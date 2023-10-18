@@ -397,38 +397,6 @@ class BaseSQLBackend(BaseBackend):
     def _to_sql(self, expr: ir.Expr, **kwargs) -> str:
         return str(self.compile(expr, **kwargs))
 
-    def explain(
-        self,
-        expr: ir.Expr | str,
-        params: Mapping[ir.Expr, Any] | None = None,
-    ) -> str:
-        """Explain an expression.
-
-        Return the query plan associated with the indicated expression or SQL
-        query.
-
-        Returns
-        -------
-        str
-            Query plan
-        """
-        if isinstance(expr, ir.Expr):
-            context = self.compiler.make_context(params=params)
-            query_ast = self.compiler.to_ast(expr, context)
-            if len(query_ast.queries) > 1:
-                raise Exception("Multi-query expression")
-
-            query = query_ast.queries[0].compile()
-        else:
-            query = expr
-
-        statement = f"EXPLAIN {query}"
-
-        with self._safe_raw_sql(statement) as cur:
-            result = self._get_list(cur)
-
-        return "\n".join(["Query:", util.indent(query, 2), "", *result])
-
     @classmethod
     @lru_cache
     def _get_operations(cls):

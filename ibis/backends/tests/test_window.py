@@ -672,7 +672,7 @@ def test_simple_ungrouped_unbound_following_window(
     ["pyspark"], raises=AnalysisException, reason="pyspark tries to locate None column"
 )
 @pytest.mark.never(
-    ["impala", "mssql"], raises=Exception, reason="order by constant is not supported"
+    ["mssql"], raises=Exception, reason="order by constant is not supported"
 )
 @pytest.mark.notimpl(["polars"], raises=com.OperationNotDefinedError)
 @pytest.mark.broken(

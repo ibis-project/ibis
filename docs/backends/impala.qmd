@@ -145,7 +145,7 @@ render_methods(
 render_methods(backend, "drop_table_or_view", "create_view")
 ```
 
-## Accessing data formats in HDFS
+## Accessing data
 
 ```{python}
 #| echo: false
@@ -153,21 +153,15 @@ render_methods(backend, "drop_table_or_view", "create_view")
 render_methods(backend, "delimited_file", "parquet_file", "avro_file")
 ```
 
-## HDFS Interaction
-
-Ibis delegates all HDFS interaction to the
-[`fsspec`](https://filesystem-spec.readthedocs.io/en/latest/) library.
-
 ## The Impala client object
 
 To use Ibis with Impala, you first must connect to a cluster using the
-`ibis.impala.connect` function, optionally supplying an HDFS connection:
+`ibis.impala.connect` function:
 
 ```python
 import ibis
 
-hdfs = ibis.impala.hdfs_connect(host=webhdfs_host, port=webhdfs_port)
-client = ibis.impala.connect(host=impala_host, port=impala_port, hdfs_client=hdfs)
+client = ibis.impala.connect(host=impala_host, port=impala_port)
 ```
 
 By default binary transport mode is used, however it is also possible to use HTTP.
@@ -196,8 +190,7 @@ using docker:
 ```python
 import ibis
 
-hdfs = ibis.impala.hdfs_connect(host="localhost", port=50070)
-client = ibis.impala.connect(host=host, hdfs_client=hdfs)
+client = ibis.impala.connect(host=host)
 ```
 
 You can accomplish many tasks directly through the client object, but we
@@ -707,7 +700,6 @@ query execution:
 #| output: asis
 render_methods(
     backend,
-    "disable_codegen",
     "get_options",
     "set_options",
     "set_compression_codec",
@@ -725,8 +717,6 @@ For example:
  'COMPUTE_STATS_MIN_SAMPLE_SIZE': '1073741824',
  'DEFAULT_JOIN_DISTRIBUTION_MODE': '0',
  'DEFAULT_SPILLABLE_BUFFER_SIZE': '2097152',
- 'DISABLE_CODEGEN': '0',
- 'DISABLE_CODEGEN_ROWS_THRESHOLD': '50000',
  'DISABLE_ROW_RUNTIME_FILTERING': '0',
  'DISABLE_STREAMING_PREAGGREGATIONS': '0',
  'DISABLE_UNSAFE_SPILLS': '0',
@@ -851,92 +841,7 @@ For example:
 >>> to_insert.drop()
 ```
 
-## Uploading / downloading data from HDFS
-
-If you've set up an HDFS connection, you can use the Ibis HDFS interface
-to look through your data and read and write files to and from HDFS:
-
-```python
->>> hdfs = con.hdfs
->>> hdfs.ls('/__ibis/ibis-testing-data')
-['README.md',
- 'avro',
- 'awards_players.csv',
- 'batting.csv',
- 'csv',
- 'diamonds.csv',
- 'functional_alltypes.csv',
- 'functional_alltypes.parquet',
- 'geo.csv',
- 'ibis_testing.db',
- 'parquet',
- 'struct_table.avro',
- 'udf']
-```
-
-```python
->>> hdfs.ls('/__ibis/ibis-testing-data/parquet')
-['functional_alltypes',
- 'tpch_customer',
- 'tpch_lineitem',
- 'tpch_nation',
- 'tpch_orders',
- 'tpch_part',
- 'tpch_partsupp',
- 'tpch_region',
- 'tpch_supplier']
-```
-
-Suppose we wanted to download
-`/__ibis/ibis-testing-data/parquet/functional_alltypes`, which is a
-directory. We need only do:
-
-```bash
-$ rm -rf parquet_dir/
-```
-
-```python
->>> hdfs.get('/__ibis/ibis-testing-data/parquet/functional_alltypes',
-...          'parquet_dir',
-...           recursive=True)
-'/ibis/docs/source/tutorial/parquet_dir'
-```
-
-Now we have that directory locally:
-
-```bash
-$ ls parquet_dir/
-9a41de519352ab07-4e76bc4d9fb5a789_1624886651_data.0.parq
-9a41de519352ab07-4e76bc4d9fb5a78a_778826485_data.0.parq
-9a41de519352ab07-4e76bc4d9fb5a78b_1277612014_data.0.parq
-```
-
-Files and directories can be written to HDFS just as easily using `put`:
-
-```python
->>> path = '/__ibis/dir-write-example'
->>> hdfs.rm(path, recursive=True)
->>> hdfs.put(path, 'parquet_dir', recursive=True)
-```
-
-```python
->>> hdfs.ls('/__ibis/dir-write-example')
-['9a41de519352ab07-4e76bc4d9fb5a789_1624886651_data.0.parq',
- '9a41de519352ab07-4e76bc4d9fb5a78a_778826485_data.0.parq',
- '9a41de519352ab07-4e76bc4d9fb5a78b_1277612014_data.0.parq']
-```
-
-Delete files and directories with `rm`:
-
-```python
->>> hdfs.rm('/__ibis/dir-write-example', recursive=True)
-```
-
-```bash
-rm -rf parquet_dir/
-```
-
-## Queries on Parquet, Avro, and Delimited files in HDFS
+## Queries on Parquet, Avro, and Delimited files
 
 Ibis can easily create temporary or persistent Impala tables that
 reference data in the following formats:
@@ -995,36 +900,7 @@ Decimal('229577310901.20')
 >>> con.drop_table('my_parquet_table')
 ```
 
-To query delimited files, you need to write down an Ibis schema. At some
-point we'd like to build some helper tools that will infer the schema
-for you, all in good time.
-
-There's some CSV files in the test folder, so let's use those:
-
-```python
->>> hdfs.get('/__ibis/ibis-testing-data/csv', 'csv-files', recursive=True)
-'/ibis/docs/source/tutorial/csv-files'
-```
-
-```bash
-$ cat csv-files/0.csv
-63IEbRheTh,0.679388707915,6
-mG4hlqnjeG,2.80710565922,15
-JTPdX9SZH5,-0.155126406372,55
-2jcl6FypOl,1.03787834032,21
-k3TbJLaadQ,-1.40190801103,23
-rP5J4xvinM,-0.442092712869,22
-WniUylixYt,-0.863748033806,27
-znsDuKOB1n,-0.566029637098,47
-4SRP9jlo1M,0.331460412318,88
-KsfjPyDf5e,-0.578930506363,70
-```
-
-```bash
-$ rm -rf csv-files/
-```
-
-The schema here is pretty simple (see `ibis.schema` for more):
+To query delimited files, you need to write down an Ibis schema.
 
 ```python
 >>> schema = ibis.schema(dict(foo='string', bar='double', baz='int32'))
@@ -1049,31 +925,8 @@ The schema here is pretty simple (see `ibis.schema` for more):
 0    100      0 -1.401908  2.807106  8.479978  0.0848              10
 ```
 
-For functions like `parquet_file` and `delimited_file`, an HDFS directory must
+For functions like `parquet_file` and `delimited_file`, a directory must
 be passed and the directory must contain files all having the same schema.
-
-If you have Avro data, you can query it too if you have the full avro
-schema:
-
-```python
->>> avro_schema = {
-...     "fields": [
-...         {"type": ["int", "null"], "name": "R_REGIONKEY"},
-...         {"type": ["string", "null"], "name": "R_NAME"},
-...         {"type": ["string", "null"], "name": "R_COMMENT"}],
-...     "type": "record",
-...     "name": "a"
-... }
-
->>> path = '/__ibis/ibis-testing-data/avro/tpch.region'
-
->>> hdfs.mkdir(path, create_parents=True)
->>> table = con.avro_file(path, avro_schema)
->>> table
-Empty DataFrame
-Columns: [r_regionkey, r_name, r_comment]
-Index: []
-```
 
 ## Other helper functions for interacting with the database
 
@@ -1132,22 +985,12 @@ you want for the data files
 
 ```python
 >>> db = 'ibis_testing2'
->>> con.create_database(db, path='/__ibis/my-test-database', force=True)
-
->>> # you may or may not have to give the impala user write and execute permissions to '/__ibis/my-test-database'
->>> hdfs.chmod('/__ibis/my-test-database', 0o777)
+>>> con.create_database(db, force=True)
 ```
 
 ```python
 >>> con.create_table('example_table', con.table('functional_alltypes'),
 ...                  database=db, force=True)
-```
-
-Hopefully, there will be data files in the indicated spot in HDFS:
-
-```python
->>> hdfs.ls('/__ibis/my-test-database')
-['example_table']
 ```
 
 To drop a database, including all tables in it, you can use
@@ -1156,38 +999,6 @@ To drop a database, including all tables in it, you can use
 ```python
 >>> con.drop_database(db, force=True)
 ```
-
-## Faster queries on small data in Impala
-
-Since Impala internally uses LLVM to compile parts of queries (aka
-"codegen") to make them faster on large data sets there is a certain
-amount of overhead with running many kinds of queries, even on small
-datasets. You can disable LLVM code generation when using Ibis, which
-may significantly speed up queries on smaller datasets:
-
-```python
->>> from numpy.random import rand
->>> con.disable_codegen()
->>> t = con.table('ibis_testing.functional_alltypes')
-```
-
-```bash
-$ time python -c "(t.double_col + rand()).sum().to_pandas()"
-27.7 ms ± 996 µs per loop (mean ± std. dev. of 7 runs, 10 loops each)
-```
-
-```python
-# Turn codegen back on
-con.disable_codegen(False)
-```
-
-```bash
-$ time python -c "(t.double_col + rand()).sum().to_pandas()"
-27 ms ± 1.62 ms per loop (mean ± std. dev. of 7 runs, 10 loops each)
-```
-
-It's important to remember that codegen is a fixed overhead and will
-significantly speed up queries on big data
 
 ## User Defined functions (UDF)
 
@@ -1298,26 +1109,6 @@ Specifically, after authenticating yourself against Kerberos (e.g., by issuing
 the appropriate `kinit` command), pass `auth_mechanism='GSSAPI'` or
 `auth_mechanism='LDAP'` (and set `kerberos_service_name` if necessary along
 with `user` and `password` if necessary) to the
-`ibis.impala_connect(...)` method when instantiating an `ImpalaConnection`.
+`ibis.impala_connect(...)` method.
 This method also takes arguments to configure SSL (`use_ssl`, `ca_cert`).
 See the documentation for the Impala shell for more details.
-
-Ibis also includes functionality that communicates directly with HDFS, using
-the WebHDFS REST API. When calling `ibis.impala.hdfs_connect(...)`, also pass
-`auth_mechanism='GSSAPI'` or `auth_mechanism='LDAP'`, and ensure that you
-are connecting to the correct port, which may likely be an SSL-secured WebHDFS
-port. Also note that you can pass `verify=False` to avoid verifying SSL
-certificates (which may be helpful in testing). Ibis will assume `https`
-when connecting to a Kerberized cluster. Because some Ibis commands create HDFS
-directories as well as new Impala databases and/or tables, your user will
-require the necessary privileges.
-
-## Default Configuration Values for CDH Components
-
-Cloudera CDH ships with HDFS, Impala, Hive and many other components.
-Sometimes it's not obvious what default configuration values these tools are
-using or should be using.
-
-Check out [this
-link](https://www.cloudera.com/documentation/enterprise/latest/topics/cdh_ig_ports_cdh5.html#topic_9_1)
-to see the default configuration values for every component of CDH.

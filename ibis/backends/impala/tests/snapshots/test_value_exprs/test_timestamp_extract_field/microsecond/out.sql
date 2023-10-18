@@ -1,1 +1,1 @@
-extract(`i`, 'microsecond')
+extract(`i`, 'microsecond') % 1000000

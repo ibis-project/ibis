@@ -61,8 +61,8 @@ def test_con_dot_sql(backend, con, schema):
         con.sql(
             f"""
             SELECT
-                string_col as s,
-                double_col + 1.0 AS new_col
+              string_col as s,
+              double_col + 1.0 AS new_col
             FROM {name}
             """,
             schema=schema,
@@ -84,7 +84,7 @@ def test_con_dot_sql(backend, con, schema):
         .sort_values()
         .reset_index(drop=True)
     )
-    backend.assert_series_equal(result, expected)
+    backend.assert_series_equal(result.astype(expected.dtype), expected)
 
 
 @table_dot_sql_notimpl
