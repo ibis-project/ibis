@@ -622,9 +622,9 @@ def _binop(op_class: type[ops.Binary], left: ir.Value, right: ir.Value) -> ir.Va
     >>> import ibis.expr.operations as ops
     >>> expr = _binop(ops.TimeAdd, ibis.time("01:00"), ibis.interval(hours=1))
     >>> expr
-    TimeAdd(datetime.time(1, 0), 1): datetime.time(1, 0) + 1 h
+    TimeAdd(datetime.time(1, 0), 1h): datetime.time(1, 0) + 1 h
     >>> _binop(ops.TimeAdd, 1, ibis.interval(hours=1))
-    TimeAdd(datetime.time(0, 0, 1), 1): datetime.time(0, 0, 1) + 1 h
+    TimeAdd(datetime.time(0, 0, 1), 1h): datetime.time(0, 0, 1) + 1 h
     """
     try:
         node = op_class(left, right)
