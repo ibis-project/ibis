@@ -1,1 +1,1 @@
-floor(`double_col`)
+cast(floor(`double_col`) AS BIGINT)

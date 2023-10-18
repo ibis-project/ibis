@@ -11,7 +11,6 @@ import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.types as ir
 from ibis import util
-from ibis.backends.base.sql.ddl import fully_qualified_re
 from ibis.tests.util import assert_equal
 
 pytest.importorskip("impala")
@@ -35,35 +34,30 @@ def test_create_exists_view(con, temp_view):
     assert not t2.execute().empty
 
 
-def test_drop_non_empty_database(con, alltypes, temp_table_db):
-    temp_database, temp_table = temp_table_db
-    con.create_table(temp_table, alltypes, database=temp_database)
-    assert temp_table in con.list_tables(database=temp_database)
+def test_drop_non_empty_database(con, alltypes, temp_table):
+    con.create_table(temp_table, alltypes)
+    assert temp_table in con.list_tables()
 
     with pytest.raises(com.IntegrityError):
-        con.drop_database(temp_database)
+        con.drop_database("ibis_testing")
 
 
 @pytest.fixture
-def temp_db(con, hdfs, tmp_dir):
+def temp_db(con, tmp_dir):
     base = pjoin(tmp_dir, util.guid())
     name = util.gen_name("test_database")
     yield pjoin(base, name)
     con.drop_database(name)
-    hdfs.rm(base, recursive=True)
 
 
-@pytest.mark.hdfs
-def test_create_database_with_location(con, temp_db, hdfs):
-    base = os.path.dirname(temp_db)
+def test_create_database_with_location(con, temp_db):
     name = os.path.basename(temp_db)
     con.create_database(name, path=temp_db)
-    assert hdfs.exists(base)
+    assert name in con.list_databases()
 
 
-@pytest.mark.hdfs
 def test_create_table_with_location_execute(
-    con, hdfs, tmp_dir, alltypes, test_data_db, temp_table
+    con, tmp_dir, alltypes, test_data_db, temp_table
 ):
     base = pjoin(tmp_dir, util.guid())
     name = f"test_{util.guid()}"
@@ -72,7 +66,7 @@ def test_create_table_with_location_execute(
     expr = alltypes
 
     con.create_table(temp_table, obj=expr, location=tmp_path, database=test_data_db)
-    assert hdfs.exists(tmp_path)
+    assert temp_table in con.list_tables()
 
 
 def test_drop_table_not_exist(con):
@@ -108,11 +102,9 @@ def test_truncate_table_expression(con, alltypes, temp_table):
     assert not nrows
 
 
-def test_ctas_from_table_expr(con, alltypes, temp_table_db):
-    expr = alltypes
-    db, table_name = temp_table_db
-
-    con.create_table(table_name, expr, database=db)
+def test_ctas_from_table_expr(con, alltypes, temp_table):
+    t = con.create_table(temp_table, alltypes)
+    assert t.count().execute()
 
 
 def test_create_empty_table(con, temp_table):
@@ -213,20 +205,14 @@ def path_uuid():
 
 
 @pytest.fixture
-def table(con, tmp_db, tmp_dir, path_uuid):
+def table(con, tmp_dir, path_uuid):
     table_name = f"table_{util.guid()}"
     fake_path = pjoin(tmp_dir, path_uuid)
     schema = ibis.schema([("foo", "string"), ("bar", "int64")])
-    con.create_table(
-        table_name,
-        database=tmp_db,
-        schema=schema,
-        format="parquet",
-        external=True,
-        location=fake_path,
+    yield con.create_table(
+        table_name, schema=schema, format="parquet", external=True, location=fake_path
     )
-    yield con.table(table_name, database=tmp_db)
-    con.drop_table(table_name, database=tmp_db)
+    con.drop_table(table_name)
 
 
 def test_change_location(table, tmp_dir, path_uuid):
@@ -260,7 +246,7 @@ def test_change_format(table):
     assert "Avro" in meta.hive_format
 
 
-def test_query_avro(con, test_data_dir, tmp_db):
+def test_query_avro(con, test_data_dir):
     hdfs_path = pjoin(test_data_dir, "impala/avro/tpch/region")
 
     avro_schema = {
@@ -273,13 +259,10 @@ def test_query_avro(con, test_data_dir, tmp_db):
         "name": "a",
     }
 
-    table = con.avro_file(hdfs_path, avro_schema, database=tmp_db)
-
-    qualified_name = table._qualified_name
-    _, name = filter(None, fully_qualified_re.match(qualified_name).groups())
+    table = con.avro_file(hdfs_path, avro_schema)
 
     # table exists
-    assert name in con.list_tables(database=tmp_db)
+    assert table._qualified_name in con.list_tables()
 
     expr = table.r_name.value_counts()
     expr.execute()
@@ -305,14 +288,11 @@ def test_create_table_reserved_identifier(con, temp_table_id):
     assert result == expected
 
 
-def test_query_delimited_file_directory(con, test_data_dir, tmp_db):
+def test_query_delimited_file_directory(con, test_data_dir, temp_table):
     hdfs_path = pjoin(test_data_dir, "csv")
 
     schema = ibis.schema([("foo", "string"), ("bar", "double"), ("baz", "int8")])
-    name = "delimited_table_test1"
-    table = con.delimited_file(
-        hdfs_path, schema, name=name, database=tmp_db, delimiter=","
-    )
+    table = con.delimited_file(hdfs_path, schema, name=temp_table, delimiter=",")
 
     expr = (
         table[table.bar > 0]
@@ -350,37 +330,6 @@ def test_varchar_char_support(temp_char_table):
     assert isinstance(temp_char_table["group2"], ir.StringValue)
 
 
-def test_temp_table_concurrency(con, test_data_dir):
-    import concurrent.futures
-    import multiprocessing
-
-    def limit(con, hdfs_path, offset):
-        t = con.parquet_file(hdfs_path)
-        return t.order_by(t.r_regionkey).limit(1, offset=offset).execute()
-
-    nthreads = multiprocessing.cpu_count()
-    hdfs_path = pjoin(test_data_dir, "impala/parquet/region")
-
-    num_rows = int(con.parquet_file(hdfs_path).count().execute())
-    with concurrent.futures.ThreadPoolExecutor(max_workers=nthreads) as e:
-        futures = [
-            e.submit(limit, con, hdfs_path, offset=offset % (num_rows - 1) + 1)
-            for offset in range(nthreads)
-        ]
-        results = [
-            future.result() for future in concurrent.futures.as_completed(futures)
-        ]
-    assert all(map(len, results))
-
-
 def test_access_kudu_table(kudu_table):
     assert kudu_table.columns == ["a"]
     assert kudu_table["a"].type() == dt.string
-
-
-def test_kudu_property_raises_useful_error(con):
-    with pytest.raises(
-        NotImplementedError,
-        match="kudu support using kudu-python",
-    ):
-        con.kudu  # noqa: B018

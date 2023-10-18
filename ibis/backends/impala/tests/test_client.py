@@ -2,14 +2,12 @@ from __future__ import annotations
 
 import datetime
 from contextlib import closing
-from posixpath import join as pjoin
 
 import pandas as pd
 import pytest
 import pytz
 
 import ibis
-import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.types as ir
 from ibis import config
@@ -17,20 +15,6 @@ from ibis.tests.util import assert_equal
 
 pytest.importorskip("impala")
 thrift = pytest.importorskip("thrift")
-
-
-def test_hdfs_connect_function_is_public():
-    assert hasattr(ibis.impala, "hdfs_connect")
-
-
-def test_raise_ibis_error_no_hdfs(env):
-    con = ibis.impala.connect(
-        host=env.impala_host, port=env.impala_port, auth_mechanism=env.auth_mechanism
-    )
-
-    # GH299
-    with pytest.raises(com.IbisError):
-        con.hdfs  # noqa: B018
 
 
 def test_run_sql(con, test_data_db):
@@ -191,18 +175,6 @@ def test_database_default_current_database(con):
     assert db.name == con.current_database
 
 
-def test_close_drops_temp_tables(con, test_data_dir):
-    hdfs_path = pjoin(test_data_dir, "impala/parquet/region")
-
-    table = con.parquet_file(hdfs_path)
-
-    name = table._qualified_name
-    assert len(con.list_tables(like=name))
-    con.close()
-
-    assert not len(con.list_tables(like=name))
-
-
 def test_set_compression_codec(con):
     old_opts = con.get_options()
     assert old_opts["COMPRESSION_CODEC"].upper() in ("NONE", "")
@@ -216,30 +188,7 @@ def test_set_compression_codec(con):
     assert opts["COMPRESSION_CODEC"].upper() in ("NONE", "")
 
 
-def test_disable_codegen(con):
-    con.disable_codegen(False)
-    opts = con.get_options()
-    assert opts["DISABLE_CODEGEN"] == "0"
-
-    con.disable_codegen()
-    opts = con.get_options()
-    assert opts["DISABLE_CODEGEN"] == "1"
-
-    impala_con = con.con
-    cur1 = impala_con.execute("SET")
-    cur2 = impala_con.execute("SET")
-
-    opts1 = dict(row[:2] for row in cur1.fetchall())
-    cur1.release()
-
-    opts2 = dict(row[:2] for row in cur2.fetchall())
-    cur2.release()
-
-    assert opts1["DISABLE_CODEGEN"] == "1"
-    assert opts2["DISABLE_CODEGEN"] == "1"
-
-
-def test_attr_name_conflict(con, tmp_db, temp_parquet_table, temp_parquet_table2):
+def test_attr_name_conflict(temp_parquet_table, temp_parquet_table2):
     left = temp_parquet_table
     right = temp_parquet_table2
 
@@ -250,15 +199,9 @@ def test_attr_name_conflict(con, tmp_db, temp_parquet_table, temp_parquet_table2
 
 @pytest.fixture
 def con2(env):
-    con = ibis.impala.connect(
-        host=env.impala_host,
-        port=env.impala_port,
-        auth_mechanism=env.auth_mechanism,
+    return ibis.impala.connect(
+        host=env.impala_host, port=env.impala_port, auth_mechanism=env.auth_mechanism
     )
-    if not env.use_codegen:
-        con.disable_codegen()
-    assert con.get_options()["DISABLE_CODEGEN"] == "1"
-    return con
 
 
 def test_day_of_week(con):

@@ -1,182 +1,13 @@
 from __future__ import annotations
 
-import contextlib
-import traceback
-from typing import TYPE_CHECKING
-
-import sqlalchemy as sa
+import pandas as pd
 import sqlglot as sg
 
 import ibis.common.exceptions as com
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
-from ibis import util
-from ibis.backends.base import Database
-from ibis.backends.base.sql.compiler import DDL, DML
 from ibis.backends.base.sql.ddl import AlterTable, InsertSelect
 from ibis.backends.impala import ddl
-from ibis.backends.impala.compat import HS2Error, impyla
-
-if TYPE_CHECKING:
-    import pandas as pd
-
-
-class ImpalaDatabase(Database):
-    def create_table(self, name: str, obj=None, **kwargs) -> ir.Table:
-        """Dispatch to ImpalaClient.create_table.
-
-        See that function's docstring for more
-        """
-        return self.client.create_table(name, obj=obj, database=self.name, **kwargs)
-
-    def list_udfs(self, like=None):
-        return self.client.list_udfs(like=like, database=self.name)
-
-    def list_udas(self, like=None):
-        return self.client.list_udas(like=like, database=self.name)
-
-
-class ImpalaConnection:
-    """Database connection wrapper."""
-
-    def __init__(self, pool_size=8, database="default", **params):
-        self.params = params
-        self.database = database
-        self.options = {}
-        self.pool = sa.pool.QueuePool(
-            self._new_cursor,
-            pool_size=pool_size,
-            # disable invoking rollback, because any transactions in impala are
-            # automatic:
-            # https://impala.apache.org/docs/build/html/topics/impala_transactions.html
-            reset_on_return=False,
-        )
-
-        @sa.event.listens_for(self.pool, "checkout")
-        def _(dbapi_connection, *_):
-            """Update `dbapi_connection` options if they don't match `self`."""
-            if (options := self.options) != dbapi_connection.options:
-                dbapi_connection.options = options.copy()
-                dbapi_connection.set_options()
-
-    def set_options(self, options):
-        self.options.update(options)
-
-    def close(self):
-        """Close all idle Impyla connections."""
-        self.pool.dispose()
-
-    def disable_codegen(self, disabled=True):
-        self.options["DISABLE_CODEGEN"] = str(int(disabled))
-
-    def execute(self, query):
-        if isinstance(query, (DDL, DML)):
-            query = query.compile()
-
-        util.log(query)
-
-        cursor = self.pool.connect()
-        try:
-            cursor.execute(query)
-        except Exception:
-            cursor.close()
-            util.log(f"Exception caused by {query}: {traceback.format_exc()}")
-            raise
-
-        return cursor
-
-    def fetchall(self, query):
-        cur = self.execute(query)
-        try:
-            results = cur.fetchall()
-        finally:
-            cur.close()
-        return results
-
-    def _new_cursor(self):
-        params = self.params.copy()
-        con = impyla.connect(database=self.database, **params)
-
-        # make sure the connection works
-        cursor = con.cursor(user=params.get("user"), convert_types=True)
-        cursor.ping()
-
-        wrapper = ImpalaCursor(cursor, con, self.database, self.options.copy())
-        wrapper.set_options()
-        return wrapper
-
-    def release(self, cur):  # pragma: no cover
-        pass
-
-
-class ImpalaCursor:
-    def __init__(self, cursor, impyla_con, database, options):
-        self._cursor = cursor
-        self.impyla_con = impyla_con
-        self.database = database
-        self.options = options
-
-    def __del__(self):
-        with contextlib.suppress(Exception):
-            self.close()
-
-    def close(self):
-        try:
-            self._cursor.close()
-        except HS2Error as e:
-            # connection was closed elsewhere
-            already_closed_messages = [
-                "invalid query handle",
-                "invalid session",
-            ]
-            for message in already_closed_messages:
-                if message in e.args[0].lower():
-                    break
-            else:
-                raise
-
-    def set_options(self):
-        for k, v in self.options.items():
-            query = f"SET {k} = {v!r}"
-            self._cursor.execute(query)
-
-    @property
-    def description(self):
-        return self._cursor.description
-
-    def release(self):
-        pass
-
-    def execute(self, stmt):
-        self._cursor.execute_async(stmt)
-        self._wait_synchronous()
-
-    def _wait_synchronous(self):
-        # Wait to finish, but cancel if KeyboardInterrupt
-        try:
-            self._cursor._wait_to_finish()
-        except KeyboardInterrupt:
-            util.log("Canceling query")
-            self.cancel()
-            raise
-
-    def is_finished(self):
-        return not self.is_executing()
-
-    def is_executing(self):
-        return self._cursor.is_executing()
-
-    def cancel(self):
-        self._cursor.cancel_operation()
-
-    def fetchone(self):
-        return self._cursor.fetchone()
-
-    def fetchall(self, columnar=False):
-        if columnar:
-            return self._cursor.fetchcolumnar()
-        else:
-            return self._cursor.fetchall()
 
 
 class ImpalaTable(ir.Table):
@@ -267,37 +98,40 @@ class ImpalaTable(ir.Table):
         if values is not None:
             raise NotImplementedError
 
-        with self._client._setup_insert(obj) as expr:
-            if validate:
-                existing_schema = self.schema()
-                insert_schema = expr.schema()
-                if not insert_schema.equals(existing_schema):
-                    _validate_compatible(insert_schema, existing_schema)
+        if isinstance(obj, pd.DataFrame):
+            raise NotImplementedError("Pandas DataFrames not yet supported")
 
-            if partition is not None:
-                partition_schema = self.partition_schema()
-                partition_schema_names = frozenset(partition_schema.names)
-                expr = expr.select(
-                    [
-                        column
-                        for column in expr.columns
-                        if column not in partition_schema_names
-                    ]
-                )
-            else:
-                partition_schema = None
+        expr = obj
+        if validate:
+            existing_schema = self.schema()
+            insert_schema = expr.schema()
+            if not insert_schema.equals(existing_schema):
+                _validate_compatible(insert_schema, existing_schema)
 
-            ast = self._client.compiler.to_ast(expr)
-            select = ast.queries[0]
-            statement = InsertSelect(
-                self._qualified_name,
-                select,
-                partition=partition,
-                partition_schema=partition_schema,
-                overwrite=overwrite,
+        if partition is not None:
+            partition_schema = self.partition_schema()
+            partition_schema_names = frozenset(partition_schema.names)
+            expr = expr.select(
+                [
+                    column
+                    for column in expr.columns
+                    if column not in partition_schema_names
+                ]
             )
-            self._client._safe_exec_sql(statement.compile())
-            return self
+        else:
+            partition_schema = None
+
+        ast = self._client.compiler.to_ast(expr)
+        select = ast.queries[0]
+        statement = InsertSelect(
+            self._qualified_name,
+            select,
+            partition=partition,
+            partition_schema=partition_schema,
+            overwrite=overwrite,
+        )
+        self._client._safe_exec_sql(statement.compile())
+        return self
 
     def load_data(self, path, overwrite=False, partition=None):
         """Load data into an Impala table.
@@ -352,8 +186,6 @@ class ImpalaTable(ir.Table):
 
     def add_partition(self, spec, location=None):
         """Add a new table partition.
-
-        This API creates any necessary new directories in HDFS.
 
         Partition parameters can be set in a single DDL statement or you can
         use `alter_partition` to set them after the fact.

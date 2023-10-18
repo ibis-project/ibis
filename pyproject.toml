@@ -68,7 +68,6 @@ db-dtypes = { version = ">=0.3,<2", optional = true }
 deltalake = { version = ">=0.9.0,<1", optional = true }
 duckdb = { version = ">=0.8.1,<1", optional = true }
 duckdb-engine = { version = ">=0.1.8,<1", optional = true }
-fsspec = { version = ">=2022.1.0", optional = true }
 geoalchemy2 = { version = ">=0.6.3,<1", optional = true }
 geopandas = { version = ">=0.6,<1", optional = true }
 google-cloud-bigquery = { version = ">=3,<4", optional = true }
@@ -86,7 +85,6 @@ pyodbc = { version = ">=4.0.39,<5", optional = true }
 pyspark = { version = ">=3,<3.4", optional = true } # pyspark is heavily broken by numpy >=1.24 and pandas >=2
 # used to support posix regexen in the pandas, dask and sqlite backends
 regex = { version = ">=2021.7.6", optional = true }
-requests = { version = ">=2,<3", optional = true }
 shapely = { version = ">=2,<3", optional = true }
 # include an explicit dependency on `snowflake-connector-python` because the
 # lack of lower bound on this dependency as specified in `snowflake-sqlalchemy`
@@ -159,7 +157,6 @@ all = [
   "duckdb",
   "duckdb-engine",
   "deltalake",
-  "fsspec",
   "geoalchemy2",
   "geopandas",
   "google-cloud-bigquery",
@@ -176,7 +173,6 @@ all = [
   "pyodbc",
   "pyspark",
   "regex",
-  "requests",
   "shapely",
   "snowflake-connector-python",
   "snowflake-sqlalchemy",
@@ -199,7 +195,7 @@ duckdb = ["duckdb", "duckdb-engine", "sqlalchemy", "sqlalchemy-views"]
 exasol = ["sqlalchemy", "sqlalchemy-exasol", "sqlalchemy-views"]
 flink = []
 geospatial = ["geoalchemy2", "geopandas", "shapely"]
-impala = ["fsspec", "impyla", "requests", "sqlalchemy"]
+impala = ["impyla", "sqlalchemy"]
 mssql = ["sqlalchemy", "pyodbc", "sqlalchemy-views"]
 mysql = ["sqlalchemy", "pymysql", "sqlalchemy-views"]
 oracle = ["sqlalchemy", "oracledb", "packaging", "sqlalchemy-views"]
@@ -350,7 +346,6 @@ markers = [
   "core: tests that do not required a backend",
   "examples: tests that exercise examples",
   "geospatial: tests for geospatial functionality",
-  "hdfs: Hadoop file system tests",
   "xfail_version: backend tests that for a specific version of a dependency",
   "notimpl: functionality that isn't implemented in ibis",
   "notyet: for functionality that isn't implemented in a backend",
