@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import operator
-from typing import Annotated
+from typing import Annotated, Union
 
 from public import public
 
@@ -10,7 +10,7 @@ import ibis.expr.rules as rlz
 from ibis.common.annotations import attribute
 from ibis.common.patterns import As, Attrs
 from ibis.common.temporal import DateUnit, IntervalUnit, TimestampUnit, TimeUnit
-from ibis.expr.operations.core import Binary, Unary, Value
+from ibis.expr.operations.core import Binary, Scalar, Unary, Value
 from ibis.expr.operations.logical import Between
 
 
@@ -49,6 +49,16 @@ class TimeTruncate(Value):
 
     shape = rlz.shape_like("arg")
     dtype = dt.time
+
+
+@public
+class TimestampBucket(Value):
+    arg: Value[dt.Timestamp]
+    interval: Scalar[dt.Interval]
+    offset: Union[Scalar[dt.Interval], None] = None
+
+    shape = rlz.shape_like("arg")
+    dtype = dt.timestamp
 
 
 @public

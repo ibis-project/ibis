@@ -1,10 +1,11 @@
 from __future__ import annotations
 
 import datetime
-from typing import TYPE_CHECKING, Literal
+from typing import TYPE_CHECKING, Literal, Any
 
 from public import public
 
+import ibis
 import ibis.expr.datashape as ds
 import ibis.expr.operations as ops
 from ibis.expr.types.core import _binop
@@ -485,6 +486,129 @@ class TimestampValue(_DateComponentMixin, _TimeComponentMixin, TemporalValue):
             Truncated timestamp expression
         """
         return ops.TimestampTruncate(self, unit).to_expr()
+
+    @util.experimental
+    def bucket(
+        self,
+        interval: Any = None,
+        *,
+        years: int | None = None,
+        quarters: int | None = None,
+        months: int | None = None,
+        weeks: int | None = None,
+        days: int | None = None,
+        hours: int | None = None,
+        minutes: int | None = None,
+        seconds: int | None = None,
+        milliseconds: int | None = None,
+        microseconds: int | None = None,
+        nanoseconds: int | None = None,
+        offset: Any = None,
+    ) -> TimestampValue:
+        """Truncate the timestamp to buckets of a specified interval.
+
+        This is similar to `truncate`, but supports truncating to arbitrary
+        intervals rather than a single unit. Buckets are computed as fixed
+        intervals starting from the UNIX epoch. This origin may be offset by
+        specifying `offset`.
+
+        Parameters
+        ----------
+        interval
+            The bucket width as an interval. Alternatively may be specified
+            via component keyword arguments.
+        offset
+            An interval to use to offset the start of the bucket.
+
+        Returns
+        -------
+        TimestampValue
+            The start of the bucket as a timestamp.
+
+        Examples
+        --------
+        >>> import ibis
+        >>> from ibis import _
+        >>> ibis.options.interactive = True
+        >>> t = ibis.memtable(
+        ...     [
+        ...         ("2020-04-15 08:04:00", 1),
+        ...         ("2020-04-15 08:06:00", 2),
+        ...         ("2020-04-15 08:09:00", 3),
+        ...         ("2020-04-15 08:11:00", 4),
+        ...     ],
+        ...     columns=["ts", "val"],
+        ... ).cast({"ts": "timestamp"})
+
+        Bucket the data into 5 minute wide buckets:
+
+        >>> t.ts.bucket(minutes=5)
+        ┏━━━━━━━━━━━━━━━━━━━━━━━━━┓
+        ┃ TimestampBucket(ts, 5m) ┃
+        ┡━━━━━━━━━━━━━━━━━━━━━━━━━┩
+        │ timestamp               │
+        ├─────────────────────────┤
+        │ 2020-04-15 08:00:00     │
+        │ 2020-04-15 08:05:00     │
+        │ 2020-04-15 08:05:00     │
+        │ 2020-04-15 08:10:00     │
+        └─────────────────────────┘
+
+        Bucket the data into 5 minute wide buckets, offset by 2 minutes:
+
+        >>> t.ts.bucket(minutes=5, offset=ibis.interval(minutes=2))
+        ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+        ┃ TimestampBucket(ts, 5m, 2m) ┃
+        ┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+        │ timestamp                   │
+        ├─────────────────────────────┤
+        │ 2020-04-15 08:02:00         │
+        │ 2020-04-15 08:02:00         │
+        │ 2020-04-15 08:07:00         │
+        │ 2020-04-15 08:07:00         │
+        └─────────────────────────────┘
+
+        One common use of timestamp bucketing is computing statistics per
+        bucket. Here we compute the mean of `val` across 5 minute intervals:
+
+        >>> mean_by_bucket = (
+        ...     t.group_by(t.ts.bucket(minutes=5).name("bucket"))
+        ...     .agg(mean=_.val.mean())
+        ...     .order_by("bucket")
+        ... )
+        >>> mean_by_bucket
+        ┏━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━┓
+        ┃ bucket              ┃ mean    ┃
+        ┡━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━┩
+        │ timestamp           │ float64 │
+        ├─────────────────────┼─────────┤
+        │ 2020-04-15 08:00:00 │     1.0 │
+        │ 2020-04-15 08:05:00 │     2.5 │
+        │ 2020-04-15 08:10:00 │     4.0 │
+        └─────────────────────┴─────────┘
+        """
+
+        components = {
+            "years": years,
+            "quarters": quarters,
+            "months": months,
+            "weeks": weeks,
+            "days": days,
+            "hours": hours,
+            "minutes": minutes,
+            "seconds": seconds,
+            "milliseconds": milliseconds,
+            "microseconds": microseconds,
+            "nanoseconds": nanoseconds,
+        }
+        has_components = any(v is not None for v in components.values())
+        if (interval is not None) == has_components:
+            raise ValueError(
+                "Must specify either interval value or components, but not both"
+            )
+        if has_components:
+            interval = ibis.interval(**components)
+        return ops.TimestampBucket(self, interval, offset).to_expr()
 
     def date(self) -> DateValue:
         """Return the date component of the expression.

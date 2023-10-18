@@ -889,3 +889,36 @@ def test_timestamp_expression():
     expr = ibis.timestamp(t2.s, timezone="UTC")
     assert deferred.resolve(t2).equals(expr)
     assert repr(deferred) == "timestamp(_.s, timezone='UTC')"
+
+
+def test_timestamp_bucket():
+    ts = ibis.table({"ts": "timestamp"}).ts
+
+    components = [
+        "nanoseconds",
+        "microseconds",
+        "milliseconds",
+        "seconds",
+        "minutes",
+        "hours",
+        "days",
+        "weeks",
+        "months",
+        "quarters",
+        "years",
+    ]
+    for component in components:
+        kws = {component: 2}
+        expr1 = ts.bucket(**kws)
+        expr2 = ts.bucket(ibis.interval(**kws))
+        assert expr1.equals(expr2)
+
+    with pytest.raises(
+        ValueError, match="Must specify either interval value or components"
+    ):
+        ts.bucket(ibis.interval(seconds=1), minutes=2)
+
+    with pytest.raises(
+        ValueError, match="Must specify either interval value or components"
+    ):
+        ts.bucket()

@@ -87,6 +87,17 @@ def _timestamp_from_unix(t, op):
         raise UnsupportedOperationError(f"{unit!r} unit is not supported!")
 
 
+def _timestamp_bucket(t, op):
+    arg = t.translate(op.arg)
+    interval = t.translate(op.interval)
+
+    origin = sa.literal_column("'epoch'::TIMESTAMP")
+
+    if op.offset is not None:
+        origin += t.translate(op.offset)
+    return sa.func.time_bucket(interval, arg, origin)
+
+
 class struct_pack(GenericFunction):
     def __init__(self, values: Mapping[str, Any], *, type: StructType) -> None:
         super().__init__()
@@ -418,6 +429,7 @@ operation_registry.update(
         ),
         ops.TableColumn: _table_column,
         ops.TimestampFromUNIX: _timestamp_from_unix,
+        ops.TimestampBucket: _timestamp_bucket,
         ops.TimestampNow: fixed_arity(
             # duckdb 0.6.0 changes now to be a timestamp with time zone force
             # it back to the original for backwards compatibility

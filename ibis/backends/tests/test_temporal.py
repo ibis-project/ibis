@@ -2513,3 +2513,87 @@ def test_timestamp_precision_output(con, ts, scale, unit):
 def test_delta(con, start, end, unit, expected):
     expr = end.delta(start, unit)
     assert con.execute(expr) == expected
+
+
+@pytest.mark.notimpl(
+    [
+        "bigquery",
+        "clickhouse",
+        "dask",
+        "datafusion",
+        "flink",
+        "impala",
+        "mssql",
+        "mysql",
+        "oracle",
+        "pandas",
+        "polars",
+        "postgres",
+        "pyspark",
+        "snowflake",
+        "sqlite",
+        "trino",
+    ],
+    raises=com.OperationNotDefinedError,
+)
+@pytest.mark.broken(
+    ["druid"],
+    raises=AttributeError,
+    reason="Druid tests load timestamp_col as a string currently",
+)
+@pytest.mark.parametrize(
+    "kws, pd_freq",
+    [
+        ({"milliseconds": 50}, "50ms"),
+        ({"seconds": 2}, "2s"),
+        ({"minutes": 5}, "300s"),
+        ({"hours": 2}, "2h"),
+        ({"days": 2}, "2D"),
+    ],
+)
+def test_timestamp_bucket(backend, kws, pd_freq):
+    ts = backend.functional_alltypes.timestamp_col.name("ts").execute()
+    res = backend.functional_alltypes.timestamp_col.bucket(**kws).name("ts").execute()
+    sol = ts.dt.floor(pd_freq)
+    backend.assert_series_equal(res, sol)
+
+
+@pytest.mark.notimpl(
+    [
+        "bigquery",
+        "clickhouse",
+        "dask",
+        "datafusion",
+        "flink",
+        "impala",
+        "mssql",
+        "mysql",
+        "oracle",
+        "pandas",
+        "polars",
+        "postgres",
+        "pyspark",
+        "snowflake",
+        "sqlite",
+        "trino",
+    ],
+    raises=com.OperationNotDefinedError,
+)
+@pytest.mark.broken(
+    ["druid"],
+    raises=AttributeError,
+    reason="Druid tests load timestamp_col as a string currently",
+)
+@pytest.mark.notimpl(
+    ["clickhouse", "mssql"],
+    reason="offset arg not supported",
+    raises=com.UnsupportedOperationError,
+)
+@pytest.mark.parametrize("offset_mins", [2, -2])
+def test_timestamp_bucket_offset(backend, offset_mins):
+    ts = backend.functional_alltypes.timestamp_col.name("ts")
+    expr = ts.bucket(minutes=5, offset=ibis.interval(minutes=offset_mins)).name("ts")
+    res = expr.execute().astype("datetime64[ns]")
+    td = pd.Timedelta(minutes=offset_mins)
+    sol = ((ts.execute() - td).dt.floor("300s") + td).astype("datetime64[ns]")
+    backend.assert_series_equal(res, sol)
