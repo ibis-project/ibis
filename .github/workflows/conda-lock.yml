@@ -27,33 +27,27 @@ jobs:
 
       - uses: conda-incubator/setup-miniconda@v2
         with:
-          miniconda-version: latest
+          miniforge-variant: Mambaforge
+          miniforge-version: latest
           activate-environment: conda-lock
-          channels: conda-forge
-          channel-priority: strict
           python-version: "3.11"
           condarc-file: ci/conda-lock/condarc
+          use-mamba: true
 
       - name: install conda libmamba solver
-        run: conda install -n base conda-libmamba-solver
-
-      - name: set solver to libmamba
-        run: conda config --set solver libmamba
-
-      - name: install conda-lock
-        run: conda install conda-lock=1.4
+        run: mamba install --name base conda-lock=2.3
 
       - name: generate lock file
-        run: ./ci/conda-lock/generate.sh "${{ matrix.python-version }}"
+        run: ./ci/conda-lock/generate.sh ${{ matrix.python-version }} --lockfile ci/conda-lock/python-${{ matrix.python-version }}.yml
 
       - name: create conda environment
-        run: conda create --name ibis${{ matrix.python-version }} --file conda-lock/linux-64-${{ matrix.python-version }}.lock
+        run: conda-lock install --name ibis${{ matrix.python-version }} --file ci/conda-lock/python-${{ matrix.python-version }}.yml
 
       - name: upload conda lock files
         uses: actions/upload-artifact@v3
         with:
           name: conda-lock-files-${{ github.run_attempt }}
-          path: conda-lock/*-${{ matrix.python-version }}.lock
+          path: ci/conda-lock/python-*.yml
 
   condalock_pr:
     if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
@@ -81,7 +75,7 @@ jobs:
         uses: actions/download-artifact@v3
         with:
           name: conda-lock-files-${{ github.run_attempt }}
-          path: conda-lock
+          path: ci/conda-lock
 
       - uses: peter-evans/create-pull-request@v5
         id: create_pr
@@ -90,7 +84,7 @@ jobs:
           commit-message: "chore(conda-lock): relock"
           branch: "create-pull-request/conda-relock"
           delete-branch: true
-          add-paths: conda-lock/*.lock
+          add-paths: ci/conda-lock/python-*.yml
           committer: "ibis-squawk-bot[bot] <ibis-squawk-bot[bot]@users.noreply.github.com>"
           author: "ibis-squawk-bot[bot] <ibis-squawk-bot[bot]@users.noreply.github.com>"
           title: "chore(conda-lock): relock"
@@ -110,49 +104,3 @@ jobs:
           token: ${{ steps.generate_pr_token.outputs.token }}
           pull-request-number: ${{ steps.create_pr.outputs.pull-request-number }}
           merge-method: rebase
-
-  condalock_push:
-    if: github.event_name == 'repository_dispatch'
-    runs-on: ubuntu-latest
-    needs:
-      - condalock
-    steps:
-      - uses: tibdex/github-app-token@v2
-        id: generate_token
-        with:
-          app_id: ${{ secrets.SQUAWK_BOT_APP_ID }}
-          private_key: ${{ secrets.SQUAWK_BOT_APP_PRIVATE_KEY }}
-
-      - uses: actions/checkout@v4
-        with:
-          token: ${{ steps.generate_token.outputs.token }}
-          repository: ${{ github.event.client_payload.pull_request.head.repo.full_name }}
-          ref: ${{ github.event.client_payload.pull_request.head.ref }}
-
-      - name: download conda lock files
-        uses: actions/download-artifact@v3
-        with:
-          name: conda-lock-files-${{ github.run_attempt }}
-          path: conda-lock
-
-      - name: Configure git info
-        run: |
-          set -euo pipefail
-
-          git config --global user.name 'ibis-squawk-bot[bot]'
-          git config --global user.email 'ibis-squawk-bot[bot]@users.noreply.github.com'
-
-      - name: commit lock files and push to PR
-        run: |
-          set -euo pipefail
-
-          git add conda-lock/*.lock
-
-          if git commit -m 'chore(conda-lock): relock'; then
-            # pull in case another commit happened in the meantime
-            #
-            # `ours` is actually the *other* changeset, not the current branch, per
-            # https://stackoverflow.com/a/3443225/564538
-            git pull --rebase -s recursive -X ours
-            git push
-          fi

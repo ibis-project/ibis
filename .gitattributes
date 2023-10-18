@@ -1,4 +1,4 @@
-conda-lock/*.lock linguist-generated=true
+ci/conda-lock/python-*.yml linguist-generated=true
 flake.lock linguist-generated=true
 poetry.lock linguist-generated=true
 requirements.txt linguist-generated=true

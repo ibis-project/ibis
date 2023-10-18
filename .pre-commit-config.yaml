@@ -56,7 +56,7 @@ repos:
     rev: v4.5.0
     hooks:
       - id: check-added-large-files
-        args: ["--maxkb=700"]
+        args: ["--maxkb=710"]
       - id: check-case-conflict
       - id: check-executables-have-shebangs
       - id: check-merge-conflict
@@ -89,6 +89,7 @@ repos:
           - json
           - markdown
           - yaml
+        exclude: ci/conda-lock/python-.+\.yml
       - id: taplo
         name: taplo
         language: system

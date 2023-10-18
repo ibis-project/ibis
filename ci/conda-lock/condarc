@@ -3,6 +3,9 @@ channels:
   - conda-forge
 channel_priority: strict
 
+# use mamba for SAT solving
+solver: libmamba
+
 always_yes: true
 
 # remote_connect_timeout_secs (float)
