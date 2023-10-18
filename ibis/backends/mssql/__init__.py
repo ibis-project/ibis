@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any, Literal
 
 import sqlalchemy as sa
+import sqlglot as sg
 import toolz
 
 from ibis.backends.base import CanCreateDatabase
@@ -83,6 +84,41 @@ class Backend(BaseAlchemyBackend, CanCreateDatabase, AlchemyCanCreateSchema):
     @property
     def current_schema(self) -> str:
         return self._scalar_query(sa.select(sa.func.schema_name()))
+
+    def list_tables(
+        self,
+        like: str | None = None,
+        database: str | None = None,
+        schema: str | None = None,
+    ) -> list[str]:
+        tablequery = sg.select("name").from_(
+            sg.table("tables", db="sys", catalog=database)
+        )
+        viewquery = sg.select("name").from_(
+            sg.table("views", db="sys", catalog=database)
+        )
+
+        if schema is not None:
+            table_predicate = sg.func(
+                "schema_name",
+                sg.column("schema_id", table="tables", db="sys", catalog=database),
+            ).eq(schema)
+            view_predicate = sg.func(
+                "schema_name",
+                sg.column("schema_id", table="views", db="sys", catalog=database),
+            ).eq(schema)
+            tablequery = tablequery.where(table_predicate)
+            viewquery = viewquery.where(view_predicate)
+
+        tablequery = sa.text(tablequery.sql(dialect="tsql"))
+        viewquery = sa.text(viewquery.sql(dialect="tsql"))
+
+        with self.begin() as con:
+            tablequery = list(con.execute(tablequery).scalars())
+            viewresults = list(con.execute(viewquery).scalars())
+        results = tablequery + viewresults
+
+        return self._filter_with_like(results, like)
 
     def _get_temp_view_definition(
         self, name: str, definition: sa.sql.compiler.Compiled
