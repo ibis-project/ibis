@@ -1381,7 +1381,8 @@ def test_floating_mod(backend, alltypes, df):
                     "oracle",
                     raises=(sa.exc.DatabaseError, sa.exc.ArgumentError),
                     reason="Oracle doesn't do integer division by zero",
-                )
+                ),
+                pytest.mark.never(["impala"], reason="doesn't allow divide by zero"),
             ],
         ),
         param(
@@ -1392,7 +1393,8 @@ def test_floating_mod(backend, alltypes, df):
                     "oracle",
                     raises=(sa.exc.DatabaseError, sa.exc.ArgumentError),
                     reason="Oracle doesn't do integer division by zero",
-                )
+                ),
+                pytest.mark.never(["impala"], reason="doesn't allow divide by zero"),
             ],
         ),
         param(
@@ -1403,7 +1405,8 @@ def test_floating_mod(backend, alltypes, df):
                     "oracle",
                     raises=(sa.exc.DatabaseError, sa.exc.ArgumentError),
                     reason="Oracle doesn't do integer division by zero",
-                )
+                ),
+                pytest.mark.never(["impala"], reason="doesn't allow divide by zero"),
             ],
         ),
         param(
@@ -1414,18 +1417,25 @@ def test_floating_mod(backend, alltypes, df):
                     "oracle",
                     raises=(sa.exc.DatabaseError, sa.exc.ArgumentError),
                     reason="Oracle doesn't do integer division by zero",
-                )
+                ),
+                pytest.mark.never(["impala"], reason="doesn't allow divide by zero"),
             ],
         ),
         param(
             "float_col",
             0.0,
-            marks=pytest.mark.notimpl(["druid"], raises=ZeroDivisionError),
+            marks=[
+                pytest.mark.notimpl(["druid"], raises=ZeroDivisionError),
+                pytest.mark.never(["impala"], reason="doesn't allow divide by zero"),
+            ],
         ),
         param(
             "double_col",
             0.0,
-            marks=pytest.mark.notimpl(["druid"], raises=ZeroDivisionError),
+            marks=[
+                pytest.mark.notimpl(["druid"], raises=ZeroDivisionError),
+                pytest.mark.never(["impala"], reason="doesn't allow divide by zero"),
+            ],
         ),
     ],
 )

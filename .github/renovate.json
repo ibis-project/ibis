@@ -50,7 +50,7 @@
       "addLabels": ["duckdb"]
     },
     {
-      "matchPackagePatterns": ["fsspec", "impyla", "impala", "kudu"],
+      "matchPackagePatterns": ["impyla", "impala", "kudu"],
       "addLabels": ["impala"]
     },
     {

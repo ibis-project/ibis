@@ -15,74 +15,6 @@ services:
     networks:
       - clickhouse
 
-  impala:
-    depends_on:
-      - impala-postgres
-      - kudu
-      - kudu-tserver
-    environment:
-      PGPASSWORD: postgres
-    healthcheck:
-      interval: 1s
-      retries: 60
-      test:
-        - CMD-SHELL
-        - nc -z 127.0.0.1 21050 && nc -z 127.0.0.1 50070
-    hostname: localhost
-    image: ibisproject/impala:latest
-    ports:
-      - 50070:50070 # namenode http (hdfs)
-      - 50075:50075 # datanode http (hdfs)
-      - 8020:8020 # namenode metadata (hdfs)
-      - 21050:21050 # hiveserver2 (impala)
-    networks:
-      - impala
-
-  impala-postgres:
-    user: postgres
-    hostname: postgres
-    environment:
-      POSTGRES_PASSWORD: postgres
-    healthcheck:
-      interval: 1s
-      retries: 10
-      test:
-        - CMD
-        - pg_isready
-    image: postgres:13.13-alpine
-    networks:
-      - impala
-
-  kudu:
-    cap_add:
-      - SYS_TIME
-    image: apache/kudu:1.17.0
-    networks:
-      - impala
-    command: kudu master run --fs_wal_dir=/var/lib/kudu/master --fs_data_dirs=/var/lib/kudu/master
-    healthcheck:
-      interval: 1s
-      retries: 60
-      test:
-        - CMD-SHELL
-        - kudu cluster ksck kudu:7051
-
-  kudu-tserver:
-    cap_add:
-      - SYS_TIME
-    image: apache/kudu:1.17.0
-    depends_on:
-      - kudu # tablet server won't start if it can't find the master kudu node
-    networks:
-      - impala
-    command: kudu tserver run --fs_wal_dir=/var/lib/kudu/master --fs_data_dirs=/var/lib/kudu/master --tserver_master_addrs=kudu
-    healthcheck:
-      interval: 1s
-      retries: 60
-      test:
-        - CMD-SHELL
-        - kudu cluster ksck kudu:7051
-
   mysql:
     environment:
       MYSQL_ALLOW_EMPTY_PASSWORD: "true"
@@ -460,8 +392,138 @@ services:
     networks:
       - flink
 
+  kudu:
+    cap_add:
+      - SYS_TIME
+    image: apache/kudu:1.17.0
+    networks:
+      - impala
+    command: kudu master run --fs_wal_dir=/var/lib/kudu/master --fs_data_dirs=/var/lib/kudu/master
+    healthcheck:
+      interval: 1s
+      retries: 60
+      test:
+        - CMD-SHELL
+        - kudu cluster ksck kudu:7051
+
+  kudu-tserver:
+    cap_add:
+      - SYS_TIME
+    image: apache/kudu:1.17.0
+    depends_on:
+      - kudu
+    networks:
+      - impala
+    command: kudu tserver run --fs_wal_dir=/var/lib/kudu/master --fs_data_dirs=/var/lib/kudu/master --tserver_master_addrs=kudu
+    healthcheck:
+      interval: 1s
+      retries: 60
+      test:
+        - CMD-SHELL
+        - kudu cluster ksck kudu:7051
+
+  impala-hive-metastore:
+    image: apache/impala:4.0.0-impala_quickstart_hms
+    container_name: impala-hive-metastore
+    command: hms
+    volumes:
+      # Volume used to store Apache Derby database.
+      - impala:/var/lib/hive
+      # Warehouse directory. HMS does file operations so needs access to the
+      # shared volume.
+      - impala:/user/hive/warehouse
+      - ./docker/impala/conf:/opt/hive/conf:ro
+    networks:
+      impala:
+        aliases:
+          - impala-hive-metastore
+          - impala-hive-metastore.impala
+
+  statestored:
+    image: apache/impala:4.0.0-statestored
+    ports:
+      - 25010:25010 # Web debug UI
+    command:
+      - -redirect_stdout_stderr=false
+      - -logtostderr
+      - -v=1
+    volumes:
+      - ./docker/impala/conf:/opt/impala/conf:ro
+    healthcheck:
+      interval: 30s
+      retries: 20
+      test:
+        - CMD-SHELL
+        - nc -z 127.0.0.1 25010
+    networks:
+      - impala
+
+  catalogd:
+    depends_on:
+      - statestored
+      - impala-hive-metastore
+    image: apache/impala:4.0.0-catalogd
+    ports:
+      - 25020:25020 # Web debug UI
+    command:
+      - -redirect_stdout_stderr=false
+      - -logtostderr
+      - -v=1
+      - -hms_event_polling_interval_s=1
+      - -invalidate_tables_timeout_s=999999
+    volumes:
+      # Warehouse directory. Catalog does file operations so needs access to the
+      # shared volume.
+      - impala:/user/hive/warehouse
+      - ./docker/impala/conf:/opt/impala/conf:ro
+    healthcheck:
+      interval: 30s
+      retries: 20
+      test:
+        - CMD-SHELL
+        - nc -z 127.0.0.1 25020
+    networks:
+      - impala
+
+  impala:
+    image: apache/impala:4.0.0-impalad_coord_exec
+    depends_on:
+      - statestored
+      - catalogd
+      - kudu
+      - kudu-tserver
+    ports:
+      - 21050:21050 # HS2 endpoint
+    healthcheck:
+      interval: 30s
+      retries: 20
+      test:
+        - CMD-SHELL
+        - nc -z 127.0.0.1 21050
+    command:
+      - -v=1
+      - -redirect_stdout_stderr=false
+      - -logtostderr
+      - -kudu_master_hosts=kudu:7051
+      - -mt_dop_auto_fallback=true
+      - -default_query_options=mt_dop=4,default_file_format=parquet,default_transactional_type=insert_only
+      - -mem_limit=4gb
+    environment:
+      # Keep the Java heap small to preserve memory for query execution.
+      JAVA_TOOL_OPTIONS: -Xmx1g
+    volumes:
+      - impala:/user/hive/warehouse
+      - ./docker/impala/conf:/opt/impala/conf:ro
+    networks:
+      - impala
+
 networks:
   impala:
+    # docker defaults to naming networks "$PROJECT_$NETWORK" but the Java Hive
+    # Metastore clients don't accept underscores in the thrift URIs and
+    # something is too-aggressively supplanting the specified thrift metastore
+    # URI with $SPECIFIED_URI.$NETWORK so rename it to something acceptable
+    name: "impala"
   mysql:
   mssql:
   clickhouse:
@@ -488,3 +550,4 @@ volumes:
   postgres:
   minio:
   exasol:
+  impala:

@@ -287,14 +287,6 @@ def test_join_with_pandas_non_null_typed_columns(batting, awards_players):
                     reason="MySQL doesn't support full outer joins natively",
                 ),
                 pytest.mark.notyet(
-                    ["impala"],
-                    raises=HiveServer2Error,
-                    reason=(
-                        "impala doesn't support full outer joins with non-equi-join "
-                        "predicates"
-                    ),
-                ),
-                pytest.mark.notyet(
                     ["sqlite"],
                     condition=vparse(sqlite3.sqlite_version) < vparse("3.39"),
                     reason="sqlite didn't support full outer join until 3.39",

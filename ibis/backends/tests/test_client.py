@@ -91,7 +91,7 @@ def _create_temp_table_with_schema(backend, con, temp_table_name, schema, data=N
         ),
     ],
 )
-@pytest.mark.notimpl(["dask", "datafusion", "druid"])
+@pytest.mark.notimpl(["dask", "datafusion", "druid", "impala"])
 def test_create_table(backend, con, temp_table, lamduh, sch):
     df = pd.DataFrame(
         {
@@ -889,7 +889,11 @@ def test_self_join_memory_table(backend, con):
             id="pandas-memtable",
             marks=pytest.mark.notimpl(["flink"], raises=NotImplementedError),
         ),
-        param(pd.DataFrame([("a", 1.0)], columns=["a", "b"]), id="pandas"),
+        param(
+            pd.DataFrame([("a", 1.0)], columns=["a", "b"]),
+            id="pandas",
+            marks=[pytest.mark.notimpl(["impala"])],
+        ),
     ],
 )
 @pytest.mark.notimpl(["dask", "datafusion", "druid"])

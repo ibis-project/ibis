@@ -1,1 +1,1 @@
-floor(`int_col`)
+cast(floor(`int_col`) AS BIGINT)

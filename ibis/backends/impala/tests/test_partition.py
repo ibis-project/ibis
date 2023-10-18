@@ -1,11 +1,11 @@
 from __future__ import annotations
 
-import os
 from posixpath import join as pjoin
 
 import pandas as pd
 import pandas.testing as tm
 import pytest
+from impala.error import HiveServer2Error
 
 import ibis
 from ibis import util
@@ -32,12 +32,12 @@ def df():
 
 
 @pytest.fixture
-def unpart_t(con, df, tmp_db):
+def unpart_t(con, df):
     pd_name = f"__ibis_test_partition_{util.guid()}"
-    con.create_table(pd_name, df, database=tmp_db)
-    assert pd_name in con.list_tables(database=tmp_db), pd_name
-    yield con.table(pd_name, database=tmp_db)
-    con.drop_table(pd_name, database=tmp_db)
+    t = con.create_table(pd_name, df)
+    assert pd_name in con.list_tables(), pd_name
+    yield t
+    con.drop_table(pd_name)
 
 
 def test_is_partitioned(con, temp_table):
@@ -46,7 +46,7 @@ def test_is_partitioned(con, temp_table):
     assert con.table(temp_table).is_partitioned
 
 
-def test_create_table_with_partition_column(con, temp_table_db):
+def test_create_table_with_partition_column(con, temp_table):
     schema = ibis.schema(
         [
             ("year", "int32"),
@@ -56,8 +56,7 @@ def test_create_table_with_partition_column(con, temp_table_db):
         ]
     )
 
-    tmp_db, name = temp_table_db
-    con.create_table(name, schema=schema, database=tmp_db, partition=["year", "month"])
+    con.create_table(temp_table, schema=schema, partition=["year", "month"])
 
     # the partition column get put at the end of the table
     ex_schema = ibis.schema(
@@ -68,10 +67,10 @@ def test_create_table_with_partition_column(con, temp_table_db):
             ("month", "string"),
         ]
     )
-    table_schema = con.get_schema(name, database=tmp_db)
+    table_schema = con.get_schema(temp_table)
     assert_equal(table_schema, ex_schema)
 
-    partition_schema = con.database(tmp_db).table(name).partition_schema()
+    partition_schema = con.table(temp_table).partition_schema()
 
     expected = ibis.schema([("year", "int32"), ("month", "string")])
     assert_equal(partition_schema, expected)
@@ -105,6 +104,7 @@ def test_unpartitioned_table_get_schema(con):
         con.table(tname).partition_schema()
 
 
+@pytest.mark.xfail(raises=NotImplementedError)
 def test_insert_select_partitioned_table(con, df, temp_table, unpart_t):
     part_keys = ["year", "month"]
 
@@ -143,6 +143,7 @@ def test_create_partitioned_table_from_expr(con, alltypes, tmp_parted):
     tm.assert_frame_equal(result, expected)
 
 
+@pytest.mark.xfail(raises=HiveServer2Error)
 def test_add_drop_partition_no_location(con, temp_table):
     schema = ibis.schema([("foo", "string"), ("year", "int32"), ("month", "int16")])
     con.create_table(temp_table, schema=schema, partition=["year", "month"])
@@ -159,8 +160,8 @@ def test_add_drop_partition_no_location(con, temp_table):
     assert len(table.partitions()) == 1
 
 
-@pytest.mark.hdfs
-def test_add_drop_partition_owned_by_impala(hdfs, con, temp_table):
+@pytest.mark.xfail(raises=HiveServer2Error)
+def test_add_drop_partition_owned_by_impala(con, temp_table):
     schema = ibis.schema([("foo", "string"), ("year", "int32"), ("month", "int16")])
     con.create_table(temp_table, schema=schema, partition=["year", "month"])
 
@@ -172,10 +173,6 @@ def test_add_drop_partition_owned_by_impala(hdfs, con, temp_table):
     basename = util.guid()
     path = f"/tmp/{subdir}/{basename}"
 
-    parent = os.path.dirname(path)
-    hdfs.mkdir(parent, create_parents=True)
-    hdfs.chown(parent, owner="impala", group="supergroup")
-
     table.add_partition(part, location=path)
 
     assert len(table.partitions()) == 2
@@ -185,6 +182,7 @@ def test_add_drop_partition_owned_by_impala(hdfs, con, temp_table):
     assert len(table.partitions()) == 1
 
 
+@pytest.mark.xfail(raises=HiveServer2Error)
 def test_add_drop_partition_hive_bug(con, temp_table):
     schema = ibis.schema([("foo", "string"), ("year", "int32"), ("month", "int16")])
     con.create_table(temp_table, schema=schema, partition=["year", "month"])
@@ -204,8 +202,8 @@ def test_add_drop_partition_hive_bug(con, temp_table):
     assert len(table.partitions()) == 1
 
 
-@pytest.mark.hdfs
-def test_load_data_partition(con, hdfs, tmp_dir, unpart_t, df, temp_table):
+@pytest.mark.xfail(raises=NotImplementedError)
+def test_load_data_partition(con, tmp_dir, unpart_t, df, temp_table):
     part_keys = ["year", "month"]
 
     con.create_table(temp_table, schema=unpart_t.schema(), partition=part_keys)
@@ -238,7 +236,6 @@ def test_load_data_partition(con, hdfs, tmp_dir, unpart_t, df, temp_table):
         part_t.alter_partition(part, format="text", serde_properties=csv_props)
         part_t.load_data(chunk_path, partition=part)
 
-    hdfs.rm(hdfs_dir, recursive=True)
     verify_partitioned_table(part_t, df, unique_keys)
 
 
