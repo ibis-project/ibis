@@ -751,6 +751,34 @@ def temporal_truncate(op, **kw):
     return arg.dt.truncate(unit, "-1w")
 
 
+def _compile_literal_interval(op):
+    if not isinstance(op, ops.Literal):
+        raise com.UnsupportedOperationError(
+            "Only literal interval values are supported"
+        )
+
+    if op.dtype.unit.short == "M":
+        suffix = "mo"
+    else:
+        suffix = op.dtype.unit.short.lower()
+
+    return f"{op.value}{suffix}"
+
+
+@translate.register(ops.TimestampBucket)
+def timestamp_bucket(op, **kw):
+    arg = translate(op.arg, **kw)
+    interval = _compile_literal_interval(op.interval)
+    if op.offset is not None:
+        offset = _compile_literal_interval(op.offset)
+        neg_offset = offset[1:] if offset.startswith("-") else f"-{offset}"
+        arg = arg.dt.offset_by(neg_offset)
+    else:
+        offset = None
+    res = arg.dt.truncate(interval, offset)
+    return res
+
+
 @translate.register(ops.DateFromYMD)
 def date_from_ymd(op, **kw):
     return pl.date(
