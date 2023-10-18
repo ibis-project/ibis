@@ -55,3 +55,28 @@ def test_load_extension(ext_directory):
         """
     ).fetchall()
     assert all(loaded for (loaded,) in results)
+
+
+def test_cross_db(tmpdir):
+    import duckdb
+
+    path1 = str(tmpdir.join("test1.ddb"))
+    with duckdb.connect(path1) as con1:
+        con1.execute("CREATE SCHEMA foo")
+        con1.execute("CREATE TABLE t1 (x BIGINT)")
+        con1.execute("CREATE TABLE foo.t1 (x BIGINT)")
+
+    path2 = str(tmpdir.join("test2.ddb"))
+    con2 = ibis.duckdb.connect(path2)
+    t2 = con2.create_table("t2", schema=ibis.schema(dict(x="int")))
+
+    with con2.begin() as c:
+        c.exec_driver_sql(f"ATTACH '{path1}' AS test1 (READ_ONLY)")
+
+    t1_from_con2 = con2.table("t1", schema="test1.main")
+    assert t1_from_con2.schema() == t2.schema()
+    assert t1_from_con2.execute().equals(t2.execute())
+
+    foo_t1_from_con2 = con2.table("t1", schema="test1.foo")
+    assert foo_t1_from_con2.schema() == t2.schema()
+    assert foo_t1_from_con2.execute().equals(t2.execute())
