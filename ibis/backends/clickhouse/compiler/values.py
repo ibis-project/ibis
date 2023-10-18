@@ -436,6 +436,16 @@ def _truncate(op, *, arg, unit, **_):
     return converter(arg)
 
 
+@translate_val.register(ops.TimestampBucket)
+def _timestamp_bucket(op, *, arg, interval, offset, **_):
+    if offset is not None:
+        raise com.UnsupportedOperationError(
+            "Timestamp bucket with offset is not supported"
+        )
+
+    return F.toStartOfInterval(arg, interval)
+
+
 @translate_val.register(ops.DateFromYMD)
 def _date_from_ymd(op, *, year, month, day, **_):
     return F.toDate(

@@ -2502,7 +2502,6 @@ def test_delta(con, start, end, unit, expected):
 @pytest.mark.notimpl(
     [
         "bigquery",
-        "clickhouse",
         "dask",
         "datafusion",
         "flink",
@@ -2527,7 +2526,15 @@ def test_delta(con, start, end, unit, expected):
 @pytest.mark.parametrize(
     "kws, pd_freq",
     [
-        ({"milliseconds": 50}, "50ms"),
+        param(
+            {"milliseconds": 50},
+            "50ms",
+            marks=pytest.mark.notimpl(
+                ["clickhouse"],
+                raises=com.UnsupportedOperationError,
+                reason="clickhouse doesn't support sub-second interval precision",
+            ),
+        ),
         ({"seconds": 2}, "2s"),
         ({"minutes": 5}, "300s"),
         ({"hours": 2}, "2h"),
@@ -2544,7 +2551,6 @@ def test_timestamp_bucket(backend, kws, pd_freq):
 @pytest.mark.notimpl(
     [
         "bigquery",
-        "clickhouse",
         "dask",
         "datafusion",
         "flink",
