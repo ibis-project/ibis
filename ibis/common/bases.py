@@ -116,6 +116,7 @@ class Final(Abstract):
     """Prohibit subclassing."""
 
     def __init_subclass__(cls, **kwargs):
+        super().__init_subclass__(**kwargs)
         cls.__init_subclass__ = cls.__prohibit_inheritance__
 
     @classmethod
@@ -178,37 +179,45 @@ class Comparable(Abstract):
         return result
 
 
-class Slotted(Abstract):
+class SlottedMeta(AbstractMeta):
+    def __new__(metacls, clsname, bases, dct, **kwargs):
+        fields = dct.get("__fields__", dct.get("__slots__", ()))
+        inherited = (getattr(base, "__fields__", ()) for base in bases)
+        dct["__fields__"] = sum(inherited, ()) + fields
+        return super().__new__(metacls, clsname, bases, dct, **kwargs)
+
+
+class Slotted(Abstract, metaclass=SlottedMeta):
     """A lightweight alternative to `ibis.common.grounds.Annotable`.
 
     The class is mostly used to reduce boilerplate code.
     """
 
     def __init__(self, **kwargs) -> None:
-        for name, value in kwargs.items():
-            object.__setattr__(self, name, value)
+        for field in self.__fields__:
+            object.__setattr__(self, field, kwargs[field])
 
     def __eq__(self, other) -> bool:
         if self is other:
             return True
         if type(self) is not type(other):
             return NotImplemented
-        return all(getattr(self, n) == getattr(other, n) for n in self.__slots__)
+        return all(getattr(self, n) == getattr(other, n) for n in self.__fields__)
 
     def __getstate__(self):
-        return {k: getattr(self, k) for k in self.__slots__}
+        return {k: getattr(self, k) for k in self.__fields__}
 
     def __setstate__(self, state):
         for name, value in state.items():
             object.__setattr__(self, name, value)
 
     def __repr__(self):
-        fields = {k: getattr(self, k) for k in self.__slots__}
+        fields = {k: getattr(self, k) for k in self.__fields__}
         fieldstring = ", ".join(f"{k}={v!r}" for k, v in fields.items())
         return f"{self.__class__.__name__}({fieldstring})"
 
     def __rich_repr__(self):
-        for name in self.__slots__:
+        for name in self.__fields__:
             yield name, getattr(self, name)
 
 
@@ -220,18 +229,21 @@ class FrozenSlotted(Slotted, Immutable, Hashable):
     """
 
     __slots__ = ("__precomputed_hash__",)
+    __fields__ = ()
     __precomputed_hash__: int
 
     def __init__(self, **kwargs) -> None:
-        for name, value in kwargs.items():
-            object.__setattr__(self, name, value)
-        hashvalue = hash(tuple(kwargs.values()))
+        values = []
+        for field in self.__fields__:
+            values.append(value := kwargs[field])
+            object.__setattr__(self, field, value)
+        hashvalue = hash((self.__class__, tuple(values)))
         object.__setattr__(self, "__precomputed_hash__", hashvalue)
 
     def __setstate__(self, state):
         for name, value in state.items():
             object.__setattr__(self, name, value)
-        hashvalue = hash(tuple(state.values()))
+        hashvalue = hash((self.__class__, tuple(state.values())))
         object.__setattr__(self, "__precomputed_hash__", hashvalue)
 
     def __hash__(self) -> int:
