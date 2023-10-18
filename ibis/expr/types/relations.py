@@ -3797,7 +3797,7 @@ class Table(Expr, _FixedTextJupyterMixin):
         ...     names_from="tension",
         ...     values_from="breaks",
         ...     values_agg=_.sum(),
-        ... )
+        ... ).order_by("wool")
         ┏━━━━━━━━┳━━━━━━━┳━━━━━━━┳━━━━━━━┓
         ┃ wool   ┃ L     ┃ M     ┃ H     ┃
         ┡━━━━━━━━╇━━━━━━━╇━━━━━━━╇━━━━━━━┩
