@@ -100,7 +100,9 @@ class Annotation(Slotted, Immutable):
     Annotations are used to mark fields in a class and to validate them.
     """
 
-    __slots__ = ()
+    __slots__ = ("pattern", "default")
+    pattern: Pattern
+    default: AnyType
 
     def validate(self, name: str, value: AnyType, this: AnyType) -> AnyType:
         """Validate the field.
@@ -141,10 +143,6 @@ class Attribute(Annotation):
     default : Callable, default EMPTY
         Callable to compute the default value of the field.
     """
-
-    __slots__ = ("pattern", "default")
-    pattern: Pattern
-    default: AnyType
 
     def __init__(self, pattern: Pattern = _any, default: AnyType = EMPTY):
         super().__init__(pattern=ensure_pattern(pattern), default=default)
@@ -199,9 +197,7 @@ class Argument(Annotation):
         Defaults to positional or keyword.
     """
 
-    __slots__ = ("pattern", "default", "typehint", "kind")
-    pattern: Pattern
-    default: AnyType
+    __slots__ = ("typehint", "kind")
     typehint: AnyType
     kind: int
 
