@@ -70,8 +70,7 @@ def test_cross_db(tmpdir):
     con2 = ibis.duckdb.connect(path2)
     t2 = con2.create_table("t2", schema=ibis.schema(dict(x="int")))
 
-    with con2.begin() as c:
-        c.exec_driver_sql(f"ATTACH '{path1}' AS test1 (READ_ONLY)")
+    con2.attach(path1, name="test1", read_only=True)
 
     t1_from_con2 = con2.table("t1", schema="test1.main")
     assert t1_from_con2.schema() == t2.schema()
@@ -80,3 +79,37 @@ def test_cross_db(tmpdir):
     foo_t1_from_con2 = con2.table("t1", schema="test1.foo")
     assert foo_t1_from_con2.schema() == t2.schema()
     assert foo_t1_from_con2.execute().equals(t2.execute())
+
+
+def test_attach_detach(tmpdir):
+    import duckdb
+
+    path1 = str(tmpdir.join("test1.ddb"))
+    with duckdb.connect(path1):
+        pass
+
+    path2 = str(tmpdir.join("test2.ddb"))
+    con2 = ibis.duckdb.connect(path2)
+
+    # default name
+    name = "test1"
+    assert name not in con2.list_databases()
+
+    con2.attach(path1)
+    assert name in con2.list_databases()
+
+    con2.detach(name)
+    assert name not in con2.list_databases()
+
+    # passed-in name
+    name = "test_foo"
+    assert name not in con2.list_databases()
+
+    con2.attach(path1, name=name)
+    assert name in con2.list_databases()
+
+    con2.detach(name)
+    assert name not in con2.list_databases()
+
+    with pytest.raises(sa.exc.ProgrammingError):
+        con2.detach(name)
