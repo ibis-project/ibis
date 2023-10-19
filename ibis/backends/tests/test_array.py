@@ -373,6 +373,9 @@ def test_unnest_complex(backend):
     result = expr.execute()
     tm.assert_frame_equal(result, expected)
 
+    # test that unnest works with to_pyarrow
+    assert len(expr.to_pyarrow()) == len(result)
+
 
 @builtin_array
 @pytest.mark.never(
