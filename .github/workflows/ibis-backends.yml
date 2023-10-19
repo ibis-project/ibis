@@ -579,7 +579,8 @@ jobs:
         run: git checkout poetry.lock pyproject.toml && ! git status --porcelain | tee /dev/stderr | grep .
 
       - name: upload code coverage
-        if: success()
+        # only upload coverage for jobs that aren't mostly xfails
+        if: success() && matrix.python-version != '3.11' && matrix.pandas.version != '2.0.0'
         uses: codecov/codecov-action@v3
         with:
           flags: backend,pyspark,${{ runner.os }},python-${{ steps.install_python.outputs.python-version }},pandas-${{ matrix.pandas.version }}
