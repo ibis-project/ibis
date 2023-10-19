@@ -2,6 +2,15 @@
 
 set -euo pipefail
 
+python_version="${1}"
+python_version_file="$(mktemp --suffix=.yml)"
+
+{
+  echo 'name: conda-lock'
+  echo 'dependencies:'
+  echo "  - python=${python_version}"
+} > "${python_version_file}"
+
 extras=(
   -e bigquery
   -e clickhouse
@@ -32,9 +41,13 @@ top="$(dirname "$(readlink -f -- "$0")")"
 python_version="${1}"
 shift 1
 
+template="${top}/{platform}/${python_version}.lock"
+
 conda lock \
   --file pyproject.toml \
-  --file "${top}/versions/python-${python_version}.yml" \
+  --file "${python_version_file}" \
+  --kind explicit \
+  --filename-template "${template}" \
   --channel conda-forge \
   --platform linux-64 \
   --platform osx-64 \
