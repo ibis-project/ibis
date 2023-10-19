@@ -111,6 +111,54 @@ def _filter(translator: ExprTranslator, op: ops.Node) -> str:
     return f"CASE WHEN {bool_expr} THEN {true_expr} ELSE {false_null_expr} END"
 
 
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+def _timestamp_add(translator: ExprTranslator, op: ops.temporal.TimestampAdd) -> str:
+    return _left_op_right(translator=translator, op_node=op, op_sign="+")
+
+
+def _timestamp_diff(translator: ExprTranslator, op: ops.temporal.TimestampDiff) -> str:
+    return _left_op_right(translator=translator, op_node=op, op_sign="-")
+
+
+def _timestamp_sub(translator: ExprTranslator, op: ops.temporal.TimestampSub) -> str:
+    table_column = op.left
+    interval = op.right
+
+    table_column_translated = translator.translate(table_column)
+    interval_translated = translator.translate(interval)
+    return f"{table_column_translated} - {interval_translated}"
+
+
+def _timestamp_from_unix(translator: ExprTranslator, op: ops.Node) -> str:
+    arg, unit = op.args
+
+    numeric = helpers.quote_identifier(arg.name, force=True)
+    if unit == TimestampUnit.MILLISECOND:
+        precision = 3
+    elif unit == TimestampUnit.SECOND:
+        precision = 0
+    else:
+        raise ValueError(f"{unit!r} unit is not supported!")
+
+    return f"TO_TIMESTAMP_LTZ({numeric}, {precision})"
+
+
+def _timestamp_from_ymdhms(
+    translator: ExprTranslator, op: ops.temporal.TimestampFromYMDHMS
+) -> str:
+    year, month, day, hours, minutes, seconds = (
+        f"CAST({translator.translate(e)} AS STRING)"
+        for e in [op.year, op.month, op.day, op.hours, op.minutes, op.seconds]
+    )
+    concat_string = f"CONCAT({year}, '-', {month}, '-', {day}, ' ', {hours}, ':', {minutes}, ':', {seconds})"
+    return f"CAST({concat_string} AS TIMESTAMP)"
+
+
+=======
+>>>>>>> aff572cfd (test(flink): fix/skip common backend tests for flink)
+>>>>>>> 7ff6e5c5c (test(flink): fix/skip common backend tests for flink)
 def _format_window_start(translator: ExprTranslator, boundary):
     if boundary is None:
         return "UNBOUNDED PRECEDING"
@@ -249,6 +297,7 @@ def _array_index(translator: ExprTranslator, op: ops.arrays.ArrayIndex):
     return f"{table_column_translated} [ {index_translated} + 1 ]"
 
 
+<<<<<<< HEAD
 def _array_length(translator: ExprTranslator, op: ops.arrays.ArrayLength) -> str:
     return f"CARDINALITY({translator.translate(op.arg)})"
 
@@ -278,10 +327,44 @@ def _map_get(translator: ExprTranslator, op: ops.maps.MapGet) -> str:
     return f"{map_} [ {key} ]"
 
 
+=======
+<<<<<<< HEAD
+>>>>>>> 7ff6e5c5c (test(flink): fix/skip common backend tests for flink)
 def _day_of_week_index(
     translator: ExprTranslator, op: ops.temporal.DayOfWeekIndex
 ) -> str:
     arg = translator.translate(op.arg)
+=======
+def _array_length(translator: ExprTranslator, op: ops.arrays.ArrayLength) -> str:
+    return f"CARDINALITY({translator.translate(op.arg)})"
+
+
+def _json_get_item(translator: ExprTranslator, op: ops.json.JSONGetItem) -> str:
+    arg_translated = translator.translate(op.arg)
+    if op.index.dtype.is_integer():
+        query_path = f"$[{op.index.value}]"
+    else:  # is string
+        query_path = f"$.{op.index.value}"
+
+    return f"JSON_QUERY({arg_translated}, '{query_path}' WITH CONDITIONAL ARRAY WRAPPER)"
+
+
+def _map(translator: ExprTranslator, op: ops.maps.Map) -> str:
+    key_array = translator.translate(op.keys)
+    value_array = translator.translate(op.values)
+
+    return f"MAP_FROM_ARRAYS({key_array}, {value_array})"
+
+
+def _map_get(translator: ExprTranslator, op: ops.maps.MapGet) -> str:
+    map_ = translator.translate(op.arg)
+    key = translator.translate(op.key)
+    return f"{map_} '[' {key} ']'"
+
+
+def _day_of_week_index(translator: ExprTranslator, op: ops.Node) -> str:
+    arg = translator.translate(op.args[0])
+>>>>>>> aff572cfd (test(flink): fix/skip common backend tests for flink)
     return f"MOD(DAYOFWEEK({arg}) + 5, 7)"
 
 
@@ -294,19 +377,42 @@ def _date_diff(translator: ExprTranslator, op: ops.temporal.DateDiff) -> str:
 
 
 def _date_from_ymd(translator: ExprTranslator, op: ops.temporal.DateFromYMD) -> str:
+<<<<<<< HEAD
     year, month, day = (
         f"CAST({translator.translate(e)} AS STRING)"
         for e in [op.year, op.month, op.day]
     )
     concat_string = f"CONCAT({year}, '-', {month}, '-', {day})"
     return f"CAST({concat_string} AS DATE)"
+=======
+<<<<<<< HEAD
+    year, month, day = op.year, op.month, op.day
+    date_string = f"{year.value}-{month.value}-{day.value}"
+    return f"CAST('{date_string}' AS DATE)"
+=======
+    year, month, day = [
+        f"CAST({translator.translate(e)} AS STRING)"
+        for e in [op.year, op.month, op.day]
+    ]
+    concat_string = f"CONCAT({year}, '-', {month}, '-', {day})"
+    return f"CAST({concat_string} AS DATE)"
+>>>>>>> aff572cfd (test(flink): fix/skip common backend tests for flink)
+>>>>>>> 7ff6e5c5c (test(flink): fix/skip common backend tests for flink)
 
 
 def _date_sub(translator: ExprTranslator, op: ops.temporal.DateSub) -> str:
     return _left_op_right(translator=translator, op_node=op, op_sign="-")
 
 
+<<<<<<< HEAD
 def _extract_epoch_seconds(translator: ExprTranslator, op: ops.Node) -> str:
+=======
+<<<<<<< HEAD
+def extract_epoch_seconds(translator: ExprTranslator, op: ops.Node) -> str:
+=======
+def _extract_epoch_seconds(translator: ExprTranslator, op: ops.Node) -> str:
+>>>>>>> aff572cfd (test(flink): fix/skip common backend tests for flink)
+>>>>>>> 7ff6e5c5c (test(flink): fix/skip common backend tests for flink)
     arg = translator.translate(op.arg)
     return f"UNIX_TIMESTAMP(CAST({arg} AS STRING))"
 
@@ -319,6 +425,7 @@ def _string_to_timestamp(
     return f"TO_TIMESTAMP({arg}, {format_string})"
 
 
+<<<<<<< HEAD
 def _time(translator: ExprTranslator, op: ops.temporal.Time) -> str:
     if op.arg.dtype.is_timestamp():
         datetime = op.arg.value
@@ -335,6 +442,27 @@ def _time_from_hms(translator: ExprTranslator, op: ops.temporal.TimeFromHMS) -> 
     )
     concat_string = f"CONCAT({hours}, ':', {minutes}, ':', {seconds})"
     return f"CAST({concat_string} AS TIME)"
+=======
+<<<<<<< HEAD
+=======
+def _time(translator: ExprTranslator, op: ops.temporal.Time) -> str:
+    from ibis.expr.datatypes.core import Timestamp
+    from datetime import datetime
+
+    if isinstance(op.arg.dtype, Timestamp):
+        date_time: datetime = op.arg.value
+        return f"TIME '{date_time.hour}:{date_time.minute}:{date_time.second}'"
+
+    else:
+        raise com.UnsupportedOperationError(
+            f"Does NOT support dtype= {op.arg.dtype}"
+        )
+
+
+def _time_from_hms(translator: ExprTranslator, op: ops.temporal.TimeFromHMS) -> str:
+    hours, minutes, seconds = op.hours.value, op.minutes.value, op.seconds.value
+    return f"TIME '{hours}:{minutes}:{seconds}'"
+>>>>>>> 7ff6e5c5c (test(flink): fix/skip common backend tests for flink)
 
 
 def _timestamp_add(translator: ExprTranslator, op: ops.temporal.TimestampAdd) -> str:
@@ -379,6 +507,10 @@ def _timestamp_from_ymdhms(
     return f"CAST({concat_string} AS TIMESTAMP)"
 
 
+<<<<<<< HEAD
+=======
+>>>>>>> aff572cfd (test(flink): fix/skip common backend tests for flink)
+>>>>>>> 7ff6e5c5c (test(flink): fix/skip common backend tests for flink)
 operation_registry.update(
     {
         # Unary operations
@@ -395,7 +527,15 @@ operation_registry.update(
         ops.RegexSearch: fixed_arity("regexp", 2),
         # Timestamp operations
         ops.Date: _date,
+<<<<<<< HEAD
         ops.ExtractEpochSeconds: _extract_epoch_seconds,
+=======
+<<<<<<< HEAD
+        ops.ExtractEpochSeconds: extract_epoch_seconds,
+=======
+        ops.ExtractEpochSeconds: _extract_epoch_seconds,
+>>>>>>> aff572cfd (test(flink): fix/skip common backend tests for flink)
+>>>>>>> 7ff6e5c5c (test(flink): fix/skip common backend tests for flink)
         ops.ExtractYear: _extract_field("year"),  # equivalent to YEAR(date)
         ops.ExtractMonth: _extract_field("month"),  # equivalent to MONTH(date)
         ops.ExtractDay: _extract_field("day"),  # equivalent to DAYOFMONTH(date)
@@ -414,24 +554,53 @@ operation_registry.update(
         ops.Literal: _literal,
         ops.TryCast: _try_cast,
         ops.IfElse: _filter,
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+        ops.TimestampAdd: _timestamp_add,
+        ops.TimestampDiff: _timestamp_diff,
+        ops.TimestampFromUNIX: _timestamp_from_unix,
+        ops.TimestampFromYMDHMS: _timestamp_from_ymdhms,
+        ops.TimestampSub: _timestamp_sub,
+=======
+>>>>>>> aff572cfd (test(flink): fix/skip common backend tests for flink)
+>>>>>>> 7ff6e5c5c (test(flink): fix/skip common backend tests for flink)
         ops.Window: _window,
         ops.Clip: _clip,
         # Binary operations
         ops.Power: fixed_arity("power", 2),
         ops.FloorDivide: _floor_divide,
+<<<<<<< HEAD
         # Collection functions
         ops.ArrayIndex: _array_index,
+=======
+<<<<<<< HEAD
+        # Temporal functions
+        ops.ArrayIndex: _array_index,
+=======
+        # Collection functions
+        ops.ArrayIndex: _array_index,
+>>>>>>> 7ff6e5c5c (test(flink): fix/skip common backend tests for flink)
         ops.ArrayLength: _array_length,
         ops.JSONGetItem: _json_get_item,
         ops.Map: _map,
         ops.MapGet: _map_get,
         # Temporal functions
+<<<<<<< HEAD
+=======
+>>>>>>> aff572cfd (test(flink): fix/skip common backend tests for flink)
+>>>>>>> 7ff6e5c5c (test(flink): fix/skip common backend tests for flink)
         ops.DateAdd: _date_add,
         ops.DateDiff: _date_diff,
         ops.DateFromYMD: _date_from_ymd,
         ops.DateSub: _date_sub,
         ops.DayOfWeekIndex: _day_of_week_index,
         ops.StringToTimestamp: _string_to_timestamp,
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+=======
+>>>>>>> 7ff6e5c5c (test(flink): fix/skip common backend tests for flink)
         ops.Time: _time,
         ops.TimeFromHMS: _time_from_hms,
         ops.TimestampAdd: _timestamp_add,
@@ -439,6 +608,10 @@ operation_registry.update(
         ops.TimestampFromUNIX: _timestamp_from_unix,
         ops.TimestampFromYMDHMS: _timestamp_from_ymdhms,
         ops.TimestampSub: _timestamp_sub,
+<<<<<<< HEAD
+=======
+>>>>>>> aff572cfd (test(flink): fix/skip common backend tests for flink)
+>>>>>>> 7ff6e5c5c (test(flink): fix/skip common backend tests for flink)
     }
 )
 

@@ -320,4 +320,7 @@ def translate_literal(op: ops.Literal) -> str:
         return f"INTERVAL {_translate_interval(value, dtype)}"
     elif dtype.is_uuid():
         return translate_literal(ops.Literal(str(value), dtype=dt.str))
+    elif dtype.is_array():
+        return f"ARRAY{[e for e in value]}"
+
     raise NotImplementedError(f"No translation rule for {dtype}")

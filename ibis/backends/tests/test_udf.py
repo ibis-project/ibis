@@ -4,6 +4,7 @@ import pandas.testing as tm
 import sqlalchemy as sa
 from pytest import mark, param
 
+import ibis.common.exceptions as com
 from ibis import _, udf
 
 no_python_udfs = mark.notimpl(
@@ -12,6 +13,7 @@ no_python_udfs = mark.notimpl(
         "clickhouse",
         "dask",
         "druid",
+        "flink",
         "impala",
         "mssql",
         "mysql",
@@ -25,6 +27,7 @@ no_python_udfs = mark.notimpl(
 @no_python_udfs
 @mark.notimpl(["pyspark"])
 @mark.notyet(["datafusion"], raises=NotImplementedError)
+@mark.notyet(["flink"], raises=com.OperationNotDefinedError)
 def test_udf(batting):
     @udf.scalar.python
     def num_vowels(s: str, include_y: bool = False) -> int:
@@ -83,6 +86,7 @@ def test_map_udf(batting):
     ["postgres"], raises=TypeError, reason="postgres only supports map<string, string>"
 )
 @mark.notimpl(["polars"])
+@mark.notimpl(["flink"], raises=com.OperationNotDefinedError)
 @mark.notyet(["datafusion"], raises=NotImplementedError)
 @mark.notyet(["sqlite"], raises=TypeError, reason="sqlite doesn't support map types")
 def test_map_merge_udf(batting):
@@ -144,6 +148,11 @@ def add_one_pyarrow(s: int) -> int:  # s is series, int is the element type
     ["postgres"],
     raises=NotImplementedError,
     reason="postgres only supports Python-native UDFs",
+)
+@mark.notimpl(
+    ["flink"],
+    raises=com.OperationNotDefinedError,
+    reason="No translation rule for Pandas or PyArrow",
 )
 @mark.parametrize(
     "add_one",
