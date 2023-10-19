@@ -9,6 +9,7 @@ import pandas.testing as tm
 import pytest
 import sqlalchemy as sa
 from pytest import param
+from py4j.protocol import Py4JJavaError
 
 import ibis
 import ibis.expr.datatypes as dt
@@ -80,7 +81,7 @@ def test_scalar_param_array(con):
     assert result == len(value)
 
 
-@pytest.mark.notimpl(["datafusion", "impala", "postgres", "pyspark", "druid", "oracle"])
+@pytest.mark.notimpl(["datafusion", "impala", "flink", "postgres", "pyspark", "druid", "oracle"])
 @pytest.mark.never(
     ["mysql", "sqlite", "mssql"],
     reason="mysql and sqlite will never implement struct types",
@@ -98,6 +99,14 @@ def test_scalar_param_struct(con):
     reason="mysql and sqlite will never implement map types",
 )
 @pytest.mark.notyet(["bigquery"])
+@pytest.mark.broken(
+    ["flink"],
+    raises=Py4JJavaError,
+    reason=(
+        "SqlParseException: Expecting alias, found character literal"
+        "sql= SELECT MAP_FROM_ARRAYS(ARRAY['a', 'b', 'c'], ARRAY['ghi', 'def', 'abc']) '[' 'b' ']' AS `MapGet(param_0, 'b', None)`"
+    ),
+)
 def test_scalar_param_map(con):
     value = {"a": "ghi", "b": "def", "c": "abc"}
     param = ibis.param(dt.Map(dt.string, dt.string))
@@ -209,7 +218,7 @@ def test_scalar_param_date(backend, alltypes, value):
     backend.assert_frame_equal(result, expected)
 
 
-@pytest.mark.notyet(["mysql"], reason="no struct support")
+@pytest.mark.notyet(["flink", "mysql"], reason="no struct support")
 @pytest.mark.notimpl(
     [
         "postgres",
@@ -229,5 +238,5 @@ def test_scalar_param_date(backend, alltypes, value):
 def test_scalar_param_nested(con):
     param = ibis.param("struct<x: array<struct<y: array<double>>>>")
     value = OrderedDict([("x", [OrderedDict([("y", [1.0, 2.0, 3.0])])])])
-    result = con.execute(param, {param: value})
+    result = con.execute(param, params={param: value})
     assert pytest.approx(result["x"][0]["y"]) == np.array([1.0, 2.0, 3.0])

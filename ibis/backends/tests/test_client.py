@@ -33,6 +33,11 @@ from ibis.util import gen_name, guid
 if TYPE_CHECKING:
     from ibis.backends.base import BaseBackend
 
+try:
+    from py4j.protocol import Py4JJavaError
+except ImportError:
+    Py4JJavaError = None
+
 
 @pytest.fixture
 def new_schema():
@@ -70,17 +75,22 @@ def _create_temp_table_with_schema(con, temp_table_name, schema, data=None):
 @pytest.mark.parametrize(
     "sch",
     [
-        ibis.schema(
-            [
-                ("first_name", "string"),
-                ("last_name", "string"),
-                ("department_name", "string"),
-                ("salary", "float64"),
-            ]
+        param(
+            None,
+            id="no schema",
         ),
-        None,
+        param(
+            ibis.schema(
+                [
+                    ("first_name", "string"),
+                    ("last_name", "string"),
+                    ("department_name", "string"),
+                    ("salary", "float64"),
+                ]
+            ),
+            id="schema",
+        ),
     ],
-    ids=["schema", "no schema"],
 )
 @pytest.mark.notimpl(["dask", "datafusion", "druid"])
 def test_create_table(backend, con, temp_table, lamduh, sch):
@@ -94,7 +104,18 @@ def test_create_table(backend, con, temp_table, lamduh, sch):
     )
 
     obj = lamduh(df)
-    con.create_table(temp_table, obj, schema=sch)
+    if backend.name() == "flink":
+        con.create_table(
+            temp_table,
+            obj,
+            schema=sch,
+            tbl_properties={
+                "connector": None,
+            },
+        )
+    else:
+        con.create_table(temp_table, obj, schema=sch)
+
     result = (
         con.table(temp_table).execute().sort_values("first_name").reset_index(drop=True)
     )
@@ -128,6 +149,7 @@ def test_load_data_sqlalchemy(alchemy_backend, alchemy_con, alchemy_temp_table, 
 
     obj = lamduh(df)
     alchemy_con.create_table(alchemy_temp_table, obj, schema=sch, overwrite=True)
+
     result = (
         alchemy_con.table(alchemy_temp_table)
         .execute()
@@ -148,6 +170,14 @@ def test_load_data_sqlalchemy(alchemy_backend, alchemy_con, alchemy_temp_table, 
             id="table",
         ),
     ],
+)
+@pytest.mark.broken(
+    ["flink"],
+    raises=Py4JJavaError,
+    reason=(
+        "org.apache.flink.table.api.ValidationException: "
+        "Table `default_catalog`.`default_database`.`functional_alltypes` was not found."
+    )
 )
 def test_query_schema(ddl_backend, expr_fn, expected):
     expr = expr_fn(ddl_backend.functional_alltypes)
@@ -170,10 +200,17 @@ _LIMIT = {
 
 @pytest.mark.notimpl(["datafusion", "polars", "mssql"])
 @pytest.mark.never(["dask", "pandas"], reason="dask and pandas do not support SQL")
+@pytest.mark.notimpl(
+    ["flink"],
+    raises=AttributeError,
+    reason="'Backend' object has no attribute 'sql'"
+)
 def test_sql(backend, con):
     # execute the expression using SQL query
     table = backend.format_table("functional_alltypes")
     limit = _LIMIT.get(backend.name(), "LIMIT 10")
+
+    # TODO (mehmet): Is there a way to get ir.Expr from SQL statement for Flink?
     expr = con.sql(f"SELECT * FROM {table} {limit}")
     result = expr.execute()
     assert len(result) == 10
@@ -190,7 +227,7 @@ backend_type_mapping = {
 }
 
 
-@mark.notimpl(["datafusion", "druid"])
+@mark.notimpl(["datafusion", "druid", "flink"])
 def test_create_table_from_schema(con, new_schema, temp_table):
     new_table = con.create_table(temp_table, schema=new_schema)
     backend_mapping = backend_type_mapping.get(con.name, {})
@@ -251,6 +288,7 @@ def test_create_temporary_table_from_schema(tmpcon, new_schema):
         "datafusion",
         "druid",
         "duckdb",
+        "flink",
         "mssql",
         "mysql",
         "oracle",
@@ -277,18 +315,36 @@ def test_rename_table(con, temp_table, temp_table_orig):
     ["trino"], reason="trino doesn't support NOT NULL in its in-memory catalog"
 )
 @mark.broken(["snowflake"], reason="snowflake shows not nullable column as nullable")
+@mark.broken(
+    ["flink"],
+    raises=AssertionError,
+    reason=(
+        "assert not True, where True = Int64(nullable=True).nullable"
+        "Flink shows not nullable column as nullable"
+    )
+)
 def test_nullable_input_output(con, temp_table):
     sch = ibis.schema(
         [("foo", "int64"), ("bar", dt.int64(nullable=False)), ("baz", "boolean")]
     )
-    t = con.create_table(temp_table, schema=sch)
+
+    if con.name == "flink":
+        t = con.create_table(
+            temp_table,
+            schema=sch,
+            tbl_properties={
+                "connector": None,
+            },
+        )
+    else:
+        t = con.create_table(temp_table, schema=sch)
 
     assert t.schema().types[0].nullable
     assert not t.schema().types[1].nullable
     assert t.schema().types[2].nullable
 
 
-@mark.notimpl(["datafusion", "druid", "polars"])
+@mark.notimpl(["datafusion", "druid", "flink", "polars"])
 def test_create_drop_view(ddl_con, temp_view):
     # setup
     table_name = "functional_alltypes"
@@ -835,10 +891,22 @@ def test_self_join_memory_table(backend, con):
         param(
             ibis.memtable([("a", 1.0)], columns=["a", "b"]),
             id="python",
+            marks=[
+                pytest.mark.notimpl(
+                    ["flink"],
+                    raises=NotImplementedError,
+                )
+            ],
         ),
         param(
             ibis.memtable(pd.DataFrame([("a", 1.0)], columns=["a", "b"])),
             id="pandas-memtable",
+            marks=[
+                pytest.mark.notimpl(
+                    ["flink"],
+                    raises=NotImplementedError,
+                )
+            ],
         ),
         param(pd.DataFrame([("a", 1.0)], columns=["a", "b"]), id="pandas"),
     ],
@@ -1144,17 +1212,33 @@ def test_set_backend_url(url, monkeypatch):
 )
 @pytest.mark.broken(["oracle"], reason="oracle doesn't like `DESCRIBE` from sqlalchemy")
 @pytest.mark.broken(["druid"], reason="sqlalchemy dialect is broken")
+@pytest.mark.notimpl(
+    ["flink"],
+    raises=AttributeError,
+    reason="'Backend' object has no attribute 'raw_sql'",
+)
 def test_create_table_timestamp(con, temp_table):
     schema = ibis.schema(
         dict(zip(string.ascii_letters, map("timestamp({:d})".format, range(10))))
     )
-    con.create_table(temp_table, schema=schema, overwrite=True)
+
+    if con.name == "flink":
+        con.create_table(
+            temp_table,
+            schema=schema,
+            tbl_properties={
+                "connector": None,
+            },
+            overwrite=True,
+        )
+    else:
+        con.create_table(temp_table, schema=schema, overwrite=True)
     rows = con.raw_sql(f"DESCRIBE {temp_table}").fetchall()
     result = ibis.schema((name, typ) for name, typ, *_ in rows)
     assert result == schema
 
 
-@mark.notimpl(["datafusion", "bigquery", "impala", "trino", "druid"])
+@mark.notimpl(["datafusion", "bigquery", "flink", "impala", "trino", "druid"])
 @mark.never(
     ["mssql"],
     reason="mssql supports support temporary tables through naming conventions",
@@ -1171,7 +1255,7 @@ def test_persist_expression_ref_count(con, alltypes):
     assert con._query_cache.refs[op] == 1
 
 
-@mark.notimpl(["datafusion", "bigquery", "impala", "trino", "druid"])
+@mark.notimpl(["datafusion", "bigquery", "flink", "impala", "trino", "druid"])
 @mark.never(
     ["mssql"],
     reason="mssql supports support temporary tables through naming conventions",
@@ -1182,7 +1266,7 @@ def test_persist_expression(alltypes):
     tm.assert_frame_equal(non_persisted_table.to_pandas(), persisted_table.to_pandas())
 
 
-@mark.notimpl(["datafusion", "bigquery", "impala", "trino", "druid"])
+@mark.notimpl(["datafusion", "bigquery", "flink", "impala", "trino", "druid"])
 @mark.never(
     ["mssql"],
     reason="mssql supports support temporary tables through naming conventions",
@@ -1195,7 +1279,7 @@ def test_persist_expression_contextmanager(alltypes):
         tm.assert_frame_equal(non_cached_table.to_pandas(), cached_table.to_pandas())
 
 
-@mark.notimpl(["datafusion", "bigquery", "impala", "trino", "druid"])
+@mark.notimpl(["datafusion", "bigquery", "flink", "impala", "trino", "druid"])
 @mark.never(
     ["mssql"],
     reason="mssql supports support temporary tables through naming conventions",
@@ -1211,7 +1295,7 @@ def test_persist_expression_contextmanager_ref_count(con, alltypes):
     assert con._query_cache.refs[op] == 0
 
 
-@mark.notimpl(["datafusion", "bigquery", "impala", "trino", "druid"])
+@mark.notimpl(["datafusion", "bigquery", "flink", "impala", "trino", "druid"])
 @mark.never(
     ["mssql"],
     reason="mssql supports support temporary tables through naming conventions",
@@ -1244,7 +1328,7 @@ def test_persist_expression_multiple_refs(con, alltypes):
     assert name2 not in con.list_tables()
 
 
-@mark.notimpl(["datafusion", "bigquery", "impala", "trino", "druid"])
+@mark.notimpl(["datafusion", "bigquery", "flink", "impala", "trino", "druid"])
 @mark.never(
     ["mssql"],
     reason="mssql supports support temporary tables through naming conventions",
@@ -1258,7 +1342,7 @@ def test_persist_expression_repeated_cache(alltypes):
             assert not nested_cached_table.to_pandas().empty
 
 
-@mark.notimpl(["datafusion", "bigquery", "impala", "trino", "druid"])
+@mark.notimpl(["datafusion", "bigquery", "flink", "impala", "trino", "druid"])
 @mark.never(
     ["mssql"],
     reason="mssql supports support temporary tables through naming conventions",
@@ -1299,7 +1383,7 @@ def gen_test_name(con: BaseBackend) -> str:
     ["druid"], raises=sa.exc.ProgrammingError, reason="generated SQL fails to parse"
 )
 @mark.notimpl(["impala"], reason="impala doesn't support memtable")
-@mark.notimpl(["pyspark"])
+@mark.notimpl(["flink", "pyspark"])
 def test_overwrite(ddl_con):
     t0 = ibis.memtable({"a": [1, 2, 3]})
 

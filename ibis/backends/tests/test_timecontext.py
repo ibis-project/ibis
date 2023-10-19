@@ -7,7 +7,14 @@ from packaging.version import parse as vparse
 from pytest import param
 
 import ibis
+import ibis.common.exceptions as com
 from ibis.backends.tests.test_vectorized_udf import calc_mean, create_demean_struct_udf
+
+try:
+    from py4j.protocol import Py4JJavaError
+except ImportError:
+    Py4JJavaError = None
+
 
 pytestmark = pytest.mark.notimpl(
     [
@@ -55,6 +62,11 @@ broken_pandas_grouped_rolling = pytest.mark.xfail(
 @pytest.mark.xfail_version(
     pyspark=["pyspark<3.1"], pandas=["pyarrow>=13", "pandas>=2.1"]
 )
+@pytest.mark.notimpl(
+    ["flink"],
+    raises=com.OperationNotDefinedError,
+    reason="No translation rule for <class 'ibis.expr.operations.vectorized.ReductionVectorizedUDF'>",
+)
 @pytest.mark.parametrize(
     "window",
     [
@@ -91,6 +103,17 @@ def test_context_adjustment_window_udf(alltypes, context, window, monkeypatch):
 def test_context_adjustment_filter_before_window(alltypes, context, monkeypatch):
     monkeypatch.setattr(ibis.options.context_adjustment, "time_col", "timestamp_col")
 
+
+@pytest.mark.notimpl(["dask", "duckdb"])
+@pytest.mark.xfail_version(pandas=["pyarrow>=13", "pandas>=2.1"])
+@pytest.mark.broken(
+    ["flink"],
+    raises=Py4JJavaError,
+    reason="Cannot cast org.apache.flink.table.data.TimestampData to java.lang.Long",
+)
+def test_context_adjustment_filter_before_window(alltypes, context, monkeypatch):
+    monkeypatch.setattr(ibis.options.context_adjustment, "time_col", "timestamp_col")
+
     window = ibis.trailing_window(ibis.interval(days=3), order_by=ORDER_BY_COL)
 
     expr = alltypes[alltypes["bool_col"]]
@@ -106,9 +129,13 @@ def test_context_adjustment_filter_before_window(alltypes, context, monkeypatch)
 
 
 @pytest.mark.notimpl(["duckdb", "pyspark"])
+@pytest.mark.notimpl(
+    ["flink"],
+    raises=com.OperationNotDefinedError,
+    reason="No translation rule for <class 'ibis.expr.operations.structs.StructField'>",
+)
 def test_context_adjustment_multi_col_udf_non_grouped(alltypes, context, monkeypatch):
     monkeypatch.setattr(ibis.options.context_adjustment, "time_col", "timestamp_col")
-
     w = ibis.window(preceding=None, following=None)
 
     demean_struct_udf = create_demean_struct_udf(
