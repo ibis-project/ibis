@@ -473,8 +473,8 @@ class Backend(BaseSQLBackend, CanCreateSchema, CanListDatabases):
         **kwargs: Any,
     ) -> pa.Table:
         self._import_pyarrow()
-        query_ast = self.compiler.to_ast_ensure_limit(expr, limit, params=params)
-        sql = query_ast.compile()
+        sql = self.compile(expr, limit=limit, params=params, **kwargs)
+        self._log(sql)
         cursor = self.raw_sql(sql, params=params, **kwargs)
         table = self._cursor_to_arrow(cursor)
         return expr.__pyarrow_result__(table)
@@ -492,8 +492,8 @@ class Backend(BaseSQLBackend, CanCreateSchema, CanListDatabases):
 
         schema = expr.as_table().schema()
 
-        query_ast = self.compiler.to_ast_ensure_limit(expr, limit, params=params)
-        sql = query_ast.compile()
+        sql = self.compile(expr, limit=limit, params=params, **kwargs)
+        self._log(sql)
         cursor = self.raw_sql(sql, params=params, **kwargs)
         batch_iter = self._cursor_to_arrow(
             cursor,
