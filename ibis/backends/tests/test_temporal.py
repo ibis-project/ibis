@@ -433,7 +433,14 @@ PANDAS_UNITS = {
             "ms",
             marks=[
                 pytest.mark.notimpl(
-                    ["clickhouse", "impala", "mysql", "pyspark", "sqlite"],
+                    [
+                        "clickhouse",
+                        "impala",
+                        "mysql",
+                        "pyspark",
+                        "sqlite",
+                        "datafusion",
+                    ],
                     raises=com.UnsupportedOperationError,
                 ),
                 pytest.mark.broken(
@@ -447,7 +454,15 @@ PANDAS_UNITS = {
             "us",
             marks=[
                 pytest.mark.notimpl(
-                    ["clickhouse", "impala", "mysql", "pyspark", "sqlite", "trino"],
+                    [
+                        "clickhouse",
+                        "impala",
+                        "mysql",
+                        "pyspark",
+                        "sqlite",
+                        "trino",
+                        "datafusion",
+                    ],
                     raises=com.UnsupportedOperationError,
                 ),
                 pytest.mark.broken(
@@ -473,6 +488,7 @@ PANDAS_UNITS = {
                         "snowflake",
                         "trino",
                         "mssql",
+                        "datafusion",
                     ],
                     raises=com.UnsupportedOperationError,
                 ),
@@ -485,7 +501,7 @@ PANDAS_UNITS = {
         ),
     ],
 )
-@pytest.mark.notimpl(["datafusion", "oracle"], raises=com.OperationNotDefinedError)
+@pytest.mark.notimpl(["oracle"], raises=com.OperationNotDefinedError)
 @pytest.mark.broken(
     ["druid"],
     raises=AttributeError,
