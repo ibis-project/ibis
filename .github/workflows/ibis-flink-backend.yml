@@ -1,0 +1,126 @@
+name: Flink Backend
+
+on:
+  push:
+    # Skip the backend suite if all changes are docs
+    paths-ignore:
+      - "docs/**"
+      - "**/*.md"
+      - "**/*.qmd"
+      - "codecov.yml"
+      - ".envrc"
+    branches:
+      - master
+      - "*.x.x"
+  pull_request:
+    # Skip the backend suite if all changes are docs
+    paths-ignore:
+      - "docs/**"
+      - "**/*.md"
+      - "**/*.qmd"
+      - "codecov.yml"
+      - ".envrc"
+    branches:
+      - master
+      - "*.x.x"
+  merge_group:
+
+permissions:
+  # this allows extractions/setup-just to list releases for `just` at a higher
+  # rate limit while restricting GITHUB_TOKEN permissions elsewhere
+  contents: read
+
+concurrency:
+  group: ${{ github.repository }}-${{ github.head_ref || github.sha }}-${{ github.workflow }}
+  cancel-in-progress: true
+
+env:
+  FORCE_COLOR: "1"
+
+jobs:
+  test_flink_backend:
+    name: Flink ${{ matrix.os }} python-${{ matrix.python-version }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - ubuntu-latest
+          - windows-latest
+        python-version:
+          - "3.9"
+        backend:
+          - name: flink
+            extras:
+              - flink
+            additional_deps:
+              - apache-flink
+              - grpcio-status # FIXME(deepyaman)
+            even_more_deps:
+              - pandas~=1.5
+    steps:
+      - name: checkout
+        uses: actions/checkout@v4
+
+      - uses: extractions/setup-just@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: download backend data
+        run: just download-data
+
+      - name: install python
+        uses: actions/setup-python@v4
+        id: install_python
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - uses: syphar/restore-pip-download-cache@v1
+        with:
+          requirement_files: poetry.lock
+          custom_cache_key_element: ${{ steps.install_python.outputs.python-version }}
+
+      - name: install poetry
+        run: python -m pip install --upgrade pip 'poetry==1.6.1'
+
+      - uses: syphar/restore-virtualenv@v1
+        with:
+          requirement_files: poetry.lock
+          custom_cache_key_element: ${{ matrix.backend.name }}-${{ steps.install_python.outputs.python-version }}
+
+      - name: install ibis
+        run: poetry install --without dev --without docs --extras "${{ join(matrix.backend.extras, ' ') }}"
+
+      - name: install other deps
+        if: matrix.backend.additional_deps != null
+        run: poetry run pip install ${{ join(matrix.backend.additional_deps, ' ') }}
+
+      # FIXME(deepyaman)
+      - name: install even more deps
+        if: matrix.backend.even_more_deps != null
+        run: poetry run pip install ${{ join(matrix.backend.even_more_deps, ' ') }}
+
+      - name: show installed deps
+        run: poetry run pip list
+
+      - name: "run serial tests: ${{ matrix.backend.name }} (common)"
+        run: just ci-check -m ${{ matrix.backend.name }} ibis/backends/tests
+        env:
+          IBIS_EXAMPLES_DATA: ${{ runner.temp }}/examples-${{ matrix.backend.name }}-${{ matrix.os }}-${{ steps.install_python.outputs.python-version }}
+          JVM_ARGS: -XX:CompressedClassSpaceSize=3G
+
+      - name: "run serial tests: ${{ matrix.backend.name }} (backend-specific)"
+        run: just ci-check -m ${{ matrix.backend.name }} ibis/backends/flink/tests
+        env:
+          IBIS_EXAMPLES_DATA: ${{ runner.temp }}/examples-${{ matrix.backend.name }}-${{ matrix.os }}-${{ steps.install_python.outputs.python-version }}
+          JVM_ARGS: -XX:CompressedClassSpaceSize=3G
+
+      - name: check that no untracked files were produced
+        shell: bash
+        run: git checkout poetry.lock pyproject.toml && ! git status --porcelain | tee /dev/stderr | grep .
+
+      - name: upload code coverage
+        if: success()
+        uses: codecov/codecov-action@v3
+        with:
+          flags: backend,${{ matrix.backend.name }},${{ runner.os }},python-${{ steps.install_python.outputs.python-version }}
