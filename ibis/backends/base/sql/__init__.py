@@ -90,7 +90,9 @@ class BaseSQLBackend(BaseBackend):
             )
         qualified_name = self._fully_qualified_name(name, database)
         schema = self.get_schema(qualified_name)
-        node = ops.DatabaseTable(name, schema, self, namespace=database)
+        node = ops.DatabaseTable(
+            name, schema, self, namespace=ops.Namespace(database=database)
+        )
         return node.to_expr()
 
     def _fully_qualified_name(self, name, database):

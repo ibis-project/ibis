@@ -16,7 +16,7 @@ from ibis import util
 from ibis.common.annotations import annotated, attribute
 from ibis.common.collections import FrozenDict  # noqa: TCH001
 from ibis.common.deferred import Deferred
-from ibis.common.grounds import Immutable
+from ibis.common.grounds import Concrete, Immutable
 from ibis.common.patterns import Between, Coercible, Eq
 from ibis.common.typing import VarTuple  # noqa: TCH001
 from ibis.expr.operations.core import Column, Named, Node, Scalar, Value
@@ -70,6 +70,12 @@ TableNode = Relation
 
 
 @public
+class Namespace(Concrete):
+    database: Optional[str] = None
+    schema: Optional[str] = None
+
+
+@public
 class PhysicalTable(Relation, Named):
     pass
 
@@ -80,11 +86,12 @@ class PhysicalTable(Relation, Named):
 class UnboundTable(PhysicalTable):
     schema: Schema
     name: Optional[str] = None
+    namespace: Namespace = Namespace()
 
-    def __init__(self, schema, name) -> None:
+    def __init__(self, schema, name, namespace) -> None:
         if name is None:
             name = genname()
-        super().__init__(schema=schema, name=name)
+        super().__init__(schema=schema, name=name, namespace=namespace)
 
 
 @public
@@ -92,7 +99,7 @@ class DatabaseTable(PhysicalTable):
     name: str
     schema: Schema
     source: Any
-    namespace: Optional[str] = None
+    namespace: Namespace = Namespace()
 
 
 @public

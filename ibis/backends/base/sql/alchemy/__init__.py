@@ -447,7 +447,9 @@ class BaseAlchemyBackend(BaseSQLBackend):
                 "Dropping tables from a different database is not yet implemented"
             )
 
-        t = self._get_sqla_table(name, schema=database, autoload=False)
+        t = self._get_sqla_table(
+            name, namespace=ops.Namespace(database=database), autoload=False
+        )
         with self.begin() as bind:
             t.drop(bind=bind, checkfirst=force)
 
@@ -458,7 +460,7 @@ class BaseAlchemyBackend(BaseSQLBackend):
             del self._schemas[qualified_name]
 
     def truncate_table(self, name: str, database: str | None = None) -> None:
-        t = self._get_sqla_table(name, schema=database)
+        t = self._get_sqla_table(name, namespace=ops.Namespace(database=database))
         with self.begin() as con:
             con.execute(t.delete())
 
@@ -490,7 +492,12 @@ class BaseAlchemyBackend(BaseSQLBackend):
         return sa.MetaData()
 
     def _get_sqla_table(
-        self, name: str, schema: str | None = None, autoload: bool = True, **_: Any
+        self,
+        name: str,
+        *,
+        namespace: ops.Namespace = ops.Namespace(),  # noqa: B008
+        autoload: bool = True,
+        **_: Any,
     ) -> sa.Table:
         meta = self._new_sa_metadata()
         with warnings.catch_warnings():
@@ -503,7 +510,7 @@ class BaseAlchemyBackend(BaseSQLBackend):
             table = sa.Table(
                 name,
                 meta,
-                schema=schema,
+                schema=namespace.schema,
                 autoload_with=self.con if autoload else None,
                 quote=self.compiler.translator_class._quote_table_names,
             )
@@ -615,16 +622,9 @@ class BaseAlchemyBackend(BaseSQLBackend):
         Table
             Table expression
         """
-        namespace = schema
-        if database is not None:
-            if not isinstance(database, str):
-                raise com.IbisTypeError(
-                    f"`database` must be a string; got {type(database)}"
-                )
-            if database != self.current_database:
-                return self.database(name=database).table(name=name, schema=schema)
+        namespace = ops.Namespace(schema=schema, database=database)
 
-        sqla_table = self._get_sqla_table(name, schema=schema)
+        sqla_table = self._get_sqla_table(name, namespace=namespace)
 
         schema = self._schema_from_sqla_table(
             sqla_table, schema=self._schemas.get(name)
@@ -637,9 +637,9 @@ class BaseAlchemyBackend(BaseSQLBackend):
     def _insert_dataframe(
         self, table_name: str, df: pd.DataFrame, overwrite: bool
     ) -> None:
-        schema = self._current_schema
+        namespace = ops.Namespace(schema=self._current_schema)
 
-        t = self._get_sqla_table(table_name, schema=schema)
+        t = self._get_sqla_table(table_name, namespace=namespace)
         with self.con.begin() as con:
             if overwrite:
                 con.execute(t.delete())
@@ -701,7 +701,9 @@ class BaseAlchemyBackend(BaseSQLBackend):
                 self.drop_table(table_name, database=database)
                 self.create_table(table_name, schema=to_table_schema, database=database)
 
-            to_table = self._get_sqla_table(table_name, schema=database)
+            to_table = self._get_sqla_table(
+                table_name, namespace=ops.Namespace(database=database)
+            )
 
             from_table_expr = obj
 
@@ -713,7 +715,9 @@ class BaseAlchemyBackend(BaseSQLBackend):
                 with self.begin() as bind:
                     bind.execute(to_table.insert().from_select(columns, compiled))
         elif isinstance(obj, (list, dict)):
-            to_table = self._get_sqla_table(table_name, schema=database)
+            to_table = self._get_sqla_table(
+                table_name, namespace=ops.Namespace(database=database)
+            )
 
             with self.begin() as bind:
                 if overwrite:
@@ -904,7 +908,10 @@ class AlchemyCrossSchemaBackend(BaseAlchemyBackend):
     currently active one.
     """
 
-    def _get_table_identifier(self, *, name, schema, database):
+    def _get_table_identifier(self, *, name, namespace):
+        database = namespace.database
+        schema = namespace.schema
+
         if schema is None:
             schema = self.current_schema
 
@@ -935,13 +942,9 @@ class AlchemyCrossSchemaBackend(BaseAlchemyBackend):
         return table
 
     def _get_sqla_table(
-        self,
-        name: str,
-        schema: str | None = None,
-        database: str | None = None,
-        **_: Any,
+        self, name: str, namespace: ops.Namespace, **_: Any
     ) -> sa.Table:
-        table = self._get_table_identifier(name=name, schema=schema, database=database)
+        table = self._get_table_identifier(name=name, namespace=namespace)
         metadata_query = sg.select(STAR).from_(table).limit(0).sql(dialect=self.name)
         pairs = self._metadata(metadata_query)
         ibis_schema = ibis.schema(pairs)

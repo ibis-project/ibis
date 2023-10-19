@@ -28,7 +28,7 @@ def _physical_table(op: ops.PhysicalTable, **_):
 
 @translate_rel.register
 def _database_table(op: ops.DatabaseTable, *, name, namespace, **_):
-    return sg.table(name, db=namespace)
+    return sg.table(name, db=namespace.schema, catalog=namespace.database)
 
 
 def replace_tables_with_star_selection(node, alias=None):

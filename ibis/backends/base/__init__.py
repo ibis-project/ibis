@@ -42,6 +42,18 @@ _IBIS_TO_SQLGLOT_DIALECT = {
 }
 
 
+_SQLALCHEMY_TO_SQLGLOT_DIALECT = {
+    # sqlalchemy dialects of backends not listed here match the sqlglot dialect
+    # name
+    "mssql": "tsql",
+    "postgresql": "postgres",
+    "default": "duckdb",
+    # druid allows double quotes for identifiers, like postgres:
+    # https://druid.apache.org/docs/latest/querying/sql#identifiers-and-literals
+    "druid": "postgres",
+}
+
+
 class Database:
     """Generic Database class."""
 

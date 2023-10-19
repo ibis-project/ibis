@@ -130,7 +130,7 @@ class MockAlchemyBackend(MockBackend):
         pytest.importorskip("sqlalchemy")
         self.tables = {}
 
-    def table(self, name, database=None):
+    def table(self, name, **_):
         schema = self.get_schema(name)
         return self._inject_table(name, schema)
 
@@ -139,7 +139,7 @@ class MockAlchemyBackend(MockBackend):
             self.tables[name] = table_from_schema(name, sa.MetaData(), schema)
         return ops.DatabaseTable(source=self, name=name, schema=schema).to_expr()
 
-    def _get_sqla_table(self, name, schema=None, **kwargs):
+    def _get_sqla_table(self, name, **_):
         return self.tables[name]
 
 

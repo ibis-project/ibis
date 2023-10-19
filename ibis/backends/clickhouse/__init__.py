@@ -431,7 +431,10 @@ class Backend(BaseBackend, CanCreateDatabase):
         """
         schema = self.get_schema(name, database=database)
         op = ops.DatabaseTable(
-            name=name, schema=schema, source=self, namespace=database
+            name=name,
+            schema=schema,
+            source=self,
+            namespace=ops.Namespace(database=database),
         )
         return op.to_expr()
 

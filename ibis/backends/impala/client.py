@@ -185,7 +185,7 @@ class ImpalaTable(ir.Table):
     @property
     def _qualified_name(self) -> str:
         op = self.op()
-        return sg.table(op.name, db=op.namespace).sql(dialect="hive")
+        return sg.table(op.name, catalog=op.namespace.database).sql(dialect="hive")
 
     @property
     def _unqualified_name(self) -> str:

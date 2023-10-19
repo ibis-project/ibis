@@ -19,7 +19,9 @@ class PySparkTable(ir.Table):
     @property
     def _qualified_name(self) -> str:
         op = self.op()
-        return sg.table(op.name, db=op.namespace, quoted=True).sql(dialect="spark")
+        return sg.table(
+            op.name, db=op.namespace.schema, catalog=op.namespace.database, quoted=True
+        ).sql(dialect="spark")
 
     @property
     def _database(self) -> str:
