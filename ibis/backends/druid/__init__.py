@@ -123,7 +123,7 @@ class Backend(BaseAlchemyBackend):
         return bool(connection.execute(query).scalar())
 
     def _get_sqla_table(
-        self, name: str, schema: str | None = None, autoload: bool = True, **kwargs: Any
+        self, name: str, autoload: bool = True, **kwargs: Any
     ) -> sa.Table:
         with warnings.catch_warnings():
             warnings.filterwarnings(
@@ -136,6 +136,4 @@ class Backend(BaseAlchemyBackend):
                 ),
                 category=sa.exc.SAWarning,
             )
-            return super()._get_sqla_table(
-                name, schema=schema, autoload=autoload, **kwargs
-            )
+            return super()._get_sqla_table(name, autoload=autoload, **kwargs)

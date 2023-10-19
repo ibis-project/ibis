@@ -6,6 +6,7 @@ import string
 import pytest
 
 import ibis
+import ibis.common.exceptions as exc
 from ibis import udf, util
 from ibis.backends.trino.tests.conftest import (
     TRINO_HOST,
@@ -161,3 +162,14 @@ def test_table_access_from_connection_without_catalog_or_schema():
     assert con.current_schema is None
 
     assert t.count().execute()
+
+
+def test_table_access_database_schema(con):
+    t = con.table("region", schema="sf1", database="tpch")
+    assert t.count().execute()
+
+    with pytest.raises(exc.IbisError, match="Cannot specify both"):
+        con.table("region", schema="tpch.sf1", database="tpch")
+
+    with pytest.raises(exc.IbisError, match="Cannot specify both"):
+        con.table("region", schema="tpch.sf1", database="system")

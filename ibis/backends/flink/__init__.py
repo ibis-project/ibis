@@ -191,7 +191,10 @@ class Backend(BaseBackend, CanCreateDatabase):
         _, quoted, unquoted = fully_qualified_re.search(qualified_name).groups()
         unqualified_name = quoted or unquoted
         node = ops.DatabaseTable(
-            unqualified_name, schema, self, namespace=database
+            unqualified_name,
+            schema,
+            self,
+            namespace=ops.Namespace(schema=database, database=catalog),
         )  # TODO(chloeh13q): look into namespacing with catalog + db
         return node.to_expr()
 

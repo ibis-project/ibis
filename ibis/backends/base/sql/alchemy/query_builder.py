@@ -3,12 +3,14 @@ from __future__ import annotations
 import functools
 
 import sqlalchemy as sa
+import sqlglot as sg
 import toolz
 from sqlalchemy import sql
 
 import ibis.common.exceptions as com
 import ibis.expr.analysis as an
 import ibis.expr.operations as ops
+from ibis.backends.base import _SQLALCHEMY_TO_SQLGLOT_DIALECT
 from ibis.backends.base.sql.alchemy.translator import (
     AlchemyContext,
     AlchemyExprTranslator,
@@ -93,15 +95,22 @@ class _AlchemyTableSetFormatter(TableSetFormatter):
         translator = ctx.compiler.translator_class(op, ctx)
 
         if isinstance(op, ops.DatabaseTable):
-            result = op.source._get_sqla_table(op.name, schema=op.namespace)
+            namespace = op.namespace
+            result = op.source._get_sqla_table(op.name, namespace=namespace)
         elif isinstance(op, ops.UnboundTable):
             # use SQLAlchemy's TableClause for unbound tables
+            name = op.name
+            namespace = op.namespace
             result = sa.Table(
-                op.name,
+                name,
                 sa.MetaData(),
                 *translator._schema_to_sqlalchemy_columns(op.schema),
                 quote=translator._quote_table_names,
             )
+            dialect = translator._dialect_name
+            result.fullname = sg.table(
+                name, db=namespace.schema, catalog=namespace.database
+            ).sql(dialect=_SQLALCHEMY_TO_SQLGLOT_DIALECT.get(dialect, dialect))
         elif isinstance(op, ops.SQLQueryResult):
             columns = translator._schema_to_sqlalchemy_columns(op.schema)
             result = sa.text(op.query).columns(*columns)

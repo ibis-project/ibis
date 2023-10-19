@@ -114,9 +114,13 @@ class TableSetFormatter:
             if (name := op.name) is None:
                 raise com.RelationError(f"Table did not have a name: {op!r}")
 
+            namespace = getattr(op, "namespace", None)
+            catalog = getattr(namespace, "database", None)
+            db = getattr(namespace, "schema", None)
             result = sg.table(
                 name,
-                db=getattr(op, "namespace", None),
+                db=db,
+                catalog=catalog,
                 quoted=self.parent.translator_class._quote_identifiers,
             ).sql(dialect=self.parent.translator_class._dialect_name)
         elif ctx.is_extracted(op):
