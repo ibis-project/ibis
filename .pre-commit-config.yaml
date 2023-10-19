@@ -89,7 +89,6 @@ repos:
           - json
           - markdown
           - yaml
-        exclude: ci/conda-lock/python-.+\.yml
       - id: taplo
         name: taplo
         language: system

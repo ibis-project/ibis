@@ -1,3 +1,0 @@
-name: conda-lock
-dependencies:
-  - python=3.9
