@@ -1,0 +1,17 @@
+{
+  "image": "mcr.microsoft.com/vscode/devcontainers/python:3.11",
+  "updateContentCommand": ".devcontainer/updateContent.sh",
+  "customizations": {
+    "codespaces": {
+      "openFiles": ["docs/tutorials/getting_started.qmd"]
+    },
+    "vscode": {
+      "extensions": ["ms-toolsai.jupyter", "ms-python.python", "quarto.quarto"]
+    }
+  },
+  "features": {
+    "ghcr.io/rocker-org/devcontainer-features/quarto-cli:1": {
+      "version": "1.4.339"
+    }
+  }
+}
