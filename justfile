@@ -108,6 +108,10 @@ down *backends:
         docker compose rm {{ backends }} --force --stop --volumes
     fi
 
+# tail logs for one or more services
+tail *services:
+    docker compose logs --follow {{ services }}
+
 # run the benchmark suite
 bench +args='ibis/tests/benchmarks':
     pytest --benchmark-only --benchmark-enable --benchmark-autosave {{ args }}
@@ -136,6 +140,7 @@ decouple +args:
 profile +args:
     pyinstrument {{ args }}
 
+# generate API documentation
 docs-apigen *args:
     cd docs && quartodoc interlinks
     quartodoc build {{ args }} --config docs/_quarto.yml
@@ -148,6 +153,7 @@ docs-render:
 docs-preview:
     quarto preview docs
 
+# deploy docs to netlify
 docs-deploy:
     quarto publish --no-prompt --no-browser --no-render netlify docs
 
