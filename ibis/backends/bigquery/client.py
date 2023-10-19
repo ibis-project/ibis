@@ -9,7 +9,6 @@ import pandas as pd
 
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
-import ibis.expr.operations as ops
 from ibis.backends.bigquery.datatypes import BigQuerySchema, BigQueryType
 
 NATIVE_PARTITION_COL = "_PARTITIONTIME"
@@ -134,10 +133,6 @@ def bq_param_date(_: dt.Date, value, name):
     return bq.ScalarQueryParameter(
         name, "DATE", pd.Timestamp(value).to_pydatetime().date()
     )
-
-
-class BigQueryTable(ops.DatabaseTable):
-    pass
 
 
 def rename_partitioned_column(table_expr, bq_table, partition_col):
