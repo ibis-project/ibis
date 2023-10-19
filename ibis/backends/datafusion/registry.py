@@ -50,6 +50,14 @@ def extract_millisecond(array: pa.Array) -> pa.Array:
     return pc.cast(pc.millisecond(array), pa.int32())
 
 
+def extract_hour(array: pa.Array) -> pa.Array:
+    return pc.cast(pc.hour(array), pa.int32())
+
+
+def extract_minute(array: pa.Array) -> pa.Array:
+    return pc.cast(pc.minute(array), pa.int32())
+
+
 UDFS = {
     "extract_microseconds_time": create_udf(
         ops.ExtractMicrosecond,
@@ -110,5 +118,14 @@ UDFS = {
         extract_millisecond,
         input_types=[dt.timestamp],
         name="extract_millisecond_timestamp",
+    ),
+    "extract_hour_time": create_udf(
+        ops.ExtractHour, extract_hour, input_types=[dt.time], name="extract_hour_time"
+    ),
+    "extract_minute_time": create_udf(
+        ops.ExtractMinute,
+        extract_minute,
+        input_types=[dt.time],
+        name="extract_minute_time",
     ),
 }

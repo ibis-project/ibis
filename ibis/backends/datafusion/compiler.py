@@ -15,6 +15,7 @@ import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 from ibis import NA
 from ibis.backends.datafusion import registry
+from ibis.common.temporal import IntervalUnit
 from ibis.expr.operations.udf import InputType
 from ibis.formats.pyarrow import PyArrowType
 
@@ -927,20 +928,36 @@ def extract_quarter(op, **kw):
 @translate.register(ops.ExtractMinute)
 def extract_minute(op, **kw):
     arg = translate(op.arg, **kw)
-    return df.functions.date_part(df.literal("minute"), arg)
+
+    if op.arg.dtype.is_time():
+        return registry.UDFS["extract_minute_time"](arg)
+    elif op.arg.dtype.is_timestamp():
+        return df.functions.date_part(df.literal("minute"), arg)
+    else:
+        raise com.OperationNotDefinedError(
+            f"The function is not defined for {type(op.arg)}"
+        )
 
 
 @translate.register(ops.ExtractHour)
 def extract_hour(op, **kw):
     arg = translate(op.arg, **kw)
-    return df.functions.date_part(df.literal("hour"), arg)
+
+    if op.arg.dtype.is_time():
+        return registry.UDFS["extract_hour_time"](arg)
+    elif op.arg.dtype.is_timestamp():
+        return df.functions.date_part(df.literal("hour"), arg)
+    else:
+        raise com.OperationNotDefinedError(
+            f"The function is not defined for {type(op.arg)}"
+        )
 
 
 @translate.register(ops.ExtractMillisecond)
 def extract_millisecond(op, **kw):
     arg = translate(op.arg, **kw)
 
-    if op.arg.dtype.is_date():
+    if op.arg.dtype.is_time():
         return registry.UDFS["extract_millisecond_time"](arg)
     elif op.arg.dtype.is_timestamp():
         return registry.UDFS["extract_millisecond_timestamp"](arg)
@@ -954,7 +971,7 @@ def extract_millisecond(op, **kw):
 def extract_second(op, **kw):
     arg = translate(op.arg, **kw)
 
-    if op.arg.dtype.is_date():
+    if op.arg.dtype.is_time():
         return registry.UDFS["extract_second_time"](arg)
     elif op.arg.dtype.is_timestamp():
         return registry.UDFS["extract_second_timestamp"](arg)
@@ -1028,3 +1045,19 @@ def extract_epoch_seconds(op, **kw):
         raise com.OperationNotDefinedError(
             f"The function is not defined for {type(op.arg)}"
         )
+
+
+@translate.register(ops.TimestampTruncate)
+def timestamp_truncate(op, **kw):
+    arg = translate(op.arg, **kw)
+    unit = op.unit
+    if unit in (
+        IntervalUnit.MILLISECOND,
+        IntervalUnit.MICROSECOND,
+        IntervalUnit.NANOSECOND,
+    ):
+        raise com.UnsupportedOperationError(
+            f"The function is not defined for time unit {unit}"
+        )
+
+    return df.functions.date_trunc(df.literal(unit.name.lower()), arg)
