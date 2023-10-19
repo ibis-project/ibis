@@ -10,7 +10,6 @@ services:
       test:
         - CMD-SHELL
         - wget -qO- 'http://localhost:8123/?query=SELECT%201' # SELECT 1
-      timeout: 10s
     volumes:
       - clickhouse:/var/lib/clickhouse/user_files/ibis
     networks:
@@ -20,15 +19,15 @@ services:
     depends_on:
       - impala-postgres
       - kudu
+      - kudu-tserver
     environment:
       PGPASSWORD: postgres
     healthcheck:
-      interval: 5s
-      retries: 20
+      interval: 1s
+      retries: 60
       test:
         - CMD-SHELL
         - nc -z 127.0.0.1 21050 && nc -z 127.0.0.1 50070
-      timeout: 10s
     hostname: localhost
     image: ibisproject/impala:latest
     ports:
@@ -46,11 +45,10 @@ services:
       POSTGRES_PASSWORD: postgres
     healthcheck:
       interval: 1s
-      retries: 30
+      retries: 10
       test:
         - CMD
         - pg_isready
-      timeout: 5s
     image: postgres:13.12-alpine
     networks:
       - impala
@@ -58,34 +56,32 @@ services:
   kudu:
     cap_add:
       - SYS_TIME
-    depends_on:
-      - kudu-tserver
     image: apache/kudu:1.17.0
     networks:
       - impala
     command: kudu master run --fs_wal_dir=/var/lib/kudu/master --fs_data_dirs=/var/lib/kudu/master
     healthcheck:
-      interval: 5s
-      retries: 20
+      interval: 1s
+      retries: 60
       test:
         - CMD-SHELL
         - kudu cluster ksck kudu:7051
-      timeout: 10s
 
   kudu-tserver:
     cap_add:
       - SYS_TIME
     image: apache/kudu:1.17.0
+    depends_on:
+      - kudu # tablet server won't start if it can't find the master kudu node
     networks:
       - impala
     command: kudu tserver run --fs_wal_dir=/var/lib/kudu/master --fs_data_dirs=/var/lib/kudu/master --tserver_master_addrs=kudu
     healthcheck:
-      interval: 5s
-      retries: 20
+      interval: 1s
+      retries: 60
       test:
         - CMD-SHELL
         - kudu cluster ksck kudu:7051
-      timeout: 10s
 
   mysql:
     environment:
@@ -95,12 +91,11 @@ services:
       MYSQL_USER: ibis
     healthcheck:
       interval: 1s
-      retries: 30
+      retries: 20
       test:
         - CMD
         - mariadb-admin
         - ping
-      timeout: 5s
     image: mariadb:10.11.5
     ports:
       - 3306:3306
@@ -120,11 +115,10 @@ services:
     image: ibis-postgres
     healthcheck:
       interval: 1s
-      retries: 30
+      retries: 20
       test:
         - CMD
         - pg_isready
-      timeout: 5s
     ports:
       - 5432:5432
     networks:
@@ -139,11 +133,10 @@ services:
       ACCEPT_EULA: "Y"
     healthcheck:
       interval: 1s
-      retries: 30
+      retries: 20
       test:
         - CMD-SHELL
         - /opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P "$$MSSQL_SA_PASSWORD" -Q "IF DB_ID('ibis_testing') IS NULL BEGIN CREATE DATABASE [ibis_testing] END"
-      timeout: 10s
     ports:
       - 1433:1433
     volumes:
@@ -159,17 +152,17 @@ services:
       POSTGRES_DB: metastore
     healthcheck:
       interval: 1s
-      retries: 30
+      retries: 20
       test:
         - CMD
         - pg_isready
         - --port=23456
-      timeout: 5s
     command: -c port=23456
     networks:
       - trino
 
   minio:
+    # TODO: healthcheck?
     image: minio/minio:latest
     environment:
       MINIO_ROOT_USER: accesskey
@@ -182,6 +175,7 @@ services:
       - minio:/opt/data/raw
 
   hive-metastore:
+    # TODO: healthcheck?
     image: starburstdata/hive:3.1.3-e.4
     environment:
       HIVE_METASTORE_DRIVER: org.postgresql.Driver
@@ -218,12 +212,11 @@ services:
     depends_on:
       - hive-metastore
     healthcheck:
-      interval: 5s
-      retries: 10
+      interval: 2s
+      retries: 15
       test:
         - CMD-SHELL
         - trino --output-format null --execute 'show schemas in hive; show schemas in memory'
-      timeout: 30s
     image: trinodb/trino:429
     ports:
       - 8080:8080
@@ -242,9 +235,8 @@ services:
       POSTGRES_USER: druid
       POSTGRES_DB: druid
     healthcheck:
-      interval: 1s
+      interval: 2s
       retries: 30
-      timeout: 90s
       test:
         - CMD-SHELL
         - pg_isready
@@ -259,9 +251,8 @@ services:
     environment:
       ZOO_MY_ID: 1
     healthcheck:
-      interval: 10s
-      retries: 9
-      timeout: 90s
+      interval: 2s
+      retries: 30
       test:
         - CMD-SHELL
         - nc -z 127.0.0.1 2181
@@ -281,9 +272,8 @@ services:
     command:
       - coordinator
     healthcheck:
-      interval: 10s
-      retries: 9
-      timeout: 90s
+      interval: 2s
+      retries: 30
       test:
         - CMD-SHELL
         - nc -z 127.0.0.1 8081
@@ -305,9 +295,8 @@ services:
     command:
       - broker
     healthcheck:
-      interval: 10s
-      retries: 9
-      timeout: 90s
+      interval: 2s
+      retries: 30
       test:
         - CMD-SHELL
         - nc -z 127.0.0.1 8082
@@ -332,9 +321,8 @@ services:
     command:
       - historical
     healthcheck:
-      interval: 10s
-      retries: 9
-      timeout: 90s
+      interval: 2s
+      retries: 30
       test:
         - CMD-SHELL
         - nc -z 127.0.0.1 8083
@@ -358,9 +346,8 @@ services:
     command:
       - middleManager
     healthcheck:
-      interval: 10s
-      retries: 9
-      timeout: 90s
+      interval: 2s
+      retries: 30
       test:
         - CMD-SHELL
         - nc -z 127.0.0.1 8091
@@ -387,9 +374,8 @@ services:
     command:
       - router
     healthcheck:
-      interval: 10s
-      retries: 9
-      timeout: 90s
+      interval: 2s
+      retries: 30
       test:
         - CMD-SHELL
         - nc -z 127.0.0.1 8888
@@ -408,12 +394,11 @@ services:
     ports:
       - 1521:1521
     healthcheck:
-      interval: 5s
-      retries: 10
+      interval: 2s
+      retries: 25
       test:
         - CMD-SHELL
         - ./healthcheck.sh
-      timeout: 30s
     restart: on-failure
     networks:
       - oracle
