@@ -8,6 +8,8 @@ import pytest
 import sqlglot as sg
 
 import ibis
+import ibis.expr.datatypes as dt
+import ibis.selectors as s
 from ibis.backends.conftest import TEST_TABLES
 from ibis.backends.tests.base import BackendTest, RoundAwayFromZero
 
@@ -40,7 +42,7 @@ class TestConf(BackendTest, RoundAwayFromZero):
     supports_tpch = True
     deps = ("sqlalchemy", "trino.sqlalchemy")
 
-    _tpch_data_schema = "tpch.sf1"
+    _tpch_data_schema = "tpch.tiny"
     _tpch_query_schema = "hive.ibis_sf1"
 
     def preload(self):
@@ -113,14 +115,23 @@ class TestConf(BackendTest, RoundAwayFromZero):
         con.create_schema(schema, database=database, force=True)
 
         prefixes = {"partsupp": "ps"}
+
+        # this is the type duckdb uses for numeric columns in TPC-H data
+        decimal_type = dt.Decimal(15, 2)
+
         with con.begin() as c:
             for table in tables:
                 prefix = prefixes.get(table, table[0])
 
-                t = con.table(table, schema=data_schema)
-                new_t = t.rename(**{f"{prefix}_{old}": old for old in t.columns})
+                t = (
+                    con.table(table, schema=data_schema).rename(f"{prefix}_{{}}".format)
+                    # https://github.com/trinodb/trino/issues/19477
+                    .mutate(
+                        s.across(s.of_type(dt.float64), lambda c: c.cast(decimal_type))
+                    )
+                )
 
-                sql = ibis.to_sql(new_t, dialect="trino")
+                sql = ibis.to_sql(t, dialect="trino")
                 c.exec_driver_sql(
                     f"CREATE OR REPLACE VIEW {query_schema}.{table} AS {sql}"
                 )
