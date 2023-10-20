@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import contextlib
 import operator
 from functools import singledispatch
 from typing import IO
@@ -335,6 +336,25 @@ class SQLString(str):
 
     def _repr_markdown_(self) -> str:
         return f"```sql\n{self!s}\n```"
+
+    def _repr_pretty_(self, p, cycle) -> str:
+        output = str(self)
+        try:
+            from pygments import highlight
+            from pygments.formatters import TerminalFormatter
+            from pygments.lexers import SqlLexer
+        except ImportError:
+            pass
+        else:
+            with contextlib.suppress(Exception):
+                output = highlight(
+                    code=output,
+                    lexer=SqlLexer(),
+                    formatter=TerminalFormatter(),
+                )
+
+        # strip trailing newline
+        p.text(output.strip())
 
 
 @public
