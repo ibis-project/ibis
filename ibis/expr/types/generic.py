@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any, Iterable, Literal, Sequence
 
 from public import public
+from rich.table import Table as RichTable
 
 import ibis
 import ibis.common.exceptions as com
@@ -1271,9 +1272,69 @@ class Column(Value, _FixedTextJupyterMixin):
         return self.execute().__array__(dtype)
 
     def __interactive_rich_console__(self, console, options):
+        return console.render(self.preview(), options=options)
+
+    def preview(
+        self,
+        *,
+        max_rows: int | None = None,
+        show_types: bool | None = None,
+        max_length: int | None = None,
+        max_string: int | None = None,
+        max_depth: int | None = None,
+        console_width: int | float | None = None,
+    ) -> RichTable:
+        """Pretty-print a preview using rich.
+
+        This is an explicit version of what you get when you inspect
+        this object in interactive mode, except with this version you
+        can pass formatting options. The options are the same as those exposed
+        in `ibis.options.interactive`.
+
+        Parameters
+        ----------
+        max_rows
+            Maximum number of rows to display
+        show_types
+            Whether to show column types in the 2nd row, under the column name
+        max_length
+           Maximum length for pretty-printed arrays and maps.
+        max_string
+            Maximum length for pretty-printed strings.
+        max_depth
+            Maximum depth for nested data types.
+        console_width
+            Width of the console in characters. If not specified, the width
+            will be inferred from the console.
+
+        Examples
+        --------
+        >>> import ibis
+        >>> ibis.options.interactive = False
+        >>> t = ibis.examples.penguins.fetch()
+        >>> t.island.preview(max_rows=3, show_types=False, max_string=5)
+        ┏━━━━━━━━┓
+        ┃ island ┃
+        ┡━━━━━━━━┩
+        │ Torg…  │
+        │ Torg…  │
+        │ Torg…  │
+        │ …      │
+        └────────┘
+        """
+        from ibis.expr.types.pretty import to_rich_table
+
         named = self.name(self.op().name)
         projection = named.as_table()
-        return console.render(projection, options=options)
+        return to_rich_table(
+            projection,
+            max_rows=max_rows,
+            show_types=show_types,
+            max_length=max_length,
+            max_string=max_string,
+            max_depth=max_depth,
+            console_width=console_width,
+        )
 
     def __pyarrow_result__(self, table: pa.Table) -> pa.Array | pa.ChunkedArray:
         from ibis.formats.pyarrow import PyArrowData

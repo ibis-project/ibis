@@ -10,39 +10,69 @@ import rich
 from rich.align import Align
 from rich.console import Console
 from rich.text import Text
+from rich.table import Table as RichTable
 
 import ibis
 import ibis.expr.datatypes as dt
+from ibis.expr.types import Table
+from ibis.common.exceptions import TranslationError
 
-# A console with all color/markup disabled, used for `__repr__`
-simple_console = Console(force_terminal=False)
+
+def pretty_repr(expr: ibis.Expr) -> str:
+    # All color/markup disabled, used for `__repr__`
+    console = Console(force_terminal=False)
+    with console.capture() as capture:
+        try:
+            console.print(expr)
+        except TranslationError as e:
+            lines = [
+                "Translation to backend failed",
+                f"Error message: {e.args[0]}",
+                "Expression repr follows:",
+                expr._repr(),
+            ]
+            return "\n".join(lines)
+    return capture.get().rstrip()
 
 
-def _format_nested(values):
-    interactive = ibis.options.repr.interactive
+def _format_nested(
+    values,
+    *,
+    max_length: int | None = None,
+    max_string: int | None = None,
+    max_depth: int | None = None,
+):
+    if max_length is None:
+        max_length = ibis.options.repr.interactive.max_length
+    if max_string is None:
+        max_string = ibis.options.repr.interactive.max_string
+    if max_depth is None:
+        max_depth = ibis.options.repr.interactive.max_depth
     return [
         rich.pretty.Pretty(
             v,
-            max_length=interactive.max_length,
-            max_string=interactive.max_string,
-            max_depth=interactive.max_depth,
+            max_length=max_length,
+            max_string=max_string,
+            max_depth=max_depth,
         )
         for v in values
     ]
 
 
 @singledispatch
-def format_values(dtype, values):
-    return _format_nested(values)
+def format_values(dtype, values, **fmt_kwargs):
+    return _format_nested(values, **fmt_kwargs)
 
 
 @format_values.register(dt.Map)
-def _(dtype, values):
-    return _format_nested([None if v is None else dict(v) for v in values])
+def _(dtype, values, **fmt_kwargs):
+    return _format_nested(
+        [None if v is None else dict(v) for v in values], **fmt_kwargs
+    )
 
 
 @format_values.register(dt.JSON)
-def _(dtype, values):
+def _(dtype, values, **fmt_kwargs):
     def try_json(v):
         if v is None:
             return None
@@ -51,17 +81,17 @@ def _(dtype, values):
         except Exception:
             return v
 
-    return _format_nested([try_json(v) for v in values])
+    return _format_nested([try_json(v) for v in values], **fmt_kwargs)
 
 
 @format_values.register(dt.Boolean)
 @format_values.register(dt.UUID)
-def _(dtype, values):
+def _(dtype, values, **fmt_kwargs):
     return [Text(str(v)) for v in values]
 
 
 @format_values.register(dt.Decimal)
-def _(dtype, values):
+def _(dtype, values, **fmt_kwargs):
     if dtype.scale is not None:
         fmt = f"{{:.{dtype.scale}f}}"
         return [Text.styled(fmt.format(v), "bold cyan") for v in values]
@@ -71,12 +101,12 @@ def _(dtype, values):
 
 
 @format_values.register(dt.Integer)
-def _(dtype, values):
+def _(dtype, values, **fmt_kwargs):
     return [Text.styled(str(int(v)), "bold cyan") for v in values]
 
 
 @format_values.register(dt.Floating)
-def _(dtype, values):
+def _(dtype, values, **fmt_kwargs):
     floats = [float(v) for v in values]
     # Extract and format all finite floats
     finites = [f for f in floats if isfinite(f)]
@@ -95,7 +125,7 @@ def _(dtype, values):
 
 
 @format_values.register(dt.Timestamp)
-def _(dtype, values):
+def _(dtype, values, **fmt_kwargs):
     if all(v.microsecond == 0 for v in values):
         timespec = "seconds"
     elif all(v.microsecond % 1000 == 0 for v in values):
@@ -108,13 +138,13 @@ def _(dtype, values):
 
 
 @format_values.register(dt.Date)
-def _(dtype, values):
+def _(dtype, values, **fmt_kwargs):
     dates = [v.date() if isinstance(v, datetime.datetime) else v for v in values]
     return [Text.styled(d.isoformat(), "magenta") for d in dates]
 
 
 @format_values.register(dt.Time)
-def _(dtype, values):
+def _(dtype, values, **fmt_kwargs):
     times = [v.time() if isinstance(v, datetime.datetime) else v for v in values]
     if all(t.microsecond == 0 for t in times):
         timespec = "seconds"
@@ -126,7 +156,7 @@ def _(dtype, values):
 
 
 @format_values.register(dt.Interval)
-def _(dtype, values):
+def _(dtype, values, **fmt_kwargs):
     return [Text.styled(str(v), "magenta") for v in values]
 
 
@@ -142,8 +172,9 @@ _str_escapes = str.maketrans(
 
 
 @format_values.register(dt.String)
-def _(dtype, values):
-    max_string = ibis.options.repr.interactive.max_string
+def _(dtype, values, *, max_string: int | None = None, **fmt_kwargs):
+    if max_string is None:
+        max_string = ibis.options.repr.interactive.max_string
     out = []
     for v in values:
         v = str(v)
@@ -174,7 +205,14 @@ def _(dtype, values):
     return out
 
 
-def format_column(dtype, values):
+def format_column(
+    dtype,
+    values,
+    *,
+    max_length: int | None = None,
+    max_string: int | None = None,
+    max_depth: int | None = None,
+):
     import pandas as pd
 
     null_str = Text.styled("NULL", style="dim")
@@ -192,7 +230,13 @@ def format_column(dtype, values):
 
     nonnull = [v for v in values if not isnull(v)]
     if nonnull:
-        formatted = format_values(dtype, nonnull)
+        formatted = format_values(
+            dtype,
+            nonnull,
+            max_length=max_length,
+            max_string=max_string,
+            max_depth=max_depth,
+        )
         next_f = iter(formatted).__next__
         out = [null_str if isnull(v) else next_f() for v in values]
     else:
@@ -220,13 +264,28 @@ def format_dtype(dtype):
     return Text.styled(strtyp, "dim")
 
 
-def to_rich_table(table, console_width=None):
+def to_rich_table(
+    table: Table,
+    *,
+    max_rows: int | None = None,
+    max_columns: int | None = None,
+    show_types: bool | None = None,
+    max_length: int | None = None,
+    max_string: int | None = None,
+    max_depth: int | None = None,
+    console_width: int | float | None = None,
+) -> RichTable:
+    if max_rows is None:
+        max_rows = ibis.options.repr.interactive.max_rows
+    if max_columns is None:
+        max_columns = ibis.options.repr.interactive.max_columns
+    if show_types is None:
+        show_types = ibis.options.repr.interactive.show_types
     if console_width is None:
         console_width = float("inf")
 
     orig_ncols = len(table.columns)
 
-    max_columns = ibis.options.repr.interactive.max_columns
     if console_width == float("inf"):
         # When there's infinite display space, only subset columns
         # if an explicit limit has been set.
@@ -253,10 +312,7 @@ def to_rich_table(table, console_width=None):
         if orig_ncols > len(computed_cols):
             table = table.select(*computed_cols)
 
-    # Compute the data and return a pandas dataframe
-    nrows = ibis.options.repr.interactive.max_rows
-    result = table.limit(nrows + 1).to_pyarrow()
-
+    result = table.limit(max_rows + 1).to_pyarrow()
     # Now format the columns in order, stopping if the console width would
     # be exceeded.
     col_info = []
@@ -265,12 +321,14 @@ def to_rich_table(table, console_width=None):
     remaining = console_width - 1  # 1 char for left boundary
     for name, dtype in table.schema().items():
         formatted, min_width, max_width = format_column(
-            dtype, result[name].to_pylist()[:nrows]
+            dtype,
+            result[name].to_pylist()[:max_rows],
+            max_length=max_length,
+            max_string=max_string,
+            max_depth=max_depth,
         )
         dtype_str = format_dtype(dtype)
-        if ibis.options.repr.interactive.show_types and not isinstance(
-            dtype, (dt.Struct, dt.Map, dt.Array)
-        ):
+        if show_types and not isinstance(dtype, (dt.Struct, dt.Map, dt.Array)):
             # Don't truncate non-nested dtypes
             min_width = max(min_width, len(dtype_str))
 
@@ -368,7 +426,7 @@ def to_rich_table(table, console_width=None):
     else:
         add_row = rich_table.add_row
 
-    if ibis.options.repr.interactive.show_types:
+    if show_types:
         add_row(
             *(Align(s, align="left") for s in formatted_dtypes),
             end_section=True,
@@ -378,7 +436,7 @@ def to_rich_table(table, console_width=None):
         add_row(*row)
 
     # If the rows are truncated, add a trailing ellipsis row
-    if len(result) > nrows:
+    if len(result) > max_rows:
         rich_table.add_row(
             *(Align("[dim]…[/]", align=c.justify) for c in rich_table.columns)
         )

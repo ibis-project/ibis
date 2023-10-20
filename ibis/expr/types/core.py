@@ -75,20 +75,9 @@ class Expr(Immutable, Coercible):
         if not opts.interactive:
             return self._repr()
 
-        from ibis.expr.types.pretty import simple_console
+        from ibis.expr.types.pretty import pretty_repr
 
-        with simple_console.capture() as capture:
-            try:
-                simple_console.print(self)
-            except TranslationError as e:
-                lines = [
-                    "Translation to backend failed",
-                    f"Error message: {e.args[0]}",
-                    "Expression repr follows:",
-                    self._repr(),
-                ]
-                return "\n".join(lines)
-        return capture.get().rstrip()
+        return pretty_repr(self)
 
     def __reduce__(self):
         return (self.__class__, (self._arg,))

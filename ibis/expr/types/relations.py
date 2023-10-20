@@ -11,6 +11,7 @@ from typing import TYPE_CHECKING, Callable, Iterable, Literal, Mapping, Sequence
 
 import toolz
 from public import public
+from rich.table import Table as RichTable
 
 import ibis
 import ibis.common.exceptions as com
@@ -340,8 +341,6 @@ class Table(Expr, _FixedTextJupyterMixin):
         return self.select(*cols)
 
     def __interactive_rich_console__(self, console, options):
-        from ibis.expr.types.pretty import to_rich_table
-
         if console.is_jupyter:
             # Rich infers a console width in jupyter notebooks, but since
             # notebooks can use horizontal scroll bars we don't want to apply a
@@ -354,8 +353,81 @@ class Table(Expr, _FixedTextJupyterMixin):
         else:
             width = options.max_width
 
-        table = to_rich_table(self, width)
-        return console.render(table, options=options)
+        return console.render(self.preview(console_width=width), options=options)
+
+    def preview(
+        self,
+        *,
+        max_rows: int | None = None,
+        max_columns: int | None = None,
+        show_types: bool | None = None,
+        max_length: int | None = None,
+        max_string: int | None = None,
+        max_depth: int | None = None,
+        console_width: int | float | None = None,
+    ) -> RichTable:
+        """Pretty-print a preview using rich.
+
+        This is an explicit version of what you get when you inspect
+        this object in interactive mode, except with this version you
+        can pass formatting options. The options are the same as those exposed
+        in `ibis.options.interactive`.
+
+        Parameters
+        ----------
+        max_rows
+            Maximum number of rows to display
+        max_columns
+            Maximum number of columns to display
+        show_types
+            Whether to show column types in the 2nd row, under the column name
+        max_length
+            Maximum length for pretty-printed arrays and maps
+        max_string
+            Maximum length for pretty-printed strings
+        max_depth
+            Maximum depth for nested data types
+        console_width
+            Width of the console in characters. If not specified, the width
+            will be inferred from the console.
+
+        Examples
+        --------
+        >>> import ibis
+        >>> ibis.options.interactive = False
+        >>> t = ibis.examples.penguins.fetch()
+
+        Because the console_width is too small, only 2 columns are shown even though
+        we specified up to 3.
+
+        >>> t.preview(
+        ...     max_rows=3,
+        ...     max_columns=3,
+        ...     show_types=False,
+        ...     max_string=8,
+        ...     console_width=30,
+        ... )
+        ┏━━━━━━━━━┳━━━━━━━━━━┳━━━┓
+        ┃ species ┃ island   ┃ … ┃
+        ┡━━━━━━━━━╇━━━━━━━━━━╇━━━┩
+        │ Adelie  │ Torgers… │ … │
+        │ Adelie  │ Torgers… │ … │
+        │ Adelie  │ Torgers… │ … │
+        │ …       │ …        │ … │
+        └─────────┴──────────┴───┘
+        """
+        from ibis.expr.types.pretty import to_rich_table
+
+        return to_rich_table(
+            self,
+            max_columns=max_columns,
+            max_rows=max_rows,
+            show_types=show_types,
+            max_length=max_length,
+            max_string=max_string,
+            max_depth=max_depth,
+            console_width=console_width,
+        )
 
     def __getitem__(self, what):
         """Select items from a table expression.
