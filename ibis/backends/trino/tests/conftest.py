@@ -40,7 +40,7 @@ class TestConf(BackendTest, RoundAwayFromZero):
     supports_tpch = True
     deps = ("sqlalchemy", "trino.sqlalchemy")
 
-    _tpch_data_schema = "tpch.sf1"
+    _tpch_data_schema = "tpch.tiny"
     _tpch_query_schema = "hive.ibis_sf1"
 
     def preload(self):
