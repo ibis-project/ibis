@@ -365,7 +365,10 @@ class AlchemySelect(Select):
             )
 
         if n is not None:
-            fragment = fragment.limit(n)
+            try:
+                fragment = fragment.limit(n)
+            except AttributeError:
+                fragment = fragment.subquery().select().limit(n)
 
         offset = self.limit.offset
 
