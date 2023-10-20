@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+import geopandas as gpd
 import pytest
 
 import ibis
@@ -13,6 +14,19 @@ if TYPE_CHECKING:
     from collections.abc import Iterator
 
     from ibis.backends.base import BaseBackend
+
+TEST_TABLES_GEO = {
+    "zones": ibis.schema(
+        {
+            "zone": "string",
+            "LocationID": "int32",
+            "borough": "string",
+            "geom": "geometry",
+            "x_cent": "float32",
+            "y_cent": "float32",
+        }
+    )
+}
 
 
 class TestConf(BackendTest):
@@ -30,11 +44,21 @@ class TestConf(BackendTest):
     @property
     def ddl_script(self) -> Iterator[str]:
         parquet_dir = self.data_dir / "parquet"
+        geojson_dir = self.data_dir / "geojson"
         for table in TEST_TABLES:
             yield (
                 f"""
                 CREATE OR REPLACE TABLE {table} AS
                 SELECT * FROM read_parquet('{parquet_dir / f'{table}.parquet'}')
+                """
+            )
+        for table in TEST_TABLES_GEO:
+            yield (
+                f"""
+                INSTALL spatial;
+                LOAD spatial;
+                CREATE OR REPLACE TABLE {table} AS
+                SELECT * FROM st_read('{geojson_dir / f'{table}.geojson'}')
                 """
             )
         yield from super().ddl_script
@@ -55,3 +79,10 @@ class TestConf(BackendTest):
 @pytest.fixture(scope="session")
 def con(data_dir, tmp_path_factory, worker_id):
     return TestConf.load_data(data_dir, tmp_path_factory, worker_id).connection
+
+
+@pytest.fixture(scope="session")
+def zones_gdf(data_dir):
+    # pending merge https://github.com/ibis-project/testing-data/pull/5
+    gdf = gpd.read_file(data_dir / "geojson" / "zones.geojson")
+    return gdf
