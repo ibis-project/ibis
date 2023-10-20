@@ -2526,7 +2526,6 @@ def test_delta(con, start, end, unit, expected):
         "oracle",
         "pandas",
         "pyspark",
-        "snowflake",
         "sqlite",
         "trino",
     ],
@@ -2543,16 +2542,24 @@ def test_delta(con, start, end, unit, expected):
         param(
             {"milliseconds": 50},
             "50ms",
-            marks=pytest.mark.notimpl(
-                ["clickhouse"],
-                raises=com.UnsupportedOperationError,
-                reason="clickhouse doesn't support sub-second interval precision",
-            ),
+            marks=[
+                pytest.mark.notimpl(
+                    ["clickhouse"],
+                    raises=com.UnsupportedOperationError,
+                    reason="backend doesn't support sub-second interval precision",
+                ),
+                pytest.mark.notimpl(
+                    ["snowflake"],
+                    raises=sa.exc.ProgrammingError,
+                    reason="snowflake doesn't support sub-second interval precision",
+                ),
+            ],
+            id="milliseconds",
         ),
-        ({"seconds": 2}, "2s"),
-        ({"minutes": 5}, "300s"),
-        ({"hours": 2}, "2h"),
-        ({"days": 2}, "2D"),
+        param({"seconds": 2}, "2s", id="seconds"),
+        param({"minutes": 5}, "300s", id="minutes"),
+        param({"hours": 2}, "2h", id="hours"),
+        param({"days": 2}, "2D", id="days"),
     ],
 )
 def test_timestamp_bucket(backend, kws, pd_freq):
@@ -2573,7 +2580,6 @@ def test_timestamp_bucket(backend, kws, pd_freq):
         "oracle",
         "pandas",
         "pyspark",
-        "snowflake",
         "sqlite",
         "trino",
     ],
@@ -2585,11 +2591,11 @@ def test_timestamp_bucket(backend, kws, pd_freq):
     reason="Druid tests load timestamp_col as a string currently",
 )
 @pytest.mark.notimpl(
-    ["clickhouse", "mssql"],
+    ["clickhouse", "mssql", "snowflake"],
     reason="offset arg not supported",
     raises=com.UnsupportedOperationError,
 )
-@pytest.mark.parametrize("offset_mins", [2, -2])
+@pytest.mark.parametrize("offset_mins", [2, -2], ids=["pos", "neg"])
 def test_timestamp_bucket_offset(backend, offset_mins):
     ts = backend.functional_alltypes.timestamp_col.name("ts")
     expr = ts.bucket(minutes=5, offset=ibis.interval(minutes=offset_mins)).name("ts")

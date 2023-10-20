@@ -257,6 +257,24 @@ def _map_get(t, op):
     return sa.cast(expr, sqla_type)
 
 
+def _timestamp_bucket(t, op):
+    if op.offset is not None:
+        raise com.UnsupportedOperationError(
+            "`offset` is not supported in the Snowflake backend for timestamp bucketing"
+        )
+
+    interval = op.interval
+
+    if not isinstance(interval, ops.Literal):
+        raise com.UnsupportedOperationError(
+            f"Interval must be a literal for the Snowflake backend, got {type(interval)}"
+        )
+
+    return sa.func.time_slice(
+        t.translate(op.arg), interval.value, interval.dtype.unit.name
+    )
+
+
 _TIMESTAMP_UNITS_TO_SCALE = {"s": 0, "ms": 3, "us": 6, "ns": 9}
 
 _SF_POS_INF = sa.func.to_double("Inf")
@@ -471,6 +489,7 @@ operation_registry.update(
         ops.TimestampDelta: fixed_arity(
             lambda part, left, right: sa.func.timestampdiff(part, right, left), 3
         ),
+        ops.TimestampBucket: _timestamp_bucket,
     }
 )
 
