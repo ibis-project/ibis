@@ -498,6 +498,40 @@ operation_registry.update(
         ops.ToJSONArray: _to_json_collection,
         ops.ArrayFlatten: unary(sa.func.flatten),
         ops.IntegerRange: fixed_arity(sa.func.range, 3),
+        # geospatial
+        ops.GeoPoint: fixed_arity(sa.func.ST_Point, 2),
+        ops.GeoAsText: unary(sa.func.ST_AsText),
+        ops.GeoArea: unary(sa.func.ST_Area),
+        # ops.GeoBuffer: fixed_arity(sa.func.ST_Buffer, 2), duckdb sup 2 or 3?
+        ops.GeoCentroid: unary(sa.func.ST_Centroid),
+        ops.GeoContains: fixed_arity(sa.func.ST_Contains, 2),
+        # ops.GeoContainsProperly: fixed_arity(sa.func.ST_Contains, 2), ?
+        ops.GeoCovers: fixed_arity(sa.func.ST_Covers, 2),
+        ops.GeoCoveredBy: fixed_arity(sa.func.ST_CoveredBy, 2),
+        ops.GeoCrosses: fixed_arity(sa.func.ST_Crosses, 2),
+        ops.GeoDifference: fixed_arity(sa.func.ST_Difference, 2),
+        ops.GeoDisjoint: fixed_arity(sa.func.ST_Disjoint, 2),
+        ops.GeoDistance: fixed_arity(sa.func.ST_Distance, 2),
+        # ops.GeoDWithin: fixed_arity(sa.func.ST_DWithin, 3), see # https://github.com/ibis-project/ibis/issues/7427
+        ops.GeoEndPoint: unary(sa.func.ST_EndPoint),
+        ops.GeoEnvelope: unary(sa.func.ST_Envelope),
+        ops.GeoEquals: fixed_arity(sa.func.ST_Equals, 2),
+        ops.GeoGeometryType: unary(sa.func.ST_GeometryType),
+        ops.GeoIntersection: fixed_arity(sa.func.ST_Intersection, 2),
+        ops.GeoIntersects: fixed_arity(sa.func.ST_Intersects, 2),
+        ops.GeoIsValid: unary(sa.func.ST_IsValid),
+        ops.GeoLength: unary(sa.func.ST_Length),
+        ops.GeoNPoints: unary(sa.func.ST_NPoints),
+        ops.GeoOverlaps: fixed_arity(sa.func.ST_Overlaps, 2),
+        # ops.GeoSimplify 	fixed_arity(sa.func.ST_Simplify, 3) # ? ST_Simplify and ST_SimplifyPreserveTopology
+        ops.GeoStartPoint: unary(sa.func.ST_StartPoint),
+        ops.GeoTouches: fixed_arity(sa.func.ST_Touches, 2),
+        # ops.GeoTransform 	fixed_arity(sa.func.ST_Transform, 2) # ? ST_Transform(GEOMETRY, VARCHAR, VARCHAR)
+        # ops.GeoUnaryUnion 	unary(sa.func.ST_Union) # ? ST_Union_Agg
+        ops.GeoUnion: fixed_arity(sa.func.ST_Union, 2),
+        ops.GeoWithin: fixed_arity(sa.func.ST_Within, 2),
+        ops.GeoX: unary(sa.func.ST_X),
+        ops.GeoY: unary(sa.func.ST_Y),
     }
 )
 
