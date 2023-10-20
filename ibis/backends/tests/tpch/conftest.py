@@ -59,7 +59,10 @@ def tpch_test(test: Callable[..., ir.Table]):
         result_expr = test(*args, **kwargs)
 
         result = result_expr.execute()
+        assert not result.empty
+
         expected = expected_expr.execute()
+        assert not expected.empty
 
         assert list(map(str.lower, expected.columns)) == result.columns.tolist()
         expected.columns = result.columns
