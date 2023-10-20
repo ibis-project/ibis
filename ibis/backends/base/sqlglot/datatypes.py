@@ -352,6 +352,26 @@ class DuckDBType(SqlglotType):
     default_decimal_scale = 3
     default_interval_precision = "us"
 
+    @classmethod
+    def _from_sqlglot_TIMESTAMP(cls) -> dt.Timestamp:
+        return dt.Timestamp(scale=6, nullable=cls.default_nullable)
+
+    @classmethod
+    def _from_sqlglot_TIMESTAMPTZ(cls) -> dt.Timestamp:
+        return dt.Timestamp(scale=6, timezone="UTC", nullable=cls.default_nullable)
+
+    @classmethod
+    def _from_sqlglot_TIMESTAMP_S(cls) -> dt.Timestamp:
+        return dt.Timestamp(scale=0, nullable=cls.default_nullable)
+
+    @classmethod
+    def _from_sqlglot_TIMESTAMP_MS(cls) -> dt.Timestamp:
+        return dt.Timestamp(scale=3, nullable=cls.default_nullable)
+
+    @classmethod
+    def _from_sqlglot_TIMESTAMP_NS(cls) -> dt.Timestamp:
+        return dt.Timestamp(scale=9, nullable=cls.default_nullable)
+
 
 class TrinoType(SqlglotType):
     dialect = "trino"

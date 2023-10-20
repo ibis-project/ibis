@@ -29,8 +29,8 @@ from ibis.backends.duckdb.datatypes import DuckDBType
             ("SMALLINT", dt.int16),
             ("TIME", dt.time),
             ("TIME WITH TIME ZONE", dt.time),
-            ("TIMESTAMP", dt.timestamp),
-            ("TIMESTAMP WITH TIME ZONE", dt.Timestamp("UTC")),
+            ("TIMESTAMP", dt.Timestamp(scale=6)),
+            ("TIMESTAMP WITH TIME ZONE", dt.Timestamp(scale=6, timezone="UTC")),
             ("TINYINT", dt.int8),
             ("UBIGINT", dt.uint64),
             ("UINTEGER", dt.uint32),
@@ -53,6 +53,9 @@ from ibis.backends.duckdb.datatypes import DuckDBType
             ("INTEGER[][]", dt.Array(dt.Array(dt.int32))),
             ("JSON", dt.json),
             ("HUGEINT", dt.Decimal(38, 0)),
+            ("TIMESTAMP_S", dt.Timestamp(scale=0)),
+            ("TIMESTAMP_MS", dt.Timestamp(scale=3)),
+            ("TIMESTAMP_NS", dt.Timestamp(scale=9)),
         ]
     ],
 )

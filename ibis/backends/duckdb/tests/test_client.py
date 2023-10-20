@@ -3,9 +3,12 @@ from __future__ import annotations
 import duckdb
 import pytest
 import sqlalchemy as sa
+from pytest import param
 
 import ibis
+import ibis.expr.datatypes as dt
 from ibis.conftest import LINUX, SANDBOXED
+from ibis.util import gen_name
 
 
 @pytest.fixture(scope="session")
@@ -113,3 +116,19 @@ def test_attach_detach(tmpdir):
 
     with pytest.raises(sa.exc.ProgrammingError):
         con2.detach(name)
+
+
+@pytest.mark.parametrize(
+    "scale",
+    [
+        None,
+        param(0, id="seconds"),
+        param(3, id="millis"),
+        param(6, id="micros"),
+        param(9, id="nanos"),
+    ],
+)
+def test_create_table_with_timestamp_scales(con, scale):
+    schema = ibis.schema(dict(ts=dt.Timestamp(scale=scale)))
+    t = con.create_table(gen_name("duckdb_timestamp_scale"), schema=schema, temp=True)
+    assert t.schema() == schema
