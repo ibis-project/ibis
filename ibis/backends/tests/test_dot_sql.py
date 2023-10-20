@@ -306,3 +306,12 @@ def test_order_by_no_projection(backend):
 
     result = con.sql(ibis.to_sql(expr)).execute().name.iloc[:2]
     assert set(result) == {"Ross, Jerry L.", "Chang-Diaz, Franklin R."}
+
+
+@dot_sql_notimpl
+@dot_sql_notyet
+@dot_sql_never
+@pytest.mark.notyet(["polars"], raises=PolarsComputeError)
+def test_dot_sql_limit(con):
+    expr = con.sql("SELECT 'abc' ts").limit(1)
+    assert expr.execute().equals(pd.DataFrame({"ts": ["abc"]}))
