@@ -562,9 +562,13 @@ class Backend(BaseSQLBackend, CanCreateSchema, CanListDatabases):
                 as_of="7.1",
                 removed_in="8.0",
             )
-            database = sg.parse_one(database, into=sg.exp.Table).sql(dialect=self.name)
+            database = sg.parse_one(database, into=sg.exp.Table, read=self.name).sql(
+                dialect=self.name
+            )
         elif database is None and schema is not None:
-            database = sg.parse_one(schema, into=sg.exp.Table).sql(dialect=self.name)
+            database = sg.parse_one(schema, into=sg.exp.Table, read=self.name).sql(
+                dialect=self.name
+            )
         else:
             database = sg.table(schema, db=database).sql(dialect=self.name) or None
 
