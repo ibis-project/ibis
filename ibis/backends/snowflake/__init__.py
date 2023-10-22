@@ -497,7 +497,6 @@ $$""".format(
             types of `table`.
             :::
         """
-        query = "SHOW TABLES"
 
         if database is not None and schema is None:
             util.warn_deprecated(
@@ -517,13 +516,22 @@ $$""".format(
                 sg.table(schema, db=database, quoted=True).sql(dialect=self.name)
                 or None
             )
+
+        tables_query = "SHOW TABLES"
+        views_query = "SHOW VIEWS"
+
         if database is not None:
-            query += f" IN {database}"
+            tables_query += f" IN {database}"
+            views_query += f" IN {database}"
 
         with self.begin() as con:
-            tables = [row["name"] for row in con.exec_driver_sql(query).mappings()]
+            # TODO: considering doing this with a single query using information_schema
+            tables = [
+                row["name"] for row in con.exec_driver_sql(tables_query).mappings()
+            ]
+            views = [row["name"] for row in con.exec_driver_sql(views_query).mappings()]
 
-        return self._filter_with_like(tables, like=like)
+        return self._filter_with_like(tables + views, like=like)
 
     def _register_in_memory_table(self, op: ops.InMemoryTable) -> None:
         import pyarrow.parquet as pq
