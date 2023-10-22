@@ -485,6 +485,7 @@ _invalid_operations = {
     # ibis.expr.operations.temporal
     ops.IntervalFromInteger,
     ops.TimestampDiff,
+    ops.TimestampBucket,
 }
 
 operation_registry = {
