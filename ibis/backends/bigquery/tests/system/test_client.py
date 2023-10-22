@@ -40,14 +40,9 @@ def test_current_database(con, dataset_id):
         db = con.current_database
     assert db == dataset_id
     assert db == con.dataset_id
-    assert con.list_tables(database=db, like="alltypes") == con.list_tables(
+    assert con.list_tables(schema=db, like="alltypes") == con.list_tables(
         like="alltypes"
     )
-
-
-def test_database(con):
-    database = con.database(con.dataset_id)
-    assert database.list_tables(like="alltypes") == con.list_tables(like="alltypes")
 
 
 def test_array_collect(struct_table):
@@ -242,10 +237,10 @@ def test_set_database(con2):
 
 def test_exists_table_different_project(con):
     name = "co_daily_summary"
-    database = "bigquery-public-data.epa_historical_air_quality"
+    dataset = "bigquery-public-data.epa_historical_air_quality"
 
-    assert name in con.list_tables(database=database)
-    assert "foobar" not in con.list_tables(database=database)
+    assert name in con.list_tables(schema=dataset)
+    assert "foobar" not in con.list_tables(schema=dataset)
 
 
 def test_multiple_project_queries(con, snapshot):
