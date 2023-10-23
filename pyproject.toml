@@ -418,9 +418,9 @@ ignore = [
   "D213",    # Multi-line docstring summary should start at the second line
   "D401",    # Imperative mood
   "D402",    # First line should not be the function's signature
-  "E501",
-  "E731",
-  "PGH003",
+  "E501",    # line-tool-long, this is automatically enforce by black
+  "E731",    # lambda-assignment
+  "PGH003",  # blanket-type-ignore
   "PLC0105", # covariant type parameters should have a _co suffix
   "PLR0124", # name compared with self, e.g., a == a
   "PLR0911", # too many return statements
@@ -429,11 +429,11 @@ ignore = [
   "PLR0915", # too many statements
   "PLR2004", # forces everything to be a constant
   "PLW2901", # overwriting loop variable
-  "RET504",
-  "RET505",
-  "RET506",
-  "RET507",
-  "RET508",
+  "RET504",  # unnecessary-assign, these are useful for debugging
+  "RET505",  # superfluous-else-return, stylistic choice
+  "RET506",  # superfluous-else-raise, stylistic choice
+  "RET507",  # superfluous-else-continue, stylistic choice
+  "RET508",  # superfluous-else-break, stylistic choice
   "RUF005",  # splat instead of concat
   "RUF012",  # Mutable class attributes should be annotated with `typing.ClassVar`
   "SIM102",  # nested ifs
