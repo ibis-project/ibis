@@ -196,9 +196,7 @@ def parse_project_and_dataset(project: str, dataset: str = "") -> tuple[str, str
     """
     if dataset.count(".") > 1:
         raise ValueError(
-            "{} is not a BigQuery dataset. More info https://cloud.google.com/bigquery/docs/datasets-intro".format(
-                dataset
-            )
+            f"{dataset} is not a BigQuery dataset. More info https://cloud.google.com/bigquery/docs/datasets-intro"
         )
     elif dataset.count(".") == 1:
         data_project, dataset = dataset.split(".")
