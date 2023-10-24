@@ -1,48 +1,32 @@
 WITH t0 AS (
-  SELECT t5.`diag`, t5.`status`
-  FROM aids2_two t5
+  SELECT t3.`diag` + 1 AS `diag`, t3.`status`
+  FROM aids2_two t3
 ),
 t1 AS (
-  SELECT t5.`diag`, t5.`status`
-  FROM aids2_one t5
-),
-t2 AS (
-  SELECT t0.`diag` + 1 AS `diag`, t0.`status`
-  FROM t0
-),
-t3 AS (
-  SELECT t1.`diag` + 1 AS `diag`, t1.`status`
-  FROM t1
+  SELECT t3.`diag` + 1 AS `diag`, t3.`status`
+  FROM aids2_one t3
 )
-SELECT t4.`diag`, t4.`status`
+SELECT t2.`diag`, t2.`status`
 FROM (
   WITH t0 AS (
-    SELECT t5.`diag`, t5.`status`
-    FROM aids2_two t5
+    SELECT t3.`diag` + 1 AS `diag`, t3.`status`
+    FROM aids2_two t3
   ),
   t1 AS (
-    SELECT t5.`diag`, t5.`status`
-    FROM aids2_one t5
-  ),
-  t2 AS (
-    SELECT t0.`diag` + 1 AS `diag`, t0.`status`
-    FROM t0
+    SELECT t3.`diag` + 1 AS `diag`, t3.`status`
+    FROM aids2_one t3
   ),
   t3 AS (
-    SELECT t1.`diag` + 1 AS `diag`, t1.`status`
+    SELECT CAST(t0.`diag` AS int) AS `diag`, t0.`status`
+    FROM t0
+  ),
+  t4 AS (
+    SELECT CAST(t1.`diag` AS int) AS `diag`, t1.`status`
     FROM t1
-  ),
-  t5 AS (
-    SELECT CAST(t2.`diag` AS int) AS `diag`, t2.`status`
-    FROM t2
-  ),
-  t6 AS (
-    SELECT CAST(t3.`diag` AS int) AS `diag`, t3.`status`
-    FROM t3
   )
   SELECT *
-  FROM t6
+  FROM t4
   UNION ALL
   SELECT *
-  FROM t5
-) t4
+  FROM t3
+) t2

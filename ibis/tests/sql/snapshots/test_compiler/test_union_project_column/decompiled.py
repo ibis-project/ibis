@@ -32,6 +32,5 @@ union = (
         ).filter(functional_alltypes.int_col <= lit)
     )
 )
-proj = union.select([union.key, union.value])
 
-result = proj.select(proj.key)
+result = union.select(union.key)

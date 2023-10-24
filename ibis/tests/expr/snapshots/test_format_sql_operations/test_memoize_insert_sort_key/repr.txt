@@ -33,19 +33,15 @@ r1 := Selection[r0]
   selections:
     arrdelay: r0.arrdelay
     dest:     r0.dest
+    dest_avg: WindowFunction(func=Mean(r0.arrdelay), frame=RowsWindowFrame(table=r0, group_by=[r0.dest]))
+    dev:      r0.arrdelay - WindowFunction(func=Mean(r0.arrdelay), frame=RowsWindowFrame(table=r0, group_by=[r0.dest]))
 
 r2 := Selection[r1]
-  selections:
-    r1
-    dest_avg: WindowFunction(func=Mean(r1.arrdelay), frame=RowsWindowFrame(table=r1, group_by=[r1.dest]))
-    dev:      r1.arrdelay - WindowFunction(func=Mean(r1.arrdelay), frame=RowsWindowFrame(table=r1, group_by=[r1.dest]))
+  predicates:
+    NotNull(r1.dev)
 
 r3 := Selection[r2]
-  predicates:
-    NotNull(r2.dev)
-
-r4 := Selection[r3]
   sort_keys:
-    desc r3.dev
+    desc r2.dev
 
-Limit[r4, n=10]
+Limit[r3, n=10]

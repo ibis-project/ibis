@@ -33,6 +33,5 @@ difference = (
         distinct=True,
     )
 )
-proj = difference.select([difference.key, difference.value])
 
-result = proj.select(proj.key)
+result = difference.select(difference.key)

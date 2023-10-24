@@ -5,16 +5,14 @@ r1 := Selection[r0]
   predicates:
     r0.a < 42
     r0.a >= 42
-
-r2 := Selection[r1]
   selections:
-    r1
-    x: r1.a + 42
+    r0
+    x: r0.a + 42
 
-r3 := Aggregation[r2]
+r2 := Aggregation[r1]
   metrics:
-    y: Sum(r2.a)
+    y: Sum(r1.a)
   by:
-    x: r2.x
+    x: r1.x
 
-Limit[r3, n=10]
+Limit[r2, n=10]
