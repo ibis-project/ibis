@@ -1102,25 +1102,39 @@ def test_inner_join_overlapping_column_names():
     ]
 
 
-def test_join_key_alternatives(con):
+@pytest.mark.parametrize(
+    "key_maker",
+    [
+        lambda t1, t2: t1.foo_id == t2.foo_id,
+        lambda t1, t2: [("foo_id", "foo_id")],
+        lambda t1, t2: [(t1.foo_id, t2.foo_id)],
+        lambda t1, t2: [(_.foo_id, _.foo_id)],
+        lambda t1, t2: [(t1.foo_id, _.foo_id)],
+        lambda t1, t2: [(2, 0)],  # foo_id is 2nd in t1, 0th in t2
+        lambda t1, t2: [(lambda t: t.foo_id, lambda t: t.foo_id)],
+    ],
+)
+def test_join_key_alternatives(con, key_maker):
     t1 = con.table("star1")
     t2 = con.table("star2")
-
-    # Join with tuples
-    joined = t1.inner_join(t2, [("foo_id", "foo_id")])
-    joined2 = t1.inner_join(t2, [(t1.foo_id, t2.foo_id)])
-
-    # Join with single expr
-    joined3 = t1.inner_join(t2, t1.foo_id == t2.foo_id)
-
     expected = t1.inner_join(t2, [t1.foo_id == t2.foo_id])
-
+    key = key_maker(t1, t2)
+    joined = t1.inner_join(t2, key)
     assert_equal(joined, expected)
-    assert_equal(joined2, expected)
-    assert_equal(joined3, expected)
 
-    with pytest.raises(com.ExpressionError):
-        t1.inner_join(t2, [("foo_id", "foo_id", "foo_id")])
+
+@pytest.mark.parametrize(
+    "key,error",
+    [
+        ([("foo_id", "foo_id", "foo_id")], com.ExpressionError),
+        ([(s.c("foo_id"), s.c("foo_id"))], ValueError),
+    ],
+)
+def test_join_key_invalid(con, key, error):
+    t1 = con.table("star1")
+    t2 = con.table("star2")
+    with pytest.raises(error):
+        t1.inner_join(t2, key)
 
 
 def test_join_invalid_refs(con):
