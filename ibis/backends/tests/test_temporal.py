@@ -1024,9 +1024,8 @@ timestamp_value = pd.Timestamp("2018-01-01 18:18:18")
         ),
     ],
 )
-@pytest.mark.notimpl(
-    ["datafusion", "mssql", "oracle"], raises=com.OperationNotDefinedError
-)
+@pytest.mark.notimpl(["mssql", "oracle"], raises=com.OperationNotDefinedError)
+@pytest.mark.broken(["datafusion"], raises=BaseException)
 def test_temporal_binop(backend, con, alltypes, df, expr_fn, expected_fn):
     expr = expr_fn(alltypes, backend).name("tmp")
     expected = expected_fn(df, backend)
@@ -1340,7 +1339,7 @@ def test_timestamp_comparison_filter_numpy(backend, con, alltypes, df, func_name
 
 
 @pytest.mark.notimpl(
-    ["datafusion", "sqlite", "snowflake", "mssql", "oracle"],
+    ["sqlite", "snowflake", "mssql", "oracle"],
     raises=com.OperationNotDefinedError,
 )
 @pytest.mark.broken(
@@ -1361,7 +1360,7 @@ def test_interval_add_cast_scalar(backend, alltypes):
     ["pyspark"], reason="PySpark does not support casting columns to intervals"
 )
 @pytest.mark.notimpl(
-    ["datafusion", "sqlite", "snowflake", "mssql", "oracle"],
+    ["sqlite", "snowflake", "mssql", "oracle"],
     raises=com.OperationNotDefinedError,
 )
 @pytest.mark.notimpl(
@@ -1651,7 +1650,7 @@ def test_string_to_timestamp(alltypes, fmt):
 @pytest.mark.notimpl(["mssql", "druid", "oracle"], raises=com.OperationNotDefinedError)
 @pytest.mark.notimpl(["impala"], raises=com.UnsupportedBackendType)
 @pytest.mark.xfail_version(
-    datafusion=["datafusion<31"],
+    datafusion=["datafusion"],
     raises=Exception,
     reason="Exception: Arrow error: Cast error: Cannot cast string to value of Date64 type",
 )
@@ -2044,7 +2043,7 @@ INTERVAL_BACKEND_TYPES = {
     ["bigquery"], reason="BigQuery returns DateOffset arrays", raises=AssertionError
 )
 @pytest.mark.xfail_version(
-    datafusion=["datafusion<31"],
+    datafusion=["datafusion"],
     raises=Exception,
     reason='This feature is not implemented: Can\'t create a scalar from array of type "Duration(Second)"',
 )
@@ -2140,11 +2139,6 @@ def test_timestamp_column_from_ymdhms(con, alltypes, df):
     ),
 )
 @pytest.mark.notimpl(["impala"], raises=com.UnsupportedBackendType)
-@pytest.mark.xfail_version(
-    datafusion=["datafusion<31"],
-    raises=Exception,
-    reason="Arrow error: Cast error: Cannot cast string '2022-02-24' to value of Date64 type",
-)
 @pytest.mark.notimpl(
     ["oracle"], raises=sa.exc.DatabaseError, reason="ORA-01861 literal does not match"
 )
@@ -2163,11 +2157,6 @@ def test_date_scalar_from_iso(con):
     reason="java.lang.UnsupportedOperationException: class org.apache.calcite.sql.SqlIdentifier: STRING",
 )
 @pytest.mark.notimpl(["impala"], raises=com.UnsupportedBackendType)
-@pytest.mark.xfail_version(
-    datafusion=["datafusion<31"],
-    raises=Exception,
-    reason="Arrow error: Cast error: Cannot cast string '2010-11-13' to value of Date64 type",
-)
 @pytest.mark.notyet(
     ["oracle"],
     raises=sa.exc.DatabaseError,
@@ -2279,6 +2268,14 @@ def test_integer_cast_to_timestamp_scalar(alltypes, df):
     reason="PySpark doesn't handle big timestamps",
     raises=pd.errors.OutOfBoundsDatetime,
 )
+@pytest.mark.notimpl(
+    ["datafusion"],
+    raises=Exception,
+    reason=(
+        "Exception: Arrow error: Parser error: The dates that can be represented as nanoseconds have to be "
+        "between 1677-09-21T00:12:44.0 and 2262-04-11T23:47:16.854775804"
+    ),
+)
 def test_big_timestamp(con):
     # TODO: test with a timezone
     value = ibis.timestamp("2419-10-11 10:10:25")
@@ -2305,11 +2302,6 @@ def build_date_col(t):
     ["druid"],
     raises=sa.exc.CompileError,
     reason='No literal value renderer is available for literal value "datetime.date(2010, 11, 1)" with datatype DATE',
-)
-@pytest.mark.xfail_version(
-    datafusion=["datafusion<31"],
-    raises=Exception,
-    reason="Arrow error: Cast error: Cannot cast string '2010-11-01' to value of Date64 type",
 )
 @pytest.mark.notyet(
     ["impala"],
@@ -2364,6 +2356,14 @@ def test_timestamp_date_comparison(backend, alltypes, df, left_fn, right_fn):
     reason=(
         "called `Result::unwrap()` on an `Err` value: PyErr { type: <class 'OverflowError'>, "
         "value: OverflowError('int too big to convert'), traceback: None }"
+    ),
+)
+@pytest.mark.notimpl(
+    ["datafusion"],
+    raises=Exception,
+    reason=(
+        "Exception: Arrow error: Parser error: The dates that can be represented as nanoseconds have to be "
+        "between 1677-09-21T00:12:44.0 and 2262-04-11T23:47:16.854775804"
     ),
 )
 def test_large_timestamp(con):
@@ -2448,6 +2448,11 @@ def test_large_timestamp(con):
     raises=sa.exc.DatabaseError,
     reason="ORA-01843: invalid month was specified",
 )
+@pytest.mark.notimpl(
+    ["datafusion"],
+    raises=Exception,
+    reason="Exception: DataFusion error: NotImplemented",
+)
 def test_timestamp_precision_output(con, ts, scale, unit):
     dtype = dt.Timestamp(scale=scale)
     expr = ibis.literal(ts).cast(dtype)
@@ -2519,7 +2524,6 @@ def test_delta(con, start, end, unit, expected):
     [
         "bigquery",
         "dask",
-        "datafusion",
         "flink",
         "impala",
         "mysql",
@@ -2553,13 +2557,58 @@ def test_delta(con, start, end, unit, expected):
                     raises=sa.exc.ProgrammingError,
                     reason="snowflake doesn't support sub-second interval precision",
                 ),
+                pytest.mark.notimpl(
+                    ["datafusion"],
+                    raises=com.UnsupportedOperationError,
+                    reason="backend doesn't support sub-second interval precision",
+                ),
             ],
             id="milliseconds",
         ),
-        param({"seconds": 2}, "2s", id="seconds"),
-        param({"minutes": 5}, "300s", id="minutes"),
-        param({"hours": 2}, "2h", id="hours"),
-        param({"days": 2}, "2D", id="days"),
+        param(
+            {"seconds": 2},
+            "2s",
+            marks=[
+                pytest.mark.notimpl(
+                    ["datafusion"],
+                    raises=com.OperationNotDefinedError,
+                ),
+            ],
+            id="seconds",
+        ),
+        param(
+            {"minutes": 5},
+            "300s",
+            marks=[
+                pytest.mark.notimpl(
+                    ["datafusion"],
+                    raises=com.OperationNotDefinedError,
+                ),
+            ],
+            id="minutes",
+        ),
+        param(
+            {"hours": 2},
+            "2h",
+            marks=[
+                pytest.mark.notimpl(
+                    ["datafusion"],
+                    raises=com.OperationNotDefinedError,
+                ),
+            ],
+            id="hours",
+        ),
+        param(
+            {"days": 2},
+            "2D",
+            marks=[
+                pytest.mark.notimpl(
+                    ["datafusion"],
+                    raises=com.OperationNotDefinedError,
+                ),
+            ],
+            id="days",
+        ),
     ],
 )
 def test_timestamp_bucket(backend, kws, pd_freq):

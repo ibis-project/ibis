@@ -41,7 +41,6 @@ def test_rowid(backend):
     "column",
     ["string_col", "double_col", "date_string_col", "timestamp_col"],
 )
-@pytest.mark.notimpl(["datafusion"], raises=com.OperationNotDefinedError)
 def test_distinct_column(alltypes, df, column):
     expr = alltypes[[column]].distinct()
     result = expr.execute()
