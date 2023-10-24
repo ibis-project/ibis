@@ -1426,15 +1426,18 @@ class PatternList(Slotted, Pattern):
 
     @classmethod
     def __create__(cls, patterns, type=list):
+        if patterns == ():
+            return EqualTo(patterns)
+
         patterns = tuple(map(pattern, patterns))
         for pat in patterns:
             pat = _maybe_unwrap_capture(pat)
             if isinstance(pat, (SomeOf, SomeChunksOf)):
                 return VariadicPatternList(patterns, type)
+
         return super().__create__(patterns, type)
 
     def __init__(self, patterns, type):
-        patterns = tuple(map(pattern, patterns))
         super().__init__(patterns=patterns, type=type)
 
     def describe(self, plural=False):
@@ -1584,12 +1587,15 @@ def pattern(obj: AnyType) -> Pattern:
         return Capture(obj)
     elif isinstance(obj, Mapping):
         raise TypeError("Cannot create a pattern from a mapping")
+    elif isinstance(obj, Sequence):
+        if isinstance(obj, (str, bytes)):
+            return EqualTo(obj)
+        else:
+            return PatternList(obj, type=type(obj))
     elif isinstance(obj, type):
         return InstanceOf(obj)
     elif get_origin(obj):
         return Pattern.from_typehint(obj, allow_coercion=False)
-    elif is_iterable(obj):
-        return PatternList(obj)
     elif callable(obj):
         return Custom(obj)
     else:

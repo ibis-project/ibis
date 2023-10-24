@@ -842,6 +842,11 @@ def test_matching_sequence_pattern():
     assert match([Some(...), 2, 3, 4, Some(...)], list(range(8))) == list(range(8))
 
 
+def test_matching_sequence_pattern_keeps_original_type():
+    assert match([1, 2, 3, 4, Some(...)], tuple(range(1, 9))) == list(range(1, 9))
+    assert match((1, 2, 3, Some(...)), [1, 2, 3, 4, 5]) == (1, 2, 3, 4, 5)
+
+
 def test_matching_sequence_with_captures():
     v = list(range(1, 9))
     assert match([1, 2, 3, 4, Some(...)], v) == v
