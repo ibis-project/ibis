@@ -155,15 +155,41 @@ def can_prune_projection(projection, context):
     return projection
 
 
+# TODO(kszucs): merge this rewrite rule pushdown_selection_filters() and
+# simplify_aggregation() analysis functions since their logic is almost
+# identical
 @replace(
     p.Selection(parent @ p.Selection(~p.Join, selections=parent_fields), selections=fields)
     & can_prune_projection
 )
 def prune_subsequent_projection(_, parent, fields, parent_fields):
-    print("="*80)
-    print(_.to_expr())
-
-    pattern = Eq(parent) >> parent.table
+    # needed to support the ibis/tests/sql/test_select_sql.py::test_fuse_projections
+    # test case which wouldn't work with Eq(parent) since it calls
+    # filtered_table.select(table.field) referencing a different but semantically
+    # equivalent table object r2 instead of r1
+    #
+    # r0 := UnboundTable: tbl
+    #   foo   int32
+    #   bar   int64
+    #   value float64
+    #
+    # r1 := Selection[r0]
+    #   predicates:
+    #     r0.value > 0
+    #   selections:
+    #     r0
+    #     baz: r0.foo + r0.bar
+    #
+    # r2 := Selection[r0]
+    #   selections:
+    #     r0
+    #     baz: r0.foo + r0.bar
+    #
+    # Selection[r1]
+    #   selections:
+    #     r2
+    #     qux: r2.foo * 2
+    pattern = p.Projection(parent.table, parent.selections) >> parent.table
 
     selections = []
     for field in fields:
@@ -178,7 +204,4 @@ def prune_subsequent_projection(_, parent, fields, parent_fields):
         else:
             selections.append(field.replace(pattern))
 
-    res = parent.copy(selections=selections)
-    print('-'*80)
-    print(res.to_expr())
-    return res
+    return parent.copy(selections=selections)

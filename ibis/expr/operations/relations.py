@@ -407,6 +407,7 @@ class SelfReference(Relation):
         return self.table.schema
 
 
+@public
 class Projection(Relation):
     table: Relation
     selections: VarTuple[Relation | Value]
