@@ -294,6 +294,8 @@ class Projector:
                 # print(new.to_expr())
                 # print("==========")
                 # print(fused_op.to_expr())
+                # breakpoint()
+                raise ValueError()
                 return fused_op
 
         return ops.Selection(self.parent, self.clean_exprs)

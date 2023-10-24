@@ -88,6 +88,7 @@ r = var("r")
 parent = var("parent")
 fields = var("fields")
 parent_fields = var("parent_fields")
+peeled_fields = var("peeled_fields")
 
 # reprojection of the same fields from the parent selection
 rewrite_redundant_selection = (
@@ -124,14 +125,14 @@ rewrite_redundant_selection = (
 #     col2: r0.col + 2
 
 
-def can_prune_projection(projection, context):
+def can_prune_parent_projection(_, context):
     parent = context["parent"]
     fields = context["fields"]
     parent_fields = context["parent_fields"]
 
-    projected_column_names = []
+    columns, conflicts = {}, {}
     for value in parent_fields:
-        if isinstance(value, (ops.Relation, ops.TableColumn)):
+        if isinstance(value, ops.Relation):
             # we are only interested in projected value expressions, not tables
             # nor column references which are not changing the projection
             continue
@@ -139,29 +140,45 @@ def can_prune_projection(projection, context):
             # the parent has analytic projections like window functions so we
             # can't push down filters to that level
             return NoMatch
+        elif isinstance(value, ops.TableColumn):
+            columns[value.name] = value
         else:
             # otherwise collect the names of newly projected value expressions
             # which are not just plain column references
-            projected_column_names.append(value.name)
+            conflicts[value.name] = value
 
-    conflicting_table_columns = p.TableColumn(parent, In(projected_column_names))
-    for value in fields:
-        if value.match(conflicting_table_columns, filter=ops.Value):
+    peeled_fields = []
+    reprojected_columns = p.TableColumn(parent, In(columns))
+    conflicting_columns = p.TableColumn(parent, In(conflicts))
+
+    for field in fields:
+        if field == parent:
+            if parent_fields:
+                peeled_fields.extend(parent_fields)
+            else:
+                # order_by() and filter() creates selections objects with empty
+                # selections field, so we need to add the parent table to the
+                # selections explicitly, should add selections=[self] there instead
+                peeled_fields.append(parent.table)
+        elif field.match(conflicting_columns, filter=ops.Value):
             return NoMatch
+        elif reprojected_columns.match(field, {}) is not NoMatch:
+            peeled_fields.append(columns[field.name])
+        else:
+            peeled_fields.append(field)
 
-    return projection
+    context["peeled_fields"] = peeled_fields
+    return _
 
 
 # TODO(kszucs): merge this rewrite rule pushdown_selection_filters() and
 # simplify_aggregation() analysis functions since their logic is almost
 # identical
 @replace(
-    p.Selection(
-        parent @ p.Selection(~p.Join, selections=parent_fields), selections=fields
-    )
-    & can_prune_projection
+    p.Selection(parent @ p.Selection(selections=parent_fields), selections=fields)
+    & can_prune_parent_projection
 )
-def prune_subsequent_projection(_, parent, fields, parent_fields):
+def prune_subsequent_projection(_, parent, fields, parent_fields, peeled_fields):
     # needed to support the ibis/tests/sql/test_select_sql.py::test_fuse_projections
     # test case which wouldn't work with Eq(parent) since it calls
     # filtered_table.select(table.field) referencing a different but semantically
@@ -189,18 +206,5 @@ def prune_subsequent_projection(_, parent, fields, parent_fields):
     #     r2
     #     qux: r2.foo * 2
     pattern = p.Projection(parent.table, parent.selections) >> parent.table
-
-    selections = []
-    for field in fields:
-        if field == parent:
-            if parent_fields:
-                selections.extend(parent_fields)
-            else:
-                # order_by() and filter() creates selections objects with empty
-                # selections field, so we need to add the parent table to the
-                # selections explicitly, should add selections=[self] there instead
-                selections.append(parent.table)
-        else:
-            selections.append(field.replace(pattern))
-
+    selections = [field.replace(pattern) for field in peeled_fields]
     return parent.copy(selections=selections)
