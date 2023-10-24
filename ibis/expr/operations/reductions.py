@@ -154,10 +154,25 @@ class Sum(Filterable, Reduction):
 
     @attribute
     def dtype(self):
-        if self.arg.dtype.is_boolean():
+        dtype = self.arg.dtype
+        if dtype.is_boolean():
             return dt.int64
+        elif dtype.is_integer():
+            return dt.int64
+        elif dtype.is_unsigned_integer():
+            return dt.uint64
+        elif dtype.is_floating():
+            return dt.float64
+        elif dtype.is_decimal():
+            return dt.Decimal(
+                precision=max(dtype.precision, 38)
+                if dtype.precision is not None
+                else None,
+                scale=max(dtype.scale, 2) if dtype.scale is not None else None,
+            )
+
         else:
-            return self.arg.dtype.largest
+            raise TypeError(f"Cannot compute sum of {dtype} values")
 
 
 @public
@@ -204,8 +219,8 @@ class VarianceBase(Filterable, Reduction):
 
     @attribute
     def dtype(self):
-        if (dtype := self.arg.dtype).is_decimal():
-            return dtype.largest
+        if self.arg.dtype.is_decimal():
+            return self.arg.dtype
         else:
             return dt.float64
 

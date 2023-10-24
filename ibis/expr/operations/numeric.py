@@ -180,14 +180,17 @@ class MathUnary(Unary):
 
     @attribute
     def dtype(self):
-        return dt.higher_precedence(self.arg.dtype, dt.double)
+        return dt.higher_precedence(self.arg.dtype, dt.float64)
 
 
 @public
 class ExpandingMathUnary(MathUnary):
     @attribute
     def dtype(self):
-        return dt.higher_precedence(self.arg.dtype.largest, dt.double)
+        if self.arg.dtype.is_decimal():
+            return self.arg.dtype
+        else:
+            return dt.float64
 
 
 @public
