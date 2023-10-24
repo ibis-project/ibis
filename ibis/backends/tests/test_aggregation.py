@@ -273,10 +273,6 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
             lambda t, where: t.bool_col[where].any(),
             id="any",
             marks=[
-                pytest.mark.notimpl(
-                    ["datafusion"],
-                    raises=com.OperationNotDefinedError,
-                ),
                 pytest.mark.broken(
                     ["druid"],
                     raises=AttributeError,
@@ -289,10 +285,6 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
             lambda t, where: ~t.bool_col[where].any(),
             id="notany",
             marks=[
-                pytest.mark.notimpl(
-                    ["datafusion"],
-                    raises=com.OperationNotDefinedError,
-                ),
                 pytest.mark.broken(
                     ["druid"],
                     raises=AttributeError,
@@ -310,10 +302,6 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
             lambda t, where: ~t.bool_col[where].any(),
             id="any_negate",
             marks=[
-                pytest.mark.notimpl(
-                    ["datafusion"],
-                    raises=com.OperationNotDefinedError,
-                ),
                 pytest.mark.broken(
                     ["druid"],
                     raises=AttributeError,
@@ -331,10 +319,6 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
             lambda t, where: t.bool_col[where].all(),
             id="all",
             marks=[
-                pytest.mark.notimpl(
-                    ["datafusion"],
-                    raises=com.OperationNotDefinedError,
-                ),
                 pytest.mark.broken(
                     ["druid"],
                     raises=AttributeError,
@@ -347,10 +331,6 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
             lambda t, where: ~t.bool_col[where].all(),
             id="notall",
             marks=[
-                pytest.mark.notimpl(
-                    ["datafusion"],
-                    raises=com.OperationNotDefinedError,
-                ),
                 pytest.mark.broken(
                     ["druid"],
                     raises=AttributeError,
@@ -368,10 +348,6 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
             lambda t, where: ~t.bool_col[where].all(),
             id="all_negate",
             marks=[
-                pytest.mark.notimpl(
-                    ["datafusion"],
-                    raises=com.OperationNotDefinedError,
-                ),
                 pytest.mark.broken(
                     ["druid"],
                     raises=AttributeError,
@@ -533,9 +509,7 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
             lambda t, where: t.string_col.approx_nunique(where=where),
             lambda t, where: t.string_col[where].nunique(),
             id="approx_nunique",
-            marks=pytest.mark.notimpl(
-                ["polars", "datafusion"], raises=com.OperationNotDefinedError
-            ),
+            marks=pytest.mark.notimpl(["polars"], raises=com.OperationNotDefinedError),
         ),
         param(
             lambda t, where: t.double_col.arbitrary(where=where),
@@ -617,7 +591,7 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
             lambda t, where: t.double_col[where].iloc[0],
             id="first",
             marks=pytest.mark.notimpl(
-                ["dask", "datafusion", "druid", "impala", "mssql", "mysql", "oracle"],
+                ["dask", "druid", "impala", "mssql", "mysql", "oracle"],
                 raises=com.OperationNotDefinedError,
             ),
         ),
@@ -626,7 +600,7 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
             lambda t, where: t.double_col[where].iloc[-1],
             id="last",
             marks=pytest.mark.notimpl(
-                ["dask", "datafusion", "druid", "impala", "mssql", "mysql", "oracle"],
+                ["dask", "druid", "impala", "mssql", "mysql", "oracle"],
                 raises=com.OperationNotDefinedError,
             ),
         ),
@@ -636,7 +610,7 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
             id="bit_and",
             marks=[
                 pytest.mark.notimpl(
-                    ["polars", "datafusion", "mssql"],
+                    ["polars", "mssql"],
                     raises=com.OperationNotDefinedError,
                 ),
                 pytest.mark.notimpl(["druid"], strict=False, raises=AssertionError),
@@ -660,7 +634,7 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
             id="bit_or",
             marks=[
                 pytest.mark.notimpl(
-                    ["polars", "datafusion", "mssql"],
+                    ["polars", "mssql"],
                     raises=com.OperationNotDefinedError,
                 ),
                 pytest.mark.notyet(
@@ -684,7 +658,7 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
             id="bit_xor",
             marks=[
                 pytest.mark.notimpl(
-                    ["polars", "datafusion", "mssql"],
+                    ["polars", "mssql"],
                     raises=com.OperationNotDefinedError,
                 ),
                 pytest.mark.notyet(
@@ -746,13 +720,11 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
             lambda t: t.string_col.isin(["1", "7"]),
             lambda t: t.string_col.isin(["1", "7"]),
             id="is_in",
-            marks=[mark.broken(["datafusion"], raises=AssertionError)],
         ),
         param(
             lambda _: ibis._.string_col.isin(["1", "7"]),
             lambda t: t.string_col.isin(["1", "7"]),
             id="is_in_deferred",
-            marks=[mark.broken(["datafusion"], raises=AssertionError)],
         ),
     ],
 )

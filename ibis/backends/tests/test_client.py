@@ -817,7 +817,6 @@ def test_agg_memory_table(con):
 @pytest.mark.broken(
     ["polars"], reason="join column renaming is currently incorrect on polars"
 )
-@pytest.mark.notimpl(["datafusion"])
 def test_self_join_memory_table(backend, con):
     t = ibis.memtable({"x": [1, 2], "y": [2, 1], "z": ["a", "b"]})
     t_view = t.view()

@@ -99,7 +99,14 @@ def calc_zscore(s):
             lambda t, win: t.float_col.lag().over(win),
             lambda t: t.float_col.shift(1),
             id="lag",
-            marks=pytest.mark.notimpl(["dask"], raises=NotImplementedError),
+            marks=[
+                pytest.mark.notimpl(["dask"], raises=NotImplementedError),
+                pytest.mark.broken(
+                    ["datafusion"],
+                    raises=Exception,
+                    reason="Exception: Internal error: Expects default value to have Int64 type.",
+                ),
+            ],
         ),
         param(
             lambda t, win: t.float_col.lead().over(win),
@@ -111,6 +118,11 @@ def calc_zscore(s):
                     reason="upstream is broken; returns all nulls",
                     raises=AssertionError,
                 ),
+                pytest.mark.broken(
+                    ["datafusion"],
+                    reason="Exception: Internal error: Expects default value to have Int64 type.",
+                    raises=BaseException,
+                ),
                 pytest.mark.notimpl(["dask"], raises=NotImplementedError),
             ],
         ),
@@ -118,13 +130,27 @@ def calc_zscore(s):
             lambda t, win: t.id.rank().over(win),
             lambda t: t.id.rank(method="min").astype("int64") - 1,
             id="rank",
-            marks=[pytest.mark.notimpl(["dask"], raises=NotImplementedError)],
+            marks=[
+                pytest.mark.notimpl(["dask"], raises=NotImplementedError),
+                pytest.mark.broken(
+                    ["datafusion"],
+                    raises=AssertionError,
+                    reason="Results are shifted + 1",
+                ),
+            ],
         ),
         param(
             lambda t, win: t.id.dense_rank().over(win),
             lambda t: t.id.rank(method="dense").astype("int64") - 1,
             id="dense_rank",
-            marks=[pytest.mark.notimpl(["dask"], raises=NotImplementedError)],
+            marks=[
+                pytest.mark.notimpl(["dask"], raises=NotImplementedError),
+                pytest.mark.broken(
+                    ["datafusion"],
+                    raises=AssertionError,
+                    reason="Results are shifted + 1",
+                ),
+            ],
         ),
         param(
             lambda t, win: t.id.percent_rank().over(win),
@@ -159,7 +185,7 @@ def calc_zscore(s):
             id="ntile",
             marks=[
                 pytest.mark.notimpl(
-                    ["dask", "pandas", "polars", "datafusion"],
+                    ["dask", "pandas", "polars"],
                     raises=com.OperationNotDefinedError,
                 ),
                 pytest.mark.notyet(
@@ -171,6 +197,11 @@ def calc_zscore(s):
                     ["impala"],
                     raises=AssertionError,
                     reason="Results don't match; possibly due to ordering",
+                ),
+                pytest.mark.broken(
+                    ["datafusion"],
+                    raises=AssertionError,
+                    reason="Results are shifted + 1",
                 ),
             ],
         ),
@@ -203,6 +234,11 @@ def calc_zscore(s):
                     ["impala", "mssql"], raises=com.OperationNotDefinedError
                 ),
                 pytest.mark.notimpl(["dask"], raises=NotImplementedError),
+                pytest.mark.broken(
+                    ["datafusion"],
+                    raises=AssertionError,
+                    reason="Results are shifted + 1",
+                ),
             ],
         ),
         param(
@@ -212,6 +248,11 @@ def calc_zscore(s):
             marks=[
                 pytest.mark.notimpl(["dask"], raises=NotImplementedError),
                 pytest.mark.notimpl(["pandas"], raises=com.OperationNotDefinedError),
+                pytest.mark.broken(
+                    ["datafusion"],
+                    raises=AssertionError,
+                    reason="Results are shifted + 1",
+                ),
             ],
         ),
         param(
@@ -330,7 +371,7 @@ def calc_zscore(s):
         ),
     ],
 )
-@pytest.mark.notimpl(["datafusion", "polars"], raises=com.OperationNotDefinedError)
+@pytest.mark.notimpl(["polars"], raises=com.OperationNotDefinedError)
 def test_grouped_bounded_expanding_window(
     backend, alltypes, df, result_fn, expected_fn
 ):
@@ -363,12 +404,6 @@ def test_grouped_bounded_expanding_window(
             lambda t, win: t.double_col.mean().over(win),
             lambda df: (df.double_col.expanding().mean()),
             id="mean",
-            # marks=[
-            #     pytest.mark.broken(
-            #         ["dask"],
-            #         reason="FIXME Dask complains about non-unique index. Unable to reproduce outside of this test.",
-            #     ),
-            # ],
             marks=[pytest.mark.notimpl(["dask"], raises=NotImplementedError)],
         ),
         param(
@@ -390,6 +425,7 @@ def test_grouped_bounded_expanding_window(
                         "postgres",
                         "sqlite",
                         "snowflake",
+                        "datafusion",
                         "trino",
                     ],
                     raises=com.OperationNotDefinedError,
@@ -400,7 +436,7 @@ def test_grouped_bounded_expanding_window(
     ],
 )
 # Some backends do not support non-grouped window specs
-@pytest.mark.notimpl(["datafusion", "polars"], raises=com.OperationNotDefinedError)
+@pytest.mark.notimpl(["polars"], raises=com.OperationNotDefinedError)
 def test_ungrouped_bounded_expanding_window(
     backend, alltypes, df, result_fn, expected_fn
 ):
@@ -427,7 +463,7 @@ def test_ungrouped_bounded_expanding_window(
         (None, (0, 2)),
     ],
 )
-@pytest.mark.notimpl(["datafusion", "polars"], raises=com.OperationNotDefinedError)
+@pytest.mark.notimpl(["polars"], raises=com.OperationNotDefinedError)
 @pytest.mark.notimpl(["dask"], raises=NotImplementedError)
 @pytest.mark.notimpl(["pandas"], raises=AssertionError)
 def test_grouped_bounded_following_window(backend, alltypes, df, preceding, following):
@@ -493,7 +529,7 @@ def test_grouped_bounded_following_window(backend, alltypes, df, preceding, foll
         ),
     ],
 )
-@pytest.mark.notimpl(["datafusion", "polars"], raises=com.OperationNotDefinedError)
+@pytest.mark.notimpl(["polars"], raises=com.OperationNotDefinedError)
 @pytest.mark.notimpl(["dask"], raises=NotImplementedError)
 def test_grouped_bounded_preceding_window(backend, alltypes, df, window_fn):
     window = window_fn(alltypes)
@@ -543,6 +579,7 @@ def test_grouped_bounded_preceding_window(backend, alltypes, df, window_fn):
                         "sqlite",
                         "snowflake",
                         "trino",
+                        "datafusion",
                     ],
                     raises=com.OperationNotDefinedError,
                 ),
@@ -561,7 +598,7 @@ def test_grouped_bounded_preceding_window(backend, alltypes, df, window_fn):
         param(False, id="unordered"),
     ],
 )
-@pytest.mark.notimpl(["datafusion", "polars"], raises=com.OperationNotDefinedError)
+@pytest.mark.notimpl(["polars"], raises=com.OperationNotDefinedError)
 def test_grouped_unbounded_window(
     backend, alltypes, df, result_fn, expected_fn, ordered
 ):
@@ -601,7 +638,7 @@ def test_grouped_unbounded_window(
 )
 @pytest.mark.broken(["snowflake"], raises=AssertionError)
 @pytest.mark.broken(["dask", "pandas", "mssql"], raises=AssertionError)
-@pytest.mark.notimpl(["datafusion", "polars"], raises=com.OperationNotDefinedError)
+@pytest.mark.notimpl(["polars"], raises=com.OperationNotDefinedError)
 def test_simple_ungrouped_unbound_following_window(
     backend, alltypes, ibis_method, pandas_fn
 ):
@@ -626,7 +663,12 @@ def test_simple_ungrouped_unbound_following_window(
 @pytest.mark.never(
     ["impala", "mssql"], raises=Exception, reason="order by constant is not supported"
 )
-@pytest.mark.notimpl(["datafusion", "polars"], raises=com.OperationNotDefinedError)
+@pytest.mark.notimpl(["polars"], raises=com.OperationNotDefinedError)
+@pytest.mark.broken(
+    ["datafusion"],
+    raises=Exception,
+    reason="Exception: Error during planning: Sort operation is not applicable to scalar value NULL",
+)
 def test_simple_ungrouped_window_with_scalar_order_by(backend, alltypes):
     t = alltypes[alltypes.double_col < 50].order_by("id")
     w = ibis.window(rows=(0, None), order_by=ibis.NA)
@@ -678,6 +720,11 @@ def test_simple_ungrouped_window_with_scalar_order_by(backend, alltypes):
                     raises=AnalysisException,
                     reason="pyspark requires CURRENT ROW",
                 ),
+                pytest.mark.broken(
+                    ["datafusion"],
+                    raises=AssertionError,
+                    reason="Series values are different",
+                ),
             ],
         ),
         param(
@@ -699,6 +746,7 @@ def test_simple_ungrouped_window_with_scalar_order_by(backend, alltypes):
                         "sqlite",
                         "snowflake",
                         "trino",
+                        "datafusion",
                     ],
                     raises=com.OperationNotDefinedError,
                 ),
@@ -729,6 +777,7 @@ def test_simple_ungrouped_window_with_scalar_order_by(backend, alltypes):
                         "sqlite",
                         "snowflake",
                         "trino",
+                        "datafusion",
                     ],
                     raises=com.OperationNotDefinedError,
                 ),
@@ -740,6 +789,13 @@ def test_simple_ungrouped_window_with_scalar_order_by(backend, alltypes):
             lambda df: df.float_col.shift(1),
             True,
             id="ordered-lag",
+            marks=[
+                pytest.mark.broken(
+                    ["datafusion"],
+                    raises=Exception,
+                    reason="Exception: Internal error: Expects default value to have Int64 type.",
+                ),
+            ],
         ),
         param(
             lambda t, win: t.float_col.lag().over(win),
@@ -753,6 +809,11 @@ def test_simple_ungrouped_window_with_scalar_order_by(backend, alltypes):
                     raises=AssertionError,
                 ),
                 pytest.mark.broken(["oracle"], raises=AssertionError),
+                pytest.mark.broken(
+                    ["datafusion"],
+                    raises=Exception,
+                    reason="Exception: Internal error: Expects default value to have Int64 type.",
+                ),
                 pytest.mark.notimpl(
                     ["pyspark"],
                     raises=AnalysisException,
@@ -771,6 +832,13 @@ def test_simple_ungrouped_window_with_scalar_order_by(backend, alltypes):
             lambda df: df.float_col.shift(-1),
             True,
             id="ordered-lead",
+            marks=[
+                pytest.mark.broken(
+                    ["datafusion"],
+                    raises=Exception,
+                    reason="Exception: Internal error: Expects default value to have Int64 type.",
+                ),
+            ],
         ),
         param(
             lambda t, win: t.float_col.lead().over(win),
@@ -785,6 +853,11 @@ def test_simple_ungrouped_window_with_scalar_order_by(backend, alltypes):
                         "result is equal up to ordering"
                     ),
                     raises=AssertionError,
+                ),
+                pytest.mark.broken(
+                    ["datafusion"],
+                    raises=Exception,
+                    reason="Exception: Internal error: Expects default value to have Int64 type.",
                 ),
                 pytest.mark.broken(["oracle"], raises=AssertionError),
                 pytest.mark.notimpl(
@@ -820,6 +893,7 @@ def test_simple_ungrouped_window_with_scalar_order_by(backend, alltypes):
                         "sqlite",
                         "snowflake",
                         "trino",
+                        "datafusion",
                     ],
                     raises=com.OperationNotDefinedError,
                 ),
@@ -854,6 +928,7 @@ def test_simple_ungrouped_window_with_scalar_order_by(backend, alltypes):
                     "sqlite",
                     "snowflake",
                     "trino",
+                    "datafusion",
                 ],
                 raises=com.OperationNotDefinedError,
             ),
@@ -861,7 +936,7 @@ def test_simple_ungrouped_window_with_scalar_order_by(backend, alltypes):
     ],
 )
 # Some backends do not support non-grouped window specs
-@pytest.mark.notimpl(["datafusion", "polars"], raises=com.OperationNotDefinedError)
+@pytest.mark.notimpl(["polars"], raises=com.OperationNotDefinedError)
 def test_ungrouped_unbounded_window(
     backend, alltypes, df, result_fn, expected_fn, ordered
 ):
@@ -887,7 +962,7 @@ def test_ungrouped_unbounded_window(
     backend.assert_series_equal(left, right)
 
 
-@pytest.mark.notimpl(["datafusion", "polars"], raises=com.OperationNotDefinedError)
+@pytest.mark.notimpl(["polars"], raises=com.OperationNotDefinedError)
 @pytest.mark.notimpl(["snowflake"], raises=sa.exc.ProgrammingError)
 @pytest.mark.notimpl(
     ["impala"], raises=HiveServer2Error, reason="limited RANGE support"
@@ -956,9 +1031,7 @@ def test_grouped_bounded_range_window(backend, alltypes, df):
     backend.assert_series_equal(result.val, expected.val)
 
 
-@pytest.mark.notimpl(
-    ["clickhouse", "datafusion", "polars"], raises=com.OperationNotDefinedError
-)
+@pytest.mark.notimpl(["clickhouse", "polars"], raises=com.OperationNotDefinedError)
 @pytest.mark.notimpl(["dask"], raises=AttributeError)
 @pytest.mark.notimpl(["pyspark"], raises=AnalysisException)
 @pytest.mark.notyet(
@@ -976,10 +1049,15 @@ def test_percent_rank_whole_table_no_order_by(backend, alltypes, df):
     backend.assert_series_equal(result.val, expected.val)
 
 
-@pytest.mark.notimpl(["datafusion", "polars"], raises=com.OperationNotDefinedError)
+@pytest.mark.notimpl(["polars"], raises=com.OperationNotDefinedError)
 @pytest.mark.notimpl(["dask"], raises=NotImplementedError)
 @pytest.mark.broken(
     ["pandas"], reason="pandas returns incorrect results", raises=AssertionError
+)
+@pytest.mark.broken(
+    ["datafusion"],
+    reason="Exception: External error: Internal error: Expects default value to have Int64 type",
+    raises=Exception,
 )
 def test_grouped_ordered_window_coalesce(backend, alltypes, df):
     t = alltypes
@@ -1014,7 +1092,12 @@ def test_grouped_ordered_window_coalesce(backend, alltypes, df):
     backend.assert_series_equal(result, expected)
 
 
-@pytest.mark.notimpl(["datafusion", "polars"], raises=com.OperationNotDefinedError)
+@pytest.mark.notimpl(["polars"], raises=com.OperationNotDefinedError)
+@pytest.mark.broken(
+    ["datafusion"],
+    raises=Exception,
+    reason="Exception: Internal error: Expects default value to have Int64 type.",
+)
 def test_mutate_window_filter(backend, alltypes, df):
     t = alltypes
     win = ibis.window(order_by=[t.id])

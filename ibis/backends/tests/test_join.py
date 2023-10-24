@@ -122,7 +122,7 @@ def test_mutating_join(backend, batting, awards_players, how):
 
 
 @pytest.mark.parametrize("how", ["semi", "anti"])
-@pytest.mark.notimpl(["dask", "druid"])
+@pytest.mark.notimpl(["dask", "druid", "datafusion"])
 def test_filtering_join(backend, batting, awards_players, how):
     left = batting[batting.yearID == 2015]
     right = awards_players[awards_players.lgID == "NL"].drop("yearID", "lgID")
@@ -298,7 +298,7 @@ def test_join_with_pandas_non_null_typed_columns(batting, awards_players):
     ],
 )
 @pytest.mark.notimpl(
-    ["polars", "datafusion"],
+    ["polars"],
     raises=com.TranslationError,
     reason="polars doesn't support join predicates",
 )
