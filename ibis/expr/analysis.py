@@ -267,7 +267,10 @@ class Projector:
 
     def get_result(self):
         from ibis.common.patterns import NoMatch, match
-        from ibis.expr.rewrites import rewrite_redundant_selection, prune_subsequent_projection
+        from ibis.expr.rewrites import (
+            prune_subsequent_projection,
+            rewrite_redundant_selection,
+        )
 
         roots = find_immediate_parent_tables(self.parent.op())
         first_root = roots[0]
@@ -284,7 +287,8 @@ class Projector:
         if len(roots) == 1 and isinstance(first_root, ops.Selection):
             fused_op = self.try_fusion(first_root)
             if fused_op is not None:
-                from rich.pretty import pprint
+                # from rich.pretty import pprint
+
                 # pprint(fused_op)
                 # print()
                 # print(new.to_expr())

@@ -3,14 +3,13 @@ from __future__ import annotations
 
 import functools
 from collections.abc import Mapping
-import toolz
 
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 from ibis.common.exceptions import UnsupportedOperationError
 from ibis.common.patterns import pattern, replace
 from ibis.common.deferred import var
-from ibis.common.patterns import Check, Eq, NoMatch, Pattern, pattern, replace, In
+from ibis.common.patterns import Eq, In, NoMatch, pattern, replace
 from ibis.util import Namespace
 
 p = Namespace(pattern, module=ops)
@@ -90,12 +89,10 @@ parent = var("parent")
 fields = var("fields")
 parent_fields = var("parent_fields")
 
-# JOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO
 # reprojection of the same fields from the parent selection
 rewrite_redundant_selection = (
     p.Selection(x, selections=[p.Selection(selections=Eq(x.selections))]) >> x
 )
-
 
 # the following rewrite rule is responsible to fuse the following two non-overlapping
 # selections into a single one:
@@ -159,7 +156,9 @@ def can_prune_projection(projection, context):
 # simplify_aggregation() analysis functions since their logic is almost
 # identical
 @replace(
-    p.Selection(parent @ p.Selection(~p.Join, selections=parent_fields), selections=fields)
+    p.Selection(
+        parent @ p.Selection(~p.Join, selections=parent_fields), selections=fields
+    )
     & can_prune_projection
 )
 def prune_subsequent_projection(_, parent, fields, parent_fields):
