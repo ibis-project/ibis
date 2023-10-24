@@ -500,7 +500,7 @@ jobs:
         run: docker compose logs
 
   test_pyspark:
-    name: PySpark ${{ matrix.os }} python-${{ matrix.python-version }} pandas-${{ matrix.pandas.version }}
+    name: PySpark ${{ matrix.os }} python-${{ matrix.python-version }}
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -509,24 +509,7 @@ jobs:
           - ubuntu-latest
         python-version:
           - "3.10"
-        pandas:
-          - version: "1.5.*"
-          - version: "2.*.*"
-            conflicts:
-              - snowflake-sqlalchemy
-              - snowflake-connector-python
-        include:
-          - os: ubuntu-latest
-            python-version: "3.9"
-            pandas:
-              version: "1.5.*"
-          - os: ubuntu-latest
-            python-version: "3.11"
-            pandas:
-              version: "2.*.*"
-              conflicts:
-                - snowflake-sqlalchemy
-                - snowflake-connector-python
+          - "3.11"
     steps:
       - name: checkout
         uses: actions/checkout@v4
@@ -552,12 +535,8 @@ jobs:
       - name: install poetry
         run: python -m pip install --upgrade pip 'poetry==1.6.1'
 
-      - name: remove conflicting deps
-        if: matrix.pandas.conflicts != null
-        run: poetry remove ${{ join(matrix.pandas.conflicts, ' ') }}
-
-      - name: install minimum versions
-        run: poetry add --lock 'pandas@${{ matrix.pandas.version }}' 'numpy@1.23.*'
+      - name: install maximum versions of pandas and numpy
+        run: poetry add --lock 'pandas@<2' 'numpy<1.24'
 
       - name: checkout the lock file
         run: git checkout poetry.lock
@@ -580,10 +559,10 @@ jobs:
 
       - name: upload code coverage
         # only upload coverage for jobs that aren't mostly xfails
-        if: success() && matrix.python-version != '3.11' && matrix.pandas.version != '2.0.0'
+        if: success() && matrix.python-version != '3.11'
         uses: codecov/codecov-action@v3
         with:
-          flags: backend,pyspark,${{ runner.os }},python-${{ steps.install_python.outputs.python-version }},pandas-${{ matrix.pandas.version }}
+          flags: backend,pyspark,${{ runner.os }},python-${{ steps.install_python.outputs.python-version }}
 
   gen_lockfile_sqlalchemy2:
     name: Generate Poetry Lockfile for SQLAlchemy 2
