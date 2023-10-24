@@ -346,3 +346,10 @@ def _scalar_parameter(op, dtype, **kwargs):
 @fmt.register(ops.SortKey)
 def _sort_key(op, expr, **kwargs):
     return f"{'asc' if op.ascending else 'desc'} {expr}"
+
+
+@fmt.register(ops.GeoSpatialBinOp)
+def _geo_bin_op(op, left, right, **kwargs):
+    fields = [left, right, inline_args(kwargs)]
+    args = ", ".join(f"{field}" for field in fields if field)
+    return f"{op.__class__.__name__}({args})"
