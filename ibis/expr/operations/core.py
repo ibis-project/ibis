@@ -75,11 +75,17 @@ class Value(Node, Named, Coercible, DefaultTypeVars, Generic[T, S]):
         if isinstance(value, Value):
             return value
 
-        try:
+        if T is dt.Integer:
+            dtype = dt.infer(int(value))
+        elif T is dt.Floating:
+            dtype = dt.infer(float(value))
+        else:
             try:
                 dtype = dt.DataType.from_typehint(T)
             except TypeError:
                 dtype = dt.infer(value)
+
+        try:
             return Literal(value, dtype=dtype)
         except TypeError:
             raise CoercionError(f"Unable to coerce {value!r} to Value[{T!r}]")

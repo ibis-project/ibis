@@ -17,12 +17,12 @@ one = ops.Literal(1, dt.int8)
 @pytest.mark.parametrize(
     ("value", "dtype"),
     [
-        (1, dt.int8),
-        (1.0, dt.double),
-        (True, dt.boolean),
-        ("foo", dt.string),
-        (b"foo", dt.binary),
-        ((1, 2), dt.Array(dt.int8)),
+        (1, dt.Int8),
+        (1.0, dt.Float64),
+        (True, dt.Boolean),
+        ("foo", dt.String),
+        (b"foo", dt.Binary),
+        ((1, 2), dt.Array[dt.Int8]),
     ],
 )
 def test_literal_coercion_type_inference(value, dtype):
@@ -39,6 +39,9 @@ def test_literal_coercion_type_inference(value, dtype):
         (ops.Literal[dt.Int8], 1, one),
         (ops.Literal[dt.Int16], 1, ops.Literal(1, dt.int16)),
         (ops.Literal[dt.Int8], ops.Literal(1, dt.int16), NoMatch),
+        (ops.Literal[dt.Integer], 1, ops.Literal(1, dt.int8)),
+        (ops.Literal[dt.Floating], 1, ops.Literal(1, dt.float64)),
+        (ops.Literal[dt.Float32], 1.0, ops.Literal(1.0, dt.float32)),
     ],
 )
 def test_coerced_to_literal(typehint, value, expected):
@@ -60,8 +63,19 @@ def test_coerced_to_literal(typehint, value, expected):
         # same applies here, the coercion itself will use only the inferred datatype
         # but then the result is checked against the given typehint
         (ops.Value[dt.Int8 | dt.Int16], 1, one),
+        (Union[ops.Value[dt.Int8], ops.Value[dt.Int16]], 1, one),
         (ops.Value[dt.Int8 | dt.Int16], 128, ops.Literal(128, dt.int16)),
+        (
+            Union[ops.Value[dt.Int8], ops.Value[dt.Int16]],
+            128,
+            ops.Literal(128, dt.int16),
+        ),
         (ops.Value[dt.Int8 | dt.Int16], 128, ops.Literal(128, dt.int16)),
+        (
+            Union[ops.Value[dt.Int8], ops.Value[dt.Int16]],
+            128,
+            ops.Literal(128, dt.int16),
+        ),
         (ops.Value[dt.Int8], 128, NoMatch),
         # this is actually supported by creating an explicit dtype
         # in Value.__coerce__ based on the `T` keyword argument
@@ -69,6 +83,9 @@ def test_coerced_to_literal(typehint, value, expected):
         (ops.Value[dt.Int16, ds.Scalar], 128, ops.Literal(128, dt.int16)),
         # equivalent with ops.Value[dt.Int8 | dt.Int16]
         (Union[ops.Value[dt.Int8], ops.Value[dt.Int16]], 1, one),
+        # when expecting floating point values given an integer value it will
+        # be coerced to float64
+        (ops.Value[dt.Floating], 1, ops.Literal(1, dt.float64)),
     ],
 )
 def test_coerced_to_value(typehint, value, expected):
