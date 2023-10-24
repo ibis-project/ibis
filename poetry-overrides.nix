@@ -1,8 +1,4 @@
 self: super: {
-  # `wheel` cannot be used as a wheel to unpack itself, since that would
-  # require itself (infinite recursion)
-  wheel = super.wheel.override { preferWheel = false; };
-
   # patch oscrypto for openssl 3 support: the fix is to relax some regexes that
   # inspect the libcrypto version
   #
