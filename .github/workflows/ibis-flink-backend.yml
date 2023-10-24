@@ -40,7 +40,7 @@ env:
 jobs:
   test_flink_backend:
     name: Flink ${{ matrix.os }} python-${{ matrix.python-version }}
-    runs-on: ${{ matrix.os }}
+    runs-on: linux-64-core
     strategy:
       fail-fast: false
       matrix:
