@@ -156,10 +156,11 @@ def can_prune_projection(projection, context):
 
 
 @replace(
-    p.Selection(parent @ p.Selection(selections=parent_fields), selections=fields)
+    p.Selection(parent @ p.Selection(~p.Join, selections=parent_fields), selections=fields)
     & can_prune_projection
 )
 def prune_subsequent_projection(_, parent, fields, parent_fields):
+    print("="*80)
     print(_.to_expr())
 
     pattern = Eq(parent) >> parent.table
@@ -167,8 +168,17 @@ def prune_subsequent_projection(_, parent, fields, parent_fields):
     selections = []
     for field in fields:
         if field == parent:
-            selections.extend(parent_fields)
+            if parent_fields:
+                selections.extend(parent_fields)
+            else:
+                # order_by() and filter() creates selections objects with empty
+                # selections field, so we need to add the parent table to the
+                # selections explicitly, should add selections=[self] there instead
+                selections.append(parent.table)
         else:
             selections.append(field.replace(pattern))
 
-    return parent.copy(selections=selections)
+    res = parent.copy(selections=selections)
+    print('-'*80)
+    print(res.to_expr())
+    return res

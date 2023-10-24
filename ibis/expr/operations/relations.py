@@ -52,6 +52,7 @@ class Relation(Node, Coercible):
         else:
             return value
 
+    # TODO(kszucs): remove these special order_by methods
     def order_by(self, sort_exprs):
         return Selection(self, [], sort_keys=sort_exprs)
 
@@ -466,6 +467,7 @@ class Selection(Projection):
             **kwargs,
         )
 
+    # TODO(kszucs): remove these special order_by methods
     @annotated
     def order_by(self, keys: VarTuple[SortKey]):
         from ibis.expr.analysis import shares_all_roots, sub_immediate_parents
@@ -547,6 +549,7 @@ class Aggregation(Relation):
             types.append(value.dtype)
         return Schema.from_tuples(zip(names, types))
 
+    # TODO(kszucs): remove these special order_by methods
     @annotated
     def order_by(self, keys: VarTuple[SortKey]):
         from ibis.expr.analysis import shares_all_roots, sub_immediate_parents
