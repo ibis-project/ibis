@@ -287,14 +287,7 @@ class Projector:
         if len(roots) == 1 and isinstance(first_root, ops.Selection):
             fused_op = self.try_fusion(first_root)
             if fused_op is not None:
-                # from rich.pretty import pprint
-
-                # pprint(fused_op)
-                # print()
-                # print(new.to_expr())
-                # print("==========")
-                # print(fused_op.to_expr())
-                # breakpoint()
+                # TODO(kszucs): remove try_fusion entirely
                 raise ValueError()
                 return fused_op
 

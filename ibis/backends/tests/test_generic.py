@@ -971,6 +971,7 @@ def test_many_subqueries(con, snapshot):
     t = ibis.table(dict(street="str"), name="data")
 
     t2 = query(t, group_cols=["street"])
+
     t3 = query(t2, group_cols=["street"])
 
     snapshot.assert_match(str(ibis.to_sql(t3, dialect=con.name)), "out.sql")

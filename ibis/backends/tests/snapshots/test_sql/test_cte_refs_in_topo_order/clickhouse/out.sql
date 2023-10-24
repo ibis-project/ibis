@@ -12,14 +12,10 @@ FROM (
   ) AS t1
   INNER JOIN (
     SELECT
-      t1.key
-    FROM (
-      SELECT
-        *
-      FROM leaf AS t0
-      WHERE
-        TRUE
-    ) AS t1
+      t0.key
+    FROM leaf AS t0
+    WHERE
+      TRUE
   ) AS t2
     ON t1.key = t2.key
 ) AS t4
@@ -35,14 +31,10 @@ INNER JOIN (
   ) AS t1
   INNER JOIN (
     SELECT
-      t1.key
-    FROM (
-      SELECT
-        *
-      FROM leaf AS t0
-      WHERE
-        TRUE
-    ) AS t1
+      t0.key
+    FROM leaf AS t0
+    WHERE
+      TRUE
   ) AS t2
     ON t1.key = t2.key
 ) AS t5

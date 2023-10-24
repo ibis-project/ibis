@@ -29,15 +29,10 @@ FROM (
   WHERE
     t3.o_orderkey IN (
       SELECT
-        t5.l_orderkey
-      FROM (
-        SELECT
-          t0.l_orderkey AS l_orderkey,
-          t0.qty_sum AS qty_sum
-        FROM t0
-        WHERE
-          t0.qty_sum > CAST(300 AS SMALLINT)
-      ) AS t5
+        t0.l_orderkey
+      FROM t0
+      WHERE
+        t0.qty_sum > CAST(300 AS SMALLINT)
     )
   GROUP BY
     1,

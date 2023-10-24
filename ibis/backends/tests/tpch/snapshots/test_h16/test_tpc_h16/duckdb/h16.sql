@@ -20,19 +20,9 @@ FROM (
       NOT t1.ps_suppkey IN (
         SELECT
           t3.s_suppkey
-        FROM (
-          SELECT
-            t4.s_suppkey AS s_suppkey,
-            t4.s_name AS s_name,
-            t4.s_address AS s_address,
-            t4.s_nationkey AS s_nationkey,
-            t4.s_phone AS s_phone,
-            t4.s_acctbal AS s_acctbal,
-            t4.s_comment AS s_comment
-          FROM main.supplier AS t4
-          WHERE
-            t4.s_comment LIKE '%Customer%Complaints%'
-        ) AS t3
+        FROM main.supplier AS t3
+        WHERE
+          t3.s_comment LIKE '%Customer%Complaints%'
       )
     )
   GROUP BY

@@ -6,9 +6,8 @@ from collections.abc import Mapping
 
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
-from ibis.common.exceptions import UnsupportedOperationError
-from ibis.common.patterns import pattern, replace
 from ibis.common.deferred import var
+from ibis.common.exceptions import UnsupportedOperationError
 from ibis.common.patterns import Eq, In, NoMatch, pattern, replace
 from ibis.util import Namespace
 
@@ -81,6 +80,8 @@ def rewrite_sample(_):
         (ops.LessEqual(ops.RandomScalar(), _.fraction),),
         (),
     )
+
+
 x = var("x")
 y = var("y")
 t = var("t")
@@ -125,7 +126,7 @@ rewrite_redundant_selection = (
 #     col2: r0.col + 2
 
 
-def can_prune_parent_projection(_, context):
+def can_prune_parent_projection(selection, context):
     parent = context["parent"]
     fields = context["fields"]
     parent_fields = context["parent_fields"]
@@ -148,7 +149,9 @@ def can_prune_parent_projection(_, context):
             conflicts[value.name] = value
 
     peeled_fields = []
-    reprojected_columns = p.TableColumn(parent, In(columns))
+    reprojected_columns = p.TableColumn(parent, In(columns)) >> (
+        lambda _: columns[_.name]
+    )
     conflicting_columns = p.TableColumn(parent, In(conflicts))
 
     for field in fields:
@@ -162,13 +165,12 @@ def can_prune_parent_projection(_, context):
                 peeled_fields.append(parent.table)
         elif field.match(conflicting_columns, filter=ops.Value):
             return NoMatch
-        elif reprojected_columns.match(field, {}) is not NoMatch:
-            peeled_fields.append(columns[field.name])
         else:
+            field = field.replace(reprojected_columns, filter=ops.Value)
             peeled_fields.append(field)
 
     context["peeled_fields"] = peeled_fields
-    return _
+    return selection
 
 
 # TODO(kszucs): merge this rewrite rule pushdown_selection_filters() and
