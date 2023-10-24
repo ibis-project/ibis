@@ -10,7 +10,7 @@ from typing import Any, Callable, TypeVar, overload
 from ibis.common.bases import Final, FrozenSlotted, Hashable, Immutable, Slotted
 from ibis.common.collections import FrozenDict
 from ibis.common.typing import Coercible, CoercionError
-from ibis.util import PseudoHashable, is_iterable
+from ibis.util import PseudoHashable
 
 
 class Resolver(Coercible, Hashable):
@@ -519,9 +519,12 @@ def resolver(obj):
     elif isinstance(obj, collections.abc.Mapping):
         # allow nesting deferred patterns in dicts
         return Mapping(obj)
-    elif is_iterable(obj):
+    elif isinstance(obj, collections.abc.Sequence):
         # allow nesting deferred patterns in tuples/lists
-        return Sequence(obj)
+        if isinstance(obj, (str, bytes)):
+            return Just(obj)
+        else:
+            return Sequence(obj)
     elif isinstance(obj, type):
         return Just(obj)
     elif callable(obj):
