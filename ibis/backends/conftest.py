@@ -4,7 +4,6 @@ import contextlib
 import importlib
 import importlib.metadata
 import itertools
-import sys
 from functools import cache
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
@@ -332,10 +331,6 @@ def pytest_collection_modifyitems(session, config, items):
                     (
                         item,
                         [
-                            pytest.mark.xfail(
-                                sys.version_info >= (3, 11),
-                                reason="PySpark doesn't support Python 3.11",
-                            ),
                             pytest.mark.xfail(
                                 vparse(pd.__version__) >= vparse("2"),
                                 reason="PySpark doesn't support pandas>=2",
