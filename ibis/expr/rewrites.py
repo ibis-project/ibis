@@ -181,7 +181,7 @@ def prune_subsequent_projection(
     #     r2
     #     qux: r2.foo * 2
     traverse_only = p.Value | p.Selection
-    pattern = p.Projection(parent.table, parent.selections) >> parent.table
+    pattern = p.Selection(parent.table, parent.selections) >> parent.table
     selections = [
         field.replace(pattern, filter=traverse_only) for field in peeled_fields
     ]
