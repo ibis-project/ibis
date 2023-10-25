@@ -131,6 +131,7 @@ def test_context_adjustment_filter_before_window(alltypes, context, monkeypatch)
 )
 def test_context_adjustment_multi_col_udf_non_grouped(alltypes, context, monkeypatch):
     monkeypatch.setattr(ibis.options.context_adjustment, "time_col", "timestamp_col")
+
     w = ibis.window(preceding=None, following=None)
 
     demean_struct_udf = create_demean_struct_udf(
