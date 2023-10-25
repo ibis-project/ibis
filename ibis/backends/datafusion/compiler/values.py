@@ -168,7 +168,8 @@ def _literal(op, *, value, dtype, **kw):
     elif dtype.is_boolean():
         return lit(bool(value))
     elif dtype.is_inet():
-        return cast(lit(str(value)), dtype)
+        # treat inet as strings for now
+        return lit(str(value))
     elif dtype.is_decimal():
         return cast(
             lit(str(value)),
