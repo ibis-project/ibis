@@ -25,7 +25,7 @@ BINARY_BACKEND_TYPES = {
     raises=sqlalchemy.exc.StatementError,
 )
 @pytest.mark.broken(
-    ["clickhouse", "impala", "datafusion"],
+    ["clickhouse", "impala"],
     "Unsupported type: Binary(nullable=True)",
     raises=NotImplementedError,
 )
