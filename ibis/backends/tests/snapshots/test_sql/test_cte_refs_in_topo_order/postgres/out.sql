@@ -6,8 +6,10 @@ WITH t0 AS (
     TRUE
 ), t1 AS (
   SELECT
-    t0.key AS key
-  FROM t0
+    t4.key AS key
+  FROM leaf AS t4
+  WHERE
+    TRUE
 ), t2 AS (
   SELECT
     t0.key AS key

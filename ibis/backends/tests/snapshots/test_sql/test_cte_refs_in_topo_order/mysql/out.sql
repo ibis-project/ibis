@@ -6,8 +6,10 @@ WITH t0 AS (
     TRUE = 1
 ), t1 AS (
   SELECT
-    t0.`key` AS `key`
-  FROM t0
+    t4.`key` AS `key`
+  FROM leaf AS t4
+  WHERE
+    TRUE = 1
 ), t2 AS (
   SELECT
     t0.`key` AS `key`
