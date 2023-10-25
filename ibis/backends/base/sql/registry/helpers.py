@@ -67,7 +67,6 @@ sql_type_names = {
     "boolean": "boolean",
     "timestamp": "timestamp",
     "decimal": "decimal",
-    "date": "date",
 }
 
 
