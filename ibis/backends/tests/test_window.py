@@ -132,11 +132,6 @@ def calc_zscore(s):
             id="rank",
             marks=[
                 pytest.mark.notimpl(["dask"], raises=NotImplementedError),
-                pytest.mark.broken(
-                    ["datafusion"],
-                    raises=AssertionError,
-                    reason="Results are shifted + 1",
-                ),
             ],
         ),
         param(
@@ -145,11 +140,6 @@ def calc_zscore(s):
             id="dense_rank",
             marks=[
                 pytest.mark.notimpl(["dask"], raises=NotImplementedError),
-                pytest.mark.broken(
-                    ["datafusion"],
-                    raises=AssertionError,
-                    reason="Results are shifted + 1",
-                ),
             ],
         ),
         param(
@@ -234,11 +224,6 @@ def calc_zscore(s):
                     ["impala", "mssql"], raises=com.OperationNotDefinedError
                 ),
                 pytest.mark.notimpl(["dask"], raises=NotImplementedError),
-                pytest.mark.broken(
-                    ["datafusion"],
-                    raises=AssertionError,
-                    reason="Results are shifted + 1",
-                ),
             ],
         ),
         param(
@@ -248,11 +233,6 @@ def calc_zscore(s):
             marks=[
                 pytest.mark.notimpl(["dask"], raises=NotImplementedError),
                 pytest.mark.notimpl(["pandas"], raises=com.OperationNotDefinedError),
-                pytest.mark.broken(
-                    ["datafusion"],
-                    raises=AssertionError,
-                    reason="Results are shifted + 1",
-                ),
             ],
         ),
         param(
@@ -719,11 +699,6 @@ def test_simple_ungrouped_window_with_scalar_order_by(backend, alltypes):
                     ["pyspark"],
                     raises=AnalysisException,
                     reason="pyspark requires CURRENT ROW",
-                ),
-                pytest.mark.broken(
-                    ["datafusion"],
-                    raises=AssertionError,
-                    reason="Series values are different",
                 ),
             ],
         ),
