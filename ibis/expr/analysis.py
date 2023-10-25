@@ -131,8 +131,15 @@ def pushdown_selection_filters(parent, predicates):
     if not isinstance(parent, (ops.Selection, ops.Aggregation)):  # ops.Projection
         return default
 
+    if isinstance(parent, ops.Selection):
+        selections = parent.selections
+    elif isinstance(parent, ops.Aggregation):
+        selections = parent.by + parent.metrics
+    else:
+        raise TypeError(f"Unexpected parent type: {type(parent)}")
+
     projected_column_names = set()
-    for value in parent._projection.selections:
+    for value in selections:
         if isinstance(value, (ops.Relation, ops.TableColumn)):
             # we are only interested in projected value expressions, not tables
             # nor column references which are not changing the projection
@@ -299,11 +306,11 @@ def _find_projections(node):
     if isinstance(node, ops.Selection):
         # remove predicates and sort_keys, so that child tables are considered
         # equivalent even if their predicates and sort_keys are not
-        return g.proceed, node._projection
+        return g.proceed, (node.table, node.selections)
     elif isinstance(node, ops.SelfReference):
         return g.proceed, node
     elif isinstance(node, ops.Aggregation):
-        return g.proceed, node._projection
+        return g.proceed, (node.table, node.by + node.metrics)
     elif isinstance(node, ops.Join):
         return g.proceed, None
     elif isinstance(node, ops.TableNode):
@@ -384,7 +391,7 @@ def find_subqueries(node: ops.Node, min_dependents=1) -> tuple[ops.Node, ...]:
         for u, vs in dependents.toposort().items():
             # count the number of table-node dependents on the current node
             # but only if the current node is a selection or aggregation
-            if isinstance(u, (rels.Projection, rels.Aggregation, rels.Limit)):
+            if isinstance(u, (rels.Selection, rels.Aggregation, rels.Limit)):
                 subquery_dependents[u].update(vs)
 
     return tuple(

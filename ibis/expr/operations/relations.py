@@ -407,30 +407,6 @@ class SelfReference(Relation):
         return self.table.schema
 
 
-@public
-class Projection(Relation):
-    table: Relation
-    selections: VarTuple[Relation | Value]
-
-    @attribute
-    def schema(self):
-        # Resolve schema and initialize
-        if not self.selections:
-            return self.table.schema
-
-        types, names = [], []
-        for projection in self.selections:
-            if isinstance(projection, Value):
-                names.append(projection.name)
-                types.append(projection.dtype)
-            elif isinstance(projection, TableNode):
-                schema = projection.schema
-                names.extend(schema.names)
-                types.extend(schema.types)
-
-        return Schema.from_tuples(zip(names, types))
-
-
 def _add_alias(op: ops.Value | ops.TableNode):
     """Add a name to a projected column if necessary."""
     if isinstance(op, ops.Value) and not isinstance(op, (ops.Alias, ops.TableColumn)):
@@ -440,7 +416,9 @@ def _add_alias(op: ops.Value | ops.TableNode):
 
 
 @public
-class Selection(Projection):
+class Selection(Relation):
+    table: Relation
+    selections: VarTuple[Relation | Value]
     predicates: VarTuple[Value[dt.Boolean]] = ()
     sort_keys: VarTuple[SortKey] = ()
 
@@ -468,6 +446,24 @@ class Selection(Projection):
             **kwargs,
         )
 
+    @attribute
+    def schema(self):
+        # Resolve schema and initialize
+        if not self.selections:
+            return self.table.schema
+
+        types, names = [], []
+        for projection in self.selections:
+            if isinstance(projection, Value):
+                names.append(projection.name)
+                types.append(projection.dtype)
+            elif isinstance(projection, TableNode):
+                schema = projection.schema
+                names.extend(schema.names)
+                types.extend(schema.types)
+
+        return Schema.from_tuples(zip(names, types))
+
     # TODO(kszucs): remove these special order_by methods
     @annotated
     def order_by(self, keys: VarTuple[SortKey]):
@@ -487,10 +483,6 @@ class Selection(Projection):
                 )
 
         return Selection(self, [], sort_keys=keys)
-
-    @attribute
-    def _projection(self):
-        return Projection(self.table, self.selections)
 
 
 @public
@@ -537,10 +529,6 @@ class Aggregation(Relation):
             predicates=predicates,
             sort_keys=sort_keys,
         )
-
-    @attribute
-    def _projection(self):
-        return Projection(self.table, self.metrics + self.by)
 
     @attribute
     def schema(self):
