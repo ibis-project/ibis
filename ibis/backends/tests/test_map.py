@@ -329,14 +329,13 @@ def test_map_get_with_null_on_null_type_with_non_null(con):
 
 @pytest.mark.notimpl(
     ["flink"],
-    raises=exc.UnsupportedBackendType,
-    reason="UnsupportedBackendType: map",
+    raises=exc.IbisError,
+    reason="`tbl_properties` is required when creating table with schema",
 )
 def test_map_create_table(con, temp_table):
     t = con.create_table(
         temp_table,
         schema=ibis.schema(dict(xyz="map<string, string>")),
-        **{"tbl_properties": {"connector": None}} if con.name == "flink" else {},
     )
     assert t.schema()["xyz"].is_map()
 

@@ -15,9 +15,12 @@ from ibis.backends.flink.compiler.core import FlinkCompiler
 from ibis.backends.flink.ddl import (
     CreateDatabase,
     CreateTableFromConnector,
+    CreateView,
     DropDatabase,
     DropTable,
+    DropView,
     InsertSelect,
+    RenameTable,
 )
 
 if TYPE_CHECKING:
@@ -116,18 +119,23 @@ class Backend(BaseBackend, CanCreateDatabase):
     def list_tables(
         self,
         like: str | None = None,
+        temp: bool = False,
         database: str | None = None,
         catalog: str | None = None,
     ) -> list[str]:
-        """Return the list of table names.
+        """Return the list of table/view names.
 
-        Return the list of table names in the specified database and catalog.
-        or the default one if no database/catalog is specified.
+        Return the list of table/view names in the `database` and `catalog`. If
+        `database`/`catalog` are not specified, their default values will be
+        used. Temporary tables can only be listed for the default database and
+        catalog, hence `database` and `catalog` are ignored if `temp` is True.
 
         Parameters
         ----------
         like : str, optional
             A pattern in Python's regex format.
+        temp : bool, optional
+            Whether to list temporary tables or permanent tables.
         database : str, optional
             The database to list tables of, if not the current one.
         catalog : str, optional
@@ -136,19 +144,29 @@ class Backend(BaseBackend, CanCreateDatabase):
         Returns
         -------
         list[str]
-            The list of the table names that match the pattern `like`.
+            The list of the table/view names that match the pattern `like`.
         """
-        tables = self._table_env._j_tenv.listTables(
-            catalog or self.current_catalog,
-            database or self.current_database,
-        )  # this is equivalent to the SQL query string `SHOW TABLES FROM|IN`,
+        catalog = catalog or self.current_catalog
+        database = database or self.current_database
+
+        # The following is equivalent to the SQL query string `SHOW TABLES FROM|IN`,
         # but executing the SQL string directly yields a `TableResult` object
+        if temp:
+            # Note (mehmet): TableEnvironment does not provide a function to list
+            # the temporary tables in a given catalog and database.
+            # Ref: https://nightlies.apache.org/flink/flink-docs-master/api/java/org/apache/flink/table/api/TableEnvironment.html
+            tables = self._table_env.list_temporary_tables()
+        else:
+            # Note (mehmet): `listTables` returns both tables and views.
+            # Ref: Docstring for pyflink/table/table_environment.py:list_tables()
+            tables = self._table_env._j_tenv.listTables(catalog, database)
+
         return self._filter_with_like(tables, like)
 
-    def _list_views(
+    def list_views(
         self,
         like: str | None = None,
-        temporary: bool = True,
+        temp: bool = False,
     ) -> list[str]:
         """Return the list of view names.
 
@@ -158,7 +176,7 @@ class Backend(BaseBackend, CanCreateDatabase):
         ----------
         like : str, optional
             A pattern in Python's regex format.
-        temporary : bool, optional
+        temp : bool, optional
             Whether to list temporary views or permanent views.
 
         Returns
@@ -166,17 +184,19 @@ class Backend(BaseBackend, CanCreateDatabase):
         list[str]
             The list of the view names that match the pattern `like`.
         """
-        if temporary:
+
+        if temp:
             views = self._table_env.list_temporary_views()
         else:
             views = self._table_env.list_views()
+
         return self._filter_with_like(views, like)
 
     def _fully_qualified_name(
         self,
         name: str,
-        database: str | None,
-        catalog: str | None,
+        database: str | None = None,
+        catalog: str | None = None,
     ) -> str:
         if is_fully_qualified(name):
             return name
@@ -279,6 +299,7 @@ class Backend(BaseBackend, CanCreateDatabase):
         table_expr = expr.as_table()
         sql = self.compile(table_expr, **kwargs)
         df = self._table_env.sql_query(sql).to_pandas()
+
         return expr.__pandas_result__(df)
 
     def create_table(
@@ -296,13 +317,15 @@ class Backend(BaseBackend, CanCreateDatabase):
     ) -> ir.Table:
         """Create a new table in Flink.
 
-        Note that: in Flink, tables can be either virtual (VIEWS) or regular
-        (TABLES).
-
+        In Flink, tables can be either virtual (VIEWS) or regular (TABLES).
         VIEWS can be created from an existing Table object, usually the result
         of a Table API or SQL query. TABLES describe external data, such as a
         file, database table, or message queue. In other words, TABLES refer
         explicitly to tables constructed directly from source/sink connectors.
+
+        When `obj` is in-memory (e.g., Dataframe), currently this function can
+        create only a TEMPORARY VIEW. If `obj` is in-memory and `temp` is False,
+        it will raise an error.
 
         Parameters
         ----------
@@ -341,44 +364,90 @@ class Backend(BaseBackend, CanCreateDatabase):
         import pyarrow_hotfix  # noqa: F401
 
         import ibis.expr.types as ir
-        from ibis.backends.flink.datatypes import FlinkRowSchema
 
         if obj is None and schema is None:
-            raise exc.IbisError("The schema or obj parameter is required")
+            raise exc.IbisError("`schema` or `obj` is required")
+        if isinstance(obj, (pd.DataFrame, pa.Table)) and not temp:
+            raise exc.IbisError(
+                "`temp` cannot be False when `obj` is in-memory. "
+                "Currently can create only TEMPORARY VIEW for in-memory data."
+            )
 
-        # in-memory data is created as views in `pyflink`
-        elif obj is not None:
-            if isinstance(obj, pa.Table):
-                obj = obj.to_pandas()
-            if isinstance(obj, pd.DataFrame):
-                table = self._table_env.from_pandas(
-                    obj, FlinkRowSchema.from_ibis(schema)
+        if overwrite:
+            if self.list_tables(like=name, temp=temp):
+                self.drop_table(
+                    name=name,
+                    catalog=catalog,
+                    database=database,
+                    temp=temp,
+                    force=True,
                 )
-            if isinstance(obj, ir.Table):
-                table = obj
-            return self.create_view(name, table, database=database, overwrite=overwrite)
 
-        # external data is created as tables in `pyflink`
-        else:
+        # In-memory data is created as views in `pyflink`
+        if obj is not None:
+            if isinstance(obj, pd.DataFrame):
+                dataframe = obj
+
+            elif isinstance(obj, pa.Table):
+                dataframe = obj.to_pandas()
+
+            elif isinstance(obj, ir.Table):
+                # Note (mehmet): If obj points to in-memory data, we create a view.
+                # Other cases are unsupported for now, e.g., obj is of UnboundTable.
+                # See TODO right below for more context on how we handle in-memory data.
+                op = obj.op()
+                if isinstance(op, ops.InMemoryTable):
+                    dataframe = op.data.to_frame()
+                else:
+                    raise exc.IbisError(
+                        "`obj` is of type ibis.expr.types.Table but it is not in-memory. "
+                        "Currently, only in-memory tables are supported. "
+                        "See ibis.memtable() for info on creating in-memory table."
+                    )
+            else:
+                raise exc.IbisError(f"Unsupported `obj` type: {type(obj)}")
+
+            # TODO (mehmet): Flink requires a source connector to create regular tables.
+            # In-memory data can only be created as a view (virtual table). So we decided
+            # to create views for in-memory data. Ideally, this function should only create
+            # tables. However, for that, we would need the notion of a "default" table,
+            # which may not be ideal. We plan to get back to this later.
+            # Ref: https://github.com/ibis-project/ibis/pull/7479#discussion_r1416237088
+            return self.create_view(
+                name=name,
+                obj=dataframe,
+                schema=schema,
+                database=database,
+                catalog=catalog,
+                temp=temp,
+                overwrite=overwrite,
+            )
+
+        # External data is created as tables in `pyflink`
+        else:  # obj is None, schema is not None
             if not tbl_properties:
                 raise exc.IbisError(
-                    "tbl_properties is required when creating table with schema"
+                    "`tbl_properties` is required when creating table with schema"
                 )
-            if overwrite:
-                self.drop_table(
-                    name=name, catalog=catalog, database=database, force=True
-                )
+            elif (
+                "connector" not in tbl_properties or tbl_properties["connector"] is None
+            ):
+                raise exc.IbisError("connector must be defined in `tbl_properties`")
 
+            # TODO (mehmet): Given that we rely on default catalog if one is not specified,
+            # is there any point to support temporary tables?
             statement = CreateTableFromConnector(
                 table_name=name,
                 schema=schema,
                 tbl_properties=tbl_properties,
                 watermark=watermark,
-                temp=temp,
+                temporary=temp,
                 database=database,
                 catalog=catalog,
             )
-            self._exec_sql(statement.compile())
+            sql = statement.compile()
+            self._exec_sql(sql)
+
             return self.table(name, database=database, catalog=catalog)
 
     def drop_table(
@@ -401,7 +470,7 @@ class Backend(BaseBackend, CanCreateDatabase):
         catalog
             Name of the catalog where the table exists, if not the default.
         temp
-            Whether a table is temporary or not.
+            Whether the table is temporary or not.
         force
             If `False`, an exception is raised if the table does not exist.
         """
@@ -410,20 +479,52 @@ class Backend(BaseBackend, CanCreateDatabase):
             database=database,
             catalog=catalog,
             must_exist=not force,
-            temp=temp,
+            temporary=temp,
         )
         self._exec_sql(statement.compile())
+
+    def rename_table(
+        self,
+        old_name: str,
+        new_name: str,
+        force: bool = True,
+    ) -> None:
+        """Rename an existing table.
+
+        Parameters
+        ----------
+        old_name
+            The old name of the table.
+        new_name
+            The new name of the table.
+        force
+            If `False`, an exception is raised if the table does not exist.
+        """
+        statement = RenameTable(
+            old_name=old_name,
+            new_name=new_name,
+            must_exist=not force,
+        )
+        sql = statement.compile()
+        self._exec_sql(sql)
 
     def create_view(
         self,
         name: str,
         obj: pd.DataFrame | ir.Table,
         *,
+        schema: sch.Schema | None = None,
         database: str | None = None,
         catalog: str | None = None,
+        force: bool = False,
+        temp: bool = False,
         overwrite: bool = False,
     ) -> ir.Table:
-        """Create a new view from an expression.
+        """Create a new view from a dataframe or table.
+
+        When `obj` is in-memory (e.g., Dataframe), currently this function can
+        create only a TEMPORARY VIEW. If `obj` is in-memory and `temp` is False,
+        it will raise an error.
 
         Parameters
         ----------
@@ -431,29 +532,72 @@ class Backend(BaseBackend, CanCreateDatabase):
             Name of the new view.
         obj
             An Ibis table expression that will be used to create the view.
+        schema
+            The schema for the new view.
         database
             Name of the database where the view will be created, if not
             provided the database's default is used.
         catalog
             Name of the catalog where the table exists, if not the default.
+        force
+            If `False`, an exception is raised if the table is already present.
+        temp
+            Whether the table is temporary or not.
         overwrite
-            Whether to clobber an existing view with the same name.
+            If `True`, remove the existing view, and create a new one.
 
         Returns
         -------
         Table
             The view that was created.
         """
-        if isinstance(obj, ir.Table):
-            # TODO(chloeh13q): implement CREATE VIEW for expressions
-            raise NotImplementedError
+        import pandas as pd
 
-        if overwrite and name in self._list_views():
-            self.drop_view(name=name, catalog=catalog, database=database, force=True)
+        from ibis.backends.flink.datatypes import FlinkRowSchema
 
-        qualified_name = self._fully_qualified_name(name, database, catalog)
-        self._table_env.create_temporary_view(qualified_name, obj)
-        return self.table(name, database=database, catalog=catalog)
+        if isinstance(obj, pd.DataFrame) and not temp:
+            raise exc.IbisError(
+                "`temp` cannot be False when `obj` is in-memory. "
+                "Currently supports creating only temporary view for in-memory data."
+            )
+
+        if overwrite and self.list_views(like=name, temp=temp):
+            self.drop_view(
+                name=name,
+                database=database,
+                catalog=catalog,
+                temp=temp,
+                force=True,
+            )
+
+        if isinstance(obj, pd.DataFrame):
+            qualified_name = self._fully_qualified_name(name, database, catalog)
+            if schema:
+                table = self._table_env.from_pandas(
+                    obj, FlinkRowSchema.from_ibis(schema)
+                )
+            else:
+                table = self._table_env.from_pandas(obj)
+            # Note (mehmet): We use `create_temporary_view` here instead of `register_table`
+            # as suggested in PyFlink source code due to the deprecation of `register_table`.
+            self._table_env.create_temporary_view(qualified_name, table)
+
+        elif isinstance(obj, ir.Table):
+            query_expression = self.compile(obj)
+            statement = CreateView(
+                name=name,
+                query_expression=query_expression,
+                database=database,
+                can_exist=force,
+                temporary=temp,
+            )
+            sql = statement.compile()
+            self._exec_sql(sql)
+
+        else:
+            raise exc.IbisError(f"Unsupported `obj` type: {type(obj)}")
+
+        return self.table(name=name, database=database, catalog=catalog)
 
     def drop_view(
         self,
@@ -461,6 +605,7 @@ class Backend(BaseBackend, CanCreateDatabase):
         *,
         database: str | None = None,
         catalog: str | None = None,
+        temp: bool = False,
         force: bool = False,
     ) -> None:
         """Drop a view.
@@ -473,14 +618,22 @@ class Backend(BaseBackend, CanCreateDatabase):
             Name of the database where the view exists, if not the default.
         catalog
             Name of the catalog where the view exists, if not the default.
+        temp
+            Whether the view is temporary or not.
         force
             If `False`, an exception is raised if the view does not exist.
         """
-        qualified_name = self._fully_qualified_name(name, database, catalog)
-        if not (self._table_env.drop_temporary_view(qualified_name) or force):
-            raise exc.IntegrityError(f"View {name} does not exist.")
-
         # TODO(deepyaman): Support (and differentiate) permanent views.
+
+        statement = DropView(
+            name=name,
+            database=database,
+            catalog=catalog,
+            must_exist=(not force),
+            temporary=temp,
+        )
+        sql = statement.compile()
+        self._exec_sql(sql)
 
     @classmethod
     @lru_cache

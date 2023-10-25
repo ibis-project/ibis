@@ -92,6 +92,10 @@ def _create_temp_table_with_schema(backend, con, temp_table_name, schema, data=N
     ],
 )
 @pytest.mark.notimpl(["dask", "datafusion", "druid"])
+@pytest.mark.notimpl(
+    ["flink"],
+    reason="Flink backend supports creating only TEMPORARY VIEW for in-memory data.",
+)
 def test_create_table(backend, con, temp_table, lamduh, sch):
     df = pd.DataFrame(
         {
@@ -107,7 +111,6 @@ def test_create_table(backend, con, temp_table, lamduh, sch):
         temp_table,
         obj,
         schema=sch,
-        **{"tbl_properties": {"connector": None}} if backend.name() == "flink" else {},
     )
     result = (
         con.table(temp_table).execute().sort_values("first_name").reset_index(drop=True)
@@ -215,7 +218,12 @@ backend_type_mapping = {
 }
 
 
-@mark.notimpl(["datafusion", "druid", "flink"])
+@mark.notimpl(["datafusion", "druid"])
+@pytest.mark.notimpl(
+    ["flink"],
+    raises=com.IbisError,
+    reason="`tbl_properties` is required when creating table with schema",
+)
 def test_create_table_from_schema(con, new_schema, temp_table):
     new_table = con.create_table(temp_table, schema=new_schema)
     backend_mapping = backend_type_mapping.get(con.name, {})
@@ -278,7 +286,6 @@ def test_create_temporary_table_from_schema(tmpcon, new_schema):
         "druid",
         "duckdb",
         "exasol",
-        "flink",
         "mssql",
         "mysql",
         "oracle",
@@ -289,6 +296,11 @@ def test_create_temporary_table_from_schema(tmpcon, new_schema):
         "sqlite",
         "trino",
     ]
+)
+@pytest.mark.notimpl(
+    ["flink"],
+    raises=com.IbisError,
+    reason="`tbl_properties` is required when creating table with schema",
 )
 def test_rename_table(con, temp_table, temp_table_orig):
     schema = ibis.schema({"a": "string", "b": "bool", "c": "int32"})
@@ -304,23 +316,34 @@ def test_rename_table(con, temp_table, temp_table_orig):
 @mark.notyet(
     ["trino"], reason="trino doesn't support NOT NULL in its in-memory catalog"
 )
-@mark.broken(["snowflake", "flink"], reason="shows not nullable column as nullable")
+@mark.broken(["snowflake"], reason="snowflake shows not nullable column as nullable")
+@pytest.mark.notimpl(
+    ["flink"],
+    raises=com.IbisError,
+    reason="`tbl_properties` is required when creating table with schema",
+)
 def test_nullable_input_output(con, temp_table):
     sch = ibis.schema(
         [("foo", "int64"), ("bar", dt.int64(nullable=False)), ("baz", "boolean")]
     )
-    t = con.create_table(
-        temp_table,
-        schema=sch,
-        **{"tbl_properties": {"connector": None}} if con.name == "flink" else {},
-    )
+    t = con.create_table(temp_table, schema=sch)
 
     assert t.schema().types[0].nullable
     assert not t.schema().types[1].nullable
     assert t.schema().types[2].nullable
 
 
-@mark.notimpl(["datafusion", "druid", "flink", "polars"])
+@mark.notimpl(["datafusion", "druid", "polars"])
+@pytest.mark.broken(
+    ["flink"],
+    raises=ValueError,
+    reason=(
+        "table `FUNCTIONAL_ALLTYPES` does not exist"
+        "Note (mehmet): Not raised when only this test function is executed, "
+        "but can be reproduced by running all the test functions in this file."
+        "TODO (mehmet): Caused by the test execution order?"
+    ),
+)
 def test_create_drop_view(ddl_con, temp_view):
     # setup
     table_name = "functional_alltypes"
@@ -802,21 +825,24 @@ def test_invalid_connect(tmp_path):
 
 
 @pytest.mark.parametrize(
-    ("expr", "expected"),
+    ("arg", "lambda_", "expected"),
     [
         param(
-            ibis.memtable([(1, 2.0, "3")], columns=list("abc")),
+            [(1, 2.0, "3")],
+            lambda arg: ibis.memtable(arg, columns=list("abc")),
             pd.DataFrame([(1, 2.0, "3")], columns=list("abc")),
             id="simple",
         ),
         param(
-            ibis.memtable([(1, 2.0, "3")]),
+            [(1, 2.0, "3")],
+            lambda arg: ibis.memtable(arg),
             pd.DataFrame([(1, 2.0, "3")], columns=["col0", "col1", "col2"]),
             id="simple_auto_named",
         ),
         param(
-            ibis.memtable(
-                [(1, 2.0, "3")],
+            [(1, 2.0, "3")],
+            lambda arg: ibis.memtable(
+                arg,
                 schema=ibis.schema(dict(a="int8", b="float32", c="string")),
             ),
             pd.DataFrame([(1, 2.0, "3")], columns=list("abc")).astype(
@@ -825,29 +851,34 @@ def test_invalid_connect(tmp_path):
             id="simple_schema",
         ),
         param(
-            ibis.memtable(
-                pd.DataFrame({"a": [1], "b": [2.0], "c": ["3"]}).astype(
-                    {"a": "int8", "b": "float32"}
-                )
+            pd.DataFrame({"a": [1], "b": [2.0], "c": ["3"]}).astype(
+                {"a": "int8", "b": "float32"}
             ),
+            lambda arg: ibis.memtable(arg),
             pd.DataFrame([(1, 2.0, "3")], columns=list("abc")).astype(
                 {"a": "int8", "b": "float32"}
             ),
             id="dataframe",
         ),
         param(
-            ibis.memtable([dict(a=1), dict(a=2)]),
+            [dict(a=1), dict(a=2)],
+            lambda arg: ibis.memtable(arg),
             pd.DataFrame({"a": [1, 2]}),
             id="list_of_dicts",
         ),
     ],
 )
-def test_in_memory_table(backend, con, expr, expected):
+def test_in_memory_table(backend, con, arg, lambda_, expected, monkeypatch):
+    monkeypatch.setattr(ibis.options, "default_backend", con)
+
+    expr = lambda_(arg)
     result = con.execute(expr)
     backend.assert_frame_equal(result, expected)
 
 
-def test_filter_memory_table(backend, con):
+def test_filter_memory_table(backend, con, monkeypatch):
+    monkeypatch.setattr(ibis.options, "default_backend", con)
+
     t = ibis.memtable([(1, 2), (3, 4), (5, 6)], columns=["x", "y"])
     expr = t.filter(t.x > 1)
     expected = pd.DataFrame({"x": [3, 5], "y": [4, 6]})
@@ -855,7 +886,9 @@ def test_filter_memory_table(backend, con):
     backend.assert_frame_equal(result, expected)
 
 
-def test_agg_memory_table(con):
+def test_agg_memory_table(con, monkeypatch):
+    monkeypatch.setattr(ibis.options, "default_backend", con)
+
     t = ibis.memtable([(1, 2), (3, 4), (5, 6)], columns=["x", "y"])
     expr = t.x.count()
     result = con.execute(expr)
@@ -865,7 +898,9 @@ def test_agg_memory_table(con):
 @pytest.mark.broken(
     ["polars"], reason="join column renaming is currently incorrect on polars"
 )
-def test_self_join_memory_table(backend, con):
+def test_self_join_memory_table(backend, con, monkeypatch):
+    monkeypatch.setattr(ibis.options, "default_backend", con)
+
     t = ibis.memtable({"x": [1, 2], "y": [2, 1], "z": ["a", "b"]})
     t_view = t.view()
     expr = t.join(t_view, t.x == t_view.y).select("x", "y", "z", "z_right")
@@ -877,23 +912,34 @@ def test_self_join_memory_table(backend, con):
 
 
 @pytest.mark.parametrize(
-    "t",
+    ("arg", "lambda_"),
     [
         param(
-            ibis.memtable([("a", 1.0)], columns=["a", "b"]),
+            [("a", 1.0)],
+            lambda arg: ibis.memtable(arg, columns=["a", "b"]),
             id="python",
-            marks=pytest.mark.notimpl(["flink"], raises=NotImplementedError),
         ),
         param(
-            ibis.memtable(pd.DataFrame([("a", 1.0)], columns=["a", "b"])),
+            pd.DataFrame([("a", 1.0)], columns=["a", "b"]),
+            lambda arg: ibis.memtable(arg),
             id="pandas-memtable",
-            marks=pytest.mark.notimpl(["flink"], raises=NotImplementedError),
         ),
-        param(pd.DataFrame([("a", 1.0)], columns=["a", "b"]), id="pandas"),
+        param(
+            pd.DataFrame([("a", 1.0)], columns=["a", "b"]),
+            lambda arg: arg,
+            id="pandas",
+        ),
     ],
 )
 @pytest.mark.notimpl(["dask", "datafusion", "druid"])
-def test_create_from_in_memory_table(backend, con, t, temp_table):
+@pytest.mark.notimpl(
+    ["flink"],
+    reason="Flink backend supports creating only TEMPORARY VIEW for in-memory data.",
+)
+def test_create_from_in_memory_table(con, temp_table, arg, lambda_, monkeypatch):
+    monkeypatch.setattr(ibis.options, "default_backend", con)
+
+    t = lambda_(arg)
     con.create_table(temp_table, t)
     assert temp_table in con.list_tables()
 
@@ -1216,8 +1262,8 @@ def test_set_backend_url(url, monkeypatch):
 @pytest.mark.broken(["druid"], reason="sqlalchemy dialect is broken")
 @pytest.mark.notimpl(
     ["flink"],
-    raises=AttributeError,
-    reason="'Backend' object has no attribute 'raw_sql'",
+    raises=com.IbisError,
+    reason="`tbl_properties` is required when creating table with schema",
 )
 def test_create_table_timestamp(con, temp_table):
     schema = ibis.schema(
@@ -1226,7 +1272,6 @@ def test_create_table_timestamp(con, temp_table):
     con.create_table(
         temp_table,
         schema=schema,
-        **{"tbl_properties": {"connector": None}} if con.name == "flink" else {},
         overwrite=True,
     )
     rows = con.raw_sql(f"DESCRIBE {temp_table}").fetchall()
@@ -1396,8 +1441,18 @@ def gen_test_name(con: BaseBackend) -> str:
     ["druid"], raises=sa.exc.ProgrammingError, reason="generated SQL fails to parse"
 )
 @mark.notimpl(["impala"], reason="impala doesn't support memtable")
-@mark.notimpl(["flink", "pyspark"])
-def test_overwrite(ddl_con):
+@mark.notimpl(["pyspark"])
+@mark.notimpl(
+    ["flink"],
+    raises=com.IbisError,
+    reason=(
+        "Unsupported operation: <class 'ibis.expr.operations.relations.Selection'>. "
+        "If `obj` is of `ir.Table`, the operation must be `InMemoryTable`."
+    ),
+)
+def test_overwrite(ddl_con, monkeypatch):
+    monkeypatch.setattr(ibis.options, "default_backend", ddl_con)
+
     t0 = ibis.memtable({"a": [1, 2, 3]})
 
     with gen_test_name(ddl_con) as x:

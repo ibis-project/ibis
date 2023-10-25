@@ -6,9 +6,11 @@ import sqlglot as sg
 
 import ibis.expr.schema as sch
 from ibis.backends.base.sql.ddl import (
+    CreateTable,
     CreateTableWithSchema,
     DropObject,
     InsertSelect,
+    RenameTable,
     _CreateDDL,
     _format_properties,
     _is_quoted,
@@ -35,9 +37,12 @@ def _format_schema_element(name, t):
 
 def type_to_flink_sql_string(tval):
     if tval.is_timestamp():
-        return f"timestamp({tval.scale})"
+        return f"TIMESTAMP({tval.scale})"
     else:
-        return type_to_sql_string(tval)
+        sql_string = type_to_sql_string(tval)
+        if not tval.nullable:
+            sql_string += " NOT NULL"
+        return sql_string
 
 
 def _format_watermark_strategy(watermark: Watermark) -> str:
@@ -85,7 +90,7 @@ class CreateTableFromConnector(
         watermark: Watermark | None = None,
         database: str | None = None,
         catalog: str | None = None,
-        temp: bool = False,
+        temporary: bool = False,
         **kwargs,
     ):
         super().__init__(
@@ -99,7 +104,7 @@ class CreateTableFromConnector(
             **kwargs,
         )
         self.catalog = catalog
-        self.temp = temp
+        self.temporary = temporary
         self.watermark = watermark
 
     def _storage(self) -> str:
@@ -111,7 +116,7 @@ class CreateTableFromConnector(
     @property
     def _prefix(self) -> str:
         # `TEMPORARY` is not documented in Flink's documentation
-        modifier = " TEMPORARY" if self.temp else ""
+        modifier = " TEMPORARY" if self.temporary else ""
         return f"CREATE{modifier} TABLE"
 
     def _create_line(self) -> str:
@@ -145,6 +150,43 @@ class CreateTableFromConnector(
         yield self._format_tbl_properties()
 
 
+class CreateView(_CatalogAwareBaseQualifiedSQLStatement, CreateTable):
+    def __init__(
+        self,
+        name: str,
+        query_expression: str,
+        database: str | None = None,
+        catalog: str | None = None,
+        can_exist: bool = False,
+        temporary: bool = False,
+    ):
+        super().__init__(
+            table_name=name,
+            database=database,
+            can_exist=can_exist,
+        )
+        self.name = name
+        self.query_expression = query_expression
+        self.catalog = catalog
+        self.temporary = temporary
+
+    @property
+    def _prefix(self):
+        if self.temporary:
+            return "CREATE TEMPORARY VIEW"
+        else:
+            return "CREATE VIEW"
+
+    def _create_line(self):
+        scoped_name = self._get_scoped_name(self.name, self.database, self.catalog)
+        return f"{self._prefix} {self._if_exists()}{scoped_name}"
+
+    @property
+    def pieces(self):
+        yield self._create_line()
+        yield f"AS {self.query_expression}"
+
+
 class DropTable(_CatalogAwareBaseQualifiedSQLStatement, DropObject):
     _object_type = "TABLE"
 
@@ -154,22 +196,64 @@ class DropTable(_CatalogAwareBaseQualifiedSQLStatement, DropObject):
         database: str | None = None,
         catalog: str | None = None,
         must_exist: bool = True,
-        temp: bool = False,
+        temporary: bool = False,
     ):
         super().__init__(must_exist=must_exist)
         self.table_name = table_name
         self.database = database
         self.catalog = catalog
-        self.temp = temp
+        self.temporary = temporary
 
     def _object_name(self):
         return self._get_scoped_name(self.table_name, self.database, self.catalog)
 
     def compile(self):
-        temp = "TEMPORARY " if self.temp else ""
+        temporary = "TEMPORARY " if self.temporary else ""
         if_exists = "" if self.must_exist else "IF EXISTS "
         object_name = self._object_name()
-        return f"DROP {temp}{self._object_type} {if_exists}{object_name}"
+        return f"DROP {temporary}{self._object_type} {if_exists}{object_name}"
+
+
+class DropView(DropTable):
+    _object_type = "VIEW"
+
+    def __init__(
+        self,
+        name: str,
+        database: str | None = None,
+        catalog: str | None = None,
+        must_exist: bool = True,
+        temporary: bool = False,
+    ):
+        super().__init__(
+            table_name=name,
+            database=database,
+            catalog=catalog,
+            must_exist=must_exist,
+            temporary=temporary,
+        )
+
+
+class RenameTable(RenameTable):
+    def __init__(
+        self,
+        old_name: str,
+        new_name: str,
+        old_database: str | None = None,
+        new_database: str | None = None,
+        must_exist: bool = True,
+    ):
+        super().__init__(
+            old_name=old_name,
+            new_name=new_name,
+            old_database=old_database,
+            new_database=new_database,
+        )
+        self.must_exist = must_exist
+
+    def compile(self):
+        if_exists = "" if self.must_exist else "IF EXISTS"
+        return f"ALTER TABLE {if_exists} {self._old} RENAME TO {self._new}"
 
 
 class _DatabaseObject:
