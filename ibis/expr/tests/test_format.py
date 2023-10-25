@@ -11,13 +11,12 @@ import ibis.expr.format
 import ibis.expr.operations as ops
 import ibis.legacy.udf.vectorized as udf
 from ibis import util
-from ibis.expr.operations.relations import Projection
 
 # easier to switch implementation if needed
 fmt = repr
 
 
-@pytest.mark.parametrize("cls", set(ops.Relation.__subclasses__()) - {Projection})
+@pytest.mark.parametrize("cls", set(ops.Relation.__subclasses__()))
 def test_tables_have_format_rules(cls):
     assert cls in ibis.expr.format.fmt.registry
 

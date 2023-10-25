@@ -598,9 +598,8 @@ def multiple_joins(table, num_joins):
         table = table.left_join(table, ["dummy"])[[table]]
 
 
-# TODO(kszucs): restore benchmarking with 100 columns which has been disabled
 @pytest.mark.parametrize("num_joins", [1, 10])
-@pytest.mark.parametrize("num_columns", [1, 10])
+@pytest.mark.parametrize("num_columns", [1, 10, 100])
 def test_multiple_joins(benchmark, num_joins, num_columns):
     table = ibis.table(
         {f"col_{i:d}": "string" for i in range(num_columns)},

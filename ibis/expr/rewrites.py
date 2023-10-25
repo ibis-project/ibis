@@ -82,18 +82,15 @@ def rewrite_sample(_):
     )
 
 
-x = var("x")
-y = var("y")
-t = var("t")
-r = var("r")
 parent = var("parent")
 fields = var("fields")
 parent_fields = var("parent_fields")
-peeled_fields = var("peeled_fields")
+
 
 # reprojection of the same fields from the parent selection
 rewrite_redundant_selection = (
-    p.Selection(x, selections=[p.Selection(selections=Eq(x.selections))]) >> x
+    p.Selection(parent, selections=[p.Selection(selections=Eq(parent.selections))])
+    >> parent
 )
 
 
@@ -102,14 +99,10 @@ def can_prune_parent_projection(selection, context):
     fields = context["fields"]
     parent_fields = context["parent_fields"]
 
-    columns, conflicts = {}, {}
+    conflicts = {}
     for value in parent_fields:
-        if isinstance(value, ops.Relation):
-            # TODO(kszucs): this makes the rewrite rule really sloggy
-            for name in value.schema:
-                columns[name] = ops.TableColumn(value, name)
-        elif isinstance(value, ops.TableColumn):
-            columns[value.name] = value
+        if isinstance(value, (ops.Relation, ops.TableColumn)):
+            continue
         elif value.find((ops.WindowFunction, ops.ExistsSubquery), filter=ops.Value):
             # the parent has analytic projections like window functions so we
             # can't push down filters to that level
@@ -119,28 +112,13 @@ def can_prune_parent_projection(selection, context):
             # which are not just plain column references
             conflicts[value.name] = value
 
-    peeled_fields = []
-    reprojected_columns = p.TableColumn(parent, In(columns)) >> (
-        lambda _: columns[_.name]
-    )
     conflicting_columns = p.TableColumn(parent, In(conflicts))
-
     for field in fields:
-        if field == parent:
-            if parent_fields:
-                peeled_fields.extend(parent_fields)
-            else:
-                # order_by() and filter() creates selections objects with empty
-                # selections field, so we need to add the parent table to the
-                # selections explicitly, should add selections=[self] there instead
-                peeled_fields.append(parent.table)
-        elif field.match(conflicting_columns, filter=ops.Value):
+        if field.match(conflicting_columns, filter=ops.Value):
+            # the field references a newly projected value expression from the
+            # parent selection so we can't eliminate the parent projection
             return NoMatch
-        else:
-            field = field.replace(reprojected_columns, filter=ops.Value)
-            peeled_fields.append(field)
 
-    context["peeled_fields"] = peeled_fields
     return selection
 
 
@@ -151,38 +129,46 @@ def can_prune_parent_projection(selection, context):
     p.Selection(parent @ p.Selection(selections=parent_fields), selections=fields)
     & can_prune_parent_projection
 )
-def prune_subsequent_projection(
-    _, parent, fields, parent_fields, peeled_fields, **kwargs
-):
-    # needed to support the ibis/tests/sql/test_select_sql.py::test_fuse_projections
-    # test case which wouldn't work with Eq(parent) since it calls
-    # filtered_table.select(table.field) referencing a different but semantically
-    # equivalent table object r2 instead of r1
-    #
-    # r0 := UnboundTable: tbl
-    #   foo   int32
-    #   bar   int64
-    #   value float64
-    #
-    # r1 := Selection[r0]
-    #   predicates:
-    #     r0.value > 0
-    #   selections:
-    #     r0
-    #     baz: r0.foo + r0.bar
-    #
-    # r2 := Selection[r0]
-    #   selections:
-    #     r0
-    #     baz: r0.foo + r0.bar
-    #
-    # Selection[r1]
-    #   selections:
-    #     r2
-    #     qux: r2.foo * 2
-    traverse_only = p.Value | p.Selection
-    pattern = p.Selection(parent.table, parent.selections) >> parent.table
-    selections = [
-        field.replace(pattern, filter=traverse_only) for field in peeled_fields
-    ]
+def prune_subsequent_projection(_, parent, fields, parent_fields, **kwargs):
+    # create a mapping of column names to projected value expressions from the parent
+    column_lookup = {}
+    parent_fields = parent_fields or [parent.table]
+    for field in parent_fields:
+        if isinstance(field, ops.Relation):
+            for name in field.schema:
+                column_lookup[name] = ops.TableColumn(field, name)
+        else:
+            column_lookup[field.name] = field
+
+    # Eq() is an optimization to avoid deeper pattern matching
+    substitute_parent = p.Selection(parent.table, Eq(parent.selections)) >> parent.table
+    # replace parent columns with the corresponding value from the lookup table
+    lookup_from_parent = p.TableColumn(parent) >> (lambda _: column_lookup[_.name])
+
+    selections = []
+    for field in fields:
+        if field == parent:
+            if parent_fields:
+                # the parent selection is referenced directly, so we need to
+                # include all of its fields in the new selection
+                selections.extend(parent_fields)
+            else:
+                # order_by() and filter() creates selections objects with empty
+                # selections field, so we need to add the parent table to the
+                # selections explicitly, should add selections=[self] there instead
+                selections.append(parent.table)
+        elif isinstance(field, ops.TableColumn):
+            # faster branch for simple column references
+            if field.table == parent:
+                field = column_lookup[field.name]
+            selections.append(field)
+        else:
+            # need to replace columns referencing the parent table with the
+            # corresponding projected value expressions from the parent selection
+            field = field.replace(lookup_from_parent, filter=ops.Value)
+            # replace any leftover references to the parent selection which may
+            # be in e.g. WindowFrame operations
+            field = field.replace(substitute_parent, filter=p.Value | p.Selection)
+            selections.append(field)
+
     return parent.copy(selections=selections)
