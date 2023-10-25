@@ -73,6 +73,7 @@ except ImportError:
         param(
             lambda c: c.cast("date"),
             id="cast",
+            marks=pytest.mark.notimpl(["impala"], raises=com.UnsupportedBackendType),
         ),
     ],
 )
