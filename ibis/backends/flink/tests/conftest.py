@@ -53,10 +53,10 @@ class TestConf(BackendTest):
 
         for table_name in TEST_TABLES:
             path = self.data_dir / "parquet" / f"{table_name}.parquet"
-            self.connection.create_table(table_name, pd.read_parquet(path))
+            self.connection.create_table(table_name, pd.read_parquet(path), temp=True)
 
-        self.connection.create_table("json_t", json_types)
-        self.connection.create_table("struct", struct_types)
+        self.connection.create_table("json_t", json_types, temp=True)
+        self.connection.create_table("struct", struct_types, temp=True)
 
 
 class TestConfForStreaming(TestConf):
@@ -110,3 +110,28 @@ def db(con):
 @pytest.fixture(scope="session")
 def alltypes(con):
     return con.tables.functional_alltypes
+
+
+@pytest.fixture
+def temp_view(con) -> str:
+    """Return a temporary view name.
+
+    Parameters
+    ----------
+    con : backend connection
+
+    Yields
+    ------
+    name : string
+        Random view name for a temporary usage.
+
+    Note (mehmet): Added this here because the fixture
+    ibis/ibis/backends/conftest.py::temp_view()
+    leads to docker related errors through its parameter `ddl_con`.
+    """
+    from ibis import util
+
+    name = util.gen_name("view")
+    yield name
+
+    con.drop_view(name, force=True)

@@ -85,8 +85,9 @@ def tempdir_sink_configs():
     return generate_tempdir_configs
 
 
-def test_list_tables(con):
-    assert len(con.list_tables())
+@pytest.mark.parametrize("temp", [True, False])
+def test_list_tables(con, temp):
+    assert len(con.list_tables(temp=temp))
     assert con.list_tables(catalog="default_catalog", database="default_database")
 
 
@@ -194,6 +195,7 @@ def test_recreate_in_mem_table(
         obj=employee_df,
         schema=schema,
         tbl_properties=tbl_properties,
+        temp=True,
     )
     assert temp_table in con.list_tables()
     if schema is not None:
@@ -210,6 +212,7 @@ def test_recreate_in_mem_table(
             schema=schema,
             tbl_properties=tbl_properties,
             overwrite=False,
+            temp=True,
         )
 
 
@@ -239,6 +242,7 @@ def test_force_recreate_in_mem_table(
         obj=employee_df,
         schema=schema,
         tbl_properties=tbl_properties,
+        temp=True,
     )
     assert temp_table in con.list_tables()
     if schema is not None:
@@ -250,6 +254,7 @@ def test_force_recreate_in_mem_table(
         obj=employee_df,
         schema=schema,
         tbl_properties=tbl_properties,
+        temp=True,
         overwrite=True,
     )
     assert temp_table in con.list_tables()
@@ -270,6 +275,89 @@ def test_create_source_table_with_watermark(
     )
     assert temp_table in con.list_tables()
     assert new_table.schema() == functiona_alltypes_schema
+
+
+@pytest.mark.parametrize("temp", [True, False])
+def test_create_view(
+    con,
+    temp_table: str,
+    awards_players_schema: sch.Schema,
+    csv_source_configs,
+    temp_view: str,
+    temp,
+):
+    table = con.create_table(
+        name=temp_table,
+        schema=awards_players_schema,
+        tbl_properties=csv_source_configs("awards_players"),
+    )
+    assert temp_table in con.list_tables()
+
+    con.create_view(
+        name=temp_view,
+        obj=table,
+        force=False,
+        temp=temp,
+        overwrite=False,
+    )
+    view_list = sorted(con.list_tables())
+    assert temp_view in view_list
+
+    # Try to re-create the same view with `force=False`
+    with pytest.raises(Py4JJavaError):
+        con.create_view(
+            name=temp_view,
+            obj=table,
+            force=False,
+            temp=temp,
+            overwrite=False,
+        )
+    assert view_list == sorted(con.list_tables())
+
+    # Try to re-create the same view with `force=True`
+    con.create_view(
+        name=temp_view,
+        obj=table,
+        force=True,
+        temp=temp,
+        overwrite=False,
+    )
+    assert view_list == sorted(con.list_tables())
+
+    # Overwrite the view
+    con.create_view(
+        name=temp_view,
+        obj=table,
+        force=False,
+        temp=temp,
+        overwrite=True,
+    )
+    assert view_list == sorted(con.list_tables())
+
+    con.drop_view(name=temp_view, temp=temp, force=True)
+    assert temp_view not in con.list_tables()
+
+
+def test_rename_table(con, awards_players_schema, temp_table, csv_source_configs):
+    table_name = temp_table
+    con.create_table(
+        name=table_name,
+        schema=awards_players_schema,
+        tbl_properties=csv_source_configs("awards_players"),
+    )
+    assert table_name in con.list_tables()
+
+    new_table_name = f"{table_name}_new"
+    con.rename_table(
+        old_name=table_name,
+        new_name=new_table_name,
+        force=False,
+    )
+    assert table_name not in con.list_tables()
+    assert new_table_name in con.list_tables()
+
+    con.drop_table(new_table_name)
+    assert new_table_name not in con.list_tables()
 
 
 @pytest.mark.parametrize(
@@ -327,6 +415,7 @@ def test_insert_simple_select(con, tempdir_sink_configs):
             [("fred flintstone", 35, 1.28), ("barney rubble", 32, 2.32)],
             columns=["name", "age", "gpa"],
         ),
+        temp=True,
     )
     sink_schema = sch.Schema({"name": dt.string, "age": dt.int64})
     source_table = ibis.table(
