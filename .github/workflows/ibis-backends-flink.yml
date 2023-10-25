@@ -38,8 +38,8 @@ env:
   FORCE_COLOR: "1"
 
 jobs:
-  test_flink_backend:
-    name: Flink ${{ matrix.os }} python-${{ matrix.python-version }}
+  test_backends:
+    name: ${{ matrix.backend.title }} ${{ matrix.os }} python-${{ matrix.python-version }}
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -51,13 +51,13 @@ jobs:
           - "3.9"
         backend:
           - name: flink
+            title: Flink
+            serial: true
             extras:
               - flink
             additional_deps:
               - apache-flink
               - grpcio-status # FIXME(deepyaman)
-            even_more_deps:
-              - pandas~=1.5
     steps:
       - name: checkout
         uses: actions/checkout@v4
@@ -92,19 +92,17 @@ jobs:
         run: poetry install --without dev --without docs --extras "${{ join(matrix.backend.extras, ' ') }}"
 
       - name: install other deps
-        if: matrix.backend.additional_deps != null
         run: poetry run pip install ${{ join(matrix.backend.additional_deps, ' ') }}
 
       # FIXME(deepyaman)
-      - name: install even more deps
-        if: matrix.backend.even_more_deps != null
-        run: poetry run pip install ${{ join(matrix.backend.even_more_deps, ' ') }}
+      - name: override overly-restrictive PyFlink requirements
+        run: poetry run pip install pandas~=1.5
 
       - name: show installed deps
         run: poetry run pip list
 
       - name: "run serial tests: ${{ matrix.backend.name }} (common)"
-        run: just ci-check -m ${{ matrix.backend.name }} ibis/backends/tests/test_generic.py
+        run: just ci-check -m ${{ matrix.backend.name }} ibis/backends/tests/test_string.py
         env:
           IBIS_EXAMPLES_DATA: ${{ runner.temp }}/examples-${{ matrix.backend.name }}-${{ matrix.os }}-${{ steps.install_python.outputs.python-version }}
           JVM_ARGS: -XX:CompressedClassSpaceSize=3G
