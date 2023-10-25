@@ -272,92 +272,14 @@ class Projector:
             rewrite_redundant_selection,
         )
 
-        roots = find_immediate_parent_tables(self.parent.op())
-        first_root = roots[0]
-
         new = ops.Selection(self.parent, selections=self.clean_exprs)
-        rewritten = match(rewrite_redundant_selection, new)
-        if rewritten is not NoMatch:
-            return rewritten
-
-        rewritten = match(prune_subsequent_projection, new)
-        if rewritten is not NoMatch:
-            return rewritten
-
-        if len(roots) == 1 and isinstance(first_root, ops.Selection):
-            fused_op = self.try_fusion(first_root)
-            if fused_op is not None:
-                # TODO(kszucs): remove try_fusion entirely
-                raise ValueError()
-                return fused_op
-
-        return ops.Selection(self.parent, self.clean_exprs)
-
-    def try_fusion(self, root):
-        assert self.parent.op() == root
-
-        root_table = root.table
-        root_table_expr = root_table.to_expr()
-        roots = find_immediate_parent_tables(root_table)
-        fused_exprs = []
-        clean_exprs = self.clean_exprs
-
-        if not isinstance(root_table, ops.Join):
-            try:
-                resolved = [
-                    root_table_expr._ensure_expr(expr) for expr in self.input_exprs
-                ]
-            except (AttributeError, IbisTypeError):
-                resolved = clean_exprs
-            else:
-                # if any expressions aren't exactly equivalent then don't try
-                # to fuse them
-                if any(
-                    not res_root_root.equals(res_root)
-                    for res_root_root, res_root in zip(resolved, clean_exprs)
-                ):
-                    return None
-        else:
-            # joins cannot be used to resolve expressions, but we still may be
-            # able to fuse columns from a projection off of a join. In that
-            # case, use the projection's input expressions as the columns with
-            # which to attempt fusion
-            resolved = clean_exprs
-
-        root_selections = root.selections
-        parent_op = self.parent.op()
-        for val in resolved:
-            # a * projection
-            if isinstance(val, ir.Table) and (
-                parent_op.equals(val.op())
-                # gross we share the same table root. Better way to
-                # detect?
-                or len(roots) == 1
-                and find_immediate_parent_tables(val.op())[0] == roots[0]
-            ):
-                have_root = False
-                for root_sel in root_selections:
-                    # Don't add the * projection twice
-                    if root_sel.equals(root_table):
-                        fused_exprs.append(root_table)
-                        have_root = True
-                        continue
-                    fused_exprs.append(root_sel)
-
-                # This was a filter, so implicitly a select *
-                if not have_root and not root_selections:
-                    fused_exprs = [root_table, *fused_exprs]
-            elif shares_all_roots(val.op(), root_table):
-                fused_exprs.append(val)
-            else:
-                return None
-
-        return ops.Selection(
-            root_table,
-            fused_exprs,
-            predicates=root.predicates,
-            sort_keys=root.sort_keys,
+        rewritten = match(
+            rewrite_redundant_selection | prune_subsequent_projection, new
         )
+        if rewritten is not NoMatch:
+            return rewritten
+        else:
+            return new
 
 
 def find_first_base_table(node):

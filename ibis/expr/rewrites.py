@@ -96,35 +96,6 @@ rewrite_redundant_selection = (
     p.Selection(x, selections=[p.Selection(selections=Eq(x.selections))]) >> x
 )
 
-# the following rewrite rule is responsible to fuse the following two non-overlapping
-# selections into a single one:
-#
-# INPUT:
-#
-# r0 := UnboundTable: t
-#   col int32
-#
-# r1 := Selection[r0]
-#   selections:
-#     r0
-#     col1: r0.col + 1
-#
-# Selection[r1]
-#   selections:
-#     r1
-#     col2: r0.col + 2
-#
-# OUTPUT:
-#
-# r0 := UnboundTable: t
-#   col int32
-
-# Selection[r0]
-#   selections:
-#     r0
-#     col1: r0.col + 1
-#     col2: r0.col + 2
-
 
 def can_prune_parent_projection(selection, context):
     parent = context["parent"]
@@ -180,7 +151,9 @@ def can_prune_parent_projection(selection, context):
     p.Selection(parent @ p.Selection(selections=parent_fields), selections=fields)
     & can_prune_parent_projection
 )
-def prune_subsequent_projection(_, parent, fields, parent_fields, peeled_fields):
+def prune_subsequent_projection(
+    _, parent, fields, parent_fields, peeled_fields, **kwargs
+):
     # needed to support the ibis/tests/sql/test_select_sql.py::test_fuse_projections
     # test case which wouldn't work with Eq(parent) since it calls
     # filtered_table.select(table.field) referencing a different but semantically
