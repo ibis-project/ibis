@@ -285,16 +285,8 @@ def test_notin(backend, alltypes, sorted_df, column, elements):
 @pytest.mark.parametrize(
     ("predicate_fn", "expected_fn"),
     [
-        param(
-            lambda t: t["bool_col"],
-            lambda df: df["bool_col"],
-            id="no_op",
-        ),
-        param(
-            lambda t: ~t["bool_col"],
-            lambda df: ~df["bool_col"],
-            id="negate",
-        ),
+        param(lambda t: t["bool_col"], lambda df: df["bool_col"], id="no_op"),
+        param(lambda t: ~t["bool_col"], lambda df: ~df["bool_col"], id="negate"),
         param(
             lambda t: t.bool_col & t.bool_col,
             lambda df: df.bool_col & df.bool_col,
@@ -1279,11 +1271,6 @@ def test_hash_consistent(backend, alltypes):
                     reason="raises TrinoUserError",
                 ),
                 pytest.mark.broken(["polars"], reason="casts to 1672531200000000000"),
-                pytest.mark.broken(
-                    ["flink"],
-                    raises=AssertionError,
-                    reason="assert 1672549200 == 1672531200",
-                ),
             ],
         ),
     ],

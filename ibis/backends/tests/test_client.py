@@ -149,7 +149,6 @@ def test_load_data_sqlalchemy(alchemy_backend, alchemy_con, alchemy_temp_table, 
 
     obj = lamduh(df)
     alchemy_con.create_table(alchemy_temp_table, obj, schema=sch, overwrite=True)
-
     result = (
         alchemy_con.table(alchemy_temp_table)
         .execute()
@@ -207,8 +206,6 @@ def test_sql(backend, con):
     # execute the expression using SQL query
     table = backend.format_table("functional_alltypes")
     limit = _LIMIT.get(backend.name(), "LIMIT 10")
-
-    # TODO (mehmet): Is there a way to get ir.Expr from SQL statement for Flink?
     expr = con.sql(f"SELECT * FROM {table} {limit}")
     result = expr.execute()
     assert len(result) == 10

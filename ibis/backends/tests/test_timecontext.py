@@ -109,24 +109,9 @@ def test_context_adjustment_window_udf(alltypes, context, window, monkeypatch):
 def test_context_adjustment_filter_before_window(alltypes, context, monkeypatch):
     monkeypatch.setattr(ibis.options.context_adjustment, "time_col", "timestamp_col")
 
-
-@pytest.mark.notimpl(["dask", "duckdb"])
-@pytest.mark.xfail_version(pandas=["pyarrow>=13", "pandas>=2.1"])
-@pytest.mark.broken(
-    ["flink"],
-    raises=Py4JJavaError,
-    reason="Cannot cast org.apache.flink.table.data.TimestampData to java.lang.Long",
-)
-def test_context_adjustment_filter_before_window(alltypes, context, monkeypatch):
-    monkeypatch.setattr(ibis.options.context_adjustment, "time_col", "timestamp_col")
-
     window = ibis.trailing_window(ibis.interval(days=3), order_by=ORDER_BY_COL)
-    # Note(mehmet): Works.
-    # window = ibis.trailing_window(3, order_by="id")
 
     expr = alltypes[alltypes["bool_col"]]
-    # Note(mehmet): Does not work; gives the same error as the above line.
-    # expr = functional_alltypes_w_watermark[functional_alltypes_w_watermark["bool_col"]]
     expr = expr.mutate(v1=expr[TARGET_COL].count().over(window))
 
     result = expr.execute(timecontext=context)

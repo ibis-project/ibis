@@ -30,7 +30,6 @@ UUID_EXPECTED_VALUES = {
     "pandas": TEST_UUID,
     "bigquery": TEST_UUID,
     "duckdb": TEST_UUID,
-    "flink": str(TEST_UUID),
     "sqlite": TEST_UUID,
     "snowflake": TEST_UUID,
     "trino": TEST_UUID,

@@ -46,7 +46,7 @@ no_limit = [
     param(
         None,
         id="nolimit",
-        marks=[pytest.mark.notimpl(["flink"])],
+        marks=pytest.mark.notimpl(["flink"]),
     )
 ]
 
@@ -323,6 +323,11 @@ def test_table_to_csv(tmp_path, backend, awards_players):
                 ),
                 pytest.mark.notyet(["oracle"], raises=sa.exc.DatabaseError),
                 pytest.mark.notyet(["mssql", "mysql"], raises=sa.exc.OperationalError),
+                pytest.mark.notyet(
+                     ["pyspark"],
+                     raises=AnalysisException,
+                     reason="precision is out of range",
+                 ),
                 pytest.mark.notyet(["flink"], raises=NotImplementedError),
             ],
         ),

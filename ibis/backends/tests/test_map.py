@@ -63,7 +63,7 @@ def test_column_map_merge(backend):
 @pytest.mark.notimpl(
     ["flink"],
     raises=exc.OperationNotDefinedError,
-    reason=("No translation rule for <class 'ibis.expr.operations.maps.MapKeys'>"),
+    reason="No translation rule for <class 'ibis.expr.operations.maps.MapKeys'>",
 )
 def test_literal_map_keys(con):
     mapping = ibis.literal({"1": "a", "2": "b"})
@@ -220,11 +220,9 @@ def test_literal_map_get_broadcast(backend, alltypes, df):
             ["a", "b"],
             [1, 2],
             id="string",
-            marks=[
-                pytest.mark.notyet(
-                    ["postgres"], reason="only support maps of string -> string"
-                ),
-            ],
+            marks=pytest.mark.notyet(
+                ["postgres"], reason="only support maps of string -> string"
+            ),
         ),
         param(["a", "b"], ["1", "2"], id="int"),
     ],
