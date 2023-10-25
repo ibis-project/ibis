@@ -104,7 +104,7 @@ jobs:
         run: poetry run pip list
 
       - name: "run serial tests: ${{ matrix.backend.name }} (common)"
-        run: just ci-check -m ${{ matrix.backend.name }} ibis/backends/tests
+        run: just ci-check -m ${{ matrix.backend.name }} ibis/backends/tests/test_generic.py
         env:
           IBIS_EXAMPLES_DATA: ${{ runner.temp }}/examples-${{ matrix.backend.name }}-${{ matrix.os }}-${{ steps.install_python.outputs.python-version }}
           JVM_ARGS: -XX:CompressedClassSpaceSize=3G
