@@ -738,11 +738,6 @@ def test_date_truncate(backend, alltypes, df, unit):
                     raises=com.UnsupportedOperationError,
                     reason="year not implemented",
                 ),
-                pytest.mark.broken(
-                    ["flink"],
-                    raises=Py4JJavaError,
-                    reason="CalciteContextException: No match found for function signature date_add(<TIMESTAMP>, <INTERVAL_DAY_TIME>)",
-                ),
             ],
         ),
         param("Q", pd.offsets.DateOffset, marks=pytest.mark.xfail),
@@ -775,11 +770,6 @@ def test_date_truncate(backend, alltypes, df, unit):
                     ["trino"],
                     raises=com.UnsupportedOperationError,
                     reason="month not implemented",
-                ),
-                pytest.mark.broken(
-                    ["flink"],
-                    raises=Py4JJavaError,
-                    reason="CalciteContextException: No match found for function signature date_add(<TIMESTAMP>, <INTERVAL_YEAR_MONTH>)",
                 ),
             ],
         ),
@@ -913,11 +903,6 @@ def test_date_truncate(backend, alltypes, df, unit):
     raises=ValidationError,
     reason="Given argument with datatype interval('h') is not implicitly castable to string",
 )
-@pytest.mark.notimpl(
-    ["flink"],
-    raises=Py4JJavaError,
-    reason="The INTERVAL keyword should be followed by a numeric value, not a column reference.",
-)
 def test_integer_to_interval_timestamp(
     backend, con, alltypes, df, unit, displacement_type
 ):
@@ -934,7 +919,6 @@ def test_integer_to_interval_timestamp(
         warnings.simplefilter("ignore", category=pd.errors.PerformanceWarning)
         result = con.execute(expr)
         offset = df.int_col.apply(convert_to_offset)
-        print(f"offset= {offset}")
         expected = df.timestamp_col + offset
 
     expected = backend.default_series_rename(expected)
@@ -1603,11 +1587,6 @@ def test_interval_add_cast_scalar(backend, alltypes):
     ["druid"],
     raises=AttributeError,
     reason="'StringColumn' object has no attribute 'date'",
-)
-@pytest.mark.notimpl(
-    ["flink"],
-    raises=Py4JJavaError,
-    reason="org.apache.flink.table.planner.codegen.CodeGenException: Interval expression type expected",
 )
 def test_interval_add_cast_column(backend, alltypes, df):
     timestamp_date = alltypes.timestamp_col.date()
@@ -2553,37 +2532,6 @@ def test_timestamp_extract_milliseconds_with_big_value(con):
     raises=sa.exc.ProgrammingError,
     reason="No match found for function signature to_timestamp(<NUMERIC>)",
 )
-@pytest.mark.broken(
-    ["flink"],
-    raises=AssertionError,
-    reason=(
-        # TODO (mehmet): Figure out why 5 hours difference?
-        # FROM_UNIXTIME(numeric[, string])
-        # Returns a representation of the numeric argument as a value in
-        # string format (default is `yyyy-MM-dd HH:mm:ss`). numeric is an
-        # internal timestamp value representing seconds since `1970-01-01 00:00:00` UTC,
-        # such as produced by the UNIX_TIMESTAMP() function. The return value is
-        # expressed in the session time zone (specified in TableConfig).
-        # E.g., FROM_UNIXTIME(44) returns `1970-01-01 00:00:44` if in UTC
-        # time zone, but returns `1970-01-01 09:00:44` if in `Asia/Tokyo` time zone.
-        # Ref: https://nightlies.apache.org/flink/flink-docs-master/docs/dev/table/functions/systemfunctions/
-        """numpy array are different
-        expected   = 0      1970-01-01 00:00:00
-        1      1970-01-01 00:00:01
-        2      1970-01-01 00:00:02
-        3      1970-01-01 00:00:03
-        4      197...98   1970-01-01 00:00:08
-        7299   1970-01-01 00:00:09
-
-        result     = 0      1969-12-31 19:00:00
-        1      1969-12-31 19:00:01
-        2      1969-12-31 19:00:02
-        3      1969-12-31 19:00:03
-        4      196...98   1969-12-31 19:00:08
-        7299   1969-12-31 19:00:09
-        """
-    ),
-)
 def test_integer_cast_to_timestamp_column(backend, alltypes, df):
     expr = alltypes.int_col.cast("timestamp")
     expected = pd.to_datetime(df.int_col, unit="s").rename(expr.get_name())
@@ -2606,11 +2554,6 @@ def test_integer_cast_to_timestamp_column(backend, alltypes, df):
     reason="No match found for function signature to_timestamp(<NUMERIC>)",
 )
 @pytest.mark.notimpl(["oracle"], raises=sa.exc.DatabaseError)
-@pytest.mark.broken(
-    ["flink"],
-    reason="assert Timestamp('1969-12-31 19:00:00') == Timestamp('1970-01-01 00:00:00')",
-    raises=AssertionError,
-)
 def test_integer_cast_to_timestamp_scalar(alltypes, df):
     expr = alltypes.int_col.min().cast("timestamp")
     result = expr.execute()

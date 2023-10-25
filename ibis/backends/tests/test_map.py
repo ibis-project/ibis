@@ -10,12 +10,6 @@ import ibis
 import ibis.common.exceptions as exc
 import ibis.expr.datatypes as dt
 
-try:
-    from py4j.protocol import Py4JJavaError
-except ImportError:
-    Py4JJavaError = None
-
-
 pytestmark = [
     pytest.mark.never(
         ["sqlite", "mysql", "mssql"], reason="Unlikely to ever add map support"
@@ -236,12 +230,7 @@ def test_literal_map_get_broadcast(backend, alltypes, df):
     ],
 )
 @pytest.mark.notimpl(
-    ["flink"],
-    raises=Py4JJavaError,
-    reason=(
-        "CalciteContextException: No match found for function signature "
-        "MAP_FROM_ARRAYS(<CHAR(1) ARRAY>, <INTEGER ARRAY>)"
-    ),
+    ["flink"], raises=AssertionError, reason="WIP; got [('a', 1), ('b', 2)] instead"
 )
 def test_map_construct_dict(con, keys, values):
     expr = ibis.map(keys, values)
