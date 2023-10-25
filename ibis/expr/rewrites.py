@@ -134,15 +134,15 @@ def can_prune_parent_projection(selection, context):
     columns, conflicts = {}, {}
     for value in parent_fields:
         if isinstance(value, ops.Relation):
-            # we are only interested in projected value expressions, not tables
-            # nor column references which are not changing the projection
-            continue
+            # TODO(kszucs): this makes the rewrite rule really sloggy
+            for name in value.schema:
+                columns[name] = ops.TableColumn(value, name)
+        elif isinstance(value, ops.TableColumn):
+            columns[value.name] = value
         elif value.find((ops.WindowFunction, ops.ExistsSubquery), filter=ops.Value):
             # the parent has analytic projections like window functions so we
             # can't push down filters to that level
             return NoMatch
-        elif isinstance(value, ops.TableColumn):
-            columns[value.name] = value
         else:
             # otherwise collect the names of newly projected value expressions
             # which are not just plain column references
@@ -207,6 +207,9 @@ def prune_subsequent_projection(_, parent, fields, parent_fields, peeled_fields)
     #   selections:
     #     r2
     #     qux: r2.foo * 2
+    traverse_only = p.Value | p.Selection
     pattern = p.Projection(parent.table, parent.selections) >> parent.table
-    selections = [field.replace(pattern) for field in peeled_fields]
+    selections = [
+        field.replace(pattern, filter=traverse_only) for field in peeled_fields
+    ]
     return parent.copy(selections=selections)
