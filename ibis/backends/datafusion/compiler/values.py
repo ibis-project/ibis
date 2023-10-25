@@ -217,6 +217,8 @@ def _literal(op, *, value, dtype, **kw):
             for ftype, v in zip(dtype.types, value.values())
         ]
         return cast(sg.exp.Struct.from_arg_list(fields), dtype)
+    elif dtype.is_binary():
+        return sg.exp.HexString(this=value.hex())
     else:
         raise NotImplementedError(f"Unsupported type: {dtype!r}")
 
