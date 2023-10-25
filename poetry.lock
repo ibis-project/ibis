@@ -1199,17 +1199,16 @@ test = ["pandas[test]", "pre-commit", "pytest", "pytest-cov", "pytest-rerunfailu
 
 [[package]]
 name = "datafusion"
-version = "31.0.0"
+version = "32.0.0"
 description = "Build and run queries against data"
 optional = true
 python-versions = ">=3.6"
 files = [
-    {file = "datafusion-31.0.0-cp38-abi3-macosx_10_7_x86_64.whl", hash = "sha256:6738852b0b123f86d621a8c9a2039574e0ce974fd28145573aeffbc6f275933b"},
-    {file = "datafusion-31.0.0-cp38-abi3-macosx_11_0_arm64.whl", hash = "sha256:fb2bd966479f0154fd11046e20a6beb0787ae1af9f078e7519b0df523874ac74"},
-    {file = "datafusion-31.0.0-cp38-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:017dbd1df224160845a5b3388e476938226a3a6d713da41d4f359dbad2b28f6d"},
-    {file = "datafusion-31.0.0-cp38-abi3-manylinux_2_28_aarch64.whl", hash = "sha256:235d2419f828cfa596f785e6202e71df217dd26df933aa54bfa6395464c8167f"},
-    {file = "datafusion-31.0.0-cp38-abi3-win_amd64.whl", hash = "sha256:96b7091e5fdbcbfda172891ca7d43b6722df646f5a30b685f92776b799ecb260"},
-    {file = "datafusion-31.0.0.tar.gz", hash = "sha256:cb8f10e03427e2133372e4485142470076009f79efd9f2c97226977cde93bbe8"},
+    {file = "datafusion-32.0.0-cp38-abi3-macosx_10_7_x86_64.whl", hash = "sha256:a74ef7f95798385f0fbdf14c233f9126159101f6ffd9d8bdff177d1070f8a824"},
+    {file = "datafusion-32.0.0-cp38-abi3-macosx_11_0_arm64.whl", hash = "sha256:39ee5b5cc64c978ae725b4486d2500027eeb0f5071f9242d314d44f0fd32e8a9"},
+    {file = "datafusion-32.0.0-cp38-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:e35f996bdce5966b07aa303b475895d1cff5f0d35b4a12f8c902a470d2b9388f"},
+    {file = "datafusion-32.0.0-cp38-abi3-manylinux_2_28_aarch64.whl", hash = "sha256:0ba147342d50e76242b1c5d4465e9c40decdfe0958ec03a4f360aeba1bd95e38"},
+    {file = "datafusion-32.0.0-cp38-abi3-win_amd64.whl", hash = "sha256:f2d598d993bfd1055a69ad5bb3e6d7f149b8ddd1fc32a5603ca7bc809ee2188d"},
 ]
 
 [package.dependencies]
@@ -6259,4 +6258,4 @@ visualization = ["graphviz"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.9"
-content-hash = "43463a6341cc90657e3cb7f8ad4612befd51bb30c16030a7c8468a3a62ac4202"
+content-hash = "97712d7e81e564b538de4577e812b446ef9ffacd6beb40a3767e9b4594bedfd5"
