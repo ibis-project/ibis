@@ -1262,7 +1262,7 @@ class Object(Slotted, Pattern):
         if self.type.match(value, context) is NoMatch:
             return NoMatch
 
-        patterns = {**self.kwargs, **dict(zip(value.__match_args__, self.args))}
+        patterns = {**dict(zip(value.__match_args__, self.args)), **self.kwargs}
 
         fields = {}
         changed = False
