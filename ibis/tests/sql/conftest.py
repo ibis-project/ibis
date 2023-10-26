@@ -4,6 +4,7 @@ import pytest
 
 import ibis
 from ibis.backends.base.sql.compiler import Compiler, QueryContext
+from ibis.expr.rewrites import simplify
 from ibis.tests.expr.mocks import MockBackend
 
 
@@ -73,6 +74,7 @@ def get_query(expr):
 
 
 def to_sql(expr, *args, **kwargs) -> str:
+    expr = simplify(expr.op()).to_expr()
     return get_query(expr).compile(*args, **kwargs)
 
 

@@ -88,10 +88,10 @@ parent_fields = var("parent_fields")
 
 
 # reprojection of the same fields from the parent selection
-rewrite_redundant_selection = (
-    p.Selection(parent, selections=[p.Selection(selections=Eq(parent.selections))])
-    >> parent
-)
+# prune_reprojection = (
+#     p.Selection(parent, selections=[p.Selection(selections=Eq(parent.selections))])
+#     >> parent
+# )
 
 
 def can_prune_parent_projection(selection, context):
@@ -129,7 +129,7 @@ def can_prune_parent_projection(selection, context):
     p.Selection(parent @ p.Selection(selections=parent_fields), selections=fields)
     & can_prune_parent_projection
 )
-def prune_subsequent_projection(_, parent, fields, parent_fields, **kwargs):
+def prune_generic_projection(_, parent, fields, parent_fields, **kwargs):
     # create a mapping of column names to projected value expressions from the parent
     column_lookup = {}
     parent_fields = parent_fields or [parent.table]
@@ -146,7 +146,7 @@ def prune_subsequent_projection(_, parent, fields, parent_fields, **kwargs):
     lookup_from_parent = p.TableColumn(parent) >> (lambda _: column_lookup[_.name])
 
     selections = []
-    for field in fields:
+    for field in fields or [parent]:
         if field == parent:
             if parent_fields:
                 # the parent selection is referenced directly, so we need to
@@ -171,4 +171,22 @@ def prune_subsequent_projection(_, parent, fields, parent_fields, **kwargs):
             field = field.replace(substitute_parent, filter=p.Value | p.Selection)
             selections.append(field)
 
-    return parent.copy(selections=selections)
+    predicates = list(parent.predicates)
+    for pred in _.predicates:
+        pred = pred.replace(lookup_from_parent, filter=ops.Value)
+        pred = pred.replace(substitute_parent, filter=p.Value | p.Selection)
+        predicates.append(pred)
+
+    sort_keys = list(parent.sort_keys)
+    for sort_key in _.sort_keys:
+        sort_key = sort_key.replace(lookup_from_parent, filter=ops.Value)
+        sort_key = sort_key.replace(substitute_parent, filter=p.Value | p.Selection)
+        sort_keys.append(sort_key)
+
+    return parent.copy(
+        selections=selections, predicates=predicates, sort_keys=sort_keys
+    )
+
+
+def simplify(node):
+    return node.replace(prune_generic_projection)
