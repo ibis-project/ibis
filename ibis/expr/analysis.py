@@ -273,21 +273,21 @@ class Projector:
         ]
 
     def get_result(self):
-        # from ibis.common.patterns import NoMatch, match
-        # from ibis.expr.rewrites import (
-        #     prune_subsequent_projection,
-        #     rewrite_redundant_selection,
-        # )
+        from ibis.common.patterns import NoMatch, match
+        from ibis.expr.rewrites import (
+            prune_subsequent_projection,
+            rewrite_redundant_selection,
+        )
 
         new = ops.Selection(self.parent, selections=self.clean_exprs)
-        return new
-        # rewritten = match(
-        #     rewrite_redundant_selection | prune_subsequent_projection, new
-        # )
-        # if rewritten is not NoMatch:
-        #     return rewritten
-        # else:
-        #     return new
+        # return new
+        rewritten = match(
+            rewrite_redundant_selection | prune_subsequent_projection, new
+        )
+        if rewritten is not NoMatch:
+            return rewritten
+        else:
+            return new
 
 
 def find_first_base_table(node):

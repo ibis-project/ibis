@@ -88,10 +88,10 @@ parent_fields = var("parent_fields")
 
 
 # reprojection of the same fields from the parent selection
-# prune_reprojection = (
-#     p.Selection(parent, selections=[p.Selection(selections=Eq(parent.selections))])
-#     >> parent
-# )
+rewrite_redundant_selection = (
+    p.Selection(parent, selections=[p.Selection(selections=Eq(parent.selections))])
+    >> parent
+)
 
 
 def can_prune_parent_projection(selection, context):
@@ -129,7 +129,7 @@ def can_prune_parent_projection(selection, context):
     p.Selection(parent @ p.Selection(selections=parent_fields), selections=fields)
     & can_prune_parent_projection
 )
-def prune_generic_projection(_, parent, fields, parent_fields, **kwargs):
+def prune_subsequent_projection(_, parent, fields, parent_fields, **kwargs):
     # create a mapping of column names to projected value expressions from the parent
     column_lookup = {}
     parent_fields = parent_fields or [parent.table]
@@ -189,4 +189,4 @@ def prune_generic_projection(_, parent, fields, parent_fields, **kwargs):
 
 
 def simplify(node):
-    return node.replace(prune_generic_projection)
+    return node.replace(rewrite_redundant_selection | prune_subsequent_projection)
