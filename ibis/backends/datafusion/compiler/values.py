@@ -16,7 +16,6 @@ from ibis.backends.base.sqlglot import (
     AggGen,
     F,
     interval,
-    lit,
     make_cast,
     paren,
     parenthesize,
@@ -167,19 +166,19 @@ def _literal(op, *, value, dtype, **kw):
             return NULL
         return cast(NULL, dtype)
     elif dtype.is_boolean():
-        return lit(bool(value))
+        return sg.exp.convert(bool(value))
     elif dtype.is_inet():
         # treat inet as strings for now
-        return lit(str(value))
+        return sg.exp.convert(str(value))
     elif dtype.is_decimal():
         return cast(
-            lit(str(value)),
+            sg.exp.convert(str(value)),
             dt.Decimal(precision=dtype.precision or 38, scale=dtype.scale or 9),
         )
     elif dtype.is_string() or dtype.is_macaddr():
-        return lit(str(value))
+        return sg.exp.convert(str(value))
     elif dtype.is_numeric():
-        return lit(value)
+        return sg.exp.convert(value)
     elif dtype.is_interval():
         if dtype.unit.short in {"ms", "us", "ns"}:
             raise com.UnsupportedOperationError(
@@ -192,7 +191,7 @@ def _literal(op, *, value, dtype, **kw):
     elif dtype.is_date():
         return F.date_trunc("day", value.isoformat())
     elif dtype.is_time():
-        return cast(lit(str(value)), dt.time())
+        return cast(sg.exp.convert(str(value)), dt.time())
     elif dtype.is_array():
         vtype = dtype.value_type
         values = [
@@ -206,7 +205,7 @@ def _literal(op, *, value, dtype, **kw):
         values = []
 
         for k, v in value.items():
-            keys.append(lit(k))
+            keys.append(sg.exp.convert(k))
             values.append(
                 _literal(ops.Literal(v, dtype=vtype), value=v, dtype=vtype, **kw)
             )
@@ -364,12 +363,12 @@ def cot(op, *, arg, **_):
 
 @translate_val.register(ops.Radians)
 def radians(op, *, arg, **_):
-    return arg * lit(math.pi) / lit(180)
+    return arg * sg.exp.convert(math.pi) / sg.exp.convert(180)
 
 
 @translate_val.register(ops.Degrees)
 def degrees(op, *, arg, **_):
-    return arg * lit(180) / lit(math.pi)
+    return arg * sg.exp.convert(180) / sg.exp.convert(math.pi)
 
 
 @translate_val.register(ops.Coalesce)
@@ -389,12 +388,12 @@ def log(op, *, arg, base, **_):
 
 @translate_val.register(ops.Pi)
 def pi(op, **_):
-    return lit(math.pi)
+    return sg.exp.convert(math.pi)
 
 
 @translate_val.register(ops.E)
 def e(op, **_):
-    return lit(math.e)
+    return sg.exp.convert(math.e)
 
 
 @translate_val.register(ops.ScalarUDF)
@@ -435,7 +434,7 @@ def regex_extract(op, *, arg, pattern, index, **_):
 
 @translate_val.register(ops.RegexReplace)
 def regex_replace(op, *, arg, pattern, replacement, **_):
-    return F.regexp_replace(arg, pattern, replacement, lit("g"))
+    return F.regexp_replace(arg, pattern, replacement, sg.exp.convert("g"))
 
 
 @translate_val.register(ops.StringFind)
@@ -457,7 +456,7 @@ def regex_search(op, *, arg, pattern, **_):
 
 @translate_val.register(ops.StringContains)
 def string_contains(op, *, haystack, needle, **_):
-    return F.strpos(haystack, needle) > lit(0)
+    return F.strpos(haystack, needle) > sg.exp.convert(0)
 
 
 @translate_val.register(ops.StringJoin)

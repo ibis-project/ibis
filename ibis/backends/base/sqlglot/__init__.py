@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from functools import partial, reduce
+from functools import partial
 from typing import TYPE_CHECKING, Any, Callable
 
 import sqlglot as sg
@@ -62,28 +62,6 @@ class ColGen:
         return sg.column(key)
 
 
-class IdentiferGen:
-    __slots__ = ()
-
-    def __getattr__(self, name: str) -> sg.exp.Identifier:
-        return sg.to_identifier(name)
-
-    def __getitem__(self, key: str) -> sg.exp.Identifier:
-        return sg.to_identifier(key)
-
-
-def dot(first: str, second: str, *rest: str) -> sg.exp.Dot:
-    """Create a dot expression."""
-    return reduce(
-        lambda left, right: sg.exp.Dot(this=left, expression=right),
-        (
-            sg.to_identifier(first),
-            sg.to_identifier(second),
-            *map(sg.to_identifier, rest),
-        ),
-    )
-
-
 def paren(expr):
     """Wrap a sqlglot expression in parentheses."""
     return sg.exp.Paren(this=expr)
@@ -98,17 +76,12 @@ def parenthesize(op, arg):
     return arg
 
 
-def lit(val):
-    return sg.exp.Literal(this=str(val), is_string=isinstance(val, str))
-
-
 def interval(value, *, unit):
     return sg.exp.Interval(this=sg.exp.convert(value), unit=sg.exp.var(unit))
 
 
 C = ColGen()
 F = FuncGen()
-ID = IdentiferGen()
 NULL = sg.exp.NULL
 FALSE = sg.exp.FALSE
 TRUE = sg.exp.TRUE

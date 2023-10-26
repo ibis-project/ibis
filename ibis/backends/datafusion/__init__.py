@@ -20,7 +20,7 @@ import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis.backends.base import BaseBackend, CanCreateDatabase, CanCreateSchema
-from ibis.backends.base.sqlglot import ID, STAR, C, dot
+from ibis.backends.base.sqlglot import STAR, C
 from ibis.backends.datafusion.compiler.core import translate
 from ibis.expr.operations.udf import InputType
 from ibis.formats.pyarrow import PyArrowType
@@ -202,7 +202,9 @@ class Backend(BaseBackend, CanCreateDatabase, CanCreateSchema):
         return self._filter_with_like(result["table_catalog"], like)
 
     def create_database(self, name: str, force: bool = False) -> None:
-        self.raw_sql(sg.exp.Create(kind="DATABASE", this=ID[name], exists=force))
+        self.raw_sql(
+            sg.exp.Create(kind="DATABASE", this=sg.to_identifier(name), exists=force)
+        )
 
     def drop_database(self, name: str, force: bool = False) -> None:
         raise com.UnsupportedOperationError(
@@ -222,9 +224,8 @@ class Backend(BaseBackend, CanCreateDatabase, CanCreateSchema):
     def create_schema(
         self, name: str, database: str | None = None, force: bool = False
     ) -> None:
-        schema_name = (
-            sg.to_identifier(name) if database is None else dot(database, name)
-        )
+        # not actually a table, but this is how sqlglot represents schema names
+        schema_name = sg.table(name, db=database)
         self.raw_sql(sg.exp.Create(kind="SCHEMA", this=schema_name, exists=force))
 
     def drop_schema(
