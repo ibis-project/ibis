@@ -1326,11 +1326,6 @@ def test_create_database(con_create_database):
     con_create_database.drop_database(database)
 
 
-@pytest.mark.notyet(
-    ["datafusion"],
-    raises=com.UnsupportedOperationError,
-    reason="datafusion doesn't support dropping schemas",
-)
 def test_create_schema(con_create_schema):
     schema = gen_name("test_create_schema")
     con_create_schema.create_schema(schema)

@@ -231,9 +231,8 @@ class Backend(BaseBackend, CanCreateDatabase, CanCreateSchema):
     def drop_schema(
         self, name: str, database: str | None = None, force: bool = False
     ) -> None:
-        raise com.UnsupportedOperationError(
-            "DataFusion does not support dropping schemas"
-        )
+        schema_name = sg.table(name, db=database)
+        self.raw_sql(sg.exp.Drop(kind="SCHEMA", this=schema_name, exists=force))
 
     def list_tables(
         self,
