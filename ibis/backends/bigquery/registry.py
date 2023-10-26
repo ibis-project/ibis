@@ -119,7 +119,7 @@ def _struct_field(translator, op):
 def _struct_column(translator, op):
     cols = (
         f"{translator.translate(value)} AS {name}"
-        for name, value, in zip(op.names, op.values)
+        for name, value in zip(op.names, op.values)
     )
     return "STRUCT({})".format(", ".join(cols))
 
@@ -785,8 +785,10 @@ OPERATION_REGISTRY = {
     ops.BitwiseXor: lambda t, op: f"{t.translate(op.left)} ^ {t.translate(op.right)}",
     ops.BitwiseOr: lambda t, op: f"{t.translate(op.left)} | {t.translate(op.right)}",
     ops.BitwiseAnd: lambda t, op: f"{t.translate(op.left)} & {t.translate(op.right)}",
-    ops.BitwiseLeftShift: lambda t, op: f"{t.translate(op.left)} << {t.translate(op.right)}",
-    ops.BitwiseRightShift: lambda t, op: f"{t.translate(op.left)} >> {t.translate(op.right)}",
+    ops.BitwiseLeftShift: lambda t,
+    op: f"{t.translate(op.left)} << {t.translate(op.right)}",
+    ops.BitwiseRightShift: lambda t,
+    op: f"{t.translate(op.left)} >> {t.translate(op.right)}",
     # Temporal functions
     ops.Date: unary("DATE"),
     ops.DateFromYMD: fixed_arity("DATE", 3),
@@ -914,7 +916,8 @@ OPERATION_REGISTRY = {
     ops.RandomScalar: fixed_arity("RAND", 0),
     ops.NthValue: _nth_value,
     ops.JSONGetItem: lambda t, op: f"{t.translate(op.arg)}[{t.translate(op.index)}]",
-    ops.ArrayStringJoin: lambda t, op: f"ARRAY_TO_STRING({t.translate(op.arg)}, {t.translate(op.sep)})",
+    ops.ArrayStringJoin: lambda t,
+    op: f"ARRAY_TO_STRING({t.translate(op.arg)}, {t.translate(op.sep)})",
     ops.StartsWith: fixed_arity("STARTS_WITH", 2),
     ops.EndsWith: fixed_arity("ENDS_WITH", 2),
     ops.TableColumn: table_column,

@@ -258,8 +258,10 @@ operation_registry = {
     ops.Tan: unary("tan"),
     ops.Pi: fixed_arity("pi", 0),
     ops.E: fixed_arity("e", 0),
-    ops.Degrees: lambda t, op: f"(180 * {t.translate(op.arg)} / {t.translate(ops.Pi())})",
-    ops.Radians: lambda t, op: f"({t.translate(ops.Pi())} * {t.translate(op.arg)} / 180)",
+    ops.Degrees: lambda t,
+    op: f"(180 * {t.translate(op.arg)} / {t.translate(ops.Pi())})",
+    ops.Radians: lambda t,
+    op: f"({t.translate(ops.Pi())} * {t.translate(op.arg)} / 180)",
     # Unary aggregates
     ops.ApproxMedian: aggregate.reduction("appx_median"),
     ops.ApproxCountDistinct: aggregate.reduction("ndv"),

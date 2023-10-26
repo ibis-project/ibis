@@ -328,9 +328,7 @@ from __future__ import annotations
 from typing import *
 
 {source}
-$$""".format(
-            **self._get_udf_source(udf_node)
-        )
+$$""".format(**self._get_udf_source(udf_node))
 
     def _compile_pandas_udf(self, udf_node: ops.ScalarUDF) -> str:
         return """\
@@ -355,9 +353,7 @@ import pandas as pd
 @_snowflake.vectorized(input=pd.DataFrame)
 def wrapper(df):
     return {name}(*(col for _, col in df.items()))
-$$""".format(
-            **self._get_udf_source(udf_node)
-        )
+$$""".format(**self._get_udf_source(udf_node))
 
     def to_pyarrow(
         self,

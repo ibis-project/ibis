@@ -624,8 +624,9 @@ class Table(Expr, _FixedTextJupyterMixin):
             return self.select(what)
         else:
             raise NotImplementedError(
-                "Selection rows or columns with {} objects is not "
-                "supported".format(type(what).__name__)
+                "Selection rows or columns with {} objects is not supported".format(
+                    type(what).__name__
+                )
             )
 
     def __len__(self):

@@ -146,7 +146,7 @@ def test_round_decimal_with_negative_places(t, df):
 
 @pytest.mark.xfail(
     raises=OperationNotDefinedError,
-    reason="TODO - arrays - #2553"
+    reason="TODO - arrays - #2553",
     # Need an ops.MultiQuantile execution func that dispatches on ndarrays
 )
 @pytest.mark.parametrize(
@@ -203,7 +203,7 @@ def test_arraylike_functions_transform_errors(t, df, ibis_func, exc):
 
 @pytest.mark.xfail(
     raises=OperationNotDefinedError,
-    reason="TODO - arrays - #2553"
+    reason="TODO - arrays - #2553",
     # Need an ops.MultiQuantile execution func that dispatches on ndarrays
 )
 def test_quantile_array_access(client, t, df):

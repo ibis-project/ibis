@@ -427,9 +427,7 @@ def test_nullif_inf(npartitions):
     expected = dd.from_pandas(
         pd.Series([np.nan, 3.14, np.nan, 42.0], name="a"),
         npartitions=npartitions,
-    ).reset_index(
-        drop=True
-    )  # match dask reset index behavior
+    ).reset_index(drop=True)  # match dask reset index behavior
     tm.assert_series_equal(result.compute(), expected.compute(), check_index=False)
 
 
