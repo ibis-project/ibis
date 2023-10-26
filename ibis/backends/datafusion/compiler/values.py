@@ -40,6 +40,7 @@ def translate_val(op, **_):
 
 agg = AggGen(aggfunc=_aggregate)
 cast = make_cast(PostgresType)
+if_ = F["if"]
 
 _simple_ops = {
     ops.Abs: "abs",
@@ -164,6 +165,21 @@ def alias(op, *, arg, name, **_):
     return arg.as_(name)
 
 
+def _to_timestamp(value, target_dtype, literal=False):
+    tz = (
+        f'Some("{timezone}")'
+        if (timezone := target_dtype.timezone) is not None
+        else "None"
+    )
+    unit = (
+        target_dtype.unit.name.capitalize()
+        if target_dtype.scale is not None
+        else "Microsecond"
+    )
+    str_value = str(value) if literal else value
+    return F.arrow_cast(str_value, f"Timestamp({unit}, {tz})")
+
+
 @translate_val.register(ops.Literal)
 def _literal(op, *, value, dtype, **kw):
     if value is None and dtype.nullable:
@@ -192,7 +208,7 @@ def _literal(op, *, value, dtype, **kw):
 
         return interval(value, unit=dtype.resolution.upper())
     elif dtype.is_timestamp():
-        return F.to_timestamp(value.isoformat())
+        return _to_timestamp(value, dtype, literal=True)
     elif dtype.is_date():
         return F.date_trunc("day", value.isoformat())
     elif dtype.is_time():
@@ -233,9 +249,8 @@ def _cast(op, *, arg, to, **_):
     if to.is_interval():
         unit_name = to.unit.name.lower()
         return sg.cast(F.concat(sg.cast(arg, "text"), f" {unit_name}"), "interval")
-    if to.is_timestamp() and (timezone := to.timezone) is not None:
-        unit = to.unit.name.capitalize()
-        return F.arrow_cast(arg, f'Timestamp({unit}, Some("{timezone}"))')
+    if to.is_timestamp():
+        return _to_timestamp(arg, to)
     if to.is_decimal():
         return F.arrow_cast(arg, f"{PyArrowType.from_ibis(to)}".capitalize())
     return cast(arg, to)
@@ -492,16 +507,25 @@ def extract_day_of_the_week_index(op, *, arg, **_):
     return (F.date_part("dow", arg) + 6) % 7
 
 
+_DOW_INDEX_NAME = {
+    0: "Monday",
+    1: "Tuesday",
+    2: "Wednesday",
+    3: "Thursday",
+    4: "Friday",
+    5: "Saturday",
+    6: "Sunday",
+}
+
+
 @translate_val.register(ops.DayOfWeekName)
 def extract_day_of_the_week_name(op, *, arg, **_):
-    if op.arg.dtype.is_date():
-        return F.extract_dow_name_date(arg)
-    elif op.arg.dtype.is_timestamp():
-        return F.extract_dow_name_timestamp(arg)
-    else:
-        raise com.OperationNotDefinedError(
-            f"The function is not defined for {type(op.arg)}"
-        )
+    cases, results = zip(*_DOW_INDEX_NAME.items())
+
+    return sg.exp.Case(
+        this=paren((F.date_part("dow", arg) + 6) % 7),
+        ifs=list(map(if_, cases, results)),
+    )
 
 
 @translate_val.register(ops.Date)
