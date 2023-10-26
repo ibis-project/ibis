@@ -159,7 +159,7 @@ _backends = set(_get_backend_names())
 # compile is a no-op
 _backends.remove("pandas")
 
-_XFAIL_COMPILE_BACKENDS = {"dask", "datafusion", "pyspark", "polars"}
+_XFAIL_COMPILE_BACKENDS = {"dask", "pyspark", "polars"}
 
 
 @pytest.mark.benchmark(group="compilation")
