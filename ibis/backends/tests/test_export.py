@@ -312,12 +312,6 @@ def test_table_to_csv(tmp_path, backend, awards_players):
                     raises=AnalysisException,
                     reason="precision is out of range",
                 ),
-                pytest.mark.broken(
-                    ["datafusion"],
-                    raises=Exception,
-                    reason='Exception: DataFusion error: Plan("Decimal(precision = 76, scale = 38) '
-                    'should satisfy `0 < precision <= 38`, and `scale <= precision`.")',
-                ),
             ],
         ),
     ],

@@ -24,6 +24,7 @@ from ibis.backends.base.sqlglot import (
 from ibis.backends.base.sqlglot.datatypes import PostgresType
 from ibis.common.temporal import IntervalUnit
 from ibis.expr.operations.udf import InputType
+from ibis.formats.pyarrow import PyArrowType
 
 
 def _aggregate(funcname, *args, where):
@@ -231,6 +232,8 @@ def _cast(op, *, arg, to, **_):
     if to.is_timestamp() and (timezone := to.timezone) is not None:
         unit = to.unit.name.capitalize()
         return F.arrow_cast(arg, f'Timestamp({unit}, Some("{timezone}"))')
+    if to.is_decimal():
+        return F.arrow_cast(arg, f"{PyArrowType.from_ibis(to)}".capitalize())
     return cast(arg, to)
 
 
