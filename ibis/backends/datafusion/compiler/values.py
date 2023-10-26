@@ -694,3 +694,19 @@ def _window_boundary(op, *, value, preceding, **_):
     # TODO: bit of a hack to return a dict, but there's no sqlglot expression
     # that corresponds to _only_ this information
     return {"value": value, "side": "preceding" if preceding else "following"}
+
+
+@translate_val.register(ops.SimpleCase)
+@translate_val.register(ops.SearchedCase)
+def _case(op, *, base=None, cases, results, default, **_):
+    return sg.exp.Case(this=base, ifs=list(map(if_, cases, results)), default=default)
+
+
+@translate_val.register(ops.IfElse)
+def _if_else(op, *, bool_expr, true_expr, false_null_expr, **_):
+    return if_(bool_expr, true_expr, false_null_expr)
+
+
+@translate_val.register(ops.NotNull)
+def _not_null(op, *, arg, **_):
+    return sg.not_(arg.is_(NULL))
