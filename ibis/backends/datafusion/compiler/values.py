@@ -442,9 +442,9 @@ def string_find(op, *, arg, substr, start, end, **_):
 
     if start is not None:
         pos = F.strpos(F.substr(arg, start + 1), substr)
-        return F.coalesce(F.nullif(pos + start, start), 0) - 1
+        return F.coalesce(F.nullif(pos + start, start), 0)
 
-    return F.strpos(arg, substr) - 1
+    return F.strpos(arg, substr)
 
 
 @translate_val.register(ops.RegexSearch)
