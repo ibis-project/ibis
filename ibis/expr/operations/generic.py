@@ -190,8 +190,6 @@ class Literal(Scalar[T]):
 
     @property
     def name(self):
-        if self.dtype.is_interval():
-            return f"{self.value!r}{self.dtype.unit.short}"
         return repr(self.value)
 
 

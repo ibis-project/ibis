@@ -394,7 +394,6 @@ def test_where_correlated_subquery_with_join(snapshot):
     subq = partsupp.join(supplier, supplier.s_suppkey == partsupp.ps_suppkey)
     subq = subq.select(partsupp.ps_partkey, partsupp.ps_supplycost)
     subq = subq[subq.ps_partkey == q.p_partkey]
-
     expr = q[q.ps_supplycost == subq.ps_supplycost.min()]
 
     snapshot.assert_match(to_sql(expr), "out.sql")

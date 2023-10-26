@@ -275,6 +275,7 @@ class Projector:
     def get_result(self):
         from ibis.common.patterns import NoMatch, match
         from ibis.expr.rewrites import (
+            prune_exact_reprojection_of_phyisical_table,
             prune_subsequent_projection,
             rewrite_redundant_selection,
         )
@@ -282,7 +283,10 @@ class Projector:
         new = ops.Selection(self.parent, selections=self.clean_exprs)
         # return new
         rewritten = match(
-            rewrite_redundant_selection | prune_subsequent_projection, new
+            prune_exact_reprojection_of_phyisical_table
+            | rewrite_redundant_selection
+            | prune_subsequent_projection,
+            new,
         )
         if rewritten is not NoMatch:
             return rewritten

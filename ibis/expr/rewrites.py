@@ -8,7 +8,7 @@ import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 from ibis.common.deferred import var
 from ibis.common.exceptions import UnsupportedOperationError
-from ibis.common.patterns import Eq, In, NoMatch, pattern, replace
+from ibis.common.patterns import Check, Eq, In, NoMatch, pattern, replace
 from ibis.util import Namespace
 
 p = Namespace(pattern, module=ops)
@@ -85,6 +85,17 @@ def rewrite_sample(_):
 parent = var("parent")
 fields = var("fields")
 parent_fields = var("parent_fields")
+
+
+def is_exact_reprojection_of_parent(selection):
+    parent = selection.table
+    expected = tuple(ops.TableColumn(parent, name) for name in parent.schema.names)
+    return selection.selections == expected
+
+
+@replace(p.Selection(p.PhysicalTable) & Check(is_exact_reprojection_of_parent))
+def prune_exact_reprojection_of_phyisical_table(_, **kwargs):
+    return _.table
 
 
 # reprojection of the same fields from the parent selection
