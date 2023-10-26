@@ -40,8 +40,8 @@ _JOIN_TYPES = {
     ops.LeftJoin: "left",
     ops.RightJoin: "right",
     ops.OuterJoin: "full",
-    ops.LeftAntiJoin: "anti",
-    ops.LeftSemiJoin: "semi",
+    ops.LeftAntiJoin: "left anti",
+    ops.LeftSemiJoin: "left semi",
 }
 
 

@@ -10,7 +10,7 @@ import datafusion as df
 import pyarrow as pa
 import pyarrow.dataset as ds
 import sqlglot as sg
-from sqlglot import exp
+from sqlglot import exp, transforms
 from sqlglot.dialects import Postgres
 
 import ibis
@@ -52,6 +52,12 @@ class DataFusion(Postgres):
             exp: trans
             for exp, trans in Postgres.Generator.TRANSFORMS.items()
             if exp not in _exclude_exp
+        } | {
+            exp.Select: transforms.preprocess(
+                [
+                    transforms.eliminate_qualify,
+                ]
+            ),
         }
 
 
