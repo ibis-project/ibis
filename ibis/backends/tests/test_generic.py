@@ -424,7 +424,6 @@ def test_table_fillna_invalid(alltypes):
         ),
     ],
 )
-@pytest.mark.notimpl(["datafusion"])
 def test_table_fillna_mapping(backend, alltypes, replacements):
     table = alltypes.mutate(
         int_col=alltypes.int_col.nullif(1),
@@ -439,7 +438,7 @@ def test_table_fillna_mapping(backend, alltypes, replacements):
     backend.assert_frame_equal(result, expected, check_dtype=False)
 
 
-@pytest.mark.notimpl(["datafusion", "druid", "oracle"])
+@pytest.mark.notimpl(["druid", "oracle"])
 def test_table_fillna_scalar(backend, alltypes):
     table = alltypes.mutate(
         int_col=alltypes.int_col.nullif(1),
@@ -1530,7 +1529,6 @@ def test_dynamic_table_slice_with_computed_offset(backend):
 @pytest.mark.notimpl(
     [
         "bigquery",
-        "datafusion",
         "druid",
         "flink",
         "polars",
@@ -1555,7 +1553,6 @@ def test_sample(backend):
 @pytest.mark.notimpl(
     [
         "bigquery",
-        "datafusion",
         "druid",
         "flink",
         "polars",
