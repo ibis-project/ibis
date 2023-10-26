@@ -46,6 +46,7 @@ rich = ">=12.4.4,<14"
 sqlglot = ">=18.12.0,<19"
 toolz = ">=0.11,<1"
 typing-extensions = ">=4.3.0,<5"
+apache-flink = { version = ">=1.18", optional = true }
 black = { version = ">=22.1.0,<24", optional = true }
 clickhouse-connect = { version = ">=0.5.23,<1", optional = true, extras = [
   "arrow",
@@ -139,6 +140,7 @@ seaborn = { version = ">=0.12.2,<1", python = "^3.10" }
 [tool.poetry.extras]
 # generate the `all` extra using nix run '.#gen-all-extras'
 all = [
+  "apache-flink",
   "black",
   "clickhouse-connect",
   "dask",
@@ -183,7 +185,7 @@ dask = ["dask", "regex"]
 datafusion = ["datafusion"]
 druid = ["pydruid", "sqlalchemy"]
 duckdb = ["duckdb", "duckdb-engine", "sqlalchemy", "sqlalchemy-views"]
-flink = []
+flink = ["apache-flink"]
 geospatial = ["geoalchemy2", "geopandas", "shapely"]
 impala = ["fsspec", "impyla", "requests", "sqlalchemy"]
 mssql = ["sqlalchemy", "pymssql", "sqlalchemy-views"]
@@ -515,7 +517,7 @@ omit = [
 universal = false
 
 [tool.poetry-dynamic-versioning]
-enable = true
+enable = false
 dirty = true
 style = "pep440"
 pattern = '^(?P<base>\d+(\.\d+)*)'

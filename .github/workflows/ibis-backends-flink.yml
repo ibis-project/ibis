@@ -55,7 +55,6 @@ jobs:
             extras:
               - flink
             additional_deps:
-              - apache-flink
               - grpcio-status # FIXME(deepyaman)
               - pytest-split
         group:
@@ -118,12 +117,6 @@ jobs:
       - name: install other deps
         run: poetry run pip install ${{ join(matrix.backend.additional_deps, ' ') }}
 
-      # FIXME(deepyaman): We reinstall pandas~=1.5 to get a version with
-      #   ArrowDtype, but this step will be removed once PyFlink relaxes
-      #   its overly-restrictive dependencies (specifying pandas<1.4.0).
-      - name: override overly-restrictive PyFlink requirements
-        run: poetry run pip install pandas~=1.5
-
       - name: show installed deps
         run: poetry run pip list
 
@@ -172,7 +165,6 @@ jobs:
             extras:
               - flink
             additional_deps:
-              - apache-flink
               - grpcio-status # FIXME(deepyaman)
               - pytest-split
     steps:
@@ -203,10 +195,6 @@ jobs:
 
       - name: install other deps
         run: poetry run pip install ${{ join(matrix.backend.additional_deps, ' ') }}
-
-      # FIXME(deepyaman)
-      - name: override overly-restrictive PyFlink requirements
-        run: poetry run pip install pandas~=1.5
 
       - name: show installed deps
         run: poetry run pip list
