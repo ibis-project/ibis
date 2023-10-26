@@ -265,9 +265,7 @@ LANGUAGE {language}
 AS $$
 {source}
 return {name}({args})
-$$""".format(
-            **self._get_udf_source(udf_node)
-        )
+$$""".format(**self._get_udf_source(udf_node))
 
     def _metadata(self, query: str) -> Iterable[tuple[str, dt.DataType]]:
         name = util.gen_name("postgres_metadata")

@@ -124,7 +124,8 @@ class TestConf(BackendTest, RoundAwayFromZero):
                 prefix = prefixes.get(table, table[0])
 
                 t = (
-                    con.table(table, schema=data_schema).rename(f"{prefix}_{{}}".format)
+                    con.table(table, schema=data_schema)
+                    .rename(f"{prefix}_{{}}".format)
                     # https://github.com/trinodb/trino/issues/19477
                     .mutate(
                         s.across(s.of_type(dt.float64), lambda c: c.cast(decimal_type))

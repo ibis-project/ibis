@@ -585,7 +585,8 @@ def _array_map(t, op):
             sa.func.unnest(t.translate(op.arg))
             # name the columns of the result the same as the lambda parameter
             # so that we can reference them as such in the outer query
-            .table_valued(op.param).render_derived()
+            .table_valued(op.param)
+            .render_derived()
         )
         .scalar_subquery()
     )
