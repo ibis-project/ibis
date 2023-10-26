@@ -607,6 +607,30 @@ def test_object_pattern_from_coerced_to():
     assert p_call == Object(MyCoercibleType, 1, 2)
 
 
+def test_object_pattern_matching_order():
+    class Foo:
+        __match_args__ = ("a", "b", "c")
+
+        def __init__(self, a, b, c):
+            self.a = a
+            self.b = b
+            self.c = c
+
+        def __eq__(self, other):
+            return (
+                type(self) == type(other)
+                and self.a == other.a
+                and self.b == other.b
+                and self.c == other.c
+            )
+
+    a = var("a")
+    p = Object(Foo, a, c=EqualTo(a))
+
+    assert match(p, Foo(1, 2, 3)) is NoMatch
+    assert match(p, Foo(1, 2, 1)) == Foo(1, 2, 1)
+
+
 def test_callable_with():
     def func(a, b):
         return str(a) + b
