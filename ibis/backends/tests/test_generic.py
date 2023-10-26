@@ -162,7 +162,6 @@ def test_isna(backend, alltypes, col, filt):
                     "snowflake",
                     "polars",
                     "trino",
-                    "datafusion",
                     "mssql",
                     "druid",
                     "oracle",
