@@ -332,7 +332,6 @@ def test_filter_with_window_op(backend, alltypes, sorted_df):
     backend.assert_frame_equal(result, expected)
 
 
-@pytest.mark.notimpl(["datafusion"])
 def test_case_where(backend, alltypes, df):
     table = alltypes
     table = table.mutate(
@@ -480,7 +479,6 @@ def test_dropna_invalid(alltypes):
 @pytest.mark.parametrize(
     "subset", [None, [], "col_1", ["col_1", "col_2"], ["col_1", "col_3"]]
 )
-@pytest.mark.notimpl(["datafusion"])
 def test_dropna_table(backend, alltypes, how, subset):
     is_two = alltypes.int_col == 2
     is_four = alltypes.int_col == 4
@@ -684,7 +682,6 @@ def test_zeroifnull_column(backend, alltypes, df):
     backend.assert_series_equal(result, expected)
 
 
-@pytest.mark.notimpl(["datafusion"])
 def test_ifelse_select(backend, alltypes, df):
     table = alltypes
     table = table.select(
@@ -708,7 +705,6 @@ def test_ifelse_select(backend, alltypes, df):
     backend.assert_frame_equal(result, expected)
 
 
-@pytest.mark.notimpl(["datafusion"])
 def test_ifelse_column(backend, alltypes, df):
     expr = ibis.ifelse(alltypes["int_col"] == 0, 42, -1).cast("int64").name("where_col")
     result = expr.execute()

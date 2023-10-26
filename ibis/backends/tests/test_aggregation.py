@@ -1345,7 +1345,7 @@ def test_aggregate_mixed_udf(backend, alltypes, df):
     backend.assert_frame_equal(result, expected, check_like=True)
 
 
-@pytest.mark.notimpl(["datafusion", "pyspark"], raises=com.OperationNotDefinedError)
+@pytest.mark.notimpl(["pyspark"], raises=com.OperationNotDefinedError)
 def test_binds_are_cast(alltypes):
     expr = alltypes.aggregate(
         high_line_count=(
@@ -1393,7 +1393,6 @@ def test_agg_name_in_output_column(alltypes):
     assert "max" in df.columns[1].lower()
 
 
-@pytest.mark.notimpl(["datafusion"], raises=com.OperationNotDefinedError)
 def test_grouped_case(backend, con):
     table = ibis.memtable({"key": [1, 1, 2, 2], "value": [10, 30, 20, 40]})
 

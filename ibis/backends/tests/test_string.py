@@ -532,7 +532,7 @@ def uses_java_re(t):
             # pyspark doesn't support `cases` yet
             marks=[
                 pytest.mark.notimpl(
-                    ["dask", "datafusion", "pyspark"],
+                    ["dask", "pyspark"],
                     raises=com.OperationNotDefinedError,
                 ),
                 pytest.mark.broken(
@@ -866,7 +866,6 @@ def test_re_replace_global(con):
     assert result == "cbc"
 
 
-@pytest.mark.notimpl(["datafusion"], raises=com.OperationNotDefinedError)
 @pytest.mark.broken(
     ["mssql"],
     raises=sa.exc.OperationalError,
@@ -1010,7 +1009,7 @@ def test_array_string_join(con):
 
 
 @pytest.mark.notimpl(
-    ["datafusion", "mssql", "mysql", "pyspark", "druid", "oracle"],
+    ["mssql", "mysql", "pyspark", "druid", "oracle"],
     raises=com.OperationNotDefinedError,
 )
 def test_subs_with_re_replace(con):
@@ -1019,7 +1018,7 @@ def test_subs_with_re_replace(con):
     assert result == "k"
 
 
-@pytest.mark.notimpl(["pyspark", "datafusion"], raises=com.OperationNotDefinedError)
+@pytest.mark.notimpl(["pyspark"], raises=com.OperationNotDefinedError)
 def test_multiple_subs(con):
     m = {"foo": "FOO", "bar": "BAR"}
     expr = ibis.literal("foo").substitute(m)
@@ -1053,7 +1052,6 @@ def test_levenshtein(con, right):
     assert result == 3
 
 
-@pytest.mark.notimpl(["datafusion"], raises=com.OperationNotDefinedError)
 @pytest.mark.notyet(
     ["mssql"],
     reason="doesn't allow boolean expressions in select statements",
