@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import functools
-import math
 import operator
 from typing import Any
 
@@ -99,6 +98,12 @@ _simple_ops = {
     ops.MinRank: "rank",
     ops.CumeDist: "cume_dist",
     ops.NthValue: "nth_value",
+    ops.Cot: "cot",
+    ops.Atan2: "atan2",
+    ops.Radians: "radians",
+    ops.Degrees: "degrees",
+    ops.NullIf: "nullif",
+    ops.Pi: "pi",
 }
 
 for _op, _name in _simple_ops.items():
@@ -263,16 +268,6 @@ def _de_morgan_law(logical_op: sg.exp.Expression):
     return None
 
 
-@translate_val.register(ops.And)
-def and_(op, *, left, right, **_):
-    return sg.and_(left, right)
-
-
-@translate_val.register(ops.Or)
-def or_(op, *, left, right, **_):
-    return sg.or_(left, right)
-
-
 @translate_val.register(ops.Ceil)
 @translate_val.register(ops.Floor)
 def ceil_floor(op, *, arg, **_):
@@ -351,34 +346,9 @@ def negate(op, *, arg, **_):
     return -paren(arg)
 
 
-@translate_val.register(ops.Atan2)
-def atan2(op, *, left, right, **_):
-    return F.atan(left / right)
-
-
-@translate_val.register(ops.Cot)
-def cot(op, *, arg, **_):
-    return 1.0 / F.tan(arg)
-
-
-@translate_val.register(ops.Radians)
-def radians(op, *, arg, **_):
-    return arg * sg.exp.convert(math.pi) / sg.exp.convert(180)
-
-
-@translate_val.register(ops.Degrees)
-def degrees(op, *, arg, **_):
-    return arg * sg.exp.convert(180) / sg.exp.convert(math.pi)
-
-
 @translate_val.register(ops.Coalesce)
 def coalesce(op, *, arg, **_):
     return F.coalesce(*arg)
-
-
-@translate_val.register(ops.NullIf)
-def nullif(op, *, arg, null_if_expr, **_):
-    return F.nullif(arg, null_if_expr)
 
 
 @translate_val.register(ops.Log)
@@ -386,14 +356,9 @@ def log(op, *, arg, base, **_):
     return F.log(base, arg)
 
 
-@translate_val.register(ops.Pi)
-def pi(op, **_):
-    return sg.exp.convert(math.pi)
-
-
 @translate_val.register(ops.E)
 def e(op, **_):
-    return sg.exp.convert(math.e)
+    return F.exp(1)
 
 
 @translate_val.register(ops.ScalarUDF)
@@ -472,43 +437,31 @@ def string_join(op, *, sep, arg, **_):
 
 @translate_val.register(ops.ExtractFragment)
 def _(op, *, arg, **_):
-    if isinstance(arg, sg.exp.Alias):  # ignore the aliases inside a function
-        arg = arg.this
     return F.extract_url_field(arg, "fragment")
 
 
 @translate_val.register(ops.ExtractProtocol)
 def extract_protocol(op, *, arg, **_):
-    if isinstance(arg, sg.exp.Alias):  # ignore the aliases inside a function
-        arg = arg.this
     return F.extract_url_field(arg, "scheme")
 
 
 @translate_val.register(ops.ExtractAuthority)
 def extract_authority(op, *, arg, **_):
-    if isinstance(arg, sg.exp.Alias):  # ignore the aliases inside a function
-        arg = arg.this
     return F.extract_url_field(arg, "netloc")
 
 
 @translate_val.register(ops.ExtractPath)
 def extract_path(op, *, arg, **_):
-    if isinstance(arg, sg.exp.Alias):  # ignore the aliases inside a function
-        arg = arg.this
     return F.extract_url_field(arg, "path")
 
 
 @translate_val.register(ops.ExtractHost)
 def extract_host(op, *, arg, **_):
-    if isinstance(arg, sg.exp.Alias):  # ignore the aliases inside a function
-        arg = arg.this
     return F.extract_url_field(arg, "hostname")
 
 
 @translate_val.register(ops.ExtractQuery)
 def extract_query(op, *, arg, key, **_):
-    if isinstance(arg, sg.exp.Alias):  # ignore the aliases inside a function
-        arg = arg.this
     if key is not None:
         return F.extract_query_param(arg, key)
     return F.extract_query(arg)
@@ -516,8 +469,6 @@ def extract_query(op, *, arg, key, **_):
 
 @translate_val.register(ops.ExtractUserInfo)
 def extract_user_info(op, *, arg, **_):
-    if isinstance(arg, sg.exp.Alias):  # ignore the aliases inside a function
-        arg = arg.this
     return F.extract_user_info(arg)
 
 
