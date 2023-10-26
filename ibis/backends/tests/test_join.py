@@ -300,7 +300,7 @@ def test_join_with_pandas_non_null_typed_columns(batting, awards_players):
     ],
 )
 @pytest.mark.notimpl(
-    ["polars", "datafusion"],
+    ["polars"],
     raises=com.TranslationError,
     reason="polars doesn't support join predicates",
 )

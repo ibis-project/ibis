@@ -2,11 +2,6 @@
   description = "Expressive Python analytics at any scale.";
 
   inputs = {
-    flake-compat = {
-      url = "github:edolstra/flake-compat";
-      flake = false;
-    };
-
     flake-utils.url = "github:numtide/flake-utils";
 
     gitignore = {
@@ -88,7 +83,7 @@
           # python dev environment
           env
           # poetry executable
-          env.pkgs.poetry
+          poetry
           # rendering release notes
           changelog
           glow
@@ -125,7 +120,7 @@
 
         default = pkgs.ibis310;
 
-        inherit (pkgs) update-lock-files gen-all-extras gen-examples check-poetry-version check-release-notes-spelling;
+        inherit (pkgs) update-lock-files gen-all-extras gen-examples check-release-notes-spelling;
       };
 
       devShells = rec {

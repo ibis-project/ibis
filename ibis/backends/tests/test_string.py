@@ -1000,7 +1000,7 @@ def test_substr_with_null_values(backend, alltypes, df):
 )
 def test_parse_url(con, result_func, expected):
     url = "http://user:pass@example.com:80/docs/books/tutorial/index.html?name=networking#DOWNLOADING"
-    expr = result_func(ibis.literal(url).name("url"))
+    expr = result_func(ibis.literal(url))
     result = con.execute(expr)
     assert result == expected
 

@@ -35,7 +35,6 @@ def union_subsets(alltypes, df):
 
 
 @pytest.mark.parametrize("distinct", [False, True], ids=["all", "distinct"])
-@pytest.mark.notimpl(["datafusion"])
 @pytest.mark.broken(["druid"], raises=sa.exc.ProgrammingError)
 def test_union(backend, union_subsets, distinct):
     (a, b, c), (da, db, dc) = union_subsets
@@ -50,7 +49,6 @@ def test_union(backend, union_subsets, distinct):
     backend.assert_frame_equal(result, expected)
 
 
-@pytest.mark.notimpl(["datafusion"])
 @pytest.mark.broken(["druid"], raises=sa.exc.ProgrammingError)
 def test_union_mixed_distinct(backend, union_subsets):
     (a, b, c), (da, db, dc) = union_subsets
@@ -78,7 +76,7 @@ def test_union_mixed_distinct(backend, union_subsets):
         param(True, id="distinct"),
     ],
 )
-@pytest.mark.notimpl(["datafusion", "polars"])
+@pytest.mark.notimpl(["polars"])
 @pytest.mark.notyet(["impala"])
 @pytest.mark.broken(["druid"], raises=sa.exc.ProgrammingError)
 def test_intersect(backend, alltypes, df, distinct):
@@ -117,7 +115,7 @@ def test_intersect(backend, alltypes, df, distinct):
         param(True, id="distinct"),
     ],
 )
-@pytest.mark.notimpl(["datafusion", "polars"])
+@pytest.mark.notimpl(["polars"])
 @pytest.mark.notyet(["impala"])
 @pytest.mark.broken(["druid"], raises=sa.exc.ProgrammingError)
 def test_difference(backend, alltypes, df, distinct):
@@ -164,7 +162,6 @@ def test_table_set_operations_api(alltypes, method):
         False,
     ],
 )
-@pytest.mark.notimpl(["datafusion"], raises=com.OperationNotDefinedError)
 def test_top_level_union(backend, con, alltypes, distinct):
     t1 = alltypes.select(a="bigint_col").filter(lambda t: t.a == 10).distinct()
     t2 = alltypes.select(a="bigint_col").filter(lambda t: t.a == 20).distinct()
@@ -194,7 +191,7 @@ def test_top_level_union(backend, con, alltypes, distinct):
     ],
     ids=["intersect", "difference"],
 )
-@pytest.mark.notimpl(["datafusion", "polars"], raises=com.OperationNotDefinedError)
+@pytest.mark.notimpl(["polars"], raises=com.OperationNotDefinedError)
 @pytest.mark.notyet(["impala"], reason="doesn't support intersection or difference")
 @pytest.mark.broken(["druid"], raises=sa.exc.ProgrammingError)
 def test_top_level_intersect_difference(

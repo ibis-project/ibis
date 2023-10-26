@@ -171,7 +171,6 @@ def test_isna(backend, alltypes, col, filt):
                         "snowflake",
                         "polars",
                         "trino",
-                        "datafusion",
                         "mssql",
                         "druid",
                         "oracle",
@@ -301,7 +300,6 @@ def test_notin(backend, alltypes, sorted_df, column, elements):
             lambda t: t.bool_col ^ t.bool_col,
             lambda df: df.bool_col ^ df.bool_col,
             id="xor",
-            marks=pytest.mark.notimpl(["datafusion"]),
         ),
     ],
 )
@@ -443,7 +441,6 @@ def test_table_fillna_invalid(alltypes):
         ),
     ],
 )
-@pytest.mark.notimpl(["datafusion"])
 def test_table_fillna_mapping(backend, alltypes, replacements):
     table = alltypes.mutate(
         int_col=alltypes.int_col.nullif(1),
@@ -458,7 +455,7 @@ def test_table_fillna_mapping(backend, alltypes, replacements):
     backend.assert_frame_equal(result, expected, check_dtype=False)
 
 
-@pytest.mark.notimpl(["datafusion", "druid", "oracle"])
+@pytest.mark.notimpl(["druid", "oracle"])
 def test_table_fillna_scalar(backend, alltypes):
     table = alltypes.mutate(
         int_col=alltypes.int_col.nullif(1),
@@ -796,7 +793,7 @@ def test_correlated_subquery(alltypes):
     assert expr.compile() is not None
 
 
-@pytest.mark.notimpl(["polars", "pyspark", "datafusion"])
+@pytest.mark.notimpl(["polars", "pyspark"])
 @pytest.mark.broken(["flink"], reason="`result` order differs from `expected`")
 def test_uncorrelated_subquery(backend, batting, batting_df):
     subset_batting = batting[batting.yearID <= 2000]
@@ -1030,7 +1027,6 @@ def test_pivot_longer(backend):
     assert len(res.execute()) == len(expected)
 
 
-@pytest.mark.notyet(["datafusion"], raises=com.OperationNotDefinedError)
 def test_pivot_wider(backend):
     diamonds = backend.diamonds
     expr = (
@@ -1386,7 +1382,7 @@ def test_try_cast_func(con, from_val, to_type, func):
                 ),
                 pytest.mark.notyet(
                     ["datafusion"],
-                    raises=NotImplementedError,
+                    raises=AssertionError,
                     reason="no support for offset yet",
                 ),
                 pytest.mark.notyet(
@@ -1415,7 +1411,7 @@ def test_try_cast_func(con, from_val, to_type, func):
             marks=[
                 pytest.mark.notyet(
                     ["datafusion"],
-                    raises=NotImplementedError,
+                    raises=AssertionError,
                     reason="no support for offset yet",
                 ),
                 pytest.mark.notyet(
@@ -1495,8 +1491,8 @@ def test_static_table_slice(backend, slc, expected_count_fn):
 )
 @pytest.mark.notyet(
     ["datafusion"],
-    reason="datafusion doesn't support dynamic limit/offset",
-    raises=NotImplementedError,
+    reason='Exception: DataFusion error: Plan("LIMIT must not be negative")',
+    raises=Exception,
 )
 @pytest.mark.never(
     ["impala"],
@@ -1534,8 +1530,8 @@ def test_dynamic_table_slice(backend, slc, expected_count_fn):
 )
 @pytest.mark.notyet(
     ["datafusion"],
-    reason="datafusion doesn't support dynamic limit/offset",
-    raises=NotImplementedError,
+    reason='Exception: DataFusion error: Plan("Unexpected expression in OFFSET clause")',
+    raises=Exception,
 )
 @pytest.mark.never(
     ["impala"],
@@ -1570,7 +1566,6 @@ def test_dynamic_table_slice_with_computed_offset(backend):
 @pytest.mark.notimpl(
     [
         "bigquery",
-        "datafusion",
         "druid",
         "flink",
         "polars",
@@ -1595,7 +1590,6 @@ def test_sample(backend):
 @pytest.mark.notimpl(
     [
         "bigquery",
-        "datafusion",
         "druid",
         "flink",
         "polars",

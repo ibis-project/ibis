@@ -63,7 +63,6 @@ def test_date_scalar_parameter(backend, alltypes, start_string, end_string):
     backend.assert_series_equal(result, expected)
 
 
-@pytest.mark.notimpl(["datafusion"])
 def test_timestamp_accepts_date_literals(alltypes):
     date_string = "2009-03-01"
     param = ibis.param(dt.timestamp)

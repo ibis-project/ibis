@@ -1,20 +1,30 @@
 from __future__ import annotations
 
-import re
-from functools import lru_cache
+import inspect
+import typing
+from contextlib import suppress
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
-import datafusion
+import datafusion as df
 import pyarrow as pa
+import pyarrow.dataset as ds
+import sqlglot as sg
+from sqlglot import exp, transforms
+from sqlglot.dialects import Postgres
 
+import ibis
 import ibis.common.exceptions as com
+import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis.backends.base import BaseBackend, CanCreateDatabase, CanCreateSchema
-from ibis.backends.datafusion.compiler import translate
-from ibis.util import gen_name, normalize_filename
+from ibis.backends.base.sqlglot import STAR, C
+from ibis.backends.datafusion.compiler.core import translate
+from ibis.expr.operations.udf import InputType
+from ibis.formats.pyarrow import PyArrowType
+from ibis.util import gen_name, log, normalize_filename
 
 try:
     from datafusion import ExecutionContext as SessionContext
@@ -31,11 +41,31 @@ if TYPE_CHECKING:
 
     import pandas as pd
 
+_exclude_exp = (exp.Pow,)
+
+
+# the DataFusion dialect was created to skip the power function to operator transformation
+# in the future this could be used to optimize sqlglot for datafusion
+class DataFusion(Postgres):
+    class Generator(Postgres.Generator):
+        TRANSFORMS = {
+            exp: trans
+            for exp, trans in Postgres.Generator.TRANSFORMS.items()
+            if exp not in _exclude_exp
+        } | {
+            exp.Select: transforms.preprocess(
+                [
+                    transforms.eliminate_qualify,
+                ]
+            ),
+        }
+
 
 class Backend(BaseBackend, CanCreateDatabase, CanCreateSchema):
     name = "datafusion"
+    dialect = "datafusion"
     builder = None
-    supports_in_memory_tables = False
+    supports_in_memory_tables = True
 
     @property
     def version(self):
@@ -60,19 +90,99 @@ class Backend(BaseBackend, CanCreateDatabase, CanCreateSchema):
         >>> ibis.datafusion.connect(config)
         """
         if isinstance(config, SessionContext):
-            (self._context, config) = (config, None)
+            (self.con, config) = (config, None)
         else:
             if SessionConfig is not None:
-                df_config = SessionConfig().with_information_schema(True)
+                df_config = SessionConfig(
+                    {"datafusion.sql_parser.dialect": "PostgreSQL"}
+                ).with_information_schema(True)
             else:
                 df_config = None
-            self._context = SessionContext(df_config)
+            self.con = SessionContext(df_config)
+
+        self._register_builtin_udfs()
 
         if not config:
             config = {}
 
         for name, path in config.items():
             self.register(path, table_name=name)
+
+    def _register_builtin_udfs(self):
+        from ibis.backends.datafusion import udfs
+
+        for name, func in inspect.getmembers(
+            udfs,
+            predicate=lambda m: callable(m)
+            and not m.__name__.startswith("_")
+            and m.__module__ == udfs.__name__,
+        ):
+            annotations = typing.get_type_hints(func)
+            argnames = list(inspect.signature(func).parameters.keys())
+            input_types = [
+                PyArrowType.from_ibis(dt.dtype(annotations.get(arg_name)))
+                for arg_name in argnames
+            ]
+            return_type = PyArrowType.from_ibis(dt.dtype(annotations["return"]))
+            udf = df.udf(
+                func,
+                input_types=input_types,
+                return_type=return_type,
+                volatility="immutable",
+                name=name,
+            )
+            self.con.register_udf(udf)
+
+    def _register_udfs(self, expr: ir.Expr) -> None:
+        for udf_node in expr.op().find(ops.ScalarUDF):
+            if udf_node.__input_type__ == InputType.PYARROW:
+                udf = self._compile_pyarrow_udf(udf_node)
+                self.con.register_udf(udf)
+
+        for udf_node in expr.op().find(ops.ElementWiseVectorizedUDF):
+            udf = self._compile_elementwise_udf(udf_node)
+            self.con.register_udf(udf)
+
+    def _compile_pyarrow_udf(self, udf_node):
+        return df.udf(
+            udf_node.__func__,
+            input_types=[PyArrowType.from_ibis(arg.dtype) for arg in udf_node.args],
+            return_type=PyArrowType.from_ibis(udf_node.dtype),
+            volatility=getattr(udf_node, "config", {}).get("volatility", "volatile"),
+            name=udf_node.__full_name__,
+        )
+
+    def _compile_elementwise_udf(self, udf_node):
+        return df.udf(
+            udf_node.func,
+            input_types=list(map(PyArrowType.from_ibis, udf_node.input_type)),
+            return_type=PyArrowType.from_ibis(udf_node.return_type),
+            volatility="volatile",
+            name=udf_node.func.__name__,
+        )
+
+    def _log(self, sql: str) -> None:
+        """Log `sql`.
+
+        This method can be implemented by subclasses. Logging occurs when
+        `ibis.options.verbose` is `True`.
+        """
+        log(sql)
+
+    def raw_sql(self, query: str | sg.exp.Expression) -> Any:
+        """Execute a SQL string `query` against the database.
+
+        Parameters
+        ----------
+        query
+            Raw SQL string
+        kwargs
+            Backend specific query arguments
+        """
+        with suppress(AttributeError):
+            query = query.sql(dialect=self.dialect, pretty=True)
+        self._log(query)
+        return self.con.sql(query)
 
     @property
     def current_database(self) -> str:
@@ -83,18 +193,18 @@ class Backend(BaseBackend, CanCreateDatabase, CanCreateSchema):
         return NotImplementedError()
 
     def list_databases(self, like: str | None = None) -> list[str]:
-        code = "SELECT DISTINCT table_catalog FROM information_schema.tables"
-        if like:
-            code += f" WHERE table_catalog LIKE {like!r}"
-        result = self._context.sql(code).to_pydict()
-        return result["table_catalog"]
+        code = (
+            sg.select(C.table_catalog)
+            .from_(sg.table("tables", db="information_schema"))
+            .distinct()
+        ).sql()
+        result = self.con.sql(code).to_pydict()
+        return self._filter_with_like(result["table_catalog"], like)
 
     def create_database(self, name: str, force: bool = False) -> None:
-        code = "CREATE DATABASE"
-        if force:
-            code += " IF NOT EXISTS"
-        code += f" {name}"
-        self._context.sql(code)
+        self.raw_sql(
+            sg.exp.Create(kind="DATABASE", this=sg.to_identifier(name), exists=force)
+        )
 
     def drop_database(self, name: str, force: bool = False) -> None:
         raise com.UnsupportedOperationError(
@@ -105,7 +215,7 @@ class Backend(BaseBackend, CanCreateDatabase, CanCreateSchema):
         self, like: str | None = None, database: str | None = None
     ) -> list[str]:
         return self._filter_with_like(
-            self._context.catalog(
+            self.con.catalog(
                 database if database is not None else "datafusion"
             ).names(),
             like=like,
@@ -114,20 +224,15 @@ class Backend(BaseBackend, CanCreateDatabase, CanCreateSchema):
     def create_schema(
         self, name: str, database: str | None = None, force: bool = False
     ) -> None:
-        create_stmt = "CREATE SCHEMA"
-        if force:
-            create_stmt += " IF NOT EXISTS"
-
-        create_stmt += " "
-        create_stmt += ".".join(filter(None, [database, name]))
-        self._context.sql(create_stmt)
+        # not actually a table, but this is how sqlglot represents schema names
+        schema_name = sg.table(name, db=database)
+        self.raw_sql(sg.exp.Create(kind="SCHEMA", this=schema_name, exists=force))
 
     def drop_schema(
         self, name: str, database: str | None = None, force: bool = False
     ) -> None:
-        raise com.UnsupportedOperationError(
-            "DataFusion does not support dropping schemas"
-        )
+        schema_name = sg.table(name, db=database)
+        self.raw_sql(sg.exp.Drop(kind="SCHEMA", this=schema_name, exists=force))
 
     def list_tables(
         self,
@@ -135,11 +240,7 @@ class Backend(BaseBackend, CanCreateDatabase, CanCreateSchema):
         database: str | None = None,
     ) -> list[str]:
         """List the available tables."""
-        tables = list(self._context.tables())
-        if like is not None:
-            pattern = re.compile(like)
-            return list(filter(lambda t: pattern.findall(t), tables))
-        return tables
+        return self._filter_with_like(self.con.tables(), like)
 
     def table(self, name: str, schema: sch.Schema | None = None) -> ir.Table:
         """Get an ibis expression representing a DataFusion table.
@@ -156,7 +257,7 @@ class Backend(BaseBackend, CanCreateDatabase, CanCreateSchema):
         Table
             A table expression
         """
-        catalog = self._context.catalog()
+        catalog = self.con.catalog()
         database = catalog.database()
         table = database.table(name)
         schema = sch.schema(table.schema)
@@ -209,16 +310,16 @@ class Backend(BaseBackend, CanCreateDatabase, CanCreateSchema):
         if isinstance(source, (str, Path)):
             first = str(source)
         elif isinstance(source, pa.Table):
-            self._context.deregister_table(table_name)
-            self._context.register_record_batches(table_name, [source.to_batches()])
+            self.con.deregister_table(table_name)
+            self.con.register_record_batches(table_name, [source.to_batches()])
             return self.table(table_name)
         elif isinstance(source, pa.RecordBatch):
-            self._context.deregister_table(table_name)
-            self._context.register_record_batches(table_name, [[source]])
+            self.con.deregister_table(table_name)
+            self.con.register_record_batches(table_name, [[source]])
             return self.table(table_name)
         elif isinstance(source, pa.dataset.Dataset):
-            self._context.deregister_table(table_name)
-            self._context.register_dataset(table_name, source)
+            self.con.deregister_table(table_name)
+            self.con.register_dataset(table_name, source)
             return self.table(table_name)
         elif isinstance(source, pd.DataFrame):
             return self.register(pa.Table.from_pandas(source), table_name, **kwargs)
@@ -248,6 +349,22 @@ class Backend(BaseBackend, CanCreateDatabase, CanCreateSchema):
             f"please call one of {msg} directly"
         )
 
+    def _register_in_memory_table(self, op: ops.InMemoryTable) -> None:
+        name = op.name
+        schema = op.schema
+
+        self.con.deregister_table(name)
+        if batches := op.data.to_pyarrow(schema).to_batches():
+            self.con.register_record_batches(name, [batches])
+        else:
+            empty_dataset = ds.dataset([], schema=schema.to_pyarrow())
+            self.con.register_dataset(name=name, dataset=empty_dataset)
+
+    def _register_in_memory_tables(self, expr: ir.Expr) -> None:
+        if self.supports_in_memory_tables:
+            for memtable in expr.op().find(ops.InMemoryTable):
+                self._register_in_memory_table(memtable)
+
     def read_csv(
         self, path: str | Path, table_name: str | None = None, **kwargs: Any
     ) -> ir.Table:
@@ -271,8 +388,8 @@ class Backend(BaseBackend, CanCreateDatabase, CanCreateSchema):
         path = normalize_filename(path)
         table_name = table_name or gen_name("read_csv")
         # Our other backends support overwriting views / tables when reregistering
-        self._context.deregister_table(table_name)
-        self._context.register_csv(table_name, path, **kwargs)
+        self.con.deregister_table(table_name)
+        self.con.register_csv(table_name, path, **kwargs)
         return self.table(table_name)
 
     def read_parquet(
@@ -298,8 +415,8 @@ class Backend(BaseBackend, CanCreateDatabase, CanCreateSchema):
         path = normalize_filename(path)
         table_name = table_name or gen_name("read_parquet")
         # Our other backends support overwriting views / tables when reregistering
-        self._context.deregister_table(table_name)
-        self._context.register_parquet(table_name, path, **kwargs)
+        self.con.deregister_table(table_name)
+        self.con.register_parquet(table_name, path, **kwargs)
         return self.table(table_name)
 
     def read_delta(
@@ -328,7 +445,7 @@ class Backend(BaseBackend, CanCreateDatabase, CanCreateSchema):
         table_name = table_name or gen_name("read_delta")
 
         # Our other backends support overwriting views / tables when reregistering
-        self._context.deregister_table(table_name)
+        self.con.deregister_table(table_name)
 
         try:
             from deltalake import DeltaTable
@@ -343,15 +460,6 @@ class Backend(BaseBackend, CanCreateDatabase, CanCreateSchema):
 
         return self.register(delta_table.to_pyarrow_dataset(), table_name=table_name)
 
-    def _get_frame(
-        self,
-        expr: ir.Expr,
-        params: Mapping[ir.Scalar, Any] | None = None,
-        limit: int | str | None = None,
-        **kwargs: Any,
-    ) -> datafusion.DataFrame:
-        return self.compile(expr.as_table(), params, **kwargs)
-
     def to_pyarrow_batches(
         self,
         expr: ir.Expr,
@@ -362,7 +470,10 @@ class Backend(BaseBackend, CanCreateDatabase, CanCreateSchema):
         **kwargs: Any,
     ) -> pa.ipc.RecordBatchReader:
         pa = self._import_pyarrow()
-        frame = self._get_frame(expr, params, limit, **kwargs)
+
+        self._register_in_memory_tables(expr)
+
+        frame = self.con.sql(self.compile(expr.as_table(), params, **kwargs))
         return pa.ipc.RecordBatchReader.from_batches(frame.schema(), frame.collect())
 
     def execute(
@@ -375,27 +486,42 @@ class Backend(BaseBackend, CanCreateDatabase, CanCreateSchema):
         output = self.to_pyarrow(expr.as_table(), params=params, limit=limit, **kwargs)
         return expr.__pandas_result__(output.to_pandas(timestamp_as_object=True))
 
-    def compile(
-        self,
-        expr: ir.Expr,
-        params: Mapping[ir.Expr, object] | None = None,
-        **kwargs: Any,
+    def _to_sqlglot(
+        self, expr: ir.Expr, limit: str | None = None, params=None, **_: Any
     ):
-        return translate(expr.op(), ctx=self._context)
+        """Compile an Ibis expression to a sqlglot object."""
+        table_expr = expr.as_table()
 
-    @classmethod
-    @lru_cache
-    def _get_operations(cls):
-        from ibis.backends.datafusion.compiler import translate
+        if limit == "default":
+            limit = ibis.options.sql.default_limit
+        if limit is not None:
+            table_expr = table_expr.limit(limit)
 
-        return frozenset(op for op in translate.registry if issubclass(op, ops.Value))
+        if params is None:
+            params = {}
+
+        sql = translate(table_expr.op(), params=params)
+        assert not isinstance(sql, sg.exp.Subquery)
+
+        if isinstance(sql, sg.exp.Table):
+            sql = sg.select(STAR).from_(sql)
+
+        assert not isinstance(sql, sg.exp.Subquery)
+        return sql
+
+    def compile(
+        self, expr: ir.Expr, limit: str | None = None, params=None, **kwargs: Any
+    ):
+        """Compile an Ibis expression to a DataFusion SQL string."""
+        return self._to_sqlglot(expr, limit=limit, params=params, **kwargs).sql(
+            dialect=self.dialect, pretty=True
+        )
 
     @classmethod
     def has_operation(cls, operation: type[ops.Value]) -> bool:
-        op_classes = cls._get_operations()
-        return operation in op_classes or any(
-            issubclass(operation, op_impl) for op_impl in op_classes
-        )
+        from ibis.backends.datafusion.compiler.values import translate_val
+
+        return translate_val.dispatch(operation) is not translate_val.dispatch(object)
 
     def create_table(self, *_, **__) -> ir.Table:
         raise NotImplementedError(self.name)

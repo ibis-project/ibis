@@ -3,7 +3,6 @@ from __future__ import annotations
 import pandas.testing as tm
 import pytest
 
-import ibis.common.exceptions as exc
 import ibis.expr.datatypes as dt
 import ibis.expr.types as ir
 from ibis import udf
@@ -75,6 +74,4 @@ def test_builtin_agg_udf_filtered(con):
     def median(a: float, where: bool = True) -> float:
         """Median of a column."""
 
-    expr = median(con.tables.batting.G)
-    with pytest.raises(exc.OperationNotDefinedError, match="No translation rule for"):
-        con.execute(expr)
+    median(con.tables.batting.G).execute()

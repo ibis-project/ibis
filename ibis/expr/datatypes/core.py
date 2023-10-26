@@ -499,11 +499,6 @@ class Bounds(NamedTuple):
 class Numeric(DataType):
     """Numeric types."""
 
-    @property
-    @abstractmethod
-    def largest(self) -> DataType:
-        """Return the largest type in this family."""
-
 
 @public
 class Integer(Primitive, Numeric):
@@ -631,11 +626,6 @@ class SignedInteger(Integer):
     """Signed integer values."""
 
     @property
-    def largest(self):
-        """Return the largest type of signed integer."""
-        return int64
-
-    @property
     def bounds(self):
         exp = self.nbytes * 8 - 1
         upper = (1 << exp) - 1
@@ -645,11 +635,6 @@ class SignedInteger(Integer):
 @public
 class UnsignedInteger(Integer):
     """Unsigned integer values."""
-
-    @property
-    def largest(self):
-        """Return the largest type of unsigned integer."""
-        return uint64
 
     @property
     def bounds(self):
@@ -666,14 +651,9 @@ class Floating(Primitive, Numeric):
     column = "FloatingColumn"
 
     @property
-    def largest(self):
-        """Return the largest type of floating point values."""
-        return float64
-
-    @property
     @abstractmethod
     def nbytes(self) -> int:  # pragma: no cover
-        ...
+        """Return the number of bytes used to store values of this type."""
 
 
 @public
@@ -793,14 +773,6 @@ class Decimal(Numeric, Parametric):
                     f"scale. Got precision={precision:d} and scale={scale:d}"
                 )
         super().__init__(precision=precision, scale=scale, **kwargs)
-
-    @property
-    def largest(self):
-        """Return the largest type of decimal."""
-        return self.__class__(
-            precision=max(self.precision, 38) if self.precision is not None else None,
-            scale=max(self.scale, 2) if self.scale is not None else None,
-        )
 
     @property
     def _pretty_piece(self) -> str:

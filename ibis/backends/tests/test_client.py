@@ -868,7 +868,6 @@ def test_agg_memory_table(con):
 @pytest.mark.broken(
     ["polars"], reason="join column renaming is currently incorrect on polars"
 )
-@pytest.mark.notimpl(["datafusion"])
 def test_self_join_memory_table(backend, con):
     t = ibis.memtable({"x": [1, 2], "y": [2, 1], "z": ["a", "b"]})
     t_view = t.view()
@@ -1442,11 +1441,6 @@ def test_create_database(con_create_database):
     con_create_database.drop_database(database)
 
 
-@pytest.mark.notyet(
-    ["datafusion"],
-    raises=com.UnsupportedOperationError,
-    reason="datafusion doesn't support dropping schemas",
-)
 def test_create_schema(con_create_schema):
     schema = gen_name("test_create_schema")
     con_create_schema.create_schema(schema)

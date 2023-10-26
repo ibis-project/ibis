@@ -62,12 +62,26 @@ class ColGen:
         return sg.column(key)
 
 
+def paren(expr):
+    """Wrap a sqlglot expression in parentheses."""
+    return sg.exp.Paren(this=expr)
+
+
+def parenthesize(op, arg):
+    import ibis.expr.operations as ops
+
+    if isinstance(op, (ops.Binary, ops.Unary)):
+        return paren(arg)
+    # function calls don't need parens
+    return arg
+
+
 def interval(value, *, unit):
     return sg.exp.Interval(this=sg.exp.convert(value), unit=sg.exp.var(unit))
 
 
-F = FuncGen()
 C = ColGen()
+F = FuncGen()
 NULL = sg.exp.NULL
 FALSE = sg.exp.FALSE
 TRUE = sg.exp.TRUE
