@@ -1649,11 +1649,6 @@ def test_string_to_timestamp(alltypes, fmt):
 )
 @pytest.mark.notimpl(["mssql", "druid", "oracle"], raises=com.OperationNotDefinedError)
 @pytest.mark.notimpl(["impala"], raises=com.UnsupportedBackendType)
-@pytest.mark.xfail_version(
-    datafusion=["datafusion"],
-    raises=Exception,
-    reason="Exception: Arrow error: Cast error: Cannot cast string to value of Date64 type",
-)
 def test_day_of_week_scalar(con, date, expected_index, expected_day):
     expr = ibis.literal(date).cast(dt.date)
     result_index = con.execute(expr.day_of_week.index().name("tmp"))
@@ -2268,14 +2263,6 @@ def test_integer_cast_to_timestamp_scalar(alltypes, df):
     reason="PySpark doesn't handle big timestamps",
     raises=pd.errors.OutOfBoundsDatetime,
 )
-@pytest.mark.notimpl(
-    ["datafusion"],
-    raises=Exception,
-    reason=(
-        "Exception: Arrow error: Parser error: The dates that can be represented as nanoseconds have to be "
-        "between 1677-09-21T00:12:44.0 and 2262-04-11T23:47:16.854775804"
-    ),
-)
 def test_big_timestamp(con):
     # TODO: test with a timezone
     value = ibis.timestamp("2419-10-11 10:10:25")
@@ -2356,14 +2343,6 @@ def test_timestamp_date_comparison(backend, alltypes, df, left_fn, right_fn):
     reason=(
         "called `Result::unwrap()` on an `Err` value: PyErr { type: <class 'OverflowError'>, "
         "value: OverflowError('int too big to convert'), traceback: None }"
-    ),
-)
-@pytest.mark.notimpl(
-    ["datafusion"],
-    raises=Exception,
-    reason=(
-        "Exception: Arrow error: Parser error: The dates that can be represented as nanoseconds have to be "
-        "between 1677-09-21T00:12:44.0 and 2262-04-11T23:47:16.854775804"
     ),
 )
 def test_large_timestamp(con):
@@ -2447,11 +2426,6 @@ def test_large_timestamp(con):
     ["oracle"],
     raises=sa.exc.DatabaseError,
     reason="ORA-01843: invalid month was specified",
-)
-@pytest.mark.notimpl(
-    ["datafusion"],
-    raises=Exception,
-    reason="Exception: DataFusion error: NotImplemented",
 )
 def test_timestamp_precision_output(con, ts, scale, unit):
     dtype = dt.Timestamp(scale=scale)

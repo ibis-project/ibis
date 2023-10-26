@@ -50,27 +50,6 @@ def extract_microsecond(array: dt.Timestamp(scale=9)) -> dt.int32:
     return pc.cast(pc.add(pc.microsecond(array), arr), pa.int32())
 
 
-def _extract_dow_name(array) -> str:
-    return pc.choose(
-        pc.day_of_week(array),
-        "Monday",
-        "Tuesday",
-        "Wednesday",
-        "Thursday",
-        "Friday",
-        "Saturday",
-        "Sunday",
-    )
-
-
-def extract_dow_name_date(array: dt.Date) -> str:
-    return _extract_dow_name(array)
-
-
-def extract_dow_name_timestamp(array: dt.Timestamp(scale=9)) -> str:
-    return _extract_dow_name(array)
-
-
 def _extract_query_arrow(
     arr: pa.StringArray, *, param: str | None = None
 ) -> pa.StringArray:
