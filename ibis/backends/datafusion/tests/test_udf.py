@@ -74,4 +74,4 @@ def test_builtin_agg_udf_filtered(con):
     def median(a: float, where: bool = True) -> float:
         """Median of a column."""
 
-    median(con.tables.batting.G)
+    median(con.tables.batting.G).execute()
