@@ -9,6 +9,8 @@ import pytest
 from packaging.version import parse as vparse
 from pytest import param
 
+from ibis.common.exceptions import OperationNotDefinedError
+
 pytestmark = [
     pytest.mark.never(["impala"], reason="doesn't support JSON and never will"),
     pytest.mark.notyet(["clickhouse"], reason="upstream is broken"),
@@ -36,9 +38,15 @@ pytestmark = [
     condition=vparse(sqlite3.sqlite_version) < vparse("3.38.0"),
     reason="JSON not supported in SQLite < 3.38.0",
 )
-def test_json_getitem(json_t, expr_fn, expected):
+def test_json_getitem(json_t, expr_fn, expected, backend):
     expr = expr_fn(json_t)
     result = expr.execute()
+
+    # Flink returns to queries
+    if backend.name() == "flink":
+        expected = [e if (e is None or isinstance(e, list)) else [e] for e in expected]
+    expected = pd.Series(expected, name="res")
+
     tm.assert_series_equal(result.fillna(pd.NA), expected.fillna(pd.NA))
 
 
@@ -47,6 +55,14 @@ def test_json_getitem(json_t, expr_fn, expected):
 @pytest.mark.notyet(["postgres"], reason="only supports map<string, string>")
 @pytest.mark.notyet(
     ["pyspark", "trino"], reason="should work but doesn't deserialize JSON"
+)
+@pytest.mark.notimpl(
+    ["flink"],
+    raises=OperationNotDefinedError,
+    reason=(
+        "No translation rule for <class 'ibis.expr.operations.json.ToJSONMap'"
+        "Flink does not support ToJSONMap"
+    ),
 )
 def test_json_map(json_t):
     expr = json_t.js.map.name("res")
@@ -72,6 +88,14 @@ def test_json_map(json_t):
     ["pyspark", "trino"], reason="should work but doesn't deserialize JSON"
 )
 @pytest.mark.notyet(["bigquery"], reason="doesn't allow null in arrays")
+@pytest.mark.notimpl(
+    ["flink"],
+    raises=OperationNotDefinedError,
+    reason=(
+        "No translation rule for <class 'ibis.expr.operations.json.ToJSONArray'"
+        "Flink does not support ToJSONArray"
+    ),
+)
 def test_json_array(json_t):
     expr = json_t.js.array.name("res")
     result = expr.execute()

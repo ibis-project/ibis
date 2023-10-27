@@ -424,6 +424,11 @@ def uses_java_re(t):
                     ],
                     raises=com.OperationNotDefinedError,
                 ),
+                pytest.mark.notyet(
+                    ["flink"],
+                    raises=com.OperationNotDefinedError,
+                    reason="doesn't support `TRANSLATE`",
+                ),
             ],
         ),
         param(
@@ -457,41 +462,55 @@ def uses_java_re(t):
             lambda t: t.string_col.find_in_set(["1"]),
             lambda t: t.string_col.str.find("1"),
             id="find_in_set",
-            marks=pytest.mark.notimpl(
-                [
-                    "bigquery",
-                    "datafusion",
-                    "pyspark",
-                    "sqlite",
-                    "snowflake",
-                    "polars",
-                    "mssql",
-                    "trino",
-                    "druid",
-                    "oracle",
-                ],
-                raises=com.OperationNotDefinedError,
-            ),
+            marks=[
+                pytest.mark.notimpl(
+                    [
+                        "bigquery",
+                        "datafusion",
+                        "pyspark",
+                        "sqlite",
+                        "snowflake",
+                        "polars",
+                        "mssql",
+                        "trino",
+                        "druid",
+                        "oracle",
+                    ],
+                    raises=com.OperationNotDefinedError,
+                ),
+                pytest.mark.notyet(
+                    ["flink"],
+                    raises=com.OperationNotDefinedError,
+                    reason="doesn't support `FIND_IN_SET`",
+                ),
+            ],
         ),
         param(
             lambda t: t.string_col.find_in_set(["a"]),
             lambda t: t.string_col.str.find("a"),
             id="find_in_set_all_missing",
-            marks=pytest.mark.notimpl(
-                [
-                    "bigquery",
-                    "datafusion",
-                    "pyspark",
-                    "sqlite",
-                    "snowflake",
-                    "polars",
-                    "mssql",
-                    "trino",
-                    "druid",
-                    "oracle",
-                ],
-                raises=com.OperationNotDefinedError,
-            ),
+            marks=[
+                pytest.mark.notimpl(
+                    [
+                        "bigquery",
+                        "datafusion",
+                        "pyspark",
+                        "sqlite",
+                        "snowflake",
+                        "polars",
+                        "mssql",
+                        "trino",
+                        "druid",
+                        "oracle",
+                    ],
+                    raises=com.OperationNotDefinedError,
+                ),
+                pytest.mark.notyet(
+                    ["flink"],
+                    raises=com.OperationNotDefinedError,
+                    reason="doesn't support `FIND_IN_SET`",
+                ),
+            ],
         ),
         param(
             lambda t: t.string_col.lower(),
@@ -684,7 +703,9 @@ def uses_java_re(t):
             id="negative-index",
             marks=[
                 pytest.mark.broken(["druid"], raises=sa.exc.ProgrammingError),
-                pytest.mark.broken(["datafusion", "impala"], raises=AssertionError),
+                pytest.mark.broken(
+                    ["datafusion", "impala", "flink"], raises=AssertionError
+                ),
                 pytest.mark.notimpl(["pyspark"], raises=NotImplementedError),
             ],
         ),
@@ -817,6 +838,7 @@ def uses_java_re(t):
                     "mssql",
                     "druid",
                     "oracle",
+                    "flink",
                 ],
                 raises=com.OperationNotDefinedError,
             ),
@@ -990,7 +1012,7 @@ def test_capitalize(con):
 
 
 @pytest.mark.notimpl(
-    ["dask", "datafusion", "pandas", "polars", "druid", "oracle"],
+    ["dask", "datafusion", "pandas", "polars", "druid", "oracle", "flink"],
     raises=OperationNotDefinedError,
 )
 @pytest.mark.notyet(
@@ -1039,6 +1061,7 @@ def test_multiple_subs(con):
         "pandas",
         "polars",
         "sqlite",
+        "flink",
     ],
     raises=com.OperationNotDefinedError,
 )

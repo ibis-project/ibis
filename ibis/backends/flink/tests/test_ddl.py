@@ -6,12 +6,16 @@ import tempfile
 import pandas as pd
 import pyarrow as pa
 import pytest
-from py4j.protocol import Py4JJavaError
 
 import ibis
 import ibis.expr.datatypes as dt
 import ibis.expr.schema as sch
 from ibis.backends.conftest import TEST_TABLES
+
+try:
+    from py4j.protocol import Py4JJavaError
+except ImportError:
+    Py4JJavaError = None
 
 
 @pytest.fixture(autouse=True)

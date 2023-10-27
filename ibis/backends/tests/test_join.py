@@ -123,6 +123,7 @@ def test_mutating_join(backend, batting, awards_players, how):
 
 @pytest.mark.parametrize("how", ["semi", "anti"])
 @pytest.mark.notimpl(["dask", "druid"])
+@pytest.mark.notyet(["flink"], reason="Flink doesn't support semi joins or anti joins")
 def test_filtering_join(backend, batting, awards_players, how):
     left = batting[batting.yearID == 2015]
     right = awards_players[awards_players.lgID == "NL"].drop("yearID", "lgID")
@@ -183,6 +184,7 @@ def test_mutate_then_join_no_column_overlap(batting, awards_players):
 
 @pytest.mark.notimpl(["druid"])
 @pytest.mark.notyet(["dask"], reason="dask doesn't support descending order by")
+@pytest.mark.notyet(["flink"], reason="Flink doesn't support semi joins")
 @pytest.mark.broken(
     ["polars"],
     raises=ValueError,

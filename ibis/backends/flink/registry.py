@@ -50,7 +50,8 @@ def _cast(translator: ExprTranslator, op: ops.generic.Cast) -> str:
             return f"TO_TIMESTAMP(CONVERT_TZ(CAST({arg_translated} AS STRING), 'UTC+0', '{to.timezone}'))"
         else:
             return f"TO_TIMESTAMP({arg_translated})"
-
+    elif to.is_date():
+        return f"CAST({arg_translated} AS date)"
     elif to.is_json():
         return arg_translated
 

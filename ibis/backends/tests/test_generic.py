@@ -46,6 +46,11 @@ try:
 except ImportError:
     HiveServer2Error = None
 
+try:
+    from py4j.protocol import Py4JJavaError
+except ImportError:
+    Py4JJavaError = None
+
 
 NULL_BACKEND_TYPES = {
     "bigquery": "NULL",
@@ -61,6 +66,7 @@ NULL_BACKEND_TYPES = {
 
 
 @pytest.mark.broken(["impala", "bigquery"], "assert nan is None")
+@pytest.mark.broken(["flink"], "The runtime does not support untyped `NULL` values.")
 def test_null_literal(con, backend):
     expr = ibis.null()
     result = con.execute(expr)
@@ -80,6 +86,7 @@ BOOLEAN_BACKEND_TYPE = {
     "trino": "boolean",
     "duckdb": "BOOLEAN",
     "postgres": "boolean",
+    "flink": "BOOLEAN NOT NULL",
 }
 
 
@@ -133,6 +140,7 @@ def test_scalar_fillna_nullif(con, expr, expected):
     ],
 )
 @pytest.mark.notimpl(["mssql", "druid", "oracle"])
+@pytest.mark.notyet(["flink"], "NaN is not supported in Flink SQL", raises=ValueError)
 def test_isna(backend, alltypes, col, filt):
     table = alltypes.select(
         nan_col=ibis.literal(np.nan), none_col=ibis.NA.cast("float64")
@@ -151,23 +159,28 @@ def test_isna(backend, alltypes, col, filt):
         None,
         param(
             np.nan,
-            marks=pytest.mark.notimpl(
-                [
-                    "bigquery",
-                    "clickhouse",
-                    "duckdb",
-                    "impala",
-                    "postgres",
-                    "mysql",
-                    "snowflake",
-                    "polars",
-                    "trino",
-                    "mssql",
-                    "druid",
-                    "oracle",
-                ],
-                reason="NaN != NULL for these backends",
-            ),
+            marks=[
+                pytest.mark.notimpl(
+                    [
+                        "bigquery",
+                        "clickhouse",
+                        "duckdb",
+                        "impala",
+                        "postgres",
+                        "mysql",
+                        "snowflake",
+                        "polars",
+                        "trino",
+                        "mssql",
+                        "druid",
+                        "oracle",
+                    ],
+                    reason="NaN != NULL for these backends",
+                ),
+                pytest.mark.notyet(
+                    ["flink"], "NaN is not supported in Flink SQL", raises=ValueError
+                ),
+            ],
             id="nan_col",
         ),
     ],
@@ -318,6 +331,10 @@ def test_filter(backend, alltypes, sorted_df, predicate_fn, expected_fn):
         "oracle",
     ]
 )
+@pytest.mark.never(
+    ["flink"],
+    reason="Flink engine does not support generic window clause with no order by",
+)
 def test_filter_with_window_op(backend, alltypes, sorted_df):
     sorted_alltypes = alltypes.order_by("id")
     table = sorted_alltypes
@@ -360,6 +377,7 @@ def test_case_where(backend, alltypes, df):
 
 # TODO: some of these are notimpl (datafusion) others are probably never
 @pytest.mark.notimpl(["datafusion", "mysql", "sqlite", "mssql", "druid", "oracle"])
+@pytest.mark.notyet(["flink"], "NaN is not supported in Flink SQL", raises=ValueError)
 def test_select_filter_mutate(backend, alltypes, df):
     """Test that select, filter and mutate are executed in right order.
 
@@ -748,6 +766,11 @@ def test_between(backend, alltypes, df):
 
 
 @pytest.mark.notimpl(["druid"])
+@pytest.mark.notimpl(
+    ["flink"],
+    raises=NotImplementedError,
+    reason="NotImplementedError('flink') raised in repr()",
+)
 def test_interactive(alltypes, monkeypatch):
     monkeypatch.setattr(ibis.options, "interactive", True)
 
@@ -767,6 +790,7 @@ def test_correlated_subquery(alltypes):
 
 
 @pytest.mark.notimpl(["polars", "pyspark"])
+@pytest.mark.broken(["flink"], reason="`result` order differs from `expected`")
 def test_uncorrelated_subquery(backend, batting, batting_df):
     subset_batting = batting[batting.yearID <= 2000]
     expr = batting[_.yearID == subset_batting.yearID.max()]["playerID", "yearID"]
@@ -943,7 +967,7 @@ def test_memtable_construct(backend, con, monkeypatch):
 @pytest.mark.notimpl(
     ["pyspark"], reason="pyspark doesn't generate SQL", raises=NotImplementedError
 )
-@pytest.mark.notimpl(["druid"], reason="no sqlglot dialect", raises=ValueError)
+@pytest.mark.notimpl(["druid", "flink"], reason="no sqlglot dialect", raises=ValueError)
 def test_many_subqueries(con, snapshot):
     def query(t, group_cols):
         t2 = t.mutate(key=ibis.row_number().over(ibis.window(order_by=group_cols)))
@@ -957,7 +981,9 @@ def test_many_subqueries(con, snapshot):
     snapshot.assert_match(str(ibis.to_sql(t3, dialect=con.name)), "out.sql")
 
 
-@pytest.mark.notimpl(["dask", "pandas", "oracle"], raises=com.OperationNotDefinedError)
+@pytest.mark.notimpl(
+    ["dask", "pandas", "oracle", "flink"], raises=com.OperationNotDefinedError
+)
 @pytest.mark.notimpl(["druid"], raises=AssertionError)
 @pytest.mark.notyet(
     ["datafusion", "impala", "mssql", "mysql", "sqlite"],
@@ -1065,6 +1091,11 @@ def test_pivot_wider(backend):
     raises=com.OperationNotDefinedError,
     reason="backend doesn't implement ops.WindowFunction",
 )
+@pytest.mark.notimpl(
+    ["flink"],
+    raises=com.OperationNotDefinedError,
+    reason="backend doesn't implement deduplication",
+)
 def test_distinct_on_keep(backend, on, keep):
     from ibis import _
 
@@ -1130,6 +1161,11 @@ def test_distinct_on_keep(backend, on, keep):
     raises=com.UnsupportedOperationError,
     reason="backend doesn't support `having` filters",
 )
+@pytest.mark.notimpl(
+    ["flink"],
+    raises=com.OperationNotDefinedError,
+    reason="backend doesn't implement deduplication",
+)
 def test_distinct_on_keep_is_none(backend, on):
     from ibis import _
 
@@ -1152,7 +1188,7 @@ def test_distinct_on_keep_is_none(backend, on):
     assert len(result) == len(expected)
 
 
-@pytest.mark.notimpl(["dask", "pandas", "postgres"])
+@pytest.mark.notimpl(["dask", "pandas", "postgres", "flink"])
 @pytest.mark.notyet(
     [
         "sqlite",
@@ -1460,6 +1496,7 @@ def test_static_table_slice(backend, slc, expected_count_fn):
     raises=HiveServer2Error,
 )
 @pytest.mark.notyet(["pyspark"], reason="pyspark doesn't support dynamic limit/offset")
+@pytest.mark.notyet(["flink"], reason="flink doesn't support dynamic limit/offset")
 def test_dynamic_table_slice(backend, slc, expected_count_fn):
     t = backend.functional_alltypes
 
@@ -1503,6 +1540,7 @@ def test_dynamic_table_slice(backend, slc, expected_count_fn):
     raises=AssertionError,
     reason="https://github.com/duckdb/duckdb/issues/8412",
 )
+@pytest.mark.notyet(["flink"], reason="flink doesn't support dynamic limit/offset")
 def test_dynamic_table_slice_with_computed_offset(backend):
     t = backend.functional_alltypes
 
