@@ -84,7 +84,7 @@ jobs:
         run: choco install graphviz
 
       - name: install ibis
-        run: poetry install --without dev --without docs --extras visualization
+        run: poetry install --without dev --without docs --extras "visualization decompiler"
 
       - uses: extractions/setup-just@v1
         env:
