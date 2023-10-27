@@ -240,7 +240,9 @@ WHERE catalog_name = :database"""
         super().do_connect(engine)
 
     @staticmethod
-    def _sa_load_extensions(dbapi_con, extensions):
+    def _sa_load_extensions(
+        dbapi_con, extensions: list[str], force_install: bool = False
+    ) -> None:
         query = """
         WITH exts AS (
           SELECT extension_name AS name, aliases FROM duckdb_extensions()
@@ -253,22 +255,28 @@ WHERE catalog_name = :database"""
         # Install and load all other extensions
         todo = set(extensions).difference(installed)
         for extension in todo:
-            dbapi_con.install_extension(extension)
+            dbapi_con.install_extension(extension, force_install=force_install)
             dbapi_con.load_extension(extension)
 
-    def _load_extensions(self, extensions):
+    def _load_extensions(
+        self, extensions: list[str], force_install: bool = False
+    ) -> None:
         with self.begin() as con:
-            self._sa_load_extensions(con.connection, extensions)
+            self._sa_load_extensions(
+                con.connection, extensions, force_install=force_install
+            )
 
-    def load_extension(self, extension: str) -> None:
+    def load_extension(self, extension: str, force_install: bool = False) -> None:
         """Install and load a duckdb extension by name or path.
 
         Parameters
         ----------
         extension
             The extension name or path.
+        force_install
+            Force reinstallation of the extension.
         """
-        self._load_extensions([extension])
+        self._load_extensions([extension], force_install=force_install)
 
     def create_schema(
         self, name: str, database: str | None = None, force: bool = False
