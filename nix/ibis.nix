@@ -16,7 +16,7 @@ poetry2nix.mkPoetryApplication rec {
   checkGroups = [ "test" ];
   projectDir = gitignoreSource ../.;
   src = gitignoreSource ../.;
-  extras = backends;
+  extras = backends ++ [ "decompiler" ];
   overrides = [
     (import ../poetry-overrides.nix)
     poetry2nix.defaultPoetryOverrides
