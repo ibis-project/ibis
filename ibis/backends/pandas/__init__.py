@@ -12,11 +12,13 @@ import ibis.config
 import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
+from ibis import util
 from ibis.backends.base import BaseBackend
 from ibis.formats.pandas import PandasData, PandasSchema
 from ibis.formats.pyarrow import PyArrowData
 
 if TYPE_CHECKING:
+    import pathlib
     from collections.abc import Mapping, MutableMapping
 
 
@@ -79,6 +81,62 @@ class BasePandasBackend(BaseBackend):
             return self.connect({name: df}).table(name)
         client.dictionary[name] = df
         return client.table(name)
+
+    def read_csv(
+        self, source: str | pathlib.Path, table_name: str | None = None, **kwargs: Any
+    ):
+        """Register a CSV file as a table in the current session.
+
+        Parameters
+        ----------
+        source
+            The data source. Can be a local or remote file, pathlike objects
+            also accepted.
+        table_name
+            An optional name to use for the created table. This defaults to
+            a generated name.
+        **kwargs
+            Additional keyword arguments passed to Pandas loading function.
+            See https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.read_csv.html
+            for more information.
+
+        Returns
+        -------
+        ir.Table
+            The just-registered table
+        """
+        table_name = table_name or util.gen_name("read_csv")
+        df = pd.read_csv(source, **kwargs)
+        self.dictionary[table_name] = df
+        return self.table(table_name)
+
+    def read_parquet(
+        self, source: str | pathlib.Path, table_name: str | None = None, **kwargs: Any
+    ):
+        """Register a parquet file as a table in the current session.
+
+        Parameters
+        ----------
+        source
+            The data source(s). May be a path to a file, an iterable of files,
+            or directory of parquet files.
+        table_name
+            An optional name to use for the created table. This defaults to
+            a generated name.
+        **kwargs
+            Additional keyword arguments passed to Pandas loading function.
+            See https://pandas.pydata.org/docs/reference/api/pandas.read_parquet.html
+            for more information.
+
+        Returns
+        -------
+        ir.Table
+            The just-registered table
+        """
+        table_name = table_name or util.gen_name("read_parquet")
+        df = pd.read_parquet(source, **kwargs)
+        self.dictionary[table_name] = df
+        return self.table(table_name)
 
     @property
     def version(self) -> str:
