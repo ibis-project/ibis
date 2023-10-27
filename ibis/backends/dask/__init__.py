@@ -104,7 +104,7 @@ class Backend(BasePandasBackend):
 
         Returns
         -------
-        dask.dataframe.core.DataFrame | dask.dataframe.core.Series | das.dataframe.core.Scalar
+        dask.dataframe.core.DataFrame | dask.dataframe.core.Series | dask.dataframe.core.Scalar
             Dask graph.
         """
         params = {
