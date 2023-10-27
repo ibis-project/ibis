@@ -7,6 +7,7 @@ import pytest
 import ibis
 from ibis.backends.conftest import TEST_TABLES
 from ibis.backends.tests.base import BackendTest, RoundAwayFromZero
+from ibis.backends.tests.data import array_types
 
 
 class TestConf(BackendTest, RoundAwayFromZero):
@@ -15,7 +16,7 @@ class TestConf(BackendTest, RoundAwayFromZero):
     # returned_timestamp_unit = 'ns'
     supports_structs = False
     supports_json = False
-    supports_arrays = False
+    supports_arrays = True
     stateful = False
     deps = ("datafusion",)
 
@@ -24,6 +25,7 @@ class TestConf(BackendTest, RoundAwayFromZero):
         for table_name in TEST_TABLES:
             path = self.data_dir / "parquet" / f"{table_name}.parquet"
             con.register(path, table_name=table_name)
+        con.register(array_types, table_name="array_types")
 
     @staticmethod
     def connect(*, tmpdir, worker_id, **kw):

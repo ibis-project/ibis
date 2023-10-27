@@ -105,6 +105,9 @@ _simple_ops = {
     ops.Degrees: "degrees",
     ops.NullIf: "nullif",
     ops.Pi: "pi",
+    ops.ArrayContains: "array_contains",
+    ops.ArrayLength: "array_length",
+    ops.ArrayRemove: "array_remove_all",
 }
 
 for _op, _name in _simple_ops.items():
@@ -710,3 +713,23 @@ def _if_else(op, *, bool_expr, true_expr, false_null_expr, **_):
 @translate_val.register(ops.NotNull)
 def _not_null(op, *, arg, **_):
     return sg.not_(arg.is_(NULL))
+
+
+@translate_val.register(ops.ArrayColumn)
+def array_column(op, *, cols, **_):
+    return F.make_array(*cols)
+
+
+@translate_val.register(ops.ArrayRepeat)
+def array_repeat(op, *, arg, times, **_):
+    return F.flatten(F.array_repeat(arg, times))
+
+
+@translate_val.register(ops.ArrayConcat)
+def array_concat(op, *, arg, **_):
+    return F.array_concat(*arg)
+
+
+@translate_val.register(ops.ArrayPosition)
+def array_position(op, *, arg, other, **_):
+    return F.coalesce(F.array_position(arg, other), 0)
