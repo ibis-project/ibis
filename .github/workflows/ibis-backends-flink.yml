@@ -60,6 +60,7 @@ jobs:
               - pytest-split
         group:
           [
+            0,
             1,
             2,
             3,
@@ -126,8 +127,20 @@ jobs:
       - name: show installed deps
         run: poetry run pip list
 
-      - name: "run serial tests: ${{ matrix.backend.name }}"
-        run: just ci-check -m ${{ matrix.backend.name }} --splits 20 --group ${{ matrix.group }} --splitting-algorithm least_duration
+      - name: "run serial tests: ${{ matrix.backend.name }} (common)"
+        if: matrix.group > 0
+        run: just ci-check -m ${{ matrix.backend.name }} ibis/backends/tests --splits 20 --group ${{ matrix.group }} --splitting-algorithm least_duration
+        env:
+          IBIS_EXAMPLES_DATA: ${{ runner.temp }}/examples-${{ matrix.backend.name }}-${{ matrix.os }}-${{ steps.install_python.outputs.python-version }}
+          JVM_ARGS: -XX:CompressedClassSpaceSize=3G
+
+      # FIXME(deepyaman): If some backend-specific test, in test_ddl.py,
+      #   executes before common tests, they will fail with:
+      #   org.apache.flink.table.api.ValidationException: Table `default_catalog`.`default_database`.`functional_alltypes` was not found.
+      #   Therefore, we quarantine backend-specific tests to avoid this.
+      - name: "run serial tests: ${{ matrix.backend.name }} (backend-specific)"
+        if: matrix.group == 0
+        run: just ci-check -m ${{ matrix.backend.name }} ibis/backends/flink/tests
         env:
           IBIS_EXAMPLES_DATA: ${{ runner.temp }}/examples-${{ matrix.backend.name }}-${{ matrix.os }}-${{ steps.install_python.outputs.python-version }}
           JVM_ARGS: -XX:CompressedClassSpaceSize=3G
