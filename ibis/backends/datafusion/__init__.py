@@ -41,7 +41,7 @@ if TYPE_CHECKING:
 
     import pandas as pd
 
-_exclude_exp = (exp.Pow,)
+_exclude_exp = (exp.Pow, exp.ArrayContains)
 
 
 # the DataFusion dialect was created to skip the power function to operator transformation
@@ -66,6 +66,7 @@ class Backend(BaseBackend, CanCreateDatabase, CanCreateSchema):
     dialect = "datafusion"
     builder = None
     supports_in_memory_tables = True
+    supports_arrays = True
 
     @property
     def version(self):

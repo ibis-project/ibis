@@ -54,7 +54,6 @@ pytestmark = [
 # list.
 
 
-@pytest.mark.notimpl(["datafusion"], raises=com.OperationNotDefinedError)
 def test_array_column(backend, alltypes, df):
     expr = ibis.array([alltypes["double_col"], alltypes["double_col"]])
     assert isinstance(expr, ir.ArrayColumn)
@@ -91,7 +90,7 @@ def test_array_scalar(con, backend):
         assert con.execute(expr.typeof()) == ARRAY_BACKEND_TYPES[backend_name]
 
 
-@pytest.mark.notimpl(["polars", "datafusion"], raises=com.OperationNotDefinedError)
+@pytest.mark.notimpl(["polars"], raises=com.OperationNotDefinedError)
 def test_array_repeat(con):
     expr = ibis.array([1.0, 2.0]) * 2
 
@@ -102,7 +101,6 @@ def test_array_repeat(con):
 
 
 # Issues #2370
-@pytest.mark.notimpl(["datafusion"], raises=com.OperationNotDefinedError)
 def test_array_concat(con):
     left = ibis.literal([1, 2, 3])
     right = ibis.literal([2, 1])
@@ -113,7 +111,6 @@ def test_array_concat(con):
 
 
 # Issues #2370
-@pytest.mark.notimpl(["datafusion"], raises=com.OperationNotDefinedError)
 def test_array_concat_variadic(con):
     left = ibis.literal([1, 2, 3])
     right = ibis.literal([2, 1])
@@ -124,7 +121,7 @@ def test_array_concat_variadic(con):
 
 
 # Issues #2370
-@pytest.mark.notimpl(["datafusion"], raises=com.OperationNotDefinedError)
+@pytest.mark.notimpl(["datafusion"], raises=BaseException)
 @pytest.mark.notyet(
     ["postgres", "trino"],
     raises=sa.exc.ProgrammingError,
@@ -139,7 +136,6 @@ def test_array_concat_some_empty(con):
     assert np.array_equal(result, expected)
 
 
-@pytest.mark.notimpl(["datafusion"], raises=com.OperationNotDefinedError)
 def test_array_radd_concat(con):
     left = [1]
     right = ibis.literal([2])
@@ -150,7 +146,6 @@ def test_array_radd_concat(con):
     assert np.array_equal(result, expected)
 
 
-@pytest.mark.notimpl(["datafusion"], raises=com.OperationNotDefinedError)
 def test_array_length(con):
     expr = ibis.literal([1, 2, 3]).length()
     assert con.execute(expr.name("tmp")) == 3
@@ -193,13 +188,21 @@ builtin_array = toolz.compose(
         ["sqlite"], reason="array types are unsupported", raises=NotImplementedError
     ),
     # someone just needs to implement these
-    pytest.mark.notimpl(["datafusion"], raises=Exception),
 )
 
 
 @builtin_array
 @pytest.mark.never(
-    ["clickhouse", "duckdb", "pandas", "pyspark", "snowflake", "polars", "trino"],
+    [
+        "clickhouse",
+        "duckdb",
+        "pandas",
+        "pyspark",
+        "snowflake",
+        "polars",
+        "trino",
+        "datafusion",
+    ],
     reason="backend does not flatten array types",
     raises=AssertionError,
 )
@@ -234,7 +237,16 @@ def test_array_discovery_postgres(backend):
     raises=AssertionError,
 )
 @pytest.mark.never(
-    ["duckdb", "pandas", "postgres", "pyspark", "snowflake", "polars", "trino"],
+    [
+        "duckdb",
+        "pandas",
+        "postgres",
+        "pyspark",
+        "snowflake",
+        "polars",
+        "trino",
+        "datafusion",
+    ],
     reason="backend supports nullable nested types",
     raises=AssertionError,
 )
@@ -334,6 +346,7 @@ def test_array_discovery_snowflake(backend):
     raises=BadRequest,
 )
 @pytest.mark.notimpl(["dask"], raises=ValueError)
+@pytest.mark.notimpl(["datafusion"], raises=com.OperationNotDefinedError)
 def test_unnest_simple(backend):
     array_types = backend.array_types
     expected = (
@@ -350,6 +363,7 @@ def test_unnest_simple(backend):
 
 @builtin_array
 @pytest.mark.notimpl("dask", raises=com.OperationNotDefinedError)
+@pytest.mark.notimpl(["datafusion"], raises=com.OperationNotDefinedError)
 def test_unnest_complex(backend):
     array_types = backend.array_types
     df = array_types.execute()
@@ -389,6 +403,7 @@ def test_unnest_complex(backend):
     raises=AssertionError,
 )
 @pytest.mark.notimpl(["dask"], raises=ValueError)
+@pytest.mark.notimpl(["datafusion"], raises=com.OperationNotDefinedError)
 def test_unnest_idempotent(backend):
     array_types = backend.array_types
     df = array_types.execute()
@@ -409,6 +424,7 @@ def test_unnest_idempotent(backend):
 
 @builtin_array
 @pytest.mark.notimpl("dask", raises=ValueError)
+@pytest.mark.notimpl(["datafusion"], raises=com.OperationNotDefinedError)
 def test_unnest_no_nulls(backend):
     array_types = backend.array_types
     df = array_types.execute()
@@ -435,6 +451,7 @@ def test_unnest_no_nulls(backend):
 
 @builtin_array
 @pytest.mark.notimpl("dask", raises=ValueError)
+@pytest.mark.notimpl(["datafusion"], raises=com.OperationNotDefinedError)
 def test_unnest_default_name(backend):
     array_types = backend.array_types
     df = array_types.execute()
@@ -561,10 +578,9 @@ def test_array_filter(backend, con, input, output):
 
 @builtin_array
 @pytest.mark.notimpl(
-    ["datafusion", "mssql", "pandas", "polars", "postgres"],
+    ["mssql", "pandas", "polars", "postgres"],
     raises=com.OperationNotDefinedError,
 )
-@pytest.mark.notimpl(["datafusion"], raises=Exception)
 @pytest.mark.notimpl(["dask"], raises=com.OperationNotDefinedError)
 @pytest.mark.never(["impala"], reason="array_types table isn't defined")
 def test_array_contains(backend, con):
@@ -577,7 +593,7 @@ def test_array_contains(backend, con):
 
 @builtin_array
 @pytest.mark.notimpl(
-    ["dask", "datafusion", "impala", "mssql", "pandas", "polars"],
+    ["dask", "impala", "mssql", "pandas", "polars"],
     raises=com.OperationNotDefinedError,
 )
 def test_array_position(backend, con):
@@ -590,7 +606,7 @@ def test_array_position(backend, con):
 
 @builtin_array
 @pytest.mark.notimpl(
-    ["dask", "datafusion", "impala", "mssql", "pandas", "polars"],
+    ["dask", "impala", "mssql", "pandas", "polars"],
     raises=com.OperationNotDefinedError,
 )
 def test_array_remove(backend, con):
@@ -708,6 +724,7 @@ def test_array_intersect(con):
     reason="ClickHouse won't accept dicts for struct type values",
 )
 @pytest.mark.notimpl(["postgres"], raises=sa.exc.ProgrammingError)
+@pytest.mark.notimpl(["datafusion"], raises=com.OperationNotDefinedError)
 def test_unnest_struct(con):
     data = {"value": [[{"a": 1}, {"a": 2}], [{"a": 3}, {"a": 4}]]}
     t = ibis.memtable(data, schema=ibis.schema({"value": "!array<!struct<a: !int>>"}))
@@ -754,6 +771,7 @@ def test_zip(backend):
     reason="https://github.com/ClickHouse/ClickHouse/issues/41112",
 )
 @pytest.mark.notimpl(["postgres"], raises=sa.exc.ProgrammingError)
+@pytest.mark.notimpl(["datafusion"], raises=com.OperationNotDefinedError)
 @pytest.mark.notimpl(
     ["polars"],
     raises=com.OperationNotDefinedError,
