@@ -785,7 +785,6 @@ def test_correlated_subquery(alltypes):
 
 
 @pytest.mark.notimpl(["polars", "pyspark"])
-@pytest.mark.broken(["flink"], reason="`result` order differs from `expected`")
 def test_uncorrelated_subquery(backend, batting, batting_df):
     subset_batting = batting[batting.yearID <= 2000]
     expr = batting[_.yearID == subset_batting.yearID.max()]["playerID", "yearID"]
