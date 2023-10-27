@@ -158,15 +158,6 @@ jobs:
               - oracle
             services:
               - oracle
-          - name: flink
-            title: Flink
-            serial: true
-            extras:
-              - flink
-            additional_deps:
-              - apache-flink
-            even_more_deps:
-              - pandas~=1.5
         exclude:
           - os: windows-latest
             backend:
@@ -263,17 +254,6 @@ jobs:
                 - oracle
               services:
                 - oracle
-          - python-version: "3.11"
-            backend:
-              name: flink
-              title: Flink
-              serial: true
-              extras:
-                - flink
-              additional_deps:
-                - apache-flink
-              even_more_deps:
-                - pandas~=1.5
     steps:
       - name: update and install system dependencies
         if: matrix.os == 'ubuntu-latest' && matrix.backend.sys-deps != null
@@ -327,11 +307,6 @@ jobs:
         if: matrix.backend.additional_deps != null
         run: poetry run pip install ${{ join(matrix.backend.additional_deps, ' ') }}
 
-      # FIXME(deepyaman)
-      - name: install even more deps
-        if: matrix.backend.even_more_deps != null
-        run: poetry run pip install ${{ join(matrix.backend.even_more_deps, ' ') }}
-
       - name: show installed deps
         run: poetry run pip list
 
@@ -351,13 +326,7 @@ jobs:
           IBIS_EXAMPLES_DATA: ${{ runner.temp }}/examples-${{ matrix.backend.name }}-${{ matrix.os }}-${{ steps.install_python.outputs.python-version }}
 
       - name: "run serial tests: ${{ matrix.backend.name }}"
-        if: matrix.backend.serial && matrix.backend.name == 'flink'
-        run: just ci-check -m ${{ matrix.backend.name }} ibis/backends/flink/tests
-        env:
-          IBIS_EXAMPLES_DATA: ${{ runner.temp }}/examples-${{ matrix.backend.name }}-${{ matrix.os }}-${{ steps.install_python.outputs.python-version }}
-
-      - name: "run serial tests: ${{ matrix.backend.name }}"
-        if: matrix.backend.serial && matrix.backend.name != 'impala' && matrix.backend.name != 'flink'
+        if: matrix.backend.serial && matrix.backend.name != 'impala'
         run: just ci-check -m ${{ matrix.backend.name }}
         env:
           IBIS_EXAMPLES_DATA: ${{ runner.temp }}/examples-${{ matrix.backend.name }}-${{ matrix.os }}-${{ steps.install_python.outputs.python-version }}
