@@ -2721,7 +2721,14 @@ class Table(Expr, _FixedTextJupyterMixin):
         right: Table,
         predicates: str
         | Sequence[
-            str | tuple[str | ir.Column, str | ir.Column] | ir.BooleanColumn
+            str
+            | ir.BooleanColumn
+            | Literal[True]
+            | Literal[False]
+            | tuple[
+                str | ir.Column | ir.Deferred,
+                str | ir.Column | ir.Deferred,
+            ]
         ] = (),
         how: Literal[
             "inner",
@@ -2747,9 +2754,9 @@ class Table(Expr, _FixedTextJupyterMixin):
         right
             Right table to join
         predicates
-            Boolean or column names to join on
+            Condition(s) to join on. See examples for details.
         how
-            Join method
+            Join method, e.g. ``"inner"`` or ``"left"``.
         lname
             A format string to use to rename overlapping columns in the left
             table (e.g. ``"left_{name}"``).
@@ -2760,12 +2767,10 @@ class Table(Expr, _FixedTextJupyterMixin):
         Examples
         --------
         >>> import ibis
-        >>> import ibis.selectors as s
-        >>> import ibis.examples as ex
         >>> from ibis import _
         >>> ibis.options.interactive = True
-        >>> movies = ex.ml_latest_small_movies.fetch()
-        >>> movies
+        >>> movies = ibis.examples.ml_latest_small_movies.fetch()
+        >>> movies.head()
         ┏━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
         ┃ movieId ┃ title                            ┃ genres                          ┃
         ┡━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
@@ -2776,64 +2781,123 @@ class Table(Expr, _FixedTextJupyterMixin):
         │       3 │ Grumpier Old Men (1995)          │ Comedy|Romance                  │
         │       4 │ Waiting to Exhale (1995)         │ Comedy|Drama|Romance            │
         │       5 │ Father of the Bride Part II (19… │ Comedy                          │
-        │       6 │ Heat (1995)                      │ Action|Crime|Thriller           │
-        │       7 │ Sabrina (1995)                   │ Comedy|Romance                  │
-        │       8 │ Tom and Huck (1995)              │ Adventure|Children              │
-        │       9 │ Sudden Death (1995)              │ Action                          │
-        │      10 │ GoldenEye (1995)                 │ Action|Adventure|Thriller       │
-        │       … │ …                                │ …                               │
         └─────────┴──────────────────────────────────┴─────────────────────────────────┘
-        >>> links = ex.ml_latest_small_links.fetch()
-        >>> links
-        ┏━━━━━━━━━┳━━━━━━━━━┳━━━━━━━━┓
-        ┃ movieId ┃ imdbId  ┃ tmdbId ┃
-        ┡━━━━━━━━━╇━━━━━━━━━╇━━━━━━━━┩
-        │ int64   │ string  │ int64  │
-        ├─────────┼─────────┼────────┤
-        │       1 │ 0114709 │    862 │
-        │       2 │ 0113497 │   8844 │
-        │       3 │ 0113228 │  15602 │
-        │       4 │ 0114885 │  31357 │
-        │       5 │ 0113041 │  11862 │
-        │       6 │ 0113277 │    949 │
-        │       7 │ 0114319 │  11860 │
-        │       8 │ 0112302 │  45325 │
-        │       9 │ 0114576 │   9091 │
-        │      10 │ 0113189 │    710 │
-        │       … │ …       │      … │
-        └─────────┴─────────┴────────┘
+        >>> ratings = ibis.examples.ml_latest_small_ratings.fetch().drop("timestamp")
+        >>> ratings.head()
+        ┏━━━━━━━━┳━━━━━━━━━┳━━━━━━━━━┓
+        ┃ userId ┃ movieId ┃ rating  ┃
+        ┡━━━━━━━━╇━━━━━━━━━╇━━━━━━━━━┩
+        │ int64  │ int64   │ float64 │
+        ├────────┼─────────┼─────────┤
+        │      1 │       1 │     4.0 │
+        │      1 │       3 │     4.0 │
+        │      1 │       6 │     4.0 │
+        │      1 │      47 │     5.0 │
+        │      1 │      50 │     5.0 │
+        └────────┴─────────┴─────────┘
 
-        Implicit inner equality join on the shared `movieId` column
+        Equality left join on the shared `movieId` column.
+        Note the `_right` suffix added to all overlapping
+        columns from the right table
+        (in this case only the "movieId" column).
 
-        >>> linked = movies.join(links, "movieId", how="inner")
-        >>> linked.head()
-        ┏━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━┳━━━━━━━━┓
-        ┃ movieId ┃ title                  ┃ genres                 ┃ imdbId  ┃ tmdbId ┃
-        ┡━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━╇━━━━━━━━┩
-        │ int64   │ string                 │ string                 │ string  │ int64  │
-        ├─────────┼────────────────────────┼────────────────────────┼─────────┼────────┤
-        │       1 │ Toy Story (1995)       │ Adventure|Animation|C… │ 0114709 │    862 │
-        │       2 │ Jumanji (1995)         │ Adventure|Children|Fa… │ 0113497 │   8844 │
-        │       3 │ Grumpier Old Men (199… │ Comedy|Romance         │ 0113228 │  15602 │
-        │       4 │ Waiting to Exhale (19… │ Comedy|Drama|Romance   │ 0114885 │  31357 │
-        │       5 │ Father of the Bride P… │ Comedy                 │ 0113041 │  11862 │
-        └─────────┴────────────────────────┴────────────────────────┴─────────┴────────┘
+        >>> ratings.join(movies, "movieId", how="left").head(5)
+        ┏━━━━━━━━┳━━━━━━━━━┳━━━━━━━━━┳━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━┓
+        ┃ userId ┃ movieId ┃ rating  ┃ movieId_right ┃ title                       ┃ … ┃
+        ┡━━━━━━━━╇━━━━━━━━━╇━━━━━━━━━╇━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━┩
+        │ int64  │ int64   │ float64 │ int64         │ string                      │ … │
+        ├────────┼─────────┼─────────┼───────────────┼─────────────────────────────┼───┤
+        │      1 │       1 │     4.0 │             1 │ Toy Story (1995)            │ … │
+        │      1 │       3 │     4.0 │             3 │ Grumpier Old Men (1995)     │ … │
+        │      1 │       6 │     4.0 │             6 │ Heat (1995)                 │ … │
+        │      1 │      47 │     5.0 │            47 │ Seven (a.k.a. Se7en) (1995) │ … │
+        │      1 │      50 │     5.0 │            50 │ Usual Suspects, The (1995)  │ … │
+        └────────┴─────────┴─────────┴───────────────┴─────────────────────────────┴───┘
 
-        Explicit equality join using the default `how` value of `"inner"`
+        Explicit equality join using the default `how` value of `"inner"`.
+        Note how there is no `_right` suffix added to the `movieId` column
+        since this is an inner join and the `movieId` column is part of the
+        join condition.
 
-        >>> linked = movies.join(links, movies.movieId == links.movieId)
-        >>> linked.head()
-        ┏━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━┳━━━━━━━━┓
-        ┃ movieId ┃ title                  ┃ genres                 ┃ imdbId  ┃ tmdbId ┃
-        ┡━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━╇━━━━━━━━┩
-        │ int64   │ string                 │ string                 │ string  │ int64  │
-        ├─────────┼────────────────────────┼────────────────────────┼─────────┼────────┤
-        │       1 │ Toy Story (1995)       │ Adventure|Animation|C… │ 0114709 │    862 │
-        │       2 │ Jumanji (1995)         │ Adventure|Children|Fa… │ 0113497 │   8844 │
-        │       3 │ Grumpier Old Men (199… │ Comedy|Romance         │ 0113228 │  15602 │
-        │       4 │ Waiting to Exhale (19… │ Comedy|Drama|Romance   │ 0114885 │  31357 │
-        │       5 │ Father of the Bride P… │ Comedy                 │ 0113041 │  11862 │
-        └─────────┴────────────────────────┴────────────────────────┴─────────┴────────┘
+        >>> ratings.join(movies, ratings.movieId == movies.movieId).head(5)
+        ┏━━━━━━━━┳━━━━━━━━━┳━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━┓
+        ┃ userId ┃ movieId ┃ rating  ┃ title                  ┃ genres                 ┃
+        ┡━━━━━━━━╇━━━━━━━━━╇━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━┩
+        │ int64  │ int64   │ float64 │ string                 │ string                 │
+        ├────────┼─────────┼─────────┼────────────────────────┼────────────────────────┤
+        │      1 │       1 │     4.0 │ Toy Story (1995)       │ Adventure|Animation|C… │
+        │      1 │       3 │     4.0 │ Grumpier Old Men (199… │ Comedy|Romance         │
+        │      1 │       6 │     4.0 │ Heat (1995)            │ Action|Crime|Thriller  │
+        │      1 │      47 │     5.0 │ Seven (a.k.a. Se7en) … │ Mystery|Thriller       │
+        │      1 │      50 │     5.0 │ Usual Suspects, The (… │ Crime|Mystery|Thriller │
+        └────────┴─────────┴─────────┴────────────────────────┴────────────────────────┘
+
+        >>> tags = ibis.examples.ml_latest_small_tags.fetch()
+        >>> tags.head()
+        ┏━━━━━━━━┳━━━━━━━━━┳━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━┓
+        ┃ userId ┃ movieId ┃ tag             ┃ timestamp  ┃
+        ┡━━━━━━━━╇━━━━━━━━━╇━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━┩
+        │ int64  │ int64   │ string          │ int64      │
+        ├────────┼─────────┼─────────────────┼────────────┤
+        │      2 │   60756 │ funny           │ 1445714994 │
+        │      2 │   60756 │ Highly quotable │ 1445714996 │
+        │      2 │   60756 │ will ferrell    │ 1445714992 │
+        │      2 │   89774 │ Boxing story    │ 1445715207 │
+        │      2 │   89774 │ MMA             │ 1445715200 │
+        └────────┴─────────┴─────────────────┴────────────┘
+
+        You can join on multiple columns/conditions by passing in a
+        sequence. Find all instances where a user both tagged and
+        rated a movie:
+
+        >>> tags.join(ratings, ["userId", "movieId"]).head(5)
+        ┏━━━━━━━━┳━━━━━━━━━┳━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━┓
+        ┃ userId ┃ movieId ┃ tag            ┃ timestamp  ┃ rating  ┃
+        ┡━━━━━━━━╇━━━━━━━━━╇━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━━┩
+        │ int64  │ int64   │ string         │ int64      │ float64 │
+        ├────────┼─────────┼────────────────┼────────────┼─────────┤
+        │     62 │       2 │ Robin Williams │ 1528843907 │     4.0 │
+        │     62 │     110 │ sword fight    │ 1528152535 │     4.5 │
+        │     62 │     410 │ gothic         │ 1525636609 │     4.5 │
+        │     62 │    2023 │ mafia          │ 1525636733 │     5.0 │
+        │     62 │    2124 │ quirky         │ 1525636846 │     5.0 │
+        └────────┴─────────┴────────────────┴────────────┴─────────┘
+
+        To self-join a table with itself, you need to call
+        `.view()` on one of the arguments so the two tables
+        are distinct from each other.
+
+        For crafting more complex join conditions,
+        a valid form of a join condition is a 2-tuple like
+        `({left_key}, {right_key})`, where each key can be
+
+        - a Column
+        - Deferred expression
+        - lambda of the form (Table) -> Column
+
+        For example, to find all movies pairings that received the same
+        (ignoring case) tags:
+
+        >>> movie_tags = tags["movieId", "tag"]
+        >>> view = movie_tags.view()
+        >>> movie_tags.join(
+        ...     view,
+        ...     [
+        ...         movie_tags.movieId != view.movieId,
+        ...         (_.tag.lower(), lambda t: t.tag.lower()),
+        ...     ],
+        ... ).head()
+        ┏━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━┓
+        ┃ movieId ┃ tag               ┃ movieId_right ┃ tag_right         ┃
+        ┡━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━┩
+        │ int64   │ string            │ int64         │ string            │
+        ├─────────┼───────────────────┼───────────────┼───────────────────┤
+        │   60756 │ funny             │          1732 │ funny             │
+        │   60756 │ Highly quotable   │          1732 │ Highly quotable   │
+        │   89774 │ Tom Hardy         │        139385 │ tom hardy         │
+        │  106782 │ drugs             │          1732 │ drugs             │
+        │  106782 │ Leonardo DiCaprio │          5989 │ Leonardo DiCaprio │
+        └─────────┴───────────────────┴───────────────┴───────────────────┘
         """
 
         _join_classes = {
