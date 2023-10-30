@@ -92,14 +92,14 @@ def _extract_quarter(t, op):
 
 
 _truncate_modifiers = {
-    DateUnit.DAY: "start of day",
-    DateUnit.WEEK: "weekday 1",
-    DateUnit.MONTH: "start of month",
-    DateUnit.YEAR: "start of year",
-    IntervalUnit.DAY: "start of day",
-    IntervalUnit.WEEK: "weekday 1",
-    IntervalUnit.MONTH: "start of month",
-    IntervalUnit.YEAR: "start of year",
+    DateUnit.DAY: ("start of day",),
+    DateUnit.WEEK: ("weekday 0", "-6 days"),
+    DateUnit.MONTH: ("start of month",),
+    DateUnit.YEAR: ("start of year",),
+    IntervalUnit.DAY: ("start of day",),
+    IntervalUnit.WEEK: ("weekday 1",),
+    IntervalUnit.MONTH: ("start of month",),
+    IntervalUnit.YEAR: ("start of year",),
 }
 
 
@@ -112,7 +112,7 @@ def _truncate(func):
             raise com.UnsupportedOperationError(
                 f"Unsupported truncate unit {op.unit!r}"
             )
-        return func(sa_arg, modifier)
+        return func(sa_arg, *modifier)
 
     return translator
 

@@ -537,7 +537,7 @@ def test_timestamp_truncate(backend, alltypes, df, unit):
                     raises=com.UnsupportedOperationError,
                     reason="Unsupported truncate unit W",
                 ),
-                pytest.mark.broken(["impala", "sqlite"], raises=AssertionError),
+                pytest.mark.broken(["impala"], raises=AssertionError),
             ],
         ),
     ],
