@@ -433,7 +433,6 @@ def ft_data(data_dir):
 @pytest.mark.notyet(
     [
         "bigquery",
-        "dask",
         "impala",
         "mssql",
         "mysql",
@@ -462,7 +461,6 @@ def test_read_parquet_glob(con, tmp_path, ft_data):
 @pytest.mark.notyet(
     [
         "bigquery",
-        "dask",
         "impala",
         "mssql",
         "mysql",
