@@ -16,7 +16,10 @@ def get_renderer(level: int) -> MdRenderer:
 
 @cache
 def get_backend(backend: str):
-    return get_object(f"ibis.backends.{backend}", "Backend")
+    if backend == "pandas":
+        return get_object(f"ibis.backends.{backend}", "BasePandasBackend")
+    else:
+        return get_object(f"ibis.backends.{backend}", "Backend")
 
 
 def get_callable(obj, name):
