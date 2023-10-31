@@ -757,7 +757,7 @@ def test_decimal_literal(con, backend, expr, expected_types, expected_result):
     ],
 )
 @pytest.mark.notimpl(
-    ["mysql", "sqlite", "datafusion", "mssql", "oracle"],
+    ["mysql", "sqlite", "datafusion", "mssql", "oracle", "flink"],
     raises=com.OperationNotDefinedError,
 )
 @pytest.mark.xfail(
@@ -841,6 +841,11 @@ def test_isnan_isinf(
             L(0).sign(),
             0,
             id="sign-zero",
+            marks=pytest.mark.broken(
+                ["flink"],
+                "An error occurred while calling z:org.apache.flink.table.runtime.arrow.ArrowUtils.collectAsPandasDataFrame.",
+                raises=Py4JError,
+            ),
         ),
         param(L(5.556).sqrt(), math.sqrt(5.556), id="sqrt"),
         param(
@@ -1183,6 +1188,11 @@ def test_mod(backend, alltypes, df):
     reason="bigquery doesn't support floating modulus",
     raises=GoogleBadRequest,
 )
+@pytest.mark.notyet(
+    ["flink"],
+    "Cannot apply '%' to arguments of type '<DOUBLE> % <SMALLINT>'. Supported form(s): '<EXACT_NUMERIC> % <EXACT_NUMERIC>",
+    raises=Py4JError,
+)
 def test_floating_mod(backend, alltypes, df):
     expr = operator.mod(alltypes.double_col, alltypes.smallint_col + 1).name("tmp")
 
@@ -1194,10 +1204,85 @@ def test_floating_mod(backend, alltypes, df):
 
 
 @pytest.mark.parametrize(
-    "column",
+    ("column", "denominator"),
     [
         param(
             "tinyint_col",
+            0,
+            marks=[
+                pytest.mark.notyet(
+                    "oracle",
+                    raises=(sa.exc.DatabaseError, sa.exc.ArgumentError),
+                    reason="Oracle doesn't do integer division by zero",
+                ),
+                pytest.mark.notyet(
+                    "flink",
+                    raises=Py4JError,
+                    reason="Flink doesn't do integer division by zero",
+                ),
+            ],
+        ),
+        param(
+            "smallint_col",
+            0,
+            marks=[
+                pytest.mark.notyet(
+                    "oracle",
+                    raises=(sa.exc.DatabaseError, sa.exc.ArgumentError),
+                    reason="Oracle doesn't do integer division by zero",
+                ),
+                pytest.mark.notyet(
+                    "flink",
+                    raises=Py4JError,
+                    reason="Flink doesn't do integer division by zero",
+                ),
+            ],
+        ),
+        param(
+            "int_col",
+            0,
+            marks=[
+                pytest.mark.notyet(
+                    "oracle",
+                    raises=(sa.exc.DatabaseError, sa.exc.ArgumentError),
+                    reason="Oracle doesn't do integer division by zero",
+                ),
+                pytest.mark.notyet(
+                    "flink",
+                    raises=Py4JError,
+                    reason="Flink doesn't do integer division by zero",
+                ),
+            ],
+        ),
+        param(
+            "bigint_col",
+            0,
+            marks=[
+                pytest.mark.notyet(
+                    "oracle",
+                    raises=(sa.exc.DatabaseError, sa.exc.ArgumentError),
+                    reason="Oracle doesn't do integer division by zero",
+                ),
+                pytest.mark.notyet(
+                    "flink",
+                    raises=Py4JError,
+                    reason="Flink doesn't do integer division by zero",
+                ),
+            ],
+        ),
+        param(
+            "float_col",
+            0,
+            marks=pytest.mark.notimpl(["druid"], raises=ZeroDivisionError),
+        ),
+        param(
+            "double_col",
+            0,
+            marks=pytest.mark.notimpl(["druid"], raises=ZeroDivisionError),
+        ),
+        param(
+            "tinyint_col",
+            0.0,
             marks=[
                 pytest.mark.notyet(
                     "oracle",
@@ -1208,6 +1293,7 @@ def test_floating_mod(backend, alltypes, df):
         ),
         param(
             "smallint_col",
+            0.0,
             marks=[
                 pytest.mark.notyet(
                     "oracle",
@@ -1218,6 +1304,7 @@ def test_floating_mod(backend, alltypes, df):
         ),
         param(
             "int_col",
+            0.0,
             marks=[
                 pytest.mark.notyet(
                     "oracle",
@@ -1228,6 +1315,7 @@ def test_floating_mod(backend, alltypes, df):
         ),
         param(
             "bigint_col",
+            0.0,
             marks=[
                 pytest.mark.notyet(
                     "oracle",
@@ -1237,10 +1325,14 @@ def test_floating_mod(backend, alltypes, df):
             ],
         ),
         param(
-            "float_col", marks=pytest.mark.notimpl(["druid"], raises=ZeroDivisionError)
+            "float_col",
+            0.0,
+            marks=pytest.mark.notimpl(["druid"], raises=ZeroDivisionError),
         ),
         param(
-            "double_col", marks=pytest.mark.notimpl(["druid"], raises=ZeroDivisionError)
+            "double_col",
+            0.0,
+            marks=pytest.mark.notimpl(["druid"], raises=ZeroDivisionError),
         ),
     ],
 )
@@ -1253,7 +1345,6 @@ def test_floating_mod(backend, alltypes, df):
 @pytest.mark.notyet(["mssql"], raises=sa.exc.OperationalError)
 @pytest.mark.notyet(["postgres"], raises=sa.exc.DataError)
 @pytest.mark.notyet(["snowflake"], raises=sa.exc.ProgrammingError)
-@pytest.mark.parametrize("denominator", [0, 0.0])
 def test_divide_by_zero(backend, alltypes, df, column, denominator):
     expr = alltypes[column] / denominator
     result = expr.name("tmp").execute()
@@ -1301,6 +1392,7 @@ def test_divide_by_zero(backend, alltypes, df, column, denominator):
         "pandas",
         "pyspark",
         "polars",
+        "flink",
     ],
     reason="Not SQLAlchemy backends",
 )
@@ -1403,6 +1495,11 @@ def test_clip(backend, alltypes, df, ibis_func, pandas_func):
     raises=sa.exc.ProgrammingError,
     reason="SQL query requires 'MIN' operator that is not supported.",
 )
+@pytest.mark.never(
+    ["flink"],
+    raises=com.UnsupportedOperationError,
+    reason="Flink does not support 'MIN' or 'MAX' operation without specifying window.",
+)
 def test_histogram(con, alltypes):
     n = 10
     hist = con.execute(alltypes.int_col.histogram(n).name("hist"))
@@ -1423,6 +1520,11 @@ pyspark_no_bitshift = pytest.mark.notyet(
     reason="pyspark doesn't implement bitshift operators",
     raises=com.OperationNotDefinedError,
 )
+flink_no_bitwise = pytest.mark.notyet(
+    ["flink"],
+    reason="Flink doesn't implement bitwise operators",
+    raises=Py4JError,
+)
 
 
 @pytest.mark.parametrize("op", [and_, or_, xor])
@@ -1435,6 +1537,7 @@ pyspark_no_bitshift = pytest.mark.notyet(
     ],
 )
 @pytest.mark.notimpl(["oracle"], raises=sa.exc.DatabaseError)
+@flink_no_bitwise
 def test_bitwise_columns(backend, con, alltypes, df, op, left_fn, right_fn):
     expr = op(left_fn(alltypes), right_fn(alltypes)).name("tmp")
     result = con.execute(expr)
@@ -1471,6 +1574,7 @@ def test_bitwise_columns(backend, con, alltypes, df, op, left_fn, right_fn):
 )
 @pytest.mark.notimpl(["oracle"], raises=sa.exc.DatabaseError)
 @pyspark_no_bitshift
+@flink_no_bitwise
 def test_bitwise_shift(backend, alltypes, df, op, left_fn, right_fn):
     expr = op(left_fn(alltypes), right_fn(alltypes)).name("tmp")
     result = expr.execute()
@@ -1500,6 +1604,7 @@ def test_bitwise_shift(backend, alltypes, df, op, left_fn, right_fn):
     [param(4, L(2), id="int_col"), param(L(4), 2, id="col_int")],
 )
 @pytest.mark.notimpl(["oracle"], raises=sa.exc.DatabaseError)
+@flink_no_bitwise
 def test_bitwise_scalars(con, op, left, right):
     expr = op(left, right)
     result = con.execute(expr)
@@ -1509,6 +1614,7 @@ def test_bitwise_scalars(con, op, left, right):
 
 @pytest.mark.notimpl(["datafusion"], raises=com.OperationNotDefinedError)
 @pytest.mark.notimpl(["oracle"], raises=sa.exc.DatabaseError)
+@flink_no_bitwise
 def test_bitwise_not_scalar(con):
     expr = ~L(2)
     result = con.execute(expr)
@@ -1518,6 +1624,7 @@ def test_bitwise_not_scalar(con):
 
 @pytest.mark.notimpl(["datafusion"], raises=com.OperationNotDefinedError)
 @pytest.mark.notimpl(["oracle"], raises=sa.exc.DatabaseError)
+@flink_no_bitwise
 def test_bitwise_not_col(backend, alltypes, df):
     expr = (~alltypes.int_col).name("tmp")
     result = expr.execute()

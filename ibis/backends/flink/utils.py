@@ -282,6 +282,8 @@ def translate_literal(op: ops.Literal) -> str:
     elif dtype.is_string():
         quoted = value.replace("'", "''")
         return f"'{quoted}'"
+    elif dtype.is_binary():
+        return f"x'{value.hex()}'"
     elif dtype.is_date():
         if isinstance(value, datetime.date):
             value = value.strftime("%Y-%m-%d")
@@ -320,4 +322,7 @@ def translate_literal(op: ops.Literal) -> str:
         return f"INTERVAL {_translate_interval(value, dtype)}"
     elif dtype.is_uuid():
         return translate_literal(ops.Literal(str(value), dtype=dt.str))
+    elif dtype.is_array():
+        return f"ARRAY{list(value)}"
+
     raise NotImplementedError(f"No translation rule for {dtype}")

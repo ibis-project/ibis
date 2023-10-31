@@ -54,6 +54,7 @@ pytestmark = [
 # list.
 
 
+@pytest.mark.notimpl(["flink"], raises=com.OperationNotDefinedError)
 def test_array_column(backend, alltypes, df):
     expr = ibis.array([alltypes["double_col"], alltypes["double_col"]])
     assert isinstance(expr, ir.ArrayColumn)
@@ -73,6 +74,7 @@ ARRAY_BACKEND_TYPES = {
     "bigquery": "ARRAY",
     "duckdb": "DOUBLE[]",
     "postgres": "numeric[]",
+    "flink": "ARRAY<DECIMAL(2, 1) NOT NULL> NOT NULL",
 }
 
 
@@ -90,7 +92,7 @@ def test_array_scalar(con, backend):
         assert con.execute(expr.typeof()) == ARRAY_BACKEND_TYPES[backend_name]
 
 
-@pytest.mark.notimpl(["polars"], raises=com.OperationNotDefinedError)
+@pytest.mark.notimpl(["polars", "flink"], raises=com.OperationNotDefinedError)
 def test_array_repeat(con):
     expr = ibis.array([1.0, 2.0]) * 2
 
@@ -101,6 +103,7 @@ def test_array_repeat(con):
 
 
 # Issues #2370
+@pytest.mark.notimpl(["flink"], raises=com.OperationNotDefinedError)
 def test_array_concat(con):
     left = ibis.literal([1, 2, 3])
     right = ibis.literal([2, 1])
@@ -111,6 +114,7 @@ def test_array_concat(con):
 
 
 # Issues #2370
+@pytest.mark.notimpl(["flink"], raises=com.OperationNotDefinedError)
 def test_array_concat_variadic(con):
     left = ibis.literal([1, 2, 3])
     right = ibis.literal([2, 1])
@@ -122,6 +126,7 @@ def test_array_concat_variadic(con):
 
 # Issues #2370
 @pytest.mark.notimpl(["datafusion"], raises=BaseException)
+@pytest.mark.notimpl(["flink"], raises=com.OperationNotDefinedError)
 @pytest.mark.notyet(
     ["postgres", "trino"],
     raises=sa.exc.ProgrammingError,
@@ -136,6 +141,7 @@ def test_array_concat_some_empty(con):
     assert np.array_equal(result, expected)
 
 
+@pytest.mark.notimpl(["flink"], raises=com.OperationNotDefinedError)
 def test_array_radd_concat(con):
     left = [1]
     right = ibis.literal([2])
@@ -188,6 +194,7 @@ builtin_array = toolz.compose(
         ["sqlite"], reason="array types are unsupported", raises=NotImplementedError
     ),
     # someone just needs to implement these
+    pytest.mark.notimpl(["flink"], raises=Exception),
 )
 
 
@@ -484,7 +491,7 @@ def test_unnest_default_name(backend):
 )
 @pytest.mark.notimpl(["polars"], raises=com.OperationNotDefinedError)
 @pytest.mark.notimpl(
-    ["datafusion"], raises=Exception, reason="array_types table isn't defined"
+    ["datafusion", "flink"], raises=Exception, reason="array_types table isn't defined"
 )
 @pytest.mark.notimpl(["dask"], raises=com.OperationNotDefinedError)
 def test_array_slice(backend, start, stop):
@@ -698,7 +705,7 @@ def test_array_union(con):
 
 
 @pytest.mark.notimpl(
-    ["dask", "datafusion", "impala", "mssql", "pandas", "polars", "mysql"],
+    ["dask", "datafusion", "impala", "mssql", "pandas", "polars", "mysql", "flink"],
     raises=com.OperationNotDefinedError,
 )
 @pytest.mark.notimpl(

@@ -36,6 +36,10 @@ pytestmark = [
     condition=vparse(sqlite3.sqlite_version) < vparse("3.38.0"),
     reason="JSON not supported in SQLite < 3.38.0",
 )
+@pytest.mark.broken(
+    ["flink"],
+    reason="https://github.com/ibis-project/ibis/pull/6920#discussion_r1373212503",
+)
 def test_json_getitem(json_t, expr_fn, expected):
     expr = expr_fn(json_t)
     result = expr.execute()
@@ -46,7 +50,7 @@ def test_json_getitem(json_t, expr_fn, expected):
 @pytest.mark.notyet(["bigquery", "sqlite"], reason="doesn't support maps")
 @pytest.mark.notyet(["postgres"], reason="only supports map<string, string>")
 @pytest.mark.notyet(
-    ["pyspark", "trino"], reason="should work but doesn't deserialize JSON"
+    ["pyspark", "trino", "flink"], reason="should work but doesn't deserialize JSON"
 )
 def test_json_map(json_t):
     expr = json_t.js.map.name("res")
@@ -69,7 +73,7 @@ def test_json_map(json_t):
 @pytest.mark.notimpl(["dask", "mysql", "pandas"])
 @pytest.mark.notyet(["sqlite"], reason="doesn't support arrays")
 @pytest.mark.notyet(
-    ["pyspark", "trino"], reason="should work but doesn't deserialize JSON"
+    ["pyspark", "trino", "flink"], reason="should work but doesn't deserialize JSON"
 )
 @pytest.mark.notyet(["bigquery"], reason="doesn't allow null in arrays")
 def test_json_array(json_t):
