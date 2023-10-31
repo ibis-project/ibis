@@ -3733,6 +3733,8 @@ files = [
     {file = "psycopg2-2.9.9-cp310-cp310-win_amd64.whl", hash = "sha256:426f9f29bde126913a20a96ff8ce7d73fd8a216cfb323b1f04da402d452853c3"},
     {file = "psycopg2-2.9.9-cp311-cp311-win32.whl", hash = "sha256:ade01303ccf7ae12c356a5e10911c9e1c51136003a9a1d92f7aa9d010fb98372"},
     {file = "psycopg2-2.9.9-cp311-cp311-win_amd64.whl", hash = "sha256:121081ea2e76729acfb0673ff33755e8703d45e926e416cb59bae3a86c6a4981"},
+    {file = "psycopg2-2.9.9-cp312-cp312-win32.whl", hash = "sha256:d735786acc7dd25815e89cc4ad529a43af779db2e25aa7c626de864127e5a024"},
+    {file = "psycopg2-2.9.9-cp312-cp312-win_amd64.whl", hash = "sha256:a7653d00b732afb6fc597e29c50ad28087dcb4fbfb28e86092277a559ae4e693"},
     {file = "psycopg2-2.9.9-cp37-cp37m-win32.whl", hash = "sha256:5e0d98cade4f0e0304d7d6f25bbfbc5bd186e07b38eac65379309c4ca3193efa"},
     {file = "psycopg2-2.9.9-cp37-cp37m-win_amd64.whl", hash = "sha256:7e2dacf8b009a1c1e843b5213a87f7c544b2b042476ed7755be813eaf4e8347a"},
     {file = "psycopg2-2.9.9-cp38-cp38-win32.whl", hash = "sha256:ff432630e510709564c01dafdbe996cb552e0b9f3f065eb89bdce5bd31fabf4c"},
@@ -5523,13 +5525,13 @@ sqlalchemy = ">=1.0.0"
 
 [[package]]
 name = "sqlglot"
-version = "18.16.1"
+version = "19.0.0"
 description = "An easily customizable SQL parser and transpiler"
 optional = false
 python-versions = ">=3.7"
 files = [
-    {file = "sqlglot-18.16.1-py3-none-any.whl", hash = "sha256:62765d8eb0731a6dd1170fab6763851eceef69f8bb174b4bb242b23f99dd8b32"},
-    {file = "sqlglot-18.16.1.tar.gz", hash = "sha256:d24682c07387884c480d668ddd14d33ca03805cfe138800a2c34fc092ba174dd"},
+    {file = "sqlglot-19.0.0-py3-none-any.whl", hash = "sha256:e4dff767add991109db0a04dbf2404dc54b107b00b278740f22d8b4278100ee0"},
+    {file = "sqlglot-19.0.0.tar.gz", hash = "sha256:544af1351e63d2663f791bc0bd5f679f2ea6880762f0ee0e35ed6446a9a66d18"},
 ]
 
 [package.extras]
@@ -6258,4 +6260,4 @@ visualization = ["graphviz"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.9"
-content-hash = "e835acc523158cf8aa82d978705e95ee86c1f4bfc31ed881ec09dbababc5ac04"
+content-hash = "da0f0a88ef8d8376f5972e5d0be21f704f967bc2e3c8d5193169ba4dd12f2186"
