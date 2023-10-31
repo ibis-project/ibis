@@ -135,14 +135,23 @@ argidx_not_grouped_marks = [
 argidx_grouped_marks = ["dask"] + argidx_not_grouped_marks
 
 
-def make_argidx_params(marks):
-    marks = pytest.mark.notyet(marks, raises=com.OperationNotDefinedError)
+def make_argidx_params(marks, grouped=False):
+    marks = [
+        pytest.mark.notyet(marks, raises=com.OperationNotDefinedError),
+        pytest.mark.notimpl(["flink"], "WIP", raises=com.OperationNotDefinedError),
+    ]
     return [
         param(
             lambda t: t.timestamp_col.argmin(t.id),
             lambda s: s.timestamp_col.iloc[s.id.argmin()],
             id="argmin",
-            marks=marks,
+            marks=marks
+            + [
+                pytest.mark.xfail_version(
+                    polars=["polars==0.19.12"], raises=BaseException
+                )
+            ]
+            * grouped,
         ),
         param(
             lambda t: t.double_col.argmax(t.id),
@@ -170,7 +179,7 @@ def test_aggregate(backend, alltypes, df, result_fn, expected_fn):
 
 @pytest.mark.parametrize(
     ("result_fn", "expected_fn"),
-    aggregate_test_params + make_argidx_params(argidx_grouped_marks),
+    aggregate_test_params + make_argidx_params(argidx_grouped_marks, grouped=True),
 )
 def test_aggregate_grouped(backend, alltypes, df, result_fn, expected_fn):
     grouping_key_col = "bigint_col"
