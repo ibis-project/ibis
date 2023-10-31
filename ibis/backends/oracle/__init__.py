@@ -255,11 +255,26 @@ class Backend(BaseAlchemyBackend):
                 con.execute(drop_view)
 
         for name, type_string, precision, scale, nullable in results:
-            if precision is not None and scale is not None and precision != 0:
+            # NUMBER(null, null) --> FLOAT
+            # (null, null) --> from_string()
+            if type_string == "NUMBER" and precision is None and scale is None:
+                typ = dt.Float64(nullable=nullable)
+
+            # (null, 0) --> INT
+            # (null, 3), (null, 6), (null, 9) --> from_string() - TIMESTAMP(3)/(6)/(9)
+            elif precision is None and (scale is not None and scale == 0):
+                typ = dt.Int64(nullable=nullable)
+
+            # NUMBER(*, 0) --> INT
+            # (*, 0) --> from_string() - INTERVAL DAY(3) TO SECOND(0)
+            elif type_string == "NUMBER" and precision is not None and (scale is not None and scale == 0):
+                typ = dt.Int64(nullable=nullable)
+
+            # NUMBER(*, > 0) --> DECIMAL
+            # (*, > 0) --> from_string() - INTERVAL DAY(3) TO SECOND(2)
+            elif type_string == "NUMBER" and precision is not None and (scale is not None and scale > 0):
                 typ = dt.Decimal(precision=precision, scale=scale, nullable=nullable)
-            elif precision == 0:
-                # TODO: how to disambiguate between int and float here without inspecting the value?
-                typ = dt.float
+
             else:
                 typ = OracleType.from_string(type_string, nullable=nullable)
             yield name, typ
