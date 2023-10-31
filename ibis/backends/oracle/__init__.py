@@ -210,6 +210,7 @@ class Backend(BaseAlchemyBackend):
 
     def _metadata(self, query: str) -> Iterable[tuple[str, dt.DataType]]:
         from sqlalchemy_views import CreateView, DropView
+        from sqlalchemy import case
 
         name = util.gen_name("oracle_metadata")
 
@@ -242,7 +243,7 @@ class Backend(BaseAlchemyBackend):
             t.c.data_type,
             t.c.data_precision,
             t.c.data_scale,
-            (t.c.nullable == "Y").label("nullable"),
+            case([(t.c.nullable == "Y", True)], else_=False).label("nullable"),
         ).where(t.c.table_name == name)
 
         with self.begin() as con:
