@@ -23,7 +23,7 @@
   outputs = { self, flake-utils, gitignore, nixpkgs, poetry2nix, ... }: {
     overlays.default = nixpkgs.lib.composeManyExtensions [
       gitignore.overlay
-      poetry2nix.overlay
+      poetry2nix.overlays.default
       (import ./nix/overlay.nix)
     ];
   } // flake-utils.lib.eachDefaultSystem (
