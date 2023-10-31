@@ -733,3 +733,34 @@ def array_concat(op, *, arg, **_):
 @translate_val.register(ops.ArrayPosition)
 def array_position(op, *, arg, other, **_):
     return F.coalesce(F.array_position(arg, other), 0)
+
+
+@translate_val.register(ops.Covariance)
+def covariance(op, *, left, right, how, where, **_):
+    x = op.left
+    if x.dtype.is_boolean():
+        left = cast(left, dt.float64)
+
+    y = op.right
+    if y.dtype.is_boolean():
+        right = cast(right, dt.float64)
+
+    if how == "sample":
+        return agg["covar_samp"](left, right, where=where)
+    elif how == "pop":
+        return agg["covar_pop"](left, right, where=where)
+    else:
+        raise ValueError(f"Unrecognized how = `{how}` value")
+
+
+@translate_val.register(ops.Correlation)
+def correlation(op, *, left, right, where, **_):
+    x = op.left
+    if x.dtype.is_boolean():
+        left = cast(left, dt.float64)
+
+    y = op.right
+    if y.dtype.is_boolean():
+        right = cast(right, dt.float64)
+
+    return agg["corr"](left, right, where=where)
