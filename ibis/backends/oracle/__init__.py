@@ -243,7 +243,7 @@ class Backend(BaseAlchemyBackend):
             t.c.data_type,
             t.c.data_precision,
             t.c.data_scale,
-            case([(t.c.nullable == "Y", True)], else_=False).label("nullable"),
+            case((t.c.nullable == "Y", True), else_=False).label("nullable"),
         ).where(t.c.table_name == name)
 
         with self.begin() as con:
