@@ -24,7 +24,7 @@ lock:
 
 # format code
 fmt:
-    black .
+    ruff format .
     blackdoc .
     ruff --fix .
 
@@ -38,7 +38,7 @@ ci-check *args:
 
 # lint code
 lint:
-    black -q . --check
+    ruff format -q . --check
     ruff .
 
 # run the test suite for one or more backends
