@@ -486,8 +486,9 @@ dask = ">=2021.10.0"
 pip = "*"
 pyarrow-tests = "*"
 deltalake = { source = "pypi" } # doesn't exist for osx-arm64
-quartodoc = { source = "pypi" }
 shapely = { source = "pypi" }
+just = "*"
+taplo = "*"
 
 [tool.coverage.run]
 branch = true
