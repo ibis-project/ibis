@@ -1,0 +1,12 @@
+{
+  "version": "10",
+  "aliases": {
+    "trino": {
+      "url": "http://minio:9000",
+      "accessKey": "accesskey",
+      "secretKey": "secretkey",
+      "api": "s3v4",
+      "path": "auto"
+    }
+  }
+}
