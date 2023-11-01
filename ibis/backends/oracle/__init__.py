@@ -209,8 +209,8 @@ class Backend(BaseAlchemyBackend):
         return self._filter_with_like(tables + views, like)
 
     def _metadata(self, query: str) -> Iterable[tuple[str, dt.DataType]]:
-        from sqlalchemy_views import CreateView, DropView
         from sqlalchemy import case
+        from sqlalchemy_views import CreateView, DropView
 
         name = util.gen_name("oracle_metadata")
 
