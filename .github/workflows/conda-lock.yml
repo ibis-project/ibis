@@ -36,9 +36,6 @@ jobs:
       - name: install conda libmamba solver
         run: mamba install --name base conda-lock
 
-      - name: hack seaborn out until the `seaborn-split` bug in conda-lock is fixed
-        run: sed -i 's/^seaborn = /# seaborn = /g' pyproject.toml
-
       - name: generate lock file
         run: ./ci/conda-lock/generate.sh "${{ matrix.python-version }}"
 
