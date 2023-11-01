@@ -150,7 +150,7 @@ jobs:
         run: git checkout poetry.lock pyproject.toml && ! git status --porcelain | tee /dev/stderr | grep .
 
       - name: upload code coverage
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: coverage${{ matrix.group }}
           path: .coverage
