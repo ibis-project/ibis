@@ -267,12 +267,20 @@ class Backend(BaseAlchemyBackend):
 
             # NUMBER(*, 0) --> INT
             # (*, 0) --> from_string() - INTERVAL DAY(3) TO SECOND(0)
-            elif type_string == "NUMBER" and precision is not None and (scale is not None and scale == 0):
+            elif (
+                type_string == "NUMBER"
+                and precision is not None
+                and (scale is not None and scale == 0)
+            ):
                 typ = dt.Int64(nullable=nullable)
 
             # NUMBER(*, > 0) --> DECIMAL
             # (*, > 0) --> from_string() - INTERVAL DAY(3) TO SECOND(2)
-            elif type_string == "NUMBER" and precision is not None and (scale is not None and scale > 0):
+            elif (
+                type_string == "NUMBER"
+                and precision is not None
+                and (scale is not None and scale > 0)
+            ):
                 typ = dt.Decimal(precision=precision, scale=scale, nullable=nullable)
 
             else:
