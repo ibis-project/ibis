@@ -46,20 +46,6 @@ class TestConf(BackendTest, RoundAwayFromZero):
     _tpch_query_schema = "hive.ibis_sf1"
 
     def preload(self):
-        # create a minio host named trino
-        subprocess.run(
-            [
-                "docker",
-                "compose",
-                "exec",
-                "minio",
-                "bash",
-                "-c",
-                "mc config host add trino http://minio:9000 $MINIO_ROOT_USER $MINIO_ROOT_PASSWORD",
-            ],
-            check=True,
-        )
-
         for path in self.test_files:
             directory = path.with_suffix("").name
             raw_data_path = f"/opt/data/raw/{path.name}"
