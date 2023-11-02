@@ -2,8 +2,7 @@
 
 ## Code style
 
-- [`black`](https://github.com/psf/black): Formatting Python code
-- [`ruff`](https://github.com/charliermarsh/ruff): Formatting and sorting `import` statements
+- [`ruff`](https://github.com/charliermarsh/ruff): Formatting Python code and sorting `import` statements
 - [`shellcheck`](https://github.com/koalaman/shellcheck): Linting shell scripts
 - [`shfmt`](https://github.com/mvdan/sh): Formatting shell scripts
 - [`statix`](https://github.com/nerdypepper/statix): Linting nix files
