@@ -1,18 +1,16 @@
 from __future__ import annotations
 
-import itertools
-
 import ibis
 import ibis.expr.operations as ops
 
 
-def _reduction_format(translator, func_name, where, arg, *args):
+def _reduction_format(translator, func_name, where, *args):
     if where is not None:
-        arg = ops.IfElse(where, arg, ibis.NA)
+        args = (ops.IfElse(where, arg, ibis.NA) for arg in args)
 
     return "{}({})".format(
         func_name,
-        ", ".join(map(translator.translate, itertools.chain([arg], args))),
+        ", ".join(map(translator.translate, args)),
     )
 
 
