@@ -533,7 +533,6 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
             id="approx_nunique",
             marks=[
                 pytest.mark.notimpl(["polars"], raises=com.OperationNotDefinedError),
-                pytest.mark.notimpl(["flink"], "WIP", raises=Py4JError),
             ],
         ),
         param(

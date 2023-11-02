@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING
 
 import ibis.common.exceptions as com
 import ibis.expr.operations as ops
-from ibis.backends.base.sql.registry import fixed_arity, helpers, unary
+from ibis.backends.base.sql.registry import aggregate, fixed_arity, helpers, unary
 from ibis.backends.base.sql.registry import (
     operation_registry as base_operation_registry,
 )
@@ -389,6 +389,7 @@ operation_registry.update(
         ops.Degrees: unary("degrees"),
         ops.Radians: unary("radians"),
         # Unary aggregates
+        ops.ApproxCountDistinct: aggregate.reduction("approx_count_distinct"),
         ops.CountStar: _count_star,
         # String operations
         ops.StringLength: unary("char_length"),
