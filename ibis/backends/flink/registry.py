@@ -17,6 +17,13 @@ if TYPE_CHECKING:
 operation_registry = base_operation_registry.copy()
 
 
+def _not(translator: ExprTranslator, op: ops.Node) -> str:
+    formatted_arg = translator.translate(op.arg)
+    if helpers.needs_parens(op.arg):
+        formatted_arg = helpers.parenthesize(formatted_arg)
+    return f"NOT CAST({formatted_arg} AS boolean)"
+
+
 def _count_star(translator: ExprTranslator, op: ops.Node) -> str:
     if (where := op.where) is not None:
         condition = f" FILTER (WHERE {translator.translate(where)})"
@@ -383,7 +390,7 @@ def _timestamp_from_ymdhms(
 operation_registry.update(
     {
         # Unary operations
-        ops.Coalesce: varargs("coalesce"),
+        ops.Not: _not,
         ops.NullIf: fixed_arity("nullif", 2),
         ops.RandomScalar: lambda *_: "rand()",
         ops.Degrees: unary("degrees"),
@@ -411,6 +418,7 @@ operation_registry.update(
         ops.ExtractMicrosecond: _extract_field("microsecond"),
         # Other operations
         ops.Cast: _cast,
+        ops.Coalesce: varargs("coalesce"),
         ops.IntervalAdd: _interval_add,
         ops.IntervalSubtract: _interval_subtract,
         ops.Literal: _literal,
