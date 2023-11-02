@@ -67,6 +67,7 @@ aggregate_test_params = [
                     "trino",
                     "druid",
                     "oracle",
+                    "flink",
                 ],
                 raises=com.OperationNotDefinedError,
             ),
@@ -75,7 +76,6 @@ aggregate_test_params = [
                 reason="no udf support",
                 raises=com.OperationNotDefinedError,
             ),
-            pytest.mark.notimpl(["flink"], "WIP", raises=com.OperationNotDefinedError),
         ],
     ),
     param(lambda t: t.double_col.min(), lambda t: t.double_col.min(), id="min"),
@@ -98,10 +98,10 @@ aggregate_test_params = [
                     "trino",
                     "druid",
                     "oracle",
+                    "flink",
                 ],
                 raises=com.OperationNotDefinedError,
             ),
-            pytest.mark.notimpl(["flink"], "WIP", raises=com.OperationNotDefinedError),
         ],
     ),
     param(
@@ -130,15 +130,13 @@ argidx_not_grouped_marks = [
     "mssql",
     "druid",
     "oracle",
+    "flink",
 ]
 argidx_grouped_marks = ["dask"] + argidx_not_grouped_marks
 
 
 def make_argidx_params(marks):
-    marks = [
-        pytest.mark.notyet(marks, raises=com.OperationNotDefinedError),
-        pytest.mark.notimpl(["flink"], "WIP", raises=com.OperationNotDefinedError),
-    ]
+    marks = pytest.mark.notyet(marks, raises=com.OperationNotDefinedError)
     return [
         param(
             lambda t: t.timestamp_col.argmin(t.id),
