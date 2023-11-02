@@ -187,6 +187,7 @@ class ExprTranslator:
     )
     _dialect_name = "hive"
     _quote_identifiers = None
+    _bool_aggs_need_cast_to_int32 = False
 
     def __init__(
         self, node, context, named=False, permit_subquery=False, within_where=False

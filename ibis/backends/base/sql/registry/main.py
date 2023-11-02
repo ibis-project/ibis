@@ -189,6 +189,7 @@ def sort_key(translator, op):
 def count_star(translator, op):
     return aggregate._reduction_format(
         translator,
+        op,
         "count",
         op.where,
         ops.Literal(value=1, dtype=dt.int64),

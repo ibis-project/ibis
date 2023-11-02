@@ -10,6 +10,7 @@ class FlinkExprTranslator(ExprTranslator):
         "hive"  # TODO: neither sqlglot nor sqlalchemy supports flink dialect
     )
     _registry = operation_registry
+    _bool_aggs_need_cast_to_int32 = True
 
 
 @FlinkExprTranslator.rewrites(ops.Clip)

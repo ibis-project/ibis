@@ -391,7 +391,6 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
                     raises=sa.exc.DatabaseError,
                     reason="ORA-02000: missing AS keyword",
                 ),
-                pytest.mark.notimpl(["flink"], "WIP", raises=Py4JError),
             ],
         ),
         param(
