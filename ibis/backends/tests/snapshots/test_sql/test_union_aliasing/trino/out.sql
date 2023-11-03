@@ -16,8 +16,8 @@ WITH t0 AS (
     t1.field_of_study AS field_of_study,
     t1.years AS years,
     t1.degrees AS degrees,
-    FIRST_VALUE(t1.degrees) OVER (PARTITION BY t1.field_of_study ORDER BY t1.years ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) AS earliest_degrees,
-    LAST_VALUE(t1.degrees) OVER (PARTITION BY t1.field_of_study ORDER BY t1.years ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) AS latest_degrees
+    FIRST_VALUE(t1.degrees) OVER (PARTITION BY t1.field_of_study ORDER BY t1.years ASC ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) AS earliest_degrees,
+    LAST_VALUE(t1.degrees) OVER (PARTITION BY t1.field_of_study ORDER BY t1.years ASC ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) AS latest_degrees
   FROM t1
 ), t3 AS (
   SELECT
@@ -56,7 +56,7 @@ WITH t0 AS (
     t5.diff AS diff
   FROM t5
   ORDER BY
-    t5.diff
+    t5.diff ASC
   LIMIT 10
 )
 SELECT
