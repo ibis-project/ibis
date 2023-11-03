@@ -1024,8 +1024,8 @@ class BaseBackend(abc.ABC, _FileIOHandler):
     def _to_sql(self, expr: ir.Expr, **kwargs) -> str:
         """Convert an expression to a SQL string.
 
-        Called by `ibis.to_sql`/`ibis.show_sql`, gives the backend an
-        opportunity to generate nicer SQL for human consumption.
+        Called by `ibis.to_sql`; gives the backend an opportunity to generate
+        nicer SQL for human consumption.
         """
         raise NotImplementedError(f"Backend '{self.name}' backend doesn't support SQL")
 
