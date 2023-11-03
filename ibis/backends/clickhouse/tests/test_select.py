@@ -392,7 +392,6 @@ def test_count_name(snapshot):
         A=t.count(where=~t.b).fillna(0), B=t.count(where=t.b).fillna(0)
     )
 
-    ibis.show_sql(expr, dialect="clickhouse")
     snapshot.assert_match(str(ibis.to_sql(expr, dialect="clickhouse")), "out.sql")
 
 

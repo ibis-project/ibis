@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-import io
-
 import pytest
 from pytest import param
 
@@ -14,24 +12,6 @@ sa = pytest.importorskip("sqlalchemy")
 sg = pytest.importorskip("sqlglot")
 
 pytestmark = pytest.mark.notimpl(["druid", "flink"])
-
-
-@pytest.mark.never(
-    ["dask", "pandas"],
-    reason="Dask and Pandas are not SQL backends",
-    raises=(NotImplementedError, ValueError),
-)
-@pytest.mark.notimpl(
-    ["datafusion", "pyspark", "polars"],
-    reason="Not clear how to extract SQL from the backend",
-    raises=(exc.OperationNotDefinedError, NotImplementedError, ValueError),
-)
-def test_table(backend):
-    expr = backend.functional_alltypes.select(c=_.int_col + 1)
-    buf = io.StringIO()
-    ibis.show_sql(expr, file=buf)
-    assert buf.getvalue()
-
 
 simple_literal = param(ibis.literal(1), id="simple_literal")
 array_literal = param(
