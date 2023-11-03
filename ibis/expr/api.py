@@ -24,7 +24,7 @@ from ibis.common.grounds import Concrete
 from ibis.common.temporal import normalize_datetime, normalize_timezone
 from ibis.expr.decompile import decompile
 from ibis.expr.schema import Schema
-from ibis.expr.sql import parse_sql, show_sql, to_sql
+from ibis.expr.sql import parse_sql, to_sql
 from ibis.expr.types import (
     DateValue,
     Expr,
@@ -158,7 +158,6 @@ __all__ = (
     "Schema",
     "selectors",
     "set_backend",
-    "show_sql",
     "struct",
     "to_sql",
     "table",
