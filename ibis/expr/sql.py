@@ -3,7 +3,6 @@ from __future__ import annotations
 import contextlib
 import operator
 from functools import singledispatch
-from typing import IO
 
 import sqlglot as sg
 import sqlglot.expressions as sge
@@ -288,45 +287,6 @@ def parse_sql(sqlstring, catalog, dialect=None):
     plan = sgp.Plan(tree)
 
     return convert(plan.root, catalog=catalog)
-
-
-@public
-def show_sql(
-    expr: ir.Expr,
-    dialect: str | None = None,
-    file: IO[str] | None = None,
-) -> None:
-    """Pretty-print the compiled SQL string of an expression.
-
-    If a dialect cannot be inferred and one was not passed, duckdb
-    will be used as the dialect
-
-    Parameters
-    ----------
-    expr
-        Ibis expression whose SQL will be printed
-    dialect
-        String dialect. This is typically not required, but can be useful if
-        ibis cannot infer the backend dialect.
-    file
-        File to write output to
-
-    Examples
-    --------
-    >>> import ibis
-    >>> from ibis import _
-    >>> t = ibis.table(dict(a="int"), name="t")
-    >>> expr = t.select(c=_.a * 2)
-    >>> ibis.show_sql(expr)  # duckdb dialect by default
-    SELECT
-      t0.a * CAST(2 AS TINYINT) AS c
-    FROM t AS t0
-    >>> ibis.show_sql(expr, dialect="mysql")
-    SELECT
-      t0.a * 2 AS c
-    FROM t AS t0
-    """
-    print(to_sql(expr, dialect=dialect), file=file)
 
 
 class SQLString(str):

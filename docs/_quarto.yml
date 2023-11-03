@@ -307,9 +307,6 @@ quartodoc:
             - name: case
               dynamic: true
               signature_name: full
-            - name: show_sql
-              dynamic: true
-              signature_name: full
             - name: to_sql
               dynamic: true
               signature_name: full
