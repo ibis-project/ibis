@@ -20,10 +20,6 @@ repos:
     rev: v1.6.26
     hooks:
       - id: actionlint-system
-  - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.1.4
-    hooks:
-      - id: ruff-format
   - repo: https://github.com/keewis/blackdoc
     rev: v0.3.9
     hooks:
@@ -46,6 +42,19 @@ repos:
           - python
           - pyi
         args: ["check", "--force-exclude", "--show-source", "--fix"]
+        require_serial: true
+        minimum_pre_commit_version: "2.9.2"
+  - repo: local
+    hooks:
+      - id: ruff-format
+        name: ruff-format
+        description: "Run 'ruff' for extremely fast Python linting"
+        entry: ruff
+        language: system
+        types_or:
+          - python
+          - pyi
+        args: ["format", "--force-exclude"]
         require_serial: true
         minimum_pre_commit_version: "2.9.2"
   - repo: https://github.com/adrienverge/yamllint
