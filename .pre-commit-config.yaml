@@ -9,6 +9,7 @@ ci:
     - nixpkgs-fmt
     - prettier
     - ruff
+    - ruff-format
     - shellcheck
     - shfmt
     - statix
