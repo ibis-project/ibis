@@ -59,9 +59,6 @@ broken_pandas_grouped_rolling = pytest.mark.xfail(
 
 
 @pytest.mark.notimpl(["dask", "duckdb"])
-@pytest.mark.xfail_version(
-    pyspark=["pyspark<3.1"], pandas=["pyarrow>=13", "pandas>=2.1"]
-)
 @pytest.mark.notimpl(
     ["flink"],
     raises=com.OperationNotDefinedError,
@@ -99,7 +96,6 @@ def test_context_adjustment_window_udf(alltypes, context, window, monkeypatch):
 
 
 @pytest.mark.notimpl(["dask", "duckdb"])
-@pytest.mark.xfail_version(pandas=["pyarrow>=13", "pandas>=2.1,<2.1.2"])
 @pytest.mark.broken(
     # TODO (mehmet): Check with the team.
     ["flink"],
