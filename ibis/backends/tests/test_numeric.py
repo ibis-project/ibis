@@ -753,11 +753,17 @@ def test_decimal_literal(con, backend, expr, expected_types, expected_result):
             operator.methodcaller("isinf"),
             np.isinf,
             id="isinf",
+            marks=[
+                pytest.mark.notimpl(
+                    ["datafusion"],
+                    raises=com.OperationNotDefinedError,
+                )
+            ],
         ),
     ],
 )
 @pytest.mark.notimpl(
-    ["mysql", "sqlite", "datafusion", "mssql", "oracle", "flink"],
+    ["mysql", "sqlite", "mssql", "oracle", "flink"],
     raises=com.OperationNotDefinedError,
 )
 @pytest.mark.xfail(

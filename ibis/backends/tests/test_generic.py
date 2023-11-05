@@ -128,13 +128,13 @@ def test_scalar_fillna_nullif(con, expr, expected):
         param(
             "nan_col",
             _.nan_col.isnan(),
-            marks=pytest.mark.notimpl(["datafusion", "mysql", "sqlite"]),
+            marks=pytest.mark.notimpl(["mysql", "sqlite"]),
             id="nan_col",
         ),
         param(
             "none_col",
             _.none_col.isnull(),
-            marks=[pytest.mark.notimpl(["datafusion", "mysql"])],
+            marks=[pytest.mark.notimpl(["mysql"])],
             id="none_col",
         ),
     ],
@@ -376,7 +376,7 @@ def test_case_where(backend, alltypes, df):
 
 
 # TODO: some of these are notimpl (datafusion) others are probably never
-@pytest.mark.notimpl(["datafusion", "mysql", "sqlite", "mssql", "druid", "oracle"])
+@pytest.mark.notimpl(["mysql", "sqlite", "mssql", "druid", "oracle"])
 @pytest.mark.notyet(["flink"], "NaN is not supported in Flink SQL", raises=ValueError)
 def test_select_filter_mutate(backend, alltypes, df):
     """Test that select, filter and mutate are executed in right order.
@@ -565,7 +565,6 @@ def test_order_by_random(alltypes):
     raises=sa.exc.ProgrammingError,
     reason="Druid only supports trivial unions",
 )
-@pytest.mark.notimpl(["datafusion"], raises=com.OperationNotDefinedError)
 def test_table_info(alltypes):
     expr = alltypes.info()
     df = expr.execute()
@@ -1373,11 +1372,6 @@ def test_try_cast_func(con, from_val, to_type, func):
                     reason="bigquery doesn't support OFFSET without LIMIT",
                 ),
                 pytest.mark.notyet(
-                    ["datafusion"],
-                    raises=AssertionError,
-                    reason="no support for offset yet",
-                ),
-                pytest.mark.notyet(
                     ["mssql"],
                     raises=sa.exc.CompileError,
                     reason="mssql doesn't support OFFSET without LIMIT",
@@ -1401,11 +1395,6 @@ def test_try_cast_func(con, from_val, to_type, func):
             lambda _: 1,
             id="[3:4]",
             marks=[
-                pytest.mark.notyet(
-                    ["datafusion"],
-                    raises=AssertionError,
-                    reason="no support for offset yet",
-                ),
                 pytest.mark.notyet(
                     ["mssql"],
                     raises=sa.exc.CompileError,

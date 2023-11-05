@@ -12,6 +12,7 @@ import pyarrow.dataset as ds
 import sqlglot as sg
 from sqlglot import exp, transforms
 from sqlglot.dialects import Postgres
+from sqlglot.dialects.dialect import rename_func
 
 import ibis
 import ibis.common.exceptions as com
@@ -58,6 +59,7 @@ class DataFusion(Postgres):
                     transforms.eliminate_qualify,
                 ]
             ),
+            exp.IsNan: rename_func("isnan"),
         }
 
 
