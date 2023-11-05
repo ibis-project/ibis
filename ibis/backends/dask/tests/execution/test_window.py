@@ -236,7 +236,7 @@ def test_batting_specific_cumulative(batting, batting_df, op, sort_kind):
     pandas_method = methodcaller(op)
     expected = pandas_method(
         batting_df[["G", "yearID"]]
-        .sort_values("yearID", kind=sort_kind)
+        .sort_values("yearID")
         .G.rolling(len(batting_df), min_periods=1)
     )
     expected = expected.compute().sort_index().reset_index(drop=True)
@@ -252,7 +252,7 @@ def test_batting_cumulative(batting, batting_df, sort_kind):
     columns = ["G", "yearID"]
     more_values = (
         batting_df[columns]
-        .sort_values("yearID", kind=sort_kind)
+        .sort_values("yearID")
         .G.rolling(len(batting_df), min_periods=1)
         .sum()
         .astype("int64")
@@ -299,7 +299,7 @@ def test_batting_rolling(batting, batting_df, sort_kind):
     columns = ["G", "yearID"]
     more_values = (
         batting_df[columns]
-        .sort_values("yearID", kind=sort_kind)
+        .sort_values("yearID")
         .G.rolling(6, min_periods=1)
         .sum()
         .astype("int64")
@@ -400,7 +400,7 @@ def test_mutate_with_window_after_join(sort_kind, npartitions):
             {
                 "dates": dd.concat([left_df.dates] * 3)
                 .compute()
-                .sort_values(kind=sort_kind)
+                .sort_values()
                 .reset_index(drop=True),
                 "ints": [0] * 3 + [1] * 3 + [2] * 3,
                 "strings": ["a"] * 3 + ["b"] * 3 + ["c"] * 3,
