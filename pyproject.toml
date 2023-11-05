@@ -418,6 +418,7 @@ ignore = [
   "D402",    # First line should not be the function's signature
   "E501",    # line-too-long, this is automatically enforced by ruff format
   "E731",    # lambda-assignment
+  "ISC001",  # single line implicit string concat, handled by ruff format
   "PGH003",  # blanket-type-ignore
   "PLC0105", # covariant type parameters should have a _co suffix
   "PLR0124", # name compared with self, e.g., a == a
