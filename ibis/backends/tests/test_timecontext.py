@@ -99,7 +99,7 @@ def test_context_adjustment_window_udf(alltypes, context, window, monkeypatch):
 
 
 @pytest.mark.notimpl(["dask", "duckdb"])
-@pytest.mark.xfail_version(pandas=["pyarrow>=13", "pandas>=2.1"])
+@pytest.mark.xfail_version(pandas=["pyarrow>=13", "pandas>=2.1,<2.1.2"])
 @pytest.mark.broken(
     # TODO (mehmet): Check with the team.
     ["flink"],
