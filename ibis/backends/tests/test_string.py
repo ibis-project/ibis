@@ -466,7 +466,6 @@ def uses_java_re(t):
                 pytest.mark.notimpl(
                     [
                         "bigquery",
-                        "datafusion",
                         "pyspark",
                         "sqlite",
                         "snowflake",
@@ -493,7 +492,6 @@ def uses_java_re(t):
                 pytest.mark.notimpl(
                     [
                         "bigquery",
-                        "datafusion",
                         "pyspark",
                         "sqlite",
                         "snowflake",
@@ -703,9 +701,7 @@ def uses_java_re(t):
             id="negative-index",
             marks=[
                 pytest.mark.broken(["druid"], raises=sa.exc.ProgrammingError),
-                pytest.mark.broken(
-                    ["datafusion", "impala", "flink"], raises=AssertionError
-                ),
+                pytest.mark.broken(["impala", "flink"], raises=AssertionError),
                 pytest.mark.notimpl(["pyspark"], raises=NotImplementedError),
             ],
         ),
@@ -1012,7 +1008,7 @@ def test_capitalize(con):
 
 
 @pytest.mark.notimpl(
-    ["dask", "datafusion", "pandas", "polars", "druid", "oracle", "flink"],
+    ["dask", "pandas", "polars", "druid", "oracle", "flink"],
     raises=OperationNotDefinedError,
 )
 @pytest.mark.notyet(
