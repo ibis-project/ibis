@@ -39,6 +39,7 @@ def db(tmp_path_factory):
     con.execute("CREATE TABLE timestamps (ts TIMESTAMP)")
     con.execute("CREATE TABLE timestamps_tz (ts TIMESTAMP)")
     con.execute("CREATE TABLE weird (str_col STRING, date_col ITSADATE)")
+    con.execute("CREATE TABLE blobs (data BLOB)")
     with con:
         con.executemany("INSERT INTO timestamps VALUES (?)", [(t,) for t in TIMESTAMPS])
         con.executemany(
@@ -54,6 +55,7 @@ def db(tmp_path_factory):
                 ("d", "2022-01-04"),
             ],
         )
+        con.execute("INSERT INTO blobs (data) VALUES (?)", (b"\x00\x01\x02\x03",))
     con.close()
     return path
 
@@ -90,3 +92,9 @@ def test_type_map(db):
         }
     )
     assert res.equals(sol)
+
+
+def test_read_blob(db):
+    con = ibis.sqlite.connect(db)
+    t = con.table("blobs")
+    assert t["data"].type() == dt.binary

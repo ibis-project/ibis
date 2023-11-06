@@ -142,6 +142,7 @@ _from_sqlalchemy_types = {
     sat.BOOLEAN: dt.Boolean,
     sat.Boolean: dt.Boolean,
     sat.BINARY: dt.Binary,
+    sat.BLOB: dt.Binary,
     sat.LargeBinary: dt.Binary,
     sat.DATE: dt.Date,
     sat.Date: dt.Date,
