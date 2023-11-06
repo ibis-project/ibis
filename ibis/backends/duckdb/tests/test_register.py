@@ -46,6 +46,18 @@ def test_read_parquet(data_dir):
     assert t.count().execute()
 
 
+@pytest.mark.xfail(raises=duckdb.duckdb.CatalogException, reason="ST_AsEWKB")
+def test_read_geo_fail(con, data_dir):
+    t = con.read_geo(data_dir / "geojson" / "zones.geojson")
+    # can't convert geometry to arrow type yet
+    assert t.head().to_pyarrow()
+
+
+def test_read_geo(con, data_dir):
+    t = con.read_geo(data_dir / "geojson" / "zones.geojson")
+    assert t.count().execute()
+
+
 @pytest.mark.xfail_version(
     duckdb=["duckdb<0.7.0"], reason="read_json_auto doesn't exist", raises=exc.IbisError
 )
