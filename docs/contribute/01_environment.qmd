@@ -123,7 +123,7 @@ for manager, params in managers.items():
         print("```sh")
         print(f"# Create a dev environment for {platform}")
         print("cd ibis")
-        print(f"{manager} create -n ibis-dev --file=conda-lock/{platform}/3.10.lock")
+        print(f"{manager} create -n ibis-dev --file=ci/conda-lock/{platform}/3.10.lock")
         print("```")
         print()
     print()
