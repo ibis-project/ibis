@@ -493,6 +493,49 @@ WHERE catalog_name = :database"""
             con.exec_driver_sql(view)
         return self.table(table_name)
 
+    def read_geo(
+        self,
+        source: str,
+        table_name: str | None = None,
+        **kwargs: Any,
+    ) -> ir.Table:
+        """Register a GEO file as a table in the current database.
+
+        Parameters
+        ----------
+        source
+            The data source(s). Path to a file of geospatial files supported
+            by duckdb.
+            See https://duckdb.org/docs/extensions/spatial.html#st_read---read-spatial-data-from-files
+        table_name
+            An optional name to use for the created table. This defaults to
+            a sequentially generated name.
+        **kwargs
+            Additional keyword arguments passed to DuckDB loading function.
+            See https://duckdb.org/docs/extensions/spatial.html#st_read---read-spatial-data-from-files
+            for more information.
+
+        Returns
+        -------
+        ir.Table
+            The just-registered table
+        """
+
+        if not table_name:
+            table_name = util.gen_name("read_geo")
+
+        # load geospatial extension
+        self.load_extension("spatial")
+
+        source_expr = sa.select(sa.literal_column("*")).select_from(
+            sa.func.st_read(util.normalize_filename(source), _format_kwargs(kwargs))
+        )
+
+        view = self._compile_temp_view(table_name, source_expr)
+        with self.begin() as con:
+            con.exec_driver_sql(view)
+        return self.table(table_name)
+
     def read_parquet(
         self,
         source_list: str | Iterable[str],
