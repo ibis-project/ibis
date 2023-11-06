@@ -108,6 +108,7 @@ _simple_ops = {
     ops.ArrayContains: "array_contains",
     ops.ArrayLength: "array_length",
     ops.ArrayRemove: "array_remove_all",
+    ops.StringLength: "length",
 }
 
 for _op, _name in _simple_ops.items():
@@ -303,7 +304,7 @@ def round(op, *, arg, digits, **_):
 
 @translate_val.register(ops.Substring)
 def substring(op, *, arg, start, length, **_):
-    start += 1
+    start = if_(start < 0, F.length(arg) + start + 1, start + 1)
     if length is not None:
         return F.substr(arg, start, length)
     return F.substr(arg, start)
@@ -776,3 +777,13 @@ def is_null(op, *, arg, **_):
 @translate_val.register(ops.IsNan)
 def is_nan(op, *, arg, **_):
     return F.isnan(F.coalesce(arg, sg.exp.Literal.number("'NaN'::double")))
+
+
+@translate_val.register(ops.ArrayStringJoin)
+def array_string_join(op, *, sep, arg):
+    return F.array_join(arg, sep)
+
+
+@translate_val.register(ops.FindInSet)
+def array_string_find(op, *, needle, values):
+    return F.coalesce(F.array_position(F.make_array(*values), needle), 0)
