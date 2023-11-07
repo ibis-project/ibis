@@ -198,13 +198,14 @@ for manager, params in managers.items():
     nix-shell -p cachix --run 'cachix use ibis'
     ```
 
-1.  Run `nix-shell` in the checkout directory:
+1.  Run `nix develop` in the checkout directory:
 
     ```sh
     cd ibis
-    nix-shell
+    nix develop
     ```
 
+    This will launch a `bash` shell with all of the required dependencies installed.
     This may take a while due to artifact download from the cache.
 
 :::
