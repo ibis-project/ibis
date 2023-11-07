@@ -414,7 +414,9 @@ jobs:
 
       - name: install libgeos for shapely
         if: matrix.backend.name == 'postgres'
-        run: sudo apt-get install -qq -y build-essential libgeos-dev
+        run: |
+          sudo apt-get update -y -qq
+          sudo apt-get install -qq -y build-essential libgeos-dev
 
       - uses: extractions/setup-just@v1
         env:
@@ -633,11 +635,15 @@ jobs:
 
       - name: install libgeos for shapely
         if: ${{ matrix.backend.name == 'postgres' }}
-        run: sudo apt-get install -qq -y build-essential libgeos-dev
+        run: |
+          sudo apt-get update -y -qq
+          sudo apt-get install -qq -y build-essential libgeos-dev
 
       - name: install freetds-dev for mssql
         if: ${{ matrix.backend.name == 'mssql' }}
-        run: sudo apt-get install -qq -y build-essential libkrb5-dev krb5-config freetds-dev
+        run: |
+          sudo apt-get update -y -qq
+          sudo apt-get install -qq -y build-essential libkrb5-dev krb5-config freetds-dev
 
       - uses: extractions/setup-just@v1
         env:
