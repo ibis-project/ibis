@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import duckdb
+import pyarrow as pa
 import pytest
 import sqlalchemy as sa
 from pytest import param
@@ -132,3 +133,28 @@ def test_create_table_with_timestamp_scales(con, scale):
     schema = ibis.schema(dict(ts=dt.Timestamp(scale=scale)))
     t = con.create_table(gen_name("duckdb_timestamp_scale"), schema=schema, temp=True)
     assert t.schema() == schema
+
+
+def test_config_options(con):
+    a_first = {"a": [None, 1]}
+    a_last = {"a": [1, None]}
+    nulls_first = pa.Table.from_pydict(a_first, schema=pa.schema([("a", pa.float64())]))
+    nulls_last = pa.Table.from_pydict(a_last, schema=pa.schema([("a", pa.float64())]))
+
+    t = ibis.memtable(a_last)
+
+    expr = t.order_by("a")
+
+    assert con.to_pyarrow(expr) == nulls_last
+
+    con.settings["null_order"] = "nulls_first"
+
+    assert con.to_pyarrow(expr) == nulls_first
+
+
+def test_config_options_bad_option(con):
+    with pytest.raises(sa.exc.ProgrammingError):
+        con.settings["not_a_valid_option"] = "oopsie"
+
+    with pytest.raises(KeyError):
+        con.settings["i_didnt_set_this"]
