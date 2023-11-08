@@ -7,10 +7,7 @@ import contextlib
 import os
 import warnings
 from pathlib import Path
-from typing import (
-    TYPE_CHECKING,
-    Any,
-)
+from typing import TYPE_CHECKING, Any
 
 import duckdb
 import pyarrow as pa
@@ -69,10 +66,40 @@ _UDF_INPUT_TYPE_MAPPING = {
 }
 
 
+class _Settings:
+    def __init__(self, con):
+        self.con = con
+
+    def __getitem__(self, key):
+        try:
+            with self.con.begin() as con:
+                return con.exec_driver_sql(
+                    f"select value from duckdb_settings() where name = '{key}'"
+                ).one()
+        except sa.exc.NoResultFound:
+            raise KeyError(key)
+
+    def __setitem__(self, key, value):
+        with self.con.begin() as con:
+            con.exec_driver_sql(f"SET {key}='{value}'")
+
+    def __repr__(self):
+        with self.con.begin() as con:
+            kv = con.exec_driver_sql(
+                "select map(array_agg(name), array_agg(value)) from duckdb_settings()"
+            ).scalar()
+
+        return repr(dict(zip(kv["key"], kv["value"])))
+
+
 class Backend(AlchemyCrossSchemaBackend, CanCreateSchema):
     name = "duckdb"
     compiler = DuckDBSQLCompiler
     supports_create_or_replace = True
+
+    @property
+    def settings(self) -> _Settings:
+        return _Settings(self)
 
     @property
     def current_database(self) -> str:
