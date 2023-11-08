@@ -41,7 +41,7 @@ def dtype_to_polars(dtype):
 
 @dtype_to_polars.register(dt.Decimal)
 def from_ibis_decimal(dtype):
-    return pl.Decimal(dtype.precision, dtype.scale)
+    return pl.Decimal(precision=dtype.precision, scale=dtype.scale)
 
 
 @dtype_to_polars.register(dt.Timestamp)

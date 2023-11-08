@@ -669,11 +669,6 @@ def uses_java_re(t):
                     raises=com.OperationNotDefinedError,
                 ),
                 pytest.mark.broken(
-                    ["polars"],
-                    raises=AttributeError,
-                    reason="'NoneType' object has no attribute 'name'",
-                ),
-                pytest.mark.broken(
                     ["mssql"],
                     reason="substr requires 3 arguments",
                     raises=sa.exc.OperationalError,
