@@ -163,7 +163,7 @@ def pretty(node):
 
     def mapper(op, _, **kwargs):
         result = fmt(op, **kwargs)
-        if isinstance(op, ops.Relation):
+        if isinstance(op, (ops.Relation, nr.Relation)):
             tables[op] = result
             result = f"r{next(refcnt)}"
         return Rendered(result)
@@ -181,7 +181,7 @@ def pretty(node):
         out.append(res)
     elif isinstance(node, ops.Value):
         out.append(f"{node.name}: {res}{type_info(node.dtype)}")
-    elif isinstance(node, ops.Relation):
+    elif isinstance(node, (ops.Relation, nr.Relation)):
         out.append(tables[node])
 
     return "\n\n".join(out)

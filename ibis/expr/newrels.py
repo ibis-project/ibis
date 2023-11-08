@@ -1,15 +1,20 @@
 from __future__ import annotations
 
 from abc import abstractmethod
+from typing import Annotated, Any
 
 import ibis.expr.datashape as ds
 import ibis.expr.datatypes as dt
+import ibis.expr.types as ir
 from ibis.common.annotations import attribute
-from ibis.common.collections import FrozenDict
+from ibis.common.collections import FrozenDict  # noqa: TCH001
+from ibis.common.deferred import Deferred
+from ibis.common.patterns import InstanceOf  # noqa: TCH001
 from ibis.common.typing import Coercible, VarTuple
-from ibis.expr.operations import Node, SortKey, Value
-from ibis.expr.schema import Schema  # noqa: TCH001
-from ibis.expr.types import Expr
+from ibis.expr.operations import Alias, Column, Node, Scalar, SortKey, Value
+from ibis.expr.schema import Schema
+from ibis.expr.types import Expr, literal
+from ibis.selectors import Selector
 
 # need a parallel Expression and Operation class hierarchy to decompose ops.Selection
 # into proper relational algebra operations
@@ -47,15 +52,15 @@ class Field(Value):
 
 class Project(Relation):
     parent: Relation
-    values: FrozenDict[str, Value]
+    values: FrozenDict[str, Annotated[Value, ~InstanceOf(Alias)]]
 
-    def __init__(self, parent, fields):
-        # validate that each field originates from the parent relation
-        pass
+    def __init__(self, parent, values):
+        # TODO(kszucs): validate that each field originates from the parent relation
+        super().__init__(parent=parent, values=values)
 
     @attribute
     def schema(self):
-        return FrozenDict({k: v.dtype for k, v in self.fields.items()})
+        return Schema({k: v.dtype for k, v in self.values.items()})
 
 
 class Join(Relation):
@@ -66,7 +71,7 @@ class Join(Relation):
 
     @attribute
     def schema(self):
-        return FrozenDict({k: v.dtype for k, v in self.fields.items()})
+        return Schema({k: v.dtype for k, v in self.fields.items()})
 
 
 class Sort(Relation):
@@ -87,6 +92,17 @@ class Filter(Relation):
         return self.parent.schema
 
 
+class Aggregate(Relation):
+    parent: Relation
+    groups: FrozenDict[str, Annotated[Column, ~InstanceOf(Alias)]]
+    metrics: FrozenDict[str, Annotated[Scalar, ~InstanceOf(Alias)]]
+
+    @attribute
+    def schema(self):
+        # schema is consisting both by and metrics
+        return Schema.from_tuples([*self.groups.items(), *self.metrics.items()])
+
+
 class UnboundTable(Relation):
     name: str
     schema: Schema
@@ -94,4 +110,41 @@ class UnboundTable(Relation):
 
 class TableExpr(Expr):
     def __getattr__(self, key):
-        return Field(self, key)
+        return Field(self, key).to_expr()
+
+    def select(self, *args, **kwargs):
+        values = bind(self, (args, kwargs))
+        values = unwrap_alias(values)
+        return Project(self, values).to_expr()
+
+
+def bind(table: TableExpr, value: Any) -> ir.Value:
+    if isinstance(value, ir.Value):
+        yield value
+    elif isinstance(value, str):
+        yield Field(table, value).to_expr()
+    elif isinstance(value, Deferred):
+        yield value.resolve(table)
+    elif isinstance(value, Selector):
+        yield from value.expand(table)
+    elif isinstance(value, tuple):
+        for v in value:
+            yield from bind(table, v)
+    elif isinstance(value, dict):
+        for k, v in value.items():
+            for val in bind(table, v):
+                yield val.name(k)
+    elif callable(value):
+        yield value(table)
+    else:
+        yield literal(value)
+
+
+def unwrap_alias(values):
+    result = {}
+    for value in values:
+        if isinstance(node := value.op(), Alias):
+            result[node.name] = node.arg
+        else:
+            result[node.name] = node
+    return result

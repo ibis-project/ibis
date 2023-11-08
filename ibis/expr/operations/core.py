@@ -73,6 +73,7 @@ class Value(Node, Named, Coercible, DefaultTypeVars, Generic[T, S]):
 
         if isinstance(value, Expr):
             value = value.op()
+        # TODO(kszucs): could unwrap aliases here
         if isinstance(value, Value):
             return value
 
