@@ -245,9 +245,10 @@ class Expr(Immutable, Coercible):
         list[BaseBackend]
             A list of the backends found.
         """
+
         backends = set()
         has_unbound = False
-        node_types = (ops.DatabaseTable, ops.SQLQueryResult, ops.UnboundTable)
+        node_types = (ops.UnboundTable, ops.DatabaseTable, ops.SQLQueryResult)
         for table in self.op().find(node_types):
             if isinstance(table, ops.UnboundTable):
                 has_unbound = True

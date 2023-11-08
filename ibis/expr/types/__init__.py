@@ -12,6 +12,7 @@ from ibis.expr.types.logical import *  # noqa: F403
 from ibis.expr.types.maps import *  # noqa: F403
 from ibis.expr.types.numeric import *  # noqa: F403
 from ibis.expr.types.relations import *  # noqa: F403
+from ibis.expr.types.joins import *  # noqa: F403
 from ibis.expr.types.strings import *  # noqa: F403
 from ibis.expr.types.structs import *  # noqa: F403
 from ibis.expr.types.temporal import *  # noqa: F403
