@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from abc import abstractmethod
+from functools import partial
 from typing import Annotated, Any
 
 import ibis.expr.datashape as ds
@@ -8,17 +9,25 @@ import ibis.expr.datatypes as dt
 import ibis.expr.types as ir
 from ibis.common.annotations import attribute
 from ibis.common.collections import FrozenDict  # noqa: TCH001
-from ibis.common.deferred import Deferred
-from ibis.common.patterns import InstanceOf  # noqa: TCH001
+from ibis.common.deferred import Call, Deferred, _, deferred, var
+from ibis.common.patterns import (
+    InstanceOf,  # noqa: TCH001
+    pattern,
+    replace,
+)
 from ibis.common.typing import Coercible, VarTuple
 from ibis.expr.operations import Alias, Column, Node, Scalar, SortKey, Value
 from ibis.expr.schema import Schema
 from ibis.expr.types import Expr, literal
 from ibis.expr.types import Value as ValueExpr
 from ibis.selectors import Selector
+from ibis.util import Namespace
 
 # need a parallel Expression and Operation class hierarchy to decompose ops.Selection
 # into proper relational algebra operations
+
+
+################################ OPERATIONS ################################
 
 
 class Relation(Node, Coercible):
@@ -64,6 +73,17 @@ class Project(Relation):
         return Schema({k: v.dtype for k, v in self.values.items()})
 
 
+# TODO(kszucs): consider to have a specialization projecting only fields not
+# generic value expressions
+# class ProjectFields(Relation):
+#     parent: Relation
+#     fields: FrozenDict[str, Field]
+
+#     @attribute
+#     def schema(self):
+#         return Schema({f.name: f.dtype for f in self.fields})
+
+
 class Join(Relation):
     left: Relation
     right: Relation
@@ -100,13 +120,17 @@ class Aggregate(Relation):
 
     @attribute
     def schema(self):
-        # schema is consisting both by and metrics
+        # schema is consisting both by and metrics, use .from_tuples() to disallow
+        # duplicate names in the schema
         return Schema.from_tuples([*self.groups.items(), *self.metrics.items()])
 
 
 class UnboundTable(Relation):
     name: str
     schema: Schema
+
+
+################################ TYPES ################################
 
 
 class TableExpr(Expr):
@@ -118,24 +142,30 @@ class TableExpr(Expr):
 
     def select(self, *args, **kwargs):
         values = bind(self, (args, kwargs))
-        values = unwrap_alias(values)
+        values = unwrap_aliases(values)
         # TODO(kszucs): windowization of redictions should happen here
-        return Project(self, values).to_expr()
+        node = Project(self, values).replace(subsequent_projection)
+        return node.to_expr()
 
     def where(self, *predicates):
         predicates = bind(self, predicates)
-        return Filter(self, predicates).to_expr()
+        predicates = unwrap_aliases(predicates)
+        node = Filter(self, predicates.values())
+        return node.to_expr()
 
     def order_by(self, *keys):
         keys = bind(self, keys)
-        return Sort(self, keys).to_expr()
+        keys = unwrap_aliases(keys)
+        node = Sort(self, keys.values())
+        return node.to_expr()
 
     def aggregate(self, groups, metrics):
         groups = bind(self, groups)
         metrics = bind(self, metrics)
-        groups = unwrap_alias(groups)
-        metrics = unwrap_alias(metrics)
-        return Aggregate(self, groups, metrics).to_expr()
+        groups = unwrap_aliases(groups)
+        metrics = unwrap_aliases(metrics)
+        node = Aggregate(self, groups, metrics)
+        return node.to_expr()
 
 
 def bind(table: TableExpr, value: Any) -> ir.Value:
@@ -163,7 +193,7 @@ def bind(table: TableExpr, value: Any) -> ir.Value:
         yield literal(value)
 
 
-def unwrap_alias(values):
+def unwrap_aliases(values):
     result = {}
     for value in values:
         node = value.op()
@@ -172,6 +202,28 @@ def unwrap_alias(values):
         else:
             result[node.name] = node
     return result
+
+
+################################ REWRITES ################################
+
+
+p = Namespace(pattern, module=__name__)
+d = Namespace(deferred, module=__name__)
+
+name = var("name")
+
+x = var("x")
+y = var("y")
+values = var("values")
+
+Map = partial(Call, map)
+
+
+@replace(p.Project(x @ p.Project(y), values))
+def subsequent_projection(_, x, y, values):
+    rule = p.Field(x) >> (lambda _: x.values[_.name])
+    vals = {k: v.replace(rule) for k, v in values.items()}
+    return Project(y, vals)
 
 
 # POSSIBLE REWRITES:

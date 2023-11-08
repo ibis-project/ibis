@@ -94,7 +94,8 @@ def test_select_values():
 
 
 def test_select_across_relations():
-    t1 = t.select("bool_col", "int_col")
-    t2 = t1.select(t.bool_col)
-    print()
-    print(t2)
+    t1 = t.select("bool_col", "int_col", "float_col")
+    t2 = t1.select("bool_col", "int_col")
+    t3 = t2.select("bool_col")
+    expected = Project(parent=t, values={"bool_col": t.bool_col})
+    assert t3.op() == expected
