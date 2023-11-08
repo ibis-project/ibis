@@ -29,23 +29,20 @@ r0 := DatabaseTable: airlines
   security_delay      int32
   late_aircraft_delay int32
 
-r1 := Selection[r0]
-  selections:
-    arrdelay: r0.arrdelay
-    dest:     r0.dest
+r1 := Project[r0]
+  arrdelay: r0.arrdelay
+  dest:     r0.dest
 
-r2 := Selection[r1]
-  selections:
-    r1
-    dest_avg: WindowFunction(func=Mean(r1.arrdelay), frame=RowsWindowFrame(table=r1, group_by=[r1.dest]))
-    dev:      r1.arrdelay - WindowFunction(func=Mean(r1.arrdelay), frame=RowsWindowFrame(table=r1, group_by=[r1.dest]))
+r2 := Project[r1]
+  arrdelay: r1.arrdelay
+  dest:     r1.dest
+  dest_avg: WindowFunction(func=Mean(r1.arrdelay), frame=RowsWindowFrame(table=r1, group_by=[r1.dest]))
+  dev:      r1.arrdelay - WindowFunction(func=Mean(r1.arrdelay), frame=RowsWindowFrame(table=r1, group_by=[r1.dest]))
 
-r3 := Selection[r2]
-  predicates:
-    NotNull(r2.dev)
+r3 := Filter[r2]
+  NotNull(r2.dev)
 
-r4 := Selection[r3]
-  sort_keys:
-    desc r3.dev
+r4 := Sort[r3]
+  desc r3.dev
 
 Limit[r4, n=10]

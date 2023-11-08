@@ -1,2 +1,2 @@
 DummyTable
-  foo array<int8>
+  foo: [1]
