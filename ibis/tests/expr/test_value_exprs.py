@@ -308,7 +308,7 @@ def test_distinct_table(functional_alltypes):
     expr = functional_alltypes.distinct()
     assert isinstance(expr.op(), ops.Distinct)
     assert isinstance(expr, ir.Table)
-    assert expr.op().table == functional_alltypes.op()
+    assert expr.op().parent == functional_alltypes.op()
 
 
 def test_nunique(functional_alltypes):
@@ -1465,10 +1465,9 @@ def test_deferred_r_ops(op_name, expected_left, expected_right):
 
     op = getattr(operator, op_name)
     expr = t[op(left, right).name("b")]
-
-    op = expr.op().selections[0].arg
-    assert op.left.equals(expected_left(t).op())
-    assert op.right.equals(expected_right(t).op())
+    node = expr.op().values["b"]
+    assert node.left.equals(expected_left(t).op())
+    assert node.right.equals(expected_right(t).op())
 
 
 @pytest.mark.parametrize(
@@ -1671,9 +1670,9 @@ def test_quantile_shape():
 
     projs = [b1]
     expr = t.select(projs)
-    (b1,) = expr.op().selections
+    b1 = expr.br2
 
-    assert b1.shape.is_columnar()
+    assert b1.op().shape.is_columnar()
 
 
 def test_sample():
