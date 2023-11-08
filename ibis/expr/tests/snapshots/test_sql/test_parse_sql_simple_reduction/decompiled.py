@@ -12,4 +12,4 @@ call = ibis.table(
     },
 )
 
-result = call.aggregate(call.call_attempts.mean().name("mean"))
+result = call.aggregate([call.call_attempts.mean().name("mean")])

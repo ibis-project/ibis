@@ -393,7 +393,7 @@ def c(*names: str | ir.Column) -> Predicate:
     names = frozenset(col if isinstance(col, str) else col.get_name() for col in names)
 
     def func(col: ir.Value) -> bool:
-        schema = col.op().table.schema
+        schema = col.op().rel.schema
         if extra_cols := (names - schema.keys()):
             raise exc.IbisInputError(
                 f"Columns {extra_cols} are not present in {schema.names}"
