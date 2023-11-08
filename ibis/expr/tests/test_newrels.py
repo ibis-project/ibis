@@ -5,6 +5,10 @@ import ibis.expr.datatypes as dt
 from ibis.expr.newrels import Field, Project, TableExpr, UnboundTable
 from ibis.expr.schema import Schema
 
+# TODO(kszucs):
+# def test_relation_coercion()
+
+
 t = UnboundTable(
     name="t",
     schema={
@@ -57,6 +61,21 @@ def test_select_fields():
     assert proj.op().schema == Schema({"int_col": dt.int64, "myint": dt.int64})
 
 
+def test_select_relation():
+    proj = t.select(t)
+    expected = Project(
+        parent=t,
+        values={
+            "bool_col": t.bool_col,
+            "int_col": t.int_col,
+            "float_col": t.float_col,
+            "string_col": t.string_col,
+        },
+    )
+    assert proj.op() == expected
+    assert proj.op().schema == t.schema()
+
+
 def test_select_values():
     proj = t.select((1 + t.int_col).name("incremented"))
     expected = Project(parent=t, values={"incremented": (1 + t.int_col)})
@@ -74,5 +93,8 @@ def test_select_values():
     )
 
 
-# TODO(kszucs):
-# def test_relation_coercion()
+def test_select_across_relations():
+    t1 = t.select("bool_col", "int_col")
+    t2 = t1.select(t.bool_col)
+    print()
+    print(t2)

@@ -268,6 +268,21 @@ def _selection(op, table, selections, **kwargs):
     return name + render_fields(kwargs, 1)
 
 
+@fmt.register(nr.Project)
+def _project(op, parent, values):
+    name = f"{op.__class__.__name__}[{parent}]\n"
+
+    # special handling required to support both relation and value selections
+    fields = {}
+    for k, v in values.items():
+        node = op.values[k]
+        fields[f"{k}:"] = f"{v}{type_info(node.dtype)}"
+
+    # segments = filter(None, [render(rels), render(values)])
+    # kwargs["selections"] = "\n".join(segments)
+    return name + render_schema(fields, 1)
+
+
 @fmt.register(ops.SetOp)
 def _set_op(op, left, right, distinct):
     args = [str(left), str(right)]
@@ -317,6 +332,11 @@ def _literal(op, value, **kwargs):
 @fmt.register(ops.TableColumn)
 def _table_column(op, table, name):
     return f"{table}.{name}"
+
+
+@fmt.register(nr.Field)
+def _relation_field(op, rel, name):
+    return f"{rel}.{name}"
 
 
 @fmt.register(ops.Value)

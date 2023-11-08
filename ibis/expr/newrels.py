@@ -14,6 +14,7 @@ from ibis.common.typing import Coercible, VarTuple
 from ibis.expr.operations import Alias, Column, Node, Scalar, SortKey, Value
 from ibis.expr.schema import Schema
 from ibis.expr.types import Expr, literal
+from ibis.expr.types import Value as ValueExpr
 from ibis.selectors import Selector
 
 # need a parallel Expression and Operation class hierarchy to decompose ops.Selection
@@ -109,18 +110,40 @@ class UnboundTable(Relation):
 
 
 class TableExpr(Expr):
+    def schema(self):
+        return self.op().schema
+
     def __getattr__(self, key):
         return Field(self, key).to_expr()
 
     def select(self, *args, **kwargs):
         values = bind(self, (args, kwargs))
         values = unwrap_alias(values)
+        # TODO(kszucs): windowization of redictions should happen here
         return Project(self, values).to_expr()
+
+    def where(self, *predicates):
+        predicates = bind(self, predicates)
+        return Filter(self, predicates).to_expr()
+
+    def order_by(self, *keys):
+        keys = bind(self, keys)
+        return Sort(self, keys).to_expr()
+
+    def aggregate(self, groups, metrics):
+        groups = bind(self, groups)
+        metrics = bind(self, metrics)
+        groups = unwrap_alias(groups)
+        metrics = unwrap_alias(metrics)
+        return Aggregate(self, groups, metrics).to_expr()
 
 
 def bind(table: TableExpr, value: Any) -> ir.Value:
-    if isinstance(value, ir.Value):
+    if isinstance(value, ValueExpr):
         yield value
+    elif isinstance(value, TableExpr):
+        for name in value.schema().keys():
+            yield Field(value, name).to_expr()
     elif isinstance(value, str):
         yield Field(table, value).to_expr()
     elif isinstance(value, Deferred):
@@ -143,8 +166,13 @@ def bind(table: TableExpr, value: Any) -> ir.Value:
 def unwrap_alias(values):
     result = {}
     for value in values:
-        if isinstance(node := value.op(), Alias):
+        node = value.op()
+        if isinstance(node, Alias):
             result[node.name] = node.arg
         else:
             result[node.name] = node
     return result
+
+
+# POSSIBLE REWRITES:
+# 1. Reprojection of the whole relation: t.select(t) >> t
