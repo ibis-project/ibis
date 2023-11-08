@@ -11,10 +11,10 @@ r0 := UnboundTable: alltypes
   j date
   k time
 
-Aggregation[r0]
+Aggregate[r0]
+  groups:
+    key1: r0.g
+    key2: Round(r0.f)
   metrics:
     c: Sum(r0.c)
     d: Mean(r0.d)
-  by:
-    key1: r0.g
-    key2: Round(r0.f)
