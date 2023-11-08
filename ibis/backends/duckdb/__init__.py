@@ -36,6 +36,7 @@ if TYPE_CHECKING:
 
     import pandas as pd
     import torch
+    from fsspec import AbstractFileSystem
 
 
 def normalize_filenames(source_list):
@@ -876,6 +877,44 @@ WHERE catalog_name = :database"""
         with self.begin() as con:
             con.execute(sa.text(f"SET GLOBAL sqlite_all_varchar={all_varchar}"))
             con.execute(sa.text(f"CALL sqlite_attach('{path}', overwrite={overwrite})"))
+
+    def register_filesystem(self, filesystem: AbstractFileSystem):
+        """Register an `fsspec` filesystem object with DuckDB.
+
+        This allow a user to read from any `fsspec` compatible filesystem using
+        `read_csv`, `read_parquet`, `read_json`, etc.
+
+
+        ::: {.callout-note}
+        Creating an `fsspec` filesystem requires that the corresponding
+        backend-specific `fsspec` helper library is installed.
+
+        e.g. to connect to Google Cloud Storage, `gcsfs` must be installed.
+        :::
+
+        Parameters
+        ----------
+        filesystem
+            The fsspec filesystem object to register with DuckDB.
+            See https://duckdb.org/docs/guides/python/filesystems for details.
+
+        Examples
+        --------
+        >>> import ibis
+        >>> import fsspec
+        >>> gcs = fsspec.filesystem("gcs")
+        >>> con = ibis.duckdb.connect()
+        >>> con.register_filesystem(gcs)
+        >>> t = con.read_csv(
+        ...     "gcs://ibis-examples/data/band_members.csv.gz",
+        ...     table_name="band_members",
+        ... )
+        DatabaseTable: band_members
+          name string
+          band string
+        """
+        with self.begin() as con:
+            con.connection.register_filesystem(filesystem)
 
     def _run_pre_execute_hooks(self, expr: ir.Expr) -> None:
         # Warn for any tables depending on RecordBatchReaders that have already
