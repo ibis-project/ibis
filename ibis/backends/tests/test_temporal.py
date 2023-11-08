@@ -1159,6 +1159,11 @@ timestamp_value = pd.Timestamp("2018-01-01 18:18:18")
                         "CalciteContextException: Cannot apply '-' to arguments of type '<TIMESTAMP(9)> - <TIMESTAMP(0)>'."
                     ),
                 ),
+                pytest.mark.broken(
+                    ["datafusion"],
+                    raises=Exception,
+                    reason="pyarrow.lib.ArrowInvalid: Casting from duration[us] to duration[s] would lose data",
+                ),
             ],
         ),
         param(
@@ -1186,12 +1191,16 @@ timestamp_value = pd.Timestamp("2018-01-01 18:18:18")
                     raises=com.UnsupportedOperationError,
                     reason="DATE_DIFF is not supported in Flink",
                 ),
+                pytest.mark.broken(
+                    ["datafusion"],
+                    raises=Exception,
+                    reason="pyarrow.lib.ArrowNotImplementedError: Unsupported cast",
+                ),
             ],
         ),
     ],
 )
 @pytest.mark.notimpl(["mssql", "oracle"], raises=com.OperationNotDefinedError)
-@pytest.mark.broken(["datafusion"], raises=BaseException)
 def test_temporal_binop(backend, con, alltypes, df, expr_fn, expected_fn):
     expr = expr_fn(alltypes, backend).name("tmp")
     expected = expected_fn(df, backend)
@@ -1377,9 +1386,7 @@ minus = lambda t, td: t.timestamp_col - pd.Timedelta(td)
         ),
     ],
 )
-@pytest.mark.notimpl(
-    ["datafusion", "sqlite", "mssql", "oracle"], raises=com.OperationNotDefinedError
-)
+@pytest.mark.notimpl(["sqlite", "mssql", "oracle"], raises=com.OperationNotDefinedError)
 def test_temporal_binop_pandas_timedelta(
     backend, con, alltypes, df, timedelta, temporal_fn
 ):
@@ -1775,7 +1782,7 @@ unit_factors = {"s": 10**9, "ms": 10**6, "us": 10**3, "ns": 1}
     ],
 )
 @pytest.mark.notimpl(
-    ["datafusion", "mysql", "postgres", "sqlite", "druid", "oracle"],
+    ["mysql", "postgres", "sqlite", "druid", "oracle"],
     raises=com.OperationNotDefinedError,
 )
 def test_integer_to_timestamp(backend, con, unit):
