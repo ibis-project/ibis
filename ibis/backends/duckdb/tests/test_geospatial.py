@@ -1,10 +1,13 @@
 from __future__ import annotations
 
 import geopandas as gpd
+import geopandas.testing as gtm
 import numpy.testing as npt
 import pandas.testing as tm
 import pyarrow as pa
 import pytest
+import shapely
+from pytest import param
 
 import ibis
 
@@ -17,82 +20,18 @@ def test_geospatial_point(zones, zones_gdf):
     npt.assert_array_equal(gpd.array.from_wkb(coord.to_pandas().values), gp_coord)
 
 
-def test_geospatial_as_text(snapshot):
+# this functions are not implemented in geopandas
+@pytest.mark.parametrize(
+    ("operation", "keywords"),
+    [
+        param("as_text", {}, id="as_text"),
+        param("n_points", {}, id="n_points"),
+    ],
+)
+def test_geospatial_unary_snapshot(operation, keywords, snapshot):
     t = ibis.table([("geom", "geometry")], name="t")
-    expr = t.geom.as_text().name("tmp")
-
+    expr = getattr(t.geom, operation)(**keywords).name("tmp")
     snapshot.assert_match(ibis.to_sql(expr), "out.sql")
-
-
-def test_geospatial_area(zones, zones_gdf):
-    gp_area = zones_gdf.geometry.area
-    area = zones.geom.area().name("area")
-
-    tm.assert_series_equal(area.to_pandas(), gp_area, check_names=False)
-
-
-def test_geospatial_centroid(zones, zones_gdf):
-    cen = zones.geom.centroid().name("centroid")
-    gp_cen = zones_gdf.geometry.centroid
-
-    tm.assert_series_equal(gpd.GeoSeries.from_wkb(cen.to_pandas().values), gp_cen)
-
-
-def test_geospatial_contains(zones, zones_gdf):
-    cont = zones.geom.contains(zones.geom).name("contains")
-    gp_cont = zones_gdf.geometry.contains(zones_gdf.geometry)
-
-    tm.assert_series_equal(cont.to_pandas(), gp_cont, check_names=False)
-
-
-def test_geospatial_covers(zones, zones_gdf):
-    # Note that ST_Covers(A, B) = ST_CoveredBy(B, A)
-    # using same geom because of issue to generate geojason with 2 geom cols on duckdb
-    covers = zones.geom.covers(zones.geom).name("covers")
-    gp_covers = zones_gdf.geometry.covers(zones_gdf.geometry)
-
-    tm.assert_series_equal(covers.to_pandas(), gp_covers, check_names=False)
-
-
-def test_geospatial_covered_by(zones, zones_gdf):
-    # Note that  ST_CoveredBy(A, B) = ST_Covers(B,A)
-    # using same geom because of issue to generate geojason with 2 geom cols on duckdb
-    coverby = zones.geom.covered_by(zones.geom).name("coverby")
-    gp_coverby = zones_gdf.geometry.covered_by(zones_gdf.geometry)
-
-    tm.assert_series_equal(coverby.to_pandas(), gp_coverby, check_names=False)
-
-
-def test_geospatial_crosses(zones, zones_gdf):
-    # using same geom because of issue to generate geojason with 2 geom cols on duckdb
-    crosses = zones.geom.crosses(zones.geom).name("crosses")
-    gp_crosses = zones_gdf.geometry.crosses(zones_gdf.geometry)
-
-    tm.assert_series_equal(crosses.to_pandas(), gp_crosses, check_names=False)
-
-
-def test_geospatial_diff(zones, zones_gdf):
-    # using same geom because of issue to generate geojason with 2 geom cols on duckdb
-    diff = zones.geom.difference(zones.geom).name("diff")
-    gp_diff = zones_gdf.geometry.difference(zones_gdf.geometry)
-
-    tm.assert_series_equal(gpd.GeoSeries.from_wkb(diff.to_pandas().values), gp_diff)
-
-
-def test_geospatial_disjoint(zones, zones_gdf):
-    # using same geom because of issue to generate geojason with 2 geom cols on duckdb
-    disj = zones.geom.disjoint(zones.geom).name("disj")
-    gp_disj = zones_gdf.geometry.disjoint(zones_gdf.geometry)
-
-    tm.assert_series_equal(disj.to_pandas(), gp_disj, check_names=False)
-
-
-def test_geospatial_distance(zones, zones_gdf):
-    # using same geom because of issue to generate geojason with 2 geom cols on duckdb
-    dist = zones.geom.distance(zones.geom).name("dist")
-    gp_dist = zones_gdf.geometry.distance(zones_gdf.geometry)
-
-    tm.assert_series_equal(dist.to_pandas(), gp_dist, check_names=False)
 
 
 def test_geospatial_dwithin(snapshot):
@@ -102,135 +41,174 @@ def test_geospatial_dwithin(snapshot):
     snapshot.assert_match(ibis.to_sql(expr), "out.sql")
 
 
-# for end and start point need to have a different dataset that contains
-# lines or rings types to test this one.
-def test_geospatial_end_point(zones):
-    # This operation only applies to linesstrings, it gets the
-    # end point of a line or ring if we implement ST_MakeLine or
-    # ST_ExteriorRing
-    # when xfail fixed, this should failed on polygon type
-    epoint = zones.geom.end_point().name("end_point")
-    # this returns a series of None because the geom column has only Polygons
-    epoint.to_pandas()
+# geospatial unary functions that return a non-geometry series
+# we can test using pd.testing (tm)
+@pytest.mark.parametrize(
+    ("op", "keywords", "gp_op"),
+    [
+        param("area", {}, "area", id="area"),
+        param("is_valid", {}, "is_valid", id="is_valid"),
+        param(
+            "geometry_type",
+            {},
+            "geom_type",
+            id="geometry_type",
+            marks=pytest.mark.xfail(raises=pa.lib.ArrowTypeError),
+        ),
+    ],
+)
+def test_geospatial_unary_tm(op, keywords, gp_op, zones, zones_gdf):
+    expr = getattr(zones.geom, op)(**keywords).name("tmp")
+    gp_expr = getattr(zones_gdf.geometry, gp_op)
+
+    tm.assert_series_equal(expr.to_pandas(), gp_expr, check_names=False)
 
 
-def test_geospatial_start_point(zones):
-    start_point = zones.geom.start_point().name("start_point")
-    # this returns a series of None because the geom column has only Polygons
-    start_point.to_pandas()
+@pytest.mark.parametrize(
+    ("op", "keywords", "gp_op"),
+    [
+        param("x", {}, "x", id="x_coord"),
+        param("y", {}, "y", id="y_coord"),
+    ],
+)
+def test_geospatial_xy(op, keywords, gp_op, zones, zones_gdf):
+    cen = zones.geom.centroid().name("centroid")
+    gp_cen = zones_gdf.geometry.centroid
+
+    expr = getattr(cen, op)(**keywords).name("tmp")
+    gp_expr = getattr(gp_cen, gp_op)
+
+    tm.assert_series_equal(expr.to_pandas(), gp_expr, check_names=False)
 
 
-def test_geospatial_envelope(zones, zones_gdf):
-    envelope = zones.geom.envelope().name("envelope")
-    gp_envelope = zones_gdf.geometry.envelope
+def test_geospatial_length(lines, lines_gdf):
+    # note: ST_LENGTH returns 0 for the case of polygon
+    # or multi polygon while pandas geopandas returns the perimeter.
+    length = lines.geom.length().name("length")
+    gp_length = lines_gdf.geometry.length
 
-    tm.assert_series_equal(
-        gpd.GeoSeries.from_wkb(envelope.to_pandas().values), gp_envelope
+    tm.assert_series_equal(length.to_pandas(), gp_length, check_names=False)
+
+
+# geospatial binary functions that return a non-geometry series
+# we can test using pd.testing (tm)
+@pytest.mark.parametrize(
+    ("op", "keywords", "gp_op", "gp_keywords"),
+    [
+        param("contains", {}, "contains", {}, id="contains"),
+        param("geo_equals", {}, "geom_equals", {}, id="geo_eqs"),
+        param("covers", {}, "covers", {}, id="covers"),
+        param("covered_by", {}, "covered_by", {}, id="covered_by"),
+        param("crosses", {}, "crosses", {}, id="crosses"),
+        param("disjoint", {}, "disjoint", {}, id="disjoint"),
+        param("distance", {}, "distance", {}, id="distance"),
+        param("intersects", {}, "intersects", {}, id="intersects"),
+        param("overlaps", {}, "overlaps", {}, id="overlaps"),
+        param("touches", {}, "touches", {}, id="touches"),
+        param("within", {}, "within", {}, id="within"),
+    ],
+)
+def test_geospatial_binary_tm(op, keywords, gp_op, gp_keywords, zones, zones_gdf):
+    expr = getattr(zones.geom, op)(zones.geom, **keywords).name("tmp")
+    gp_func = getattr(zones_gdf.geometry, gp_op)(zones_gdf.geometry, **gp_keywords)
+
+    tm.assert_series_equal(expr.to_pandas(), gp_func, check_names=False)
+
+
+# geospatial unary functions that return a geometry series
+# we can test using gpd.testing (gtm)
+@pytest.mark.parametrize(
+    ("op", "keywords", "gp_op"),
+    [
+        param("centroid", {}, "centroid", id="centroid"),
+        param("envelope", {}, "envelope", id="envelope"),
+    ],
+)
+def test_geospatial_unary_gtm(op, keywords, gp_op, zones, zones_gdf):
+    expr = getattr(zones.geom, op)(**keywords).name("tmp")
+    gp_expr = getattr(zones_gdf.geometry, gp_op)
+
+    gtm.assert_geoseries_equal(
+        gpd.GeoSeries.from_wkb(expr.to_pandas()), gp_expr, check_crs=False
     )
 
 
-def test_geospatial_equals(zones, zones_gdf):
-    eqs = zones.geom.geo_equals(zones.geom).name("geo_eq")
-    gp_eqs = zones_gdf.geometry.geom_equals(zones_gdf.geometry)
+# geospatial binary functions that return a geometry series
+# we can test using gpd.testing (gtm)
+@pytest.mark.parametrize(
+    ("op", "keywords", "gp_op", "gp_keywords"),
+    [
+        param("difference", {}, "difference", {}, id="difference"),
+        param("intersection", {}, "intersection", {}, id="intersection"),
+        param("union", {}, "union", {}, id=""),
+    ],
+)
+def test_geospatial_binary_gtm(op, keywords, gp_op, gp_keywords, zones, zones_gdf):
+    expr = getattr(zones.geom, op)(zones.geom, **keywords).name("tmp")
+    gp_func = getattr(zones_gdf.geometry, gp_op)(zones_gdf.geometry, **gp_keywords)
 
-    tm.assert_series_equal(eqs.to_pandas(), gp_eqs, check_names=False)
-
-
-@pytest.mark.xfail(raises=pa.lib.ArrowTypeError)
-def test_geospatial_geometry_type(zones, zones_gdf):
-    geom_type = zones.geom.geometry_type().name("geom_type")
-    gp_geom_type = zones_gdf.geometry.geom_type
-
-    tm.assert_series_equal(geom_type.to_pandas(), gp_geom_type)
-
-
-def test_geospatial_intersection(zones, zones_gdf):
-    intersection = zones.geom.intersection(zones.geom).name("intersection")
-    gp_intersection = zones_gdf.geometry.intersection(zones_gdf.geometry)
-
-    tm.assert_series_equal(
-        gpd.GeoSeries.from_wkb(intersection.to_pandas().values), gp_intersection
+    gtm.assert_geoseries_equal(
+        gpd.GeoSeries.from_wkb(expr.to_pandas().values), gp_func, check_crs=False
     )
 
 
-def test_geospatial_intersects(zones, zones_gdf):
-    intersects = zones.geom.intersects(zones.geom).name("intersects")
-    gp_intersects = zones_gdf.geometry.intersects(zones_gdf.geometry)
+def test_geospatial_end_point(lines, lines_gdf):
+    epoint = lines.geom.end_point().name("end_point")
+    # geopandas does not have end_point this is a work around to get it
+    gp_epoint = lines_gdf.geometry.boundary.explode(index_parts=True).xs(1, level=1)
 
-    tm.assert_series_equal(intersects.to_pandas(), gp_intersects, check_names=False)
-
-
-def test_geospatial_is_valid(zones, zones_gdf):
-    is_valid = zones.geom.is_valid().name("is_valid")
-    gp_is_valid = zones_gdf.geometry.is_valid
-
-    tm.assert_series_equal(is_valid.to_pandas(), gp_is_valid, check_names=False)
+    gtm.assert_geoseries_equal(
+        gpd.GeoSeries.from_wkb(epoint.to_pandas().values), gp_epoint, check_crs=False
+    )
 
 
-# FIX ME: SEE https://postgis.net/docs/ST_Length.html
-# ST_LENGTH returns 0 for the case of polygon or multi polygon while pandas geopandas returns the perimeter.
-# https://geopandas.org/en/stable/docs/reference/api/geopandas.GeoSeries.length.html
+def test_geospatial_start_point(lines, lines_gdf):
+    spoint = lines.geom.start_point().name("start_point")
+    # geopandas does not have start_point this is a work around to get it
+    gp_spoint = lines_gdf.geometry.boundary.explode(index_parts=True).xs(0, level=1)
 
-# def test_geospatial_length(zones, zones_gdf):
-#     length = zones.geom.length().name("length")
-#     gp_length = zones_gdf.geometry.length
-
-#     tm.assert_series_equal(length.to_pandas(), gp_length, check_names=False)
-
-
-# not implemented in geopandas
-def test_geospatial_npoints(snapshot):
-    t = ibis.table([("geom", "geometry")], name="t")
-    expr = t.geom.n_points().name("tmp")
-
-    snapshot.assert_match(ibis.to_sql(expr), "out.sql")
+    gtm.assert_geoseries_equal(
+        gpd.GeoSeries.from_wkb(spoint.to_pandas().values), gp_spoint, check_crs=False
+    )
 
 
-def test_geospatial_overlaps(zones, zones_gdf):
-    overlaps = zones.geom.overlaps(zones.geom).name("overlaps")
-    gp_overlaps = zones_gdf.geometry.overlaps(zones_gdf.geometry)
+# this one takes a bit longer than the rest.
+def test_geospatial_unary_union(zones, zones_gdf):
+    unary_union = zones.geom.unary_union().name("unary_union")
+    # this returns a shapely geometry object
+    gp_unary_union = zones_gdf.geometry.unary_union
 
-    tm.assert_series_equal(overlaps.to_pandas(), gp_overlaps, check_names=False)
-
-
-def test_geospatial_touches(zones, zones_gdf):
-    touches = zones.geom.touches(zones.geom).name("touches")
-    gp_touches = zones_gdf.geometry.touches(zones_gdf.geometry)
-
-    tm.assert_series_equal(touches.to_pandas(), gp_touches, check_names=False)
-
-
-def test_geospatial_union(zones, zones_gdf):
-    union = zones.geom.union(zones.geom).name("union")
-    gp_union = zones_gdf.geometry.union(zones_gdf.geometry)
-
-    tm.assert_series_equal(gpd.GeoSeries.from_wkb(union.to_pandas().values), gp_union)
+    # shapely equals does not pass but
+    # if we set a precision to the grid_size we get the test to pass.
+    # unary_union (union_agg) on duckdb is supposed to use GEOS implementation (same as shapely)
+    # but there is not exact match.
+    # I did a plot to get a visual comparison, and the union-agg overlaps almost perfectly expect for 2 points
+    assert shapely.equals(
+        shapely.set_precision(
+            shapely.from_wkb(unary_union.to_pandas()), grid_size=1e-7
+        ),
+        shapely.set_precision(gp_unary_union, grid_size=1e-7),
+    )
 
 
-def test_geospatial_within(zones, zones_gdf):
-    within = zones.geom.within(zones.geom).name("within")
-    gp_within = zones_gdf.geometry.within(zones_gdf.geometry)
-
-    tm.assert_series_equal(within.to_pandas(), gp_within, check_names=False)
-
-
-def test_geospatial_x(zones, zones_gdf):
+def test_geospatial_buffer_point(zones, zones_gdf):
     cen = zones.geom.centroid().name("centroid")
     gp_cen = zones_gdf.geometry.centroid
-    # Get x coord
-    x = cen.x().name("x")
-    tm.assert_series_equal(x.to_pandas(), gp_cen.x, check_names=False)
+
+    buffer = cen.buffer(100.0)
+    # geopandas resolution default is 16, while duckdb is 8.
+    gp_buffer = gp_cen.buffer(100.0, resolution=8)
+
+    gtm.assert_geoseries_equal(
+        gpd.GeoSeries.from_wkb(buffer.to_pandas().values), gp_buffer, check_crs=False
+    )
 
 
-def test_geospatial_y(zones, zones_gdf):
-    cen = zones.geom.centroid().name("centroid")
-    gp_cen = zones_gdf.geometry.centroid
-    # Get y coord
-    y = cen.y().name("y")
-    tm.assert_series_equal(y.to_pandas(), gp_cen.y, check_names=False)
+def test_geospatial_buffer(zones, zones_gdf):
+    buffer = zones.geom.buffer(100.0)
+    # geopandas resolution default is 16, while duckdb is 8.
+    gp_buffer = zones_gdf.geometry.buffer(100.0, resolution=8)
 
-
-# def test_geospatial_buffer()
-# GeoBUffer in alchemy supports 2 arguments, but duckdb is a unary?
-# actually docs are wrong, it takes 2 or 3 args
-# looks like we have fixed_arity(sa.func.ST_Buffer, 2)
+    gtm.assert_geoseries_equal(
+        gpd.GeoSeries.from_wkb(buffer.to_pandas().values), gp_buffer, check_crs=False
+    )
