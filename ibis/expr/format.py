@@ -192,11 +192,14 @@ def fmt(op, **kwargs):
 
 
 @fmt.register(ops.Relation)
-@fmt.register(ops.DummyTable)
 @fmt.register(ops.WindowingTVF)
-def _relation(op, **kwargs):
-    schema = render_schema(op.schema, indent_level=1)
-    return f"{op.__class__.__name__}\n{schema}"
+def _relation(op, parent=None, **kwargs):
+    if parent is None:
+        top = f"{op.__class__.__name__}\n"
+    else:
+        top = f"{op.__class__.__name__}[{parent}]\n"
+    kwargs["schema"] = render_schema(op.schema)
+    return top + render_fields(kwargs, 1)
 
 
 @fmt.register(ops.PhysicalTable)
@@ -218,6 +221,7 @@ def _in_memory_table(op, data, **kwargs):
 @fmt.register(ops.SQLStringView)
 def _sql_query_result(op, query, **kwargs):
     clsname = op.__class__.__name__
+
     if isinstance(op, ops.SQLStringView):
         child, name = kwargs["child"], kwargs["name"]
         top = f"{clsname}[{child}]: {name}\n"
@@ -235,38 +239,54 @@ def _sql_query_result(op, query, **kwargs):
 
 @fmt.register(ops.FillNa)
 @fmt.register(ops.DropNa)
-def _fill_na(op, table, **kwargs):
-    name = f"{op.__class__.__name__}[{table}]\n"
+def _fill_na(op, parent, **kwargs):
+    name = f"{op.__class__.__name__}[{parent}]\n"
     return name + render_fields(kwargs, 1)
 
 
-@fmt.register(ops.Aggregation)
-def _aggregation(op, table, **kwargs):
-    name = f"{op.__class__.__name__}[{table}]\n"
-    kwargs["by"] = {node.name: r for node, r in zip(op.by, kwargs["by"])}
-    kwargs["metrics"] = {node.name: r for node, r in zip(op.metrics, kwargs["metrics"])}
+@fmt.register(ops.Aggregate)
+def _aggregate(op, parent, **kwargs):
+    name = f"{op.__class__.__name__}[{parent}]\n"
     return name + render_fields(kwargs, 1)
 
 
-@fmt.register(ops.Selection)
-def _selection(op, table, selections, **kwargs):
-    name = f"{op.__class__.__name__}[{table}]\n"
+@fmt.register(ops.Project)
+def _project(op, parent, values):
+    name = f"{op.__class__.__name__}[{parent}]\n"
 
-    # special handling required to support both relation and value selections
-    rels, values = [], {}
-    for node, rendered in zip(op.selections, selections):
-        if isinstance(node, ops.Relation):
-            rels.append(rendered)
-        else:
-            values[node.name] = f"{rendered}{type_info(node.dtype)}"
+    fields = {}
+    for k, v in values.items():
+        node = op.values[k]
+        fields[f"{k}:"] = f"{v}{type_info(node.dtype)}"
 
-    segments = filter(None, [render(rels), render(values)])
-    kwargs["selections"] = "\n".join(segments)
-
-    return name + render_fields(kwargs, 1)
+    return name + render_schema(fields, 1)
 
 
-@fmt.register(ops.SetOp)
+@fmt.register(ops.DummyTable)
+def _dummy_table(op, values):
+    name = op.__class__.__name__ + "\n"
+
+    fields = {}
+    for k, v in values.items():
+        node = op.values[k]
+        fields[f"{k}:"] = f"{v}{type_info(node.dtype)}"
+
+    return name + render_schema(fields, 1)
+
+
+@fmt.register(ops.Filter)
+def _project(op, parent, predicates):
+    name = f"{op.__class__.__name__}[{parent}]\n"
+    return name + render(predicates, 1)
+
+
+@fmt.register(ops.Sort)
+def _sort(op, parent, keys):
+    name = f"{op.__class__.__name__}[{parent}]\n"
+    return name + render(keys, 1)
+
+
+@fmt.register(ops.Set)
 def _set_op(op, left, right, distinct):
     args = [str(left), str(right)]
     if op.distinct is not None:
@@ -274,7 +294,7 @@ def _set_op(op, left, right, distinct):
     return f"{op.__class__.__name__}[{', '.join(args)}]"
 
 
-@fmt.register(ops.Join)
+@fmt.register(ops.JoinChain)
 def _join(op, left, right, predicates, **kwargs):
     args = [str(left), str(right)]
     name = f"{op.__class__.__name__}[{', '.join(args)}]"
@@ -291,30 +311,48 @@ def _join(op, left, right, predicates, **kwargs):
     return f"{top}\n{fields}" if fields else top
 
 
+@fmt.register(ops.JoinLink)
+def _join(op, how, table, predicates):
+    args = [str(how), str(table)]
+    name = f"{op.__class__.__name__}[{', '.join(args)}]"
+    return f"{name}\n{render(predicates, 1)}"
+
+
+@fmt.register(ops.JoinChain)
+def _join_project(op, first, rest, **kwargs):
+    name = f"{op.__class__.__name__}[{first}]\n"
+    return name + render(rest, 1) + "\n" + render_fields(kwargs, 1)
+
+
 @fmt.register(ops.Limit)
 @fmt.register(ops.Sample)
-def _limit(op, table, **kwargs):
+def _limit(op, parent, **kwargs):
     params = inline_args(kwargs)
-    return f"{op.__class__.__name__}[{table}, {params}]"
+    return f"{op.__class__.__name__}[{parent}, {params}]"
 
 
 @fmt.register(ops.SelfReference)
 @fmt.register(ops.Distinct)
-def _self_reference(op, table, **kwargs):
-    return f"{op.__class__.__name__}[{table}]"
+def _self_reference(op, parent, **kwargs):
+    return f"{op.__class__.__name__}[{parent}]"
 
 
 @fmt.register(ops.Literal)
 def _literal(op, value, **kwargs):
     if op.dtype.is_interval():
         return f"{value!r} {op.dtype.unit.short}"
+    elif op.dtype.is_array():
+        return f"{list(value)!r}"
     else:
         return f"{value!r}"
 
 
-@fmt.register(ops.TableColumn)
-def _table_column(op, table, name):
-    return f"{table}.{name}"
+@fmt.register(ops.Field)
+def _relation_field(op, rel, name):
+    if name.isidentifier():
+        return f"{rel}.{name}"
+    else:
+        return f"{rel}[{name!r}]"
 
 
 @fmt.register(ops.Value)

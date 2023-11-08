@@ -36,8 +36,7 @@ r1 := SQLStringView[r0]: foo
     carrier      string
     avg_arrdelay float64
 
-Selection[r1]
-  selections:
-    carrier:      r1.carrier
-    avg_arrdelay: Round(r1.avg_arrdelay, digits=1)
-    island:       Lowercase(r1.carrier)
+Project[r1]
+  carrier:      r1.carrier
+  avg_arrdelay: Round(r1.avg_arrdelay, digits=1)
+  island:       Lowercase(r1.carrier)

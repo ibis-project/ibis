@@ -4,7 +4,7 @@ from public import public
 
 import ibis.expr.datatypes as dt
 from ibis.expr.operations.core import Binary, Unary, Value
-from ibis.expr.operations.reductions import Reduction
+from ibis.expr.operations.reductions import Filterable, Reduction
 
 
 @public
@@ -181,8 +181,10 @@ class GeoTouches(GeoSpatialBinOp):
 
 
 @public
-class GeoUnaryUnion(Reduction, GeoSpatialUnOp):
+class GeoUnaryUnion(Filterable, Reduction):
     """Returns the pointwise union of the geometries in the column."""
+
+    arg: Value[dt.GeoSpatial]
 
     dtype = dt.geometry
 

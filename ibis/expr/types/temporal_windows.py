@@ -10,27 +10,10 @@ import ibis.expr.operations as ops
 import ibis.expr.types as ir
 from ibis.common.deferred import Deferred
 from ibis.selectors import Selector
+from ibis.expr.types.relations import bind
 
 if TYPE_CHECKING:
     from ibis.expr.types import Table
-
-
-def _get_window_by_key(table, value):
-    if isinstance(value, str):
-        return table[value]
-    elif isinstance(value, Deferred):
-        return value.resolve(table)
-    elif isinstance(value, Selector):
-        matches = value.expand(table)
-        if len(matches) != 1:
-            raise com.IbisInputError(
-                "Multiple columns match the selector; only 1 is expected"
-            )
-        return next(iter(matches))
-    elif isinstance(value, ir.Expr):
-        return an.sub_immediate_parents(value.op(), table.op()).to_expr()
-    else:
-        return value
 
 
 @public
@@ -39,7 +22,7 @@ class WindowedTable:
 
     def __init__(self, table: ir.Table, time_col: ir.Value):
         self.table = table
-        self.time_col = _get_window_by_key(table, time_col)
+        self.time_col = next(bind(table, time_col))
 
         if self.time_col is None:
             raise com.IbisInputError(
@@ -68,9 +51,10 @@ class WindowedTable:
         Table
             Table expression after applying tumbling table-valued function.
         """
+        time_col = next(bind(self.table, self.time_col))
         return ops.TumbleWindowingTVF(
             table=self.table,
-            time_col=_get_window_by_key(self.table, self.time_col),
+            time_col=time_col,
             window_size=window_size,
             offset=offset,
         ).to_expr()
@@ -106,9 +90,10 @@ class WindowedTable:
         Table
             Table expression after applying hopping table-valued function.
         """
+        time_col = next(bind(self.table, self.time_col))
         return ops.HopWindowingTVF(
             table=self.table,
-            time_col=_get_window_by_key(self.table, self.time_col),
+            time_col=time_col,
             window_size=window_size,
             window_slide=window_slide,
             offset=offset,
@@ -143,9 +128,10 @@ class WindowedTable:
         Table
             Table expression after applying cumulate table-valued function.
         """
+        time_col = next(bind(self.table, self.time_col))
         return ops.CumulateWindowingTVF(
             table=self.table,
-            time_col=_get_window_by_key(self.table, self.time_col),
+            time_col=time_col,
             window_size=window_size,
             window_step=window_step,
             offset=offset,

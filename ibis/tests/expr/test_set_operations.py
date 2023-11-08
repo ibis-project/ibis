@@ -51,13 +51,13 @@ def test_operation_supports_schemas_with_different_field_order(method):
 
     assert u1.schema() == a.schema()
 
-    u1 = u1.op().table
+    u1 = u1.op().parent
     assert u1.left == a.op()
     assert u1.right == b.op()
 
     # a selection is added to ensure that the field order of the right table
     # matches the field order of the left table
-    u2 = u2.op().table
+    u2 = u2.op().parent
     assert u2.schema == a.schema()
     assert u2.left == a.op()
 

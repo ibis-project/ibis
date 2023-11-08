@@ -1,6 +1,10 @@
 import ibis
 
 
+employee = ibis.table(
+    name="employee",
+    schema={"first_name": "string", "last_name": "string", "id": "int64"},
+)
 call = ibis.table(
     name="call",
     schema={
@@ -11,24 +15,18 @@ call = ibis.table(
         "call_attempts": "int64",
     },
 )
-employee = ibis.table(
-    name="employee",
-    schema={"first_name": "string", "last_name": "string", "id": "int64"},
-)
-proj = employee.inner_join(call, employee.id == call.employee_id).filter(
-    employee.id < 5
-)
+joinchain = employee.inner_join(call, employee.id == call.employee_id)
+f = joinchain.filter(joinchain.id < 5)
+s = f.order_by(f.id.desc())
 
-result = proj.select(
-    [
-        proj.first_name,
-        proj.last_name,
-        proj.id,
-        call.start_time,
-        call.end_time,
-        call.employee_id,
-        call.call_outcome_id,
-        call.call_attempts,
-        proj.first_name.name("first"),
-    ]
-).order_by(proj.id.desc())
+result = s.select(
+    s.first_name,
+    s.last_name,
+    s.id,
+    s.start_time,
+    s.end_time,
+    s.employee_id,
+    s.call_outcome_id,
+    s.call_attempts,
+    s.first_name.name("first"),
+)
