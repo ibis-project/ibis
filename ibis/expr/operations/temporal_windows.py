@@ -5,6 +5,7 @@ from typing import Optional
 from public import public
 
 import ibis.expr.datatypes as dt
+from ibis.common.annotations import attribute
 from ibis.expr.operations.core import Column, Scalar  # noqa: TCH001
 from ibis.expr.operations.relations import Relation
 from ibis.expr.schema import Schema
@@ -14,8 +15,13 @@ from ibis.expr.schema import Schema
 class WindowingTVF(Relation):
     """Generic windowing table-valued function."""
 
+    # TODO(kszucs): rename to `parent`
     table: Relation
     time_col: Column[dt.Timestamp]  # enforce timestamp column type here
+
+    @attribute
+    def values(self):
+        return self.table.fields
 
     @property
     def schema(self):
@@ -26,6 +32,8 @@ class WindowingTVF(Relation):
         # of original relation as well as additional 3 columns named “window_start”,
         # “window_end”, “window_time” to indicate the assigned window
 
+        # TODO(kszucs): this looks like an implementation detail leaked from the
+        # flink backend
         names.extend(["window_start", "window_end", "window_time"])
         # window_start, window_end, window_time have type TIMESTAMP(3) in Flink
         types.extend([dt.timestamp(scale=3)] * 3)

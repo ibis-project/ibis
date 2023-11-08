@@ -129,12 +129,9 @@ class WindowFunction(Value):
     shape = ds.columnar
 
     def __init__(self, func, frame):
-        from ibis.expr.analysis import shares_all_roots
-
-        if not shares_all_roots(func, frame):
+        if func.relations and frame.table not in func.relations:
             raise com.RelationError(
-                "Window function expressions doesn't fully originate from the "
-                "dependencies of the window expression."
+                "The reduction has different parent relation than the window"
             )
         super().__init__(func=func, frame=frame)
 
