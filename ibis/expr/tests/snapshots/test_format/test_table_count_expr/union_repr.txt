@@ -8,9 +8,8 @@ r1 := UnboundTable: t2
 
 r2 := Union[r0, r1, distinct=False]
 
-r3 := Selection[r2]
-  selections:
-    a: r2.a
-    b: r2.b
+r3 := Project[r2]
+  a: r2.a
+  b: r2.b
 
 CountStar(): CountStar(r3)
