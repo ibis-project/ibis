@@ -10,6 +10,7 @@ from public import public
 
 import ibis
 import ibis.expr.datatypes as dt
+import ibis.expr.newrels as nr
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
 from ibis import util
@@ -191,6 +192,7 @@ def fmt(op, **kwargs):
     raise NotImplementedError(f"no pretty printer for {type(op)}")
 
 
+@fmt.register(nr.Relation)
 @fmt.register(ops.Relation)
 @fmt.register(ops.DummyTable)
 @fmt.register(ops.WindowingTVF)
