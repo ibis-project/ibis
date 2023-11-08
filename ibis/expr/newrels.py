@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from abc import abstractmethod
-from functools import partial
 from typing import Annotated, Any
 
 import ibis.expr.datashape as ds
@@ -9,9 +8,10 @@ import ibis.expr.datatypes as dt
 import ibis.expr.types as ir
 from ibis.common.annotations import attribute
 from ibis.common.collections import FrozenDict  # noqa: TCH001
-from ibis.common.deferred import Call, Deferred, _, deferred, var
+from ibis.common.deferred import Deferred, Item, deferred, var
 from ibis.common.patterns import (
-    InstanceOf,  # noqa: TCH001
+    Check,
+    InstanceOf,
     pattern,
     replace,
 )
@@ -144,7 +144,9 @@ class TableExpr(Expr):
         values = bind(self, (args, kwargs))
         values = unwrap_aliases(values)
         # TODO(kszucs): windowization of redictions should happen here
-        node = Project(self, values).replace(subsequent_projection)
+        node = Project(self, values).replace(
+            complete_reprojection | subsequent_projections
+        )
         return node.to_expr()
 
     def where(self, *predicates):
@@ -216,12 +218,20 @@ x = var("x")
 y = var("y")
 values = var("values")
 
-Map = partial(Call, map)
+
+@replace(x @ p.Project(y @ p.Relation) & Check(x.schema == y.schema))
+def complete_reprojection(x, y, **kwargs):
+    # TODO(kszucs): this could be moved to the pattern itself but not sure how
+    # to express it, especially in a shorter way then the following check
+    for name in x.schema:
+        if x.values[name] != Field(y, name):
+            return x
+    return y
 
 
 @replace(p.Project(x @ p.Project(y), values))
-def subsequent_projection(_, x, y, values):
-    rule = p.Field(x) >> (lambda _: x.values[_.name])
+def subsequent_projections(x, y, values, **kwargs):
+    rule = p.Field(x, name) >> Item(x.values, name)
     vals = {k: v.replace(rule) for k, v in values.items()}
     return Project(y, vals)
 

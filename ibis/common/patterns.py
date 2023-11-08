@@ -1651,3 +1651,4 @@ Eq = EqualTo
 In = IsIn
 If = Check
 Some = SomeOf
+Each = SequenceOf

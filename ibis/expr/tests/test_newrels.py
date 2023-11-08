@@ -62,7 +62,7 @@ def test_select_fields():
 
 
 def test_select_relation():
-    proj = t.select(t)
+    proj = t.select(t, other=t.int_col + 1)
     expected = Project(
         parent=t,
         values={
@@ -70,10 +70,10 @@ def test_select_relation():
             "int_col": t.int_col,
             "float_col": t.float_col,
             "string_col": t.string_col,
+            "other": t.int_col + 1,
         },
     )
     assert proj.op() == expected
-    assert proj.op().schema == t.schema()
 
 
 def test_select_values():
@@ -91,6 +91,12 @@ def test_select_values():
     assert proj.op().schema == Schema(
         {"1": dt.int8, "float_col": dt.float64, "length": dt.int32}
     )
+
+
+def test_select_full_reprojection():
+    t1 = t.select(t)
+    expected = t.op()
+    assert t1.op() == expected
 
 
 def test_select_across_relations():
