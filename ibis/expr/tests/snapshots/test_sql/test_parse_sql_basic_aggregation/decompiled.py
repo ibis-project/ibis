@@ -12,6 +12,6 @@ call = ibis.table(
     },
 )
 
-result = call.group_by(call.employee_id).aggregate(
-    call.call_attempts.sum().name("attempts")
+result = call.aggregate(
+    [call.call_attempts.sum().name("attempts")], by=[call.employee_id]
 )

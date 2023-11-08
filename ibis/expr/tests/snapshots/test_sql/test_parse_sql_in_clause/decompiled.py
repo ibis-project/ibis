@@ -5,8 +5,7 @@ employee = ibis.table(
     name="employee",
     schema={"first_name": "string", "last_name": "string", "id": "int64"},
 )
-
-result = employee.select(employee.first_name).filter(
+f = employee.filter(
     employee.first_name.isin(
         (
             ibis.literal("Graham"),
@@ -17,3 +16,5 @@ result = employee.select(employee.first_name).filter(
         )
     )
 )
+
+result = f.select(f.first_name)

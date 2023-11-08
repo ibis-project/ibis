@@ -7,10 +7,12 @@ from public import public
 
 import ibis
 import ibis.common.exceptions as com
+import ibis.expr.builders as bl
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
-from ibis.common.deferred import Deferred
+from ibis.common.deferred import Deferred, _, deferrable
 from ibis.common.grounds import Singleton
+from ibis.expr.rewrites import rewrite_window_input
 from ibis.expr.types.core import Expr, _binop, _FixedTextJupyterMixin
 from ibis.util import deprecated
 
@@ -18,7 +20,6 @@ if TYPE_CHECKING:
     import pandas as pd
     import pyarrow as pa
 
-    import ibis.expr.builders as bl
     import ibis.expr.types as ir
     from ibis.formats.pyarrow import PyArrowData
 
@@ -571,7 +572,7 @@ class Value(Expr):
         if isinstance(values, ArrayValue):
             return ops.ArrayContains(values, self).to_expr()
         elif isinstance(values, Column):
-            return ops.InColumn(self, values).to_expr()
+            return ops.InSubquery(values.as_table(), needle=self).to_expr()
         else:
             return ops.InValues(self, values).to_expr()
 
@@ -721,11 +722,7 @@ class Value(Expr):
             A window function expression
 
         """
-        import ibis.expr.analysis as an
-        import ibis.expr.builders as bl
-        from ibis import _
-        from ibis.common.deferred import Call
-
+        node = self.op()
         if window is None:
             window = ibis.window(
                 rows=rows,
@@ -733,23 +730,30 @@ class Value(Expr):
                 group_by=group_by,
                 order_by=order_by,
             )
+        elif not isinstance(window, bl.WindowBuilder):
+            raise com.IbisTypeError("Unexpected window type: {window!r}")
 
+        if len(node.relations) == 0:
+            table = None
+        elif len(node.relations) == 1:
+            (table,) = node.relations
+        else:
+            raise com.RelationError("Cannot use window with multiple tables")
+
+        @deferrable
         def bind(table):
             frame = window.bind(table)
-            expr = an.windowize_function(self, frame)
-            if expr.equals(self):
+            winfunc = rewrite_window_input(node, frame)
+            if winfunc == node:
                 raise com.IbisTypeError(
                     "No reduction or analytic function found to construct a window expression"
                 )
-            return expr
+            return winfunc.to_expr()
 
-        if isinstance(window, bl.WindowBuilder):
-            if table := an.find_first_base_table(self.op()):
-                return bind(table)
-            else:
-                return Deferred(Call(bind, _))
-        else:
-            raise com.IbisTypeError("Unexpected window type: {window!r}")
+        try:
+            return bind(table)
+        except com.IbisInputError:
+            return bind(_)
 
     def isnull(self) -> ir.BooleanValue:
         """Return whether this expression is NULL.
@@ -1116,9 +1120,13 @@ class Value(Expr):
         return super().__hash__()
 
     def __eq__(self, other: Value) -> ir.BooleanValue:
+        if other is None:
+            return _binop(ops.IdenticalTo, self, other)
         return _binop(ops.Equals, self, other)
 
     def __ne__(self, other: Value) -> ir.BooleanValue:
+        if other is None:
+            return ~self.__eq__(other)
         return _binop(ops.NotEquals, self, other)
 
     def __ge__(self, other: Value) -> ir.BooleanValue:
@@ -1158,21 +1166,19 @@ class Value(Expr):
         >>> expr.equals(expected)
         True
         """
-        from ibis.expr.analysis import find_immediate_parent_tables
+        parents = self.op().relations
+        values = {self.get_name(): self}
 
-        roots = find_immediate_parent_tables(self.op())
-        if len(roots) > 1:
+        if len(parents) == 0:
+            return ops.DummyTable(values).to_expr()
+        elif len(parents) == 1:
+            (parent,) = parents
+            return parent.to_expr().select(self)
+        else:
             raise com.RelationError(
-                f"Cannot convert {type(self)} expression "
-                "involving multiple base table references "
-                "to a projection"
+                f"Cannot convert {type(self)} expression involving multiple "
+                "base table references to a projection"
             )
-
-        if roots:
-            return roots[0].to_expr().select(self)
-
-        # no child table to select from
-        return ops.DummyTable(values=(self,)).to_expr()
 
     def to_pandas(self, **kwargs) -> pd.Series:
         """Convert a column expression to a pandas Series or scalar object.
@@ -1254,20 +1260,19 @@ class Scalar(Value):
         >>> isinstance(lit, ir.Table)
         True
         """
-        from ibis.expr.analysis import find_first_base_table
+        parents = self.op().relations
 
-        op = self.op()
-        table = find_first_base_table(op)
-        if table is not None:
-            return table.to_expr().aggregate(**{self.get_name(): self})
+        if len(parents) == 0:
+            return ops.DummyTable({self.get_name(): self}).to_expr()
+        elif len(parents) == 1:
+            (parent,) = parents
+            return parent.to_expr().aggregate(self)
         else:
-            if isinstance(op, ops.Alias):
-                value = op
-                assert value.name == self.get_name()
-            else:
-                value = ops.Alias(op, self.get_name())
-
-            return ops.DummyTable(values=(value,)).to_expr()
+            raise com.RelationError(
+                f"The scalar expression {self} cannot be converted to a "
+                "table expression because it involves multiple base table "
+                "references"
+            )
 
     def __deferred_repr__(self):
         return f"<scalar[{self.type()}]>"
@@ -1323,13 +1328,23 @@ class Column(Value, _FixedTextJupyterMixin):
         return PandasData.convert_column(df.loc[:, column], self.type())
 
     def _bind_reduction_filter(self, where):
-        import ibis.expr.analysis as an
-
-        if where is None or not isinstance(where, Deferred):
+        node = self.op()
+        if isinstance(where, Deferred):
+            if len(node.relations) == 0:
+                raise com.IbisInputError(
+                    "Unable to bind deferred expression to a table because "
+                    "the expression doesn't depend on any tables"
+                )
+            elif len(node.relations) == 1:
+                (table,) = node.relations
+                return where.resolve(table)
+            else:
+                raise com.RelationError(
+                    "Cannot bind deferred expression to a table because the "
+                    "expression depends on multiple tables"
+                )
+        else:
             return where
-
-        table = an.find_first_base_table(self.op()).to_expr()
-        return where.resolve(table)
 
     def __deferred_repr__(self):
         return f"<column[{self.type()}]>"
@@ -1831,16 +1846,9 @@ class Column(Value, _FixedTextJupyterMixin):
         │ d      │           3 │
         └────────┴─────────────┘
         """
-        from ibis.expr.analysis import find_first_base_table
-
         name = self.get_name()
-        return (
-            find_first_base_table(self.op())
-            .to_expr()
-            .select(self)
-            .group_by(name)
-            .agg(**{f"{name}_count": lambda t: t.count()})
-        )
+        metric = _.count().name(f"{name}_count")
+        return self.as_table().group_by(name).aggregate(metric)
 
     def first(self, where: ir.BooleanValue | None = None) -> Value:
         """Return the first value of a column.
@@ -1923,13 +1931,7 @@ class Column(Value, _FixedTextJupyterMixin):
         │      3 │     5 │
         └────────┴───────┘
         """
-        import ibis.expr.analysis as an
-
-        return (
-            ibis.rank()
-            .over(order_by=self)
-            .resolve(an.find_first_base_table(self.op()).to_expr())
-        )
+        return ibis.rank().over(order_by=self)
 
     def dense_rank(self) -> ir.IntegerColumn:
         """Position of first element within each group of equal values.
@@ -1962,33 +1964,15 @@ class Column(Value, _FixedTextJupyterMixin):
         │      3 │     2 │
         └────────┴───────┘
         """
-        import ibis.expr.analysis as an
-
-        return (
-            ibis.dense_rank()
-            .over(order_by=self)
-            .resolve(an.find_first_base_table(self.op()).to_expr())
-        )
+        return ibis.dense_rank().over(order_by=self)
 
     def percent_rank(self) -> Column:
         """Return the relative rank of the values in the column."""
-        import ibis.expr.analysis as an
-
-        return (
-            ibis.percent_rank()
-            .over(order_by=self)
-            .resolve(an.find_first_base_table(self.op()).to_expr())
-        )
+        return ibis.percent_rank().over(order_by=self)
 
     def cume_dist(self) -> Column:
         """Return the cumulative distribution over a window."""
-        import ibis.expr.analysis as an
-
-        return (
-            ibis.cume_dist()
-            .over(order_by=self)
-            .resolve(an.find_first_base_table(self.op()).to_expr())
-        )
+        return ibis.cume_dist().over(order_by=self)
 
     def ntile(self, buckets: int | ir.IntegerValue) -> ir.IntegerColumn:
         """Return the integer number of a partitioning of the column values.
@@ -1998,13 +1982,7 @@ class Column(Value, _FixedTextJupyterMixin):
         buckets
             Number of buckets to partition into
         """
-        import ibis.expr.analysis as an
-
-        return (
-            ibis.ntile(buckets)
-            .over(order_by=self)
-            .resolve(an.find_first_base_table(self.op()).to_expr())
-        )
+        return ibis.ntile(buckets).over(order_by=self)
 
     def cummin(self, *, where=None, group_by=None, order_by=None) -> Column:
         """Return the cumulative min over a window."""

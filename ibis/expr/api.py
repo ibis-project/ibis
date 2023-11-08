@@ -5,6 +5,7 @@ from __future__ import annotations
 import builtins
 import datetime
 import functools
+import itertools
 import numbers
 import operator
 from collections import Counter
@@ -303,6 +304,9 @@ def schema(
     return sch.Schema.from_tuples(zip(names, types))
 
 
+_table_names = (f"unbound_table_{i:d}" for i in itertools.count())
+
+
 def table(
     schema: SupportsSchema | None = None,
     name: str | None = None,
@@ -333,9 +337,12 @@ def table(
       a int64
       b string
     """
-    if isinstance(schema, type) and name is None:
-        name = schema.__name__
-    return ops.UnboundTable(schema=schema, name=name).to_expr()
+    if name is None:
+        if isinstance(schema, type):
+            name = schema.__name__
+        else:
+            name = next(_table_names)
+    return ops.UnboundTable(name=name, schema=schema).to_expr()
 
 
 @lazy_singledispatch

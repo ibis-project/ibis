@@ -502,8 +502,7 @@ def test_window_analysis_combine_preserves_existing_window():
     )
     w = ibis.cumulative_window(order_by=t.one)
     mut = t.group_by(t.three).mutate(four=t.two.sum().over(w))
-
-    assert mut.op().selections[1].arg.frame.start is None
+    assert mut.op().values["four"].frame.start is None
 
 
 def test_window_analysis_auto_windowize_bug():
@@ -552,19 +551,18 @@ def test_group_by_with_window_function_preserves_range(alltypes):
     w = ibis.cumulative_window(order_by=t.one)
     expr = t.group_by(t.three).mutate(four=t.two.sum().over(w))
 
-    expected = ops.Selection(
-        t,
-        [
-            t,
-            ops.Alias(
-                ops.WindowFunction(
-                    func=ops.Sum(t.two),
-                    frame=ops.RowsWindowFrame(
-                        table=t, end=0, group_by=[t.three], order_by=[t.one]
-                    ),
+    expected = ops.Project(
+        parent=t,
+        values={
+            "one": t.one,
+            "two": t.two,
+            "three": t.three,
+            "four": ops.WindowFunction(
+                func=ops.Sum(t.two),
+                frame=ops.RowsWindowFrame(
+                    table=t, end=0, group_by=[t.three], order_by=[t.one]
                 ),
-                name="four",
             ),
-        ],
+        },
     )
     assert expr.op() == expected
