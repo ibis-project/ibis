@@ -40,9 +40,10 @@ def test_mutate_with_analytic_functions(alltypes):
 
     exprs = [expr.name("e%d" % i) for i, expr in enumerate(exprs)]
     proj = g.mutate(exprs)
-    for field in proj.op().selections[1:]:
-        assert isinstance(field, ops.Alias)
-        assert isinstance(field.arg, ops.WindowFunction)
+
+    values = list(proj.op().values.values())
+    for field in values[len(t.schema()) :]:
+        assert isinstance(field, ops.WindowFunction)
 
 
 def test_value_over_api(alltypes):
@@ -70,5 +71,5 @@ def test_conflicting_window_boundaries(alltypes):
 def test_rank_followed_by_over_call_merge_frames(alltypes):
     t = alltypes
     expr1 = t.f.percent_rank().over(ibis.window(group_by=t.f.notnull()))
-    expr2 = ibis.percent_rank().over(group_by=t.f.notnull(), order_by=t.f).resolve(t)
+    expr2 = ibis.percent_rank().over(group_by=t.f.notnull(), order_by=t.f)
     assert expr1.equals(expr2)

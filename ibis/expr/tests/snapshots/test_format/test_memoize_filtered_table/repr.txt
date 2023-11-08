@@ -3,16 +3,16 @@ r0 := UnboundTable: airlines
   origin   string
   arrdelay int32
 
-r1 := Aggregation[r0]
+r1 := Filter[r0]
+  InValues(value=r0.dest, options=['ORD', 'JFK', 'SFO'])
+
+r2 := Aggregate[r1]
+  groups:
+    dest: r1.dest
   metrics:
-    Mean(arrdelay): Mean(r0.arrdelay)
-  by:
-    dest: r0.dest
-  predicates:
-    InValues(value=r0.dest, options=['ORD', 'JFK', 'SFO'])
+    Mean(arrdelay): Mean(r1.arrdelay)
 
-r2 := Selection[r1]
-  sort_keys:
-    desc r1.Mean(arrdelay)
+r3 := Sort[r2]
+  desc r2['Mean(arrdelay)']
 
-Limit[r2, n=10]
+Limit[r3, n=10]
