@@ -15,8 +15,8 @@ call = ibis.table(
         "call_attempts": "int64",
     },
 )
-leftjoin = employee.left_join(call, employee.id == call.employee_id)
+joinchain = employee.left_join(call, employee.id == call.employee_id)
 
-result = leftjoin.group_by(leftjoin.id).aggregate(
-    call.call_attempts.sum().name("attempts")
+result = joinchain.aggregate(
+    [joinchain.call_attempts.sum().name("attempts")], by=[joinchain.id]
 )

@@ -28,6 +28,7 @@ _is_ascending = {
 class SortKey(Value):
     """A sort operation."""
 
+    # TODO(kszucs): rename expr to arg or something else except expr
     expr: Value
     ascending: bool = True
 

@@ -4,27 +4,26 @@ r0 := UnboundTable: purchases
   user   int64
   amount float64
 
-r1 := Aggregation[r0]
-  metrics:
-    total: Sum(r0.amount)
-  by:
+r1 := Aggregate[r0]
+  groups:
     region: r0.region
     kind:   r0.kind
-  predicates:
-    r0.kind == 'foo'
-
-r2 := Aggregation[r0]
   metrics:
     total: Sum(r0.amount)
-  by:
-    region: r0.region
-    kind:   r0.kind
-  predicates:
-    r0.kind == 'bar'
 
-r3 := InnerJoin[r1, r2] r1.region == r2.region
+r2 := Filter[r1]
+  r1.kind == 'foo'
 
-Selection[r3]
-  selections:
-    r1
-    right_total: r2.total
+r3 := Filter[r1]
+  r1.kind == 'bar'
+
+r4 := SelfReference[r3]
+
+JoinChain[r2]
+  JoinLink[inner, r4]
+    r2.region == r4.region
+  values:
+    region:      r2.region
+    kind:        r2.kind
+    total:       r2.total
+    right_total: r4.total

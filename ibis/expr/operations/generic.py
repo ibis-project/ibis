@@ -1,13 +1,12 @@
 from __future__ import annotations
 
 import itertools
-from typing import Annotated, Any, Optional, Union
+from typing import Annotated, Any, Optional
 from typing import Literal as LiteralType
 
 from public import public
 from typing_extensions import TypeVar
 
-import ibis.common.exceptions as com
 import ibis.expr.datashape as ds
 import ibis.expr.datatypes as dt
 import ibis.expr.rules as rlz
@@ -21,33 +20,6 @@ from ibis.expr.operations.relations import Relation  # noqa: TCH001
 
 
 @public
-class TableColumn(Value, Named):
-    """Selects a column from a `Table`."""
-
-    table: Relation
-    name: Union[str, int]
-
-    shape = ds.columnar
-
-    def __init__(self, table, name):
-        if isinstance(name, int):
-            name = table.schema.name_at_position(name)
-
-        if name not in table.schema:
-            columns_formatted = ", ".join(map(repr, table.schema.names))
-            raise com.IbisTypeError(
-                f"Column {name!r} is not found in table. "
-                f"Existing columns: {columns_formatted}."
-            )
-
-        super().__init__(table=table, name=name)
-
-    @property
-    def dtype(self):
-        return self.table.schema[self.name]
-
-
-@public
 class RowID(Value, Named):
     """The row number (an autonumeric) of the returned result."""
 
@@ -57,22 +29,9 @@ class RowID(Value, Named):
     shape = ds.columnar
     dtype = dt.int64
 
-
-@public
-class TableArrayView(Value, Named):
-    """Helper operation class for creating scalar subqueries."""
-
-    table: Relation
-
-    shape = ds.columnar
-
-    @property
-    def dtype(self):
-        return self.table.schema[self.name]
-
-    @property
-    def name(self):
-        return self.table.schema.names[0]
+    @attribute
+    def relations(self):
+        return frozenset({self.table})
 
 
 @public
