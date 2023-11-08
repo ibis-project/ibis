@@ -5,16 +5,12 @@ import pytest
 import ibis
 import ibis.common.exceptions as com
 import ibis.expr.operations as ops
-from ibis.tests.util import assert_equal
+from ibis.expr.rewrites import simplify
 
 # Place to collect esoteric expression analysis bugs and tests
 
 
-# TODO(kszucs): not directly using an analysis function anymore, move to a
-# more appropriate test module
 def test_rewrite_join_projection_without_other_ops(con):
-    # See #790, predicate pushdown in joins not supported
-
     # Star schema with fact table
     table = con.table("star1")
     table2 = con.table("star2")
@@ -32,10 +28,32 @@ def test_rewrite_join_projection_without_other_ops(con):
     view = j2[[filtered, table2["value1"], table3["value2"]]]
 
     # Construct the thing we expect to obtain
-    ex_pred2 = table["bar_id"] == table3["bar_id"]
-    ex_expr = table.left_join(table2, [pred1]).inner_join(table3, [ex_pred2])
-
-    assert view.op().table != ex_expr.op()
+    table2_ref = j2.op().rest[0].table.to_expr()
+    table3_ref = j2.op().rest[1].table.to_expr()
+    expected = ops.JoinChain(
+        first=filtered,
+        rest=[
+            ops.JoinLink(
+                how="left",
+                table=table2_ref,
+                predicates=[filtered["foo_id"] == table2_ref["foo_id"]],
+            ),
+            ops.JoinLink(
+                how="inner",
+                table=table3_ref,
+                predicates=[filtered["bar_id"] == table3_ref["bar_id"]],
+            ),
+        ],
+        values={
+            "c": filtered.c,
+            "f": filtered.f,
+            "foo_id": filtered.foo_id,
+            "bar_id": filtered.bar_id,
+            "value1": table2_ref.value1,
+            "value2": table3_ref.value2,
+        },
+    )
+    assert view.op() == expected
 
 
 def test_multiple_join_deeper_reference():
@@ -86,8 +104,8 @@ def test_filter_on_projected_field(con):
 
     # Now then! Predicate pushdown here is inappropriate, so we check that
     # it didn't occur.
-    assert isinstance(result.op(), ops.Selection)
-    assert result.op().table == tpch.op()
+    assert isinstance(result.op(), ops.Filter)
+    assert result.op().parent == tpch.op()
 
 
 def test_join_predicate_from_derived_raises():
@@ -101,18 +119,18 @@ def test_join_predicate_from_derived_raises():
     filter_pred = table["f"] > 0
     table3 = table[filter_pred]
 
-    with pytest.raises(com.ExpressionError):
+    with pytest.raises(com.IntegrityError, match="they belong to another relation"):
+        # TODO(kszucs): could be smarter actually and rewrite the predicate
+        # to contain the conditions from the filter
         table.inner_join(table2, [table3["g"] == table2["key"]])
 
 
 def test_bad_join_predicate_raises():
     table = ibis.table([("c", "int32"), ("f", "double"), ("g", "string")], "foo_table")
-
     table2 = ibis.table([("key", "string"), ("value", "double")], "bar_table")
-
     table3 = ibis.table([("key", "string"), ("value", "double")], "baz_table")
 
-    with pytest.raises(com.ExpressionError):
+    with pytest.raises(com.IntegrityError):
         table.inner_join(table2, [table["g"] == table3["key"]])
 
 
@@ -130,9 +148,22 @@ def test_filter_self_join():
 
     metric = purchases.amount.sum().name("total")
     agged = purchases.group_by(["region", "kind"]).aggregate(metric)
+    assert agged.op() == ops.Aggregate(
+        parent=purchases,
+        groups={"region": purchases.region, "kind": purchases.kind},
+        metrics={"total": purchases.amount.sum()},
+    )
 
     left = agged[agged.kind == "foo"]
     right = agged[agged.kind == "bar"]
+    assert left.op() == ops.Filter(
+        parent=agged,
+        predicates=[agged.kind == "foo"],
+    )
+    assert right.op() == ops.Filter(
+        parent=agged,
+        predicates=[agged.kind == "bar"],
+    )
 
     cond = left.region == right.region
     joined = left.join(right, cond)
@@ -141,11 +172,18 @@ def test_filter_self_join():
     what = [left.region, metric]
     projected = joined.select(what)
 
-    proj_exprs = projected.op().selections
-
-    # proj exprs unaffected by analysis
-    assert_equal(proj_exprs[0], left.region.op())
-    assert_equal(proj_exprs[1], metric.op())
+    right_ = joined.op().rest[0].table.to_expr()
+    join = ops.JoinChain(
+        first=left,
+        rest=[
+            ops.JoinLink("inner", right_, [left.region == right_.region]),
+        ],
+        values={
+            "region": left.region,
+            "diff": left.total - right_.total,
+        },
+    )
+    assert projected.op() == join
 
 
 def test_is_ancestor_analytic():
@@ -169,20 +207,17 @@ def test_mutation_fusion_no_overwrite():
     result = result.mutate(col1=t["col"] + 1)
     result = result.mutate(col2=t["col"] + 2)
     result = result.mutate(col3=t["col"] + 3)
-    result = result.op()
 
-    first_selection = result
-
-    assert len(result.selections) == 4
-
-    col1 = (t["col"] + 1).name("col1")
-    assert first_selection.selections[1] == col1.op()
-
-    col2 = (t["col"] + 2).name("col2")
-    assert first_selection.selections[2] == col2.op()
-
-    col3 = (t["col"] + 3).name("col3")
-    assert first_selection.selections[3] == col3.op()
+    simplified = simplify(result.op())
+    assert simplified == ops.Project(
+        parent=t,
+        values={
+            "col": t["col"],
+            "col1": t["col"] + 1,
+            "col2": t["col"] + 2,
+            "col3": t["col"] + 3,
+        },
+    )
 
 
 # Pr 2635
@@ -196,39 +231,21 @@ def test_mutation_fusion_overwrite():
     result = result.mutate(col2=t["col"] + 2)
     result = result.mutate(col3=t["col"] + 3)
     result = result.mutate(col=t["col"] - 1)
-    result = result.mutate(col4=t["col"] + 4)
 
-    second_selection = result.op()
-    first_selection = second_selection.table
+    with pytest.raises(com.IntegrityError):
+        # unable to dereference the column since result doesn't contain it anymore
+        result.mutate(col4=t["col"] + 4)
 
-    assert len(first_selection.selections) == 4
-    col1 = (t["col"] + 1).name("col1").op()
-    assert first_selection.selections[1] == col1
-
-    col2 = (t["col"] + 2).name("col2").op()
-    assert first_selection.selections[2] == col2
-
-    col3 = (t["col"] + 3).name("col3").op()
-    assert first_selection.selections[3] == col3
-
-    # Since the second selection overwrites existing columns, it will
-    # not have the Table as the first selection
-    assert len(second_selection.selections) == 5
-
-    col = (t["col"] - 1).name("col").op()
-    assert second_selection.selections[0] == col
-
-    col1 = first_selection.to_expr()["col1"].op()
-    assert second_selection.selections[1] == col1
-
-    col2 = first_selection.to_expr()["col2"].op()
-    assert second_selection.selections[2] == col2
-
-    col3 = first_selection.to_expr()["col3"].op()
-    assert second_selection.selections[3] == col3
-
-    col4 = (t["col"] + 4).name("col4").op()
-    assert second_selection.selections[4] == col4
+    simplified = simplify(result.op())
+    assert simplified == ops.Project(
+        parent=t,
+        values={
+            "col": t["col"] - 1,
+            "col1": t["col"] + 1,
+            "col2": t["col"] + 2,
+            "col3": t["col"] + 3,
+        },
+    )
 
 
 # Pr 2635
@@ -237,41 +254,21 @@ def test_select_filter_mutate_fusion():
 
     t = ibis.table(ibis.schema([("col", "float32")]), "t")
 
-    result = t[["col"]]
-    result = result[result["col"].isnan()]
-    result = result.mutate(col=result["col"].cast("int32"))
+    t1 = t[["col"]]
+    assert t1.op() == ops.Project(parent=t, values={"col": t.col})
 
-    second_selection = result.op()
-    first_selection = second_selection.table
-    assert len(second_selection.selections) == 1
+    t2 = t1[t1["col"].isnan()]
+    assert t2.op() == ops.Filter(parent=t1, predicates=[t1.col.isnan()])
 
-    col = first_selection.to_expr()["col"].cast("int32").name("col").op()
-    assert second_selection.selections[0] == col
+    t3 = t2.mutate(col=t2["col"].cast("int32"))
+    assert t3.op() == ops.Project(parent=t2, values={"col": t2.col.cast("int32")})
 
-    # we don't look past the projection when a filter is encountered, so the
-    # number of selections in the first projection (`first_selection`) is 0
-    #
-    # previously we did, but this was buggy when executing against the pandas
-    # backend
-    #
-    # eventually we will bring this back, but we're trading off the ability
-    # to remove materialize for some performance in the short term
-    assert len(first_selection.selections) == 1
-    assert len(first_selection.predicates) == 1
+    # create the expected expression
+    filt = ops.Filter(parent=t, predicates=[t.col.isnan()]).to_expr()
+    proj = ops.Project(parent=filt, values={"col": filt.col.cast("int32")}).to_expr()
 
-
-def test_no_filter_means_no_selection():
-    t = ibis.table(dict(a="string"))
-    proj = t.filter([])
-    assert proj.equals(t)
-
-
-def test_mutate_overwrites_existing_column():
-    t = ibis.table(dict(a="string"))
-    mut = t.mutate(a=42).select(["a"])
-    sel = mut.op().selections[0].table.selections[0].arg
-    assert isinstance(sel, ops.Literal)
-    assert sel.value == 42
+    t3_opt = simplify(t3.op()).to_expr()
+    assert t3_opt.equals(proj)
 
 
 def test_agg_selection_does_not_share_roots():
@@ -280,5 +277,5 @@ def test_agg_selection_does_not_share_roots():
     gb = t.group_by("a")
     n = s.count()
 
-    with pytest.raises(com.RelationError, match="Selection expressions"):
+    with pytest.raises(com.IntegrityError, match=" they belong to another relation"):
         gb.aggregate(n=n)

@@ -479,14 +479,14 @@ def test_c_error_on_misspelled_column(penguins):
 
 def test_order_by_with_selectors(penguins):
     expr = penguins.order_by(s.of_type("string"))
-    assert tuple(key.name for key in expr.op().sort_keys) == (
+    assert tuple(key.name for key in expr.op().keys) == (
         "species",
         "island",
         "sex",
     )
 
     expr = penguins.order_by(s.all())
-    assert tuple(key.name for key in expr.op().sort_keys) == tuple(expr.columns)
+    assert tuple(key.name for key in expr.op().keys) == tuple(expr.columns)
 
     with pytest.raises(exc.IbisError):
         penguins.order_by(~s.all())
