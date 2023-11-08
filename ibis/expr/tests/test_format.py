@@ -11,15 +11,9 @@ import ibis.expr.format
 import ibis.expr.operations as ops
 import ibis.legacy.udf.vectorized as udf
 from ibis import util
-from ibis.expr.operations.relations import Projection
 
 # easier to switch implementation if needed
 fmt = repr
-
-
-@pytest.mark.parametrize("cls", set(ops.Relation.__subclasses__()) - {Projection})
-def test_tables_have_format_rules(cls):
-    assert cls in ibis.expr.format.fmt.registry
 
 
 @pytest.mark.parametrize("cls", [ops.PhysicalTable, ops.Relation])
@@ -62,7 +56,6 @@ def test_table_type_output(snapshot):
 
     expr = foo.dept_id == foo.view().dept_id
     result = fmt(expr)
-    assert "SelfReference[r0]" in result
     assert "UnboundTable: foo" in result
     snapshot.assert_match(result, "repr.txt")
 
@@ -77,7 +70,7 @@ def test_aggregate_arg_names(alltypes, snapshot):
     expr = t.group_by(by_exprs).aggregate(metrics)
     result = fmt(expr)
     assert "metrics" in result
-    assert "by" in result
+    assert "groups" in result
 
     snapshot.assert_match(result, "repr.txt")
 
@@ -125,8 +118,6 @@ def test_memoize_filtered_table(snapshot):
     delay_filter = t.dest.topk(10, by=t.arrdelay.mean())
 
     result = fmt(delay_filter)
-    assert result.count("Selection") == 1
-
     snapshot.assert_match(result, "repr.txt")
 
 
@@ -167,12 +158,6 @@ def test_memoize_filtered_tables_in_join(snapshot):
     joined = left.join(right, cond)[left, right.total.name("right_total")]
 
     result = fmt(joined)
-
-    # one for each aggregation
-    # joins are shown without the word `predicates` above them
-    # since joins only have predicates as arguments
-    assert result.count("predicates") == 2
-
     snapshot.assert_match(result, "repr.txt")
 
 
@@ -331,9 +316,6 @@ def test_asof_join(snapshot):
     )
 
     result = fmt(joined)
-    assert result.count("InnerJoin") == 1
-    assert result.count("AsOfJoin") == 1
-
     snapshot.assert_match(result, "repr.txt")
 
 
@@ -349,8 +331,6 @@ def test_two_inner_joins(snapshot):
     )
 
     result = fmt(joined)
-    assert result.count("InnerJoin") == 2
-
     snapshot.assert_match(result, "repr.txt")
 
 
@@ -382,11 +362,13 @@ def test_format_literal(literal, typ, output):
 
 
 def test_format_dummy_table(snapshot):
+<<<<<<< HEAD
     t = ops.DummyTable([ibis.array([1]).cast("array<int8>").name("foo")]).to_expr()
+=======
+    t = ops.DummyTable({"foo": ibis.array([1], type="array<int8>")}).to_expr()
+>>>>>>> 2189ab71b (refactor(ir): split the relational operations)
 
     result = fmt(t)
-    assert "DummyTable" in result
-    assert "foo array<int8>" in result
     snapshot.assert_match(result, "repr.txt")
 
 
@@ -407,6 +389,10 @@ def test_format_new_relational_operation(alltypes, snapshot):
         @property
         def schema(self):
             return self.parent.schema
+
+        @property
+        def values(self):
+            return {}
 
     table = MyRelation(alltypes, kind="foo").to_expr()
     expr = table[table, table.a.name("a2")]

@@ -9,13 +9,11 @@ import ibis.expr.operations as ops
 import ibis.expr.rules as rlz
 import ibis.expr.types as ir
 from ibis import util
-from ibis.common.annotations import annotated
+from ibis.common.annotations import annotated, attribute
 from ibis.common.deferred import Deferred, Resolver, deferrable
 from ibis.common.exceptions import IbisInputError
 from ibis.common.grounds import Concrete
 from ibis.common.typing import VarTuple  # noqa: TCH001
-from ibis.expr.operations.relations import Relation  # noqa: TCH001
-from ibis.expr.types.relations import bind_expr
 
 if TYPE_CHECKING:
     from typing_extensions import Self
@@ -146,6 +144,25 @@ class WindowBuilder(Builder):
     orderings: VarTuple[Union[str, Resolver, ops.Value]] = ()
     max_lookback: Optional[ops.Value[dt.Interval]] = None
 
+    @attribute
+    def _table(self):
+        inputs = (
+            self.start,
+            self.end,
+            *self.groupings,
+            *self.orderings,
+            self.max_lookback,
+        )
+        valuerels = (v.relations for v in inputs if isinstance(v, ops.Value))
+        relations = frozenset().union(*valuerels)
+        if len(relations) == 0:
+            return None
+        elif len(relations) == 1:
+            (table,) = relations
+            return table
+        else:
+            raise IbisInputError("Window frame can only depend on a single relation")
+
     def _maybe_cast_boundary(self, boundary, dtype):
         if boundary.dtype == dtype:
             return boundary
@@ -214,9 +231,23 @@ class WindowBuilder(Builder):
         return self.copy(max_lookback=value)
 
     @annotated
-    def bind(self, table: Relation):
-        groupings = bind_expr(table.to_expr(), self.groupings)
-        orderings = bind_expr(table.to_expr(), self.orderings)
+    def bind(self, table: Optional[ops.Relation]):
+        table = table or self._table
+        if table is None:
+            raise IbisInputError("Unable to bind window frame to a table")
+
+        table = table.to_expr()
+
+        def bind_value(value):
+            if isinstance(value, str):
+                return table._get_column(value)
+            elif isinstance(value, Resolver):
+                return value.resolve({"_": table})
+            else:
+                return value
+
+        groupings = map(bind_value, self.groupings)
+        orderings = map(bind_value, self.orderings)
         if self.how == "rows":
             return ops.RowsWindowFrame(
                 table=table,

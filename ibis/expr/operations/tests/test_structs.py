@@ -15,7 +15,7 @@ def test_struct_column_shape():
 
     assert op.shape == ds.scalar
 
-    col = ops.TableColumn(
+    col = ops.Field(
         ops.UnboundTable(schema=ibis.schema(dict(a="int64")), name="t"), "a"
     )
     op = ops.StructColumn(names=("a",), values=(col,))
