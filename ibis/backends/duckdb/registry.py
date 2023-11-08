@@ -87,6 +87,17 @@ def _envelope(t, op):
     return sa.func.st_envelope(arg, type_=Geometry_WKB)
 
 
+def _geo_buffer(t, op):
+    arg = t.translate(op.arg)
+    radius = t.translate(op.radius)
+    return sa.func.st_buffer(arg, radius, type_=Geometry_WKB)
+
+
+def _geo_unary_union(t, op):
+    arg = t.translate(op.arg)
+    return sa.func.st_union_agg(arg, type_=Geometry_WKB)
+
+
 def _geo_point(t, op):
     left = t.translate(op.left)
     right = t.translate(op.right)
@@ -559,7 +570,8 @@ operation_registry.update(
         ops.GeoPoint: _geo_point,
         ops.GeoAsText: unary(sa.func.ST_AsText),
         ops.GeoArea: unary(sa.func.ST_Area),
-        # ops.GeoBuffer: fixed_arity(sa.func.ST_Buffer, 2), duckdb sup 2 or 3?
+        # ops.GeoBuffer: fixed_arity(sa.func.ST_Buffer, 2),
+        ops.GeoBuffer: _geo_buffer,
         # ops.GeoCentroid: unary(sa.func.ST_Centroid),
         ops.GeoCentroid: _centroid,
         ops.GeoContains: fixed_arity(sa.func.ST_Contains, 2),
@@ -592,6 +604,7 @@ operation_registry.update(
         # ops.GeoTransform 	fixed_arity(sa.func.ST_Transform, 2) # ? ST_Transform(GEOMETRY, VARCHAR, VARCHAR)
         # ops.GeoUnion: fixed_arity(sa.func.ST_Union, 2),
         ops.GeoUnion: _geo_union,
+        ops.GeoUnaryUnion: _geo_unary_union,
         ops.GeoWithin: fixed_arity(sa.func.ST_Within, 2),
         ops.GeoX: unary(sa.func.ST_X),
         ops.GeoY: unary(sa.func.ST_Y),

@@ -25,7 +25,13 @@ TEST_TABLES_GEO = {
             "x_cent": "float32",
             "y_cent": "float32",
         }
-    )
+    ),
+    "lines": ibis.schema(
+        {
+            "loc_id": "int32",
+            "geom": "geometry",
+        }
+    ),
 }
 
 
@@ -83,13 +89,23 @@ def con(data_dir, tmp_path_factory, worker_id):
 
 @pytest.fixture(scope="session")
 def zones(con, data_dir):
-    # pending merge https://github.com/ibis-project/testing-data/pull/5
     zones = con.read_geo(data_dir / "geojson" / "zones.geojson")
     return zones
 
 
 @pytest.fixture(scope="session")
+def lines(con, data_dir):
+    lines = con.read_geo(data_dir / "geojson" / "lines.geojson")
+    return lines
+
+
+@pytest.fixture(scope="session")
 def zones_gdf(data_dir):
-    # pending merge https://github.com/ibis-project/testing-data/pull/5
-    gdf = gpd.read_file(data_dir / "geojson" / "zones.geojson")
-    return gdf
+    zones_gdf = gpd.read_file(data_dir / "geojson" / "zones.geojson")
+    return zones_gdf
+
+
+@pytest.fixture(scope="session")
+def lines_gdf(data_dir):
+    lines_gdf = gpd.read_file(data_dir / "geojson" / "lines.geojson")
+    return lines_gdf
