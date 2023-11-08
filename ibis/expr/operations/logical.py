@@ -2,14 +2,12 @@ from __future__ import annotations
 
 from public import public
 
-import ibis.expr.datashape as ds
 import ibis.expr.datatypes as dt
 import ibis.expr.rules as rlz
 from ibis.common.annotations import ValidationError, attribute
 from ibis.common.exceptions import IbisTypeError
 from ibis.common.typing import VarTuple  # noqa: TCH001
-from ibis.expr.operations.core import Binary, Column, Unary, Value
-from ibis.expr.operations.relations import Relation  # noqa: TCH001
+from ibis.expr.operations.core import Binary, Unary, Value
 
 
 @public
@@ -138,15 +136,6 @@ class InValues(Value):
 
 
 @public
-class InColumn(Value):
-    value: Value
-    options: Column[dt.Any]
-
-    dtype = dt.boolean
-    shape = rlz.shape_like("args")
-
-
-@public
 class IfElse(Value):
     """Ternary case expression, equivalent to.
 
@@ -164,67 +153,3 @@ class IfElse(Value):
     @attribute
     def dtype(self):
         return rlz.highest_precedence_dtype([self.true_expr, self.false_null_expr])
-
-
-@public
-class ExistsSubquery(Value):
-    foreign_table: Relation
-    predicates: VarTuple[Value[dt.Boolean]]
-
-    dtype = dt.boolean
-    shape = ds.columnar
-
-
-@public
-class UnresolvedExistsSubquery(Value):
-    """An exists subquery whose outer leaf table is unknown.
-
-    Notes
-    -----
-    Consider the following ibis expressions
-
-    ```python
-    import ibis
-
-    t = ibis.table(dict(a="string"))
-    s = ibis.table(dict(a="string"))
-
-    cond = (t.a == s.a).any()
-    ```
-
-    Without knowing the table to use as the outer query there are two ways to
-    turn this expression into a SQL `EXISTS` predicate, depending on which of
-    `t` or `s` is filtered on.
-
-    Filtering from `t`:
-
-    ```sql
-    SELECT *
-    FROM t
-    WHERE EXISTS (SELECT 1 FROM s WHERE t.a = s.a)
-    ```
-
-    Filtering from `s`:
-
-    ```sql
-    SELECT *
-    FROM s
-    WHERE EXISTS (SELECT 1 FROM t WHERE t.a = s.a)
-    ```
-
-    Notably the correlated subquery cannot stand on its own.
-
-    The purpose of `UnresolvedExistsSubquery` is to capture enough information
-    about an exists predicate such that it can be resolved when predicates are
-    resolved against the outer leaf table when `Selection`s are constructed.
-    """
-
-    tables: VarTuple[Relation]
-    predicates: VarTuple[Value[dt.Boolean]]
-
-    dtype = dt.boolean
-    shape = ds.columnar
-
-    def resolve(self, table) -> ExistsSubquery:
-        (foreign_table,) = (t for t in self.tables if t != table)
-        return ExistsSubquery(foreign_table, self.predicates)
