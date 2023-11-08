@@ -6,7 +6,6 @@ from typing import TYPE_CHECKING, Any
 
 import numpy as np
 import sqlalchemy as sa
-from geoalchemy2 import Geometry
 from sqlalchemy.ext.compiler import compiles
 from sqlalchemy.sql.functions import GenericFunction
 
@@ -28,6 +27,18 @@ from ibis.backends.postgres.registry import (
     operation_registry,
 )
 from ibis.common.exceptions import UnsupportedOperationError
+
+try:
+    from geoalchemy2 import Geometry
+
+    class Geometry_WKB(Geometry):
+        as_binary = "ST_AsWKB"
+
+except ImportError:
+
+    class Geometry_WKB:
+        ...
+
 
 if TYPE_CHECKING:
     from collections.abc import Mapping
@@ -54,10 +65,6 @@ _LOG_BASE_FUNCS = {
     2: sa.func.log2,
     10: sa.func.log,
 }
-
-
-class Geometry_WKB(Geometry):
-    as_binary = "ST_AsWKB"
 
 
 def _centroid(t, op):
