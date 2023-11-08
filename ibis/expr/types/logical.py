@@ -244,6 +244,10 @@ class BooleanColumn(NumericColumn, BooleanValue):
     def any(self, where: BooleanValue | None = None) -> BooleanValue:
         """Return whether at least one element is `True`.
 
+        If the expression does not reference any foreign tables, the result
+        will be a scalar reduction, otherwise it will be a deferred expression
+        constructing an exists subquery when passed to a table method.
+
         Parameters
         ----------
         where
@@ -253,6 +257,41 @@ class BooleanColumn(NumericColumn, BooleanValue):
         -------
         BooleanValue
             Whether at least one element is `True`.
+
+        Notes
+        -----
+        Consider the following ibis expressions
+
+        ```python
+        import ibis
+
+        t = ibis.table(dict(a="string"))
+        s = ibis.table(dict(a="string"))
+
+        cond = (t.a == s.a).any()
+        ```
+
+        Without knowing the table to use as the outer query there are two ways to
+        turn this expression into a SQL `EXISTS` predicate, depending on which of
+        `t` or `s` is filtered on.
+
+        Filtering from `t`:
+
+        ```sql
+        SELECT *
+        FROM t
+        WHERE EXISTS (SELECT 1 FROM s WHERE t.a = s.a)
+        ```
+
+        Filtering from `s`:
+
+        ```sql
+        SELECT *
+        FROM s
+        WHERE EXISTS (SELECT 1 FROM t WHERE t.a = s.a)
+        ```
+
+        Notably the correlated subquery cannot stand on its own.
 
         Examples
         --------
@@ -267,17 +306,25 @@ class BooleanColumn(NumericColumn, BooleanValue):
         >>> (t.arr == None).any(where=t.arr != None)
         False
         """
-        import ibis.expr.analysis as an
+        from ibis.common.deferred import Call, _, Deferred
 
-        tables = an.find_immediate_parent_tables(self.op())
+        parents = self.op().relations
 
-        if len(tables) > 1:
-            op = ops.UnresolvedExistsSubquery(
-                tables=[t.to_expr() for t in tables],
-                predicates=an.find_predicates(self.op(), flatten=True),
-            )
-        else:
+        def resolve_exists_subquery(outer):
+            """An exists subquery whose outer leaf table is unknown."""
+            (inner,) = (t for t in parents if t != outer.op())
+            relation = ops.Project(ops.Filter(inner, [self]), {"1": 1})
+            return ops.ExistsSubquery(relation).to_expr()
+
+        if len(parents) == 2:
+            return Deferred(Call(resolve_exists_subquery, _))
+        elif len(parents) == 1:
             op = ops.Any(self, where=self._bind_reduction_filter(where))
+        else:
+            raise NotImplementedError(
+                f'Cannot compute "any" for expression of type {type(self)} '
+                f"with multiple foreign tables"
+            )
 
         return op.to_expr()
 

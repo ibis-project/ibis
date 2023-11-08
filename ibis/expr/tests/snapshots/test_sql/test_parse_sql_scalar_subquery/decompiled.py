@@ -11,6 +11,6 @@ call = ibis.table(
         "call_attempts": "int64",
     },
 )
-agg = call.aggregate(call.call_attempts.mean().name("mean"))
+agg = call.aggregate([call.call_attempts.mean().name("mean")])
 
-result = call.inner_join(agg, [])
+result = call.inner_join(agg, [call.call_attempts > agg.mean, ibis.literal(True)])
