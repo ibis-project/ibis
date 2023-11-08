@@ -1,8 +1,7 @@
 """Some common rewrite functions to be shared between backends."""
 from __future__ import annotations
 
-import functools
-from collections.abc import Mapping
+import toolz
 
 import toolz
 
@@ -44,11 +43,23 @@ def replace_scalar_parameter(params):
     return repl
 
 
-@replace(p.FillNa)
-def rewrite_fillna(_):
-    """Rewrite FillNa expressions to use more common operations."""
-    if isinstance(_.replacements, Mapping):
-        mapping = _.replacements
+y = var("y")
+name = var("name")
+
+
+@replace(ops.Analytic)
+def project_wrap_analytic(_, rel):
+    # Wrap analytic functions in a window function
+    return ops.WindowFunction(_, ops.RowsWindowFrame(rel))
+
+
+@replace(ops.Reduction)
+def project_wrap_reduction(_, rel):
+    # Query all the tables that the reduction depends on
+    if _.relations == {rel}:
+        # The reduction is fully originating from the `rel`, so turn
+        # it into a window function of `rel`
+        return ops.WindowFunction(_, ops.RowsWindowFrame(rel))
     else:
         mapping = {
             name: _.replacements

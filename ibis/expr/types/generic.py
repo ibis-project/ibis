@@ -18,6 +18,7 @@ from ibis.expr.types.core import Expr, _binop, _FixedTextJupyterMixin
 from ibis.util import deprecated
 
 
+
 if TYPE_CHECKING:
     import pandas as pd
     import pyarrow as pa

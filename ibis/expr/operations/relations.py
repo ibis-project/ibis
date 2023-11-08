@@ -20,6 +20,7 @@ from ibis.expr.operations.core import Alias, Column, Node, Scalar, Value
 from ibis.expr.operations.sortkeys import SortKey  # noqa: TCH001
 from ibis.expr.schema import Schema
 from ibis.formats import TableProxy  # noqa: TCH001
+from ibis.util import gen_name
 
 T = TypeVar("T")
 
