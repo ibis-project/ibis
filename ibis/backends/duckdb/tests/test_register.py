@@ -350,3 +350,20 @@ def test_csv_with_slash_n_null(con, tmp_path):
     t = con.read_csv(data_path, nullstr="\\N")
     col = t.a.execute()
     assert pd.isna(col.iat[-1])
+
+
+@pytest.mark.xfail(
+    LINUX and SANDBOXED,
+    reason=("nix can't hit GCS because it is sandboxed."),
+)
+def test_register_filesystem_gcs(con):
+    import fsspec
+
+    gcs = fsspec.filesystem("gcs")
+
+    con.register_filesystem(gcs)
+    band_members = con.read_csv(
+        "gcs://ibis-examples/data/band_members.csv.gz", table_name="band_members"
+    )
+
+    assert band_members.count().to_pyarrow()

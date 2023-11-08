@@ -523,7 +523,9 @@ def normalize_filename(source: str | Path) -> str:
         source = source.removeprefix(f"{prefix}://")
 
     def _absolufy_paths(name):
-        if not name.startswith(("http", "s3", "az", "abfs", "abfss", "adl", "gs")):
+        if not name.startswith(
+            ("http", "s3", "az", "abfs", "abfss", "adl", "gs", "gcs", "azure")
+        ):
             return os.path.abspath(name)
         return name
 
