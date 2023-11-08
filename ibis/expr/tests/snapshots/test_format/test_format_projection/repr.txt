@@ -11,10 +11,9 @@ r0 := UnboundTable: alltypes
   j date
   k time
 
-r1 := Selection[r0]
-  selections:
-    c: r0.c
-    a: r0.a
-    f: r0.f
+r1 := Project[r0]
+  c: r0.c
+  a: r0.a
+  f: r0.f
 
 a: r1.a

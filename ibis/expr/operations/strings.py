@@ -4,7 +4,6 @@ from typing import Optional
 
 from public import public
 
-import ibis.expr.datashape as ds
 import ibis.expr.datatypes as dt
 import ibis.expr.rules as rlz
 from ibis.common.annotations import attribute
@@ -78,7 +77,7 @@ class Repeat(Value):
     arg: Value[dt.String]
     times: Value[dt.Integer]
 
-    shape = rlz.shape_like("arg")
+    shape = rlz.shape_like("args")
     dtype = dt.string
 
 
@@ -156,7 +155,7 @@ class ArrayStringJoin(Value):
 @public
 class StartsWith(Value):
     arg: Value[dt.String]
-    start: Value[dt.String, ds.Scalar]
+    start: Value[dt.String]
 
     dtype = dt.boolean
     shape = rlz.shape_like("arg")
@@ -165,7 +164,7 @@ class StartsWith(Value):
 @public
 class EndsWith(Value):
     arg: Value[dt.String]
-    end: Value[dt.String, ds.Scalar]
+    end: Value[dt.String]
 
     dtype = dt.boolean
     shape = rlz.shape_like("arg")

@@ -772,19 +772,26 @@ class GeoSpatialScalar(NumericScalar, GeoSpatialValue):
 
 @public
 class GeoSpatialColumn(NumericColumn, GeoSpatialValue):
-    def unary_union(self) -> ir.GeoSpatialScalar:
+    def unary_union(
+        self, where: bool | ir.BooleanValue | None = None
+    ) -> ir.GeoSpatialScalar:
         """Aggregate a set of geometries into a union.
 
         This corresponds to the aggregate version of the PostGIS ST_Union.
         We give it a different name (following the corresponding method
         in GeoPandas) to avoid name conflicts with the non-aggregate version.
 
+        Parameters
+        ----------
+        where
+            Filter expression
+
         Returns
         -------
         GeoSpatialScalar
             Union of geometries
         """
-        return ops.GeoUnaryUnion(self).to_expr().name("union")
+        return ops.GeoUnaryUnion(self, where=where).to_expr()
 
 
 @public
