@@ -20,7 +20,7 @@ from ibis.backends.base.sqlglot import (
     parenthesize,
 )
 from ibis.backends.base.sqlglot.datatypes import PostgresType
-from ibis.common.temporal import IntervalUnit
+from ibis.common.temporal import IntervalUnit, TimestampUnit
 from ibis.expr.operations.udf import InputType
 from ibis.formats.pyarrow import PyArrowType
 
@@ -108,7 +108,6 @@ _simple_ops = {
     ops.ArrayContains: "array_contains",
     ops.ArrayLength: "array_length",
     ops.ArrayRemove: "array_remove_all",
-    ops.StringLength: "length",
 }
 
 for _op, _name in _simple_ops.items():
@@ -148,6 +147,11 @@ _binary_infix_ops = {
     ops.DateAdd: operator.add,
     ops.DateSub: operator.sub,
     ops.DateDiff: operator.sub,
+    ops.TimestampDiff: operator.sub,
+    ops.TimestampSub: operator.sub,
+    ops.TimestampAdd: operator.add,
+    ops.IntervalAdd: operator.add,
+    ops.IntervalSubtract: operator.sub,
 }
 
 
@@ -212,7 +216,7 @@ def _literal(op, *, value, dtype, **kw):
                 "DataFusion doesn't support subsecond interval resolutions"
             )
 
-        return interval(value, unit=dtype.resolution.upper())
+        return interval(value, unit=dtype.unit.plural.lower())
     elif dtype.is_timestamp():
         return _to_timestamp(value, dtype, literal=True)
     elif dtype.is_date():
@@ -780,10 +784,24 @@ def is_nan(op, *, arg, **_):
 
 
 @translate_val.register(ops.ArrayStringJoin)
-def array_string_join(op, *, sep, arg):
+def array_string_join(op, *, sep, arg, **_):
     return F.array_join(arg, sep)
 
 
 @translate_val.register(ops.FindInSet)
-def array_string_find(op, *, needle, values):
+def array_string_find(op, *, needle, values, **_):
     return F.coalesce(F.array_position(F.make_array(*values), needle), 0)
+
+
+@translate_val.register(ops.TimestampFromUNIX)
+def timestamp_from_unix(op, *, arg, unit, **_):
+    if unit == TimestampUnit.SECOND:
+        return F.from_unixtime(arg)
+    elif unit in (
+        TimestampUnit.MILLISECOND,
+        TimestampUnit.MICROSECOND,
+        TimestampUnit.NANOSECOND,
+    ):
+        return F.arrow_cast(arg, f"Timestamp({unit.name.capitalize()}, None)")
+    else:
+        raise com.UnsupportedOperationError(f"Unsupported unit {unit}")
