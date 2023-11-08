@@ -298,6 +298,13 @@ class BasePandasBackend(BaseBackend):
         output = pa.Table.from_pandas(
             self.execute(table_expr, params=params, limit=limit, **kwargs)
         )
+
+        # cudf.pandas adds a column with the name `__index_level_0__` (and maybe
+        # other index level columns) but these aren't part of the known schema
+        # so we drop them
+        output = output.drop_columns(
+            filter(lambda col: col.startswith("__index_level_"), output.column_names)
+        )
         table = PyArrowData.convert_table(output, table_expr.schema())
         return expr.__pyarrow_result__(table)
 
