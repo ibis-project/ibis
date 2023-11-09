@@ -10,6 +10,7 @@ from typing import TYPE_CHECKING, Any, Literal
 
 import clickhouse_connect as cc
 import pyarrow as pa
+import pyarrow_hotfix  # noqa: F401
 import sqlalchemy as sa
 import sqlglot as sg
 import toolz

@@ -3854,6 +3854,17 @@ files = [
 numpy = ">=1.16.6"
 
 [[package]]
+name = "pyarrow-hotfix"
+version = "0.4"
+description = ""
+optional = false
+python-versions = ">=3.5"
+files = [
+    {file = "pyarrow_hotfix-0.4-py3-none-any.whl", hash = "sha256:aecaecaccbe4b3d7b7198d6634afe1c5eec3cbf89d1b551e9f85675f21b24921"},
+    {file = "pyarrow_hotfix-0.4.tar.gz", hash = "sha256:eb6e2738ba6e023e93a5fd8078d12c437e90d79df87736f1b2ba1c46f0e242d1"},
+]
+
+[[package]]
 name = "pyasn1"
 version = "0.5.0"
 description = "Pure-Python implementation of ASN.1 types and DER/BER/CER codecs (X.208)"
@@ -6267,4 +6278,4 @@ visualization = ["graphviz"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.9"
-content-hash = "7200e140aabf8a6616d85f74f33aab840e2065d925d12617afb5ceecf2b81253"
+content-hash = "36fc927f7e49d8794b2fd8dc260a83c09027955ad1c697adfa41a7479d63ca80"

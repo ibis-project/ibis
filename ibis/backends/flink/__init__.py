@@ -312,6 +312,7 @@ class Backend(BaseBackend, CanCreateDatabase):
         """
         import pandas as pd
         import pyarrow as pa
+        import pyarrow_hotfix  # noqa: F401
 
         import ibis.expr.types as ir
 
@@ -485,6 +486,7 @@ class Backend(BaseBackend, CanCreateDatabase):
         """
         import pandas as pd
         import pyarrow as pa
+        import pyarrow_hotfix  # noqa: F401
 
         if isinstance(obj, ir.Table):
             expr = obj

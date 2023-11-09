@@ -685,6 +685,7 @@ class Backend(BaseSQLBackend, CanCreateSchema, CanListDatabases):
 
         if obj is not None:
             import pyarrow as pa
+            import pyarrow_hotfix  # noqa: F401
 
             if isinstance(obj, (pd.DataFrame, pa.Table)):
                 table = ibis.memtable(obj, schema=schema)

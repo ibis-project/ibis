@@ -387,6 +387,7 @@ class Backend(BaseSQLBackend, CanCreateDatabase):
         """
         import pandas as pd
         import pyarrow as pa
+        import pyarrow_hotfix  # noqa: F401
 
         if obj is None and schema is None:
             raise com.IbisError("The schema or obj parameter is required")
@@ -827,6 +828,7 @@ class Backend(BaseSQLBackend, CanCreateDatabase):
         **kwargs: Any,
     ) -> pa.Table:
         import pyarrow as pa
+        import pyarrow_hotfix  # noqa: F401
 
         from ibis.formats.pyarrow import PyArrowData
 

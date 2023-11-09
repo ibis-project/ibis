@@ -19,6 +19,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 import pyarrow as pa
+import pyarrow_hotfix  # noqa: F401
 import sqlalchemy as sa
 import sqlglot as sg
 from packaging.version import parse as vparse

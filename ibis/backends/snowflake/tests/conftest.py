@@ -5,6 +5,7 @@ import os
 from typing import TYPE_CHECKING, Any
 
 import pyarrow.parquet as pq
+import pyarrow_hotfix  # noqa: F401
 import pytest
 import sqlalchemy as sa
 import sqlglot as sg

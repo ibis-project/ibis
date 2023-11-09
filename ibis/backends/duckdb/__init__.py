@@ -11,6 +11,7 @@ from typing import TYPE_CHECKING, Any
 
 import duckdb
 import pyarrow as pa
+import pyarrow_hotfix  # noqa: F401
 import sqlalchemy as sa
 import sqlglot as sg
 import toolz
