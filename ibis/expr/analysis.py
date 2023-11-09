@@ -470,4 +470,4 @@ def find_toplevel_unnest_children(nodes: Iterable[ops.Node]) -> Iterator[ops.Tab
             find_first_base_table(node) if isinstance(node, ops.Unnest) else None,
         )
 
-    return g.traverse(finder, nodes, filter=ops.Node)
+    return g.traverse(finder, nodes)
