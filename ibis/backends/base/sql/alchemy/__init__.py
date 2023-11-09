@@ -5,6 +5,7 @@ import atexit
 import contextlib
 import getpass
 import warnings
+from collections import ChainMap
 from operator import methodcaller
 from typing import TYPE_CHECKING, Any
 
@@ -124,6 +125,23 @@ class BaseAlchemyBackend(BaseSQLBackend):
     compiler = AlchemyCompiler
     supports_temporary_tables = True
     _temporary_prefix = "TEMPORARY"
+
+    def _kwargs_from_url(self, url, **kwargs) -> Mapping[str, Any]:
+        """Construct an ibis backend from a SQLAlchemy-conforming URL."""
+        # Questions:
+        #  * What should be the exact order and priority also in terms of conversion
+        #  * Should every layer overriding _kwargs_from_url implement their own ENV handling?
+        #  * At which level/priority should the ENV settings be applied?
+        #
+        # Context:
+        # For additional context see a https://github.com/ibis-project/ibis/pull/7303/files/7875409bb77d5148dc03aa766b5e750dbb0e3a53#r1386765304
+        base_class_kwargs = super()._kwargs_from_url(url, kwargs)
+        _, new_kwargs = self.inspector.dialect.create_connect_args(url)
+        connect_kwargs = kwargs.copy()
+        self._convert_kwargs(connect_kwargs)
+        kwargs = ChainMap(new_kwargs, connect_kwargs, base_class_kwargs)
+        kwargs = dict(kwargs)
+        return kwargs
 
     def _scalar_query(self, query):
         method = "exec_driver_sql" if isinstance(query, str) else "execute"
