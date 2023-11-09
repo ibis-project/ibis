@@ -9,12 +9,9 @@ import ibis.expr.types as ir
 from ibis.common.annotations import attribute
 from ibis.common.collections import FrozenDict  # noqa: TCH001
 from ibis.common.deferred import Deferred, Item, deferred, var
-from ibis.common.patterns import (
-    Check,
-    InstanceOf,
-    pattern,
-    replace,
-)
+from ibis.common.exceptions import IntegrityError
+from ibis.common.graph import traverse
+from ibis.common.patterns import Check, InstanceOf, _, pattern, replace
 from ibis.common.typing import Coercible, VarTuple
 from ibis.expr.operations import Alias, Column, Node, Scalar, SortKey, Value
 from ibis.expr.schema import Schema
@@ -65,7 +62,13 @@ class Project(Relation):
     values: FrozenDict[str, Annotated[Value, ~InstanceOf(Alias)]]
 
     def __init__(self, parent, values):
-        # TODO(kszucs): validate that each field originates from the parent relation
+        for name, value in values.items():
+            rel = relation_of(value)
+            if rel is not None and rel != parent:
+                raise IntegrityError(
+                    f"Cannot add {name}: {value!r} to projection, "
+                    f"it belongs to {rel!r}"
+                )
         super().__init__(parent=parent, values=values)
 
     @attribute
@@ -143,22 +146,24 @@ class TableExpr(Expr):
     def select(self, *args, **kwargs):
         values = bind(self, (args, kwargs))
         values = unwrap_aliases(values)
-        # TODO(kszucs): windowization of redictions should happen here
-        node = Project(self, values).replace(
-            complete_reprojection | subsequent_projections
-        )
+        # TODO(kszucs): windowization of reductions should happen here
+        node = Project(self, values)
+        node = node.replace(complete_reprojection | subsequent_projections)
         return node.to_expr()
 
     def where(self, *predicates):
         predicates = bind(self, predicates)
         predicates = unwrap_aliases(predicates)
+        # TODO(kszucs): add predicate flattening
         node = Filter(self, predicates.values())
+        node = node.replace(subsequent_filters)
         return node.to_expr()
 
     def order_by(self, *keys):
         keys = bind(self, keys)
         keys = unwrap_aliases(keys)
         node = Sort(self, keys.values())
+        node = node.replace(subsequent_sorts)
         return node.to_expr()
 
     def aggregate(self, groups, metrics):
@@ -219,21 +224,45 @@ y = var("y")
 values = var("values")
 
 
-@replace(x @ p.Project(y @ p.Relation) & Check(x.schema == y.schema))
-def complete_reprojection(x, y, **kwargs):
+@replace(p.Project(y @ p.Relation) & Check(_.schema == y.schema))
+def complete_reprojection(_, y):
     # TODO(kszucs): this could be moved to the pattern itself but not sure how
     # to express it, especially in a shorter way then the following check
-    for name in x.schema:
-        if x.values[name] != Field(y, name):
+    for name in _.schema:
+        if _.values[name] != Field(y, name):
             return x
     return y
 
 
-@replace(p.Project(x @ p.Project(y), values))
-def subsequent_projections(x, y, values, **kwargs):
+@replace(p.Project(x @ p.Project(y)))
+def subsequent_projections(_, x, y):
     rule = p.Field(x, name) >> Item(x.values, name)
-    vals = {k: v.replace(rule) for k, v in values.items()}
+    vals = {k: v.replace(rule) for k, v in _.values.items()}
     return Project(y, vals)
+
+
+@replace(p.Filter(x @ p.Filter))
+def subsequent_filters(_, x):
+    # this can be easily expressed in simple deferred-like expressions
+    return Filter(x.parent, x.predicates + _.predicates)
+
+
+@replace(p.Sort(x @ p.Sort))
+def subsequent_sorts(_, x):
+    return Sort(x.parent, x.keys + _.keys)
+
+
+def relation_of(value):
+    def fn(node):
+        if isinstance(node, Relation):
+            return False, node
+        else:
+            return True, None
+
+    try:
+        return next(traverse(fn, value))
+    except StopIteration:
+        return None
 
 
 # POSSIBLE REWRITES:

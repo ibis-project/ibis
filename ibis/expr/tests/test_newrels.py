@@ -2,12 +2,12 @@ from __future__ import annotations
 
 import ibis.expr.datashape as ds
 import ibis.expr.datatypes as dt
-from ibis.expr.newrels import Field, Project, TableExpr, UnboundTable
+from ibis.expr.newrels import Field, Filter, Project, Sort, TableExpr, UnboundTable
 from ibis.expr.schema import Schema
 
 # TODO(kszucs):
 # def test_relation_coercion()
-
+# def test_where_flattens_predicates()
 
 t = UnboundTable(
     name="t",
@@ -105,3 +105,25 @@ def test_select_across_relations():
     t3 = t2.select("bool_col")
     expected = Project(parent=t, values={"bool_col": t.bool_col})
     assert t3.op() == expected
+
+
+def test_where():
+    filt = t.where(t.bool_col)
+    expected = Filter(parent=t, predicates=[t.bool_col])
+    assert filt.op() == expected
+
+    filt = t.where(t.bool_col, t.int_col > 0)
+    expected = Filter(parent=t, predicates=[t.bool_col, t.int_col > 0])
+    assert filt.op() == expected
+
+
+def test_subsequent_filters_are_squashed():
+    filt = t.where(t.bool_col).where(t.int_col > 0)
+    expected = Filter(parent=t, predicates=[t.bool_col, t.int_col > 0])
+    assert filt.op() == expected
+
+
+def test_subsequent_sorts_are_squashed():
+    sort = t.order_by(t.bool_col).order_by(t.int_col)
+    expected = Sort(parent=t, keys=[t.bool_col, t.int_col])
+    assert sort.op() == expected
