@@ -8,71 +8,82 @@ import pandas as pd
 import pandas.testing as tm
 import pytest
 import sqlalchemy as sa
+from packaging.version import parse as vparse
 from pytest import param
 from sqlalchemy.dialects import mysql
 
 import ibis
 import ibis.expr.datatypes as dt
 from ibis import udf
+from ibis.backends.base.sql.alchemy.geospatial import geospatial_supported
 from ibis.util import gen_name
 
+if geospatial_supported:
+    import geoalchemy2
+else:
+    geoalchemy2 = None
+
 MYSQL_TYPES = [
-    ("tinyint", dt.int8),
-    ("int1", dt.int8),
-    ("boolean", dt.int8),
-    ("smallint", dt.int16),
-    ("int2", dt.int16),
+    param("tinyint", dt.int8, id="tinyint"),
+    param("int1", dt.int8, id="int1"),
+    param("boolean", dt.int8, id="boolean"),
+    param("smallint", dt.int16, id="smallint"),
+    param("int2", dt.int16, id="int2"),
     # ("mediumint", dt.int32), => https://github.com/tobymao/sqlglot/issues/2109
     # ("int3", dt.int32), => https://github.com/tobymao/sqlglot/issues/2109
-    ("int", dt.int32),
-    ("int4", dt.int32),
-    ("integer", dt.int32),
-    ("bigint", dt.int64),
-    ("decimal", dt.Decimal(10, 0)),
-    ("decimal(5, 2)", dt.Decimal(5, 2)),
-    ("dec", dt.Decimal(10, 0)),
-    ("numeric", dt.Decimal(10, 0)),
-    ("fixed", dt.Decimal(10, 0)),
-    ("float", dt.float32),
-    ("double", dt.float64),
-    ("timestamp", dt.Timestamp("UTC")),
-    ("date", dt.date),
-    ("time", dt.time),
-    ("datetime", dt.timestamp),
-    ("year", dt.int8),
-    ("char(32)", dt.string),
-    ("char byte", dt.binary),
-    ("varchar(42)", dt.string),
-    ("mediumtext", dt.string),
-    ("text", dt.string),
-    ("binary(42)", dt.binary),
-    ("varbinary(42)", dt.binary),
-    ("bit(1)", dt.int8),
-    ("bit(9)", dt.int16),
-    ("bit(17)", dt.int32),
-    ("bit(33)", dt.int64),
+    param("int", dt.int32, id="int"),
+    param("int4", dt.int32, id="int4"),
+    param("integer", dt.int32, id="integer"),
+    param("bigint", dt.int64, id="bigint"),
+    param("decimal", dt.Decimal(10, 0), id="decimal"),
+    param("decimal(5, 2)", dt.Decimal(5, 2), id="decimal_5_2"),
+    param("dec", dt.Decimal(10, 0), id="dec"),
+    param("numeric", dt.Decimal(10, 0), id="numeric"),
+    param("fixed", dt.Decimal(10, 0), id="fixed"),
+    param("float", dt.float32, id="float"),
+    param("double", dt.float64, id="double"),
+    param("timestamp", dt.Timestamp("UTC"), id="timestamp"),
+    param("date", dt.date, id="date"),
+    param("time", dt.time, id="time"),
+    param("datetime", dt.timestamp, id="datetime"),
+    param("year", dt.int8, id="year"),
+    param("char(32)", dt.string, id="char"),
+    param("char byte", dt.binary, id="char_byte"),
+    param("varchar(42)", dt.string, id="varchar"),
+    param("mediumtext", dt.string, id="mediumtext"),
+    param("text", dt.string, id="text"),
+    param("binary(42)", dt.binary, id="binary"),
+    param("varbinary(42)", dt.binary, id="varbinary"),
+    param("bit(1)", dt.int8, id="bit_1"),
+    param("bit(9)", dt.int16, id="bit_9"),
+    param("bit(17)", dt.int32, id="bit_17"),
+    param("bit(33)", dt.int64, id="bit_33"),
     # mariadb doesn't have a distinct json type
-    ("json", dt.string),
-    ("enum('small', 'medium', 'large')", dt.string),
+    param("json", dt.string, id="json"),
+    param("enum('small', 'medium', 'large')", dt.string, id="enum"),
     # con.table(name) first parses the type correctly as ibis inet using sqlglot,
     # then convert these types to sqlalchemy types then a sqlalchemy table to
     # get the ibis schema again from the alchemy types, but alchemy doesn't
     # support inet6 so it gets converted to string eventually
     # ("inet6", dt.inet),
-    ("set('a', 'b', 'c', 'd')", dt.Array(dt.string)),
-    ("mediumblob", dt.binary),
-    ("blob", dt.binary),
-    ("uuid", dt.uuid),
+    param("set('a', 'b', 'c', 'd')", dt.Array(dt.string), id="set"),
+    param("mediumblob", dt.binary, id="mediumblob"),
+    param("blob", dt.binary, id="blob"),
+    param(
+        "uuid",
+        dt.uuid,
+        marks=[
+            pytest.mark.xfail(
+                condition=vparse(sa.__version__) < vparse("2"),
+                reason="geoalchemy2 0.14.x doesn't work",
+            )
+        ],
+        id="uuid",
+    ),
 ]
 
 
-@pytest.mark.parametrize(
-    ("mysql_type", "expected_type"),
-    [
-        param(mysql_type, ibis_type, id=mysql_type)
-        for mysql_type, ibis_type in MYSQL_TYPES
-    ],
-)
+@pytest.mark.parametrize(("mysql_type", "expected_type"), MYSQL_TYPES)
 def test_get_schema_from_query(con, mysql_type, expected_type):
     raw_name = ibis.util.guid()
     name = con._quote(raw_name)
@@ -109,6 +120,11 @@ def tmp_t(con_nodb):
 
 
 @pytest.mark.usefixtures("setup_privs", "tmp_t")
+@pytest.mark.xfail(
+    geospatial_supported and vparse(geoalchemy2.__version__) > vparse("0.13.3"),
+    reason="geoalchemy2 issues when using 0.14.x",
+    raises=sa.exc.OperationalError,
+)
 def test_get_schema_from_query_other_schema(con_nodb):
     t = con_nodb.table("t", schema="test_schema")
     assert t.schema() == ibis.schema({"x": dt.string})
