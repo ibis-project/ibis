@@ -180,7 +180,7 @@ def test_subsequent_sorts_are_squashed():
     assert sort.op() == expected
 
 
-# def test_e():
-#     t1 = t.select(t.bool_col, t.int_col, t.float_col)
-#     t2 = t1.where(t1.bool_col)
-#     t3 = t1.where(t2.int_col > 0)
+def test_e():
+    t1 = t.select(t.bool_col, t.int_col, t.float_col)
+    t2 = t1.where(t1.bool_col)
+    t3 = t2.where(t2.int_col > 0)

@@ -37,10 +37,13 @@ class Relation(Node, Coercible):
         else:
             raise TypeError(f"Cannot coerce {value!r} to a Relation")
 
-    @property
-    @abstractmethod
+    @attribute
+    def fields(self):
+        raise NotImplementedError()
+
+    @attribute
     def schema(self):
-        ...
+        return Schema({k: v.dtype for k, v in self.fields.items()})
 
     def to_expr(self):
         return TableExpr(self)
@@ -58,12 +61,14 @@ class Field(Value):
 
 
 def _check_integrity(parent, values):
+    possible_fields = set(parent.fields.values())
     for value in values:
-        rel = relation_of(value)
-        if rel is not None and rel != parent:
-            raise IntegrityError(
-                f"Cannot add {value!r} to projection, " f"it belongs to {rel!r}"
-            )
+        for field in value.find(Field):
+            if field not in possible_fields:
+                raise IntegrityError(
+                    f"Cannot add {field!r} to projection, "
+                    f"it belongs to {field.rel!r}"
+                )
 
 
 class Project(Relation):
@@ -75,8 +80,8 @@ class Project(Relation):
         super().__init__(parent=parent, values=values)
 
     @attribute
-    def schema(self):
-        return Schema({k: v.dtype for k, v in self.values.items()})
+    def fields(self):
+        return self.values
 
 
 # TODO(kszucs): consider to have a specialization projecting only fields not
@@ -90,15 +95,11 @@ class Project(Relation):
 #         return Schema({f.name: f.dtype for f in self.fields})
 
 
-class Join(Relation):
-    left: Relation
-    right: Relation
-    fields: FrozenDict[str, Field]
-    predicates: VarTuple[Value[dt.Boolean]]
-
-    @attribute
-    def schema(self):
-        return Schema({k: v.dtype for k, v in self.fields.items()})
+# class Join(Relation):
+#     left: Relation
+#     right: Relation
+#     fields: FrozenDict[str, Field]
+#     predicates: VarTuple[Value[dt.Boolean]]
 
 
 class Sort(Relation):
@@ -110,8 +111,8 @@ class Sort(Relation):
         super().__init__(parent=parent, keys=keys)
 
     @attribute
-    def schema(self):
-        return self.parent.schema
+    def fields(self):
+        return self.parent.fields
 
 
 class Filter(Relation):
@@ -123,25 +124,29 @@ class Filter(Relation):
         super().__init__(parent=parent, predicates=predicates)
 
     @attribute
-    def schema(self):
-        return self.parent.schema
+    def fields(self):
+        return self.parent.fields
 
 
-class Aggregate(Relation):
-    parent: Relation
-    groups: FrozenDict[str, Annotated[Column, ~InstanceOf(Alias)]]
-    metrics: FrozenDict[str, Annotated[Scalar, ~InstanceOf(Alias)]]
+# class Aggregate(Relation):
+#     parent: Relation
+#     groups: FrozenDict[str, Annotated[Column, ~InstanceOf(Alias)]]
+#     metrics: FrozenDict[str, Annotated[Scalar, ~InstanceOf(Alias)]]
 
-    @attribute
-    def schema(self):
-        # schema is consisting both by and metrics, use .from_tuples() to disallow
-        # duplicate names in the schema
-        return Schema.from_tuples([*self.groups.items(), *self.metrics.items()])
+#     @attribute
+#     def schema(self):
+#         # schema is consisting both by and metrics, use .from_tuples() to disallow
+#         # duplicate names in the schema
+#         return Schema.from_tuples([*self.groups.items(), *self.metrics.items()])
 
 
 class UnboundTable(Relation):
     name: str
     schema: Schema
+
+    @attribute
+    def fields(self):
+        return {k: Field(self, k) for k in self.schema}
 
 
 ################################ TYPES ################################
@@ -178,31 +183,15 @@ class TableExpr(Expr):
         preds = bind(self, predicates)
         preds = unwrap_aliases(predicates).values()
         # TODO(kszucs): add predicate flattening
-
-        rel = self.op()
-        if isinstance(rel, Filter):
-            rule = p.Field(rel, name) >> d.Field(rel.parent, name)
-            preds = tuple(v.replace(rule) for v in preds)
-            node = rel.copy(predicates=rel.predicates + preds)
-        else:
-            node = Filter(rel, preds)
-
+        node = Filter(self, preds)
+        node = node.replace(subsequent_filters)
         return node.to_expr()
 
     def order_by(self, *keys):
         keys = bind(self, keys)
         keys = unwrap_aliases(keys).values()
-
-        rel = self.op()
-        if isinstance(rel, Sort):
-            rule = p.Field(rel, name) >> d.Field(rel.parent, name)
-            keys = tuple(v.replace(rule) for v in keys)
-            node = rel.copy(keys=rel.keys + keys)
-        else:
-            node = Sort(rel, keys)
-
-        # node = node.replace(subsequent_sorts)
-
+        node = Sort(self, keys)
+        node = node.replace(subsequent_sorts)
         return node.to_expr()
 
     def aggregate(self, groups, metrics):
@@ -222,10 +211,8 @@ def bind(table: TableExpr, value: Any) -> ir.Value:
         for name in value.schema().keys():
             yield Field(value, name).to_expr()
     elif isinstance(value, str):
-        if isinstance(node, Project):
-            yield node.values[value].to_expr().name(value)
-        else:
-            yield Field(table, value).to_expr()
+        # column peeling / dereferencing
+        yield node.fields[value].to_expr().name(value)
     elif isinstance(value, Deferred):
         yield value.resolve(table)
     elif isinstance(value, Selector):
@@ -284,15 +271,15 @@ def subsequent_projections(_, x, y):
     return Project(y, vals)
 
 
-# @replace(p.Filter(x @ p.Filter))
-# def subsequent_filters(_, x):
-#     # this can be easily expressed in simple deferred-like expressions
-#     return Filter(x.parent, x.predicates + _.predicates)
+@replace(p.Filter(x @ p.Filter))
+def subsequent_filters(_, x):
+    # this can be easily expressed in simple deferred-like expressions
+    return Filter(x.parent, x.predicates + _.predicates)
 
 
-# @replace(p.Sort(x @ p.Sort))
-# def subsequent_sorts(_, x):
-#     return Sort(x.parent, x.keys + _.keys)
+@replace(p.Sort(x @ p.Sort))
+def subsequent_sorts(_, x):
+    return Sort(x.parent, x.keys + _.keys)
 
 
 def relation_of(value):
