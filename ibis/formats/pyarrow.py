@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any
 
 import pyarrow as pa
+import pyarrow_hotfix  # noqa: F401
 
 import ibis.expr.datatypes as dt
 from ibis.expr.schema import Schema

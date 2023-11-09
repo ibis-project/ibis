@@ -141,6 +141,7 @@ class TableProxy(Immutable):
 
     def to_pyarrow_bytes(self, schema: Schema) -> bytes:
         import pyarrow as pa
+        import pyarrow_hotfix  # noqa: F401
 
         data = self.to_pyarrow(schema=schema)
         out = pa.BufferOutputStream()
@@ -170,6 +171,7 @@ class PandasDataFrameProxy(TableProxy):
 
     def to_pyarrow(self, schema: Schema) -> pa.Table:
         import pyarrow as pa
+        import pyarrow_hotfix  # noqa: F401
 
         from ibis.formats.pyarrow import PyArrowSchema
 

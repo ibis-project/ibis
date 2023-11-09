@@ -52,6 +52,8 @@ class Example(Concrete):
             else:
                 return backend.read_csv(path, table_name=table_name)
         else:
+            import pyarrow_hotfix  # noqa: F401
+
             if path.endswith(".parquet"):
                 import pyarrow.parquet
 

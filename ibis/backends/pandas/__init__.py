@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING, Any
 
 import pandas as pd
 import pyarrow as pa
+import pyarrow_hotfix  # noqa: F401
 
 import ibis.common.exceptions as com
 import ibis.config
@@ -242,8 +243,6 @@ class BasePandasBackend(BaseBackend):
 
     @classmethod
     def _convert_object(cls, obj: Any) -> Any:
-        import pyarrow as pa
-
         if isinstance(obj, ir.Table):
             # Support memtables
             assert isinstance(obj.op(), ops.InMemoryTable)

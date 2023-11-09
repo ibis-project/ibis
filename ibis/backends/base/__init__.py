@@ -245,6 +245,8 @@ class _FileIOHandler:
                 "Exporting to arrow formats requires `pyarrow` but it is not installed"
             )
         else:
+            import pyarrow_hotfix  # noqa: F401
+
             return pyarrow
 
     def to_pandas_batches(

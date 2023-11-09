@@ -9,6 +9,7 @@ from typing import TYPE_CHECKING, Any
 import datafusion as df
 import pyarrow as pa
 import pyarrow.dataset as ds
+import pyarrow_hotfix  # noqa: F401
 import sqlglot as sg
 from sqlglot import exp, transforms
 from sqlglot.dialects import Postgres

@@ -286,6 +286,7 @@ class BaseAlchemyBackend(BaseSQLBackend):
 
         import pandas as pd
         import pyarrow as pa
+        import pyarrow_hotfix  # noqa: F401
 
         if isinstance(obj, (pd.DataFrame, pa.Table)):
             obj = ibis.memtable(obj)
