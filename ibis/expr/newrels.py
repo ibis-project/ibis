@@ -57,18 +57,21 @@ class Field(Value):
         return self.rel.schema[self.name]
 
 
+def _check_integrity(parent, values):
+    for value in values:
+        rel = relation_of(value)
+        if rel is not None and rel != parent:
+            raise IntegrityError(
+                f"Cannot add {value!r} to projection, " f"it belongs to {rel!r}"
+            )
+
+
 class Project(Relation):
     parent: Relation
     values: FrozenDict[str, Annotated[Value, ~InstanceOf(Alias)]]
 
     def __init__(self, parent, values):
-        for name, value in values.items():
-            rel = relation_of(value)
-            if rel is not None and rel != parent:
-                raise IntegrityError(
-                    f"Cannot add {name}: {value!r} to projection, "
-                    f"it belongs to {rel!r}"
-                )
+        _check_integrity(parent, values.values())
         super().__init__(parent=parent, values=values)
 
     @attribute
@@ -102,6 +105,10 @@ class Sort(Relation):
     parent: Relation
     keys: VarTuple[SortKey]
 
+    def __init__(self, parent, keys):
+        _check_integrity(parent, keys)
+        super().__init__(parent=parent, keys=keys)
+
     @attribute
     def schema(self):
         return self.parent.schema
@@ -110,6 +117,10 @@ class Sort(Relation):
 class Filter(Relation):
     parent: Relation
     predicates: VarTuple[Value[dt.Boolean]]
+
+    def __init__(self, parent, predicates):
+        _check_integrity(parent, predicates)
+        super().__init__(parent=parent, predicates=predicates)
 
     @attribute
     def schema(self):
@@ -141,29 +152,57 @@ class TableExpr(Expr):
         return self.op().schema
 
     def __getattr__(self, key):
-        return Field(self, key).to_expr()
+        return next(bind(self, key))
 
     def select(self, *args, **kwargs):
         values = bind(self, (args, kwargs))
         values = unwrap_aliases(values)
         # TODO(kszucs): windowization of reductions should happen here
-        node = Project(self, values)
-        node = node.replace(complete_reprojection | subsequent_projections)
+
+        rel = self.op()
+        if isinstance(rel, Project):
+            # subsequent projections, use only the new values
+            # rule = p.Field(rel, name) >> Item(rel.values, name)
+            # values = {k: v.replace(rule) for k, v in values.items()}
+            # this peeling is currently done in bind() directly referencing the
+            # parent relation's value
+            node = rel.copy(values=values)
+        else:
+            node = Project(rel, values)
+
+        # node = node.replace(complete_reprojection | subsequent_projections)
+
         return node.to_expr()
 
     def where(self, *predicates):
-        predicates = bind(self, predicates)
-        predicates = unwrap_aliases(predicates)
+        preds = bind(self, predicates)
+        preds = unwrap_aliases(predicates).values()
         # TODO(kszucs): add predicate flattening
-        node = Filter(self, predicates.values())
-        node = node.replace(subsequent_filters)
+
+        rel = self.op()
+        if isinstance(rel, Filter):
+            rule = p.Field(rel, name) >> d.Field(rel.parent, name)
+            preds = tuple(v.replace(rule) for v in preds)
+            node = rel.copy(predicates=rel.predicates + preds)
+        else:
+            node = Filter(rel, preds)
+
         return node.to_expr()
 
     def order_by(self, *keys):
         keys = bind(self, keys)
-        keys = unwrap_aliases(keys)
-        node = Sort(self, keys.values())
-        node = node.replace(subsequent_sorts)
+        keys = unwrap_aliases(keys).values()
+
+        rel = self.op()
+        if isinstance(rel, Sort):
+            rule = p.Field(rel, name) >> d.Field(rel.parent, name)
+            keys = tuple(v.replace(rule) for v in keys)
+            node = rel.copy(keys=rel.keys + keys)
+        else:
+            node = Sort(rel, keys)
+
+        # node = node.replace(subsequent_sorts)
+
         return node.to_expr()
 
     def aggregate(self, groups, metrics):
@@ -176,13 +215,17 @@ class TableExpr(Expr):
 
 
 def bind(table: TableExpr, value: Any) -> ir.Value:
+    node = table.op()
     if isinstance(value, ValueExpr):
         yield value
     elif isinstance(value, TableExpr):
         for name in value.schema().keys():
             yield Field(value, name).to_expr()
     elif isinstance(value, str):
-        yield Field(table, value).to_expr()
+        if isinstance(node, Project):
+            yield node.values[value].to_expr().name(value)
+        else:
+            yield Field(table, value).to_expr()
     elif isinstance(value, Deferred):
         yield value.resolve(table)
     elif isinstance(value, Selector):
@@ -241,15 +284,15 @@ def subsequent_projections(_, x, y):
     return Project(y, vals)
 
 
-@replace(p.Filter(x @ p.Filter))
-def subsequent_filters(_, x):
-    # this can be easily expressed in simple deferred-like expressions
-    return Filter(x.parent, x.predicates + _.predicates)
+# @replace(p.Filter(x @ p.Filter))
+# def subsequent_filters(_, x):
+#     # this can be easily expressed in simple deferred-like expressions
+#     return Filter(x.parent, x.predicates + _.predicates)
 
 
-@replace(p.Sort(x @ p.Sort))
-def subsequent_sorts(_, x):
-    return Sort(x.parent, x.keys + _.keys)
+# @replace(p.Sort(x @ p.Sort))
+# def subsequent_sorts(_, x):
+#     return Sort(x.parent, x.keys + _.keys)
 
 
 def relation_of(value):

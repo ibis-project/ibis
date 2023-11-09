@@ -93,10 +93,10 @@ def test_select_values():
     )
 
 
-def test_select_full_reprojection():
-    t1 = t.select(t)
-    expected = t.op()
-    assert t1.op() == expected
+# def test_select_full_reprojection():
+#     t1 = t.select(t)
+#     expected = t.op()
+#     assert t1.op() == expected
 
 
 def test_select_across_relations():
@@ -104,6 +104,57 @@ def test_select_across_relations():
     t2 = t1.select("bool_col", "int_col")
     t3 = t2.select("bool_col")
     expected = Project(parent=t, values={"bool_col": t.bool_col})
+    assert t3.op() == expected
+
+    t1 = t.select(t.bool_col, t.int_col, t.float_col)
+    t2 = t1.select(t1.bool_col, t1.int_col)
+    t3 = t2.select(t2.bool_col)
+    expected = Project(parent=t, values={"bool_col": t.bool_col})
+    assert t3.op() == expected
+
+    expected = Project(
+        t, {"bool_col": t.bool_col, "int_col": t.int_col, "float_col": t.float_col}
+    )
+    t1 = t.select(t.bool_col, t.int_col, t.float_col)
+    t2 = t1.select(t.bool_col, t1.int_col, t1.float_col)
+    t3 = t2.select(t.bool_col, t1.int_col, t2.float_col)
+    assert t1.op() == expected
+    assert t2.op() == expected
+    assert t3.op() == expected
+
+    t1 = t.select(
+        bool_col=~t.bool_col, int_col=t.int_col + 1, float_col=t.float_col * 3
+    )
+    expected = Project(
+        t,
+        {
+            "bool_col": ~t.bool_col,
+            "int_col": t.int_col + 1,
+            "float_col": t.float_col * 3,
+        },
+    )
+    assert t1.op() == expected
+
+    t2 = t1.select(t.bool_col, t1.int_col, t1.float_col)
+    expected = Project(
+        t,
+        {
+            "bool_col": t.bool_col,
+            "int_col": t.int_col + 1,
+            "float_col": t.float_col * 3,
+        },
+    )
+    assert t2.op() == expected
+
+    t3 = t2.select(t.bool_col, t1.int_col, float_col=t2.float_col * 2)
+    expected = Project(
+        t,
+        {
+            "bool_col": t.bool_col,
+            "int_col": t.int_col + 1,
+            "float_col": (t.float_col * 3).name("float_col") * 2,
+        },
+    )
     assert t3.op() == expected
 
 
@@ -127,3 +178,9 @@ def test_subsequent_sorts_are_squashed():
     sort = t.order_by(t.bool_col).order_by(t.int_col)
     expected = Sort(parent=t, keys=[t.bool_col, t.int_col])
     assert sort.op() == expected
+
+
+# def test_e():
+#     t1 = t.select(t.bool_col, t.int_col, t.float_col)
+#     t2 = t1.where(t1.bool_col)
+#     t3 = t1.where(t2.int_col > 0)

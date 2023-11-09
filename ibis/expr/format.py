@@ -283,6 +283,12 @@ def _project(op, parent, values):
     return name + render_schema(fields, 1)
 
 
+@fmt.register(nr.Filter)
+def _project(op, parent, **kwargs):
+    name = f"{op.__class__.__name__}[{parent}]\n"
+    return name + render_fields(kwargs, 1)
+
+
 @fmt.register(ops.SetOp)
 def _set_op(op, left, right, distinct):
     args = [str(left), str(right)]
