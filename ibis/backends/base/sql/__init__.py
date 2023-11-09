@@ -3,10 +3,9 @@ from __future__ import annotations
 import abc
 import contextlib
 import os
+from collections import ChainMap
 from functools import lru_cache
 from typing import TYPE_CHECKING, Any
-
-import toolz
 
 import ibis.common.exceptions as exc
 import ibis.expr.operations as ops
@@ -34,6 +33,48 @@ class BaseSQLBackend(BaseBackend):
     def _sqlglot_dialect(self) -> str:
         return self.name
 
+    def _kwargs_from_url(self, url, **kwargs) -> Mapping[str, Any]:
+        """Create keyword arguments which can be used to create/connect to a backend using a URL `url`.
+
+        Parameters
+        ----------
+        url
+            URL with which to connect to a backend.
+        kwargs
+            Additional keyword arguments passed to the `connect` method.
+
+        Returns
+        -------
+        Dictionary
+            of keyword arguments which can be used to create a backend instance
+        """
+        import sqlalchemy as sa
+
+        url = sa.engine.make_url(url)
+        kwargs = ChainMap(kwargs)
+        kwargs_from_url = {}
+
+        for name in ("host", "port", "database", "password"):
+            if value := (
+                getattr(url, name, None)
+                or os.environ.get(f"{self.name.upper()}_{name.upper()}")
+            ):
+                kwargs_from_url[name] = value
+        if username := url.username:
+            kwargs_from_url["user"] = username
+
+        kwargs = kwargs.new_child(kwargs_from_url)
+        kwargs = kwargs.new_child(url.query)
+        kwargs = dict(kwargs)
+        # Question: Current signature and implementation looks like it could have side
+        #           effects on the object (self) itself. Would a return and assign based
+        #           style easier to read and understand?
+        # e.g.:
+        # kwargs = self._convert_kwargs(kwargs)
+        self._convert_kwargs(kwargs)
+
+        return kwargs
+
     def _from_url(self, url: str, **kwargs: Any) -> BaseBackend:
         """Connect to a backend using a URL `url`.
 
@@ -49,25 +90,8 @@ class BaseSQLBackend(BaseBackend):
         BaseBackend
             A backend instance
         """
-        import sqlalchemy as sa
-
-        url = sa.engine.make_url(url)
-        new_kwargs = kwargs.copy()
-        kwargs = {}
-
-        for name in ("host", "port", "database", "password"):
-            if value := (
-                getattr(url, name, None)
-                or os.environ.get(f"{self.name.upper()}_{name.upper()}")
-            ):
-                kwargs[name] = value
-        if username := url.username:
-            kwargs["user"] = username
-
-        kwargs.update(url.query)
-        new_kwargs = toolz.merge(kwargs, new_kwargs)
-        self._convert_kwargs(new_kwargs)
-        return self.connect(**new_kwargs)
+        kwargs = self._kwargs_from_url(url, kwargs)
+        return self.connect(**kwargs)
 
     def table(self, name: str, database: str | None = None) -> ir.Table:
         """Construct a table expression.
