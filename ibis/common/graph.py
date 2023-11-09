@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING, Any, Callable, Optional, TypeVar
 
 from ibis.common.bases import Hashable
 from ibis.common.collections import frozendict
-from ibis.common.patterns import NoMatch, Pattern, pattern
+from ibis.common.patterns import NoMatch, pattern
 from ibis.util import experimental
 
 if TYPE_CHECKING:
@@ -485,9 +485,7 @@ halt = False
 
 
 def traverse(
-    fn: Callable[[Node], tuple[bool | Iterable, Any]],
-    node: Iterable[Node] | Node,
-    filter: Optional[Any] = None,
+    fn: Callable[[Node], tuple[bool | Iterable, Any]], node: Iterable[Node] | Node
 ) -> Iterator[Any]:
     """Utility for generic expression tree traversal.
 
@@ -498,24 +496,17 @@ def traverse(
         the traversal, and the second is the result if its not `None`.
     node
         The Node expression or a list of expressions.
-    filter
-        Pattern-like object to filter out nodes from the traversal. The traversal will
-        only visit nodes that match the given pattern and stop otherwise.
     """
 
     args = reversed(node) if isinstance(node, Sequence) else [node]
     todo: deque[Node] = deque(args)
     seen: set[Node] = set()
-    filter: Pattern = pattern(filter or ...)
 
     while todo:
         node = todo.pop()
 
         if node in seen:
             continue
-        if filter.match(node, {}) is NoMatch:
-            continue
-
         seen.add(node)
 
         control, result = fn(node)
