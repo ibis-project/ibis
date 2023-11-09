@@ -68,12 +68,7 @@ def tpch_test(test: Callable[..., ir.Table]):
         expected.columns = result.columns
 
         assert len(expected) == len(result)
-        tm.assert_frame_equal(
-            # TODO: we should handle this more precisely
-            result.replace(float("nan"), None),
-            expected,
-            check_dtype=False,
-        )
+        tm.assert_frame_equal(result, expected, check_dtype=False)
 
         # only produce sql if the execution passes
         result_expr_sql = ibis.to_sql(result_expr, dialect=backend_name)
