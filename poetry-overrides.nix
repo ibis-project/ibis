@@ -18,9 +18,9 @@ self: super: {
       })
     ];
   });
-  pyodbc = (super.pyodbc.override { preferWheel = false; }).overridePythonAttrs (attrs: {
-    nativeBuildInputs = attrs.nativeBuildInputs or [ ] ++ [
-      self.pkgs.unixODBC
-    ];
+  pyodbc = super.pyodbc.overridePythonAttrs (attrs: {
+    preFixup = attrs.preFixup or "" + ''
+      addAutoPatchelfSearchPath ${self.pkgs.unixODBC}
+    '';
   });
 }
