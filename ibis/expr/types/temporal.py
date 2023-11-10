@@ -21,37 +21,6 @@ if TYPE_CHECKING:
     import ibis.expr.types as ir
 
 
-@public
-class TemporalValue(Value):
-    def strftime(self, format_str: str) -> ir.StringValue:
-        """Format timestamp according to `format_str`.
-
-        Format string may depend on the backend, but we try to conform to ANSI
-        `strftime`.
-
-        Parameters
-        ----------
-        format_str
-            `strftime` format string
-
-        Returns
-        -------
-        StringValue
-            Formatted version of `arg`
-        """
-        return ops.Strftime(self, format_str).to_expr()
-
-
-@public
-class TemporalScalar(Scalar, TemporalValue):
-    pass
-
-
-@public
-class TemporalColumn(Column, TemporalValue):
-    pass
-
-
 class _DateComponentMixin:
     """Temporal expressions that have a date component."""
 
@@ -176,11 +145,26 @@ class _TimeComponentMixin:
 
 
 @public
-class TimeValue(_TimeComponentMixin, TemporalValue):
-    def truncate(
-        self,
-        unit: Literal["h", "m", "s", "ms", "us", "ns"],
-    ) -> TimeValue:
+class TimeValue(_TimeComponentMixin, Value):
+    def strftime(self, format_str: str) -> ir.StringValue:
+        """Format a time according to `format_str`.
+
+        Format string may depend on the backend, but we try to conform to ANSI
+        `strftime`.
+
+        Parameters
+        ----------
+        format_str
+            `strftime` format string
+
+        Returns
+        -------
+        StringValue
+            Formatted version of `arg`
+        """
+        return ops.Strftime(self, format_str).to_expr()
+
+    def truncate(self, unit: Literal["h", "m", "s", "ms", "us", "ns"]) -> TimeValue:
         """Truncate the expression to a time expression in units of `unit`.
 
         Commonly used for time series resampling.
@@ -317,17 +301,35 @@ class TimeValue(_TimeComponentMixin, TemporalValue):
 
 
 @public
-class TimeScalar(TemporalScalar, TimeValue):
+class TimeScalar(Scalar, TimeValue):
     pass
 
 
 @public
-class TimeColumn(TemporalColumn, TimeValue):
+class TimeColumn(Column, TimeValue):
     pass
 
 
 @public
-class DateValue(TemporalValue, _DateComponentMixin):
+class DateValue(Value, _DateComponentMixin):
+    def strftime(self, format_str: str) -> ir.StringValue:
+        """Format a date according to `format_str`.
+
+        Format string may depend on the backend, but we try to conform to ANSI
+        `strftime`.
+
+        Parameters
+        ----------
+        format_str
+            `strftime` format string
+
+        Returns
+        -------
+        StringValue
+            Formatted version of `arg`
+        """
+        return ops.Strftime(self, format_str).to_expr()
+
     def truncate(self, unit: Literal["Y", "Q", "M", "W", "D"]) -> DateValue:
         """Truncate date expression to units of `unit`.
 
@@ -458,17 +460,35 @@ class DateValue(TemporalValue, _DateComponentMixin):
 
 
 @public
-class DateScalar(TemporalScalar, DateValue):
+class DateScalar(Scalar, DateValue):
     pass
 
 
 @public
-class DateColumn(TemporalColumn, DateValue):
+class DateColumn(Column, DateValue):
     pass
 
 
 @public
-class TimestampValue(_DateComponentMixin, _TimeComponentMixin, TemporalValue):
+class TimestampValue(_DateComponentMixin, _TimeComponentMixin, Value):
+    def strftime(self, format_str: str) -> ir.StringValue:
+        """Format a timestamp according to `format_str`.
+
+        Format string may depend on the backend, but we try to conform to ANSI
+        `strftime`.
+
+        Parameters
+        ----------
+        format_str
+            `strftime` format string
+
+        Returns
+        -------
+        StringValue
+            Formatted version of `arg`
+        """
+        return ops.Strftime(self, format_str).to_expr()
+
     def truncate(
         self,
         unit: Literal["Y", "Q", "M", "W", "D", "h", "m", "s", "ms", "us", "ns"],
@@ -738,12 +758,12 @@ class TimestampValue(_DateComponentMixin, _TimeComponentMixin, TemporalValue):
 
 
 @public
-class TimestampScalar(TemporalScalar, TimestampValue):
+class TimestampScalar(Scalar, TimestampValue):
     pass
 
 
 @public
-class TimestampColumn(TemporalColumn, TimestampValue):
+class TimestampColumn(Column, TimestampValue):
     pass
 
 
