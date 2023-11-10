@@ -496,16 +496,10 @@ $$""".format(**self._get_udf_source(udf_node))
         """
 
         if database is not None and schema is None:
-            util.warn_deprecated(
-                "database",
-                instead=(
-                    f"{self.name} cannot list tables only using `database` specifier. "
-                    "Include a `schema` argument."
-                ),
-                as_of="7.1",
-                removed_in="8.0",
+            raise com.IbisInputError(
+                f"{self.name} cannot list tables only using `database` specifier. "
+                "Include a `schema` argument."
             )
-            database = sg.parse_one(database, into=sg.exp.Table).sql(dialect=self.name)
         elif database is None and schema is not None:
             database = sg.parse_one(schema, into=sg.exp.Table).sql(dialect=self.name)
         else:
