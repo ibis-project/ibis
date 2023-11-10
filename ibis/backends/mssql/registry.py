@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import sqlalchemy as sa
+from sqlalchemy.dialects import mssql
 from sqlalchemy.ext.compiler import compiles
 
 import ibis.common.exceptions as com
@@ -36,6 +37,13 @@ def _reduction(func, cast_type="int32"):
 @compiles(substr, "mssql")
 def mssql_substr(element, compiler, **kw):
     return compiler.process(sa.func.substring(*element.clauses), **kw)
+
+
+@compiles(mssql.VARBINARY)
+def compile_mssql_varbinary(element, compiler, **kw):
+    if (length := element.length) is not None:
+        return f"VARBINARY({length})"
+    return "VARBINARY"
 
 
 # String
@@ -145,6 +153,62 @@ def _not(t, op):
         return sa.case((arg == 0, True), else_=False)
 
 
+def _literal(_, op):
+    dtype = op.dtype
+    value = op.value
+
+    if value is None:
+        return sa.null()
+
+    if dtype.is_array():
+        value = list(value)
+    elif dtype.is_decimal():
+        value = value.normalize()
+    elif dtype.is_date():
+        return sa.func.datefromparts(value.year, value.month, value.day)
+    elif dtype.is_timestamp():
+        args = (
+            value.year,
+            value.month,
+            value.day,
+            value.hour,
+            value.minute,
+            value.second,
+            value.microsecond,
+        )
+        if dtype.timezone is not None:
+            assert value.tzinfo is not None
+
+            offset = value.strftime("%z")
+            hour_offset = int(offset[:3])
+            minute_offset = int(offset[-2:])
+            return sa.func.datetimeoffsetfromparts(
+                *args,
+                hour_offset,
+                minute_offset,
+                6,  # precision
+            )
+        else:
+            return sa.func.datetime2fromparts(
+                *args,
+                6,  # precision
+            )
+    elif dtype.is_time():
+        return sa.func.timefromparts(
+            value.hour,
+            value.minute,
+            value.second,
+            value.microsecond,
+            sa.literal_column("0"),
+        )
+    elif dtype.is_uuid():
+        return sa.cast(sa.literal(str(value)), mssql.UNIQUEIDENTIFIER)
+    elif dtype.is_binary():
+        return sa.cast(value, mssql.VARBINARY("max"))
+
+    return sa.literal(value)
+
+
 operation_registry = sqlalchemy_operation_registry.copy()
 operation_registry.update(sqlalchemy_window_functions_registry)
 
@@ -241,6 +305,7 @@ operation_registry.update(
         ops.TimeDelta: _temporal_delta,
         ops.DateDelta: _temporal_delta,
         ops.TimestampDelta: _temporal_delta,
+        ops.Literal: _literal,
     }
 )
 
