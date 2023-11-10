@@ -255,7 +255,12 @@ class TimeValue(_TimeComponentMixin, TemporalValue):
     rsub = __rsub__
 
     def delta(
-        self, other: datetime.time | Value[dt.Time], part: str
+        self,
+        other: datetime.time | Value[dt.Time],
+        part: Literal[
+            "hour", "minute", "second", "millisecond", "microsecond", "nanosecond"
+        ]
+        | Value[dt.String],
     ) -> ir.IntegerValue:
         """Compute the number of `part`s between two times.
 
@@ -401,7 +406,9 @@ class DateValue(TemporalValue, _DateComponentMixin):
     rsub = __rsub__
 
     def delta(
-        self, other: datetime.date | Value[dt.Date], part: str
+        self,
+        other: datetime.date | Value[dt.Date],
+        part: Literal["year", "quarter", "month", "week", "day"] | Value[dt.String],
     ) -> ir.IntegerValue:
         """Compute the number of `part`s between two dates.
 
@@ -678,7 +685,22 @@ class TimestampValue(_DateComponentMixin, _TimeComponentMixin, TemporalValue):
     rsub = __rsub__
 
     def delta(
-        self, other: datetime.datetime | Value[dt.Timestamp], part: str
+        self,
+        other: datetime.datetime | Value[dt.Timestamp],
+        part: Literal[
+            "year",
+            "quarter",
+            "month",
+            "week",
+            "day",
+            "hour",
+            "minute",
+            "second",
+            "millisecond",
+            "microsecond",
+            "nanosecond",
+        ]
+        | Value[dt.String],
     ) -> ir.IntegerValue:
         """Compute the number of `part`s between two timestamps.
 
