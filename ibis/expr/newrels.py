@@ -7,7 +7,7 @@ import ibis.expr.datatypes as dt
 import ibis.expr.types as ir
 from ibis.common.annotations import attribute
 from ibis.common.collections import FrozenDict  # noqa: TCH001
-from ibis.common.deferred import Deferred, deferred, var
+from ibis.common.deferred import Deferred, Item, deferred, var
 from ibis.common.exceptions import IntegrityError
 from ibis.common.patterns import Check, InstanceOf, _, pattern, replace
 from ibis.common.typing import Coercible, VarTuple
@@ -35,13 +35,13 @@ class Relation(Node, Coercible):
         else:
             raise TypeError(f"Cannot coerce {value!r} to a Relation")
 
-    @attribute
+    @property
     def fields(self):
-        raise NotImplementedError()
+        ...
 
-    @attribute
+    @property
     def schema(self):
-        return Schema({k: v.dtype for k, v in self.fields.items()})
+        ...
 
     def to_expr(self):
         return TableExpr(self)
@@ -53,7 +53,7 @@ class Field(Value):
 
     shape = ds.columnar
 
-    @attribute
+    @property
     def dtype(self):
         return self.rel.schema[self.name]
 
@@ -61,7 +61,7 @@ class Field(Value):
 def _check_integrity(parent, values):
     possible_fields = set(parent.fields.values())
     for value in values:
-        for field in value.find(Field):
+        for field in value.find(Field, filter=Value):
             if field not in possible_fields:
                 raise IntegrityError(
                     f"Cannot add {field!r} to projection, "
@@ -74,15 +74,16 @@ class Project(Relation):
     values: FrozenDict[str, Annotated[Value, ~InstanceOf(Alias)]]
 
     def __init__(self, parent, values):
-        p = parent
-        while isinstance(p, Project):
-            p = p.parent
-        _check_integrity(p, values.values())
+        _check_integrity(parent, values.values())
         super().__init__(parent=parent, values=values)
 
-    @attribute
+    @property
     def fields(self):
-        return self.values
+        return {k: Field(self, k) for k in self.values}
+
+    @property
+    def schema(self):
+        return Schema({k: v.dtype for k, v in self.values.items()})
 
 
 # TODO(kszucs): consider to have a specialization projecting only fields not
@@ -108,12 +109,20 @@ class Sort(Relation):
     keys: VarTuple[SortKey]
 
     def __init__(self, parent, keys):
+        # squash subsequent sorts
+        if isinstance(parent, Sort):
+            keys = parent.keys + keys
+            parent = parent.parent
         _check_integrity(parent, keys)
         super().__init__(parent=parent, keys=keys)
 
-    @attribute
+    @property
     def fields(self):
         return self.parent.fields
+
+    @property
+    def schema(self):
+        return self.parent.schema
 
 
 class Filter(Relation):
@@ -121,12 +130,21 @@ class Filter(Relation):
     predicates: VarTuple[Value[dt.Boolean]]
 
     def __init__(self, parent, predicates):
+        # squash subsequent filters
+        if isinstance(parent, Filter):
+            predicates = parent.predicates + predicates
+            parent = parent.parent
+        # TODO(kszucs): use toolz.unique(predicates) to remove duplicates
         _check_integrity(parent, predicates)
         super().__init__(parent=parent, predicates=predicates)
 
-    @attribute
+    @property
     def fields(self):
         return self.parent.fields
+
+    @property
+    def schema(self):
+        return self.parent.schema
 
 
 # class Aggregate(Relation):
@@ -145,7 +163,7 @@ class UnboundTable(Relation):
     name: str
     schema: Schema
 
-    @attribute
+    @property
     def fields(self):
         return {k: Field(self, k) for k in self.schema}
 
@@ -253,17 +271,18 @@ def complete_reprojection(_, y):
     return y
 
 
-@replace(p.Project(p.Project(y)))
+@replace(p.Project(y @ p.Project))
 def subsequent_projects(_, y):
-    return Project(y, _.values)
+    rule = p.Field(y, name) >> Item(y.values, name)
+    values = {k: v.replace(rule) for k, v in _.values.items()}
+    return Project(y.parent, values)
 
 
-@replace(p.Filter(x @ p.Filter))
-def subsequent_filters(_, x):
-    # this can be easily expressed in simple deferred-like expressions
-    return Filter(x.parent, x.predicates + _.predicates)
+@replace(p.Filter(y @ p.Filter))
+def subsequent_filters(_, y):
+    return Filter(y.parent, y.predicates + _.predicates)
 
 
-@replace(p.Sort(x @ p.Sort))
-def subsequent_sorts(_, x):
-    return Sort(x.parent, x.keys + _.keys)
+@replace(p.Sort(y @ p.Sort))
+def subsequent_sorts(_, y):
+    return Sort(y.parent, y.keys + _.keys)

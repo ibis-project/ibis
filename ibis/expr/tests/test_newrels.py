@@ -1,7 +1,10 @@
 from __future__ import annotations
 
+import pytest
+
 import ibis.expr.datashape as ds
 import ibis.expr.datatypes as dt
+from ibis.common.exceptions import IntegrityError
 from ibis.expr.newrels import Field, Filter, Project, Sort, TableExpr, UnboundTable
 from ibis.expr.schema import Schema
 
@@ -116,8 +119,12 @@ def test_select_across_relations():
         t, {"bool_col": t.bool_col, "int_col": t.int_col, "float_col": t.float_col}
     )
     t1 = t.select(t.bool_col, t.int_col, t.float_col)
-    t2 = t1.select(t.bool_col, t1.int_col, t1.float_col)
-    t3 = t2.select(t.bool_col, t1.int_col, t2.float_col)
+    with pytest.raises(IntegrityError):
+        t1.select(t.bool_col, t1.int_col, t1.float_col)
+    t2 = t1.select(t1.bool_col, t1.int_col, t1.float_col)
+    with pytest.raises(IntegrityError):
+        t2.select(t.bool_col, t1.int_col, t2.float_col)
+    t3 = t2.select(t2.bool_col, t2.int_col, t2.float_col)
     assert t1.op() == expected
     assert t2.op() == expected
     assert t3.op() == expected
@@ -135,18 +142,10 @@ def test_select_across_relations():
     )
     assert t1.op() == expected
 
-    t2 = t1.select(t.bool_col, t1.int_col, t1.float_col)
-    expected = Project(
-        t,
-        {
-            "bool_col": t.bool_col,
-            "int_col": t.int_col + 1,
-            "float_col": t.float_col * 3,
-        },
-    )
+    t2 = t1.select(t1.bool_col, t1.int_col, t1.float_col)
     assert t2.op() == expected
 
-    t3 = t2.select(t.bool_col, t1.int_col, float_col=t2.float_col * 2)
+    t3 = t2.select(t2.bool_col, t2.int_col, float_col=t2.float_col * 2)
     expected = Project(
         t,
         {
@@ -181,6 +180,9 @@ def test_subsequent_sorts_are_squashed():
 
 
 def test_e():
-    t1 = t.select(t.bool_col, t.int_col, t.float_col)
+    t1 = t.select(
+        bool_col=~t.bool_col, int_col=t.int_col + 1, float_col=t.float_col * 3
+    )
     t2 = t1.where(t1.bool_col)
     t3 = t2.where(t2.int_col > 0)
+    t4 = t3.select(t3.bool_col, t3.int_col)
