@@ -764,6 +764,18 @@ def _timestamp_delta(t, op):
         )
 
 
+def _group_concat(translator, op):
+    arg = op.arg
+    where = op.where
+
+    if where is not None:
+        arg = ops.IfElse(where, arg, ibis.NA)
+
+    arg = translator.translate(arg)
+    sep = translator.translate(op.sep)
+    return f"STRING_AGG({arg}, {sep})"
+
+
 OPERATION_REGISTRY = {
     **operation_registry,
     # Literal
@@ -836,7 +848,7 @@ OPERATION_REGISTRY = {
     ops.RegexSearch: _regex_search,
     ops.RegexExtract: _regex_extract,
     ops.RegexReplace: _regex_replace,
-    ops.GroupConcat: reduction("STRING_AGG"),
+    ops.GroupConcat: _group_concat,
     ops.Cast: _cast,
     ops.StructField: _struct_field,
     ops.StructColumn: _struct_column,
