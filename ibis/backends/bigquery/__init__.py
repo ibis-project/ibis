@@ -23,7 +23,6 @@ import ibis
 import ibis.common.exceptions as com
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
-from ibis import util
 from ibis.backends.base import CanCreateSchema, Database
 from ibis.backends.base.sql import BaseSQLBackend
 from ibis.backends.bigquery.client import (
@@ -819,18 +818,10 @@ class Backend(BaseSQLBackend, CanCreateSchema):
             :::
         """
         if database is not None and schema is None:
-            util.warn_deprecated(
-                "database",
-                instead=(
-                    f"{self.name} cannot list tables only using `database` specifier. "
-                    "Include a `schema` argument."
-                ),
-                as_of="7.1",
-                removed_in="8.0",
+            raise com.com.IbisInputError(
+                f"{self.name} cannot list tables only using `database` specifier. "
+                "Include a `schema` argument."
             )
-            database = sg.parse_one(database, into=sg.exp.Table, read=self.name)
-            database.args["quoted"] = False
-            database = database.sql(dialect=self.name)
         elif database is None and schema is not None:
             database = sg.parse_one(schema, into=sg.exp.Table, read=self.name)
             database.args["quoted"] = False
