@@ -93,10 +93,10 @@ def test_select_values():
     )
 
 
-# def test_select_full_reprojection():
-#     t1 = t.select(t)
-#     expected = t.op()
-#     assert t1.op() == expected
+def test_select_full_reprojection():
+    t1 = t.select(t)
+    expected = t.op()
+    assert t1.op() == expected
 
 
 def test_select_across_relations():

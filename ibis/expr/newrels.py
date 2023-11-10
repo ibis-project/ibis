@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from abc import abstractmethod
 from typing import Annotated, Any
 
 import ibis.expr.datashape as ds
@@ -8,12 +7,11 @@ import ibis.expr.datatypes as dt
 import ibis.expr.types as ir
 from ibis.common.annotations import attribute
 from ibis.common.collections import FrozenDict  # noqa: TCH001
-from ibis.common.deferred import Deferred, Item, deferred, var
+from ibis.common.deferred import Deferred, deferred, var
 from ibis.common.exceptions import IntegrityError
-from ibis.common.graph import traverse
 from ibis.common.patterns import Check, InstanceOf, _, pattern, replace
 from ibis.common.typing import Coercible, VarTuple
-from ibis.expr.operations import Alias, Column, Node, Scalar, SortKey, Value
+from ibis.expr.operations import Alias, Node, SortKey, Value
 from ibis.expr.schema import Schema
 from ibis.expr.types import Expr, literal
 from ibis.expr.types import Value as ValueExpr
@@ -76,7 +74,10 @@ class Project(Relation):
     values: FrozenDict[str, Annotated[Value, ~InstanceOf(Alias)]]
 
     def __init__(self, parent, values):
-        _check_integrity(parent, values.values())
+        p = parent
+        while isinstance(p, Project):
+            p = p.parent
+        _check_integrity(p, values.values())
         super().__init__(parent=parent, values=values)
 
     @attribute
@@ -163,20 +164,8 @@ class TableExpr(Expr):
         values = bind(self, (args, kwargs))
         values = unwrap_aliases(values)
         # TODO(kszucs): windowization of reductions should happen here
-
-        rel = self.op()
-        if isinstance(rel, Project):
-            # subsequent projections, use only the new values
-            # rule = p.Field(rel, name) >> Item(rel.values, name)
-            # values = {k: v.replace(rule) for k, v in values.items()}
-            # this peeling is currently done in bind() directly referencing the
-            # parent relation's value
-            node = rel.copy(values=values)
-        else:
-            node = Project(rel, values)
-
-        # node = node.replace(complete_reprojection | subsequent_projections)
-
+        node = Project(self, values)
+        node = node.replace(complete_reprojection | subsequent_projects)
         return node.to_expr()
 
     def where(self, *predicates):
@@ -264,11 +253,9 @@ def complete_reprojection(_, y):
     return y
 
 
-@replace(p.Project(x @ p.Project(y)))
-def subsequent_projections(_, x, y):
-    rule = p.Field(x, name) >> Item(x.values, name)
-    vals = {k: v.replace(rule) for k, v in _.values.items()}
-    return Project(y, vals)
+@replace(p.Project(p.Project(y)))
+def subsequent_projects(_, y):
+    return Project(y, _.values)
 
 
 @replace(p.Filter(x @ p.Filter))
@@ -280,20 +267,3 @@ def subsequent_filters(_, x):
 @replace(p.Sort(x @ p.Sort))
 def subsequent_sorts(_, x):
     return Sort(x.parent, x.keys + _.keys)
-
-
-def relation_of(value):
-    def fn(node):
-        if isinstance(node, Relation):
-            return False, node
-        else:
-            return True, None
-
-    try:
-        return next(traverse(fn, value))
-    except StopIteration:
-        return None
-
-
-# POSSIBLE REWRITES:
-# 1. Reprojection of the whole relation: t.select(t) >> t
