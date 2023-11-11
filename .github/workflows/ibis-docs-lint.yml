@@ -126,21 +126,6 @@ jobs:
       - name: benchmark
         run: poetry run pytest --benchmark-enable --benchmark-json .benchmarks/output.json ibis/tests/benchmarks
 
-      - uses: tibdex/github-app-token@v2
-        id: generate-token
-        with:
-          app_id: ${{ secrets.SQUAWK_BOT_APP_ID }}
-          private_key: ${{ secrets.SQUAWK_BOT_APP_PRIVATE_KEY }}
-
-      - uses: benchmark-action/github-action-benchmark@v1
-        with:
-          tool: pytest
-          github-token: ${{ steps.generate-token.outputs.token }}
-          output-file-path: .benchmarks/output.json
-          benchmark-data-dir-path: ./bench
-          auto-push: false
-          comment-on-alert: false
-
       - uses: google-github-actions/auth@v1
         with:
           credentials_json: ${{ secrets.GCP_CREDENTIALS }}
