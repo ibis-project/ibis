@@ -146,10 +146,13 @@ jobs:
         run: |
           set -euo pipefail
 
+          # sort json keys
+          jq --sort-keys -rcM < "$PWD/.benchmarks/output.json" > output.json
+
           # connect to a file to allow spilling to disk
           ./duckdb json2parquet.ddb <<EOF
             COPY (
-              SELECT * FROM read_json_auto('$PWD/.benchmarks/output.json', maximum_object_size=2**27)
+              SELECT * FROM read_ndjson_auto('output.json', maximum_object_size=2**27)
             ) TO 'output.parquet' (FORMAT PARQUET, COMPRESSION ZSTD)
           EOF
 
