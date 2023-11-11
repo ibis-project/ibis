@@ -150,13 +150,30 @@ jobs:
       - name: show gcloud info
         run: gcloud info
 
-      - name: copy benchmark data to gcs
+      - name: download the latest duckdb release
         run: |
-          # remove whitespace and compress
-          jq -rcM < ./.benchmarks/output.json | gzip -c > output.json.gz
+          set -euo pipefail
+
+          gh release download -R duckdb/duckdb --pattern 'duckdb_cli-linux-amd64.zip'
+          unzip duckdb_cli-linux-amd64.zip
+
+      - name: convert json data to parquet
+        run: |
+          set -euo pipefail
+
+          # connect to a file to allow spilling to disk
+          ./duckdb json2parquet.ddb <<EOF
+            COPY (
+              SELECT * FROM read_json_auto('$PWD/.benchmarks/output.json', maximum_object_size=2**27)
+            ) TO 'output.parquet' (FORMAT PARQUET, COMPRESSION ZSTD)
+          EOF
+
+      - name: copy data to gcs
+        run: |
+          set -euo pipefail
 
           timestamp="$(date --iso-8601=ns --utc | tr ','  '.')"
-          gsutil cp output.json.gz "gs://ibis-benchmark-data/ci/${timestamp}.json.gz"
+          gsutil cp output.parquet "gs://ibis-benchmark-data/ci/${timestamp}.parquet"
 
   docs_pr:
     runs-on: ubuntu-latest
