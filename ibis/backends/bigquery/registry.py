@@ -75,7 +75,7 @@ def bigquery_cast_floating_to_integer(compiled_arg, from_, to):
 @bigquery_cast.register(str, dt.DataType, dt.DataType)
 def bigquery_cast_generate(compiled_arg, from_, to):
     """Cast to desired type."""
-    sql_type = BigQueryType.from_ibis(to)
+    sql_type = BigQueryType.to_string(to)
     return f"CAST({compiled_arg} AS {sql_type})"
 
 
@@ -337,7 +337,7 @@ def _literal(t, op):
 
     if value is None:
         if not dtype.is_null():
-            return f"CAST(NULL AS {BigQueryType.from_ibis(dtype)})"
+            return f"CAST(NULL AS {BigQueryType.to_string(dtype)})"
         return "NULL"
     elif dtype.is_boolean():
         return str(value).upper()
@@ -350,7 +350,7 @@ def _literal(t, op):
             prefix = "-" * value.is_signed()
             return f"CAST('{prefix}inf' AS FLOAT64)"
         else:
-            return f"{BigQueryType.from_ibis(dtype)} '{value}'"
+            return f"{BigQueryType.to_string(dtype)} '{value}'"
     elif dtype.is_uuid():
         return _sg_literal(str(value))
     elif dtype.is_numeric():
@@ -564,7 +564,7 @@ def compiles_string_to_timestamp(translator, op):
 
 
 def compiles_floor(t, op):
-    bigquery_type = BigQueryType.from_ibis(op.dtype)
+    bigquery_type = BigQueryType.to_string(op.dtype)
     arg = op.arg
     return f"CAST(FLOOR({t.translate(arg)}) AS {bigquery_type})"
 

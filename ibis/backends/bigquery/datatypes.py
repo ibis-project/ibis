@@ -1,101 +1,124 @@
 from __future__ import annotations
 
 import google.cloud.bigquery as bq
-import sqlglot as sg
+import sqlglot.expressions as sge
 
 import ibis
 import ibis.expr.datatypes as dt
 import ibis.expr.schema as sch
-from ibis.formats import SchemaMapper, TypeMapper
-
-_from_bigquery_types = {
-    "INT64": dt.Int64,
-    "INTEGER": dt.Int64,
-    "FLOAT": dt.Float64,
-    "FLOAT64": dt.Float64,
-    "BOOL": dt.Boolean,
-    "BOOLEAN": dt.Boolean,
-    "STRING": dt.String,
-    "DATE": dt.Date,
-    "TIME": dt.Time,
-    "BYTES": dt.Binary,
-    "JSON": dt.JSON,
-}
+from ibis.backends.base.sqlglot.datatypes import SqlglotType
+from ibis.formats import SchemaMapper
 
 
-class BigQueryType(TypeMapper):
+class BigQueryType(SqlglotType):
+    dialect = "bigquery"
+
+    default_decimal_precision = 38
+    default_decimal_scale = 9
+
     @classmethod
-    def to_ibis(cls, typ: str, nullable: bool = True) -> dt.DataType:
-        if typ == "DATETIME":
-            return dt.Timestamp(timezone=None, nullable=nullable)
-        elif typ == "TIMESTAMP":
-            return dt.Timestamp(timezone="UTC", nullable=nullable)
-        elif typ == "NUMERIC":
-            return dt.Decimal(38, 9, nullable=nullable)
-        elif typ == "BIGNUMERIC":
-            return dt.Decimal(76, 38, nullable=nullable)
-        elif typ == "GEOGRAPHY":
-            return dt.GeoSpatial(geotype="geography", srid=4326, nullable=nullable)
+    def _from_sqlglot_NUMERIC(cls) -> dt.Decimal:
+        return dt.Decimal(
+            cls.default_decimal_precision,
+            cls.default_decimal_scale,
+            nullable=cls.default_nullable,
+        )
+
+    @classmethod
+    def _from_sqlglot_BIGNUMERIC(cls) -> dt.Decimal:
+        return dt.Decimal(76, 38, nullable=cls.default_nullable)
+
+    @classmethod
+    def _from_sqlglot_DATETIME(cls) -> dt.Decimal:
+        return dt.Timestamp(timezone=None, nullable=cls.default_nullable)
+
+    @classmethod
+    def _from_sqlglot_TIMESTAMP(cls) -> dt.Decimal:
+        return dt.Timestamp(timezone="UTC", nullable=cls.default_nullable)
+
+    @classmethod
+    def _from_sqlglot_GEOGRAPHY(cls) -> dt.Decimal:
+        return dt.GeoSpatial(
+            geotype="geography", srid=4326, nullable=cls.default_nullable
+        )
+
+    @classmethod
+    def _from_sqlglot_TINYINT(cls) -> dt.Int64:
+        return dt.Int64(nullable=cls.default_nullable)
+
+    _from_sqlglot_UINT = (
+        _from_sqlglot_USMALLINT
+    ) = (
+        _from_sqlglot_UTINYINT
+    ) = _from_sqlglot_INT = _from_sqlglot_SMALLINT = _from_sqlglot_TINYINT
+
+    @classmethod
+    def _from_sqlglot_UBIGINT(cls) -> dt.Int64:
+        raise TypeError("Unsigned BIGINT isn't representable in BigQuery INT64")
+
+    @classmethod
+    def _from_sqlglot_FLOAT(cls) -> dt.Double:
+        return dt.Float64(nullable=cls.default_nullable)
+
+    @classmethod
+    def _from_sqlglot_MAP(cls) -> dt.Map:
+        raise NotImplementedError(
+            "Cannot convert sqlglot Map type to ibis type: maps are not supported in BigQuery"
+        )
+
+    @classmethod
+    def _from_ibis_Map(cls, dtype: dt.Map) -> sge.DataType:
+        raise NotImplementedError(
+            "Cannot convert Ibis Map type to BigQuery type: maps are not supported in BigQuery"
+        )
+
+    @classmethod
+    def _from_ibis_Timestamp(cls, dtype: dt.Timestamp) -> sge.DataType:
+        if dtype.timezone is None:
+            return sge.DataType(this=sge.DataType.Type.DATETIME)
+        elif dtype.timezone == "UTC":
+            return sge.DataType(this=sge.DataType.Type.TIMESTAMPTZ)
         else:
-            try:
-                return _from_bigquery_types[typ](nullable=nullable)
-            except KeyError:
-                raise TypeError(f"Unable to convert BigQuery type to ibis: {typ}")
+            raise TypeError(
+                "BigQuery does not support timestamps with timezones other than 'UTC'"
+            )
 
     @classmethod
-    def from_ibis(cls, dtype: dt.DataType) -> str:
-        if dtype.is_floating():
-            return "FLOAT64"
-        elif dtype.is_uint64():
-            raise TypeError(
-                "Conversion from uint64 to BigQuery integer type (int64) is lossy"
-            )
-        elif dtype.is_integer():
-            return "INT64"
-        elif dtype.is_binary():
-            return "BYTES"
-        elif dtype.is_date():
-            return "DATE"
-        elif dtype.is_timestamp():
-            if dtype.timezone is None:
-                return "DATETIME"
-            elif dtype.timezone == "UTC":
-                return "TIMESTAMP"
-            else:
-                raise TypeError(
-                    "BigQuery does not support timestamps with timezones other than 'UTC'"
-                )
-        elif dtype.is_decimal():
-            if (dtype.precision, dtype.scale) == (76, 38):
-                return "BIGNUMERIC"
-            if (dtype.precision, dtype.scale) in [(38, 9), (None, None)]:
-                return "NUMERIC"
+    def _from_ibis_Decimal(cls, dtype: dt.Decimal) -> sge.DataType:
+        precision = dtype.precision
+        scale = dtype.scale
+        if (precision, scale) == (76, 38):
+            return sge.DataType(this=sge.DataType.Type.BIGDECIMAL)
+        elif (precision, scale) in ((38, 9), (None, None)):
+            return sge.DataType(this=sge.DataType.Type.DECIMAL)
+        else:
             raise TypeError(
                 "BigQuery only supports decimal types with precision of 38 and "
                 f"scale of 9 (NUMERIC) or precision of 76 and scale of 38 (BIGNUMERIC). "
                 f"Current precision: {dtype.precision}. Current scale: {dtype.scale}"
             )
-        elif dtype.is_array():
-            return f"ARRAY<{cls.from_ibis(dtype.value_type)}>"
-        elif dtype.is_struct():
-            fields = (
-                f"{sg.to_identifier(k).sql('bigquery')} {cls.from_ibis(v)}"
-                for k, v in dtype.fields.items()
-            )
-            return "STRUCT<{}>".format(", ".join(fields))
-        elif dtype.is_json():
-            return "JSON"
-        elif dtype.is_geospatial():
-            if (dtype.geotype, dtype.srid) == ("geography", 4326):
-                return "GEOGRAPHY"
+
+    @classmethod
+    def _from_ibis_UInt64(cls, dtype: dt.UInt64) -> sge.DataType:
+        raise TypeError(
+            f"Conversion from {dtype} to BigQuery integer type (Int64) is lossy"
+        )
+
+    @classmethod
+    def _from_ibis_UInt32(cls, dtype: dt.UInt32) -> sge.DataType:
+        return sge.DataType(this=sge.DataType.Type.BIGINT)
+
+    _from_ibis_UInt8 = _from_ibis_UInt16 = _from_ibis_UInt32
+
+    @classmethod
+    def _from_ibis_GeoSpatial(cls, dtype: dt.GeoSpatial) -> sge.DataType:
+        if (dtype.geotype, dtype.srid) == ("geography", 4326):
+            return sge.DataType(this=sge.DataType.Type.GEOGRAPHY)
+        else:
             raise TypeError(
                 "BigQuery geography uses points on WGS84 reference ellipsoid."
                 f"Current geotype: {dtype.geotype}, Current srid: {dtype.srid}"
             )
-        elif dtype.is_map():
-            raise NotImplementedError("Maps are not supported in BigQuery")
-        else:
-            return str(dtype).upper()
 
 
 class BigQuerySchema(SchemaMapper):
@@ -112,7 +135,7 @@ class BigQuerySchema(SchemaMapper):
                 is_struct = value_type.is_struct()
 
                 field_type = (
-                    "RECORD" if is_struct else BigQueryType.from_ibis(typ.value_type)
+                    "RECORD" if is_struct else BigQueryType.to_string(typ.value_type)
                 )
                 mode = "REPEATED"
                 fields = cls.from_ibis(ibis.schema(getattr(value_type, "fields", {})))
@@ -121,7 +144,7 @@ class BigQuerySchema(SchemaMapper):
                 mode = "NULLABLE" if typ.nullable else "REQUIRED"
                 fields = cls.from_ibis(ibis.schema(typ.fields))
             else:
-                field_type = BigQueryType.from_ibis(typ)
+                field_type = BigQueryType.to_string(typ)
                 mode = "NULLABLE" if typ.nullable else "REQUIRED"
                 fields = ()
 
@@ -138,7 +161,7 @@ class BigQuerySchema(SchemaMapper):
             fields = {f.name: cls._dtype_from_bigquery_field(f) for f in field.fields}
             dtype = dt.Struct(fields)
         else:
-            dtype = BigQueryType.to_ibis(typ)
+            dtype = BigQueryType.from_string(typ)
 
         mode = field.mode
         if mode == "NULLABLE":
