@@ -389,29 +389,16 @@ def test_register_garbage(con, monkeypatch):
 
 
 @pytest.mark.parametrize(
-    ("fname", "in_table_name", "out_table_name"),
+    ("fname", "in_table_name"),
     [
-        (
-            "functional_alltypes.parquet",
-            None,
-            "ibis_read_parquet",
-        ),
-        ("functional_alltypes.parquet", "funk_all", "funk_all"),
+        ("functional_alltypes.parquet", None),
+        ("functional_alltypes.parquet", "funk_all"),
     ],
 )
 @pytest.mark.notyet(
-    [
-        "bigquery",
-        "flink",
-        "impala",
-        "mssql",
-        "mysql",
-        "postgres",
-        "sqlite",
-        "trino",
-    ]
+    ["flink", "impala", "mssql", "mysql", "postgres", "sqlite", "trino"]
 )
-def test_read_parquet(con, tmp_path, data_dir, fname, in_table_name, out_table_name):
+def test_read_parquet(con, tmp_path, data_dir, fname, in_table_name):
     pq = pytest.importorskip("pyarrow.parquet")
 
     fname = Path(fname)
@@ -426,10 +413,9 @@ def test_read_parquet(con, tmp_path, data_dir, fname, in_table_name, out_table_n
             fname = str(Path(fname).absolute())
         table = con.read_parquet(fname, table_name=in_table_name)
 
-    assert any(out_table_name in t for t in con.list_tables())
-
-    if con.name != "datafusion":
-        table.count().execute()
+    if in_table_name is not None:
+        assert table.op().name == in_table_name
+    assert table.count().execute()
 
 
 @pytest.fixture(scope="module")
@@ -441,17 +427,7 @@ def ft_data(data_dir):
 
 
 @pytest.mark.notyet(
-    [
-        "bigquery",
-        "flink",
-        "impala",
-        "mssql",
-        "mysql",
-        "pandas",
-        "postgres",
-        "sqlite",
-        "trino",
-    ]
+    ["flink", "impala", "mssql", "mysql", "pandas", "postgres", "sqlite", "trino"]
 )
 def test_read_parquet_glob(con, tmp_path, ft_data):
     pq = pytest.importorskip("pyarrow.parquet")
@@ -470,17 +446,7 @@ def test_read_parquet_glob(con, tmp_path, ft_data):
 
 
 @pytest.mark.notyet(
-    [
-        "bigquery",
-        "flink",
-        "impala",
-        "mssql",
-        "mysql",
-        "pandas",
-        "postgres",
-        "sqlite",
-        "trino",
-    ]
+    ["flink", "impala", "mssql", "mysql", "pandas", "postgres", "sqlite", "trino"]
 )
 def test_read_csv_glob(con, tmp_path, ft_data):
     pc = pytest.importorskip("pyarrow.csv")
@@ -500,7 +466,6 @@ def test_read_csv_glob(con, tmp_path, ft_data):
 
 @pytest.mark.notyet(
     [
-        "bigquery",
         "clickhouse",
         "dask",
         "datafusion",
@@ -554,25 +519,13 @@ DIAMONDS_COLUMN_TYPES = {
 
 
 @pytest.mark.parametrize(
-    ("in_table_name", "out_table_name"),
-    [
-        param(None, "ibis_read_csv_", id="default"),
-        param("fancy_stones", "fancy_stones", id="file_name"),
-    ],
+    "in_table_name",
+    [param(None, id="default"), param("fancy_stones", id="file_name")],
 )
 @pytest.mark.notyet(
-    [
-        "bigquery",
-        "flink",
-        "impala",
-        "mssql",
-        "mysql",
-        "postgres",
-        "sqlite",
-        "trino",
-    ]
+    ["flink", "impala", "mssql", "mysql", "postgres", "sqlite", "trino"]
 )
-def test_read_csv(con, data_dir, in_table_name, out_table_name, num_diamonds):
+def test_read_csv(con, data_dir, in_table_name, num_diamonds):
     fname = "diamonds.csv"
     with pushd(data_dir / "csv"):
         if con.name == "pyspark":
@@ -580,7 +533,8 @@ def test_read_csv(con, data_dir, in_table_name, out_table_name, num_diamonds):
             fname = str(Path(fname).absolute())
         table = con.read_csv(fname, table_name=in_table_name)
 
-    assert any(out_table_name in t for t in con.list_tables())
+    if in_table_name is not None:
+        assert table.op().name == in_table_name
 
     special_types = DIAMONDS_COLUMN_TYPES.get(con.name, {})
 

@@ -2,7 +2,10 @@
 
 from __future__ import annotations
 
+import concurrent.futures
 import contextlib
+import glob
+import os
 import re
 import warnings
 from functools import partial
@@ -40,6 +43,7 @@ with contextlib.suppress(ImportError):
 
 if TYPE_CHECKING:
     from collections.abc import Iterable, Mapping
+    from pathlib import Path
 
     import pyarrow as pa
     from google.cloud.bigquery.table import RowIterator
@@ -146,6 +150,141 @@ class Backend(BaseSQLBackend, CanCreateSchema):
                 ),
             )
             load_job.result()
+
+    def _read_file(
+        self,
+        path: str | Path,
+        *,
+        table_name: str | None = None,
+        job_config: bq.LoadJobConfig,
+    ) -> ir.Table:
+        self._make_session()
+
+        if table_name is None:
+            table_name = util.gen_name(f"bq_read_{job_config.source_format}")
+
+        table_ref = self._session_dataset.table(table_name)
+
+        schema = self._session_dataset.dataset_id
+        database = self._session_dataset.project
+
+        # drop the table if it exists
+        #
+        # we could do this with write_disposition = WRITE_TRUNCATE but then the
+        # concurrent append jobs aren't possible
+        #
+        # dropping the table first means all write_dispositions can be
+        # WRITE_APPEND
+        self.drop_table(table_name, schema=schema, database=database, force=True)
+
+        if os.path.isdir(path):
+            raise NotImplementedError("Reading from a directory is not supported.")
+        elif str(path).startswith("gs://"):
+            load_job = self.client.load_table_from_uri(
+                path, table_ref, job_config=job_config
+            )
+            load_job.result()
+        else:
+
+            def load(file: str) -> None:
+                with open(file, mode="rb") as f:
+                    load_job = self.client.load_table_from_file(
+                        f, table_ref, job_config=job_config
+                    )
+                    load_job.result()
+
+            job_config.write_disposition = bq.WriteDisposition.WRITE_APPEND
+
+            with concurrent.futures.ThreadPoolExecutor() as executor:
+                for fut in concurrent.futures.as_completed(
+                    executor.submit(load, file) for file in glob.glob(str(path))
+                ):
+                    fut.result()
+
+        return self.table(table_name, schema=schema, database=database)
+
+    def read_parquet(
+        self, path: str | Path, table_name: str | None = None, **kwargs: Any
+    ):
+        """Read Parquet data into a BigQuery table.
+
+        Parameters
+        ----------
+        path
+            Path to a Parquet file on GCS or the local filesystem. Globs are supported.
+        table_name
+            Optional table name
+        kwargs
+            Additional keyword arguments passed to `google.cloud.bigquery.LoadJobConfig`.
+
+        Returns
+        -------
+        Table
+            An Ibis table expression
+        """
+        return self._read_file(
+            path,
+            table_name=table_name,
+            job_config=bq.LoadJobConfig(
+                source_format=bq.SourceFormat.PARQUET, **kwargs
+            ),
+        )
+
+    def read_csv(
+        self, path: str | Path, table_name: str | None = None, **kwargs: Any
+    ) -> ir.Table:
+        """Read CSV data into a BigQuery table.
+
+        Parameters
+        ----------
+        path
+            Path to a CSV file on GCS or the local filesystem. Globs are supported.
+        table_name
+            Optional table name
+        kwargs
+            Additional keyword arguments passed to
+            `google.cloud.bigquery.LoadJobConfig`.
+
+        Returns
+        -------
+        Table
+            An Ibis table expression
+        """
+        job_config = bq.LoadJobConfig(
+            source_format=bq.SourceFormat.CSV,
+            autodetect=True,
+            skip_leading_rows=1,
+            **kwargs,
+        )
+        return self._read_file(path, table_name=table_name, job_config=job_config)
+
+    def read_json(
+        self, path: str | Path, table_name: str | None = None, **kwargs: Any
+    ) -> ir.Table:
+        """Read newline-delimited JSON data into a BigQuery table.
+
+        Parameters
+        ----------
+        path
+            Path to a newline-delimited JSON file on GCS or the local
+            filesystem. Globs are supported.
+        table_name
+            Optional table name
+        kwargs
+            Additional keyword arguments passed to
+            `google.cloud.bigquery.LoadJobConfig`.
+
+        Returns
+        -------
+        Table
+            An Ibis table expression
+        """
+        job_config = bq.LoadJobConfig(
+            source_format=bq.SourceFormat.NEWLINE_DELIMITED_JSON,
+            autodetect=True,
+            **kwargs,
+        )
+        return self._read_file(path, table_name=table_name, job_config=job_config)
 
     def _from_url(self, url: str, **kwargs):
         result = urlparse(url)
