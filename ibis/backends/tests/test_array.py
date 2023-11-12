@@ -566,7 +566,18 @@ def test_array_map(backend, con, input, output):
 @pytest.mark.parametrize(
     ("input", "output"),
     [
-        param({"a": [[1, None, 2], [4]]}, {"a": [[2], [4]]}, id="nulls"),
+        param(
+            {"a": [[1, None, 2], [4]]},
+            {"a": [[2], [4]]},
+            id="nulls",
+            marks=[
+                pytest.mark.notyet(
+                    ["bigquery"],
+                    raises=BadRequest,
+                    reason="NULLs are not allowed as array elements",
+                )
+            ],
+        ),
         param({"a": [[1, 2], [4]]}, {"a": [[2], [4]]}, id="no_nulls"),
     ],
 )
@@ -711,10 +722,28 @@ def test_array_union(con):
 @pytest.mark.notimpl(
     ["sqlite"], raises=NotImplementedError, reason="Unsupported type: Array..."
 )
-def test_array_intersect(con):
-    t = ibis.memtable(
-        {"a": [[3, 2], [], []], "b": [[1, 3], [None], [5]], "c": range(3)}
-    )
+@pytest.mark.parametrize(
+    "data",
+    [
+        param(
+            {"a": [[3, 2], [], []], "b": [[1, 3], [None], [5]], "c": range(3)},
+            id="nulls",
+            marks=[
+                pytest.mark.notyet(
+                    ["bigquery"],
+                    raises=BadRequest,
+                    reason="BigQuery doesn't support arrays with null elements",
+                )
+            ],
+        ),
+        param(
+            {"a": [[3, 2], [], []], "b": [[1, 3], [], [5]], "c": range(3)},
+            id="no_nulls",
+        ),
+    ],
+)
+def test_array_intersect(con, data):
+    t = ibis.memtable(data)
     expr = t.select("c", d=t.a.intersect(t.b)).order_by("c").drop("c").d
     result = con.execute(expr).map(set, na_action="ignore")
     expected = pd.Series([{3}, set(), set()], dtype="object")

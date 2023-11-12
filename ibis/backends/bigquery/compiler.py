@@ -9,12 +9,10 @@ import sqlglot as sg
 import toolz
 
 import ibis.common.graph as lin
-import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
 from ibis.backends.base.sql import compiler as sql_compiler
 from ibis.backends.bigquery import operations, registry, rewrites
-from ibis.backends.bigquery.datatypes import BigQueryType
 
 
 class BigQueryUDFDefinition(sql_compiler.DDL):
@@ -117,25 +115,6 @@ class BigQueryTableSetFormatter(sql_compiler.TableSetFormatter):
     def _quote_identifier(self, name):
         return sg.to_identifier(name).sql("bigquery")
 
-    def _format_in_memory_table(self, op):
-        import ibis
-
-        schema = op.schema
-        names = schema.names
-        types = schema.types
-
-        raw_rows = []
-        for row in op.data.to_frame().itertuples(index=False):
-            raw_row = ", ".join(
-                f"{self._translate(lit.op())} AS {name}"
-                for lit, name in zip(
-                    map(ibis.literal, row, types), map(self._quote_identifier, names)
-                )
-            )
-            raw_rows.append(f"STRUCT({raw_row})")
-        array_type = BigQueryType.from_ibis(dt.Array(op.schema.as_struct()))
-        return f"UNNEST({array_type}[{', '.join(raw_rows)}])"
-
 
 class BigQueryCompiler(sql_compiler.Compiler):
     translator_class = BigQueryExprTranslator
@@ -146,6 +125,7 @@ class BigQueryCompiler(sql_compiler.Compiler):
 
     support_values_syntax_in_select = False
     null_limit = None
+    cheap_in_memory_tables = True
 
     @staticmethod
     def _generate_setup_queries(expr, context):

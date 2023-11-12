@@ -2,10 +2,9 @@ from __future__ import annotations
 
 import concurrent.futures
 import contextlib
-import functools
 import io
 import os
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
 import google.api_core.exceptions as gexc
 import google.auth
@@ -13,58 +12,17 @@ import pytest
 from google.cloud import bigquery as bq
 
 import ibis
-import ibis.expr.datatypes as dt
 from ibis.backends.bigquery import EXTERNAL_DATA_SCOPES, Backend
-from ibis.backends.bigquery.datatypes import BigQueryType
+from ibis.backends.bigquery.datatypes import BigQuerySchema
 from ibis.backends.conftest import TEST_TABLES
 from ibis.backends.tests.base import BackendTest, RoundAwayFromZero, UnorderedComparator
 from ibis.backends.tests.data import json_types, non_null_array_types, struct_types, win
-
-if TYPE_CHECKING:
-    from collections.abc import Mapping
 
 DATASET_ID = "ibis_gbq_testing"
 DATASET_ID_TOKYO = "ibis_gbq_testing_tokyo"
 REGION_TOKYO = "asia-northeast1"
 DEFAULT_PROJECT_ID = "ibis-gbq"
 PROJECT_ID_ENV_VAR = "GOOGLE_BIGQUERY_PROJECT_ID"
-
-
-@functools.singledispatch
-def ibis_type_to_bq_field(typ: dt.DataType) -> Mapping[str, Any]:
-    raise NotImplementedError(typ)
-
-
-@ibis_type_to_bq_field.register(dt.DataType)
-def _(typ: dt.DataType) -> Mapping[str, Any]:
-    return {"field_type": BigQueryType.from_ibis(typ)}
-
-
-@ibis_type_to_bq_field.register(dt.Array)
-def _(typ: dt.Array) -> Mapping[str, Any]:
-    return {
-        "field_type": BigQueryType.from_ibis(typ.value_type),
-        "mode": "REPEATED",
-    }
-
-
-@ibis_type_to_bq_field.register(dt.Struct)
-def _(typ: dt.Struct) -> Mapping[str, Any]:
-    return {
-        "field_type": "RECORD",
-        "mode": "NULLABLE" if typ.nullable else "REQUIRED",
-        "fields": ibis_schema_to_bq_schema(ibis.schema(typ.fields)),
-    }
-
-
-def ibis_schema_to_bq_schema(schema):
-    return [
-        bq.SchemaField(
-            name.replace(":", "").replace(" ", "_"),
-            **ibis_type_to_bq_field(typ),
-        )
-        for name, typ in ibis.schema(schema).items()
-    ]
 
 
 class TestConf(UnorderedComparator, BackendTest, RoundAwayFromZero):
@@ -129,9 +87,13 @@ class TestConf(UnorderedComparator, BackendTest, RoundAwayFromZero):
         timestamp_table = bq.Table(
             bq.TableReference(testing_dataset, "timestamp_column_parted")
         )
-        timestamp_table.schema = ibis_schema_to_bq_schema(
-            dict(
-                my_timestamp_parted_col="timestamp", string_col="string", int_col="int"
+        timestamp_table.schema = BigQuerySchema.from_ibis(
+            ibis.schema(
+                dict(
+                    my_timestamp_parted_col="timestamp",
+                    string_col="string",
+                    int_col="int",
+                )
             )
         )
         timestamp_table.time_partitioning = bq.TimePartitioning(
@@ -141,8 +103,10 @@ class TestConf(UnorderedComparator, BackendTest, RoundAwayFromZero):
 
         # ingestion date partitioning
         date_table = bq.Table(bq.TableReference(testing_dataset, "date_column_parted"))
-        date_table.schema = ibis_schema_to_bq_schema(
-            dict(my_date_parted_col="date", string_col="string", int_col="int")
+        date_table.schema = BigQuerySchema.from_ibis(
+            ibis.schema(
+                dict(my_date_parted_col="date", string_col="string", int_col="int")
+            )
         )
         date_table.time_partitioning = bq.TimePartitioning(field="my_date_parted_col")
         client.create_table(date_table, exists_ok=True)
@@ -161,8 +125,10 @@ class TestConf(UnorderedComparator, BackendTest, RoundAwayFromZero):
                     bq.TableReference(testing_dataset, "struct"),
                     job_config=bq.LoadJobConfig(
                         write_disposition=write_disposition,
-                        schema=ibis_schema_to_bq_schema(
-                            dict(abc="struct<a: float64, b: string, c: int64>")
+                        schema=BigQuerySchema.from_ibis(
+                            ibis.schema(
+                                dict(abc="struct<a: float64, b: string, c: int64>")
+                            )
                         ),
                     ),
                 )
@@ -176,13 +142,15 @@ class TestConf(UnorderedComparator, BackendTest, RoundAwayFromZero):
                     bq.TableReference(testing_dataset, "array_types"),
                     job_config=bq.LoadJobConfig(
                         write_disposition=write_disposition,
-                        schema=ibis_schema_to_bq_schema(
-                            dict(
-                                x="array<int64>",
-                                y="array<string>",
-                                z="array<float64>",
-                                grouper="string",
-                                scalar_column="float64",
+                        schema=BigQuerySchema.from_ibis(
+                            ibis.schema(
+                                dict(
+                                    x="array<int64>",
+                                    y="array<string>",
+                                    z="array<float64>",
+                                    grouper="string",
+                                    scalar_column="float64",
+                                )
                             )
                         ),
                     ),
@@ -219,8 +187,10 @@ class TestConf(UnorderedComparator, BackendTest, RoundAwayFromZero):
                     bq.TableReference(testing_dataset, "numeric_table"),
                     job_config=bq.LoadJobConfig(
                         write_disposition=write_disposition,
-                        schema=ibis_schema_to_bq_schema(
-                            dict(string_col="string", numeric_col="decimal(38, 9)")
+                        schema=BigQuerySchema.from_ibis(
+                            ibis.schema(
+                                dict(string_col="string", numeric_col="decimal(38, 9)")
+                            )
                         ),
                         source_format=bq.SourceFormat.NEWLINE_DELIMITED_JSON,
                     ),
@@ -235,8 +205,8 @@ class TestConf(UnorderedComparator, BackendTest, RoundAwayFromZero):
                     bq.TableReference(testing_dataset, "win"),
                     job_config=bq.LoadJobConfig(
                         write_disposition=write_disposition,
-                        schema=ibis_schema_to_bq_schema(
-                            dict(g="string", x="int64", y="int64")
+                        schema=BigQuerySchema.from_ibis(
+                            ibis.schema(dict(g="string", x="int64", y="int64"))
                         ),
                     ),
                 )
@@ -250,7 +220,7 @@ class TestConf(UnorderedComparator, BackendTest, RoundAwayFromZero):
                     bq.TableReference(testing_dataset, "json_t"),
                     job_config=bq.LoadJobConfig(
                         write_disposition=write_disposition,
-                        schema=ibis_schema_to_bq_schema(dict(js="json")),
+                        schema=BigQuerySchema.from_ibis(ibis.schema(dict(js="json"))),
                         source_format=bq.SourceFormat.NEWLINE_DELIMITED_JSON,
                     ),
                 )
@@ -267,7 +237,7 @@ class TestConf(UnorderedComparator, BackendTest, RoundAwayFromZero):
                     ),
                     bq.TableReference(testing_dataset, table),
                     job_config=bq.LoadJobConfig(
-                        schema=ibis_schema_to_bq_schema(schema),
+                        schema=BigQuerySchema.from_ibis(ibis.schema(schema)),
                         write_disposition=write_disposition,
                         source_format=bq.SourceFormat.PARQUET,
                     ),
@@ -288,7 +258,7 @@ class TestConf(UnorderedComparator, BackendTest, RoundAwayFromZero):
                     ),
                     bq.TableReference(testing_dataset_tokyo, table),
                     job_config=bq.LoadJobConfig(
-                        schema=ibis_schema_to_bq_schema(schema),
+                        schema=BigQuerySchema.from_ibis(ibis.schema(schema)),
                         write_disposition=write_disposition,
                         source_format=bq.SourceFormat.PARQUET,
                     ),

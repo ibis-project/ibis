@@ -3,6 +3,7 @@ from __future__ import annotations
 import google.cloud.bigquery as bq
 import sqlglot as sg
 
+import ibis
 import ibis.expr.datatypes as dt
 import ibis.expr.schema as sch
 from ibis.formats import SchemaMapper, TypeMapper
@@ -91,6 +92,8 @@ class BigQueryType(TypeMapper):
                 "BigQuery geography uses points on WGS84 reference ellipsoid."
                 f"Current geotype: {dtype.geotype}, Current srid: {dtype.srid}"
             )
+        elif dtype.is_map():
+            raise NotImplementedError("Maps are not supported in BigQuery")
         else:
             return str(dtype).upper()
 
@@ -98,16 +101,34 @@ class BigQueryType(TypeMapper):
 class BigQuerySchema(SchemaMapper):
     @classmethod
     def from_ibis(cls, schema: sch.Schema) -> list[bq.SchemaField]:
-        result = []
-        for name, dtype in schema.items():
-            if isinstance(dtype, dt.Array):
+        schema_fields = []
+
+        for name, typ in ibis.schema(schema).items():
+            if typ.is_array():
+                value_type = typ.value_type
+                if value_type.is_array():
+                    raise TypeError("Nested arrays are not supported in BigQuery")
+
+                is_struct = value_type.is_struct()
+
+                field_type = (
+                    "RECORD" if is_struct else BigQueryType.from_ibis(typ.value_type)
+                )
                 mode = "REPEATED"
-                dtype = dtype.value_type
+                fields = cls.from_ibis(ibis.schema(getattr(value_type, "fields", {})))
+            elif typ.is_struct():
+                field_type = "RECORD"
+                mode = "NULLABLE" if typ.nullable else "REQUIRED"
+                fields = cls.from_ibis(ibis.schema(typ.fields))
             else:
-                mode = "REQUIRED" if not dtype.nullable else "NULLABLE"
-            field = bq.SchemaField(name, BigQueryType.from_ibis(dtype), mode=mode)
-            result.append(field)
-        return result
+                field_type = BigQueryType.from_ibis(typ)
+                mode = "NULLABLE" if typ.nullable else "REQUIRED"
+                fields = ()
+
+            schema_fields.append(
+                bq.SchemaField(name, field_type=field_type, mode=mode, fields=fields)
+            )
+        return schema_fields
 
     @classmethod
     def _dtype_from_bigquery_field(cls, field: bq.SchemaField) -> dt.DataType:
@@ -125,7 +146,8 @@ class BigQuerySchema(SchemaMapper):
         elif mode == "REQUIRED":
             return dtype.copy(nullable=False)
         elif mode == "REPEATED":
-            return dt.Array(dtype)
+            # arrays with NULL elements aren't supported
+            return dt.Array(dtype.copy(nullable=False))
         else:
             raise TypeError(f"Unknown BigQuery field.mode: {mode}")
 
@@ -148,6 +170,5 @@ def spread_type(dt: dt.DataType):
         for type_ in dt.types:
             yield from spread_type(type_)
     elif dt.is_map():
-        yield from spread_type(dt.key_type)
-        yield from spread_type(dt.value_type)
+        raise NotImplementedError("Maps are not supported in BigQuery")
     yield dt
