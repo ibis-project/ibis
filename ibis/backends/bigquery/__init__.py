@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 import contextlib
+import re
 import warnings
+from functools import partial
 from typing import TYPE_CHECKING, Any, Callable
 from urllib.parse import parse_qs, urlparse
 
@@ -20,7 +22,7 @@ import ibis.common.exceptions as com
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
 from ibis import util
-from ibis.backends.base import CanCreateSchema, CanListDatabases, Database
+from ibis.backends.base import CanCreateSchema, Database
 from ibis.backends.base.sql import BaseSQLBackend
 from ibis.backends.bigquery.client import (
     BigQueryCursor,
@@ -89,10 +91,26 @@ def _anonymous_unnest_to_explode(node: sg.exp.Expression):
     return node
 
 
-class Backend(BaseSQLBackend, CanCreateSchema, CanListDatabases):
+_MEMTABLE_PATTERN = re.compile(r"^_ibis_(?:pandas|pyarrow)_memtable_[a-z0-9]{26}$")
+
+
+def _qualify_memtable(
+    node: sg.exp.Expression, *, dataset: str, project: str
+) -> sg.exp.Expression:
+    """Add a BigQuery dataset and project to memtable references."""
+    if (
+        isinstance(node, sg.exp.Table)
+        and _MEMTABLE_PATTERN.match(node.name) is not None
+    ):
+        node.args["db"] = dataset
+        node.args["catalog"] = project
+    return node
+
+
+class Backend(BaseSQLBackend, CanCreateSchema):
     name = "bigquery"
     compiler = BigQueryCompiler
-    supports_in_memory_tables = False
+    supports_in_memory_tables = True
     supports_python_udfs = False
 
     def __init__(self, *args, **kwargs) -> None:
@@ -101,6 +119,31 @@ class Backend(BaseSQLBackend, CanCreateSchema, CanListDatabases):
         self._query_cache.lookup = lambda name: self.table(
             name, schema=self._session_dataset, database=self.billing_project
         ).op()
+
+    def _register_in_memory_table(self, op: ops.InMemoryTable) -> None:
+        self._make_session()
+
+        raw_name = op.name
+
+        project = self.billing_project
+        dataset = self._session_dataset
+
+        if raw_name not in self.list_tables(schema=dataset, database=project):
+            table_id = sg.table(
+                raw_name, db=dataset, catalog=project, quoted=False
+            ).sql(dialect=self.name)
+
+            bq_schema = BigQuerySchema.from_ibis(op.schema)
+            load_job = self.client.load_table_from_dataframe(
+                op.data.to_frame(),
+                table_id,
+                job_config=bq.LoadJobConfig(
+                    # fail if the table already exists and contains data
+                    write_disposition=bq.WriteDisposition.WRITE_EMPTY,
+                    schema=bq_schema,
+                ),
+            )
+            load_job.result()
 
     def _from_url(self, url: str, **kwargs):
         result = urlparse(url)
@@ -385,7 +428,7 @@ class Backend(BaseSQLBackend, CanCreateSchema, CanListDatabases):
             )
 
             self.client.default_query_job_config = bq.QueryJobConfig(
-                connection_properties=connection_properties
+                allow_large_results=True, connection_properties=connection_properties
             )
             self._session_dataset = query.destination.dataset_id
 
@@ -434,14 +477,21 @@ class Backend(BaseSQLBackend, CanCreateSchema, CanListDatabases):
             The output of compilation. The type of this value depends on the
             backend.
         """
-
         self._define_udf_translation_rules(expr)
         sql = self.compiler.to_ast_ensure_limit(expr, limit, params=params).compile()
 
         return ";\n\n".join(
-            query.transform(_anonymous_unnest_to_explode).sql(
-                dialect=self.name, pretty=True
+            # convert unnest function calls to explode
+            query.transform(_anonymous_unnest_to_explode)
+            # add dataset and project to memtable references
+            .transform(
+                partial(
+                    _qualify_memtable,
+                    dataset=self._session_dataset,
+                    project=getattr(self, "billing_project", None),
+                )
             )
+            .sql(dialect=self.name, pretty=True)
             for query in sg.parse(sql, read=self.name)
         )
 
@@ -510,6 +560,7 @@ class Backend(BaseSQLBackend, CanCreateSchema, CanListDatabases):
 
         # TODO: upstream needs to pass params to raw_sql, I think.
         kwargs.pop("timecontext", None)
+        self._register_in_memory_tables(expr)
         sql = self.compile(expr, limit=limit, params=params, **kwargs)
         self._log(sql)
         cursor = self.raw_sql(sql, params=params, **kwargs)
@@ -557,6 +608,7 @@ class Backend(BaseSQLBackend, CanCreateSchema, CanListDatabases):
         **kwargs: Any,
     ) -> pa.Table:
         self._import_pyarrow()
+        self._register_in_memory_tables(expr)
         sql = self.compile(expr, limit=limit, params=params, **kwargs)
         self._log(sql)
         cursor = self.raw_sql(sql, params=params, **kwargs)
@@ -576,6 +628,7 @@ class Backend(BaseSQLBackend, CanCreateSchema, CanListDatabases):
 
         schema = expr.as_table().schema()
 
+        self._register_in_memory_tables(expr)
         sql = self.compile(expr, limit=limit, params=params, **kwargs)
         self._log(sql)
         cursor = self.raw_sql(sql, params=params, **kwargs)
@@ -772,6 +825,8 @@ class Backend(BaseSQLBackend, CanCreateSchema, CanListDatabases):
             if isinstance(obj, (pd.DataFrame, pa.Table)):
                 obj = ibis.memtable(obj, schema=schema)
 
+            self._register_in_memory_tables(obj)
+
         if temp:
             dataset = self._session_dataset
         else:
@@ -798,7 +853,7 @@ class Backend(BaseSQLBackend, CanCreateSchema, CanListDatabases):
                 ),
                 constraints=(
                     None
-                    if typ.nullable
+                    if typ.nullable or typ.is_array()
                     else [
                         sg.exp.ColumnConstraint(kind=sg.exp.NotNullColumnConstraint())
                     ]
@@ -833,7 +888,7 @@ class Backend(BaseSQLBackend, CanCreateSchema, CanListDatabases):
             this=sg.table(
                 name,
                 db=schema or self.current_schema,
-                catalog=database or self.data_project,
+                catalog=database or self.billing_project,
             ),
             exists=force,
         )
@@ -853,11 +908,12 @@ class Backend(BaseSQLBackend, CanCreateSchema, CanListDatabases):
             this=sg.table(
                 name,
                 db=schema or self.current_schema,
-                catalog=database or self.data_project,
+                catalog=database or self.billing_project,
             ),
             expression=self.compile(obj),
             replace=overwrite,
         )
+        self._register_in_memory_tables(obj)
         self.raw_sql(stmt.sql(self.name))
         return self.table(name, schema=schema, database=database)
 
@@ -874,7 +930,7 @@ class Backend(BaseSQLBackend, CanCreateSchema, CanListDatabases):
             this=sg.table(
                 name,
                 db=schema or self.current_schema,
-                catalog=database or self.data_project,
+                catalog=database or self.billing_project,
             ),
             exists=force,
         )

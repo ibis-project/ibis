@@ -77,6 +77,9 @@ class TableSetFormatter:
         return quote_identifier(name)
 
     def _format_in_memory_table(self, op):
+        if self.context.compiler.cheap_in_memory_tables:
+            return op.name
+
         names = op.schema.names
         raw_rows = []
         for row in op.data.to_frame().itertuples(index=False):
