@@ -36,7 +36,6 @@ from ibis.backends.bigquery.client import (
 )
 from ibis.backends.bigquery.compiler import BigQueryCompiler
 from ibis.backends.bigquery.datatypes import BigQuerySchema, BigQueryType
-from ibis.formats.pandas import PandasData
 
 with contextlib.suppress(ImportError):
     from ibis.backends.bigquery.udf import udf  # noqa: F401
@@ -709,6 +708,8 @@ class Backend(BaseSQLBackend, CanCreateSchema):
         return expr.__pandas_result__(result)
 
     def fetch_from_cursor(self, cursor, schema):
+        from ibis.formats.pandas import PandasData
+
         arrow_t = self._cursor_to_arrow(cursor)
         df = arrow_t.to_pandas(timestamp_as_object=True)
         return PandasData.convert_table(df, schema)
@@ -988,11 +989,7 @@ class Backend(BaseSQLBackend, CanCreateSchema):
         column_defs = [
             sg.exp.ColumnDef(
                 this=name,
-                kind=sg.parse_one(
-                    BigQueryType.from_ibis(typ),
-                    into=sg.exp.DataType,
-                    read=self.name,
-                ),
+                kind=BigQueryType.from_ibis(typ),
                 constraints=(
                     None
                     if typ.nullable or typ.is_array()

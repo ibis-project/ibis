@@ -261,10 +261,10 @@ return {f.__name__}({args});\
             libraries = []
 
         bigquery_signature = ", ".join(
-            f"{name} {BigQueryType.from_ibis(dt.dtype(type_))}"
+            f"{name} {BigQueryType.to_string(dt.dtype(type_))}"
             for name, type_ in params.items()
         )
-        return_type = BigQueryType.from_ibis(dt.dtype(output_type))
+        return_type = BigQueryType.to_string(dt.dtype(output_type))
         libraries_opts = (
             f"\nOPTIONS (\n    library={list(libraries)!r}\n)" if libraries else ""
         )
@@ -361,14 +361,14 @@ RETURNS {return_type}
             name: rlz.ValueOf(None if type_ == "ANY TYPE" else type_)
             for name, type_ in params.items()
         }
-        return_type = BigQueryType.from_ibis(dt.dtype(output_type))
+        return_type = BigQueryType.to_string(dt.dtype(output_type))
 
         bigquery_signature = ", ".join(
             "{name} {type}".format(
                 name=name,
                 type="ANY TYPE"
                 if type_ == "ANY TYPE"
-                else BigQueryType.from_ibis(dt.dtype(type_)),
+                else BigQueryType.to_string(dt.dtype(type_)),
             )
             for name, type_ in params.items()
         )
