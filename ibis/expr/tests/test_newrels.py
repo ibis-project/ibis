@@ -1,10 +1,7 @@
 from __future__ import annotations
 
-
-
 import ibis.expr.datashape as ds
 import ibis.expr.datatypes as dt
-
 from ibis.expr.newrels import (
     Field,
     Filter,
@@ -169,10 +166,6 @@ def test_select_across_relations():
 
 
 def test_where():
-    # filt = t.select(t.bool_col).filter(t.bool_col)            # OK
-    # filt = t.select(bool_col=t.bool_col).filter(t.bool_col)   # OK
-    # filt = t.select(bool_col=~t.bool_col).filter(t.bool_col)  # NOT (though working now)
-    # filt = t.select(bool_col=t.int_col).filter(t.int_col)     # >> t.filter(t.int_col).select(bool_col=t.int_col)
     filt = t.filter(t.bool_col)
 
     expected = Filter(parent=t, predicates=[t.bool_col])
@@ -187,6 +180,12 @@ def test_where_after_select():
     filt = t.select(t.bool_col).filter(t.bool_col)
     expected = Filter(
         parent=Project(t, {"bool_col": t.bool_col}), predicates=[t.bool_col]
+    )
+    assert filt.op() == expected
+
+    filt = t.select(int_col=t.bool_col).filter(t.bool_col)
+    expected = Filter(
+        parent=Project(t, {"int_col": t.bool_col}), predicates=[t.bool_col]
     )
     assert filt.op() == expected
 

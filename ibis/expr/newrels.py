@@ -324,16 +324,9 @@ class JoinChain(Concrete):
 
 def bind(table: TableExpr, value: Any) -> ir.Value:
     if isinstance(value, ValueExpr):
-        # node = value.op()
-        # if isinstance(node, Field) and node.parent != table.op():
-        #     # the value belongs to another table
-        #     table.op().fields
-        # else:
-        #     yield value
         yield value
     elif isinstance(value, TableExpr):
-        for name in value.schema().keys():
-            yield Field(value, name).to_expr()
+        yield from bind(table, tuple(value.schema().keys()))
     elif isinstance(value, str):
         # column peeling / dereferencing
         yield table.op().fields[value].to_expr().name(value)
