@@ -186,3 +186,11 @@ def test_e():
     t2 = t1.where(t1.bool_col)
     t3 = t2.where(t2.int_col > 0)
     t4 = t3.select(t3.bool_col, t3.int_col)
+
+
+def test_join():
+    t1 = UnboundTable("t1", {"a": "int64", "b": "string"}).to_expr()
+    t2 = UnboundTable("t2", {"c": "int64", "d": "string"}).to_expr()
+
+    joined = t1.join(t2, [t1.a == t2.c])
+    joined.where(t1.b == "foo")

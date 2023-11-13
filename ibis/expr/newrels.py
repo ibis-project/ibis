@@ -1,6 +1,8 @@
 from __future__ import annotations
 
-from typing import Annotated, Any
+import types
+from functools import wraps
+from typing import Annotated, Any, Optional
 
 import ibis.expr.datashape as ds
 import ibis.expr.datatypes as dt
@@ -9,6 +11,7 @@ from ibis.common.annotations import attribute
 from ibis.common.collections import FrozenDict  # noqa: TCH001
 from ibis.common.deferred import Deferred, Item, deferred, var
 from ibis.common.exceptions import IntegrityError
+from ibis.common.grounds import Concrete
 from ibis.common.patterns import Check, InstanceOf, _, pattern, replace
 from ibis.common.typing import Coercible, VarTuple
 from ibis.expr.operations import Alias, Node, SortKey, Value
@@ -97,11 +100,19 @@ class Project(Relation):
 #         return Schema({f.name: f.dtype for f in self.fields})
 
 
-# class Join(Relation):
-#     left: Relation
-#     right: Relation
-#     fields: FrozenDict[str, Field]
-#     predicates: VarTuple[Value[dt.Boolean]]
+class Join(Relation):
+    left: Relation
+    right: Relation
+    fields: FrozenDict[str, Field]
+    predicates: VarTuple[Value[dt.Boolean]]
+    how: str = "inner"
+
+    def __init__(self, left, right, fields, predicates, how):
+        # _check_integrity(left, predicates)
+        # _check_integrity(right, predicates)
+        super().__init__(
+            left=left, right=right, fields=fields, predicates=predicates, how=how
+        )
 
 
 class Sort(Relation):
@@ -109,10 +120,6 @@ class Sort(Relation):
     keys: VarTuple[SortKey]
 
     def __init__(self, parent, keys):
-        # squash subsequent sorts
-        if isinstance(parent, Sort):
-            keys = parent.keys + keys
-            parent = parent.parent
         _check_integrity(parent, keys)
         super().__init__(parent=parent, keys=keys)
 
@@ -130,10 +137,6 @@ class Filter(Relation):
     predicates: VarTuple[Value[dt.Boolean]]
 
     def __init__(self, parent, predicates):
-        # squash subsequent filters
-        if isinstance(parent, Filter):
-            predicates = parent.predicates + predicates
-            parent = parent.parent
         # TODO(kszucs): use toolz.unique(predicates) to remove duplicates
         _check_integrity(parent, predicates)
         super().__init__(parent=parent, predicates=predicates)
@@ -201,6 +204,10 @@ class TableExpr(Expr):
         node = node.replace(subsequent_sorts)
         return node.to_expr()
 
+    def join(self, right, predicates, how="inner"):
+        # do the predicate coercion and binding here
+        return JoinBuilder(how=how, left=self, right=right, predicates=predicates)
+
     def aggregate(self, groups, metrics):
         groups = bind(self, groups)
         metrics = bind(self, metrics)
@@ -208,6 +215,48 @@ class TableExpr(Expr):
         metrics = unwrap_aliases(metrics)
         node = Aggregate(self, groups, metrics)
         return node.to_expr()
+
+
+class JoinBuilder(Concrete):
+    how: str = "inner"
+    left: Relation
+    right: Relation
+    predicates: VarTuple[Value[dt.Boolean]]
+    fields: Optional[FrozenDict[str, Field]] = None
+
+    def select(self, *args, **kwargs):
+        values = bind(self, (args, kwargs))
+        return self.copy(fields=values)
+
+    def guess(self):
+        # try to figure out the join intent here
+        if self.left.fields.keys() & self.right.fields.keys():
+            # overlapping fields
+            raise IntegrityError("Overlapping fields in join")
+        return {**self.left.fields, **self.right.fields}
+
+    def finish(self):
+        fields = self.fields or self.guess()
+        node = Join(
+            left=self.left,
+            right=self.right,
+            fields=fields,
+            predicates=self.predicates,
+            how=self.how,
+        )
+        return node.to_expr()
+
+    def __dir__(self):
+        return dir(TableExpr)
+
+    def __getattr__(self, key):
+        method = getattr(TableExpr, key)
+
+        @wraps(method)
+        def wrapper(*args, **kwargs):
+            return method(self.finish(), *args, **kwargs)
+
+        return wrapper
 
 
 def bind(table: TableExpr, value: Any) -> ir.Value:
@@ -286,3 +335,6 @@ def subsequent_filters(_, y):
 @replace(p.Sort(y @ p.Sort))
 def subsequent_sorts(_, y):
     return Sort(y.parent, y.keys + _.keys)
+
+
+# TODO(kszucs): support t.select(*t) syntax by implementing TableExpr.__iter__()
