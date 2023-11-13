@@ -136,10 +136,7 @@ argidx_grouped_marks = ["dask"] + argidx_not_grouped_marks
 
 
 def make_argidx_params(marks, grouped=False):
-    marks = [
-        pytest.mark.notyet(marks, raises=com.OperationNotDefinedError),
-        pytest.mark.notimpl(["flink"], "WIP", raises=com.OperationNotDefinedError),
-    ]
+    marks = [pytest.mark.notyet(marks, raises=com.OperationNotDefinedError)]
     return [
         param(
             lambda t: t.timestamp_col.argmin(t.id),
