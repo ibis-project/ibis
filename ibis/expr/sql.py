@@ -125,8 +125,8 @@ def convert_join(join, catalog):
     catalog = catalog.overlay(join)
 
     left_name = join.name
+    left_table = catalog[left_name]
     for right_name, desc in join.joins.items():
-        left_table = catalog[left_name]
         right_table = catalog[right_name]
         join_kind = _join_types[desc["side"]]
 
@@ -139,11 +139,15 @@ def convert_join(join, catalog):
             else:
                 predicate &= left_key == right_key
 
-        catalog[left_name] = left_table.join(
-            right_table, predicates=predicate, how=join_kind
-        )
+        left_table = left_table.join(right_table, predicates=predicate, how=join_kind)
 
-    return catalog[left_name]
+    if join.condition:
+        predicate = convert(join.condition, catalog=catalog)
+        left_table = left_table.filter(predicate)
+
+    catalog[left_name] = left_table
+
+    return left_table
 
 
 @convert.register(sgp.Aggregate)

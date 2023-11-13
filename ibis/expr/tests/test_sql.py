@@ -17,14 +17,15 @@ catalog = {
 }
 
 
-def test_parse_sql_basic_projection():
+def test_parse_sql_basic_projection(snapshot):
     sql = "SELECT *, first_name as first FROM employee WHERE id < 5 ORDER BY id DESC"
     expr = ibis.parse_sql(sql, catalog)
-    code = ibis.decompile(expr, format=True)  # noqa: F841
+    code = ibis.decompile(expr, format=True)
+    snapshot.assert_match(code, "decompiled.py")
 
 
 @pytest.mark.parametrize("how", ["right", "left", "inner"])
-def test_parse_sql_basic_join(how):
+def test_parse_sql_basic_join(how, snapshot):
     sql = f"""
 SELECT
   *,
@@ -37,10 +38,11 @@ WHERE
 ORDER BY
   id DESC"""
     expr = ibis.parse_sql(sql, catalog)
-    code = ibis.decompile(expr, format=True)  # noqa: F841
+    code = ibis.decompile(expr, format=True)
+    snapshot.assert_match(code, "decompiled.py")
 
 
-def test_parse_sql_multiple_joins():
+def test_parse_sql_multiple_joins(snapshot):
     sql = """
 SELECT *
 FROM employee
@@ -49,10 +51,11 @@ JOIN call
 JOIN call_outcome
   ON call.call_outcome_id = call_outcome.id"""
     expr = ibis.parse_sql(sql, catalog)
-    code = ibis.decompile(expr, format=True)  # noqa: F841
+    code = ibis.decompile(expr, format=True)
+    snapshot.assert_match(code, "decompiled.py")
 
 
-def test_parse_sql_basic_aggregation():
+def test_parse_sql_basic_aggregation(snapshot):
     sql = """
 SELECT
   employee_id,
@@ -60,10 +63,11 @@ SELECT
 FROM call
 GROUP BY employee_id"""
     expr = ibis.parse_sql(sql, catalog)
-    code = ibis.decompile(expr, format=True)  # noqa: F841
+    code = ibis.decompile(expr, format=True)
+    snapshot.assert_match(code, "decompiled.py")
 
 
-def test_parse_sql_basic_aggregation_with_join():
+def test_parse_sql_basic_aggregation_with_join(snapshot):
     sql = """
 SELECT
   id,
@@ -73,10 +77,11 @@ LEFT JOIN call
   ON employee.id = call.employee_id
 GROUP BY id"""
     expr = ibis.parse_sql(sql, catalog)
-    code = ibis.decompile(expr, format=True)  # noqa: F841
+    code = ibis.decompile(expr, format=True)
+    snapshot.assert_match(code, "decompiled.py")
 
 
-def test_parse_sql_aggregation_with_multiple_joins():
+def test_parse_sql_aggregation_with_multiple_joins(snapshot):
     sql = """
 SELECT
   t.employee_id,
@@ -87,16 +92,18 @@ FROM (
 ) AS t
 GROUP BY t.employee_id"""
     expr = ibis.parse_sql(sql, catalog)
-    code = ibis.decompile(expr, format=True)  # noqa: F841
+    code = ibis.decompile(expr, format=True)
+    snapshot.assert_match(code, "decompiled.py")
 
 
-def test_parse_sql_simple_reduction():
+def test_parse_sql_simple_reduction(snapshot):
     sql = """SELECT AVG(call_attempts) AS mean FROM call"""
     expr = ibis.parse_sql(sql, catalog)
-    code = ibis.decompile(expr, format=True)  # noqa: F841
+    code = ibis.decompile(expr, format=True)
+    snapshot.assert_match(code, "decompiled.py")
 
 
-def test_parse_sql_scalar_subquery():
+def test_parse_sql_scalar_subquery(snapshot):
     sql = """
 SELECT *
 FROM call
@@ -105,16 +112,30 @@ WHERE call_attempts > (
   FROM call
 )"""
     expr = ibis.parse_sql(sql, catalog)
-    code = ibis.decompile(expr, format=True)  # noqa: F841
+    code = ibis.decompile(expr, format=True)
+    snapshot.assert_match(code, "decompiled.py")
 
 
-def test_parse_sql_simple_select_count():
+def test_parse_sql_simple_select_count(snapshot):
     sql = """SELECT COUNT(first_name) FROM employee"""
     expr = ibis.parse_sql(sql, catalog)
-    code = ibis.decompile(expr, format=True)  # noqa: F841
+    code = ibis.decompile(expr, format=True)
+    snapshot.assert_match(code, "decompiled.py")
 
 
-def test_parse_sql_table_alias():
+def test_parse_sql_table_alias(snapshot):
     sql = """SELECT e.* FROM employee AS e"""
     expr = ibis.parse_sql(sql, catalog)
-    code = ibis.decompile(expr, format=True)  # noqa: F841
+    code = ibis.decompile(expr, format=True)
+    snapshot.assert_match(code, "decompiled.py")
+
+
+def test_parse_sql_join_with_filter(snapshot):
+    sql = """
+SELECT *, first_name as first FROM employee
+LEFT JOIN call ON employee.id = call.employee_id
+WHERE id < 5
+ORDER BY id DESC"""
+    expr = ibis.parse_sql(sql, catalog)
+    code = ibis.decompile(expr, format=True)
+    snapshot.assert_match(code, "decompiled.py")
