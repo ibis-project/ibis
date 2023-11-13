@@ -16,8 +16,8 @@ concurrency:
   cancel-in-progress: true
 
 permissions:
-  # increase the rate limit for nix operations hitting github, but limit the
-  # permissions to reading things
+  # increase the rate limit for github operations, but limit token permissions
+  # to read-only
   contents: read
 
 jobs:
@@ -136,6 +136,8 @@ jobs:
         run: gcloud info
 
       - name: download the latest duckdb release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
 
