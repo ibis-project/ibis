@@ -252,6 +252,7 @@ class JoinChain(Concrete):
         return self.finish(values)
 
     def guess(self):
+        # TODO(kszucs): more advanced heuristics can be applied here
         # try to figure out the join intent here
         fields = self.start.fields
         for link in self.links:
@@ -271,7 +272,8 @@ class JoinChain(Concrete):
             # pick only the fields relevant at this level of the join since fields
             # can contain references from all of the links but we are only interested
             # in the ones belonging to the current link (part of left and link.right)
-            possible_fields = set([*left.fields.values(), *link.right.fields.values()])
+            # TODO(kszucs): must put fields being part of the predicates here as well
+            possible_fields = {*left.fields.values(), *link.right.fields.values()}
             selected_fields = {k: v for k, v in fields.items() if v in possible_fields}
 
             left = Join(

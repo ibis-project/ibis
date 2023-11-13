@@ -206,7 +206,7 @@ def test_projection_before_and_after_filter():
         values={
             "bool_col": t1.bool_col,
             "int_col": t1.int_col,
-        }
+        },
     )
 
 
@@ -238,7 +238,6 @@ def test_chained_join():
 
     joined = a.join(b, [a.a == b.c]).join(c, [a.a == c.e])
     result = joined.finish()
-
     assert result.op() == Join(
         how="inner",
         left=Join(
@@ -261,6 +260,29 @@ def test_chained_join():
             "c": b.c,
             "d": b.d,
             "e": c.e,
+            "f": c.f,
+        },
+    )
+
+    joined = a.join(b, [a.a == b.c]).join(c, [b.c == c.e])
+    result = joined.select(a.a, b.d, c.f)
+    assert result.op() == Join(
+        how="inner",
+        left=Join(
+            how="inner",
+            left=a.op(),
+            right=b.op(),
+            predicates=[a.a == b.c],
+            fields={
+                "a": a.a,
+                "d": b.d,
+            },
+        ),
+        right=c.op(),
+        predicates=[b.c == c.e],
+        fields={
+            "a": a.a,
+            "d": b.d,
             "f": c.f,
         },
     )
