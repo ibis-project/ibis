@@ -207,6 +207,24 @@ class Pattern(Hashable):
         """
         ...
 
+    def is_match(self, value: AnyType, context: dict[str, AnyType] = None) -> bool:
+        """Check that a value matches the pattern.
+
+        Parameters
+        ----------
+        value
+            The value to match the pattern against.
+        context
+            A dictionary providing arbitrary context for the pattern matching.
+
+        Returns
+        -------
+        Whether the pattern matches the value.
+        """
+        if context is None:
+            context = {}
+        return self.match(value, context) is not NoMatch
+
     def describe(self, plural=False):
         return f"matching {self!r}"
 

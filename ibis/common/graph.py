@@ -256,6 +256,9 @@ class Node(Hashable):
         return results.get(self, self)
 
 
+Traversable = Node
+
+
 class Graph(dict[Node, Sequence[Node]]):
     """A mapping-like graph data structure for easier graph traversal and manipulation.
 

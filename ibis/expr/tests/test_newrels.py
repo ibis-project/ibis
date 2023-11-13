@@ -276,6 +276,7 @@ def test_chained_join():
             fields={
                 "a": a.a,
                 "d": b.d,
+                "c": b.c,
             },
         ),
         right=c.op(),

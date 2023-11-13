@@ -3,6 +3,7 @@ from __future__ import annotations
 import types
 from abc import abstractmethod
 from functools import wraps
+from itertools import zip_longest
 from typing import Annotated, Any, Optional
 
 import ibis.expr.datashape as ds
@@ -12,8 +13,9 @@ from ibis.common.annotations import attribute
 from ibis.common.collections import FrozenDict  # noqa: TCH001
 from ibis.common.deferred import Deferred, Item, deferred, var
 from ibis.common.exceptions import IntegrityError
+from ibis.common.graph import Traversable
 from ibis.common.grounds import Concrete
-from ibis.common.patterns import Check, InstanceOf, _, pattern, replace
+from ibis.common.patterns import Check, In, InstanceOf, _, pattern, replace
 from ibis.common.typing import Coercible, VarTuple
 from ibis.expr.operations import Alias, Node, SortKey, Value
 from ibis.expr.schema import Schema
@@ -64,11 +66,11 @@ class Field(Value):
         return self.rel.schema[self.name]
 
 
-def _check_integrity(parent, values):
-    possible_fields = set(parent.fields.values())
+def _check_integrity(values, allowed_fields):
+    allowed_fields = set(allowed_fields)
     for value in values:
         for field in value.find(Field, filter=Value):
-            if field not in possible_fields:
+            if field not in allowed_fields:
                 raise IntegrityError(
                     f"Cannot add {field!r} to projection, "
                     f"it belongs to {field.rel!r}"
@@ -80,7 +82,7 @@ class Project(Relation):
     values: FrozenDict[str, Annotated[Value, ~InstanceOf(Alias)]]
 
     def __init__(self, parent, values):
-        _check_integrity(parent, values.values())
+        _check_integrity(values.values(), allowed_fields=parent.fields.values())
         super().__init__(parent=parent, values=values)
 
     @property
@@ -111,8 +113,9 @@ class Join(Relation):
     how: str = "inner"
 
     def __init__(self, left, right, fields, predicates, how):
-        # _check_integrity(left, predicates)
-        # _check_integrity(right, predicates)
+        allowed_fields = {*left.fields.values(), *right.fields.values()}
+        _check_integrity(fields.values(), allowed_fields)
+        # _check_integrity(predicates, allowed_fields)
         super().__init__(
             left=left, right=right, fields=fields, predicates=predicates, how=how
         )
@@ -127,7 +130,7 @@ class Sort(Relation):
     keys: VarTuple[SortKey]
 
     def __init__(self, parent, keys):
-        _check_integrity(parent, keys)
+        _check_integrity(keys, allowed_fields=parent.fields.values())
         super().__init__(parent=parent, keys=keys)
 
     @property
@@ -145,7 +148,7 @@ class Filter(Relation):
 
     def __init__(self, parent, predicates):
         # TODO(kszucs): use toolz.unique(predicates) to remove duplicates
-        _check_integrity(parent, predicates)
+        _check_integrity(predicates, allowed_fields=parent.fields.values())
         super().__init__(parent=parent, predicates=predicates)
 
     @property
@@ -223,7 +226,7 @@ class TableExpr(Expr):
         return node.to_expr()
 
 
-class JoinLink(Concrete):
+class JoinLink(Concrete, Traversable):
     how: str = "inner"
     right: Relation
     predicates: VarTuple[Value[dt.Boolean]]
@@ -266,15 +269,19 @@ class JoinChain(Concrete):
         if fields is None:
             fields = self.guess()
 
-        # build the join operation from the join chain
+        # build the possibly nested join operation from the join chain
         left = self.start
-        for link in self.links:
-            # pick only the fields relevant at this level of the join since fields
-            # can contain references from all of the links but we are only interested
-            # in the ones belonging to the current link (part of left and link.right)
-            # TODO(kszucs): must put fields being part of the predicates here as well
+        for link, next_link in zip_longest(self.links, self.links[1:]):
+            # pick the fields which are referenced by the final projection
             possible_fields = {*left.fields.values(), *link.right.fields.values()}
             selected_fields = {k: v for k, v in fields.items() if v in possible_fields}
+
+            # pick fields from either the left or the right side of the join which
+            # are referenced by the predicates of the upcoming join
+            if next_link is not None:
+                rule = p.Field(In({left, link.right}))
+                for field in next_link.match(rule, filter=~p.Relation):
+                    selected_fields[field.name] = field
 
             left = Join(
                 how=link.how,
