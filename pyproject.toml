@@ -451,7 +451,7 @@ ignore = [
   "SIM300",  # yoda conditions
   "UP007",   # Optional[str] -> str | None
 ]
-exclude = ["*_py310.py", "ibis/tests/*/snapshots/*"]
+exclude = ["*_py310.py"]
 target-version = "py39"
 # none of these codes will be automatically fixed by ruff
 unfixable = [
@@ -473,6 +473,7 @@ required-imports = ["from __future__ import annotations"]
 ]
 "ci/*.py" = ["INP001"]
 "docs/*.py" = ["INP001"]
+"*/decompiled.py" = ["ALL"]
 "ci/release/verify_release.py" = ["T201"] # CLI tool that prints stuff
 
 [tool.blackdoc]
