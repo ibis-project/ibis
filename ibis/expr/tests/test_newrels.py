@@ -1,10 +1,10 @@
 from __future__ import annotations
 
-import pytest
+
 
 import ibis.expr.datashape as ds
 import ibis.expr.datatypes as dt
-from ibis.common.exceptions import IntegrityError
+
 from ibis.expr.newrels import (
     Field,
     Filter,
@@ -127,12 +127,15 @@ def test_select_across_relations():
         t, {"bool_col": t.bool_col, "int_col": t.int_col, "float_col": t.float_col}
     )
     t1 = t.select(t.bool_col, t.int_col, t.float_col)
-    with pytest.raises(IntegrityError):
-        t1.select(t.bool_col, t1.int_col, t1.float_col)
-    t2 = t1.select(t1.bool_col, t1.int_col, t1.float_col)
-    with pytest.raises(IntegrityError):
-        t2.select(t.bool_col, t1.int_col, t2.float_col)
-    t3 = t2.select(t2.bool_col, t2.int_col, t2.float_col)
+
+    t2 = t1.select(t.bool_col, t1.int_col, t1.float_col)
+    t2_ = t1.select(t1.bool_col, t1.int_col, t1.float_col)
+    assert t2.equals(t2_)
+
+    t3 = t2.select(t.bool_col, t1.int_col, t2.float_col)
+    t3_ = t2.select(t2.bool_col, t2.int_col, t2.float_col)
+    assert t3.equals(t3_)
+
     assert t1.op() == expected
     assert t2.op() == expected
     assert t3.op() == expected
@@ -170,7 +173,6 @@ def test_where():
     # filt = t.select(bool_col=t.bool_col).filter(t.bool_col)   # OK
     # filt = t.select(bool_col=~t.bool_col).filter(t.bool_col)  # NOT (though working now)
     # filt = t.select(bool_col=t.int_col).filter(t.int_col)     # >> t.filter(t.int_col).select(bool_col=t.int_col)
-
     filt = t.filter(t.bool_col)
 
     expected = Filter(parent=t, predicates=[t.bool_col])
@@ -178,6 +180,14 @@ def test_where():
 
     filt = t.filter(t.bool_col, t.int_col > 0)
     expected = Filter(parent=t, predicates=[t.bool_col, t.int_col > 0])
+    assert filt.op() == expected
+
+
+def test_where_after_select():
+    filt = t.select(t.bool_col).filter(t.bool_col)
+    expected = Filter(
+        parent=Project(t, {"bool_col": t.bool_col}), predicates=[t.bool_col]
+    )
     assert filt.op() == expected
 
 

@@ -82,10 +82,12 @@ class Project(Relation):
         _check_integrity(values.values(), allowed_fields=parent.fields.values())
         super().__init__(parent=parent, values=values)
 
-    # reprojection  cuold be just carried over from the parent?
     @property
     def fields(self):
-        return {k: Field(self, k) for k in self.values}
+        return {
+            k: v if isinstance(v, Field) else Field(self, k)
+            for k, v in self.values.items()
+        }
 
     @property
     def schema(self):
@@ -104,7 +106,12 @@ class Project(Relation):
 
 # TODO(kszucs): Subquery(value, outer_relation)
 
+
 class Join(Relation):
+    # TODO(kszucs): rewrite the representation to a sequence-like structure
+    # with first: Relation and rest: tuple[kind, relation, predicates] where
+    # kind is one of inner, left, right, outer, predicates is a tuple of
+    # predicates
     left: Relation
     right: Relation
     fields: FrozenDict[str, Annotated[Field, ~InstanceOf(Alias)]]
@@ -245,6 +252,7 @@ class JoinChain(Concrete):
     links: VarTuple[JoinLink] = ()
 
     def join(self, right, predicates, how="inner"):
+        # TODO(kszucs): _integrity_check should be done here as well
         # do the predicate coercion and binding here
         link = JoinLink(how=how, right=right, predicates=predicates)
         return self.copy(links=self.links + (link,))
@@ -315,15 +323,20 @@ class JoinChain(Concrete):
 
 
 def bind(table: TableExpr, value: Any) -> ir.Value:
-    node = table.op()
     if isinstance(value, ValueExpr):
+        # node = value.op()
+        # if isinstance(node, Field) and node.parent != table.op():
+        #     # the value belongs to another table
+        #     table.op().fields
+        # else:
+        #     yield value
         yield value
     elif isinstance(value, TableExpr):
         for name in value.schema().keys():
             yield Field(value, name).to_expr()
     elif isinstance(value, str):
         # column peeling / dereferencing
-        yield node.fields[value].to_expr().name(value)
+        yield table.op().fields[value].to_expr().name(value)
     elif isinstance(value, Deferred):
         yield value.resolve(table)
     elif isinstance(value, Selector):
