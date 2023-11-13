@@ -108,14 +108,14 @@ class Project(Relation):
 class Join(Relation):
     left: Relation
     right: Relation
-    fields: FrozenDict[str, Field]
+    fields: FrozenDict[str, Annotated[Field, ~InstanceOf(Alias)]]
     predicates: VarTuple[Value[dt.Boolean]]
     how: str = "inner"
 
     def __init__(self, left, right, fields, predicates, how):
         allowed_fields = {*left.fields.values(), *right.fields.values()}
         _check_integrity(fields.values(), allowed_fields)
-        # _check_integrity(predicates, allowed_fields)
+        _check_integrity(predicates, allowed_fields)
         super().__init__(
             left=left, right=right, fields=fields, predicates=predicates, how=how
         )
@@ -123,6 +123,15 @@ class Join(Relation):
     @property
     def schema(self):
         return Schema({k: v.dtype for k, v in self.fields.items()})
+
+
+# class JoinProject(Relation):
+#     parent: Join
+#     fields: FrozenDict[str, Field]
+
+#     @property
+#     def schema(self):
+#         return Schema({f.name: f.dtype for f in self.fields})
 
 
 class Sort(Relation):
