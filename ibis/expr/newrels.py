@@ -205,8 +205,7 @@ class TableExpr(Expr):
         return node.to_expr()
 
     def join(self, right, predicates, how="inner"):
-        # do the predicate coercion and binding here
-        return JoinBuilder(how=how, left=self, right=right, predicates=predicates)
+        return JoinChain(self).join(right, predicates, how)
 
     def aggregate(self, groups, metrics):
         groups = bind(self, groups)
@@ -217,34 +216,65 @@ class TableExpr(Expr):
         return node.to_expr()
 
 
-class JoinBuilder(Concrete):
+class JoinLink(Concrete):
     how: str = "inner"
-    left: Relation
     right: Relation
     predicates: VarTuple[Value[dt.Boolean]]
-    fields: Optional[FrozenDict[str, Field]] = None
+
+
+class JoinChain(Concrete):
+    start: Relation
+    links: VarTuple[JoinLink] = ()
+
+    def join(self, right, predicates, how="inner"):
+        # do the predicate coercion and binding here
+        link = JoinLink(how=how, right=right, predicates=predicates)
+        return self.copy(links=self.links + (link,))
 
     def select(self, *args, **kwargs):
+        # do the fields projection here
         values = bind(self, (args, kwargs))
-        return self.copy(fields=values)
+        values = unwrap_aliases(values)
+
+        # TODO(kszucs): go over the values and pull out the fields only, until
+        # that just raise if the value is a computed expression
+        for value in values.values():
+            if not isinstance(value, Field):
+                raise TypeError("Only fields can be selected in a join")
+
+        return self.finish(values)
 
     def guess(self):
         # try to figure out the join intent here
-        if self.left.fields.keys() & self.right.fields.keys():
-            # overlapping fields
-            raise IntegrityError("Overlapping fields in join")
-        return {**self.left.fields, **self.right.fields}
+        fields = self.start.fields
+        for link in self.links:
+            if fields.keys() & link.right.fields.keys():
+                # overlapping fields
+                raise IntegrityError("Overlapping fields in join")
+            fields.update(link.right.fields)
+        return fields
 
-    def finish(self):
-        fields = self.fields or self.guess()
-        node = Join(
-            left=self.left,
-            right=self.right,
-            fields=fields,
-            predicates=self.predicates,
-            how=self.how,
-        )
-        return node.to_expr()
+    def finish(self, fields=None):
+        if fields is None:
+            fields = self.guess()
+
+        # build the join operation from the join chain
+        left = self.start
+        for link in self.links:
+            # pick only the fields relevant at this level of the join since fields
+            # can contain references from all of the links but we are only interested
+            # in the ones belonging to the current link (part of left and link.right)
+            possible_fields = set([*left.fields.values(), *link.right.fields.values()])
+            selected_fields = {k: v for k, v in fields.items() if v in possible_fields}
+
+            left = Join(
+                how=link.how,
+                left=left,
+                right=link.right,
+                predicates=link.predicates,
+                fields=selected_fields,
+            )
+        return left.to_expr()
 
     def __dir__(self):
         return dir(TableExpr)
