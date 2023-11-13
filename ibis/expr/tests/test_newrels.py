@@ -5,7 +5,15 @@ import pytest
 import ibis.expr.datashape as ds
 import ibis.expr.datatypes as dt
 from ibis.common.exceptions import IntegrityError
-from ibis.expr.newrels import Field, Filter, Project, Sort, TableExpr, UnboundTable, Join
+from ibis.expr.newrels import (
+    Field,
+    Filter,
+    Join,
+    Project,
+    Sort,
+    TableExpr,
+    UnboundTable,
+)
 from ibis.expr.schema import Schema
 
 # TODO(kszucs):
@@ -179,13 +187,27 @@ def test_subsequent_sorts_are_squashed():
     assert sort.op() == expected
 
 
-def test_e():
+def test_projection_before_and_after_filter():
     t1 = t.select(
         bool_col=~t.bool_col, int_col=t.int_col + 1, float_col=t.float_col * 3
     )
     t2 = t1.where(t1.bool_col)
     t3 = t2.where(t2.int_col > 0)
     t4 = t3.select(t3.bool_col, t3.int_col)
+
+    assert t4.op() == Project(
+        parent=Filter(
+            parent=t1,
+            predicates=[
+                t1.bool_col,
+                t1.int_col > 0,
+            ],
+        ),
+        values={
+            "bool_col": t1.bool_col,
+            "int_col": t1.int_col,
+        }
+    )
 
 
 def test_join():

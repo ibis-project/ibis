@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import types
+from abc import abstractmethod
 from functools import wraps
 from typing import Annotated, Any, Optional
 
@@ -20,7 +21,6 @@ from ibis.expr.types import Expr, literal
 from ibis.expr.types import Value as ValueExpr
 from ibis.selectors import Selector
 from ibis.util import Namespace
-from abc import abstractmethod
 
 # need a parallel Expression and Operation class hierarchy to decompose ops.Selection
 # into proper relational algebra operations
