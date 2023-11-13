@@ -287,3 +287,12 @@ def test_chained_join():
             "f": c.f,
         },
     )
+
+
+def test_chained_join_referencing_intermediate_table():
+    a = UnboundTable("a", {"a": "int64", "b": "string"}).to_expr()
+    b = UnboundTable("b", {"c": "int64", "d": "string"}).to_expr()
+    c = UnboundTable("c", {"e": "int64", "f": "string"}).to_expr()
+
+    ab = a.join(b, [a.a == b.c])
+    abc = ab.join(c, [ab.a == c.e])

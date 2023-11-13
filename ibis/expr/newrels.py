@@ -1,15 +1,12 @@
 from __future__ import annotations
 
-import types
 from abc import abstractmethod
-from functools import wraps
 from itertools import zip_longest
-from typing import Annotated, Any, Optional
+from typing import Annotated, Any
 
 import ibis.expr.datashape as ds
 import ibis.expr.datatypes as dt
 import ibis.expr.types as ir
-from ibis.common.annotations import attribute
 from ibis.common.collections import FrozenDict  # noqa: TCH001
 from ibis.common.deferred import Deferred, Item, deferred, var
 from ibis.common.exceptions import IntegrityError
@@ -252,7 +249,9 @@ class JoinChain(Concrete):
 
     def select(self, *args, **kwargs):
         # do the fields projection here
-        values = bind(self, (args, kwargs))
+        # TODO(kszucs): need to do smarter binding here since references may
+        # point to any of the relations in the join chain
+        values = bind(self.start.to_expr(), (args, kwargs))
         values = unwrap_aliases(values)
 
         # TODO(kszucs): go over the values and pull out the fields only, until
@@ -263,9 +262,17 @@ class JoinChain(Concrete):
 
         return self.finish(values)
 
+    # TODO(kszucs): figure out a solution to automatically wrap all the
+    # TableExpr methods including the docstrings and the signature
+    def where(self, *predicates):
+        return self.finish().where(*predicates)
+
+    def order_by(self, *keys):
+        return self.finish().order_by(*keys)
+
     def guess(self):
         # TODO(kszucs): more advanced heuristics can be applied here
-        # try to figure out the join intent here
+        # trying to figure out the join intent here
         fields = self.start.fields
         for link in self.links:
             if fields.keys() & link.right.fields.keys():
@@ -301,17 +308,8 @@ class JoinChain(Concrete):
             )
         return left.to_expr()
 
-    def __dir__(self):
-        return dir(TableExpr)
-
-    def __getattr__(self, key):
-        method = getattr(TableExpr, key)
-
-        @wraps(method)
-        def wrapper(*args, **kwargs):
-            return method(self.finish(), *args, **kwargs)
-
-        return wrapper
+    def __getattr__(self, name):
+        return next(bind(self.finish(), name))
 
 
 def bind(table: TableExpr, value: Any) -> ir.Value:
