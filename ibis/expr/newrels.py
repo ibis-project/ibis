@@ -82,6 +82,7 @@ class Project(Relation):
         _check_integrity(values.values(), allowed_fields=parent.fields.values())
         super().__init__(parent=parent, values=values)
 
+    # reprojection  cuold be just carried over from the parent?
     @property
     def fields(self):
         return {k: Field(self, k) for k in self.values}
@@ -101,6 +102,7 @@ class Project(Relation):
 #     def schema(self):
 #         return Schema({f.name: f.dtype for f in self.fields})
 
+# TODO(kszucs): Subquery(value, outer_relation)
 
 class Join(Relation):
     left: Relation
@@ -205,7 +207,7 @@ class TableExpr(Expr):
         node = node.replace(complete_reprojection | subsequent_projects)
         return node.to_expr()
 
-    def where(self, *predicates):
+    def filter(self, *predicates):
         preds = bind(self, predicates)
         preds = unwrap_aliases(predicates).values()
         # TODO(kszucs): add predicate flattening
@@ -326,7 +328,7 @@ def bind(table: TableExpr, value: Any) -> ir.Value:
         yield value.resolve(table)
     elif isinstance(value, Selector):
         yield from value.expand(table)
-    elif isinstance(value, tuple):
+    elif isinstance(value, (tuple, list)):
         for v in value:
             yield from bind(table, v)
     elif isinstance(value, dict):
@@ -385,6 +387,7 @@ def subsequent_filters(_, y):
     return Filter(y.parent, y.predicates + _.predicates)
 
 
+# TODO(kszucs): this may work if the sort keys are not overlapping, need to revisit
 @replace(p.Sort(y @ p.Sort))
 def subsequent_sorts(_, y):
     return Sort(y.parent, y.keys + _.keys)

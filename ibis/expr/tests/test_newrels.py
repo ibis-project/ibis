@@ -166,17 +166,23 @@ def test_select_across_relations():
 
 
 def test_where():
-    filt = t.where(t.bool_col)
+    # filt = t.select(t.bool_col).filter(t.bool_col)            # OK
+    # filt = t.select(bool_col=t.bool_col).filter(t.bool_col)   # OK
+    # filt = t.select(bool_col=~t.bool_col).filter(t.bool_col)  # NOT (though working now)
+    # filt = t.select(bool_col=t.int_col).filter(t.int_col)     # >> t.filter(t.int_col).select(bool_col=t.int_col)
+
+    filt = t.filter(t.bool_col)
+
     expected = Filter(parent=t, predicates=[t.bool_col])
     assert filt.op() == expected
 
-    filt = t.where(t.bool_col, t.int_col > 0)
+    filt = t.filter(t.bool_col, t.int_col > 0)
     expected = Filter(parent=t, predicates=[t.bool_col, t.int_col > 0])
     assert filt.op() == expected
 
 
 def test_subsequent_filters_are_squashed():
-    filt = t.where(t.bool_col).where(t.int_col > 0)
+    filt = t.filter(t.bool_col).filter(t.int_col > 0)
     expected = Filter(parent=t, predicates=[t.bool_col, t.int_col > 0])
     assert filt.op() == expected
 
@@ -191,8 +197,8 @@ def test_projection_before_and_after_filter():
     t1 = t.select(
         bool_col=~t.bool_col, int_col=t.int_col + 1, float_col=t.float_col * 3
     )
-    t2 = t1.where(t1.bool_col)
-    t3 = t2.where(t2.int_col > 0)
+    t2 = t1.filter(t1.bool_col)
+    t3 = t2.filter(t2.int_col > 0)
     t4 = t3.select(t3.bool_col, t3.int_col)
 
     assert t4.op() == Project(
