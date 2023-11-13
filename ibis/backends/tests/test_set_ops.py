@@ -84,7 +84,7 @@ def test_union_mixed_distinct(backend, union_subsets):
         param(True, id="distinct"),
     ],
 )
-@pytest.mark.notimpl(["datafusion", "polars"])
+@pytest.mark.notimpl(["polars"])
 @pytest.mark.broken(["druid"], raises=sa.exc.ProgrammingError)
 def test_intersect(backend, alltypes, df, distinct):
     a = alltypes.filter((_.id >= 5200) & (_.id <= 5210))
@@ -130,7 +130,7 @@ def test_intersect(backend, alltypes, df, distinct):
         param(True, id="distinct"),
     ],
 )
-@pytest.mark.notimpl(["datafusion", "polars"])
+@pytest.mark.notimpl(["polars"])
 @pytest.mark.broken(["druid"], raises=sa.exc.ProgrammingError)
 def test_difference(backend, alltypes, df, distinct):
     a = alltypes.filter((_.id >= 5200) & (_.id <= 5210))
@@ -205,7 +205,7 @@ def test_top_level_union(backend, con, alltypes, distinct):
     ],
     ids=["intersect", "difference"],
 )
-@pytest.mark.notimpl(["datafusion", "polars"], raises=com.OperationNotDefinedError)
+@pytest.mark.notimpl(["polars"], raises=com.OperationNotDefinedError)
 @pytest.mark.broken(["druid"], raises=sa.exc.ProgrammingError)
 def test_top_level_intersect_difference(
     backend, con, alltypes, distinct, opname, expected
