@@ -298,6 +298,7 @@ def _set_op(op, left, right, distinct):
 
 
 @fmt.register(ops.Join)
+@fmt.register(nr.Join)
 def _join(op, left, right, predicates, **kwargs):
     args = [str(left), str(right)]
     name = f"{op.__class__.__name__}[{', '.join(args)}]"

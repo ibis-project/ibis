@@ -5,7 +5,7 @@ import pytest
 import ibis.expr.datashape as ds
 import ibis.expr.datatypes as dt
 from ibis.common.exceptions import IntegrityError
-from ibis.expr.newrels import Field, Filter, Project, Sort, TableExpr, UnboundTable
+from ibis.expr.newrels import Field, Filter, Project, Sort, TableExpr, UnboundTable, Join
 from ibis.expr.schema import Schema
 
 # TODO(kszucs):
@@ -193,4 +193,52 @@ def test_join():
     t2 = UnboundTable("t2", {"c": "int64", "d": "string"}).to_expr()
 
     joined = t1.join(t2, [t1.a == t2.c])
-    joined.where(t1.b == "foo")
+    result = joined.finish()
+
+    assert result.op() == Join(
+        how="inner",
+        left=t1.op(),
+        right=t2.op(),
+        predicates=[t1.a == t2.c],
+        fields={
+            "a": t1.a,
+            "b": t1.b,
+            "c": t2.c,
+            "d": t2.d,
+        },
+    )
+
+
+def test_chained_join():
+    a = UnboundTable("a", {"a": "int64", "b": "string"}).to_expr()
+    b = UnboundTable("b", {"c": "int64", "d": "string"}).to_expr()
+    c = UnboundTable("c", {"e": "int64", "f": "string"}).to_expr()
+
+    joined = a.join(b, [a.a == b.c]).join(c, [a.a == c.e])
+    result = joined.finish()
+
+    assert result.op() == Join(
+        how="inner",
+        left=Join(
+            how="inner",
+            left=a.op(),
+            right=b.op(),
+            predicates=[a.a == b.c],
+            fields={
+                "a": a.a,
+                "b": a.b,
+                "c": b.c,
+                "d": b.d,
+            },
+        ),
+        right=c.op(),
+        predicates=[a.a == c.e],
+        fields={
+            "a": a.a,
+            "b": a.b,
+            "c": b.c,
+            "d": b.d,
+            "e": c.e,
+            "f": c.f,
+        },
+    )

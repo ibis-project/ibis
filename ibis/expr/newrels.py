@@ -20,6 +20,7 @@ from ibis.expr.types import Expr, literal
 from ibis.expr.types import Value as ValueExpr
 from ibis.selectors import Selector
 from ibis.util import Namespace
+from abc import abstractmethod
 
 # need a parallel Expression and Operation class hierarchy to decompose ops.Selection
 # into proper relational algebra operations
@@ -39,10 +40,12 @@ class Relation(Node, Coercible):
             raise TypeError(f"Cannot coerce {value!r} to a Relation")
 
     @property
+    @abstractmethod
     def fields(self):
         ...
 
     @property
+    @abstractmethod
     def schema(self):
         ...
 
@@ -113,6 +116,10 @@ class Join(Relation):
         super().__init__(
             left=left, right=right, fields=fields, predicates=predicates, how=how
         )
+
+    @property
+    def schema(self):
+        return Schema({k: v.dtype for k, v in self.fields.items()})
 
 
 class Sort(Relation):
