@@ -95,7 +95,7 @@ _MEMTABLE_PATTERN = re.compile(r"^_ibis_(?:pandas|pyarrow)_memtable_[a-z0-9]{26}
 
 
 def _qualify_memtable(
-    node: sg.exp.Expression, *, dataset: str, project: str
+    node: sg.exp.Expression, *, dataset: str | None, project: str | None
 ) -> sg.exp.Expression:
     """Add a BigQuery dataset and project to memtable references."""
     if (
@@ -125,8 +125,8 @@ class Backend(BaseSQLBackend, CanCreateSchema):
 
         raw_name = op.name
 
-        project = self.billing_project
-        dataset = self._session_dataset
+        project = self._session_dataset.project
+        dataset = self._session_dataset.dataset_id
 
         if raw_name not in self.list_tables(schema=dataset, database=project):
             table_id = sg.table(
@@ -272,6 +272,10 @@ class Backend(BaseSQLBackend, CanCreateSchema):
                 client_info=_create_client_info(application_name),
             )
 
+        self.client.default_query_job_config = bq.QueryJobConfig(
+            use_legacy_sql=False, allow_large_results=True
+        )
+
         if storage_client is not None:
             self.storage_client = storage_client
         else:
@@ -411,41 +415,28 @@ class Backend(BaseSQLBackend, CanCreateSchema):
 
     def _make_session(self) -> tuple[str, str]:
         if self._session_dataset is None:
-            job_config = bq.job.QueryJobConfig(
-                create_session=True, use_legacy_sql=False, use_query_cache=False
-            )
+            job_config = bq.QueryJobConfig(create_session=True, use_query_cache=False)
             query = self.client.query(
                 "SELECT 1", job_config=job_config, project=self.billing_project
             )
-            connection_properties = [
-                bq.ConnectionProperty("session_id", query.session_info.session_id)
-            ]
+            query.result()
 
-            # default load/query job configs are merged with further
-            # configuration in load/query jobs, e.g., when executing a query
-            self.client.default_load_job_config = bq.LoadJobConfig(
-                connection_properties=connection_properties
-            )
-
-            self.client.default_query_job_config = bq.QueryJobConfig(
-                allow_large_results=True, connection_properties=connection_properties
-            )
             self._session_dataset = query.destination.dataset_id
 
     def _get_schema_using_query(self, query: str) -> sch.Schema:
         self._make_session()
 
         job = self.client.query(
-            query, job_config=bq.QueryJobConfig(dry_run=True, use_query_cache=False)
+            query,
+            job_config=bq.QueryJobConfig(dry_run=True, use_query_cache=False),
+            project=self.billing_project,
         )
         return BigQuerySchema.to_ibis(job.schema)
 
     def _execute(self, stmt, results=True, query_parameters=None):
         self._make_session()
 
-        job_config = bq.job.QueryJobConfig(
-            query_parameters=query_parameters or [], use_legacy_sql=False
-        )
+        job_config = bq.job.QueryJobConfig(query_parameters=query_parameters or [])
         query = self.client.query(
             stmt, job_config=job_config, project=self.billing_project
         )
@@ -487,8 +478,8 @@ class Backend(BaseSQLBackend, CanCreateSchema):
             .transform(
                 partial(
                     _qualify_memtable,
-                    dataset=self._session_dataset,
-                    project=getattr(self, "billing_project", None),
+                    dataset=getattr(self._session_dataset, "dataset_id", None),
+                    project=getattr(self._session_dataset, "project", None),
                 )
             )
             .sql(dialect=self.name, pretty=True)
