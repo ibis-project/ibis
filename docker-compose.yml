@@ -145,7 +145,7 @@ services:
       - mssql
 
   hive-metastore-db:
-    image: postgres:16.0-alpine
+    image: postgres:16.1-alpine
     environment:
       POSTGRES_USER: admin
       POSTGRES_PASSWORD: admin
@@ -235,7 +235,7 @@ services:
       - $PWD/docker/trino/jvm.config:/etc/trino/jvm.config:ro
 
   druid-postgres:
-    image: postgres:16.0-alpine
+    image: postgres:16.1-alpine
     container_name: druid-postgres
     environment:
       POSTGRES_PASSWORD: FoolishPassword
