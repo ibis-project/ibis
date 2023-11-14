@@ -49,7 +49,7 @@ services:
       test:
         - CMD
         - pg_isready
-    image: postgres:13.12-alpine
+    image: postgres:13.13-alpine
     networks:
       - impala
 
