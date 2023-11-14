@@ -56,7 +56,6 @@ jobs:
               - flink
             additional_deps:
               - apache-flink
-              - grpcio-status # FIXME(deepyaman)
               - pytest-split
         group:
           [
@@ -167,7 +166,6 @@ jobs:
               - flink
             additional_deps:
               - apache-flink
-              - grpcio-status # FIXME(deepyaman)
               - pytest-split
     steps:
       - name: checkout
