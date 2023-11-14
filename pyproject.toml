@@ -328,6 +328,8 @@ filterwarnings = [
   # `is_sparse` deprecation was addressed in pyarrow 13.0.0 (see https://github.com/apache/arrow/pull/35366),
   # but flink requires apache-beam<2.49, which caps its pyarrow dependency (see https://github.com/apache/beam/blob/v2.48.0/sdks/python/setup.py#L144)
   "ignore:is_sparse is deprecated and will be removed in a future version:FutureWarning",
+  # google-api-core
+  "ignore:Please install grpcio-status to obtain helpful grpc error messages.",
 ]
 empty_parameter_set_mark = "fail_at_collect"
 markers = [
