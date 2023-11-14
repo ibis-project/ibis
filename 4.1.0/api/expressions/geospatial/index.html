@@ -1,0 +1,5623 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+        <link rel="canonical" href="https://ibis-project.github.io/ibis/4.1.0/api/expressions/geospatial/">
+      
+      <link rel="icon" href="../../../static/icons/ibis/logo.svg">
+      <meta name="generator" content="mkdocs-1.4.2, mkdocs-material-8.5.10">
+    
+    
+      
+        <title>Geospatial - Ibis Project</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../../assets/stylesheets/main.975780f9.min.css">
+      
+        
+        <link rel="stylesheet" href="../../../assets/stylesheets/palette.2505c338.min.css">
+        
+          
+          
+          <meta name="theme-color" content="#009485">
+        
+      
+      
+
+    
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../../assets/_mkdocstrings.css">
+    
+      <link rel="stylesheet" href="../../../stylesheets/extra.css">
+    
+    <script>__md_scope=new URL("../../..",location),__md_hash=e=>[...e].reduce((e,_)=>(e<<5)-e+_.charCodeAt(0),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+    
+<meta name="google-site-verification" content="IVqzkYiD5E35oD4kkVOcTYCTfqWKU1f6zOHCnLIPkUU">
+<script data-goatcounter="https://ibis.goatcounter.com/count"
+        async src="https://gc.zgo.at/count.js"></script>
+
+  </head>
+  
+  
+    
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="slate" data-md-color-primary="teal" data-md-color-accent="lime">
+  
+    
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#geospatial-expressions" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--lifted" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../../.." title="Ibis Project" class="md-header__button md-logo" aria-label="Ibis Project" data-md-component="logo">
+      
+  <img src="../../../static/icons/ibis/logo.svg" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3V6m0 5h18v2H3v-2m0 5h18v2H3v-2Z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Ibis Project
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Geospatial
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+    
+    
+      <label class="md-header__button md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"/></svg>
+      </label>
+      <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"/></svg>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12Z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+          <a href="javascript:void(0)" class="md-search__icon md-icon" title="Share" aria-label="Share" data-clipboard data-clipboard-text="" data-md-component="search-share" tabindex="-1">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7 0-.24-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9a3 3 0 0 0-3 3 3 3 0 0 0 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.15c-.05.21-.08.43-.08.66 0 1.61 1.31 2.91 2.92 2.91 1.61 0 2.92-1.3 2.92-2.91A2.92 2.92 0 0 0 18 16.08Z"/></svg>
+          </a>
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41Z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/ibis-project/ibis/tree/4.1.0" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 496 512"><!--! Font Awesome Free 6.2.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc.--><path d="M165.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6zm-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3zm44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9zM244.8 8C106.1 8 0 113.3 0 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C428.2 457.8 496 362.9 496 252 496 113.3 383.5 8 244.8 8zM97.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1zm-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7zm32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1zm-11.4-14.7c-1.6 1-1.6 3.6 0 5.9 1.6 2.3 4.3 3.3 5.6 2.3 1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+    
+      
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-tabs__inner md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+
+
+  <li class="md-tabs__item">
+    <a href="../../.." class="md-tabs__link">
+      Home
+    </a>
+  </li>
+
+      
+        
+  
+  
+
+
+  <li class="md-tabs__item">
+    <a href="../../../install/" class="md-tabs__link">
+      Install
+    </a>
+  </li>
+
+      
+        
+  
+  
+    
+  
+
+
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../../docs/" class="md-tabs__link md-tabs__link--active">
+        Docs
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+
+
+  <li class="md-tabs__item">
+    <a href="../../../release_notes/" class="md-tabs__link">
+      Releases
+    </a>
+  </li>
+
+      
+        
+  
+  
+
+
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../../blog/ibis-version-4.0.0-release/" class="md-tabs__link">
+        Blog
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+
+
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../../community/" class="md-tabs__link">
+        Community
+      </a>
+    </li>
+  
+
+      
+    </ul>
+  </div>
+</nav>
+    
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../../.." title="Ibis Project" class="md-nav__button md-logo" aria-label="Ibis Project" data-md-component="logo">
+      
+  <img src="../../../static/icons/ibis/logo.svg" alt="logo">
+
+    </a>
+    Ibis Project
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/ibis-project/ibis/tree/4.1.0" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 496 512"><!--! Font Awesome Free 6.2.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc.--><path d="M165.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6zm-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3zm44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9zM244.8 8C106.1 8 0 113.3 0 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C428.2 457.8 496 362.9 496 252 496 113.3 383.5 8 244.8 8zM97.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1zm-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7zm32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1zm-11.4-14.7c-1.6 1-1.6 3.6 0 5.9 1.6 2.3 4.3 3.3 5.6 2.3 1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../.." class="md-nav__link">
+        Home
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../install/" class="md-nav__link">
+        Install
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+    
+  
+  
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_3" type="checkbox" id="__nav_3" checked>
+      
+      
+      
+        
+          
+            
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+      
+      
+        
+        
+        <div class="md-nav__link md-nav__link--index ">
+          <a href="../../../docs/">Docs</a>
+          
+            <label for="__nav_3">
+              <span class="md-nav__icon md-icon"></span>
+            </label>
+          
+        </div>
+      
+      <nav class="md-nav" aria-label="Docs" data-md-level="1">
+        <label class="md-nav__title" for="__nav_3">
+          <span class="md-nav__icon md-icon"></span>
+          Docs
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+          
+            
+              
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_3_2" type="checkbox" id="__nav_3_2" >
+      
+      
+      
+        
+          
+            
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+      
+      
+        
+        
+        <div class="md-nav__link md-nav__link--index ">
+          <a href="../../../tutorial/">Tutorial</a>
+          
+            <label for="__nav_3_2">
+              <span class="md-nav__icon md-icon"></span>
+            </label>
+          
+        </div>
+      
+      <nav class="md-nav" aria-label="Tutorial" data-md-level="2">
+        <label class="md-nav__title" for="__nav_3_2">
+          <span class="md-nav__icon md-icon"></span>
+          Tutorial
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../tutorial/01-Introduction-to-Ibis/" class="md-nav__link">
+        Getting started
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../tutorial/02-Aggregates-Joins/" class="md-nav__link">
+        Aggregating and joining data
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../tutorial/03-Expressions-Lazy-Mode-Logging/" class="md-nav__link">
+        Lazy Mode and Logging
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../tutorial/04-More-Value-Expressions/" class="md-nav__link">
+        More Value Expressions
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../tutorial/05-IO-Create-Insert-External-Data/" class="md-nav__link">
+        Creating and Inserting Data
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../tutorial/06-ComplexFiltering/" class="md-nav__link">
+        Complex Filtering
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../tutorial/07-Analytics-Tools/" class="md-nav__link">
+        Analytics Tools
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../tutorial/rendered/08-Geospatial-Analysis/" class="md-nav__link">
+        Geospatial Analysis
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_3_3" type="checkbox" id="__nav_3_3" >
+      
+      
+      
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+      
+      
+        <label class="md-nav__link" for="__nav_3_3">
+          How To Guide
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="How To Guide" data-md-level="2">
+        <label class="md-nav__title" for="__nav_3_3">
+          <span class="md-nav__icon md-icon"></span>
+          How To Guide
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../how_to/chain-expressions/" class="md-nav__link">
+        How to Chain Expressions with Underscore
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../how_to/duckdb_register/" class="md-nav__link">
+        How to Use `register` to load external data files with the DuckDB backend
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../how_to/ffill_bfill_w_window/" class="md-nav__link">
+        How to `ffill` and `bfill` using Window Functions
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../how_to/memtable-join/" class="md-nav__link">
+        How to join an in-memory DataFrame to a TableExpression
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../how_to/sessionize/" class="md-nav__link">
+        How to Sessionize a Log of Events
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../how_to/topk/" class="md-nav__link">
+        How to Compute the Top K Records
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_3_4" type="checkbox" id="__nav_3_4" >
+      
+      
+      
+        
+          
+            
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+      
+      
+        
+        
+        <div class="md-nav__link md-nav__link--index ">
+          <a href="../../../backends/">Execution Backends</a>
+          
+            <label for="__nav_3_4">
+              <span class="md-nav__icon md-icon"></span>
+            </label>
+          
+        </div>
+      
+      <nav class="md-nav" aria-label="Execution Backends" data-md-level="2">
+        <label class="md-nav__title" for="__nav_3_4">
+          <span class="md-nav__icon md-icon"></span>
+          Execution Backends
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../backends/BigQuery/" class="md-nav__link">
+        BigQuery
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../backends/ClickHouse/" class="md-nav__link">
+        ClickHouse
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../backends/Dask/" class="md-nav__link">
+        Dask
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../backends/Datafusion/" class="md-nav__link">
+        Datafusion
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../backends/DuckDB/" class="md-nav__link">
+        DuckDB
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../backends/Impala/" class="md-nav__link">
+        Impala
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../backends/MSSQL/" class="md-nav__link">
+        MSSQL
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../backends/MySQL/" class="md-nav__link">
+        MySQL
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../backends/Pandas/" class="md-nav__link">
+        Pandas
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../backends/Polars/" class="md-nav__link">
+        Polars
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../backends/PostgreSQL/" class="md-nav__link">
+        PostgreSQL
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../backends/PySpark/" class="md-nav__link">
+        PySpark
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../backends/SQLite/" class="md-nav__link">
+        SQLite
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../backends/Snowflake/" class="md-nav__link">
+        Snowflake
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../backends/Trino/" class="md-nav__link">
+        Trino
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_3_5" type="checkbox" id="__nav_3_5" >
+      
+      
+      
+        
+          
+        
+          
+        
+          
+        
+          
+        
+      
+      
+        <label class="md-nav__link" for="__nav_3_5">
+          User Guide
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="User Guide" data-md-level="2">
+        <label class="md-nav__title" for="__nav_3_5">
+          <span class="md-nav__icon md-icon"></span>
+          User Guide
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../user_guide/configuration/" class="md-nav__link">
+        Configuring Ibis
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../user_guide/design/" class="md-nav__link">
+        Design
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../user_guide/self_joins/" class="md-nav__link">
+        Self Joins
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_3_5_4" type="checkbox" id="__nav_3_5_4" >
+      
+      
+      
+        
+          
+        
+          
+        
+      
+      
+        <label class="md-nav__link" for="__nav_3_5_4">
+          Extending
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Extending" data-md-level="3">
+        <label class="md-nav__title" for="__nav_3_5_4">
+          <span class="md-nav__icon md-icon"></span>
+          Extending
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../user_guide/extending/elementwise/" class="md-nav__link">
+        Adding an Elementwise Operation
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../user_guide/extending/reduction/" class="md-nav__link">
+        Adding a Reduction Operation
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+    
+  
+  
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_3_6" type="checkbox" id="__nav_3_6" checked>
+      
+      
+      
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+      
+      
+        <label class="md-nav__link" for="__nav_3_6">
+          API Reference
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="API Reference" data-md-level="2">
+        <label class="md-nav__title" for="__nav_3_6">
+          <span class="md-nav__icon md-icon"></span>
+          API Reference
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+    
+  
+  
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_3_6_1" type="checkbox" id="__nav_3_6_1" checked>
+      
+      
+      
+        
+          
+            
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+      
+      
+        
+        
+        <div class="md-nav__link md-nav__link--index ">
+          <a href="../">Expressions</a>
+          
+            <label for="__nav_3_6_1">
+              <span class="md-nav__icon md-icon"></span>
+            </label>
+          
+        </div>
+      
+      <nav class="md-nav" aria-label="Expressions" data-md-level="3">
+        <label class="md-nav__title" for="__nav_3_6_1">
+          <span class="md-nav__icon md-icon"></span>
+          Expressions
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../top_level/" class="md-nav__link">
+        Top Level
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tables/" class="md-nav__link">
+        Tables
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../generic/" class="md-nav__link">
+        Generic Values
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../numeric/" class="md-nav__link">
+        Numeric + Boolean
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../strings/" class="md-nav__link">
+        Strings
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../timestamps/" class="md-nav__link">
+        Timestamps + Dates + Times
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../collections/" class="md-nav__link">
+        Collections
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+    
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" data-md-toggle="toc" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          Geospatial
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        Geospatial
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#ibis.expr.types.geospatial.GeoSpatialValue" class="md-nav__link">
+    GeoSpatialValue
+  </a>
+  
+    <nav class="md-nav" aria-label="GeoSpatialValue">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.geospatial.GeoSpatialValue-functions" class="md-nav__link">
+    Functions
+  </a>
+  
+    <nav class="md-nav" aria-label="Functions">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.geospatial.GeoSpatialValue.area" class="md-nav__link">
+    area()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.geospatial.GeoSpatialValue.as_binary" class="md-nav__link">
+    as_binary()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.geospatial.GeoSpatialValue.as_ewkb" class="md-nav__link">
+    as_ewkb()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.geospatial.GeoSpatialValue.as_ewkt" class="md-nav__link">
+    as_ewkt()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.geospatial.GeoSpatialValue.as_text" class="md-nav__link">
+    as_text()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.geospatial.GeoSpatialValue.azimuth" class="md-nav__link">
+    azimuth()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.geospatial.GeoSpatialValue.buffer" class="md-nav__link">
+    buffer()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.geospatial.GeoSpatialValue.centroid" class="md-nav__link">
+    centroid()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.geospatial.GeoSpatialValue.contains" class="md-nav__link">
+    contains()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.geospatial.GeoSpatialValue.contains_properly" class="md-nav__link">
+    contains_properly()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.geospatial.GeoSpatialValue.covered_by" class="md-nav__link">
+    covered_by()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.geospatial.GeoSpatialValue.covers" class="md-nav__link">
+    covers()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.geospatial.GeoSpatialValue.crosses" class="md-nav__link">
+    crosses()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.geospatial.GeoSpatialValue.d_fully_within" class="md-nav__link">
+    d_fully_within()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.geospatial.GeoSpatialValue.d_within" class="md-nav__link">
+    d_within()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.geospatial.GeoSpatialValue.difference" class="md-nav__link">
+    difference()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.geospatial.GeoSpatialValue.disjoint" class="md-nav__link">
+    disjoint()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.geospatial.GeoSpatialValue.distance" class="md-nav__link">
+    distance()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.geospatial.GeoSpatialValue.end_point" class="md-nav__link">
+    end_point()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.geospatial.GeoSpatialValue.envelope" class="md-nav__link">
+    envelope()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.geospatial.GeoSpatialValue.geo_equals" class="md-nav__link">
+    geo_equals()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.geospatial.GeoSpatialValue.geometry_n" class="md-nav__link">
+    geometry_n()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.geospatial.GeoSpatialValue.geometry_type" class="md-nav__link">
+    geometry_type()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.geospatial.GeoSpatialValue.intersection" class="md-nav__link">
+    intersection()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.geospatial.GeoSpatialValue.intersects" class="md-nav__link">
+    intersects()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.geospatial.GeoSpatialValue.is_valid" class="md-nav__link">
+    is_valid()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.geospatial.GeoSpatialValue.length" class="md-nav__link">
+    length()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.geospatial.GeoSpatialValue.line_locate_point" class="md-nav__link">
+    line_locate_point()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.geospatial.GeoSpatialValue.line_merge" class="md-nav__link">
+    line_merge()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.geospatial.GeoSpatialValue.line_substring" class="md-nav__link">
+    line_substring()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.geospatial.GeoSpatialValue.max_distance" class="md-nav__link">
+    max_distance()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.geospatial.GeoSpatialValue.n_points" class="md-nav__link">
+    n_points()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.geospatial.GeoSpatialValue.n_rings" class="md-nav__link">
+    n_rings()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.geospatial.GeoSpatialValue.ordering_equals" class="md-nav__link">
+    ordering_equals()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.geospatial.GeoSpatialValue.overlaps" class="md-nav__link">
+    overlaps()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.geospatial.GeoSpatialValue.perimeter" class="md-nav__link">
+    perimeter()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.geospatial.GeoSpatialValue.point_n" class="md-nav__link">
+    point_n()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.geospatial.GeoSpatialValue.set_srid" class="md-nav__link">
+    set_srid()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.geospatial.GeoSpatialValue.simplify" class="md-nav__link">
+    simplify()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.geospatial.GeoSpatialValue.srid" class="md-nav__link">
+    srid()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.geospatial.GeoSpatialValue.start_point" class="md-nav__link">
+    start_point()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.geospatial.GeoSpatialValue.touches" class="md-nav__link">
+    touches()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.geospatial.GeoSpatialValue.transform" class="md-nav__link">
+    transform()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.geospatial.GeoSpatialValue.union" class="md-nav__link">
+    union()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.geospatial.GeoSpatialValue.within" class="md-nav__link">
+    within()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.geospatial.GeoSpatialValue.x" class="md-nav__link">
+    x()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.geospatial.GeoSpatialValue.x_max" class="md-nav__link">
+    x_max()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.geospatial.GeoSpatialValue.x_min" class="md-nav__link">
+    x_min()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.geospatial.GeoSpatialValue.y" class="md-nav__link">
+    y()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.geospatial.GeoSpatialValue.y_max" class="md-nav__link">
+    y_max()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.geospatial.GeoSpatialValue.y_min" class="md-nav__link">
+    y_min()
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#ibis.expr.types.geospatial.GeoSpatialColumn" class="md-nav__link">
+    GeoSpatialColumn
+  </a>
+  
+    <nav class="md-nav" aria-label="GeoSpatialColumn">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.geospatial.GeoSpatialColumn-functions" class="md-nav__link">
+    Functions
+  </a>
+  
+    <nav class="md-nav" aria-label="Functions">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.geospatial.GeoSpatialColumn.unary_union" class="md-nav__link">
+    unary_union()
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../selectors/" class="md-nav__link">
+        Column Selectors
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../datatypes/" class="md-nav__link">
+        Data Types
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../schemas/" class="md-nav__link">
+        Schemas
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_3_6_5" type="checkbox" id="__nav_3_6_5" >
+      
+      
+      
+        
+          
+        
+          
+        
+          
+        
+          
+        
+      
+      
+        <label class="md-nav__link" for="__nav_3_6_5">
+          Backend Interfaces
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Backend Interfaces" data-md-level="3">
+        <label class="md-nav__title" for="__nav_3_6_5">
+          <span class="md-nav__icon md-icon"></span>
+          Backend Interfaces
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../backends/base/" class="md-nav__link">
+        Backend Base Classes
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../backends/pandas/" class="md-nav__link">
+        Pandas-like Backend Base Classes
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../backends/sql/" class="md-nav__link">
+        SQL Backend Base Classes
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../backends/sqlalchemy/" class="md-nav__link">
+        SQLAlchemy Backend Base Classes
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../config/" class="md-nav__link">
+        Configuration
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../ibis-for-sql-programmers/" class="md-nav__link">
+        Ibis for SQL Programmers
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../ibis-for-pandas-users/" class="md-nav__link">
+        Ibis for pandas Users
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../backends/support_matrix/" class="md-nav__link">
+        Backend Operations Matrix
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../release_notes/" class="md-nav__link">
+        Releases
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_5" type="checkbox" id="__nav_5" >
+      
+      
+      
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+      
+      
+        <label class="md-nav__link" for="__nav_5">
+          Blog
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Blog" data-md-level="1">
+        <label class="md-nav__title" for="__nav_5">
+          <span class="md-nav__icon md-icon"></span>
+          Blog
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../blog/ibis-version-4.0.0-release/" class="md-nav__link">
+        Ibis v4.0.0
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../blog/rendered/ci-analysis/" class="md-nav__link">
+        Analysis of Ibis's CI Performance
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../blog/ffill-and-bfill-using-ibis/" class="md-nav__link">
+        ffill and bfill using ibis
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../blog/Ibis-version-3.1.0-release/" class="md-nav__link">
+        Ibis v3.1.0
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../blog/Ibis-version-3.0.0-release/" class="md-nav__link">
+        Ibis v3.0.0
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_6" type="checkbox" id="__nav_6" >
+      
+      
+      
+        
+          
+            
+          
+        
+          
+        
+      
+      
+        
+        
+        <div class="md-nav__link md-nav__link--index ">
+          <a href="../../../community/">Community</a>
+          
+            <label for="__nav_6">
+              <span class="md-nav__icon md-icon"></span>
+            </label>
+          
+        </div>
+      
+      <nav class="md-nav" aria-label="Community" data-md-level="1">
+        <label class="md-nav__title" for="__nav_6">
+          <span class="md-nav__icon md-icon"></span>
+          Community
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+          
+            
+              
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_6_2" type="checkbox" id="__nav_6_2" >
+      
+      
+      
+        
+          
+            
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+      
+      
+        
+        
+        <div class="md-nav__link md-nav__link--index ">
+          <a href="../../../community/contribute/">Contribute</a>
+          
+            <label for="__nav_6_2">
+              <span class="md-nav__icon md-icon"></span>
+            </label>
+          
+        </div>
+      
+      <nav class="md-nav" aria-label="Contribute" data-md-level="2">
+        <label class="md-nav__title" for="__nav_6_2">
+          <span class="md-nav__icon md-icon"></span>
+          Contribute
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../community/contribute/01_environment/" class="md-nav__link">
+        Setting Up a Development Environment
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../community/contribute/02_workflow/" class="md-nav__link">
+        Contribute to the Ibis Codebase
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../community/contribute/03_style/" class="md-nav__link">
+        Style and Formatting
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../community/contribute/05_maintainers_guide/" class="md-nav__link">
+        Maintaining the Codebase
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#ibis.expr.types.geospatial.GeoSpatialValue" class="md-nav__link">
+    GeoSpatialValue
+  </a>
+  
+    <nav class="md-nav" aria-label="GeoSpatialValue">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.geospatial.GeoSpatialValue-functions" class="md-nav__link">
+    Functions
+  </a>
+  
+    <nav class="md-nav" aria-label="Functions">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.geospatial.GeoSpatialValue.area" class="md-nav__link">
+    area()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.geospatial.GeoSpatialValue.as_binary" class="md-nav__link">
+    as_binary()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.geospatial.GeoSpatialValue.as_ewkb" class="md-nav__link">
+    as_ewkb()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.geospatial.GeoSpatialValue.as_ewkt" class="md-nav__link">
+    as_ewkt()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.geospatial.GeoSpatialValue.as_text" class="md-nav__link">
+    as_text()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.geospatial.GeoSpatialValue.azimuth" class="md-nav__link">
+    azimuth()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.geospatial.GeoSpatialValue.buffer" class="md-nav__link">
+    buffer()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.geospatial.GeoSpatialValue.centroid" class="md-nav__link">
+    centroid()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.geospatial.GeoSpatialValue.contains" class="md-nav__link">
+    contains()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.geospatial.GeoSpatialValue.contains_properly" class="md-nav__link">
+    contains_properly()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.geospatial.GeoSpatialValue.covered_by" class="md-nav__link">
+    covered_by()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.geospatial.GeoSpatialValue.covers" class="md-nav__link">
+    covers()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.geospatial.GeoSpatialValue.crosses" class="md-nav__link">
+    crosses()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.geospatial.GeoSpatialValue.d_fully_within" class="md-nav__link">
+    d_fully_within()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.geospatial.GeoSpatialValue.d_within" class="md-nav__link">
+    d_within()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.geospatial.GeoSpatialValue.difference" class="md-nav__link">
+    difference()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.geospatial.GeoSpatialValue.disjoint" class="md-nav__link">
+    disjoint()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.geospatial.GeoSpatialValue.distance" class="md-nav__link">
+    distance()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.geospatial.GeoSpatialValue.end_point" class="md-nav__link">
+    end_point()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.geospatial.GeoSpatialValue.envelope" class="md-nav__link">
+    envelope()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.geospatial.GeoSpatialValue.geo_equals" class="md-nav__link">
+    geo_equals()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.geospatial.GeoSpatialValue.geometry_n" class="md-nav__link">
+    geometry_n()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.geospatial.GeoSpatialValue.geometry_type" class="md-nav__link">
+    geometry_type()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.geospatial.GeoSpatialValue.intersection" class="md-nav__link">
+    intersection()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.geospatial.GeoSpatialValue.intersects" class="md-nav__link">
+    intersects()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.geospatial.GeoSpatialValue.is_valid" class="md-nav__link">
+    is_valid()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.geospatial.GeoSpatialValue.length" class="md-nav__link">
+    length()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.geospatial.GeoSpatialValue.line_locate_point" class="md-nav__link">
+    line_locate_point()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.geospatial.GeoSpatialValue.line_merge" class="md-nav__link">
+    line_merge()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.geospatial.GeoSpatialValue.line_substring" class="md-nav__link">
+    line_substring()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.geospatial.GeoSpatialValue.max_distance" class="md-nav__link">
+    max_distance()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.geospatial.GeoSpatialValue.n_points" class="md-nav__link">
+    n_points()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.geospatial.GeoSpatialValue.n_rings" class="md-nav__link">
+    n_rings()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.geospatial.GeoSpatialValue.ordering_equals" class="md-nav__link">
+    ordering_equals()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.geospatial.GeoSpatialValue.overlaps" class="md-nav__link">
+    overlaps()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.geospatial.GeoSpatialValue.perimeter" class="md-nav__link">
+    perimeter()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.geospatial.GeoSpatialValue.point_n" class="md-nav__link">
+    point_n()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.geospatial.GeoSpatialValue.set_srid" class="md-nav__link">
+    set_srid()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.geospatial.GeoSpatialValue.simplify" class="md-nav__link">
+    simplify()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.geospatial.GeoSpatialValue.srid" class="md-nav__link">
+    srid()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.geospatial.GeoSpatialValue.start_point" class="md-nav__link">
+    start_point()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.geospatial.GeoSpatialValue.touches" class="md-nav__link">
+    touches()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.geospatial.GeoSpatialValue.transform" class="md-nav__link">
+    transform()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.geospatial.GeoSpatialValue.union" class="md-nav__link">
+    union()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.geospatial.GeoSpatialValue.within" class="md-nav__link">
+    within()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.geospatial.GeoSpatialValue.x" class="md-nav__link">
+    x()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.geospatial.GeoSpatialValue.x_max" class="md-nav__link">
+    x_max()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.geospatial.GeoSpatialValue.x_min" class="md-nav__link">
+    x_min()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.geospatial.GeoSpatialValue.y" class="md-nav__link">
+    y()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.geospatial.GeoSpatialValue.y_max" class="md-nav__link">
+    y_max()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.geospatial.GeoSpatialValue.y_min" class="md-nav__link">
+    y_min()
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#ibis.expr.types.geospatial.GeoSpatialColumn" class="md-nav__link">
+    GeoSpatialColumn
+  </a>
+  
+    <nav class="md-nav" aria-label="GeoSpatialColumn">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.geospatial.GeoSpatialColumn-functions" class="md-nav__link">
+    Functions
+  </a>
+  
+    <nav class="md-nav" aria-label="Functions">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.geospatial.GeoSpatialColumn.unary_union" class="md-nav__link">
+    unary_union()
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              <article class="md-content__inner md-typeset">
+                
+
+
+
+                  
+
+
+<h1 id="geospatial-expressions">Geospatial Expressions<a class="headerlink" href="#geospatial-expressions" title="Anchor link to this section for reference">&para;</a></h1>
+<p>Ibis supports the following geospatial expression APIs</p>
+
+
+<div class="doc doc-object doc-class">
+
+
+
+<h2 id="ibis.expr.types.geospatial.GeoSpatialValue" class="doc doc-heading">
+        <code>GeoSpatialValue</code>
+
+
+<a href="#ibis.expr.types.geospatial.GeoSpatialValue" class="headerlink" title="Anchor link to this section for reference">&para;</a></h2>
+
+
+  <div class="doc doc-contents first">
+      <p class="doc doc-class-bases">
+        Bases: <code><a class="autorefs autorefs-internal" title="ibis.expr.types.numeric.NumericValue" href="../numeric/#ibis.expr.types.numeric.NumericValue">NumericValue</a></code></p>
+
+
+
+
+  
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+
+<h3 id="ibis.expr.types.geospatial.GeoSpatialValue-functions">Functions<a href="#ibis.expr.types.geospatial.GeoSpatialValue-functions" class="headerlink" title="Anchor link to this section for reference">&para;</a></h3>
+
+<div class="doc doc-object doc-function">
+
+
+
+<h4 id="ibis.expr.types.geospatial.GeoSpatialValue.area" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">area</span><span class="p">()</span></code>
+
+<a href="#ibis.expr.types.geospatial.GeoSpatialValue.area" class="headerlink" title="Anchor link to this section for reference">&para;</a></h4>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>Compute the area of a geospatial value.</p>
+
+  <p><strong>Returns:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td>
+                <code><a class="autorefs autorefs-internal" title="ibis.expr.types.numeric.FloatingValue" href="../numeric/#ibis.expr.types.numeric.FloatingValue">FloatingValue</a></code>
+          </td>
+          <td><p>The area of <code>self</code></p></td>
+        </tr>
+    </tbody>
+  </table>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+
+<h4 id="ibis.expr.types.geospatial.GeoSpatialValue.as_binary" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">as_binary</span><span class="p">()</span></code>
+
+<a href="#ibis.expr.types.geospatial.GeoSpatialValue.as_binary" class="headerlink" title="Anchor link to this section for reference">&para;</a></h4>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>Get the geometry as well-known bytes (WKB) without the SRID data.</p>
+
+  <p><strong>Returns:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td>
+                <code><span title="ibis.expr.types.binary.BinaryValue">BinaryValue</span></code>
+          </td>
+          <td><p>Binary value</p></td>
+        </tr>
+    </tbody>
+  </table>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+
+<h4 id="ibis.expr.types.geospatial.GeoSpatialValue.as_ewkb" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">as_ewkb</span><span class="p">()</span></code>
+
+<a href="#ibis.expr.types.geospatial.GeoSpatialValue.as_ewkb" class="headerlink" title="Anchor link to this section for reference">&para;</a></h4>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>Get the geometry as well-known bytes (WKB) with the SRID data.</p>
+
+  <p><strong>Returns:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td>
+                <code><span title="ibis.expr.types.binary.BinaryValue">BinaryValue</span></code>
+          </td>
+          <td><p>WKB value</p></td>
+        </tr>
+    </tbody>
+  </table>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+
+<h4 id="ibis.expr.types.geospatial.GeoSpatialValue.as_ewkt" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">as_ewkt</span><span class="p">()</span></code>
+
+<a href="#ibis.expr.types.geospatial.GeoSpatialValue.as_ewkt" class="headerlink" title="Anchor link to this section for reference">&para;</a></h4>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>Get the geometry as well-known text (WKT) with the SRID data.</p>
+
+  <p><strong>Returns:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td>
+                <code><a class="autorefs autorefs-internal" title="ibis.expr.types.uuid.StringValue" href="../strings/#ibis.expr.types.strings.StringValue">StringValue</a></code>
+          </td>
+          <td><p>String value</p></td>
+        </tr>
+    </tbody>
+  </table>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+
+<h4 id="ibis.expr.types.geospatial.GeoSpatialValue.as_text" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">as_text</span><span class="p">()</span></code>
+
+<a href="#ibis.expr.types.geospatial.GeoSpatialValue.as_text" class="headerlink" title="Anchor link to this section for reference">&para;</a></h4>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>Get the geometry as well-known text (WKT) without the SRID data.</p>
+
+  <p><strong>Returns:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td>
+                <code><a class="autorefs autorefs-internal" title="ibis.expr.types.uuid.StringValue" href="../strings/#ibis.expr.types.strings.StringValue">StringValue</a></code>
+          </td>
+          <td><p>String value</p></td>
+        </tr>
+    </tbody>
+  </table>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+
+<h4 id="ibis.expr.types.geospatial.GeoSpatialValue.azimuth" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">azimuth</span><span class="p">(</span><span class="n">right</span><span class="p">)</span></code>
+
+<a href="#ibis.expr.types.geospatial.GeoSpatialValue.azimuth" class="headerlink" title="Anchor link to this section for reference">&para;</a></h4>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>Return the angle in radians from the horizontal of the vector defined by the inputs.</p>
+<p>Angle is computed clockwise from down-to-up on the clock: 12=0; 3=PI/2; 6=PI; 9=3PI/2.</p>
+
+  <p><strong>Parameters:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Type</th>
+        <th>Description</th>
+        <th>Default</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td><code>right</code></td>
+          <td>
+                <code><a class="autorefs autorefs-internal" title="ibis.expr.types.geospatial.GeoSpatialValue" href="#ibis.expr.types.geospatial.GeoSpatialValue">GeoSpatialValue</a></code>
+          </td>
+          <td><p>Right geometry</p></td>
+          <td>
+              <em>required</em>
+          </td>
+        </tr>
+    </tbody>
+  </table>
+
+  <p><strong>Returns:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td>
+                <code><a class="autorefs autorefs-internal" title="ibis.expr.types.numeric.FloatingValue" href="../numeric/#ibis.expr.types.numeric.FloatingValue">FloatingValue</a></code>
+          </td>
+          <td><p>azimuth</p></td>
+        </tr>
+    </tbody>
+  </table>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+
+<h4 id="ibis.expr.types.geospatial.GeoSpatialValue.buffer" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">buffer</span><span class="p">(</span><span class="n">radius</span><span class="p">)</span></code>
+
+<a href="#ibis.expr.types.geospatial.GeoSpatialValue.buffer" class="headerlink" title="Anchor link to this section for reference">&para;</a></h4>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>Return all points whose distance from this geometry is less than or equal to <code>radius</code>.</p>
+<p>Calculations are in the Spatial Reference System of this Geometry.</p>
+
+  <p><strong>Parameters:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Type</th>
+        <th>Description</th>
+        <th>Default</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td><code>radius</code></td>
+          <td>
+                <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#float">float</a> | <span title="ibis.expr.types">ir</span>.<a class="autorefs autorefs-internal" title="ibis.expr.types.FloatingValue" href="../numeric/#ibis.expr.types.numeric.FloatingValue">FloatingValue</a></code>
+          </td>
+          <td><p>Floating expression</p></td>
+          <td>
+              <em>required</em>
+          </td>
+        </tr>
+    </tbody>
+  </table>
+
+  <p><strong>Returns:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td>
+                <code><a class="autorefs autorefs-internal" title="ibis.expr.types.geospatial.GeoSpatialValue" href="#ibis.expr.types.geospatial.GeoSpatialValue">GeoSpatialValue</a></code>
+          </td>
+          <td><p>Geometry expression</p></td>
+        </tr>
+    </tbody>
+  </table>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+
+<h4 id="ibis.expr.types.geospatial.GeoSpatialValue.centroid" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">centroid</span><span class="p">()</span></code>
+
+<a href="#ibis.expr.types.geospatial.GeoSpatialValue.centroid" class="headerlink" title="Anchor link to this section for reference">&para;</a></h4>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>Returns the centroid of the geometry.</p>
+
+  <p><strong>Returns:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td>
+                <code><span title="ibis.expr.types.geospatial.PointValue">PointValue</span></code>
+          </td>
+          <td><p>The centroid</p></td>
+        </tr>
+    </tbody>
+  </table>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+
+<h4 id="ibis.expr.types.geospatial.GeoSpatialValue.contains" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">contains</span><span class="p">(</span><span class="n">right</span><span class="p">)</span></code>
+
+<a href="#ibis.expr.types.geospatial.GeoSpatialValue.contains" class="headerlink" title="Anchor link to this section for reference">&para;</a></h4>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>Check if the geometry contains the <code>right</code>.</p>
+
+  <p><strong>Parameters:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Type</th>
+        <th>Description</th>
+        <th>Default</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td><code>right</code></td>
+          <td>
+                <code><a class="autorefs autorefs-internal" title="ibis.expr.types.geospatial.GeoSpatialValue" href="#ibis.expr.types.geospatial.GeoSpatialValue">GeoSpatialValue</a></code>
+          </td>
+          <td><p>Right geometry</p></td>
+          <td>
+              <em>required</em>
+          </td>
+        </tr>
+    </tbody>
+  </table>
+
+  <p><strong>Returns:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td>
+                <code><a class="autorefs autorefs-internal" title="ibis.expr.types.logical.BooleanValue" href="../numeric/#ibis.expr.types.logical.BooleanValue">BooleanValue</a></code>
+          </td>
+          <td><p>Whether <code>self</code> contains <code>right</code></p></td>
+        </tr>
+    </tbody>
+  </table>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+
+<h4 id="ibis.expr.types.geospatial.GeoSpatialValue.contains_properly" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">contains_properly</span><span class="p">(</span><span class="n">right</span><span class="p">)</span></code>
+
+<a href="#ibis.expr.types.geospatial.GeoSpatialValue.contains_properly" class="headerlink" title="Anchor link to this section for reference">&para;</a></h4>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>Check if the first geometry contains the second one.</p>
+<p>Excludes common border points.</p>
+
+  <p><strong>Parameters:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Type</th>
+        <th>Description</th>
+        <th>Default</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td><code>right</code></td>
+          <td>
+                <code><a class="autorefs autorefs-internal" title="ibis.expr.types.geospatial.GeoSpatialValue" href="#ibis.expr.types.geospatial.GeoSpatialValue">GeoSpatialValue</a></code>
+          </td>
+          <td><p>Right geometry</p></td>
+          <td>
+              <em>required</em>
+          </td>
+        </tr>
+    </tbody>
+  </table>
+
+  <p><strong>Returns:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td>
+                <code><a class="autorefs autorefs-internal" title="ibis.expr.types.logical.BooleanValue" href="../numeric/#ibis.expr.types.logical.BooleanValue">BooleanValue</a></code>
+          </td>
+          <td><p>Whether self contains right excluding border points.</p></td>
+        </tr>
+    </tbody>
+  </table>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+
+<h4 id="ibis.expr.types.geospatial.GeoSpatialValue.covered_by" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">covered_by</span><span class="p">(</span><span class="n">right</span><span class="p">)</span></code>
+
+<a href="#ibis.expr.types.geospatial.GeoSpatialValue.covered_by" class="headerlink" title="Anchor link to this section for reference">&para;</a></h4>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>Check if the first geometry is covered by the second one.</p>
+
+  <p><strong>Parameters:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Type</th>
+        <th>Description</th>
+        <th>Default</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td><code>right</code></td>
+          <td>
+                <code><a class="autorefs autorefs-internal" title="ibis.expr.types.geospatial.GeoSpatialValue" href="#ibis.expr.types.geospatial.GeoSpatialValue">GeoSpatialValue</a></code>
+          </td>
+          <td><p>Right geometry</p></td>
+          <td>
+              <em>required</em>
+          </td>
+        </tr>
+    </tbody>
+  </table>
+
+  <p><strong>Returns:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td>
+                <code><a class="autorefs autorefs-internal" title="ibis.expr.types.logical.BooleanValue" href="../numeric/#ibis.expr.types.logical.BooleanValue">BooleanValue</a></code>
+          </td>
+          <td><p>Whether <code>self</code> is covered by <code>right</code></p></td>
+        </tr>
+    </tbody>
+  </table>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+
+<h4 id="ibis.expr.types.geospatial.GeoSpatialValue.covers" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">covers</span><span class="p">(</span><span class="n">right</span><span class="p">)</span></code>
+
+<a href="#ibis.expr.types.geospatial.GeoSpatialValue.covers" class="headerlink" title="Anchor link to this section for reference">&para;</a></h4>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>Check if the first geometry covers the second one.</p>
+
+  <p><strong>Parameters:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Type</th>
+        <th>Description</th>
+        <th>Default</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td><code>right</code></td>
+          <td>
+                <code><a class="autorefs autorefs-internal" title="ibis.expr.types.geospatial.GeoSpatialValue" href="#ibis.expr.types.geospatial.GeoSpatialValue">GeoSpatialValue</a></code>
+          </td>
+          <td><p>Right geometry</p></td>
+          <td>
+              <em>required</em>
+          </td>
+        </tr>
+    </tbody>
+  </table>
+
+  <p><strong>Returns:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td>
+                <code><a class="autorefs autorefs-internal" title="ibis.expr.types.logical.BooleanValue" href="../numeric/#ibis.expr.types.logical.BooleanValue">BooleanValue</a></code>
+          </td>
+          <td><p>Whether <code>self</code> covers <code>right</code></p></td>
+        </tr>
+    </tbody>
+  </table>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+
+<h4 id="ibis.expr.types.geospatial.GeoSpatialValue.crosses" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">crosses</span><span class="p">(</span><span class="n">right</span><span class="p">)</span></code>
+
+<a href="#ibis.expr.types.geospatial.GeoSpatialValue.crosses" class="headerlink" title="Anchor link to this section for reference">&para;</a></h4>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>Check if the geometries have at least one interior point in common.</p>
+
+  <p><strong>Parameters:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Type</th>
+        <th>Description</th>
+        <th>Default</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td><code>right</code></td>
+          <td>
+                <code><a class="autorefs autorefs-internal" title="ibis.expr.types.geospatial.GeoSpatialValue" href="#ibis.expr.types.geospatial.GeoSpatialValue">GeoSpatialValue</a></code>
+          </td>
+          <td><p>Right geometry</p></td>
+          <td>
+              <em>required</em>
+          </td>
+        </tr>
+    </tbody>
+  </table>
+
+  <p><strong>Returns:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td>
+                <code><a class="autorefs autorefs-internal" title="ibis.expr.types.logical.BooleanValue" href="../numeric/#ibis.expr.types.logical.BooleanValue">BooleanValue</a></code>
+          </td>
+          <td><p>Whether <code>self</code> and <code>right</code> have at least one common interior point.</p></td>
+        </tr>
+    </tbody>
+  </table>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+
+<h4 id="ibis.expr.types.geospatial.GeoSpatialValue.d_fully_within" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">d_fully_within</span><span class="p">(</span><span class="n">right</span><span class="p">,</span> <span class="n">distance</span><span class="p">)</span></code>
+
+<a href="#ibis.expr.types.geospatial.GeoSpatialValue.d_fully_within" class="headerlink" title="Anchor link to this section for reference">&para;</a></h4>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>Check if <code>self</code> is entirely within <code>distance</code> from <code>right</code>.</p>
+
+  <p><strong>Parameters:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Type</th>
+        <th>Description</th>
+        <th>Default</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td><code>right</code></td>
+          <td>
+                <code><a class="autorefs autorefs-internal" title="ibis.expr.types.geospatial.GeoSpatialValue" href="#ibis.expr.types.geospatial.GeoSpatialValue">GeoSpatialValue</a></code>
+          </td>
+          <td><p>Right geometry</p></td>
+          <td>
+              <em>required</em>
+          </td>
+        </tr>
+        <tr>
+          <td><code>distance</code></td>
+          <td>
+                <code><span title="ibis.expr.types">ir</span>.<a class="autorefs autorefs-internal" title="ibis.expr.types.FloatingValue" href="../numeric/#ibis.expr.types.numeric.FloatingValue">FloatingValue</a></code>
+          </td>
+          <td><p>Distance to check</p></td>
+          <td>
+              <em>required</em>
+          </td>
+        </tr>
+    </tbody>
+  </table>
+
+  <p><strong>Returns:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td>
+                <code><a class="autorefs autorefs-internal" title="ibis.expr.types.logical.BooleanValue" href="../numeric/#ibis.expr.types.logical.BooleanValue">BooleanValue</a></code>
+          </td>
+          <td><p>Whether <code>self</code> is within a specified distance from <code>right</code>.</p></td>
+        </tr>
+    </tbody>
+  </table>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+
+<h4 id="ibis.expr.types.geospatial.GeoSpatialValue.d_within" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">d_within</span><span class="p">(</span><span class="n">right</span><span class="p">,</span> <span class="n">distance</span><span class="p">)</span></code>
+
+<a href="#ibis.expr.types.geospatial.GeoSpatialValue.d_within" class="headerlink" title="Anchor link to this section for reference">&para;</a></h4>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>Check if <code>self</code> is partially within <code>distance</code> from <code>right</code>.</p>
+
+  <p><strong>Parameters:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Type</th>
+        <th>Description</th>
+        <th>Default</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td><code>right</code></td>
+          <td>
+                <code><a class="autorefs autorefs-internal" title="ibis.expr.types.geospatial.GeoSpatialValue" href="#ibis.expr.types.geospatial.GeoSpatialValue">GeoSpatialValue</a></code>
+          </td>
+          <td><p>Right geometry</p></td>
+          <td>
+              <em>required</em>
+          </td>
+        </tr>
+        <tr>
+          <td><code>distance</code></td>
+          <td>
+                <code><span title="ibis.expr.types">ir</span>.<a class="autorefs autorefs-internal" title="ibis.expr.types.FloatingValue" href="../numeric/#ibis.expr.types.numeric.FloatingValue">FloatingValue</a></code>
+          </td>
+          <td><p>Distance to check</p></td>
+          <td>
+              <em>required</em>
+          </td>
+        </tr>
+    </tbody>
+  </table>
+
+  <p><strong>Returns:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td>
+                <code><a class="autorefs autorefs-internal" title="ibis.expr.types.logical.BooleanValue" href="../numeric/#ibis.expr.types.logical.BooleanValue">BooleanValue</a></code>
+          </td>
+          <td><p>Whether <code>self</code> is partially within <code>distance</code> from <code>right</code>.</p></td>
+        </tr>
+    </tbody>
+  </table>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+
+<h4 id="ibis.expr.types.geospatial.GeoSpatialValue.difference" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">difference</span><span class="p">(</span><span class="n">right</span><span class="p">)</span></code>
+
+<a href="#ibis.expr.types.geospatial.GeoSpatialValue.difference" class="headerlink" title="Anchor link to this section for reference">&para;</a></h4>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>Return the difference of two geometries.</p>
+
+  <p><strong>Parameters:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Type</th>
+        <th>Description</th>
+        <th>Default</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td><code>right</code></td>
+          <td>
+                <code><a class="autorefs autorefs-internal" title="ibis.expr.types.geospatial.GeoSpatialValue" href="#ibis.expr.types.geospatial.GeoSpatialValue">GeoSpatialValue</a></code>
+          </td>
+          <td><p>Right geometry</p></td>
+          <td>
+              <em>required</em>
+          </td>
+        </tr>
+    </tbody>
+  </table>
+
+  <p><strong>Returns:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td>
+                <code><a class="autorefs autorefs-internal" title="ibis.expr.types.geospatial.GeoSpatialValue" href="#ibis.expr.types.geospatial.GeoSpatialValue">GeoSpatialValue</a></code>
+          </td>
+          <td><p>Difference of <code>self</code> and <code>right</code></p></td>
+        </tr>
+    </tbody>
+  </table>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+
+<h4 id="ibis.expr.types.geospatial.GeoSpatialValue.disjoint" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">disjoint</span><span class="p">(</span><span class="n">right</span><span class="p">)</span></code>
+
+<a href="#ibis.expr.types.geospatial.GeoSpatialValue.disjoint" class="headerlink" title="Anchor link to this section for reference">&para;</a></h4>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>Check if the geometries have no points in common.</p>
+
+  <p><strong>Parameters:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Type</th>
+        <th>Description</th>
+        <th>Default</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td><code>right</code></td>
+          <td>
+                <code><a class="autorefs autorefs-internal" title="ibis.expr.types.geospatial.GeoSpatialValue" href="#ibis.expr.types.geospatial.GeoSpatialValue">GeoSpatialValue</a></code>
+          </td>
+          <td><p>Right geometry</p></td>
+          <td>
+              <em>required</em>
+          </td>
+        </tr>
+    </tbody>
+  </table>
+
+  <p><strong>Returns:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td>
+                <code><a class="autorefs autorefs-internal" title="ibis.expr.types.logical.BooleanValue" href="../numeric/#ibis.expr.types.logical.BooleanValue">BooleanValue</a></code>
+          </td>
+          <td><p>Whether <code>self</code> and <code>right</code> are disjoint</p></td>
+        </tr>
+    </tbody>
+  </table>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+
+<h4 id="ibis.expr.types.geospatial.GeoSpatialValue.distance" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">distance</span><span class="p">(</span><span class="n">right</span><span class="p">)</span></code>
+
+<a href="#ibis.expr.types.geospatial.GeoSpatialValue.distance" class="headerlink" title="Anchor link to this section for reference">&para;</a></h4>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>Compute the distance between two geospatial expressions.</p>
+
+  <p><strong>Parameters:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Type</th>
+        <th>Description</th>
+        <th>Default</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td><code>right</code></td>
+          <td>
+                <code><a class="autorefs autorefs-internal" title="ibis.expr.types.geospatial.GeoSpatialValue" href="#ibis.expr.types.geospatial.GeoSpatialValue">GeoSpatialValue</a></code>
+          </td>
+          <td><p>Right geometry or geography</p></td>
+          <td>
+              <em>required</em>
+          </td>
+        </tr>
+    </tbody>
+  </table>
+
+  <p><strong>Returns:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td>
+                <code><a class="autorefs autorefs-internal" title="ibis.expr.types.numeric.FloatingValue" href="../numeric/#ibis.expr.types.numeric.FloatingValue">FloatingValue</a></code>
+          </td>
+          <td><p>Distance between <code>self</code> and <code>right</code></p></td>
+        </tr>
+    </tbody>
+  </table>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+
+<h4 id="ibis.expr.types.geospatial.GeoSpatialValue.end_point" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">end_point</span><span class="p">()</span></code>
+
+<a href="#ibis.expr.types.geospatial.GeoSpatialValue.end_point" class="headerlink" title="Anchor link to this section for reference">&para;</a></h4>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>Return the last point of a <code>LINESTRING</code> geometry as a <code>POINT</code>.</p>
+<p>Return <code>NULL</code> if the input parameter is not a <code>LINESTRING</code></p>
+
+  <p><strong>Returns:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td>
+                <code><span title="ibis.expr.types.geospatial.PointValue">PointValue</span></code>
+          </td>
+          <td><p>End point</p></td>
+        </tr>
+    </tbody>
+  </table>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+
+<h4 id="ibis.expr.types.geospatial.GeoSpatialValue.envelope" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">envelope</span><span class="p">()</span></code>
+
+<a href="#ibis.expr.types.geospatial.GeoSpatialValue.envelope" class="headerlink" title="Anchor link to this section for reference">&para;</a></h4>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>Returns a geometry representing the bounding box of <code>self</code>.</p>
+
+  <p><strong>Returns:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td>
+                <code><span title="ibis.expr.types.geospatial.PolygonValue">PolygonValue</span></code>
+          </td>
+          <td><p>A polygon</p></td>
+        </tr>
+    </tbody>
+  </table>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+
+<h4 id="ibis.expr.types.geospatial.GeoSpatialValue.geo_equals" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">geo_equals</span><span class="p">(</span><span class="n">right</span><span class="p">)</span></code>
+
+<a href="#ibis.expr.types.geospatial.GeoSpatialValue.geo_equals" class="headerlink" title="Anchor link to this section for reference">&para;</a></h4>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>Check if the geometries are equal.</p>
+
+  <p><strong>Parameters:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Type</th>
+        <th>Description</th>
+        <th>Default</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td><code>right</code></td>
+          <td>
+                <code><a class="autorefs autorefs-internal" title="ibis.expr.types.geospatial.GeoSpatialValue" href="#ibis.expr.types.geospatial.GeoSpatialValue">GeoSpatialValue</a></code>
+          </td>
+          <td><p>Right geometry</p></td>
+          <td>
+              <em>required</em>
+          </td>
+        </tr>
+    </tbody>
+  </table>
+
+  <p><strong>Returns:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td>
+                <code><a class="autorefs autorefs-internal" title="ibis.expr.types.logical.BooleanValue" href="../numeric/#ibis.expr.types.logical.BooleanValue">BooleanValue</a></code>
+          </td>
+          <td><p>Whether <code>self</code> equals <code>right</code></p></td>
+        </tr>
+    </tbody>
+  </table>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+
+<h4 id="ibis.expr.types.geospatial.GeoSpatialValue.geometry_n" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">geometry_n</span><span class="p">(</span><span class="n">n</span><span class="p">)</span></code>
+
+<a href="#ibis.expr.types.geospatial.GeoSpatialValue.geometry_n" class="headerlink" title="Anchor link to this section for reference">&para;</a></h4>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>Get the 1-based Nth geometry of a multi geometry.</p>
+
+  <p><strong>Parameters:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Type</th>
+        <th>Description</th>
+        <th>Default</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td><code>n</code></td>
+          <td>
+                <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#int">int</a> | <span title="ibis.expr.types">ir</span>.<a class="autorefs autorefs-internal" title="ibis.expr.types.IntegerValue" href="../numeric/#ibis.expr.types.numeric.IntegerValue">IntegerValue</a></code>
+          </td>
+          <td><p>Nth geometry index</p></td>
+          <td>
+              <em>required</em>
+          </td>
+        </tr>
+    </tbody>
+  </table>
+
+  <p><strong>Returns:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td>
+                <code><a class="autorefs autorefs-internal" title="ibis.expr.types.geospatial.GeoSpatialValue" href="#ibis.expr.types.geospatial.GeoSpatialValue">GeoSpatialValue</a></code>
+          </td>
+          <td><p>Geometry value</p></td>
+        </tr>
+    </tbody>
+  </table>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+
+<h4 id="ibis.expr.types.geospatial.GeoSpatialValue.geometry_type" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">geometry_type</span><span class="p">()</span></code>
+
+<a href="#ibis.expr.types.geospatial.GeoSpatialValue.geometry_type" class="headerlink" title="Anchor link to this section for reference">&para;</a></h4>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>Get the type of a geometry.</p>
+
+  <p><strong>Returns:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td>
+                <code><a class="autorefs autorefs-internal" title="ibis.expr.types.uuid.StringValue" href="../strings/#ibis.expr.types.strings.StringValue">StringValue</a></code>
+          </td>
+          <td><p>String representing the type of <code>self</code>.</p></td>
+        </tr>
+    </tbody>
+  </table>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+
+<h4 id="ibis.expr.types.geospatial.GeoSpatialValue.intersection" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">intersection</span><span class="p">(</span><span class="n">right</span><span class="p">)</span></code>
+
+<a href="#ibis.expr.types.geospatial.GeoSpatialValue.intersection" class="headerlink" title="Anchor link to this section for reference">&para;</a></h4>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>Return the intersection of two geometries.</p>
+
+  <p><strong>Parameters:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Type</th>
+        <th>Description</th>
+        <th>Default</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td><code>right</code></td>
+          <td>
+                <code><a class="autorefs autorefs-internal" title="ibis.expr.types.geospatial.GeoSpatialValue" href="#ibis.expr.types.geospatial.GeoSpatialValue">GeoSpatialValue</a></code>
+          </td>
+          <td><p>Right geometry</p></td>
+          <td>
+              <em>required</em>
+          </td>
+        </tr>
+    </tbody>
+  </table>
+
+  <p><strong>Returns:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td>
+                <code><a class="autorefs autorefs-internal" title="ibis.expr.types.geospatial.GeoSpatialValue" href="#ibis.expr.types.geospatial.GeoSpatialValue">GeoSpatialValue</a></code>
+          </td>
+          <td><p>Intersection of <code>self</code> and <code>right</code></p></td>
+        </tr>
+    </tbody>
+  </table>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+
+<h4 id="ibis.expr.types.geospatial.GeoSpatialValue.intersects" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">intersects</span><span class="p">(</span><span class="n">right</span><span class="p">)</span></code>
+
+<a href="#ibis.expr.types.geospatial.GeoSpatialValue.intersects" class="headerlink" title="Anchor link to this section for reference">&para;</a></h4>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>Check if the geometries share any points.</p>
+
+  <p><strong>Parameters:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Type</th>
+        <th>Description</th>
+        <th>Default</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td><code>right</code></td>
+          <td>
+                <code><a class="autorefs autorefs-internal" title="ibis.expr.types.geospatial.GeoSpatialValue" href="#ibis.expr.types.geospatial.GeoSpatialValue">GeoSpatialValue</a></code>
+          </td>
+          <td><p>Right geometry</p></td>
+          <td>
+              <em>required</em>
+          </td>
+        </tr>
+    </tbody>
+  </table>
+
+  <p><strong>Returns:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td>
+                <code><a class="autorefs autorefs-internal" title="ibis.expr.types.logical.BooleanValue" href="../numeric/#ibis.expr.types.logical.BooleanValue">BooleanValue</a></code>
+          </td>
+          <td><p>Whether <code>self</code> intersects <code>right</code></p></td>
+        </tr>
+    </tbody>
+  </table>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+
+<h4 id="ibis.expr.types.geospatial.GeoSpatialValue.is_valid" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">is_valid</span><span class="p">()</span></code>
+
+<a href="#ibis.expr.types.geospatial.GeoSpatialValue.is_valid" class="headerlink" title="Anchor link to this section for reference">&para;</a></h4>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>Check if the geometry is valid.</p>
+
+  <p><strong>Returns:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td>
+                <code><a class="autorefs autorefs-internal" title="ibis.expr.types.logical.BooleanValue" href="../numeric/#ibis.expr.types.logical.BooleanValue">BooleanValue</a></code>
+          </td>
+          <td><p>Whether <code>self</code> is valid</p></td>
+        </tr>
+    </tbody>
+  </table>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+
+<h4 id="ibis.expr.types.geospatial.GeoSpatialValue.length" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">length</span><span class="p">()</span></code>
+
+<a href="#ibis.expr.types.geospatial.GeoSpatialValue.length" class="headerlink" title="Anchor link to this section for reference">&para;</a></h4>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>Compute the length of a geospatial expression.</p>
+
+  <p><strong>Returns:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td>
+                <code><a class="autorefs autorefs-internal" title="ibis.expr.types.numeric.FloatingValue" href="../numeric/#ibis.expr.types.numeric.FloatingValue">FloatingValue</a></code>
+          </td>
+          <td><p>Length of <code>self</code></p></td>
+        </tr>
+    </tbody>
+  </table>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+
+<h4 id="ibis.expr.types.geospatial.GeoSpatialValue.line_locate_point" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">line_locate_point</span><span class="p">(</span><span class="n">right</span><span class="p">)</span></code>
+
+<a href="#ibis.expr.types.geospatial.GeoSpatialValue.line_locate_point" class="headerlink" title="Anchor link to this section for reference">&para;</a></h4>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>Locate the distance a point falls along the length of a line.</p>
+<p>Returns a float between zero and one representing the location of the
+closest point on the linestring to the given point, as a fraction of
+the total 2d line length.</p>
+
+  <p><strong>Parameters:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Type</th>
+        <th>Description</th>
+        <th>Default</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td><code>right</code></td>
+          <td>
+                <code><span title="ibis.expr.types.geospatial.PointValue">PointValue</span></code>
+          </td>
+          <td><p>Point geometry</p></td>
+          <td>
+              <em>required</em>
+          </td>
+        </tr>
+    </tbody>
+  </table>
+
+  <p><strong>Returns:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td>
+                <code><a class="autorefs autorefs-internal" title="ibis.expr.types.numeric.FloatingValue" href="../numeric/#ibis.expr.types.numeric.FloatingValue">FloatingValue</a></code>
+          </td>
+          <td><p>Fraction of the total line length</p></td>
+        </tr>
+    </tbody>
+  </table>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+
+<h4 id="ibis.expr.types.geospatial.GeoSpatialValue.line_merge" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">line_merge</span><span class="p">()</span></code>
+
+<a href="#ibis.expr.types.geospatial.GeoSpatialValue.line_merge" class="headerlink" title="Anchor link to this section for reference">&para;</a></h4>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>Merge a <code>MultiLineString</code> into a <code>LineString</code>.</p>
+<p>Returns a (set of) LineString(s) formed by sewing together the
+constituent line work of a MultiLineString. If a geometry other than
+a LineString or MultiLineString is given, this will return an empty
+geometry collection.</p>
+
+  <p><strong>Returns:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td>
+                <code><a class="autorefs autorefs-internal" title="ibis.expr.types.geospatial.GeoSpatialValue" href="#ibis.expr.types.geospatial.GeoSpatialValue">GeoSpatialValue</a></code>
+          </td>
+          <td><p>Merged linestrings</p></td>
+        </tr>
+    </tbody>
+  </table>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+
+<h4 id="ibis.expr.types.geospatial.GeoSpatialValue.line_substring" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">line_substring</span><span class="p">(</span><span class="n">start</span><span class="p">,</span> <span class="n">end</span><span class="p">)</span></code>
+
+<a href="#ibis.expr.types.geospatial.GeoSpatialValue.line_substring" class="headerlink" title="Anchor link to this section for reference">&para;</a></h4>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>Clip a substring from a LineString.</p>
+<p>Returns a linestring that is a substring of the input one, starting
+and ending at the given fractions of the total 2d length. The second
+and third arguments are floating point values between zero and one.
+This only works with linestrings.</p>
+
+  <p><strong>Parameters:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Type</th>
+        <th>Description</th>
+        <th>Default</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td><code>start</code></td>
+          <td>
+                <code><span title="ibis.expr.types">ir</span>.<a class="autorefs autorefs-internal" title="ibis.expr.types.FloatingValue" href="../numeric/#ibis.expr.types.numeric.FloatingValue">FloatingValue</a></code>
+          </td>
+          <td><p>Start value</p></td>
+          <td>
+              <em>required</em>
+          </td>
+        </tr>
+        <tr>
+          <td><code>end</code></td>
+          <td>
+                <code><span title="ibis.expr.types">ir</span>.<a class="autorefs autorefs-internal" title="ibis.expr.types.FloatingValue" href="../numeric/#ibis.expr.types.numeric.FloatingValue">FloatingValue</a></code>
+          </td>
+          <td><p>End value</p></td>
+          <td>
+              <em>required</em>
+          </td>
+        </tr>
+    </tbody>
+  </table>
+
+  <p><strong>Returns:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td>
+                <code><span title="ibis.expr.types.geospatial.LineStringValue">LineStringValue</span></code>
+          </td>
+          <td><p>Clipped linestring</p></td>
+        </tr>
+    </tbody>
+  </table>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+
+<h4 id="ibis.expr.types.geospatial.GeoSpatialValue.max_distance" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">max_distance</span><span class="p">(</span><span class="n">right</span><span class="p">)</span></code>
+
+<a href="#ibis.expr.types.geospatial.GeoSpatialValue.max_distance" class="headerlink" title="Anchor link to this section for reference">&para;</a></h4>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>Returns the 2-dimensional max distance between two geometries in projected units.</p>
+<p>If <code>self</code> and <code>right</code> are the same geometry the function will return
+the distance between the two vertices most far from each other in that
+geometry.</p>
+
+  <p><strong>Parameters:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Type</th>
+        <th>Description</th>
+        <th>Default</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td><code>right</code></td>
+          <td>
+                <code><a class="autorefs autorefs-internal" title="ibis.expr.types.geospatial.GeoSpatialValue" href="#ibis.expr.types.geospatial.GeoSpatialValue">GeoSpatialValue</a></code>
+          </td>
+          <td><p>Right geometry</p></td>
+          <td>
+              <em>required</em>
+          </td>
+        </tr>
+    </tbody>
+  </table>
+
+  <p><strong>Returns:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td>
+                <code><a class="autorefs autorefs-internal" title="ibis.expr.types.numeric.FloatingValue" href="../numeric/#ibis.expr.types.numeric.FloatingValue">FloatingValue</a></code>
+          </td>
+          <td><p>Maximum distance</p></td>
+        </tr>
+    </tbody>
+  </table>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+
+<h4 id="ibis.expr.types.geospatial.GeoSpatialValue.n_points" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">n_points</span><span class="p">()</span></code>
+
+<a href="#ibis.expr.types.geospatial.GeoSpatialValue.n_points" class="headerlink" title="Anchor link to this section for reference">&para;</a></h4>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>Return the number of points in a geometry. Works for all geometries.</p>
+
+  <p><strong>Returns:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td>
+                <code><a class="autorefs autorefs-internal" title="ibis.expr.types.numeric.IntegerValue" href="../numeric/#ibis.expr.types.numeric.IntegerValue">IntegerValue</a></code>
+          </td>
+          <td><p>Number of points</p></td>
+        </tr>
+    </tbody>
+  </table>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+
+<h4 id="ibis.expr.types.geospatial.GeoSpatialValue.n_rings" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">n_rings</span><span class="p">()</span></code>
+
+<a href="#ibis.expr.types.geospatial.GeoSpatialValue.n_rings" class="headerlink" title="Anchor link to this section for reference">&para;</a></h4>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>Return the number of rings for polygons and multipolygons.</p>
+<p>Outer rings are counted as well.</p>
+
+  <p><strong>Returns:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td>
+                <code><a class="autorefs autorefs-internal" title="ibis.expr.types.numeric.IntegerValue" href="../numeric/#ibis.expr.types.numeric.IntegerValue">IntegerValue</a></code>
+          </td>
+          <td><p>Number of rings</p></td>
+        </tr>
+    </tbody>
+  </table>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+
+<h4 id="ibis.expr.types.geospatial.GeoSpatialValue.ordering_equals" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">ordering_equals</span><span class="p">(</span><span class="n">right</span><span class="p">)</span></code>
+
+<a href="#ibis.expr.types.geospatial.GeoSpatialValue.ordering_equals" class="headerlink" title="Anchor link to this section for reference">&para;</a></h4>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>Check if two geometries are equal and have the same point ordering.</p>
+<p>Returns true if the two geometries are equal and the coordinates
+are in the same order.</p>
+
+  <p><strong>Parameters:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Type</th>
+        <th>Description</th>
+        <th>Default</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td><code>right</code></td>
+          <td>
+                <code><a class="autorefs autorefs-internal" title="ibis.expr.types.geospatial.GeoSpatialValue" href="#ibis.expr.types.geospatial.GeoSpatialValue">GeoSpatialValue</a></code>
+          </td>
+          <td><p>Right geometry</p></td>
+          <td>
+              <em>required</em>
+          </td>
+        </tr>
+    </tbody>
+  </table>
+
+  <p><strong>Returns:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td>
+                <code><a class="autorefs autorefs-internal" title="ibis.expr.types.logical.BooleanValue" href="../numeric/#ibis.expr.types.logical.BooleanValue">BooleanValue</a></code>
+          </td>
+          <td><p>Whether points and orderings are equal.</p></td>
+        </tr>
+    </tbody>
+  </table>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+
+<h4 id="ibis.expr.types.geospatial.GeoSpatialValue.overlaps" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">overlaps</span><span class="p">(</span><span class="n">right</span><span class="p">)</span></code>
+
+<a href="#ibis.expr.types.geospatial.GeoSpatialValue.overlaps" class="headerlink" title="Anchor link to this section for reference">&para;</a></h4>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>Check if the geometries share space, have the same dimension, and are not completely contained by each other.</p>
+
+  <p><strong>Parameters:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Type</th>
+        <th>Description</th>
+        <th>Default</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td><code>right</code></td>
+          <td>
+                <code><a class="autorefs autorefs-internal" title="ibis.expr.types.geospatial.GeoSpatialValue" href="#ibis.expr.types.geospatial.GeoSpatialValue">GeoSpatialValue</a></code>
+          </td>
+          <td><p>Right geometry</p></td>
+          <td>
+              <em>required</em>
+          </td>
+        </tr>
+    </tbody>
+  </table>
+
+  <p><strong>Returns:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td>
+                <code><a class="autorefs autorefs-internal" title="ibis.expr.types.logical.BooleanValue" href="../numeric/#ibis.expr.types.logical.BooleanValue">BooleanValue</a></code>
+          </td>
+          <td><p>Overlaps indicator</p></td>
+        </tr>
+    </tbody>
+  </table>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+
+<h4 id="ibis.expr.types.geospatial.GeoSpatialValue.perimeter" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">perimeter</span><span class="p">()</span></code>
+
+<a href="#ibis.expr.types.geospatial.GeoSpatialValue.perimeter" class="headerlink" title="Anchor link to this section for reference">&para;</a></h4>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>Compute the perimeter of a geospatial expression.</p>
+
+  <p><strong>Returns:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td>
+                <code><a class="autorefs autorefs-internal" title="ibis.expr.types.numeric.FloatingValue" href="../numeric/#ibis.expr.types.numeric.FloatingValue">FloatingValue</a></code>
+          </td>
+          <td><p>Perimeter of <code>self</code></p></td>
+        </tr>
+    </tbody>
+  </table>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+
+<h4 id="ibis.expr.types.geospatial.GeoSpatialValue.point_n" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">point_n</span><span class="p">(</span><span class="n">n</span><span class="p">)</span></code>
+
+<a href="#ibis.expr.types.geospatial.GeoSpatialValue.point_n" class="headerlink" title="Anchor link to this section for reference">&para;</a></h4>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>Return the Nth point in a single linestring in the geometry.</p>
+<p>Negative values are counted backwards from the end of the LineString,
+so that -1 is the last point. Returns NULL if there is no linestring in
+the geometry.</p>
+
+  <p><strong>Parameters:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Type</th>
+        <th>Description</th>
+        <th>Default</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td><code>n</code></td>
+          <td>
+                <code><span title="ibis.expr.types">ir</span>.<a class="autorefs autorefs-internal" title="ibis.expr.types.IntegerValue" href="../numeric/#ibis.expr.types.numeric.IntegerValue">IntegerValue</a></code>
+          </td>
+          <td><p>Nth point index</p></td>
+          <td>
+              <em>required</em>
+          </td>
+        </tr>
+    </tbody>
+  </table>
+
+  <p><strong>Returns:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td>
+                <code><span title="ibis.expr.types.geospatial.PointValue">PointValue</span></code>
+          </td>
+          <td><p>Nth point in <code>self</code></p></td>
+        </tr>
+    </tbody>
+  </table>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+
+<h4 id="ibis.expr.types.geospatial.GeoSpatialValue.set_srid" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">set_srid</span><span class="p">(</span><span class="n">srid</span><span class="p">)</span></code>
+
+<a href="#ibis.expr.types.geospatial.GeoSpatialValue.set_srid" class="headerlink" title="Anchor link to this section for reference">&para;</a></h4>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>Set the spatial reference identifier for the <code>ST_Geometry</code>.</p>
+
+  <p><strong>Parameters:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Type</th>
+        <th>Description</th>
+        <th>Default</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td><code>srid</code></td>
+          <td>
+                <code><span title="ibis.expr.types">ir</span>.<a class="autorefs autorefs-internal" title="ibis.expr.types.IntegerValue" href="../numeric/#ibis.expr.types.numeric.IntegerValue">IntegerValue</a></code>
+          </td>
+          <td><p>SRID integer value</p></td>
+          <td>
+              <em>required</em>
+          </td>
+        </tr>
+    </tbody>
+  </table>
+
+  <p><strong>Returns:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td>
+                <code><a class="autorefs autorefs-internal" title="ibis.expr.types.geospatial.GeoSpatialValue" href="#ibis.expr.types.geospatial.GeoSpatialValue">GeoSpatialValue</a></code>
+          </td>
+          <td><p><code>self</code> with SRID set to <code>srid</code></p></td>
+        </tr>
+    </tbody>
+  </table>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+
+<h4 id="ibis.expr.types.geospatial.GeoSpatialValue.simplify" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">simplify</span><span class="p">(</span><span class="n">tolerance</span><span class="p">,</span> <span class="n">preserve_collapsed</span><span class="p">)</span></code>
+
+<a href="#ibis.expr.types.geospatial.GeoSpatialValue.simplify" class="headerlink" title="Anchor link to this section for reference">&para;</a></h4>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>Simplify a given geometry.</p>
+
+  <p><strong>Parameters:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Type</th>
+        <th>Description</th>
+        <th>Default</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td><code>tolerance</code></td>
+          <td>
+                <code><span title="ibis.expr.types">ir</span>.<a class="autorefs autorefs-internal" title="ibis.expr.types.FloatingValue" href="../numeric/#ibis.expr.types.numeric.FloatingValue">FloatingValue</a></code>
+          </td>
+          <td><p>Tolerance</p></td>
+          <td>
+              <em>required</em>
+          </td>
+        </tr>
+        <tr>
+          <td><code>preserve_collapsed</code></td>
+          <td>
+                <code><span title="ibis.expr.types">ir</span>.<a class="autorefs autorefs-internal" title="ibis.expr.types.BooleanValue" href="../numeric/#ibis.expr.types.logical.BooleanValue">BooleanValue</a></code>
+          </td>
+          <td><p>Whether to preserve collapsed geometries</p></td>
+          <td>
+              <em>required</em>
+          </td>
+        </tr>
+    </tbody>
+  </table>
+
+  <p><strong>Returns:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td>
+                <code><a class="autorefs autorefs-internal" title="ibis.expr.types.geospatial.GeoSpatialValue" href="#ibis.expr.types.geospatial.GeoSpatialValue">GeoSpatialValue</a></code>
+          </td>
+          <td><p>Simplified geometry</p></td>
+        </tr>
+    </tbody>
+  </table>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+
+<h4 id="ibis.expr.types.geospatial.GeoSpatialValue.srid" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">srid</span><span class="p">()</span></code>
+
+<a href="#ibis.expr.types.geospatial.GeoSpatialValue.srid" class="headerlink" title="Anchor link to this section for reference">&para;</a></h4>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>Return the spatial reference identifier for the ST_Geometry.</p>
+
+  <p><strong>Returns:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td>
+                <code><a class="autorefs autorefs-internal" title="ibis.expr.types.numeric.IntegerValue" href="../numeric/#ibis.expr.types.numeric.IntegerValue">IntegerValue</a></code>
+          </td>
+          <td><p>SRID</p></td>
+        </tr>
+    </tbody>
+  </table>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+
+<h4 id="ibis.expr.types.geospatial.GeoSpatialValue.start_point" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">start_point</span><span class="p">()</span></code>
+
+<a href="#ibis.expr.types.geospatial.GeoSpatialValue.start_point" class="headerlink" title="Anchor link to this section for reference">&para;</a></h4>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>Return the first point of a <code>LINESTRING</code> geometry as a <code>POINT</code>.</p>
+<p>Return <code>NULL</code> if the input parameter is not a <code>LINESTRING</code></p>
+
+  <p><strong>Returns:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td>
+                <code><span title="ibis.expr.types.geospatial.PointValue">PointValue</span></code>
+          </td>
+          <td><p>Start point</p></td>
+        </tr>
+    </tbody>
+  </table>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+
+<h4 id="ibis.expr.types.geospatial.GeoSpatialValue.touches" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">touches</span><span class="p">(</span><span class="n">right</span><span class="p">)</span></code>
+
+<a href="#ibis.expr.types.geospatial.GeoSpatialValue.touches" class="headerlink" title="Anchor link to this section for reference">&para;</a></h4>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>Check if the geometries have at least one point in common, but do not intersect.</p>
+
+  <p><strong>Parameters:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Type</th>
+        <th>Description</th>
+        <th>Default</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td><code>right</code></td>
+          <td>
+                <code><a class="autorefs autorefs-internal" title="ibis.expr.types.geospatial.GeoSpatialValue" href="#ibis.expr.types.geospatial.GeoSpatialValue">GeoSpatialValue</a></code>
+          </td>
+          <td><p>Right geometry</p></td>
+          <td>
+              <em>required</em>
+          </td>
+        </tr>
+    </tbody>
+  </table>
+
+  <p><strong>Returns:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td>
+                <code><a class="autorefs autorefs-internal" title="ibis.expr.types.logical.BooleanValue" href="../numeric/#ibis.expr.types.logical.BooleanValue">BooleanValue</a></code>
+          </td>
+          <td><p>Whether self and right are touching</p></td>
+        </tr>
+    </tbody>
+  </table>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+
+<h4 id="ibis.expr.types.geospatial.GeoSpatialValue.transform" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">transform</span><span class="p">(</span><span class="n">srid</span><span class="p">)</span></code>
+
+<a href="#ibis.expr.types.geospatial.GeoSpatialValue.transform" class="headerlink" title="Anchor link to this section for reference">&para;</a></h4>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>Transform a geometry into a new SRID.</p>
+
+  <p><strong>Parameters:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Type</th>
+        <th>Description</th>
+        <th>Default</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td><code>srid</code></td>
+          <td>
+                <code><span title="ibis.expr.types">ir</span>.<a class="autorefs autorefs-internal" title="ibis.expr.types.IntegerValue" href="../numeric/#ibis.expr.types.numeric.IntegerValue">IntegerValue</a></code>
+          </td>
+          <td><p>Integer expression</p></td>
+          <td>
+              <em>required</em>
+          </td>
+        </tr>
+    </tbody>
+  </table>
+
+  <p><strong>Returns:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td>
+                <code><a class="autorefs autorefs-internal" title="ibis.expr.types.geospatial.GeoSpatialValue" href="#ibis.expr.types.geospatial.GeoSpatialValue">GeoSpatialValue</a></code>
+          </td>
+          <td><p>Transformed geometry</p></td>
+        </tr>
+    </tbody>
+  </table>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+
+<h4 id="ibis.expr.types.geospatial.GeoSpatialValue.union" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">union</span><span class="p">(</span><span class="n">right</span><span class="p">)</span></code>
+
+<a href="#ibis.expr.types.geospatial.GeoSpatialValue.union" class="headerlink" title="Anchor link to this section for reference">&para;</a></h4>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>Merge two geometries into a union geometry.</p>
+<p>Returns the pointwise union of the two geometries.
+This corresponds to the non-aggregate version the PostGIS ST_Union.</p>
+
+  <p><strong>Parameters:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Type</th>
+        <th>Description</th>
+        <th>Default</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td><code>right</code></td>
+          <td>
+                <code><a class="autorefs autorefs-internal" title="ibis.expr.types.geospatial.GeoSpatialValue" href="#ibis.expr.types.geospatial.GeoSpatialValue">GeoSpatialValue</a></code>
+          </td>
+          <td><p>Right geometry</p></td>
+          <td>
+              <em>required</em>
+          </td>
+        </tr>
+    </tbody>
+  </table>
+
+  <p><strong>Returns:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td>
+                <code><a class="autorefs autorefs-internal" title="ibis.expr.types.geospatial.GeoSpatialValue" href="#ibis.expr.types.geospatial.GeoSpatialValue">GeoSpatialValue</a></code>
+          </td>
+          <td><p>Union of geometries</p></td>
+        </tr>
+    </tbody>
+  </table>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+
+<h4 id="ibis.expr.types.geospatial.GeoSpatialValue.within" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">within</span><span class="p">(</span><span class="n">right</span><span class="p">)</span></code>
+
+<a href="#ibis.expr.types.geospatial.GeoSpatialValue.within" class="headerlink" title="Anchor link to this section for reference">&para;</a></h4>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>Check if the first geometry is completely inside of the second.</p>
+
+  <p><strong>Parameters:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Type</th>
+        <th>Description</th>
+        <th>Default</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td><code>right</code></td>
+          <td>
+                <code><a class="autorefs autorefs-internal" title="ibis.expr.types.geospatial.GeoSpatialValue" href="#ibis.expr.types.geospatial.GeoSpatialValue">GeoSpatialValue</a></code>
+          </td>
+          <td><p>Right geometry</p></td>
+          <td>
+              <em>required</em>
+          </td>
+        </tr>
+    </tbody>
+  </table>
+
+  <p><strong>Returns:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td>
+                <code><a class="autorefs autorefs-internal" title="ibis.expr.types.logical.BooleanValue" href="../numeric/#ibis.expr.types.logical.BooleanValue">BooleanValue</a></code>
+          </td>
+          <td><p>Whether <code>self</code> is in <code>right</code>.</p></td>
+        </tr>
+    </tbody>
+  </table>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+
+<h4 id="ibis.expr.types.geospatial.GeoSpatialValue.x" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">x</span><span class="p">()</span></code>
+
+<a href="#ibis.expr.types.geospatial.GeoSpatialValue.x" class="headerlink" title="Anchor link to this section for reference">&para;</a></h4>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>Return the X coordinate of <code>self</code>, or NULL if not available.</p>
+<p>Input must be a point.</p>
+
+  <p><strong>Returns:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td>
+                <code><a class="autorefs autorefs-internal" title="ibis.expr.types.numeric.FloatingValue" href="../numeric/#ibis.expr.types.numeric.FloatingValue">FloatingValue</a></code>
+          </td>
+          <td><p>X coordinate of <code>self</code></p></td>
+        </tr>
+    </tbody>
+  </table>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+
+<h4 id="ibis.expr.types.geospatial.GeoSpatialValue.x_max" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">x_max</span><span class="p">()</span></code>
+
+<a href="#ibis.expr.types.geospatial.GeoSpatialValue.x_max" class="headerlink" title="Anchor link to this section for reference">&para;</a></h4>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>Return the X maxima of a geometry.</p>
+
+  <p><strong>Returns:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td>
+                <code><a class="autorefs autorefs-internal" title="ibis.expr.types.numeric.FloatingValue" href="../numeric/#ibis.expr.types.numeric.FloatingValue">FloatingValue</a></code>
+          </td>
+          <td><p>X maxima</p></td>
+        </tr>
+    </tbody>
+  </table>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+
+<h4 id="ibis.expr.types.geospatial.GeoSpatialValue.x_min" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">x_min</span><span class="p">()</span></code>
+
+<a href="#ibis.expr.types.geospatial.GeoSpatialValue.x_min" class="headerlink" title="Anchor link to this section for reference">&para;</a></h4>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>Return the X minima of a geometry.</p>
+
+  <p><strong>Returns:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td>
+                <code><a class="autorefs autorefs-internal" title="ibis.expr.types.numeric.FloatingValue" href="../numeric/#ibis.expr.types.numeric.FloatingValue">FloatingValue</a></code>
+          </td>
+          <td><p>X minima</p></td>
+        </tr>
+    </tbody>
+  </table>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+
+<h4 id="ibis.expr.types.geospatial.GeoSpatialValue.y" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">y</span><span class="p">()</span></code>
+
+<a href="#ibis.expr.types.geospatial.GeoSpatialValue.y" class="headerlink" title="Anchor link to this section for reference">&para;</a></h4>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>Return the Y coordinate of <code>self</code>, or NULL if not available.</p>
+<p>Input must be a point.</p>
+
+  <p><strong>Returns:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td>
+                <code><a class="autorefs autorefs-internal" title="ibis.expr.types.numeric.FloatingValue" href="../numeric/#ibis.expr.types.numeric.FloatingValue">FloatingValue</a></code>
+          </td>
+          <td><p>Y coordinate of <code>self</code></p></td>
+        </tr>
+    </tbody>
+  </table>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+
+<h4 id="ibis.expr.types.geospatial.GeoSpatialValue.y_max" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">y_max</span><span class="p">()</span></code>
+
+<a href="#ibis.expr.types.geospatial.GeoSpatialValue.y_max" class="headerlink" title="Anchor link to this section for reference">&para;</a></h4>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>Return the Y maxima of a geometry.</p>
+
+  <p><strong>Returns:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td>
+                <code><a class="autorefs autorefs-internal" title="ibis.expr.types.numeric.FloatingValue" href="../numeric/#ibis.expr.types.numeric.FloatingValue">FloatingValue</a></code>
+          </td>
+          <td><p>Y maxima</p></td>
+        </tr>
+    </tbody>
+  </table>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+
+<h4 id="ibis.expr.types.geospatial.GeoSpatialValue.y_min" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">y_min</span><span class="p">()</span></code>
+
+<a href="#ibis.expr.types.geospatial.GeoSpatialValue.y_min" class="headerlink" title="Anchor link to this section for reference">&para;</a></h4>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>Return the Y minima of a geometry.</p>
+
+  <p><strong>Returns:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td>
+                <code><a class="autorefs autorefs-internal" title="ibis.expr.types.numeric.FloatingValue" href="../numeric/#ibis.expr.types.numeric.FloatingValue">FloatingValue</a></code>
+          </td>
+          <td><p>Y minima</p></td>
+        </tr>
+    </tbody>
+  </table>
+
+  </div>
+
+</div>
+
+
+
+  </div>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h2 id="ibis.expr.types.geospatial.GeoSpatialColumn" class="doc doc-heading">
+        <code>GeoSpatialColumn</code>
+
+
+<a href="#ibis.expr.types.geospatial.GeoSpatialColumn" class="headerlink" title="Anchor link to this section for reference">&para;</a></h2>
+
+
+  <div class="doc doc-contents first">
+      <p class="doc doc-class-bases">
+        Bases: <code><a class="autorefs autorefs-internal" title="ibis.expr.types.numeric.NumericColumn" href="../numeric/#ibis.expr.types.numeric.NumericColumn">NumericColumn</a></code>, <code><a class="autorefs autorefs-internal" title="ibis.expr.types.geospatial.GeoSpatialValue" href="#ibis.expr.types.geospatial.GeoSpatialValue">GeoSpatialValue</a></code></p>
+
+
+
+
+  
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+
+<h3 id="ibis.expr.types.geospatial.GeoSpatialColumn-functions">Functions<a href="#ibis.expr.types.geospatial.GeoSpatialColumn-functions" class="headerlink" title="Anchor link to this section for reference">&para;</a></h3>
+
+<div class="doc doc-object doc-function">
+
+
+
+<h4 id="ibis.expr.types.geospatial.GeoSpatialColumn.unary_union" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">unary_union</span><span class="p">()</span></code>
+
+<a href="#ibis.expr.types.geospatial.GeoSpatialColumn.unary_union" class="headerlink" title="Anchor link to this section for reference">&para;</a></h4>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>Aggregate a set of geometries into a union.</p>
+<p>This corresponds to the aggregate version of the PostGIS ST_Union.
+We give it a different name (following the corresponding method
+in GeoPandas) to avoid name conflicts with the non-aggregate version.</p>
+
+  <p><strong>Returns:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td>
+                <code><span title="ibis.expr.types.geospatial.GeoSpatialScalar">GeoSpatialScalar</span></code>
+          </td>
+          <td><p>Union of geometries</p></td>
+        </tr>
+    </tbody>
+  </table>
+
+  </div>
+
+</div>
+
+
+
+  </div>
+
+  </div>
+
+</div>
+
+  <hr>
+<div class="md-source-file">
+  <small>
+    
+      Last update:
+      <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date">August 5, 2022</span>
+      
+    
+  </small>
+</div>
+
+
+
+
+
+                
+
+              </article>
+            </div>
+          
+          
+  <script>var tabs=__md_get("__tabs");if(Array.isArray(tabs))e:for(var set of document.querySelectorAll(".tabbed-set")){var tab,labels=set.querySelector(".tabbed-labels");for(tab of tabs)for(var label of labels.getElementsByTagName("label"))if(label.innerText.trim()===tab){var input=document.getElementById(label.htmlFor);input.checked=!0;continue e}}</script>
+
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+    
+    <nav class="md-footer__inner md-grid" aria-label="Footer" >
+      
+        
+        <a href="../collections/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Collections" rel="prev">
+          <div class="md-footer__button md-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12Z"/></svg>
+          </div>
+          <div class="md-footer__title">
+            <div class="md-ellipsis">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              Collections
+            </div>
+          </div>
+        </a>
+      
+      
+        
+        <a href="../../selectors/" class="md-footer__link md-footer__link--next" aria-label="Next: Column Selectors" rel="next">
+          <div class="md-footer__title">
+            <div class="md-ellipsis">
+              <span class="md-footer__direction">
+                Next
+              </span>
+              Column Selectors
+            </div>
+          </div>
+          <div class="md-footer__button md-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11H4Z"/></svg>
+          </div>
+        </a>
+      
+    </nav>
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+    <div class="md-copyright__highlight">
+      Copyright &copy; 2014-2022
+    </div>
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+        <div class="md-social">
+  
+    
+    
+      
+      
+    
+    <a href="https://twitter.com/IbisData" target="_blank" rel="noopener" title="twitter.com" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc.--><path d="M459.37 151.716c.325 4.548.325 9.097.325 13.645 0 138.72-105.583 298.558-298.558 298.558-59.452 0-114.68-17.219-161.137-47.106 8.447.974 16.568 1.299 25.34 1.299 49.055 0 94.213-16.568 130.274-44.832-46.132-.975-84.792-31.188-98.112-72.772 6.498.974 12.995 1.624 19.818 1.624 9.421 0 18.843-1.3 27.614-3.573-48.081-9.747-84.143-51.98-84.143-102.985v-1.299c13.969 7.797 30.214 12.67 47.431 13.319-28.264-18.843-46.781-51.005-46.781-87.391 0-19.492 5.197-37.36 14.294-52.954 51.655 63.675 129.3 105.258 216.365 109.807-1.624-7.797-2.599-15.918-2.599-24.04 0-57.828 46.782-104.934 104.934-104.934 30.213 0 57.502 12.67 76.67 33.137 23.715-4.548 46.456-13.32 66.599-25.34-7.798 24.366-24.366 44.833-46.132 57.827 21.117-2.273 41.584-8.122 60.426-16.243-14.292 20.791-32.161 39.308-52.628 54.253z"/></svg>
+    </a>
+  
+    
+    
+      
+      
+    
+    <a href="https://github.com/ibis-project/ibis/discussions" target="_blank" rel="noopener" title="github.com" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 496 512"><!--! Font Awesome Free 6.2.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc.--><path d="M165.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6zm-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3zm44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9zM244.8 8C106.1 8 0 113.3 0 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C428.2 457.8 496 362.9 496 252 496 113.3 383.5 8 244.8 8zM97.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1zm-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7zm32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1zm-11.4-14.7c-1.6 1-1.6 3.6 0 5.9 1.6 2.3 4.3 3.3 5.6 2.3 1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2z"/></svg>
+    </a>
+  
+    
+    
+      
+      
+    
+    <a href="https://gitter.im/ibis-dev/Lobby" target="_blank" rel="noopener" title="gitter.im" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512"><!--! Font Awesome Free 6.2.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc.--><path d="M66.4 322.5H16V0h50.4v322.5zM166.9 76.1h-50.4V512h50.4V76.1zm100.6 0h-50.4V512h50.4V76.1zM368 76h-50.4v247H368V76z"/></svg>
+    </a>
+  
+    
+    
+      
+      
+    
+    <a href="https://stackoverflow.com/questions/tagged/ibis" target="_blank" rel="noopener" title="stackoverflow.com" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512"><!--! Font Awesome Free 6.2.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc.--><path d="M290.7 311 95 269.7 86.8 309l195.7 41zm51-87L188.2 95.7l-25.5 30.8 153.5 128.3zm-31.2 39.7L129.2 179l-16.7 36.5L293.7 300zM262 32l-32 24 119.3 160.3 32-24zm20.5 328h-200v39.7h200zm39.7 80H42.7V320h-40v160h359.5V320h-40z"/></svg>
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    <script id="__config" type="application/json">{"base": "../../..", "features": ["navigation.tabs", "navigation.tabs.sticky", "content.code.annotate", "content.tabs.link", "header.autohide", "navigation.indexes", "navigation.instant", "navigation.tracking", "search.highlight", "search.share", "search.suggest"], "search": "../../../assets/javascripts/workers/search.16e2a7d4.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.config.lang": "en", "search.config.pipeline": "trimmer, stopWordFilter", "search.config.separator": "[\\s\\-]+", "search.placeholder": "Search", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version.title": "Select version"}}</script>
+    
+    
+      <script src="../../../assets/javascripts/bundle.5a2dcb6a.min.js"></script>
+      
+        <script src="../../../javascripts/mathjax.js"></script>
+      
+        <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+      
+        <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+      
+    
+    
+  </body>
+</html>

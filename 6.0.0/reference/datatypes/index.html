@@ -1,0 +1,7614 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+        <link rel="canonical" href="https://ibis-project.github.io/ibis/6.0.0/reference/datatypes/">
+      
+      
+        <link rel="prev" href="../selectors/">
+      
+      
+        <link rel="next" href="../schemas/">
+      
+      <link rel="icon" href="../../static/icons/ibis/logo.svg">
+      <meta name="generator" content="mkdocs-1.4.3, mkdocs-material-9.1.18">
+    
+    
+      
+        <title>Data types - Ibis Project</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.26e3688c.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.ecc896b0.min.css">
+      
+      
+
+    
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/_mkdocstrings.css">
+    
+      <link rel="stylesheet" href="../../stylesheets/extra.css">
+    
+      <link rel="stylesheet" href="../../stylesheets/code_select.css">
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce((e,_)=>(e<<5)-e+_.charCodeAt(0),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+    
+<meta name="google-site-verification" content="IVqzkYiD5E35oD4kkVOcTYCTfqWKU1f6zOHCnLIPkUU">
+<script data-goatcounter="https://ibis.goatcounter.com/count"
+        async src="https://gc.zgo.at/count.js"></script>
+
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="teal" data-md-color-accent="teal">
+  
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&"object"==typeof palette.color)for(var key of Object.keys(palette.color))document.body.setAttribute("data-md-color-"+key,palette.color[key])</script>
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#data-types" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="Ibis Project" class="md-header__button md-logo" aria-label="Ibis Project" data-md-component="logo">
+      
+  <img src="../../static/icons/ibis/logo.svg" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3V6m0 5h18v2H3v-2m0 5h18v2H3v-2Z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Ibis Project
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Data types
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+          
+            
+            
+            
+            <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="teal" data-md-color-accent="teal"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_1">
+            
+              <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_2" hidden>
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12 20 8.69Z"/></svg>
+              </label>
+            
+          
+            
+            
+            
+            <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="teal" data-md-color-accent="teal"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_2">
+            
+              <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_1" hidden>
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12c0-2.42-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12 20 8.69Z"/></svg>
+              </label>
+            
+          
+        </form>
+      
+    
+    
+    
+      <label class="md-header__button md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"/></svg>
+      </label>
+      <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"/></svg>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12Z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+          <a href="javascript:void(0)" class="md-search__icon md-icon" title="Share" aria-label="Share" data-clipboard data-clipboard-text="" data-md-component="search-share" tabindex="-1">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7 0-.24-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9a3 3 0 0 0-3 3 3 3 0 0 0 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.15c-.05.21-.08.43-.08.66 0 1.61 1.31 2.91 2.92 2.91 1.61 0 2.92-1.3 2.92-2.91A2.92 2.92 0 0 0 18 16.08Z"/></svg>
+          </a>
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41Z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/ibis-project/ibis/tree/6.0.0" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 496 512"><!--! Font Awesome Free 6.4.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2023 Fonticons, Inc.--><path d="M165.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6zm-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3zm44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9zM244.8 8C106.1 8 0 113.3 0 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C428.2 457.8 496 362.9 496 252 496 113.3 383.5 8 244.8 8zM97.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1zm-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7zm32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1zm-11.4-14.7c-1.6 1-1.6 3.6 0 5.9 1.6 2.3 4.3 3.3 5.6 2.3 1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+    
+      
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+
+
+  <li class="md-tabs__item">
+    <a href="../.." class="md-tabs__link">
+      Home
+    </a>
+  </li>
+
+      
+        
+  
+  
+
+
+  <li class="md-tabs__item">
+    <a href="../../install/" class="md-tabs__link">
+      Install
+    </a>
+  </li>
+
+      
+        
+  
+  
+
+
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../concept/why_ibis/" class="md-tabs__link">
+        Concepts
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+
+
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../backends/" class="md-tabs__link">
+        Backends
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+
+
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../tutorial/" class="md-tabs__link">
+        Tutorials
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+
+
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../how_to/configuration/" class="md-tabs__link">
+        How-to guides
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+    
+  
+
+
+  
+  
+  
+    
+
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../expressions/" class="md-tabs__link md-tabs__link--active">
+        Reference
+      </a>
+    </li>
+  
+
+  
+
+      
+        
+  
+  
+
+
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../blog/rendered/torch/" class="md-tabs__link">
+        Blog
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+
+
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../community/" class="md-tabs__link">
+        Community
+      </a>
+    </li>
+  
+
+      
+    </ul>
+  </div>
+</nav>
+    
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="Ibis Project" class="md-nav__button md-logo" aria-label="Ibis Project" data-md-component="logo">
+      
+  <img src="../../static/icons/ibis/logo.svg" alt="logo">
+
+    </a>
+    Ibis Project
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/ibis-project/ibis/tree/6.0.0" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 496 512"><!--! Font Awesome Free 6.4.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2023 Fonticons, Inc.--><path d="M165.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6zm-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3zm44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9zM244.8 8C106.1 8 0 113.3 0 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C428.2 457.8 496 362.9 496 252 496 113.3 383.5 8 244.8 8zM97.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1zm-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7zm32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1zm-11.4-14.7c-1.6 1-1.6 3.6 0 5.9 1.6 2.3 4.3 3.3 5.6 2.3 1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        Home
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../install/" class="md-nav__link">
+        Install
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+      
+      
+      <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+      
+      
+        
+          
+        
+          
+        
+          
+        
+      
+      
+        <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+          Concepts
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+        <label class="md-nav__title" for="__nav_3">
+          <span class="md-nav__icon md-icon"></span>
+          Concepts
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../concept/why_ibis/" class="md-nav__link">
+        Why Ibis?
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../concept/design/" class="md-nav__link">
+        Design
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../concept/backends/" class="md-nav__link">
+        Backends
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+      
+      
+      <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+      
+      
+        
+          
+            
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+      
+      
+        
+        
+        <div class="md-nav__link md-nav__link--index ">
+          <a href="../../backends/">Backends</a>
+          
+            <label for="__nav_4">
+              <span class="md-nav__icon md-icon"></span>
+            </label>
+          
+        </div>
+      
+      <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+        <label class="md-nav__title" for="__nav_4">
+          <span class="md-nav__icon md-icon"></span>
+          Backends
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../backends/_support_matrix/" class="md-nav__link">
+        Operation support matrix
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../backends/bigquery/" class="md-nav__link">
+        BigQuery
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../backends/clickhouse/" class="md-nav__link">
+        ClickHouse
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../backends/dask/" class="md-nav__link">
+        Dask
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../backends/datafusion/" class="md-nav__link">
+        DataFusion
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../backends/druid/" class="md-nav__link">
+        Druid
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../backends/duckdb/" class="md-nav__link">
+        DuckDB
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../backends/impala/" class="md-nav__link">
+        Impala
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../backends/mssql/" class="md-nav__link">
+        MSSQL
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../backends/mysql/" class="md-nav__link">
+        MySQL
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../backends/oracle/" class="md-nav__link">
+        Oracle
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../backends/pandas/" class="md-nav__link">
+        Pandas
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../backends/polars/" class="md-nav__link">
+        Polars
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../backends/postgresql/" class="md-nav__link">
+        PostgreSQL
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../backends/pyspark/" class="md-nav__link">
+        PySpark
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../backends/snowflake/" class="md-nav__link">
+        Snowflake
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../backends/sqlite/" class="md-nav__link">
+        SQLite
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../backends/trino/" class="md-nav__link">
+        Trino
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+      
+      
+      <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
+      
+      
+        
+          
+            
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+      
+      
+        
+        
+        <div class="md-nav__link md-nav__link--index ">
+          <a href="../../tutorial/">Tutorials</a>
+          
+            <label for="__nav_5">
+              <span class="md-nav__icon md-icon"></span>
+            </label>
+          
+        </div>
+      
+      <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+        <label class="md-nav__title" for="__nav_5">
+          <span class="md-nav__icon md-icon"></span>
+          Tutorials
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../tutorial/getting_started/" class="md-nav__link">
+        Getting started with Ibis
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../tutorial/ibis-for-sql-users/" class="md-nav__link">
+        Ibis for SQL users
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../tutorial/ibis-for-pandas-users/" class="md-nav__link">
+        Ibis for pandas users
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../tutorial/ibis-for-dplyr-users/" class="md-nav__link">
+        Ibis for dplyr users
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+      
+      
+      <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" >
+      
+      
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+      
+      
+        <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
+          How-to guides
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+        <label class="md-nav__title" for="__nav_6">
+          <span class="md-nav__icon md-icon"></span>
+          How-to guides
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../how_to/configuration/" class="md-nav__link">
+        Configure Ibis
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../how_to/chain_expressions/" class="md-nav__link">
+        Chain expressions with the underscore API
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../how_to/ffill_bfill_w_window/" class="md-nav__link">
+        Fill data using window functions
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../how_to/self_joins/" class="md-nav__link">
+        Perform self joins
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../how_to/sessionize/" class="md-nav__link">
+        Sessionize a log of events
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../how_to/topk/" class="md-nav__link">
+        Compute the top K records
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../how_to/memtable_join/" class="md-nav__link">
+        Join an in-memory DataFrame to a TableExpression
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../how_to/duckdb_register/" class="md-nav__link">
+        Load external data files with the DuckDB backend
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../how_to/streamlit/" class="md-nav__link">
+        Write a Streamlit app with Ibis
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+      
+      
+      <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6_10" >
+      
+      
+        
+          
+        
+          
+        
+      
+      
+        <label class="md-nav__link" for="__nav_6_10" id="__nav_6_10_label" tabindex="0">
+          Extend with custom operations
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_6_10_label" aria-expanded="false">
+        <label class="md-nav__title" for="__nav_6_10">
+          <span class="md-nav__icon md-icon"></span>
+          Extend with custom operations
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../how_to/extending/elementwise/" class="md-nav__link">
+        Add an elementwise operation
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../how_to/extending/reduction/" class="md-nav__link">
+        Add a reduction operation
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+    
+  
+  
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+      
+      
+      
+      <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" checked>
+      
+      
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+      
+      
+        <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="0">
+          Reference
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="true">
+        <label class="md-nav__title" for="__nav_7">
+          <span class="md-nav__icon md-icon"></span>
+          Reference
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+      
+      
+      <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7_1" >
+      
+      
+        
+          
+            
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+      
+      
+        
+        
+        <div class="md-nav__link md-nav__link--index ">
+          <a href="../expressions/">Expressions</a>
+          
+            <label for="__nav_7_1">
+              <span class="md-nav__icon md-icon"></span>
+            </label>
+          
+        </div>
+      
+      <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_7_1_label" aria-expanded="false">
+        <label class="md-nav__title" for="__nav_7_1">
+          <span class="md-nav__icon md-icon"></span>
+          Expressions
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../expressions/top_level/" class="md-nav__link">
+        Top level
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../expressions/tables/" class="md-nav__link">
+        Tables
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../expressions/generic/" class="md-nav__link">
+        Generic Values
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../expressions/numeric/" class="md-nav__link">
+        Numeric and boolean
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../expressions/strings/" class="md-nav__link">
+        Strings
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../expressions/timestamps/" class="md-nav__link">
+        Timestamps, dates, and times
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../expressions/collections/" class="md-nav__link">
+        Collections
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../expressions/geospatial/" class="md-nav__link">
+        Geospatial
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../selectors/" class="md-nav__link">
+        Column selectors
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+    
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          Data types
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        Data types
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core" class="md-nav__link">
+    core
+  </a>
+  
+    <nav class="md-nav" aria-label="core">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core-classes" class="md-nav__link">
+    Classes
+  </a>
+  
+    <nav class="md-nav" aria-label="Classes">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.Array" class="md-nav__link">
+    Array
+  </a>
+  
+    <nav class="md-nav" aria-label="Array">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.Array-attributes" class="md-nav__link">
+    Attributes
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.Array-functions" class="md-nav__link">
+    Functions
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.Binary" class="md-nav__link">
+    Binary
+  </a>
+  
+    <nav class="md-nav" aria-label="Binary">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.Binary--notes" class="md-nav__link">
+    Notes
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.Binary-attributes" class="md-nav__link">
+    Attributes
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.Binary-functions" class="md-nav__link">
+    Functions
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.Boolean" class="md-nav__link">
+    Boolean
+  </a>
+  
+    <nav class="md-nav" aria-label="Boolean">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.Boolean-attributes" class="md-nav__link">
+    Attributes
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.Boolean-functions" class="md-nav__link">
+    Functions
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.Bounds" class="md-nav__link">
+    Bounds
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.DataType" class="md-nav__link">
+    DataType
+  </a>
+  
+    <nav class="md-nav" aria-label="DataType">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.DataType-attributes" class="md-nav__link">
+    Attributes
+  </a>
+  
+    <nav class="md-nav" aria-label="Attributes">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.DataType.name" class="md-nav__link">
+    name
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.DataType-functions" class="md-nav__link">
+    Functions
+  </a>
+  
+    <nav class="md-nav" aria-label="Functions">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.DataType.from_dask" class="md-nav__link">
+    from_dask()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.DataType.from_numpy" class="md-nav__link">
+    from_numpy()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.DataType.from_pandas" class="md-nav__link">
+    from_pandas()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.DataType.from_pyarrow" class="md-nav__link">
+    from_pyarrow()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.DataType.to_dask" class="md-nav__link">
+    to_dask()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.DataType.to_numpy" class="md-nav__link">
+    to_numpy()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.DataType.to_pandas" class="md-nav__link">
+    to_pandas()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.DataType.to_pyarrow" class="md-nav__link">
+    to_pyarrow()
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.Date" class="md-nav__link">
+    Date
+  </a>
+  
+    <nav class="md-nav" aria-label="Date">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.Date-attributes" class="md-nav__link">
+    Attributes
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.Date-functions" class="md-nav__link">
+    Functions
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.Decimal" class="md-nav__link">
+    Decimal
+  </a>
+  
+    <nav class="md-nav" aria-label="Decimal">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.Decimal-attributes" class="md-nav__link">
+    Attributes
+  </a>
+  
+    <nav class="md-nav" aria-label="Attributes">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.Decimal.largest" class="md-nav__link">
+    largest
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.Decimal.precision" class="md-nav__link">
+    precision
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.Decimal.scale" class="md-nav__link">
+    scale
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.Decimal-functions" class="md-nav__link">
+    Functions
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.Float16" class="md-nav__link">
+    Float16
+  </a>
+  
+    <nav class="md-nav" aria-label="Float16">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.Float16-attributes" class="md-nav__link">
+    Attributes
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.Float16-functions" class="md-nav__link">
+    Functions
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.Float32" class="md-nav__link">
+    Float32
+  </a>
+  
+    <nav class="md-nav" aria-label="Float32">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.Float32-attributes" class="md-nav__link">
+    Attributes
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.Float32-functions" class="md-nav__link">
+    Functions
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.Float64" class="md-nav__link">
+    Float64
+  </a>
+  
+    <nav class="md-nav" aria-label="Float64">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.Float64-attributes" class="md-nav__link">
+    Attributes
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.Float64-functions" class="md-nav__link">
+    Functions
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.Floating" class="md-nav__link">
+    Floating
+  </a>
+  
+    <nav class="md-nav" aria-label="Floating">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.Floating-attributes" class="md-nav__link">
+    Attributes
+  </a>
+  
+    <nav class="md-nav" aria-label="Attributes">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.Floating.largest" class="md-nav__link">
+    largest
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.Floating-functions" class="md-nav__link">
+    Functions
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.GeoSpatial" class="md-nav__link">
+    GeoSpatial
+  </a>
+  
+    <nav class="md-nav" aria-label="GeoSpatial">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.GeoSpatial-attributes" class="md-nav__link">
+    Attributes
+  </a>
+  
+    <nav class="md-nav" aria-label="Attributes">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.GeoSpatial.geotype" class="md-nav__link">
+    geotype
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.GeoSpatial.srid" class="md-nav__link">
+    srid
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.GeoSpatial-functions" class="md-nav__link">
+    Functions
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.INET" class="md-nav__link">
+    INET
+  </a>
+  
+    <nav class="md-nav" aria-label="INET">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.INET-attributes" class="md-nav__link">
+    Attributes
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.INET-functions" class="md-nav__link">
+    Functions
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.Int16" class="md-nav__link">
+    Int16
+  </a>
+  
+    <nav class="md-nav" aria-label="Int16">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.Int16-attributes" class="md-nav__link">
+    Attributes
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.Int16-functions" class="md-nav__link">
+    Functions
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.Int32" class="md-nav__link">
+    Int32
+  </a>
+  
+    <nav class="md-nav" aria-label="Int32">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.Int32-attributes" class="md-nav__link">
+    Attributes
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.Int32-functions" class="md-nav__link">
+    Functions
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.Int64" class="md-nav__link">
+    Int64
+  </a>
+  
+    <nav class="md-nav" aria-label="Int64">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.Int64-attributes" class="md-nav__link">
+    Attributes
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.Int64-functions" class="md-nav__link">
+    Functions
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.Int8" class="md-nav__link">
+    Int8
+  </a>
+  
+    <nav class="md-nav" aria-label="Int8">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.Int8-attributes" class="md-nav__link">
+    Attributes
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.Int8-functions" class="md-nav__link">
+    Functions
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.Integer" class="md-nav__link">
+    Integer
+  </a>
+  
+    <nav class="md-nav" aria-label="Integer">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.Integer-attributes" class="md-nav__link">
+    Attributes
+  </a>
+  
+    <nav class="md-nav" aria-label="Attributes">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.Integer.nbytes" class="md-nav__link">
+    nbytes
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.Integer-functions" class="md-nav__link">
+    Functions
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.Interval" class="md-nav__link">
+    Interval
+  </a>
+  
+    <nav class="md-nav" aria-label="Interval">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.Interval-attributes" class="md-nav__link">
+    Attributes
+  </a>
+  
+    <nav class="md-nav" aria-label="Attributes">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.Interval.resolution" class="md-nav__link">
+    resolution
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.Interval.unit" class="md-nav__link">
+    unit
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.Interval-functions" class="md-nav__link">
+    Functions
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.JSON" class="md-nav__link">
+    JSON
+  </a>
+  
+    <nav class="md-nav" aria-label="JSON">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.JSON-attributes" class="md-nav__link">
+    Attributes
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.JSON-functions" class="md-nav__link">
+    Functions
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.LineString" class="md-nav__link">
+    LineString
+  </a>
+  
+    <nav class="md-nav" aria-label="LineString">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.LineString-attributes" class="md-nav__link">
+    Attributes
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.LineString-functions" class="md-nav__link">
+    Functions
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.MACADDR" class="md-nav__link">
+    MACADDR
+  </a>
+  
+    <nav class="md-nav" aria-label="MACADDR">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.MACADDR-attributes" class="md-nav__link">
+    Attributes
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.MACADDR-functions" class="md-nav__link">
+    Functions
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.Map" class="md-nav__link">
+    Map
+  </a>
+  
+    <nav class="md-nav" aria-label="Map">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.Map-attributes" class="md-nav__link">
+    Attributes
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.Map-functions" class="md-nav__link">
+    Functions
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.MultiLineString" class="md-nav__link">
+    MultiLineString
+  </a>
+  
+    <nav class="md-nav" aria-label="MultiLineString">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.MultiLineString-attributes" class="md-nav__link">
+    Attributes
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.MultiLineString-functions" class="md-nav__link">
+    Functions
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.MultiPoint" class="md-nav__link">
+    MultiPoint
+  </a>
+  
+    <nav class="md-nav" aria-label="MultiPoint">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.MultiPoint-attributes" class="md-nav__link">
+    Attributes
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.MultiPoint-functions" class="md-nav__link">
+    Functions
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.MultiPolygon" class="md-nav__link">
+    MultiPolygon
+  </a>
+  
+    <nav class="md-nav" aria-label="MultiPolygon">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.MultiPolygon-attributes" class="md-nav__link">
+    Attributes
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.MultiPolygon-functions" class="md-nav__link">
+    Functions
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.Null" class="md-nav__link">
+    Null
+  </a>
+  
+    <nav class="md-nav" aria-label="Null">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.Null-attributes" class="md-nav__link">
+    Attributes
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.Null-functions" class="md-nav__link">
+    Functions
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.Numeric" class="md-nav__link">
+    Numeric
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.Parametric" class="md-nav__link">
+    Parametric
+  </a>
+  
+    <nav class="md-nav" aria-label="Parametric">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.Parametric-attributes" class="md-nav__link">
+    Attributes
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.Parametric-functions" class="md-nav__link">
+    Functions
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.Point" class="md-nav__link">
+    Point
+  </a>
+  
+    <nav class="md-nav" aria-label="Point">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.Point-attributes" class="md-nav__link">
+    Attributes
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.Point-functions" class="md-nav__link">
+    Functions
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.Polygon" class="md-nav__link">
+    Polygon
+  </a>
+  
+    <nav class="md-nav" aria-label="Polygon">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.Polygon-attributes" class="md-nav__link">
+    Attributes
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.Polygon-functions" class="md-nav__link">
+    Functions
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.Primitive" class="md-nav__link">
+    Primitive
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.SignedInteger" class="md-nav__link">
+    SignedInteger
+  </a>
+  
+    <nav class="md-nav" aria-label="SignedInteger">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.SignedInteger-attributes" class="md-nav__link">
+    Attributes
+  </a>
+  
+    <nav class="md-nav" aria-label="Attributes">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.SignedInteger.largest" class="md-nav__link">
+    largest
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.SignedInteger-functions" class="md-nav__link">
+    Functions
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.String" class="md-nav__link">
+    String
+  </a>
+  
+    <nav class="md-nav" aria-label="String">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.String--notes" class="md-nav__link">
+    Notes
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.String-attributes" class="md-nav__link">
+    Attributes
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.String-functions" class="md-nav__link">
+    Functions
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.Struct" class="md-nav__link">
+    Struct
+  </a>
+  
+    <nav class="md-nav" aria-label="Struct">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.Struct-attributes" class="md-nav__link">
+    Attributes
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.Struct-functions" class="md-nav__link">
+    Functions
+  </a>
+  
+    <nav class="md-nav" aria-label="Functions">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.Struct.from_tuples" class="md-nav__link">
+    from_tuples()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.Struct.names" class="md-nav__link">
+    names()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.Struct.types" class="md-nav__link">
+    types()
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.Temporal" class="md-nav__link">
+    Temporal
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.Time" class="md-nav__link">
+    Time
+  </a>
+  
+    <nav class="md-nav" aria-label="Time">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.Time-attributes" class="md-nav__link">
+    Attributes
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.Time-functions" class="md-nav__link">
+    Functions
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.Timestamp" class="md-nav__link">
+    Timestamp
+  </a>
+  
+    <nav class="md-nav" aria-label="Timestamp">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.Timestamp-attributes" class="md-nav__link">
+    Attributes
+  </a>
+  
+    <nav class="md-nav" aria-label="Attributes">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.Timestamp.scale" class="md-nav__link">
+    scale
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.Timestamp.timezone" class="md-nav__link">
+    timezone
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.Timestamp.unit" class="md-nav__link">
+    unit
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.Timestamp-functions" class="md-nav__link">
+    Functions
+  </a>
+  
+    <nav class="md-nav" aria-label="Functions">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.Timestamp.from_unit" class="md-nav__link">
+    from_unit()
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.UInt16" class="md-nav__link">
+    UInt16
+  </a>
+  
+    <nav class="md-nav" aria-label="UInt16">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.UInt16-attributes" class="md-nav__link">
+    Attributes
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.UInt16-functions" class="md-nav__link">
+    Functions
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.UInt32" class="md-nav__link">
+    UInt32
+  </a>
+  
+    <nav class="md-nav" aria-label="UInt32">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.UInt32-attributes" class="md-nav__link">
+    Attributes
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.UInt32-functions" class="md-nav__link">
+    Functions
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.UInt64" class="md-nav__link">
+    UInt64
+  </a>
+  
+    <nav class="md-nav" aria-label="UInt64">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.UInt64-attributes" class="md-nav__link">
+    Attributes
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.UInt64-functions" class="md-nav__link">
+    Functions
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.UInt8" class="md-nav__link">
+    UInt8
+  </a>
+  
+    <nav class="md-nav" aria-label="UInt8">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.UInt8-attributes" class="md-nav__link">
+    Attributes
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.UInt8-functions" class="md-nav__link">
+    Functions
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.UUID" class="md-nav__link">
+    UUID
+  </a>
+  
+    <nav class="md-nav" aria-label="UUID">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.UUID-attributes" class="md-nav__link">
+    Attributes
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.UUID-functions" class="md-nav__link">
+    Functions
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.Unknown" class="md-nav__link">
+    Unknown
+  </a>
+  
+    <nav class="md-nav" aria-label="Unknown">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.Unknown-attributes" class="md-nav__link">
+    Attributes
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.Unknown-functions" class="md-nav__link">
+    Functions
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.UnsignedInteger" class="md-nav__link">
+    UnsignedInteger
+  </a>
+  
+    <nav class="md-nav" aria-label="UnsignedInteger">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.UnsignedInteger-attributes" class="md-nav__link">
+    Attributes
+  </a>
+  
+    <nav class="md-nav" aria-label="Attributes">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.UnsignedInteger.largest" class="md-nav__link">
+    largest
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.UnsignedInteger-functions" class="md-nav__link">
+    Functions
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.Variadic" class="md-nav__link">
+    Variadic
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core-functions" class="md-nav__link">
+    Functions
+  </a>
+  
+    <nav class="md-nav" aria-label="Functions">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.dtype" class="md-nav__link">
+    dtype()
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../schemas/" class="md-nav__link">
+        Schemas
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+      
+      
+      <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7_5" >
+      
+      
+        
+          
+        
+          
+        
+          
+        
+          
+        
+      
+      
+        <label class="md-nav__link" for="__nav_7_5" id="__nav_7_5_label" tabindex="0">
+          Backend interfaces
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_7_5_label" aria-expanded="false">
+        <label class="md-nav__title" for="__nav_7_5">
+          <span class="md-nav__icon md-icon"></span>
+          Backend interfaces
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../backends/base/" class="md-nav__link">
+        Backend Base Classes
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../backends/pandas/" class="md-nav__link">
+        pandas-like Backend Base Classes
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../backends/sql/" class="md-nav__link">
+        SQL Backend Base Classes
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../backends/sqlalchemy/" class="md-nav__link">
+        SQLAlchemy Backend Base Classes
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../config/" class="md-nav__link">
+        Configuration
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../supported_python_versions/" class="md-nav__link">
+        Supported Python versions
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../release_notes/" class="md-nav__link">
+        Release notes
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+      
+      
+      <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_8" >
+      
+      
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+      
+      
+        <label class="md-nav__link" for="__nav_8" id="__nav_8_label" tabindex="0">
+          Blog
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_8_label" aria-expanded="false">
+        <label class="md-nav__title" for="__nav_8">
+          <span class="md-nav__icon md-icon"></span>
+          Blog
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../blog/rendered/torch/" class="md-nav__link">
+        Ibis on &#x1F525;: Supercharge Your Workflow with DuckDB and PyTorch
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../blog/rendered/campaign-finance/" class="md-nav__link">
+        Exploring Campaign Finance Data
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../blog/ibis-to-file/" class="md-nav__link">
+        Ibis sneak peek: writing to files
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../blog/ibis-examples/" class="md-nav__link">
+        Ibis sneak peek: examples
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../blog/selectors/" class="md-nav__link">
+        Maximizing productivity with selectors
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../blog/ibis_substrait_to_duckdb/" class="md-nav__link">
+        Ibis + DuckDB + Substrait
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../blog/ibis-version-4.0.0-release/" class="md-nav__link">
+        Ibis v4.0.0
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../blog/rendered/ci-analysis/" class="md-nav__link">
+        Analysis of Ibis's CI Performance
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../blog/ffill-and-bfill-using-ibis/" class="md-nav__link">
+        ffill and bfill using ibis
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../blog/Ibis-version-3.1.0-release/" class="md-nav__link">
+        Ibis v3.1.0
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../blog/Ibis-version-3.0.0-release/" class="md-nav__link">
+        Ibis v3.0.0
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+      
+      
+      <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_9" >
+      
+      
+        
+          
+            
+          
+        
+          
+        
+      
+      
+        
+        
+        <div class="md-nav__link md-nav__link--index ">
+          <a href="../../community/">Community</a>
+          
+            <label for="__nav_9">
+              <span class="md-nav__icon md-icon"></span>
+            </label>
+          
+        </div>
+      
+      <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_9_label" aria-expanded="false">
+        <label class="md-nav__title" for="__nav_9">
+          <span class="md-nav__icon md-icon"></span>
+          Community
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+          
+            
+              
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+      
+      
+      <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_9_2" >
+      
+      
+        
+          
+            
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+      
+      
+        
+        
+        <div class="md-nav__link md-nav__link--index ">
+          <a href="../../community/contribute/">Contribute</a>
+          
+            <label for="__nav_9_2">
+              <span class="md-nav__icon md-icon"></span>
+            </label>
+          
+        </div>
+      
+      <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_9_2_label" aria-expanded="false">
+        <label class="md-nav__title" for="__nav_9_2">
+          <span class="md-nav__icon md-icon"></span>
+          Contribute
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../community/contribute/01_environment/" class="md-nav__link">
+        Setting Up a Development Environment
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../community/contribute/02_workflow/" class="md-nav__link">
+        Contribute to the Ibis Codebase
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../community/contribute/03_style/" class="md-nav__link">
+        Style and Formatting
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../community/contribute/05_maintainers_guide/" class="md-nav__link">
+        Maintaining the Codebase
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core" class="md-nav__link">
+    core
+  </a>
+  
+    <nav class="md-nav" aria-label="core">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core-classes" class="md-nav__link">
+    Classes
+  </a>
+  
+    <nav class="md-nav" aria-label="Classes">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.Array" class="md-nav__link">
+    Array
+  </a>
+  
+    <nav class="md-nav" aria-label="Array">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.Array-attributes" class="md-nav__link">
+    Attributes
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.Array-functions" class="md-nav__link">
+    Functions
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.Binary" class="md-nav__link">
+    Binary
+  </a>
+  
+    <nav class="md-nav" aria-label="Binary">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.Binary--notes" class="md-nav__link">
+    Notes
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.Binary-attributes" class="md-nav__link">
+    Attributes
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.Binary-functions" class="md-nav__link">
+    Functions
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.Boolean" class="md-nav__link">
+    Boolean
+  </a>
+  
+    <nav class="md-nav" aria-label="Boolean">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.Boolean-attributes" class="md-nav__link">
+    Attributes
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.Boolean-functions" class="md-nav__link">
+    Functions
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.Bounds" class="md-nav__link">
+    Bounds
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.DataType" class="md-nav__link">
+    DataType
+  </a>
+  
+    <nav class="md-nav" aria-label="DataType">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.DataType-attributes" class="md-nav__link">
+    Attributes
+  </a>
+  
+    <nav class="md-nav" aria-label="Attributes">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.DataType.name" class="md-nav__link">
+    name
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.DataType-functions" class="md-nav__link">
+    Functions
+  </a>
+  
+    <nav class="md-nav" aria-label="Functions">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.DataType.from_dask" class="md-nav__link">
+    from_dask()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.DataType.from_numpy" class="md-nav__link">
+    from_numpy()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.DataType.from_pandas" class="md-nav__link">
+    from_pandas()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.DataType.from_pyarrow" class="md-nav__link">
+    from_pyarrow()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.DataType.to_dask" class="md-nav__link">
+    to_dask()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.DataType.to_numpy" class="md-nav__link">
+    to_numpy()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.DataType.to_pandas" class="md-nav__link">
+    to_pandas()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.DataType.to_pyarrow" class="md-nav__link">
+    to_pyarrow()
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.Date" class="md-nav__link">
+    Date
+  </a>
+  
+    <nav class="md-nav" aria-label="Date">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.Date-attributes" class="md-nav__link">
+    Attributes
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.Date-functions" class="md-nav__link">
+    Functions
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.Decimal" class="md-nav__link">
+    Decimal
+  </a>
+  
+    <nav class="md-nav" aria-label="Decimal">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.Decimal-attributes" class="md-nav__link">
+    Attributes
+  </a>
+  
+    <nav class="md-nav" aria-label="Attributes">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.Decimal.largest" class="md-nav__link">
+    largest
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.Decimal.precision" class="md-nav__link">
+    precision
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.Decimal.scale" class="md-nav__link">
+    scale
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.Decimal-functions" class="md-nav__link">
+    Functions
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.Float16" class="md-nav__link">
+    Float16
+  </a>
+  
+    <nav class="md-nav" aria-label="Float16">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.Float16-attributes" class="md-nav__link">
+    Attributes
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.Float16-functions" class="md-nav__link">
+    Functions
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.Float32" class="md-nav__link">
+    Float32
+  </a>
+  
+    <nav class="md-nav" aria-label="Float32">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.Float32-attributes" class="md-nav__link">
+    Attributes
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.Float32-functions" class="md-nav__link">
+    Functions
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.Float64" class="md-nav__link">
+    Float64
+  </a>
+  
+    <nav class="md-nav" aria-label="Float64">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.Float64-attributes" class="md-nav__link">
+    Attributes
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.Float64-functions" class="md-nav__link">
+    Functions
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.Floating" class="md-nav__link">
+    Floating
+  </a>
+  
+    <nav class="md-nav" aria-label="Floating">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.Floating-attributes" class="md-nav__link">
+    Attributes
+  </a>
+  
+    <nav class="md-nav" aria-label="Attributes">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.Floating.largest" class="md-nav__link">
+    largest
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.Floating-functions" class="md-nav__link">
+    Functions
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.GeoSpatial" class="md-nav__link">
+    GeoSpatial
+  </a>
+  
+    <nav class="md-nav" aria-label="GeoSpatial">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.GeoSpatial-attributes" class="md-nav__link">
+    Attributes
+  </a>
+  
+    <nav class="md-nav" aria-label="Attributes">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.GeoSpatial.geotype" class="md-nav__link">
+    geotype
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.GeoSpatial.srid" class="md-nav__link">
+    srid
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.GeoSpatial-functions" class="md-nav__link">
+    Functions
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.INET" class="md-nav__link">
+    INET
+  </a>
+  
+    <nav class="md-nav" aria-label="INET">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.INET-attributes" class="md-nav__link">
+    Attributes
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.INET-functions" class="md-nav__link">
+    Functions
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.Int16" class="md-nav__link">
+    Int16
+  </a>
+  
+    <nav class="md-nav" aria-label="Int16">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.Int16-attributes" class="md-nav__link">
+    Attributes
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.Int16-functions" class="md-nav__link">
+    Functions
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.Int32" class="md-nav__link">
+    Int32
+  </a>
+  
+    <nav class="md-nav" aria-label="Int32">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.Int32-attributes" class="md-nav__link">
+    Attributes
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.Int32-functions" class="md-nav__link">
+    Functions
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.Int64" class="md-nav__link">
+    Int64
+  </a>
+  
+    <nav class="md-nav" aria-label="Int64">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.Int64-attributes" class="md-nav__link">
+    Attributes
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.Int64-functions" class="md-nav__link">
+    Functions
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.Int8" class="md-nav__link">
+    Int8
+  </a>
+  
+    <nav class="md-nav" aria-label="Int8">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.Int8-attributes" class="md-nav__link">
+    Attributes
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.Int8-functions" class="md-nav__link">
+    Functions
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.Integer" class="md-nav__link">
+    Integer
+  </a>
+  
+    <nav class="md-nav" aria-label="Integer">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.Integer-attributes" class="md-nav__link">
+    Attributes
+  </a>
+  
+    <nav class="md-nav" aria-label="Attributes">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.Integer.nbytes" class="md-nav__link">
+    nbytes
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.Integer-functions" class="md-nav__link">
+    Functions
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.Interval" class="md-nav__link">
+    Interval
+  </a>
+  
+    <nav class="md-nav" aria-label="Interval">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.Interval-attributes" class="md-nav__link">
+    Attributes
+  </a>
+  
+    <nav class="md-nav" aria-label="Attributes">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.Interval.resolution" class="md-nav__link">
+    resolution
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.Interval.unit" class="md-nav__link">
+    unit
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.Interval-functions" class="md-nav__link">
+    Functions
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.JSON" class="md-nav__link">
+    JSON
+  </a>
+  
+    <nav class="md-nav" aria-label="JSON">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.JSON-attributes" class="md-nav__link">
+    Attributes
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.JSON-functions" class="md-nav__link">
+    Functions
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.LineString" class="md-nav__link">
+    LineString
+  </a>
+  
+    <nav class="md-nav" aria-label="LineString">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.LineString-attributes" class="md-nav__link">
+    Attributes
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.LineString-functions" class="md-nav__link">
+    Functions
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.MACADDR" class="md-nav__link">
+    MACADDR
+  </a>
+  
+    <nav class="md-nav" aria-label="MACADDR">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.MACADDR-attributes" class="md-nav__link">
+    Attributes
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.MACADDR-functions" class="md-nav__link">
+    Functions
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.Map" class="md-nav__link">
+    Map
+  </a>
+  
+    <nav class="md-nav" aria-label="Map">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.Map-attributes" class="md-nav__link">
+    Attributes
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.Map-functions" class="md-nav__link">
+    Functions
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.MultiLineString" class="md-nav__link">
+    MultiLineString
+  </a>
+  
+    <nav class="md-nav" aria-label="MultiLineString">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.MultiLineString-attributes" class="md-nav__link">
+    Attributes
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.MultiLineString-functions" class="md-nav__link">
+    Functions
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.MultiPoint" class="md-nav__link">
+    MultiPoint
+  </a>
+  
+    <nav class="md-nav" aria-label="MultiPoint">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.MultiPoint-attributes" class="md-nav__link">
+    Attributes
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.MultiPoint-functions" class="md-nav__link">
+    Functions
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.MultiPolygon" class="md-nav__link">
+    MultiPolygon
+  </a>
+  
+    <nav class="md-nav" aria-label="MultiPolygon">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.MultiPolygon-attributes" class="md-nav__link">
+    Attributes
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.MultiPolygon-functions" class="md-nav__link">
+    Functions
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.Null" class="md-nav__link">
+    Null
+  </a>
+  
+    <nav class="md-nav" aria-label="Null">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.Null-attributes" class="md-nav__link">
+    Attributes
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.Null-functions" class="md-nav__link">
+    Functions
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.Numeric" class="md-nav__link">
+    Numeric
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.Parametric" class="md-nav__link">
+    Parametric
+  </a>
+  
+    <nav class="md-nav" aria-label="Parametric">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.Parametric-attributes" class="md-nav__link">
+    Attributes
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.Parametric-functions" class="md-nav__link">
+    Functions
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.Point" class="md-nav__link">
+    Point
+  </a>
+  
+    <nav class="md-nav" aria-label="Point">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.Point-attributes" class="md-nav__link">
+    Attributes
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.Point-functions" class="md-nav__link">
+    Functions
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.Polygon" class="md-nav__link">
+    Polygon
+  </a>
+  
+    <nav class="md-nav" aria-label="Polygon">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.Polygon-attributes" class="md-nav__link">
+    Attributes
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.Polygon-functions" class="md-nav__link">
+    Functions
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.Primitive" class="md-nav__link">
+    Primitive
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.SignedInteger" class="md-nav__link">
+    SignedInteger
+  </a>
+  
+    <nav class="md-nav" aria-label="SignedInteger">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.SignedInteger-attributes" class="md-nav__link">
+    Attributes
+  </a>
+  
+    <nav class="md-nav" aria-label="Attributes">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.SignedInteger.largest" class="md-nav__link">
+    largest
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.SignedInteger-functions" class="md-nav__link">
+    Functions
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.String" class="md-nav__link">
+    String
+  </a>
+  
+    <nav class="md-nav" aria-label="String">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.String--notes" class="md-nav__link">
+    Notes
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.String-attributes" class="md-nav__link">
+    Attributes
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.String-functions" class="md-nav__link">
+    Functions
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.Struct" class="md-nav__link">
+    Struct
+  </a>
+  
+    <nav class="md-nav" aria-label="Struct">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.Struct-attributes" class="md-nav__link">
+    Attributes
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.Struct-functions" class="md-nav__link">
+    Functions
+  </a>
+  
+    <nav class="md-nav" aria-label="Functions">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.Struct.from_tuples" class="md-nav__link">
+    from_tuples()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.Struct.names" class="md-nav__link">
+    names()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.Struct.types" class="md-nav__link">
+    types()
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.Temporal" class="md-nav__link">
+    Temporal
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.Time" class="md-nav__link">
+    Time
+  </a>
+  
+    <nav class="md-nav" aria-label="Time">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.Time-attributes" class="md-nav__link">
+    Attributes
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.Time-functions" class="md-nav__link">
+    Functions
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.Timestamp" class="md-nav__link">
+    Timestamp
+  </a>
+  
+    <nav class="md-nav" aria-label="Timestamp">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.Timestamp-attributes" class="md-nav__link">
+    Attributes
+  </a>
+  
+    <nav class="md-nav" aria-label="Attributes">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.Timestamp.scale" class="md-nav__link">
+    scale
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.Timestamp.timezone" class="md-nav__link">
+    timezone
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.Timestamp.unit" class="md-nav__link">
+    unit
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.Timestamp-functions" class="md-nav__link">
+    Functions
+  </a>
+  
+    <nav class="md-nav" aria-label="Functions">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.Timestamp.from_unit" class="md-nav__link">
+    from_unit()
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.UInt16" class="md-nav__link">
+    UInt16
+  </a>
+  
+    <nav class="md-nav" aria-label="UInt16">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.UInt16-attributes" class="md-nav__link">
+    Attributes
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.UInt16-functions" class="md-nav__link">
+    Functions
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.UInt32" class="md-nav__link">
+    UInt32
+  </a>
+  
+    <nav class="md-nav" aria-label="UInt32">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.UInt32-attributes" class="md-nav__link">
+    Attributes
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.UInt32-functions" class="md-nav__link">
+    Functions
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.UInt64" class="md-nav__link">
+    UInt64
+  </a>
+  
+    <nav class="md-nav" aria-label="UInt64">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.UInt64-attributes" class="md-nav__link">
+    Attributes
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.UInt64-functions" class="md-nav__link">
+    Functions
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.UInt8" class="md-nav__link">
+    UInt8
+  </a>
+  
+    <nav class="md-nav" aria-label="UInt8">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.UInt8-attributes" class="md-nav__link">
+    Attributes
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.UInt8-functions" class="md-nav__link">
+    Functions
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.UUID" class="md-nav__link">
+    UUID
+  </a>
+  
+    <nav class="md-nav" aria-label="UUID">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.UUID-attributes" class="md-nav__link">
+    Attributes
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.UUID-functions" class="md-nav__link">
+    Functions
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.Unknown" class="md-nav__link">
+    Unknown
+  </a>
+  
+    <nav class="md-nav" aria-label="Unknown">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.Unknown-attributes" class="md-nav__link">
+    Attributes
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.Unknown-functions" class="md-nav__link">
+    Functions
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.UnsignedInteger" class="md-nav__link">
+    UnsignedInteger
+  </a>
+  
+    <nav class="md-nav" aria-label="UnsignedInteger">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.UnsignedInteger-attributes" class="md-nav__link">
+    Attributes
+  </a>
+  
+    <nav class="md-nav" aria-label="Attributes">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.UnsignedInteger.largest" class="md-nav__link">
+    largest
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.UnsignedInteger-functions" class="md-nav__link">
+    Functions
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.Variadic" class="md-nav__link">
+    Variadic
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core-functions" class="md-nav__link">
+    Functions
+  </a>
+  
+    <nav class="md-nav" aria-label="Functions">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.datatypes.core.dtype" class="md-nav__link">
+    dtype()
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              <article class="md-content__inner md-typeset">
+                
+
+
+
+                  
+
+
+<h1 id="data-types">Data Types<a class="headerlink" href="#data-types" title="Anchor link to this section for reference">&para;</a></h1>
+<p>This module contains classes for handling the different logical types that
+occur in databases.</p>
+<!-- prettier-ignore-start -->
+<p>All data type constructors take a <code>nullable: bool</code> parameter whose default
+value is <a class="autorefs autorefs-external" href="https://docs.python.org/3/library/constants.html#True"><code>True</code></a>.</p>
+<!-- prettier-ignore-end -->
+
+
+
+<div class="doc doc-object doc-module">
+
+
+
+<h2 id="ibis.expr.datatypes.core" class="doc doc-heading">
+          <code>core</code>
+
+
+<a href="#ibis.expr.datatypes.core" class="headerlink" title="Anchor link to this section for reference">&para;</a></h2>
+
+  <div class="doc doc-contents first">
+
+  
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+<h3 id="ibis.expr.datatypes.core-classes">Classes<a href="#ibis.expr.datatypes.core-classes" class="headerlink" title="Anchor link to this section for reference">&para;</a></h3>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h4 id="ibis.expr.datatypes.core.Array" class="doc doc-heading">
+        <code>Array</code>
+
+
+<a href="#ibis.expr.datatypes.core.Array" class="headerlink" title="Anchor link to this section for reference">&para;</a></h4>
+
+
+  <div class="doc doc-contents ">
+      <p class="doc doc-class-bases">
+        Bases: <code><a class="autorefs autorefs-internal" title="ibis.expr.datatypes.core.Variadic" href="#ibis.expr.datatypes.core.Variadic">Variadic</a></code>, <code><a class="autorefs autorefs-internal" title="ibis.expr.datatypes.core.Parametric" href="#ibis.expr.datatypes.core.Parametric">Parametric</a></code></p>
+
+  
+      <p>Array values.</p>
+
+
+
+  
+
+  <div class="doc doc-children">
+
+
+
+
+
+<h5 id="ibis.expr.datatypes.core.Array-attributes">Attributes<a href="#ibis.expr.datatypes.core.Array-attributes" class="headerlink" title="Anchor link to this section for reference">&para;</a></h5>
+
+<h5 id="ibis.expr.datatypes.core.Array-functions">Functions<a href="#ibis.expr.datatypes.core.Array-functions" class="headerlink" title="Anchor link to this section for reference">&para;</a></h5>
+
+
+
+  </div>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h4 id="ibis.expr.datatypes.core.Binary" class="doc doc-heading">
+        <code>Binary</code>
+
+
+<a href="#ibis.expr.datatypes.core.Binary" class="headerlink" title="Anchor link to this section for reference">&para;</a></h4>
+
+
+  <div class="doc doc-contents ">
+      <p class="doc doc-class-bases">
+        Bases: <code><a class="autorefs autorefs-internal" title="ibis.expr.datatypes.core.Variadic" href="#ibis.expr.datatypes.core.Variadic">Variadic</a></code>, <code><span title="ibis.common.grounds.Singleton">Singleton</span></code></p>
+
+  
+      <p>A type representing a sequence of bytes.</p>
+<h6 id="ibis.expr.datatypes.core.Binary--notes">Notes<a class="headerlink" href="#ibis.expr.datatypes.core.Binary--notes" title="Anchor link to this section for reference">&para;</a></h6>
+<p>Some databases treat strings and blobs of equally, and some do not.</p>
+<p>For example, Impala doesn't make a distinction between string and binary
+types but PostgreSQL has a <code>TEXT</code> type and a <code>BYTEA</code> type which are
+distinct types that have different behavior.</p>
+
+
+
+  
+
+  <div class="doc doc-children">
+
+
+
+
+
+<h5 id="ibis.expr.datatypes.core.Binary-attributes">Attributes<a href="#ibis.expr.datatypes.core.Binary-attributes" class="headerlink" title="Anchor link to this section for reference">&para;</a></h5>
+
+<h5 id="ibis.expr.datatypes.core.Binary-functions">Functions<a href="#ibis.expr.datatypes.core.Binary-functions" class="headerlink" title="Anchor link to this section for reference">&para;</a></h5>
+
+
+
+  </div>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h4 id="ibis.expr.datatypes.core.Boolean" class="doc doc-heading">
+        <code>Boolean</code>
+
+
+<a href="#ibis.expr.datatypes.core.Boolean" class="headerlink" title="Anchor link to this section for reference">&para;</a></h4>
+
+
+  <div class="doc doc-contents ">
+      <p class="doc doc-class-bases">
+        Bases: <code><a class="autorefs autorefs-internal" title="ibis.expr.datatypes.core.Primitive" href="#ibis.expr.datatypes.core.Primitive">Primitive</a></code></p>
+
+  
+      <p><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/constants.html#True"><code>True</code></a> or <a class="autorefs autorefs-external" href="https://docs.python.org/3/library/constants.html#False"><code>False</code></a> values.</p>
+
+
+
+  
+
+  <div class="doc doc-children">
+
+
+
+
+
+<h5 id="ibis.expr.datatypes.core.Boolean-attributes">Attributes<a href="#ibis.expr.datatypes.core.Boolean-attributes" class="headerlink" title="Anchor link to this section for reference">&para;</a></h5>
+
+<h5 id="ibis.expr.datatypes.core.Boolean-functions">Functions<a href="#ibis.expr.datatypes.core.Boolean-functions" class="headerlink" title="Anchor link to this section for reference">&para;</a></h5>
+
+
+
+  </div>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h4 id="ibis.expr.datatypes.core.Bounds" class="doc doc-heading">
+        <code>Bounds</code>
+
+
+<a href="#ibis.expr.datatypes.core.Bounds" class="headerlink" title="Anchor link to this section for reference">&para;</a></h4>
+
+
+  <div class="doc doc-contents ">
+      <p class="doc doc-class-bases">
+        Bases: <code><a class="autorefs autorefs-external" title="typing.NamedTuple" href="https://docs.python.org/3/library/typing.html#typing.NamedTuple">NamedTuple</a></code></p>
+
+  
+      <p>The lower and upper bound of a fixed-size value.</p>
+
+
+
+  
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h4 id="ibis.expr.datatypes.core.DataType" class="doc doc-heading">
+        <code>DataType</code>
+
+
+<a href="#ibis.expr.datatypes.core.DataType" class="headerlink" title="Anchor link to this section for reference">&para;</a></h4>
+
+
+  <div class="doc doc-contents ">
+      <p class="doc doc-class-bases">
+        Bases: <code><span title="ibis.common.grounds.Concrete">Concrete</span></code>, <code><span title="ibis.common.validators.Coercible">Coercible</span></code></p>
+
+  
+      <p>Base class for all data types.</p>
+<p><a class="autorefs autorefs-internal" href="#ibis.expr.datatypes.core.DataType"><code>DataType</code></a> instances are immutable.</p>
+
+
+
+  
+
+  <div class="doc doc-children">
+
+
+
+
+
+<h5 id="ibis.expr.datatypes.core.DataType-attributes">Attributes<a href="#ibis.expr.datatypes.core.DataType-attributes" class="headerlink" title="Anchor link to this section for reference">&para;</a></h5>
+
+<div class="doc doc-object doc-attribute">
+
+
+
+<h6 id="ibis.expr.datatypes.core.DataType.name" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">name</span><span class="p">:</span> <span class="nb">str</span></code>
+  
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-property"><code>property</code></small>
+  </span>
+
+<a href="#ibis.expr.datatypes.core.DataType.name" class="headerlink" title="Anchor link to this section for reference">&para;</a></h6>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>Return the name of the data type.</p>
+  </div>
+
+</div>
+
+<h5 id="ibis.expr.datatypes.core.DataType-functions">Functions<a href="#ibis.expr.datatypes.core.DataType-functions" class="headerlink" title="Anchor link to this section for reference">&para;</a></h5>
+
+<div class="doc doc-object doc-function">
+
+
+
+<h6 id="ibis.expr.datatypes.core.DataType.from_dask" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">from_dask</span><span class="p">(</span><span class="n">dask_type</span><span class="p">,</span> <span class="n">nullable</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span></code>
+  
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-classmethod"><code>classmethod</code></small>
+  </span>
+
+<a href="#ibis.expr.datatypes.core.DataType.from_dask" class="headerlink" title="Anchor link to this section for reference">&para;</a></h6>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>Return the equivalent ibis datatype.</p>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+
+<h6 id="ibis.expr.datatypes.core.DataType.from_numpy" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">from_numpy</span><span class="p">(</span><span class="n">numpy_type</span><span class="p">,</span> <span class="n">nullable</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span></code>
+  
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-classmethod"><code>classmethod</code></small>
+  </span>
+
+<a href="#ibis.expr.datatypes.core.DataType.from_numpy" class="headerlink" title="Anchor link to this section for reference">&para;</a></h6>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>Return the equivalent ibis datatype.</p>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+
+<h6 id="ibis.expr.datatypes.core.DataType.from_pandas" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">from_pandas</span><span class="p">(</span><span class="n">pandas_type</span><span class="p">,</span> <span class="n">nullable</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span></code>
+  
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-classmethod"><code>classmethod</code></small>
+  </span>
+
+<a href="#ibis.expr.datatypes.core.DataType.from_pandas" class="headerlink" title="Anchor link to this section for reference">&para;</a></h6>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>Return the equivalent ibis datatype.</p>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+
+<h6 id="ibis.expr.datatypes.core.DataType.from_pyarrow" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">from_pyarrow</span><span class="p">(</span><span class="n">arrow_type</span><span class="p">,</span> <span class="n">nullable</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span></code>
+  
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-classmethod"><code>classmethod</code></small>
+  </span>
+
+<a href="#ibis.expr.datatypes.core.DataType.from_pyarrow" class="headerlink" title="Anchor link to this section for reference">&para;</a></h6>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>Return the equivalent ibis datatype.</p>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+
+<h6 id="ibis.expr.datatypes.core.DataType.to_dask" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">to_dask</span><span class="p">()</span></code>
+
+<a href="#ibis.expr.datatypes.core.DataType.to_dask" class="headerlink" title="Anchor link to this section for reference">&para;</a></h6>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>Return the equivalent dask datatype.</p>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+
+<h6 id="ibis.expr.datatypes.core.DataType.to_numpy" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">to_numpy</span><span class="p">()</span></code>
+
+<a href="#ibis.expr.datatypes.core.DataType.to_numpy" class="headerlink" title="Anchor link to this section for reference">&para;</a></h6>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>Return the equivalent numpy datatype.</p>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+
+<h6 id="ibis.expr.datatypes.core.DataType.to_pandas" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">to_pandas</span><span class="p">()</span></code>
+
+<a href="#ibis.expr.datatypes.core.DataType.to_pandas" class="headerlink" title="Anchor link to this section for reference">&para;</a></h6>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>Return the equivalent pandas datatype.</p>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+
+<h6 id="ibis.expr.datatypes.core.DataType.to_pyarrow" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">to_pyarrow</span><span class="p">()</span></code>
+
+<a href="#ibis.expr.datatypes.core.DataType.to_pyarrow" class="headerlink" title="Anchor link to this section for reference">&para;</a></h6>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>Return the equivalent pyarrow datatype.</p>
+
+  </div>
+
+</div>
+
+
+
+  </div>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h4 id="ibis.expr.datatypes.core.Date" class="doc doc-heading">
+        <code>Date</code>
+
+
+<a href="#ibis.expr.datatypes.core.Date" class="headerlink" title="Anchor link to this section for reference">&para;</a></h4>
+
+
+  <div class="doc doc-contents ">
+      <p class="doc doc-class-bases">
+        Bases: <code><a class="autorefs autorefs-internal" title="ibis.expr.datatypes.core.Temporal" href="#ibis.expr.datatypes.core.Temporal">Temporal</a></code>, <code><a class="autorefs autorefs-internal" title="ibis.expr.datatypes.core.Primitive" href="#ibis.expr.datatypes.core.Primitive">Primitive</a></code></p>
+
+  
+      <p>Date values.</p>
+
+
+
+  
+
+  <div class="doc doc-children">
+
+
+
+
+
+<h5 id="ibis.expr.datatypes.core.Date-attributes">Attributes<a href="#ibis.expr.datatypes.core.Date-attributes" class="headerlink" title="Anchor link to this section for reference">&para;</a></h5>
+
+<h5 id="ibis.expr.datatypes.core.Date-functions">Functions<a href="#ibis.expr.datatypes.core.Date-functions" class="headerlink" title="Anchor link to this section for reference">&para;</a></h5>
+
+
+
+  </div>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h4 id="ibis.expr.datatypes.core.Decimal" class="doc doc-heading">
+        <code>Decimal</code>
+
+
+<a href="#ibis.expr.datatypes.core.Decimal" class="headerlink" title="Anchor link to this section for reference">&para;</a></h4>
+
+
+  <div class="doc doc-contents ">
+      <p class="doc doc-class-bases">
+        Bases: <code><a class="autorefs autorefs-internal" title="ibis.expr.datatypes.core.Numeric" href="#ibis.expr.datatypes.core.Numeric">Numeric</a></code>, <code><a class="autorefs autorefs-internal" title="ibis.expr.datatypes.core.Parametric" href="#ibis.expr.datatypes.core.Parametric">Parametric</a></code></p>
+
+  
+      <p>Fixed-precision decimal values.</p>
+
+
+
+  
+
+  <div class="doc doc-children">
+
+
+
+
+
+<h5 id="ibis.expr.datatypes.core.Decimal-attributes">Attributes<a href="#ibis.expr.datatypes.core.Decimal-attributes" class="headerlink" title="Anchor link to this section for reference">&para;</a></h5>
+
+<div class="doc doc-object doc-attribute">
+
+
+
+<h6 id="ibis.expr.datatypes.core.Decimal.largest" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">largest</span></code>
+  
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-property"><code>property</code></small>
+  </span>
+
+<a href="#ibis.expr.datatypes.core.Decimal.largest" class="headerlink" title="Anchor link to this section for reference">&para;</a></h6>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>Return the largest type of decimal.</p>
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-attribute">
+
+
+
+<h6 id="ibis.expr.datatypes.core.Decimal.precision" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">precision</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span></code>
+  
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-class-attribute"><code>class-attribute</code></small>
+      <small class="doc doc-label doc-label-instance-attribute"><code>instance-attribute</code></small>
+  </span>
+
+<a href="#ibis.expr.datatypes.core.Decimal.precision" class="headerlink" title="Anchor link to this section for reference">&para;</a></h6>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>The number of decimal places values of this type can hold.</p>
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-attribute">
+
+
+
+<h6 id="ibis.expr.datatypes.core.Decimal.scale" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">scale</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span></code>
+  
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-class-attribute"><code>class-attribute</code></small>
+      <small class="doc doc-label doc-label-instance-attribute"><code>instance-attribute</code></small>
+  </span>
+
+<a href="#ibis.expr.datatypes.core.Decimal.scale" class="headerlink" title="Anchor link to this section for reference">&para;</a></h6>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>The number of values after the decimal point.</p>
+  </div>
+
+</div>
+
+<h5 id="ibis.expr.datatypes.core.Decimal-functions">Functions<a href="#ibis.expr.datatypes.core.Decimal-functions" class="headerlink" title="Anchor link to this section for reference">&para;</a></h5>
+
+
+
+  </div>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h4 id="ibis.expr.datatypes.core.Float16" class="doc doc-heading">
+        <code>Float16</code>
+
+
+<a href="#ibis.expr.datatypes.core.Float16" class="headerlink" title="Anchor link to this section for reference">&para;</a></h4>
+
+
+  <div class="doc doc-contents ">
+      <p class="doc doc-class-bases">
+        Bases: <code><a class="autorefs autorefs-internal" title="ibis.expr.datatypes.core.Floating" href="#ibis.expr.datatypes.core.Floating">Floating</a></code></p>
+
+  
+      <p>16-bit floating point numbers.</p>
+
+
+
+  
+
+  <div class="doc doc-children">
+
+
+
+
+
+<h5 id="ibis.expr.datatypes.core.Float16-attributes">Attributes<a href="#ibis.expr.datatypes.core.Float16-attributes" class="headerlink" title="Anchor link to this section for reference">&para;</a></h5>
+
+<h5 id="ibis.expr.datatypes.core.Float16-functions">Functions<a href="#ibis.expr.datatypes.core.Float16-functions" class="headerlink" title="Anchor link to this section for reference">&para;</a></h5>
+
+
+
+  </div>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h4 id="ibis.expr.datatypes.core.Float32" class="doc doc-heading">
+        <code>Float32</code>
+
+
+<a href="#ibis.expr.datatypes.core.Float32" class="headerlink" title="Anchor link to this section for reference">&para;</a></h4>
+
+
+  <div class="doc doc-contents ">
+      <p class="doc doc-class-bases">
+        Bases: <code><a class="autorefs autorefs-internal" title="ibis.expr.datatypes.core.Floating" href="#ibis.expr.datatypes.core.Floating">Floating</a></code></p>
+
+  
+      <p>32-bit floating point numbers.</p>
+
+
+
+  
+
+  <div class="doc doc-children">
+
+
+
+
+
+<h5 id="ibis.expr.datatypes.core.Float32-attributes">Attributes<a href="#ibis.expr.datatypes.core.Float32-attributes" class="headerlink" title="Anchor link to this section for reference">&para;</a></h5>
+
+<h5 id="ibis.expr.datatypes.core.Float32-functions">Functions<a href="#ibis.expr.datatypes.core.Float32-functions" class="headerlink" title="Anchor link to this section for reference">&para;</a></h5>
+
+
+
+  </div>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h4 id="ibis.expr.datatypes.core.Float64" class="doc doc-heading">
+        <code>Float64</code>
+
+
+<a href="#ibis.expr.datatypes.core.Float64" class="headerlink" title="Anchor link to this section for reference">&para;</a></h4>
+
+
+  <div class="doc doc-contents ">
+      <p class="doc doc-class-bases">
+        Bases: <code><a class="autorefs autorefs-internal" title="ibis.expr.datatypes.core.Floating" href="#ibis.expr.datatypes.core.Floating">Floating</a></code></p>
+
+  
+      <p>64-bit floating point numbers.</p>
+
+
+
+  
+
+  <div class="doc doc-children">
+
+
+
+
+
+<h5 id="ibis.expr.datatypes.core.Float64-attributes">Attributes<a href="#ibis.expr.datatypes.core.Float64-attributes" class="headerlink" title="Anchor link to this section for reference">&para;</a></h5>
+
+<h5 id="ibis.expr.datatypes.core.Float64-functions">Functions<a href="#ibis.expr.datatypes.core.Float64-functions" class="headerlink" title="Anchor link to this section for reference">&para;</a></h5>
+
+
+
+  </div>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h4 id="ibis.expr.datatypes.core.Floating" class="doc doc-heading">
+        <code>Floating</code>
+
+
+<a href="#ibis.expr.datatypes.core.Floating" class="headerlink" title="Anchor link to this section for reference">&para;</a></h4>
+
+
+  <div class="doc doc-contents ">
+      <p class="doc doc-class-bases">
+        Bases: <code><a class="autorefs autorefs-internal" title="ibis.expr.datatypes.core.Primitive" href="#ibis.expr.datatypes.core.Primitive">Primitive</a></code>, <code><a class="autorefs autorefs-internal" title="ibis.expr.datatypes.core.Numeric" href="#ibis.expr.datatypes.core.Numeric">Numeric</a></code></p>
+
+  
+      <p>Floating point values.</p>
+
+
+
+  
+
+  <div class="doc doc-children">
+
+
+
+
+
+<h5 id="ibis.expr.datatypes.core.Floating-attributes">Attributes<a href="#ibis.expr.datatypes.core.Floating-attributes" class="headerlink" title="Anchor link to this section for reference">&para;</a></h5>
+
+<div class="doc doc-object doc-attribute">
+
+
+
+<h6 id="ibis.expr.datatypes.core.Floating.largest" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">largest</span></code>
+  
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-property"><code>property</code></small>
+  </span>
+
+<a href="#ibis.expr.datatypes.core.Floating.largest" class="headerlink" title="Anchor link to this section for reference">&para;</a></h6>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>Return the largest type of floating point values.</p>
+  </div>
+
+</div>
+
+<h5 id="ibis.expr.datatypes.core.Floating-functions">Functions<a href="#ibis.expr.datatypes.core.Floating-functions" class="headerlink" title="Anchor link to this section for reference">&para;</a></h5>
+
+
+
+  </div>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h4 id="ibis.expr.datatypes.core.GeoSpatial" class="doc doc-heading">
+        <code>GeoSpatial</code>
+
+
+<a href="#ibis.expr.datatypes.core.GeoSpatial" class="headerlink" title="Anchor link to this section for reference">&para;</a></h4>
+
+
+  <div class="doc doc-contents ">
+      <p class="doc doc-class-bases">
+        Bases: <code><a class="autorefs autorefs-internal" title="ibis.expr.datatypes.core.DataType" href="#ibis.expr.datatypes.core.DataType">DataType</a></code></p>
+
+  
+      <p>Geospatial values.</p>
+
+
+
+  
+
+  <div class="doc doc-children">
+
+
+
+
+
+<h5 id="ibis.expr.datatypes.core.GeoSpatial-attributes">Attributes<a href="#ibis.expr.datatypes.core.GeoSpatial-attributes" class="headerlink" title="Anchor link to this section for reference">&para;</a></h5>
+
+<div class="doc doc-object doc-attribute">
+
+
+
+<h6 id="ibis.expr.datatypes.core.GeoSpatial.geotype" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">geotype</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Literal</span><span class="p">[</span><span class="s1">&#39;geography&#39;</span><span class="p">,</span> <span class="s1">&#39;geometry&#39;</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span></code>
+  
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-class-attribute"><code>class-attribute</code></small>
+      <small class="doc doc-label doc-label-instance-attribute"><code>instance-attribute</code></small>
+  </span>
+
+<a href="#ibis.expr.datatypes.core.GeoSpatial.geotype" class="headerlink" title="Anchor link to this section for reference">&para;</a></h6>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>The specific geospatial type.</p>
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-attribute">
+
+
+
+<h6 id="ibis.expr.datatypes.core.GeoSpatial.srid" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">srid</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span></code>
+  
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-class-attribute"><code>class-attribute</code></small>
+      <small class="doc doc-label doc-label-instance-attribute"><code>instance-attribute</code></small>
+  </span>
+
+<a href="#ibis.expr.datatypes.core.GeoSpatial.srid" class="headerlink" title="Anchor link to this section for reference">&para;</a></h6>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>The spatial reference identifier.</p>
+  </div>
+
+</div>
+
+<h5 id="ibis.expr.datatypes.core.GeoSpatial-functions">Functions<a href="#ibis.expr.datatypes.core.GeoSpatial-functions" class="headerlink" title="Anchor link to this section for reference">&para;</a></h5>
+
+
+
+  </div>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h4 id="ibis.expr.datatypes.core.INET" class="doc doc-heading">
+        <code>INET</code>
+
+
+<a href="#ibis.expr.datatypes.core.INET" class="headerlink" title="Anchor link to this section for reference">&para;</a></h4>
+
+
+  <div class="doc doc-contents ">
+      <p class="doc doc-class-bases">
+        Bases: <code><a class="autorefs autorefs-internal" title="ibis.expr.datatypes.core.String" href="#ibis.expr.datatypes.core.String">String</a></code></p>
+
+  
+      <p>IP addresses.</p>
+
+
+
+  
+
+  <div class="doc doc-children">
+
+
+
+
+
+<h5 id="ibis.expr.datatypes.core.INET-attributes">Attributes<a href="#ibis.expr.datatypes.core.INET-attributes" class="headerlink" title="Anchor link to this section for reference">&para;</a></h5>
+
+<h5 id="ibis.expr.datatypes.core.INET-functions">Functions<a href="#ibis.expr.datatypes.core.INET-functions" class="headerlink" title="Anchor link to this section for reference">&para;</a></h5>
+
+
+
+  </div>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h4 id="ibis.expr.datatypes.core.Int16" class="doc doc-heading">
+        <code>Int16</code>
+
+
+<a href="#ibis.expr.datatypes.core.Int16" class="headerlink" title="Anchor link to this section for reference">&para;</a></h4>
+
+
+  <div class="doc doc-contents ">
+      <p class="doc doc-class-bases">
+        Bases: <code><a class="autorefs autorefs-internal" title="ibis.expr.datatypes.core.SignedInteger" href="#ibis.expr.datatypes.core.SignedInteger">SignedInteger</a></code></p>
+
+  
+      <p>Signed 16-bit integers.</p>
+
+
+
+  
+
+  <div class="doc doc-children">
+
+
+
+
+
+<h5 id="ibis.expr.datatypes.core.Int16-attributes">Attributes<a href="#ibis.expr.datatypes.core.Int16-attributes" class="headerlink" title="Anchor link to this section for reference">&para;</a></h5>
+
+<h5 id="ibis.expr.datatypes.core.Int16-functions">Functions<a href="#ibis.expr.datatypes.core.Int16-functions" class="headerlink" title="Anchor link to this section for reference">&para;</a></h5>
+
+
+
+  </div>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h4 id="ibis.expr.datatypes.core.Int32" class="doc doc-heading">
+        <code>Int32</code>
+
+
+<a href="#ibis.expr.datatypes.core.Int32" class="headerlink" title="Anchor link to this section for reference">&para;</a></h4>
+
+
+  <div class="doc doc-contents ">
+      <p class="doc doc-class-bases">
+        Bases: <code><a class="autorefs autorefs-internal" title="ibis.expr.datatypes.core.SignedInteger" href="#ibis.expr.datatypes.core.SignedInteger">SignedInteger</a></code></p>
+
+  
+      <p>Signed 32-bit integers.</p>
+
+
+
+  
+
+  <div class="doc doc-children">
+
+
+
+
+
+<h5 id="ibis.expr.datatypes.core.Int32-attributes">Attributes<a href="#ibis.expr.datatypes.core.Int32-attributes" class="headerlink" title="Anchor link to this section for reference">&para;</a></h5>
+
+<h5 id="ibis.expr.datatypes.core.Int32-functions">Functions<a href="#ibis.expr.datatypes.core.Int32-functions" class="headerlink" title="Anchor link to this section for reference">&para;</a></h5>
+
+
+
+  </div>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h4 id="ibis.expr.datatypes.core.Int64" class="doc doc-heading">
+        <code>Int64</code>
+
+
+<a href="#ibis.expr.datatypes.core.Int64" class="headerlink" title="Anchor link to this section for reference">&para;</a></h4>
+
+
+  <div class="doc doc-contents ">
+      <p class="doc doc-class-bases">
+        Bases: <code><a class="autorefs autorefs-internal" title="ibis.expr.datatypes.core.SignedInteger" href="#ibis.expr.datatypes.core.SignedInteger">SignedInteger</a></code></p>
+
+  
+      <p>Signed 64-bit integers.</p>
+
+
+
+  
+
+  <div class="doc doc-children">
+
+
+
+
+
+<h5 id="ibis.expr.datatypes.core.Int64-attributes">Attributes<a href="#ibis.expr.datatypes.core.Int64-attributes" class="headerlink" title="Anchor link to this section for reference">&para;</a></h5>
+
+<h5 id="ibis.expr.datatypes.core.Int64-functions">Functions<a href="#ibis.expr.datatypes.core.Int64-functions" class="headerlink" title="Anchor link to this section for reference">&para;</a></h5>
+
+
+
+  </div>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h4 id="ibis.expr.datatypes.core.Int8" class="doc doc-heading">
+        <code>Int8</code>
+
+
+<a href="#ibis.expr.datatypes.core.Int8" class="headerlink" title="Anchor link to this section for reference">&para;</a></h4>
+
+
+  <div class="doc doc-contents ">
+      <p class="doc doc-class-bases">
+        Bases: <code><a class="autorefs autorefs-internal" title="ibis.expr.datatypes.core.SignedInteger" href="#ibis.expr.datatypes.core.SignedInteger">SignedInteger</a></code></p>
+
+  
+      <p>Signed 8-bit integers.</p>
+
+
+
+  
+
+  <div class="doc doc-children">
+
+
+
+
+
+<h5 id="ibis.expr.datatypes.core.Int8-attributes">Attributes<a href="#ibis.expr.datatypes.core.Int8-attributes" class="headerlink" title="Anchor link to this section for reference">&para;</a></h5>
+
+<h5 id="ibis.expr.datatypes.core.Int8-functions">Functions<a href="#ibis.expr.datatypes.core.Int8-functions" class="headerlink" title="Anchor link to this section for reference">&para;</a></h5>
+
+
+
+  </div>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h4 id="ibis.expr.datatypes.core.Integer" class="doc doc-heading">
+        <code>Integer</code>
+
+
+<a href="#ibis.expr.datatypes.core.Integer" class="headerlink" title="Anchor link to this section for reference">&para;</a></h4>
+
+
+  <div class="doc doc-contents ">
+      <p class="doc doc-class-bases">
+        Bases: <code><a class="autorefs autorefs-internal" title="ibis.expr.datatypes.core.Primitive" href="#ibis.expr.datatypes.core.Primitive">Primitive</a></code>, <code><a class="autorefs autorefs-internal" title="ibis.expr.datatypes.core.Numeric" href="#ibis.expr.datatypes.core.Numeric">Numeric</a></code></p>
+
+  
+      <p>Integer values.</p>
+
+
+
+  
+
+  <div class="doc doc-children">
+
+
+
+
+
+<h5 id="ibis.expr.datatypes.core.Integer-attributes">Attributes<a href="#ibis.expr.datatypes.core.Integer-attributes" class="headerlink" title="Anchor link to this section for reference">&para;</a></h5>
+
+<div class="doc doc-object doc-attribute">
+
+
+
+<h6 id="ibis.expr.datatypes.core.Integer.nbytes" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">nbytes</span><span class="p">:</span> <span class="nb">int</span></code>
+  
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-property"><code>property</code></small>
+      <small class="doc doc-label doc-label-abstractmethod"><code>abstractmethod</code></small>
+  </span>
+
+<a href="#ibis.expr.datatypes.core.Integer.nbytes" class="headerlink" title="Anchor link to this section for reference">&para;</a></h6>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>Return the number of bytes used to store values of this type.</p>
+  </div>
+
+</div>
+
+<h5 id="ibis.expr.datatypes.core.Integer-functions">Functions<a href="#ibis.expr.datatypes.core.Integer-functions" class="headerlink" title="Anchor link to this section for reference">&para;</a></h5>
+
+
+
+  </div>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h4 id="ibis.expr.datatypes.core.Interval" class="doc doc-heading">
+        <code>Interval</code>
+
+
+<a href="#ibis.expr.datatypes.core.Interval" class="headerlink" title="Anchor link to this section for reference">&para;</a></h4>
+
+
+  <div class="doc doc-contents ">
+      <p class="doc doc-class-bases">
+        Bases: <code><a class="autorefs autorefs-internal" title="ibis.expr.datatypes.core.Parametric" href="#ibis.expr.datatypes.core.Parametric">Parametric</a></code></p>
+
+  
+      <p>Interval values.</p>
+
+
+
+  
+
+  <div class="doc doc-children">
+
+
+
+
+
+<h5 id="ibis.expr.datatypes.core.Interval-attributes">Attributes<a href="#ibis.expr.datatypes.core.Interval-attributes" class="headerlink" title="Anchor link to this section for reference">&para;</a></h5>
+
+<div class="doc doc-object doc-attribute">
+
+
+
+<h6 id="ibis.expr.datatypes.core.Interval.resolution" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">resolution</span></code>
+  
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-property"><code>property</code></small>
+  </span>
+
+<a href="#ibis.expr.datatypes.core.Interval.resolution" class="headerlink" title="Anchor link to this section for reference">&para;</a></h6>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>The interval unit's name.</p>
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-attribute">
+
+
+
+<h6 id="ibis.expr.datatypes.core.Interval.unit" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">unit</span><span class="p">:</span> <span class="n">IntervalUnit</span></code>
+  
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-instance-attribute"><code>instance-attribute</code></small>
+  </span>
+
+<a href="#ibis.expr.datatypes.core.Interval.unit" class="headerlink" title="Anchor link to this section for reference">&para;</a></h6>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>The time unit of the interval.</p>
+  </div>
+
+</div>
+
+<h5 id="ibis.expr.datatypes.core.Interval-functions">Functions<a href="#ibis.expr.datatypes.core.Interval-functions" class="headerlink" title="Anchor link to this section for reference">&para;</a></h5>
+
+
+
+  </div>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h4 id="ibis.expr.datatypes.core.JSON" class="doc doc-heading">
+        <code>JSON</code>
+
+
+<a href="#ibis.expr.datatypes.core.JSON" class="headerlink" title="Anchor link to this section for reference">&para;</a></h4>
+
+
+  <div class="doc doc-contents ">
+      <p class="doc doc-class-bases">
+        Bases: <code><a class="autorefs autorefs-internal" title="ibis.expr.datatypes.core.Variadic" href="#ibis.expr.datatypes.core.Variadic">Variadic</a></code></p>
+
+  
+      <p>JSON values.</p>
+
+
+
+  
+
+  <div class="doc doc-children">
+
+
+
+
+
+<h5 id="ibis.expr.datatypes.core.JSON-attributes">Attributes<a href="#ibis.expr.datatypes.core.JSON-attributes" class="headerlink" title="Anchor link to this section for reference">&para;</a></h5>
+
+<h5 id="ibis.expr.datatypes.core.JSON-functions">Functions<a href="#ibis.expr.datatypes.core.JSON-functions" class="headerlink" title="Anchor link to this section for reference">&para;</a></h5>
+
+
+
+  </div>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h4 id="ibis.expr.datatypes.core.LineString" class="doc doc-heading">
+        <code>LineString</code>
+
+
+<a href="#ibis.expr.datatypes.core.LineString" class="headerlink" title="Anchor link to this section for reference">&para;</a></h4>
+
+
+  <div class="doc doc-contents ">
+      <p class="doc doc-class-bases">
+        Bases: <code><a class="autorefs autorefs-internal" title="ibis.expr.datatypes.core.GeoSpatial" href="#ibis.expr.datatypes.core.GeoSpatial">GeoSpatial</a></code></p>
+
+  
+      <p>A sequence of 2 or more points.</p>
+
+
+
+  
+
+  <div class="doc doc-children">
+
+
+
+
+
+<h5 id="ibis.expr.datatypes.core.LineString-attributes">Attributes<a href="#ibis.expr.datatypes.core.LineString-attributes" class="headerlink" title="Anchor link to this section for reference">&para;</a></h5>
+
+<h5 id="ibis.expr.datatypes.core.LineString-functions">Functions<a href="#ibis.expr.datatypes.core.LineString-functions" class="headerlink" title="Anchor link to this section for reference">&para;</a></h5>
+
+
+
+  </div>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h4 id="ibis.expr.datatypes.core.MACADDR" class="doc doc-heading">
+        <code>MACADDR</code>
+
+
+<a href="#ibis.expr.datatypes.core.MACADDR" class="headerlink" title="Anchor link to this section for reference">&para;</a></h4>
+
+
+  <div class="doc doc-contents ">
+      <p class="doc doc-class-bases">
+        Bases: <code><a class="autorefs autorefs-internal" title="ibis.expr.datatypes.core.String" href="#ibis.expr.datatypes.core.String">String</a></code></p>
+
+  
+      <p>Media Access Control (MAC) address of a network interface.</p>
+
+
+
+  
+
+  <div class="doc doc-children">
+
+
+
+
+
+<h5 id="ibis.expr.datatypes.core.MACADDR-attributes">Attributes<a href="#ibis.expr.datatypes.core.MACADDR-attributes" class="headerlink" title="Anchor link to this section for reference">&para;</a></h5>
+
+<h5 id="ibis.expr.datatypes.core.MACADDR-functions">Functions<a href="#ibis.expr.datatypes.core.MACADDR-functions" class="headerlink" title="Anchor link to this section for reference">&para;</a></h5>
+
+
+
+  </div>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h4 id="ibis.expr.datatypes.core.Map" class="doc doc-heading">
+        <code>Map</code>
+
+
+<a href="#ibis.expr.datatypes.core.Map" class="headerlink" title="Anchor link to this section for reference">&para;</a></h4>
+
+
+  <div class="doc doc-contents ">
+      <p class="doc doc-class-bases">
+        Bases: <code><a class="autorefs autorefs-internal" title="ibis.expr.datatypes.core.Variadic" href="#ibis.expr.datatypes.core.Variadic">Variadic</a></code>, <code><a class="autorefs autorefs-internal" title="ibis.expr.datatypes.core.Parametric" href="#ibis.expr.datatypes.core.Parametric">Parametric</a></code></p>
+
+  
+      <p>Associative array values.</p>
+
+
+
+  
+
+  <div class="doc doc-children">
+
+
+
+
+
+<h5 id="ibis.expr.datatypes.core.Map-attributes">Attributes<a href="#ibis.expr.datatypes.core.Map-attributes" class="headerlink" title="Anchor link to this section for reference">&para;</a></h5>
+
+<h5 id="ibis.expr.datatypes.core.Map-functions">Functions<a href="#ibis.expr.datatypes.core.Map-functions" class="headerlink" title="Anchor link to this section for reference">&para;</a></h5>
+
+
+
+  </div>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h4 id="ibis.expr.datatypes.core.MultiLineString" class="doc doc-heading">
+        <code>MultiLineString</code>
+
+
+<a href="#ibis.expr.datatypes.core.MultiLineString" class="headerlink" title="Anchor link to this section for reference">&para;</a></h4>
+
+
+  <div class="doc doc-contents ">
+      <p class="doc doc-class-bases">
+        Bases: <code><a class="autorefs autorefs-internal" title="ibis.expr.datatypes.core.GeoSpatial" href="#ibis.expr.datatypes.core.GeoSpatial">GeoSpatial</a></code></p>
+
+  
+      <p>A set of one or more line strings.</p>
+
+
+
+  
+
+  <div class="doc doc-children">
+
+
+
+
+
+<h5 id="ibis.expr.datatypes.core.MultiLineString-attributes">Attributes<a href="#ibis.expr.datatypes.core.MultiLineString-attributes" class="headerlink" title="Anchor link to this section for reference">&para;</a></h5>
+
+<h5 id="ibis.expr.datatypes.core.MultiLineString-functions">Functions<a href="#ibis.expr.datatypes.core.MultiLineString-functions" class="headerlink" title="Anchor link to this section for reference">&para;</a></h5>
+
+
+
+  </div>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h4 id="ibis.expr.datatypes.core.MultiPoint" class="doc doc-heading">
+        <code>MultiPoint</code>
+
+
+<a href="#ibis.expr.datatypes.core.MultiPoint" class="headerlink" title="Anchor link to this section for reference">&para;</a></h4>
+
+
+  <div class="doc doc-contents ">
+      <p class="doc doc-class-bases">
+        Bases: <code><a class="autorefs autorefs-internal" title="ibis.expr.datatypes.core.GeoSpatial" href="#ibis.expr.datatypes.core.GeoSpatial">GeoSpatial</a></code></p>
+
+  
+      <p>A set of one or more points.</p>
+
+
+
+  
+
+  <div class="doc doc-children">
+
+
+
+
+
+<h5 id="ibis.expr.datatypes.core.MultiPoint-attributes">Attributes<a href="#ibis.expr.datatypes.core.MultiPoint-attributes" class="headerlink" title="Anchor link to this section for reference">&para;</a></h5>
+
+<h5 id="ibis.expr.datatypes.core.MultiPoint-functions">Functions<a href="#ibis.expr.datatypes.core.MultiPoint-functions" class="headerlink" title="Anchor link to this section for reference">&para;</a></h5>
+
+
+
+  </div>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h4 id="ibis.expr.datatypes.core.MultiPolygon" class="doc doc-heading">
+        <code>MultiPolygon</code>
+
+
+<a href="#ibis.expr.datatypes.core.MultiPolygon" class="headerlink" title="Anchor link to this section for reference">&para;</a></h4>
+
+
+  <div class="doc doc-contents ">
+      <p class="doc doc-class-bases">
+        Bases: <code><a class="autorefs autorefs-internal" title="ibis.expr.datatypes.core.GeoSpatial" href="#ibis.expr.datatypes.core.GeoSpatial">GeoSpatial</a></code></p>
+
+  
+      <p>A set of one or more polygons.</p>
+
+
+
+  
+
+  <div class="doc doc-children">
+
+
+
+
+
+<h5 id="ibis.expr.datatypes.core.MultiPolygon-attributes">Attributes<a href="#ibis.expr.datatypes.core.MultiPolygon-attributes" class="headerlink" title="Anchor link to this section for reference">&para;</a></h5>
+
+<h5 id="ibis.expr.datatypes.core.MultiPolygon-functions">Functions<a href="#ibis.expr.datatypes.core.MultiPolygon-functions" class="headerlink" title="Anchor link to this section for reference">&para;</a></h5>
+
+
+
+  </div>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h4 id="ibis.expr.datatypes.core.Null" class="doc doc-heading">
+        <code>Null</code>
+
+
+<a href="#ibis.expr.datatypes.core.Null" class="headerlink" title="Anchor link to this section for reference">&para;</a></h4>
+
+
+  <div class="doc doc-contents ">
+      <p class="doc doc-class-bases">
+        Bases: <code><a class="autorefs autorefs-internal" title="ibis.expr.datatypes.core.Primitive" href="#ibis.expr.datatypes.core.Primitive">Primitive</a></code></p>
+
+  
+      <p>Null values.</p>
+
+
+
+  
+
+  <div class="doc doc-children">
+
+
+
+
+
+<h5 id="ibis.expr.datatypes.core.Null-attributes">Attributes<a href="#ibis.expr.datatypes.core.Null-attributes" class="headerlink" title="Anchor link to this section for reference">&para;</a></h5>
+
+<h5 id="ibis.expr.datatypes.core.Null-functions">Functions<a href="#ibis.expr.datatypes.core.Null-functions" class="headerlink" title="Anchor link to this section for reference">&para;</a></h5>
+
+
+
+  </div>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h4 id="ibis.expr.datatypes.core.Numeric" class="doc doc-heading">
+        <code>Numeric</code>
+
+
+<a href="#ibis.expr.datatypes.core.Numeric" class="headerlink" title="Anchor link to this section for reference">&para;</a></h4>
+
+
+  <div class="doc doc-contents ">
+      <p class="doc doc-class-bases">
+        Bases: <code><a class="autorefs autorefs-internal" title="ibis.expr.datatypes.core.DataType" href="#ibis.expr.datatypes.core.DataType">DataType</a></code></p>
+
+  
+      <p>Numeric types.</p>
+
+
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h4 id="ibis.expr.datatypes.core.Parametric" class="doc doc-heading">
+        <code>Parametric</code>
+
+
+<a href="#ibis.expr.datatypes.core.Parametric" class="headerlink" title="Anchor link to this section for reference">&para;</a></h4>
+
+
+  <div class="doc doc-contents ">
+      <p class="doc doc-class-bases">
+        Bases: <code><a class="autorefs autorefs-internal" title="ibis.expr.datatypes.core.DataType" href="#ibis.expr.datatypes.core.DataType">DataType</a></code></p>
+
+  
+      <p>Types that can be parameterized.</p>
+
+
+
+  
+
+  <div class="doc doc-children">
+
+
+
+
+
+<h5 id="ibis.expr.datatypes.core.Parametric-attributes">Attributes<a href="#ibis.expr.datatypes.core.Parametric-attributes" class="headerlink" title="Anchor link to this section for reference">&para;</a></h5>
+
+<h5 id="ibis.expr.datatypes.core.Parametric-functions">Functions<a href="#ibis.expr.datatypes.core.Parametric-functions" class="headerlink" title="Anchor link to this section for reference">&para;</a></h5>
+
+
+
+  </div>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h4 id="ibis.expr.datatypes.core.Point" class="doc doc-heading">
+        <code>Point</code>
+
+
+<a href="#ibis.expr.datatypes.core.Point" class="headerlink" title="Anchor link to this section for reference">&para;</a></h4>
+
+
+  <div class="doc doc-contents ">
+      <p class="doc doc-class-bases">
+        Bases: <code><a class="autorefs autorefs-internal" title="ibis.expr.datatypes.core.GeoSpatial" href="#ibis.expr.datatypes.core.GeoSpatial">GeoSpatial</a></code></p>
+
+  
+      <p>A point described by two coordinates.</p>
+
+
+
+  
+
+  <div class="doc doc-children">
+
+
+
+
+
+<h5 id="ibis.expr.datatypes.core.Point-attributes">Attributes<a href="#ibis.expr.datatypes.core.Point-attributes" class="headerlink" title="Anchor link to this section for reference">&para;</a></h5>
+
+<h5 id="ibis.expr.datatypes.core.Point-functions">Functions<a href="#ibis.expr.datatypes.core.Point-functions" class="headerlink" title="Anchor link to this section for reference">&para;</a></h5>
+
+
+
+  </div>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h4 id="ibis.expr.datatypes.core.Polygon" class="doc doc-heading">
+        <code>Polygon</code>
+
+
+<a href="#ibis.expr.datatypes.core.Polygon" class="headerlink" title="Anchor link to this section for reference">&para;</a></h4>
+
+
+  <div class="doc doc-contents ">
+      <p class="doc doc-class-bases">
+        Bases: <code><a class="autorefs autorefs-internal" title="ibis.expr.datatypes.core.GeoSpatial" href="#ibis.expr.datatypes.core.GeoSpatial">GeoSpatial</a></code></p>
+
+  
+      <p>A set of one or more closed line strings.</p>
+<p>The first line string represents the shape (external ring) and the
+rest represent holes in that shape (internal rings).</p>
+
+
+
+  
+
+  <div class="doc doc-children">
+
+
+
+
+
+<h5 id="ibis.expr.datatypes.core.Polygon-attributes">Attributes<a href="#ibis.expr.datatypes.core.Polygon-attributes" class="headerlink" title="Anchor link to this section for reference">&para;</a></h5>
+
+<h5 id="ibis.expr.datatypes.core.Polygon-functions">Functions<a href="#ibis.expr.datatypes.core.Polygon-functions" class="headerlink" title="Anchor link to this section for reference">&para;</a></h5>
+
+
+
+  </div>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h4 id="ibis.expr.datatypes.core.Primitive" class="doc doc-heading">
+        <code>Primitive</code>
+
+
+<a href="#ibis.expr.datatypes.core.Primitive" class="headerlink" title="Anchor link to this section for reference">&para;</a></h4>
+
+
+  <div class="doc doc-contents ">
+      <p class="doc doc-class-bases">
+        Bases: <code><a class="autorefs autorefs-internal" title="ibis.expr.datatypes.core.DataType" href="#ibis.expr.datatypes.core.DataType">DataType</a></code>, <code><span title="ibis.common.grounds.Singleton">Singleton</span></code></p>
+
+  
+      <p>Values with known size.</p>
+
+
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h4 id="ibis.expr.datatypes.core.SignedInteger" class="doc doc-heading">
+        <code>SignedInteger</code>
+
+
+<a href="#ibis.expr.datatypes.core.SignedInteger" class="headerlink" title="Anchor link to this section for reference">&para;</a></h4>
+
+
+  <div class="doc doc-contents ">
+      <p class="doc doc-class-bases">
+        Bases: <code><a class="autorefs autorefs-internal" title="ibis.expr.datatypes.core.Integer" href="#ibis.expr.datatypes.core.Integer">Integer</a></code></p>
+
+  
+      <p>Signed integer values.</p>
+
+
+
+  
+
+  <div class="doc doc-children">
+
+
+
+
+
+<h5 id="ibis.expr.datatypes.core.SignedInteger-attributes">Attributes<a href="#ibis.expr.datatypes.core.SignedInteger-attributes" class="headerlink" title="Anchor link to this section for reference">&para;</a></h5>
+
+<div class="doc doc-object doc-attribute">
+
+
+
+<h6 id="ibis.expr.datatypes.core.SignedInteger.largest" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">largest</span></code>
+  
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-property"><code>property</code></small>
+  </span>
+
+<a href="#ibis.expr.datatypes.core.SignedInteger.largest" class="headerlink" title="Anchor link to this section for reference">&para;</a></h6>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>Return the largest type of signed integer.</p>
+  </div>
+
+</div>
+
+<h5 id="ibis.expr.datatypes.core.SignedInteger-functions">Functions<a href="#ibis.expr.datatypes.core.SignedInteger-functions" class="headerlink" title="Anchor link to this section for reference">&para;</a></h5>
+
+
+
+  </div>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h4 id="ibis.expr.datatypes.core.String" class="doc doc-heading">
+        <code>String</code>
+
+
+<a href="#ibis.expr.datatypes.core.String" class="headerlink" title="Anchor link to this section for reference">&para;</a></h4>
+
+
+  <div class="doc doc-contents ">
+      <p class="doc doc-class-bases">
+        Bases: <code><a class="autorefs autorefs-internal" title="ibis.expr.datatypes.core.Variadic" href="#ibis.expr.datatypes.core.Variadic">Variadic</a></code>, <code><span title="ibis.common.grounds.Singleton">Singleton</span></code></p>
+
+  
+      <p>A type representing a string.</p>
+<h6 id="ibis.expr.datatypes.core.String--notes">Notes<a class="headerlink" href="#ibis.expr.datatypes.core.String--notes" title="Anchor link to this section for reference">&para;</a></h6>
+<p>Because of differences in the way different backends handle strings, we
+cannot assume that strings are UTF-8 encoded.</p>
+
+
+
+  
+
+  <div class="doc doc-children">
+
+
+
+
+
+<h5 id="ibis.expr.datatypes.core.String-attributes">Attributes<a href="#ibis.expr.datatypes.core.String-attributes" class="headerlink" title="Anchor link to this section for reference">&para;</a></h5>
+
+<h5 id="ibis.expr.datatypes.core.String-functions">Functions<a href="#ibis.expr.datatypes.core.String-functions" class="headerlink" title="Anchor link to this section for reference">&para;</a></h5>
+
+
+
+  </div>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h4 id="ibis.expr.datatypes.core.Struct" class="doc doc-heading">
+        <code>Struct</code>
+
+
+<a href="#ibis.expr.datatypes.core.Struct" class="headerlink" title="Anchor link to this section for reference">&para;</a></h4>
+
+
+  <div class="doc doc-contents ">
+      <p class="doc doc-class-bases">
+        Bases: <code><a class="autorefs autorefs-internal" title="ibis.expr.datatypes.core.Parametric" href="#ibis.expr.datatypes.core.Parametric">Parametric</a></code>, <code><span title="ibis.common.collections.MapSet">MapSet</span></code></p>
+
+  
+      <p>Structured values.</p>
+
+
+
+  
+
+  <div class="doc doc-children">
+
+
+
+
+
+<h5 id="ibis.expr.datatypes.core.Struct-attributes">Attributes<a href="#ibis.expr.datatypes.core.Struct-attributes" class="headerlink" title="Anchor link to this section for reference">&para;</a></h5>
+
+<h5 id="ibis.expr.datatypes.core.Struct-functions">Functions<a href="#ibis.expr.datatypes.core.Struct-functions" class="headerlink" title="Anchor link to this section for reference">&para;</a></h5>
+
+<div class="doc doc-object doc-function">
+
+
+
+<h6 id="ibis.expr.datatypes.core.Struct.from_tuples" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">from_tuples</span><span class="p">(</span><span class="n">pairs</span><span class="p">,</span> <span class="n">nullable</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span></code>
+  
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-classmethod"><code>classmethod</code></small>
+  </span>
+
+<a href="#ibis.expr.datatypes.core.Struct.from_tuples" class="headerlink" title="Anchor link to this section for reference">&para;</a></h6>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>Construct a <code>Struct</code> type from pairs.</p>
+
+  <p><strong>Parameters:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Type</th>
+        <th>Description</th>
+        <th>Default</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td><code>pairs</code></td>
+          <td>
+                <code><a class="autorefs autorefs-external" title="typing.Iterable" href="https://docs.python.org/3/library/typing.html#typing.Iterable">Iterable</a>[<a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#tuple">tuple</a>[<span title="ibis.expr.datatypes.str">str</span>, <span title="ibis.expr.datatypes.str">str</span> | <a class="autorefs autorefs-internal" title="ibis.expr.datatypes.core.DataType" href="#ibis.expr.datatypes.core.DataType">DataType</a>]]</code>
+          </td>
+          <td>
+            <div class="doc-md-description">
+              <p>An iterable of pairs of field name and type</p>
+            </div>
+          </td>
+          <td>
+              <em>required</em>
+          </td>
+        </tr>
+        <tr>
+          <td><code>nullable</code></td>
+          <td>
+                <code><span title="ibis.expr.datatypes.bool">bool</span></code>
+          </td>
+          <td>
+            <div class="doc-md-description">
+              <p>Whether the type is nullable</p>
+            </div>
+          </td>
+          <td>
+                <code>True</code>
+          </td>
+        </tr>
+    </tbody>
+  </table>
+
+  <p><strong>Returns:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td>
+                <code><a class="autorefs autorefs-internal" title="ibis.expr.datatypes.core.Struct" href="#ibis.expr.datatypes.core.Struct">Struct</a></code>
+          </td>
+          <td>
+            <div class="doc-md-description">
+              <p>Struct data type instance</p>
+            </div>
+          </td>
+        </tr>
+    </tbody>
+  </table>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+
+<h6 id="ibis.expr.datatypes.core.Struct.names" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">names</span><span class="p">()</span></code>
+
+<a href="#ibis.expr.datatypes.core.Struct.names" class="headerlink" title="Anchor link to this section for reference">&para;</a></h6>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>Return the names of the struct's fields.</p>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+
+<h6 id="ibis.expr.datatypes.core.Struct.types" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">types</span><span class="p">()</span></code>
+
+<a href="#ibis.expr.datatypes.core.Struct.types" class="headerlink" title="Anchor link to this section for reference">&para;</a></h6>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>Return the types of the struct's fields.</p>
+
+  </div>
+
+</div>
+
+
+
+  </div>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h4 id="ibis.expr.datatypes.core.Temporal" class="doc doc-heading">
+        <code>Temporal</code>
+
+
+<a href="#ibis.expr.datatypes.core.Temporal" class="headerlink" title="Anchor link to this section for reference">&para;</a></h4>
+
+
+  <div class="doc doc-contents ">
+      <p class="doc doc-class-bases">
+        Bases: <code><a class="autorefs autorefs-internal" title="ibis.expr.datatypes.core.DataType" href="#ibis.expr.datatypes.core.DataType">DataType</a></code></p>
+
+  
+      <p>Data types related to time.</p>
+
+
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h4 id="ibis.expr.datatypes.core.Time" class="doc doc-heading">
+        <code>Time</code>
+
+
+<a href="#ibis.expr.datatypes.core.Time" class="headerlink" title="Anchor link to this section for reference">&para;</a></h4>
+
+
+  <div class="doc doc-contents ">
+      <p class="doc doc-class-bases">
+        Bases: <code><a class="autorefs autorefs-internal" title="ibis.expr.datatypes.core.Temporal" href="#ibis.expr.datatypes.core.Temporal">Temporal</a></code>, <code><a class="autorefs autorefs-internal" title="ibis.expr.datatypes.core.Primitive" href="#ibis.expr.datatypes.core.Primitive">Primitive</a></code></p>
+
+  
+      <p>Time values.</p>
+
+
+
+  
+
+  <div class="doc doc-children">
+
+
+
+
+
+<h5 id="ibis.expr.datatypes.core.Time-attributes">Attributes<a href="#ibis.expr.datatypes.core.Time-attributes" class="headerlink" title="Anchor link to this section for reference">&para;</a></h5>
+
+<h5 id="ibis.expr.datatypes.core.Time-functions">Functions<a href="#ibis.expr.datatypes.core.Time-functions" class="headerlink" title="Anchor link to this section for reference">&para;</a></h5>
+
+
+
+  </div>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h4 id="ibis.expr.datatypes.core.Timestamp" class="doc doc-heading">
+        <code>Timestamp</code>
+
+
+<a href="#ibis.expr.datatypes.core.Timestamp" class="headerlink" title="Anchor link to this section for reference">&para;</a></h4>
+
+
+  <div class="doc doc-contents ">
+      <p class="doc doc-class-bases">
+        Bases: <code><a class="autorefs autorefs-internal" title="ibis.expr.datatypes.core.Temporal" href="#ibis.expr.datatypes.core.Temporal">Temporal</a></code>, <code><a class="autorefs autorefs-internal" title="ibis.expr.datatypes.core.Parametric" href="#ibis.expr.datatypes.core.Parametric">Parametric</a></code></p>
+
+  
+      <p>Timestamp values.</p>
+
+
+
+  
+
+  <div class="doc doc-children">
+
+
+
+
+
+<h5 id="ibis.expr.datatypes.core.Timestamp-attributes">Attributes<a href="#ibis.expr.datatypes.core.Timestamp-attributes" class="headerlink" title="Anchor link to this section for reference">&para;</a></h5>
+
+<div class="doc doc-object doc-attribute">
+
+
+
+<h6 id="ibis.expr.datatypes.core.Timestamp.scale" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">scale</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Literal</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="mi">7</span><span class="p">,</span> <span class="mi">8</span><span class="p">,</span> <span class="mi">9</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span></code>
+  
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-class-attribute"><code>class-attribute</code></small>
+      <small class="doc doc-label doc-label-instance-attribute"><code>instance-attribute</code></small>
+  </span>
+
+<a href="#ibis.expr.datatypes.core.Timestamp.scale" class="headerlink" title="Anchor link to this section for reference">&para;</a></h6>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>The scale of the timestamp if known.</p>
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-attribute">
+
+
+
+<h6 id="ibis.expr.datatypes.core.Timestamp.timezone" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">timezone</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span></code>
+  
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-class-attribute"><code>class-attribute</code></small>
+      <small class="doc doc-label doc-label-instance-attribute"><code>instance-attribute</code></small>
+  </span>
+
+<a href="#ibis.expr.datatypes.core.Timestamp.timezone" class="headerlink" title="Anchor link to this section for reference">&para;</a></h6>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>The timezone of values of this type.</p>
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-attribute">
+
+
+
+<h6 id="ibis.expr.datatypes.core.Timestamp.unit" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">unit</span><span class="p">:</span> <span class="nb">str</span></code>
+  
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-property"><code>property</code></small>
+  </span>
+
+<a href="#ibis.expr.datatypes.core.Timestamp.unit" class="headerlink" title="Anchor link to this section for reference">&para;</a></h6>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>Return the unit of the timestamp.</p>
+  </div>
+
+</div>
+
+<h5 id="ibis.expr.datatypes.core.Timestamp-functions">Functions<a href="#ibis.expr.datatypes.core.Timestamp-functions" class="headerlink" title="Anchor link to this section for reference">&para;</a></h5>
+
+<div class="doc doc-object doc-function">
+
+
+
+<h6 id="ibis.expr.datatypes.core.Timestamp.from_unit" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">from_unit</span><span class="p">(</span><span class="n">unit</span><span class="p">,</span> <span class="n">timezone</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">nullable</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span></code>
+  
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-classmethod"><code>classmethod</code></small>
+  </span>
+
+<a href="#ibis.expr.datatypes.core.Timestamp.from_unit" class="headerlink" title="Anchor link to this section for reference">&para;</a></h6>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>Return a timestamp type with the given unit and timezone.</p>
+
+  </div>
+
+</div>
+
+
+
+  </div>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h4 id="ibis.expr.datatypes.core.UInt16" class="doc doc-heading">
+        <code>UInt16</code>
+
+
+<a href="#ibis.expr.datatypes.core.UInt16" class="headerlink" title="Anchor link to this section for reference">&para;</a></h4>
+
+
+  <div class="doc doc-contents ">
+      <p class="doc doc-class-bases">
+        Bases: <code><a class="autorefs autorefs-internal" title="ibis.expr.datatypes.core.UnsignedInteger" href="#ibis.expr.datatypes.core.UnsignedInteger">UnsignedInteger</a></code></p>
+
+  
+      <p>Unsigned 16-bit integers.</p>
+
+
+
+  
+
+  <div class="doc doc-children">
+
+
+
+
+
+<h5 id="ibis.expr.datatypes.core.UInt16-attributes">Attributes<a href="#ibis.expr.datatypes.core.UInt16-attributes" class="headerlink" title="Anchor link to this section for reference">&para;</a></h5>
+
+<h5 id="ibis.expr.datatypes.core.UInt16-functions">Functions<a href="#ibis.expr.datatypes.core.UInt16-functions" class="headerlink" title="Anchor link to this section for reference">&para;</a></h5>
+
+
+
+  </div>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h4 id="ibis.expr.datatypes.core.UInt32" class="doc doc-heading">
+        <code>UInt32</code>
+
+
+<a href="#ibis.expr.datatypes.core.UInt32" class="headerlink" title="Anchor link to this section for reference">&para;</a></h4>
+
+
+  <div class="doc doc-contents ">
+      <p class="doc doc-class-bases">
+        Bases: <code><a class="autorefs autorefs-internal" title="ibis.expr.datatypes.core.UnsignedInteger" href="#ibis.expr.datatypes.core.UnsignedInteger">UnsignedInteger</a></code></p>
+
+  
+      <p>Unsigned 32-bit integers.</p>
+
+
+
+  
+
+  <div class="doc doc-children">
+
+
+
+
+
+<h5 id="ibis.expr.datatypes.core.UInt32-attributes">Attributes<a href="#ibis.expr.datatypes.core.UInt32-attributes" class="headerlink" title="Anchor link to this section for reference">&para;</a></h5>
+
+<h5 id="ibis.expr.datatypes.core.UInt32-functions">Functions<a href="#ibis.expr.datatypes.core.UInt32-functions" class="headerlink" title="Anchor link to this section for reference">&para;</a></h5>
+
+
+
+  </div>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h4 id="ibis.expr.datatypes.core.UInt64" class="doc doc-heading">
+        <code>UInt64</code>
+
+
+<a href="#ibis.expr.datatypes.core.UInt64" class="headerlink" title="Anchor link to this section for reference">&para;</a></h4>
+
+
+  <div class="doc doc-contents ">
+      <p class="doc doc-class-bases">
+        Bases: <code><a class="autorefs autorefs-internal" title="ibis.expr.datatypes.core.UnsignedInteger" href="#ibis.expr.datatypes.core.UnsignedInteger">UnsignedInteger</a></code></p>
+
+  
+      <p>Unsigned 64-bit integers.</p>
+
+
+
+  
+
+  <div class="doc doc-children">
+
+
+
+
+
+<h5 id="ibis.expr.datatypes.core.UInt64-attributes">Attributes<a href="#ibis.expr.datatypes.core.UInt64-attributes" class="headerlink" title="Anchor link to this section for reference">&para;</a></h5>
+
+<h5 id="ibis.expr.datatypes.core.UInt64-functions">Functions<a href="#ibis.expr.datatypes.core.UInt64-functions" class="headerlink" title="Anchor link to this section for reference">&para;</a></h5>
+
+
+
+  </div>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h4 id="ibis.expr.datatypes.core.UInt8" class="doc doc-heading">
+        <code>UInt8</code>
+
+
+<a href="#ibis.expr.datatypes.core.UInt8" class="headerlink" title="Anchor link to this section for reference">&para;</a></h4>
+
+
+  <div class="doc doc-contents ">
+      <p class="doc doc-class-bases">
+        Bases: <code><a class="autorefs autorefs-internal" title="ibis.expr.datatypes.core.UnsignedInteger" href="#ibis.expr.datatypes.core.UnsignedInteger">UnsignedInteger</a></code></p>
+
+  
+      <p>Unsigned 8-bit integers.</p>
+
+
+
+  
+
+  <div class="doc doc-children">
+
+
+
+
+
+<h5 id="ibis.expr.datatypes.core.UInt8-attributes">Attributes<a href="#ibis.expr.datatypes.core.UInt8-attributes" class="headerlink" title="Anchor link to this section for reference">&para;</a></h5>
+
+<h5 id="ibis.expr.datatypes.core.UInt8-functions">Functions<a href="#ibis.expr.datatypes.core.UInt8-functions" class="headerlink" title="Anchor link to this section for reference">&para;</a></h5>
+
+
+
+  </div>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h4 id="ibis.expr.datatypes.core.UUID" class="doc doc-heading">
+        <code>UUID</code>
+
+
+<a href="#ibis.expr.datatypes.core.UUID" class="headerlink" title="Anchor link to this section for reference">&para;</a></h4>
+
+
+  <div class="doc doc-contents ">
+      <p class="doc doc-class-bases">
+        Bases: <code><a class="autorefs autorefs-internal" title="ibis.expr.datatypes.core.DataType" href="#ibis.expr.datatypes.core.DataType">DataType</a></code></p>
+
+  
+      <p>A 128-bit number used to identify information in computer systems.</p>
+
+
+
+  
+
+  <div class="doc doc-children">
+
+
+
+
+
+<h5 id="ibis.expr.datatypes.core.UUID-attributes">Attributes<a href="#ibis.expr.datatypes.core.UUID-attributes" class="headerlink" title="Anchor link to this section for reference">&para;</a></h5>
+
+<h5 id="ibis.expr.datatypes.core.UUID-functions">Functions<a href="#ibis.expr.datatypes.core.UUID-functions" class="headerlink" title="Anchor link to this section for reference">&para;</a></h5>
+
+
+
+  </div>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h4 id="ibis.expr.datatypes.core.Unknown" class="doc doc-heading">
+        <code>Unknown</code>
+
+
+<a href="#ibis.expr.datatypes.core.Unknown" class="headerlink" title="Anchor link to this section for reference">&para;</a></h4>
+
+
+  <div class="doc doc-contents ">
+      <p class="doc doc-class-bases">
+        Bases: <code><a class="autorefs autorefs-internal" title="ibis.expr.datatypes.core.DataType" href="#ibis.expr.datatypes.core.DataType">DataType</a></code>, <code><span title="ibis.common.grounds.Singleton">Singleton</span></code></p>
+
+  
+      <p>An unknown type.</p>
+
+
+
+  
+
+  <div class="doc doc-children">
+
+
+
+
+
+<h5 id="ibis.expr.datatypes.core.Unknown-attributes">Attributes<a href="#ibis.expr.datatypes.core.Unknown-attributes" class="headerlink" title="Anchor link to this section for reference">&para;</a></h5>
+
+<h5 id="ibis.expr.datatypes.core.Unknown-functions">Functions<a href="#ibis.expr.datatypes.core.Unknown-functions" class="headerlink" title="Anchor link to this section for reference">&para;</a></h5>
+
+
+
+  </div>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h4 id="ibis.expr.datatypes.core.UnsignedInteger" class="doc doc-heading">
+        <code>UnsignedInteger</code>
+
+
+<a href="#ibis.expr.datatypes.core.UnsignedInteger" class="headerlink" title="Anchor link to this section for reference">&para;</a></h4>
+
+
+  <div class="doc doc-contents ">
+      <p class="doc doc-class-bases">
+        Bases: <code><a class="autorefs autorefs-internal" title="ibis.expr.datatypes.core.Integer" href="#ibis.expr.datatypes.core.Integer">Integer</a></code></p>
+
+  
+      <p>Unsigned integer values.</p>
+
+
+
+  
+
+  <div class="doc doc-children">
+
+
+
+
+
+<h5 id="ibis.expr.datatypes.core.UnsignedInteger-attributes">Attributes<a href="#ibis.expr.datatypes.core.UnsignedInteger-attributes" class="headerlink" title="Anchor link to this section for reference">&para;</a></h5>
+
+<div class="doc doc-object doc-attribute">
+
+
+
+<h6 id="ibis.expr.datatypes.core.UnsignedInteger.largest" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">largest</span></code>
+  
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-property"><code>property</code></small>
+  </span>
+
+<a href="#ibis.expr.datatypes.core.UnsignedInteger.largest" class="headerlink" title="Anchor link to this section for reference">&para;</a></h6>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>Return the largest type of unsigned integer.</p>
+  </div>
+
+</div>
+
+<h5 id="ibis.expr.datatypes.core.UnsignedInteger-functions">Functions<a href="#ibis.expr.datatypes.core.UnsignedInteger-functions" class="headerlink" title="Anchor link to this section for reference">&para;</a></h5>
+
+
+
+  </div>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h4 id="ibis.expr.datatypes.core.Variadic" class="doc doc-heading">
+        <code>Variadic</code>
+
+
+<a href="#ibis.expr.datatypes.core.Variadic" class="headerlink" title="Anchor link to this section for reference">&para;</a></h4>
+
+
+  <div class="doc doc-contents ">
+      <p class="doc doc-class-bases">
+        Bases: <code><a class="autorefs autorefs-internal" title="ibis.expr.datatypes.core.DataType" href="#ibis.expr.datatypes.core.DataType">DataType</a></code></p>
+
+  
+      <p>Values with unknown size.</p>
+
+
+
+  </div>
+
+</div>
+<h3 id="ibis.expr.datatypes.core-functions">Functions<a href="#ibis.expr.datatypes.core-functions" class="headerlink" title="Anchor link to this section for reference">&para;</a></h3>
+
+<div class="doc doc-object doc-function">
+
+
+
+<h4 id="ibis.expr.datatypes.core.dtype" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">dtype</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">nullable</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span></code>
+
+<a href="#ibis.expr.datatypes.core.dtype" class="headerlink" title="Anchor link to this section for reference">&para;</a></h4>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>Construct an ibis datatype from a python type.</p>
+
+  </div>
+
+</div>
+
+
+
+  </div>
+
+  </div>
+
+</div>
+
+  <hr>
+<div class="md-source-file">
+  <small>
+    
+      Last update:
+      <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date">June 22, 2023</span>
+      
+    
+  </small>
+</div>
+
+
+
+
+
+                
+
+              </article>
+            </div>
+          
+          
+  <script>var tabs=__md_get("__tabs");if(Array.isArray(tabs))e:for(var set of document.querySelectorAll(".tabbed-set")){var tab,labels=set.querySelector(".tabbed-labels");for(tab of tabs)for(var label of labels.getElementsByTagName("label"))if(label.innerText.trim()===tab){var input=document.getElementById(label.htmlFor);input.checked=!0;continue e}}</script>
+
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+    <div class="md-copyright__highlight">
+      Copyright &copy; Ibis Maintainers
+    </div>
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+        <div class="md-social">
+  
+    
+    
+    
+    
+      
+      
+    
+    <a href="https://twitter.com/IbisData" target="_blank" rel="noopener" title="twitter.com" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.4.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2023 Fonticons, Inc.--><path d="M459.37 151.716c.325 4.548.325 9.097.325 13.645 0 138.72-105.583 298.558-298.558 298.558-59.452 0-114.68-17.219-161.137-47.106 8.447.974 16.568 1.299 25.34 1.299 49.055 0 94.213-16.568 130.274-44.832-46.132-.975-84.792-31.188-98.112-72.772 6.498.974 12.995 1.624 19.818 1.624 9.421 0 18.843-1.3 27.614-3.573-48.081-9.747-84.143-51.98-84.143-102.985v-1.299c13.969 7.797 30.214 12.67 47.431 13.319-28.264-18.843-46.781-51.005-46.781-87.391 0-19.492 5.197-37.36 14.294-52.954 51.655 63.675 129.3 105.258 216.365 109.807-1.624-7.797-2.599-15.918-2.599-24.04 0-57.828 46.782-104.934 104.934-104.934 30.213 0 57.502 12.67 76.67 33.137 23.715-4.548 46.456-13.32 66.599-25.34-7.798 24.366-24.366 44.833-46.132 57.827 21.117-2.273 41.584-8.122 60.426-16.243-14.292 20.791-32.161 39.308-52.628 54.253z"/></svg>
+    </a>
+  
+    
+    
+    
+    
+      
+      
+    
+    <a href="https://github.com/ibis-project/ibis/discussions" target="_blank" rel="noopener" title="github.com" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 496 512"><!--! Font Awesome Free 6.4.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2023 Fonticons, Inc.--><path d="M165.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6zm-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3zm44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9zM244.8 8C106.1 8 0 113.3 0 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C428.2 457.8 496 362.9 496 252 496 113.3 383.5 8 244.8 8zM97.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1zm-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7zm32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1zm-11.4-14.7c-1.6 1-1.6 3.6 0 5.9 1.6 2.3 4.3 3.3 5.6 2.3 1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2z"/></svg>
+    </a>
+  
+    
+    
+    
+    
+      
+      
+    
+    <a href="https://gitter.im/ibis-dev/Lobby" target="_blank" rel="noopener" title="gitter.im" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512"><!--! Font Awesome Free 6.4.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2023 Fonticons, Inc.--><path d="M66.4 322.5H16V0h50.4v322.5zM166.9 76.1h-50.4V512h50.4V76.1zm100.6 0h-50.4V512h50.4V76.1zM368 76h-50.4v247H368V76z"/></svg>
+    </a>
+  
+    
+    
+    
+    
+      
+      
+    
+    <a href="https://stackoverflow.com/questions/tagged/ibis" target="_blank" rel="noopener" title="stackoverflow.com" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512"><!--! Font Awesome Free 6.4.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2023 Fonticons, Inc.--><path d="M290.7 311 95 269.7 86.8 309l195.7 41zm51-87L188.2 95.7l-25.5 30.8 153.5 128.3zm-31.2 39.7L129.2 179l-16.7 36.5L293.7 300zM262 32l-32 24 119.3 160.3 32-24zm20.5 328h-200v39.7h200zm39.7 80H42.7V320h-40v160h359.5V320h-40z"/></svg>
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    <script id="__config" type="application/json">{"base": "../..", "features": ["navigation.tabs", "navigation.tabs.sticky", "content.code.annotate", "content.tabs.link", "content.code.copy", "header.autohide", "navigation.indexes", "navigation.instant", "navigation.tracking", "search.highlight", "search.share", "search.suggest"], "search": "../../assets/javascripts/workers/search.74e28a9f.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.220ee61c.min.js"></script>
+      
+        
+          <script src="../../javascripts/mathjax.js"></script>
+        
+      
+        
+          <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+        
+      
+        
+          <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+        
+      
+    
+  </body>
+</html>

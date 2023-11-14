@@ -1,0 +1,2733 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+        <link rel="canonical" href="https://ibis-project.github.io/ibis/6.2.0/blog/ibis_substrait_to_duckdb/">
+      
+      
+        <link rel="prev" href="../selectors/">
+      
+      
+        <link rel="next" href="../ibis-version-4.0.0-release/">
+      
+      <link rel="icon" href="../../static/icons/ibis/logo.svg">
+      <meta name="generator" content="mkdocs-1.5.2, mkdocs-material-9.1.21">
+    
+    
+      
+        <title>Ibis + DuckDB + Substrait - Ibis Project</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.eebd395e.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.ecc896b0.min.css">
+      
+      
+
+    
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/_mkdocstrings.css">
+    
+      <link rel="stylesheet" href="../../stylesheets/extra.css">
+    
+      <link rel="stylesheet" href="../../stylesheets/code_select.css">
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce((e,_)=>(e<<5)-e+_.charCodeAt(0),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+      
+        <meta  property="og:type"  content="website" >
+      
+        <meta  property="og:title"  content="Ibis + DuckDB + Substrait - Ibis Project" >
+      
+        <meta  property="og:description"  content="None" >
+      
+        <meta  property="og:image"  content="https://ibis-project.github.io/ibis/6.2.0/assets/images/social/blog/ibis_substrait_to_duckdb.png" >
+      
+        <meta  property="og:image:type"  content="image/png" >
+      
+        <meta  property="og:image:width"  content="1200" >
+      
+        <meta  property="og:image:height"  content="630" >
+      
+        <meta  property="og:url"  content="https://ibis-project.github.io/ibis/6.2.0/blog/ibis_substrait_to_duckdb/" >
+      
+        <meta  name="twitter:card"  content="summary_large_image" >
+      
+        <meta  name="twitter:title"  content="Ibis + DuckDB + Substrait - Ibis Project" >
+      
+        <meta  name="twitter:description"  content="None" >
+      
+        <meta  name="twitter:image"  content="https://ibis-project.github.io/ibis/6.2.0/assets/images/social/blog/ibis_substrait_to_duckdb.png" >
+      
+    
+    
+<meta name="google-site-verification" content="IVqzkYiD5E35oD4kkVOcTYCTfqWKU1f6zOHCnLIPkUU">
+<script data-goatcounter="https://ibis.goatcounter.com/count"
+        async src="https://gc.zgo.at/count.js"></script>
+
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="teal" data-md-color-accent="teal">
+  
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&"object"==typeof palette.color)for(var key of Object.keys(palette.color))document.body.setAttribute("data-md-color-"+key,palette.color[key])</script>
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#ibis-substrait-duckdb" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="Ibis Project" class="md-header__button md-logo" aria-label="Ibis Project" data-md-component="logo">
+      
+  <img src="../../static/icons/ibis/logo.svg" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3V6m0 5h18v2H3v-2m0 5h18v2H3v-2Z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Ibis Project
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Ibis + DuckDB + Substrait
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+          
+            
+            
+            
+            <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="teal" data-md-color-accent="teal"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_1">
+            
+              <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_2" hidden>
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12 20 8.69Z"/></svg>
+              </label>
+            
+          
+            
+            
+            
+            <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="teal" data-md-color-accent="teal"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_2">
+            
+              <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_1" hidden>
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12c0-2.42-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12 20 8.69Z"/></svg>
+              </label>
+            
+          
+        </form>
+      
+    
+    
+    
+      <label class="md-header__button md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"/></svg>
+      </label>
+      <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"/></svg>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12Z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+          <a href="javascript:void(0)" class="md-search__icon md-icon" title="Share" aria-label="Share" data-clipboard data-clipboard-text="" data-md-component="search-share" tabindex="-1">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7 0-.24-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9a3 3 0 0 0-3 3 3 3 0 0 0 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.15c-.05.21-.08.43-.08.66 0 1.61 1.31 2.91 2.92 2.91 1.61 0 2.92-1.3 2.92-2.91A2.92 2.92 0 0 0 18 16.08Z"/></svg>
+          </a>
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41Z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/ibis-project/ibis/tree/6.2.0" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 496 512"><!--! Font Awesome Free 6.4.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2023 Fonticons, Inc.--><path d="M165.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6zm-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3zm44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9zM244.8 8C106.1 8 0 113.3 0 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C428.2 457.8 496 362.9 496 252 496 113.3 383.5 8 244.8 8zM97.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1zm-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7zm32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1zm-11.4-14.7c-1.6 1-1.6 3.6 0 5.9 1.6 2.3 4.3 3.3 5.6 2.3 1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+    
+      
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+
+
+  <li class="md-tabs__item">
+    <a href="../.." class="md-tabs__link">
+      Home
+    </a>
+  </li>
+
+      
+        
+  
+  
+
+
+  <li class="md-tabs__item">
+    <a href="../../install/" class="md-tabs__link">
+      Install
+    </a>
+  </li>
+
+      
+        
+  
+  
+
+
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../concept/why_ibis/" class="md-tabs__link">
+        Concepts
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+
+
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../backends/" class="md-tabs__link">
+        Backends
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+
+
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../tutorial/" class="md-tabs__link">
+        Tutorials
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+
+
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../how_to/configuration/" class="md-tabs__link">
+        How-to guides
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+
+
+  
+  
+  
+    
+
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../reference/expressions/" class="md-tabs__link">
+        Reference
+      </a>
+    </li>
+  
+
+  
+
+      
+        
+  
+  
+    
+  
+
+
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../rendered/ibis-version-6.0.0-release/" class="md-tabs__link md-tabs__link--active">
+        Blog
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+
+
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../community/" class="md-tabs__link">
+        Community
+      </a>
+    </li>
+  
+
+      
+    </ul>
+  </div>
+</nav>
+    
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="Ibis Project" class="md-nav__button md-logo" aria-label="Ibis Project" data-md-component="logo">
+      
+  <img src="../../static/icons/ibis/logo.svg" alt="logo">
+
+    </a>
+    Ibis Project
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/ibis-project/ibis/tree/6.2.0" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 496 512"><!--! Font Awesome Free 6.4.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2023 Fonticons, Inc.--><path d="M165.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6zm-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3zm44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9zM244.8 8C106.1 8 0 113.3 0 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C428.2 457.8 496 362.9 496 252 496 113.3 383.5 8 244.8 8zM97.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1zm-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7zm32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1zm-11.4-14.7c-1.6 1-1.6 3.6 0 5.9 1.6 2.3 4.3 3.3 5.6 2.3 1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        Home
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../install/" class="md-nav__link">
+        Install
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+      
+      
+      <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+      
+      
+        
+          
+        
+          
+        
+          
+        
+      
+      
+        <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+          Concepts
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+        <label class="md-nav__title" for="__nav_3">
+          <span class="md-nav__icon md-icon"></span>
+          Concepts
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../concept/why_ibis/" class="md-nav__link">
+        Why Ibis?
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../concept/design/" class="md-nav__link">
+        Design
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../concept/backends/" class="md-nav__link">
+        Backends
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+      
+      
+      <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+      
+      
+        
+          
+            
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+      
+      
+        
+        
+        <div class="md-nav__link md-nav__link--index ">
+          <a href="../../backends/">Backends</a>
+          
+            <label for="__nav_4">
+              <span class="md-nav__icon md-icon"></span>
+            </label>
+          
+        </div>
+      
+      <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+        <label class="md-nav__title" for="__nav_4">
+          <span class="md-nav__icon md-icon"></span>
+          Backends
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../backends/_support_matrix/" class="md-nav__link">
+        Operation support matrix
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../backends/bigquery/" class="md-nav__link">
+        BigQuery
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../backends/clickhouse/" class="md-nav__link">
+        ClickHouse
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../backends/dask/" class="md-nav__link">
+        Dask
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../backends/datafusion/" class="md-nav__link">
+        DataFusion
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../backends/druid/" class="md-nav__link">
+        Druid
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../backends/duckdb/" class="md-nav__link">
+        DuckDB
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../backends/impala/" class="md-nav__link">
+        Impala
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../backends/mssql/" class="md-nav__link">
+        MSSQL
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../backends/mysql/" class="md-nav__link">
+        MySQL
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../backends/oracle/" class="md-nav__link">
+        Oracle
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../backends/pandas/" class="md-nav__link">
+        Pandas
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../backends/polars/" class="md-nav__link">
+        Polars
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../backends/postgresql/" class="md-nav__link">
+        PostgreSQL
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../backends/pyspark/" class="md-nav__link">
+        PySpark
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../backends/snowflake/" class="md-nav__link">
+        Snowflake
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../backends/sqlite/" class="md-nav__link">
+        SQLite
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../backends/trino/" class="md-nav__link">
+        Trino
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+      
+      
+      <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
+      
+      
+        
+          
+            
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+      
+      
+        
+        
+        <div class="md-nav__link md-nav__link--index ">
+          <a href="../../tutorial/">Tutorials</a>
+          
+            <label for="__nav_5">
+              <span class="md-nav__icon md-icon"></span>
+            </label>
+          
+        </div>
+      
+      <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+        <label class="md-nav__title" for="__nav_5">
+          <span class="md-nav__icon md-icon"></span>
+          Tutorials
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../tutorial/getting_started/" class="md-nav__link">
+        Getting started with Ibis
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../tutorial/ibis-for-sql-users/" class="md-nav__link">
+        Ibis for SQL users
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../tutorial/ibis-for-pandas-users/" class="md-nav__link">
+        Ibis for pandas users
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../tutorial/ibis-for-dplyr-users/" class="md-nav__link">
+        Ibis for dplyr users
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+      
+      
+      <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" >
+      
+      
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+      
+      
+        <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
+          How-to guides
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+        <label class="md-nav__title" for="__nav_6">
+          <span class="md-nav__icon md-icon"></span>
+          How-to guides
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../how_to/configuration/" class="md-nav__link">
+        Configure Ibis
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../how_to/chain_expressions/" class="md-nav__link">
+        Chain expressions with the underscore API
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../how_to/ffill_bfill_w_window/" class="md-nav__link">
+        Fill data using window functions
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../how_to/self_joins/" class="md-nav__link">
+        Perform self joins
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../how_to/sessionize/" class="md-nav__link">
+        Sessionize a log of events
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../how_to/topk/" class="md-nav__link">
+        Compute the top K records
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../how_to/memtable_join/" class="md-nav__link">
+        Join an in-memory DataFrame to a TableExpression
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../how_to/duckdb_register/" class="md-nav__link">
+        Load external data files with the DuckDB backend
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../how_to/streamlit/" class="md-nav__link">
+        Write a Streamlit app with Ibis
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+      
+      
+      <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6_10" >
+      
+      
+        
+          
+        
+          
+        
+      
+      
+        <label class="md-nav__link" for="__nav_6_10" id="__nav_6_10_label" tabindex="0">
+          Extend with custom operations
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_6_10_label" aria-expanded="false">
+        <label class="md-nav__title" for="__nav_6_10">
+          <span class="md-nav__icon md-icon"></span>
+          Extend with custom operations
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../how_to/extending/elementwise/" class="md-nav__link">
+        Add an elementwise operation
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../how_to/extending/reduction/" class="md-nav__link">
+        Add a reduction operation
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+      
+      
+      <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" >
+      
+      
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+      
+      
+        <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="0">
+          Reference
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+        <label class="md-nav__title" for="__nav_7">
+          <span class="md-nav__icon md-icon"></span>
+          Reference
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+      
+      
+      <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7_1" >
+      
+      
+        
+          
+            
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+      
+      
+        
+        
+        <div class="md-nav__link md-nav__link--index ">
+          <a href="../../reference/expressions/">Expressions</a>
+          
+            <label for="__nav_7_1">
+              <span class="md-nav__icon md-icon"></span>
+            </label>
+          
+        </div>
+      
+      <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_7_1_label" aria-expanded="false">
+        <label class="md-nav__title" for="__nav_7_1">
+          <span class="md-nav__icon md-icon"></span>
+          Expressions
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/expressions/top_level/" class="md-nav__link">
+        Top level
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/expressions/tables/" class="md-nav__link">
+        Tables
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/expressions/generic/" class="md-nav__link">
+        Generic Values
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/expressions/numeric/" class="md-nav__link">
+        Numeric and boolean
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/expressions/strings/" class="md-nav__link">
+        Strings
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/expressions/timestamps/" class="md-nav__link">
+        Timestamps, dates, and times
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/expressions/collections/" class="md-nav__link">
+        Collections
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/expressions/geospatial/" class="md-nav__link">
+        Geospatial
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/selectors/" class="md-nav__link">
+        Column selectors
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/datatypes/" class="md-nav__link">
+        Data types
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/schemas/" class="md-nav__link">
+        Schemas
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+      
+      
+      <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7_5" >
+      
+      
+        
+          
+        
+          
+        
+          
+        
+          
+        
+      
+      
+        <label class="md-nav__link" for="__nav_7_5" id="__nav_7_5_label" tabindex="0">
+          Backend interfaces
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_7_5_label" aria-expanded="false">
+        <label class="md-nav__title" for="__nav_7_5">
+          <span class="md-nav__icon md-icon"></span>
+          Backend interfaces
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/backends/base/" class="md-nav__link">
+        Backend Base Classes
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/backends/pandas/" class="md-nav__link">
+        pandas-like Backend Base Classes
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/backends/sql/" class="md-nav__link">
+        SQL Backend Base Classes
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/backends/sqlalchemy/" class="md-nav__link">
+        SQLAlchemy Backend Base Classes
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/config/" class="md-nav__link">
+        Configuration
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../versioning/" class="md-nav__link">
+        Versioning Policy
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../release_notes/" class="md-nav__link">
+        Release notes
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+    
+  
+  
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+      
+      
+      
+      <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_8" checked>
+      
+      
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+      
+      
+        <label class="md-nav__link" for="__nav_8" id="__nav_8_label" tabindex="0">
+          Blog
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_8_label" aria-expanded="true">
+        <label class="md-nav__title" for="__nav_8">
+          <span class="md-nav__icon md-icon"></span>
+          Blog
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../rendered/ibis-version-6.0.0-release/" class="md-nav__link">
+        Ibis v6.0.0
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../rendered/torch/" class="md-nav__link">
+        Ibis on &#x1F525;: Supercharge Your Workflow with DuckDB and PyTorch
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../rendered/campaign-finance/" class="md-nav__link">
+        Exploring Campaign Finance Data
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../ibis-to-file/" class="md-nav__link">
+        Ibis sneak peek: writing to files
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../ibis-examples/" class="md-nav__link">
+        Ibis sneak peek: examples
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../selectors/" class="md-nav__link">
+        Maximizing productivity with selectors
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+    
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          Ibis + DuckDB + Substrait
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        Ibis + DuckDB + Substrait
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#getting-started" class="md-nav__link">
+    Getting started
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#query-creation" class="md-nav__link">
+    Query Creation
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#substrait-serialization" class="md-nav__link">
+    Substrait Serialization
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#substrait-plan-execution" class="md-nav__link">
+    Substrait Plan Execution
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#why-wouldnt-i-just-use-sql-for-this" class="md-nav__link">
+    Why wouldn't I just use SQL for this?
+  </a>
+  
+    <nav class="md-nav" aria-label="Why wouldn't I just use SQL for this?">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#standards" class="md-nav__link">
+    Standards
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#extensibility" class="md-nav__link">
+    Extensibility
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#serialization-and-parsing" class="md-nav__link">
+    Serialization and parsing
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#wrapping-up" class="md-nav__link">
+    Wrapping Up
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../ibis-version-4.0.0-release/" class="md-nav__link">
+        Ibis v4.0.0
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../rendered/ci-analysis/" class="md-nav__link">
+        Analysis of Ibis's CI Performance
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../ffill-and-bfill-using-ibis/" class="md-nav__link">
+        ffill and bfill using ibis
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../Ibis-version-3.1.0-release/" class="md-nav__link">
+        Ibis v3.1.0
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../Ibis-version-3.0.0-release/" class="md-nav__link">
+        Ibis v3.0.0
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+      
+      
+      <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_9" >
+      
+      
+        
+          
+            
+          
+        
+          
+        
+      
+      
+        
+        
+        <div class="md-nav__link md-nav__link--index ">
+          <a href="../../community/">Community</a>
+          
+            <label for="__nav_9">
+              <span class="md-nav__icon md-icon"></span>
+            </label>
+          
+        </div>
+      
+      <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_9_label" aria-expanded="false">
+        <label class="md-nav__title" for="__nav_9">
+          <span class="md-nav__icon md-icon"></span>
+          Community
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+          
+            
+              
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+      
+      
+      <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_9_2" >
+      
+      
+        
+          
+            
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+      
+      
+        
+        
+        <div class="md-nav__link md-nav__link--index ">
+          <a href="../../community/contribute/">Contribute</a>
+          
+            <label for="__nav_9_2">
+              <span class="md-nav__icon md-icon"></span>
+            </label>
+          
+        </div>
+      
+      <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_9_2_label" aria-expanded="false">
+        <label class="md-nav__title" for="__nav_9_2">
+          <span class="md-nav__icon md-icon"></span>
+          Contribute
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../community/contribute/01_environment/" class="md-nav__link">
+        Setting Up a Development Environment
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../community/contribute/02_workflow/" class="md-nav__link">
+        Contribute to the Ibis Codebase
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../community/contribute/03_style/" class="md-nav__link">
+        Style and Formatting
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../community/contribute/05_maintainers_guide/" class="md-nav__link">
+        Maintaining the Codebase
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#getting-started" class="md-nav__link">
+    Getting started
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#query-creation" class="md-nav__link">
+    Query Creation
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#substrait-serialization" class="md-nav__link">
+    Substrait Serialization
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#substrait-plan-execution" class="md-nav__link">
+    Substrait Plan Execution
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#why-wouldnt-i-just-use-sql-for-this" class="md-nav__link">
+    Why wouldn't I just use SQL for this?
+  </a>
+  
+    <nav class="md-nav" aria-label="Why wouldn't I just use SQL for this?">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#standards" class="md-nav__link">
+    Standards
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#extensibility" class="md-nav__link">
+    Extensibility
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#serialization-and-parsing" class="md-nav__link">
+    Serialization and parsing
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#wrapping-up" class="md-nav__link">
+    Wrapping Up
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              <article class="md-content__inner md-typeset">
+                
+
+
+
+                  
+
+
+<h1 id="ibis-substrait-duckdb">Ibis + Substrait + DuckDB<a class="headerlink" href="#ibis-substrait-duckdb" title="Anchor link to this section for reference">&para;</a></h1>
+<p><strong>by Gil Forsyth</strong></p>
+<p>Ibis strives to provide a consistent interface for interacting with a multitude
+of different analytical execution engines, most of which (but not all) speak
+some dialect of SQL.</p>
+<p>Today, Ibis accomplishes this with a lot of help from <code>sqlalchemy</code> and <code>sqlglot</code>
+to handle differences in dialect, or we interact directly with available Python
+bindings (for instance with the <code>pandas</code>, <code>datafusion</code>, and <code>polars</code> backends).</p>
+<p>Ibis goes to <span class="underline">great</span> lengths to generate sane and consistent SQL for those
+backends that use it. We are also interested in exploring other means of
+communicating consistently with those backends.</p>
+<p><a href="https://substrait.io/">Substrait</a> is a new cross-language serialization format for communicating (among
+other things) query plans. It's still in its early days, but there is already
+nascent support for Substrait in <a href="https://arrow.apache.org/docs/dev/cpp/streaming_execution.html#substrait">Apache Arrow</a>, <a href="https://duckdb.org/docs/extensions/substrait">DuckDB</a>, and <a href="https://engineering.fb.com/2022/08/31/open-source/velox/">Velox</a>.</p>
+<p>Ibis supports producing Substrait plans from Ibis table expressions, with the
+help of the <a href="https://github.com/ibis-project/ibis-substrait">ibis-substrait</a>
+library. Let's take a quick peek at how we might use it for query execution.</p>
+<h2 id="getting-started">Getting started<a class="headerlink" href="#getting-started" title="Anchor link to this section for reference">&para;</a></h2>
+<p>First, we can create a <code>conda</code> environment using the latest versions of
+<code>duckdb</code>, <code>ibis</code>, and <code>ibis_substrait</code>.</p>
+<div class="language-sh highlight"><pre><span></span><code>mamba<span class="w"> </span>create<span class="w"> </span>-n<span class="w"> </span>ibis_substrait_duckdb<span class="w"> </span>ibis-framework<span class="o">==</span><span class="m">4</span>.1<span class="w"> </span>ibis-substrait<span class="o">==</span><span class="m">2</span>.19<span class="w"> </span>ipython<span class="w"> </span>python-duckdb<span class="w"> </span><span class="nv">parsy</span><span class="o">==</span><span class="m">2</span>
+</code></pre></div>
+<p>Next, we'll need to choose a dataset. For this example, we'll use data from IMDB, available through their <a href="https://datasets.imdbws.com/">dataset portal</a>.</p>
+<p>For convenience, I used <a href="https://github.com/saulpw/readysetdata">Ready, Set, Data!</a> to grab the data in <code>parquet</code> format and then insert
+it into a DuckDB database.</p>
+<div class="language-python highlight"><pre><span></span><code><span class="kn">import</span> <span class="nn">duckdb</span>
+<span class="n">con</span> <span class="o">=</span> <span class="n">duckdb</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="s2">&quot;/home/gil/imdb.ddb&quot;</span><span class="p">)</span>
+<span class="n">con</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span>
+    <span class="s2">&quot;CREATE TABLE ratings AS SELECT * FROM &#39;/home/gil/data/imdb/imdb_ratings.parquet&#39;&quot;</span>
+<span class="p">)</span>
+<span class="n">con</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span>
+    <span class="s2">&quot;CREATE TABLE basics AS SELECT * FROM &#39;/home/gil/data/imdb/imdb_basics.parquet&#39;&quot;</span>
+<span class="p">)</span>
+</code></pre></div>
+<h2 id="query-creation">Query Creation<a class="headerlink" href="#query-creation" title="Anchor link to this section for reference">&para;</a></h2>
+<p>For our example, we'll build up a query using Ibis but without connecting to our
+execution engine (DuckDB). Once we have an Ibis table expression, we'll create a
+Substrait plan, then execute that plan directly on DuckDB to get results.</p>
+<p>To do this, all we need is some knowledge of the schema of the tables we want to
+interact with. We might get these schema from a metadata store, or possibly a
+coworker, or a friendly mouse.</p>
+<p>However we arrive at it, if we know the column names and the datatypes, we can
+build up a query in Ibis, so let's do that.</p>
+<div class="language-python highlight"><pre><span></span><code><span class="kn">import</span> <span class="nn">ibis</span>
+<span class="kn">from</span> <span class="nn">ibis</span> <span class="kn">import</span> <span class="n">_</span>
+
+<span class="n">ratings</span> <span class="o">=</span> <span class="n">ibis</span><span class="o">.</span><span class="n">table</span><span class="p">(</span>
+    <span class="p">[</span>
+        <span class="p">(</span><span class="s2">&quot;tconst&quot;</span><span class="p">,</span> <span class="s2">&quot;str&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;averageRating&quot;</span><span class="p">,</span> <span class="s2">&quot;str&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;numVotes&quot;</span><span class="p">,</span> <span class="s2">&quot;str&quot;</span><span class="p">),</span>
+    <span class="p">],</span>
+    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;ratings&quot;</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="n">basics</span> <span class="o">=</span> <span class="n">ibis</span><span class="o">.</span><span class="n">table</span><span class="p">(</span>
+    <span class="p">[</span>
+        <span class="p">(</span><span class="s2">&quot;tconst&quot;</span><span class="p">,</span> <span class="s2">&quot;str&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;titleType&quot;</span><span class="p">,</span> <span class="s2">&quot;str&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;primaryTitle&quot;</span><span class="p">,</span> <span class="s2">&quot;str&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;originalTitle&quot;</span><span class="p">,</span> <span class="s2">&quot;str&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;isAdult&quot;</span><span class="p">,</span> <span class="s2">&quot;str&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;startYear&quot;</span><span class="p">,</span> <span class="s2">&quot;str&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;endYear&quot;</span><span class="p">,</span> <span class="s2">&quot;str&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;runtimeMinutes&quot;</span><span class="p">,</span> <span class="s2">&quot;str&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;genres&quot;</span><span class="p">,</span> <span class="s2">&quot;str&quot;</span><span class="p">),</span>
+    <span class="p">],</span>
+    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;basics&quot;</span><span class="p">,</span>
+<span class="p">)</span>
+</code></pre></div>
+<p>Now that those tables are represented in Ibis, we can start creating our query.
+We'll try to recreate the top-ten movies on the IMDB leaderboard. For that,
+we'll need movie titles and their respective ratings.</p>
+<p>We know that the data we have for <code>ratings</code> looks something like the following:</p>
+<div class="language-python highlight"><pre><span></span><code><span class="err">┏━━━━━━━━━━━┳━━━━━━━━━━━━━━━┳━━━━━━━━━━┓</span>
+<span class="err">┃</span> <span class="n">tconst</span>    <span class="err">┃</span> <span class="n">averageRating</span> <span class="err">┃</span> <span class="n">numVotes</span> <span class="err">┃</span>
+<span class="err">┡━━━━━━━━━━━╇━━━━━━━━━━━━━━━╇━━━━━━━━━━┩</span>
+<span class="err">│</span> <span class="n">string</span>    <span class="err">│</span> <span class="n">string</span>        <span class="err">│</span> <span class="n">string</span>   <span class="err">│</span>
+<span class="err">├───────────┼───────────────┼──────────┤</span>
+<span class="err">│</span> <span class="n">tt0000001</span> <span class="err">│</span> <span class="mf">5.7</span>           <span class="err">│</span> <span class="mi">1919</span>\<span class="n">n</span>   <span class="err">│</span>
+<span class="err">│</span> <span class="n">tt0000002</span> <span class="err">│</span> <span class="mf">5.8</span>           <span class="err">│</span> <span class="mi">260</span>\<span class="n">n</span>    <span class="err">│</span>
+<span class="err">│</span> <span class="n">tt0000003</span> <span class="err">│</span> <span class="mf">6.5</span>           <span class="err">│</span> <span class="mi">1726</span>\<span class="n">n</span>   <span class="err">│</span>
+<span class="err">│</span> <span class="n">tt0000004</span> <span class="err">│</span> <span class="mf">5.6</span>           <span class="err">│</span> <span class="mi">173</span>\<span class="n">n</span>    <span class="err">│</span>
+<span class="err">│</span> <span class="n">tt0000005</span> <span class="err">│</span> <span class="mf">6.2</span>           <span class="err">│</span> <span class="mi">2541</span>\<span class="n">n</span>   <span class="err">│</span>
+<span class="err">└───────────┴───────────────┴──────────┘</span>
+</code></pre></div>
+<p>Based on the column names alone, <code>averageRating</code> is almost certainly supposed to
+be a <code>float</code>, and <code>numVotes</code> should be an <code>integer</code>. We can cast those so we
+can make useful comparisons between ratings and vote numbers.</p>
+<div class="language-python highlight"><pre><span></span><code><span class="n">ratings</span> <span class="o">=</span> <span class="n">ratings</span><span class="o">.</span><span class="n">select</span><span class="p">(</span>
+    <span class="n">ratings</span><span class="o">.</span><span class="n">tconst</span><span class="p">,</span>
+    <span class="n">avg_rating</span><span class="o">=</span><span class="n">ratings</span><span class="o">.</span><span class="n">averageRating</span><span class="o">.</span><span class="n">cast</span><span class="p">(</span><span class="s2">&quot;float&quot;</span><span class="p">),</span>
+    <span class="n">num_votes</span><span class="o">=</span><span class="n">ratings</span><span class="o">.</span><span class="n">numVotes</span><span class="o">.</span><span class="n">cast</span><span class="p">(</span><span class="s2">&quot;int&quot;</span><span class="p">),</span>
+<span class="p">)</span>
+</code></pre></div>
+<p>The first few rows of <code>basics</code> looks like this:</p>
+<div class="language-python highlight"><pre><span></span><code><span class="err">┏━━━━━━━━━━━┳━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━┳━━━━━━━━━━━┳━━━┓</span>
+<span class="err">┃</span> <span class="n">tconst</span>    <span class="err">┃</span> <span class="n">titleType</span> <span class="err">┃</span> <span class="n">primaryTitle</span>           <span class="err">┃</span> <span class="n">originalTitle</span>          <span class="err">┃</span> <span class="n">isAdult</span> <span class="err">┃</span> <span class="n">startYear</span> <span class="err">┃</span> <span class="err">…</span> <span class="err">┃</span>
+<span class="err">┡━━━━━━━━━━━╇━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━╇━━━━━━━━━━━╇━━━┩</span>
+<span class="err">│</span> <span class="n">string</span>    <span class="err">│</span> <span class="n">string</span>    <span class="err">│</span> <span class="n">string</span>                 <span class="err">│</span> <span class="n">string</span>                 <span class="err">│</span> <span class="n">string</span>  <span class="err">│</span> <span class="n">string</span>    <span class="err">│</span> <span class="err">…</span> <span class="err">│</span>
+<span class="err">├───────────┼───────────┼────────────────────────┼────────────────────────┼─────────┼───────────┼───┤</span>
+<span class="err">│</span> <span class="n">tt0000001</span> <span class="err">│</span> <span class="n">short</span>     <span class="err">│</span> <span class="n">Carmencita</span>             <span class="err">│</span> <span class="n">Carmencita</span>             <span class="err">│</span> <span class="mi">0</span>       <span class="err">│</span> <span class="mi">1894</span>      <span class="err">│</span> <span class="err">…</span> <span class="err">│</span>
+<span class="err">│</span> <span class="n">tt0000002</span> <span class="err">│</span> <span class="n">short</span>     <span class="err">│</span> <span class="n">Le</span> <span class="n">clown</span> <span class="n">et</span> <span class="n">ses</span> <span class="n">chiens</span> <span class="err">│</span> <span class="n">Le</span> <span class="n">clown</span> <span class="n">et</span> <span class="n">ses</span> <span class="n">chiens</span> <span class="err">│</span> <span class="mi">0</span>       <span class="err">│</span> <span class="mi">1892</span>      <span class="err">│</span> <span class="err">…</span> <span class="err">│</span>
+<span class="err">│</span> <span class="n">tt0000003</span> <span class="err">│</span> <span class="n">short</span>     <span class="err">│</span> <span class="n">Pauvre</span> <span class="n">Pierrot</span>         <span class="err">│</span> <span class="n">Pauvre</span> <span class="n">Pierrot</span>         <span class="err">│</span> <span class="mi">0</span>       <span class="err">│</span> <span class="mi">1892</span>      <span class="err">│</span> <span class="err">…</span> <span class="err">│</span>
+<span class="err">│</span> <span class="n">tt0000004</span> <span class="err">│</span> <span class="n">short</span>     <span class="err">│</span> <span class="n">Un</span> <span class="n">bon</span> <span class="n">bock</span>            <span class="err">│</span> <span class="n">Un</span> <span class="n">bon</span> <span class="n">bock</span>            <span class="err">│</span> <span class="mi">0</span>       <span class="err">│</span> <span class="mi">1892</span>      <span class="err">│</span> <span class="err">…</span> <span class="err">│</span>
+<span class="err">│</span> <span class="n">tt0000005</span> <span class="err">│</span> <span class="n">short</span>     <span class="err">│</span> <span class="n">Blacksmith</span> <span class="n">Scene</span>       <span class="err">│</span> <span class="n">Blacksmith</span> <span class="n">Scene</span>       <span class="err">│</span> <span class="mi">0</span>       <span class="err">│</span> <span class="mi">1893</span>      <span class="err">│</span> <span class="err">…</span> <span class="err">│</span>
+<span class="err">└───────────┴───────────┴────────────────────────┴────────────────────────┴─────────┴───────────┴───┘</span>
+</code></pre></div>
+<p>In the interest of keeping things family-friendly, we can filter out any adult
+films. We can filter out any IMDB titles that aren't movies, then select out the
+columns <code>tconst</code> and <code>primaryTitle</code>. And we'll include <code>startYear</code> just in case
+it's interesting.</p>
+<div class="language-python highlight"><pre><span></span><code><span class="n">basics</span> <span class="o">=</span> <span class="n">basics</span><span class="o">.</span><span class="n">filter</span><span class="p">([</span><span class="n">basics</span><span class="o">.</span><span class="n">titleType</span> <span class="o">==</span> <span class="s2">&quot;movie&quot;</span><span class="p">,</span> <span class="n">basics</span><span class="o">.</span><span class="n">isAdult</span> <span class="o">==</span> <span class="s2">&quot;0&quot;</span><span class="p">])</span><span class="o">.</span><span class="n">select</span><span class="p">(</span>
+    <span class="s2">&quot;tconst&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;primaryTitle&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;startYear&quot;</span><span class="p">,</span>
+<span class="p">)</span>
+</code></pre></div>
+<p>With the data (lightly) cleaned up, we can construct our query for top films.
+We want to join the two tables <code>ratings</code> and <code>basics</code>. Then we'll order them by
+<code>avg_rating</code> and <code>num_votes</code>, and include an additional filter that the movie
+has to have at least 200,000 votes.</p>
+<div class="language-python highlight"><pre><span></span><code><span class="n">topfilms</span> <span class="o">=</span> <span class="p">(</span>
+    <span class="n">ratings</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">basics</span><span class="p">,</span> <span class="s2">&quot;tconst&quot;</span><span class="p">)</span>
+    <span class="o">.</span><span class="n">order_by</span><span class="p">([</span><span class="n">_</span><span class="o">.</span><span class="n">avg_rating</span><span class="o">.</span><span class="n">desc</span><span class="p">(),</span> <span class="n">_</span><span class="o">.</span><span class="n">num_votes</span><span class="o">.</span><span class="n">desc</span><span class="p">()])</span>
+    <span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">_</span><span class="o">.</span><span class="n">num_votes</span> <span class="o">&gt;</span> <span class="mi">200_000</span><span class="p">)</span>
+    <span class="o">.</span><span class="n">limit</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span>
+<span class="p">)</span>
+</code></pre></div>
+<p>Now that we have an Ibis table expression, it's time for Substrait to enter
+the scene.</p>
+<h2 id="substrait-serialization">Substrait Serialization<a class="headerlink" href="#substrait-serialization" title="Anchor link to this section for reference">&para;</a></h2>
+<p>We're going to import <code>ibis_substrait</code> and compile the <code>topfilms</code> table
+expression into a Substrait plan.</p>
+<div class="language-python highlight"><pre><span></span><code><span class="kn">from</span> <span class="nn">ibis_substrait.compiler.core</span> <span class="kn">import</span> <span class="n">SubstraitCompiler</span>
+
+<span class="n">compiler</span> <span class="o">=</span> <span class="n">SubstraitCompiler</span><span class="p">()</span>
+
+<span class="n">plan</span> <span class="o">=</span> <span class="n">compiler</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="n">topfilms</span><span class="p">)</span>
+
+<span class="c1"># type(plan) --&gt; &lt;class &#39;substrait.ibis.plan_pb2.Plan&#39;&gt;</span>
+</code></pre></div>
+<p>Substrait is built using <code>protobuf</code>. If you look at the <code>repr</code> for <code>plan</code>,
+you'll see a LOOOONG JSON-ish representation of the Substrait plan. This
+representation is not really meant for human eyes.</p>
+<p>We'll serialize the Substrait plan to disk and open it up in a separate
+session, or on another machine, entirely. That's one of the notions of
+Substrait: plans can be serialized and shuttled around between various systems.
+It's similar to Ibis in that it allows a separation of plan creation from plan
+execution.</p>
+<div class="language-python highlight"><pre><span></span><code><span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="s2">&quot;topfilms.proto&quot;</span><span class="p">,</span> <span class="s2">&quot;wb&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+    <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">plan</span><span class="o">.</span><span class="n">SerializeToString</span><span class="p">())</span>
+</code></pre></div>
+<h2 id="substrait-plan-execution">Substrait Plan Execution<a class="headerlink" href="#substrait-plan-execution" title="Anchor link to this section for reference">&para;</a></h2>
+<p>Now we can open up the serialized Substrait plan in a new session where we
+execute it using DuckDB directly. One important point to note here is that our
+plan refers to two tables, named <code>basics</code> and <code>ratings</code>. If those tables don't
+exist in our execution engine, then this isn't going to work.</p>
+<div class="language-python highlight"><pre><span></span><code><span class="kn">import</span> <span class="nn">duckdb</span>
+
+<span class="n">con</span> <span class="o">=</span> <span class="n">duckdb</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="s2">&quot;/home/gil/imdb.ddb&quot;</span><span class="p">)</span>
+
+<span class="n">con</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">&quot;PRAGMA show_tables;&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">fetchall</span><span class="p">()</span>
+</code></pre></div>
+<table border="2" cellspacing="0" cellpadding="6" rules="groups" frame="hsides">
+
+<colgroup>
+<col  class="org-left" />
+</colgroup>
+<tbody>
+<tr>
+<td class="org-left">basics</td>
+</tr>
+
+<tr>
+<td class="org-left">ratings</td>
+</tr>
+</tbody>
+</table>
+
+<p>Luckily, they do exist! Let's install and load the DuckDB Substrait extension,
+then execute the Substrait plan, and finally grab our results.</p>
+<div class="language-python highlight"><pre><span></span><code><span class="n">con</span><span class="o">.</span><span class="n">install_extension</span><span class="p">(</span><span class="s2">&quot;substrait&quot;</span><span class="p">)</span>
+<span class="n">con</span><span class="o">.</span><span class="n">load_extension</span><span class="p">(</span><span class="s2">&quot;substrait&quot;</span><span class="p">)</span>
+
+<span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="s2">&quot;topfilms.proto&quot;</span><span class="p">,</span> <span class="s2">&quot;rb&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+    <span class="n">plan_blob</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
+
+<span class="n">result</span> <span class="o">=</span> <span class="n">con</span><span class="o">.</span><span class="n">from_substrait</span><span class="p">(</span><span class="n">plan_blob</span><span class="p">)</span>
+
+<span class="n">result</span><span class="o">.</span><span class="n">fetchall</span><span class="p">()</span>
+</code></pre></div>
+<table border="2" cellspacing="0" cellpadding="6" rules="groups" frame="hsides">
+
+<colgroup>
+<col  class="org-left" />
+
+<col  class="org-right" />
+
+<col  class="org-right" />
+
+<col  class="org-left" />
+
+<col  class="org-right" />
+</colgroup>
+<tbody>
+<tr>
+<td class="org-left">tt0111161</td>
+<td class="org-right">9.3</td>
+<td class="org-right">2651547</td>
+<td class="org-left">The Shawshank Redemption</td>
+<td class="org-right">1994</td>
+</tr>
+
+<tr>
+<td class="org-left">tt0068646</td>
+<td class="org-right">9.2</td>
+<td class="org-right">1838044</td>
+<td class="org-left">The Godfather</td>
+<td class="org-right">1972</td>
+</tr>
+
+<tr>
+<td class="org-left">tt0468569</td>
+<td class="org-right">9.0</td>
+<td class="org-right">2623735</td>
+<td class="org-left">The Dark Knight</td>
+<td class="org-right">2008</td>
+</tr>
+
+<tr>
+<td class="org-left">tt0167260</td>
+<td class="org-right">9.0</td>
+<td class="org-right">1827464</td>
+<td class="org-left">The Lord of the Rings: The Return of the King</td>
+<td class="org-right">2003</td>
+</tr>
+
+<tr>
+<td class="org-left">tt0108052</td>
+<td class="org-right">9.0</td>
+<td class="org-right">1343647</td>
+<td class="org-left">Schindler's List</td>
+<td class="org-right">1993</td>
+</tr>
+
+<tr>
+<td class="org-left">tt0071562</td>
+<td class="org-right">9.0</td>
+<td class="org-right">1259465</td>
+<td class="org-left">The Godfather Part II</td>
+<td class="org-right">1974</td>
+</tr>
+
+<tr>
+<td class="org-left">tt0050083</td>
+<td class="org-right">9.0</td>
+<td class="org-right">782903</td>
+<td class="org-left">12 Angry Men</td>
+<td class="org-right">1957</td>
+</tr>
+
+<tr>
+<td class="org-left">tt0110912</td>
+<td class="org-right">8.9</td>
+<td class="org-right">2029684</td>
+<td class="org-left">Pulp Fiction</td>
+<td class="org-right">1994</td>
+</tr>
+
+<tr>
+<td class="org-left">tt1375666</td>
+<td class="org-right">8.8</td>
+<td class="org-right">2325417</td>
+<td class="org-left">Inception</td>
+<td class="org-right">2010</td>
+</tr>
+
+<tr>
+<td class="org-left">tt0137523</td>
+<td class="org-right">8.8</td>
+<td class="org-right">2096752</td>
+<td class="org-left">Fight Club</td>
+<td class="org-right">1999</td>
+</tr>
+</tbody>
+</table>
+
+<p>That looks about right to me. There may be some small differences with the
+current Top 10 list on IMDB if our data are a little stale.</p>
+<p>It's early days still for Substrait, but it's exciting to see how far it's come
+in the last 18 months!</p>
+<h2 id="why-wouldnt-i-just-use-sql-for-this">Why wouldn't I just use SQL for this?<a class="headerlink" href="#why-wouldnt-i-just-use-sql-for-this" title="Anchor link to this section for reference">&para;</a></h2>
+<p>It's a fair question. SQL <em>is</em> everywhere, after all.</p>
+<p>There are a few reasons we think you shouldn't ignore Substrait.</p>
+<h3 id="standards">Standards<a class="headerlink" href="#standards" title="Anchor link to this section for reference">&para;</a></h3>
+<p>SQL has a standard, but how closely do engines follow the standard? In our
+experience, queries don't translate well between engines (this is one reason
+Ibis exists!)</p>
+<h3 id="extensibility">Extensibility<a class="headerlink" href="#extensibility" title="Anchor link to this section for reference">&para;</a></h3>
+<p>Substrait is more extensible than SQL. Some DBMS have added in some very cool
+features, but it usually involves diverging (sometimes widely) from the SQL
+standard. Substrait has an extension system that allows plan producers and plan
+consumers to agree on a well-typed and well-defined interaction that exists
+outside of the core Substrait specification.</p>
+<h3 id="serialization-and-parsing">Serialization and parsing<a class="headerlink" href="#serialization-and-parsing" title="Anchor link to this section for reference">&para;</a></h3>
+<p>Parsing SQL can be a big pain (trust us). If you send a big string over the
+wire, you need the engine on the other side to have a SQL parser to understand
+what the message is. Now, obviously, SQL engines have those. But here, again,
+standards (or lack of adherence to standards) can bite you. Extensibility is
+also difficult here, because now the SQL parser needs to understand some new
+custom syntax.</p>
+<p>Protobuf is hardly a dream to work with, but it's a lot easier to consistently
+define behavior AND to validate that behavior is correct. It's also smaller than
+raw text.</p>
+<h2 id="wrapping-up">Wrapping Up<a class="headerlink" href="#wrapping-up" title="Anchor link to this section for reference">&para;</a></h2>
+<p>That's all for now! To quickly summarize:</p>
+<p>Substrait is a new standard for representing relational algebra queries with
+support in <a href="https://arrow.apache.org/docs/dev/cpp/streaming_execution.html#substrait">Apache
+Arrow</a>,
+<a href="https://duckdb.org/docs/extensions/substrait">DuckDB</a>,
+<a href="https://engineering.fb.com/2022/08/31/open-source/velox/">Velox</a>, and more (and
+more to come!).</p>
+<p>Ibis can now generate substrait instead of string SQL, letting it take advantage
+of this new standard.</p>
+<p>Interested in substrait or ibis? Docs are available at</p>
+<ul>
+<li><a href="https://substrait.io/">Substrait</a></li>
+<li><a href="https://ibis-project.org">Ibis Docs</a></li>
+</ul>
+<p>and the relevant GitHub repos are</p>
+<ul>
+<li><a href="https://github.com/substrait-io/substrait">Substrait GitHub</a></li>
+<li><a href="https://github.com/ibis-project/ibis-substrait">Ibis Substrait GitHub</a></li>
+<li><a href="https://github.com/ibis-project/ibis">Ibis GitHub</a></li>
+</ul>
+<p>Please feel free to reach out on GitHub!</p>
+
+  <hr>
+<div class="md-source-file">
+  <small>
+    
+      Last update:
+      <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date">June 8, 2023</span>
+      
+    
+  </small>
+</div>
+
+
+
+
+
+                
+
+              </article>
+            </div>
+          
+          
+  <script>var tabs=__md_get("__tabs");if(Array.isArray(tabs))e:for(var set of document.querySelectorAll(".tabbed-set")){var tab,labels=set.querySelector(".tabbed-labels");for(tab of tabs)for(var label of labels.getElementsByTagName("label"))if(label.innerText.trim()===tab){var input=document.getElementById(label.htmlFor);input.checked=!0;continue e}}</script>
+
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+    <div class="md-copyright__highlight">
+      Copyright &copy; Ibis Maintainers
+    </div>
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+        <div class="md-social">
+  
+    
+    
+    
+    
+      
+      
+    
+    <a href="https://twitter.com/IbisData" target="_blank" rel="noopener" title="twitter.com" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.4.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2023 Fonticons, Inc.--><path d="M459.37 151.716c.325 4.548.325 9.097.325 13.645 0 138.72-105.583 298.558-298.558 298.558-59.452 0-114.68-17.219-161.137-47.106 8.447.974 16.568 1.299 25.34 1.299 49.055 0 94.213-16.568 130.274-44.832-46.132-.975-84.792-31.188-98.112-72.772 6.498.974 12.995 1.624 19.818 1.624 9.421 0 18.843-1.3 27.614-3.573-48.081-9.747-84.143-51.98-84.143-102.985v-1.299c13.969 7.797 30.214 12.67 47.431 13.319-28.264-18.843-46.781-51.005-46.781-87.391 0-19.492 5.197-37.36 14.294-52.954 51.655 63.675 129.3 105.258 216.365 109.807-1.624-7.797-2.599-15.918-2.599-24.04 0-57.828 46.782-104.934 104.934-104.934 30.213 0 57.502 12.67 76.67 33.137 23.715-4.548 46.456-13.32 66.599-25.34-7.798 24.366-24.366 44.833-46.132 57.827 21.117-2.273 41.584-8.122 60.426-16.243-14.292 20.791-32.161 39.308-52.628 54.253z"/></svg>
+    </a>
+  
+    
+    
+    
+    
+      
+      
+    
+    <a href="https://github.com/ibis-project/ibis/discussions" target="_blank" rel="noopener" title="github.com" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 496 512"><!--! Font Awesome Free 6.4.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2023 Fonticons, Inc.--><path d="M165.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6zm-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3zm44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9zM244.8 8C106.1 8 0 113.3 0 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C428.2 457.8 496 362.9 496 252 496 113.3 383.5 8 244.8 8zM97.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1zm-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7zm32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1zm-11.4-14.7c-1.6 1-1.6 3.6 0 5.9 1.6 2.3 4.3 3.3 5.6 2.3 1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2z"/></svg>
+    </a>
+  
+    
+    
+    
+    
+      
+      
+    
+    <a href="https://gitter.im/ibis-dev/Lobby" target="_blank" rel="noopener" title="gitter.im" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512"><!--! Font Awesome Free 6.4.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2023 Fonticons, Inc.--><path d="M66.4 322.5H16V0h50.4v322.5zM166.9 76.1h-50.4V512h50.4V76.1zm100.6 0h-50.4V512h50.4V76.1zM368 76h-50.4v247H368V76z"/></svg>
+    </a>
+  
+    
+    
+    
+    
+      
+      
+    
+    <a href="https://stackoverflow.com/questions/tagged/ibis" target="_blank" rel="noopener" title="stackoverflow.com" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512"><!--! Font Awesome Free 6.4.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2023 Fonticons, Inc.--><path d="M290.7 311 95 269.7 86.8 309l195.7 41zm51-87L188.2 95.7l-25.5 30.8 153.5 128.3zm-31.2 39.7L129.2 179l-16.7 36.5L293.7 300zM262 32l-32 24 119.3 160.3 32-24zm20.5 328h-200v39.7h200zm39.7 80H42.7V320h-40v160h359.5V320h-40z"/></svg>
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    <script id="__config" type="application/json">{"base": "../..", "features": ["navigation.tabs", "navigation.tabs.sticky", "content.code.annotate", "content.tabs.link", "content.code.copy", "header.autohide", "navigation.indexes", "navigation.instant", "navigation.tracking", "search.highlight", "search.share", "search.suggest"], "search": "../../assets/javascripts/workers/search.74e28a9f.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.220ee61c.min.js"></script>
+      
+        
+          <script src="../../javascripts/mathjax.js"></script>
+        
+      
+        
+          <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+        
+      
+        
+          <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+        
+      
+    
+  </body>
+</html>

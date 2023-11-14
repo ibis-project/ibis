@@ -1,0 +1,5401 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+        <link rel="canonical" href="https://ibis-project.github.io/ibis/4.0.0/api/expressions/tables/">
+      
+      <link rel="icon" href="../../../static/icons/ibis/logo.svg">
+      <meta name="generator" content="mkdocs-1.4.2, mkdocs-material-8.5.10">
+    
+    
+      
+        <title>Tables - Ibis Project</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../../assets/stylesheets/main.975780f9.min.css">
+      
+        
+        <link rel="stylesheet" href="../../../assets/stylesheets/palette.2505c338.min.css">
+        
+          
+          
+          <meta name="theme-color" content="#009485">
+        
+      
+      
+
+    
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../../assets/_mkdocstrings.css">
+    
+      <link rel="stylesheet" href="../../../stylesheets/extra.css">
+    
+    <script>__md_scope=new URL("../../..",location),__md_hash=e=>[...e].reduce((e,_)=>(e<<5)-e+_.charCodeAt(0),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+    
+<meta name="google-site-verification" content="IVqzkYiD5E35oD4kkVOcTYCTfqWKU1f6zOHCnLIPkUU">
+<script data-goatcounter="https://ibis.goatcounter.com/count"
+        async src="https://gc.zgo.at/count.js"></script>
+
+  </head>
+  
+  
+    
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="slate" data-md-color-primary="teal" data-md-color-accent="lime">
+  
+    
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#table-expressions" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--lifted" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../../.." title="Ibis Project" class="md-header__button md-logo" aria-label="Ibis Project" data-md-component="logo">
+      
+  <img src="../../../static/icons/ibis/logo.svg" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3V6m0 5h18v2H3v-2m0 5h18v2H3v-2Z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Ibis Project
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Tables
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+    
+    
+      <label class="md-header__button md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"/></svg>
+      </label>
+      <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"/></svg>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12Z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+          <a href="javascript:void(0)" class="md-search__icon md-icon" title="Share" aria-label="Share" data-clipboard data-clipboard-text="" data-md-component="search-share" tabindex="-1">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7 0-.24-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9a3 3 0 0 0-3 3 3 3 0 0 0 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.15c-.05.21-.08.43-.08.66 0 1.61 1.31 2.91 2.92 2.91 1.61 0 2.92-1.3 2.92-2.91A2.92 2.92 0 0 0 18 16.08Z"/></svg>
+          </a>
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41Z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/ibis-project/ibis/tree/4.0.0" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 496 512"><!--! Font Awesome Free 6.2.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc.--><path d="M165.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6zm-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3zm44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9zM244.8 8C106.1 8 0 113.3 0 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C428.2 457.8 496 362.9 496 252 496 113.3 383.5 8 244.8 8zM97.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1zm-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7zm32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1zm-11.4-14.7c-1.6 1-1.6 3.6 0 5.9 1.6 2.3 4.3 3.3 5.6 2.3 1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+    
+      
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-tabs__inner md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+
+
+  <li class="md-tabs__item">
+    <a href="../../.." class="md-tabs__link">
+      Home
+    </a>
+  </li>
+
+      
+        
+  
+  
+
+
+  <li class="md-tabs__item">
+    <a href="../../../install/" class="md-tabs__link">
+      Install
+    </a>
+  </li>
+
+      
+        
+  
+  
+    
+  
+
+
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../../docs/" class="md-tabs__link md-tabs__link--active">
+        Docs
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+
+
+  <li class="md-tabs__item">
+    <a href="../../../release_notes/" class="md-tabs__link">
+      Releases
+    </a>
+  </li>
+
+      
+        
+  
+  
+
+
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../../blog/ibis-version-4.0.0-release/" class="md-tabs__link">
+        Blog
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+
+
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../../community/" class="md-tabs__link">
+        Community
+      </a>
+    </li>
+  
+
+      
+    </ul>
+  </div>
+</nav>
+    
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../../.." title="Ibis Project" class="md-nav__button md-logo" aria-label="Ibis Project" data-md-component="logo">
+      
+  <img src="../../../static/icons/ibis/logo.svg" alt="logo">
+
+    </a>
+    Ibis Project
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/ibis-project/ibis/tree/4.0.0" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 496 512"><!--! Font Awesome Free 6.2.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc.--><path d="M165.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6zm-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3zm44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9zM244.8 8C106.1 8 0 113.3 0 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C428.2 457.8 496 362.9 496 252 496 113.3 383.5 8 244.8 8zM97.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1zm-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7zm32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1zm-11.4-14.7c-1.6 1-1.6 3.6 0 5.9 1.6 2.3 4.3 3.3 5.6 2.3 1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../.." class="md-nav__link">
+        Home
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../install/" class="md-nav__link">
+        Install
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+    
+  
+  
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_3" type="checkbox" id="__nav_3" checked>
+      
+      
+      
+        
+          
+            
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+      
+      
+        
+        
+        <div class="md-nav__link md-nav__link--index ">
+          <a href="../../../docs/">Docs</a>
+          
+            <label for="__nav_3">
+              <span class="md-nav__icon md-icon"></span>
+            </label>
+          
+        </div>
+      
+      <nav class="md-nav" aria-label="Docs" data-md-level="1">
+        <label class="md-nav__title" for="__nav_3">
+          <span class="md-nav__icon md-icon"></span>
+          Docs
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+          
+            
+              
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_3_2" type="checkbox" id="__nav_3_2" >
+      
+      
+      
+        
+          
+            
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+      
+      
+        
+        
+        <div class="md-nav__link md-nav__link--index ">
+          <a href="../../../tutorial/">Tutorial</a>
+          
+            <label for="__nav_3_2">
+              <span class="md-nav__icon md-icon"></span>
+            </label>
+          
+        </div>
+      
+      <nav class="md-nav" aria-label="Tutorial" data-md-level="2">
+        <label class="md-nav__title" for="__nav_3_2">
+          <span class="md-nav__icon md-icon"></span>
+          Tutorial
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../tutorial/01-Introduction-to-Ibis/" class="md-nav__link">
+        Getting started
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../tutorial/02-Aggregates-Joins/" class="md-nav__link">
+        Aggregating and joining data
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../tutorial/03-Expressions-Lazy-Mode-Logging/" class="md-nav__link">
+        Lazy Mode and Logging
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../tutorial/04-More-Value-Expressions/" class="md-nav__link">
+        More Value Expressions
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../tutorial/05-IO-Create-Insert-External-Data/" class="md-nav__link">
+        Creating and Inserting Data
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../tutorial/06-ComplexFiltering/" class="md-nav__link">
+        Complex Filtering
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../tutorial/07-Analytics-Tools/" class="md-nav__link">
+        Analytics Tools
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../tutorial/rendered/08-Geospatial-Analysis/" class="md-nav__link">
+        Geospatial Analysis
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_3_3" type="checkbox" id="__nav_3_3" >
+      
+      
+      
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+      
+      
+        <label class="md-nav__link" for="__nav_3_3">
+          How To Guide
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="How To Guide" data-md-level="2">
+        <label class="md-nav__title" for="__nav_3_3">
+          <span class="md-nav__icon md-icon"></span>
+          How To Guide
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../how_to/chain-expressions/" class="md-nav__link">
+        How to Chain Expressions with Underscore
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../how_to/duckdb_register/" class="md-nav__link">
+        How to Use `register` to load external data files with the DuckDB backend
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../how_to/ffill_bfill_w_window/" class="md-nav__link">
+        How to `ffill` and `bfill` using Window Functions
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../how_to/memtable-join/" class="md-nav__link">
+        How to join an in-memory DataFrame to a TableExpression
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../how_to/sessionize/" class="md-nav__link">
+        How to Sessionize a Log of Events
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../how_to/topk/" class="md-nav__link">
+        How to Compute the Top K Records
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_3_4" type="checkbox" id="__nav_3_4" >
+      
+      
+      
+        
+          
+            
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+      
+      
+        
+        
+        <div class="md-nav__link md-nav__link--index ">
+          <a href="../../../backends/">Execution Backends</a>
+          
+            <label for="__nav_3_4">
+              <span class="md-nav__icon md-icon"></span>
+            </label>
+          
+        </div>
+      
+      <nav class="md-nav" aria-label="Execution Backends" data-md-level="2">
+        <label class="md-nav__title" for="__nav_3_4">
+          <span class="md-nav__icon md-icon"></span>
+          Execution Backends
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../backends/ClickHouse/" class="md-nav__link">
+        ClickHouse
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../backends/Dask/" class="md-nav__link">
+        Dask
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../backends/Datafusion/" class="md-nav__link">
+        Datafusion
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../backends/DuckDB/" class="md-nav__link">
+        DuckDB
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../backends/Impala/" class="md-nav__link">
+        Impala
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../backends/MSSQL/" class="md-nav__link">
+        MSSQL
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../backends/MySQL/" class="md-nav__link">
+        MySQL
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../backends/Pandas/" class="md-nav__link">
+        Pandas
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../backends/Polars/" class="md-nav__link">
+        Polars
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../backends/PostgreSQL/" class="md-nav__link">
+        PostgreSQL
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../backends/PySpark/" class="md-nav__link">
+        PySpark
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../backends/SQLite/" class="md-nav__link">
+        SQLite
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../backends/Snowflake/" class="md-nav__link">
+        Snowflake
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../backends/Trino/" class="md-nav__link">
+        Trino
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_3_5" type="checkbox" id="__nav_3_5" >
+      
+      
+      
+        
+          
+        
+          
+        
+          
+        
+          
+        
+      
+      
+        <label class="md-nav__link" for="__nav_3_5">
+          User Guide
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="User Guide" data-md-level="2">
+        <label class="md-nav__title" for="__nav_3_5">
+          <span class="md-nav__icon md-icon"></span>
+          User Guide
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../user_guide/configuration/" class="md-nav__link">
+        Configuring Ibis
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../user_guide/design/" class="md-nav__link">
+        Design
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../user_guide/self_joins/" class="md-nav__link">
+        Self Joins
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_3_5_4" type="checkbox" id="__nav_3_5_4" >
+      
+      
+      
+        
+          
+        
+          
+        
+      
+      
+        <label class="md-nav__link" for="__nav_3_5_4">
+          Extending
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Extending" data-md-level="3">
+        <label class="md-nav__title" for="__nav_3_5_4">
+          <span class="md-nav__icon md-icon"></span>
+          Extending
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../user_guide/extending/elementwise/" class="md-nav__link">
+        Adding an Elementwise Operation
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../user_guide/extending/reduction/" class="md-nav__link">
+        Adding a Reduction Operation
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+    
+  
+  
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_3_6" type="checkbox" id="__nav_3_6" checked>
+      
+      
+      
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+      
+      
+        <label class="md-nav__link" for="__nav_3_6">
+          API Reference
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="API Reference" data-md-level="2">
+        <label class="md-nav__title" for="__nav_3_6">
+          <span class="md-nav__icon md-icon"></span>
+          API Reference
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+    
+  
+  
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_3_6_1" type="checkbox" id="__nav_3_6_1" checked>
+      
+      
+      
+        
+          
+            
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+      
+      
+        
+        
+        <div class="md-nav__link md-nav__link--index ">
+          <a href="../">Expressions</a>
+          
+            <label for="__nav_3_6_1">
+              <span class="md-nav__icon md-icon"></span>
+            </label>
+          
+        </div>
+      
+      <nav class="md-nav" aria-label="Expressions" data-md-level="3">
+        <label class="md-nav__title" for="__nav_3_6_1">
+          <span class="md-nav__icon md-icon"></span>
+          Expressions
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../top_level/" class="md-nav__link">
+        Top Level
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+    
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" data-md-toggle="toc" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          Tables
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        Tables
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#ibis.expr.types.relations.Table" class="md-nav__link">
+    Table
+  </a>
+  
+    <nav class="md-nav" aria-label="Table">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.relations.Table-functions" class="md-nav__link">
+    Functions
+  </a>
+  
+    <nav class="md-nav" aria-label="Functions">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.relations.Table.aggregate" class="md-nav__link">
+    aggregate()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.relations.Table.alias" class="md-nav__link">
+    alias()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.relations.Table.asof_join" class="md-nav__link">
+    asof_join()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.relations.Table.count" class="md-nav__link">
+    count()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.relations.Table.cross_join" class="md-nav__link">
+    cross_join()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.relations.Table.difference" class="md-nav__link">
+    difference()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.relations.Table.distinct" class="md-nav__link">
+    distinct()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.relations.Table.drop" class="md-nav__link">
+    drop()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.relations.Table.dropna" class="md-nav__link">
+    dropna()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.relations.Table.fillna" class="md-nav__link">
+    fillna()
+  </a>
+  
+    <nav class="md-nav" aria-label="fillna()">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.relations.Table.fillna--notes" class="md-nav__link">
+    Notes
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.relations.Table.filter" class="md-nav__link">
+    filter()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.relations.Table.get_column" class="md-nav__link">
+    get_column()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.relations.Table.get_columns" class="md-nav__link">
+    get_columns()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.relations.Table.group_by" class="md-nav__link">
+    group_by()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.relations.Table.head" class="md-nav__link">
+    head()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.relations.Table.info" class="md-nav__link">
+    info()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.relations.Table.intersect" class="md-nav__link">
+    intersect()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.relations.Table.join" class="md-nav__link">
+    join()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.relations.Table.limit" class="md-nav__link">
+    limit()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.relations.Table.mutate" class="md-nav__link">
+    mutate()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.relations.Table.order_by" class="md-nav__link">
+    order_by()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.relations.Table.relabel" class="md-nav__link">
+    relabel()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.relations.Table.rowid" class="md-nav__link">
+    rowid()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.relations.Table.schema" class="md-nav__link">
+    schema()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.relations.Table.select" class="md-nav__link">
+    select()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.relations.Table.set_column" class="md-nav__link">
+    set_column()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.relations.Table.sql" class="md-nav__link">
+    sql()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.relations.Table.to_array" class="md-nav__link">
+    to_array()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.relations.Table.union" class="md-nav__link">
+    union()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.relations.Table.unpack" class="md-nav__link">
+    unpack()
+  </a>
+  
+    <nav class="md-nav" aria-label="unpack()">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.relations.Table.unpack--see-also" class="md-nav__link">
+    See Also
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.relations.Table.view" class="md-nav__link">
+    view()
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#ibis.expr.types.groupby.GroupedTable" class="md-nav__link">
+    GroupedTable
+  </a>
+  
+    <nav class="md-nav" aria-label="GroupedTable">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.groupby.GroupedTable-functions" class="md-nav__link">
+    Functions
+  </a>
+  
+    <nav class="md-nav" aria-label="Functions">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.groupby.GroupedTable.count" class="md-nav__link">
+    count()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.groupby.GroupedTable.having" class="md-nav__link">
+    having()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.groupby.GroupedTable.mutate" class="md-nav__link">
+    mutate()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.groupby.GroupedTable.order_by" class="md-nav__link">
+    order_by()
+  </a>
+  
+    <nav class="md-nav" aria-label="order_by()">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.groupby.GroupedTable.order_by--notes" class="md-nav__link">
+    Notes
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.groupby.GroupedTable.over" class="md-nav__link">
+    over()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.groupby.GroupedTable.projection" class="md-nav__link">
+    projection()
+  </a>
+  
+    <nav class="md-nav" aria-label="projection()">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.groupby.GroupedTable.projection--see-also" class="md-nav__link">
+    See Also
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../generic/" class="md-nav__link">
+        Generic Values
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../numeric/" class="md-nav__link">
+        Numeric + Boolean
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../strings/" class="md-nav__link">
+        Strings
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../timestamps/" class="md-nav__link">
+        Timestamps + Dates + Times
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../collections/" class="md-nav__link">
+        Collections
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../geospatial/" class="md-nav__link">
+        Geospatial
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../datatypes/" class="md-nav__link">
+        Data Types
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../schemas/" class="md-nav__link">
+        Schemas
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_3_6_4" type="checkbox" id="__nav_3_6_4" >
+      
+      
+      
+        
+          
+        
+          
+        
+          
+        
+          
+        
+      
+      
+        <label class="md-nav__link" for="__nav_3_6_4">
+          Backend Interfaces
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Backend Interfaces" data-md-level="3">
+        <label class="md-nav__title" for="__nav_3_6_4">
+          <span class="md-nav__icon md-icon"></span>
+          Backend Interfaces
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../backends/base/" class="md-nav__link">
+        Backend Base Classes
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../backends/pandas/" class="md-nav__link">
+        Pandas-like Backend Base Classes
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../backends/sql/" class="md-nav__link">
+        SQL Backend Base Classes
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../backends/sqlalchemy/" class="md-nav__link">
+        SQLAlchemy Backend Base Classes
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../config/" class="md-nav__link">
+        Configuration
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../ibis-for-sql-programmers/" class="md-nav__link">
+        Ibis for SQL Programmers
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../ibis-for-pandas-users/" class="md-nav__link">
+        Ibis for pandas Users
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../backends/support_matrix/" class="md-nav__link">
+        Backend Operations Matrix
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../release_notes/" class="md-nav__link">
+        Releases
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_5" type="checkbox" id="__nav_5" >
+      
+      
+      
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+      
+      
+        <label class="md-nav__link" for="__nav_5">
+          Blog
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Blog" data-md-level="1">
+        <label class="md-nav__title" for="__nav_5">
+          <span class="md-nav__icon md-icon"></span>
+          Blog
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../blog/ibis-version-4.0.0-release/" class="md-nav__link">
+        Ibis v4.0.0
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../blog/rendered/ci-analysis/" class="md-nav__link">
+        Analysis of Ibis's CI Performance
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../blog/ffill-and-bfill-using-ibis/" class="md-nav__link">
+        ffill and bfill using ibis
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../blog/Ibis-version-3.1.0-release/" class="md-nav__link">
+        Ibis v3.1.0
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../blog/Ibis-version-3.0.0-release/" class="md-nav__link">
+        Ibis v3.0.0
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_6" type="checkbox" id="__nav_6" >
+      
+      
+      
+        
+          
+            
+          
+        
+          
+        
+      
+      
+        
+        
+        <div class="md-nav__link md-nav__link--index ">
+          <a href="../../../community/">Community</a>
+          
+            <label for="__nav_6">
+              <span class="md-nav__icon md-icon"></span>
+            </label>
+          
+        </div>
+      
+      <nav class="md-nav" aria-label="Community" data-md-level="1">
+        <label class="md-nav__title" for="__nav_6">
+          <span class="md-nav__icon md-icon"></span>
+          Community
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+          
+            
+              
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_6_2" type="checkbox" id="__nav_6_2" >
+      
+      
+      
+        
+          
+            
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+      
+      
+        
+        
+        <div class="md-nav__link md-nav__link--index ">
+          <a href="../../../community/contribute/">Contribute</a>
+          
+            <label for="__nav_6_2">
+              <span class="md-nav__icon md-icon"></span>
+            </label>
+          
+        </div>
+      
+      <nav class="md-nav" aria-label="Contribute" data-md-level="2">
+        <label class="md-nav__title" for="__nav_6_2">
+          <span class="md-nav__icon md-icon"></span>
+          Contribute
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../community/contribute/01_environment/" class="md-nav__link">
+        Setting Up a Development Environment
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../community/contribute/02_workflow/" class="md-nav__link">
+        Contribute to the Ibis Codebase
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../community/contribute/03_style/" class="md-nav__link">
+        Style and Formatting
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../community/contribute/05_maintainers_guide/" class="md-nav__link">
+        Maintaining the Codebase
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#ibis.expr.types.relations.Table" class="md-nav__link">
+    Table
+  </a>
+  
+    <nav class="md-nav" aria-label="Table">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.relations.Table-functions" class="md-nav__link">
+    Functions
+  </a>
+  
+    <nav class="md-nav" aria-label="Functions">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.relations.Table.aggregate" class="md-nav__link">
+    aggregate()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.relations.Table.alias" class="md-nav__link">
+    alias()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.relations.Table.asof_join" class="md-nav__link">
+    asof_join()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.relations.Table.count" class="md-nav__link">
+    count()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.relations.Table.cross_join" class="md-nav__link">
+    cross_join()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.relations.Table.difference" class="md-nav__link">
+    difference()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.relations.Table.distinct" class="md-nav__link">
+    distinct()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.relations.Table.drop" class="md-nav__link">
+    drop()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.relations.Table.dropna" class="md-nav__link">
+    dropna()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.relations.Table.fillna" class="md-nav__link">
+    fillna()
+  </a>
+  
+    <nav class="md-nav" aria-label="fillna()">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.relations.Table.fillna--notes" class="md-nav__link">
+    Notes
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.relations.Table.filter" class="md-nav__link">
+    filter()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.relations.Table.get_column" class="md-nav__link">
+    get_column()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.relations.Table.get_columns" class="md-nav__link">
+    get_columns()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.relations.Table.group_by" class="md-nav__link">
+    group_by()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.relations.Table.head" class="md-nav__link">
+    head()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.relations.Table.info" class="md-nav__link">
+    info()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.relations.Table.intersect" class="md-nav__link">
+    intersect()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.relations.Table.join" class="md-nav__link">
+    join()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.relations.Table.limit" class="md-nav__link">
+    limit()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.relations.Table.mutate" class="md-nav__link">
+    mutate()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.relations.Table.order_by" class="md-nav__link">
+    order_by()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.relations.Table.relabel" class="md-nav__link">
+    relabel()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.relations.Table.rowid" class="md-nav__link">
+    rowid()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.relations.Table.schema" class="md-nav__link">
+    schema()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.relations.Table.select" class="md-nav__link">
+    select()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.relations.Table.set_column" class="md-nav__link">
+    set_column()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.relations.Table.sql" class="md-nav__link">
+    sql()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.relations.Table.to_array" class="md-nav__link">
+    to_array()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.relations.Table.union" class="md-nav__link">
+    union()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.relations.Table.unpack" class="md-nav__link">
+    unpack()
+  </a>
+  
+    <nav class="md-nav" aria-label="unpack()">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.relations.Table.unpack--see-also" class="md-nav__link">
+    See Also
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.relations.Table.view" class="md-nav__link">
+    view()
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#ibis.expr.types.groupby.GroupedTable" class="md-nav__link">
+    GroupedTable
+  </a>
+  
+    <nav class="md-nav" aria-label="GroupedTable">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.groupby.GroupedTable-functions" class="md-nav__link">
+    Functions
+  </a>
+  
+    <nav class="md-nav" aria-label="Functions">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.groupby.GroupedTable.count" class="md-nav__link">
+    count()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.groupby.GroupedTable.having" class="md-nav__link">
+    having()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.groupby.GroupedTable.mutate" class="md-nav__link">
+    mutate()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.groupby.GroupedTable.order_by" class="md-nav__link">
+    order_by()
+  </a>
+  
+    <nav class="md-nav" aria-label="order_by()">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.groupby.GroupedTable.order_by--notes" class="md-nav__link">
+    Notes
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.groupby.GroupedTable.over" class="md-nav__link">
+    over()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.groupby.GroupedTable.projection" class="md-nav__link">
+    projection()
+  </a>
+  
+    <nav class="md-nav" aria-label="projection()">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.groupby.GroupedTable.projection--see-also" class="md-nav__link">
+    See Also
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              <article class="md-content__inner md-typeset">
+                
+
+
+
+                  
+
+
+<h1 id="table-expressions">Table Expressions<a class="headerlink" href="#table-expressions" title="Anchor link to this section for reference">&para;</a></h1>
+<p>Table expressions form the basis for most Ibis expressions.</p>
+
+
+<div class="doc doc-object doc-class">
+
+
+
+<h2 id="ibis.expr.types.relations.Table" class="doc doc-heading">
+        <code>Table</code>
+
+
+<a href="#ibis.expr.types.relations.Table" class="headerlink" title="Anchor link to this section for reference">&para;</a></h2>
+
+
+  <div class="doc doc-contents first">
+      <p class="doc doc-class-bases">
+        Bases: <code><a class="autorefs autorefs-internal" title="ibis.expr.types.core.Expr" href="../#ibis.expr.types.core.Expr">Expr</a></code>, <code><span title="rich.jupyter.JupyterMixin">JupyterMixin</span></code></p>
+
+
+
+
+  
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+
+<h3 id="ibis.expr.types.relations.Table-functions">Functions<a href="#ibis.expr.types.relations.Table-functions" class="headerlink" title="Anchor link to this section for reference">&para;</a></h3>
+
+<div class="doc doc-object doc-function">
+
+
+
+<h4 id="ibis.expr.types.relations.Table.aggregate" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">aggregate</span><span class="p">(</span><span class="n">metrics</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">by</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">having</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></code>
+
+<a href="#ibis.expr.types.relations.Table.aggregate" class="headerlink" title="Anchor link to this section for reference">&para;</a></h4>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>Aggregate a table with a given set of reductions grouping by <code>by</code>.</p>
+
+  <p><strong>Parameters:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Type</th>
+        <th>Description</th>
+        <th>Default</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td><code>metrics</code></td>
+          <td>
+                <code><a class="autorefs autorefs-external" title="typing.Sequence" href="https://docs.python.org/3/library/typing.html#typing.Sequence">Sequence</a>[<span title="ibis.expr.types">ir</span>.<a class="autorefs autorefs-internal" title="ibis.expr.types.Scalar" href="../generic/#ibis.expr.types.generic.Scalar">Scalar</a>] | None</code>
+          </td>
+          <td><p>Aggregate expressions</p></td>
+          <td>
+                <code>None</code>
+          </td>
+        </tr>
+        <tr>
+          <td><code>by</code></td>
+          <td>
+                <code><a class="autorefs autorefs-external" title="typing.Sequence" href="https://docs.python.org/3/library/typing.html#typing.Sequence">Sequence</a>[<span title="ibis.expr.types">ir</span>.<a class="autorefs autorefs-internal" title="ibis.expr.types.Value" href="../generic/#ibis.expr.types.generic.Value">Value</a>] | None</code>
+          </td>
+          <td><p>Grouping expressions</p></td>
+          <td>
+                <code>None</code>
+          </td>
+        </tr>
+        <tr>
+          <td><code>having</code></td>
+          <td>
+                <code><a class="autorefs autorefs-external" title="typing.Sequence" href="https://docs.python.org/3/library/typing.html#typing.Sequence">Sequence</a>[<span title="ibis.expr.types">ir</span>.<a class="autorefs autorefs-internal" title="ibis.expr.types.BooleanValue" href="../numeric/#ibis.expr.types.logical.BooleanValue">BooleanValue</a>] | None</code>
+          </td>
+          <td><p>Post-aggregation filters</p></td>
+          <td>
+                <code>None</code>
+          </td>
+        </tr>
+        <tr>
+          <td><code>kwargs</code></td>
+          <td>
+                <code><span title="ibis.expr.types">ir</span>.<a class="autorefs autorefs-internal" title="ibis.expr.types.Value" href="../generic/#ibis.expr.types.generic.Value">Value</a></code>
+          </td>
+          <td><p>Named aggregate expressions</p></td>
+          <td>
+                <code>{}</code>
+          </td>
+        </tr>
+    </tbody>
+  </table>
+
+  <p><strong>Returns:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td>
+                <code><a class="autorefs autorefs-internal" title="ibis.expr.types.relations.Table" href="#ibis.expr.types.relations.Table">Table</a></code>
+          </td>
+          <td><p>An aggregate table expression</p></td>
+        </tr>
+    </tbody>
+  </table>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+
+<h4 id="ibis.expr.types.relations.Table.alias" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">alias</span><span class="p">(</span><span class="n">alias</span><span class="p">)</span></code>
+
+<a href="#ibis.expr.types.relations.Table.alias" class="headerlink" title="Anchor link to this section for reference">&para;</a></h4>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>Create a table expression with a specific name <code>alias</code>.</p>
+<p>This method is useful for exposing an ibis expression to the underlying
+backend for use in the
+<a class="autorefs autorefs-internal" href="#ibis.expr.types.relations.Table.sql"><code>Table.sql</code></a> method.</p>
+<div class="admonition note">
+<p class="admonition-title"><code>.alias</code> will create a temporary view</p>
+<p><code>.alias</code> creates a temporary view in the database.</p>
+<p>This side effect will be removed in a future version of ibis and
+<strong>is not part of the public API</strong>.</p>
+</div>
+
+  <p><strong>Parameters:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Type</th>
+        <th>Description</th>
+        <th>Default</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td><code>alias</code></td>
+          <td>
+                <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></code>
+          </td>
+          <td><p>Name of the child expression</p></td>
+          <td>
+              <em>required</em>
+          </td>
+        </tr>
+    </tbody>
+  </table>
+
+  <p><strong>Returns:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td>
+                <code><a class="autorefs autorefs-internal" title="ibis.expr.types.relations.Table" href="#ibis.expr.types.relations.Table">Table</a></code>
+          </td>
+          <td><p>An table expression</p></td>
+        </tr>
+    </tbody>
+  </table>
+
+<p><strong>Examples:</strong></p>
+    <div class="highlight"><pre><span></span><code><span class="gp">&gt;&gt;&gt; </span><span class="n">con</span> <span class="o">=</span> <span class="n">ibis</span><span class="o">.</span><span class="n">duckdb</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="s2">&quot;ci/ibis-testing-data/ibis_testing.ddb&quot;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">t</span> <span class="o">=</span> <span class="n">con</span><span class="o">.</span><span class="n">table</span><span class="p">(</span><span class="s2">&quot;functional_alltypes&quot;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">expr</span> <span class="o">=</span> <span class="n">t</span><span class="o">.</span><span class="n">alias</span><span class="p">(</span><span class="s2">&quot;my_t&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">sql</span><span class="p">(</span><span class="s2">&quot;SELECT sum(double_col) FROM my_t&quot;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">expr</span>
+<span class="go">r0 := AlchemyTable: functional_alltypes</span>
+<span class="go">  index           int64</span>
+<span class="go">    ⋮</span>
+<span class="go">  month           int32</span>
+<span class="go">r1 := View[r0]: my_t</span>
+<span class="go">  schema:</span>
+<span class="go">    index           int64</span>
+<span class="go">      ⋮</span>
+<span class="go">    month           int32</span>
+<span class="go">SQLStringView[r1]: _ibis_view_0</span>
+<span class="go">  query: &#39;SELECT sum(double_col) FROM my_t&#39;</span>
+<span class="go">  schema:</span>
+<span class="go">    sum(double_col) float64</span>
+</code></pre></div>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+
+<h4 id="ibis.expr.types.relations.Table.asof_join" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">asof_join</span><span class="p">(</span><span class="n">left</span><span class="p">,</span> <span class="n">right</span><span class="p">,</span> <span class="n">predicates</span><span class="o">=</span><span class="p">(),</span> <span class="n">by</span><span class="o">=</span><span class="p">(),</span> <span class="n">tolerance</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">suffixes</span><span class="o">=</span><span class="p">(</span><span class="s1">&#39;_x&#39;</span><span class="p">,</span> <span class="s1">&#39;_y&#39;</span><span class="p">))</span></code>
+
+<a href="#ibis.expr.types.relations.Table.asof_join" class="headerlink" title="Anchor link to this section for reference">&para;</a></h4>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>Perform an "as-of" join between <code>left</code> and <code>right</code>.</p>
+<p>Similar to a left join except that the match is done on nearest key
+rather than equal keys.</p>
+<p>Optionally, match keys with <code>by</code> before joining with <code>predicates</code>.</p>
+
+  <p><strong>Parameters:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Type</th>
+        <th>Description</th>
+        <th>Default</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td><code>left</code></td>
+          <td>
+                <code><a class="autorefs autorefs-internal" title="ibis.expr.types.relations.Table" href="#ibis.expr.types.relations.Table">Table</a></code>
+          </td>
+          <td><p>Table expression</p></td>
+          <td>
+              <em>required</em>
+          </td>
+        </tr>
+        <tr>
+          <td><code>right</code></td>
+          <td>
+                <code><a class="autorefs autorefs-internal" title="ibis.expr.types.relations.Table" href="#ibis.expr.types.relations.Table">Table</a></code>
+          </td>
+          <td><p>Table expression</p></td>
+          <td>
+              <em>required</em>
+          </td>
+        </tr>
+        <tr>
+          <td><code>predicates</code></td>
+          <td>
+                <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a> | <span title="ibis.expr.types">ir</span>.<span title="ibis.expr.types.BooleanColumn">BooleanColumn</span> | <a class="autorefs autorefs-external" title="typing.Sequence" href="https://docs.python.org/3/library/typing.html#typing.Sequence">Sequence</a>[<a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a> | <span title="ibis.expr.types">ir</span>.<span title="ibis.expr.types.BooleanColumn">BooleanColumn</span>]</code>
+          </td>
+          <td><p>Join expressions</p></td>
+          <td>
+                <code>()</code>
+          </td>
+        </tr>
+        <tr>
+          <td><code>by</code></td>
+          <td>
+                <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a> | <span title="ibis.expr.types">ir</span>.<a class="autorefs autorefs-internal" title="ibis.expr.types.Column" href="../generic/#ibis.expr.types.generic.Column">Column</a> | <a class="autorefs autorefs-external" title="typing.Sequence" href="https://docs.python.org/3/library/typing.html#typing.Sequence">Sequence</a>[<a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a> | <span title="ibis.expr.types">ir</span>.<a class="autorefs autorefs-internal" title="ibis.expr.types.Column" href="../generic/#ibis.expr.types.generic.Column">Column</a>]</code>
+          </td>
+          <td><p>column to group by before joining</p></td>
+          <td>
+                <code>()</code>
+          </td>
+        </tr>
+        <tr>
+          <td><code>tolerance</code></td>
+          <td>
+                <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a> | <span title="ibis.expr.types">ir</span>.<span title="ibis.expr.types.IntervalScalar">IntervalScalar</span> | None</code>
+          </td>
+          <td><p>Amount of time to look behind when joining</p></td>
+          <td>
+                <code>None</code>
+          </td>
+        </tr>
+        <tr>
+          <td><code>suffixes</code></td>
+          <td>
+                <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#tuple">tuple</a>[<a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a>, <a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a>]</code>
+          </td>
+          <td><p>Left and right suffixes that will be used to rename overlapping
+columns.</p></td>
+          <td>
+                <code>(&#39;_x&#39;, &#39;_y&#39;)</code>
+          </td>
+        </tr>
+    </tbody>
+  </table>
+
+  <p><strong>Returns:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td>
+                <code><a class="autorefs autorefs-internal" title="ibis.expr.types.relations.Table" href="#ibis.expr.types.relations.Table">Table</a></code>
+          </td>
+          <td><p>Table expression</p></td>
+        </tr>
+    </tbody>
+  </table>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+
+<h4 id="ibis.expr.types.relations.Table.count" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">count</span><span class="p">(</span><span class="n">where</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span></code>
+
+<a href="#ibis.expr.types.relations.Table.count" class="headerlink" title="Anchor link to this section for reference">&para;</a></h4>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>Compute the number of rows in the table.</p>
+
+  <p><strong>Parameters:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Type</th>
+        <th>Description</th>
+        <th>Default</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td><code>where</code></td>
+          <td>
+                <code><span title="ibis.expr.types">ir</span>.<a class="autorefs autorefs-internal" title="ibis.expr.types.BooleanValue" href="../numeric/#ibis.expr.types.logical.BooleanValue">BooleanValue</a> | None</code>
+          </td>
+          <td><p>Optional boolean expression to filter rows when counting.</p></td>
+          <td>
+                <code>None</code>
+          </td>
+        </tr>
+    </tbody>
+  </table>
+
+  <p><strong>Returns:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td>
+                <code><span title="ibis.expr.types.numeric.IntegerScalar">IntegerScalar</span></code>
+          </td>
+          <td><p>Number of rows in the table</p></td>
+        </tr>
+    </tbody>
+  </table>
+
+<p><strong>Examples:</strong></p>
+    <div class="highlight"><pre><span></span><code><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">ibis</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">ibis</span> <span class="kn">import</span> <span class="n">_</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">t</span> <span class="o">=</span> <span class="n">ibis</span><span class="o">.</span><span class="n">table</span><span class="p">(</span><span class="nb">dict</span><span class="p">(</span><span class="n">a</span><span class="o">=</span><span class="s2">&quot;int&quot;</span><span class="p">),</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;t&quot;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">t</span><span class="o">.</span><span class="n">count</span><span class="p">()</span>
+<span class="go">r0 := UnboundTable: t</span>
+<span class="go">  a int64</span>
+<span class="go">count: CountStar(t)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">t</span><span class="o">.</span><span class="n">aggregate</span><span class="p">(</span><span class="n">n</span><span class="o">=</span><span class="n">_</span><span class="o">.</span><span class="n">count</span><span class="p">(</span><span class="n">_</span><span class="o">.</span><span class="n">a</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">),</span> <span class="n">total</span><span class="o">=</span><span class="n">_</span><span class="o">.</span><span class="n">sum</span><span class="p">())</span>
+<span class="go">r0 := UnboundTable: t</span>
+<span class="go">  a int64</span>
+<span class="go">Aggregation[r0]</span>
+<span class="go">  metrics:</span>
+<span class="go">    n:     CountStar(t, where=r0.a &gt; 1)</span>
+<span class="go">    total: Sum(r0.a)</span>
+</code></pre></div>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+
+<h4 id="ibis.expr.types.relations.Table.cross_join" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">cross_join</span><span class="p">(</span><span class="n">left</span><span class="p">,</span> <span class="n">right</span><span class="p">,</span> <span class="o">*</span><span class="n">rest</span><span class="p">,</span> <span class="n">suffixes</span><span class="o">=</span><span class="p">(</span><span class="s1">&#39;_x&#39;</span><span class="p">,</span> <span class="s1">&#39;_y&#39;</span><span class="p">))</span></code>
+
+<a href="#ibis.expr.types.relations.Table.cross_join" class="headerlink" title="Anchor link to this section for reference">&para;</a></h4>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>Compute the cross join of a sequence of tables.</p>
+
+  <p><strong>Parameters:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Type</th>
+        <th>Description</th>
+        <th>Default</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td><code>left</code></td>
+          <td>
+                <code><a class="autorefs autorefs-internal" title="ibis.expr.types.relations.Table" href="#ibis.expr.types.relations.Table">Table</a></code>
+          </td>
+          <td><p>Left table</p></td>
+          <td>
+              <em>required</em>
+          </td>
+        </tr>
+        <tr>
+          <td><code>right</code></td>
+          <td>
+                <code><a class="autorefs autorefs-internal" title="ibis.expr.types.relations.Table" href="#ibis.expr.types.relations.Table">Table</a></code>
+          </td>
+          <td><p>Right table</p></td>
+          <td>
+              <em>required</em>
+          </td>
+        </tr>
+        <tr>
+          <td><code>rest</code></td>
+          <td>
+                <code><a class="autorefs autorefs-internal" title="ibis.expr.types.relations.Table" href="#ibis.expr.types.relations.Table">Table</a></code>
+          </td>
+          <td><p>Additional tables to cross join</p></td>
+          <td>
+                <code>()</code>
+          </td>
+        </tr>
+        <tr>
+          <td><code>suffixes</code></td>
+          <td>
+                <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#tuple">tuple</a>[<a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a>, <a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a>]</code>
+          </td>
+          <td><p>Left and right suffixes that will be used to rename overlapping
+columns.</p></td>
+          <td>
+                <code>(&#39;_x&#39;, &#39;_y&#39;)</code>
+          </td>
+        </tr>
+    </tbody>
+  </table>
+
+  <p><strong>Returns:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td>
+                <code><a class="autorefs autorefs-internal" title="ibis.expr.types.relations.Table" href="#ibis.expr.types.relations.Table">Table</a></code>
+          </td>
+          <td><p>Cross join of <code>left</code>, <code>right</code> and <code>rest</code></p></td>
+        </tr>
+    </tbody>
+  </table>
+
+<p><strong>Examples:</strong></p>
+    <div class="highlight"><pre><span></span><code><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">ibis</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">schemas</span> <span class="o">=</span> <span class="p">[(</span><span class="n">name</span><span class="p">,</span> <span class="s1">&#39;int64&#39;</span><span class="p">)</span> <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="s1">&#39;abcde&#39;</span><span class="p">]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">c</span><span class="p">,</span> <span class="n">d</span><span class="p">,</span> <span class="n">e</span> <span class="o">=</span> <span class="p">[</span>
+<span class="gp">... </span>    <span class="n">ibis</span><span class="o">.</span><span class="n">table</span><span class="p">([(</span><span class="n">name</span><span class="p">,</span> <span class="nb">type</span><span class="p">)],</span> <span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">)</span> <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="nb">type</span> <span class="ow">in</span> <span class="n">schemas</span>
+<span class="gp">... </span><span class="p">]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">joined1</span> <span class="o">=</span> <span class="n">ibis</span><span class="o">.</span><span class="n">cross_join</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">c</span><span class="p">,</span> <span class="n">d</span><span class="p">,</span> <span class="n">e</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">joined1</span>
+<span class="go">r0 := UnboundTable[e]</span>
+<span class="go">  e int64</span>
+<span class="go">r1 := UnboundTable[d]</span>
+<span class="go">  d int64</span>
+<span class="go">r2 := UnboundTable[c]</span>
+<span class="go">  c int64</span>
+<span class="go">r3 := UnboundTable[b]</span>
+<span class="go">  b int64</span>
+<span class="go">r4 := UnboundTable[a]</span>
+<span class="go">  a int64</span>
+<span class="go">r5 := CrossJoin[r3, r2]</span>
+<span class="go">r6 := CrossJoin[r5, r1]</span>
+<span class="go">r7 := CrossJoin[r6, r0]</span>
+<span class="go">CrossJoin[r4, r7]</span>
+</code></pre></div>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+
+<h4 id="ibis.expr.types.relations.Table.difference" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">difference</span><span class="p">(</span><span class="o">*</span><span class="n">tables</span><span class="p">,</span> <span class="n">distinct</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span></code>
+
+<a href="#ibis.expr.types.relations.Table.difference" class="headerlink" title="Anchor link to this section for reference">&para;</a></h4>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>Compute the set difference of multiple table expressions.</p>
+<p>The input tables must have identical schemas.</p>
+
+  <p><strong>Parameters:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Type</th>
+        <th>Description</th>
+        <th>Default</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td><code>tables</code></td>
+          <td>
+                <code><a class="autorefs autorefs-internal" title="ibis.expr.types.relations.Table" href="#ibis.expr.types.relations.Table">Table</a></code>
+          </td>
+          <td><p>One or more table expressions</p></td>
+          <td>
+                <code>()</code>
+          </td>
+        </tr>
+        <tr>
+          <td><code>distinct</code></td>
+          <td>
+                <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#bool">bool</a></code>
+          </td>
+          <td><p>Only diff distinct rows not occurring in the calling table</p></td>
+          <td>
+                <code>True</code>
+          </td>
+        </tr>
+    </tbody>
+  </table>
+
+  <p><strong>Returns:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td>
+                <code><a class="autorefs autorefs-internal" title="ibis.expr.types.relations.Table" href="#ibis.expr.types.relations.Table">Table</a></code>
+          </td>
+          <td><p>The rows present in <code>self</code> that are not present in <code>tables</code>.</p></td>
+        </tr>
+    </tbody>
+  </table>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+
+<h4 id="ibis.expr.types.relations.Table.distinct" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">distinct</span><span class="p">()</span></code>
+
+<a href="#ibis.expr.types.relations.Table.distinct" class="headerlink" title="Anchor link to this section for reference">&para;</a></h4>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>Compute the set of unique rows in the table.</p>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+
+<h4 id="ibis.expr.types.relations.Table.drop" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">drop</span><span class="p">(</span><span class="o">*</span><span class="n">fields</span><span class="p">)</span></code>
+
+<a href="#ibis.expr.types.relations.Table.drop" class="headerlink" title="Anchor link to this section for reference">&para;</a></h4>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>Remove fields from a table.</p>
+
+  <p><strong>Parameters:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Type</th>
+        <th>Description</th>
+        <th>Default</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td><code>fields</code></td>
+          <td>
+                <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></code>
+          </td>
+          <td><p>Fields to drop</p></td>
+          <td>
+                <code>()</code>
+          </td>
+        </tr>
+    </tbody>
+  </table>
+
+  <p><strong>Returns:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td>
+                <code><a class="autorefs autorefs-internal" title="ibis.expr.types.relations.Table" href="#ibis.expr.types.relations.Table">Table</a></code>
+          </td>
+          <td><p>A table with all columns in <code>fields</code> removed.</p></td>
+        </tr>
+    </tbody>
+  </table>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+
+<h4 id="ibis.expr.types.relations.Table.dropna" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">dropna</span><span class="p">(</span><span class="n">subset</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">how</span><span class="o">=</span><span class="s1">&#39;any&#39;</span><span class="p">)</span></code>
+
+<a href="#ibis.expr.types.relations.Table.dropna" class="headerlink" title="Anchor link to this section for reference">&para;</a></h4>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>Remove rows with null values from the table.</p>
+
+  <p><strong>Parameters:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Type</th>
+        <th>Description</th>
+        <th>Default</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td><code>subset</code></td>
+          <td>
+                <code><a class="autorefs autorefs-external" title="typing.Sequence" href="https://docs.python.org/3/library/typing.html#typing.Sequence">Sequence</a>[<a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a>] | None</code>
+          </td>
+          <td><p>Columns names to consider when dropping nulls. By default all columns
+are considered.</p></td>
+          <td>
+                <code>None</code>
+          </td>
+        </tr>
+        <tr>
+          <td><code>how</code></td>
+          <td>
+                <code><a class="autorefs autorefs-external" title="typing.Literal" href="https://docs.python.org/3/library/typing.html#typing.Literal">Literal</a>[&#39;any&#39;, &#39;all&#39;]</code>
+          </td>
+          <td><p>Determine whether a row is removed if there is at least one null
+value in the row ('any'), or if all row values are null ('all').
+Options are 'any' or 'all'. Default is 'any'.</p></td>
+          <td>
+                <code>&#39;any&#39;</code>
+          </td>
+        </tr>
+    </tbody>
+  </table>
+
+<p><strong>Examples:</strong></p>
+    <div class="highlight"><pre><span></span><code><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">ibis</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">t</span> <span class="o">=</span> <span class="n">ibis</span><span class="o">.</span><span class="n">table</span><span class="p">(</span><span class="nb">dict</span><span class="p">(</span><span class="n">a</span><span class="o">=</span><span class="s1">&#39;int64&#39;</span><span class="p">,</span> <span class="n">b</span><span class="o">=</span><span class="s1">&#39;string&#39;</span><span class="p">),</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;t&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">t</span> <span class="o">=</span> <span class="n">t</span><span class="o">.</span><span class="n">dropna</span><span class="p">()</span>  <span class="c1"># Drop all rows where any values are null</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">t</span>
+<span class="go">r0 := UnboundTable: t</span>
+<span class="go">  a int64</span>
+<span class="go">  b string</span>
+<span class="go">DropNa[r0]</span>
+<span class="go">  how: &#39;any&#39;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">t</span><span class="o">.</span><span class="n">dropna</span><span class="p">(</span><span class="n">how</span><span class="o">=</span><span class="s1">&#39;all&#39;</span><span class="p">)</span>  <span class="c1"># Only drop rows where all values are null</span>
+<span class="go">r0 := UnboundTable: t</span>
+<span class="go">  a int64</span>
+<span class="go">  b string</span>
+<span class="go">r1 := DropNa[r0]</span>
+<span class="go">  how: &#39;all&#39;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">t</span><span class="o">.</span><span class="n">dropna</span><span class="p">(</span><span class="n">subset</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;a&#39;</span><span class="p">],</span> <span class="n">how</span><span class="o">=</span><span class="s1">&#39;all&#39;</span><span class="p">)</span>  <span class="c1"># Only drop rows where all values in column &#39;a&#39; are null  # noqa: E501</span>
+<span class="go">r0 := UnboundTable: t</span>
+<span class="go">  a int64</span>
+<span class="go">  b string</span>
+<span class="go">DropNa[r0]</span>
+<span class="go">  how: &#39;all&#39;</span>
+<span class="go">  subset:</span>
+<span class="go">    r0.a</span>
+</code></pre></div>
+
+  <p><strong>Returns:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td>
+                <code><a class="autorefs autorefs-internal" title="ibis.expr.types.relations.Table" href="#ibis.expr.types.relations.Table">Table</a></code>
+          </td>
+          <td><p>Table expression</p></td>
+        </tr>
+    </tbody>
+  </table>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+
+<h4 id="ibis.expr.types.relations.Table.fillna" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">fillna</span><span class="p">(</span><span class="n">replacements</span><span class="p">)</span></code>
+
+<a href="#ibis.expr.types.relations.Table.fillna" class="headerlink" title="Anchor link to this section for reference">&para;</a></h4>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>Fill null values in a table expression.</p>
+
+  <p><strong>Parameters:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Type</th>
+        <th>Description</th>
+        <th>Default</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td><code>replacements</code></td>
+          <td>
+                <code><span title="ibis.expr.types">ir</span>.<a class="autorefs autorefs-internal" title="ibis.expr.types.Scalar" href="../generic/#ibis.expr.types.generic.Scalar">Scalar</a> | <a class="autorefs autorefs-external" title="typing.Mapping" href="https://docs.python.org/3/library/typing.html#typing.Mapping">Mapping</a>[<a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a>, <span title="ibis.expr.types">ir</span>.<a class="autorefs autorefs-internal" title="ibis.expr.types.Scalar" href="../generic/#ibis.expr.types.generic.Scalar">Scalar</a>]</code>
+          </td>
+          <td><p>Value with which to fill the nulls. If passed as a mapping, the keys
+are column names that map to their replacement value. If passed
+as a scalar, all columns are filled with that value.</p></td>
+          <td>
+              <em>required</em>
+          </td>
+        </tr>
+    </tbody>
+  </table>
+      <h6 id="ibis.expr.types.relations.Table.fillna--notes">Notes<a class="headerlink" href="#ibis.expr.types.relations.Table.fillna--notes" title="Anchor link to this section for reference">&para;</a></h6>
+<p>There is potential lack of type stability with the <code>fillna</code> API. For
+example, different library versions may impact whether or not a given
+backend promotes integer replacement values to floats.</p>
+
+<p><strong>Examples:</strong></p>
+    <div class="highlight"><pre><span></span><code><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">ibis</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">ibis.expr.datatypes</span> <span class="k">as</span> <span class="nn">dt</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">t</span> <span class="o">=</span> <span class="n">ibis</span><span class="o">.</span><span class="n">table</span><span class="p">([(</span><span class="s1">&#39;a&#39;</span><span class="p">,</span> <span class="s1">&#39;int64&#39;</span><span class="p">),</span> <span class="p">(</span><span class="s1">&#39;b&#39;</span><span class="p">,</span> <span class="s1">&#39;string&#39;</span><span class="p">)])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">res</span> <span class="o">=</span> <span class="n">t</span><span class="o">.</span><span class="n">fillna</span><span class="p">(</span><span class="mf">0.0</span><span class="p">)</span>  <span class="c1"># Replace nulls in all columns with 0.0</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">res</span> <span class="o">=</span> <span class="n">t</span><span class="o">.</span><span class="n">fillna</span><span class="p">({</span><span class="n">c</span><span class="p">:</span> <span class="mf">0.0</span> <span class="k">for</span> <span class="n">c</span><span class="p">,</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">t</span><span class="o">.</span><span class="n">schema</span><span class="p">()</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">t</span> <span class="o">==</span> <span class="n">dt</span><span class="o">.</span><span class="n">float64</span><span class="p">})</span>
+</code></pre></div>
+
+  <p><strong>Returns:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td>
+                <code><a class="autorefs autorefs-internal" title="ibis.expr.types.relations.Table" href="#ibis.expr.types.relations.Table">Table</a></code>
+          </td>
+          <td><p>Table expression</p></td>
+        </tr>
+    </tbody>
+  </table>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+
+<h4 id="ibis.expr.types.relations.Table.filter" class="doc doc-heading">
+<code class="highlight language-python"><span class="nb">filter</span><span class="p">(</span><span class="n">predicates</span><span class="p">)</span></code>
+
+<a href="#ibis.expr.types.relations.Table.filter" class="headerlink" title="Anchor link to this section for reference">&para;</a></h4>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>Select rows from <code>table</code> based on <code>predicates</code>.</p>
+
+  <p><strong>Parameters:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Type</th>
+        <th>Description</th>
+        <th>Default</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td><code>predicates</code></td>
+          <td>
+                <code><span title="ibis.expr.types">ir</span>.<a class="autorefs autorefs-internal" title="ibis.expr.types.BooleanValue" href="../numeric/#ibis.expr.types.logical.BooleanValue">BooleanValue</a> | <a class="autorefs autorefs-external" title="typing.Sequence" href="https://docs.python.org/3/library/typing.html#typing.Sequence">Sequence</a>[<span title="ibis.expr.types">ir</span>.<a class="autorefs autorefs-internal" title="ibis.expr.types.BooleanValue" href="../numeric/#ibis.expr.types.logical.BooleanValue">BooleanValue</a>]</code>
+          </td>
+          <td><p>Boolean value expressions used to select rows in <code>table</code>.</p></td>
+          <td>
+              <em>required</em>
+          </td>
+        </tr>
+    </tbody>
+  </table>
+
+  <p><strong>Returns:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td>
+                <code><a class="autorefs autorefs-internal" title="ibis.expr.types.relations.Table" href="#ibis.expr.types.relations.Table">Table</a></code>
+          </td>
+          <td><p>Filtered table expression</p></td>
+        </tr>
+    </tbody>
+  </table>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+
+<h4 id="ibis.expr.types.relations.Table.get_column" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">get_column</span><span class="p">(</span><span class="n">name</span><span class="p">)</span></code>
+
+<a href="#ibis.expr.types.relations.Table.get_column" class="headerlink" title="Anchor link to this section for reference">&para;</a></h4>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>Get a reference to a single column from the table.</p>
+
+  <p><strong>Returns:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td>
+                <code><a class="autorefs autorefs-internal" title="ibis.expr.types.generic.Column" href="../generic/#ibis.expr.types.generic.Column">Column</a></code>
+          </td>
+          <td><p>A column named <code>name</code>.</p></td>
+        </tr>
+    </tbody>
+  </table>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+
+<h4 id="ibis.expr.types.relations.Table.get_columns" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">get_columns</span><span class="p">(</span><span class="n">iterable</span><span class="p">)</span></code>
+
+<a href="#ibis.expr.types.relations.Table.get_columns" class="headerlink" title="Anchor link to this section for reference">&para;</a></h4>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>Get multiple columns from the table.</p>
+
+<p><strong>Examples:</strong></p>
+    <div class="highlight"><pre><span></span><code><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">ibis</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">table</span> <span class="o">=</span> <span class="n">ibis</span><span class="o">.</span><span class="n">table</span><span class="p">(</span>
+<span class="gp">... </span>   <span class="p">[</span>
+<span class="gp">... </span>       <span class="p">(</span><span class="s1">&#39;a&#39;</span><span class="p">,</span> <span class="s1">&#39;int64&#39;</span><span class="p">),</span>
+<span class="gp">... </span>       <span class="p">(</span><span class="s1">&#39;b&#39;</span><span class="p">,</span> <span class="s1">&#39;string&#39;</span><span class="p">),</span>
+<span class="gp">... </span>       <span class="p">(</span><span class="s1">&#39;c&#39;</span><span class="p">,</span> <span class="s1">&#39;timestamp&#39;</span><span class="p">),</span>
+<span class="gp">... </span>       <span class="p">(</span><span class="s1">&#39;d&#39;</span><span class="p">,</span> <span class="s1">&#39;float&#39;</span><span class="p">),</span>
+<span class="gp">... </span>   <span class="p">],</span>
+<span class="gp">... </span>   <span class="n">name</span><span class="o">=</span><span class="s1">&#39;t&#39;</span>
+<span class="gp">... </span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">c</span> <span class="o">=</span> <span class="n">table</span><span class="o">.</span><span class="n">get_columns</span><span class="p">([</span><span class="s1">&#39;a&#39;</span><span class="p">,</span> <span class="s1">&#39;b&#39;</span><span class="p">,</span> <span class="s1">&#39;c&#39;</span><span class="p">])</span>
+</code></pre></div>
+
+  <p><strong>Returns:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td>
+                <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#list">list</a>[<span title="ibis.expr.types">ir</span>.<a class="autorefs autorefs-internal" title="ibis.expr.types.Column" href="../generic/#ibis.expr.types.generic.Column">Column</a>]</code>
+          </td>
+          <td><p>List of column expressions</p></td>
+        </tr>
+    </tbody>
+  </table>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+
+<h4 id="ibis.expr.types.relations.Table.group_by" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">group_by</span><span class="p">(</span><span class="n">by</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">additional_grouping_expressions</span><span class="p">)</span></code>
+
+<a href="#ibis.expr.types.relations.Table.group_by" class="headerlink" title="Anchor link to this section for reference">&para;</a></h4>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>Create a grouped table expression.</p>
+
+  <p><strong>Parameters:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Type</th>
+        <th>Description</th>
+        <th>Default</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td><code>by</code></td>
+          <td>
+          </td>
+          <td><p>Grouping expressions</p></td>
+          <td>
+                <code>None</code>
+          </td>
+        </tr>
+        <tr>
+          <td><code>additional_grouping_expressions</code></td>
+          <td>
+                <code><a class="autorefs autorefs-external" title="typing.Any" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></code>
+          </td>
+          <td><p>Named grouping expressions</p></td>
+          <td>
+                <code>{}</code>
+          </td>
+        </tr>
+    </tbody>
+  </table>
+
+<p><strong>Examples:</strong></p>
+    <div class="highlight"><pre><span></span><code><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">ibis</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">ibis</span> <span class="kn">import</span> <span class="n">_</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">t</span> <span class="o">=</span> <span class="n">ibis</span><span class="o">.</span><span class="n">table</span><span class="p">(</span><span class="nb">dict</span><span class="p">(</span><span class="n">a</span><span class="o">=</span><span class="s1">&#39;int32&#39;</span><span class="p">,</span> <span class="n">b</span><span class="o">=</span><span class="s1">&#39;timestamp&#39;</span><span class="p">,</span> <span class="n">c</span><span class="o">=</span><span class="s1">&#39;double&#39;</span><span class="p">),</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;t&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">t</span><span class="o">.</span><span class="n">group_by</span><span class="p">([</span><span class="n">_</span><span class="o">.</span><span class="n">a</span><span class="p">,</span> <span class="n">_</span><span class="o">.</span><span class="n">b</span><span class="p">])</span><span class="o">.</span><span class="n">aggregate</span><span class="p">(</span><span class="n">sum_of_c</span><span class="o">=</span><span class="n">_</span><span class="o">.</span><span class="n">c</span><span class="o">.</span><span class="n">sum</span><span class="p">())</span>
+<span class="go">r0 := UnboundTable: t</span>
+<span class="go">  a int32</span>
+<span class="go">  b timestamp</span>
+<span class="go">  c float64</span>
+<span class="go">Aggregation[r0]</span>
+<span class="go">  metrics:</span>
+<span class="go">    sum_of_c: Sum(r0.c)</span>
+<span class="go">  by:</span>
+<span class="go">    a: r0.a</span>
+<span class="go">    b: r0.b</span>
+</code></pre></div>
+
+  <p><strong>Returns:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td>
+                <code><a class="autorefs autorefs-internal" title="ibis.expr.types.groupby.GroupedTable" href="#ibis.expr.types.groupby.GroupedTable">GroupedTable</a></code>
+          </td>
+          <td><p>A grouped table expression</p></td>
+        </tr>
+    </tbody>
+  </table>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+
+<h4 id="ibis.expr.types.relations.Table.head" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">head</span><span class="p">(</span><span class="n">n</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span></code>
+
+<a href="#ibis.expr.types.relations.Table.head" class="headerlink" title="Anchor link to this section for reference">&para;</a></h4>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>Select the first <code>n</code> rows of a table.</p>
+<p>The result set is not deterministic without a sort.</p>
+
+  <p><strong>Parameters:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Type</th>
+        <th>Description</th>
+        <th>Default</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td><code>n</code></td>
+          <td>
+                <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#int">int</a></code>
+          </td>
+          <td><p>Number of rows to include, defaults to 5</p></td>
+          <td>
+                <code>5</code>
+          </td>
+        </tr>
+    </tbody>
+  </table>
+
+  <p><strong>Returns:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td>
+                <code><a class="autorefs autorefs-internal" title="ibis.expr.types.relations.Table" href="#ibis.expr.types.relations.Table">Table</a></code>
+          </td>
+          <td><p><code>table</code> limited to <code>n</code> rows</p></td>
+        </tr>
+    </tbody>
+  </table>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+
+<h4 id="ibis.expr.types.relations.Table.info" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">info</span><span class="p">(</span><span class="n">buf</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span></code>
+
+<a href="#ibis.expr.types.relations.Table.info" class="headerlink" title="Anchor link to this section for reference">&para;</a></h4>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>Show summary information about a table.</p>
+<p>Currently implemented as showing column names, types and null counts.</p>
+
+  <p><strong>Parameters:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Type</th>
+        <th>Description</th>
+        <th>Default</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td><code>buf</code></td>
+          <td>
+                <code><a class="autorefs autorefs-external" title="typing.IO" href="https://docs.python.org/3/library/typing.html#typing.IO">IO</a>[<a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a>] | None</code>
+          </td>
+          <td><p>A writable buffer, defaults to stdout</p></td>
+          <td>
+                <code>None</code>
+          </td>
+        </tr>
+    </tbody>
+  </table>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+
+<h4 id="ibis.expr.types.relations.Table.intersect" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">intersect</span><span class="p">(</span><span class="o">*</span><span class="n">tables</span><span class="p">,</span> <span class="n">distinct</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span></code>
+
+<a href="#ibis.expr.types.relations.Table.intersect" class="headerlink" title="Anchor link to this section for reference">&para;</a></h4>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>Compute the set intersection of multiple table expressions.</p>
+<p>The input tables must have identical schemas.</p>
+
+  <p><strong>Parameters:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Type</th>
+        <th>Description</th>
+        <th>Default</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td><code>*tables</code></td>
+          <td>
+                <code><a class="autorefs autorefs-internal" title="ibis.expr.types.relations.Table" href="#ibis.expr.types.relations.Table">Table</a></code>
+          </td>
+          <td><p>One or more table expressions</p></td>
+          <td>
+                <code>()</code>
+          </td>
+        </tr>
+        <tr>
+          <td><code>distinct</code></td>
+          <td>
+                <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#bool">bool</a></code>
+          </td>
+          <td><p>Only return distinct rows</p></td>
+          <td>
+                <code>True</code>
+          </td>
+        </tr>
+    </tbody>
+  </table>
+
+  <p><strong>Returns:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td>
+                <code><a class="autorefs autorefs-internal" title="ibis.expr.types.relations.Table" href="#ibis.expr.types.relations.Table">Table</a></code>
+          </td>
+          <td><p>A new table containing the intersection of all input tables.</p></td>
+        </tr>
+    </tbody>
+  </table>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+
+<h4 id="ibis.expr.types.relations.Table.join" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">join</span><span class="p">(</span><span class="n">left</span><span class="p">,</span> <span class="n">right</span><span class="p">,</span> <span class="n">predicates</span><span class="o">=</span><span class="p">(),</span> <span class="n">how</span><span class="o">=</span><span class="s1">&#39;inner&#39;</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">suffixes</span><span class="o">=</span><span class="p">(</span><span class="s1">&#39;_x&#39;</span><span class="p">,</span> <span class="s1">&#39;_y&#39;</span><span class="p">))</span></code>
+
+<a href="#ibis.expr.types.relations.Table.join" class="headerlink" title="Anchor link to this section for reference">&para;</a></h4>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>Perform a join between two tables.</p>
+
+  <p><strong>Parameters:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Type</th>
+        <th>Description</th>
+        <th>Default</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td><code>left</code></td>
+          <td>
+                <code><a class="autorefs autorefs-internal" title="ibis.expr.types.relations.Table" href="#ibis.expr.types.relations.Table">Table</a></code>
+          </td>
+          <td><p>Left table to join</p></td>
+          <td>
+              <em>required</em>
+          </td>
+        </tr>
+        <tr>
+          <td><code>right</code></td>
+          <td>
+                <code><a class="autorefs autorefs-internal" title="ibis.expr.types.relations.Table" href="#ibis.expr.types.relations.Table">Table</a></code>
+          </td>
+          <td><p>Right table to join</p></td>
+          <td>
+              <em>required</em>
+          </td>
+        </tr>
+        <tr>
+          <td><code>predicates</code></td>
+          <td>
+                <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a> | <a class="autorefs autorefs-external" title="typing.Sequence" href="https://docs.python.org/3/library/typing.html#typing.Sequence">Sequence</a>[<a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a> | <a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#tuple">tuple</a>[<a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a> | <span title="ibis.expr.types">ir</span>.<a class="autorefs autorefs-internal" title="ibis.expr.types.Column" href="../generic/#ibis.expr.types.generic.Column">Column</a>, <a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a> | <span title="ibis.expr.types">ir</span>.<a class="autorefs autorefs-internal" title="ibis.expr.types.Column" href="../generic/#ibis.expr.types.generic.Column">Column</a>] | <span title="ibis.expr.types">ir</span>.<span title="ibis.expr.types.BooleanColumn">BooleanColumn</span>]</code>
+          </td>
+          <td><p>Boolean or column names to join on</p></td>
+          <td>
+                <code>()</code>
+          </td>
+        </tr>
+        <tr>
+          <td><code>how</code></td>
+          <td>
+                <code><a class="autorefs autorefs-external" title="typing.Literal" href="https://docs.python.org/3/library/typing.html#typing.Literal">Literal</a>[&#39;inner&#39;, &#39;left&#39;, &#39;outer&#39;, &#39;right&#39;, &#39;semi&#39;, &#39;anti&#39;, &#39;any_inner&#39;, &#39;any_left&#39;, &#39;left_semi&#39;]</code>
+          </td>
+          <td><p>Join method</p></td>
+          <td>
+                <code>&#39;inner&#39;</code>
+          </td>
+        </tr>
+        <tr>
+          <td><code>suffixes</code></td>
+          <td>
+                <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#tuple">tuple</a>[<a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a>, <a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a>]</code>
+          </td>
+          <td><p>Left and right suffixes that will be used to rename overlapping
+columns.</p></td>
+          <td>
+                <code>(&#39;_x&#39;, &#39;_y&#39;)</code>
+          </td>
+        </tr>
+    </tbody>
+  </table>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+
+<h4 id="ibis.expr.types.relations.Table.limit" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">limit</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="n">offset</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span></code>
+
+<a href="#ibis.expr.types.relations.Table.limit" class="headerlink" title="Anchor link to this section for reference">&para;</a></h4>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>Select the first <code>n</code> rows starting at <code>offset</code>.</p>
+
+  <p><strong>Parameters:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Type</th>
+        <th>Description</th>
+        <th>Default</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td><code>n</code></td>
+          <td>
+                <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#int">int</a></code>
+          </td>
+          <td><p>Number of rows to include</p></td>
+          <td>
+              <em>required</em>
+          </td>
+        </tr>
+        <tr>
+          <td><code>offset</code></td>
+          <td>
+                <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#int">int</a></code>
+          </td>
+          <td><p>Number of rows to skip first</p></td>
+          <td>
+                <code>0</code>
+          </td>
+        </tr>
+    </tbody>
+  </table>
+
+  <p><strong>Returns:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td>
+                <code><a class="autorefs autorefs-internal" title="ibis.expr.types.relations.Table" href="#ibis.expr.types.relations.Table">Table</a></code>
+          </td>
+          <td><p>The first <code>n</code> rows of <code>table</code> starting at <code>offset</code></p></td>
+        </tr>
+    </tbody>
+  </table>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+
+<h4 id="ibis.expr.types.relations.Table.mutate" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">mutate</span><span class="p">(</span><span class="n">exprs</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">mutations</span><span class="p">)</span></code>
+
+<a href="#ibis.expr.types.relations.Table.mutate" class="headerlink" title="Anchor link to this section for reference">&para;</a></h4>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>Add columns to a table expression.</p>
+
+  <p><strong>Parameters:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Type</th>
+        <th>Description</th>
+        <th>Default</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td><code>exprs</code></td>
+          <td>
+                <code><a class="autorefs autorefs-external" title="typing.Sequence" href="https://docs.python.org/3/library/typing.html#typing.Sequence">Sequence</a>[<span title="ibis.expr.types">ir</span>.<a class="autorefs autorefs-internal" title="ibis.expr.types.Expr" href="../#ibis.expr.types.core.Expr">Expr</a>] | None</code>
+          </td>
+          <td><p>List of named expressions to add as columns</p></td>
+          <td>
+                <code>None</code>
+          </td>
+        </tr>
+        <tr>
+          <td><code>mutations</code></td>
+          <td>
+                <code><span title="ibis.expr.types">ir</span>.<a class="autorefs autorefs-internal" title="ibis.expr.types.Value" href="../generic/#ibis.expr.types.generic.Value">Value</a></code>
+          </td>
+          <td><p>Named expressions using keyword arguments</p></td>
+          <td>
+                <code>{}</code>
+          </td>
+        </tr>
+    </tbody>
+  </table>
+
+  <p><strong>Returns:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td>
+                <code><a class="autorefs autorefs-internal" title="ibis.expr.types.relations.Table" href="#ibis.expr.types.relations.Table">Table</a></code>
+          </td>
+          <td><p>Table expression with additional columns</p></td>
+        </tr>
+    </tbody>
+  </table>
+
+<p><strong>Examples:</strong></p>
+    <p>Using keywords arguments to name the new columns</p>
+    <div class="highlight"><pre><span></span><code><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">ibis</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">table</span> <span class="o">=</span> <span class="n">ibis</span><span class="o">.</span><span class="n">table</span><span class="p">(</span>
+<span class="gp">... </span>    <span class="p">[(</span><span class="s1">&#39;foo&#39;</span><span class="p">,</span> <span class="s1">&#39;double&#39;</span><span class="p">),</span> <span class="p">(</span><span class="s1">&#39;bar&#39;</span><span class="p">,</span> <span class="s1">&#39;double&#39;</span><span class="p">)],</span>
+<span class="gp">... </span>    <span class="n">name</span><span class="o">=</span><span class="s1">&#39;t&#39;</span>
+<span class="gp">... </span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">expr</span> <span class="o">=</span> <span class="n">table</span><span class="o">.</span><span class="n">mutate</span><span class="p">(</span><span class="n">qux</span><span class="o">=</span><span class="n">table</span><span class="o">.</span><span class="n">foo</span> <span class="o">+</span> <span class="n">table</span><span class="o">.</span><span class="n">bar</span><span class="p">,</span> <span class="n">baz</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">expr</span>
+<span class="go">r0 := UnboundTable[t]</span>
+<span class="go">  foo float64</span>
+<span class="go">  bar float64</span>
+<span class="go">Selection[r0]</span>
+<span class="go">  selections:</span>
+<span class="go">    r0</span>
+<span class="go">    baz: 5</span>
+<span class="go">    qux: r0.foo + r0.bar</span>
+</code></pre></div>
+    <p>Use the <a class="autorefs autorefs-internal" href="../generic/#ibis.expr.types.generic.Value.name"><code>name</code></a> method to name
+the new columns.</p>
+    <div class="highlight"><pre><span></span><code><span class="gp">&gt;&gt;&gt; </span><span class="n">new_columns</span> <span class="o">=</span> <span class="p">[</span><span class="n">ibis</span><span class="o">.</span><span class="n">literal</span><span class="p">(</span><span class="mi">5</span><span class="p">)</span><span class="o">.</span><span class="n">name</span><span class="p">(</span><span class="s1">&#39;baz&#39;</span><span class="p">,),</span>
+<span class="gp">... </span>               <span class="p">(</span><span class="n">table</span><span class="o">.</span><span class="n">foo</span> <span class="o">+</span> <span class="n">table</span><span class="o">.</span><span class="n">bar</span><span class="p">)</span><span class="o">.</span><span class="n">name</span><span class="p">(</span><span class="s1">&#39;qux&#39;</span><span class="p">)]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">expr2</span> <span class="o">=</span> <span class="n">table</span><span class="o">.</span><span class="n">mutate</span><span class="p">(</span><span class="n">new_columns</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">expr</span><span class="o">.</span><span class="n">equals</span><span class="p">(</span><span class="n">expr2</span><span class="p">)</span>
+<span class="go">True</span>
+</code></pre></div>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+
+<h4 id="ibis.expr.types.relations.Table.order_by" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">order_by</span><span class="p">(</span><span class="n">by</span><span class="p">)</span></code>
+
+<a href="#ibis.expr.types.relations.Table.order_by" class="headerlink" title="Anchor link to this section for reference">&para;</a></h4>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>Sort a table by one or more expressions.</p>
+
+  <p><strong>Parameters:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Type</th>
+        <th>Description</th>
+        <th>Default</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td><code>by</code></td>
+          <td>
+                <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a> | <span title="ibis.expr.types">ir</span>.<a class="autorefs autorefs-internal" title="ibis.expr.types.Column" href="../generic/#ibis.expr.types.generic.Column">Column</a> | <a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#tuple">tuple</a>[<a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a> | <span title="ibis.expr.types">ir</span>.<a class="autorefs autorefs-internal" title="ibis.expr.types.Column" href="../generic/#ibis.expr.types.generic.Column">Column</a>, <a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#bool">bool</a>] | <a class="autorefs autorefs-external" title="typing.Sequence" href="https://docs.python.org/3/library/typing.html#typing.Sequence">Sequence</a>[<a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#tuple">tuple</a>[<a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a> | <span title="ibis.expr.types">ir</span>.<a class="autorefs autorefs-internal" title="ibis.expr.types.Column" href="../generic/#ibis.expr.types.generic.Column">Column</a>, <a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#bool">bool</a>]]</code>
+          </td>
+          <td><p>An expression (or expressions) to sort the table by.</p></td>
+          <td>
+              <em>required</em>
+          </td>
+        </tr>
+    </tbody>
+  </table>
+
+<p><strong>Examples:</strong></p>
+    <div class="highlight"><pre><span></span><code><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">ibis</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">t</span> <span class="o">=</span> <span class="n">ibis</span><span class="o">.</span><span class="n">table</span><span class="p">(</span><span class="nb">dict</span><span class="p">(</span><span class="n">a</span><span class="o">=</span><span class="s1">&#39;int64&#39;</span><span class="p">,</span> <span class="n">b</span><span class="o">=</span><span class="s1">&#39;string&#39;</span><span class="p">))</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">t</span><span class="o">.</span><span class="n">order_by</span><span class="p">([</span><span class="s1">&#39;a&#39;</span><span class="p">,</span> <span class="n">ibis</span><span class="o">.</span><span class="n">desc</span><span class="p">(</span><span class="s1">&#39;b&#39;</span><span class="p">)])</span>
+<span class="go">r0 := UnboundTable: unbound_table_0</span>
+<span class="go">  a int64</span>
+<span class="go">  b string</span>
+<span class="go">Selection[r0]</span>
+<span class="go">  sort_keys:</span>
+<span class="go">     asc|r0.a</span>
+<span class="go">    desc|r0.b</span>
+</code></pre></div>
+
+  <p><strong>Returns:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td>
+                <code><a class="autorefs autorefs-internal" title="ibis.expr.types.relations.Table" href="#ibis.expr.types.relations.Table">Table</a></code>
+          </td>
+          <td><p>Sorted table</p></td>
+        </tr>
+    </tbody>
+  </table>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+
+<h4 id="ibis.expr.types.relations.Table.relabel" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">relabel</span><span class="p">(</span><span class="n">substitutions</span><span class="p">)</span></code>
+
+<a href="#ibis.expr.types.relations.Table.relabel" class="headerlink" title="Anchor link to this section for reference">&para;</a></h4>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>Rename columns in the table.</p>
+
+  <p><strong>Parameters:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Type</th>
+        <th>Description</th>
+        <th>Default</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td><code>substitutions</code></td>
+          <td>
+                <code><a class="autorefs autorefs-external" title="typing.Mapping" href="https://docs.python.org/3/library/typing.html#typing.Mapping">Mapping</a>[<a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a>, <a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a>] | <a class="autorefs autorefs-external" title="typing.Callable" href="https://docs.python.org/3/library/typing.html#typing.Callable">Callable</a>[[<a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a>], <a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a> | None]</code>
+          </td>
+          <td><p>A mapping or function from old to new column names. If a column
+isn't in the mapping (or if the callable returns None) it is left
+with its original name.</p></td>
+          <td>
+              <em>required</em>
+          </td>
+        </tr>
+    </tbody>
+  </table>
+
+  <p><strong>Returns:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td>
+                <code><a class="autorefs autorefs-internal" title="ibis.expr.types.relations.Table" href="#ibis.expr.types.relations.Table">Table</a></code>
+          </td>
+          <td><p>A relabeled table expression</p></td>
+        </tr>
+    </tbody>
+  </table>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+
+<h4 id="ibis.expr.types.relations.Table.rowid" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">rowid</span><span class="p">()</span></code>
+
+<a href="#ibis.expr.types.relations.Table.rowid" class="headerlink" title="Anchor link to this section for reference">&para;</a></h4>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>A unique integer per row, only valid on physical tables.</p>
+<p>Any further meaning behind this expression is backend dependent.
+Generally this corresponds to some index into the database storage
+(for example, sqlite or duckdb's <code>rowid</code>).</p>
+<p>For a monotonically increasing row number, see <code>ibis.row_number</code>.</p>
+
+  <p><strong>Returns:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td>
+                <code><a class="autorefs autorefs-internal" title="ibis.expr.types.numeric.IntegerColumn" href="../numeric/#ibis.expr.types.numeric.IntegerColumn">IntegerColumn</a></code>
+          </td>
+          <td><p>An integer column</p></td>
+        </tr>
+    </tbody>
+  </table>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+
+<h4 id="ibis.expr.types.relations.Table.schema" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">schema</span><span class="p">()</span></code>
+
+<a href="#ibis.expr.types.relations.Table.schema" class="headerlink" title="Anchor link to this section for reference">&para;</a></h4>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>Get the schema for this table (if one is known).</p>
+
+  <p><strong>Returns:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td>
+                <code><a class="autorefs autorefs-internal" title="ibis.expr.api.Schema" href="../../schemas/#ibis.expr.schema.Schema">Schema</a></code>
+          </td>
+          <td><p>The table's schema.</p></td>
+        </tr>
+    </tbody>
+  </table>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+
+<h4 id="ibis.expr.types.relations.Table.select" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">select</span><span class="p">(</span><span class="o">*</span><span class="n">exprs</span><span class="p">,</span> <span class="o">**</span><span class="n">named_exprs</span><span class="p">)</span></code>
+
+<a href="#ibis.expr.types.relations.Table.select" class="headerlink" title="Anchor link to this section for reference">&para;</a></h4>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>Compute a new table expression using <code>exprs</code> and <code>named_exprs</code>.</p>
+<p>Passing an aggregate function to this method will broadcast the
+aggregate's value over the number of rows in the table and
+automatically constructs a window function expression. See the examples
+section for more details.</p>
+<p>For backwards compatibility the keyword argument <code>exprs</code> is reserved
+and cannot be used to name an expression. This behavior will be removed
+in v4.</p>
+
+  <p><strong>Parameters:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Type</th>
+        <th>Description</th>
+        <th>Default</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td><code>exprs</code></td>
+          <td>
+                <code><span title="ibis.expr.types">ir</span>.<a class="autorefs autorefs-internal" title="ibis.expr.types.Value" href="../generic/#ibis.expr.types.generic.Value">Value</a> | <a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a> | <a class="autorefs autorefs-external" title="typing.Iterable" href="https://docs.python.org/3/library/typing.html#typing.Iterable">Iterable</a>[<span title="ibis.expr.types">ir</span>.<a class="autorefs autorefs-internal" title="ibis.expr.types.Value" href="../generic/#ibis.expr.types.generic.Value">Value</a> | <a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a>]</code>
+          </td>
+          <td><p>Column expression, string, or list of column expressions and
+strings.</p></td>
+          <td>
+                <code>()</code>
+          </td>
+        </tr>
+        <tr>
+          <td><code>named_exprs</code></td>
+          <td>
+                <code><span title="ibis.expr.types">ir</span>.<a class="autorefs autorefs-internal" title="ibis.expr.types.Value" href="../generic/#ibis.expr.types.generic.Value">Value</a> | <a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></code>
+          </td>
+          <td><p>Column expressions</p></td>
+          <td>
+                <code>{}</code>
+          </td>
+        </tr>
+    </tbody>
+  </table>
+
+  <p><strong>Returns:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td>
+                <code><a class="autorefs autorefs-internal" title="ibis.expr.types.relations.Table" href="#ibis.expr.types.relations.Table">Table</a></code>
+          </td>
+          <td><p>Table expression</p></td>
+        </tr>
+    </tbody>
+  </table>
+
+<p><strong>Examples:</strong></p>
+    <p>Simple projection</p>
+    <div class="highlight"><pre><span></span><code><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">ibis</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">t</span> <span class="o">=</span> <span class="n">ibis</span><span class="o">.</span><span class="n">table</span><span class="p">(</span><span class="nb">dict</span><span class="p">(</span><span class="n">a</span><span class="o">=</span><span class="s2">&quot;int64&quot;</span><span class="p">,</span> <span class="n">b</span><span class="o">=</span><span class="s2">&quot;double&quot;</span><span class="p">),</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;t&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">proj</span> <span class="o">=</span> <span class="n">t</span><span class="o">.</span><span class="n">select</span><span class="p">(</span><span class="n">t</span><span class="o">.</span><span class="n">a</span><span class="p">,</span> <span class="n">b_plus_1</span><span class="o">=</span><span class="n">t</span><span class="o">.</span><span class="n">b</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">proj</span>
+<span class="go">r0 := UnboundTable[t]</span>
+<span class="go">  a int64</span>
+<span class="go">  b float64</span>
+<span class="go">Selection[r0]</span>
+<span class="go">  selections:</span>
+<span class="go">    a:        r0.a</span>
+<span class="go">    b_plus_1: r0.b + 1</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">proj2</span> <span class="o">=</span> <span class="n">t</span><span class="o">.</span><span class="n">select</span><span class="p">(</span><span class="s2">&quot;a&quot;</span><span class="p">,</span> <span class="n">b_plus_1</span><span class="o">=</span><span class="n">t</span><span class="o">.</span><span class="n">b</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">proj</span><span class="o">.</span><span class="n">equals</span><span class="p">(</span><span class="n">proj2</span><span class="p">)</span>
+<span class="go">True</span>
+</code></pre></div>
+    <p>Aggregate projection</p>
+    <div class="highlight"><pre><span></span><code><span class="gp">&gt;&gt;&gt; </span><span class="n">agg_proj</span> <span class="o">=</span> <span class="n">t</span><span class="o">.</span><span class="n">select</span><span class="p">(</span><span class="n">sum_a</span><span class="o">=</span><span class="n">t</span><span class="o">.</span><span class="n">a</span><span class="o">.</span><span class="n">sum</span><span class="p">(),</span> <span class="n">mean_b</span><span class="o">=</span><span class="n">t</span><span class="o">.</span><span class="n">b</span><span class="o">.</span><span class="n">mean</span><span class="p">())</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">agg_proj</span>
+<span class="go">r0 := UnboundTable[t]</span>
+<span class="go">  a int64</span>
+<span class="go">  b float64</span>
+<span class="go">Selection[r0]</span>
+<span class="go">  selections:</span>
+<span class="go">    sum_a:  Window(Sum(r0.a), window=Window(how=&#39;rows&#39;))</span>
+<span class="go">    mean_b: Window(Mean(r0.b), window=Window(how=&#39;rows&#39;))</span>
+</code></pre></div>
+    <p>Note the <code>Window</code> objects here.</p>
+<p>Their existence means that the result of the aggregation will be
+broadcast across the number of rows in the input column.
+The purpose of this expression rewrite is to make it easy to write
+column/scalar-aggregate operations like</p>
+    <div class="highlight"><pre><span></span><code><span class="gp">&gt;&gt;&gt; </span><span class="n">t</span><span class="o">.</span><span class="n">select</span><span class="p">(</span><span class="n">demeaned_a</span><span class="o">=</span><span class="n">t</span><span class="o">.</span><span class="n">a</span> <span class="o">-</span> <span class="n">t</span><span class="o">.</span><span class="n">a</span><span class="o">.</span><span class="n">mean</span><span class="p">())</span>
+<span class="go">r0 := UnboundTable[t]</span>
+<span class="go">  a int64</span>
+<span class="go">  b float64</span>
+<span class="go">Selection[r0]</span>
+<span class="go">  selections:</span>
+<span class="go">    demeaned_a: r0.a - Window(Mean(r0.a), window=Window(how=&#39;rows&#39;))</span>
+</code></pre></div>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+
+<h4 id="ibis.expr.types.relations.Table.set_column" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">set_column</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">expr</span><span class="p">)</span></code>
+
+<a href="#ibis.expr.types.relations.Table.set_column" class="headerlink" title="Anchor link to this section for reference">&para;</a></h4>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>Replace an existing column with a new expression.</p>
+
+  <p><strong>Parameters:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Type</th>
+        <th>Description</th>
+        <th>Default</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td><code>name</code></td>
+          <td>
+                <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></code>
+          </td>
+          <td><p>Column name to replace</p></td>
+          <td>
+              <em>required</em>
+          </td>
+        </tr>
+        <tr>
+          <td><code>expr</code></td>
+          <td>
+                <code><span title="ibis.expr.types">ir</span>.<a class="autorefs autorefs-internal" title="ibis.expr.types.Value" href="../generic/#ibis.expr.types.generic.Value">Value</a></code>
+          </td>
+          <td><p>New data for column</p></td>
+          <td>
+              <em>required</em>
+          </td>
+        </tr>
+    </tbody>
+  </table>
+
+  <p><strong>Returns:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td>
+                <code><a class="autorefs autorefs-internal" title="ibis.expr.types.relations.Table" href="#ibis.expr.types.relations.Table">Table</a></code>
+          </td>
+          <td><p>Table expression with new columns</p></td>
+        </tr>
+    </tbody>
+  </table>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+
+<h4 id="ibis.expr.types.relations.Table.sql" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">sql</span><span class="p">(</span><span class="n">query</span><span class="p">)</span></code>
+
+<a href="#ibis.expr.types.relations.Table.sql" class="headerlink" title="Anchor link to this section for reference">&para;</a></h4>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>Run a SQL query against a table expression.</p>
+<div class="admonition note">
+<p class="admonition-title">The SQL string is backend specific</p>
+<p><code>query</code> must be valid SQL for the execution backend the expression
+will run against</p>
+</div>
+<p>See <a class="autorefs autorefs-internal" href="#ibis.expr.types.relations.Table.alias"><code>Table.alias</code></a> for
+details on using named table expressions in a SQL string.</p>
+
+  <p><strong>Parameters:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Type</th>
+        <th>Description</th>
+        <th>Default</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td><code>query</code></td>
+          <td>
+                <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></code>
+          </td>
+          <td><p>Query string</p></td>
+          <td>
+              <em>required</em>
+          </td>
+        </tr>
+    </tbody>
+  </table>
+
+  <p><strong>Returns:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td>
+                <code><a class="autorefs autorefs-internal" title="ibis.expr.types.relations.Table" href="#ibis.expr.types.relations.Table">Table</a></code>
+          </td>
+          <td><p>An opaque table expression</p></td>
+        </tr>
+    </tbody>
+  </table>
+
+<p><strong>Examples:</strong></p>
+    <div class="highlight"><pre><span></span><code><span class="gp">&gt;&gt;&gt; </span><span class="n">con</span> <span class="o">=</span> <span class="n">ibis</span><span class="o">.</span><span class="n">duckdb</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="s2">&quot;ci/ibis-testing-data/ibis_testing.ddb&quot;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">t</span> <span class="o">=</span> <span class="n">con</span><span class="o">.</span><span class="n">table</span><span class="p">(</span><span class="s2">&quot;functional_alltypes&quot;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">expr</span> <span class="o">=</span> <span class="n">t</span><span class="o">.</span><span class="n">sql</span><span class="p">(</span><span class="s2">&quot;SELECT sum(double_col) FROM functional_alltypes&quot;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">expr</span>
+<span class="go">r0 := AlchemyTable: functional_alltypes</span>
+<span class="go">  index           int64</span>
+<span class="go">    ⋮</span>
+<span class="go">  month           int32</span>
+<span class="go">SQLStringView[r0]: _ibis_view_1</span>
+<span class="go">  query: &#39;SELECT sum(double_col) FROM functional_alltypes&#39;</span>
+<span class="go">  schema:</span>
+<span class="go">    sum(double_col) float64</span>
+</code></pre></div>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+
+<h4 id="ibis.expr.types.relations.Table.to_array" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">to_array</span><span class="p">()</span></code>
+
+<a href="#ibis.expr.types.relations.Table.to_array" class="headerlink" title="Anchor link to this section for reference">&para;</a></h4>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>View a single column table as an array.</p>
+
+  <p><strong>Returns:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td>
+                <code><a class="autorefs autorefs-internal" title="ibis.expr.types.temporal.Value" href="../generic/#ibis.expr.types.generic.Value">Value</a></code>
+          </td>
+          <td><p>A single column view of a table</p></td>
+        </tr>
+    </tbody>
+  </table>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+
+<h4 id="ibis.expr.types.relations.Table.union" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">union</span><span class="p">(</span><span class="o">*</span><span class="n">tables</span><span class="p">,</span> <span class="n">distinct</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span></code>
+
+<a href="#ibis.expr.types.relations.Table.union" class="headerlink" title="Anchor link to this section for reference">&para;</a></h4>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>Compute the set union of multiple table expressions.</p>
+<p>The input tables must have identical schemas.</p>
+
+  <p><strong>Parameters:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Type</th>
+        <th>Description</th>
+        <th>Default</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td><code>*tables</code></td>
+          <td>
+                <code><a class="autorefs autorefs-internal" title="ibis.expr.types.relations.Table" href="#ibis.expr.types.relations.Table">Table</a></code>
+          </td>
+          <td><p>One or more table expressions</p></td>
+          <td>
+                <code>()</code>
+          </td>
+        </tr>
+        <tr>
+          <td><code>distinct</code></td>
+          <td>
+                <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#bool">bool</a></code>
+          </td>
+          <td><p>Only return distinct rows</p></td>
+          <td>
+                <code>False</code>
+          </td>
+        </tr>
+    </tbody>
+  </table>
+
+  <p><strong>Returns:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td>
+                <code><a class="autorefs autorefs-internal" title="ibis.expr.types.relations.Table" href="#ibis.expr.types.relations.Table">Table</a></code>
+          </td>
+          <td><p>A new table containing the union of all input tables.</p></td>
+        </tr>
+    </tbody>
+  </table>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+
+<h4 id="ibis.expr.types.relations.Table.unpack" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">unpack</span><span class="p">(</span><span class="o">*</span><span class="n">columns</span><span class="p">)</span></code>
+
+<a href="#ibis.expr.types.relations.Table.unpack" class="headerlink" title="Anchor link to this section for reference">&para;</a></h4>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>Project the struct fields of each of <code>columns</code> into <code>self</code>.</p>
+<p>Existing fields are retained in the projection.</p>
+
+  <p><strong>Parameters:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Type</th>
+        <th>Description</th>
+        <th>Default</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td><code>columns</code></td>
+          <td>
+                <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></code>
+          </td>
+          <td><p>String column names to project into <code>self</code>.</p></td>
+          <td>
+                <code>()</code>
+          </td>
+        </tr>
+    </tbody>
+  </table>
+
+  <p><strong>Returns:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td>
+                <code><a class="autorefs autorefs-internal" title="ibis.expr.types.relations.Table" href="#ibis.expr.types.relations.Table">Table</a></code>
+          </td>
+          <td><p>The child table with struct fields of each of <code>columns</code> projected.</p></td>
+        </tr>
+    </tbody>
+  </table>
+
+<p><strong>Examples:</strong></p>
+    <div class="highlight"><pre><span></span><code><span class="gp">&gt;&gt;&gt; </span><span class="n">schema</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">a</span><span class="o">=</span><span class="s2">&quot;struct&lt;b: float, c: string&gt;&quot;</span><span class="p">,</span> <span class="n">d</span><span class="o">=</span><span class="s2">&quot;string&quot;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">t</span> <span class="o">=</span> <span class="n">ibis</span><span class="o">.</span><span class="n">table</span><span class="p">(</span><span class="n">schema</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;t&quot;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">t</span>
+<span class="go">UnboundTable: t</span>
+<span class="go">  a struct&lt;b: float64, c: string&gt;</span>
+<span class="go">  d string</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">t</span><span class="o">.</span><span class="n">unpack</span><span class="p">(</span><span class="s2">&quot;a&quot;</span><span class="p">)</span>
+<span class="go">r0 := UnboundTable: t</span>
+<span class="go">  a struct&lt;b: float64, c: string&gt;</span>
+<span class="go">  d string</span>
+<span class="go">Selection[r0]</span>
+<span class="go">  selections:</span>
+<span class="go">    b: StructField(r0.a, field=&#39;b&#39;)</span>
+<span class="go">    c: StructField(r0.a, field=&#39;c&#39;)</span>
+<span class="go">    d: r0.d</span>
+</code></pre></div>
+      <h6 id="ibis.expr.types.relations.Table.unpack--see-also">See Also<a class="headerlink" href="#ibis.expr.types.relations.Table.unpack--see-also" title="Anchor link to this section for reference">&para;</a></h6>
+<p><a class="autorefs autorefs-internal" href="../collections/#ibis.expr.types.structs.StructValue.lift"><code>StructValue.lift</code></a></p>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+
+<h4 id="ibis.expr.types.relations.Table.view" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">view</span><span class="p">()</span></code>
+
+<a href="#ibis.expr.types.relations.Table.view" class="headerlink" title="Anchor link to this section for reference">&para;</a></h4>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>Create a new table expression distinct from the current one.</p>
+<p>Use this API for any self-referencing operations like a self-join.</p>
+
+  <p><strong>Returns:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td>
+                <code><a class="autorefs autorefs-internal" title="ibis.expr.types.relations.Table" href="#ibis.expr.types.relations.Table">Table</a></code>
+          </td>
+          <td><p>Table expression</p></td>
+        </tr>
+    </tbody>
+  </table>
+
+  </div>
+
+</div>
+
+
+
+  </div>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h2 id="ibis.expr.types.groupby.GroupedTable" class="doc doc-heading">
+        <code>GroupedTable</code>
+
+
+<a href="#ibis.expr.types.groupby.GroupedTable" class="headerlink" title="Anchor link to this section for reference">&para;</a></h2>
+
+
+  <div class="doc doc-contents first">
+
+  
+      <p>An intermediate table expression to hold grouping information.</p>
+
+
+
+  
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+
+<h3 id="ibis.expr.types.groupby.GroupedTable-functions">Functions<a href="#ibis.expr.types.groupby.GroupedTable-functions" class="headerlink" title="Anchor link to this section for reference">&para;</a></h3>
+
+<div class="doc doc-object doc-function">
+
+
+
+<h4 id="ibis.expr.types.groupby.GroupedTable.count" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">count</span><span class="p">(</span><span class="n">metric_name</span><span class="o">=</span><span class="s1">&#39;count&#39;</span><span class="p">)</span></code>
+
+<a href="#ibis.expr.types.groupby.GroupedTable.count" class="headerlink" title="Anchor link to this section for reference">&para;</a></h4>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>Computing the number of rows per group.</p>
+
+  <p><strong>Parameters:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Type</th>
+        <th>Description</th>
+        <th>Default</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td><code>metric_name</code></td>
+          <td>
+                <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></code>
+          </td>
+          <td><p>Name to use for the row count metric</p></td>
+          <td>
+                <code>&#39;count&#39;</code>
+          </td>
+        </tr>
+    </tbody>
+  </table>
+
+  <p><strong>Returns:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td>
+                <code><a class="autorefs autorefs-internal" title="ibis.expr.types.relations.Table" href="#ibis.expr.types.relations.Table">Table</a></code>
+          </td>
+          <td><p>The aggregated table</p></td>
+        </tr>
+    </tbody>
+  </table>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+
+<h4 id="ibis.expr.types.groupby.GroupedTable.having" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">having</span><span class="p">(</span><span class="n">expr</span><span class="p">)</span></code>
+
+<a href="#ibis.expr.types.groupby.GroupedTable.having" class="headerlink" title="Anchor link to this section for reference">&para;</a></h4>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>Add a post-aggregation result filter <code>expr</code>.</p>
+
+  <p><strong>Parameters:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Type</th>
+        <th>Description</th>
+        <th>Default</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td><code>expr</code></td>
+          <td>
+                <code><span title="ibis.expr.types">ir</span>.<span title="ibis.expr.types.BooleanScalar">BooleanScalar</span></code>
+          </td>
+          <td><p>An expression that filters based on an aggregate value.</p></td>
+          <td>
+              <em>required</em>
+          </td>
+        </tr>
+    </tbody>
+  </table>
+
+  <p><strong>Returns:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td>
+                <code><a class="autorefs autorefs-internal" title="ibis.expr.types.groupby.GroupedTable" href="#ibis.expr.types.groupby.GroupedTable">GroupedTable</a></code>
+          </td>
+          <td><p>A grouped table expression</p></td>
+        </tr>
+    </tbody>
+  </table>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+
+<h4 id="ibis.expr.types.groupby.GroupedTable.mutate" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">mutate</span><span class="p">(</span><span class="n">exprs</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwds</span><span class="p">)</span></code>
+
+<a href="#ibis.expr.types.groupby.GroupedTable.mutate" class="headerlink" title="Anchor link to this section for reference">&para;</a></h4>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>Return a table projection with window functions applied.</p>
+<p>Any arguments can be functions.</p>
+
+  <p><strong>Parameters:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Type</th>
+        <th>Description</th>
+        <th>Default</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td><code>exprs</code></td>
+          <td>
+                <code><span title="ibis.expr.types">ir</span>.<a class="autorefs autorefs-internal" title="ibis.expr.types.Value" href="../generic/#ibis.expr.types.generic.Value">Value</a> | <a class="autorefs autorefs-external" title="typing.Sequence" href="https://docs.python.org/3/library/typing.html#typing.Sequence">Sequence</a>[<span title="ibis.expr.types">ir</span>.<a class="autorefs autorefs-internal" title="ibis.expr.types.Value" href="../generic/#ibis.expr.types.generic.Value">Value</a>] | None</code>
+          </td>
+          <td><p>List of expressions</p></td>
+          <td>
+                <code>None</code>
+          </td>
+        </tr>
+        <tr>
+          <td><code>kwds</code></td>
+          <td>
+                <code><span title="ibis.expr.types">ir</span>.<a class="autorefs autorefs-internal" title="ibis.expr.types.Value" href="../generic/#ibis.expr.types.generic.Value">Value</a></code>
+          </td>
+          <td><p>Expressions</p></td>
+          <td>
+                <code>{}</code>
+          </td>
+        </tr>
+    </tbody>
+  </table>
+
+<p><strong>Examples:</strong></p>
+    <div class="highlight"><pre><span></span><code><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">ibis</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">t</span> <span class="o">=</span> <span class="n">ibis</span><span class="o">.</span><span class="n">table</span><span class="p">([</span>
+<span class="gp">... </span>    <span class="p">(</span><span class="s1">&#39;foo&#39;</span><span class="p">,</span> <span class="s1">&#39;string&#39;</span><span class="p">),</span>
+<span class="gp">... </span>    <span class="p">(</span><span class="s1">&#39;bar&#39;</span><span class="p">,</span> <span class="s1">&#39;string&#39;</span><span class="p">),</span>
+<span class="gp">... </span>    <span class="p">(</span><span class="s1">&#39;baz&#39;</span><span class="p">,</span> <span class="s1">&#39;double&#39;</span><span class="p">),</span>
+<span class="gp">... </span><span class="p">],</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;t&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">t</span>
+<span class="go">UnboundTable[t]</span>
+<span class="go">  foo string</span>
+<span class="go">  bar string</span>
+<span class="go">  baz float64</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">expr</span> <span class="o">=</span> <span class="p">(</span><span class="n">t</span><span class="o">.</span><span class="n">group_by</span><span class="p">(</span><span class="s1">&#39;foo&#39;</span><span class="p">)</span>
+<span class="gp">... </span>         <span class="o">.</span><span class="n">order_by</span><span class="p">(</span><span class="n">ibis</span><span class="o">.</span><span class="n">desc</span><span class="p">(</span><span class="s1">&#39;bar&#39;</span><span class="p">))</span>
+<span class="gp">... </span>         <span class="o">.</span><span class="n">mutate</span><span class="p">(</span><span class="n">qux</span><span class="o">=</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span><span class="o">.</span><span class="n">baz</span><span class="o">.</span><span class="n">lag</span><span class="p">(),</span> <span class="n">qux2</span><span class="o">=</span><span class="n">t</span><span class="o">.</span><span class="n">baz</span><span class="o">.</span><span class="n">lead</span><span class="p">()))</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">print</span><span class="p">(</span><span class="n">expr</span><span class="p">)</span>
+<span class="go">r0 := UnboundTable[t]</span>
+<span class="go">  foo string</span>
+<span class="go">  bar string</span>
+<span class="go">  baz float64</span>
+<span class="go">Selection[r0]</span>
+<span class="go">  selections:</span>
+<span class="go">    r0</span>
+<span class="go">    qux:  Window(Lag(r0.baz), window=Window(group_by=[r0.foo], order_by=[desc|r0.bar], how=&#39;rows&#39;))</span>
+<span class="go">    qux2: Window(Lead(r0.baz), window=Window(group_by=[r0.foo], order_by=[desc|r0.bar], how=&#39;rows&#39;))</span>
+</code></pre></div>
+
+  <p><strong>Returns:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td>
+                <code><a class="autorefs autorefs-internal" title="ibis.expr.types.relations.Table" href="#ibis.expr.types.relations.Table">Table</a></code>
+          </td>
+          <td><p>A table expression with window functions applied</p></td>
+        </tr>
+    </tbody>
+  </table>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+
+<h4 id="ibis.expr.types.groupby.GroupedTable.order_by" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">order_by</span><span class="p">(</span><span class="n">expr</span><span class="p">)</span></code>
+
+<a href="#ibis.expr.types.groupby.GroupedTable.order_by" class="headerlink" title="Anchor link to this section for reference">&para;</a></h4>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>Sort a grouped table expression by <code>expr</code>.</p>
+<h6 id="ibis.expr.types.groupby.GroupedTable.order_by--notes">Notes<a class="headerlink" href="#ibis.expr.types.groupby.GroupedTable.order_by--notes" title="Anchor link to this section for reference">&para;</a></h6>
+<p>This API call is ignored in aggregations.</p>
+
+  <p><strong>Parameters:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Type</th>
+        <th>Description</th>
+        <th>Default</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td><code>expr</code></td>
+          <td>
+                <code><span title="ibis.expr.types">ir</span>.<a class="autorefs autorefs-internal" title="ibis.expr.types.Value" href="../generic/#ibis.expr.types.generic.Value">Value</a> | <a class="autorefs autorefs-external" title="typing.Iterable" href="https://docs.python.org/3/library/typing.html#typing.Iterable">Iterable</a>[<span title="ibis.expr.types">ir</span>.<a class="autorefs autorefs-internal" title="ibis.expr.types.Value" href="../generic/#ibis.expr.types.generic.Value">Value</a>]</code>
+          </td>
+          <td><p>Expressions to order the results by</p></td>
+          <td>
+              <em>required</em>
+          </td>
+        </tr>
+    </tbody>
+  </table>
+
+  <p><strong>Returns:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td>
+                <code><a class="autorefs autorefs-internal" title="ibis.expr.types.groupby.GroupedTable" href="#ibis.expr.types.groupby.GroupedTable">GroupedTable</a></code>
+          </td>
+          <td><p>A sorted grouped GroupedTable</p></td>
+        </tr>
+    </tbody>
+  </table>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+
+<h4 id="ibis.expr.types.groupby.GroupedTable.over" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">over</span><span class="p">(</span><span class="n">window</span><span class="p">)</span></code>
+
+<a href="#ibis.expr.types.groupby.GroupedTable.over" class="headerlink" title="Anchor link to this section for reference">&para;</a></h4>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>Apply a window over the input expressions.</p>
+
+  <p><strong>Parameters:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Type</th>
+        <th>Description</th>
+        <th>Default</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td><code>window</code></td>
+          <td>
+                <code><span title="ibis.expr.types.groupby.GroupedTable._window">_window</span>.<span title="ibis.expr.types.groupby.GroupedTable._window.Window">Window</span></code>
+          </td>
+          <td><p>Window to add to the input</p></td>
+          <td>
+              <em>required</em>
+          </td>
+        </tr>
+    </tbody>
+  </table>
+
+  <p><strong>Returns:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td>
+                <code><a class="autorefs autorefs-internal" title="ibis.expr.types.groupby.GroupedTable" href="#ibis.expr.types.groupby.GroupedTable">GroupedTable</a></code>
+          </td>
+          <td><p>A new grouped table expression</p></td>
+        </tr>
+    </tbody>
+  </table>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+
+<h4 id="ibis.expr.types.groupby.GroupedTable.projection" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">projection</span><span class="p">(</span><span class="n">exprs</span><span class="p">)</span></code>
+
+<a href="#ibis.expr.types.groupby.GroupedTable.projection" class="headerlink" title="Anchor link to this section for reference">&para;</a></h4>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>Project new columns out of the grouped table.</p>
+<h6 id="ibis.expr.types.groupby.GroupedTable.projection--see-also">See Also<a class="headerlink" href="#ibis.expr.types.groupby.GroupedTable.projection--see-also" title="Anchor link to this section for reference">&para;</a></h6>
+<p><a class="autorefs autorefs-internal" href="#ibis.expr.types.groupby.GroupedTable.mutate"><code>GroupedTable.mutate</code></a></p>
+
+  </div>
+
+</div>
+
+
+
+  </div>
+
+  </div>
+
+</div>
+
+  <hr>
+<div class="md-source-file">
+  <small>
+    
+      Last update:
+      <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date">August 5, 2022</span>
+      
+    
+  </small>
+</div>
+
+
+
+
+
+                
+
+              </article>
+            </div>
+          
+          
+  <script>var tabs=__md_get("__tabs");if(Array.isArray(tabs))e:for(var set of document.querySelectorAll(".tabbed-set")){var tab,labels=set.querySelector(".tabbed-labels");for(tab of tabs)for(var label of labels.getElementsByTagName("label"))if(label.innerText.trim()===tab){var input=document.getElementById(label.htmlFor);input.checked=!0;continue e}}</script>
+
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+    
+    <nav class="md-footer__inner md-grid" aria-label="Footer" >
+      
+        
+        <a href="../top_level/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Top Level" rel="prev">
+          <div class="md-footer__button md-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12Z"/></svg>
+          </div>
+          <div class="md-footer__title">
+            <div class="md-ellipsis">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              Top Level
+            </div>
+          </div>
+        </a>
+      
+      
+        
+        <a href="../generic/" class="md-footer__link md-footer__link--next" aria-label="Next: Generic Values" rel="next">
+          <div class="md-footer__title">
+            <div class="md-ellipsis">
+              <span class="md-footer__direction">
+                Next
+              </span>
+              Generic Values
+            </div>
+          </div>
+          <div class="md-footer__button md-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11H4Z"/></svg>
+          </div>
+        </a>
+      
+    </nav>
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+    <div class="md-copyright__highlight">
+      Copyright &copy; 2014-2022
+    </div>
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+        <div class="md-social">
+  
+    
+    
+      
+      
+    
+    <a href="https://twitter.com/IbisData" target="_blank" rel="noopener" title="twitter.com" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc.--><path d="M459.37 151.716c.325 4.548.325 9.097.325 13.645 0 138.72-105.583 298.558-298.558 298.558-59.452 0-114.68-17.219-161.137-47.106 8.447.974 16.568 1.299 25.34 1.299 49.055 0 94.213-16.568 130.274-44.832-46.132-.975-84.792-31.188-98.112-72.772 6.498.974 12.995 1.624 19.818 1.624 9.421 0 18.843-1.3 27.614-3.573-48.081-9.747-84.143-51.98-84.143-102.985v-1.299c13.969 7.797 30.214 12.67 47.431 13.319-28.264-18.843-46.781-51.005-46.781-87.391 0-19.492 5.197-37.36 14.294-52.954 51.655 63.675 129.3 105.258 216.365 109.807-1.624-7.797-2.599-15.918-2.599-24.04 0-57.828 46.782-104.934 104.934-104.934 30.213 0 57.502 12.67 76.67 33.137 23.715-4.548 46.456-13.32 66.599-25.34-7.798 24.366-24.366 44.833-46.132 57.827 21.117-2.273 41.584-8.122 60.426-16.243-14.292 20.791-32.161 39.308-52.628 54.253z"/></svg>
+    </a>
+  
+    
+    
+      
+      
+    
+    <a href="https://github.com/ibis-project/ibis/discussions" target="_blank" rel="noopener" title="github.com" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 496 512"><!--! Font Awesome Free 6.2.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc.--><path d="M165.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6zm-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3zm44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9zM244.8 8C106.1 8 0 113.3 0 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C428.2 457.8 496 362.9 496 252 496 113.3 383.5 8 244.8 8zM97.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1zm-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7zm32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1zm-11.4-14.7c-1.6 1-1.6 3.6 0 5.9 1.6 2.3 4.3 3.3 5.6 2.3 1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2z"/></svg>
+    </a>
+  
+    
+    
+      
+      
+    
+    <a href="https://gitter.im/ibis-dev/Lobby" target="_blank" rel="noopener" title="gitter.im" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512"><!--! Font Awesome Free 6.2.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc.--><path d="M66.4 322.5H16V0h50.4v322.5zM166.9 76.1h-50.4V512h50.4V76.1zm100.6 0h-50.4V512h50.4V76.1zM368 76h-50.4v247H368V76z"/></svg>
+    </a>
+  
+    
+    
+      
+      
+    
+    <a href="https://stackoverflow.com/questions/tagged/ibis" target="_blank" rel="noopener" title="stackoverflow.com" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512"><!--! Font Awesome Free 6.2.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc.--><path d="M290.7 311 95 269.7 86.8 309l195.7 41zm51-87L188.2 95.7l-25.5 30.8 153.5 128.3zm-31.2 39.7L129.2 179l-16.7 36.5L293.7 300zM262 32l-32 24 119.3 160.3 32-24zm20.5 328h-200v39.7h200zm39.7 80H42.7V320h-40v160h359.5V320h-40z"/></svg>
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    <script id="__config" type="application/json">{"base": "../../..", "features": ["navigation.tabs", "navigation.tabs.sticky", "content.code.annotate", "content.tabs.link", "header.autohide", "navigation.indexes", "navigation.instant", "navigation.tracking", "search.highlight", "search.share", "search.suggest"], "search": "../../../assets/javascripts/workers/search.16e2a7d4.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.config.lang": "en", "search.config.pipeline": "trimmer, stopWordFilter", "search.config.separator": "[\\s\\-]+", "search.placeholder": "Search", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version.title": "Select version"}}</script>
+    
+    
+      <script src="../../../assets/javascripts/bundle.5a2dcb6a.min.js"></script>
+      
+        <script src="../../../javascripts/mathjax.js"></script>
+      
+        <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+      
+        <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+      
+    
+    
+  </body>
+</html>

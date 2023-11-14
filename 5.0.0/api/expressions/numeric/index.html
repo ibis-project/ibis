@@ -1,0 +1,5953 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+        <link rel="canonical" href="https://ibis-project.github.io/ibis/5.0.0/api/expressions/numeric/">
+      
+      
+        <link rel="prev" href="../generic/">
+      
+      
+        <link rel="next" href="../strings/">
+      
+      <link rel="icon" href="../../../static/icons/ibis/logo.svg">
+      <meta name="generator" content="mkdocs-1.4.2, mkdocs-material-9.1.3">
+    
+    
+      
+        <title>Numeric + Boolean - Ibis Project</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../../assets/stylesheets/main.c4a75a56.min.css">
+      
+        
+        <link rel="stylesheet" href="../../../assets/stylesheets/palette.a0c5b2b5.min.css">
+      
+      
+
+    
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../../assets/_mkdocstrings.css">
+    
+      <link rel="stylesheet" href="../../../stylesheets/extra.css">
+    
+    <script>__md_scope=new URL("../../..",location),__md_hash=e=>[...e].reduce((e,_)=>(e<<5)-e+_.charCodeAt(0),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+    
+<meta name="google-site-verification" content="IVqzkYiD5E35oD4kkVOcTYCTfqWKU1f6zOHCnLIPkUU">
+<script data-goatcounter="https://ibis.goatcounter.com/count"
+        async src="https://gc.zgo.at/count.js"></script>
+
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="teal" data-md-color-accent="teal">
+  
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&"object"==typeof palette.color)for(var key of Object.keys(palette.color))document.body.setAttribute("data-md-color-"+key,palette.color[key])</script>
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#numeric-and-boolean-expressions" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../../.." title="Ibis Project" class="md-header__button md-logo" aria-label="Ibis Project" data-md-component="logo">
+      
+  <img src="../../../static/icons/ibis/logo.svg" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3V6m0 5h18v2H3v-2m0 5h18v2H3v-2Z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Ibis Project
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Numeric + Boolean
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      <form class="md-header__option" data-md-component="palette">
+        
+          
+          <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="teal" data-md-color-accent="teal"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_1">
+          
+            <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_2" hidden>
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12 20 8.69Z"/></svg>
+            </label>
+          
+        
+          
+          <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="teal" data-md-color-accent="teal"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_2">
+          
+            <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_1" hidden>
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12c0-2.42-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12 20 8.69Z"/></svg>
+            </label>
+          
+        
+      </form>
+    
+    
+    
+      <label class="md-header__button md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"/></svg>
+      </label>
+      <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"/></svg>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12Z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+          <a href="javascript:void(0)" class="md-search__icon md-icon" title="Share" aria-label="Share" data-clipboard data-clipboard-text="" data-md-component="search-share" tabindex="-1">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7 0-.24-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9a3 3 0 0 0-3 3 3 3 0 0 0 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.15c-.05.21-.08.43-.08.66 0 1.61 1.31 2.91 2.92 2.91 1.61 0 2.92-1.3 2.92-2.91A2.92 2.92 0 0 0 18 16.08Z"/></svg>
+          </a>
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41Z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/ibis-project/ibis/tree/5.0.0" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 496 512"><!--! Font Awesome Free 6.3.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2023 Fonticons, Inc.--><path d="M165.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6zm-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3zm44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9zM244.8 8C106.1 8 0 113.3 0 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C428.2 457.8 496 362.9 496 252 496 113.3 383.5 8 244.8 8zM97.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1zm-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7zm32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1zm-11.4-14.7c-1.6 1-1.6 3.6 0 5.9 1.6 2.3 4.3 3.3 5.6 2.3 1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+    
+      
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+
+
+  <li class="md-tabs__item">
+    <a href="../../.." class="md-tabs__link">
+      Home
+    </a>
+  </li>
+
+      
+        
+  
+  
+
+
+  <li class="md-tabs__item">
+    <a href="../../../install/" class="md-tabs__link">
+      Install
+    </a>
+  </li>
+
+      
+        
+  
+  
+    
+  
+
+
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../../docs/" class="md-tabs__link md-tabs__link--active">
+        Docs
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+
+
+  <li class="md-tabs__item">
+    <a href="../../../release_notes/" class="md-tabs__link">
+      Releases
+    </a>
+  </li>
+
+      
+        
+  
+  
+
+
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../../blog/ibis-to-file/" class="md-tabs__link">
+        Blog
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+
+
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../../community/" class="md-tabs__link">
+        Community
+      </a>
+    </li>
+  
+
+      
+    </ul>
+  </div>
+</nav>
+    
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../../.." title="Ibis Project" class="md-nav__button md-logo" aria-label="Ibis Project" data-md-component="logo">
+      
+  <img src="../../../static/icons/ibis/logo.svg" alt="logo">
+
+    </a>
+    Ibis Project
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/ibis-project/ibis/tree/5.0.0" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 496 512"><!--! Font Awesome Free 6.3.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2023 Fonticons, Inc.--><path d="M165.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6zm-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3zm44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9zM244.8 8C106.1 8 0 113.3 0 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C428.2 457.8 496 362.9 496 252 496 113.3 383.5 8 244.8 8zM97.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1zm-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7zm32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1zm-11.4-14.7c-1.6 1-1.6 3.6 0 5.9 1.6 2.3 4.3 3.3 5.6 2.3 1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../.." class="md-nav__link">
+        Home
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../install/" class="md-nav__link">
+        Install
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+    
+  
+  
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+      
+      
+      
+      <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" checked>
+      
+      
+        
+          
+            
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+      
+      
+        
+        
+        <div class="md-nav__link md-nav__link--index ">
+          <a href="../../../docs/">Docs</a>
+          
+            <label for="__nav_3">
+              <span class="md-nav__icon md-icon"></span>
+            </label>
+          
+        </div>
+      
+      <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="true">
+        <label class="md-nav__title" for="__nav_3">
+          <span class="md-nav__icon md-icon"></span>
+          Docs
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+          
+            
+              
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+      
+      
+      <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_2" >
+      
+      
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+      
+      
+        <label class="md-nav__link" for="__nav_3_2" id="__nav_3_2_label" tabindex="0">
+          How To Guide
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_2_label" aria-expanded="false">
+        <label class="md-nav__title" for="__nav_3_2">
+          <span class="md-nav__icon md-icon"></span>
+          How To Guide
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../how_to/chain-expressions/" class="md-nav__link">
+        How to Chain Expressions with Underscore
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../how_to/duckdb_register/" class="md-nav__link">
+        How to Use `register` to load external data files with the DuckDB backend
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../how_to/ffill_bfill_w_window/" class="md-nav__link">
+        How to `ffill` and `bfill` using Window Functions
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../how_to/memtable-join/" class="md-nav__link">
+        How to join an in-memory DataFrame to a TableExpression
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../how_to/sessionize/" class="md-nav__link">
+        How to Sessionize a Log of Events
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../how_to/topk/" class="md-nav__link">
+        How to Compute the Top K Records
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+      
+      
+      <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_3" >
+      
+      
+        
+          
+            
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+      
+      
+        
+        
+        <div class="md-nav__link md-nav__link--index ">
+          <a href="../../../backends/">Execution Backends</a>
+          
+            <label for="__nav_3_3">
+              <span class="md-nav__icon md-icon"></span>
+            </label>
+          
+        </div>
+      
+      <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_3_label" aria-expanded="false">
+        <label class="md-nav__title" for="__nav_3_3">
+          <span class="md-nav__icon md-icon"></span>
+          Execution Backends
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../backends/BigQuery/" class="md-nav__link">
+        BigQuery
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../backends/ClickHouse/" class="md-nav__link">
+        ClickHouse
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../backends/Dask/" class="md-nav__link">
+        Dask
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../backends/Datafusion/" class="md-nav__link">
+        Datafusion
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../backends/Druid/" class="md-nav__link">
+        Druid
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../backends/DuckDB/" class="md-nav__link">
+        DuckDB
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../backends/Impala/" class="md-nav__link">
+        Impala
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../backends/MSSQL/" class="md-nav__link">
+        MSSQL
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../backends/MySQL/" class="md-nav__link">
+        MySQL
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../backends/Pandas/" class="md-nav__link">
+        Pandas
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../backends/Polars/" class="md-nav__link">
+        Polars
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../backends/PostgreSQL/" class="md-nav__link">
+        PostgreSQL
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../backends/PySpark/" class="md-nav__link">
+        PySpark
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../backends/SQLite/" class="md-nav__link">
+        SQLite
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../backends/Snowflake/" class="md-nav__link">
+        Snowflake
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../backends/Trino/" class="md-nav__link">
+        Trino
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+      
+      
+      <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_4" >
+      
+      
+        
+          
+        
+          
+        
+          
+        
+          
+        
+      
+      
+        <label class="md-nav__link" for="__nav_3_4" id="__nav_3_4_label" tabindex="0">
+          User Guide
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_4_label" aria-expanded="false">
+        <label class="md-nav__title" for="__nav_3_4">
+          <span class="md-nav__icon md-icon"></span>
+          User Guide
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../user_guide/configuration/" class="md-nav__link">
+        Configuring Ibis
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../user_guide/design/" class="md-nav__link">
+        Design
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../user_guide/self_joins/" class="md-nav__link">
+        Self Joins
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+      
+      
+      <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_4_4" >
+      
+      
+        
+          
+        
+          
+        
+      
+      
+        <label class="md-nav__link" for="__nav_3_4_4" id="__nav_3_4_4_label" tabindex="0">
+          Extending
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_3_4_4_label" aria-expanded="false">
+        <label class="md-nav__title" for="__nav_3_4_4">
+          <span class="md-nav__icon md-icon"></span>
+          Extending
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../user_guide/extending/elementwise/" class="md-nav__link">
+        Adding an Elementwise Operation
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../user_guide/extending/reduction/" class="md-nav__link">
+        Adding a Reduction Operation
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+    
+  
+  
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+      
+      
+      
+      <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_5" checked>
+      
+      
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+      
+      
+        <label class="md-nav__link" for="__nav_3_5" id="__nav_3_5_label" tabindex="0">
+          API Reference
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_5_label" aria-expanded="true">
+        <label class="md-nav__title" for="__nav_3_5">
+          <span class="md-nav__icon md-icon"></span>
+          API Reference
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+    
+  
+  
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+      
+      
+      
+      <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_5_1" checked>
+      
+      
+        
+          
+            
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+      
+      
+        
+        
+        <div class="md-nav__link md-nav__link--index ">
+          <a href="../">Expressions</a>
+          
+            <label for="__nav_3_5_1">
+              <span class="md-nav__icon md-icon"></span>
+            </label>
+          
+        </div>
+      
+      <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_3_5_1_label" aria-expanded="true">
+        <label class="md-nav__title" for="__nav_3_5_1">
+          <span class="md-nav__icon md-icon"></span>
+          Expressions
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../top_level/" class="md-nav__link">
+        Top Level
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tables/" class="md-nav__link">
+        Tables
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../generic/" class="md-nav__link">
+        Generic Values
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+    
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          Numeric + Boolean
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        Numeric + Boolean
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#ibis.expr.types.numeric.NumericValue" class="md-nav__link">
+    NumericValue
+  </a>
+  
+    <nav class="md-nav" aria-label="NumericValue">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.numeric.NumericValue-functions" class="md-nav__link">
+    Functions
+  </a>
+  
+    <nav class="md-nav" aria-label="Functions">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.numeric.NumericValue.__add__" class="md-nav__link">
+    __add__()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.numeric.NumericValue.__floordiv__" class="md-nav__link">
+    __floordiv__()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.numeric.NumericValue.__mod__" class="md-nav__link">
+    __mod__()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.numeric.NumericValue.__mul__" class="md-nav__link">
+    __mul__()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.numeric.NumericValue.__neg__" class="md-nav__link">
+    __neg__()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.numeric.NumericValue.__pow__" class="md-nav__link">
+    __pow__()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.numeric.NumericValue.__rfloordiv__" class="md-nav__link">
+    __rfloordiv__()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.numeric.NumericValue.__rmod__" class="md-nav__link">
+    __rmod__()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.numeric.NumericValue.__rpow__" class="md-nav__link">
+    __rpow__()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.numeric.NumericValue.__rsub__" class="md-nav__link">
+    __rsub__()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.numeric.NumericValue.__rtruediv__" class="md-nav__link">
+    __rtruediv__()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.numeric.NumericValue.__sub__" class="md-nav__link">
+    __sub__()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.numeric.NumericValue.__truediv__" class="md-nav__link">
+    __truediv__()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.numeric.NumericValue.abs" class="md-nav__link">
+    abs()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.numeric.NumericValue.acos" class="md-nav__link">
+    acos()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.numeric.NumericValue.asin" class="md-nav__link">
+    asin()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.numeric.NumericValue.atan" class="md-nav__link">
+    atan()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.numeric.NumericValue.atan2" class="md-nav__link">
+    atan2()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.numeric.NumericValue.ceil" class="md-nav__link">
+    ceil()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.numeric.NumericValue.clip" class="md-nav__link">
+    clip()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.numeric.NumericValue.cos" class="md-nav__link">
+    cos()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.numeric.NumericValue.cot" class="md-nav__link">
+    cot()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.numeric.NumericValue.degrees" class="md-nav__link">
+    degrees()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.numeric.NumericValue.exp" class="md-nav__link">
+    exp()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.numeric.NumericValue.floor" class="md-nav__link">
+    floor()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.numeric.NumericValue.ln" class="md-nav__link">
+    ln()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.numeric.NumericValue.log" class="md-nav__link">
+    log()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.numeric.NumericValue.log10" class="md-nav__link">
+    log10()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.numeric.NumericValue.log2" class="md-nav__link">
+    log2()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.numeric.NumericValue.negate" class="md-nav__link">
+    negate()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.numeric.NumericValue.nullifzero" class="md-nav__link">
+    nullifzero()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.numeric.NumericValue.point" class="md-nav__link">
+    point()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.numeric.NumericValue.radians" class="md-nav__link">
+    radians()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.numeric.NumericValue.round" class="md-nav__link">
+    round()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.numeric.NumericValue.sign" class="md-nav__link">
+    sign()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.numeric.NumericValue.sin" class="md-nav__link">
+    sin()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.numeric.NumericValue.sqrt" class="md-nav__link">
+    sqrt()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.numeric.NumericValue.tan" class="md-nav__link">
+    tan()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.numeric.NumericValue.zeroifnull" class="md-nav__link">
+    zeroifnull()
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#ibis.expr.types.numeric.NumericColumn" class="md-nav__link">
+    NumericColumn
+  </a>
+  
+    <nav class="md-nav" aria-label="NumericColumn">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.numeric.NumericColumn-functions" class="md-nav__link">
+    Functions
+  </a>
+  
+    <nav class="md-nav" aria-label="Functions">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.numeric.NumericColumn.bucket" class="md-nav__link">
+    bucket()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.numeric.NumericColumn.corr" class="md-nav__link">
+    corr()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.numeric.NumericColumn.cov" class="md-nav__link">
+    cov()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.numeric.NumericColumn.cummean" class="md-nav__link">
+    cummean()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.numeric.NumericColumn.cumsum" class="md-nav__link">
+    cumsum()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.numeric.NumericColumn.histogram" class="md-nav__link">
+    histogram()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.numeric.NumericColumn.mean" class="md-nav__link">
+    mean()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.numeric.NumericColumn.quantile" class="md-nav__link">
+    quantile()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.numeric.NumericColumn.std" class="md-nav__link">
+    std()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.numeric.NumericColumn.sum" class="md-nav__link">
+    sum()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.numeric.NumericColumn.summary" class="md-nav__link">
+    summary()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.numeric.NumericColumn.var" class="md-nav__link">
+    var()
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#ibis.expr.types.numeric.IntegerValue" class="md-nav__link">
+    IntegerValue
+  </a>
+  
+    <nav class="md-nav" aria-label="IntegerValue">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.numeric.IntegerValue-functions" class="md-nav__link">
+    Functions
+  </a>
+  
+    <nav class="md-nav" aria-label="Functions">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.numeric.IntegerValue.__and__" class="md-nav__link">
+    __and__()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.numeric.IntegerValue.__invert__" class="md-nav__link">
+    __invert__()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.numeric.IntegerValue.__lshift__" class="md-nav__link">
+    __lshift__()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.numeric.IntegerValue.__or__" class="md-nav__link">
+    __or__()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.numeric.IntegerValue.__rlshift__" class="md-nav__link">
+    __rlshift__()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.numeric.IntegerValue.__rrshift__" class="md-nav__link">
+    __rrshift__()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.numeric.IntegerValue.__rshift__" class="md-nav__link">
+    __rshift__()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.numeric.IntegerValue.__xor__" class="md-nav__link">
+    __xor__()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.numeric.IntegerValue.convert_base" class="md-nav__link">
+    convert_base()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.numeric.IntegerValue.label" class="md-nav__link">
+    label()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.numeric.IntegerValue.to_interval" class="md-nav__link">
+    to_interval()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.numeric.IntegerValue.to_timestamp" class="md-nav__link">
+    to_timestamp()
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#ibis.expr.types.numeric.IntegerColumn" class="md-nav__link">
+    IntegerColumn
+  </a>
+  
+    <nav class="md-nav" aria-label="IntegerColumn">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.numeric.IntegerColumn-functions" class="md-nav__link">
+    Functions
+  </a>
+  
+    <nav class="md-nav" aria-label="Functions">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.numeric.IntegerColumn.bit_and" class="md-nav__link">
+    bit_and()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.numeric.IntegerColumn.bit_or" class="md-nav__link">
+    bit_or()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.numeric.IntegerColumn.bit_xor" class="md-nav__link">
+    bit_xor()
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#ibis.expr.types.numeric.FloatingValue" class="md-nav__link">
+    FloatingValue
+  </a>
+  
+    <nav class="md-nav" aria-label="FloatingValue">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.numeric.FloatingValue-functions" class="md-nav__link">
+    Functions
+  </a>
+  
+    <nav class="md-nav" aria-label="Functions">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.numeric.FloatingValue.isinf" class="md-nav__link">
+    isinf()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.numeric.FloatingValue.isnan" class="md-nav__link">
+    isnan()
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#ibis.expr.types.numeric.DecimalValue" class="md-nav__link">
+    DecimalValue
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#ibis.expr.types.logical.BooleanValue" class="md-nav__link">
+    BooleanValue
+  </a>
+  
+    <nav class="md-nav" aria-label="BooleanValue">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.logical.BooleanValue-functions" class="md-nav__link">
+    Functions
+  </a>
+  
+    <nav class="md-nav" aria-label="Functions">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.logical.BooleanValue.ifelse" class="md-nav__link">
+    ifelse()
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../strings/" class="md-nav__link">
+        Strings
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../timestamps/" class="md-nav__link">
+        Timestamps + Dates + Times
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../collections/" class="md-nav__link">
+        Collections
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../geospatial/" class="md-nav__link">
+        Geospatial
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../selectors/" class="md-nav__link">
+        Column Selectors
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../datatypes/" class="md-nav__link">
+        Data Types
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../schemas/" class="md-nav__link">
+        Schemas
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+      
+      
+      <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_5_5" >
+      
+      
+        
+          
+        
+          
+        
+          
+        
+          
+        
+      
+      
+        <label class="md-nav__link" for="__nav_3_5_5" id="__nav_3_5_5_label" tabindex="0">
+          Backend Interfaces
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_3_5_5_label" aria-expanded="false">
+        <label class="md-nav__title" for="__nav_3_5_5">
+          <span class="md-nav__icon md-icon"></span>
+          Backend Interfaces
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../backends/base/" class="md-nav__link">
+        Backend Base Classes
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../backends/pandas/" class="md-nav__link">
+        Pandas-like Backend Base Classes
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../backends/sql/" class="md-nav__link">
+        SQL Backend Base Classes
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../backends/sqlalchemy/" class="md-nav__link">
+        SQLAlchemy Backend Base Classes
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../config/" class="md-nav__link">
+        Configuration
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../ibis-for-sql-programmers/" class="md-nav__link">
+        Ibis for SQL Programmers
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../ibis-for-pandas-users/" class="md-nav__link">
+        Ibis for pandas Users
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../backends/support_matrix/" class="md-nav__link">
+        Backend Operations Matrix
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../release_notes/" class="md-nav__link">
+        Releases
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+      
+      
+      <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
+      
+      
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+      
+      
+        <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+          Blog
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+        <label class="md-nav__title" for="__nav_5">
+          <span class="md-nav__icon md-icon"></span>
+          Blog
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../blog/ibis-to-file/" class="md-nav__link">
+        Ibis Sneak Peek: Writing to Files
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../blog/ibis-examples/" class="md-nav__link">
+        Ibis Sneak Peek: Examples
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../blog/selectors/" class="md-nav__link">
+        Maximizing Productivity with Selectors
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../blog/ibis_substrait_to_duckdb/" class="md-nav__link">
+        Ibis + DuckDB + Substrait
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../blog/ibis-version-4.0.0-release/" class="md-nav__link">
+        Ibis v4.0.0
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../blog/rendered/ci-analysis/" class="md-nav__link">
+        Analysis of Ibis's CI Performance
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../blog/ffill-and-bfill-using-ibis/" class="md-nav__link">
+        ffill and bfill using ibis
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../blog/Ibis-version-3.1.0-release/" class="md-nav__link">
+        Ibis v3.1.0
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../blog/Ibis-version-3.0.0-release/" class="md-nav__link">
+        Ibis v3.0.0
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+      
+      
+      <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" >
+      
+      
+        
+          
+            
+          
+        
+          
+        
+      
+      
+        
+        
+        <div class="md-nav__link md-nav__link--index ">
+          <a href="../../../community/">Community</a>
+          
+            <label for="__nav_6">
+              <span class="md-nav__icon md-icon"></span>
+            </label>
+          
+        </div>
+      
+      <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+        <label class="md-nav__title" for="__nav_6">
+          <span class="md-nav__icon md-icon"></span>
+          Community
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+          
+            
+              
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+      
+      
+      <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6_2" >
+      
+      
+        
+          
+            
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+      
+      
+        
+        
+        <div class="md-nav__link md-nav__link--index ">
+          <a href="../../../community/contribute/">Contribute</a>
+          
+            <label for="__nav_6_2">
+              <span class="md-nav__icon md-icon"></span>
+            </label>
+          
+        </div>
+      
+      <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_6_2_label" aria-expanded="false">
+        <label class="md-nav__title" for="__nav_6_2">
+          <span class="md-nav__icon md-icon"></span>
+          Contribute
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../community/contribute/01_environment/" class="md-nav__link">
+        Setting Up a Development Environment
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../community/contribute/02_workflow/" class="md-nav__link">
+        Contribute to the Ibis Codebase
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../community/contribute/03_style/" class="md-nav__link">
+        Style and Formatting
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../community/contribute/05_maintainers_guide/" class="md-nav__link">
+        Maintaining the Codebase
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#ibis.expr.types.numeric.NumericValue" class="md-nav__link">
+    NumericValue
+  </a>
+  
+    <nav class="md-nav" aria-label="NumericValue">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.numeric.NumericValue-functions" class="md-nav__link">
+    Functions
+  </a>
+  
+    <nav class="md-nav" aria-label="Functions">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.numeric.NumericValue.__add__" class="md-nav__link">
+    __add__()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.numeric.NumericValue.__floordiv__" class="md-nav__link">
+    __floordiv__()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.numeric.NumericValue.__mod__" class="md-nav__link">
+    __mod__()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.numeric.NumericValue.__mul__" class="md-nav__link">
+    __mul__()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.numeric.NumericValue.__neg__" class="md-nav__link">
+    __neg__()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.numeric.NumericValue.__pow__" class="md-nav__link">
+    __pow__()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.numeric.NumericValue.__rfloordiv__" class="md-nav__link">
+    __rfloordiv__()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.numeric.NumericValue.__rmod__" class="md-nav__link">
+    __rmod__()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.numeric.NumericValue.__rpow__" class="md-nav__link">
+    __rpow__()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.numeric.NumericValue.__rsub__" class="md-nav__link">
+    __rsub__()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.numeric.NumericValue.__rtruediv__" class="md-nav__link">
+    __rtruediv__()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.numeric.NumericValue.__sub__" class="md-nav__link">
+    __sub__()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.numeric.NumericValue.__truediv__" class="md-nav__link">
+    __truediv__()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.numeric.NumericValue.abs" class="md-nav__link">
+    abs()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.numeric.NumericValue.acos" class="md-nav__link">
+    acos()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.numeric.NumericValue.asin" class="md-nav__link">
+    asin()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.numeric.NumericValue.atan" class="md-nav__link">
+    atan()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.numeric.NumericValue.atan2" class="md-nav__link">
+    atan2()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.numeric.NumericValue.ceil" class="md-nav__link">
+    ceil()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.numeric.NumericValue.clip" class="md-nav__link">
+    clip()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.numeric.NumericValue.cos" class="md-nav__link">
+    cos()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.numeric.NumericValue.cot" class="md-nav__link">
+    cot()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.numeric.NumericValue.degrees" class="md-nav__link">
+    degrees()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.numeric.NumericValue.exp" class="md-nav__link">
+    exp()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.numeric.NumericValue.floor" class="md-nav__link">
+    floor()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.numeric.NumericValue.ln" class="md-nav__link">
+    ln()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.numeric.NumericValue.log" class="md-nav__link">
+    log()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.numeric.NumericValue.log10" class="md-nav__link">
+    log10()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.numeric.NumericValue.log2" class="md-nav__link">
+    log2()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.numeric.NumericValue.negate" class="md-nav__link">
+    negate()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.numeric.NumericValue.nullifzero" class="md-nav__link">
+    nullifzero()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.numeric.NumericValue.point" class="md-nav__link">
+    point()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.numeric.NumericValue.radians" class="md-nav__link">
+    radians()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.numeric.NumericValue.round" class="md-nav__link">
+    round()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.numeric.NumericValue.sign" class="md-nav__link">
+    sign()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.numeric.NumericValue.sin" class="md-nav__link">
+    sin()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.numeric.NumericValue.sqrt" class="md-nav__link">
+    sqrt()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.numeric.NumericValue.tan" class="md-nav__link">
+    tan()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.numeric.NumericValue.zeroifnull" class="md-nav__link">
+    zeroifnull()
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#ibis.expr.types.numeric.NumericColumn" class="md-nav__link">
+    NumericColumn
+  </a>
+  
+    <nav class="md-nav" aria-label="NumericColumn">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.numeric.NumericColumn-functions" class="md-nav__link">
+    Functions
+  </a>
+  
+    <nav class="md-nav" aria-label="Functions">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.numeric.NumericColumn.bucket" class="md-nav__link">
+    bucket()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.numeric.NumericColumn.corr" class="md-nav__link">
+    corr()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.numeric.NumericColumn.cov" class="md-nav__link">
+    cov()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.numeric.NumericColumn.cummean" class="md-nav__link">
+    cummean()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.numeric.NumericColumn.cumsum" class="md-nav__link">
+    cumsum()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.numeric.NumericColumn.histogram" class="md-nav__link">
+    histogram()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.numeric.NumericColumn.mean" class="md-nav__link">
+    mean()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.numeric.NumericColumn.quantile" class="md-nav__link">
+    quantile()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.numeric.NumericColumn.std" class="md-nav__link">
+    std()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.numeric.NumericColumn.sum" class="md-nav__link">
+    sum()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.numeric.NumericColumn.summary" class="md-nav__link">
+    summary()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.numeric.NumericColumn.var" class="md-nav__link">
+    var()
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#ibis.expr.types.numeric.IntegerValue" class="md-nav__link">
+    IntegerValue
+  </a>
+  
+    <nav class="md-nav" aria-label="IntegerValue">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.numeric.IntegerValue-functions" class="md-nav__link">
+    Functions
+  </a>
+  
+    <nav class="md-nav" aria-label="Functions">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.numeric.IntegerValue.__and__" class="md-nav__link">
+    __and__()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.numeric.IntegerValue.__invert__" class="md-nav__link">
+    __invert__()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.numeric.IntegerValue.__lshift__" class="md-nav__link">
+    __lshift__()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.numeric.IntegerValue.__or__" class="md-nav__link">
+    __or__()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.numeric.IntegerValue.__rlshift__" class="md-nav__link">
+    __rlshift__()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.numeric.IntegerValue.__rrshift__" class="md-nav__link">
+    __rrshift__()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.numeric.IntegerValue.__rshift__" class="md-nav__link">
+    __rshift__()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.numeric.IntegerValue.__xor__" class="md-nav__link">
+    __xor__()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.numeric.IntegerValue.convert_base" class="md-nav__link">
+    convert_base()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.numeric.IntegerValue.label" class="md-nav__link">
+    label()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.numeric.IntegerValue.to_interval" class="md-nav__link">
+    to_interval()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.numeric.IntegerValue.to_timestamp" class="md-nav__link">
+    to_timestamp()
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#ibis.expr.types.numeric.IntegerColumn" class="md-nav__link">
+    IntegerColumn
+  </a>
+  
+    <nav class="md-nav" aria-label="IntegerColumn">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.numeric.IntegerColumn-functions" class="md-nav__link">
+    Functions
+  </a>
+  
+    <nav class="md-nav" aria-label="Functions">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.numeric.IntegerColumn.bit_and" class="md-nav__link">
+    bit_and()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.numeric.IntegerColumn.bit_or" class="md-nav__link">
+    bit_or()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.numeric.IntegerColumn.bit_xor" class="md-nav__link">
+    bit_xor()
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#ibis.expr.types.numeric.FloatingValue" class="md-nav__link">
+    FloatingValue
+  </a>
+  
+    <nav class="md-nav" aria-label="FloatingValue">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.numeric.FloatingValue-functions" class="md-nav__link">
+    Functions
+  </a>
+  
+    <nav class="md-nav" aria-label="Functions">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.numeric.FloatingValue.isinf" class="md-nav__link">
+    isinf()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.numeric.FloatingValue.isnan" class="md-nav__link">
+    isnan()
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#ibis.expr.types.numeric.DecimalValue" class="md-nav__link">
+    DecimalValue
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#ibis.expr.types.logical.BooleanValue" class="md-nav__link">
+    BooleanValue
+  </a>
+  
+    <nav class="md-nav" aria-label="BooleanValue">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.logical.BooleanValue-functions" class="md-nav__link">
+    Functions
+  </a>
+  
+    <nav class="md-nav" aria-label="Functions">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ibis.expr.types.logical.BooleanValue.ifelse" class="md-nav__link">
+    ifelse()
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              <article class="md-content__inner md-typeset">
+                
+
+
+
+                  
+
+
+<h1 id="numeric-and-boolean-expressions">Numeric and Boolean Expressions<a class="headerlink" href="#numeric-and-boolean-expressions" title="Anchor link to this section for reference">&para;</a></h1>
+<p>These APIs are available on numeric and boolean expressions.</p>
+
+
+<div class="doc doc-object doc-class">
+
+
+
+<h2 id="ibis.expr.types.numeric.NumericValue" class="doc doc-heading">
+        <code>NumericValue</code>
+
+
+<a href="#ibis.expr.types.numeric.NumericValue" class="headerlink" title="Anchor link to this section for reference">&para;</a></h2>
+
+
+  <div class="doc doc-contents first">
+      <p class="doc doc-class-bases">
+        Bases: <code><a class="autorefs autorefs-internal" title="ibis.expr.types.generic.Value" href="../generic/#ibis.expr.types.generic.Value">Value</a></code></p>
+
+
+
+
+  
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+
+<h3 id="ibis.expr.types.numeric.NumericValue-functions">Functions<a href="#ibis.expr.types.numeric.NumericValue-functions" class="headerlink" title="Anchor link to this section for reference">&para;</a></h3>
+
+<div class="doc doc-object doc-function">
+
+
+
+<h4 id="ibis.expr.types.numeric.NumericValue.__add__" class="doc doc-heading">
+<code class="highlight language-python"><span class="fm">__add__</span><span class="p">(</span><span class="n">other</span><span class="p">)</span></code>
+
+<a href="#ibis.expr.types.numeric.NumericValue.__add__" class="headerlink" title="Anchor link to this section for reference">&para;</a></h4>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>Add <code>self</code> with <code>other</code>.</p>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+
+<h4 id="ibis.expr.types.numeric.NumericValue.__floordiv__" class="doc doc-heading">
+<code class="highlight language-python"><span class="fm">__floordiv__</span><span class="p">(</span><span class="n">other</span><span class="p">)</span></code>
+
+<a href="#ibis.expr.types.numeric.NumericValue.__floordiv__" class="headerlink" title="Anchor link to this section for reference">&para;</a></h4>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>Floor divide <code>self</code> by <code>other</code>.</p>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+
+<h4 id="ibis.expr.types.numeric.NumericValue.__mod__" class="doc doc-heading">
+<code class="highlight language-python"><span class="fm">__mod__</span><span class="p">(</span><span class="n">other</span><span class="p">)</span></code>
+
+<a href="#ibis.expr.types.numeric.NumericValue.__mod__" class="headerlink" title="Anchor link to this section for reference">&para;</a></h4>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>Compute <code>self</code> modulo <code>other</code>.</p>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+
+<h4 id="ibis.expr.types.numeric.NumericValue.__mul__" class="doc doc-heading">
+<code class="highlight language-python"><span class="fm">__mul__</span><span class="p">(</span><span class="n">other</span><span class="p">)</span></code>
+
+<a href="#ibis.expr.types.numeric.NumericValue.__mul__" class="headerlink" title="Anchor link to this section for reference">&para;</a></h4>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>Multiply <code>self</code> and <code>other</code>.</p>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+
+<h4 id="ibis.expr.types.numeric.NumericValue.__neg__" class="doc doc-heading">
+<code class="highlight language-python"><span class="fm">__neg__</span><span class="p">()</span></code>
+
+<a href="#ibis.expr.types.numeric.NumericValue.__neg__" class="headerlink" title="Anchor link to this section for reference">&para;</a></h4>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>Negate <code>self</code>.</p>
+
+  <p><strong>Returns:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td>
+                <code><a class="autorefs autorefs-internal" title="ibis.expr.types.numeric.NumericValue" href="#ibis.expr.types.numeric.NumericValue">NumericValue</a></code>
+          </td>
+          <td><p><code>self</code> negated</p></td>
+        </tr>
+    </tbody>
+  </table>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+
+<h4 id="ibis.expr.types.numeric.NumericValue.__pow__" class="doc doc-heading">
+<code class="highlight language-python"><span class="fm">__pow__</span><span class="p">(</span><span class="n">other</span><span class="p">)</span></code>
+
+<a href="#ibis.expr.types.numeric.NumericValue.__pow__" class="headerlink" title="Anchor link to this section for reference">&para;</a></h4>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>Raise <code>self</code> to the <code>other</code>th power.</p>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+
+<h4 id="ibis.expr.types.numeric.NumericValue.__rfloordiv__" class="doc doc-heading">
+<code class="highlight language-python"><span class="fm">__rfloordiv__</span><span class="p">(</span><span class="n">other</span><span class="p">)</span></code>
+
+<a href="#ibis.expr.types.numeric.NumericValue.__rfloordiv__" class="headerlink" title="Anchor link to this section for reference">&para;</a></h4>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>Floor divide <code>other</code> by <code>self</code>.</p>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+
+<h4 id="ibis.expr.types.numeric.NumericValue.__rmod__" class="doc doc-heading">
+<code class="highlight language-python"><span class="fm">__rmod__</span><span class="p">(</span><span class="n">other</span><span class="p">)</span></code>
+
+<a href="#ibis.expr.types.numeric.NumericValue.__rmod__" class="headerlink" title="Anchor link to this section for reference">&para;</a></h4>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>Compute <code>other</code> modulo <code>self</code>.</p>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+
+<h4 id="ibis.expr.types.numeric.NumericValue.__rpow__" class="doc doc-heading">
+<code class="highlight language-python"><span class="fm">__rpow__</span><span class="p">(</span><span class="n">other</span><span class="p">)</span></code>
+
+<a href="#ibis.expr.types.numeric.NumericValue.__rpow__" class="headerlink" title="Anchor link to this section for reference">&para;</a></h4>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>Raise <code>other</code> to the <code>self</code>th power.</p>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+
+<h4 id="ibis.expr.types.numeric.NumericValue.__rsub__" class="doc doc-heading">
+<code class="highlight language-python"><span class="fm">__rsub__</span><span class="p">(</span><span class="n">other</span><span class="p">)</span></code>
+
+<a href="#ibis.expr.types.numeric.NumericValue.__rsub__" class="headerlink" title="Anchor link to this section for reference">&para;</a></h4>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>Substract <code>self</code> from <code>other</code>.</p>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+
+<h4 id="ibis.expr.types.numeric.NumericValue.__rtruediv__" class="doc doc-heading">
+<code class="highlight language-python"><span class="fm">__rtruediv__</span><span class="p">(</span><span class="n">other</span><span class="p">)</span></code>
+
+<a href="#ibis.expr.types.numeric.NumericValue.__rtruediv__" class="headerlink" title="Anchor link to this section for reference">&para;</a></h4>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>Divide <code>other</code> by <code>self</code>.</p>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+
+<h4 id="ibis.expr.types.numeric.NumericValue.__sub__" class="doc doc-heading">
+<code class="highlight language-python"><span class="fm">__sub__</span><span class="p">(</span><span class="n">other</span><span class="p">)</span></code>
+
+<a href="#ibis.expr.types.numeric.NumericValue.__sub__" class="headerlink" title="Anchor link to this section for reference">&para;</a></h4>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>Substract <code>other</code> from <code>self</code>.</p>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+
+<h4 id="ibis.expr.types.numeric.NumericValue.__truediv__" class="doc doc-heading">
+<code class="highlight language-python"><span class="fm">__truediv__</span><span class="p">(</span><span class="n">other</span><span class="p">)</span></code>
+
+<a href="#ibis.expr.types.numeric.NumericValue.__truediv__" class="headerlink" title="Anchor link to this section for reference">&para;</a></h4>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>Divide <code>self</code> by <code>other</code>.</p>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+
+<h4 id="ibis.expr.types.numeric.NumericValue.abs" class="doc doc-heading">
+<code class="highlight language-python"><span class="nb">abs</span><span class="p">()</span></code>
+
+<a href="#ibis.expr.types.numeric.NumericValue.abs" class="headerlink" title="Anchor link to this section for reference">&para;</a></h4>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>Return the absolute value of <code>self</code>.</p>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+
+<h4 id="ibis.expr.types.numeric.NumericValue.acos" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">acos</span><span class="p">()</span></code>
+
+<a href="#ibis.expr.types.numeric.NumericValue.acos" class="headerlink" title="Anchor link to this section for reference">&para;</a></h4>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>Compute the arc cosine of <code>self</code>.</p>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+
+<h4 id="ibis.expr.types.numeric.NumericValue.asin" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">asin</span><span class="p">()</span></code>
+
+<a href="#ibis.expr.types.numeric.NumericValue.asin" class="headerlink" title="Anchor link to this section for reference">&para;</a></h4>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>Compute the arc sine of <code>self</code>.</p>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+
+<h4 id="ibis.expr.types.numeric.NumericValue.atan" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">atan</span><span class="p">()</span></code>
+
+<a href="#ibis.expr.types.numeric.NumericValue.atan" class="headerlink" title="Anchor link to this section for reference">&para;</a></h4>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>Compute the arc tangent of <code>self</code>.</p>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+
+<h4 id="ibis.expr.types.numeric.NumericValue.atan2" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">atan2</span><span class="p">(</span><span class="n">other</span><span class="p">)</span></code>
+
+<a href="#ibis.expr.types.numeric.NumericValue.atan2" class="headerlink" title="Anchor link to this section for reference">&para;</a></h4>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>Compute the two-argument version of arc tangent.</p>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+
+<h4 id="ibis.expr.types.numeric.NumericValue.ceil" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">ceil</span><span class="p">()</span></code>
+
+<a href="#ibis.expr.types.numeric.NumericValue.ceil" class="headerlink" title="Anchor link to this section for reference">&para;</a></h4>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>Return the ceiling of <code>self</code>.</p>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+
+<h4 id="ibis.expr.types.numeric.NumericValue.clip" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">clip</span><span class="p">(</span><span class="n">lower</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">upper</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span></code>
+
+<a href="#ibis.expr.types.numeric.NumericValue.clip" class="headerlink" title="Anchor link to this section for reference">&para;</a></h4>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>Trim values outside of <code>lower</code> and <code>upper</code> bounds.</p>
+
+  <p><strong>Parameters:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Type</th>
+        <th>Description</th>
+        <th>Default</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td><code>lower</code></td>
+          <td>
+                <code><a class="autorefs autorefs-internal" title="ibis.expr.types.numeric.NumericValue" href="#ibis.expr.types.numeric.NumericValue">NumericValue</a> | None</code>
+          </td>
+          <td><p>Lower bound</p></td>
+          <td>
+                <code>None</code>
+          </td>
+        </tr>
+        <tr>
+          <td><code>upper</code></td>
+          <td>
+                <code><a class="autorefs autorefs-internal" title="ibis.expr.types.numeric.NumericValue" href="#ibis.expr.types.numeric.NumericValue">NumericValue</a> | None</code>
+          </td>
+          <td><p>Upper bound</p></td>
+          <td>
+                <code>None</code>
+          </td>
+        </tr>
+    </tbody>
+  </table>
+
+  <p><strong>Returns:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td>
+                <code><a class="autorefs autorefs-internal" title="ibis.expr.types.numeric.NumericValue" href="#ibis.expr.types.numeric.NumericValue">NumericValue</a></code>
+          </td>
+          <td><p>Clipped input</p></td>
+        </tr>
+    </tbody>
+  </table>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+
+<h4 id="ibis.expr.types.numeric.NumericValue.cos" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">cos</span><span class="p">()</span></code>
+
+<a href="#ibis.expr.types.numeric.NumericValue.cos" class="headerlink" title="Anchor link to this section for reference">&para;</a></h4>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>Compute the cosine of <code>self</code>.</p>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+
+<h4 id="ibis.expr.types.numeric.NumericValue.cot" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">cot</span><span class="p">()</span></code>
+
+<a href="#ibis.expr.types.numeric.NumericValue.cot" class="headerlink" title="Anchor link to this section for reference">&para;</a></h4>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>Compute the cotangent of <code>self</code>.</p>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+
+<h4 id="ibis.expr.types.numeric.NumericValue.degrees" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">degrees</span><span class="p">()</span></code>
+
+<a href="#ibis.expr.types.numeric.NumericValue.degrees" class="headerlink" title="Anchor link to this section for reference">&para;</a></h4>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>Compute the degrees of <code>self</code> radians.</p>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+
+<h4 id="ibis.expr.types.numeric.NumericValue.exp" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">exp</span><span class="p">()</span></code>
+
+<a href="#ibis.expr.types.numeric.NumericValue.exp" class="headerlink" title="Anchor link to this section for reference">&para;</a></h4>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>Compute <span class="arithmatex">\(e^\texttt{self}\)</span>.</p>
+
+  <p><strong>Returns:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td>
+                <code><a class="autorefs autorefs-internal" title="ibis.expr.types.numeric.NumericValue" href="#ibis.expr.types.numeric.NumericValue">NumericValue</a></code>
+          </td>
+          <td><p><span class="arithmatex">\(e^\texttt{self}\)</span></p></td>
+        </tr>
+    </tbody>
+  </table>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+
+<h4 id="ibis.expr.types.numeric.NumericValue.floor" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">floor</span><span class="p">()</span></code>
+
+<a href="#ibis.expr.types.numeric.NumericValue.floor" class="headerlink" title="Anchor link to this section for reference">&para;</a></h4>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>Return the floor of an expression.</p>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+
+<h4 id="ibis.expr.types.numeric.NumericValue.ln" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">ln</span><span class="p">()</span></code>
+
+<a href="#ibis.expr.types.numeric.NumericValue.ln" class="headerlink" title="Anchor link to this section for reference">&para;</a></h4>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>Compute <span class="arithmatex">\(\ln\left(\texttt{self}\right)\)</span>.</p>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+
+<h4 id="ibis.expr.types.numeric.NumericValue.log" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">log</span><span class="p">(</span><span class="n">base</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span></code>
+
+<a href="#ibis.expr.types.numeric.NumericValue.log" class="headerlink" title="Anchor link to this section for reference">&para;</a></h4>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>Return the logarithm using a specified base.</p>
+
+  <p><strong>Parameters:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Type</th>
+        <th>Description</th>
+        <th>Default</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td><code>base</code></td>
+          <td>
+                <code><a class="autorefs autorefs-internal" title="ibis.expr.types.numeric.NumericValue" href="#ibis.expr.types.numeric.NumericValue">NumericValue</a> | None</code>
+          </td>
+          <td><p>The base of the logarithm. If <code>None</code>, base <code>e</code> is used.</p></td>
+          <td>
+                <code>None</code>
+          </td>
+        </tr>
+    </tbody>
+  </table>
+
+  <p><strong>Returns:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td>
+                <code><a class="autorefs autorefs-internal" title="ibis.expr.types.numeric.NumericValue" href="#ibis.expr.types.numeric.NumericValue">NumericValue</a></code>
+          </td>
+          <td><p>Logarithm of <code>arg</code> with base <code>base</code></p></td>
+        </tr>
+    </tbody>
+  </table>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+
+<h4 id="ibis.expr.types.numeric.NumericValue.log10" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">log10</span><span class="p">()</span></code>
+
+<a href="#ibis.expr.types.numeric.NumericValue.log10" class="headerlink" title="Anchor link to this section for reference">&para;</a></h4>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>Compute <span class="arithmatex">\(\log_{10}\left(\texttt{self}\right)\)</span>.</p>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+
+<h4 id="ibis.expr.types.numeric.NumericValue.log2" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">log2</span><span class="p">()</span></code>
+
+<a href="#ibis.expr.types.numeric.NumericValue.log2" class="headerlink" title="Anchor link to this section for reference">&para;</a></h4>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>Compute <span class="arithmatex">\(\log_{2}\left(\texttt{self}\right)\)</span>.</p>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+
+<h4 id="ibis.expr.types.numeric.NumericValue.negate" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">negate</span><span class="p">()</span></code>
+
+<a href="#ibis.expr.types.numeric.NumericValue.negate" class="headerlink" title="Anchor link to this section for reference">&para;</a></h4>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>Negate a numeric expression.</p>
+
+  <p><strong>Returns:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td>
+                <code><a class="autorefs autorefs-internal" title="ibis.expr.types.numeric.NumericValue" href="#ibis.expr.types.numeric.NumericValue">NumericValue</a></code>
+          </td>
+          <td><p>A numeric value expression</p></td>
+        </tr>
+    </tbody>
+  </table>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+
+<h4 id="ibis.expr.types.numeric.NumericValue.nullifzero" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">nullifzero</span><span class="p">()</span></code>
+
+<a href="#ibis.expr.types.numeric.NumericValue.nullifzero" class="headerlink" title="Anchor link to this section for reference">&para;</a></h4>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>Return <code>NULL</code> if an expression is zero.</p>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+
+<h4 id="ibis.expr.types.numeric.NumericValue.point" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">point</span><span class="p">(</span><span class="n">right</span><span class="p">)</span></code>
+
+<a href="#ibis.expr.types.numeric.NumericValue.point" class="headerlink" title="Anchor link to this section for reference">&para;</a></h4>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>Return a point constructed from the coordinate values.</p>
+<p>Constant coordinates result in construction of a <code>POINT</code> literal or
+column.</p>
+
+  <p><strong>Parameters:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Type</th>
+        <th>Description</th>
+        <th>Default</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td><code>right</code></td>
+          <td>
+                <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#int">int</a> | <a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#float">float</a> | <a class="autorefs autorefs-internal" title="ibis.expr.types.numeric.NumericValue" href="#ibis.expr.types.numeric.NumericValue">NumericValue</a></code>
+          </td>
+          <td><p>Y coordinate</p></td>
+          <td>
+              <em>required</em>
+          </td>
+        </tr>
+    </tbody>
+  </table>
+
+  <p><strong>Returns:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td>
+                <code><span title="ibis.expr.types.geospatial.PointValue">PointValue</span></code>
+          </td>
+          <td><p>Points</p></td>
+        </tr>
+    </tbody>
+  </table>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+
+<h4 id="ibis.expr.types.numeric.NumericValue.radians" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">radians</span><span class="p">()</span></code>
+
+<a href="#ibis.expr.types.numeric.NumericValue.radians" class="headerlink" title="Anchor link to this section for reference">&para;</a></h4>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>Compute radians from <code>self</code> degrees.</p>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+
+<h4 id="ibis.expr.types.numeric.NumericValue.round" class="doc doc-heading">
+<code class="highlight language-python"><span class="nb">round</span><span class="p">(</span><span class="n">digits</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span></code>
+
+<a href="#ibis.expr.types.numeric.NumericValue.round" class="headerlink" title="Anchor link to this section for reference">&para;</a></h4>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>Round values to an indicated number of decimal places.</p>
+
+  <p><strong>Parameters:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Type</th>
+        <th>Description</th>
+        <th>Default</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td><code>digits</code></td>
+          <td>
+                <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#int">int</a> | <a class="autorefs autorefs-internal" title="ibis.expr.types.numeric.IntegerValue" href="#ibis.expr.types.numeric.IntegerValue">IntegerValue</a> | None</code>
+          </td>
+          <td><p>The number of digits to round to.</p>
+<p>Here's how the <code>digits</code> parameter affects the expression output
+type:</p>
+<table>
+<thead>
+<tr>
+<th align="center"><code>digits</code></th>
+<th align="center"><code>self.type()</code></th>
+<th align="center">Output</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="center"><code>None</code> or <code>0</code></td>
+<td align="center"><code>decimal</code></td>
+<td align="center"><code>decimal</code></td>
+</tr>
+<tr>
+<td align="center">Nonzero</td>
+<td align="center"><code>decimal</code></td>
+<td align="center"><code>decimal</code></td>
+</tr>
+<tr>
+<td align="center"><code>None</code> or <code>0</code></td>
+<td align="center">Floating</td>
+<td align="center"><code>int64</code></td>
+</tr>
+<tr>
+<td align="center">Nonzero</td>
+<td align="center">Floating</td>
+<td align="center"><code>float64</code></td>
+</tr>
+</tbody>
+</table></td>
+          <td>
+                <code>None</code>
+          </td>
+        </tr>
+    </tbody>
+  </table>
+
+  <p><strong>Returns:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td>
+                <code><a class="autorefs autorefs-internal" title="ibis.expr.types.numeric.NumericValue" href="#ibis.expr.types.numeric.NumericValue">NumericValue</a></code>
+          </td>
+          <td><p>The rounded expression</p></td>
+        </tr>
+    </tbody>
+  </table>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+
+<h4 id="ibis.expr.types.numeric.NumericValue.sign" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">sign</span><span class="p">()</span></code>
+
+<a href="#ibis.expr.types.numeric.NumericValue.sign" class="headerlink" title="Anchor link to this section for reference">&para;</a></h4>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>Return the sign of the input.</p>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+
+<h4 id="ibis.expr.types.numeric.NumericValue.sin" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">sin</span><span class="p">()</span></code>
+
+<a href="#ibis.expr.types.numeric.NumericValue.sin" class="headerlink" title="Anchor link to this section for reference">&para;</a></h4>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>Compute the sine of <code>self</code>.</p>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+
+<h4 id="ibis.expr.types.numeric.NumericValue.sqrt" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">sqrt</span><span class="p">()</span></code>
+
+<a href="#ibis.expr.types.numeric.NumericValue.sqrt" class="headerlink" title="Anchor link to this section for reference">&para;</a></h4>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>Compute the square root of <code>self</code>.</p>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+
+<h4 id="ibis.expr.types.numeric.NumericValue.tan" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">tan</span><span class="p">()</span></code>
+
+<a href="#ibis.expr.types.numeric.NumericValue.tan" class="headerlink" title="Anchor link to this section for reference">&para;</a></h4>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>Compute the tangent of <code>self</code>.</p>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+
+<h4 id="ibis.expr.types.numeric.NumericValue.zeroifnull" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">zeroifnull</span><span class="p">()</span></code>
+
+<a href="#ibis.expr.types.numeric.NumericValue.zeroifnull" class="headerlink" title="Anchor link to this section for reference">&para;</a></h4>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>Return zero if an expression is <code>NULL</code>.</p>
+
+  </div>
+
+</div>
+
+
+
+  </div>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h2 id="ibis.expr.types.numeric.NumericColumn" class="doc doc-heading">
+        <code>NumericColumn</code>
+
+
+<a href="#ibis.expr.types.numeric.NumericColumn" class="headerlink" title="Anchor link to this section for reference">&para;</a></h2>
+
+
+  <div class="doc doc-contents first">
+      <p class="doc doc-class-bases">
+        Bases: <code><a class="autorefs autorefs-internal" title="ibis.expr.types.generic.Column" href="../generic/#ibis.expr.types.generic.Column">Column</a></code>, <code><a class="autorefs autorefs-internal" title="ibis.expr.types.numeric.NumericValue" href="#ibis.expr.types.numeric.NumericValue">NumericValue</a></code></p>
+
+
+
+
+  
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+
+<h3 id="ibis.expr.types.numeric.NumericColumn-functions">Functions<a href="#ibis.expr.types.numeric.NumericColumn-functions" class="headerlink" title="Anchor link to this section for reference">&para;</a></h3>
+
+<div class="doc doc-object doc-function">
+
+
+
+<h4 id="ibis.expr.types.numeric.NumericColumn.bucket" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">bucket</span><span class="p">(</span><span class="n">buckets</span><span class="p">,</span> <span class="n">closed</span><span class="o">=</span><span class="s1">&#39;left&#39;</span><span class="p">,</span> <span class="n">close_extreme</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">include_under</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">include_over</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span></code>
+
+<a href="#ibis.expr.types.numeric.NumericColumn.bucket" class="headerlink" title="Anchor link to this section for reference">&para;</a></h4>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>Compute a discrete binning of a numeric array.</p>
+
+  <p><strong>Parameters:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Type</th>
+        <th>Description</th>
+        <th>Default</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td><code>buckets</code></td>
+          <td>
+                <code><a class="autorefs autorefs-external" title="typing.Sequence" href="https://docs.python.org/3/library/typing.html#typing.Sequence">Sequence</a>[<a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#int">int</a>]</code>
+          </td>
+          <td><p>List of buckets</p></td>
+          <td>
+              <em>required</em>
+          </td>
+        </tr>
+        <tr>
+          <td><code>closed</code></td>
+          <td>
+                <code><a class="autorefs autorefs-external" title="typing.Literal" href="https://docs.python.org/3/library/typing.html#typing.Literal">Literal</a>[&#39;left&#39;, &#39;right&#39;]</code>
+          </td>
+          <td><p>Which side of each interval is closed. For example:</p>
+<div class="highlight"><pre><span></span><code><span class="n">buckets</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">100</span><span class="p">,</span> <span class="mi">200</span><span class="p">]</span>
+<span class="n">closed</span> <span class="o">=</span> <span class="s2">&quot;left&quot;</span>  <span class="c1"># 100 falls in 2nd bucket</span>
+<span class="n">closed</span> <span class="o">=</span> <span class="s2">&quot;right&quot;</span>  <span class="c1"># 100 falls in 1st bucket</span>
+</code></pre></div></td>
+          <td>
+                <code>&#39;left&#39;</code>
+          </td>
+        </tr>
+        <tr>
+          <td><code>close_extreme</code></td>
+          <td>
+                <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#bool">bool</a></code>
+          </td>
+          <td><p>Whether the extreme values fall in the last bucket</p></td>
+          <td>
+                <code>True</code>
+          </td>
+        </tr>
+        <tr>
+          <td><code>include_over</code></td>
+          <td>
+                <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#bool">bool</a></code>
+          </td>
+          <td><p>Include values greater than the last bucket in the last bucket</p></td>
+          <td>
+                <code>False</code>
+          </td>
+        </tr>
+        <tr>
+          <td><code>include_under</code></td>
+          <td>
+                <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#bool">bool</a></code>
+          </td>
+          <td><p>Include values less than the first bucket in the first bucket</p></td>
+          <td>
+                <code>False</code>
+          </td>
+        </tr>
+    </tbody>
+  </table>
+
+  <p><strong>Returns:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td>
+                <code><a class="autorefs autorefs-internal" title="ibis.expr.types.numeric.IntegerColumn" href="#ibis.expr.types.numeric.IntegerColumn">IntegerColumn</a></code>
+          </td>
+          <td><p>A categorical column expression</p></td>
+        </tr>
+    </tbody>
+  </table>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+
+<h4 id="ibis.expr.types.numeric.NumericColumn.corr" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">corr</span><span class="p">(</span><span class="n">right</span><span class="p">,</span> <span class="n">where</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">how</span><span class="o">=</span><span class="s1">&#39;sample&#39;</span><span class="p">)</span></code>
+
+<a href="#ibis.expr.types.numeric.NumericColumn.corr" class="headerlink" title="Anchor link to this section for reference">&para;</a></h4>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>Return the correlation of two numeric columns.</p>
+
+  <p><strong>Parameters:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Type</th>
+        <th>Description</th>
+        <th>Default</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td><code>right</code></td>
+          <td>
+                <code><a class="autorefs autorefs-internal" title="ibis.expr.types.numeric.NumericColumn" href="#ibis.expr.types.numeric.NumericColumn">NumericColumn</a></code>
+          </td>
+          <td><p>Numeric column</p></td>
+          <td>
+              <em>required</em>
+          </td>
+        </tr>
+        <tr>
+          <td><code>where</code></td>
+          <td>
+                <code><span title="ibis.expr.types">ir</span>.<a class="autorefs autorefs-internal" title="ibis.expr.types.BooleanValue" href="#ibis.expr.types.logical.BooleanValue">BooleanValue</a> | None</code>
+          </td>
+          <td><p>Filter</p></td>
+          <td>
+                <code>None</code>
+          </td>
+        </tr>
+        <tr>
+          <td><code>how</code></td>
+          <td>
+                <code><a class="autorefs autorefs-external" title="typing.Literal" href="https://docs.python.org/3/library/typing.html#typing.Literal">Literal</a>[&#39;sample&#39;, &#39;pop&#39;]</code>
+          </td>
+          <td><p>Population or sample correlation</p></td>
+          <td>
+                <code>&#39;sample&#39;</code>
+          </td>
+        </tr>
+    </tbody>
+  </table>
+
+  <p><strong>Returns:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td>
+                <code><span title="ibis.expr.types.numeric.NumericScalar">NumericScalar</span></code>
+          </td>
+          <td><p>The correlation of <code>left</code> and <code>right</code></p></td>
+        </tr>
+    </tbody>
+  </table>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+
+<h4 id="ibis.expr.types.numeric.NumericColumn.cov" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">cov</span><span class="p">(</span><span class="n">right</span><span class="p">,</span> <span class="n">where</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">how</span><span class="o">=</span><span class="s1">&#39;sample&#39;</span><span class="p">)</span></code>
+
+<a href="#ibis.expr.types.numeric.NumericColumn.cov" class="headerlink" title="Anchor link to this section for reference">&para;</a></h4>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>Return the covariance of two numeric columns.</p>
+
+  <p><strong>Parameters:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Type</th>
+        <th>Description</th>
+        <th>Default</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td><code>right</code></td>
+          <td>
+                <code><a class="autorefs autorefs-internal" title="ibis.expr.types.numeric.NumericColumn" href="#ibis.expr.types.numeric.NumericColumn">NumericColumn</a></code>
+          </td>
+          <td><p>Numeric column</p></td>
+          <td>
+              <em>required</em>
+          </td>
+        </tr>
+        <tr>
+          <td><code>where</code></td>
+          <td>
+                <code><span title="ibis.expr.types">ir</span>.<a class="autorefs autorefs-internal" title="ibis.expr.types.BooleanValue" href="#ibis.expr.types.logical.BooleanValue">BooleanValue</a> | None</code>
+          </td>
+          <td><p>Filter</p></td>
+          <td>
+                <code>None</code>
+          </td>
+        </tr>
+        <tr>
+          <td><code>how</code></td>
+          <td>
+                <code><a class="autorefs autorefs-external" title="typing.Literal" href="https://docs.python.org/3/library/typing.html#typing.Literal">Literal</a>[&#39;sample&#39;, &#39;pop&#39;]</code>
+          </td>
+          <td><p>Population or sample covariance</p></td>
+          <td>
+                <code>&#39;sample&#39;</code>
+          </td>
+        </tr>
+    </tbody>
+  </table>
+
+  <p><strong>Returns:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td>
+                <code><span title="ibis.expr.types.numeric.NumericScalar">NumericScalar</span></code>
+          </td>
+          <td><p>The covariance of <code>self</code> and <code>right</code></p></td>
+        </tr>
+    </tbody>
+  </table>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+
+<h4 id="ibis.expr.types.numeric.NumericColumn.cummean" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">cummean</span><span class="p">()</span></code>
+
+<a href="#ibis.expr.types.numeric.NumericColumn.cummean" class="headerlink" title="Anchor link to this section for reference">&para;</a></h4>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>Return the cumulative mean of the input.</p>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+
+<h4 id="ibis.expr.types.numeric.NumericColumn.cumsum" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">cumsum</span><span class="p">()</span></code>
+
+<a href="#ibis.expr.types.numeric.NumericColumn.cumsum" class="headerlink" title="Anchor link to this section for reference">&para;</a></h4>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>Return the cumulative sum of the input.</p>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+
+<h4 id="ibis.expr.types.numeric.NumericColumn.histogram" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">histogram</span><span class="p">(</span><span class="n">nbins</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">binwidth</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">base</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">eps</span><span class="o">=</span><span class="mf">1e-13</span><span class="p">)</span></code>
+
+<a href="#ibis.expr.types.numeric.NumericColumn.histogram" class="headerlink" title="Anchor link to this section for reference">&para;</a></h4>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>Compute a histogram with fixed width bins.</p>
+
+  <p><strong>Parameters:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Type</th>
+        <th>Description</th>
+        <th>Default</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td><code>nbins</code></td>
+          <td>
+                <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#int">int</a> | None</code>
+          </td>
+          <td><p>If supplied, will be used to compute the binwidth</p></td>
+          <td>
+                <code>None</code>
+          </td>
+        </tr>
+        <tr>
+          <td><code>binwidth</code></td>
+          <td>
+                <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#float">float</a> | None</code>
+          </td>
+          <td><p>If not supplied, computed from the data (actual max and min values)</p></td>
+          <td>
+                <code>None</code>
+          </td>
+        </tr>
+        <tr>
+          <td><code>base</code></td>
+          <td>
+                <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#float">float</a> | None</code>
+          </td>
+          <td><p>The value of the first histogram bin. Defaults to the minimum value
+of <code>column</code>.</p></td>
+          <td>
+                <code>None</code>
+          </td>
+        </tr>
+        <tr>
+          <td><code>eps</code></td>
+          <td>
+                <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#float">float</a></code>
+          </td>
+          <td><p>Allowed floating point epsilon for histogram base</p></td>
+          <td>
+                <code>1e-13</code>
+          </td>
+        </tr>
+    </tbody>
+  </table>
+
+  <p><strong>Returns:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td>
+                <code><a class="autorefs autorefs-internal" title="ibis.expr.types.generic.Column" href="../generic/#ibis.expr.types.generic.Column">Column</a></code>
+          </td>
+          <td><p>Bucketed column</p></td>
+        </tr>
+    </tbody>
+  </table>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+
+<h4 id="ibis.expr.types.numeric.NumericColumn.mean" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">mean</span><span class="p">(</span><span class="n">where</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span></code>
+
+<a href="#ibis.expr.types.numeric.NumericColumn.mean" class="headerlink" title="Anchor link to this section for reference">&para;</a></h4>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>Return the mean of a numeric column.</p>
+
+  <p><strong>Parameters:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Type</th>
+        <th>Description</th>
+        <th>Default</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td><code>where</code></td>
+          <td>
+                <code><span title="ibis.expr.types">ir</span>.<a class="autorefs autorefs-internal" title="ibis.expr.types.BooleanValue" href="#ibis.expr.types.logical.BooleanValue">BooleanValue</a> | None</code>
+          </td>
+          <td><p>Filter</p></td>
+          <td>
+                <code>None</code>
+          </td>
+        </tr>
+    </tbody>
+  </table>
+
+  <p><strong>Returns:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td>
+                <code><span title="ibis.expr.types.numeric.NumericScalar">NumericScalar</span></code>
+          </td>
+          <td><p>The mean of the input expression</p></td>
+        </tr>
+    </tbody>
+  </table>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+
+<h4 id="ibis.expr.types.numeric.NumericColumn.quantile" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">quantile</span><span class="p">(</span><span class="n">quantile</span><span class="p">,</span> <span class="n">interpolation</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">where</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span></code>
+
+<a href="#ibis.expr.types.numeric.NumericColumn.quantile" class="headerlink" title="Anchor link to this section for reference">&para;</a></h4>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>Return value at the given quantile.</p>
+
+  <p><strong>Parameters:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Type</th>
+        <th>Description</th>
+        <th>Default</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td><code>quantile</code></td>
+          <td>
+                <code><a class="autorefs autorefs-external" title="typing.Sequence" href="https://docs.python.org/3/library/typing.html#typing.Sequence">Sequence</a>[<a class="autorefs autorefs-internal" title="ibis.expr.types.numeric.NumericValue" href="#ibis.expr.types.numeric.NumericValue">NumericValue</a> | <a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#float">float</a>]</code>
+          </td>
+          <td><p><code>0 &lt;= quantile &lt;= 1</code>, the quantile(s) to compute</p></td>
+          <td>
+              <em>required</em>
+          </td>
+        </tr>
+        <tr>
+          <td><code>interpolation</code></td>
+          <td>
+                <code><a class="autorefs autorefs-external" title="typing.Literal" href="https://docs.python.org/3/library/typing.html#typing.Literal">Literal</a>[&#39;linear&#39;, &#39;lower&#39;, &#39;higher&#39;, &#39;midpoint&#39;, &#39;nearest&#39;] | None</code>
+          </td>
+          <td><div class="admonition warning">
+<p class="admonition-title">This parameter is backend dependent and may have no effect</p>
+</div>
+<p>This parameter specifies the interpolation method to use, when the
+desired quantile lies between two data points <code>i</code> and <code>j</code>:</p>
+<ul>
+<li>linear: <code>i + (j - i) * fraction</code>, where <code>fraction</code> is the
+fractional part of the index surrounded by <code>i</code> and <code>j</code>.</li>
+<li>lower: <code>i</code>.</li>
+<li>higher: <code>j</code>.</li>
+<li>nearest: <code>i</code> or <code>j</code> whichever is nearest.</li>
+<li>midpoint: (<code>i</code> + <code>j</code>) / 2.</li>
+</ul></td>
+          <td>
+                <code>None</code>
+          </td>
+        </tr>
+        <tr>
+          <td><code>where</code></td>
+          <td>
+                <code><span title="ibis.expr.types">ir</span>.<a class="autorefs autorefs-internal" title="ibis.expr.types.BooleanValue" href="#ibis.expr.types.logical.BooleanValue">BooleanValue</a> | None</code>
+          </td>
+          <td><p>Boolean filter for input values</p></td>
+          <td>
+                <code>None</code>
+          </td>
+        </tr>
+    </tbody>
+  </table>
+
+  <p><strong>Returns:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td>
+                <code><span title="ibis.expr.types.numeric.NumericScalar">NumericScalar</span></code>
+          </td>
+          <td><p>Quantile of the input</p></td>
+        </tr>
+    </tbody>
+  </table>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+
+<h4 id="ibis.expr.types.numeric.NumericColumn.std" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">std</span><span class="p">(</span><span class="n">where</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">how</span><span class="o">=</span><span class="s1">&#39;sample&#39;</span><span class="p">)</span></code>
+
+<a href="#ibis.expr.types.numeric.NumericColumn.std" class="headerlink" title="Anchor link to this section for reference">&para;</a></h4>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>Return the standard deviation of a numeric column.</p>
+
+  <p><strong>Parameters:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Type</th>
+        <th>Description</th>
+        <th>Default</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td><code>where</code></td>
+          <td>
+                <code><span title="ibis.expr.types">ir</span>.<a class="autorefs autorefs-internal" title="ibis.expr.types.BooleanValue" href="#ibis.expr.types.logical.BooleanValue">BooleanValue</a> | None</code>
+          </td>
+          <td><p>Filter</p></td>
+          <td>
+                <code>None</code>
+          </td>
+        </tr>
+        <tr>
+          <td><code>how</code></td>
+          <td>
+                <code><a class="autorefs autorefs-external" title="typing.Literal" href="https://docs.python.org/3/library/typing.html#typing.Literal">Literal</a>[&#39;sample&#39;, &#39;pop&#39;]</code>
+          </td>
+          <td><p>Sample or population standard deviation</p></td>
+          <td>
+                <code>&#39;sample&#39;</code>
+          </td>
+        </tr>
+    </tbody>
+  </table>
+
+  <p><strong>Returns:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td>
+                <code><span title="ibis.expr.types.numeric.NumericScalar">NumericScalar</span></code>
+          </td>
+          <td><p>Standard deviation of <code>arg</code></p></td>
+        </tr>
+    </tbody>
+  </table>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+
+<h4 id="ibis.expr.types.numeric.NumericColumn.sum" class="doc doc-heading">
+<code class="highlight language-python"><span class="nb">sum</span><span class="p">(</span><span class="n">where</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span></code>
+
+<a href="#ibis.expr.types.numeric.NumericColumn.sum" class="headerlink" title="Anchor link to this section for reference">&para;</a></h4>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>Return the sum of a numeric column.</p>
+
+  <p><strong>Parameters:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Type</th>
+        <th>Description</th>
+        <th>Default</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td><code>where</code></td>
+          <td>
+                <code><span title="ibis.expr.types">ir</span>.<a class="autorefs autorefs-internal" title="ibis.expr.types.BooleanValue" href="#ibis.expr.types.logical.BooleanValue">BooleanValue</a> | None</code>
+          </td>
+          <td><p>Filter</p></td>
+          <td>
+                <code>None</code>
+          </td>
+        </tr>
+    </tbody>
+  </table>
+
+  <p><strong>Returns:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td>
+                <code><span title="ibis.expr.types.numeric.NumericScalar">NumericScalar</span></code>
+          </td>
+          <td><p>The sum of the input expression</p></td>
+        </tr>
+    </tbody>
+  </table>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+
+<h4 id="ibis.expr.types.numeric.NumericColumn.summary" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">summary</span><span class="p">(</span><span class="n">exact_nunique</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">prefix</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="n">suffix</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">)</span></code>
+
+<a href="#ibis.expr.types.numeric.NumericColumn.summary" class="headerlink" title="Anchor link to this section for reference">&para;</a></h4>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>Compute summary metrics from the input numeric expression.</p>
+
+  <p><strong>Parameters:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Type</th>
+        <th>Description</th>
+        <th>Default</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td><code>exact_nunique</code></td>
+          <td>
+                <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#bool">bool</a></code>
+          </td>
+          <td><p>Compute the exact number of distinct values. Typically slower if
+<code>True</code>.</p></td>
+          <td>
+                <code>False</code>
+          </td>
+        </tr>
+        <tr>
+          <td><code>prefix</code></td>
+          <td>
+                <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></code>
+          </td>
+          <td><p>String prefix for metric names</p></td>
+          <td>
+                <code>&#39;&#39;</code>
+          </td>
+        </tr>
+        <tr>
+          <td><code>suffix</code></td>
+          <td>
+                <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></code>
+          </td>
+          <td><p>String suffix for metric names</p></td>
+          <td>
+                <code>&#39;&#39;</code>
+          </td>
+        </tr>
+    </tbody>
+  </table>
+
+  <p><strong>Returns:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td>
+                <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#list">list</a>[<span title="ibis.expr.types.numeric.NumericScalar">NumericScalar</span>]</code>
+          </td>
+          <td><p>Metrics list</p></td>
+        </tr>
+    </tbody>
+  </table>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+
+<h4 id="ibis.expr.types.numeric.NumericColumn.var" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">var</span><span class="p">(</span><span class="n">where</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">how</span><span class="o">=</span><span class="s1">&#39;sample&#39;</span><span class="p">)</span></code>
+
+<a href="#ibis.expr.types.numeric.NumericColumn.var" class="headerlink" title="Anchor link to this section for reference">&para;</a></h4>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>Return the variance of a numeric column.</p>
+
+  <p><strong>Parameters:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Type</th>
+        <th>Description</th>
+        <th>Default</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td><code>where</code></td>
+          <td>
+                <code><span title="ibis.expr.types">ir</span>.<a class="autorefs autorefs-internal" title="ibis.expr.types.BooleanValue" href="#ibis.expr.types.logical.BooleanValue">BooleanValue</a> | None</code>
+          </td>
+          <td><p>Filter</p></td>
+          <td>
+                <code>None</code>
+          </td>
+        </tr>
+        <tr>
+          <td><code>how</code></td>
+          <td>
+                <code><a class="autorefs autorefs-external" title="typing.Literal" href="https://docs.python.org/3/library/typing.html#typing.Literal">Literal</a>[&#39;sample&#39;, &#39;pop&#39;]</code>
+          </td>
+          <td><p>Sample or population variance</p></td>
+          <td>
+                <code>&#39;sample&#39;</code>
+          </td>
+        </tr>
+    </tbody>
+  </table>
+
+  <p><strong>Returns:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td>
+                <code><span title="ibis.expr.types.numeric.NumericScalar">NumericScalar</span></code>
+          </td>
+          <td><p>Standard deviation of <code>arg</code></p></td>
+        </tr>
+    </tbody>
+  </table>
+
+  </div>
+
+</div>
+
+
+
+  </div>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h2 id="ibis.expr.types.numeric.IntegerValue" class="doc doc-heading">
+        <code>IntegerValue</code>
+
+
+<a href="#ibis.expr.types.numeric.IntegerValue" class="headerlink" title="Anchor link to this section for reference">&para;</a></h2>
+
+
+  <div class="doc doc-contents first">
+      <p class="doc doc-class-bases">
+        Bases: <code><a class="autorefs autorefs-internal" title="ibis.expr.types.numeric.NumericValue" href="#ibis.expr.types.numeric.NumericValue">NumericValue</a></code></p>
+
+
+
+
+  
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+
+<h3 id="ibis.expr.types.numeric.IntegerValue-functions">Functions<a href="#ibis.expr.types.numeric.IntegerValue-functions" class="headerlink" title="Anchor link to this section for reference">&para;</a></h3>
+
+<div class="doc doc-object doc-function">
+
+
+
+<h4 id="ibis.expr.types.numeric.IntegerValue.__and__" class="doc doc-heading">
+<code class="highlight language-python"><span class="fm">__and__</span><span class="p">(</span><span class="n">other</span><span class="p">)</span></code>
+
+<a href="#ibis.expr.types.numeric.IntegerValue.__and__" class="headerlink" title="Anchor link to this section for reference">&para;</a></h4>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>Bitwise and <code>self</code> with <code>other</code>.</p>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+
+<h4 id="ibis.expr.types.numeric.IntegerValue.__invert__" class="doc doc-heading">
+<code class="highlight language-python"><span class="fm">__invert__</span><span class="p">()</span></code>
+
+<a href="#ibis.expr.types.numeric.IntegerValue.__invert__" class="headerlink" title="Anchor link to this section for reference">&para;</a></h4>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>Bitwise not of <code>self</code>.</p>
+
+  <p><strong>Returns:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td>
+                <code><a class="autorefs autorefs-internal" title="ibis.expr.types.numeric.IntegerValue" href="#ibis.expr.types.numeric.IntegerValue">IntegerValue</a></code>
+          </td>
+          <td><p>Inverted bits of <code>self</code>.</p></td>
+        </tr>
+    </tbody>
+  </table>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+
+<h4 id="ibis.expr.types.numeric.IntegerValue.__lshift__" class="doc doc-heading">
+<code class="highlight language-python"><span class="fm">__lshift__</span><span class="p">(</span><span class="n">other</span><span class="p">)</span></code>
+
+<a href="#ibis.expr.types.numeric.IntegerValue.__lshift__" class="headerlink" title="Anchor link to this section for reference">&para;</a></h4>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>Bitwise left shift <code>self</code> with <code>other</code>.</p>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+
+<h4 id="ibis.expr.types.numeric.IntegerValue.__or__" class="doc doc-heading">
+<code class="highlight language-python"><span class="fm">__or__</span><span class="p">(</span><span class="n">other</span><span class="p">)</span></code>
+
+<a href="#ibis.expr.types.numeric.IntegerValue.__or__" class="headerlink" title="Anchor link to this section for reference">&para;</a></h4>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>Bitwise or <code>self</code> with <code>other</code>.</p>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+
+<h4 id="ibis.expr.types.numeric.IntegerValue.__rlshift__" class="doc doc-heading">
+<code class="highlight language-python"><span class="fm">__rlshift__</span><span class="p">(</span><span class="n">other</span><span class="p">)</span></code>
+
+<a href="#ibis.expr.types.numeric.IntegerValue.__rlshift__" class="headerlink" title="Anchor link to this section for reference">&para;</a></h4>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>Bitwise left shift <code>self</code> with <code>other</code>.</p>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+
+<h4 id="ibis.expr.types.numeric.IntegerValue.__rrshift__" class="doc doc-heading">
+<code class="highlight language-python"><span class="fm">__rrshift__</span><span class="p">(</span><span class="n">other</span><span class="p">)</span></code>
+
+<a href="#ibis.expr.types.numeric.IntegerValue.__rrshift__" class="headerlink" title="Anchor link to this section for reference">&para;</a></h4>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>Bitwise right shift <code>self</code> with <code>other</code>.</p>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+
+<h4 id="ibis.expr.types.numeric.IntegerValue.__rshift__" class="doc doc-heading">
+<code class="highlight language-python"><span class="fm">__rshift__</span><span class="p">(</span><span class="n">other</span><span class="p">)</span></code>
+
+<a href="#ibis.expr.types.numeric.IntegerValue.__rshift__" class="headerlink" title="Anchor link to this section for reference">&para;</a></h4>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>Bitwise right shift <code>self</code> with <code>other</code>.</p>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+
+<h4 id="ibis.expr.types.numeric.IntegerValue.__xor__" class="doc doc-heading">
+<code class="highlight language-python"><span class="fm">__xor__</span><span class="p">(</span><span class="n">other</span><span class="p">)</span></code>
+
+<a href="#ibis.expr.types.numeric.IntegerValue.__xor__" class="headerlink" title="Anchor link to this section for reference">&para;</a></h4>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>Bitwise xor <code>self</code> with <code>other</code>.</p>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+
+<h4 id="ibis.expr.types.numeric.IntegerValue.convert_base" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">convert_base</span><span class="p">(</span><span class="n">from_base</span><span class="p">,</span> <span class="n">to_base</span><span class="p">)</span></code>
+
+<a href="#ibis.expr.types.numeric.IntegerValue.convert_base" class="headerlink" title="Anchor link to this section for reference">&para;</a></h4>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>Convert an integer from one base to another.</p>
+
+  <p><strong>Parameters:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Type</th>
+        <th>Description</th>
+        <th>Default</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td><code>from_base</code></td>
+          <td>
+                <code><a class="autorefs autorefs-internal" title="ibis.expr.types.numeric.IntegerValue" href="#ibis.expr.types.numeric.IntegerValue">IntegerValue</a></code>
+          </td>
+          <td><p>Numeric base of expression</p></td>
+          <td>
+              <em>required</em>
+          </td>
+        </tr>
+        <tr>
+          <td><code>to_base</code></td>
+          <td>
+                <code><a class="autorefs autorefs-internal" title="ibis.expr.types.numeric.IntegerValue" href="#ibis.expr.types.numeric.IntegerValue">IntegerValue</a></code>
+          </td>
+          <td><p>New base</p></td>
+          <td>
+              <em>required</em>
+          </td>
+        </tr>
+    </tbody>
+  </table>
+
+  <p><strong>Returns:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td>
+                <code><a class="autorefs autorefs-internal" title="ibis.expr.types.numeric.IntegerValue" href="#ibis.expr.types.numeric.IntegerValue">IntegerValue</a></code>
+          </td>
+          <td><p>Converted expression</p></td>
+        </tr>
+    </tbody>
+  </table>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+
+<h4 id="ibis.expr.types.numeric.IntegerValue.label" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">label</span><span class="p">(</span><span class="n">labels</span><span class="p">,</span> <span class="n">nulls</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span></code>
+
+<a href="#ibis.expr.types.numeric.IntegerValue.label" class="headerlink" title="Anchor link to this section for reference">&para;</a></h4>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>Label a set of integer values with strings.</p>
+
+  <p><strong>Parameters:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Type</th>
+        <th>Description</th>
+        <th>Default</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td><code>labels</code></td>
+          <td>
+                <code><a class="autorefs autorefs-external" title="typing.Iterable" href="https://docs.python.org/3/library/typing.html#typing.Iterable">Iterable</a>[<a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a>]</code>
+          </td>
+          <td><p>An iterable of string labels. Each integer value in <code>self</code> will be mapped to
+a value in <code>labels</code>.</p></td>
+          <td>
+              <em>required</em>
+          </td>
+        </tr>
+        <tr>
+          <td><code>nulls</code></td>
+          <td>
+                <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a> | None</code>
+          </td>
+          <td><p>String label to use for <code>NULL</code> values</p></td>
+          <td>
+                <code>None</code>
+          </td>
+        </tr>
+    </tbody>
+  </table>
+
+  <p><strong>Returns:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td>
+                <code><a class="autorefs autorefs-internal" title="ibis.expr.types.uuid.StringValue" href="../strings/#ibis.expr.types.strings.StringValue">StringValue</a></code>
+          </td>
+          <td><p><code>self</code> labeled with <code>labels</code></p></td>
+        </tr>
+    </tbody>
+  </table>
+
+<p><strong>Examples:</strong></p>
+    <div class="highlight"><pre><span></span><code><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">ibis</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">ibis</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">interactive</span> <span class="o">=</span> <span class="kc">True</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">t</span> <span class="o">=</span> <span class="n">ibis</span><span class="o">.</span><span class="n">memtable</span><span class="p">({</span><span class="s2">&quot;a&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">]})</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">t</span><span class="o">.</span><span class="n">select</span><span class="p">(</span><span class="n">t</span><span class="o">.</span><span class="n">a</span><span class="p">,</span> <span class="n">labeled</span><span class="o">=</span><span class="n">t</span><span class="o">.</span><span class="n">a</span><span class="o">.</span><span class="n">label</span><span class="p">([</span><span class="s2">&quot;a&quot;</span><span class="p">,</span> <span class="s2">&quot;b&quot;</span><span class="p">,</span> <span class="s2">&quot;c&quot;</span><span class="p">]))</span>
+<span class="go">┏━━━━━━━┳━━━━━━━━━┓</span>
+<span class="go">┃ a     ┃ labeled ┃</span>
+<span class="go">┡━━━━━━━╇━━━━━━━━━┩</span>
+<span class="go">│ int64 │ string  │</span>
+<span class="go">├───────┼─────────┤</span>
+<span class="go">│     0 │ a       │</span>
+<span class="go">│     1 │ b       │</span>
+<span class="go">│     0 │ a       │</span>
+<span class="go">│     2 │ c       │</span>
+<span class="go">└───────┴─────────┘</span>
+</code></pre></div>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+
+<h4 id="ibis.expr.types.numeric.IntegerValue.to_interval" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">to_interval</span><span class="p">(</span><span class="n">unit</span><span class="o">=</span><span class="s1">&#39;s&#39;</span><span class="p">)</span></code>
+
+<a href="#ibis.expr.types.numeric.IntegerValue.to_interval" class="headerlink" title="Anchor link to this section for reference">&para;</a></h4>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>Convert an integer to an interval.</p>
+
+  <p><strong>Parameters:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Type</th>
+        <th>Description</th>
+        <th>Default</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td><code>unit</code></td>
+          <td>
+                <code><a class="autorefs autorefs-external" title="typing.Literal" href="https://docs.python.org/3/library/typing.html#typing.Literal">Literal</a>[&#39;Y&#39;, &#39;M&#39;, &#39;W&#39;, &#39;D&#39;, &#39;h&#39;, &#39;m&#39;, &#39;s&#39;, &#39;ms&#39;, &#39;us&#39;, &#39;ns&#39;]</code>
+          </td>
+          <td><p>Unit for the resulting interval</p></td>
+          <td>
+                <code>&#39;s&#39;</code>
+          </td>
+        </tr>
+    </tbody>
+  </table>
+
+  <p><strong>Returns:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td>
+                <code><a class="autorefs autorefs-internal" title="ibis.expr.types.temporal.IntervalValue" href="../timestamps/#ibis.expr.types.temporal.IntervalValue">IntervalValue</a></code>
+          </td>
+          <td><p>An interval in units of <code>unit</code></p></td>
+        </tr>
+    </tbody>
+  </table>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+
+<h4 id="ibis.expr.types.numeric.IntegerValue.to_timestamp" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">to_timestamp</span><span class="p">(</span><span class="n">unit</span><span class="o">=</span><span class="s1">&#39;s&#39;</span><span class="p">)</span></code>
+
+<a href="#ibis.expr.types.numeric.IntegerValue.to_timestamp" class="headerlink" title="Anchor link to this section for reference">&para;</a></h4>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>Convert an integral UNIX timestamp to a timestamp expression.</p>
+
+  <p><strong>Parameters:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Type</th>
+        <th>Description</th>
+        <th>Default</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td><code>unit</code></td>
+          <td>
+                <code><a class="autorefs autorefs-external" title="typing.Literal" href="https://docs.python.org/3/library/typing.html#typing.Literal">Literal</a>[&#39;s&#39;, &#39;ms&#39;, &#39;us&#39;]</code>
+          </td>
+          <td><p>The resolution of <code>arg</code></p></td>
+          <td>
+                <code>&#39;s&#39;</code>
+          </td>
+        </tr>
+    </tbody>
+  </table>
+
+  <p><strong>Returns:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td>
+                <code><a class="autorefs autorefs-internal" title="ibis.expr.types.temporal.TimestampValue" href="../timestamps/#ibis.expr.types.temporal.TimestampValue">TimestampValue</a></code>
+          </td>
+          <td><p><code>self</code> converted to a timestamp</p></td>
+        </tr>
+    </tbody>
+  </table>
+
+  </div>
+
+</div>
+
+
+
+  </div>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h2 id="ibis.expr.types.numeric.IntegerColumn" class="doc doc-heading">
+        <code>IntegerColumn</code>
+
+
+<a href="#ibis.expr.types.numeric.IntegerColumn" class="headerlink" title="Anchor link to this section for reference">&para;</a></h2>
+
+
+  <div class="doc doc-contents first">
+      <p class="doc doc-class-bases">
+        Bases: <code><a class="autorefs autorefs-internal" title="ibis.expr.types.numeric.NumericColumn" href="#ibis.expr.types.numeric.NumericColumn">NumericColumn</a></code>, <code><a class="autorefs autorefs-internal" title="ibis.expr.types.numeric.IntegerValue" href="#ibis.expr.types.numeric.IntegerValue">IntegerValue</a></code></p>
+
+
+
+
+  
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+
+<h3 id="ibis.expr.types.numeric.IntegerColumn-functions">Functions<a href="#ibis.expr.types.numeric.IntegerColumn-functions" class="headerlink" title="Anchor link to this section for reference">&para;</a></h3>
+
+<div class="doc doc-object doc-function">
+
+
+
+<h4 id="ibis.expr.types.numeric.IntegerColumn.bit_and" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">bit_and</span><span class="p">(</span><span class="n">where</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span></code>
+
+<a href="#ibis.expr.types.numeric.IntegerColumn.bit_and" class="headerlink" title="Anchor link to this section for reference">&para;</a></h4>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>Aggregate the column using the bitwise and operator.</p>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+
+<h4 id="ibis.expr.types.numeric.IntegerColumn.bit_or" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">bit_or</span><span class="p">(</span><span class="n">where</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span></code>
+
+<a href="#ibis.expr.types.numeric.IntegerColumn.bit_or" class="headerlink" title="Anchor link to this section for reference">&para;</a></h4>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>Aggregate the column using the bitwise or operator.</p>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+
+<h4 id="ibis.expr.types.numeric.IntegerColumn.bit_xor" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">bit_xor</span><span class="p">(</span><span class="n">where</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span></code>
+
+<a href="#ibis.expr.types.numeric.IntegerColumn.bit_xor" class="headerlink" title="Anchor link to this section for reference">&para;</a></h4>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>Aggregate the column using the bitwise exclusive or operator.</p>
+
+  </div>
+
+</div>
+
+
+
+  </div>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h2 id="ibis.expr.types.numeric.FloatingValue" class="doc doc-heading">
+        <code>FloatingValue</code>
+
+
+<a href="#ibis.expr.types.numeric.FloatingValue" class="headerlink" title="Anchor link to this section for reference">&para;</a></h2>
+
+
+  <div class="doc doc-contents first">
+      <p class="doc doc-class-bases">
+        Bases: <code><a class="autorefs autorefs-internal" title="ibis.expr.types.numeric.NumericValue" href="#ibis.expr.types.numeric.NumericValue">NumericValue</a></code></p>
+
+
+
+
+  
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+
+<h3 id="ibis.expr.types.numeric.FloatingValue-functions">Functions<a href="#ibis.expr.types.numeric.FloatingValue-functions" class="headerlink" title="Anchor link to this section for reference">&para;</a></h3>
+
+<div class="doc doc-object doc-function">
+
+
+
+<h4 id="ibis.expr.types.numeric.FloatingValue.isinf" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">isinf</span><span class="p">()</span></code>
+
+<a href="#ibis.expr.types.numeric.FloatingValue.isinf" class="headerlink" title="Anchor link to this section for reference">&para;</a></h4>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>Return whether the value is infinity.</p>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+
+<h4 id="ibis.expr.types.numeric.FloatingValue.isnan" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">isnan</span><span class="p">()</span></code>
+
+<a href="#ibis.expr.types.numeric.FloatingValue.isnan" class="headerlink" title="Anchor link to this section for reference">&para;</a></h4>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>Return whether the value is NaN.</p>
+
+  </div>
+
+</div>
+
+
+
+  </div>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h2 id="ibis.expr.types.numeric.DecimalValue" class="doc doc-heading">
+        <code>DecimalValue</code>
+
+
+<a href="#ibis.expr.types.numeric.DecimalValue" class="headerlink" title="Anchor link to this section for reference">&para;</a></h2>
+
+
+  <div class="doc doc-contents first">
+      <p class="doc doc-class-bases">
+        Bases: <code><a class="autorefs autorefs-internal" title="ibis.expr.types.numeric.NumericValue" href="#ibis.expr.types.numeric.NumericValue">NumericValue</a></code></p>
+
+
+
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h2 id="ibis.expr.types.logical.BooleanValue" class="doc doc-heading">
+        <code>BooleanValue</code>
+
+
+<a href="#ibis.expr.types.logical.BooleanValue" class="headerlink" title="Anchor link to this section for reference">&para;</a></h2>
+
+
+  <div class="doc doc-contents first">
+      <p class="doc doc-class-bases">
+        Bases: <code><a class="autorefs autorefs-internal" title="ibis.expr.types.numeric.NumericValue" href="#ibis.expr.types.numeric.NumericValue">NumericValue</a></code></p>
+
+
+
+
+  
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+
+<h3 id="ibis.expr.types.logical.BooleanValue-functions">Functions<a href="#ibis.expr.types.logical.BooleanValue-functions" class="headerlink" title="Anchor link to this section for reference">&para;</a></h3>
+
+<div class="doc doc-object doc-function">
+
+
+
+<h4 id="ibis.expr.types.logical.BooleanValue.ifelse" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">ifelse</span><span class="p">(</span><span class="n">true_expr</span><span class="p">,</span> <span class="n">false_expr</span><span class="p">)</span></code>
+
+<a href="#ibis.expr.types.logical.BooleanValue.ifelse" class="headerlink" title="Anchor link to this section for reference">&para;</a></h4>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>Construct a ternary conditional expression.</p>
+
+  <p><strong>Parameters:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Type</th>
+        <th>Description</th>
+        <th>Default</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td><code>true_expr</code></td>
+          <td>
+                <code><span title="ibis.expr.types">ir</span>.<a class="autorefs autorefs-internal" title="ibis.expr.types.Value" href="../generic/#ibis.expr.types.generic.Value">Value</a></code>
+          </td>
+          <td><p>Expression to return if <code>self</code> evaluates to <code>True</code></p></td>
+          <td>
+              <em>required</em>
+          </td>
+        </tr>
+        <tr>
+          <td><code>false_expr</code></td>
+          <td>
+                <code><span title="ibis.expr.types">ir</span>.<a class="autorefs autorefs-internal" title="ibis.expr.types.Value" href="../generic/#ibis.expr.types.generic.Value">Value</a></code>
+          </td>
+          <td><p>Expression to return if <code>self</code> evaluates to <code>False</code></p></td>
+          <td>
+              <em>required</em>
+          </td>
+        </tr>
+    </tbody>
+  </table>
+
+  <p><strong>Returns:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td>
+                <code><a class="autorefs autorefs-internal" title="ibis.expr.types.temporal.Value" href="../generic/#ibis.expr.types.generic.Value">Value</a></code>
+          </td>
+          <td><p>The value of <code>true_expr</code> if <code>arg</code> is <code>True</code> else <code>false_expr</code></p></td>
+        </tr>
+    </tbody>
+  </table>
+
+<p><strong>Examples:</strong></p>
+    <div class="highlight"><pre><span></span><code><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">ibis</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">t</span> <span class="o">=</span> <span class="n">ibis</span><span class="o">.</span><span class="n">table</span><span class="p">([(</span><span class="s2">&quot;is_person&quot;</span><span class="p">,</span> <span class="s2">&quot;boolean&quot;</span><span class="p">)],</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;t&quot;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">expr</span> <span class="o">=</span> <span class="n">t</span><span class="o">.</span><span class="n">is_person</span><span class="o">.</span><span class="n">ifelse</span><span class="p">(</span><span class="s2">&quot;yes&quot;</span><span class="p">,</span> <span class="s2">&quot;no&quot;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">print</span><span class="p">(</span><span class="n">ibis</span><span class="o">.</span><span class="n">impala</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="n">expr</span><span class="o">.</span><span class="n">name</span><span class="p">(</span><span class="s2">&quot;tmp&quot;</span><span class="p">)))</span>
+<span class="go">SELECT if(t0.`is_person`, &#39;yes&#39;, &#39;no&#39;) AS `tmp`</span>
+<span class="go">FROM t t0</span>
+</code></pre></div>
+
+  </div>
+
+</div>
+
+
+
+  </div>
+
+  </div>
+
+</div>
+
+  <hr>
+<div class="md-source-file">
+  <small>
+    
+      Last update:
+      <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date">August 5, 2022</span>
+      
+    
+  </small>
+</div>
+
+
+
+
+
+                
+
+              </article>
+            </div>
+          
+          
+  <script>var tabs=__md_get("__tabs");if(Array.isArray(tabs))e:for(var set of document.querySelectorAll(".tabbed-set")){var tab,labels=set.querySelector(".tabbed-labels");for(tab of tabs)for(var label of labels.getElementsByTagName("label"))if(label.innerText.trim()===tab){var input=document.getElementById(label.htmlFor);input.checked=!0;continue e}}</script>
+
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+    <div class="md-copyright__highlight">
+      Copyright &copy; 2014-2022
+    </div>
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+        <div class="md-social">
+  
+    
+    
+    
+    
+      
+      
+    
+    <a href="https://twitter.com/IbisData" target="_blank" rel="noopener" title="twitter.com" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.3.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2023 Fonticons, Inc.--><path d="M459.37 151.716c.325 4.548.325 9.097.325 13.645 0 138.72-105.583 298.558-298.558 298.558-59.452 0-114.68-17.219-161.137-47.106 8.447.974 16.568 1.299 25.34 1.299 49.055 0 94.213-16.568 130.274-44.832-46.132-.975-84.792-31.188-98.112-72.772 6.498.974 12.995 1.624 19.818 1.624 9.421 0 18.843-1.3 27.614-3.573-48.081-9.747-84.143-51.98-84.143-102.985v-1.299c13.969 7.797 30.214 12.67 47.431 13.319-28.264-18.843-46.781-51.005-46.781-87.391 0-19.492 5.197-37.36 14.294-52.954 51.655 63.675 129.3 105.258 216.365 109.807-1.624-7.797-2.599-15.918-2.599-24.04 0-57.828 46.782-104.934 104.934-104.934 30.213 0 57.502 12.67 76.67 33.137 23.715-4.548 46.456-13.32 66.599-25.34-7.798 24.366-24.366 44.833-46.132 57.827 21.117-2.273 41.584-8.122 60.426-16.243-14.292 20.791-32.161 39.308-52.628 54.253z"/></svg>
+    </a>
+  
+    
+    
+    
+    
+      
+      
+    
+    <a href="https://github.com/ibis-project/ibis/discussions" target="_blank" rel="noopener" title="github.com" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 496 512"><!--! Font Awesome Free 6.3.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2023 Fonticons, Inc.--><path d="M165.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6zm-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3zm44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9zM244.8 8C106.1 8 0 113.3 0 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C428.2 457.8 496 362.9 496 252 496 113.3 383.5 8 244.8 8zM97.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1zm-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7zm32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1zm-11.4-14.7c-1.6 1-1.6 3.6 0 5.9 1.6 2.3 4.3 3.3 5.6 2.3 1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2z"/></svg>
+    </a>
+  
+    
+    
+    
+    
+      
+      
+    
+    <a href="https://gitter.im/ibis-dev/Lobby" target="_blank" rel="noopener" title="gitter.im" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512"><!--! Font Awesome Free 6.3.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2023 Fonticons, Inc.--><path d="M66.4 322.5H16V0h50.4v322.5zM166.9 76.1h-50.4V512h50.4V76.1zm100.6 0h-50.4V512h50.4V76.1zM368 76h-50.4v247H368V76z"/></svg>
+    </a>
+  
+    
+    
+    
+    
+      
+      
+    
+    <a href="https://stackoverflow.com/questions/tagged/ibis" target="_blank" rel="noopener" title="stackoverflow.com" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512"><!--! Font Awesome Free 6.3.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2023 Fonticons, Inc.--><path d="M290.7 311 95 269.7 86.8 309l195.7 41zm51-87L188.2 95.7l-25.5 30.8 153.5 128.3zm-31.2 39.7L129.2 179l-16.7 36.5L293.7 300zM262 32l-32 24 119.3 160.3 32-24zm20.5 328h-200v39.7h200zm39.7 80H42.7V320h-40v160h359.5V320h-40z"/></svg>
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    <script id="__config" type="application/json">{"base": "../../..", "features": ["navigation.tabs", "navigation.tabs.sticky", "content.code.annotate", "content.tabs.link", "header.autohide", "navigation.indexes", "navigation.instant", "navigation.tracking", "search.highlight", "search.share", "search.suggest"], "search": "../../../assets/javascripts/workers/search.208ed371.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
+    
+    
+      <script src="../../../assets/javascripts/bundle.efa0ade1.min.js"></script>
+      
+        <script src="../../../javascripts/mathjax.js"></script>
+      
+        <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+      
+        <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+      
+    
+  </body>
+</html>

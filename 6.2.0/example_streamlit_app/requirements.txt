@@ -1,0 +1,3 @@
+git+https://github.com/ibis-project/ibis.git#egg=ibis-framework[clickhouse]
+requests
+streamlit
