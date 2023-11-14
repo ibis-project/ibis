@@ -331,9 +331,6 @@ def test_timestamp_extract_milliseconds(backend, alltypes, df):
     pyspark=["pandas<2.1"],
     reason="test was adjusted to work with pandas 2.1 output; pyspark doesn't support pandas 2",
 )
-@pytest.mark.broken(
-    ["flink"], raises=AssertionError, reason="numpy array are different"
-)
 def test_timestamp_extract_epoch_seconds(backend, alltypes, df):
     expr = alltypes.timestamp_col.epoch_seconds().name("tmp")
     result = expr.execute()
