@@ -319,3 +319,17 @@ def test_chained_join_referencing_intermediate_table():
             "f": c.f,
         },
     )
+
+
+def test_aggregate():
+    agg = t.aggregate(groups=[t.bool_col], metrics=[t.int_col.sum()])
+    expected = Aggregate(
+        parent=t,
+        groups={
+            "bool_col": t.bool_col,
+        },
+        metrics={
+            "Sum(int_col)": t.int_col.sum(),
+        },
+    )
+    assert agg.op() == expected

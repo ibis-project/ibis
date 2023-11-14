@@ -250,6 +250,12 @@ def _aggregation(op, table, **kwargs):
     return name + render_fields(kwargs, 1)
 
 
+@fmt.register(nr.Aggregate)
+def _aggregate(op, parent, **kwargs):
+    name = f"{op.__class__.__name__}[{parent}]\n"
+    return name + render_fields(kwargs, 1)
+
+
 @fmt.register(ops.Selection)
 def _selection(op, table, selections, **kwargs):
     name = f"{op.__class__.__name__}[{table}]\n"

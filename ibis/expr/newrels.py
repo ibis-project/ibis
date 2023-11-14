@@ -163,7 +163,9 @@ class Aggregate(Relation):
     def schema(self):
         # schema is consisting both by and metrics, use .from_tuples() to disallow
         # duplicate names in the schema
-        return Schema.from_tuples([*self.groups.items(), *self.metrics.items()])
+        groups = {k: v.dtype for k, v in self.groups.items()}
+        metrics = {k: v.dtype for k, v in self.metrics.items()}
+        return Schema.from_tuples([*groups.items(), *metrics.items()])
 
     @attribute
     def fields(self):
