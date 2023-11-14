@@ -12,6 +12,7 @@ from ibis.expr.newrels import (
     UnboundTable,
 )
 from ibis.expr.schema import Schema
+from ibis import _
 
 # TODO(kszucs):
 # def test_relation_coercion()
@@ -67,6 +68,10 @@ def test_select_fields():
     expected = Project(parent=t, values={"int_col": t.int_col, "myint": t.int_col})
     assert proj.op() == expected
     assert proj.op().schema == Schema({"int_col": dt.int64, "myint": dt.int64})
+
+    proj = t.select(_.int_col, myint=_.int_col)
+    expected = Project(parent=t, values={"int_col": t.int_col, "myint": t.int_col})
+    assert proj.op() == expected
 
 
 def test_select_relation():
@@ -167,12 +172,15 @@ def test_select_across_relations():
 
 def test_where():
     filt = t.filter(t.bool_col)
-
     expected = Filter(parent=t, predicates=[t.bool_col])
     assert filt.op() == expected
 
     filt = t.filter(t.bool_col, t.int_col > 0)
     expected = Filter(parent=t, predicates=[t.bool_col, t.int_col > 0])
+    assert filt.op() == expected
+
+    filt = t.filter(_.bool_col)
+    expected = Filter(parent=t, predicates=[t.bool_col])
     assert filt.op() == expected
 
 

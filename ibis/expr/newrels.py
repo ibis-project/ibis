@@ -216,7 +216,7 @@ class TableExpr(Expr):
 
     def filter(self, *predicates):
         preds = bind(self, predicates)
-        preds = unwrap_aliases(predicates).values()
+        preds = unwrap_aliases(preds).values()
         # TODO(kszucs): add predicate flattening
         node = Filter(self, preds)
         node = node.replace(subsequent_filters)
