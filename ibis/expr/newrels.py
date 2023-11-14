@@ -11,10 +11,11 @@ from ibis.common.collections import FrozenDict  # noqa: TCH001
 from ibis.common.deferred import Deferred, Item, deferred, var
 from ibis.common.exceptions import IntegrityError
 from ibis.common.graph import Traversable
+from ibis.common.annotations import attribute
 from ibis.common.grounds import Concrete
 from ibis.common.patterns import Check, In, InstanceOf, _, pattern, replace
 from ibis.common.typing import Coercible, VarTuple
-from ibis.expr.operations import Alias, Node, SortKey, Value
+from ibis.expr.operations import Alias, Node, SortKey, Value, Column, Scalar
 from ibis.expr.schema import Schema
 from ibis.expr.types import Expr, literal
 from ibis.expr.types import Value as ValueExpr
@@ -38,15 +39,17 @@ class Relation(Node, Coercible):
         else:
             raise TypeError(f"Cannot coerce {value!r} to a Relation")
 
-    @property
-    @abstractmethod
-    def fields(self):
-        ...
 
     @property
     @abstractmethod
     def schema(self):
         ...
+
+    @property
+    @abstractmethod
+    def fields(self):
+        ...
+
 
     def to_expr(self):
         return TableExpr(self)
@@ -58,7 +61,7 @@ class Field(Value):
 
     shape = ds.columnar
 
-    @property
+    @attribute
     def dtype(self):
         return self.rel.schema[self.name]
 
@@ -82,16 +85,17 @@ class Project(Relation):
         _check_integrity(values.values(), allowed_fields=parent.fields.values())
         super().__init__(parent=parent, values=values)
 
-    @property
+    @attribute
+    def schema(self):
+        return Schema({k: v.dtype for k, v in self.values.items()})
+
+    @attribute
     def fields(self):
         return {
             k: v if isinstance(v, Field) else Field(self, k)
             for k, v in self.values.items()
         }
 
-    @property
-    def schema(self):
-        return Schema({k: v.dtype for k, v in self.values.items()})
 
 
 # TODO(kszucs): consider to have a specialization projecting only fields not
@@ -126,7 +130,7 @@ class Join(Relation):
             left=left, right=right, fields=fields, predicates=predicates, how=how
         )
 
-    @property
+    @attribute
     def schema(self):
         return Schema({k: v.dtype for k, v in self.fields.items()})
 
@@ -148,11 +152,11 @@ class Sort(Relation):
         _check_integrity(keys, allowed_fields=parent.fields.values())
         super().__init__(parent=parent, keys=keys)
 
-    @property
+    @attribute
     def fields(self):
         return self.parent.fields
 
-    @property
+    @attribute
     def schema(self):
         return self.parent.schema
 
@@ -166,25 +170,27 @@ class Filter(Relation):
         _check_integrity(predicates, allowed_fields=parent.fields.values())
         super().__init__(parent=parent, predicates=predicates)
 
-    @property
-    def fields(self):
-        return self.parent.fields
 
-    @property
+    @attribute
     def schema(self):
         return self.parent.schema
 
+    @attribute
+    def fields(self):
+        return self.parent.fields
 
-# class Aggregate(Relation):
-#     parent: Relation
-#     groups: FrozenDict[str, Annotated[Column, ~InstanceOf(Alias)]]
-#     metrics: FrozenDict[str, Annotated[Scalar, ~InstanceOf(Alias)]]
 
-#     @attribute
-#     def schema(self):
-#         # schema is consisting both by and metrics, use .from_tuples() to disallow
-#         # duplicate names in the schema
-#         return Schema.from_tuples([*self.groups.items(), *self.metrics.items()])
+
+class Aggregate(Relation):
+    parent: Relation
+    groups: FrozenDict[str, Annotated[Column, ~InstanceOf(Alias)]]
+    metrics: FrozenDict[str, Annotated[Scalar, ~InstanceOf(Alias)]]
+
+    @attribute
+    def schema(self):
+        # schema is consisting both by and metrics, use .from_tuples() to disallow
+        # duplicate names in the schema
+        return Schema.from_tuples([*self.groups.items(), *self.metrics.items()])
 
 
 class UnboundTable(Relation):

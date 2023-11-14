@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import ibis.expr.datashape as ds
 import ibis.expr.datatypes as dt
+from ibis import _
 from ibis.expr.newrels import (
     Field,
     Filter,
@@ -12,7 +13,6 @@ from ibis.expr.newrels import (
     UnboundTable,
 )
 from ibis.expr.schema import Schema
-from ibis import _
 
 # TODO(kszucs):
 # def test_relation_coercion()
