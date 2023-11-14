@@ -1,21 +1,18 @@
 from __future__ import annotations
 
 from abc import abstractmethod
-from itertools import zip_longest
 from typing import Annotated, Any
 
 import ibis.expr.datashape as ds
 import ibis.expr.datatypes as dt
 import ibis.expr.types as ir
+from ibis.common.annotations import attribute
 from ibis.common.collections import FrozenDict  # noqa: TCH001
 from ibis.common.deferred import Deferred, Item, deferred, var
 from ibis.common.exceptions import IntegrityError
-from ibis.common.graph import Traversable
-from ibis.common.annotations import attribute
-from ibis.common.grounds import Concrete
-from ibis.common.patterns import Check, In, InstanceOf, _, pattern, replace
+from ibis.common.patterns import Check, InstanceOf, _, pattern, replace
 from ibis.common.typing import Coercible, VarTuple
-from ibis.expr.operations import Alias, Node, SortKey, Value, Column, Scalar
+from ibis.expr.operations import Alias, Column, Node, Scalar, SortKey, Value
 from ibis.expr.schema import Schema
 from ibis.expr.types import Expr, literal
 from ibis.expr.types import Value as ValueExpr
@@ -39,7 +36,6 @@ class Relation(Node, Coercible):
         else:
             raise TypeError(f"Cannot coerce {value!r} to a Relation")
 
-
     @property
     @abstractmethod
     def schema(self):
@@ -49,7 +45,6 @@ class Relation(Node, Coercible):
     @abstractmethod
     def fields(self):
         ...
-
 
     def to_expr(self):
         return TableExpr(self)
@@ -97,51 +92,31 @@ class Project(Relation):
         }
 
 
-
-# TODO(kszucs): consider to have a specialization projecting only fields not
-# generic value expressions
-# class ProjectFields(Relation):
-#     parent: Relation
-#     fields: FrozenDict[str, Field]
-
-#     @attribute
-#     def schema(self):
-#         return Schema({f.name: f.dtype for f in self.fields})
-
 # TODO(kszucs): Subquery(value, outer_relation)
 
 
-class Join(Relation):
-    # TODO(kszucs): rewrite the representation to a sequence-like structure
-    # with first: Relation and rest: tuple[kind, relation, predicates] where
-    # kind is one of inner, left, right, outer, predicates is a tuple of
-    # predicates
-    left: Relation
-    right: Relation
-    fields: FrozenDict[str, Annotated[Field, ~InstanceOf(Alias)]]
+class Join(Node):
+    how: str
+    table: Relation
     predicates: VarTuple[Value[dt.Boolean]]
-    how: str = "inner"
 
-    def __init__(self, left, right, fields, predicates, how):
-        allowed_fields = {*left.fields.values(), *right.fields.values()}
+
+class JoinProject(Relation):
+    first: Relation
+    rest: VarTuple[Join]
+    fields: FrozenDict[str, Field]
+
+    def __init__(self, first, rest, fields):
+        allowed_fields = set(first.fields.values())
+        for join in rest:
+            allowed_fields |= set(join.table.fields.values())
+            _check_integrity(join.predicates, allowed_fields)
         _check_integrity(fields.values(), allowed_fields)
-        _check_integrity(predicates, allowed_fields)
-        super().__init__(
-            left=left, right=right, fields=fields, predicates=predicates, how=how
-        )
+        super().__init__(first=first, rest=rest, fields=fields)
 
     @attribute
     def schema(self):
         return Schema({k: v.dtype for k, v in self.fields.items()})
-
-
-# class JoinProject(Relation):
-#     parent: Join
-#     fields: FrozenDict[str, Field]
-
-#     @property
-#     def schema(self):
-#         return Schema({f.name: f.dtype for f in self.fields})
 
 
 class Sort(Relation):
@@ -170,7 +145,6 @@ class Filter(Relation):
         _check_integrity(predicates, allowed_fields=parent.fields.values())
         super().__init__(parent=parent, predicates=predicates)
 
-
     @attribute
     def schema(self):
         return self.parent.schema
@@ -178,7 +152,6 @@ class Filter(Relation):
     @attribute
     def fields(self):
         return self.parent.fields
-
 
 
 class Aggregate(Relation):
@@ -191,6 +164,10 @@ class Aggregate(Relation):
         # schema is consisting both by and metrics, use .from_tuples() to disallow
         # duplicate names in the schema
         return Schema.from_tuples([*self.groups.items(), *self.metrics.items()])
+
+    @attribute
+    def fields(self):
+        return {k: Field(self, k) for k, v in self.schema.items()}
 
 
 class UnboundTable(Relation):
@@ -236,7 +213,10 @@ class TableExpr(Expr):
         return node.to_expr()
 
     def join(self, right, predicates, how="inner"):
-        return JoinChain(self).join(right, predicates, how)
+        # construct an empty join chain and wrap it with a JoinExpr
+        expr = JoinExpr(JoinProject(self, (), {}))
+        # add the first join to the join chain and return the result
+        return expr.join(right, predicates, how)
 
     def aggregate(self, groups, metrics):
         groups = bind(self, groups)
@@ -247,27 +227,22 @@ class TableExpr(Expr):
         return node.to_expr()
 
 
-class JoinLink(Concrete, Traversable):
-    how: str = "inner"
-    right: Relation
-    predicates: VarTuple[Value[dt.Boolean]]
-
-
-class JoinChain(Concrete):
-    start: Relation
-    links: VarTuple[JoinLink] = ()
-
+class JoinExpr(Expr):
     def join(self, right, predicates, how="inner"):
-        # TODO(kszucs): _integrity_check should be done here as well
-        # do the predicate coercion and binding here
-        link = JoinLink(how=how, right=right, predicates=predicates)
-        return self.copy(links=self.links + (link,))
+        # construct a new join node
+        join = Join(how, table=right, predicates=predicates)
+        # add the join to the join chain
+        node = self.op()
+        node = node.copy(rest=node.rest + (join,))
+        # return with a new JoinExpr wrapping the new join chain
+        return JoinExpr(node)
 
     def select(self, *args, **kwargs):
         # do the fields projection here
         # TODO(kszucs): need to do smarter binding here since references may
         # point to any of the relations in the join chain
-        values = bind(self.start.to_expr(), (args, kwargs))
+        table = self.op().first.to_expr()
+        values = bind(table, (args, kwargs))
         values = unwrap_aliases(values)
 
         # TODO(kszucs): go over the values and pull out the fields only, until
@@ -289,45 +264,22 @@ class JoinChain(Concrete):
     def guess(self):
         # TODO(kszucs): more advanced heuristics can be applied here
         # trying to figure out the join intent here
-        fields = self.start.fields
-        for link in self.links:
-            if fields.keys() & link.right.fields.keys():
-                # overlapping fields
-                raise IntegrityError("Overlapping fields in join")
-            fields.update(link.right.fields)
+        node = self.op()
+        fields = node.first.fields
+        for join in node.rest:
+            fields.update(join.table.fields)
         return fields
 
     def finish(self, fields=None):
         if fields is None:
             fields = self.guess()
-
-        # build the possibly nested join operation from the join chain
-        left = self.start
-        for link, next_link in zip_longest(self.links, self.links[1:]):
-            # pick the fields which are referenced by the final projection
-            possible_fields = {*left.fields.values(), *link.right.fields.values()}
-            selected_fields = {k: v for k, v in fields.items() if v in possible_fields}
-
-            # pick fields from either the left or the right side of the join which
-            # are referenced by the predicates of the upcoming join
-            if next_link is not None:
-                rule = p.Field(In({left, link.right}))
-                for field in next_link.match(rule, filter=~p.Relation):
-                    selected_fields[field.name] = field
-
-            left = Join(
-                how=link.how,
-                left=left,
-                right=link.right,
-                predicates=link.predicates,
-                fields=selected_fields,
-            )
-        return left.to_expr()
+        return self.op().copy(fields=fields).to_expr()
 
     def __getattr__(self, name):
         return next(bind(self.finish(), name))
 
 
+# TODO(kszucs): cover it with tests
 def bind(table: TableExpr, value: Any) -> ir.Value:
     if isinstance(value, ValueExpr):
         yield value
@@ -353,6 +305,7 @@ def bind(table: TableExpr, value: Any) -> ir.Value:
         yield literal(value)
 
 
+# TODO(kszucs): cover it with tests
 def unwrap_aliases(values):
     result = {}
     for value in values:

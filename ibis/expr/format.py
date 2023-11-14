@@ -298,7 +298,6 @@ def _set_op(op, left, right, distinct):
 
 
 @fmt.register(ops.Join)
-@fmt.register(nr.Join)
 def _join(op, left, right, predicates, **kwargs):
     args = [str(left), str(right)]
     name = f"{op.__class__.__name__}[{', '.join(args)}]"
@@ -313,6 +312,19 @@ def _join(op, left, right, predicates, **kwargs):
 
     fields = render_fields(fields, 1)
     return f"{top}\n{fields}" if fields else top
+
+
+@fmt.register(nr.Join)
+def _join(op, how, table, predicates):
+    args = [str(how), str(table)]
+    name = f"{op.__class__.__name__}[{', '.join(args)}]"
+    return f"{name}\n{render(predicates, 1)}"
+
+
+@fmt.register(nr.JoinProject)
+def _join_project(op, first, rest, **kwargs):
+    name = f"{op.__class__.__name__}[{first}]\n"
+    return name + render(rest, 1) + "\n" + render_fields(kwargs, 1)
 
 
 @fmt.register(ops.Limit)
