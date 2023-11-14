@@ -75,7 +75,7 @@ class _BigQueryUDF:
         ...     return x + 1
         ...
         >>> print(add_one.sql)
-        CREATE OR REPLACE TEMPORARY FUNCTION add_one_0(x FLOAT64)
+        CREATE TEMPORARY FUNCTION add_one_0(x FLOAT64)
         RETURNS FLOAT64
         LANGUAGE js AS """
         'use strict';
@@ -99,7 +99,7 @@ class _BigQueryUDF:
         ...         result.append(value)
         ...     return result
         >>> print(my_range.sql)
-        CREATE OR REPLACE TEMPORARY FUNCTION my_range_0(start FLOAT64, stop FLOAT64)
+        CREATE TEMPORARY FUNCTION my_range_0(start FLOAT64, stop FLOAT64)
         RETURNS ARRAY<FLOAT64>
         LANGUAGE js AS """
         'use strict';
@@ -140,7 +140,7 @@ class _BigQueryUDF:
         ...
         ...     return Rectangle(width, height)
         >>> print(my_rectangle.sql)
-        CREATE OR REPLACE TEMPORARY FUNCTION my_rectangle_0(width FLOAT64, height FLOAT64)
+        CREATE TEMPORARY FUNCTION my_rectangle_0(width FLOAT64, height FLOAT64)
         RETURNS STRUCT<width FLOAT64, height FLOAT64>
         LANGUAGE js AS """
         'use strict';
@@ -239,7 +239,7 @@ return {f.__name__}({args});\
         ...     body="return x + 1",
         ... )
         >>> print(add_one.sql)
-        CREATE OR REPLACE TEMPORARY FUNCTION add_one_0(x FLOAT64)
+        CREATE TEMPORARY FUNCTION add_one_0(x FLOAT64)
         RETURNS FLOAT64
         LANGUAGE js AS """
         return x + 1
@@ -276,7 +276,7 @@ return {f.__name__}({args});\
 
         name = _make_udf_name(name)
         sql_code = f'''\
-CREATE OR REPLACE TEMPORARY FUNCTION {name}({bigquery_signature})
+CREATE TEMPORARY FUNCTION {name}({bigquery_signature})
 RETURNS {return_type}
 {determinism_formatted}LANGUAGE js AS """
 {body}
@@ -352,7 +352,7 @@ RETURNS {return_type}
         ...     sql_expression="x + 1",
         ... )
         >>> print(add_one.sql)
-        CREATE OR REPLACE TEMPORARY FUNCTION add_one_0(x FLOAT64)
+        CREATE TEMPORARY FUNCTION add_one_0(x FLOAT64)
         RETURNS FLOAT64
         AS (x + 1)
         """
@@ -374,7 +374,7 @@ RETURNS {return_type}
         )
         name = _make_udf_name(name)
         sql_code = f"""\
-CREATE OR REPLACE TEMPORARY FUNCTION {name}({bigquery_signature})
+CREATE TEMPORARY FUNCTION {name}({bigquery_signature})
 RETURNS {return_type}
 AS ({sql_expression});"""
 
