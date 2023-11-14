@@ -307,7 +307,7 @@ class Backend(BaseSQLBackend, CanCreateSchema, CanListDatabases):
             util.warn_deprecated(
                 "database",
                 instead=(
-                    f"{self.name} cannot list tables only using `database` specifier. "
+                    f"The {self.name} backend cannot return a table expression using only a `database` specifier. "
                     "Include a `schema` argument."
                 ),
                 as_of="7.1",
