@@ -421,7 +421,7 @@ class Backend(BaseSQLBackend, CanCreateSchema):
 
     def _make_session(self) -> tuple[str, str]:
         if self._session_dataset is None:
-            job_config = bq.QueryJobConfig(create_session=True, use_query_cache=False)
+            job_config = bq.QueryJobConfig(use_query_cache=False)
             query = self.client.query(
                 "SELECT 1", job_config=job_config, project=self.billing_project
             )
