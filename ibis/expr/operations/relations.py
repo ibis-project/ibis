@@ -27,6 +27,8 @@ if TYPE_CHECKING:
     import pandas as pd
     import pyarrow as pa
 
+    import ibis.expr.types as ir
+
 
 _table_names = (f"unbound_table_{i:d}" for i in itertools.count())
 
@@ -658,7 +660,7 @@ class SQLStringView(PhysicalTable):
         return backend._get_schema_using_query(self.query)
 
 
-def _dedup_join_columns(expr, lname: str, rname: str):
+def _dedup_join_columns(expr: ir.Table, lname: str, rname: str):
     from ibis.expr.operations.generic import TableColumn
     from ibis.expr.operations.logical import Equals
 
@@ -692,18 +694,22 @@ def _dedup_join_columns(expr, lname: str, rname: str):
     # Rename columns in the left table that overlap, unless they're known to be
     # equal to a column in the right
     left_projections = [
-        left[column].name(lname.format(name=column) if lname else column)
+        left[column]
+        .cast(left[column].type().copy(nullable=True))
+        .name(lname.format(name=column) if lname else column)
         if column in overlap and column not in equal
-        else left[column]
+        else left[column].cast(left[column].type().copy(nullable=True)).name(column)
         for column in left.columns
     ]
 
     # Rename columns in the right table that overlap, dropping any columns that
     # are known to be equal to those in the left table
     right_projections = [
-        right[column].name(rname.format(name=column) if rname else column)
+        right[column]
+        .cast(right[column].type().copy(nullable=True))
+        .name(rname.format(name=column) if rname else column)
         if column in overlap
-        else right[column]
+        else right[column].cast(right[column].type().copy(nullable=True)).name(column)
         for column in right.columns
         if column not in equal
     ]
