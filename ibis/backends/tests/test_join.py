@@ -343,7 +343,9 @@ def test_join_with_trivial_predicate(awards_players, predicate, how, pandas_valu
                     raises=sa.exc.ProgrammingError,
                     reason="mysql doesn't support full outer joins",
                 )
-            ],
+            ]
+            + [pytest.mark.notyet(["sqlite"])]
+            * (vparse(sqlite3.sqlite_version) < vparse("3.39")),
         ),
     ],
 )
