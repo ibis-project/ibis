@@ -51,6 +51,7 @@ def backends_info_df():
             "datafusion": ["sql"],
             "druid": ["sqlalchemy", "sql"],
             "duckdb": ["sqlalchemy", "sql"],
+            "flink": ["string", "sql"],
             "impala": ["string", "sql"],
             "mssql": ["sqlalchemy", "sql"],
             "mysql": ["sqlalchemy", "sql"],
