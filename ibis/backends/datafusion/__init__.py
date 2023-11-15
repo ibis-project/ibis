@@ -474,6 +474,7 @@ class Backend(BaseBackend, CanCreateDatabase, CanCreateSchema):
     ) -> pa.ipc.RecordBatchReader:
         pa = self._import_pyarrow()
 
+        self._register_udfs(expr)
         self._register_in_memory_tables(expr)
 
         sql = self.compile(expr.as_table(), params=params, **kwargs)
