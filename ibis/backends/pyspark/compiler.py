@@ -128,8 +128,8 @@ def _can_be_replaced_by_column_name(column, table):
 
 
 @compiles(ops.Alias)
-def compile_alias(t, op, **kwargs):
-    arg = t.translate(op.arg, **kwargs)
+def compile_alias(t, op, raw: bool = False, **kwargs):
+    arg = t.translate(op.arg, raw=False, **kwargs)
     return arg.alias(op.name)
 
 
