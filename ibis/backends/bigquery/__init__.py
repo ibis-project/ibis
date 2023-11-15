@@ -115,9 +115,11 @@ class Backend(BaseSQLBackend, CanCreateSchema):
 
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
-        self._session_dataset: str | None = None
+        self._session_dataset: bq.DatasetReference | None = None
         self._query_cache.lookup = lambda name: self.table(
-            name, schema=self._session_dataset, database=self.billing_project
+            name,
+            schema=self._session_dataset.dataset_id,
+            database=self._session_dataset.project,
         ).op()
 
     def _register_in_memory_table(self, op: ops.InMemoryTable) -> None:
@@ -166,6 +168,7 @@ class Backend(BaseSQLBackend, CanCreateSchema):
         partition_column: str | None = "PARTITIONTIME",
         client: bq.Client | None = None,
         storage_client: bqstorage.BigQueryReadClient | None = None,
+        location: str | None = None,
     ) -> Backend:
         """Create a `Backend` for use with Ibis.
 
@@ -216,6 +219,8 @@ class Backend(BaseSQLBackend, CanCreateSchema):
             A ``BigQueryReadClient`` from the
             ``google.cloud.bigquery_storage_v1`` package. If not set, one is
             created using the ``project_id`` and ``credentials``.
+        location
+            Default location for BigQuery objects.
 
         Returns
         -------
@@ -270,6 +275,7 @@ class Backend(BaseSQLBackend, CanCreateSchema):
                 project=self.billing_project,
                 credentials=credentials,
                 client_info=_create_client_info(application_name),
+                location=location,
             )
 
         self.client.default_query_job_config = bq.QueryJobConfig(
@@ -421,7 +427,10 @@ class Backend(BaseSQLBackend, CanCreateSchema):
             )
             query.result()
 
-            self._session_dataset = query.destination.dataset_id
+            self._session_dataset = bq.DatasetReference(
+                project=query.destination.project,
+                dataset_id=query.destination.dataset_id,
+            )
 
     def _get_schema_using_query(self, query: str) -> sch.Schema:
         self._make_session()
@@ -819,7 +828,10 @@ class Backend(BaseSQLBackend, CanCreateSchema):
             self._register_in_memory_tables(obj)
 
         if temp:
-            dataset = self._session_dataset
+            dataset = self._session_dataset.dataset_id
+            if database is not None:
+                raise com.IbisInputError("Cannot specify database for temporary table")
+            database = self._session_dataset.project
         else:
             dataset = database or self.current_schema
 
@@ -931,7 +943,11 @@ class Backend(BaseSQLBackend, CanCreateSchema):
         self.create_table(name, expr, schema=expr.schema(), temp=True)
 
     def _clean_up_cached_table(self, op):
-        self.drop_table(op.name, schema=self._session_dataset)
+        self.drop_table(
+            op.name,
+            schema=self._session_dataset.dataset_id,
+            database=self._session_dataset.project,
+        )
 
 
 def compile(expr, params=None, **kwargs):
