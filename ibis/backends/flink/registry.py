@@ -448,12 +448,14 @@ operation_registry.update(
 )
 
 _invalid_operations = {
-    # ibis.expr.operations.strings
-    ops.Translate,
-    ops.FindInSet,
     # ibis.expr.operations.numeric
     ops.IsNan,
     ops.IsInf,
+    # ibis.expr.operations.reductions
+    ops.ApproxMedian,
+    # ibis.expr.operations.strings
+    ops.Translate,
+    ops.FindInSet,
 }
 
 operation_registry = {
