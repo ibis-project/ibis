@@ -1243,9 +1243,15 @@ class Scalar(Value):
         op = self.op()
         table = find_first_base_table(op)
         if table is not None:
-            return table.to_expr().aggregate([self])
+            return table.to_expr().aggregate(**{self.get_name(): self})
         else:
-            return ops.DummyTable(values=(op,)).to_expr()
+            if isinstance(op, ops.Alias):
+                value = op
+                assert value.name == self.get_name()
+            else:
+                value = ops.Alias(op, self.get_name())
+
+            return ops.DummyTable(values=(value,)).to_expr()
 
     def __deferred_repr__(self):
         return f"<scalar[{self.type()}]>"
