@@ -42,6 +42,19 @@ IBIS_TYPE_TO_PANDAS_TYPE: dict[dt.DataType, type | str] = {
     dt.timestamp: "datetime64[ns]",
     dt.boolean: np.bool_,
     dt.json: str,
+    dt.float16.copy(nullable=False): np.float16,
+    dt.float32.copy(nullable=False): np.float32,
+    dt.float64.copy(nullable=False): np.float64,
+    dt.float32.copy(nullable=False): np.float32,
+    dt.float64.copy(nullable=False): np.float64,
+    dt.int8.copy(nullable=False): np.int8,
+    dt.int16.copy(nullable=False): np.int16,
+    dt.int32.copy(nullable=False): np.int32,
+    dt.int64.copy(nullable=False): np.int64,
+    dt.string.copy(nullable=False): str,
+    dt.timestamp.copy(nullable=False): "datetime64[ns]",
+    dt.boolean.copy(nullable=False): np.bool_,
+    dt.json.copy(nullable=False): str,
 }
 
 
@@ -55,6 +68,15 @@ IBIS_TO_PYTHON_LITERAL_TYPES = {
     dt.int8: int,
     dt.string: str,
     dt.date: lambda x: pd.Timestamp(x).to_pydatetime().date(),
+    dt.boolean.copy(nullable=False): bool,
+    dt.float64.copy(nullable=False): float,
+    dt.float32.copy(nullable=False): float,
+    dt.int64.copy(nullable=False): int,
+    dt.int32.copy(nullable=False): int,
+    dt.int16.copy(nullable=False): int,
+    dt.int8.copy(nullable=False): int,
+    dt.string.copy(nullable=False): str,
+    dt.date.copy(nullable=False): lambda x: pd.Timestamp(x).to_pydatetime().date(),
 }
 
 
