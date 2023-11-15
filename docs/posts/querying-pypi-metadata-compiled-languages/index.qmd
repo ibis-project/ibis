@@ -1,0 +1,266 @@
+---
+title: Querying every file in every release on the Python Package Index (redux)
+author: Gil Forsyth
+date: 2023-11-15
+categories:
+    - blog
+---
+
+Seth Larson wrote a great [blog
+post](https://sethmlarson.dev/security-developer-in-residence-weekly-report-18)
+on querying a PyPI dataset to look for trends in the use of memory-safe
+languages in Python.
+
+Check out Seth's article for more information on the dataset (and
+it's a good read!). It caught our eye because it makes use of
+[DuckDB](https://duckdb.org/) to clean the data for analysis.
+
+That's right up our alley here in Ibis land, so let's see if we can duplicate
+Seth's results (and then continue on to plot them!)
+
+## Grab the data (locations)
+
+Seth showed (and then safely decomposed) a nested `curl` statement and that's
+always viable -- we're in Python land so why not grab the filenames using
+`urllib3`?
+
+```{python}
+import urllib3
+
+http = urllib3.PoolManager()
+
+resp = http.request("GET", "https://github.com/pypi-data/data/raw/main/links/dataset.txt")
+
+parquet_files = resp.data.decode().split()
+parquet_files
+```
+
+## Grab the data
+
+Now we're ready to get started with Ibis!
+
+DuckDB is clever enough to grab only the parquet metadata.  This means we can
+use `read_parquet` to create a lazy view of the parquet files and then build up
+our expression without downloading everything beforehand!
+
+```{python}
+import ibis
+from ibis import _  # <1>
+
+ibis.options.interactive = True
+```
+
+1. See https://ibis-project.org/how-to/analytics/chain_expressions.html for docs
+on the deferred operator!
+
+Create a DuckDB connection:
+
+```{python}
+con = ibis.duckdb.connect()
+```
+
+And load up one of the files (we can run the full query after)!
+
+```{python}
+pypi = con.read_parquet(parquet_files[0], table_name="pypi")
+```
+
+```{python}
+pypi.schema()
+```
+
+## Query crafting
+
+Let's break down what we're looking for. As a high-level view of the use of
+compiled languages, Seth is using file extensions as an indicator that a given
+filetype is used in a Python project.
+
+The dataset we're using has _every file in every project_ -- what criteria should we use?
+
+We can follow Seth's lead and look for things:
+
+1. A file extension that is one of: `asm`, `cc`, `cpp`, `cxx`, `h`, `hpp`, `rs`, `go`, and variants of `F90`, `f90`, etc...
+   That is, C, C++, Assembly, Rust, Go, and Fortran.
+2. We exclude matches where the file path is within the `site-packages/` directory.
+3. We exclude matches that are in directories used for testing.
+
+```{python}
+expr = pypi.filter(
+    [
+        _.path.re_search(r"\.(asm|c|cc|cpp|cxx|h|hpp|rs|[Ff][0-9]{0-2}(?:or)?|go)$"),
+        ~_.path.re_search(r"(^|/)test(|s|ing)"),
+        ~_.path.contains("/site-packages/"),
+    ]
+)
+expr
+```
+
+That _could_ be right -- we can peak at the filename at the end of the `path` column to do a quick check:
+
+```{python}
+expr.path.split("/")[-1]
+```
+
+Ok! Next up, we want to group the matches by:
+
+1. The month that the package / file was published
+   For this, we can use the `truncate` method and ask for month as our truncation window.
+2. The file extension of the file used
+
+```{python}
+expr.group_by(
+    month=_.uploaded_on.truncate("M"),
+    ext=_.path.re_extract(r"\.([a-z0-9]+)$", 1),
+).aggregate()
+```
+
+That looks promising. Now we need to grab the package names that correspond to a
+given file extension in a given month and deduplicate it. And to match Seth's
+results, we'll also sort by the month in descending order:
+
+```{python}
+expr = (
+    expr.group_by(
+        month=_.uploaded_on.truncate("M"),
+        ext=_.path.re_extract(r"\.([a-z0-9]+)$", 1),
+    )
+    .aggregate(projects=_.project_name.collect().unique())
+    .order_by(_.month.desc())
+)
+
+expr
+```
+
+## Massage and plot
+
+Let's continue and see what our results look like.
+
+We'll do a few things:
+
+1. Combine all of the C and C++ extensions into a single group by renaming them all.
+2. Count the number of distinct entries in each group
+3. Plot the results!
+
+```{python}
+collapse_names = expr.mutate(
+    ext=_.ext.re_replace(r"cxx|cpp|cc|c|hpp|h", "C/C++")
+    .replace("rs", "Rust")
+    .replace("go", "Go")
+    .replace("asm", "Assembly"),
+)
+
+collapse_names
+```
+
+Note that now we need to de-duplicate again, since we might've had separate
+unique entries for both an `h` and `c` file extension, and we don't want to
+double-count!
+
+We could rewrite our original query and include the renames in the original
+`group_by` (this would be the smart thing to do), but let's push on and see if
+we can make this work.
+
+The `projects` column is now a column of string arrays, so we want to collect
+all of the arrays in each group, this will give us a "list of lists", then we'll
+`flatten` that list and call `unique().length()` as before.
+
+DuckDB has a `flatten` function, but it isn't exposed in Ibis (yet!).
+
+We'll use a handy bit of Ibis magic to define a `builtin` `UDF` that will map directly
+onto the underlying DuckDB function (what!? See
+[here](https://ibis-project.org/how-to/extending/builtin.html#duckdb) for more
+info):
+
+```{python}
+@ibis.udf.scalar.builtin
+def flatten(x: list[list[str]]) -> list[str]:
+    ...
+
+
+collapse_names = collapse_names.group_by(["month", "ext"]).aggregate(
+    projects=flatten(_.projects.collect())
+)
+
+collapse_names
+```
+
+We could have included the `unique().length()` in the `aggregate` call, but
+sometimes it's good to check that your slightly off-kilter idea has worked (and
+it has!).
+
+```{python}
+collapse_names = collapse_names.select(
+    _.month, _.ext, project_count=_.projects.unique().length()
+)
+
+collapse_names
+```
+
+Now that the data are tidied, we can pass our expression directly to Altair and see what it looks like!
+
+```{python}
+import altair as alt
+
+chart = (
+    alt.Chart(collapse_names)
+    .mark_line()
+    .encode(x="month", y="project_count", color="ext")
+    .properties(width=600, height=300)
+)
+chart
+```
+
+That looks good, but it definitely doesn't match the plot from Seth's post:
+
+![upstream plot](upstream_plot.png)
+
+Our current plot is only showing the results from a subset of the available
+data. Now that our expression is complete, we can re-run on the full dataset and
+compare.
+
+## The full run
+
+To recap -- we pulled a lazy view of a single parquet file from the `pypi-data`
+repo, filtered for all the files that contain file extensions we care about,
+then grouped them all together to get counts of the various filetypes used
+across projects by month.
+
+Here's the entire query chained together into a single command, now running on
+all of the `parquet` files we have access to:
+
+```{python}
+pypi = con.read_parquet(parquet_files, table_name="pypi")
+
+full_query = (
+    pypi.filter(
+        [
+            _.path.re_search(
+                r"\.(asm|c|cc|cpp|cxx|h|hpp|rs|[Ff][0-9]{0-2}(?:or)?|go)$"
+            ),
+            ~_.path.re_search(r"(^|/)test(|s|ing)"),
+            ~_.path.contains("/site-packages/"),
+        ]
+    )
+    .group_by(
+        month=_.uploaded_on.truncate("M"),
+        ext=_.path.re_extract(r"\.([a-z0-9]+)$", 1),
+    )
+    .aggregate(projects=_.project_name.collect().unique())
+    .order_by(_.month.desc())
+    .mutate(
+        ext=_.ext.re_replace(r"cxx|cpp|cc|c|hpp|h", "C/C++")
+        .replace("rs", "Rust")
+        .replace("go", "Go")
+        .replace("asm", "Assembly"),
+    )
+    .group_by(["month", "ext"])
+    .aggregate(project_count=flatten(_.projects.collect()).unique().length())
+)
+chart = (
+    alt.Chart(full_query)
+    .mark_line()
+    .encode(x="month", y="project_count", color="ext")
+    .properties(width=600, height=300)
+)
+chart
+```
