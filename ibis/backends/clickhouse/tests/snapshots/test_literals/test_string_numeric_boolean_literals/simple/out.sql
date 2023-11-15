@@ -1,2 +1,2 @@
 SELECT
-  'simple'
+  'simple' AS "'simple'"
