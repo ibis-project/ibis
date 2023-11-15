@@ -1152,11 +1152,11 @@ def test_mutate_window_filter(backend, alltypes, df):
     backend.assert_frame_equal(res, sol, check_dtype=False)
 
 
-@pytest.mark.notimpl(["datafusion", "polars"], raises=com.OperationNotDefinedError)
+@pytest.mark.notimpl(["polars"], raises=com.OperationNotDefinedError)
 @pytest.mark.notimpl(
-    ["datafusion", "flink"],
+    ["flink"],
     raises=Exception,
-    reason="KeyError: \"Table with name win doesn't exist.",
+    reason="KeyError: Table with name win doesn't exist.",
 )
 @pytest.mark.broken(
     ["impala"],

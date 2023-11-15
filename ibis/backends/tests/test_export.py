@@ -32,7 +32,6 @@ limit = [
                 [
                     # limit not implemented for pandas backend execution
                     "dask",
-                    "datafusion",
                     "pandas",
                     "pyspark",
                     "flink",
@@ -171,7 +170,7 @@ def test_column_pyarrow_batch_chunk_size(awards_players):
         util.consume(batch_reader)
 
 
-@pytest.mark.notimpl(["pandas", "dask", "datafusion", "flink"])
+@pytest.mark.notimpl(["pandas", "dask", "flink"])
 @pytest.mark.broken(
     ["pyspark"], raises=AssertionError, reason="chunk_size isn't respected"
 )
