@@ -327,23 +327,18 @@ class _FileIOHandler:
         """
         pa = self._import_pyarrow()
         self._run_pre_execute_hooks(expr)
-        table_expr = expr.as_table()
-        arrow_schema = table_expr.schema().to_pyarrow()
-        try:
-            with self.to_pyarrow_batches(
-                table_expr, params=params, limit=limit, **kwargs
-            ) as reader:
-                table = (
-                    pa.Table.from_batches(reader)
-                    .rename_columns(table_expr.columns)
-                    .cast(arrow_schema)
-                )
-        except pa.lib.ArrowInvalid:
-            raise
-        except ValueError:
-            table = arrow_schema.empty_table()
 
-        return expr.__pyarrow_result__(table)
+        table_expr = expr.as_table()
+        schema = table_expr.schema()
+        arrow_schema = schema.to_pyarrow()
+        with self.to_pyarrow_batches(
+            table_expr, params=params, limit=limit, **kwargs
+        ) as reader:
+            table = pa.Table.from_batches(reader, schema=arrow_schema)
+
+        return expr.__pyarrow_result__(
+            table.rename_columns(table_expr.columns).cast(arrow_schema)
+        )
 
     @util.experimental
     def to_pyarrow_batches(
