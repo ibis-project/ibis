@@ -243,7 +243,7 @@ INSERT INTO json_t VALUES
     ('[]');
 
 DROP TABLE IF EXISTS win CASCADE;
-CREATE TABLE win (g TEXT, x BIGINT, y BIGINT);
+CREATE TABLE win (g TEXT, x BIGINT NOT NULL, y BIGINT);
 INSERT INTO win VALUES
     ('a', 0, 3),
     ('a', 1, 2),

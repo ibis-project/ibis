@@ -326,3 +326,38 @@ def test_join_with_trivial_predicate(awards_players, predicate, how, pandas_valu
     result = expr.to_pandas()
 
     assert len(result) == len(expected)
+
+
+@pytest.mark.parametrize(
+    ("how", "nrows"),
+    [
+        param("left", 2, id="left"),
+        param("right", 1, id="right"),
+        param(
+            "outer",
+            2,
+            id="outer",
+            marks=[
+                pytest.mark.notyet(
+                    ["mysql"],
+                    raises=sa.exc.ProgrammingError,
+                    reason="mysql doesn't support full outer joins",
+                )
+            ],
+        ),
+    ],
+)
+@pytest.mark.notimpl(
+    ["druid"], raises=sa.exc.NoSuchTableError, reason="`win` table isn't loaded"
+)
+def test_outer_join_nullability(backend, how, nrows):
+    win = backend.win
+    left = win.select(x=lambda t: t.x.cast(t.x.type().copy(nullable=False))).filter(
+        lambda t: t.x.isin((1, 2))
+    )
+    right = left.filter(lambda t: t.x == 1)
+    expr = left.join(right, "x", how=how)
+    assert all(typ.nullable for typ in expr.schema().types)
+
+    result = expr.to_pyarrow()
+    assert len(result) == nrows
