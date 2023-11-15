@@ -34,7 +34,6 @@ except ImportError:
         ("float_col", 2.2),
     ],
 )
-@pytest.mark.notimpl(["datafusion"])
 def test_floating_scalar_parameter(backend, alltypes, df, column, raw_value):
     value = ibis.param(dt.double)
     expr = (alltypes[column] + value).name("tmp")
@@ -71,9 +70,7 @@ def test_timestamp_accepts_date_literals(alltypes):
     assert expr.compile(params=params) is not None
 
 
-@pytest.mark.notimpl(
-    ["dask", "datafusion", "impala", "pandas", "pyspark", "druid", "oracle"]
-)
+@pytest.mark.notimpl(["dask", "impala", "pandas", "pyspark", "druid", "oracle"])
 @pytest.mark.never(
     ["mysql", "sqlite", "mssql"], reason="backend will never implement array types"
 )
@@ -178,7 +175,6 @@ def test_scalar_param_map(con):
         ),
     ],
 )
-@pytest.mark.notimpl(["datafusion"])
 def test_scalar_param(alltypes, df, value, dtype, col):
     param = ibis.param(dtype)
     expr = alltypes.filter([_[col] == param])
@@ -195,7 +191,7 @@ def test_scalar_param(alltypes, df, value, dtype, col):
     ["2009-01-20", datetime.date(2009, 1, 20), datetime.datetime(2009, 1, 20)],
     ids=["string", "date", "datetime"],
 )
-@pytest.mark.notimpl(["datafusion", "druid", "oracle"])
+@pytest.mark.notimpl(["druid", "oracle"])
 @pytest.mark.notyet(["impala"], reason="impala doesn't support dates")
 def test_scalar_param_date(backend, alltypes, value):
     param = ibis.param("date")

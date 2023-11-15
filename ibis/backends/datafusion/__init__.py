@@ -469,7 +469,6 @@ class Backend(BaseBackend, CanCreateDatabase, CanCreateSchema):
         expr: ir.Expr,
         *,
         params: Mapping[ir.Scalar, Any] | None = None,
-        limit: int | str | None = None,
         chunk_size: int = 1_000_000,
         **kwargs: Any,
     ) -> pa.ipc.RecordBatchReader:
@@ -477,8 +476,39 @@ class Backend(BaseBackend, CanCreateDatabase, CanCreateSchema):
 
         self._register_in_memory_tables(expr)
 
-        frame = self.con.sql(self.compile(expr.as_table(), params, **kwargs))
-        return pa.ipc.RecordBatchReader.from_batches(frame.schema(), frame.collect())
+        sql = self.compile(expr.as_table(), params=params, **kwargs)
+        frame = self.con.sql(sql)
+        batches = frame.collect()
+        schema = expr.as_table().schema()
+        struct_schema = schema.as_struct().to_pyarrow()
+        return pa.ipc.RecordBatchReader.from_batches(
+            schema.to_pyarrow(),
+            (
+                # convert the renamed and casted columns batch into a record batch
+                pa.RecordBatch.from_struct_array(
+                    # rename columns to match schema because datafusion lowercases things
+                    pa.RecordBatch.from_arrays(batch.columns, names=schema.names)
+                    # casting the struct array to appropriate types to work around
+                    # https://github.com/apache/arrow-datafusion-python/issues/534
+                    .to_struct_array()
+                    .cast(struct_schema)
+                )
+                for batch in batches
+            ),
+        )
+
+    def to_pyarrow(
+        self,
+        expr: ir.Expr,
+        *,
+        params: Mapping[ir.Scalar, Any] | None = None,
+        **kwargs: Any,
+    ) -> pa.Table:
+        self._register_in_memory_tables(expr)
+
+        batch_reader = self.to_pyarrow_batches(expr, params=params, **kwargs)
+        t = batch_reader.read_all()
+        return expr.__pyarrow_result__(t)
 
     def execute(
         self,
