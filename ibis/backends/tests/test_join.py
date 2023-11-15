@@ -328,6 +328,10 @@ def test_join_with_trivial_predicate(awards_players, predicate, how, pandas_valu
     assert len(result) == len(expected)
 
 
+@pytest.mark.notimpl(
+    ["druid"], raises=sa.exc.NoSuchTableError, reason="`win` table isn't loaded"
+)
+@pytest.mark.notimpl(["flink"], reason="`win` table isn't loaded")
 @pytest.mark.parametrize(
     ("how", "nrows"),
     [
@@ -349,17 +353,30 @@ def test_join_with_trivial_predicate(awards_players, predicate, how, pandas_valu
         ),
     ],
 )
-@pytest.mark.notimpl(
-    ["druid"], raises=sa.exc.NoSuchTableError, reason="`win` table isn't loaded"
+@pytest.mark.parametrize(
+    ("gen_right", "keys"),
+    [
+        param(
+            lambda left: left.filter(lambda t: t.x == 1).select(y=lambda t: t.x),
+            [("x", "y")],
+            id="non_overlapping",
+            marks=[pytest.mark.notyet(["polars"], reason="renaming fails")],
+        ),
+        param(
+            lambda left: left.filter(lambda t: t.x == 1),
+            "x",
+            id="overlapping",
+            marks=[pytest.mark.notimpl(["pyspark"], reason="overlapping columns")],
+        ),
+    ],
 )
-@pytest.mark.notimpl(["flink"], reason="`win` table isn't loaded")
-def test_outer_join_nullability(backend, how, nrows):
+def test_outer_join_nullability(backend, how, nrows, gen_right, keys):
     win = backend.win
     left = win.select(x=lambda t: t.x.cast(t.x.type().copy(nullable=False))).filter(
         lambda t: t.x.isin((1, 2))
     )
-    right = left.filter(lambda t: t.x == 1)
-    expr = left.join(right, "x", how=how)
+    right = gen_right(left)
+    expr = left.join(right, keys, how=how)
     assert all(typ.nullable for typ in expr.schema().types)
 
     result = expr.to_pyarrow()

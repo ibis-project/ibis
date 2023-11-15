@@ -293,17 +293,29 @@ class InnerJoin(Join):
 
 @public
 class LeftJoin(Join):
-    pass
+    @property
+    def schema(self) -> Schema:
+        return Schema(
+            {name: typ.copy(nullable=True) for name, typ in super().schema.items()}
+        )
 
 
 @public
 class RightJoin(Join):
-    pass
+    @property
+    def schema(self) -> Schema:
+        return Schema(
+            {name: typ.copy(nullable=True) for name, typ in super().schema.items()}
+        )
 
 
 @public
 class OuterJoin(Join):
-    pass
+    @property
+    def schema(self) -> Schema:
+        return Schema(
+            {name: typ.copy(nullable=True) for name, typ in super().schema.items()}
+        )
 
 
 @public
@@ -313,7 +325,11 @@ class AnyInnerJoin(Join):
 
 @public
 class AnyLeftJoin(Join):
-    pass
+    @property
+    def schema(self) -> Schema:
+        return Schema(
+            {name: typ.copy(nullable=True) for name, typ in super().schema.items()}
+        )
 
 
 @public
