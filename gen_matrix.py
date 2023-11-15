@@ -36,9 +36,7 @@ def main():
     support = {"operation": [f"{op.__module__}.{op.__name__}" for op in public_ops]}
     support.update(
         (name, list(map(backend.has_operation, public_ops)))
-        # exclude flink until https://github.com/apache/flink/pull/23141 is
-        # merged and released we also need to roll it into poetry
-        for name, backend in get_backends(exclude=("flink",))
+        for name, backend in get_backends()
     )
 
     df = pd.DataFrame(support).set_index("operation").sort_index()
