@@ -1,2 +1,2 @@
 SELECT
-  FALSE
+  FALSE AS False

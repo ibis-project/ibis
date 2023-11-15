@@ -1,2 +1,2 @@
 SELECT
-  TRUE
+  TRUE AS True
