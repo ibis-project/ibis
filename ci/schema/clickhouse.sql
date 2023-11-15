@@ -87,7 +87,7 @@ INSERT INTO ibis_testing.map VALUES
     (map('a', 1, 'b', 2, 'c', 3)),
     (map('d', 4, 'e', 5, 'c', 6));
 
-CREATE OR REPLACE TABLE ibis_testing.win (g String, x Int64, y Int64) ENGINE = Memory;
+CREATE OR REPLACE TABLE ibis_testing.win (g Nullable(String), x Int64, y Nullable(Int64)) ENGINE = Memory;
 INSERT INTO ibis_testing.win VALUES
     ('a', 0, 3),
     ('a', 1, 2),
