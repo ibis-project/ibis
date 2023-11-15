@@ -352,6 +352,7 @@ def test_join_with_trivial_predicate(awards_players, predicate, how, pandas_valu
 @pytest.mark.notimpl(
     ["druid"], raises=sa.exc.NoSuchTableError, reason="`win` table isn't loaded"
 )
+@pytest.mark.notimpl(["flink"], reason="`win` table isn't loaded")
 def test_outer_join_nullability(backend, how, nrows):
     win = backend.win
     left = win.select(x=lambda t: t.x.cast(t.x.type().copy(nullable=False))).filter(
