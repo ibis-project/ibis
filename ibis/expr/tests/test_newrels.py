@@ -14,7 +14,6 @@ from ibis.expr.newrels import (
     Join,
     JoinProject,
     Project,
-    Sort,
     TableExpr,
     UnboundTable,
 )
@@ -257,49 +256,55 @@ def test_subsequent_selections_field_dereferencing():
         assert t3_.op() == expected
         assert t3__.op() == expected
 
-    # expected = Project(
-    #     t, {"bool_col": t.bool_col, "int_col": t.int_col, "float_col": t.float_col}
-    # )
-    # t1 = t.select(t.bool_col, t.int_col, t.float_col)
+    with options(eager_optimization=True):
+        expected = Project(
+            t, {"bool_col": t.bool_col, "int_col": t.int_col, "float_col": t.float_col}
+        )
+        t1 = t.select(t.bool_col, t.int_col, t.float_col)
+        t2 = t1.select(t.bool_col, t1.int_col, t1.float_col)
+        t2_ = t1.select(t1.bool_col, t1.int_col, t1.float_col)
+        assert t2.equals(t2_)
 
-    # t2 = t1.select(t.bool_col, t1.int_col, t1.float_col)
-    # t2_ = t1.select(t1.bool_col, t1.int_col, t1.float_col)
-    # assert t2.equals(t2_)
+        t3 = t2.select(t.bool_col, t1.int_col, t2.float_col)
+        t3_ = t2.select(t2.bool_col, t2.int_col, t2.float_col)
+        assert t3.equals(t3_)
 
-    # t3 = t2.select(t.bool_col, t1.int_col, t2.float_col)
-    # t3_ = t2.select(t2.bool_col, t2.int_col, t2.float_col)
-    # assert t3.equals(t3_)
+        assert t1.op() == expected
+        assert t2.op() == expected
+        assert t3.op() == expected
 
-    # assert t1.op() == expected
-    # assert t2.op() == expected
-    # assert t3.op() == expected
+        t1 = t.select(
+            bool_col=~t.bool_col, int_col=t.int_col + 1, float_col=t.float_col * 3
+        )
+        expected = Project(
+            t,
+            {
+                "bool_col": ~t.bool_col,
+                "int_col": t.int_col + 1,
+                "float_col": t.float_col * 3,
+            },
+        )
+        assert t1.op() == expected
 
-    # t1 = t.select(
-    #     bool_col=~t.bool_col, int_col=t.int_col + 1, float_col=t.float_col * 3
-    # )
-    # expected = Project(
-    #     t,
-    #     {
-    #         "bool_col": ~t.bool_col,
-    #         "int_col": t.int_col + 1,
-    #         "float_col": t.float_col * 3,
-    #     },
-    # )
-    # assert t1.op() == expected
+        t2 = t1.select(t1.bool_col, t1.int_col, t1.float_col)
+        assert t2.op() == expected
 
-    # t2 = t1.select(t1.bool_col, t1.int_col, t1.float_col)
-    # assert t2.op() == expected
-
-    # t3 = t2.select(t2.bool_col, t2.int_col, float_col=t2.float_col * 2)
-    # expected = Project(
-    #     t,
-    #     {
-    #         "bool_col": t.bool_col,
-    #         "int_col": t.int_col + 1,
-    #         "float_col": (t.float_col * 3).name("float_col") * 2,
-    #     },
-    # )
-    # assert t3.op() == expected
+        t3 = t2.select(
+            t2.bool_col,
+            t2.int_col,
+            float_col=t2.float_col * 2,
+            another_col=t1.float_col - 1,
+        )
+        expected = Project(
+            t,
+            {
+                "bool_col": ~t.bool_col,
+                "int_col": t.int_col + 1,
+                "float_col": (t.float_col * 3) * 2,
+                "another_col": (t.float_col * 3) - 1,
+            },
+        )
+        assert t3.op() == expected
 
 
 def test_where():
@@ -463,24 +468,7 @@ def test_chained_join_referencing_intermediate_table():
 
     ab = a.join(b, [a.a == b.c])
     with pytest.raises(IntegrityError):
-        abc = ab.join(c, [ab.a == c.e])
-    # result = abc.finish()
-
-    # assert result.op() == JoinProject(
-    #     first=a,
-    #     rest=[
-    #         Join("inner", b, [a.a == b.c]),
-    #         Join("inner", c, [a.a == c.e]),
-    #     ],
-    #     fields={
-    #         "a": a.a,
-    #         "b": a.b,
-    #         "c": b.c,
-    #         "d": b.d,
-    #         "e": c.e,
-    #         "f": c.f,
-    #     },
-    # )
+        ab.join(c, [ab.a == c.e])
 
 
 def test_aggregate():

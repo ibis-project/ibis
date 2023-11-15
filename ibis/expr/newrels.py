@@ -228,92 +228,6 @@ class UnboundTable(Relation):
 ################################ TYPES ################################
 
 
-# def dereference_values(parent, values):
-#     # r0 := UnboundTable
-#     #   bool_col   boolean
-#     #   int_col    int64
-#     #   float_col  float64
-#     #   string_col string
-
-#     # r1 := Project[r0]
-#     #   bool_col:  r0.bool_col
-#     #   int_col:   r0.int_col
-#     #   float_col: r0.float_col
-
-#     # r2 := Project[r1]
-#     #   bool_col: r1.bool_col
-#     #   int_col:  r1.int_col
-
-#     # --------------------------------------------------------
-#     # mapping = {}
-#     # for k, v in parent.fields.items():
-#     #     mapping[v] = k
-#     #     while isinstance(v, Field) and (v := v.rel.fields.get(v.name)):
-#     #         mapping[v] = k
-
-#     # result = {}
-#     # for name, value in values.items():
-#     #     if name_in_parent := mapping.get(value):
-#     #         result[name] = Field(parent, name_in_parent)
-#     #     else:
-#     #         result[name] = value
-
-#     # return result
-#     # ---------------------------------------------------------
-#     mapping = {}
-#     for k, v in parent.fields.items():
-#         if isinstance(v, Field):
-#             mapping[v.peel()] = k
-#         else:
-#             mapping[v] = k
-
-#     result = {}
-#     for name, value in values.items():
-#         if isinstance(value, Field):
-#             value = value.peel()
-
-#         if value in mapping:
-#             result[name] = Field(parent, mapping[value])
-#         else:
-#             result[name] = value
-
-#     return result
-
-#     # result = {}
-#     # flipped = {v: k for k, v in parent.fields.items()}
-#     # for name, value in values.items():
-#     #     if name_in_parent := flipped.get(value):
-#     #         result[name] = Field(parent, name_in_parent)
-#     #     else:
-#     #         result[name] = value
-#     # return result
-
-
-@replace(p.Field)
-def dereference_field(_, parent, mapping):
-    name = mapping.get(_.peel())
-    if name is not None:
-        return Field(parent, name)
-    else:
-        return _
-
-
-def dereference_values(parent, values):
-    mapping = {}
-    for k, v in parent.fields.items():
-        if isinstance(v, Field):
-            mapping[v.peel()] = k
-        else:
-            mapping[v] = k
-
-    # rule = p.Field >> (lambda _: Field(parent, mapping.get(_.peel(), _.name)))
-    context = {"parent": parent, "mapping": mapping}
-    return {
-        k: v.replace(dereference_field, context=context, filter=Value)
-        for k, v in values.items()
-    }
-
-
 class TableExpr(Expr):
     def schema(self):
         return self.op().schema
@@ -331,7 +245,7 @@ class TableExpr(Expr):
         # 2. if a scalar value is originating from a foreign table it should be turned into a scalar subquery
         node = Project(self, values)
         if options.eager_optimization:
-            node = node.replace(complete_reprojection | subsequent_projects)
+            node = node.replace(subsequent_projects | complete_reprojection)
 
         return node.to_expr()
 
@@ -470,6 +384,30 @@ def unwrap_aliases(values):
     return result
 
 
+@replace(p.Field)
+def lookup_peeled_field(_, parent, mapping):
+    name = mapping.get(_.peel())
+    if name is not None:
+        return Field(parent, name)
+    else:
+        return _
+
+
+def dereference_values(parent, values):
+    mapping = {}
+    for k, v in parent.fields.items():
+        if isinstance(v, Field):
+            mapping[v.peel()] = k
+        else:
+            mapping[v] = k
+
+    context = {"parent": parent, "mapping": mapping}
+    return {
+        k: v.replace(lookup_peeled_field, context=context, filter=Value)
+        for k, v in values.items()
+    }
+
+
 ################################ REWRITES ################################
 
 name = var("name")
@@ -485,7 +423,7 @@ def complete_reprojection(_, y):
     # to express it, especially in a shorter way then the following check
     for name in _.schema:
         if _.values[name] != Field(y, name):
-            return x
+            return _
     return y
 
 
