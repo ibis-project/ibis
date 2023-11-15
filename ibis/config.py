@@ -38,7 +38,11 @@ class Config(Annotable):
             for key, value in old.items():
                 self.set(key, value)
 
-    def __call__(self, options):
+    def __call__(self, *args, **kwargs):
+        options = {}
+        for arg in args:
+            options.update(arg)
+        options.update(kwargs)
         return self._with_temporary(options)
 
 
@@ -175,6 +179,7 @@ class Options(Config):
     impala: Optional[Config] = None
     pandas: Optional[Config] = None
     pyspark: Optional[Config] = None
+    eager_optimization: bool = True
 
 
 def _default_backend() -> Any:
