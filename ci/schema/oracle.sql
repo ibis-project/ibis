@@ -108,7 +108,7 @@ CREATE TABLE "functional_alltypes" (
 
 DROP TABLE IF EXISTS "win";
 
-CREATE TABLE "win" ("g" VARCHAR2(8), "x" NUMBER(18), "y" NUMBER(18));
+CREATE TABLE "win" ("g" VARCHAR2(8), "x" NUMBER(18) NOT NULL, "y" NUMBER(18));
 INSERT INTO "win" VALUES
     ('a', 0, 3),
     ('a', 1, 2),

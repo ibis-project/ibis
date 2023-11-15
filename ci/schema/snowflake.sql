@@ -133,7 +133,7 @@ INSERT INTO json_t ("js")
     SELECT parse_json('[42,47,55]') UNION
     SELECT parse_json('[]');
 
-CREATE OR REPLACE TABLE win ("g" TEXT, "x" BIGINT, "y" BIGINT);
+CREATE OR REPLACE TABLE win ("g" TEXT, "x" BIGINT NOT NULL, "y" BIGINT);
 INSERT INTO win VALUES
     ('a', 0, 3),
     ('a', 1, 2),

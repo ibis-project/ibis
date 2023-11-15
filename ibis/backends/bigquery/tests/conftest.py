@@ -206,7 +206,7 @@ class TestConf(UnorderedComparator, BackendTest, RoundAwayFromZero):
                     job_config=bq.LoadJobConfig(
                         write_disposition=write_disposition,
                         schema=BigQuerySchema.from_ibis(
-                            ibis.schema(dict(g="string", x="int64", y="int64"))
+                            ibis.schema(dict(g="string", x="!int64", y="int64"))
                         ),
                     ),
                 )
