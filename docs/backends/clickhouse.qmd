@@ -1,3 +1,7 @@
+---
+execute:
+  freeze: auto
+---
 # ClickHouse
 
 [https://clickhouse.com](https://clickhouse.com)
@@ -103,25 +107,14 @@ con = ibis.connect(f"clickhouse://{user}:{password}@{host}:{port}?secure={secure
 
 ## ClickHouse playground
 
-ClickHouse provides a free playground with several datasets that you can connect to using `ibis`:
+ClickHouse provides a free playground with several datasets that you can connect to using Ibis:
 
 ```{python}
 from ibis.interactive import *
 
-con = ibis.clickhouse.connect(
-    host="play.clickhouse.com",
-    secure=True,
-    user="play",
-    password="clickhouse",
-)
-con.table("actors")
-```
-
-or
-
-```{python}
 con = ibis.connect("clickhouse://play:clickhouse@play.clickhouse.com:443?secure=True")
-con.table("opensky")
+actors = con.table("actors")
+actors
 ```
 
 ```{python}
