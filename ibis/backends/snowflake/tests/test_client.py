@@ -219,3 +219,10 @@ def test_read_parquet(con, data_dir):
     t = con.read_parquet(path)
 
     assert t.timestamp_col.type().is_timestamp()
+
+
+def test_array_repr(con, monkeypatch):
+    monkeypatch.setattr(ibis.options, "interactive", True)
+    t = con.tables.ARRAY_TYPES
+    expr = t.x
+    assert repr(expr)
