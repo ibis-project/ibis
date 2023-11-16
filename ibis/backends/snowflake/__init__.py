@@ -364,6 +364,8 @@ $$""".format(**self._get_udf_source(udf_node))
         limit: int | str | None = None,
         **_: Any,
     ) -> pa.Table:
+        from ibis.backends.snowflake.converter import SnowflakePyArrowData
+
         self._run_pre_execute_hooks(expr)
 
         query_ast = self.compiler.to_ast_ensure_limit(expr, limit, params=params)
@@ -375,9 +377,7 @@ $$""".format(**self._get_udf_source(udf_node))
         if res is None:
             res = target_schema.empty_table()
 
-        res = res.rename_columns(target_schema.names).cast(target_schema)
-
-        return expr.__pyarrow_result__(res)
+        return expr.__pyarrow_result__(res, data_mapper=SnowflakePyArrowData)
 
     def fetch_from_cursor(self, cursor, schema: sch.Schema) -> pd.DataFrame:
         if (table := cursor.cursor.fetch_arrow_all()) is None:

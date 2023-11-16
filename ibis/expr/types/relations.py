@@ -32,6 +32,7 @@ if TYPE_CHECKING:
     from ibis.expr.types.groupby import GroupedTable
     from ibis.expr.types.tvf import WindowedTable
     from ibis.selectors import IfAnyAll, Selector
+    from ibis.formats.pyarrow import PyArrowData
 
 _ALIASES = (f"_ibis_view_{n:d}" for n in itertools.count())
 
@@ -158,10 +159,13 @@ class Table(Expr, _FixedTextJupyterMixin):
 
         return IbisDataFrame(self, nan_as_null=nan_as_null, allow_copy=allow_copy)
 
-    def __pyarrow_result__(self, table: pa.Table) -> pa.Table:
-        from ibis.formats.pyarrow import PyArrowData
+    def __pyarrow_result__(
+        self, table: pa.Table, data_mapper: type[PyArrowData] | None = None
+    ) -> pa.Table:
+        if data_mapper is None:
+            from ibis.formats.pyarrow import PyArrowData as data_mapper
 
-        return PyArrowData.convert_table(table, self.schema())
+        return data_mapper.convert_table(table, self.schema())
 
     def __pandas_result__(self, df: pd.DataFrame) -> pd.DataFrame:
         from ibis.formats.pandas import PandasData

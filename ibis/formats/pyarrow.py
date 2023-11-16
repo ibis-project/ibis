@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from typing import TYPE_CHECKING, Any
 
 import pyarrow as pa
@@ -11,6 +12,38 @@ from ibis.formats import DataMapper, SchemaMapper, TypeMapper
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
+
+
+class JSONScalar(pa.ExtensionScalar):
+    def as_py(self):
+        value = self.value
+        if value is None:
+            return value
+        else:
+            return json.loads(value.as_py())
+
+
+class JSONArray(pa.ExtensionArray):
+    pass
+
+
+class JSONType(pa.ExtensionType):
+    def __init__(self):
+        super().__init__(pa.string(), "ibis.json")
+
+    def __arrow_ext_serialize__(self):
+        return b""
+
+    @classmethod
+    def __arrow_ext_deserialize__(cls, storage_type, serialized):
+        return cls()
+
+    def __arrow_ext_class__(self):
+        return JSONArray
+
+    def __arrow_ext_scalar_class__(self):
+        return JSONScalar
+
 
 _from_pyarrow_types = {
     pa.int8(): dt.Int8,
@@ -57,7 +90,6 @@ _to_pyarrow_types = {
     dt.Unknown: pa.string(),
     dt.MACADDR: pa.string(),
     dt.INET: pa.string(),
-    dt.JSON: pa.string(),
 }
 
 
@@ -95,6 +127,8 @@ class PyArrowType(TypeMapper):
             key_dtype = cls.to_ibis(typ.key_type, typ.key_field.nullable)
             value_dtype = cls.to_ibis(typ.item_type, typ.item_field.nullable)
             return dt.Map(key_dtype, value_dtype, nullable=nullable)
+        elif isinstance(typ, JSONType):
+            return dt.JSON()
         else:
             return _from_pyarrow_types[typ](nullable=nullable)
 
@@ -154,6 +188,8 @@ class PyArrowType(TypeMapper):
                 nullable=dtype.value_type.nullable,
             )
             return pa.map_(key_field, value_field, keys_sorted=False)
+        elif dtype.is_json():
+            return PYARROW_JSON_TYPE
         else:
             try:
                 return _to_pyarrow_types[type(dtype)]
@@ -254,3 +290,7 @@ class PyArrowData(DataMapper):
             return table.cast(desired_schema)
         else:
             return table
+
+
+PYARROW_JSON_TYPE = JSONType()
+pa.register_extension_type(PYARROW_JSON_TYPE)
