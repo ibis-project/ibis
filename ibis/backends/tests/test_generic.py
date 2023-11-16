@@ -1608,3 +1608,19 @@ def test_sample_with_seed(backend):
     df1 = expr.to_pandas()
     df2 = expr.to_pandas()
     backend.assert_frame_equal(df1, df2)
+
+
+@pytest.mark.broken(
+    ["dask"], reason="implementation somehow differs from pandas", raises=ValueError
+)
+def test_substitute(backend):
+    val = "400"
+    t = backend.functional_alltypes
+    expr = (
+        t.string_col.nullif("1")
+        .substitute({None: val})
+        .name("subs")
+        .value_counts()
+        .filter(lambda t: t.subs == val)
+    )
+    assert expr["subs_count"].execute()[0] == t.count().execute() // 10
