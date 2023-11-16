@@ -4,6 +4,7 @@ import pytest
 from pytest import param
 
 import ibis
+from ibis.common.deferred import _
 
 
 def test_sum(con, snapshot, simple_table):
@@ -137,9 +138,34 @@ def test_having(con, snapshot, simple_table):
         ),
     ],
 )
-def test_tvf(con, snapshot, simple_table, function_type, params):
+def test_windowing_tvf(con, snapshot, simple_table, function_type, params):
     expr = getattr(simple_table.window_by(time_col=simple_table.i), function_type)(
         **params
     )
+    result = con.compile(expr)
+    snapshot.assert_match(result, "out.sql")
+
+
+def test_window_aggregation(con, snapshot, simple_table):
+    expr = (
+        simple_table.window_by(time_col=simple_table.i)
+        .tumble(window_size=ibis.interval(minutes=15))
+        .group_by(["window_start", "window_end", "g"])
+        .aggregate(mean=_.d.mean())
+    )
+    result = con.compile(expr)
+    snapshot.assert_match(result, "out.sql")
+
+
+def test_window_topn(con, snapshot, simple_table):
+    expr = simple_table.window_by(time_col="i").tumble(
+        window_size=ibis.interval(seconds=600),
+    )["a", "b", "c", "d", "g", "window_start", "window_end"]
+    expr = expr.mutate(
+        rownum=ibis.row_number().over(
+            group_by=["window_start", "window_end"], order_by=ibis.desc("g")
+        )
+    )
+    expr = expr[expr.rownum <= 3]
     result = con.compile(expr)
     snapshot.assert_match(result, "out.sql")
