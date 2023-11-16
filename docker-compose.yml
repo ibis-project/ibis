@@ -96,7 +96,7 @@ services:
         - CMD
         - mariadb-admin
         - ping
-    image: mariadb:10.11.5
+    image: mariadb:10.11.6
     ports:
       - 3306:3306
     networks:
