@@ -9,6 +9,7 @@ import ibis.expr.datashape as ds
 import ibis.expr.datatypes as dt
 import ibis.expr.types as ir
 from ibis.common.annotations import attribute
+from ibis.common.patterns import Eq
 from ibis.common.collections import FrozenDict  # noqa: TCH001
 from ibis.common.deferred import Deferred, Item, deferred, var
 from ibis.common.exceptions import IntegrityError
@@ -68,34 +69,28 @@ class Field(Value):
     def dtype(self):
         return self.rel.schema[self.name]
 
-    # TODO(kszucs): peel could return with the last field instead of the path
-    # def peel(self):
-    #     this = self
-    #     while isinstance(this, Field):
-    #         yield this
-    #         this = this.rel.fields.get(this.name)
-
     # TODO(kszucs): move this method to the dereferencer function
     def peel(self):
         this = self
         while (
             isinstance(this, Field)
             and not isinstance(this.rel, UnboundTable)
+            # and isinstance(this.rel, Project)
             and this.name in this.rel.fields
         ):
             this = this.rel.fields[this.name]
         return this
 
 
-# class ForeignField(Value):
-#     rel: Relation
-#     name: str
+class ForeignField(Value):
+    rel: Relation
+    name: str
 
-#     shape = ds.columnar
+    shape = ds.columnar
 
-#     @attribute
-#     def dtype(self):
-#         return self.rel.schema[self.name]
+    @attribute
+    def dtype(self):
+        return self.rel.schema[self.name]
 
 
 def _check_integrity(values, allowed_parents):
@@ -390,6 +385,10 @@ def lookup_peeled_field(_, parent, mapping):
     if name is not None:
         return Field(parent, name)
     else:
+        print((_.rel, _.name))
+        # TODO(kszucs): test that passing a rewritten foreign field back to its relations
+        # TODO(kszucs): need to allow only scalar values based on foreign fields
+        return ForeignField(_.rel, _.name)
         return _
 
 
@@ -412,7 +411,6 @@ def dereference_values(parent, values):
 
 name = var("name")
 
-x = var("x")
 y = var("y")
 values = var("values")
 

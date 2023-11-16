@@ -363,6 +363,8 @@ def test_projection_before_and_after_filter():
         assert t2.op() == Filter(parent=t1, predicates=[t1.bool_col])
 
         t3 = t2.filter(t2.int_col > 0)
+        # t4 = t3.filter(t2.float_col < 0)
+
         t3_ = t2.filter(t1.int_col > 0)
         assert t3.op() == Filter(parent=t2, predicates=[t2.int_col > 0])
         assert t3_.op() == Filter(parent=t2, predicates=[t2.int_col > 0])
@@ -399,6 +401,12 @@ def test_projection_before_and_after_filter():
         assert t4.op() == Project(
             parent=t3, values={"bool_col": t3.bool_col, "int_col": t3.int_col}
         )
+
+def test_e():
+    t1 = t.filter(t.bool_col)
+
+
+    print(t.select(t1.int_col))
 
 
 # TODO(kszucs): add test for integrity checks

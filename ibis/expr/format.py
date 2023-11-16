@@ -363,6 +363,10 @@ def _table_column(op, table, name):
 def _relation_field(op, rel, name):
     return f"{rel}.{name}"
 
+# @fmt.register(nr.ForeignField)
+# def _relation_field(op, rel, name):
+#     return f"'{rel}.{name}"
+
 
 @fmt.register(ops.Value)
 def _value(op, **kwargs):
