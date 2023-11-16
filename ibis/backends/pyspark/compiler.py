@@ -130,7 +130,10 @@ def _can_be_replaced_by_column_name(column, table):
 @compiles(ops.Alias)
 def compile_alias(t, op, **kwargs):
     arg = t.translate(op.arg, **kwargs)
-    return arg.alias(op.name)
+    if isinstance(arg, pyspark.sql.Column):
+        return arg.alias(op.name)
+    else:
+        return arg
 
 
 @compiles(ops.Selection)
