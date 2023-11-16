@@ -23,6 +23,7 @@ import ibis
 import ibis.common.exceptions as com
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
+from ibis import util
 from ibis.backends.base import CanCreateSchema, Database
 from ibis.backends.base.sql import BaseSQLBackend
 from ibis.backends.bigquery.client import (
@@ -494,14 +495,9 @@ class Backend(BaseSQLBackend, CanCreateSchema):
         self, name: str, database: str | None = None, schema: str | None = None
     ) -> ir.TableExpr:
         if database is not None and schema is None:
-            util.warn_deprecated(
-                "database",
-                instead=(
-                    f"The {self.name} backend cannot return a table expression using only a `database` specifier. "
-                    "Include a `schema` argument."
-                ),
-                as_of="7.1",
-                removed_in="8.0",
+            raise com.IbisInputError(
+                f"The {self.name} backend cannot return a table expression using only a "
+                "`database` specifier. Include a `schema` argument."
             )
 
         table = sg.parse_one(name, into=sg.exp.Table, read=self.name)
