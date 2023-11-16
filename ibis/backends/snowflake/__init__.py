@@ -292,6 +292,10 @@ $$ {defn["source"]} $$"""
 
         self.con.dialect.normalize_name = normalize_name
 
+    def close(self):
+        """Dispose the current backend connection."""
+        self.con.dispose()
+
     def _get_udf_source(self, udf_node: ops.ScalarUDF):
         name = type(udf_node).__name__
         signature = ", ".join(
