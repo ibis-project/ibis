@@ -684,7 +684,7 @@ class Value(Expr):
         """
         expr = self.case()
         if isinstance(value, dict):
-            for k, v in sorted(value.items()):
+            for k, v in value.items():
                 expr = expr.when(k, v)
         else:
             expr = expr.when(value, replacement)
