@@ -10,6 +10,7 @@ concurrency:
 
 jobs:
   analyze:
+    if: github.repository_owner == 'ibis-project'
     runs-on: ubuntu-latest
     permissions:
       actions: read

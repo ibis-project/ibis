@@ -17,6 +17,7 @@ concurrency:
 
 jobs:
   pre-release:
+    if: github.repository_owner == 'ibis-project'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
