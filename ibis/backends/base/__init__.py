@@ -547,7 +547,7 @@ class _FileIOHandler:
         import pyarrow.parquet as pq
 
         with expr.to_pyarrow_batches(params=params) as batch_reader:
-            with pq.ParquetWriter(path, batch_reader.schema) as writer:
+            with pq.ParquetWriter(path, batch_reader.schema, **kwargs) as writer:
                 for batch in batch_reader:
                     writer.write_batch(batch)
 
@@ -582,7 +582,7 @@ class _FileIOHandler:
         import pyarrow.csv as pcsv
 
         with expr.to_pyarrow_batches(params=params) as batch_reader:
-            with pcsv.CSVWriter(path, batch_reader.schema) as writer:
+            with pcsv.CSVWriter(path, batch_reader.schema, **kwargs) as writer:
                 for batch in batch_reader:
                     writer.write_batch(batch)
 

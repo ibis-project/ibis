@@ -3,6 +3,7 @@ from __future__ import annotations
 import pandas as pd
 import pandas.testing as tm
 import pyarrow as pa
+import pyarrow.csv as pcsv
 import pytest
 import sqlalchemy as sa
 from pytest import param
@@ -220,6 +221,21 @@ def test_table_to_parquet(tmp_path, backend, awards_players):
     backend.assert_frame_equal(awards_players.to_pandas(), df)
 
 
+@pytest.mark.notimpl(["flink"])
+@pytest.mark.parametrize(("kwargs"), [({"version": "1.0"}), ({"version": "2.6"})])
+def test_table_to_parquet_writer_kwargs(kwargs, tmp_path, backend, awards_players):
+    outparquet = tmp_path / "out.parquet"
+    awards_players.to_parquet(outparquet, **kwargs)
+
+    df = pd.read_parquet(outparquet)
+
+    backend.assert_frame_equal(awards_players.to_pandas(), df)
+
+    file = pa.parquet.ParquetFile(outparquet)
+
+    assert file.metadata.format_version == kwargs["version"]
+
+
 @pytest.mark.notimpl(
     [
         "bigquery",
@@ -297,6 +313,17 @@ def test_table_to_csv(tmp_path, backend, awards_players):
     df = pd.read_csv(outcsv, dtype=awards_players.schema().to_pandas())
 
     backend.assert_frame_equal(awards_players.to_pandas(), df)
+
+
+@pytest.mark.notimpl(["flink"])
+@pytest.mark.parametrize(("kwargs", "delimiter"), [({"write_options": pcsv.WriteOptions(delimiter=";")}, ";"), ({"write_options": pcsv.WriteOptions(delimiter="\t")}, "\t")])
+def test_table_to_csv_writer_kwargs(kwargs, delimiter, tmp_path, backend, awards_players):
+    outcsv = tmp_path / "out.csv"
+    # avoid pandas NaNonense
+    awards_players = awards_players.select("playerID", "awardID", "yearID", "lgID")
+
+    awards_players.to_csv(outcsv, **kwargs)
+    pd.read_csv(outcsv, delimiter=delimiter)
 
 
 @pytest.mark.parametrize(
