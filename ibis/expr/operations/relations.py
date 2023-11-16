@@ -283,7 +283,12 @@ class Join(Relation):
         left, right = self.left.schema, self.right.schema
         if duplicates := left.keys() & right.keys():
             raise com.IntegrityError(f"Duplicate column name(s): {duplicates}")
-        return Schema({**left, **right})
+        return Schema(
+            {
+                name: typ.copy(nullable=True)
+                for name, typ in itertools.chain(left.items(), right.items())
+            }
+        )
 
 
 @public
@@ -293,29 +298,17 @@ class InnerJoin(Join):
 
 @public
 class LeftJoin(Join):
-    @property
-    def schema(self) -> Schema:
-        return Schema(
-            {name: typ.copy(nullable=True) for name, typ in super().schema.items()}
-        )
+    pass
 
 
 @public
 class RightJoin(Join):
-    @property
-    def schema(self) -> Schema:
-        return Schema(
-            {name: typ.copy(nullable=True) for name, typ in super().schema.items()}
-        )
+    pass
 
 
 @public
 class OuterJoin(Join):
-    @property
-    def schema(self) -> Schema:
-        return Schema(
-            {name: typ.copy(nullable=True) for name, typ in super().schema.items()}
-        )
+    pass
 
 
 @public
@@ -325,11 +318,7 @@ class AnyInnerJoin(Join):
 
 @public
 class AnyLeftJoin(Join):
-    @property
-    def schema(self) -> Schema:
-        return Schema(
-            {name: typ.copy(nullable=True) for name, typ in super().schema.items()}
-        )
+    pass
 
 
 @public
