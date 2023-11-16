@@ -508,8 +508,8 @@ class Backend(BaseBackend, CanCreateDatabase, CanCreateSchema):
         self._register_in_memory_tables(expr)
 
         batch_reader = self.to_pyarrow_batches(expr, params=params, **kwargs)
-        t = batch_reader.read_all()
-        return expr.__pyarrow_result__(t)
+        arrow_table = batch_reader.read_all()
+        return expr.__pyarrow_result__(arrow_table)
 
     def execute(
         self,
