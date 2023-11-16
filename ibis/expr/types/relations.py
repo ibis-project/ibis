@@ -130,7 +130,7 @@ class Table(Expr, _FixedTextJupyterMixin):
     - from an existing table in a data platform with
       [`connection.table("name")`](./expression-tables.qmd#ibis.backends.duckdb.Backend.table)
     - from a file or URL, into a specific backend with
-      [`connection.read_csv/parsquet/json("path/to/file")`](../backends/duckdb.qmd#ibis.backends.duckdb.Backend.read_csv)
+      [`connection.read_csv/parquet/json("path/to/file")`](../backends/duckdb.qmd#ibis.backends.duckdb.Backend.read_csv)
       (only some backends, typically local ones, support this)
     - from a file or URL, into the default backend with
        [`ibis.read_csv/read_json/read_parquet("path/to/file")`](./expression-tables.qmd#ibis.read_csv)
