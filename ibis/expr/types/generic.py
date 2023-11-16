@@ -18,6 +18,7 @@ if TYPE_CHECKING:
 
     import ibis.expr.builders as bl
     import ibis.expr.types as ir
+    from ibis.formats.pyarrow import PyArrowData
 
 
 @public
@@ -1204,10 +1205,13 @@ class Scalar(Value):
     def __interactive_rich_console__(self, console, options):
         return console.render(repr(self.execute()), options=options)
 
-    def __pyarrow_result__(self, table: pa.Table) -> pa.Scalar:
-        from ibis.formats.pyarrow import PyArrowData
+    def __pyarrow_result__(
+        self, table: pa.Table, data_mapper: type[PyArrowData] | None = None
+    ) -> pa.Scalar:
+        if data_mapper is None:
+            from ibis.formats.pyarrow import PyArrowData as data_mapper
 
-        return PyArrowData.convert_scalar(table[0][0], self.type())
+        return data_mapper.convert_scalar(table[0][0], self.type())
 
     def __pandas_result__(self, df: pd.DataFrame) -> Any:
         return df.iat[0, 0]
@@ -1275,10 +1279,13 @@ class Column(Value, _FixedTextJupyterMixin):
         projection = named.as_table()
         return console.render(projection, options=options)
 
-    def __pyarrow_result__(self, table: pa.Table) -> pa.Array | pa.ChunkedArray:
-        from ibis.formats.pyarrow import PyArrowData
+    def __pyarrow_result__(
+        self, table: pa.Table, data_mapper: type[PyArrowData] | None = None
+    ) -> pa.Array | pa.ChunkedArray:
+        if data_mapper is None:
+            from ibis.formats.pyarrow import PyArrowData as data_mapper
 
-        return PyArrowData.convert_column(table[0], self.type())
+        return data_mapper.convert_column(table[0], self.type())
 
     def __pandas_result__(self, df: pd.DataFrame) -> pd.Series:
         from ibis.formats.pandas import PandasData
