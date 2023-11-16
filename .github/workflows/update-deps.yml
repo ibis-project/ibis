@@ -7,6 +7,7 @@ on:
 
 jobs:
   get-flakes:
+    if: github.repository_owner == 'ibis-project'
     runs-on: ubuntu-latest
     outputs:
       matrix: ${{ steps.get-flakes.outputs.matrix }}
@@ -25,6 +26,7 @@ jobs:
           echo "matrix=${flakes}" >> "$GITHUB_OUTPUT"
 
   flake-update:
+    if: github.repository_owner == 'ibis-project'
     runs-on: ubuntu-latest
     needs:
       - get-flakes

@@ -7,6 +7,7 @@ on:
 
 jobs:
   gcs_insert:
+    if: github.repository_owner == 'ibis-project'
     runs-on: ubuntu-latest
     steps:
       - name: set date
