@@ -156,10 +156,6 @@ def _format_window_frame(translator: ExprTranslator, func, frame):
         components.append(f"PARTITION BY {partition_args}")
 
     (order_by,) = frame.order_by
-    if order_by.descending is True:
-        raise com.UnsupportedOperationError(
-            "Flink only supports windows ordered in ASCENDING mode"
-        )
     components.append(f"ORDER BY {translator.translate(order_by)}")
 
     if frame.start is None and frame.end is None:
@@ -221,8 +217,7 @@ def _window(translator: ExprTranslator, op: ops.Node) -> str:
 
     if isinstance(func, (ops.RankBase, ops.NTile)):
         return f"({result} - 1)"
-    else:
-        return result
+    return result
 
 
 def _clip(translator: ExprTranslator, op: ops.Node) -> str:

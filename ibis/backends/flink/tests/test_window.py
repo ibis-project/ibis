@@ -29,19 +29,6 @@ def test_window_does_not_support_multiple_order_by(con, simple_table):
         con.compile(expr)
 
 
-def test_window_does_not_support_desc_order(con, simple_table):
-    expr = simple_table.f.sum().over(
-        rows=(-1, 1),
-        group_by=[simple_table.g, simple_table.a],
-        order_by=[simple_table.f.desc()],
-    )
-    with pytest.raises(
-        UnsupportedOperationError,
-        match="Flink only supports windows ordered in ASCENDING mode",
-    ):
-        con.compile(expr)
-
-
 @pytest.mark.parametrize(
     ("window", "err"),
     [
