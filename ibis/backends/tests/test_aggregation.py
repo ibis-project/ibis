@@ -145,7 +145,7 @@ def make_argidx_params(marks, grouped=False):
             marks=marks
             + [
                 pytest.mark.xfail_version(
-                    polars=["polars==0.19.12"], raises=BaseException
+                    polars=["polars>=0.19.12,<1"], raises=BaseException
                 )
             ]
             * grouped,
