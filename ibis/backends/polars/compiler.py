@@ -431,6 +431,8 @@ def in_column(op, **kw):
 def in_values(op, **kw):
     value = translate(op.value, **kw)
     options = list(map(translate, op.options))
+    if not options:
+        return pl.lit(False)
     return pl.any_horizontal([value == option for option in options])
 
 
