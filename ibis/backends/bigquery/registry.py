@@ -776,6 +776,16 @@ def _group_concat(translator, op):
     return f"STRING_AGG({arg}, {sep})"
 
 
+def _integer_range(translator, op):
+    start = translator.translate(op.start)
+    stop = translator.translate(op.stop)
+    step = translator.translate(op.step)
+    n = f"FLOOR(({stop} - {start}) / NULLIF({step}, 0))"
+    gen_array = f"GENERATE_ARRAY({start}, {stop}, {step})"
+    inner = f"SELECT x FROM UNNEST({gen_array}) x WHERE x <> {stop}"
+    return f"IF({n} > 0, ARRAY({inner}), [])"
+
+
 OPERATION_REGISTRY = {
     **operation_registry,
     # Literal
@@ -939,6 +949,7 @@ OPERATION_REGISTRY = {
     ops.TimeDelta: _time_delta,
     ops.DateDelta: _date_delta,
     ops.TimestampDelta: _timestamp_delta,
+    ops.IntegerRange: _integer_range,
 }
 
 _invalid_operations = {

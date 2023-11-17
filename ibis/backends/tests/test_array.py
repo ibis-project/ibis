@@ -39,6 +39,12 @@ try:
 except ImportError:
     PySparkAnalysisException = None
 
+
+try:
+    from polars.exceptions import PolarsInvalidOperationError
+except ImportError:
+    PolarsInvalidOperationError = None
+
 pytestmark = [
     pytest.mark.never(
         ["sqlite", "mysql", "mssql"],
@@ -910,3 +916,135 @@ def test_array_flatten(backend, flatten_data, column, expected):
     expr = t[column].flatten()
     result = backend.connection.execute(expr)
     backend.assert_series_equal(result, expected, check_names=False)
+
+
+polars_overflow = pytest.mark.notyet(
+    ["polars"],
+    reason="but polars overflows allocation with some inputs",
+    raises=BaseException,
+)
+
+
+@pytest.mark.notyet(
+    ["datafusion"],
+    reason="range isn't implemented upstream",
+    raises=com.OperationNotDefinedError,
+)
+@pytest.mark.notimpl(["flink", "pandas", "dask"], raises=com.OperationNotDefinedError)
+@pytest.mark.parametrize("n", [param(-2, marks=[polars_overflow]), 0, 2])
+def test_range_single_argument(con, n):
+    expr = ibis.range(n)
+    result = con.execute(expr)
+    assert list(result) == list(range(n))
+
+
+@pytest.mark.notyet(
+    ["datafusion"],
+    reason="range and unnest aren't implemented upstream",
+    raises=com.OperationNotDefinedError,
+)
+@pytest.mark.parametrize(
+    "n",
+    [
+        param(
+            -2,
+            marks=[
+                pytest.mark.broken(
+                    ["snowflake"],
+                    reason="snowflake unnests empty arrays to null",
+                    raises=AssertionError,
+                )
+            ],
+        ),
+        param(
+            0,
+            marks=[
+                pytest.mark.broken(
+                    ["snowflake"],
+                    reason="snowflake unnests empty arrays to null",
+                    raises=AssertionError,
+                )
+            ],
+        ),
+        2,
+    ],
+)
+@pytest.mark.notimpl(
+    ["polars", "flink", "pandas", "dask"], raises=com.OperationNotDefinedError
+)
+def test_range_single_argument_unnest(con, n):
+    expr = ibis.range(n).unnest()
+    result = con.execute(expr)
+    tm.assert_series_equal(
+        result,
+        pd.Series(list(range(n)), dtype=result.dtype, name=expr.get_name()),
+        check_index=False,
+    )
+
+
+@pytest.mark.parametrize(
+    "step",
+    [
+        param(
+            -2,
+            marks=[
+                pytest.mark.notyet(
+                    ["polars"],
+                    reason="panic upstream",
+                    raises=PolarsInvalidOperationError,
+                )
+            ],
+        ),
+        param(
+            -1,
+            marks=[
+                pytest.mark.notyet(
+                    ["polars"],
+                    reason="panic upstream",
+                    raises=PolarsInvalidOperationError,
+                )
+            ],
+        ),
+        1,
+        2,
+    ],
+)
+@pytest.mark.parametrize(
+    ("start", "stop"),
+    [
+        param(-7, -7),
+        param(-7, 0),
+        param(-7, 7),
+        param(0, -7, marks=[polars_overflow]),
+        param(0, 0),
+        param(0, 7),
+        param(7, -7, marks=[polars_overflow]),
+        param(7, 0, marks=[polars_overflow]),
+        param(7, 7),
+    ],
+)
+@pytest.mark.notyet(
+    ["datafusion"],
+    reason="range and unnest aren't implemented upstream",
+    raises=com.OperationNotDefinedError,
+)
+@pytest.mark.notimpl(["flink", "pandas", "dask"], raises=com.OperationNotDefinedError)
+def test_range_start_stop_step(con, start, stop, step):
+    expr = ibis.range(start, stop, step)
+    result = con.execute(expr)
+    assert list(result) == list(range(start, stop, step))
+
+
+@pytest.mark.parametrize("stop", [-7, 0, 7])
+@pytest.mark.parametrize("start", [-7, 0, 7])
+@pytest.mark.notyet(
+    ["clickhouse"], raises=ClickhouseDatabaseError, reason="not supported upstream"
+)
+@pytest.mark.notyet(
+    ["datafusion"], raises=com.OperationNotDefinedError, reason="not supported upstream"
+)
+@pytest.mark.notimpl(["flink", "pandas", "dask"], raises=com.OperationNotDefinedError)
+def test_range_start_stop_step_zero(con, start, stop):
+    expr = ibis.range(start, stop, 0)
+    result = con.execute(expr)
+    assert list(result) == []

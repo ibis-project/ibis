@@ -491,6 +491,14 @@ operation_registry.update(
             lambda part, left, right: sa.func.timestampdiff(part, right, left), 3
         ),
         ops.TimestampBucket: _timestamp_bucket,
+        ops.IntegerRange: fixed_arity(
+            lambda start, stop, step: sa.func.iff(
+                step != 0,
+                sa.func.array_generate_range(start, stop, step),
+                sa.func.array_construct(),
+            ),
+            3,
+        ),
     }
 )
 

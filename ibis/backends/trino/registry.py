@@ -350,6 +350,24 @@ def _interval_from_integer(t, op):
     return sa.type_coerce(sa.func.parse_duration(arg), INTERVAL)
 
 
+def _integer_range(t, op):
+    start = t.translate(op.start)
+    stop = t.translate(op.stop)
+    step = t.translate(op.step)
+    satype = t.get_sqla_type(op.dtype)
+    # `sequence` doesn't allow arguments that would produce an empty range, so
+    # check that first
+    n = sa.func.floor((stop - start) / sa.func.nullif(step, 0))
+    return if_(
+        n > 0,
+        # TODO(cpcloud): revisit using array_remove when my brain is working
+        sa.func.array_remove(
+            sa.func.sequence(start, stop, step, type_=satype), stop, type_=satype
+        ),
+        sa.literal_column("ARRAY[]"),
+    )
+
+
 operation_registry.update(
     {
         # conditional expressions
@@ -547,6 +565,7 @@ operation_registry.update(
         ops.IntervalAdd: fixed_arity(operator.add, 2),
         ops.IntervalSubtract: fixed_arity(operator.sub, 2),
         ops.IntervalFromInteger: _interval_from_integer,
+        ops.IntegerRange: _integer_range,
     }
 )
 

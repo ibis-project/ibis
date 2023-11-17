@@ -1198,3 +1198,20 @@ def execute_agg_udf(op, **kw):
     if (where := op.where) is not None:
         first = first.filter(translate(where, **kw))
     return getattr(first, op.__func_name__)(*rest)
+
+
+@translate.register(ops.IntegerRange)
+def execute_integer_range(op, **kw):
+    if not isinstance(op.step, ops.Literal):
+        raise NotImplementedError("Dynamic step not supported by Polars")
+    step = op.step.value
+
+    dtype = dtype_to_polars(op.dtype)
+    empty = pl.int_ranges(0, 0, dtype=dtype)
+
+    if step == 0:
+        return empty
+
+    start = translate(op.start, **kw)
+    stop = translate(op.stop, **kw)
+    return pl.int_ranges(start, stop, step, dtype=dtype)
