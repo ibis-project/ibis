@@ -41,16 +41,11 @@ class Relation(Node, Coercible):
         else:
             raise TypeError(f"Cannot coerce {value!r} to a Relation")
 
-    @attribute
-    def code(self):
-        char = self.__class__.__name__[0]
-        id = next(self._counter)
-        return f"{char}{id}"
-
     @property
     @abstractmethod
     def fields(self):
-        # used for dereferencing fields/values to the lowest relation in the chain
+        # used for dereferencing fields/values to the lowest relation in the
+        # chain this should return references to parent relation's fields
         ...
 
     @property
@@ -67,9 +62,6 @@ class Field(Value):
     name: str
 
     shape = ds.columnar
-
-    def __repr__(self):
-        return f"{self.rel.code}.{self.name}"
 
     @attribute
     def dtype(self):
@@ -261,6 +253,18 @@ class TableExpr(Expr):
         groups = unwrap_aliases(groups)
         metrics = unwrap_aliases(metrics)
         node = Aggregate(self, groups, metrics)
+        return node.to_expr()
+
+    def optimize(self):
+        node = self.op()
+        # apply the rewrites
+        node = node.replace(
+            complete_reprojection
+            | subsequent_projects
+            | subsequent_filters
+            | subsequent_sorts
+        )
+        # return with a new TableExpr wrapping the optimized node
         return node.to_expr()
 
 

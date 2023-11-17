@@ -124,9 +124,8 @@ def test_select_full_reprojection():
         },
     )
 
-    # with options(eager_optimization=True):
-    #     t1 = t.select(t)
-    #     assert t1.op() == t.op()
+    t1_opt = t1.optimize()
+    assert t1_opt.op() == t.op()
 
 
 def test_subsequent_selections_with_field_names():
@@ -155,31 +154,13 @@ def test_subsequent_selections_with_field_names():
         },
     )
 
-    # with options(eager_optimization=True):
-    #     t1 = t.select("bool_col", "int_col", "float_col")
-    #     assert t1.op() == Project(
-    #         parent=t,
-    #         values={
-    #             "bool_col": t.bool_col,
-    #             "int_col": t.int_col,
-    #             "float_col": t.float_col,
-    #         },
-    #     )
-    #     t2 = t1.select("bool_col", "int_col")
-    #     assert t2.op() == Project(
-    #         parent=t,
-    #         values={
-    #             "bool_col": t.bool_col,
-    #             "int_col": t.int_col,
-    #         },
-    #     )
-    #     t3 = t2.select("bool_col")
-    #     assert t3.op() == Project(
-    #         parent=t,
-    #         values={
-    #             "bool_col": t.bool_col,
-    #         },
-    #     )
+    t2_opt = t2.optimize()
+    assert t2_opt.op() == Project(
+        parent=t, values={"bool_col": t.bool_col, "int_col": t.int_col}
+    )
+
+    t3_opt = t3.optimize()
+    assert t3_opt.op() == Project(parent=t, values={"bool_col": t.bool_col})
 
 
 def test_subsequent_selections_field_dereferencing():
@@ -194,117 +175,129 @@ def test_subsequent_selections_field_dereferencing():
     )
 
     t2 = t1.select(t1.bool_col, t1.int_col)
-    t2_ = t1.select(t.bool_col, t.int_col)
-    expected = Project(
+    t2_opt = t2.optimize()
+    assert t1.select(t1.bool_col, t.int_col).equals(t2)
+    assert t1.select(t.bool_col, t.int_col).equals(t2)
+    assert t2.op() == Project(
         parent=t1,
         values={
             "bool_col": t1.bool_col,
             "int_col": t1.int_col,
         },
     )
-    assert t2.op() == expected
-    assert t2_.op() == expected
+    assert t2_opt.op() == Project(
+        parent=t,
+        values={
+            "bool_col": t.bool_col,
+            "int_col": t.int_col,
+        },
+    )
 
     t3 = t2.select(t2.bool_col)
-    t3_ = t2.select(t1.bool_col)
-    t3__ = t2.select(t.bool_col)
-    expected = Project(
+    t3_opt = t3.optimize()
+    assert t2.select(t1.bool_col).equals(t3)
+    assert t2.select(t.bool_col).equals(t3)
+    assert t3.op() == Project(
         parent=t2,
         values={
             "bool_col": t2.bool_col,
         },
     )
-    assert t3.op() == expected
-    assert t3_.op() == expected
-    assert t3__.op() == expected
+    assert t3_opt.op() == Project(parent=t, values={"bool_col": t.bool_col})
 
-    # with options(eager_optimization=True):
-    #     t1 = t.select(t.bool_col, t.int_col, t.float_col)
-    #     assert t1.op() == Project(
-    #         parent=t,
-    #         values={
-    #             "bool_col": t.bool_col,
-    #             "int_col": t.int_col,
-    #             "float_col": t.float_col,
-    #         },
-    #     )
+    u1 = t.select(t.bool_col, t.int_col, t.float_col)
+    assert u1.op() == Project(
+        parent=t,
+        values={
+            "bool_col": t.bool_col,
+            "int_col": t.int_col,
+            "float_col": t.float_col,
+        },
+    )
 
-    #     t2 = t1.select(t1.bool_col, t1.int_col)
-    #     t2_ = t1.select(t.bool_col, t.int_col)
-    #     expected = Project(
-    #         parent=t,
-    #         values={
-    #             "bool_col": t.bool_col,
-    #             "int_col": t.int_col,
-    #         },
-    #     )
-    #     assert t2.op() == expected
-    #     assert t2_.op() == expected
+    u2 = u1.select(u1.bool_col, u1.int_col, u1.float_col)
+    assert u1.select(t.bool_col, u1.int_col, u1.float_col).equals(u2)
+    assert u1.select(t.bool_col, t.int_col, t.float_col).equals(u2)
+    assert u2.op() == Project(
+        parent=u1,
+        values={
+            "bool_col": u1.bool_col,
+            "int_col": u1.int_col,
+            "float_col": u1.float_col,
+        },
+    )
 
-    #     t3 = t2.select(t2.bool_col)
-    #     print("-------------------------")
-    #     t3_ = t2.select(t1.bool_col)
-    #     print(t1.bool_col.op())
-    #     t3__ = t2.select(t.bool_col)
-    #     expected = Project(
-    #         parent=t,
-    #         values={
-    #             "bool_col": t.bool_col,
-    #         },
-    #     )
-    #     assert t3.op() == expected
-    #     assert t3_.op() == expected
-    #     assert t3__.op() == expected
+    u3 = u2.select(u2.bool_col, u2.int_col, u2.float_col)
+    assert u2.select(u2.bool_col, u1.int_col, u2.float_col).equals(u3)
+    assert u2.select(u2.bool_col, u1.int_col, t.float_col).equals(u3)
+    assert u3.op() == Project(
+        parent=u2,
+        values={
+            "bool_col": u2.bool_col,
+            "int_col": u2.int_col,
+            "float_col": u2.float_col,
+        },
+    )
 
-    # with options(eager_optimization=True):
-    #     expected = Project(
-    #         t, {"bool_col": t.bool_col, "int_col": t.int_col, "float_col": t.float_col}
-    #     )
-    #     t1 = t.select(t.bool_col, t.int_col, t.float_col)
-    #     t2 = t1.select(t.bool_col, t1.int_col, t1.float_col)
-    #     t2_ = t1.select(t1.bool_col, t1.int_col, t1.float_col)
-    #     assert t2.equals(t2_)
 
-    #     t3 = t2.select(t.bool_col, t1.int_col, t2.float_col)
-    #     t3_ = t2.select(t2.bool_col, t2.int_col, t2.float_col)
-    #     assert t3.equals(t3_)
+def test_subsequent_selections_value_dereferencing():
+    t1 = t.select(
+        bool_col=~t.bool_col, int_col=t.int_col + 1, float_col=t.float_col * 3
+    )
+    assert t1.op() == Project(
+        parent=t,
+        values={
+            "bool_col": ~t.bool_col,
+            "int_col": t.int_col + 1,
+            "float_col": t.float_col * 3,
+        },
+    )
 
-    #     assert t1.op() == expected
-    #     assert t2.op() == expected
-    #     assert t3.op() == expected
+    t2 = t1.select(t1.bool_col, t1.int_col, t1.float_col)
+    t2_opt = t2.optimize()
+    assert t2.op() == Project(
+        parent=t1,
+        values={
+            "bool_col": t1.bool_col,
+            "int_col": t1.int_col,
+            "float_col": t1.float_col,
+        },
+    )
+    assert t2_opt.op() == Project(
+        parent=t,
+        values={
+            "bool_col": ~t.bool_col,
+            "int_col": t.int_col + 1,
+            "float_col": t.float_col * 3,
+        },
+    )
 
-    #     t1 = t.select(
-    #         bool_col=~t.bool_col, int_col=t.int_col + 1, float_col=t.float_col * 3
-    #     )
-    #     expected = Project(
-    #         t,
-    #         {
-    #             "bool_col": ~t.bool_col,
-    #             "int_col": t.int_col + 1,
-    #             "float_col": t.float_col * 3,
-    #         },
-    #     )
-    #     assert t1.op() == expected
+    t3 = t2.select(
+        t2.bool_col,
+        t2.int_col,
+        float_col=t2.float_col * 2,
+        another_col=t1.float_col - 1,
+    )
 
-    #     t2 = t1.select(t1.bool_col, t1.int_col, t1.float_col)
-    #     assert t2.op() == expected
-
-    #     t3 = t2.select(
-    #         t2.bool_col,
-    #         t2.int_col,
-    #         float_col=t2.float_col * 2,
-    #         another_col=t1.float_col - 1,
-    #     )
-    #     expected = Project(
-    #         t,
-    #         {
-    #             "bool_col": ~t.bool_col,
-    #             "int_col": t.int_col + 1,
-    #             "float_col": (t.float_col * 3) * 2,
-    #             "another_col": (t.float_col * 3) - 1,
-    #         },
-    #     )
-    #     assert t3.op() == expected
+    t3_opt = t3.optimize()
+    assert t3.op() == Project(
+        parent=t2,
+        values={
+            "bool_col": t2.bool_col,
+            "int_col": t2.int_col,
+            "float_col": t2.float_col * 2,
+            "another_col": t2.float_col - 1,
+        },
+    )
+    assert t3_opt.op() == Project(
+        parent=t,
+        values={
+            "bool_col": ~t.bool_col,
+            "int_col": t.int_col + 1,
+            "float_col": (t.float_col * 3) * 2,
+            "another_col": (t.float_col * 3) - 1,
+        },
+    )
 
 
 def test_where():
@@ -339,12 +332,8 @@ def test_subsequent_filter():
     expected = Filter(f1, predicates=[f1.int_col > 0])
     assert f2.op() == expected
 
-    # with options(eager_optimization=True):
-    #     f1 = t.filter(t.bool_col)
-    #     f2 = f1.filter(t.int_col > 0)
-    #     f3 = f2.filter(f1.float_col > 0)
-    #     expected = Filter(t, predicates=[t.bool_col, t.int_col > 0])
-    #     assert f2.op() == expected
+    f2_opt = f2.optimize()
+    assert f2_opt.op() == Filter(t, predicates=[t.bool_col, t.int_col > 0])
 
 
 def test_projection_before_and_after_filter():
@@ -378,29 +367,16 @@ def test_projection_before_and_after_filter():
         },
     )
 
-    # with options(eager_optimization=True):
-    #     t1 = t.select(
-    #         bool_col=~t.bool_col, int_col=t.int_col + 1, float_col=t.float_col * 3
-    #     )
-    #     assert t1.op() == Project(
-    #         parent=t,
-    #         values={
-    #             "bool_col": ~t.bool_col,
-    #             "int_col": t.int_col + 1,
-    #             "float_col": t.float_col * 3,
-    #         },
-    #     )
+    t2_opt = t2.optimize()
+    assert t2_opt.op() == Filter(parent=t1, predicates=[t1.bool_col])
 
-    #     t2 = t1.filter(t1.bool_col)
-    #     assert t2.op() == Filter(parent=t1, predicates=[t1.bool_col])
+    t3_opt = t3.optimize()
+    assert t3_opt.op() == Filter(parent=t1, predicates=[t1.bool_col, t1.int_col > 0])
 
-    #     t3 = t2.filter(t2.int_col > 0)
-    #     assert t3.op() == Filter(parent=t1, predicates=[t1.bool_col, t1.int_col > 0])
-
-    #     t4 = t3.select(t3.bool_col, t3.int_col)
-    #     assert t4.op() == Project(
-    #         parent=t3, values={"bool_col": t3.bool_col, "int_col": t3.int_col}
-    #     )
+    t4_opt = t4.optimize()
+    assert t4_opt.op() == Project(
+        parent=t3_opt, values={"bool_col": t3_opt.bool_col, "int_col": t3_opt.int_col}
+    )
 
 
 def test_foreign_field_identification():
@@ -410,7 +386,7 @@ def test_foreign_field_identification():
     assert isinstance(node, ForeignField)
 
 
-# TODO(kszucs): add test for integrity checks
+# TODO(kszucs): add test for failing integrity checks
 def test_join():
     t1 = table("t1", {"a": "int64", "b": "string"})
     t2 = table("t2", {"c": "int64", "d": "string"})
