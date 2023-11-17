@@ -1172,8 +1172,12 @@ class Value(Expr):
                 "involving multiple base table references "
                 "to a projection"
             )
-        table = roots[0].to_expr()
-        return table.select(self)
+
+        if roots:
+            return roots[0].to_expr().select(self)
+
+        # no child table to select from
+        return ops.DummyTable(values=(self,)).to_expr()
 
     def to_pandas(self, **kwargs) -> pd.Series:
         """Convert a column expression to a pandas Series or scalar object.

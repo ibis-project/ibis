@@ -9,7 +9,6 @@ from typing import Union as UnionType
 from public import public
 
 import ibis.common.exceptions as com
-import ibis.expr.datashape as ds
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 from ibis import util
@@ -502,7 +501,7 @@ class Selection(Projection):
 @public
 class DummyTable(Relation):
     # TODO(kszucs): verify that it has at least one element: Length(at_least=1)
-    values: VarTuple[Value[dt.Any, ds.Scalar]]
+    values: VarTuple[Value[dt.Any]]
 
     @attribute
     def schema(self):

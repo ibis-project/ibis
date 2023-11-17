@@ -604,6 +604,27 @@ def _array_filter(t, op):
     )
 
 
+def _integer_range(t, op):
+    start = t.translate(op.start)
+    stop = t.translate(op.stop)
+    step = t.translate(op.step)
+    satype = t.get_sqla_type(op.dtype)
+    # `sequence` doesn't allow arguments that would produce an empty range, so
+    # check that first
+    n = sa.func.floor((stop - start) / sa.func.nullif(step, 0))
+    seq = sa.func.generate_series(start, stop, step, type_=satype)
+    return sa.case(
+        # TODO(cpcloud): revisit using array_remove when my brain is working
+        (
+            n > 0,
+            sa.func.array_remove(
+                sa.func.array(sa.select(seq).scalar_subquery()), stop, type_=satype
+            ),
+        ),
+        else_=sa.cast(pg.array([]), satype),
+    )
+
+
 operation_registry.update(
     {
         ops.Literal: _literal,
@@ -802,5 +823,6 @@ operation_registry.update(
         ops.ArrayPosition: fixed_arity(_array_position, 2),
         ops.ArrayMap: _array_map,
         ops.ArrayFilter: _array_filter,
+        ops.IntegerRange: _integer_range,
     }
 )

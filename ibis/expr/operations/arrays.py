@@ -202,3 +202,18 @@ class ArrayFlatten(Value):
     @property
     def dtype(self):
         return self.arg.dtype.value_type
+
+
+class Range(Value):
+    shape = rlz.shape_like("args")
+
+    @attribute
+    def dtype(self) -> dt.DataType:
+        return dt.Array(dt.highest_precedence((self.start.dtype, self.stop.dtype)))
+
+
+@public
+class IntegerRange(Range):
+    start: Value[dt.Integer]
+    stop: Value[dt.Integer]
+    step: Value[dt.Integer]

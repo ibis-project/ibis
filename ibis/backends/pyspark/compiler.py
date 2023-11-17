@@ -2080,3 +2080,20 @@ def compile_levenshtein(t, op, **kwargs):
 @compiles(ops.ArrayFlatten)
 def compile_flatten(t, op, **kwargs):
     return F.flatten(t.translate(op.arg, **kwargs))
+
+
+@compiles(ops.IntegerRange)
+def compile_integer_range(t, op, **kwargs):
+    start = t.translate(op.start, **kwargs)
+    stop = t.translate(op.stop, **kwargs)
+    step = t.translate(op.step, **kwargs)
+
+    denom = F.when(step == 0, F.lit(None)).otherwise(step)
+    n = F.floor((stop - start) / denom)
+    seq = F.sequence(start, stop, step)
+    seq = F.slice(
+        seq,
+        1,
+        F.size(seq) - F.when(F.element_at(seq, F.size(seq)) == stop, 1).otherwise(0),
+    )
+    return F.when(n > 0, seq).otherwise(F.array())
