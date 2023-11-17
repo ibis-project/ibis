@@ -136,12 +136,16 @@ class BaseSQLBackend(BaseBackend):
         ::: {.callout-tip}
         ## Consider using [`.sql`](#ibis.backends.base.sql.BaseSQLBackend.sql) instead
 
-        If your query is a SELECT statement, you should use the
+        If your query is a `SELECT` statement you can use the
         [backend `.sql`](#ibis.backends.base.sql.BaseSQLBackend.sql) method to avoid
-        having to release the cursor returned from this method manually.
+        having to manually release the cursor returned from this method.
 
-        ::: {.callout-warning collapse="true"}
-        ## The returned cursor object must be **manually released** if you use `raw_sql`.
+        ::: {.callout-warning}
+        ## The cursor returned from this method must be **manually released**
+
+        You **do not** need to call `.close()` on the cursor when running DDL
+        or DML statements like `CREATE`, `INSERT` or `DROP`, only when using
+        `SELECT` statements.
 
         To release a cursor, call the `close` method on the returned cursor
         object.
@@ -166,7 +170,7 @@ class BaseSQLBackend(BaseBackend):
         Parameters
         ----------
         query
-            DDL or DML statement
+            SQL query string
 
         Examples
         --------
