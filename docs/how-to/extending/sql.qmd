@@ -120,7 +120,7 @@ another.
 ## `Backend.sql`
 
 There's also the `Backend.sql` method, which can handle arbitrary `SELECT`
-statements as well and return's an Ibis table expression.
+statements as well and returns an Ibis table expression.
 
 The main difference with `Table.sql` is that `Backend.sql` **can only refer to
 tables that already exist in the database**, because the API is defined on
