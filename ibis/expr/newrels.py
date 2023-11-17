@@ -1,21 +1,21 @@
 from __future__ import annotations
 
+# need a parallel Expression and Operation class hierarchy to decompose ops.Selection
+# into proper relational algebra operations
+################################ OPERATIONS ################################
+import itertools
 from abc import abstractmethod
 from typing import Annotated, Any
-
-import toolz
 
 import ibis.expr.datashape as ds
 import ibis.expr.datatypes as dt
 import ibis.expr.types as ir
 from ibis.common.annotations import attribute
-from ibis.common.patterns import Eq
-from ibis.common.collections import FrozenDict  # noqa: TCH001
+from ibis.common.collections import FrozenDict
 from ibis.common.deferred import Deferred, Item, deferred, var
 from ibis.common.exceptions import IntegrityError
 from ibis.common.patterns import Check, In, InstanceOf, _, pattern, replace
 from ibis.common.typing import Coercible, VarTuple
-from ibis.config import options
 from ibis.expr.operations import Alias, Column, Node, Scalar, SortKey, Value
 from ibis.expr.schema import Schema
 from ibis.expr.types import Expr, literal
@@ -23,18 +23,15 @@ from ibis.expr.types import Value as ValueExpr
 from ibis.selectors import Selector
 from ibis.util import Namespace
 
-# need a parallel Expression and Operation class hierarchy to decompose ops.Selection
-# into proper relational algebra operations
-
-
-################################ OPERATIONS ################################
-
-
 p = Namespace(pattern, module=__name__)
 d = Namespace(deferred, module=__name__)
 
 
 class Relation(Node, Coercible):
+    def __init_subclass__(cls, **kwargs):
+        super().__init_subclass__(**kwargs)
+        cls._counter = itertools.count()
+
     @classmethod
     def __coerce__(cls, value):
         if isinstance(value, Relation):
@@ -43,6 +40,12 @@ class Relation(Node, Coercible):
             return value.op()
         else:
             raise TypeError(f"Cannot coerce {value!r} to a Relation")
+
+    @attribute
+    def code(self):
+        char = self.__class__.__name__[0]
+        id = next(self._counter)
+        return f"{char}{id}"
 
     @property
     @abstractmethod
@@ -65,21 +68,12 @@ class Field(Value):
 
     shape = ds.columnar
 
+    def __repr__(self):
+        return f"{self.rel.code}.{self.name}"
+
     @attribute
     def dtype(self):
         return self.rel.schema[self.name]
-
-    # TODO(kszucs): move this method to the dereferencer function
-    def peel(self):
-        this = self
-        while (
-            isinstance(this, Field)
-            and not isinstance(this.rel, UnboundTable)
-            # and isinstance(this.rel, Project)
-            and this.name in this.rel.fields
-        ):
-            this = this.rel.fields[this.name]
-        return this
 
 
 class ForeignField(Value):
@@ -156,7 +150,7 @@ class Sort(Relation):
 
     @attribute
     def fields(self):
-        return self.parent.fields
+        return FrozenDict({k: Field(self.parent, k) for k in self.parent.schema})
 
     @attribute
     def schema(self):
@@ -174,7 +168,7 @@ class Filter(Relation):
 
     @attribute
     def fields(self):
-        return self.parent.fields
+        return FrozenDict({k: Field(self.parent, k) for k in self.parent.schema})
 
     @attribute
     def schema(self):
@@ -188,7 +182,7 @@ class Aggregate(Relation):
 
     @attribute
     def fields(self):
-        return {**self.groups, **self.metrics}
+        return FrozenDict({**self.groups, **self.metrics})
 
     @attribute
     def schema(self):
@@ -202,10 +196,11 @@ class Aggregate(Relation):
 class UnboundTable(Relation):
     name: str
     schema: Schema
+    fields = FrozenDict()
 
-    @attribute
-    def fields(self):
-        return {k: Field(self, k) for k in self.schema}
+    # @attribute
+    # def fields(self):
+    #     return {k: Field(self, k) for k in self.schema}
 
 
 # class Subquery(Relation):
@@ -234,33 +229,24 @@ class TableExpr(Expr):
         values = bind(self, (args, kwargs))
         values = unwrap_aliases(values)
         values = dereference_values(self.op(), values)
-
         # TODO(kszucs): windowization of reductions should happen here
         # 1. if a reduction if originating from self it should be turned into a window function
         # 2. if a scalar value is originating from a foreign table it should be turned into a scalar subquery
         node = Project(self, values)
-        if options.eager_optimization:
-            node = node.replace(subsequent_projects | complete_reprojection)
-
         return node.to_expr()
 
     def filter(self, *predicates):
         preds = bind(self, predicates)
         preds = unwrap_aliases(preds)
         preds = dereference_values(self.op(), preds)
-
         # TODO(kszucs): add predicate flattening
         node = Filter(self, preds.values())
-        if options.eager_optimization:
-            node = node.replace(subsequent_filters)
-
         return node.to_expr()
 
     def order_by(self, *keys):
         keys = bind(self, keys)
         keys = unwrap_aliases(keys).values()
         node = Sort(self, keys)
-        # node = node.replace(subsequent_sorts)
         return node.to_expr()
 
     def join(self, right, predicates, how="inner"):
@@ -342,6 +328,10 @@ class JoinExpr(Expr):
         return next(bind(self.finish(), name))
 
 
+def table(name, schema):
+    return UnboundTable(name, schema).to_expr()
+
+
 # TODO(kszucs): cover it with tests
 def bind(table: TableExpr, value: Any) -> ir.Value:
     if isinstance(value, ValueExpr):
@@ -381,25 +371,24 @@ def unwrap_aliases(values):
 
 @replace(p.Field)
 def lookup_peeled_field(_, parent, mapping):
-    name = mapping.get(_.peel())
+    name = mapping.get(_)
     if name is not None:
         return Field(parent, name)
     else:
-        print((_.rel, _.name))
-        # TODO(kszucs): test that passing a rewritten foreign field back to its relations
-        # TODO(kszucs): need to allow only scalar values based on foreign fields
         return ForeignField(_.rel, _.name)
-        return _
+
+
+def dereference_mapping(parent):
+    result = {Field(parent, k): k for k in parent.schema}
+    for k, v in parent.fields.items():
+        while isinstance(v, Field):
+            result[v] = k
+            v = v.rel.fields.get(v.name)
+    return result
 
 
 def dereference_values(parent, values):
-    mapping = {}
-    for k, v in parent.fields.items():
-        if isinstance(v, Field):
-            mapping[v.peel()] = k
-        else:
-            mapping[v] = k
-
+    mapping = dereference_mapping(parent)
     context = {"parent": parent, "mapping": mapping}
     return {
         k: v.replace(lookup_peeled_field, context=context, filter=Value)

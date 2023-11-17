@@ -179,7 +179,6 @@ class Options(Config):
     impala: Optional[Config] = None
     pandas: Optional[Config] = None
     pyspark: Optional[Config] = None
-    eager_optimization: bool = True
 
 
 def _default_backend() -> Any:
