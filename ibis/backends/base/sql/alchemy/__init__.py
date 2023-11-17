@@ -589,7 +589,59 @@ class BaseAlchemyBackend(BaseSQLBackend):
                 )
         return table
 
-    def raw_sql(self, query):
+    def raw_sql(self, query: str | sa.sql.ClauseElement):
+        """Execute a query and return the cursor used for execution.
+
+        ::: {.callout-tip}
+        ## Consider using [`.sql`](#ibis.backends.base.sql.BaseSQLBackend.sql) instead
+
+        If your query is a `SELECT` statement you can use the
+        [backend `.sql`](#ibis.backends.base.sql.BaseSQLBackend.sql) method to avoid
+        having to manually release the cursor returned from this method.
+
+        ::: {.callout-warning}
+        ## The cursor returned from this method must be **manually released**
+
+        You **do not** need to call `.close()` on the cursor when running DDL
+        or DML statements like `CREATE`, `INSERT` or `DROP`, only when using
+        `SELECT` statements.
+
+        To release a cursor, call the `close` method on the returned cursor
+        object.
+
+        You can close the cursor by explicitly calling its `close` method:
+
+        ```python
+        cursor = con.raw_sql("SELECT ...")
+        cursor.close()
+        ```
+
+        Or you can use a context manager:
+
+        ```python
+        with con.raw_sql("SELECT ...") as cursor:
+            ...
+        ```
+        :::
+
+        :::
+
+        Parameters
+        ----------
+        query
+            SQL query or SQLAlchemy expression to execute
+
+        Examples
+        --------
+        >>> con = ibis.connect("duckdb://")
+        >>> with con.raw_sql("SELECT 1") as cursor:
+        ...     result = cursor.fetchall()
+        ...
+        >>> result
+        [(1,)]
+        >>> cursor.closed
+        True
+        """
         return self.con.connect().execute(
             sa.text(query) if isinstance(query, str) else query
         )
