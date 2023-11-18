@@ -136,6 +136,22 @@ def project(op, parent, values):
     return out
 
 
+@translate.register(ops.Filter)
+def filter_(op, parent, predicates):
+    out = f"{parent}"
+    if predicates:
+        out = f"{out}.filter({_try_unwrap(predicates)})"
+    return out
+
+@translate.register(ops.Sort)
+def sort(op, parent, keys):
+    out = f"{parent}"
+    if keys:
+        out = f"{out}.filter({_try_unwrap(keys)})"
+    return out
+
+
+
 @translate.register(ops.Aggregate)
 def aggregation(op, parent, groups, metrics):
     out = f"{parent}"
@@ -145,11 +161,14 @@ def aggregation(op, parent, groups, metrics):
         out = f"{out}.group_by({_try_unwrap(metrics)})"
     return out
 
+@translate.register(ops.JoinLink)
+def join_link(op, table, predicates, how):
+    return f".join_{how}({table}, {_try_unwrap(predicates)})"
 
 @translate.register(ops.Join)
-def join(op, left, right, predicates):
-    method = _get_method_name(op)
-    return f"{left}.{method}({right}, {_try_unwrap(predicates)})"
+def join(op, first, rest, fields):
+    calls = "".join(rest)
+    return f"{first}{calls}"
 
 
 @translate.register(ops.Set)
@@ -162,16 +181,17 @@ def union(op, left, right, distinct):
 
 
 @translate.register(ops.Limit)
-def limit(op, table, n, offset):
+def limit(op, parent, n, offset):
     if offset:
         return f"{table}.limit({n}, {offset})"
     else:
         return f"{table}.limit({n})"
 
 
-@translate.register(ops.TableColumn)
-def table_column(op, table, name):
-    return f"{table}.{name}"
+@translate.register(ops.Field)
+@translate.register(ops.ForeignField)
+def table_column(op, rel, name):
+    return f"{rel}.{name}"
 
 
 @translate.register(ops.SortKey)
@@ -298,7 +318,7 @@ class CodeContext:
 
     def variable_for(self, node):
         klass = type(node)
-        if isinstance(node, ops.Relation) and isinstance(node, ops.Named):
+        if isinstance(node, ops.Relation) and hasattr(node, "name"):
             name = node.name
         elif klass in self.shorthands:
             name = self.shorthands[klass]

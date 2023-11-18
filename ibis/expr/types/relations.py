@@ -4372,8 +4372,8 @@ class JoinExpr(TableExpr):
 
     # TODO(kszucs): figure out a solution to automatically wrap all the
     # TableExpr methods including the docstrings and the signature
-    def where(self, *predicates):
-        return self.finish().where(*predicates)
+    def filter(self, *predicates):
+        return self.finish().filter(*predicates)
 
     def order_by(self, *keys):
         return self.finish().order_by(*keys)
@@ -4393,6 +4393,7 @@ class JoinExpr(TableExpr):
         return fields
 
     def finish(self, fields=None):
+        print(f"FINISH {self}")
         if fields is None:
             fields = self.guess()
         return self.op().copy(fields=fields).to_expr()
