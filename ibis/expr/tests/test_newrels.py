@@ -1,18 +1,16 @@
 from __future__ import annotations
 
-import pytest
-
 import ibis.expr.datashape as ds
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 from ibis import _
-from ibis.common.exceptions import IntegrityError
 from ibis.expr.newrels import (
     Aggregate,
     Field,
     Filter,
     ForeignField,
     Join,
+    JoinExpr,
     JoinProject,
     Project,
     TableExpr,
@@ -453,8 +451,18 @@ def test_chained_join_referencing_intermediate_table():
     c = table("c", {"e": "int64", "f": "string"})
 
     ab = a.join(b, [a.a == b.c])
-    with pytest.raises(IntegrityError):
-        ab.join(c, [ab.a == c.e])
+    assert isinstance(ab, JoinExpr)
+
+    assert ab.a.op() == Field(a, "a")
+    abc = ab.join(c, [ab.a == c.e])
+    assert isinstance(abc, JoinExpr)
+
+    result = abc.finish()
+    assert result.op() == JoinProject(
+        first=a,
+        rest=[Join("inner", b, [a.a == b.c]), Join("inner", c, [a.a == c.e])],
+        fields={"a": a.a, "b": a.b, "c": b.c, "d": b.d, "e": c.e, "f": c.f},
+    )
 
 
 def test_aggregate():

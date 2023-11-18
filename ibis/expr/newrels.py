@@ -334,7 +334,13 @@ class JoinExpr(Expr):
         return self.op().copy(fields=fields).to_expr()
 
     def __getattr__(self, name):
-        return next(bind(self.finish(), name))
+        # successfully built the JoinProject
+        table = self.finish()
+        # successfully referenced the field
+        field = next(bind(table, name)).op()
+        # dereference the field to one of the join's parents
+        field = table.op().fields[field.name]
+        return field.to_expr()
 
 
 def table(name, schema):
