@@ -193,7 +193,12 @@ def _unnest(t, op):
     # HACK: https://community.snowflake.com/s/question/0D50Z000086MVhnSAG/has-anyone-found-a-way-to-unnest-an-array-without-loosing-the-null-values
     sep = util.guid()
     col = sa.func.nullif(
-        sa.func.split_to_table(sa.func.array_to_string(arg, sep), sep)
+        sa.func.split_to_table(
+            sa.func.array_to_string(
+                sa.func.nullif(arg, sa.func.array_construct()), sep
+            ),
+            sep,
+        )
         .table_valued("value")  # seq, index, value is supported but we only need value
         .lateral()
         .c["value"],
