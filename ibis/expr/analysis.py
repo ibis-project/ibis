@@ -1,13 +1,11 @@
 from __future__ import annotations
 
-from collections import defaultdict
 from typing import TYPE_CHECKING
 
 import toolz
 
 import ibis.common.graph as g
 import ibis.expr.operations as ops
-import ibis.expr.operations.relations as rels
 import ibis.expr.types as ir
 from ibis import util
 from ibis.common.deferred import _, deferred, var
@@ -447,20 +445,21 @@ def find_predicates(node, flatten=True):
 
 
 def find_subqueries(node: ops.Node, min_dependents=1) -> tuple[ops.Node, ...]:
-    subquery_dependents = defaultdict(set)
-    for n in filter(None, util.promote_list(node)):
-        dependents = g.Graph.from_dfs(n).invert()
-        for u, vs in dependents.toposort().items():
-            # count the number of table-node dependents on the current node
-            # but only if the current node is a selection or aggregation
-            if isinstance(u, (rels.Projection, rels.Aggregation, rels.Limit)):
-                subquery_dependents[u].update(vs)
+    raise NotImplementedError
+    # subquery_dependents = defaultdict(set)
+    # for n in filter(None, util.promote_list(node)):
+    #     dependents = g.Graph.from_dfs(n).invert()
+    #     for u, vs in dependents.toposort().items():
+    #         # count the number of table-node dependents on the current node
+    #         # but only if the current node is a selection or aggregation
+    #         if isinstance(u, (rels.Projection, rels.Aggregation, rels.Limit)):
+    #             subquery_dependents[u].update(vs)
 
-    return tuple(
-        node
-        for node, dependents in reversed(subquery_dependents.items())
-        if len(dependents) >= min_dependents
-    )
+    # return tuple(
+    #     node
+    #     for node, dependents in reversed(subquery_dependents.items())
+    #     if len(dependents) >= min_dependents
+    # )
 
 
 def find_toplevel_unnest_children(nodes: Iterable[ops.Node]) -> Iterator[ops.Table]:

@@ -31,11 +31,11 @@ _method_overrides = {
     ops.ExtractYear: "year",
     ops.Intersection: "intersect",
     ops.IsNull: "isnull",
-    ops.LeftAntiJoin: "anti_join",
-    ops.LeftSemiJoin: "semi_join",
+    # ops.LeftAntiJoin: "anti_join",
+    # ops.LeftSemiJoin: "semi_join",
     ops.Lowercase: "lower",
     ops.RegexSearch: "re_search",
-    ops.SelfReference: "view",
+    # ops.SelfReference: "view",
     ops.StartsWith: "startswith",
     ops.StringContains: "contains",
     ops.StringSQLILike: "ilike",
@@ -87,7 +87,7 @@ def translate(op, *args, **kwargs):
 
 
 @translate.register(ops.Value)
-@translate.register(ops.TableNode)
+# @translate.register(ops.TableNode)
 def value(op, *args, **kwargs):
     method = _get_method_name(op)
     kwargs = [(k, v) for k, v in kwargs.items() if v is not None]
@@ -128,31 +128,21 @@ def _try_unwrap(stmt):
         return f"[{', '.join(stmt)}]"
 
 
-@translate.register(ops.Selection)
-def selection(op, table, selections, predicates, sort_keys):
-    out = f"{table}"
-    if selections:
-        out = f"{out}.select({_try_unwrap(selections)})"
-    if predicates:
-        out = f"{out}.filter({_try_unwrap(predicates)})"
-    if sort_keys:
-        out = f"{out}.order_by({_try_unwrap(sort_keys)})"
+@translate.register(ops.Project)
+def project(op, parent, values):
+    out = f"{parent}"
+    if values:
+        out = f"{out}.select({_try_unwrap(values)})"
     return out
 
 
-@translate.register(ops.Aggregation)
-def aggregation(op, table, by, metrics, predicates, having, sort_keys):
-    out = f"{table}"
-    if predicates:
-        out = f"{out}.filter({_try_unwrap(predicates)})"
-    if by:
-        out = f"{out}.group_by({_try_unwrap(by)})"
-    if having:
-        out = f"{out}.having({_try_unwrap(having)})"
+@translate.register(ops.Aggregate)
+def aggregation(op, parent, groups, metrics):
+    out = f"{parent}"
+    if groups:
+        out = f"{out}.filter({_try_unwrap(groups)})"
     if metrics:
-        out = f"{out}.aggregate({_try_unwrap(metrics)})"
-    if sort_keys:
-        out = f"{out}.order_by({_try_unwrap(sort_keys)})"
+        out = f"{out}.group_by({_try_unwrap(metrics)})"
     return out
 
 
@@ -162,7 +152,7 @@ def join(op, left, right, predicates):
     return f"{left}.{method}({right}, {_try_unwrap(predicates)})"
 
 
-@translate.register(ops.SetOp)
+@translate.register(ops.Set)
 def union(op, left, right, distinct):
     method = _get_method_name(op)
     if distinct:
@@ -292,14 +282,14 @@ def isin(op, value, options):
 
 
 class CodeContext:
-    always_assign = (ops.ScalarParameter, ops.UnboundTable, ops.Aggregation)
+    always_assign = (ops.ScalarParameter, ops.UnboundTable, ops.Aggregate)
     always_ignore = (ops.TableColumn, dt.Primitive, dt.Variadic, dt.Temporal)
     shorthands = {
-        ops.Aggregation: "agg",
+        ops.Aggregate: "agg",
         ops.Literal: "lit",
         ops.ScalarParameter: "param",
-        ops.Selection: "proj",
-        ops.TableNode: "t",
+        ops.Project: "proj",
+        ops.Relation: "t",
     }
 
     def __init__(self, assign_result_to="result"):
@@ -308,7 +298,7 @@ class CodeContext:
 
     def variable_for(self, node):
         klass = type(node)
-        if isinstance(node, ops.TableNode) and isinstance(node, ops.Named):
+        if isinstance(node, ops.Relation) and isinstance(node, ops.Named):
             name = node.name
         elif klass in self.shorthands:
             name = self.shorthands[klass]

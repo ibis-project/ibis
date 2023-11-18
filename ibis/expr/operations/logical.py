@@ -9,7 +9,7 @@ from ibis.common.annotations import ValidationError, attribute
 from ibis.common.exceptions import IbisTypeError
 from ibis.common.typing import VarTuple  # noqa: TCH001
 from ibis.expr.operations.core import Binary, Column, Unary, Value
-from ibis.expr.operations.relations import Relation  # noqa: TCH001
+from ibis.expr.operations.newrels import Relation  # noqa: TCH001
 
 
 @public

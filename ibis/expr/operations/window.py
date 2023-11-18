@@ -15,9 +15,9 @@ from ibis.common.typing import VarTuple  # noqa: TCH001
 from ibis.expr.operations.analytic import Analytic  # noqa: TCH001
 from ibis.expr.operations.core import Column, Value
 from ibis.expr.operations.generic import Literal
+from ibis.expr.operations.newrels import Relation  # noqa: TCH001
 from ibis.expr.operations.numeric import Negate
 from ibis.expr.operations.reductions import Reduction  # noqa: TCH001
-from ibis.expr.operations.relations import Relation  # noqa: TCH001
 from ibis.expr.operations.sortkeys import SortKey  # noqa: TCH001
 
 T = TypeVar("T", bound=dt.Numeric | dt.Interval, covariant=True)

@@ -6,7 +6,7 @@ from public import public
 
 import ibis.expr.datatypes as dt
 from ibis.expr.operations.core import Column, Scalar  # noqa: TCH001
-from ibis.expr.operations.relations import Relation
+from ibis.expr.operations.newrels import Relation
 from ibis.expr.schema import Schema
 
 

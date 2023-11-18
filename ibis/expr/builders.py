@@ -14,8 +14,8 @@ from ibis.common.deferred import Deferred, Resolver, deferrable
 from ibis.common.exceptions import IbisInputError
 from ibis.common.grounds import Concrete
 from ibis.common.typing import VarTuple  # noqa: TCH001
-from ibis.expr.operations.relations import Relation  # noqa: TCH001
-from ibis.expr.types.relations import bind_expr
+from ibis.expr.operations.newrels import Relation  # noqa: TCH001
+from ibis.expr.types.relations import bind
 
 if TYPE_CHECKING:
     from typing_extensions import Self
@@ -215,8 +215,8 @@ class WindowBuilder(Builder):
 
     @annotated
     def bind(self, table: Relation):
-        groupings = bind_expr(table.to_expr(), self.groupings)
-        orderings = bind_expr(table.to_expr(), self.orderings)
+        groupings = bind(table.to_expr(), self.groupings)
+        orderings = bind(table.to_expr(), self.orderings)
         if self.how == "rows":
             return ops.RowsWindowFrame(
                 table=table,

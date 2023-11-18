@@ -7,20 +7,19 @@ import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 from ibis import _
 from ibis.common.exceptions import IntegrityError
-from ibis.expr.newrels import (
+from ibis.expr.operations import (
     Aggregate,
     Field,
     Filter,
     ForeignField,
     Join,
-    JoinExpr,
     JoinLink,
     Project,
-    TableExpr,
     UnboundTable,
     table,
 )
 from ibis.expr.schema import Schema
+import ibis.expr.types as ir
 
 # TODO(kszucs):
 # def test_relation_coercion()
@@ -48,7 +47,7 @@ def test_field():
 
 def test_unbound_table():
     node = t.op()
-    assert isinstance(t, TableExpr)
+    assert isinstance(t, ir.TableExpr)
     assert isinstance(node, UnboundTable)
     assert node.name == "t"
     assert node.schema == Schema(
@@ -454,11 +453,11 @@ def test_chained_join_referencing_intermediate_table():
     c = table("c", {"e": "int64", "f": "string"})
 
     ab = a.join(b, [a.a == b.c])
-    assert isinstance(ab, JoinExpr)
+    assert isinstance(ab, ir.JoinExpr)
 
     assert ab.a.op() == Field(a, "a")
     abc = ab.join(c, [ab.a == c.e])
-    assert isinstance(abc, JoinExpr)
+    assert isinstance(abc, ir.JoinExpr)
 
     result = abc.finish()
     assert result.op() == Join(
@@ -469,7 +468,7 @@ def test_chained_join_referencing_intermediate_table():
 
 
 def test_aggregate():
-    agg = t.aggregate(groups=[t.bool_col], metrics=[t.int_col.sum()])
+    agg = t.aggregate(by=[t.bool_col], metrics=[t.int_col.sum()])
     expected = Aggregate(
         parent=t,
         groups={

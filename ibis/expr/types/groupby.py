@@ -27,7 +27,7 @@ import ibis.expr.types as ir
 from ibis import util
 from ibis.common.deferred import Deferred
 from ibis.selectors import Selector
-from ibis.expr.types.relations import bind_expr
+
 import ibis.common.exceptions as com
 from public import public
 
@@ -105,7 +105,8 @@ class GroupedTable:
 
     def aggregate(self, metrics=None, **kwds) -> ir.Table:
         """Compute aggregates over a group by."""
-        return self.table.aggregate(metrics, by=self.by, having=self._having, **kwds)
+        # XXX: pass having=self._having to the table aggregate method
+        return self.table.aggregate(metrics, by=self.by, **kwds)
 
     agg = aggregate
 
