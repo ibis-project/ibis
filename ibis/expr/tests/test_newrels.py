@@ -4,6 +4,7 @@ import pytest
 
 import ibis.expr.datashape as ds
 import ibis.expr.datatypes as dt
+import ibis.expr.operations as ops
 from ibis import _
 from ibis.common.exceptions import IntegrityError
 from ibis.expr.newrels import (
@@ -470,6 +471,22 @@ def test_aggregate():
     assert agg.op() == expected
 
 
+def test_select_with_uncorrelated_scalar_subquery():
+    t1 = table("t1", {"a": "int64", "b": "string"})
+    t2 = table("t2", {"c": "int64", "d": "string"})
+
+    # Create a subquery
+    t2_filt = t2.filter(t2.d == "value")
+
+    # Use the subquery in an IN condition
+    sub = t1.select(t1.a, summary=t2_filt.c.sum())
+
+    assert sub.op() == Project(
+        parent=t1,
+        values={"a": t1.a, "summary": ops.Sum(ForeignField(rel=t2_filt, name="c"))},
+    )
+
+
 # def test_isin_subquery():
 #     import ibis
 
@@ -482,25 +499,6 @@ def test_aggregate():
 
 #     # Use the subquery in an IN condition
 #     expr = t1.filter(t1.a.isin(t2_filt.c))
-
-#     print(expr)
-
-
-# def test_select_with_uncorrelated_scalar_subquery():
-#     import ibis
-
-#     # Define your tables
-#     t1 = UnboundTable("t1", {"a": "int64", "b": "string"}).to_expr()
-#     t2 = UnboundTable("t2", {"c": "int64", "d": "string"}).to_expr()
-
-#     # Create a subquery
-#     t2_filt = t2.filter(t2.d == "value")
-
-#     print(t2_filt.c)
-#     return
-
-#     # Use the subquery in an IN condition
-#     expr = t1.select(t1.a, t2_filt.c.sum())
 
 #     print(expr)
 

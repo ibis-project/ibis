@@ -86,6 +86,7 @@ def _check_integrity(values, allowed_parents):
             raise IntegrityError(
                 f"Cannot add {disallowed!r} to projection, they belong to another relation"
             )
+        # egyebkent csak scalar lehet (e.g. scalar subquery or a value based on literals)
 
 
 class Project(Relation):
@@ -94,6 +95,10 @@ class Project(Relation):
 
     def __init__(self, parent, values):
         _check_integrity(values.values(), {parent})
+        # for v in values.values():
+        #     if v.find(ForeignField):
+        #         print("found foreign field")
+        # TODO(kszucs): raise if values depending on foreign fields are not scalar shaped
         super().__init__(parent=parent, values=values)
 
     @attribute
