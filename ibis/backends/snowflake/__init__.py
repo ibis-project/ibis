@@ -17,6 +17,7 @@ import textwrap
 import warnings
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
+from urllib.request import urlretrieve
 
 import pyarrow as pa
 import pyarrow_hotfix  # noqa: F401
@@ -777,10 +778,17 @@ $$"""
             )
             con.exec_driver_sql(create_infer_fmt)
 
-            # copy the local file to the stage
-            con.exec_driver_sql(
-                f"PUT 'file://{Path(path).absolute()}' @{stage} PARALLEL = {threads:d}"
-            )
+            if path.startswith("https://"):
+                with tempfile.NamedTemporaryFile() as tmp:
+                    urlretrieve(path, filename=tmp.name)
+                    tmp.flush()
+                    con.exec_driver_sql(
+                        f"PUT 'file://{tmp.name}' @{stage} PARALLEL = {threads:d} AUTO_COMPRESS = TRUE"
+                    )
+            else:
+                con.exec_driver_sql(
+                    f"PUT 'file://{Path(path).absolute()}' @{stage} PARALLEL = {threads:d} AUTO_COMPRESS = TRUE"
+                )
 
             # handle setting up the schema in python because snowflake is
             # broken for csv globs: it cannot parse the result of the following
