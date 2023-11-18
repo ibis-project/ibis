@@ -197,6 +197,22 @@ def test_read_csv_options(con, tmp_path):
     assert t.schema() == ibis.schema(dict(a="int64", b="int64"))
 
 
+def test_read_csv_https(con):
+    t = con.read_csv(
+        "https://storage.googleapis.com/ibis-tutorial-data/wowah_data/locations.csv",
+        field_optionally_enclosed_by='"',
+    )
+    assert t.schema() == ibis.schema(
+        {
+            "Map_ID": "int64",
+            "Location_Type": "string",
+            "Location_Name": "string",
+            "Game_Version": "string",
+        }
+    )
+    assert t.count().execute() == 151
+
+
 @pytest.fixture(scope="module")
 def json_data():
     return [
