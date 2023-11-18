@@ -1,9 +1,12 @@
 from __future__ import annotations
 
+import pytest
+
 import ibis.expr.datashape as ds
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 from ibis import _
+from ibis.common.exceptions import IntegrityError
 from ibis.expr.newrels import (
     Aggregate,
     Field,
@@ -380,8 +383,8 @@ def test_projection_before_and_after_filter():
 
 def test_foreign_field_identification():
     t1 = t.filter(t.bool_col)
-    t2 = t.select(t1.int_col)
-    node = t2.op().fields["int_col"]
+    t2 = t.select(summary=t1.int_col.sum())
+    node = t2.op().fields["summary"].arg
     assert isinstance(node, ForeignField)
 
 
@@ -485,6 +488,10 @@ def test_select_with_uncorrelated_scalar_subquery():
 
     # Create a subquery
     t2_filt = t2.filter(t2.d == "value")
+
+    # Ensure that the integrity checks require scalar shaped foreign values
+    with pytest.raises(IntegrityError):
+        t1.select(t2_filt.c)
 
     # Use the subquery in an IN condition
     sub = t1.select(t1.a, summary=t2_filt.c.sum())

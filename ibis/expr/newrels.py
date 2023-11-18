@@ -107,6 +107,14 @@ class Project(Relation):
         # this way we can ensure that the foreign fields are not referencing relations
         # foreign to the currently constructed one, but there are just references
         # back and forth
+
+        # TODO(kszucs): move this to the integrity checker?
+        for v in values.values():
+            if v.find(ForeignField) and not v.shape.is_scalar():
+                raise IntegrityError(
+                    f"Cannot add foreign value {v!r} to projection, it is not scalar shaped"
+                )
+
         super().__init__(parent=parent, values=values)
 
     @attribute
@@ -257,7 +265,7 @@ class TableExpr(Expr):
     def join(self, right, predicates, how="inner"):
         # construct an empty join chain and wrap it with a JoinExpr
         expr = JoinExpr(Join(self, (), {}))
-        # add the first join to the join chain and return the result
+        # add the first join link to the join chain and return the result
         return expr.join(right, predicates, how)
 
     def aggregate(self, groups, metrics):
