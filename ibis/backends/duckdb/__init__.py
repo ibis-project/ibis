@@ -98,24 +98,6 @@ class Backend(AlchemyCrossSchemaBackend, CanCreateSchema):
     name = "duckdb"
     compiler = DuckDBSQLCompiler
     supports_create_or_replace = True
-    reserved_csv_copy_args = [
-        "COMPRESSION",
-        "FORCE_QUOTE",
-        "DATEFORMAT",
-        "DELIM",
-        "SEP",
-        "ESCAPE",
-        "HEADER",
-        "NULLSTR",
-        "QUOTE",
-        "TIMESTAMP_FORMAT"
-    ]
-    reserved_parquet_copy_args = [
-        "COMPRESSION",
-        "ROW_GROUP_SIZE",
-        "ROW_GROUP_SIZE_BYTES",
-        "FIELD_IDS",
-    ]
 
     @property
     def settings(self) -> _Settings:
@@ -1107,7 +1089,7 @@ WHERE catalog_name = :database"""
         """
         self._run_pre_execute_hooks(expr)
         query = self._to_sql(expr, params=params)
-        args = ["FORMAT 'parquet'", *(f"{k.upper()} {v!r}" for k, v in kwargs.items() if k.upper() in self.reserved_parquet_copy_args)]
+        args = ["FORMAT 'parquet'", *(f"{k.upper()} {v!r}" for k, v in kwargs.items())]
         copy_cmd = f"COPY ({query}) TO {str(path)!r} ({', '.join(args)})"
         with self.begin() as con:
             con.exec_driver_sql(copy_cmd)
@@ -1145,7 +1127,7 @@ WHERE catalog_name = :database"""
         args = [
             "FORMAT 'csv'",
             f"HEADER {int(header)}",
-            *(f"{k.upper()} {v!r}" for k, v in kwargs.items() if k.upper() in self.reserved_csv_copy_args),
+            *(f"{k.upper()} {v!r}" for k, v in kwargs.items()),
         ]
         copy_cmd = f"COPY ({query}) TO {str(path)!r} ({', '.join(args)})"
         with self.begin() as con:
