@@ -2,7 +2,10 @@ from __future__ import annotations
 
 import concurrent.futures
 import os
+import tempfile
+from pathlib import Path
 from typing import TYPE_CHECKING, Any
+from urllib.request import urlretrieve
 
 import pyarrow.parquet as pq
 import pyarrow_hotfix  # noqa: F401
@@ -17,8 +20,6 @@ from ibis.backends.tests.base import BackendTest
 from ibis.formats.pyarrow import PyArrowSchema
 
 if TYPE_CHECKING:
-    from pathlib import Path
-
     from ibis.backends.base import BaseBackend
 
 
@@ -115,8 +116,21 @@ USE DATABASE ibis_testing;
 CREATE SCHEMA IF NOT EXISTS {dbschema};
 USE SCHEMA {dbschema};
 CREATE TEMP STAGE ibis_testing;
+CREATE STAGE IF NOT EXISTS models;
 {self.script_dir.joinpath("snowflake.sql").read_text()}"""
             )
+
+        with tempfile.TemporaryDirectory() as d:
+            path, _ = urlretrieve(
+                "https://storage.googleapis.com/ibis-testing-data/model.joblib",
+                os.path.join(d, "model.joblib"),
+            )
+
+            assert os.path.exists(path)
+            assert os.path.getsize(path) > 0
+
+            with con.begin() as c:
+                c.exec_driver_sql(f"PUT {Path(path).as_uri()} @MODELS")
 
         with con.begin() as c:
             # not much we can do to make this faster, but running these in
