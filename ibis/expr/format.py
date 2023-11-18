@@ -320,14 +320,14 @@ def _join(op, left, right, predicates, **kwargs):
     return f"{top}\n{fields}" if fields else top
 
 
-@fmt.register(nr.Join)
+@fmt.register(nr.JoinLink)
 def _join(op, how, table, predicates):
     args = [str(how), str(table)]
     name = f"{op.__class__.__name__}[{', '.join(args)}]"
     return f"{name}\n{render(predicates, 1)}"
 
 
-@fmt.register(nr.JoinProject)
+@fmt.register(nr.JoinLink)
 def _join_project(op, first, rest, **kwargs):
     name = f"{op.__class__.__name__}[{first}]\n"
     return name + render(rest, 1) + "\n" + render_fields(kwargs, 1)

@@ -11,7 +11,7 @@ from ibis.expr.newrels import (
     ForeignField,
     Join,
     JoinExpr,
-    JoinProject,
+    JoinLink,
     Project,
     TableExpr,
     UnboundTable,
@@ -392,10 +392,10 @@ def test_join():
 
     joined = t1.join(t2, [t1.a == t2.c])
     result = joined.finish()
-    assert result.op() == JoinProject(
+    assert result.op() == Join(
         first=t1,
         rest=[
-            Join("inner", t2, [t1.a == t2.c]),
+            JoinLink("inner", t2, [t1.a == t2.c]),
         ],
         fields={
             "a": t1.a,
@@ -413,11 +413,11 @@ def test_chained_join():
 
     joined = a.join(b, [a.a == b.c]).join(c, [a.a == c.e])
     result = joined.finish()
-    assert result.op() == JoinProject(
+    assert result.op() == Join(
         first=a,
         rest=[
-            Join("inner", b, [a.a == b.c]),
-            Join("inner", c, [a.a == c.e]),
+            JoinLink("inner", b, [a.a == b.c]),
+            JoinLink("inner", c, [a.a == c.e]),
         ],
         fields={
             "a": a.a,
@@ -431,11 +431,11 @@ def test_chained_join():
 
     joined = a.join(b, [a.a == b.c]).join(c, [b.c == c.e])
     result = joined.select(a.a, b.d, c.f)
-    assert result.op() == JoinProject(
+    assert result.op() == Join(
         first=a,
         rest=[
-            Join("inner", b, [a.a == b.c]),
-            Join("inner", c, [b.c == c.e]),
+            JoinLink("inner", b, [a.a == b.c]),
+            JoinLink("inner", c, [b.c == c.e]),
         ],
         fields={
             "a": a.a,
@@ -458,9 +458,9 @@ def test_chained_join_referencing_intermediate_table():
     assert isinstance(abc, JoinExpr)
 
     result = abc.finish()
-    assert result.op() == JoinProject(
+    assert result.op() == Join(
         first=a,
-        rest=[Join("inner", b, [a.a == b.c]), Join("inner", c, [a.a == c.e])],
+        rest=[JoinLink("inner", b, [a.a == b.c]), JoinLink("inner", c, [a.a == c.e])],
         fields={"a": a.a, "b": a.b, "c": b.c, "d": b.d, "e": c.e, "f": c.f},
     )
 
@@ -492,6 +492,31 @@ def test_select_with_uncorrelated_scalar_subquery():
     assert sub.op() == Project(
         parent=t1,
         values={"a": t1.a, "summary": ops.Sum(ForeignField(rel=t2_filt, name="c"))},
+    )
+
+
+def test_select_with_correlated_scalar_subquery():
+    # Define your tables
+    t1 = table(name="t1", schema={"a": "int64", "b": "string"})
+    t2 = table(name="t2", schema={"c": "int64", "d": "string"})
+
+    # Create a subquery
+    filt = t2.filter(t2.d == t1.b)
+    summary = filt.c.sum().name("summary")
+
+    # Use the subquery in a select operation
+    expr = t1.select(t1.a, summary)
+    assert expr.op() == Project(
+        parent=t1,
+        values={
+            "a": t1.a,
+            "summary": ops.Sum(
+                ForeignField(
+                    rel=filt,
+                    name="c",
+                )
+            ),
+        },
     )
 
 

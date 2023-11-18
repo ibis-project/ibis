@@ -99,6 +99,14 @@ class Project(Relation):
         #     if v.find(ForeignField):
         #         print("found foreign field")
         # TODO(kszucs): raise if values depending on foreign fields are not scalar shaped
+        # TODO(kszucs): column-like values dependent on foreign fields are allowed in filter predicates only
+        # TODO(kszucs): additional integrity check can be done for correlated subqueryies:
+        # 1. locate the values with foreign fields in this projection
+        # 2. locate the foreign fields in the relations of the values above
+        # 3. assert that the relation of those foreign fields is `parent`
+        # this way we can ensure that the foreign fields are not referencing relations
+        # foreign to the currently constructed one, but there are just references
+        # back and forth
         super().__init__(parent=parent, values=values)
 
     @attribute
@@ -113,15 +121,15 @@ class Project(Relation):
 # TODO(kszucs): Subquery(value, outer_relation)
 
 
-class Join(Node):
+class JoinLink(Node):
     how: str
     table: Relation
     predicates: VarTuple[Value[dt.Boolean]]
 
 
-class JoinProject(Relation):
+class Join(Relation):
     first: Relation
-    rest: VarTuple[Join]
+    rest: VarTuple[JoinLink]
     fields: FrozenDict[str, Field]
 
     def __init__(self, first, rest, fields):
@@ -248,7 +256,7 @@ class TableExpr(Expr):
 
     def join(self, right, predicates, how="inner"):
         # construct an empty join chain and wrap it with a JoinExpr
-        expr = JoinExpr(JoinProject(self, (), {}))
+        expr = JoinExpr(Join(self, (), {}))
         # add the first join to the join chain and return the result
         return expr.join(right, predicates, how)
 
@@ -278,13 +286,13 @@ class JoinExpr(Expr):
         node = self.op()
         # TODO(kszucs): need to do the usual input preparation here, binding,
         # unwrap_aliases, dereference_values, but the latter requires the
-        # `field` property to be not empty in the JoinProject node
+        # `field` property to be not empty in the Join node
 
         # construct a new join node
-        join = Join(how, table=right, predicates=predicates)
+        link = JoinLink(how, table=right, predicates=predicates)
 
         # add the join to the join chain
-        node = node.copy(rest=node.rest + (join,))
+        node = node.copy(rest=node.rest + (link,))
 
         # return with a new JoinExpr wrapping the new join chain
         return JoinExpr(node)
@@ -334,7 +342,7 @@ class JoinExpr(Expr):
         return self.op().copy(fields=fields).to_expr()
 
     def __getattr__(self, name):
-        # successfully built the JoinProject
+        # successfully built the Join
         table = self.finish()
         # successfully referenced the field
         field = next(bind(table, name)).op()
