@@ -1022,8 +1022,7 @@ def test_array_string_join(con):
 
 
 @pytest.mark.notimpl(
-    ["mssql", "mysql", "pyspark", "druid", "oracle"],
-    raises=com.OperationNotDefinedError,
+    ["mssql", "mysql", "druid", "oracle"], raises=com.OperationNotDefinedError
 )
 def test_subs_with_re_replace(con):
     expr = ibis.literal("hi").re_replace("i", "a").substitute({"d": "b"}, else_="k")
@@ -1031,7 +1030,6 @@ def test_subs_with_re_replace(con):
     assert result == "k"
 
 
-@pytest.mark.notimpl(["pyspark"], raises=com.OperationNotDefinedError)
 def test_multiple_subs(con):
     m = {"foo": "FOO", "bar": "BAR"}
     expr = ibis.literal("foo").substitute(m)
