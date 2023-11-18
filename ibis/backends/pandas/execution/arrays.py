@@ -147,7 +147,7 @@ def execute_array_collect_groupby(op, data, where, aggcontext=None, **kwargs):
 
 @execute_node.register(ops.Unnest, pd.Series)
 def execute_unnest(op, data, **kwargs):
-    return data.explode()
+    return data[data.map(lambda v: bool(len(v)), na_action="ignore")].explode()
 
 
 @execute_node.register(ops.ArrayFlatten, pd.Series)
