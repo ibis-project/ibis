@@ -222,18 +222,23 @@ def test_table_to_parquet(tmp_path, backend, awards_players):
 
 
 @pytest.mark.notimpl(["flink"])
-@pytest.mark.parametrize(("kwargs"), [({"version": "1.0"}), ({"version": "2.6"})])
-def test_table_to_parquet_writer_kwargs(kwargs, tmp_path, backend, awards_players):
+@pytest.mark.notimpl(
+    ["duckdb"],
+    reason="cannot inline WriteOptions objects",
+    raises=sa.exc.NotSupportedError,
+)
+@pytest.mark.parametrize("version", ["1.0", "2.6"])
+def test_table_to_parquet_writer_kwargs(version, tmp_path, backend, awards_players):
     outparquet = tmp_path / "out.parquet"
-    awards_players.to_parquet(outparquet, **kwargs)
+    awards_players.to_parquet(outparquet, version=version)
 
     df = pd.read_parquet(outparquet)
 
     backend.assert_frame_equal(awards_players.to_pandas(), df)
 
-    file = pa.parquet.ParquetFile(outparquet)
+    md = pa.parquet.read_metadata(outparquet)
 
-    assert file.metadata.format_version == kwargs["version"]
+    assert md.format_version == version
 
 
 @pytest.mark.notimpl(
@@ -316,14 +321,20 @@ def test_table_to_csv(tmp_path, backend, awards_players):
 
 
 @pytest.mark.notimpl(["flink"])
-@pytest.mark.parametrize(("kwargs", "delimiter"), [({"write_options": pcsv.WriteOptions(delimiter=";")}, ";"), ({"write_options": pcsv.WriteOptions(delimiter="\t")}, "\t")])
-def test_table_to_csv_writer_kwargs(kwargs, delimiter, tmp_path, backend, awards_players):
+@pytest.mark.notimpl(
+    ["duckdb"],
+    reason="cannot inline WriteOptions objects",
+    raises=sa.exc.ProgrammingError,
+)
+@pytest.mark.parametrize("delimiter", [";", "\t"], ids=["semicolon", "tab"])
+def test_table_to_csv_writer_kwargs(delimiter, tmp_path, awards_players):
     outcsv = tmp_path / "out.csv"
     # avoid pandas NaNonense
     awards_players = awards_players.select("playerID", "awardID", "yearID", "lgID")
 
-    awards_players.to_csv(outcsv, **kwargs)
-    pd.read_csv(outcsv, delimiter=delimiter)
+    awards_players.to_csv(outcsv, write_options=pcsv.WriteOptions(delimiter=delimiter))
+    df = pd.read_csv(outcsv, delimiter=delimiter, nrows=1)
+    assert len(df) == 1
 
 
 @pytest.mark.parametrize(
