@@ -268,7 +268,7 @@ class ArrayValue(Value):
         """Flatten an array into a column.
 
         ::: {.callout-note}
-        ## This operation changes the cardinality of the result
+        ## Rows with empty arrays are dropped in the output.
         :::
 
         Examples
