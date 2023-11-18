@@ -842,3 +842,20 @@ def test_array_of_struct_unnest(con):
     # `value` can be `None` because the order of results is arbitrary; observed
     # in the wild with the trino backend
     assert value is None or isinstance(value, str)
+
+
+@pytest.mark.notimpl(
+    ["polars"],
+    raises=AssertionError,
+    reason="ibis hasn't implemented this behavior yet",
+)
+@pytest.mark.notyet(
+    ["datafusion"],
+    raises=com.OperationNotDefinedError,
+    reason="backend doesn't support unnest",
+)
+def test_unnest_empty_array(con):
+    t = ibis.memtable({"arr": [[], ["a"], ["a", "b"]]})
+    expr = t.arr.unnest()
+    result = con.execute(expr)
+    assert len(result) == 3
