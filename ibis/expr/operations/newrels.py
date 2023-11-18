@@ -277,37 +277,49 @@ class DummyTable(Relation):
 class FillNa(Relation):
     """Fill null values in the table."""
 
-    table: Relation
+    parent: Relation
     replacements: typing.Union[Value[dt.Numeric | dt.String], FrozenDict[str, Any]]
 
     @attribute
+    def fields(self):
+        return FrozenDict({k: Field(self.parent, k) for k in self.parent.schema})
+
+    @attribute
     def schema(self):
-        return self.table.schema
+        return self.parent.schema
 
 
 class DropNa(Relation):
     """Drop null values in the table."""
 
-    table: Relation
+    parent: Relation
     how: typing.Literal["any", "all"]
     subset: Optional[VarTuple[Column[dt.Any]]] = None
 
     @attribute
+    def fields(self):
+        return FrozenDict({k: Field(self.parent, k) for k in self.parent.schema})
+
+    @attribute
     def schema(self):
-        return self.table.schema
+        return self.parent.schema
 
 
 class Sample(Relation):
     """Sample performs random sampling of records in a table."""
 
-    table: Relation
+    parent: Relation
     fraction: Annotated[float, Between(0, 1)]
     method: typing.Literal["row", "block"]
     seed: typing.Union[int, None] = None
 
     @attribute
+    def fields(self):
+        return FrozenDict({k: Field(self.parent, k) for k in self.parent.schema})
+
+    @attribute
     def schema(self):
-        return self.table.schema
+        return self.parent.schema
 
 
 class Distinct(Relation):
@@ -322,11 +334,15 @@ class Distinct(Relation):
     FROM table
     """
 
-    table: Relation
+    parent: Relation
+
+    @attribute
+    def fields(self):
+        return FrozenDict({k: Field(self.parent, k) for k in self.parent.schema})
 
     @attribute
     def schema(self):
-        return self.table.schema
+        return self.parent.schema
 
 
 # class Subquery(Relation):
@@ -350,9 +366,6 @@ class Distinct(Relation):
 
 #     # def __getattr__(self, key):
 #     #     return next(bind(self, key))
-
-
-
 
 
 def table(name, schema):

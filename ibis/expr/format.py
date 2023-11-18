@@ -236,8 +236,8 @@ def _sql_query_result(op, query, **kwargs):
 
 @fmt.register(ops.FillNa)
 @fmt.register(ops.DropNa)
-def _fill_na(op, table, **kwargs):
-    name = f"{op.__class__.__name__}[{table}]\n"
+def _fill_na(op, parent, **kwargs):
+    name = f"{op.__class__.__name__}[{parent}]\n"
     return name + render_fields(kwargs, 1)
 
 
@@ -308,9 +308,9 @@ def _join_project(op, first, rest, **kwargs):
 
 @fmt.register(ops.Limit)
 @fmt.register(ops.Sample)
-def _limit(op, table, **kwargs):
+def _limit(op, parent, **kwargs):
     params = inline_args(kwargs)
-    return f"{op.__class__.__name__}[{table}, {params}]"
+    return f"{op.__class__.__name__}[{parent}, {params}]"
 
 
 # @fmt.register(ops.SelfReference)

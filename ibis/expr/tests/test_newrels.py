@@ -5,6 +5,7 @@ import pytest
 import ibis.expr.datashape as ds
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
+import ibis.expr.types as ir
 from ibis import _
 from ibis.common.exceptions import IntegrityError
 from ibis.expr.operations import (
@@ -19,7 +20,6 @@ from ibis.expr.operations import (
     table,
 )
 from ibis.expr.schema import Schema
-import ibis.expr.types as ir
 
 # TODO(kszucs):
 # def test_relation_coercion()

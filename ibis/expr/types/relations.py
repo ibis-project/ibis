@@ -4334,16 +4334,18 @@ class TableExpr(Expr, _FixedTextJupyterMixin):
         # return with a new TableExpr wrapping the optimized node
         return node.to_expr()
 
+
 @public
-class JoinExpr(Expr):
+class JoinExpr(TableExpr):
     def join(self, right, predicates, how="inner"):
         node = self.op()
         # TODO(kszucs): need to do the usual input preparation here, binding,
         # unwrap_aliases, dereference_values, but the latter requires the
         # `field` property to be not empty in the Join node
+        preds = bind(node.first, predicates)
 
         # construct a new join node
-        link = ops.JoinLink(how, table=right, predicates=predicates)
+        link = ops.JoinLink(how, table=right, predicates=preds)
 
         # add the join to the join chain
         node = node.copy(rest=node.rest + (link,))

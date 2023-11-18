@@ -33,6 +33,7 @@ def sub_immediate_parents(node: ops.Node, table: ops.TableNode) -> ops.Node:
     return node.replace(In(parents) >> table)
 
 
+# TODO(kszucs): should be removed
 def find_immediate_parent_tables(input_node, keep_input=True):
     """Find every first occurrence of a `ir.Table` object in `input_node`.
 
@@ -66,7 +67,7 @@ def find_immediate_parent_tables(input_node, keep_input=True):
     assert all(isinstance(arg, ops.Node) for arg in util.promote_list(input_node))
 
     def finder(node):
-        if isinstance(node, ops.TableNode):
+        if isinstance(node, ops.Relation):
             if keep_input or node != input_node:
                 return g.halt, node
             else:
@@ -349,9 +350,10 @@ class Projector:
         )
 
 
+# TODO(kszucs): should be removed
 def find_first_base_table(node):
     def predicate(node):
-        if isinstance(node, ops.TableNode):
+        if isinstance(node, ops.Relation):
             return g.halt, node
         else:
             return g.proceed, None

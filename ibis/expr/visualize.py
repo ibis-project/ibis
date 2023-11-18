@@ -70,14 +70,14 @@ def get_label(node):
             label_fmt = "<<B>{}</B>>"
             label = label_fmt.format(escape(name))
         else:
-            if isinstance(node, ops.TableNode):
+            if isinstance(node, ops.Relation):
                 label_fmt = "<<I>{}</I>: <B>{}</B>{}>"
             else:
                 label_fmt = '<<I>{}</I>: <B>{}</B><BR ALIGN="LEFT" />:: {}>'
             # typename is already escaped
             label = label_fmt.format(escape(nodename), escape(name), typename)
     else:
-        if isinstance(node, ops.TableNode):
+        if isinstance(node, ops.Relation):
             label_fmt = "<<B>{}</B>{}>"
         else:
             label_fmt = '<<B>{}</B><BR ALIGN="LEFT" />:: {}>'
