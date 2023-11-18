@@ -78,7 +78,6 @@ jobs:
         run: just download-data
 
       - uses: google-github-actions/auth@v2
-        if: matrix.backend.name == 'bigquery'
         with:
           credentials_json: ${{ secrets.GCP_CREDENTIALS }}
 

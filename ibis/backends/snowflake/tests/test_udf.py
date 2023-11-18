@@ -92,3 +92,67 @@ def test_builtin_agg_udf(con):
         expected = c.exec_driver_sql(query).cursor.fetch_pandas_all()
 
     tm.assert_frame_equal(result, expected)
+
+
+def test_xgboost_model(con):
+    import ibis
+    from ibis import _
+
+    @udf.scalar.pandas(
+        packages=("joblib", "xgboost"), imports=("@MODELS/model.joblib",)
+    )
+    def predict_price(
+        carat_scaled: float, cut_encoded: int, color_encoded: int, clarity_encoded: int
+    ) -> int:
+        import sys
+
+        import joblib
+        import pandas as pd
+
+        import_dir = sys._xoptions.get("snowflake_import_directory")
+        model = joblib.load(f"{import_dir}model.joblib")
+        df = pd.concat(
+            [carat_scaled, cut_encoded, color_encoded, clarity_encoded], axis=1
+        )
+        df.columns = ["CARAT_SCALED", "CUT_ENCODED", "COLOR_ENCODED", "CLARITY_ENCODED"]
+        return model.predict(df)
+
+    def cases(value, mapping):
+        """This should really be a top-level function or method."""
+        expr = ibis.case()
+        for k, v in mapping.items():
+            expr = expr.when(value == k, v)
+        return expr.end()
+
+    diamonds = con.tables.DIAMONDS
+    expr = diamonds.mutate(
+        predicted_price=predict_price(
+            (_.carat - _.carat.mean()) / _.carat.std(),
+            cases(
+                _.cut,
+                {
+                    c: i
+                    for i, c in enumerate(
+                        ("Fair", "Good", "Very Good", "Premium", "Ideal"), start=1
+                    )
+                },
+            ),
+            cases(_.color, {c: i for i, c in enumerate("DEFGHIJ", start=1)}),
+            cases(
+                _.clarity,
+                {
+                    c: i
+                    for i, c in enumerate(
+                        ("I1", "IF", "SI1", "SI2", "VS1", "VS2", "VVS1", "VVS2"),
+                        start=1,
+                    )
+                },
+            ),
+        )
+    )
+
+    df = expr.execute()
+
+    assert not df.empty
+    assert "predicted_price" in df.columns
+    assert len(df) == diamonds.count().execute()
