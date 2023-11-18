@@ -1048,3 +1048,20 @@ def test_range_start_stop_step_zero(con, start, stop):
     expr = ibis.range(start, stop, 0)
     result = con.execute(expr)
     assert list(result) == []
+
+
+@pytest.mark.notimpl(
+    ["polars"],
+    raises=AssertionError,
+    reason="ibis hasn't implemented this behavior yet",
+)
+@pytest.mark.notyet(
+    ["datafusion", "flink"],
+    raises=com.OperationNotDefinedError,
+    reason="backend doesn't support unnest",
+)
+def test_unnest_empty_array(con):
+    t = ibis.memtable({"arr": [[], ["a"], ["a", "b"]]})
+    expr = t.arr.unnest()
+    result = con.execute(expr)
+    assert len(result) == 3
