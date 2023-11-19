@@ -280,6 +280,65 @@ def _timestamp_bucket(t, op):
     )
 
 
+class _flatten(sa.sql.functions.GenericFunction):
+    def __init__(self, arg, *, type: sa.types.TypeEngine) -> None:
+        super().__init__(arg)
+        self.type = sa.sql.sqltypes.TableValueType(
+            sa.Column("index", sa.BIGINT()), sa.Column("value", type)
+        )
+
+
+@compiles(_flatten, "snowflake")
+def compiles_flatten(element, compiler, **kw):
+    (arg,) = element.clauses.clauses
+    return f"TABLE(FLATTEN(INPUT => {compiler.process(arg, **kw)}, MODE => 'ARRAY'))"
+
+
+def _timestamp_range(t, op):
+    if not isinstance(op.step, ops.Literal):
+        raise com.UnsupportedOperationError("`step` argument must be a literal")
+
+    start = t.translate(op.start)
+    stop = t.translate(op.stop)
+
+    unit = op.step.dtype.unit.name.lower()
+    step = op.step.value
+
+    value_type = op.dtype.value_type
+
+    f = _flatten(
+        sa.func.array_generate_range(0, sa.func.datediff(unit, start, stop), step),
+        type=t.get_sqla_type(op.start.dtype),
+    ).alias("f")
+    return sa.func.iff(
+        step != 0,
+        sa.select(
+            sa.func.array_agg(
+                sa.func.replace(
+                    # conversion to varchar is necessary to control
+                    # the timestamp format
+                    #
+                    # otherwise, since timestamps in arrays become strings
+                    # anyway due to lack of parameterized type support in
+                    # Snowflake the format depends on a session parameter
+                    sa.func.to_varchar(
+                        sa.func.dateadd(unit, f.c.value, start),
+                        'YYYY-MM-DD"T"HH24:MI:SS.FF6'
+                        + (value_type.timezone is not None) * "TZH:TZM",
+                    ),
+                    # timezones are always hour:minute offsets from UTC, not
+                    # named, so replacing "Z" shouldn't be an issue
+                    "Z",
+                    "+00:00",
+                ),
+            )
+        )
+        .select_from(f)
+        .scalar_subquery(),
+        sa.func.array_construct(),
+    )
+
+
 _TIMESTAMP_UNITS_TO_SCALE = {"s": 0, "ms": 3, "us": 6, "ns": 9}
 
 _SF_POS_INF = sa.func.to_double("Inf")
@@ -504,6 +563,7 @@ operation_registry.update(
             ),
             3,
         ),
+        ops.TimestampRange: _timestamp_range,
     }
 )
 

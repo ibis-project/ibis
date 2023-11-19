@@ -1205,7 +1205,9 @@ def execute_agg_udf(op, **kw):
 @translate.register(ops.IntegerRange)
 def execute_integer_range(op, **kw):
     if not isinstance(op.step, ops.Literal):
-        raise NotImplementedError("Dynamic step not supported by Polars")
+        raise com.UnsupportedOperationError(
+            "Dynamic integer step not supported by Polars"
+        )
     step = op.step.value
 
     dtype = dtype_to_polars(op.dtype)
@@ -1217,3 +1219,17 @@ def execute_integer_range(op, **kw):
     start = translate(op.start, **kw)
     stop = translate(op.stop, **kw)
     return pl.int_ranges(start, stop, step, dtype=dtype)
+
+
+@translate.register(ops.TimestampRange)
+def execute_timestamp_range(op, **kw):
+    if not isinstance(op.step, ops.Literal):
+        raise com.UnsupportedOperationError(
+            "Dynamic interval step not supported by Polars"
+        )
+    step = op.step.value
+    unit = op.step.dtype.unit.value
+
+    start = translate(op.start, **kw)
+    stop = translate(op.stop, **kw)
+    return pl.datetime_ranges(start, stop, f"{step}{unit}", closed="left")

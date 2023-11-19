@@ -1027,7 +1027,7 @@ class Value(Expr):
         │ b      │     5 │
         └────────┴───────┘
         >>> t.value.collect()
-        [1, 2, 3, 4, 5]
+        [1, 2, ... +3]
         >>> type(t.value.collect())
         <class 'ibis.expr.types.arrays.ArrayScalar'>
 
@@ -1229,7 +1229,18 @@ class Value(Expr):
 @public
 class Scalar(Value):
     def __interactive_rich_console__(self, console, options):
-        return console.render(repr(self.execute()), options=options)
+        import rich.pretty
+
+        interactive = ibis.options.repr.interactive
+        return console.render(
+            rich.pretty.Pretty(
+                self.execute(),
+                max_length=interactive.max_length,
+                max_string=interactive.max_string,
+                max_depth=interactive.max_depth,
+            ),
+            options=options,
+        )
 
     def __pyarrow_result__(
         self, table: pa.Table, data_mapper: type[PyArrowData] | None = None

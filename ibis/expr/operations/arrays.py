@@ -217,3 +217,10 @@ class IntegerRange(Range):
     start: Value[dt.Integer]
     stop: Value[dt.Integer]
     step: Value[dt.Integer]
+
+
+@public
+class TimestampRange(Range):
+    start: Value[dt.Timestamp]
+    stop: Value[dt.Timestamp]
+    step: Value[dt.Interval]

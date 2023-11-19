@@ -1979,6 +1979,8 @@ def watermark(time_col: str, allowed_delay: ir.IntervalScalar) -> Watermark:
 def range(start, stop, step) -> ir.ArrayValue:
     """Generate a range of values.
 
+    Integer ranges are supported, as well as timestamp ranges.
+
     ::: {.callout-note}
     `start` is inclucive and `stop` is exclusive, just like Python's builtin
     [`range`](range).
@@ -2010,12 +2012,12 @@ def range(start, stop, step) -> ir.ArrayValue:
     Range using only a stop argument
 
     >>> ibis.range(5)
-    [0, 1, 2, 3, 4]
+    [0, 1, ... +3]
 
     Simple range using start and stop
 
     >>> ibis.range(1, 5)
-    [1, 2, 3, 4]
+    [1, 2, ... +2]
 
     Generate an empty range
 
@@ -2025,7 +2027,7 @@ def range(start, stop, step) -> ir.ArrayValue:
     Negative step values are supported
 
     >>> ibis.range(10, 4, -2)
-    [10, 8, 6]
+    [10, 8, ... +1]
 
     `ibis.range` behaves the same as Python's range ...
 
@@ -2052,6 +2054,34 @@ def range(start, stop, step) -> ir.ArrayValue:
     │       3 │
     │       4 │
     └─────────┘
+
+    Timestamp ranges are also supported
+
+    >>> expr = ibis.range("2002-01-01", "2002-02-01", ibis.interval(days=2)).name("ts")
+    >>> expr
+    [
+        datetime.datetime(2002, 1, 1, 0, 0),
+        datetime.datetime(2002, 1, 3, 0, 0),
+        ... +14
+    ]
+    >>> expr.unnest()
+    ┏━━━━━━━━━━━━━━━━━━━━━┓
+    ┃ ts                  ┃
+    ┡━━━━━━━━━━━━━━━━━━━━━┩
+    │ timestamp           │
+    ├─────────────────────┤
+    │ 2002-01-01 00:00:00 │
+    │ 2002-01-03 00:00:00 │
+    │ 2002-01-05 00:00:00 │
+    │ 2002-01-07 00:00:00 │
+    │ 2002-01-09 00:00:00 │
+    │ 2002-01-11 00:00:00 │
+    │ 2002-01-13 00:00:00 │
+    │ 2002-01-15 00:00:00 │
+    │ 2002-01-17 00:00:00 │
+    │ 2002-01-19 00:00:00 │
+    │ …                   │
+    └─────────────────────┘
     """
     raise NotImplementedError()
 
@@ -2069,6 +2099,19 @@ def _int_range(
     if step is None:
         step = 1
     return ops.IntegerRange(start=start, stop=stop, step=step).to_expr()
+
+
+@range.register(str)
+@range.register(datetime.datetime)
+@range.register(ir.TimestampValue)
+def _timestamp_range(
+    start: datetime.datetime | ir.TimestampValue | str,
+    stop: datetime.datetime | ir.TimestampValue | str,
+    step: datetime.timedelta | ir.IntervalValue,
+) -> ir.ArrayValue:
+    return ops.TimestampRange(
+        start=normalize_datetime(start), stop=normalize_datetime(stop), step=step
+    ).to_expr()
 
 
 def _wrap_deprecated(fn, prefix=""):
