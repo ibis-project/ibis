@@ -15,13 +15,12 @@ import ibis.expr.datatypes as dt
 from ibis.common.annotations import attribute
 from ibis.common.collections import FrozenDict
 from ibis.common.deferred import Item, deferred, var
-from ibis.common.exceptions import IntegrityError
+from ibis.common.exceptions import IbisTypeError, IntegrityError
 from ibis.common.grounds import Concrete
 from ibis.common.patterns import Between, Check, In, InstanceOf, _, pattern, replace
 from ibis.common.typing import Coercible, VarTuple
 from ibis.expr.operations.core import Alias, Column, Node, Scalar, Value
 from ibis.expr.operations.sortkeys import SortKey
-from ibis.common.exceptions import IbisTypeError
 from ibis.expr.schema import Schema
 from ibis.util import Namespace
 

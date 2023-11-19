@@ -145,7 +145,7 @@ class GroupedTable:
             self.table,
             self.by,
             having=self._having,
-            order_by=self._order_by + util.promote_list(expr),
+            order_by=self._order_by + tuple(util.promote_list(expr)),
         )
 
     def mutate(

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import pytest
 
+import ibis
 import ibis.expr.datashape as ds
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
@@ -17,7 +18,6 @@ from ibis.expr.operations import (
     JoinLink,
     Project,
     UnboundTable,
-    table,
 )
 from ibis.expr.schema import Schema
 
@@ -25,7 +25,7 @@ from ibis.expr.schema import Schema
 # def test_relation_coercion()
 # def test_where_flattens_predicates()
 
-t = table(
+t = ibis.table(
     name="t",
     schema={
         "bool_col": "boolean",
@@ -87,7 +87,7 @@ def test_select_values():
     assert proj.op() == expected
     assert proj.op().schema == Schema({"incremented": dt.int64})
 
-    proj = t.select(1, "float_col", length=t.string_col.length())
+    proj = t.select(ibis.literal(1), "float_col", length=t.string_col.length())
     expected = Project(
         parent=t,
         values={"1": 1, "float_col": t.float_col, "length": t.string_col.length()},
@@ -389,8 +389,8 @@ def test_foreign_field_identification():
 
 # TODO(kszucs): add test for failing integrity checks
 def test_join():
-    t1 = table("t1", {"a": "int64", "b": "string"})
-    t2 = table("t2", {"c": "int64", "d": "string"})
+    t1 = ibis.table(name="t1", schema={"a": "int64", "b": "string"})
+    t2 = ibis.table(name="t2", schema={"c": "int64", "d": "string"})
 
     joined = t1.join(t2, [t1.a == t2.c])
     result = joined.finish()
@@ -408,10 +408,35 @@ def test_join():
     )
 
 
+def test_join_unambiguous_select():
+    a = ibis.table(name="a", schema={"a_int": "int64", "a_str": "string"})
+    b = ibis.table(name="b", schema={"b_int": "int64", "b_str": "string"})
+
+    join = a.join(b, a.a_int == b.b_int)
+    expr1 = join["a_int", "b_int"]
+    expr2 = join.select("a_int", "b_int")
+    assert expr1.equals(expr2)
+
+    print(expr1)
+    assert expr1.op() == Join(
+        first=a,
+        rest=[
+            JoinLink("inner", b, [a.a_int == b.b_int])
+        ],
+        fields={
+            "a_int": a.a_int,
+            "b_int": b.b_int,
+        }
+    )
+    # expr3 = join.select(["a0", "a1"])
+    # assert expr1.equals(expr2)
+    # assert expr1.equals(expr3)
+
+
 def test_chained_join():
-    a = table("a", {"a": "int64", "b": "string"})
-    b = table("b", {"c": "int64", "d": "string"})
-    c = table("c", {"e": "int64", "f": "string"})
+    a = ibis.table(name="a", schema={"a": "int64", "b": "string"})
+    b = ibis.table(name="b", schema={"c": "int64", "d": "string"})
+    c = ibis.table(name="c", schema={"e": "int64", "f": "string"})
 
     joined = a.join(b, [a.a == b.c]).join(c, [a.a == c.e])
     result = joined.finish()
@@ -448,9 +473,9 @@ def test_chained_join():
 
 
 def test_chained_join_referencing_intermediate_table():
-    a = table("a", {"a": "int64", "b": "string"})
-    b = table("b", {"c": "int64", "d": "string"})
-    c = table("c", {"e": "int64", "f": "string"})
+    a = ibis.table(name="a", schema={"a": "int64", "b": "string"})
+    b = ibis.table(name="b", schema={"c": "int64", "d": "string"})
+    c = ibis.table(name="c", schema={"e": "int64", "f": "string"})
 
     ab = a.join(b, [a.a == b.c])
     assert isinstance(ab, ir.JoinExpr)
@@ -482,8 +507,8 @@ def test_aggregate():
 
 
 def test_select_with_uncorrelated_scalar_subquery():
-    t1 = table("t1", {"a": "int64", "b": "string"})
-    t2 = table("t2", {"c": "int64", "d": "string"})
+    t1 = ibis.table(name="t1", schema={"a": "int64", "b": "string"})
+    t2 = ibis.table(name="t2", schema={"c": "int64", "d": "string"})
 
     # Create a subquery
     t2_filt = t2.filter(t2.d == "value")
@@ -503,8 +528,8 @@ def test_select_with_uncorrelated_scalar_subquery():
 
 def test_select_with_correlated_scalar_subquery():
     # Define your tables
-    t1 = table(name="t1", schema={"a": "int64", "b": "string"})
-    t2 = table(name="t2", schema={"c": "int64", "d": "string"})
+    t1 = ibis.table(name="t1", schema={"a": "int64", "b": "string"})
+    t2 = ibis.table(name="t2", schema={"c": "int64", "d": "string"})
 
     # Create a subquery
     filt = t2.filter(t2.d == t1.b)
@@ -530,8 +555,8 @@ def test_select_with_correlated_scalar_subquery():
 #     import ibis
 
 #     # Define your tables
-#     t1 = UnboundTable("t1", {"a": "int64", "b": "string"}).to_expr()
-#     t2 = UnboundTable("t2", {"c": "int64", "d": "string"}).to_expr()
+#     t1 = Unboundibis.table("t1", {"a": "int64", "b": "string"}).to_expr()
+#     t2 = Unboundibis.table("t2", {"c": "int64", "d": "string"}).to_expr()
 
 #     # Create a subquery
 #     t2_filt = t2.filter(t2.d == "value")
@@ -542,9 +567,9 @@ def test_select_with_correlated_scalar_subquery():
 #     print(expr)
 
 
-# t1 = ibis.table(name="a", schema={"a": "int64", "b": "string"})
-# t2 = ibis.table(name="b", schema={"c": "int64", "d": "string"})
-# t3 = ibis.table(name="c", schema={"e": "int64", "f": "string"})
+# t1 = ibis.ibis.table(name="a", schema={"a": "int64", "b": "string"})
+# t2 = ibis.ibis.table(name="b", schema={"c": "int64", "d": "string"})
+# t3 = ibis.ibis.table(name="c", schema={"e": "int64", "f": "string"})
 
 # t1.select(t1.a, t2.c.sum())  # OK
 # t1.select(t1.a, (t2.c == t3.e).sum())  # ???

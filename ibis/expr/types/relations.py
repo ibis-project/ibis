@@ -92,15 +92,12 @@ def _regular_join_method(
 # TODO(kszucs): cover it with tests
 # TODO(kszucs): should use (table, *args, **kwargs) instead to avoid intepreting nested inputs
 def bind(table: TableExpr, value: Any) -> ir.Value:
-    if isinstance(value, ValueExpr):
+    if isinstance(value, (str, int)):
+        yield table.column(value)
+    elif isinstance(value, ValueExpr):
         yield value
     elif isinstance(value, TableExpr):
         yield from bind(table, tuple(value.schema().keys()))
-    elif isinstance(value, str):
-        yield ops.Field(table, value).to_expr()
-    elif isinstance(value, int):
-        name = table.schema().name_at_position(value)
-        yield ops.Field(table, name).to_expr()
     elif isinstance(value, Deferred):
         yield value.resolve(table)
     elif isinstance(value, Selector):
@@ -134,26 +131,29 @@ from ibis.common.patterns import replace
 
 
 @replace(ops.Field)
-def lookup_peeled_field(_, parent, mapping):
-    name = mapping.get(_)
-    if name is not None:
-        return ops.Field(parent, name)
+def lookup_peeled_field(_, mapping):
+    parent_field = mapping.get(_)
+    if parent_field is not None:
+        return parent_field
     else:
         return ops.ForeignField(_.rel, _.name)
 
 
 def dereference_mapping(parent):
-    result = {ops.Field(parent, k): k for k in parent.schema}
+    result = {ops.Field(parent, k): ops.Field(parent, k) for k in parent.schema}
     for k, v in parent.fields.items():
         while isinstance(v, ops.Field):
-            result[v] = k
+            result[v] = ops.Field(parent, k)
             v = v.rel.fields.get(v.name)
     return result
 
 
-def dereference_values(parent, values):
-    mapping = dereference_mapping(parent)
-    context = {"parent": parent, "mapping": mapping}
+def dereference_values(parents, values):
+    mapping = {}
+    for parent in util.promote_list(parents):
+        mapping.update(dereference_mapping(parent))
+
+    context = {"mapping": mapping}
     return {
         k: v.replace(lookup_peeled_field, context=context, filter=ops.Value)
         for k, v in values.items()
@@ -427,6 +427,11 @@ class TableExpr(Expr, _FixedTextJupyterMixin):
         table = to_rich_table(self, width)
         return console.render(table, options=options)
 
+    def column(self, name):
+        if isinstance(name, int):
+            name = self.schema().name_at_position(name)
+        return ops.Field(self, name).to_expr()
+
     def __getitem__(self, what):
         """Select items from a table expression.
 
@@ -675,7 +680,7 @@ class TableExpr(Expr, _FixedTextJupyterMixin):
         from ibis.expr.types.logical import BooleanValue
 
         if isinstance(what, (str, int)):
-            return next(bind(self, what))
+            return self.column(what)
         elif isinstance(what, slice):
             limit, offset = util.slice_to_limit_offset(what, self.count())
             return self.limit(limit, offset=offset)
@@ -689,12 +694,6 @@ class TableExpr(Expr, _FixedTextJupyterMixin):
             return self.filter([what])
         else:
             return self.select(what)
-            # return next(bind(self, what))
-            # raise NotImplementedError(
-            #     "Selection rows or columns with {} objects is not supported".format(
-            #         type(what).__name__
-            #     )
-            # )
 
     def __len__(self):
         raise com.ExpressionError("Use .count() instead")
@@ -736,23 +735,26 @@ class TableExpr(Expr, _FixedTextJupyterMixin):
         │ …         │
         └───────────┘
         """
-        # TODO(kszucs): validate that is key is string
-        return next(bind(self, key))
+        try:
+            return self.column(key)
+        except com.IbisTypeError:
+            pass
 
-        # # A mapping of common attribute typos, mapping them to the proper name
-        # common_typos = {
-        #     "sort": "order_by",
-        #     "sort_by": "order_by",
-        #     "sortby": "order_by",
-        #     "orderby": "order_by",
-        #     "groupby": "group_by",
-        # }
-        # if key in common_typos:
-        #     hint = common_typos[key]
-        #     raise AttributeError(
-        #         f"{type(self).__name__} object has no attribute {key!r}, did you mean {hint!r}"
-        #     )
-        # raise AttributeError(f"'Table' object has no attribute {key!r}")
+        # A mapping of common attribute typos, mapping them to the proper name
+        common_typos = {
+            "sort": "order_by",
+            "sort_by": "order_by",
+            "sortby": "order_by",
+            "orderby": "order_by",
+            "groupby": "group_by",
+        }
+        if key in common_typos:
+            hint = common_typos[key]
+            raise AttributeError(
+                f"{type(self).__name__} object has no attribute {key!r}, did you mean {hint!r}"
+            )
+
+        raise AttributeError(f"'Table' object has no attribute {key!r}")
 
     def __dir__(self) -> list[str]:
         out = set(dir(type(self)))
@@ -2915,9 +2917,11 @@ class TableExpr(Expr, _FixedTextJupyterMixin):
         └─────────┴───────────────────┴───────────────┴───────────────────┘
         """
         # construct an empty join chain and wrap it with a JoinExpr
-        expr = JoinExpr(ops.Join(left, (), {}))
+        # TODO(kszucs): initialize join fields with left fields here
+        fields = {k: ops.Field(left, k) for k in left.schema().names}
+        node = ops.Join(left, rest=(), fields=fields)
         # add the first join link to the join chain and return the result
-        return expr.join(right, predicates, how)
+        return JoinExpr(node).join(right, predicates, how=how, lname=lname, rname=rname)
 
         # OLD IMPLEMENTATION
         # _join_classes = {
@@ -2943,55 +2947,55 @@ class TableExpr(Expr, _FixedTextJupyterMixin):
 
         # return ops.relations._dedup_join_columns(expr, lname=lname, rname=rname)
 
-    def asof_join(
-        left: Table,
-        right: Table,
-        predicates: str | ir.BooleanColumn | Sequence[str | ir.BooleanColumn] = (),
-        by: str | ir.Column | Sequence[str | ir.Column] = (),
-        tolerance: str | ir.IntervalScalar | None = None,
-        *,
-        lname: str = "",
-        rname: str = "{name}_right",
-    ) -> Table:
-        """Perform an "as-of" join between `left` and `right`.
+    # def asof_join(
+    #     left: Table,
+    #     right: Table,
+    #     predicates: str | ir.BooleanColumn | Sequence[str | ir.BooleanColumn] = (),
+    #     by: str | ir.Column | Sequence[str | ir.Column] = (),
+    #     tolerance: str | ir.IntervalScalar | None = None,
+    #     *,
+    #     lname: str = "",
+    #     rname: str = "{name}_right",
+    # ) -> Table:
+    #     """Perform an "as-of" join between `left` and `right`.
 
-        Similar to a left join except that the match is done on nearest key
-        rather than equal keys.
+    #     Similar to a left join except that the match is done on nearest key
+    #     rather than equal keys.
 
-        Optionally, match keys with `by` before joining with `predicates`.
+    #     Optionally, match keys with `by` before joining with `predicates`.
 
-        Parameters
-        ----------
-        left
-            Table expression
-        right
-            Table expression
-        predicates
-            Join expressions
-        by
-            column to group by before joining
-        tolerance
-            Amount of time to look behind when joining
-        lname
-            A format string to use to rename overlapping columns in the left
-            table (e.g. ``"left_{name}"``).
-        rname
-            A format string to use to rename overlapping columns in the right
-            table (e.g. ``"right_{name}"``).
+    #     Parameters
+    #     ----------
+    #     left
+    #         Table expression
+    #     right
+    #         Table expression
+    #     predicates
+    #         Join expressions
+    #     by
+    #         column to group by before joining
+    #     tolerance
+    #         Amount of time to look behind when joining
+    #     lname
+    #         A format string to use to rename overlapping columns in the left
+    #         table (e.g. ``"left_{name}"``).
+    #     rname
+    #         A format string to use to rename overlapping columns in the right
+    #         table (e.g. ``"right_{name}"``).
 
-        Returns
-        -------
-        Table
-            Table expression
-        """
-        op = ops.AsOfJoin(
-            left=left,
-            right=right,
-            predicates=predicates,
-            by=by,
-            tolerance=tolerance,
-        )
-        return ops.relations._dedup_join_columns(op.to_expr(), lname=lname, rname=rname)
+    #     Returns
+    #     -------
+    #     Table
+    #         Table expression
+    #     """
+    #     # op = ops.AsOfJoin(
+    #     #     left=left,
+    #     #     right=right,
+    #     #     predicates=predicates,
+    #     #     by=by,
+    #     #     tolerance=tolerance,
+    #     # )
+    #     # return ops.relations._dedup_join_columns(op.to_expr(), lname=lname, rname=rname)
 
     def cross_join(
         left: Table,
@@ -3067,13 +3071,15 @@ class TableExpr(Expr, _FixedTextJupyterMixin):
         >>> expr.count()
         344
         """
-        op = ops.CrossJoin(
-            left,
-            functools.reduce(Table.cross_join, rest, right),
-            [],
-        )
-        return ops.relations._dedup_join_columns(op.to_expr(), lname=lname, rname=rname)
+        raise NotImplementedError
+        # op = ops.CrossJoin(
+        #     left,
+        #     functools.reduce(Table.cross_join, rest, right),
+        #     [],
+        # )
+        # return ops.relations._dedup_join_columns(op.to_expr(), lname=lname, rname=rname)
 
+    asof_join = _regular_join_method("asof_join", "asof")
     inner_join = _regular_join_method("inner_join", "inner")
     left_join = _regular_join_method("left_join", "left")
     outer_join = _regular_join_method("outer_join", "outer")
@@ -4345,20 +4351,77 @@ class TableExpr(Expr, _FixedTextJupyterMixin):
         return node.to_expr()
 
 
+def _coerce_join_predicate(left, right, pred):
+    if isinstance(pred, ValueExpr):
+        return pred
+    elif pred is True or pred is False:
+        return ops.Literal(pred, dtype="bool").to_expr()
+
+    if isinstance(pred, tuple):
+        if len(pred) != 2:
+            raise com.ExpressionError("Join key tuple must be length 2")
+        lk, rk = pred
+    else:
+        lf = rf = pred
+
+    return bind(left, lk) == bind(right, rk)
+
+
+def _disambiguate_join_fields(left_fields, right_fields, lname, rname):
+    overlap = left_fields.keys() & right_fields.keys()
+
+    fields = {}
+    for name, field in left_fields.items():
+        if name in overlap:
+            name = lname.format(name=name)
+        fields[name] = field
+    for name, field in right_fields.items():
+        if name in overlap:
+            name = rname.format(name=name)
+        fields[name] = field
+
+    return fields
+
+
 @public
 class JoinExpr(TableExpr):
-    def join(self, right, predicates, how="inner"):
+    def column(self, name):
+        node = self.op()
+        if isinstance(name, int):
+            name = node.schema.name_at_position(name)
+        if name not in node.fields:
+            raise com.IbisError(f"Column {name!r} not found, try to disambiguate ...")
+        return node.fields[name].to_expr()
+
+    def join(
+        self,
+        right,
+        predicates,
+        how="inner",
+        *,
+        lname: str = "",
+        rname: str = "{name}_right",
+    ):
         node = self.op()
         # TODO(kszucs): need to do the usual input preparation here, binding,
         # unwrap_aliases, dereference_values, but the latter requires the
         # `field` property to be not empty in the Join node
-        preds = bind(node.first, predicates)
+        preds = [
+            _coerce_join_predicate(node.first, right, pred)
+            for pred in util.promote_list(predicates)
+        ]
 
         # construct a new join node
         link = ops.JoinLink(how, table=right, predicates=preds)
 
+        # calculate the fields based in lname and rname, this should be a best
+        # effort guess but shouldn't raise on conflicts
+        right_fields = {k: ops.Field(right, k) for k in link.table.schema}
+
+        fields = _disambiguate_join_fields(node.fields, right_fields, lname, rname)
+
         # add the join to the join chain
-        node = node.copy(rest=node.rest + (link,))
+        node = node.copy(rest=node.rest + (link,), fields=fields)
 
         # return with a new JoinExpr wrapping the new join chain
         return JoinExpr(node)
@@ -4368,9 +4431,9 @@ class JoinExpr(TableExpr):
         # TODO(kszucs): need to do smarter binding here since references may
         # point to any of the relations in the join chain
         table = self.op().first.to_expr()
-        values = bind(table, (args, kwargs))
+        values = bind(self, (args, kwargs))
         values = unwrap_aliases(values)
-        # values = dereference_values(self.op(), values)
+        values = dereference_values(self.tables(), values)
 
         # TODO(kszucs): go over the values and pull out the fields only, until
         # that just raise if the value is a computed expression
@@ -4395,28 +4458,20 @@ class JoinExpr(TableExpr):
             parents.append(join.table)
         return parents
 
-    def guess(self):
-        # TODO(kszucs): more advanced heuristics can be applied here
-        # trying to figure out the join intent here
-        fields = {}
-        for parent in self.tables():
-            fields.update({k: ops.Field(parent, k) for k in parent.schema})
-        return fields
+    # def guess(self):
+    #     # TODO(kszucs): more advanced heuristics can be applied here
+    #     # trying to figure out the join intent here
+    #     fields = {}
+    #     for parent in self.tables():
+    #         fields.update({k: ops.Field(parent, k) for k in parent.schema})
+    #     return fields
 
     def finish(self, fields=None):
-        print(f"FINISH {self}")
-        if fields is None:
-            fields = self.guess()
-        return self.op().copy(fields=fields).to_expr()
-
-    def __getattr__(self, name):
-        # successfully built the Join
-        table = self.finish()
-        # successfully referenced the field
-        field = next(bind(table, name)).op()
-        # dereference the field to one of the join's parents
-        field = table.op().fields[field.name]
-        return field.to_expr()
+        if fields is not None:
+            return self.op().copy(fields=fields).to_expr()
+        else:
+            # raise if there are missing fields from either of the tables
+            return self.op().to_expr()
 
 
 @public
