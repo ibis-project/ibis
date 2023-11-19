@@ -860,7 +860,7 @@ def flatten_data():
 @pytest.mark.notyet(
     ["bigquery"],
     reason="BigQuery doesn't support arrays of arrays",
-    raises=BadRequest,
+    raises=TypeError,
 )
 @pytest.mark.notyet(
     ["postgres"],
@@ -900,6 +900,8 @@ def flatten_data():
         ),
     ],
 )
+@pytest.mark.notimpl(["flink"], raises=com.OperationNotDefinedError)
+@pytest.mark.notyet(["datafusion"], raises=com.OperationNotDefinedError)
 def test_array_flatten(backend, flatten_data, column, expected):
     data = flatten_data[column]
     t = ibis.memtable(
