@@ -420,7 +420,7 @@ operation_registry.update(
         ops.ArrayRemove: fixed_arity(sa.func.array_remove, 2),
         ops.ArrayIntersect: fixed_arity(sa.func.array_intersection, 2),
         ops.ArrayZip: _array_zip,
-        ops.ArraySort: unary(sa.func.ibis_udfs.public.array_sort),
+        ops.ArraySort: unary(sa.func.array_sort),
         ops.ArrayRepeat: fixed_arity(sa.func.ibis_udfs.public.array_repeat, 2),
         ops.StringSplit: fixed_arity(sa.func.split, 2),
         # snowflake typeof only accepts VARIANT, so we cast
