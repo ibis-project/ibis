@@ -496,6 +496,7 @@ operation_registry.update(
         ops.TimestampDelta: _temporal_delta,
         ops.ToJSONMap: _to_json_collection,
         ops.ToJSONArray: _to_json_collection,
+        ops.ArrayFlatten: unary(sa.func.flatten),
     }
 )
 
