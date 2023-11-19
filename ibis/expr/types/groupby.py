@@ -30,6 +30,7 @@ from ibis.selectors import Selector
 
 import ibis.common.exceptions as com
 from public import public
+from ibis.expr.types.relations import bind
 
 _function_types = tuple(
     filter(
@@ -46,45 +47,34 @@ _function_types = tuple(
 )
 
 
-def _get_group_by_key(table, value):
-    if isinstance(value, str):
-        yield table[value]
-    elif isinstance(value, _function_types):
-        yield value(table)
-    elif isinstance(value, Deferred):
-        yield value.resolve(table)
-    elif isinstance(value, Selector):
-        yield from value.expand(table)
-    elif isinstance(value, ir.Expr):
-        yield an.sub_immediate_parents(value.op(), table.op()).to_expr()
-    else:
-        yield value
+# def _get_group_by_key(table, value):
+#     if isinstance(value, str):
+#         yield table[value]
+#     elif isinstance(value, _function_types):
+#         yield value(table)
+#     elif isinstance(value, Deferred):
+#         yield value.resolve(table)
+#     elif isinstance(value, Selector):
+#         yield from value.expand(table)
+#     elif isinstance(value, ir.Expr):
+#         yield an.sub_immediate_parents(value.op(), table.op()).to_expr()
+#     else:
+#         yield value
 
 
 @public
 class GroupedTable:
     """An intermediate table expression to hold grouping information."""
 
-    def __init__(self, table, by, having=None, order_by=None, **expressions):
+    def __init__(self, table, by, having=(), order_by=()):
         self.table = table
-        self.by = list(
-            itertools.chain(
-                itertools.chain.from_iterable(
-                    _get_group_by_key(table, v) for v in util.promote_list(by)
-                ),
-                (
-                    expr.name(k)
-                    for k, v in expressions.items()
-                    for expr in _get_group_by_key(table, v)
-                ),
-            )
-        )
+        self.by = by
 
         if not self.by:
             raise com.IbisInputError("The grouping keys list is empty")
 
-        self._order_by = order_by or []
-        self._having = having or []
+        self._order_by = order_by
+        self._having = having
 
     def __getitem__(self, args):
         # Shortcut for projection with window functions
@@ -103,7 +93,7 @@ class GroupedTable:
         else:
             return GroupedArray(col, self)
 
-    def aggregate(self, metrics=None, **kwds) -> ir.Table:
+    def aggregate(self, metrics=(), **kwds) -> ir.Table:
         """Compute aggregates over a group by."""
         # XXX: pass having=self._having to the table aggregate method
         return self.table.aggregate(metrics, by=self.by, **kwds)
@@ -251,18 +241,12 @@ class GroupedTable:
         table = self.table
         default_frame = ops.RowsWindowFrame(
             table=self.table,
-            group_by=bind_expr(self.table, self.by),
-            order_by=bind_expr(self.table, self._order_by),
+            group_by=bind(self.table, self.by),
+            order_by=bind(self.table, self._order_by),
         )
         return [
-            an.windowize_function(e2, default_frame, merge_frames=True)
-            for expr in exprs
-            for e1 in util.promote_list(expr)
-            for e2 in util.promote_list(table._ensure_expr(e1))
-        ] + [
-            an.windowize_function(e, default_frame, merge_frames=True).name(k)
-            for k, expr in kwexprs.items()
-            for e in util.promote_list(table._ensure_expr(expr))
+            an.windowize_function(value, default_frame, merge_frames=True)
+            for value in bind(table, (exprs, kwexprs))
         ]
 
     projection = select

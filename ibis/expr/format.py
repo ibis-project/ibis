@@ -327,11 +327,6 @@ def _literal(op, value, **kwargs):
         return f"{value!r}"
 
 
-@fmt.register(ops.TableColumn)
-def _table_column(op, table, name):
-    return f"{table}.{name}"
-
-
 @fmt.register(ops.Field)
 def _relation_field(op, rel, name):
     return f"{rel}.{name}"

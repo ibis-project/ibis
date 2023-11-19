@@ -629,7 +629,8 @@ sqlalchemy_operation_registry: dict[Any, Any] = {
     ops.Literal: _literal,
     ops.SimpleCase: _simple_case,
     ops.SearchedCase: _searched_case,
-    ops.TableColumn: _table_column,
+    ops.Field: _table_column,
+    ops.ForeignField: _table_column,
     ops.TableArrayView: _table_array_view,
     ops.ExistsSubquery: _exists_subquery,
     # miscellaneous varargs

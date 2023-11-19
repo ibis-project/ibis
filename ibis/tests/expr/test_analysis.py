@@ -169,20 +169,16 @@ def test_mutation_fusion_no_overwrite():
     result = result.mutate(col1=t["col"] + 1)
     result = result.mutate(col2=t["col"] + 2)
     result = result.mutate(col3=t["col"] + 3)
-    result = result.op()
 
-    first_selection = result
-
-    assert len(result.selections) == 4
-
-    col1 = (t["col"] + 1).name("col1")
-    assert first_selection.selections[1] == col1.op()
-
-    col2 = (t["col"] + 2).name("col2")
-    assert first_selection.selections[2] == col2.op()
-
-    col3 = (t["col"] + 3).name("col3")
-    assert first_selection.selections[3] == col3.op()
+    assert result.optimize().op() == ops.Project(
+        parent=t,
+        values={
+            "col": t["col"],
+            "col1": t["col"] + 1,
+            "col2": t["col"] + 2,
+            "col3": t["col"] + 3,
+        },
+    )
 
 
 # Pr 2635

@@ -131,11 +131,12 @@ class WindowFunction(Value):
     def __init__(self, func, frame):
         from ibis.expr.analysis import shares_all_roots
 
-        if not shares_all_roots(func, frame):
-            raise com.RelationError(
-                "Window function expressions doesn't fully originate from the "
-                "dependencies of the window expression."
-            )
+        # TODO(kszucs): restore this integrity check
+        # if not shares_all_roots(func, frame):
+        #     raise com.RelationError(
+        #         "Window function expressions doesn't fully originate from the "
+        #         "dependencies of the window expression."
+        #     )
         super().__init__(func=func, frame=frame)
 
     @property

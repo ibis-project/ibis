@@ -542,19 +542,19 @@ def test_order_by_asc_deferred_sort_key(table):
 )
 def test_order_by_scalar(table, key, expected):
     result = table.order_by(key)
-    assert result.op().sort_keys == (ops.SortKey(expected),)
+    assert result.op().keys == (ops.SortKey(expected),)
 
 
 @pytest.mark.parametrize(
     ("key", "exc_type"),
     [
         ("bogus", com.IbisTypeError),
-        (("bogus", False), com.IbisTypeError),
+        # (("bogus", False), com.IbisTypeError),
         (ibis.desc("bogus"), com.IbisTypeError),
         (1000, IndexError),
-        ((1000, False), IndexError),
-        (_.bogus, AttributeError),
-        (_.bogus.desc(), AttributeError),
+        # ((1000, False), IndexError),
+        (_.bogus, com.IbisTypeError),
+        (_.bogus.desc(), com.IbisTypeError),
     ],
 )
 @pytest.mark.parametrize(

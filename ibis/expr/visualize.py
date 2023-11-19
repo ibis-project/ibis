@@ -56,7 +56,7 @@ def get_label(node):
             node,
             (
                 ops.Literal,
-                ops.TableColumn,
+                ops.Field,
                 ops.Alias,
                 ops.PhysicalTable,
                 ops.window.RangeWindowFrame,

@@ -1465,10 +1465,9 @@ def test_deferred_r_ops(op_name, expected_left, expected_right):
 
     op = getattr(operator, op_name)
     expr = t[op(left, right).name("b")]
-
-    op = expr.op().selections[0].arg
-    assert op.left.equals(expected_left(t).op())
-    assert op.right.equals(expected_right(t).op())
+    node = expr.op().values["b"]
+    assert node.left.equals(expected_left(t).op())
+    assert node.right.equals(expected_right(t).op())
 
 
 @pytest.mark.parametrize(

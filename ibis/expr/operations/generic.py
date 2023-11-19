@@ -21,33 +21,6 @@ from ibis.expr.operations.newrels import Relation  # noqa: TCH001
 
 
 @public
-class TableColumn(Value, Named):
-    """Selects a column from a `Table`."""
-
-    table: Relation
-    name: Union[str, int]
-
-    shape = ds.columnar
-
-    def __init__(self, table, name):
-        if isinstance(name, int):
-            name = table.schema.name_at_position(name)
-
-        if name not in table.schema:
-            columns_formatted = ", ".join(map(repr, table.schema.names))
-            raise com.IbisTypeError(
-                f"Column {name!r} is not found in table. "
-                f"Existing columns: {columns_formatted}."
-            )
-
-        super().__init__(table=table, name=name)
-
-    @property
-    def dtype(self):
-        return self.table.schema[self.name]
-
-
-@public
 class RowID(Value, Named):
     """The row number (an autonumeric) of the returned result."""
 

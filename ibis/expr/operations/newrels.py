@@ -8,16 +8,20 @@ import typing
 from abc import abstractmethod
 from typing import Annotated, Any, Optional
 
+from public import public
+
 import ibis.expr.datashape as ds
 import ibis.expr.datatypes as dt
 from ibis.common.annotations import attribute
 from ibis.common.collections import FrozenDict
 from ibis.common.deferred import Item, deferred, var
 from ibis.common.exceptions import IntegrityError
+from ibis.common.grounds import Concrete
 from ibis.common.patterns import Between, Check, In, InstanceOf, _, pattern, replace
 from ibis.common.typing import Coercible, VarTuple
 from ibis.expr.operations.core import Alias, Column, Node, Scalar, Value
 from ibis.expr.operations.sortkeys import SortKey
+from ibis.common.exceptions import IbisTypeError
 from ibis.expr.schema import Schema
 from ibis.util import Namespace
 
@@ -25,6 +29,7 @@ p = Namespace(pattern, module=__name__)
 d = Namespace(deferred, module=__name__)
 
 
+@public
 class Relation(Node, Coercible):
     def __init_subclass__(cls, **kwargs):
         super().__init_subclass__(**kwargs)
@@ -59,17 +64,29 @@ class Relation(Node, Coercible):
         return TableExpr(self)
 
 
+@public
 class Field(Value):
     rel: Relation
     name: str
 
     shape = ds.columnar
 
+    def __init__(self, rel, name):
+        if name not in rel.schema:
+            columns_formatted = ", ".join(map(repr, rel.schema.names))
+            # TODO(kszucs): should raise a more specific error type
+            raise IbisTypeError(
+                f"Column {name!r} is not found in table. "
+                f"Existing columns: {columns_formatted}."
+            )
+        super().__init__(rel=rel, name=name)
+
     @attribute
     def dtype(self):
         return self.rel.schema[self.name]
 
 
+@public
 class ForeignField(Value):
     rel: Relation
     name: str
@@ -91,6 +108,7 @@ def _check_integrity(values, allowed_parents):
         # egyebkent csak scalar lehet (e.g. scalar subquery or a value based on literals)
 
 
+@public
 class Project(Relation):
     parent: Relation
     values: FrozenDict[str, Annotated[Value, ~InstanceOf(Alias)]]
@@ -128,12 +146,14 @@ class Project(Relation):
 # TODO(kszucs): Subquery(value, outer_relation)
 
 
+@public
 class JoinLink(Node):
     how: str
     table: Relation
     predicates: VarTuple[Value[dt.Boolean]]
 
 
+@public
 class Join(Relation):
     first: Relation
     rest: VarTuple[JoinLink]
@@ -152,6 +172,7 @@ class Join(Relation):
         return Schema({k: v.dtype for k, v in self.fields.items()})
 
 
+@public
 class Sort(Relation):
     parent: Relation
     keys: VarTuple[SortKey]
@@ -169,6 +190,7 @@ class Sort(Relation):
         return self.parent.schema
 
 
+@public
 class Filter(Relation):
     parent: Relation
     predicates: VarTuple[Value[dt.Boolean]]
@@ -187,6 +209,7 @@ class Filter(Relation):
         return self.parent.schema
 
 
+@public
 class Limit(Relation):
     parent: Relation
     n: typing.Union[int, Scalar[dt.Integer], None] = None
@@ -201,6 +224,7 @@ class Limit(Relation):
         return self.parent.schema
 
 
+@public
 class Aggregate(Relation):
     parent: Relation
     groups: FrozenDict[str, Annotated[Column, ~InstanceOf(Alias)]]
@@ -219,40 +243,57 @@ class Aggregate(Relation):
         return Schema.from_tuples([*groups.items(), *metrics.items()])
 
 
+@public
 class Set(Relation):
     pass
 
 
+@public
 class Union(Set):
     pass
 
 
+@public
 class Intersection(Set):
     pass
 
 
+@public
 class Difference(Set):
     pass
 
 
+# TODO(kszucs): call it Source or Table?
+@public
 class PhysicalTable(Relation):
     name: str
     schema: Schema
     fields = FrozenDict()
 
 
+@public
 class UnboundTable(PhysicalTable):
     pass
 
 
+@public
+class Namespace(Concrete):
+    database: Optional[str] = None
+    schema: Optional[str] = None
+
+
+@public
 class DatabaseTable(PhysicalTable):
-    pass
+    source: Any
+    namespace: Namespace = Namespace()
 
 
+@public
 class InMemoryTable(PhysicalTable):
     pass
 
 
+@public
 class SQLQueryResult(Relation):
     """A table sourced from the result set of a select query."""
 
@@ -261,6 +302,7 @@ class SQLQueryResult(Relation):
     source: Any
 
 
+@public
 class DummyTable(Relation):
     # TODO(kszucs): verify that it has at least one element: Length(at_least=1)
     values: VarTuple[Value[dt.Any, ds.Scalar]]
@@ -274,6 +316,7 @@ class DummyTable(Relation):
         return Schema({op.name: op.dtype for op in self.values})
 
 
+@public
 class FillNa(Relation):
     """Fill null values in the table."""
 
@@ -289,6 +332,7 @@ class FillNa(Relation):
         return self.parent.schema
 
 
+@public
 class DropNa(Relation):
     """Drop null values in the table."""
 
@@ -305,6 +349,7 @@ class DropNa(Relation):
         return self.parent.schema
 
 
+@public
 class Sample(Relation):
     """Sample performs random sampling of records in a table."""
 
@@ -322,6 +367,7 @@ class Sample(Relation):
         return self.parent.schema
 
 
+@public
 class Distinct(Relation):
     """Distinct is a table-level unique-ing operation.
 
@@ -368,6 +414,7 @@ class Distinct(Relation):
 #     #     return next(bind(self, key))
 
 
+@public
 def table(name, schema):
     return UnboundTable(name, schema).to_expr()
 

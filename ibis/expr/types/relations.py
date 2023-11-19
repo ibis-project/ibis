@@ -90,6 +90,7 @@ def _regular_join_method(
 
 
 # TODO(kszucs): cover it with tests
+# TODO(kszucs): should use (table, *args, **kwargs) instead to avoid intepreting nested inputs
 def bind(table: TableExpr, value: Any) -> ir.Value:
     if isinstance(value, ValueExpr):
         yield value
@@ -97,6 +98,9 @@ def bind(table: TableExpr, value: Any) -> ir.Value:
         yield from bind(table, tuple(value.schema().keys()))
     elif isinstance(value, str):
         yield ops.Field(table, value).to_expr()
+    elif isinstance(value, int):
+        name = table.schema().name_at_position(value)
+        yield ops.Field(table, name).to_expr()
     elif isinstance(value, Deferred):
         yield value.resolve(table)
     elif isinstance(value, Selector):
@@ -670,19 +674,22 @@ class TableExpr(Expr, _FixedTextJupyterMixin):
         from ibis.expr.types.generic import Column
         from ibis.expr.types.logical import BooleanValue
 
-        if isinstance(what, slice):
+        if isinstance(what, (str, int)):
+            return next(bind(self, what))
+        elif isinstance(what, slice):
             limit, offset = util.slice_to_limit_offset(what, self.count())
             return self.limit(limit, offset=offset)
-        elif isinstance(what, (list, tuple, Table)):
-            # Projection case
-            return self.select(what)
+        # elif isinstance(what, (list, tuple, Table)):
+        #     # Projection case
+        #     return self.select(what)
         elif isinstance(what, BooleanValue):
             # TODO(kszucs): this branch should be removed, .filter should be
             # used instead
             # Boolean predicate
             return self.filter([what])
         else:
-            return next(bind(self, what))
+            return self.select(what)
+            # return next(bind(self, what))
             # raise NotImplementedError(
             #     "Selection rows or columns with {} objects is not supported".format(
             #         type(what).__name__
@@ -729,6 +736,7 @@ class TableExpr(Expr, _FixedTextJupyterMixin):
         │ …         │
         └───────────┘
         """
+        # TODO(kszucs): validate that is key is string
         return next(bind(self, key))
 
         # # A mapping of common attribute typos, mapping them to the proper name
@@ -804,7 +812,7 @@ class TableExpr(Expr, _FixedTextJupyterMixin):
 
     def group_by(
         self,
-        by: str | ir.Value | Iterable[str] | Iterable[ir.Value] | None = None,
+        by: str | ir.Value | Iterable[str] | Iterable[ir.Value] = (),
         **key_exprs: str | ir.Value | Iterable[str] | Iterable[ir.Value],
     ) -> GroupedTable:
         """Create a grouped table expression.
@@ -860,7 +868,8 @@ class TableExpr(Expr, _FixedTextJupyterMixin):
         """
         from ibis.expr.types.groupby import GroupedTable
 
-        return GroupedTable(self, by, **key_exprs)
+        groups = list(bind(self, (by, key_exprs)))
+        return GroupedTable(self, groups)
 
     def rowid(self) -> ir.IntegerValue:
         """A unique integer per row.
@@ -962,9 +971,9 @@ class TableExpr(Expr, _FixedTextJupyterMixin):
 
     def aggregate(
         self,
-        metrics: Sequence[ir.Scalar] | None = None,
-        by: Sequence[ir.Value] | None = None,
-        having: Sequence[ir.BooleanValue] | None = None,
+        metrics: Sequence[ir.Scalar] | None = (),
+        by: Sequence[ir.Value] | None = (),
+        having: Sequence[ir.BooleanValue] | None = (),
         **kwargs: ir.Value,
     ) -> Table:
         """Aggregate a table with a given set of reductions grouping by `by`.
@@ -1029,10 +1038,11 @@ class TableExpr(Expr, _FixedTextJupyterMixin):
         │ orange │       0.33 │     0.33 │
         └────────┴────────────┴──────────┘
         """
-        if having is not None:
+        if having:
             raise NotImplementedError
+
         groups = bind(self, by)
-        metrics = bind(self, metrics)
+        metrics = bind(self, (metrics, kwargs))
         groups = unwrap_aliases(groups)
         metrics = unwrap_aliases(metrics)
         node = ops.Aggregate(self, groups, metrics)
@@ -1716,7 +1726,7 @@ class TableExpr(Expr, _FixedTextJupyterMixin):
         return ops.TableArrayView(self).to_expr()
 
     def mutate(
-        self, exprs: Sequence[ir.Expr] | None = None, **mutations: ir.Value
+        self, exprs: Sequence[ir.Expr] | None = (), **mutations: ir.Value
     ) -> Table:
         """Add columns to a table expression.
 
@@ -4378,18 +4388,19 @@ class JoinExpr(TableExpr):
     def order_by(self, *keys):
         return self.finish().order_by(*keys)
 
-    def guess(self):
-        # TODO(kszucs): more advanced heuristics can be applied here
-        # trying to figure out the join intent here
+    def tables(self):
         node = self.op()
         parents = [node.first]
         for join in node.rest:
             parents.append(join.table)
+        return parents
 
+    def guess(self):
+        # TODO(kszucs): more advanced heuristics can be applied here
+        # trying to figure out the join intent here
         fields = {}
-        for parent in parents:
+        for parent in self.tables():
             fields.update({k: ops.Field(parent, k) for k in parent.schema})
-
         return fields
 
     def finish(self, fields=None):
