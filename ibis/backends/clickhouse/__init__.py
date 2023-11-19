@@ -3,6 +3,7 @@ from __future__ import annotations
 import ast
 import atexit
 import glob
+import warnings
 from contextlib import closing, suppress
 from functools import partial
 from typing import TYPE_CHECKING, Any, Literal
@@ -169,6 +170,11 @@ class Backend(BaseBackend, CanCreateDatabase):
             compress=compression,
             **kwargs,
         )
+        try:
+            with closing(self.raw_sql("SET session_timezone = 'UTC'")):
+                pass
+        except Exception as e:  # noqa: BLE001
+            warnings.warn(f"Could not set timezone to UTC: {e}", category=UserWarning)
         self._temp_views = set()
 
     @property

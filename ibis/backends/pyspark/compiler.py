@@ -2082,18 +2082,45 @@ def compile_flatten(t, op, **kwargs):
     return F.flatten(t.translate(op.arg, **kwargs))
 
 
+def _zero_value(dtype):
+    if dtype.is_interval():
+        return F.expr(f"INTERVAL 0 {dtype.resolution}")
+    return F.lit(0)
+
+
+def _build_sequence(start, stop, step, zero):
+    seq = F.sequence(start, stop, step)
+    length = F.size(seq)
+    last_element = F.element_at(seq, length)
+    # slice off the last element if we'd be inclusive on the right
+    seq = F.when(last_element == stop, F.slice(seq, 1, length - 1)).otherwise(seq)
+    return F.when(
+        (step != zero) & (F.signum(step) == F.signum(stop - start)), seq
+    ).otherwise(F.array())
+
+
 @compiles(ops.IntegerRange)
 def compile_integer_range(t, op, **kwargs):
     start = t.translate(op.start, **kwargs)
     stop = t.translate(op.stop, **kwargs)
     step = t.translate(op.step, **kwargs)
 
-    denom = F.when(step == 0, F.lit(None)).otherwise(step)
-    n = F.floor((stop - start) / denom)
-    seq = F.sequence(start, stop, step)
-    seq = F.slice(
-        seq,
-        1,
-        F.size(seq) - F.when(F.element_at(seq, F.size(seq)) == stop, 1).otherwise(0),
-    )
-    return F.when(n > 0, seq).otherwise(F.array())
+    return _build_sequence(start, stop, step, _zero_value(op.step.dtype))
+
+
+@compiles(ops.TimestampRange)
+def compile_timestamp_range(t, op, **kwargs):
+    start = t.translate(op.start, **kwargs)
+    stop = t.translate(op.stop, **kwargs)
+
+    if not isinstance(op.step, ops.Literal):
+        raise com.UnsupportedOperationError(
+            "`step` argument of timestamp range must be a literal"
+        )
+
+    step_value = op.step.value
+    unit = op.step.dtype.resolution
+
+    step = F.expr(f"INTERVAL {step_value} {unit}")
+
+    return _build_sequence(start, stop, step, _zero_value(op.step.dtype))

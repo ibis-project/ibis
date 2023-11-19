@@ -2,11 +2,13 @@ from __future__ import annotations
 
 import contextlib
 import functools
+from datetime import datetime
 
 import numpy as np
 import pandas as pd
 import pandas.testing as tm
 import pytest
+import pytz
 import sqlalchemy as sa
 import toolz
 from pytest import param
@@ -33,6 +35,17 @@ try:
     from pyspark.sql.utils import AnalysisException as PySparkAnalysisException
 except ImportError:
     PySparkAnalysisException = None
+
+try:
+    from polars.exceptions import ComputeError as PolarsComputeError
+except ImportError:
+    PolarsComputeError = None
+
+try:
+    from py4j.protocol import Py4JJavaError
+except ImportError:
+    Py4JJavaError = None
+
 
 pytestmark = [
     pytest.mark.never(
@@ -931,3 +944,134 @@ def test_complex_array_map(con):
 
     expr = arr.map(lambda token: token.substitute({"abc": "ABC"}))
     assert con.execute(expr) == ["ABC", "xyz"]
+
+
+timestamp_range_tzinfos = pytest.mark.parametrize(
+    "tzinfo",
+    [
+        param(
+            None,
+            id="none",
+            marks=[
+                pytest.mark.notyet(
+                    ["bigquery"],
+                    raises=com.IbisTypeError,
+                    reason="bigquery doesn't support datetime ranges, only timestamp ranges",
+                ),
+            ],
+        ),
+        param(
+            pytz.UTC,
+            id="utc",
+            marks=[
+                pytest.mark.notyet(
+                    ["trino"],
+                    raises=sa.exc.ProgrammingError,
+                    reason="trino doesn't support timestamp with time zone arguments to its sequence function",
+                ),
+                pytest.mark.notyet(
+                    ["polars"],
+                    raises=(TypeError, com.UnsupportedOperationError),
+                    reason="polars doesn't work with dateutil timezones",
+                ),
+            ],
+        ),
+    ],
+)
+
+
+@pytest.mark.parametrize(
+    ("start", "stop", "step", "freq"),
+    [
+        param(
+            datetime(2017, 1, 1),
+            datetime(2017, 1, 2),
+            ibis.interval(hours=1),
+            "1H",
+            id="pos",
+        ),
+        param(
+            datetime(2017, 1, 2),
+            datetime(2017, 1, 1),
+            ibis.interval(hours=-1),
+            "-1H",
+            id="neg_inner",
+            marks=[pytest.mark.notyet(["polars"], raises=PolarsComputeError)],
+        ),
+        param(
+            datetime(2017, 1, 2),
+            datetime(2017, 1, 1),
+            -ibis.interval(hours=1),
+            "-1H",
+            id="neg_outer",
+            marks=[
+                pytest.mark.notyet(["polars"], raises=com.UnsupportedOperationError),
+                pytest.mark.notyet(["bigquery"], raises=BadRequest),
+                pytest.mark.notyet(
+                    ["clickhouse", "pyspark", "snowflake"],
+                    raises=com.UnsupportedOperationError,
+                ),
+            ],
+        ),
+    ],
+)
+@timestamp_range_tzinfos
+@pytest.mark.notimpl(
+    ["pandas", "dask", "flink", "datafusion"], raises=com.OperationNotDefinedError
+)
+def test_timestamp_range(con, start, stop, step, freq, tzinfo):
+    start = start.replace(tzinfo=tzinfo)
+    stop = stop.replace(tzinfo=tzinfo)
+    expr = ibis.range(start, stop, step)
+    result = con.execute(expr)
+    expected = pd.date_range(start, stop, freq=freq, inclusive="left")
+    assert list(result) == expected.tolist()
+
+
+@pytest.mark.parametrize(
+    ("start", "stop", "step"),
+    [
+        param(
+            datetime(2017, 1, 1, tzinfo=pytz.UTC),
+            datetime(2017, 1, 2, tzinfo=pytz.UTC),
+            ibis.interval(hours=0),
+            id="pos",
+            marks=[pytest.mark.notyet(["polars"], raises=PolarsComputeError)],
+        ),
+        param(
+            datetime(2017, 1, 1, tzinfo=pytz.UTC),
+            datetime(2017, 1, 2, tzinfo=pytz.UTC),
+            -ibis.interval(hours=0),
+            id="neg",
+            marks=[
+                pytest.mark.notyet(["polars"], raises=com.UnsupportedOperationError),
+                pytest.mark.notyet(["bigquery"], raises=BadRequest),
+                pytest.mark.notyet(
+                    ["clickhouse", "pyspark", "snowflake"],
+                    raises=com.UnsupportedOperationError,
+                ),
+            ],
+        ),
+    ],
+)
+@timestamp_range_tzinfos
+@pytest.mark.notimpl(
+    ["pandas", "dask", "flink", "datafusion"], raises=com.OperationNotDefinedError
+)
+def test_timestamp_range_zero_step(con, start, stop, step, tzinfo):
+    start = start.replace(tzinfo=tzinfo)
+    stop = stop.replace(tzinfo=tzinfo)
+    expr = ibis.range(start, stop, step)
+    result = con.execute(expr)
+    assert list(result) == []
+
+
+@pytest.mark.notimpl(["flink"], raises=Py4JJavaError)
+@pytest.mark.notimpl(["datafusion"], raises=Exception)
+def test_repr_timestamp_array(con, monkeypatch):
+    monkeypatch.setattr(ibis.options, "interactive", True)
+    monkeypatch.setattr(ibis.options, "default_backend", con)
+    assert ibis.options.interactive is True
+    assert ibis.options.default_backend is con
+    expr = ibis.array(pd.date_range("2010-01-01", "2010-01-03", freq="D").tolist())
+    assert repr(expr)

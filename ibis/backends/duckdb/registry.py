@@ -183,7 +183,7 @@ def _literal(t, op):
     sqla_type = t.get_sqla_type(dtype)
 
     if dtype.is_interval():
-        return sa.literal_column(f"INTERVAL '{value} {dtype.resolution}'")
+        return getattr(sa.func, f"to_{dtype.unit.plural}")(value)
     elif dtype.is_array():
         values = value.tolist() if isinstance(value, np.ndarray) else value
         return sa.cast(sa.func.list_value(*values), sqla_type)
@@ -550,6 +550,8 @@ operation_registry.update(
         ops.GeoWithin: fixed_arity(sa.func.ST_Within, 2),
         ops.GeoX: unary(sa.func.ST_X),
         ops.GeoY: unary(sa.func.ST_Y),
+        # other ops
+        ops.TimestampRange: fixed_arity(sa.func.range, 3),
     }
 )
 

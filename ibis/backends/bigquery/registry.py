@@ -776,14 +776,62 @@ def _group_concat(translator, op):
     return f"STRING_AGG({arg}, {sep})"
 
 
-def _integer_range(translator, op):
-    start = translator.translate(op.start)
-    stop = translator.translate(op.stop)
-    step = translator.translate(op.step)
-    n = f"FLOOR(({stop} - {start}) / NULLIF({step}, 0))"
-    gen_array = f"GENERATE_ARRAY({start}, {stop}, {step})"
-    inner = f"SELECT x FROM UNNEST({gen_array}) x WHERE x <> {stop}"
-    return f"IF({n} > 0, ARRAY({inner}), [])"
+def _zero(dtype):
+    if dtype.is_interval():
+        return "MAKE_INTERVAL()"
+    return "0"
+
+
+def _sign(value, dtype):
+    if dtype.is_interval():
+        zero = _zero(dtype)
+        return f"""\
+CASE
+  WHEN {value} < {zero} THEN -1
+  WHEN {value} = {zero} THEN 0
+  WHEN {value} > {zero} THEN 1
+  ELSE NULL
+END"""
+    return f"SIGN({value})"
+
+
+def _nullifzero(step, zero, step_dtype):
+    if step_dtype.is_interval():
+        return f"IF({step} = {zero}, NULL, {step})"
+    return f"NULLIF({step}, {zero})"
+
+
+def _make_range(func):
+    def _range(translator, op):
+        start = translator.translate(op.start)
+        stop = translator.translate(op.stop)
+        step = translator.translate(op.step)
+
+        step_dtype = op.step.dtype
+        step_sign = _sign(step, step_dtype)
+        delta_sign = _sign(step, step_dtype)
+        zero = _zero(step_dtype)
+        nullifzero = _nullifzero(step, zero, step_dtype)
+
+        condition = f"{nullifzero} IS NOT NULL AND {step_sign} = {delta_sign}"
+        gen_array = f"{func}({start}, {stop}, {step})"
+        inner = f"SELECT x FROM UNNEST({gen_array}) x WHERE x <> {stop}"
+        return f"IF({condition}, ARRAY({inner}), [])"
+
+    return _range
+
+
+def _timestamp_range(translator, op):
+    start = op.start
+    stop = op.stop
+
+    if start.dtype.timezone is None or stop.dtype.timezone is None:
+        raise com.IbisTypeError(
+            "Timestamps without timezone values are not supported when generating timestamp ranges"
+        )
+
+    rule = _make_range("GENERATE_TIMESTAMP_ARRAY")
+    return rule(translator, op)
 
 
 OPERATION_REGISTRY = {
@@ -949,7 +997,8 @@ OPERATION_REGISTRY = {
     ops.TimeDelta: _time_delta,
     ops.DateDelta: _date_delta,
     ops.TimestampDelta: _timestamp_delta,
-    ops.IntegerRange: _integer_range,
+    ops.IntegerRange: _make_range("GENERATE_ARRAY"),
+    ops.TimestampRange: _timestamp_range,
 }
 
 _invalid_operations = {

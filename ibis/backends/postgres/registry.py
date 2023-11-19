@@ -618,19 +618,36 @@ def _array_filter(t, op):
     )
 
 
-def _integer_range(t, op):
+def zero_value(dtype):
+    if dtype.is_interval():
+        return sa.func.make_interval()
+    return 0
+
+
+def interval_sign(v):
+    zero = sa.func.make_interval()
+    return sa.case((v == zero, 0), (v < zero, -1), (v > zero, 1))
+
+
+def _sign(value, dtype):
+    if dtype.is_interval():
+        return interval_sign(value)
+    return sa.func.sign(value)
+
+
+def _range(t, op):
     start = t.translate(op.start)
     stop = t.translate(op.stop)
     step = t.translate(op.step)
     satype = t.get_sqla_type(op.dtype)
-    # `sequence` doesn't allow arguments that would produce an empty range, so
-    # check that first
-    n = sa.func.floor((stop - start) / sa.func.nullif(step, 0))
     seq = sa.func.generate_series(start, stop, step, type_=satype)
+    zero = zero_value(op.step.dtype)
     return sa.case(
-        # TODO(cpcloud): revisit using array_remove when my brain is working
         (
-            n > 0,
+            sa.and_(
+                sa.func.nullif(step, zero).is_not(None),
+                _sign(step, op.step.dtype) == _sign(stop - start, op.step.dtype),
+            ),
             sa.func.array_remove(
                 sa.func.array(sa.select(seq).scalar_subquery()), stop, type_=satype
             ),
@@ -839,6 +856,7 @@ operation_registry.update(
         ops.ArrayPosition: fixed_arity(_array_position, 2),
         ops.ArrayMap: _array_map,
         ops.ArrayFilter: _array_filter,
-        ops.IntegerRange: _integer_range,
+        ops.IntegerRange: _range,
+        ops.TimestampRange: _range,
     }
 )

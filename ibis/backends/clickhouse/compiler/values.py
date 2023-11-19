@@ -1017,3 +1017,30 @@ def _agg_udf(op, *, where, **kw) -> str:
 @translate_val.register(ops.TimestampDelta)
 def _delta(op, *, part, left, right, **_):
     return sg.exp.DateDiff(this=left, expression=right, unit=part)
+
+
+@translate_val.register(ops.TimestampRange)
+def _timestamp_range(op, *, start, stop, step, **_):
+    unit = op.step.dtype.unit.name.lower()
+
+    if not isinstance(op.step, ops.Literal):
+        raise com.UnsupportedOperationError(
+            "ClickHouse doesn't support non-literal step values"
+        )
+
+    step_value = op.step.value
+
+    offset = sg.to_identifier("offset")
+
+    # e.g., offset -> dateAdd(DAY, offset, start)
+    func = sg.exp.Lambda(
+        this=F.dateAdd(sg.to_identifier(unit), offset, start), expressions=[offset]
+    )
+
+    if step_value == 0:
+        return F.array()
+
+    result = F.arrayMap(
+        func, F.range(0, F.timestampDiff(unit, start, stop), step_value)
+    )
+    return result

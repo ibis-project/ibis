@@ -1070,7 +1070,7 @@ def array(values: Iterable[V], type: str | dt.DataType | None = None) -> ArrayVa
     Create an array scalar from Python literals
 
     >>> ibis.array([1.0, 2.0, 3.0])
-    [1.0, 2.0, 3.0]
+    [1.0, 2.0, ... +1]
 
     Mixing scalar and column expressions is allowed
 
