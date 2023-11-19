@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import itertools
 import operator
 from functools import partial
 from typing import TYPE_CHECKING, Any
@@ -147,3 +148,10 @@ def execute_array_collect_groupby(op, data, where, aggcontext=None, **kwargs):
 @execute_node.register(ops.Unnest, pd.Series)
 def execute_unnest(op, data, **kwargs):
     return data.explode()
+
+
+@execute_node.register(ops.ArrayFlatten, pd.Series)
+def execute_array_flatten(op, data, **kwargs):
+    return data.map(
+        lambda v: list(itertools.chain.from_iterable(v)), na_action="ignore"
+    )
