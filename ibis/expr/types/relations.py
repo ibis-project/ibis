@@ -97,7 +97,8 @@ def bind(table: TableExpr, value: Any) -> ir.Value:
     elif isinstance(value, ValueExpr):
         yield value
     elif isinstance(value, TableExpr):
-        yield from bind(table, tuple(value.schema().keys()))
+        for name in value.columns:
+            yield value.column(name)
     elif isinstance(value, Deferred):
         yield value.resolve(table)
     elif isinstance(value, Selector):
@@ -686,13 +687,14 @@ class TableExpr(Expr, _FixedTextJupyterMixin):
         elif isinstance(what, slice):
             limit, offset = util.slice_to_limit_offset(what, self.count())
             return self.limit(limit, offset=offset)
-        # elif isinstance(what, (list, tuple, Table)):
-        #     # Projection case
-        #     return self.select(what)
-        elif isinstance(what, BooleanValue):
+        elif isinstance(what, (list, tuple, Table)):
+            # Projection case
+            return self.select(what)
+
+        (what,) = bind(self, what)
+        if isinstance(what, BooleanValue):
             # TODO(kszucs): this branch should be removed, .filter should be
             # used instead
-            # Boolean predicate
             return self.filter([what])
         else:
             return self.select(what)
@@ -2020,6 +2022,10 @@ class TableExpr(Expr, _FixedTextJupyterMixin):
         values = bind(self, (exprs, named_exprs))
         values = unwrap_aliases(values)
         values = dereference_values(self.op(), values)
+        if not values:
+            raise com.IbisTypeError(
+                "You must select at least one column for a valid projection"
+            )
         # TODO(kszucs): windowization of reductions should happen here
         # 1. if a reduction if originating from self it should be turned into a window function
         # 2. if a scalar value is originating from a foreign table it should be turned into a scalar subquery
@@ -4346,11 +4352,7 @@ class TableExpr(Expr, _FixedTextJupyterMixin):
 
         node = self.op()
         # apply the rewrites
-        node = node.replace(
-            subsequent_projects
-            | subsequent_filters
-            | subsequent_sorts
-        )
+        node = node.replace(subsequent_projects | subsequent_filters | subsequent_sorts)
         node = node.replace(complete_reprojection)
 
         # return with a new TableExpr wrapping the optimized node
@@ -4418,6 +4420,9 @@ class JoinExpr(TableExpr):
         rname: str = "{name}_right",
     ):
         node = self.op()
+
+        right = ops.Relation.__coerce__(right).to_expr()
+
         # TODO(kszucs): need to do the usual input preparation here, binding,
         # unwrap_aliases, dereference_values, but the latter requires the
         # `field` property to be not empty in the Join node

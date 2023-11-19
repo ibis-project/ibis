@@ -188,7 +188,7 @@ class SelectBuilder:
         table = op.parent
 
         if toplevel:
-            if isinstance(table, ops.Join):
+            if isinstance(table, ops.JoinChain):
                 self._collect_Join(table)
             else:
                 self._collect(table)

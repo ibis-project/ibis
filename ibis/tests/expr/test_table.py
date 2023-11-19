@@ -20,7 +20,7 @@ import ibis.selectors as s
 from ibis import _
 from ibis import literal as L
 from ibis.common.annotations import ValidationError
-from ibis.common.exceptions import RelationError
+from ibis.common.exceptions import RelationError, IntegrityError
 from ibis.expr import api
 from ibis.expr.types import Column, Table
 from ibis.tests.expr.mocks import MockAlchemyBackend, MockBackend
@@ -200,7 +200,7 @@ def test_projection_with_star_expr(table):
 
     # cannot pass an invalid table expression
     t2 = t.aggregate([t["a"].sum().name("sum(a)")], by=["g"])
-    with pytest.raises(RelationError):
+    with pytest.raises(IntegrityError):
         t[[t2]]
     # TODO: there may be some ways this can be invalid
 
@@ -350,13 +350,13 @@ def test_add_predicate_coalesce(table):
     pred1 = table["a"] > 5
     pred2 = table["b"] > 0
 
-    result = table[pred1][pred2]
+    result = table[pred1][pred2].optimize()
     expected = table.filter([pred1, pred2])
     assert_equal(result, expected)
 
     # 59, if we are not careful, we can obtain broken refs
     subset = table[pred1]
-    result = subset.filter([subset["b"] > 0])
+    result = subset.filter([subset["b"] > 0]).optimize()
     assert_equal(result, expected)
 
 
@@ -1508,11 +1508,11 @@ def test_mutate_chain():
     assert three.optimize().op() == ops.Project(
         parent=one,
         values={
-            "a":  one.a.fillna("Short Term"),
-            "b":  one.b.fillna("Short Term"),
-
-        }
+            "a": one.a.fillna("Short Term"),
+            "b": one.b.fillna("Short Term"),
+        },
     )
+
 
 # TODO(kszucs): move this test case to ibis/tests/sql since it requires the
 # sql backend to be executed
@@ -1696,22 +1696,15 @@ def test_array_string_compare():
 
 
 @pytest.mark.parametrize("value", [True, False])
-@pytest.mark.parametrize(
-    "api",
-    [
-        param(lambda t, value: t[value], id="getitem"),
-        param(lambda t, value: t.filter(value), id="filter"),
-    ],
-)
-def test_filter_with_literal(value, api):
+def test_filter_with_literal(value):
     t = ibis.table(dict(a="string"))
-    filt = api(t, ibis.literal(value))
-    assert filt is not None
+    filt = t.filter(ibis.literal(value))
+    assert filt.op() == ops.Filter(parent=t, predicates=[ibis.literal(value)])
 
     # ints are invalid predicates
     int_val = ibis.literal(int(value))
-    with pytest.raises((NotImplementedError, ValidationError, com.IbisTypeError)):
-        api(t, int_val)
+    with pytest.raises(ValidationError):
+        t.filter(int_val)
 
 
 def test_cast():
