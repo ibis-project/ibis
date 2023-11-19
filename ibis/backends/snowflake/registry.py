@@ -285,7 +285,6 @@ operation_registry.update(
     {
         ops.JSONGetItem: fixed_arity(sa.func.get, 2),
         ops.StringFind: _string_find,
-        ops.ArrayZip: _array_zip,
         ops.Map: fixed_arity(
             lambda keys, values: sa.func.iff(
                 sa.func.is_array(keys) & sa.func.is_array(values),
@@ -420,6 +419,9 @@ operation_registry.update(
         ),
         ops.ArrayRemove: fixed_arity(sa.func.array_remove, 2),
         ops.ArrayIntersect: fixed_arity(sa.func.array_intersection, 2),
+        ops.ArrayZip: _array_zip,
+        ops.ArraySort: unary(sa.func.ibis_udfs.public.array_sort),
+        ops.ArrayRepeat: fixed_arity(sa.func.ibis_udfs.public.array_repeat, 2),
         ops.StringSplit: fixed_arity(sa.func.split, 2),
         # snowflake typeof only accepts VARIANT, so we cast
         ops.TypeOf: unary(lambda arg: sa.func.typeof(sa.func.to_variant(arg))),
@@ -478,8 +480,6 @@ operation_registry.update(
         ops.Median: reduction(sa.func.median),
         ops.TableColumn: _table_column,
         ops.Levenshtein: fixed_arity(sa.func.editdistance, 2),
-        ops.ArraySort: unary(sa.func.ibis_udfs.public.array_sort),
-        ops.ArrayRepeat: fixed_arity(sa.func.ibis_udfs.public.array_repeat, 2),
         ops.TimeDelta: fixed_arity(
             lambda part, left, right: sa.func.timediff(part, right, left), 3
         ),
