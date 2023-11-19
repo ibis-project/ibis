@@ -226,11 +226,6 @@ def test_literal_map_get_broadcast(backend, alltypes, df):
         param(["a", "b"], ["1", "2"], id="int"),
     ],
 )
-@pytest.mark.notyet(
-    ["flink"],
-    raises=AssertionError,
-    reason="got list of tuples instead; requires PyFlink compatibility with PyArrow 13",
-)
 def test_map_construct_dict(con, keys, values):
     expr = ibis.map(keys, values)
     result = con.execute(expr.name("tmp"))

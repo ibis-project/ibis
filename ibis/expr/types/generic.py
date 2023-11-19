@@ -1225,7 +1225,9 @@ class Scalar(Value):
         return data_mapper.convert_scalar(table[0][0], self.type())
 
     def __pandas_result__(self, df: pd.DataFrame) -> Any:
-        return df.iat[0, 0]
+        from ibis.formats.pandas import PandasData
+
+        return PandasData.convert_scalar(df, self.type())
 
     def as_table(self) -> ir.Table:
         """Promote the scalar expression to a table.
