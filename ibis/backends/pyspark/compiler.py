@@ -2075,3 +2075,8 @@ def compile_levenshtein(t, op, **kwargs):
     left = t.translate(op.left, **kwargs)
     right = t.translate(op.right, **kwargs)
     return F.levenshtein(left, right)
+
+
+@compiles(ops.ArrayFlatten)
+def compile_flatten(t, op, **kwargs):
+    return F.flatten(t.translate(op.arg, **kwargs))
