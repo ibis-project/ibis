@@ -842,3 +842,69 @@ def test_array_of_struct_unnest(con):
     # `value` can be `None` because the order of results is arbitrary; observed
     # in the wild with the trino backend
     assert value is None or isinstance(value, str)
+
+
+@pytest.fixture(scope="module")
+def flatten_data():
+    return {
+        "empty": {"data": [[], [], []], "type": "array<!array<!int64>>"},
+        "happy": {
+            "data": [[["abc"]], [["bcd"]], [["def"]]],
+            "type": "array<!array<!string>>",
+        },
+        "nulls_only": {"data": [None, None, None], "type": "array<array<string>>"},
+        "mixed_nulls": {"data": [[[]], None, [[None]]], "type": "array<array<string>>"},
+    }
+
+
+@pytest.mark.notyet(
+    ["bigquery"],
+    reason="BigQuery doesn't support arrays of arrays",
+    raises=BadRequest,
+)
+@pytest.mark.notyet(
+    ["postgres"],
+    reason="Postgres doesn't truly support arrays of arrays",
+    raises=com.OperationNotDefinedError,
+)
+@pytest.mark.parametrize(
+    ("column", "expected"),
+    [
+        param("empty", pd.Series([[], [], []], dtype="object"), id="empty"),
+        param(
+            "happy", pd.Series([["abc"], ["bcd"], ["def"]], dtype="object"), id="happy"
+        ),
+        param(
+            "nulls_only",
+            pd.Series([None, None, None], dtype="object"),
+            id="nulls_only",
+            marks=[
+                pytest.mark.notyet(
+                    ["clickhouse"],
+                    reason="doesn't support nullable array elements",
+                    raises=ClickhouseDatabaseError,
+                )
+            ],
+        ),
+        param(
+            "mixed_nulls",
+            pd.Series([[], None, [None]], dtype="object"),
+            id="mixed_nulls",
+            marks=[
+                pytest.mark.notyet(
+                    ["clickhouse"],
+                    reason="doesn't support nullable array elements",
+                    raises=ClickhouseDatabaseError,
+                )
+            ],
+        ),
+    ],
+)
+def test_array_flatten(backend, flatten_data, column, expected):
+    data = flatten_data[column]
+    t = ibis.memtable(
+        {column: data["data"]}, schema=ibis.schema({column: data["type"]})
+    )
+    expr = t[column].flatten()
+    result = backend.connection.execute(expr)
+    backend.assert_series_equal(result, expected, check_names=False)
