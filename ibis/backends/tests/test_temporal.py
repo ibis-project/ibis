@@ -44,10 +44,13 @@ except ImportError:
 
 try:
     from clickhouse_connect.driver.exceptions import (
+        DatabaseError as ClickhouseDatabaseError,
+    )
+    from clickhouse_connect.driver.exceptions import (
         InternalError as ClickhouseOperationalError,
     )
 except ImportError:
-    ClickhouseOperationalError = None
+    ClickhouseOperationalError = ClickhouseDatabaseError = None
 
 try:
     from impala.error import (
@@ -64,11 +67,15 @@ try:
 except ImportError:
     Py4JJavaError = None
 
-
 try:
     from pyexasol.exceptions import ExaQueryError
 except ImportError:
     ExaQueryError = None
+
+try:
+    from pyspark.sql.utils import IllegalArgumentException
+except ImportError:
+    IllegalArgumentException = None
 
 
 @pytest.mark.parametrize("attr", ["year", "month", "day"])
@@ -707,9 +714,9 @@ def test_date_truncate(backend, alltypes, df, unit):
     unit = PANDAS_UNITS.get(unit, unit)
 
     try:
-        expected = df.timestamp_col.dt.floor(unit)
+        expected = df.timestamp_col.dt.floor(unit).dt.date
     except ValueError:
-        expected = df.timestamp_col.dt.to_period(unit).dt.to_timestamp()
+        expected = df.timestamp_col.dt.to_period(unit).dt.to_timestamp().dt.date
 
     result = expr.execute()
     expected = backend.default_series_rename(expected)
@@ -1017,10 +1024,14 @@ def test_integer_to_interval_date(backend, con, alltypes, df, unit):
         warnings.simplefilter(
             "ignore", category=(UserWarning, pd.errors.PerformanceWarning)
         )
-        expected = pd.to_datetime(df.date_string_col) + offset
+        expected = (
+            pd.to_datetime(df.date_string_col)
+            .add(offset)
+            .map(lambda ts: ts.normalize().date(), na_action="ignore")
+        )
 
     expected = backend.default_series_rename(expected)
-    backend.assert_series_equal(result, expected.map(lambda ts: ts.normalize()))
+    backend.assert_series_equal(result, expected)
 
 
 date_value = pd.Timestamp("2017-12-31")
@@ -1119,7 +1130,12 @@ timestamp_value = pd.Timestamp("2018-01-01 18:18:18")
         ),
         param(
             lambda t, _: t.timestamp_col.date() + ibis.interval(days=4),
-            lambda t, _: t.timestamp_col.dt.floor("d") + pd.Timedelta(days=4),
+            lambda t, _: (
+                t.timestamp_col.dt.floor("d")
+                .add(pd.Timedelta(days=4))
+                .dt.normalize()
+                .dt.date
+            ),
             id="date-add-interval",
             marks=[
                 pytest.mark.notimpl(
@@ -1131,7 +1147,12 @@ timestamp_value = pd.Timestamp("2018-01-01 18:18:18")
         ),
         param(
             lambda t, _: t.timestamp_col.date() - ibis.interval(days=14),
-            lambda t, _: t.timestamp_col.dt.floor("d") - pd.Timedelta(days=14),
+            lambda t, _: (
+                t.timestamp_col.dt.floor("d")
+                .sub(pd.Timedelta(days=14))
+                .dt.normalize()
+                .dt.date
+            ),
             id="date-subtract-interval",
             marks=[
                 pytest.mark.notimpl(
@@ -1229,7 +1250,9 @@ def test_temporal_binop(backend, con, alltypes, df, expr_fn, expected_fn):
     result = con.execute(expr)
     expected = backend.default_series_rename(expected)
 
-    backend.assert_series_equal(result, expected.astype(result.dtype))
+    backend.assert_series_equal(
+        result, expected.astype(result.dtype), check_dtype=False
+    )
 
 
 plus = lambda t, td: t.timestamp_col + pd.Timedelta(td)
@@ -1624,6 +1647,7 @@ def test_interval_add_cast_column(backend, alltypes, df):
         .dt.normalize()
         .add(df.bigint_col.astype("timedelta64[D]"))
         .rename("tmp")
+        .dt.date
     )
     backend.assert_series_equal(result, expected.astype(result.dtype))
 
@@ -2200,11 +2224,6 @@ def test_timestamp_literal(con, backend):
         "<NUMERIC>, <NUMERIC>, <NUMERIC>, <NUMERIC>)"
     ),
 )
-@pytest.mark.notimpl(
-    ["flink"],
-    "https://github.com/ibis-project/ibis/pull/6920/files#r1372453059",
-    raises=AssertionError,
-)
 @pytest.mark.notimpl(["exasol"], raises=ExaQueryError)
 def test_timestamp_with_timezone_literal(con, timezone, expected):
     expr = ibis.timestamp(2022, 2, 4, 16, 20, 0).cast(dt.Timestamp(timezone=timezone))
@@ -2511,7 +2530,7 @@ def test_date_column_from_iso(backend, con, alltypes, df):
 
     result = con.execute(expr.name("tmp"))
     golden = df.year.astype(str) + "-" + df.month.astype(str).str.rjust(2, "0") + "-13"
-    actual = result.dt.strftime("%Y-%m-%d")
+    actual = result.map(datetime.date.isoformat)
     backend.assert_series_equal(golden.rename("tmp"), actual.rename("tmp"))
 
 
@@ -2976,7 +2995,7 @@ def test_timestamp_bucket_offset(backend, offset_mins):
     backend.assert_series_equal(res, sol)
 
 
-_NO_SQLGLOT_DIALECT = {"pandas", "dask", "druid", "flink", "datafusion", "polars"}
+_NO_SQLGLOT_DIALECT = ("pandas", "dask", "druid", "flink", "datafusion", "polars")
 no_sqlglot_dialect = sorted(
     param(backend, marks=pytest.mark.xfail) for backend in _NO_SQLGLOT_DIALECT
 )
@@ -3002,6 +3021,11 @@ def test_temporal_literal_sql(value, dialect, snapshot):
     snapshot.assert_match(sql, "out.sql")
 
 
+no_time_type = pytest.mark.xfail(
+    raises=NotImplementedError, reason="no time type support"
+)
+
+
 @pytest.mark.parametrize(
     "dialect",
     [
@@ -3011,24 +3035,9 @@ def test_temporal_literal_sql(value, dialect, snapshot):
         ),
         *no_sqlglot_dialect,
         *[
-            param(
-                "impala",
-                marks=pytest.mark.xfail(
-                    raises=NotImplementedError, reason="no time type support"
-                ),
-            ),
-            param(
-                "clickhouse",
-                marks=pytest.mark.xfail(
-                    raises=NotImplementedError, reason="no time type support"
-                ),
-            ),
-            param(
-                "oracle",
-                marks=pytest.mark.xfail(
-                    raises=NotImplementedError, reason="no time type support"
-                ),
-            ),
+            param("impala", marks=no_time_type),
+            param("clickhouse", marks=no_time_type),
+            param("oracle", marks=no_time_type),
         ],
     ],
 )
@@ -3038,3 +3047,58 @@ def test_time_literal_sql(dialect, snapshot, micros):
     expr = ibis.literal(value)
     sql = ibis.to_sql(expr, dialect=dialect)
     snapshot.assert_match(sql, "out.sql")
+
+
+@pytest.mark.notimpl(["druid"], raises=sa.exc.CompileError, reason="no date support")
+@pytest.mark.parametrize(
+    "value",
+    [
+        param("2017-12-31", id="simple"),
+        param(
+            "9999-01-02",
+            marks=[
+                pytest.mark.broken(
+                    ["clickhouse"],
+                    raises=AssertionError,
+                    reason="clickhouse doesn't support dates after 2149-06-06",
+                ),
+                pytest.mark.notyet(["datafusion"], raises=Exception),
+            ],
+            id="large",
+        ),
+        param(
+            "0001-07-17",
+            id="small",
+            marks=[
+                pytest.mark.broken(
+                    ["clickhouse"],
+                    raises=AssertionError,
+                    reason="clickhouse doesn't support dates before the UNIX epoch",
+                ),
+                pytest.mark.notyet(["datafusion"], raises=Exception),
+                pytest.mark.notyet(["pyspark"], raises=IllegalArgumentException),
+            ],
+        ),
+        param(
+            "2150-01-01",
+            marks=pytest.mark.broken(["clickhouse"], raises=AssertionError),
+            id="medium",
+        ),
+    ],
+)
+@pytest.mark.parametrize(
+    "func",
+    [
+        param(lambda x: x, id="identity"),
+        param(datetime.date.fromisoformat, id="fromstring"),
+    ],
+)
+def test_date_scalar(con, value, func):
+    expr = ibis.date(func(value)).name("tmp")
+
+    result = con.execute(expr)
+
+    assert not isinstance(result, datetime.datetime)
+    assert isinstance(result, datetime.date)
+
+    assert result == datetime.date.fromisoformat(value)

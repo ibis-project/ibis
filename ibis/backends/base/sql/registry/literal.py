@@ -62,7 +62,7 @@ def _interval_literal_format(translator, op):
 def _date_literal_format(translator, op):
     value = op.value
     if isinstance(value, datetime.date):
-        value = value.strftime("%Y-%m-%d")
+        value = value.isoformat()
 
     return repr(value)
 

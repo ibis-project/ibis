@@ -66,7 +66,7 @@ def _cast(translator: ExprTranslator, op: ops.generic.Cast) -> str:
             arg_translated = f"FROM_UNIXTIME({arg_translated})"
 
         if to.timezone:
-            return f"TO_TIMESTAMP(CONVERT_TZ(CAST({arg_translated} AS STRING), 'UTC+0', '{to.timezone}'))"
+            return f"TO_TIMESTAMP(CONVERT_TZ(CAST({arg_translated} AS STRING), 'UTC', {to.timezone!r}))"
         else:
             return f"TO_TIMESTAMP({arg_translated})"
     elif to.is_date():

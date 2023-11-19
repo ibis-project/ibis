@@ -346,18 +346,14 @@ def _literal(op, *, value, dtype, **kw):
 
         return interval(value, unit=dtype.resolution.upper())
     elif dtype.is_timestamp():
-        funcname = "makeDateTime"
+        funcname = "parseDateTime"
+
         if micros := value.microsecond:
             funcname += "64"
 
-        args = [
-            value.year,
-            value.month,
-            value.day,
-            value.hour,
-            value.minute,
-            value.second,
-        ]
+        funcname += "BestEffort"
+
+        args = [value.isoformat()]
 
         if micros % 1000:
             args.append(micros)

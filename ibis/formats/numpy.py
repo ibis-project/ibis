@@ -68,8 +68,7 @@ class NumpyType(TypeMapper[np.dtype]):
             # return np.dtype(f"datetime64[{dtype.unit.short}]")
             return np.dtype("datetime64[ns]")
         elif dtype.is_date():
-            # return np.dtype("datetime64[D]")
-            return np.dtype("datetime64[ns]")
+            return np.dtype("datetime64[D]")
         elif dtype.is_time():
             return np.dtype("timedelta64[ns]")
         elif (
