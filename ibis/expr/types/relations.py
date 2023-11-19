@@ -1050,13 +1050,14 @@ class TableExpr(Expr, _FixedTextJupyterMixin):
         """
         groups = bind(self, by)
         metrics = bind(self, (metrics, kwargs))
+        having = bind(self, having)
+
         groups = unwrap_aliases(groups)
         metrics = unwrap_aliases(metrics)
-        node = ops.Aggregate(self, groups, metrics)
+        having = unwrap_aliases(having)
 
-        if having != ():
-            having = bind(self, having)
-            having = unwrap_aliases(having)
+        node = ops.Aggregate(self, groups, metrics)
+        if having:
             node = ops.Filter(node, having)
 
         return node.to_expr()
@@ -3089,7 +3090,9 @@ class TableExpr(Expr, _FixedTextJupyterMixin):
         """
         left = left.join(right, how="cross", predicates=(), lname=lname, rname=rname)
         for right in rest:
-            left = left.join(right, how="cross", predicates=(), lname=lname, rname=rname)
+            left = left.join(
+                right, how="cross", predicates=(), lname=lname, rname=rname
+            )
         return left
 
     inner_join = _regular_join_method("inner_join", "inner")

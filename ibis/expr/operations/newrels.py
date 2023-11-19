@@ -23,7 +23,7 @@ from ibis.common.typing import Coercible, VarTuple
 from ibis.expr.operations.core import Alias, Column, Node, Scalar, Value
 from ibis.expr.operations.sortkeys import SortKey
 from ibis.expr.schema import Schema
-from ibis.util import Namespace, indent
+from ibis.util import Namespace, gen_name, indent
 
 p = Namespace(pattern, module=__name__)
 d = Namespace(deferred, module=__name__)
@@ -331,12 +331,11 @@ class Set(Relation):
 
     @attribute
     def fields(self):
-        return {} # FrozenDict({k: Field(self.left, k) for k in self.left.schema})
+        return {}  # FrozenDict({k: Field(self.left, k) for k in self.left.schema})
 
     @attribute
     def schema(self):
         return self.left.schema
-
 
 
 @public
@@ -407,6 +406,25 @@ class DummyTable(Relation):
     @attribute
     def schema(self):
         return Schema({op.name: op.dtype for op in self.values})
+
+
+@public
+class SelfReference(Relation):
+    parent: Relation
+
+    @attribute
+    def name(self) -> str:
+        if (name := getattr(self.parent, "name", None)) is not None:
+            return f"{name}_ref"
+        return gen_name("self_ref")
+
+    @attribute
+    def fields(self):
+        return {}
+
+    @attribute
+    def schema(self):
+        return self.parent.schema
 
 
 @public
