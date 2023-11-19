@@ -8,7 +8,7 @@ from collections import defaultdict
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 from ibis.backends.flink.datatypes import FlinkType
-from ibis.common.temporal import IntervalUnit
+from ibis.common.temporal import IntervalUnit, normalize_timezone
 from ibis.util import convert_unit
 
 # For details on what precisions Flink SQL interval types support, see
@@ -264,7 +264,7 @@ def translate_literal(op: ops.Literal) -> str:
         return f"x'{value.hex()}'"
     elif dtype.is_date():
         if isinstance(value, datetime.date):
-            value = value.strftime("%Y-%m-%d")
+            value = value.isoformat()
         return repr(value)
     elif dtype.is_numeric():
         if math.isnan(value):
@@ -285,15 +285,24 @@ def translate_literal(op: ops.Literal) -> str:
         return f"CAST({value} AS {FlinkType.from_ibis(dtype)!s})"
     elif dtype.is_timestamp():
         # TODO(chloeh13q): support timestamp with local timezone
-        if isinstance(value, datetime.datetime):
-            fmt = "%Y-%m-%d %H:%M:%S"
-            # datetime.datetime only supports resolution up to microseconds, even
-            # though Flink supports fractional precision up to 9 digits. We will
-            # need to use numpy or pandas datetime types for higher resolutions.
-            if value.microsecond:
-                fmt += ".%f"
-            return "TIMESTAMP " + repr(value.strftime(fmt))
-        raise NotImplementedError(f"No translation rule for timestamp {value}")
+        assert isinstance(value, datetime.datetime)
+        # datetime.datetime only supports resolution up to microseconds, even
+        # though Flink supports fractional precision up to 9 digits. We will
+        # need to use numpy or pandas datetime types for higher resolutions.
+        #
+        if dtype.timezone is not None:
+            value = value.astimezone(normalize_timezone("UTC"))
+
+        # remove timezone information without altering the ISO output
+        # except for removing the UTC offset
+        #
+        # format to ISO 8601 without the T character
+        value = value.replace(tzinfo=None).isoformat(sep=" ")
+
+        if (tz := dtype.timezone) is not None:
+            return f"TO_TIMESTAMP(CONVERT_TZ({value!r}, 'UTC', {tz!r}))"
+        else:
+            return f"TIMESTAMP {value!r}"
     elif dtype.is_time():
         return f"TIME '{value}'"
     elif dtype.is_interval():

@@ -346,14 +346,14 @@ def _literal(op, *, value, dtype, **kw):
 
         return interval(value, unit=dtype.resolution.upper())
     elif dtype.is_timestamp():
-        funcname = "toDateTime"
-        fmt = "%Y-%m-%dT%H:%M:%S"
+        funcname = "parseDateTime"
 
         if micros := value.microsecond:
             funcname += "64"
-            fmt += ".%f"
 
-        args = [value.strftime(fmt)]
+        funcname += "BestEffort"
+
+        args = [value.isoformat()]
 
         if micros % 1000:
             args.append(6)
@@ -365,7 +365,7 @@ def _literal(op, *, value, dtype, **kw):
 
         return F[funcname](*args)
     elif dtype.is_date():
-        return F.toDate(value.strftime("%Y-%m-%d"))
+        return F.toDate(value.isoformat())
     elif dtype.is_array():
         value_type = dtype.value_type
         values = [

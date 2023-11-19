@@ -420,7 +420,7 @@ class Backend(BaseBackend):
         else:
             assert isinstance(expr, ir.Column), type(expr)
             if expr.type().is_temporal():
-                return df.to_pandas().iloc[:, 0]
+                return expr.__pandas_result__(df.to_pandas())
             else:
                 # note: skip frame-construction overhead
                 return df.to_series().to_pandas()

@@ -33,10 +33,10 @@ class TestConf(BackendTest):
 
     @classmethod
     def assert_series_equal(cls, left, right, *args, **kwargs) -> None:
-        check_dtype = not (
+        check_dtype = kwargs.pop("check_dtype", True) and not (
             issubclass(left.dtype.type, np.timedelta64)
             and issubclass(right.dtype.type, np.timedelta64)
-        ) and kwargs.pop("check_dtype", True)
+        )
         return super().assert_series_equal(
             left, right, *args, **kwargs, check_dtype=check_dtype
         )

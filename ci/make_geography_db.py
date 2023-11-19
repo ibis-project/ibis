@@ -56,10 +56,7 @@ POST_PARSE_FUNCTIONS = {
     "independence": lambda row: toolz.assoc(
         row,
         "independence_date",
-        datetime.datetime.strptime(
-            row["independence_date"],
-            "%Y-%m-%d",
-        ).date(),
+        datetime.datetime.fromisoformat(row["independence_date"]).date(),
     )
 }
 

@@ -218,8 +218,7 @@ class Backend(BaseSQLBackend, CanCreateDatabase):
         table_expr = expr.as_table()
         df = self.compile(table_expr, **kwargs).toPandas()
 
-        # TODO: remove the extra conversion
-        return expr.__pandas_result__(table_expr.__pandas_result__(df))
+        return expr.__pandas_result__(df)
 
     def _fully_qualified_name(self, name, database):
         if is_fully_qualified(name):

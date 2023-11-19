@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import sqlite3
+from datetime import date
 
 import pandas as pd
 import pytest
@@ -86,10 +87,7 @@ def test_type_map(db):
     assert t.schema() == expected_schema
     res = t.filter(t.str_col == "a").execute()
     sol = pd.DataFrame(
-        {
-            "str_col": ["a"],
-            "date_col": pd.Series(["2022-01-01"], dtype="M8[ns]"),
-        }
+        {"str_col": ["a"], "date_col": pd.Series([date(2022, 1, 1)], dtype="object")}
     )
     assert res.equals(sol)
 

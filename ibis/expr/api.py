@@ -801,19 +801,19 @@ def date(value_or_year, month=None, day=None, /):
     Create a date scalar from a string
 
     >>> ibis.date("2023-01-02")
-    Timestamp('2023-01-02 00:00:00')
+    datetime.date(2023, 1, 2)
 
     Create a date scalar from year, month, and day
 
     >>> ibis.date(2023, 1, 2)
-    Timestamp('2023-01-02 00:00:00')
+    datetime.date(2023, 1, 2)
 
     Create a date column from year, month, and day
 
-    >>> t = ibis.memtable({"y": [2001, 2002], "m": [1, 3], "d": [2, 4]})
-    >>> ibis.date(t.y, t.m, t.d).name("date")
+    >>> t = ibis.memtable(dict(year=[2001, 2002], month=[1, 3], day=[2, 4]))
+    >>> ibis.date(t.year, t.month, t.day).name("my_date")
     ┏━━━━━━━━━━━━┓
-    ┃ date       ┃
+    ┃ my_date    ┃
     ┡━━━━━━━━━━━━┩
     │ date       │
     ├────────────┤

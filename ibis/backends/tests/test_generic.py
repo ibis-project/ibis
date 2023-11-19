@@ -817,7 +817,7 @@ def test_int_column(alltypes):
     assert result.dtype == np.int8
 
 
-@pytest.mark.notimpl(["druid", "oracle", "exasol"])
+@pytest.mark.notimpl(["druid", "oracle"])
 @pytest.mark.never(
     ["bigquery", "sqlite", "snowflake"], reason="backend only implements int64"
 )
