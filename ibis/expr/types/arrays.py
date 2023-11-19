@@ -901,6 +901,102 @@ class ArrayValue(Value):
 
         return ops.ArrayZip((self, other, *others)).to_expr()
 
+    def flatten(self) -> ir.ArrayValue:
+        """Remove one level of nesting from an array expression.
+
+        Returns
+        -------
+        ArrayValue
+            Flattened array expression
+
+        Examples
+        --------
+        >>> import ibis
+        >>> import ibis.selectors as s
+        >>> from ibis import _
+        >>> ibis.options.interactive = True
+        >>> schema = {
+        ...     "empty": "array<array<int>>",
+        ...     "happy": "array<array<string>>",
+        ...     "nulls_only": "array<array<struct<a: array<string>>>>",
+        ...     "mixed_nulls": "array<array<string>>",
+        ... }
+        >>> data = {
+        ...     "empty": [[], [], []],
+        ...     "happy": [[["abc"]], [["bcd"]], [["def"]]],
+        ...     "nulls_only": [None, None, None],
+        ...     "mixed_nulls": [[], None, [None]],
+        ... }
+        >>> import pyarrow as pa
+        >>> t = ibis.memtable(
+        ...     pa.Table.from_pydict(
+        ...         data,
+        ...         schema=ibis.schema(schema).to_pyarrow(),
+        ...     )
+        ... )
+        >>> t
+        ┏━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━┳━━━┓
+        ┃ empty                ┃ happy                ┃ nulls_only ┃ … ┃
+        ┡━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━╇━━━┩
+        │ array<array<int64>>  │ array<array<string>> │ array<arr… │ … │
+        ├──────────────────────┼──────────────────────┼────────────┼───┤
+        │ []                   │ [[...]]              │ NULL       │ … │
+        │ []                   │ [[...]]              │ NULL       │ … │
+        │ []                   │ [[...]]              │ NULL       │ … │
+        └──────────────────────┴──────────────────────┴────────────┴───┘
+        >>> t.empty.flatten()
+        ┏━━━━━━━━━━━━━━━━━━━━━━┓
+        ┃ ArrayFlatten(empty)  ┃
+        ┡━━━━━━━━━━━━━━━━━━━━━━┩
+        │ array<int64>         │
+        ├──────────────────────┤
+        │ []                   │
+        │ []                   │
+        │ []                   │
+        └──────────────────────┘
+        >>> t.happy.flatten()
+        ┏━━━━━━━━━━━━━━━━━━━━━━┓
+        ┃ ArrayFlatten(happy)  ┃
+        ┡━━━━━━━━━━━━━━━━━━━━━━┩
+        │ array<string>        │
+        ├──────────────────────┤
+        │ ['abc']              │
+        │ ['bcd']              │
+        │ ['def']              │
+        └──────────────────────┘
+        >>> t.nulls_only.flatten()
+        ┏━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+        ┃ ArrayFlatten(nulls_only) ┃
+        ┡━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+        │ array<struct<a: array<s… │
+        ├──────────────────────────┤
+        │ NULL                     │
+        │ NULL                     │
+        │ NULL                     │
+        └──────────────────────────┘
+        >>> t.mixed_nulls.flatten()
+        ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+        ┃ ArrayFlatten(mixed_nulls) ┃
+        ┡━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+        │ array<string>             │
+        ├───────────────────────────┤
+        │ []                        │
+        │ NULL                      │
+        │ []                        │
+        └───────────────────────────┘
+        >>> t.select(s.across(s.all(), _.flatten()))
+        ┏━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━┳━━━┓
+        ┃ empty                ┃ happy                ┃ nulls_only ┃ … ┃
+        ┡━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━╇━━━┩
+        │ array<int64>         │ array<string>        │ array<str… │ … │
+        ├──────────────────────┼──────────────────────┼────────────┼───┤
+        │ []                   │ ['abc']              │ NULL       │ … │
+        │ []                   │ ['bcd']              │ NULL       │ … │
+        │ []                   │ ['def']              │ NULL       │ … │
+        └──────────────────────┴──────────────────────┴────────────┴───┘
+        """
+        return ops.ArrayFlatten(self).to_expr()
+
 
 @public
 class ArrayScalar(Scalar, ArrayValue):
