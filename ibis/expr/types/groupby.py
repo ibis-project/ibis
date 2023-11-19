@@ -32,35 +32,6 @@ import ibis.common.exceptions as com
 from public import public
 from ibis.expr.types.relations import bind
 
-_function_types = tuple(
-    filter(
-        None,
-        (
-            types.BuiltinFunctionType,
-            types.BuiltinMethodType,
-            types.FunctionType,
-            types.LambdaType,
-            types.MethodType,
-            getattr(types, "UnboundMethodType", None),
-        ),
-    )
-)
-
-
-# def _get_group_by_key(table, value):
-#     if isinstance(value, str):
-#         yield table[value]
-#     elif isinstance(value, _function_types):
-#         yield value(table)
-#     elif isinstance(value, Deferred):
-#         yield value.resolve(table)
-#     elif isinstance(value, Selector):
-#         yield from value.expand(table)
-#     elif isinstance(value, ir.Expr):
-#         yield an.sub_immediate_parents(value.op(), table.op()).to_expr()
-#     else:
-#         yield value
-
 
 @public
 class GroupedTable:
