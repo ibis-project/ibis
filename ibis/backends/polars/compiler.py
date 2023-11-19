@@ -885,6 +885,11 @@ def array_collect(op, **kw):
     return arg
 
 
+@translate.register(ops.ArrayFlatten)
+def array_flatten(op, **kw):
+    return pl.concat_list(translate(op.arg, **kw))
+
+
 _date_methods = {
     ops.ExtractDay: "day",
     ops.ExtractMonth: "month",
