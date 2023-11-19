@@ -16,7 +16,7 @@ from ibis.common.annotations import attribute
 from ibis.common.bases import Immutable
 from ibis.common.collections import FrozenDict
 from ibis.common.deferred import Item, deferred, var
-from ibis.common.exceptions import IbisTypeError, IntegrityError
+from ibis.common.exceptions import IbisTypeError, IntegrityError, RelationError
 from ibis.common.grounds import Concrete
 from ibis.common.patterns import Between, Check, In, InstanceOf, _, pattern, replace
 from ibis.common.typing import Coercible, VarTuple
@@ -216,7 +216,7 @@ class Project(Relation):
 
 @public
 class JoinLink(Node):
-    how: Literal["inner", "left", "right", "outer", "asof"]
+    how: Literal["inner", "left", "right", "outer", "asof", "semi", "cross"]
     table: Relation
     predicates: VarTuple[Value[dt.Boolean]]
 
@@ -313,7 +313,30 @@ class Aggregate(Relation):
 
 @public
 class Set(Relation):
-    pass
+    left: Relation
+    right: Relation
+    distinct: bool = False
+
+    def __init__(self, left, right, **kwargs):
+        # convert to dictionary first, to get key-unordered comparison
+        # semantics
+        if dict(left.schema) != dict(right.schema):
+            raise RelationError("Table schemas must be equal for set operations")
+        elif left.schema.names != right.schema.names:
+            # rewrite so that both sides have the columns in the same order making it
+            # easier for the backends to implement set operations
+            cols = [Field(right, name) for name in left.schema.names]
+            right = Project(right, cols)
+        super().__init__(left=left, right=right, **kwargs)
+
+    @attribute
+    def fields(self):
+        return {} # FrozenDict({k: Field(self.left, k) for k in self.left.schema})
+
+    @attribute
+    def schema(self):
+        return self.left.schema
+
 
 
 @public

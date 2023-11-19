@@ -20,7 +20,7 @@ import ibis.selectors as s
 from ibis import _
 from ibis import literal as L
 from ibis.common.annotations import ValidationError
-from ibis.common.exceptions import RelationError, IntegrityError
+from ibis.common.exceptions import IntegrityError, RelationError
 from ibis.expr import api
 from ibis.expr.types import Column, Table
 from ibis.tests.expr.mocks import MockAlchemyBackend, MockBackend
@@ -1207,11 +1207,11 @@ def test_union(
     setops_relation_error_message,
 ):
     result = setops_table_foo.union(setops_table_bar)
-    assert isinstance(result.op().table, ops.Union)
-    assert not result.op().table.distinct
+    assert isinstance(result.op().parent, ops.Union)
+    assert not result.op().parent.distinct
 
     result = setops_table_foo.union(setops_table_bar, distinct=True)
-    assert result.op().table.distinct
+    assert result.op().parent.distinct
 
     with pytest.raises(RelationError, match=setops_relation_error_message):
         setops_table_foo.union(setops_table_baz)
@@ -1224,7 +1224,7 @@ def test_intersection(
     setops_relation_error_message,
 ):
     result = setops_table_foo.intersect(setops_table_bar)
-    assert isinstance(result.op().table, ops.Intersection)
+    assert isinstance(result.op().parent, ops.Intersection)
 
     with pytest.raises(RelationError, match=setops_relation_error_message):
         setops_table_foo.intersect(setops_table_baz)
@@ -1237,7 +1237,7 @@ def test_difference(
     setops_relation_error_message,
 ):
     result = setops_table_foo.difference(setops_table_bar)
-    assert isinstance(result.op().table, ops.Difference)
+    assert isinstance(result.op().parent, ops.Difference)
 
     with pytest.raises(RelationError, match=setops_relation_error_message):
         setops_table_foo.difference(setops_table_baz)

@@ -120,6 +120,10 @@ def unwrap_aliases(values):
     result = {}
     for value in values:
         node = value.op()
+        # if node.name in result:
+        #     raise com.IntegrityError(
+        #         f"Duplicate column name {node.name!r} in result set"
+        #     )
         if isinstance(node, ops.Alias):
             result[node.name] = node.arg
         else:
@@ -3083,13 +3087,10 @@ class TableExpr(Expr, _FixedTextJupyterMixin):
         >>> expr.count()
         344
         """
-        raise NotImplementedError
-        # op = ops.CrossJoin(
-        #     left,
-        #     functools.reduce(Table.cross_join, rest, right),
-        #     [],
-        # )
-        # return ops.relations._dedup_join_columns(op.to_expr(), lname=lname, rname=rname)
+        left = left.join(right, how="cross", predicates=(), lname=lname, rname=rname)
+        for right in rest:
+            left = left.join(right, how="cross", predicates=(), lname=lname, rname=rname)
+        return left
 
     inner_join = _regular_join_method("inner_join", "inner")
     left_join = _regular_join_method("left_join", "left")
@@ -4430,15 +4431,20 @@ class JoinExpr(TableExpr):
             _coerce_join_predicate(self, right, pred)
             for pred in util.promote_list(predicates)
         ]
+        if how == "cross" and preds:
+            raise com.IbisInputError("Cross join cannot have predicates")
 
         # construct a new join node
         link = ops.JoinLink(how, table=right, predicates=preds)
 
         # calculate the fields based in lname and rname, this should be a best
         # effort guess but shouldn't raise on conflicts
-        right_fields = {k: ops.Field(right, k) for k in link.table.schema}
-
-        fields = _disambiguate_join_fields(node.fields, right_fields, lname, rname)
+        if how in {"left_semi", "semi", "anti"}:
+            # discard the right fields
+            fields = node.fields
+        else:
+            right_fields = {k: ops.Field(right, k) for k in link.table.schema}
+            fields = _disambiguate_join_fields(node.fields, right_fields, lname, rname)
 
         # add the join to the join chain
         node = node.copy(rest=node.rest + (link,), fields=fields)
