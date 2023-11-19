@@ -417,6 +417,7 @@ operation_registry.update(
         ops.ArraySort: fixed_arity(sa.func.array_sort, 1),
         ops.ArrayRemove: fixed_arity(sa.func.array_remove, 2),
         ops.ArrayUnion: fixed_arity(sa.func.array_union, 2),
+        ops.ArrayFlatten: unary(sa.func.flatten),
         ops.JSONGetItem: _json_get_item,
         ops.ExtractDayOfYear: unary(sa.func.day_of_year),
         ops.ExtractWeekOfYear: unary(sa.func.week_of_year),
