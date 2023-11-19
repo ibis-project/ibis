@@ -6,7 +6,6 @@ import toolz
 
 import ibis.common.graph as g
 import ibis.expr.operations as ops
-import ibis.expr.types as ir
 from ibis import util
 from ibis.common.deferred import _, deferred, var
 from ibis.common.exceptions import IbisTypeError, IntegrityError
@@ -83,43 +82,6 @@ def find_immediate_parent_tables(input_node, keep_input=True):
             return g.proceed, None
 
     return list(toolz.unique(g.traverse(finder, input_node)))
-
-
-def get_mutation_exprs(exprs: list[ir.Expr], table: ir.Table) -> list[ir.Expr | None]:
-    """Return the exprs to use to instantiate the mutation."""
-    # The below logic computes the mutation node exprs by splitting the
-    # assignment exprs into two disjoint sets:
-    # 1) overwriting_cols_to_expr, which maps a column name to its expr
-    # if the expr contains a column that overwrites an existing table column.
-    # All keys in this dict are columns in the original table that are being
-    # overwritten by an assignment expr.
-    # 2) non_overwriting_exprs, which is a list of all exprs that do not do
-    # any overwriting. That is, if an expr is in this list, then its column
-    # name does not exist in the original table.
-    # Given these two data structures, we can compute the mutation node exprs
-    # based on whether any columns are being overwritten.
-    overwriting_cols_to_expr: dict[str, ir.Expr | None] = {}
-    non_overwriting_exprs: list[ir.Expr] = []
-    table_schema = table.schema()
-    for expr in exprs:
-        expr_contains_overwrite = False
-        if isinstance(expr, ir.Value) and expr.get_name() in table_schema:
-            overwriting_cols_to_expr[expr.get_name()] = expr
-            expr_contains_overwrite = True
-
-        if not expr_contains_overwrite:
-            non_overwriting_exprs.append(expr)
-
-    columns = table.columns
-    if overwriting_cols_to_expr:
-        return [
-            overwriting_cols_to_expr.get(column, table[column])
-            for column in columns
-            if overwriting_cols_to_expr.get(column, table[column]) is not None
-        ] + non_overwriting_exprs
-
-    table_expr: ir.Expr = table
-    return [table_expr] + exprs
 
 
 def pushdown_selection_filters(parent, predicates):
@@ -239,115 +201,6 @@ def simplify_aggregation(agg):
             )
 
     return agg
-
-
-class Projector:
-    """Analysis and validation of projection operation.
-
-    This pass tries to take advantage of projection fusion opportunities where
-    they exist, i.e. combining compatible projections together rather than
-    nesting them.
-
-    Translation / evaluation later will not attempt to do any further fusion /
-    simplification.
-    """
-
-    def __init__(self, parent, proj_exprs):
-        # TODO(kszucs): rewrite projector to work with operations exclusively
-        proj_exprs = util.promote_list(proj_exprs)
-        self.parent = parent
-        self.input_exprs = proj_exprs
-        self.resolved_exprs = [parent._ensure_expr(e) for e in proj_exprs]
-
-        default_frame = ops.RowsWindowFrame(table=parent)
-        self.clean_exprs = [
-            windowize_function(expr, default_frame) for expr in self.resolved_exprs
-        ]
-
-    def get_result(self):
-        roots = find_immediate_parent_tables(self.parent.op())
-        first_root = roots[0]
-        parent_op = self.parent.op()
-
-        # reprojection of the same selections
-        if len(self.clean_exprs) == 1:
-            first = self.clean_exprs[0].op()
-            if isinstance(first, ops.Selection):
-                if first.selections == parent_op.selections:
-                    return parent_op
-
-        if len(roots) == 1 and isinstance(first_root, ops.Selection):
-            fused_op = self.try_fusion(first_root)
-            if fused_op is not None:
-                return fused_op
-
-        return ops.Selection(self.parent, self.clean_exprs)
-
-    def try_fusion(self, root):
-        assert self.parent.op() == root
-
-        root_table = root.table
-        root_table_expr = root_table.to_expr()
-        roots = find_immediate_parent_tables(root_table)
-        fused_exprs = []
-        clean_exprs = self.clean_exprs
-
-        if not isinstance(root_table, ops.Join):
-            try:
-                resolved = [
-                    root_table_expr._ensure_expr(expr) for expr in self.input_exprs
-                ]
-            except (AttributeError, IbisTypeError):
-                resolved = clean_exprs
-            else:
-                # if any expressions aren't exactly equivalent then don't try
-                # to fuse them
-                if any(
-                    not res_root_root.equals(res_root)
-                    for res_root_root, res_root in zip(resolved, clean_exprs)
-                ):
-                    return None
-        else:
-            # joins cannot be used to resolve expressions, but we still may be
-            # able to fuse columns from a projection off of a join. In that
-            # case, use the projection's input expressions as the columns with
-            # which to attempt fusion
-            resolved = clean_exprs
-
-        root_selections = root.selections
-        parent_op = self.parent.op()
-        for val in resolved:
-            # a * projection
-            if isinstance(val, ir.Table) and (
-                parent_op.equals(val.op())
-                # gross we share the same table root. Better way to
-                # detect?
-                or len(roots) == 1
-                and find_immediate_parent_tables(val.op())[0] == roots[0]
-            ):
-                have_root = False
-                for root_sel in root_selections:
-                    # Don't add the * projection twice
-                    if root_sel.equals(root_table):
-                        fused_exprs.append(root_table)
-                        have_root = True
-                        continue
-                    fused_exprs.append(root_sel)
-
-                # This was a filter, so implicitly a select *
-                if not have_root and not root_selections:
-                    fused_exprs = [root_table, *fused_exprs]
-            elif shares_all_roots(val.op(), root_table):
-                fused_exprs.append(val)
-            else:
-                return None
-
-        return ops.Selection(
-            root_table,
-            fused_exprs,
-            predicates=root.predicates,
-            sort_keys=root.sort_keys,
-        )
 
 
 # TODO(kszucs): should be removed
