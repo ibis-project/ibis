@@ -129,8 +129,6 @@ class WindowFunction(Value):
     shape = ds.columnar
 
     def __init__(self, func, frame):
-        from ibis.expr.analysis import shares_all_roots
-
         # TODO(kszucs): restore this integrity check
         # if not shares_all_roots(func, frame):
         #     raise com.RelationError(

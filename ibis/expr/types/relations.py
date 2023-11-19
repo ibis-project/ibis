@@ -2395,10 +2395,6 @@ class TableExpr(Expr, _FixedTextJupyterMixin):
         │ male   │        68 │
         └────────┴───────────┘
         """
-        # import ibis.expr.analysis as an
-        # resolved_predicates = _resolve_predicates(self, predicates)
-        # relation = an.pushdown_selection_filters(self.op(), resolved_predicates)
-        # return relation.to_expr()
         preds = bind(self, predicates)
         preds = unwrap_aliases(preds)
         preds = dereference_values(self.op(), preds)

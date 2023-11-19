@@ -8,8 +8,7 @@ import ibis.common.graph as g
 import ibis.expr.operations as ops
 from ibis import util
 from ibis.common.deferred import _, deferred, var
-from ibis.common.exceptions import IbisTypeError, IntegrityError
-from ibis.common.patterns import Eq, In, pattern
+from ibis.common.patterns import In, pattern
 from ibis.util import Namespace
 
 if TYPE_CHECKING:
@@ -84,46 +83,6 @@ def find_immediate_parent_tables(input_node, keep_input=True):
     return list(toolz.unique(g.traverse(finder, input_node)))
 
 
-def pushdown_selection_filters(parent, predicates):
-    if not predicates:
-        return parent
-
-    default = ops.Selection(parent, selections=[], predicates=predicates)
-    if not isinstance(parent, (ops.Selection, ops.Aggregation)):
-        return default
-
-    projected_column_names = set()
-    for value in parent._projection.selections:
-        if isinstance(value, (ops.Relation, ops.TableColumn)):
-            # we are only interested in projected value expressions, not tables
-            # nor column references which are not changing the projection
-            continue
-        elif value.find((ops.WindowFunction, ops.ExistsSubquery), filter=ops.Value):
-            # the parent has analytic projections like window functions so we
-            # can't push down filters to that level
-            return default
-        else:
-            # otherwise collect the names of newly projected value expressions
-            # which are not just plain column references
-            projected_column_names.add(value.name)
-
-    conflicting_projection = p.TableColumn(parent, In(projected_column_names))
-    pushdown_pattern = Eq(parent) >> parent.table
-
-    simplified = []
-    for pred in predicates:
-        if pred.match(conflicting_projection, filter=p.Value):
-            return default
-        try:
-            simplified.append(pred.replace(pushdown_pattern))
-        except (IntegrityError, IbisTypeError):
-            # former happens when there is a duplicate column name in the parent
-            # which is a join, the latter happens for semi/anti joins
-            return default
-
-    return parent.copy(predicates=parent.predicates + tuple(simplified))
-
-
 def windowize_function(expr, default_frame, merge_frames=False):
     func, frame = var("func"), var("frame")
 
@@ -146,63 +105,6 @@ def windowize_function(expr, default_frame, merge_frames=False):
     return node.to_expr()
 
 
-def contains_first_or_last_agg(exprs):
-    def fn(node: ops.Node) -> tuple[bool, bool | None]:
-        if not isinstance(node, ops.Value):
-            return g.halt, None
-        return g.proceed, isinstance(node, (ops.First, ops.Last))
-
-    return any(g.traverse(fn, exprs))
-
-
-def simplify_aggregation(agg):
-    def _pushdown(nodes):
-        subbed = []
-        for node in nodes:
-            new_node = node.replace(Eq(agg.table) >> agg.table.table)
-            subbed.append(new_node)
-
-        # TODO(kszucs): perhaps this validation could be omitted
-        if subbed:
-            valid = shares_all_roots(subbed, agg.table.table)
-        else:
-            valid = True
-
-        return valid, subbed
-
-    table = agg.table
-    if (
-        isinstance(table, ops.Selection)
-        and not table.selections
-        # more aggressive than necessary, a better solution would be to check
-        # whether the selections have any order sensitive aggregates that
-        # *depend on* the sort_keys
-        and not (table.sort_keys or contains_first_or_last_agg(table.selections))
-    ):
-        metrics_valid, lowered_metrics = _pushdown(agg.metrics)
-        by_valid, lowered_by = _pushdown(agg.by)
-        having_valid, lowered_having = _pushdown(agg.having)
-
-        if metrics_valid and by_valid and having_valid:
-            valid_lowered_sort_keys = frozenset(lowered_metrics).union(lowered_by)
-            return ops.Aggregation(
-                table.table,
-                lowered_metrics,
-                by=lowered_by,
-                having=lowered_having,
-                predicates=agg.table.predicates,
-                # only the sort keys that exist as grouping keys or metrics can
-                # be included
-                sort_keys=[
-                    key
-                    for key in agg.table.sort_keys
-                    if key.expr in valid_lowered_sort_keys
-                ],
-            )
-
-    return agg
-
-
 # TODO(kszucs): should be removed
 def find_first_base_table(node):
     def predicate(node):
@@ -215,41 +117,6 @@ def find_first_base_table(node):
         return next(g.traverse(predicate, node))
     except StopIteration:
         return None
-
-
-def _find_projections(node):
-    if isinstance(node, ops.Selection):
-        # remove predicates and sort_keys, so that child tables are considered
-        # equivalent even if their predicates and sort_keys are not
-        return g.proceed, node._projection
-    elif isinstance(node, ops.SelfReference):
-        return g.proceed, node
-    elif isinstance(node, ops.Aggregation):
-        return g.proceed, node._projection
-    elif isinstance(node, ops.Join):
-        return g.proceed, None
-    elif isinstance(node, ops.TableNode):
-        return g.halt, node
-    elif isinstance(node, ops.InColumn):
-        # we allow InColumn.options to be a column from a foreign table
-        return [node.value], None
-    else:
-        return g.proceed, None
-
-
-def shares_all_roots(exprs, parents):
-    # unique table dependencies of exprs and parents
-    exprs_deps = set(g.traverse(_find_projections, exprs))
-    parents_deps = set(g.traverse(_find_projections, parents))
-    return exprs_deps <= parents_deps
-
-
-def shares_some_roots(exprs, parents):
-    # unique table dependencies of exprs and parents
-    exprs_deps = set(g.traverse(_find_projections, exprs))
-    parents_deps = set(g.traverse(_find_projections, parents))
-    # Also return True if exprs has no roots (e.g. literal-only expressions)
-    return bool(exprs_deps & parents_deps) or not exprs_deps
 
 
 def flatten_predicate(node):
