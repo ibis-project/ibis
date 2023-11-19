@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import contextlib
+import datetime
+import json
 import warnings
 
 import numpy as np
@@ -134,6 +136,11 @@ class PandasData(DataMapper):
         return result
 
     @classmethod
+    def convert_scalar(cls, obj, dtype):
+        df = PandasData.convert_table(obj, sch.Schema({obj.columns[0]: dtype}))
+        return df.iat[0, 0]
+
+    @classmethod
     def convert_GeoSpatial(cls, s, dtype, pandas_type):
         return s
 
@@ -189,7 +196,19 @@ class PandasData(DataMapper):
     def convert_Date(cls, s, dtype, pandas_type):
         if isinstance(s.dtype, pd.DatetimeTZDtype):
             s = s.dt.tz_convert("UTC").dt.tz_localize(None)
-        return s.astype(pandas_type, errors="ignore").dt.normalize()
+        try:
+            return s.astype(pandas_type).dt.date
+        except (TypeError, pd._libs.tslibs.OutOfBoundsDatetime):
+
+            def try_date(v):
+                if isinstance(v, datetime.datetime):
+                    return v.date()
+                elif isinstance(v, str):
+                    return datetime.date.fromisoformat(v)
+                else:
+                    return v
+
+            return s.map(try_date, na_action="ignore")
 
     @classmethod
     def convert_Interval(cls, s, dtype, pandas_type):

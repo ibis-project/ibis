@@ -80,9 +80,14 @@ def test_variadic_to_numpy(ibis_type):
     assert NumpyType.from_ibis(ibis_type) == np.dtype("object")
 
 
-@h.given(ibst.date_dtype() | ibst.timestamp_dtype())
-def test_date_to_numpy(ibis_type):
+@h.given(ibst.timestamp_dtype())
+def test_timestamp_to_numpy(ibis_type):
     assert NumpyType.from_ibis(ibis_type) == np.dtype("datetime64[ns]")
+
+
+@h.given(ibst.date_dtype())
+def test_date_to_numpy(ibis_type):
+    assert NumpyType.from_ibis(ibis_type) == np.dtype("datetime64[D]")
 
 
 @h.given(ibst.time_dtype())
