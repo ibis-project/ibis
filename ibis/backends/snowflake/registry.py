@@ -422,6 +422,7 @@ operation_registry.update(
         ops.ArrayZip: _array_zip,
         ops.ArraySort: unary(sa.func.array_sort),
         ops.ArrayRepeat: fixed_arity(sa.func.ibis_udfs.public.array_repeat, 2),
+        ops.ArrayFlatten: fixed_arity(sa.func.array_flatten, 1),
         ops.StringSplit: fixed_arity(sa.func.split, 2),
         # snowflake typeof only accepts VARIANT, so we cast
         ops.TypeOf: unary(lambda arg: sa.func.typeof(sa.func.to_variant(arg))),
