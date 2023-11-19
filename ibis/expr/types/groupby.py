@@ -120,7 +120,7 @@ class GroupedTable:
         return self.__class__(
             self.table,
             self.by,
-            having=self._having + util.promote_list(expr),
+            having=self._having + tuple(util.promote_list(expr)),
             order_by=self._order_by,
         )
 

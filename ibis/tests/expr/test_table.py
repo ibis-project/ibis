@@ -844,7 +844,7 @@ def test_asof_join():
         "time_right",
         "value2",
     ]
-    pred = joined.op().table.predicates[0]
+    pred = joined.op().rest[0].predicates[0]
     assert pred.left.name == pred.right.name == "time"
 
 
@@ -1499,17 +1499,20 @@ def test_mutate_chain():
     one = ibis.table([("a", "string"), ("b", "string")], name="t")
     two = one.mutate(b=lambda t: t.b.fillna("Short Term"))
     three = two.mutate(a=lambda t: t.a.fillna("Short Term"))
-    a, b = three.op().selections
 
-    # we can't fuse these correctly yet
-    assert isinstance(a, ops.Alias)
-    assert isinstance(a.arg, ops.Coalesce)
-    assert isinstance(b, ops.TableColumn)
+    values = three.op().values
+    assert isinstance(values["a"], ops.Coalesce)
+    assert isinstance(values["b"], ops.Field)
+    assert values["b"].rel == two.op()
 
-    expr = b.table.selections[1]
-    assert isinstance(expr, ops.Alias)
-    assert isinstance(expr.arg, ops.Coalesce)
+    assert three.optimize().op() == ops.Project(
+        parent=one,
+        values={
+            "a":  one.a.fillna("Short Term"),
+            "b":  one.b.fillna("Short Term"),
 
+        }
+    )
 
 # TODO(kszucs): move this test case to ibis/tests/sql since it requires the
 # sql backend to be executed

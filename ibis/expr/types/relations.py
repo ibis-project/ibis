@@ -1042,14 +1042,17 @@ class TableExpr(Expr, _FixedTextJupyterMixin):
         │ orange │       0.33 │     0.33 │
         └────────┴────────────┴──────────┘
         """
-        if having:
-            raise NotImplementedError
-
         groups = bind(self, by)
         metrics = bind(self, (metrics, kwargs))
         groups = unwrap_aliases(groups)
         metrics = unwrap_aliases(metrics)
         node = ops.Aggregate(self, groups, metrics)
+
+        if having != ():
+            having = bind(self, having)
+            having = unwrap_aliases(having)
+            node = ops.Filter(node, having)
+
         return node.to_expr()
 
     agg = aggregate
@@ -4344,11 +4347,12 @@ class TableExpr(Expr, _FixedTextJupyterMixin):
         node = self.op()
         # apply the rewrites
         node = node.replace(
-            complete_reprojection
-            | subsequent_projects
+            subsequent_projects
             | subsequent_filters
             | subsequent_sorts
         )
+        node = node.replace(complete_reprojection)
+
         # return with a new TableExpr wrapping the optimized node
         return node.to_expr()
 

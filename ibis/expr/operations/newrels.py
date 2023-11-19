@@ -19,10 +19,11 @@ from ibis.common.exceptions import IbisTypeError, IntegrityError
 from ibis.common.grounds import Concrete
 from ibis.common.patterns import Between, Check, In, InstanceOf, _, pattern, replace
 from ibis.common.typing import Coercible, VarTuple
+from ibis.common.bases import Immutable
 from ibis.expr.operations.core import Alias, Column, Node, Scalar, Value
 from ibis.expr.operations.sortkeys import SortKey
 from ibis.expr.schema import Schema
-from ibis.util import Namespace
+from ibis.util import Namespace, indent
 
 p = Namespace(pattern, module=__name__)
 d = Namespace(deferred, module=__name__)
@@ -465,3 +466,68 @@ def subsequent_sorts(_, y):
 # subqueries:
 # 1. reduction passed to .filter() should be turned into a subquery
 # 2. reduction passed to .select() with a foreign table should be turned into a subquery
+
+
+################################## InMemoryTable ##################################
+
+class TableProxy(Immutable):
+    __slots__ = ("_data", "_hash")
+    _data: Any
+    _hash: int
+
+    def __init__(self, data) -> None:
+        object.__setattr__(self, "_data", data)
+        object.__setattr__(self, "_hash", hash((type(data), id(data))))
+
+    def __hash__(self) -> int:
+        return self._hash
+
+    def __repr__(self) -> str:
+        data_repr = indent(repr(self._data), spaces=2)
+        return f"{self.__class__.__name__}:\n{data_repr}"
+
+    @abstractmethod
+    def to_frame(self) -> pd.DataFrame:  # pragma: no cover
+        """Convert this input to a pandas DataFrame."""
+
+    @abstractmethod
+    def to_pyarrow(self, schema: Schema) -> pa.Table:  # pragma: no cover
+        """Convert this input to a PyArrow Table."""
+
+    def to_pyarrow_bytes(self, schema: Schema) -> bytes:
+        import pyarrow as pa
+        import pyarrow_hotfix  # noqa: F401
+
+        data = self.to_pyarrow(schema=schema)
+        out = pa.BufferOutputStream()
+        with pa.RecordBatchFileWriter(out, data.schema) as writer:
+            writer.write(data)
+        return out.getvalue()
+
+    def __len__(self) -> int:
+        return len(self._data)
+
+
+class PyArrowTableProxy(TableProxy):
+    __slots__ = ()
+
+    def to_frame(self):
+        return self._data.to_pandas()
+
+    def to_pyarrow(self, schema: Schema) -> pa.Table:
+        return self._data
+
+
+class PandasDataFrameProxy(TableProxy):
+    __slots__ = ()
+
+    def to_frame(self) -> pd.DataFrame:
+        return self._data
+
+    def to_pyarrow(self, schema: Schema) -> pa.Table:
+        import pyarrow as pa
+        import pyarrow_hotfix  # noqa: F401
+
+        from ibis.formats.pyarrow import PyArrowSchema
+
+        return pa.Table.from_pandas(self._data, schema=PyArrowSchema.from_ibis(schema))
