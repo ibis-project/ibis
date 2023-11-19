@@ -140,6 +140,8 @@ def lookup_peeled_field(_, mapping):
 
 
 def dereference_mapping(parent):
+    # TODO(kszucs): this initial result building step can be omitted by restricting the
+    # replacement pattern above to p.Field(~In(parents))
     result = {ops.Field(parent, k): ops.Field(parent, k) for k in parent.schema}
     for k, v in parent.fields.items():
         while isinstance(v, ops.Field):
@@ -4352,22 +4354,30 @@ class TableExpr(Expr, _FixedTextJupyterMixin):
 
 
 def _coerce_join_predicate(left, right, pred):
-    if isinstance(pred, ValueExpr):
-        return pred
-    elif pred is True or pred is False:
+    if pred is True or pred is False:
         return ops.Literal(pred, dtype="bool").to_expr()
+    elif isinstance(pred, ValueExpr):
+        return pred
+    elif isinstance(pred, Deferred):
+        # resolve deferred expressions on the left table
+        return pred.resolve(left)
+
 
     if isinstance(pred, tuple):
         if len(pred) != 2:
             raise com.ExpressionError("Join key tuple must be length 2")
         lk, rk = pred
     else:
-        lf = rf = pred
+        lk = rk = pred
 
-    return bind(left, lk) == bind(right, rk)
+    left_value = next(bind(left, lk))
+    right_value = next(bind(right, rk))
+    return left_value == right_value
 
 
-def _disambiguate_join_fields(left_fields, right_fields, lname, rname):
+def _disambiguate_join_fields(left_fields, right_fields, lname, rname): # collisions=set()
+    lname = lname or "{name}"
+    rname = rname or "{name}"
     overlap = left_fields.keys() & right_fields.keys()
 
     fields = {}
@@ -4378,7 +4388,9 @@ def _disambiguate_join_fields(left_fields, right_fields, lname, rname):
     for name, field in right_fields.items():
         if name in overlap:
             name = rname.format(name=name)
-        fields[name] = field
+        # only add if there is no collision
+        if name not in fields:
+            fields[name] = field
 
     return fields
 
@@ -4407,7 +4419,7 @@ class JoinExpr(TableExpr):
         # unwrap_aliases, dereference_values, but the latter requires the
         # `field` property to be not empty in the Join node
         preds = [
-            _coerce_join_predicate(node.first, right, pred)
+            _coerce_join_predicate(self, right, pred)
             for pred in util.promote_list(predicates)
         ]
 
@@ -4458,19 +4470,23 @@ class JoinExpr(TableExpr):
             parents.append(join.table)
         return parents
 
-    # def guess(self):
-    #     # TODO(kszucs): more advanced heuristics can be applied here
-    #     # trying to figure out the join intent here
-    #     fields = {}
-    #     for parent in self.tables():
-    #         fields.update({k: ops.Field(parent, k) for k in parent.schema})
-    #     return fields
-
     def finish(self, fields=None):
         if fields is not None:
             return self.op().copy(fields=fields).to_expr()
         else:
             # raise if there are missing fields from either of the tables
+            # raise on collisions
+            collisions = []
+            fields = set(self.op().fields.values())
+            for rel in self.tables():
+                for k in rel.schema:
+                    f = ops.Field(rel, k)
+                    if f not in fields:
+                        collisions.append(f)
+            if collisions:
+                # TODO(kszucs): better naming
+                raise com.IntegrityError(f"Name collisions: {collisions}")
+
             return self.op().to_expr()
 
 
