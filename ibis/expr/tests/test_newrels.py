@@ -14,7 +14,7 @@ from ibis.expr.operations import (
     Field,
     Filter,
     ForeignField,
-    Join,
+    JoinChain,
     JoinLink,
     Project,
     UnboundTable,
@@ -394,7 +394,7 @@ def test_join():
 
     joined = t1.join(t2, [t1.a == t2.c])
     result = joined.finish()
-    assert result.op() == Join(
+    assert result.op() == JoinChain(
         first=t1,
         rest=[
             JoinLink("inner", t2, [t1.a == t2.c]),
@@ -416,21 +416,14 @@ def test_join_unambiguous_select():
     expr1 = join["a_int", "b_int"]
     expr2 = join.select("a_int", "b_int")
     assert expr1.equals(expr2)
-
-    print(expr1)
-    assert expr1.op() == Join(
+    assert expr1.op() == JoinChain(
         first=a,
-        rest=[
-            JoinLink("inner", b, [a.a_int == b.b_int])
-        ],
+        rest=[JoinLink("inner", b, [a.a_int == b.b_int])],
         fields={
             "a_int": a.a_int,
             "b_int": b.b_int,
-        }
+        },
     )
-    # expr3 = join.select(["a0", "a1"])
-    # assert expr1.equals(expr2)
-    # assert expr1.equals(expr3)
 
 
 def test_chained_join():
@@ -440,7 +433,7 @@ def test_chained_join():
 
     joined = a.join(b, [a.a == b.c]).join(c, [a.a == c.e])
     result = joined.finish()
-    assert result.op() == Join(
+    assert result.op() == JoinChain(
         first=a,
         rest=[
             JoinLink("inner", b, [a.a == b.c]),
@@ -458,7 +451,7 @@ def test_chained_join():
 
     joined = a.join(b, [a.a == b.c]).join(c, [b.c == c.e])
     result = joined.select(a.a, b.d, c.f)
-    assert result.op() == Join(
+    assert result.op() == JoinChain(
         first=a,
         rest=[
             JoinLink("inner", b, [a.a == b.c]),
@@ -485,7 +478,7 @@ def test_chained_join_referencing_intermediate_table():
     assert isinstance(abc, ir.JoinExpr)
 
     result = abc.finish()
-    assert result.op() == Join(
+    assert result.op() == JoinChain(
         first=a,
         rest=[JoinLink("inner", b, [a.a == b.c]), JoinLink("inner", c, [a.a == c.e])],
         fields={"a": a.a, "b": a.b, "c": b.c, "d": b.d, "e": c.e, "f": c.f},

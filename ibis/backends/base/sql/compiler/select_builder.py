@@ -86,7 +86,7 @@ class SelectBuilder:
     def _make_table_aliases(self, node):
         ctx = self.context
 
-        if isinstance(node, ops.Join):
+        if isinstance(node, ops.JoinChain):
             for arg in node.args:
                 if isinstance(arg, ops.Relation):
                     self._make_table_aliases(arg)
@@ -125,7 +125,7 @@ class SelectBuilder:
             f(op, toplevel=toplevel)
         elif isinstance(op, (ops.PhysicalTable, ops.SQLQueryResult)):
             self._collect_PhysicalTable(op, toplevel=toplevel)
-        elif isinstance(op, ops.Join):
+        elif isinstance(op, ops.JoinChain):
             self._collect_Join(op, toplevel=toplevel)
         elif isinstance(op, ops.WindowingTVF):
             self._collect_WindowingTVF(op, toplevel=toplevel)

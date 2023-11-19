@@ -2921,7 +2921,7 @@ class TableExpr(Expr, _FixedTextJupyterMixin):
         # construct an empty join chain and wrap it with a JoinExpr
         # TODO(kszucs): initialize join fields with left fields here
         fields = {k: ops.Field(left, k) for k in left.schema().names}
-        node = ops.Join(left, rest=(), fields=fields)
+        node = ops.JoinChain(left, rest=(), fields=fields)
         # add the first join link to the join chain and return the result
         return JoinExpr(node).join(right, predicates, how=how, lname=lname, rname=rname)
 
@@ -2949,55 +2949,56 @@ class TableExpr(Expr, _FixedTextJupyterMixin):
 
         # return ops.relations._dedup_join_columns(expr, lname=lname, rname=rname)
 
-    # def asof_join(
-    #     left: Table,
-    #     right: Table,
-    #     predicates: str | ir.BooleanColumn | Sequence[str | ir.BooleanColumn] = (),
-    #     by: str | ir.Column | Sequence[str | ir.Column] = (),
-    #     tolerance: str | ir.IntervalScalar | None = None,
-    #     *,
-    #     lname: str = "",
-    #     rname: str = "{name}_right",
-    # ) -> Table:
-    #     """Perform an "as-of" join between `left` and `right`.
+    def asof_join(
+        left: Table,
+        right: Table,
+        predicates: str | ir.BooleanColumn | Sequence[str | ir.BooleanColumn] = (),
+        by: str | ir.Column | Sequence[str | ir.Column] = (),
+        tolerance: str | ir.IntervalScalar | None = None,
+        *,
+        lname: str = "",
+        rname: str = "{name}_right",
+    ) -> Table:
+        """Perform an "as-of" join between `left` and `right`.
 
-    #     Similar to a left join except that the match is done on nearest key
-    #     rather than equal keys.
+        Similar to a left join except that the match is done on nearest key
+        rather than equal keys.
 
-    #     Optionally, match keys with `by` before joining with `predicates`.
+        Optionally, match keys with `by` before joining with `predicates`.
 
-    #     Parameters
-    #     ----------
-    #     left
-    #         Table expression
-    #     right
-    #         Table expression
-    #     predicates
-    #         Join expressions
-    #     by
-    #         column to group by before joining
-    #     tolerance
-    #         Amount of time to look behind when joining
-    #     lname
-    #         A format string to use to rename overlapping columns in the left
-    #         table (e.g. ``"left_{name}"``).
-    #     rname
-    #         A format string to use to rename overlapping columns in the right
-    #         table (e.g. ``"right_{name}"``).
+        Parameters
+        ----------
+        left
+            Table expression
+        right
+            Table expression
+        predicates
+            Join expressions
+        by
+            column to group by before joining
+        tolerance
+            Amount of time to look behind when joining
+        lname
+            A format string to use to rename overlapping columns in the left
+            table (e.g. ``"left_{name}"``).
+        rname
+            A format string to use to rename overlapping columns in the right
+            table (e.g. ``"right_{name}"``).
 
-    #     Returns
-    #     -------
-    #     Table
-    #         Table expression
-    #     """
-    #     # op = ops.AsOfJoin(
-    #     #     left=left,
-    #     #     right=right,
-    #     #     predicates=predicates,
-    #     #     by=by,
-    #     #     tolerance=tolerance,
-    #     # )
-    #     # return ops.relations._dedup_join_columns(op.to_expr(), lname=lname, rname=rname)
+        Returns
+        -------
+        Table
+            Table expression
+        """
+        if tolerance is not None:
+            if not isinstance(predicates, str):
+                raise TypeError(
+                    "tolerance can only be specified when predicates is a string"
+                )
+            left_key, right_key = left[predicates], right[predicates]
+            predicates = [left_key == right_key, left_key - right_key <= tolerance]
+
+        return left.join(right, predicates, how="asof", lname=lname, rname=rname)
 
     def cross_join(
         left: Table,
@@ -3081,7 +3082,6 @@ class TableExpr(Expr, _FixedTextJupyterMixin):
         # )
         # return ops.relations._dedup_join_columns(op.to_expr(), lname=lname, rname=rname)
 
-    asof_join = _regular_join_method("asof_join", "asof")
     inner_join = _regular_join_method("inner_join", "inner")
     left_join = _regular_join_method("left_join", "left")
     outer_join = _regular_join_method("outer_join", "outer")
@@ -4362,7 +4362,6 @@ def _coerce_join_predicate(left, right, pred):
         # resolve deferred expressions on the left table
         return pred.resolve(left)
 
-
     if isinstance(pred, tuple):
         if len(pred) != 2:
             raise com.ExpressionError("Join key tuple must be length 2")
@@ -4375,7 +4374,7 @@ def _coerce_join_predicate(left, right, pred):
     return left_value == right_value
 
 
-def _disambiguate_join_fields(left_fields, right_fields, lname, rname): # collisions=set()
+def _disambiguate_join_fields(left_fields, right_fields, lname, rname):
     lname = lname or "{name}"
     rname = rname or "{name}"
     overlap = left_fields.keys() & right_fields.keys()
@@ -4474,6 +4473,7 @@ class JoinExpr(TableExpr):
         if fields is not None:
             return self.op().copy(fields=fields).to_expr()
         else:
+            # TODO(kszucs): clean this up with a nicer error message
             # raise if there are missing fields from either of the tables
             # raise on collisions
             collisions = []
@@ -4484,7 +4484,6 @@ class JoinExpr(TableExpr):
                     if f not in fields:
                         collisions.append(f)
             if collisions:
-                # TODO(kszucs): better naming
                 raise com.IntegrityError(f"Name collisions: {collisions}")
 
             return self.op().to_expr()

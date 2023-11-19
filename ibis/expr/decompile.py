@@ -167,7 +167,7 @@ def join_link(op, table, predicates, how):
     return f".join_{how}({table}, {_try_unwrap(predicates)})"
 
 
-@translate.register(ops.Join)
+@translate.register(ops.JoinChain)
 def join(op, first, rest, fields):
     calls = "".join(rest)
     return f"{first}{calls}"

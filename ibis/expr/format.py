@@ -276,7 +276,7 @@ def _set_op(op, left, right, distinct):
     return f"{op.__class__.__name__}[{', '.join(args)}]"
 
 
-@fmt.register(ops.Join)
+@fmt.register(ops.JoinChain)
 def _join(op, left, right, predicates, **kwargs):
     args = [str(left), str(right)]
     name = f"{op.__class__.__name__}[{', '.join(args)}]"
@@ -300,7 +300,7 @@ def _join(op, how, table, predicates):
     return f"{name}\n{render(predicates, 1)}"
 
 
-@fmt.register(ops.Join)
+@fmt.register(ops.JoinChain)
 def _join_project(op, first, rest, **kwargs):
     name = f"{op.__class__.__name__}[{first}]\n"
     return name + render(rest, 1) + "\n" + render_fields(kwargs, 1)

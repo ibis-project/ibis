@@ -6,7 +6,7 @@ from __future__ import annotations
 import itertools
 import typing
 from abc import abstractmethod
-from typing import Annotated, Any, Optional
+from typing import Annotated, Any, Literal, Optional
 
 from public import public
 
@@ -147,13 +147,13 @@ class Project(Relation):
 
 @public
 class JoinLink(Node):
-    how: str
+    how: Literal["inner", "left", "right", "outer", "asof"]
     table: Relation
     predicates: VarTuple[Value[dt.Boolean]]
 
 
 @public
-class Join(Relation):
+class JoinChain(Relation):
     first: Relation
     rest: VarTuple[JoinLink]
     fields: FrozenDict[str, Field]
