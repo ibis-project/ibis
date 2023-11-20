@@ -431,6 +431,7 @@ class SQLQueryResult(Relation):
     query: str
     schema: Schema
     source: Any
+    fields = FrozenDict()
 
 
 @public

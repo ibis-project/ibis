@@ -8,7 +8,7 @@ import sqlglot as sg
 
 import ibis.common.exceptions as com
 import ibis.expr.operations as ops
-from ibis.backends.base.sqlglot import FALSE, NULL, STAR, lit
+from ibis.backends.base.sqlglot import FALSE, NULL, STAR
 
 
 @functools.singledispatch
@@ -37,114 +37,52 @@ def _database_table(op, *, name, namespace, **_):
     return sg.table(name, db=db, catalog=catalog)
 
 
-def replace_tables_with_star_selection(node, alias=None):
-    if isinstance(node, (sg.exp.Subquery, sg.exp.Table, sg.exp.CTE)):
-        return sg.exp.Column(
-            this=STAR,
-            table=sg.to_identifier(alias if alias is not None else node.alias_or_name),
-        )
-    return node
+@translate_rel.register(ops.JoinChain)
+def _join_chain(op: ops.JoinChain, *, first, rest, fields):
+    result = first
+
+    for link in rest:
+        how = link.how
+        table = link.table
+        predicates = link.predicates
+        result = result.join(table, on=predicates, join_type=how)
+    return result.select(*(value.as_(key) for key, value in fields.items()))
 
 
-@translate_rel.register
-def _selection(op: ops.Selection, *, table, selections, predicates, sort_keys, **_):
+@translate_rel.register(ops.Project)
+def _selection(op: ops.Project, *, parent, values, **_):
     # needs_alias should never be true here in explicitly, but it may get
     # passed via a (recursive) call to translate_val
-    if isinstance(op.table, ops.Join) and not isinstance(
-        op.table, (ops.LeftSemiJoin, ops.LeftAntiJoin)
-    ):
-        args = table.this.args
-        from_ = args["from"]
-        (join,) = args["joins"]
-    else:
-        from_ = join = None
+    return sg.select(*(value.as_(key) for key, value in values.items())).from_(parent)
 
-    selections = tuple(
-        replace_tables_with_star_selection(
-            node,
-            # replace the table name with the alias if the table is **not** a
-            # join, because we may be selecting from a subquery or an aliased
-            # table; otherwise we'll select from the _unaliased_ table or the
-            # _child_ table, which may have a different alias than the one we
-            # generated for the input table
-            table.alias_or_name if from_ is None and join is None else None,
-        )
-        for node in selections
-    ) or (STAR,)
 
-    sel = sg.select(*selections).from_(from_ if from_ is not None else table)
+@translate_rel.register(ops.Aggregate)
+def _aggregation(op: ops.Aggregate, *, parent, groups, metrics, **_):
+    sel = sg.select(
+        *(value.as_(key) for key, value in groups.items()),
+        *(value.as_(key) for key, value in metrics.items()),
+    ).from_(parent)
 
-    if join is not None:
-        sel = sel.join(join)
-
-    if predicates:
-        if join is not None:
-            sel = sg.select(STAR).from_(sel.subquery(table.alias_or_name))
-        sel = sel.where(*predicates)
-
-    if sort_keys:
-        sel = sel.order_by(*sort_keys)
+    if groups:
+        sel = sel.group_by(*map(sg.exp.convert, range(1, len(groups) + 1)))
 
     return sel
 
 
-@translate_rel.register(ops.Aggregation)
-def _aggregation(
-    op: ops.Aggregation, *, table, metrics, by, having, predicates, sort_keys, **_
-):
-    selections = (by + metrics) or (STAR,)
-    sel = sg.select(*selections).from_(table)
-
-    if by:
-        sel = sel.group_by(*map(lit, range(1, len(by) + 1)))
-
-    if predicates:
-        sel = sel.where(*predicates)
-
-    if having:
-        sel = sel.having(*having)
-
-    if sort_keys:
-        sel = sel.order_by(*sort_keys)
-
-    return sel
-
-
-_JOIN_TYPES = {
-    ops.InnerJoin: "INNER",
-    ops.LeftJoin: "LEFT",
-    ops.RightJoin: "RIGHT",
-    ops.OuterJoin: "FULL",
-    ops.CrossJoin: "CROSS",
-    ops.LeftSemiJoin: "SEMI",
-    ops.LeftAntiJoin: "ANTI",
-    ops.AsOfJoin: "ASOF",
-}
-
-
-@translate_rel.register
-def _join(op: ops.Join, *, left, right, predicates, **_):
-    on = sg.and_(*predicates) if predicates else None
-
-    join_type = _JOIN_TYPES[type(op)]
+@translate_rel.register(ops.Filter)
+def _filter(op: ops.Filter, *, parent, predicates, **_):
     try:
-        return left.join(right, join_type=join_type, on=on)
+        return parent.where(predicates)
     except AttributeError:
-        select_args = [f"{left.alias_or_name}.*"]
-
-        # select from both the left and right side of the join if the join
-        # is not a filtering join (semi join or anti join); filtering joins
-        # only return the left side columns
-        if not isinstance(op, (ops.LeftSemiJoin, ops.LeftAntiJoin)):
-            select_args.append(f"{right.alias_or_name}.*")
-        return (
-            sg.select(*select_args).from_(left).join(right, join_type=join_type, on=on)
-        )
+        return sg.select(STAR).from_(parent).where(*predicates)
 
 
-@translate_rel.register
-def _self_ref(op: ops.SelfReference, *, table, **_):
-    return sg.alias(table, op.name)
+@translate_rel.register(ops.Sort)
+def _sort(op: ops.Sort, *, parent, keys, **_):
+    try:
+        return parent.order_by(*keys)
+    except AttributeError:
+        return sg.select(STAR).from_(parent).order_by(*keys)
 
 
 @translate_rel.register
@@ -159,24 +97,24 @@ _SET_OP_FUNC = {
 }
 
 
+# @translate_rel.register
+# def _set_op(op: ops.SetOp, *, left, right, **_):
+#     if isinstance(left, sg.exp.Table):
+#         left = sg.select("*").from_(left)
+#
+#     if isinstance(right, sg.exp.Table):
+#         right = sg.select("*").from_(right)
+#
+#     return _SET_OP_FUNC[type(op)](
+#         left.args.get("this", left),
+#         right.args.get("this", right),
+#         distinct=op.distinct,
+#     )
+
+
 @translate_rel.register
-def _set_op(op: ops.SetOp, *, left, right, **_):
-    if isinstance(left, sg.exp.Table):
-        left = sg.select("*").from_(left)
-
-    if isinstance(right, sg.exp.Table):
-        right = sg.select("*").from_(right)
-
-    return _SET_OP_FUNC[type(op)](
-        left.args.get("this", left),
-        right.args.get("this", right),
-        distinct=op.distinct,
-    )
-
-
-@translate_rel.register
-def _limit(op: ops.Limit, *, table, n, offset, **_):
-    result = sg.select("*").from_(table)
+def _limit(op: ops.Limit, *, parent, n, offset, **_):
+    result = sg.select("*").from_(parent)
 
     if isinstance(n, int):
         result = result.limit(n)
@@ -184,14 +122,14 @@ def _limit(op: ops.Limit, *, table, n, offset, **_):
         limit = n
         # TODO: calling `.sql` is a workaround for sqlglot not supporting
         # scalar subqueries in limits
-        limit = sg.select(limit).from_(table).subquery().sql(dialect="duckdb")
+        limit = sg.select(limit).from_(parent).subquery().sql(dialect="duckdb")
         result = result.limit(limit)
 
     assert offset is not None, "offset is None"
 
     if not isinstance(offset, int):
         skip = offset
-        skip = sg.select(skip).from_(table).subquery().sql(dialect="duckdb")
+        skip = sg.select(skip).from_(parent).subquery().sql(dialect="duckdb")
     elif not offset:
         return result
     else:
@@ -201,15 +139,16 @@ def _limit(op: ops.Limit, *, table, n, offset, **_):
 
 
 @translate_rel.register
-def _distinct(op: ops.Distinct, *, table, **_):
-    return sg.select(STAR).distinct().from_(table)
+def _distinct(op: ops.Distinct, *, parent, **_):
+    return sg.select(STAR).distinct().from_(parent)
 
 
 @translate_rel.register(ops.DropNa)
-def _dropna(op: ops.DropNa, *, table, how, subset, **_):
+def _dropna(op: ops.DropNa, *, parent, how, subset, **_):
     if subset is None:
         subset = [
-            sg.column(name, table=table.alias_or_name) for name in op.table.schema.names
+            sg.column(name, table=parent.alias_or_name)
+            for name in op.table.schema.names
         ]
 
     if subset:
@@ -223,16 +162,16 @@ def _dropna(op: ops.DropNa, *, table, how, subset, **_):
         predicate = None
 
     if predicate is None:
-        return table
+        return parent
 
     try:
-        return table.where(predicate)
+        return parent.where(predicate)
     except AttributeError:
-        return sg.select(STAR).from_(table).where(predicate)
+        return sg.select(STAR).from_(parent).where(predicate)
 
 
 @translate_rel.register
-def _fillna(op: ops.FillNa, *, table, replacements, **_):
+def _fillna(op: ops.FillNa, *, parent, replacements, **_):
     if isinstance(replacements, Mapping):
         mapping = replacements
     else:
@@ -247,18 +186,18 @@ def _fillna(op: ops.FillNa, *, table, replacements, **_):
         )
         for col in op.schema.keys()
     ]
-    return sg.select(*exprs).from_(table)
+    return sg.select(*exprs).from_(parent)
 
 
-@translate_rel.register
-def _view(op: ops.View, *, child, name: str, **_):
-    # TODO: find a way to do this without creating a temporary view
-    backend = op.child.to_expr()._find_backend()
-    backend._create_temp_view(table_name=name, source=sg.select(STAR).from_(child))
-    return sg.table(name)
+# @translate_rel.register
+# def _view(op: ops.View, *, child, name: str, **_):
+#     # TODO: find a way to do this without creating a temporary view
+#     backend = op.child.to_expr()._find_backend()
+#     backend._create_temp_view(table_name=name, source=sg.select(STAR).from_(child))
+#     return sg.table(name)
 
 
-@translate_rel.register
-def _sql_string_view(op: ops.SQLStringView, query: str, **_: Any):
-    table = sg.table(op.name)
-    return sg.select(STAR).from_(table).with_(table, as_=query, dialect="duckdb")
+# @translate_rel.register
+# def _sql_string_view(op: ops.SQLStringView, query: str, **_: Any):
+#     table = sg.table(op.name)
+#     return sg.select(STAR).from_(table).with_(table, as_=query, dialect="duckdb")

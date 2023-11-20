@@ -46,28 +46,24 @@ from typing import TYPE_CHECKING, Any
 
 import sqlglot as sg
 
-import ibis.expr.analysis as an
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
-from ibis.common.patterns import Call, _
-from ibis.expr.analysis import c, p, x, y
+from ibis.common.deferred import _
+from ibis.expr.analysis import c, p, x
 
 if TYPE_CHECKING:
     from collections.abc import Mapping
 
 
-a = Call.namespace(an)
-
-
 def translate(
-    op: ops.TableNode, *, params: Mapping[ir.Value, Any], translate_rel, translate_val
+    op, *, params: Mapping[ir.Value, Any], translate_rel, translate_val
 ) -> sg.exp.Expression:
     """Translate an ibis operation to a sqlglot expression.
 
     Parameters
     ----------
     op
-        An ibis `TableNode`
+        An ibis operation
     params
         A mapping of expressions to concrete values
     translate_rel
@@ -84,7 +80,6 @@ def translate(
     def _translate_node(node, **kwargs):
         if isinstance(node, ops.Value):
             return translate_val(node, **kwargs)
-        assert isinstance(node, ops.TableNode)
         return translate_rel(node, **kwargs)
 
     gen_alias_index = itertools.count()
@@ -95,8 +90,6 @@ def translate(
         # don't alias root nodes or value ops
         if node is op or isinstance(node, ops.Value):
             return result
-
-        assert isinstance(node, ops.TableNode)
 
         alias_index = next(gen_alias_index)
         alias = f"t{alias_index:d}"
@@ -117,31 +110,11 @@ def translate(
         lambda op, ctx: ops.Literal(value=params[op], dtype=ctx[x])
     )
 
-    # replace the right side of InColumn into a scalar subquery for sql
-    # backends
-    replace_in_column_with_table_array_view = p.InColumn(..., y) >> _.copy(
-        options=c.TableArrayView(
-            c.Selection(table=a.find_first_base_table(y), selections=(y,))
-        ),
-    )
-
     # replace any checks against an empty right side of the IN operation with
     # `False`
     replace_empty_in_values_with_false = p.InValues(..., ()) >> c.Literal(
         False, dtype="bool"
     )
-
-    # replace `NotExistsSubquery` with `Not(ExistsSubquery)`
-    #
-    # this allows us to avoid having another rule to negate ExistsSubquery
-    replace_notexists_subquery_with_not_exists = p.NotExistsSubquery(x, y) >> c.Not(
-        c.ExistsSubquery(x, y)
-    )
-
-    # clickhouse-specific rewrite to turn notany/notall into equivalent
-    # already-defined operations
-    replace_notany_with_min_not = p.NotAny(x, where=y) >> c.Min(c.Not(x), where=y)
-    replace_notall_with_max_not = p.NotAll(x, where=y) >> c.Max(c.Not(x), where=y)
 
     # add an ORDER BY clause to rank window functions that don't have one
     add_order_by_to_empty_window_functions = p.WindowFunction(
@@ -151,14 +124,10 @@ def translate(
 
     op = op.replace(
         replace_literals
-        | replace_in_column_with_table_array_view
         | replace_empty_in_values_with_false
-        | replace_notexists_subquery_with_not_exists
-        | replace_notany_with_min_not
-        | replace_notall_with_max_not
         | add_order_by_to_empty_window_functions
     )
     # apply translate rules in topological order
-    results = op.map(fn, filter=(ops.TableNode, ops.Value))
+    results = op.map(fn)
     node = results[op]
     return node.this if isinstance(node, sg.exp.Subquery) else node

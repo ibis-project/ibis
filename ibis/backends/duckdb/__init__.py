@@ -68,23 +68,18 @@ class _Settings:
         self.con = con
 
     def __getitem__(self, key):
-        try:
-            with self.con.begin() as con:
-                return con.exec_driver_sql(
-                    f"select value from duckdb_settings() where name = '{key}'"
-                ).one()
-        except sa.exc.NoResultFound:
-            raise KeyError(key)
+        (value,) = self.con.execute(
+            f"select value from duckdb_settings() where name = '{key}'"
+        ).fetchone()
+        return value
 
     def __setitem__(self, key, value):
-        with self.con.begin() as con:
-            con.exec_driver_sql(f"SET {key}='{value}'")
+        self.con.execute(f"SET {key} = '{value}'").fetchall()
 
     def __repr__(self):
-        with self.con.begin() as con:
-            kv = con.exec_driver_sql(
-                "select map(array_agg(name), array_agg(value)) from duckdb_settings()"
-            ).scalar()
+        (kv,) = self.con.execute(
+            "select map(array_agg(name), array_agg(value)) from duckdb_settings()"
+        ).fetchone()
 
         return repr(dict(zip(kv["key"], kv["value"])))
 
@@ -218,13 +213,17 @@ class Backend(BaseBackend, CanCreateSchema):
     def _clean_up_cached_table(self, op):
         self.drop_table(op.name)
 
-    def table(self, name: str, database: str | None = None) -> ir.Table:
+    def table(
+        self, name: str, schema: str | None = None, database: str | None = None
+    ) -> ir.Table:
         """Construct a table expression.
 
         Parameters
         ----------
         name
             Table name
+        schema
+            Schema name
         database
             Database name
 
@@ -233,11 +232,16 @@ class Backend(BaseBackend, CanCreateSchema):
         Table
             Table expression
         """
-        schema = self.get_schema(name, database=database)
+        table_schema = self.get_schema(name, schema=schema, database=database)
         # load geospatial only if geo columns
-        if any(typ.is_geospatial() for typ in schema.types):
+        if any(typ.is_geospatial() for typ in table_schema.types):
             self.load_extension("spatial")
-        return ops.DatabaseTable(name, schema, self, namespace=database).to_expr()
+        return ops.DatabaseTable(
+            name,
+            schema=table_schema,
+            source=self,
+            namespace=ops.Namespace(database=database, schema=schema),
+        ).to_expr()
 
     def get_schema(
         self, table_name: str, schema: str | None = None, database: str | None = None
@@ -472,6 +476,16 @@ class Backend(BaseBackend, CanCreateSchema):
 
         self.con = duckdb.connect(str(database), config=config)
 
+        self._record_batch_readers_consumed = {}
+        self._temp_views: set[str] = set()
+
+        # Load any pre-specified extensions
+        if extensions is not None:
+            self._load_extensions(extensions)
+
+        # Default timezone
+        self.raw_sql("SET TimeZone = 'UTC'")
+
     @staticmethod
     def _sg_load_extensions(
         dbapi_con, extensions: list[str], force_install: bool = False
@@ -494,20 +508,7 @@ class Backend(BaseBackend, CanCreateSchema):
     def _load_extensions(
         self, extensions: list[str], force_install: bool = False
     ) -> None:
-        with self.begin() as con:
-            self._sa_load_extensions(
-                con.connection, extensions, force_install=force_install
-            )
-
-        # Load any pre-specified extensions
-        if extensions is not None:
-            self._load_extensions(extensions)
-
-        # Default timezone
-        self.raw_sql("SET TimeZone = 'UTC'")
-
-        self._record_batch_readers_consumed = {}
-        self._temp_views: set[str] = set()
+        self._sg_load_extensions(self.con, extensions, force_install=force_install)
 
     def _from_url(self, url: str, **kwargs) -> BaseBackend:
         """Connect to a backend using a URL `url`.
@@ -1061,8 +1062,7 @@ class Backend(BaseBackend, CanCreateSchema):
             .sql(self.name, pretty=True)
         )
 
-        with self.begin() as con:
-            out = con.exec_driver_sql(sql).cursor.fetch_arrow_table()
+        out = self.con.execute(sql).arrow()
 
         return self._filter_with_like(out["table_name"].to_pylist(), like)
 
@@ -1180,8 +1180,7 @@ class Backend(BaseBackend, CanCreateSchema):
         if read_only:
             code += " (READ_ONLY)"
 
-        with self.begin() as con:
-            con.exec_driver_sql(code)
+        self.con.execute(code).fetchall()
 
     def detach(self, name: str) -> None:
         """Detach a database from the current DuckDB session.
@@ -1192,8 +1191,7 @@ class Backend(BaseBackend, CanCreateSchema):
             The name of the database to detach.
         """
         name = sg.to_identifier(name).sql(self.name)
-        with self.begin() as con:
-            con.exec_driver_sql(f"DETACH {name}")
+        self.con.execute(f"DETACH {name}").fetchall()
 
     def attach_sqlite(
         self, path: str | Path, overwrite: bool = False, all_varchar: bool = False
@@ -1268,8 +1266,7 @@ class Backend(BaseBackend, CanCreateSchema):
           name string
           band string
         """
-        with self.begin() as con:
-            con.connection.register_filesystem(filesystem)
+        self.con.register_filesystem(filesystem)
 
     def _run_pre_execute_hooks(self, expr: ir.Expr) -> None:
         # Warn for any tables depending on RecordBatchReaders that have already

@@ -13,7 +13,7 @@ import sqlglot as sg
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
-from ibis.backends.base.sqlglot import NULL, STAR, AggGen, FuncGen, lit, make_cast
+from ibis.backends.base.sqlglot import NULL, STAR, AggGen, FuncGen, make_cast
 from ibis.backends.base.sqlglot.datatypes import DuckDBType
 
 
@@ -36,9 +36,9 @@ def translate_val(op, **_):
     raise com.OperationNotDefinedError(f"No translation rule for {type(op)}")
 
 
-@translate_val.register(ops.TableColumn)
-def _column(op, *, table, name, **_):
-    return sg.column(name, table=table.alias_or_name)
+@translate_val.register(ops.Field)
+def _column(op, *, rel, name, **_):
+    return sg.column(name, table=rel.alias_or_name)
 
 
 @translate_val.register(ops.Alias)
@@ -61,11 +61,13 @@ def _literal(op, *, value, dtype, **kw):
                 "Duckdb doesn't support nanosecond interval resolutions"
             )
 
-        return sg.exp.Interval(this=lit(value), unit=dtype.resolution.upper())
+        return sg.exp.Interval(
+            this=sg.exp.convert(value), unit=dtype.resolution.upper()
+        )
     elif dtype.is_boolean():
         return sg.exp.Boolean(this=value)
     elif dtype.is_string() or dtype.is_inet() or dtype.is_macaddr():
-        return lit(str(value))
+        return sg.exp.convert(str(value))
     elif dtype.is_numeric():
         # cast non finite values to float because that's the behavior of
         # duckdb when a mixed decimal/float operation is performed
@@ -96,7 +98,9 @@ def _literal(op, *, value, dtype, **kw):
         return f[func](*args)
     elif dtype.is_date():
         return sg.exp.DateFromParts(
-            year=lit(value.year), month=lit(value.month), day=lit(value.day)
+            year=sg.exp.convert(value.year),
+            month=sg.exp.convert(value.month),
+            day=sg.exp.convert(value.day),
         )
     elif dtype.is_array():
         value_type = dtype.value_type
@@ -125,7 +129,7 @@ def _literal(op, *, value, dtype, **kw):
         make_field = partial(_literal, **kw)
         items = [
             sg.exp.Slice(
-                this=lit(k),
+                this=sg.exp.convert(k),
                 expression=make_field(
                     ops.Literal(v, dtype=field_dtype), value=v, dtype=field_dtype
                 ),
@@ -357,16 +361,6 @@ def _negate(op, *, arg, **_):
 @translate_val.register(ops.Not)
 def _not(op, *, arg, **_):
     return sg.exp.Not(this=arg)
-
-
-@translate_val.register(ops.NotAny)
-def _not_any(op, *, arg, where, **_):
-    return agg.bool_and(sg.not_(arg), where=where)
-
-
-@translate_val.register(ops.NotAll)
-def _not_all(op, *, arg, where, **_):
-    return agg.bool_or(sg.not_(arg), where=where)
 
 
 ### Timey McTimeFace
@@ -649,21 +643,6 @@ def _is_not_null(op, *, arg, **_):
     return sg.not_(arg.is_(NULL))
 
 
-@translate_val.register(ops.IfNull)
-def _if_null(op, *, arg, ifnull_expr, **_):
-    return f.ifnull(arg, ifnull_expr)
-
-
-@translate_val.register(ops.NullIfZero)
-def _null_if_zero(op, *, arg, **_):
-    return f.nullif(arg, 0)
-
-
-@translate_val.register(ops.ZeroIfNull)
-def _zero_if_null(op, *, arg, **_):
-    return f.ifnull(arg, 0)
-
-
 ### Definitely Not Tensors
 
 
@@ -793,7 +772,7 @@ def _array_zip(op: ops.ArrayZip, *, arg, **_) -> str:
     body = sg.exp.Struct.from_arg_list(
         [
             sg.exp.Slice(this=k, expression=v[i])
-            for k, v in zip(map(lit, op.dtype.value_type.names), arg)
+            for k, v in zip(map(sg.exp.convert, op.dtype.value_type.names), arg)
         ]
     )
     func = sg.exp.Lambda(this=body, expressions=[i])
@@ -933,7 +912,7 @@ def _array_column(op, *, cols, **_):
 def _struct_column(op, *, names, values, **_):
     return sg.exp.Struct.from_arg_list(
         [
-            sg.exp.Slice(this=lit(name), expression=value)
+            sg.exp.Slice(this=sg.exp.convert(name), expression=value)
             for name, value in zip(names, values)
         ]
     )
@@ -942,7 +921,7 @@ def _struct_column(op, *, names, values, **_):
 @translate_val.register(ops.StructField)
 def _struct_field(op, *, arg, field, **_):
     val = arg.this if isinstance(op.arg, ops.Alias) else arg
-    return val[lit(field)]
+    return val[sg.exp.convert(field)]
 
 
 @translate_val.register(ops.IdenticalTo)
