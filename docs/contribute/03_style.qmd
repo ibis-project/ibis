@@ -4,7 +4,7 @@
 
 Ibis uses several code linters, like [`ruff`](https://github.com/charliermarsh/ruff), [`shellcheck`](https://github.com/koalaman/shellcheck), [`statix`](https://github.com/nerdypepper/statix), [`nixpkgs-fmt`](https://github.com/nix-community/nixpkgs-fmt) and others, that are enforced by CI. Developers should run them locally before submitting a PR.
 
-1. Install pre-commit
+1. Install `pre-commit`
 
 ```sh
 pip install pre-commit
