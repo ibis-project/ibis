@@ -544,6 +544,74 @@ def test_select_with_correlated_scalar_subquery():
     )
 
 
+def test_aggregate_field_dereferencing():
+    t = ibis.table(
+        {
+            "l_orderkey": "int32",
+            "l_partkey": "int32",
+            "l_suppkey": "int32",
+            "l_linenumber": "int32",
+            "l_quantity": "decimal(15, 2)",
+            "l_extendedprice": "decimal(15, 2)",
+            "l_discount": "decimal(15, 2)",
+            "l_tax": "decimal(15, 2)",
+            "l_returnflag": "string",
+            "l_linestatus": "string",
+            "l_shipdate": "date",
+            "l_commitdate": "date",
+            "l_receiptdate": "date",
+            "l_shipinstruct": "string",
+            "l_shipmode": "string",
+            "l_comment": "string",
+        }
+    )
+
+    f = t.filter(t.l_shipdate <= ibis.date("1998-09-01"))
+    assert f.op() == Filter(
+        parent=t, predicates=[t.l_shipdate <= ibis.date("1998-09-01")]
+    )
+
+    discount_price = t.l_extendedprice * (1 - t.l_discount)
+    charge = discount_price * (1 + t.l_tax)
+    a = f.group_by(["l_returnflag", "l_linestatus"]).aggregate(
+        sum_qty=t.l_quantity.sum(),
+        sum_base_price=t.l_extendedprice.sum(),
+        sum_disc_price=discount_price.sum(),
+        sum_charge=charge.sum(),
+        avg_qty=t.l_quantity.mean(),
+        avg_price=t.l_extendedprice.mean(),
+        avg_disc=t.l_discount.mean(),
+        count_order=t.count(),
+    )
+
+    discount_price_ = f.l_extendedprice * (1 - f.l_discount)
+    charge_ = discount_price_ * (1 + f.l_tax)
+    assert a.op() == Aggregate(
+        parent=f,
+        groups={
+            "l_returnflag": f.l_returnflag,
+            "l_linestatus": f.l_linestatus,
+        },
+        metrics={
+            "sum_qty": f.l_quantity.sum(),
+            "sum_base_price": f.l_extendedprice.sum(),
+            "sum_disc_price": discount_price_.sum(),
+            "sum_charge": charge_.sum(),
+            "avg_qty": f.l_quantity.mean(),
+            "avg_price": f.l_extendedprice.mean(),
+            "avg_disc": f.l_discount.mean(),
+            # TODO(kszucs): this is not dereferenced
+            "count_order": t.count(),
+        },
+    )
+
+    s = a.order_by(["l_returnflag", "l_linestatus"])
+    assert s.op() == ops.Sort(
+        parent=a,
+        keys=[a.l_returnflag, a.l_linestatus],
+    )
+
+
 # def test_isin_subquery():
 #     import ibis
 

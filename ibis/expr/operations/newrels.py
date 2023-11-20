@@ -298,6 +298,11 @@ class Aggregate(Relation):
     groups: FrozenDict[str, Annotated[Column, ~InstanceOf(Alias)]]
     metrics: FrozenDict[str, Annotated[Scalar, ~InstanceOf(Alias)]]
 
+    def __init__(self, parent, groups, metrics):
+        _check_integrity(groups.values(), {parent})
+        _check_integrity(metrics.values(), {parent})
+        super().__init__(parent=parent, groups=groups, metrics=metrics)
+
     @attribute
     def fields(self):
         return FrozenDict({**self.groups, **self.metrics})

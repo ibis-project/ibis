@@ -1062,6 +1062,9 @@ class TableExpr(Expr, _FixedTextJupyterMixin):
         metrics = unwrap_aliases(metrics)
         having = unwrap_aliases(having)
 
+        groups = dereference_values(self.op(), groups)
+        metrics = dereference_values(self.op(), metrics)
+
         node = ops.Aggregate(self, groups, metrics)
         if having:
             # TODO(kszucs): need to put having values to metrics
