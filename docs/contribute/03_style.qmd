@@ -9,7 +9,9 @@ Ibis uses several code linters, like [`ruff`](https://github.com/charliermarsh/r
 ```sh
 pip install pre-commit
 ```
+
 2. Run
+
 ```sh
 pre-commit run --all-files
 ```
