@@ -39,14 +39,38 @@ def _database_table(op, *, name, namespace, **_):
 
 @translate_rel.register(ops.JoinChain)
 def _join_chain(op: ops.JoinChain, *, first, rest, fields):
-    result = first
+    result = sg.select(*(value.as_(key) for key, value in fields.items())).from_(first)
 
     for link in rest:
-        how = link.how
-        table = link.table
-        predicates = link.predicates
-        result = result.join(table, on=predicates, join_type=how)
-    return result.select(*(value.as_(key) for key, value in fields.items()))
+        result = result.join(link)
+    return result
+
+
+@translate_rel.register(ops.JoinLink)
+def _join_link(op: ops.JoinLink, *, how, table, predicates):
+    sides = {
+        "inner": None,
+        "left": "left",
+        "right": "right",
+        "semi": "left",
+        "anti": "left",
+        "cross": None,
+    }
+    kinds = {
+        "inner": "inner",
+        "left": "outer",
+        "right": "outer",
+        "semi": "semi",
+        "anti": "anti",
+        "cross": "cross",
+    }
+    res = sg.exp.Join(
+        this=table,
+        side=sides[how],
+        kind=kinds[how],
+        on=sg.condition(*predicates),
+    )
+    return res
 
 
 @translate_rel.register(ops.Project)
