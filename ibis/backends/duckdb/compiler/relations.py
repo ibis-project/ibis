@@ -37,11 +37,18 @@ def _database_table(op, *, name, namespace, **_):
     return sg.table(name, db=db, catalog=catalog)
 
 
+@translate_rel.register(ops.SelfReference)
+def _self_ref(op: ops.SelfReference, *, parent, **_):
+    return parent.as_(op.name)
+
+
 @translate_rel.register(ops.JoinChain)
 def _join_chain(op: ops.JoinChain, *, first, rest, fields):
     result = sg.select(*(value.as_(key) for key, value in fields.items())).from_(first)
 
     for link in rest:
+        if isinstance(link, sg.exp.Alias):
+            link = link.this
         result = result.join(link)
     return result
 

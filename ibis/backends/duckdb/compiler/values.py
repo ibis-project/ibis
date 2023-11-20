@@ -37,13 +37,14 @@ def translate_val(op, **_):
 
 
 @translate_val.register(ops.Field)
-def _column(op, *, rel, name, **_):
+@translate_val.register(ops.ForeignField)
+def _field(op, *, rel, name, **_):
     return sg.column(name, table=rel.alias_or_name)
 
 
 @translate_val.register(ops.Alias)
 def _alias(op, *, arg, name, **_):
-    return sg.alias(arg, name)
+    return arg.as_(name)
 
 
 ### Literals
@@ -901,6 +902,11 @@ def _table_array_view(op, *, table, **_):
 def _exists_subquery(op, *, foreign_table, predicates, **_):
     subq = sg.select(1).from_(foreign_table).where(sg.and_(*predicates)).subquery()
     return f.exists(subq)
+
+
+@translate_val.register(ops.UnresolvedExistsSubquery)
+def _unresolved_exists_subquery(op, *, tables, predicates, **_):
+    raise NotImplementedError("cannot evaluate unresolved EXISTS subquery")
 
 
 @translate_val.register(ops.ArrayColumn)
