@@ -2,15 +2,33 @@
 
 ## Code style
 
-- [`ruff`](https://github.com/charliermarsh/ruff): Formatting Python code and sorting `import` statements
-- [`shellcheck`](https://github.com/koalaman/shellcheck): Linting shell scripts
-- [`shfmt`](https://github.com/mvdan/sh): Formatting shell scripts
-- [`statix`](https://github.com/nerdypepper/statix): Linting nix files
-- [`nixpkgs-fmt`](https://github.com/nix-community/nixpkgs-fmt): Formatting nix files
+Ibis uses several code linters, like [`ruff`](https://github.com/charliermarsh/ruff), [`shellcheck`](https://github.com/koalaman/shellcheck), [`statix`](https://github.com/nerdypepper/statix), [`nixpkgs-fmt`](https://github.com/nix-community/nixpkgs-fmt) and others, that are enforced by CI.Developers should run them locally before submitting a PR.
+
+1. Install pre-commit
+
+```sh
+pip install pre-commit
+```
+2. Run
+```sh
+pre-commit run --all-files
+```
+
+Optionally, you may want to setup the `pre-commit` hooks to run automatically when making a git commit. To do this, run the following from the root of the Ibis repository:
+
+```sh
+pre-commit install
+```
+
+This will run the code linters automatically when you make a git commit. If you want to skip these checks, do `git commit --no-verify`
+
+::: {.callout-note}
+Some of the packages needed to run the `pre-commit` linting can not be installed automatically (e.g. `prettier`, `actionlint`, `shellcheck`), and they need to be installed through a system package manager.
 
 ::: {.callout-tip}
 If you use `nix-shell`, all of these are already setup for you and ready to use, and you don't need to do anything to install these tools.
 :::
 
+## Docstrings
 We use [numpydoc](https://numpydoc.readthedocs.io/en/latest/format.html) as our
 standard format for docstrings.
