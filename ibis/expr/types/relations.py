@@ -110,6 +110,12 @@ def bind(table: TableExpr, value: Any) -> ir.Value:
         for k, v in value.items():
             for val in bind(table, v):
                 yield val.name(k)
+    elif isinstance(value, ops.Value):
+        # TODO(kszucs): from certain builders, like ir.GroupedTable we pass
+        # operation nodes instead of expressions to table methods, it would
+        # be better to convert them to expressions before passing them to
+        # this function
+        yield value.to_expr()
     elif callable(value):
         yield value(table)
     else:
@@ -1058,7 +1064,9 @@ class TableExpr(Expr, _FixedTextJupyterMixin):
 
         node = ops.Aggregate(self, groups, metrics)
         if having:
-            node = ops.Filter(node, having)
+            # TODO(kszucs): need to put having values to metrics
+            having = dereference_values(node, having)
+            node = ops.Filter(node, having.values())
 
         return node.to_expr()
 

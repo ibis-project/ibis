@@ -25,49 +25,46 @@ import ibis.expr.analysis as an
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
 from ibis import util
+from ibis.common.grounds import Concrete
 from ibis.common.deferred import Deferred
 from ibis.selectors import Selector
 
 import ibis.common.exceptions as com
 from public import public
 from ibis.expr.types.relations import bind
+from ibis.common.typing import VarTuple
+import ibis.expr.datatypes as dt
 
 
 @public
-class GroupedTable:
+class GroupedTable(Concrete):
     """An intermediate table expression to hold grouping information."""
 
-    def __init__(self, table, by, having=(), order_by=()):
-        self.table = table
-        self.by = by
-
-        if not self.by:
-            raise com.IbisInputError("The grouping keys list is empty")
-
-        self._order_by = order_by
-        self._having = having
+    table: ops.Relation
+    groupings: VarTuple[ops.Column]
+    orderings: VarTuple[ops.SortKey] = ()
+    havings: VarTuple[ops.Value[dt.Boolean]] = ()
 
     def __getitem__(self, args):
         # Shortcut for projection with window functions
         return self.select(*args)
 
     def __getattr__(self, attr):
-        if hasattr(self.table, attr):
-            return self._column_wrapper(attr)
+        try:
+            field = getattr(self.table, attr)
+        except AttributeError:
+            raise AttributeError(f"GroupedTable has no attribute {attr}")
 
-        raise AttributeError("GroupBy has no attribute %r" % attr)
-
-    def _column_wrapper(self, attr):
-        col = self.table[attr]
-        if isinstance(col, ir.NumericValue):
-            return GroupedNumbers(col, self)
+        if isinstance(field, ir.NumericValue):
+            return GroupedNumbers(field, self)
         else:
-            return GroupedArray(col, self)
+            return GroupedArray(field, self)
 
     def aggregate(self, metrics=(), **kwds) -> ir.Table:
         """Compute aggregates over a group by."""
-        # XXX: pass having=self._having to the table aggregate method
-        return self.table.aggregate(metrics, by=self.by, **kwds)
+        return self.table.to_expr().aggregate(
+            metrics, by=self.groupings, having=self.havings, **kwds
+        )
 
     agg = aggregate
 
@@ -88,12 +85,9 @@ class GroupedTable:
         GroupedTable
             A grouped table expression
         """
-        return self.__class__(
-            self.table,
-            self.by,
-            having=self._having + tuple(util.promote_list(expr)),
-            order_by=self._order_by,
-        )
+        table = self.table.to_expr()
+        havings = tuple(bind(table, expr))
+        return self.copy(havings=self.havings + havings)
 
     def order_by(self, expr: ir.Value | Iterable[ir.Value]) -> GroupedTable:
         """Sort a grouped table expression by `expr`.
@@ -112,12 +106,9 @@ class GroupedTable:
         GroupedTable
             A sorted grouped GroupedTable
         """
-        return self.__class__(
-            self.table,
-            self.by,
-            having=self._having,
-            order_by=self._order_by + tuple(util.promote_list(expr)),
-        )
+        table = self.table.to_expr()
+        orderings = tuple(bind(table, expr))
+        return self.copy(orderings=self.orderings + orderings)
 
     def mutate(
         self, *exprs: ir.Value | Sequence[ir.Value], **kwexprs: ir.Value
@@ -190,7 +181,7 @@ class GroupedTable:
             A table expression with window functions applied
         """
         exprs = self._selectables(*exprs, **kwexprs)
-        return self.table.mutate(exprs)
+        return self.table.to_expr().mutate(exprs)
 
     def select(self, *exprs, **kwexprs) -> ir.Table:
         """Project new columns out of the grouped table.
@@ -200,7 +191,7 @@ class GroupedTable:
         [`GroupedTable.mutate`](#ibis.expr.types.groupby.GroupedTable.mutate)
         """
         exprs = self._selectables(*exprs, **kwexprs)
-        return self.table.select(exprs)
+        return self.table.to_expr().select(exprs)
 
     def _selectables(self, *exprs, **kwexprs):
         """Project new columns out of the grouped table.
@@ -209,11 +200,11 @@ class GroupedTable:
         --------
         [`GroupedTable.mutate`](#ibis.expr.types.groupby.GroupedTable.mutate)
         """
-        table = self.table
+        table = self.table.to_expr()
         default_frame = ops.RowsWindowFrame(
             table=self.table,
-            group_by=bind(self.table, self.by),
-            order_by=bind(self.table, self._order_by),
+            group_by=self.groupings,
+            order_by=self.orderings,
         )
         return [
             an.windowize_function(value, default_frame, merge_frames=True)
@@ -275,8 +266,8 @@ class GroupedTable:
         Table
             The aggregated table
         """
-        metric = self.table.count()
-        return self.table.aggregate([metric], by=self.by, having=self._having)
+        table = self.table.to_expr()
+        return table.aggregate([table.count()], by=self.groupings, having=self.havings)
 
     size = count
 

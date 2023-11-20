@@ -1106,6 +1106,8 @@ class SequenceOf(Slotted, Pattern):
         return f"{typ} of {item}"
 
     def match(self, values, context):
+        # TODO(kszucs): consider to check for Iterable or Sequence but
+        # exclude string-like types and mappings
         if not is_iterable(values):
             return NoMatch
 

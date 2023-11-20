@@ -722,8 +722,8 @@ def test_group_by_having_api(table):
     postp = table.d.mean() > 1
 
     expr = table.group_by("g").having(postp).aggregate(metric)
-
     expected = table.aggregate(metric, by="g", having=postp)
+
     assert_equal(expr, expected)
 
 
