@@ -15,12 +15,6 @@ import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 from ibis.legacy.udf.vectorized import analytic, reduction
 
-try:
-    from py4j.protocol import Py4JJavaError
-except ImportError:
-    Py4JJavaError = None
-
-
 pytestmark = pytest.mark.notimpl(
     ["druid"],
     raises=(
@@ -48,6 +42,17 @@ try:
     from impala.error import HiveServer2Error
 except ImportError:
     HiveServer2Error = None
+
+try:
+    from py4j.protocol import Py4JJavaError
+except ImportError:
+    Py4JJavaError = None
+
+
+try:
+    from google.api_core.exceptions import BadRequest as GoogleBadRequest
+except ImportError:
+    GoogleBadRequest = None
 
 
 # adapted from https://gist.github.com/xmnlab/2c1f93df1a6c6bde4e32c8579117e9cc
@@ -1186,3 +1191,61 @@ def test_first_last(backend):
         }
     )
     tm.assert_frame_equal(result, expected)
+
+
+@pytest.mark.notyet(
+    ["bigquery"], raises=GoogleBadRequest, reason="not supported by BigQuery"
+)
+@pytest.mark.notyet(
+    ["clickhouse"],
+    raises=ClickHouseOperationalError,
+    reason="not supported by ClickHouse",
+)
+@pytest.mark.notyet(
+    ["datafusion"], raises=Exception, reason="not supported by DataFusion"
+)
+@pytest.mark.notyet(
+    ["impala"], raises=HiveServer2Error, reason="not supported by Impala"
+)
+@pytest.mark.notyet(
+    ["mysql"], raises=sa.exc.ProgrammingError, reason="not supported by MySQL"
+)
+@pytest.mark.notyet(
+    ["mssql", "oracle", "polars", "snowflake", "sqlite"],
+    raises=com.OperationNotDefinedError,
+    reason="not support by the backend",
+)
+@pytest.mark.notyet(["flink"], raises=Py4JJavaError, reason="not supported by Flink")
+def test_range_expression_bounds(backend):
+    t = ibis.memtable(
+        {
+            "time": pd.to_datetime(
+                [
+                    "2016-05-25 13:30:00.023",
+                    "2016-05-25 13:30:00.023",
+                    "2016-05-25 13:30:00.030",
+                    "2016-05-25 13:30:00.041",
+                    "2016-05-25 13:30:00.048",
+                    "2016-05-25 13:30:00.049",
+                    "2016-05-25 13:30:00.072",
+                    "2016-05-25 13:30:00.075",
+                ],
+                utc=True,
+            ),
+            "ticker": ["GOOG", "MSFT", "MSFT", "MSFT", "GOOG", "AAPL", "GOOG", "MSFT"],
+            "bid": [720.50, 51.95, 51.97, 51.99, 720.50, 97.99, 720.50, 52.01],
+            "ask": [720.93, 51.96, 51.98, 52.00, 720.93, 98.01, 720.88, 52.03],
+        }
+    )
+    expr = t.select(
+        "ticker",
+        total_bid_amount=lambda t: t.bid.sum().over(
+            range=(-ibis.interval(seconds=10), 0), order_by=t.time
+        ),
+    )
+
+    con = backend.connection
+    result = con.execute(expr)
+
+    assert not result.empty
+    assert len(result) == con.execute(t.count())
