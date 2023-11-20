@@ -233,27 +233,21 @@ def test_select_filter_mutate_fusion():
 
     t = ibis.table(ibis.schema([("col", "float32")]), "t")
 
-    result = t[["col"]]
-    result = result[result["col"].isnan()]
-    result = result.mutate(col=result["col"].cast("int32"))
+    t1 = t[["col"]]
+    assert t1.op() == ops.Project(parent=t, values={"col": t.col})
 
-    second_selection = result.op()
-    first_selection = second_selection.table
-    assert len(second_selection.selections) == 1
+    t2 = t1[t1["col"].isnan()]
+    assert t2.op() == ops.Filter(parent=t1, predicates=[t1.col.isnan()])
 
-    col = first_selection.to_expr()["col"].cast("int32").name("col").op()
-    assert second_selection.selections[0] == col
+    t3 = t2.mutate(col=t2["col"].cast("int32"))
+    assert t3.op() == ops.Project(parent=t2, values={"col": t2.col.cast("int32")})
 
-    # we don't look past the projection when a filter is encountered, so the
-    # number of selections in the first projection (`first_selection`) is 0
-    #
-    # previously we did, but this was buggy when executing against the pandas
-    # backend
-    #
-    # eventually we will bring this back, but we're trading off the ability
-    # to remove materialize for some performance in the short term
-    assert len(first_selection.selections) == 1
-    assert len(first_selection.predicates) == 1
+    # create the expected expression
+    filt = ops.Filter(parent=t, predicates=[t.col.isnan()]).to_expr()
+    proj = ops.Project(parent=filt, values={"col": filt.col.cast("int32")}).to_expr()
+
+    t3_opt = t3.optimize()
+    assert t3_opt.equals(proj)
 
 
 def test_no_filter_means_no_selection():

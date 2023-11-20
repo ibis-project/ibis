@@ -154,6 +154,7 @@ class Field(Value):
         return self.rel.schema[self.name]
 
 
+# TODO(kszucs): we may not need this, the pattern can define whether it is foreign or not
 @public
 class ForeignField(Value):
     rel: Relation
@@ -173,6 +174,8 @@ def _check_integrity(values, allowed_parents):
             raise IntegrityError(
                 f"Cannot add {disallowed!r} to projection, they belong to another relation"
             )
+        # add a flag about allowing foreign values
+        # add a flag to enfore scalar foreign values (e.g. for Project and Aggregate)
         # egyebkent csak scalar lehet (e.g. scalar subquery or a value based on literals)
 
 
@@ -195,7 +198,9 @@ class Project(Relation):
 
         # TODO(kszucs): move this to the integrity checker?
         for v in values.values():
-            if v.find(ForeignField) and not v.shape.is_scalar():
+            # TODO(kszucs): need to have a test case that we don't traverse
+            # deeper than value expressions
+            if v.find(ForeignField, filter=Value) and not v.shape.is_scalar():
                 raise IntegrityError(
                     f"Cannot add foreign value {v!r} to projection, it is not scalar shaped"
                 )
@@ -300,6 +305,7 @@ class Aggregate(Relation):
 
     def __init__(self, parent, groups, metrics):
         _check_integrity(groups.values(), {parent})
+        # TODO(kszucs): do the same ForeignField + scalar integrity check for metrics
         _check_integrity(metrics.values(), {parent})
         super().__init__(parent=parent, groups=groups, metrics=metrics)
 
@@ -570,10 +576,22 @@ def subsequent_filters(_, y):
     return Filter(y.parent, y.predicates + preds)
 
 
+@replace(p.Filter(y @ p.Project))
+def reorder_filter_project(_, y):
+    rule = p.Field(y, name) >> Item(y.values, name)
+    preds = tuple(v.replace(rule) for v in _.predicates)
+
+    inner = Filter(y.parent, preds)
+    rule = p.Field(y.parent, name) >> d.Field(inner, name)
+    projs = {k: v.replace(rule) for k, v in y.values.items()}
+
+    return Project(inner, projs)
+
+
 # TODO(kszucs): this may work if the sort keys are not overlapping, need to revisit
-@replace(p.Sort(y @ p.Sort))
-def subsequent_sorts(_, y):
-    return Sort(y.parent, y.keys + _.keys)
+# @replace(p.Sort(y @ p.Sort))
+# def subsequent_sorts(_, y):
+#     return Sort(y.parent, y.keys + _.keys)
 
 
 # TODO(kszucs): support t.select(*t) syntax by implementing TableExpr.__iter__()

@@ -142,12 +142,19 @@ from ibis.common.patterns import replace
 
 
 @replace(ops.Field)
-def lookup_peeled_field(_, mapping):
+def lookup_peeled_field(_, mapping, allow_foreign):
     parent_field = mapping.get(_)
     if parent_field is not None:
         return parent_field
-    else:
+    elif allow_foreign:
+        # TODO(kszucs): allow_foreign can be possibly removed since it is only used from .aggregate(having=...)
+        # but in that case having values should be added to the metrics
         return ops.ForeignField(_.rel, _.name)
+    else:
+        # TODO(kszucs): raise RelationError instead
+        raise com.ExpressionError(
+            f"Field {_.name!r} is not a direct column of this table"
+        )
 
 
 def dereference_mapping(parent):
@@ -161,12 +168,12 @@ def dereference_mapping(parent):
     return result
 
 
-def dereference_values(parents, values):
+def dereference_values(parents, values, allow_foreign=True):
     mapping = {}
     for parent in util.promote_list(parents):
         mapping.update(dereference_mapping(parent))
 
-    context = {"mapping": mapping}
+    context = {"mapping": mapping, "allow_foreign": allow_foreign}
     return {
         k: v.replace(lookup_peeled_field, context=context, filter=ops.Value)
         for k, v in values.items()
@@ -1068,7 +1075,7 @@ class TableExpr(Expr, _FixedTextJupyterMixin):
         node = ops.Aggregate(self, groups, metrics)
         if having:
             # TODO(kszucs): need to put having values to metrics
-            having = dereference_values(node, having)
+            having = dereference_values(node, having, allow_foreign=False)
             node = ops.Filter(node, having.values())
 
         return node.to_expr()
@@ -4353,17 +4360,21 @@ class TableExpr(Expr, _FixedTextJupyterMixin):
 
         return WindowedTable(self, time_col)
 
-    def optimize(self):
+    def optimize(self, enable_reordering=True):
         from ibis.expr.operations.newrels import (
             complete_reprojection,
             subsequent_filters,
             subsequent_projects,
-            subsequent_sorts,
+            reorder_filter_project,
         )
+
+        ruleset = subsequent_projects | subsequent_filters
+        if enable_reordering:
+            ruleset |= reorder_filter_project
 
         node = self.op()
         # apply the rewrites
-        node = node.replace(subsequent_projects | subsequent_filters | subsequent_sorts)
+        node = node.replace(ruleset)
         node = node.replace(complete_reprojection)
 
         # return with a new TableExpr wrapping the optimized node

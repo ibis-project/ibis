@@ -368,13 +368,13 @@ def test_projection_before_and_after_filter():
         },
     )
 
-    t2_opt = t2.optimize()
+    t2_opt = t2.optimize(enable_reordering=False)
     assert t2_opt.op() == Filter(parent=t1, predicates=[t1.bool_col])
 
-    t3_opt = t3.optimize()
+    t3_opt = t3.optimize(enable_reordering=False)
     assert t3_opt.op() == Filter(parent=t1, predicates=[t1.bool_col, t1.int_col > 0])
 
-    t4_opt = t4.optimize()
+    t4_opt = t4.optimize(enable_reordering=False)
     assert t4_opt.op() == Project(
         parent=t3_opt, values={"bool_col": t3_opt.bool_col, "int_col": t3_opt.int_col}
     )

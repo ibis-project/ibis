@@ -699,21 +699,18 @@ def test_filter_on_literal_then_aggregate(table):
     assert expr.columns == ["total"]
 
 
-@pytest.mark.parametrize(
-    "case_fn",
-    [
-        param(lambda t: t.f.sum(), id="non_boolean"),
-        param(lambda t: t.f > 2, id="non_scalar"),
-    ],
-)
-def test_aggregate_post_predicate(table, case_fn):
+def test_aggregate_post_predicate(table):
     # Test invalid having clause
     metrics = [table.f.sum().name("total")]
     by = ["g"]
-    having = [case_fn(table)]
 
     with pytest.raises(ValidationError):
-        table.aggregate(metrics, by=by, having=having)
+        # non boolean
+        table.aggregate(metrics, by=by, having=table.f.sum())
+
+    with pytest.raises(ValidationError):
+        # non scalar
+        print(table.aggregate(metrics, by=by, having=table.f > 2))
 
 
 def test_group_by_having_api(table):
