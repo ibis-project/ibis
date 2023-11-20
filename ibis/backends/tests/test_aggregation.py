@@ -1117,6 +1117,7 @@ def test_quantile(
     raises=com.OperationNotDefinedError,
 )
 def test_corr_cov(
+    con,
     batting,
     batting_df,
     result_fn,
@@ -1134,7 +1135,11 @@ def test_corr_cov(
     #
     # This makes a generic, precise and accurate comparison function incredibly
     # fragile and tedious to write.
-    assert pytest.approx(result) == expected
+    assert (
+        # polars seems to have a numerically-imprecise-compared-to-pandas
+        # (though perhaps fast!) implementation of correlation and covariance
+        pytest.approx(result, abs=1e-2 if con.name == "polars" else None) == expected
+    )
 
 
 @pytest.mark.notimpl(
