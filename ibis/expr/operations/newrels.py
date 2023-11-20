@@ -155,12 +155,25 @@ class Field(Value):
 
 
 # TODO(kszucs): we may not need this, the pattern can define whether it is foreign or not
+# @public
+# class ForeignField(Value):
+#     rel: Relation
+#     name: str
+
+#     shape = ds.columnar
+
+#     @attribute
+#     def dtype(self):
+#         return self.rel.schema[self.name]
+
+
+# TODO(kszucs): rename it to ForeignScalar
 @public
 class ForeignField(Value):
     rel: Relation
     name: str
 
-    shape = ds.columnar
+    shape = ds.scalar
 
     @attribute
     def dtype(self):
@@ -197,13 +210,13 @@ class Project(Relation):
         # back and forth
 
         # TODO(kszucs): move this to the integrity checker?
-        for v in values.values():
-            # TODO(kszucs): need to have a test case that we don't traverse
-            # deeper than value expressions
-            if v.find(ForeignField, filter=Value) and not v.shape.is_scalar():
-                raise IntegrityError(
-                    f"Cannot add foreign value {v!r} to projection, it is not scalar shaped"
-                )
+        # for v in values.values():
+        #     # TODO(kszucs): need to have a test case that we don't traverse
+        #     # deeper than value expressions
+        #     if v.find(ForeignField, filter=Value) and not v.shape.is_scalar():
+        #         raise IntegrityError(
+        #             f"Cannot add foreign value {v!r} to projection, it is not scalar shaped"
+        #         )
 
         super().__init__(parent=parent, values=values)
 

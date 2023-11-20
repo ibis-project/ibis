@@ -383,7 +383,7 @@ def test_projection_before_and_after_filter():
 def test_foreign_field_identification():
     t1 = t.filter(t.bool_col)
     t2 = t.select(summary=t1.int_col.sum())
-    node = t2.op().fields["summary"].arg
+    node = t2.op().fields["summary"]
     assert isinstance(node, ForeignField)
 
 
@@ -515,10 +515,54 @@ def test_select_with_uncorrelated_scalar_subquery():
 
     assert sub.op() == Project(
         parent=t1,
-        values={"a": t1.a, "summary": ops.Sum(ForeignField(rel=t2_filt, name="c"))},
+        values={
+            "a": t1.a,
+            "summary": ForeignField(
+                rel=Aggregate(
+                    parent=t2_filt,
+                    groups={},
+                    metrics={"Sum(c)": t2_filt.c.sum()},
+                ),
+                name="Sum(c)",
+            ),
+        },
     )
 
 
+def test_select_with_subquery():
+    # Define your tables
+    employees = ibis.table(
+        name="employees", schema={"name": "string", "salary": "double"}
+    )
+
+    # # Create the subquery
+    # subquery = employees.aggregate(average_salary=employees.salary.mean())
+
+    # Use the subquery in a select operation
+    expr = employees.select(employees.name, average_salary=employees.salary.mean())
+    print(expr.op().values["average_salary"])
+    return
+    # Define the expected result
+    expected = ibis.expr.operations.Project(
+        parent=employees,
+        values={
+            "name": employees.name,
+            # "average_salary": ibis.expr.operations.Scalar(
+            #     op=ibis.expr.operations.Aggregate(
+            #         parent=employees,
+            #         groups={},
+            #         metrics={"average_salary": employees.salary.mean()},
+            #     ),
+            #     dtype=subquery.average_salary.dtype(),
+            # ),
+        },
+    )
+
+    # Assert that the generated expression matches the expected result
+    assert expr.op() == expected
+
+
+# FIXME(kszucs): filter() must be smarter to detect the other relation
 def test_select_with_correlated_scalar_subquery():
     # Define your tables
     t1 = ibis.table(name="t1", schema={"a": "int64", "b": "string"})

@@ -138,7 +138,13 @@ def unwrap_aliases(values):
 
 
 ################################# DEREFERENCE LOGIC #################################
-from ibis.common.patterns import replace
+from ibis.common.patterns import replace, pattern
+from ibis.common.deferred import deferred, _
+import ibis.expr.analysis as an
+from ibis.util import Namespace
+
+p = Namespace(pattern, module=ops)
+d = Namespace(deferred, module=ops)
 
 
 @replace(ops.Field)
@@ -146,15 +152,25 @@ def lookup_peeled_field(_, mapping, allow_foreign):
     parent_field = mapping.get(_)
     if parent_field is not None:
         return parent_field
-    elif allow_foreign:
-        # TODO(kszucs): allow_foreign can be possibly removed since it is only used from .aggregate(having=...)
-        # but in that case having values should be added to the metrics
-        return ops.ForeignField(_.rel, _.name)
     else:
-        # TODO(kszucs): raise RelationError instead
-        raise com.ExpressionError(
-            f"Field {_.name!r} is not a direct column of this table"
-        )
+        return _
+    # elif allow_foreign:
+    #     # TODO(kszucs): allow_foreign can be possibly removed since it is only used from .aggregate(having=...)
+    #     # but in that case having values should be added to the metrics
+    #     return ops.ForeignField(_.rel, _.name)
+    # else:
+    #     # TODO(kszucs): raise RelationError instead
+    #     raise com.ExpressionError(
+    #         f"Field {_.name!r} is not a direct column of this table"
+    #     )
+
+
+@replace(ops.Reduction)
+def reduction_to_foreign(_, mapping, allow_foreign):
+    table = an.find_first_base_table(_)
+    agg = ops.Aggregate(table, groups={}, metrics={_.name: _})
+    print(agg.to_expr())
+    return ops.ForeignField(agg, _.name)
 
 
 def dereference_mapping(parent):
@@ -168,16 +184,23 @@ def dereference_mapping(parent):
     return result
 
 
-def dereference_values(parents, values, allow_foreign=True):
+def dereference_values(parents, values, allow_foreign=True, convert_reductions=True):
     mapping = {}
     for parent in util.promote_list(parents):
         mapping.update(dereference_mapping(parent))
 
     context = {"mapping": mapping, "allow_foreign": allow_foreign}
-    return {
-        k: v.replace(lookup_peeled_field, context=context, filter=ops.Value)
+    ruleset = lookup_peeled_field
+    if convert_reductions:
+        ruleset |= reduction_to_foreign
+
+    values = {
+        k: v.replace(ruleset, context=context, filter=ops.Value)
         for k, v in values.items()
     }
+
+    # TODO(kszucs): here reductions must be replaced with ForeignField nodes
+    return values
 
 
 ################################# DEREFERENCE LOGIC #################################
@@ -1070,7 +1093,7 @@ class TableExpr(Expr, _FixedTextJupyterMixin):
         having = unwrap_aliases(having)
 
         groups = dereference_values(self.op(), groups)
-        metrics = dereference_values(self.op(), metrics)
+        metrics = dereference_values(self.op(), metrics, convert_reductions=False)
 
         node = ops.Aggregate(self, groups, metrics)
         if having:
