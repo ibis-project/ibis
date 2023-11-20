@@ -1,15 +1,16 @@
 from __future__ import annotations
 
-import geopandas as gpd
-import geopandas.testing as gtm
 import numpy.testing as npt
 import pandas.testing as tm
 import pyarrow as pa
 import pytest
-import shapely
 from pytest import param
 
 import ibis
+
+gpd = pytest.importorskip("geopandas")
+gtm = pytest.importorskip("geopandas.testing")
+shapely = pytest.importorskip("shapely")
 
 
 def test_geospatial_point(zones, zones_gdf):
