@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-import geopandas as gpd
 import pytest
 
 import ibis
@@ -49,6 +48,8 @@ class TestConf(BackendTest):
 
     @property
     def ddl_script(self) -> Iterator[str]:
+        from ibis.backends.base.sql.alchemy.geospatial import geospatial_supported
+
         parquet_dir = self.data_dir / "parquet"
         geojson_dir = self.data_dir / "geojson"
         for table in TEST_TABLES:
@@ -58,15 +59,16 @@ class TestConf(BackendTest):
                 SELECT * FROM read_parquet('{parquet_dir / f'{table}.parquet'}')
                 """
             )
-        for table in TEST_TABLES_GEO:
-            yield (
-                f"""
-                INSTALL spatial;
-                LOAD spatial;
-                CREATE OR REPLACE TABLE {table} AS
-                SELECT * FROM st_read('{geojson_dir / f'{table}.geojson'}')
-                """
-            )
+        if geospatial_supported:
+            for table in TEST_TABLES_GEO:
+                yield (
+                    f"""
+                    INSTALL spatial;
+                    LOAD spatial;
+                    CREATE OR REPLACE TABLE {table} AS
+                    SELECT * FROM st_read('{geojson_dir / f'{table}.geojson'}')
+                    """
+                )
         yield from super().ddl_script
 
     @staticmethod
@@ -101,11 +103,13 @@ def lines(con, data_dir):
 
 @pytest.fixture(scope="session")
 def zones_gdf(data_dir):
+    gpd = pytest.importorskip("geopandas")
     zones_gdf = gpd.read_file(data_dir / "geojson" / "zones.geojson")
     return zones_gdf
 
 
 @pytest.fixture(scope="session")
 def lines_gdf(data_dir):
+    gpd = pytest.importorskip("geopandas")
     lines_gdf = gpd.read_file(data_dir / "geojson" / "lines.geojson")
     return lines_gdf
