@@ -45,7 +45,7 @@ For a better development experience see the `conda` or `nix` setup instructions.
 1. Install ibis in development mode
 
    ```sh
-   pip install -e .
+   pip install -e '.[all]'
    ```
 
 ## Conda
