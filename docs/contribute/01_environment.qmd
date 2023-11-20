@@ -212,7 +212,7 @@ for manager, params in managers.items():
 
 ## Building the docs
 
-Run
+Install [`just`](https://just.systems/man/en/chapter_4.html) and run
 
 ```bash
 just docs-preview
