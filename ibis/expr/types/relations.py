@@ -147,50 +147,31 @@ p = Namespace(pattern, module=ops)
 d = Namespace(deferred, module=ops)
 
 
-# TODO(kszucs): rewrite it to p.Field(~In(parents))
-@replace(ops.Value)
-def lookup_peeled_field(_, mapping):
-    return mapping.get(_, _)
-
-
 @replace(ops.Reduction)
-def reduction_to_foreign(_, mapping):
+def reduction_to_foreign(_):
     table = an.find_first_base_table(_)
     agg = ops.Aggregate(table, groups={}, metrics={_.name: _})
     print(agg.to_expr())
     return ops.ForeignField(agg, _.name)
 
 
-def dereference_mapping(parent):
-    result = {}
-    for k, v in parent.fields.items():
-        while isinstance(v, ops.Field):
-            result[v] = ops.Field(parent, k)
-            v = v.rel.fields.get(v.name)
-        else:
-            result[v] = ops.Field(parent, k)
-    return result
-
-
 def dereference_values(parents, values, convert_reductions=True):
     mapping = {}
     for parent in util.promote_list(parents):
-        mapping.update(dereference_mapping(parent))
+        for k, v in parent.fields.items():
+            while isinstance(v, ops.Field):
+                mapping[v] = ops.Field(parent, k)
+                v = v.rel.fields.get(v.name)
+            else:
+                mapping[v] = ops.Field(parent, k)
 
-    context = {"mapping": mapping}
-    ruleset = lookup_peeled_field
     # if convert_reductions:
     #     ruleset |= reduction_to_foreign
 
-    # values = {k: mapping.get(v, v) for k, v in values.items()}
-
-    values = {
-        k: v.replace(lookup_peeled_field, context=context, filter=ops.Value)
-        for k, v in values.items()
-    }
+    values = {k: v.replace(mapping, filter=ops.Value) for k, v in values.items()}
     if convert_reductions:
         values = {
-            k: v.replace(reduction_to_foreign, context=context, filter=ops.Value)
+            k: v.replace(reduction_to_foreign, filter=ops.Value)
             for k, v in values.items()
         }
 
@@ -1093,6 +1074,8 @@ class TableExpr(Expr, _FixedTextJupyterMixin):
         node = ops.Aggregate(self, groups, metrics)
         if having:
             having = dereference_values(node, having, convert_reductions=False)
+            # TODO(kszucs): try catch IntegrityError and suggest to put the
+            # reduction from the having condition to the list of metrics
             node = ops.Filter(node, having.values())
 
         return node.to_expr()
