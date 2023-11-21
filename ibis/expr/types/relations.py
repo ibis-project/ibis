@@ -147,15 +147,7 @@ p = Namespace(pattern, module=ops)
 d = Namespace(deferred, module=ops)
 
 
-@replace(ops.Reduction)
-def reduction_to_foreign(_):
-    table = an.find_first_base_table(_)
-    agg = ops.Aggregate(table, groups={}, metrics={_.name: _})
-    print(agg.to_expr())
-    return ops.ForeignField(agg, _.name)
-
-
-def dereference_values(parents, values, convert_reductions=True):
+def dereference_values(parents, values):
     mapping = {}
     for parent in util.promote_list(parents):
         for k, v in parent.fields.items():
@@ -164,19 +156,21 @@ def dereference_values(parents, values, convert_reductions=True):
                 v = v.rel.fields.get(v.name)
             else:
                 mapping[v] = ops.Field(parent, k)
+    return {k: v.replace(mapping, filter=ops.Value) for k, v in values.items()}
 
-    # if convert_reductions:
-    #     ruleset |= reduction_to_foreign
 
-    values = {k: v.replace(mapping, filter=ops.Value) for k, v in values.items()}
-    if convert_reductions:
-        values = {
-            k: v.replace(reduction_to_foreign, filter=ops.Value)
-            for k, v in values.items()
-        }
+@replace(ops.Reduction)
+def reduction_to_foreign(_):
+    # TODO(kszucs): should use _.to_expr().as_table() instead
+    table = an.find_first_base_table(_)
+    agg = ops.Aggregate(table, groups={}, metrics={_.name: _})
+    return ops.ForeignField(agg, _.name)
 
-    # TODO(kszucs): here reductions must be replaced with ForeignField nodes
-    return values
+
+def detect_foreign_values(values):
+    return {
+        k: v.replace(reduction_to_foreign, filter=ops.Value) for k, v in values.items()
+    }
 
 
 ################################# DEREFERENCE LOGIC #################################
@@ -1069,11 +1063,11 @@ class TableExpr(Expr, _FixedTextJupyterMixin):
         having = unwrap_aliases(having)
 
         groups = dereference_values(self.op(), groups)
-        metrics = dereference_values(self.op(), metrics, convert_reductions=False)
+        metrics = dereference_values(self.op(), metrics)
 
         node = ops.Aggregate(self, groups, metrics)
         if having:
-            having = dereference_values(node, having, convert_reductions=False)
+            having = dereference_values(node, having)
             # TODO(kszucs): try catch IntegrityError and suggest to put the
             # reduction from the having condition to the list of metrics
             node = ops.Filter(node, having.values())
@@ -2045,10 +2039,12 @@ class TableExpr(Expr, _FixedTextJupyterMixin):
         values = bind(self, (exprs, named_exprs))
         values = unwrap_aliases(values)
         values = dereference_values(self.op(), values)
+        values = detect_foreign_values(values)
         if not values:
             raise com.IbisTypeError(
                 "You must select at least one column for a valid projection"
             )
+
         # TODO(kszucs): windowization of reductions should happen here
         # 1. if a reduction if originating from self it should be turned into a window function
         # 2. if a scalar value is originating from a foreign table it should be turned into a scalar subquery
@@ -2416,6 +2412,8 @@ class TableExpr(Expr, _FixedTextJupyterMixin):
         preds = bind(self, predicates)
         preds = unwrap_aliases(preds)
         preds = dereference_values(self.op(), preds)
+        preds = detect_foreign_values(preds)
+
         # TODO(kszucs): add predicate flattening
         node = ops.Filter(self, preds.values())
         return node.to_expr()
@@ -4481,6 +4479,7 @@ class JoinExpr(TableExpr):
         values = bind(self, (args, kwargs))
         values = unwrap_aliases(values)
         values = dereference_values(self.tables(), values)
+        # TODO(kszucs): add reduction conversion here detect_foreign_values(values)?
 
         # TODO(kszucs): go over the values and pull out the fields only, until
         # that just raise if the value is a computed expression

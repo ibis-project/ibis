@@ -188,6 +188,7 @@ class Node(Hashable):
         -------
         The set of nodes matching the given pattern.
         """
+        # TODO(kszucs): return with a tuple instead of a set to preserve traversal order
         nodes = Graph.from_bfs(self, filter=filter).nodes()
         if isinstance(pat, type):
             return {node for node in nodes if isinstance(node, type)}
