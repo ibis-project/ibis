@@ -1582,21 +1582,6 @@ class TableExpr(Expr, _FixedTextJupyterMixin):
         │     2 │ B      │     6 │
         └───────┴────────┴───────┘
         """
-        # import ibis.selectors as s
-
-        # sort_keys = []
-        # for item in util.promote_list(by):
-        #     if isinstance(item, tuple):
-        #         if len(item) != 2:
-        #             raise ValueError(f"Tuple must be of length 2, got {len(item):d}")
-        #         sort_keys.append(bind_expr(self, item[0]), item[1])
-        #     elif isinstance(item, s.Selector):
-        #         sort_keys.extend(item.expand(self))
-        #     else:
-        #         sort_keys.append(bind_expr(self, item))
-
-        # if not sort_keys:
-        #     raise com.IbisError("At least one sort key must be provided")
         keys = bind(self, by)
         keys = unwrap_aliases(keys).values()
         node = ops.Sort(self, keys)
@@ -1845,20 +1830,6 @@ class TableExpr(Expr, _FixedTextJupyterMixin):
         │ Adelie  │  2007 │       -7.22193 │
         └─────────┴───────┴────────────────┘
         """
-        # import ibis.expr.analysis as an
-
-        # exprs = [] if exprs is None else util.promote_list(exprs)
-        # exprs = itertools.chain(
-        #     itertools.chain.from_iterable(
-        #         util.promote_list(_ensure_expr(self, expr)) for expr in exprs
-        #     ),
-        #     (
-        #         e.name(name)
-        #         for name, expr in mutations.items()
-        #         for e in util.promote_list(_ensure_expr(self, expr))
-        #     ),
-        # )
-        # mutation_exprs = an.get_mutation_exprs(list(exprs), self)
         return self.select(self, exprs, **mutations)
 
     def select(
@@ -4513,38 +4484,6 @@ class CachedTableExpr(TableExpr):
         """Release the underlying expression from the cache."""
         current_backend = self._find_backend(use_default=True)
         return current_backend._release_cached(self)
-
-
-# TODO(kszucs): used at a single place along with an.apply_filter(), should be
-# consolidated into a single function
-# def _resolve_predicates(
-#     table: Table, predicates
-# ) -> tuple[list[ir.BooleanValue], list[tuple[ir.BooleanValue, ir.Table]]]:
-#     import ibis.expr.types as ir
-#     from ibis.expr.analysis import _, flatten_predicate, p
-
-#     # TODO(kszucs): clean this up, too much flattening and resolving happens here
-#     predicates = [
-#         pred.op()
-#         for preds in map(
-#             functools.partial(ir.relations.bind_expr, table),
-#             util.promote_list(predicates),
-#         )
-#         for pred in util.promote_list(preds)
-#     ]
-#     predicates = flatten_predicate(predicates)
-
-#     rules = (
-#         # turn reductions into table array views so that they can be used as
-#         # WHERE t1.`a` = (SELECT max(t1.`a`) AS `Max(a)`
-#         p.Reduction >> (lambda _: ops.TableArrayView(_.to_expr().as_table()))
-#         |
-#         # resolve unresolved exists subqueries to IN subqueries
-#         p.UnresolvedExistsSubquery >> (lambda _: _.resolve(table.op()))
-#     )
-#     # do not apply the rules below the following nodes
-#     until = p.Value & ~p.WindowFunction & ~p.TableArrayView & ~p.ExistsSubquery
-#     return [pred.replace(rules, filter=until) for pred in predicates]
 
 
 public(Table=TableExpr)
