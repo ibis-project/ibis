@@ -675,22 +675,23 @@ def test_aggregate_keywords(table):
     assert_equal(expr2, expected)
 
 
-def test_filter_aggregate_pushdown_predicate(table):
-    # In the case where we want to add a predicate to an aggregate
-    # expression after the fact, rather than having to backpedal and add it
-    # before calling aggregate.
-    #
-    # TODO (design decision): This could happen automatically when adding a
-    # predicate originating from the same root table; if an expression is
-    # created from field references from the aggregated table then it
-    # becomes a filter predicate applied on top of a view
+# TODO(kszucs): revisit this test case, but this usage should not be allowed
+# def test_filter_aggregate_pushdown_predicate(table):
+#     # In the case where we want to add a predicate to an aggregate
+#     # expression after the fact, rather than having to backpedal and add it
+#     # before calling aggregate.
+#     #
+#     # TODO (design decision): This could happen automatically when adding a
+#     # predicate originating from the same root table; if an expression is
+#     # created from field references from the aggregated table then it
+#     # becomes a filter predicate applied on top of a view
 
-    pred = table.f > 0
-    metrics = [table.a.sum().name("total")]
-    agged = table.aggregate(metrics, by=["g"])
-    filtered = agged.filter([pred])
-    expected = table[pred].aggregate(metrics, by=["g"])
-    assert_equal(filtered, expected)
+#     pred = table.f > 0
+#     metrics = [table.a.sum().name("total")]
+#     agged = table.aggregate(metrics, by=["g"])
+#     filtered = agged.filter([pred])
+#     expected = table[pred].aggregate(metrics, by=["g"])
+#     assert_equal(filtered, expected)
 
 
 def test_filter_on_literal_then_aggregate(table):
