@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import functools
 from collections.abc import Mapping
-from typing import Any
 
 import sqlglot as sg
 
@@ -30,11 +29,7 @@ def _physical_table(op, **_):
 
 @translate_rel.register(ops.DatabaseTable)
 def _database_table(op, *, name, namespace, **_):
-    try:
-        db, catalog = namespace.split(".")
-    except AttributeError:
-        db = catalog = None
-    return sg.table(name, db=db, catalog=catalog)
+    return sg.table(name, db=namespace.schema, catalog=namespace.database)
 
 
 @translate_rel.register(ops.SelfReference)
