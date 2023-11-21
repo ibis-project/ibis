@@ -274,6 +274,12 @@ def _sort(op, parent, **kwargs):
     return name + render_fields(kwargs, 1)
 
 
+@fmt.register(ops.Selection)
+def _selection(op, parent, **kwargs):
+    name = f"{op.__class__.__name__}[{parent}]\n"
+    return name + render_fields(kwargs, 1)
+
+
 @fmt.register(ops.Set)
 def _set_op(op, left, right, distinct):
     args = [str(left), str(right)]

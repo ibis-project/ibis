@@ -697,9 +697,10 @@ def test_aggregate_field_dereferencing():
     )
 
 
-def test_sequalize():
+def test_sequelize():
     expr = t.select(t.bool_col, t.int_col).filter(t.bool_col).order_by(t.int_col)
     selection = expr.sequelize()
+    print(selection.to_expr())
 
 
 # def test_isin_subquery():

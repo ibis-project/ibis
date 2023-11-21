@@ -153,6 +153,10 @@ def sequalize(_, root, filt=None, proj=None, sort=None):
         rule = p.Field(filt, name) >> d.Field(root, name)
         selections = {k: v.replace(rule) for k, v in selections.items()}
 
+    if proj:
+        rule = p.Field(proj, name) >> Item(selections, name)
+        sort_keys = tuple(v.replace(rule) for v in sort_keys)
+
     return ops.Selection(
         parent=parent, selections=selections, predicates=predicates, sort_keys=sort_keys
     )
