@@ -9,8 +9,6 @@ from ibis.expr.operations.histograms import *  # noqa: F403
 from ibis.expr.operations.json import *  # noqa: F403
 from ibis.expr.operations.logical import *  # noqa: F403
 from ibis.expr.operations.maps import *  # noqa: F403
-
-# from ibis.expr.operations.relations import *  # noqa: F403
 from ibis.expr.operations.newrels import *  # noqa: F403
 from ibis.expr.operations.numeric import *  # noqa: F403
 from ibis.expr.operations.reductions import *  # noqa: F403

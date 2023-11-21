@@ -6,11 +6,16 @@ from collections.abc import Mapping
 
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
+from ibis.common.deferred import Item, _, deferred, var
 from ibis.common.exceptions import UnsupportedOperationError
-from ibis.common.patterns import pattern, replace
+from ibis.common.patterns import Check, pattern, replace
 from ibis.util import Namespace
 
 p = Namespace(pattern, module=ops)
+d = Namespace(deferred, module=ops)
+
+y = var("y")
+name = var("name")
 
 
 @replace(p.FillNa)
@@ -79,3 +84,50 @@ def rewrite_sample(_):
         (ops.LessEqual(ops.RandomScalar(), _.fraction),),
         (),
     )
+
+
+@replace(p.Project(y @ p.Relation) & Check(_.schema == y.schema))
+def complete_reprojection(_, y):
+    # TODO(kszucs): this could be moved to the pattern itself but not sure how
+    # to express it, especially in a shorter way then the following check
+    for name in _.schema:
+        if _.values[name] != ops.Field(y, name):
+            return _
+    return y
+
+
+@replace(p.Project(y @ p.Project))
+def subsequent_projects(_, y):
+    rule = p.Field(y, name) >> Item(y.values, name)
+    values = {k: v.replace(rule) for k, v in _.values.items()}
+    return ops.Project(y.parent, values)
+
+
+@replace(p.Filter(y @ p.Filter))
+def subsequent_filters(_, y):
+    rule = p.Field(y, name) >> d.Field(y.parent, name)
+    preds = tuple(v.replace(rule) for v in _.predicates)
+    return ops.Filter(y.parent, y.predicates + preds)
+
+
+@replace(p.Filter(y @ p.Project))
+def reorder_filter_project(_, y):
+    rule = p.Field(y, name) >> Item(y.values, name)
+    preds = tuple(v.replace(rule) for v in _.predicates)
+
+    inner = ops.Filter(y.parent, preds)
+    rule = p.Field(y.parent, name) >> d.Field(inner, name)
+    projs = {k: v.replace(rule) for k, v in y.values.items()}
+
+    return ops.Project(inner, projs)
+
+
+# TODO(kszucs): add a rewrite rule for nestes JoinChain objects where the
+# JoinLink depends on another JoinChain, in this case the JoinLink should be
+# merged into the JoinChain
+
+
+# TODO(kszucs): this may work if the sort keys are not overlapping, need to revisit
+# @replace(p.Sort(y @ p.Sort))
+# def subsequent_sorts(_, y):
+#     return Sort(y.parent, y.keys + _.keys)

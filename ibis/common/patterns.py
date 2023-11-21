@@ -207,7 +207,9 @@ class Pattern(Hashable):
         """
         ...
 
-    def is_match(self, value: AnyType, context: dict[str, AnyType] = None) -> bool:
+    def is_match(
+        self, value: AnyType, context: Optional[dict[str, AnyType]] = None
+    ) -> bool:
         """Check that a value matches the pattern.
 
         Parameters

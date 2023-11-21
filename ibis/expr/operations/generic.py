@@ -1,13 +1,12 @@
 from __future__ import annotations
 
 import itertools
-from typing import Annotated, Any, Optional, Union
+from typing import Annotated, Any, Optional
 from typing import Literal as LiteralType
 
 from public import public
 from typing_extensions import TypeVar
 
-import ibis.common.exceptions as com
 import ibis.expr.datashape as ds
 import ibis.expr.datatypes as dt
 import ibis.expr.rules as rlz

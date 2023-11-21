@@ -6,7 +6,7 @@ from __future__ import annotations
 import itertools
 import typing
 from abc import abstractmethod
-from typing import Annotated, Any, Literal, Optional
+from typing import TYPE_CHECKING, Annotated, Any, Literal, Optional
 
 from public import public
 
@@ -15,15 +15,19 @@ import ibis.expr.datatypes as dt
 from ibis.common.annotations import attribute
 from ibis.common.bases import Immutable
 from ibis.common.collections import FrozenDict
-from ibis.common.deferred import Item, deferred, var
+from ibis.common.deferred import deferred
 from ibis.common.exceptions import IbisTypeError, IntegrityError, RelationError
 from ibis.common.grounds import Concrete
-from ibis.common.patterns import Between, Check, In, InstanceOf, _, pattern, replace
+from ibis.common.patterns import Between, In, InstanceOf, pattern
 from ibis.common.typing import Coercible, VarTuple
 from ibis.expr.operations.core import Alias, Column, Node, Scalar, Value
-from ibis.expr.operations.sortkeys import SortKey
+from ibis.expr.operations.sortkeys import SortKey  # noqa: TCH001
 from ibis.expr.schema import Schema
 from ibis.util import Namespace, gen_name, indent
+
+if TYPE_CHECKING:
+    import pandas as pd
+    import pyarrow as pa
 
 p = Namespace(pattern, module=__name__)
 d = Namespace(deferred, module=__name__)
@@ -154,19 +158,6 @@ class Field(Value):
         return self.rel.schema[self.name]
 
 
-# TODO(kszucs): we may not need this, the pattern can define whether it is foreign or not
-# @public
-# class ForeignField(Value):
-#     rel: Relation
-#     name: str
-
-#     shape = ds.columnar
-
-#     @attribute
-#     def dtype(self):
-#         return self.rel.schema[self.name]
-
-
 # TODO(kszucs): rename it to ForeignScalar
 @public
 class ForeignField(Value):
@@ -188,9 +179,6 @@ def _check_integrity(values, allowed_parents):
             raise IntegrityError(
                 f"Cannot add {disallowed!r} to projection, they belong to another relation"
             )
-        # add a flag about allowing foreign values
-        # add a flag to enfore scalar foreign values (e.g. for Project and Aggregate)
-        # egyebkent csak scalar lehet (e.g. scalar subquery or a value based on literals)
 
 
 @public
@@ -533,96 +521,9 @@ class Distinct(Relation):
         return self.parent.schema
 
 
-# class Subquery(Relation):
-#     rel: Relation
-
-#     @property
-#     def schema(self):
-#         return self.rel.schema
-
-#     @property
-#     def fields(self):
-#         return self.rel.fields
-
-
-################################ TYPES ################################
-
-
-# class TableExpr(Expr):
-#     def schema(self):
-#         return self.op().schema
-
-#     # def __getattr__(self, key):
-#     #     return next(bind(self, key))
-
-
 @public
 def table(name, schema):
     return UnboundTable(name, schema).to_expr()
 
 
-# TODO(kszucs): cover it with tests
-
-
-################################ REWRITES ################################
-from ibis.common.patterns import Each
-
-name = var("name")
-
-y = var("y")
-values = var("values")
-
-
-@replace(p.Project(y @ p.Relation) & Check(_.schema == y.schema))
-def complete_reprojection(_, y):
-    # TODO(kszucs): this could be moved to the pattern itself but not sure how
-    # to express it, especially in a shorter way then the following check
-    for name in _.schema:
-        if _.values[name] != Field(y, name):
-            return _
-    return y
-
-
-@replace(p.Project(y @ p.Project))
-def subsequent_projects(_, y):
-    rule = p.Field(y, name) >> Item(y.values, name)
-    values = {k: v.replace(rule) for k, v in _.values.items()}
-    return Project(y.parent, values)
-
-
-@replace(p.Filter(y @ p.Filter))
-def subsequent_filters(_, y):
-    rule = p.Field(y, name) >> d.Field(y.parent, name)
-    preds = tuple(v.replace(rule) for v in _.predicates)
-    return Filter(y.parent, y.predicates + preds)
-
-
-@replace(p.Filter(y @ p.Project))
-def reorder_filter_project(_, y):
-    rule = p.Field(y, name) >> Item(y.values, name)
-    preds = tuple(v.replace(rule) for v in _.predicates)
-
-    inner = Filter(y.parent, preds)
-    rule = p.Field(y.parent, name) >> d.Field(inner, name)
-    projs = {k: v.replace(rule) for k, v in y.values.items()}
-
-    return Project(inner, projs)
-
-
-# TODO(kszucs): add a rewrite rule for nestes JoinChain objects where the
-# JoinLink depends on another JoinChain, in this case the JoinLink should be
-# merged into the JoinChain
-
-
-# TODO(kszucs): this may work if the sort keys are not overlapping, need to revisit
-# @replace(p.Sort(y @ p.Sort))
-# def subsequent_sorts(_, y):
-#     return Sort(y.parent, y.keys + _.keys)
-
-
 # TODO(kszucs): support t.select(*t) syntax by implementing TableExpr.__iter__()
-
-
-# subqueries:
-# 1. reduction passed to .filter() should be turned into a subquery
-# 2. reduction passed to .select() with a foreign table should be turned into a subquery

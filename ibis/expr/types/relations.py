@@ -4326,7 +4326,7 @@ class TableExpr(Expr, _FixedTextJupyterMixin):
         return WindowedTable(self, time_col)
 
     def optimize(self, enable_reordering=True):
-        from ibis.expr.operations.newrels import (
+        from ibis.expr.rewrites import (
             complete_reprojection,
             subsequent_filters,
             subsequent_projects,

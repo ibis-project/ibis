@@ -5,7 +5,6 @@ import pytest
 import ibis
 import ibis.common.exceptions as com
 import ibis.expr.operations as ops
-from ibis.tests.util import assert_equal
 
 # Place to collect esoteric expression analysis bugs and tests
 
