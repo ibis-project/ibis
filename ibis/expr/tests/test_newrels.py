@@ -394,7 +394,15 @@ def test_join():
     t2 = ibis.table(name="t2", schema={"c": "int64", "d": "string"})
 
     joined = t1.join(t2, [t1.a == t2.c])
+    assert isinstance(joined, ir.JoinExpr)
+    assert isinstance(joined.op(), JoinChain)
+    assert isinstance(joined.op().to_expr(), ir.JoinExpr)
+
     result = joined.finish()
+    assert isinstance(joined, ir.TableExpr)
+    assert isinstance(joined.op(), JoinChain)
+    assert isinstance(joined.op().to_expr(), ir.JoinExpr)
+
     assert result.op() == JoinChain(
         first=t1,
         rest=[
@@ -424,6 +432,19 @@ def test_join_unambiguous_select():
             "a_int": a.a_int,
             "b_int": b.b_int,
         },
+    )
+
+
+def test_join_with_subsequent_value_projection():
+    t1 = ibis.table(name="t1", schema={"a": "int64", "b": "string"})
+    t2 = ibis.table(name="t2", schema={"c": "int64", "d": "string"})
+
+    joined = t1.join(t2, [t1.a == t2.c])
+    expr = joined.select(t1.a, t1.b, col=t2.c + 1)
+    assert expr.op() == JoinChain(
+        first=t1,
+        rest=[JoinLink("inner", t2, [t1.a == t2.c])],
+        fields={"a": t1.a, "b": t1.b, "col": t2.c + 1},
     )
 
 
@@ -474,7 +495,7 @@ def test_chained_join_referencing_intermediate_table():
     ab = a.join(b, [a.a == b.c])
     assert isinstance(ab, ir.JoinExpr)
 
-    assert ab.a.op() == Field(a, "a")
+    assert ab.a.op() == Field(ab, "a")
     abc = ab.join(c, [ab.a == c.e])
     assert isinstance(abc, ir.JoinExpr)
 

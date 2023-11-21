@@ -1132,7 +1132,7 @@ def test_join_invalid_refs(con):
     t3 = con.table("star3")
 
     predicate = t1.bar_id == t3.bar_id
-    with pytest.raises(com.RelationError):
+    with pytest.raises(com.IntegrityError):
         t1.inner_join(t2, [predicate])
 
 

@@ -73,6 +73,16 @@ def test_lift_join(t, s):
     result = join.a_right.lift()
     expected = join[_.a_right.f, _.a_right.g]
     assert result.equals(expected)
+    assert result.op() == ops.JoinChain(
+        first=t,
+        rest=[
+            ops.JoinLink("inner", s, [t.d == s.a.g]),
+        ],
+        fields={
+            "f": s.a.f,
+            "g": s.a.g,
+        },
+    )
 
 
 def test_unpack_join_from_table(t, s):

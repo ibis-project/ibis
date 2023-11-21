@@ -4381,12 +4381,12 @@ class TableExpr(Expr, _FixedTextJupyterMixin):
 
 def _coerce_join_predicate(left, right, pred):
     if pred is True or pred is False:
-        return ops.Literal(pred, dtype="bool").to_expr()
+        return ops.Literal(pred, dtype="bool")
     elif isinstance(pred, ValueExpr):
-        return pred
+        return pred.op()
     elif isinstance(pred, Deferred):
         # resolve deferred expressions on the left table
-        return pred.resolve(left)
+        return pred.resolve(left).op()
 
     if isinstance(pred, tuple):
         if len(pred) != 2:
@@ -4397,7 +4397,7 @@ def _coerce_join_predicate(left, right, pred):
 
     left_value = next(bind(left, lk))
     right_value = next(bind(right, rk))
-    return left_value == right_value
+    return (left_value == right_value).op()
 
 
 def _disambiguate_join_fields(left_fields, right_fields, lname, rname):
@@ -4422,13 +4422,13 @@ def _disambiguate_join_fields(left_fields, right_fields, lname, rname):
 
 @public
 class JoinExpr(TableExpr):
-    def column(self, name):
-        node = self.op()
-        if isinstance(name, int):
-            name = node.schema.name_at_position(name)
-        if name not in node.fields:
-            raise com.IbisError(f"Column {name!r} not found, try to disambiguate ...")
-        return node.fields[name].to_expr()
+    # def column(self, name):
+    #     node = self.op()
+    #     if isinstance(name, int):
+    #         name = node.schema.name_at_position(name)
+    #     if name not in node.fields:
+    #         raise com.IbisError(f"Column {name!r} not found, try to disambiguate ...")
+    #     return node.fields[name].to_expr()
 
     def join(
         self,
@@ -4450,6 +4450,14 @@ class JoinExpr(TableExpr):
             _coerce_join_predicate(self, right, pred)
             for pred in util.promote_list(predicates)
         ]
+
+        # TODO(kszucs): factor this out into a separate function, e.g. defereference_values_from()
+        # and defereference_values() could be renamed to dereference_values_to()
+        # we need to replace fields referencing the current state of the join chain
+        # with a field referencing one of the relations in the join chain
+        fields = {ops.Field(self, k): v for k, v in self.op().fields.items()}
+        preds = [v.replace(fields, filter=ops.Value) for v in preds]
+
         if how == "cross" and preds:
             raise com.IbisInputError("Cross join cannot have predicates")
 
@@ -4475,17 +4483,17 @@ class JoinExpr(TableExpr):
         # do the fields projection here
         # TODO(kszucs): need to do smarter binding here since references may
         # point to any of the relations in the join chain
-        table = self.op().first.to_expr()
         values = bind(self, (args, kwargs))
         values = unwrap_aliases(values)
+
+        # TODO(kszucs): factor this out into a separate function
+        # we need to replace fields referencing the current state of the join chain
+        # with a field referencing one of the relations in the join chain
+        fields = {ops.Field(self, k): v for k, v in self.op().fields.items()}
+        values = {k: v.replace(fields, filter=ops.Value) for k, v in values.items()}
+
         values = dereference_values(self.tables(), values)
         # TODO(kszucs): add reduction conversion here detect_foreign_values(values)?
-
-        # TODO(kszucs): go over the values and pull out the fields only, until
-        # that just raise if the value is a computed expression
-        for value in values.values():
-            if not isinstance(value, ops.Field):
-                raise TypeError("Only fields can be selected in a join")
 
         return self.finish(values)
 
@@ -4505,9 +4513,8 @@ class JoinExpr(TableExpr):
         return parents
 
     def finish(self, fields=None):
-        if fields is not None:
-            return self.op().copy(fields=fields).to_expr()
-        else:
+        node = self.op()
+        if fields is None:
             # TODO(kszucs): clean this up with a nicer error message
             # raise if there are missing fields from either of the tables
             # raise on collisions
@@ -4520,8 +4527,11 @@ class JoinExpr(TableExpr):
                         collisions.append(f)
             if collisions:
                 raise com.IntegrityError(f"Name collisions: {collisions}")
-
-            return self.op().to_expr()
+        else:
+            node = node.copy(fields=fields)
+        # important to explicitly create a TableExpr because .to_expr() would construct
+        # a JoinExpr which should be finished again causing an infinite recursion
+        return TableExpr(node)
 
 
 @public

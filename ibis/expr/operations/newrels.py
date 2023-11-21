@@ -196,6 +196,7 @@ def _check_integrity(values, allowed_parents):
 @public
 class Project(Relation):
     parent: Relation
+    # TODO(kszucs): rename values to fields
     values: FrozenDict[str, Annotated[Value, ~InstanceOf(Alias)]]
 
     def __init__(self, parent, values):
@@ -244,7 +245,7 @@ class JoinLink(Node):
 class JoinChain(Relation):
     first: Relation
     rest: VarTuple[JoinLink]
-    fields: FrozenDict[str, Field]
+    fields: FrozenDict[str, Annotated[Value, ~InstanceOf(Alias)]]
 
     def __init__(self, first, rest, fields):
         allowed_parents = {first}
@@ -257,6 +258,11 @@ class JoinChain(Relation):
     @attribute
     def schema(self):
         return Schema({k: v.dtype for k, v in self.fields.items()})
+
+    def to_expr(self):
+        import ibis.expr.types as ir
+
+        return ir.JoinExpr(self)
 
 
 @public
