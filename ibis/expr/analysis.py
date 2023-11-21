@@ -119,7 +119,7 @@ def find_first_base_table(node):
         return None
 
 
-def flatten_predicate(node):
+def flatten_predicates(node):
     """Yield the expressions corresponding to the `And` nodes of a predicate.
 
     Examples

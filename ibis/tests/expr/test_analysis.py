@@ -128,9 +128,22 @@ def test_filter_self_join():
 
     metric = purchases.amount.sum().name("total")
     agged = purchases.group_by(["region", "kind"]).aggregate(metric)
+    assert agged.op() == ops.Aggregate(
+        parent=purchases,
+        groups={"region": purchases.region, "kind": purchases.kind},
+        metrics={"total": purchases.amount.sum()},
+    )
 
     left = agged[agged.kind == "foo"]
     right = agged[agged.kind == "bar"]
+    assert left.op() == ops.Filter(
+        parent=agged,
+        predicates=[agged.kind == "foo"],
+    )
+    assert right.op() == ops.Filter(
+        parent=agged,
+        predicates=[agged.kind == "bar"],
+    )
 
     cond = left.region == right.region
     joined = left.join(right, cond)
@@ -138,12 +151,16 @@ def test_filter_self_join():
     metric = (left.total - right.total).name("diff")
     what = [left.region, metric]
     projected = joined.select(what)
-
-    proj_exprs = projected.op().selections
-
-    # proj exprs unaffected by analysis
-    assert_equal(proj_exprs[0], left.region.op())
-    assert_equal(proj_exprs[1], metric.op())
+    assert projected.op() == ops.JoinChain(
+        first=left,
+        rest=[
+            ops.JoinLink("inner", right, [cond]),
+        ],
+        fields={
+            "region": left.region,
+            "diff": left.total - right.total,
+        },
+    )
 
 
 def test_is_ancestor_analytic():

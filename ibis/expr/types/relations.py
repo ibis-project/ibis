@@ -2382,13 +2382,16 @@ class TableExpr(Expr, _FixedTextJupyterMixin):
         │ male   │        68 │
         └────────┴───────────┘
         """
+        from ibis.expr.analysis import flatten_predicates
+
         preds = bind(self, predicates)
         preds = unwrap_aliases(preds)
         preds = dereference_values(self.op(), preds)
         preds = detect_foreign_values(preds)
+        preds = flatten_predicates(list(preds.values()))
 
         # TODO(kszucs): add predicate flattening
-        node = ops.Filter(self, preds.values())
+        node = ops.Filter(self, preds)
         return node.to_expr()
 
     def nunique(self, where: ir.BooleanValue | None = None) -> ir.IntegerScalar:
@@ -4387,14 +4390,14 @@ class JoinExpr(TableExpr):
         lname: str = "",
         rname: str = "{name}_right",
     ):
-        from ibis.expr.analysis import flatten_predicate
+        from ibis.expr.analysis import flatten_predicates
 
         chain = self.op()
         preds = [
             _coerce_join_predicate(chain, right, pred)
             for pred in util.promote_list(predicates)
         ]
-        preds = sum([flatten_predicate(pred) for pred in preds], [])
+        preds = flatten_predicates(preds)
 
         # TODO(kszucs): factor this out into a separate function, e.g. defereference_values_from()
         # and defereference_values() could be renamed to dereference_values_to()
