@@ -319,10 +319,10 @@ def _limit(op, parent, **kwargs):
     return f"{op.__class__.__name__}[{parent}, {params}]"
 
 
-# @fmt.register(ops.SelfReference)
+@fmt.register(ops.SelfReference)
 @fmt.register(ops.Distinct)
-def _self_reference(op, table, **kwargs):
-    return f"{op.__class__.__name__}[{table}]"
+def _self_reference(op, parent, **kwargs):
+    return f"{op.__class__.__name__}[{parent}]"
 
 
 @fmt.register(ops.Literal)

@@ -140,7 +140,7 @@ def unwrap_aliases(values):
 
 
 ################################# DEREFERENCE LOGIC #################################
-from ibis.common.patterns import replace, pattern
+from ibis.common.patterns import replace, pattern, Eq
 from ibis.common.deferred import deferred, _
 import ibis.expr.analysis as an
 from ibis.util import Namespace
@@ -169,10 +169,26 @@ def reduction_to_foreign(_):
     return ops.ForeignField(agg, _.name)
 
 
-def detect_foreign_values(values):
-    return {
-        k: v.replace(reduction_to_foreign, filter=ops.Value) for k, v in values.items()
-    }
+def detect_foreign_values(parent, values, from_reductions=True, from_fields=False):
+    # In Project values:
+
+    # 1. have a subquery with only scalars, no need to identify fields as foreign fields since there are no fields
+    # 2. it contains reduction, that case is handled
+    # 3. a limited selection SELECT ... LIMIT 1
+
+    # In Filter values: all fields originating from other than the parent table are foreign fields
+
+    if from_reductions:
+        values = {
+            k: v.replace(reduction_to_foreign, filter=ops.Value)
+            for k, v in values.items()
+        }
+
+    if from_fields:
+        rule = p.Field(~Eq(parent)) >> d.ForeignField(_.rel, _.name)
+        values = {k: v.replace(rule, filter=ops.Value) for k, v in values.items()}
+
+    return values
 
 
 ################################# DEREFERENCE LOGIC #################################
@@ -2012,7 +2028,7 @@ class TableExpr(Expr, _FixedTextJupyterMixin):
         values = bind(self, (exprs, named_exprs))
         values = unwrap_aliases(values)
         values = dereference_values(self.op(), values)
-        values = detect_foreign_values(values)
+        values = detect_foreign_values(self.op(), values)
         if not values:
             raise com.IbisTypeError(
                 "You must select at least one column for a valid projection"
@@ -2387,7 +2403,7 @@ class TableExpr(Expr, _FixedTextJupyterMixin):
         preds = bind(self, predicates)
         preds = unwrap_aliases(preds)
         preds = dereference_values(self.op(), preds)
-        preds = detect_foreign_values(preds)
+        preds = detect_foreign_values(self.op(), preds, from_fields=True)
         preds = flatten_predicates(list(preds.values()))
 
         # TODO(kszucs): add predicate flattening

@@ -86,8 +86,8 @@ def test_filter_on_projected_field(con):
 
     # Now then! Predicate pushdown here is inappropriate, so we check that
     # it didn't occur.
-    assert isinstance(result.op(), ops.Selection)
-    assert result.op().table == tpch.op()
+    assert isinstance(result.op(), ops.Filter)
+    assert result.op().parent == tpch.op()
 
 
 def test_join_predicate_from_derived_raises():
