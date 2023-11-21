@@ -698,7 +698,16 @@ def test_aggregate_field_dereferencing():
 
 
 def test_sequelize():
-    expr = t.select(t.bool_col, t.int_col).filter(t.bool_col).order_by(t.int_col)
+    expr = (
+        t.select(t.bool_col, t.int_col, incremented=t.int_col + 1)
+        .filter(_.incremented < 5)
+        .order_by(t.int_col + 1)
+    )
+    print()
+    print("--------- Before Sequelize --------")
+    print(expr)
+    print()
+    print("--------- After Sequelize ---------")
     selection = expr.sequelize()
     print(selection.to_expr())
 
