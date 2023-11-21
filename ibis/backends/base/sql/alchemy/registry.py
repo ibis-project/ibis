@@ -341,46 +341,41 @@ def _interpret_range(self, range_):
 sa.sql.elements.Over._interpret_range = _interpret_range
 
 
-def _translate_window_boundary(t, boundary):
-    if boundary is None:
-        return None
-
-    value = t.translate(boundary.value)
-    return value if boundary.preceding else value
-
-
-def _compile_bounds(compiler, range_, kind, **kw):
-    left_, right_ = range_
-
-    if left_ is RANGE_UNBOUNDED:
+def _compile_bounds(processor, left, right) -> str:
+    if left is RANGE_UNBOUNDED:
         left = "UNBOUNDED PRECEDING"
-    elif left_ is RANGE_CURRENT:
+    elif left is RANGE_CURRENT:
         left = "CURRENT ROW"
     else:
-        left = f"{compiler.process(left_, **kw)} PRECEDING"
+        left = f"{processor(left)} PRECEDING"
 
-    if right_ is RANGE_UNBOUNDED:
+    if right is RANGE_UNBOUNDED:
         right = "UNBOUNDED FOLLOWING"
-    elif right_ is RANGE_CURRENT:
+    elif right is RANGE_CURRENT:
         right = "CURRENT ROW"
     else:
-        right = f"{compiler.process(right_, **kw)} FOLLOWING"
+        right = f"{processor(right)} FOLLOWING"
 
-    return f"{kind} BETWEEN {left} AND {right}"
+    return f"BETWEEN {left} AND {right}"
 
 
 @compiles(sa.sql.elements.Over)
-def compile_over(over, compiler, **kw):
-    text = compiler.process(over.element, **kw)
+def compile_over(over, compiler, **kw) -> str:
+    processor = functools.partial(compiler.process, **kw)
+
+    text = processor(over.element)
+
     if over.range_:
-        range_ = _compile_bounds(compiler, over.range_, kind="RANGE", **kw)
+        bounds = _compile_bounds(processor, *over.range_)
+        range_ = f"RANGE {bounds}"
     elif over.rows:
-        range_ = _compile_bounds(compiler, over.rows, kind="ROWS", **kw)
+        bounds = _compile_bounds(processor, *over.rows)
+        range_ = f"ROWS {bounds}"
     else:
         range_ = None
 
     args = [
-        f"{word} BY {compiler.process(clause, **kw)}"
+        f"{word} BY {processor(clause)}"
         for word, clause in (
             ("PARTITION", over.partition_by),
             ("ORDER", over.order_by),
@@ -420,22 +415,26 @@ def _window_function(t, window):
     else:
         raise NotImplementedError(type(window.frame))
 
-    if t._forbids_frame_clause and isinstance(func, t._forbids_frame_clause):
-        # some functions on some backends don't support frame clauses
-        additional_params = {}
-    else:
-        start = _translate_window_boundary(t, window.frame.start)
-        end = _translate_window_boundary(t, window.frame.end)
-        additional_params = {how: (start, end)}
+    additional_params = {}
+
+    # some functions on some backends don't support frame clauses
+    if not t._forbids_frame_clause or not isinstance(func, t._forbids_frame_clause):
+        if (start := window.frame.start) is not None:
+            start = t.translate(start.value)
+
+        if (end := window.frame.end) is not None:
+            end = t.translate(end.value)
+
+        additional_params[how] = (start, end)
 
     result = sa.over(
         reduction, partition_by=partition_by, order_by=order_by, **additional_params
     )
 
     if isinstance(func, (ops.RowNumber, ops.DenseRank, ops.MinRank, ops.NTile)):
-        return result - 1
-    else:
-        return result
+        result -= 1
+
+    return result
 
 
 def _lag(t, op):
