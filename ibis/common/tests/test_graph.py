@@ -297,10 +297,10 @@ def test_recursive_lookup():
 
 def test_node_find_using_pattern():
     result = A.find(If(_.name == "C"))
-    assert result == {C}
+    assert result == (C,)
 
     result = A.find(Object(MyNode, name=Eq("D")))
-    assert result == {D}
+    assert result == (D,)
 
     result = A.find(If(_.children))
-    assert result == {A, B}
+    assert result == (A, B)
