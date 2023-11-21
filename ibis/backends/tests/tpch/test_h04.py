@@ -21,5 +21,5 @@ def test_tpc_h04(orders, lineitem):
     )
     q = q.group_by([orders.o_orderpriority])
     q = q.aggregate(order_count=orders.count())
-    q = q.order_by([orders.o_orderpriority])
+    q = q.order_by(["o_orderpriority"])
     return q
