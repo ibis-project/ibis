@@ -133,6 +133,10 @@ def reorder_filter_project(_, y):
 # def subsequent_sorts(_, y):
 #     return Sort(y.parent, y.keys + _.keys)
 
+# TODO(kszucs): should use node.map() instead of node.replace() to match on the
+# largest possible pattern, or even better `graph.traverse()` to go top-down
+# possibly need a top-to-bottom rewriter for rules like the one below
+
 
 # replacement rule to convert a sequence of project filter operations into a
 # SQL-like ops.Selection operation

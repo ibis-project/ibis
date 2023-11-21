@@ -180,7 +180,7 @@ def detect_foreign_values(parent, values, from_reductions=True, from_fields=Fals
 
     if from_reductions:
         values = {
-            k: v.replace(reduction_to_foreign, filter=ops.Value)
+            k: v.replace(reduction_to_foreign, filter=p.Value & ~p.WindowFunction)
             for k, v in values.items()
         }
 
@@ -1601,6 +1601,9 @@ class TableExpr(Expr, _FixedTextJupyterMixin):
         keys = bind(self, by)
         keys = unwrap_aliases(keys)
         keys = dereference_values(self.op(), keys)
+        if not keys:
+            raise com.IbisError("At least one sort key must be provided")
+
         node = ops.Sort(self, keys.values())
         return node.to_expr()
 
