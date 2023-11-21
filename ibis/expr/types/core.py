@@ -12,7 +12,7 @@ import ibis.expr.operations as ops
 from ibis.common.annotations import ValidationError
 from ibis.common.exceptions import IbisError, TranslationError
 from ibis.common.grounds import Immutable
-from ibis.common.patterns import Coercible, CoercionError
+from ibis.common.patterns import Coercible, CoercionError, InstanceOf
 from ibis.config import _default_backend, options as opts
 from ibis.util import experimental
 
