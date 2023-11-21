@@ -107,7 +107,7 @@ class Backend(BaseBackend, CanCreateSchema):
 
     def raw_sql(self, query: str | sg.Expression, **kwargs: Any) -> Any:
         with contextlib.suppress(AttributeError):
-            query = query.sql(dialect="duckdb")
+            query = query.sql(dialect=self.name)
         return self.con.execute(query, **kwargs)
 
     def create_table(
