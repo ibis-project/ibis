@@ -335,7 +335,10 @@ def _literal(op, value, **kwargs):
 
 @fmt.register(ops.Field)
 def _relation_field(op, rel, name):
-    return f"{rel}.{name}"
+    if name.isidentifier():
+        return f"{rel}.{name}"
+    else:
+        return f"{rel}[{name!r}]"
 
 
 @fmt.register(ops.ForeignField)

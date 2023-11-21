@@ -173,7 +173,7 @@ class ForeignField(Value):
     rel: Relation
     name: str
 
-    shape = ds.scalar
+    shape = ds.columnar
 
     @attribute
     def dtype(self):
@@ -181,9 +181,10 @@ class ForeignField(Value):
 
 
 def _check_integrity(values, allowed_parents):
-    foreign_field = p.Field(~In(allowed_parents))
+    unmarked_foreign_field = p.Field(~In(allowed_parents))
     for value in values:
-        if disallowed := value.match(foreign_field, filter=Value):
+        if disallowed := value.match(unmarked_foreign_field, filter=Value):
+            # TODO(kszucs): perhaps it should raise a relationerror
             raise IntegrityError(
                 f"Cannot add {disallowed!r} to projection, they belong to another relation"
             )

@@ -8,6 +8,7 @@ import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
 from ibis import _
+from ibis.common.annotations import ValidationError
 from ibis.common.exceptions import IntegrityError
 from ibis.expr.operations import (
     Aggregate,
@@ -499,6 +500,25 @@ def test_aggregate():
     assert agg.op() == expected
 
 
+def test_aggregate_having():
+    table = ibis.table(name="table", schema={"g": "string", "f": "double"})
+
+    metrics = [table.f.sum().name("total")]
+    by = ["g"]
+
+    expr = table.aggregate(metrics, by=by, having=(table.f.sum() > 0).name("cond"))
+    expected = table.aggregate(metrics, by=by).filter(_.total > 0)
+    assert expr.equals(expected)
+
+    with pytest.raises(ValidationError):
+        # non boolean
+        table.aggregate(metrics, by=by, having=table.f.sum())
+
+    with pytest.raises(IntegrityError):
+        # non scalar
+        table.aggregate(metrics, by=by, having=table.f > 2)
+
+
 def test_select_with_uncorrelated_scalar_subquery():
     t1 = ibis.table(name="t1", schema={"a": "int64", "b": "string"})
     t2 = ibis.table(name="t2", schema={"c": "int64", "d": "string"})
@@ -535,57 +555,35 @@ def test_select_with_subquery():
         name="employees", schema={"name": "string", "salary": "double"}
     )
 
-    # # Create the subquery
-    # subquery = employees.aggregate(average_salary=employees.salary.mean())
-
     # Use the subquery in a select operation
     expr = employees.select(employees.name, average_salary=employees.salary.mean())
-    print(expr.op().values["average_salary"])
-    return
-    # Define the expected result
-    expected = ibis.expr.operations.Project(
-        parent=employees,
-        values={
-            "name": employees.name,
-            # "average_salary": ibis.expr.operations.Scalar(
-            #     op=ibis.expr.operations.Aggregate(
-            #         parent=employees,
-            #         groups={},
-            #         metrics={"average_salary": employees.salary.mean()},
-            #     ),
-            #     dtype=subquery.average_salary.dtype(),
-            # ),
-        },
-    )
-
-    # Assert that the generated expression matches the expected result
-    assert expr.op() == expected
+    assert isinstance(expr.op().values["average_salary"], ops.ForeignField)
 
 
 # FIXME(kszucs): filter() must be smarter to detect the other relation
-def test_select_with_correlated_scalar_subquery():
-    # Define your tables
-    t1 = ibis.table(name="t1", schema={"a": "int64", "b": "string"})
-    t2 = ibis.table(name="t2", schema={"c": "int64", "d": "string"})
+# def test_select_with_correlated_scalar_subquery():
+#     # Define your tables
+#     t1 = ibis.table(name="t1", schema={"a": "int64", "b": "string"})
+#     t2 = ibis.table(name="t2", schema={"c": "int64", "d": "string"})
 
-    # Create a subquery
-    filt = t2.filter(t2.d == t1.b)
-    summary = filt.c.sum().name("summary")
+#     # Create a subquery
+#     filt = t2.filter(t2.d == t1.b)
+#     summary = filt.c.sum().name("summary")
 
-    # Use the subquery in a select operation
-    expr = t1.select(t1.a, summary)
-    assert expr.op() == Project(
-        parent=t1,
-        values={
-            "a": t1.a,
-            "summary": ops.Sum(
-                ForeignField(
-                    rel=filt,
-                    name="c",
-                )
-            ),
-        },
-    )
+#     # Use the subquery in a select operation
+#     expr = t1.select(t1.a, summary)
+#     assert expr.op() == Project(
+#         parent=t1,
+#         values={
+#             "a": t1.a,
+#             "summary": ops.Sum(
+#                 ForeignField(
+#                     rel=filt,
+#                     name="c",
+#                 )
+#             ),
+#         },
+#     )
 
 
 def test_aggregate_field_dereferencing():

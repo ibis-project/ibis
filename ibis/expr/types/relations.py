@@ -147,26 +147,14 @@ p = Namespace(pattern, module=ops)
 d = Namespace(deferred, module=ops)
 
 
-@replace(ops.Field)
-def lookup_peeled_field(_, mapping, allow_foreign):
-    parent_field = mapping.get(_)
-    if parent_field is not None:
-        return parent_field
-    else:
-        return _
-    # elif allow_foreign:
-    #     # TODO(kszucs): allow_foreign can be possibly removed since it is only used from .aggregate(having=...)
-    #     # but in that case having values should be added to the metrics
-    #     return ops.ForeignField(_.rel, _.name)
-    # else:
-    #     # TODO(kszucs): raise RelationError instead
-    #     raise com.ExpressionError(
-    #         f"Field {_.name!r} is not a direct column of this table"
-    #     )
+# TODO(kszucs): rewrite it to p.Field(~In(parents))
+@replace(ops.Value)
+def lookup_peeled_field(_, mapping):
+    return mapping.get(_, _)
 
 
 @replace(ops.Reduction)
-def reduction_to_foreign(_, mapping, allow_foreign):
+def reduction_to_foreign(_, mapping):
     table = an.find_first_base_table(_)
     agg = ops.Aggregate(table, groups={}, metrics={_.name: _})
     print(agg.to_expr())
@@ -174,30 +162,37 @@ def reduction_to_foreign(_, mapping, allow_foreign):
 
 
 def dereference_mapping(parent):
-    # TODO(kszucs): this initial result building step can be omitted by restricting the
-    # replacement pattern above to p.Field(~In(parents))
-    result = {ops.Field(parent, k): ops.Field(parent, k) for k in parent.schema}
+    result = {}
     for k, v in parent.fields.items():
         while isinstance(v, ops.Field):
             result[v] = ops.Field(parent, k)
             v = v.rel.fields.get(v.name)
+        else:
+            result[v] = ops.Field(parent, k)
     return result
 
 
-def dereference_values(parents, values, allow_foreign=True, convert_reductions=True):
+def dereference_values(parents, values, convert_reductions=True):
     mapping = {}
     for parent in util.promote_list(parents):
         mapping.update(dereference_mapping(parent))
 
-    context = {"mapping": mapping, "allow_foreign": allow_foreign}
+    context = {"mapping": mapping}
     ruleset = lookup_peeled_field
-    if convert_reductions:
-        ruleset |= reduction_to_foreign
+    # if convert_reductions:
+    #     ruleset |= reduction_to_foreign
+
+    # values = {k: mapping.get(v, v) for k, v in values.items()}
 
     values = {
-        k: v.replace(ruleset, context=context, filter=ops.Value)
+        k: v.replace(lookup_peeled_field, context=context, filter=ops.Value)
         for k, v in values.items()
     }
+    if convert_reductions:
+        values = {
+            k: v.replace(reduction_to_foreign, context=context, filter=ops.Value)
+            for k, v in values.items()
+        }
 
     # TODO(kszucs): here reductions must be replaced with ForeignField nodes
     return values
@@ -1097,8 +1092,7 @@ class TableExpr(Expr, _FixedTextJupyterMixin):
 
         node = ops.Aggregate(self, groups, metrics)
         if having:
-            # TODO(kszucs): need to put having values to metrics
-            having = dereference_values(node, having, allow_foreign=False)
+            having = dereference_values(node, having, convert_reductions=False)
             node = ops.Filter(node, having.values())
 
         return node.to_expr()
