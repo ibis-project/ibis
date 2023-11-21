@@ -24,7 +24,7 @@ def _dummy(op: ops.DummyTable, *, values, **_):
 @translate_rel.register(ops.UnboundTable)
 @translate_rel.register(ops.InMemoryTable)
 def _physical_table(op, **_):
-    return sg.expressions.Table(this=sg.to_identifier(op.name, quoted=True))
+    return sg.table(op.name, quoted=True)
 
 
 @translate_rel.register(ops.DatabaseTable)
