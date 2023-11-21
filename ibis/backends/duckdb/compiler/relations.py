@@ -67,10 +67,7 @@ def _join_link(op: ops.JoinLink, *, how, table, predicates):
         "cross": "cross",
     }
     res = sg.exp.Join(
-        this=table,
-        side=sides[how],
-        kind=kinds[how],
-        on=sg.condition(*predicates),
+        this=table, side=sides[how], kind=kinds[how], on=sg.and_(*predicates)
     )
     return res
 
