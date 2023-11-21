@@ -327,73 +327,6 @@ class Backend(BaseBackend, CanCreateSchema):
         out = self.raw_sql(query).arrow()
         return self._filter_with_like(out[col].to_pylist(), like=like)
 
-    def list_tables(
-        self,
-        like: str | None = None,
-        database: str | None = None,
-        schema: str | None = None,
-    ) -> list[str]:
-        """List tables and views.
-
-        Parameters
-        ----------
-        like
-            Regex to filter by table/view name.
-        database
-            Database name. If not passed, uses the current database. Only
-            supported with MotherDuck.
-        schema
-            Schema name. If not passed, uses the current schema.
-
-        Returns
-        -------
-        list[str]
-            List of table and view names.
-
-        Examples
-        --------
-        >>> import ibis
-        >>> con = ibis.duckdb.connect()
-        >>> foo = con.create_table("foo", schema=ibis.schema(dict(a="int")))
-        >>> con.list_tables()
-        ['foo']
-        >>> bar = con.create_view("bar", foo)
-        >>> con.list_tables()
-        ['bar', 'foo']
-        >>> con.create_schema("my_schema")
-        >>> con.list_tables(schema="my_schema")
-        []
-        >>> with con.begin() as c:
-        ...     c.exec_driver_sql(
-        ...         "CREATE TABLE my_schema.baz (a INTEGER)"
-        ...     )  # doctest: +ELLIPSIS
-        ...
-        <...>
-        >>> con.list_tables(schema="my_schema")
-        ['baz']
-        """
-        database = (
-            F.current_database() if database is None else sg.exp.convert(database)
-        )
-        schema = F.current_schema() if schema is None else sg.exp.convert(schema)
-
-        col = "table_name"
-        query = (
-            sg.select(col)
-            .from_(sg.table("tables", db="information_schema"))
-            .distinct()
-            .where(
-                C.table_catalog.eq(database).or_(
-                    C.table_catalog.eq(sg.exp.convert("temp"))
-                ),
-                C.table_schema.eq(schema),
-            )
-            .sql(self.name, pretty=True)
-        )
-
-        out = self.raw_sql(query).arrow()
-        return self._filter_with_like(out[col].to_pylist(), like)
-
     @classmethod
     def has_operation(cls, operation: type[ops.Value]) -> bool:
         from ibis.backends.duckdb.compiler.values import translate_val
@@ -1044,13 +977,53 @@ class Backend(BaseBackend, CanCreateSchema):
         database: str | None = None,
         schema: str | None = None,
     ) -> list[str]:
+        """List tables and views.
+
+        Parameters
+        ----------
+        like
+            Regex to filter by table/view name.
+        database
+            Database name. If not passed, uses the current database. Only
+            supported with MotherDuck.
+        schema
+            Schema name. If not passed, uses the current schema.
+
+        Returns
+        -------
+        list[str]
+            List of table and view names.
+
+        Examples
+        --------
+        >>> import ibis
+        >>> con = ibis.duckdb.connect()
+        >>> foo = con.create_table("foo", schema=ibis.schema(dict(a="int")))
+        >>> con.list_tables()
+        ['foo']
+        >>> bar = con.create_view("bar", foo)
+        >>> con.list_tables()
+        ['bar', 'foo']
+        >>> con.create_schema("my_schema")
+        >>> con.list_tables(schema="my_schema")
+        []
+        >>> with con.begin() as c:
+        ...     c.exec_driver_sql(
+        ...         "CREATE TABLE my_schema.baz (a INTEGER)"
+        ...     )  # doctest: +ELLIPSIS
+        ...
+        <...>
+        >>> con.list_tables(schema="my_schema")
+        ['baz']
+        """
         database = (
             F.current_database() if database is None else sg.exp.convert(database)
         )
         schema = F.current_schema() if schema is None else sg.exp.convert(schema)
 
+        col = "table_name"
         sql = (
-            sg.select(C.table_name)
+            sg.select(col)
             .from_(sg.table("tables", db="information_schema"))
             .distinct()
             .where(
@@ -1064,7 +1037,7 @@ class Backend(BaseBackend, CanCreateSchema):
 
         out = self.con.execute(sql).arrow()
 
-        return self._filter_with_like(out["table_name"].to_pylist(), like)
+        return self._filter_with_like(out[col].to_pylist(), like)
 
     def read_postgres(
         self, uri: str, table_name: str | None = None, schema: str = "public"
