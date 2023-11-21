@@ -162,38 +162,22 @@ class Node(Hashable):
             results[node] = fn(node, results, **kwargs)
         return results
 
-    def find(self, type: type | tuple[type], filter: Optional[Any] = None) -> set[Node]:
-        """Find all nodes of a given type in the graph.
+    def find(
+        self,
+        pat: type | tuple[type],
+        filter: Optional[Any] = None,
+        context: Optional[dict] = None,
+    ) -> list[Node]:
+        """Find all nodes matching a given pattern or type in the graph.
 
-        Parameters
-        ----------
-        type
-            Type or tuple of types to find.
-        filter
-            Pattern-like object to filter out nodes from the traversal. The traversal
-            will only visit nodes that match the given pattern and stop otherwise.
-
-        Returns
-        -------
-        The set of nodes matching the given type.
-        """
-        nodes = Graph.from_bfs(self, filter=filter).nodes()
-        return {node for node in nodes if isinstance(node, type)}
-
-    @experimental
-    def match(
-        self, pat: Any, filter: Optional[Any] = None, context: Optional[dict] = None
-    ) -> set[Node]:
-        """Find all nodes matching a given pattern in the graph.
-
-        A more advanced version of find, this method allows to match nodes based on
-        the more flexible pattern matching system implemented in the pattern module.
+        Allow to match nodes based on the flexible pattern matching system implemented
+        in the pattern module, but also provide a fast path for matching based on the
+        type of the node.
 
         Parameters
         ----------
         pat
-            Pattern to match. `ibis.common.pattern()` function is used to coerce the
-            input value into a pattern. See the pattern module for more details.
+            Python type or `Pattern` to match.
         filter
             Pattern-like object to filter out nodes from the traversal. The traversal
             will only visit nodes that match the given pattern and stop otherwise.
@@ -202,12 +186,16 @@ class Node(Hashable):
 
         Returns
         -------
-        The set of nodes matching the given pattern.
+        The list of nodes matching the given pattern. The order of the nodes is
+        determined by a breadth-first search.
         """
-        pat = pattern(pat)
-        ctx = context or {}
         nodes = Graph.from_bfs(self, filter=filter).nodes()
-        return {node for node in nodes if pat.match(node, ctx) is not NoMatch}
+        if isinstance(pat, (tuple, type)):
+            return [node for node in nodes if isinstance(node, pat)]
+        else:
+            pat = pattern(pat)
+            ctx = context or {}
+            return [node for node in nodes if pat.match(node, ctx) is not NoMatch]
 
     @experimental
     def replace(

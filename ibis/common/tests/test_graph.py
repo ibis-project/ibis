@@ -309,12 +309,38 @@ def test_recursive_lookup():
     )
 
 
-def test_node_match():
-    result = A.match(If(_.name == "C"))
-    assert result == {C}
+def test_node_find_using_type():
+    class FooNode(MyNode):
+        pass
 
-    result = A.match(Object(MyNode, name=Eq("D")))
-    assert result == {D}
+    class BarNode(MyNode):
+        pass
 
-    result = A.match(If(_.children))
-    assert result == {A, B}
+    C = BarNode(name="C", children=[])
+    D = FooNode(name="D", children=[])
+    E = BarNode(name="E", children=[])
+    B = FooNode(name="B", children=[D, E])
+    A = MyNode(name="A", children=[B, C])
+
+    result = A.find(MyNode)
+    assert result == [A, B, C, D, E]
+
+    result = A.find(FooNode)
+    assert result == [B, D]
+
+    result = A.find(BarNode)
+    assert result == [C, E]
+
+    result = A.find((FooNode, BarNode))
+    assert result == [B, C, D, E]
+
+
+def test_node_find_using_pattern():
+    result = A.find(If(_.name == "C"))
+    assert result == [C]
+
+    result = A.find(Object(MyNode, name=Eq("D")))
+    assert result == [D]
+
+    result = A.find(If(_.children))
+    assert result == [A, B]
