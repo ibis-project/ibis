@@ -45,13 +45,20 @@ class GroupedTable(Concrete):
     orderings: VarTuple[ops.SortKey] = ()
     havings: VarTuple[ops.Value[dt.Boolean]] = ()
 
+    def __init__(self, groupings, **kwargs):
+        # TODO(kszucs): could add this validation to the annotation of groupings
+        # but that would raise a different error message
+        if not groupings:
+            raise com.IbisInputError("Cannot group by empty list")
+        super().__init__(groupings=groupings, **kwargs)
+
     def __getitem__(self, args):
         # Shortcut for projection with window functions
         return self.select(*args)
 
     def __getattr__(self, attr):
         try:
-            field = getattr(self.table, attr)
+            field = getattr(self.table.to_expr(), attr)
         except AttributeError:
             raise AttributeError(f"GroupedTable has no attribute {attr}")
 
