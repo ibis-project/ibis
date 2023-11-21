@@ -151,7 +151,7 @@ def pushdown_selection_filters(parent, predicates):
 
     simplified = []
     for pred in predicates:
-        if pred.match(conflicting_projection, filter=p.Value):
+        if pred.find(conflicting_projection, filter=p.Value):
             return default
         try:
             simplified.append(pred.replace(pushdown_pattern))
