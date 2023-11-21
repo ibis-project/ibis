@@ -527,3 +527,20 @@ def table(name, schema):
 
 
 # TODO(kszucs): support t.select(*t) syntax by implementing TableExpr.__iter__()
+
+
+# SQL-like selection, not used internally
+@public
+class Selection(Relation):
+    parent: Relation
+    selections: FrozenDict[str, Value]
+    predicates: VarTuple[Value[dt.Boolean]]
+    sort_keys: VarTuple[SortKey]
+
+    @attribute
+    def fields(self):
+        return self.selections
+
+    @attribute
+    def schema(self):
+        return Schema({k: v.dtype for k, v in self.selections.items()})

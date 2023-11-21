@@ -1599,8 +1599,9 @@ class TableExpr(Expr, _FixedTextJupyterMixin):
         └───────┴────────┴───────┘
         """
         keys = bind(self, by)
-        keys = unwrap_aliases(keys).values()
-        node = ops.Sort(self, keys)
+        keys = unwrap_aliases(keys)
+        keys = dereference_values(self.op(), keys)
+        node = ops.Sort(self, keys.values())
         return node.to_expr()
 
     def union(self, table: Table, *rest: Table, distinct: bool = False) -> Table:
@@ -4344,6 +4345,23 @@ class TableExpr(Expr, _FixedTextJupyterMixin):
 
         # return with a new TableExpr wrapping the optimized node
         return node.to_expr()
+
+    def sequelize(self):
+        """Convert an Ibis expression to a SQLAlchemy expression.
+
+        Returns
+        -------
+        sqlalchemy.sql.expression.ClauseElement
+        """
+        from ibis.expr.rewrites import sequalize
+        from ibis.common.patterns import NoMatch, match
+
+        expr = self.optimize()
+        node = expr.op()
+        if (result := match(sequalize, node)) is not NoMatch:
+            return result
+
+        raise ValueError(f"Cannot sequalize {expr!r}")
 
 
 def _coerce_join_predicate(left, right, pred):

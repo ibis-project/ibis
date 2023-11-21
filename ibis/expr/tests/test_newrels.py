@@ -328,6 +328,28 @@ def test_where_after_select():
     assert t2.op() == expected
 
 
+def test_project_filter_sort():
+    expr = t.select(t.bool_col, t.int_col).filter(t.bool_col).order_by(t.int_col)
+    expected = ops.Sort(
+        parent=(
+            filt := ops.Filter(
+                parent=(
+                    proj := ops.Project(
+                        parent=t,
+                        values={
+                            "bool_col": t.bool_col,
+                            "int_col": t.int_col,
+                        },
+                    )
+                ),
+                predicates=[ops.Field(proj, "bool_col")],
+            )
+        ),
+        keys=[ops.SortKey(ops.Field(filt, "int_col"), ascending=True)],
+    )
+    assert expr.op() == expected
+
+
 def test_subsequent_filter():
     f1 = t.filter(t.bool_col)
     f2 = f1.filter(t.int_col > 0)
@@ -673,6 +695,11 @@ def test_aggregate_field_dereferencing():
         parent=a,
         keys=[a.l_returnflag, a.l_linestatus],
     )
+
+
+def test_sequalize():
+    expr = t.select(t.bool_col, t.int_col).filter(t.bool_col).order_by(t.int_col)
+    selection = expr.sequelize()
 
 
 # def test_isin_subquery():
