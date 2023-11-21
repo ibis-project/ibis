@@ -43,8 +43,10 @@ def _field(op, *, rel, name, **_):
 
 @translate_val.register(ops.ForeignField)
 def _foreign_field(op, *, rel, name, **_):
-    assert isinstance(rel, sg.exp.Subquery), type(rel)
-    return rel.this.subquery()
+    col = sg.column(name, table=rel.alias_or_name)
+    if isinstance(rel, sg.exp.Table):
+        return col
+    return sg.select(name).from_(rel).subquery()
 
 
 @translate_val.register(ops.Alias)

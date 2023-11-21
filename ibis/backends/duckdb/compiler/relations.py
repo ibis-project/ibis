@@ -137,7 +137,7 @@ _SET_OP_FUNC = {
 
 @translate_rel.register
 def _limit(op: ops.Limit, *, parent, n, offset, **_):
-    result = sg.select("*").from_(parent)
+    result = sg.select(STAR).from_(parent)
 
     if isinstance(n, int):
         result = result.limit(n)
