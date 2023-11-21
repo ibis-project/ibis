@@ -37,9 +37,14 @@ def translate_val(op, **_):
 
 
 @translate_val.register(ops.Field)
-@translate_val.register(ops.ForeignField)
 def _field(op, *, rel, name, **_):
     return sg.column(name, table=rel.alias_or_name)
+
+
+@translate_val.register(ops.ForeignField)
+def _foreign_field(op, *, rel, name, **_):
+    assert isinstance(rel, sg.exp.Subquery), type(rel)
+    return rel.this.subquery()
 
 
 @translate_val.register(ops.Alias)
