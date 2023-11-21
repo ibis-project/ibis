@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from abc import abstractmethod
 from collections import deque
-from collections.abc import Iterable, Iterator, KeysView, Sequence
+from collections.abc import Iterable, Iterator, KeysView, Mapping, Sequence
 from typing import TYPE_CHECKING, Any, Callable, Optional, TypeVar
 
 from ibis.common.bases import Hashable
@@ -162,27 +162,11 @@ class Node(Hashable):
             results[node] = fn(node, results, **kwargs)
         return results
 
-    def find(self, type: type | tuple[type], filter: Optional[Any] = None) -> set[Node]:
-        """Find all nodes of a given type in the graph.
-
-        Parameters
-        ----------
-        type
-            Type or tuple of types to find.
-        filter
-            Pattern-like object to filter out nodes from the traversal. The traversal
-            will only visit nodes that match the given pattern and stop otherwise.
-
-        Returns
-        -------
-        The set of nodes matching the given type.
-        """
-        nodes = Graph.from_bfs(self, filter=filter).nodes()
-        return {node for node in nodes if isinstance(node, type)}
-
-    @experimental
-    def match(
-        self, pat: Any, filter: Optional[Any] = None, context: Optional[dict] = None
+    def find(
+        self,
+        pat: type | tuple[type],
+        filter: Optional[Any] = None,
+        context: Optional[dict] = None,
     ) -> set[Node]:
         """Find all nodes matching a given pattern in the graph.
 
@@ -204,10 +188,13 @@ class Node(Hashable):
         -------
         The set of nodes matching the given pattern.
         """
-        pat = pattern(pat)
-        ctx = context or {}
         nodes = Graph.from_bfs(self, filter=filter).nodes()
-        return {node for node in nodes if pat.match(node, ctx) is not NoMatch}
+        if isinstance(pat, type):
+            return {node for node in nodes if isinstance(node, type)}
+        else:
+            pat = pattern(pat)
+            ctx = context or {}
+            return {node for node in nodes if pat.match(node, ctx) is not NoMatch}
 
     @experimental
     def replace(
@@ -233,24 +220,32 @@ class Node(Hashable):
         -------
         The root node of the graph with the replaced nodes.
         """
-        pat = pattern(pat)
-        ctx = context or {}
+        if isinstance(pat, Mapping):
 
-        def fn(node, _, **kwargs):
-            # need to first reconstruct the node from the possible rewritten
-            # children, so we can match on the new node containing the rewritten
-            # child arguments, this way we can propagate the rewritten nodes
-            # upward in the hierarchy
-            # TODO(kszucs): add a __recreate__() method to the Node interface
-            # with a default implementation that uses the __class__ constructor
-            # which is supposed to provide an implementation for quick object
-            # reconstruction (the __recreate__ implementation in grounds.py
-            # should be sped up as well by totally avoiding the validation)
-            recreated = node.__class__(**kwargs)
-            if (result := pat.match(recreated, ctx)) is NoMatch:
-                return recreated
-            else:
-                return result
+            def fn(node, _, **kwargs):
+                try:
+                    return pat[node]
+                except KeyError:
+                    return node.__class__(**kwargs)
+        else:
+            pat = pattern(pat)
+            ctx = context or {}
+
+            def fn(node, _, **kwargs):
+                # need to first reconstruct the node from the possible rewritten
+                # children, so we can match on the new node containing the rewritten
+                # child arguments, this way we can propagate the rewritten nodes
+                # upward in the hierarchy
+                # TODO(kszucs): add a __recreate__() method to the Node interface
+                # with a default implementation that uses the __class__ constructor
+                # which is supposed to provide an implementation for quick object
+                # reconstruction (the __recreate__ implementation in grounds.py
+                # should be sped up as well by totally avoiding the validation)
+                recreated = node.__class__(**kwargs)
+                if (result := pat.match(recreated, ctx)) is NoMatch:
+                    return recreated
+                else:
+                    return result
 
         results = self.map(fn, filter=filter)
         return results.get(self, self)

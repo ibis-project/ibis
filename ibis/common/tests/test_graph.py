@@ -295,12 +295,12 @@ def test_recursive_lookup():
     )
 
 
-def test_node_match():
-    result = A.match(If(_.name == "C"))
+def test_node_find_using_pattern():
+    result = A.find(If(_.name == "C"))
     assert result == {C}
 
-    result = A.match(Object(MyNode, name=Eq("D")))
+    result = A.find(Object(MyNode, name=Eq("D")))
     assert result == {D}
 
-    result = A.match(If(_.children))
+    result = A.find(If(_.children))
     assert result == {A, B}
