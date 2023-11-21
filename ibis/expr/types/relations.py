@@ -2032,6 +2032,10 @@ class TableExpr(Expr, _FixedTextJupyterMixin):
         values = bind(self, (exprs, named_exprs))
         values = unwrap_aliases(values)
         values = dereference_values(self.op(), values)
+
+        # TODO(kszucs): windowization of reductions an analytical functions should
+        # happen here. Reductions should be windowed if they are originating from
+        # self, otherwise they should be turned into a scalar subquery.
         values = detect_foreign_values(self.op(), values)
         if not values:
             raise com.IbisTypeError(

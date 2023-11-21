@@ -37,9 +37,9 @@ def test_mutate_with_analytic_functions(alltypes):
 
     exprs = [expr.name("e%d" % i) for i, expr in enumerate(exprs)]
     proj = g.mutate(exprs)
-    for field in proj.op().selections[1:]:
-        assert isinstance(field, ops.Alias)
-        assert isinstance(field.arg, ops.WindowFunction)
+    items = list(proj.op().values.items())
+    for name, field in items[1:]:
+        assert isinstance(field, ops.WindowFunction)
 
 
 def test_value_over_api(alltypes):

@@ -12,6 +12,8 @@ from ibis.expr.operations.newrels import Field, Relation
 from ibis.expr.schema import Schema
 
 
+# TODO(kszucs): these should be window frames specialized for timeseries operations
+# but they should inherit from ops.WindowFrame
 @public
 class WindowingTVF(Relation):
     """Generic windowing table-valued function."""

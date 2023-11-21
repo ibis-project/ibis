@@ -344,7 +344,7 @@ class Set(Relation):
         elif left.schema.names != right.schema.names:
             # rewrite so that both sides have the columns in the same order making it
             # easier for the backends to implement set operations
-            cols = [Field(right, name) for name in left.schema.names]
+            cols = {name: Field(right, name) for name in left.schema.names}
             right = Project(right, cols)
         super().__init__(left=left, right=right, **kwargs)
 
