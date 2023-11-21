@@ -448,7 +448,7 @@ operation_registry.update(
                 type_=t.get_sqla_type(op.dtype),
             )
         ),
-        ops.TableColumn: _table_column,
+        ops.Field: _table_column,
         ops.TimestampFromUNIX: _timestamp_from_unix,
         ops.TimestampBucket: _timestamp_bucket,
         ops.TimestampNow: fixed_arity(
