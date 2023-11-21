@@ -7,7 +7,7 @@ import itertools
 import operator
 import re
 from keyword import iskeyword
-from typing import TYPE_CHECKING, Callable, Iterable, Literal, Mapping, Sequence
+from typing import TYPE_CHECKING, Callable, Iterable, Literal, Mapping, Sequence, Any
 
 import toolz
 from public import public
@@ -18,6 +18,8 @@ import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 from ibis import util
+from ibis.common.annotations import annotated
+
 from ibis.common.deferred import Deferred
 from ibis.expr.types.core import Expr, _FixedTextJupyterMixin
 from ibis.expr.types.generic import literal
@@ -2951,30 +2953,6 @@ class TableExpr(Expr, _FixedTextJupyterMixin):
         # add the first join link to the join chain and return the result
         return JoinExpr(node).join(right, predicates, how=how, lname=lname, rname=rname)
 
-        # OLD IMPLEMENTATION
-        # _join_classes = {
-        #     "inner": ops.InnerJoin,
-        #     "left": ops.LeftJoin,
-        #     "any_inner": ops.AnyInnerJoin,
-        #     "any_left": ops.AnyLeftJoin,
-        #     "outer": ops.OuterJoin,
-        #     "right": ops.RightJoin,
-        #     "left_semi": ops.LeftSemiJoin,
-        #     "semi": ops.LeftSemiJoin,
-        #     "anti": ops.LeftAntiJoin,
-        #     "cross": ops.CrossJoin,
-        # }
-
-        # klass = _join_classes[how.lower()]
-        # expr = klass(left, right, predicates).to_expr()
-
-        # # semi/anti join only give access to the left table's fields, so
-        # # there's never overlap
-        # if how in ("left_semi", "semi", "anti"):
-        #     return expr
-
-        # return ops.relations._dedup_join_columns(expr, lname=lname, rname=rname)
-
     def asof_join(
         left: Table,
         right: Table,
@@ -4380,6 +4358,8 @@ class TableExpr(Expr, _FixedTextJupyterMixin):
 
 
 def _coerce_join_predicate(left, right, pred):
+    left, right = left.to_expr(), right.to_expr()
+
     if pred is True or pred is False:
         return ops.Literal(pred, dtype="bool")
     elif isinstance(pred, ValueExpr):
@@ -4422,32 +4402,23 @@ def _disambiguate_join_fields(left_fields, right_fields, lname, rname):
 
 @public
 class JoinExpr(TableExpr):
-    # def column(self, name):
-    #     node = self.op()
-    #     if isinstance(name, int):
-    #         name = node.schema.name_at_position(name)
-    #     if name not in node.fields:
-    #         raise com.IbisError(f"Column {name!r} not found, try to disambiguate ...")
-    #     return node.fields[name].to_expr()
-
+    @annotated
     def join(
         self,
-        right,
-        predicates,
-        how="inner",
+        right: ops.Relation,
+        predicates: Any,
+        how: str = "inner",
         *,
         lname: str = "",
         rname: str = "{name}_right",
     ):
-        node = self.op()
-
-        right = ops.Relation.__coerce__(right).to_expr()
+        chain = self.op()
 
         # TODO(kszucs): need to do the usual input preparation here, binding,
         # unwrap_aliases, dereference_values, but the latter requires the
         # `field` property to be not empty in the Join node
         preds = [
-            _coerce_join_predicate(self, right, pred)
+            _coerce_join_predicate(chain, right, pred)
             for pred in util.promote_list(predicates)
         ]
 
@@ -4455,7 +4426,7 @@ class JoinExpr(TableExpr):
         # and defereference_values() could be renamed to dereference_values_to()
         # we need to replace fields referencing the current state of the join chain
         # with a field referencing one of the relations in the join chain
-        fields = {ops.Field(self, k): v for k, v in self.op().fields.items()}
+        fields = {ops.Field(chain, k): v for k, v in chain.fields.items()}
         preds = [v.replace(fields, filter=ops.Value) for v in preds]
 
         if how == "cross" and preds:
@@ -4468,16 +4439,16 @@ class JoinExpr(TableExpr):
         # effort guess but shouldn't raise on conflicts
         if how in {"left_semi", "semi", "anti"}:
             # discard the right fields
-            fields = node.fields
+            fields = chain.fields
         else:
             right_fields = {k: ops.Field(right, k) for k in link.table.schema}
-            fields = _disambiguate_join_fields(node.fields, right_fields, lname, rname)
+            fields = _disambiguate_join_fields(chain.fields, right_fields, lname, rname)
 
         # add the join to the join chain
-        node = node.copy(rest=node.rest + (link,), fields=fields)
+        chain = chain.copy(rest=chain.rest + (link,), fields=fields)
 
         # return with a new JoinExpr wrapping the new join chain
-        return JoinExpr(node)
+        return JoinExpr(chain)
 
     def select(self, *args, **kwargs):
         # do the fields projection here

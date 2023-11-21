@@ -1040,8 +1040,24 @@ def test_cross_join_multiple(table):
     c = table["f", "h"]
 
     joined = ibis.cross_join(a, b, c)
-    expected = a.cross_join(b.cross_join(c))
-    assert joined.equals(expected)
+    assert joined.op() == ops.JoinChain(
+        first=a,
+        rest=[
+            ops.JoinLink("cross", b, []),
+            ops.JoinLink("cross", c, []),
+        ],
+        fields={
+            "a": a.a,
+            "b": a.b,
+            "c": a.c,
+            "d": b.d,
+            "e": b.e,
+            "f": c.f,
+            "h": c.h,
+        },
+    )
+    # TODO(kszucs): it must be simplified first using an appropiate rewrite rule
+    assert not joined.equals(a.cross_join(b.cross_join(c)))
 
 
 def test_filter_join():

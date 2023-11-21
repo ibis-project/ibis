@@ -565,6 +565,7 @@ def table(name, schema):
 
 
 ################################ REWRITES ################################
+from ibis.common.patterns import Each
 
 name = var("name")
 
@@ -606,6 +607,11 @@ def reorder_filter_project(_, y):
     projs = {k: v.replace(rule) for k, v in y.values.items()}
 
     return Project(inner, projs)
+
+
+# TODO(kszucs): add a rewrite rule for nestes JoinChain objects where the
+# JoinLink depends on another JoinChain, in this case the JoinLink should be
+# merged into the JoinChain
 
 
 # TODO(kszucs): this may work if the sort keys are not overlapping, need to revisit
