@@ -107,12 +107,10 @@ def test_join_predicate_from_derived_raises():
 
 def test_bad_join_predicate_raises():
     table = ibis.table([("c", "int32"), ("f", "double"), ("g", "string")], "foo_table")
-
     table2 = ibis.table([("key", "string"), ("value", "double")], "bar_table")
-
     table3 = ibis.table([("key", "string"), ("value", "double")], "baz_table")
 
-    with pytest.raises(com.ExpressionError):
+    with pytest.raises(com.IntegrityError):
         table.inner_join(table2, [table["g"] == table3["key"]])
 
 

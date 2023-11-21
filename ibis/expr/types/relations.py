@@ -2947,7 +2947,6 @@ class TableExpr(Expr, _FixedTextJupyterMixin):
         └─────────┴───────────────────┴───────────────┴───────────────────┘
         """
         # construct an empty join chain and wrap it with a JoinExpr
-        # TODO(kszucs): initialize join fields with left fields here
         fields = {k: ops.Field(left, k) for k in left.schema().names}
         node = ops.JoinChain(left, rest=(), fields=fields)
         # add the first join link to the join chain and return the result
@@ -4377,10 +4376,14 @@ def _coerce_join_predicate(left, right, pred):
 
     left_value = next(bind(left, lk))
     right_value = next(bind(right, rk))
-    return (left_value == right_value).op()
+    return ops.Equals(left_value, right_value)
 
 
-def _disambiguate_join_fields(left_fields, right_fields, lname, rname):
+def _disambiguate_join_fields(how, left_fields, right_fields, lname, rname):
+    if how in {"left_semi", "semi", "anti"}:
+        # discard the right fields
+        return left_fields
+
     lname = lname or "{name}"
     rname = rname or "{name}"
     overlap = left_fields.keys() & right_fields.keys()
@@ -4407,20 +4410,20 @@ class JoinExpr(TableExpr):
         self,
         right: ops.Relation,
         predicates: Any,
+        # TODO(kszucs): add typehint about the possible join kinds
         how: str = "inner",
         *,
         lname: str = "",
         rname: str = "{name}_right",
     ):
-        chain = self.op()
+        from ibis.expr.analysis import flatten_predicate
 
-        # TODO(kszucs): need to do the usual input preparation here, binding,
-        # unwrap_aliases, dereference_values, but the latter requires the
-        # `field` property to be not empty in the Join node
+        chain = self.op()
         preds = [
             _coerce_join_predicate(chain, right, pred)
             for pred in util.promote_list(predicates)
         ]
+        preds = sum([flatten_predicate(pred) for pred in preds], [])
 
         # TODO(kszucs): factor this out into a separate function, e.g. defereference_values_from()
         # and defereference_values() could be renamed to dereference_values_to()
@@ -4429,22 +4432,15 @@ class JoinExpr(TableExpr):
         fields = {ops.Field(chain, k): v for k, v in chain.fields.items()}
         preds = [v.replace(fields, filter=ops.Value) for v in preds]
 
-        if how == "cross" and preds:
-            raise com.IbisInputError("Cross join cannot have predicates")
+        # calculate the fields based in lname and rname, this should be a best effort
+        # guess but shouldn't raise on conflicts, if there are conflicts they will be
+        # raised later on when the join is finished
+        left_fields = chain.fields
+        right_fields = {k: ops.Field(right, k) for k in right.schema}
+        fields = _disambiguate_join_fields(how, left_fields, right_fields, lname, rname)
 
-        # construct a new join node
+        # add the join to the join chain and update the fields
         link = ops.JoinLink(how, table=right, predicates=preds)
-
-        # calculate the fields based in lname and rname, this should be a best
-        # effort guess but shouldn't raise on conflicts
-        if how in {"left_semi", "semi", "anti"}:
-            # discard the right fields
-            fields = chain.fields
-        else:
-            right_fields = {k: ops.Field(right, k) for k in link.table.schema}
-            fields = _disambiguate_join_fields(chain.fields, right_fields, lname, rname)
-
-        # add the join to the join chain
         chain = chain.copy(rest=chain.rest + (link,), fields=fields)
 
         # return with a new JoinExpr wrapping the new join chain
@@ -4521,34 +4517,34 @@ class CachedTableExpr(TableExpr):
 
 # TODO(kszucs): used at a single place along with an.apply_filter(), should be
 # consolidated into a single function
-def _resolve_predicates(
-    table: Table, predicates
-) -> tuple[list[ir.BooleanValue], list[tuple[ir.BooleanValue, ir.Table]]]:
-    import ibis.expr.types as ir
-    from ibis.expr.analysis import _, flatten_predicate, p
+# def _resolve_predicates(
+#     table: Table, predicates
+# ) -> tuple[list[ir.BooleanValue], list[tuple[ir.BooleanValue, ir.Table]]]:
+#     import ibis.expr.types as ir
+#     from ibis.expr.analysis import _, flatten_predicate, p
 
-    # TODO(kszucs): clean this up, too much flattening and resolving happens here
-    predicates = [
-        pred.op()
-        for preds in map(
-            functools.partial(ir.relations.bind_expr, table),
-            util.promote_list(predicates),
-        )
-        for pred in util.promote_list(preds)
-    ]
-    predicates = flatten_predicate(predicates)
+#     # TODO(kszucs): clean this up, too much flattening and resolving happens here
+#     predicates = [
+#         pred.op()
+#         for preds in map(
+#             functools.partial(ir.relations.bind_expr, table),
+#             util.promote_list(predicates),
+#         )
+#         for pred in util.promote_list(preds)
+#     ]
+#     predicates = flatten_predicate(predicates)
 
-    rules = (
-        # turn reductions into table array views so that they can be used as
-        # WHERE t1.`a` = (SELECT max(t1.`a`) AS `Max(a)`
-        p.Reduction >> (lambda _: ops.TableArrayView(_.to_expr().as_table()))
-        |
-        # resolve unresolved exists subqueries to IN subqueries
-        p.UnresolvedExistsSubquery >> (lambda _: _.resolve(table.op()))
-    )
-    # do not apply the rules below the following nodes
-    until = p.Value & ~p.WindowFunction & ~p.TableArrayView & ~p.ExistsSubquery
-    return [pred.replace(rules, filter=until) for pred in predicates]
+#     rules = (
+#         # turn reductions into table array views so that they can be used as
+#         # WHERE t1.`a` = (SELECT max(t1.`a`) AS `Max(a)`
+#         p.Reduction >> (lambda _: ops.TableArrayView(_.to_expr().as_table()))
+#         |
+#         # resolve unresolved exists subqueries to IN subqueries
+#         p.UnresolvedExistsSubquery >> (lambda _: _.resolve(table.op()))
+#     )
+#     # do not apply the rules below the following nodes
+#     until = p.Value & ~p.WindowFunction & ~p.TableArrayView & ~p.ExistsSubquery
+#     return [pred.replace(rules, filter=until) for pred in predicates]
 
 
 public(Table=TableExpr)
