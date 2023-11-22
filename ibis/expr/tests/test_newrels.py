@@ -14,7 +14,6 @@ from ibis.expr.operations import (
     Aggregate,
     Field,
     Filter,
-    ForeignField,
     JoinChain,
     JoinLink,
     Project,
@@ -407,7 +406,7 @@ def test_foreign_field_identification():
     t1 = t.filter(t.bool_col)
     t2 = t.select(summary=t1.int_col.sum())
     node = t2.op().fields["summary"]
-    assert isinstance(node, ForeignField)
+    assert isinstance(node.rel, ops.Foreign)
 
 
 # TODO(kszucs): add test for failing integrity checks
@@ -580,11 +579,13 @@ def test_select_with_uncorrelated_scalar_subquery():
         parent=t1,
         values={
             "a": t1.a,
-            "summary": ForeignField(
-                rel=Aggregate(
-                    parent=t2_filt,
-                    groups={},
-                    metrics={"Sum(c)": t2_filt.c.sum()},
+            "summary": ops.Field(
+                rel=ops.Foreign(
+                    Aggregate(
+                        parent=t2_filt,
+                        groups={},
+                        metrics={"Sum(c)": t2_filt.c.sum()},
+                    )
                 ),
                 name="Sum(c)",
             ),
@@ -600,7 +601,9 @@ def test_select_with_subquery():
 
     # Use the subquery in a select operation
     expr = employees.select(employees.name, average_salary=employees.salary.mean())
-    assert isinstance(expr.op().values["average_salary"], ops.ForeignField)
+    field = expr.op().fields["average_salary"]
+    assert isinstance(field, ops.Field)
+    assert isinstance(field.rel, ops.Foreign)
 
 
 # FIXME(kszucs): filter() must be smarter to detect the other relation
@@ -666,7 +669,7 @@ def test_aggregate_field_dereferencing():
         avg_qty=t.l_quantity.mean(),
         avg_price=t.l_extendedprice.mean(),
         avg_disc=t.l_discount.mean(),
-        count_order=t.count(),
+        count_order=f.count(),  # note that this is f.count() not t.count()
     )
 
     discount_price_ = f.l_extendedprice * (1 - f.l_discount)
@@ -685,8 +688,7 @@ def test_aggregate_field_dereferencing():
             "avg_qty": f.l_quantity.mean(),
             "avg_price": f.l_extendedprice.mean(),
             "avg_disc": f.l_discount.mean(),
-            # TODO(kszucs): this is not dereferenced
-            "count_order": t.count(),
+            "count_order": f.count(),
         },
     )
 

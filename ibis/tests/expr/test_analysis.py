@@ -100,7 +100,9 @@ def test_join_predicate_from_derived_raises():
     filter_pred = table["f"] > 0
     table3 = table[filter_pred]
 
-    with pytest.raises(com.ExpressionError):
+    with pytest.raises(com.IntegrityError, match="they belong to another relation"):
+        # TODO(kszucs): could be smarter actually and rewrite the predicate
+        # to contain the conditions from the filter
         table.inner_join(table2, [table3["g"] == table2["key"]])
 
 
@@ -284,5 +286,5 @@ def test_agg_selection_does_not_share_roots():
     gb = t.group_by("a")
     n = s.count()
 
-    with pytest.raises(com.RelationError, match="Selection expressions"):
+    with pytest.raises(com.IntegrityError, match=" they belong to another relation"):
         gb.aggregate(n=n)

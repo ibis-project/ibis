@@ -166,7 +166,7 @@ def reduction_to_foreign(_):
     # TODO(kszucs): should use _.to_expr().as_table() instead
     table = an.find_first_base_table(_)
     agg = ops.Aggregate(table, groups={}, metrics={_.name: _})
-    return ops.ForeignField(agg, _.name)
+    return ops.Field(ops.Foreign(agg), _.name)
 
 
 def detect_foreign_values(parent, values, from_reductions=True, from_fields=False):
@@ -185,7 +185,7 @@ def detect_foreign_values(parent, values, from_reductions=True, from_fields=Fals
         }
 
     if from_fields:
-        rule = p.Field(~Eq(parent)) >> d.ForeignField(_.rel, _.name)
+        rule = p.Field(~Eq(parent)) >> d.Field(d.Foreign(_.rel), _.name)
         values = {k: v.replace(rule, filter=ops.Value) for k, v in values.items()}
 
     return values

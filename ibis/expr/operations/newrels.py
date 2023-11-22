@@ -136,6 +136,22 @@ class Relation(Node, Coercible):
         return TableExpr(self)
 
 
+# TODO(kszucs): consider to rename it to ForeignRelation
+@public
+class Foreign(Relation):
+    """Marker class for foreign table references."""
+
+    rel: Relation
+
+    @property
+    def fields(self):
+        return self.rel.fields
+
+    @property
+    def schema(self):
+        return self.rel.schema
+
+
 @public
 class Field(Value):
     rel: Relation
@@ -158,27 +174,13 @@ class Field(Value):
         return self.rel.schema[self.name]
 
 
-# TODO(kszucs): rename it to ForeignScalar
-@public
-class ForeignField(Value):
-    rel: Relation
-    name: str
-
-    shape = ds.columnar
-
-    @attribute
-    def dtype(self):
-        return self.rel.schema[self.name]
-
-
 def _check_integrity(values, allowed_parents):
-    unmarked_foreign_field = p.Field(~In(allowed_parents))
     for value in values:
-        if disallowed := value.find(unmarked_foreign_field, filter=Value):
-            # TODO(kszucs): perhaps it should raise a relationerror
-            raise IntegrityError(
-                f"Cannot add {disallowed!r} to projection, they belong to another relation"
-            )
+        for root in value.find_topmost(Relation):
+            if root not in allowed_parents and not isinstance(root, Foreign):
+                raise IntegrityError(
+                    f"Cannot add {value!r} to projection, they belong to another relation"
+                )
 
 
 @public
@@ -189,8 +191,6 @@ class Project(Relation):
 
     def __init__(self, parent, values):
         _check_integrity(values.values(), {parent})
-        # TODO(kszucs): raise if values depending on foreign fields are not scalar shaped
-        # TODO(kszucs): column-like values dependent on foreign fields are allowed in filter predicates only
         # TODO(kszucs): additional integrity check can be done for correlated subqueryies:
         # 1. locate the values with foreign fields in this projection
         # 2. locate the foreign fields in the relations of the values above
@@ -198,16 +198,6 @@ class Project(Relation):
         # this way we can ensure that the foreign fields are not referencing relations
         # foreign to the currently constructed one, but there are just references
         # back and forth
-
-        # TODO(kszucs): move this to the integrity checker?
-        # for v in values.values():
-        #     # TODO(kszucs): need to have a test case that we don't traverse
-        #     # deeper than value expressions
-        #     if v.find(ForeignField, filter=Value) and not v.shape.is_scalar():
-        #         raise IntegrityError(
-        #             f"Cannot add foreign value {v!r} to projection, it is not scalar shaped"
-        #         )
-
         super().__init__(parent=parent, values=values)
 
     @attribute
@@ -217,9 +207,6 @@ class Project(Relation):
     @attribute
     def schema(self):
         return Schema({k: v.dtype for k, v in self.values.items()})
-
-
-# TODO(kszucs): Subquery(value, outer_relation)
 
 
 @public

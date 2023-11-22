@@ -215,16 +215,27 @@ class Node(Hashable):
         -------
         The list of topmost nodes matching the given pattern.
         """
-        pat = pattern(pat)
-        ctx = context or {}
         queue = deque([self])
         result = []
-        while queue:
-            if node := queue.popleft():
-                if pat.match(node, ctx) is not NoMatch:
-                    result.append(node)
-                else:
-                    queue.extend(_flatten_collections(node.__args__))
+
+        if isinstance(pat, type):
+            # fast path for locating a specific type
+            while queue:
+                if node := queue.popleft():
+                    if isinstance(node, pat):
+                        result.append(node)
+                    else:
+                        queue.extend(_flatten_collections(node.__args__))
+        else:
+            pat = pattern(pat)
+            ctx = context or {}
+            while queue:
+                if node := queue.popleft():
+                    if pat.match(node, ctx) is not NoMatch:
+                        result.append(node)
+                    else:
+                        queue.extend(_flatten_collections(node.__args__))
+
         return result
 
     @experimental

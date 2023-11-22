@@ -191,7 +191,6 @@ def limit(op, parent, n, offset):
 
 
 @translate.register(ops.Field)
-@translate.register(ops.ForeignField)
 def table_column(op, rel, name):
     return f"{rel}.{name}"
 

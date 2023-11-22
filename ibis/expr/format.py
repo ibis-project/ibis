@@ -347,11 +347,6 @@ def _relation_field(op, rel, name):
         return f"{rel}[{name!r}]"
 
 
-@fmt.register(ops.ForeignField)
-def _relation_field(op, rel, name):
-    return f"foreign {rel}.{name}"
-
-
 @fmt.register(ops.Value)
 def _value(op, **kwargs):
     fields = inline_args(kwargs, prefer_positional=True)
