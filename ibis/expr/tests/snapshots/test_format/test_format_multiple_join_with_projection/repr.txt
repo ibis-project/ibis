@@ -1,36 +1,29 @@
-r0 := UnboundTable: three
-  bar_id string
-  value2 float64
-
-r1 := UnboundTable: one
+r0 := UnboundTable: one
   c      int32
   f      float64
   foo_id string
   bar_id string
 
-r2 := UnboundTable: two
+r1 := UnboundTable: two
   foo_id string
   value1 float64
 
-r3 := Selection[r1]
-  predicates:
-    r1.f > 0
+r2 := UnboundTable: three
+  bar_id string
+  value2 float64
 
-r4 := LeftJoin[r3, r2] r3.foo_id == r2.foo_id
+r3 := Filter[r0]
+  r0.f > 0
 
-r5 := Selection[r4]
-  selections:
-    c:            r3.c
-    f:            r3.f
-    foo_id:       r3.foo_id
-    bar_id:       r3.bar_id
-    foo_id_right: r2.foo_id
-    value1:       r2.value1
-
-r6 := InnerJoin[r5, r0] r3.bar_id == r0.bar_id
-
-Selection[r6]
-  selections:
-    r3
-    value1: r2.value1
-    value2: r0.value2
+JoinChain[r3]
+  JoinLink[left, r1]
+    r3.foo_id == r1.foo_id
+  JoinLink[inner, r2]
+    r3.bar_id == r2.bar_id
+  fields:
+    c:      r3.c
+    f:      r3.f
+    foo_id: r3.foo_id
+    bar_id: r3.bar_id
+    value1: r1.value1
+    value2: r2.value2

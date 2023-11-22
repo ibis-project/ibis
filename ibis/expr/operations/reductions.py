@@ -33,7 +33,6 @@ class Count(Filterable, Reduction):
     dtype = dt.int64
 
 
-# TODO(kszucs): the dereferencer doesn't dereference the parents of these operations
 @public
 class CountStar(Filterable, Reduction):
     arg: Relation

@@ -363,13 +363,12 @@ class Difference(Set):
 @public
 class PhysicalTable(Relation):
     name: str
-    schema: Schema
     fields = FrozenDict()
 
 
 @public
 class UnboundTable(PhysicalTable):
-    pass
+    schema: Schema
 
 
 @public
@@ -380,13 +379,13 @@ class Namespace(Concrete):
 
 @public
 class DatabaseTable(PhysicalTable):
+    schema: Schema
     source: Any
     namespace: Namespace = Namespace()
 
 
 @public
 class InMemoryTable(PhysicalTable):
-    name: str
     schema: Schema
     data: TableProxy
 
@@ -398,6 +397,20 @@ class SQLQueryResult(Relation):
     query: str
     schema: Schema
     source: Any
+
+
+@public
+class SQLStringView(PhysicalTable):
+    """A view created from a SQL string."""
+
+    child: Relation
+    query: str
+
+    @attribute
+    def schema(self):
+        # TODO(kszucs): avoid converting to expression
+        backend = self.child.to_expr()._find_backend()
+        return backend._get_schema_using_query(self.query)
 
 
 @public

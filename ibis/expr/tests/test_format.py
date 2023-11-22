@@ -76,7 +76,7 @@ def test_aggregate_arg_names(alltypes, snapshot):
     expr = t.group_by(by_exprs).aggregate(metrics)
     result = fmt(expr)
     assert "metrics" in result
-    assert "by" in result
+    assert "groups" in result
 
     snapshot.assert_match(result, "repr.txt")
 
@@ -124,8 +124,6 @@ def test_memoize_filtered_table(snapshot):
     delay_filter = t.dest.topk(10, by=t.arrdelay.mean())
 
     result = fmt(delay_filter)
-    assert result.count("Selection") == 1
-
     snapshot.assert_match(result, "repr.txt")
 
 
@@ -166,12 +164,6 @@ def test_memoize_filtered_tables_in_join(snapshot):
     joined = left.join(right, cond)[left, right.total.name("right_total")]
 
     result = fmt(joined)
-
-    # one for each aggregation
-    # joins are shown without the word `predicates` above them
-    # since joins only have predicates as arguments
-    assert result.count("predicates") == 2
-
     snapshot.assert_match(result, "repr.txt")
 
 
@@ -330,9 +322,6 @@ def test_asof_join(snapshot):
     )
 
     result = fmt(joined)
-    assert result.count("InnerJoin") == 1
-    assert result.count("AsOfJoin") == 1
-
     snapshot.assert_match(result, "repr.txt")
 
 
@@ -348,8 +337,6 @@ def test_two_inner_joins(snapshot):
     )
 
     result = fmt(joined)
-    assert result.count("InnerJoin") == 2
-
     snapshot.assert_match(result, "repr.txt")
 
 

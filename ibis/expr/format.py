@@ -215,15 +215,15 @@ def _in_memory_table(op, data, **kwargs):
 
 
 @fmt.register(ops.SQLQueryResult)
-# @fmt.register(ops.SQLStringView)
+@fmt.register(ops.SQLStringView)
 def _sql_query_result(op, query, **kwargs):
     clsname = op.__class__.__name__
-    top = f"{clsname}\n"
-    # if isinstance(op, ops.SQLStringView):
-    #     child, name = kwargs["child"], kwargs["name"]
-    #     top = f"{clsname}[{child}]: {name}\n"
-    # else:
-    #     top = f"{clsname}\n"
+
+    if isinstance(op, ops.SQLStringView):
+        child, name = kwargs["child"], kwargs["name"]
+        top = f"{clsname}[{child}]: {name}\n"
+    else:
+        top = f"{clsname}\n"
 
     query = textwrap.shorten(
         query,
@@ -263,15 +263,15 @@ def _project(op, parent, values):
 
 
 @fmt.register(ops.Filter)
-def _project(op, parent, **kwargs):
+def _project(op, parent, predicates):
     name = f"{op.__class__.__name__}[{parent}]\n"
-    return name + render_fields(kwargs, 1)
+    return name + render(predicates, 1)
 
 
 @fmt.register(ops.Sort)
-def _sort(op, parent, **kwargs):
+def _sort(op, parent, keys):
     name = f"{op.__class__.__name__}[{parent}]\n"
-    return name + render_fields(kwargs, 1)
+    return name + render(keys, 1)
 
 
 @fmt.register(ops.Selection)

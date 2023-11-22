@@ -7,16 +7,23 @@ r1 := DatabaseTable: test1
   f float64
   g string
 
-r2 := Selection[r1]
-  predicates:
-    r1.f > 0
+r2 := Filter[r1]
+  r1.f > 0
 
-r3 := InnerJoin[r0, r2] r2.g == r0.key
+r3 := JoinChain[r0]
+  JoinLink[inner, r2]
+    r2.g == r0.key
+  fields:
+    key:   r0.key
+    value: r0.value
+    c:     r2.c
+    f:     r2.f
+    g:     r2.g
 
-Aggregation[r3]
+Aggregate[r3]
+  groups:
+    g:   r3.g
+    key: r3.key
   metrics:
-    foo: Mean(r2.f - r0.value)
-    bar: Sum(r2.f)
-  by:
-    g:   r2.g
-    key: r0.key
+    foo: Mean(r3.f - r3.value)
+    bar: Sum(r3.f)
