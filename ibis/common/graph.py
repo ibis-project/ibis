@@ -167,7 +167,7 @@ class Node(Hashable):
         pat: type | tuple[type],
         filter: Optional[Any] = None,
         context: Optional[dict] = None,
-    ) -> set[Node]:
+    ) -> list[Node]:
         """Find all nodes matching a given pattern in the graph.
 
         A more advanced version of find, this method allows to match nodes based on
@@ -186,15 +186,46 @@ class Node(Hashable):
 
         Returns
         -------
-        The set of nodes matching the given pattern.
+        The list of nodes matching the given pattern.
         """
         nodes = Graph.from_bfs(self, filter=filter).nodes()
         if isinstance(pat, type):
-            return tuple(node for node in nodes if isinstance(node, type))
+            return [node for node in nodes if isinstance(node, type)]
         else:
             pat = pattern(pat)
             ctx = context or {}
-            return tuple(node for node in nodes if pat.match(node, ctx) is not NoMatch)
+            return [node for node in nodes if pat.match(node, ctx) is not NoMatch]
+
+    @experimental
+    def find_topmost(self, pat: type, context: Optional[dict] = None) -> list[Node]:
+        """Find all topmost nodes matching a given pattern in the graph.
+
+        A more advanced version of find, this method stops the traversal at the first
+        node that matches the given pattern and does not descend into its children.
+
+        Parameters
+        ----------
+        pat
+            Pattern to match. `ibis.common.pattern()` function is used to coerce the
+            input value into a pattern. See the pattern module for more details.
+        context
+            Optional context to use for the pattern matching.
+
+        Returns
+        -------
+        The list of topmost nodes matching the given pattern.
+        """
+        pat = pattern(pat)
+        ctx = context or {}
+        queue = deque([self])
+        result = []
+        while queue:
+            if node := queue.popleft():
+                if pat.match(node, ctx) is not NoMatch:
+                    result.append(node)
+                else:
+                    queue.extend(_flatten_collections(node.__args__))
+        return result
 
     @experimental
     def replace(
@@ -290,36 +321,10 @@ class Graph(dict[Node, Sequence[Node]]):
         -------
         A graph constructed from the root node.
         """
-        if not isinstance(root, Node):
-            raise TypeError("node must be an instance of ibis.common.graph.Node")
-
-        queue = deque()
-        graph = cls()
-
         if filter is None:
-            # fast path for the default no filter case, according to benchmarks
-            # this is gives a 10% speedup compared to the filtered version
-            queue.append(root)
-            while queue:
-                if (node := queue.popleft()) not in graph:
-                    children = tuple(_flatten_collections(node.__args__))
-                    graph[node] = children
-                    queue.extend(children)
+            return bfs(root)
         else:
-            filter = pattern(filter)
-            if filter.match(root, {}) is not NoMatch:
-                queue.append(root)
-            while queue:
-                if (node := queue.popleft()) not in graph:
-                    children = tuple(
-                        child
-                        for child in _flatten_collections(node.__args__)
-                        if filter.match(child, {}) is not NoMatch
-                    )
-                    graph[node] = children
-                    queue.extend(children)
-
-        return graph
+            return bfs_while(root, filter=filter)
 
     @classmethod
     def from_dfs(cls, root: Node, filter: Optional[Any] = None) -> Self:
@@ -339,36 +344,10 @@ class Graph(dict[Node, Sequence[Node]]):
         -------
         A graph constructed from the root node.
         """
-        if not isinstance(root, Node):
-            raise TypeError("node must be an instance of ibis.common.graph.Node")
-
-        stack = deque()
-        graph = dict()
-
         if filter is None:
-            # fast path for the default no filter case, according to benchmarks
-            # this is gives a 10% speedup compared to the filtered version
-            stack.append(root)
-            while stack:
-                if (node := stack.pop()) not in graph:
-                    children = tuple(_flatten_collections(node.__args__))
-                    graph[node] = children
-                    stack.extend(children)
+            return dfs(root)
         else:
-            filter = pattern(filter)
-            if filter.match(root, {}) is not NoMatch:
-                stack.append(root)
-            while stack:
-                if (node := stack.pop()) not in graph:
-                    children = tuple(
-                        child
-                        for child in _flatten_collections(node.__args__)
-                        if filter.match(child, {}) is not NoMatch
-                    )
-                    graph[node] = children
-                    stack.extend(children)
-
-        return cls(reversed(graph.items()))
+            return dfs_while(root, filter=filter)
 
     def __repr__(self):
         return f"{self.__class__.__name__}({super().__repr__()})"
@@ -426,57 +405,6 @@ class Graph(dict[Node, Sequence[Node]]):
         return result
 
 
-def bfs(node: Node, filter: Optional[Any] = None) -> Graph:
-    """Construct a graph from a root node using a breadth-first search.
-
-    Parameters
-    ----------
-    node
-        Root node of the graph.
-    filter
-        Pattern-like object to filter out nodes from the traversal. The traversal
-        will only visit nodes that match the given pattern and stop otherwise.
-
-    Returns
-    -------
-    A graph constructed from the root node.
-    """
-    return Graph.from_bfs(node, filter=filter)
-
-
-def dfs(node: Node, filter: Optional[Any] = None) -> Graph:
-    """Construct a graph from a root node using a depth-first search.
-
-    Parameters
-    ----------
-    node
-        Root node of the graph.
-    filter
-        Pattern-like object to filter out nodes from the traversal. The traversal
-        will only visit nodes that match the given pattern and stop otherwise.
-
-    Returns
-    -------
-    A graph constructed from the root node.
-    """
-    return Graph.from_dfs(node, filter=filter)
-
-
-def toposort(node: Node) -> Graph:
-    """Construct a graph from a root node then topologically sort it.
-
-    Parameters
-    ----------
-    node : Node
-        Root node of the graph.
-
-    Returns
-    -------
-    A topologically sorted graph constructed from the root node.
-    """
-    return Graph(node).toposort()
-
-
 # these could be callables instead
 proceed = True
 halt = False
@@ -523,3 +451,137 @@ def traverse(
                 )
 
             todo.extend(reversed(children))
+
+
+def bfs(root: Node) -> Graph:
+    """Construct a graph from a root node using a breadth-first search.
+
+    Parameters
+    ----------
+    root
+        Root node of the graph.
+
+    Returns
+    -------
+    A graph constructed from the root node.
+    """
+    # fast path for the default no filter case, according to benchmarks
+    # this is gives a 10% speedup compared to the filtered version
+    if not isinstance(root, Node):
+        raise TypeError("node must be an instance of ibis.common.graph.Node")
+
+    queue = deque([root])
+    graph = Graph()
+
+    while queue:
+        if (node := queue.popleft()) not in graph:
+            children = tuple(_flatten_collections(node.__args__))
+            graph[node] = children
+            queue.extend(children)
+
+    return graph
+
+
+def bfs_while(root: Node, filter: Optional[Any] = None) -> Graph:
+    """Construct a graph from a root node using a breadth-first search.
+
+    Parameters
+    ----------
+    root
+        Root node of the graph.
+    filter
+        Pattern-like object to filter out nodes from the traversal. The traversal
+        will only visit nodes that match the given pattern and stop otherwise.
+
+    Returns
+    -------
+    A graph constructed from the root node.
+    """
+    if not isinstance(root, Node):
+        raise TypeError("node must be an instance of ibis.common.graph.Node")
+
+    queue = deque()
+    graph = Graph()
+
+    filter = pattern(filter)
+    if filter.match(root, {}) is not NoMatch:
+        queue.append(root)
+
+    while queue:
+        if (node := queue.popleft()) not in graph:
+            children = tuple(
+                child
+                for child in _flatten_collections(node.__args__)
+                if filter.match(child, {}) is not NoMatch
+            )
+            graph[node] = children
+            queue.extend(children)
+
+    return graph
+
+
+def dfs(root: Node) -> Graph:
+    """Construct a graph from a root node using a depth-first search.
+
+    Parameters
+    ----------
+    root
+        Root node of the graph.
+
+    Returns
+    -------
+    A graph constructed from the root node.
+    """
+    # fast path for the default no filter case, according to benchmarks
+    # this is gives a 10% speedup compared to the filtered version
+    if not isinstance(root, Node):
+        raise TypeError("node must be an instance of ibis.common.graph.Node")
+
+    stack = deque([root])
+    graph = {}
+
+    while stack:
+        if (node := stack.pop()) not in graph:
+            children = tuple(_flatten_collections(node.__args__))
+            graph[node] = children
+            stack.extend(children)
+
+    return Graph(reversed(graph.items()))
+
+
+def dfs_while(root: Node, filter: Optional[Any] = None) -> Graph:
+    """Construct a graph from a root node using a depth-first search.
+
+    Parameters
+    ----------
+    root
+        Root node of the graph.
+    filter
+        Pattern-like object to filter out nodes from the traversal. The traversal
+        will only visit nodes that match the given pattern and stop otherwise.
+
+    Returns
+    -------
+    A graph constructed from the root node.
+    """
+    if not isinstance(root, Node):
+        raise TypeError("node must be an instance of ibis.common.graph.Node")
+
+    stack = deque()
+    graph = {}
+
+    filter = pattern(filter)
+    if filter.match(root, {}) is not NoMatch:
+        stack.append(root)
+
+    while stack:
+        if (node := stack.pop()) not in graph:
+            children = tuple(
+                child
+                for child in _flatten_collections(node.__args__)
+                if filter.match(child, {}) is not NoMatch
+            )
+            graph[node] = children
+            stack.extend(children)
+
+    return Graph(reversed(graph.items()))

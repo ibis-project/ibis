@@ -11,8 +11,9 @@ from ibis.common.graph import (
     _flatten_collections,
     _recursive_lookup,
     bfs,
+    bfs_while,
     dfs,
-    toposort,
+    dfs_while,
 )
 from ibis.common.grounds import Annotable, Concrete
 from ibis.common.patterns import Eq, If, InstanceOf, Object, TupleOf, _
@@ -95,7 +96,8 @@ def test_invert():
 
 
 def test_toposort():
-    assert list(toposort(A).keys()) == [C, D, E, B, A]
+    g = Graph(A).toposort()
+    assert list(g.keys()) == [C, D, E, B, A]
 
 
 def test_toposort_cycle_detection():
@@ -105,8 +107,9 @@ def test_toposort_cycle_detection():
     A.children.append(B)
 
     # A depends on B which depends on A
+    g = Graph(A)
     with pytest.raises(ValueError, match="cycle detected in the graph"):
-        toposort(A)
+        g.toposort()
 
 
 def test_nested_children():
@@ -124,7 +127,7 @@ def test_nested_children():
     }
 
 
-@pytest.mark.parametrize("func", [bfs, dfs, Graph.from_bfs, Graph.from_dfs])
+@pytest.mark.parametrize("func", [bfs_while, dfs_while, Graph.from_bfs, Graph.from_dfs])
 def test_traversals_with_filter(func):
     graph = func(A, filter=If(lambda x: x.name != "B"))
     assert graph == {A: (C,), C: ()}
@@ -133,7 +136,7 @@ def test_traversals_with_filter(func):
     assert graph == {E: (), B: (E,), A: (B, C), C: ()}
 
 
-@pytest.mark.parametrize("func", [bfs, dfs, Graph.from_bfs, Graph.from_dfs])
+@pytest.mark.parametrize("func", [bfs_while, dfs_while, Graph.from_bfs, Graph.from_dfs])
 def test_traversal_with_filtering_out_root(func):
     graph = func(A, filter=If(lambda x: x.name != "A"))
     assert graph == {}
@@ -297,10 +300,19 @@ def test_recursive_lookup():
 
 def test_node_find_using_pattern():
     result = A.find(If(_.name == "C"))
-    assert result == (C,)
+    assert result == [C]
 
     result = A.find(Object(MyNode, name=Eq("D")))
-    assert result == (D,)
+    assert result == [D]
 
     result = A.find(If(_.children))
-    assert result == (A, B)
+    assert result == [A, B]
+
+
+def test_node_find_topmost_using_pattern():
+    G = MyNode(name="G", children=[A, B])
+    E = MyNode(name="E", children=[G, G, A])
+
+    result = E.find_topmost(If(_.name == "A"))
+    expected = [A, A, A]
+    assert result == expected
