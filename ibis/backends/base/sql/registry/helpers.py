@@ -14,9 +14,11 @@ def format_call(translator, func, *args):
     return "{}({})".format(func, ", ".join(formatted_args))
 
 
-def quote_identifier(name, quotechar="`", force=False):
+def quote_identifier(
+    name, quotechar="`", force=False, base_identifiers=identifiers.base_identifiers
+):
     """Add quotes to the `name` identifier if needed."""
-    if force or name.count(" ") or name in identifiers.base_identifiers:
+    if force or name.count(" ") or name in base_identifiers:
         return f"{quotechar}{name}{quotechar}"
     else:
         return name

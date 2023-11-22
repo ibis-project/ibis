@@ -1471,7 +1471,6 @@ def test_agg_name_in_output_column(alltypes):
     assert "max" in df.columns[1].lower()
 
 
-@pytest.mark.notimpl(["flink"], "WIP", raises=Py4JError)
 def test_grouped_case(backend, con):
     table = ibis.memtable({"key": [1, 1, 2, 2], "value": [10, 30, 20, 40]})
 

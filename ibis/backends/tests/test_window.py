@@ -1215,7 +1215,7 @@ def test_first_last(backend):
     raises=com.OperationNotDefinedError,
     reason="not support by the backend",
 )
-@pytest.mark.notyet(["flink"], raises=Py4JJavaError, reason="not supported by Flink")
+@pytest.mark.broken(["flink"], raises=Py4JJavaError, reason="bug in Flink")
 def test_range_expression_bounds(backend):
     t = ibis.memtable(
         {

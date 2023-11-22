@@ -14,10 +14,14 @@ from ibis.backends.base.sql.compiler import (
     TableSetFormatter,
 )
 from ibis.backends.base.sql.registry import quote_identifier
+from ibis.backends.flink import identifiers
 from ibis.backends.flink.translator import FlinkExprTranslator
 
 
 class FlinkTableSetFormatter(TableSetFormatter):
+    def _quote_identifier(self, name):
+        return quote_identifier(name, base_identifiers=identifiers.base_identifiers)
+
     def _format_in_memory_table(self, op):
         names = op.schema.names
         raw_rows = []
@@ -121,7 +125,7 @@ def _tumble_window_params(
         filter(
             None,
             [
-                f"TABLE {quote_identifier(op.table.name)}",
+                f"TABLE {formatter._quote_identifier(op.table.name)}",
                 f"DESCRIPTOR({formatter._translate(op.time_col)})",
                 formatter._translate(op.window_size),
                 formatter._translate(op.offset) if op.offset else None,
@@ -136,7 +140,7 @@ def _hop_window_params(op: ops.HopWindowingTVF, formatter: TableSetFormatter) ->
         filter(
             None,
             [
-                f"TABLE {quote_identifier(op.table.name)}",
+                f"TABLE {formatter._quote_identifier(op.table.name)}",
                 f"DESCRIPTOR({formatter._translate(op.time_col)})",
                 formatter._translate(op.window_slide),
                 formatter._translate(op.window_size),
@@ -154,7 +158,7 @@ def _cumulate_window_params(
         filter(
             None,
             [
-                f"TABLE {quote_identifier(op.table.name)}",
+                f"TABLE {formatter._quote_identifier(op.table.name)}",
                 f"DESCRIPTOR({formatter._translate(op.time_col)})",
                 formatter._translate(op.window_step),
                 formatter._translate(op.window_size),
