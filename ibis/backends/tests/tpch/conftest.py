@@ -57,6 +57,8 @@ def tpch_test(test: Callable[..., ir.Table]):
 
         result_expr = test(*args, **kwargs)
 
+        ibis_sql = ibis.to_sql(result_expr, dialect=backend_name)
+
         assert result_expr._find_backend(use_default=False) is backend.connection
         result = backend.connection.execute(result_expr)
         assert not result.empty
@@ -70,9 +72,8 @@ def tpch_test(test: Callable[..., ir.Table]):
         assert len(expected) == len(result)
         backend.assert_frame_equal(result, expected, check_dtype=False)
 
-        # only produce sql if the execution passes
-        result_expr_sql = ibis.to_sql(result_expr, dialect=backend_name)
-        snapshot.assert_match(result_expr_sql, sql_path_name)
+        # only write sql if the execution passes
+        snapshot.assert_match(ibis_sql, sql_path_name)
 
     return wrapper
 
