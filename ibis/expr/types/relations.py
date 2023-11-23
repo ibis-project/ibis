@@ -178,15 +178,15 @@ def detect_foreign_values(parent, values, from_reductions=True, from_fields=Fals
 
     # In Filter values: all fields originating from other than the parent table are foreign fields
 
-    if from_reductions:
-        values = {
-            k: v.replace(reduction_to_foreign, filter=p.Value & ~p.WindowFunction)
-            for k, v in values.items()
-        }
+    # if from_reductions:
+    #     values = {
+    #         k: v.replace(reduction_to_foreign, filter=p.Value & ~p.WindowFunction)
+    #         for k, v in values.items()
+    #     }
 
-    if from_fields:
-        rule = p.Field(~Eq(parent)) >> d.Field(d.Foreign(_.rel), _.name)
-        values = {k: v.replace(rule, filter=ops.Value) for k, v in values.items()}
+    # if from_fields:
+    #     rule = p.Field(~Eq(parent)) >> d.Field(d.Foreign(_.rel), _.name)
+    #     values = {k: v.replace(rule, filter=ops.Value) for k, v in values.items()}
 
     return values
 
@@ -2029,22 +2029,63 @@ class TableExpr(Expr, _FixedTextJupyterMixin):
         │       43.92193 │      17.15117 │        200.915205 │ 4201.754386 │
         └────────────────┴───────────────┴───────────────────┴─────────────┘
         """
+
         values = bind(self, (exprs, named_exprs))
         values = unwrap_aliases(values)
         values = dereference_values(self.op(), values)
-
-        # TODO(kszucs): windowization of reductions an analytical functions should
-        # happen here. Reductions should be windowed if they are originating from
-        # self, otherwise they should be turned into a scalar subquery.
-        values = detect_foreign_values(self.op(), values)
         if not values:
             raise com.IbisTypeError(
                 "You must select at least one column for a valid projection"
             )
 
-        # TODO(kszucs): windowization of reductions should happen here
-        # 1. if a reduction if originating from self it should be turned into a window function
-        # 2. if a scalar value is originating from a foreign table it should be turned into a scalar subquery
+        # we need to detect reductions which are either turned into window functions
+        # or scalar subqueries depending on whether they are originating from self
+
+        from ibis.common.patterns import replace
+
+        @replace(ops.Analytic)
+        def wrap_analytic(_, rel):
+            # Wrap analytic functions in a window function
+            return ops.WindowFunction(_, ops.RowsWindowFrame(rel))
+
+        @replace(ops.Reduction)
+        def wrap_reduction(_, rel):
+            print("FOUND REDUCTION")
+            # Query all the tables that the reduction depends on
+            parents = _.find(ops.Relation)
+            print(parents)
+            if parents == []:
+                # The reduction doesn't depend on any table, so turn it into a
+                # scalar subquery
+                return ops.Subquery(_)
+            elif parents == [rel]:
+                # The reduction is fully originating from the `rel`, so turn
+                # it into a window function of `rel`
+                return ops.WindowFunction(_, ops.RowsWindowFrame(rel))
+            elif rel in parents:
+                print("EEEEE")
+                # The reduction is originating from `rel` and other tables, so
+                # turn it into a correlated subquery
+                # TODO(kszucs): have a specific CorrelatedSubquery node
+                return ops.Subquery(_)
+            else:
+                print("FFFF")
+                # The reduction is originating entirely from other tables, so
+                # we cannot windowize nor turn it into a subquery, let the
+                # integrity checks of Project handle this case
+                return ops.Subquery(_)
+                return _
+
+        node = self.op()
+        values = {
+            k: v.replace(
+                wrap_analytic | wrap_reduction,
+                filter=p.Value & ~p.WindowFunction,
+                context={"rel": node},
+            )
+            for k, v in values.items()
+        }
+
         node = ops.Project(self, values)
         return node.to_expr()
 

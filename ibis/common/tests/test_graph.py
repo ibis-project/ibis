@@ -298,6 +298,13 @@ def test_recursive_lookup():
     )
 
 
+def test_node_find_using_type():
+    result = A.find(MyNode)
+    assert result == [A, B, C, D, E]
+    result = A.find(int)
+    assert result == []
+
+
 def test_node_find_using_pattern():
     result = A.find(If(_.name == "C"))
     assert result == [C]

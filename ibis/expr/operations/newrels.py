@@ -12,6 +12,7 @@ from public import public
 
 import ibis.expr.datashape as ds
 import ibis.expr.datatypes as dt
+import ibis.expr.rules as rlz
 from ibis.common.annotations import attribute
 from ibis.common.bases import Immutable
 from ibis.common.collections import FrozenDict
@@ -137,19 +138,19 @@ class Relation(Node, Coercible):
 
 
 # TODO(kszucs): consider to rename it to ForeignRelation
-@public
-class Foreign(Relation):
-    """Marker class for foreign table references."""
+# @public
+# class Foreign(Relation):
+#     """Marker class for foreign table references."""
 
-    rel: Relation
+#     rel: Relation
 
-    @property
-    def fields(self):
-        return self.rel.fields
+#     @property
+#     def fields(self):
+#         return self.rel.fields
 
-    @property
-    def schema(self):
-        return self.rel.schema
+#     @property
+#     def schema(self):
+#         return self.rel.schema
 
 
 @public
@@ -174,13 +175,67 @@ class Field(Value):
         return self.rel.schema[self.name]
 
 
+# OR call i ForeignField
+@public
+class Subquery(Value):
+    value: Value
+    # correlated: bool
+
+    shape = rlz.shape_like("value")
+    dtype = rlz.dtype_like("value")
+
+    # def __init__(self, value, correlated):
+    #     # TODO(kszucs): additional validation comes here
+    #     super().__init__(value=value, correlated=correlated)
+
+    # def validate(self, outer_relation):
+    #     pass
+
+
+@public
+class ScalarSubquery(Subquery):
+    value: Scalar
+
+
 def _check_integrity(values, allowed_parents):
     for value in values:
         for root in value.find_topmost(Relation):
-            if root not in allowed_parents and not isinstance(root, Foreign):
+            if root not in allowed_parents:
                 raise IntegrityError(
                     f"Cannot add {value!r} to projection, they belong to another relation"
                 )
+
+
+def _check_project_integrity(values, parent):
+    for value in values:
+        for root in value.find_topmost((Relation, Subquery)):
+            if isinstance(root, Relation):
+                if root != parent:
+                    raise IntegrityError(
+                        f"Cannot add {value!r} to projection, they belong to another relation"
+                    )
+            elif isinstance(root, Subquery):
+                # TODO(kszucs): need to validate that these are scalar subqueries
+                depends_on = root.find(Relation)
+                # TODO(kszucs): have specific subqueries which do validate their
+                # value
+                # empty depends on mean that the subquery is not referencing any
+                # relation
+                if depends_on and parent not in depends_on:
+                    raise IntegrityError(
+                        f"Cannot add {value!r} to projection, it doesn't depend on the relation"
+                    )
+            else:
+                raise TypeError(root)
+
+
+def _check_filter_integrity(values, allowed_parents):
+    for value in values:
+        parents = set(value.find_topmost(Relation))
+        if not parents.intersection(allowed_parents):
+            raise IntegrityError(
+                f"Cannot add {value!r} to filter, it doesn't depend on the relation"
+            )
 
 
 @public
@@ -190,7 +245,7 @@ class Project(Relation):
     values: FrozenDict[str, Annotated[Value, ~InstanceOf(Alias)]]
 
     def __init__(self, parent, values):
-        _check_integrity(values.values(), {parent})
+        _check_project_integrity(values.values(), parent)
         # TODO(kszucs): additional integrity check can be done for correlated subqueryies:
         # 1. locate the values with foreign fields in this projection
         # 2. locate the foreign fields in the relations of the values above
@@ -265,7 +320,8 @@ class Filter(Relation):
 
     def __init__(self, parent, predicates):
         # TODO(kszucs): use toolz.unique(predicates) to remove duplicates
-        _check_integrity(predicates, {parent})
+        # _check_integrity(predicates, {parent})
+        _check_filter_integrity(predicates, {parent})
         super().__init__(parent=parent, predicates=predicates)
 
     @attribute

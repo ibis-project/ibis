@@ -123,6 +123,17 @@ def reorder_filter_project(_, y):
     return ops.Project(inner, projs)
 
 
+# TODO(kszucs): rewrite projection not actually depending on the parent table,
+# it should rather use a DummyTable object, see the following repr:
+# r0 := UnboundTable: t
+#   bool_col   boolean
+#   int_col    int64
+#   float_col  float64
+#   string_col string
+#
+# Project[r0]
+#   res: Subquery(Sum(Unnest((1, 2, 3))))
+
 # TODO(kszucs): add a rewrite rule for nestes JoinChain objects where the
 # JoinLink depends on another JoinChain, in this case the JoinLink should be
 # merged into the JoinChain

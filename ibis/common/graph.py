@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING, Any, Callable, Optional, TypeVar
 
 from ibis.common.bases import Hashable
 from ibis.common.collections import frozendict
-from ibis.common.patterns import NoMatch, pattern
+from ibis.common.patterns import NoMatch, Pattern, pattern
 from ibis.util import experimental
 
 if TYPE_CHECKING:
@@ -162,6 +162,7 @@ class Node(Hashable):
             results[node] = fn(node, results, **kwargs)
         return results
 
+    # TODO(kszucs): perhaps rename it to find_all() for better clarity
     def find(
         self,
         pat: type | tuple[type],
@@ -189,12 +190,11 @@ class Node(Hashable):
         The list of nodes matching the given pattern.
         """
         nodes = Graph.from_bfs(self, filter=filter).nodes()
-        if isinstance(pat, type):
-            return [node for node in nodes if isinstance(node, type)]
-        else:
-            pat = pattern(pat)
+        if isinstance(pat, Pattern):
             ctx = context or {}
             return [node for node in nodes if pat.match(node, ctx) is not NoMatch]
+        else:
+            return [node for node in nodes if isinstance(node, pat)]
 
     @experimental
     def find_topmost(self, pat: type, context: Optional[dict] = None) -> list[Node]:
@@ -218,20 +218,19 @@ class Node(Hashable):
         queue = deque([self])
         result = []
 
-        if isinstance(pat, type):
-            # fast path for locating a specific type
-            while queue:
-                if node := queue.popleft():
-                    if isinstance(node, pat):
-                        result.append(node)
-                    else:
-                        queue.extend(_flatten_collections(node.__args__))
-        else:
-            pat = pattern(pat)
+        if isinstance(pat, Pattern):
             ctx = context or {}
             while queue:
                 if node := queue.popleft():
                     if pat.match(node, ctx) is not NoMatch:
+                        result.append(node)
+                    else:
+                        queue.extend(_flatten_collections(node.__args__))
+        else:
+            # fast path for locating a specific type
+            while queue:
+                if node := queue.popleft():
+                    if isinstance(node, pat):
                         result.append(node)
                     else:
                         queue.extend(_flatten_collections(node.__args__))

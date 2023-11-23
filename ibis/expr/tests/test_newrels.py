@@ -98,6 +98,42 @@ def test_select_values():
     )
 
 
+def test_select_windowing_local_reduction():
+    t1 = t.select(res=t.int_col.sum())
+    assert t1.op() == Project(parent=t, values={"res": t.int_col.sum().over()})
+
+
+def test_select_windowizing_analytic_function():
+    t1 = t.select(res=t.int_col.lag())
+    assert t1.op() == Project(parent=t, values={"res": t.int_col.lag().over()})
+
+
+def test_select_turns_scalar_reduction_into_subquery():
+    arr = ibis.literal([1, 2, 3])
+    res = arr.unnest().sum().name("unnested_sum")
+    t1 = t.select(res)
+    expected = Project(parent=t, values={"unnested_sum": ops.Subquery(res.op().arg)})
+    assert t1.op() == expected
+
+
+def test_select_scalar_foreign_scalar_reduction_into_subquery():
+    t1 = t.filter(t.bool_col)
+    t2 = t.select(summary=t1.int_col.sum())
+    expected = Project(parent=t, values={"summary": ops.Subquery(t1.int_col.sum())})
+    assert t2.op() == expected
+
+
+def test_select_turns_value_with_multiple_parents_into_subquery():
+    v = ibis.table(name="v", schema={"a": "int64", "b": "string"})
+    v_filt = v.filter(v.a == t.int_col)
+
+    t1 = t.select(t.int_col, max=v_filt.a.max())
+    expected = Project(
+        parent=t, values={"int_col": t.int_col, "max": ops.Subquery(v_filt.a.max())}
+    )
+    assert t1.op() == expected
+
+
 def test_mutate():
     proj = t.select(t, other=t.int_col + 1)
     expected = Project(
@@ -359,7 +395,7 @@ def test_subsequent_filter():
     assert f2_opt.op() == Filter(t, predicates=[t.bool_col, t.int_col > 0])
 
 
-def test_projection_before_and_after_filter():
+def test_project_before_and_after_filter():
     t1 = t.select(
         bool_col=~t.bool_col, int_col=t.int_col + 1, float_col=t.float_col * 3
     )
@@ -400,13 +436,6 @@ def test_projection_before_and_after_filter():
     assert t4_opt.op() == Project(
         parent=t3_opt, values={"bool_col": t3_opt.bool_col, "int_col": t3_opt.int_col}
     )
-
-
-def test_foreign_field_identification():
-    t1 = t.filter(t.bool_col)
-    t2 = t.select(summary=t1.int_col.sum())
-    node = t2.op().fields["summary"]
-    assert isinstance(node.rel, ops.Foreign)
 
 
 # TODO(kszucs): add test for failing integrity checks
@@ -568,11 +597,10 @@ def test_select_with_uncorrelated_scalar_subquery():
     # Create a subquery
     t2_filt = t2.filter(t2.d == "value")
 
-    # Ensure that the integrity checks require scalar shaped foreign values
+    # Non-reduction won't be turned into a subquery
     with pytest.raises(IntegrityError):
         t1.select(t2_filt.c)
 
-    # Use the subquery in an IN condition
     sub = t1.select(t1.a, summary=t2_filt.c.sum())
 
     assert sub.op() == Project(
@@ -593,7 +621,7 @@ def test_select_with_uncorrelated_scalar_subquery():
     )
 
 
-def test_select_with_subquery():
+def test_select_with_reduction_turns_into_window_function():
     # Define your tables
     employees = ibis.table(
         name="employees", schema={"name": "string", "salary": "double"}
@@ -601,9 +629,14 @@ def test_select_with_subquery():
 
     # Use the subquery in a select operation
     expr = employees.select(employees.name, average_salary=employees.salary.mean())
-    field = expr.op().fields["average_salary"]
-    assert isinstance(field, ops.Field)
-    assert isinstance(field.rel, ops.Foreign)
+    expected = Project(
+        parent=employees,
+        values={
+            "name": employees.name,
+            "average_salary": employees.salary.mean().over(),
+        },
+    )
+    assert expr.op() == expected
 
 
 # FIXME(kszucs): filter() must be smarter to detect the other relation
