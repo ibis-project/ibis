@@ -339,7 +339,7 @@ def test_invalid_predicate(table, schema):
     # a lookalike
     table2 = api.table(schema, name="bar")
     predicate = table2.a > 5
-    with pytest.raises(RelationError):
+    with pytest.raises(IntegrityError):
         table.filter(predicate)
 
 

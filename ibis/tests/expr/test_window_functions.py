@@ -37,8 +37,9 @@ def test_mutate_with_analytic_functions(alltypes):
 
     exprs = [expr.name("e%d" % i) for i, expr in enumerate(exprs)]
     proj = g.mutate(exprs)
-    items = list(proj.op().values.items())
-    for name, field in items[1:]:
+
+    values = list(proj.op().values.values())
+    for field in values[len(t.schema()) :]:
         assert isinstance(field, ops.WindowFunction)
 
 

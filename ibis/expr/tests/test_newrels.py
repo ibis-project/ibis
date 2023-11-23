@@ -112,14 +112,18 @@ def test_select_turns_scalar_reduction_into_subquery():
     arr = ibis.literal([1, 2, 3])
     res = arr.unnest().sum().name("unnested_sum")
     t1 = t.select(res)
-    expected = Project(parent=t, values={"unnested_sum": ops.Subquery(res.op().arg)})
+    expected = Project(
+        parent=t, values={"unnested_sum": ops.ScalarSubquery(res.op().arg)}
+    )
     assert t1.op() == expected
 
 
 def test_select_scalar_foreign_scalar_reduction_into_subquery():
     t1 = t.filter(t.bool_col)
     t2 = t.select(summary=t1.int_col.sum())
-    expected = Project(parent=t, values={"summary": ops.Subquery(t1.int_col.sum())})
+    expected = Project(
+        parent=t, values={"summary": ops.ScalarSubquery(t1.int_col.sum())}
+    )
     assert t2.op() == expected
 
 
@@ -129,7 +133,8 @@ def test_select_turns_value_with_multiple_parents_into_subquery():
 
     t1 = t.select(t.int_col, max=v_filt.a.max())
     expected = Project(
-        parent=t, values={"int_col": t.int_col, "max": ops.Subquery(v_filt.a.max())}
+        parent=t,
+        values={"int_col": t.int_col, "max": ops.ScalarSubquery(v_filt.a.max())},
     )
     assert t1.op() == expected
 
@@ -601,24 +606,16 @@ def test_select_with_uncorrelated_scalar_subquery():
     with pytest.raises(IntegrityError):
         t1.select(t2_filt.c)
 
+    # Construct the projection using the subquery
     sub = t1.select(t1.a, summary=t2_filt.c.sum())
-
-    assert sub.op() == Project(
+    expected = Project(
         parent=t1,
         values={
             "a": t1.a,
-            "summary": ops.Field(
-                rel=ops.Foreign(
-                    Aggregate(
-                        parent=t2_filt,
-                        groups={},
-                        metrics={"Sum(c)": t2_filt.c.sum()},
-                    )
-                ),
-                name="Sum(c)",
-            ),
+            "summary": ops.ScalarSubquery(t2_filt.c.sum()),
         },
     )
+    assert sub.op() == expected
 
 
 def test_select_with_reduction_turns_into_window_function():

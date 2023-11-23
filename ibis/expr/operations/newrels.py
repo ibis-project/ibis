@@ -184,12 +184,7 @@ class Subquery(Value):
     shape = rlz.shape_like("value")
     dtype = rlz.dtype_like("value")
 
-    # def __init__(self, value, correlated):
-    #     # TODO(kszucs): additional validation comes here
-    #     super().__init__(value=value, correlated=correlated)
-
     # def validate(self, outer_relation):
-    #     pass
 
 
 @public
@@ -215,16 +210,20 @@ def _check_project_integrity(values, parent):
                         f"Cannot add {value!r} to projection, they belong to another relation"
                     )
             elif isinstance(root, Subquery):
-                # TODO(kszucs): need to validate that these are scalar subqueries
-                depends_on = root.find(Relation)
-                # TODO(kszucs): have specific subqueries which do validate their
-                # value
-                # empty depends on mean that the subquery is not referencing any
-                # relation
-                if depends_on and parent not in depends_on:
+                # TODO(kszucs): cover it with a test case
+                if not isinstance(root, ScalarSubquery):
                     raise IntegrityError(
-                        f"Cannot add {value!r} to projection, it doesn't depend on the relation"
+                        f"Cannot add {value!r} to projection, it is a non-scalar subquery"
                     )
+                # depends_on = root.find(Relation)
+                # # TODO(kszucs): have specific subqueries which do validate their
+                # # value
+                # # empty depends on mean that the subquery is not referencing any
+                # # relation
+                # if depends_on and parent not in depends_on:
+                #     raise IntegrityError(
+                #         f"Cannot add {value!r} to projection, it doesn't depend on the relation"
+                #     )
             else:
                 raise TypeError(root)
 
@@ -232,6 +231,9 @@ def _check_project_integrity(values, parent):
 def _check_filter_integrity(values, allowed_parents):
     for value in values:
         parents = set(value.find_topmost(Relation))
+        if not parents:
+            # only scalars are in the value
+            continue
         if not parents.intersection(allowed_parents):
             raise IntegrityError(
                 f"Cannot add {value!r} to filter, it doesn't depend on the relation"

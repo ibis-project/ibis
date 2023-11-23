@@ -166,6 +166,7 @@ class IfElse(Value):
         return rlz.highest_precedence_dtype([self.true_expr, self.false_null_expr])
 
 
+# TODO(kszucs): move it next to the ScalarSubquery
 @public
 class ExistsSubquery(Value):
     foreign_table: Relation
@@ -175,6 +176,7 @@ class ExistsSubquery(Value):
     shape = ds.columnar
 
 
+# TODO(kszucs): try to remove this
 @public
 class UnresolvedExistsSubquery(Value):
     """An exists subquery whose outer leaf table is unknown.

@@ -1085,6 +1085,9 @@ class TableExpr(Expr, _FixedTextJupyterMixin):
 
         node = ops.Aggregate(self, groups, metrics)
         if having:
+            # TODO(kszucs): should be adding the having conditions to the
+            # aggregate node, so that we can dereference them if the user
+            # didn't specify the metrics explicitly
             having = dereference_values(node, having)
             # TODO(kszucs): try catch IntegrityError and suggest to put the
             # reduction from the having condition to the list of metrics
@@ -2052,29 +2055,34 @@ class TableExpr(Expr, _FixedTextJupyterMixin):
         def wrap_reduction(_, rel):
             print("FOUND REDUCTION")
             # Query all the tables that the reduction depends on
-            parents = _.find(ops.Relation)
+            parents = _.find_topmost(ops.Relation)
             print(parents)
-            if parents == []:
-                # The reduction doesn't depend on any table, so turn it into a
-                # scalar subquery
-                return ops.Subquery(_)
-            elif parents == [rel]:
+
+            if parents == [rel]:
+                print("PIIIIII")
                 # The reduction is fully originating from the `rel`, so turn
                 # it into a window function of `rel`
                 return ops.WindowFunction(_, ops.RowsWindowFrame(rel))
-            elif rel in parents:
-                print("EEEEE")
-                # The reduction is originating from `rel` and other tables, so
-                # turn it into a correlated subquery
-                # TODO(kszucs): have a specific CorrelatedSubquery node
-                return ops.Subquery(_)
             else:
-                print("FFFF")
-                # The reduction is originating entirely from other tables, so
-                # we cannot windowize nor turn it into a subquery, let the
-                # integrity checks of Project handle this case
-                return ops.Subquery(_)
-                return _
+                # 1. The reduction doesn't depend on any table, constructed from
+                #    scalar values, so turn it into a scalar subquery.
+                # 2. The reduction is originating from `rel` and other tables,
+                #    so this is a correlated scalar subquery.
+                # 3. The reduction is originating entirely from other tables,
+                #    so this is an uncorrelated scalar subquery.
+                return ops.ScalarSubquery(_)
+            # elif rel in parents:
+            #     print("EEEEE")
+            #     # The reduction is originating from `rel` and other tables, so
+            #     # turn it into a correlated subquery
+            #     # TODO(kszucs): have a specific CorrelatedSubquery node
+            #     return ops.Subquery(_, correlated=True)
+            # else:
+            #     print("FFFF")
+            #     # The reduction is originating entirely from other tables, so
+            #     # we cannot windowize nor turn it into a subquery, let the
+            #     # integrity checks of Project handle this case
+            #     return ops.Subquery(_, correlated=False)
 
         node = self.op()
         values = {
