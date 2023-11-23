@@ -579,7 +579,7 @@ class Value(Expr):
         if isinstance(values, ArrayValue):
             return ops.ArrayContains(values, self).to_expr()
         elif isinstance(values, Column):
-            return ops.InColumn(self, values).to_expr()
+            return ops.InSubquery(values.as_table(), needle=self).to_expr()
         else:
             return ops.InValues(self, values).to_expr()
 
