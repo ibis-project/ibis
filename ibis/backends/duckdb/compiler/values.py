@@ -41,8 +41,10 @@ def _field(op, *, rel, name, **_):
     return sg.column(name, table=rel.alias_or_name)
 
 
-@translate_val.register(ops.ForeignField)
+@translate_val.register(ops.Subquery)
+@translate_val.register(ops.ScalarSubquery)
 def _foreign_field(op, *, rel, name, **_):
+    breakpoint()
     col = sg.column(name, table=rel.alias_or_name)
     if isinstance(rel, sg.exp.Table):
         return col
@@ -909,11 +911,6 @@ def _table_array_view(op, *, table, **_):
 def _exists_subquery(op, *, foreign_table, predicates, **_):
     subq = sg.select(1).from_(foreign_table).where(sg.and_(*predicates)).subquery()
     return f.exists(subq)
-
-
-@translate_val.register(ops.UnresolvedExistsSubquery)
-def _unresolved_exists_subquery(op, *, tables, predicates, **_):
-    raise NotImplementedError("cannot evaluate unresolved EXISTS subquery")
 
 
 @translate_val.register(ops.ArrayColumn)
