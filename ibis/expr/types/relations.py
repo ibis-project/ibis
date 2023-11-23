@@ -92,7 +92,8 @@ def _regular_join_method(
 
 
 # TODO(kszucs): cover it with tests
-# TODO(kszucs): should use (table, *args, **kwargs) instead to avoid intepreting nested inputs
+# TODO(kszucs): should use (table, *args, **kwargs) instead to avoid interpreting
+# nested inputs
 def bind(table: TableExpr, value: Any, prefer_column=True) -> ir.Value:
     if prefer_column and isinstance(value, (str, int)):
         yield table.column(value)
@@ -140,13 +141,6 @@ def unwrap_aliases(values):
 
 
 ################################# DEREFERENCE LOGIC #################################
-from ibis.common.patterns import replace, pattern, Eq
-from ibis.common.deferred import deferred, _
-import ibis.expr.analysis as an
-from ibis.util import Namespace
-
-p = Namespace(pattern, module=ops)
-d = Namespace(deferred, module=ops)
 
 
 def dereference_values(parents, values):
@@ -159,36 +153,6 @@ def dereference_values(parents, values):
             else:
                 mapping[v] = ops.Field(parent, k)
     return {k: v.replace(mapping, filter=ops.Value) for k, v in values.items()}
-
-
-@replace(ops.Reduction)
-def reduction_to_foreign(_):
-    # TODO(kszucs): should use _.to_expr().as_table() instead
-    table = an.find_first_base_table(_)
-    agg = ops.Aggregate(table, groups={}, metrics={_.name: _})
-    return ops.Field(ops.Foreign(agg), _.name)
-
-
-# def detect_foreign_values(parent, values, from_reductions=True, from_fields=False):
-#     # In Project values:
-
-#     # 1. have a subquery with only scalars, no need to identify fields as foreign fields since there are no fields
-#     # 2. it contains reduction, that case is handled
-#     # 3. a limited selection SELECT ... LIMIT 1
-
-#     # In Filter values: all fields originating from other than the parent table are foreign fields
-
-#     # if from_reductions:
-#     #     values = {
-#     #         k: v.replace(reduction_to_foreign, filter=p.Value & ~p.WindowFunction)
-#     #         for k, v in values.items()
-#     #     }
-
-#     # if from_fields:
-#     #     rule = p.Field(~Eq(parent)) >> d.Field(d.Foreign(_.rel), _.name)
-#     #     values = {k: v.replace(rule, filter=ops.Value) for k, v in values.items()}
-
-#     return values
 
 
 ################################# DEREFERENCE LOGIC #################################
@@ -2038,7 +2002,7 @@ class TableExpr(Expr, _FixedTextJupyterMixin):
         │       43.92193 │      17.15117 │        200.915205 │ 4201.754386 │
         └────────────────┴───────────────┴───────────────────┴─────────────┘
         """
-        from ibis.expr.rewrites import project_wrap_analytic, project_wrap_reduction
+        from ibis.expr.rewrites import project_wrap_analytic, project_wrap_reduction, p
 
         values = bind(self, (exprs, named_exprs))
         values = unwrap_aliases(values)
@@ -2422,18 +2386,14 @@ class TableExpr(Expr, _FixedTextJupyterMixin):
         └────────┴───────────┘
         """
         from ibis.expr.analysis import flatten_predicates
-        from ibis.expr.rewrites import filter_wrap_reduction
+        from ibis.expr.rewrites import filter_wrap_reduction, p
 
         preds = bind(self, predicates)
         preds = unwrap_aliases(preds)
         preds = dereference_values(self.op(), preds)
+        preds = flatten_predicates(list(preds.values()))
         if not preds:
             raise com.IbisInputError("You must pass at least one predicate to filter")
-        # preds = detect_foreign_values(self.op(), preds, from_fields=True)
-        # TODO(kszucs): need to convert the values to subqueries similarly to
-        # the case of projections
-
-        preds = flatten_predicates(list(preds.values()))
 
         node = self.op()
         preds = [
@@ -4489,7 +4449,6 @@ class JoinExpr(TableExpr):
         # with a field referencing one of the relations in the join chain
         fields = {ops.Field(self, k): v for k, v in self.op().fields.items()}
         values = {k: v.replace(fields, filter=ops.Value) for k, v in values.items()}
-
         values = dereference_values(self.tables(), values)
         # TODO(kszucs): add reduction conversion here detect_foreign_values(values)?
 
