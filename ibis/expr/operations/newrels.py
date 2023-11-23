@@ -169,8 +169,15 @@ class Subquery(Value):
 class ScalarSubquery(Subquery):
     value: Scalar
 
-    # shape = rlz.shape_like("value")
     dtype = rlz.dtype_like("value")
+
+
+@public
+class InSubquery(Subquery):
+    value: Value
+    options: Column[dt.Any]
+
+    dtype = dt.boolean
 
 
 @public

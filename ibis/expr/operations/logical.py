@@ -2,13 +2,12 @@ from __future__ import annotations
 
 from public import public
 
-import ibis.expr.datashape as ds
 import ibis.expr.datatypes as dt
 import ibis.expr.rules as rlz
 from ibis.common.annotations import ValidationError, attribute
 from ibis.common.exceptions import IbisTypeError
 from ibis.common.typing import VarTuple  # noqa: TCH001
-from ibis.expr.operations.core import Binary, Column, Unary, Value
+from ibis.expr.operations.core import Binary, Unary, Value
 
 
 @public
@@ -134,15 +133,6 @@ class InValues(Value):
     def shape(self):
         args = [self.value, *self.options]
         return rlz.highest_precedence_shape(args)
-
-
-@public
-class InColumn(Value):
-    value: Value
-    options: Column[dt.Any]
-
-    dtype = dt.boolean
-    shape = rlz.shape_like("args")
 
 
 @public
