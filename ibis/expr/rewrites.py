@@ -6,9 +6,10 @@ from collections.abc import Mapping
 
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
+from ibis.common.collections import FrozenDict
 from ibis.common.deferred import Item, _, deferred, var
 from ibis.common.exceptions import UnsupportedOperationError
-from ibis.common.patterns import Check, pattern, replace
+from ibis.common.patterns import Check, Eq, pattern, replace
 from ibis.util import Namespace
 
 p = Namespace(pattern, module=ops)
@@ -126,15 +127,10 @@ def filter_wrap_reduction_value(_):
     return ops.ScalarSubquery(value.to_expr().as_table())
 
 
-# @replace(ops.Reduction)
-# def filter_wrap_reduction(_):
-#     return ops.ScalarSubquery(_.to_expr().as_table())
-
-
-# @replace(p.Field(p.Aggregate(groups={})))
-# def filter_wrap_aggregate_field(_):
-#     expr = _.rel.fields[_.name].to_expr().as_table()
-#     return ops.ScalarSubquery(expr)
+@replace(p.Field(rel=p.Aggregate(groups=Eq(FrozenDict()))))
+def filter_wrap_field(_):
+    expr = _.rel.fields[_.name].to_expr().as_table()
+    return ops.ScalarSubquery(expr)
 
 
 @replace(p.Project(y @ p.Relation) & Check(_.schema == y.schema))

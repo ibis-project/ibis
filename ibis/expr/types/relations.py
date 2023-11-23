@@ -16,6 +16,7 @@ import ibis
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
+from ibis.expr.rewrites import filter_wrap_field
 import ibis.expr.schema as sch
 from ibis import util
 from ibis.common.annotations import annotated
