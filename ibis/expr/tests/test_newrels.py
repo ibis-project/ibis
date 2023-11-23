@@ -9,7 +9,7 @@ import ibis.expr.operations as ops
 import ibis.expr.types as ir
 from ibis import _
 from ibis.common.annotations import ValidationError
-from ibis.common.exceptions import IntegrityError
+from ibis.common.exceptions import IbisInputError, IntegrityError
 from ibis.expr.operations import (
     Aggregate,
     Field,
@@ -354,6 +354,12 @@ def test_where():
     filt = t.filter(_.bool_col)
     expected = Filter(parent=t, predicates=[t.bool_col])
     assert filt.op() == expected
+
+
+def test_where_raies_for_empty_predicate_list():
+    t = ibis.table(dict(a="string"))
+    with pytest.raises(IbisInputError):
+        t.filter()
 
 
 def test_where_after_select():

@@ -2420,6 +2420,8 @@ class TableExpr(Expr, _FixedTextJupyterMixin):
         preds = bind(self, predicates)
         preds = unwrap_aliases(preds)
         preds = dereference_values(self.op(), preds)
+        if not preds:
+            raise com.IbisInputError("You must pass at least one predicate to filter")
         # preds = detect_foreign_values(self.op(), preds, from_fields=True)
         # TODO(kszucs): need to convert the values to subqueries similarly to
         # the case of projections

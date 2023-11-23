@@ -83,6 +83,7 @@ def find_immediate_parent_tables(input_node, keep_input=True):
     return list(toolz.unique(g.traverse(finder, input_node)))
 
 
+# TODO(kszucs): remove it in favor of the rewrites
 def windowize_function(expr, default_frame, merge_frames=False):
     func, frame = var("func"), var("frame")
 
