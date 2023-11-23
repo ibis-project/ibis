@@ -8,6 +8,7 @@ from .conftest import tpch_test
 @tpch_test
 def test_tpc_h02(part, supplier, partsupp, nation, region):
     """Minimum Cost Supplier Query (Q2)"""
+
     REGION = "EUROPE"
     SIZE = 15
     TYPE = "BRASS"
