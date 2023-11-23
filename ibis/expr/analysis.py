@@ -8,7 +8,7 @@ import ibis.common.graph as g
 import ibis.expr.operations as ops
 from ibis import util
 from ibis.common.deferred import _, deferred, var
-from ibis.common.patterns import In, pattern
+from ibis.common.patterns import pattern
 from ibis.util import Namespace
 
 if TYPE_CHECKING:
@@ -19,16 +19,6 @@ c = Namespace(deferred, module=ops)
 
 x = var("x")
 y = var("y")
-
-# ---------------------------------------------------------------------
-# Some expression metaprogramming / graph transformations to support
-# compilation later
-
-
-def sub_immediate_parents(node: ops.Node, table: ops.TableNode) -> ops.Node:
-    """Replace immediate parent tables in `op` with `table`."""
-    parents = find_immediate_parent_tables(node)
-    return node.replace(In(parents) >> table)
 
 
 # TODO(kszucs): should be removed in favor of node.find_topmost(Relation)
@@ -152,39 +142,7 @@ def flatten_predicates(node):
     return list(g.traverse(predicate, node))
 
 
-def find_predicates(node, flatten=True):
-    # TODO(kszucs): consider to remove flatten argument and compose with
-    # flatten_predicates instead
-    def predicate(node):
-        assert isinstance(node, ops.Node), type(node)
-        if isinstance(node, ops.Value) and node.dtype.is_boolean():
-            if flatten and isinstance(node, ops.And):
-                return g.proceed, None
-            else:
-                return g.halt, node
-        return g.proceed, None
-
-    return list(g.traverse(predicate, node))
-
-
-def find_subqueries(node: ops.Node, min_dependents=1) -> tuple[ops.Node, ...]:
-    raise NotImplementedError
-    # subquery_dependents = defaultdict(set)
-    # for n in filter(None, util.promote_list(node)):
-    #     dependents = g.Graph.from_dfs(n).invert()
-    #     for u, vs in dependents.toposort().items():
-    #         # count the number of table-node dependents on the current node
-    #         # but only if the current node is a selection or aggregation
-    #         if isinstance(u, (rels.Projection, rels.Aggregation, rels.Limit)):
-    #             subquery_dependents[u].update(vs)
-
-    # return tuple(
-    #     node
-    #     for node, dependents in reversed(subquery_dependents.items())
-    #     if len(dependents) >= min_dependents
-    # )
-
-
+# TODO(kszucs): remove this, only used from the alchemy backend
 def find_toplevel_unnest_children(nodes: Iterable[ops.Node]) -> Iterator[ops.Table]:
     def finder(node):
         return (

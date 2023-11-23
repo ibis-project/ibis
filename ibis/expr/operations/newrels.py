@@ -12,6 +12,7 @@ from public import public
 
 import ibis.expr.datashape as ds
 import ibis.expr.datatypes as dt
+import ibis.expr.rules as rlz
 from ibis.common.annotations import attribute
 from ibis.common.bases import Immutable
 from ibis.common.collections import FrozenDict
@@ -194,14 +195,6 @@ class ScalarSubquery(Subquery):
 class ExistsSubquery(Subquery):
     dtype = dt.boolean
 
-    # def __init__(self, parent, value):
-    #     if parent not in value.find_topmost(Relation):
-    #         # TODO(kszucs): cover it with a test
-    #         raise IntegrityError(
-    #             f"Subquery {value!r} doesn't depend on the relation {parent!r}"
-    #         )
-    #     super().__init__(parent=parent, value=value)
-
 
 @public
 class InSubquery(Subquery):
@@ -209,12 +202,12 @@ class InSubquery(Subquery):
     needle: Value
     dtype = dt.boolean
 
-    # def __init__(self, rel, needle):
-    #     if needle.shape.is_scalar():
-    #         raise IntegrityError(
-    #             f"Subquery {needle!r} is scalar, it must be turned into a scalar subquery first"
-    #         )
-    #     super().__init__(rel=rel, needle=needle)
+    def __init__(self, rel, needle):
+        super().__init__(rel=rel, needle=needle)
+        if not rlz.comparable(self.value, needle):
+            raise IntegrityError(
+                f"Subquery {needle!r} is not comparable to {self.value!r}"
+            )
 
 
 # TODO: implement these
@@ -245,11 +238,6 @@ def _check_project_integrity(values, parent):
                     raise IntegrityError(
                         f"Cannot add {value!r} to projection, it is a non-scalar subquery"
                     )
-                # depends_on = root.find(Relation)
-                # if depends_on and parent not in depends_on:
-                #     raise IntegrityError(
-                #         f"Cannot add {value!r} to projection, it doesn't depend on the relation"
-                #     )
             else:
                 raise TypeError(root)
 
@@ -287,13 +275,6 @@ class Project(Relation):
 
     def __init__(self, parent, values):
         _check_project_integrity(values.values(), parent)
-        # TODO(kszucs): additional integrity check can be done for correlated subqueryies:
-        # 1. locate the values with foreign fields in this projection
-        # 2. locate the foreign fields in the relations of the values above
-        # 3. assert that the relation of those foreign fields is `parent`
-        # this way we can ensure that the foreign fields are not referencing relations
-        # foreign to the currently constructed one, but there are just references
-        # back and forth
         super().__init__(parent=parent, values=values)
 
     @attribute
@@ -396,7 +377,6 @@ class Aggregate(Relation):
 
     def __init__(self, parent, groups, metrics):
         _check_integrity(groups.values(), {parent})
-        # TODO(kszucs): do the same ForeignField + scalar integrity check for metrics
         _check_integrity(metrics.values(), {parent})
         super().__init__(parent=parent, groups=groups, metrics=metrics)
 
