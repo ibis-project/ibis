@@ -1854,6 +1854,7 @@ class TableExpr(Expr, _FixedTextJupyterMixin):
         # string and integer inputs are going to be coerced to literals instead
         # of interpreted as column references like in select
         node = self.op()
+        # TODO(kszucs): use self.columns instead
         fields = {k: ops.Field(node, k) for k in node.schema}
         values = bind(self, (exprs, mutations), prefer_column=False)
         values = unwrap_aliases(values)

@@ -31,7 +31,7 @@ def sub_immediate_parents(node: ops.Node, table: ops.TableNode) -> ops.Node:
     return node.replace(In(parents) >> table)
 
 
-# TODO(kszucs): should be removed
+# TODO(kszucs): should be removed in favor of node.find_topmost(Relation)
 def find_immediate_parent_tables(input_node, keep_input=True):
     """Find every first occurrence of a `ir.Table` object in `input_node`.
 

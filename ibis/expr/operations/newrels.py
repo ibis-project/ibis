@@ -160,20 +160,39 @@ class Field(Value):
 
 
 # OR call i ForeignField
+# TODO(kszucs): subquery should contain a parent: Relation field which the
+# value can be validated against
 @public
 class Subquery(Value):
-    value: Value
+    pass
+    # value: Value
     # correlated: bool
-
-    shape = rlz.shape_like("value")
-    dtype = rlz.dtype_like("value")
-
     # def validate(self, outer_relation):
 
 
 @public
 class ScalarSubquery(Subquery):
     value: Scalar
+
+    shape = rlz.shape_like("value")
+    dtype = rlz.dtype_like("value")
+
+
+@public
+class ExistsSubquery(Value):
+    # rename it to parent
+    parent: Relation
+    value: Value[dt.Boolean]
+    # predicates: VarTuple[Value[dt.Boolean]]
+
+    dtype = dt.boolean
+    shape = ds.columnar
+
+
+# ExistsSubquery
+# InSubquery
+# AnySubquery
+# AllSubquery
 
 
 def _check_integrity(values, allowed_parents):

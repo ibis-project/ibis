@@ -18,8 +18,8 @@ import ibis.expr.schema as sch
 import ibis.expr.types as ir
 import ibis.selectors as s
 from ibis import _
-from ibis import literal as L
 from ibis.common.annotations import ValidationError
+from ibis.common.deferred import Deferred
 from ibis.common.exceptions import IntegrityError, RelationError
 from ibis.expr import api
 from ibis.expr.types import Column, Table
@@ -537,9 +537,9 @@ def test_order_by_asc_deferred_sort_key(table):
     [
         param(ibis.NA, ibis.NA.op(), id="na"),
         param(ibis.random(), ibis.random().op(), id="random"),
-        param(1.0, L(1.0).op(), id="float"),
-        param(L("a"), L("a").op(), id="string"),
-        param(L([1, 2, 3]), L([1, 2, 3]).op(), id="array"),
+        param(1.0, ibis.literal(1.0).op(), id="float"),
+        param(ibis.literal("a"), ibis.literal("a").op(), id="string"),
+        param(ibis.literal([1, 2, 3]), ibis.literal([1, 2, 3]).op(), id="array"),
     ],
 )
 def test_order_by_scalar(table, key, expected):
@@ -1322,8 +1322,17 @@ def t2():
 
 def test_unresolved_existence_predicate(t1, t2):
     expr = (t1.key1 == t2.key1).any()
-    assert isinstance(expr, ir.BooleanColumn)
-    assert isinstance(expr.op(), ops.UnresolvedExistsSubquery)
+    assert isinstance(expr, Deferred)
+
+    expected = ops.Filter(
+        parent=t1, predicates=[ops.ExistsSubquery(parent=t2, value=t1.key1 == t2.key1)]
+    )
+    assert t1[expr].op() == expected
+
+    expected = ops.Filter(
+        parent=t2, predicates=[ops.ExistsSubquery(parent=t1, value=t1.key1 == t2.key1)]
+    )
+    assert t2[expr].op() == expected
 
 
 def test_resolve_existence_predicate(t1, t2):
