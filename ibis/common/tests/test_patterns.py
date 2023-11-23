@@ -631,6 +631,26 @@ def test_object_pattern_matching_order():
     assert match(p, Foo(1, 2, 1)) == Foo(1, 2, 1)
 
 
+def test_object_pattern_matching_dictionary_field():
+    a = Bar(1, FrozenDict())
+    b = Bar(1, {})
+    c = Bar(1, None)
+    d = Bar(1, {"foo": 1})
+
+    pattern = Object(Bar, 1, d={})
+    assert match(pattern, a) is a
+    assert match(pattern, b) is b
+    assert match(pattern, c) is NoMatch
+
+    pattern = Object(Bar, 1, d=None)
+    assert match(pattern, a) is NoMatch
+    assert match(pattern, c) is c
+
+    pattern = Object(Bar, 1, d={"foo": 1})
+    assert match(pattern, a) is NoMatch
+    assert match(pattern, d) is d
+
+
 def test_callable_with():
     def func(a, b):
         return str(a) + b
@@ -1230,6 +1250,9 @@ def test_pattern_function():
 
     # matching deferred to user defined functions
     assert pattern(f) == Custom(f)
+
+    # matching mapping values
+    assert pattern({"a": 1, "b": 2}) == EqualTo(FrozenDict({"a": 1, "b": 2}))
 
 
 class Term(GraphNode):

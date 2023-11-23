@@ -1586,7 +1586,7 @@ def pattern(obj: AnyType) -> Pattern:
     elif isinstance(obj, (Deferred, Resolver)):
         return Capture(obj)
     elif isinstance(obj, Mapping):
-        raise TypeError("Cannot create a pattern from a mapping")
+        return EqualTo(FrozenDict(obj))
     elif isinstance(obj, Sequence):
         if isinstance(obj, (str, bytes)):
             return EqualTo(obj)
