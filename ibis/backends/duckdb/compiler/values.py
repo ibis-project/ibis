@@ -41,7 +41,7 @@ def _field(op, *, rel, name, **_):
     return sg.column(name, table=rel.alias_or_name)
 
 
-@translate_val.register(ops.Subquery)
+@translate_val.register(ops.ScalarSubquery)
 def _subquery(op, *, rel, **_):
     return rel.this.subquery()
 
