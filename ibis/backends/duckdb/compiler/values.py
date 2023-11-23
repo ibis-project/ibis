@@ -42,13 +42,8 @@ def _field(op, *, rel, name, **_):
 
 
 @translate_val.register(ops.Subquery)
-@translate_val.register(ops.ScalarSubquery)
-def _foreign_field(op, *, rel, name, **_):
-    breakpoint()
-    col = sg.column(name, table=rel.alias_or_name)
-    if isinstance(rel, sg.exp.Table):
-        return col
-    return sg.select(name).from_(rel).subquery()
+def _subquery(op, *, rel, **_):
+    return rel.this.subquery()
 
 
 @translate_val.register(ops.Alias)
@@ -676,11 +671,6 @@ def _in_values(op, *, value, options, **_):
     return value.isin(*options)
 
 
-@translate_val.register(ops.InColumn)
-def _in_column(op, *, value, options, **_):
-    return value.isin(options.this if isinstance(options, sg.exp.Subquery) else options)
-
-
 @translate_val.register(ops.ArrayConcat)
 def _array_concat(op, *, arg, **_):
     result, *rest = arg
@@ -908,9 +898,13 @@ def _table_array_view(op, *, table, **_):
 
 
 @translate_val.register(ops.ExistsSubquery)
-def _exists_subquery(op, *, foreign_table, predicates, **_):
-    subq = sg.select(1).from_(foreign_table).where(sg.and_(*predicates)).subquery()
-    return f.exists(subq)
+def _exists_subquery(op, *, rel, **_):
+    return f.exists(rel.this.subquery())
+
+
+@translate_val.register(ops.InSubquery)
+def _in_subquery(op, *, rel, needle, **_):
+    return needle.isin(rel.this.subquery())
 
 
 @translate_val.register(ops.ArrayColumn)
