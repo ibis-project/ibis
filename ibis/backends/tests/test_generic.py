@@ -791,7 +791,10 @@ def test_uncorrelated_subquery(backend, batting, batting_df):
     result = expr.execute()
 
     expected = batting_df[batting_df.yearID == 2000][["playerID", "yearID"]]
-    backend.assert_frame_equal(result, expected)
+    backend.assert_frame_equal(
+        result.sort_values(result.columns.tolist()).reset_index(drop=True),
+        expected.sort_values(result.columns.tolist()).reset_index(drop=True),
+    )
 
 
 def test_int_column(alltypes):
