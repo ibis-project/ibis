@@ -8,7 +8,7 @@ import ibis.expr.datatypes as dt
 from ibis.common.annotations import attribute
 from ibis.common.collections import FrozenDict
 from ibis.expr.operations.core import Column, Scalar  # noqa: TCH001
-from ibis.expr.operations.newrels import Field, Relation
+from ibis.expr.operations.relations import Field, Relation
 from ibis.expr.schema import Schema
 
 

@@ -10,7 +10,7 @@ import ibis.expr.datatypes as dt
 import ibis.expr.rules as rlz
 from ibis.common.annotations import attribute
 from ibis.expr.operations.core import Column, Value
-from ibis.expr.operations.newrels import Relation  # noqa: TCH001
+from ibis.expr.operations.relations import Relation  # noqa: TCH001
 
 
 @public

@@ -14,7 +14,7 @@ from ibis.common.deferred import Deferred, Resolver, deferrable
 from ibis.common.exceptions import IbisInputError
 from ibis.common.grounds import Concrete
 from ibis.common.typing import VarTuple  # noqa: TCH001
-from ibis.expr.operations.newrels import Relation  # noqa: TCH001
+from ibis.expr.operations.relations import Relation  # noqa: TCH001
 
 if TYPE_CHECKING:
     from typing_extensions import Self
