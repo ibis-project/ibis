@@ -217,23 +217,26 @@ class Node(Hashable):
         """
         queue = deque([self])
         result = []
+        seen = set()
 
         if isinstance(pat, Pattern):
             ctx = context or {}
             while queue:
-                if node := queue.popleft():
+                if (node := queue.popleft()) not in seen:
                     if pat.match(node, ctx) is not NoMatch:
                         result.append(node)
                     else:
                         queue.extend(_flatten_collections(node.__args__))
+                    seen.add(node)
         else:
             # fast path for locating a specific type
             while queue:
-                if node := queue.popleft():
+                if (node := queue.popleft()) not in seen:
                     if isinstance(node, pat):
                         result.append(node)
                     else:
                         queue.extend(_flatten_collections(node.__args__))
+                    seen.add(node)
 
         return result
 

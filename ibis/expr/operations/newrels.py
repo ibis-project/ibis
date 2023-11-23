@@ -12,7 +12,6 @@ from public import public
 
 import ibis.expr.datashape as ds
 import ibis.expr.datatypes as dt
-import ibis.expr.rules as rlz
 from ibis.common.annotations import attribute
 from ibis.common.bases import Immutable
 from ibis.common.collections import FrozenDict
@@ -161,42 +160,64 @@ class Field(Value):
 
 @public
 class Subquery(Value):
-    value: Value
+    rel: Relation
     shape = ds.columnar
+
+    def __init__(self, rel):
+        if len(rel.schema) != 1:
+            raise IntegrityError(
+                f"Subquery must have exactly one column, got {len(rel.schema)}"
+            )
+        super().__init__(rel=rel)
+
+    @attribute
+    def value(self):
+        name = self.rel.schema.names[0]
+        return self.rel.fields[name]
 
 
 @public
 class ScalarSubquery(Subquery):
-    value: Scalar
+    def __init__(self, rel):
+        super().__init__(rel=rel)
+        if not self.value.shape.is_scalar():
+            raise IntegrityError(
+                f"Subquery {self.value!r} is not scalar, it must be turned into a scalar subquery first"
+            )
 
-    dtype = rlz.dtype_like("value")
-
-
-@public
-class InSubquery(Subquery):
-    value: Value
-    options: Column[dt.Any]
-
-    dtype = dt.boolean
+    @attribute
+    def dtype(self):
+        return self.value.dtype
 
 
 @public
 class ExistsSubquery(Subquery):
-    parent: Relation
-    value: Value[dt.Boolean]
-
-    def __init__(self, parent, value):
-        if parent not in value.find_topmost(Relation):
-            # TODO(kszucs): cover it with a test
-            raise IntegrityError(
-                f"Subquery {value!r} doesn't depend on the relation {parent!r}"
-            )
-        super().__init__(parent=parent, value=value)
-
     dtype = dt.boolean
 
+    # def __init__(self, parent, value):
+    #     if parent not in value.find_topmost(Relation):
+    #         # TODO(kszucs): cover it with a test
+    #         raise IntegrityError(
+    #             f"Subquery {value!r} doesn't depend on the relation {parent!r}"
+    #         )
+    #     super().__init__(parent=parent, value=value)
 
-# InSubquery
+
+@public
+class InSubquery(Subquery):
+    rel: Relation
+    needle: Value
+    dtype = dt.boolean
+
+    # def __init__(self, rel, needle):
+    #     if needle.shape.is_scalar():
+    #         raise IntegrityError(
+    #             f"Subquery {needle!r} is scalar, it must be turned into a scalar subquery first"
+    #         )
+    #     super().__init__(rel=rel, needle=needle)
+
+
+# TODO: implement these
 # AnySubquery
 # AllSubquery
 
@@ -491,7 +512,7 @@ class SQLStringView(PhysicalTable):
 @public
 class DummyTable(Relation):
     # TODO(kszucs): verify that it has at least one element: Length(at_least=1)
-    values: VarTuple[Value[dt.Any, ds.Scalar]]
+    values: FrozenDict[str, Value]
 
     @attribute
     def fields(self):
@@ -499,7 +520,7 @@ class DummyTable(Relation):
 
     @attribute
     def schema(self):
-        return Schema({op.name: op.dtype for op in self.values})
+        return Schema({k: v.dtype for k, v in self.values.items()})
 
 
 @public

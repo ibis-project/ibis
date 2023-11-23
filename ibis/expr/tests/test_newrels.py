@@ -110,20 +110,18 @@ def test_select_windowizing_analytic_function():
 
 def test_select_turns_scalar_reduction_into_subquery():
     arr = ibis.literal([1, 2, 3])
-    res = arr.unnest().sum().name("unnested_sum")
+    res = arr.unnest().sum()
     t1 = t.select(res)
-    expected = Project(
-        parent=t, values={"unnested_sum": ops.ScalarSubquery(res.op().arg)}
-    )
+    subquery = ops.ScalarSubquery(res.as_table())
+    expected = Project(parent=t, values={"Sum((1, 2, 3))": subquery})
     assert t1.op() == expected
 
 
 def test_select_scalar_foreign_scalar_reduction_into_subquery():
     t1 = t.filter(t.bool_col)
     t2 = t.select(summary=t1.int_col.sum())
-    expected = Project(
-        parent=t, values={"summary": ops.ScalarSubquery(t1.int_col.sum())}
-    )
+    subquery = ops.ScalarSubquery(t1.int_col.sum().as_table())
+    expected = Project(parent=t, values={"summary": subquery})
     assert t2.op() == expected
 
 
@@ -132,10 +130,8 @@ def test_select_turns_value_with_multiple_parents_into_subquery():
     v_filt = v.filter(v.a == t.int_col)
 
     t1 = t.select(t.int_col, max=v_filt.a.max())
-    expected = Project(
-        parent=t,
-        values={"int_col": t.int_col, "max": ops.ScalarSubquery(v_filt.a.max())},
-    )
+    subquery = ops.ScalarSubquery(v_filt.a.max().as_table())
+    expected = Project(parent=t, values={"int_col": t.int_col, "max": subquery})
     assert t1.op() == expected
 
 
@@ -389,9 +385,8 @@ def test_where_with_reduction():
         Filter(t, predicates=[t.int_col.sum() > 1])
 
     t1 = t.filter(t.int_col.sum() > 0)
-    expected = Filter(
-        parent=t, predicates=[ops.Greater(ops.ScalarSubquery(t.int_col.sum()), 0)]
-    )
+    subquery = ops.ScalarSubquery(t.int_col.sum().as_table())
+    expected = Filter(parent=t, predicates=[ops.Greater(subquery, 0)])
     assert t1.op() == expected
 
 
@@ -709,7 +704,7 @@ def test_select_with_uncorrelated_scalar_subquery():
         parent=t1,
         values={
             "a": t1.a,
-            "summary": ops.ScalarSubquery(t2_filt.c.sum()),
+            "summary": ops.ScalarSubquery(t2_filt.c.sum().as_table()),
         },
     )
     assert sub.op() == expected
@@ -832,13 +827,8 @@ def test_sequelize():
         .filter(_.incremented < 5)
         .order_by(t.int_col + 1)
     )
-    print()
-    print("--------- Before Sequelize --------")
-    print(expr)
-    print()
-    print("--------- After Sequelize ---------")
     selection = expr.sequelize()
-    print(selection.to_expr())
+    assert isinstance(selection.to_expr(), ir.Expr)
 
 
 # def test_isin_subquery():

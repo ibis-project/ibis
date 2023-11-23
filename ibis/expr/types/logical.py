@@ -312,12 +312,15 @@ class BooleanColumn(NumericColumn, BooleanValue):
         """
         from ibis.common.deferred import Call, _, Deferred
 
+        parents = self.op().find_topmost(ops.Relation)
+
         def resolve_exists_subquery(outer):
             """An exists subquery whose outer leaf table is unknown."""
             (inner,) = (t for t in parents if t != outer.op())
-            return ops.ExistsSubquery(parent=inner, value=self).to_expr()
+            print(inner)
+            relation = ops.Project(ops.Filter(inner, [self]), {"1": 1})
+            return ops.ExistsSubquery(relation).to_expr()
 
-        parents = self.op().find_topmost(ops.Relation)
         if len(parents) == 2:
             return Deferred(Call(resolve_exists_subquery, _))
         elif len(parents) == 1:

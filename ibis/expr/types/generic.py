@@ -1170,21 +1170,24 @@ class Value(Expr):
         >>> expr.equals(expected)
         True
         """
-        from ibis.expr.analysis import find_immediate_parent_tables
+        parents = self.op().find_topmost(ops.Relation)
+        values = {self.get_name(): self}
 
-        roots = find_immediate_parent_tables(self.op())
-        if len(roots) > 1:
+        if len(parents) == 0:
+            return ops.DummyTable(values).to_expr()
+        elif len(parents) == 1:
+            (parent,) = parents
+            return parent.to_expr().select(self)
+        elif len(parents) > 1:
             raise com.RelationError(
-                f"Cannot convert {type(self)} expression "
-                "involving multiple base table references "
-                "to a projection"
+                f"Cannot convert {type(self)} expression involving multiple "
+                "base table references to a projection"
             )
-
-        if roots:
-            return roots[0].to_expr().select(self)
-
-        # no child table to select from
-        return ops.DummyTable(values=(self,)).to_expr()
+        else:
+            raise com.RelationError(
+                f"The column expression {self} cannot be converted to a "
+                "table expression"
+            )
 
     def to_pandas(self, **kwargs) -> pd.Series:
         """Convert a column expression to a pandas Series or scalar object.
@@ -1253,20 +1256,20 @@ class Scalar(Value):
         >>> isinstance(lit, ir.Table)
         True
         """
-        from ibis.expr.analysis import find_first_base_table
+        parents = self.op().find_topmost(ops.Relation)
+        values = {self.get_name(): self}
 
-        op = self.op()
-        table = find_first_base_table(op)
-        if table is not None:
-            return table.to_expr().aggregate(**{self.get_name(): self})
+        if len(parents) == 0:
+            return ops.DummyTable(values).to_expr()
+        elif len(parents) == 1:
+            (parent,) = parents
+            return parent.to_expr().aggregate(**values)
         else:
-            if isinstance(op, ops.Alias):
-                value = op
-                assert value.name == self.get_name()
-            else:
-                value = ops.Alias(op, self.get_name())
-
-            return ops.DummyTable(values=(value,)).to_expr()
+            raise com.RelationError(
+                f"The scalar expression {self} cannot be converted to a "
+                "table expression because it involves multiple base table "
+                "references"
+            )
 
     def __deferred_repr__(self):
         return f"<scalar[{self.type()}]>"

@@ -910,18 +910,27 @@ def test_asof_join_with_tolerance(ibis_interval, timedelta_interval):
     left = ibis.table([("time", "int32"), ("key", "int32"), ("value", "double")])
     right = ibis.table([("time", "int32"), ("key", "int32"), ("value2", "double")])
 
-    joined = api.asof_join(left, right, "time", tolerance=ibis_interval).op()
-    # TODO(kszucs): must be updated because tolerance is going to be encoded in
-    # predicates from now on
-    # tolerance = joined.table.tolerance
-    # assert_equal(tolerance, ibis_interval.op())
-
-    joined = api.asof_join(left, right, "time", tolerance=timedelta_interval).op()
-    # TODO(kszucs): must be updated because tolerance is going to be encoded in
-    # from now on
-    # tolerance = joined.table.tolerance
-    # assert isinstance(tolerance.to_expr(), ir.IntervalScalar)
-    # assert isinstance(tolerance, ops.Literal)
+    for interval in [ibis_interval, timedelta_interval]:
+        joined = api.asof_join(left, right, "time", tolerance=interval)
+        expected = ops.JoinChain(
+            first=left,
+            rest=[
+                ops.JoinLink(
+                    "asof",
+                    right,
+                    [left.time == right.time, (left.time - right.time) <= interval],
+                )
+            ],
+            fields={
+                "time": left.time,
+                "key": left.key,
+                "value": left.value,
+                "time_right": right.time,
+                "key_right": right.key,
+                "value2": right.value2,
+            },
+        )
+        assert joined.op() == expected
 
 
 def test_equijoin_schema_merge():
@@ -1097,7 +1106,7 @@ def test_cross_join_multiple(table):
             "h": c.h,
         },
     )
-    # TODO(kszucs): it must be simplified first using an appropiate rewrite rule
+    # TODO(kszucs): it must be simplified first using an appropriate rewrite rule
     assert not joined.equals(a.cross_join(b.cross_join(c)))
 
 
@@ -1324,14 +1333,14 @@ def test_unresolved_existence_predicate(t1, t2):
     expr = (t1.key1 == t2.key1).any()
     assert isinstance(expr, Deferred)
 
-    expected = ops.Filter(
-        parent=t1, predicates=[ops.ExistsSubquery(parent=t2, value=t1.key1 == t2.key1)]
-    )
+    filtered = t2.filter(t1.key1 == t2.key1).select(ibis.literal(1))
+    subquery = ops.ExistsSubquery(filtered)
+    expected = ops.Filter(parent=t1, predicates=[subquery])
     assert t1[expr].op() == expected
 
-    expected = ops.Filter(
-        parent=t2, predicates=[ops.ExistsSubquery(parent=t1, value=t1.key1 == t2.key1)]
-    )
+    filtered = t1.filter(t1.key1 == t2.key1).select(ibis.literal(1))
+    subquery = ops.ExistsSubquery(filtered)
+    expected = ops.Filter(parent=t2, predicates=[subquery])
     assert t2[expr].op() == expected
 
 
@@ -1685,7 +1694,7 @@ def test_join_lname_rname_still_collide():
     t2 = ibis.table({"id": "int64", "col1": "int64", "col2": "int64"})
     t3 = ibis.table({"id": "int64", "col1": "int64", "col2": "int64"})
 
-    with pytest.raises(com.IntegrityError) as rec:
+    with pytest.raises(com.IntegrityError):
         t1.left_join(t2, "id").left_join(t3, "id").finish()
 
     # assert "`['col1_right', 'col2_right', 'id_right']`" in str(rec.value)

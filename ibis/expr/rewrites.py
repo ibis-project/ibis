@@ -108,12 +108,12 @@ def project_wrap_reduction(_, rel):
         #    so this is a correlated scalar subquery.
         # 3. The reduction is originating entirely from other tables,
         #    so this is an uncorrelated scalar subquery.
-        return ops.ScalarSubquery(_)
+        return ops.ScalarSubquery(_.to_expr().as_table())
 
 
 @replace(ops.Reduction)
 def filter_wrap_reduction(_):
-    return ops.ScalarSubquery(_)
+    return ops.ScalarSubquery(_.to_expr().as_table())
 
 
 @replace(p.Project(y @ p.Relation) & Check(_.schema == y.schema))

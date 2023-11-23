@@ -320,6 +320,15 @@ def test_node_find_topmost_using_pattern():
     G = MyNode(name="G", children=[A, B])
     E = MyNode(name="E", children=[G, G, A])
 
-    result = E.find_topmost(If(_.name == "A"))
-    expected = [A, A, A]
+    result = E.find_topmost(Object(MyNode, name="G") | Object(MyNode, name="B"))
+    expected = [G, B]
+    assert result == expected
+
+
+def test_node_find_topmost_dont_traverse_the_same_node_twice():
+    G = MyNode(name="G", children=[A, B])
+    E = MyNode(name="E", children=[G, G, A])
+
+    result = E.find_topmost(If(_.name == "G"))
+    expected = [G]
     assert result == expected

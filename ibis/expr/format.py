@@ -192,7 +192,6 @@ def fmt(op, **kwargs):
 
 
 @fmt.register(ops.Relation)
-@fmt.register(ops.DummyTable)
 @fmt.register(ops.WindowingTVF)
 def _relation(op, **kwargs):
     schema = render_schema(op.schema, indent_level=1)
@@ -251,14 +250,23 @@ def _aggregate(op, parent, **kwargs):
 def _project(op, parent, values):
     name = f"{op.__class__.__name__}[{parent}]\n"
 
-    # special handling required to support both relation and value selections
     fields = {}
     for k, v in values.items():
         node = op.values[k]
         fields[f"{k}:"] = f"{v}{type_info(node.dtype)}"
 
-    # segments = filter(None, [render(rels), render(values)])
-    # kwargs["selections"] = "\n".join(segments)
+    return name + render_schema(fields, 1)
+
+
+@fmt.register(ops.DummyTable)
+def _dummy_table(op, values):
+    name = op.__class__.__name__ + "\n"
+
+    fields = {}
+    for k, v in values.items():
+        node = op.values[k]
+        fields[f"{k}:"] = f"{v}{type_info(node.dtype)}"
+
     return name + render_schema(fields, 1)
 
 
@@ -335,6 +343,8 @@ def _self_reference(op, parent, **kwargs):
 def _literal(op, value, **kwargs):
     if op.dtype.is_interval():
         return f"{value!r} {op.dtype.unit.short}"
+    elif op.dtype.is_array():
+        return f"{list(value)!r}"
     else:
         return f"{value!r}"
 
