@@ -3006,6 +3006,11 @@ class TableExpr(Expr, _FixedTextJupyterMixin):
         Table
             Table expression
         """
+        if by:
+            # perform a regular join on the by columns first, then perform the
+            # asof join on the result
+            left = left.join(right, by, lname=lname, rname=rname)
+
         if tolerance is not None:
             if not isinstance(predicates, str):
                 raise TypeError(

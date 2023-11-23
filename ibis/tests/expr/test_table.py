@@ -720,8 +720,11 @@ def test_group_by_having_api(table):
     metric = table.f.sum().name("foo")
     postp = table.d.mean() > 1
 
-    expr = table.group_by("g").having(postp).aggregate(metric)
-    expected = table.aggregate(metric, by="g", having=postp)
+    # TODO(kszucs): update table.aggregate() to automatically add the
+    # post-predicate to the list of metrics, also ensure that fields
+    # dereferencing is working properly
+    expr = table.group_by("g").having(postp).aggregate([metric, table.d.mean()])
+    expected = table.aggregate([metric, table.d.mean()], by="g", having=postp)
 
     assert_equal(expr, expected)
 
@@ -847,20 +850,42 @@ def test_asof_join():
     assert pred.left.name == pred.right.name == "time"
 
 
+# TODO(kszucs): ensure the correctness of the pd.merge_asof(by=...) argument emulation
 def test_asof_join_with_by():
     left = ibis.table([("time", "int32"), ("key", "int32"), ("value", "double")])
     right = ibis.table([("time", "int32"), ("key", "int32"), ("value2", "double")])
-    joined = api.asof_join(left, right, "time", by="key")
-    assert joined.columns == [
-        "time",
-        "key",
-        "value",
-        "time_right",
-        "key_right",
-        "value2",
-    ]
-    by = joined.op().table.by[0]
-    assert by.left.name == by.right.name == "key"
+
+    join_without_by = api.asof_join(left, right, "time")
+    assert join_without_by.op() == ops.JoinChain(
+        first=left,
+        rest=[ops.JoinLink("asof", right, [left.time == right.time])],
+        fields={
+            "time": left.time,
+            "key": left.key,
+            "value": left.value,
+            "time_right": right.time,
+            "key_right": right.key,
+            "value2": right.value2,
+        },
+    )
+
+    join_with_by = api.asof_join(left, right, "time", by="key")
+    assert join_with_by.op() == ops.JoinChain(
+        first=left,
+        rest=[
+            ops.JoinLink("inner", right, [left.key == right.key]),
+            ops.JoinLink("asof", right, [left.time == right.time]),
+        ],
+        fields={
+            "time": left.time,
+            "key": left.key,
+            "value": left.value,
+            "time_right": right.time,
+            "key_right": right.key,
+            "value2": right.value2,
+            "value2_right": right.value2,
+        },
+    )
 
 
 @pytest.mark.parametrize(
