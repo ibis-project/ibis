@@ -128,10 +128,10 @@ def unwrap_aliases(values):
     result = {}
     for value in values:
         node = value.op()
-        # if node.name in result:
-        #     raise com.IntegrityError(
-        #         f"Duplicate column name {node.name!r} in result set"
-        #     )
+        if node.name in result:
+            raise com.IntegrityError(
+                f"Duplicate column name {node.name!r} in result set"
+            )
         if isinstance(node, ops.Alias):
             result[node.name] = node.arg
         else:
@@ -1853,8 +1853,12 @@ class TableExpr(Expr, _FixedTextJupyterMixin):
         """
         # string and integer inputs are going to be coerced to literals instead
         # of interpreted as column references like in select
+        node = self.op()
+        fields = {k: ops.Field(node, k) for k in node.schema}
         values = bind(self, (exprs, mutations), prefer_column=False)
-        return self.select(self, *values)
+        values = unwrap_aliases(values)
+        values = {**fields, **values}
+        return self.select(**values)
 
     def select(
         self,
