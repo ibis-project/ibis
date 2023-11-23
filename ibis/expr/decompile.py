@@ -125,22 +125,40 @@ def _try_unwrap(stmt):
     if len(stmt) == 1:
         return stmt[0]
     else:
-        return f"[{', '.join(stmt)}]"
+        stmt = map(str, stmt)
+        values = ", ".join(stmt)
+        return f"[{values}]"
+
+
+def _wrap_alias(values, rendered):
+    result = []
+    for k, v in values.items():
+        text = rendered[k]
+        if v.name != k:
+            text = f"{text}.name({k!r})"
+        result.append(text)
+    return result
+
+
+def _inline(args):
+    return ", ".join(map(str, args))
 
 
 @translate.register(ops.Project)
 def project(op, parent, values):
     out = f"{parent}"
-    if values:
-        out = f"{out}.select({_try_unwrap(values)})"
-    return out
+    if not values:
+        return out
+
+    values = _wrap_alias(op.values, values)
+    return f"{out}.select({_inline(values)})"
 
 
 @translate.register(ops.Filter)
 def filter_(op, parent, predicates):
     out = f"{parent}"
     if predicates:
-        out = f"{out}.filter({_try_unwrap(predicates)})"
+        out = f"{out}.filter({_inline(predicates)})"
     return out
 
 
@@ -148,23 +166,25 @@ def filter_(op, parent, predicates):
 def sort(op, parent, keys):
     out = f"{parent}"
     if keys:
-        out = f"{out}.filter({_try_unwrap(keys)})"
+        out = f"{out}.order_by({_inline(keys)})"
     return out
 
 
 @translate.register(ops.Aggregate)
 def aggregation(op, parent, groups, metrics):
-    out = f"{parent}"
-    if groups:
-        out = f"{out}.filter({_try_unwrap(groups)})"
-    if metrics:
-        out = f"{out}.group_by({_try_unwrap(metrics)})"
-    return out
+    groups = _wrap_alias(op.groups, groups)
+    metrics = _wrap_alias(op.metrics, metrics)
+    if groups and metrics:
+        return f"{parent}.aggregate([{_inline(metrics)}], by=[{_inline(groups)}])"
+    elif metrics:
+        return f"{parent}.aggregate([{_inline(metrics)}])"
+    else:
+        raise ValueError("No metrics to aggregate")
 
 
 @translate.register(ops.JoinLink)
 def join_link(op, table, predicates, how):
-    return f".join_{how}({table}, {_try_unwrap(predicates)})"
+    return f".{how}_join({table}, {_try_unwrap(predicates)})"
 
 
 @translate.register(ops.JoinChain)
@@ -185,9 +205,9 @@ def union(op, left, right, distinct):
 @translate.register(ops.Limit)
 def limit(op, parent, n, offset):
     if offset:
-        return f"{table}.limit({n}, {offset})"
+        return f"{parent}.limit({n}, {offset})"
     else:
-        return f"{table}.limit({n})"
+        return f"{parent}.limit({n})"
 
 
 @translate.register(ops.Field)
@@ -309,8 +329,10 @@ class CodeContext:
         ops.Aggregate: "agg",
         ops.Literal: "lit",
         ops.ScalarParameter: "param",
-        ops.Project: "proj",
-        ops.Relation: "t",
+        ops.Project: "p",
+        ops.Relation: "r",
+        ops.Filter: "f",
+        ops.Sort: "s",
     }
 
     def __init__(self, assign_result_to="result"):
@@ -356,7 +378,7 @@ class CodeContext:
 
 @experimental
 def decompile(
-    node: ops.Node | ir.Expr,
+    expr: ir.Expr,
     render_import: bool = True,
     assign_result_to: str = "result",
     format: bool = False,
@@ -379,13 +401,10 @@ def decompile(
     str
         Equivalent Python source code for `node`.
     """
-    if isinstance(node, ir.Expr):
-        node = node.op()
-    elif not isinstance(node, ops.Node):
-        raise TypeError(
-            f"Expected ibis expression or operation, got {type(node).__name__}"
-        )
+    if not isinstance(expr, ir.Expr):
+        raise TypeError(f"Expected ibis expression, got {type(expr).__name__}")
 
+    node = expr.optimize().op()
     out = io.StringIO()
     ctx = CodeContext(assign_result_to=assign_result_to)
     dependents = Graph(node).invert()

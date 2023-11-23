@@ -355,6 +355,26 @@ class Expr(Immutable, Coercible):
             self, limit=limit, timecontext=timecontext, params=params
         )
 
+    def optimize(self, enable_reordering=True):
+        from ibis.expr.rewrites import (
+            complete_reprojection,
+            subsequent_filters,
+            subsequent_projects,
+            reorder_filter_project,
+        )
+
+        ruleset = subsequent_projects | subsequent_filters
+        if enable_reordering:
+            ruleset |= reorder_filter_project
+
+        node = self.op()
+        # apply the rewrites
+        node = node.replace(ruleset)
+        node = node.replace(complete_reprojection)
+
+        # return with a new expression wrapping the optimized node
+        return node.to_expr()
+
     @experimental
     def to_pyarrow_batches(
         self,

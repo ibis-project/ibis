@@ -126,18 +126,23 @@ def convert_join(join, catalog):
 
     left_name = join.name
     left_table = catalog[left_name]
+
     for right_name, desc in join.joins.items():
         right_table = catalog[right_name]
         join_kind = _join_types[desc["side"]]
 
-        predicate = None
-        for left_key, right_key in zip(desc["source_key"], desc["join_key"]):
-            left_key = convert(left_key, catalog=catalog)
-            right_key = convert(right_key, catalog=catalog)
-            if predicate is None:
-                predicate = left_key == right_key
-            else:
-                predicate &= left_key == right_key
+        if desc["join_key"]:
+            predicate = None
+            for left_key, right_key in zip(desc["source_key"], desc["join_key"]):
+                left_key = convert(left_key, catalog=catalog)
+                right_key = convert(right_key, catalog=catalog)
+                if predicate is None:
+                    predicate = left_key == right_key
+                else:
+                    predicate &= left_key == right_key
+        else:
+            condition = desc["condition"]
+            predicate = convert(condition, catalog=catalog)
 
         left_table = left_table.join(right_table, predicates=predicate, how=join_kind)
 
@@ -178,6 +183,11 @@ def convert_literal(literal, catalog):
     elif literal.is_number:
         value = float(value)
     return ibis.literal(value)
+
+
+@convert.register(sge.Boolean)
+def convert_boolean(boolean, catalog):
+    return ibis.literal(boolean.this)
 
 
 @convert.register(sge.Alias)
