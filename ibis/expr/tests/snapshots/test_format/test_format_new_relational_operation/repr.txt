@@ -24,7 +24,16 @@ r1 := MyRelation
   j date
   k time
 
-Selection[r1]
-  selections:
-    r1
-    a2: r1.a
+Project[r1]
+  a:  r1.a
+  b:  r1.b
+  c:  r1.c
+  d:  r1.d
+  e:  r1.e
+  f:  r1.f
+  g:  r1.g
+  h:  r1.h
+  i:  r1.i
+  j:  r1.j
+  k:  r1.k
+  a2: r1.a

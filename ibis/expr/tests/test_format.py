@@ -394,6 +394,10 @@ def test_format_new_relational_operation(alltypes, snapshot):
         def schema(self):
             return self.parent.schema
 
+        @property
+        def fields(self):
+            return {}
+
     table = MyRelation(alltypes, kind="foo").to_expr()
     expr = table[table, table.a.name("a2")]
     result = fmt(expr)
