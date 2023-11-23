@@ -1131,18 +1131,17 @@ def test_join_key_alternatives(con, key_maker):
     assert_equal(joined, expected)
 
 
-@pytest.mark.parametrize(
-    "key,error",
-    [
-        ([("foo_id", "foo_id", "foo_id")], com.ExpressionError),
-        ([(s.c("foo_id"), s.c("foo_id"))], ValueError),
-    ],
-)
-def test_join_key_invalid(con, key, error):
+def test_join_key_invalid(con):
     t1 = con.table("star1")
     t2 = con.table("star2")
-    with pytest.raises(error):
-        t1.inner_join(t2, key)
+
+    with pytest.raises(com.ExpressionError):
+        t1.inner_join(t2, [("foo_id", "foo_id", "foo_id")])
+
+    # it is working now
+    t1.inner_join(t2, [(s.c("foo_id"), s.c("foo_id"))])
+    # with pytest.raises(ValueError):
+    #     t1.inner_join(t2, [(s.c("foo_id"), s.c("foo_id"))])
 
 
 def test_join_invalid_refs(con):

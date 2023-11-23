@@ -87,6 +87,30 @@ def rewrite_sample(_):
     )
 
 
+@replace(ops.Analytic)
+def wrap_analytic(_, rel):
+    # Wrap analytic functions in a window function
+    return ops.WindowFunction(_, ops.RowsWindowFrame(rel))
+
+
+@replace(ops.Reduction)
+def wrap_reduction(_, rel):
+    # Query all the tables that the reduction depends on
+    parents = _.find_topmost(ops.Relation)
+    if parents == [rel]:
+        # The reduction is fully originating from the `rel`, so turn
+        # it into a window function of `rel`
+        return ops.WindowFunction(_, ops.RowsWindowFrame(rel))
+    else:
+        # 1. The reduction doesn't depend on any table, constructed from
+        #    scalar values, so turn it into a scalar subquery.
+        # 2. The reduction is originating from `rel` and other tables,
+        #    so this is a correlated scalar subquery.
+        # 3. The reduction is originating entirely from other tables,
+        #    so this is an uncorrelated scalar subquery.
+        return ops.ScalarSubquery(_)
+
+
 @replace(p.Project(y @ p.Relation) & Check(_.schema == y.schema))
 def complete_reprojection(_, y):
     # TODO(kszucs): this could be moved to the pattern itself but not sure how

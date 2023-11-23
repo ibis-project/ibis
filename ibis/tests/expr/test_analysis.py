@@ -208,39 +208,20 @@ def test_mutation_fusion_overwrite():
     result = result.mutate(col2=t["col"] + 2)
     result = result.mutate(col3=t["col"] + 3)
     result = result.mutate(col=t["col"] - 1)
-    result = result.mutate(col4=t["col"] + 4)
 
-    second_selection = result.op()
-    first_selection = second_selection.table
+    with pytest.raises(com.IntegrityError):
+        # unable to dereference the column since result doesn't contain it anymore
+        result.mutate(col4=t["col"] + 4)
 
-    assert len(first_selection.selections) == 4
-    col1 = (t["col"] + 1).name("col1").op()
-    assert first_selection.selections[1] == col1
-
-    col2 = (t["col"] + 2).name("col2").op()
-    assert first_selection.selections[2] == col2
-
-    col3 = (t["col"] + 3).name("col3").op()
-    assert first_selection.selections[3] == col3
-
-    # Since the second selection overwrites existing columns, it will
-    # not have the Table as the first selection
-    assert len(second_selection.selections) == 5
-
-    col = (t["col"] - 1).name("col").op()
-    assert second_selection.selections[0] == col
-
-    col1 = first_selection.to_expr()["col1"].op()
-    assert second_selection.selections[1] == col1
-
-    col2 = first_selection.to_expr()["col2"].op()
-    assert second_selection.selections[2] == col2
-
-    col3 = first_selection.to_expr()["col3"].op()
-    assert second_selection.selections[3] == col3
-
-    col4 = (t["col"] + 4).name("col4").op()
-    assert second_selection.selections[4] == col4
+    assert result.optimize().op() == ops.Project(
+        parent=t,
+        values={
+            "col": t["col"] - 1,
+            "col1": t["col"] + 1,
+            "col2": t["col"] + 2,
+            "col3": t["col"] + 3,
+        },
+    )
 
 
 # Pr 2635

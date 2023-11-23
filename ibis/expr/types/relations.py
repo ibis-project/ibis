@@ -169,26 +169,26 @@ def reduction_to_foreign(_):
     return ops.Field(ops.Foreign(agg), _.name)
 
 
-def detect_foreign_values(parent, values, from_reductions=True, from_fields=False):
-    # In Project values:
+# def detect_foreign_values(parent, values, from_reductions=True, from_fields=False):
+#     # In Project values:
 
-    # 1. have a subquery with only scalars, no need to identify fields as foreign fields since there are no fields
-    # 2. it contains reduction, that case is handled
-    # 3. a limited selection SELECT ... LIMIT 1
+#     # 1. have a subquery with only scalars, no need to identify fields as foreign fields since there are no fields
+#     # 2. it contains reduction, that case is handled
+#     # 3. a limited selection SELECT ... LIMIT 1
 
-    # In Filter values: all fields originating from other than the parent table are foreign fields
+#     # In Filter values: all fields originating from other than the parent table are foreign fields
 
-    # if from_reductions:
-    #     values = {
-    #         k: v.replace(reduction_to_foreign, filter=p.Value & ~p.WindowFunction)
-    #         for k, v in values.items()
-    #     }
+#     # if from_reductions:
+#     #     values = {
+#     #         k: v.replace(reduction_to_foreign, filter=p.Value & ~p.WindowFunction)
+#     #         for k, v in values.items()
+#     #     }
 
-    # if from_fields:
-    #     rule = p.Field(~Eq(parent)) >> d.Field(d.Foreign(_.rel), _.name)
-    #     values = {k: v.replace(rule, filter=ops.Value) for k, v in values.items()}
+#     # if from_fields:
+#     #     rule = p.Field(~Eq(parent)) >> d.Field(d.Foreign(_.rel), _.name)
+#     #     values = {k: v.replace(rule, filter=ops.Value) for k, v in values.items()}
 
-    return values
+#     return values
 
 
 ################################# DEREFERENCE LOGIC #################################
@@ -2032,6 +2032,7 @@ class TableExpr(Expr, _FixedTextJupyterMixin):
         │       43.92193 │      17.15117 │        200.915205 │ 4201.754386 │
         └────────────────┴───────────────┴───────────────────┴─────────────┘
         """
+        from ibis.expr.rewrites import wrap_analytic, wrap_reduction
 
         values = bind(self, (exprs, named_exprs))
         values = unwrap_aliases(values)
@@ -2043,47 +2044,6 @@ class TableExpr(Expr, _FixedTextJupyterMixin):
 
         # we need to detect reductions which are either turned into window functions
         # or scalar subqueries depending on whether they are originating from self
-
-        from ibis.common.patterns import replace
-
-        @replace(ops.Analytic)
-        def wrap_analytic(_, rel):
-            # Wrap analytic functions in a window function
-            return ops.WindowFunction(_, ops.RowsWindowFrame(rel))
-
-        @replace(ops.Reduction)
-        def wrap_reduction(_, rel):
-            print("FOUND REDUCTION")
-            # Query all the tables that the reduction depends on
-            parents = _.find_topmost(ops.Relation)
-            print(parents)
-
-            if parents == [rel]:
-                print("PIIIIII")
-                # The reduction is fully originating from the `rel`, so turn
-                # it into a window function of `rel`
-                return ops.WindowFunction(_, ops.RowsWindowFrame(rel))
-            else:
-                # 1. The reduction doesn't depend on any table, constructed from
-                #    scalar values, so turn it into a scalar subquery.
-                # 2. The reduction is originating from `rel` and other tables,
-                #    so this is a correlated scalar subquery.
-                # 3. The reduction is originating entirely from other tables,
-                #    so this is an uncorrelated scalar subquery.
-                return ops.ScalarSubquery(_)
-            # elif rel in parents:
-            #     print("EEEEE")
-            #     # The reduction is originating from `rel` and other tables, so
-            #     # turn it into a correlated subquery
-            #     # TODO(kszucs): have a specific CorrelatedSubquery node
-            #     return ops.Subquery(_, correlated=True)
-            # else:
-            #     print("FFFF")
-            #     # The reduction is originating entirely from other tables, so
-            #     # we cannot windowize nor turn it into a subquery, let the
-            #     # integrity checks of Project handle this case
-            #     return ops.Subquery(_, correlated=False)
-
         node = self.op()
         values = {
             k: v.replace(
@@ -2460,7 +2420,10 @@ class TableExpr(Expr, _FixedTextJupyterMixin):
         preds = bind(self, predicates)
         preds = unwrap_aliases(preds)
         preds = dereference_values(self.op(), preds)
-        preds = detect_foreign_values(self.op(), preds, from_fields=True)
+        # preds = detect_foreign_values(self.op(), preds, from_fields=True)
+        # TODO(kszucs): need to convert the values to subqueries similarly to
+        # the case of projections
+
         preds = flatten_predicates(list(preds.values()))
 
         # TODO(kszucs): add predicate flattening

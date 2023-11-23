@@ -19,7 +19,7 @@ from ibis.common.collections import FrozenDict
 from ibis.common.deferred import deferred
 from ibis.common.exceptions import IbisTypeError, IntegrityError, RelationError
 from ibis.common.grounds import Concrete
-from ibis.common.patterns import Between, In, InstanceOf, pattern
+from ibis.common.patterns import Between, InstanceOf, pattern
 from ibis.common.typing import Coercible, VarTuple
 from ibis.expr.operations.core import Alias, Column, Node, Scalar, Value
 from ibis.expr.operations.sortkeys import SortKey  # noqa: TCH001
@@ -137,22 +137,6 @@ class Relation(Node, Coercible):
         return TableExpr(self)
 
 
-# TODO(kszucs): consider to rename it to ForeignRelation
-# @public
-# class Foreign(Relation):
-#     """Marker class for foreign table references."""
-
-#     rel: Relation
-
-#     @property
-#     def fields(self):
-#         return self.rel.fields
-
-#     @property
-#     def schema(self):
-#         return self.rel.schema
-
-
 @public
 class Field(Value):
     rel: Relation
@@ -216,10 +200,6 @@ def _check_project_integrity(values, parent):
                         f"Cannot add {value!r} to projection, it is a non-scalar subquery"
                     )
                 # depends_on = root.find(Relation)
-                # # TODO(kszucs): have specific subqueries which do validate their
-                # # value
-                # # empty depends on mean that the subquery is not referencing any
-                # # relation
                 # if depends_on and parent not in depends_on:
                 #     raise IntegrityError(
                 #         f"Cannot add {value!r} to projection, it doesn't depend on the relation"
@@ -322,7 +302,6 @@ class Filter(Relation):
 
     def __init__(self, parent, predicates):
         # TODO(kszucs): use toolz.unique(predicates) to remove duplicates
-        # _check_integrity(predicates, {parent})
         _check_filter_integrity(predicates, {parent})
         super().__init__(parent=parent, predicates=predicates)
 
