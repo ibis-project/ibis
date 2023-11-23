@@ -384,6 +384,17 @@ def test_where_after_select():
     assert t2.op() == expected
 
 
+def test_where_with_reduction():
+    with pytest.raises(IntegrityError):
+        Filter(t, predicates=[t.int_col.sum() > 1])
+
+    t1 = t.filter(t.int_col.sum() > 0)
+    expected = Filter(
+        parent=t, predicates=[ops.Greater(ops.ScalarSubquery(t.int_col.sum()), 0)]
+    )
+    assert t1.op() == expected
+
+
 def test_project_filter_sort():
     expr = t.select(t.bool_col, t.int_col).filter(t.bool_col).order_by(t.int_col)
     expected = ops.Sort(

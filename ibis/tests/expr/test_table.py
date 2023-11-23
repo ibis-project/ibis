@@ -1375,10 +1375,23 @@ def test_group_by_keys(table):
 def test_having(table):
     m = table.mutate(foo=table.f * 2, bar=table.e / 2)
 
-    expr = m.group_by("foo").having(lambda x: x.foo.sum() > 10).size()
-    expected = m.group_by("foo").having(m.foo.sum() > 10).size()
+    # TODO(kszucs): the test didn't contain the `.agg()` call before, the
+    # table.aggregate() method should automatically add the post-predicate
+    # to the list of metrics
+    expr = (
+        m.group_by("foo")
+        .having(lambda x: x.foo.sum() > 10)
+        .agg([m.foo.sum(), m.count()])
+    )
+    agg = ops.Aggregate(
+        parent=m,
+        groups={"foo": m.foo},
+        metrics={"Sum(foo)": ops.Sum(m.foo), "CountStar()": ops.CountStar(m)},
+    )
+    assert expr.op().parent == agg
 
-    assert_equal(expr, expected)
+    having = ops.Filter(agg, [ops.Greater(ops.Field(agg, "Sum(foo)"), 10)])
+    assert expr.op() == having
 
 
 def test_filter(table):

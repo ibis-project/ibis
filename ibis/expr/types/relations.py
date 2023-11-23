@@ -2038,7 +2038,7 @@ class TableExpr(Expr, _FixedTextJupyterMixin):
         │       43.92193 │      17.15117 │        200.915205 │ 4201.754386 │
         └────────────────┴───────────────┴───────────────────┴─────────────┘
         """
-        from ibis.expr.rewrites import wrap_analytic, wrap_reduction
+        from ibis.expr.rewrites import project_wrap_analytic, project_wrap_reduction
 
         values = bind(self, (exprs, named_exprs))
         values = unwrap_aliases(values)
@@ -2053,7 +2053,7 @@ class TableExpr(Expr, _FixedTextJupyterMixin):
         node = self.op()
         values = {
             k: v.replace(
-                wrap_analytic | wrap_reduction,
+                project_wrap_analytic | project_wrap_reduction,
                 filter=p.Value & ~p.WindowFunction,
                 context={"rel": node},
             )
@@ -2422,6 +2422,7 @@ class TableExpr(Expr, _FixedTextJupyterMixin):
         └────────┴───────────┘
         """
         from ibis.expr.analysis import flatten_predicates
+        from ibis.expr.rewrites import filter_wrap_reduction
 
         preds = bind(self, predicates)
         preds = unwrap_aliases(preds)
@@ -2434,7 +2435,12 @@ class TableExpr(Expr, _FixedTextJupyterMixin):
 
         preds = flatten_predicates(list(preds.values()))
 
-        # TODO(kszucs): add predicate flattening
+        node = self.op()
+        preds = [
+            v.replace(filter_wrap_reduction, filter=p.Value & ~p.WindowFunction)
+            for v in preds
+        ]
+
         node = ops.Filter(self, preds)
         return node.to_expr()
 

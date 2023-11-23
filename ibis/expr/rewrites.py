@@ -88,15 +88,15 @@ def rewrite_sample(_):
 
 
 @replace(ops.Analytic)
-def wrap_analytic(_, rel):
+def project_wrap_analytic(_, rel):
     # Wrap analytic functions in a window function
     return ops.WindowFunction(_, ops.RowsWindowFrame(rel))
 
 
 @replace(ops.Reduction)
-def wrap_reduction(_, rel):
+def project_wrap_reduction(_, rel):
     # Query all the tables that the reduction depends on
-    parents = _.find_topmost(ops.Relation)
+    parents = _.find_topmost(ops.Relation)  # need to add Subquery here?
     if parents == [rel]:
         # The reduction is fully originating from the `rel`, so turn
         # it into a window function of `rel`
@@ -109,6 +109,11 @@ def wrap_reduction(_, rel):
         # 3. The reduction is originating entirely from other tables,
         #    so this is an uncorrelated scalar subquery.
         return ops.ScalarSubquery(_)
+
+
+@replace(ops.Reduction)
+def filter_wrap_reduction(_):
+    return ops.ScalarSubquery(_)
 
 
 @replace(p.Project(y @ p.Relation) & Check(_.schema == y.schema))

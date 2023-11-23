@@ -159,37 +159,36 @@ class Field(Value):
         return self.rel.schema[self.name]
 
 
-# OR call i ForeignField
-# TODO(kszucs): subquery should contain a parent: Relation field which the
-# value can be validated against
 @public
 class Subquery(Value):
-    pass
-    # value: Value
-    # correlated: bool
-    # def validate(self, outer_relation):
+    value: Value
+    shape = ds.columnar
 
 
 @public
 class ScalarSubquery(Subquery):
     value: Scalar
 
-    shape = rlz.shape_like("value")
+    # shape = rlz.shape_like("value")
     dtype = rlz.dtype_like("value")
 
 
 @public
-class ExistsSubquery(Value):
-    # rename it to parent
+class ExistsSubquery(Subquery):
     parent: Relation
     value: Value[dt.Boolean]
-    # predicates: VarTuple[Value[dt.Boolean]]
+
+    def __init__(self, parent, value):
+        if parent not in value.find_topmost(Relation):
+            # TODO(kszucs): cover it with a test
+            raise IntegrityError(
+                f"Subquery {value!r} doesn't depend on the relation {parent!r}"
+            )
+        super().__init__(parent=parent, value=value)
 
     dtype = dt.boolean
-    shape = ds.columnar
 
 
-# ExistsSubquery
 # InSubquery
 # AnySubquery
 # AllSubquery
@@ -227,16 +226,29 @@ def _check_project_integrity(values, parent):
                 raise TypeError(root)
 
 
-def _check_filter_integrity(values, allowed_parents):
+def _check_filter_integrity(values, allowed_parent):
     for value in values:
-        parents = set(value.find_topmost(Relation))
-        if not parents:
-            # only scalars are in the value
-            continue
-        if not parents.intersection(allowed_parents):
-            raise IntegrityError(
-                f"Cannot add {value!r} to filter, it doesn't depend on the relation"
-            )
+        # 1. no parents
+        # 2. multiple parents where one must be the allowed_parent
+        # 3. one parent which must be the allowed_parent or a subquery
+
+        # if there are no parents, it is a scalar value, so it is allowed
+        if parents := value.find_topmost((Relation, Subquery)):
+            if value.shape.is_scalar():
+                raise IntegrityError(
+                    f"Cannot add scalar shaped {value!r} to filter, it must be turned into a subquery first"
+                )
+            elif len(parents) > 1:
+                if allowed_parent not in parents:
+                    raise IntegrityError(
+                        f"Cannot add {value!r} to filter, it doesn't depend on the relation"
+                    )
+            else:
+                parent = parents[0]
+                if not isinstance(parent, Subquery) and parent != allowed_parent:
+                    raise IntegrityError(
+                        f"Cannot add {value!r} to filter, it doesn't depend on the relation"
+                    )
 
 
 @public
@@ -321,7 +333,7 @@ class Filter(Relation):
 
     def __init__(self, parent, predicates):
         # TODO(kszucs): use toolz.unique(predicates) to remove duplicates
-        _check_filter_integrity(predicates, {parent})
+        _check_filter_integrity(predicates, parent)
         super().__init__(parent=parent, predicates=predicates)
 
     @attribute
