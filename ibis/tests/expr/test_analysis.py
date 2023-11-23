@@ -9,34 +9,6 @@ import ibis.expr.operations as ops
 # Place to collect esoteric expression analysis bugs and tests
 
 
-# TODO(kszucs): not directly using an analysis function anymore, move to a
-# more appropriate test module
-def test_rewrite_join_projection_without_other_ops(con):
-    # See #790, predicate pushdown in joins not supported
-
-    # Star schema with fact table
-    table = con.table("star1")
-    table2 = con.table("star2")
-    table3 = con.table("star3")
-
-    filtered = table[table["f"] > 0]
-
-    pred1 = table["foo_id"] == table2["foo_id"]
-    pred2 = filtered["bar_id"] == table3["bar_id"]
-
-    j1 = filtered.left_join(table2, [pred1])
-    j2 = j1.inner_join(table3, [pred2])
-
-    # Project out the desired fields
-    view = j2[[filtered, table2["value1"], table3["value2"]]]
-
-    # Construct the thing we expect to obtain
-    ex_pred2 = table["bar_id"] == table3["bar_id"]
-    ex_expr = table.left_join(table2, [pred1]).inner_join(table3, [ex_pred2])
-
-    assert view.op().table != ex_expr.op()
-
-
 def test_multiple_join_deeper_reference():
     # Join predicates down the chain might reference one or more root
     # tables in the hierarchy.
@@ -245,14 +217,6 @@ def test_select_filter_mutate_fusion():
 
     t3_opt = t3.optimize()
     assert t3_opt.equals(proj)
-
-
-def test_mutate_overwrites_existing_column():
-    t = ibis.table(dict(a="string"))
-    mut = t.mutate(a=42).select(["a"])
-    sel = mut.op().selections[0].table.selections[0].arg
-    assert isinstance(sel, ops.Literal)
-    assert sel.value == 42
 
 
 def test_agg_selection_does_not_share_roots():

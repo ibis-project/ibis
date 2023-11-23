@@ -4455,6 +4455,11 @@ class JoinExpr(TableExpr):
         ]
         preds = flatten_predicates(preds)
 
+        # TODO(kszucs): clean this up
+        preds = dict(enumerate(preds))
+        preds = dereference_values(self.tables(), preds)
+        preds = list(preds.values())
+
         # TODO(kszucs): factor this out into a separate function, e.g. defereference_values_from()
         # and defereference_values() could be renamed to dereference_values_to()
         # we need to replace fields referencing the current state of the join chain

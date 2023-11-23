@@ -154,6 +154,16 @@ def test_mutate():
     assert proj.op() == expected
 
 
+def test_mutate_overwrites_existing_column():
+    t = ibis.table(dict(a="string", b="string"))
+
+    mut = t.mutate(a=42)
+    assert mut.op() == Project(parent=t, values={"a": ibis.literal(42), "b": t.b})
+
+    sel = mut.select("a")
+    assert sel.op() == Project(parent=mut, values={"a": mut.a})
+
+
 def test_select_full_reprojection():
     t1 = t.select(t)
     assert t1.op() == Project(
@@ -566,6 +576,76 @@ def test_chained_join_referencing_intermediate_table():
         rest=[JoinLink("inner", b, [a.a == b.c]), JoinLink("inner", c, [a.a == c.e])],
         fields={"a": a.a, "b": a.b, "c": b.c, "d": b.d, "e": c.e, "f": c.f},
     )
+
+
+def test_join_predicate_dereferencing():
+    # See #790, predicate pushdown in joins not supported
+
+    # Star schema with fact table
+    table = ibis.table({"c": int, "f": float, "foo_id": str, "bar_id": str})
+    table2 = ibis.table({"foo_id": str, "value1": float, "value3": float})
+    table3 = ibis.table({"bar_id": str, "value2": float})
+
+    filtered = table[table["f"] > 0]
+
+    # dereference table.foo_id to filtered.foo_id
+    j1 = filtered.left_join(table2, table["foo_id"] == table2["foo_id"])
+    expected = ops.JoinChain(
+        first=filtered,
+        rest=[
+            ops.JoinLink("left", table2, [filtered.foo_id == table2.foo_id]),
+        ],
+        fields={
+            "c": filtered.c,
+            "f": filtered.f,
+            "foo_id": filtered.foo_id,
+            "bar_id": filtered.bar_id,
+            "foo_id_right": table2.foo_id,
+            "value1": table2.value1,
+            "value3": table2.value3,
+        },
+    )
+    assert j1.op() == expected
+
+    j2 = j1.inner_join(table3, filtered["bar_id"] == table3["bar_id"])
+    expected = ops.JoinChain(
+        first=filtered,
+        rest=[
+            ops.JoinLink("left", table2, [filtered.foo_id == table2.foo_id]),
+            ops.JoinLink("inner", table3, [filtered.bar_id == table3.bar_id]),
+        ],
+        fields={
+            "c": filtered.c,
+            "f": filtered.f,
+            "foo_id": filtered.foo_id,
+            "bar_id": filtered.bar_id,
+            "foo_id_right": table2.foo_id,
+            "value1": table2.value1,
+            "value3": table2.value3,
+            "bar_id_right": table3.bar_id,
+            "value2": table3.value2,
+        },
+    )
+    assert j2.op() == expected
+
+    # Project out the desired fields
+    view = j2[[filtered, table2["value1"], table3["value2"]]]
+    expected = ops.JoinChain(
+        first=filtered,
+        rest=[
+            ops.JoinLink("left", table2, [filtered.foo_id == table2.foo_id]),
+            ops.JoinLink("inner", table3, [filtered.bar_id == table3.bar_id]),
+        ],
+        fields={
+            "c": filtered.c,
+            "f": filtered.f,
+            "foo_id": filtered.foo_id,
+            "bar_id": filtered.bar_id,
+            "value1": table2.value1,
+            "value2": table3.value2,
+        },
+    )
+    assert view.op() == expected
 
 
 def test_aggregate():
