@@ -93,8 +93,8 @@ def _regular_join_method(
 
 # TODO(kszucs): cover it with tests
 # TODO(kszucs): should use (table, *args, **kwargs) instead to avoid intepreting nested inputs
-def bind(table: TableExpr, value: Any) -> ir.Value:
-    if isinstance(value, (str, int)):
+def bind(table: TableExpr, value: Any, prefer_column=True) -> ir.Value:
+    if prefer_column and isinstance(value, (str, int)):
         yield table.column(value)
     elif isinstance(value, ValueExpr):
         yield value
@@ -107,10 +107,10 @@ def bind(table: TableExpr, value: Any) -> ir.Value:
         yield from value.expand(table)
     elif isinstance(value, (tuple, list)):
         for v in value:
-            yield from bind(table, v)
+            yield from bind(table, v, prefer_column=prefer_column)
     elif isinstance(value, dict):
         for k, v in value.items():
-            for val in bind(table, v):
+            for val in bind(table, v, prefer_column=prefer_column):
                 yield val.name(k)
     elif isinstance(value, ops.Value):
         # TODO(kszucs): from certain builders, like ir.GroupedTable we pass
@@ -1761,9 +1761,7 @@ class TableExpr(Expr, _FixedTextJupyterMixin):
 
         return ops.TableArrayView(self).to_expr()
 
-    def mutate(
-        self, exprs: Sequence[ir.Expr] | None = (), **mutations: ir.Value
-    ) -> Table:
+    def mutate(self, *exprs: Sequence[ir.Expr] | None, **mutations: ir.Value) -> Table:
         """Add columns to a table expression.
 
         Parameters
@@ -1853,7 +1851,10 @@ class TableExpr(Expr, _FixedTextJupyterMixin):
         │ Adelie  │  2007 │       -7.22193 │
         └─────────┴───────┴────────────────┘
         """
-        return self.select(self, exprs, **mutations)
+        # string and integer inputs are going to be coerced to literals instead
+        # of interpreted as column references like in select
+        values = bind(self, (exprs, mutations), prefer_column=False)
+        return self.select(self, *values)
 
     def select(
         self,
