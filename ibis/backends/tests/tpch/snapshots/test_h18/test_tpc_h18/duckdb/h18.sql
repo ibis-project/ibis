@@ -5,12 +5,12 @@ FROM (
     *
   FROM (
     SELECT
-      t8.c_name AS c_name,
-      t8.c_custkey AS c_custkey,
-      t8.o_orderkey AS o_orderkey,
-      t8.o_orderdate AS o_orderdate,
-      t8.o_totalprice AS o_totalprice,
-      SUM(t8.l_quantity) AS sum_qty
+      t9.c_name AS c_name,
+      t9.c_custkey AS c_custkey,
+      t9.o_orderkey AS o_orderkey,
+      t9.o_orderdate AS o_orderdate,
+      t9.o_totalprice AS o_totalprice,
+      SUM(t9.l_quantity) AS sum_qty
     FROM (
       SELECT
         *
@@ -60,9 +60,9 @@ FROM (
           )
       ) AS t6
       WHERE
-        t6.o_orderkey IN (
+        t6.o_orderkey IN ((
           SELECT
-            t7.l_orderkey
+            t7.l_orderkey AS l_orderkey
           FROM (
             SELECT
               *
@@ -79,17 +79,17 @@ FROM (
                 t5.qty_sum > CAST(300 AS SMALLINT)
               )
           ) AS t7
-        )
-    ) AS t8
+        ))
+    ) AS t9
     GROUP BY
       1,
       2,
       3,
       4,
       5
-  ) AS t9
+  ) AS t10
   ORDER BY
-    t9.o_totalprice DESC,
-    t9.o_orderdate ASC
-) AS t10
+    t10.o_totalprice DESC,
+    t10.o_orderdate ASC
+) AS t11
 LIMIT 100

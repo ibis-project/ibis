@@ -2,10 +2,10 @@ SELECT
   *
 FROM (
   SELECT
-    t6.p_brand AS p_brand,
-    t6.p_type AS p_type,
-    t6.p_size AS p_size,
-    COUNT(DISTINCT t6.ps_suppkey) AS supplier_cnt
+    t7.p_brand AS p_brand,
+    t7.p_type AS p_type,
+    t7.p_size AS p_size,
+    COUNT(DISTINCT t7.ps_suppkey) AS supplier_cnt
   FROM (
     SELECT
       *
@@ -37,9 +37,9 @@ FROM (
       )
       AND NOT t5.p_type LIKE 'MEDIUM POLISHED%'
       AND t5.p_size IN (CAST(49 AS TINYINT), CAST(14 AS TINYINT), CAST(23 AS TINYINT), CAST(45 AS TINYINT), CAST(19 AS TINYINT), CAST(3 AS TINYINT), CAST(36 AS TINYINT), CAST(9 AS TINYINT))
-      AND NOT t5.ps_suppkey IN (
+      AND NOT t5.ps_suppkey IN ((
         SELECT
-          t4.s_suppkey
+          t4.s_suppkey AS s_suppkey
         FROM (
           SELECT
             *
@@ -47,15 +47,15 @@ FROM (
           WHERE
             t2.s_comment LIKE '%Customer%Complaints%'
         ) AS t4
-      )
-  ) AS t6
+      ))
+  ) AS t7
   GROUP BY
     1,
     2,
     3
-) AS t7
+) AS t8
 ORDER BY
-  t7.supplier_cnt DESC,
-  t7.p_brand ASC,
-  t7.p_type ASC,
-  t7.p_size ASC
+  t8.supplier_cnt DESC,
+  t8.p_brand ASC,
+  t8.p_type ASC,
+  t8.p_size ASC
