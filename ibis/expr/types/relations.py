@@ -2386,7 +2386,7 @@ class TableExpr(Expr, _FixedTextJupyterMixin):
         └────────┴───────────┘
         """
         from ibis.expr.analysis import flatten_predicates
-        from ibis.expr.rewrites import filter_wrap_reduction, p
+        from ibis.expr.rewrites import filter_wrap_reduction_value, p
 
         preds = bind(self, predicates)
         preds = unwrap_aliases(preds)
@@ -2397,7 +2397,7 @@ class TableExpr(Expr, _FixedTextJupyterMixin):
 
         node = self.op()
         preds = [
-            v.replace(filter_wrap_reduction, filter=p.Value & ~p.WindowFunction)
+            v.replace(filter_wrap_reduction_value, filter=p.Value & ~p.WindowFunction)
             for v in preds
         ]
 

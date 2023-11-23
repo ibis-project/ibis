@@ -114,9 +114,27 @@ def project_wrap_reduction(_, rel):
         return ops.ScalarSubquery(_.to_expr().as_table())
 
 
-@replace(ops.Reduction)
-def filter_wrap_reduction(_):
-    return ops.ScalarSubquery(_.to_expr().as_table())
+ReductionValue = p.Reduction | p.Field(p.Aggregate(groups={}))
+
+
+@replace(ReductionValue)
+def filter_wrap_reduction_value(_):
+    if isinstance(_, ops.Field):
+        value = _.rel.fields[_.name]
+    else:
+        value = _
+    return ops.ScalarSubquery(value.to_expr().as_table())
+
+
+# @replace(ops.Reduction)
+# def filter_wrap_reduction(_):
+#     return ops.ScalarSubquery(_.to_expr().as_table())
+
+
+# @replace(p.Field(p.Aggregate(groups={})))
+# def filter_wrap_aggregate_field(_):
+#     expr = _.rel.fields[_.name].to_expr().as_table()
+#     return ops.ScalarSubquery(expr)
 
 
 @replace(p.Project(y @ p.Relation) & Check(_.schema == y.schema))

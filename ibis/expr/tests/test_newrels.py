@@ -728,30 +728,25 @@ def test_select_with_reduction_turns_into_window_function():
     assert expr.op() == expected
 
 
-# FIXME(kszucs): filter() must be smarter to detect the other relation
-# def test_select_with_correlated_scalar_subquery():
-#     # Define your tables
-#     t1 = ibis.table(name="t1", schema={"a": "int64", "b": "string"})
-#     t2 = ibis.table(name="t2", schema={"c": "int64", "d": "string"})
+def test_select_with_correlated_scalar_subquery():
+    # Define your tables
+    t1 = ibis.table(name="t1", schema={"a": "int64", "b": "string"})
+    t2 = ibis.table(name="t2", schema={"c": "int64", "d": "string"})
 
-#     # Create a subquery
-#     filt = t2.filter(t2.d == t1.b)
-#     summary = filt.c.sum().name("summary")
+    # Create a subquery
+    filt = t2.filter(t2.d == t1.b)
+    summary = filt.c.sum().name("summary")
 
-#     # Use the subquery in a select operation
-#     expr = t1.select(t1.a, summary)
-#     assert expr.op() == Project(
-#         parent=t1,
-#         values={
-#             "a": t1.a,
-#             "summary": ops.Sum(
-#                 ForeignField(
-#                     rel=filt,
-#                     name="c",
-#                 )
-#             ),
-#         },
-#     )
+    # Use the subquery in a select operation
+    expr = t1.select(t1.a, summary)
+    expected = Project(
+        parent=t1,
+        values={
+            "a": t1.a,
+            "summary": ops.ScalarSubquery(filt.c.sum().as_table()),
+        },
+    )
+    assert expr.op() == expected
 
 
 def test_aggregate_field_dereferencing():
@@ -844,37 +839,21 @@ def test_sequelize():
 #     # Use the subquery in an IN condition
 #     expr = t1.filter(t1.a.isin(t2_filt.c))
 
-#     print(expr)
 
+def test_filter_condition_referencing_agg_without_groupby_turns_it_into_a_subquery():
+    # Define your tables and expressions
+    r1 = ibis.table(
+        name="r3", schema={"name": str, "key": str, "int_col": int, "float_col": float}
+    )
+    r2 = r1.filter(r1.name == "GERMANY")
+    r3 = r2.aggregate(by=[r2.key], value=(r2.float_col * r2.int_col).sum())
+    r4 = r2.aggregate(total=(r2.float_col * r2.int_col).sum())
+    r5 = r3.filter(r3.value > r4.total * 0.0001)
 
-# t1 = ibis.ibis.table(name="a", schema={"a": "int64", "b": "string"})
-# t2 = ibis.ibis.table(name="b", schema={"c": "int64", "d": "string"})
-# t3 = ibis.ibis.table(name="c", schema={"e": "int64", "f": "string"})
+    total = (r2.float_col * r2.int_col).sum()
+    subquery = ops.ScalarSubquery(
+        ops.Aggregate(r2, groups={}, metrics={total.get_name(): total})
+    ).to_expr()
+    expected = Filter(parent=r3, predicates=[r3.value > subquery * 0.0001])
 
-# t1.select(t1.a, t2.c.sum())  # OK
-# t1.select(t1.a, (t2.c == t3.e).sum())  # ???
-
-
-# SELECT name, salary
-# FROM employees
-# WHERE salary > (SELECT AVG(salary) FROM employees);
-
-
-# Filter(
-#     parent=Project(
-#         parent=employees, values={"name": employees.name, "salary": employees.salary}
-#     ),
-#     predicates=[
-#         Greater(
-#             employees.salary,
-#             Field(
-#                 Aggregate(
-#                     parent=employees,
-#                     groups={},
-#                     metrics={"AVG(salary)": employees.salary.mean()},
-#                 ),
-#                 name="AVG(salary)",
-#             )
-#         )
-#     ],
-# )
+    assert r5.op() == expected

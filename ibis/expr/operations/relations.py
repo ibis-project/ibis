@@ -128,6 +128,26 @@ class Relation(Node, Coercible):
 
         return TableExpr(self)
 
+    # cardinality property marking if the relation has a single row like SELECT COUNT(*)
+
+
+# leaf relation nodes
+class Table(Relation):
+    pass
+
+
+# just to reduce boilerplate
+class SimpleRelation(Relation):
+    parent: Relation
+
+    @attribute
+    def fields(self):
+        return FrozenDict({k: Field(self.parent, k) for k in self.parent.schema})
+
+    @attribute
+    def schema(self):
+        return self.parent.schema
+
 
 @public
 class Field(Value):
@@ -172,8 +192,10 @@ class Subquery(Value):
 @public
 class ScalarSubquery(Subquery):
     def __init__(self, rel):
+        from ibis.expr.rewrites import ReductionValue
+
         super().__init__(rel=rel)
-        if not self.value.shape.is_scalar():
+        if not self.value.find(ReductionValue, filter=Value):
             raise IntegrityError(
                 f"Subquery {self.value!r} is not scalar, it must be turned into a scalar subquery first"
             )
@@ -235,28 +257,18 @@ def _check_project_integrity(values, parent):
 
 
 def _check_filter_integrity(values, allowed_parent):
-    for value in values:
-        # 1. no parents
-        # 2. multiple parents where one must be the allowed_parent
-        # 3. one parent which must be the allowed_parent or a subquery
+    from ibis.expr.rewrites import ReductionValue
 
-        # if there are no parents, it is a scalar value, so it is allowed
-        if parents := value.find_topmost((Relation, Subquery)):
-            if value.shape.is_scalar():
-                raise IntegrityError(
-                    f"Cannot add scalar shaped {value!r} to filter, it must be turned into a subquery first"
-                )
-            elif len(parents) > 1:
-                if allowed_parent not in parents:
-                    raise IntegrityError(
-                        f"Cannot add {value!r} to filter, it doesn't depend on the relation"
-                    )
-            else:
-                parent = parents[0]
-                if not isinstance(parent, Subquery) and parent != allowed_parent:
-                    raise IntegrityError(
-                        f"Cannot add {value!r} to filter, it doesn't depend on the relation"
-                    )
+    for value in values:
+        if value.find(ReductionValue, filter=Value):
+            raise IntegrityError(f"Cannot add {value!r} to filter, it is a reduction")
+
+        depends_on = value.find_topmost((Relation, Subquery))
+        all_subqueries = all(isinstance(v, Subquery) for v in depends_on)
+        if allowed_parent not in depends_on and not all_subqueries:
+            raise IntegrityError(
+                f"Cannot add {value!r} to filter, it doesn't depend on the relation"
+            )
 
 
 @public
@@ -310,26 +322,16 @@ class JoinChain(Relation):
 
 
 @public
-class Sort(Relation):
-    parent: Relation
+class Sort(SimpleRelation):
     keys: VarTuple[SortKey]
 
     def __init__(self, parent, keys):
         _check_integrity(keys, {parent})
         super().__init__(parent=parent, keys=keys)
 
-    @attribute
-    def fields(self):
-        return FrozenDict({k: Field(self.parent, k) for k in self.parent.schema})
-
-    @attribute
-    def schema(self):
-        return self.parent.schema
-
 
 @public
-class Filter(Relation):
-    parent: Relation
+class Filter(SimpleRelation):
     predicates: VarTuple[Value[dt.Boolean]]
 
     def __init__(self, parent, predicates):
@@ -337,28 +339,11 @@ class Filter(Relation):
         _check_filter_integrity(predicates, parent)
         super().__init__(parent=parent, predicates=predicates)
 
-    @attribute
-    def fields(self):
-        return FrozenDict({k: Field(self.parent, k) for k in self.parent.schema})
-
-    @attribute
-    def schema(self):
-        return self.parent.schema
-
 
 @public
-class Limit(Relation):
-    parent: Relation
+class Limit(SimpleRelation):
     n: typing.Union[int, Scalar[dt.Integer], None] = None
     offset: typing.Union[int, Scalar[dt.Integer]] = 0
-
-    @attribute
-    def fields(self):
-        return FrozenDict({k: Field(self.parent, k) for k in self.parent.schema})
-
-    @attribute
-    def schema(self):
-        return self.parent.schema
 
 
 @public
@@ -387,6 +372,7 @@ class Aggregate(Relation):
 
 @public
 class Set(Relation):
+    # turn it into a variadic relation
     left: Relation
     right: Relation
     distinct: bool = False
@@ -496,77 +482,40 @@ class DummyTable(Relation):
 
 
 @public
-class SelfReference(Relation):
-    parent: Relation
-
+class SelfReference(SimpleRelation):
     @attribute
     def name(self) -> str:
         if (name := getattr(self.parent, "name", None)) is not None:
             return f"{name}_ref"
         return gen_name("self_ref")
 
-    @attribute
-    def fields(self):
-        return {}
-
-    @attribute
-    def schema(self):
-        return self.parent.schema
-
 
 @public
-class FillNa(Relation):
+class FillNa(SimpleRelation):
     """Fill null values in the table."""
 
-    parent: Relation
     replacements: typing.Union[Value[dt.Numeric | dt.String], FrozenDict[str, Any]]
-
-    @attribute
-    def fields(self):
-        return FrozenDict({k: Field(self.parent, k) for k in self.parent.schema})
-
-    @attribute
-    def schema(self):
-        return self.parent.schema
 
 
 @public
-class DropNa(Relation):
+class DropNa(SimpleRelation):
     """Drop null values in the table."""
 
-    parent: Relation
     how: typing.Literal["any", "all"]
     subset: Optional[VarTuple[Column[dt.Any]]] = None
 
-    @attribute
-    def fields(self):
-        return FrozenDict({k: Field(self.parent, k) for k in self.parent.schema})
-
-    @attribute
-    def schema(self):
-        return self.parent.schema
-
 
 @public
-class Sample(Relation):
+class Sample(SimpleRelation):
     """Sample performs random sampling of records in a table."""
 
-    parent: Relation
     fraction: Annotated[float, Between(0, 1)]
     method: typing.Literal["row", "block"]
     seed: typing.Union[int, None] = None
 
-    @attribute
-    def fields(self):
-        return FrozenDict({k: Field(self.parent, k) for k in self.parent.schema})
-
-    @attribute
-    def schema(self):
-        return self.parent.schema
-
 
 @public
-class Distinct(Relation):
+class Distinct(SimpleRelation):
     """Distinct is a table-level unique-ing operation.
 
     In SQL, you might have:
@@ -577,16 +526,6 @@ class Distinct(Relation):
     SELECT DISTINCT foo, bar
     FROM table
     """
-
-    parent: Relation
-
-    @attribute
-    def fields(self):
-        return FrozenDict({k: Field(self.parent, k) for k in self.parent.schema})
-
-    @attribute
-    def schema(self):
-        return self.parent.schema
 
 
 @public
@@ -612,3 +551,6 @@ class Selection(Relation):
     @attribute
     def schema(self):
         return Schema({k: v.dtype for k, v in self.selections.items()})
+
+
+# add test case a scalar subquery from an aggregation without
