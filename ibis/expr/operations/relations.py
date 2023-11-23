@@ -1,8 +1,5 @@
 from __future__ import annotations
 
-# need a parallel Expression and Operation class hierarchy to decompose ops.Selection
-# into proper relational algebra operations
-################################ OPERATIONS ################################
 import itertools
 import typing
 from abc import abstractmethod
@@ -32,8 +29,6 @@ if TYPE_CHECKING:
 
 p = Namespace(pattern, module=__name__)
 d = Namespace(deferred, module=__name__)
-
-################################## InMemoryTable ##################################
 
 
 class TableProxy(Immutable):
@@ -97,9 +92,6 @@ class PandasDataFrameProxy(TableProxy):
         from ibis.formats.pyarrow import PyArrowSchema
 
         return pa.Table.from_pandas(self._data, schema=PyArrowSchema.from_ibis(schema))
-
-
-############################################################################
 
 
 @public

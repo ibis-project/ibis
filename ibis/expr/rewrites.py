@@ -19,6 +19,7 @@ y = var("y")
 name = var("name")
 
 
+# TODO(kszucs): must be updated
 @replace(p.FillNa)
 def rewrite_fillna(_):
     """Rewrite FillNa expressions to use more common operations."""
@@ -44,6 +45,7 @@ def rewrite_fillna(_):
     return ops.Selection(_.table, selections, (), ())
 
 
+# TODO(kszucs): must be updated
 @replace(p.DropNa)
 def rewrite_dropna(_):
     """Rewrite DropNa expressions to use more common operations."""
@@ -67,6 +69,7 @@ def rewrite_dropna(_):
     return ops.Selection(_.table, (), preds, ())
 
 
+# TODO(kszucs): must be updated
 @replace(p.Sample)
 def rewrite_sample(_):
     """Rewrite Sample as `t.filter(random() <= fraction)`.
