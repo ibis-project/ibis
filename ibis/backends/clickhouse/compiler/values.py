@@ -816,6 +816,8 @@ _simple_ops = {
     ops.ExtractPath: "path",
     ops.ExtractFragment: "fragment",
     ops.ArrayPosition: "indexOf",
+    ops.ArrayFlatten: "arrayFlatten",
+    ops.IntegerRange: "range",
 }
 
 

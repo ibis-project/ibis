@@ -83,22 +83,21 @@ def bq_param_array(dtype: dt.Array, value, name):
     value_type = dtype.value_type
 
     try:
-        bigquery_type = BigQueryType.from_ibis(value_type)
+        bigquery_type = BigQueryType.to_string(value_type)
     except NotImplementedError:
         raise com.UnsupportedBackendType(dtype)
     else:
-        if isinstance(value_type, dt.Struct):
+        if isinstance(value_type, dt.Array):
+            raise TypeError("ARRAY<ARRAY<T>> is not supported in BigQuery")
+        elif isinstance(value_type, dt.Struct):
             query_value = [
                 bigquery_param(dtype.value_type, struct, f"element_{i:d}")
                 for i, struct in enumerate(value)
             ]
             bigquery_type = "STRUCT"
-        elif isinstance(value_type, dt.Array):
-            raise TypeError("ARRAY<ARRAY<T>> is not supported in BigQuery")
         else:
             query_value = value
-        result = bq.ArrayQueryParameter(name, bigquery_type, query_value)
-        return result
+        return bq.ArrayQueryParameter(name, bigquery_type, query_value)
 
 
 @bigquery_param.register

@@ -257,13 +257,15 @@ class SqlglotType(TypeMapper):
     @classmethod
     def _from_ibis_Array(cls, dtype: dt.Array) -> sge.DataType:
         value_type = cls.from_ibis(dtype.value_type)
-        return sge.DataType(this=typecode.ARRAY, expressions=[value_type])
+        return sge.DataType(this=typecode.ARRAY, expressions=[value_type], nested=True)
 
     @classmethod
     def _from_ibis_Map(cls, dtype: dt.Map) -> sge.DataType:
         key_type = cls.from_ibis(dtype.key_type)
         value_type = cls.from_ibis(dtype.value_type)
-        return sge.DataType(this=typecode.MAP, expressions=[key_type, value_type])
+        return sge.DataType(
+            this=typecode.MAP, expressions=[key_type, value_type], nested=True
+        )
 
     @classmethod
     def _from_ibis_Struct(cls, dtype: dt.Struct) -> sge.DataType:
@@ -271,7 +273,7 @@ class SqlglotType(TypeMapper):
             sge.ColumnDef(this=str(name), kind=cls.from_ibis(field))
             for name, field in dtype.items()
         ]
-        return sge.DataType(this=typecode.STRUCT, expressions=fields)
+        return sge.DataType(this=typecode.STRUCT, expressions=fields, nested=True)
 
     @classmethod
     def _from_ibis_Decimal(cls, dtype: dt.Decimal) -> sge.DataType:

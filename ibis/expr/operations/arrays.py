@@ -186,3 +186,34 @@ class ArrayZip(Value):
                 }
             )
         )
+
+
+@public
+class ArrayFlatten(Value):
+    """Flatten a nested array one level.
+
+    The input expression must have at least one level of nesting for flattening
+    to make sense.
+    """
+
+    arg: Value[dt.Array[dt.Array]]
+    shape = rlz.shape_like("arg")
+
+    @property
+    def dtype(self):
+        return self.arg.dtype.value_type
+
+
+class Range(Value):
+    shape = rlz.shape_like("args")
+
+    @attribute
+    def dtype(self) -> dt.DataType:
+        return dt.Array(dt.highest_precedence((self.start.dtype, self.stop.dtype)))
+
+
+@public
+class IntegerRange(Range):
+    start: Value[dt.Integer]
+    stop: Value[dt.Integer]
+    step: Value[dt.Integer]

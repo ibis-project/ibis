@@ -792,13 +792,21 @@ def test_substitute_dict():
 
     result = table.foo.substitute(subs)
     expected = (
-        table.foo.case().when("a", "one").when("b", table.bar).else_(table.foo).end()
+        ibis.case()
+        .when(table.foo == "a", "one")
+        .when(table.foo == "b", table.bar)
+        .else_(table.foo)
+        .end()
     )
     assert_equal(result, expected)
 
     result = table.foo.substitute(subs, else_=ibis.NA)
     expected = (
-        table.foo.case().when("a", "one").when("b", table.bar).else_(ibis.NA).end()
+        ibis.case()
+        .when(table.foo == "a", "one")
+        .when(table.foo == "b", table.bar)
+        .else_(ibis.NA)
+        .end()
     )
     assert_equal(result, expected)
 

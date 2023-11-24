@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import builtins
 import datetime
 import functools
 import numbers
@@ -143,6 +144,7 @@ __all__ = (
     "parse_sql",
     "pi",
     "random",
+    "range",
     "range_window",
     "read_csv",
     "read_delta",
@@ -471,7 +473,7 @@ def _memtable_from_dataframe(
         newcols = getattr(
             schema,
             "names",
-            (f"col{i:d}" for i in range(len(cols))),
+            (f"col{i:d}" for i in builtins.range(len(cols))),
         )
         df = df.rename(columns=dict(zip(cols, newcols)))
     op = ops.InMemoryTable(
@@ -1945,6 +1947,102 @@ def watermark(time_col: str, allowed_delay: ir.IntervalScalar) -> Watermark:
         A watermark object.
     """
     return Watermark(time_col=time_col, allowed_delay=allowed_delay)
+
+
+@functools.singledispatch
+def range(start, stop, step) -> ir.ArrayValue:
+    """Generate a range of values.
+
+    ::: {.callout-note}
+    `start` is inclucive and `stop` is exclusive, just like Python's builtin
+    [`range`](range).
+
+    When `step` equals 0, however, this function will return an empty array.
+
+    Python's `range` will raise an exception when `step` is zero.
+    :::
+
+    Parameters
+    ----------
+    start
+        Lower bound of the range, inclusive.
+    stop
+        Upper bound of the range, exclusive.
+    step
+        Step value. Optional, defaults to 1.
+
+    Returns
+    -------
+    ArrayValue
+        An array of values
+
+    Examples
+    --------
+    >>> import ibis
+    >>> ibis.options.interactive = True
+
+    Range using only a stop argument
+
+    >>> ibis.range(5)
+    [0, 1, 2, 3, 4]
+
+    Simple range using start and stop
+
+    >>> ibis.range(1, 5)
+    [1, 2, 3, 4]
+
+    Generate an empty range
+
+    >>> ibis.range(0)
+    []
+
+    Negative step values are supported
+
+    >>> ibis.range(10, 4, -2)
+    [10, 8, 6]
+
+    `ibis.range` behaves the same as Python's range ...
+
+    >>> ibis.range(0, 7, -1)
+    []
+
+    ... except when the step is zero, in which case `ibis.range` returns an
+    empty array
+
+    >>> ibis.range(0, 5, 0)
+    []
+
+    Because the resulting expression is array, you can unnest the values
+
+    >>> ibis.range(5).unnest().name("numbers")
+    ┏━━━━━━━━━┓
+    ┃ numbers ┃
+    ┡━━━━━━━━━┩
+    │ int8    │
+    ├─────────┤
+    │       0 │
+    │       1 │
+    │       2 │
+    │       3 │
+    │       4 │
+    └─────────┘
+    """
+    raise NotImplementedError()
+
+
+@range.register(int)
+@range.register(ir.IntegerValue)
+def _int_range(
+    start: int,
+    stop: int | ir.IntegerValue | None = None,
+    step: int | ir.IntegerValue | None = None,
+) -> ir.ArrayValue:
+    if stop is None:
+        stop = start
+        start = 0
+    if step is None:
+        step = 1
+    return ops.IntegerRange(start=start, stop=stop, step=step).to_expr()
 
 
 def _wrap_deprecated(fn, prefix=""):

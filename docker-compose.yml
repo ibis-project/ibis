@@ -412,6 +412,37 @@ services:
     volumes:
       - oracle:/opt/oracle/data
 
+  flink-jobmanager:
+    build: ./docker/flink
+    image: ibis-flink
+    environment:
+      - |
+        FLINK_PROPERTIES=
+        jobmanager.rpc.address: flink-jobmanager
+    ports:
+      - 8081:8081
+    command: jobmanager
+    networks:
+      - flink
+
+  flink:
+    build: ./docker/flink
+    image: ibis-flink
+    environment:
+      - |
+        FLINK_PROPERTIES=
+        jobmanager.rpc.address: flink-jobmanager
+        taskmanager.numberOfTaskSlots: 2
+        taskmanager.memory.process.size: 2048m
+        taskmanager.memory.network.fraction: 0.4
+        taskmanager.memory.network.min: 512mb
+        taskmanager.memory.network.max: 2gb
+    depends_on:
+      - flink-jobmanager
+    command: taskmanager
+    networks:
+      - flink
+
 networks:
   impala:
   mysql:
@@ -421,6 +452,7 @@ networks:
   trino:
   druid:
   oracle:
+  flink:
 
 volumes:
   broker_var:

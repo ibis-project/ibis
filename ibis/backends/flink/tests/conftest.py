@@ -19,11 +19,32 @@ class TestConf(BackendTest, RoundAwayFromZero):
         comply with the assumption that the tests under ibis/ibis/backends/tests/
         are for batch (storage or processing) backends.
         """
-        from pyflink.table import EnvironmentSettings, TableEnvironment
+        import os
 
-        env_settings = EnvironmentSettings.in_batch_mode()
-        table_env = TableEnvironment.create(env_settings)
-        return ibis.flink.connect(table_env, **kw)
+        from pyflink.java_gateway import get_gateway
+        from pyflink.table import StreamTableEnvironment
+        from pyflink.table.table_environment import StreamExecutionEnvironment
+
+        # connect with Flink remote cluster to run the unit tests
+        gateway = get_gateway()
+        string_class = gateway.jvm.String
+        string_array = gateway.new_array(string_class, 0)
+        env_settings = (
+            gateway.jvm.org.apache.flink.table.api.EnvironmentSettings.inBatchMode()
+        )
+        stream_env = gateway.jvm.org.apache.flink.streaming.api.environment.StreamExecutionEnvironment
+        flink_cluster_addr = os.environ.get("FLINK_REMOTE_CLUSTER_ADDR", "localhost")
+        flink_cluster_port = int(os.environ.get("FLINK_REMOTE_CLUSTER_PORT", "8081"))
+        j_stream_exection_environment = stream_env.createRemoteEnvironment(
+            flink_cluster_addr,
+            flink_cluster_port,
+            env_settings.getConfiguration(),
+            string_array,
+        )
+
+        env = StreamExecutionEnvironment(j_stream_exection_environment)
+        stream_table_env = StreamTableEnvironment.create(env)
+        return ibis.flink.connect(stream_table_env, **kw)
 
     def _load_data(self, **_: Any) -> None:
         import pandas as pd
@@ -42,6 +63,7 @@ class TestConfForStreaming(TestConf):
     def connect(*, tmpdir, worker_id, **kw: Any):
         """Flink backend is created in streaming mode here. To be used
         in the tests under ibis/ibis/backends/flink/tests/.
+        We only use mini cluster here for simplicity.
         """
         from pyflink.table import EnvironmentSettings, TableEnvironment
 

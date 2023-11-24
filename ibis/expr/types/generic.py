@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import contextlib
 from typing import TYPE_CHECKING, Any, Iterable, Literal, Sequence
 
 from public import public
@@ -683,12 +684,18 @@ class Value(Expr):
         │ torg   │           52 │
         └────────┴──────────────┘
         """
-        expr = self.case()
         if isinstance(value, dict):
-            for k, v in sorted(value.items()):
-                expr = expr.when(k, v)
+            expr = ibis.case()
+            try:
+                null_replacement = value.pop(None)
+            except KeyError:
+                pass
+            else:
+                expr = expr.when(self.isnull(), null_replacement)
+            for k, v in value.items():
+                expr = expr.when(self == k, v)
         else:
-            expr = expr.when(value, replacement)
+            expr = self.case().when(value, replacement)
 
         return expr.else_(else_ if else_ is not None else self).end()
 
@@ -1172,8 +1179,12 @@ class Value(Expr):
                 "involving multiple base table references "
                 "to a projection"
             )
-        table = roots[0].to_expr()
-        return table.select(self)
+
+        if roots:
+            return roots[0].to_expr().select(self)
+
+        # no child table to select from
+        return ops.DummyTable(values=(self,)).to_expr()
 
     def to_pandas(self, **kwargs) -> pd.Series:
         """Convert a column expression to a pandas Series or scalar object.

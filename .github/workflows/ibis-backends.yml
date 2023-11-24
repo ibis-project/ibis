@@ -158,6 +158,16 @@ jobs:
               - oracle
             services:
               - oracle
+          - name: flink
+            title: Flink
+            serial: true
+            extras:
+              - flink
+            additional_deps:
+              - apache-flink
+              - pytest-split
+            services:
+              - flink
         exclude:
           - os: windows-latest
             backend:
@@ -254,6 +264,24 @@ jobs:
                 - oracle
               services:
                 - oracle
+          - os: windows-latest
+            backend:
+              name: flink
+              title: Flink
+              serial: true
+              extras:
+                - flink
+              services:
+                - flink
+          - python-version: "3.11"
+            backend:
+              name: flink
+              title: Flink
+              serial: true
+              extras:
+                - flink
+              services:
+                - flink
     steps:
       - name: update and install system dependencies
         if: matrix.os == 'ubuntu-latest' && matrix.backend.sys-deps != null
@@ -330,6 +358,8 @@ jobs:
         run: just ci-check -m ${{ matrix.backend.name }}
         env:
           IBIS_EXAMPLES_DATA: ${{ runner.temp }}/examples-${{ matrix.backend.name }}-${{ matrix.os }}-${{ steps.install_python.outputs.python-version }}
+          FLINK_REMOTE_CLUSTER_ADDR: localhost
+          FLINK_REMOTE_CLUSTER_PORT: "8081"
 
       - name: check that no untracked files were produced
         shell: bash

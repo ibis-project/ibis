@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import pytest
+import sqlglot as sg
 from pytest import param
 
 import ibis.expr.datatypes as dt
@@ -69,13 +70,13 @@ from ibis.backends.bigquery.datatypes import (
     ],
 )
 def test_simple(datatype, expected):
-    assert BigQueryType.from_ibis(datatype) == expected
+    assert BigQueryType.to_string(datatype) == expected
 
 
 @pytest.mark.parametrize("datatype", [dt.uint64, dt.Decimal(8, 3)])
 def test_simple_failure_mode(datatype):
     with pytest.raises(TypeError):
-        BigQueryType.from_ibis(datatype)
+        BigQueryType.to_string(datatype)
 
 
 @pytest.mark.parametrize(
@@ -101,3 +102,13 @@ def test_simple_failure_mode(datatype):
 )
 def test_spread_type(type_, expected):
     assert list(spread_type(type_)) == expected
+
+
+def test_struct_type():
+    dtype = dt.Array(dt.int64)
+    parsed_type = sg.parse_one("BIGINT[]", into=sg.exp.DataType, read="duckdb")
+
+    expected = "ARRAY<INT64>"
+
+    assert parsed_type.sql(dialect="bigquery") == expected
+    assert BigQueryType.to_string(dtype) == expected
