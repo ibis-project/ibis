@@ -1,0 +1,117 @@
+---
+title: "dbt-ibis: Write your dbt models using Ibis"
+author: "Stefan Binder"
+date: "2023-11-24"
+categories:
+    - blog
+    - dbt
+    - data engineering
+---
+
+# Introduction to dbt
+[dbt](https://github.com/dbt-labs/dbt-core) has revolutionized how transformations are
+orchestrated and managed within modern data warehouses. Initially released in 2016,
+dbt quickly gained traction within the data analytics community due to its focus on bringing software engineering best practices to analytics code like modularity, portability, CI/CD, and documentation.
+
+At the heart of dbt are so called "models" which are just simple SQL SELECT statements
+(see further below for an example). dbt removes the need to write any DDL/DML,
+allowing users to focus on writing SELECT statements. Depending on how you configure it, the queries are materialized as tables, views, or custom materializations. dbt also infers dependencies between models and runs them in order. The following is a dbt model which selects from two
+other models called `stg_orders` and `stg_customers`:
+
+```sql
+WITH customer_orders as (
+    SELECT
+        customer_id AS customer_id,
+        MIN(order_date) AS first_order,
+        MAX(order_date) AS most_recent_order,
+        COUNT(*) AS number_of_orders
+    FROM {{ ref('stg_orders') }} AS orders
+    GROUP BY
+        customer_id
+), customer_orders_info as (
+    SELECT
+        customers.customer_id AS customer_id,
+        customers.first_name AS first_name,
+        customers.last_name AS last_name,
+        customer_orders.customer_id AS customer_id_right,
+        customer_orders.first_order AS first_order,
+        customer_orders.most_recent_order AS most_recent_order,
+        customer_orders.number_of_orders AS number_of_orders
+    FROM {{ ref('stg_customers') }} AS customers
+    LEFT OUTER JOIN customer_orders
+        ON customers.customer_id = customer_orders.customer_id
+)
+SELECT
+    customer_id,
+    first_name,
+    last_name,
+    first_order,
+    most_recent_order,
+    number_of_orders
+FROM customer_orders_info
+```
+dbt will make sure that the resulting table will be created after `stg_orders`
+and `stg_customers`. This model is inspired by the [jaffle shop demo project by dbt Labs](https://github.com/dbt-labs/jaffle_shop)
+where you can find more example queries.
+
+At the end of 2022, dbt added support for [Python models](https://docs.getdbt.com/docs/build/python-models)
+on specific platforms (Snowflake, Databricks, Google Cloud Platform). This can be useful
+for complex transformations such as using a machine learning model and storing the results.
+However, it also requires that your Python code is run in a cloud data warehouse and often,
+that data is moved into a Python process which can be slower than leveraging the power of modern SQL engines.
+
+
+# Why dbt and Ibis go great together
+[dbt-ibis](https://github.com/binste/dbt-ibis) offers a lightweight and compatible alternative,
+which allows you to write dbt models using Ibis. dbt-ibis transparently converts your Ibis
+statements into SQL and then hands it over to dbt. Your database does not need to have Python
+support for this as everything is executed in the same process as dbt. Hence, this allows for
+working in Python for all dbt adapters with supported Ibis backends. Rewriting the above SQL model in Ibis we get:
+
+```python
+from dbt_ibis import depends_on, ref
+
+
+@depends_on(ref("stg_customers"), ref("stg_orders"))
+def model(customers, orders):
+    customer_orders = orders.group_by("customer_id").aggregate(
+        first_order=orders["order_date"].min(),
+        most_recent_order=orders["order_date"].max(),
+        number_of_orders=orders.count(),
+    )
+    # Add first_name and last_name
+    customer_orders = customers.join(customer_orders, "customer_id", how="left")
+    return customer_orders.select(
+            "customer_id",
+            "first_name",
+            "last_name",
+            "first_order",
+            "most_recent_order",
+            "number_of_orders",
+        )
+```
+
+Using Ibis instead of SQL for dbt models brings you many advantages:
+
+* Type checks and validation before your code is executed in a database.
+* More composable as you can break down complex queries into smaller pieces.
+* Better reusability of code. Although dbt allows you to use [Jinja and macros](https://docs.getdbt.com/docs/build/jinja-macros), which is an improvement over plain SQL, this gets you only so far. String manipulation is inherently fragile. With dbt-ibis, you can easily share common code between models.
+* Your dbt models become backend agnostic which reduces lock-in to a specific database. Furthermore, you get the possibility of building a [multi-engine data stack](https://juhache.substack.com/p/n-engines-1-language?publication_id=1211981&post_id=137718100). For example, you could use DuckDB for small to medium workloads and Snowflake for heavy workloads and as an end-user and BI layer leveraging its governance features. Depending on the size of your warehouse, this can result in significant cost savings.
+* Unit test your code with your favorite Python testing frameworks such as pytest.
+
+In addition, you can stick to the tool (Ibis) you like, no matter if you're writing an
+ ingestion pipeline, a dbt model to transform the data in your data warehouse, or conduct an ad-hoc analysis in a Jupyter notebook.
+
+Be aware that a current limitation of dbt-ibis is that you cannot connect to the database
+from within your dbt models, i.e. you purely use Ibis to construct a SELECT statement. You cannot execute statements and act based on the results.
+
+# Further readings
+If you want to give dbt-ibis a try, head over to the [GitHub repo](https://github.com/binste/dbt-ibis/blob/main/README.md)
+for more information on how to get up and running in no time!
+
+For more details on the future of the integration of Ibis within dbt, you can check out
+[this PR](https://github.com/dbt-labs/dbt-core/pull/5274#issuecomment-1132772028) and [this GitHub issue](https://github.com/dbt-labs/dbt-core/issues/6184)
+on adding an official plugin system to dbt
+which could be used to provide first-class support for modeling languages in general and
+which might allow dbt-ibis to provide an even better user experience and more features.
+See also this [discussion on Ibis as a dataframe API in the dbt GitHub repo](https://github.com/dbt-labs/dbt-core/discussions/5738).
