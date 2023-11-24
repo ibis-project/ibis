@@ -20,6 +20,7 @@ countries = ibis.table(
     name="countries",
 )
 asian_countries = countries.filter(countries.continent == "AS")
+eurasian_countries = countries.filter(countries.continent.isin(("AS", "EUR")))
 top_with_highest_population = asian_countries.order_by(
     asian_countries.population.desc()
 ).limit(10)
@@ -51,6 +52,7 @@ def test_decompile_invalid_type():
         (top_with_highest_population, top_with_highest_population),
         (overall_population_density, overall_population_density),
         (population_density_per_country, population_density_per_country),
+        (eurasian_countries, eurasian_countries),
         (three, 3),
         (nine, nine_),
     ],
@@ -58,6 +60,7 @@ def test_decompile_invalid_type():
         "top_with_highest_population",
         "overall_population_density",
         "population_density_per_country",
+        "eurasian_countries",
         "three",
         "nine",
     ],

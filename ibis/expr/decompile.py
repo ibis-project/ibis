@@ -286,6 +286,11 @@ def binary(op, left, right):
     return f"{left} {operator} {right}"
 
 
+@translate.register(ops.InValues)
+def isin(op, value, options):
+    return f"{value}.isin(({', '.join([str(option) for option in options])}))"
+
+
 class CodeContext:
     always_assign = (ops.ScalarParameter, ops.UnboundTable, ops.Aggregation)
     always_ignore = (ops.TableColumn, dt.Primitive, dt.Variadic, dt.Temporal)
