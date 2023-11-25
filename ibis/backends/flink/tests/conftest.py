@@ -6,10 +6,10 @@ import pytest
 
 import ibis
 from ibis.backends.conftest import TEST_TABLES
-from ibis.backends.tests.base import BackendTest, RoundAwayFromZero
+from ibis.backends.tests.base import BackendTest, RoundAwayFromZero, UnorderedComparator
 
 
-class TestConf(BackendTest, RoundAwayFromZero):
+class TestConf(UnorderedComparator, BackendTest, RoundAwayFromZero):
     supports_structs = False
     deps = "pandas", "pyflink"
 
