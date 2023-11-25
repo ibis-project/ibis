@@ -354,12 +354,25 @@ jobs:
           IBIS_EXAMPLES_DATA: ${{ runner.temp }}/examples-${{ matrix.backend.name }}-${{ matrix.os }}-${{ steps.install_python.outputs.python-version }}
 
       - name: "run serial tests: ${{ matrix.backend.name }}"
-        if: matrix.backend.serial && matrix.backend.name != 'impala'
-        run: just ci-check -m ${{ matrix.backend.name }}
+        if: matrix.backend.serial && matrix.backend.name == 'flink'
+        # FIXME(deepyaman): If some backend-specific test, in test_ddl.py,
+        # executes before common tests, they will fail with:
+        # org.apache.flink.table.api.ValidationException: Table `default_catalog`.`default_database`.`functional_alltypes` was not found.
+        # Therefore, we quarantine backend-specific tests to avoid this.
+        run: |
+          just ci-check -m ${{ matrix.backend.name }} ibis/backends/tests
+          just ci-check -m ${{ matrix.backend.name }} ibis/backends/flink/tests
         env:
           IBIS_EXAMPLES_DATA: ${{ runner.temp }}/examples-${{ matrix.backend.name }}-${{ matrix.os }}-${{ steps.install_python.outputs.python-version }}
           FLINK_REMOTE_CLUSTER_ADDR: localhost
           FLINK_REMOTE_CLUSTER_PORT: "8081"
+          JVM_ARGS: -XX:CompressedClassSpaceSize=3G
+
+      - name: "run serial tests: ${{ matrix.backend.name }}"
+        if: matrix.backend.serial && matrix.backend.name != 'impala' && matrix.backend.name != 'flink'
+        run: just ci-check -m ${{ matrix.backend.name }}
+        env:
+          IBIS_EXAMPLES_DATA: ${{ runner.temp }}/examples-${{ matrix.backend.name }}-${{ matrix.os }}-${{ steps.install_python.outputs.python-version }}
 
       - name: check that no untracked files were produced
         shell: bash
