@@ -1513,7 +1513,7 @@ class Backend(BaseBackend, CanCreateSchema):
             # register creates a transaction, and we can't nest transactions so
             # we create a function to encapsulate the whole shebang
             def _register(name, table):
-                self.con.register(name, getattr(table, "obj", table))
+                self.con.register(name, table)
 
             _register(name, table)
 
