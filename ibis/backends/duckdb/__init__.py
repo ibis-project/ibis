@@ -64,22 +64,24 @@ _UDF_INPUT_TYPE_MAPPING = {
 
 
 class _Settings:
-    def __init__(self, con):
+    def __init__(self, con: duckdb.DuckDBPyConnection) -> None:
         self.con = con
 
-    def __getitem__(self, key):
-        (value,) = self.con.execute(
+    def __getitem__(self, key: str) -> Any:
+        maybe_value = self.con.execute(
             f"select value from duckdb_settings() where name = '{key}'"
         ).fetchone()
-        return value
+        if maybe_value is not None:
+            return maybe_value[0]
+        raise KeyError(key)
 
     def __setitem__(self, key, value):
-        self.con.execute(f"SET {key} = '{value}'").fetchall()
+        self.con.execute(f"SET {key} = '{value}'")
 
     def __repr__(self):
-        (kv,) = self.con.execute(
+        ((kv,),) = self.con.execute(
             "select map(array_agg(name), array_agg(value)) from duckdb_settings()"
-        ).fetchone()
+        ).fetch()
 
         return repr(dict(zip(kv["key"], kv["value"])))
 
@@ -93,7 +95,7 @@ class Backend(BaseBackend, CanCreateSchema):
 
     @property
     def settings(self) -> _Settings:
-        return _Settings(self)
+        return _Settings(self.con)
 
     @property
     def current_database(self) -> str:
