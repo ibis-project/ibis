@@ -757,16 +757,21 @@ def test_ifelse_column(backend, alltypes, df):
 def test_select_filter(backend, alltypes, df):
     t = alltypes
 
-    expr = t.select("int_col").filter(t.string_col == "4")
+    # XXX: should we consider a builder pattern for select and filter too?
+    #      this would allow us to capture the context
+    # TODO(cpcloud): this now requires the additional string_col projection
+    expr = t.select("int_col", "string_col").filter(t.string_col == "4")
     result = expr.execute()
 
-    expected = df.loc[df.string_col == "4", ["int_col"]].reset_index(drop=True)
+    expected = df.loc[df.string_col == "4", ["int_col", "string_col"]].reset_index(
+        drop=True
+    )
     backend.assert_frame_equal(result, expected)
 
 
 def test_select_filter_select(backend, alltypes, df):
     t = alltypes
-    expr = t.select("int_col").filter(t.string_col == "4").int_col
+    expr = t.select("int_col", "string_col").filter(t.string_col == "4").int_col
     result = expr.execute().rename("int_col")
 
     expected = df.loc[df.string_col == "4", "int_col"].reset_index(drop=True)
