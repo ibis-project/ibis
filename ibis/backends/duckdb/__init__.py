@@ -1509,13 +1509,8 @@ class Backend(BaseBackend, CanCreateSchema):
         # only register if we haven't already done so
         if (name := op.name) not in self.list_tables():
             table = op.data.to_pyarrow(schema)
-
-            # register creates a transaction, and we can't nest transactions so
-            # we create a function to encapsulate the whole shebang
-            def _register(name, table):
-                self.con.register(name, table)
-
-            _register(name, table)
+            table = getattr(table, "obj", table)
+            self.con.register(name, table)
 
     def _get_temp_view_definition(self, name: str, definition) -> str:
         yield f"CREATE OR REPLACE TEMPORARY VIEW {name} AS {definition}"
