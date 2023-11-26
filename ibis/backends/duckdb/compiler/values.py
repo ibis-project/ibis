@@ -67,7 +67,7 @@ def _literal(op, *, value, dtype, **kw):
             )
 
         return sg.exp.Interval(
-            this=sg.exp.convert(value), unit=dtype.resolution.upper()
+            this=sg.exp.convert(str(value)), unit=dtype.resolution.upper()
         )
     elif dtype.is_boolean():
         return sg.exp.Boolean(this=value)
