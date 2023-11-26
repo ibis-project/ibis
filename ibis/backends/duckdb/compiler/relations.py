@@ -224,3 +224,14 @@ def _view(op: ops.View, *, child, name: str, **_):
 def _sql_string_view(op: ops.SQLStringView, *, query: str, **_):
     table = sg.table(op.name)
     return sg.select(STAR).from_(table).with_(table, as_=query, dialect="duckdb")
+
+
+@translate_rel.register
+def _sample(op: ops.Sample, *, parent, fraction, method, seed, **_):
+    source = sg.exp.TableSample(
+        this=parent,
+        method="bernoulli" if method == "row" else "system",
+        percent=sg.exp.convert(fraction * 100),
+        seed=None if seed is None else sg.exp.convert(seed),
+    )
+    return sg.select(STAR).from_(source)
