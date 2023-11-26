@@ -114,7 +114,7 @@ def test_attach_detach(tmpdir):
     con2.detach(name)
     assert name not in con2.list_databases()
 
-    with pytest.raises(sa.exc.ProgrammingError):
+    with pytest.raises(duckdb.BinderException):
         con2.detach(name)
 
 
@@ -152,7 +152,7 @@ def test_config_options(con):
 
 
 def test_config_options_bad_option(con):
-    with pytest.raises(sa.exc.ProgrammingError):
+    with pytest.raises(duckdb.CatalogException):
         con.settings["not_a_valid_option"] = "oopsie"
 
     with pytest.raises(KeyError):
