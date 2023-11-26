@@ -273,7 +273,18 @@ class Project(Relation):
 
 @public
 class JoinLink(Node):
-    how: Literal["inner", "left", "right", "outer", "asof", "semi", "cross"]
+    how: Literal[
+        "inner",
+        "left",
+        "right",
+        "outer",
+        "asof",
+        "semi",
+        "anti",
+        "any_inner",
+        "any_left",
+        "cross",
+    ]
     table: Relation
     predicates: VarTuple[Value[dt.Boolean]]
 
