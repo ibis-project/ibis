@@ -2958,8 +2958,8 @@ def test_delta(con, start, end, unit, expected):
 )
 @pytest.mark.notimpl(["exasol"], raises=com.OperationNotDefinedError)
 def test_timestamp_bucket(backend, kws, pd_freq):
-    ts = backend.functional_alltypes.timestamp_col.name("ts").execute()
-    res = backend.functional_alltypes.timestamp_col.bucket(**kws).name("ts").execute()
+    ts = backend.functional_alltypes.timestamp_col.execute().rename("ts")
+    res = backend.functional_alltypes.timestamp_col.bucket(**kws).execute().rename("ts")
     sol = ts.dt.floor(pd_freq)
     backend.assert_series_equal(res, sol)
 
@@ -2993,11 +2993,13 @@ def test_timestamp_bucket(backend, kws, pd_freq):
 @pytest.mark.parametrize("offset_mins", [2, -2], ids=["pos", "neg"])
 @pytest.mark.notimpl(["exasol"], raises=com.OperationNotDefinedError)
 def test_timestamp_bucket_offset(backend, offset_mins):
-    ts = backend.functional_alltypes.timestamp_col.name("ts")
-    expr = ts.bucket(minutes=5, offset=ibis.interval(minutes=offset_mins)).name("ts")
-    res = expr.execute().astype("datetime64[ns]")
+    ts = backend.functional_alltypes.timestamp_col
+    expr = ts.bucket(minutes=5, offset=ibis.interval(minutes=offset_mins))
+    res = expr.execute().astype("datetime64[ns]").rename("ts")
     td = pd.Timedelta(minutes=offset_mins)
-    sol = ((ts.execute() - td).dt.floor("300s") + td).astype("datetime64[ns]")
+    sol = ((ts.execute().rename("ts") - td).dt.floor("300s") + td).astype(
+        "datetime64[ns]"
+    )
     backend.assert_series_equal(res, sol)
 
 
