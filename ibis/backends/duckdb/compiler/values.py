@@ -232,6 +232,8 @@ _simple_ops = {
     ops.MapMerge: "map_concat",
     ops.JSONGetItem: "json_extract",
     ops.TypeOf: "typeof",
+    ops.IntegerRange: "range",
+    ops.ArrayFlatten: "flatten",
 }
 
 
