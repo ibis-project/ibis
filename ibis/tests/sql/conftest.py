@@ -1,9 +1,12 @@
 from __future__ import annotations
 
 import pytest
+import sqlglot as sg
 
 import ibis
-from ibis.backends.base.sql.compiler import Compiler, QueryContext
+
+# from ibis.backends.base.sql.compiler import Compiler, QueryContext
+from ibis.backends.duckdb.compiler import translate
 from ibis.tests.expr.mocks import MockBackend
 
 
@@ -67,13 +70,19 @@ def bar_t(con):
     return con.table("bar_t")
 
 
-def get_query(expr):
-    ast = Compiler.to_ast(expr, QueryContext(compiler=Compiler))
-    return ast.queries[0]
-
-
 def to_sql(expr, *args, **kwargs) -> str:
-    return get_query(expr).compile(*args, **kwargs)
+    if args:
+        raise TypeError("Unexpected positional arguments")
+    if kwargs:
+        raise TypeError("Unexpected keyword arguments")
+
+    expr = expr.optimize()
+
+    sql = translate(expr.op(), params={})
+    if isinstance(sql, sg.exp.Table):
+        sql = sg.select("*").from_(sql)
+
+    return sql.sql(dialect="duckdb", pretty=True)
 
 
 @pytest.fixture(scope="module")

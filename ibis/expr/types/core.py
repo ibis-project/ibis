@@ -355,7 +355,7 @@ class Expr(Immutable, Coercible):
             self, limit=limit, timecontext=timecontext, params=params
         )
 
-    def optimize(self, enable_reordering=True):
+    def optimize(self):
         from ibis.expr.rewrites import (
             complete_reprojection,
             subsequent_filters,
@@ -363,13 +363,10 @@ class Expr(Immutable, Coercible):
             reorder_filter_project,
         )
 
-        ruleset = subsequent_projects | subsequent_filters
-        if enable_reordering:
-            ruleset |= reorder_filter_project
-
         node = self.op()
-        # apply the rewrites
-        node = node.replace(ruleset)
+        node = node.replace(reorder_filter_project)
+        node = node.replace(reorder_filter_project)
+        node = node.replace(subsequent_projects | subsequent_filters)
         node = node.replace(complete_reprojection)
 
         # return with a new expression wrapping the optimized node
