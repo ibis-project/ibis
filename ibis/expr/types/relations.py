@@ -4481,7 +4481,8 @@ class JoinExpr(TableExpr):
         node = self.op()
         yield node.first
         for join in node.rest:
-            yield join.table
+            if join.how not in ("semi", "anti"):
+                yield join.table
 
     def finish(self, fields: Mapping[str, ops.Field] | None = None) -> ir.Table:
         """Construct a valid table expression from this join expression."""
