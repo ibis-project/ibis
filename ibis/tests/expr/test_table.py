@@ -1695,7 +1695,7 @@ def test_join_lname_rname_still_collide():
     t3 = ibis.table({"id": "int64", "col1": "int64", "col2": "int64"})
 
     with pytest.raises(com.IntegrityError):
-        t1.left_join(t2, "id").left_join(t3, "id").finish()
+        t1.left_join(t2, "id").left_join(t3, "id")._finish()
 
     # assert "`['col1_right', 'col2_right', 'id_right']`" in str(rec.value)
     # assert "`lname='', rname='{name}_right'`" in str(rec.value)

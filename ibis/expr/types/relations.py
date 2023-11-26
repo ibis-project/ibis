@@ -4422,7 +4422,7 @@ class JoinExpr(TableExpr):
 
         # TODO(kszucs): clean this up
         preds = dict(enumerate(preds))
-        preds = dereference_values(self._tables, preds)
+        preds = dereference_values(self._tables(), preds)
         preds = list(preds.values())
 
         # TODO(kszucs): factor this out into a separate function, e.g. defereference_values_from()
@@ -4459,7 +4459,7 @@ class JoinExpr(TableExpr):
         # with a field referencing one of the relations in the join chain
         fields = {ops.Field(self, k): v for k, v in self.op().fields.items()}
         values = {k: v.replace(fields, filter=ops.Value) for k, v in values.items()}
-        values = dereference_values(self._tables, values)
+        values = dereference_values(self._tables(), values)
         # TODO(kszucs): add reduction conversion here detect_foreign_values(values)?
 
         return self._finish(values)
@@ -4474,7 +4474,6 @@ class JoinExpr(TableExpr):
         """Order the join by the given keys."""
         return self._finish().order_by(*keys)
 
-    @property
     def _tables(self) -> Iterator[ops.TableNode]:
         node = self.op()
         yield node.first
@@ -4489,7 +4488,7 @@ class JoinExpr(TableExpr):
             # raise on collisions
             collisions = []
             fields = frozenset(self.op().fields.values())
-            for rel in self._tables:
+            for rel in self._tables():
                 for k in rel.schema:
                     f = ops.Field(rel, k)
                     if f not in fields:

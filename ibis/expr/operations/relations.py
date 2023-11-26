@@ -291,6 +291,7 @@ class JoinChain(Relation):
         _check_integrity(fields.values(), allowed_parents)
         super().__init__(first=first, rest=rest, fields=fields)
 
+    # TODO(kszucs): the fields should be changed to be nullable
     @attribute
     def schema(self):
         return Schema({k: v.dtype for k, v in self.fields.items()})
