@@ -317,7 +317,6 @@ class BooleanColumn(NumericColumn, BooleanValue):
         def resolve_exists_subquery(outer):
             """An exists subquery whose outer leaf table is unknown."""
             (inner,) = (t for t in parents if t != outer.op())
-            print(inner)
             relation = ops.Project(ops.Filter(inner, [self]), {"1": 1})
             return ops.ExistsSubquery(relation).to_expr()
 

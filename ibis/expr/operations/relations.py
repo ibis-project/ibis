@@ -238,11 +238,11 @@ def _check_integrity(values, allowed_parents):
                 )
 
 
-def _check_project_integrity(values, parent):
-    for value in values:
+def _check_project_integrity(values, allowed_parent):
+    for _, value in values.items():
         for root in value.find_topmost((Relation, Subquery)):
             if isinstance(root, Relation):
-                if root != parent:
+                if root != allowed_parent:
                     raise IntegrityError(
                         f"Cannot add {value!r} to projection, they belong to another relation"
                     )
@@ -256,18 +256,18 @@ def _check_project_integrity(values, parent):
                 raise TypeError(root)
 
 
-def _check_filter_integrity(values, allowed_parent):
+def _check_filter_integrity(predicates, allowed_parent):
     from ibis.expr.rewrites import ReductionValue
 
-    for value in values:
-        if value.find(ReductionValue, filter=Value):
-            raise IntegrityError(f"Cannot add {value!r} to filter, it is a reduction")
+    for pred in predicates:
+        if pred.find(ReductionValue, filter=Value):
+            raise IntegrityError(f"Cannot add {pred!r} to filter, it is a reduction")
 
-        depends_on = value.find_topmost((Relation, Subquery))
+        depends_on = pred.find_topmost((Relation, Subquery))
         all_subqueries = all(isinstance(v, Subquery) for v in depends_on)
         if allowed_parent not in depends_on and not all_subqueries:
             raise IntegrityError(
-                f"Cannot add {value!r} to filter, it doesn't depend on the relation"
+                f"Cannot add {pred!r} to filter, it doesn't depend on the relation"
             )
 
 
@@ -278,7 +278,7 @@ class Project(Relation):
     values: FrozenDict[str, Annotated[Value, ~InstanceOf(Alias)]]
 
     def __init__(self, parent, values):
-        _check_project_integrity(values.values(), parent)
+        _check_project_integrity(values, parent)
         super().__init__(parent=parent, values=values)
 
     @attribute
@@ -391,7 +391,7 @@ class Set(Relation):
 
     @attribute
     def fields(self):
-        return {}  # FrozenDict({k: Field(self.left, k) for k in self.left.schema})
+        return FrozenDict()
 
     @attribute
     def schema(self):
@@ -488,6 +488,10 @@ class SelfReference(SimpleRelation):
         if (name := getattr(self.parent, "name", None)) is not None:
             return f"{name}_ref"
         return gen_name("self_ref")
+
+    @attribute
+    def fields(self):
+        return FrozenDict()
 
 
 @public
