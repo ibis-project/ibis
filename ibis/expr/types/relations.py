@@ -4376,7 +4376,7 @@ def _coerce_join_predicate(left, right, pred):
 
 
 def _disambiguate_join_fields(how, left_fields, right_fields, lname, rname):
-    if how in {"left_semi", "semi", "anti"}:
+    if how in ("semi", "anti"):
         # discard the right fields
         return left_fields
 
