@@ -212,15 +212,15 @@ def _fillna(op: ops.FillNa, *, parent, replacements, **_):
     return sg.select(*exprs).from_(parent)
 
 
-# @translate_rel.register
-# def _view(op: ops.View, *, child, name: str, **_):
-#     # TODO: find a way to do this without creating a temporary view
-#     backend = op.child.to_expr()._find_backend()
-#     backend._create_temp_view(table_name=name, source=sg.select(STAR).from_(child))
-#     return sg.table(name)
+@translate_rel.register
+def _view(op: ops.View, *, child, name: str, **_):
+    # TODO: find a way to do this without creating a temporary view
+    backend = op.child.to_expr()._find_backend()
+    backend._create_temp_view(table_name=name, source=sg.select(STAR).from_(child))
+    return sg.table(name)
 
 
-# @translate_rel.register
-# def _sql_string_view(op: ops.SQLStringView, query: str, **_: Any):
-#     table = sg.table(op.name)
-#     return sg.select(STAR).from_(table).with_(table, as_=query, dialect="duckdb")
+@translate_rel.register
+def _sql_string_view(op: ops.SQLStringView, query: str, **_):
+    table = sg.table(op.name)
+    return sg.select(STAR).from_(table).with_(table, as_=query, dialect="duckdb")

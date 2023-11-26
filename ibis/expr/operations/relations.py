@@ -450,6 +450,18 @@ class SQLStringView(PhysicalTable):
 
 
 @public
+class View(PhysicalTable):
+    """A view created from an expression."""
+
+    child: Relation
+    name: str
+
+    @attribute
+    def schema(self):
+        return self.child.schema
+
+
+@public
 class DummyTable(Relation):
     # TODO(kszucs): verify that it has at least one element: Length(at_least=1)
     values: FrozenDict[str, Value]
