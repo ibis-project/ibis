@@ -588,7 +588,7 @@ def _string_find(op, *, arg, substr, start, end, **_):
     if start is not None:
         arg = f.substr(arg, start + 1)
         pos = f.strpos(arg, substr)
-        return if_(pos > 0, pos - 1 + start, -1)
+        return if_(pos > 0, pos + start, 0)
 
     return f.strpos(arg, substr)
 
