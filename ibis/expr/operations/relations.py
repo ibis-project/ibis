@@ -60,15 +60,15 @@ class TableProxy(Concrete):
 
 class PyArrowTableProxy(TableProxy):
     def to_frame(self):
-        return self.data.to_pandas()
+        return self.data.obj.to_pandas()
 
     def to_pyarrow(self, schema: Schema) -> pa.Table:
-        return self.data
+        return self.data.obj
 
 
 class PandasDataFrameProxy(TableProxy):
     def to_frame(self) -> pd.DataFrame:
-        return self.data
+        return self.data.obj
 
     def to_pyarrow(self, schema: Schema) -> pa.Table:
         import pyarrow as pa
@@ -76,7 +76,9 @@ class PandasDataFrameProxy(TableProxy):
 
         from ibis.formats.pyarrow import PyArrowSchema
 
-        return pa.Table.from_pandas(self.data, schema=PyArrowSchema.from_ibis(schema))
+        return pa.Table.from_pandas(
+            self.data.obj, schema=PyArrowSchema.from_ibis(schema)
+        )
 
 
 @public
