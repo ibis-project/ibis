@@ -127,12 +127,6 @@ def filter_wrap_reduction_value(_):
     return ops.ScalarSubquery(value.to_expr().as_table())
 
 
-@replace(p.Field(rel=p.Aggregate(groups=Eq(FrozenDict()))))
-def filter_wrap_field(_):
-    expr = _.rel.fields[_.name].to_expr().as_table()
-    return ops.ScalarSubquery(expr)
-
-
 @replace(p.Project(y @ p.Relation) & Check(_.schema == y.schema))
 def complete_reprojection(_, y):
     # TODO(kszucs): this could be moved to the pattern itself but not sure how
