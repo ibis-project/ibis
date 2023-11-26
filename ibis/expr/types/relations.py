@@ -2942,6 +2942,8 @@ class TableExpr(Expr, _FixedTextJupyterMixin):
         fields = {k: ops.Field(left, k) for k in left.schema().names}
         node = ops.JoinChain(left, rest=(), fields=fields)
         # add the first join link to the join chain and return the result
+        if how == "left_semi":
+            how = "semi"
         return JoinExpr(node).join(right, predicates, how=how, lname=lname, rname=rname)
 
     def asof_join(
