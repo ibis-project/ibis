@@ -107,7 +107,7 @@ def translate(
     # `translate_val` rule
     params = {param.op(): value for param, value in params.items()}
     replace_literals = p.ScalarParameter(dtype=x) >> (
-        lambda op, ctx: ops.Literal(value=params[op], dtype=ctx[x])
+        lambda _, x: ops.Literal(value=params[_], dtype=x)
     )
 
     # replace any checks against an empty right side of the IN operation with
