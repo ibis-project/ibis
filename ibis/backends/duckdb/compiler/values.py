@@ -1119,3 +1119,10 @@ def _agg_udf(op, *, where, **kw) -> str:
 @translate_val.register(ops.ToJSONArray)
 def _to_json_collection(op, *, arg, **_):
     return f.try_cast(arg, DuckDBType.from_ibis(op.dtype))
+
+
+@translate_val.register(ops.TimestampDelta)
+@translate_val.register(ops.DateDelta)
+@translate_val.register(ops.TimeDelta)
+def _temporal_delta(op, *, part, left, right, **_):
+    return f.date_diff(part, right, left)
