@@ -119,19 +119,21 @@ def test_attach_detach(tmpdir):
 
 
 @pytest.mark.parametrize(
-    "scale",
+    ("scale", "expected_scale"),
     [
-        None,
-        param(0, id="seconds"),
-        param(3, id="millis"),
-        param(6, id="micros"),
-        param(9, id="nanos"),
+        param(None, 6, id="default"),
+        param(0, 0, id="seconds"),
+        param(3, 3, id="millis"),
+        param(6, 6, id="micros"),
+        param(9, 9, id="nanos"),
     ],
 )
-def test_create_table_with_timestamp_scales(con, scale):
+def test_create_table_with_timestamp_scales(con, scale, expected_scale):
     schema = ibis.schema(dict(ts=dt.Timestamp(scale=scale)))
-    t = con.create_table(gen_name("duckdb_timestamp_scale"), schema=schema, temp=True)
-    assert t.schema() == schema
+    expected = ibis.schema(dict(ts=dt.Timestamp(scale=expected_scale)))
+    name = gen_name("duckdb_timestamp_scale")
+    t = con.create_table(name, schema=schema, temp=True)
+    assert t.schema() == expected
 
 
 def test_config_options(con):
