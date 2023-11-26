@@ -40,6 +40,7 @@ if TYPE_CHECKING:
     import ibis.expr.types as ir
     import ibis.selectors as s
     from ibis.common.typing import SupportsSchema
+    from ibis.expr.types import Table
     from ibis.expr.types.groupby import GroupedTable
     from ibis.expr.types.tvf import WindowedTable
     from ibis.selectors import IfAnyAll, Selector
@@ -679,7 +680,6 @@ class TableExpr(Expr, _FixedTextJupyterMixin):
         │           36.7 │          19.3 │               193 │        3450 │
         └────────────────┴───────────────┴───────────────────┴─────────────┘
         """
-        from ibis.expr.types.generic import Column
         from ibis.expr.types.logical import BooleanValue
 
         if isinstance(what, (str, int)):
