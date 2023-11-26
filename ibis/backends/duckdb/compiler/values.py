@@ -1113,3 +1113,9 @@ def _scalar_udf(op, **kw) -> str:
 @translate_val.register(ops.AggUDF)
 def _agg_udf(op, *, where, **kw) -> str:
     return agg[op.__full_name__](*kw.values(), where=where)
+
+
+@translate_val.register(ops.ToJSONMap)
+@translate_val.register(ops.ToJSONArray)
+def _to_json_collection(op, *, arg, **_):
+    return f.try_cast(arg, DuckDBType.from_ibis(op.dtype))
