@@ -2938,12 +2938,19 @@ class TableExpr(Expr, _FixedTextJupyterMixin):
         │  106782 │ Leonardo DiCaprio │          5989 │ Leonardo DiCaprio │
         └─────────┴───────────────────┴───────────────┴───────────────────┘
         """
+        import pyarrow as pa
+        import pandas as pd
+
         # construct an empty join chain and wrap it with a JoinExpr
         fields = {k: ops.Field(left, k) for k in left.schema().names}
         node = ops.JoinChain(left, rest=(), fields=fields)
         # add the first join link to the join chain and return the result
         if how == "left_semi":
             how = "semi"
+
+        if isinstance(right, (pd.DataFrame, pa.Table)):
+            right = ibis.memtable(right)
+
         return JoinExpr(node).join(right, predicates, how=how, lname=lname, rname=rname)
 
     def asof_join(
@@ -2987,10 +2994,16 @@ class TableExpr(Expr, _FixedTextJupyterMixin):
         Table
             Table expression
         """
+        import pyarrow as pa
+        import pandas as pd
+
         if by:
             # perform a regular join on the by columns first, then perform the
             # asof join on the result
             left = left.join(right, by, lname=lname, rname=rname)
+
+        if isinstance(right, (pd.DataFrame, pa.Table)):
+            right = ibis.memtable(right)
 
         if tolerance is not None:
             if not isinstance(predicates, str):
