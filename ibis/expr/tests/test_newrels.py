@@ -826,22 +826,19 @@ def test_sequelize():
     assert isinstance(selection.to_expr(), ir.Expr)
 
 
-# def test_isin_subquery():
-#     import ibis
+def test_isin_subquery():
+    t1 = ibis.table(name="t1", schema={"a": "int64", "b": "string"})
+    t2 = ibis.table(name="t2", schema={"c": "int64", "d": "string"})
 
-#     # Define your tables
-#     t1 = Unboundibis.table("t1", {"a": "int64", "b": "string"}).to_expr()
-#     t2 = Unboundibis.table("t2", {"c": "int64", "d": "string"}).to_expr()
+    t2_filt = t2.filter(t2.d == "value")
 
-#     # Create a subquery
-#     t2_filt = t2.filter(t2.d == "value")
-
-#     # Use the subquery in an IN condition
-#     expr = t1.filter(t1.a.isin(t2_filt.c))
+    expr = t1.filter(t1.a.isin(t2_filt.c))
+    subquery = Project(t2_filt, values={"c": t2_filt.c})
+    expected = Filter(parent=t1, predicates=[ops.InSubquery(rel=subquery, needle=t1.a)])
+    assert expr.op() == expected
 
 
 def test_filter_condition_referencing_agg_without_groupby_turns_it_into_a_subquery():
-    # Define your tables and expressions
     r1 = ibis.table(
         name="r3", schema={"name": str, "key": str, "int_col": int, "float_col": float}
     )

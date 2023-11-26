@@ -157,12 +157,12 @@ class Subquery(Value):
     rel: Relation
     shape = ds.columnar
 
-    def __init__(self, rel):
-        if len(rel.schema) != 1:
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        if len(self.rel.schema) != 1:
             raise IntegrityError(
-                f"Subquery must have exactly one column, got {len(rel.schema)}"
+                f"Subquery must have exactly one column, got {len(self.rel.schema)}"
             )
-        super().__init__(rel=rel)
 
     @attribute
     def value(self):
@@ -193,15 +193,14 @@ class ExistsSubquery(Subquery):
 
 @public
 class InSubquery(Subquery):
-    rel: Relation
     needle: Value
     dtype = dt.boolean
 
-    def __init__(self, rel, needle):
-        super().__init__(rel=rel, needle=needle)
-        if not rlz.comparable(self.value, needle):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        if not rlz.comparable(self.value, self.needle):
             raise IntegrityError(
-                f"Subquery {needle!r} is not comparable to {self.value!r}"
+                f"Subquery {self.needle!r} is not comparable to {self.value!r}"
             )
 
 
@@ -536,6 +535,3 @@ class Selection(Relation):
     @attribute
     def schema(self):
         return Schema({k: v.dtype for k, v in self.selections.items()})
-
-
-# add test case a scalar subquery from an aggregation without
