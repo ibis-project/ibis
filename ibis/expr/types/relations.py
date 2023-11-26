@@ -4422,7 +4422,7 @@ class JoinExpr(TableExpr):
 
         # TODO(kszucs): clean this up
         preds = dict(enumerate(preds))
-        preds = dereference_values(self._tables(), preds)
+        preds = dereference_values(self.tables(), preds)
         preds = list(preds.values())
 
         # TODO(kszucs): factor this out into a separate function, e.g. defereference_values_from()
@@ -4459,28 +4459,30 @@ class JoinExpr(TableExpr):
         # with a field referencing one of the relations in the join chain
         fields = {ops.Field(self, k): v for k, v in self.op().fields.items()}
         values = {k: v.replace(fields, filter=ops.Value) for k, v in values.items()}
-        values = dereference_values(self._tables(), values)
+        values = dereference_values(self.tables(), values)
         # TODO(kszucs): add reduction conversion here detect_foreign_values(values)?
 
-        return self._finish(values)
+        return self.finish(values)
 
     # TODO(kszucs): figure out a solution to automatically wrap all the
     # TableExpr methods including the docstrings and the signature
     def filter(self, *predicates):
         """Filter with `predicates`."""
-        return self._finish().filter(*predicates)
+        return self.finish().filter(*predicates)
 
     def order_by(self, *keys):
         """Order the join by the given keys."""
-        return self._finish().order_by(*keys)
+        return self.finish().order_by(*keys)
 
-    def _tables(self) -> Iterator[ops.TableNode]:
+    def tables(self) -> Iterator[ops.TableNode]:
+        """Yield all tables in this join expression."""
         node = self.op()
         yield node.first
         for join in node.rest:
             yield join.table
 
-    def _finish(self, fields: Mapping[str, ops.Field] | None = None) -> ir.Table:
+    def finish(self, fields: Mapping[str, ops.Field] | None = None) -> ir.Table:
+        """Construct a valid table expression from this join expression."""
         node = self.op()
         if fields is None:
             # TODO(kszucs): clean this up with a nicer error message
@@ -4488,7 +4490,7 @@ class JoinExpr(TableExpr):
             # raise on collisions
             collisions = []
             fields = frozenset(self.op().fields.values())
-            for rel in self._tables():
+            for rel in self.tables():
                 for k in rel.schema:
                     f = ops.Field(rel, k)
                     if f not in fields:
