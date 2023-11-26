@@ -234,6 +234,7 @@ _simple_ops = {
     ops.TypeOf: "typeof",
     ops.IntegerRange: "range",
     ops.ArrayFlatten: "flatten",
+    ops.ArrayPosition: "list_indexof",
 }
 
 
@@ -589,7 +590,7 @@ def _string_find(op, *, arg, substr, start, end, **_):
         pos = f.strpos(arg, substr)
         return if_(pos > 0, pos - 1 + start, -1)
 
-    return f.strpos(arg, substr) - 1
+    return f.strpos(arg, substr)
 
 
 @translate_val.register(ops.RegexSearch)
@@ -744,11 +745,6 @@ def _array_intersect(op, *, left, right, **_):
     return f.list_filter(left, lamduh)
 
 
-@translate_val.register(ops.ArrayPosition)
-def _array_position(op, *, arg, other, **_):
-    return f.list_indexof(arg, other) - 1
-
-
 @translate_val.register(ops.ArrayRemove)
 def _array_remove(op, *, arg, other, **_):
     param = sg.to_identifier("x")
@@ -818,7 +814,7 @@ def _sum(op, *, arg, where, **_):
 
 @translate_val.register(ops.NthValue)
 def _nth_value(op, *, arg, nth, **_):
-    return f.nth_value(arg, nth + 1)
+    return f.nth_value(arg, nth)
 
 
 ### Stats
@@ -885,7 +881,7 @@ def _arbitrary(op, *, arg, how, where, **_):
 
 @translate_val.register(ops.FindInSet)
 def _index_of(op, *, needle, values, **_):
-    return f.list_indexof(f.array(*values), needle) - 1
+    return f.list_indexof(f.array(*values), needle)
 
 
 @translate_val.register(ops.SimpleCase)
@@ -1069,12 +1065,7 @@ def _window_frame(op, *, group_by, order_by, start, end, **_):
 
 @translate_val.register(ops.WindowFunction)
 def _window(op: ops.WindowFunction, *, func, frame, **_: Any):
-    window = frame(this=func)
-
-    # preserve zero-based indexing
-    if isinstance(op.func, ops.RankBase):
-        return window - 1
-    return window
+    return frame(this=func)
 
 
 @translate_val.register(ops.Lag)
@@ -1125,7 +1116,9 @@ def _to_json_collection(op, *, arg, **_):
 @translate_val.register(ops.DateDelta)
 @translate_val.register(ops.TimeDelta)
 def _temporal_delta(op, *, part, left, right, **_):
-    return f.date_diff(part, right, left)
+    # dialect is necessary due to sqlglot's default behavior
+    # of `part` coming last
+    return f.date_diff(part, right, left, dialect="duckdb")
 
 
 @translate_val.register(ops.TimestampBucket)

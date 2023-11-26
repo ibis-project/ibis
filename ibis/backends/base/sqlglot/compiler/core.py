@@ -122,10 +122,22 @@ def translate(
         p.WindowFrame(..., order_by=()) >> _.copy(order_by=(x,)),
     )
 
+    # subtract one from one-based functions to convert to zero-based indexing
+    subtract_one_from_one_indexed_functions = (
+        p.WindowFunction(p.RankBase | p.NTile)
+        | p.StringFind
+        | p.FindInSet
+        | p.ArrayPosition
+    ) >> c.Subtract(_, 1)
+
+    add_one_to_nth_value_input = p.NthValue >> _.copy(nth=c.Add(_.nth, 1))
+
     op = op.replace(
         replace_literals
         | replace_empty_in_values_with_false
         | add_order_by_to_empty_window_functions
+        | subtract_one_from_one_indexed_functions
+        | add_one_to_nth_value_input
     )
     # apply translate rules in topological order
     results = op.map(fn)
