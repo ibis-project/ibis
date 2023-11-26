@@ -2539,7 +2539,7 @@ class TableExpr(Expr, _FixedTextJupyterMixin):
         344
         """
         if subset is not None:
-            subset = bind_expr(self, util.promote_list(subset))
+            subset = bind(self, subset)
         return ops.DropNa(self, how, subset).to_expr()
 
     def fillna(

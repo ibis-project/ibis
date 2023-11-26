@@ -202,7 +202,10 @@ def _fillna(op: ops.FillNa, *, parent, replacements, **_):
         }
     exprs = [
         (
-            sg.alias(sg.exp.Coalesce(this=sg.column(col), expressions=[alt]), col)
+            sg.alias(
+                sg.exp.Coalesce(this=sg.column(col), expressions=[sg.exp.convert(alt)]),
+                col,
+            )
             if (alt := mapping.get(col)) is not None
             else sg.column(col)
         )
