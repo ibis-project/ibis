@@ -1494,8 +1494,8 @@ def test_binds_are_cast(alltypes):
 
 def test_agg_sort(alltypes):
     query = alltypes.aggregate(count=alltypes.count())
-    query = query.order_by(alltypes.year)
-    query.execute()
+    with pytest.raises(com.IntegrityError):
+        query.order_by(alltypes.year)
 
 
 @pytest.mark.xfail_version(
