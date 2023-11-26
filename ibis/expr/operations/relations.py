@@ -11,7 +11,6 @@ import ibis.expr.datashape as ds
 import ibis.expr.datatypes as dt
 import ibis.expr.rules as rlz
 from ibis.common.annotations import attribute
-from ibis.common.bases import Immutable
 from ibis.common.collections import FrozenDict
 from ibis.common.deferred import deferred
 from ibis.common.exceptions import IbisTypeError, IntegrityError, RelationError
@@ -21,7 +20,7 @@ from ibis.common.typing import Coercible, VarTuple
 from ibis.expr.operations.core import Alias, Column, Node, Scalar, Value
 from ibis.expr.operations.sortkeys import SortKey  # noqa: TCH001
 from ibis.expr.schema import Schema
-from ibis.util import Namespace, gen_name, indent
+from ibis.util import Namespace, PseudoHashable, gen_name, indent
 
 if TYPE_CHECKING:
     import pandas as pd
@@ -31,21 +30,15 @@ p = Namespace(pattern, module=__name__)
 d = Namespace(deferred, module=__name__)
 
 
-class TableProxy(Immutable):
-    __slots__ = ("_data", "_hash")
-    _data: Any
-    _hash: int
-
-    def __init__(self, data) -> None:
-        object.__setattr__(self, "_data", data)
-        object.__setattr__(self, "_hash", hash((type(data), id(data))))
-
-    def __hash__(self) -> int:
-        return self._hash
+class TableProxy(Concrete):
+    data: PseudoHashable
 
     def __repr__(self) -> str:
-        data_repr = indent(repr(self._data), spaces=2)
+        data_repr = indent(repr(self.data.obj), spaces=2)
         return f"{self.__class__.__name__}:\n{data_repr}"
+
+    def __len__(self) -> int:
+        return len(self.data)
 
     @abstractmethod
     def to_frame(self) -> pd.DataFrame:  # pragma: no cover
@@ -65,25 +58,18 @@ class TableProxy(Immutable):
             writer.write(data)
         return out.getvalue()
 
-    def __len__(self) -> int:
-        return len(self._data)
-
 
 class PyArrowTableProxy(TableProxy):
-    __slots__ = ()
-
     def to_frame(self):
-        return self._data.to_pandas()
+        return self.data.to_pandas()
 
     def to_pyarrow(self, schema: Schema) -> pa.Table:
-        return self._data
+        return self.data
 
 
 class PandasDataFrameProxy(TableProxy):
-    __slots__ = ()
-
     def to_frame(self) -> pd.DataFrame:
-        return self._data
+        return self.data
 
     def to_pyarrow(self, schema: Schema) -> pa.Table:
         import pyarrow as pa
@@ -91,7 +77,7 @@ class PandasDataFrameProxy(TableProxy):
 
         from ibis.formats.pyarrow import PyArrowSchema
 
-        return pa.Table.from_pandas(self._data, schema=PyArrowSchema.from_ibis(schema))
+        return pa.Table.from_pandas(self.data, schema=PyArrowSchema.from_ibis(schema))
 
 
 @public
@@ -129,11 +115,6 @@ class Relation(Node, Coercible):
         return TableExpr(self)
 
     # cardinality property marking if the relation has a single row like SELECT COUNT(*)
-
-
-# leaf relation nodes
-class Table(Relation):
-    pass
 
 
 # just to reduce boilerplate
