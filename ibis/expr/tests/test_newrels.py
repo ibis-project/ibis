@@ -475,7 +475,7 @@ def test_join():
     assert isinstance(joined.op(), JoinChain)
     assert isinstance(joined.op().to_expr(), ir.JoinExpr)
 
-    result = joined._finish()
+    result = joined.finish()
     assert isinstance(joined, ir.TableExpr)
     assert isinstance(joined.op(), JoinChain)
     assert isinstance(joined.op().to_expr(), ir.JoinExpr)
@@ -531,7 +531,7 @@ def test_chained_join():
     c = ibis.table(name="c", schema={"e": "int64", "f": "string"})
 
     joined = a.join(b, [a.a == b.c]).join(c, [a.a == c.e])
-    result = joined._finish()
+    result = joined.finish()
     assert result.op() == JoinChain(
         first=a,
         rest=[
@@ -576,7 +576,7 @@ def test_chained_join_referencing_intermediate_table():
     abc = ab.join(c, [ab.a == c.e])
     assert isinstance(abc, ir.JoinExpr)
 
-    result = abc._finish()
+    result = abc.finish()
     assert result.op() == JoinChain(
         first=a,
         rest=[JoinLink("inner", b, [a.a == b.c]), JoinLink("inner", c, [a.a == c.e])],
