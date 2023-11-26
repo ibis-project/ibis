@@ -538,22 +538,6 @@ class Backend(BaseBackend, CanCreateSchema):
         """
         self._load_extensions([extension], force_install=force_install)
 
-    def _load_extensions(self, extensions):
-        query = """
-        WITH exts AS (
-          SELECT extension_name AS name, aliases FROM duckdb_extensions()
-          WHERE installed AND loaded
-        )
-        SELECT name FROM exts
-        UNION (SELECT UNNEST(aliases) AS name FROM exts)
-        """
-        installed = (name for (name,) in self.con.sql(query).fetchall())
-        # Install and load all other extensions
-        todo = set(extensions).difference(installed)
-        for extension in todo:
-            self.con.install_extension(extension)
-            self.con.load_extension(extension)
-
     def create_schema(
         self, name: str, database: str | None = None, force: bool = False
     ) -> None:
