@@ -221,6 +221,6 @@ def _view(op: ops.View, *, child, name: str, **_):
 
 
 @translate_rel.register
-def _sql_string_view(op: ops.SQLStringView, query: str, **_):
+def _sql_string_view(op: ops.SQLStringView, *, query: str, **_):
     table = sg.table(op.name)
     return sg.select(STAR).from_(table).with_(table, as_=query, dialect="duckdb")
