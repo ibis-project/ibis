@@ -190,6 +190,7 @@ def test_insert(con):
 
 
 def test_to_other_sql(con, snapshot):
+    # TODO(cpcloud): Port snowflake to sqlglot
     pytest.importorskip("snowflake.connector")
     pytest.importorskip("snowflake.sqlalchemy")
 
