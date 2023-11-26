@@ -1126,3 +1126,11 @@ def _to_json_collection(op, *, arg, **_):
 @translate_val.register(ops.TimeDelta)
 def _temporal_delta(op, *, part, left, right, **_):
     return f.date_diff(part, right, left)
+
+
+@translate_val.register(ops.TimestampBucket)
+def _timestamp_bucket(op, *, arg, interval, offset, **_):
+    origin = f.cast("epoch", DuckDBType.from_ibis(dt.timestamp))
+    if offset is not None:
+        origin += offset
+    return f.time_bucket(interval, arg, origin)
