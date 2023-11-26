@@ -170,8 +170,7 @@ def _distinct(op: ops.Distinct, *, parent, **_):
 def _dropna(op: ops.DropNa, *, parent, how, subset, **_):
     if subset is None:
         subset = [
-            sg.column(name, table=parent.alias_or_name)
-            for name in op.table.schema.names
+            sg.column(name, table=parent.alias_or_name) for name in op.schema.names
         ]
 
     if subset:
