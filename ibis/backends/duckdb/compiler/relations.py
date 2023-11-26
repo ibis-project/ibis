@@ -18,7 +18,7 @@ def translate_rel(op: ops.TableNode, **_):
 
 @translate_rel.register(ops.DummyTable)
 def _dummy(op: ops.DummyTable, *, values, **_):
-    return sg.select(*values)
+    return sg.select(*(value.as_(key) for key, value in values.items()))
 
 
 @translate_rel.register(ops.UnboundTable)
