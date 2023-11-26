@@ -712,7 +712,7 @@ def _array_slice_op(op, *, arg, start, stop, **_):
         start = f.least(arg_length, _neg_idx_to_pos(arg, start))
 
     if stop is None:
-        stop = NULL
+        stop = arg_length
     else:
         stop = _neg_idx_to_pos(arg, stop)
 
