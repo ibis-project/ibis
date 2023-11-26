@@ -23,6 +23,13 @@ except ImportError:
     PyDeltaTableError = None
 
 
+try:
+    from duckdb import NotImplementedException as DuckDBNotImplementedException
+    from duckdb import ParserException as DuckDBParserException
+except ImportError:
+    DuckDBNotImplementedException = DuckDBParserException = None
+
+
 limit = [
     param(
         42,
@@ -225,7 +232,7 @@ def test_table_to_parquet(tmp_path, backend, awards_players):
 @pytest.mark.notimpl(
     ["duckdb"],
     reason="cannot inline WriteOptions objects",
-    raises=sa.exc.NotSupportedError,
+    raises=DuckDBNotImplementedException,
 )
 @pytest.mark.parametrize("version", ["1.0", "2.6"])
 def test_table_to_parquet_writer_kwargs(version, tmp_path, backend, awards_players):
@@ -325,7 +332,7 @@ def test_table_to_csv(tmp_path, backend, awards_players):
 @pytest.mark.notimpl(
     ["duckdb"],
     reason="cannot inline WriteOptions objects",
-    raises=sa.exc.ProgrammingError,
+    raises=DuckDBParserException,
 )
 @pytest.mark.parametrize("delimiter", [";", "\t"], ids=["semicolon", "tab"])
 def test_table_to_csv_writer_kwargs(delimiter, tmp_path, awards_players):
