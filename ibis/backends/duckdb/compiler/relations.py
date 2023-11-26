@@ -57,6 +57,7 @@ def _join_link(op: ops.JoinLink, *, how, table, predicates):
         "semi": "left",
         "anti": "left",
         "cross": None,
+        "outer": "full",
     }
     kinds = {
         "inner": "inner",
@@ -65,6 +66,7 @@ def _join_link(op: ops.JoinLink, *, how, table, predicates):
         "semi": "semi",
         "anti": "anti",
         "cross": "cross",
+        "outer": "outer",
     }
     res = sg.exp.Join(
         this=table, side=sides[how], kind=kinds[how], on=sg.and_(*predicates)
