@@ -181,7 +181,7 @@ def _cast(op, strict=True, **kw):
     return arg.cast(typ, strict=strict)
 
 
-@translate.register(ops.TableColumn)
+@translate.register(ops.Field)
 def column(op, **_):
     return pl.col(op.name)
 

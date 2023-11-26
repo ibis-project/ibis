@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import itertools
 import typing
 from abc import abstractmethod
 from typing import TYPE_CHECKING, Annotated, Any, Literal, Optional
@@ -82,10 +81,6 @@ class PandasDataFrameProxy(TableProxy):
 
 @public
 class Relation(Node, Coercible):
-    def __init_subclass__(cls, **kwargs):
-        super().__init_subclass__(**kwargs)
-        cls._counter = itertools.count()
-
     @classmethod
     def __coerce__(cls, value):
         from ibis.expr.types import TableExpr

@@ -2938,18 +2938,12 @@ class TableExpr(Expr, _FixedTextJupyterMixin):
         │  106782 │ Leonardo DiCaprio │          5989 │ Leonardo DiCaprio │
         └─────────┴───────────────────┴───────────────┴───────────────────┘
         """
-        import pyarrow as pa
-        import pandas as pd
-
         # construct an empty join chain and wrap it with a JoinExpr
         fields = {k: ops.Field(left, k) for k in left.schema().names}
         node = ops.JoinChain(left, rest=(), fields=fields)
         # add the first join link to the join chain and return the result
         if how == "left_semi":
             how = "semi"
-
-        if isinstance(right, (pd.DataFrame, pa.Table)):
-            right = ibis.memtable(right)
 
         return JoinExpr(node).join(right, predicates, how=how, lname=lname, rname=rname)
 
@@ -2994,16 +2988,10 @@ class TableExpr(Expr, _FixedTextJupyterMixin):
         Table
             Table expression
         """
-        import pyarrow as pa
-        import pandas as pd
-
         if by:
             # perform a regular join on the by columns first, then perform the
             # asof join on the result
             left = left.join(right, by, lname=lname, rname=rname)
-
-        if isinstance(right, (pd.DataFrame, pa.Table)):
-            right = ibis.memtable(right)
 
         if tolerance is not None:
             if not isinstance(predicates, str):
@@ -4414,10 +4402,9 @@ def _disambiguate_join_fields(how, left_fields, right_fields, lname, rname):
 
 @public
 class JoinExpr(TableExpr):
-    @annotated
     def join(
         self,
-        right: ops.Relation,
+        right,
         predicates: Any,
         # TODO(kszucs): add typehint about the possible join kinds
         how: str = "inner",
@@ -4427,7 +4414,17 @@ class JoinExpr(TableExpr):
     ):
         """Join with another table."""
         from ibis.expr.analysis import flatten_predicates
+        import pyarrow as pa
+        import pandas as pd
 
+        if isinstance(right, (pd.DataFrame, pa.Table)):
+            right = ibis.memtable(right)
+        elif not isinstance(right, TableExpr):
+            raise TypeError(
+                f"right operand must be a TableExpr, got {type(right).__name__}"
+            )
+
+        right = right.op()
         chain = self.op()
         preds = [
             _coerce_join_predicate(chain, right, pred)
