@@ -228,9 +228,10 @@ def _check_project_integrity(values, allowed_parent):
                     )
             elif isinstance(root, Subquery):
                 # TODO(kszucs): cover it with a test case
-                if not isinstance(root, ScalarSubquery):
+                if not isinstance(root, (ScalarSubquery, InSubquery)):
                     raise IntegrityError(
-                        f"Cannot add {value!r} to projection, it is a non-scalar subquery"
+                        f"Cannot add {value!r} to projection, it is a non-scalar, "
+                        "non-membership-checking subquery"
                     )
             else:
                 raise TypeError(root)
