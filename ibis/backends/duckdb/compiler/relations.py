@@ -120,19 +120,19 @@ _SET_OP_FUNC = {
 }
 
 
-# @translate_rel.register
-# def _set_op(op: ops.SetOp, *, left, right, **_):
-#     if isinstance(left, sg.exp.Table):
-#         left = sg.select("*").from_(left)
-#
-#     if isinstance(right, sg.exp.Table):
-#         right = sg.select("*").from_(right)
-#
-#     return _SET_OP_FUNC[type(op)](
-#         left.args.get("this", left),
-#         right.args.get("this", right),
-#         distinct=op.distinct,
-#     )
+@translate_rel.register
+def _set_op(op: ops.Set, *, left, right, **_):
+    if isinstance(left, sg.exp.Table):
+        left = sg.select(STAR).from_(left)
+
+    if isinstance(right, sg.exp.Table):
+        right = sg.select(STAR).from_(right)
+
+    return _SET_OP_FUNC[type(op)](
+        left.args.get("this", left),
+        right.args.get("this", right),
+        distinct=op.distinct,
+    )
 
 
 @translate_rel.register
