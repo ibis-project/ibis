@@ -8,7 +8,8 @@ import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 from ibis.common.deferred import Item, _, deferred, var
 from ibis.common.exceptions import UnsupportedOperationError
-from ibis.common.patterns import Check, pattern, replace
+from ibis.common.grounds import Concrete
+from ibis.common.patterns import Check, NoMatch, Pattern, pattern, replace
 from ibis.util import Namespace
 
 p = Namespace(pattern, module=ops)
@@ -17,6 +18,18 @@ d = Namespace(deferred, module=ops)
 
 y = var("y")
 name = var("name")
+
+
+class DependsOn(Concrete, Pattern):
+    """Pattern to match expressions that depend only on a given relation."""
+
+    rel: ops.Relation
+
+    def match(self, value, context):
+        if value.find_topmost(ops.Relation) == [self.rel]:
+            return value
+        else:
+            return NoMatch
 
 
 # TODO(kszucs): must be updated

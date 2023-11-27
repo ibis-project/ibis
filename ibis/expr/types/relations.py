@@ -155,10 +155,12 @@ def dereference_values(parents, values):
     mapping = {}
     for parent in util.promote_list(parents):
         for k, v in parent.fields.items():
-            while isinstance(v, ops.Field):
-                mapping[v] = ops.Field(parent, k)
-                v = v.rel.fields.get(v.name)
-            else:
+            if isinstance(v, ops.Field):
+                while isinstance(v, ops.Field):
+                    mapping[v] = ops.Field(parent, k)
+                    v = v.rel.fields.get(v.name)
+            # do not dereference literal expressions
+            elif v.find_topmost(ops.Field):
                 mapping[v] = ops.Field(parent, k)
     return {k: v.replace(mapping, filter=ops.Value) for k, v in values.items()}
 
@@ -1044,6 +1046,9 @@ class TableExpr(Expr, _FixedTextJupyterMixin):
         │ orange │       0.33 │     0.33 │
         └────────┴────────────┴──────────┘
         """
+        from ibis.expr.rewrites import p, DependsOn
+        from ibis.common.patterns import In
+
         groups = bind(self, by)
         metrics = bind(self, (metrics, kwargs))
         having = bind(self, having)
@@ -1054,18 +1059,31 @@ class TableExpr(Expr, _FixedTextJupyterMixin):
 
         groups = dereference_values(self.op(), groups)
         metrics = dereference_values(self.op(), metrics)
+        having = dereference_values(self.op(), having)
 
-        node = ops.Aggregate(self, groups, metrics)
+        # the user doesn't need to specify the metrics used in the having clause
+        # explicitly, we implicitly add them to the metrics list by looking for
+        # any metrics depending on self which are not specified explicitly
+        pattern = p.Reduction & ~In(set(metrics.values())) & DependsOn(self.op())
+        original_metrics = metrics.copy()
+        for pred in having.values():
+            for metric in pred.find_topmost(pattern):
+                if metric.name in metrics:
+                    metrics[util.get_name("metric")] = metric
+                else:
+                    metrics[metric.name] = metric
+
+        # construct the aggregate node
+        agg = ops.Aggregate(self, groups, metrics).to_expr()
+
         if having:
-            # TODO(kszucs): should be adding the having conditions to the
-            # aggregate node, so that we can dereference them if the user
-            # didn't specify the metrics explicitly
-            having = dereference_values(node, having)
-            # TODO(kszucs): try catch IntegrityError and suggest to put the
-            # reduction from the having condition to the list of metrics
-            node = ops.Filter(node, having.values())
+            # apply the having clause
+            agg = agg.filter(*having.values())
+            # remove any metrics that were only used in the having clause
+            if metrics != original_metrics:
+                agg = agg.select(*groups.keys(), *original_metrics.keys())
 
-        return node.to_expr()
+        return agg
 
     agg = aggregate
 

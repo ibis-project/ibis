@@ -655,28 +655,51 @@ def test_aggregate_keys_basic(table):
     repr(result)
 
 
-def test_aggregate_non_list_inputs(table):
-    # per #150
+def test_aggregate_having_implicit_metric(table):
     metric = table.f.sum().name("total")
     by = "g"
     having = table.c.sum() > 10
 
-    with pytest.raises(IntegrityError):
-        # the field in having cannot be dereferenced to a field of the aggregation
-        # because table.c.sum() is not part of the aggregation, it should be
-        # added to the list of metrics
-        table.aggregate(metric, by=by, having=having)
+    implicit_having_metric = table.aggregate(metric, by=by, having=having)
+    expected_aggregate = ops.Aggregate(
+        parent=table,
+        groups={"g": table.g},
+        metrics={"total": table.f.sum(), table.c.sum().get_name(): table.c.sum()},
+    )
+    expected_filter = ops.Filter(
+        parent=expected_aggregate,
+        predicates=[
+            ops.Greater(ops.Field(expected_aggregate, table.c.sum().get_name()), 10)
+        ],
+    )
+    expected_project = ops.Project(
+        parent=expected_filter,
+        values={
+            "g": ops.Field(expected_filter, "g"),
+            "total": ops.Field(expected_filter, "total"),
+        },
+    )
+    assert implicit_having_metric.op() == expected_project
 
-    result = table.aggregate([metric, table.c.sum().name("sum")], by=by, having=having)
 
-    agg = ops.Aggregate(
+def test_agg_having_explicit_metric(table):
+    metric = table.f.sum().name("total")
+    by = "g"
+    having = table.c.sum() > 10
+
+    explicit_having_metric = table.aggregate(
+        [metric, table.c.sum().name("sum")], by=by, having=having
+    )
+    expected_aggregate = ops.Aggregate(
         parent=table,
         groups={"g": table.g},
         metrics={"total": table.f.sum(), "sum": table.c.sum()},
     )
-    assert result.op() == ops.Filter(
-        parent=agg, predicates=[ops.Greater(ops.Field(agg, "sum"), 10)]
+    expected_filter = ops.Filter(
+        parent=expected_aggregate,
+        predicates=[ops.Greater(ops.Field(expected_aggregate, "sum"), 10)],
     )
+    assert explicit_having_metric.op() == expected_filter
 
 
 def test_aggregate_keywords(table):
