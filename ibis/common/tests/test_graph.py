@@ -117,7 +117,7 @@ def test_nested_children():
     b = MyNode(name="b", children=[a])
     c = MyNode(name="c", children=[])
     d = MyNode(name="d", children=[])
-    e = MyNode(name="e", children=[[b, c], d])
+    e = MyNode(name="e", children=[[b, c], {"d": d}])
     assert bfs(e) == {
         e: (b, c, d),
         b: (a,),
@@ -125,6 +125,12 @@ def test_nested_children():
         d: (),
         a: (),
     }
+
+    assert a.__children__ == ()
+    assert b.__children__ == (a,)
+    assert c.__children__ == ()
+    assert d.__children__ == ()
+    assert e.__children__ == (b, c, d)
 
 
 @pytest.mark.parametrize("func", [bfs_while, dfs_while, Graph.from_bfs, Graph.from_dfs])
