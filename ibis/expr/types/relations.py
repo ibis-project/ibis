@@ -879,6 +879,7 @@ class TableExpr(Expr, _FixedTextJupyterMixin):
         groups = list(bind(self, (by, key_exprs)))
         return GroupedTable(self, groups)
 
+    # TODO(kszucs): shouldn't this be ibis.rowid() instead not bound to a specific table?
     def rowid(self) -> ir.IntegerValue:
         """A unique integer per row.
 
@@ -1059,9 +1060,16 @@ class TableExpr(Expr, _FixedTextJupyterMixin):
         metrics = unwrap_aliases(metrics)
         having = unwrap_aliases(having)
 
+        # TODO(kszucs): dereferecence CountStar and CountStarDistinct nodes
+        # called on the parent tables
+
         groups = dereference_values(self.op(), groups)
         metrics = dereference_values(self.op(), metrics)
         having = dereference_values(self.op(), having)
+
+        # TODO(kszucs): must consider both the groups and the metrics for the
+        # having clause calculated below
+        # fields = {**groups, **metrics}
 
         # the user doesn't need to specify the metrics used in the having clause
         # explicitly, we implicitly add them to the metrics list by looking for

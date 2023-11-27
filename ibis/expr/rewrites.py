@@ -125,6 +125,8 @@ def filter_wrap_reduction_value(_):
     return ops.ScalarSubquery(value.to_expr().as_table())
 
 
+# TODO(kszucs): schema comparison should be updated to not distinguish between
+# different column order
 @replace(p.Project(y @ p.Relation) & Check(_.schema == y.schema))
 def complete_reprojection(_, y):
     # TODO(kszucs): this could be moved to the pattern itself but not sure how

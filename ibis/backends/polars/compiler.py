@@ -286,6 +286,8 @@ def aggregation(op, **kw):
     return lf
 
 
+# TODO(kszucs): before compilation join chain should be converted to a nested
+# join tree along with the respective projections at each level
 @translate.register(ops.JoinChain)
 def join(op, **kw):
     left = translate(op.first, **kw)
