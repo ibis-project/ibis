@@ -293,10 +293,6 @@ class BooleanColumn(NumericColumn, BooleanValue):
 
         Notably the correlated subquery cannot stand on its own.
 
-        The purpose of `UnresolvedExistsSubquery` is to capture enough information
-        about an exists predicate such that it can be resolved when predicates are
-        resolved against the outer leaf table when `Selection`s are constructed.
-
         Examples
         --------
         >>> import ibis
@@ -312,7 +308,7 @@ class BooleanColumn(NumericColumn, BooleanValue):
         """
         from ibis.common.deferred import Call, _, Deferred
 
-        parents = self.op().find_topmost(ops.Relation)
+        parents = self.op().relations
 
         def resolve_exists_subquery(outer):
             """An exists subquery whose outer leaf table is unknown."""

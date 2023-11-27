@@ -17,7 +17,7 @@ from ibis.expr.operations.core import Column, Value
 from ibis.expr.operations.generic import Literal
 from ibis.expr.operations.numeric import Negate
 from ibis.expr.operations.reductions import Reduction  # noqa: TCH001
-from ibis.expr.operations.relations import Relation
+from ibis.expr.operations.relations import Relation  # noqa: TCH001
 from ibis.expr.operations.sortkeys import SortKey  # noqa: TCH001
 
 T = TypeVar("T", bound=dt.Numeric | dt.Interval, covariant=True)
@@ -129,8 +129,7 @@ class WindowFunction(Value):
     shape = ds.columnar
 
     def __init__(self, func, frame):
-        parents = func.find_topmost(Relation)
-        if parents and frame.table not in parents:
+        if func.relations and frame.table not in func.relations:
             raise com.RelationError(
                 "Window function expression must originate from the dependencies of "
                 "the window expression."

@@ -8,8 +8,7 @@ import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 from ibis.common.deferred import Item, _, deferred, var
 from ibis.common.exceptions import UnsupportedOperationError
-from ibis.common.grounds import Concrete
-from ibis.common.patterns import Check, NoMatch, Pattern, pattern, replace
+from ibis.common.patterns import Check, pattern, replace
 from ibis.util import Namespace
 
 p = Namespace(pattern, module=ops)
@@ -18,18 +17,6 @@ d = Namespace(deferred, module=ops)
 
 y = var("y")
 name = var("name")
-
-
-class DependsOn(Concrete, Pattern):
-    """Pattern to match expressions that depend only on a given relation."""
-
-    rel: ops.Relation
-
-    def match(self, value, context):
-        if value.find_topmost(ops.Relation) == [self.rel]:
-            return value
-        else:
-            return NoMatch
 
 
 # TODO(kszucs): must be updated
@@ -112,7 +99,7 @@ def project_wrap_analytic(_, rel):
 @replace(ops.Reduction)
 def project_wrap_reduction(_, rel):
     # Query all the tables that the reduction depends on
-    parents = _.find_topmost(ops.Relation)  # need to add Subquery here?
+    parents = _.find_topmost(ops.Relation)
     if parents == [rel]:
         # The reduction is fully originating from the `rel`, so turn
         # it into a window function of `rel`

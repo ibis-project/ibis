@@ -148,6 +148,10 @@ class Field(Value):
     def dtype(self):
         return self.rel.schema[self.name]
 
+    @attribute
+    def relations(self):
+        return frozenset({self.rel})
+
 
 @public
 class Subquery(Value):
@@ -165,6 +169,10 @@ class Subquery(Value):
     def value(self):
         name = self.rel.schema.names[0]
         return self.rel.fields[name]
+
+    @attribute
+    def relations(self):
+        return frozenset()
 
 
 @public
@@ -200,6 +208,10 @@ class InSubquery(Subquery):
                 f"Subquery {self.needle!r} is not comparable to {self.value!r}"
             )
 
+    @attribute
+    def relations(self):
+        return self.needle.relations
+
 
 # TODO: implement these
 # AnySubquery
@@ -208,30 +220,11 @@ class InSubquery(Subquery):
 
 def _check_integrity(values, allowed_parents):
     for value in values:
-        for root in value.find_topmost(Relation):
-            if root not in allowed_parents:
+        for rel in value.relations:
+            if rel not in allowed_parents:
                 raise IntegrityError(
                     f"Cannot add {value!r} to projection, they belong to another relation"
                 )
-
-
-def _check_project_integrity(values, allowed_parent):
-    for _, value in values.items():
-        for root in value.find_topmost((Relation, Subquery)):
-            if isinstance(root, Relation):
-                if root != allowed_parent:
-                    raise IntegrityError(
-                        f"Cannot add {value!r} to projection, they belong to another relation"
-                    )
-            elif isinstance(root, Subquery):
-                # TODO(kszucs): cover it with a test case
-                if not isinstance(root, (ScalarSubquery, InSubquery)):
-                    raise IntegrityError(
-                        f"Cannot add {value!r} to projection, it is a non-scalar, "
-                        "non-membership-checking subquery"
-                    )
-            else:
-                raise TypeError(root)
 
 
 def _check_filter_integrity(predicates, allowed_parent):
@@ -241,11 +234,9 @@ def _check_filter_integrity(predicates, allowed_parent):
         if pred.find(ReductionValue, filter=Value):
             raise IntegrityError(f"Cannot add {pred!r} to filter, it is a reduction")
 
-        depends_on = pred.find_topmost((Relation, Subquery))
-        all_subqueries = all(isinstance(v, Subquery) for v in depends_on)
-        if allowed_parent not in depends_on and not all_subqueries:
+        if pred.relations and allowed_parent not in pred.relations:
             raise IntegrityError(
-                f"Cannot add {pred!r} to filter, it doesn't depend on the relation"
+                f"Cannot add {pred!r} to filter, they belong to another relation"
             )
 
 
@@ -256,7 +247,7 @@ class Project(Relation):
     values: FrozenDict[str, Annotated[Value, ~InstanceOf(Alias)]]
 
     def __init__(self, parent, values):
-        _check_project_integrity(values, parent)
+        _check_integrity(values.values(), {parent})
         super().__init__(parent=parent, values=values)
 
     @attribute

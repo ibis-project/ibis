@@ -1,7 +1,7 @@
 SELECT
-  t0.x IN (
+  t0.x IN ((
     SELECT
-      t1.x
+      t1.x AS x
     FROM (
       SELECT
         *
@@ -11,5 +11,5 @@ SELECT
           t0.x > CAST(2 AS TINYINT)
         )
     ) AS t1
-  ) AS "InColumn(x, x)"
+  )) AS "InSubquery(x)"
 FROM "t" AS t0

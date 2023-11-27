@@ -128,6 +128,11 @@ class Node(Hashable):
     def __argnames__(self) -> tuple[str, ...]:
         """Sequence of argument names."""
 
+    @property
+    def __children__(self) -> tuple[Node, ...]:
+        """Sequence of children nodes."""
+        return tuple(_flatten_collections(self.__args__))
+
     def __rich_repr__(self):
         """Support for rich reprerentation of the node."""
         return zip(self.__argnames__, self.__args__)
@@ -226,7 +231,7 @@ class Node(Hashable):
                     if pat.match(node, ctx) is not NoMatch:
                         result.append(node)
                     else:
-                        queue.extend(_flatten_collections(node.__args__))
+                        queue.extend(node.__children__)
                     seen.add(node)
         else:
             # fast path for locating a specific type
@@ -235,7 +240,7 @@ class Node(Hashable):
                     if isinstance(node, pat):
                         result.append(node)
                     else:
-                        queue.extend(_flatten_collections(node.__args__))
+                        queue.extend(node.__children__)
                     seen.add(node)
 
         return result
@@ -454,7 +459,7 @@ def traverse(
 
         if control is not halt:
             if control is proceed:
-                children = tuple(_flatten_collections(node.__args__))
+                children = node.__children__
             elif isinstance(control, Iterable):
                 children = control
             else:
@@ -488,7 +493,7 @@ def bfs(root: Node) -> Graph:
 
     while queue:
         if (node := queue.popleft()) not in graph:
-            children = tuple(_flatten_collections(node.__args__))
+            children = node.__children__
             graph[node] = children
             queue.extend(children)
 
@@ -524,7 +529,7 @@ def bfs_while(root: Node, filter: Optional[Any] = None) -> Graph:
         if (node := queue.popleft()) not in graph:
             children = tuple(
                 child
-                for child in _flatten_collections(node.__args__)
+                for child in node.__children__
                 if filter.match(child, {}) is not NoMatch
             )
             graph[node] = children
@@ -555,7 +560,7 @@ def dfs(root: Node) -> Graph:
 
     while stack:
         if (node := stack.pop()) not in graph:
-            children = tuple(_flatten_collections(node.__args__))
+            children = node.__children__
             graph[node] = children
             stack.extend(children)
 
@@ -591,7 +596,7 @@ def dfs_while(root: Node, filter: Optional[Any] = None) -> Graph:
         if (node := stack.pop()) not in graph:
             children = tuple(
                 child
-                for child in _flatten_collections(node.__args__)
+                for child in node.__children__
                 if filter.match(child, {}) is not NoMatch
             )
             graph[node] = children

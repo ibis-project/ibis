@@ -159,8 +159,8 @@ def dereference_values(parents, values):
                 while isinstance(v, ops.Field):
                     mapping[v] = ops.Field(parent, k)
                     v = v.rel.fields.get(v.name)
-            # do not dereference literal expressions
-            elif v.find_topmost(ops.Field):
+            elif v.relations:
+                # do not dereference literal expressions
                 mapping[v] = ops.Field(parent, k)
     return {k: v.replace(mapping, filter=ops.Value) for k, v in values.items()}
 
@@ -1046,8 +1046,10 @@ class TableExpr(Expr, _FixedTextJupyterMixin):
         │ orange │       0.33 │     0.33 │
         └────────┴────────────┴──────────┘
         """
-        from ibis.expr.rewrites import p, DependsOn
-        from ibis.common.patterns import In
+        from ibis.expr.rewrites import p
+        from ibis.common.patterns import Contains, In
+
+        node = self.op()
 
         groups = bind(self, by)
         metrics = bind(self, (metrics, kwargs))
@@ -1064,7 +1066,7 @@ class TableExpr(Expr, _FixedTextJupyterMixin):
         # the user doesn't need to specify the metrics used in the having clause
         # explicitly, we implicitly add them to the metrics list by looking for
         # any metrics depending on self which are not specified explicitly
-        pattern = p.Reduction & ~In(set(metrics.values())) & DependsOn(self.op())
+        pattern = p.Reduction(relations=Contains(node)) & ~In(set(metrics.values()))
         original_metrics = metrics.copy()
         for pred in having.values():
             for metric in pred.find_topmost(pattern):
@@ -1074,7 +1076,7 @@ class TableExpr(Expr, _FixedTextJupyterMixin):
                     metrics[metric.name] = metric
 
         # construct the aggregate node
-        agg = ops.Aggregate(self, groups, metrics).to_expr()
+        agg = ops.Aggregate(node, groups, metrics).to_expr()
 
         if having:
             # apply the having clause

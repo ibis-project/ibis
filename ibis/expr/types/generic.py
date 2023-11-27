@@ -1174,7 +1174,7 @@ class Value(Expr):
         >>> expr.equals(expected)
         True
         """
-        parents = self.op().find_topmost(ops.Relation)
+        parents = self.op().relations
         values = {self.get_name(): self}
 
         if len(parents) == 0:
@@ -1260,7 +1260,7 @@ class Scalar(Value):
         >>> isinstance(lit, ir.Table)
         True
         """
-        parents = self.op().find_topmost(ops.Relation)
+        parents = self.op().relations
 
         if len(parents) == 0:
             return ops.DummyTable({self.get_name(): self}).to_expr()

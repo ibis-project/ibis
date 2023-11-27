@@ -21,7 +21,7 @@ x = var("x")
 y = var("y")
 
 
-# TODO(kszucs): should be removed in favor of node.find_topmost(Relation)
+# TODO(kszucs): should be removed in favor of value.relations
 def find_immediate_parent_tables(input_node, keep_input=True):
     """Find every first occurrence of a `ir.Table` object in `input_node`.
 
