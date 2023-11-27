@@ -367,3 +367,11 @@ def test_register_filesystem_gcs(con):
     )
 
     assert band_members.count().to_pyarrow()
+
+
+def test_memtable_null_column_parquet_dtype_roundtrip(con, tmp_path):
+    before = ibis.memtable({"a": [None, None, None]}, schema={"a": "string"})
+    before.to_parquet(tmp_path / "tmp.parquet")
+    after = ibis.read_parquet(tmp_path / "tmp.parquet")
+
+    assert before.a.type() == after.a.type()
