@@ -18,9 +18,7 @@ FROM (
           t3.degrees AS degrees,
           t3.earliest_degrees AS earliest_degrees,
           t3.latest_degrees AS latest_degrees,
-          (
-            t3.latest_degrees - t3.earliest_degrees
-          ) AS diff
+          t3.latest_degrees - t3.earliest_degrees AS diff
         FROM (
           SELECT
             t2.field_of_study AS field_of_study,
@@ -71,9 +69,7 @@ FROM (
             t3.degrees AS degrees,
             t3.earliest_degrees AS earliest_degrees,
             t3.latest_degrees AS latest_degrees,
-            (
-              t3.latest_degrees - t3.earliest_degrees
-            ) AS diff
+            t3.latest_degrees - t3.earliest_degrees AS diff
           FROM (
             SELECT
               t2.field_of_study AS field_of_study,

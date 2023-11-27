@@ -66,7 +66,7 @@ dask = { version = ">=2022.9.1", optional = true, extras = [
 datafusion = { version = ">=0.6,<34", optional = true }
 db-dtypes = { version = ">=0.3,<2", optional = true }
 deltalake = { version = ">=0.9.0,<1", optional = true }
-duckdb = { version = ">=0.8.1,<1", optional = true }
+duckdb = { version = ">=0.9.2,<1", optional = true }
 fsspec = { version = ">=2022.1.0", optional = true }
 geoalchemy2 = { version = ">=0.6.3,<1", optional = true }
 geopandas = { version = ">=0.6,<1", optional = true }

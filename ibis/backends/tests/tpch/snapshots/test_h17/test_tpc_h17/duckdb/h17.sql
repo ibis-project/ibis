@@ -1,7 +1,5 @@
 SELECT
-  (
-    SUM(t6.l_extendedprice) / CAST(7.0 AS DOUBLE)
-  ) AS avg_yearly
+  SUM(t6.l_extendedprice) / CAST(7.0 AS DOUBLE) AS avg_yearly
 FROM (
   SELECT
     *
@@ -34,9 +32,7 @@ FROM (
       t1.p_comment AS p_comment
     FROM "lineitem" AS t0
     INNER JOIN "part" AS t1
-      ON (
-        t1.p_partkey = t0.l_partkey
-      )
+      ON t1.p_partkey = t0.l_partkey
   ) AS t3
   WHERE
     (

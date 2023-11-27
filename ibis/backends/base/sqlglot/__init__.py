@@ -1,13 +1,9 @@
 from __future__ import annotations
 
 from functools import partial
-from typing import TYPE_CHECKING, Any, Callable
+from typing import Any, Callable
 
 import sqlglot as sg
-
-if TYPE_CHECKING:
-    import ibis.expr.datatypes as dt
-    from ibis.backends.base.sqlglot.datatypes import SqlglotType
 
 
 class AggGen:
@@ -86,12 +82,3 @@ NULL = sg.exp.NULL
 FALSE = sg.exp.FALSE
 TRUE = sg.exp.TRUE
 STAR = sg.exp.Star()
-
-
-def make_cast(
-    converter: SqlglotType,
-) -> Callable[[sg.exp.Expression, dt.DataType], sg.exp.Cast]:
-    def cast(arg: sg.exp.Expression, to: dt.DataType) -> sg.exp.Cast:
-        return sg.cast(sg.exp.convert(arg), to=converter.from_ibis(to))
-
-    return cast

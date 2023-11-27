@@ -29,9 +29,7 @@ FROM (
         t1.o_comment AS o_comment
       FROM "customer" AS t0
       LEFT OUTER JOIN "orders" AS t1
-        ON (
-          t0.c_custkey = t1.o_custkey
-        ) AND NOT t1.o_comment LIKE '%special%requests%'
+        ON t0.c_custkey = t1.o_custkey AND NOT t1.o_comment LIKE '%special%requests%'
     ) AS t3
     GROUP BY
       1

@@ -6,7 +6,6 @@ import ast
 import contextlib
 import os
 import warnings
-from operator import itemgetter
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
@@ -16,6 +15,7 @@ import pyarrow as pa
 import pyarrow_hotfix  # noqa: F401
 import sqlglot as sg
 import toolz
+from public import public
 
 import ibis
 import ibis.common.exceptions as exc
@@ -27,9 +27,9 @@ from ibis import util
 from ibis.backends.base import CanCreateSchema
 from ibis.backends.base.sql import BaseBackend
 from ibis.backends.base.sql.alchemy.geospatial import geospatial_supported
-from ibis.backends.base.sqlglot import C, F
+from ibis.backends.base.sqlglot import STAR, C, F
+from ibis.backends.base.sqlglot.compiler import SQLGlotCompiler
 from ibis.backends.base.sqlglot.datatypes import DuckDBType
-from ibis.backends.duckdb.compiler import translate
 from ibis.backends.duckdb.datatypes import DuckDBPandasData
 from ibis.expr.operations.udf import InputType
 
@@ -47,14 +47,6 @@ def normalize_filenames(source_list):
     source_list = util.promote_list(source_list)
 
     return list(map(util.normalize_filename, source_list))
-
-
-def strlit(s: str) -> sg.exp.Literal:
-    return sg.exp.Literal(this=s, is_string=True)
-
-
-def eq(left, right) -> sg.exp.EQ:
-    return sg.exp.EQ(this=left, expression=right)
 
 
 _UDF_INPUT_TYPE_MAPPING = {
@@ -86,9 +78,36 @@ class _Settings:
         return repr(dict(zip(kv["key"], kv["value"])))
 
 
+@public
+class DuckDBCompiler(SQLGlotCompiler):
+    __slots__ = ()
+
+    dialect = "duckdb"
+    type_mapper = DuckDBType
+
+    def _aggregate(self, funcname: str, *args, where):
+        expr = self.f[funcname](*args)
+        if where is not None:
+            return sg.exp.Filter(this=expr, expression=sg.exp.Where(this=where))
+        return expr
+
+    @SQLGlotCompiler.visit_node.register(ops.Sample)
+    def visit_Sample(
+        self, op, *, parent, fraction: float, method: str, seed: int | None, **_
+    ):
+        sample = sg.exp.TableSample(
+            this=parent,
+            method="bernoulli" if method == "row" else "system",
+            percent=sg.exp.convert(fraction * 100.0),
+            seed=None if seed is None else sg.exp.convert(seed),
+        )
+        return sg.select(STAR).from_(sample)
+
+
 class Backend(BaseBackend, CanCreateSchema):
     name = "duckdb"
     supports_create_or_replace = True
+    compiler = DuckDBCompiler()
 
     def _define_udf_translation_rules(self, expr):
         """No-op: UDF translation rules are defined in the compiler."""
@@ -265,25 +284,23 @@ class Backend(BaseBackend, CanCreateSchema):
         sch.Schema
             Ibis schema
         """
-        conditions = [eq(sg.column("table_name"), strlit(table_name))]
+        conditions = [sg.column("table_name").eq(sg.exp.convert(table_name))]
 
         if database is not None:
-            conditions.append(eq(sg.column("table_catalog"), strlit(database)))
+            conditions.append(sg.column("table_catalog").eq(sg.exp.convert(database)))
 
         if schema is not None:
-            conditions.append(eq(sg.column("table_schema"), strlit(schema)))
+            conditions.append(sg.column("table_schema").eq(sg.exp.convert(schema)))
 
         query = (
             sg.select(
                 "column_name",
                 "data_type",
-                sg.alias(eq(sg.column("is_nullable"), strlit("YES")), "nullable"),
-                # see https://github.com/tobymao/sqlglot/issues/2253 for why
-                # this column is included
-                "ordinal_position",
+                sg.column("is_nullable").eq(sg.exp.convert("YES")).as_("nullable"),
             )
             .from_(sg.table("columns", db="information_schema"))
             .where(sg.and_(*conditions))
+            .order_by("ordinal_position")
         )
 
         result = self.raw_sql(query)
@@ -295,14 +312,11 @@ class Backend(BaseBackend, CanCreateSchema):
         names = meta["column_name"].to_pylist()
         types = meta["data_type"].to_pylist()
         nullables = meta["nullable"].to_pylist()
-        pos = meta["ordinal_position"].to_pylist()
 
         return sch.Schema(
             {
                 name: DuckDBType.from_string(typ, nullable=nullable)
-                for _, name, typ, nullable in sorted(
-                    zip(pos, names, types, nullables), key=itemgetter(0)
-                )
+                for name, typ, nullable in zip(names, types, nullables)
             }
         )
 
@@ -324,16 +338,17 @@ class Backend(BaseBackend, CanCreateSchema):
         )
 
         if database is not None:
-            query = query.where(eq(sg.column("catalog_name"), strlit(database)))
+            query = query.where(sg.column("catalog_name").eq(sg.exp.convert(database)))
 
         out = self.raw_sql(query).arrow()
         return self._filter_with_like(out[col].to_pylist(), like=like)
 
     @classmethod
     def has_operation(cls, operation: type[ops.Value]) -> bool:
-        from ibis.backends.duckdb.compiler.values import translate_val
-
-        return translate_val.dispatch(operation) is not translate_val.dispatch(object)
+        # singledispatchmethod overrides `__get__` so we can't directly access
+        # the dispatcher
+        dispatcher = cls.compiler.visit_node.register.__self__.dispatcher
+        return dispatcher.dispatch(operation) is not dispatcher.dispatch(object)
 
     @staticmethod
     def _convert_kwargs(kwargs: MutableMapping) -> None:
@@ -401,18 +416,7 @@ class Backend(BaseBackend, CanCreateSchema):
             Path(temp_directory).mkdir(parents=True, exist_ok=True)
             config["temp_directory"] = str(temp_directory)
 
-        self._record_batch_readers_consumed = {}
-        import duckdb
-
-        # TODO(cpcloud): remove this when duckdb is >0.8.1
-        # this is here to workaround https://github.com/duckdb/duckdb/issues/8735
-        with contextlib.suppress(duckdb.InvalidInputException):
-            duckdb.execute("SELECT ?", (1,))
-
-        self.con = duckdb.connect(str(database), config=config)
-
-        self._record_batch_readers_consumed = {}
-        self._temp_views: set[str] = set()
+        self.con = duckdb.connect(str(database), config=config, read_only=read_only)
 
         # Load any pre-specified extensions
         if extensions is not None:
@@ -421,29 +425,26 @@ class Backend(BaseBackend, CanCreateSchema):
         # Default timezone
         self.raw_sql("SET TimeZone = 'UTC'")
 
-    @staticmethod
-    def _sg_load_extensions(
-        dbapi_con, extensions: list[str], force_install: bool = False
-    ) -> None:
-        query = """
-        WITH exts AS (
-          SELECT extension_name AS name, aliases FROM duckdb_extensions()
-          WHERE installed AND loaded
-        )
-        SELECT name FROM exts
-        UNION (SELECT UNNEST(aliases) AS name FROM exts)
-        """
-        installed = (name for (name,) in dbapi_con.sql(query).fetchall())
-        # Install and load all other extensions
-        todo = set(extensions).difference(installed)
-        for extension in todo:
-            dbapi_con.install_extension(extension, force_install=force_install)
-            dbapi_con.load_extension(extension)
+        self._record_batch_readers_consumed = {}
+        self._temp_views: set[str] = set()
 
     def _load_extensions(
         self, extensions: list[str], force_install: bool = False
     ) -> None:
-        self._sg_load_extensions(self.con, extensions, force_install=force_install)
+        query = """
+        SELECT
+          UNNEST(aliases || [extension_name])
+        FROM duckdb_extensions()
+        WHERE installed
+          AND loaded
+        """
+        con = self.con
+        installed = (name for (name,) in con.sql(query).fetchall())
+        # Install and load all other extensions
+        todo = frozenset(extensions).difference(installed)
+        for extension in todo:
+            con.install_extension(extension, force_install=force_install)
+            con.load_extension(extension)
 
     def _from_url(self, url: str, **kwargs) -> BaseBackend:
         """Connect to a backend using a URL `url`.
@@ -488,7 +489,7 @@ class Backend(BaseBackend, CanCreateSchema):
         if params is None:
             params = {}
 
-        sql = translate(table_expr.op(), params=params)
+        sql = self.compiler.translate(table_expr.op(), params=params)
         assert not isinstance(sql, sg.exp.Subquery)
 
         if isinstance(sql, sg.exp.Table):

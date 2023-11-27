@@ -27,9 +27,7 @@ FROM (
         t1.p_comment AS p_comment
       FROM "partsupp" AS t0
       INNER JOIN "part" AS t1
-        ON (
-          t1.p_partkey = t0.ps_partkey
-        )
+        ON t1.p_partkey = t0.ps_partkey
     ) AS t5
     WHERE
       (

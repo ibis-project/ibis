@@ -6,10 +6,9 @@ from collections.abc import Mapping
 
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
-from ibis.common.collections import FrozenDict
 from ibis.common.deferred import Item, _, deferred, var
 from ibis.common.exceptions import UnsupportedOperationError
-from ibis.common.patterns import Check, Eq, pattern, replace
+from ibis.common.patterns import Check, pattern, replace
 from ibis.util import Namespace
 
 p = Namespace(pattern, module=ops)

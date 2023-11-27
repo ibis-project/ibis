@@ -963,11 +963,11 @@ def test_default_backend():
     for _ in range(2):
         assert expr.execute() == df.a.sum()
 
-    sql = str(ibis.to_sql(expr))
+    sql = ibis.to_sql(expr)
     rx = """\
 SELECT
-  SUM\\((\\w+)\\.a\\) AS ".+"
-FROM "\\w+" AS \\1"""
+  SUM\\((t\\d+)\\.a\\) AS ".+"
+FROM \\w+ AS \\1"""
     assert re.match(rx, sql) is not None
 
 

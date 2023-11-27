@@ -21,17 +21,11 @@ FROM (
           t3.n_name AS n_name
         FROM "supplier" AS t0
         INNER JOIN "lineitem" AS t1
-          ON (
-            t0.s_suppkey = t1.l_suppkey
-          )
+          ON t0.s_suppkey = t1.l_suppkey
         INNER JOIN "orders" AS t2
-          ON (
-            t2.o_orderkey = t1.l_orderkey
-          )
+          ON t2.o_orderkey = t1.l_orderkey
         INNER JOIN "nation" AS t3
-          ON (
-            t0.s_nationkey = t3.n_nationkey
-          )
+          ON t0.s_nationkey = t3.n_nationkey
       ) AS t8
       WHERE
         (

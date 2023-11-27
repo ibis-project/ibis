@@ -20,9 +20,7 @@ INNER JOIN (
       TRUE
   ) AS t1
 ) AS t2
-  ON (
-    t1.key = t2.key
-  )
+  ON t1.key = t2.key
 INNER JOIN (
   SELECT
     t1.key AS key,
@@ -45,10 +43,6 @@ INNER JOIN (
         TRUE
     ) AS t1
   ) AS t2
-    ON (
-      t1.key = t2.key
-    )
+    ON t1.key = t2.key
 ) AS t4
-  ON (
-    t1.key = t1.key
-  )
+  ON t1.key = t1.key

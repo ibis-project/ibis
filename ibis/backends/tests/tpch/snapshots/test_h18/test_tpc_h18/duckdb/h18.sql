@@ -51,13 +51,9 @@ FROM (
           t2.l_comment AS l_comment
         FROM "customer" AS t0
         INNER JOIN "orders" AS t1
-          ON (
-            t0.c_custkey = t1.o_custkey
-          )
+          ON t0.c_custkey = t1.o_custkey
         INNER JOIN "lineitem" AS t2
-          ON (
-            t1.o_orderkey = t2.l_orderkey
-          )
+          ON t1.o_orderkey = t2.l_orderkey
       ) AS t6
       WHERE
         t6.o_orderkey IN ((
