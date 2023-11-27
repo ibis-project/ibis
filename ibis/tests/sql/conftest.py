@@ -4,9 +4,7 @@ import pytest
 import sqlglot as sg
 
 import ibis
-
-# from ibis.backends.base.sql.compiler import Compiler, QueryContext
-from ibis.backends.duckdb.compiler import translate
+from ibis.backends.duckdb import Backend as DuckDBBackend
 from ibis.tests.expr.mocks import MockBackend
 
 
@@ -78,7 +76,7 @@ def to_sql(expr, *args, **kwargs) -> str:
 
     expr = expr.optimize()
 
-    sql = translate(expr.op(), params={})
+    sql = DuckDBBackend.compiler.translate(expr.op(), params={})
     if isinstance(sql, sg.exp.Table):
         sql = sg.select("*").from_(sql)
 
