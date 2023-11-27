@@ -51,7 +51,9 @@ class Resolver(Coercible, Hashable):
         elif isinstance(value, Deferred):
             return value._resolver
         else:
-            raise CoercionError(f"Cannot coerce {value!r} to {cls.__name__!r}")
+            raise CoercionError(
+                f"Cannot coerce {type(value).__name__!r} to {cls.__name__!r}"
+            )
 
 
 class Deferred(Slotted, Immutable, Final):
