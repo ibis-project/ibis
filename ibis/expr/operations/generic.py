@@ -35,27 +35,6 @@ class RowID(Value, Named):
 
 
 @public
-class TableArrayView(Value, Named):
-    """Helper operation class for creating scalar subqueries."""
-
-    table: Relation
-
-    shape = ds.columnar
-
-    @attribute
-    def dtype(self):
-        return self.table.schema[self.name]
-
-    @attribute
-    def name(self):
-        return self.table.schema.names[0]
-
-    @attribute
-    def relations(self):
-        return frozenset({self.table})
-
-
-@public
 class Cast(Value):
     """Explicitly cast value to a specific data type."""
 

@@ -829,10 +829,6 @@ class SQLGlotCompiler(abc.ABC):
             this=base, ifs=list(map(self.if_, cases, results)), default=default
         )
 
-    @visit_node.register(ops.TableArrayView)
-    def visit_TableArrayView(self, op, *, table, **_):
-        return table.args["this"].subquery()
-
     @visit_node.register(ops.ExistsSubquery)
     def visit_ExistsSubquery(self, op, *, rel, **_):
         return self.f.exists(rel.this.subquery())

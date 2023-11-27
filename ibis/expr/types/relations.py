@@ -1737,22 +1737,6 @@ class TableExpr(Expr, _FixedTextJupyterMixin):
             node = ops.Intersection(node, table, distinct=distinct)
         return node.to_expr().select(self.columns)
 
-    def to_array(self) -> ir.Column:
-        """View a single column table as an array.
-
-        Returns
-        -------
-        Value
-            A single column view of a table
-        """
-        schema = self.schema()
-        if len(schema) != 1:
-            raise com.ExpressionError(
-                "Table must have exactly one column when viewed as array"
-            )
-
-        return ops.TableArrayView(self).to_expr()
-
     def mutate(self, *exprs: Sequence[ir.Expr] | None, **mutations: ir.Value) -> Table:
         """Add columns to a table expression.
 

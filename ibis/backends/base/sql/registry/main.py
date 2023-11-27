@@ -342,7 +342,6 @@ operation_registry = {
     ops.SimpleCase: case.simple_case,
     ops.SearchedCase: case.searched_case,
     ops.Field: table_column,
-    ops.TableArrayView: table_array_view,
     ops.DateAdd: timestamp.timestamp_op("date_add"),
     ops.DateSub: timestamp.timestamp_op("date_sub"),
     ops.DateDiff: timestamp.timestamp_op("datediff"),
