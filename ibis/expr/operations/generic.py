@@ -29,6 +29,10 @@ class RowID(Value, Named):
     shape = ds.columnar
     dtype = dt.int64
 
+    @attribute
+    def relations(self):
+        return frozenset({self.table})
+
 
 @public
 class TableArrayView(Value, Named):
@@ -38,13 +42,17 @@ class TableArrayView(Value, Named):
 
     shape = ds.columnar
 
-    @property
+    @attribute
     def dtype(self):
         return self.table.schema[self.name]
 
-    @property
+    @attribute
     def name(self):
         return self.table.schema.names[0]
+
+    @attribute
+    def relations(self):
+        return frozenset({self.table})
 
 
 @public
