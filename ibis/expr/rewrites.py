@@ -99,8 +99,7 @@ def project_wrap_analytic(_, rel):
 @replace(ops.Reduction)
 def project_wrap_reduction(_, rel):
     # Query all the tables that the reduction depends on
-    parents = _.find_topmost(ops.Relation)
-    if parents == [rel]:
+    if _.relations == {rel}:
         # The reduction is fully originating from the `rel`, so turn
         # it into a window function of `rel`
         return ops.WindowFunction(_, ops.RowsWindowFrame(rel))
