@@ -43,7 +43,7 @@ FROM (
         ) AS t3
       ) AS t4
       GROUP BY
-        1
+        t4.field_of_study
     ) AS t5
     ORDER BY
       t5.diff DESC
@@ -94,7 +94,7 @@ FROM (
           ) AS t3
         ) AS t4
         GROUP BY
-          1
+          t4.field_of_study
       ) AS t5
       WHERE
         (

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import calendar
 import math
-from functools import partial, singledispatchmethod
+from functools import singledispatchmethod
 from typing import Any
 
 import sqlglot as sg
@@ -570,58 +570,6 @@ class ClickHouseCompiler(SQLGlotCompiler):
             dtype,
         )
 
-    @visit_node.register
-    def _sort_key(self, op: ops.SortKey, *, expr, ascending: bool, **_):
-        return sg.exp.Ordered(this=expr, desc=not ascending)
-
-    @visit_node.register(ops.WindowBoundary)
-    def visit_WindowBoundary(self, op, *, value, preceding, **_):
-        # TODO: bit of a hack to return a dict, but there's no sqlglot expression
-        # that corresponds to _only_ this information
-        return {"value": value, "side": "preceding" if preceding else "following"}
-
-    @visit_node.register(ops.RowsWindowFrame)
-    @visit_node.register(ops.RangeWindowFrame)
-    def visit_RangeWindowFrame(
-        self, op, *, group_by, order_by, start, end, max_lookback=None, **_
-    ):
-        if max_lookback is not None:
-            raise NotImplementedError(
-                "`max_lookback` is not supported in the ClickHouse backend"
-            )
-
-        if start is None:
-            start = {}
-
-        start_value = start.get("value", "UNBOUNDED")
-        start_side = start.get("side", "PRECEDING")
-
-        if end is None:
-            end = {}
-
-        end_value = end.get("value", "UNBOUNDED")
-        end_side = end.get("side", "FOLLOWING")
-
-        spec = sg.exp.WindowSpec(
-            kind=op.how.upper(),
-            start=start_value,
-            start_side=start_side,
-            end=end_value,
-            end_side=end_side,
-            over="OVER",
-        )
-
-        order = sg.exp.Order(expressions=order_by) if order_by else None
-
-        # TODO: bit of a hack to return a partial, but similar to `WindowBoundary`
-        # there's no sqlglot expression that corresponds to _only_ this information
-        return partial(sg.exp.Window, partition_by=group_by, order=order, spec=spec)
-
-    @visit_node.register(ops.WindowFunction)
-    def visit_WindowFunction(self, op: ops.WindowFunction, *, func, frame, **_: Any):
-        # frame is a partial call to sg.exp.Window
-        return frame(this=func)
-
     @visit_node.register(ops.Lag)
     @visit_node.register(ops.Lead)
     def formatter(self, op, *, arg, offset, default, **_):
@@ -653,10 +601,6 @@ class ClickHouseCompiler(SQLGlotCompiler):
     @visit_node.register(ops.ArrayStringJoin)
     def visit_ArrayStringJoin(self, op, *, arg, sep, **_):
         return self.f.arrayStringConcat(arg, sep)
-
-    @visit_node.register(ops.Argument)
-    def visit_Argument(self, op, *, name, **_):
-        return sg.to_identifier(name)
 
     @visit_node.register(ops.ArrayMap)
     def visit_ArrayMap(self, op, *, arg, param, body, **_):
