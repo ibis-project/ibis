@@ -9,7 +9,7 @@ import pytest
 import ibis
 import ibis.expr.types as ir
 from ibis import util
-from ibis.backends.tests.base import RoundHalfToEven, ServiceBackendTest
+from ibis.backends.tests.base import ServiceBackendTest
 
 if TYPE_CHECKING:
     from collections.abc import Iterable
@@ -22,7 +22,7 @@ CLICKHOUSE_PASS = os.environ.get("IBIS_TEST_CLICKHOUSE_PASSWORD", "")
 IBIS_TEST_CLICKHOUSE_DB = os.environ.get("IBIS_TEST_DATA_DB", "ibis_testing")
 
 
-class TestConf(ServiceBackendTest, RoundHalfToEven):
+class TestConf(ServiceBackendTest):
     check_dtype = False
     supports_window_operations = False
     returned_timestamp_unit = "s"
@@ -30,6 +30,7 @@ class TestConf(ServiceBackendTest, RoundHalfToEven):
     supports_floating_modulus = False
     supports_json = False
     force_sort_before_comparison = True
+    rounding_method = "half_to_even"
     data_volume = "/var/lib/clickhouse/user_files/ibis"
     service_name = "clickhouse"
     deps = ("clickhouse_connect",)

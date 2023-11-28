@@ -11,7 +11,7 @@ import ibis
 import ibis.expr.datatypes as dt
 import ibis.selectors as s
 from ibis.backends.conftest import TEST_TABLES
-from ibis.backends.tests.base import BackendTest, RoundAwayFromZero
+from ibis.backends.tests.base import BackendTest
 
 if TYPE_CHECKING:
     from collections.abc import Iterable
@@ -32,7 +32,7 @@ TRINO_PORT = int(
 )
 
 
-class TestConf(BackendTest, RoundAwayFromZero):
+class TestConf(BackendTest):
     # trino rounds half to even for double precision and half away from zero
     # for numeric and decimal
 

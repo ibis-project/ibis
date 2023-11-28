@@ -4,16 +4,17 @@ from typing import Any
 
 import ibis
 from ibis.backends.conftest import TEST_TABLES
-from ibis.backends.tests.base import BackendTest, RoundHalfToEven
+from ibis.backends.tests.base import BackendTest
 from ibis.backends.tests.data import array_types, json_types, struct_types, win
 
 
-class TestConf(BackendTest, RoundHalfToEven):
+class TestConf(BackendTest):
     check_names = False
     supported_to_timestamp_units = BackendTest.supported_to_timestamp_units | {"ns"}
     supports_divide_by_zero = True
     returned_timestamp_unit = "ns"
     stateful = False
+    rounding_method = "half_to_even"
     deps = ("pandas",)
 
     def _load_data(self, **_: Any) -> None:
