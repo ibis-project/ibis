@@ -5,7 +5,7 @@ import concurrent.futures
 import inspect
 import subprocess
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Literal
 
 import numpy as np
 import pandas as pd
@@ -21,26 +21,48 @@ if TYPE_CHECKING:
 
 
 class BackendTest(abc.ABC):
-    check_dtype = True
-    check_names = True
-    supports_arrays = True
-    supports_arrays_outside_of_select = supports_arrays
-    supports_window_operations = True
-    supports_divide_by_zero = False
-    returned_timestamp_unit = "us"
+    """
+    The base class for managing configuration and data loading for a backend
+    that does not require Docker for testing (this includes both in-process
+    backends and cloud backends like Snowflake and BigQuery).
+    """
+
+    check_dtype: bool = True
+    "Check that dtypes match when comparing Pandas Series"
+    check_names: bool = True
+    "Check that column name matches when comparing Pandas Series"
+    supports_arrays: bool = True
+    "Whether backend supports Arrays / Lists"
+    supports_arrays_outside_of_select: bool = supports_arrays
+    "Whether backend supports Arrays / Lists outside of Select Statements"
+    supports_window_operations: bool = True
+    "Whether backend supports Window Operations"
+    supports_divide_by_zero: bool = False
+    "Whether backend supports division by zero"
+    returned_timestamp_unit: str = "us"
     supported_to_timestamp_units = {"s", "ms", "us"}
-    supports_floating_modulus = True
-    native_bool = True
-    supports_structs = True
-    supports_json = True
-    supports_map = False  # basically nothing does except trino and snowflake
+    supports_floating_modulus: bool = True
+    "Whether backend supports floating point in modulus operations"
+    native_bool: bool = True
+    "Whether backend has native boolean types"
+    supports_structs: bool = True
+    "Whether backend supports Structs"
+    supports_json: bool = True
+    "Whether backend supports operating on JSON"
+    supports_map: bool = False
+    "Whether backend supports mappings (currently DuckDB, Snowflake, and Trino)"
     reduction_tolerance = 1e-7
+    "Used for a single test in `test_aggregation.py`. You should not need to touch this."
     default_identifier_case_fn = staticmethod(toolz.identity)
+    "Function applied to all identifier names to change case as necessary (e.g. Snowflake ALL_CAPS)"
     stateful = True
-    service_name = None
-    supports_tpch = False
+    "Whether special handling is needed for running a multi-process pytest run."
+    supports_tpch: bool = False
+    "Child class defines a `load_tpch` method that loads the required TPC-H tables into a connection."
     force_sort_before_comparison = False
-    rounding_method = "away_from_zero"
+    "Sort results before comparing against reference computation."
+    rounding_method: Literal["away_from_zero", "half_to_even"] = "away_from_zero"
+    "Name of round method to use for rounding test comparisons."
 
     @property
     @abc.abstractmethod
@@ -62,6 +84,20 @@ class BackendTest(abc.ABC):
         return name
 
     def __init__(self, *, data_dir: Path, tmpdir, worker_id, **kw) -> None:
+        """
+        Initializes the test class -- note that none of the arguments are
+        required and will be provided by `pytest` or by fixtures defined in
+        `ibis/backends/conftest.py`.
+
+        data_dir
+            Directory where test data resides (will be provided by the
+            `data_dir` fixture in `ibis/backends/conftest.py`)
+        tmpdir
+            Pytest fixture providing a temporary directory location
+        worker_id
+            A unique identifier for each worker used for running test
+            concurrently via e.g. `pytest -n auto`
+        """
         self.connection = self.connect(tmpdir=tmpdir, worker_id=worker_id, **kw)
         self.data_dir = data_dir
         self.script_dir = data_dir.parent / "schema"
@@ -112,7 +148,7 @@ class BackendTest(abc.ABC):
         if worker_id != "master":
             root_tmp_dir = root_tmp_dir.parent
 
-        fn = root_tmp_dir / (getattr(cls, "service_name", None) or cls.name())
+        fn = root_tmp_dir / cls.name()
         with FileLock(f"{fn}.lock"):
             cls.skip_if_missing_deps()
 
@@ -295,7 +331,15 @@ class BackendTest(abc.ABC):
 
 
 class ServiceBackendTest(BackendTest):
+    """Parent class to use for backend test configuration if backend requires a
+    Docker container(s) in order to run locally.
+
+    """
+
+    service_name: str | None = None
+    "Name of service defined in docker-compose.yml corresponding to backend."
     data_volume = "/data"
+    "Data volume defined in docker-compose.yml corresponding to backend."
 
     @property
     @abc.abstractmethod
