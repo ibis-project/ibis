@@ -970,14 +970,6 @@ def execute_string_split(op, data, delimiter, **kwargs):
     return pd.Series(np.array(s.split(delimiter)) for s in data)
 
 
-@execute_node.register(
-    ops.Between,
-    pd.Series,
-    (pd.Series, numbers.Real, str, datetime.datetime),
-    (pd.Series, numbers.Real, str, datetime.datetime),
-)
-def execute_between(op, data, lower, upper, **kwargs):
-    return data.between(lower, upper)
 
 
 @execute_node.register(ops.Union, pd.DataFrame, pd.DataFrame, bool)
@@ -1020,15 +1012,6 @@ def execute_difference_dataframe_dataframe(
     result = merged[merged["_merge"] == "left_only"].drop("_merge", axis=1)
     return result
 
-
-@execute_node.register(ops.IsNull, pd.Series)
-def execute_series_isnull(op, data, **kwargs):
-    return data.isnull()
-
-
-@execute_node.register(ops.NotNull, pd.Series)
-def execute_series_notnnull(op, data, **kwargs):
-    return data.notnull()
 
 
 @execute_node.register(ops.IsNan, (pd.Series, floating_types))
@@ -1120,49 +1103,6 @@ def execute_node_math_function_number(op, value, **kwargs):
 @execute_node.register(ops.Log, numeric_types, numeric_types)
 def execute_node_log_number_number(op, value, base, **kwargs):
     return math.log(value, base)
-
-
-def coalesce(values):
-    return functools.reduce(
-        lambda a1, a2: np.where(pd.isnull(a1), a2, a1),
-        values,
-    )
-
-
-@toolz.curry
-def promote_to_sequence(length, obj):
-    try:
-        return obj.values
-    except AttributeError:
-        return np.repeat(obj, length)
-
-
-def compute_row_reduction(func, values, **kwargs):
-    final_sizes = {len(x) for x in values if isinstance(x, Sized)}
-    if not final_sizes:
-        return func(values)
-    (final_size,) = final_sizes
-    raw = func(list(map(promote_to_sequence(final_size), values)), **kwargs)
-    return pd.Series(raw).squeeze()
-
-
-@execute_node.register(ops.Greatest, tuple)
-def execute_node_greatest_list(op, values, **kwargs):
-    values = [execute(arg, **kwargs) for arg in values]
-    return compute_row_reduction(np.maximum.reduce, values, axis=0)
-
-
-@execute_node.register(ops.Least, tuple)
-def execute_node_least_list(op, values, **kwargs):
-    values = [execute(arg, **kwargs) for arg in values]
-    return compute_row_reduction(np.minimum.reduce, values, axis=0)
-
-
-@execute_node.register(ops.Coalesce, tuple)
-def execute_node_coalesce(op, values, **kwargs):
-    # TODO: this is slow
-    values = [execute(arg, **kwargs) for arg in values]
-    return compute_row_reduction(coalesce, values)
 
 
 def wrap_case_result(raw, expr):
@@ -1263,8 +1203,3 @@ def execute_distinct_dataframe(op, df, **kwargs):
 # @execute_node.register(ops.TableArrayView, pd.DataFrame)
 # def execute_table_array_view(op, _, **kwargs):
 #     return execute(op.table).squeeze()
-
-
-@execute_node.register(ops.Sample, pd.DataFrame, object, object)
-def execute_sample(op, data, fraction, seed, **kwargs):
-    return data.sample(frac=fraction, random_state=seed)

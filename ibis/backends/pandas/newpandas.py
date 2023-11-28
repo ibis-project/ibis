@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import operator
+from collections.abc import Sized
 from functools import reduce, singledispatch
 
 import numpy as np
@@ -84,14 +85,18 @@ def execute_limit(op, parent, n, offset):
         return parent.iloc[offset : offset + n]
 
 
+@execute.register(ops.Sample)
+def execute_sample(op, parent, fraction, method, seed):
+    return parent.sample(frac=fraction, random_state=seed)
+
+
 @execute.register(ops.Filter)
 def execute_filter(op, parent, predicates):
     if predicates:
-        predicate = reduce(operator.and_, predicates)
-        assert len(predicate) == len(
-            parent
-        ), "Selection predicate length does not match underlying table"
-        parent = parent.loc[predicate]
+        pred = reduce(operator.and_, predicates)
+        if len(pred) != len(parent):
+            raise RuntimeError("Selection predicate length does not match underlying table")
+        parent = parent.loc[pred]
     return parent
 
 
@@ -102,18 +107,23 @@ def execute_project(op, parent, values):
 
 @execute.register(ops.Sort)
 def execute_sort(op, parent, keys):
-    # 1. add sort key columns to the dataframe
+    # 1. add sort key columns to the dataframe if they are not already present
     # 2. sort the dataframe using those columns
     # 3. drop the sort key columns
 
-    columns = {util.gen_name("sort_key"): key for key in keys}
-    result = parent.assign(**columns)
+    names = []
+    newcols = {}
+    for key, keycol in zip(op.keys, keys):
+        if not isinstance(key, ops.Field):
+            name = util.gen_name("sort_key")
+            newcols[name] = keycol
+        names.append(name)
 
-    by = list(columns.keys())
+    result = parent.assign(**newcols)
     ascending = [key.ascending for key in op.keys]
-    result = result.sort_values(by=by, ascending=ascending)
+    result = result.sort_values(by=names, ascending=ascending, ignore_index=True)
 
-    return result.drop(by, axis=1)
+    return result.drop(newcols.keys(), axis=1)
 
 
 @execute.register(ops.Field)
@@ -155,7 +165,8 @@ def execute_cast(op, arg, to):
     if isinstance(arg, pd.Series):
         return PandasData.convert_column(arg, to)
     else:
-        raise NotImplementedError(f"no rule for {type(arg)}")
+        return PandasData.convert_scalar(arg, to)
+
 
 
 _binary_operations = {
@@ -220,6 +231,14 @@ def execute_null_if(op, arg, null_if_expr):
     else:
         return np.nan if arg == null_if_expr else arg
 
+@execute.register(ops.IsNull)
+def execute_series_isnull(op, arg):
+    return arg.isnull()
+
+
+@execute.register(ops.NotNull)
+def execute_series_notnnull(op, arg):
+    return arg.notnull()
 
 @execute.register(ops.FillNa)
 def execute_fillna(op, parent, replacements):
@@ -295,6 +314,50 @@ def execute_timestamp_now(op, *args, **kwargs):
 @execute.register(ops.TimestampDiff)
 def execute_timestamp_diff(op, left, right):
     return left - right
+
+
+def _broadcast_scalars(values):
+    sizes = {len(x) for x in values if isinstance(x, Sized)}
+    if not sizes:
+        return values
+
+    (size,) = sizes
+    columns = []
+    for v in values:
+        if isinstance(v, pd.Series):
+            columns.append(v.values)
+        else:
+            columns.append(np.repeat(v, size))
+
+    return columns
+
+
+@execute.register(ops.Greatest)
+def execute_greatest(op, arg):
+    # TODO(kszucs): create a pandas dataframe instead and use `max(axis=1)`
+    values = _broadcast_scalars(arg)
+    return np.maximum.reduce(values, axis=0)
+
+
+@execute.register(ops.Least)
+def execute_least(op, arg):
+    # TODO(kszucs): create a pandas dataframe instead and use `min(axis=1)`
+    values = _broadcast_scalars(arg)
+    return np.minimum.reduce(values, axis=0)
+
+
+@execute.register(ops.Coalesce)
+def execute_coalesce(op, arg, **kwargs):
+    values = _broadcast_scalars(arg)
+    return reduce(
+        lambda a1, a2: np.where(pd.isnull(a1), a2, a1),
+        values,
+    )
+
+@execute.register(ops.Between)
+def execute_between(op, arg, lower_bound, upper_bound):
+    return arg.between(lower_bound, upper_bound)
+
 
 
 def zuper(node):

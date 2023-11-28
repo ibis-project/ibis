@@ -103,16 +103,12 @@ class PandasData(DataMapper):
         return sch.Schema.from_tuples(pairs)
 
     @classmethod
-    def convert_table(cls, df, schema):
-        if len(schema) != len(df.columns):
-            raise ValueError(
-                "schema column count does not match input data column count"
-            )
+    def convert_scalar(cls, obj, dtype):
+        pandas_type = PandasType.from_ibis(dtype)
 
-        for name, dtype in schema.items():
-            df[name] = cls.convert_column(df[name], dtype)
+        # TODO(kszucs): properly implement the conversion
+        return obj
 
-        return df
 
     @classmethod
     def convert_column(cls, obj, dtype):
@@ -127,6 +123,18 @@ class PandasData(DataMapper):
         result = convert_method(obj, dtype, pandas_type)
         assert not isinstance(result, np.ndarray), f"{convert_method} -> {type(result)}"
         return result
+
+    @classmethod
+    def convert_table(cls, df, schema):
+        if len(schema) != len(df.columns):
+            raise ValueError(
+                "schema column count does not match input data column count"
+            )
+
+        for name, dtype in schema.items():
+            df[name] = cls.convert_column(df[name], dtype)
+
+        return df
 
     @staticmethod
     def convert_GeoSpatial(s, dtype, pandas_type):
