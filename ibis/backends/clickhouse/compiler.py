@@ -64,16 +64,9 @@ class ClickHouseCompiler(SQLGlotCompiler):
 
     @visit_node.register(ops.ArrayRepeat)
     def visit_ArrayRepeat(self, op, *, arg, times, **_):
-        return (
-            sg.select(self.f.arrayFlatten(self.f.groupArray(sg.column("arr"))))
-            .from_(
-                sg.select(arg.as_("arr"))
-                .from_(sg.table("numbers", db="system"))
-                .limit(times)
-                .subquery()
-            )
-            .subquery()
-        )
+        param = sg.to_identifier("_")
+        func = sg.exp.Lambda(this=arg, expressions=[param])
+        return self.f.arrayFlatten(self.f.arrayMap(func, self.f.range(times)))
 
     @visit_node.register(ops.ArraySlice)
     def visit_ArraySlice(self, op, *, arg, start, stop, **_):
