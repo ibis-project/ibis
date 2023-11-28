@@ -1,13 +1,850 @@
 from __future__ import annotations
 
-from public import public
+import calendar
+import math
+from functools import partial, singledispatchmethod
+from typing import Any
 
-from ibis.backends.clickhouse.compiler.core import translate
-from ibis.backends.clickhouse.compiler.relations import translate_rel
-from ibis.backends.clickhouse.compiler.values import translate_val
+import sqlglot as sg
 
-public(
-    translate=translate,
-    translate_rel=translate_rel,
-    translate_val=translate_val,
-)
+import ibis.common.exceptions as com
+import ibis.expr.datatypes as dt
+import ibis.expr.operations as ops
+from ibis import util
+from ibis.backends.base.sqlglot import NULL, STAR, parenthesize
+from ibis.backends.base.sqlglot.compiler import SQLGlotCompiler
+from ibis.backends.clickhouse.datatypes import ClickhouseType
+from ibis.expr.rewrites import rewrite_sample
+
+
+class ClickHouseCompiler(SQLGlotCompiler):
+    dialect = "clickhouse"
+    type_mapper = ClickhouseType
+    rewrites = (*SQLGlotCompiler.rewrites, rewrite_sample)
+
+    def _aggregate(self, funcname: str, *args, where):
+        has_filter = where is not None
+        func = self.f[funcname + "If" * has_filter]
+        args += (where,) * has_filter
+        return func(*args)
+
+    @singledispatchmethod
+    def visit_node(self, op, **kw):
+        return super().visit_node(op, **kw)
+
+    @visit_node.register(ops.Cast)
+    def visit_Cast(self, op, *, arg, to, **_):
+        _interval_cast_suffixes = {
+            "s": "Second",
+            "m": "Minute",
+            "h": "Hour",
+            "D": "Day",
+            "W": "Week",
+            "M": "Month",
+            "Q": "Quarter",
+            "Y": "Year",
+        }
+
+        if to.is_interval():
+            suffix = _interval_cast_suffixes[to.unit.short]
+            return self.f[f"toInterval{suffix}"](arg)
+
+        result = self.cast(arg, to)
+        if (timezone := getattr(to, "timezone", None)) is not None:
+            return self.f.toTimeZone(result, timezone)
+        return result
+
+    @visit_node.register(ops.TryCast)
+    def visit_TryCast(self, op, *, arg, to, **_):
+        return self.f.accurateCastOrNull(arg, self.type_mapper.to_string(to))
+
+    @visit_node.register(ops.ArrayIndex)
+    def visit_ArrayIndex(self, op, *, arg, index, **_):
+        return arg[self.if_(index >= 0, index + 1, index)]
+
+    @visit_node.register(ops.ArrayRepeat)
+    def visit_ArrayRepeat(self, op, *, arg, times, **_):
+        return (
+            sg.select(self.f.arrayFlatten(self.f.groupArray(sg.column("arr"))))
+            .from_(
+                sg.select(arg.as_("arr"))
+                .from_(sg.table("numbers", db="system"))
+                .limit(times)
+                .subquery()
+            )
+            .subquery()
+        )
+
+    @visit_node.register(ops.ArraySlice)
+    def visit_ArraySlice(self, op, *, arg, start, stop, **_):
+        start = parenthesize(op.start, start)
+        start_correct = self.if_(start < 0, start, start + 1)
+
+        if stop is not None:
+            stop = parenthesize(op.stop, stop)
+
+            length = self.if_(
+                stop < 0,
+                stop,
+                self.if_(
+                    start < 0,
+                    self.f.greatest(0, stop - (self.f.length(arg) + start)),
+                    self.f.greatest(0, stop - start),
+                ),
+            )
+            return self.f.arraySlice(arg, start_correct, length)
+        else:
+            return self.f.arraySlice(arg, start_correct)
+
+    @visit_node.register(ops.CountStar)
+    def visit_CountStar(self, op, *, where, **_):
+        if where is not None:
+            return self.f.countIf(where)
+        return sg.exp.Count(this=STAR)
+
+    @visit_node.register(ops.Quantile)
+    @visit_node.register(ops.MultiQuantile)
+    def visit_QuantileMultiQuantile(self, op, *, arg, quantile, where, **_):
+        if where is None:
+            return self.agg.quantile(arg, quantile, where=where)
+
+        func = "quantile" + "s" * isinstance(op, ops.MultiQuantile)
+        return sg.exp.ParameterizedAgg(
+            this=f"{func}If",
+            expressions=util.promote_list(quantile),
+            params=[arg, where],
+        )
+
+    @visit_node.register(ops.Correlation)
+    def visit_Correlation(self, op, *, left, right, how, where, **_):
+        if how == "pop":
+            raise ValueError(
+                "ClickHouse only implements `sample` correlation coefficient"
+            )
+        return self.agg.corr(left, right, where=where)
+
+    @visit_node.register(ops.Arbitrary)
+    def visit_Arbitrary(self, op, *, arg, how, where, **_):
+        if how == "first":
+            return self.agg.any(arg, where=where)
+        elif how == "last":
+            return self.agg.anyLast(arg, where=where)
+        else:
+            assert how == "heavy"
+            return self.agg.anyHeavy(arg, where=where)
+
+    @visit_node.register(ops.Substring)
+    def visit_Substring(self, op, *, arg, start, length, **_):
+        # Clickhouse is 1-indexed
+        suffix = (length,) * (length is not None)
+        if_pos = self.f.substring(arg, start + 1, *suffix)
+        if_neg = self.f.substring(arg, self.f.length(arg) + start + 1, *suffix)
+        return self.if_(start >= 0, if_pos, if_neg)
+
+    @visit_node.register(ops.StringFind)
+    def visit_StringFind(self, op, *, arg, substr, start, end, **_):
+        if end is not None:
+            raise com.UnsupportedOperationError(
+                "String find doesn't support end argument"
+            )
+
+        if start is not None:
+            return self.f.locate(arg, substr, start)
+
+        return self.f.locate(arg, substr)
+
+    @visit_node.register(ops.RegexSearch)
+    def visit_RegexSearch(self, op, *, arg, pattern, **_):
+        return sg.exp.RegexpLike(this=arg, expression=pattern)
+
+    @visit_node.register(ops.RegexExtract)
+    def visit_RegexExtract(self, op, *, arg, pattern, index, **_):
+        arg = self.cast(arg, dt.String(nullable=False))
+
+        pattern = self.f.concat("(", pattern, ")")
+
+        if index is None:
+            index = 0
+
+        index += 1
+
+        then = self.f.extractGroups(arg, pattern)[index]
+
+        return self.if_(self.f.notEmpty(then), then, NULL)
+
+    @visit_node.register(ops.FindInSet)
+    def visit_FindInSet(self, op, *, needle, values, **_):
+        return self.f.indexOf(self.f.array(*values), needle)
+
+    @visit_node.register(ops.Sign)
+    def visit_Sign(self, op, *, arg, **_):
+        """Workaround for missing sign function."""
+        return self.f.intDivOrZero(arg, self.f.abs(arg))
+
+    @visit_node.register(ops.Hash)
+    def visit_Hash(self, op, *, arg, **_):
+        return self.f.sipHash64(arg)
+
+    @visit_node.register(ops.HashBytes)
+    def visit_HashBytes(self, op, *, arg, how, **_):
+        supported_algorithms = frozenset(
+            (
+                "MD5",
+                "halfMD5",
+                "SHA1",
+                "SHA224",
+                "SHA256",
+                "intHash32",
+                "intHash64",
+                "cityHash64",
+                "sipHash64",
+                "sipHash128",
+            )
+        )
+        if how not in supported_algorithms:
+            raise com.UnsupportedOperationError(f"Unsupported hash algorithm {how}")
+
+        return self.f[how](arg)
+
+    @visit_node.register(ops.IntervalFromInteger)
+    def visit_IntervalFromInteger(self, op, *, arg, unit, **_):
+        dtype = op.dtype
+        if dtype.unit.short in ("ms", "us", "ns"):
+            raise com.UnsupportedOperationError(
+                "Clickhouse doesn't support subsecond interval resolutions"
+            )
+
+        return sg.exp.Interval(this=sg.exp.convert(arg), unit=dtype.resolution.upper())
+
+    @visit_node.register(ops.Literal)
+    def visit_Literal(self, op, *, value, dtype, **kw):
+        if value is None and dtype.nullable:
+            if dtype.is_null():
+                return NULL
+            return self.cast(NULL, dtype)
+        elif dtype.is_boolean():
+            return sg.exp.convert(bool(value))
+        elif dtype.is_inet():
+            v = str(value)
+            return self.f.toIPv6(v) if ":" in v else self.f.toIPv4(v)
+        elif dtype.is_string():
+            return sg.exp.convert(str(value).replace(r"\0", r"\\0"))
+        elif dtype.is_macaddr():
+            return sg.exp.convert(str(value))
+        elif dtype.is_decimal():
+            precision = dtype.precision
+            if precision is None or not 1 <= precision <= 76:
+                raise NotImplementedError(
+                    f"Unsupported precision. Supported values: [1 : 76]. Current value: {precision!r}"
+                )
+
+            if 1 <= precision <= 9:
+                type_name = self.f.toDecimal32
+            elif 10 <= precision <= 18:
+                type_name = self.f.toDecimal64
+            elif 19 <= precision <= 38:
+                type_name = self.f.toDecimal128
+            else:
+                type_name = self.f.toDecimal256
+            return type_name(value, dtype.scale)
+        elif dtype.is_numeric():
+            if math.isnan(value):
+                return sg.exp.Literal(this="NaN", is_string=False)
+            elif math.isinf(value):
+                inf = sg.exp.Literal(this="inf", is_string=False)
+                return -inf if value < 0 else inf
+            return sg.exp.convert(value)
+        elif dtype.is_interval():
+            if dtype.unit.short in ("ms", "us", "ns"):
+                raise com.UnsupportedOperationError(
+                    "Clickhouse doesn't support subsecond interval resolutions"
+                )
+
+            return sg.exp.Interval(
+                this=sg.exp.convert(str(value)), unit=dtype.resolution.upper()
+            )
+        elif dtype.is_timestamp():
+            funcname = "toDateTime"
+            fmt = "%Y-%m-%dT%H:%M:%S"
+
+            if micros := value.microsecond:
+                funcname += "64"
+                fmt += ".%f"
+
+            args = [value.strftime(fmt)]
+
+            if micros % 1000:
+                args.append(6)
+            elif micros // 1000:
+                args.append(3)
+
+            if (timezone := dtype.timezone) is not None:
+                args.append(timezone)
+
+            return self.f[funcname](*args)
+        elif dtype.is_date():
+            return self.f.toDate(value.strftime("%Y-%m-%d"))
+        elif dtype.is_array():
+            value_type = dtype.value_type
+            values = [
+                self.visit_Literal(
+                    ops.Literal(v, dtype=value_type), value=v, dtype=value_type, **kw
+                )
+                for v in value
+            ]
+            return self.f.array(*values)
+        elif dtype.is_map():
+            value_type = dtype.value_type
+            keys = []
+            values = []
+
+            for k, v in value.items():
+                keys.append(sg.exp.convert(k))
+                values.append(
+                    self.visit_Literal(
+                        ops.Literal(v, dtype=value_type),
+                        value=v,
+                        dtype=value_type,
+                        **kw,
+                    )
+                )
+
+            return self.f.map(self.f.array(*keys), self.f.array(*values))
+        elif dtype.is_struct():
+            fields = [
+                self.visit_Literal(
+                    ops.Literal(v, dtype=field_type), value=v, dtype=field_type, **kw
+                )
+                for field_type, v in zip(dtype.types, value.values())
+            ]
+            return self.f.tuple(*fields)
+        else:
+            raise NotImplementedError(f"Unsupported type: {dtype!r}")
+
+    @visit_node.register(ops.TimestampFromUNIX)
+    def visit_TimestampFromUNIX(self, op, *, arg, unit, **_):
+        if (unit := unit.short) in {"ms", "us", "ns"}:
+            raise com.UnsupportedOperationError(f"{unit!r} unit is not supported!")
+        return self.f.toDateTime(arg)
+
+    @visit_node.register(ops.DateTruncate)
+    @visit_node.register(ops.TimestampTruncate)
+    @visit_node.register(ops.TimeTruncate)
+    def visit_TimeTruncate(self, op, *, arg, unit, **_):
+        converters = {
+            "Y": self.f.toStartOfYear,
+            "M": self.f.toStartOfMonth,
+            "W": self.f.toMonday,
+            "D": self.f.toDate,
+            "h": self.f.toStartOfHour,
+            "m": self.f.toStartOfMinute,
+            "s": self.f.toDateTime,
+        }
+
+        unit = unit.short
+        if (converter := converters.get(unit)) is None:
+            raise com.UnsupportedOperationError(f"Unsupported truncate unit {unit}")
+
+        return converter(arg)
+
+    @visit_node.register(ops.TimestampBucket)
+    def visit_TimestampBucket(self, op, *, arg, interval, offset, **_):
+        if offset is not None:
+            raise com.UnsupportedOperationError(
+                "Timestamp bucket with offset is not supported"
+            )
+
+        return self.f.toStartOfInterval(arg, interval)
+
+    @visit_node.register(ops.DateFromYMD)
+    def visit_DateFromYMD(self, op, *, year, month, day, **_):
+        return self.f.toDate(
+            self.f.concat(
+                self.f.toString(year),
+                "-",
+                self.f.leftPad(self.f.toString(month), 2, "0"),
+                "-",
+                self.f.leftPad(self.f.toString(day), 2, "0"),
+            )
+        )
+
+    @visit_node.register(ops.TimestampFromYMDHMS)
+    def visit_TimestampFromYMDHMS(
+        self, op, *, year, month, day, hours, minutes, seconds, **_
+    ):
+        to_datetime = self.f.toDateTime(
+            self.f.concat(
+                self.f.toString(year),
+                "-",
+                self.f.leftPad(self.f.toString(month), 2, "0"),
+                "-",
+                self.f.leftPad(self.f.toString(day), 2, "0"),
+                " ",
+                self.f.leftPad(self.f.toString(hours), 2, "0"),
+                ":",
+                self.f.leftPad(self.f.toString(minutes), 2, "0"),
+                ":",
+                self.f.leftPad(self.f.toString(seconds), 2, "0"),
+            )
+        )
+        if timezone := op.dtype.timezone:
+            return self.f.toTimeZone(to_datetime, timezone)
+        return to_datetime
+
+    @visit_node.register(ops.ExistsSubquery)
+    def visit_ExistsSubquery(self, op, *, foreign_table, predicates, **_):
+        # https://github.com/ClickHouse/ClickHouse/issues/6697
+        #
+        # this would work if clickhouse supported correlated subqueries
+        subq = (
+            sg.select(1).from_(foreign_table).where(sg.condition(predicates)).subquery()
+        )
+        return self.f.exists(subq)
+
+    @visit_node.register(ops.StringSplit)
+    def visit_StringSplit(self, op, *, arg, delimiter, **_):
+        return self.f.splitByString(
+            delimiter, self.cast(arg, dt.String(nullable=False))
+        )
+
+    @visit_node.register(ops.StringJoin)
+    def visit_StringJoin(self, op, *, sep, arg, **_):
+        return self.f.arrayStringConcat(self.f.array(*arg), sep)
+
+    @visit_node.register(ops.StringConcat)
+    def visit_StringConcat(self, op, *, arg, **_):
+        return self.f.concat(*arg)
+
+    @visit_node.register(ops.Capitalize)
+    def visit_Capitalize(self, op, *, arg, **_):
+        return self.f.concat(
+            self.f.upper(self.f.substr(arg, 1, 1)), self.f.lower(self.f.substr(arg, 2))
+        )
+
+    @visit_node.register(ops.GroupConcat)
+    def visit_GroupConcat(self, op, *, arg, sep, where, **_):
+        call = self.agg.groupArray(arg, where=where)
+        return self.if_(self.f.empty(call), NULL, self.f.arrayStringConcat(call, sep))
+
+    @visit_node.register(ops.StrRight)
+    def visit_StrRight(self, op, *, arg, nchars, **_):
+        nchars = parenthesize(op.nchars, nchars)
+        return self.f.substring(arg, -nchars)
+
+    @visit_node.register(ops.Cot)
+    def visit_Cot(self, op, *, arg, **_):
+        return 1.0 / self.f.tan(arg)
+
+    @visit_node.register(ops.ArrayColumn)
+    def visit_ArrayColumn(self, op, *, cols, **_):
+        return self.f.array(*cols)
+
+    @visit_node.register(ops.StructColumn)
+    def visit_StructColumn(self, op, *, values, **_):
+        # ClickHouse struct types cannot be nullable
+        # (non-nested fields can be nullable)
+        return self.cast(self.f.tuple(*values), op.dtype.copy(nullable=False))
+
+    @visit_node.register(ops.Clip)
+    def visit_Clip(self, op, *, arg, lower, upper, **_):
+        if upper is not None:
+            arg = self.if_(self.f.isNull(arg), NULL, self.f.least(upper, arg))
+
+        if lower is not None:
+            arg = self.if_(self.f.isNull(arg), NULL, self.f.greatest(lower, arg))
+
+        return arg
+
+    @visit_node.register(ops.StructField)
+    def visit_StructField(self, op, *, arg, field: str, **_):
+        arg_dtype = op.arg.dtype
+        idx = arg_dtype.names.index(field)
+        return self.cast(
+            sg.exp.Dot(this=arg, expression=sg.exp.convert(idx + 1)), op.dtype
+        )
+
+    @visit_node.register(ops.Repeat)
+    def visit_Repeat(self, op, *, arg, times, **_):
+        return self.f.repeat(arg, self.f.accurateCast(times, "UInt64"))
+
+    @visit_node.register(ops.FloorDivide)
+    def visit_FloorDivide(self, op, *, left, right, **_):
+        return self.f.floor(left / right)
+
+    @visit_node.register(ops.StringContains)
+    def visit_StringContains(self, op, haystack, needle, **_):
+        return self.f.locate(haystack, needle) > 0
+
+    @visit_node.register(ops.DayOfWeekIndex)
+    def visit_DayOfWeekIndex(self, op, *, arg, **_):
+        weekdays = len(calendar.day_name)
+        return (((self.f.toDayOfWeek(arg) - 1) % weekdays) + weekdays) % weekdays
+
+    @visit_node.register(ops.DayOfWeekName)
+    def visit_DayOfWeekName(self, op, *, arg, **_):
+        # ClickHouse 20 doesn't support dateName
+        #
+        # ClickHouse 21 supports dateName is broken for regexen:
+        # https://github.com/ClickHouse/ClickHouse/issues/32777
+        #
+        # ClickHouses 20 and 21 also have a broken case statement hence the ifnull:
+        # https://github.com/ClickHouse/ClickHouse/issues/32849
+        #
+        # We test against 20 in CI, so we implement day_of_week_name as follows
+        days = calendar.day_name
+        num_weekdays = len(days)
+        base = (
+            ((self.f.toDayOfWeek(arg) - 1) % num_weekdays) + num_weekdays
+        ) % num_weekdays
+        return sg.exp.Case(
+            this=base,
+            ifs=list(map(self.if_, *zip(*enumerate(days)))),
+            default=sg.exp.convert(""),
+        )
+
+    @visit_node.register(ops.Greatest)
+    @visit_node.register(ops.Least)
+    @visit_node.register(ops.Coalesce)
+    def visit_Coalesce(self, op, *, arg, **_):
+        return self.f[op.__class__.__name__.lower()](*arg)
+
+    @visit_node.register(ops.Map)
+    def visit_Map(self, op, *, keys, values, **_):
+        # cast here to allow lookups of nullable columns
+        return self.cast(self.f.tuple(keys, values), op.dtype)
+
+    @visit_node.register(ops.MapGet)
+    def visit_MapGet(self, op, *, arg, key, default, **_):
+        return self.if_(self.f.mapContains(arg, key), arg[key], default)
+
+    @visit_node.register(ops.ArrayConcat)
+    def visit_ArrayConcat(self, op, *, arg, **_):
+        return self.f.arrayConcat(*arg)
+
+    @visit_node.register(ops.BitAnd)
+    @visit_node.register(ops.BitOr)
+    @visit_node.register(ops.BitXor)
+    def visit_BitAndOrXor(self, op, *, arg, where, **_):
+        if not (dtype := op.arg.dtype).is_unsigned_integer():
+            nbits = dtype.nbytes * 8
+            arg = self.f[f"reinterpretAsUInt{nbits}"](arg)
+        return self.agg[f"group{type(op).__name__}"](arg, where=where)
+
+    @visit_node.register(ops.StandardDev)
+    @visit_node.register(ops.Variance)
+    def visit_StandardDevVariance(self, op, *, how, where, **kw):
+        funcs = {ops.StandardDev: "stddev", ops.Variance: "var"}
+        func = funcs[type(op)]
+        variants = {"sample": f"{func}Samp", "pop": f"{func}Pop"}
+        funcname = variants[how]
+        return self.agg[funcname](*kw.values(), where=where)
+
+    @visit_node.register(ops.Covariance)
+    def visit_Covariance(self, op, *, left, right, how, where, **_):
+        variants = {"sample": "covarSamp", "pop": "covarPop"}
+        funcname = variants[how]
+        return self.agg[funcname](left, right, where=where)
+
+    @visit_node.register(ops.ArrayDistinct)
+    def visit_ArrayDistinct(self, op, *, arg, **_):
+        null_element = self.if_(
+            self.f.countEqual(arg, NULL) > 0, self.f.array(NULL), self.f.array()
+        )
+        return self.f.arrayConcat(self.f.arrayDistinct(arg), null_element)
+
+    @visit_node.register(ops.ExtractMicrosecond)
+    def visit_ExtractMicrosecond(self, op, *, arg, **_):
+        dtype = op.dtype
+        return self.cast(
+            self.f.toUnixTimestamp64Micro(self.cast(arg, op.arg.dtype.copy(scale=6)))
+            % 1_000_000,
+            dtype,
+        )
+
+    @visit_node.register(ops.ExtractMillisecond)
+    def visit_ExtractMillisecond(self, op, *, arg, **_):
+        dtype = op.dtype
+        return self.cast(
+            self.f.toUnixTimestamp64Milli(self.cast(arg, op.arg.dtype.copy(scale=3)))
+            % 1_000,
+            dtype,
+        )
+
+    @visit_node.register
+    def _sort_key(self, op: ops.SortKey, *, expr, ascending: bool, **_):
+        return sg.exp.Ordered(this=expr, desc=not ascending)
+
+    @visit_node.register(ops.WindowBoundary)
+    def visit_WindowBoundary(self, op, *, value, preceding, **_):
+        # TODO: bit of a hack to return a dict, but there's no sqlglot expression
+        # that corresponds to _only_ this information
+        return {"value": value, "side": "preceding" if preceding else "following"}
+
+    @visit_node.register(ops.RowsWindowFrame)
+    @visit_node.register(ops.RangeWindowFrame)
+    def visit_RangeWindowFrame(
+        self, op, *, group_by, order_by, start, end, max_lookback=None, **_
+    ):
+        if max_lookback is not None:
+            raise NotImplementedError(
+                "`max_lookback` is not supported in the ClickHouse backend"
+            )
+
+        if start is None:
+            start = {}
+
+        start_value = start.get("value", "UNBOUNDED")
+        start_side = start.get("side", "PRECEDING")
+
+        if end is None:
+            end = {}
+
+        end_value = end.get("value", "UNBOUNDED")
+        end_side = end.get("side", "FOLLOWING")
+
+        spec = sg.exp.WindowSpec(
+            kind=op.how.upper(),
+            start=start_value,
+            start_side=start_side,
+            end=end_value,
+            end_side=end_side,
+            over="OVER",
+        )
+
+        order = sg.exp.Order(expressions=order_by) if order_by else None
+
+        # TODO: bit of a hack to return a partial, but similar to `WindowBoundary`
+        # there's no sqlglot expression that corresponds to _only_ this information
+        return partial(sg.exp.Window, partition_by=group_by, order=order, spec=spec)
+
+    @visit_node.register(ops.WindowFunction)
+    def visit_WindowFunction(self, op: ops.WindowFunction, *, func, frame, **_: Any):
+        # frame is a partial call to sg.exp.Window
+        return frame(this=func)
+
+    @visit_node.register(ops.Lag)
+    @visit_node.register(ops.Lead)
+    def formatter(self, op, *, arg, offset, default, **_):
+        args = [arg]
+
+        if default is not None:
+            if offset is None:
+                offset = 1
+
+            args.append(offset)
+            args.append(default)
+        elif offset is not None:
+            args.append(offset)
+
+        func = self.f[f"{type(op).__name__.lower()}InFrame"]
+        return func(*args)
+
+    @visit_node.register(ops.ExtractFile)
+    def visit_ExtractFile(self, op, *, arg, **_):
+        return self.f.cutFragment(self.f.pathFull(arg))
+
+    @visit_node.register(ops.ExtractQuery)
+    def visit_ExtractQuery(self, op, *, arg, key, **_):
+        if key is not None:
+            return self.f.extractURLParameter(arg, key)
+        else:
+            return self.f.queryString(arg)
+
+    @visit_node.register(ops.ArrayStringJoin)
+    def visit_ArrayStringJoin(self, op, *, arg, sep, **_):
+        return self.f.arrayStringConcat(arg, sep)
+
+    @visit_node.register(ops.Argument)
+    def visit_Argument(self, op, *, name, **_):
+        return sg.to_identifier(name)
+
+    @visit_node.register(ops.ArrayMap)
+    def visit_ArrayMap(self, op, *, arg, param, body, **_):
+        func = sg.exp.Lambda(this=body, expressions=[param])
+        return self.f.arrayMap(func, arg)
+
+    @visit_node.register(ops.ArrayFilter)
+    def visit_ArrayFilter(self, op, *, arg, param, body, **_):
+        func = sg.exp.Lambda(this=body, expressions=[param])
+        return self.f.arrayFilter(func, arg)
+
+    @visit_node.register(ops.ArrayRemove)
+    def visit_ArrayRemove(self, op, *, arg, other, **_):
+        x = sg.to_identifier("x")
+        body = x.neq(other)
+        return self.f.arrayFilter(sg.exp.Lambda(this=body, expressions=[x]), arg)
+
+    @visit_node.register(ops.ArrayUnion)
+    def visit_ArrayUnion(self, op, *, left, right, **_):
+        arg = self.f.arrayConcat(left, right)
+        null_element = self.if_(
+            self.f.countEqual(arg, NULL) > 0, self.f.array(NULL), self.f.array()
+        )
+        return self.f.arrayConcat(self.f.arrayDistinct(arg), null_element)
+
+    @visit_node.register(ops.ArrayZip)
+    def visit_ArrayZip(self, op: ops.ArrayZip, *, arg, **_: Any) -> str:
+        return self.f.arrayZip(*arg)
+
+    @visit_node.register(ops.CountDistinctStar)
+    def visit_CountDistinctStar(
+        self, op: ops.CountDistinctStar, *, where, **_: Any
+    ) -> str:
+        columns = self.f.tuple(*map(sg.column, op.arg.schema.names))
+
+        if where is not None:
+            return self.f.countDistinctIf(columns, where)
+        else:
+            return self.f.countDistinct(columns)
+
+    @visit_node.register(ops.DateDelta)
+    @visit_node.register(ops.TimestampDelta)
+    def visit_TimestampDelta(self, op, *, part, left, right, **_):
+        return sg.exp.DateDiff(this=left, expression=right, unit=part)
+
+
+_SIMPLE_OPS = {
+    ops.Abs: "abs",
+    ops.Acos: "acos",
+    ops.All: "min",
+    ops.Any: "max",
+    ops.ApproxCountDistinct: "uniqHLL12",
+    ops.ApproxMedian: "median",
+    ops.ArgMax: "argMax",
+    ops.ArgMin: "argMin",
+    ops.ArrayCollect: "groupArray",
+    ops.ArrayContains: "has",
+    ops.ArrayFlatten: "arrayFlatten",
+    ops.ArrayIntersect: "arrayIntersect",
+    ops.ArrayLength: "length",
+    ops.ArrayPosition: "indexOf",
+    ops.ArraySort: "arraySort",
+    ops.Asin: "asin",
+    ops.Atan2: "atan2",
+    ops.Atan: "atan",
+    ops.BitwiseAnd: "bitAnd",
+    ops.BitwiseLeftShift: "bitShiftLeft",
+    ops.BitwiseNot: "bitNot",
+    ops.BitwiseOr: "bitOr",
+    ops.BitwiseRightShift: "bitShiftRight",
+    ops.BitwiseXor: "bitXor",
+    ops.Capitalize: "initcap",
+    ops.Ceil: "ceil",
+    ops.Cos: "cos",
+    ops.Count: "count",
+    ops.CountDistinct: "uniq",
+    ops.Date: "toDate",
+    ops.Degrees: "degrees",
+    ops.DenseRank: "dense_rank",
+    ops.E: "e",
+    ops.EndsWith: "endsWith",
+    ops.Exp: "exp",
+    ops.ExtractAuthority: "netloc",
+    ops.ExtractDay: "toDayOfMonth",
+    ops.ExtractDayOfYear: "toDayOfYear",
+    ops.ExtractEpochSeconds: "toRelativeSecondNum",
+    ops.ExtractFragment: "fragment",
+    ops.ExtractHost: "domain",
+    ops.ExtractHour: "toHour",
+    ops.ExtractMinute: "toMinute",
+    ops.ExtractMonth: "toMonth",
+    ops.ExtractPath: "path",
+    ops.ExtractProtocol: "protocol",
+    ops.ExtractQuarter: "toQuarter",
+    ops.ExtractSecond: "toSecond",
+    ops.ExtractWeekOfYear: "toISOWeek",
+    ops.ExtractYear: "toYear",
+    ops.First: "any",
+    ops.FirstValue: "first_value",
+    ops.Floor: "floor",
+    ops.IfElse: "if",
+    ops.IntegerRange: "range",
+    ops.IsInf: "isInfinite",
+    ops.IsNan: "isNaN",
+    ops.IsNull: "isNull",
+    ops.LPad: "leftPad",
+    ops.LPad: "lpad",
+    ops.LStrip: "trimLeft",
+    ops.Last: "anyLast",
+    ops.LastValue: "last_value",
+    ops.Ln: "log",
+    ops.Log10: "log10",
+    ops.Log2: "log2",
+    ops.Lowercase: "lower",
+    ops.MapContains: "mapContains",
+    ops.MapKeys: "mapKeys",
+    ops.MapLength: "length",
+    ops.MapMerge: "mapUpdate",
+    ops.MapValues: "mapValues",
+    ops.Max: "max",
+    ops.Mean: "avg",
+    ops.Median: "quantileExactExclusive",
+    ops.Min: "min",
+    ops.MinRank: "rank",
+    ops.NTile: "ntile",
+    ops.NotNull: "isNotNull",
+    ops.NthValue: "nth_value",
+    ops.NullIf: "nullIf",
+    ops.Pi: "pi",
+    ops.RPad: "rightPad",
+    ops.RStrip: "trimRight",
+    ops.Radians: "radians",
+    ops.RandomScalar: "randCanonical",
+    ops.RegexReplace: "replaceRegexpAll",
+    ops.Repeat: "repeat",
+    ops.Reverse: "reverse",
+    ops.RowNumber: "row_number",
+    ops.Sign: "sign",
+    ops.Sin: "sin",
+    ops.Sqrt: "sqrt",
+    ops.StartsWith: "startsWith",
+    ops.StrRight: "right",
+    ops.Strftime: "formatDateTime",
+    ops.StringAscii: "ascii",
+    ops.StringLength: "length",
+    ops.StringReplace: "replaceAll",
+    ops.Strip: "trimBoth",
+    ops.Sum: "sum",
+    ops.Tan: "tan",
+    ops.TimestampNow: "now",
+    ops.Translate: "translate",
+    ops.TypeOf: "toTypeName",
+    ops.Unnest: "arrayJoin",
+    ops.Uppercase: "upper",
+}
+
+for _op, _name in _SIMPLE_OPS.items():
+    assert isinstance(type(_op), type), type(_op)
+    if issubclass(_op, ops.Reduction):
+
+        @ClickHouseCompiler.visit_node.register(_op)
+        def _fmt(self, op, *, _name: str = _name, where, **kw):
+            return self.agg[_name](*kw.values(), where=where)
+
+    else:
+
+        @ClickHouseCompiler.visit_node.register(_op)
+        def _fmt(self, op, *, _name: str = _name, **kw):
+            return self.f[_name](*kw.values())
+
+    setattr(ClickHouseCompiler, f"visit_{_op.__name__}", _fmt)
+
+del _op, _name, _fmt
+
+_NOT_IMPLEMENTED_OPS = {
+    ops.RowID,
+    ops.CumeDist,
+    ops.PercentRank,
+    ops.Time,
+}
+
+for _op in _NOT_IMPLEMENTED_OPS:
+
+    @ClickHouseCompiler.visit_node.register(_op)
+    def _fmt(self, op, **_):
+        raise com.OperationNotDefinedError(type(op).__name__)
+
+    setattr(ClickHouseCompiler, f"visit_{_op.__name__}", _fmt)
+
+
+del _op, _fmt

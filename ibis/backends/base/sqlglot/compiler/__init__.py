@@ -377,11 +377,11 @@ class SQLGlotCompiler(abc.ABC):
 
     @visit_node.register(ops.Negate)
     def visit_Negate(self, op, *, arg, **_):
-        return sg.exp.Neg(this=arg)
+        return -sg.exp.Paren(this=arg)
 
     @visit_node.register(ops.Not)
     def visit_Not(self, op, *, arg, **_):
-        return sg.exp.Not(this=arg)
+        return sg.not_(sg.exp.Paren(this=arg))
 
     ### Timey McTimeFace
 

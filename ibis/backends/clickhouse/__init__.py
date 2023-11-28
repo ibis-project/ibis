@@ -24,7 +24,7 @@ import ibis.expr.types as ir
 from ibis import util
 from ibis.backends.base import BaseBackend, CanCreateDatabase
 from ibis.backends.base.sqlglot import STAR, C, F
-from ibis.backends.clickhouse.compiler import translate
+from ibis.backends.clickhouse.compiler import ClickHouseCompiler
 from ibis.backends.clickhouse.datatypes import ClickhouseType
 
 if TYPE_CHECKING:
@@ -42,6 +42,7 @@ def _to_memtable(v):
 
 class Backend(BaseBackend, CanCreateDatabase):
     name = "clickhouse"
+    compiler = ClickHouseCompiler()
 
     # ClickHouse itself does, but the client driver does not
     supports_temporary_tables = False
@@ -396,7 +397,7 @@ class Backend(BaseBackend, CanCreateDatabase):
         if params is None:
             params = {}
 
-        sql = translate(table_expr.op(), params=params)
+        sql = self.compiler.translate(table_expr.op(), params=params)
         assert not isinstance(sql, sg.exp.Subquery)
 
         if isinstance(sql, sg.exp.Table):
@@ -530,9 +531,10 @@ class Backend(BaseBackend, CanCreateDatabase):
 
     @classmethod
     def has_operation(cls, operation: type[ops.Value]) -> bool:
-        from ibis.backends.clickhouse.compiler.values import translate_val
-
-        return translate_val.dispatch(operation) is not translate_val.dispatch(object)
+        # singledispatchmethod overrides `__get__` so we can't directly access
+        # the dispatcher
+        dispatcher = cls.compiler.visit_node.register.__self__.dispatcher
+        return dispatcher.dispatch(operation) is not dispatcher.dispatch(object)
 
     def create_database(
         self, name: str, *, force: bool = False, engine: str = "Atomic"

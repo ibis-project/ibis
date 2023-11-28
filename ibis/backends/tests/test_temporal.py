@@ -1051,7 +1051,6 @@ timestamp_value = pd.Timestamp("2018-01-01 18:18:18")
             marks=[
                 pytest.mark.notimpl(
                     [
-                        "clickhouse",
                         "dask",
                         "impala",
                         "mysql",
@@ -1079,7 +1078,6 @@ timestamp_value = pd.Timestamp("2018-01-01 18:18:18")
             marks=[
                 pytest.mark.notimpl(
                     [
-                        "clickhouse",
                         "sqlite",
                         "postgres",
                         "polars",
