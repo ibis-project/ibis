@@ -47,26 +47,6 @@ class RoundHalfToEven(RoundingConvention):
         return result if decimals else result.astype(np.int64)
 
 
-# TODO: Merge into BackendTest, #2564
-class UnorderedComparator:
-    @classmethod
-    def assert_series_equal(
-        cls, left: pd.Series, right: pd.Series, *args: Any, **kwargs: Any
-    ) -> None:
-        left = left.sort_values().reset_index(drop=True)
-        right = right.sort_values().reset_index(drop=True)
-        return super().assert_series_equal(left, right, *args, **kwargs)
-
-    @classmethod
-    def assert_frame_equal(
-        cls, left: pd.DataFrame, right: pd.DataFrame, *args: Any, **kwargs: Any
-    ) -> None:
-        columns = list(set(left.columns) & set(right.columns))
-        left = left.sort_values(by=columns)
-        right = right.sort_values(by=columns)
-        return super().assert_frame_equal(left, right, *args, **kwargs)
-
-
 class BackendTest(abc.ABC):
     check_dtype = True
     check_names = True
@@ -86,6 +66,7 @@ class BackendTest(abc.ABC):
     stateful = True
     service_name = None
     supports_tpch = False
+    force_sort_before_comparison = False
 
     @property
     @abc.abstractmethod
@@ -185,6 +166,9 @@ class BackendTest(abc.ABC):
     def assert_series_equal(
         cls, left: pd.Series, right: pd.Series, *args: Any, **kwargs: Any
     ) -> None:
+        if cls.force_sort_before_comparison:
+            left = left.sort_values().reset_index(drop=True)
+            right = right.sort_values().reset_index(drop=True)
         kwargs.setdefault("check_dtype", cls.check_dtype)
         kwargs.setdefault("check_names", cls.check_names)
         tm.assert_series_equal(left, right, *args, **kwargs)
@@ -193,6 +177,10 @@ class BackendTest(abc.ABC):
     def assert_frame_equal(
         cls, left: pd.DataFrame, right: pd.DataFrame, *args: Any, **kwargs: Any
     ) -> None:
+        if cls.force_sort_before_comparison:
+            columns = list(set(left.columns) & set(right.columns))
+            left = left.sort_values(by=columns)
+            right = right.sort_values(by=columns)
         left = left.reset_index(drop=True)
         right = right.reset_index(drop=True)
         kwargs.setdefault("check_dtype", cls.check_dtype)

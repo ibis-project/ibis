@@ -18,12 +18,12 @@ import ibis.expr.types as ir
 from ibis import options, util
 from ibis.backends.conftest import TEST_TABLES
 from ibis.backends.impala.compiler import ImpalaCompiler, ImpalaExprTranslator
-from ibis.backends.tests.base import BackendTest, RoundAwayFromZero, UnorderedComparator
+from ibis.backends.tests.base import BackendTest, RoundAwayFromZero
 from ibis.backends.tests.data import win
 from ibis.tests.expr.mocks import MockBackend
 
 
-class TestConf(UnorderedComparator, BackendTest, RoundAwayFromZero):
+class TestConf(BackendTest, RoundAwayFromZero):
     supports_arrays = True
     supports_arrays_outside_of_select = False
     check_dtype = False
@@ -31,6 +31,7 @@ class TestConf(UnorderedComparator, BackendTest, RoundAwayFromZero):
     returned_timestamp_unit = "s"
     supports_structs = False
     supports_json = False
+    force_sort_before_comparison = True
     deps = "fsspec", "requests", "impala"
 
     def _load_data(self, **_: Any) -> None:
