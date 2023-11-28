@@ -31,7 +31,7 @@ class TestConf(BackendTest):
     returned_timestamp_unit = "s"
     supports_structs = False
     supports_json = False
-    force_sort_before_comparison = True
+    force_sort = True
     deps = "fsspec", "requests", "impala"
 
     def _load_data(self, **_: Any) -> None:

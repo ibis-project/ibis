@@ -543,3 +543,10 @@ quartodoc:
         - Options
         - Repr
         - SQL
+
+    - title: Contributing
+      desc: "Ibis Backend Developer Documentation"
+      package: ibis.backends.tests.base
+      contents:
+        - BackendTest
+        - ServiceBackendTest

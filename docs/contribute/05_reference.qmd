@@ -1,0 +1,37 @@
+---
+title: "Test Class Reference"
+---
+
+This page provides a partial reference to the attributes, methods, properties
+and class-level variables that are used to help configure a backend for the Ibis
+test suite.
+
+Contributors are encouraged to look over the methods and class-level variables
+in `ibis/backends/tests/base.py`.
+
+To add a new backend test configuration import one of `BackendTest` or
+`ServiceBackendTest` into a `conftest.py` file with the path
+`ibis/backends/{backend_name}/tests/conftest.py`.  Then update / override the
+relevant class-level variables and methods.
+
+```python
+from ibis.backends.tests.base import BackendTest
+
+class TestConf(BackendTest):
+    """Backend-specific class with information for testing."""
+
+    supports_divide_by_zero = True
+    supports_floating_modulus = False
+    returned_timestamp_unit = "us"
+    supports_structs = True
+    supports_json = True
+    check_names = False
+    force_sort = True
+
+    @staticmethod
+    def connect(*args, **kwargs):
+        ...
+```
+
+{{< include ../reference/BackendTest.qmd >}}
+{{< include ../reference/ServiceBackendTest.qmd >}}

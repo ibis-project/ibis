@@ -11,7 +11,7 @@ from ibis.backends.tests.base import BackendTest
 
 class TestConf(BackendTest):
     supports_structs = False
-    force_sort_before_comparison = True
+    force_sort = True
     deps = "pandas", "pyflink"
 
     @staticmethod

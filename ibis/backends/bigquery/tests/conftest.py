@@ -34,7 +34,7 @@ class TestConf(BackendTest):
     supports_structs = True
     supports_json = True
     check_names = False
-    force_sort_before_comparison = True
+    force_sort = True
     deps = ("google.cloud.bigquery",)
 
     @staticmethod
