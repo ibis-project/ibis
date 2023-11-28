@@ -57,7 +57,6 @@ def test_read_geo_to_pyarrow(con, data_dir):
 def test_read_geo_to_geopandas(con, data_dir):
     gpd = pytest.importorskip("geopandas")
     t = con.read_geo(data_dir / "geojson" / "zones.geojson")
-    # can't convert geometry to arrow type yet
     gdf = t.head().to_pandas()
     assert isinstance(gdf, gpd.GeoDataFrame)
 
