@@ -14,13 +14,12 @@ from ibis.backends.base.sql.compiler import (
     TableSetFormatter,
 )
 from ibis.backends.base.sql.registry import quote_identifier
-from ibis.backends.flink import identifiers
 from ibis.backends.flink.translator import FlinkExprTranslator
 
 
 class FlinkTableSetFormatter(TableSetFormatter):
     def _quote_identifier(self, name):
-        return quote_identifier(name, base_identifiers=identifiers.base_identifiers)
+        return quote_identifier(name, force=True)
 
     def _format_in_memory_table(self, op):
         names = op.schema.names
