@@ -59,7 +59,7 @@ class BackendTest(abc.ABC):
     "Whether special handling is needed for running a multi-process pytest run."
     supports_tpch: bool = False
     "Child class defines a `load_tpch` method that loads the required TPC-H tables into a connection."
-    force_sort_before_comparison = False
+    force_sort = False
     "Sort results before comparing against reference computation."
     rounding_method: Literal["away_from_zero", "half_to_even"] = "away_from_zero"
     "Name of round method to use for rounding test comparisons."
@@ -163,6 +163,7 @@ class BackendTest(abc.ABC):
 
     @classmethod
     def skip_if_missing_deps(cls) -> None:
+        """Add an `importorskip` for any missing dependencies."""
         for dep in cls.deps:
             pytest.importorskip(dep)
 
@@ -176,7 +177,11 @@ class BackendTest(abc.ABC):
     def assert_series_equal(
         cls, left: pd.Series, right: pd.Series, *args: Any, **kwargs: Any
     ) -> None:
-        if cls.force_sort_before_comparison:
+        """Compare two Pandas Series, optionally ignoring order, dtype, and column name.
+
+        `force_sort`, `check_dtype`, and `check_names` are set as class-level variables.
+        """
+        if cls.force_sort:
             left = left.sort_values().reset_index(drop=True)
             right = right.sort_values().reset_index(drop=True)
         kwargs.setdefault("check_dtype", cls.check_dtype)
@@ -187,7 +192,11 @@ class BackendTest(abc.ABC):
     def assert_frame_equal(
         cls, left: pd.DataFrame, right: pd.DataFrame, *args: Any, **kwargs: Any
     ) -> None:
-        if cls.force_sort_before_comparison:
+        """Compare two Pandas DataFrames optionally ignoring order, and dtype.
+
+        `force_sort`, and `check_dtype` are set as class-level variables.
+        """
+        if cls.force_sort:
             columns = list(set(left.columns) & set(right.columns))
             left = left.sort_values(by=columns)
             right = right.sort_values(by=columns)
@@ -344,9 +353,14 @@ class ServiceBackendTest(BackendTest):
     @property
     @abc.abstractmethod
     def test_files(self) -> Iterable[Path]:
+        """Returns an iterable of test files to load into a Docker container before testing."""
         ...
 
     def preload(self):
+        """Use `docker compose cp` to copy all files from `test_files` into a container.
+
+        `service_name` and `data_volume` are set as class-level variables.
+        """
         service = self.service_name
         data_volume = self.data_volume
         with concurrent.futures.ThreadPoolExecutor() as e:

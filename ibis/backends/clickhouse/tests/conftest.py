@@ -29,7 +29,7 @@ class TestConf(ServiceBackendTest):
     supported_to_timestamp_units = {"s"}
     supports_floating_modulus = False
     supports_json = False
-    force_sort_before_comparison = True
+    force_sort = True
     rounding_method = "half_to_even"
     data_volume = "/var/lib/clickhouse/user_files/ibis"
     service_name = "clickhouse"
