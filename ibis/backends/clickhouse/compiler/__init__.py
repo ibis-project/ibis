@@ -702,6 +702,10 @@ class ClickHouseCompiler(SQLGlotCompiler):
     def visit_TimestampDelta(self, op, *, part, left, right, **_):
         return sg.exp.DateDiff(this=left, expression=right, unit=part)
 
+    @staticmethod
+    def _generate_groups(groups):
+        return groups
+
 
 _SIMPLE_OPS = {
     ops.Abs: "abs",

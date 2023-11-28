@@ -949,8 +949,14 @@ class SQLGlotCompiler(abc.ABC):
             "anti": "left",
             "cross": None,
             "outer": "full",
+            "asof": "left",
+            "any_left": "left",
+            "any_inner": None,
         }
         kinds = {
+            "any_left": "any",
+            "any_inner": "any",
+            "asof": "asof",
             "inner": "inner",
             "left": "outer",
             "right": "outer",
@@ -959,10 +965,9 @@ class SQLGlotCompiler(abc.ABC):
             "cross": "cross",
             "outer": "outer",
         }
-        res = sg.exp.Join(
+        return sg.exp.Join(
             this=table, side=sides[how], kind=kinds[how], on=sg.and_(*predicates)
         )
-        return res
 
     @visit_node.register(ops.Project)
     def visit_Project(self, op, *, parent, values, **_):
@@ -972,6 +977,10 @@ class SQLGlotCompiler(abc.ABC):
             *(value.as_(key, quoted=self.quoted) for key, value in values.items())
         ).from_(parent)
 
+    @staticmethod
+    def _generate_groups(groups):
+        return map(sg.exp.convert, range(1, len(groups) + 1))
+
     @visit_node.register(ops.Aggregate)
     def visit_Aggregate(self, op, *, parent, groups, metrics, **_):
         sel = sg.select(
@@ -980,7 +989,7 @@ class SQLGlotCompiler(abc.ABC):
         ).from_(parent)
 
         if groups:
-            sel = sel.group_by(*map(sg.exp.convert, range(1, len(groups) + 1)))
+            sel = sel.group_by(*self._generate_groups(groups.values()))
 
         return sel
 

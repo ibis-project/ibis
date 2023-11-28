@@ -1,12 +1,18 @@
 SELECT
-  t1.string_col
+  t2.string_col AS string_col
 FROM (
   SELECT
-    t0.string_col,
-    SUM(t0.float_col) AS total
-  FROM functional_alltypes AS t0
-  WHERE
-    t0.int_col > 0
+    t1.string_col AS string_col,
+    SUM(t1.float_col) AS total
+  FROM (
+    SELECT
+      *
+    FROM functional_alltypes AS t0
+    WHERE
+      (
+        t0.int_col > 0
+      )
+  ) AS t1
   GROUP BY
-    t0.string_col
-) AS t1
+    t1.string_col
+) AS t2
