@@ -778,11 +778,7 @@ def test_select_filter(backend, alltypes, df):
 
 def test_select_filter_select(backend, alltypes, df):
     t = alltypes
-    print(alltypes.execute())
-    print(t.select("int_col", "string_col").execute())
     expr = t.select("int_col", "string_col").filter(t.string_col == "4").int_col
-    print(expr.execute())
-    return
     result = expr.execute().rename("int_col")
 
     expected = df.loc[df.string_col == "4", "int_col"].reset_index(drop=True)

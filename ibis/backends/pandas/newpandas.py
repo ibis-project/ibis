@@ -9,6 +9,7 @@ import pandas as pd
 
 import ibis.expr.operations as ops
 from ibis import util
+from ibis.common.exceptions import OperationNotDefinedError
 from ibis.formats.pandas import PandasData, PandasSchema, PandasType
 
 ################## PANDAS SPECIFIC NODES ######################
@@ -41,7 +42,7 @@ from ibis.formats.pandas import PandasData, PandasSchema, PandasType
 
 @singledispatch
 def execute(node, **kwargs):
-    raise NotImplementedError(f"no rule for {type(node)}")
+    raise OperationNotDefinedError(f"no rule for {type(node)}")
 
 
 @execute.register(ops.Literal)
@@ -96,7 +97,7 @@ def execute_filter(op, parent, predicates):
         pred = reduce(operator.and_, predicates)
         if len(pred) != len(parent):
             raise RuntimeError("Selection predicate length does not match underlying table")
-        parent = parent.loc[pred]
+        parent = parent.loc[pred].reset_index(drop=True)
     return parent
 
 
@@ -289,6 +290,34 @@ def execute_in_values(op, value, options):
     else:
         return value in options
 
+
+@execute.register(ops.InSubquery)
+def execute_in_subquery(op, rel, needle):
+    first_column = rel.iloc[:, 0]
+    if isinstance(needle, pd.Series):
+        return needle.isin(first_column)
+    # elif isinstance(needle, SeriesGroupBy):
+    #     return data.obj.isin(elements).groupby(
+    #         get_grouping(data.grouper.groupings), group_keys=False
+    #     )
+    else:
+        return needle in first_column
+
+# @execute_node.register(ops.InColumn, object, np.ndarray)
+# def execute_node_scalar_in_column(op, data, elements, **kwargs):
+#     return data in elements
+
+
+# @execute_node.register(ops.InColumn, pd.Series, pd.Series)
+# def execute_node_column_in_column(op, data, elements, **kwargs):
+#     return data.isin(elements)
+
+
+# @execute_node.register(ops.InColumn, SeriesGroupBy, pd.Series)
+# def execute_node_group_in_column(op, data, elements, **kwargs):
+#     return data.obj.isin(elements).groupby(
+#         get_grouping(data.grouper.groupings), group_keys=False
+#     )
 
 @execute.register(ops.StringLength)
 def execute_string_length(op, arg):

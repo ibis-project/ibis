@@ -1053,21 +1053,7 @@ def execute_node_string_join(op, args, **kwargs):
     return op.sep.join(args)
 
 
-# @execute_node.register(ops.InColumn, object, np.ndarray)
-# def execute_node_scalar_in_column(op, data, elements, **kwargs):
-#     return data in elements
 
-
-# @execute_node.register(ops.InColumn, pd.Series, pd.Series)
-# def execute_node_column_in_column(op, data, elements, **kwargs):
-#     return data.isin(elements)
-
-
-# @execute_node.register(ops.InColumn, SeriesGroupBy, pd.Series)
-# def execute_node_group_in_column(op, data, elements, **kwargs):
-#     return data.obj.isin(elements).groupby(
-#         get_grouping(data.grouper.groupings), group_keys=False
-#     )
 
 
 # For true/false as scalars, we only support identical type pairs + None to
