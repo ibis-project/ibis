@@ -46,12 +46,20 @@ def test_read_parquet(data_dir):
     assert t.count().execute()
 
 
-@pytest.mark.xfail(raises=duckdb.duckdb.CatalogException, reason="ST_AsEWKB")
-def test_read_geo_fail(con, data_dir):
+@pytest.mark.xfail(raises=NotImplementedError)
+def test_read_geo_to_pyarrow(con, data_dir):
     pytest.importorskip("geopandas")
     t = con.read_geo(data_dir / "geojson" / "zones.geojson")
     # can't convert geometry to arrow type yet
     assert t.head().to_pyarrow()
+
+
+def test_read_geo_to_geopandas(con, data_dir):
+    gpd = pytest.importorskip("geopandas")
+    t = con.read_geo(data_dir / "geojson" / "zones.geojson")
+    # can't convert geometry to arrow type yet
+    gdf = t.head().to_pandas()
+    assert isinstance(gdf, gpd.GeoDataFrame)
 
 
 def test_read_geo(con, data_dir):
