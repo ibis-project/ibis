@@ -532,18 +532,17 @@ class ClickHouseCompiler(SQLGlotCompiler):
 
     @visit_node.register(ops.StandardDev)
     @visit_node.register(ops.Variance)
+    @visit_node.register(ops.Covariance)
     def visit_StandardDevVariance(self, op, *, how, where, **kw):
-        funcs = {ops.StandardDev: "stddev", ops.Variance: "var"}
+        funcs = {
+            ops.StandardDev: "stddev",
+            ops.Variance: "var",
+            ops.Covariance: "covar",
+        }
         func = funcs[type(op)]
         variants = {"sample": f"{func}Samp", "pop": f"{func}Pop"}
         funcname = variants[how]
         return self.agg[funcname](*kw.values(), where=where)
-
-    @visit_node.register(ops.Covariance)
-    def visit_Covariance(self, op, *, left, right, how, where, **_):
-        variants = {"sample": "covarSamp", "pop": "covarPop"}
-        funcname = variants[how]
-        return self.agg[funcname](left, right, where=where)
 
     @visit_node.register(ops.ArrayDistinct)
     def visit_ArrayDistinct(self, op, *, arg, **_):
