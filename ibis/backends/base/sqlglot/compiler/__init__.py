@@ -17,7 +17,7 @@ from public import public
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
-from ibis.backends.base.sqlglot import FALSE, NULL, STAR, AggGen, FuncGen
+from ibis.backends.base.sqlglot import FALSE, NULL, STAR, AggGen, FuncGen, paren
 from ibis.common.deferred import _
 from ibis.common.patterns import replace
 from ibis.expr.analysis import p, x
@@ -345,7 +345,12 @@ class SQLGlotCompiler(abc.ABC):
 
     @visit_node.register(ops.FloorDivide)
     def visit_FloorDivide(self, op, *, left, right, **_):
-        return self.cast(self.f.fdiv(left, right), op.dtype)
+        return self.cast(self.f.floor(left / right), op.dtype)
+
+    @visit_node.register(ops.Ceil)
+    @visit_node.register(ops.Floor)
+    def visit_CeilFloor(self, op, *, arg, **_):
+        return self.cast(self.f[type(op).__name__.lower()](arg), op.dtype)
 
     @visit_node.register(ops.Round)
     def visit_Round(self, op, *, arg, digits, **_):
@@ -377,11 +382,23 @@ class SQLGlotCompiler(abc.ABC):
 
     @visit_node.register(ops.Negate)
     def visit_Negate(self, op, *, arg, **_):
-        return -sg.exp.Paren(this=arg)
+        return -paren(arg)
 
     @visit_node.register(ops.Not)
     def visit_Not(self, op, *, arg, **_):
-        return sg.not_(sg.exp.Paren(this=arg))
+        if isinstance(arg, sg.exp.Filter):
+            return sg.exp.Filter(
+                this=self._de_morgan_law(arg.this), expression=arg.expression
+            )  # transform the not expression using _de_morgan_law
+        return sg.not_(paren(arg))
+
+    @staticmethod
+    def _de_morgan_law(logical_op: sg.exp.Expression):
+        if isinstance(logical_op, sg.exp.LogicalAnd):
+            return sg.exp.LogicalOr(this=sg.not_(paren(logical_op.this)))
+        if isinstance(logical_op, sg.exp.LogicalOr):
+            return sg.exp.LogicalAnd(this=sg.not_(paren(logical_op.this)))
+        return None
 
     ### Timey McTimeFace
 
@@ -666,10 +683,6 @@ class SQLGlotCompiler(abc.ABC):
         arg = self.cast(arg, op.dtype) if op.arg.dtype.is_boolean() else arg
         return self.agg.sum(arg, where=where)
 
-    @visit_node.register(ops.NthValue)
-    def visit_NthValue(self, op, *, arg, nth, **_):
-        return self.f.nth_value(arg, nth)
-
     ### Stats
 
     @visit_node.register(ops.Quantile)
@@ -785,22 +798,6 @@ class SQLGlotCompiler(abc.ABC):
     @visit_node.register(ops.RowNumber)
     def visit_RowNumber(self, op, **_):
         return sg.exp.RowNumber()
-
-    @visit_node.register(ops.DenseRank)
-    def visit_DenseRank(self, op, **_):
-        return self.f.dense_rank()
-
-    @visit_node.register(ops.MinRank)
-    def visit_MinRank(self, op, **_):
-        return self.f.rank()
-
-    @visit_node.register(ops.PercentRank)
-    def visit_PercentRank(self, op, **_):
-        return self.f.percent_rank()
-
-    @visit_node.register(ops.CumeDist)
-    def visit_CumeDist(self, op, **_):
-        return self.f.cume_dist()
 
     @visit_node.register(ops.SortKey)
     def visit_SortKey(self, op, *, expr, ascending: bool, **_):
@@ -997,7 +994,7 @@ class SQLGlotCompiler(abc.ABC):
 
     def _add_parens(self, op, sg_expr):
         if type(op) in _BINARY_INFIX_OPS:
-            return sg.exp.Paren(this=sg_expr)
+            return paren(sg_expr)
         return sg_expr
 
     @visit_node.register(ops.Filter)
@@ -1166,8 +1163,6 @@ _SIMPLE_OPS = {
     ops.IsNan: "isnan",
     ops.IsInf: "isinf",
     ops.Abs: "abs",
-    ops.Ceil: "ceil",
-    ops.Floor: "floor",
     ops.Exp: "exp",
     ops.Sqrt: "sqrt",
     ops.Ln: "ln",
@@ -1221,6 +1216,11 @@ _SIMPLE_OPS = {
     ops.Radians: "radians",
     ops.FirstValue: "first_value",
     ops.LastValue: "last_value",
+    ops.NthValue: "nth_value",
+    ops.MinRank: "rank",
+    ops.DenseRank: "dense_rank",
+    ops.PercentRank: "percent_rank",
+    ops.CumeDist: "cume_dist",
 }
 
 _BINARY_INFIX_OPS = {

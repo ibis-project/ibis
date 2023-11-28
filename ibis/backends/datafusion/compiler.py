@@ -144,36 +144,15 @@ class DataFusionCompiler(SQLGlotCompiler):
     @visit_node.register(ops.Cast)
     def visit_Cast(self, op, *, arg, to, **_):
         if to.is_interval():
-            unit_name = to.unit.name.lower()
+            unit = to.unit.name.lower()
             return sg.cast(
-                self.f.concat(self.cast(arg, dt.string), f" {unit_name}"), "interval"
+                self.f.concat(self.cast(arg, dt.string), f" {unit}"), "interval"
             )
         if to.is_timestamp():
             return self._to_timestamp(arg, to)
         if to.is_decimal():
             return self.f.arrow_cast(arg, f"{PyArrowType.from_ibis(to)}".capitalize())
         return self.cast(arg, to)
-
-    @visit_node.register(ops.Not)
-    def visit_Not(self, op, *, arg, **_):
-        if isinstance(arg, sg.exp.Filter):
-            return sg.exp.Filter(
-                this=self._de_morgan_law(arg.this), expression=arg.expression
-            )  # transform the not expression using _de_morgan_law
-        return sg.not_(paren(arg))
-
-    @staticmethod
-    def _de_morgan_law(logical_op: sg.exp.Expression):
-        if isinstance(logical_op, sg.exp.LogicalAnd):
-            return sg.exp.LogicalOr(this=sg.not_(paren(logical_op.this)))
-        if isinstance(logical_op, sg.exp.LogicalOr):
-            return sg.exp.LogicalAnd(this=sg.not_(paren(logical_op.this)))
-        return None
-
-    @visit_node.register(ops.Ceil)
-    @visit_node.register(ops.Floor)
-    def visit_CeilFloor(self, op, *, arg, **_):
-        return self.cast(self.f[type(op).__name__.lower()](arg), dt.int64)
 
     @visit_node.register(ops.Substring)
     def visit_Substring(self, op, *, arg, start, length, **_):
@@ -185,10 +164,6 @@ class DataFusionCompiler(SQLGlotCompiler):
     @visit_node.register(ops.Divide)
     def visit_Divide(self, op, *, left, right, **_):
         return self.cast(left, dt.float64) / self.cast(right, dt.float64)
-
-    @visit_node.register(ops.FloorDivide)
-    def visit_FloorDivide(self, op, *, left, right, **_):
-        return self.f.floor(left / right)
 
     @visit_node.register(ops.Variance)
     def visit_Variance(self, op, *, arg, how, where, **_):

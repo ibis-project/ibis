@@ -178,7 +178,7 @@ class ClickHouseCompiler(SQLGlotCompiler):
 
     @visit_node.register(ops.Sign)
     def visit_Sign(self, op, *, arg, **_):
-        """Workaround for missing sign function."""
+        """Workaround for missing sign function in older versions of clickhouse."""
         return self.f.intDivOrZero(arg, self.f.abs(arg))
 
     @visit_node.register(ops.Hash)
@@ -467,10 +467,6 @@ class ClickHouseCompiler(SQLGlotCompiler):
     def visit_Repeat(self, op, *, arg, times, **_):
         return self.f.repeat(arg, self.f.accurateCast(times, "UInt64"))
 
-    @visit_node.register(ops.FloorDivide)
-    def visit_FloorDivide(self, op, *, left, right, **_):
-        return self.f.floor(left / right)
-
     @visit_node.register(ops.StringContains)
     def visit_StringContains(self, op, haystack, needle, **_):
         return self.f.locate(haystack, needle) > 0
@@ -501,12 +497,6 @@ class ClickHouseCompiler(SQLGlotCompiler):
             ifs=list(map(self.if_, *zip(*enumerate(days)))),
             default=sg.exp.convert(""),
         )
-
-    @visit_node.register(ops.Greatest)
-    @visit_node.register(ops.Least)
-    @visit_node.register(ops.Coalesce)
-    def visit_Coalesce(self, op, *, arg, **_):
-        return self.f[op.__class__.__name__.lower()](*arg)
 
     @visit_node.register(ops.Map)
     def visit_Map(self, op, *, keys, values, **_):
@@ -646,8 +636,6 @@ class ClickHouseCompiler(SQLGlotCompiler):
 
 
 _SIMPLE_OPS = {
-    ops.Abs: "abs",
-    ops.Acos: "acos",
     ops.All: "min",
     ops.Any: "max",
     ops.ApproxCountDistinct: "uniqHLL12",
@@ -661,9 +649,6 @@ _SIMPLE_OPS = {
     ops.ArrayLength: "length",
     ops.ArrayPosition: "indexOf",
     ops.ArraySort: "arraySort",
-    ops.Asin: "asin",
-    ops.Atan2: "atan2",
-    ops.Atan: "atan",
     ops.BitwiseAnd: "bitAnd",
     ops.BitwiseLeftShift: "bitShiftLeft",
     ops.BitwiseNot: "bitNot",
@@ -671,16 +656,10 @@ _SIMPLE_OPS = {
     ops.BitwiseRightShift: "bitShiftRight",
     ops.BitwiseXor: "bitXor",
     ops.Capitalize: "initcap",
-    ops.Ceil: "ceil",
-    ops.Cos: "cos",
-    ops.Count: "count",
     ops.CountDistinct: "uniq",
     ops.Date: "toDate",
-    ops.Degrees: "degrees",
-    ops.DenseRank: "dense_rank",
     ops.E: "e",
     ops.EndsWith: "endsWith",
-    ops.Exp: "exp",
     ops.ExtractAuthority: "netloc",
     ops.ExtractDay: "toDayOfMonth",
     ops.ExtractDayOfYear: "toDayOfYear",
@@ -697,9 +676,6 @@ _SIMPLE_OPS = {
     ops.ExtractWeekOfYear: "toISOWeek",
     ops.ExtractYear: "toYear",
     ops.First: "any",
-    ops.FirstValue: "first_value",
-    ops.Floor: "floor",
-    ops.IfElse: "if",
     ops.IntegerRange: "range",
     ops.IsInf: "isInfinite",
     ops.IsNan: "isNaN",
@@ -708,37 +684,23 @@ _SIMPLE_OPS = {
     ops.LPad: "lpad",
     ops.LStrip: "trimLeft",
     ops.Last: "anyLast",
-    ops.LastValue: "last_value",
     ops.Ln: "log",
     ops.Log10: "log10",
-    ops.Log2: "log2",
-    ops.Lowercase: "lower",
     ops.MapContains: "mapContains",
     ops.MapKeys: "mapKeys",
     ops.MapLength: "length",
     ops.MapMerge: "mapUpdate",
     ops.MapValues: "mapValues",
-    ops.Max: "max",
-    ops.Mean: "avg",
     ops.Median: "quantileExactExclusive",
-    ops.Min: "min",
-    ops.MinRank: "rank",
-    ops.NTile: "ntile",
     ops.NotNull: "isNotNull",
-    ops.NthValue: "nth_value",
     ops.NullIf: "nullIf",
-    ops.Pi: "pi",
     ops.RPad: "rightPad",
     ops.RStrip: "trimRight",
-    ops.Radians: "radians",
     ops.RandomScalar: "randCanonical",
     ops.RegexReplace: "replaceRegexpAll",
     ops.Repeat: "repeat",
     ops.Reverse: "reverse",
     ops.RowNumber: "row_number",
-    ops.Sign: "sign",
-    ops.Sin: "sin",
-    ops.Sqrt: "sqrt",
     ops.StartsWith: "startsWith",
     ops.StrRight: "right",
     ops.Strftime: "formatDateTime",
@@ -746,13 +708,10 @@ _SIMPLE_OPS = {
     ops.StringLength: "length",
     ops.StringReplace: "replaceAll",
     ops.Strip: "trimBoth",
-    ops.Sum: "sum",
-    ops.Tan: "tan",
     ops.TimestampNow: "now",
     ops.Translate: "translate",
     ops.TypeOf: "toTypeName",
     ops.Unnest: "arrayJoin",
-    ops.Uppercase: "upper",
 }
 
 for _op, _name in _SIMPLE_OPS.items():
