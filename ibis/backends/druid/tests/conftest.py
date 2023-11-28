@@ -12,7 +12,7 @@ import pytest
 from requests import Session
 
 import ibis
-from ibis.backends.tests.base import RoundHalfToEven, ServiceBackendTest
+from ibis.backends.tests.base import ServiceBackendTest
 
 if TYPE_CHECKING:
     from collections.abc import Iterable
@@ -89,7 +89,7 @@ def run_query(session: Session, query: str) -> None:
         time.sleep(REQUEST_INTERVAL)
 
 
-class TestConf(ServiceBackendTest, RoundHalfToEven):
+class TestConf(ServiceBackendTest):
     # druid has the same rounding behavior as postgres
     check_dtype = False
     supports_window_operations = False
@@ -99,6 +99,7 @@ class TestConf(ServiceBackendTest, RoundHalfToEven):
     native_bool = True
     supports_structs = False
     supports_json = False  # it does, but we haven't implemented it
+    rounding_method = "half_to_even"
     service_name = "druid-middlemanager"
     deps = ("pydruid.db.sqlalchemy",)
 

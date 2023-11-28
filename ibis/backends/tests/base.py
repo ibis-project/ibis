@@ -20,33 +20,6 @@ if TYPE_CHECKING:
     import ibis.expr.types as ir
 
 
-# TODO: Merge into BackendTest, #2564
-class RoundingConvention:
-    @staticmethod
-    @abc.abstractmethod
-    def round(series: pd.Series, decimals: int = 0) -> pd.Series:
-        """Round a series to `decimals` number of decimal values."""
-
-
-# TODO: Merge into BackendTest, #2564
-class RoundAwayFromZero(RoundingConvention):
-    @staticmethod
-    def round(series: pd.Series, decimals: int = 0) -> pd.Series:
-        if not decimals:
-            return (-(np.sign(series)) * np.ceil(-(series.abs()) - 0.5)).astype(
-                np.int64
-            )
-        return series.round(decimals=decimals)
-
-
-# TODO: Merge into BackendTest, #2564
-class RoundHalfToEven(RoundingConvention):
-    @staticmethod
-    def round(series: pd.Series, decimals: int = 0) -> pd.Series:
-        result = series.round(decimals=decimals)
-        return result if decimals else result.astype(np.int64)
-
-
 class BackendTest(abc.ABC):
     check_dtype = True
     check_names = True
@@ -67,6 +40,7 @@ class BackendTest(abc.ABC):
     service_name = None
     supports_tpch = False
     force_sort_before_comparison = False
+    rounding_method = "away_from_zero"
 
     @property
     @abc.abstractmethod
@@ -185,6 +159,23 @@ class BackendTest(abc.ABC):
         right = right.reset_index(drop=True)
         kwargs.setdefault("check_dtype", cls.check_dtype)
         tm.assert_frame_equal(left, right, *args, **kwargs)
+
+    @classmethod
+    def round(cls, series: pd.Series, decimals: int = 0) -> pd.Series:
+        return getattr(cls, cls.rounding_method)(series, decimals)
+
+    @staticmethod
+    def away_from_zero(series: pd.Series, decimals: int = 0) -> pd.Series:
+        if not decimals:
+            return (-(np.sign(series)) * np.ceil(-(series.abs()) - 0.5)).astype(
+                np.int64
+            )
+        return series.round(decimals=decimals)
+
+    @staticmethod
+    def half_to_even(series: pd.Series, decimals: int = 0) -> pd.Series:
+        result = series.round(decimals=decimals)
+        return result if decimals else result.astype(np.int64)
 
     @staticmethod
     def default_series_rename(series: pd.Series, name: str = "tmp") -> pd.Series:

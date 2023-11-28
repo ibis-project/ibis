@@ -11,10 +11,10 @@ import pytest
 import ibis
 import ibis.expr.types as ir
 from ibis.backends.conftest import TEST_TABLES
-from ibis.backends.tests.base import BackendTest, RoundAwayFromZero
+from ibis.backends.tests.base import BackendTest
 
 
-class TestConf(BackendTest, RoundAwayFromZero):
+class TestConf(BackendTest):
     supports_arrays = False
     supports_arrays_outside_of_select = supports_arrays
     supports_window_operations = True

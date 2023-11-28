@@ -15,7 +15,7 @@ import ibis
 from ibis.backends.bigquery import EXTERNAL_DATA_SCOPES, Backend
 from ibis.backends.bigquery.datatypes import BigQuerySchema
 from ibis.backends.conftest import TEST_TABLES
-from ibis.backends.tests.base import BackendTest, RoundAwayFromZero
+from ibis.backends.tests.base import BackendTest
 from ibis.backends.tests.data import json_types, non_null_array_types, struct_types, win
 
 DATASET_ID = "ibis_gbq_testing"
@@ -25,7 +25,7 @@ DEFAULT_PROJECT_ID = "ibis-gbq"
 PROJECT_ID_ENV_VAR = "GOOGLE_BIGQUERY_PROJECT_ID"
 
 
-class TestConf(BackendTest, RoundAwayFromZero):
+class TestConf(BackendTest):
     """Backend-specific class with information for testing."""
 
     supports_divide_by_zero = True

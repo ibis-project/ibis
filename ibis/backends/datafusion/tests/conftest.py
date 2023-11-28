@@ -6,11 +6,11 @@ import pytest
 
 import ibis
 from ibis.backends.conftest import TEST_TABLES
-from ibis.backends.tests.base import BackendTest, RoundAwayFromZero
+from ibis.backends.tests.base import BackendTest
 from ibis.backends.tests.data import array_types, win
 
 
-class TestConf(BackendTest, RoundAwayFromZero):
+class TestConf(BackendTest):
     # check_names = False
     # supports_divide_by_zero = True
     # returned_timestamp_unit = 'ns'

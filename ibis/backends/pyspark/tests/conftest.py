@@ -11,7 +11,7 @@ import pytest
 import ibis
 from ibis import util
 from ibis.backends.conftest import TEST_TABLES
-from ibis.backends.tests.base import BackendTest, RoundAwayFromZero
+from ibis.backends.tests.base import BackendTest
 from ibis.backends.tests.data import json_types, win
 
 
@@ -19,7 +19,7 @@ def set_pyspark_database(con, database):
     con._session.catalog.setCurrentDatabase(database)
 
 
-class TestConf(BackendTest, RoundAwayFromZero):
+class TestConf(BackendTest):
     supported_to_timestamp_units = {"s"}
     deps = ("pyspark",)
 

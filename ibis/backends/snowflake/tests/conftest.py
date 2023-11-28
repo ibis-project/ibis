@@ -13,7 +13,7 @@ import sqlglot as sg
 import ibis
 from ibis.backends.conftest import TEST_TABLES
 from ibis.backends.snowflake.datatypes import SnowflakeType
-from ibis.backends.tests.base import BackendTest, RoundAwayFromZero
+from ibis.backends.tests.base import BackendTest
 from ibis.formats.pyarrow import PyArrowSchema
 
 if TYPE_CHECKING:
@@ -63,7 +63,7 @@ def copy_into(con, data_dir: Path, table: str) -> None:
     )
 
 
-class TestConf(BackendTest, RoundAwayFromZero):
+class TestConf(BackendTest):
     supports_map = True
     default_identifier_case_fn = staticmethod(str.upper)
     deps = ("snowflake.connector", "snowflake.sqlalchemy")
