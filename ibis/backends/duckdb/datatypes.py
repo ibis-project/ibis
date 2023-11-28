@@ -7,7 +7,6 @@ import ibis.expr.datatypes as dt
 from ibis.backends.base.sql.alchemy.datatypes import AlchemyType
 from ibis.backends.base.sqlglot.datatypes import DuckDBType as SqlglotDuckdbType
 
-
 try:
     from geoalchemy2 import Geometry
 

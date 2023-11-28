@@ -29,11 +29,7 @@ from ibis.backends.postgres.registry import (
 from ibis.common.exceptions import UnsupportedOperationError
 
 try:
-    from geoalchemy2 import Geometry
-
-    class Geometry_WKB(Geometry):
-        as_binary = "ST_AsWKB"
-
+    from ibis.backends.duckdb.datatypes import Geometry_WKB
 except ImportError:
 
     class Geometry_WKB:
@@ -566,43 +562,31 @@ operation_registry.update(
         ops.ArrayFlatten: unary(sa.func.flatten),
         ops.IntegerRange: fixed_arity(sa.func.range, 3),
         # geospatial
-        # ops.GeoPoint: fixed_arity(sa.func.ST_Point, 2),
         ops.GeoPoint: _geo_point,
         ops.GeoAsText: unary(sa.func.ST_AsText),
         ops.GeoArea: unary(sa.func.ST_Area),
-        # ops.GeoBuffer: fixed_arity(sa.func.ST_Buffer, 2),
         ops.GeoBuffer: _geo_buffer,
-        # ops.GeoCentroid: unary(sa.func.ST_Centroid),
         ops.GeoCentroid: _centroid,
         ops.GeoContains: fixed_arity(sa.func.ST_Contains, 2),
-        # ops.GeoContainsProperly: fixed_arity(sa.func.ST_Contains, 2), ?
         ops.GeoCovers: fixed_arity(sa.func.ST_Covers, 2),
         ops.GeoCoveredBy: fixed_arity(sa.func.ST_CoveredBy, 2),
         ops.GeoCrosses: fixed_arity(sa.func.ST_Crosses, 2),
-        # ops.GeoDifference: fixed_arity(sa.func.ST_Difference, 2),
         ops.GeoDifference: _geo_difference,
         ops.GeoDisjoint: fixed_arity(sa.func.ST_Disjoint, 2),
         ops.GeoDistance: fixed_arity(sa.func.ST_Distance, 2),
         ops.GeoDWithin: fixed_arity(sa.func.ST_DWithin, 3),
-        # ops.GeoEndPoint: unary(sa.func.ST_EndPoint),
         ops.GeoEndPoint: _geo_end_point,
-        # ops.GeoEnvelope: unary(sa.func.ST_Envelope),
         ops.GeoEnvelope: _envelope,
         ops.GeoEquals: fixed_arity(sa.func.ST_Equals, 2),
         ops.GeoGeometryType: unary(sa.func.ST_GeometryType),
-        # ops.GeoIntersection: fixed_arity(sa.func.ST_Intersection, 2),
         ops.GeoIntersection: _geo_intersection,
         ops.GeoIntersects: fixed_arity(sa.func.ST_Intersects, 2),
         ops.GeoIsValid: unary(sa.func.ST_IsValid),
         ops.GeoLength: unary(sa.func.ST_Length),
         ops.GeoNPoints: unary(sa.func.ST_NPoints),
         ops.GeoOverlaps: fixed_arity(sa.func.ST_Overlaps, 2),
-        # ops.GeoSimplify 	fixed_arity(sa.func.ST_Simplify, 3) # ? ST_Simplify and ST_SimplifyPreserveTopology
-        # ops.GeoStartPoint: unary(sa.func.ST_StartPoint),
         ops.GeoStartPoint: _geo_start_point,
         ops.GeoTouches: fixed_arity(sa.func.ST_Touches, 2),
-        # ops.GeoTransform 	fixed_arity(sa.func.ST_Transform, 2) # ? ST_Transform(GEOMETRY, VARCHAR, VARCHAR)
-        # ops.GeoUnion: fixed_arity(sa.func.ST_Union, 2),
         ops.GeoUnion: _geo_union,
         ops.GeoUnaryUnion: _geo_unary_union,
         ops.GeoWithin: fixed_arity(sa.func.ST_Within, 2),
