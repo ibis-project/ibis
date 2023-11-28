@@ -267,19 +267,19 @@ def adjust_context_alias(
     return adjust_context(op.arg, scope, timecontext)
 
 
-@adjust_context.register(ops.AsOfJoin)
-def adjust_context_asof_join(
-    op: ops.AsOfJoin, scope: Scope, timecontext: TimeContext
-) -> TimeContext:
-    begin, end = timecontext
+# @adjust_context.register(ops.AsOfJoin)
+# def adjust_context_asof_join(
+#     op: ops.AsOfJoin, scope: Scope, timecontext: TimeContext
+# ) -> TimeContext:
+#     begin, end = timecontext
 
-    if op.tolerance is not None:
-        from ibis.backends.pandas.execution import execute
+#     if op.tolerance is not None:
+#         from ibis.backends.pandas.execution import execute
 
-        timedelta = execute(op.tolerance)
-        return (begin - timedelta, end)
+#         timedelta = execute(op.tolerance)
+#         return (begin - timedelta, end)
 
-    return timecontext
+#     return timecontext
 
 
 @adjust_context.register(ops.WindowFunction)

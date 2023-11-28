@@ -579,12 +579,12 @@ def get_node_arguments_dropna(node):
     return (node.table,)
 
 
-@get_node_arguments.register(ops.Selection)
+@get_node_arguments.register(ops.Project)
 def get_node_arguments_selection(node):
     return (node.table,)
 
 
-@get_node_arguments.register(ops.Aggregation)
+@get_node_arguments.register(ops.Aggregate)
 def get_node_arguments_aggregation(node):
     return (node.table,)
 

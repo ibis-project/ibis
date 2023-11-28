@@ -86,11 +86,6 @@ def execute_between_time(op, data, lower, upper, **kwargs):
     return pd.Series(result)
 
 
-@execute_node.register(ops.Date, pd.Series)
-def execute_timestamp_date(op, data, **kwargs):
-    return data.dt.floor("d")
-
-
 PANDAS_UNITS = {
     "m": "Min",
     "ms": "L",
@@ -245,14 +240,6 @@ def execute_interval_multiply_fdiv_series_numeric(op, left, right, **kwargs):
 @execute_node.register(ops.TimestampFromUNIX, (pd.Series,) + integer_types)
 def execute_timestamp_from_unix(op, data, **kwargs):
     return pd.to_datetime(data, unit=op.unit.short)
-
-
-@pre_execute.register(ops.TimestampNow)
-@pre_execute.register(ops.TimestampNow, BaseBackend)
-def pre_execute_timestamp_now(op, *args, **kwargs):
-    timecontext = kwargs.get("timecontext", None)
-    now = pd.Timestamp("now", tz="UTC").tz_localize(None)
-    return Scope({op: now}, timecontext)
 
 
 @execute_node.register(ops.DayOfWeekIndex, (str, datetime.date))

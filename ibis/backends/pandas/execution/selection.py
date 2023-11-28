@@ -273,65 +273,64 @@ def build_df_from_projection(
 
     return pd.concat(new_pieces, axis=1)
 
+    # @execute_node.register(ops.Selection, pd.DataFrame)
+    # def execute_selection_dataframe(
+    #     op,
+    #     data,
+    #     scope: Scope,
+    #     timecontext: TimeContext | None,
+    #     **kwargs,
+    # ):
+    #     result = data
 
-@execute_node.register(ops.Selection, pd.DataFrame)
-def execute_selection_dataframe(
-    op,
-    data,
-    scope: Scope,
-    timecontext: TimeContext | None,
-    **kwargs,
-):
-    result = data
+    #     # Build up the individual pandas structures from column expressions
+    #     if op.selections:
+    #         if all(isinstance(s, ops.TableColumn) for s in op.selections):
+    #             result = build_df_from_selection(op.selections, data, op.table)
+    #         else:
+    #             result = build_df_from_projection(
+    #                 op.selections,
+    #                 op,
+    #                 data,
+    #                 scope=scope,
+    #                 timecontext=timecontext,
+    #                 **kwargs,
+    #             )
 
-    # Build up the individual pandas structures from column expressions
-    if op.selections:
-        if all(isinstance(s, ops.TableColumn) for s in op.selections):
-            result = build_df_from_selection(op.selections, data, op.table)
-        else:
-            result = build_df_from_projection(
-                op.selections,
-                op,
-                data,
-                scope=scope,
-                timecontext=timecontext,
-                **kwargs,
-            )
+    #     if op.predicates:
+    #         predicates = _compute_predicates(
+    #             op.table, op.predicates, data, scope, timecontext, **kwargs
+    #         )
+    #         predicate = functools.reduce(operator.and_, predicates)
+    #         assert len(predicate) == len(
+    #             result
+    #         ), "Selection predicate length does not match underlying table"
+    #         result = result.loc[predicate]
 
-    if op.predicates:
-        predicates = _compute_predicates(
-            op.table, op.predicates, data, scope, timecontext, **kwargs
-        )
-        predicate = functools.reduce(operator.and_, predicates)
-        assert len(predicate) == len(
-            result
-        ), "Selection predicate length does not match underlying table"
-        result = result.loc[predicate]
+    #     if op.sort_keys:
+    #         result, grouping_keys, ordering_keys = util.compute_sorted_frame(
+    #             result,
+    #             order_by=op.sort_keys,
+    #             scope=scope,
+    #             timecontext=timecontext,
+    #             **kwargs,
+    #         )
+    #     else:
+    #         grouping_keys = ordering_keys = ()
 
-    if op.sort_keys:
-        result, grouping_keys, ordering_keys = util.compute_sorted_frame(
-            result,
-            order_by=op.sort_keys,
-            scope=scope,
-            timecontext=timecontext,
-            **kwargs,
-        )
-    else:
-        grouping_keys = ordering_keys = ()
+    #     # return early if we do not have any temporary grouping or ordering columns
+    #     assert not grouping_keys, "group by should never show up in Selection"
+    #     if not ordering_keys:
+    #         return result
 
-    # return early if we do not have any temporary grouping or ordering columns
-    assert not grouping_keys, "group by should never show up in Selection"
-    if not ordering_keys:
-        return result
+    #     # create a sequence of columns that we need to drop
+    #     temporary_columns = pd.Index(concatv(grouping_keys, ordering_keys)).difference(
+    #         data.columns
+    #     )
 
-    # create a sequence of columns that we need to drop
-    temporary_columns = pd.Index(concatv(grouping_keys, ordering_keys)).difference(
-        data.columns
-    )
+    #     # no reason to call drop if we don't need to
+    #     if temporary_columns.empty:
+    #         return result
 
-    # no reason to call drop if we don't need to
-    if temporary_columns.empty:
-        return result
-
-    # drop every temporary column we created for ordering or grouping
-    return result.drop(temporary_columns, axis=1)
+    #     # drop every temporary column we created for ordering or grouping
+    #     return result.drop(temporary_columns, axis=1)

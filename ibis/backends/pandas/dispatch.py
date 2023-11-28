@@ -29,7 +29,7 @@ def raise_unknown_op(node, *args, **kwargs):
     )
 
 
-@execute_node.register(ops.TableNode)
+@execute_node.register(ops.Field)
 def raise_unknown_table_node(node, **kwargs):
     raise com.UnboundExpressionError(
         f"Node of type {type(node).__name__!r} has no data bound to it. "

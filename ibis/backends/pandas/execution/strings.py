@@ -23,11 +23,6 @@ from ibis.backends.pandas.dispatch import execute_node
 from ibis.backends.pandas.execution.util import get_grouping
 
 
-@execute_node.register(ops.StringLength, pd.Series)
-def execute_string_length_series(op, data, **kwargs):
-    return data.str.len().astype("int32")
-
-
 @execute_node.register(
     ops.Substring, pd.Series, integer_types, (type(None), *integer_types)
 )

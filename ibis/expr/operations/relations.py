@@ -499,7 +499,7 @@ class DropNa(SimpleRelation):
     """Drop null values in the table."""
 
     how: typing.Literal["any", "all"]
-    subset: Optional[VarTuple[Column[dt.Any]]] = None
+    subset: Optional[VarTuple[Column]] = None
 
 
 @public

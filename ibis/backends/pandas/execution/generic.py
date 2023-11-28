@@ -43,143 +43,80 @@ from ibis.backends.pandas.dispatch import execute_literal, execute_node
 from ibis.backends.pandas.execution import constants
 from ibis.backends.pandas.execution.util import coerce_to_output, get_grouping
 
-
-# By default return the literal value
-@execute_literal.register(ops.Literal, object, dt.DataType)
-def execute_node_literal_value_datatype(op, value, datatype, **kwargs):
-    return value
-
-
-# Because True and 1 hash to the same value, if we have True or False in scope
-# keys while executing anything that should evaluate to 1 or 0 evaluates to
-# True or False respectively. This is a hack to work around that by casting the
-# bool to an integer.
-@execute_literal.register(ops.Literal, object, dt.Integer)
-def execute_node_literal_any_integer_datatype(op, value, datatype, **kwargs):
-    if value is None:
-        return value
-    return int(value)
+# @execute_node.register(ops.Cast, SeriesGroupBy, dt.DataType)
+# def execute_cast_series_group_by(op, data, type, **kwargs):
+#     result = execute_cast_series_generic(op, data.obj, type, **kwargs)
+#     return result.groupby(get_grouping(data.grouper.groupings), group_keys=False)
 
 
-@execute_literal.register(ops.Literal, object, dt.Boolean)
-def execute_node_literal_any_boolean_datatype(op, value, datatype, **kwargs):
-    if value is None:
-        return value
-    return bool(value)
+# @execute_node.register(ops.Cast, pd.Series, dt.DataType)
+# def execute_cast_series_generic(op, data, type, **kwargs):
+#     out = data.astype(constants.IBIS_TYPE_TO_PANDAS_TYPE[type])
+#     if type.is_integer():
+#         if op.arg.dtype.is_timestamp():
+#             return out.floordiv(int(1e9))
+#         elif op.arg.dtype.is_date():
+#             return out.floordiv(int(24 * 60 * 60 * 1e9))
+#     return out
 
 
-@execute_literal.register(ops.Literal, object, dt.Floating)
-def execute_node_literal_any_floating_datatype(op, value, datatype, **kwargs):
-    if value is None:
-        return value
-    return float(value)
+# @execute_node.register(ops.Cast, pd.Series, dt.Array)
+# def execute_cast_series_array(op, data, type, **kwargs):
+#     value_type = type.value_type
+#     numpy_type = constants.IBIS_TYPE_TO_PANDAS_TYPE.get(value_type, None)
+#     if numpy_type is None:
+#         raise ValueError(
+#             "Array value type must be a primitive type "
+#             "(e.g., number, string, or timestamp)"
+#         )
+
+#     def cast_to_array(array, numpy_type=numpy_type):
+#         elems = [
+#             el if el is None else np.array(el, dtype=numpy_type).item() for el in array
+#         ]
+#         try:
+#             return np.array(elems, dtype=numpy_type)
+#         except TypeError:
+#             return np.array(elems)
+
+#     return data.map(cast_to_array)
 
 
-@execute_literal.register(ops.Literal, object, dt.Array)
-def execute_node_literal_any_array_datatype(op, value, datatype, **kwargs):
-    if value is None:
-        return value
-    return np.array(value)
+# @execute_node.register(ops.Cast, pd.Series, dt.Timestamp)
+# def execute_cast_series_timestamp(op, data, type, **kwargs):
+#     arg = op.arg
+#     from_type = arg.dtype
 
+#     if from_type.equals(type):  # noop cast
+#         return data
 
-@execute_literal.register(ops.Literal, dt.DataType)
-def execute_node_literal_datatype(op, datatype, **kwargs):
-    return op.value
+#     tz = type.timezone
 
+#     if from_type.is_timestamp():
+#         from_tz = from_type.timezone
+#         if tz is None and from_tz is None:
+#             return data
+#         elif tz is None or from_tz is None:
+#             return data.dt.tz_localize(tz)
+#         elif tz is not None and from_tz is not None:
+#             return data.dt.tz_convert(tz)
+#     elif from_type.is_date():
+#         return data if tz is None else data.dt.tz_localize(tz)
 
-@execute_literal.register(
-    ops.Literal, (*timedelta_types, str, *integer_types, type(None)), dt.Interval
-)
-def execute_interval_literal(op, value, dtype, **kwargs):
-    if value is None:
-        return pd.NaT
-    return pd.Timedelta(value, dtype.unit.short)
+#     if from_type.is_string() or from_type.is_integer():
+#         if from_type.is_integer():
+#             timestamps = pd.to_datetime(data.values, unit="s")
+#         else:
+#             timestamps = pd.to_datetime(data.values)
+#         if getattr(timestamps.dtype, "tz", None) is not None:
+#             method_name = "tz_convert"
+#         else:
+#             method_name = "tz_localize"
+#         method = getattr(timestamps, method_name)
+#         timestamps = method(tz)
+#         return pd.Series(timestamps, index=data.index, name=data.name)
 
-
-@execute_node.register(ops.Limit, pd.DataFrame, integer_types, integer_types)
-def execute_limit_frame(op, data, nrows: int, offset: int, **kwargs):
-    return data.iloc[offset : offset + nrows]
-
-
-@execute_node.register(ops.Limit, pd.DataFrame, type(None), integer_types)
-def execute_limit_frame_no_limit(op, data, nrows: None, offset: int, **kwargs):
-    return data.iloc[offset:]
-
-
-@execute_node.register(ops.Cast, SeriesGroupBy, dt.DataType)
-def execute_cast_series_group_by(op, data, type, **kwargs):
-    result = execute_cast_series_generic(op, data.obj, type, **kwargs)
-    return result.groupby(get_grouping(data.grouper.groupings), group_keys=False)
-
-
-@execute_node.register(ops.Cast, pd.Series, dt.DataType)
-def execute_cast_series_generic(op, data, type, **kwargs):
-    out = data.astype(constants.IBIS_TYPE_TO_PANDAS_TYPE[type])
-    if type.is_integer():
-        if op.arg.dtype.is_timestamp():
-            return out.floordiv(int(1e9))
-        elif op.arg.dtype.is_date():
-            return out.floordiv(int(24 * 60 * 60 * 1e9))
-    return out
-
-
-@execute_node.register(ops.Cast, pd.Series, dt.Array)
-def execute_cast_series_array(op, data, type, **kwargs):
-    value_type = type.value_type
-    numpy_type = constants.IBIS_TYPE_TO_PANDAS_TYPE.get(value_type, None)
-    if numpy_type is None:
-        raise ValueError(
-            "Array value type must be a primitive type "
-            "(e.g., number, string, or timestamp)"
-        )
-
-    def cast_to_array(array, numpy_type=numpy_type):
-        elems = [
-            el if el is None else np.array(el, dtype=numpy_type).item() for el in array
-        ]
-        try:
-            return np.array(elems, dtype=numpy_type)
-        except TypeError:
-            return np.array(elems)
-
-    return data.map(cast_to_array)
-
-
-@execute_node.register(ops.Cast, pd.Series, dt.Timestamp)
-def execute_cast_series_timestamp(op, data, type, **kwargs):
-    arg = op.arg
-    from_type = arg.dtype
-
-    if from_type.equals(type):  # noop cast
-        return data
-
-    tz = type.timezone
-
-    if from_type.is_timestamp():
-        from_tz = from_type.timezone
-        if tz is None and from_tz is None:
-            return data
-        elif tz is None or from_tz is None:
-            return data.dt.tz_localize(tz)
-        elif tz is not None and from_tz is not None:
-            return data.dt.tz_convert(tz)
-    elif from_type.is_date():
-        return data if tz is None else data.dt.tz_localize(tz)
-
-    if from_type.is_string() or from_type.is_integer():
-        if from_type.is_integer():
-            timestamps = pd.to_datetime(data.values, unit="s")
-        else:
-            timestamps = pd.to_datetime(data.values)
-        if getattr(timestamps.dtype, "tz", None) is not None:
-            method_name = "tz_convert"
-        else:
-            method_name = "tz_localize"
-        method = getattr(timestamps, method_name)
-        timestamps = method(tz)
-        return pd.Series(timestamps, index=data.index, name=data.name)
-
-    raise TypeError(f"Don't know how to cast {from_type} to {type}")
+#     raise TypeError(f"Don't know how to cast {from_type} to {type}")
 
 
 def _normalize(values, original_index, name, timezone=None):
@@ -187,35 +124,35 @@ def _normalize(values, original_index, name, timezone=None):
     return pd.Series(index.normalize(), index=original_index, name=name)
 
 
-@execute_node.register(ops.Cast, pd.Series, dt.Date)
-def execute_cast_series_date(op, data, type, **kwargs):
-    arg = op.args[0]
-    from_type = arg.dtype
+# @execute_node.register(ops.Cast, pd.Series, dt.Date)
+# def execute_cast_series_date(op, data, type, **kwargs):
+#     arg = op.args[0]
+#     from_type = arg.dtype
 
-    if from_type.equals(type):
-        return data
+#     if from_type.equals(type):
+#         return data
 
-    if from_type.is_timestamp():
-        return _normalize(
-            data.values, data.index, data.name, timezone=from_type.timezone
-        )
+#     if from_type.is_timestamp():
+#         return _normalize(
+#             data.values, data.index, data.name, timezone=from_type.timezone
+#         )
 
-    if from_type.is_string():
-        values = data.values
-        datetimes = pd.to_datetime(values)
-        with contextlib.suppress(TypeError):
-            datetimes = datetimes.tz_convert(None)
-        dates = _normalize(datetimes, data.index, data.name)
-        return pd.Series(dates, index=data.index, name=data.name)
+#     if from_type.is_string():
+#         values = data.values
+#         datetimes = pd.to_datetime(values)
+#         with contextlib.suppress(TypeError):
+#             datetimes = datetimes.tz_convert(None)
+#         dates = _normalize(datetimes, data.index, data.name)
+#         return pd.Series(dates, index=data.index, name=data.name)
 
-    if from_type.is_integer():
-        return pd.Series(
-            pd.to_datetime(data.values, unit="D").values,
-            index=data.index,
-            name=data.name,
-        )
+#     if from_type.is_integer():
+#         return pd.Series(
+#             pd.to_datetime(data.values, unit="D").values,
+#             index=data.index,
+#             name=data.name,
+#         )
 
-    raise TypeError(f"Don't know how to cast {from_type} to {type}")
+#     raise TypeError(f"Don't know how to cast {from_type} to {type}")
 
 
 @execute_node.register(ops.SortKey, pd.Series, bool)
@@ -231,21 +168,16 @@ def call_numpy_ufunc(func, op, data, **kwargs):
     return func(data)
 
 
-@execute_node.register(ops.Negate, fixed_width_types + timedelta_types)
-def execute_obj_negate(op, data, **kwargs):
-    return -data
+# @execute_node.register(ops.Negate, pd.Series)
+# def execute_series_negate(op, data, **kwargs):
+#     return call_numpy_ufunc(np.negative, op, data, **kwargs)
 
 
-@execute_node.register(ops.Negate, pd.Series)
-def execute_series_negate(op, data, **kwargs):
-    return call_numpy_ufunc(np.negative, op, data, **kwargs)
-
-
-@execute_node.register(ops.Negate, SeriesGroupBy)
-def execute_series_group_by_negate(op, data, **kwargs):
-    return execute_series_negate(op, data.obj, **kwargs).groupby(
-        get_grouping(data.grouper.groupings), group_keys=False
-    )
+# @execute_node.register(ops.Negate, SeriesGroupBy)
+# def execute_series_group_by_negate(op, data, **kwargs):
+#     return execute_series_negate(op, data.obj, **kwargs).groupby(
+#         get_grouping(data.grouper.groupings), group_keys=False
+#     )
 
 
 @execute_node.register(ops.Unary, pd.Series)
@@ -526,12 +458,7 @@ def execute_round_series(op, data, places, **kwargs):
     return result if places else result.astype("int64")
 
 
-@execute_node.register(ops.TableColumn, (pd.DataFrame, DataFrameGroupBy))
-def execute_table_column_df_or_df_groupby(op, data, **kwargs):
-    return data[op.name]
-
-
-@execute_node.register(ops.Aggregation, pd.DataFrame)
+@execute_node.register(ops.Aggregate, pd.DataFrame)
 def execute_aggregation_dataframe(
     op,
     data,
@@ -739,9 +666,9 @@ def execute_std_series_groupby_mask(op, data, mask, aggcontext=None, **kwargs):
     )
 
 
-@execute_node.register(ops.CountStar, DataFrameGroupBy, type(None))
-def execute_count_star_frame_groupby(op, data, _, **kwargs):
-    return data.size()
+# @execute_node.register(ops.CountStar, DataFrameGroupBy, type(None))
+# def execute_count_star_frame_groupby(op, data, _, **kwargs):
+#     return data.size()
 
 
 @execute_node.register(ops.CountDistinctStar, DataFrameGroupBy, type(None))
@@ -847,14 +774,14 @@ def execute_any_all_series_group_by(op, data, mask, aggcontext=None, **kwargs):
         return result
 
 
-@execute_node.register(ops.CountStar, pd.DataFrame, type(None))
-def execute_count_star_frame(op, data, _, **kwargs):
-    return len(data)
+# @execute_node.register(ops.CountStar, pd.DataFrame, type(None))
+# def execute_count_star_frame(op, data, _, **kwargs):
+#     return len(data)
 
 
-@execute_node.register(ops.CountStar, pd.DataFrame, pd.Series)
-def execute_count_star_frame_filter(op, data, where, **kwargs):
-    return len(data) - len(where) + where.sum()
+# @execute_node.register(ops.CountStar, pd.DataFrame, pd.Series)
+# def execute_count_star_frame_filter(op, data, where, **kwargs):
+#     return len(data) - len(where) + where.sum()
 
 
 @execute_node.register(ops.CountDistinctStar, pd.DataFrame, type(None))
@@ -938,11 +865,6 @@ def execute_approx_median_series_groupby(_, data, mask, aggcontext=None, **kwarg
         median = functools.partial(_filtered_reduction, mask.obj, median)
 
     return aggcontext.agg(data, median)
-
-
-@execute_node.register((ops.Not, ops.Negate), (bool, np.bool_))
-def execute_not_bool(_, data, **kwargs):
-    return not data
 
 
 def _execute_binary_op_impl(op, left, right, **_):
@@ -1039,11 +961,6 @@ def execute_log_series_gb_others(op, left, right, **kwargs):
 def execute_log_series_gb_series_gb(op, left, right, **kwargs):
     result = execute_node(op, left.obj, right.obj, **kwargs)
     return result.groupby(get_grouping(left.grouper.groupings), group_keys=False)
-
-
-@execute_node.register(ops.Not, pd.Series)
-def execute_not_series(op, data, **kwargs):
-    return ~data
 
 
 @execute_node.register(ops.StringSplit, pd.Series, (pd.Series, str))
@@ -1153,96 +1070,31 @@ def execute_node_string_join(op, args, **kwargs):
     return op.sep.join(args)
 
 
-@execute_node.register(ops.InValues, object, tuple)
-def execute_node_scalar_in_values(op, data, elements, **kwargs):
-    elements = [execute(arg, **kwargs) for arg in elements]
-    return data in elements
+# @execute_node.register(ops.InColumn, object, np.ndarray)
+# def execute_node_scalar_in_column(op, data, elements, **kwargs):
+#     return data in elements
 
 
-@execute_node.register(ops.InColumn, object, np.ndarray)
-def execute_node_scalar_in_column(op, data, elements, **kwargs):
-    return data in elements
+# @execute_node.register(ops.InColumn, pd.Series, pd.Series)
+# def execute_node_column_in_column(op, data, elements, **kwargs):
+#     return data.isin(elements)
 
 
-@execute_node.register(ops.InValues, pd.Series, tuple)
-def execute_node_column_in_values(op, data, elements, **kwargs):
-    elements = [execute(arg, **kwargs) for arg in elements]
-    return data.isin(elements)
-
-
-@execute_node.register(ops.InColumn, pd.Series, pd.Series)
-def execute_node_column_in_column(op, data, elements, **kwargs):
-    return data.isin(elements)
-
-
-@execute_node.register(ops.InValues, SeriesGroupBy, tuple)
-def execute_node_group_in_values(op, data, elements, **kwargs):
-    elements = [execute(arg, **kwargs) for arg in elements]
-    return data.obj.isin(elements).groupby(
-        get_grouping(data.grouper.groupings), group_keys=False
-    )
-
-
-@execute_node.register(ops.InColumn, SeriesGroupBy, pd.Series)
-def execute_node_group_in_column(op, data, elements, **kwargs):
-    return data.obj.isin(elements).groupby(
-        get_grouping(data.grouper.groupings), group_keys=False
-    )
-
-
-def pd_where(cond, true, false):
-    """Execute `where` following ibis's intended semantics."""
-    if isinstance(cond, pd.Series):
-        if not isinstance(true, pd.Series):
-            true = pd.Series(
-                np.repeat(true, len(cond)), name=cond.name, index=cond.index
-            )
-        return true.where(cond, other=false)
-    if cond:
-        if isinstance(false, pd.Series) and not isinstance(true, pd.Series):
-            return pd.Series(np.repeat(true, len(false)))
-        return true
-    else:
-        if isinstance(true, pd.Series) and not isinstance(false, pd.Series):
-            return pd.Series(np.repeat(false, len(true)), index=true.index)
-        return false
-
-
-@execute_node.register(ops.IfElse, (pd.Series, *boolean_types), pd.Series, pd.Series)
-@execute_node.register(ops.IfElse, (pd.Series, *boolean_types), pd.Series, simple_types)
-@execute_node.register(ops.IfElse, (pd.Series, *boolean_types), simple_types, pd.Series)
-@execute_node.register(ops.IfElse, (pd.Series, *boolean_types), type(None), type(None))
-def execute_node_where(op, cond, true, false, **kwargs):
-    return pd_where(cond, true, false)
+# @execute_node.register(ops.InColumn, SeriesGroupBy, pd.Series)
+# def execute_node_group_in_column(op, data, elements, **kwargs):
+#     return data.obj.isin(elements).groupby(
+#         get_grouping(data.grouper.groupings), group_keys=False
+#     )
 
 
 # For true/false as scalars, we only support identical type pairs + None to
 # limit the size of the dispatch table and not have to worry about type
 # promotion.
-for typ in (str, *scalar_types):
-    for cond_typ in (pd.Series, *boolean_types):
-        execute_node.register(ops.IfElse, cond_typ, typ, typ)(execute_node_where)
-        execute_node.register(ops.IfElse, cond_typ, type(None), typ)(execute_node_where)
-        execute_node.register(ops.IfElse, cond_typ, typ, type(None))(execute_node_where)
-
-
-@execute_node.register(ops.DatabaseTable, PandasBackend)
-def execute_database_table_client(
-    op, client, timecontext: TimeContext | None, **kwargs
-):
-    df = client.dictionary[op.name]
-    if timecontext:
-        begin, end = timecontext
-        time_col = get_time_col()
-        if time_col not in df:
-            raise com.IbisError(
-                f"Table {op.name} must have a time column named {time_col}"
-                " to execute with time context."
-            )
-        # filter with time context
-        mask = df[time_col].between(begin, end)
-        return df.loc[mask].reset_index(drop=True)
-    return df
+# for typ in (str, *scalar_types):
+#     for cond_typ in (pd.Series, *boolean_types):
+#         execute_node.register(ops.IfElse, cond_typ, typ, typ)(execute_node_where)
+#         execute_node.register(ops.IfElse, cond_typ, type(None), typ)(execute_node_where)
+#         execute_node.register(ops.IfElse, cond_typ, typ, type(None))(execute_node_where)
 
 
 MATH_FUNCTIONS = {
@@ -1268,41 +1120,6 @@ def execute_node_math_function_number(op, value, **kwargs):
 @execute_node.register(ops.Log, numeric_types, numeric_types)
 def execute_node_log_number_number(op, value, base, **kwargs):
     return math.log(value, base)
-
-
-@execute_node.register(ops.DropNa, pd.DataFrame)
-def execute_node_dropna_dataframe(op, df, **kwargs):
-    if op.subset is not None:
-        subset = [col.name for col in op.subset]
-    else:
-        subset = None
-    return df.dropna(how=op.how, subset=subset)
-
-
-@execute_node.register(ops.FillNa, pd.DataFrame, simple_types)
-def execute_node_fillna_dataframe_scalar(op, df, replacements, **kwargs):
-    return df.fillna(replacements)
-
-
-@execute_node.register(ops.FillNa, pd.DataFrame)
-def execute_node_fillna_dataframe_dict(op, df, **kwargs):
-    replmap = {col: execute(repl, **kwargs) for col, repl in op.replacements.items()}
-    return df.fillna(replmap)
-
-
-@execute_node.register(ops.NullIf, simple_types, simple_types)
-def execute_node_nullif_scalars(op, value1, value2, **kwargs):
-    return np.nan if value1 == value2 else value1
-
-
-@execute_node.register(ops.NullIf, pd.Series, (pd.Series, *simple_types))
-def execute_node_nullif_series(op, left, right, **kwargs):
-    return left.where(left != right)
-
-
-@execute_node.register(ops.NullIf, simple_types, pd.Series)
-def execute_node_nullif_scalar_series(op, value, series, **kwargs):
-    return series.where(series != value)
 
 
 def coalesce(values):
@@ -1443,14 +1260,9 @@ def execute_distinct_dataframe(op, df, **kwargs):
     return df.drop_duplicates()
 
 
-@execute_node.register(ops.TableArrayView, pd.DataFrame)
-def execute_table_array_view(op, _, **kwargs):
-    return execute(op.table).squeeze()
-
-
-@execute_node.register(ops.InMemoryTable)
-def execute_in_memory_table(op, **kwargs):
-    return op.data.to_frame()
+# @execute_node.register(ops.TableArrayView, pd.DataFrame)
+# def execute_table_array_view(op, _, **kwargs):
+#     return execute(op.table).squeeze()
 
 
 @execute_node.register(ops.Sample, pd.DataFrame, object, object)

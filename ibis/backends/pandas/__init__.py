@@ -329,31 +329,34 @@ class Backend(BasePandasBackend):
     name = "pandas"
 
     def execute(self, query, params=None, limit="default", **kwargs):
-        from ibis.backends.pandas.core import execute_and_reset
+        from ibis.backends.pandas.newpandas import zuper
 
-        if limit != "default" and limit is not None:
-            raise ValueError(
-                "limit parameter to execute is not yet implemented in the "
-                "pandas backend"
-            )
+        return zuper(query.op())
+        # from ibis.backends.pandas.core import execute_and_reset
 
-        if not isinstance(query, ir.Expr):
-            raise TypeError(
-                "`query` has type {!r}, expected ibis.expr.types.Expr".format(
-                    type(query).__name__
-                )
-            )
+        # if limit != "default" and limit is not None:
+        #     raise ValueError(
+        #         "limit parameter to execute is not yet implemented in the "
+        #         "pandas backend"
+        #     )
 
-        node = query.op()
+        # if not isinstance(query, ir.Expr):
+        #     raise TypeError(
+        #         "`query` has type {!r}, expected ibis.expr.types.Expr".format(
+        #             type(query).__name__
+        #         )
+        #     )
 
-        if params is None:
-            params = {}
-        else:
-            params = {
-                k.op() if isinstance(k, ir.Expr) else k: v for k, v in params.items()
-            }
+        # node = query.op()
 
-        return execute_and_reset(node, params=params, **kwargs)
+        # if params is None:
+        #     params = {}
+        # else:
+        #     params = {
+        #         k.op() if isinstance(k, ir.Expr) else k: v for k, v in params.items()
+        #     }
+
+        # return execute_and_reset(node, params=params, **kwargs)
 
     def _load_into_cache(self, name, expr):
         self.create_table(name, expr.execute())

@@ -46,28 +46,28 @@ if TYPE_CHECKING:
     from ibis.backends.base.df.scope import Scope
 
 
-@compute_time_context.register(ops.AsOfJoin)
-def compute_time_context_asof_join(
-    op: ops.AsOfJoin,
-    scope: Scope,
-    clients: list[BaseBackend],
-    timecontext: TimeContext | None = None,
-    **kwargs,
-):
-    new_timecontexts = [
-        timecontext for arg in get_node_arguments(op) if is_computable_input(arg)
-    ]
+# @compute_time_context.register(ops.AsOfJoin)
+# def compute_time_context_asof_join(
+#     op: ops.AsOfJoin,
+#     scope: Scope,
+#     clients: list[BaseBackend],
+#     timecontext: TimeContext | None = None,
+#     **kwargs,
+# ):
+#     new_timecontexts = [
+#         timecontext for arg in get_node_arguments(op) if is_computable_input(arg)
+#     ]
 
-    if not timecontext:
-        return new_timecontexts
+#     if not timecontext:
+#         return new_timecontexts
 
-    # right table is the second node in children
-    new_timecontexts = [
-        new_timecontexts[0],
-        adjust_context(op, scope, timecontext),
-        *new_timecontexts[2:],
-    ]
-    return new_timecontexts
+#     # right table is the second node in children
+#     new_timecontexts = [
+#         new_timecontexts[0],
+#         adjust_context(op, scope, timecontext),
+#         *new_timecontexts[2:],
+#     ]
+#     return new_timecontexts
 
 
 @compute_time_context.register(ops.Window)
