@@ -7,6 +7,19 @@ import ibis.expr.datatypes as dt
 from ibis.backends.base.sql.alchemy.datatypes import AlchemyType
 from ibis.backends.base.sqlglot.datatypes import DuckDBType as SqlglotDuckdbType
 
+
+try:
+    from geoalchemy2 import Geometry
+
+    class Geometry_WKB(Geometry):
+        as_binary = "ST_AsWKB"
+
+except ImportError:
+
+    class Geometry_WKB:
+        ...
+
+
 _from_duckdb_types = {
     psql.BYTEA: dt.Binary,
     psql.UUID: dt.UUID,
@@ -35,6 +48,8 @@ _to_duckdb_types = {
     dt.UInt16: ducktypes.USmallInteger,
     dt.UInt32: ducktypes.UInteger,
     dt.UInt64: ducktypes.UBigInteger,
+    # Handle projections with geometry columns
+    dt.Geometry: Geometry_WKB,
 }
 
 

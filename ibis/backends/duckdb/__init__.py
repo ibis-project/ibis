@@ -24,6 +24,7 @@ import ibis.expr.types as ir
 from ibis import util
 from ibis.backends.base import CanCreateSchema
 from ibis.backends.base.sql.alchemy import AlchemyCrossSchemaBackend
+from ibis.backends.base.sql.alchemy.geospatial import geospatial_supported
 from ibis.backends.base.sqlglot import C, F
 from ibis.backends.duckdb.compiler import DuckDBSQLCompiler
 from ibis.backends.duckdb.datatypes import DuckDBType
@@ -1199,7 +1200,30 @@ WHERE catalog_name = :database"""
                 for name, col in zip(table.column_names, table.columns)
             }
         )
-        return PandasData.convert_table(df, schema)
+        df = PandasData.convert_table(df, schema)
+        if not df.empty and geospatial_supported:
+            return self._to_geodataframe(df, schema)
+        return df
+
+    # TODO(gforsyth): this may not need to be specialized in the future
+    @staticmethod
+    def _to_geodataframe(df, schema):
+        """Convert `df` to a `GeoDataFrame`.
+
+        Required libraries for geospatial support must be installed and
+        a geospatial column is present in the dataframe.
+        """
+        import geopandas as gpd
+
+        geom_col = None
+        for name, dtype in schema.items():
+            if dtype.is_geospatial():
+                if not geom_col:
+                    geom_col = name
+                df[name] = gpd.GeoSeries.from_wkb(df[name])
+        if geom_col:
+            df = gpd.GeoDataFrame(df, geometry=geom_col)
+        return df
 
     def _metadata(self, query: str) -> Iterator[tuple[str, dt.DataType]]:
         with self.begin() as con:
