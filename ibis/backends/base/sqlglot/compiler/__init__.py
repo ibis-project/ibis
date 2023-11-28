@@ -881,13 +881,15 @@ class SQLGlotCompiler(abc.ABC):
     def visit_AggUDF(self, op, *, where, **kw):
         return self.agg[op.__full_name__](*kw.values(), where=where)
 
-    @visit_node.register(ops.TimestampDelta)
-    @visit_node.register(ops.DateDelta)
     @visit_node.register(ops.TimeDelta)
-    def visit_Delta(self, op, *, part, left, right, **_):
+    @visit_node.register(ops.DateDelta)
+    @visit_node.register(ops.TimestampDelta)
+    def visit_TimestampDelta(self, op, *, part, left, right, **_):
         # dialect is necessary due to sqlglot's default behavior
         # of `part` coming last
-        return self.f.date_diff(part, right, left, dialect=self.dialect)
+        return sg.exp.DateDiff(
+            this=left, expression=right, unit=part, dialect=self.dialect
+        )
 
     @visit_node.register(ops.TimestampBucket)
     def visit_TimestampBucket(self, op, *, arg, interval, offset, **_):
