@@ -19,12 +19,12 @@ FROM (
           t1.l_suppkey AS l1_suppkey,
           t0.s_name AS s_name,
           t3.n_name AS n_name
-        FROM "supplier" AS t0
-        INNER JOIN "lineitem" AS t1
+        FROM supplier AS t0
+        INNER JOIN lineitem AS t1
           ON t0.s_suppkey = t1.l_suppkey
-        INNER JOIN "orders" AS t2
+        INNER JOIN orders AS t2
           ON t2.o_orderkey = t1.l_orderkey
-        INNER JOIN "nation" AS t3
+        INNER JOIN nation AS t3
           ON t0.s_nationkey = t3.n_nationkey
       ) AS t8
       WHERE
@@ -44,7 +44,7 @@ FROM (
             FROM (
               SELECT
                 *
-              FROM "lineitem" AS t4
+              FROM lineitem AS t4
               WHERE
                 (
                   (
@@ -63,7 +63,7 @@ FROM (
             FROM (
               SELECT
                 *
-              FROM "lineitem" AS t4
+              FROM lineitem AS t4
               WHERE
                 (
                   (

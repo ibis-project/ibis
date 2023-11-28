@@ -46,14 +46,14 @@ FROM (
           t4.r_regionkey AS r_regionkey,
           t4.r_name AS r_name,
           t4.r_comment AS r_comment
-        FROM "part" AS t0
-        INNER JOIN "partsupp" AS t1
+        FROM part AS t0
+        INNER JOIN partsupp AS t1
           ON t0.p_partkey = t1.ps_partkey
-        INNER JOIN "supplier" AS t2
+        INNER JOIN supplier AS t2
           ON t2.s_suppkey = t1.ps_suppkey
-        INNER JOIN "nation" AS t3
+        INNER JOIN nation AS t3
           ON t2.s_nationkey = t3.n_nationkey
-        INNER JOIN "region" AS t4
+        INNER JOIN region AS t4
           ON t3.n_regionkey = t4.r_regionkey
       ) AS t9
       WHERE
@@ -92,12 +92,12 @@ FROM (
                   t4.r_regionkey AS r_regionkey,
                   t4.r_name AS r_name,
                   t4.r_comment AS r_comment
-                FROM "partsupp" AS t1
-                INNER JOIN "supplier" AS t2
+                FROM partsupp AS t1
+                INNER JOIN supplier AS t2
                   ON t2.s_suppkey = t1.ps_suppkey
-                INNER JOIN "nation" AS t3
+                INNER JOIN nation AS t3
                   ON t2.s_nationkey = t3.n_nationkey
-                INNER JOIN "region" AS t4
+                INNER JOIN region AS t4
                   ON t3.n_regionkey = t4.r_regionkey
               ) AS t10
               WHERE

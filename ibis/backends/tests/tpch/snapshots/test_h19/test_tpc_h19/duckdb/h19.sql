@@ -32,8 +32,8 @@ FROM (
       t1.p_container AS p_container,
       t1.p_retailprice AS p_retailprice,
       t1.p_comment AS p_comment
-    FROM "lineitem" AS t0
-    INNER JOIN "part" AS t1
+    FROM lineitem AS t0
+    INNER JOIN part AS t1
       ON t1.p_partkey = t0.l_partkey
   ) AS t3
   WHERE

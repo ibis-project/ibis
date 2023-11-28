@@ -5,7 +5,7 @@ SELECT
 FROM (
   SELECT
     *
-  FROM "leaf" AS t0
+  FROM leaf AS t0
   WHERE
     TRUE
 ) AS t1
@@ -15,7 +15,7 @@ INNER JOIN (
   FROM (
     SELECT
       *
-    FROM "leaf" AS t0
+    FROM leaf AS t0
     WHERE
       TRUE
   ) AS t1
@@ -28,7 +28,7 @@ INNER JOIN (
   FROM (
     SELECT
       *
-    FROM "leaf" AS t0
+    FROM leaf AS t0
     WHERE
       TRUE
   ) AS t1
@@ -38,7 +38,7 @@ INNER JOIN (
     FROM (
       SELECT
         *
-      FROM "leaf" AS t0
+      FROM leaf AS t0
       WHERE
         TRUE
     ) AS t1

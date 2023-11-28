@@ -11,7 +11,7 @@ FROM (
     SELECT
       t0.street AS street,
       ROW_NUMBER() OVER (ORDER BY t0.street ASC ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) - CAST(1 AS TINYINT) AS key
-    FROM "data" AS t0
+    FROM data AS t0
   ) AS t1
   INNER JOIN (
     SELECT
@@ -20,7 +20,7 @@ FROM (
       SELECT
         t0.street AS street,
         ROW_NUMBER() OVER (ORDER BY t0.street ASC ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) - CAST(1 AS TINYINT) AS key
-      FROM "data" AS t0
+      FROM data AS t0
     ) AS t1
   ) AS t2
     ON t1.key = t2.key
@@ -37,7 +37,7 @@ INNER JOIN (
       SELECT
         t0.street AS street,
         ROW_NUMBER() OVER (ORDER BY t0.street ASC ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) - CAST(1 AS TINYINT) AS key
-      FROM "data" AS t0
+      FROM data AS t0
     ) AS t1
     INNER JOIN (
       SELECT
@@ -46,7 +46,7 @@ INNER JOIN (
         SELECT
           t0.street AS street,
           ROW_NUMBER() OVER (ORDER BY t0.street ASC ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) - CAST(1 AS TINYINT) AS key
-        FROM "data" AS t0
+        FROM data AS t0
       ) AS t1
     ) AS t2
       ON t1.key = t2.key

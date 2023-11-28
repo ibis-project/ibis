@@ -28,10 +28,10 @@ FROM (
           t2.n_name AS n_name,
           t2.n_regionkey AS n_regionkey,
           t2.n_comment AS n_comment
-        FROM "partsupp" AS t0
-        INNER JOIN "supplier" AS t1
+        FROM partsupp AS t0
+        INNER JOIN supplier AS t1
           ON t0.ps_suppkey = t1.s_suppkey
-        INNER JOIN "nation" AS t2
+        INNER JOIN nation AS t2
           ON t2.n_nationkey = t1.s_nationkey
       ) AS t5
       WHERE
@@ -69,10 +69,10 @@ FROM (
                 t2.n_name AS n_name,
                 t2.n_regionkey AS n_regionkey,
                 t2.n_comment AS n_comment
-              FROM "partsupp" AS t0
-              INNER JOIN "supplier" AS t1
+              FROM partsupp AS t0
+              INNER JOIN supplier AS t1
                 ON t0.ps_suppkey = t1.s_suppkey
-              INNER JOIN "nation" AS t2
+              INNER JOIN nation AS t2
                 ON t2.n_nationkey = t1.s_nationkey
             ) AS t5
             WHERE

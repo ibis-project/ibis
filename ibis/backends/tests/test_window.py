@@ -111,11 +111,6 @@ def calc_zscore(s):
             id="lag",
             marks=[
                 pytest.mark.notimpl(["dask"], raises=NotImplementedError),
-                pytest.mark.broken(
-                    ["datafusion"],
-                    raises=Exception,
-                    reason="Exception: Internal error: Expects default value to have Int64 type.",
-                ),
                 pytest.mark.notimpl(["flink"], raises=Py4JJavaError),
             ],
         ),
@@ -128,11 +123,6 @@ def calc_zscore(s):
                     ["clickhouse"],
                     reason="upstream is broken; returns all nulls",
                     raises=AssertionError,
-                ),
-                pytest.mark.broken(
-                    ["datafusion"],
-                    reason="Exception: Internal error: Expects default value to have Int64 type.",
-                    raises=BaseException,
                 ),
                 pytest.mark.notimpl(["dask"], raises=NotImplementedError),
                 pytest.mark.notimpl(["flink"], raises=Py4JJavaError),
@@ -811,13 +801,6 @@ def test_simple_ungrouped_window_with_scalar_order_by(alltypes):
             lambda df: df.float_col.shift(1),
             True,
             id="ordered-lag",
-            marks=[
-                pytest.mark.broken(
-                    ["datafusion"],
-                    raises=Exception,
-                    reason="Exception: Internal error: Expects default value to have Int64 type.",
-                ),
-            ],
         ),
         param(
             lambda t, win: t.float_col.lag().over(win),
@@ -831,11 +814,6 @@ def test_simple_ungrouped_window_with_scalar_order_by(alltypes):
                     raises=AssertionError,
                 ),
                 pytest.mark.broken(["oracle"], raises=AssertionError),
-                pytest.mark.broken(
-                    ["datafusion"],
-                    raises=Exception,
-                    reason="Exception: Internal error: Expects default value to have Int64 type.",
-                ),
                 pytest.mark.notimpl(
                     ["pyspark"],
                     raises=AnalysisException,
@@ -859,13 +837,6 @@ def test_simple_ungrouped_window_with_scalar_order_by(alltypes):
             lambda df: df.float_col.shift(-1),
             True,
             id="ordered-lead",
-            marks=[
-                pytest.mark.broken(
-                    ["datafusion"],
-                    raises=Exception,
-                    reason="Exception: Internal error: Expects default value to have Int64 type.",
-                ),
-            ],
         ),
         param(
             lambda t, win: t.float_col.lead().over(win),
@@ -880,11 +851,6 @@ def test_simple_ungrouped_window_with_scalar_order_by(alltypes):
                         "result is equal up to ordering"
                     ),
                     raises=AssertionError,
-                ),
-                pytest.mark.broken(
-                    ["datafusion"],
-                    raises=Exception,
-                    reason="Exception: Internal error: Expects default value to have Int64 type.",
                 ),
                 pytest.mark.broken(["oracle"], raises=AssertionError),
                 pytest.mark.notimpl(
@@ -1098,11 +1064,6 @@ def test_percent_rank_whole_table_no_order_by(backend, alltypes, df):
 @pytest.mark.broken(
     ["pandas"], reason="pandas returns incorrect results", raises=AssertionError
 )
-@pytest.mark.broken(
-    ["datafusion"],
-    reason="Exception: External error: Internal error: Expects default value to have Int64 type",
-    raises=Exception,
-)
 def test_grouped_ordered_window_coalesce(backend, alltypes, df):
     t = alltypes
     expr = (
@@ -1137,12 +1098,7 @@ def test_grouped_ordered_window_coalesce(backend, alltypes, df):
 
 
 @pytest.mark.notimpl(["polars"], raises=com.OperationNotDefinedError)
-@pytest.mark.broken(
-    ["datafusion"],
-    raises=Exception,
-    reason="Exception: Internal error: Expects default value to have Int64 type.",
-)
-def test_mutate_window_filter(backend, alltypes):
+def test_mutate_window_filter(backend, alltypes, df):
     t = alltypes
     win = ibis.window(order_by=[t.id])
     expr = (

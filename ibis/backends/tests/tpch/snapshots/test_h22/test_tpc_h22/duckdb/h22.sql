@@ -16,7 +16,7 @@ FROM (
     FROM (
       SELECT
         *
-      FROM "customer" AS t0
+      FROM customer AS t0
       WHERE
         CASE
           WHEN CAST(0 AS TINYINT) >= 0
@@ -30,7 +30,7 @@ FROM (
             FROM (
               SELECT
                 *
-              FROM "customer" AS t0
+              FROM customer AS t0
               WHERE
                 (
                   t0.c_acctbal > CAST(0.0 AS DOUBLE)
@@ -50,7 +50,7 @@ FROM (
             FROM (
               SELECT
                 *
-              FROM "orders" AS t1
+              FROM orders AS t1
               WHERE
                 (
                   t1.o_custkey = t0.c_custkey

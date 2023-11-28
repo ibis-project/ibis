@@ -11,9 +11,6 @@ import pyarrow as pa
 import pyarrow.dataset as ds
 import pyarrow_hotfix  # noqa: F401
 import sqlglot as sg
-from sqlglot import exp, transforms
-from sqlglot.dialects import Postgres
-from sqlglot.dialects.dialect import rename_func
 
 import ibis
 import ibis.common.exceptions as com
@@ -23,7 +20,7 @@ import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis.backends.base import BaseBackend, CanCreateDatabase, CanCreateSchema
 from ibis.backends.base.sqlglot import STAR, C
-from ibis.backends.datafusion.compiler.core import translate
+from ibis.backends.datafusion.compiler import DataFusionCompiler
 from ibis.expr.operations.udf import InputType
 from ibis.formats.pyarrow import PyArrowType
 from ibis.util import gen_name, log, normalize_filename
@@ -43,26 +40,6 @@ if TYPE_CHECKING:
 
     import pandas as pd
 
-_exclude_exp = (exp.Pow, exp.ArrayContains)
-
-
-# the DataFusion dialect was created to skip the power function to operator transformation
-# in the future this could be used to optimize sqlglot for datafusion
-class DataFusion(Postgres):
-    class Generator(Postgres.Generator):
-        TRANSFORMS = {
-            exp: trans
-            for exp, trans in Postgres.Generator.TRANSFORMS.items()
-            if exp not in _exclude_exp
-        } | {
-            exp.Select: transforms.preprocess(
-                [
-                    transforms.eliminate_qualify,
-                ]
-            ),
-            exp.IsNan: rename_func("isnan"),
-        }
-
 
 class Backend(BaseBackend, CanCreateDatabase, CanCreateSchema):
     name = "datafusion"
@@ -70,6 +47,7 @@ class Backend(BaseBackend, CanCreateDatabase, CanCreateSchema):
     builder = None
     supports_in_memory_tables = True
     supports_arrays = True
+    compiler = DataFusionCompiler()
 
     @property
     def version(self):
@@ -111,6 +89,9 @@ class Backend(BaseBackend, CanCreateDatabase, CanCreateSchema):
 
         for name, path in config.items():
             self.register(path, table_name=name)
+
+    def _to_sql(self, expr: ir.Expr, **kwargs) -> str:
+        return self.compile(expr, **kwargs)
 
     def _register_builtin_udfs(self):
         from ibis.backends.datafusion import udfs
@@ -527,7 +508,7 @@ class Backend(BaseBackend, CanCreateDatabase, CanCreateSchema):
         if params is None:
             params = {}
 
-        sql = translate(table_expr.op(), params=params)
+        sql = self.compiler.translate(table_expr.op(), params=params)
         assert not isinstance(sql, sg.exp.Subquery)
 
         if isinstance(sql, sg.exp.Table):
@@ -546,9 +527,10 @@ class Backend(BaseBackend, CanCreateDatabase, CanCreateSchema):
 
     @classmethod
     def has_operation(cls, operation: type[ops.Value]) -> bool:
-        from ibis.backends.datafusion.compiler.values import translate_val
-
-        return translate_val.dispatch(operation) is not translate_val.dispatch(object)
+        # singledispatchmethod overrides `__get__` so we can't directly access
+        # the dispatcher
+        dispatcher = cls.compiler.visit_node.register.__self__.dispatcher
+        return dispatcher.dispatch(operation) is not dispatcher.dispatch(object)
 
     def create_table(self, *_, **__) -> ir.Table:
         raise NotImplementedError(self.name)

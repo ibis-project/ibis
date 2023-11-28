@@ -25,8 +25,8 @@ FROM (
         t1.p_container AS p_container,
         t1.p_retailprice AS p_retailprice,
         t1.p_comment AS p_comment
-      FROM "partsupp" AS t0
-      INNER JOIN "part" AS t1
+      FROM partsupp AS t0
+      INNER JOIN part AS t1
         ON t1.p_partkey = t0.ps_partkey
     ) AS t5
     WHERE
@@ -41,7 +41,7 @@ FROM (
         FROM (
           SELECT
             *
-          FROM "supplier" AS t2
+          FROM supplier AS t2
           WHERE
             t2.s_comment LIKE '%Customer%Complaints%'
         ) AS t4

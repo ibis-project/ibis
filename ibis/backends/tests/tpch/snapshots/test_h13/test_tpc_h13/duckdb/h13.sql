@@ -27,8 +27,8 @@ FROM (
         t1.o_clerk AS o_clerk,
         t1.o_shippriority AS o_shippriority,
         t1.o_comment AS o_comment
-      FROM "customer" AS t0
-      LEFT OUTER JOIN "orders" AS t1
+      FROM customer AS t0
+      LEFT OUTER JOIN orders AS t1
         ON t0.c_custkey = t1.o_custkey AND NOT t1.o_comment LIKE '%special%requests%'
     ) AS t3
     GROUP BY

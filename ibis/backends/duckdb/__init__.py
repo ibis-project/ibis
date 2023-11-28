@@ -15,7 +15,6 @@ import pyarrow as pa
 import pyarrow_hotfix  # noqa: F401
 import sqlglot as sg
 import toolz
-from public import public
 
 import ibis
 import ibis.common.exceptions as exc
@@ -30,6 +29,7 @@ from ibis.backends.base.sql.alchemy.geospatial import geospatial_supported
 from ibis.backends.base.sqlglot import STAR, C, F
 from ibis.backends.base.sqlglot.compiler import SQLGlotCompiler
 from ibis.backends.base.sqlglot.datatypes import DuckDBType
+from ibis.backends.duckdb.compiler import DuckDBCompiler
 from ibis.backends.duckdb.datatypes import DuckDBPandasData
 from ibis.expr.operations.udf import InputType
 
@@ -76,32 +76,6 @@ class _Settings:
         ).fetch()
 
         return repr(dict(zip(kv["key"], kv["value"])))
-
-
-@public
-class DuckDBCompiler(SQLGlotCompiler):
-    __slots__ = ()
-
-    dialect = "duckdb"
-    type_mapper = DuckDBType
-
-    def _aggregate(self, funcname: str, *args, where):
-        expr = self.f[funcname](*args)
-        if where is not None:
-            return sg.exp.Filter(this=expr, expression=sg.exp.Where(this=where))
-        return expr
-
-    @SQLGlotCompiler.visit_node.register(ops.Sample)
-    def visit_Sample(
-        self, op, *, parent, fraction: float, method: str, seed: int | None, **_
-    ):
-        sample = sg.exp.TableSample(
-            this=parent,
-            method="bernoulli" if method == "row" else "system",
-            percent=sg.exp.convert(fraction * 100.0),
-            seed=None if seed is None else sg.exp.convert(seed),
-        )
-        return sg.select(STAR).from_(sample)
 
 
 class Backend(BaseBackend, CanCreateSchema):

@@ -76,12 +76,16 @@ _INTERVAL_SUFFIXES = {
 class SQLGlotCompiler(abc.ABC):
     __slots__ = "agg", "f"
 
-    rewrites = (
+    rewrites: tuple = (
         empty_in_values_right_side,
         add_order_by_to_empty_ranking_window_functions,
         one_to_zero_index,
         add_one_to_nth_value_input,
     )
+    """A sequence of rewrites to apply to the expression tree before compilation."""
+
+    quoted: bool | None = None
+    """Whether to always quote identifiers."""
 
     def __init__(self) -> None:
         self.agg = AggGen(aggfunc=self._aggregate)
@@ -94,7 +98,7 @@ class SQLGlotCompiler(abc.ABC):
 
     @property
     @abc.abstractmethod
-    def type_mapper(self) -> SqlglotType:
+    def type_mapper(self) -> type[SqlglotType]:
         """The type mapper for the backend."""
 
     @abc.abstractmethod
@@ -146,6 +150,7 @@ class SQLGlotCompiler(abc.ABC):
         """
 
         gen_alias_index = itertools.count()
+        quoted = self.quoted
 
         def fn(node, _, **kwargs):
             result = self.visit_node(node, **kwargs)
@@ -158,9 +163,9 @@ class SQLGlotCompiler(abc.ABC):
             alias = f"t{alias_index:d}"
 
             try:
-                return result.subquery(alias)
+                return result.subquery(sg.exp.TableAlias(this=alias, quoted=quoted))
             except AttributeError:
-                return sg.alias(result, alias)
+                return result.as_(alias, quoted=quoted)
 
         # substitute parameters immediately to avoid having to define a
         # ScalarParameter translation rule
@@ -181,16 +186,15 @@ class SQLGlotCompiler(abc.ABC):
         node = results[op]
         return node.this if isinstance(node, sg.exp.Subquery) else node
 
-    def _visit_node(self, op: ops.Node, **_):
+    @singledispatchmethod
+    def visit_node(self, op: ops.Node, **_):
         raise com.OperationNotDefinedError(
             f"No translation rule for {type(op).__name__}"
         )
 
-    visit_node = singledispatchmethod(_visit_node)
-
     @visit_node.register(ops.Field)
     def visit_Field(self, op, *, rel, name, **_):
-        return sg.column(name, table=rel.alias_or_name)
+        return sg.column(name, table=rel.alias_or_name, quoted=self.quoted)
 
     @visit_node.register(ops.ScalarSubquery)
     def visit_ScalarSubquery(self, op, *, rel, **_):
@@ -198,7 +202,7 @@ class SQLGlotCompiler(abc.ABC):
 
     @visit_node.register(ops.Alias)
     def visit_Alias(self, op, *, arg, name, **_):
-        return arg.as_(name)
+        return arg.as_(name, quoted=self.quoted)
 
     @visit_node.register(ops.Literal)
     def visit_Literal(self, op, *, value, dtype, **kw):
@@ -614,35 +618,9 @@ class SQLGlotCompiler(abc.ABC):
 
     ### Definitely Not Tensors
 
-    @visit_node.register(ops.ArrayDistinct)
-    def visit_ArrayDistinct(self, op, *, arg, **_):
-        return self.if_(
-            arg.is_(NULL),
-            NULL,
-            self.f.list_distinct(arg)
-            + self.if_(
-                self.f.list_count(arg) < self.f.len(arg),
-                self.f.array(NULL),
-                self.f.array(),
-            ),
-        )
-
-    @visit_node.register(ops.ArrayIndex)
-    def visit_ArrayIndex(self, op, *, arg, index, **_):
-        return self.f.list_extract(arg, index + self.cast(index >= 0, op.index.dtype))
-
     @visit_node.register(ops.InValues)
     def visit_InValues(self, op, *, value, options, **_):
         return value.isin(*options)
-
-    @visit_node.register(ops.ArrayConcat)
-    def visit_ArrayConcat(self, op, *, arg, **_):
-        return functools.reduce(self.f.list_concat, arg)
-
-    @visit_node.register(ops.ArrayRepeat)
-    def visit_ArrayRepeat(self, op, *, arg, times, **_):
-        func = sg.exp.Lambda(this=arg, expressions=[sg.to_identifier("_")])
-        return self.f.flatten(self.f.list_apply(self.f.range(times), func))
 
     def _neg_idx_to_pos(self, array, idx):
         arg_length = self.f.len(array)
@@ -657,82 +635,9 @@ class SQLGlotCompiler(abc.ABC):
             arg_length + self.f.greatest(idx, -arg_length),
         )
 
-    @visit_node.register(ops.ArraySlice)
-    def visit_ArraySlice(self, op, *, arg, start, stop, **_):
-        arg_length = self.f.len(arg)
-
-        if start is None:
-            start = 0
-        else:
-            start = self.f.least(arg_length, self._neg_idx_to_pos(arg, start))
-
-        if stop is None:
-            stop = arg_length
-        else:
-            stop = self._neg_idx_to_pos(arg, stop)
-
-        return self.f.list_slice(arg, start + 1, stop)
-
     @visit_node.register(ops.ArrayStringJoin)
     def visit_ArrayStringJoin(self, op, *, sep, arg, **_):
         return self.f.array_to_string(arg, sep)
-
-    @visit_node.register(ops.ArrayMap)
-    def visit_ArrayMap(self, op, *, arg, body, param, **_):
-        lamduh = sg.exp.Lambda(this=body, expressions=[sg.to_identifier(param)])
-        return self.f.list_apply(arg, lamduh)
-
-    @visit_node.register(ops.ArrayFilter)
-    def visit_ArrayFilter(self, op, *, arg, body, param, **_):
-        lamduh = sg.exp.Lambda(this=body, expressions=[sg.to_identifier(param)])
-        return self.f.list_filter(arg, lamduh)
-
-    @visit_node.register(ops.ArrayIntersect)
-    def visit_ArrayIntersect(self, op, *, left, right, **_):
-        param = sg.to_identifier("x")
-        body = self.f.list_contains(right, param)
-        lamduh = sg.exp.Lambda(this=body, expressions=[param])
-        return self.f.list_filter(left, lamduh)
-
-    @visit_node.register(ops.ArrayRemove)
-    def visit_ArrayRemove(self, op, *, arg, other, **_):
-        param = sg.to_identifier("x")
-        body = param.neq(other)
-        lamduh = sg.exp.Lambda(this=body, expressions=[param])
-        return self.f.list_filter(arg, lamduh)
-
-    @visit_node.register(ops.ArrayUnion)
-    def visit_ArrayUnion(self, op, *, left, right, **_):
-        arg = self.f.list_concat(left, right)
-        return self.if_(
-            arg.is_(NULL),
-            NULL,
-            self.f.list_distinct(arg)
-            + self.if_(
-                self.f.list_count(arg) < self.f.len(arg),
-                self.f.array(NULL),
-                self.f.array(),
-            ),
-        )
-
-    @visit_node.register(ops.ArrayZip)
-    def visit_ArrayZip(self, op, *, arg, **_):
-        i = sg.to_identifier("i")
-        body = sg.exp.Struct.from_arg_list(
-            [
-                sg.exp.Slice(this=k, expression=v[i])
-                for k, v in zip(map(sg.exp.convert, op.dtype.value_type.names), arg)
-            ]
-        )
-        func = sg.exp.Lambda(this=body, expressions=[i])
-        return self.f.list_apply(
-            self.f.range(
-                1,
-                # DuckDB Range excludes upper bound
-                self.f.greatest(*map(self.f.len, arg)) + 1,
-            ),
-            func,
-        )
 
     ### Counting
 
@@ -745,7 +650,11 @@ class SQLGlotCompiler(abc.ABC):
         # use a tuple because duckdb doesn't accept COUNT(DISTINCT a, b, c, ...)
         #
         # this turns the expression into COUNT(DISTINCT (a, b, c, ...))
-        row = sg.exp.Tuple(expressions=list(map(sg.column, op.arg.schema.keys())))
+        row = sg.exp.Tuple(
+            expressions=list(
+                map(partial(sg.column, quoted=self.quoted), op.arg.schema.keys())
+            )
+        )
         return self.agg.count(sg.exp.Distinct(expressions=[row]), where=where)
 
     @visit_node.register(ops.CountStar)
@@ -871,16 +780,6 @@ class SQLGlotCompiler(abc.ABC):
     def visit_Coalesce(self, op, *, arg, **_):
         return self.f.coalesce(*arg)
 
-    @visit_node.register(ops.MapGet)
-    def visit_MapGet(self, op, *, arg, key, default, **_):
-        return self.f.ifnull(
-            self.f.list_extract(self.f.element_at(arg, key), 1), default
-        )
-
-    @visit_node.register(ops.MapContains)
-    def visit_MapContains(self, op, *, arg, key, **_):
-        return self.f.len(self.f.element_at(arg, key)).neq(0)
-
     ### Ordering and window functions
 
     @visit_node.register(ops.RowNumber)
@@ -972,7 +871,7 @@ class SQLGlotCompiler(abc.ABC):
 
     @visit_node.register(ops.RowID)
     def visit_RowID(self, op, *, table, **_):
-        return sg.column(op.name, table=table.alias_or_name)
+        return sg.column(op.name, table=table.alias_or_name, quoted=self.quoted)
 
     @visit_node.register(ops.ScalarUDF)
     def visit_ScalarUDF(self, op, **kw):
@@ -981,11 +880,6 @@ class SQLGlotCompiler(abc.ABC):
     @visit_node.register(ops.AggUDF)
     def visit_AggUDF(self, op, *, where, **kw):
         return self.agg[op.__full_name__](*kw.values(), where=where)
-
-    @visit_node.register(ops.ToJSONMap)
-    @visit_node.register(ops.ToJSONArray)
-    def visit_ToJSONMap(self, op, *, arg, **_):
-        return self.f.try_cast(arg, self.type_mapper.from_ibis(op.dtype))
 
     @visit_node.register(ops.TimestampDelta)
     @visit_node.register(ops.DateDelta)
@@ -1002,33 +896,42 @@ class SQLGlotCompiler(abc.ABC):
             origin += offset
         return self.f.time_bucket(interval, arg, origin)
 
+    @visit_node.register(ops.ArrayConcat)
+    def visit_ArrayConcat(self, op, *, arg, **_):
+        return sg.exp.ArrayConcat(this=arg[0], expressions=list(arg[1:]))
+
+    @visit_node.register(ops.ArrayContains)
+    def visit_ArrayContains(self, op, *, arg, other, **_):
+        return sg.exp.ArrayContains(this=arg, expression=other)
+
     ## relations
 
     @visit_node.register(ops.DummyTable)
     def visit_DummyTable(self, op, *, values, **_):
-        return sg.select(*(value.as_(key) for key, value in values.items()))
+        return sg.select(
+            *(value.as_(key, quoted=self.quoted) for key, value in values.items())
+        )
 
     @visit_node.register(ops.UnboundTable)
-    def visit_UnboundTable(self, op, **_):
-        return sg.table(op.name, quoted=True)
-
     @visit_node.register(ops.InMemoryTable)
-    def visit_InMemoryTable(self, op, **_):
-        return sg.table(op.name)
+    def visit_UnboundInMemoryTable(self, op, **_):
+        return sg.table(op.name, quoted=self.quoted)
 
     @visit_node.register(ops.DatabaseTable)
     def visit_DatabaseTable(self, op, *, name, namespace, **_):
-        return sg.table(name, db=namespace.schema, catalog=namespace.database)
+        return sg.table(
+            name, db=namespace.schema, catalog=namespace.database, quoted=self.quoted
+        )
 
     @visit_node.register(ops.SelfReference)
     def visit_SelfReference(self, op, *, parent, **_):
-        return parent.as_(op.name)
+        return parent.as_(op.name, quoted=self.quoted)
 
     @visit_node.register(ops.JoinChain)
     def visit_JoinChain(self, op, *, first, rest, fields, **_):
-        result = sg.select(*(value.as_(key) for key, value in fields.items())).from_(
-            first
-        )
+        result = sg.select(
+            *(value.as_(key, quoted=self.quoted) for key, value in fields.items())
+        ).from_(first)
 
         for link in rest:
             if isinstance(link, sg.exp.Alias):
@@ -1065,15 +968,15 @@ class SQLGlotCompiler(abc.ABC):
     def visit_Project(self, op, *, parent, values, **_):
         # needs_alias should never be true here in explicitly, but it may get
         # passed via a (recursive) call to translate_val
-        return sg.select(*(value.as_(key) for key, value in values.items())).from_(
-            parent
-        )
+        return sg.select(
+            *(value.as_(key, quoted=self.quoted) for key, value in values.items())
+        ).from_(parent)
 
     @visit_node.register(ops.Aggregate)
     def visit_Aggregate(self, op, *, parent, groups, metrics, **_):
         sel = sg.select(
-            *(value.as_(key) for key, value in groups.items()),
-            *(value.as_(key) for key, value in metrics.items()),
+            *(value.as_(key, quoted=self.quoted) for key, value in groups.items()),
+            *(value.as_(key, quoted=self.quoted) for key, value in metrics.items()),
         ).from_(parent)
 
         if groups:
@@ -1179,7 +1082,8 @@ class SQLGlotCompiler(abc.ABC):
     def visit_DropNa(self, op, *, parent, how, subset, **_):
         if subset is None:
             subset = [
-                sg.column(name, table=parent.alias_or_name) for name in op.schema.names
+                sg.column(name, table=parent.alias_or_name, quoted=self.quoted)
+                for name in op.schema.names
             ]
 
         if subset:
@@ -1214,12 +1118,13 @@ class SQLGlotCompiler(abc.ABC):
             (
                 sg.alias(
                     sg.exp.Coalesce(
-                        this=sg.column(col), expressions=[sg.exp.convert(alt)]
+                        this=sg.column(col, quoted=self.quoted),
+                        expressions=[sg.exp.convert(alt)],
                     ),
                     col,
                 )
                 if (alt := mapping.get(col)) is not None
-                else sg.column(col)
+                else sg.column(col, quoted=self.quoted)
             )
             for col in op.schema.keys()
         ]
@@ -1230,11 +1135,11 @@ class SQLGlotCompiler(abc.ABC):
         # TODO: find a way to do this without creating a temporary view
         backend = op.child.to_expr()._find_backend()
         backend._create_temp_view(table_name=name, source=sg.select(STAR).from_(child))
-        return sg.table(name)
+        return sg.table(name, quoted=self.quoted)
 
     @visit_node.register(ops.SQLStringView)
     def visit_SQLStringView(self, op, *, query: str, **_):
-        table = sg.table(op.name)
+        table = sg.table(op.name, quoted=self.quoted)
         return (
             sg.select(STAR).from_(table).with_(table, as_=query, dialect=self.dialect)
         )
@@ -1243,8 +1148,6 @@ class SQLGlotCompiler(abc.ABC):
     def visit_SQLQueryResult(self, op, *, query, **_):
         return sg.parse_one(query, read=self.dialect).subquery()
 
-
-### Simple Ops
 
 _SIMPLE_OPS = {
     ops.Power: "pow",
@@ -1271,64 +1174,42 @@ _SIMPLE_OPS = {
     ops.RandomScalar: "random",
     ops.Sign: "sign",
     # Unary aggregates
-    ops.ApproxCountDistinct: "approx_count_distinct",
+    ops.ApproxCountDistinct: "approx_distinct",
     ops.Median: "median",
     ops.Mean: "avg",
     ops.Max: "max",
     ops.Min: "min",
-    ops.ArgMin: "arg_min",
-    ops.Mode: "mode",
-    ops.ArgMax: "arg_max",
+    ops.ArgMin: "argmin",
+    ops.ArgMax: "argmax",
     ops.First: "first",
     ops.Last: "last",
     ops.Count: "count",
     ops.All: "bool_and",
     ops.Any: "bool_or",
-    ops.ArrayCollect: "list",
-    ops.GroupConcat: "string_agg",
-    ops.BitOr: "bit_or",
-    ops.BitAnd: "bit_and",
-    ops.BitXor: "bit_xor",
+    ops.ArrayCollect: "array_agg",
+    ops.GroupConcat: "group_concat",
     # string operations
     ops.StringContains: "contains",
     ops.StringLength: "length",
     ops.Lowercase: "lower",
     ops.Uppercase: "upper",
-    ops.Reverse: "reverse",
-    ops.StringReplace: "replace",
-    ops.StartsWith: "prefix",
-    ops.EndsWith: "suffix",
-    ops.LPad: "lpad",
-    ops.RPad: "rpad",
-    ops.StringAscii: "ascii",
+    ops.StartsWith: "starts_with",
     ops.StrRight: "right",
     # Other operations
     ops.IfElse: "if",
     ops.ArrayLength: "length",
     ops.Unnest: "unnest",
-    ops.Degrees: "degrees",
-    ops.Radians: "radians",
     ops.NullIf: "nullif",
-    ops.MapLength: "cardinality",
-    ops.MapKeys: "map_keys",
-    ops.MapValues: "map_values",
-    ops.ArraySort: "list_sort",
-    ops.ArrayContains: "list_contains",
-    ops.FirstValue: "first_value",
-    ops.LastValue: "last_value",
-    ops.NTile: "ntile",
-    ops.Hash: "hash",
-    ops.TimeFromHMS: "make_time",
-    ops.StringToTimestamp: "strptime",
-    ops.Levenshtein: "levenshtein",
     ops.Repeat: "repeat",
     ops.Map: "map",
-    ops.MapMerge: "map_concat",
     ops.JSONGetItem: "json_extract",
-    ops.TypeOf: "typeof",
-    ops.IntegerRange: "range",
     ops.ArrayFlatten: "flatten",
-    ops.ArrayPosition: "list_indexof",
+    # common enough to be in the base, but not modeled in sqlglot
+    ops.NTile: "ntile",
+    ops.Degrees: "degrees",
+    ops.Radians: "radians",
+    ops.FirstValue: "first_value",
+    ops.LastValue: "last_value",
 }
 
 _BINARY_INFIX_OPS = {

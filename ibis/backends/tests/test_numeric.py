@@ -786,28 +786,14 @@ def test_decimal_literal(con, backend, expr, expected_types, expected_result):
         param(
             operator.methodcaller("isnan"),
             np.isnan,
-            marks=[
-                pytest.mark.notimpl(
-                    ["exasol"],
-                    raises=com.OperationNotDefinedError,
-                ),
-            ],
+            marks=pytest.mark.notimpl(["exasol"], raises=com.OperationNotDefinedError),
             id="isnan",
         ),
         param(
             operator.methodcaller("isinf"),
             np.isinf,
             id="isinf",
-            marks=[
-                pytest.mark.notimpl(
-                    ["exasol"],
-                    raises=com.OperationNotDefinedError,
-                ),
-                pytest.mark.notimpl(
-                    ["datafusion"],
-                    raises=com.OperationNotDefinedError,
-                ),
-            ],
+            marks=pytest.mark.notimpl(["exasol"], raises=com.OperationNotDefinedError),
         ),
     ],
 )

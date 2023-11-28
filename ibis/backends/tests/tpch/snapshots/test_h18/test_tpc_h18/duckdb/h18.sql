@@ -49,10 +49,10 @@ FROM (
           t2.l_shipinstruct AS l_shipinstruct,
           t2.l_shipmode AS l_shipmode,
           t2.l_comment AS l_comment
-        FROM "customer" AS t0
-        INNER JOIN "orders" AS t1
+        FROM customer AS t0
+        INNER JOIN orders AS t1
           ON t0.c_custkey = t1.o_custkey
-        INNER JOIN "lineitem" AS t2
+        INNER JOIN lineitem AS t2
           ON t1.o_orderkey = t2.l_orderkey
       ) AS t6
       WHERE
@@ -66,7 +66,7 @@ FROM (
               SELECT
                 t2.l_orderkey AS l_orderkey,
                 SUM(t2.l_quantity) AS qty_sum
-              FROM "lineitem" AS t2
+              FROM lineitem AS t2
               GROUP BY
                 1
             ) AS t5
