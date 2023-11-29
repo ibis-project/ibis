@@ -558,9 +558,12 @@ class Backend(BaseSQLBackend, CanCreateSchema):
         return rename_partitioned_column(table_expr, bq_table, self.partition_column)
 
     def _make_session(self) -> tuple[str, str]:
-        if self._session_dataset is None:
+        if (
+            self._session_dataset is None
+            and (client := getattr(self, "client", None)) is not None
+        ):
             job_config = bq.QueryJobConfig(use_query_cache=False)
-            query = self.client.query(
+            query = client.query(
                 "SELECT 1", job_config=job_config, project=self.billing_project
             )
             query.result()
@@ -615,6 +618,7 @@ class Backend(BaseSQLBackend, CanCreateSchema):
             The output of compilation. The type of this value depends on the
             backend.
         """
+        self._make_session()
         self._define_udf_translation_rules(expr)
         sql = self.compiler.to_ast_ensure_limit(expr, limit, params=params).compile()
 
