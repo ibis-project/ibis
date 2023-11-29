@@ -9,8 +9,7 @@ from public import public
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
-from ibis.backends.base.sqlglot import NULL, STAR
-from ibis.backends.base.sqlglot.compiler import SQLGlotCompiler
+from ibis.backends.base.sqlglot.compiler import NULL, STAR, SQLGlotCompiler
 from ibis.backends.base.sqlglot.datatypes import DuckDBType
 
 _INTERVAL_SUFFIXES = {

@@ -222,8 +222,16 @@ class Backend(SQLGlotBackend, CanCreateDatabase, CanCreateSchema):
     def get_schema(
         self, table_name: str, schema: str | None = None, database: str | None = None
     ) -> sch.Schema:
-        catalog = self.con.catalog(database)
-        database = catalog.database(schema)
+        if database is not None:
+            catalog = self.con.catalog(database)
+        else:
+            catalog = self.con.catalog()
+
+        if schema is not None:
+            database = catalog.database(schema)
+        else:
+            database = catalog.database()
+
         table = database.table(table_name)
         return sch.schema(table.schema)
 

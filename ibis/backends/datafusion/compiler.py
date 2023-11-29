@@ -12,8 +12,7 @@ from sqlglot.dialects.dialect import rename_func
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
-from ibis.backends.base.sqlglot import paren
-from ibis.backends.base.sqlglot.compiler import SQLGlotCompiler
+from ibis.backends.base.sqlglot.compiler import SQLGlotCompiler, paren
 from ibis.backends.base.sqlglot.datatypes import PostgresType
 from ibis.common.temporal import IntervalUnit, TimestampUnit
 from ibis.expr.operations.udf import InputType
@@ -249,7 +248,7 @@ class DataFusionCompiler(SQLGlotCompiler):
     @visit_node.register(ops.DayOfWeekName)
     def visit_DayOfWeekName(self, op, *, arg):
         return sg.exp.Case(
-            this=paren((self.f.date_part("dow", arg) + 6) % 7),
+            this=paren(self.f.date_part("dow", arg) + 6) % 7,
             ifs=list(map(self.if_, *zip(*enumerate(calendar.day_name)))),
         )
 

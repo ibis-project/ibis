@@ -36,7 +36,7 @@ except ImportError:
     DatabaseError = None
 
 
-@dot_sql_notimpl
+@pytest.mark.notimpl(["flink"])
 @dot_sql_notyet
 @dot_sql_never
 @pytest.mark.parametrize(
@@ -46,7 +46,7 @@ except ImportError:
             None,
             id="implicit_schema",
             marks=[
-                pytest.mark.notimpl(["druid"]),
+                pytest.mark.notimpl(["druid", "datafusion"]),
                 pytest.mark.notyet(["polars"], raises=PolarsComputeError),
             ],
         ),
