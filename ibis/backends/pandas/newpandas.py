@@ -139,6 +139,7 @@ def execute_group_by(op, parent, groups):
     return parent.groupby(list(groups))
 
 
+
 @execute.register(ops.GroupByMetrics)
 def execute_group_by_metrics(op, parent, metrics):
     # construct the result dataframe from the groups and metrics
@@ -524,7 +525,7 @@ def zuper(node):
 
     node = node.replace(aggregate_to_groupby)
 
-    # print(node.to_expr())
+    print(node.to_expr())
 
     result = node.map(fn)[node]
     return result

@@ -221,22 +221,23 @@ def aggregate_to_groupby(_):
 
     for v in _.groups.values():
         if not isinstance(v, ops.Field):
-            values[gen_name("group")] = v
+            values[v] = gen_name("agg")
 
     for v in _.metrics.values():
         for red in v.find_topmost(ops.Reduction):
             for arg in red.args:
                 if isinstance(arg, ops.Value) and not isinstance(arg, ops.Field):
-                    values[gen_name("metric")] = arg
+                    values[arg] = gen_name("agg")
 
     fields = {k: ops.Field(_.parent, k) for k in _.parent.schema}
-    fields.update(values)
+    fields.update({v: k for k, v in values.items()})
     proj = ops.Project(_.parent, fields)
 
     mapping = {v: k for k, v in proj.fields.items()}
     groups = [v.replace(mapping, filter=ops.Value) for k, v in _.groups.items()]
     groupby = ops.GroupBy(proj, groups)
 
+    # turn these into a different type, e.g. LazyField to not compute it
     mapping = {v: ops.Field(groupby, k) for k, v in proj.fields.items()}
     metrics = {k: v.replace(mapping) for k, v in _.metrics.items()}
     return ops.GroupByMetrics(groupby, metrics)
