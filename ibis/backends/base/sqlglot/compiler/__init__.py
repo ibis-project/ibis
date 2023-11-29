@@ -4,7 +4,6 @@ import abc
 import calendar
 import functools
 import itertools
-import math
 import operator
 import string
 from collections.abc import Mapping
@@ -58,18 +57,6 @@ def one_to_zero_index(_, **__):
 @replace(ops.NthValue)
 def add_one_to_nth_value_input(_, **__):
     return _.copy(nth=ops.Add(_.nth, 1))
-
-
-_INTERVAL_SUFFIXES = {
-    "ms": "milliseconds",
-    "us": "microseconds",
-    "s": "seconds",
-    "m": "minutes",
-    "h": "hours",
-    "D": "days",
-    "M": "months",
-    "Y": "years",
-}
 
 
 @public
@@ -209,61 +196,23 @@ class SQLGlotCompiler(abc.ABC):
         if value is None:
             if dtype.nullable:
                 return NULL if dtype.is_null() else self.cast(NULL, dtype)
-            raise NotImplementedError(
+            raise com.UnsupportedOperationError(
                 f"Unsupported NULL for non-nullable type: {dtype!r}"
             )
         elif dtype.is_interval():
-            if dtype.unit.short == "ns":
-                raise com.UnsupportedOperationError(
-                    f"{self.dialect} doesn't support nanosecond interval resolutions"
-                )
-
             return sg.exp.Interval(
                 this=sg.exp.convert(str(value)), unit=dtype.resolution.upper()
             )
         elif dtype.is_boolean():
-            return sg.exp.Boolean(this=value)
+            return sg.exp.Boolean(this=bool(value))
         elif dtype.is_string():
             return sg.exp.convert(value)
         elif dtype.is_inet() or dtype.is_macaddr():
             return sg.exp.convert(str(value))
-        elif dtype.is_numeric():
-            # cast non finite values to float because that's the behavior of
-            # duckdb when a mixed decimal/float operation is performed
-            #
-            # float will be upcast to double if necessary by duckdb
-            if not math.isfinite(value):
-                return self.cast(
-                    str(value), to=dt.float32 if dtype.is_decimal() else dtype
-                )
-            return self.cast(value, dtype)
-        elif dtype.is_time():
-            return self.f.make_time(
-                value.hour, value.minute, value.second + value.microsecond / 1e6
-            )
-        elif dtype.is_timestamp():
-            args = [
-                value.year,
-                value.month,
-                value.day,
-                value.hour,
-                value.minute,
-                value.second + value.microsecond / 1e6,
-            ]
-
-            if (tz := dtype.timezone) is not None:
-                func = self.f.make_timestamptz
-                args.append(tz)
-            else:
-                func = self.f.make_timestamp
-
-            return func(*args)
+        elif dtype.is_timestamp() or dtype.is_time():
+            return self.cast(value.isoformat(), dtype)
         elif dtype.is_date():
-            return sg.exp.DateFromParts(
-                year=sg.exp.convert(value.year),
-                month=sg.exp.convert(value.month),
-                day=sg.exp.convert(value.day),
-            )
+            return self.f.datefromparts(value.year, value.month, value.day)
         elif dtype.is_array():
             value_type = dtype.value_type
             return self.f.array(
@@ -307,10 +256,6 @@ class SQLGlotCompiler(abc.ABC):
                 for field_dtype, (k, v) in zip(dtype.types, value.items())
             ]
             return sg.exp.Struct.from_arg_list(items)
-        elif dtype.is_uuid():
-            return self.cast(str(value), dtype)
-        elif dtype.is_binary():
-            return self.cast("".join(map("\\x{:02x}".format, value)), dtype)
         else:
             raise NotImplementedError(f"Unsupported type: {dtype!r}")
 
@@ -359,16 +304,6 @@ class SQLGlotCompiler(abc.ABC):
         return sg.exp.Round(this=arg)
 
     ### Dtype Dysmorphia
-    @visit_node.register(ops.Cast)
-    def visit_Cast(self, op, *, arg, to, **_):
-        if to.is_interval():
-            return self.f[f"to_{_INTERVAL_SUFFIXES[to.unit.short]}"](
-                sg.cast(arg, to=self.type_mapper.from_ibis(dt.int32))
-            )
-        elif to.is_timestamp() and op.arg.dtype.is_integer():
-            return self.f.to_timestamp(arg)
-
-        return self.cast(arg, to)
 
     @visit_node.register(ops.TryCast)
     def visit_TryCast(self, op, *, arg, to, **_):
@@ -419,29 +354,6 @@ class SQLGlotCompiler(abc.ABC):
         """DuckDB current timestamp defaults to timestamp + tz."""
         return self.cast(sg.exp.CurrentTimestamp(), dt.timestamp)
 
-    @visit_node.register(ops.TimestampFromUNIX)
-    def visit_TimestampFromUNIX(self, op, *, arg, unit, **_):
-        unit = unit.short
-        if unit == "ms":
-            return self.f.epoch_ms(arg)
-        elif unit == "s":
-            return sg.exp.UnixToTime(this=arg)
-        else:
-            raise com.UnsupportedOperationError(f"{unit!r} unit is not supported!")
-
-    @visit_node.register(ops.TimestampFromYMDHMS)
-    def visit_TimestampFromYMDHMS(
-        self, op, *, year, month, day, hours, minutes, seconds, **_
-    ):
-        args = [year, month, day, hours, minutes, seconds]
-
-        func = "make_timestamp"
-        if (timezone := op.dtype.timezone) is not None:
-            func += "tz"
-            args.append(timezone)
-
-        return self.f[func](*args)
-
     @visit_node.register(ops.Strftime)
     def visit_Strftime(self, op, *, arg, format_str, **_):
         if not isinstance(op.format_str, ops.Literal):
@@ -489,16 +401,6 @@ class SQLGlotCompiler(abc.ABC):
     @visit_node.register(ops.ExtractSecond)
     def visit_ExtractSecond(self, op, *, arg, **_):
         return self.f.extract("second", arg)
-
-    @visit_node.register(ops.ExtractMillisecond)
-    def visit_ExtractMillisecond(self, op, *, arg, **_):
-        return self.f.mod(self.f.extract("ms", arg), 1_000)
-
-    # DuckDB extracts subminute microseconds and milliseconds
-    # so we have to finesse it a little bit
-    @visit_node.register(ops.ExtractMicrosecond)
-    def visit_ExtractMicrosecond(self, op, *, arg, **_):
-        return self.f.mod(self.f.extract("us", arg), 1_000_000)
 
     @visit_node.register(ops.TimestampTruncate)
     @visit_node.register(ops.DateTruncate)
@@ -591,10 +493,6 @@ class SQLGlotCompiler(abc.ABC):
     def visit_StringSplit(self, op, *, arg, delimiter, **_):
         return sg.exp.Split(this=arg, expression=delimiter)
 
-    @visit_node.register(ops.StringJoin)
-    def visit_StringJoin(self, op, *, arg, sep, **_):
-        return self.f.list_aggr(self.f.array(*arg), "string_agg", sep)
-
     @visit_node.register(ops.StringConcat)
     def visit_StringConcat(self, op, *, arg, **_):
         return sg.exp.Concat.from_arg_list(list(arg))
@@ -625,11 +523,11 @@ class SQLGlotCompiler(abc.ABC):
     def visit_NotNull(self, op, *, arg, **_):
         return arg.is_(sg.not_(NULL))
 
-    ### Definitely Not Tensors
-
     @visit_node.register(ops.InValues)
     def visit_InValues(self, op, *, value, options, **_):
         return value.isin(*options)
+
+    ### Definitely Not Tensors
 
     def _neg_idx_to_pos(self, array, idx):
         arg_length = self.f.len(array)
@@ -653,18 +551,6 @@ class SQLGlotCompiler(abc.ABC):
     @visit_node.register(ops.CountDistinct)
     def visit_CountDistinct(self, op, *, arg, where, **_):
         return self.agg.count(sg.exp.Distinct(expressions=[arg]), where=where)
-
-    @visit_node.register(ops.CountDistinctStar)
-    def visit_CountDistinctStar(self, op, *, where, **_):
-        # use a tuple because duckdb doesn't accept COUNT(DISTINCT a, b, c, ...)
-        #
-        # this turns the expression into COUNT(DISTINCT (a, b, c, ...))
-        row = sg.exp.Tuple(
-            expressions=list(
-                map(partial(sg.column, quoted=self.quoted), op.arg.schema.keys())
-            )
-        )
-        return self.agg.count(sg.exp.Distinct(expressions=[row]), where=where)
 
     @visit_node.register(ops.CountStar)
     def visit_CountStar(self, op, *, where, **_):
@@ -698,20 +584,6 @@ class SQLGlotCompiler(abc.ABC):
 
         return self.agg.corr(left, right, where=where)
 
-    @visit_node.register(ops.Covariance)
-    def visit_Covariance(self, op, *, left, right, how, where, **_):
-        hows = {"sample": "samp", "pop": "pop"}
-
-        # TODO: rewrite rule?
-        if (left_type := op.left.dtype).is_boolean():
-            left = self.cast(left, dt.Int32(nullable=left_type.nullable))
-
-        if (right_type := op.right.dtype).is_boolean():
-            right = self.cast(right, dt.Int32(nullable=right_type.nullable))
-
-        funcname = f"covar_{hows[how]}"
-        return self.agg[funcname](left, right, where=where)
-
     @visit_node.register(ops.Variance)
     @visit_node.register(ops.StandardDev)
     @visit_node.register(ops.Covariance)
@@ -725,10 +597,9 @@ class SQLGlotCompiler(abc.ABC):
 
         args = []
 
-        for arg in kw.values():
-            if (arg_dtype := op.arg.dtype).is_boolean():
+        for oparg, arg in zip(op.args, kw.values()):
+            if (arg_dtype := oparg.dtype).is_boolean():
                 arg = self.cast(arg, dt.Int32(nullable=arg_dtype.nullable))
-
             args.append(arg)
 
         funcname = f"{funcs[type(op)]}_{hows[how]}"

@@ -12,7 +12,7 @@ from sqlglot.dialects.dialect import rename_func
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
-from ibis.backends.base.sqlglot import NULL, paren
+from ibis.backends.base.sqlglot import paren
 from ibis.backends.base.sqlglot.compiler import SQLGlotCompiler
 from ibis.backends.base.sqlglot.datatypes import PostgresType
 from ibis.common.temporal import IntervalUnit, TimestampUnit
@@ -66,22 +66,13 @@ class DataFusionCompiler(SQLGlotCompiler):
 
     @visit_node.register(ops.Literal)
     def visit_Literal(self, op, *, value, dtype, **kw):
-        if value is None and dtype.nullable:
-            if dtype.is_null():
-                return NULL
-            return self.cast(NULL, dtype)
-        elif dtype.is_boolean():
-            return sg.exp.Boolean(this=bool(value))
-        elif dtype.is_inet() or dtype.is_macaddr():
-            # treat inet as strings for now
-            return sg.exp.convert(str(value))
+        if value is None:
+            return super().visit_node(op, value=value, dtype=dtype, **kw)
         elif dtype.is_decimal():
             return self.cast(
                 sg.exp.convert(str(value)),
                 dt.Decimal(precision=dtype.precision or 38, scale=dtype.scale or 9),
             )
-        elif dtype.is_string():
-            return sg.exp.convert(value)
         elif dtype.is_numeric():
             if isinstance(value, float):
                 if math.isinf(value):
@@ -103,43 +94,10 @@ class DataFusionCompiler(SQLGlotCompiler):
             return self._to_timestamp(value, dtype, literal=True)
         elif dtype.is_date():
             return self.f.date_trunc("day", value.isoformat())
-        elif dtype.is_time():
-            return self.cast(str(value), dt.time())
-        elif dtype.is_array():
-            vtype = dtype.value_type
-            values = [
-                self.visit_Literal(
-                    ops.Literal(v, dtype=vtype), value=v, dtype=vtype, **kw
-                )
-                for v in value
-            ]
-            return self.f.array(*values)
-        elif dtype.is_map():
-            vtype = dtype.value_type
-            keys = []
-            values = []
-
-            for k, v in value.items():
-                keys.append(sg.exp.convert(k))
-                values.append(
-                    self.visit_Literal(
-                        ops.Literal(v, dtype=vtype), value=v, dtype=vtype, **kw
-                    )
-                )
-
-            return self.f.map(self.f.array(*keys), self.f.array(*values))
-        elif dtype.is_struct():
-            fields = [
-                self.visit_Literal(
-                    ops.Literal(v, dtype=ftype), value=v, dtype=ftype, **kw
-                )
-                for ftype, v in zip(dtype.types, value.values())
-            ]
-            return self.cast(sg.exp.Struct.from_arg_list(fields), dtype)
         elif dtype.is_binary():
             return sg.exp.HexString(this=value.hex())
         else:
-            raise NotImplementedError(f"Unsupported type: {dtype!r}")
+            return super().visit_node(op, value=value, dtype=dtype, **kw)
 
     @visit_node.register(ops.Cast)
     def visit_Cast(self, op, *, arg, to, **_):
@@ -160,10 +118,6 @@ class DataFusionCompiler(SQLGlotCompiler):
         if length is not None:
             return self.f.substr(arg, start, length)
         return self.f.substr(arg, start)
-
-    @visit_node.register(ops.Divide)
-    def visit_Divide(self, op, *, left, right, **_):
-        return self.cast(left, dt.float64) / self.cast(right, dt.float64)
 
     @visit_node.register(ops.Variance)
     def visit_Variance(self, op, *, arg, how, where, **_):
@@ -487,40 +441,38 @@ class DataFusionCompiler(SQLGlotCompiler):
 
 
 _SIMPLE_OPS = {
-    ops.Reverse: "reverse",
-    ops.Strip: "trim",
-    ops.LStrip: "ltrim",
-    ops.RStrip: "rtrim",
-    ops.Lowercase: "lower",
-    ops.Uppercase: "upper",
-    ops.StringLength: "character_length",
-    ops.Capitalize: "initcap",
-    ops.Repeat: "repeat",
-    ops.LPad: "lpad",
-    ops.RPad: "rpad",
-    ops.Count: "count",
-    ops.Median: "median",
-    ops.ApproxMedian: "approx_median",
-    ops.Power: "power",
-    ops.RandomScalar: "random",
-    ops.Translate: "translate",
-    ops.StringAscii: "ascii",
-    ops.StartsWith: "starts_with",
-    ops.StrRight: "right",
-    ops.StringReplace: "replace",
-    ops.Sign: "sign",
-    ops.ExtractMicrosecond: "extract_microsecond",
-    ops.BitOr: "bit_or",
-    ops.BitXor: "bit_xor",
-    ops.BitAnd: "bit_and",
     ops.ApproxCountDistinct: "approx_distinct",
-    ops.First: "first_value",
-    ops.Last: "last_value",
-    ops.Cot: "cot",
+    ops.ApproxMedian: "approx_median",
     ops.ArrayLength: "array_length",
     ops.ArrayRemove: "array_remove_all",
+    ops.BitAnd: "bit_and",
+    ops.BitOr: "bit_or",
+    ops.BitXor: "bit_xor",
+    ops.Capitalize: "initcap",
+    ops.Cot: "cot",
+    ops.Count: "count",
+    ops.ExtractMicrosecond: "extract_microsecond",
     ops.First: "first_value",
+    ops.LPad: "lpad",
+    ops.LStrip: "ltrim",
     ops.Last: "last_value",
+    ops.Lowercase: "lower",
+    ops.Median: "median",
+    ops.Power: "power",
+    ops.RPad: "rpad",
+    ops.RStrip: "rtrim",
+    ops.RandomScalar: "random",
+    ops.Repeat: "repeat",
+    ops.Reverse: "reverse",
+    ops.Sign: "sign",
+    ops.StartsWith: "starts_with",
+    ops.StrRight: "right",
+    ops.StringAscii: "ascii",
+    ops.StringLength: "character_length",
+    ops.StringReplace: "replace",
+    ops.Strip: "trim",
+    ops.Translate: "translate",
+    ops.Uppercase: "upper",
 }
 
 for _op, _name in _SIMPLE_OPS.items():

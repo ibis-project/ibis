@@ -1,15 +1,28 @@
 from __future__ import annotations
 
-from functools import reduce, singledispatchmethod
+import math
+from functools import partial, reduce, singledispatchmethod
 
 import sqlglot as sg
 from public import public
 
 import ibis.common.exceptions as com
+import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 from ibis.backends.base.sqlglot import NULL, STAR
 from ibis.backends.base.sqlglot.compiler import SQLGlotCompiler
 from ibis.backends.base.sqlglot.datatypes import DuckDBType
+
+_INTERVAL_SUFFIXES = {
+    "ms": "milliseconds",
+    "us": "microseconds",
+    "s": "seconds",
+    "m": "minutes",
+    "h": "hours",
+    "D": "days",
+    "M": "months",
+    "Y": "years",
+}
 
 
 @public
@@ -149,7 +162,7 @@ class DuckDBCompiler(SQLGlotCompiler):
     @visit_node.register(ops.ToJSONMap)
     @visit_node.register(ops.ToJSONArray)
     def visit_ToJSONMap(self, op, *, arg, **_):
-        return self.f.try_cast(arg, self.type_mapper.from_ibis(op.dtype))
+        return sg.exp.TryCast(this=arg, to=self.type_mapper.from_ibis(op.dtype))
 
     @visit_node.register(ops.ArrayConcat)
     def visit_ArrayConcat(self, op, *, arg, **_):
@@ -170,6 +183,116 @@ class DuckDBCompiler(SQLGlotCompiler):
     @visit_node.register(ops.FindInSet)
     def visit_FindInSet(self, op, *, needle, values, **_):
         return self.f.list_indexof(self.f.array(*values), needle)
+
+    @visit_node.register(ops.CountDistinctStar)
+    def visit_CountDistinctStar(self, op, *, where, **_):
+        # use a tuple because duckdb doesn't accept COUNT(DISTINCT a, b, c, ...)
+        #
+        # this turns the expression into COUNT(DISTINCT (a, b, c, ...))
+        row = sg.exp.Tuple(
+            expressions=list(
+                map(partial(sg.column, quoted=self.quoted), op.arg.schema.keys())
+            )
+        )
+        return self.agg.count(sg.exp.Distinct(expressions=[row]), where=where)
+
+    @visit_node.register(ops.StringJoin)
+    def visit_StringJoin(self, op, *, arg, sep, **_):
+        return self.f.list_aggr(self.f.array(*arg), "string_agg", sep)
+
+    @visit_node.register(ops.ExtractMillisecond)
+    def visit_ExtractMillisecond(self, op, *, arg, **_):
+        return self.f.mod(self.f.extract("ms", arg), 1_000)
+
+    # DuckDB extracts subminute microseconds and milliseconds
+    # so we have to finesse it a little bit
+    @visit_node.register(ops.ExtractMicrosecond)
+    def visit_ExtractMicrosecond(self, op, *, arg, **_):
+        return self.f.mod(self.f.extract("us", arg), 1_000_000)
+
+    @visit_node.register(ops.TimestampFromUNIX)
+    def visit_TimestampFromUNIX(self, op, *, arg, unit, **_):
+        unit = unit.short
+        if unit == "ms":
+            return self.f.epoch_ms(arg)
+        elif unit == "s":
+            return sg.exp.UnixToTime(this=arg)
+        else:
+            raise com.UnsupportedOperationError(f"{unit!r} unit is not supported!")
+
+    @visit_node.register(ops.TimestampFromYMDHMS)
+    def visit_TimestampFromYMDHMS(
+        self, op, *, year, month, day, hours, minutes, seconds, **_
+    ):
+        args = [year, month, day, hours, minutes, seconds]
+
+        func = "make_timestamp"
+        if (timezone := op.dtype.timezone) is not None:
+            func += "tz"
+            args.append(timezone)
+
+        return self.f[func](*args)
+
+    @visit_node.register(ops.Cast)
+    def visit_Cast(self, op, *, arg, to, **_):
+        if to.is_interval():
+            func = self.f[f"to_{_INTERVAL_SUFFIXES[to.unit.short]}"]
+            return func(sg.cast(arg, to=self.type_mapper.from_ibis(dt.int32)))
+        elif to.is_timestamp() and op.arg.dtype.is_integer():
+            return self.f.to_timestamp(arg)
+
+        return self.cast(arg, to)
+
+    @visit_node.register(ops.Literal)
+    def visit_Literal(self, op, *, value, dtype, **kw):
+        if value is None:
+            return super().visit_node(op, value=value, dtype=dtype, **kw)
+        elif dtype.is_interval():
+            if dtype.unit.short == "ns":
+                raise com.UnsupportedOperationError(
+                    f"{self.dialect} doesn't support nanosecond interval resolutions"
+                )
+
+            return sg.exp.Interval(
+                this=sg.exp.convert(str(value)), unit=dtype.resolution.upper()
+            )
+        elif dtype.is_uuid():
+            return self.cast(str(value), dtype)
+        elif dtype.is_binary():
+            return self.cast("".join(map("\\x{:02x}".format, value)), dtype)
+        elif dtype.is_numeric():
+            # cast non finite values to float because that's the behavior of
+            # duckdb when a mixed decimal/float operation is performed
+            #
+            # float will be upcast to double if necessary by duckdb
+            if not math.isfinite(value):
+                return self.cast(
+                    str(value), to=dt.float32 if dtype.is_decimal() else dtype
+                )
+            return self.cast(value, dtype)
+        elif dtype.is_time():
+            return self.f.make_time(
+                value.hour, value.minute, value.second + value.microsecond / 1e6
+            )
+        elif dtype.is_timestamp():
+            args = [
+                value.year,
+                value.month,
+                value.day,
+                value.hour,
+                value.minute,
+                value.second + value.microsecond / 1e6,
+            ]
+
+            funcname = "make_timestamp"
+
+            if (tz := dtype.timezone) is not None:
+                funcname += "tz"
+                args.append(tz)
+
+            return self.f[funcname](*args)
+        else:
+            return super().visit_node(op, value=value, dtype=dtype, **kw)
 
 
 _SIMPLE_OPS = {

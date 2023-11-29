@@ -33,19 +33,23 @@ FROM (
       (
         t5.p_brand <> 'Brand#45'
       )
-      AND NOT t5.p_type LIKE 'MEDIUM POLISHED%'
+      AND NOT (
+        t5.p_type LIKE 'MEDIUM POLISHED%'
+      )
       AND t5.p_size IN (CAST(49 AS TINYINT), CAST(14 AS TINYINT), CAST(23 AS TINYINT), CAST(45 AS TINYINT), CAST(19 AS TINYINT), CAST(3 AS TINYINT), CAST(36 AS TINYINT), CAST(9 AS TINYINT))
-      AND NOT t5.ps_suppkey IN ((
-        SELECT
-          t4.s_suppkey AS s_suppkey
-        FROM (
+      AND NOT (
+        t5.ps_suppkey IN ((
           SELECT
-            *
-          FROM supplier AS t2
-          WHERE
-            t2.s_comment LIKE '%Customer%Complaints%'
-        ) AS t4
-      ))
+            t4.s_suppkey AS s_suppkey
+          FROM (
+            SELECT
+              *
+            FROM supplier AS t2
+            WHERE
+              t2.s_comment LIKE '%Customer%Complaints%'
+          ) AS t4
+        ))
+      )
   ) AS t7
   GROUP BY
     1,

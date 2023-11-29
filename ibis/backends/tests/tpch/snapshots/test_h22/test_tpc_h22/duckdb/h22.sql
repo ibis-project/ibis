@@ -43,19 +43,21 @@ FROM (
             ) AS t3
           )
         )
-        AND NOT EXISTS(
-          (
-            SELECT
-              CAST(1 AS TINYINT) AS "1"
-            FROM (
+        AND NOT (
+          EXISTS(
+            (
               SELECT
-                *
-              FROM orders AS t1
-              WHERE
-                (
-                  t1.o_custkey = t0.c_custkey
-                )
-            ) AS t2
+                CAST(1 AS TINYINT) AS "1"
+              FROM (
+                SELECT
+                  *
+                FROM orders AS t1
+                WHERE
+                  (
+                    t1.o_custkey = t0.c_custkey
+                  )
+              ) AS t2
+            )
           )
         )
     ) AS t6

@@ -56,28 +56,30 @@ FROM (
             ) AS t9
           )
         )
-        AND NOT EXISTS(
-          (
-            SELECT
-              CAST(1 AS TINYINT) AS "1"
-            FROM (
+        AND NOT (
+          EXISTS(
+            (
               SELECT
-                *
-              FROM lineitem AS t4
-              WHERE
-                (
+                CAST(1 AS TINYINT) AS "1"
+              FROM (
+                SELECT
+                  *
+                FROM lineitem AS t4
+                WHERE
                   (
                     (
-                      t4.l_orderkey = t8.l1_orderkey
-                    ) AND (
-                      t4.l_suppkey <> t8.l1_suppkey
+                      (
+                        t4.l_orderkey = t8.l1_orderkey
+                      ) AND (
+                        t4.l_suppkey <> t8.l1_suppkey
+                      )
+                    )
+                    AND (
+                      t4.l_receiptdate > t4.l_commitdate
                     )
                   )
-                  AND (
-                    t4.l_receiptdate > t4.l_commitdate
-                  )
-                )
-            ) AS t11
+              ) AS t11
+            )
           )
         )
     ) AS t13
