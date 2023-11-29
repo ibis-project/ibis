@@ -206,8 +206,7 @@ class ClickHouseCompiler(SQLGlotCompiler):
             raise com.UnsupportedOperationError(
                 "Clickhouse doesn't support subsecond interval resolutions"
             )
-
-        return sg.exp.Interval(this=sg.exp.convert(arg), unit=dtype.resolution.upper())
+        return super().visit_node(op, arg=arg, unit=unit)
 
     @visit_node.register(ops.Literal)
     def visit_Literal(self, op, *, value, dtype, **kw):

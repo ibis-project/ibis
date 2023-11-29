@@ -5,6 +5,7 @@ from functools import reduce, singledispatchmethod
 import sqlglot as sg
 from public import public
 
+import ibis.common.exceptions as com
 import ibis.expr.operations as ops
 from ibis.backends.base.sqlglot import NULL, STAR
 from ibis.backends.base.sqlglot.compiler import SQLGlotCompiler
@@ -153,6 +154,18 @@ class DuckDBCompiler(SQLGlotCompiler):
     @visit_node.register(ops.ArrayConcat)
     def visit_ArrayConcat(self, op, *, arg, **_):
         return reduce(self.f.list_concat, arg)
+
+    @visit_node.register(ops.IntervalFromInteger)
+    def visit_IntervalFromInteger(self, op, *, arg, **_):
+        dtype = op.dtype
+        if dtype.unit.short == "ns":
+            raise com.UnsupportedOperationError(
+                f"{self.dialect} doesn't support nanosecond interval resolutions"
+            )
+
+        if op.dtype.resolution == "week":
+            return self.f.to_days(arg * 7)
+        return self.f[f"to_{op.dtype.resolution}s"](arg)
 
 
 _SIMPLE_OPS = {

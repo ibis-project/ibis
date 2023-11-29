@@ -537,16 +537,8 @@ class SQLGlotCompiler(abc.ABC):
         )
 
     @visit_node.register(ops.IntervalFromInteger)
-    def visit_IntervalFromInteger(self, op, *, arg, **_):
-        dtype = op.dtype
-        if dtype.unit.short == "ns":
-            raise com.UnsupportedOperationError(
-                f"{self.dialect} doesn't support nanosecond interval resolutions"
-            )
-
-        if op.dtype.resolution == "week":
-            return self.f.to_days(arg * 7)
-        return self.f[f"to_{op.dtype.resolution}s"](arg)
+    def visit_IntervalFromInteger(self, op, *, arg, unit, **_):
+        return sg.exp.Interval(this=sg.exp.convert(arg), unit=unit.singular.upper())
 
     ### String Instruments
 
