@@ -6,11 +6,12 @@ import pytest
 
 import ibis
 from ibis.backends.conftest import TEST_TABLES
-from ibis.backends.tests.base import BackendTest, RoundAwayFromZero
+from ibis.backends.tests.base import BackendTest
 
 
-class TestConf(BackendTest, RoundAwayFromZero):
+class TestConf(BackendTest):
     supports_structs = False
+    force_sort = True
     deps = "pandas", "pyflink"
 
     @staticmethod

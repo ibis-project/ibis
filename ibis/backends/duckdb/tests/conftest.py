@@ -6,7 +6,7 @@ import pytest
 
 import ibis
 from ibis.backends.conftest import TEST_TABLES
-from ibis.backends.tests.base import BackendTest, RoundAwayFromZero
+from ibis.backends.tests.base import BackendTest
 from ibis.conftest import SANDBOXED
 
 if TYPE_CHECKING:
@@ -15,7 +15,7 @@ if TYPE_CHECKING:
     from ibis.backends.base import BaseBackend
 
 
-class TestConf(BackendTest, RoundAwayFromZero):
+class TestConf(BackendTest):
     supports_map = True
     deps = "duckdb", "duckdb_engine"
     stateful = False

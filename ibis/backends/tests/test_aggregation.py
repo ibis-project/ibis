@@ -432,11 +432,9 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
                         "trino",
                         "druid",
                         "oracle",
+                        "flink",
                     ],
                     raises=com.OperationNotDefinedError,
-                ),
-                pytest.mark.notimpl(
-                    ["flink"], "WIP", raises=com.OperationNotDefinedError
                 ),
             ],
         ),
@@ -453,11 +451,9 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
                         "mssql",
                         "druid",
                         "oracle",
+                        "flink",
                     ],
                     raises=com.OperationNotDefinedError,
-                ),
-                pytest.mark.notimpl(
-                    ["flink"], "WIP", raises=com.OperationNotDefinedError
                 ),
             ],
         ),
@@ -474,11 +470,9 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
                         "mssql",
                         "druid",
                         "oracle",
+                        "flink",
                     ],
                     raises=com.OperationNotDefinedError,
-                ),
-                pytest.mark.notimpl(
-                    ["flink"], "WIP", raises=com.OperationNotDefinedError
                 ),
             ],
         ),
@@ -755,9 +749,7 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
                         "callable or a string"
                     ),
                 ),
-                pytest.mark.notimpl(
-                    ["flink"], "WIP", raises=com.OperationNotDefinedError
-                ),
+                pytest.mark.notyet(["flink"], raises=com.OperationNotDefinedError),
             ],
         ),
     ],
@@ -877,8 +869,10 @@ def test_count_distinct_star(alltypes, df, ibis_cond, pandas_cond):
                     reason="backend implements approximate quantiles",
                     raises=AssertionError,
                 ),
-                pytest.mark.notimpl(
-                    ["flink"], "WIP", raises=com.OperationNotDefinedError
+                pytest.mark.never(
+                    ["flink"],
+                    reason="backend doesn't implement approximate quantiles yet",
+                    raises=com.OperationNotDefinedError,
                 ),
             ],
         ),
@@ -917,8 +911,10 @@ def test_count_distinct_star(alltypes, df, ibis_cond, pandas_cond):
                     reason="backend implements approximate quantiles",
                     raises=AssertionError,
                 ),
-                pytest.mark.notimpl(
-                    ["flink"], "WIP", raises=com.OperationNotDefinedError
+                pytest.mark.never(
+                    ["flink"],
+                    reason="backend doesn't implement approximate quantiles yet",
+                    raises=com.OperationNotDefinedError,
                 ),
             ],
         ),
@@ -965,10 +961,8 @@ def test_quantile(
                     raises=com.OperationNotDefinedError,
                 ),
                 pytest.mark.notyet(
-                    ["mysql", "impala", "sqlite"], raises=com.OperationNotDefinedError
-                ),
-                pytest.mark.notimpl(
-                    ["flink"], "WIP", raises=com.OperationNotDefinedError
+                    ["mysql", "impala", "sqlite", "flink"],
+                    raises=com.OperationNotDefinedError,
                 ),
             ],
         ),
@@ -982,11 +976,8 @@ def test_quantile(
                     raises=com.OperationNotDefinedError,
                 ),
                 pytest.mark.notyet(
-                    ["mysql", "impala", "sqlite"],
+                    ["mysql", "impala", "sqlite", "flink"],
                     raises=com.OperationNotDefinedError,
-                ),
-                pytest.mark.notimpl(
-                    ["flink"], "WIP", raises=com.OperationNotDefinedError
                 ),
             ],
         ),
@@ -1000,7 +991,7 @@ def test_quantile(
                     raises=com.OperationNotDefinedError,
                 ),
                 pytest.mark.notyet(
-                    ["impala", "mysql", "sqlite"],
+                    ["impala", "mysql", "sqlite", "flink"],
                     raises=com.OperationNotDefinedError,
                 ),
                 pytest.mark.notyet(
@@ -1012,9 +1003,6 @@ def test_quantile(
                     ["pyspark"],
                     raises=ValueError,
                     reason="PySpark only implements sample correlation",
-                ),
-                pytest.mark.notimpl(
-                    ["flink"], "WIP", raises=com.OperationNotDefinedError
                 ),
             ],
         ),
@@ -1028,7 +1016,7 @@ def test_quantile(
                     raises=com.OperationNotDefinedError,
                 ),
                 pytest.mark.notyet(
-                    ["impala", "mysql", "sqlite"],
+                    ["impala", "mysql", "sqlite", "flink"],
                     raises=com.OperationNotDefinedError,
                 ),
                 pytest.mark.notyet(
@@ -1040,9 +1028,6 @@ def test_quantile(
                     ["trino", "postgres", "duckdb", "snowflake", "oracle"],
                     raises=ValueError,
                     reason="XXXXSQLExprTranslator only implements population correlation coefficient",
-                ),
-                pytest.mark.notimpl(
-                    ["flink"], "WIP", raises=com.OperationNotDefinedError
                 ),
             ],
         ),
@@ -1060,10 +1045,8 @@ def test_quantile(
                     raises=com.OperationNotDefinedError,
                 ),
                 pytest.mark.notyet(
-                    ["mysql", "impala", "sqlite"], raises=com.OperationNotDefinedError
-                ),
-                pytest.mark.notimpl(
-                    ["flink"], "WIP", raises=com.OperationNotDefinedError
+                    ["mysql", "impala", "sqlite", "flink"],
+                    raises=com.OperationNotDefinedError,
                 ),
             ],
         ),
@@ -1081,7 +1064,7 @@ def test_quantile(
                     raises=com.OperationNotDefinedError,
                 ),
                 pytest.mark.notyet(
-                    ["impala", "mysql", "sqlite"],
+                    ["impala", "mysql", "sqlite", "flink"],
                     raises=com.OperationNotDefinedError,
                 ),
                 pytest.mark.notyet(
@@ -1093,9 +1076,6 @@ def test_quantile(
                     ["pyspark"],
                     raises=ValueError,
                     reason="PySpark only implements sample correlation",
-                ),
-                pytest.mark.notimpl(
-                    ["flink"], "WIP", raises=com.OperationNotDefinedError
                 ),
             ],
         ),
@@ -1151,7 +1131,7 @@ def test_corr_cov(
     raises=AttributeError,
     reason="'Series' object has no attribute 'approx_median'",
 )
-@pytest.mark.notimpl(["flink"], "WIP", raises=Py4JError)
+@pytest.mark.notyet(["flink"], raises=com.OperationNotDefinedError)
 def test_approx_median(alltypes):
     expr = alltypes.double_col.approx_median()
     result = expr.execute()
@@ -1166,7 +1146,11 @@ def test_approx_median(alltypes):
     raises=com.OperationNotDefinedError,
 )
 @pytest.mark.notyet(["dask"], raises=NotImplementedError)
-@pytest.mark.notimpl(["flink"], "WIP", raises=com.OperationNotDefinedError)
+@pytest.mark.never(
+    ["flink"],
+    reason="backend doesn't implement approximate quantiles yet",
+    raises=com.OperationNotDefinedError,
+)
 def test_median(alltypes, df):
     expr = alltypes.double_col.median()
     result = expr.execute()
@@ -1262,7 +1246,11 @@ def test_median(alltypes, df):
     raises=sa.exc.DatabaseError,
     reason="ORA-00904: 'GROUP_CONCAT': invalid identifier",
 )
-@pytest.mark.notimpl(["flink"], "WIP", raises=Py4JError)
+@pytest.mark.notyet(
+    ["flink"],
+    raises=Py4JError,
+    reason='SQL parse failed. Encountered "group_concat ("',
+)
 def test_group_concat(
     backend,
     alltypes,
@@ -1326,7 +1314,9 @@ def test_topk_op(alltypes, df):
     raises=NotImplementedError,
     reason="sorting on aggregations not yet implemented",
 )
-@pytest.mark.notimpl(["flink"], "WIP", raises=Py4JError)
+@pytest.mark.notyet(
+    ["flink"], raises=Py4JError, reason="Flink doesn't support semi joins"
+)
 def test_topk_filter_op(alltypes, df, result_fn, expected_fn):
     # TopK expression will order rows by "count" but each backend
     # can have different result for that.
@@ -1359,10 +1349,10 @@ def test_topk_filter_op(alltypes, df, result_fn, expected_fn):
         "trino",
         "druid",
         "oracle",
+        "flink",
     ],
     raises=com.OperationNotDefinedError,
 )
-@pytest.mark.notimpl(["flink"], "WIP", raises=com.OperationNotDefinedError)
 def test_aggregate_list_like(backend, alltypes, df, agg_fn):
     """Tests .aggregate() where the result of an aggregation is a list-like.
 
@@ -1398,10 +1388,10 @@ def test_aggregate_list_like(backend, alltypes, df, agg_fn):
         "trino",
         "druid",
         "oracle",
+        "flink",
     ],
     raises=com.OperationNotDefinedError,
 )
-@pytest.mark.notimpl(["flink"], "WIP", raises=com.OperationNotDefinedError)
 def test_aggregate_mixed_udf(backend, alltypes, df):
     """Tests .aggregate() with multiple aggregations with mixed result types.
 
@@ -1481,7 +1471,6 @@ def test_agg_name_in_output_column(alltypes):
     assert "max" in df.columns[1].lower()
 
 
-@pytest.mark.notimpl(["flink"], "WIP", raises=Py4JError)
 def test_grouped_case(backend, con):
     table = ibis.memtable({"key": [1, 1, 2, 2], "value": [10, 30, 20, 40]})
 
@@ -1501,13 +1490,12 @@ def test_grouped_case(backend, con):
     reason="Dask and Pandas do not windowize this operation correctly",
     raises=AssertionError,
 )
-@pytest.mark.notyet(["impala"], raises=com.UnsupportedOperationError)
+@pytest.mark.notyet(["impala", "flink"], raises=com.UnsupportedOperationError)
 @pytest.mark.notyet(["clickhouse"], raises=ClickhouseDatabaseError)
 @pytest.mark.notyet(["druid", "trino", "snowflake"], raises=sa.exc.ProgrammingError)
-@pytest.mark.notyet("mysql", raises=sa.exc.NotSupportedError)
-@pytest.mark.notyet("oracle", raises=sa.exc.DatabaseError)
-@pytest.mark.notyet("pyspark", raises=PysparkAnalysisException)
-@pytest.mark.notimpl(["flink"], "WIP", raises=com.UnsupportedOperationError)
+@pytest.mark.notyet(["mysql"], raises=sa.exc.NotSupportedError)
+@pytest.mark.notyet(["oracle"], raises=sa.exc.DatabaseError)
+@pytest.mark.notyet(["pyspark"], raises=PysparkAnalysisException)
 def test_group_concat_over_window(backend, con):
     input_df = pd.DataFrame(
         {

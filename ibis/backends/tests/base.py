@@ -5,7 +5,7 @@ import concurrent.futures
 import inspect
 import subprocess
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Literal
 
 import numpy as np
 import pandas as pd
@@ -20,72 +20,49 @@ if TYPE_CHECKING:
     import ibis.expr.types as ir
 
 
-# TODO: Merge into BackendTest, #2564
-class RoundingConvention:
-    @staticmethod
-    @abc.abstractmethod
-    def round(series: pd.Series, decimals: int = 0) -> pd.Series:
-        """Round a series to `decimals` number of decimal values."""
-
-
-# TODO: Merge into BackendTest, #2564
-class RoundAwayFromZero(RoundingConvention):
-    @staticmethod
-    def round(series: pd.Series, decimals: int = 0) -> pd.Series:
-        if not decimals:
-            return (-(np.sign(series)) * np.ceil(-(series.abs()) - 0.5)).astype(
-                np.int64
-            )
-        return series.round(decimals=decimals)
-
-
-# TODO: Merge into BackendTest, #2564
-class RoundHalfToEven(RoundingConvention):
-    @staticmethod
-    def round(series: pd.Series, decimals: int = 0) -> pd.Series:
-        result = series.round(decimals=decimals)
-        return result if decimals else result.astype(np.int64)
-
-
-# TODO: Merge into BackendTest, #2564
-class UnorderedComparator:
-    @classmethod
-    def assert_series_equal(
-        cls, left: pd.Series, right: pd.Series, *args: Any, **kwargs: Any
-    ) -> None:
-        left = left.sort_values().reset_index(drop=True)
-        right = right.sort_values().reset_index(drop=True)
-        return super().assert_series_equal(left, right, *args, **kwargs)
-
-    @classmethod
-    def assert_frame_equal(
-        cls, left: pd.DataFrame, right: pd.DataFrame, *args: Any, **kwargs: Any
-    ) -> None:
-        columns = list(set(left.columns) & set(right.columns))
-        left = left.sort_values(by=columns)
-        right = right.sort_values(by=columns)
-        return super().assert_frame_equal(left, right, *args, **kwargs)
-
-
 class BackendTest(abc.ABC):
-    check_dtype = True
-    check_names = True
-    supports_arrays = True
-    supports_arrays_outside_of_select = supports_arrays
-    supports_window_operations = True
-    supports_divide_by_zero = False
-    returned_timestamp_unit = "us"
+    """
+    The base class for managing configuration and data loading for a backend
+    that does not require Docker for testing (this includes both in-process
+    backends and cloud backends like Snowflake and BigQuery).
+    """
+
+    check_dtype: bool = True
+    "Check that dtypes match when comparing Pandas Series"
+    check_names: bool = True
+    "Check that column name matches when comparing Pandas Series"
+    supports_arrays: bool = True
+    "Whether backend supports Arrays / Lists"
+    supports_arrays_outside_of_select: bool = supports_arrays
+    "Whether backend supports Arrays / Lists outside of Select Statements"
+    supports_window_operations: bool = True
+    "Whether backend supports Window Operations"
+    supports_divide_by_zero: bool = False
+    "Whether backend supports division by zero"
+    returned_timestamp_unit: str = "us"
     supported_to_timestamp_units = {"s", "ms", "us"}
-    supports_floating_modulus = True
-    native_bool = True
-    supports_structs = True
-    supports_json = True
-    supports_map = False  # basically nothing does except trino and snowflake
+    supports_floating_modulus: bool = True
+    "Whether backend supports floating point in modulus operations"
+    native_bool: bool = True
+    "Whether backend has native boolean types"
+    supports_structs: bool = True
+    "Whether backend supports Structs"
+    supports_json: bool = True
+    "Whether backend supports operating on JSON"
+    supports_map: bool = False
+    "Whether backend supports mappings (currently DuckDB, Snowflake, and Trino)"
     reduction_tolerance = 1e-7
+    "Used for a single test in `test_aggregation.py`. You should not need to touch this."
     default_identifier_case_fn = staticmethod(toolz.identity)
+    "Function applied to all identifier names to change case as necessary (e.g. Snowflake ALL_CAPS)"
     stateful = True
-    service_name = None
-    supports_tpch = False
+    "Whether special handling is needed for running a multi-process pytest run."
+    supports_tpch: bool = False
+    "Child class defines a `load_tpch` method that loads the required TPC-H tables into a connection."
+    force_sort = False
+    "Sort results before comparing against reference computation."
+    rounding_method: Literal["away_from_zero", "half_to_even"] = "away_from_zero"
+    "Name of round method to use for rounding test comparisons."
 
     @property
     @abc.abstractmethod
@@ -107,6 +84,20 @@ class BackendTest(abc.ABC):
         return name
 
     def __init__(self, *, data_dir: Path, tmpdir, worker_id, **kw) -> None:
+        """
+        Initializes the test class -- note that none of the arguments are
+        required and will be provided by `pytest` or by fixtures defined in
+        `ibis/backends/conftest.py`.
+
+        data_dir
+            Directory where test data resides (will be provided by the
+            `data_dir` fixture in `ibis/backends/conftest.py`)
+        tmpdir
+            Pytest fixture providing a temporary directory location
+        worker_id
+            A unique identifier for each worker used for running test
+            concurrently via e.g. `pytest -n auto`
+        """
         self.connection = self.connect(tmpdir=tmpdir, worker_id=worker_id, **kw)
         self.data_dir = data_dir
         self.script_dir = data_dir.parent / "schema"
@@ -157,7 +148,7 @@ class BackendTest(abc.ABC):
         if worker_id != "master":
             root_tmp_dir = root_tmp_dir.parent
 
-        fn = root_tmp_dir / (getattr(cls, "service_name", None) or cls.name())
+        fn = root_tmp_dir / cls.name()
         with FileLock(f"{fn}.lock"):
             cls.skip_if_missing_deps()
 
@@ -172,6 +163,7 @@ class BackendTest(abc.ABC):
 
     @classmethod
     def skip_if_missing_deps(cls) -> None:
+        """Add an `importorskip` for any missing dependencies."""
         for dep in cls.deps:
             pytest.importorskip(dep)
 
@@ -185,6 +177,13 @@ class BackendTest(abc.ABC):
     def assert_series_equal(
         cls, left: pd.Series, right: pd.Series, *args: Any, **kwargs: Any
     ) -> None:
+        """Compare two Pandas Series, optionally ignoring order, dtype, and column name.
+
+        `force_sort`, `check_dtype`, and `check_names` are set as class-level variables.
+        """
+        if cls.force_sort:
+            left = left.sort_values().reset_index(drop=True)
+            right = right.sort_values().reset_index(drop=True)
         kwargs.setdefault("check_dtype", cls.check_dtype)
         kwargs.setdefault("check_names", cls.check_names)
         tm.assert_series_equal(left, right, *args, **kwargs)
@@ -193,10 +192,35 @@ class BackendTest(abc.ABC):
     def assert_frame_equal(
         cls, left: pd.DataFrame, right: pd.DataFrame, *args: Any, **kwargs: Any
     ) -> None:
+        """Compare two Pandas DataFrames optionally ignoring order, and dtype.
+
+        `force_sort`, and `check_dtype` are set as class-level variables.
+        """
+        if cls.force_sort:
+            columns = list(set(left.columns) & set(right.columns))
+            left = left.sort_values(by=columns)
+            right = right.sort_values(by=columns)
         left = left.reset_index(drop=True)
         right = right.reset_index(drop=True)
         kwargs.setdefault("check_dtype", cls.check_dtype)
         tm.assert_frame_equal(left, right, *args, **kwargs)
+
+    @classmethod
+    def round(cls, series: pd.Series, decimals: int = 0) -> pd.Series:
+        return getattr(cls, cls.rounding_method)(series, decimals)
+
+    @staticmethod
+    def away_from_zero(series: pd.Series, decimals: int = 0) -> pd.Series:
+        if not decimals:
+            return (-(np.sign(series)) * np.ceil(-(series.abs()) - 0.5)).astype(
+                np.int64
+            )
+        return series.round(decimals=decimals)
+
+    @staticmethod
+    def half_to_even(series: pd.Series, decimals: int = 0) -> pd.Series:
+        result = series.round(decimals=decimals)
+        return result if decimals else result.astype(np.int64)
 
     @staticmethod
     def default_series_rename(series: pd.Series, name: str = "tmp") -> pd.Series:
@@ -316,14 +340,27 @@ class BackendTest(abc.ABC):
 
 
 class ServiceBackendTest(BackendTest):
+    """Parent class to use for backend test configuration if backend requires a
+    Docker container(s) in order to run locally.
+
+    """
+
+    service_name: str | None = None
+    "Name of service defined in docker-compose.yml corresponding to backend."
     data_volume = "/data"
+    "Data volume defined in docker-compose.yml corresponding to backend."
 
     @property
     @abc.abstractmethod
     def test_files(self) -> Iterable[Path]:
+        """Returns an iterable of test files to load into a Docker container before testing."""
         ...
 
     def preload(self):
+        """Use `docker compose cp` to copy all files from `test_files` into a container.
+
+        `service_name` and `data_volume` are set as class-level variables.
+        """
         service = self.service_name
         data_volume = self.data_volume
         with concurrent.futures.ThreadPoolExecutor() as e:

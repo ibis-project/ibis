@@ -27,9 +27,10 @@ always viable -- we're in Python land so why not grab the filenames using
 ```{python}
 import urllib3
 
-http = urllib3.PoolManager()
+url = "https://raw.githubusercontent.com/pypi-data/data/main/links/dataset.txt"
 
-resp = http.request("GET", "https://github.com/pypi-data/data/raw/main/links/dataset.txt")
+with urllib3.PoolManager() as http:
+    resp = http.request("GET", url)
 
 parquet_files = resp.data.decode().split()
 parquet_files
@@ -87,7 +88,7 @@ We can follow Seth's lead and look for things:
 ```{python}
 expr = pypi.filter(
     [
-        _.path.re_search(r"\.(asm|c|cc|cpp|cxx|h|hpp|rs|[Ff][0-9]{0-2}(?:or)?|go)$"),
+        _.path.re_search(r"\.(asm|c|cc|cpp|cxx|h|hpp|rs|[Ff][0-9]{0,2}(?:or)?|go)$"),
         ~_.path.re_search(r"(^|/)test(|s|ing)"),
         ~_.path.contains("/site-packages/"),
     ]
@@ -144,10 +145,12 @@ We'll do a few things:
 ```{python}
 collapse_names = expr.mutate(
     ext=_.ext.re_replace(r"cxx|cpp|cc|c|hpp|h", "C/C++")
+    .re_replace("^f.*$", "Fortran")
     .replace("rs", "Rust")
     .replace("go", "Go")
-    .replace("asm", "Assembly"),
-)
+    .replace("asm", "Assembly")
+    .nullif(""),
+).dropna("ext")
 
 collapse_names
 ```
@@ -202,7 +205,7 @@ Now that the data are tidied, we can pass our expression directly to Altair and 
 import altair as alt
 
 chart = (
-    alt.Chart(collapse_names)
+    alt.Chart(collapse_names.to_pandas())
     .mark_line()
     .encode(x="month", y="project_count", color="ext")
     .properties(width=600, height=300)
@@ -235,7 +238,7 @@ full_query = (
     pypi.filter(
         [
             _.path.re_search(
-                r"\.(asm|c|cc|cpp|cxx|h|hpp|rs|[Ff][0-9]{0-2}(?:or)?|go)$"
+                r"\.(asm|c|cc|cpp|cxx|h|hpp|rs|[Ff][0-9]{0,2}(?:or)?|go)$"
             ),
             ~_.path.re_search(r"(^|/)test(|s|ing)"),
             ~_.path.contains("/site-packages/"),
@@ -249,15 +252,18 @@ full_query = (
     .order_by(_.month.desc())
     .mutate(
         ext=_.ext.re_replace(r"cxx|cpp|cc|c|hpp|h", "C/C++")
+        .re_replace("^f.*$", "Fortran")
         .replace("rs", "Rust")
         .replace("go", "Go")
-        .replace("asm", "Assembly"),
+        .replace("asm", "Assembly")
+        .nullif(""),
     )
+    .dropna("ext")
     .group_by(["month", "ext"])
     .aggregate(project_count=flatten(_.projects.collect()).unique().length())
 )
 chart = (
-    alt.Chart(full_query)
+    alt.Chart(full_query.to_pandas())
     .mark_line()
     .encode(x="month", y="project_count", color="ext")
     .properties(width=600, height=300)

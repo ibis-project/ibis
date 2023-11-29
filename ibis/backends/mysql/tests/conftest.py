@@ -9,7 +9,7 @@ from packaging.version import parse as parse_version
 
 import ibis
 from ibis.backends.conftest import TEST_TABLES, init_database
-from ibis.backends.tests.base import RoundHalfToEven, ServiceBackendTest
+from ibis.backends.tests.base import ServiceBackendTest
 
 if TYPE_CHECKING:
     from collections.abc import Iterable
@@ -22,7 +22,7 @@ MYSQL_PORT = int(os.environ.get("IBIS_TEST_MYSQL_PORT", 3306))
 IBIS_TEST_MYSQL_DB = os.environ.get("IBIS_TEST_MYSQL_DATABASE", "ibis_testing")
 
 
-class TestConf(ServiceBackendTest, RoundHalfToEven):
+class TestConf(ServiceBackendTest):
     # mysql has the same rounding behavior as postgres
     check_dtype = False
     returned_timestamp_unit = "s"
@@ -30,6 +30,7 @@ class TestConf(ServiceBackendTest, RoundHalfToEven):
     supports_arrays_outside_of_select = supports_arrays
     native_bool = False
     supports_structs = False
+    rounding_method = "half_to_even"
     service_name = "mysql"
     deps = "pymysql", "sqlalchemy"
 

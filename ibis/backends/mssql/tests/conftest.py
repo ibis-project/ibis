@@ -8,7 +8,7 @@ import sqlalchemy as sa
 
 import ibis
 from ibis.backends.conftest import init_database
-from ibis.backends.tests.base import RoundHalfToEven, ServiceBackendTest
+from ibis.backends.tests.base import ServiceBackendTest
 
 if TYPE_CHECKING:
     from collections.abc import Iterable
@@ -21,7 +21,7 @@ MSSQL_PORT = int(os.environ.get("IBIS_TEST_MSSQL_PORT", 1433))
 IBIS_TEST_MSSQL_DB = os.environ.get("IBIS_TEST_MSSQL_DATABASE", "ibis_testing")
 
 
-class TestConf(ServiceBackendTest, RoundHalfToEven):
+class TestConf(ServiceBackendTest):
     # MSSQL has the same rounding behavior as postgres
     check_dtype = False
     supports_window_operations = False
@@ -30,6 +30,7 @@ class TestConf(ServiceBackendTest, RoundHalfToEven):
     supports_arrays_outside_of_select = supports_arrays
     supports_structs = False
     supports_json = False
+    rounding_method = "half_to_even"
     service_name = "mssql"
     deps = "pymssql", "sqlalchemy"
 

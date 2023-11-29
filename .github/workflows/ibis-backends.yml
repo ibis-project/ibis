@@ -321,7 +321,7 @@ jobs:
           custom_cache_key_element: ${{ steps.install_python.outputs.python-version }}
 
       - name: install poetry
-        run: python -m pip install --upgrade pip 'poetry==1.6.1'
+        run: python -m pip install --upgrade pip 'poetry==1.7.0'
 
       - uses: syphar/restore-virtualenv@v1
         with:
@@ -353,13 +353,25 @@ jobs:
           IBIS_TEST_WEBHDFS_USER: hdfs
           IBIS_EXAMPLES_DATA: ${{ runner.temp }}/examples-${{ matrix.backend.name }}-${{ matrix.os }}-${{ steps.install_python.outputs.python-version }}
 
+      # FIXME(deepyaman): If some backend-specific test, in test_ddl.py,
+      #   executes before common tests, they will fail with:
+      #   org.apache.flink.table.api.ValidationException: Table `default_catalog`.`default_database`.`functional_alltypes` was not found.
+      #   Therefore, we run backend-specific tests second to avoid this.
       - name: "run serial tests: ${{ matrix.backend.name }}"
-        if: matrix.backend.serial && matrix.backend.name != 'impala'
-        run: just ci-check -m ${{ matrix.backend.name }}
+        if: matrix.backend.serial && matrix.backend.name == 'flink'
+        run: |
+          just ci-check -m ${{ matrix.backend.name }} ibis/backends/tests
+          just ci-check -m ${{ matrix.backend.name }} ibis/backends/flink/tests
         env:
           IBIS_EXAMPLES_DATA: ${{ runner.temp }}/examples-${{ matrix.backend.name }}-${{ matrix.os }}-${{ steps.install_python.outputs.python-version }}
           FLINK_REMOTE_CLUSTER_ADDR: localhost
           FLINK_REMOTE_CLUSTER_PORT: "8081"
+
+      - name: "run serial tests: ${{ matrix.backend.name }}"
+        if: matrix.backend.serial && matrix.backend.name != 'impala' && matrix.backend.name != 'flink'
+        run: just ci-check -m ${{ matrix.backend.name }}
+        env:
+          IBIS_EXAMPLES_DATA: ${{ runner.temp }}/examples-${{ matrix.backend.name }}-${{ matrix.os }}-${{ steps.install_python.outputs.python-version }}
 
       - name: check that no untracked files were produced
         shell: bash
@@ -466,7 +478,7 @@ jobs:
           python-version: ${{ matrix.python-version }}
 
       - name: install poetry
-        run: python -m pip install --upgrade pip 'poetry==1.6.1'
+        run: python -m pip install --upgrade pip 'poetry==1.7.0'
 
       - name: install minimum versions
         run: poetry add --lock --optional ${{ join(matrix.backend.deps, ' ') }}
@@ -533,7 +545,7 @@ jobs:
           python-version: ${{ matrix.python-version }}
 
       - name: install poetry
-        run: python -m pip install --upgrade pip 'poetry==1.6.1'
+        run: python -m pip install --upgrade pip 'poetry==1.7.0'
 
       - name: install maximum versions of pandas and numpy
         run: poetry add --lock 'pandas@<2' 'numpy<1.24'
@@ -576,7 +588,7 @@ jobs:
         with:
           python-version: "3.11"
 
-      - run: python -m pip install --upgrade pip 'poetry==1.6.1'
+      - run: python -m pip install --upgrade pip 'poetry==1.7.0'
 
       - name: remove deps that are not compatible with sqlalchemy 2
         run: poetry remove snowflake-sqlalchemy
@@ -716,7 +728,7 @@ jobs:
           custom_cache_key_element: ${{ steps.install_python.outputs.python-version }}
 
       - name: install poetry
-        run: python -m pip install --upgrade pip 'poetry==1.6.1'
+        run: python -m pip install --upgrade pip 'poetry==1.7.0'
 
       - name: install ibis
         run: poetry install --without dev --without docs --extras "${{ join(matrix.backend.extras, ' ') }}"

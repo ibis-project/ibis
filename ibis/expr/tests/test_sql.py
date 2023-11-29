@@ -139,3 +139,13 @@ ORDER BY id DESC"""
     expr = ibis.parse_sql(sql, catalog)
     code = ibis.decompile(expr, format=True)
     snapshot.assert_match(code, "decompiled.py")
+
+
+def test_parse_sql_in_clause(snapshot):
+    sql = """
+SELECT first_name FROM employee
+WHERE first_name IN ('Graham', 'John', 'Terry', 'Eric', 'Michael')"""
+
+    expr = ibis.parse_sql(sql, catalog)
+    code = ibis.decompile(expr, format=True)
+    snapshot.assert_match(code, "decompiled.py")

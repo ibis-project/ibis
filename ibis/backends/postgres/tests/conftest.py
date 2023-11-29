@@ -21,7 +21,7 @@ import sqlalchemy as sa
 
 import ibis
 from ibis.backends.conftest import init_database
-from ibis.backends.tests.base import RoundHalfToEven, ServiceBackendTest
+from ibis.backends.tests.base import ServiceBackendTest
 
 if TYPE_CHECKING:
     from collections.abc import Iterable
@@ -42,12 +42,13 @@ IBIS_TEST_POSTGRES_DB = os.environ.get(
 )
 
 
-class TestConf(ServiceBackendTest, RoundHalfToEven):
+class TestConf(ServiceBackendTest):
     # postgres rounds half to even for double precision and half away from zero
     # for numeric and decimal
 
     returned_timestamp_unit = "s"
     supports_structs = False
+    rounding_method = "half_to_even"
     service_name = "postgres"
     deps = "psycopg2", "sqlalchemy"
 

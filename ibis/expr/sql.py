@@ -260,6 +260,13 @@ def convert_sum(reduction, catalog):
     return getattr(this, method)()
 
 
+@convert.register(sge.In)
+def convert_in(in_, catalog):
+    this = convert(in_.this, catalog=catalog)
+    candidates = [convert(expression, catalog) for expression in in_.expressions]
+    return this.isin(candidates)
+
+
 @public
 @experimental
 def parse_sql(sqlstring, catalog, dialect=None):

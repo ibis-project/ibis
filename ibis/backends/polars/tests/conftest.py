@@ -7,11 +7,11 @@ import pytest
 
 import ibis
 from ibis.backends.conftest import TEST_TABLES
-from ibis.backends.tests.base import BackendTest, RoundAwayFromZero
+from ibis.backends.tests.base import BackendTest
 from ibis.backends.tests.data import array_types, struct_types, win
 
 
-class TestConf(BackendTest, RoundAwayFromZero):
+class TestConf(BackendTest):
     supports_structs = True
     supports_json = False
     reduction_tolerance = 1e-3

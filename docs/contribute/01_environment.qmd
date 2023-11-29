@@ -38,7 +38,7 @@ For a better development experience see the `conda` or `nix` setup instructions.
 1. Install development dependencies
 
    ```sh
-   pip install 'poetry==1.6.1'
+   pip install 'poetry==1.7.0'
    pip install -r requirements-dev.txt
    ```
 

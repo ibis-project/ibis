@@ -11,7 +11,7 @@ import pytest
 import sqlalchemy as sa
 
 import ibis
-from ibis.backends.tests.base import RoundHalfToEven, ServiceBackendTest
+from ibis.backends.tests.base import ServiceBackendTest
 
 if TYPE_CHECKING:
     from collections.abc import Iterable
@@ -29,7 +29,7 @@ ORACLE_PORT = int(os.environ.get("IBIS_TEST_ORACLE_PORT", 1521))
 # where ORACLE_DB is the same name you used in the docker-compose file.
 
 
-class TestConf(ServiceBackendTest, RoundHalfToEven):
+class TestConf(ServiceBackendTest):
     check_dtype = False
     supports_window_operations = False
     returned_timestamp_unit = "s"
@@ -40,6 +40,7 @@ class TestConf(ServiceBackendTest, RoundHalfToEven):
     native_bool = False
     supports_structs = False
     supports_json = False
+    rounding_method = "half_to_even"
     data_volume = "/opt/oracle/data"
     service_name = "oracle"
     deps = "oracledb", "sqlalchemy"

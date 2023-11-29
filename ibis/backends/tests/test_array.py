@@ -943,32 +943,7 @@ def test_range_single_argument(con, n):
     reason="range and unnest aren't implemented upstream",
     raises=com.OperationNotDefinedError,
 )
-@pytest.mark.parametrize(
-    "n",
-    [
-        param(
-            -2,
-            marks=[
-                pytest.mark.broken(
-                    ["snowflake"],
-                    reason="snowflake unnests empty arrays to null",
-                    raises=AssertionError,
-                )
-            ],
-        ),
-        param(
-            0,
-            marks=[
-                pytest.mark.broken(
-                    ["snowflake"],
-                    reason="snowflake unnests empty arrays to null",
-                    raises=AssertionError,
-                )
-            ],
-        ),
-        2,
-    ],
-)
+@pytest.mark.parametrize("n", [-2, 0, 2])
 @pytest.mark.notimpl(
     ["polars", "flink", "pandas", "dask"], raises=com.OperationNotDefinedError
 )
@@ -1048,3 +1023,20 @@ def test_range_start_stop_step_zero(con, start, stop):
     expr = ibis.range(start, stop, 0)
     result = con.execute(expr)
     assert list(result) == []
+
+
+@pytest.mark.notimpl(
+    ["polars"],
+    raises=AssertionError,
+    reason="ibis hasn't implemented this behavior yet",
+)
+@pytest.mark.notyet(
+    ["datafusion", "flink"],
+    raises=com.OperationNotDefinedError,
+    reason="backend doesn't support unnest",
+)
+def test_unnest_empty_array(con):
+    t = ibis.memtable({"arr": [[], ["a"], ["a", "b"]]})
+    expr = t.arr.unnest()
+    result = con.execute(expr)
+    assert len(result) == 3
