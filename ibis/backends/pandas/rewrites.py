@@ -56,32 +56,62 @@ class PandasProject(ops.Relation):
         return Schema({k: v.dtype for k, v in self.values.items()})
 
 
+class PandasAggregate(ops.Relation):
+    parent: ops.Relation
+    groups: VarTuple[str]
+    metrics: FrozenDict[str, ops.Reduction]
+
+    @attribute
+    def fields(self):
+        return {}
+
+    @attribute
+    def schema(self):
+        groups = {k: self.parent.schema[k] for k in self.groups}
+        metrics = {k: v.dtype for k, v in self.metrics.items()}
+        return Schema.from_tuples([*groups.items(), *metrics.items()])
+
+
+def flip(d):
+    return {v: k for k, v in d.items()}
+
+
 @replace(ops.Aggregate)
 def aggregate_to_groupby(_):
     if not _.groups:
         return ops.PandasProject(_.parent, _.metrics)
 
-    values = {}
+    metrics = {}
+    reductions = {}
+    projections = {ops.Field(_.parent, k): k for k in _.parent.schema}
 
-    for v in _.groups.values():
-        if not isinstance(v, ops.Field):
-            values[v] = gen_name("agg")
+    # add all the computed groups to the pre-projection
+    for _k, v in _.groups.items():
+        if v not in projections:
+            projections[v] = gen_name("agg")
 
-    for v in _.metrics.values():
-        for red in v.find_topmost(ops.Reduction):
-            for arg in red.args:
-                if isinstance(arg, ops.Value) and not isinstance(arg, ops.Field):
-                    values[arg] = gen_name("agg")
+    # add all the computed dependencies of any reduction to the pre-projection
+    # add all the reductions to the actual pandas aggregation
+    for _k, v in _.metrics.items():
+        for reduction in v.find_topmost(ops.Reduction):
+            for child in reduction.__children__:
+                if child not in projections:
+                    projections[child] = gen_name("agg")
+            reductions[reduction] = gen_name("agg")
 
-    fields = {k: ops.Field(_.parent, k) for k in _.parent.schema}
-    fields.update({v: k for k, v in values.items()})
-    proj = ops.Project(_.parent, fields)
+    # construct the pre-projection
+    step1 = ops.Project(_.parent, flip(projections))
 
-    mapping = {v: k for k, v in proj.fields.items()}
-    groups = [v.replace(mapping, filter=ops.Value) for k, v in _.groups.items()]
-    groupby = GroupBy(proj, groups)
+    # construct the pandas aggregation
+    subs = {node: ops.Field(step1, name) for node, name in projections.items()}
+    groups = [projections[node] for node in _.groups.values()]
+    metrics = {name: node.replace(subs) for node, name in reductions.items()}
+    step2 = PandasAggregate(step1, groups, metrics)
 
-    # turn these into a different type, e.g. LazyField to not compute it
-    mapping = {v: ops.Field(groupby, k) for k, v in proj.fields.items()}
-    metrics = {k: v.replace(mapping) for k, v in _.metrics.items()}
-    return GroupByMetrics(groupby, metrics)
+    # construct the post-projection
+    subs = {node: ops.Field(step2, name) for node, name in reductions.items()}
+    group_values = {name: ops.Field(step2, projections[node]) for name, node in _.groups.items()}
+    metric_values = {name: node.replace(subs) for name, node in _.metrics.items()}
+    step3 = ops.Project(step2, {**group_values, **metric_values})
+
+    return step3
