@@ -2824,7 +2824,7 @@ def test_timestamp_precision_output(con, ts, scale, unit):
             marks=[
                 pytest.mark.notimpl(
                     ["clickhouse"],
-                    raises=NotImplementedError,
+                    raises=com.OperationNotDefinedError,
                     reason="time types not yet implemented in ibis for the clickhouse backend",
                 )
             ],

@@ -210,19 +210,13 @@ class ClickHouseCompiler(SQLGlotCompiler):
 
     @visit_node.register(ops.Literal)
     def visit_Literal(self, op, *, value, dtype, **kw):
-        if value is None and dtype.nullable:
-            if dtype.is_null():
-                return NULL
-            return self.cast(NULL, dtype)
-        elif dtype.is_boolean():
-            return sg.exp.convert(bool(value))
+        if value is None:
+            return super().visit_node(op, value=value, dtype=dtype, **kw)
         elif dtype.is_inet():
             v = str(value)
             return self.f.toIPv6(v) if ":" in v else self.f.toIPv4(v)
         elif dtype.is_string():
             return sg.exp.convert(str(value).replace(r"\0", r"\\0"))
-        elif dtype.is_macaddr():
-            return sg.exp.convert(str(value))
         elif dtype.is_decimal():
             precision = dtype.precision
             if precision is None or not 1 <= precision <= 76:
@@ -240,11 +234,8 @@ class ClickHouseCompiler(SQLGlotCompiler):
                 type_name = self.f.toDecimal256
             return type_name(value, dtype.scale)
         elif dtype.is_numeric():
-            if math.isnan(value):
-                return sg.exp.Literal(this="NaN", is_string=False)
-            elif math.isinf(value):
-                inf = sg.exp.Literal(this="inf", is_string=False)
-                return -inf if value < 0 else inf
+            if not math.isfinite(value):
+                return sg.exp.Literal.number(str(value))
             return sg.exp.convert(value)
         elif dtype.is_interval():
             if dtype.unit.short in ("ms", "us", "ns"):
@@ -276,32 +267,6 @@ class ClickHouseCompiler(SQLGlotCompiler):
             return self.f[funcname](*args)
         elif dtype.is_date():
             return self.f.toDate(value.strftime("%Y-%m-%d"))
-        elif dtype.is_array():
-            value_type = dtype.value_type
-            values = [
-                self.visit_Literal(
-                    ops.Literal(v, dtype=value_type), value=v, dtype=value_type, **kw
-                )
-                for v in value
-            ]
-            return self.f.array(*values)
-        elif dtype.is_map():
-            value_type = dtype.value_type
-            keys = []
-            values = []
-
-            for k, v in value.items():
-                keys.append(sg.exp.convert(k))
-                values.append(
-                    self.visit_Literal(
-                        ops.Literal(v, dtype=value_type),
-                        value=v,
-                        dtype=value_type,
-                        **kw,
-                    )
-                )
-
-            return self.f.map(self.f.array(*keys), self.f.array(*values))
         elif dtype.is_struct():
             fields = [
                 self.visit_Literal(
@@ -311,7 +276,7 @@ class ClickHouseCompiler(SQLGlotCompiler):
             ]
             return self.f.tuple(*fields)
         else:
-            raise NotImplementedError(f"Unsupported type: {dtype!r}")
+            return super().visit_node(op, value=value, dtype=dtype, **kw)
 
     @visit_node.register(ops.TimestampFromUNIX)
     def visit_TimestampFromUNIX(self, op, *, arg, unit, **_):
@@ -324,20 +289,20 @@ class ClickHouseCompiler(SQLGlotCompiler):
     @visit_node.register(ops.TimeTruncate)
     def visit_TimeTruncate(self, op, *, arg, unit, **_):
         converters = {
-            "Y": self.f.toStartOfYear,
-            "M": self.f.toStartOfMonth,
-            "W": self.f.toMonday,
-            "D": self.f.toDate,
-            "h": self.f.toStartOfHour,
-            "m": self.f.toStartOfMinute,
-            "s": self.f.toDateTime,
+            "Y": "toStartOfYear",
+            "M": "toStartOfMonth",
+            "W": "toMonday",
+            "D": "toDate",
+            "h": "toStartOfHour",
+            "m": "toStartOfMinute",
+            "s": "toDateTime",
         }
 
         unit = unit.short
         if (converter := converters.get(unit)) is None:
             raise com.UnsupportedOperationError(f"Unsupported truncate unit {unit}")
 
-        return converter(arg)
+        return self.f[converter](arg)
 
     @visit_node.register(ops.TimestampBucket)
     def visit_TimestampBucket(self, op, *, arg, interval, offset, **_):
@@ -706,6 +671,7 @@ _NOT_IMPLEMENTED_OPS = {
     ops.CumeDist,
     ops.PercentRank,
     ops.Time,
+    ops.TimeDelta,
 }
 
 for _op in _NOT_IMPLEMENTED_OPS:
