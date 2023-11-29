@@ -166,6 +166,7 @@ class DuckDBCompiler(SQLGlotCompiler):
 
     @visit_node.register(ops.ArrayConcat)
     def visit_ArrayConcat(self, op, *, arg):
+        # TODO(cpcloud): map ArrayConcat to this in sqlglot instead of here
         return reduce(self.f.list_concat, arg)
 
     @visit_node.register(ops.IntervalFromInteger)
