@@ -1322,3 +1322,16 @@ WHERE catalog_name = :database"""
             if overwrite:
                 con.execute(t.delete())
             con.execute(t.insert().from_select(columns, sa.select(source)))
+
+    def table(
+        self,
+        name: str,
+        database: str | None = None,
+        schema: str | None = None,
+    ) -> ir.Table:
+        expr = super().table(name=name, database=database, schema=schema)
+        # load geospatial only if geo columns
+        if any(typ.is_geospatial() for typ in expr.op().schema.types):
+            self.load_extension("spatial")
+
+        return expr

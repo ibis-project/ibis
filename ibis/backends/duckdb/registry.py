@@ -28,14 +28,7 @@ from ibis.backends.postgres.registry import (
 )
 from ibis.common.exceptions import UnsupportedOperationError
 
-try:
-    from ibis.backends.duckdb.datatypes import Geometry_WKB
-except ImportError:
-
-    class Geometry_WKB:
-        ...
-
-
+from ibis.backends.duckdb.datatypes import Geometry_WKB
 if TYPE_CHECKING:
     from collections.abc import Mapping
 
