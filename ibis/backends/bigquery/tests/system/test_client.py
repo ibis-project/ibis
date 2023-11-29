@@ -389,6 +389,22 @@ def test_fully_qualified_table_creation(con, project_id, dataset_id, temp_table)
     assert t.get_name() == f"{project_id}.{dataset_id}.{temp_table}"
 
 
+def test_fully_qualified_memtable_compile(project_id, dataset_id):
+    new_bq_con = ibis.bigquery.connect(project_id=project_id, dataset_id=dataset_id)
+    # New connection shouldn't have _session_dataset populated after connection
+    assert new_bq_con._session_dataset is None
+
+    t = ibis.memtable(
+        {"a": [1, 2, 3], "b": [4, 5, 6]},
+        schema=ibis.schema({"a": "int64", "b": "int64"}),
+    )
+
+    # call to compile should fill in _session_dataset
+    sql = new_bq_con.compile(t)
+    assert new_bq_con._session_dataset is not None
+    assert project_id in sql
+
+
 def test_create_table_with_options(con):
     name = gen_name("bigquery_temp_table")
     schema = ibis.schema(dict(a="int64", b="int64", c="array<string>", d="date"))
