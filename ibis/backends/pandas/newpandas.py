@@ -9,6 +9,7 @@ import pandas as pd
 
 import ibis.expr.operations as ops
 from ibis import util
+from ibis.backends.pandas.rewrites import *
 from ibis.common.exceptions import OperationNotDefinedError
 from ibis.formats.pandas import PandasData, PandasSchema, PandasType
 
@@ -108,7 +109,7 @@ def execute_project(op, parent, values):
     return pd.DataFrame(values)
 
 
-@execute.register(ops.PandasProject)
+@execute.register(PandasProject)
 def execute_pandas_project(op, parent, values):
     return pd.DataFrame(values, index=[0])
 
@@ -134,13 +135,12 @@ def execute_sort(op, parent, keys):
     return result.drop(newcols.keys(), axis=1)
 
 
-@execute.register(ops.GroupBy)
+@execute.register(GroupBy)
 def execute_group_by(op, parent, groups):
     return parent.groupby(list(groups))
 
 
-
-@execute.register(ops.GroupByMetrics)
+@execute.register(GroupByMetrics)
 def execute_group_by_metrics(op, parent, metrics):
     # construct the result dataframe from the groups and metrics
     return pd.concat(metrics, axis=1).reset_index()
@@ -517,7 +517,7 @@ def execute_round(op, arg, digits):
 
 
 def zuper(node):
-    from ibis.expr.rewrites import aggregate_to_groupby
+    from ibis.backends.pandas.rewrites import aggregate_to_groupby
 
     def fn(node, _, **kwargs):
         result = execute(node, **kwargs)
