@@ -100,7 +100,7 @@ class DataFusionCompiler(SQLGlotCompiler):
             return super().visit_node(op, value=value, dtype=dtype, **kw)
 
     @visit_node.register(ops.Cast)
-    def visit_Cast(self, op, *, arg, to, **_):
+    def visit_Cast(self, op, *, arg, to):
         if to.is_interval():
             unit = to.unit.name.lower()
             return sg.cast(
@@ -113,14 +113,14 @@ class DataFusionCompiler(SQLGlotCompiler):
         return self.cast(arg, to)
 
     @visit_node.register(ops.Substring)
-    def visit_Substring(self, op, *, arg, start, length, **_):
+    def visit_Substring(self, op, *, arg, start, length):
         start = self.if_(start < 0, self.f.length(arg) + start + 1, start + 1)
         if length is not None:
             return self.f.substr(arg, start, length)
         return self.f.substr(arg, start)
 
     @visit_node.register(ops.Variance)
-    def visit_Variance(self, op, *, arg, how, where, **_):
+    def visit_Variance(self, op, *, arg, how, where):
         if how == "sample":
             return self.agg.var_samp(arg, where=where)
         elif how == "pop":
@@ -129,7 +129,7 @@ class DataFusionCompiler(SQLGlotCompiler):
             raise ValueError(f"Unrecognized how value: {how}")
 
     @visit_node.register(ops.StandardDev)
-    def visit_StandardDev(self, op, *, arg, how, where, **_):
+    def visit_StandardDev(self, op, *, arg, how, where):
         if how == "sample":
             return self.agg.stddev_samp(arg, where=where)
         elif how == "pop":
@@ -148,15 +148,17 @@ class DataFusionCompiler(SQLGlotCompiler):
             )
 
     @visit_node.register(ops.ElementWiseVectorizedUDF)
-    def visit_ElementWiseVectorizedUDF(self, op, *, func, func_args, **_):
+    def visit_ElementWiseVectorizedUDF(
+        self, op, *, func, func_args, input_type, return_type
+    ):
         return self.f[func.__name__](*func_args)
 
     @visit_node.register(ops.StringConcat)
-    def visit_StringConcat(self, op, *, arg, **_):
+    def visit_StringConcat(self, op, *, arg):
         return self.f.concat(*arg)
 
     @visit_node.register(ops.RegexExtract)
-    def visit_RegexExtract(self, op, *, arg, pattern, index, **_):
+    def visit_RegexExtract(self, op, *, arg, pattern, index):
         if not isinstance(op.index, ops.Literal):
             raise ValueError(
                 "re_extract `index` expressions must be literals. "
@@ -165,11 +167,11 @@ class DataFusionCompiler(SQLGlotCompiler):
         return self.f.regexp_match(arg, self.f.concat("(", pattern, ")"))[index]
 
     # @visit_node.register(ops.RegexReplace)
-    # def regex_replace(self, op, *, arg, pattern, replacement, **_):
+    # def regex_replace(self, op, *, arg, pattern, replacement):
     #     return self.f.regexp_replace(arg, pattern, replacement, sg.exp.convert("g"))
 
     @visit_node.register(ops.StringFind)
-    def visit_StringFind(self, op, *, arg, substr, start, end, **_):
+    def visit_StringFind(self, op, *, arg, substr, start, end):
         if end is not None:
             raise NotImplementedError("`end` not yet implemented")
 
@@ -180,15 +182,15 @@ class DataFusionCompiler(SQLGlotCompiler):
         return self.f.strpos(arg, substr)
 
     @visit_node.register(ops.RegexSearch)
-    def visit_RegexSearch(self, op, *, arg, pattern, **_):
+    def visit_RegexSearch(self, op, *, arg, pattern):
         return self.f.array_length(self.f.regexp_match(arg, pattern)) > 0
 
     @visit_node.register(ops.StringContains)
-    def visit_StringContains(self, op, *, haystack, needle, **_):
+    def visit_StringContains(self, op, *, haystack, needle):
         return self.f.strpos(haystack, needle) > sg.exp.convert(0)
 
     @visit_node.register(ops.StringJoin)
-    def visit_StringJoin(self, op, *, sep, arg, **_):
+    def visit_StringJoin(self, op, *, sep, arg):
         if not isinstance(op.sep, ops.Literal):
             raise ValueError(
                 "join `sep` expressions must be literals. "
@@ -198,70 +200,69 @@ class DataFusionCompiler(SQLGlotCompiler):
         return self.f.concat_ws(sep, *arg)
 
     @visit_node.register(ops.ExtractFragment)
-    def visit_ExtractFragment(self, op, *, arg, **_):
+    def visit_ExtractFragment(self, op, *, arg):
         return self.f.extract_url_field(arg, "fragment")
 
     @visit_node.register(ops.ExtractProtocol)
-    def visit_ExtractProtocol(self, op, *, arg, **_):
+    def visit_ExtractProtocol(self, op, *, arg):
         return self.f.extract_url_field(arg, "scheme")
 
     @visit_node.register(ops.ExtractAuthority)
-    def visit_ExtractAuthority(self, op, *, arg, **_):
+    def visit_ExtractAuthority(self, op, *, arg):
         return self.f.extract_url_field(arg, "netloc")
 
     @visit_node.register(ops.ExtractPath)
-    def visit_ExtractPath(self, op, *, arg, **_):
+    def visit_ExtractPath(self, op, *, arg):
         return self.f.extract_url_field(arg, "path")
 
     @visit_node.register(ops.ExtractHost)
-    def visit_ExtractHost(self, op, *, arg, **_):
+    def visit_ExtractHost(self, op, *, arg):
         return self.f.extract_url_field(arg, "hostname")
 
     @visit_node.register(ops.ExtractQuery)
-    def visit_ExtractQuery(self, op, *, arg, key, **_):
+    def visit_ExtractQuery(self, op, *, arg, key):
         if key is not None:
             return self.f.extract_query_param(arg, key)
         return self.f.extract_query(arg)
 
     @visit_node.register(ops.ExtractUserInfo)
-    def visit_ExtractUserInfo(self, op, *, arg, **_):
+    def visit_ExtractUserInfo(self, op, *, arg):
         return self.f.extract_user_info(arg)
 
     @visit_node.register(ops.ExtractYear)
     @visit_node.register(ops.ExtractMonth)
     @visit_node.register(ops.ExtractQuarter)
     @visit_node.register(ops.ExtractDay)
-    def visit_ExtractYearMonthQuarterDay(self, op, *, arg, **_):
+    def visit_ExtractYearMonthQuarterDay(self, op, *, arg):
         skip = len("Extract")
         part = type(op).__name__[skip:].lower()
         return self.f.date_part(part, arg)
 
     @visit_node.register(ops.ExtractDayOfYear)
-    def visit_ExtractDayOfYear(self, op, *, arg, **_):
+    def visit_ExtractDayOfYear(self, op, *, arg):
         return self.f.date_part("doy", arg)
 
     @visit_node.register(ops.DayOfWeekIndex)
-    def visit_DayOfWeekIndex(self, op, *, arg, **_):
+    def visit_DayOfWeekIndex(self, op, *, arg):
         return (self.f.date_part("dow", arg) + 6) % 7
 
     @visit_node.register(ops.DayOfWeekName)
-    def visit_DayOfWeekName(self, op, *, arg, **_):
+    def visit_DayOfWeekName(self, op, *, arg):
         return sg.exp.Case(
             this=paren((self.f.date_part("dow", arg) + 6) % 7),
             ifs=list(map(self.if_, *zip(*enumerate(calendar.day_name)))),
         )
 
     @visit_node.register(ops.Date)
-    def visit_Date(self, op, *, arg, **_):
+    def visit_Date(self, op, *, arg):
         return self.f.date_trunc("day", arg)
 
     @visit_node.register(ops.ExtractWeekOfYear)
-    def visit_ExtractWeekOfYear(self, op, *, arg, **_):
+    def visit_ExtractWeekOfYear(self, op, *, arg):
         return self.f.date_part("week", arg)
 
     @visit_node.register(ops.TimestampTruncate)
-    def visit_TimestampTruncate(self, op, *, arg, **_):
-        unit = op.unit
+    def visit_TimestampTruncate(self, op, *, arg, unit):
         if unit in (
             IntervalUnit.MILLISECOND,
             IntervalUnit.MICROSECOND,
@@ -274,7 +275,7 @@ class DataFusionCompiler(SQLGlotCompiler):
         return self.f.date_trunc(unit.name.lower(), arg)
 
     @visit_node.register(ops.ExtractEpochSeconds)
-    def visit_ExtractEpochSeconds(self, op, *, arg, **_):
+    def visit_ExtractEpochSeconds(self, op, *, arg):
         if op.arg.dtype.is_date():
             return self.f.extract_epoch_seconds_date(arg)
         elif op.arg.dtype.is_timestamp():
@@ -285,7 +286,7 @@ class DataFusionCompiler(SQLGlotCompiler):
             )
 
     @visit_node.register(ops.ExtractMinute)
-    def visit_ExtractMinute(self, op, *, arg, **_):
+    def visit_ExtractMinute(self, op, *, arg):
         if op.arg.dtype.is_date():
             return self.f.date_part("minute", arg)
         elif op.arg.dtype.is_time():
@@ -298,7 +299,7 @@ class DataFusionCompiler(SQLGlotCompiler):
             )
 
     @visit_node.register(ops.ExtractMillisecond)
-    def visit_ExtractMillisecond(self, op, *, arg, **_):
+    def visit_ExtractMillisecond(self, op, *, arg):
         if op.arg.dtype.is_time():
             return self.f.extract_millisecond_time(arg)
         elif op.arg.dtype.is_timestamp():
@@ -309,7 +310,7 @@ class DataFusionCompiler(SQLGlotCompiler):
             )
 
     @visit_node.register(ops.ExtractHour)
-    def visit_ExtractHour(self, op, *, arg, **_):
+    def visit_ExtractHour(self, op, *, arg):
         if op.arg.dtype.is_date() or op.arg.dtype.is_timestamp():
             return self.f.date_part("hour", arg)
         elif op.arg.dtype.is_time():
@@ -320,7 +321,7 @@ class DataFusionCompiler(SQLGlotCompiler):
             )
 
     @visit_node.register(ops.ExtractSecond)
-    def visit_ExtractSecond(self, op, *, arg, **_):
+    def visit_ExtractSecond(self, op, *, arg):
         if op.arg.dtype.is_date() or op.arg.dtype.is_timestamp():
             return self.f.extract_second_timestamp(arg)
         elif op.arg.dtype.is_time():
@@ -331,15 +332,15 @@ class DataFusionCompiler(SQLGlotCompiler):
             )
 
     @visit_node.register(ops.ArrayRepeat)
-    def visit_ArrayRepeat(self, op, *, arg, times, **_):
+    def visit_ArrayRepeat(self, op, *, arg, times):
         return self.f.flatten(self.f.array_repeat(arg, times))
 
     @visit_node.register(ops.ArrayPosition)
-    def visit_ArrayPosition(self, op, *, arg, other, **_):
+    def visit_ArrayPosition(self, op, *, arg, other):
         return self.f.coalesce(self.f.array_position(arg, other), 0)
 
     @visit_node.register(ops.Covariance)
-    def visit_Covariance(self, op, *, left, right, how, where, **_):
+    def visit_Covariance(self, op, *, left, right, how, where):
         x = op.left
         if x.dtype.is_boolean():
             left = self.cast(left, dt.float64)
@@ -356,7 +357,7 @@ class DataFusionCompiler(SQLGlotCompiler):
             raise ValueError(f"Unrecognized how = `{how}` value")
 
     @visit_node.register(ops.Correlation)
-    def visit_Correlation(self, op, *, left, right, where, **_):
+    def visit_Correlation(self, op, *, left, right, where, how):
         x = op.left
         if x.dtype.is_boolean():
             left = self.cast(left, dt.float64)
@@ -368,21 +369,21 @@ class DataFusionCompiler(SQLGlotCompiler):
         return self.agg["corr"](left, right, where=where)
 
     @visit_node.register(ops.IsNan)
-    def visit_IsNan(self, op, *, arg, **_):
+    def visit_IsNan(self, op, *, arg):
         return self.f.isnan(self.f.coalesce(arg, self.cast("NaN", dt.float64)))
 
     @visit_node.register(ops.ArrayStringJoin)
-    def visit_ArrayStringJoin(self, op, *, sep, arg, **_):
+    def visit_ArrayStringJoin(self, op, *, sep, arg):
         return self.f.array_join(arg, sep)
 
     @visit_node.register(ops.FindInSet)
-    def visit_FindInSet(self, op, *, needle, values, **_):
+    def visit_FindInSet(self, op, *, needle, values):
         return self.f.coalesce(
             self.f.array_position(self.f.make_array(*values), needle), 0
         )
 
     @visit_node.register(ops.TimestampFromUNIX)
-    def visit_TimestampFromUNIX(self, op, *, arg, unit, **_):
+    def visit_TimestampFromUNIX(self, op, *, arg, unit):
         if unit == TimestampUnit.SECOND:
             return self.f.from_unixtime(arg)
         elif unit in (
@@ -395,7 +396,7 @@ class DataFusionCompiler(SQLGlotCompiler):
             raise com.UnsupportedOperationError(f"Unsupported unit {unit}")
 
     @visit_node.register(ops.DateFromYMD)
-    def visit_DateFromYMD(self, op, *, year, month, day, **_):
+    def visit_DateFromYMD(self, op, *, year, month, day):
         return self.cast(
             self.f.concat(
                 self.f.lpad(self.cast(self.cast(year, dt.int64), dt.string), 4, "0"),
@@ -429,14 +430,14 @@ class DataFusionCompiler(SQLGlotCompiler):
         )
 
     @visit_node.register(ops.IsInf)
-    def visit_IsInf(self, op, *, arg, **_):
+    def visit_IsInf(self, op, *, arg):
         return sg.and_(
             sg.not_(self.f.isnan(arg)),
             self.f.abs(arg).eq(self.cast(sg.exp.convert("+Inf"), dt.float64)),
         )
 
     @visit_node.register(ops.ArrayIndex)
-    def visit_ArrayIndex(self, op, *, arg, index, **_):
+    def visit_ArrayIndex(self, op, *, arg, index):
         return self.f.array_element(arg, index + self.cast(index >= 0, op.index.dtype))
 
 

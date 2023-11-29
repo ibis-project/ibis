@@ -22,6 +22,7 @@ from ibis.common.patterns import replace
 from ibis.expr.analysis import p, x
 
 if TYPE_CHECKING:
+    import ibis.expr.schema as sch
     import ibis.expr.types as ir
     from ibis.backends.base.sqlglot.datatypes import SqlglotType
 
@@ -180,15 +181,15 @@ class SQLGlotCompiler(abc.ABC):
         )
 
     @visit_node.register(ops.Field)
-    def visit_Field(self, op, *, rel, name, **_):
+    def visit_Field(self, op, *, rel, name):
         return sg.column(name, table=rel.alias_or_name, quoted=self.quoted)
 
     @visit_node.register(ops.ScalarSubquery)
-    def visit_ScalarSubquery(self, op, *, rel, **_):
+    def visit_ScalarSubquery(self, op, *, rel):
         return rel.this.subquery()
 
     @visit_node.register(ops.Alias)
-    def visit_Alias(self, op, *, arg, name, **_):
+    def visit_Alias(self, op, *, arg, name):
         return arg.as_(name, quoted=self.quoted)
 
     @visit_node.register(ops.Literal)
@@ -260,17 +261,17 @@ class SQLGlotCompiler(abc.ABC):
             raise NotImplementedError(f"Unsupported type: {dtype!r}")
 
     @visit_node.register(ops.BitwiseNot)
-    def visit_BitwiseNot(self, op, *, arg, **_):
+    def visit_BitwiseNot(self, op, *, arg):
         return sg.exp.BitwiseNot(this=arg)
 
     ### Mathematical Calisthenics
 
     @visit_node.register(ops.E)
-    def visit_E(self, op, **_):
+    def visit_E(self, op):
         return self.f.exp(1)
 
     @visit_node.register(ops.Log)
-    def visit_Log(self, op, *, arg, base, **_):
+    def visit_Log(self, op, *, arg, base):
         if base is None:
             return self.f.ln(arg)
         elif str(base) in ("2", "10"):
@@ -279,7 +280,7 @@ class SQLGlotCompiler(abc.ABC):
             return self.f.ln(arg) / self.f.ln(base)
 
     @visit_node.register(ops.Clip)
-    def visit_Clip(self, op, *, arg, lower, upper, **_):
+    def visit_Clip(self, op, *, arg, lower, upper):
         if upper is not None:
             arg = self.if_(arg.is_(NULL), arg, self.f.least(upper, arg))
 
@@ -289,16 +290,16 @@ class SQLGlotCompiler(abc.ABC):
         return arg
 
     @visit_node.register(ops.FloorDivide)
-    def visit_FloorDivide(self, op, *, left, right, **_):
+    def visit_FloorDivide(self, op, *, left, right):
         return self.cast(self.f.floor(left / right), op.dtype)
 
     @visit_node.register(ops.Ceil)
     @visit_node.register(ops.Floor)
-    def visit_CeilFloor(self, op, *, arg, **_):
+    def visit_CeilFloor(self, op, *, arg):
         return self.cast(self.f[type(op).__name__.lower()](arg), op.dtype)
 
     @visit_node.register(ops.Round)
-    def visit_Round(self, op, *, arg, digits, **_):
+    def visit_Round(self, op, *, arg, digits):
         if digits is not None:
             return sg.exp.Round(this=arg, decimals=digits)
         return sg.exp.Round(this=arg)
@@ -306,21 +307,21 @@ class SQLGlotCompiler(abc.ABC):
     ### Dtype Dysmorphia
 
     @visit_node.register(ops.TryCast)
-    def visit_TryCast(self, op, *, arg, to, **_):
+    def visit_TryCast(self, op, *, arg, to):
         return sg.exp.TryCast(this=arg, to=self.type_mapper.from_ibis(to))
 
     ### Comparator Conundrums
 
     @visit_node.register(ops.Between)
-    def visit_Between(self, op, *, arg, lower_bound, upper_bound, **_):
+    def visit_Between(self, op, *, arg, lower_bound, upper_bound):
         return sg.exp.Between(this=arg, low=lower_bound, high=upper_bound)
 
     @visit_node.register(ops.Negate)
-    def visit_Negate(self, op, *, arg, **_):
+    def visit_Negate(self, op, *, arg):
         return -paren(arg)
 
     @visit_node.register(ops.Not)
-    def visit_Not(self, op, *, arg, **_):
+    def visit_Not(self, op, *, arg):
         if isinstance(arg, sg.exp.Filter):
             return sg.exp.Filter(
                 this=self._de_morgan_law(arg.this), expression=arg.expression
@@ -338,24 +339,24 @@ class SQLGlotCompiler(abc.ABC):
     ### Timey McTimeFace
 
     @visit_node.register(ops.Date)
-    def visit_Date(self, op, *, arg, **_):
+    def visit_Date(self, op, *, arg):
         return sg.exp.Date(this=arg)
 
     @visit_node.register(ops.DateFromYMD)
-    def visit_DateFromYMD(self, op, *, year, month, day, **_):
+    def visit_DateFromYMD(self, op, *, year, month, day):
         return sg.exp.DateFromParts(year=year, month=month, day=day)
 
     @visit_node.register(ops.Time)
-    def visit_Time(self, op, *, arg, **_):
+    def visit_Time(self, op, *, arg):
         return self.cast(arg, to=dt.time)
 
     @visit_node.register(ops.TimestampNow)
-    def visit_TimestampNow(self, op, **_):
+    def visit_TimestampNow(self, op):
         """DuckDB current timestamp defaults to timestamp + tz."""
         return self.cast(sg.exp.CurrentTimestamp(), dt.timestamp)
 
     @visit_node.register(ops.Strftime)
-    def visit_Strftime(self, op, *, arg, format_str, **_):
+    def visit_Strftime(self, op, *, arg, format_str):
         if not isinstance(op.format_str, ops.Literal):
             raise com.UnsupportedOperationError(
                 f"{self.dialect} `format_str` must be a literal `str`; got {type(op.format_str)}"
@@ -363,49 +364,49 @@ class SQLGlotCompiler(abc.ABC):
         return self.f.strftime(arg, format_str)
 
     @visit_node.register(ops.ExtractEpochSeconds)
-    def visit_ExtractEpochSeconds(self, op, *, arg, **_):
+    def visit_ExtractEpochSeconds(self, op, *, arg):
         return self.f.epoch(self.cast(arg, dt.timestamp))
 
     @visit_node.register(ops.ExtractYear)
-    def visit_ExtractYear(self, op, *, arg, **_):
+    def visit_ExtractYear(self, op, *, arg):
         return self.f.extract("year", arg)
 
     @visit_node.register(ops.ExtractMonth)
-    def visit_ExtractMonth(self, op, *, arg, **_):
+    def visit_ExtractMonth(self, op, *, arg):
         return self.f.extract("month", arg)
 
     @visit_node.register(ops.ExtractDay)
-    def visit_ExtractDay(self, op, *, arg, **_):
+    def visit_ExtractDay(self, op, *, arg):
         return self.f.extract("day", arg)
 
     @visit_node.register(ops.ExtractDayOfYear)
-    def visit_ExtractDayOfYear(self, op, *, arg, **_):
+    def visit_ExtractDayOfYear(self, op, *, arg):
         return self.f.extract("dayofyear", arg)
 
     @visit_node.register(ops.ExtractQuarter)
-    def visit_ExtractQuarter(self, op, *, arg, **_):
+    def visit_ExtractQuarter(self, op, *, arg):
         return self.f.extract("quarter", arg)
 
     @visit_node.register(ops.ExtractWeekOfYear)
-    def visit_ExtractWeekOfYear(self, op, *, arg, **_):
+    def visit_ExtractWeekOfYear(self, op, *, arg):
         return self.f.extract("week", arg)
 
     @visit_node.register(ops.ExtractHour)
-    def visit_ExtractHour(self, op, *, arg, **_):
+    def visit_ExtractHour(self, op, *, arg):
         return self.f.extract("hour", arg)
 
     @visit_node.register(ops.ExtractMinute)
-    def visit_ExtractMinute(self, op, *, arg, **_):
+    def visit_ExtractMinute(self, op, *, arg):
         return self.f.extract("minute", arg)
 
     @visit_node.register(ops.ExtractSecond)
-    def visit_ExtractSecond(self, op, *, arg, **_):
+    def visit_ExtractSecond(self, op, *, arg):
         return self.f.extract("second", arg)
 
     @visit_node.register(ops.TimestampTruncate)
     @visit_node.register(ops.DateTruncate)
     @visit_node.register(ops.TimeTruncate)
-    def visit_TimestampTruncate(self, op, *, arg, unit, **_):
+    def visit_TimestampTruncate(self, op, *, arg, unit):
         unit_mapping = {
             "Y": "year",
             "M": "month",
@@ -425,11 +426,11 @@ class SQLGlotCompiler(abc.ABC):
         return self.f.date_trunc(duckunit, arg)
 
     @visit_node.register(ops.DayOfWeekIndex)
-    def visit_DayOfWeekIndex(self, op, *, arg, **_):
+    def visit_DayOfWeekIndex(self, op, *, arg):
         return (self.f.dayofweek(arg) + 6) % 7
 
     @visit_node.register(ops.DayOfWeekName)
-    def visit_DayOfWeekName(self, op, *, arg, **_):
+    def visit_DayOfWeekName(self, op, *, arg):
         # day of week number is 0-indexed
         # Sunday == 0
         # Saturday == 6
@@ -439,32 +440,32 @@ class SQLGlotCompiler(abc.ABC):
         )
 
     @visit_node.register(ops.IntervalFromInteger)
-    def visit_IntervalFromInteger(self, op, *, arg, unit, **_):
+    def visit_IntervalFromInteger(self, op, *, arg, unit):
         return sg.exp.Interval(this=sg.exp.convert(arg), unit=unit.singular.upper())
 
     ### String Instruments
 
     @visit_node.register(ops.Strip)
-    def visit_Strip(self, op, *, arg, **_):
+    def visit_Strip(self, op, *, arg):
         return self.f.trim(arg, string.whitespace)
 
     @visit_node.register(ops.RStrip)
-    def visit_RStrip(self, op, *, arg, **_):
+    def visit_RStrip(self, op, *, arg):
         return self.f.rtrim(arg, string.whitespace)
 
     @visit_node.register(ops.LStrip)
-    def visit_LStrip(self, op, *, arg, **_):
+    def visit_LStrip(self, op, *, arg):
         return self.f.ltrim(arg, string.whitespace)
 
     @visit_node.register(ops.Substring)
-    def visit_Substring(self, op, *, arg, start, length, **_):
+    def visit_Substring(self, op, *, arg, start, length):
         if_pos = sg.exp.Substring(this=arg, start=start + 1, length=length)
         if_neg = sg.exp.Substring(this=arg, start=start, length=length)
 
         return self.if_(start >= 0, if_pos, if_neg)
 
     @visit_node.register(ops.StringFind)
-    def visit_StringFind(self, op, *, arg, substr, start, end, **_):
+    def visit_StringFind(self, op, *, arg, substr, start, end):
         if end is not None:
             raise com.UnsupportedOperationError(
                 "String find doesn't support `end` argument"
@@ -478,35 +479,35 @@ class SQLGlotCompiler(abc.ABC):
         return self.f.strpos(arg, substr)
 
     @visit_node.register(ops.RegexSearch)
-    def visit_RegexSearch(self, op, *, arg, pattern, **_):
+    def visit_RegexSearch(self, op, *, arg, pattern):
         return self.f.regexp_matches(arg, pattern, "s")
 
     @visit_node.register(ops.RegexReplace)
-    def visit_RegexReplace(self, op, *, arg, pattern, replacement, **_):
+    def visit_RegexReplace(self, op, *, arg, pattern, replacement):
         return self.f.regexp_replace(arg, pattern, replacement, "g")
 
     @visit_node.register(ops.RegexExtract)
-    def visit_RegexExtract(self, op, *, arg, pattern, index, **_):
+    def visit_RegexExtract(self, op, *, arg, pattern, index):
         return self.f.regexp_extract(arg, pattern, index, dialect=self.dialect)
 
     @visit_node.register(ops.StringSplit)
-    def visit_StringSplit(self, op, *, arg, delimiter, **_):
+    def visit_StringSplit(self, op, *, arg, delimiter):
         return sg.exp.Split(this=arg, expression=delimiter)
 
     @visit_node.register(ops.StringConcat)
-    def visit_StringConcat(self, op, *, arg, **_):
+    def visit_StringConcat(self, op, *, arg):
         return sg.exp.Concat.from_arg_list(list(arg))
 
     @visit_node.register(ops.StringSQLLike)
-    def visit_StringSQLLike(self, op, *, arg, pattern, **_):
+    def visit_StringSQLLike(self, op, *, arg, pattern, escape):
         return arg.like(pattern)
 
     @visit_node.register(ops.StringSQLILike)
-    def visit_StringSQLILike(self, op, *, arg, pattern, **_):
+    def visit_StringSQLILike(self, op, *, arg, pattern, escape):
         return arg.ilike(pattern)
 
     @visit_node.register(ops.Capitalize)
-    def visit_Capitalize(self, op, *, arg, **_):
+    def visit_Capitalize(self, op, *, arg):
         return sg.exp.Concat(
             expressions=[
                 self.f.upper(self.f.substr(arg, 1, 1)),
@@ -516,15 +517,15 @@ class SQLGlotCompiler(abc.ABC):
 
     ### NULL PLAYER CHARACTER
     @visit_node.register(ops.IsNull)
-    def visit_IsNull(self, op, *, arg, **_):
+    def visit_IsNull(self, op, *, arg):
         return arg.is_(NULL)
 
     @visit_node.register(ops.NotNull)
-    def visit_NotNull(self, op, *, arg, **_):
+    def visit_NotNull(self, op, *, arg):
         return arg.is_(sg.not_(NULL))
 
     @visit_node.register(ops.InValues)
-    def visit_InValues(self, op, *, value, options, **_):
+    def visit_InValues(self, op, *, value, options):
         return value.isin(*options)
 
     ### Definitely Not Tensors
@@ -543,21 +544,21 @@ class SQLGlotCompiler(abc.ABC):
         )
 
     @visit_node.register(ops.ArrayStringJoin)
-    def visit_ArrayStringJoin(self, op, *, sep, arg, **_):
+    def visit_ArrayStringJoin(self, op, *, sep, arg):
         return self.f.array_to_string(arg, sep)
 
     ### Counting
 
     @visit_node.register(ops.CountDistinct)
-    def visit_CountDistinct(self, op, *, arg, where, **_):
+    def visit_CountDistinct(self, op, *, arg, where):
         return self.agg.count(sg.exp.Distinct(expressions=[arg]), where=where)
 
     @visit_node.register(ops.CountStar)
-    def visit_CountStar(self, op, *, where, **_):
+    def visit_CountStar(self, op, *, arg, where):
         return self.agg.count(STAR, where=where)
 
     @visit_node.register(ops.Sum)
-    def visit_Sum(self, op, *, arg, where, **_):
+    def visit_Sum(self, op, *, arg, where):
         arg = self.cast(arg, op.dtype) if op.arg.dtype.is_boolean() else arg
         return self.agg.sum(arg, where=where)
 
@@ -565,11 +566,11 @@ class SQLGlotCompiler(abc.ABC):
 
     @visit_node.register(ops.Quantile)
     @visit_node.register(ops.MultiQuantile)
-    def visit_Quantile(self, op, *, arg, quantile, where, **_):
+    def visit_Quantile(self, op, *, arg, quantile, where):
         return self.agg.quantile_cont(arg, quantile, where=where)
 
     @visit_node.register(ops.Correlation)
-    def visit_Correlation(self, op, *, left, right, how, where, **_):
+    def visit_Correlation(self, op, *, left, right, how, where):
         if how == "sample":
             raise com.UnsupportedOperationError(
                 f"{self.dialect} only implements `pop` correlation coefficient"
@@ -606,7 +607,7 @@ class SQLGlotCompiler(abc.ABC):
         return self.agg[funcname](*args, where=where)
 
     @visit_node.register(ops.Arbitrary)
-    def visit_Arbitrary(self, op, *, arg, how, where, **_):
+    def visit_Arbitrary(self, op, *, arg, how, where):
         if how == "heavy":
             raise com.UnsupportedOperationError(
                 "how='heavy' not supported in the backend"
@@ -615,25 +616,25 @@ class SQLGlotCompiler(abc.ABC):
 
     @visit_node.register(ops.SimpleCase)
     @visit_node.register(ops.SearchedCase)
-    def visit_SimpleCase(self, op, *, base=None, cases, results, default, **_):
+    def visit_SimpleCase(self, op, *, base=None, cases, results, default):
         return sg.exp.Case(
             this=base, ifs=list(map(self.if_, cases, results)), default=default
         )
 
     @visit_node.register(ops.ExistsSubquery)
-    def visit_ExistsSubquery(self, op, *, rel, **_):
+    def visit_ExistsSubquery(self, op, *, rel):
         return self.f.exists(rel.this.subquery())
 
     @visit_node.register(ops.InSubquery)
-    def visit_InSubquery(self, op, *, rel, needle, **_):
+    def visit_InSubquery(self, op, *, rel, needle):
         return needle.isin(rel.this.subquery())
 
     @visit_node.register(ops.ArrayColumn)
-    def visit_ArrayColumn(self, op, *, cols, **_):
+    def visit_ArrayColumn(self, op, *, cols):
         return self.f.array(*cols)
 
     @visit_node.register(ops.StructColumn)
-    def visit_StructColumn(self, op, *, names, values, **_):
+    def visit_StructColumn(self, op, *, names, values):
         return sg.exp.Struct.from_arg_list(
             [
                 sg.exp.Slice(this=sg.exp.convert(name), expression=value)
@@ -642,48 +643,53 @@ class SQLGlotCompiler(abc.ABC):
         )
 
     @visit_node.register(ops.StructField)
-    def visit_StructField(self, op, *, arg, field, **_):
+    def visit_StructField(self, op, *, arg, field):
         val = arg.this if isinstance(op.arg, ops.Alias) else arg
         return val[sg.exp.convert(field)]
 
     @visit_node.register(ops.IdenticalTo)
-    def visit_IdenticalTo(self, op, *, left, right, **_):
+    def visit_IdenticalTo(self, op, *, left, right):
         return sg.exp.NullSafeEQ(this=left, expression=right)
 
     @visit_node.register(ops.Greatest)
-    def visit_Greatest(self, op, *, arg, **_):
+    def visit_Greatest(self, op, *, arg):
         return self.f.greatest(*arg)
 
     @visit_node.register(ops.Least)
-    def visit_Least(self, op, *, arg, **_):
+    def visit_Least(self, op, *, arg):
         return self.f.least(*arg)
 
     @visit_node.register(ops.Coalesce)
-    def visit_Coalesce(self, op, *, arg, **_):
+    def visit_Coalesce(self, op, *, arg):
         return self.f.coalesce(*arg)
 
     ### Ordering and window functions
 
     @visit_node.register(ops.RowNumber)
-    def visit_RowNumber(self, op, **_):
+    def visit_RowNumber(self, op):
         return sg.exp.RowNumber()
 
     @visit_node.register(ops.SortKey)
-    def visit_SortKey(self, op, *, expr, ascending: bool, **_):
+    def visit_SortKey(self, op, *, expr, ascending: bool):
         return sg.exp.Ordered(this=expr, desc=not ascending)
 
     @visit_node.register(ops.ApproxMedian)
-    def visit_ApproxMedian(self, op, *, arg, where, **_):
+    def visit_ApproxMedian(self, op, *, arg, where):
         return self.agg.approx_quantile(arg, 0.5, where=where)
 
     @visit_node.register(ops.WindowBoundary)
-    def visit_WindowBoundary(self, op, *, value, preceding, **_):
+    def visit_WindowBoundary(self, op, *, value, preceding):
         # TODO: bit of a hack to return a dict, but there's no sqlglot expression
         # that corresponds to _only_ this information
         return {"value": value, "side": "preceding" if preceding else "following"}
 
     @visit_node.register(ops.WindowFrame)
-    def visit_WindowFrame(self, op, *, group_by, order_by, start, end, **_):
+    def visit_WindowFrame(
+        self, op, *, group_by, order_by, start, end, table, max_lookback=None
+    ):
+        if max_lookback is not None:
+            raise com.UnsupportedOperationError("`max_lookback` not supported")
+
         if start is None:
             start = {}
 
@@ -717,7 +723,7 @@ class SQLGlotCompiler(abc.ABC):
 
     @visit_node.register(ops.Lag)
     @visit_node.register(ops.Lead)
-    def visit_LagLead(self, op, *, arg, offset, default, **_):
+    def visit_LagLead(self, op, *, arg, offset, default):
         args = [arg]
 
         if default is not None:
@@ -732,11 +738,11 @@ class SQLGlotCompiler(abc.ABC):
         return self.f[type(op).__name__.lower()](*args)
 
     @visit_node.register(ops.Argument)
-    def visit_Argument(self, op, **_):
-        return sg.to_identifier(op.name)
+    def visit_Argument(self, op, *, name: str, shape, dtype):
+        return sg.to_identifier(name)
 
     @visit_node.register(ops.RowID)
-    def visit_RowID(self, op, *, table, **_):
+    def visit_RowID(self, op, *, table):
         return sg.column(op.name, table=table.alias_or_name, quoted=self.quoted)
 
     @visit_node.register(ops.ScalarUDF)
@@ -750,7 +756,7 @@ class SQLGlotCompiler(abc.ABC):
     @visit_node.register(ops.TimeDelta)
     @visit_node.register(ops.DateDelta)
     @visit_node.register(ops.TimestampDelta)
-    def visit_TimestampDelta(self, op, *, part, left, right, **_):
+    def visit_TimestampDelta(self, op, *, part, left, right):
         # dialect is necessary due to sqlglot's default behavior
         # of `part` coming last
         return sg.exp.DateDiff(
@@ -758,45 +764,48 @@ class SQLGlotCompiler(abc.ABC):
         )
 
     @visit_node.register(ops.TimestampBucket)
-    def visit_TimestampBucket(self, op, *, arg, interval, offset, **_):
+    def visit_TimestampBucket(self, op, *, arg, interval, offset):
         origin = self.f.cast("epoch", self.type_mapper.from_ibis(dt.timestamp))
         if offset is not None:
             origin += offset
         return self.f.time_bucket(interval, arg, origin)
 
     @visit_node.register(ops.ArrayConcat)
-    def visit_ArrayConcat(self, op, *, arg, **_):
+    def visit_ArrayConcat(self, op, *, arg):
         return sg.exp.ArrayConcat(this=arg[0], expressions=list(arg[1:]))
 
     @visit_node.register(ops.ArrayContains)
-    def visit_ArrayContains(self, op, *, arg, other, **_):
+    def visit_ArrayContains(self, op, *, arg, other):
         return sg.exp.ArrayContains(this=arg, expression=other)
 
     ## relations
 
     @visit_node.register(ops.DummyTable)
-    def visit_DummyTable(self, op, *, values, **_):
+    def visit_DummyTable(self, op, *, values):
         return sg.select(
             *(value.as_(key, quoted=self.quoted) for key, value in values.items())
         )
 
     @visit_node.register(ops.UnboundTable)
+    def visit_UnboundTable(self, op, *, name: str, schema: sch.Schema):
+        return sg.table(name, quoted=self.quoted)
+
     @visit_node.register(ops.InMemoryTable)
-    def visit_UnboundInMemoryTable(self, op, **_):
-        return sg.table(op.name, quoted=self.quoted)
+    def visit_InMemoryTable(self, op, *, name: str, schema: sch.Schema, data):
+        return sg.table(name, quoted=self.quoted)
 
     @visit_node.register(ops.DatabaseTable)
-    def visit_DatabaseTable(self, op, *, name, namespace, **_):
+    def visit_DatabaseTable(self, op, *, name, namespace, schema, source):
         return sg.table(
             name, db=namespace.schema, catalog=namespace.database, quoted=self.quoted
         )
 
     @visit_node.register(ops.SelfReference)
-    def visit_SelfReference(self, op, *, parent, **_):
+    def visit_SelfReference(self, op, *, parent):
         return parent.as_(op.name, quoted=self.quoted)
 
     @visit_node.register(ops.JoinChain)
-    def visit_JoinChain(self, op, *, first, rest, fields, **_):
+    def visit_JoinChain(self, op, *, first, rest, fields):
         result = sg.select(
             *(value.as_(key, quoted=self.quoted) for key, value in fields.items())
         ).from_(first)
@@ -808,7 +817,7 @@ class SQLGlotCompiler(abc.ABC):
         return result
 
     @visit_node.register(ops.JoinLink)
-    def visit_JoinLink(self, op, *, how, table, predicates, **_):
+    def visit_JoinLink(self, op, *, how, table, predicates):
         sides = {
             "inner": None,
             "left": "left",
@@ -838,7 +847,7 @@ class SQLGlotCompiler(abc.ABC):
         )
 
     @visit_node.register(ops.Project)
-    def visit_Project(self, op, *, parent, values, **_):
+    def visit_Project(self, op, *, parent, values):
         # needs_alias should never be true here in explicitly, but it may get
         # passed via a (recursive) call to translate_val
         return sg.select(
@@ -850,7 +859,7 @@ class SQLGlotCompiler(abc.ABC):
         return map(sg.exp.convert, range(1, len(groups) + 1))
 
     @visit_node.register(ops.Aggregate)
-    def visit_Aggregate(self, op, *, parent, groups, metrics, **_):
+    def visit_Aggregate(self, op, *, parent, groups, metrics):
         sel = sg.select(
             *(value.as_(key, quoted=self.quoted) for key, value in groups.items()),
             *(value.as_(key, quoted=self.quoted) for key, value in metrics.items()),
@@ -867,7 +876,7 @@ class SQLGlotCompiler(abc.ABC):
         return sg_expr
 
     @visit_node.register(ops.Filter)
-    def visit_Filter(self, op, *, parent, predicates, **_):
+    def visit_Filter(self, op, *, parent, predicates):
         predicates = (
             self._add_parens(raw_predicate, predicate)
             for raw_predicate, predicate in zip(op.predicates, predicates)
@@ -878,14 +887,14 @@ class SQLGlotCompiler(abc.ABC):
             return sg.select(STAR).from_(parent).where(*predicates)
 
     @visit_node.register(ops.Sort)
-    def visit_Sort(self, op, *, parent, keys, **_):
+    def visit_Sort(self, op, *, parent, keys):
         try:
             return parent.order_by(*keys)
         except AttributeError:
             return sg.select(STAR).from_(parent).order_by(*keys)
 
     @visit_node.register(ops.Union)
-    def visit_Union(self, op, *, left, right, distinct, **_):
+    def visit_Union(self, op, *, left, right, distinct):
         if isinstance(left, sg.exp.Table):
             left = sg.select(STAR).from_(left)
 
@@ -899,7 +908,7 @@ class SQLGlotCompiler(abc.ABC):
         )
 
     @visit_node.register(ops.Intersection)
-    def visit_Intersection(self, op, *, left, right, distinct, **_):
+    def visit_Intersection(self, op, *, left, right, distinct):
         if isinstance(left, sg.exp.Table):
             left = sg.select(STAR).from_(left)
 
@@ -913,7 +922,7 @@ class SQLGlotCompiler(abc.ABC):
         )
 
     @visit_node.register(ops.Difference)
-    def visit_Difference(self, op, *, left, right, distinct, **_):
+    def visit_Difference(self, op, *, left, right, distinct):
         if isinstance(left, sg.exp.Table):
             left = sg.select(STAR).from_(left)
 
@@ -927,7 +936,7 @@ class SQLGlotCompiler(abc.ABC):
         )
 
     @visit_node.register(ops.Limit)
-    def visit_Limit(self, op, *, parent, n, offset, **_):
+    def visit_Limit(self, op, *, parent, n, offset):
         result = sg.select(STAR).from_(parent)
 
         if isinstance(n, int):
@@ -952,11 +961,11 @@ class SQLGlotCompiler(abc.ABC):
         return result.offset(skip)
 
     @visit_node.register(ops.Distinct)
-    def visit_Distinct(self, op, *, parent, **_):
+    def visit_Distinct(self, op, *, parent):
         return sg.select(STAR).distinct().from_(parent)
 
     @visit_node.register(ops.DropNa)
-    def visit_DropNa(self, op, *, parent, how, subset, **_):
+    def visit_DropNa(self, op, *, parent, how, subset):
         if subset is None:
             subset = [
                 sg.column(name, table=parent.alias_or_name, quoted=self.quoted)
@@ -982,7 +991,7 @@ class SQLGlotCompiler(abc.ABC):
             return sg.select(STAR).from_(parent).where(predicate)
 
     @visit_node.register(ops.FillNa)
-    def visit_FillNa(self, op, *, parent, replacements, **_):
+    def visit_FillNa(self, op, *, parent, replacements):
         if isinstance(replacements, Mapping):
             mapping = replacements
         else:
@@ -1008,21 +1017,21 @@ class SQLGlotCompiler(abc.ABC):
         return sg.select(*exprs).from_(parent)
 
     @visit_node.register(ops.View)
-    def visit_View(self, op, *, child, name: str, **_):
+    def visit_View(self, op, *, child, name: str):
         # TODO: find a way to do this without creating a temporary view
         backend = op.child.to_expr()._find_backend()
         backend._create_temp_view(table_name=name, source=sg.select(STAR).from_(child))
         return sg.table(name, quoted=self.quoted)
 
     @visit_node.register(ops.SQLStringView)
-    def visit_SQLStringView(self, op, *, query: str, **_):
-        table = sg.table(op.name, quoted=self.quoted)
+    def visit_SQLStringView(self, op, *, query: str, name: str, child):
+        table = sg.table(name, quoted=self.quoted)
         return (
             sg.select(STAR).from_(table).with_(table, as_=query, dialect=self.dialect)
         )
 
     @visit_node.register(ops.SQLQueryResult)
-    def visit_SQLQueryResult(self, op, *, query, **_):
+    def visit_SQLQueryResult(self, op, *, query, schema, source):
         return sg.parse_one(query, read=self.dialect).subquery()
 
 
@@ -1132,7 +1141,7 @@ _BINARY_INFIX_OPS = {
 for _op, _sym in _BINARY_INFIX_OPS.items():
 
     @SQLGlotCompiler.visit_node.register(_op)
-    def _fmt(self, op, *, _sym: sg.exp.Expression = _sym, left, right, **_):
+    def _fmt(self, op, *, _sym: sg.exp.Expression = _sym, left, right):
         return _sym(
             this=self._add_parens(op.left, left),
             expression=self._add_parens(op.right, right),

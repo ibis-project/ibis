@@ -43,7 +43,7 @@ class DuckDBCompiler(SQLGlotCompiler):
         return super().visit_node(op, **kwargs)
 
     @visit_node.register(ops.ArrayDistinct)
-    def visit_ArrayDistinct(self, op, *, arg, **_):
+    def visit_ArrayDistinct(self, op, *, arg):
         return self.if_(
             arg.is_(NULL),
             NULL,
@@ -56,11 +56,11 @@ class DuckDBCompiler(SQLGlotCompiler):
         )
 
     @visit_node.register(ops.ArrayIndex)
-    def visit_ArrayIndex(self, op, *, arg, index, **_):
+    def visit_ArrayIndex(self, op, *, arg, index):
         return self.f.list_extract(arg, index + self.cast(index >= 0, op.index.dtype))
 
     @visit_node.register(ops.ArrayRepeat)
-    def visit_ArrayRepeat(self, op, *, arg, times, **_):
+    def visit_ArrayRepeat(self, op, *, arg, times):
         func = sg.exp.Lambda(this=arg, expressions=[sg.to_identifier("_")])
         return self.f.flatten(self.f.list_apply(self.f.range(times), func))
 
@@ -77,7 +77,7 @@ class DuckDBCompiler(SQLGlotCompiler):
         return sg.select(STAR).from_(sample)
 
     @visit_node.register(ops.ArraySlice)
-    def visit_ArraySlice(self, op, *, arg, start, stop, **_):
+    def visit_ArraySlice(self, op, *, arg, start, stop):
         arg_length = self.f.len(arg)
 
         if start is None:
@@ -93,31 +93,31 @@ class DuckDBCompiler(SQLGlotCompiler):
         return self.f.list_slice(arg, start + 1, stop)
 
     @visit_node.register(ops.ArrayMap)
-    def visit_ArrayMap(self, op, *, arg, body, param, **_):
+    def visit_ArrayMap(self, op, *, arg, body, param):
         lamduh = sg.exp.Lambda(this=body, expressions=[sg.to_identifier(param)])
         return self.f.list_apply(arg, lamduh)
 
     @visit_node.register(ops.ArrayFilter)
-    def visit_ArrayFilter(self, op, *, arg, body, param, **_):
+    def visit_ArrayFilter(self, op, *, arg, body, param):
         lamduh = sg.exp.Lambda(this=body, expressions=[sg.to_identifier(param)])
         return self.f.list_filter(arg, lamduh)
 
     @visit_node.register(ops.ArrayIntersect)
-    def visit_ArrayIntersect(self, op, *, left, right, **_):
+    def visit_ArrayIntersect(self, op, *, left, right):
         param = sg.to_identifier("x")
         body = self.f.list_contains(right, param)
         lamduh = sg.exp.Lambda(this=body, expressions=[param])
         return self.f.list_filter(left, lamduh)
 
     @visit_node.register(ops.ArrayRemove)
-    def visit_ArrayRemove(self, op, *, arg, other, **_):
+    def visit_ArrayRemove(self, op, *, arg, other):
         param = sg.to_identifier("x")
         body = param.neq(other)
         lamduh = sg.exp.Lambda(this=body, expressions=[param])
         return self.f.list_filter(arg, lamduh)
 
     @visit_node.register(ops.ArrayUnion)
-    def visit_ArrayUnion(self, op, *, left, right, **_):
+    def visit_ArrayUnion(self, op, *, left, right):
         arg = self.f.list_concat(left, right)
         return self.if_(
             arg.is_(NULL),
@@ -131,7 +131,7 @@ class DuckDBCompiler(SQLGlotCompiler):
         )
 
     @visit_node.register(ops.ArrayZip)
-    def visit_ArrayZip(self, op, *, arg, **_):
+    def visit_ArrayZip(self, op, *, arg):
         i = sg.to_identifier("i")
         body = sg.exp.Struct.from_arg_list(
             [
@@ -150,26 +150,26 @@ class DuckDBCompiler(SQLGlotCompiler):
         )
 
     @visit_node.register(ops.MapGet)
-    def visit_MapGet(self, op, *, arg, key, default, **_):
+    def visit_MapGet(self, op, *, arg, key, default):
         return self.f.ifnull(
             self.f.list_extract(self.f.element_at(arg, key), 1), default
         )
 
     @visit_node.register(ops.MapContains)
-    def visit_MapContains(self, op, *, arg, key, **_):
+    def visit_MapContains(self, op, *, arg, key):
         return self.f.len(self.f.element_at(arg, key)).neq(0)
 
     @visit_node.register(ops.ToJSONMap)
     @visit_node.register(ops.ToJSONArray)
-    def visit_ToJSONMap(self, op, *, arg, **_):
+    def visit_ToJSONMap(self, op, *, arg):
         return sg.exp.TryCast(this=arg, to=self.type_mapper.from_ibis(op.dtype))
 
     @visit_node.register(ops.ArrayConcat)
-    def visit_ArrayConcat(self, op, *, arg, **_):
+    def visit_ArrayConcat(self, op, *, arg):
         return reduce(self.f.list_concat, arg)
 
     @visit_node.register(ops.IntervalFromInteger)
-    def visit_IntervalFromInteger(self, op, *, arg, **_):
+    def visit_IntervalFromInteger(self, op, *, arg, unit):
         dtype = op.dtype
         if dtype.unit.short == "ns":
             raise com.UnsupportedOperationError(
@@ -181,11 +181,11 @@ class DuckDBCompiler(SQLGlotCompiler):
         return self.f[f"to_{op.dtype.resolution}s"](arg)
 
     @visit_node.register(ops.FindInSet)
-    def visit_FindInSet(self, op, *, needle, values, **_):
+    def visit_FindInSet(self, op, *, needle, values):
         return self.f.list_indexof(self.f.array(*values), needle)
 
     @visit_node.register(ops.CountDistinctStar)
-    def visit_CountDistinctStar(self, op, *, where, **_):
+    def visit_CountDistinctStar(self, op, *, where, arg):
         # use a tuple because duckdb doesn't accept COUNT(DISTINCT a, b, c, ...)
         #
         # this turns the expression into COUNT(DISTINCT (a, b, c, ...))
@@ -197,21 +197,21 @@ class DuckDBCompiler(SQLGlotCompiler):
         return self.agg.count(sg.exp.Distinct(expressions=[row]), where=where)
 
     @visit_node.register(ops.StringJoin)
-    def visit_StringJoin(self, op, *, arg, sep, **_):
+    def visit_StringJoin(self, op, *, arg, sep):
         return self.f.list_aggr(self.f.array(*arg), "string_agg", sep)
 
     @visit_node.register(ops.ExtractMillisecond)
-    def visit_ExtractMillisecond(self, op, *, arg, **_):
+    def visit_ExtractMillisecond(self, op, *, arg):
         return self.f.mod(self.f.extract("ms", arg), 1_000)
 
     # DuckDB extracts subminute microseconds and milliseconds
     # so we have to finesse it a little bit
     @visit_node.register(ops.ExtractMicrosecond)
-    def visit_ExtractMicrosecond(self, op, *, arg, **_):
+    def visit_ExtractMicrosecond(self, op, *, arg):
         return self.f.mod(self.f.extract("us", arg), 1_000_000)
 
     @visit_node.register(ops.TimestampFromUNIX)
-    def visit_TimestampFromUNIX(self, op, *, arg, unit, **_):
+    def visit_TimestampFromUNIX(self, op, *, arg, unit):
         unit = unit.short
         if unit == "ms":
             return self.f.epoch_ms(arg)
@@ -234,7 +234,7 @@ class DuckDBCompiler(SQLGlotCompiler):
         return self.f[func](*args)
 
     @visit_node.register(ops.Cast)
-    def visit_Cast(self, op, *, arg, to, **_):
+    def visit_Cast(self, op, *, arg, to):
         if to.is_interval():
             func = self.f[f"to_{_INTERVAL_SUFFIXES[to.unit.short]}"]
             return func(sg.cast(arg, to=self.type_mapper.from_ibis(dt.int32)))
