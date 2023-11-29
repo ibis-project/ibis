@@ -742,10 +742,6 @@ class SQLGlotCompiler(abc.ABC):
             )
         return self.agg[how](arg, where=where)
 
-    @visit_node.register(ops.FindInSet)
-    def visit_FindInSet(self, op, *, needle, values, **_):
-        return self.f.list_indexof(self.f.array(*values), needle)
-
     @visit_node.register(ops.SimpleCase)
     @visit_node.register(ops.SearchedCase)
     def visit_SimpleCase(self, op, *, base=None, cases, results, default, **_):

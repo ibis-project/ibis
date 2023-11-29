@@ -167,6 +167,10 @@ class DuckDBCompiler(SQLGlotCompiler):
             return self.f.to_days(arg * 7)
         return self.f[f"to_{op.dtype.resolution}s"](arg)
 
+    @visit_node.register(ops.FindInSet)
+    def visit_FindInSet(self, op, *, needle, values, **_):
+        return self.f.list_indexof(self.f.array(*values), needle)
+
 
 _SIMPLE_OPS = {
     ops.ArrayPosition: "list_indexof",
