@@ -5,10 +5,11 @@ import math
 from abc import ABC, abstractmethod
 from collections import defaultdict
 
-from pyflink.table.types import DataTypes
+from pyflink.table.types import DataTypes, RowType
 
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
+import ibis.expr.schema as sch
 from ibis.common.temporal import IntervalUnit
 from ibis.util import convert_unit
 
@@ -326,3 +327,14 @@ def translate_literal(op: ops.Literal) -> str:
         return f"ARRAY{list(value)}"
 
     raise NotImplementedError(f"No translation rule for {dtype}")
+
+
+def ibis_schema_to_flink_schema(schema: sch.Schema) -> RowType:
+    if schema is None:
+        return None
+    return DataTypes.ROW(
+        [
+            DataTypes.FIELD(key, _to_pyflink_types[type(value)])
+            for key, value in schema.fields.items()
+        ]
+    )
