@@ -124,14 +124,13 @@ class SQLGlotBackend(BaseBackend):
         overwrite: bool = False,
     ) -> ir.Table:
         src = sg.exp.Create(
-            this=sg.table(name, db=database),
+            this=sg.table(name, db=database, quoted=self.compiler.quoted),
             kind="VIEW",
             replace=overwrite,
             expression=self._to_sqlglot(obj),
         )
         self._register_in_memory_tables(obj)
-        external_tables = self._collect_in_memory_tables(obj)
-        with self._safe_raw_sql(src, external_tables=external_tables):
+        with self._safe_raw_sql(src):
             pass
         return self.table(name, database=database)
 
@@ -142,7 +141,11 @@ class SQLGlotBackend(BaseBackend):
     def drop_view(
         self, name: str, *, database: str | None = None, force: bool = False
     ) -> None:
-        src = sg.exp.Drop(this=sg.table(name, db=database), kind="VIEW", exists=force)
+        src = sg.exp.Drop(
+            this=sg.table(name, db=database, quoted=self.compiler.quoted),
+            kind="VIEW",
+            exists=force,
+        )
         with contextlib.closing(self.raw_sql(src)):
             pass
 

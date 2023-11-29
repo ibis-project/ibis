@@ -62,6 +62,12 @@ except ImportError:
     ExaQueryError = None
 
 
+try:
+    from snowflake.connector.errors import ProgrammingError as SnowflakeProgrammingError
+except ImportError:
+    SnowflakeProgrammingError = None
+
+
 @pytest.mark.parametrize(
     ("expr", "expected_types"),
     [
@@ -1405,7 +1411,7 @@ def test_floating_mod(backend, alltypes, df):
 )
 @pytest.mark.notyet(["mssql"], raises=sa.exc.OperationalError)
 @pytest.mark.notyet(["postgres"], raises=sa.exc.DataError)
-@pytest.mark.notyet(["snowflake"], raises=sa.exc.ProgrammingError)
+@pytest.mark.notyet(["snowflake"], raises=SnowflakeProgrammingError)
 @pytest.mark.notimpl(["exasol"], raises=(sa.exc.DBAPIError, com.IbisTypeError))
 def test_divide_by_zero(backend, alltypes, df, column, denominator):
     expr = alltypes[column] / denominator

@@ -204,7 +204,7 @@ $$ {defn["source"]} $$"""
                     for name, defn in _SNOWFLAKE_MAP_UDFS.items()
                 ),
             ]
-            stmt = "; ".join(stmts)
+            stmt = ";\n".join(stmts)
             with contextlib.closing(con.cursor()) as cur:
                 try:
                     cur.execute(stmt)
@@ -394,25 +394,21 @@ $$"""
         return ibis.schema(fields)
 
     def _metadata(self, query: str) -> Iterable[tuple[str, dt.DataType]]:
-        with self._safe_raw_sql(f"{query}; DESC RESULT last_query_id()") as cur:
-            result = cur.fetchall()
+        with self._safe_raw_sql(f"{query}") as cur:
+            result = cur.description
 
-        breakpoint()
         for field in result:
-            name = field["name"]
-            type_string = field["type"]
-            is_nullable = field["null?"] == "Y"
+            name = field.name
+            type_name = sc.constants.FIELD_TYPES[field.type_code].name
+            is_nullable = field.is_nullable
             yield (
                 name,
-                self.compiler.type_mapper.from_string(
-                    type_string, nullable=is_nullable
-                ),
+                self.compiler.type_mapper.from_string(type_name, nullable=is_nullable),
             )
 
     def list_databases(self, like: str | None = None) -> list[str]:
         with self._safe_raw_sql("SHOW DATABASES") as con:
-            rows = con.fetchall()
-        breakpoint()
+            databases = list(map(itemgetter(1), con))
         return self._filter_with_like(databases, like)
 
     def list_schemas(
@@ -421,11 +417,11 @@ $$"""
         query = "SHOW SCHEMAS"
 
         if database is not None:
-            query += f" IN {self.to_identifier(database).sql(self.name)}"
+            db = sg.to_identifier(database, quoted=self.compiler.quoted).sql(self.name)
+            query += f" IN {db}"
 
-        with self.con.cursor() as con:
-            breakpoint()
-            schemata = [row["name"] for row in con.execute(query)]
+        with self._safe_raw_sql(query) as con:
+            schemata = list(map(itemgetter(1), con))
 
         return self._filter_with_like(schemata, like)
 
@@ -516,7 +512,7 @@ $$"""
             exists=force,
         )
         use_stmt = sg.exp.Use(
-            kind="DATABASE",
+            kind="SCHEMA",
             this=sg.table(
                 current_schema, db=current_database, quoted=self.compiler.quoted
             ),
@@ -551,7 +547,7 @@ $$"""
             this=sg.table(name, db=database, quoted=self.compiler.quoted),
             kind="SCHEMA",
             exists=force,
-        )
+        ).sql(self.name)
         use_stmt = sg.exp.Use(
             kind="SCHEMA",
             this=sg.table(
@@ -570,13 +566,20 @@ $$"""
         with contextlib.suppress(AttributeError):
             query = query.sql(dialect=self.name)
 
-        with self.con.cursor() as cur:
-            yield cur.execute(query, **kwargs)
+        with contextlib.closing(self.raw_sql(query, **kwargs)) as cur:
+            yield cur
 
     def raw_sql(self, query: str | sg.Expression, **kwargs: Any) -> Any:
         with contextlib.suppress(AttributeError):
             query = query.sql(dialect=self.name)
-        return self.con.execute(query, **kwargs)
+        cur = self.con.cursor()
+        try:
+            cur.execute(query, **kwargs)
+        except Exception:
+            cur.close()
+            raise
+        else:
+            return cur
 
     def drop_schema(
         self, name: str, database: str | None = None, force: bool = False
@@ -698,7 +701,11 @@ $$"""
         force: bool = False,
     ) -> None:
         drop_stmt = sg.exp.Drop(
-            kind="TABLE", this=sg.table(name, db=schema, catalog=database), exists=force
+            kind="TABLE",
+            this=sg.table(
+                name, db=schema, catalog=database, quoted=self.compiler.quoted
+            ),
+            exists=force,
         )
         with self._safe_raw_sql(drop_stmt):
             pass
@@ -752,12 +759,13 @@ $$"""
                 f"CREATE TEMP FILE FORMAT {file_format} TYPE = CSV PARSE_HEADER = {str(header).upper()}"
                 + options
             ),
-            # copy the local file to the stage
-            f"PUT 'file://{Path(path).absolute()}' @{stage} PARALLEL = {threads:d}",
         ]
 
-        with self.con.cursor() as con:
-            con.execute("; ".join(stmts))
+        with self._safe_raw_sql(";\n".join(stmts)) as con:
+            # copy the local file to the stage
+            con.execute(
+                f"PUT 'file://{Path(path).absolute()}' @{stage} PARALLEL = {threads:d}"
+            )
 
             # handle setting up the schema in python because snowflake is
             # broken for csv globs: it cannot parse the result of the following
@@ -773,10 +781,10 @@ $$"""
                     )
                 )
                 """
-            ).fetchall()
+            ).fetchone()
             columns = ", ".join(
                 "{} {}{}".format(
-                    self.to_identifier(
+                    sg.to_identifier(
                         field["COLUMN_NAME"], quoted=self.compiler.quoted
                     ).sql(self.name),
                     field["TYPE"],
@@ -795,7 +803,7 @@ $$"""
                 FILE_FORMAT = (TYPE = CSV SKIP_HEADER = {int(header)}{options})
                 """,
             ]
-            con.execute("; ".join(stmts))
+            con.execute(";\n".join(stmts))
 
         return self.table(table)
 
@@ -836,30 +844,37 @@ $$"""
         stmts = [
             f"CREATE TEMP FILE FORMAT {file_format} TYPE = JSON" + options,
             f"CREATE TEMP STAGE {stage} FILE_FORMAT = {file_format}",
-            f"PUT 'file://{Path(path).absolute()}' @{stage} PARALLEL = {threads:d}",
-            f"""
-            CREATE TEMP TABLE {qtable}
-            USING TEMPLATE (
-                SELECT ARRAY_AGG(OBJECT_CONSTRUCT(*))
-                WITHIN GROUP (ORDER BY ORDER_ID ASC)
-                FROM TABLE(
-                    INFER_SCHEMA(
-                        LOCATION => '@{stage}',
-                        FILE_FORMAT => '{file_format}'
-                    )
-                )
-            )
-            """,
-            # load the JSON file into the table
-            f"""
-            COPY INTO {qtable}
-            FROM @{stage}
-            MATCH_BY_COLUMN_NAME = {str(match_by_column_name).upper()}
-            """,
         ]
 
-        with self._safe_raw_sql("; ".join(stmts)):
-            pass
+        with self._safe_raw_sql(";\n".join(stmts)) as cur:
+            cur.execute(
+                f"PUT 'file://{Path(path).absolute()}' @{stage} PARALLEL = {threads:d}"
+            )
+            cur.execute(
+                ";\n".join(
+                    [
+                        f"""
+                        CREATE TEMP TABLE {qtable}
+                        USING TEMPLATE (
+                            SELECT ARRAY_AGG(OBJECT_CONSTRUCT(*))
+                            WITHIN GROUP (ORDER BY ORDER_ID ASC)
+                            FROM TABLE(
+                                INFER_SCHEMA(
+                                    LOCATION => '@{stage}',
+                                    FILE_FORMAT => '{file_format}'
+                                )
+                            )
+                        )
+                        """,
+                        # load the JSON file into the table
+                        f"""
+                        COPY INTO {qtable}
+                        FROM @{stage}
+                        MATCH_BY_COLUMN_NAME = {str(match_by_column_name).upper()}
+                        """,
+                    ]
+                )
+            )
 
         return self.table(table)
 
@@ -926,14 +941,14 @@ $$"""
         )
 
         stmts = [
-            f"CREATE TEMP STAGE {stage} FILE_FORMAT = (TYPE = PARQUET{options})"
-            f"PUT 'file://{abspath}' @{stage} PARALLEL = {threads:d}",
+            f"CREATE TEMP STAGE {stage} FILE_FORMAT = (TYPE = PARQUET{options})",
             f"CREATE TEMP TABLE {qtable} ({snowflake_schema})",
-            f"COPY INTO {qtable} FROM (SELECT {cols} FROM @{stage})",
         ]
 
-        with self._safe_raw_sql("; ".join(stmts)):
-            pass
+        query = ";\n".join(stmts)
+        with self._safe_raw_sql(query) as cur:
+            cur.execute(f"PUT 'file://{abspath}' @{stage} PARALLEL = {threads:d}")
+            cur.execute(f"COPY INTO {qtable} FROM (SELECT {cols} FROM @{stage})")
 
         return self.table(table)
 

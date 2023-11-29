@@ -572,6 +572,14 @@ class ClickHouseCompiler(SQLGlotCompiler):
     def _generate_groups(groups):
         return groups
 
+    @visit_node.register(ops.RowID)
+    @visit_node.register(ops.CumeDist)
+    @visit_node.register(ops.PercentRank)
+    @visit_node.register(ops.Time)
+    @visit_node.register(ops.TimeDelta)
+    def visit_Undefined(self, op, **_):
+        raise com.OperationNotDefinedError(type(op).__name__)
+
 
 _SIMPLE_OPS = {
     ops.All: "min",
@@ -669,22 +677,3 @@ for _op, _name in _SIMPLE_OPS.items():
     setattr(ClickHouseCompiler, f"visit_{_op.__name__}", _fmt)
 
 del _op, _name, _fmt
-
-_NOT_IMPLEMENTED_OPS = {
-    ops.RowID,
-    ops.CumeDist,
-    ops.PercentRank,
-    ops.Time,
-    ops.TimeDelta,
-}
-
-for _op in _NOT_IMPLEMENTED_OPS:
-
-    @ClickHouseCompiler.visit_node.register(_op)
-    def _fmt(self, op, **_):
-        raise com.OperationNotDefinedError(type(op).__name__)
-
-    setattr(ClickHouseCompiler, f"visit_{_op.__name__}", _fmt)
-
-
-del _op, _fmt

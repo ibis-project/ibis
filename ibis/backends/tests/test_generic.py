@@ -1278,7 +1278,6 @@ def test_hash_consistent(backend, alltypes):
         "oracle",
         "postgres",
         "pyspark",
-        "snowflake",
         "sqlite",
         "exasol",
     ]
@@ -1351,7 +1350,6 @@ def test_try_cast_expected(con, from_val, to_type, expected):
         "oracle",
         "postgres",
         "pyspark",
-        "snowflake",
         "sqlite",
         "exasol",
     ]
@@ -1381,7 +1379,6 @@ def test_try_cast_table(backend, con):
         "oracle",
         "postgres",
         "pyspark",
-        "snowflake",
         "sqlite",
         "exasol",
     ]

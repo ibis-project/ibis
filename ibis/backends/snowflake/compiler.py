@@ -90,11 +90,8 @@ class SnowflakeCompiler(SQLGlotCompiler):
             args.append(start)
         return self.f.position(*args)
 
-    def _gen_udf_name(self, name: str) -> sg.exp.Dot:
-        return sg.exp.Dot(
-            this=sg.to_identifier("ibis_udfs"),
-            expression=sg.exp.Dot(this="public", expression=sg.to_identifier(name)),
-        )
+    def _gen_udf_name(self, name: str) -> str:
+        return f"ibis_udfs.public.{name}"
 
     @visit_node.register(ops.Map)
     def visit_Map(self, op, *, keys, values):
@@ -145,11 +142,6 @@ class SnowflakeCompiler(SQLGlotCompiler):
             self.f.is_object(arg), self.f.array_size(self.f.object_keys(arg)), NULL
         )
 
-    @visit_node.register(ops.BitwiseBinary)
-    def visit_BitwiseOps(self, op, *, left, right):
-        funcname = type(op).__name__.lower().replace("wise", "")
-        return self.f[funcname](left, right)
-
     @visit_node.register(ops.Log2)
     def visit_Log2(self, op, *, arg):
         return self.f.log(2, arg)
@@ -160,7 +152,7 @@ class SnowflakeCompiler(SQLGlotCompiler):
 
     @visit_node.register(ops.Log)
     def visit_Log(self, op, *, arg, base):
-        return self.f.log(base, arg, dialect=self.name)
+        return self.f.log(base, arg, dialect=self.dialect)
 
     @visit_node.register(ops.RandomScalar)
     def visit_RandomScalar(self, op):
@@ -192,7 +184,7 @@ class SnowflakeCompiler(SQLGlotCompiler):
     @visit_node.register(ops.IntegerRange)
     def visit_IntegerRange(self, op, *, start, stop, step):
         return self.if_(
-            step.ne(0), self.f.array_generate_range(start, stop, step), self.f.array()
+            step.neq(0), self.f.array_generate_range(start, stop, step), self.f.array()
         )
 
     @visit_node.register(ops.StructColumn)
@@ -207,7 +199,7 @@ class SnowflakeCompiler(SQLGlotCompiler):
 
     @visit_node.register(ops.RegexSearch)
     def visit_RegexSearch(self, op, *, arg, pattern):
-        return self.f.regexp_instr(arg, pattern).ne(0)
+        return self.f.regexp_instr(arg, pattern).neq(0)
 
     @visit_node.register(ops.TypeOf)
     def visit_TypeOf(self, op, *, arg):
@@ -227,7 +219,9 @@ class SnowflakeCompiler(SQLGlotCompiler):
 
     @visit_node.register(ops.ArrayCollect)
     def visit_ArrayCollect(self, op, *, arg, where):
-        return self.agg.array_agg(self.f.ifnull(arg, self.f.parse_json("null")))
+        return self.agg.array_agg(
+            self.f.ifnull(arg, self.f.parse_json("null")), where=where
+        )
 
     @visit_node.register(ops.ArrayConcat)
     def visit_ArrayConcat(self, op, *, arg):
@@ -237,7 +231,9 @@ class SnowflakeCompiler(SQLGlotCompiler):
     def visit_ArrayPosition(self, op, *, arg, other):
         # snowflake is zero-based here, so we don't need to subtract 1 from the
         # result
-        return self.f.coalesce(self.f.array_position(self.f.to_variant(other), arg), -1)
+        return self.f.coalesce(
+            self.f.array_position(self.f.to_variant(other), arg) + 1, 0
+        )
 
     @visit_node.register(ops.RegexExtract)
     def visit_RegexExtract(self, op, *, arg, pattern, index):
@@ -247,7 +243,7 @@ class SnowflakeCompiler(SQLGlotCompiler):
     @visit_node.register(ops.ArrayZip)
     def visit_ArrayZip(self, op, *, arg):
         func = self._gen_udf_name("array_zip")
-        return func(self.f.array(*arg))
+        return sg.func(func, self.f.array(*arg))
 
     @visit_node.register(ops.DayOfWeekName)
     def visit_DayOfWeekName(self, op, *, arg):
@@ -309,9 +305,9 @@ class SnowflakeCompiler(SQLGlotCompiler):
     @visit_node.register(ops.Arbitrary)
     def visit_Arbitrary(self, op, *, arg, how, where):
         if how == "first":
-            return self.f.get(self.agg.array_agg(arg), 0)
+            return self.f.get(self.agg.array_agg(arg, where=where), 0)
         elif how == "last":
-            expr = self.agg.array_agg(arg)
+            expr = self.agg.array_agg(arg, where=where)
             return self.f.get(expr, self.f.array_size(expr) - 1)
         else:
             raise com.UnsupportedOperationError("how must be 'first' or 'last'")
@@ -357,19 +353,19 @@ class SnowflakeCompiler(SQLGlotCompiler):
         )
 
     @visit_node.register(ops.ExtractFile)
-    def visit_ExtractFile(self, op, *, arg, key):
+    def visit_ExtractFile(self, op, *, arg):
         return self.f.concat_ws(
             "?",
-            self.visit_ExtractPath(op, arg=arg, key=key),
+            self.visit_ExtractPath(op, arg=arg),
             self.visit_ExtractQuery(op, arg=arg, key=None),
         )
 
     @visit_node.register(ops.ExtractPath)
-    def visit_ExtractPath(self, op, *, arg, key):
+    def visit_ExtractPath(self, op, *, arg):
         return "/" + self.f.as_varchar(self.f.get(self.f.parse_url(arg, 1), "path"))
 
     @visit_node.register(ops.ExtractFragment)
-    def visit_ExtractFragment(self, op, *, arg, key):
+    def visit_ExtractFragment(self, op, *, arg):
         return self.f.nullif(
             self.f.as_varchar(self.f.get(self.f.parse_url(arg, 1), "fragment")), ""
         )
@@ -377,6 +373,13 @@ class SnowflakeCompiler(SQLGlotCompiler):
     @visit_node.register(ops.Unnest)
     def visit_Unnest(self, op, *, arg):
         return sg.exp.Explode(this=arg)
+
+    @visit_node.register(ops.ArrayMap)
+    @visit_node.register(ops.ArrayFilter)
+    @visit_node.register(ops.RowID)
+    @visit_node.register(ops.Translate)
+    def visit_Undefined(self, op, **_):
+        raise com.OperationNotDefinedError(type(op).__name__)
 
 
 _SIMPLE_OPS = {
@@ -397,7 +400,7 @@ _SIMPLE_OPS = {
     ops.BitXor: "bitxor_agg",
     ops.DateFromYMD: "date_from_parts",
     ops.StringToTimestamp: "to_timestamp_tz",
-    ops.RegexReplace: "regex_replace",
+    ops.RegexReplace: "regexp_replace",
     ops.ArgMin: "min_by",
     ops.ArgMax: "max_by",
     ops.StartsWith: "startswith",
@@ -406,6 +409,18 @@ _SIMPLE_OPS = {
     ops.Median: "median",
     ops.Levenshtein: "editdistance",
     ops.TimestampFromYMDHMS: "timestamp_from_parts",
+    ops.BitwiseAnd: "bitand",
+    ops.BitwiseOr: "bitor",
+    ops.BitwiseXor: "bitxor",
+    ops.BitwiseNot: "bitnot",
+    ops.BitwiseLeftShift: "bitshiftleft",
+    ops.BitwiseRightShift: "bitshiftright",
+    ops.StringJoin: "array_to_string",
+    ops.LPad: "lpad",
+    ops.RPad: "rpad",
+    ops.Reverse: "reverse",
+    ops.StringAscii: "ascii",
+    ops.StringReplace: "replace",
 }
 
 for _op, _name in _SIMPLE_OPS.items():
