@@ -26,8 +26,8 @@ from ibis import util
 from ibis.backends.base import CanCreateSchema
 from ibis.backends.base.sql import BaseBackend
 from ibis.backends.base.sql.alchemy.geospatial import geospatial_supported
-from ibis.backends.base.sqlglot import STAR, C, F
-from ibis.backends.base.sqlglot.compiler import SQLGlotCompiler
+from ibis.backends.base.sqlglot import SQLGlotBackend
+from ibis.backends.base.sqlglot.compiler import C, F, SQLGlotCompiler
 from ibis.backends.base.sqlglot.datatypes import DuckDBType
 from ibis.backends.duckdb.compiler import DuckDBCompiler
 from ibis.backends.duckdb.datatypes import DuckDBPandasData
@@ -39,7 +39,7 @@ if TYPE_CHECKING:
     import torch
     from fsspec import AbstractFileSystem
 
-    from ibis.common.typing import SupportsSchema
+    from ibis.backends.base.sql import BaseBackend
 
 
 def normalize_filenames(source_list):
@@ -78,9 +78,8 @@ class _Settings:
         return repr(dict(zip(kv["key"], kv["value"])))
 
 
-class Backend(BaseBackend, CanCreateSchema):
+class Backend(SQLGlotBackend, CanCreateSchema):
     name = "duckdb"
-    supports_create_or_replace = True
     compiler = DuckDBCompiler()
 
     def _define_udf_translation_rules(self, expr):
@@ -278,7 +277,7 @@ class Backend(BaseBackend, CanCreateSchema):
         )
 
         result = self.raw_sql(query)
-        meta = result.arrow()
+        meta = result.fetch_arrow_table()
 
         if not meta:
             raise exc.IbisError(f"Table not found: {table_name!r}")
@@ -314,15 +313,8 @@ class Backend(BaseBackend, CanCreateSchema):
         if database is not None:
             query = query.where(sg.column("catalog_name").eq(sg.exp.convert(database)))
 
-        out = self.raw_sql(query).arrow()
+        out = self.raw_sql(query).fetch_arrow_table()
         return self._filter_with_like(out[col].to_pylist(), like=like)
-
-    @classmethod
-    def has_operation(cls, operation: type[ops.Value]) -> bool:
-        # singledispatchmethod overrides `__get__` so we can't directly access
-        # the dispatcher
-        dispatcher = cls.compiler.visit_node.register.__self__.dispatcher
-        return dispatcher.dispatch(operation) is not dispatcher.dispatch(object)
 
     @staticmethod
     def _convert_kwargs(kwargs: MutableMapping) -> None:
@@ -452,37 +444,6 @@ class Backend(BaseBackend, CanCreateSchema):
         self._convert_kwargs(kwargs)
         return self.connect(**kwargs)
 
-    def compile(self, expr: ir.Expr, limit: str | None = None, params=None, **_: Any):
-        table_expr = expr.as_table()
-
-        if limit == "default":
-            limit = ibis.options.sql.default_limit
-        if limit is not None:
-            table_expr = table_expr.limit(limit)
-
-        if params is None:
-            params = {}
-
-        sql = self.compiler.translate(table_expr.op(), params=params)
-        assert not isinstance(sql, sg.exp.Subquery)
-
-        if isinstance(sql, sg.exp.Table):
-            sql = sg.select("*").from_(sql)
-
-        assert not isinstance(sql, sg.exp.Subquery)
-        return sql.sql(dialect="duckdb", pretty=True)
-
-    def _to_sql(self, expr: ir.Expr, **kwargs) -> str:
-        return self.compile(expr, **kwargs)
-
-    def _log(self, sql: str) -> None:
-        """Log `sql`.
-
-        This method can be implemented by subclasses. Logging occurs when
-        `ibis.options.verbose` is `True`.
-        """
-        util.log(sql)
-
     def execute(
         self, expr: ir.Expr, limit: str | None = "default", **kwargs: Any
     ) -> Any:
@@ -524,11 +485,7 @@ class Backend(BaseBackend, CanCreateSchema):
             )
 
         name = sg.to_identifier(database, quoted=True)
-        return sg.exp.Create(
-            this=name,
-            kind="SCHEMA",
-            replace=force,
-        )
+        return sg.exp.Create(this=name, kind="SCHEMA", replace=force)
 
     def drop_schema(
         self, name: str, database: str | None = None, force: bool = False
@@ -539,26 +496,7 @@ class Backend(BaseBackend, CanCreateSchema):
             )
 
         name = sg.to_identifier(database, quoted=True)
-        return sg.exp.Drop(
-            this=name,
-            kind="SCHEMA",
-            replace=force,
-        )
-
-    def sql(
-        self,
-        query: str,
-        schema: SupportsSchema | None = None,
-        dialect: str | None = None,
-    ) -> ir.Table:
-        query = self._transpile_sql(query, dialect=dialect)
-        if schema is None:
-            schema = self._get_schema_using_query(query)
-        return ops.SQLQueryResult(query, ibis.schema(schema), self).to_expr()
-
-    def _get_schema_using_query(self, query: str) -> sch.Schema:
-        """Return an ibis Schema from a backend-specific SQL string."""
-        return sch.Schema.from_tuples(self._metadata(query))
+        return sg.exp.Drop(this=name, kind="SCHEMA", replace=force)
 
     def register(
         self,
@@ -996,7 +934,7 @@ class Backend(BaseBackend, CanCreateSchema):
             .sql(self.name, pretty=True)
         )
 
-        out = self.con.execute(sql).arrow()
+        out = self.con.execute(sql).fetch_arrow_table()
 
         return self._filter_with_like(out[col].to_pylist(), like)
 
@@ -1460,14 +1398,14 @@ class Backend(BaseBackend, CanCreateSchema):
     def _metadata(self, query: str) -> Iterator[tuple[str, dt.DataType]]:
         rows = self.raw_sql(f"DESCRIBE {query}").fetch_arrow_table()
 
-        as_py = lambda val: val.as_py()
         for name, type, null in zip(
-            map(as_py, rows["column_name"]),
-            map(as_py, rows["column_type"]),
-            map(as_py, rows["null"]),
+            rows["column_name"].to_pylist(),
+            rows["column_type"].to_pylist(),
+            rows["null"].to_pylist(),
         ):
-            ibis_type = DuckDBType.from_string(type, nullable=null.lower() == "yes")
-            yield name, ibis_type.copy(nullable=null.lower() == "yes")
+            nullable = null.lower() == "yes"
+            dtype = DuckDBType.from_string(type, nullable=nullable)
+            yield name, dtype
 
     def _register_in_memory_tables(self, expr: ir.Expr) -> None:
         for memtable in expr.op().find(ops.InMemoryTable):

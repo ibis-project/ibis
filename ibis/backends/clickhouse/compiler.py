@@ -11,8 +11,12 @@ import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 from ibis import util
-from ibis.backends.base.sqlglot import NULL, STAR, parenthesize
-from ibis.backends.base.sqlglot.compiler import SQLGlotCompiler
+from ibis.backends.base.sqlglot.compiler import (
+    NULL,
+    STAR,
+    SQLGlotCompiler,
+    parenthesize,
+)
 from ibis.backends.clickhouse.datatypes import ClickhouseType
 from ibis.expr.rewrites import rewrite_sample
 

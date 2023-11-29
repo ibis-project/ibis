@@ -23,7 +23,8 @@ import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis import util
 from ibis.backends.base import BaseBackend, CanCreateDatabase
-from ibis.backends.base.sqlglot import STAR, C, F
+from ibis.backends.base.sqlglot import SQLGlotBackend
+from ibis.backends.base.sqlglot.compiler import C, F
 from ibis.backends.clickhouse.compiler import ClickHouseCompiler
 from ibis.backends.clickhouse.datatypes import ClickhouseType
 
@@ -33,14 +34,14 @@ if TYPE_CHECKING:
 
     import pandas as pd
 
-    from ibis.common.typing import SupportsSchema
+    import ibis.expr.types as dt
 
 
 def _to_memtable(v):
     return ibis.memtable(v).op() if not isinstance(v, ops.InMemoryTable) else v
 
 
-class Backend(BaseBackend, CanCreateDatabase):
+class Backend(SQLGlotBackend, CanCreateDatabase):
     name = "clickhouse"
     compiler = ClickHouseCompiler()
 
@@ -57,25 +58,6 @@ class Backend(BaseBackend, CanCreateDatabase):
         """
 
         bool_type: Literal["Bool", "UInt8", "Int8"] = "Bool"
-
-    def _log(self, sql: str) -> None:
-        """Log `sql`.
-
-        This method can be implemented by subclasses. Logging occurs when
-        `ibis.options.verbose` is `True`.
-        """
-        util.log(sql)
-
-    def sql(
-        self,
-        query: str,
-        schema: SupportsSchema | None = None,
-        dialect: str | None = None,
-    ) -> ir.Table:
-        query = self._transpile_sql(query, dialect=dialect)
-        if schema is None:
-            schema = self._get_schema_using_query(query)
-        return ops.SQLQueryResult(query, ibis.schema(schema), self).to_expr()
 
     def _from_url(self, url: str, **kwargs) -> BaseBackend:
         """Connect to a backend using a URL `url`.
@@ -383,64 +365,6 @@ class Backend(BaseBackend, CanCreateDatabase):
         # in single column conversion and whole table conversion
         return expr.__pandas_result__(table.__pandas_result__(df))
 
-    def _to_sqlglot(
-        self, expr: ir.Expr, limit: str | None = None, params=None, **_: Any
-    ):
-        """Compile an Ibis expression to a sqlglot object."""
-        table_expr = expr.as_table()
-
-        if limit == "default":
-            limit = ibis.options.sql.default_limit
-        if limit is not None:
-            table_expr = table_expr.limit(limit)
-
-        if params is None:
-            params = {}
-
-        sql = self.compiler.translate(table_expr.op(), params=params)
-        assert not isinstance(sql, sg.exp.Subquery)
-
-        if isinstance(sql, sg.exp.Table):
-            sql = sg.select(STAR).from_(sql)
-
-        assert not isinstance(sql, sg.exp.Subquery)
-        return sql
-
-    def compile(
-        self, expr: ir.Expr, limit: str | None = None, params=None, **kwargs: Any
-    ):
-        """Compile an Ibis expression to a ClickHouse SQL string."""
-        return self._to_sqlglot(expr, limit=limit, params=params, **kwargs).sql(
-            dialect=self.name, pretty=True
-        )
-
-    def _to_sql(self, expr: ir.Expr, **kwargs) -> str:
-        return self.compile(expr, **kwargs)
-
-    def table(self, name: str, database: str | None = None) -> ir.Table:
-        """Construct a table expression.
-
-        Parameters
-        ----------
-        name
-            Table name
-        database
-            Database name
-
-        Returns
-        -------
-        Table
-            Table expression
-        """
-        schema = self.get_schema(name, database=database)
-        op = ops.DatabaseTable(
-            name=name,
-            schema=schema,
-            source=self,
-            namespace=ops.Namespace(database=database),
-        )
-        return op.to_expr()
-
     def insert(
         self,
         name: str,
@@ -496,7 +420,9 @@ class Backend(BaseBackend, CanCreateDatabase):
         """Close ClickHouse connection."""
         self.con.close()
 
-    def get_schema(self, table_name: str, database: str | None = None) -> sch.Schema:
+    def get_schema(
+        self, table_name: str, database: str | None = None, schema: str | None = None
+    ) -> sch.Schema:
         """Return a Schema object for the indicated table and database.
 
         Parameters
@@ -506,19 +432,25 @@ class Backend(BaseBackend, CanCreateDatabase):
             qualify the identifier.
         database
             Database name
+        schema
+            Schema name, not supported by ClickHouse
 
         Returns
         -------
         sch.Schema
             Ibis schema
         """
+        if schema is not None:
+            raise com.UnsupportedBackendFeatureError(
+                "`schema` namespaces are not supported by clickhouse"
+            )
         query = sg.exp.Describe(this=sg.table(table_name, db=database))
         with closing(self.raw_sql(query)) as results:
             names, types, *_ = results.result_columns
         return sch.Schema(dict(zip(names, map(ClickhouseType.from_string, types))))
 
-    def _get_schema_using_query(self, query: str) -> sch.Schema:
-        name = util.gen_name("get_schema_using_query")
+    def _metadata(self, query: str) -> sch.Schema:
+        name = util.gen_name("clickhouse_metadata")
         with closing(self.raw_sql(f"CREATE VIEW {name} AS {query}")):
             pass
         try:
@@ -527,14 +459,7 @@ class Backend(BaseBackend, CanCreateDatabase):
         finally:
             with closing(self.raw_sql(f"DROP VIEW {name}")):
                 pass
-        return sch.Schema(dict(zip(names, map(ClickhouseType.from_string, types))))
-
-    @classmethod
-    def has_operation(cls, operation: type[ops.Value]) -> bool:
-        # singledispatchmethod overrides `__get__` so we can't directly access
-        # the dispatcher
-        dispatcher = cls.compiler.visit_node.register.__self__.dispatcher
-        return dispatcher.dispatch(operation) is not dispatcher.dispatch(object)
+        return zip(names, map(ClickhouseType.from_string, types))
 
     def create_database(
         self, name: str, *, force: bool = False, engine: str = "Atomic"

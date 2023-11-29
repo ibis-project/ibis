@@ -12,18 +12,18 @@ import pyarrow.dataset as ds
 import pyarrow_hotfix  # noqa: F401
 import sqlglot as sg
 
-import ibis
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
-from ibis.backends.base import BaseBackend, CanCreateDatabase, CanCreateSchema
-from ibis.backends.base.sqlglot import STAR, C
+from ibis.backends.base import CanCreateDatabase, CanCreateSchema
+from ibis.backends.base.sqlglot import SQLGlotBackend
+from ibis.backends.base.sqlglot.compiler import C
 from ibis.backends.datafusion.compiler import DataFusionCompiler
 from ibis.expr.operations.udf import InputType
 from ibis.formats.pyarrow import PyArrowType
-from ibis.util import gen_name, log, normalize_filename
+from ibis.util import gen_name, normalize_filename
 
 try:
     from datafusion import ExecutionContext as SessionContext
@@ -41,7 +41,7 @@ if TYPE_CHECKING:
     import pandas as pd
 
 
-class Backend(BaseBackend, CanCreateDatabase, CanCreateSchema):
+class Backend(SQLGlotBackend, CanCreateDatabase, CanCreateSchema):
     name = "datafusion"
     dialect = "datafusion"
     builder = None
@@ -146,14 +146,6 @@ class Backend(BaseBackend, CanCreateDatabase, CanCreateSchema):
             name=udf_node.func.__name__,
         )
 
-    def _log(self, sql: str) -> None:
-        """Log `sql`.
-
-        This method can be implemented by subclasses. Logging occurs when
-        `ibis.options.verbose` is `True`.
-        """
-        log(sql)
-
     def raw_sql(self, query: str | sg.exp.Expression) -> Any:
         """Execute a SQL string `query` against the database.
 
@@ -227,26 +219,13 @@ class Backend(BaseBackend, CanCreateDatabase, CanCreateSchema):
         """List the available tables."""
         return self._filter_with_like(self.con.tables(), like)
 
-    def table(self, name: str, schema: sch.Schema | None = None) -> ir.Table:
-        """Get an ibis expression representing a DataFusion table.
-
-        Parameters
-        ----------
-        name
-            The name of the table to retrieve
-        schema
-            An optional schema for the table
-
-        Returns
-        -------
-        Table
-            A table expression
-        """
-        catalog = self.con.catalog()
-        database = catalog.database()
-        table = database.table(name)
-        schema = sch.schema(table.schema)
-        return ops.DatabaseTable(name, schema, self).to_expr()
+    def get_schema(
+        self, table_name: str, schema: str | None = None, database: str | None = None
+    ) -> sch.Schema:
+        catalog = self.con.catalog(database)
+        database = catalog.database(schema)
+        table = database.table(table_name)
+        return sch.schema(table.schema)
 
     def register(
         self,
@@ -493,44 +472,6 @@ class Backend(BaseBackend, CanCreateDatabase, CanCreateSchema):
         return expr.__pandas_result__(
             batch_reader.read_pandas(timestamp_as_object=True)
         )
-
-    def _to_sqlglot(
-        self, expr: ir.Expr, limit: str | None = None, params=None, **_: Any
-    ):
-        """Compile an Ibis expression to a sqlglot object."""
-        table_expr = expr.as_table()
-
-        if limit == "default":
-            limit = ibis.options.sql.default_limit
-        if limit is not None:
-            table_expr = table_expr.limit(limit)
-
-        if params is None:
-            params = {}
-
-        sql = self.compiler.translate(table_expr.op(), params=params)
-        assert not isinstance(sql, sg.exp.Subquery)
-
-        if isinstance(sql, sg.exp.Table):
-            sql = sg.select(STAR).from_(sql)
-
-        assert not isinstance(sql, sg.exp.Subquery)
-        return sql
-
-    def compile(
-        self, expr: ir.Expr, limit: str | None = None, params=None, **kwargs: Any
-    ):
-        """Compile an Ibis expression to a DataFusion SQL string."""
-        return self._to_sqlglot(expr, limit=limit, params=params, **kwargs).sql(
-            dialect=self.dialect, pretty=True
-        )
-
-    @classmethod
-    def has_operation(cls, operation: type[ops.Value]) -> bool:
-        # singledispatchmethod overrides `__get__` so we can't directly access
-        # the dispatcher
-        dispatcher = cls.compiler.visit_node.register.__self__.dispatcher
-        return dispatcher.dispatch(operation) is not dispatcher.dispatch(object)
 
     def create_table(self, *_, **__) -> ir.Table:
         raise NotImplementedError(self.name)

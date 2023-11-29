@@ -1,84 +1,115 @@
 from __future__ import annotations
 
-from functools import partial
-from typing import Any, Callable
+from typing import TYPE_CHECKING, Any, ClassVar
 
 import sqlglot as sg
+import sqlglot.expressions as sge
+
+import ibis
+import ibis.expr.operations as ops
+import ibis.expr.schema as sch
+from ibis.backends.base import BaseBackend
+from ibis.backends.base.sqlglot.compiler import STAR
+
+if TYPE_CHECKING:
+    import ibis.expr.types as ir
+    from ibis.backends.base.sqlglot.compiler import SQLGlotCompiler
+    from ibis.common.typing import SupportsSchema
 
 
-class AggGen:
-    __slots__ = ("aggfunc",)
+class SQLGlotBackend(BaseBackend):
+    compiler: ClassVar[SQLGlotCompiler]
+    name: ClassVar[str]
 
-    def __init__(self, *, aggfunc: Callable) -> None:
-        self.aggfunc = aggfunc
+    @classmethod
+    def has_operation(cls, operation: type[ops.Value]) -> bool:
+        # singledispatchmethod overrides `__get__` so we can't directly access
+        # the dispatcher
+        dispatcher = cls.compiler.visit_node.register.__self__.dispatcher
+        return dispatcher.dispatch(operation) is not dispatcher.dispatch(object)
 
-    def __getattr__(self, name: str) -> partial:
-        return partial(self.aggfunc, name)
+    def table(
+        self, name: str, schema: str | None = None, database: str | None = None
+    ) -> ir.Table:
+        """Construct a table expression.
 
-    def __getitem__(self, key: str) -> partial:
-        return getattr(self, key)
+        Parameters
+        ----------
+        name
+            Table name
+        schema
+            Schema name
+        database
+            Database name
 
+        Returns
+        -------
+        Table
+            Table expression
+        """
+        table_schema = self.get_schema(name, schema=schema, database=database)
+        return ops.DatabaseTable(
+            name,
+            schema=table_schema,
+            source=self,
+            namespace=ops.Namespace(database=database, schema=schema),
+        ).to_expr()
 
-def _func(name: str, *args: Any, **kwargs: Any):
-    return sg.func(name, *map(sg.exp.convert, args), **kwargs)
+    def _to_sqlglot(
+        self, expr: ir.Expr, limit: str | None = None, params=None, **_: Any
+    ):
+        """Compile an Ibis expression to a sqlglot object."""
+        table_expr = expr.as_table()
 
+        if limit == "default":
+            limit = ibis.options.sql.default_limit
+        if limit is not None:
+            table_expr = table_expr.limit(limit)
 
-class FuncGen:
-    __slots__ = ()
+        if params is None:
+            params = {}
 
-    def __getattr__(self, name: str) -> partial:
-        return partial(_func, name)
+        sql = self.compiler.translate(table_expr.op(), params=params)
+        assert not isinstance(sql, sge.Subquery)
 
-    def __getitem__(self, key: str) -> partial:
-        return getattr(self, key)
+        if isinstance(sql, sge.Table):
+            sql = sg.select(STAR).from_(sql)
 
-    def array(self, *args):
-        return sg.exp.Array.from_arg_list(list(map(sg.exp.convert, args)))
+        assert not isinstance(sql, sge.Subquery)
+        return sql
 
-    def tuple(self, *args):
-        return sg.func("tuple", *map(sg.exp.convert, args))
+    def compile(
+        self, expr: ir.Expr, limit: str | None = None, params=None, **kwargs: Any
+    ):
+        """Compile an Ibis expression to a ClickHouse SQL string."""
+        return self._to_sqlglot(expr, limit=limit, params=params, **kwargs).sql(
+            dialect=self.name, pretty=True
+        )
 
-    def exists(self, query):
-        return sg.exp.Exists(this=query)
+    def _to_sql(self, expr: ir.Expr, **kwargs) -> str:
+        return self.compile(expr, **kwargs)
 
-    def concat(self, *args):
-        return sg.exp.Concat(expressions=list(map(sg.exp.convert, args)))
+    def _log(self, sql: str) -> None:
+        """Log `sql`.
 
-    def map(self, keys, values):
-        return sg.exp.Map(keys=keys, values=values)
+        This method can be implemented by subclasses. Logging occurs when
+        `ibis.options.verbose` is `True`.
+        """
+        from ibis import util
 
+        util.log(sql)
 
-class ColGen:
-    __slots__ = ()
+    def sql(
+        self,
+        query: str,
+        schema: SupportsSchema | None = None,
+        dialect: str | None = None,
+    ) -> ir.Table:
+        query = self._transpile_sql(query, dialect=dialect)
+        if schema is None:
+            schema = self._get_schema_using_query(query)
+        return ops.SQLQueryResult(query, ibis.schema(schema), self).to_expr()
 
-    def __getattr__(self, name: str) -> sg.exp.Column:
-        return sg.column(name)
-
-    def __getitem__(self, key: str) -> sg.exp.Column:
-        return sg.column(key)
-
-
-def paren(expr):
-    """Wrap a sqlglot expression in parentheses."""
-    return sg.exp.Paren(this=expr)
-
-
-def parenthesize(op, arg):
-    import ibis.expr.operations as ops
-
-    if isinstance(op, (ops.Binary, ops.Unary)):
-        return paren(arg)
-    # function calls don't need parens
-    return arg
-
-
-def interval(value, *, unit):
-    return sg.exp.Interval(this=sg.exp.convert(value), unit=sg.exp.var(unit))
-
-
-C = ColGen()
-F = FuncGen()
-NULL = sg.exp.NULL
-FALSE = sg.exp.FALSE
-TRUE = sg.exp.TRUE
-STAR = sg.exp.Star()
+    def _get_schema_using_query(self, query: str) -> sch.Schema:
+        """Return an ibis Schema from a backend-specific SQL string."""
+        return sch.Schema.from_tuples(self._metadata(query))

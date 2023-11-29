@@ -54,6 +54,10 @@ class UnsupportedBackendType(TranslationError):
     """UnsupportedBackendType."""
 
 
+class UnsupportedBackendFeatureError(IbisError):
+    """Unsupported backend feature."""
+
+
 class UnboundExpressionError(ValueError, IbisError):
     """UnboundExpressionError."""
 
