@@ -794,30 +794,6 @@ def execute_count_distinct_star_frame_filter(op, data, filt, **kwargs):
     return len(data.loc[filt].drop_duplicates())
 
 
-@execute_node.register(ops.BitAnd, pd.Series, (pd.Series, type(None)))
-def execute_bit_and_series(_, data, mask, aggcontext=None, **kwargs):
-    return aggcontext.agg(
-        data[mask] if mask is not None else data,
-        np.bitwise_and.reduce,
-    )
-
-
-@execute_node.register(ops.BitOr, pd.Series, (pd.Series, type(None)))
-def execute_bit_or_series(_, data, mask, aggcontext=None, **kwargs):
-    return aggcontext.agg(
-        data[mask] if mask is not None else data,
-        np.bitwise_or.reduce,
-    )
-
-
-@execute_node.register(ops.BitXor, pd.Series, (pd.Series, type(None)))
-def execute_bit_xor_series(_, data, mask, aggcontext=None, **kwargs):
-    return aggcontext.agg(
-        data[mask] if mask is not None else data,
-        np.bitwise_xor.reduce,
-    )
-
-
 @execute_node.register(
     (ops.ArgMin, ops.ArgMax),
     pd.Series,
@@ -970,8 +946,6 @@ def execute_string_split(op, data, delimiter, **kwargs):
     return pd.Series(np.array(s.split(delimiter)) for s in data)
 
 
-
-
 @execute_node.register(ops.Union, pd.DataFrame, pd.DataFrame, bool)
 def execute_union_dataframe_dataframe(
     op, left: pd.DataFrame, right: pd.DataFrame, distinct, **kwargs
@@ -1013,23 +987,6 @@ def execute_difference_dataframe_dataframe(
     return result
 
 
-
-@execute_node.register(ops.IsNan, (pd.Series, floating_types))
-def execute_isnan(op, data, **kwargs):
-    try:
-        return np.isnan(data)
-    except (TypeError, ValueError):
-        # if `data` contains `None` np.isnan will complain
-        # so we take advantage of NaN not equaling itself
-        # to do the correct thing
-        return data != data
-
-
-@execute_node.register(ops.IsInf, (pd.Series, floating_types))
-def execute_isinf(op, data, **kwargs):
-    return np.isinf(data)
-
-
 @execute_node.register(ops.SelfReference, pd.DataFrame)
 def execute_node_self_reference_dataframe(op, data, **kwargs):
     return data
@@ -1051,9 +1008,6 @@ def execute_node_string_concat(op, values, **kwargs):
 @execute_node.register(ops.StringJoin, collections.abc.Sequence)
 def execute_node_string_join(op, args, **kwargs):
     return op.sep.join(args)
-
-
-
 
 
 # For true/false as scalars, we only support identical type pairs + None to

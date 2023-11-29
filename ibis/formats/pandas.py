@@ -109,7 +109,6 @@ class PandasData(DataMapper):
         # TODO(kszucs): properly implement the conversion
         return obj
 
-
     @classmethod
     def convert_column(cls, obj, dtype):
         pandas_type = PandasType.from_ibis(dtype)

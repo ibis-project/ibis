@@ -329,6 +329,7 @@ class Backend(BasePandasBackend):
     name = "pandas"
 
     def execute(self, query, params=None, limit="default", **kwargs):
+        import ibis.backends.pandas.newstrings
         from ibis.backends.pandas.newpandas import zuper
 
         return zuper(query.op())

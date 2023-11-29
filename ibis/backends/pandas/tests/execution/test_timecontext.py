@@ -19,9 +19,8 @@ from ibis.backends.pandas.execution import execute
 from ibis.backends.pandas.execution.window import trim_window_result
 from ibis.backends.pandas.tests.conftest import TestConf as tm
 
-
-class CustomAsOfJoin(ops.AsOfJoin):
-    pass
+# class CustomAsOfJoin(ops.AsOfJoin):
+#     pass
 
 
 def test_execute_with_timecontext(time_table):

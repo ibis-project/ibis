@@ -78,29 +78,3 @@ IBIS_TO_PYTHON_LITERAL_TYPES = {
     dt.string.copy(nullable=False): str,
     dt.date.copy(nullable=False): lambda x: pd.Timestamp(x).to_pydatetime().date(),
 }
-
-
-# BINARY_OPERATIONS = {
-#     ops.Greater: operator.gt,
-#     ops.Less: operator.lt,
-#     ops.LessEqual: operator.le,
-#     ops.GreaterEqual: operator.ge,
-#     ops.Equals: operator.eq,
-#     ops.NotEquals: operator.ne,
-#     ops.And: operator.and_,
-#     ops.Or: operator.or_,
-#     ops.Xor: operator.xor,
-#     ops.Add: operator.add,
-#     ops.Subtract: operator.sub,
-#     ops.Multiply: operator.mul,
-#     ops.Divide: operator.truediv,
-#     ops.FloorDivide: operator.floordiv,
-#     ops.Modulus: operator.mod,
-#     ops.Power: operator.pow,
-#     ops.IdenticalTo: lambda x, y: (x == y) | (pd.isnull(x) & pd.isnull(y)),
-#     ops.BitwiseXor: lambda x, y: np.bitwise_xor(x, y),
-#     ops.BitwiseOr: lambda x, y: np.bitwise_or(x, y),
-#     ops.BitwiseAnd: lambda x, y: np.bitwise_and(x, y),
-#     ops.BitwiseLeftShift: lambda x, y: np.left_shift(x, y),
-#     ops.BitwiseRightShift: lambda x, y: np.right_shift(x, y),
-# }

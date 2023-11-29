@@ -9,7 +9,7 @@ import ibis.expr.operations as ops
 from ibis.common.deferred import Item, _, deferred, var
 from ibis.common.exceptions import UnsupportedOperationError
 from ibis.common.patterns import Check, pattern, replace
-from ibis.util import Namespace
+from ibis.util import Namespace, gen_name
 
 p = Namespace(pattern, module=ops)
 d = Namespace(deferred, module=ops)
@@ -210,3 +210,33 @@ def sequalize(_, root, filt=None, proj=None, sort=None):
     return ops.Selection(
         parent=parent, selections=selections, predicates=predicates, sort_keys=sort_keys
     )
+
+
+@replace(ops.Aggregate)
+def aggregate_to_groupby(_):
+    if not _.groups:
+        return ops.PandasProject(_.parent, _.metrics)
+
+    values = {}
+
+    for v in _.groups.values():
+        if not isinstance(v, ops.Field):
+            values[gen_name("group")] = v
+
+    for v in _.metrics.values():
+        for red in v.find_topmost(ops.Reduction):
+            for arg in red.args:
+                if isinstance(arg, ops.Value) and not isinstance(arg, ops.Field):
+                    values[gen_name("metric")] = arg
+
+    fields = {k: ops.Field(_.parent, k) for k in _.parent.schema}
+    fields.update(values)
+    proj = ops.Project(_.parent, fields)
+
+    mapping = {v: k for k, v in proj.fields.items()}
+    groups = [v.replace(mapping, filter=ops.Value) for k, v in _.groups.items()]
+    groupby = ops.GroupBy(proj, groups)
+
+    mapping = {v: ops.Field(groupby, k) for k, v in proj.fields.items()}
+    metrics = {k: v.replace(mapping) for k, v in _.metrics.items()}
+    return ops.GroupByMetrics(groupby, metrics)

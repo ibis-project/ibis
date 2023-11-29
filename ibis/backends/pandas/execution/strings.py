@@ -361,11 +361,6 @@ def execute_series_right_gb(op, data, nchars, **kwargs):
     )
 
 
-@execute_node.register(ops.StringReplace, pd.Series, (pd.Series, str), (pd.Series, str))
-def execute_series_string_replace(_, data, needle, replacement, **kwargs):
-    return data.str.replace(needle, replacement)
-
-
 @execute_node.register(ops.StringJoin, (pd.Series, str), tuple)
 def execute_series_join_scalar_sep(op, sep, args, **kwargs):
     data = [execute(arg, **kwargs) for arg in args]

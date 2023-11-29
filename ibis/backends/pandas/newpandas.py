@@ -96,7 +96,9 @@ def execute_filter(op, parent, predicates):
     if predicates:
         pred = reduce(operator.and_, predicates)
         if len(pred) != len(parent):
-            raise RuntimeError("Selection predicate length does not match underlying table")
+            raise RuntimeError(
+                "Selection predicate length does not match underlying table"
+            )
         parent = parent.loc[pred].reset_index(drop=True)
     return parent
 
@@ -104,6 +106,11 @@ def execute_filter(op, parent, predicates):
 @execute.register(ops.Project)
 def execute_project(op, parent, values):
     return pd.DataFrame(values)
+
+
+@execute.register(ops.PandasProject)
+def execute_pandas_project(op, parent, values):
+    return pd.DataFrame(values, index=[0])
 
 
 @execute.register(ops.Sort)
@@ -125,6 +132,17 @@ def execute_sort(op, parent, keys):
     result = result.sort_values(by=names, ascending=ascending, ignore_index=True)
 
     return result.drop(newcols.keys(), axis=1)
+
+
+@execute.register(ops.GroupBy)
+def execute_group_by(op, parent, groups):
+    return parent.groupby(list(groups))
+
+
+@execute.register(ops.GroupByMetrics)
+def execute_group_by_metrics(op, parent, metrics):
+    # construct the result dataframe from the groups and metrics
+    return pd.concat(metrics, axis=1).reset_index()
 
 
 @execute.register(ops.Field)
@@ -169,6 +187,17 @@ def execute_cast(op, arg, to):
         return PandasData.convert_scalar(arg, to)
 
 
+_unary_operations = {
+    ops.Abs: abs,
+    ops.Ceil: np.ceil,
+    ops.Floor: np.floor,
+    ops.Sqrt: np.sqrt,
+    ops.Sign: np.sign,
+    ops.Log2: np.log2,
+    ops.Log10: np.log10,
+    ops.Ln: np.log,
+    ops.Exp: np.exp,
+}
 
 _binary_operations = {
     ops.Greater: operator.gt,
@@ -194,6 +223,11 @@ _binary_operations = {
     ops.BitwiseLeftShift: lambda x, y: np.left_shift(x, y),
     ops.BitwiseRightShift: lambda x, y: np.right_shift(x, y),
 }
+
+
+@execute.register(ops.Unary)
+def execute_unary(op, arg):
+    return _unary_operations[type(op)](arg)
 
 
 @execute.register(ops.Binary)
@@ -232,6 +266,7 @@ def execute_null_if(op, arg, null_if_expr):
     else:
         return np.nan if arg == null_if_expr else arg
 
+
 @execute.register(ops.IsNull)
 def execute_series_isnull(op, arg):
     return arg.isnull()
@@ -241,9 +276,26 @@ def execute_series_isnull(op, arg):
 def execute_series_notnnull(op, arg):
     return arg.notnull()
 
+
 @execute.register(ops.FillNa)
 def execute_fillna(op, parent, replacements):
     return parent.fillna(replacements)
+
+
+@execute.register(ops.IsNan)
+def execute_isnan(op, arg):
+    try:
+        return np.isnan(arg)
+    except (TypeError, ValueError):
+        # if `arg` contains `None` np.isnan will complain
+        # so we take advantage of NaN not equaling itself
+        # to do the correct thing
+        return arg != arg
+
+
+@execute.register(ops.IsInf)
+def execute_isinf(op, arg):
+    return np.isinf(arg)
 
 
 @execute.register(ops.DropNa)
@@ -255,10 +307,43 @@ def execute_dropna(op, parent, how, subset):
     return parent.dropna(how=how, subset=subset)
 
 
+# def _filter_reduction(arg, where):
+#     if where is not None:
+#         return arg[where[arg.index]]
+#     else:
+#         return arg
+
+_reduction_functions = {
+    # ops.Variance: lambda x
+    ops.Min: lambda x: x.min(),
+    ops.Max: lambda x: x.max(),
+    ops.Sum: lambda x: x.sum(),
+    ops.Mean: lambda x: x.mean(),
+    ops.Count: lambda x: x.count(),
+    ops.Mode: lambda x: x.mode(),
+    ops.Any: lambda x: x.any(),
+    ops.All: lambda x: x.all(),
+    ops.Median: lambda x: x.median(),
+    ops.BitAnd: lambda x: np.bitwise_and.reduce(x.values),
+    ops.BitOr: lambda x: np.bitwise_or.reduce(x.values),
+    ops.BitXor: lambda x: np.bitwise_xor.reduce(x.values),
+    ops.Last: lambda x: x.iloc[-1],
+    ops.First: lambda x: x.iloc[0],
+}
+
+
+def agg(func, arg, where, **kwargs):
+    if where is None:
+        return arg.aggregate(func, **kwargs)
+    else:
+        return arg.aggregate(lambda x: func(x[where[x.index]]), **kwargs)
+
+
 @execute.register(ops.Reduction)
-def execute_reduction(op, arg, where):
-    if where is not None:
-        arg = arg[where[arg.index]]
+def execute_reduction(op, arg, where, **kwargs):
+    # TODO(kszucs): could rewrite the incoming expression to apply a
+    # ColumnFilter-like pandas operation
+    # arg = _filter_reduction(arg, where)
 
     # op_type = type(op)
     # if op_type == ops.BitwiseNot:
@@ -266,9 +351,67 @@ def execute_reduction(op, arg, where):
     # else:
     #     function = getattr(np, op_type.__name__.lower())
     # return call_numpy_ufunc(function, op, data, **kwargs)
-    name = op.__class__.__name__.lower()
-    method = getattr(arg, name)
-    return method()
+    default_function = op.__class__.__name__.lower()
+    # function = _reduction_functions.get(type(op), default_function)
+    func = _reduction_functions[type(op)]
+    return agg(func, arg, where)
+
+
+variance_ddof = {"pop": 0, "sample": 1}
+
+
+@execute.register(ops.Variance)
+def execute_variance(op, arg, where, how):
+    ddof = variance_ddof[how]
+    return agg(lambda x: x.var(ddof=ddof), arg, where)
+
+
+@execute.register(ops.StandardDev)
+def execute_standard_dev(op, arg, where, how):
+    ddof = variance_ddof[how]
+    return agg(lambda x: x.std(ddof=ddof), arg, where)
+
+
+# @execute.register(ops.ArgMin)
+@execute.register(ops.ArgMax)
+def execute_argminmax(op, arg, key, where):
+    breakpoint()
+
+
+#     method = operator.methodcaller(op.__class__.__name__.lower())
+
+#     # key = agg(method, key, where)
+#     # arg = _filter_reduction(arg, where)
+#     # key = _filter_reduction(key, where)
+
+#     # return arg.iloc[method(key.loc[arg.index])]
+
+
+# @execute.register(ops.ArrayCollect)
+# def execute_array_collect(op, arg, where):
+#     arg = _filter_reduction(arg, where)
+#     return arg.
+
+
+@execute.register(ops.Arbitrary)
+def execute_arbitrary(op, arg, where, how):
+    # TODO(kszucs): could be rewritten to ops.Last and ops.First prior to execution
+
+    if how == "first":
+        return agg(lambda x: x.iloc[0], arg, where)
+    elif how == "last":
+        return agg(lambda x: x.iloc[-1], arg, where)
+    else:
+        raise OperationNotDefinedError(f"Arbitrary {how!r} is not supported")
+
+
+@execute.register(ops.CountDistinct)
+@execute.register(ops.ApproxCountDistinct)
+def execute_count_distinct(op, arg, where):
+    if where is not None:
+        arg = arg[where[arg.index]]
+
+    return arg.nunique()
 
 
 @execute.register(ops.CountStar)
@@ -302,31 +445,6 @@ def execute_in_subquery(op, rel, needle):
     #     )
     else:
         return needle in first_column
-
-# @execute_node.register(ops.InColumn, object, np.ndarray)
-# def execute_node_scalar_in_column(op, data, elements, **kwargs):
-#     return data in elements
-
-
-# @execute_node.register(ops.InColumn, pd.Series, pd.Series)
-# def execute_node_column_in_column(op, data, elements, **kwargs):
-#     return data.isin(elements)
-
-
-# @execute_node.register(ops.InColumn, SeriesGroupBy, pd.Series)
-# def execute_node_group_in_column(op, data, elements, **kwargs):
-#     return data.obj.isin(elements).groupby(
-#         get_grouping(data.grouper.groupings), group_keys=False
-#     )
-
-@execute.register(ops.StringLength)
-def execute_string_length(op, arg):
-    return arg.str.len().astype("int32")
-
-
-@execute.register(ops.StringReplace)
-def execute_string_replace(op, arg, pattern, replacement):
-    return arg.str.replace(pattern, replacement)
 
 
 @execute.register(ops.Date)
@@ -383,16 +501,30 @@ def execute_coalesce(op, arg, **kwargs):
         values,
     )
 
+
 @execute.register(ops.Between)
 def execute_between(op, arg, lower_bound, upper_bound):
     return arg.between(lower_bound, upper_bound)
 
 
+# NUMERIC
+
+
+@execute.register(ops.Round)
+def execute_round(op, arg, digits):
+    return np.round(arg, digits)
+
 
 def zuper(node):
+    from ibis.expr.rewrites import aggregate_to_groupby
+
     def fn(node, _, **kwargs):
         result = execute(node, **kwargs)
         return result
+
+    node = node.replace(aggregate_to_groupby)
+
+    # print(node.to_expr())
 
     result = node.map(fn)[node]
     return result

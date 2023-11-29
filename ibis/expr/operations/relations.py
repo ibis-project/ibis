@@ -548,3 +548,48 @@ class Selection(Relation):
     @attribute
     def schema(self):
         return Schema({k: v.dtype for k, v in self.selections.items()})
+
+
+# Not a relation on its own
+@public
+class GroupBy(Relation):
+    parent: Relation
+    groups: VarTuple[str]
+
+    @attribute
+    def fields(self):
+        return {}
+
+    @attribute
+    def schema(self):
+        return self.parent.schema
+
+
+@public
+class GroupByMetrics(Relation):
+    parent: GroupBy
+    metrics: FrozenDict[str, Scalar]
+
+    @attribute
+    def fields(self):
+        return {}
+
+    @attribute
+    def schema(self):
+        groups = {k: self.parent.schema[k] for k in self.parent.groups}
+        metrics = {k: v.dtype for k, v in self.metrics.items()}
+        return Schema.from_tuples([*groups.items(), *metrics.items()])
+
+
+@public
+class PandasProject(Relation):
+    parent: Relation
+    values: FrozenDict[str, Value]
+
+    @attribute
+    def fields(self):
+        return self.values
+
+    @attribute
+    def schema(self):
+        return Schema({k: v.dtype for k, v in self.values.items()})
