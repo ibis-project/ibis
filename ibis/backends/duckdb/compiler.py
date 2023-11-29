@@ -171,15 +171,14 @@ class DuckDBCompiler(SQLGlotCompiler):
 
     @visit_node.register(ops.IntervalFromInteger)
     def visit_IntervalFromInteger(self, op, *, arg, unit):
-        dtype = op.dtype
-        if dtype.unit.short == "ns":
+        if unit.short == "ns":
             raise com.UnsupportedOperationError(
                 f"{self.dialect} doesn't support nanosecond interval resolutions"
             )
 
-        if op.dtype.resolution == "week":
+        if unit.singular == "week":
             return self.f.to_days(arg * 7)
-        return self.f[f"to_{op.dtype.resolution}s"](arg)
+        return self.f[f"to_{unit.plural}"](arg)
 
     @visit_node.register(ops.FindInSet)
     def visit_FindInSet(self, op, *, needle, values):
