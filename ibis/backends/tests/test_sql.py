@@ -13,7 +13,7 @@ from ibis.backends.conftest import _get_backends_to_test
 sa = pytest.importorskip("sqlalchemy")
 sg = pytest.importorskip("sqlglot")
 
-pytestmark = pytest.mark.notimpl(["druid"])
+pytestmark = pytest.mark.notimpl(["druid", "flink"])
 
 
 @pytest.mark.never(
@@ -26,7 +26,6 @@ pytestmark = pytest.mark.notimpl(["druid"])
     reason="Not clear how to extract SQL from the backend",
     raises=(exc.OperationNotDefinedError, NotImplementedError, ValueError),
 )
-@pytest.mark.notimpl(["flink"], "WIP")
 def test_table(backend):
     expr = backend.functional_alltypes.select(c=_.int_col + 1)
     buf = io.StringIO()
@@ -84,7 +83,6 @@ no_sql_extraction = pytest.mark.notimpl(
 )
 @not_sql
 @no_sql_extraction
-@pytest.mark.notimpl(["flink"], "WIP")
 def test_literal(backend, expr):
     assert ibis.to_sql(expr, dialect=backend.name())
 
@@ -95,7 +93,6 @@ def test_literal(backend, expr):
 @pytest.mark.xfail_version(
     mssql=["sqlalchemy>=2"], reason="sqlalchemy 2 prefixes literals with `N`"
 )
-@pytest.mark.notimpl(["flink"], "WIP")
 def test_group_by_has_index(backend, snapshot):
     countries = ibis.table(
         dict(continent="string", population="int64"), name="countries"
@@ -121,7 +118,6 @@ def test_group_by_has_index(backend, snapshot):
 @pytest.mark.never(
     ["pandas", "dask", "datafusion", "polars", "pyspark"], reason="not SQL"
 )
-@pytest.mark.notimpl(["flink"], "WIP")
 def test_cte_refs_in_topo_order(backend, snapshot):
     mr0 = ibis.table(schema=ibis.schema(dict(key="int")), name="leaf")
 
@@ -137,7 +133,6 @@ def test_cte_refs_in_topo_order(backend, snapshot):
 @pytest.mark.never(
     ["pandas", "dask", "datafusion", "polars", "pyspark"], reason="not SQL"
 )
-@pytest.mark.notimpl(["flink"], "WIP")
 def test_isin_bug(con, snapshot):
     t = ibis.table(dict(x="int"), name="t")
     good = t[t.x > 2].x
