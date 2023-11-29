@@ -714,15 +714,25 @@ class SQLGlotCompiler(abc.ABC):
 
     @visit_node.register(ops.Variance)
     @visit_node.register(ops.StandardDev)
-    def visit_Variance(self, op, *, arg, how, where, **_):
+    @visit_node.register(ops.Covariance)
+    def visit_VarianceStandardDevCovariance(self, op, *, how, where, **kw):
         hows = {"sample": "samp", "pop": "pop"}
-        funcs = {ops.Variance: "var", ops.StandardDev: "stddev"}
+        funcs = {
+            ops.Variance: "var",
+            ops.StandardDev: "stddev",
+            ops.Covariance: "covar",
+        }
 
-        if (arg_dtype := op.arg.dtype).is_boolean():
-            arg = self.cast(arg, dt.Int32(nullable=arg_dtype.nullable))
+        args = []
+
+        for arg in kw.values():
+            if (arg_dtype := op.arg.dtype).is_boolean():
+                arg = self.cast(arg, dt.Int32(nullable=arg_dtype.nullable))
+
+            args.append(arg)
 
         funcname = f"{funcs[type(op)]}_{hows[how]}"
-        return self.agg[funcname](arg, where=where)
+        return self.agg[funcname](*args, where=where)
 
     @visit_node.register(ops.Arbitrary)
     def visit_Arbitrary(self, op, *, arg, how, where, **_):
