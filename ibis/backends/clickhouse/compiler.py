@@ -383,16 +383,6 @@ class ClickHouseCompiler(SQLGlotCompiler):
             return self.f.toTimeZone(to_datetime, timezone)
         return to_datetime
 
-    @visit_node.register(ops.ExistsSubquery)
-    def visit_ExistsSubquery(self, op, *, foreign_table, predicates, **_):
-        # https://github.com/ClickHouse/ClickHouse/issues/6697
-        #
-        # this would work if clickhouse supported correlated subqueries
-        subq = (
-            sg.select(1).from_(foreign_table).where(sg.condition(predicates)).subquery()
-        )
-        return self.f.exists(subq)
-
     @visit_node.register(ops.StringSplit)
     def visit_StringSplit(self, op, *, arg, delimiter, **_):
         return self.f.splitByString(
@@ -402,10 +392,6 @@ class ClickHouseCompiler(SQLGlotCompiler):
     @visit_node.register(ops.StringJoin)
     def visit_StringJoin(self, op, *, sep, arg, **_):
         return self.f.arrayStringConcat(self.f.array(*arg), sep)
-
-    @visit_node.register(ops.StringConcat)
-    def visit_StringConcat(self, op, *, arg, **_):
-        return self.f.concat(*arg)
 
     @visit_node.register(ops.Capitalize)
     def visit_Capitalize(self, op, *, arg, **_):
@@ -418,18 +404,9 @@ class ClickHouseCompiler(SQLGlotCompiler):
         call = self.agg.groupArray(arg, where=where)
         return self.if_(self.f.empty(call), NULL, self.f.arrayStringConcat(call, sep))
 
-    @visit_node.register(ops.StrRight)
-    def visit_StrRight(self, op, *, arg, nchars, **_):
-        nchars = parenthesize(op.nchars, nchars)
-        return self.f.substring(arg, -nchars)
-
     @visit_node.register(ops.Cot)
     def visit_Cot(self, op, *, arg, **_):
         return 1.0 / self.f.tan(arg)
-
-    @visit_node.register(ops.ArrayColumn)
-    def visit_ArrayColumn(self, op, *, cols, **_):
-        return self.f.array(*cols)
 
     @visit_node.register(ops.StructColumn)
     def visit_StructColumn(self, op, *, values, **_):
