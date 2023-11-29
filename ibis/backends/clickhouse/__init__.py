@@ -710,34 +710,9 @@ class Backend(SQLGlotBackend, CanCreateDatabase):
             expression=self._to_sqlglot(obj),
         )
         external_tables = self._collect_in_memory_tables(obj)
-        with closing(self.raw_sql(src, external_tables=external_tables)):
+        with self._safe_raw_sql(src, external_tables=external_tables):
             pass
         return self.table(name, database=database)
-
-    def drop_view(
-        self, name: str, *, database: str | None = None, force: bool = False
-    ) -> None:
-        src = sg.exp.Drop(this=sg.table(name, db=database), kind="VIEW", exists=force)
-        with closing(self.raw_sql(src)):
-            pass
-
-    def _load_into_cache(self, name, expr):
-        self.create_table(name, expr, schema=expr.schema(), temp=True)
-
-    def _clean_up_cached_table(self, op):
-        self.drop_table(op.name)
-
-    def _create_temp_view(self, table_name, source):
-        if table_name not in self._temp_views and table_name in self.list_tables():
-            raise ValueError(
-                f"{table_name} already exists as a non-temporary table or view"
-            )
-        src = sg.exp.Create(
-            this=sg.table(table_name), kind="VIEW", replace=True, expression=source
-        )
-        self.raw_sql(src)
-        self._temp_views.add(table_name)
-        self._register_temp_view_cleanup(table_name)
 
     def _register_temp_view_cleanup(self, name: str) -> None:
         def drop(self, name: str, query: str):

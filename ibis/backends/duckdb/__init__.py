@@ -293,6 +293,10 @@ class Backend(SQLGlotBackend, CanCreateSchema):
             }
         )
 
+    @contextlib.contextmanager
+    def _safe_raw_sql(self, *args, **kwargs):
+        yield self.raw_sql(*args, **kwargs)
+
     def list_databases(self, like: str | None = None) -> list[str]:
         col = "catalog_name"
         query = sg.select(sg.exp.Distinct(expressions=[sg.column(col)])).from_(
@@ -444,26 +448,6 @@ class Backend(SQLGlotBackend, CanCreateSchema):
         self._convert_kwargs(kwargs)
         return self.connect(**kwargs)
 
-    def execute(
-        self, expr: ir.Expr, limit: str | None = "default", **kwargs: Any
-    ) -> Any:
-        """Execute an expression."""
-
-        self._run_pre_execute_hooks(expr)
-        table = expr.as_table()
-        sql = self.compile(table, limit=limit, **kwargs)
-
-        schema = table.schema()
-        self._log(sql)
-
-        try:
-            cur = self.con.execute(sql)
-        except duckdb.CatalogException as e:
-            raise exc.IbisError(e)
-
-        result = self.fetch_from_cursor(cur, schema)
-        return expr.__pandas_result__(result)
-
     def load_extension(self, extension: str, force_install: bool = False) -> None:
         """Install and load a duckdb extension by name or path.
 
@@ -563,25 +547,6 @@ class Backend(SQLGlotBackend, CanCreateSchema):
             f"Cannot infer appropriate read function for input, "
             f"please call one of {msg} directly"
         )
-
-    def _create_temp_view(self, table_name, source):
-        if table_name not in self._temp_views and table_name in self.list_tables():
-            raise ValueError(
-                f"{table_name} already exists as a non-temporary table or view"
-            )
-        src = sg.exp.Create(
-            this=sg.exp.Identifier(
-                this=table_name, quoted=True
-            ),  # CREATE ... 'table_name'
-            kind="VIEW",  # VIEW
-            replace=True,  # OR REPLACE
-            properties=sg.exp.Properties(
-                expressions=[sg.exp.TemporaryProperty()]  # TEMPORARY
-            ),
-            expression=source,  # AS ...
-        )
-        self.raw_sql(src.sql("duckdb"))
-        self._temp_views.add(table_name)
 
     @util.experimental
     def read_json(
@@ -1424,9 +1389,6 @@ class Backend(SQLGlotBackend, CanCreateSchema):
             table = op.data.to_pyarrow(schema)
             table = getattr(table, "obj", table)
             self.con.register(name, table)
-
-    def _get_temp_view_definition(self, name: str, definition) -> str:
-        yield f"CREATE OR REPLACE TEMPORARY VIEW {name} AS {definition}"
 
     def _register_udfs(self, expr: ir.Expr) -> None:
         import ibis.expr.operations as ops

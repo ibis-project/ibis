@@ -4,6 +4,7 @@ import abc
 import calendar
 import functools
 import itertools
+import math
 import operator
 import string
 from collections.abc import Mapping
@@ -144,6 +145,15 @@ class SQLGlotCompiler(abc.ABC):
     quoted: bool | None = None
     """Whether to always quote identifiers."""
 
+    NAN = sg.exp.Literal.number("'NaN'::double")
+    """Backend's NaN literal."""
+
+    POS_INF = sg.exp.Literal.number("'Inf'::double")
+    """Backend's positive infinity literal."""
+
+    NEG_INF = sg.exp.Literal.number("'-Inf'::double")
+    """Backend's negative infinity literal."""
+
     def __init__(self) -> None:
         self.agg = AggGen(aggfunc=self._aggregate)
         self.f = FuncGen()
@@ -217,10 +227,10 @@ class SQLGlotCompiler(abc.ABC):
                 return result
 
             alias_index = next(gen_alias_index)
-            alias = f"t{alias_index:d}"
+            alias = sg.to_identifier(f"t{alias_index:d}", quoted=quoted)
 
             try:
-                return result.subquery(sg.exp.TableAlias(this=alias, quoted=quoted))
+                return result.subquery(alias)
             except AttributeError:
                 return result.as_(alias, quoted=quoted)
 
@@ -269,6 +279,16 @@ class SQLGlotCompiler(abc.ABC):
             raise com.UnsupportedOperationError(
                 f"Unsupported NULL for non-nullable type: {dtype!r}"
             )
+        elif dtype.is_integer():
+            return sg.exp.convert(value)
+        elif dtype.is_floating():
+            if math.isnan(value):
+                return self.NAN
+            elif math.isinf(value):
+                return self.POS_INF if value < 0 else self.NEG_INF
+            return sg.exp.convert(value)
+        elif dtype.is_decimal():
+            return self.cast(sg.exp.convert(str(value)), dtype)
         elif dtype.is_interval():
             return sg.exp.Interval(
                 this=sg.exp.convert(str(value)), unit=dtype.resolution.upper()

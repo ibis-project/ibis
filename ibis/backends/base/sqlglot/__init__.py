@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import contextlib
 from typing import TYPE_CHECKING, Any, ClassVar
 
 import sqlglot as sg
@@ -113,3 +114,86 @@ class SQLGlotBackend(BaseBackend):
     def _get_schema_using_query(self, query: str) -> sch.Schema:
         """Return an ibis Schema from a backend-specific SQL string."""
         return sch.Schema.from_tuples(self._metadata(query))
+
+    def create_view(
+        self,
+        name: str,
+        obj: ir.Table,
+        *,
+        database: str | None = None,
+        overwrite: bool = False,
+    ) -> ir.Table:
+        src = sg.exp.Create(
+            this=sg.table(name, db=database),
+            kind="VIEW",
+            replace=overwrite,
+            expression=self._to_sqlglot(obj),
+        )
+        self._register_in_memory_tables(obj)
+        external_tables = self._collect_in_memory_tables(obj)
+        with self._safe_raw_sql(src, external_tables=external_tables):
+            pass
+        return self.table(name, database=database)
+
+    def _register_in_memory_tables(self, expr: ir.Expr) -> None:
+        for memtable in expr.op().find(ops.InMemoryTable):
+            self._register_in_memory_table(memtable)
+
+    def drop_view(
+        self, name: str, *, database: str | None = None, force: bool = False
+    ) -> None:
+        src = sg.exp.Drop(this=sg.table(name, db=database), kind="VIEW", exists=force)
+        with contextlib.closing(self.raw_sql(src)):
+            pass
+
+    def _get_temp_view_definition(self, name: str, definition: str) -> str:
+        yield sg.exp.Create(
+            this=sg.to_identifier(name, quoted=self.compiler.quoted),
+            kind="VIEW",
+            expression=definition,
+            replace=True,
+            properties=sg.exp.Properties(expressions=[sg.exp.TemporaryProperty()]),
+        ).sql(self.name)
+
+    def _create_temp_view(self, table_name, source):
+        if table_name not in self._temp_views and table_name in self.list_tables():
+            raise ValueError(
+                f"{table_name} already exists as a non-temporary table or view"
+            )
+        with self._safe_raw_sql(self._get_temp_view_definition(table_name, source)):
+            pass
+        self._temp_views.add(table_name)
+        self._register_temp_view_cleanup(table_name)
+
+    def _register_temp_view_cleanup(self, name: str) -> None:
+        """Register a clean up function for a temporary view.
+
+        No-op by default.
+
+        Parameters
+        ----------
+        name
+            The temporary view to register for clean up.
+        """
+
+    def _load_into_cache(self, name, expr):
+        self.create_table(name, expr, schema=expr.schema(), temp=True)
+
+    def _clean_up_cached_table(self, op):
+        self.drop_table(op.name)
+
+    def execute(
+        self, expr: ir.Expr, limit: str | None = "default", **kwargs: Any
+    ) -> Any:
+        """Execute an expression."""
+
+        self._run_pre_execute_hooks(expr)
+        table = expr.as_table()
+        sql = self.compile(table, limit=limit, **kwargs)
+
+        schema = table.schema()
+        self._log(sql)
+
+        with self._safe_raw_sql(sql) as cur:
+            result = self.fetch_from_cursor(cur, schema)
+        return expr.__pandas_result__(result)
