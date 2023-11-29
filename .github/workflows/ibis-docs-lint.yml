@@ -53,7 +53,7 @@ jobs:
             access-tokens = github.com=${{ secrets.GITHUB_TOKEN }}
 
       - name: setup cachix
-        uses: cachix/cachix-action@v12
+        uses: cachix/cachix-action@v13
         with:
           name: ibis
           authToken: ${{ secrets.CACHIX_AUTH_TOKEN }}
@@ -78,7 +78,7 @@ jobs:
             access-tokens = github.com=${{ secrets.GITHUB_TOKEN }}
 
       - name: setup cachix
-        uses: cachix/cachix-action@v12
+        uses: cachix/cachix-action@v13
         with:
           name: ibis
           authToken: ${{ secrets.CACHIX_AUTH_TOKEN }}
@@ -177,7 +177,7 @@ jobs:
             access-tokens = github.com=${{ secrets.GITHUB_TOKEN }}
 
       - name: setup cachix
-        uses: cachix/cachix-action@v12
+        uses: cachix/cachix-action@v13
         with:
           name: ibis
           authToken: ${{ secrets.CACHIX_AUTH_TOKEN }}
@@ -215,7 +215,7 @@ jobs:
             access-tokens = github.com=${{ secrets.GITHUB_TOKEN }}
 
       - name: setup cachix
-        uses: cachix/cachix-action@v12
+        uses: cachix/cachix-action@v13
         with:
           name: ibis
           authToken: ${{ secrets.CACHIX_AUTH_TOKEN }}
@@ -258,7 +258,7 @@ jobs:
           extra_nix_config: |
             access-tokens = github.com=${{ secrets.GITHUB_TOKEN }}
 
-      - uses: cachix/cachix-action@v12
+      - uses: cachix/cachix-action@v13
         with:
           name: ibis
           authToken: ${{ secrets.CACHIX_AUTH_TOKEN }}
