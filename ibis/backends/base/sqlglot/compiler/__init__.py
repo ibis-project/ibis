@@ -553,6 +553,10 @@ class SQLGlotCompiler(abc.ABC):
     def visit_CountDistinct(self, op, *, arg, where):
         return self.agg.count(sg.exp.Distinct(expressions=[arg]), where=where)
 
+    @visit_node.register(ops.CountDistinctStar)
+    def visit_CountDistinctStar(self, op, *, arg, where):
+        return self.agg.count(sg.exp.Distinct(expressions=[STAR]), where=where)
+
     @visit_node.register(ops.CountStar)
     def visit_CountStar(self, op, *, arg, where):
         return self.agg.count(STAR, where=where)
@@ -610,7 +614,7 @@ class SQLGlotCompiler(abc.ABC):
     def visit_Arbitrary(self, op, *, arg, how, where):
         if how == "heavy":
             raise com.UnsupportedOperationError(
-                "how='heavy' not supported in the backend"
+                f"how='heavy' not supported in the {self.dialect} backend"
             )
         return self.agg[how](arg, where=where)
 
