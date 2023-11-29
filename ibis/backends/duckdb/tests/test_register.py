@@ -46,9 +46,14 @@ def test_read_parquet(data_dir):
     assert t.count().execute()
 
 
+@pytest.mark.xfail(
+    LINUX and SANDBOXED,
+    reason="nix on linux cannot download duckdb extensions or data due to sandboxing",
+)
 def test_load_spatial_when_geo_column(tmpdir):
-    # create a table with a geom column
+    pytest.importorskip("geoalchemy2")
 
+    # create a table with a geom column
     path = str(tmpdir.join("test_load_spatial.ddb"))
 
     con_db = duckdb.connect(path)
@@ -100,6 +105,8 @@ def test_read_geo_to_geopandas(con, data_dir):
     t = con.read_geo(data_dir / "geojson" / "zones.geojson")
     gdf = t.head().to_pandas()
     assert isinstance(gdf, gpd.GeoDataFrame)
+
+
 @pytest.mark.xfail_version(
     duckdb=["duckdb<0.7.0"], reason="read_json_auto doesn't exist", raises=exc.IbisError
 )

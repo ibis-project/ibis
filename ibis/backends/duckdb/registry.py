@@ -20,6 +20,7 @@ from ibis.backends.base.sql.alchemy.registry import (
     reduction,
     try_cast,
 )
+from ibis.backends.duckdb.datatypes import Geometry_WKB
 from ibis.backends.postgres.registry import (
     _array_index,
     _array_slice,
@@ -28,7 +29,6 @@ from ibis.backends.postgres.registry import (
 )
 from ibis.common.exceptions import UnsupportedOperationError
 
-from ibis.backends.duckdb.datatypes import Geometry_WKB
 if TYPE_CHECKING:
     from collections.abc import Mapping
 
