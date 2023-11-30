@@ -546,14 +546,19 @@ def execute_between(op, arg, lower_bound, upper_bound):
     return arg.between(lower_bound, upper_bound)
 
 
-def zuper(node):
+def zuper(node, params):
     from ibis.backends.pandas.rewrites import aggregate_to_groupby
+    from ibis.expr.rewrites import _, p
+
+    replace_literals = p.ScalarParameter >> (
+        lambda _: ops.Literal(value=params[_], dtype=_.dtype)
+    )
 
     def fn(node, _, **kwargs):
         result = execute(node, **kwargs)
         return result
 
-    node = node.replace(aggregate_to_groupby)
+    node = node.replace(aggregate_to_groupby | replace_literals)
 
     # print(node.to_expr())
 

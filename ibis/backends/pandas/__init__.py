@@ -329,10 +329,14 @@ class Backend(BasePandasBackend):
     name = "pandas"
 
     def execute(self, query, params=None, limit="default", **kwargs):
+        import ibis.backends.pandas.newarrays
+        import ibis.backends.pandas.newmaps
         import ibis.backends.pandas.newstrings
         from ibis.backends.pandas.newpandas import zuper
 
-        return zuper(query.op())
+        params = params or {}
+        params = {k.op() if isinstance(k, ir.Expr) else k: v for k, v in params.items()}
+        return zuper(query.op(), params=params)
         # from ibis.backends.pandas.core import execute_and_reset
 
         # if limit != "default" and limit is not None:
