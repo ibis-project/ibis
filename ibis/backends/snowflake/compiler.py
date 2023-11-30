@@ -280,7 +280,9 @@ class SnowflakeCompiler(SQLGlotCompiler):
         arg = self.if_(where, arg, None)
 
         return self.if_(
-            self.f.count_if(arg.is_(sg.not_(NULL))) != 0, self.f.listagg(arg, sep), NULL
+            self.f.count_if(arg.is_(sg.not_(NULL))).neq(0),
+            self.f.listagg(arg, sep),
+            NULL,
         )
 
     @visit_node.register(ops.TimestampBucket)
