@@ -17,6 +17,7 @@ import warnings
 from operator import itemgetter
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
+from urllib.parse import parse_qs, urlparse
 
 import pyarrow as pa
 import pyarrow_hotfix  # noqa: F401
@@ -94,6 +95,64 @@ class Backend(SQLGlotBackend, CanCreateDatabase, CanCreateSchema):
     def _convert_kwargs(self, kwargs):
         with contextlib.suppress(KeyError):
             kwargs["account"] = kwargs.pop("host")
+
+    def _from_url(self, url: str, **kwargs):
+        """Connect to a backend using a URL `url`.
+
+        Parameters
+        ----------
+        url
+            URL with which to connect to a backend.
+        kwargs
+            Additional keyword arguments
+
+        Returns
+        -------
+        BaseBackend
+            A backend instance
+        """
+
+        url = urlparse(url)
+        database, schema = url.path[1:].split("/", 1)
+        query_params = parse_qs(url.query)
+        (warehouse,) = query_params.pop("warehouse", (None,))
+        connect_args = {
+            "user": url.username,
+            "password": url.password or "",
+            "account": url.hostname,
+            "warehouse": warehouse,
+            "database": database or "",
+            "schema": schema or "",
+        }
+
+        for name, value in query_params.items():
+            if len(value) > 1:
+                connect_args[name] = value
+            elif len(value) == 1:
+                connect_args[name] = value[0]
+            else:
+                raise com.IbisError(f"Invalid URL parameter: {name}")
+
+        session_parameters = kwargs.setdefault("session_parameters", {})
+
+        session_parameters.setdefault("MULTI_STATEMENT_COUNT", 0)
+        session_parameters.setdefault("JSON_INDENT", 0)
+        session_parameters.setdefault(
+            "PYTHON_CONNECTOR_QUERY_RESULT_FORMAT", "arrow_force"
+        )
+
+        kwargs.update(connect_args)
+        self._convert_kwargs(kwargs)
+
+        if "database" in kwargs and not kwargs["database"]:
+            del kwargs["database"]
+
+        if "schema" in kwargs and not kwargs["schema"]:
+            del kwargs["schema"]
+
+        if "password" in kwargs and kwargs["password"] is None:
+            kwargs["password"] = ""
+        return self.connect(**kwargs)
 
     @property
     def version(self) -> str:
