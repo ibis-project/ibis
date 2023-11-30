@@ -12,6 +12,7 @@ import ibis.expr.types as ir
 from ibis.backends.base import BaseBackend, CanCreateDatabase
 from ibis.backends.base.sql.ddl import fully_qualified_re, is_fully_qualified
 from ibis.backends.flink.compiler.core import FlinkCompiler
+from ibis.backends.flink.datatypes import FlinkRowSchema
 from ibis.backends.flink.ddl import (
     CreateDatabase,
     CreateTableFromConnector,
@@ -19,7 +20,6 @@ from ibis.backends.flink.ddl import (
     DropTable,
     InsertSelect,
 )
-from ibis.backends.flink.utils import ibis_schema_to_flink_schema
 
 if TYPE_CHECKING:
     from collections.abc import Mapping
@@ -354,7 +354,7 @@ class Backend(BaseBackend, CanCreateDatabase):
                 obj = obj.to_pandas()
             if isinstance(obj, pd.DataFrame):
                 table = self._table_env.from_pandas(
-                    obj, ibis_schema_to_flink_schema(schema)
+                    obj, FlinkRowSchema.from_ibis(schema)
                 )
             if isinstance(obj, ir.Table):
                 table = obj
