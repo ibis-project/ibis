@@ -311,7 +311,7 @@ class SnowflakeCompiler(SQLGlotCompiler):
             raise com.UnsupportedOperationError("how must be 'first' or 'last'")
 
     @visit_node.register(ops.ArraySlice)
-    def visit_ArraySclie(self, op, *, arg, start, stop):
+    def visit_ArraySlice(self, op, *, arg, start, stop):
         if start is None:
             start = 0
 
