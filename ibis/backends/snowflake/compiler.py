@@ -418,7 +418,7 @@ class SnowflakeCompiler(SQLGlotCompiler):
 
     @visit_node.register(ops.Unnest)
     def visit_Unnest(self, op, *, arg):
-        return sg.exp.Explode(this=arg)
+        return self.cast(self.f.nullif(sg.exp.Explode(this=arg), ""), op.dtype)
 
     @visit_node.register(ops.StringJoin)
     def visit_StringJoin(self, op, *, arg, sep):
