@@ -42,11 +42,8 @@ def temp_schema(con, temp_db):
 
 def test_cross_db_access(con, temp_db, temp_schema):
     table = gen_name("tmp_table")
-    with con.begin() as c:
-        c.exec_driver_sql(
-            f'CREATE TABLE "{temp_db}"."{temp_schema}"."{table}" ("x" INT)'
-        )
-    t = con.table(table, schema=f"{temp_db}.{temp_schema}")
+    con.raw_sql(f'CREATE TABLE "{temp_db}"."{temp_schema}"."{table}" ("x" INT)').close()
+    t = con.table(table, schema=temp_schema, database=temp_db)
     assert t.schema() == ibis.schema(dict(x="int"))
     assert t.execute().empty
 
@@ -156,14 +153,12 @@ def test_drop_current_db_not_allowed(db_con):
 
     assert db_con.current_database == cur_db
 
-    with db_con.begin() as c:
-        c.exec_driver_sql(f'USE DATABASE "{database}"')
+    db_con.raw_sql(f'USE DATABASE "{database}"').close()
 
     with pytest.raises(com.UnsupportedOperationError, match="behavior is undefined"):
         db_con.drop_database(database)
 
-    with db_con.begin() as c:
-        c.exec_driver_sql(f"USE DATABASE {cur_db}")
+    db_con.raw_sql(f'USE DATABASE "{cur_db}"').close()
 
     db_con.drop_database(database)
 
@@ -176,14 +171,12 @@ def test_drop_current_schema_not_allowed(schema_con):
 
     assert schema_con.current_schema == cur_schema
 
-    with schema_con.begin() as c:
-        c.exec_driver_sql(f'USE SCHEMA "{schema}"')
+    schema_con.raw_sql(f'USE SCHEMA "{schema}"').close()
 
     with pytest.raises(com.UnsupportedOperationError, match="behavior is undefined"):
         schema_con.drop_schema(schema)
 
-    with schema_con.begin() as c:
-        c.exec_driver_sql(f"USE SCHEMA {cur_schema}")
+    schema_con.raw_sql(f'USE SCHEMA "{cur_schema}"').close()
 
     schema_con.drop_schema(schema)
 

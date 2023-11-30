@@ -30,6 +30,12 @@ except ImportError:
     DuckDBNotImplementedException = DuckDBParserException = None
 
 
+try:
+    from snowflake.connector.errors import ProgrammingError as SnowflakeProgrammingError
+except ImportError:
+    SnowflakeProgrammingError = None
+
+
 limit = [
     param(
         42,
@@ -365,9 +371,8 @@ def test_table_to_csv_writer_kwargs(delimiter, tmp_path, awards_players):
             marks=[
                 pytest.mark.notyet(["impala"], reason="precision not supported"),
                 pytest.mark.notyet(["duckdb"], reason="precision is out of range"),
-                pytest.mark.notyet(
-                    ["druid", "snowflake", "trino"], raises=sa.exc.ProgrammingError
-                ),
+                pytest.mark.notyet(["druid", "trino"], raises=sa.exc.ProgrammingError),
+                pytest.mark.notyet(["snowflake"], raises=SnowflakeProgrammingError),
                 pytest.mark.notyet(["oracle"], raises=sa.exc.DatabaseError),
                 pytest.mark.notyet(["mssql", "mysql"], raises=sa.exc.OperationalError),
                 pytest.mark.notyet(

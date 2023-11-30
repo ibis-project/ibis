@@ -48,6 +48,12 @@ try:
 except ImportError:
     ExaQueryError = None
 
+try:
+    from snowflake.connector.errors import ProgrammingError as SnowflakeProgrammingError
+except ImportError:
+    SnowflakeProgrammingError = None
+
+
 NULL_BACKEND_TYPES = {
     "bigquery": "NULL",
     "clickhouse": "Nullable(Nothing)",
@@ -1546,8 +1552,13 @@ def test_static_table_slice(backend, slc, expected_count_fn):
     ids=str,
 )
 @pytest.mark.notyet(
-    ["mysql", "snowflake", "trino"],
+    ["mysql", "trino"],
     raises=sa.exc.ProgrammingError,
+    reason="backend doesn't support dynamic limit/offset",
+)
+@pytest.mark.notyet(
+    ["snowflake"],
+    raises=SnowflakeProgrammingError,
     reason="backend doesn't support dynamic limit/offset",
 )
 @pytest.mark.notimpl(
@@ -1594,13 +1605,18 @@ def test_dynamic_table_slice(backend, slc, expected_count_fn):
 
 
 @pytest.mark.notyet(
-    ["mysql", "snowflake", "trino"],
+    ["mysql", "trino"],
     raises=sa.exc.ProgrammingError,
     reason="backend doesn't support dynamic limit/offset",
 )
 @pytest.mark.notimpl(
     ["exasol"],
     raises=sa.exc.CompileError,
+)
+@pytest.mark.notyet(
+    ["snowflake"],
+    raises=SnowflakeProgrammingError,
+    reason="backend doesn't support dynamic limit/offset",
 )
 @pytest.mark.notyet(
     ["clickhouse"],
