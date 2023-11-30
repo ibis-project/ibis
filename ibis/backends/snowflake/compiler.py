@@ -163,8 +163,8 @@ class SnowflakeCompiler(SQLGlotCompiler):
         return self.visit_Cast(ops.Cast(op.arg, to=op.dtype), arg=arg, to=op.dtype)
 
     @visit_node.register(ops.ApproxMedian)
-    def visit_ApproxMedian(self, op, *, arg):
-        return self.f.approx_percentile(arg, 0.5)
+    def visit_ApproxMedian(self, op, *, arg, where):
+        return self.agg.approx_percentile(arg, 0.5, where=where)
 
     @visit_node.register(ops.TimeDelta)
     def visit_TimeDelta(self, op, *, part, left, right):
