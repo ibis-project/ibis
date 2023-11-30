@@ -840,7 +840,7 @@ def test_reduction_ops(
             id="cond",
             marks=[
                 pytest.mark.notyet(
-                    ["snowflake", "mysql"],
+                    ["mysql"],
                     raises=com.UnsupportedOperationError,
                     reason="backend does not support filtered count distinct with more than one column",
                 ),
@@ -1075,7 +1075,7 @@ def test_quantile(
                     reason="Correlation with how='sample' is not supported.",
                 ),
                 pytest.mark.notyet(
-                    ["trino", "postgres", "snowflake", "oracle"],
+                    ["trino", "postgres", "oracle"],
                     raises=ValueError,
                     reason="XXXXSQLExprTranslator only implements population correlation coefficient",
                 ),

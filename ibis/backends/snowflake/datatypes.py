@@ -6,6 +6,10 @@ from ibis.backends.base.sqlglot.datatypes import SqlglotType
 
 class SnowflakeType(SqlglotType):
     dialect = "snowflake"
+
+    default_decimal_precision = 38
+    default_decimal_scale = 9
+
     default_temporal_scale = 9
 
     @classmethod

@@ -5,11 +5,18 @@ from functools import reduce, singledispatchmethod
 
 import sqlglot as sg
 from public import public
+from sqlglot import exp
+from sqlglot.dialects import Snowflake
+from sqlglot.dialects.dialect import rename_func
 
 import ibis.common.exceptions as com
 import ibis.expr.operations as ops
 from ibis.backends.base.sqlglot.compiler import NULL, SQLGlotCompiler
 from ibis.backends.snowflake.datatypes import SnowflakeType
+
+Snowflake.Generator.TRANSFORMS[exp.ApproxDistinct] = rename_func(
+    "approx_count_distinct"
+)
 
 
 @public
@@ -385,6 +392,32 @@ class SnowflakeCompiler(SQLGlotCompiler):
             arg = self.if_(where, arg, NULL)
         return self.f.percentile_cont(arg, quantile)
 
+    @visit_node.register(ops.CountStar)
+    def visit_CountStar(self, op, *, arg, where):
+        if where is None:
+            return super().visit_node(op, arg=arg, where=where)
+        return self.f.count_if(where)
+
+    @visit_node.register(ops.CountDistinct)
+    def visit_CountDistinct(self, op, *, arg, where):
+        if where is not None:
+            arg = self.if_(where, arg, NULL)
+        return self.f.count(sg.exp.Distinct(expressions=[arg]))
+
+    @visit_node.register(ops.CountDistinctStar)
+    def visit_CountDistinctStar(self, op, *, arg, where):
+        if where is None:
+            expressions = [
+                sg.column(name, quoted=self.quoted) for name in op.arg.schema.names
+            ]
+        else:
+            # any null columns will cause the entire row not to be counted
+            expressions = [
+                self.if_(where, sg.column(name, quoted=self.quoted), NULL)
+                for name in op.arg.schema.names
+            ]
+        return self.f.count(sg.exp.Distinct(expressions=expressions))
+
     @visit_node.register(ops.ArrayMap)
     @visit_node.register(ops.ArrayFilter)
     @visit_node.register(ops.RowID)
@@ -432,7 +465,6 @@ _SIMPLE_OPS = {
     ops.Reverse: "reverse",
     ops.StringAscii: "ascii",
     ops.StringReplace: "replace",
-    ops.ApproxCountDistinct: "approx_count_distinct",
 }
 
 for _op, _name in _SIMPLE_OPS.items():

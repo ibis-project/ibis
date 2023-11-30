@@ -441,7 +441,6 @@ class DataFusionCompiler(SQLGlotCompiler):
 
 
 _SIMPLE_OPS = {
-    ops.ApproxCountDistinct: "approx_distinct",
     ops.ApproxMedian: "approx_median",
     ops.ArrayLength: "array_length",
     ops.ArrayRemove: "array_remove_all",
