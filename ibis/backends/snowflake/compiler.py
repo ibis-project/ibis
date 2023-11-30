@@ -13,10 +13,23 @@ import ibis.common.exceptions as com
 import ibis.expr.operations as ops
 from ibis.backends.base.sqlglot.compiler import NULL, SQLGlotCompiler
 from ibis.backends.snowflake.datatypes import SnowflakeType
+from ibis.common.patterns import replace
+from ibis.expr.analysis import p, x, y
 
 Snowflake.Generator.TRANSFORMS[exp.ApproxDistinct] = rename_func(
     "approx_count_distinct"
 )
+
+
+@replace(p.WindowFunction(p.First(x, y)))
+def rewrite_first(_, x, y):
+    return ops.ArrayIndex(_.copy(func=ops.ArrayCollect(x, where=y)), 0)
+
+
+@replace(p.WindowFunction(p.Last(x, y)))
+def rewrite_last(_, x, y):
+    window_func = _.copy(func=ops.ArrayCollect(x, where=y))
+    return ops.ArrayIndex(window_func, ops.Subtract(ops.ArrayLength(window_func), -1))
 
 
 @public
@@ -26,6 +39,7 @@ class SnowflakeCompiler(SQLGlotCompiler):
     dialect = "snowflake"
     quoted = True
     type_mapper = SnowflakeType
+    rewrites = (*SQLGlotCompiler.rewrites, rewrite_first, rewrite_last)
 
     def _aggregate(self, funcname: str, *args, where):
         if where is not None:
@@ -284,11 +298,9 @@ class SnowflakeCompiler(SQLGlotCompiler):
         if where is None:
             return self.f.listagg(arg, sep)
 
-        arg = self.if_(where, arg, None)
-
         return self.if_(
-            self.f.count_if(arg.is_(sg.not_(NULL))).neq(0),
-            self.f.listagg(arg, sep),
+            self.f.count_if(where) > 0,
+            self.f.listagg(self.if_(where, arg, None), sep),
             NULL,
         )
 
