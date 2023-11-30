@@ -419,7 +419,7 @@ class Backend(BaseBackend, CanCreateDatabase):
     def create_view(
         self,
         name: str,
-        obj: ir.Table,
+        obj: pd.DataFrame | ir.Table | None = None,
         *,
         database: str | None = None,
         catalog: str | None = None,
@@ -448,6 +448,10 @@ class Backend(BaseBackend, CanCreateDatabase):
         """
         if obj is None:
             raise exc.IbisError("The obj parameter is required")
+
+        if isinstance(obj, ir.Table):
+            # TODO(chloeh13q): implement CREATE VIEW for expressions
+            raise NotImplementedError
 
         if overwrite and self.list_views(name):
             self.drop_view(name=name, catalog=catalog, database=database, force=True)
