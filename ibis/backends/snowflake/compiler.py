@@ -11,8 +11,9 @@ from sqlglot.dialects.dialect import rename_func
 
 import ibis
 import ibis.common.exceptions as com
+import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
-from ibis.backends.base.sqlglot.compiler import NULL, SQLGlotCompiler
+from ibis.backends.base.sqlglot.compiler import NULL, STAR, SQLGlotCompiler
 from ibis.backends.snowflake.datatypes import SnowflakeType
 from ibis.common.patterns import replace
 from ibis.expr.analysis import p, x, y
@@ -45,6 +46,11 @@ def rewrite_empty_order_by_window(_, x):
     return _.copy(frame=x.copy(order_by=(ibis.NA,)))
 
 
+@replace(p.WindowFunction(ops.RowNumber, x))
+def exclude_unsupported_window_frame_from_row_number(_, x):
+    return _.copy(frame=x.copy(start=None, end=None))
+
+
 @public
 class SnowflakeCompiler(SQLGlotCompiler):
     __slots__ = ()
@@ -53,10 +59,11 @@ class SnowflakeCompiler(SQLGlotCompiler):
     quoted = True
     type_mapper = SnowflakeType
     rewrites = (
-        *SQLGlotCompiler.rewrites,
+        exclude_unsupported_window_frame_from_row_number,
         rewrite_first,
         rewrite_last,
         rewrite_empty_order_by_window,
+        *SQLGlotCompiler.rewrites,
     )
 
     def _aggregate(self, funcname: str, *args, where):
@@ -451,6 +458,35 @@ class SnowflakeCompiler(SQLGlotCompiler):
                 for name in op.arg.schema.names
             ]
         return self.f.count(sg.exp.Distinct(expressions=expressions))
+
+    @visit_node.register(ops.Xor)
+    def visit_Xor(self, op, *, left, right):
+        # boolxor accepts numerics ... and returns a boolean? wtf?
+        return self.f.boolxor(self.cast(left, dt.int8), self.cast(right, dt.int8))
+
+    @visit_node.register(ops.Limit)
+    def visit_Limit(self, op, *, parent, n, offset):
+        result = sg.select(STAR).from_(parent)
+
+        if isinstance(n, int):
+            result = result.limit(n)
+        elif n is not None:
+            result = result.limit(sg.select(n).from_(parent).subquery())
+        else:
+            assert n is None, n
+            result = result.limit(NULL)
+
+        assert offset is not None, "offset is None"
+
+        if not isinstance(offset, int):
+            skip = offset
+            skip = sg.select(skip).from_(parent).subquery()
+        elif not offset:
+            return result
+        else:
+            skip = offset
+
+        return result.offset(skip)
 
     @visit_node.register(ops.ArrayMap)
     @visit_node.register(ops.ArrayFilter)
