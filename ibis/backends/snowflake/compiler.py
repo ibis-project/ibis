@@ -10,7 +10,6 @@ import ibis.common.exceptions as com
 import ibis.expr.operations as ops
 from ibis.backends.base.sqlglot.compiler import NULL, SQLGlotCompiler
 from ibis.backends.snowflake.datatypes import SnowflakeType
-from ibis.common.deferred import _
 
 
 @public
@@ -163,7 +162,7 @@ class SnowflakeCompiler(SQLGlotCompiler):
     @visit_node.register(ops.ToJSONArray)
     @visit_node.register(ops.ToJSONMap)
     def visit_ToJSON(self, op, *, arg):
-        return self.cast(arg, op.dtype)
+        return self.visit_Cast(ops.Cast(op.arg, to=op.dtype), arg=arg, to=op.dtype)
 
     @visit_node.register(ops.ApproxMedian)
     def visit_ApproxMedian(self, op, *, arg):
@@ -262,9 +261,9 @@ class SnowflakeCompiler(SQLGlotCompiler):
         )
 
     @visit_node.register(ops.TimestampFromUNIX)
-    def visit_DayOfWeekName(self, op, *, arg):
+    def visit_TimestampFromUNIX(self, op, *, arg, unit):
         timestamp_units_to_scale = {"s": 0, "ms": 3, "us": 6, "ns": 9}
-        return self.f.to_timestamp(arg, timestamp_units_to_scale[op.unit.short])
+        return self.f.to_timestamp(arg, timestamp_units_to_scale[unit.short])
 
     @visit_node.register(ops.First)
     def visit_First(self, op, *, arg, where):
@@ -374,6 +373,10 @@ class SnowflakeCompiler(SQLGlotCompiler):
     def visit_Unnest(self, op, *, arg):
         return sg.exp.Explode(this=arg)
 
+    @visit_node.register(ops.StringJoin)
+    def visit_StringJoin(self, op, *, arg, sep):
+        return self.f.array_to_string(self.f.array(*arg), sep)
+
     @visit_node.register(ops.ArrayMap)
     @visit_node.register(ops.ArrayFilter)
     @visit_node.register(ops.RowID)
@@ -415,12 +418,12 @@ _SIMPLE_OPS = {
     ops.BitwiseNot: "bitnot",
     ops.BitwiseLeftShift: "bitshiftleft",
     ops.BitwiseRightShift: "bitshiftright",
-    ops.StringJoin: "array_to_string",
     ops.LPad: "lpad",
     ops.RPad: "rpad",
     ops.Reverse: "reverse",
     ops.StringAscii: "ascii",
     ops.StringReplace: "replace",
+    ops.ApproxCountDistinct: "approx_count_distinct",
 }
 
 for _op, _name in _SIMPLE_OPS.items():
