@@ -1286,6 +1286,7 @@ def test_hash_consistent(backend, alltypes):
         "pyspark",
         "sqlite",
         "exasol",
+        "snowflake",
     ]
 )
 @pytest.mark.parametrize(
@@ -1358,6 +1359,7 @@ def test_try_cast_expected(con, from_val, to_type, expected):
         "pyspark",
         "sqlite",
         "exasol",
+        "snowflake",
     ]
 )
 def test_try_cast_table(backend, con):
@@ -1387,6 +1389,7 @@ def test_try_cast_table(backend, con):
         "pyspark",
         "sqlite",
         "exasol",
+        "snowflake",
     ]
 )
 @pytest.mark.parametrize(
