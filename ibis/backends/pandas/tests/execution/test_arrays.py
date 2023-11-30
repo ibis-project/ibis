@@ -139,7 +139,7 @@ def test_array_index(t, df, index):
     expected = pd.DataFrame(
         {
             "indexed": df.array_of_float64.apply(
-                lambda x: x[index] if -len(x) <= index < len(x) else np.nan
+                lambda x: x[index] if -len(x) <= index < len(x) else None
             )
         }
     )

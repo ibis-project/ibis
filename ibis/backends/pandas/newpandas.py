@@ -9,7 +9,7 @@ import pandas as pd
 
 import ibis.expr.operations as ops
 from ibis import util
-from ibis.backends.pandas.newutils import asframe
+from ibis.backends.pandas.newutils import asframe, columnwise
 from ibis.backends.pandas.rewrites import (
     ColumnRef,
     PandasAggregate,
@@ -18,6 +18,7 @@ from ibis.backends.pandas.rewrites import (
 )
 from ibis.common.exceptions import OperationNotDefinedError
 from ibis.formats.pandas import PandasData, PandasSchema, PandasType
+
 
 ################## PANDAS SPECIFIC NODES ######################
 
@@ -514,25 +515,20 @@ def execute_timestamp_diff(op, left, right):
 
 @execute.register(ops.Greatest)
 def execute_greatest(op, arg):
-    # TODO(kszucs): create a pandas dataframe instead and use `max(axis=1)`
-    values = _broadcast_scalars(arg)
-    return np.maximum.reduce(values, axis=0)
+    return columnwise(lambda df: df.max(axis=1), arg)
+
 
 
 @execute.register(ops.Least)
 def execute_least(op, arg):
-    # TODO(kszucs): create a pandas dataframe instead and use `min(axis=1)`
-    values = _broadcast_scalars(arg)
-    return np.minimum.reduce(values, axis=0)
+    return columnwise(lambda df: df.min(axis=1), arg)
+
 
 
 @execute.register(ops.Coalesce)
-def execute_coalesce(op, arg, **kwargs):
-    values = _broadcast_scalars(arg)
-    return reduce(
-        lambda a1, a2: np.where(pd.isnull(a1), a2, a1),
-        values,
-    )
+def execute_coalesce(op, arg):
+    return columnwise(lambda df: df.bfill(axis=1).iloc[:, 0], arg)
+
 
 
 @execute.register(ops.Between)

@@ -156,7 +156,7 @@ class ArrayStringJoin(Value):
 @public
 class StartsWith(Value):
     arg: Value[dt.String]
-    start: Value[dt.String, ds.Scalar]
+    start: Value[dt.String]
 
     dtype = dt.boolean
     shape = rlz.shape_like("arg")
@@ -165,7 +165,7 @@ class StartsWith(Value):
 @public
 class EndsWith(Value):
     arg: Value[dt.String]
-    end: Value[dt.String, ds.Scalar]
+    end: Value[dt.String]
 
     dtype = dt.boolean
     shape = rlz.shape_like("arg")

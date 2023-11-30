@@ -11,11 +11,6 @@ import pandas as pd
 import toolz
 from pandas.core.groupby import SeriesGroupBy
 
-try:
-    import regex as re
-except ImportError:
-    import re
-
 import ibis.expr.operations as ops
 import ibis.util
 from ibis.backends.pandas.core import execute, integer_types, scalar_types
@@ -23,177 +18,9 @@ from ibis.backends.pandas.dispatch import execute_node
 from ibis.backends.pandas.execution.util import get_grouping
 
 
-@execute_node.register(
-    ops.Substring, pd.Series, integer_types, (type(None), *integer_types)
-)
-def execute_substring_int_int(op, data, start, length, **kwargs):
-    if length is None:
-        return data.str[start:]
-    else:
-        return data.str[start : start + length]
-
-
-@execute_node.register(ops.Substring, pd.Series, pd.Series, integer_types)
-def execute_substring_series_int(op, data, start, length, **kwargs):
-    return execute_substring_series_series(
-        op, data, start, pd.Series(np.repeat(length, len(start))), **kwargs
-    )
-
-
-@execute_node.register(ops.Substring, pd.Series, integer_types, pd.Series)
-def execute_string_substring_int_series(op, data, start, length, **kwargs):
-    return execute_substring_series_series(
-        op, data, pd.Series(np.repeat(start, len(length))), length, **kwargs
-    )
-
-
-@execute_node.register(ops.Substring, pd.Series, pd.Series, pd.Series)
-def execute_substring_series_series(op, data, start, length, **kwargs):
-    end = start + length
-
-    return pd.Series(
-        [
-            None
-            if (begin is not None and pd.isnull(begin))
-            or (stop is not None and pd.isnull(stop))
-            else value[begin:stop]
-            for value, begin, stop in zip(data, start.values, end.values)
-        ],
-        dtype=data.dtype,
-        name=data.name,
-    )
-
-
-@execute_node.register(ops.Strip, pd.Series)
-def execute_string_strip(op, data, **kwargs):
-    return data.str.strip()
-
-
-@execute_node.register(ops.LStrip, pd.Series)
-def execute_string_lstrip(op, data, **kwargs):
-    return data.str.lstrip()
-
-
-@execute_node.register(ops.RStrip, pd.Series)
-def execute_string_rstrip(op, data, **kwargs):
-    return data.str.rstrip()
-
-
-@execute_node.register(
-    ops.LPad, pd.Series, (pd.Series,) + integer_types, (pd.Series, str)
-)
-def execute_string_lpad(op, data, length, pad, **kwargs):
-    return data.str.pad(length, side="left", fillchar=pad)
-
-
-@execute_node.register(
-    ops.RPad, pd.Series, (pd.Series,) + integer_types, (pd.Series, str)
-)
-def execute_string_rpad(op, data, length, pad, **kwargs):
-    return data.str.pad(length, side="right", fillchar=pad)
-
-
-@execute_node.register(ops.Reverse, pd.Series)
-def execute_string_reverse(op, data, **kwargs):
-    return data.str[::-1]
-
-
-@execute_node.register(ops.Lowercase, pd.Series)
-def execute_string_lower(op, data, **kwargs):
-    return data.str.lower()
-
-
-@execute_node.register(ops.Uppercase, pd.Series)
-def execute_string_upper(op, data, **kwargs):
-    return data.str.upper()
-
-
-@execute_node.register(ops.Capitalize, (pd.Series, str))
-def execute_string_capitalize(op, data, **kwargs):
-    return getattr(data, "str", data).capitalize()
-
-
-@execute_node.register(ops.Repeat, pd.Series, (pd.Series,) + integer_types)
-def execute_string_repeat(op, data, times, **kwargs):
-    return data.str.repeat(times)
-
-
 @execute_node.register(ops.StringContains, pd.Series, (pd.Series, str))
 def execute_string_contains(_, data, needle, **kwargs):
     return data.str.contains(needle)
-
-
-@execute_node.register(
-    ops.StringFind,
-    pd.Series,
-    (pd.Series, str),
-    (pd.Series, type(None)) + integer_types,
-    (pd.Series, type(None)) + integer_types,
-)
-def execute_string_find(op, data, needle, start, end, **kwargs):
-    return data.str.find(needle, start, end)
-
-
-def _sql_like_to_regex(pattern, escape):
-    cur_i = 0
-    pattern_length = len(pattern)
-
-    while cur_i < pattern_length:
-        nxt_i = cur_i + 1
-
-        cur = pattern[cur_i]
-        nxt = pattern[nxt_i] if nxt_i < pattern_length else None
-
-        skip = 1
-
-        if nxt is not None and escape is not None and cur == escape:
-            yield nxt
-            skip = 2
-        elif cur == "%":
-            yield ".*"
-        elif cur == "_":
-            yield "."
-        else:
-            yield cur
-
-        cur_i += skip
-
-
-def sql_like_to_regex(pattern: str, escape: str | None = None) -> str:
-    """Convert a SQL `LIKE` pattern to an equivalent Python regular expression.
-
-    Parameters
-    ----------
-    pattern
-        A LIKE pattern with the following semantics:
-        * `%` matches zero or more characters
-        * `_` matches exactly one character
-        * To escape `%` and `_` (or to match the `escape` parameter
-          itself), prefix the desired character with `escape`.
-    escape
-        Escape character
-
-    Returns
-    -------
-    str
-        A regular expression pattern equivalent to the input SQL `LIKE` pattern.
-
-    Examples
-    --------
-    >>> sql_like_to_regex("6%")  # default is to not escape anything
-    '^6.*$'
-    >>> sql_like_to_regex("6^%", escape="^")
-    '^6%$'
-    >>> sql_like_to_regex("6_")
-    '^6.$'
-    >>> sql_like_to_regex("6/_", escape="/")
-    '^6_$'
-    >>> sql_like_to_regex("%abc")  # any string ending with "abc"
-    '^.*abc$'
-    >>> sql_like_to_regex("abc%")  # any string starting with "abc"
-    '^abc.*$'
-    """
-    return f"^{''.join(_sql_like_to_regex(pattern, escape))}$"
 
 
 @execute_node.register(ops.StringSQLLike, pd.Series, str, (str, type(None)))
@@ -233,41 +60,6 @@ def execute_group_concat_series_gb_mask(op, data, sep, mask, aggcontext=None, **
         data,
         lambda data, mask=mask.obj, method=method: method(data[mask[data.index]]),
     )
-
-
-@execute_node.register(ops.StringAscii, pd.Series)
-def execute_string_ascii(op, data, **kwargs):
-    return data.map(ord).astype("int32")
-
-
-@execute_node.register(ops.StringAscii, SeriesGroupBy)
-def execute_string_ascii_group_by(op, data, **kwargs):
-    return execute_string_ascii(op, data, **kwargs).groupby(
-        get_grouping(data.grouper.groupings), group_keys=False
-    )
-
-
-@execute_node.register(ops.RegexSearch, pd.Series, str)
-def execute_series_regex_search(op, data, pattern, **kwargs):
-    pattern = re.compile(pattern)
-    return data.map(lambda x, pattern=pattern: pattern.search(x) is not None)
-
-
-@execute_node.register(ops.RegexSearch, SeriesGroupBy, str)
-def execute_series_regex_search_gb(op, data, pattern, **kwargs):
-    return execute_series_regex_search(
-        op, data, getattr(pattern, "obj", pattern), **kwargs
-    ).groupby(get_grouping(data.grouper.groupings), group_keys=False)
-
-
-@execute_node.register(ops.StartsWith, pd.Series, str)
-def execute_series_starts_with(op, data, pattern, **kwargs):
-    return data.str.startswith(pattern)
-
-
-@execute_node.register(ops.EndsWith, pd.Series, str)
-def execute_series_ends_with(op, data, pattern, **kwargs):
-    return data.str.endswith(pattern)
 
 
 @execute_node.register(ops.RegexExtract, pd.Series, str, integer_types)
@@ -347,24 +139,6 @@ def execute_series_translate_scalar_series(op, data, from_string, to_string, **k
 @execute_node.register(ops.Translate, pd.Series, str, str)
 def execute_series_translate_scalar_scalar(op, data, from_string, to_string, **kwargs):
     return data.str.translate(str.maketrans(from_string, to_string))
-
-
-@execute_node.register(ops.StrRight, pd.Series, integer_types)
-def execute_series_right(op, data, nchars, **kwargs):
-    return data.str[-nchars:]
-
-
-@execute_node.register(ops.StrRight, SeriesGroupBy, integer_types)
-def execute_series_right_gb(op, data, nchars, **kwargs):
-    return execute_series_right(op, data.obj, nchars).groupby(
-        get_grouping(data.grouper.groupings), group_keys=False
-    )
-
-
-@execute_node.register(ops.StringJoin, (pd.Series, str), tuple)
-def execute_series_join_scalar_sep(op, sep, args, **kwargs):
-    data = [execute(arg, **kwargs) for arg in args]
-    return reduce(lambda x, y: x + sep + y, data)
 
 
 def haystack_to_series_of_lists(haystack, index=None):
