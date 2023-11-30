@@ -206,19 +206,13 @@ def calc_zscore(s):
             lambda t, win: t.float_col.first().over(win),
             lambda t: t.float_col.transform("first"),
             id="first",
-            marks=[
-                pytest.mark.notimpl(["dask"], raises=NotImplementedError),
-                pytest.mark.notimpl(["snowflake"], raises=Exception),
-            ],
+            marks=pytest.mark.notimpl(["dask"], raises=NotImplementedError),
         ),
         param(
             lambda t, win: t.float_col.last().over(win),
             lambda t: t.float_col.transform("last"),
             id="last",
-            marks=[
-                pytest.mark.notimpl(["dask"], raises=NotImplementedError),
-                pytest.mark.notimpl(["snowflake"], raises=Exception),
-            ],
+            marks=pytest.mark.notimpl(["dask"], raises=NotImplementedError),
         ),
         param(
             lambda t, win: t.double_col.nth(3).over(win),

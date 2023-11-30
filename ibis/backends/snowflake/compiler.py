@@ -23,13 +23,20 @@ Snowflake.Generator.TRANSFORMS[exp.ApproxDistinct] = rename_func(
 
 @replace(p.WindowFunction(p.First(x, y)))
 def rewrite_first(_, x, y):
-    return ops.ArrayIndex(_.copy(func=ops.ArrayCollect(x, where=y)), 0)
+    if y is not None:
+        raise com.UnsupportedOperationError(
+            "`first` aggregate over window does not support `where`"
+        )
+    return _.copy(func=ops.FirstValue(x))
 
 
 @replace(p.WindowFunction(p.Last(x, y)))
 def rewrite_last(_, x, y):
-    window_func = _.copy(func=ops.ArrayCollect(x, where=y))
-    return ops.ArrayIndex(window_func, ops.Subtract(ops.ArrayLength(window_func), -1))
+    if y is not None:
+        raise com.UnsupportedOperationError(
+            "`last` aggregate over window does not support `where`"
+        )
+    return _.copy(func=ops.LastValue(x))
 
 
 @public
