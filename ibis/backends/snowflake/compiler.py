@@ -399,7 +399,9 @@ class SnowflakeCompiler(SQLGlotCompiler):
 
     @visit_node.register(ops.ExtractPath)
     def visit_ExtractPath(self, op, *, arg):
-        return "/" + self.f.as_varchar(self.f.get(self.f.parse_url(arg, 1), "path"))
+        return self.f.concat(
+            "/", self.f.as_varchar(self.f.get(self.f.parse_url(arg, 1), "path"))
+        )
 
     @visit_node.register(ops.ExtractFragment)
     def visit_ExtractFragment(self, op, *, arg):
