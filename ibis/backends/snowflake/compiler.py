@@ -376,10 +376,20 @@ class SnowflakeCompiler(SQLGlotCompiler):
     def visit_StringJoin(self, op, *, arg, sep):
         return self.f.array_to_string(self.f.array(*arg), sep)
 
+    @visit_node.register(ops.Quantile)
+    def visit_Quantile(self, op, *, arg, quantile, where):
+        # can't use `self.agg` here because `quantile` must be a constant and
+        # the agg method filters using `where` for every argument which turns
+        # the constant into an expression
+        if where is not None:
+            arg = self.if_(where, arg, NULL)
+        return self.f.percentile_cont(arg, quantile)
+
     @visit_node.register(ops.ArrayMap)
     @visit_node.register(ops.ArrayFilter)
     @visit_node.register(ops.RowID)
     @visit_node.register(ops.Translate)
+    @visit_node.register(ops.MultiQuantile)
     def visit_Undefined(self, op, **_):
         raise com.OperationNotDefinedError(type(op).__name__)
 
