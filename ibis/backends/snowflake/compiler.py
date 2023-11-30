@@ -9,6 +9,7 @@ from sqlglot import exp
 from sqlglot.dialects import Snowflake
 from sqlglot.dialects.dialect import rename_func
 
+import ibis
 import ibis.common.exceptions as com
 import ibis.expr.operations as ops
 from ibis.backends.base.sqlglot.compiler import NULL, SQLGlotCompiler
@@ -39,6 +40,11 @@ def rewrite_last(_, x, y):
     return _.copy(func=ops.LastValue(x))
 
 
+@replace(p.WindowFunction(frame=x @ p.WindowFrame(order_by=())))
+def rewrite_empty_order_by_window(_, x):
+    return _.copy(frame=x.copy(order_by=(ibis.NA,)))
+
+
 @public
 class SnowflakeCompiler(SQLGlotCompiler):
     __slots__ = ()
@@ -46,7 +52,12 @@ class SnowflakeCompiler(SQLGlotCompiler):
     dialect = "snowflake"
     quoted = True
     type_mapper = SnowflakeType
-    rewrites = (*SQLGlotCompiler.rewrites, rewrite_first, rewrite_last)
+    rewrites = (
+        *SQLGlotCompiler.rewrites,
+        rewrite_first,
+        rewrite_last,
+        rewrite_empty_order_by_window,
+    )
 
     def _aggregate(self, funcname: str, *args, where):
         if where is not None:
