@@ -89,14 +89,14 @@ class SnowflakeCompiler(SQLGlotCompiler):
             args.append(start)
         return self.f.position(*args)
 
-    def _gen_udf_name(self, name: str) -> str:
-        return f"ibis_udfs.public.{name}"
+    def _call_udf(self, name: str, *args, **kwargs) -> str:
+        return self.f[f"ibis_udfs.public.{name}"](*args, **kwargs)
 
     @visit_node.register(ops.Map)
     def visit_Map(self, op, *, keys, values):
         return self.if_(
             sg.and_(self.f.is_array(keys), self.f.is_array(values)),
-            sg.func(self._gen_udf_name("object_from_arrays"), keys, values),
+            self._call_udf("object_from_arrays", keys, values),
             NULL,
         )
 
@@ -107,9 +107,7 @@ class SnowflakeCompiler(SQLGlotCompiler):
     @visit_node.register(ops.MapValues)
     def visit_MapValues(self, op, *, arg):
         return self.if_(
-            self.f.is_object(arg),
-            sg.func(self._gen_udf_name("object_values"), arg),
-            NULL,
+            self.f.is_object(arg), self._call_udf("object_values", arg), NULL
         )
 
     @visit_node.register(ops.MapGet)
@@ -131,7 +129,7 @@ class SnowflakeCompiler(SQLGlotCompiler):
     def visit_MapMerge(self, op, *, left, right):
         return self.if_(
             sg.and_(self.f.is_object(left), self.f.is_object(right)),
-            sg.func(self._gen_udf_name("object_merge"), left, right),
+            self._call_udf("object_merge", left, right),
             NULL,
         )
 
@@ -206,7 +204,7 @@ class SnowflakeCompiler(SQLGlotCompiler):
 
     @visit_node.register(ops.ArrayRepeat)
     def visit_ArrayRepeat(self, op, *, arg, times):
-        return sg.func(self._gen_udf_name("array_repeat"), arg, times)
+        return self._call_udf("array_repeat", arg, times)
 
     @visit_node.register(ops.ArrayUnion)
     def visit_ArrayUnion(self, op, *, left, right):
@@ -241,8 +239,7 @@ class SnowflakeCompiler(SQLGlotCompiler):
 
     @visit_node.register(ops.ArrayZip)
     def visit_ArrayZip(self, op, *, arg):
-        func = self._gen_udf_name("array_zip")
-        return sg.func(func, self.f.array(*arg))
+        return self._call_udf("array_zip", self.f.array(*arg))
 
     @visit_node.register(ops.DayOfWeekName)
     def visit_DayOfWeekName(self, op, *, arg):

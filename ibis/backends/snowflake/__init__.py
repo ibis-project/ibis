@@ -387,24 +387,23 @@ $$"""
         with self._safe_raw_sql(f"DESCRIBE TABLE {table}") as cur:
             result = cur.fetchall()
 
-        fields = {
-            name: self.compiler.type_mapper.from_string(typ, nullable=nullable == "Y")
-            for name, typ, _, nullable, *_ in result
-        }
-        return ibis.schema(fields)
+        type_mapper = self.compiler.type_mapper
+        return ibis.schema(
+            {
+                name: type_mapper.from_string(typ, nullable=nullable == "Y")
+                for name, typ, _, nullable, *_ in result
+            }
+        )
 
     def _metadata(self, query: str) -> Iterable[tuple[str, dt.DataType]]:
-        with self._safe_raw_sql(f"{query}") as cur:
-            result = cur.description
+        with self._safe_raw_sql(query) as cur:
+            rows = cur.execute("DESC RESULT last_query_id()").fetchall()
 
-        for field in result:
-            name = field.name
-            type_name = sc.constants.FIELD_TYPES[field.type_code].name
-            is_nullable = field.is_nullable
-            yield (
-                name,
-                self.compiler.type_mapper.from_string(type_name, nullable=is_nullable),
-            )
+        type_mapper = self.compiler.type_mapper
+        return (
+            (name, type_mapper.from_string(type_name, nullable=nullable == "Y"))
+            for name, type_name, _, nullable, *_ in rows
+        )
 
     def list_databases(self, like: str | None = None) -> list[str]:
         with self._safe_raw_sql("SHOW DATABASES") as con:
