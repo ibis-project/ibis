@@ -455,6 +455,7 @@ class SnowflakeCompiler(SQLGlotCompiler):
     @visit_node.register(ops.RowID)
     @visit_node.register(ops.Translate)
     @visit_node.register(ops.MultiQuantile)
+    @visit_node.register(ops.IntervalFromInteger)
     def visit_Undefined(self, op, **_):
         raise com.OperationNotDefinedError(type(op).__name__)
 
