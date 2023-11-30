@@ -134,16 +134,18 @@ def execute_sort(op, parent, keys):
 
     return result.drop(newcols.keys(), axis=1)
 
+@execute.register(ColumnRef)
+def execute_column_ref(op, name, dtype):
+    return name
+# @execute.register(GroupBy)
+# def execute_group_by(op, parent, groups):
+#     return parent.groupby(list(groups))
 
-@execute.register(GroupBy)
-def execute_group_by(op, parent, groups):
-    return parent.groupby(list(groups))
 
-
-@execute.register(GroupByMetrics)
-def execute_group_by_metrics(op, parent, metrics):
-    # construct the result dataframe from the groups and metrics
-    return pd.concat(metrics, axis=1).reset_index()
+# @execute.register(GroupByMetrics)
+# def execute_group_by_metrics(op, parent, metrics):
+#     # construct the result dataframe from the groups and metrics
+#     return pd.concat(metrics, axis=1).reset_index()
 
 
 @execute.register(ops.Field)
@@ -227,13 +229,28 @@ _binary_operations = {
 
 
 @execute.register(ops.Unary)
-def execute_unary(op, arg):
+def execute_unary(op, arg, **kwargs):
     return _unary_operations[type(op)](arg)
 
 
 @execute.register(ops.Binary)
 def execute_equals(op, left, right):
     return _binary_operations[type(op)](left, right)
+
+@execute.register(ops.Log)
+def execute_log(op, arg, base):
+    if base is None:
+        return np.log(arg)
+    else:
+        return np.log(arg) / np.log(base)
+
+
+@execute.register(ops.Round)
+def execute_round(op, arg, digits):
+    if digits is None:
+        return np.round(arg)
+    else:
+        return np.round(arg, digits)
 
 
 @execute.register(ops.IfElse)
@@ -330,14 +347,15 @@ _reduction_functions = {
     ops.BitXor: lambda x: np.bitwise_xor.reduce(x.values),
     ops.Last: lambda x: x.iloc[-1],
     ops.First: lambda x: x.iloc[0],
+    ops.CountDistinct: lambda x: x.nunique(),
 }
 
 
-def agg(func, arg, where, **kwargs):
-    if where is None:
-        return arg.aggregate(func, **kwargs)
-    else:
-        return arg.aggregate(lambda x: func(x[where[x.index]]), **kwargs)
+# def agg(func, arg, where, **kwargs):
+#     if where is None:
+#         return arg.aggregate(func, **kwargs)
+#     else:
+#         return arg.aggregate(lambda x: func(x[where[x.index]]), **kwargs)
 
 
 @execute.register(ops.Reduction)
@@ -354,29 +372,54 @@ def execute_reduction(op, arg, where, **kwargs):
     # return call_numpy_ufunc(function, op, data, **kwargs)
     default_function = op.__class__.__name__.lower()
     # function = _reduction_functions.get(type(op), default_function)
+
+    # return agg(func, arg, where)
+
     func = _reduction_functions[type(op)]
-    return agg(func, arg, where)
+    if where:
+        def agg(df):
+            mask = df[where]
+            col = df[arg][mask]
+            return func(col)
+    else:
+        def agg(df):
+            return func(df[arg])
+
+    return agg
+
+@execute.register(PandasAggregate)
+def execute_pandas_aggregate(op, parent, groups, metrics):
+
+    groupby = parent.groupby(list(groups))
+    metrics = {k: groupby.apply(v) for k, v in metrics.items()}
+
+    result = pd.concat(metrics, axis=1).reset_index()
+    return result
+
+
+
+
 
 
 variance_ddof = {"pop": 0, "sample": 1}
 
 
-@execute.register(ops.Variance)
-def execute_variance(op, arg, where, how):
-    ddof = variance_ddof[how]
-    return agg(lambda x: x.var(ddof=ddof), arg, where)
+# @execute.register(ops.Variance)
+# def execute_variance(op, arg, where, how):
+#     ddof = variance_ddof[how]
+#     return agg(lambda x: x.var(ddof=ddof), arg, where)
 
 
-@execute.register(ops.StandardDev)
-def execute_standard_dev(op, arg, where, how):
-    ddof = variance_ddof[how]
-    return agg(lambda x: x.std(ddof=ddof), arg, where)
+# @execute.register(ops.StandardDev)
+# def execute_standard_dev(op, arg, where, how):
+#     ddof = variance_ddof[how]
+#     return agg(lambda x: x.std(ddof=ddof), arg, where)
 
 
-# @execute.register(ops.ArgMin)
-@execute.register(ops.ArgMax)
-def execute_argminmax(op, arg, key, where):
-    breakpoint()
+# # @execute.register(ops.ArgMin)
+# @execute.register(ops.ArgMax)
+# def execute_argminmax(op, arg, key, where):
+#     breakpoint()
 
 
 #     method = operator.methodcaller(op.__class__.__name__.lower())
@@ -394,25 +437,25 @@ def execute_argminmax(op, arg, key, where):
 #     return arg.
 
 
-@execute.register(ops.Arbitrary)
-def execute_arbitrary(op, arg, where, how):
-    # TODO(kszucs): could be rewritten to ops.Last and ops.First prior to execution
+# @execute.register(ops.Arbitrary)
+# def execute_arbitrary(op, arg, where, how):
+#     # TODO(kszucs): could be rewritten to ops.Last and ops.First prior to execution
 
-    if how == "first":
-        return agg(lambda x: x.iloc[0], arg, where)
-    elif how == "last":
-        return agg(lambda x: x.iloc[-1], arg, where)
-    else:
-        raise OperationNotDefinedError(f"Arbitrary {how!r} is not supported")
+#     if how == "first":
+#         return agg(lambda x: x.iloc[0], arg, where)
+#     elif how == "last":
+#         return agg(lambda x: x.iloc[-1], arg, where)
+#     else:
+#         raise OperationNotDefinedError(f"Arbitrary {how!r} is not supported")
 
 
-@execute.register(ops.CountDistinct)
-@execute.register(ops.ApproxCountDistinct)
-def execute_count_distinct(op, arg, where):
-    if where is not None:
-        arg = arg[where[arg.index]]
+# @execute.register(ops.CountDistinct)
+# @execute.register(ops.ApproxCountDistinct)
+# def execute_count_distinct(op, arg, where):
+#     if where is not None:
+#         arg = arg[where[arg.index]]
 
-    return arg.nunique()
+#     return arg.nunique()
 
 
 @execute.register(ops.CountStar)
@@ -508,12 +551,6 @@ def execute_between(op, arg, lower_bound, upper_bound):
     return arg.between(lower_bound, upper_bound)
 
 
-# NUMERIC
-
-
-@execute.register(ops.Round)
-def execute_round(op, arg, digits):
-    return np.round(arg, digits)
 
 
 def zuper(node):
