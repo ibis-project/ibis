@@ -67,6 +67,21 @@ class ColumnRef(ops.Value):
 
 
 @public
+class PandasReduce(ops.Relation):
+    parent: ops.Relation
+    metrics: FrozenDict[str, ops.Scalar]
+
+    @attribute
+    def fields(self):
+        return {}
+
+    @attribute
+    def schema(self):
+        metrics = {k: v.dtype for k, v in self.metrics.items()}
+        return Schema.from_tuples(metrics.items())
+
+
+@public
 class PandasAggregate(ops.Relation):
     parent: ops.Relation
     groups: VarTuple[str]
@@ -89,9 +104,6 @@ def flip(d):
 
 @replace(ops.Aggregate)
 def aggregate_to_groupby(_):
-    if not _.groups:
-        return ops.PandasProject(_.parent, _.metrics)
-
     # add all the computed groups to the pre-projection
     select_derefs = {ops.Field(_.parent, k): k for k in _.parent.schema}
     for _k, v in _.groups.items():
@@ -116,7 +128,10 @@ def aggregate_to_groupby(_):
     subs = {node: ColumnRef(name, node.dtype) for name, node in proj.fields.items()}
     groups = [select_derefs[node] for node in _.groups.values()]
     metrics = {name: node.replace(subs) for node, name in reduction_derefs.items()}
-    agg = PandasAggregate(proj, groups, metrics)
+    if groups:
+        agg = PandasAggregate(proj, groups, metrics)
+    else:
+        agg = PandasReduce(proj, metrics)
 
     # STEP 3: construct the post-projection
     subs = {node: ops.Field(agg, name) for node, name in reduction_derefs.items()}

@@ -9,7 +9,12 @@ import pandas as pd
 
 import ibis.expr.operations as ops
 from ibis import util
-from ibis.backends.pandas.rewrites import *
+from ibis.backends.pandas.rewrites import (
+    ColumnRef,
+    PandasAggregate,
+    PandasProject,
+    PandasReduce,
+)
 from ibis.common.exceptions import OperationNotDefinedError
 from ibis.formats.pandas import PandasData, PandasSchema, PandasType
 
@@ -134,9 +139,12 @@ def execute_sort(op, parent, keys):
 
     return result.drop(newcols.keys(), axis=1)
 
+
 @execute.register(ColumnRef)
 def execute_column_ref(op, name, dtype):
     return name
+
+
 # @execute.register(GroupBy)
 # def execute_group_by(op, parent, groups):
 #     return parent.groupby(list(groups))
@@ -237,6 +245,7 @@ def execute_unary(op, arg, **kwargs):
 def execute_equals(op, left, right):
     return _binary_operations[type(op)](left, right)
 
+
 @execute.register(ops.Log)
 def execute_log(op, arg, base):
     if base is None:
@@ -325,14 +334,7 @@ def execute_dropna(op, parent, how, subset):
     return parent.dropna(how=how, subset=subset)
 
 
-# def _filter_reduction(arg, where):
-#     if where is not None:
-#         return arg[where[arg.index]]
-#     else:
-#         return arg
-
 _reduction_functions = {
-    # ops.Variance: lambda x
     ops.Min: lambda x: x.min(),
     ops.Max: lambda x: x.max(),
     ops.Sum: lambda x: x.sum(),
@@ -348,48 +350,40 @@ _reduction_functions = {
     ops.Last: lambda x: x.iloc[-1],
     ops.First: lambda x: x.iloc[0],
     ops.CountDistinct: lambda x: x.nunique(),
+    ops.ApproxCountDistinct: lambda x: x.nunique(),
 }
 
 
-# def agg(func, arg, where, **kwargs):
-#     if where is None:
-#         return arg.aggregate(func, **kwargs)
-#     else:
-#         return arg.aggregate(lambda x: func(x[where[x.index]]), **kwargs)
+def agg(func, arg_column, where_column):
+    if where_column is None:
+
+        def applier(df):
+            return func(df[arg_column])
+    else:
+
+        def applier(df):
+            mask = df[where_column]
+            col = df[arg_column][mask]
+            return func(col)
+
+    return applier
 
 
 @execute.register(ops.Reduction)
-def execute_reduction(op, arg, where, **kwargs):
-    # TODO(kszucs): could rewrite the incoming expression to apply a
-    # ColumnFilter-like pandas operation
-    # arg = _filter_reduction(arg, where)
-
-    # op_type = type(op)
-    # if op_type == ops.BitwiseNot:
-    #     function = np.bitwise_not
-    # else:
-    #     function = getattr(np, op_type.__name__.lower())
-    # return call_numpy_ufunc(function, op, data, **kwargs)
-    default_function = op.__class__.__name__.lower()
-    # function = _reduction_functions.get(type(op), default_function)
-
-    # return agg(func, arg, where)
-
+def execute_reduction(op, arg, where):
     func = _reduction_functions[type(op)]
-    if where:
-        def agg(df):
-            mask = df[where]
-            col = df[arg][mask]
-            return func(col)
-    else:
-        def agg(df):
-            return func(df[arg])
+    return agg(func, arg, where)
 
-    return agg
+
+@execute.register(PandasReduce)
+def execute_pandas_reduce(op, parent, metrics):
+    metrics = {k: v(parent) for k, v in metrics.items()}
+    result = pd.DataFrame(metrics, index=[0])
+    return result
+
 
 @execute.register(PandasAggregate)
 def execute_pandas_aggregate(op, parent, groups, metrics):
-
     groupby = parent.groupby(list(groups))
     metrics = {k: groupby.apply(v) for k, v in metrics.items()}
 
@@ -397,71 +391,72 @@ def execute_pandas_aggregate(op, parent, groups, metrics):
     return result
 
 
-
-
-
-
 variance_ddof = {"pop": 0, "sample": 1}
 
 
-# @execute.register(ops.Variance)
-# def execute_variance(op, arg, where, how):
-#     ddof = variance_ddof[how]
-#     return agg(lambda x: x.var(ddof=ddof), arg, where)
+@execute.register(ops.Variance)
+def execute_variance(op, arg, where, how):
+    ddof = variance_ddof[how]
+    return agg(lambda x: x.var(ddof=ddof), arg, where)
 
 
-# @execute.register(ops.StandardDev)
-# def execute_standard_dev(op, arg, where, how):
-#     ddof = variance_ddof[how]
-#     return agg(lambda x: x.std(ddof=ddof), arg, where)
+@execute.register(ops.StandardDev)
+def execute_standard_dev(op, arg, where, how):
+    ddof = variance_ddof[how]
+    return agg(lambda x: x.std(ddof=ddof), arg, where)
 
 
-# # @execute.register(ops.ArgMin)
-# @execute.register(ops.ArgMax)
-# def execute_argminmax(op, arg, key, where):
-#     breakpoint()
+@execute.register(ops.ArgMin)
+@execute.register(ops.ArgMax)
+def execute_argminmax(op, arg, key, where):
+    func = operator.methodcaller(op.__class__.__name__.lower())
+
+    if where is None:
+
+        def agg(df):
+            indices = func(df[key])
+            return df[arg].iloc[indices]
+    else:
+
+        def agg(df):
+            mask = df[where]
+            filtered = df[mask]
+            indices = func(filtered[key])
+            return filtered[arg].iloc[indices]
+
+    return agg
 
 
-#     method = operator.methodcaller(op.__class__.__name__.lower())
+@execute.register(ops.ArrayCollect)
+def execute_array_collect(op, arg, where):
+    if where is None:
 
-#     # key = agg(method, key, where)
-#     # arg = _filter_reduction(arg, where)
-#     # key = _filter_reduction(key, where)
+        def agg(df):
+            return df[arg].tolist()
+    else:
 
-#     # return arg.iloc[method(key.loc[arg.index])]
+        def agg(df):
+            mask = df[where]
+            return df[arg][mask].tolist()
 
-
-# @execute.register(ops.ArrayCollect)
-# def execute_array_collect(op, arg, where):
-#     arg = _filter_reduction(arg, where)
-#     return arg.
-
-
-# @execute.register(ops.Arbitrary)
-# def execute_arbitrary(op, arg, where, how):
-#     # TODO(kszucs): could be rewritten to ops.Last and ops.First prior to execution
-
-#     if how == "first":
-#         return agg(lambda x: x.iloc[0], arg, where)
-#     elif how == "last":
-#         return agg(lambda x: x.iloc[-1], arg, where)
-#     else:
-#         raise OperationNotDefinedError(f"Arbitrary {how!r} is not supported")
+    return agg
 
 
-# @execute.register(ops.CountDistinct)
-# @execute.register(ops.ApproxCountDistinct)
-# def execute_count_distinct(op, arg, where):
-#     if where is not None:
-#         arg = arg[where[arg.index]]
-
-#     return arg.nunique()
+@execute.register(ops.Arbitrary)
+def execute_arbitrary(op, arg, where, how):
+    # TODO(kszucs): could be rewritten to ops.Last and ops.First prior to execution
+    if how == "first":
+        return agg(lambda x: x.iloc[0], arg, where)
+    elif how == "last":
+        return agg(lambda x: x.iloc[-1], arg, where)
+    else:
+        raise OperationNotDefinedError(f"Arbitrary {how!r} is not supported")
 
 
 @execute.register(ops.CountStar)
 def execute_count_star(op, arg, where):
     if where is None:
-        return len(arg)  # arg.size() if arg DataFrameGroupBy
+        return len(arg)
     else:
         return len(arg) - len(where) + where.sum()
 
@@ -551,8 +546,6 @@ def execute_between(op, arg, lower_bound, upper_bound):
     return arg.between(lower_bound, upper_bound)
 
 
-
-
 def zuper(node):
     from ibis.backends.pandas.rewrites import aggregate_to_groupby
 
@@ -562,7 +555,7 @@ def zuper(node):
 
     node = node.replace(aggregate_to_groupby)
 
-    print(node.to_expr())
+    # print(node.to_expr())
 
     result = node.map(fn)[node]
     return result
