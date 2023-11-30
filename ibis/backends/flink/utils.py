@@ -5,11 +5,9 @@ import math
 from abc import ABC, abstractmethod
 from collections import defaultdict
 
-from pyflink.table.types import DataTypes, RowType
-
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
-import ibis.expr.schema as sch
+from ibis.backends.flink.datatypes import FlinkType
 from ibis.common.temporal import IntervalUnit
 from ibis.util import convert_unit
 
@@ -247,27 +245,6 @@ def _translate_interval(value, dtype):
     return interval.format_as_string()
 
 
-_to_pyflink_types = {
-    dt.String: DataTypes.STRING(),
-    dt.Boolean: DataTypes.BOOLEAN(),
-    dt.Binary: DataTypes.BYTES(),
-    dt.Int8: DataTypes.TINYINT(),
-    dt.Int16: DataTypes.SMALLINT(),
-    dt.Int32: DataTypes.INT(),
-    dt.Int64: DataTypes.BIGINT(),
-    dt.UInt8: DataTypes.TINYINT(),
-    dt.UInt16: DataTypes.SMALLINT(),
-    dt.UInt32: DataTypes.INT(),
-    dt.UInt64: DataTypes.BIGINT(),
-    dt.Float16: DataTypes.FLOAT(),
-    dt.Float32: DataTypes.FLOAT(),
-    dt.Float64: DataTypes.DOUBLE(),
-    dt.Date: DataTypes.DATE(),
-    dt.Time: DataTypes.TIME(),
-    dt.Timestamp: DataTypes.TIMESTAMP(),
-}
-
-
 def translate_literal(op: ops.Literal) -> str:
     value = op.value
     dtype = op.dtype
@@ -275,7 +252,7 @@ def translate_literal(op: ops.Literal) -> str:
     if value is None:
         if dtype.is_null():
             return "NULL"
-        return f"CAST(NULL AS {_to_pyflink_types[type(dtype)]!s})"
+        return f"CAST(NULL AS {FlinkType.from_ibis(type(dtype))!s})"
 
     if dtype.is_boolean():
         # TODO(chloeh13q): Flink supports a third boolean called "UNKNOWN"
@@ -305,7 +282,7 @@ def translate_literal(op: ops.Literal) -> str:
                 raise ValueError("The precision can be up to 38 in Flink")
 
             return f"CAST({value} AS DECIMAL({precision}, {scale}))"
-        return f"CAST({value} AS {_to_pyflink_types[type(dtype)]!s})"
+        return f"CAST({value} AS {FlinkType.from_ibis(type(dtype))!s})"
     elif dtype.is_timestamp():
         # TODO(chloeh13q): support timestamp with local timezone
         if isinstance(value, datetime.datetime):
@@ -327,14 +304,3 @@ def translate_literal(op: ops.Literal) -> str:
         return f"ARRAY{list(value)}"
 
     raise NotImplementedError(f"No translation rule for {dtype}")
-
-
-def ibis_schema_to_flink_schema(schema: sch.Schema) -> RowType:
-    if schema is None:
-        return None
-    return DataTypes.ROW(
-        [
-            DataTypes.FIELD(key, _to_pyflink_types[type(value)])
-            for key, value in schema.fields.items()
-        ]
-    )
