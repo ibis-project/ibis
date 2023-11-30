@@ -7,55 +7,10 @@ import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 from ibis.common.annotations import attribute
 from ibis.common.collections import FrozenDict
-from ibis.common.grounds import Concrete
 from ibis.common.patterns import replace
 from ibis.common.typing import VarTuple
 from ibis.expr.schema import Schema
 from ibis.util import gen_name
-
-# Not a relation on its own
-# @public
-# class GroupBy(ops.Relation):
-#     parent: ops.Relation
-#     groups: VarTuple[str]
-
-#     @attribute
-#     def fields(self):
-#         return {}
-
-#     @attribute
-#     def schema(self):
-#         return self.parent.schema
-
-
-# @public
-# class GroupByMetrics(ops.Relation):
-#     parent: GroupBy
-#     metrics: FrozenDict[str, ops.Scalar]
-
-#     @attribute
-#     def fields(self):
-#         return {}
-
-#     @attribute
-#     def schema(self):
-#         groups = {k: self.parent.schema[k] for k in self.parent.groups}
-#         metrics = {k: v.dtype for k, v in self.metrics.items()}
-#         return Schema.from_tuples([*groups.items(), *metrics.items()])
-
-
-@public
-class PandasProject(ops.Relation):
-    parent: ops.Relation
-    values: FrozenDict[str, ops.Value]
-
-    @attribute
-    def fields(self):
-        return self.values
-
-    @attribute
-    def schema(self):
-        return Schema({k: v.dtype for k, v in self.values.items()})
 
 
 # TODO(kszucs): possibly not needed

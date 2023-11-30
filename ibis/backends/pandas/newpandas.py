@@ -13,12 +13,10 @@ from ibis.backends.pandas.newutils import asframe, columnwise
 from ibis.backends.pandas.rewrites import (
     ColumnRef,
     PandasAggregate,
-    PandasProject,
     PandasReduce,
 )
 from ibis.common.exceptions import OperationNotDefinedError
 from ibis.formats.pandas import PandasData, PandasSchema, PandasType
-
 
 ################## PANDAS SPECIFIC NODES ######################
 
@@ -117,12 +115,8 @@ def execute_filter(op, parent, predicates):
 
 @execute.register(ops.Project)
 def execute_project(op, parent, values):
-    return pd.DataFrame(values)
-
-
-@execute.register(PandasProject)
-def execute_pandas_project(op, parent, values):
-    return pd.DataFrame(values, index=[0])
+    df, _ = asframe(values)
+    return df
 
 
 @execute.register(ops.Sort)
@@ -214,6 +208,14 @@ _unary_operations = {
     ops.Log10: np.log10,
     ops.Ln: np.log,
     ops.Exp: np.exp,
+    ops.Tan: np.tan,
+    ops.Cos: np.cos,
+    ops.Cot: lambda x: 1 / np.tan(x),
+    ops.Sin: np.sin,
+    ops.Atan: np.arctan,
+    ops.Acos: np.arccos,
+    ops.Asin: np.arcsin,
+    ops.BitwiseNot: np.invert,
 }
 
 _binary_operations = {
@@ -239,11 +241,12 @@ _binary_operations = {
     ops.BitwiseAnd: lambda x, y: np.bitwise_and(x, y),
     ops.BitwiseLeftShift: lambda x, y: np.left_shift(x, y),
     ops.BitwiseRightShift: lambda x, y: np.right_shift(x, y),
+    ops.Atan2: np.arctan2,
 }
 
 
 @execute.register(ops.Unary)
-def execute_unary(op, arg, **kwargs):
+def execute_unary(op, arg):
     return _unary_operations[type(op)](arg)
 
 
@@ -266,6 +269,10 @@ def execute_round(op, arg, digits):
         return np.round(arg)
     else:
         return np.round(arg, digits)
+
+@execute.register(ops.Clip)
+def execute_clip(op, **kwargs):
+    return columnwise(lambda df: df["arg"].clip(lower=df["lower"], upper=df["upper"]), kwargs)
 
 
 @execute.register(ops.IfElse)
@@ -292,7 +299,7 @@ def execute_if_else(op, bool_expr, true_expr, false_null_expr):
 
 @execute.register(ops.TypeOf)
 def execute_typeof(op, arg):
-    return str(op.dtype)
+    raise OperationNotDefinedError("TypeOf is not implemented")
 
 
 @execute.register(ops.NullIf)
@@ -518,17 +525,14 @@ def execute_greatest(op, arg):
     return columnwise(lambda df: df.max(axis=1), arg)
 
 
-
 @execute.register(ops.Least)
 def execute_least(op, arg):
     return columnwise(lambda df: df.min(axis=1), arg)
 
 
-
 @execute.register(ops.Coalesce)
 def execute_coalesce(op, arg):
     return columnwise(lambda df: df.bfill(axis=1).iloc[:, 0], arg)
-
 
 
 @execute.register(ops.Between)
