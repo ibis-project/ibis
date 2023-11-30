@@ -98,6 +98,8 @@ class SnowflakeCompiler(SQLGlotCompiler):
             )
         elif dtype.is_uuid():
             return sg.exp.convert(str(value))
+        elif dtype.is_binary():
+            return sg.exp.HexString(this=value.hex())
         return super().visit_node(op, value=value, dtype=dtype)
 
     @visit_node.register(ops.Cast)
