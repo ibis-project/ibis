@@ -63,6 +63,11 @@ try:
 except ImportError:
     Py4JJavaError = None
 
+try:
+    from snowflake.connector.errors import ProgrammingError as SnowflakeProgrammingError
+except ImportError:
+    SnowflakeProgrammingError = None
+
 
 try:
     from pyexasol.exceptions import ExaQueryError
@@ -1843,7 +1848,7 @@ def test_integer_to_timestamp(backend, con, unit):
                         "(snowflake.connector.errors.ProgrammingError) 100096 (22007): "
                         "Can't parse '11/01/10' as timestamp with format '%m/%d/%y'"
                     ),
-                    raises=sa.exc.ProgrammingError,
+                    raises=SnowflakeProgrammingError,
                 ),
                 pytest.mark.never(
                     ["flink"],
