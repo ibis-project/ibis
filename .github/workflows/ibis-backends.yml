@@ -164,7 +164,7 @@ jobs:
             extras:
               - flink
             additional_deps:
-              - apache-flink
+              - apache-flink==1.17.1
               - pytest-split
             services:
               - flink
