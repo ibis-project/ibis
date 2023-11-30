@@ -8,6 +8,7 @@ import pandas as pd
 
 import ibis.expr.operations as ops
 from ibis.backends.pandas.newpandas import execute
+from ibis.backends.pandas.newutils import elementwise, rowwise
 from ibis.common.exceptions import OperationNotDefinedError
 
 
@@ -35,36 +36,25 @@ def execute_array_index(op, arg, index):
 
 
 @execute.register(ops.ArrayRepeat)
-def execute_array_repeat(op, arg, times):
-    if isinstance(times, pd.Series):
-        raise OperationNotDefinedError("ArrayRepeat with Series times")
-
-    if isinstance(arg, pd.Series):
-        return arg.apply(lambda array, times=times: np.tile(array, times))
-    else:
-        return np.tile(arg, times)
+def execute_array_repeat(op, **kwargs):
+    return rowwise(lambda row: np.tile(row["arg"], max(0, row["times"])), kwargs)
 
 
 @execute.register(ops.ArraySlice)
-def execute_array_slice(op, arg, start, stop):
-    if isinstance(start, pd.Series) or isinstance(stop, pd.Series):
-        raise OperationNotDefinedError("ArraySlice with Series start or stop")
-
-    if isinstance(arg, pd.Series):
-        return arg.apply(operator.itemgetter(slice(start, stop)))
-    else:
-        return arg[start:stop]
+def execute_array_slice(op, **kwargs):
+    return rowwise(lambda row: row["arg"][row["start"] : row["stop"]], kwargs)
 
 
 @execute.register(ops.ArrayColumn)
 def execute_array_column(op, cols):
-    df = pd.concat(cols, axis=1)
-    return df.apply(lambda row: np.array(row, dtype=object), axis=1)
+    return rowwise(lambda row: np.array(row, dtype=object), cols)
 
 
 @execute.register(ops.ArrayFlatten)
 def execute_array_flatten(op, arg):
-    return arg.map(lambda v: list(itertools.chain.from_iterable(v)), na_action="ignore")
+    return elementwise(
+        lambda v: list(itertools.chain.from_iterable(v)), arg, na_action="ignore"
+    )
 
 
 # @execute.register(ops.Unnest)

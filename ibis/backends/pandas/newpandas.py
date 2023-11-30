@@ -9,6 +9,7 @@ import pandas as pd
 
 import ibis.expr.operations as ops
 from ibis import util
+from ibis.backends.pandas.newutils import asframe
 from ibis.backends.pandas.rewrites import (
     ColumnRef,
     PandasAggregate,
@@ -54,13 +55,11 @@ def execute(node, **kwargs):
 @execute.register(ops.Literal)
 def execute_literal(op, value, dtype):
     if dtype.is_interval():
-        return pd.Timedelta(value, dtype.unit.short)
-    elif value is None:
-        return value
+        value = pd.Timedelta(value, dtype.unit.short)
     elif dtype.is_array():
-        return np.array(value)
-    else:
-        return value
+        value = np.array(value)
+
+    return value
 
 
 @execute.register(ops.DatabaseTable)
@@ -82,6 +81,12 @@ def execute_database_table(op, name, schema, source, namespace):
 @execute.register(ops.InMemoryTable)
 def execute_in_memory_table(op, name, schema, data):
     return data.to_frame()
+
+
+@execute.register(ops.DummyTable)
+def execute_dummy_table(op, values):
+    df, _ = asframe(values)
+    return df
 
 
 @execute.register(ops.Limit)
@@ -282,6 +287,11 @@ def execute_if_else(op, bool_expr, true_expr, false_null_expr):
         if isinstance(true, pd.Series) and not isinstance(false, pd.Series):
             return pd.Series(np.repeat(false, len(true)), index=true.index)
         return false
+
+
+@execute.register(ops.TypeOf)
+def execute_typeof(op, arg):
+    return str(op.dtype)
 
 
 @execute.register(ops.NullIf)
@@ -502,22 +512,6 @@ def execute_timestamp_diff(op, left, right):
     return left - right
 
 
-def _broadcast_scalars(values):
-    sizes = {len(x) for x in values if isinstance(x, Sized)}
-    if not sizes:
-        return values
-
-    (size,) = sizes
-    columns = []
-    for v in values:
-        if isinstance(v, pd.Series):
-            columns.append(v.values)
-        else:
-            columns.append(np.repeat(v, size))
-
-    return columns
-
-
 @execute.register(ops.Greatest)
 def execute_greatest(op, arg):
     # TODO(kszucs): create a pandas dataframe instead and use `max(axis=1)`
@@ -558,9 +552,20 @@ def zuper(node, params):
         result = execute(node, **kwargs)
         return result
 
+    # original = node
+    # node = node.to_expr().as_table().op()
     node = node.replace(aggregate_to_groupby | replace_literals)
-
     # print(node.to_expr())
 
     result = node.map(fn)[node]
+    # if isinstance(original, ops.Value):
+    #     if original.shape.is_columnar():
+    #         print("COLUMNAR")
+    #         result = result.iloc[:, 0]
+    #     elif original.shape.is_scalar():
+    #         print("SCALAR")
+    #         result = result.iloc[0, 0]
+    #     else:
+    #         raise TypeError(f"Unexpected shape: {original.shape}")
+
     return result
