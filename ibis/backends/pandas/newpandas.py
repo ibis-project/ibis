@@ -216,6 +216,8 @@ _unary_operations = {
     ops.Acos: np.arccos,
     ops.Asin: np.arcsin,
     ops.BitwiseNot: np.invert,
+    ops.Radians: np.radians,
+    ops.Degrees: np.degrees,
 }
 
 _binary_operations = {
@@ -270,9 +272,12 @@ def execute_round(op, arg, digits):
     else:
         return np.round(arg, digits)
 
+
 @execute.register(ops.Clip)
 def execute_clip(op, **kwargs):
-    return columnwise(lambda df: df["arg"].clip(lower=df["lower"], upper=df["upper"]), kwargs)
+    return columnwise(
+        lambda df: df["arg"].clip(lower=df["lower"], upper=df["upper"]), kwargs
+    )
 
 
 @execute.register(ops.IfElse)

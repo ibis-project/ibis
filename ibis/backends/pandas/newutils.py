@@ -3,15 +3,16 @@ from __future__ import annotations
 import itertools
 import operator
 from collections.abc import Sized
+from typing import Callable
 
 import numpy as np
 import pandas as pd
 
 
-def asframe(values):
+def asframe(values: dict | tuple):
     if isinstance(values, dict):
         names, values = zip(*values.items())
-    elif isinstance(values, (list, tuple)):
+    elif isinstance(values, tuple):
         names = [f"_{i}" for i in range(len(values))]
     else:
         raise TypeError(f"values must be a dict, list, or tuple; got {type(values)}")
@@ -37,7 +38,7 @@ def asframe(values):
     return pd.concat(columns, axis=1, keys=names), all_scalars
 
 
-def rowwise(_func, _values, **kwargs):
+def rowwise(_func: Callable, _values: dict | tuple, **kwargs):
     # dealing with a collection of series objects
     df, all_scalars = asframe(_values)
     result = df.apply(_func, axis=1, **kwargs)
@@ -46,10 +47,20 @@ def rowwise(_func, _values, **kwargs):
     return result.iloc[0] if all_scalars else result
 
 
-def columnwise(_func, _values, **kwargs):
+def columnwise(_func: Callable, _values: dict | tuple, **kwargs):
     df, all_scalars = asframe(_values)
     result = _func(df, **kwargs)
     return result.iloc[0] if all_scalars else result
+
+
+def serieswise(_func, _value, **kwargs):
+    if isinstance(_value, pd.Series):
+        # dealing with a single series object
+        return _func(_value, **kwargs)
+    else:
+        # dealing with a single scalar object
+        _value = pd.Series([_value])
+        return _func(_value, **kwargs).iloc[0]
 
 
 def elementwise(_func, _values, **kwargs):
@@ -59,15 +70,6 @@ def elementwise(_func, _values, **kwargs):
     else:
         # dealing with a single scalar object
         return _func(_values)
-
-
-# if isinstance(values, pd.Series):
-#     # dealing with a single series object
-#     return func(values)
-# else:
-#     # dealing with a single scalar object
-#     values = pd.Series([values])
-#     return func(values).iloc[0]
 
 
 ####################### STRING FUNCTIONS #######################

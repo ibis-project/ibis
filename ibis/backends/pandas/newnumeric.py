@@ -1,12 +1,12 @@
 from __future__ import annotations
 
-
+import numpy as np
 import pandas as pd
 
 import ibis.expr.operations as ops
 from ibis.backends.pandas.newpandas import execute
 from ibis.backends.pandas.newutils import columnwise, rowwise
-import numpy as np
+
 
 @execute.register(ops.E)
 def execute_e(op):

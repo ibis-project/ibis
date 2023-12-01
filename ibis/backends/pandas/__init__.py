@@ -331,8 +331,9 @@ class Backend(BasePandasBackend):
     def execute(self, query, params=None, limit="default", **kwargs):
         import ibis.backends.pandas.newarrays
         import ibis.backends.pandas.newmaps
-        import ibis.backends.pandas.newstrings
         import ibis.backends.pandas.newnumeric
+        import ibis.backends.pandas.newstrings
+        import ibis.backends.pandas.newtemporal
         from ibis.backends.pandas.newpandas import zuper
 
         params = params or {}

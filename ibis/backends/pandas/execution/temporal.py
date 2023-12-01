@@ -31,40 +31,6 @@ def execute_strftime_series_str(op, data, format_string, **kwargs):
     return data.dt.strftime(format_string)
 
 
-@execute_node.register(ops.ExtractTemporalField, datetime.datetime)
-def execute_extract_timestamp_field_timestamp(op, data, **kwargs):
-    field_name = type(op).__name__.lower().replace("extract", "")
-    return getattr(data, field_name)
-
-
-@execute_node.register(ops.ExtractTemporalField, pd.Series)
-def execute_extract_timestamp_field_series(op, data, **kwargs):
-    field_name = type(op).__name__.lower().replace("extract", "")
-    if field_name == "weekofyear":
-        return data.dt.isocalendar().week.astype(np.int32)
-    return getattr(data.dt, field_name).astype(np.int32)
-
-
-@execute_node.register(ops.ExtractMillisecond, datetime.datetime)
-def execute_extract_millisecond_timestamp(op, data, **kwargs):
-    return int(data.microsecond // 1_000)
-
-
-@execute_node.register(ops.ExtractMicrosecond, datetime.datetime)
-def execute_extract_microsecond_timestamp(op, data, **kwargs):
-    return int(data.microsecond)
-
-
-@execute_node.register(ops.ExtractMillisecond, pd.Series)
-def execute_extract_millisecond_series(op, data, **kwargs):
-    return (data.dt.microsecond // 1_000).astype(np.int32)
-
-
-@execute_node.register(ops.ExtractMicrosecond, pd.Series)
-def execute_extract_microsecond_series(op, data, **kwargs):
-    return data.dt.microsecond.astype(np.int32)
-
-
 @execute_node.register(ops.ExtractEpochSeconds, (datetime.datetime, pd.Series))
 def execute_epoch_seconds(op, data, **kwargs):
     return data.astype("datetime64[s]").astype("int64").astype("int32")
@@ -84,22 +50,6 @@ def execute_between_time(op, data, lower, upper, **kwargs):
     result = np.zeros(len(data), dtype=np.bool_)
     result[indexer] = True
     return pd.Series(result)
-
-
-PANDAS_UNITS = {
-    "m": "Min",
-    "ms": "L",
-}
-
-
-@execute_node.register((ops.TimestampTruncate, ops.DateTruncate), pd.Series)
-def execute_timestamp_truncate(op, data, **kwargs):
-    dt = data.dt
-    unit = PANDAS_UNITS.get(op.unit.short, op.unit.short)
-    try:
-        return dt.floor(unit)
-    except ValueError:
-        return dt.to_period(unit).dt.to_timestamp()
 
 
 OFFSET_CLASS = {
