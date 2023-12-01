@@ -71,8 +71,11 @@ def aggregate_to_groupby(_):
     for _k, v in _.metrics.items():
         for reduction in v.find_topmost(ops.Reduction):
             for arg in reduction.__args__:
-                # TODO(kszucs): should limit to columnar values only
-                if isinstance(arg, ops.Value) and arg not in select_derefs:
+                if (
+                    isinstance(arg, ops.Value)
+                    and arg.shape.is_columnar()
+                    and arg not in select_derefs
+                ):
                     select_derefs[arg] = gen_name("agg")
             if reduction not in reduction_derefs:
                 reduction_derefs[reduction] = gen_name("agg")

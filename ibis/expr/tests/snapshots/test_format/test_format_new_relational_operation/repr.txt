@@ -11,18 +11,21 @@ r0 := UnboundTable: alltypes
   j date
   k time
 
-r1 := MyRelation
-  a int8
-  b int16
-  c int32
-  d int64
-  e float32
-  f float64
-  g string
-  h boolean
-  i timestamp
-  j date
-  k time
+r1 := MyRelation[r0]
+  kind:
+    foo
+  schema:
+    a int8
+    b int16
+    c int32
+    d int64
+    e float32
+    f float64
+    g string
+    h boolean
+    i timestamp
+    j date
+    k time
 
 Project[r1]
   a:  r1.a

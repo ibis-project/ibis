@@ -9,7 +9,7 @@ import ibis.expr.datashape as ds
 import ibis.expr.datatypes as dt
 import ibis.expr.rules as rlz
 from ibis.common.annotations import attribute
-from ibis.expr.operations.core import Column, Value
+from ibis.expr.operations.core import Column, Scalar, Value
 from ibis.expr.operations.relations import Relation  # noqa: TCH001
 
 
@@ -208,7 +208,7 @@ class Median(Filterable, Reduction):
 @public
 class Quantile(Filterable, Reduction):
     arg: Value
-    quantile: Value[dt.Numeric]
+    quantile: Scalar[dt.Numeric]
 
     dtype = dt.float64
 
@@ -216,7 +216,7 @@ class Quantile(Filterable, Reduction):
 @public
 class MultiQuantile(Filterable, Reduction):
     arg: Value
-    quantile: Value[dt.Array[dt.Float64]]
+    quantile: Scalar[dt.Array[dt.Float64]]
 
     dtype = dt.Array(dt.float64)
 
@@ -328,8 +328,7 @@ class ApproxMedian(Filterable, Reduction):
 @public
 class GroupConcat(Filterable, Reduction):
     arg: Column
-    # TODO(kszucs): sep must be a scalar value
-    sep: Value[dt.String]
+    sep: Scalar[dt.String]
 
     dtype = dt.string
 

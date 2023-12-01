@@ -338,7 +338,7 @@ _reduction_functions = {
     ops.Sum: lambda x: x.sum(),
     ops.Mean: lambda x: x.mean(),
     ops.Count: lambda x: x.count(),
-    ops.Mode: lambda x: x.mode(),
+    ops.Mode: lambda x: x.mode().iloc[0],
     ops.Any: lambda x: x.any(),
     ops.All: lambda x: x.all(),
     ops.Median: lambda x: x.median(),
@@ -353,6 +353,7 @@ _reduction_functions = {
 }
 
 
+# could columnwise be used here?
 def agg(func, arg_column, where_column):
     if where_column is None:
 
@@ -379,7 +380,6 @@ def execute_pandas_reduce(op, parent, metrics):
     results = {k: v(parent) for k, v in metrics.items()}
     combined, _ = asframe(results)
     return combined
-
 
 
 @execute.register(PandasAggregate)
@@ -409,9 +409,11 @@ def execute_standard_dev(op, arg, where, how):
 @execute.register(ops.Correlation)
 def execute_correlation(op, left, right, where, how):
     if where is None:
+
         def agg(df):
             return df[left].corr(df[right])
     else:
+
         def agg(df):
             mask = df[where]
             lhs = df[left][mask]
@@ -420,13 +422,16 @@ def execute_correlation(op, left, right, where, how):
 
     return agg
 
+
 @execute.register(ops.Covariance)
 def execute_covariance(op, left, right, where, how):
     ddof = variance_ddof[how]
     if where is None:
+
         def agg(df):
             return df[left].cov(df[right], ddof=ddof)
     else:
+
         def agg(df):
             mask = df[where]
             lhs = df[left][mask]
@@ -434,6 +439,7 @@ def execute_covariance(op, left, right, where, how):
             return lhs.cov(rhs, ddof=ddof)
 
     return agg
+
 
 @execute.register(ops.ArgMin)
 @execute.register(ops.ArgMax)
@@ -474,15 +480,25 @@ def execute_array_collect(op, arg, where):
 @execute.register(ops.GroupConcat)
 def execute_group_concat(op, arg, sep, where):
     if where is None:
+
         def agg(df):
             return sep.join(df[arg].astype(str))
     else:
 
         def agg(df):
             mask = df[where]
-            return sep.join(df[arg][mask].astype(str))
+            group = df[arg][mask]
+            if group.empty:
+                return pd.NA
+            return sep.join(group)
 
     return agg
+
+
+@execute.register(ops.Quantile)
+@execute.register(ops.MultiQuantile)
+def execute_quantile(op, arg, quantile, where):
+    return agg(lambda x: x.quantile(quantile), arg, where)
 
 
 @execute.register(ops.Arbitrary)
@@ -504,6 +520,17 @@ def execute_count_star(op, arg, where):
             return len(df)
         else:
             return df[where].sum()
+
+    return agg
+
+
+@execute.register(ops.CountDistinctStar)
+def execute_count_distinct_star(op, arg, where):
+    def agg(df):
+        if where is None:
+            return df.nunique()
+        else:
+            return df[where].nunique()
 
     return agg
 
