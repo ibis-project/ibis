@@ -13,7 +13,9 @@ from ibis.backends.pandas.newutils import asframe, columnwise
 from ibis.backends.pandas.rewrites import (
     ColumnRef,
     PandasAggregate,
+    PandasJoin,
     PandasReduce,
+    PandasRename,
 )
 from ibis.common.exceptions import OperationNotDefinedError
 from ibis.formats.pandas import PandasData, PandasSchema, PandasType
@@ -95,6 +97,16 @@ def execute_filter(op, parent, predicates):
             )
         parent = parent.loc[pred].reset_index(drop=True)
     return parent
+
+
+@execute.register(PandasRename)
+def execute_rename(op, parent, mapping):
+    return parent.rename(columns=mapping)
+
+
+@execute.register(PandasJoin)
+def execute_join(op, left, right, left_on, right_on, how):
+    return left.merge(right, how=how, left_on=left_on, right_on=right_on)
 
 
 @execute.register(ops.Union)
@@ -599,7 +611,10 @@ def execute_between(op, arg, lower_bound, upper_bound):
 
 
 def zuper(node, params):
-    from ibis.backends.pandas.rewrites import aggregate_to_groupby
+    from ibis.backends.pandas.rewrites import (
+        aggregate_to_groupby,
+        join_chain_to_nested_joins,
+    )
     from ibis.expr.rewrites import _, p
 
     replace_literals = p.ScalarParameter >> (
@@ -613,7 +628,10 @@ def zuper(node, params):
     original = node
 
     node = node.to_expr().as_table().op()
-    node = node.replace(aggregate_to_groupby | replace_literals)
+    node = node.replace(
+        aggregate_to_groupby | join_chain_to_nested_joins | replace_literals
+    )
+    #print(node.to_expr())
     result = node.map(fn)[node]
 
     if isinstance(original, ops.Value):

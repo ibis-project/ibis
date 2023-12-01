@@ -52,6 +52,7 @@ def columnwise(_func: Callable, _values: dict | tuple, **kwargs):
     result = _func(df, **kwargs)
     return result.iloc[0] if all_scalars else result
 
+
 # TODO(kszucs): change kwarg to _values everywhere, should follow the API of r
 def serieswise(_func, **kwargs):
     (key, value), *rest = kwargs.items()
@@ -72,7 +73,7 @@ def elementwise(_func, **kwargs):
         return value.map(_func, **kwargs)
     else:
         # dealing with a single scalar object
-        return _func(value)#, **kwargs)
+        return _func(value)  # , **kwargs)
 
 
 ####################### STRING FUNCTIONS #######################

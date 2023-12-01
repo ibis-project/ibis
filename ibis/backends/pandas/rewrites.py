@@ -22,6 +22,37 @@ class ColumnRef(ops.Value):
 
 
 @public
+class PandasRename(ops.Relation):
+    parent: ops.Relation
+    mapping: FrozenDict[str, str]
+
+    @attribute
+    def fields(self):
+        return {}
+
+    @attribute
+    def schema(self):
+        return Schema({self.mapping[k]: v for k, v in self.parent.schema.items()})
+
+
+@public
+class PandasJoin(ops.Relation):
+    left: ops.Relation
+    right: ops.Relation
+    left_on: VarTuple[ops.Column]
+    right_on: VarTuple[ops.Column]
+    how: str
+
+    @attribute
+    def fields(self):
+        return {}
+
+    @attribute
+    def schema(self):
+        return self.left.schema | self.right.schema
+
+
+@public
 class PandasReduce(ops.Relation):
     parent: ops.Relation
     metrics: FrozenDict[str, ops.Scalar]
@@ -53,10 +84,6 @@ class PandasAggregate(ops.Relation):
         return Schema.from_tuples([*groups.items(), *metrics.items()])
 
 
-def flip(d):
-    return {v: k for k, v in d.items()}
-
-
 @replace(ops.Aggregate)
 def aggregate_to_groupby(_):
     # add all the computed groups to the pre-projection
@@ -81,7 +108,7 @@ def aggregate_to_groupby(_):
                 reduction_derefs[reduction] = gen_name("agg")
 
     # STEP 1: construct the pre-projection
-    proj = ops.Project(_.parent, flip(select_derefs))
+    proj = ops.Project(_.parent, {v: k for k, v in select_derefs.items()})
 
     # STEP 2: construct the pandas aggregation
     subs = {node: ColumnRef(name, node.dtype) for name, node in proj.fields.items()}
@@ -99,3 +126,55 @@ def aggregate_to_groupby(_):
     }
     metric_values = {name: node.replace(subs) for name, node in _.metrics.items()}
     return ops.Project(agg, {**group_values, **metric_values})
+
+
+def split_predicates(left, right, predicates):
+    left_on = []
+    right_on = []
+    for pred in predicates:
+        if not isinstance(pred, ops.Equals):
+            raise TypeError("Only equality join predicates supported with pandas")
+
+        if left in pred.left.relations and right in pred.right.relations:
+            left_on.append(pred.left)
+            right_on.append(pred.right)
+        elif left in pred.right.relations and right in pred.left.relations:
+            left_on.append(pred.right)
+            right_on.append(pred.left)
+        else:
+            raise ValueError("Join predicate does not reference both tables")
+
+    return left_on, right_on
+
+
+@replace(ops.JoinChain)
+def join_chain_to_nested_joins(_):
+    table_ids = {}
+
+    table_ids[_.first] = tableid = str(len(table_ids))
+    renames = {k: f"{tableid}_{k}" for k in _.first.schema}
+    left = PandasRename(_.first, renames)
+
+    for link in _.rest:
+        table_ids[link.table] = tableid = str(len(table_ids))
+        renames = {k: f"{tableid}_{k}" for k in link.table.schema}
+        right = PandasRename(link.table, renames)
+        left_on, right_on = split_predicates(left.parent, right.parent, link.predicates)
+
+        left = PandasJoin(
+            how=link.how,
+            left=left,
+            right=right,
+            left_on=left_on,
+            right_on=right_on,
+        )
+
+    deref_mapping = {}
+    for table, tableid in table_ids.items():
+        for k, v in table.schema.items():
+            deref_mapping[ops.Field(table, k)] = ops.Field(left, f"{tableid}_{k}")
+
+    fields = {
+        k: v.replace(deref_mapping, filter=ops.Value) for k, v in _.fields.items()
+    }
+    return ops.Project(left, fields)
