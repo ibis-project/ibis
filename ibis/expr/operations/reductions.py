@@ -328,6 +328,7 @@ class ApproxMedian(Filterable, Reduction):
 @public
 class GroupConcat(Filterable, Reduction):
     arg: Column
+    # TODO(kszucs): sep must be a scalar value
     sep: Value[dt.String]
 
     dtype = dt.string

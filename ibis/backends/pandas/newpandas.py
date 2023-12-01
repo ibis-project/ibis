@@ -342,6 +342,7 @@ _reduction_functions = {
     ops.Any: lambda x: x.any(),
     ops.All: lambda x: x.all(),
     ops.Median: lambda x: x.median(),
+    ops.ApproxMedian: lambda x: x.median(),
     ops.BitAnd: lambda x: np.bitwise_and.reduce(x.values),
     ops.BitOr: lambda x: np.bitwise_or.reduce(x.values),
     ops.BitXor: lambda x: np.bitwise_xor.reduce(x.values),
@@ -375,9 +376,10 @@ def execute_reduction(op, arg, where):
 
 @execute.register(PandasReduce)
 def execute_pandas_reduce(op, parent, metrics):
-    metrics = {k: v(parent) for k, v in metrics.items()}
-    result = pd.DataFrame(metrics, index=[0])
-    return result
+    results = {k: v(parent) for k, v in metrics.items()}
+    combined, _ = asframe(results)
+    return combined
+
 
 
 @execute.register(PandasAggregate)
@@ -469,6 +471,20 @@ def execute_array_collect(op, arg, where):
     return agg
 
 
+@execute.register(ops.GroupConcat)
+def execute_group_concat(op, arg, sep, where):
+    if where is None:
+        def agg(df):
+            return sep.join(df[arg].astype(str))
+    else:
+
+        def agg(df):
+            mask = df[where]
+            return sep.join(df[arg][mask].astype(str))
+
+    return agg
+
+
 @execute.register(ops.Arbitrary)
 def execute_arbitrary(op, arg, where, how):
     # TODO(kszucs): could be rewritten to ops.Last and ops.First prior to execution
@@ -487,7 +503,7 @@ def execute_count_star(op, arg, where):
         if where is None:
             return len(df)
         else:
-            return len(df) - len(where) + where.sum()
+            return df[where].sum()
 
     return agg
 
