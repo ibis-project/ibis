@@ -13,7 +13,6 @@ import ibis
 import ibis.expr.datatypes as dt
 from ibis import _
 from ibis.backends.pandas import Backend
-from ibis.backends.pandas.execution import execute
 from ibis.backends.pandas.tests.conftest import TestConf as tm
 
 
@@ -290,7 +289,7 @@ def test_null_if_zero(t, df, column):
 )
 def test_nullif(t, df, left, right, expected, compare):
     expr = left(t).nullif(right(t))
-    result = execute(expr.op())
+    result = expr.execute()
     compare(result, expected(df))
 
 

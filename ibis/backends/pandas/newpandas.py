@@ -95,6 +95,26 @@ def execute_filter(op, parent, predicates):
     return parent
 
 
+@execute.register(ops.Union)
+def execute_union(op, left, right, distinct):
+    result = pd.concat([left, right], axis=0)
+    return result.drop_duplicates() if distinct else result
+
+
+@execute.register(ops.Intersection)
+def execute_intersection_dataframe_dataframe(op, left, right, distinct):
+    if not distinct:
+        raise NotImplementedError(
+            "`distinct=False` is not supported by the pandas backend"
+        )
+    return left.merge(right, on=list(left.columns), how="inner")
+
+
+@execute.register(ops.Distinct)
+def execute_distinct(op, parent):
+    return parent.drop_duplicates()
+
+
 @execute.register(ops.Project)
 def execute_project(op, parent, values):
     df, _ = asframe(values)
@@ -171,8 +191,8 @@ def execute_cast(op, arg, to):
 
 _unary_operations = {
     ops.Abs: abs,
-    ops.Ceil: np.ceil,
-    ops.Floor: np.floor,
+    ops.Ceil: lambda x: np.ceil(x).astype("int64"),
+    ops.Floor: lambda x: np.floor(x).astype("int64"),
     ops.Sqrt: np.sqrt,
     ops.Sign: np.sign,
     ops.Log2: np.log2,
@@ -212,8 +232,8 @@ _binary_operations = {
     ops.BitwiseXor: lambda x, y: np.bitwise_xor(x, y),
     ops.BitwiseOr: lambda x, y: np.bitwise_or(x, y),
     ops.BitwiseAnd: lambda x, y: np.bitwise_and(x, y),
-    ops.BitwiseLeftShift: lambda x, y: np.left_shift(x, y),
-    ops.BitwiseRightShift: lambda x, y: np.right_shift(x, y),
+    ops.BitwiseLeftShift: lambda x, y: np.left_shift(x, y).astype("int64"),
+    ops.BitwiseRightShift: lambda x, y: np.right_shift(x, y).astype("int64"),
     ops.Atan2: np.arctan2,
 }
 
@@ -239,9 +259,9 @@ def execute_log(op, arg, base):
 @execute.register(ops.Round)
 def execute_round(op, arg, digits):
     if digits is None:
-        return np.round(arg)
+        return np.round(arg).astype("int64")
     else:
-        return np.round(arg, digits)
+        return np.round(arg, digits).astype("float64")
 
 
 @execute.register(ops.Clip)
@@ -384,6 +404,35 @@ def execute_standard_dev(op, arg, where, how):
     return agg(lambda x: x.std(ddof=ddof), arg, where)
 
 
+@execute.register(ops.Correlation)
+def execute_correlation(op, left, right, where, how):
+    if where is None:
+        def agg(df):
+            return df[left].corr(df[right])
+    else:
+        def agg(df):
+            mask = df[where]
+            lhs = df[left][mask]
+            rhs = df[right][mask]
+            return lhs.corr(rhs)
+
+    return agg
+
+@execute.register(ops.Covariance)
+def execute_covariance(op, left, right, where, how):
+    ddof = variance_ddof[how]
+    if where is None:
+        def agg(df):
+            return df[left].cov(df[right], ddof=ddof)
+    else:
+        def agg(df):
+            mask = df[where]
+            lhs = df[left][mask]
+            rhs = df[right][mask]
+            return lhs.cov(rhs, ddof=ddof)
+
+    return agg
+
 @execute.register(ops.ArgMin)
 @execute.register(ops.ArgMax)
 def execute_argminmax(op, arg, key, where):
@@ -439,6 +488,7 @@ def execute_count_star(op, arg, where):
             return len(df)
         else:
             return len(df) - len(where) + where.sum()
+
     return agg
 
 
