@@ -127,7 +127,11 @@ def one_to_zero_index(_, **__):
 
 @replace(ops.NthValue)
 def add_one_to_nth_value_input(_, **__):
-    return _.copy(nth=ops.Add(_.nth, 1))
+    if isinstance(_.nth, ops.Literal):
+        nth = ops.Literal(_.nth.value + 1, dtype=_.nth.dtype)
+    else:
+        nth = ops.Add(_.nth, 1)
+    return _.copy(nth=nth)
 
 
 @public
