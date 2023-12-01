@@ -508,6 +508,7 @@ class SnowflakeCompiler(SQLGlotCompiler):
     @visit_node.register(ops.MultiQuantile)
     @visit_node.register(ops.IntervalFromInteger)
     @visit_node.register(ops.IntervalAdd)
+    @visit_node.register(ops.TimestampAdd)
     @visit_node.register(ops.TimestampDiff)
     @visit_node.register(ops.Strftime)
     @visit_node.register(ops.TryCast)
