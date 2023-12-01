@@ -346,7 +346,7 @@ class SnowflakeCompiler(SQLGlotCompiler):
             )
 
         interval = op.interval
-        if not isinstance(interval, sg.exp.Literal):
+        if not isinstance(interval, ops.Literal):
             raise com.UnsupportedOperationError(
                 f"Interval must be a literal for the Snowflake backend, got {type(interval)}"
             )
