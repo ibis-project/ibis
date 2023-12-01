@@ -799,7 +799,14 @@ def test_range_single_argument(con, n):
     reason="range and unnest aren't implemented upstream",
     raises=com.OperationNotDefinedError,
 )
-@pytest.mark.parametrize("n", [-2, 0, 2])
+@pytest.mark.parametrize(
+    "n",
+    [
+        param(-2, marks=pytest.mark.notimpl(["snowflake"], raises=AssertionError)),
+        param(0, marks=pytest.mark.notimpl(["snowflake"], raises=AssertionError)),
+        2,
+    ],
+)
 @pytest.mark.notimpl(
     ["polars", "flink", "pandas", "dask"], raises=com.OperationNotDefinedError
 )
