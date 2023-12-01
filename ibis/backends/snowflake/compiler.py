@@ -217,15 +217,15 @@ class SnowflakeCompiler(SQLGlotCompiler):
 
     @visit_node.register(ops.TimeDelta)
     def visit_TimeDelta(self, op, *, part, left, right):
-        return self.f.timediff(part, right, left)
+        return self.f.timediff(part, right, left, dialect=self.dialect)
 
     @visit_node.register(ops.DateDelta)
     def visit_DateDelta(self, op, *, part, left, right):
-        return self.f.datediff(part, right, left)
+        return self.f.datediff(part, right, left, dialect=self.dialect)
 
     @visit_node.register(ops.TimestampDelta)
     def visit_TimestampDelta(self, op, *, part, left, right):
-        return self.f.timestampdiff(part, right, left)
+        return self.f.timestampdiff(part, right, left, dialect=self.dialect)
 
     @visit_node.register(ops.IntegerRange)
     def visit_IntegerRange(self, op, *, start, stop, step):
