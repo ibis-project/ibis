@@ -39,6 +39,8 @@ def execute_literal(op, value, dtype):
         value = pd.Timedelta(value, dtype.unit.short)
     elif dtype.is_array():
         value = np.array(value)
+    elif dtype.is_date():
+        value = pd.Timestamp(value, tz="UTC").tz_localize(None)
 
     return value
 

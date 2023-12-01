@@ -58,11 +58,11 @@ def execute_array_concat(op, arg):
     return rowwise(lambda row: np.concatenate(row.values), arg)
 
 
+@execute.register(ops.ArrayContains)
+def execute_array_contains(op, **kwargs):
+    return rowwise(lambda row: row["other"] in row["arg"], kwargs)
+
+
 # @execute.register(ops.Unnest)
 # def execute_unnest(op, arg):
 #     return arg.explode()
-
-
-# @execute_node.register(ops.ArrayContains, np.ndarray, object)
-# def execute_node_contains_value_array(op, haystack, needle, **kwargs):
-#     return needle in haystack

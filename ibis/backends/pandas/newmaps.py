@@ -9,6 +9,7 @@ import toolz
 
 import ibis.expr.operations as ops
 from ibis.backends.pandas.newpandas import execute
+from ibis.backends.pandas.newutils import columnwise, elementwise, rowwise, serieswise
 
 
 def safe_method(mapping, method, *args, **kwargs):
@@ -47,158 +48,35 @@ def safe_values(mapping):
 
 
 @execute.register(ops.MapLength)
-def execute_map_length(op, arg):
-    if isinstance(arg, pd.Series):
-        # TODO: investigate whether calling a lambda is faster
-        return arg.dropna().map(len).reindex(arg.index)
-    else:
-        return None if arg is None else len(arg)
+def execute_map_length(op, **kwargs):
+    return elementwise(len, **kwargs)
 
 
 @execute.register(ops.MapKeys)
-def execute_map_keys(op, arg):
-    if isinstance(arg, pd.Series):
-        return arg.map(safe_keys)
-    elif arg is None:
-        return None
-    else:
-        # list(...) to unpack iterable
-        return np.array(list(arg.keys()))
+def execute_map_keys(op, **kwargs):
+    return elementwise(safe_keys, **kwargs)
 
 
-# @execute_node.register(ops.Map, np.ndarray, np.ndarray)
-# def map_ndarray_ndarray(op, keys, values, **kwargs):
-#     return dict(zip(keys, values))
+@execute.register(ops.MapValues)
+def execute_map_values(op, **kwargs):
+    return elementwise(safe_values, **kwargs)
 
 
-# @execute_node.register(ops.Map, pd.Series, pd.Series)
-# def map_series_series(op, keys, values, **kwargs):
-#     return keys.combine(values, lambda a, b: dict(zip(a, b)))
+@execute.register(ops.MapGet)
+def execute_map_get(op, **kwargs):
+    return rowwise(lambda row: safe_get(row["arg"], row["key"], row["default"]), kwargs)
 
 
-# @execute_node.register(ops.MapGet, pd.Series, object, object)
-# def map_get_series_scalar_scalar(op, data, key, default, **kwargs):
-#     return data.map(functools.partial(safe_get, key=key, default=default))
+@execute.register(ops.MapContains)
+def execute_map_contains(op, **kwargs):
+    return rowwise(lambda row: safe_contains(row["arg"], row["key"]), kwargs)
 
 
-# @execute_node.register(ops.MapGet, pd.Series, object, pd.Series)
-# def map_get_series_scalar_series(op, data, key, default, **kwargs):
-#     defaultiter = iter(default.values)
-#     return data.map(
-#         lambda mapping, key=key, defaultiter=defaultiter: safe_get(
-#             mapping, key, next(defaultiter)
-#         )
-#     )
+@execute.register(ops.Map)
+def execute_map(op, **kwargs):
+    return rowwise(lambda row: dict(zip(row["keys"], row["values"])), kwargs)
 
 
-# @execute_node.register(ops.MapGet, pd.Series, pd.Series, object)
-# def map_get_series_series_scalar(op, data, key, default, **kwargs):
-#     keyiter = iter(key.values)
-#     return data.map(
-#         lambda mapping, keyiter=keyiter, default=default: safe_get(
-#             mapping, next(keyiter), default
-#         )
-#     )
-
-
-# @execute_node.register(ops.MapGet, pd.Series, pd.Series, pd.Series)
-# def map_get_series_series_series(op, data, key, default):
-#     keyiter = iter(key.values)
-#     defaultiter = iter(default.values)
-
-#     def get(mapping, keyiter=keyiter, defaultiter=defaultiter):
-#         return safe_get(mapping, next(keyiter), next(defaultiter))
-
-#     return data.map(get)
-
-
-# @execute_node.register(ops.MapGet, collections.abc.Mapping, object, object)
-# def map_get_dict_scalar_scalar(op, data, key, default, **kwargs):
-#     return safe_get(data, key, default)
-
-
-# @execute_node.register(ops.MapGet, collections.abc.Mapping, object, pd.Series)
-# def map_get_dict_scalar_series(op, data, key, default, **kwargs):
-#     return default.map(lambda d, data=data, key=key: safe_get(data, key, d))
-
-
-# @execute_node.register(ops.MapGet, collections.abc.Mapping, pd.Series, object)
-# def map_get_dict_series_scalar(op, data, key, default, **kwargs):
-#     return key.map(lambda k, data=data, default=default: safe_get(data, k, default))
-
-
-# @execute_node.register(ops.MapGet, collections.abc.Mapping, pd.Series, pd.Series)
-# def map_get_dict_series_series(op, data, key, default, **kwargs):
-#     defaultiter = iter(default.values)
-#     return key.map(
-#         lambda k, data=data, defaultiter=defaultiter: safe_get(
-#             data, k, next(defaultiter)
-#         )
-#     )
-
-
-# @execute_node.register(ops.MapContains, collections.abc.Mapping, object)
-# def map_contains_dict_object(op, data, key, **kwargs):
-#     return safe_contains(data, key)
-
-
-# @execute_node.register(ops.MapContains, collections.abc.Mapping, pd.Series)
-# def map_contains_dict_series(op, data, key, **kwargs):
-#     return key.map(lambda k, data=data: safe_contains(data, k))
-
-
-# @execute_node.register(ops.MapContains, pd.Series, object)
-# def map_contains_series_object(op, data, key, **kwargs):
-#     return data.map(lambda d: safe_contains(d, key))
-
-
-# @execute_node.register(ops.MapContains, pd.Series, pd.Series)
-# def map_contains_series_series(op, data, key, **kwargs):
-#     return data.combine(key, lambda d, k: safe_contains(d, k))
-
-
-# @execute_node.register(ops.MapValues, pd.Series)
-# def map_values_series(op, data, **kwargs):
-#     res = data.map(safe_values)
-#     return res
-
-
-# @execute_node.register(ops.MapValues, (collections.abc.Mapping, type(None)))
-# def map_values_dict(op, data, **kwargs):
-#     if data is None:
-#         return None
-#     # list(...) to unpack iterable
-#     return np.array(list(data.values()))
-
-
-# def safe_merge(*maps):
-#     return None if any(m is None for m in maps) else toolz.merge(*maps)
-
-
-# @execute_node.register(
-#     ops.MapMerge,
-#     (collections.abc.Mapping, type(None)),
-#     (collections.abc.Mapping, type(None)),
-# )
-# def map_merge_dict_dict(op, lhs, rhs, **kwargs):
-#     return safe_merge(lhs, rhs)
-
-
-# @execute_node.register(ops.MapMerge, (collections.abc.Mapping, type(None)), pd.Series)
-# def map_merge_dict_series(op, lhs, rhs, **kwargs):
-#     if lhs is None:
-#         return pd.Series([None] * len(rhs))
-#     return rhs.map(lambda m, lhs=lhs: safe_merge(lhs, m))
-
-
-# @execute_node.register(ops.MapMerge, pd.Series, (collections.abc.Mapping, type(None)))
-# def map_merge_series_dict(op, lhs, rhs, **kwargs):
-#     if rhs is None:
-#         return pd.Series([None] * len(lhs))
-#     return lhs.map(lambda m, rhs=rhs: safe_merge(m, rhs))
-
-
-# @execute_node.register(ops.MapMerge, pd.Series, pd.Series)
-# def map_merge_series_series(op, lhs, rhs, **kwargs):
-#     rhsiter = iter(rhs.values)
-#     return lhs.map(lambda m, rhsiter=rhsiter: safe_merge(m, next(rhsiter)))
+@execute.register(ops.MapMerge)
+def execute_map_merge(op, **kwargs):
+    return rowwise(lambda row: {**row["left"], **row["right"]}, kwargs)
