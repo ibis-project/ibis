@@ -47,9 +47,9 @@ def rewrite_empty_order_by_window(_, x):
     return _.copy(frame=x.copy(order_by=(ibis.NA,)))
 
 
-@replace(p.WindowFunction(ops.RowNumber, x))
+@replace(p.WindowFunction(p.RowNumber, x))
 def exclude_unsupported_window_frame_from_row_number(_, x):
-    return _.copy(frame=x.copy(start=None, end=None))
+    return ops.Subtract(_.copy(frame=x.copy(start=None, end=None)), 1)
 
 
 @public
