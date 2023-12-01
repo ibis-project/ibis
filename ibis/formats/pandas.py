@@ -198,6 +198,13 @@ class PandasData(DataMapper):
         return result
 
     @staticmethod
+    def convert_Decimal(s, dtype, pandas_type):
+        import pyarrow as pa
+
+        arr = pa.array(s.values).cast(dtype.to_pyarrow())
+        return arr.to_pandas()
+
+    @staticmethod
     def convert_String(s, dtype, pandas_type):
         return s.astype(pandas_type, errors="ignore")
 
