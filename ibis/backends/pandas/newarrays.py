@@ -49,7 +49,7 @@ def execute_array_column(op, cols):
 @execute.register(ops.ArrayFlatten)
 def execute_array_flatten(op, arg):
     return elementwise(
-        lambda v: list(itertools.chain.from_iterable(v)), arg, na_action="ignore"
+        lambda v: list(itertools.chain.from_iterable(v)), arg=arg, na_action="ignore"
     )
 
 
