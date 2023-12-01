@@ -403,7 +403,6 @@ def test_to_pyarrow_decimal(backend, dtype, pyarrow_dtype):
         "mysql",
         "oracle",
         "postgres",
-        "snowflake",
         "sqlite",
         "bigquery",
         "dask",
@@ -415,6 +414,11 @@ def test_to_pyarrow_decimal(backend, dtype, pyarrow_dtype):
     reason="read_delta not yet implemented",
 )
 @pytest.mark.notyet(["clickhouse"], raises=Exception)
+@pytest.mark.notyet(
+    ["snowflake"],
+    raises=Exception,
+    reason="deltalake doesn't support nanosecond timestamps",
+)
 @pytest.mark.notyet(["mssql", "pandas"], raises=PyDeltaTableError)
 @pytest.mark.notyet(
     ["druid"],
