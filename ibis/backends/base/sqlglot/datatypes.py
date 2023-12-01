@@ -255,6 +255,10 @@ class SqlglotType(TypeMapper):
         return dt.Decimal(precision, scale, nullable=cls.default_nullable)
 
     @classmethod
+    def _from_ibis_Interval(cls, dtype: dt.Interval) -> sge.DataType:
+        return sge.DataType(this=typecode.INTERVAL)
+
+    @classmethod
     def _from_ibis_Array(cls, dtype: dt.Array) -> sge.DataType:
         value_type = cls.from_ibis(dtype.value_type)
         return sge.DataType(this=typecode.ARRAY, expressions=[value_type], nested=True)

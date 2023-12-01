@@ -1663,10 +1663,7 @@ def test_interval_add_cast_column(backend, alltypes, df):
                     reason="'StringConcat' object has no attribute 'value'",
                 ),
                 pytest.mark.notimpl(
-                    [
-                        "postgres",
-                        "snowflake",
-                    ],
+                    ["postgres"],
                     raises=AttributeError,
                     reason="Neither 'concat' object nor 'Comparator' object has an attribute 'value'",
                 ),
@@ -2339,9 +2336,8 @@ INTERVAL_BACKEND_TYPES = {
 
 @pytest.mark.broken(
     ["snowflake"],
-    "(snowflake.connector.errors.ProgrammingError) 001007 (22023): SQL compilation error:"
-    "invalid type [CAST(INTERVAL_LITERAL('second', '1') AS VARIANT)] for parameter 'TO_VARIANT'",
-    raises=sa.exc.ProgrammingError,
+    "interval literal is not supported in this form.",
+    raises=SnowflakeProgrammingError,
 )
 @pytest.mark.broken(
     ["druid"],
@@ -2891,7 +2887,7 @@ def test_delta(con, start, end, unit, expected):
                 ),
                 pytest.mark.notimpl(
                     ["snowflake"],
-                    raises=sa.exc.ProgrammingError,
+                    raises=SnowflakeProgrammingError,
                     reason="snowflake doesn't support sub-second interval precision",
                 ),
                 pytest.mark.notimpl(
