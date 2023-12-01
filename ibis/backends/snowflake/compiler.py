@@ -501,7 +501,6 @@ class SnowflakeCompiler(SQLGlotCompiler):
     @visit_node.register(ops.ArrayMap)
     @visit_node.register(ops.ArrayFilter)
     @visit_node.register(ops.RowID)
-    @visit_node.register(ops.Translate)
     @visit_node.register(ops.MultiQuantile)
     @visit_node.register(ops.IntervalFromInteger)
     @visit_node.register(ops.IntervalAdd)
@@ -514,6 +513,7 @@ class SnowflakeCompiler(SQLGlotCompiler):
 
 _SIMPLE_OPS = {
     ops.Mode: "mode",
+    ops.Translate: "translate",
     ops.TimeFromHMS: "time_from_parts",
     ops.ArrayIndex: "get",
     ops.ArrayLength: "array_size",
