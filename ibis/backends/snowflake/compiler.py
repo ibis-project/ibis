@@ -82,6 +82,9 @@ class SnowflakeCompiler(SQLGlotCompiler):
     def visit_Literal(self, op, *, value, dtype):
         if value is None:
             return super().visit_Literal(op, value=value, dtype=dtype)
+        elif dtype.is_string():
+            # sqlglot doesn't escape backslashes in strings
+            return sg.exp.convert(value.replace("\\", "\\\\"))
         elif dtype.is_timestamp():
             args = (
                 value.year,
