@@ -70,8 +70,8 @@ def aggregate_to_groupby(_):
     reduction_derefs = {}
     for _k, v in _.metrics.items():
         for reduction in v.find_topmost(ops.Reduction):
-            for arg in reduction.__children__:
-                if arg not in select_derefs:
+            for arg in reduction.__args__:
+                if isinstance(arg, ops.Value) and arg not in select_derefs:
                     select_derefs[arg] = gen_name("agg")
             if reduction not in reduction_derefs:
                 reduction_derefs[reduction] = gen_name("agg")

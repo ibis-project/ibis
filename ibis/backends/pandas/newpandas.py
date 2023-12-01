@@ -252,26 +252,11 @@ def execute_clip(op, **kwargs):
 
 
 @execute.register(ops.IfElse)
-def execute_if_else(op, bool_expr, true_expr, false_null_expr):
-    """Execute `where` following ibis's intended semantics."""
-    cond = bool_expr
-    true = true_expr
-    false = false_null_expr
-    # TODO(kszucs): turn it into columnwise
-    if isinstance(cond, pd.Series):
-        if not isinstance(true, pd.Series):
-            true = pd.Series(
-                np.repeat(true, len(cond)), name=cond.name, index=cond.index
-            )
-        return true.where(cond, other=false)
-    if cond:
-        if isinstance(false, pd.Series) and not isinstance(true, pd.Series):
-            return pd.Series(np.repeat(true, len(false)))
-        return true
-    else:
-        if isinstance(true, pd.Series) and not isinstance(false, pd.Series):
-            return pd.Series(np.repeat(false, len(true)), index=true.index)
-        return false
+def execute_if_else(op, **kwargs):
+    return columnwise(
+        lambda df: df["true_expr"].where(df["bool_expr"], other=df["false_null_expr"]),
+        kwargs,
+    )
 
 
 @execute.register(ops.TypeOf)
@@ -280,13 +265,10 @@ def execute_typeof(op, arg):
 
 
 @execute.register(ops.NullIf)
-def execute_null_if(op, arg, null_if_expr):
-    if isinstance(arg, pd.Series):
-        return arg.where(arg != null_if_expr)
-    elif isinstance(null_if_expr, pd.Series):
-        return null_if_expr.where(arg != null_if_expr)
-    else:
-        return np.nan if arg == null_if_expr else arg
+def execute_null_if(op, **kwargs):
+    return columnwise(
+        lambda df: df["arg"].where(df["arg"] != df["null_if_expr"]), kwargs
+    )
 
 
 @execute.register(ops.IsNull)
@@ -451,10 +433,13 @@ def execute_arbitrary(op, arg, where, how):
 
 @execute.register(ops.CountStar)
 def execute_count_star(op, arg, where):
-    if where is None:
-        return len(arg)
-    else:
-        return len(arg) - len(where) + where.sum()
+    # TODO(kszucs): revisit the arg handling here
+    def agg(df):
+        if where is None:
+            return len(df)
+        else:
+            return len(df) - len(where) + where.sum()
+    return agg
 
 
 @execute.register(ops.InValues)
@@ -530,9 +515,18 @@ def zuper(node, params):
         result = execute(node, **kwargs)
         return result
 
-    node = node.replace(aggregate_to_groupby | replace_literals)
-    # print(node.to_expr())
+    original = node
 
+    node = node.to_expr().as_table().op()
+    node = node.replace(aggregate_to_groupby | replace_literals)
     result = node.map(fn)[node]
+
+    if isinstance(original, ops.Value):
+        if original.shape.is_scalar():
+            return result.iloc[0, 0]
+        elif original.shape.is_columnar():
+            return result.iloc[:, 0]
+        else:
+            raise TypeError(f"Unexpected shape: {original.shape}")
 
     return result

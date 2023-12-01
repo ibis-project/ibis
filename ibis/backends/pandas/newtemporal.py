@@ -56,9 +56,9 @@ _serieswise_functions = {
 @execute.register(ops.TimestampTruncate)
 @execute.register(ops.DateTruncate)
 @execute.register(ops.TimestampFromUNIX)
-def execute_columnwise(op, arg, **kwargs):
+def execute_columnwise(op, **kwargs):
     func = _serieswise_functions[type(op)]
-    return serieswise(func, arg, **kwargs)
+    return serieswise(func, **kwargs)
 
 
 @execute.register(ops.DateAdd)
@@ -74,8 +74,8 @@ def execute_timestamp_sub(op, left, right):
 
 
 @execute.register(ops.IntervalFromInteger)
-def execute_interval_from_integer(op, arg, unit):
+def execute_interval_from_integer(op, unit, **kwargs):
     if unit.short in {"Y", "Q", "M", "W"}:
-        return elementwise(lambda v: pd.DateOffset(**{unit.plural: v}), arg)
+        return elementwise(lambda v: pd.DateOffset(**{unit.plural: v}), **kwargs)
     else:
-        return serieswise(lambda arg: arg.astype(f"timedelta64[{unit.short}]"), arg)
+        return serieswise(lambda arg: arg.astype(f"timedelta64[{unit.short}]"), **kwargs)
