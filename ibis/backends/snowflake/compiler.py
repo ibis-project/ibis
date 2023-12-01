@@ -13,6 +13,7 @@ import ibis
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
+from ibis import util
 from ibis.backends.base.sqlglot.compiler import NULL, STAR, SQLGlotCompiler
 from ibis.backends.snowflake.datatypes import SnowflakeType
 from ibis.common.patterns import replace
@@ -240,6 +241,9 @@ class SnowflakeCompiler(SQLGlotCompiler):
 
     @visit_node.register(ops.StructField)
     def visit_StructField(self, op, *, arg, field):
+        # TODO(cpcloud): why is coming in as an Alias?
+        if isinstance(arg, sg.exp.Alias):
+            arg = arg.this
         return self.cast(self.f.get(arg, field), op.dtype)
 
     @visit_node.register(ops.RegexSearch)
@@ -418,7 +422,10 @@ class SnowflakeCompiler(SQLGlotCompiler):
 
     @visit_node.register(ops.Unnest)
     def visit_Unnest(self, op, *, arg):
-        return self.cast(self.f.nullif(sg.exp.Explode(this=arg), ""), op.dtype)
+        sep = sg.exp.convert(util.guid())
+        split = self.f.split(self.f.array_to_string(arg, sep), sep)
+        expr = self.f.nullif(sg.exp.Explode(this=split), "")
+        return self.cast(expr, op.dtype)
 
     @visit_node.register(ops.StringJoin)
     def visit_StringJoin(self, op, *, arg, sep):
