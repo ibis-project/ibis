@@ -513,6 +513,14 @@ class SnowflakeCompiler(SQLGlotCompiler):
     def visit_Undefined(self, op, **_):
         raise com.OperationNotDefinedError(type(op).__name__)
 
+    @visit_node.register(ops.WindowBoundary)
+    def visit_WindowBoundary(self, op, *, value, preceding):
+        if not isinstance(op.value, ops.Literal):
+            raise com.OperationNotDefinedError(
+                "Expressions in window bounds are not supported by Snowflake"
+            )
+        return super().visit_WindowBoundary(op, value=value, preceding=preceding)
+
 
 _SIMPLE_OPS = {
     ops.Mode: "mode",
