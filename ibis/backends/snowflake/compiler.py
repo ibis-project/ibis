@@ -510,7 +510,6 @@ class SnowflakeCompiler(SQLGlotCompiler):
     @visit_node.register(ops.IntervalAdd)
     @visit_node.register(ops.TimestampAdd)
     @visit_node.register(ops.TimestampDiff)
-    @visit_node.register(ops.Strftime)
     @visit_node.register(ops.TryCast)
     def visit_Undefined(self, op, **_):
         raise com.OperationNotDefinedError(type(op).__name__)
@@ -555,6 +554,7 @@ _SIMPLE_OPS = {
     ops.Reverse: "reverse",
     ops.StringAscii: "ascii",
     ops.StringReplace: "replace",
+    ops.Strftime: "to_varchar",
 }
 
 for _op, _name in _SIMPLE_OPS.items():
