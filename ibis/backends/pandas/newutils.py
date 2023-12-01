@@ -53,23 +53,26 @@ def columnwise(_func: Callable, _values: dict | tuple, **kwargs):
     return result.iloc[0] if all_scalars else result
 
 
-def serieswise(_func, _value, **kwargs):
-    if isinstance(_value, pd.Series):
+def serieswise(_func, **kwargs):
+    (key, value), *rest = kwargs.items()
+    if isinstance(value, pd.Series):
         # dealing with a single series object
-        return _func(_value, **kwargs)
+        return _func(**kwargs)
     else:
         # dealing with a single scalar object
-        _value = pd.Series([_value])
-        return _func(_value, **kwargs).iloc[0]
+        value = pd.Series([value])
+        kwargs = {key: value, **dict(rest)}
+        return _func(**kwargs).iloc[0]
 
 
-def elementwise(_func, _values, **kwargs):
-    if isinstance(_values, pd.Series):
+def elementwise(_func, **kwargs):
+    value = kwargs.pop(next(iter(kwargs)))
+    if isinstance(value, pd.Series):
         # dealing with a single series object
-        return _values.apply(_func, **kwargs)
+        return value.apply(_func, **kwargs)
     else:
         # dealing with a single scalar object
-        return _func(_values)
+        return _func(value, **kwargs)
 
 
 ####################### STRING FUNCTIONS #######################

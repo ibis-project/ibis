@@ -28,24 +28,6 @@ from ibis.formats.pandas import PandasData, PandasSchema, PandasType
 #     fields
 
 
-################## REWRITE RULES ##############################
-
-# @replace(ops.Project)
-# def rewrite_project(expr):
-#     # 1. gather plain column references and construct an operation picking those
-#     #    columns from the table
-#     # 2. collect the expressions which need to be computed
-#     # 3. merge the dataframe from 1. with the expressions from 2.
-#     pass
-
-# @replace(ops.JoinChain)
-# def rewrite_join_chain(expr):
-#     # explode the join chain into a nested join tree
-#     pass
-
-###############################################################
-
-
 @singledispatch
 def execute(node, **kwargs):
     raise OperationNotDefinedError(f"no rule for {type(node)}")
@@ -143,17 +125,6 @@ def execute_sort(op, parent, keys):
 @execute.register(ColumnRef)
 def execute_column_ref(op, name, dtype):
     return name
-
-
-# @execute.register(GroupBy)
-# def execute_group_by(op, parent, groups):
-#     return parent.groupby(list(groups))
-
-
-# @execute.register(GroupByMetrics)
-# def execute_group_by_metrics(op, parent, metrics):
-#     # construct the result dataframe from the groups and metrics
-#     return pd.concat(metrics, axis=1).reset_index()
 
 
 @execute.register(ops.Field)
@@ -286,6 +257,7 @@ def execute_if_else(op, bool_expr, true_expr, false_null_expr):
     cond = bool_expr
     true = true_expr
     false = false_null_expr
+    # TODO(kszucs): turn it into columnwise
     if isinstance(cond, pd.Series):
         if not isinstance(true, pd.Series):
             true = pd.Series(
@@ -357,6 +329,7 @@ def execute_dropna(op, parent, how, subset):
     return parent.dropna(how=how, subset=subset)
 
 
+# these are serieswise functions
 _reduction_functions = {
     ops.Min: lambda x: x.min(),
     ops.Max: lambda x: x.max(),
@@ -557,20 +530,9 @@ def zuper(node, params):
         result = execute(node, **kwargs)
         return result
 
-    # original = node
-    # node = node.to_expr().as_table().op()
     node = node.replace(aggregate_to_groupby | replace_literals)
     # print(node.to_expr())
 
     result = node.map(fn)[node]
-    # if isinstance(original, ops.Value):
-    #     if original.shape.is_columnar():
-    #         print("COLUMNAR")
-    #         result = result.iloc[:, 0]
-    #     elif original.shape.is_scalar():
-    #         print("SCALAR")
-    #         result = result.iloc[0, 0]
-    #     else:
-    #         raise TypeError(f"Unexpected shape: {original.shape}")
 
     return result
