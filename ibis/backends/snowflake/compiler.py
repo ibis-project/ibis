@@ -372,6 +372,10 @@ class SnowflakeCompiler(SQLGlotCompiler):
             stop = self.f.array_size(arg)
         return self.f.array_slice(arg, start, stop)
 
+    @visit_node.register(ops.ExtractEpochSeconds)
+    def visit_ExtractExtractEpochSeconds(self, op, *, arg):
+        return self.f.extract("epoch", arg)
+
     @visit_node.register(ops.ExtractMicrosecond)
     def visit_ExtractMicrosecond(self, op, *, arg):
         return self.cast(self.f.extract("epoch_microsecond", arg) % 1_000_000, op.dtype)
