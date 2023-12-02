@@ -63,7 +63,7 @@ def tpch_test(test: Callable[..., ir.Table]):
         result = backend.connection.execute(result_expr)
         assert not result.empty
 
-        expected = expected_expr.execute()
+        expected = expected_expr.cast(result_expr.schema()).execute()
         assert not expected.empty
 
         assert list(map(str.lower, expected.columns)) == result.columns.tolist()
