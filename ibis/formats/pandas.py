@@ -189,6 +189,8 @@ class PandasData(DataMapper):
             return s.dt.tz_convert(dtype.timezone)
         elif pdt.is_datetime64_dtype(s.dtype):
             return s.dt.tz_localize(dtype.timezone)
+        elif pdt.is_numeric_dtype(s.dtype):
+            return pd.to_datetime(s, unit="s").dt.tz_localize(dtype.timezone)
         else:
             try:
                 return s.astype(pandas_type)
@@ -208,8 +210,13 @@ class PandasData(DataMapper):
     @staticmethod
     def convert_Date(s, dtype, pandas_type):
         if isinstance(s.dtype, pd.DatetimeTZDtype):
-            s = s.dt.tz_convert("UTC").dt.tz_localize(None)
-        return s.astype(pandas_type, errors="ignore").dt.normalize()
+            ser = s.dt.tz_convert("UTC").dt.tz_localize(None)
+        elif pdt.is_numeric_dtype(s.dtype):
+            ser = pd.to_datetime(s, unit="D")
+        else:
+            ser = pd.to_datetime(s).astype(pandas_type, errors="ignore")
+
+        return ser.dt.normalize()
 
     @staticmethod
     def convert_Interval(s, dtype, pandas_type):

@@ -82,7 +82,7 @@ def test_variadic_to_numpy(ibis_type):
 
 @h.given(ibst.date_dtype())
 def test_date_to_numpy(ibis_type):
-    assert NumpyType.from_ibis(ibis_type) == np.dtype("datetime64[ns]")
+    assert NumpyType.from_ibis(ibis_type) == np.dtype("datetime64[D]")
 
 
 @pytest.mark.parametrize(

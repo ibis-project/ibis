@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import numpy as np
 import pandas as pd
 
 import ibis.expr.operations as ops
@@ -77,6 +78,27 @@ def execute_timestamp_add(op, left, right):
 @execute.register(ops.TimestampDiff)
 def execute_timestamp_sub(op, left, right):
     return left - right
+
+
+@execute.register(ops.IntervalMultiply)
+def execute_interval_multiply(op, left, right):
+    return left * right
+
+
+@execute.register(ops.IntervalFloorDivide)
+def execute_interval_floor_divide(op, left, right):
+    return left // right
+
+
+@execute.register(ops.BetweenTime)
+def execute_between_time(op, arg, lower_bound, upper_bound):
+    idx = pd.DatetimeIndex(arg)
+    if idx.tz is not None:
+        idx = idx.tz_convert(None)  # make naive because times are naive
+    indexer = idx.indexer_between_time(lower_bound, upper_bound)
+    result = np.zeros(len(arg), dtype=np.bool_)
+    result[indexer] = True
+    return pd.Series(result)
 
 
 @execute.register(ops.IntervalFromInteger)

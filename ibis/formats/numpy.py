@@ -69,8 +69,7 @@ class NumpyType(TypeMapper[np.dtype]):
             # --- now we are using the properly roundtripping one
             return np.dtype(f"datetime64[{dtype.unit.short}]")
         elif dtype.is_date():
-            # return np.dtype("datetime64[D]")
-            return np.dtype("datetime64[ns]")
+            return np.dtype("datetime64[D]")
         elif (
             dtype.is_null()
             or dtype.is_decimal()
