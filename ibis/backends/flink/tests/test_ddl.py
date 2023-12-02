@@ -242,6 +242,7 @@ def test_force_recreate_in_mem_table(
         tbl_properties=tbl_properties,
     )
     assert temp_table in con.list_tables()
+    assert temp_table in con.list_views()
     if schema is not None:
         assert new_table.schema() == schema
 
@@ -254,6 +255,7 @@ def test_force_recreate_in_mem_table(
         overwrite=True,
     )
     assert temp_table in con.list_tables()
+    assert temp_table in con.list_views()
     if schema is not None:
         assert new_table.schema() == schema
 
