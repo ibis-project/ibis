@@ -552,10 +552,6 @@ class SnowflakeCompiler(SQLGlotCompiler):
 
 
 _SIMPLE_OPS = {
-    ops.All: "booland_agg",
-    ops.Any: "boolor_agg",
-    ops.ArgMax: "max_by",
-    ops.ArgMin: "min_by",
     ops.ArrayDistinct: "array_distinct",
     ops.ArrayFlatten: "array_flatten",
     ops.ArrayIndex: "get",
@@ -580,7 +576,6 @@ _SIMPLE_OPS = {
     ops.RPad: "rpad",
     ops.RegexReplace: "regexp_replace",
     ops.Reverse: "reverse",
-    ops.StartsWith: "startswith",
     ops.Strftime: "to_varchar",
     ops.StringAscii: "ascii",
     ops.StringReplace: "replace",
@@ -588,7 +583,6 @@ _SIMPLE_OPS = {
     ops.StringToTimestamp: "to_timestamp_tz",
     ops.TimeFromHMS: "time_from_parts",
     ops.TimestampFromYMDHMS: "timestamp_from_parts",
-    ops.Translate: "translate",
 }
 
 for _op, _name in _SIMPLE_OPS.items():

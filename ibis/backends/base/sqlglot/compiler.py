@@ -598,15 +598,6 @@ class SQLGlotCompiler(abc.ABC):
     def visit_StringSQLILike(self, op, *, arg, pattern, escape):
         return arg.ilike(pattern)
 
-    @visit_node.register(ops.Capitalize)
-    def visit_Capitalize(self, op, *, arg):
-        return sge.Concat(
-            expressions=[
-                self.f.upper(self.f.substr(arg, 1, 1)),
-                self.f.lower(self.f.substr(arg, 2)),
-            ]
-        )
-
     ### NULL PLAYER CHARACTER
     @visit_node.register(ops.IsNull)
     def visit_IsNull(self, op, *, arg):
@@ -1132,6 +1123,10 @@ class SQLGlotCompiler(abc.ABC):
 
 
 _SIMPLE_OPS = {
+    ops.All: "bool_and",
+    ops.Any: "bool_or",
+    ops.ArgMax: "max_by",
+    ops.ArgMin: "min_by",
     ops.Power: "pow",
     # Unary operations
     ops.IsNan: "isnan",
@@ -1197,6 +1192,8 @@ _SIMPLE_OPS = {
     ops.CumeDist: "cume_dist",
     ops.ArrayLength: "array_size",
     ops.ArraySort: "array_sort",
+    ops.Capitalize: "initcap",
+    ops.Translate: "translate",
 }
 
 _BINARY_INFIX_OPS = {

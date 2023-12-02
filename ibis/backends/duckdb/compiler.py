@@ -4,6 +4,7 @@ import math
 from functools import partial, reduce, singledispatchmethod
 
 import sqlglot as sg
+import sqlglot.expressions as sge
 from public import public
 
 import ibis.common.exceptions as com
@@ -34,7 +35,7 @@ class DuckDBCompiler(SQLGlotCompiler):
     def _aggregate(self, funcname: str, *args, where):
         expr = self.f[funcname](*args)
         if where is not None:
-            return sg.exp.Filter(this=expr, expression=sg.exp.Where(this=where))
+            return sge.Filter(this=expr, expression=sge.Where(this=where))
         return expr
 
     @singledispatchmethod
@@ -60,18 +61,18 @@ class DuckDBCompiler(SQLGlotCompiler):
 
     @visit_node.register(ops.ArrayRepeat)
     def visit_ArrayRepeat(self, op, *, arg, times):
-        func = sg.exp.Lambda(this=arg, expressions=[sg.to_identifier("_")])
+        func = sge.Lambda(this=arg, expressions=[sg.to_identifier("_")])
         return self.f.flatten(self.f.list_apply(self.f.range(times), func))
 
     @visit_node.register(ops.Sample)
     def visit_Sample(
         self, op, *, parent, fraction: float, method: str, seed: int | None, **_
     ):
-        sample = sg.exp.TableSample(
+        sample = sge.TableSample(
             this=parent,
             method="bernoulli" if method == "row" else "system",
-            percent=sg.exp.convert(fraction * 100.0),
-            seed=None if seed is None else sg.exp.convert(seed),
+            percent=sge.convert(fraction * 100.0),
+            seed=None if seed is None else sge.convert(seed),
         )
         return sg.select(STAR).from_(sample)
 
@@ -93,26 +94,26 @@ class DuckDBCompiler(SQLGlotCompiler):
 
     @visit_node.register(ops.ArrayMap)
     def visit_ArrayMap(self, op, *, arg, body, param):
-        lamduh = sg.exp.Lambda(this=body, expressions=[sg.to_identifier(param)])
+        lamduh = sge.Lambda(this=body, expressions=[sg.to_identifier(param)])
         return self.f.list_apply(arg, lamduh)
 
     @visit_node.register(ops.ArrayFilter)
     def visit_ArrayFilter(self, op, *, arg, body, param):
-        lamduh = sg.exp.Lambda(this=body, expressions=[sg.to_identifier(param)])
+        lamduh = sge.Lambda(this=body, expressions=[sg.to_identifier(param)])
         return self.f.list_filter(arg, lamduh)
 
     @visit_node.register(ops.ArrayIntersect)
     def visit_ArrayIntersect(self, op, *, left, right):
         param = sg.to_identifier("x")
         body = self.f.list_contains(right, param)
-        lamduh = sg.exp.Lambda(this=body, expressions=[param])
+        lamduh = sge.Lambda(this=body, expressions=[param])
         return self.f.list_filter(left, lamduh)
 
     @visit_node.register(ops.ArrayRemove)
     def visit_ArrayRemove(self, op, *, arg, other):
         param = sg.to_identifier("x")
         body = param.neq(other)
-        lamduh = sg.exp.Lambda(this=body, expressions=[param])
+        lamduh = sge.Lambda(this=body, expressions=[param])
         return self.f.list_filter(arg, lamduh)
 
     @visit_node.register(ops.ArrayUnion)
@@ -132,13 +133,13 @@ class DuckDBCompiler(SQLGlotCompiler):
     @visit_node.register(ops.ArrayZip)
     def visit_ArrayZip(self, op, *, arg):
         i = sg.to_identifier("i")
-        body = sg.exp.Struct.from_arg_list(
+        body = sge.Struct.from_arg_list(
             [
-                sg.exp.Slice(this=k, expression=v[i])
-                for k, v in zip(map(sg.exp.convert, op.dtype.value_type.names), arg)
+                sge.Slice(this=k, expression=v[i])
+                for k, v in zip(map(sge.convert, op.dtype.value_type.names), arg)
             ]
         )
-        func = sg.exp.Lambda(this=body, expressions=[i])
+        func = sge.Lambda(this=body, expressions=[i])
         return self.f.list_apply(
             self.f.range(
                 1,
@@ -161,7 +162,7 @@ class DuckDBCompiler(SQLGlotCompiler):
     @visit_node.register(ops.ToJSONMap)
     @visit_node.register(ops.ToJSONArray)
     def visit_ToJSONMap(self, op, *, arg):
-        return sg.exp.TryCast(this=arg, to=self.type_mapper.from_ibis(op.dtype))
+        return sge.TryCast(this=arg, to=self.type_mapper.from_ibis(op.dtype))
 
     @visit_node.register(ops.ArrayConcat)
     def visit_ArrayConcat(self, op, *, arg):
@@ -188,12 +189,12 @@ class DuckDBCompiler(SQLGlotCompiler):
         # use a tuple because duckdb doesn't accept COUNT(DISTINCT a, b, c, ...)
         #
         # this turns the expression into COUNT(DISTINCT (a, b, c, ...))
-        row = sg.exp.Tuple(
+        row = sge.Tuple(
             expressions=list(
                 map(partial(sg.column, quoted=self.quoted), op.arg.schema.keys())
             )
         )
-        return self.agg.count(sg.exp.Distinct(expressions=[row]), where=where)
+        return self.agg.count(sge.Distinct(expressions=[row]), where=where)
 
     @visit_node.register(ops.StringJoin)
     def visit_StringJoin(self, op, *, arg, sep):
@@ -215,7 +216,7 @@ class DuckDBCompiler(SQLGlotCompiler):
         if unit == "ms":
             return self.f.epoch_ms(arg)
         elif unit == "s":
-            return sg.exp.UnixToTime(this=arg)
+            return sge.UnixToTime(this=arg)
         else:
             raise com.UnsupportedOperationError(f"{unit!r} unit is not supported!")
 
@@ -252,8 +253,8 @@ class DuckDBCompiler(SQLGlotCompiler):
                     f"{self.dialect} doesn't support nanosecond interval resolutions"
                 )
 
-            return sg.exp.Interval(
-                this=sg.exp.convert(str(value)), unit=dtype.resolution.upper()
+            return sge.Interval(
+                this=sge.convert(str(value)), unit=dtype.resolution.upper()
             )
         elif dtype.is_uuid():
             return self.cast(str(value), dtype)
@@ -292,6 +293,15 @@ class DuckDBCompiler(SQLGlotCompiler):
             return self.f[funcname](*args)
         else:
             return super().visit_node(op, value=value, dtype=dtype, **kw)
+
+    @visit_node.register(ops.Capitalize)
+    def visit_Capitalize(self, op, *, arg):
+        return sge.Concat(
+            expressions=[
+                self.f.upper(self.f.substr(arg, 1, 1)),
+                self.f.lower(self.f.substr(arg, 2)),
+            ]
+        )
 
 
 _SIMPLE_OPS = {

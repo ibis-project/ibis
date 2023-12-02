@@ -407,7 +407,7 @@ def uses_java_re(t):
             id="translate",
             marks=[
                 pytest.mark.notimpl(
-                    ["duckdb", "mssql", "mysql", "polars", "druid", "oracle"],
+                    ["mssql", "mysql", "polars", "druid", "oracle"],
                     raises=com.OperationNotDefinedError,
                 ),
                 pytest.mark.notyet(
