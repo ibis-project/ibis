@@ -30,6 +30,7 @@ class DataFusion(Postgres):
             exp.Split: rename_func("string_to_array"),
             exp.Array: rename_func("make_array"),
             exp.ArrayContains: rename_func("array_has"),
+            exp.ArraySize: rename_func("array_length"),
         }
 
 
@@ -46,7 +47,7 @@ class DataFusionCompiler(SQLGlotCompiler):
     dialect = "datafusion"
     type_mapper = DataFusionType
     quoted = True
-    rewrites = (*SQLGlotCompiler.rewrites, rewrite_sample)
+    rewrites = (rewrite_sample, *SQLGlotCompiler.rewrites)
 
     def _aggregate(self, funcname: str, *args, where):
         expr = self.f[funcname](*args)
@@ -448,10 +449,42 @@ class DataFusionCompiler(SQLGlotCompiler):
     def visit_ArrayIndex(self, op, *, arg, index):
         return self.f.array_element(arg, index + self.cast(index >= 0, op.index.dtype))
 
+    @visit_node.register(ops.Arbitrary)
+    @visit_node.register(ops.ArgMax)
+    @visit_node.register(ops.ArgMin)
+    @visit_node.register(ops.ArrayDistinct)
+    @visit_node.register(ops.ArrayFilter)
+    @visit_node.register(ops.ArrayFlatten)
+    @visit_node.register(ops.ArrayIntersect)
+    @visit_node.register(ops.ArrayMap)
+    @visit_node.register(ops.ArraySort)
+    @visit_node.register(ops.ArrayUnion)
+    @visit_node.register(ops.ArrayZip)
+    @visit_node.register(ops.BitwiseNot)
+    @visit_node.register(ops.Clip)
+    @visit_node.register(ops.CountDistinctStar)
+    @visit_node.register(ops.DateDelta)
+    @visit_node.register(ops.Greatest)
+    @visit_node.register(ops.GroupConcat)
+    @visit_node.register(ops.IntervalFromInteger)
+    @visit_node.register(ops.Least)
+    @visit_node.register(ops.MultiQuantile)
+    @visit_node.register(ops.Quantile)
+    @visit_node.register(ops.RowID)
+    @visit_node.register(ops.Strftime)
+    @visit_node.register(ops.TimeDelta)
+    @visit_node.register(ops.TimestampBucket)
+    @visit_node.register(ops.TimestampDelta)
+    @visit_node.register(ops.TimestampNow)
+    @visit_node.register(ops.TypeOf)
+    @visit_node.register(ops.Unnest)
+    @visit_node.register(ops.EndsWith)
+    def visit_Undefined(self, op, **_):
+        raise com.OperationNotDefinedError(type(op).__name__)
+
 
 _SIMPLE_OPS = {
     ops.ApproxMedian: "approx_median",
-    ops.ArrayLength: "array_length",
     ops.ArrayRemove: "array_remove_all",
     ops.BitAnd: "bit_and",
     ops.BitOr: "bit_or",
@@ -498,47 +531,3 @@ for _op, _name in _SIMPLE_OPS.items():
             return self.f[_name](*kw.values())
 
     setattr(DataFusionCompiler, f"visit_{_op.__name__}", _fmt)
-
-
-_NOT_IMPLEMENTED_OPS = {
-    ops.Arbitrary,
-    ops.ArgMax,
-    ops.ArgMin,
-    ops.ArrayDistinct,
-    ops.ArrayFilter,
-    ops.ArrayFlatten,
-    ops.ArrayIntersect,
-    ops.ArrayMap,
-    ops.ArrayUnion,
-    ops.ArrayZip,
-    ops.BitwiseNot,
-    ops.Clip,
-    ops.CountDistinctStar,
-    ops.DateDelta,
-    ops.Greatest,
-    ops.GroupConcat,
-    ops.IntervalFromInteger,
-    ops.Least,
-    ops.MultiQuantile,
-    ops.Quantile,
-    ops.RowID,
-    ops.Strftime,
-    ops.TimeDelta,
-    ops.TimestampBucket,
-    ops.TimestampDelta,
-    ops.TimestampNow,
-    ops.TypeOf,
-    ops.Unnest,
-    ops.EndsWith,
-}
-
-for _op in _NOT_IMPLEMENTED_OPS:
-
-    @DataFusionCompiler.visit_node.register(_op)
-    def _fmt(self, op, **_):
-        raise com.OperationNotDefinedError(type(op).__name__)
-
-    setattr(DataFusionCompiler, f"visit_{_op.__name__}", _fmt)
-
-
-del _op, _fmt

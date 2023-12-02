@@ -407,11 +407,11 @@ class SnowflakeCompiler(SQLGlotCompiler):
 
     @visit_node.register(ops.ExtractMicrosecond)
     def visit_ExtractMicrosecond(self, op, *, arg):
-        return self.cast(self.f.extract("epoch_microsecond", arg) % 1_000_000, op.dtype)
+        return self.f.extract("epoch_microsecond", arg) % 1_000_000
 
     @visit_node.register(ops.ExtractMillisecond)
     def visit_ExtractMillisecond(self, op, *, arg):
-        return self.cast(self.f.extract("epoch_millisecond", arg) % 1_000, op.dtype)
+        return self.f.extract("epoch_millisecond", arg) % 1_000
 
     @visit_node.register(ops.ExtractQuery)
     def visit_ExtractQuery(self, op, *, arg, key):
@@ -560,9 +560,7 @@ _SIMPLE_OPS = {
     ops.ArrayFlatten: "array_flatten",
     ops.ArrayIndex: "get",
     ops.ArrayIntersect: "array_intersection",
-    ops.ArrayLength: "array_size",
     ops.ArrayRemove: "array_remove",
-    ops.ArraySort: "array_sort",
     ops.BitAnd: "bitand_agg",
     ops.BitOr: "bitor_agg",
     ops.BitXor: "bitxor_agg",

@@ -1195,6 +1195,8 @@ _SIMPLE_OPS = {
     ops.DenseRank: "dense_rank",
     ops.PercentRank: "percent_rank",
     ops.CumeDist: "cume_dist",
+    ops.ArrayLength: "array_size",
+    ops.ArraySort: "array_sort",
 }
 
 _BINARY_INFIX_OPS = {

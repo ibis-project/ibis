@@ -6,6 +6,9 @@ from functools import singledispatchmethod
 from typing import Any
 
 import sqlglot as sg
+from sqlglot import exp
+from sqlglot.dialects import ClickHouse
+from sqlglot.dialects.dialect import rename_func
 
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
@@ -20,13 +23,18 @@ from ibis.backends.base.sqlglot.compiler import (
 from ibis.backends.clickhouse.datatypes import ClickhouseType
 from ibis.expr.rewrites import rewrite_sample
 
+ClickHouse.Generator.TRANSFORMS |= {
+    exp.ArraySize: rename_func("length"),
+    exp.ArraySort: rename_func("arraySort"),
+}
+
 
 class ClickHouseCompiler(SQLGlotCompiler):
     __slots__ = ()
 
     dialect = "clickhouse"
     type_mapper = ClickhouseType
-    rewrites = (*SQLGlotCompiler.rewrites, rewrite_sample)
+    rewrites = (rewrite_sample, *SQLGlotCompiler.rewrites)
 
     def _aggregate(self, funcname: str, *args, where):
         has_filter = where is not None
@@ -594,9 +602,7 @@ _SIMPLE_OPS = {
     ops.ArrayContains: "has",
     ops.ArrayFlatten: "arrayFlatten",
     ops.ArrayIntersect: "arrayIntersect",
-    ops.ArrayLength: "length",
     ops.ArrayPosition: "indexOf",
-    ops.ArraySort: "arraySort",
     ops.BitwiseAnd: "bitAnd",
     ops.BitwiseLeftShift: "bitShiftLeft",
     ops.BitwiseNot: "bitNot",
@@ -629,7 +635,6 @@ _SIMPLE_OPS = {
     ops.IsNan: "isNaN",
     ops.IsNull: "isNull",
     ops.LPad: "leftPad",
-    ops.LPad: "lpad",
     ops.LStrip: "trimLeft",
     ops.Last: "anyLast",
     ops.Ln: "log",

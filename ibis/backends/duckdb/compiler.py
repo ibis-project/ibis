@@ -296,7 +296,6 @@ class DuckDBCompiler(SQLGlotCompiler):
 
 _SIMPLE_OPS = {
     ops.ArrayPosition: "list_indexof",
-    ops.ArraySort: "list_sort",
     ops.BitAnd: "bit_and",
     ops.BitOr: "bit_or",
     ops.BitXor: "bit_xor",
