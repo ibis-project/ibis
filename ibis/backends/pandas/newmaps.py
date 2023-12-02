@@ -21,6 +21,10 @@ def safe_method(mapping, method, *args, **kwargs):
         return method(*args, **kwargs)
 
 
+def safe_len(mapping):
+    return safe_method(mapping, "__len__")
+
+
 def safe_get(mapping, key, default=None):
     return safe_method(mapping, "get", key, default)
 
@@ -45,9 +49,18 @@ def safe_values(mapping):
     return np.array(list(result), dtype="object")
 
 
+def safe_merge(left, right):
+    if left is None or left is pd.NA:
+        return None
+    elif right is None or right is pd.NA:
+        return None
+    else:
+        return {**left, **right}
+
+
 @execute.register(ops.MapLength)
 def execute_map_length(op, **kwargs):
-    return elementwise(len, **kwargs)
+    return elementwise(safe_len, **kwargs)
 
 
 @execute.register(ops.MapKeys)
@@ -77,7 +90,7 @@ def execute_map(op, **kwargs):
 
 @execute.register(ops.MapMerge)
 def execute_map_merge(op, **kwargs):
-    return rowwise(lambda row: {**row["left"], **row["right"]}, kwargs)
+    return rowwise(lambda row: safe_merge(row["left"], row["right"]), kwargs)
 
 
 @execute.register(ops.StructField)
