@@ -1,20 +1,16 @@
 from __future__ import annotations
 
-import collections
-import functools
-
 import numpy as np
 import pandas as pd
-import toolz
 
 import ibis.expr.operations as ops
 from ibis.backends.pandas.newpandas import execute
-from ibis.backends.pandas.newutils import columnwise, elementwise, rowwise, serieswise
+from ibis.backends.pandas.newutils import elementwise, rowwise
 
 
 def safe_method(mapping, method, *args, **kwargs):
-    if mapping is None:
-        return None
+    if mapping is None or mapping is pd.NA:
+        return mapping
     try:
         method = getattr(mapping, method)
     except AttributeError:
@@ -80,3 +76,8 @@ def execute_map(op, **kwargs):
 @execute.register(ops.MapMerge)
 def execute_map_merge(op, **kwargs):
     return rowwise(lambda row: {**row["left"], **row["right"]}, kwargs)
+
+
+@execute.register(ops.StructField)
+def execute_struct_field(op, arg, field):
+    return elementwise(lambda x: safe_get(x, field), arg=arg)

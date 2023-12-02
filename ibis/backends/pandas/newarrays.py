@@ -1,15 +1,13 @@
 from __future__ import annotations
 
 import itertools
-import operator
 
 import numpy as np
 import pandas as pd
 
 import ibis.expr.operations as ops
 from ibis.backends.pandas.newpandas import execute
-from ibis.backends.pandas.newutils import columnwise, elementwise, rowwise
-from ibis.common.exceptions import OperationNotDefinedError
+from ibis.backends.pandas.newutils import elementwise, rowwise
 
 
 @execute.register(ops.ArrayLength)
@@ -66,8 +64,3 @@ def execute_array_contains(op, **kwargs):
 # @execute.register(ops.Unnest)
 # def execute_unnest(op, arg):
 #     return arg.explode()
-
-
-@execute.register(ops.StructField)
-def execute_struct_field(op, arg, field):
-    return elementwise(lambda x: pd.NA if pd.isna(x) else x[field], arg=arg)

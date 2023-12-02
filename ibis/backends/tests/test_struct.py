@@ -18,19 +18,18 @@ pytestmark = [
 
 
 @pytest.mark.notimpl(["dask", "snowflake"])
-@pytest.mark.parametrize("field", ["a", "b", "c"])
-def test_single_field(backend, struct, struct_df, field):
+@pytest.mark.parametrize(
+    ("field", "expected"),
+    [
+        ("a", [1.0, 2.0, 3.0, pd.NA, 2.0, pd.NA, 3.0]),
+        ("b", ["banana", "apple", "orange", "banana", pd.NA, pd.NA, "orange"]),
+        ("c", [2, 3, 4, 2, 3, pd.NA, pd.NA]),
+    ],
+)
+def test_single_field(backend, struct, struct_df, field, expected):
     expr = struct.abc[field]
-    result = expr.execute().sort_values().reset_index(drop=True)
-    expected = (
-        struct_df.abc.map(
-            lambda value: value[field] if isinstance(value, dict) else value
-        )
-        .rename(field)
-        .sort_values()
-        .reset_index(drop=True)
-    )
-    backend.assert_series_equal(result, expected)
+    result = expr.execute()
+    assert result.tolist() == expected
 
 
 @pytest.mark.notimpl(["dask"])

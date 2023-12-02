@@ -145,12 +145,8 @@ class PandasData(DataMapper):
     @staticmethod
     def convert_default(s, dtype, pandas_type):
         if pandas_type == object:
-            return s.map(
-                lambda x: dt.normalize(
-                    dtype, x, array_type=list, map_type=dict, struct_type=dict
-                ),
-                na_action="ignore",
-            )
+            func = lambda x: dt.normalize(dtype, x, none=pd.NA, immutable=False)
+            return s.map(func, na_action="ignore")
         else:
             return s.astype(pandas_type)
 
@@ -239,7 +235,9 @@ class PandasData(DataMapper):
 
     @staticmethod
     def convert_String(s, dtype, pandas_type):
-        return s.astype(str, errors="ignore")
+        # TODO(kszucs): should switch to the new pandas string type and convert
+        # object columns using s.convert_dtypes() method
+        return s.map(lambda x: x if x is None or x is pd.NA else str(x))
 
 
 class DaskData(PandasData):

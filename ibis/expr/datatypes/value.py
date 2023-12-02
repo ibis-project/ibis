@@ -24,6 +24,7 @@ from ibis.common.temporal import (
     normalize_timedelta,
     normalize_timezone,
 )
+from ibis.common.typing import Sentinel
 from ibis.expr.datatypes.cast import highest_precedence
 
 
@@ -244,19 +245,31 @@ class _WellKnownText:
         return self.text
 
 
+class EMPTY(metaclass=Sentinel):
+    pass
+
+
 # TODO(kszucs): should raise ValueError instead of TypeError
 def normalize(
-    typ, value, array_type=tuple, map_type=frozendict, struct_type=frozendict
+    typ,
+    value,
+    none=EMPTY,
+    immutable=True,
 ):
     """Ensure that the Python type underlying a literal resolves to a single type."""
 
     dtype = dt.dtype(typ)
+
     if value is None:
         if not dtype.nullable:
             raise TypeError(f"Cannot convert `None` to non-nullable type {typ!r}")
         return None
-
-    if dtype.is_boolean():
+    elif none is not EMPTY and value is none:
+        if not dtype.nullable:
+            raise TypeError(f"Cannot convert `{none}` to non-nullable type {typ!r}")
+        # preserve sentinel value
+        return none
+    elif dtype.is_boolean():
         try:
             return bool(value)
         except ValueError:
@@ -297,29 +310,17 @@ def normalize(
     elif dtype.is_uuid():
         return value if isinstance(value, uuid.UUID) else uuid.UUID(value)
     elif dtype.is_array():
-        return array_type(
-            normalize(
-                dtype.value_type,
-                item,
-                array_type=array_type,
-                map_type=map_type,
-                struct_type=struct_type,
-            )
+        array = [
+            normalize(dtype.value_type, item, none=none, immutable=immutable)
             for item in value
-        )
+        ]
+        return tuple(array) if immutable else array
     elif dtype.is_map():
-        return map_type(
-            {
-                k: normalize(
-                    dtype.value_type,
-                    v,
-                    array_type=array_type,
-                    map_type=map_type,
-                    struct_type=struct_type,
-                )
-                for k, v in value.items()
-            }
-        )
+        mapping = {
+            k: normalize(dtype.value_type, v, none=none, immutable=immutable)
+            for k, v in value.items()
+        }
+        return frozendict(mapping) if immutable else mapping
     elif dtype.is_struct():
         if not isinstance(value, Mapping):
             raise TypeError(f"Unable to normalize {dtype} from non-mapping {value!r}")
@@ -327,18 +328,11 @@ def normalize(
             raise TypeError(
                 f"Unable to normalize {value!r} to {dtype} because of missing keys {missing_keys!r}"
             )
-        return struct_type(
-            {
-                k: normalize(
-                    t,
-                    value[k],
-                    array_type=array_type,
-                    map_type=map_type,
-                    struct_type=struct_type,
-                )
-                for k, t in dtype.items()
-            }
-        )
+        struct = {
+            k: normalize(t, value[k], none=none, immutable=immutable)
+            for k, t in dtype.items()
+        }
+        return frozendict(struct) if immutable else struct
     elif dtype.is_geospatial():
         if isinstance(value, (tuple, list)):
             if dtype.is_point():
