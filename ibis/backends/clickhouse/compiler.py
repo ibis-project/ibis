@@ -652,7 +652,6 @@ _SIMPLE_OPS = {
     ops.RandomScalar: "randCanonical",
     ops.RegexReplace: "replaceRegexpAll",
     ops.Repeat: "repeat",
-    ops.Reverse: "reverse",
     ops.RowNumber: "row_number",
     ops.StartsWith: "startsWith",
     ops.StrRight: "right",

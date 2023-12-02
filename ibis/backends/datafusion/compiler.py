@@ -499,12 +499,10 @@ _SIMPLE_OPS = {
     ops.RPad: "rpad",
     ops.RStrip: "rtrim",
     ops.RandomScalar: "random",
-    ops.Reverse: "reverse",
     ops.Sign: "sign",
     ops.StartsWith: "starts_with",
     ops.StringAscii: "ascii",
     ops.StringLength: "character_length",
-    ops.StringReplace: "replace",
     ops.Strip: "trim",
 }
 

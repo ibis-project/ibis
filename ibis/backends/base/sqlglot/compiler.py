@@ -1194,6 +1194,8 @@ _SIMPLE_OPS = {
     ops.ArraySort: "array_sort",
     ops.Capitalize: "initcap",
     ops.Translate: "translate",
+    ops.StringReplace: "replace",
+    ops.Reverse: "reverse",
 }
 
 _BINARY_INFIX_OPS = {
