@@ -66,3 +66,8 @@ def execute_array_contains(op, **kwargs):
 # @execute.register(ops.Unnest)
 # def execute_unnest(op, arg):
 #     return arg.explode()
+
+
+@execute.register(ops.StructField)
+def execute_struct_field(op, arg, field):
+    return elementwise(lambda x: pd.NA if pd.isna(x) else x[field], arg=arg)

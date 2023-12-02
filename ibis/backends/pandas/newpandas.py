@@ -22,13 +22,6 @@ from ibis.formats.pandas import PandasData, PandasSchema, PandasType
 
 ################## PANDAS SPECIFIC NODES ######################
 
-# class PandasRelation(ops.Relation):
-#     pass
-
-
-# class SelectColumns(PandasRelation):
-#     fields
-
 
 @singledispatch
 def execute(node, **kwargs):

@@ -48,6 +48,10 @@ class PandasRename(PandasRelation):
         )
 
 
+# class PandasSelect(PandasRelation):
+#     pass
+
+
 @public
 class PandasJoin(PandasRelation):
     left: ops.Relation
@@ -142,7 +146,7 @@ def aggregate_to_groupby(_):
     return ops.Project(agg, {**group_values, **metric_values})
 
 
-def split_predicates(left, right, predicates):
+def split_join_predicates(left, right, predicates):
     left_on = []
     right_on = []
     for pred in predicates:
@@ -182,7 +186,7 @@ def join_chain_to_nested_joins(_):
         preds = [pred.replace(subs, filter=ops.Value) for pred in link.predicates]
 
         # need to replace the fields in the predicates
-        left_on, right_on = split_predicates(left, right, preds)
+        left_on, right_on = split_join_predicates(left, right, preds)
 
         left = PandasJoin(
             how=link.how,
