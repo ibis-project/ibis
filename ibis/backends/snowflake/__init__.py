@@ -340,6 +340,12 @@ $$ {defn["source"]} $$"""
             with self._safe_raw_sql(";\n".join(udf_sources)):
                 pass
 
+    def _compile_builtin_udf(self, udf_node: ops.ScalarUDF) -> None:
+        """No op."""
+
+    def _compile_pyarrow_udf(self, udf_node: ops.ScalarUDF) -> None:
+        raise NotImplementedError("pyarrow UDFs are not supported in Snowflake")
+
     def _compile_python_udf(self, udf_node: ops.ScalarUDF) -> str:
         return """\
 {preamble}
