@@ -91,7 +91,7 @@ def _create_temp_table_with_schema(backend, con, temp_table_name, schema, data=N
         ),
     ],
 )
-@pytest.mark.notimpl(["dask", "datafusion", "druid"])
+@pytest.mark.notimpl(["dask", "druid"])
 def test_create_table(backend, con, temp_table, lamduh, sch):
     df = pd.DataFrame(
         {
@@ -215,7 +215,7 @@ backend_type_mapping = {
 }
 
 
-@mark.notimpl(["datafusion", "druid", "flink"])
+@mark.notimpl(["druid", "flink"])
 def test_create_table_from_schema(con, new_schema, temp_table):
     new_table = con.create_table(temp_table, schema=new_schema)
     backend_mapping = backend_type_mapping.get(con.name, {})
@@ -299,7 +299,7 @@ def test_rename_table(con, temp_table, temp_table_orig):
     assert temp_table_orig not in con.list_tables()
 
 
-@mark.notimpl(["datafusion", "polars", "druid"])
+@mark.notimpl(["polars", "druid"])
 @mark.never(["impala", "pyspark"], reason="No non-nullable datatypes")
 @mark.notyet(
     ["trino"], reason="trino doesn't support NOT NULL in its in-memory catalog"
@@ -320,7 +320,7 @@ def test_nullable_input_output(con, temp_table):
     assert t.schema().types[2].nullable
 
 
-@mark.notimpl(["datafusion", "druid", "flink", "polars"])
+@mark.notimpl(["druid", "flink", "polars"])
 def test_create_drop_view(ddl_con, temp_view):
     # setup
     table_name = "functional_alltypes"
@@ -1388,7 +1388,7 @@ def gen_test_name(con: BaseBackend) -> str:
 
 
 @mark.notimpl(
-    ["datafusion", "polars"],
+    ["polars"],
     raises=NotImplementedError,
     reason="overwriting not implemented in ibis for this backend",
 )
