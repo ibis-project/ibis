@@ -8,7 +8,7 @@ FROM (
   FROM "leaf" AS "t0"
   WHERE
     TRUE
-) AS t1
+) AS "t1"
 INNER JOIN (
   SELECT
     "t1"."key" AS "key"
@@ -18,8 +18,8 @@ INNER JOIN (
     FROM "leaf" AS "t0"
     WHERE
       TRUE
-  ) AS t1
-) AS t2
+  ) AS "t1"
+) AS "t2"
   ON "t1"."key" = "t2"."key"
 INNER JOIN (
   SELECT
@@ -31,7 +31,7 @@ INNER JOIN (
     FROM "leaf" AS "t0"
     WHERE
       TRUE
-  ) AS t1
+  ) AS "t1"
   INNER JOIN (
     SELECT
       "t1"."key" AS "key"
@@ -41,8 +41,8 @@ INNER JOIN (
       FROM "leaf" AS "t0"
       WHERE
         TRUE
-    ) AS t1
-  ) AS t2
+    ) AS "t1"
+  ) AS "t2"
     ON "t1"."key" = "t2"."key"
-) AS t4
+) AS "t4"
   ON "t1"."key" = "t1"."key"
