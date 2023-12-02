@@ -210,13 +210,13 @@ class PandasData(DataMapper):
     @staticmethod
     def convert_Date(s, dtype, pandas_type):
         if isinstance(s.dtype, pd.DatetimeTZDtype):
-            ser = s.dt.tz_convert("UTC").dt.tz_localize(None)
+            s = s.dt.tz_convert("UTC").dt.tz_localize(None)
         elif pdt.is_numeric_dtype(s.dtype):
-            ser = pd.to_datetime(s, unit="D")
+            s = pd.to_datetime(s, unit="D")
         else:
-            ser = pd.to_datetime(s).astype(pandas_type, errors="ignore")
+            s = pd.to_datetime(s).astype(pandas_type, errors="ignore")
 
-        return ser.dt.normalize()
+        return s.dt.normalize()
 
     @staticmethod
     def convert_Interval(s, dtype, pandas_type):
@@ -244,8 +244,7 @@ class PandasData(DataMapper):
     def convert_String(s, dtype, pandas_type):
         # TODO(kszucs): should switch to the new pandas string type and convert
         # object columns using s.convert_dtypes() method
-        # TODO(kszucs): omit if s.dtype == pandas_type
-        return s.map(lambda x: x if x is None or x is pd.NA else str(x))
+        return s.map(str, na_action="ignore").astype(object)
 
     # @staticmethod
     # def convert_JSON(s, dtype, pandas_type):

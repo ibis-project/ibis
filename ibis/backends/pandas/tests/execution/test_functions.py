@@ -13,7 +13,6 @@ from pytest import param
 
 import ibis
 import ibis.expr.datatypes as dt
-from ibis.backends.pandas.execution import execute
 from ibis.backends.pandas.tests.conftest import TestConf as tm
 from ibis.backends.pandas.udf import udf
 
@@ -221,10 +220,11 @@ def test_execute_with_same_hash_value_in_scope(
         return x
 
     df = pd.DataFrame({"left": [left], "right": [right]})
-    table = ibis.pandas.connect().from_dataframe(df)
+    con = ibis.pandas.connect()
+    table = con.from_dataframe(df)
 
     expr = my_func(table.left, table.right)
-    result = execute(expr.op())
+    result = con.execute(expr)
     assert isinstance(result, pd.Series)
 
     result = result.tolist()
@@ -238,7 +238,7 @@ def test_ifelse_returning_bool():
     true = ibis.literal(True)
     false = ibis.literal(False)
     expr = ibis.ifelse(one + one == two, true, false)
-    result = execute(expr.op())
+    result = ibis.pandas.connect().execute(expr)
     assert result is True
 
 
@@ -261,7 +261,7 @@ def test_signature_does_not_match_input_type(dtype, value):
     df = pd.DataFrame({"col": [value]})
     table = ibis.pandas.connect().from_dataframe(df)
 
-    result = execute(table.col.op())
+    result = table.col.execute()
     assert isinstance(result, pd.Series)
 
     result = result.tolist()

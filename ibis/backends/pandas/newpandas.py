@@ -7,7 +7,6 @@ import numpy as np
 import pandas as pd
 
 import ibis.expr.operations as ops
-from ibis import util
 from ibis.backends.pandas.newutils import asframe, asseries, columnwise
 from ibis.backends.pandas.rewrites import (
     ColumnRef,
@@ -18,6 +17,7 @@ from ibis.backends.pandas.rewrites import (
 )
 from ibis.common.exceptions import OperationNotDefinedError
 from ibis.formats.pandas import PandasData
+from ibis.util import gen_name
 
 ################## PANDAS SPECIFIC NODES ######################
 
@@ -109,8 +109,7 @@ def execute_join(op, left, right, left_on, right_on, how):
         return pd.merge(left, right, how="cross")
     else:
         df = left.merge(right, how=how, left_on=left_on, right_on=right_on)
-        # drop the join key columns
-        return df.drop(columns=["key_0"])
+        return df.drop(columns=[f"key_{i}" for i in range(len(left_on))])
 
 
 @execute.register(ops.Union)
@@ -149,7 +148,7 @@ def execute_sort(op, parent, keys):
     newcols = {}
     for key, keycol in zip(op.keys, keys):
         if not isinstance(key, ops.Field):
-            name = util.gen_name("sort_key")
+            name = gen_name("sort_key")
             newcols[name] = keycol
         names.append(name)
 
@@ -644,6 +643,7 @@ def zuper(node, params):
     node = node.replace(
         aggregate_to_groupby | join_chain_to_nested_joins | replace_literals
     )
+    # print(node.to_expr())
     df = node.map(fn)[node]
 
     # TODO(kszucs): add a flag to disable this conversion because it can be

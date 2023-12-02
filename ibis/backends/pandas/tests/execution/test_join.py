@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import numpy as np
 import pandas as pd
 import pandas.testing as tm
 import pytest
@@ -57,9 +58,26 @@ def test_join_with_multiple_predicates(how, left, right, df1, df2):
     ]
     result = expr.execute()
     expected = pd.merge(
-        df1, df2, how=how, left_on=["key", "key2"], right_on=["key", "key3"]
+        df1,
+        df2,
+        how=how,
+        left_on=["key", "key2"],
+        right_on=["key", "key3"],
+        suffixes=("_left", "_right"),
     ).reset_index(drop=True)
-    tm.assert_frame_equal(result[expected.columns], expected)
+
+    expected_columns = ["key", "value", "key2", "key3", "other_value"]
+    expected = expected[expected_columns]
+    if how == "right":
+        # the ibis expression references the `key` column from the left table
+        # which is not present in the result of the right join, but pandas
+        # includes the column from the right table
+        expected["key"] = pd.Series([np.nan, np.nan, np.nan], dtype=object)
+    elif how == "outer":
+        expected["key"] = pd.Series(["a", "b", "c", "d", np.nan, np.nan], dtype=object)
+
+    assert list(result.columns) == expected_columns
+    tm.assert_frame_equal(result, expected)
 
 
 @mutating_join_type
@@ -70,6 +88,12 @@ def test_join_with_multiple_predicates_written_as_one(how, left, right, df1, df2
     expected = pd.merge(
         df1, df2, how=how, left_on=["key", "key2"], right_on=["key", "key3"]
     ).reset_index(drop=True)
+
+    if how == "right":
+        expected["key"] = pd.Series([np.nan, np.nan], dtype=object)
+    elif how == "outer":
+        expected["key"] = pd.Series(["a", "b", "c", "d", np.nan, np.nan], dtype=object)
+
     tm.assert_frame_equal(result[expected.columns], expected)
 
 
