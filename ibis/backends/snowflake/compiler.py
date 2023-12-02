@@ -4,6 +4,7 @@ import itertools
 from functools import reduce, singledispatchmethod
 
 import sqlglot as sg
+import sqlglot.expressions as sge
 from public import public
 from sqlglot import exp
 from sqlglot.dialects import Snowflake
@@ -52,6 +53,22 @@ def exclude_unsupported_window_frame_from_row_number(_, x):
     return ops.Subtract(_.copy(frame=x.copy(start=None, end=None)), 1)
 
 
+@replace(p.Log2(x))
+def replace_log2(_, x):
+    return ops.Log(2, x)
+
+
+@replace(p.Log10(x))
+def replace_log10(_, x):
+    return ops.Log(10, x)
+
+
+@replace(p.ToJSONArray)
+@replace(p.ToJSONMap)
+def replace_to_json(_):
+    return ops.Cast(_.arg, to=_.dtype)
+
+
 @public
 class SnowflakeCompiler(SQLGlotCompiler):
     __slots__ = ()
@@ -64,6 +81,9 @@ class SnowflakeCompiler(SQLGlotCompiler):
         rewrite_first,
         rewrite_last,
         rewrite_empty_order_by_window,
+        replace_log2,
+        replace_log10,
+        replace_to_json,
         *SQLGlotCompiler.rewrites,
     )
 
@@ -75,8 +95,8 @@ class SnowflakeCompiler(SQLGlotCompiler):
         return func(*args)
 
     @singledispatchmethod
-    def visit_node(self, op, **kwargs):
-        return super().visit_node(op, **kwargs)
+    def visit_node(self, op, **kw):
+        return super().visit_node(op, **kw)
 
     @visit_node.register(ops.Literal)
     def visit_Literal(self, op, *, value, dtype):
@@ -84,7 +104,7 @@ class SnowflakeCompiler(SQLGlotCompiler):
             return super().visit_Literal(op, value=value, dtype=dtype)
         elif dtype.is_string():
             # sqlglot doesn't escape backslashes in strings
-            return sg.exp.convert(value.replace("\\", "\\\\"))
+            return sge.convert(value.replace("\\", "\\\\"))
         elif dtype.is_timestamp():
             args = (
                 value.year,
@@ -102,15 +122,37 @@ class SnowflakeCompiler(SQLGlotCompiler):
         elif dtype.is_time():
             nanos = value.microsecond * 1_000
             return self.f.time_from_parts(value.hour, value.minute, value.second, nanos)
-        elif dtype.is_map() or dtype.is_struct():
-            # TODO: handle conversion of keys and values to expressions
-            return self.f.object_construct_keep_null(
-                *itertools.chain.from_iterable(value.items())
+        elif dtype.is_map():
+            key_type = dtype.key_type
+            keys = (
+                self.visit_Literal(ops.Literal(k, key_type), value=k, dtype=key_type)
+                for k in value.keys()
             )
+
+            value_type = dtype.value_type
+            values = (
+                self.visit_Literal(
+                    ops.Literal(v, value_type), value=v, dtype=value_type
+                )
+                for v in value.values()
+            )
+
+            return self.f.object_construct_keep_null(
+                *itertools.chain.from_iterable(zip(keys, values))
+            )
+        elif dtype.is_struct():
+            pairs = []
+            for k, v in value.items():
+                pairs.append(k)
+                pairs.append(
+                    self.visit_Literal(ops.Literal(v, dtype), value=v, dtype=dtype)
+                )
+            return self.f.object_construct_keep_null(*pairs)
+
         elif dtype.is_uuid():
-            return sg.exp.convert(str(value))
+            return sge.convert(str(value))
         elif dtype.is_binary():
-            return sg.exp.HexString(this=value.hex())
+            return sge.HexString(this=value.hex())
         return super().visit_node(op, value=value, dtype=dtype)
 
     @visit_node.register(ops.Cast)
@@ -191,14 +233,6 @@ class SnowflakeCompiler(SQLGlotCompiler):
             self.f.is_object(arg), self.f.array_size(self.f.object_keys(arg)), NULL
         )
 
-    @visit_node.register(ops.Log2)
-    def visit_Log2(self, op, *, arg):
-        return self.f.log(2, arg)
-
-    @visit_node.register(ops.Log10)
-    def visit_Log10(self, op, *, arg):
-        return self.f.log(10, arg)
-
     @visit_node.register(ops.Log)
     def visit_Log(self, op, *, arg, base):
         return self.f.log(base, arg, dialect=self.dialect)
@@ -208,11 +242,6 @@ class SnowflakeCompiler(SQLGlotCompiler):
         return self.f.uniform(
             self.f.to_double(0.0), self.f.to_double(1.0), self.f.random()
         )
-
-    @visit_node.register(ops.ToJSONArray)
-    @visit_node.register(ops.ToJSONMap)
-    def visit_ToJSON(self, op, *, arg):
-        return self.visit_Cast(ops.Cast(op.arg, to=op.dtype), arg=arg, to=op.dtype)
 
     @visit_node.register(ops.ApproxMedian)
     def visit_ApproxMedian(self, op, *, arg, where):
@@ -245,7 +274,7 @@ class SnowflakeCompiler(SQLGlotCompiler):
     @visit_node.register(ops.StructField)
     def visit_StructField(self, op, *, arg, field):
         # TODO(cpcloud): why is coming in as an Alias?
-        if isinstance(arg, sg.exp.Alias):
+        if isinstance(arg, sge.Alias):
             arg = arg.this
         return self.cast(self.f.get(arg, field), op.dtype)
 
@@ -298,7 +327,7 @@ class SnowflakeCompiler(SQLGlotCompiler):
 
     @visit_node.register(ops.DayOfWeekName)
     def visit_DayOfWeekName(self, op, *, arg):
-        return sg.exp.Case(
+        return sge.Case(
             this=self.f.dayname(arg),
             ifs=[
                 self.if_("Sun", "Sunday"),
@@ -429,9 +458,9 @@ class SnowflakeCompiler(SQLGlotCompiler):
 
     @visit_node.register(ops.Unnest)
     def visit_Unnest(self, op, *, arg):
-        sep = sg.exp.convert(util.guid())
+        sep = sge.convert(util.guid())
         split = self.f.split(self.f.array_to_string(arg, sep), sep)
-        expr = self.f.nullif(sg.exp.Explode(this=split), "")
+        expr = self.f.nullif(sge.Explode(this=split), "")
         return self.cast(expr, op.dtype)
 
     @visit_node.register(ops.StringJoin)
@@ -457,7 +486,7 @@ class SnowflakeCompiler(SQLGlotCompiler):
     def visit_CountDistinct(self, op, *, arg, where):
         if where is not None:
             arg = self.if_(where, arg, NULL)
-        return self.f.count(sg.exp.Distinct(expressions=[arg]))
+        return self.f.count(sge.Distinct(expressions=[arg]))
 
     @visit_node.register(ops.CountDistinctStar)
     def visit_CountDistinctStar(self, op, *, arg, where):
@@ -471,7 +500,7 @@ class SnowflakeCompiler(SQLGlotCompiler):
                 self.if_(where, sg.column(name, quoted=self.quoted), NULL)
                 for name in op.arg.schema.names
             ]
-        return self.f.count(sg.exp.Distinct(expressions=expressions))
+        return self.f.count(sge.Distinct(expressions=expressions))
 
     @visit_node.register(ops.Xor)
     def visit_Xor(self, op, *, left, right):
