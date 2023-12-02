@@ -20,7 +20,7 @@ from typing import TYPE_CHECKING, Any
 from urllib.parse import parse_qs, urlparse
 
 import pyarrow as pa
-import pyarrow_hotfix  # noqa: F401
+import yarrow_hotfix  # noqa: F401
 import sqlglot as sg
 from packaging.version import parse as vparse
 
@@ -88,7 +88,7 @@ return longest.map((_, i) => {
 class Backend(SQLGlotBackend, CanCreateDatabase, CanCreateSchema):
     name = "snowflake"
     compiler = SnowflakeCompiler()
-    supports_python_udfs = False
+    supports_python_udfs = True
 
     _latest_udf_python_version = (3, 10)
 
@@ -135,11 +135,9 @@ class Backend(SQLGlotBackend, CanCreateDatabase, CanCreateSchema):
 
         session_parameters = kwargs.setdefault("session_parameters", {})
 
-        session_parameters.setdefault("MULTI_STATEMENT_COUNT", 0)
-        session_parameters.setdefault("JSON_INDENT", 0)
-        session_parameters.setdefault(
-            "PYTHON_CONNECTOR_QUERY_RESULT_FORMAT", "arrow_force"
-        )
+        session_parameters["MULTI_STATEMENT_COUNT"] = 0
+        session_parameters["JSON_INDENT"] = 0
+        session_parameters["PYTHON_CONNECTOR_QUERY_RESULT_FORMAT"] = "arrow_force"
 
         kwargs.update(connect_args)
         self._convert_kwargs(kwargs)
@@ -277,7 +275,7 @@ $$ {defn["source"]} $$"""
     def _get_udf_source(self, udf_node: ops.ScalarUDF):
         name = type(udf_node).__name__
         signature = ", ".join(
-            f"{name} {self._compile_type(arg.dtype)}"
+            f"{name} {self.compiler.type_mapper.to_string(arg.dtype)}"
             for name, arg in zip(udf_node.argnames, udf_node.args)
         )
         return_type = self._compile_type(udf_node.dtype)
@@ -324,6 +322,23 @@ $$ {defn["source"]} $$"""
         "RUNTIME_VERSION = '{version}'",
         "COMMENT = '{comment}'",
     )
+
+    def _define_udf_translation_rules(self, expr):
+        """No-op, these are defined in the compiler."""
+
+    def _register_udfs(self, expr: ir.Expr) -> None:
+        udf_sources = []
+        for udf_node in expr.op().find(ops.ScalarUDF):
+            compile_func = getattr(
+                self, f"_compile_{udf_node.__input_type__.name.lower()}_udf"
+            )
+            if sql := compile_func(udf_node):
+                udf_sources.append(sql)
+        if udf_sources:
+            # define every udf in one execution to avoid the overhead of db
+            # round trips per udf
+            with self._safe_raw_sql(";\n".join(udf_sources)):
+                pass
 
     def _compile_python_udf(self, udf_node: ops.ScalarUDF) -> str:
         return """\
