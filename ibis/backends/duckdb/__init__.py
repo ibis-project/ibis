@@ -188,19 +188,6 @@ class Backend(SQLGlotBackend, CanCreateSchema):
 
         return self.table(name, database=database)
 
-    def drop_table(
-        self, name: str, database: str | None = None, force: bool = False
-    ) -> None:
-        ident = sg.table(name, db=database).sql(self.name)
-        self.raw_sql(f"DROP TABLE {'IF EXISTS ' * force}{ident}")
-
-    def drop_view(
-        self, name: str, *, database: str | None = None, force: bool = False
-    ) -> None:
-        name = sg.table(name, db=database).sql(self.name)
-        if_exists = "IF EXISTS " * force
-        self.raw_sql(f"DROP VIEW {if_exists}{name}")
-
     def _load_into_cache(self, name, expr):
         self.create_table(name, expr, schema=expr.schema(), temp=True)
 

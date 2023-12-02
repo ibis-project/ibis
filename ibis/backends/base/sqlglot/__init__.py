@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import abc
-import contextlib
 from typing import TYPE_CHECKING, Any, ClassVar
 
 import sqlglot as sg
@@ -129,10 +128,13 @@ class SQLGlotBackend(BaseBackend):
         obj: ir.Table,
         *,
         database: str | None = None,
+        schema: str | None = None,
         overwrite: bool = False,
     ) -> ir.Table:
         src = sge.Create(
-            this=sg.table(name, db=database, quoted=self.compiler.quoted),
+            this=sg.table(
+                name, db=schema, catalog=database, quoted=self.compiler.quoted
+            ),
             kind="VIEW",
             replace=overwrite,
             expression=self._to_sqlglot(obj),
@@ -147,14 +149,21 @@ class SQLGlotBackend(BaseBackend):
             self._register_in_memory_table(memtable)
 
     def drop_view(
-        self, name: str, *, database: str | None = None, force: bool = False
+        self,
+        name: str,
+        *,
+        database: str | None = None,
+        schema: str | None = None,
+        force: bool = False,
     ) -> None:
         src = sge.Drop(
-            this=sg.table(name, db=database, quoted=self.compiler.quoted),
+            this=sg.table(
+                name, db=schema, catalog=database, quoted=self.compiler.quoted
+            ),
             kind="VIEW",
             exists=force,
         )
-        with contextlib.closing(self.raw_sql(src)):
+        with self._safe_raw_sql(src):
             pass
 
     def _get_temp_view_definition(self, name: str, definition: str) -> str:
@@ -210,3 +219,20 @@ class SQLGlotBackend(BaseBackend):
         with self._safe_raw_sql(sql) as cur:
             result = self.fetch_from_cursor(cur, schema)
         return expr.__pandas_result__(result)
+
+    def drop_table(
+        self,
+        name: str,
+        database: str | None = None,
+        schema: str | None = None,
+        force: bool = False,
+    ) -> None:
+        drop_stmt = sg.exp.Drop(
+            kind="TABLE",
+            this=sg.table(
+                name, db=schema, catalog=database, quoted=self.compiler.quoted
+            ),
+            exists=force,
+        )
+        with self._safe_raw_sql(drop_stmt):
+            pass

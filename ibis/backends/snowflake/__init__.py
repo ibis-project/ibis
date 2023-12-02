@@ -751,23 +751,6 @@ $$"""
 
         return self.table(name, schema=db, database=catalog)
 
-    def drop_table(
-        self,
-        name: str,
-        database: str | None = None,
-        schema: str | None = None,
-        force: bool = False,
-    ) -> None:
-        drop_stmt = sg.exp.Drop(
-            kind="TABLE",
-            this=sg.table(
-                name, db=schema, catalog=database, quoted=self.compiler.quoted
-            ),
-            exists=force,
-        )
-        with self._safe_raw_sql(drop_stmt):
-            pass
-
     def read_csv(
         self, path: str | Path, table_name: str | None = None, **kwargs: Any
     ) -> ir.Table:
