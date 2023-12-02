@@ -45,6 +45,7 @@ def main():
         "docs", "backends", "raw_support_matrix.csv"
     ).open(mode="w") as f:
         df.to_csv(f, index_label="FullOperation")
+        print(f"CSV output path: {f.name}")  # noqa: T201
 
 
 if __name__ == "__main__":
