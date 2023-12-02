@@ -145,7 +145,9 @@ class SnowflakeCompiler(SQLGlotCompiler):
             for k, v in value.items():
                 pairs.append(k)
                 pairs.append(
-                    self.visit_Literal(ops.Literal(v, dtype), value=v, dtype=dtype)
+                    self.visit_Literal(
+                        ops.Literal(v, dtype[k]), value=v, dtype=dtype[k]
+                    )
                 )
             return self.f.object_construct_keep_null(*pairs)
         elif dtype.is_uuid():
