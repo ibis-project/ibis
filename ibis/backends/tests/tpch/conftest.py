@@ -49,11 +49,7 @@ def tpch_test(test: Callable[..., ir.Table]):
 
         raw_sql = sql.sql(dialect="duckdb", pretty=True)
 
-        expected_expr = backend.connection.sql(
-            # in theory this should allow us to use one dialect for every backend
-            raw_sql,
-            dialect="duckdb",
-        )
+        expected_expr = backend.connection.sql(raw_sql, dialect="duckdb")
 
         result_expr = test(*args, **kwargs)
 

@@ -36,7 +36,7 @@ except ImportError:
     SessionConfig = None
 
 if TYPE_CHECKING:
-    from collections.abc import Mapping
+    from collections.abc import Iterator, Mapping
 
     import pandas as pd
 
@@ -92,6 +92,9 @@ class Backend(SQLGlotBackend, CanCreateDatabase, CanCreateSchema):
 
     def _to_sql(self, expr: ir.Expr, **kwargs) -> str:
         return self.compile(expr, **kwargs)
+
+    def _metadata(self, query: str) -> Iterator[tuple[str, dt.DataType]]:
+        raise NotImplementedError()
 
     def _register_builtin_udfs(self):
         from ibis.backends.datafusion import udfs
