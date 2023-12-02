@@ -252,7 +252,7 @@ def translate_literal(op: ops.Literal) -> str:
     if value is None:
         if dtype.is_null():
             return "NULL"
-        return f"CAST(NULL AS {FlinkType.from_ibis(type(dtype))!s})"
+        return f"CAST(NULL AS {FlinkType.from_ibis(dtype)!s})"
 
     if dtype.is_boolean():
         # TODO(chloeh13q): Flink supports a third boolean called "UNKNOWN"
@@ -282,7 +282,7 @@ def translate_literal(op: ops.Literal) -> str:
                 raise ValueError("The precision can be up to 38 in Flink")
 
             return f"CAST({value} AS DECIMAL({precision}, {scale}))"
-        return f"CAST({value} AS {FlinkType.from_ibis(type(dtype))!s})"
+        return f"CAST({value} AS {FlinkType.from_ibis(dtype)!s})"
     elif dtype.is_timestamp():
         # TODO(chloeh13q): support timestamp with local timezone
         if isinstance(value, datetime.datetime):

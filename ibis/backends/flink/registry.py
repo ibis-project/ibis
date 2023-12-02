@@ -232,7 +232,7 @@ def _clip(translator: ExprTranslator, op: ops.Node) -> str:
         lower = translator.translate(op.lower)
         arg = f"IF({arg} < {lower} AND {arg} IS NOT NULL, {lower}, {arg})"
 
-    return f"CAST({arg} AS {FlinkType.from_ibis(type(op.dtype))!s})"
+    return f"CAST({arg} AS {FlinkType.from_ibis(op.dtype)!s})"
 
 
 def _floor_divide(translator: ExprTranslator, op: ops.Node) -> str:
