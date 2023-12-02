@@ -465,9 +465,7 @@ def test_numeric_literal(con, backend, expr, expected_types):
                     raises=NotImplementedError,
                 ),
                 pytest.mark.broken(
-                    ["duckdb"],
-                    "Cannot convert inf to Decimal128",
-                    raises=pa.ArrowInvalid,
+                    ["duckdb"], "Cannot convert inf to Decimal128", raises=TypeError
                 ),
                 pytest.mark.broken(
                     ["trino"],
@@ -548,9 +546,7 @@ def test_numeric_literal(con, backend, expr, expected_types):
                     raises=NotImplementedError,
                 ),
                 pytest.mark.broken(
-                    ["duckdb"],
-                    "Cannot convert -inf to Decimal128",
-                    raises=pa.ArrowInvalid,
+                    ["duckdb"], "Cannot convert -inf to Decimal128", raises=TypeError
                 ),
                 pytest.mark.broken(
                     ["trino"],
