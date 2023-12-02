@@ -12,7 +12,6 @@ import ibis.expr.types as ir
 from ibis.backends.base import BaseBackend, CanCreateDatabase
 from ibis.backends.base.sql.ddl import fully_qualified_re, is_fully_qualified
 from ibis.backends.flink.compiler.core import FlinkCompiler
-from ibis.backends.flink.datatypes import FlinkRowSchema
 from ibis.backends.flink.ddl import (
     CreateDatabase,
     CreateTableFromConnector,
@@ -146,15 +145,14 @@ class Backend(BaseBackend, CanCreateDatabase):
         # but executing the SQL string directly yields a `TableResult` object
         return self._filter_with_like(tables, like)
 
-    def list_views(
+    def _list_views(
         self,
         like: str | None = None,
         temporary: bool = True,
     ) -> list[str]:
         """Return the list of view names.
 
-        Return the list of view names in the specified database and catalog.
-        or the default one if no database/catalog is specified.
+        Return the list of view names.
 
         Parameters
         ----------
@@ -311,12 +309,11 @@ class Backend(BaseBackend, CanCreateDatabase):
         name
             Name of the new table.
         obj
-            An Ibis table expression or pandas table that will be used to
-            extract the schema and the data of the new table. If not provided,
-            `schema` must be given.
+            An Ibis table expression, pandas DataFrame, or PyArrow Table that will
+            be used to extract the schema and the data of the new table. An
+            optional `schema` can be used to override the schema.
         schema
-            The schema for the new table. Only one of `schema` or `obj` can be
-            provided.
+            The schema for the new table. Required if `obj` is not provided.
         database
             Name of the database where the table will be created, if not the
             default.
@@ -344,6 +341,7 @@ class Backend(BaseBackend, CanCreateDatabase):
         import pyarrow_hotfix  # noqa: F401
 
         import ibis.expr.types as ir
+        from ibis.backends.flink.datatypes import FlinkRowSchema
 
         if obj is None and schema is None:
             raise exc.IbisError("The schema or obj parameter is required")
@@ -381,7 +379,7 @@ class Backend(BaseBackend, CanCreateDatabase):
                 catalog=catalog,
             )
             self._exec_sql(statement.compile())
-            return self.table(name, database=database)
+            return self.table(name, database=database, catalog=catalog)
 
     def drop_table(
         self,
@@ -419,7 +417,7 @@ class Backend(BaseBackend, CanCreateDatabase):
     def create_view(
         self,
         name: str,
-        obj: pd.DataFrame | ir.Table | None = None,
+        obj: pd.DataFrame | ir.Table,
         *,
         database: str | None = None,
         catalog: str | None = None,
@@ -446,19 +444,16 @@ class Backend(BaseBackend, CanCreateDatabase):
         Table
             The view that was created.
         """
-        if obj is None:
-            raise exc.IbisError("The obj parameter is required")
-
         if isinstance(obj, ir.Table):
             # TODO(chloeh13q): implement CREATE VIEW for expressions
             raise NotImplementedError
 
-        if overwrite and self.list_views(name):
+        if overwrite and name in self._list_views():
             self.drop_view(name=name, catalog=catalog, database=database, force=True)
 
         qualified_name = self._fully_qualified_name(name, database, catalog)
         self._table_env.create_temporary_view(qualified_name, obj)
-        return self.table(name, database=database)
+        return self.table(name, database=database, catalog=catalog)
 
     def drop_view(
         self,

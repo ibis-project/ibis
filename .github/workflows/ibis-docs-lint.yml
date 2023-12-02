@@ -186,9 +186,6 @@ jobs:
       - name: checkout
         uses: actions/checkout@v4
 
-      - name: install pyflink
-        run: nix develop --ignore-environment --keep HOME -c pip install apache-flink
-
       - name: run doctest
         # keep HOME because duckdb (which we use for doctests) wants to use
         # that for extensions
@@ -202,21 +199,6 @@ jobs:
 
       - name: check that all frozen computations were done before push
         run: git diff --exit-code --stat
-
-      - name: ls links 1
-        run: ls /home/runner/work/ibis/ibis/docs/_output/backends/
-
-      - name: ls links 2
-        run: ls /home/runner/work/ibis/ibis/docs/_output/
-
-      - name: ls links 3
-        run: ls /home/runner/work/ibis/ibis/docs/
-
-      - name: support
-        run: nix develop --ignore-environment -c python ./gen_matrix.py
-
-      - name: redirect links
-        run: python ./gen_redirects.py
 
       - name: verify internal links
         run: nix develop --ignore-environment '.#links' -c just checklinks --offline --no-progress
