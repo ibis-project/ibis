@@ -34,6 +34,8 @@ class DataFusion(Postgres):
 
 
 class DataFusionCompiler(SQLGlotCompiler):
+    __slots__ = ()
+
     dialect = "datafusion"
     type_mapper = PostgresType
     quoted = True

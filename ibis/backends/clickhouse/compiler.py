@@ -22,6 +22,8 @@ from ibis.expr.rewrites import rewrite_sample
 
 
 class ClickHouseCompiler(SQLGlotCompiler):
+    __slots__ = ()
+
     dialect = "clickhouse"
     type_mapper = ClickhouseType
     rewrites = (*SQLGlotCompiler.rewrites, rewrite_sample)
