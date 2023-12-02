@@ -55,7 +55,9 @@ def _substring_serieswise(arg, start, length):
         return arg.str[start : start + length]
 
 
-_columnwise_functions = {}
+_columnwise_functions = {
+    ops.Repeat: lambda df: df["arg"] * df["times"],
+}
 
 _rowwise_functions = {
     ops.EndsWith: lambda row: row["arg"].endswith(row["end"]),
