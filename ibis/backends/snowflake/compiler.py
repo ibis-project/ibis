@@ -261,18 +261,11 @@ class SnowflakeCompiler(SQLGlotCompiler):
         return self.f.timestampdiff(part, right, left, dialect=self.dialect)
 
     @visit_node.register(ops.TimestampAdd)
-    def visit_TimestampAdd(self, op, *, left, right):
-        if not isinstance(op.right, ops.Literal):
-            raise com.OperationNotDefinedError(
-                "right side of timestamp add must be an interval literal"
-            )
-        return sg.exp.Add(this=left, expression=right)
-
     @visit_node.register(ops.DateAdd)
-    def visit_DateAdd(self, op, *, left, right):
+    def visit_TimestampDateAdd(self, op, *, left, right):
         if not isinstance(op.right, ops.Literal):
             raise com.OperationNotDefinedError(
-                "right side of date add must be an interval literal"
+                f"right side of {type(op).__name__} operation must be an interval literal"
             )
         return sg.exp.Add(this=left, expression=right)
 
