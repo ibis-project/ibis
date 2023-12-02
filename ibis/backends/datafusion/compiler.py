@@ -33,11 +33,18 @@ class DataFusion(Postgres):
         }
 
 
+class DataFusionType(PostgresType):
+    unknown_type_strings = {
+        "utf8": dt.string,
+        "float64": dt.float64,
+    }
+
+
 class DataFusionCompiler(SQLGlotCompiler):
     __slots__ = ()
 
     dialect = "datafusion"
-    type_mapper = PostgresType
+    type_mapper = DataFusionType
     quoted = True
     rewrites = (*SQLGlotCompiler.rewrites, rewrite_sample)
 

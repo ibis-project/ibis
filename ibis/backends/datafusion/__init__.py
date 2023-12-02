@@ -1,8 +1,8 @@
 from __future__ import annotations
 
+import contextlib
 import inspect
 import typing
-from contextlib import suppress
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
@@ -11,7 +11,9 @@ import pyarrow as pa
 import pyarrow.dataset as ds
 import pyarrow_hotfix  # noqa: F401
 import sqlglot as sg
+import sqlglot.expressions as sge
 
+import ibis
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
@@ -90,11 +92,45 @@ class Backend(SQLGlotBackend, CanCreateDatabase, CanCreateSchema):
         for name, path in config.items():
             self.register(path, table_name=name)
 
+        self._temp_views = set()
+
     def _to_sql(self, expr: ir.Expr, **kwargs) -> str:
         return self.compile(expr, **kwargs)
 
+    @contextlib.contextmanager
+    def _safe_raw_sql(self, sql: sge.Statement) -> Any:
+        yield self.raw_sql(sql)
+
     def _metadata(self, query: str) -> Iterator[tuple[str, dt.DataType]]:
-        raise NotImplementedError()
+        name = gen_name("datafusion_metadata_view")
+        table = sg.table(name, quoted=self.compiler.quoted)
+        src = sge.Create(
+            this=table,
+            kind="VIEW",
+            expression=sg.parse_one(query, read="datafusion"),
+            properties=sge.Properties(expressions=[sge.TemporaryProperty()]),
+        )
+        self.raw_sql(src)
+
+        try:
+            result = (
+                self.raw_sql(f"DESCRIBE {table.sql(self.name)}")
+                .to_arrow_table()
+                .to_pydict()
+            )
+        finally:
+            self.drop_view(name)
+        return (
+            (
+                name,
+                self.compiler.type_mapper.from_string(
+                    type_string, nullable=is_nullable == "YES"
+                ),
+            )
+            for name, type_string, is_nullable in zip(
+                result["column_name"], result["data_type"], result["is_nullable"]
+            )
+        )
 
     def _register_builtin_udfs(self):
         from ibis.backends.datafusion import udfs
@@ -159,7 +195,7 @@ class Backend(SQLGlotBackend, CanCreateDatabase, CanCreateSchema):
         kwargs
             Backend specific query arguments
         """
-        with suppress(AttributeError):
+        with contextlib.suppress(AttributeError):
             query = query.sql(dialect=self.dialect, pretty=True)
         self._log(query)
         return self.con.sql(query)
@@ -484,14 +520,86 @@ class Backend(SQLGlotBackend, CanCreateDatabase, CanCreateSchema):
             batch_reader.read_pandas(timestamp_as_object=True)
         )
 
-    def create_table(self, *_, **__) -> ir.Table:
-        raise NotImplementedError(self.name)
+    def create_table(
+        self,
+        name: str,
+        obj: pd.DataFrame | pa.Table | ir.Table | None = None,
+        *,
+        schema: sch.Schema | None = None,
+        database: str | None = None,
+        temp: bool = False,
+        overwrite: bool = False,
+    ) -> ir.Table:
+        """Create a table in DataFusion.
 
-    def create_view(self, *_, **__) -> ir.Table:
-        raise NotImplementedError(self.name)
+        Parameters
+        ----------
+        name
+            Name of the table to create
+        obj
+            The data with which to populate the table; optional, but at least
+            one of `obj` or `schema` must be specified
+        schema
+            The schema of the table to create; optional, but at least one of
+            `obj` or `schema` must be specified
+        database
+            The name of the database in which to create the table; if not
+            passed, the current database is used.
+        temp
+            Create a temporary table
+        overwrite
+            If `True`, replace the table if it already exists, otherwise fail
+            if the table exists
+        """
+        if obj is None and schema is None:
+            raise ValueError("Either `obj` or `schema` must be specified")
 
-    def drop_table(self, *_, **__) -> ir.Table:
-        raise NotImplementedError(self.name)
+        column_defs = [
+            sg.exp.ColumnDef(
+                this=sg.to_identifier(name, quoted=self.compiler.quoted),
+                kind=self.compiler.type_mapper.from_ibis(typ),
+                constraints=(
+                    None
+                    if typ.nullable
+                    else [
+                        sg.exp.ColumnConstraint(kind=sg.exp.NotNullColumnConstraint())
+                    ]
+                ),
+            )
+            for name, typ in (schema or {}).items()
+        ]
 
-    def drop_view(self, *_, **__) -> ir.Table:
-        raise NotImplementedError(self.name)
+        target = sg.table(name, db=database, quoted=self.compiler.quoted)
+
+        if column_defs:
+            target = sg.exp.Schema(this=target, expressions=column_defs)
+
+        properties = []
+
+        if temp:
+            properties.append(sg.exp.TemporaryProperty())
+
+        if obj is not None:
+            if not isinstance(obj, ir.Expr):
+                table = ibis.memtable(obj)
+            else:
+                table = obj
+
+            self._run_pre_execute_hooks(table)
+
+            query = self._to_sqlglot(table)
+        else:
+            query = None
+
+        create_stmt = sg.exp.Create(
+            kind="TABLE",
+            this=target,
+            replace=overwrite,
+            properties=sg.exp.Properties(expressions=properties),
+            expression=query,
+        )
+
+        with self._safe_raw_sql(create_stmt):
+            pass
+
+        return self.table(name, schema=database)
