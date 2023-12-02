@@ -63,8 +63,7 @@ def replace_log10(_, x):
     return ops.Log(10, x)
 
 
-@replace(p.ToJSONArray)
-@replace(p.ToJSONMap)
+@replace(p.ToJSONMap | p.ToJSONArray)
 def replace_to_json(_):
     return ops.Cast(_.arg, to=_.dtype)
 
@@ -77,13 +76,13 @@ class SnowflakeCompiler(SQLGlotCompiler):
     quoted = True
     type_mapper = SnowflakeType
     rewrites = (
+        replace_to_json,
         exclude_unsupported_window_frame_from_row_number,
         rewrite_first,
         rewrite_last,
         rewrite_empty_order_by_window,
         replace_log2,
         replace_log10,
-        replace_to_json,
         *SQLGlotCompiler.rewrites,
     )
 
