@@ -892,8 +892,8 @@ def test_self_join_memory_table(backend, con):
         param(pd.DataFrame([("a", 1.0)], columns=["a", "b"]), id="pandas"),
     ],
 )
-@pytest.mark.notimpl(["dask", "datafusion", "druid"])
-def test_create_from_in_memory_table(backend, con, t, temp_table):
+@pytest.mark.notimpl(["dask", "druid"])
+def test_create_from_in_memory_table(con, t, temp_table):
     con.create_table(temp_table, t)
     assert temp_table in con.list_tables()
 
