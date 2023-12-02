@@ -337,7 +337,7 @@ class SQLGlotCompiler(abc.ABC):
                 )
             )
 
-            return sge.Map(keys=keys, values=values)
+            return self.f.map(keys, values)
         elif dtype.is_struct():
             items = [
                 sge.Slice(
