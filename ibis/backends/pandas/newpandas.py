@@ -298,6 +298,21 @@ def execute_if_else(op, **kwargs):
     )
 
 
+@execute.register(ops.SearchedCase)
+def execute_searched_case(op, cases, results, default):
+    if isinstance(default, pd.Series):
+        raise NotImplementedError(
+            "SearchedCase with a columnar shaped default value is not implemented"
+        )
+
+    cases, _ = asframe(cases, concat=False)
+    results, _ = asframe(results, concat=False)
+
+    out = np.select(cases, results, default)
+    return pd.Series(out)
+
+
+
 @execute.register(ops.TypeOf)
 def execute_typeof(op, arg):
     raise OperationNotDefinedError("TypeOf is not implemented")

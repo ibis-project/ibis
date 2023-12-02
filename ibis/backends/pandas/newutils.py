@@ -18,7 +18,7 @@ def asseries(value, size=1):
         return pd.Series(np.repeat(value, size))
 
 
-def asframe(values: dict | tuple):
+def asframe(values: dict | tuple, concat=True):
     if isinstance(values, dict):
         names, values = zip(*values.items())
     elif isinstance(values, tuple):
@@ -35,7 +35,10 @@ def asframe(values: dict | tuple):
             break
 
     columns = [asseries(v, size) for v in values]
-    return pd.concat(columns, axis=1, keys=names), all_scalars
+    if concat:
+        return pd.concat(columns, axis=1, keys=names), all_scalars
+    else:
+        return columns, all_scalars
 
 
 def rowwise(_func: Callable, _values: dict | tuple, **kwargs):
