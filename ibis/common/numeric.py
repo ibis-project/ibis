@@ -27,7 +27,7 @@ def normalize_decimal(value, precision: int | None = None, scale: int | None = N
     if scale is not None:
         if exponent < -scale:
             raise TypeError(
-                f"Normalizing {value} with scale {exponent} to scale -{scale} "
+                f"Normalizing {value} with precision {precision} to scale {scale} "
                 "would loose precision"
             )
 

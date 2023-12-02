@@ -245,7 +245,9 @@ class _WellKnownText:
 
 
 # TODO(kszucs): should raise ValueError instead of TypeError
-def normalize(typ, value):
+def normalize(
+    typ, value, array_type=tuple, map_type=frozendict, struct_type=frozendict
+):
     """Ensure that the Python type underlying a literal resolves to a single type."""
 
     dtype = dt.dtype(typ)
@@ -295,9 +297,29 @@ def normalize(typ, value):
     elif dtype.is_uuid():
         return value if isinstance(value, uuid.UUID) else uuid.UUID(value)
     elif dtype.is_array():
-        return tuple(normalize(dtype.value_type, item) for item in value)
+        return array_type(
+            normalize(
+                dtype.value_type,
+                item,
+                array_type=array_type,
+                map_type=map_type,
+                struct_type=struct_type,
+            )
+            for item in value
+        )
     elif dtype.is_map():
-        return frozendict({k: normalize(dtype.value_type, v) for k, v in value.items()})
+        return map_type(
+            {
+                k: normalize(
+                    dtype.value_type,
+                    v,
+                    array_type=array_type,
+                    map_type=map_type,
+                    struct_type=struct_type,
+                )
+                for k, v in value.items()
+            }
+        )
     elif dtype.is_struct():
         if not isinstance(value, Mapping):
             raise TypeError(f"Unable to normalize {dtype} from non-mapping {value!r}")
@@ -305,7 +327,18 @@ def normalize(typ, value):
             raise TypeError(
                 f"Unable to normalize {value!r} to {dtype} because of missing keys {missing_keys!r}"
             )
-        return frozendict({k: normalize(t, value[k]) for k, t in dtype.items()})
+        return struct_type(
+            {
+                k: normalize(
+                    t,
+                    value[k],
+                    array_type=array_type,
+                    map_type=map_type,
+                    struct_type=struct_type,
+                )
+                for k, t in dtype.items()
+            }
+        )
     elif dtype.is_geospatial():
         if isinstance(value, (tuple, list)):
             if dtype.is_point():

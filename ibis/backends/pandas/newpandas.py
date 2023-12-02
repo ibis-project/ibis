@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import operator
-from collections.abc import Sized
 from functools import reduce, singledispatch
 
 import numpy as np
@@ -18,7 +17,7 @@ from ibis.backends.pandas.rewrites import (
     PandasRename,
 )
 from ibis.common.exceptions import OperationNotDefinedError
-from ibis.formats.pandas import PandasData, PandasSchema, PandasType
+from ibis.formats.pandas import PandasData
 
 ################## PANDAS SPECIFIC NODES ######################
 
@@ -99,7 +98,7 @@ def execute_rename(op, parent, mapping):
 
 @execute.register(PandasJoin)
 def execute_join(op, left, right, left_on, right_on, how):
-    # broadcase predicates if they are scalar values
+    # broadcast predicates if they are scalar values
     left_size = len(left)
     left_on = [asseries(v, left_size) for v in left_on]
     right_size = len(right)
@@ -310,7 +309,6 @@ def execute_searched_case(op, cases, results, default):
 
     out = np.select(cases, results, default)
     return pd.Series(out)
-
 
 
 @execute.register(ops.TypeOf)
@@ -635,7 +633,7 @@ def zuper(node, params):
         aggregate_to_groupby,
         join_chain_to_nested_joins,
     )
-    from ibis.expr.rewrites import _, p
+    from ibis.expr.rewrites import p
 
     replace_literals = p.ScalarParameter >> (
         lambda _: ops.Literal(value=params[_], dtype=_.dtype)
@@ -651,15 +649,17 @@ def zuper(node, params):
     node = node.replace(
         aggregate_to_groupby | join_chain_to_nested_joins | replace_literals
     )
-    # print(node.to_expr())
-    result = node.map(fn)[node]
+    df = node.map(fn)[node]
 
+    # TODO(kszucs): add a flag to disable this conversion because it can be
+    # expensive for columns with object dtype
+    df = PandasData.convert_table(df, node.schema)
     if isinstance(original, ops.Value):
         if original.shape.is_scalar():
-            return result.iloc[0, 0]
+            return df.iloc[0, 0]
         elif original.shape.is_columnar():
-            return result.iloc[:, 0]
+            return df.iloc[:, 0]
         else:
             raise TypeError(f"Unexpected shape: {original.shape}")
-
-    return result
+    else:
+        return df
