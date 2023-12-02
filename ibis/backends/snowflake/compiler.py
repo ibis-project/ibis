@@ -124,22 +124,23 @@ class SnowflakeCompiler(SQLGlotCompiler):
             return self.f.time_from_parts(value.hour, value.minute, value.second, nanos)
         elif dtype.is_map():
             key_type = dtype.key_type
-            keys = (
-                self.visit_Literal(ops.Literal(k, key_type), value=k, dtype=key_type)
-                for k in value.keys()
-            )
-
             value_type = dtype.value_type
-            values = (
-                self.visit_Literal(
-                    ops.Literal(v, value_type), value=v, dtype=value_type
-                )
-                for v in value.values()
-            )
 
-            return self.f.object_construct_keep_null(
-                *itertools.chain.from_iterable(zip(keys, values))
-            )
+            pairs = []
+
+            for k, v in value.items():
+                pairs.append(
+                    self.visit_Literal(
+                        ops.Literal(k, key_type), value=k, dtype=key_type
+                    )
+                )
+                pairs.append(
+                    self.visit_Literal(
+                        ops.Literal(v, value_type), value=v, dtype=value_type
+                    )
+                )
+
+            return self.f.object_construct_keep_null(*pairs)
         elif dtype.is_struct():
             pairs = []
             for k, v in value.items():
@@ -148,7 +149,6 @@ class SnowflakeCompiler(SQLGlotCompiler):
                     self.visit_Literal(ops.Literal(v, dtype), value=v, dtype=dtype)
                 )
             return self.f.object_construct_keep_null(*pairs)
-
         elif dtype.is_uuid():
             return sge.convert(str(value))
         elif dtype.is_binary():
