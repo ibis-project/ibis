@@ -91,16 +91,15 @@ _serieswise_functions = {
     ops.Lowercase: lambda arg: arg.str.lower(),
     ops.LPad: lambda arg, length, pad: arg.str.rjust(length, fillchar=pad),
     ops.LStrip: lambda arg: arg.str.lstrip(),
-    ops.RegexExtract: lambda arg, pattern, index: arg.str.extract(pattern).iloc[
-        :, index - 1
-    ],
-    ops.RegexReplace: lambda arg, pattern, replacement: arg.str.replace(
-        pattern, replacement, regex=True
-    ),
-    ops.RegexReplace: lambda arg, pattern, replacement: arg.str.replace(
-        pattern, replacement, regex=True
-    ),
-    ops.RegexSearch: lambda arg, pattern: arg.str.contains(pattern),
+    # TODO(kszucs): while these are properly working, the pandas implementation
+    # doesn't seem to support POSIX patterns
+    # ops.RegexExtract: lambda arg, pattern, index: arg.str.extract(pattern).iloc[
+    #     :, index - 1
+    # ],
+    # ops.RegexReplace: lambda arg, pattern, replacement: arg.str.replace(
+    #     pattern, replacement, regex=True
+    # ),
+    # ops.RegexSearch: lambda arg, pattern: arg.str.contains(pattern, regex=True),
     ops.Repeat: lambda arg, times: arg.str.repeat(times),
     ops.Reverse: lambda arg: arg.str[::-1],
     ops.RPad: lambda arg, length, pad: arg.str.ljust(length, fillchar=pad),

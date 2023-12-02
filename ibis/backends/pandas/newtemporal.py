@@ -1,11 +1,10 @@
 from __future__ import annotations
 
-import numpy as np
 import pandas as pd
 
 import ibis.expr.operations as ops
 from ibis.backends.pandas.newpandas import execute
-from ibis.backends.pandas.newutils import columnwise, elementwise, rowwise, serieswise
+from ibis.backends.pandas.newutils import elementwise, rowwise, serieswise
 
 
 def _timestamp_truncate(arg, unit):
@@ -54,11 +53,12 @@ _serieswise_functions = {
 @execute.register(ops.ExtractEpochSeconds)
 @execute.register(ops.ExtractMillisecond)
 @execute.register(ops.ExtractMicrosecond)
+@execute.register(ops.Strftime)
 @execute.register(ops.TimestampTruncate)
 @execute.register(ops.DateTruncate)
 @execute.register(ops.TimestampFromUNIX)
 @execute.register(ops.Time)
-def execute_columnwise(op, **kwargs):
+def execute_serieswise(op, **kwargs):
     func = _serieswise_functions[type(op)]
     return serieswise(func, **kwargs)
 
@@ -73,6 +73,8 @@ def execute_timestamp_add(op, left, right):
 @execute.register(ops.DateSub)
 @execute.register(ops.TimestampSub)
 @execute.register(ops.DateDiff)
+@execute.register(ops.IntervalSubtract)
+@execute.register(ops.TimestampDiff)
 def execute_timestamp_sub(op, left, right):
     return left - right
 
@@ -85,3 +87,27 @@ def execute_interval_from_integer(op, unit, **kwargs):
         return serieswise(
             lambda arg: arg.astype(f"timedelta64[{unit.short}]"), **kwargs
         )
+
+
+@execute.register(ops.Strftime)
+def execute_strftime(op, arg, format_str):
+    if isinstance(format_str, pd.Series):
+        data = {"arg": arg, "format_str": format_str}
+        return rowwise(lambda row: row["arg"].strftime(row["format_str"]), data)
+    else:
+        return serieswise(
+            lambda arg, format_str: arg.dt.strftime(format_str),
+            arg=arg,
+            format_str=format_str,
+        )
+
+
+@execute.register(ops.Date)
+def execute_date(op, arg):
+    return arg.dt.floor("d")
+
+
+@execute.register(ops.TimestampNow)
+def execute_timestamp_now(op):
+    # timecontext = kwargs.get("timecontext", None)
+    return pd.Timestamp("now", tz="UTC").tz_localize(None)

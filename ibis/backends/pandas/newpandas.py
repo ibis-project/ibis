@@ -603,22 +603,6 @@ def execute_in_subquery(op, rel, needle):
         return needle in first_column
 
 
-@execute.register(ops.Date)
-def execute_date(op, arg):
-    return arg.dt.floor("d")
-
-
-@execute.register(ops.TimestampNow)
-def execute_timestamp_now(op, *args, **kwargs):
-    # timecontext = kwargs.get("timecontext", None)
-    return pd.Timestamp("now", tz="UTC").tz_localize(None)
-
-
-@execute.register(ops.TimestampDiff)
-def execute_timestamp_diff(op, left, right):
-    return left - right
-
-
 @execute.register(ops.Greatest)
 def execute_greatest(op, arg):
     return columnwise(lambda df: df.max(axis=1), arg)

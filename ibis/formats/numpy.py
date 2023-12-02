@@ -36,12 +36,12 @@ class NumpyType(TypeMapper[np.dtype]):
             # TODO(kszucs): the following code provedes proper timestamp roundtrips
             # between ibis and numpy/pandas but breaks the test suite at several
             # places, we should revisit this later
-            # unit, _ = np.datetime_data(typ)
-            # if unit in {'generic', 'Y', 'M', 'D', 'h', 'm'}:
-            #     return dt.Timestamp(nullable=nullable)
-            # else:
-            #     return dt.Timestamp.from_unit(unit, nullable=nullable)
-            return dt.Timestamp(nullable=nullable)
+            unit, _ = np.datetime_data(typ)
+            if unit in {"generic", "Y", "M", "D", "h", "m"}:
+                return dt.Timestamp(nullable=nullable)
+            else:
+                return dt.Timestamp.from_unit(unit, nullable=nullable)
+            # return dt.Timestamp(nullable=nullable)
         elif np.issubdtype(typ, np.timedelta64):
             unit, _ = np.datetime_data(typ)
             if unit == "generic":
@@ -62,21 +62,21 @@ class NumpyType(TypeMapper[np.dtype]):
         if dtype.is_interval():
             return np.dtype(f"timedelta64[{dtype.unit.short}]")
         elif dtype.is_timestamp():
-            # TODO(kszucs): the following code provedes proper timestamp roundtrips
+            # TODO(kszucs): the following code prevents proper timestamp roundtrips
             # between ibis and numpy/pandas but breaks the test suite at several
             # places, we should revisit this later
-            # return np.dtype(f"datetime64[{dtype.unit.short}]")
-            return np.dtype("datetime64[ns]")
+            # return np.dtype("datetime64[ns]")
+            # --- now we are using the properly roundtripping one
+            return np.dtype(f"datetime64[{dtype.unit.short}]")
         elif dtype.is_date():
             # return np.dtype("datetime64[D]")
             return np.dtype("datetime64[ns]")
-        elif dtype.is_time():
-            return np.dtype("timedelta64[ns]")
         elif (
             dtype.is_null()
             or dtype.is_decimal()
             or dtype.is_struct()
             or dtype.is_variadic()
+            or dtype.is_time()
             or dtype.is_unknown()
             or dtype.is_uuid()
             or dtype.is_geospatial()

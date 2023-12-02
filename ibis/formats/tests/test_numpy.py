@@ -80,14 +80,37 @@ def test_variadic_to_numpy(ibis_type):
     assert NumpyType.from_ibis(ibis_type) == np.dtype("object")
 
 
-@h.given(ibst.date_dtype() | ibst.timestamp_dtype())
+@h.given(ibst.date_dtype())
 def test_date_to_numpy(ibis_type):
     assert NumpyType.from_ibis(ibis_type) == np.dtype("datetime64[ns]")
 
 
+@pytest.mark.parametrize(
+    ("scale_in", "scale_out"),
+    [
+        (None, 0),
+        (0, 0),
+        (1, 3),
+        (2, 3),
+        (3, 3),
+        (4, 6),
+        (5, 6),
+        (6, 6),
+        (7, 9),
+        (8, 9),
+        (9, 9),
+    ],
+)
+def test_timestamp_to_numpy(scale_in, scale_out):
+    ibis_type = dt.Timestamp(scale=scale_in)
+    numpy_type = NumpyType.from_ibis(ibis_type)
+    restored = NumpyType.to_ibis(numpy_type)
+    assert restored == dt.Timestamp(scale=scale_out)
+
+
 @h.given(ibst.time_dtype())
 def test_time_to_numpy(ibis_type):
-    assert NumpyType.from_ibis(ibis_type) == np.dtype("timedelta64[ns]")
+    assert NumpyType.from_ibis(ibis_type) == np.dtype("object")
 
 
 @h.given(ibst.schema())
