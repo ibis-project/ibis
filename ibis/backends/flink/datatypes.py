@@ -91,3 +91,7 @@ class FlinkType(TypeMapper):
             return fl.DataTypes.TIMESTAMP()
         else:
             return super().from_ibis(dtype)
+
+    @classmethod
+    def to_string(cls, dtype: dt.DataType) -> str:
+        return cls.from_ibis(dtype).type_name()
