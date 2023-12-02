@@ -48,9 +48,19 @@ def rewrite_empty_order_by_window(_, x):
     return _.copy(frame=x.copy(order_by=(ibis.NA,)))
 
 
-@replace(p.WindowFunction(p.RowNumber, x))
+@replace(p.WindowFunction(p.RowNumber | p.NTile, x))
 def exclude_unsupported_window_frame_from_row_number(_, x):
     return ops.Subtract(_.copy(frame=x.copy(start=None, end=None)), 1)
+
+
+@replace(
+    p.WindowFunction(
+        p.Lag | p.Lead | p.PercentRank | p.CumeDist | p.Any | p.All,
+        x @ p.WindowFrame(start=None),
+    )
+)
+def exclude_unsupported_window_frame_from_ops(_, x):
+    return _.copy(frame=x.copy(start=None, end=None))
 
 
 @replace(p.Log2)
@@ -78,6 +88,7 @@ class SnowflakeCompiler(SQLGlotCompiler):
     rewrites = (
         replace_to_json,
         exclude_unsupported_window_frame_from_row_number,
+        exclude_unsupported_window_frame_from_ops,
         rewrite_first,
         rewrite_last,
         rewrite_empty_order_by_window,
