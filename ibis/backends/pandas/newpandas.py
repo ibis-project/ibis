@@ -9,7 +9,7 @@ import pandas as pd
 
 import ibis.expr.operations as ops
 from ibis import util
-from ibis.backends.pandas.newutils import asframe, columnwise
+from ibis.backends.pandas.newutils import asframe, asseries, columnwise
 from ibis.backends.pandas.rewrites import (
     ColumnRef,
     PandasAggregate,
@@ -106,8 +106,19 @@ def execute_rename(op, parent, mapping):
 
 @execute.register(PandasJoin)
 def execute_join(op, left, right, left_on, right_on, how):
-    df = left.merge(right, how=how, left_on=left_on, right_on=right_on)
-    return df.drop(columns=["key_0"])
+    # broadcase predicates if they are scalar values
+    left_size = len(left)
+    left_on = [asseries(v, left_size) for v in left_on]
+    right_size = len(right)
+    right_on = [asseries(v, right_size) for v in right_on]
+
+    if how == "cross":
+        assert not left_on and not right_on
+        return pd.merge(left, right, how="cross")
+    else:
+        df = left.merge(right, how=how, left_on=left_on, right_on=right_on)
+        # drop the join key columns
+        return df.drop(columns=["key_0"])
 
 
 @execute.register(ops.Union)

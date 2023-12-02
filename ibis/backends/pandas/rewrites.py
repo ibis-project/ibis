@@ -52,8 +52,8 @@ class PandasRename(PandasRelation):
 class PandasJoin(PandasRelation):
     left: ops.Relation
     right: ops.Relation
-    left_on: VarTuple[ops.Column]
-    right_on: VarTuple[ops.Column]
+    left_on: VarTuple[ops.Value]
+    right_on: VarTuple[ops.Value]
     how: str
 
     @attribute
@@ -146,17 +146,23 @@ def split_predicates(left, right, predicates):
     left_on = []
     right_on = []
     for pred in predicates:
-        if not isinstance(pred, ops.Equals):
-            raise TypeError("Only equality join predicates supported with pandas")
-
-        if left in pred.left.relations and right in pred.right.relations:
-            left_on.append(pred.left)
-            right_on.append(pred.right)
-        elif left in pred.right.relations and right in pred.left.relations:
-            left_on.append(pred.right)
-            right_on.append(pred.left)
+        if left not in pred.relations or right not in pred.relations:
+            # not a usual join predicate, so apply a trick by placing the
+            # predicate to the left side and adding a literal True to the right
+            # which the left side must be equal to
+            left_on.append(pred)
+            right_on.append(ops.Literal(True, dtype=dt.boolean))
+        elif isinstance(pred, ops.Equals):
+            if left in pred.left.relations and right in pred.right.relations:
+                left_on.append(pred.left)
+                right_on.append(pred.right)
+            elif left in pred.right.relations and right in pred.left.relations:
+                left_on.append(pred.right)
+                right_on.append(pred.left)
+            else:
+                raise ValueError("Join predicate does not reference both tables")
         else:
-            raise ValueError("Join predicate does not reference both tables")
+            raise TypeError("Only equality join predicates supported with pandas")
 
     return left_on, right_on
 

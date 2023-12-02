@@ -9,6 +9,15 @@ import numpy as np
 import pandas as pd
 
 
+def asseries(value, size=1):
+    if isinstance(value, pd.Series):
+        return value
+    elif isinstance(value, (list, np.ndarray)):
+        return pd.Series(itertools.repeat(np.array(value), size))
+    else:
+        return pd.Series(np.repeat(value, size))
+
+
 def asframe(values: dict | tuple):
     if isinstance(values, dict):
         names, values = zip(*values.items())
@@ -25,16 +34,7 @@ def asframe(values: dict | tuple):
             all_scalars = False
             break
 
-    columns = []
-    for v in values:
-        if isinstance(v, pd.Series):
-            pass
-        elif isinstance(v, (list, np.ndarray)):
-            v = pd.Series(itertools.repeat(np.array(v), size))
-        else:
-            v = pd.Series(np.repeat(v, size))
-        columns.append(v)
-
+    columns = [asseries(v, size) for v in values]
     return pd.concat(columns, axis=1, keys=names), all_scalars
 
 
