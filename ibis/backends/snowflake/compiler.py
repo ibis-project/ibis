@@ -53,14 +53,14 @@ def exclude_unsupported_window_frame_from_row_number(_, x):
     return ops.Subtract(_.copy(frame=x.copy(start=None, end=None)), 1)
 
 
-@replace(p.Log2(x))
-def replace_log2(_, x):
-    return ops.Log(2, x)
+@replace(p.Log2)
+def replace_log2(_):
+    return ops.Log(_.arg, base=2)
 
 
-@replace(p.Log10(x))
-def replace_log10(_, x):
-    return ops.Log(10, x)
+@replace(p.Log10)
+def replace_log10(_):
+    return ops.Log(_.arg, base=10)
 
 
 @replace(p.ToJSONMap | p.ToJSONArray)
