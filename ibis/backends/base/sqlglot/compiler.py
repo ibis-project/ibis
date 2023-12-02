@@ -453,7 +453,7 @@ class SQLGlotCompiler(abc.ABC):
             raise com.UnsupportedOperationError(
                 f"{self.dialect} `format_str` must be a literal `str`; got {type(op.format_str)}"
             )
-        return self.f.strftime(arg, format_str)
+        return sge.TimeToStr(this=arg, format=format_str)
 
     @visit_node.register(ops.ExtractEpochSeconds)
     def visit_ExtractEpochSeconds(self, op, *, arg):
