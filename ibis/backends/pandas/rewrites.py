@@ -7,7 +7,7 @@ import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 from ibis.common.annotations import attribute
 from ibis.common.collections import FrozenDict
-from ibis.common.patterns import replace
+from ibis.common.patterns import In, replace
 from ibis.common.typing import VarTuple
 from ibis.expr.schema import Schema
 from ibis.util import gen_name
@@ -21,22 +21,35 @@ class ColumnRef(ops.Value):
     shape = ds.columnar
 
 
+class PandasRelation(ops.Relation):
+    pass
+
+
 @public
-class PandasRename(ops.Relation):
+class PandasRename(PandasRelation):
     parent: ops.Relation
     mapping: FrozenDict[str, str]
 
+    @classmethod
+    def from_prefix(cls, parent, prefix):
+        mapping = {k: f"{prefix}_{k}" for k in parent.schema}
+        return cls(parent, mapping)
+
     @attribute
     def fields(self):
-        return {}
+        return FrozenDict(
+            {to: ops.Field(self.parent, from_) for from_, to in self.mapping.items()}
+        )
 
     @attribute
     def schema(self):
-        return Schema({self.mapping[k]: v for k, v in self.parent.schema.items()})
+        return Schema(
+            {self.mapping[name]: dtype for name, dtype in self.parent.schema.items()}
+        )
 
 
 @public
-class PandasJoin(ops.Relation):
+class PandasJoin(PandasRelation):
     left: ops.Relation
     right: ops.Relation
     left_on: VarTuple[ops.Column]
@@ -45,7 +58,7 @@ class PandasJoin(ops.Relation):
 
     @attribute
     def fields(self):
-        return {}
+        return FrozenDict({**self.left.fields, **self.right.fields})
 
     @attribute
     def schema(self):
@@ -53,13 +66,13 @@ class PandasJoin(ops.Relation):
 
 
 @public
-class PandasReduce(ops.Relation):
+class PandasReduce(PandasRelation):
     parent: ops.Relation
     metrics: FrozenDict[str, ops.Scalar]
 
     @attribute
     def fields(self):
-        return {}
+        return self.metrics
 
     @attribute
     def schema(self):
@@ -68,14 +81,15 @@ class PandasReduce(ops.Relation):
 
 
 @public
-class PandasAggregate(ops.Relation):
+class PandasAggregate(PandasRelation):
     parent: ops.Relation
     groups: VarTuple[str]
     metrics: FrozenDict[str, ops.Reduction]
 
     @attribute
     def fields(self):
-        return {}
+        groups = {k: ops.Field(self.parent, k) for k in self.groups}
+        return FrozenDict({**groups, **self.metrics})
 
     @attribute
     def schema(self):
@@ -149,17 +163,20 @@ def split_predicates(left, right, predicates):
 
 @replace(ops.JoinChain)
 def join_chain_to_nested_joins(_):
-    table_ids = {}
-
-    table_ids[_.first] = tableid = str(len(table_ids))
-    renames = {k: f"{tableid}_{k}" for k in _.first.schema}
-    left = PandasRename(_.first, renames)
+    prefixes = {}
+    prefixes[_.first] = prefix = str(len(prefixes))
+    left = PandasRename.from_prefix(_.first, prefix)
 
     for link in _.rest:
-        table_ids[link.table] = tableid = str(len(table_ids))
-        renames = {k: f"{tableid}_{k}" for k in link.table.schema}
-        right = PandasRename(link.table, renames)
-        left_on, right_on = split_predicates(left.parent, right.parent, link.predicates)
+        prefixes[link.table] = prefix = str(len(prefixes))
+        right = PandasRename.from_prefix(link.table, prefix)
+
+        subs = {v: ops.Field(left, k) for k, v in left.fields.items()}
+        subs.update({v: ops.Field(right, k) for k, v in right.fields.items()})
+        preds = [pred.replace(subs, filter=ops.Value) for pred in link.predicates]
+
+        # need to replace the fields in the predicates
+        left_on, right_on = split_predicates(left, right, preds)
 
         left = PandasJoin(
             how=link.how,
@@ -169,12 +186,6 @@ def join_chain_to_nested_joins(_):
             right_on=right_on,
         )
 
-    deref_mapping = {}
-    for table, tableid in table_ids.items():
-        for k, v in table.schema.items():
-            deref_mapping[ops.Field(table, k)] = ops.Field(left, f"{tableid}_{k}")
-
-    fields = {
-        k: v.replace(deref_mapping, filter=ops.Value) for k, v in _.fields.items()
-    }
+    subs = {v: ops.Field(left, k) for k, v in left.fields.items()}
+    fields = {k: v.replace(subs, filter=ops.Value) for k, v in _.fields.items()}
     return ops.Project(left, fields)

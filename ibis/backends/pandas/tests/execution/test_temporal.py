@@ -11,7 +11,6 @@ from pytest import param
 
 from ibis import literal as L
 from ibis.backends.pandas import Backend
-from ibis.backends.pandas.execution import execute
 from ibis.backends.pandas.tests.conftest import TestConf as tm
 from ibis.expr import datatypes as dt
 
@@ -56,7 +55,7 @@ def test_timestamp_functions(case_func, expected_func):
     )
     result = case_func(v)
     expected = expected_func(vt)
-    assert execute(result.op()) == expected
+    assert result.execute() == expected
 
 
 @pytest.mark.parametrize(

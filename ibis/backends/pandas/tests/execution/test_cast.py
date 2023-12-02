@@ -10,7 +10,6 @@ from pytest import param
 
 import ibis
 import ibis.expr.datatypes as dt
-from ibis.backends.pandas.execution import execute
 from ibis.backends.pandas.tests.conftest import TestConf as tm
 from ibis.common.exceptions import OperationNotDefinedError
 
@@ -108,11 +107,11 @@ def test_cast_timestamp_column(t, df, column, to, expected):
         ),
     ],
 )
-def test_cast_timestamp_scalar_naive(to, expected):
+def test_cast_timestamp_scalar_naive(client, to, expected):
     literal_expr = ibis.literal(pd.Timestamp(TIMESTAMP))
     value = literal_expr.cast(to)
-    result = execute(value.op())
-    raw = execute(literal_expr.op())
+    result = client.execute(value)
+    raw = client.execute(literal_expr)
     assert result == expected(raw)
 
 
@@ -133,11 +132,11 @@ def test_cast_timestamp_scalar_naive(to, expected):
     ],
 )
 @pytest.mark.parametrize("tz", ["UTC", "America/New_York"])
-def test_cast_timestamp_scalar(to, expected, tz):
+def test_cast_timestamp_scalar(client, to, expected, tz):
     literal_expr = ibis.literal(pd.Timestamp(TIMESTAMP).tz_localize(tz))
     value = literal_expr.cast(to)
-    result = execute(value.op())
-    raw = execute(literal_expr.op())
+    result = client.execute(value)
+    raw = client.execute(literal_expr)
     assert result == expected(raw)
 
 

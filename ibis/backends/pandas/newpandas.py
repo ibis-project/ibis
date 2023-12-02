@@ -106,7 +106,8 @@ def execute_rename(op, parent, mapping):
 
 @execute.register(PandasJoin)
 def execute_join(op, left, right, left_on, right_on, how):
-    return left.merge(right, how=how, left_on=left_on, right_on=right_on)
+    df = left.merge(right, how=how, left_on=left_on, right_on=right_on)
+    return df.drop(columns=["key_0"])
 
 
 @execute.register(ops.Union)
@@ -631,7 +632,7 @@ def zuper(node, params):
     node = node.replace(
         aggregate_to_groupby | join_chain_to_nested_joins | replace_literals
     )
-    #print(node.to_expr())
+    # print(node.to_expr())
     result = node.map(fn)[node]
 
     if isinstance(original, ops.Value):
