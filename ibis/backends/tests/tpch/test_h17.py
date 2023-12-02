@@ -6,11 +6,6 @@ from .conftest import tpch_test
 
 
 @tpch_test
-@pytest.mark.notimpl(
-    ["snowflake"],
-    raises=AssertionError,
-    reason="ibis doesn't preserve decimal types in aggregations",
-)
 @pytest.mark.xfail_version(
     duckdb=["sqlalchemy>=2"],
     trino=["sqlalchemy>=2"],
