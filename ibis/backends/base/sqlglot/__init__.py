@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import abc
 import contextlib
 from typing import TYPE_CHECKING, Any, ClassVar
 
@@ -13,6 +14,9 @@ from ibis.backends.base import BaseBackend
 from ibis.backends.base.sqlglot.compiler import STAR
 
 if TYPE_CHECKING:
+    from collections.abc import Iterator
+
+    import ibis.expr.datatypes as dt
     import ibis.expr.types as ir
     from ibis.backends.base.sqlglot.compiler import SQLGlotCompiler
     from ibis.common.typing import SupportsSchema
@@ -110,6 +114,10 @@ class SQLGlotBackend(BaseBackend):
         if schema is None:
             schema = self._get_schema_using_query(query)
         return ops.SQLQueryResult(query, ibis.schema(schema), self).to_expr()
+
+    @abc.abstractmethod
+    def _metadata(self, query: str) -> Iterator[tuple[str, dt.DataType]]:
+        """Return the metadata of a SQL query."""
 
     def _get_schema_using_query(self, query: str) -> sch.Schema:
         """Return an ibis Schema from a backend-specific SQL string."""
