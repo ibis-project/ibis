@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import decimal
 import json
 import warnings
 
@@ -200,7 +199,14 @@ class PandasData(DataMapper):
 
     @staticmethod
     def convert_Decimal(s, dtype, pandas_type):
-        return s.map(decimal.Decimal, na_action="ignore")
+        import decimal
+
+        import pyarrow as pa
+
+        arr = pa.array(s.map(decimal.Decimal).values).cast(
+            dtype.to_pyarrow(), safe=False
+        )
+        return arr.to_pandas()
 
     @staticmethod
     def convert_String(s, dtype, pandas_type):
