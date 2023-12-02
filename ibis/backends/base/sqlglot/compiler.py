@@ -609,19 +609,6 @@ class SQLGlotCompiler(abc.ABC):
 
     ### Definitely Not Tensors
 
-    def _neg_idx_to_pos(self, array, idx):
-        arg_length = self.f.len(array)
-        return self.if_(
-            idx >= 0,
-            idx,
-            # Need to have the greatest here to handle the case where
-            # abs(neg_index) > arg_length
-            # e.g. where the magnitude of the negative index is greater than the
-            # length of the array
-            # You cannot index a[:-3] if a = [1, 2]
-            arg_length + self.f.greatest(idx, -arg_length),
-        )
-
     @visit_node.register(ops.ArrayStringJoin)
     def visit_ArrayStringJoin(self, op, *, sep, arg):
         return self.f.array_to_string(arg, sep)
