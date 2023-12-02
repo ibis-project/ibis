@@ -1192,7 +1192,7 @@ _SIMPLE_OPS = {
     ops.Translate: "translate",
     ops.StringReplace: "replace",
     ops.Reverse: "reverse",
-    ops.Split: "split",
+    ops.StringSplit: "split",
 }
 
 _BINARY_INFIX_OPS = {
