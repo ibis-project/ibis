@@ -11,6 +11,7 @@ import sqlglot as sg
 from dateutil.relativedelta import relativedelta
 
 import ibis
+from ibis.formats.pandas import PandasData
 
 if TYPE_CHECKING:
     import ibis.expr.types as ir
@@ -59,11 +60,12 @@ def tpch_test(test: Callable[..., ir.Table]):
         result = backend.connection.execute(result_expr)
         assert not result.empty
 
-        expected = expected_expr.cast(result_expr.schema()).execute()
-        assert not expected.empty
-
+        expected = expected_expr.execute()
         assert list(map(str.lower, expected.columns)) == result.columns.tolist()
         expected.columns = result.columns
+
+        expected = PandasData.convert_table(expected, result_expr.schema())
+        assert not expected.empty
 
         assert len(expected) == len(result)
         backend.assert_frame_equal(result, expected, check_dtype=False)

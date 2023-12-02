@@ -530,7 +530,13 @@ class SnowflakeCompiler(SQLGlotCompiler):
 
     @visit_node.register(ops.Limit)
     def visit_Limit(self, op, *, parent, n, offset):
-        result = sg.select(STAR).from_(parent)
+        # push limit/offset into subqueries
+        if isinstance(parent, sge.Subquery):
+            result = parent.this
+            alias = parent.alias
+        else:
+            result = sg.select(STAR).from_(parent)
+            alias = None
 
         if isinstance(n, int):
             result = result.limit(n)
@@ -546,11 +552,16 @@ class SnowflakeCompiler(SQLGlotCompiler):
             skip = offset
             skip = sg.select(skip).from_(parent).subquery()
         elif not offset:
+            if alias is not None:
+                return result.subquery(alias)
             return result
         else:
             skip = offset
 
-        return result.offset(skip)
+        result = result.offset(skip)
+        if alias is not None:
+            return result.subquery(alias)
+        return result
 
     @visit_node.register(ops.ArrayMap)
     @visit_node.register(ops.ArrayFilter)
