@@ -582,10 +582,6 @@ class SQLGlotCompiler(abc.ABC):
     def visit_RegexExtract(self, op, *, arg, pattern, index):
         return self.f.regexp_extract(arg, pattern, index, dialect=self.dialect)
 
-    @visit_node.register(ops.StringSplit)
-    def visit_StringSplit(self, op, *, arg, delimiter):
-        return sge.Split(this=arg, expression=delimiter)
-
     @visit_node.register(ops.StringConcat)
     def visit_StringConcat(self, op, *, arg):
         return sge.Concat.from_arg_list(list(arg))
@@ -1196,6 +1192,7 @@ _SIMPLE_OPS = {
     ops.Translate: "translate",
     ops.StringReplace: "replace",
     ops.Reverse: "reverse",
+    ops.Split: "split",
 }
 
 _BINARY_INFIX_OPS = {

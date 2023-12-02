@@ -577,7 +577,6 @@ _SIMPLE_OPS = {
     ops.RegexReplace: "regexp_replace",
     ops.Strftime: "to_varchar",
     ops.StringAscii: "ascii",
-    ops.StringSplit: "split",
     ops.StringToTimestamp: "to_timestamp_tz",
     ops.TimeFromHMS: "time_from_parts",
     ops.TimestampFromYMDHMS: "timestamp_from_parts",
