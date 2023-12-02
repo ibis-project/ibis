@@ -36,7 +36,7 @@ The changes will show up in the dev docs when your PR is merged!
 ## Raw Data
 
 ```{python}
-#| echo: true
+#| echo: false
 !python ../gen_matrix.py
 ```
 

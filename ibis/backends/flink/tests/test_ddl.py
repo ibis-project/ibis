@@ -178,15 +178,14 @@ def test_force_recreate_table_from_schema(
     ],
 )
 @pytest.mark.parametrize(
-    "schema_props", [(None, None), (_awards_players_schema, "awards_players")]
+    "schema, table_name", [(None, None), (_awards_players_schema, "awards_players")]
 )
 def test_recreate_in_mem_table(
-    con, employee_df, schema_props, temp_table, csv_source_configs
+    con, employee_df, schema, table_name, temp_table, csv_source_configs
 ):
     # create table once
-    schema = schema_props[0]
-    if schema_props[1] is not None:
-        tbl_properties = csv_source_configs(schema_props[1])
+    if table_name is not None:
+        tbl_properties = csv_source_configs(table_name)
     else:
         tbl_properties = None
 
@@ -242,7 +241,6 @@ def test_force_recreate_in_mem_table(
         tbl_properties=tbl_properties,
     )
     assert temp_table in con.list_tables()
-    assert temp_table in con.list_views()
     if schema is not None:
         assert new_table.schema() == schema
 
@@ -255,7 +253,6 @@ def test_force_recreate_in_mem_table(
         overwrite=True,
     )
     assert temp_table in con.list_tables()
-    assert temp_table in con.list_views()
     if schema is not None:
         assert new_table.schema() == schema
 

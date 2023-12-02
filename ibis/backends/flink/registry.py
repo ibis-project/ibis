@@ -9,7 +9,6 @@ from ibis.backends.base.sql.registry import (
     operation_registry as base_operation_registry,
 )
 from ibis.backends.base.sql.registry.main import varargs
-from ibis.backends.flink.datatypes import FlinkType
 from ibis.common.temporal import TimestampUnit
 
 if TYPE_CHECKING:
@@ -222,6 +221,8 @@ def _window(translator: ExprTranslator, op: ops.Node) -> str:
 
 
 def _clip(translator: ExprTranslator, op: ops.Node) -> str:
+    from ibis.backends.flink.datatypes import FlinkType
+
     arg = translator.translate(op.arg)
 
     if op.upper is not None:
