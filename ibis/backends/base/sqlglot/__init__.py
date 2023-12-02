@@ -123,7 +123,7 @@ class SQLGlotBackend(BaseBackend):
         database: str | None = None,
         overwrite: bool = False,
     ) -> ir.Table:
-        src = sg.exp.Create(
+        src = sge.Create(
             this=sg.table(name, db=database, quoted=self.compiler.quoted),
             kind="VIEW",
             replace=overwrite,
@@ -141,7 +141,7 @@ class SQLGlotBackend(BaseBackend):
     def drop_view(
         self, name: str, *, database: str | None = None, force: bool = False
     ) -> None:
-        src = sg.exp.Drop(
+        src = sge.Drop(
             this=sg.table(name, db=database, quoted=self.compiler.quoted),
             kind="VIEW",
             exists=force,
@@ -150,21 +150,23 @@ class SQLGlotBackend(BaseBackend):
             pass
 
     def _get_temp_view_definition(self, name: str, definition: str) -> str:
-        yield sg.exp.Create(
+        return sge.Create(
             this=sg.to_identifier(name, quoted=self.compiler.quoted),
             kind="VIEW",
             expression=definition,
             replace=True,
-            properties=sg.exp.Properties(expressions=[sg.exp.TemporaryProperty()]),
-        ).sql(self.name)
+            properties=sge.Properties(expressions=[sge.TemporaryProperty()]),
+        )
 
     def _create_temp_view(self, table_name, source):
         if table_name not in self._temp_views and table_name in self.list_tables():
             raise ValueError(
                 f"{table_name} already exists as a non-temporary table or view"
             )
+
         with self._safe_raw_sql(self._get_temp_view_definition(table_name, source)):
             pass
+
         self._temp_views.add(table_name)
         self._register_temp_view_cleanup(table_name)
 
