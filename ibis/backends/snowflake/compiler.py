@@ -531,7 +531,7 @@ class SnowflakeCompiler(SQLGlotCompiler):
     @visit_node.register(ops.Limit)
     def visit_Limit(self, op, *, parent, n, offset):
         # push limit/offset into subqueries
-        if isinstance(parent, sge.Subquery):
+        if isinstance(parent, sge.Subquery) and parent.this.args.get("limit") is None:
             result = parent.this
             alias = parent.alias
         else:
