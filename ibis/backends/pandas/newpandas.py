@@ -311,6 +311,17 @@ def execute_searched_case(op, cases, results, default):
     return pd.Series(out)
 
 
+@execute.register(ops.SimpleCase)
+def execute_simple_case(op, base, cases, results, default):
+    if isinstance(default, pd.Series):
+        raise NotImplementedError(
+            "SimpleCase with a columnar shaped default value is not implemented"
+        )
+
+    cases = tuple(base == case for case in cases)
+    return execute_searched_case(op, cases, results, default)
+
+
 @execute.register(ops.TypeOf)
 def execute_typeof(op, arg):
     raise OperationNotDefinedError("TypeOf is not implemented")

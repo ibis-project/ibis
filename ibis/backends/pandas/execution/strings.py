@@ -199,13 +199,3 @@ def try_getitem(value, key):
         # TypeError: `js` doesn't implement __getitem__, either at all or for
         # the type of `key`
         return None
-
-
-@execute_node.register(ops.JSONGetItem, pd.Series, (str, int))
-def execute_json_getitem_series_str_int(_, data, key, **kwargs):
-    return pd.Series(map(partial(try_getitem, key=key), data), dtype="object")
-
-
-@execute_node.register(ops.JSONGetItem, pd.Series, pd.Series)
-def execute_json_getitem_series_series(_, data, key, **kwargs):
-    return pd.Series(map(try_getitem, data, key), dtype="object")

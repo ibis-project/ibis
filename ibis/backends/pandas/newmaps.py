@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import json
+
 import numpy as np
 import pandas as pd
 
@@ -81,3 +83,28 @@ def execute_map_merge(op, **kwargs):
 @execute.register(ops.StructField)
 def execute_struct_field(op, arg, field):
     return elementwise(lambda x: safe_get(x, field), arg=arg)
+
+
+def safe_json_getitem(value, key):
+    try:
+        # try to deserialize the value -> return None if it's None
+        if (js := json.loads(value)) is None:
+            return None
+    except (json.JSONDecodeError, TypeError):
+        # if there's an error related to decoding or a type error return None
+        return None
+
+    try:
+        # try to extract the value as an array element or mapping key
+        return json.dumps(js[key])
+    except (KeyError, IndexError, TypeError):
+        # KeyError: missing mapping key
+        # IndexError: missing sequence key
+        # TypeError: `js` doesn't implement __getitem__, either at all or for
+        # the type of `key`
+        return None
+
+
+@execute.register(ops.JSONGetItem)
+def execute_json_getitem(op, **kwargs):
+    return rowwise(lambda row: safe_json_getitem(row["arg"], row["index"]), kwargs)

@@ -237,7 +237,15 @@ class PandasData(DataMapper):
     def convert_String(s, dtype, pandas_type):
         # TODO(kszucs): should switch to the new pandas string type and convert
         # object columns using s.convert_dtypes() method
+        # TODO(kszucs): omit if s.dtype == pandas_type
         return s.map(lambda x: x if x is None or x is pd.NA else str(x))
+
+    # @staticmethod
+    # def convert_JSON(s, dtype, pandas_type):
+    #     # if dtype.is_nested():
+    #     #     return s.map(json.dumps, na_action="ignore")
+    #     # elif s.dtype != pandas_type:
+    #     #     raise TypeError(f"cannot convert {dtype} to JSON")
 
 
 class DaskData(PandasData):

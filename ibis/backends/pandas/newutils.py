@@ -1,8 +1,6 @@
 from __future__ import annotations
 
 import itertools
-import operator
-from collections.abc import Sized
 from typing import Callable
 
 import numpy as np
@@ -24,7 +22,7 @@ def asframe(values: dict | tuple, concat=True):
     elif isinstance(values, tuple):
         names = [f"_{i}" for i in range(len(values))]
     else:
-        raise TypeError(f"values must be a dict, list, or tuple; got {type(values)}")
+        raise TypeError(f"values must be a dict, or tuple; got {type(values)}")
 
     size = 1
     all_scalars = True

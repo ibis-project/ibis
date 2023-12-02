@@ -43,12 +43,6 @@ from ibis.backends.pandas.dispatch import execute_literal, execute_node
 from ibis.backends.pandas.execution import constants
 from ibis.backends.pandas.execution.util import coerce_to_output, get_grouping
 
-# @execute_node.register(ops.Cast, SeriesGroupBy, dt.DataType)
-# def execute_cast_series_group_by(op, data, type, **kwargs):
-#     result = execute_cast_series_generic(op, data.obj, type, **kwargs)
-#     return result.groupby(get_grouping(data.grouper.groupings), group_keys=False)
-
-
 # @execute_node.register(ops.Cast, pd.Series, dt.DataType)
 # def execute_cast_series_generic(op, data, type, **kwargs):
 #     out = data.astype(constants.IBIS_TYPE_TO_PANDAS_TYPE[type])
@@ -58,28 +52,6 @@ from ibis.backends.pandas.execution.util import coerce_to_output, get_grouping
 #         elif op.arg.dtype.is_date():
 #             return out.floordiv(int(24 * 60 * 60 * 1e9))
 #     return out
-
-
-# @execute_node.register(ops.Cast, pd.Series, dt.Array)
-# def execute_cast_series_array(op, data, type, **kwargs):
-#     value_type = type.value_type
-#     numpy_type = constants.IBIS_TYPE_TO_PANDAS_TYPE.get(value_type, None)
-#     if numpy_type is None:
-#         raise ValueError(
-#             "Array value type must be a primitive type "
-#             "(e.g., number, string, or timestamp)"
-#         )
-
-#     def cast_to_array(array, numpy_type=numpy_type):
-#         elems = [
-#             el if el is None else np.array(el, dtype=numpy_type).item() for el in array
-#         ]
-#         try:
-#             return np.array(elems, dtype=numpy_type)
-#         except TypeError:
-#             return np.array(elems)
-
-#     return data.map(cast_to_array)
 
 
 # @execute_node.register(ops.Cast, pd.Series, dt.Timestamp)
@@ -155,94 +127,12 @@ def _normalize(values, original_index, name, timezone=None):
 #     raise TypeError(f"Don't know how to cast {from_type} to {type}")
 
 
-@execute_node.register(ops.SortKey, pd.Series, bool)
-def execute_sort_key_series(op, data, _, **kwargs):
-    return data
-
-
 def call_numpy_ufunc(func, op, data, **kwargs):
     if getattr(data, "dtype", None) == np.dtype(np.object_):
         return data.apply(functools.partial(execute_node, op, **kwargs))
     if func is None:
         raise com.OperationNotDefinedError(f"{type(op).__name__} not supported")
     return func(data)
-
-
-# @execute_node.register(ops.Negate, pd.Series)
-# def execute_series_negate(op, data, **kwargs):
-#     return call_numpy_ufunc(np.negative, op, data, **kwargs)
-
-
-# @execute_node.register(ops.Negate, SeriesGroupBy)
-# def execute_series_group_by_negate(op, data, **kwargs):
-#     return execute_series_negate(op, data.obj, **kwargs).groupby(
-#         get_grouping(data.grouper.groupings), group_keys=False
-#     )
-
-
-@execute_node.register(ops.Unary, pd.Series)
-def execute_series_unary_op(op, data, **kwargs):
-    op_type = type(op)
-    if op_type == ops.BitwiseNot:
-        function = np.bitwise_not
-    else:
-        function = getattr(np, op_type.__name__.lower())
-    return call_numpy_ufunc(function, op, data, **kwargs)
-
-
-@execute_node.register(ops.Acos, (pd.Series, *numeric_types))
-def execute_series_acos(_, data, **kwargs):
-    return np.arccos(data)
-
-
-@execute_node.register(ops.Asin, (pd.Series, *numeric_types))
-def execute_series_asin(_, data, **kwargs):
-    return np.arcsin(data)
-
-
-@execute_node.register(ops.Atan, (pd.Series, *numeric_types))
-def execute_series_atan(_, data, **kwargs):
-    return np.arctan(data)
-
-
-@execute_node.register(ops.Cot, (pd.Series, *numeric_types))
-def execute_series_cot(_, data, **kwargs):
-    return 1.0 / np.tan(data)
-
-
-@execute_node.register(
-    ops.Atan2, (pd.Series, *numeric_types), (pd.Series, *numeric_types)
-)
-def execute_series_atan2(_, y, x, **kwargs):
-    return np.arctan2(y, x)
-
-
-@execute_node.register((ops.Cos, ops.Sin, ops.Tan), (pd.Series, *numeric_types))
-def execute_series_trig(op, data, **kwargs):
-    function = getattr(np, type(op).__name__.lower())
-    return call_numpy_ufunc(function, op, data, **kwargs)
-
-
-@execute_node.register(ops.Radians, (pd.Series, *numeric_types))
-def execute_series_radians(_, data, **kwargs):
-    return np.radians(data)
-
-
-@execute_node.register(ops.Degrees, (pd.Series, *numeric_types))
-def execute_series_degrees(_, data, **kwargs):
-    return np.degrees(data)
-
-
-@execute_node.register((ops.Ceil, ops.Floor), pd.Series)
-def execute_series_ceil(op, data, **kwargs):
-    return_type = np.object_ if data.dtype == np.object_ else np.int64
-    func = getattr(np, type(op).__name__.lower())
-    return call_numpy_ufunc(func, op, data, **kwargs).astype(return_type)
-
-
-@execute_node.register(ops.BitwiseNot, integer_types)
-def execute_int_bitwise_not(op, data, **kwargs):
-    return np.invert(data)
 
 
 def vectorize_object(op, arg, *args, **kwargs):
@@ -267,53 +157,6 @@ def execute_series_natural_log(op, data, **kwargs):
     if data.dtype == np.dtype(np.object_):
         return data.apply(functools.partial(execute_node, op, **kwargs))
     return np.log(data)
-
-
-@execute_node.register(
-    ops.Clip,
-    pd.Series,
-    (pd.Series, type(None)) + numeric_types,
-    (pd.Series, type(None)) + numeric_types,
-)
-def execute_series_clip(op, data, lower, upper, **kwargs):
-    return data.clip(lower=lower, upper=upper)
-
-
-@execute_node.register(
-    ops.Quantile,
-    pd.Series,
-    (np.ndarray, *numeric_types),
-    (pd.Series, type(None)),
-)
-def execute_series_quantile(op, data, quantile, mask, aggcontext=None, **_):
-    return aggcontext.agg(
-        data if mask is None else data.loc[mask],
-        "quantile",
-        q=quantile,
-    )
-
-
-@execute_node.register(ops.Quantile, pd.Series, (np.ndarray, *numeric_types))
-def execute_series_quantile_default(op, data, quantile, aggcontext=None, **_):
-    return aggcontext.agg(data, "quantile", q=quantile)
-
-
-@execute_node.register(
-    ops.Quantile,
-    SeriesGroupBy,
-    (np.ndarray, *numeric_types),
-    (SeriesGroupBy, type(None)),
-)
-def execute_series_group_by_quantile(op, data, quantile, mask, aggcontext=None, **_):
-    return aggcontext.agg(
-        data,
-        (
-            "quantile"
-            if mask is None
-            else functools.partial(_filtered_reduction, mask.obj, pd.Series.quantile)
-        ),
-        q=quantile,
-    )
 
 
 @execute_node.register(
@@ -664,16 +507,6 @@ def execute_std_series_groupby_mask(op, data, mask, aggcontext=None, **kwargs):
             x[mask[x.index]].std(ddof=ddof)
         ),
     )
-
-
-# @execute_node.register(ops.CountStar, DataFrameGroupBy, type(None))
-# def execute_count_star_frame_groupby(op, data, _, **kwargs):
-#     return data.size()
-
-
-@execute_node.register(ops.CountDistinctStar, DataFrameGroupBy, type(None))
-def execute_count_distinct_star_frame_groupby(op, data, _, **kwargs):
-    return data.nunique()
 
 
 @execute_node.register(ops.Reduction, pd.Series, (pd.Series, type(None)))

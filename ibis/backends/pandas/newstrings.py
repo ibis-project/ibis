@@ -7,11 +7,13 @@ except ImportError:
 from functools import reduce
 from urllib.parse import parse_qs, urlsplit
 
+import numpy as np
 import pandas as pd
 
 import ibis.expr.operations as ops
 from ibis.backends.pandas.newpandas import execute
 from ibis.backends.pandas.newutils import (
+    asframe,
     columnwise,
     elementwise,
     rowwise,
@@ -216,3 +218,12 @@ def execute_string_join(op, sep, arg):
 @execute.register(ops.StringConcat)
 def execute_string_concat(op, arg):
     return reduce(lambda x, y: x + y, arg)
+
+
+@execute.register(ops.FindInSet)
+def execute_find_in_set(op, needle, values):
+    (needle, *haystack), _ = asframe((needle, *values), concat=False)
+    condlist = [needle == col for col in haystack]
+    choicelist = [i for i, _ in enumerate(haystack)]
+    result = np.select(condlist, choicelist, default=-1)
+    return pd.Series(result, name=op.name)
