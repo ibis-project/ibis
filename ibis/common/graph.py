@@ -4,17 +4,25 @@ from __future__ import annotations
 from abc import abstractmethod
 from collections import deque
 from collections.abc import Iterable, Iterator, KeysView, Mapping, Sequence
-from typing import TYPE_CHECKING, Any, Callable, Optional, TypeVar
+from typing import TYPE_CHECKING, Any, Callable, Optional, TypeVar, Union
 
 from ibis.common.bases import Hashable
 from ibis.common.collections import frozendict
-from ibis.common.patterns import NoMatch, Pattern, pattern
+from ibis.common.patterns import NoMatch, Pattern
+from ibis.common.typing import _ClassInfo
 from ibis.util import experimental
 
 if TYPE_CHECKING:
     from typing_extensions import Self
 
     N = TypeVar("N")
+
+
+Finder = Callable[["Node"], bool]
+FinderLike = Union[Finder, Pattern, _ClassInfo]
+
+Replacer = Callable[["Node", dict["Node", Any]], "Node"]
+ReplacerLike = Union[Replacer, Pattern, Mapping]
 
 
 def _flatten_collections(node: Any) -> Iterator[N]:
@@ -115,6 +123,88 @@ def _recursive_lookup(obj: Any, dct: dict) -> Any:
         return obj
 
 
+def _coerce_finder(obj: FinderLike, context: Optional[dict] = None) -> Finder:
+    """Coerce an object into a callable finder function.
+
+    Parameters
+    ----------
+    obj
+        A callable accepting the node, a pattern or a type to match on.
+    context
+        Optional context to use if the finder is a pattern.
+
+    Returns
+    -------
+    A callable finder function which can be used to match nodes.
+    """
+    if isinstance(obj, Pattern):
+        ctx = context or {}
+
+        def fn(node):
+            return obj.match(node, ctx) is not NoMatch
+    elif isinstance(obj, (tuple, type)):
+
+        def fn(node):
+            return isinstance(node, obj)
+    elif callable(obj):
+        fn = obj
+    else:
+        raise TypeError("finder must be callable, type, tuple of types or a pattern")
+
+    return fn
+
+
+def _coerce_replacer(obj: ReplacerLike, context: Optional[dict] = None) -> Replacer:
+    """Coerce an object into a callable replacer function.
+
+    Parameters
+    ----------
+    obj
+        A Pattern, a Mapping or a callable which can be fed to `node.map()`
+        to replace nodes.
+    context
+        Optional context to use if the replacer is a pattern.
+
+    Returns
+    -------
+    A callable replacer function which can be used to replace nodes.
+    """
+
+    # TODO(kszucs): add a __recreate__() method to the Node interface
+    # with a default implementation that uses the __class__ constructor
+    # which is supposed to provide an implementation for quick object
+    # reconstruction (the __recreate__ implementation in grounds.py
+    # should be sped up as well by totally avoiding the validation)
+
+    if isinstance(obj, Pattern):
+        ctx = context or {}
+
+        def fn(node, _, **kwargs):
+            # need to first reconstruct the node from the possible rewritten
+            # children, so we can match on the new node containing the rewritten
+            # child arguments, this way we can propagate the rewritten nodes
+            # upward in the hierarchy
+            recreated = node.__class__(**kwargs)
+            if (result := obj.match(recreated, ctx)) is NoMatch:
+                return recreated
+            else:
+                return result
+
+    elif isinstance(obj, Mapping):
+
+        def fn(node, _, **kwargs):
+            try:
+                return obj[node]
+            except KeyError:
+                return node.__class__(**kwargs)
+    elif callable(obj):
+        fn = obj
+    else:
+        raise TypeError("replacer must be callable, mapping or a pattern")
+
+    return fn
+
+
 class Node(Hashable):
     __slots__ = ()
 
@@ -137,7 +227,7 @@ class Node(Hashable):
         """Support for rich reprerentation of the node."""
         return zip(self.__argnames__, self.__args__)
 
-    def map(self, fn: Callable, filter: Optional[Any] = None) -> dict[Node, Any]:
+    def map(self, fn: Callable, filter: Optional[Finder] = None) -> dict[Node, Any]:
         """Apply a function to all nodes in the graph.
 
         The traversal is done in a topological order, so the function receives the
@@ -170,8 +260,8 @@ class Node(Hashable):
     # TODO(kszucs): perhaps rename it to find_all() for better clarity
     def find(
         self,
-        pat: type | tuple[type],
-        filter: Optional[Any] = None,
+        finder: FinderLike,
+        filter: Optional[FinderLike] = None,
         context: Optional[dict] = None,
     ) -> list[Node]:
         """Find all nodes matching a given pattern or type in the graph.
@@ -182,29 +272,28 @@ class Node(Hashable):
 
         Parameters
         ----------
-        pat
-            Python type or `Pattern` to match.
+        finder
+            A type, tuple of types, a pattern or a callable to match upon.
         filter
-            Pattern-like object to filter out nodes from the traversal. The traversal
-            will only visit nodes that match the given pattern and stop otherwise.
+            A type, tuple of types, a pattern or a callable to filter out nodes
+            from the traversal. The traversal will only visit nodes that match
+            the given filter and stop otherwise.
         context
-            Optional context to use for the pattern matching.
+            Optional context to use if `finder` or `filter` is a pattern.
 
         Returns
         -------
         The list of nodes matching the given pattern. The order of the nodes is
         determined by a breadth-first search.
         """
-        nodes = Graph.from_bfs(self, filter=filter).nodes()
-        if isinstance(pat, (tuple, type)):
-            return [node for node in nodes if isinstance(node, pat)]
-        else:
-            pat = pattern(pat)
-            ctx = context or {}
-            return [node for node in nodes if pat.match(node, ctx) is not NoMatch]
+        nodes = Graph.from_bfs(self, filter=filter, context=context).nodes()
+        finder = _coerce_finder(finder, context)
+        return [node for node in nodes if finder(node)]
 
     @experimental
-    def find_topmost(self, pat: type, context: Optional[dict] = None) -> list[Node]:
+    def find_topmost(
+        self, finder: FinderLike, context: Optional[dict] = None
+    ) -> list[Node]:
         """Find all topmost nodes matching a given pattern in the graph.
 
         A more advanced version of find, this method stops the traversal at the first
@@ -212,44 +301,35 @@ class Node(Hashable):
 
         Parameters
         ----------
-        pat
-            Pattern to match. `ibis.common.pattern()` function is used to coerce the
-            input value into a pattern. See the pattern module for more details.
+        finder
+            A type, tuple of types, a pattern or a callable to match upon.
         context
-            Optional context to use for the pattern matching.
+            Optional context to use if `finder` is a pattern.
 
         Returns
         -------
         The list of topmost nodes matching the given pattern.
         """
+        seen = set()
         queue = deque([self])
         result = []
-        seen = set()
+        finder = _coerce_finder(finder, context)
 
-        if isinstance(pat, Pattern):
-            ctx = context or {}
-            while queue:
-                if (node := queue.popleft()) not in seen:
-                    if pat.match(node, ctx) is not NoMatch:
-                        result.append(node)
-                    else:
-                        queue.extend(node.__children__)
-                    seen.add(node)
-        else:
-            # fast path for locating a specific type
-            while queue:
-                if (node := queue.popleft()) not in seen:
-                    if isinstance(node, pat):
-                        result.append(node)
-                    else:
-                        queue.extend(node.__children__)
-                    seen.add(node)
-
+        while queue:
+            if (node := queue.popleft()) not in seen:
+                if finder(node):
+                    result.append(node)
+                else:
+                    queue.extend(node.__children__)
+                seen.add(node)
         return result
 
     @experimental
     def replace(
-        self, pat: Any, filter: Optional[type] = None, context: Optional[dict] = None
+        self,
+        replacer: ReplacerLike,
+        filter: Optional[FinderLike] = None,
+        context: Optional[dict] = None,
     ) -> Any:
         """Match and replace nodes in the graph according to a given pattern.
 
@@ -258,48 +338,22 @@ class Node(Hashable):
 
         Parameters
         ----------
-        pat : Any
-            Pattern to match. `ibis.common.pattern()` function is used to coerce the
-            input value into a pattern. See the pattern module for more details.
-            Actual replacement is done by the `ibis.common.pattern.Replace` pattern.
-        filter : Optional[type], default None
-            Type to filter out for the traversal, Node is filtered out by default.
-        context : Optional[dict], default None
+        replacer
+            A `Pattern`, a `Mapping` or a callable which can be fed to
+            `node.map()` directly to replace nodes.
+        filter
+            A type, tuple of types, a pattern or a callable to filter out nodes
+            from the traversal. The traversal will only visit nodes that match
+            the given filter and stop otherwise.
+        context
             Optional context to use for the pattern matching.
 
         Returns
         -------
         The root node of the graph with the replaced nodes.
         """
-
-        if isinstance(pat, Mapping):
-
-            def fn(node, _, **kwargs):
-                try:
-                    return pat[node]
-                except KeyError:
-                    return node.__class__(**kwargs)
-        else:
-            pat = pattern(pat)
-            ctx = context or {}
-
-            def fn(node, _, **kwargs):
-                # need to first reconstruct the node from the possible rewritten
-                # children, so we can match on the new node containing the rewritten
-                # child arguments, this way we can propagate the rewritten nodes
-                # upward in the hierarchy
-                # TODO(kszucs): add a __recreate__() method to the Node interface
-                # with a default implementation that uses the __class__ constructor
-                # which is supposed to provide an implementation for quick object
-                # reconstruction (the __recreate__ implementation in grounds.py
-                # should be sped up as well by totally avoiding the validation)
-                recreated = node.__class__(**kwargs)
-                if (result := pat.match(recreated, ctx)) is NoMatch:
-                    return recreated
-                else:
-                    return result
-
-        results = self.map(fn, filter=filter)
+        replacer = _coerce_replacer(replacer, context)
+        results = self.map(replacer, filter=filter)
         return results.get(self, self)
 
 
@@ -322,7 +376,12 @@ class Graph(dict[Node, Sequence[Node]]):
         super().__init__(mapping, **kwargs)
 
     @classmethod
-    def from_bfs(cls, root: Node, filter: Optional[Any] = None) -> Self:
+    def from_bfs(
+        cls,
+        root: Node,
+        filter: Optional[FinderLike] = None,
+        context: Optional[dict] = None,
+    ) -> Self:
         """Construct a graph from a root node using a breadth-first search.
 
         The traversal is implemented in an iterative fashion using a queue.
@@ -332,8 +391,11 @@ class Graph(dict[Node, Sequence[Node]]):
         root
             Root node of the graph.
         filter
-            Pattern-like object to filter out nodes from the traversal. The traversal
-            will only visit nodes that match the given pattern and stop otherwise.
+            A type, tuple of types, a pattern or a callable to filter out nodes
+            from the traversal. The traversal will only visit nodes that match
+            the given filter and stop otherwise.
+        context
+            Optional context to use for the pattern matching.
 
         Returns
         -------
@@ -342,10 +404,16 @@ class Graph(dict[Node, Sequence[Node]]):
         if filter is None:
             return bfs(root)
         else:
+            filter = _coerce_finder(filter, context)
             return bfs_while(root, filter=filter)
 
     @classmethod
-    def from_dfs(cls, root: Node, filter: Optional[Any] = None) -> Self:
+    def from_dfs(
+        cls,
+        root: Node,
+        filter: Optional[FinderLike] = None,
+        context: Optional[dict] = None,
+    ) -> Self:
         """Construct a graph from a root node using a depth-first search.
 
         The traversal is implemented in an iterative fashion using a stack.
@@ -355,8 +423,11 @@ class Graph(dict[Node, Sequence[Node]]):
         root
             Root node of the graph.
         filter
-            Pattern-like object to filter out nodes from the traversal. The traversal
-            will only visit nodes that match the given pattern and stop otherwise.
+            A type, tuple of types, a pattern or a callable to filter out nodes
+            from the traversal. The traversal will only visit nodes that match
+            the given filter and stop otherwise.
+        context
+            Optional context to use for the pattern matching.
 
         Returns
         -------
@@ -365,6 +436,7 @@ class Graph(dict[Node, Sequence[Node]]):
         if filter is None:
             return dfs(root)
         else:
+            filter = _coerce_finder(filter, None)
             return dfs_while(root, filter=filter)
 
     def __repr__(self):
@@ -500,7 +572,7 @@ def bfs(root: Node) -> Graph:
     return graph
 
 
-def bfs_while(root: Node, filter: Optional[Any] = None) -> Graph:
+def bfs_while(root: Node, filter: Finder) -> Graph:
     """Construct a graph from a root node using a breadth-first search.
 
     Parameters
@@ -508,8 +580,8 @@ def bfs_while(root: Node, filter: Optional[Any] = None) -> Graph:
     root
         Root node of the graph.
     filter
-        Pattern-like object to filter out nodes from the traversal. The traversal
-        will only visit nodes that match the given pattern and stop otherwise.
+        A callable which returns a boolean given a node. The traversal will only
+        visit nodes that match the given filter and stop otherwise.
 
     Returns
     -------
@@ -521,17 +593,12 @@ def bfs_while(root: Node, filter: Optional[Any] = None) -> Graph:
     queue = deque()
     graph = Graph()
 
-    filter = pattern(filter)
-    if filter.match(root, {}) is not NoMatch:
+    if filter(root):
         queue.append(root)
 
     while queue:
         if (node := queue.popleft()) not in graph:
-            children = tuple(
-                child
-                for child in node.__children__
-                if filter.match(child, {}) is not NoMatch
-            )
+            children = tuple(child for child in node.__children__ if filter(child))
             graph[node] = children
             queue.extend(children)
 
@@ -567,7 +634,7 @@ def dfs(root: Node) -> Graph:
     return Graph(reversed(graph.items()))
 
 
-def dfs_while(root: Node, filter: Optional[Any] = None) -> Graph:
+def dfs_while(root: Node, filter: Finder) -> Graph:
     """Construct a graph from a root node using a depth-first search.
 
     Parameters
@@ -575,8 +642,8 @@ def dfs_while(root: Node, filter: Optional[Any] = None) -> Graph:
     root
         Root node of the graph.
     filter
-        Pattern-like object to filter out nodes from the traversal. The traversal
-        will only visit nodes that match the given pattern and stop otherwise.
+        A callable which returns a boolean given a node. The traversal will only
+        visit nodes that match the given filter and stop otherwise.
 
     Returns
     -------
@@ -588,17 +655,12 @@ def dfs_while(root: Node, filter: Optional[Any] = None) -> Graph:
     stack = deque()
     graph = {}
 
-    filter = pattern(filter)
-    if filter.match(root, {}) is not NoMatch:
+    if filter(root):
         stack.append(root)
 
     while stack:
         if (node := stack.pop()) not in graph:
-            children = tuple(
-                child
-                for child in node.__children__
-                if filter.match(child, {}) is not NoMatch
-            )
+            children = tuple(child for child in node.__children__ if filter(child))
             graph[node] = children
             stack.extend(children)
 

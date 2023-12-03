@@ -8,6 +8,8 @@ from ibis.common.collections import frozendict
 from ibis.common.graph import (
     Graph,
     Node,
+    _coerce_finder,
+    _coerce_replacer,
     _flatten_collections,
     _recursive_lookup,
     bfs,
@@ -43,6 +45,9 @@ class MyNode(Node):
 
     def __eq__(self, other):
         return self.name == other.name
+
+    def copy(self, name=None, children=None):
+        return self.__class__(name or self.name, children or self.children)
 
 
 C = MyNode(name="C", children=[])
@@ -135,16 +140,16 @@ def test_nested_children():
 
 @pytest.mark.parametrize("func", [bfs_while, dfs_while, Graph.from_bfs, Graph.from_dfs])
 def test_traversals_with_filter(func):
-    graph = func(A, filter=If(lambda x: x.name != "B"))
+    graph = func(A, filter=lambda x: x.name != "B")
     assert graph == {A: (C,), C: ()}
 
-    graph = func(A, filter=If(lambda x: x.name != "D"))
+    graph = func(A, filter=lambda x: x.name != "D")
     assert graph == {E: (), B: (E,), A: (B, C), C: ()}
 
 
 @pytest.mark.parametrize("func", [bfs_while, dfs_while, Graph.from_bfs, Graph.from_dfs])
 def test_traversal_with_filtering_out_root(func):
-    graph = func(A, filter=If(lambda x: x.name != "A"))
+    graph = func(A, filter=lambda x: x.name != "A")
     assert graph == {}
 
 
@@ -316,6 +321,40 @@ def test_recursive_lookup():
         ("B", "A"),
         my_map,
     )
+
+
+def test_coerce_finder():
+    f = _coerce_finder(int)
+    assert f(1) is True
+    assert f("1") is False
+
+    f = _coerce_finder((int, str))
+    assert f(1) is True
+    assert f("1") is True
+    assert f(1.0) is False
+
+    f = _coerce_finder(InstanceOf(bool))
+    assert f(True) is True
+    assert f(False) is True
+    assert f(1) is False
+
+    f = _coerce_finder(lambda x: x == 1)
+    assert f(1) is True
+    assert f(2) is False
+
+
+def test_coerce_replacer():
+    r = _coerce_replacer(lambda x, _, **kwargs: D)
+    assert r(C, {}) == D
+
+    r = _coerce_replacer({C: D, D: E})
+    assert r(C, {}) == D
+    assert r(D, {}) == E
+    assert r(A, {}, name="A", children=[B, C]) == A
+
+    r = _coerce_replacer(InstanceOf(MyNode) >> _.copy(name=_.name.lower()))
+    assert r(C, {}, name="C", children=[]) == MyNode(name="c", children=[])
+    assert r(D, {}, name="D", children=[]) == MyNode(name="d", children=[])
 
 
 def test_node_find_using_type():
