@@ -107,6 +107,20 @@ def execute_join(op, left, right, left_on, right_on, how):
     if how == "cross":
         assert not left_on and not right_on
         return pd.merge(left, right, how="cross")
+    elif how == "anti":
+        df = pd.merge(
+            left, right, how="outer", left_on=left_on, right_on=right_on, indicator=True
+        )
+        df = df[df["_merge"] == "left_only"]
+        return df.drop(columns=["_merge"])
+    elif how == "semi":
+        mask = asseries(True, left_size)
+        for left_pred, right_pred in zip(left_on, right_on):
+            mask = mask & left_pred.isin(right_pred)
+        return left[mask]
+    elif how == "asof":
+        df = pd.merge_asof(left, right, left_on=left_on, right_on=right_on)
+        return df
     else:
         df = left.merge(right, how=how, left_on=left_on, right_on=right_on)
         return df.drop(columns=[f"key_{i}" for i in range(len(left_on))])
@@ -634,6 +648,8 @@ def zuper(node, params):
     )
 
     def fn(node, _, **kwargs):
+        # TODO(kszucs): need to clean up the resultset as soon as an intermediate
+        # result is not needed anymore
         result = execute(node, **kwargs)
         return result
 
