@@ -92,12 +92,14 @@ class Backend(SQLGlotBackend, CanCreateSchema):
 
     @property
     def current_database(self) -> str:
-        (db,) = self.raw_sql("SELECT CURRENT_DATABASE()").fetchone()
+        with self._safe_raw_sql(sg.select(self.compiler.f.current_database())) as cur:
+            [(db,)] = cur.fetchall()
         return db
 
     @property
     def current_schema(self) -> str:
-        (schema,) = self.raw_sql("SELECT CURRENT_SCHEMA()").fetchone()
+        with self._safe_raw_sql(sg.select(self.compiler.f.current_schema())) as cur:
+            [(schema,)] = cur.fetchall()
         return schema
 
     def raw_sql(self, query: str | sg.Expression, **kwargs: Any) -> Any:
@@ -139,24 +141,6 @@ class Backend(SQLGlotBackend, CanCreateSchema):
         if obj is None and schema is None:
             raise ValueError("Either `obj` or `schema` must be specified")
 
-        column_defs = [
-            sge.ColumnDef(
-                this=sg.to_identifier(name, quoted=self.compiler.quoted),
-                kind=self.compiler.type_mapper.from_ibis(typ),
-                constraints=(
-                    None
-                    if typ.nullable
-                    else [sge.ColumnConstraint(kind=sge.NotNullColumnConstraint())]
-                ),
-            )
-            for name, typ in (schema or {}).items()
-        ]
-
-        target = sg.table(name, db=database, quoted=self.compiler.quoted)
-
-        if column_defs:
-            target = sge.Schema(this=target, expressions=column_defs)
-
         properties = []
 
         if temp:
@@ -174,34 +158,48 @@ class Backend(SQLGlotBackend, CanCreateSchema):
         else:
             query = None
 
+        column_defs = [
+            sge.ColumnDef(
+                this=sg.to_identifier(colname, quoted=self.compiler.quoted),
+                kind=self.compiler.type_mapper.from_ibis(typ),
+                constraints=(
+                    None
+                    if typ.nullable
+                    else [sge.ColumnConstraint(kind=sge.NotNullColumnConstraint())]
+                ),
+            )
+            for colname, typ in (schema or table.schema()).items()
+        ]
+
+        if overwrite:
+            temp_name = util.gen_name("duckdb_table")
+        else:
+            temp_name = name
+
+        table = sg.table(temp_name, catalog=database, quoted=self.compiler.quoted)
+        target = sge.Schema(this=table, expressions=column_defs)
+
         create_stmt = sge.Create(
             kind="TABLE",
             this=target,
-            replace=overwrite,
             properties=sge.Properties(expressions=properties),
-            expression=query,
         )
 
-        with self._safe_raw_sql(create_stmt):
-            pass
+        this = sg.table(name, catalog=database, quoted=self.compiler.quoted)
+        with self._safe_raw_sql(create_stmt) as cur:
+            if query is not None:
+                insert_stmt = sge.Insert(this=table, expression=query).sql(self.name)
+                cur.execute(insert_stmt).fetchall()
+
+            if overwrite:
+                cur.execute(
+                    sge.Drop(kind="TABLE", this=this, exists=True).sql(self.name)
+                ).fetchall()
+                cur.execute(
+                    f"ALTER TABLE IF EXISTS {table.sql(self.name)} RENAME TO {this.sql(self.name)}"
+                ).fetchall()
 
         return self.table(name, schema=database)
-
-    def create_view(
-        self,
-        name: str,
-        obj: ir.Table,
-        *,
-        database: str | None = None,
-        overwrite: bool = False,
-    ) -> ir.Table:
-        qualname = sg.table(name, db=database).sql(self.name)
-        replace = "OR REPLACE " * overwrite
-        query = self.compile(obj)
-        code = f"CREATE {replace}VIEW {qualname} AS {query}"
-        self.raw_sql(code)
-
-        return self.table(name, database=database)
 
     def _load_into_cache(self, name, expr):
         self.create_table(name, expr, schema=expr.schema(), temp=True)
@@ -278,8 +276,8 @@ class Backend(SQLGlotBackend, CanCreateSchema):
             .order_by("ordinal_position")
         )
 
-        result = self.raw_sql(query)
-        meta = result.fetch_arrow_table()
+        with self._safe_raw_sql(query) as cur:
+            meta = cur.fetch_arrow_table()
 
         if not meta:
             raise exc.IbisError(f"Table not found: {table_name!r}")
@@ -304,8 +302,9 @@ class Backend(SQLGlotBackend, CanCreateSchema):
         query = sg.select(sge.Distinct(expressions=[sg.column(col)])).from_(
             sg.table("schemata", db="information_schema")
         )
-        result = self.raw_sql(query)
-        dbs = result.fetch_arrow_table()[col]
+        with self._safe_raw_sql(query) as cur:
+            result = cur.fetch_arrow_table()
+        dbs = result[col]
         return self._filter_with_like(dbs.to_pylist(), like)
 
     def list_schemas(
@@ -319,7 +318,8 @@ class Backend(SQLGlotBackend, CanCreateSchema):
         if database is not None:
             query = query.where(sg.column("catalog_name").eq(sge.convert(database)))
 
-        out = self.raw_sql(query).fetch_arrow_table()
+        with self._safe_raw_sql(query) as cur:
+            out = cur.fetch_arrow_table()
         return self._filter_with_like(out[col].to_pylist(), like=like)
 
     @staticmethod
@@ -395,7 +395,8 @@ class Backend(SQLGlotBackend, CanCreateSchema):
             self._load_extensions(extensions)
 
         # Default timezone
-        self.raw_sql("SET TimeZone = 'UTC'")
+        with self._safe_raw_sql("SET TimeZone = 'UTC'"):
+            pass
 
         self._record_batch_readers_consumed = {}
         self._temp_views: set[str] = set()
@@ -1065,8 +1066,10 @@ class Backend(SQLGlotBackend, CanCreateSchema):
         ['t']
         """
         self.load_extension("sqlite")
-        self.raw_sql(f"SET GLOBAL sqlite_all_varchar={all_varchar}")
-        self.raw_sql(f"CALL sqlite_attach('{path}', overwrite={overwrite})")
+        with self._safe_raw_sql(f"SET GLOBAL sqlite_all_varchar={all_varchar}") as cur:
+            cur.execute(
+                f"CALL sqlite_attach('{path}', overwrite={overwrite})"
+            ).fetchall()
 
     def register_filesystem(self, filesystem: AbstractFileSystem):
         """Register an `fsspec` filesystem object with DuckDB.
@@ -1181,7 +1184,8 @@ class Backend(SQLGlotBackend, CanCreateSchema):
         table = expr.as_table()
         sql = self.compile(table, limit=limit, params=params)
 
-        table = self.raw_sql(sql).fetch_arrow_table()
+        with self._safe_raw_sql(sql) as cur:
+            table = cur.fetch_arrow_table()
 
         return expr.__pyarrow_result__(table)
 
@@ -1213,7 +1217,8 @@ class Backend(SQLGlotBackend, CanCreateSchema):
             A dictionary of torch tensors, keyed by column name.
         """
         compiled = self.compile(expr, limit=limit, params=params, **kwargs)
-        return self.raw_sql(compiled).torch()
+        with self._safe_raw_sql(compiled) as cur:
+            return cur.torch()
 
     @util.experimental
     def to_parquet(
@@ -1271,7 +1276,8 @@ class Backend(SQLGlotBackend, CanCreateSchema):
         query = self._to_sql(expr, params=params)
         args = ["FORMAT 'parquet'", *(f"{k.upper()} {v!r}" for k, v in kwargs.items())]
         copy_cmd = f"COPY ({query}) TO {str(path)!r} ({', '.join(args)})"
-        self.raw_sql(copy_cmd)
+        with self._safe_raw_sql(copy_cmd):
+            pass
 
     @util.experimental
     def to_csv(
@@ -1309,7 +1315,8 @@ class Backend(SQLGlotBackend, CanCreateSchema):
             *(f"{k.upper()} {v!r}" for k, v in kwargs.items()),
         ]
         copy_cmd = f"COPY ({query}) TO {str(path)!r} ({', '.join(args)})"
-        self.raw_sql(copy_cmd)
+        with self._safe_raw_sql(copy_cmd):
+            pass
 
     def fetch_from_cursor(
         self, cursor: duckdb.DuckDBPyConnection, schema: sch.Schema
@@ -1361,16 +1368,15 @@ class Backend(SQLGlotBackend, CanCreateSchema):
         return df
 
     def _metadata(self, query: str) -> Iterator[tuple[str, dt.DataType]]:
-        rows = self.raw_sql(f"DESCRIBE {query}").fetch_arrow_table()
+        with self._safe_raw_sql(f"DESCRIBE {query}") as cur:
+            rows = cur.fetch_arrow_table()
 
-        for name, type, null in zip(
-            rows["column_name"].to_pylist(),
-            rows["column_type"].to_pylist(),
-            rows["null"].to_pylist(),
+        rows = rows.to_pydict()
+
+        for name, typ, null in zip(
+            rows["column_name"], rows["column_type"], rows["null"]
         ):
-            nullable = null.lower() == "yes"
-            dtype = DuckDBType.from_string(type, nullable=nullable)
-            yield name, dtype
+            yield name, DuckDBType.from_string(typ, nullable=null == "YES")
 
     def _register_in_memory_tables(self, expr: ir.Expr) -> None:
         for memtable in expr.op().find(ops.InMemoryTable):
@@ -1467,14 +1473,16 @@ class Backend(SQLGlotBackend, CanCreateSchema):
         """
         table = sg.table(table_name, db=database)
         if overwrite:
-            self.raw_sql(f"TRUNCATE TABLE {table.sql('duckdb')}")
+            with self._safe_raw_sql(f"TRUNCATE TABLE {table.sql('duckdb')}"):
+                pass
 
         if isinstance(obj, ir.Table):
             self._run_pre_execute_hooks(obj)
             query = sge.insert(
                 expression=self.compile(obj), into=table, dialect="duckdb"
             )
-            self.raw_sql(query)
+            with self._safe_raw_sql(query):
+                pass
         else:
             self.con.append(
                 table_name,
