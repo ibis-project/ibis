@@ -61,6 +61,6 @@ def execute_array_contains(op, **kwargs):
     return rowwise(lambda row: row["other"] in row["arg"], kwargs)
 
 
-# @execute.register(ops.Unnest)
-# def execute_unnest(op, arg):
-#     return arg.explode()
+@execute.register(ops.Unnest)
+def execute_unnest(op, arg):
+    return arg.explode()

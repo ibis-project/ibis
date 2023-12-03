@@ -34,7 +34,8 @@ def asframe(values: dict | tuple, concat=True):
 
     columns = [asseries(v, size) for v in values]
     if concat:
-        return pd.concat(columns, axis=1, keys=names), all_scalars
+        df = pd.concat(columns, axis=1, keys=names).reset_index(drop=True)
+        return df, all_scalars
     else:
         return columns, all_scalars
 
