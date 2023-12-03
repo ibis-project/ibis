@@ -298,7 +298,7 @@ MOCK_TABLES = {
         ("s_zip", "string"),
         ("s_country", "string"),
         ("s_gmt_offset", "decimal(5,2)"),
-        ("s_tax_precentage", "decimal(5,2)"),
+        ("s_tax_percentage", "decimal(5,2)"),
     ],
     "tpcds_store_sales": [
         ("ss_sold_time_sk", "bigint"),

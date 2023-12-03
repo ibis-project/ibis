@@ -140,7 +140,7 @@ class Window(AggregationContext):
             # (1) windowed.count() will exclude NaN observations
             #     , which results in incorrect window sizes.
             # (2) windowed.apply(len, raw=True) will include NaN
-            #     obversations, but doesn't work on non-numeric types.
+            #     observations, but doesn't work on non-numeric types.
             #     https://github.com/pandas-dev/pandas/issues/23002
             # To deal with this, we create a _placeholder column
             windowed_frame = self.construct_window(grouped_frame)

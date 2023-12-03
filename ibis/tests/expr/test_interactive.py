@@ -105,7 +105,7 @@ def test_compile_no_execute(con):
     assert con.executed_queries == []
 
 
-def test_isin_rule_supressed_exception_repr_not_fail(con):
+def test_isin_rule_suppressed_exception_repr_not_fail(con):
     with config.option_context("interactive", True):
         t = con.table("functional_alltypes")
         bool_clause = t["string_col"].notin(["1", "4", "7"])

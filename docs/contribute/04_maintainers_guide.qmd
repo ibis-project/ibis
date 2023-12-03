@@ -38,8 +38,8 @@ Assuming your file is called `example.csv`:
 1. Add a file named `ibis/examples/descriptions/example` that contains a
    description of your example. One line is best, but not necessary.
 1. Run one of the following **from the git root of an ibis clone**:
-   - `python ibis/examples/gen_registry.py` (doesn't include R dependenices)
-   - `nix run '.#gen-examples'` (includes R dependenices)
+   - `python ibis/examples/gen_registry.py` (doesn't include R dependencies)
+   - `nix run '.#gen-examples'` (includes R dependencies)
 
 ## Release
 
