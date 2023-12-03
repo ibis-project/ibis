@@ -552,9 +552,13 @@ def execute_group_concat(op, arg, sep, where):
 
 
 @execute.register(ops.Quantile)
-@execute.register(ops.MultiQuantile)
 def execute_quantile(op, arg, quantile, where):
     return agg(lambda x: x.quantile(quantile), arg, where)
+
+
+@execute.register(ops.MultiQuantile)
+def execute_multi_quantile(op, arg, quantile, where):
+    return agg(lambda x: list(x.quantile(quantile)), arg, where)
 
 
 @execute.register(ops.Arbitrary)
