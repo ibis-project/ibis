@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING, Any, Callable, Optional, TypeVar
 
 from ibis.common.bases import Hashable
 from ibis.common.collections import frozendict
-from ibis.common.patterns import NoMatch, Pattern, pattern
+from ibis.common.patterns import NoMatch, Pattern
 from ibis.util import experimental
 
 if TYPE_CHECKING:
@@ -115,6 +115,60 @@ def _recursive_lookup(obj: Any, dct: dict) -> Any:
         return obj
 
 
+def _coerce_finder(obj, context):
+    if isinstance(obj, Pattern):
+        ctx = context or {}
+
+        def fn(node):
+            return obj.match(node, ctx) is not NoMatch
+    elif isinstance(obj, (tuple, type)):
+
+        def fn(node):
+            return isinstance(node, obj)
+    elif callable(obj):
+        fn = obj
+    else:
+        raise TypeError("finder must be callable, type, tuple of types or a pattern")
+
+    return fn
+
+
+def _coerce_replacer(obj, context):
+    # TODO(kszucs): add a __recreate__() method to the Node interface
+    # with a default implementation that uses the __class__ constructor
+    # which is supposed to provide an implementation for quick object
+    # reconstruction (the __recreate__ implementation in grounds.py
+    # should be sped up as well by totally avoiding the validation)
+
+    if isinstance(obj, Pattern):
+        ctx = context or {}
+
+        def fn(node, _, **kwargs):
+            # need to first reconstruct the node from the possible rewritten
+            # children, so we can match on the new node containing the rewritten
+            # child arguments, this way we can propagate the rewritten nodes
+            # upward in the hierarchy
+            recreated = node.__class__(**kwargs)
+            if (result := obj.match(recreated, ctx)) is NoMatch:
+                return recreated
+            else:
+                return result
+
+    elif isinstance(obj, Mapping):
+
+        def fn(node, _, **kwargs):
+            try:
+                return obj[node]
+            except KeyError:
+                return node.__class__(**kwargs)
+    elif callable(obj):
+        fn = obj
+    else:
+        raise TypeError("replacer must be callable, mapping or a pattern")
+
+    return fn
+
+
 class Node(Hashable):
     __slots__ = ()
 
@@ -170,7 +224,7 @@ class Node(Hashable):
     # TODO(kszucs): perhaps rename it to find_all() for better clarity
     def find(
         self,
-        pat: type | tuple[type],
+        finder: type | tuple[type],
         filter: Optional[Any] = None,
         context: Optional[dict] = None,
     ) -> list[Node]:
@@ -181,7 +235,7 @@ class Node(Hashable):
 
         Parameters
         ----------
-        pat
+        finder
             Pattern to match. `ibis.common.pattern()` function is used to coerce the
             input value into a pattern. See the pattern module for more details.
         filter
@@ -194,15 +248,12 @@ class Node(Hashable):
         -------
         The list of nodes matching the given pattern.
         """
-        nodes = Graph.from_bfs(self, filter=filter).nodes()
-        if isinstance(pat, Pattern):
-            ctx = context or {}
-            return [node for node in nodes if pat.match(node, ctx) is not NoMatch]
-        else:
-            return [node for node in nodes if isinstance(node, pat)]
+        nodes = Graph.from_bfs(self, filter=filter, context=context).nodes()
+        finder = _coerce_finder(finder, context)
+        return [node for node in nodes if finder(node)]
 
     @experimental
-    def find_topmost(self, pat: type, context: Optional[dict] = None) -> list[Node]:
+    def find_topmost(self, finder: type, context: Optional[dict] = None) -> list[Node]:
         """Find all topmost nodes matching a given pattern in the graph.
 
         A more advanced version of find, this method stops the traversal at the first
@@ -210,9 +261,9 @@ class Node(Hashable):
 
         Parameters
         ----------
-        pat
-            Pattern to match. `ibis.common.pattern()` function is used to coerce the
-            input value into a pattern. See the pattern module for more details.
+        finder
+            Pattern-like to match on. `ibis.common.pattern()` function is used to coerce
+            the input value into a pattern. See the pattern module for more details.
         context
             Optional context to use for the pattern matching.
 
@@ -220,34 +271,26 @@ class Node(Hashable):
         -------
         The list of topmost nodes matching the given pattern.
         """
+        seen = set()
         queue = deque([self])
         result = []
-        seen = set()
+        finder = _coerce_finder(finder, context)
 
-        if isinstance(pat, Pattern):
-            ctx = context or {}
-            while queue:
-                if (node := queue.popleft()) not in seen:
-                    if pat.match(node, ctx) is not NoMatch:
-                        result.append(node)
-                    else:
-                        queue.extend(node.__children__)
-                    seen.add(node)
-        else:
-            # fast path for locating a specific type
-            while queue:
-                if (node := queue.popleft()) not in seen:
-                    if isinstance(node, pat):
-                        result.append(node)
-                    else:
-                        queue.extend(node.__children__)
-                    seen.add(node)
-
+        while queue:
+            if (node := queue.popleft()) not in seen:
+                if finder(node):
+                    result.append(node)
+                else:
+                    queue.extend(node.__children__)
+                seen.add(node)
         return result
 
     @experimental
     def replace(
-        self, pat: Any, filter: Optional[type] = None, context: Optional[dict] = None
+        self,
+        replacer: Any,
+        filter: Optional[type] = None,
+        context: Optional[dict] = None,
     ) -> Any:
         """Match and replace nodes in the graph according to a given pattern.
 
@@ -256,7 +299,7 @@ class Node(Hashable):
 
         Parameters
         ----------
-        pat : Any
+        replacer : Any
             Pattern to match. `ibis.common.pattern()` function is used to coerce the
             input value into a pattern. See the pattern module for more details.
             Actual replacement is done by the `ibis.common.pattern.Replace` pattern.
@@ -269,34 +312,8 @@ class Node(Hashable):
         -------
         The root node of the graph with the replaced nodes.
         """
-        if isinstance(pat, Mapping):
-
-            def fn(node, _, **kwargs):
-                try:
-                    return pat[node]
-                except KeyError:
-                    return node.__class__(**kwargs)
-        else:
-            pat = pattern(pat)
-            ctx = context or {}
-
-            def fn(node, _, **kwargs):
-                # need to first reconstruct the node from the possible rewritten
-                # children, so we can match on the new node containing the rewritten
-                # child arguments, this way we can propagate the rewritten nodes
-                # upward in the hierarchy
-                # TODO(kszucs): add a __recreate__() method to the Node interface
-                # with a default implementation that uses the __class__ constructor
-                # which is supposed to provide an implementation for quick object
-                # reconstruction (the __recreate__ implementation in grounds.py
-                # should be sped up as well by totally avoiding the validation)
-                recreated = node.__class__(**kwargs)
-                if (result := pat.match(recreated, ctx)) is NoMatch:
-                    return recreated
-                else:
-                    return result
-
-        results = self.map(fn, filter=filter)
+        replacer = _coerce_replacer(replacer, context)
+        results = self.map(replacer, filter=filter)
         return results.get(self, self)
 
 
@@ -322,7 +339,9 @@ class Graph(dict[Node, Sequence[Node]]):
         super().__init__(mapping, **kwargs)
 
     @classmethod
-    def from_bfs(cls, root: Node, filter: Optional[Any] = None) -> Self:
+    def from_bfs(
+        cls, root: Node, filter: Optional[Any] = None, context: Optional[dict] = None
+    ) -> Self:
         """Construct a graph from a root node using a breadth-first search.
 
         The traversal is implemented in an iterative fashion using a queue.
@@ -334,6 +353,8 @@ class Graph(dict[Node, Sequence[Node]]):
         filter
             Pattern-like object to filter out nodes from the traversal. The traversal
             will only visit nodes that match the given pattern and stop otherwise.
+        context
+            Optional context to use for the pattern matching.
 
         Returns
         -------
@@ -342,10 +363,13 @@ class Graph(dict[Node, Sequence[Node]]):
         if filter is None:
             return bfs(root)
         else:
+            filter = _coerce_finder(filter, context)
             return bfs_while(root, filter=filter)
 
     @classmethod
-    def from_dfs(cls, root: Node, filter: Optional[Any] = None) -> Self:
+    def from_dfs(
+        cls, root: Node, filter: Optional[Any] = None, context: Optional[dict] = None
+    ) -> Self:
         """Construct a graph from a root node using a depth-first search.
 
         The traversal is implemented in an iterative fashion using a stack.
@@ -357,6 +381,8 @@ class Graph(dict[Node, Sequence[Node]]):
         filter
             Pattern-like object to filter out nodes from the traversal. The traversal
             will only visit nodes that match the given pattern and stop otherwise.
+        context
+            Optional context to use for the pattern matching.
 
         Returns
         -------
@@ -365,6 +391,7 @@ class Graph(dict[Node, Sequence[Node]]):
         if filter is None:
             return dfs(root)
         else:
+            filter = _coerce_finder(filter, None)
             return dfs_while(root, filter=filter)
 
     def __repr__(self):
@@ -500,7 +527,7 @@ def bfs(root: Node) -> Graph:
     return graph
 
 
-def bfs_while(root: Node, filter: Optional[Any] = None) -> Graph:
+def bfs_while(root: Node, filter: Callable[[Node], bool]) -> Graph:
     """Construct a graph from a root node using a breadth-first search.
 
     Parameters
@@ -521,17 +548,12 @@ def bfs_while(root: Node, filter: Optional[Any] = None) -> Graph:
     queue = deque()
     graph = Graph()
 
-    filter = pattern(filter)
-    if filter.match(root, {}) is not NoMatch:
+    if filter(root):
         queue.append(root)
 
     while queue:
         if (node := queue.popleft()) not in graph:
-            children = tuple(
-                child
-                for child in node.__children__
-                if filter.match(child, {}) is not NoMatch
-            )
+            children = tuple(child for child in node.__children__ if filter(child))
             graph[node] = children
             queue.extend(children)
 
@@ -567,7 +589,7 @@ def dfs(root: Node) -> Graph:
     return Graph(reversed(graph.items()))
 
 
-def dfs_while(root: Node, filter: Optional[Any] = None) -> Graph:
+def dfs_while(root: Node, filter: Callable[[Node], bool]) -> Graph:
     """Construct a graph from a root node using a depth-first search.
 
     Parameters
@@ -588,17 +610,12 @@ def dfs_while(root: Node, filter: Optional[Any] = None) -> Graph:
     stack = deque()
     graph = {}
 
-    filter = pattern(filter)
-    if filter.match(root, {}) is not NoMatch:
+    if filter(root):
         stack.append(root)
 
     while stack:
         if (node := stack.pop()) not in graph:
-            children = tuple(
-                child
-                for child in node.__children__
-                if filter.match(child, {}) is not NoMatch
-            )
+            children = tuple(child for child in node.__children__ if filter(child))
             graph[node] = children
             stack.extend(children)
 

@@ -129,16 +129,16 @@ def test_nested_children():
 
 @pytest.mark.parametrize("func", [bfs_while, dfs_while, Graph.from_bfs, Graph.from_dfs])
 def test_traversals_with_filter(func):
-    graph = func(A, filter=If(lambda x: x.name != "B"))
+    graph = func(A, filter=lambda x: x.name != "B")
     assert graph == {A: (C,), C: ()}
 
-    graph = func(A, filter=If(lambda x: x.name != "D"))
+    graph = func(A, filter=lambda x: x.name != "D")
     assert graph == {E: (), B: (E,), A: (B, C), C: ()}
 
 
 @pytest.mark.parametrize("func", [bfs_while, dfs_while, Graph.from_bfs, Graph.from_dfs])
 def test_traversal_with_filtering_out_root(func):
-    graph = func(A, filter=If(lambda x: x.name != "A"))
+    graph = func(A, filter=lambda x: x.name != "A")
     assert graph == {}
 
 
