@@ -6,6 +6,7 @@ import ast
 import contextlib
 import os
 import warnings
+from operator import itemgetter
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
@@ -404,20 +405,19 @@ class Backend(SQLGlotBackend, CanCreateSchema):
     def _load_extensions(
         self, extensions: list[str], force_install: bool = False
     ) -> None:
-        query = """
-        SELECT
-          UNNEST(aliases || [extension_name])
-        FROM duckdb_extensions()
-        WHERE installed
-          AND loaded
-        """
-        con = self.con
-        installed = (name for (name,) in con.sql(query).fetchall())
-        # Install and load all other extensions
-        todo = frozenset(extensions).difference(installed)
-        for extension in todo:
-            con.install_extension(extension, force_install=force_install)
-            con.load_extension(extension)
+        f = self.compiler.f
+        query = (
+            sg.select(f.unnest(f.list_append(C.aliases, C.extension_name)))
+            .from_(f.duckdb_extensions())
+            .where(sg.and_(C.installed, C.loaded))
+        )
+        with self._safe_raw_sql(query) as cur:
+            installed = map(itemgetter(0), cur.fetchall())
+            # Install and load all other extensions
+            todo = frozenset(extensions).difference(installed)
+            for extension in todo:
+                cur.install_extension(extension, force_install=force_install)
+                cur.load_extension(extension)
 
     def _from_url(self, url: str, **kwargs) -> BaseBackend:
         """Connect to a backend using a URL `url`.
