@@ -334,6 +334,7 @@ class Backend(BasePandasBackend):
         import ibis.backends.pandas.newnumeric
         import ibis.backends.pandas.newstrings
         import ibis.backends.pandas.newtemporal
+        import ibis.backends.pandas.newudf
         from ibis.backends.pandas.newpandas import zuper
 
         params = params or {}
