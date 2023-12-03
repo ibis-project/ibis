@@ -89,7 +89,7 @@ def test_node_base():
     ]
 
 
-def test_node_subtitution():
+def test_node_substitution():
     class Aliased(Base):
         arg: ops.Node
         name: str

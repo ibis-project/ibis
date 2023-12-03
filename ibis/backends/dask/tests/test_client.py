@@ -119,10 +119,10 @@ def test_invalid_connection_parameter_types(npartitions):
             }
         )
 
-    expeced_msg = re.escape(
+    expected_msg = re.escape(
         "Expected an instance of 'dask.dataframe.DataFrame' for 'df', "
         "got an instance of 'str' instead."
     )
     con = ibis.dask.connect()
-    with pytest.raises(TypeError, match=expeced_msg):
+    with pytest.raises(TypeError, match=expected_msg):
         con.from_dataframe("file.csv")

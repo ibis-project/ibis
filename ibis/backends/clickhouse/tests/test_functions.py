@@ -169,7 +169,7 @@ def test_typeof(con, value, expected):
 
 
 @pytest.mark.parametrize(("value", "expected"), [("foo_bar", 7), ("", 0)])
-def test_string_length(con, value, expected):
+def test_tuple_string_length(con, value, expected):
     assert con.execute(L(value).length()) == expected
 
 
@@ -208,7 +208,7 @@ def test_string_lower(con):
     assert con.execute(L("FOO").lower()) == "foo"
 
 
-def test_string_lenght(con):
+def test_string_length(con):
     assert con.execute(L("FOO").length()) == 3
 
 

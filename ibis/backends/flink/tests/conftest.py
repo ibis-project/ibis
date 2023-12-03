@@ -36,14 +36,14 @@ class TestConf(BackendTest):
         stream_env = gateway.jvm.org.apache.flink.streaming.api.environment.StreamExecutionEnvironment
         flink_cluster_addr = os.environ.get("FLINK_REMOTE_CLUSTER_ADDR", "localhost")
         flink_cluster_port = int(os.environ.get("FLINK_REMOTE_CLUSTER_PORT", "8081"))
-        j_stream_exection_environment = stream_env.createRemoteEnvironment(
+        j_stream_execution_environment = stream_env.createRemoteEnvironment(
             flink_cluster_addr,
             flink_cluster_port,
             env_settings.getConfiguration(),
             string_array,
         )
 
-        env = StreamExecutionEnvironment(j_stream_exection_environment)
+        env = StreamExecutionEnvironment(j_stream_execution_environment)
         stream_table_env = StreamTableEnvironment.create(env)
         return ibis.flink.connect(stream_table_env, **kw)
 
