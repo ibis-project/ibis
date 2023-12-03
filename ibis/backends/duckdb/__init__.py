@@ -14,6 +14,7 @@ import pandas as pd
 import pyarrow as pa
 import pyarrow_hotfix  # noqa: F401
 import sqlglot as sg
+import sqlglot.expressions as sge
 import toolz
 
 import ibis
@@ -114,63 +115,77 @@ class Backend(SQLGlotBackend, CanCreateSchema):
         temp: bool = False,
         overwrite: bool = False,
     ):
-        if temp and overwrite:
-            raise exc.IbisInputError("Cannot specify both temp and overwrite")
+        """Create a table in DuckDB.
 
+        Parameters
+        ----------
+        name
+            Name of the table to create
+        obj
+            The data with which to populate the table; optional, but at least
+            one of `obj` or `schema` must be specified
+        schema
+            The schema of the table to create; optional, but at least one of
+            `obj` or `schema` must be specified
+        database
+            The name of the database in which to create the table; if not
+            passed, the current database is used.
+        temp
+            Create a temporary table
+        overwrite
+            If `True`, replace the table if it already exists, otherwise fail
+            if the table exists
+        """
         if obj is None and schema is None:
-            raise exc.IbisError("The schema or obj parameter is required")
+            raise ValueError("Either `obj` or `schema` must be specified")
 
-        table_identifier = sg.to_identifier(name, quoted=True)
-        create_expr = sg.exp.Create(
-            kind="TABLE",  # TABLE
-            replace=overwrite,  # OR REPLACE
-        )
+        column_defs = [
+            sge.ColumnDef(
+                this=sg.to_identifier(name, quoted=self.compiler.quoted),
+                kind=self.compiler.type_mapper.from_ibis(typ),
+                constraints=(
+                    None
+                    if typ.nullable
+                    else [sge.ColumnConstraint(kind=sge.NotNullColumnConstraint())]
+                ),
+            )
+            for name, typ in (schema or {}).items()
+        ]
+
+        target = sg.table(name, db=database, quoted=self.compiler.quoted)
+
+        if column_defs:
+            target = sge.Schema(this=target, expressions=column_defs)
+
+        properties = []
 
         if temp:
-            create_expr.args["properties"] = sg.exp.Properties(
-                expressions=[sg.exp.TemporaryProperty()]  # TEMPORARY
-            )
+            properties.append(sge.TemporaryProperty())
 
-        if obj is not None and not isinstance(obj, ir.Expr):
-            # pd.DataFrame or pa.Table
-            obj = ibis.memtable(obj, schema=schema)
-            self._register_in_memory_table(obj.op())
-            create_expr.args["expression"] = self.compile(obj)  # AS ...
-            create_expr.args["this"] = table_identifier  # t0
-        elif obj is not None:
-            self._register_in_memory_tables(obj)
-            # If both `obj` and `schema` are specified, `obj` overrides `schema`
-            # DuckDB doesn't support `create table (schema) AS select * ...`
-            create_expr.args["expression"] = self.compile(obj)  # AS ...
-            create_expr.args["this"] = table_identifier  # t0
+        if obj is not None:
+            if not isinstance(obj, ir.Expr):
+                table = ibis.memtable(obj)
+            else:
+                table = obj
+
+            self._run_pre_execute_hooks(table)
+
+            query = self._to_sqlglot(table)
         else:
-            # Schema -> Table -> [ColumnDefs]
-            schema_expr = sg.exp.Schema(
-                this=sg.exp.Table(this=table_identifier),
-                expressions=[
-                    sg.exp.ColumnDef(
-                        this=sg.to_identifier(key, quoted=False),
-                        kind=DuckDBType.from_ibis(typ),
-                    )
-                    if typ.nullable
-                    else sg.exp.ColumnDef(
-                        this=sg.to_identifier(key, quoted=False),
-                        kind=DuckDBType.from_ibis(typ),
-                        constraints=[
-                            sg.exp.ColumnConstraint(
-                                kind=sg.exp.NotNullColumnConstraint()
-                            )
-                        ],
-                    )
-                    for key, typ in schema.items()
-                ],
-            )
-            create_expr.args["this"] = schema_expr
+            query = None
 
-        # create the table
-        self.raw_sql(create_expr)
+        create_stmt = sge.Create(
+            kind="TABLE",
+            this=target,
+            replace=overwrite,
+            properties=sge.Properties(expressions=properties),
+            expression=query,
+        )
 
-        return self.table(name, database=database)
+        with self._safe_raw_sql(create_stmt):
+            pass
+
+        return self.table(name, schema=database)
 
     def create_view(
         self,
@@ -244,19 +259,19 @@ class Backend(SQLGlotBackend, CanCreateSchema):
         sch.Schema
             Ibis schema
         """
-        conditions = [sg.column("table_name").eq(sg.exp.convert(table_name))]
+        conditions = [sg.column("table_name").eq(sge.convert(table_name))]
 
         if database is not None:
-            conditions.append(sg.column("table_catalog").eq(sg.exp.convert(database)))
+            conditions.append(sg.column("table_catalog").eq(sge.convert(database)))
 
         if schema is not None:
-            conditions.append(sg.column("table_schema").eq(sg.exp.convert(schema)))
+            conditions.append(sg.column("table_schema").eq(sge.convert(schema)))
 
         query = (
             sg.select(
                 "column_name",
                 "data_type",
-                sg.column("is_nullable").eq(sg.exp.convert("YES")).as_("nullable"),
+                sg.column("is_nullable").eq(sge.convert("YES")).as_("nullable"),
             )
             .from_(sg.table("columns", db="information_schema"))
             .where(sg.and_(*conditions))
@@ -286,7 +301,7 @@ class Backend(SQLGlotBackend, CanCreateSchema):
 
     def list_databases(self, like: str | None = None) -> list[str]:
         col = "catalog_name"
-        query = sg.select(sg.exp.Distinct(expressions=[sg.column(col)])).from_(
+        query = sg.select(sge.Distinct(expressions=[sg.column(col)])).from_(
             sg.table("schemata", db="information_schema")
         )
         result = self.raw_sql(query)
@@ -297,12 +312,12 @@ class Backend(SQLGlotBackend, CanCreateSchema):
         self, like: str | None = None, database: str | None = None
     ) -> list[str]:
         col = "schema_name"
-        query = sg.select(sg.exp.Distinct(expressions=[sg.column(col)])).from_(
+        query = sg.select(sge.Distinct(expressions=[sg.column(col)])).from_(
             sg.table("schemata", db="information_schema")
         )
 
         if database is not None:
-            query = query.where(sg.column("catalog_name").eq(sg.exp.convert(database)))
+            query = query.where(sg.column("catalog_name").eq(sge.convert(database)))
 
         out = self.raw_sql(query).fetch_arrow_table()
         return self._filter_with_like(out[col].to_pylist(), like=like)
@@ -456,7 +471,7 @@ class Backend(SQLGlotBackend, CanCreateSchema):
             )
 
         name = sg.to_identifier(database, quoted=True)
-        return sg.exp.Create(this=name, kind="SCHEMA", replace=force)
+        return sge.Create(this=name, kind="SCHEMA", replace=force)
 
     def drop_schema(
         self, name: str, database: str | None = None, force: bool = False
@@ -467,7 +482,7 @@ class Backend(SQLGlotBackend, CanCreateSchema):
             )
 
         name = sg.to_identifier(database, quoted=True)
-        return sg.exp.Drop(this=name, kind="SCHEMA", replace=force)
+        return sge.Drop(this=name, kind="SCHEMA", replace=force)
 
     def register(
         self,
@@ -867,10 +882,8 @@ class Backend(SQLGlotBackend, CanCreateSchema):
         >>> con.list_tables(schema="my_schema")
         ['baz']
         """
-        database = (
-            F.current_database() if database is None else sg.exp.convert(database)
-        )
-        schema = F.current_schema() if schema is None else sg.exp.convert(schema)
+        database = F.current_database() if database is None else sge.convert(database)
+        schema = F.current_schema() if schema is None else sge.convert(schema)
 
         col = "table_name"
         sql = (
@@ -879,7 +892,7 @@ class Backend(SQLGlotBackend, CanCreateSchema):
             .distinct()
             .where(
                 C.table_catalog.eq(database).or_(
-                    C.table_catalog.eq(sg.exp.convert("temp"))
+                    C.table_catalog.eq(sge.convert("temp"))
                 ),
                 C.table_schema.eq(schema),
             )
@@ -1458,7 +1471,7 @@ class Backend(SQLGlotBackend, CanCreateSchema):
 
         if isinstance(obj, ir.Table):
             self._run_pre_execute_hooks(obj)
-            query = sg.exp.insert(
+            query = sge.insert(
                 expression=self.compile(obj), into=table, dialect="duckdb"
             )
             self.raw_sql(query)
