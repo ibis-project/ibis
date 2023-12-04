@@ -8,6 +8,7 @@ import glob
 import os
 import re
 import warnings
+from collections.abc import Iterator
 from functools import partial
 from typing import TYPE_CHECKING, Any, Callable
 from urllib.parse import parse_qs, urlparse
@@ -23,6 +24,7 @@ from pydata_google_auth import cache
 
 import ibis
 import ibis.common.exceptions as com
+import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
 from ibis import util
@@ -568,7 +570,7 @@ class Backend(SQLGlotBackend, CanCreateSchema):
                 dataset_id=query.destination.dataset_id,
             )
 
-    def _get_schema_using_query(self, query: str) -> sch.Schema:
+    def _metadata(self, query: str) -> Iterator[tuple[str, dt.DataType]]:
         self._make_session()
 
         job = self.client.query(
@@ -576,7 +578,9 @@ class Backend(SQLGlotBackend, CanCreateSchema):
             job_config=bq.QueryJobConfig(dry_run=True, use_query_cache=False),
             project=self.billing_project,
         )
-        return BigQuerySchema.to_ibis(job.schema)
+        return (
+            (f.name, BigQuerySchema._dtype_from_bigquery_field(f)) for f in job.schema
+        )
 
     def _execute(self, stmt, results=True, query_parameters=None):
         self._make_session()
@@ -615,9 +619,10 @@ class Backend(SQLGlotBackend, CanCreateSchema):
         """
         self._make_session()
 
-        queries = _compile_udfs(expr.op())
+        table_expr = expr.as_table()
+        queries = _compile_udfs(table_expr.op())
 
-        query = self.compiler.translate(expr.op(), params=params)
+        query = self.compiler.translate(table_expr.op(), params=params)
 
         # add dataset and project to memtable references
         session_dataset = self._session_dataset
@@ -1002,6 +1007,7 @@ class Backend(SQLGlotBackend, CanCreateSchema):
             for name, typ in (schema or {}).items()
         ]
 
+        breakpoint()
         stmt = sge.Create(
             kind="TABLE",
             this=sge.Schema(this=table, expressions=column_defs or None),

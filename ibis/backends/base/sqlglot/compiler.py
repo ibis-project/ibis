@@ -246,7 +246,7 @@ class SQLGlotCompiler(abc.ABC):
         # this lets us avoid threading `params` through every `translate_val` call
         # only to be used in the one place it would be needed: the ScalarParameter
         # `translate_val` rule
-        params = {param.op(): value for param, value in params.items()}
+        params = {param.op(): value for param, value in (params or {}).items()}
         replace_literals = p.ScalarParameter >> (
             lambda _: ops.Literal(value=params[_], dtype=_.dtype)
         )

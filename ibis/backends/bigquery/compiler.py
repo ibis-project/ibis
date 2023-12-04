@@ -84,9 +84,9 @@ class BigQueryCompiler(SQLGlotCompiler):
     quoted = True
     type_mapper = BigQueryType
 
-    NAN = sge.cast(sge.convert("NaN"), sge.DataType(sge.DataType.Type.DOUBLE))
-    POS_INF = sge.cast(sge.convert("Inf"), sge.DataType(sge.DataType.Type.DOUBLE))
-    NEG_INF = sge.cast(sge.convert("-Inf"), sge.DataType(sge.DataType.Type.DOUBLE))
+    NAN = sge.Cast(this=sge.convert("NaN"), to=sge.DataType(this=sge.DataType.Type.DOUBLE))
+    POS_INF = sge.Cast(this=sge.convert("Inf"), to=sge.DataType(this=sge.DataType.Type.DOUBLE))
+    NEG_INF = sge.Cast(this=sge.convert("-Inf"), to=sge.DataType(this=sge.DataType.Type.DOUBLE))
     # rewrites = (
     #     replace_to_json,
     #     exclude_unsupported_window_frame_from_row_number,
@@ -206,7 +206,13 @@ class BigQueryCompiler(SQLGlotCompiler):
 
     @visit_node.register(ops.DayOfWeekName)
     def visit_DayOfWeekName(self, op, *, arg):
-        return self.f.initcap(sge.Cast(this=arg, to="STRING FORMAT 'DAY'"))
+        return self.f.initcap(
+            sge.Cast(
+                this=arg,
+                to=self.type_mapper.from_ibis(dt.string),
+                format=sge.convert("day"),
+            )
+        )
 
     @visit_node.register(ops.ApproxMedian)
     def visit_ApproxMedian(self, op, *, arg, where):
@@ -222,9 +228,7 @@ class BigQueryCompiler(SQLGlotCompiler):
         array_length = self.f.array_length(arg)
         stop = self.f.greatest(times, 0) * array_length
         i = sg.to_identifier("i")
-        idx = self.f.coalesce(
-            self.f.nullif(self.f.mod(i, array_length), 0), array_length
-        )
+        idx = self.f.coalesce(self.f.nullif(i % array_length, 0), array_length)
         series = self.f.generate_array(start, stop, step)
         return self.f.array(
             sg.select(arg[self.f.safe_ordinal(idx)]).from_(self.unnest(series, as_=i))
@@ -541,15 +545,16 @@ class BigQueryCompiler(SQLGlotCompiler):
 
     @visit_node.register(ops.First)
     def visit_First(self, op, *, arg, where):
-        return self.agg.array_agg(sg.exp.IgnoreNulls(this=arg), where=where)[
-            self.f.safe_offset(0)
-        ]
+        return self.agg.array_agg(
+            sge.Limit(this=sge.IgnoreNulls(this=arg), expression=sge.convert(1)),
+            where=where,
+        )[self.f.safe_offset(0)]
 
     @visit_node.register(ops.Last)
     def visit_Last(self, op, *, arg, where):
-        return self.f.array_reverse(
-            self.agg.array_agg(sg.exp.IgnoreNulls(this=arg), where=where)
-        )[self.f.safe_offset(0)]
+        return self.agg.array_agg(sge.IgnoreNulls(this=arg), where=where)[
+            self.safe_ordinal(self.agg.count(arg, where=where))
+        ]
 
     @visit_node.register(ops.DateTruncate)
     def visit_DateTruncate(self, op, *, arg, unit):

@@ -86,8 +86,11 @@ class SQLGlotBackend(BaseBackend):
         self, expr: ir.Expr, limit: str | None = None, params=None, **kwargs: Any
     ):
         """Compile an Ibis expression to a ClickHouse SQL string."""
-        return self._to_sqlglot(expr, limit=limit, params=params, **kwargs).sql(
-            dialect=self.name, pretty=True
+        queries = ibis.util.promote_list(
+            self._to_sqlglot(expr, limit=limit, params=params, **kwargs)
+        )
+        return ";\n\n".join(
+            query.sql(dialect=self.name, pretty=True) for query in queries
         )
 
     def _to_sql(self, expr: ir.Expr, **kwargs) -> str:
@@ -137,7 +140,7 @@ class SQLGlotBackend(BaseBackend):
             ),
             kind="VIEW",
             replace=overwrite,
-            expression=self._to_sqlglot(obj),
+            expression=self.compile(obj),
         )
         self._register_in_memory_tables(obj)
         with self._safe_raw_sql(src):
