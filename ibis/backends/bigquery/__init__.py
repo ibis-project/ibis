@@ -30,6 +30,7 @@ import ibis.expr.types as ir
 from ibis import util
 from ibis.backends.base import CanCreateSchema, Database
 from ibis.backends.base.sqlglot import SQLGlotBackend
+from ibis.backends.base.sqlglot.compiler import STAR
 from ibis.backends.bigquery.client import (
     BigQueryCursor,
     bigquery_param,
@@ -622,11 +623,16 @@ class Backend(SQLGlotBackend, CanCreateSchema):
         table_expr = expr.as_table()
         queries = _compile_udfs(table_expr.op())
 
-        query = self.compiler.translate(table_expr.op(), params=params)
+        sql = self.compiler.translate(table_expr.op(), params=params)
+
+        assert not isinstance(sql, sge.Subquery)
+
+        if isinstance(sql, sge.Table):
+            sql = sg.select(STAR).from_(sql)
 
         # add dataset and project to memtable references
         session_dataset = self._session_dataset
-        query = query.transform(
+        query = sql.transform(
             partial(
                 _qualify_memtable,
                 dataset=getattr(session_dataset, "dataset_id", None),
