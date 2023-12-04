@@ -654,6 +654,11 @@ $$""".format(**self._get_udf_source(udf_node))
             create_stmt += " TEMPORARY"
 
         ident = self._quote(name)
+
+        # TODO: handle database quoting
+        if database is not None:
+            name = f"{database}.{name}"
+
         create_stmt += f" TABLE {ident}"
 
         if schema is not None:
