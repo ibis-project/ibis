@@ -9,7 +9,7 @@ import operator
 import string
 from collections.abc import Mapping
 from functools import partial, singledispatchmethod
-from typing import TYPE_CHECKING, Any, Callable
+from typing import TYPE_CHECKING, Any, Callable, Literal
 
 import sqlglot as sg
 import sqlglot.expressions as sge
@@ -144,6 +144,9 @@ class SQLGlotCompiler(abc.ABC):
         add_one_to_nth_value_input,
     )
     """A sequence of rewrites to apply to the expression tree before compilation."""
+
+    no_limit_value: sge.Null | None = None
+    """The value to use to indicate no limit."""
 
     quoted: bool | None = None
     """Whether to always quote identifiers."""
@@ -594,6 +597,10 @@ class SQLGlotCompiler(abc.ABC):
     def visit_StringSQLILike(self, op, *, arg, pattern, escape):
         return arg.ilike(pattern)
 
+    @visit_node.register(ops.StringToTimestamp)
+    def visit_StringToTimestamp(self, op, *, arg, format_str):
+        return sge.StrToTime(this=arg, format=format_str)
+
     ### NULL PLAYER CHARACTER
     @visit_node.register(ops.IsNull)
     def visit_IsNull(self, op, *, arg):
@@ -1007,16 +1014,22 @@ class SQLGlotCompiler(abc.ABC):
 
     @visit_node.register(ops.Limit)
     def visit_Limit(self, op, *, parent, n, offset):
-        result = sg.select(STAR).from_(parent)
+        # push limit/offset into subqueries
+        if isinstance(parent, sge.Subquery) and parent.this.args.get("limit") is None:
+            result = parent.this
+            alias = parent.alias
+        else:
+            result = sg.select(STAR).from_(parent)
+            alias = None
 
         if isinstance(n, int):
             result = result.limit(n)
         elif n is not None:
-            limit = n
-            # TODO: calling `.sql` is a workaround for sqlglot not supporting
-            # scalar subqueries in limits
-            limit = sg.select(limit).from_(parent).subquery()
-            result = result.limit(limit)
+            result = result.limit(sg.select(n).from_(parent).subquery())
+        else:
+            assert n is None, n
+            if self.no_limit_value is not None:
+                result = result.limit(self.no_limit_value)
 
         assert offset is not None, "offset is None"
 
@@ -1024,11 +1037,16 @@ class SQLGlotCompiler(abc.ABC):
             skip = offset
             skip = sg.select(skip).from_(parent).subquery()
         elif not offset:
+            if alias is not None:
+                return result.subquery(alias)
             return result
         else:
             skip = offset
 
-        return result.offset(skip)
+        result = result.offset(skip)
+        if alias is not None:
+            return result.subquery(alias)
+        return result
 
     @visit_node.register(ops.Distinct)
     def visit_Distinct(self, op, *, parent):
@@ -1104,6 +1122,10 @@ class SQLGlotCompiler(abc.ABC):
     def visit_SQLQueryResult(self, op, *, query, schema, source):
         return sg.parse_one(query, read=self.dialect).subquery()
 
+    @visit_node.register(ops.Unnest)
+    def visit_Unnest(self, op, *, arg):
+        return sge.Explode(this=arg)
+
 
 _SIMPLE_OPS = {
     ops.All: "bool_and",
@@ -1156,7 +1178,6 @@ _SIMPLE_OPS = {
     # Other operations
     ops.IfElse: "if",
     ops.ArrayLength: "length",
-    ops.Unnest: "unnest",
     ops.NullIf: "nullif",
     ops.Repeat: "repeat",
     ops.Map: "map",

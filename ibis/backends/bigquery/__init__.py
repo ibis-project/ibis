@@ -18,6 +18,7 @@ import google.cloud.bigquery_storage_v1 as bqstorage
 import pandas as pd
 import pydata_google_auth
 import sqlglot as sg
+import sqlglot.expressions as sge
 from pydata_google_auth import cache
 
 import ibis
@@ -26,7 +27,7 @@ import ibis.expr.operations as ops
 import ibis.expr.types as ir
 from ibis import util
 from ibis.backends.base import CanCreateSchema, Database
-from ibis.backends.base.sql import BaseSQLBackend
+from ibis.backends.base.sqlglot import SQLGlotBackend
 from ibis.backends.bigquery.client import (
     BigQueryCursor,
     bigquery_param,
@@ -36,9 +37,7 @@ from ibis.backends.bigquery.client import (
 )
 from ibis.backends.bigquery.compiler import BigQueryCompiler
 from ibis.backends.bigquery.datatypes import BigQuerySchema, BigQueryType
-
-with contextlib.suppress(ImportError):
-    from ibis.backends.bigquery.udf import udf  # noqa: F401
+from ibis.backends.bigquery.udf import udf  # noqa: F401
 
 if TYPE_CHECKING:
     from collections.abc import Iterable, Mapping
@@ -83,36 +82,32 @@ def _create_client_info_gapic(application_name):
     return ClientInfo(user_agent=_create_user_agent(application_name))
 
 
-def _anonymous_unnest_to_explode(node: sg.exp.Expression):
-    """Convert `ANONYMOUS` `unnest` function calls to `EXPLODE` calls.
-
-    This allows us to generate DuckDB-like `UNNEST` calls and let sqlglot do
-    the work of transforming those into the correct BigQuery SQL.
-    """
-    if isinstance(node, sg.exp.Anonymous) and node.this.lower() == "unnest":
-        return sg.exp.Explode(this=node.expressions[0])
-    return node
-
-
 _MEMTABLE_PATTERN = re.compile(r"^_?ibis_(?:pandas|pyarrow)_memtable_[a-z0-9]{26}$")
 
 
 def _qualify_memtable(
-    node: sg.exp.Expression, *, dataset: str | None, project: str | None
-) -> sg.exp.Expression:
+    node: sge.Expression, *, dataset: str | None, project: str | None
+) -> sge.Expression:
     """Add a BigQuery dataset and project to memtable references."""
-    if (
-        isinstance(node, sg.exp.Table)
-        and _MEMTABLE_PATTERN.match(node.name) is not None
-    ):
+    if isinstance(node, sge.Table) and _MEMTABLE_PATTERN.match(node.name) is not None:
         node.args["db"] = dataset
         node.args["catalog"] = project
     return node
 
 
-class Backend(BaseSQLBackend, CanCreateSchema):
+def _compile_udfs(node: ops.Node) -> Iterable[sge.Expression]:
+    from ibis.backends.bigquery.operations import BigQueryUDFNode
+
+    udfs = []
+    for udf_node in node.find(BigQueryUDFNode):
+        result = sg.parse_one(udf_node.sql, read="bigquery")
+        udfs.append(result)
+    return udfs
+
+
+class Backend(SQLGlotBackend, CanCreateSchema):
     name = "bigquery"
-    compiler = BigQueryCompiler
+    compiler = BigQueryCompiler()
     supports_in_memory_tables = True
     supports_python_udfs = False
 
@@ -456,23 +451,23 @@ class Backend(BaseSQLBackend, CanCreateSchema):
         **options: Any,
     ) -> None:
         properties = [
-            sg.exp.Property(this=sg.to_identifier(name), value=sg.exp.convert(value))
+            sge.Property(this=sg.to_identifier(name), value=sge.convert(value))
             for name, value in (options or {}).items()
         ]
 
         if collate is not None:
             properties.append(
-                sg.exp.CollateProperty(this=sg.exp.convert(collate), default=True)
+                sge.CollateProperty(this=sge.convert(collate), default=True)
             )
 
-        stmt = sg.exp.Create(
+        stmt = sge.Create(
             kind="SCHEMA",
             this=sg.table(name, db=database),
             exists=force,
-            properties=sg.exp.Properties(expressions=properties),
+            properties=sge.Properties(expressions=properties),
         )
 
-        self.raw_sql(stmt.sql(self.name))
+        self.raw_sql(stmt)
 
     def drop_schema(
         self,
@@ -482,14 +477,14 @@ class Backend(BaseSQLBackend, CanCreateSchema):
         cascade: bool = False,
     ) -> None:
         """Drop a BigQuery dataset."""
-        stmt = sg.exp.Drop(
+        stmt = sge.Drop(
             kind="SCHEMA",
             this=sg.table(name, db=database),
             exists=force,
             cascade=cascade,
         )
 
-        self.raw_sql(stmt.sql(self.name))
+        self.raw_sql(stmt)
 
     def table(
         self, name: str, database: str | None = None, schema: str | None = None
@@ -505,7 +500,7 @@ class Backend(BaseSQLBackend, CanCreateSchema):
                 removed_in="8.0",
             )
 
-        table = sg.parse_one(name, into=sg.exp.Table, read=self.name)
+        table = sg.parse_one(name, into=sge.Table, read=self.name)
 
         # table.catalog will be the empty string
         if table.catalog:
@@ -526,11 +521,11 @@ class Backend(BaseSQLBackend, CanCreateSchema):
                 schema = table.db
 
         if database is not None and schema is None:
-            database = sg.parse_one(database, into=sg.exp.Table, read=self.name)
+            database = sg.parse_one(database, into=sge.Table, read=self.name)
             database.args["quoted"] = False
             database = database.sql(dialect=self.name)
         elif database is None and schema is not None:
-            database = sg.parse_one(schema, into=sg.exp.Table, read=self.name)
+            database = sg.parse_one(schema, into=sge.Table, read=self.name)
             database.args["quoted"] = False
             database = database.sql(dialect=self.name)
         else:
@@ -593,7 +588,7 @@ class Backend(BaseSQLBackend, CanCreateSchema):
         query.result()  # blocks until finished
         return BigQueryCursor(query)
 
-    def compile(
+    def _to_sqlglot(
         self,
         expr: ir.Expr,
         limit: str | None = None,
@@ -619,25 +614,31 @@ class Backend(BaseSQLBackend, CanCreateSchema):
             backend.
         """
         self._make_session()
-        self._define_udf_translation_rules(expr)
-        sql = self.compiler.to_ast_ensure_limit(expr, limit, params=params).compile()
 
-        return ";\n\n".join(
-            # convert unnest function calls to explode
-            query.transform(_anonymous_unnest_to_explode)
-            # add dataset and project to memtable references
-            .transform(
-                partial(
-                    _qualify_memtable,
-                    dataset=getattr(self._session_dataset, "dataset_id", None),
-                    project=getattr(self._session_dataset, "project", None),
-                )
+        queries = _compile_udfs(expr.op())
+
+        query = self.compiler.translate(expr.op(), params=params)
+
+        # add dataset and project to memtable references
+        session_dataset = self._session_dataset
+        query = query.transform(
+            partial(
+                _qualify_memtable,
+                dataset=getattr(session_dataset, "dataset_id", None),
+                project=getattr(session_dataset, "project", None),
             )
-            .sql(dialect=self.name, pretty=True)
-            for query in sg.parse(sql, read=self.name)
         )
+        queries.append(query)
+
+        return queries
+
+    @contextlib.contextmanager
+    def _safe_raw_sql(self, *args, **kwargs):
+        yield self.raw_sql(*args, **kwargs)
 
     def raw_sql(self, query: str, results=False, params=None):
+        with contextlib.suppress(AttributeError):
+            query = query.sql(self.name, pretty=True)
         query_parameters = [
             bigquery_param(
                 param.type(),
@@ -702,7 +703,6 @@ class Backend(BaseSQLBackend, CanCreateSchema):
 
         # TODO: upstream needs to pass params to raw_sql, I think.
         kwargs.pop("timecontext", None)
-        self._register_in_memory_tables(expr)
         sql = self.compile(expr, limit=limit, params=params, **kwargs)
         self._log(sql)
         cursor = self.raw_sql(sql, params=params, **kwargs)
@@ -847,11 +847,11 @@ class Backend(BaseSQLBackend, CanCreateSchema):
                 as_of="7.1",
                 removed_in="8.0",
             )
-            database = sg.parse_one(database, into=sg.exp.Table, read=self.name)
+            database = sg.parse_one(database, into=sge.Table, read=self.name)
             database.args["quoted"] = False
             database = database.sql(dialect=self.name)
         elif database is None and schema is not None:
-            database = sg.parse_one(schema, into=sg.exp.Table, read=self.name)
+            database = sg.parse_one(schema, into=sge.Table, read=self.name)
             database.args["quoted"] = False
             database = database.sql(dialect=self.name)
         else:
@@ -939,15 +939,13 @@ class Backend(BaseSQLBackend, CanCreateSchema):
 
         if default_collate is not None:
             properties.append(
-                sg.exp.CollateProperty(
-                    this=sg.exp.convert(default_collate), default=True
-                )
+                sge.CollateProperty(this=sge.convert(default_collate), default=True)
             )
 
         if partition_by is not None:
             properties.append(
-                sg.exp.PartitionedByProperty(
-                    this=sg.exp.Tuple(
+                sge.PartitionedByProperty(
+                    this=sge.Tuple(
                         expressions=list(map(sg.to_identifier, partition_by))
                     )
                 )
@@ -955,11 +953,11 @@ class Backend(BaseSQLBackend, CanCreateSchema):
 
         if cluster_by is not None:
             properties.append(
-                sg.exp.Cluster(expressions=list(map(sg.to_identifier, cluster_by)))
+                sge.Cluster(expressions=list(map(sg.to_identifier, cluster_by)))
             )
 
         properties.extend(
-            sg.exp.Property(this=sg.to_identifier(name), value=sg.exp.convert(value))
+            sge.Property(this=sg.to_identifier(name), value=sge.convert(value))
             for name, value in (options or {}).items()
         )
 
@@ -981,7 +979,7 @@ class Backend(BaseSQLBackend, CanCreateSchema):
             dataset = database or self.current_schema
 
         try:
-            table = sg.parse_one(name, into=sg.exp.Table, read="bigquery")
+            table = sg.parse_one(name, into=sge.Table, read="bigquery")
         except sg.ParseError:
             table = sg.table(name, db=dataset, catalog=project_id)
         else:
@@ -992,31 +990,27 @@ class Backend(BaseSQLBackend, CanCreateSchema):
                 table.args["catalog"] = project_id
 
         column_defs = [
-            sg.exp.ColumnDef(
+            sge.ColumnDef(
                 this=name,
                 kind=BigQueryType.from_ibis(typ),
                 constraints=(
                     None
                     if typ.nullable or typ.is_array()
-                    else [
-                        sg.exp.ColumnConstraint(kind=sg.exp.NotNullColumnConstraint())
-                    ]
+                    else [sge.ColumnConstraint(kind=sge.NotNullColumnConstraint())]
                 ),
             )
             for name, typ in (schema or {}).items()
         ]
 
-        stmt = sg.exp.Create(
+        stmt = sge.Create(
             kind="TABLE",
-            this=sg.exp.Schema(this=table, expressions=column_defs or None),
+            this=sge.Schema(this=table, expressions=column_defs or None),
             replace=overwrite,
-            properties=sg.exp.Properties(expressions=properties),
+            properties=sge.Properties(expressions=properties),
             expression=None if obj is None else self.compile(obj),
         )
 
-        sql = stmt.sql(self.name)
-
-        self.raw_sql(sql)
+        self.raw_sql(stmt)
         return self.table(table.name, schema=table.db, database=table.catalog)
 
     def drop_table(
@@ -1027,7 +1021,7 @@ class Backend(BaseSQLBackend, CanCreateSchema):
         database: str | None = None,
         force: bool = False,
     ) -> None:
-        stmt = sg.exp.Drop(
+        stmt = sge.Drop(
             kind="TABLE",
             this=sg.table(
                 name,
@@ -1036,7 +1030,7 @@ class Backend(BaseSQLBackend, CanCreateSchema):
             ),
             exists=force,
         )
-        self.raw_sql(stmt.sql(self.name))
+        self.raw_sql(stmt)
 
     def create_view(
         self,
@@ -1047,7 +1041,7 @@ class Backend(BaseSQLBackend, CanCreateSchema):
         database: str | None = None,
         overwrite: bool = False,
     ) -> ir.Table:
-        stmt = sg.exp.Create(
+        stmt = sge.Create(
             kind="VIEW",
             this=sg.table(
                 name,
@@ -1058,7 +1052,7 @@ class Backend(BaseSQLBackend, CanCreateSchema):
             replace=overwrite,
         )
         self._register_in_memory_tables(obj)
-        self.raw_sql(stmt.sql(self.name))
+        self.raw_sql(stmt)
         return self.table(name, schema=schema, database=database)
 
     def drop_view(
@@ -1069,7 +1063,7 @@ class Backend(BaseSQLBackend, CanCreateSchema):
         database: str | None = None,
         force: bool = False,
     ) -> None:
-        stmt = sg.exp.Drop(
+        stmt = sge.Drop(
             kind="VIEW",
             this=sg.table(
                 name,
@@ -1078,7 +1072,7 @@ class Backend(BaseSQLBackend, CanCreateSchema):
             ),
             exists=force,
         )
-        self.raw_sql(stmt.sql(self.name))
+        self.raw_sql(stmt)
 
     def _load_into_cache(self, name, expr):
         self.create_table(name, expr, schema=expr.schema(), temp=True)

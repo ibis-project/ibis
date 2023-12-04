@@ -334,7 +334,6 @@ _SIMPLE_OPS = {
     ops.Mode: "mode",
     ops.RPad: "rpad",
     ops.StringAscii: "ascii",
-    ops.StringToTimestamp: "strptime",
     ops.TimeFromHMS: "make_time",
     ops.TypeOf: "typeof",
     ops.Unnest: "unnest",

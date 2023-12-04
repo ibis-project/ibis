@@ -85,6 +85,7 @@ class SnowflakeCompiler(SQLGlotCompiler):
     dialect = "snowflake"
     quoted = True
     type_mapper = SnowflakeType
+    no_limit_value = NULL
     rewrites = (
         replace_to_json,
         exclude_unsupported_window_frame_from_row_number,
@@ -527,41 +528,6 @@ class SnowflakeCompiler(SQLGlotCompiler):
     def visit_Xor(self, op, *, left, right):
         # boolxor accepts numerics ... and returns a boolean? wtf?
         return self.f.boolxor(self.cast(left, dt.int8), self.cast(right, dt.int8))
-
-    @visit_node.register(ops.Limit)
-    def visit_Limit(self, op, *, parent, n, offset):
-        # push limit/offset into subqueries
-        if isinstance(parent, sge.Subquery) and parent.this.args.get("limit") is None:
-            result = parent.this
-            alias = parent.alias
-        else:
-            result = sg.select(STAR).from_(parent)
-            alias = None
-
-        if isinstance(n, int):
-            result = result.limit(n)
-        elif n is not None:
-            result = result.limit(sg.select(n).from_(parent).subquery())
-        else:
-            assert n is None, n
-            result = result.limit(NULL)
-
-        assert offset is not None, "offset is None"
-
-        if not isinstance(offset, int):
-            skip = offset
-            skip = sg.select(skip).from_(parent).subquery()
-        elif not offset:
-            if alias is not None:
-                return result.subquery(alias)
-            return result
-        else:
-            skip = offset
-
-        result = result.offset(skip)
-        if alias is not None:
-            return result.subquery(alias)
-        return result
 
     @visit_node.register(ops.ArrayMap)
     @visit_node.register(ops.ArrayFilter)
