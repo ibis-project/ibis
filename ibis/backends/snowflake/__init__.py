@@ -653,8 +653,16 @@ $$""".format(**self._get_udf_source(udf_node))
         if temp:
             create_stmt += " TEMPORARY"
 
-        ident = self._quote(name)
-        create_stmt += f" TABLE {ident}"
+        if database is None:
+            ident = sg.table(name, quoted=True)
+            catalog = db = database
+        else:
+            db = sg.parse_one(database, into=sg.exp.Table, read=self.name)
+            catalog = db.db
+            db = db.name
+            ident = sg.table(name, db=db, catalog=catalog, quoted=True)
+
+        create_stmt += f" TABLE {ident.sql(self.name)}"
 
         if schema is not None:
             schema_sql = ", ".join(
@@ -682,16 +690,22 @@ $$""".format(**self._get_udf_source(udf_node))
         with self.begin() as con:
             con.exec_driver_sql(create_stmt)
 
-        return self.table(name, schema=database)
+        return self.table(name, schema=db, database=catalog)
 
     def drop_table(
-        self, name: str, database: str | None = None, force: bool = False
+        self,
+        name: str,
+        database: str | None = None,
+        schema: str | None = None,
+        force: bool = False,
     ) -> None:
-        name = self._quote(name)
-        # TODO: handle database quoting
-        if database is not None:
-            name = f"{database}.{name}"
-        drop_stmt = "DROP TABLE" + (" IF EXISTS" * force) + f" {name}"
+        """Drop a table from Snowflake."""
+        drop_stmt = sg.exp.Drop(
+            kind="TABLE",
+            this=sg.table(name, db=schema, catalog=database, quoted=True),
+            exists=force,
+        ).sql(self.name)
+
         with self.begin() as con:
             con.exec_driver_sql(drop_stmt)
 
