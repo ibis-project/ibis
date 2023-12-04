@@ -15,7 +15,7 @@ import ibis.expr.operations as ops
 from ibis.backends.base.df.scope import Scope
 from ibis.backends.pandas import Backend
 from ibis.backends.pandas.dispatch import pre_execute
-from ibis.backends.pandas.execution import execute
+
 from ibis.backends.pandas.tests.conftest import TestConf as tm
 from ibis.common.annotations import ValidationError
 from ibis.legacy.udf.vectorized import reduction
@@ -51,58 +51,62 @@ def range_window():
 @default
 @row_offset
 def test_lead(t, df, row_offset, default, row_window):
+    con = ibis.pandas.connect()
     expr = t.dup_strings.lead(row_offset, default=default).over(row_window)
     result = expr.execute()
-    expected = df.dup_strings.shift(execute((-row_offset).op()))
+    expected = df.dup_strings.shift(con.execute((-row_offset)))
     if default is not ibis.NA:
-        expected = expected.fillna(execute(default.op()))
+        expected = expected.fillna(con.execute(default))
     tm.assert_series_equal(result, expected.rename("tmp"))
 
 
 @default
 @row_offset
 def test_lag(t, df, row_offset, default, row_window):
+    con = ibis.pandas.connect()
     expr = t.dup_strings.lag(row_offset, default=default).over(row_window)
     result = expr.execute()
-    expected = df.dup_strings.shift(execute(row_offset.op()))
+    expected = df.dup_strings.shift(con.execute(row_offset))
     if default is not ibis.NA:
-        expected = expected.fillna(execute(default.op()))
+        expected = expected.fillna(con.execute(default))
     tm.assert_series_equal(result, expected.rename("tmp"))
 
 
 @default
 @range_offset
 def test_lead_delta(t, df, range_offset, default, range_window):
+    con = ibis.pandas.connect()
     expr = t.dup_strings.lead(range_offset, default=default).over(range_window)
     result = expr.execute()
     expected = (
         df[["plain_datetimes_naive", "dup_strings"]]
         .set_index("plain_datetimes_naive")
         .squeeze()
-        .shift(freq=execute((-range_offset).op()))
+        .shift(freq=con.execute((-range_offset)))
         .reindex(df.plain_datetimes_naive)
         .reset_index(drop=True)
     )
     if default is not ibis.NA:
-        expected = expected.fillna(execute(default.op()))
+        expected = expected.fillna(con.execute(default))
     tm.assert_series_equal(result, expected.rename("tmp"))
 
 
 @default
 @range_offset
 def test_lag_delta(t, df, range_offset, default, range_window):
+    con = ibis.pandas.connect()
     expr = t.dup_strings.lag(range_offset, default=default).over(range_window)
     result = expr.execute()
     expected = (
         df[["plain_datetimes_naive", "dup_strings"]]
         .set_index("plain_datetimes_naive")
         .squeeze()
-        .shift(freq=execute(range_offset.op()))
+        .shift(freq=con.execute(range_offset))
         .reindex(df.plain_datetimes_naive)
         .reset_index(drop=True)
     )
     if default is not ibis.NA:
-        expected = expected.fillna(execute(default.op()))
+        expected = expected.fillna(con.execute(default))
     tm.assert_series_equal(result, expected.rename("tmp"))
 
 

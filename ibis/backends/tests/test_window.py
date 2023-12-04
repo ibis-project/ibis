@@ -622,6 +622,7 @@ def test_grouped_unbounded_window(
     # 1) Grouped
     # 2) Ordered if `ordered` is True
     df = df.sort_values("id") if ordered else df
+
     expected = df.assign(val=expected_fn(df.groupby("string_col")))
     expected = expected.set_index("id").sort_index()
 
@@ -638,7 +639,7 @@ def test_grouped_unbounded_window(
     ],
 )
 @pytest.mark.broken(["snowflake"], raises=AssertionError)
-@pytest.mark.broken(["dask", "pandas", "mssql"], raises=AssertionError)
+@pytest.mark.broken(["dask", "mssql"], raises=AssertionError)
 @pytest.mark.notimpl(["polars"], raises=com.OperationNotDefinedError)
 @pytest.mark.notimpl(["flink"], raises=com.UnsupportedOperationError)
 def test_simple_ungrouped_unbound_following_window(
@@ -694,7 +695,6 @@ def test_simple_ungrouped_window_with_scalar_order_by(alltypes):
             True,
             id="ordered-mean",
             marks=[
-                pytest.mark.broken(["pandas"], raises=AssertionError),
                 pytest.mark.notimpl(
                     ["dask"],
                     raises=NotImplementedError,
@@ -764,7 +764,6 @@ def test_simple_ungrouped_window_with_scalar_order_by(alltypes):
                     ],
                     raises=com.OperationNotDefinedError,
                 ),
-                pytest.mark.broken(["pandas"], raises=AssertionError),
                 pytest.mark.broken(
                     ["dask"],
                     raises=ValueError,

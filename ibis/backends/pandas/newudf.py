@@ -23,7 +23,7 @@ def execute_reduction_udf(op, func, func_args, input_type, return_type):
     """Execute a reduction UDF."""
 
     def agg(df):
-        args = [df[col] for col in func_args]
+        args = [df[col.name] for col in func_args]
         return func(*args)
 
     return agg
