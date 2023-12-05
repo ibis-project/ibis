@@ -1083,3 +1083,11 @@ def test_levenshtein(con, right):
 )
 def test_no_conditional_percent_escape(con, expr):
     assert con.execute(expr) == "%"
+
+
+@pytest.mark.notimpl(
+    ["dask", "pandas", "mssql", "oracle"], raises=com.OperationNotDefinedError
+)
+def test_non_match_regex_search_is_false(con):
+    expr = ibis.literal("foo").re_search("bar")
+    assert con.execute(expr) is False
