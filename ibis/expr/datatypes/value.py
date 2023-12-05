@@ -340,12 +340,13 @@ def normalize(
         }
         return frozendict(mapping) if immutable else mapping
     elif dtype.is_struct():
-        if not isinstance(value, Mapping):
-            raise TypeError(f"Unable to normalize {dtype} from non-mapping {value!r}")
-        if missing_keys := (dtype.keys() - value.keys()):
-            raise TypeError(
-                f"Unable to normalize {value!r} to {dtype} because of missing keys {missing_keys!r}"
-            )
+        if isinstance(value, Mapping):
+            if missing_keys := (dtype.keys() - value.keys()):
+                raise TypeError(
+                    f"Unable to normalize {value!r} to {dtype} because of missing keys {missing_keys!r}"
+                )
+        else:
+            value = dict(zip(dtype.names, value))
         struct = {
             k: normalize(t, value[k], none=none, strict=strict, immutable=immutable)
             for k, t in dtype.items()
