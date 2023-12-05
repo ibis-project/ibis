@@ -8,7 +8,6 @@ import glob
 import os
 import re
 import warnings
-from collections.abc import Iterator
 from functools import partial
 from typing import TYPE_CHECKING, Any, Callable
 from urllib.parse import parse_qs, urlparse
@@ -43,13 +42,12 @@ from ibis.backends.bigquery.datatypes import BigQuerySchema, BigQueryType
 from ibis.backends.bigquery.udf import udf  # noqa: F401
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable, Mapping
+    from collections.abc import Iterable, Iterator, Mapping
     from pathlib import Path
 
     import pyarrow as pa
     from google.cloud.bigquery.table import RowIterator
 
-    import ibis.expr.schema as sch
 
 SCOPES = ["https://www.googleapis.com/auth/bigquery"]
 EXTERNAL_DATA_SCOPES = [
@@ -1006,14 +1004,13 @@ class Backend(SQLGlotBackend, CanCreateSchema):
                 kind=BigQueryType.from_ibis(typ),
                 constraints=(
                     None
-                    if typ.nullable or typ.is_array()
+                    if typ.nullable or typ.is_array()  # arrays can't be nullable
                     else [sge.ColumnConstraint(kind=sge.NotNullColumnConstraint())]
                 ),
             )
             for name, typ in (schema or {}).items()
         ]
 
-        breakpoint()
         stmt = sge.Create(
             kind="TABLE",
             this=sge.Schema(this=table, expressions=column_defs or None),
