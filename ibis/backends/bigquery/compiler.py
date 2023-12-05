@@ -308,13 +308,13 @@ class BigQueryCompiler(SQLGlotCompiler):
 
     @visit_node.register(ops.ArrayZip)
     def visit_ArrayZip(self, op, *, arg):
-        lengths = [self.f.array_length(a) - 1 for a in arg]
         idx = sg.to_identifier(util.gen_name("bq_arr_idx"))
         indices = self.unnest(
-            self.f.generate_array(0, self.f.greatest(*lengths)), as_=idx
+            self.f.generate_array(1, self.f.greatest(*map(self.f.array_length, arg))),
+            as_=idx,
         )
         struct_fields = [
-            arr[self.f.safe_offset(idx)].as_(name)
+            arr[self.f.safe_ordinal(idx)].as_(name)
             for name, arr in zip(op.dtype.value_type.names, arg)
         ]
         return self.f.array(
