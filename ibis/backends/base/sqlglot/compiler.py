@@ -9,7 +9,7 @@ import operator
 import string
 from collections.abc import Mapping
 from functools import partial, singledispatchmethod
-from typing import TYPE_CHECKING, Any, Callable, Literal
+from typing import TYPE_CHECKING, Any, Callable
 
 import sqlglot as sg
 import sqlglot.expressions as sge
@@ -267,7 +267,9 @@ class SQLGlotCompiler(abc.ABC):
 
     @visit_node.register(ops.Field)
     def visit_Field(self, op, *, rel, name):
-        return sg.column(name, table=rel.alias_or_name, quoted=self.quoted)
+        return sg.column(
+            self._gen_valid_name(name), table=rel.alias_or_name, quoted=self.quoted
+        )
 
     @visit_node.register(ops.ScalarSubquery)
     def visit_ScalarSubquery(self, op, *, rel):
@@ -275,7 +277,7 @@ class SQLGlotCompiler(abc.ABC):
 
     @visit_node.register(ops.Alias)
     def visit_Alias(self, op, *, arg, name):
-        return arg.as_(name, quoted=self.quoted)
+        return arg.as_(self._gen_valid_name(name), quoted=self.quoted)
 
     @visit_node.register(ops.Literal)
     def visit_Literal(self, op, *, value, dtype, **kw):
@@ -923,12 +925,19 @@ class SQLGlotCompiler(abc.ABC):
             this=table, side=sides[how], kind=kinds[how], on=sg.and_(*predicates)
         )
 
+    @staticmethod
+    def _gen_valid_name(name: str) -> str:
+        return name
+
     @visit_node.register(ops.Project)
     def visit_Project(self, op, *, parent, values):
         # needs_alias should never be true here in explicitly, but it may get
         # passed via a (recursive) call to translate_val
         return sg.select(
-            *(value.as_(key, quoted=self.quoted) for key, value in values.items())
+            *(
+                value.as_(self._gen_valid_name(key), quoted=self.quoted)
+                for key, value in values.items()
+            )
         ).from_(parent)
 
     @staticmethod
@@ -938,8 +947,14 @@ class SQLGlotCompiler(abc.ABC):
     @visit_node.register(ops.Aggregate)
     def visit_Aggregate(self, op, *, parent, groups, metrics):
         sel = sg.select(
-            *(value.as_(key, quoted=self.quoted) for key, value in groups.items()),
-            *(value.as_(key, quoted=self.quoted) for key, value in metrics.items()),
+            *(
+                value.as_(self._gen_valid_name(key), quoted=self.quoted)
+                for key, value in groups.items()
+            ),
+            *(
+                value.as_(self._gen_valid_name(key), quoted=self.quoted)
+                for key, value in metrics.items()
+            ),
         ).from_(parent)
 
         if groups:

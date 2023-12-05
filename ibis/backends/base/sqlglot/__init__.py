@@ -80,15 +80,14 @@ class SQLGlotBackend(BaseBackend):
             sql = sg.select(STAR).from_(sql)
 
         assert not isinstance(sql, sge.Subquery)
-        return sql
+        return [sql]
 
     def compile(
         self, expr: ir.Expr, limit: str | None = None, params=None, **kwargs: Any
     ):
         """Compile an Ibis expression to a ClickHouse SQL string."""
-        queries = ibis.util.promote_list(
-            self._to_sqlglot(expr, limit=limit, params=params, **kwargs)
-        )
+        queries = self._to_sqlglot(expr, limit=limit, params=params, **kwargs)
+
         return ";\n\n".join(
             query.sql(dialect=self.name, pretty=True) for query in queries
         )

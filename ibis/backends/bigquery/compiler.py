@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import contextlib
 import math
+import re
 from functools import singledispatchmethod
 
 import sqlglot as sg
@@ -104,6 +105,13 @@ class BigQueryCompiler(SQLGlotCompiler):
     def visit_node(self, op, **kw):
         return super().visit_node(op, **kw)
 
+    @staticmethod
+    def _gen_valid_name(name: str) -> str:
+        found = re.findall(r'[^!"$()*,./;?@[\\\]^`{}~\n]+', name)
+        result = "_".join(found)
+        assert result, f"name {name} produced an empty result"
+        return result
+
     @visit_node.register(ops.IntegerRange)
     def visit_IntegerRange(self, op, *, start, stop, step):
         n = self.f.floor((stop - start) / self.f.nullif(step, 0))
@@ -140,21 +148,6 @@ class BigQueryCompiler(SQLGlotCompiler):
     @visit_node.register(ops.Pi)
     def visit_Pi(self, op):
         return self.f.acos(-1)
-
-    @visit_node.register(ops.FindInSet)
-    @visit_node.register(ops.CountDistinctStar)
-    @visit_node.register(ops.DateDiff)
-    @visit_node.register(ops.TimestampDiff)
-    @visit_node.register(ops.ExtractAuthority)
-    @visit_node.register(ops.ExtractFile)
-    @visit_node.register(ops.ExtractFragment)
-    @visit_node.register(ops.ExtractHost)
-    @visit_node.register(ops.ExtractPath)
-    @visit_node.register(ops.ExtractProtocol)
-    @visit_node.register(ops.ExtractQuery)
-    @visit_node.register(ops.ExtractUserInfo)
-    def visit_Undefined(self, op, **_):
-        raise com.OperationNotDefinedError(type(op).__name__)
 
     @visit_node.register(ops.WindowBoundary)
     def visit_WindowBoundary(self, op, *, value, preceding):
@@ -547,7 +540,7 @@ class BigQueryCompiler(SQLGlotCompiler):
     @visit_node.register(ops.Last)
     def visit_Last(self, op, *, arg, where):
         return self.agg.array_agg(sge.IgnoreNulls(this=arg), where=where)[
-            self.safe_ordinal(self.agg.count(arg, where=where))
+            self.f.safe_ordinal(self.agg.count(arg, where=where))
         ]
 
     @visit_node.register(ops.DateTruncate)
@@ -642,7 +635,25 @@ class BigQueryCompiler(SQLGlotCompiler):
         elif from_.is_floating() and to.is_integer():
             return self.cast(self.f.trunc(arg), dt.int64)
         else:
-            return super().visit_node(op, arg=arg, to=to)
+            return self.cast(arg, to)
+
+    @visit_node.register(ops.FindInSet)
+    @visit_node.register(ops.CountDistinctStar)
+    @visit_node.register(ops.DateDiff)
+    @visit_node.register(ops.TimestampDiff)
+    @visit_node.register(ops.ExtractAuthority)
+    @visit_node.register(ops.ExtractFile)
+    @visit_node.register(ops.ExtractFragment)
+    @visit_node.register(ops.ExtractHost)
+    @visit_node.register(ops.ExtractPath)
+    @visit_node.register(ops.ExtractProtocol)
+    @visit_node.register(ops.ExtractQuery)
+    @visit_node.register(ops.ExtractUserInfo)
+    @visit_node.register(ops.Quantile)
+    @visit_node.register(ops.MultiQuantile)
+    @visit_node.register(ops.Median)
+    def visit_Undefined(self, op, **_):
+        raise com.OperationNotDefinedError(type(op).__name__)
 
 
 _SIMPLE_OPS = {
