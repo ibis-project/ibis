@@ -11,6 +11,7 @@ import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 from ibis.backends.base.sqlglot import (
+    FALSE,
     NULL,
     AggGen,
     F,
@@ -441,7 +442,16 @@ def string_find(op, *, arg, substr, start, end, **_):
 
 @translate_val.register(ops.RegexSearch)
 def regex_search(op, *, arg, pattern, **_):
-    return F.array_length(F.regexp_match(arg, pattern)) > 0
+    return if_(
+        sg.or_(arg.is_(NULL), pattern.is_(NULL)),
+        NULL,
+        F.coalesce(
+            # null is returned for non-matching patterns, so coalesce to false
+            # because that is the desired behavior for ops.RegexSearch
+            F.array_length(F.regexp_match(arg, pattern)) > 0,
+            FALSE,
+        ),
+    )
 
 
 @translate_val.register(ops.StringContains)
