@@ -587,6 +587,7 @@ class ClickHouseCompiler(SQLGlotCompiler):
     @visit_node.register(ops.PercentRank)
     @visit_node.register(ops.Time)
     @visit_node.register(ops.TimeDelta)
+    @visit_node.register(ops.StringToTimestamp)
     def visit_Undefined(self, op, **_):
         raise com.OperationNotDefinedError(type(op).__name__)
 
