@@ -309,8 +309,13 @@ def normalize(
             return value
     elif dtype.is_binary():
         return bytes(value)
-    elif dtype.is_string() or dtype.is_macaddr() or dtype.is_inet():
+    elif dtype.is_string() or dtype.is_macaddr():
         return str(value)
+    elif dtype.is_inet():
+        value = str(value)
+        if ":" in value:
+            return ipaddress.IPv6Address(value)
+        return ipaddress.IPv4Address(value)
     elif dtype.is_decimal():
         return normalize_decimal(
             value, precision=dtype.precision, scale=dtype.scale, strict=strict
