@@ -26,10 +26,9 @@ import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis import util
 from ibis.backends.base import CanCreateSchema
-from ibis.backends.base.sql import BaseBackend
 from ibis.backends.base.sql.alchemy.geospatial import geospatial_supported
 from ibis.backends.base.sqlglot import SQLGlotBackend
-from ibis.backends.base.sqlglot.compiler import C, F, SQLGlotCompiler
+from ibis.backends.base.sqlglot.compiler import STAR, C, F
 from ibis.backends.base.sqlglot.datatypes import DuckDBType
 from ibis.backends.duckdb.compiler import DuckDBCompiler
 from ibis.backends.duckdb.datatypes import DuckDBPandasData
@@ -581,12 +580,16 @@ class Backend(SQLGlotBackend, CanCreateSchema):
         if not table_name:
             table_name = util.gen_name("read_json")
 
-        options = [f"{key}={val}" for key, val in kwargs.items()]
+        options = [
+            sg.to_identifier(key).eq(sge.convert(val)) for key, val in kwargs.items()
+        ]
 
         self._create_temp_view(
             table_name,
-            sg.select("*").from_(
-                sg.func("read_json_auto", normalize_filenames(source_list), *options)
+            sg.select(STAR).from_(
+                self.compiler.f.read_json_auto(
+                    normalize_filenames(source_list), *options
+                )
             ),
         )
 
@@ -636,13 +639,12 @@ class Backend(SQLGlotBackend, CanCreateSchema):
         # We want to _usually_ quote arguments but if we quote `columns` it messes
         # up DuckDB's struct parsing.
         options = [
-            f'{key}="{val}"' if key != "columns" else f"{key}={val}"
-            for key, val in kwargs.items()
+            sg.to_identifier(key).eq(sge.convert(val)) for key, val in kwargs.items()
         ]
 
         self._create_temp_view(
             table_name,
-            sg.select("*").from_(sg.func("read_csv", source_list, *options)),
+            sg.select(STAR).from_(self.compiler.f.read_csv(source_list, *options)),
         )
 
         return self.table(table_name)
@@ -681,13 +683,21 @@ class Backend(SQLGlotBackend, CanCreateSchema):
         # load geospatial extension
         self.load_extension("spatial")
 
-        source_expr = sa.select(sa.literal_column("*")).select_from(
-            sa.func.st_read(util.normalize_filename(source), _format_kwargs(kwargs))
+        source_expr = sg.select(STAR).select_from(
+            self.compiler.f.st_read(
+                util.normalize_filename(source),
+                *(sg.to_identifier(key).eq(val) for key, val in kwargs.items()),
+            )
         )
 
-        view = self._compile_temp_view(table_name, source_expr)
-        with self.begin() as con:
-            con.exec_driver_sql(view)
+        view = sge.Create(
+            kind="VIEW",
+            this=sg.table(table_name, quoted=self.compiler.quoted),
+            properties=sge.Properties(expressions=[sge.TemporalProperty()]),
+            expression=source_expr,
+        )
+        with self._safe_raw_sql(view):
+            pass
         return self.table(table_name)
 
     def read_parquet(
@@ -738,15 +748,12 @@ class Backend(SQLGlotBackend, CanCreateSchema):
         ):
             self._load_extensions(["httpfs"])
 
-        if kwargs:
-            options = [f"{key}={val}" for key, val in kwargs.items()]
-            pq_func = sg.func("read_parquet", source_list, *options)
-        else:
-            pq_func = sg.func("read_parquet", source_list)
-
+        options = [
+            sg.to_identifier(key).eq(sge.convert(val)) for key, val in kwargs.items()
+        ]
         self._create_temp_view(
             table_name,
-            sg.select("*").from_(pq_func),
+            sg.select(STAR).from_(self.compiler.f.read_parquet(source_list, *options)),
         )
 
     def _read_parquet_pyarrow_dataset(
@@ -931,8 +938,8 @@ class Backend(SQLGlotBackend, CanCreateSchema):
 
         self._create_temp_view(
             table_name,
-            sg.select("*").from_(
-                sg.func("postgres_scan_pushdown", uri, schema, table_name)
+            sg.select(STAR).from_(
+                self.compiler.f.postgres_scan_pushdown(uri, schema, table_name)
             ),
         )
 
@@ -986,9 +993,9 @@ class Backend(SQLGlotBackend, CanCreateSchema):
 
         self._create_temp_view(
             table_name,
-            sg.select("*").from_(
-                sg.func(
-                    "sqlite_scan", sg.to_identifier(str(path), quoted=True), table_name
+            sg.select(STAR).from_(
+                self.compiler.f.sqlite_scan(
+                    sg.to_identifier(str(path), quoted=True), table_name
                 )
             ),
         )
