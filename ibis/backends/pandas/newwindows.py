@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import numpy as np
 import pandas as pd
 
 import ibis.expr.operations as ops
@@ -32,11 +31,11 @@ class GroupedFrame:
     def apply(self, func, **kwargs):
         result = self.groupby.apply(func, **kwargs)
         if len(self.group_keys) == 1:
-            key, = self.group_keys
+            (key,) = self.group_keys
             return self.df[key].map(result)
         else:
+            # FIXME(kszucs): this must be supported
             raise NotImplementedError("Only single group key is supported")
-
 
 
 class RowsFrame:
@@ -49,18 +48,18 @@ class RowsFrame:
         results = {}
         for df in self.parent.groups():
             for i, (ix, row) in enumerate(df.iterrows()):
-                start = row['_start']
-                end = row['_end']
+                start = row["_start"]
+                end = row["_end"]
 
                 if start is None and end is None:
                     subdf = df
                 elif start is None:
-                    subdf = df.iloc[:i + end + 1]
+                    subdf = df.iloc[: i + end + 1]
 
                 elif end is None:
-                    subdf = df.iloc[i + start:]
+                    subdf = df.iloc[i + start :]
                 else:
-                    subdf = df.iloc[i + start:i + end + 1]
+                    subdf = df.iloc[i + start : i + end + 1]
 
                 res = func(subdf, **kwargs)
                 if isinstance(res, pd.Series):
@@ -69,7 +68,6 @@ class RowsFrame:
                     results[ix] = res
 
         return pd.Series(results)
-
 
 
 @execute.register(ops.WindowBoundary)
@@ -126,6 +124,7 @@ def execute_window_function(op, func, frame):
 def execute_lag(op, arg, offset, default):
     def agg(df):
         return df[arg.name].shift(1, fill_value=default)
+
     return agg
 
 
@@ -133,4 +132,5 @@ def execute_lag(op, arg, offset, default):
 def execute_lead(op, arg, offset, default):
     def agg(df):
         return df[arg.name].shift(-1, fill_value=default)
+
     return agg

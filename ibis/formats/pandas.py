@@ -145,7 +145,9 @@ class PandasData(DataMapper):
     @staticmethod
     def convert_default(s, dtype, pandas_type):
         if pandas_type == object:
-            func = lambda x: dt.normalize(dtype, x, none=pd.NA, immutable=False)
+            func = lambda x: dt.normalize(
+                dtype, x, none=pd.NA, immutable=False, strict=False
+            )
             return s.map(func, na_action="ignore")
         else:
             return s.astype(pandas_type)

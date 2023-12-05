@@ -96,16 +96,21 @@ def operate(func):
 )
 def test_math_functions_decimal(t, df, ibis_func, pandas_func):
     dtype = dt.Decimal(12, 3)
-    expr = ibis_func(t.float64_as_strings.cast(dtype))
-    result = expr.execute()
     context = decimal.Context(prec=dtype.precision)
-    expected = df.float64_as_strings.apply(
-        lambda x: context.create_decimal(x).quantize(
+
+    def normalize(x):
+        return context.create_decimal(x).quantize(
             decimal.Decimal(
                 f"{'0' * (dtype.precision - dtype.scale)}.{'0' * dtype.scale}"
             )
         )
-    ).apply(pandas_func)
+
+    expr = ibis_func(t.float64_as_strings.cast(dtype))
+    result = expr.execute()
+
+    expected = (
+        df.float64_as_strings.apply(normalize).apply(pandas_func).apply(normalize)
+    )
 
     result[result.apply(math.isnan)] = -99999
     expected[expected.apply(math.isnan)] = -99999
@@ -239,7 +244,7 @@ def test_ifelse_returning_bool():
     false = ibis.literal(False)
     expr = ibis.ifelse(one + one == two, true, false)
     result = ibis.pandas.connect().execute(expr)
-    assert result is True
+    assert result is True or result is np.True_
 
 
 @pytest.mark.parametrize(

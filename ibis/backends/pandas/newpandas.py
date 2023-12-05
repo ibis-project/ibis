@@ -1,11 +1,10 @@
 from __future__ import annotations
 
+import decimal
 import operator
-import warnings
-from functools import partial, reduce, singledispatch
+from functools import reduce, singledispatch
 
 import numpy as np
-import numpy_ext as npx
 import pandas as pd
 
 import ibis.expr.operations as ops
@@ -43,17 +42,6 @@ def execute_literal(op, value, dtype):
 @execute.register(ops.DatabaseTable)
 def execute_database_table(op, name, schema, source, namespace):
     return source.dictionary[name]
-    # if timecontext:
-    #     begin, end = timecontext
-    #     time_col = get_time_col()
-    #     if time_col not in df:
-    #         raise com.IbisError(
-    #             f"Table {op.name} must have a time column named {time_col}"
-    #             " to execute with time context."
-    #         )
-    #     # filter with time context
-    #     mask = df[time_col].between(begin, end)
-    #     return df.loc[mask].reset_index(drop=True)
 
 
 @execute.register(ops.InMemoryTable)
@@ -220,11 +208,7 @@ _unary_operations = {
     ops.Abs: abs,
     ops.Ceil: lambda x: np.ceil(x).astype("int64"),
     ops.Floor: lambda x: np.floor(x).astype("int64"),
-    ops.Sqrt: np.sqrt,
     ops.Sign: np.sign,
-    ops.Log2: np.log2,
-    ops.Log10: np.log10,
-    ops.Ln: np.log,
     ops.Exp: np.exp,
     ops.Tan: np.tan,
     ops.Cos: np.cos,
@@ -275,9 +259,57 @@ def execute_equals(op, left, right):
     return _binary_operations[type(op)](left, right)
 
 
+def mapdecimal(func, s):
+    def wrapper(x):
+        try:
+            return func(x)
+        except decimal.InvalidOperation:
+            return decimal.Decimal("NaN")
+
+    return s.map(wrapper)
+
+
+@execute.register(ops.Sqrt)
+def execute_sqrt(op, arg):
+    if op.arg.dtype.is_decimal():
+        return mapdecimal(lambda x: x.sqrt(), arg)
+    else:
+        return np.sqrt(arg)
+
+
+@execute.register(ops.Ln)
+def execute_ln(op, arg):
+    if op.arg.dtype.is_decimal():
+        return mapdecimal(lambda x: x.ln(), arg)
+    else:
+        return np.log(arg)
+
+
+@execute.register(ops.Log2)
+def execute_log2(op, arg):
+    if op.arg.dtype.is_decimal():
+        # TODO(kszucs): this doesn't support columnar shaped base
+        baseln = decimal.Decimal(2).ln()
+        return mapdecimal(lambda x: x.ln() / baseln, arg)
+    else:
+        return np.log2(arg)
+
+
+@execute.register(ops.Log10)
+def execute_log10(op, arg):
+    if op.arg.dtype.is_decimal():
+        return mapdecimal(lambda x: x.log10(), arg)
+    else:
+        return np.log10(arg)
+
+
 @execute.register(ops.Log)
 def execute_log(op, arg, base):
-    if base is None:
+    if op.arg.dtype.is_decimal():
+        # TODO(kszucs): this doesn't support columnar shaped base
+        baseln = decimal.Decimal(base).ln()
+        return mapdecimal(lambda x: x.ln() / baseln, arg)
+    elif base is None:
         return np.log(arg)
     else:
         return np.log(arg) / np.log(base)
@@ -285,7 +317,13 @@ def execute_log(op, arg, base):
 
 @execute.register(ops.Round)
 def execute_round(op, arg, digits):
-    if digits is None:
+    if op.arg.dtype.is_decimal():
+        if digits is None:
+            return arg.map(round)
+        else:
+            return arg.map(lambda x: round(x, digits))
+
+    elif digits is None:
         return np.round(arg).astype("int64")
     else:
         return np.round(arg, digits).astype("float64")
@@ -403,10 +441,6 @@ def execute_pandas_aggregate(op, parent, groups, metrics):
 def execute_in_values(op, value, options):
     if isinstance(value, pd.Series):
         return value.isin(options)
-    # elif isinstance(value, SeriesGroupBy):
-    #     return data.obj.isin(elements).groupby(
-    #         get_grouping(data.grouper.groupings), group_keys=False
-    #     )
     else:
         return value in options
 
@@ -416,10 +450,6 @@ def execute_in_subquery(op, rel, needle):
     first_column = rel.iloc[:, 0]
     if isinstance(needle, pd.Series):
         return needle.isin(first_column)
-    # elif isinstance(needle, SeriesGroupBy):
-    #     return data.obj.isin(elements).groupby(
-    #         get_grouping(data.grouper.groupings), group_keys=False
-    #     )
     else:
         return needle in first_column
 

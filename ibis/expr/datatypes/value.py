@@ -254,6 +254,7 @@ def normalize(
     typ,
     value,
     none=EMPTY,
+    strict=True,
     immutable=True,
 ):
     """Ensure that the Python type underlying a literal resolves to a single type."""
@@ -306,18 +307,24 @@ def normalize(
     elif dtype.is_string() or dtype.is_macaddr() or dtype.is_inet():
         return str(value)
     elif dtype.is_decimal():
-        return normalize_decimal(value, precision=dtype.precision, scale=dtype.scale)
+        return normalize_decimal(
+            value, precision=dtype.precision, scale=dtype.scale, strict=strict
+        )
     elif dtype.is_uuid():
         return value if isinstance(value, uuid.UUID) else uuid.UUID(value)
     elif dtype.is_array():
         array = [
-            normalize(dtype.value_type, item, none=none, immutable=immutable)
+            normalize(
+                dtype.value_type, item, none=none, strict=strict, immutable=immutable
+            )
             for item in value
         ]
         return tuple(array) if immutable else array
     elif dtype.is_map():
         mapping = {
-            k: normalize(dtype.value_type, v, none=none, immutable=immutable)
+            k: normalize(
+                dtype.value_type, v, none=none, strict=strict, immutable=immutable
+            )
             for k, v in value.items()
         }
         return frozendict(mapping) if immutable else mapping
@@ -329,7 +336,7 @@ def normalize(
                 f"Unable to normalize {value!r} to {dtype} because of missing keys {missing_keys!r}"
             )
         struct = {
-            k: normalize(t, value[k], none=none, immutable=immutable)
+            k: normalize(t, value[k], none=none, strict=strict, immutable=immutable)
             for k, t in dtype.items()
         }
         return frozendict(struct) if immutable else struct

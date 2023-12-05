@@ -15,7 +15,6 @@ import ibis.expr.operations as ops
 from ibis.backends.base.df.scope import Scope
 from ibis.backends.pandas import Backend
 from ibis.backends.pandas.dispatch import pre_execute
-
 from ibis.backends.pandas.tests.conftest import TestConf as tm
 from ibis.common.annotations import ValidationError
 from ibis.legacy.udf.vectorized import reduction
@@ -54,7 +53,7 @@ def test_lead(t, df, row_offset, default, row_window):
     con = ibis.pandas.connect()
     expr = t.dup_strings.lead(row_offset, default=default).over(row_window)
     result = expr.execute()
-    expected = df.dup_strings.shift(con.execute((-row_offset)))
+    expected = df.dup_strings.shift(con.execute(-row_offset))
     if default is not ibis.NA:
         expected = expected.fillna(con.execute(default))
     tm.assert_series_equal(result, expected.rename("tmp"))
@@ -82,7 +81,7 @@ def test_lead_delta(t, df, range_offset, default, range_window):
         df[["plain_datetimes_naive", "dup_strings"]]
         .set_index("plain_datetimes_naive")
         .squeeze()
-        .shift(freq=con.execute((-range_offset)))
+        .shift(freq=con.execute(-range_offset))
         .reindex(df.plain_datetimes_naive)
         .reset_index(drop=True)
     )
