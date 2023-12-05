@@ -674,7 +674,7 @@ class Backend(SQLGlotBackend, CanCreateDatabase):
         expression = None
 
         if obj is not None:
-            expression = self._to_sqlglot(obj)
+            (expression,) = self._to_sqlglot(obj)
             external_tables.update(self._collect_in_memory_tables(obj))
 
         code = sge.Create(
@@ -701,11 +701,12 @@ class Backend(SQLGlotBackend, CanCreateDatabase):
         database: str | None = None,
         overwrite: bool = False,
     ) -> ir.Table:
+        (expression,) = self._to_sqlglot(obj)
         src = sge.Create(
             this=sg.table(name, db=database),
             kind="VIEW",
             replace=overwrite,
-            expression=self._to_sqlglot(obj),
+            expression=expression,
         )
         external_tables = self._collect_in_memory_tables(obj)
         with self._safe_raw_sql(src, external_tables=external_tables):
