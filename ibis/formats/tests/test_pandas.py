@@ -33,7 +33,7 @@ from ibis.formats.pandas import PandasData, PandasSchema, PandasType
         (dt.float64, np.dtype("float64")),
         (dt.boolean, np.dtype("bool")),
         (dt.date, np.dtype("datetime64[ns]")),
-        (dt.time, np.dtype("object")),
+        (dt.time, np.dtype("timedelta64[ns]")),
         (dt.timestamp, np.dtype("datetime64[ns]")),
         (dt.Interval("s"), np.dtype("timedelta64[s]")),
         (dt.Interval("ms"), np.dtype("timedelta64[ms]")),

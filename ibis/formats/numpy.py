@@ -70,9 +70,10 @@ class NumpyType(TypeMapper[np.dtype]):
         elif dtype.is_date():
             # return np.dtype("datetime64[D]")
             return np.dtype("datetime64[ns]")
+        elif dtype.is_time():
+            return np.dtype("timedelta64[ns]")
         elif (
             dtype.is_null()
-            or dtype.is_time()
             or dtype.is_decimal()
             or dtype.is_struct()
             or dtype.is_variadic()

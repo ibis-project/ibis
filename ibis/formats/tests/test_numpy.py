@@ -87,7 +87,7 @@ def test_date_to_numpy(ibis_type):
 
 @h.given(ibst.time_dtype())
 def test_time_to_numpy(ibis_type):
-    assert NumpyType.from_ibis(ibis_type) == np.dtype("object")
+    assert NumpyType.from_ibis(ibis_type) == np.dtype("timedelta64[ns]")
 
 
 @h.given(ibst.schema())

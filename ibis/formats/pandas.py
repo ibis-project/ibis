@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import warnings
 
 import numpy as np
@@ -102,14 +103,26 @@ class PandasData(DataMapper):
         return sch.Schema.from_tuples(pairs)
 
     @classmethod
-    def convert_scalar(cls, obj, dtype):
-        series = pd.Series([obj])
-        casted = cls.convert_column(series, dtype)
-        return casted[0]
+    def convert_table(cls, df, schema):
+        if len(schema) != len(df.columns):
+            raise ValueError(
+                "schema column count does not match input data column count"
+            )
+
+        for (name, series), dtype in zip(df.items(), schema.types):
+            df[name] = cls.convert_column(series, dtype)
+
+        # return data with the schema's columns which may be different than the
+        # input columns
+        df.columns = schema.names
+        return df
 
     @classmethod
     def convert_column(cls, obj, dtype):
         pandas_type = PandasType.from_ibis(dtype)
+
+        if obj.dtype == pandas_type and dtype.is_primitive():
+            return obj
 
         method_name = f"convert_{dtype.__class__.__name__}"
         convert_method = getattr(cls, method_name, cls.convert_default)
@@ -117,18 +130,6 @@ class PandasData(DataMapper):
         result = convert_method(obj, dtype, pandas_type)
         assert not isinstance(result, np.ndarray), f"{convert_method} -> {type(result)}"
         return result
-
-    @classmethod
-    def convert_table(cls, df, schema):
-        if len(schema) != len(df.columns):
-            raise ValueError(
-                "schema column count does not match input data column count"
-            )
-
-        for name, dtype in schema.items():
-            df[name] = cls.convert_column(df[name], dtype)
-
-        return df
 
     @staticmethod
     def convert_GeoSpatial(s, dtype, pandas_type):
@@ -144,13 +145,10 @@ class PandasData(DataMapper):
 
     @staticmethod
     def convert_default(s, dtype, pandas_type):
-        if pandas_type == object:
-            func = lambda x: dt.normalize(
-                dtype, x, none=pd.NA, immutable=False, strict=False
-            )
-            return s.map(func, na_action="ignore").astype(pandas_type)
-        else:
+        try:
             return s.astype(pandas_type)
+        except Exception:  # noqa: BLE001
+            return s
 
     @staticmethod
     def convert_Boolean(s, dtype, pandas_type):
@@ -164,35 +162,11 @@ class PandasData(DataMapper):
             return s
 
     @staticmethod
-    def convert_Integer(s, dtype, pandas_type):
-        if pdt.is_datetime64_any_dtype(s.dtype):
-            return s.astype("int64").floordiv(int(1e9)).astype(pandas_type)
-        else:
-            return s.astype(pandas_type, errors="ignore")
-
-    convert_SignedInteger = convert_UnsignedInteger = convert_Integer
-    convert_Int64 = convert_Int32 = convert_Int16 = convert_Int8 = convert_SignedInteger
-    convert_UInt64 = (
-        convert_UInt32
-    ) = convert_UInt16 = convert_UInt8 = convert_UnsignedInteger
-
-    @staticmethod
-    def convert_Floating(s, dtype, pandas_type):
-        if pdt.is_datetime64_any_dtype(s.dtype):
-            return s.astype("int64").floordiv(int(1e9)).astype(pandas_type)
-        else:
-            return s.astype(pandas_type, errors="ignore")
-
-    convert_Float64 = convert_Float32 = convert_Float16 = convert_Floating
-
-    @staticmethod
     def convert_Timestamp(s, dtype, pandas_type):
         if isinstance(dtype, pd.DatetimeTZDtype):
             return s.dt.tz_convert(dtype.timezone)
         elif pdt.is_datetime64_dtype(s.dtype):
             return s.dt.tz_localize(dtype.timezone)
-        elif pdt.is_numeric_dtype(s.dtype):
-            return pd.to_datetime(s, unit="s").dt.tz_localize(dtype.timezone)
         else:
             try:
                 return s.astype(pandas_type)
@@ -213,12 +187,7 @@ class PandasData(DataMapper):
     def convert_Date(s, dtype, pandas_type):
         if isinstance(s.dtype, pd.DatetimeTZDtype):
             s = s.dt.tz_convert("UTC").dt.tz_localize(None)
-        elif pdt.is_numeric_dtype(s.dtype):
-            s = pd.to_datetime(s, unit="D")
-        else:
-            s = pd.to_datetime(s).astype(pandas_type, errors="ignore")
-
-        return s.dt.normalize()
+        return s.astype(pandas_type, errors="ignore").dt.normalize()
 
     @staticmethod
     def convert_Interval(s, dtype, pandas_type):
@@ -232,21 +201,83 @@ class PandasData(DataMapper):
         return result
 
     @staticmethod
-    def convert_Decimal(s, dtype, pandas_type):
-        import decimal
-
-        import pyarrow as pa
-
-        arr = pa.array(s.map(decimal.Decimal).values).cast(
-            dtype.to_pyarrow(), safe=False
-        )
-        return arr.to_pandas()
+    def convert_String(s, dtype, pandas_type):
+        return s.astype(pandas_type, errors="ignore")
 
     @staticmethod
-    def convert_String(s, dtype, pandas_type):
-        # TODO(kszucs): should switch to the new pandas string type and convert
-        # object columns using s.convert_dtypes() method
-        return s.map(str, na_action="ignore").astype(object)
+    def convert_UUID(s, dtype, pandas_type):
+        return s.map(PandasData.get_element_converter(dtype), na_action="ignore")
+
+    @staticmethod
+    def convert_Struct(s, dtype, pandas_type):
+        return s.map(PandasData.get_element_converter(dtype), na_action="ignore")
+
+    @staticmethod
+    def convert_Array(s, dtype, pandas_type):
+        return s.map(PandasData.get_element_converter(dtype), na_action="ignore")
+
+    @staticmethod
+    def convert_Map(s, dtype, pandas_type):
+        return s.map(PandasData.get_element_converter(dtype), na_action="ignore")
+
+    @staticmethod
+    def convert_JSON(s, dtype, pandas_type):
+        return s.map(
+            PandasData.get_element_converter(dtype), na_action="ignore"
+        ).astype("object")
+
+    @staticmethod
+    def get_element_converter(dtype):
+        funcgen = getattr(
+            PandasData, f"convert_{type(dtype).__name__}_element", lambda _: lambda x: x
+        )
+        return funcgen(dtype)
+
+    @staticmethod
+    def convert_Struct_element(dtype):
+        converters = tuple(map(PandasData.get_element_converter, dtype.types))
+
+        def convert(values, names=dtype.names, converters=converters):
+            items = values.items() if isinstance(values, dict) else zip(names, values)
+            return {
+                k: converter(v) if v is not None else v
+                for converter, (k, v) in zip(converters, items)
+            }
+
+        return convert
+
+    @staticmethod
+    def convert_JSON_element(_):
+        def try_json(x):
+            if x is None:
+                return x
+            try:
+                return json.loads(x)
+            except (TypeError, json.JSONDecodeError):
+                return x
+
+        return try_json
+
+    @staticmethod
+    def convert_Array_element(dtype):
+        convert_value = PandasData.get_element_converter(dtype.value_type)
+        return lambda values: [
+            convert_value(value) if value is not None else value for value in values
+        ]
+
+    @staticmethod
+    def convert_Map_element(dtype):
+        convert_value = PandasData.get_element_converter(dtype.value_type)
+        return lambda row: {
+            key: convert_value(value) if value is not None else value
+            for key, value in dict(row).items()
+        }
+
+    @staticmethod
+    def convert_UUID_element(_):
+        from uuid import UUID
+
+        return lambda v: v if isinstance(v, UUID) else UUID(v)
 
 
 class DaskData(PandasData):
