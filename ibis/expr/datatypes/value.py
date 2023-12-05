@@ -293,15 +293,21 @@ def normalize(
         except ValueError:
             raise TypeError(f"Unable to normalize {value!r} to {dtype!r}")
     elif dtype.is_json():
-        if isinstance(value, str):
+
+        def parse(val):
             try:
-                json.loads(value)
-            except json.JSONDecodeError:
-                raise TypeError(f"Invalid JSON string: {value!r}")
-            else:
-                return value
+                return json.loads(val)
+            except (TypeError, json.JSONDecodeError):
+                return val
+
+        if isinstance(value, str):
+            return parse(value)
+        elif isinstance(value, list):
+            return list(map(parse, value))
+        elif isinstance(value, dict):
+            return {k: parse(v) for k, v in value.items()}
         else:
-            return json.dumps(value)
+            return value
     elif dtype.is_binary():
         return bytes(value)
     elif dtype.is_string() or dtype.is_macaddr() or dtype.is_inet():
