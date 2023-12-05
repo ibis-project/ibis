@@ -4,8 +4,11 @@ import pytest
 import sqlglot as sg
 
 import ibis
-from ibis.backends.duckdb import Backend as DuckDBBackend
-from ibis.tests.expr.mocks import MockBackend
+
+pytest.importorskip("duckdb")
+
+from ibis.backends.duckdb import Backend as DuckDBBackend  # noqa: E402
+from ibis.tests.expr.mocks import MockBackend  # noqa: E402
 
 
 @pytest.fixture(scope="module")
