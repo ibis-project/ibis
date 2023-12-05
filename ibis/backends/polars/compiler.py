@@ -267,9 +267,11 @@ def aggregation(op, **kw):
             )
         )
 
+    # project first to handle computed group by columns
+    lf = lf.with_columns([translate(arg, **kw) for arg in op.by])
+
     if op.by:
-        group_by = [translate(arg, **kw) for arg in op.by]
-        lf = lf.group_by(group_by).agg
+        lf = lf.group_by([pl.col(by.name) for by in op.by]).agg
     else:
         lf = lf.select
 
