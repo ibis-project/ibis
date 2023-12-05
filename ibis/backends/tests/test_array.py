@@ -918,20 +918,13 @@ def test_array_flatten(backend, flatten_data, column, expected):
     backend.assert_series_equal(result, expected, check_names=False)
 
 
-polars_overflow = pytest.mark.notyet(
-    ["polars"],
-    reason="but polars overflows allocation with some inputs",
-    raises=BaseException,
-)
-
-
 @pytest.mark.notyet(
     ["datafusion"],
     reason="range isn't implemented upstream",
     raises=com.OperationNotDefinedError,
 )
 @pytest.mark.notimpl(["flink", "pandas", "dask"], raises=com.OperationNotDefinedError)
-@pytest.mark.parametrize("n", [param(-2, marks=[polars_overflow]), 0, 2])
+@pytest.mark.parametrize("n", [-2, 0, 2])
 def test_range_single_argument(con, n):
     expr = ibis.range(n)
     result = con.execute(expr)
@@ -957,44 +950,18 @@ def test_range_single_argument_unnest(con, n):
     )
 
 
-@pytest.mark.parametrize(
-    "step",
-    [
-        param(
-            -2,
-            marks=[
-                pytest.mark.notyet(
-                    ["polars"],
-                    reason="panic upstream",
-                    raises=PolarsInvalidOperationError,
-                )
-            ],
-        ),
-        param(
-            -1,
-            marks=[
-                pytest.mark.notyet(
-                    ["polars"],
-                    reason="panic upstream",
-                    raises=PolarsInvalidOperationError,
-                )
-            ],
-        ),
-        1,
-        2,
-    ],
-)
+@pytest.mark.parametrize("step", [-2, -1, 1, 2])
 @pytest.mark.parametrize(
     ("start", "stop"),
     [
         param(-7, -7),
         param(-7, 0),
         param(-7, 7),
-        param(0, -7, marks=[polars_overflow]),
+        param(0, -7),
         param(0, 0),
         param(0, 7),
-        param(7, -7, marks=[polars_overflow]),
-        param(7, 0, marks=[polars_overflow]),
+        param(7, -7),
+        param(7, 0),
         param(7, 7),
     ],
 )
