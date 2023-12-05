@@ -6,8 +6,10 @@ from pytest import param
 import ibis
 from ibis import _
 from ibis.backends.base.sql.compiler import Compiler
-from ibis.tests.sql.conftest import get_query, to_sql
+from ibis.backends.tests.sql.conftest import get_query, to_sql
 from ibis.tests.util import assert_decompile_roundtrip
+
+pytestmark = pytest.mark.duckdb
 
 
 @pytest.mark.parametrize(
