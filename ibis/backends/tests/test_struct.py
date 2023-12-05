@@ -55,13 +55,13 @@ _NULL_STRUCT_LITERAL = ibis.NA.cast("struct<a: int64, b: string, c: float64>")
 
 @pytest.mark.notimpl(["postgres"])
 @pytest.mark.parametrize("field", ["a", "b", "c"])
-def test_literal(con, field):
+def test_literal(backend, con, field):
     query = _STRUCT_LITERAL[field]
     dtype = query.type().to_pandas()
     result = pd.Series([con.execute(query)], dtype=dtype)
     result = result.replace({np.nan: None})
     expected = pd.Series([_SIMPLE_DICT[field]])
-    tm.assert_series_equal(result, expected.astype(dtype))
+    backend.assert_series_equal(result, expected.astype(dtype))
 
 
 @pytest.mark.notimpl(["postgres"])
@@ -69,16 +69,16 @@ def test_literal(con, field):
 @pytest.mark.notyet(
     ["clickhouse"], reason="clickhouse doesn't support nullable nested types"
 )
-def test_null_literal(con, field):
+def test_null_literal(backend, con, field):
     query = _NULL_STRUCT_LITERAL[field]
     result = pd.Series([con.execute(query)])
     result = result.replace({np.nan: None})
     expected = pd.Series([None], dtype="object")
-    tm.assert_series_equal(result, expected)
+    backend.assert_series_equal(result, expected)
 
 
 @pytest.mark.notimpl(["dask", "pandas", "postgres"])
-def test_struct_column(alltypes, df):
+def test_struct_column(backend, alltypes, df):
     t = alltypes
     expr = ibis.struct(dict(a=t.string_col, b=1, c=t.bigint_col)).name("s")
     assert expr.type() == dt.Struct(dict(a=dt.string, b=dt.int8, c=dt.int64))

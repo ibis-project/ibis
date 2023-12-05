@@ -17,11 +17,6 @@ import ibis.expr.datatypes as dt
 import ibis.expr.types as ir
 
 try:
-    import duckdb
-except ImportError:
-    duckdb = None
-
-try:
     from clickhouse_connect.driver.exceptions import (
         DatabaseError as ClickhouseDatabaseError,
     )
@@ -371,7 +366,7 @@ def test_unnest_simple(backend):
     )
     expr = array_types.x.cast("!array<float64>").unnest()
     result = expr.execute().astype("Float64").rename("tmp")
-    tm.assert_series_equal(result, expected)
+    backend.assert_series_equal(result, expected)
 
 
 @builtin_array
@@ -398,7 +393,7 @@ def test_unnest_complex(backend):
         .reset_index(drop=True)
     )
     result = expr.execute()
-    tm.assert_frame_equal(result, expected)
+    backend.assert_frame_equal(result, expected)
 
     # test that unnest works with to_pyarrow
     assert len(expr.to_pyarrow()) == len(result)
@@ -475,7 +470,7 @@ def test_unnest_default_name(backend):
 
     result = expr.name("x").execute()
     expected = df.x.map(lambda x: x + [1]).explode("x")
-    tm.assert_series_equal(
+    backend.assert_series_equal(
         result.astype(object).fillna(pd.NA), expected.fillna(pd.NA), check_dtype=False
     )
 
@@ -767,7 +762,7 @@ def test_array_intersect(con, data):
 )
 @pytest.mark.notimpl(["postgres"], raises=sa.exc.ProgrammingError)
 @pytest.mark.notimpl(["datafusion"], raises=com.OperationNotDefinedError)
-def test_unnest_struct(con):
+def test_unnest_struct(backend, con):
     data = {"value": [[{"a": 1}, {"a": 2}], [{"a": 3}, {"a": 4}]]}
     t = ibis.memtable(data, schema=ibis.schema({"value": "!array<!struct<a: !int>>"}))
     expr = t.value.unnest()
@@ -775,7 +770,7 @@ def test_unnest_struct(con):
     result = con.execute(expr)
 
     expected = pd.DataFrame(data).explode("value").iloc[:, 0].reset_index(drop=True)
-    tm.assert_series_equal(result, expected)
+    backend.assert_series_equal(result, expected)
 
 
 @builtin_array
@@ -940,10 +935,10 @@ def test_range_single_argument(con, n):
 @pytest.mark.notimpl(
     ["polars", "flink", "pandas", "dask"], raises=com.OperationNotDefinedError
 )
-def test_range_single_argument_unnest(con, n):
+def test_range_single_argument_unnest(backend, con, n):
     expr = ibis.range(n).unnest()
     result = con.execute(expr)
-    tm.assert_series_equal(
+    backend.assert_series_equal(
         result,
         pd.Series(list(range(n)), dtype=result.dtype, name=expr.get_name()),
         check_index=False,

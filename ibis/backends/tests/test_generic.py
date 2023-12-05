@@ -7,7 +7,6 @@ from operator import invert, methodcaller, neg
 
 import numpy as np
 import pandas as pd
-import pandas.testing as tm
 import pytest
 import sqlalchemy as sa
 import toolz
@@ -45,11 +44,6 @@ try:
     from impala.error import HiveServer2Error
 except ImportError:
     HiveServer2Error = None
-
-try:
-    from py4j.protocol import Py4JJavaError
-except ImportError:
-    Py4JJavaError = None
 
 
 NULL_BACKEND_TYPES = {
@@ -843,7 +837,7 @@ def test_exists(batting, awards_players, method_name):
     ],
     raises=com.OperationNotDefinedError,
 )
-def test_typeof(backend, con):
+def test_typeof(con):
     # Other tests also use the typeof operation, but only this test has this operation required.
     expr = ibis.literal(1).typeof()
     result = con.execute(expr)
@@ -1195,7 +1189,7 @@ def test_distinct_on_keep_is_none(backend, on):
 def test_hash_consistent(backend, alltypes):
     h1 = alltypes.string_col.hash().execute(limit=10)
     h2 = alltypes.string_col.hash().execute(limit=10)
-    tm.assert_series_equal(h1, h2)
+    backend.assert_series_equal(h1, h2)
     assert h1.dtype in ("i8", "uint64")  # polars likes returning uint64 for this
 
 
@@ -1282,14 +1276,16 @@ def test_try_cast_expected(con, from_val, to_type, expected):
         "sqlite",
     ]
 )
-def test_try_cast_table(con):
+def test_try_cast_table(backend, con):
     df = pd.DataFrame({"a": ["1", "2", None], "b": ["1.0", "2.2", "goodbye"]})
 
     expected = pd.DataFrame({"a": [1.0, 2.0, None], "b": [1.0, 2.2, None]})
 
     t = ibis.memtable(df)
 
-    tm.assert_frame_equal(con.execute(t.try_cast({"a": "int", "b": "float"})), expected)
+    backend.assert_frame_equal(
+        con.execute(t.try_cast({"a": "int", "b": "float"})), expected
+    )
 
 
 @pytest.mark.notimpl(

@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import pandas.testing as tm
 import sqlalchemy as sa
 from pytest import mark, param
 
@@ -179,7 +178,7 @@ def add_one_pyarrow(s: int) -> int:  # s is series, int is the element type
         ),
     ],
 )
-def test_vectorized_udf(batting, add_one):
+def test_vectorized_udf(backend, batting, add_one):
     batting = batting.limit(100)
 
     expr = (
@@ -195,4 +194,4 @@ def test_vectorized_udf(batting, add_one):
         .sort_values(["year_id"])
         .reset_index(drop=True)
     )
-    tm.assert_frame_equal(result, expected)
+    backend.assert_frame_equal(result, expected)
