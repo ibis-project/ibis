@@ -9,7 +9,7 @@ import ibis.expr.operations as ops
 from ibis.common.deferred import Item, _, deferred, var
 from ibis.common.exceptions import UnsupportedOperationError
 from ibis.common.patterns import Check, pattern, replace
-from ibis.util import Namespace, gen_name
+from ibis.util import Namespace
 
 p = Namespace(pattern, module=ops)
 d = Namespace(deferred, module=ops)
@@ -168,11 +168,6 @@ def reorder_filter_project(_, y):
 #
 # Project[r0]
 #   res: Subquery(Sum(Unnest((1, 2, 3))))
-
-# TODO(kszucs): add a rewrite rule for nestes JoinChain objects where the
-# JoinLink depends on another JoinChain, in this case the JoinLink should be
-# merged into the JoinChain
-
 
 # TODO(kszucs): this may work if the sort keys are not overlapping, need to revisit
 # @replace(p.Sort(y @ p.Sort))
