@@ -6,7 +6,6 @@ import re
 from pathlib import Path
 from typing import TYPE_CHECKING, Callable
 
-import pandas.testing as tm
 import pytest
 import sqlglot as sg
 from dateutil.relativedelta import relativedelta
@@ -68,7 +67,7 @@ def tpch_test(test: Callable[..., ir.Table]):
         expected.columns = result.columns
 
         assert len(expected) == len(result)
-        tm.assert_frame_equal(result, expected, check_dtype=False)
+        backend.assert_frame_equal(result, expected, check_dtype=False)
 
         # only produce sql if the execution passes
         result_expr_sql = ibis.to_sql(result_expr, dialect=backend_name)

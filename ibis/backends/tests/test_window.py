@@ -5,7 +5,6 @@ from operator import methodcaller
 
 import numpy as np
 import pandas as pd
-import pandas.testing as tm
 import pytest
 import sqlalchemy as sa
 from pytest import param
@@ -681,7 +680,7 @@ def test_simple_ungrouped_unbound_following_window(
     raises=Exception,
     reason="Exception: Error during planning: Sort operation is not applicable to scalar value NULL",
 )
-def test_simple_ungrouped_window_with_scalar_order_by(backend, alltypes):
+def test_simple_ungrouped_window_with_scalar_order_by(alltypes):
     t = alltypes[alltypes.double_col < 50].order_by("id")
     w = ibis.window(rows=(0, None), order_by=ibis.NA)
     expr = t.double_col.sum().over(w).name("double_col")
@@ -1143,7 +1142,7 @@ def test_grouped_ordered_window_coalesce(backend, alltypes, df):
     raises=Exception,
     reason="Exception: Internal error: Expects default value to have Int64 type.",
 )
-def test_mutate_window_filter(backend, alltypes, df):
+def test_mutate_window_filter(backend, alltypes):
     t = alltypes
     win = ibis.window(order_by=[t.id])
     expr = (
@@ -1190,7 +1189,7 @@ def test_first_last(backend):
             "y_last": [3, 2, 0, 1, 1],
         }
     )
-    tm.assert_frame_equal(result, expected)
+    backend.assert_frame_equal(result, expected)
 
 
 @pytest.mark.notyet(

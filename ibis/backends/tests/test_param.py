@@ -5,7 +5,6 @@ from collections import OrderedDict
 
 import numpy as np
 import pandas as pd
-import pandas.testing as tm
 import pytest
 import sqlalchemy as sa
 from pytest import param
@@ -175,7 +174,7 @@ def test_scalar_param_map(con):
         ),
     ],
 )
-def test_scalar_param(alltypes, df, value, dtype, col):
+def test_scalar_param(backend, alltypes, df, value, dtype, col):
     param = ibis.param(dtype)
     expr = alltypes.filter([_[col] == param])
 
@@ -183,7 +182,7 @@ def test_scalar_param(alltypes, df, value, dtype, col):
         expr.execute(params={param: value}).sort_values("id").reset_index(drop=True)
     )
     expected = df.loc[df[col] == value].sort_values("id").reset_index(drop=True)
-    tm.assert_frame_equal(result, expected)
+    backend.assert_frame_equal(result, expected)
 
 
 @pytest.mark.parametrize(

@@ -15,7 +15,6 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 import pandas as pd
-import pandas.testing as tm
 import pyarrow as pa
 import pytest
 import rich.console
@@ -44,7 +43,7 @@ def new_schema():
     return ibis.schema([("a", "string"), ("b", "bool"), ("c", "int32")])
 
 
-def _create_temp_table_with_schema(con, temp_table_name, schema, data=None):
+def _create_temp_table_with_schema(backend, con, temp_table_name, schema, data=None):
     temporary = con.create_table(temp_table_name, schema=schema)
     assert temporary.to_pandas().empty
 
@@ -53,7 +52,7 @@ def _create_temp_table_with_schema(con, temp_table_name, schema, data=None):
         tmp = con.create_table(temp_table_name, data, overwrite=True)
         result = tmp.to_pandas()
         assert len(result) == len(data.index)
-        tm.assert_frame_equal(
+        backend.assert_frame_equal(
             result.sort_values(result.columns[0]).reset_index(drop=True),
             data.sort_values(result.columns[0]).reset_index(drop=True),
         )
@@ -361,9 +360,10 @@ def test_separate_database(ddl_con, alternate_current_database):
 
 
 @pytest.fixture
-def employee_empty_temp_table(alchemy_con, test_employee_schema):
+def employee_empty_temp_table(alchemy_backend, alchemy_con, test_employee_schema):
     temp_table_name = f"temp_employee_empty_table_{guid()[:6]}"
     _create_temp_table_with_schema(
+        alchemy_backend,
         alchemy_con,
         temp_table_name,
         test_employee_schema,
@@ -374,12 +374,14 @@ def employee_empty_temp_table(alchemy_con, test_employee_schema):
 
 @pytest.fixture
 def employee_data_1_temp_table(
+    alchemy_backend,
     alchemy_con,
     test_employee_schema,
     test_employee_data_1,
 ):
     temp_table_name = f"temp_employee_data_1_{guid()[:6]}"
     _create_temp_table_with_schema(
+        alchemy_backend,
         alchemy_con,
         temp_table_name,
         test_employee_schema,
@@ -392,12 +394,14 @@ def employee_data_1_temp_table(
 
 @pytest.fixture
 def employee_data_2_temp_table(
+    alchemy_backend,
     alchemy_con,
     test_employee_schema,
     test_employee_data_2,
 ):
     temp_table_name = f"temp_employee_data_2_{guid()[:6]}"
     _create_temp_table_with_schema(
+        alchemy_backend,
         alchemy_con,
         temp_table_name,
         test_employee_schema,
@@ -408,6 +412,7 @@ def employee_data_2_temp_table(
 
 
 def test_insert_no_overwrite_from_dataframe(
+    alchemy_backend,
     alchemy_con,
     test_employee_data_2,
     employee_empty_temp_table,
@@ -420,7 +425,7 @@ def test_insert_no_overwrite_from_dataframe(
     )
     result = temporary.execute()
     assert len(result) == 3
-    tm.assert_frame_equal(
+    alchemy_backend.assert_frame_equal(
         result.sort_values("first_name").reset_index(drop=True),
         test_employee_data_2.sort_values("first_name").reset_index(drop=True),
     )
@@ -432,6 +437,7 @@ def test_insert_no_overwrite_from_dataframe(
     raises=sa.exc.ProgrammingError,
 )
 def test_insert_overwrite_from_dataframe(
+    alchemy_backend,
     alchemy_con,
     employee_data_1_temp_table,
     test_employee_data_2,
@@ -445,13 +451,14 @@ def test_insert_overwrite_from_dataframe(
     )
     result = temporary.execute()
     assert len(result) == 3
-    tm.assert_frame_equal(
+    alchemy_backend.assert_frame_equal(
         result.sort_values("first_name").reset_index(drop=True),
         test_employee_data_2.sort_values("first_name").reset_index(drop=True),
     )
 
 
 def test_insert_no_overwrite_from_expr(
+    alchemy_backend,
     alchemy_con,
     employee_empty_temp_table,
     employee_data_2_temp_table,
@@ -466,13 +473,14 @@ def test_insert_no_overwrite_from_expr(
     )
     result = temporary.execute()
     assert len(result) == 3
-    tm.assert_frame_equal(
+    alchemy_backend.assert_frame_equal(
         result.sort_values("first_name").reset_index(drop=True),
         from_table.execute().sort_values("first_name").reset_index(drop=True),
     )
 
 
 def test_insert_overwrite_from_expr(
+    alchemy_backend,
     alchemy_con,
     employee_data_1_temp_table,
     employee_data_2_temp_table,
@@ -487,7 +495,7 @@ def test_insert_overwrite_from_expr(
     )
     result = temporary.execute()
     assert len(result) == 3
-    tm.assert_frame_equal(
+    alchemy_backend.assert_frame_equal(
         result.sort_values("first_name").reset_index(drop=True),
         from_table.execute().sort_values("first_name").reset_index(drop=True),
     )
@@ -705,8 +713,8 @@ def tmp_db(request, tmp_path):
             ],  # hard to test in CI since tmpdir & cwd are on different drives
             id="relative-path",
         ),
-        param(lambda p: "duckdb://", id="in-memory-empty"),
-        param(lambda p: "duckdb://:memory:", id="in-memory-explicit"),
+        param(lambda _: "duckdb://", id="in-memory-empty"),
+        param(lambda _: "duckdb://:memory:", id="in-memory-explicit"),
         param(
             lambda p: f"duckdb://{p}?read_only=1",
             id="duckdb_read_write_int",
@@ -746,8 +754,8 @@ def test_connect_duckdb(url, tmp_path):
             ],  # hard to test in CI since tmpdir & cwd are on different drives
             id="relative-path",
         ),
-        param(lambda p: "sqlite://", "db", id="in-memory-empty"),
-        param(lambda p: "sqlite://:memory:", "db", id="in-memory-explicit"),
+        param(lambda _: "sqlite://", "db", id="in-memory-empty"),
+        param(lambda _: "sqlite://:memory:", "db", id="in-memory-explicit"),
     ],
 )
 def test_connect_sqlite(url, ext, tmp_path):
@@ -876,7 +884,7 @@ def test_self_join_memory_table(backend, con):
     ],
 )
 @pytest.mark.notimpl(["dask", "datafusion", "druid"])
-def test_create_from_in_memory_table(backend, con, t, temp_table):
+def test_create_from_in_memory_table(con, t, temp_table):
     con.create_table(temp_table, t)
     assert temp_table in con.list_tables()
 
