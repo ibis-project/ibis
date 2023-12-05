@@ -14,6 +14,25 @@ if TYPE_CHECKING:
 
     from ibis.backends.base import BaseBackend
 
+TEST_TABLES_GEO = {
+    "zones": ibis.schema(
+        {
+            "zone": "string",
+            "LocationID": "int32",
+            "borough": "string",
+            "geom": "geometry",
+            "x_cent": "float32",
+            "y_cent": "float32",
+        }
+    ),
+    "lines": ibis.schema(
+        {
+            "loc_id": "int32",
+            "geom": "geometry",
+        }
+    ),
+}
+
 
 class TestConf(BackendTest):
     supports_map = True
@@ -29,7 +48,10 @@ class TestConf(BackendTest):
 
     @property
     def ddl_script(self) -> Iterator[str]:
+        from ibis.backends.base.sql.alchemy.geospatial import geospatial_supported
+
         parquet_dir = self.data_dir / "parquet"
+        geojson_dir = self.data_dir / "geojson"
         for table in TEST_TABLES:
             yield (
                 f"""
@@ -37,6 +59,16 @@ class TestConf(BackendTest):
                 SELECT * FROM read_parquet('{parquet_dir / f'{table}.parquet'}')
                 """
             )
+        if geospatial_supported:
+            for table in TEST_TABLES_GEO:
+                yield (
+                    f"""
+                    INSTALL spatial;
+                    LOAD spatial;
+                    CREATE OR REPLACE TABLE {table} AS
+                    SELECT * FROM st_read('{geojson_dir / f'{table}.geojson'}')
+                    """
+                )
         yield from super().ddl_script
 
     @staticmethod
@@ -55,3 +87,29 @@ class TestConf(BackendTest):
 @pytest.fixture(scope="session")
 def con(data_dir, tmp_path_factory, worker_id):
     return TestConf.load_data(data_dir, tmp_path_factory, worker_id).connection
+
+
+@pytest.fixture(scope="session")
+def zones(con, data_dir):
+    zones = con.read_geo(data_dir / "geojson" / "zones.geojson")
+    return zones
+
+
+@pytest.fixture(scope="session")
+def lines(con, data_dir):
+    lines = con.read_geo(data_dir / "geojson" / "lines.geojson")
+    return lines
+
+
+@pytest.fixture(scope="session")
+def zones_gdf(data_dir):
+    gpd = pytest.importorskip("geopandas")
+    zones_gdf = gpd.read_file(data_dir / "geojson" / "zones.geojson")
+    return zones_gdf
+
+
+@pytest.fixture(scope="session")
+def lines_gdf(data_dir):
+    gpd = pytest.importorskip("geopandas")
+    lines_gdf = gpd.read_file(data_dir / "geojson" / "lines.geojson")
+    return lines_gdf

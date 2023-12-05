@@ -46,6 +46,67 @@ def test_read_parquet(data_dir):
     assert t.count().execute()
 
 
+@pytest.mark.xfail(
+    LINUX and SANDBOXED,
+    reason="nix on linux cannot download duckdb extensions or data due to sandboxing",
+)
+def test_load_spatial_when_geo_column(tmpdir):
+    pytest.importorskip("geoalchemy2")
+
+    # create a table with a geom column
+    path = str(tmpdir.join("test_load_spatial.ddb"))
+
+    con_db = duckdb.connect(path)
+    con_db.install_extension("spatial")
+    con_db.load_extension("spatial")
+
+    con_db.sql(
+        """
+        CREATE or REPLACE TABLE samples (name VARCHAR, geom GEOMETRY);
+
+        INSERT INTO samples VALUES
+        ('Point', ST_GeomFromText('POINT(-100 40)')),
+        ('Linestring', ST_GeomFromText('LINESTRING(0 0, 1 1, 2 1, 2 2)')),
+        ('Polygon', ST_GeomFromText('POLYGON((0 0, 1 0, 1 1, 0 1, 0 0))'));
+        SELECT * FROM samples;
+      """
+    )
+
+    del con_db
+
+    # load data from ibis and check for spatial extension
+    con = ibis.duckdb.connect(path)
+    # trigger spatial extension load
+    con.tables.samples  # noqa: B018
+
+    loaded_ext = con.sql(
+        """
+             WITH exts AS (
+               SELECT extension_name AS name, aliases FROM duckdb_extensions()
+               WHERE installed AND loaded
+             )
+             SELECT name FROM exts
+             UNION (SELECT UNNEST(aliases) AS name FROM exts)"""
+    )
+
+    assert "spatial" in loaded_ext.to_pandas().name.values
+
+
+@pytest.mark.xfail(raises=NotImplementedError)
+def test_read_geo_to_pyarrow(con, data_dir):
+    pytest.importorskip("geopandas")
+    t = con.read_geo(data_dir / "geojson" / "zones.geojson")
+    # can't convert geometry to arrow type yet
+    assert t.head().to_pyarrow()
+
+
+def test_read_geo_to_geopandas(con, data_dir):
+    gpd = pytest.importorskip("geopandas")
+    t = con.read_geo(data_dir / "geojson" / "zones.geojson")
+    gdf = t.head().to_pandas()
+    assert isinstance(gdf, gpd.GeoDataFrame)
+
+
 @pytest.mark.xfail_version(
     duckdb=["duckdb<0.7.0"], reason="read_json_auto doesn't exist", raises=exc.IbisError
 )

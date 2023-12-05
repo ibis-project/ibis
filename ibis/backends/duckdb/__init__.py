@@ -24,6 +24,7 @@ import ibis.expr.types as ir
 from ibis import util
 from ibis.backends.base import CanCreateSchema
 from ibis.backends.base.sql.alchemy import AlchemyCrossSchemaBackend
+from ibis.backends.base.sql.alchemy.geospatial import geospatial_supported
 from ibis.backends.base.sqlglot import C, F
 from ibis.backends.duckdb.compiler import DuckDBSQLCompiler
 from ibis.backends.duckdb.datatypes import DuckDBType
@@ -489,6 +490,49 @@ WHERE catalog_name = :database"""
         )
 
         view = self._compile_temp_view(table_name, source)
+        with self.begin() as con:
+            con.exec_driver_sql(view)
+        return self.table(table_name)
+
+    def read_geo(
+        self,
+        source: str,
+        table_name: str | None = None,
+        **kwargs: Any,
+    ) -> ir.Table:
+        """Register a GEO file as a table in the current database.
+
+        Parameters
+        ----------
+        source
+            The data source(s). Path to a file of geospatial files supported
+            by duckdb.
+            See https://duckdb.org/docs/extensions/spatial.html#st_read---read-spatial-data-from-files
+        table_name
+            An optional name to use for the created table. This defaults to
+            a sequentially generated name.
+        **kwargs
+            Additional keyword arguments passed to DuckDB loading function.
+            See https://duckdb.org/docs/extensions/spatial.html#st_read---read-spatial-data-from-files
+            for more information.
+
+        Returns
+        -------
+        ir.Table
+            The just-registered table
+        """
+
+        if not table_name:
+            table_name = util.gen_name("read_geo")
+
+        # load geospatial extension
+        self.load_extension("spatial")
+
+        source_expr = sa.select(sa.literal_column("*")).select_from(
+            sa.func.st_read(util.normalize_filename(source), _format_kwargs(kwargs))
+        )
+
+        view = self._compile_temp_view(table_name, source_expr)
         with self.begin() as con:
             con.exec_driver_sql(view)
         return self.table(table_name)
@@ -1156,7 +1200,30 @@ WHERE catalog_name = :database"""
                 for name, col in zip(table.column_names, table.columns)
             }
         )
-        return PandasData.convert_table(df, schema)
+        df = PandasData.convert_table(df, schema)
+        if not df.empty and geospatial_supported:
+            return self._to_geodataframe(df, schema)
+        return df
+
+    # TODO(gforsyth): this may not need to be specialized in the future
+    @staticmethod
+    def _to_geodataframe(df, schema):
+        """Convert `df` to a `GeoDataFrame`.
+
+        Required libraries for geospatial support must be installed and
+        a geospatial column is present in the dataframe.
+        """
+        import geopandas as gpd
+
+        geom_col = None
+        for name, dtype in schema.items():
+            if dtype.is_geospatial():
+                if not geom_col:
+                    geom_col = name
+                df[name] = gpd.GeoSeries.from_wkb(df[name])
+        if geom_col:
+            df = gpd.GeoDataFrame(df, geometry=geom_col)
+        return df
 
     def _metadata(self, query: str) -> Iterator[tuple[str, dt.DataType]]:
         with self.begin() as con:
@@ -1255,3 +1322,16 @@ WHERE catalog_name = :database"""
             if overwrite:
                 con.execute(t.delete())
             con.execute(t.insert().from_select(columns, sa.select(source)))
+
+    def table(
+        self,
+        name: str,
+        database: str | None = None,
+        schema: str | None = None,
+    ) -> ir.Table:
+        expr = super().table(name=name, database=database, schema=schema)
+        # load geospatial only if geo columns
+        if any(typ.is_geospatial() for typ in expr.op().schema.types):
+            self.load_extension("spatial")
+
+        return expr

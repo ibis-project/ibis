@@ -324,6 +324,8 @@ filterwarnings = [
   "ignore:the imp module is deprecated in favour of importlib:DeprecationWarning",
   # pytest raises a syntax error when encountering this from *any* module, including third party modules
   "ignore:invalid escape sequence:DeprecationWarning",
+  # geopandas raises usr warning on geometry column
+  "ignore:Geometry is in a geographic CRS",
   # `is_sparse` deprecation was addressed in pyarrow 13.0.0 (see https://github.com/apache/arrow/pull/35366),
   # but flink requires apache-beam<2.49, which caps its pyarrow dependency (see https://github.com/apache/beam/blob/v2.48.0/sdks/python/setup.py#L144)
   "ignore:is_sparse is deprecated and will be removed in a future version:FutureWarning",

@@ -20,6 +20,7 @@ from ibis.backends.base.sql.alchemy.registry import (
     reduction,
     try_cast,
 )
+from ibis.backends.duckdb.datatypes import Geometry_WKB
 from ibis.backends.postgres.registry import (
     _array_index,
     _array_slice,
@@ -53,6 +54,61 @@ _LOG_BASE_FUNCS = {
     2: sa.func.log2,
     10: sa.func.log,
 }
+
+
+def _centroid(t, op):
+    arg = t.translate(op.arg)
+    return sa.func.st_centroid(arg, type_=Geometry_WKB)
+
+
+def _geo_end_point(t, op):
+    arg = t.translate(op.arg)
+    return sa.func.st_endpoint(arg, type_=Geometry_WKB)
+
+
+def _geo_start_point(t, op):
+    arg = t.translate(op.arg)
+    return sa.func.st_startpoint(arg, type_=Geometry_WKB)
+
+
+def _envelope(t, op):
+    arg = t.translate(op.arg)
+    return sa.func.st_envelope(arg, type_=Geometry_WKB)
+
+
+def _geo_buffer(t, op):
+    arg = t.translate(op.arg)
+    radius = t.translate(op.radius)
+    return sa.func.st_buffer(arg, radius, type_=Geometry_WKB)
+
+
+def _geo_unary_union(t, op):
+    arg = t.translate(op.arg)
+    return sa.func.st_union_agg(arg, type_=Geometry_WKB)
+
+
+def _geo_point(t, op):
+    left = t.translate(op.left)
+    right = t.translate(op.right)
+    return sa.func.st_point(left, right, type_=Geometry_WKB)
+
+
+def _geo_difference(t, op):
+    left = t.translate(op.left)
+    right = t.translate(op.right)
+    return sa.func.st_difference(left, right, type_=Geometry_WKB)
+
+
+def _geo_intersection(t, op):
+    left = t.translate(op.left)
+    right = t.translate(op.right)
+    return sa.func.st_intersection(left, right, type_=Geometry_WKB)
+
+
+def _geo_union(t, op):
+    left = t.translate(op.left)
+    right = t.translate(op.right)
+    return sa.func.st_union(left, right, type_=Geometry_WKB)
 
 
 def _generic_log(arg, base, *, type_):
@@ -498,6 +554,37 @@ operation_registry.update(
         ops.ToJSONArray: _to_json_collection,
         ops.ArrayFlatten: unary(sa.func.flatten),
         ops.IntegerRange: fixed_arity(sa.func.range, 3),
+        # geospatial
+        ops.GeoPoint: _geo_point,
+        ops.GeoAsText: unary(sa.func.ST_AsText),
+        ops.GeoArea: unary(sa.func.ST_Area),
+        ops.GeoBuffer: _geo_buffer,
+        ops.GeoCentroid: _centroid,
+        ops.GeoContains: fixed_arity(sa.func.ST_Contains, 2),
+        ops.GeoCovers: fixed_arity(sa.func.ST_Covers, 2),
+        ops.GeoCoveredBy: fixed_arity(sa.func.ST_CoveredBy, 2),
+        ops.GeoCrosses: fixed_arity(sa.func.ST_Crosses, 2),
+        ops.GeoDifference: _geo_difference,
+        ops.GeoDisjoint: fixed_arity(sa.func.ST_Disjoint, 2),
+        ops.GeoDistance: fixed_arity(sa.func.ST_Distance, 2),
+        ops.GeoDWithin: fixed_arity(sa.func.ST_DWithin, 3),
+        ops.GeoEndPoint: _geo_end_point,
+        ops.GeoEnvelope: _envelope,
+        ops.GeoEquals: fixed_arity(sa.func.ST_Equals, 2),
+        ops.GeoGeometryType: unary(sa.func.ST_GeometryType),
+        ops.GeoIntersection: _geo_intersection,
+        ops.GeoIntersects: fixed_arity(sa.func.ST_Intersects, 2),
+        ops.GeoIsValid: unary(sa.func.ST_IsValid),
+        ops.GeoLength: unary(sa.func.ST_Length),
+        ops.GeoNPoints: unary(sa.func.ST_NPoints),
+        ops.GeoOverlaps: fixed_arity(sa.func.ST_Overlaps, 2),
+        ops.GeoStartPoint: _geo_start_point,
+        ops.GeoTouches: fixed_arity(sa.func.ST_Touches, 2),
+        ops.GeoUnion: _geo_union,
+        ops.GeoUnaryUnion: _geo_unary_union,
+        ops.GeoWithin: fixed_arity(sa.func.ST_Within, 2),
+        ops.GeoX: unary(sa.func.ST_X),
+        ops.GeoY: unary(sa.func.ST_Y),
     }
 )
 
