@@ -14,7 +14,7 @@ shapely = pytest.importorskip("shapely")
 
 
 def test_geospatial_point(zones, zones_gdf):
-    coord = zones.x_cent.point(zones.y_cent).name("coord")
+    coord = zones.x_cent.point(zones.y_cent)
     # this returns GeometryArray
     gp_coord = gpd.points_from_xy(zones_gdf.x_cent, zones_gdf.y_cent)
 
@@ -31,13 +31,13 @@ def test_geospatial_point(zones, zones_gdf):
 )
 def test_geospatial_unary_snapshot(operation, keywords, snapshot):
     t = ibis.table([("geom", "geometry")], name="t")
-    expr = getattr(t.geom, operation)(**keywords).name("tmp")
+    expr = getattr(t.geom, operation)(**keywords)
     snapshot.assert_match(ibis.to_sql(expr), "out.sql")
 
 
 def test_geospatial_dwithin(snapshot):
     t = ibis.table([("geom", "geometry")], name="t")
-    expr = t.geom.d_within(t.geom, 3.0).name("tmp")
+    expr = t.geom.d_within(t.geom, 3.0)
 
     snapshot.assert_match(ibis.to_sql(expr), "out.sql")
 
@@ -59,7 +59,7 @@ def test_geospatial_dwithin(snapshot):
     ],
 )
 def test_geospatial_unary_tm(op, keywords, gp_op, zones, zones_gdf):
-    expr = getattr(zones.geom, op)(**keywords).name("tmp")
+    expr = getattr(zones.geom, op)(**keywords)
     gp_expr = getattr(zones_gdf.geometry, gp_op)
 
     tm.assert_series_equal(expr.to_pandas(), gp_expr, check_names=False)
@@ -73,10 +73,10 @@ def test_geospatial_unary_tm(op, keywords, gp_op, zones, zones_gdf):
     ],
 )
 def test_geospatial_xy(op, keywords, gp_op, zones, zones_gdf):
-    cen = zones.geom.centroid().name("centroid")
+    cen = zones.geom.centroid()
     gp_cen = zones_gdf.geometry.centroid
 
-    expr = getattr(cen, op)(**keywords).name("tmp")
+    expr = getattr(cen, op)(**keywords)
     gp_expr = getattr(gp_cen, gp_op)
 
     tm.assert_series_equal(expr.to_pandas(), gp_expr, check_names=False)
@@ -85,7 +85,7 @@ def test_geospatial_xy(op, keywords, gp_op, zones, zones_gdf):
 def test_geospatial_length(lines, lines_gdf):
     # note: ST_LENGTH returns 0 for the case of polygon
     # or multi polygon while pandas geopandas returns the perimeter.
-    length = lines.geom.length().name("length")
+    length = lines.geom.length()
     gp_length = lines_gdf.geometry.length
 
     tm.assert_series_equal(length.to_pandas(), gp_length, check_names=False)
@@ -110,7 +110,7 @@ def test_geospatial_length(lines, lines_gdf):
     ],
 )
 def test_geospatial_binary_tm(op, gp_op, zones, zones_gdf):
-    expr = getattr(zones.geom, op)(zones.geom).name("tmp")
+    expr = getattr(zones.geom, op)(zones.geom)
     gp_func = getattr(zones_gdf.geometry, gp_op)(zones_gdf.geometry)
 
     tm.assert_series_equal(expr.to_pandas(), gp_func, check_names=False)
@@ -126,7 +126,7 @@ def test_geospatial_binary_tm(op, gp_op, zones, zones_gdf):
     ],
 )
 def test_geospatial_unary_gtm(op, gp_op, zones, zones_gdf):
-    expr = getattr(zones.geom, op)().name("tmp")
+    expr = getattr(zones.geom, op)()
     gp_expr = getattr(zones_gdf.geometry, gp_op)
 
     gtm.assert_geoseries_equal(expr.to_pandas(), gp_expr, check_crs=False)
@@ -143,14 +143,14 @@ def test_geospatial_unary_gtm(op, gp_op, zones, zones_gdf):
     ],
 )
 def test_geospatial_binary_gtm(op, gp_op, zones, zones_gdf):
-    expr = getattr(zones.geom, op)(zones.geom).name("tmp")
+    expr = getattr(zones.geom, op)(zones.geom)
     gp_func = getattr(zones_gdf.geometry, gp_op)(zones_gdf.geometry)
 
     gtm.assert_geoseries_equal(expr.to_pandas(), gp_func, check_crs=False)
 
 
 def test_geospatial_end_point(lines, lines_gdf):
-    epoint = lines.geom.end_point().name("end_point")
+    epoint = lines.geom.end_point()
     # geopandas does not have end_point this is a work around to get it
     gp_epoint = lines_gdf.geometry.boundary.explode(index_parts=True).xs(1, level=1)
 
@@ -158,7 +158,7 @@ def test_geospatial_end_point(lines, lines_gdf):
 
 
 def test_geospatial_start_point(lines, lines_gdf):
-    spoint = lines.geom.start_point().name("start_point")
+    spoint = lines.geom.start_point()
     # geopandas does not have start_point this is a work around to get it
     gp_spoint = lines_gdf.geometry.boundary.explode(index_parts=True).xs(0, level=1)
 
@@ -167,7 +167,7 @@ def test_geospatial_start_point(lines, lines_gdf):
 
 # this one takes a bit longer than the rest.
 def test_geospatial_unary_union(zones, zones_gdf):
-    unary_union = zones.geom.unary_union().name("unary_union")
+    unary_union = zones.geom.unary_union()
     # this returns a shapely geometry object
     gp_unary_union = zones_gdf.geometry.unary_union
 
@@ -179,7 +179,7 @@ def test_geospatial_unary_union(zones, zones_gdf):
 
 
 def test_geospatial_buffer_point(zones, zones_gdf):
-    cen = zones.geom.centroid().name("centroid")
+    cen = zones.geom.centroid()
     gp_cen = zones_gdf.geometry.centroid
 
     buffer = cen.buffer(100.0)

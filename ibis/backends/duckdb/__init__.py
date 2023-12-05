@@ -107,6 +107,27 @@ class Backend(SQLGlotBackend, CanCreateSchema):
             query = query.sql(dialect=self.name)
         return self.con.execute(query, **kwargs)
 
+    def _transform(
+        self, sql: sge.Expression, table_expr: ir.TableExpr
+    ) -> sge.Expression:
+        geocols = frozenset(
+            name for name, typ in table_expr.schema().items() if typ.is_geospatial()
+        )
+
+        if not geocols:
+            return sql
+
+        return sg.select(
+            *(
+                self.compiler.f.st_aswkb(
+                    sg.column(col, quoted=self.compiler.quoted)
+                ).as_(col)
+                if col in geocols
+                else col
+                for col in table_expr.columns
+            )
+        ).from_(sql.subquery())
+
     def create_table(
         self,
         name: str,
