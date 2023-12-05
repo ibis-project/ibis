@@ -92,12 +92,13 @@ def test_load_spatial_when_geo_column(tmpdir):
     assert "spatial" in loaded_ext.to_pandas().name.values
 
 
-@pytest.mark.xfail(raises=NotImplementedError)
 def test_read_geo_to_pyarrow(con, data_dir):
     pytest.importorskip("geopandas")
+    shapely = pytest.importorskip("shapely")
+
     t = con.read_geo(data_dir / "geojson" / "zones.geojson")
-    # can't convert geometry to arrow type yet
-    assert t.head().to_pyarrow()
+    raw_geometry = t.head().to_pyarrow()["geom"].to_pandas()
+    assert len(shapely.from_wkb(raw_geometry))
 
 
 def test_read_geo_to_geopandas(con, data_dir):
