@@ -48,7 +48,7 @@ def test_macaddr_literal(con, backend):
             {
                 "bigquery": "127.0.0.1",
                 "clickhouse": IPv4Address("127.0.0.1"),
-                "duckdb": IPv4Address("127.0.0.1"),
+                "duckdb": "127.0.0.1",
                 "snowflake": "127.0.0.1",
                 "sqlite": "127.0.0.1",
                 "trino": "127.0.0.1",
@@ -80,7 +80,7 @@ def test_macaddr_literal(con, backend):
             {
                 "bigquery": "2001:db8::1",
                 "clickhouse": IPv6Address("2001:db8::1"),
-                "duckdb": IPv6Address("2001:db8::1"),
+                "duckdb": "2001:db8::1",
                 "snowflake": "2001:db8::1",
                 "sqlite": "2001:db8::1",
                 "trino": "2001:db8::1",
