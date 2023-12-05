@@ -325,7 +325,7 @@ def normalize(
             k: normalize(
                 dtype.value_type, v, none=none, strict=strict, immutable=immutable
             )
-            for k, v in value.items()
+            for k, v in value
         }
         return frozendict(mapping) if immutable else mapping
     elif dtype.is_struct():
