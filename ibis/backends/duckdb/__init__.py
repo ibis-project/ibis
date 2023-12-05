@@ -663,6 +663,20 @@ class Backend(SQLGlotBackend, CanCreateSchema):
             sg.to_identifier(key).eq(sge.convert(val)) for key, val in kwargs.items()
         ]
 
+        if (columns := kwargs.pop("columns", None)) is not None:
+            options.append(
+                sg.to_identifier("columns").eq(
+                    sge.Struct(
+                        expressions=[
+                            sge.Slice(
+                                this=sge.convert(key), expression=sge.convert(value)
+                            )
+                            for key, value in columns.items()
+                        ]
+                    )
+                )
+            )
+
         self._create_temp_view(
             table_name,
             sg.select(STAR).from_(self.compiler.f.read_csv(source_list, *options)),
