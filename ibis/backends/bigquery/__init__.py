@@ -634,8 +634,8 @@ class Backend(SQLGlotBackend, CanCreateSchema):
         query = sql.transform(
             partial(
                 _qualify_memtable,
-                dataset=getattr(session_dataset, "dataset_id", None),
-                project=getattr(session_dataset, "project", None),
+                dataset=session_dataset.dataset_id,
+                project=session_dataset.project,
             )
         )
         queries.append(query)
