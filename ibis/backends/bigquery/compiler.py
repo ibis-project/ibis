@@ -184,7 +184,7 @@ class BigQueryCompiler(SQLGlotCompiler):
 
     @visit_node.register(ops.StringJoin)
     def visit_StringJoin(self, op, *, sep, arg):
-        return self.f.array_to_string(self.f.array(arg), sep)
+        return self.f.array_to_string(self.f.array(*arg), sep)
 
     @visit_node.register(ops.StringAscii)
     def visit_StringAscii(self, op, *, arg):
