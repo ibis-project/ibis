@@ -2273,12 +2273,12 @@ def test_time_literal(con, backend):
 @pytest.mark.broken(
     ["sqlite"], raises=AssertionError, reason="SQLite returns Timedelta from execution"
 )
-@pytest.mark.notimpl(["dask", "datafusion"], raises=com.OperationNotDefinedError)
+@pytest.mark.notimpl(["dask"], raises=com.OperationNotDefinedError)
 @pytest.mark.notyet(["oracle"], raises=sa.exc.DatabaseError)
 @pytest.mark.parametrize(
     "microsecond",
     [
-        0,
+        param(0, id="second"),
         param(
             561021,
             marks=[
@@ -2301,9 +2301,9 @@ def test_time_literal(con, backend):
                     ),
                 ),
             ],
+            id="subsecond",
         ),
     ],
-    ids=["second", "subsecond"],
 )
 @pytest.mark.notimpl(["exasol"], raises=ExaQueryError)
 def test_extract_time_from_timestamp(con, microsecond):

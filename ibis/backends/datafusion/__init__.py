@@ -587,7 +587,7 @@ class Backend(SQLGlotBackend, CanCreateDatabase, CanCreateSchema):
 
             self._run_pre_execute_hooks(table)
 
-            query = self._to_sqlglot(table)
+            (query,) = self._to_sqlglot(table)
         else:
             query = None
 
