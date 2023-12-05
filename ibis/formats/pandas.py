@@ -231,14 +231,16 @@ class PandasData(DataMapper):
             result = s.__class__(result, index=s.index, name=s.name)
         return result
 
-    # @staticmethod
-    # def convert_Decimal(s, dtype, pandas_type):
-    #     import decimal
-    #     import pyarrow as pa
-    #     arr = pa.array(s.map(decimal.Decimal).values).cast(
-    #         dtype.to_pyarrow(), safe=False
-    #     )
-    #     return arr.to_pandas()
+    @staticmethod
+    def convert_Decimal(s, dtype, pandas_type):
+        import decimal
+
+        import pyarrow as pa
+
+        arr = pa.array(s.map(decimal.Decimal).values).cast(
+            dtype.to_pyarrow(), safe=False
+        )
+        return arr.to_pandas()
 
     @staticmethod
     def convert_String(s, dtype, pandas_type):
