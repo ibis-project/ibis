@@ -89,7 +89,7 @@ _MEMTABLE_PATTERN = re.compile(r"^_?ibis_(?:pandas|pyarrow)_memtable_[a-z0-9]{26
 def _qualify_memtable(
     node: sge.Expression, *, dataset: str | None, project: str | None
 ) -> sge.Expression:
-    """Add a BigQuery dataset and project to memtable references."""
+    """Add a BigQuery dataset and project to ibis memtable references."""
     if isinstance(node, sge.Table) and _MEMTABLE_PATTERN.match(node.name) is not None:
         node.args["db"] = dataset
         node.args["catalog"] = project
@@ -451,6 +451,7 @@ class Backend(SQLGlotBackend, CanCreateSchema):
         collate: str | None = None,
         **options: Any,
     ) -> None:
+        """Create a BigQuery dataset."""
         properties = [
             sge.Property(this=sg.to_identifier(name), value=sge.convert(value))
             for name, value in (options or {}).items()
