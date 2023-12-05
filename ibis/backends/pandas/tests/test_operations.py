@@ -289,7 +289,7 @@ def test_null_if_zero(t, df, column):
 )
 def test_nullif(t, df, left, right, expected, compare):
     expr = left(t).nullif(right(t))
-    result = expr.execute()
+    result = Backend().execute(expr)
     compare(result, expected(df))
 
 

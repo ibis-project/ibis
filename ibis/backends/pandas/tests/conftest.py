@@ -10,8 +10,8 @@ import pytest
 import ibis
 import ibis.expr.datatypes as dt
 from ibis.backends.conftest import TEST_TABLES
-from ibis.backends.tests.base import BackendTest
 from ibis.backends.pandas import Backend
+from ibis.backends.tests.base import BackendTest
 from ibis.backends.tests.data import array_types, json_types, struct_types, win
 
 
