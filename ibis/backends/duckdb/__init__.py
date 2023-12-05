@@ -683,7 +683,7 @@ class Backend(SQLGlotBackend, CanCreateSchema):
         # load geospatial extension
         self.load_extension("spatial")
 
-        source_expr = sg.select(STAR).select_from(
+        source_expr = sg.select(STAR).from_(
             self.compiler.f.st_read(
                 util.normalize_filename(source),
                 *(sg.to_identifier(key).eq(val) for key, val in kwargs.items()),
@@ -693,7 +693,7 @@ class Backend(SQLGlotBackend, CanCreateSchema):
         view = sge.Create(
             kind="VIEW",
             this=sg.table(table_name, quoted=self.compiler.quoted),
-            properties=sge.Properties(expressions=[sge.TemporalProperty()]),
+            properties=sge.Properties(expressions=[sge.TemporaryProperty()]),
             expression=source_expr,
         )
         with self._safe_raw_sql(view):
