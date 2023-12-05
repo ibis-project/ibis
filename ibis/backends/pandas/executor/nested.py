@@ -69,7 +69,7 @@ def execute_unnest(op, arg):
 
 def safe_method(mapping, method, *args, **kwargs):
     if mapping is None or mapping is pd.NA:
-        return mapping
+        return None
     try:
         method = getattr(mapping, method)
     except AttributeError:
@@ -100,7 +100,7 @@ def safe_keys(mapping):
 
 def safe_values(mapping):
     result = safe_method(mapping, "values")
-    if result is None:
+    if result is None or result is pd.NA:
         return None
     # list(...) to unpack iterable
     return np.array(list(result), dtype="object")

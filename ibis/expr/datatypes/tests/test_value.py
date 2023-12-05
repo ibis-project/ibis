@@ -335,13 +335,14 @@ def test_infer_numpy_array(numpy_array, expected_dtypes):
 
 def test_normalize_json():
     obj = ["foo", {"bar": ("baz", None, 1.0, 2)}]
-    expected = json.dumps(obj)
+    expected = obj
 
     assert dt.normalize(dt.json, obj) == expected
     assert dt.normalize(dt.json, expected) == expected
-
-    with pytest.raises(TypeError):
-        dt.normalize(dt.json, "invalid")
+    assert dt.normalize(dt.json, json.dumps(obj)) == [
+        "foo",
+        {"bar": ["baz", None, 1.0, 2]},
+    ]
 
 
 def test_normalize_none_with_non_nullable_type():

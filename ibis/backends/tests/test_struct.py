@@ -21,15 +21,16 @@ pytestmark = [
 @pytest.mark.parametrize(
     ("field", "expected"),
     [
-        ("a", [1.0, 2.0, 3.0, pd.NA, 2.0, pd.NA, 3.0]),
-        ("b", ["banana", "apple", "orange", "banana", pd.NA, pd.NA, "orange"]),
-        ("c", [2, 3, 4, 2, 3, pd.NA, pd.NA]),
+        ("a", [1.0, 2.0, 3.0, np.nan, 2.0, np.nan, 3.0]),
+        ("b", ["banana", "apple", "orange", "banana", None, None, "orange"]),
+        ("c", [2, 3, 4, 2, 3, np.nan, np.nan]),
     ],
 )
 def test_single_field(backend, struct, struct_df, field, expected):
     expr = struct.abc[field]
     result = expr.execute()
-    assert result.tolist() == expected
+    equal_nan = expr.type().is_numeric()
+    assert np.array_equal(result, expected, equal_nan=equal_nan)
 
 
 @pytest.mark.notimpl(["dask"])

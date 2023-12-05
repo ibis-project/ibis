@@ -268,8 +268,7 @@ def normalize(
     elif none is not EMPTY and value is none:
         if not dtype.nullable:
             raise TypeError(f"Cannot convert `{none}` to non-nullable type {typ!r}")
-        # preserve sentinel value
-        return none
+        return None
     elif dtype.is_boolean():
         try:
             return bool(value)
@@ -327,11 +326,12 @@ def normalize(
         ]
         return tuple(array) if immutable else array
     elif dtype.is_map():
+        pairs = value if not isinstance(value, Mapping) else value.items()
         mapping = {
             k: normalize(
                 dtype.value_type, v, none=none, strict=strict, immutable=immutable
             )
-            for k, v in (value if not isinstance(value, Mapping) else value.items())
+            for k, v in pairs
         }
         return frozendict(mapping) if immutable else mapping
     elif dtype.is_struct():
