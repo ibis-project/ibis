@@ -4,8 +4,8 @@ import numpy as np
 import pandas as pd
 
 import ibis.expr.operations as ops
-from ibis.backends.pandas.newpandas import execute
-from ibis.backends.pandas.newutils import elementwise, rowwise, serieswise
+from ibis.backends.pandas.executor.core import execute
+from ibis.backends.pandas.executor.utils import elementwise, rowwise, serieswise
 
 
 def _timestamp_truncate(arg, unit):

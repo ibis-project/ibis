@@ -11,10 +11,7 @@ from packaging.version import parse as vparse
 
 import ibis
 import ibis.expr.datatypes as dt
-import ibis.expr.operations as ops
-from ibis.backends.base.df.scope import Scope
 from ibis.backends.pandas import Backend
-from ibis.backends.pandas.dispatch import pre_execute
 from ibis.backends.pandas.tests.conftest import TestConf as tm
 from ibis.common.annotations import ValidationError
 from ibis.legacy.udf.vectorized import reduction
@@ -511,29 +508,6 @@ def test_window_with_mlb():
                 ibis.trailing_window(rows_with_mlb, order_by="time")
             )
         )
-
-
-def test_window_has_pre_execute_scope():
-    called = [0]
-
-    @pre_execute.register(ops.Lag, Backend)
-    def test_pre_execute(op, client, **kwargs):
-        called[0] += 1
-        return Scope()
-
-    data = {"key": list("abc"), "value": [1, 2, 3], "dup": list("ggh")}
-    df = pd.DataFrame(data, columns=["key", "value", "dup"])
-    client = ibis.pandas.connect({"df": df})
-    t = client.table("df")
-    window = ibis.window(order_by="value")
-    expr = t.key.lag(1).over(window).name("foo")
-    result = expr.execute()
-    assert result is not None
-
-    # once in window op at the top to pickup any scope changes before computing
-    # twice in window op when calling execute on the ops.Lag node at the
-    # beginning of execute and once before the actual computation
-    assert called[0] == 3
 
 
 def test_window_grouping_key_has_scope(t, df):

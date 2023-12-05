@@ -49,9 +49,6 @@ class BasePandasBackend(BaseBackend):
         >>> ibis.pandas.connect({"t": pd.DataFrame({"a": [1, 2, 3]})})
         <ibis.backends.pandas.Backend at 0x...>
         """
-        # register dispatchers
-        from ibis.backends.pandas import execution, udf  # noqa: F401
-
         self.dictionary = dictionary or {}
         self.schemas: MutableMapping[str, sch.Schema] = {}
 
@@ -256,19 +253,10 @@ class BasePandasBackend(BaseBackend):
     def _get_operations(cls):
         backend = f"ibis.backends.{cls.name}"
 
-        execution = importlib.import_module(f"{backend}.execution")
-        execute_node = execution.execute_node
-
-        # import UDF to pick up AnalyticVectorizedUDF and others
-        importlib.import_module(f"{backend}.udf")
-
-        dispatch = importlib.import_module(f"{backend}.dispatch")
-        pre_execute = dispatch.pre_execute
+        executor = importlib.import_module(f"{backend}.executor")
 
         return frozenset(
-            op
-            for op, *_ in execute_node.funcs.keys() | pre_execute.funcs.keys()
-            if issubclass(op, ops.Value)
+            op for op in executor.execute.registry.keys() if issubclass(op, ops.Value)
         )
 
     @classmethod
@@ -329,44 +317,24 @@ class Backend(BasePandasBackend):
     name = "pandas"
 
     def execute(self, query, params=None, limit="default", **kwargs):
-        import ibis.backends.pandas.newarrays
-        import ibis.backends.pandas.newmaps
-        import ibis.backends.pandas.newnumeric
-        import ibis.backends.pandas.newreductions
-        import ibis.backends.pandas.newstrings
-        import ibis.backends.pandas.newtemporal
-        import ibis.backends.pandas.newudf
-        import ibis.backends.pandas.newwindows
-        from ibis.backends.pandas.newpandas import zuper
+        from ibis.backends.pandas.executor import zuper
+
+        if limit != "default" and limit is not None:
+            raise ValueError(
+                "limit parameter to execute is not yet implemented in the "
+                "pandas backend"
+            )
+
+        if not isinstance(query, ir.Expr):
+            raise TypeError(
+                "`query` has type {!r}, expected ibis.expr.types.Expr".format(
+                    type(query).__name__
+                )
+            )
 
         params = params or {}
         params = {k.op() if isinstance(k, ir.Expr) else k: v for k, v in params.items()}
         return zuper(query.op(), params=params)
-        # from ibis.backends.pandas.core import execute_and_reset
-
-        # if limit != "default" and limit is not None:
-        #     raise ValueError(
-        #         "limit parameter to execute is not yet implemented in the "
-        #         "pandas backend"
-        #     )
-
-        # if not isinstance(query, ir.Expr):
-        #     raise TypeError(
-        #         "`query` has type {!r}, expected ibis.expr.types.Expr".format(
-        #             type(query).__name__
-        #         )
-        #     )
-
-        # node = query.op()
-
-        # if params is None:
-        #     params = {}
-        # else:
-        #     params = {
-        #         k.op() if isinstance(k, ir.Expr) else k: v for k, v in params.items()
-        #     }
-
-        # return execute_and_reset(node, params=params, **kwargs)
 
     def _load_into_cache(self, name, expr):
         self.create_table(name, expr.execute())

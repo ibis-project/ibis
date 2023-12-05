@@ -1536,7 +1536,7 @@ def test_grouped_case(backend, con):
     ["datafusion", "mssql", "polars", "exasol"], raises=com.OperationNotDefinedError
 )
 @pytest.mark.broken(
-    ["dask", "pandas"],
+    ["dask"],
     reason="Dask and Pandas do not windowize this operation correctly",
     raises=AssertionError,
 )

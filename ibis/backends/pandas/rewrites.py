@@ -7,7 +7,7 @@ import ibis.expr.operations as ops
 from ibis.common.annotations import attribute
 from ibis.common.collections import FrozenDict
 from ibis.common.patterns import replace
-from ibis.common.typing import VarTuple
+from ibis.common.typing import VarTuple  # noqa: TCH001
 from ibis.expr.schema import Schema
 from ibis.util import gen_name
 
@@ -96,7 +96,7 @@ def is_columnar(node):
 @replace(ops.Project)
 def rewrite_project(_):
     winfuncs = []
-    for k, v in _.values.items():
+    for v in _.values.values():
         winfuncs.extend(v.find(ops.WindowFunction, ops.Value))
 
     if not winfuncs:
@@ -139,12 +139,12 @@ def rewrite_project(_):
 @replace(ops.Aggregate)
 def rewrite_aggregate(_):
     selects = {ops.Field(_.parent, k): k for k in _.parent.schema}
-    for _k, v in _.groups.items():
+    for v in _.groups.values():
         if v not in selects:
             selects[v] = gen_name("group")
 
     reductions = {}
-    for _k, v in _.metrics.items():
+    for v in _.metrics.values():
         for reduction in v.find_topmost(ops.Reduction):
             for arg in reduction.__args__:
                 if is_columnar(arg) and arg not in selects:

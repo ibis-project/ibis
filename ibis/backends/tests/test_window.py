@@ -460,7 +460,6 @@ def test_ungrouped_bounded_expanding_window(
 )
 @pytest.mark.notimpl(["polars"], raises=com.OperationNotDefinedError)
 @pytest.mark.notimpl(["dask"], raises=NotImplementedError)
-@pytest.mark.notimpl(["pandas"], raises=AssertionError)
 @pytest.mark.notimpl(["flink"], raises=com.UnsupportedOperationError)
 def test_grouped_bounded_following_window(backend, alltypes, df, preceding, following):
     window = ibis.window(

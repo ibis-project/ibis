@@ -6,8 +6,7 @@ import numpy as np
 import pandas as pd
 
 import ibis.expr.operations as ops
-from ibis.backends.pandas.newpandas import execute
-from ibis.backends.pandas.newutils import columnwise, rowwise
+from ibis.backends.pandas.executor.core import execute
 from ibis.common.exceptions import OperationNotDefinedError
 
 # these are serieswise functions
@@ -198,5 +197,16 @@ def execute_count_distinct_star(op, arg, where):
             return df.nunique()
         else:
             return df[where.name].nunique()
+
+    return agg
+
+
+@execute.register(ops.ReductionVectorizedUDF)
+def execute_reduction_udf(op, func, func_args, input_type, return_type):
+    """Execute a reduction UDF."""
+
+    def agg(df):
+        args = [df[col.name] for col in func_args]
+        return func(*args)
 
     return agg

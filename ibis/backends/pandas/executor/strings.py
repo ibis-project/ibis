@@ -11,8 +11,8 @@ import numpy as np
 import pandas as pd
 
 import ibis.expr.operations as ops
-from ibis.backends.pandas.newpandas import execute
-from ibis.backends.pandas.newutils import (
+from ibis.backends.pandas.executor.core import execute
+from ibis.backends.pandas.executor.utils import (
     asframe,
     columnwise,
     elementwise,

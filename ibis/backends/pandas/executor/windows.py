@@ -3,8 +3,8 @@ from __future__ import annotations
 import pandas as pd
 
 import ibis.expr.operations as ops
-from ibis.backends.pandas.newpandas import execute
-from ibis.backends.pandas.newutils import asseries
+from ibis.backends.pandas.executor.core import execute
+from ibis.backends.pandas.executor.utils import asseries
 
 
 class UngroupedFrame:

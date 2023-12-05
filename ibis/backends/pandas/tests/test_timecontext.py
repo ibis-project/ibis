@@ -15,8 +15,6 @@ from ibis.backends.base.df.timecontext import (
     compare_timecontext,
     construct_time_context_aware_series,
 )
-from ibis.backends.pandas.execution import execute
-from ibis.backends.pandas.execution.window import trim_window_result
 from ibis.backends.pandas.tests.conftest import TestConf as tm
 
 # class CustomAsOfJoin(ops.AsOfJoin):
