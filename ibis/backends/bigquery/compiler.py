@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import contextlib
 import math
-from functools import reduce, singledispatchmethod
+from functools import singledispatchmethod
 
 import sqlglot as sg
 import sqlglot.expressions as sge
@@ -61,16 +61,6 @@ from ibis.common.temporal import DateUnit, IntervalUnit, TimeUnit
 #     return _.copy(frame=x.copy(start=None, end=None))
 #
 #
-# @replace(p.Log2)
-# def replace_log2(_):
-#     return ops.Log(_.arg, base=2)
-#
-#
-# @replace(p.Log10)
-# def replace_log10(_):
-#     return ops.Log(_.arg, base=10)
-#
-#
 # @replace(p.ToJSONMap | p.ToJSONArray)
 # def replace_to_json(_):
 #     return ops.Cast(_.arg, to=_.dtype)
@@ -84,9 +74,15 @@ class BigQueryCompiler(SQLGlotCompiler):
     quoted = True
     type_mapper = BigQueryType
 
-    NAN = sge.Cast(this=sge.convert("NaN"), to=sge.DataType(this=sge.DataType.Type.DOUBLE))
-    POS_INF = sge.Cast(this=sge.convert("Inf"), to=sge.DataType(this=sge.DataType.Type.DOUBLE))
-    NEG_INF = sge.Cast(this=sge.convert("-Inf"), to=sge.DataType(this=sge.DataType.Type.DOUBLE))
+    NAN = sge.Cast(
+        this=sge.convert("NaN"), to=sge.DataType(this=sge.DataType.Type.DOUBLE)
+    )
+    POS_INF = sge.Cast(
+        this=sge.convert("Inf"), to=sge.DataType(this=sge.DataType.Type.DOUBLE)
+    )
+    NEG_INF = sge.Cast(
+        this=sge.convert("-Inf"), to=sge.DataType(this=sge.DataType.Type.DOUBLE)
+    )
     # rewrites = (
     #     replace_to_json,
     #     exclude_unsupported_window_frame_from_row_number,
@@ -94,8 +90,6 @@ class BigQueryCompiler(SQLGlotCompiler):
     #     rewrite_first,
     #     rewrite_last,
     #     rewrite_empty_order_by_window,
-    #     replace_log2,
-    #     replace_log10,
     #     *SQLGlotCompiler.rewrites,
     # )
 
