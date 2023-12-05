@@ -17,78 +17,68 @@ import operator
 from operator import methodcaller
 
 import pytest
-import sqlglot as sg
 from pytest import param
-from sqlalchemy import types as sat
 
 import ibis
-import ibis.expr.datatypes as dt
-from ibis.backends.base.sql.alchemy import AlchemyCompiler, BaseAlchemyBackend
-from ibis.backends.base.sql.alchemy.datatypes import AlchemyType, ArrayType
-from ibis.tests.expr.mocks import MockAlchemyBackend
-from ibis.tests.util import assert_decompile_roundtrip, assert_equal
+from ibis.backends.tests.sql.conftest import to_sql
+from ibis.tests.util import assert_decompile_roundtrip
 
-sa = pytest.importorskip("sqlalchemy")
-
-
-L = sa.literal
-
-
-def to_sql(expr, *args, **kwargs) -> str:
-    compiled = AlchemyCompiler.to_sql(expr, *args, **kwargs)
-    sqlstring = str(compiled.compile(compile_kwargs=dict(literal_binds=True)))
-    return sg.parse_one(sqlstring).sql(pretty=True, dialect="duckdb")
+pytestmark = pytest.mark.duckdb
 
 
 @pytest.fixture(scope="module")
-def con():
-    return MockAlchemyBackend()
+def star1():
+    return ibis.table(
+        [
+            ("c", "int32"),
+            ("f", "double"),
+            ("foo_id", "string"),
+            ("bar_id", "string"),
+        ],
+        name="star1",
+    )
 
 
 @pytest.fixture(scope="module")
-def star1(con):
-    return con.table("star1")
+def functional_alltypes():
+    return ibis.table(
+        {
+            "id": "int32",
+            "bool_col": "boolean",
+            "tinyint_col": "int8",
+            "smallint_col": "int16",
+            "int_col": "int32",
+            "bigint_col": "int64",
+            "float_col": "float32",
+            "double_col": "float64",
+            "date_string_col": "string",
+            "string_col": "string",
+            "timestamp_col": "timestamp",
+            "year": "int32",
+            "month": "int32",
+        },
+        name="functional_alltypes",
+    )
 
 
 @pytest.fixture(scope="module")
-def functional_alltypes(con):
-    return con.table("functional_alltypes")
-
-
-@pytest.fixture(scope="module")
-def alltypes(con):
-    return con.table("alltypes")
-
-
-def test_sqla_schema_conversion():
-    typespec = [
-        # name, type, nullable
-        ("smallint", sat.SMALLINT, False, dt.int16),
-        ("smallint_", sat.SmallInteger, False, dt.int16),
-        ("int", sat.INTEGER, True, dt.int32),
-        ("integer", sat.INTEGER, True, dt.int32),
-        ("integer_", sat.Integer, True, dt.int32),
-        ("bigint", sat.BIGINT, False, dt.int64),
-        ("bigint_", sat.BigInteger, False, dt.int64),
-        ("real", sat.REAL, True, dt.float32),
-        ("bool", sat.BOOLEAN, True, dt.bool),
-        ("bool_", sat.Boolean, True, dt.bool),
-        ("timestamp", sat.DATETIME, True, dt.timestamp),
-        ("timestamp_", sat.DateTime, True, dt.timestamp),
-    ]
-
-    sqla_types = []
-    ibis_types = []
-    for name, t, nullable, ibis_type in typespec:
-        sqla_types.append(sa.Column(name, t, nullable=nullable))
-        ibis_types.append((name, ibis_type(nullable=nullable)))
-
-    table = sa.Table("tname", sa.MetaData(), *sqla_types)
-
-    schema = BaseAlchemyBackend._schema_from_sqla_table(table)
-    expected = ibis.schema(ibis_types)
-
-    assert_equal(schema, expected)
+def alltypes():
+    return ibis.table(
+        [
+            ("a", "int8"),
+            ("b", "int16"),
+            ("c", "int32"),
+            ("d", "int64"),
+            ("e", "float32"),
+            ("f", "float64"),
+            ("g", "string"),
+            ("h", "boolean"),
+            ("i", "timestamp"),
+            ("j", "date"),
+            ("k", "time"),
+        ],
+        name="alltypes",
+    )
 
 
 @pytest.mark.parametrize("opname", ["ge", "gt", "lt", "le", "eq", "ne"])
@@ -151,9 +141,9 @@ def test_named_expr(functional_alltypes, snapshot):
     ],
     ids=["inner", "left", "outer", "inner_select", "left_select", "outer_select"],
 )
-def test_joins(con, expr_fn, snapshot):
-    region = con.table("tpch_region")
-    nation = con.table("tpch_nation")
+def test_joins(tpch_region, tpch_nation, expr_fn, snapshot):
+    region = tpch_region
+    nation = tpch_nation
 
     expr = expr_fn(region, nation)
     snapshot.assert_match(to_sql(expr), "out.sql")
@@ -170,11 +160,11 @@ def test_join_just_materialized(nation, region, customer, snapshot):
     snapshot.assert_match(to_sql(joined), "out.sql")
 
 
-def test_full_outer_join(con):
+def test_full_outer_join(tpch_region, tpch_nation):
     """Testing full outer join separately due to previous issue with outer join
     resulting in left outer join (issue #1773)"""
-    region = con.table("tpch_region")
-    nation = con.table("tpch_nation")
+    region = tpch_region
+    nation = tpch_nation
 
     predicate = region.r_regionkey == nation.n_regionkey
     joined = region.outer_join(nation, predicate)
@@ -247,9 +237,9 @@ def test_limit_subquery(star1, snapshot):
     snapshot.assert_match(to_sql(expr), "out.sql")
 
 
-def test_cte_factor_distinct_but_equal(con, snapshot):
-    t = con.table("alltypes")
-    tt = con.table("alltypes")
+def test_cte_factor_distinct_but_equal(alltypes, snapshot):
+    t = alltypes
+    tt = alltypes.view()
 
     expr1 = t.group_by("g").aggregate(t.f.sum().name("metric"))
     expr2 = tt.group_by("g").aggregate(tt.f.sum().name("metric")).view()
@@ -267,8 +257,8 @@ def test_self_reference_join(star1, snapshot):
     snapshot.assert_match(to_sql(expr), "out.sql")
 
 
-def test_self_reference_in_not_exists(con, snapshot):
-    t = con.table("functional_alltypes")
+def test_self_reference_in_not_exists(functional_alltypes, snapshot):
+    t = functional_alltypes
     t2 = t.view()
 
     cond = (t.string_col == t2.string_col).any()
@@ -318,7 +308,7 @@ def test_lower_projection_sort_key(star1, star2, snapshot):
     assert_decompile_roundtrip(expr2, snapshot)
 
 
-def test_exists(con, foo_t, bar_t, snapshot):
+def test_exists(foo_t, bar_t, snapshot):
     t1 = foo_t
     t2 = bar_t
     cond = (t1.key1 == t2.key1).any()
@@ -500,57 +490,6 @@ def test_multi_join(snapshot):
     snapshot.assert_match(to_sql(expr), "out.sql")
 
 
-def test_tpc_h11(snapshot):
-    NATION = "GERMANY"
-    FRACTION = 0.0001
-
-    partsupp = ibis.table(
-        dict(
-            ps_partkey="int32",
-            ps_suppkey="int32",
-            ps_availqty="int32",
-            ps_supplycost="decimal(15, 2)",
-        ),
-        name="partsupp",
-    )
-    supplier = ibis.table(
-        dict(s_suppkey="int32", s_nationkey="int32"),
-        name="supplier",
-    )
-    nation = ibis.table(
-        dict(n_nationkey="int32", n_name="string"),
-        name="nation",
-    )
-
-    q = partsupp
-    q = q.join(supplier, partsupp.ps_suppkey == supplier.s_suppkey)
-    q = q.join(nation, nation.n_nationkey == supplier.s_nationkey)
-
-    q = q.filter([q.n_name == NATION])
-
-    innerq = partsupp
-    innerq = innerq.join(supplier, partsupp.ps_suppkey == supplier.s_suppkey)
-    innerq = innerq.join(nation, nation.n_nationkey == supplier.s_nationkey)
-    innerq = innerq.filter([innerq.n_name == NATION])
-    innerq = innerq.aggregate(total=(innerq.ps_supplycost * innerq.ps_availqty).sum())
-
-    gq = q.group_by([q.ps_partkey])
-    q = gq.aggregate(value=(q.ps_supplycost * q.ps_availqty).sum())
-    q = q.filter([q.value > innerq.total * FRACTION])
-    q = q.order_by(ibis.desc(q.value))
-
-    snapshot.assert_match(to_sql(q), "out.sql")
-
-
-def test_to_sqla_type_array_of_non_primitive():
-    result = AlchemyType.from_ibis(dt.Array(dt.Struct(dict(a="int"))))
-    [(result_name, result_type)] = result.value_type.fields.items()
-    expected_name = "a"
-    assert result_name == expected_name
-    assert type(result_type) == sat.BigInteger
-    assert isinstance(result, ArrayType)
-
-
 def test_no_cart_join(snapshot):
     facts = ibis.table(dict(product_id="!int32"), name="facts")
     products = ibis.table(
@@ -583,33 +522,3 @@ def test_order_by_expr(snapshot):
     t = ibis.table(dict(a="int", b="string"), name="t")
     expr = t[lambda t: t.a == 1].order_by(lambda t: t.b + "a")
     snapshot.assert_match(to_sql(expr), "out.sql")
-
-
-def test_tpc_h17(snapshot):
-    BRAND = "Brand#23"
-    CONTAINER = "MED BOX"
-
-    lineitem = ibis.table(
-        dict(
-            l_partkey="!int32", l_quantity="!int32", l_extendedprice="!decimal(15, 2)"
-        ),
-        name="lineitem",
-    )
-    part = ibis.table(
-        dict(p_partkey="!int32", p_brand="!string", p_container="!string"), name="part"
-    )
-
-    q = lineitem.join(part, part.p_partkey == lineitem.l_partkey)
-    innerq = lineitem.filter([lineitem.l_partkey == q.p_partkey])
-    q = q.filter(
-        [
-            q.p_brand == BRAND,
-            q.p_container == CONTAINER,
-            q.l_quantity < (0.2 * innerq.l_quantity.mean()),
-        ]
-    )
-    q = q.aggregate(
-        avg_yearly=q.l_extendedprice.sum() / ibis.literal(7.0, type="decimal(15, 2)")
-    )
-
-    snapshot.assert_match(to_sql(q), "out.sql")
