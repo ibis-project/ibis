@@ -100,46 +100,46 @@ class TestConf(BackendTest):
     def _load_data(self, **_: Any) -> None:
         """Load test data into a Snowflake backend instance."""
 
-    #         url = urlparse(_get_url())
-    #         _, schema = url.path[1:].split("/", 1)
-    #         (warehouse,) = parse_qs(url.query)["warehouse"]
-    #         connect_args = {
-    #             "user": url.username,
-    #             "password": url.password,
-    #             "account": url.hostname,
-    #             "warehouse": warehouse,
-    #         }
-    #
-    #         session_parameters = {
-    #             "MULTI_STATEMENT_COUNT": 0,
-    #             "JSON_INDENT": 0,
-    #             "PYTHON_CONNECTOR_QUERY_RESULT_FORMAT": "arrow_force",
-    #         }
-    #
-    #         con = sc.connect(**connect_args, session_parameters=session_parameters)
-    #
-    #         dbschema = f"ibis_testing.{schema}"
-    #
-    #         with con.cursor() as c:
-    #             c.execute(
-    #                 f"""\
-    # CREATE DATABASE IF NOT EXISTS ibis_testing;
-    # USE DATABASE ibis_testing;
-    # CREATE SCHEMA IF NOT EXISTS {dbschema};
-    # USE SCHEMA {dbschema};
-    # CREATE TEMP STAGE ibis_testing;
-    # {self.script_dir.joinpath("snowflake.sql").read_text()}"""
-    #             )
-    #
-    #         with con.cursor() as c:
-    #             # not much we can do to make this faster, but running these in
-    #             # multiple threads seems to save about 2x
-    #             with concurrent.futures.ThreadPoolExecutor() as exe:
-    #                 for future in concurrent.futures.as_completed(
-    #                     exe.submit(copy_into, c, self.data_dir, table)
-    #                     for table in TEST_TABLES.keys()
-    #                 ):
-    #                     future.result()
+        url = urlparse(_get_url())
+        _, schema = url.path[1:].split("/", 1)
+        (warehouse,) = parse_qs(url.query)["warehouse"]
+        connect_args = {
+            "user": url.username,
+            "password": url.password,
+            "account": url.hostname,
+            "warehouse": warehouse,
+        }
+
+        session_parameters = {
+            "MULTI_STATEMENT_COUNT": 0,
+            "JSON_INDENT": 0,
+            "PYTHON_CONNECTOR_QUERY_RESULT_FORMAT": "arrow_force",
+        }
+
+        con = sc.connect(**connect_args, session_parameters=session_parameters)
+
+        dbschema = f"ibis_testing.{schema}"
+
+        with con.cursor() as c:
+            c.execute(
+                f"""\
+CREATE DATABASE IF NOT EXISTS ibis_testing;
+USE DATABASE ibis_testing;
+CREATE SCHEMA IF NOT EXISTS {dbschema};
+USE SCHEMA {dbschema};
+CREATE TEMP STAGE ibis_testing;
+{self.script_dir.joinpath("snowflake.sql").read_text()}"""
+            )
+
+        with con.cursor() as c:
+            # not much we can do to make this faster, but running these in
+            # multiple threads seems to save about 2x
+            with concurrent.futures.ThreadPoolExecutor() as exe:
+                for future in concurrent.futures.as_completed(
+                    exe.submit(copy_into, c, self.data_dir, table)
+                    for table in TEST_TABLES.keys()
+                ):
+                    future.result()
 
     @staticmethod
     def connect(*, tmpdir, worker_id, **kw) -> BaseBackend:
