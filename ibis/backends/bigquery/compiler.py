@@ -281,7 +281,7 @@ class BigQueryCompiler(SQLGlotCompiler):
         elif arg_type.is_date():
             return self.f.format_date(format_str, arg)
         else:
-            assert arg_type.is_time()
+            assert arg_type.is_time(), arg_type
             return self.f.format_time(format_str, arg)
 
     @visit_node.register(ops.Log2)
