@@ -41,6 +41,13 @@ def _(dtype, values):
     return _format_nested([None if v is None else dict(v) for v in values])
 
 
+@format_values.register(dt.GeoSpatial)
+def _(dtype, values):
+    import shapely
+
+    return _format_nested([None if v is None else shapely.from_wkb(v) for v in values])
+
+
 @format_values.register(dt.JSON)
 def _(dtype, values):
     def try_json(v):
