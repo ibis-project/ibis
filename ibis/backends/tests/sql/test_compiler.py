@@ -2,10 +2,14 @@ from __future__ import annotations
 
 import datetime
 
+import pytest
+
 import ibis
 from ibis.backends.base.sql.compiler import Compiler
-from ibis.tests.sql.conftest import to_sql
+from ibis.backends.tests.sql.conftest import to_sql
 from ibis.tests.util import assert_decompile_roundtrip
+
+pytestmark = pytest.mark.duckdb
 
 
 def test_union(union, snapshot):
