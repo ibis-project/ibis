@@ -48,6 +48,7 @@ class RowsFrame:
         results = {}
         for df in self.parent.groups():
             for i, (ix, row) in enumerate(df.iterrows()):
+                # TODO(kszucs): use unique column names for _start, _end
                 start = row["_start"]
                 end = row["_end"]
 

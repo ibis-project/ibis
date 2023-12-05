@@ -8,6 +8,7 @@ import pytest
 from pytest import param
 
 import ibis
+from ibis.backends.pandas import Backend
 from ibis.backends.pandas.executor.utils import sql_like_to_regex
 
 
@@ -179,9 +180,10 @@ def test_string_repeat(t):
     expr3 = string_lit.repeat(int_col)
     expr4 = string_lit.repeat(int_lit)
 
-    expr1.execute()
-    expr2.execute()
-    expr3.execute()
-    expr4.execute()
+    con = Backend()
+    con.execute(expr1)
+    con.execute(expr2)
+    con.execute(expr3)
+    con.execute(expr4)
 
     # TODO(kszucs): add assertions or rather parametrize the tests above

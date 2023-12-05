@@ -95,6 +95,11 @@ def execute_join(op, left, right, left_on, right_on, how):
         return df.drop(columns=[f"key_{i}" for i in range(len(left_on))])
 
 
+@execute.register(ops.SelfReference)
+def execute_self_reference(op, parent):
+    return parent
+
+
 @execute.register(ops.Union)
 def execute_union(op, left, right, distinct):
     result = pd.concat([left, right], axis=0)
@@ -108,6 +113,17 @@ def execute_intersection_dataframe_dataframe(op, left, right, distinct):
             "`distinct=False` is not supported by the pandas backend"
         )
     return left.merge(right, on=list(left.columns), how="inner")
+
+
+@execute.register(ops.Difference)
+def execute_difference(op, left, right, distinct):
+    if not distinct:
+        raise NotImplementedError(
+            "`distinct=False` is not supported by the pandas backend"
+        )
+    merged = left.merge(right, on=list(left.columns), how="outer", indicator=True)
+    result = merged[merged["_merge"] == "left_only"].drop("_merge", axis=1)
+    return result
 
 
 @execute.register(ops.Distinct)
