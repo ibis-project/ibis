@@ -131,7 +131,6 @@ CREATE TEMP STAGE ibis_testing;
 {self.script_dir.joinpath("snowflake.sql").read_text()}"""
             )
 
-        with con.cursor() as c:
             # not much we can do to make this faster, but running these in
             # multiple threads seems to save about 2x
             with concurrent.futures.ThreadPoolExecutor() as exe:
