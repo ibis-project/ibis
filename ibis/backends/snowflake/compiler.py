@@ -228,8 +228,8 @@ class SnowflakeCompiler(SQLGlotCompiler):
     @visit_node.register(ops.MapContains)
     def visit_MapContains(self, op, *, arg, key):
         return self.f.array_contains(
-            self.f.to_variant(key),
             self.if_(self.f.is_object(arg), self.f.object_keys(arg), NULL),
+            self.f.to_variant(key),
         )
 
     @visit_node.register(ops.MapMerge)
@@ -318,7 +318,7 @@ class SnowflakeCompiler(SQLGlotCompiler):
 
     @visit_node.register(ops.ArrayContains)
     def visit_ArrayContains(self, op, *, arg, other):
-        return self.f.array_contains(self.f.to_variant(other), arg)
+        return self.f.array_contains(arg, self.f.to_variant(other))
 
     @visit_node.register(ops.ArrayCollect)
     def visit_ArrayCollect(self, op, *, arg, where):
