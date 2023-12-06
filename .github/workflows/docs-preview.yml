@@ -52,7 +52,7 @@ jobs:
         run: npm install -g netlify-cli
 
       - name: build and push quarto docs to preview url
-        run: netlify deploy --dir=docs/_output --alias="pr-${{ github.event.issue.number }}"
+        run: netlify deploy --dir=docs/_output --alias="pr-${{ github.event.issue.number }}-${{ steps.get_commit.outputs.sha }}"
         env:
           NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
           NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
@@ -64,4 +64,4 @@ jobs:
           token: ${{ steps.generate_token.outputs.token }}
           issue-number: ${{ github.event.issue.number }}
           body: |
-            Docs preview: https://pr-${{ github.event.issue.number }}--ibis-quarto.netlify.app
+            Docs preview: https://pr-${{ github.event.issue.number }}-${{ steps.get_commit.outputs.sha }}--ibis-quarto.netlify.app
