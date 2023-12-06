@@ -481,7 +481,9 @@ class SnowflakeCompiler(SQLGlotCompiler):
     @visit_node.register(ops.Unnest)
     def visit_Unnest(self, op, *, arg):
         sep = sge.convert(util.guid())
-        split = self.f.split(self.f.array_to_string(arg, sep), sep)
+        split = self.f.split(
+            self.f.array_to_string(self.f.nullif(arg, self.f.array()), sep), sep
+        )
         expr = self.f.nullif(sge.Explode(this=split), "")
         return self.cast(expr, op.dtype)
 
