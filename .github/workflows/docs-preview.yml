@@ -6,7 +6,7 @@ on:
       - created
 
 jobs:
-  preview_dispatch:
+  docs_preview:
     runs-on: ubuntu-latest
     steps:
       - uses: tibdex/github-app-token@v2
