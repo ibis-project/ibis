@@ -4,6 +4,7 @@ services:
     image: clickhouse/clickhouse-server:23.10.5.20-alpine
     ports:
       - 8123:8123 # http port
+      - 9000:9000 # native protocol port
     healthcheck:
       interval: 1s
       retries: 10
