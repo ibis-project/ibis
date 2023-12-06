@@ -28,8 +28,7 @@ def table(client):
 
 @pytest.fixture
 def test_data():
-    test_data = test_data = pd.DataFrame({"A": [1, 2, 3, 4, 5], "B": list("abcde")})
-    return test_data
+    return pd.DataFrame({"A": [1, 2, 3, 4, 5], "B": list("abcde")})
 
 
 def test_connect_no_args():
