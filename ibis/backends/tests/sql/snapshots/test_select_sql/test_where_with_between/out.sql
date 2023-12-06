@@ -1,4 +1,8 @@
-SELECT t0.*
-FROM alltypes t0
-WHERE (t0.`a` > 0) AND
-      (t0.`f` BETWEEN 0 AND 1)
+SELECT
+  *
+FROM alltypes AS t0
+WHERE
+  (
+    t0.a > CAST(0 AS TINYINT)
+  )
+  AND t0.f BETWEEN CAST(0 AS TINYINT) AND CAST(1 AS TINYINT)

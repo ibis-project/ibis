@@ -10,9 +10,7 @@ SELECT
   t1.i AS i,
   t1.j AS j,
   t1.k AS k,
-  (
-    t1.a + t1.b
-  ) AS foo
+  t1.a + t1.b AS foo
 FROM (
   SELECT
     *

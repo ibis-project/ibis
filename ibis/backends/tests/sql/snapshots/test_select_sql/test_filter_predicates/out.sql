@@ -1,6 +1,6 @@
 SELECT
   *
-FROM "t" AS t0
+FROM t AS t0
 WHERE
   LOWER(t0.color) LIKE '%de%'
   AND CONTAINS(LOWER(t0.color), 'de')
