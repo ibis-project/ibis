@@ -619,3 +619,34 @@ def test_multijoin(tracts_df, fields_df, harvest_df):
     )
 
     tm.assert_frame_equal(result, expected)
+
+
+def test_chain_join():
+    test_df1 = pd.DataFrame({"id": ["1", "1"], "value": ["a", "a"]})
+
+    test_df2 = pd.DataFrame({"id": ["1", "1"], "value": ["z", "z"]})
+
+    test_df3 = pd.DataFrame({"id": ["1", "1"], "value": ["z1", "z1"]})
+
+    conn = ibis.pandas.connect({"df1": test_df1, "df2": test_df2, "df3": test_df3})
+
+    t1 = conn.table("df1")
+    t2 = conn.table("df2")
+    t3 = conn.table("df3")
+
+    expr = t1.join(t2, t1.id == t2.id).join(t3, t1.id == t3.id)
+
+    result = expr.execute()
+
+    n = len(test_df1) * len(test_df2) * len(test_df3)
+
+    expected = pd.DataFrame(
+        {
+            "id": ["1"] * n,
+            "value": ["a"] * n,
+            "id_right": ["1"] * n,
+            "value_right": ["z"] * n,
+        }
+    )
+
+    tm.assert_frame_equal(result, expected)
