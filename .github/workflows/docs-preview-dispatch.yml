@@ -8,6 +8,8 @@ on:
 jobs:
   preview_dispatch:
     runs-on: ubuntu-latest
+    permissions:
+      issues: write
     steps:
       - uses: peter-evans/slash-command-dispatch@v3
         with:
@@ -18,5 +20,5 @@ jobs:
           commands: preview
           dispatch-type: workflow
           static-args: |
-            pr-number=${{ github.event.number }}
+            pr-number=${{ github.event.issue.number }}
             ref=${{ github.sha }}
