@@ -1,7 +1,7 @@
 WITH t0 AS (
   SELECT
     t7.`field_of_study`,
-    IF(pos = pos_2, __pivoted__, NULL) AS __pivoted__
+    IF(pos = pos_2, `__pivoted__`, NULL) AS `__pivoted__`
   FROM humanities AS t7, UNNEST(GENERATE_ARRAY(
     0,
     GREATEST(
@@ -10,7 +10,7 @@ WITH t0 AS (
       )
     ) - 1
   )) AS pos
-  CROSS JOIN UNNEST([STRUCT('1970-71' AS years, t7.`1970-71` AS degrees), STRUCT('1975-76' AS years, t7.`1975-76` AS degrees), STRUCT('1980-81' AS years, t7.`1980-81` AS degrees), STRUCT('1985-86' AS years, t7.`1985-86` AS degrees), STRUCT('1990-91' AS years, t7.`1990-91` AS degrees), STRUCT('1995-96' AS years, t7.`1995-96` AS degrees), STRUCT('2000-01' AS years, t7.`2000-01` AS degrees), STRUCT('2005-06' AS years, t7.`2005-06` AS degrees), STRUCT('2010-11' AS years, t7.`2010-11` AS degrees), STRUCT('2011-12' AS years, t7.`2011-12` AS degrees), STRUCT('2012-13' AS years, t7.`2012-13` AS degrees), STRUCT('2013-14' AS years, t7.`2013-14` AS degrees), STRUCT('2014-15' AS years, t7.`2014-15` AS degrees), STRUCT('2015-16' AS years, t7.`2015-16` AS degrees), STRUCT('2016-17' AS years, t7.`2016-17` AS degrees), STRUCT('2017-18' AS years, t7.`2017-18` AS degrees), STRUCT('2018-19' AS years, t7.`2018-19` AS degrees), STRUCT('2019-20' AS years, t7.`2019-20` AS degrees)]) AS __pivoted__ WITH OFFSET AS pos_2
+  CROSS JOIN UNNEST([STRUCT('1970-71' AS years, t7.`1970-71` AS degrees), STRUCT('1975-76' AS years, t7.`1975-76` AS degrees), STRUCT('1980-81' AS years, t7.`1980-81` AS degrees), STRUCT('1985-86' AS years, t7.`1985-86` AS degrees), STRUCT('1990-91' AS years, t7.`1990-91` AS degrees), STRUCT('1995-96' AS years, t7.`1995-96` AS degrees), STRUCT('2000-01' AS years, t7.`2000-01` AS degrees), STRUCT('2005-06' AS years, t7.`2005-06` AS degrees), STRUCT('2010-11' AS years, t7.`2010-11` AS degrees), STRUCT('2011-12' AS years, t7.`2011-12` AS degrees), STRUCT('2012-13' AS years, t7.`2012-13` AS degrees), STRUCT('2013-14' AS years, t7.`2013-14` AS degrees), STRUCT('2014-15' AS years, t7.`2014-15` AS degrees), STRUCT('2015-16' AS years, t7.`2015-16` AS degrees), STRUCT('2016-17' AS years, t7.`2016-17` AS degrees), STRUCT('2017-18' AS years, t7.`2017-18` AS degrees), STRUCT('2018-19' AS years, t7.`2018-19` AS degrees), STRUCT('2019-20' AS years, t7.`2019-20` AS degrees)]) AS `__pivoted__` WITH OFFSET AS pos_2
   WHERE
     pos = pos_2
     OR (
@@ -63,7 +63,7 @@ FROM (
   WITH t0 AS (
     SELECT
       t7.`field_of_study`,
-      IF(pos = pos_2, __pivoted__, NULL) AS __pivoted__
+      IF(pos = pos_2, `__pivoted__`, NULL) AS `__pivoted__`
     FROM humanities AS t7, UNNEST(GENERATE_ARRAY(
       0,
       GREATEST(
@@ -72,7 +72,7 @@ FROM (
         )
       ) - 1
     )) AS pos
-    CROSS JOIN UNNEST([STRUCT('1970-71' AS years, t7.`1970-71` AS degrees), STRUCT('1975-76' AS years, t7.`1975-76` AS degrees), STRUCT('1980-81' AS years, t7.`1980-81` AS degrees), STRUCT('1985-86' AS years, t7.`1985-86` AS degrees), STRUCT('1990-91' AS years, t7.`1990-91` AS degrees), STRUCT('1995-96' AS years, t7.`1995-96` AS degrees), STRUCT('2000-01' AS years, t7.`2000-01` AS degrees), STRUCT('2005-06' AS years, t7.`2005-06` AS degrees), STRUCT('2010-11' AS years, t7.`2010-11` AS degrees), STRUCT('2011-12' AS years, t7.`2011-12` AS degrees), STRUCT('2012-13' AS years, t7.`2012-13` AS degrees), STRUCT('2013-14' AS years, t7.`2013-14` AS degrees), STRUCT('2014-15' AS years, t7.`2014-15` AS degrees), STRUCT('2015-16' AS years, t7.`2015-16` AS degrees), STRUCT('2016-17' AS years, t7.`2016-17` AS degrees), STRUCT('2017-18' AS years, t7.`2017-18` AS degrees), STRUCT('2018-19' AS years, t7.`2018-19` AS degrees), STRUCT('2019-20' AS years, t7.`2019-20` AS degrees)]) AS __pivoted__ WITH OFFSET AS pos_2
+    CROSS JOIN UNNEST([STRUCT('1970-71' AS years, t7.`1970-71` AS degrees), STRUCT('1975-76' AS years, t7.`1975-76` AS degrees), STRUCT('1980-81' AS years, t7.`1980-81` AS degrees), STRUCT('1985-86' AS years, t7.`1985-86` AS degrees), STRUCT('1990-91' AS years, t7.`1990-91` AS degrees), STRUCT('1995-96' AS years, t7.`1995-96` AS degrees), STRUCT('2000-01' AS years, t7.`2000-01` AS degrees), STRUCT('2005-06' AS years, t7.`2005-06` AS degrees), STRUCT('2010-11' AS years, t7.`2010-11` AS degrees), STRUCT('2011-12' AS years, t7.`2011-12` AS degrees), STRUCT('2012-13' AS years, t7.`2012-13` AS degrees), STRUCT('2013-14' AS years, t7.`2013-14` AS degrees), STRUCT('2014-15' AS years, t7.`2014-15` AS degrees), STRUCT('2015-16' AS years, t7.`2015-16` AS degrees), STRUCT('2016-17' AS years, t7.`2016-17` AS degrees), STRUCT('2017-18' AS years, t7.`2017-18` AS degrees), STRUCT('2018-19' AS years, t7.`2018-19` AS degrees), STRUCT('2019-20' AS years, t7.`2019-20` AS degrees)]) AS `__pivoted__` WITH OFFSET AS pos_2
     WHERE
       pos = pos_2
       OR (
