@@ -53,43 +53,43 @@ def test_read_parquet(data_dir):
 def test_load_spatial_when_geo_column(tmpdir):
     pytest.importorskip("geoalchemy2")
 
-    # create a table with a geom column
     path = str(tmpdir.join("test_load_spatial.ddb"))
 
-    con_db = duckdb.connect(path)
-    con_db.install_extension("spatial")
-    con_db.load_extension("spatial")
+    with duckdb.connect(
+        # windows is horrible and cannot download in parallel without
+        # clobbering existing files, so give a temporary custom directory for
+        # extensions
+        path,
+        config={"extension_directory": str(tmpdir.join("extensions"))},
+    ) as con:
+        con.install_extension("spatial")
+        con.load_extension("spatial")
+        con.execute(
+            # create a table with a geom column
+            """
+            CREATE or REPLACE TABLE samples (name VARCHAR, geom GEOMETRY);
 
-    con_db.sql(
-        """
-        CREATE or REPLACE TABLE samples (name VARCHAR, geom GEOMETRY);
-
-        INSERT INTO samples VALUES
-        ('Point', ST_GeomFromText('POINT(-100 40)')),
-        ('Linestring', ST_GeomFromText('LINESTRING(0 0, 1 1, 2 1, 2 2)')),
-        ('Polygon', ST_GeomFromText('POLYGON((0 0, 1 0, 1 1, 0 1, 0 0))'));
-        SELECT * FROM samples;
-      """
-    )
-
-    del con_db
+            INSERT INTO samples VALUES
+              ('Point', ST_GeomFromText('POINT(-100 40)')),
+              ('Linestring', ST_GeomFromText('LINESTRING(0 0, 1 1, 2 1, 2 2)')),
+              ('Polygon', ST_GeomFromText('POLYGON((0 0, 1 0, 1 1, 0 1, 0 0))'));
+            """
+        )
 
     # load data from ibis and check for spatial extension
     con = ibis.duckdb.connect(path)
+
+    query = """\
+SELECT extension_name AS name
+FROM duckdb_extensions()
+WHERE installed AND loaded"""
+
+    assert "spatial" not in con.sql(query).name.to_pandas().values
+
     # trigger spatial extension load
-    con.tables.samples  # noqa: B018
+    assert not con.tables.samples.head(1).geom.to_pandas().empty
 
-    loaded_ext = con.sql(
-        """
-             WITH exts AS (
-               SELECT extension_name AS name, aliases FROM duckdb_extensions()
-               WHERE installed AND loaded
-             )
-             SELECT name FROM exts
-             UNION (SELECT UNNEST(aliases) AS name FROM exts)"""
-    )
-
-    assert "spatial" in loaded_ext.to_pandas().name.values
+    assert "spatial" in con.sql(query).name.to_pandas().values
 
 
 def test_read_geo_to_pyarrow(con, data_dir):
