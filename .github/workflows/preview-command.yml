@@ -6,6 +6,9 @@ on:
       pr-number:
         description: "Pull request number for which to generate a preview"
         required: true
+      ref:
+        description: "Commit to preview"
+        required: true
 
 jobs:
   preview:
@@ -26,6 +29,8 @@ jobs:
 
       - name: checkout
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.ref }}
 
       - name: run doctest
         # keep HOME because duckdb (which we use for doctests) wants to use
@@ -50,4 +55,5 @@ jobs:
       - name: build and push quarto docs to preview url
         run: netlify deploy --dir=docs/_output --alias="pr-${{ github.event.inputs.pr-number }}"
         env:
+          NETLIFY_SITE_ID: "3832aec3-a89a-4f2e-b185-232eb2f077da"
           NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}

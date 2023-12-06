@@ -12,9 +12,11 @@ jobs:
       - uses: peter-evans/slash-command-dispatch@v3
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          permission: none
+          reaction-token: ${{ secrets.GITHUB_TOKEN }}
+          permission: maintain
           issue-type: pull-request
           commands: preview
           dispatch-type: workflow
           static-args: |
             pr-number=${{ github.event.number }}
+            ref=${{ github.sha }}
