@@ -15,7 +15,7 @@ import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 from ibis import util
-from ibis.backends.base.sqlglot.compiler import NULL, STAR, SQLGlotCompiler
+from ibis.backends.base.sqlglot.compiler import NULL, SQLGlotCompiler
 from ibis.backends.snowflake.datatypes import SnowflakeType
 from ibis.common.patterns import replace
 from ibis.expr.analysis import p, x, y
