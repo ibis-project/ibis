@@ -162,6 +162,15 @@ class PandasData(DataMapper):
             return s
 
     @staticmethod
+    def convert_Decimal(s, dtype, pandas_type):
+        import decimal
+
+        import pyarrow as pa
+
+        arr = pa.array(s.map(decimal.Decimal, na_action="ignore").values)
+        return arr.cast(dtype.to_pyarrow(), safe=False)
+
+    @staticmethod
     def convert_Timestamp(s, dtype, pandas_type):
         if isinstance(dtype, pd.DatetimeTZDtype):
             return s.dt.tz_convert(dtype.timezone)
