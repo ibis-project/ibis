@@ -753,7 +753,7 @@ $$"""
 
             self._run_pre_execute_hooks(table)
 
-            query = self._to_sqlglot(table)
+            (query,) = self._to_sqlglot(table)
         else:
             query = None
 
@@ -761,9 +761,7 @@ $$"""
             kind="TABLE",
             this=target,
             replace=overwrite,
-            properties=sg.exp.Properties(expressions=properties)
-            if properties
-            else None,
+            properties=sg.exp.Properties(expressions=properties),
             expression=query,
         )
 
