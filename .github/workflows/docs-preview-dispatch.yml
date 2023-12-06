@@ -1,0 +1,20 @@
+name: Dispatch Docs Preview
+
+on:
+  issue_comment:
+    types:
+      - created
+
+jobs:
+  preview_dispatch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: peter-evans/slash-command-dispatch@v3
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          permission: none
+          issue-type: pull-request
+          commands: preview
+          dispatch-type: workflow
+          static-args: |
+            pr-number=${{ github.event.number }}
