@@ -857,3 +857,13 @@ def test_chain_limit_doesnt_collapse(snapshot):
     )
     expr = t.city.topk(10)[-5:]
     snapshot.assert_match(to_sql(expr), "result.sql")
+
+
+def test_join_with_conditional_aggregate(snapshot):
+    left = ibis.table({"on": "int", "by": "string"}, name="left")
+    right = ibis.table({"on": "int", "by": "string", "val": "float"}, name="right")
+    stat = right[(right.by == left.by) & (right.on <= left.on)]["on"].max()
+    merged = left.join(right, how="left", predicates=left.by == right.by)[
+        right.on == stat
+    ]
+    snapshot.assert_match(to_sql(merged), "result.sql")
