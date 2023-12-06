@@ -3,7 +3,6 @@ from __future__ import annotations
 import ast
 import atexit
 import glob
-import json
 from contextlib import closing, suppress
 from functools import partial
 from typing import TYPE_CHECKING, Any, Literal
@@ -516,16 +515,16 @@ class Backend(BaseBackend, CanCreateDatabase):
         return sch.Schema(dict(zip(names, map(ClickhouseType.from_string, types))))
 
     def _get_schema_using_query(self, query: str) -> sch.Schema:
-        query = f"EXPLAIN json = 1, description = 0, header = 1 {query}"
-        with closing(self.raw_sql(query)) as results:
-            [[raw_plans]] = results.result_columns
-        [plan] = json.loads(raw_plans)
-        return sch.Schema(
-            {
-                field["Name"]: ClickhouseType.from_string(field["Type"])
-                for field in plan["Plan"]["Header"]
-            }
-        )
+        name = util.gen_name("get_schema_using_query")
+        with closing(self.raw_sql(f"CREATE VIEW {name} AS {query}")):
+            pass
+        try:
+            with closing(self.raw_sql(f"DESCRIBE {name}")) as results:
+                names, types, *_ = results.result_columns
+        finally:
+            with closing(self.raw_sql(f"DROP VIEW {name}")):
+                pass
+        return sch.Schema(dict(zip(names, map(ClickhouseType.from_string, types))))
 
     @classmethod
     def has_operation(cls, operation: type[ops.Value]) -> bool:
