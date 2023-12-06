@@ -30,7 +30,7 @@ colorama==0.4.6 ; sys_platform == "win32" and python_version < "4.0" and python_
 comm==0.2.0 ; python_version >= "3.10" and python_version < "3.13"
 contourpy==1.2.0 ; python_version >= "3.10" and python_version < "3.13"
 coverage[toml]==7.3.2 ; python_version >= "3.9" and python_version < "4.0"
-cryptography==40.0.2 ; python_version >= "3.9" and python_version < "4.0"
+cryptography==41.0.7 ; python_version >= "3.9" and python_version < "4.0"
 cycler==0.12.1 ; python_version >= "3.10" and python_version < "3.13"
 dask==2023.12.0 ; python_version >= "3.10" and python_version < "3.13"
 dask[array,dataframe]==2023.12.0 ; python_version >= "3.9" and python_version < "4.0"
