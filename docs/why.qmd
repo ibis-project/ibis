@@ -2,6 +2,8 @@
 title: "Why Ibis?"
 ---
 
+Because of `$REASONS`.
+
 Ibis is the portable Python dataframe library.
 
 If you've had issues with scaling data transformation code in Python, need to
