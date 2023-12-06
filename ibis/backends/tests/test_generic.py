@@ -921,6 +921,13 @@ def test_memtable_bool_column(backend, con):
     )
 
 
+def test_memtable_duplicate_columns(backend, con):
+    df = pd.DataFrame(columns=["oops", "oops"], data=[[1, 2], [3, 4]])
+    with pytest.raises(ValueError) as e_info:
+        ibis.memtable(df)
+    assert "oops" in str(e_info.value)
+
+
 @pytest.mark.broken(
     ["druid"],
     raises=(

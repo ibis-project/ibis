@@ -92,6 +92,12 @@ class PandasData(DataMapper):
                 ibis_dtype = schema[column_name]
             else:
                 pandas_column = df[column_name]
+                if isinstance(pandas_column, pd.DataFrame):
+                    raise ValueError(
+                        "Converting Pandas DataFrames with duplicate "
+                        "column names is not supported. Found duplicate "
+                        f"column name: {column_name}"
+                    )
                 pandas_dtype = pandas_column.dtype
                 if pandas_dtype == np.object_:
                     ibis_dtype = cls.infer_column(pandas_column)
