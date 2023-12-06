@@ -6,6 +6,7 @@ import numpy as np
 import pandas as pd
 import pandas.testing as tm
 import pytest
+from pytest import param
 
 import ibis
 import ibis.expr.datatypes as dt
@@ -17,16 +18,28 @@ pytestmark = [
 ]
 
 
-@pytest.mark.notimpl(["dask", "snowflake"])
+@pytest.mark.notimpl(["dask"])
 @pytest.mark.parametrize(
     ("field", "expected"),
     [
-        ("a", [1.0, 2.0, 3.0, np.nan, 2.0, np.nan, 3.0]),
-        ("b", ["banana", "apple", "orange", "banana", None, None, "orange"]),
-        ("c", [2, 3, 4, 2, 3, np.nan, np.nan]),
+        param(
+            "a",
+            [1.0, 2.0, 3.0, np.nan, 2.0, np.nan, 3.0],
+            id="a",
+            marks=pytest.mark.notimpl(["snowflake"]),
+        ),
+        param(
+            "b", ["banana", "apple", "orange", "banana", None, None, "orange"], id="b"
+        ),
+        param(
+            "c",
+            [2, 3, 4, 2, 3, np.nan, np.nan],
+            id="c",
+            marks=pytest.mark.notimpl(["snowflake"]),
+        ),
     ],
 )
-def test_single_field(backend, struct, struct_df, field, expected):
+def test_single_field(struct, field, expected):
     expr = struct.abc[field]
     result = expr.execute()
     equal_nan = expr.type().is_numeric()
