@@ -5,6 +5,7 @@ import hypothesis.strategies as st
 import pytest
 from pytest import param
 
+import ibis
 import ibis.expr.datatypes as dt
 import ibis.tests.strategies as its
 from ibis.backends.clickhouse.datatypes import ClickhouseType
@@ -33,6 +34,21 @@ def test_columns_types_with_additional_argument(con):
     assert df.fixedstring_col.dtype.name == "object"
     assert df.datetime_col.dtype.name in ("datetime64[ns, UTC]", "datetime64[s, UTC]")
     assert df.datetime_ns_col.dtype.name == "datetime64[ns, UTC]"
+
+
+def test_array_discovery_clickhouse(con):
+    t = con.tables.array_types
+    expected = ibis.schema(
+        dict(
+            x=dt.Array(dt.int64, nullable=False),
+            y=dt.Array(dt.string, nullable=False),
+            z=dt.Array(dt.float64, nullable=False),
+            grouper=dt.string,
+            scalar_column=dt.float64,
+            multi_dim=dt.Array(dt.Array(dt.int64, nullable=False), nullable=False),
+        )
+    )
+    assert t.schema() == expected
 
 
 @pytest.mark.parametrize(

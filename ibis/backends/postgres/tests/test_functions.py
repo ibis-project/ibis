@@ -1349,3 +1349,18 @@ def test_string_to_binary_round_trip(con):
         cur = c.exec_driver_sql(sql_string)
         expected = pd.Series([row[0][0] for row in cur], name=name)
     tm.assert_series_equal(result, expected)
+
+
+def test_array_discovery(con):
+    t = con.tables.array_types
+    expected = ibis.schema(
+        dict(
+            x=dt.Array(dt.int64),
+            y=dt.Array(dt.string),
+            z=dt.Array(dt.float64),
+            grouper=dt.string,
+            scalar_column=dt.float64,
+            multi_dim=dt.Array(dt.int64),
+        )
+    )
+    assert t.schema() == expected
