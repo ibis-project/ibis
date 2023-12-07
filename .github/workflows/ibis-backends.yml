@@ -485,6 +485,10 @@ jobs:
       - name: install poetry
         run: python -m pip install --upgrade pip 'poetry==1.7.1'
 
+      - name: remove lonboard
+        # it requires a version of pandas that min versions are not compatible with
+        run: poetry remove lonboard
+
       - name: install minimum versions
         run: poetry add --lock --optional ${{ join(matrix.backend.deps, ' ') }}
 
@@ -551,6 +555,10 @@ jobs:
 
       - name: install poetry
         run: python -m pip install --upgrade pip 'poetry==1.7.1'
+
+      - name: remove lonboard
+        # it requires a version of pandas that pyspark is not compatible with
+        run: poetry remove lonboard
 
       - name: install maximum versions of pandas and numpy
         run: poetry add --lock 'pandas@<2' 'numpy<1.24'

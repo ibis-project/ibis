@@ -1,0 +1,246 @@
+---
+title: "Ibis + DuckDB geospatial: a match made on Earth"
+author: Naty Clementi
+date: 2023-12-07
+categories:
+    - blog
+    - duckdb
+    - geospatial
+---
+
+Ibis now has support for [DuckDB geospatial functions](https://gist.github.com/ncclementi/fbc5564af709e2d7f8882821e3a8649f)!
+
+This blogpost showcases some examples of the geospatial API for the DuckDB backend. The material is inspired by
+the ["DuckDB: Spatial Relationships"](https://geog-414.gishub.org/book/duckdb/07_spatial_relationships.html) lesson from
+[Dr. Qiusheng Wu](https://geog-414.gishub.org/book/preface/instructor.html)'s course "Spatial Data Management" from the
+Department of Geography & Sustainability at the University of Tennessee, Knoxville.
+
+::: {.callout-note}
+You can check Dr. Qiusheng Wu's full Spatial Data Management course material on its
+[website](https://geog-414.gishub.org/index.html), and the classes are also on
+[YouTube](https://www.youtube.com/watch?v=A4TOAdsXsEs&list=PLAxJ4-o7ZoPe9SkgnophygyLjTDBzIEbi).
+:::
+
+## Data
+
+We are going to be working with data from New York City. The database contains multiple tables with information about
+subway stations, streets, neighborhood, census data and, homicides. The datasets in the database are in NAD83 / UTM zone
+18N projection, EPSG:26918.
+
+```{python}
+from pathlib import Path
+from zipfile import ZipFile
+from urllib.request import urlretrieve
+
+# Download and unzip
+url = "https://open.gishub.org/data/duckdb/nyc_data.db.zip"
+zip_path = Path("nyc_data.db.zip")
+db_path = Path("nyc_data.db")
+
+if not zip_path.exists():
+    urlretrieve(url, zip_path)
+
+if not db_path.exists():
+    with ZipFile(zip_path) as zip_file:
+        zip_file.extract("nyc_data.db")
+```
+
+## Let's get started
+
+The beauty of spatial databases is that they allow us to both store *and* compute over geometries.
+
+```{python}
+import ibis
+from ibis import _
+
+ibis.options.interactive = True
+
+con = ibis.duckdb.connect("nyc_data.db")
+con.list_tables()
+```
+
+We have multiple tables with information about New York City. Following Dr. Wu's class, we'll take a look at some
+spatial relations.
+
+We can start by taking a peak at the `nyc_subway_stations` table.
+
+```{python}
+subway_stations = con.table("nyc_subway_stations")
+subway_stations
+```
+
+Notice that the last column has a `geometry` type, and in this case it contains points that represent the location of
+each subway station. Let's grab the entry for the Broad St subway station.
+
+```{python}
+broad_station = subway_stations.filter(subway_stations.NAME == "Broad St")
+broad_station
+```
+
+### `geo_equals` (`ST_Equals`)
+
+In DuckDB `ST_Equals` returns `True` if two geometries are topologically equal. This means that they have the same
+dimension and identical coordinate values, although the order of the vertices may be different.
+
+The following is a bit redundant but we can check if our `"Broad St"` point matches only one point in our data using
+`geo_equals`
+
+```{python}
+subway_stations.filter(subway_stations.geom.geo_equals(broad_station.geom))
+```
+
+We can also write this query without using `broad_station` as a variable, and with the help of the deferred expressions
+API, also known as [the underscore API](../../how-to/analytics/chain_expressions.qmd).
+
+```{python}
+subway_stations.filter(_.geom.geo_equals(_.filter(_.NAME == "Broad St").geom))
+```
+
+### `intersect` (ST_Intersect)
+
+Let's locate the neighborhood of the "Broad Street" subway station using the
+geospatial `intersect` function. The `intersect` function returns `True` if two geometries have any points in common.
+
+```{python}
+boroughs = con.table("nyc_neighborhoods")
+boroughs
+```
+
+```{python}
+boroughs.filter(boroughs.geom.intersects(broad_station.select(broad_station.geom).to_array()))
+```
+
+### `d_within` (ST_DWithin)
+
+We can also find the streets near (say, within 10 meters) the Broad St subway station using the `d_within`
+function. The `d_within` function returns True if the geometries are within a given distance.
+
+```{python}
+streets = con.table("nyc_streets")
+streets
+```
+
+Using the deferred API, we can check which streets are within `d=10` meters of distance.
+
+```{python}
+sts_near_broad = streets.filter(_.geom.d_within(broad_station.select(_.geom).to_array(), 10))
+sts_near_broad
+```
+
+::: {.callout-note}
+In the previous query, `streets` and `broad_station` are different tables. We use [`to_array()`](../../reference/expression-tables.qmd#ibis.expr.types.relations.Table.to_array) to generate a
+scalar subquery from a table with a single column (whose shape is scalar).
+:::
+
+To visualize the findings, we will convert the tables to Geopandas DataFrames.
+
+```{python}
+broad_station_gdf = broad_station.to_pandas()
+broad_station_gdf.crs = "EPSG:26918"
+
+sts_near_broad_gdf = sts_near_broad.to_pandas()
+sts_near_broad_gdf.crs = "EPSG:26918"
+
+streets_gdf = streets.to_pandas()
+streets_gdf.crs = "EPSG:26918"
+```
+
+```{python}
+import leafmap.deckgl as leafmap  # <1>
+```
+
+1. `leafmap.deckgl` allows us to visualize multiple layers
+
+```{python}
+m = leafmap.Map()
+
+m.add_vector(broad_station_gdf, get_fill_color="blue")
+m.add_vector(sts_near_broad_gdf, get_color="red", opacity=0.5)
+m.add_vector(streets_gdf, get_color="grey", zoom_to_layer=False, opacity=0.3)
+m
+```
+
+You can zoom in and out, and hover over the map to check on the streets names.
+
+### `buffer` (ST_Buffer)
+
+Next, we'll take a look at the homicides table and showcase some
+additional functionality related to polygon handling.
+
+```{python}
+homicides = con.table("nyc_homicides")
+homicides
+```
+
+Let's use the `buffer` method to find homicides near our `"Broad St"` station point.
+
+The `buffer` method computes a polygon or multipolygon that represents all points whose distance from a geometry is less
+than or equal to a given distance.
+
+```{python}
+broad_station.geom.buffer(200)
+```
+
+We can check the area using the `area` (`ST_Area`) function, and see that is $~ \pi r^{2}=125664$
+
+```{python}
+broad_station.geom.buffer(200).area()
+```
+
+To find if there were any homicides in that area, we can find where the polygon resulting from adding the
+200 meters buffer to our "Broad St" station point intersects with the geometry column in our homicides table.
+
+```{python}
+h_near_broad = homicides.filter(_.geom.intersects(broad_station.select(_.geom.buffer(200)).to_array()))
+h_near_broad
+```
+
+It looks like there was one homicide within 200 meters from the "Broad St" station, but from this
+data we can't tell the street near which it happened. However, we can check if the homicide point is within a small
+distance of a street.
+
+```{python}
+h_street = streets.filter(_.geom.d_within(h_near_broad.select(_.geom).to_array(), 2))
+h_street
+```
+
+Let's plot this:
+
+```{python}
+broad_station_zone = broad_station.mutate(geom=broad_station.geom.buffer(200))
+broad_station_zone = broad_station_zone.to_pandas()
+broad_station_zone.crs = "EPSG:26918"
+
+h_near_broad_gdf = h_near_broad.to_pandas()
+h_near_broad_gdf.crs = "EPSG:26918"
+
+h_street_gdf = h_street.to_pandas()
+h_street_gdf.crs = "EPSG:26918"
+
+
+mh = leafmap.Map()
+mh.add_vector(broad_station_gdf, get_fill_color="orange")
+mh.add_vector(broad_station_zone, get_fill_color="orange", opacity=0.1)
+mh.add_vector(h_near_broad_gdf, get_fill_color="red", opacity=0.5)
+mh.add_vector(h_street_gdf, get_color="blue", opacity=0.3)
+mh.add_vector(streets_gdf, get_color="grey", zoom_to_layer=False, opacity=0.2)
+
+mh
+```
+
+
+## Functions supported and next steps
+
+At the moment in Ibis we have support for around thirty geospatial functions for the DuckDB and we will add some more
+(see list [here](https://gist.github.com/ncclementi/fbc5564af709e2d7f8882821e3a8649f)).
+
+We also support reading multiple geospatial formats via [`read_geo()`](../../backends/duckdb.qmd#ibis.backends.duckdb.Backend.read_geo).
+
+Here are some resources to learn more about Ibis:
+
+- [Ibis Docs](https://ibis-project.org/)
+- [Ibis GitHub](https://github.com/ibis-project/ibis)
+
+Chat with us on Zulip:
+
+- [Ibis Zulip Chat](https://ibis-project.zulipchat.com/)
