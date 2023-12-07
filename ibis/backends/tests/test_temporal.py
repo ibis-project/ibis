@@ -8,7 +8,6 @@ from operator import methodcaller
 
 import numpy as np
 import pandas as pd
-import pandas.testing as tm
 import pytest
 import sqlalchemy as sa
 from pytest import param
@@ -2173,7 +2172,7 @@ def test_timestamp_literal(con, backend):
     "https://github.com/ibis-project/ibis/pull/6920/files#r1372453059",
     raises=AssertionError,
 )
-def test_timestamp_with_timezone_literal(request, con, backend, timezone, expected):
+def test_timestamp_with_timezone_literal(con, timezone, expected):
     expr = ibis.timestamp(2022, 2, 4, 16, 20, 0).cast(dt.Timestamp(timezone=timezone))
     result = con.execute(expr)
     if not isinstance(result, str):
@@ -2389,14 +2388,14 @@ def test_interval_literal(con, backend):
     ["oracle"], raises=sa.exc.DatabaseError, reason="ORA-00936: missing expression"
 )
 @pytest.mark.notyet(["impala"], raises=com.OperationNotDefinedError)
-def test_date_column_from_ymd(con, alltypes, df):
+def test_date_column_from_ymd(backend, con, alltypes, df):
     c = alltypes.timestamp_col
     expr = ibis.date(c.year(), c.month(), c.day())
     tbl = alltypes[expr.name("timestamp_col")]
     result = con.execute(tbl)
 
     golden = df.timestamp_col.dt.date.astype(result.timestamp_col.dtype)
-    tm.assert_series_equal(golden, result.timestamp_col)
+    backend.assert_series_equal(golden, result.timestamp_col)
 
 
 @pytest.mark.notimpl(
@@ -2417,7 +2416,7 @@ def test_date_column_from_ymd(con, alltypes, df):
     ["oracle"], raises=sa.exc.DatabaseError, reason="ORA-00904 make timestamp invalid"
 )
 @pytest.mark.notyet(["impala"], raises=com.OperationNotDefinedError)
-def test_timestamp_column_from_ymdhms(con, alltypes, df):
+def test_timestamp_column_from_ymdhms(backend, con, alltypes, df):
     c = alltypes.timestamp_col
     expr = ibis.timestamp(
         c.year(), c.month(), c.day(), c.hour(), c.minute(), c.second()
@@ -2426,7 +2425,7 @@ def test_timestamp_column_from_ymdhms(con, alltypes, df):
     result = con.execute(tbl)
 
     golden = df.timestamp_col.dt.floor("s").astype(result.timestamp_col.dtype)
-    tm.assert_series_equal(golden, result.timestamp_col)
+    backend.assert_series_equal(golden, result.timestamp_col)
 
 
 @pytest.mark.notimpl(
@@ -2462,7 +2461,7 @@ def test_date_scalar_from_iso(con):
     raises=sa.exc.DatabaseError,
     reason="ORA-22849 type CLOB is not supported",
 )
-def test_date_column_from_iso(con, alltypes, df):
+def test_date_column_from_iso(backend, con, alltypes, df):
     expr = (
         alltypes.year.cast("string")
         + "-"
@@ -2474,7 +2473,7 @@ def test_date_column_from_iso(con, alltypes, df):
     result = con.execute(expr.name("tmp"))
     golden = df.year.astype(str) + "-" + df.month.astype(str).str.rjust(2, "0") + "-13"
     actual = result.dt.strftime("%Y-%m-%d")
-    tm.assert_series_equal(golden.rename("tmp"), actual.rename("tmp"))
+    backend.assert_series_equal(golden.rename("tmp"), actual.rename("tmp"))
 
 
 @pytest.mark.notimpl(["druid", "oracle"], raises=com.OperationNotDefinedError)

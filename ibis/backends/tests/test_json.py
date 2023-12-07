@@ -52,7 +52,7 @@ def test_json_getitem(json_t, expr_fn, expected):
 @pytest.mark.notyet(
     ["pyspark", "trino", "flink"], reason="should work but doesn't deserialize JSON"
 )
-def test_json_map(json_t):
+def test_json_map(backend, json_t):
     expr = json_t.js.map.name("res")
     result = expr.execute()
     expected = pd.Series(
@@ -67,7 +67,7 @@ def test_json_map(json_t):
         dtype="object",
         name="res",
     )
-    tm.assert_series_equal(result, expected)
+    backend.assert_series_equal(result, expected)
 
 
 @pytest.mark.notimpl(["dask", "mysql", "pandas"])
@@ -76,10 +76,10 @@ def test_json_map(json_t):
     ["pyspark", "trino", "flink"], reason="should work but doesn't deserialize JSON"
 )
 @pytest.mark.notyet(["bigquery"], reason="doesn't allow null in arrays")
-def test_json_array(json_t):
+def test_json_array(backend, json_t):
     expr = json_t.js.array.name("res")
     result = expr.execute()
     expected = pd.Series(
         [None, None, None, None, [42, 47, 55], []], name="res", dtype="object"
     )
-    tm.assert_series_equal(result, expected)
+    backend.assert_series_equal(result, expected)

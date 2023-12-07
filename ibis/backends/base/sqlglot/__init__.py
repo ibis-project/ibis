@@ -46,7 +46,7 @@ class FuncGen:
         return sg.exp.Exists(this=query)
 
     def concat(self, *args):
-        return sg.exp.Concat.from_arg_list(list(map(sg.exp.convert, args)))
+        return sg.exp.Concat(expressions=list(map(sg.exp.convert, args)))
 
     def map(self, keys, values):
         return sg.exp.Map(keys=keys, values=values)

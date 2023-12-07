@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import numpy as np
 import pandas as pd
-import pandas.testing as tm
 import pytest
 from pytest import param
 
@@ -40,7 +39,7 @@ def test_column_map_values(backend):
     expr = table.select("idx", vals=table.kv.values()).order_by("idx")
     result = expr.execute().vals
     expected = pd.Series([[1, 2, 3], [4, 5, 6]], name="vals")
-    tm.assert_series_equal(result, expected)
+    backend.assert_series_equal(result, expected)
 
 
 @pytest.mark.notimpl(["pandas", "dask"])
@@ -57,7 +56,7 @@ def test_column_map_merge(backend):
     expected = pd.Series(
         [{"a": 1, "b": 2, "c": 3, "d": 1}, {"d": 1, "e": 5, "f": 6}], name="merged"
     )
-    tm.assert_series_equal(result, expected)
+    backend.assert_series_equal(result, expected)
 
 
 @pytest.mark.notimpl(

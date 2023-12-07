@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import pandas as pd
-import pandas.testing as tm
 import pytest
 from packaging.version import parse as vparse
 from pytest import param
@@ -82,7 +81,7 @@ broken_pandas_grouped_rolling = pytest.mark.xfail(
         ),
     ],
 )
-def test_context_adjustment_window_udf(alltypes, context, window, monkeypatch):
+def test_context_adjustment_window_udf(backend, alltypes, context, window, monkeypatch):
     """Test context adjustment of udfs in window methods."""
     monkeypatch.setattr(ibis.options.context_adjustment, "time_col", "timestamp_col")
 
@@ -92,7 +91,7 @@ def test_context_adjustment_window_udf(alltypes, context, window, monkeypatch):
     expected = expr.execute()
     expected = filter_by_time_context(expected, context).reset_index(drop=True)
 
-    tm.assert_frame_equal(result, expected)
+    backend.assert_frame_equal(result, expected)
 
 
 @pytest.mark.notimpl(["dask", "duckdb"])
@@ -102,7 +101,9 @@ def test_context_adjustment_window_udf(alltypes, context, window, monkeypatch):
     raises=Py4JJavaError,
     reason="Cannot cast org.apache.flink.table.data.TimestampData to java.lang.Long",
 )
-def test_context_adjustment_filter_before_window(alltypes, context, monkeypatch):
+def test_context_adjustment_filter_before_window(
+    backend, alltypes, context, monkeypatch
+):
     monkeypatch.setattr(ibis.options.context_adjustment, "time_col", "timestamp_col")
 
     window = ibis.trailing_window(ibis.interval(days=3), order_by=ORDER_BY_COL)
@@ -116,7 +117,7 @@ def test_context_adjustment_filter_before_window(alltypes, context, monkeypatch)
     expected = filter_by_time_context(expected, context)
     expected = expected.reset_index(drop=True)
 
-    tm.assert_frame_equal(result, expected)
+    backend.assert_frame_equal(result, expected)
 
 
 @pytest.mark.notimpl(["duckdb", "pyspark"])
@@ -125,7 +126,9 @@ def test_context_adjustment_filter_before_window(alltypes, context, monkeypatch)
     raises=com.OperationNotDefinedError,
     reason="No translation rule for <class 'ibis.expr.operations.structs.StructField'>",
 )
-def test_context_adjustment_multi_col_udf_non_grouped(alltypes, context, monkeypatch):
+def test_context_adjustment_multi_col_udf_non_grouped(
+    backend, alltypes, context, monkeypatch
+):
     monkeypatch.setattr(ibis.options.context_adjustment, "time_col", "timestamp_col")
 
     w = ibis.window(preceding=None, following=None)
@@ -144,4 +147,4 @@ def test_context_adjustment_multi_col_udf_non_grouped(alltypes, context, monkeyp
         demean=lambda t: t.double_col - t.double_col.mean().over(w),
         demean_weight=lambda t: t.int_col - t.int_col.mean().over(w),
     ).execute(timecontext=context)
-    tm.assert_frame_equal(result, expected)
+    backend.assert_frame_equal(result, expected)

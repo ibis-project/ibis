@@ -221,7 +221,7 @@ def _window(translator: ExprTranslator, op: ops.Node) -> str:
 
 
 def _clip(translator: ExprTranslator, op: ops.Node) -> str:
-    from ibis.backends.flink.utils import _to_pyflink_types
+    from ibis.backends.flink.datatypes import FlinkType
 
     arg = translator.translate(op.arg)
 
@@ -233,7 +233,7 @@ def _clip(translator: ExprTranslator, op: ops.Node) -> str:
         lower = translator.translate(op.lower)
         arg = f"IF({arg} < {lower} AND {arg} IS NOT NULL, {lower}, {arg})"
 
-    return f"CAST({arg} AS {_to_pyflink_types[type(op.dtype)]!s})"
+    return f"CAST({arg} AS {FlinkType.from_ibis(op.dtype)!s})"
 
 
 def _floor_divide(translator: ExprTranslator, op: ops.Node) -> str:

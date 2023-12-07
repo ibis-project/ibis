@@ -1,0 +1,72 @@
+name: Docs Preview
+
+on:
+  issue_comment:
+    types:
+      - created
+
+jobs:
+  docs_preview:
+    runs-on: ubuntu-latest
+    if: github.event.comment.body == '/preview'
+    steps:
+      - uses: tibdex/github-app-token@v2
+        id: generate_token
+        with:
+          app_id: ${{ secrets.DOCS_BOT_APP_ID }}
+          private_key: ${{ secrets.DOCS_BOT_APP_PRIVATE_KEY }}
+
+      - name: get HEAD commit for pr
+        id: get_commit
+        env:
+          GITHUB_TOKEN: ${{ steps.generate_token.outputs.token }}
+        run: |
+          set -euo pipefail
+
+          sha="$(gh api repos/ibis-project/ibis/pulls/${{ github.event.issue.number }} --jq '.head.sha')"
+          echo "sha=$sha" >> "$GITHUB_OUTPUT"
+
+      - name: install nix
+        uses: cachix/install-nix-action@v24
+        with:
+          extra_nix_config: |
+            access-tokens = github.com=${{ steps.generate_token.outputs.token }}
+
+      - name: setup cachix
+        uses: cachix/cachix-action@v13
+        with:
+          name: ibis
+          authToken: ${{ secrets.CACHIX_AUTH_TOKEN }}
+          extraPullNames: nix-community,poetry2nix
+
+      - name: checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ steps.get_commit.outputs.sha }}
+
+      - name: build docs
+        run: nix develop --ignore-environment --keep HOME -c just docs-build-all
+
+      - name: install netlify cli
+        run: npm install -g netlify-cli
+
+      - name: generate url alias
+        id: get_alias
+        run: |
+          echo "id=pr-${{ github.event.issue.number }}-${{ steps.get_commit.outputs.sha }}" >> "$GITHUB_OUTPUT"
+
+      - name: build and push quarto docs to preview url
+        run: netlify deploy --dir=docs/_output --alias="${{ steps.get_alias.outputs.id }}"
+        env:
+          NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+
+      - name: create preview link comment
+        if: success()
+        uses: peter-evans/create-or-update-comment@v3
+        with:
+          token: ${{ steps.generate_token.outputs.token }}
+          issue-number: ${{ github.event.issue.number }}
+          body: |
+            Docs preview: https://${{ steps.get_alias.outputs.id }}--ibis-quarto.netlify.app

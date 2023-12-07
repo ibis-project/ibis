@@ -242,17 +242,17 @@ mutated
 ### Renaming columns
 
 In addition to replacing columns, you can rename them as well. This is done with
-the `relabel` method which takes a dictionary containing the name mappings.
+the `rename` method which takes a dictionary containing the name mappings.
 
 
 ```{python}
-relabeled = t.relabel(
+renamed = t.rename(
     dict(
-        one="a",
-        two="b",
+        a="one",
+        b="two",
     )
 )
-relabeled
+renamed
 ```
 
 ## Selecting rows

@@ -1,0 +1,726 @@
+---
+title: "Ibis versus X: Performance across the ecosystem part 1"
+author: "Phillip Cloud"
+date: 2023-12-06
+categories:
+  - blog
+  - case study
+  - ecosystem
+  - performance
+---
+
+**TL; DR**: Ibis has a lot of great backends. They're all
+good at different things. For working with local data, it's hard to beat DuckDB
+on feature set and performance.
+
+Buckle up, it's going to be a long one.
+
+## Motivation
+
+Ibis maintainer [Gil Forsyth](https://github.com/gforsyth) recently wrote
+a [post on our
+blog](https://ibis-project.org/posts/querying-pypi-metadata-compiled-languages/)
+replicating [**another** blog
+post](https://sethmlarson.dev/security-developer-in-residence-weekly-report-18)
+but using Ibis instead of raw SQL.
+
+I thought it would be interesting to see how other tools compare to this setup,
+so I decided I'd try to do the same workflow on the same machine using
+a few tools from across the ecosystem.
+
+I chose two incumbents--[pandas](https://pandas.pydata.org/) and
+[dask](https://www.dask.org/)--to see how they compare to Ibis + DuckDB on this
+workload. In part 2 of this series I will compare two newer engines--Polars and
+DataFusion--to Ibis + DuckDB.
+
+I've worked on both pandas and Dask in the past but it's been such a long time
+since I've used these tools for data analysis that I consider myself rather
+naive about how to best use them today.
+
+Initially I was interested in API comparisons since usability is really where
+Ibis shines, but as I started to explore things, I was unable to complete my
+analysis in some cases due to running out of memory.
+
+::: {.callout-note}
+# This is not a forum to trash the work of others.
+
+I'm not interested in tearing down other tools.
+
+Ibis has backends for each of these tools and it's in everyone's best interest
+that all of the tools discussed here work to their full potential.
+:::
+
+I show each tool using its native API, in an attempt to compare ease-of-use
+out of the box and maximize each library's ability to complete the workload.
+
+Let's dig in.
+
+```{python}
+#| echo: false
+import gc
+
+
+def show_file(path):
+    with open(path) as f:
+        source = f.read()
+    print(f"```python\n{source}\n```")
+```
+
+## Setup
+
+I ran all of the code in this blog post on a machine with these specs.
+
+All OS caches were cleared before running this document with
+
+```bash
+$ sudo sysctl -w vm.drop_caches=3
+```
+
+::: {.callout-warning}
+# Clearing operating system caches **does not represent a realistic usage scenario**
+
+It is a method for putting the tools here on more equal footing. When you're in
+the thick of an analysis you're not going to artificially limit any OS
+optimizations.
+:::
+
+```{python}
+#| echo: false
+#| output: asis
+import os
+import platform
+import shutil
+
+import cpuinfo
+import psutil
+
+info = cpuinfo.get_cpu_info()
+uname = platform.uname()
+
+GiB = 1 << 30
+TiB = 1 << 40
+ram_gib = int(round(psutil.virtual_memory().total / GiB, 0))
+disk_tib = round(shutil.disk_usage("/").total / TiB, 1)
+
+lines = [
+    "| Component | Specification |",
+    "| --------- | ------------- |",
+    f"| CPU | {info['brand_raw']} ({os.cpu_count()} threads) |",
+    f"| RAM | {ram_gib} GiB |",
+    f"| Disk | {disk_tib} TiB SSD |",
+    f"| OS | NixOS ({uname.system} {uname.release}) |",
+]
+print("\n".join(lines))
+```
+
+### Soft constraints
+
+I'll introduce some soft UX constraints on the problem, that I think help
+convey the perspective of someone who wants to get started quickly with
+a data set:
+
+1. **I don't want to get another computer** to run this workload.
+2. **I want to use the data as is**, that is, without altering the files
+   I already have.
+3. **I'd like to run this computation with the default configuration**.
+   Ideally configuration isn't required to complete this workload out of the
+   box.
+
+### Library versions
+
+Here are the versions I used to run this experiment at the time of writing.
+
+```{python}
+#| echo: false
+#| output: asis
+import subprocess
+import sys
+
+import dask
+import distributed
+import duckdb
+import pandas as pd
+import pyarrow as pa
+
+
+def version_pair(module):
+    return module.__name__, module.__version__
+
+
+subprocess.run(("git", "fetch", "upstream"), check=True, capture_output=True)
+
+cmd = "git", "rev-parse", "--short", "upstream/master"
+proc = subprocess.run(cmd, check=True, text=True, capture_output=True)
+commit = proc.stdout.strip()
+link = f"https://github.com/ibis-project/ibis/tree/{commit}"
+
+versions = pd.DataFrame(
+    [("Python", sys.version)] + sorted(
+        [
+            *map(version_pair, (pd, dask, distributed, pa, duckdb)),
+            ("ibis", f"[`{commit}`]({link})"),
+        ]
+    ),
+    columns=["Dependency", "Version"],
+)
+
+print(versions.to_markdown(index=False))
+```
+
+### Data
+
+I used the files [here](https://raw.githubusercontent.com/pypi-data/data/20135ed214be9d6bb9c316121e5ccdaf29c6b9b1/links/dataset.txt) in this link to run my experiment.
+
+Here's a summary of the data set's file sizes:
+
+```{python}
+#| echo: false
+#| output: asis
+import glob
+import subprocess
+
+allfiles = glob.glob("/data/pypi-parquet/*.parquet")
+cmd = ("du", "-h", *allfiles)
+
+proc = subprocess.run(cmd, check=True, capture_output=True, text=True)
+print(f"""```bash\n$ du -h /data/pypi-parquet/*.parquet\n```""")
+print(f"""```\n{proc.stdout}\n```""")
+```
+
+## Recapping the original Ibis post
+
+Check out [the original blog
+post](https://ibis-project.org/posts/querying-pypi-metadata-compiled-languages/)
+if you haven't already!
+
+Here's the Ibis + DuckDB code, along with a timed execution of the query:
+
+```{python}
+#| echo: false
+#| output: asis
+with open("./step0.py") as f:
+    exec(f.read())
+show_file("./step0.py")
+```
+
+1. We've since implemented [a `flatten` method](../../reference/expression-collections.qmd#ibis.expr.types.arrays.ArrayValue.flatten)
+   on array expressions so it's no longer necessary to define a UDF here. I'll
+   leave this code unchanged for this post. **This has no effect on the
+   performance of the query**. In both cases the generated code contains
+   a DuckDB-native call to [its `flatten`
+   function](https://duckdb.org/docs/sql/functions/nested.html).
+2. This is a small change from the original query that adds a final sort key to
+   make the results deterministic.
+
+```{python}
+%time df = expr.to_pandas()
+df
+```
+
+Let's show peak memory usage in GB as reported by the [](`resource`) module:
+
+```{python}
+import resource
+
+rss_kb = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
+rss_mb = rss_kb / 1e3
+rss_gb = rss_mb / 1e3
+
+print(round(rss_gb, 1), "GB")
+```
+
+## Pandas
+
+Let's try to replicate this workflow using pandas.
+
+I started with this code:
+
+```{python}
+#| error: true
+import pandas as pd
+
+df = pd.read_parquet("/data/pypi-parquet/*.parquet")
+```
+
+Looks like pandas doesn't support globs. That's fine, we can use the builtin
+`glob` module.
+
+```python
+import glob
+
+df = pd.read_parquet(glob.glob("/data/pypi-parquet/*.parquet"))
+```
+
+This eventually triggers the [Linux OOM
+killer](https://lwn.net/Kernel/Index/#Memory_management-Out-of-memory_handling)
+after some minutes, so I can't run the code.
+
+Let's try again with just a single file. I'll pick the smallest file, to avoid any
+potential issues with memory and give pandas the best possible shot.
+
+```{python}
+import os
+
+smallest_file = min(glob.glob("/data/pypi-parquet/*.parquet"), key=os.path.getsize)
+```
+
+```{python}
+#| echo: false
+#| output: asis
+smallest_file_size = os.path.getsize(smallest_file)
+print(f"The [smallest file](#data) is {int(round(smallest_file_size / (1 << 20), 0))} MiB on disk.")
+```
+
+```{python}
+%time df = pd.read_parquet(smallest_file)
+df
+```
+
+```{python}
+#| echo: false
+del df
+gc.collect();
+```
+
+Loading the smallest file from the dataset is already pretty close
+to the time it took Ibis and DuckDB to execute the *entire query*.
+
+Let's give pandas a leg up and tell it what columns to use to avoid reading in
+a bunch of data we're not going to use.
+
+We can determine what these columns are by inspecting the Ibis code above.
+
+```{python}
+columns = ["path", "uploaded_on", "project_name"]
+
+%time df = pd.read_parquet(smallest_file, columns=columns)
+df
+```
+
+Sweet, read times improved!
+
+Let's peek at the memory usage of the DataFrame.
+
+```{python}
+print(round(df.memory_usage(deep=True).sum() / (1 << 30), 1), "GiB")
+```
+
+I still have plenty of space to do my analysis, nice!
+
+First, filter the data:
+
+```{python}
+%%time
+df = df[
+    (
+        df.path.str.contains(r"\.(?:asm|c|cc|cpp|cxx|h|hpp|rs|[Ff][0-9]{0,2}(?:or)?|go)$")
+        & ~df.path.str.contains(r"(?:^|/)test(?:|s|ing)|/site-packages/")  # <1>
+    )
+]
+df
+```
+
+1. I altered the original query here to avoid creating an unnecessary
+   intermediate `Series` object.
+
+We've blown **way** past our Ibis + DuckDB latency budget.
+
+Let's keep going!
+
+Next, group by and aggregate:
+
+```{python}
+#| error: false
+%%time
+df = (
+    df.groupby(
+        [
+            df.uploaded_on.dt.floor("M").rename("month"),
+            df.path.str.extract(r"\.([a-z0-9]+)$", 0, expand=False).rename("ext"),
+        ]
+    )
+    .agg({"project_name": lambda s: list(set(s))})
+    .sort_index(level="month", ascending=False)
+)
+df
+```
+
+Here we hit the first API issue going back to an [old pandas
+issue](https://github.com/pandas-dev/pandas/issues/15303): we can't truncate
+a timestamp column to month frequency.
+
+Let's try the solution recommended in that issue.
+
+```{python}
+#| error: false
+%%time
+df = (
+    df.groupby(
+        [
+            df.uploaded_on.dt.to_period("M").dt.to_timestamp().rename("month"),
+            df.path.str.extract(r"\.([a-z0-9]+)$", 0, expand=False).rename("ext"),
+        ]
+    )
+    .agg({"project_name": lambda s: list(set(s))})
+    .rename(columns={"project_name": "projects"})
+    .sort_index(level="month", ascending=False)
+)
+df
+```
+
+Sort the values, add a new column and do the final aggregation:
+
+```{python}
+%%time
+df = (
+    df.reset_index()
+    .assign(
+        ext=lambda t: t.ext.str.replace(r"cxx|cpp|cc|c|hpp|h", "C/C++", regex=True)
+        .str.replace("^f.*$", "Fortran", regex=True)
+        .str.replace("rs", "Rust")
+        .str.replace("go", "Go")
+        .str.replace("asm", "Assembly")
+        .replace("", None)
+    )
+    .groupby(["month", "ext"])
+    .agg({"projects": lambda s: len(set(sum(s, [])))})
+)
+df
+```
+
+```{python}
+#| echo: false
+
+# clean up after ourselves or else Dask will cause the kernel to die from
+# running out of memory
+del df
+gc.collect();  # semicolon to avoid printing the output
+```
+
+Remember, all of the previous code is executing on **a single file** and still
+takes minutes to run.
+
+#### Conclusion
+
+If I only have pandas at my disposal, I'm unsure of how I can avoid getting
+a bigger computer to run this query over the entire data set.
+
+### Rewriting the query to be fair
+
+At this point I wondered whether this was a fair query to run with pandas.
+
+After all, the downsides of pandas' use of object arrays to hold nested data
+structures like lists are well-known.
+
+The original query uses a lot of nested array types, which are very performant
+in DuckDB, but in this case **we're throwing away all of our arrays** and we
+don't need to use them.
+
+Additionally, I'm using lambda functions instead of taking advantage of pandas'
+fast built-in methods like `count`, `nunique` and others.
+
+Let's see if we can alter the original query to give pandas a leg up.
+
+#### A story of two `GROUP BY`s
+
+Here's the first Ibis expression:
+
+```{python}
+#| echo: false
+#| output: asis
+show_file("./step0.py")
+```
+
+It looks like we can remove the double `group_by` by moving the second `mutate`
+expression directly into the first `group_by` call.
+
+Applying these changes:
+
+```{python}
+#| echo: false
+#| output: asis
+import subprocess
+
+cmd = "diff", "-u", "step0.py", "step1.py"
+cmdline = " ".join(cmd)
+process = subprocess.run(cmd, text=True, capture_output=True)
+print(f"```diff\n{process.stdout.strip()}\n```")
+```
+
+We get:
+
+```{python}
+#| echo: false
+#| output: asis
+show_file("./step1.py")
+```
+
+#### Don't sort unnecessarily
+
+Notice this `order_by` call just before a `group_by` call. Ordering before
+grouping is somewhat useless here; we should probably sort after we've reduced
+our data. Let's stick the ordering at the end of the query.
+
+Applying these changes:
+
+```{python}
+#| echo: false
+#| output: asis
+import subprocess
+
+cmd = "diff", "-u", "step1.py", "step2.py"
+cmdline = " ".join(cmd)
+process = subprocess.run(cmd, text=True, capture_output=True)
+print(f"```diff\n{process.stdout.strip()}\n```")
+```
+
+We get:
+
+```{python}
+#| echo: false
+#| output: asis
+show_file("./step2.py")
+```
+
+#### Don't repeat yourself
+
+Notice that we are now
+
+1. grouping
+2. aggregating
+3. grouping again by the **same keys**
+4. aggregating
+
+This is less optimal than it could be. Notice that we are also flattening an
+array, computing its distinct values and then computing its length.
+
+We are computing the grouped number of distinct values, and we likely don't
+need to collect values into an array to do that.
+
+Let's try using a `COUNT(DISTINCT ...)` query instead, to avoid wasting cycles
+collecting arrays.
+
+We'll remove the second group by and then call `nunique()` to get the final
+query.
+
+Applying these changes:
+
+```{python}
+#| echo: false
+#| output: asis
+import subprocess
+
+cmd = "diff", "-u", "step2.py", "step3.py"
+cmdline = " ".join(cmd)
+process = subprocess.run(cmd, text=True, capture_output=True)
+print(f"```diff\n{process.stdout.strip()}\n```")
+```
+
+We get:
+
+```{python}
+#| echo: false
+#| output: asis
+with open("./step3.py") as f:
+    exec(f.read())
+```
+
+```{python}
+#| echo: false
+#| output: asis
+show_file("./step3.py")
+print("1. I added a second sort key (`project_count`) for deterministic output.")
+```
+
+Let's run it to make sure the results are as expected:
+
+```{python}
+duckdb_results = %timeit -n1 -r1 -o expr.to_pandas()
+```
+
+It looks like the new query might be a bit slower even though we're ostensibly
+doing less computation. Since we're still pretty close to the original
+duration, let's keep going.
+
+### Final pandas run with the new query
+
+Rewriting the pandas code we get:
+
+```{python}
+#| echo: false
+#| output: asis
+show_file("./pandas_impl.py")
+```
+
+Running it we get:
+
+```{python}
+pandas_results = %timeit -n1 -r1 -o %run pandas_impl.py
+```
+
+```{python}
+#| echo: false
+#| output: asis
+del df
+gc.collect();
+```
+
+::: {.callout-note}
+# Remember, this is the time it took pandas to run the query for a **single** file.
+DuckDB runs the query over the **entire** dataset about 4x faster than that!
+:::
+
+Let's try a tool that nominally scales to our problem: [Dask](https://dask.org).
+
+## Dask
+
+One really nice component of Dask is
+[`dask.dataframe`](https://docs.dask.org/en/stable/dataframe.html).
+
+Dask DataFrame implements a [good chunk of the pandas
+API](https://docs.dask.org/en/stable/dataframe.html#scope) and can be a drop-in
+replacement for pandas.
+
+I am happy that this turned out to be the case here.
+
+My first attempt was somewhat naive and was effectively a one line change
+from `import pandas as pd` to `import dask.dataframe as pd`.
+
+This worked and the workload completed. However, after talking to Dask
+expert and Ibis contributor [Naty Clementi](https://github.com/ncclementi) she
+suggested I try a few things:
+
+* Use [the distributed scheduler](https://distributed.dask.org/en/stable/).
+* Ensure that [`pyarrow` string arrays are
+  used](https://docs.dask.org/en/latest/configuration.html#dask) instead of
+  NumPy object arrays. This required **no changes** to my Dask code because
+  PyArrow strings have been the default since version 2023.7.1, hooray!
+* Explore some of the options to `read_parquet`. It turned that without setting
+  `split_row_groups=True` I ran out of memory.
+
+Let's look at the Dask implementation:
+
+```{python}
+#| echo: false
+#| output: asis
+show_file("./dask_impl.py")
+```
+
+Let's run the code:
+
+```{python}
+dask_results = %timeit -n1 -r1 -o %run dask_impl.py
+```
+
+```{python}
+#| echo: false
+#| output: asis
+del df
+gc.collect();
+```
+
+That's a great improvement over pandas: we finished the workload and our
+running time is pretty close to DuckDB.
+
+## Takeaways
+
+**Ibis + DuckDB is the only system tested that handles this workload well out of the box**
+
+* Pandas couldn't handle the workload due to memory constraints.
+* Dask required its [recommended distributed
+  scheduler](https://docs.dask.org/en/stable/deploying.html#deploy-dask-clusters)
+  to achieve maximum performance and still used a lot of memory.
+
+Let's recap the results with some numbers:
+
+### Numbers
+
+```{python}
+#| echo: false
+#| output: asis
+smallest_file_size = os.path.getsize(smallest_file)
+total_size = sum(map(os.path.getsize, allfiles))
+
+
+def make_line(name, results):
+    duration = results.best
+    total_size_mib = total_size / (1 << 20)
+    throughput = round(total_size_mib / duration, 0)
+    return " | ".join(
+        [
+            name,
+            f"{int(round(total_size_mib, 0)):,} MiB",
+            f"{int(round(duration, 0))} seconds",
+            f"{int(throughput)} MiB/s"
+        ]
+    )
+
+
+header = "| Toolset | Data size | Duration | Throughput |"
+sep = "| ------------------ | --------: | -----------: | ---------: |"
+rows = [
+    header,
+    sep,
+    f"| {make_line('Ibis + DuckDB', duckdb_results)} |",
+    f"| {make_line('Dask + Distributed', dask_results)} |",
+]
+print("\n".join(rows))
+```
+
+With Ibis + DuckDB, I was able to write the query the way I wanted to without
+running out of memory, using the default configuration provided by Ibis.
+
+```{python}
+#| echo: false
+#| output: asis
+pandas_duration = pandas_results.best
+pandas_expected_duration = pandas_duration * (total_size / smallest_file_size)
+
+dask_duration  = dask_results.best
+duckdb_duration = duckdb_results.best
+speedup = int(round(pandas_expected_duration / duckdb_duration, 0))
+
+print(f"""
+I was able run this computation around **{speedup}x faster** than you can expect
+with pandas using this hardware setup.
+""")
+```
+
+In contrast, pandas ran out of memory **on a single file** without some hand
+holding and while Dask didn't cause my program to run out of memory it still
+used quite a bit more than DuckDB.
+
+### Pandas is untenable for this workload
+
+Pandas requires me to load everything into memory, and my machine doesn't have
+enough memory to do that.
+
+Given that Ibis + DuckDB runs this workload on my machine it doesn't seem worth
+the effort to write any additional code to make pandas scale to the whole
+dataset.
+
+### Dask finishes in a similar amount of time as Ibis + DuckDB (within 2x)
+
+Out of the box I had quite a bit of difficulty figuring out how to maximize
+performance and not run out of memory.
+
+Please get in touch if you think my Dask code can be improved!
+
+I know the Dask community is hard at work building
+[`dask-expr`](https://github.com/dask-contrib/dask-expr) which might improve
+the performance of this workload when it lands.
+
+## Next steps
+
+### Please get in touch!
+
+If you have ideas about how to speed up my use of the tools I've discussed here
+please get in touch by opening a [GitHub
+discussion](https://github.com/ibis-project/ibis/discussions)!
+
+We would love it if more backends handled this workload!
+
+### Look out for part 2
+
+In part 2 of this series we'll explore how Polars and DataFusion perform on
+this query. Stay tuned!

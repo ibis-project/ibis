@@ -311,7 +311,7 @@ jobs:
         run: docker compose up --wait ${{ join(matrix.backend.services, ' ') }}
 
       - name: install python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         id: install_python
         with:
           python-version: ${{ matrix.python-version }}
@@ -319,7 +319,7 @@ jobs:
       - uses: syphar/restore-pip-download-cache@v1
         with:
           requirement_files: poetry.lock
-          custom_cache_key_element: ${{ steps.install_python.outputs.python-version }}
+          custom_cache_key_element: ${{ matrix.os }}-${{ steps.install_python.outputs.python-version }}
 
       - name: install poetry
         run: python -m pip install --upgrade pip 'poetry==1.7.0'
@@ -473,7 +473,7 @@ jobs:
         run: docker compose up --wait ${{ join(matrix.backend.services, ' ') }}
 
       - name: install python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         id: install_python
         with:
           python-version: ${{ matrix.python-version }}
@@ -540,7 +540,7 @@ jobs:
         run: just download-data
 
       - name: install python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         id: install_python
         with:
           python-version: ${{ matrix.python-version }}
@@ -585,7 +585,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: install python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: "3.11"
 
@@ -700,7 +700,7 @@ jobs:
         run: docker compose up --wait ${{ join(matrix.backend.services, ' ') }}
 
       - name: install python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         id: install_python
         with:
           python-version: ${{ matrix.python-version }}

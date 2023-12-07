@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import pandas as pd
-import pandas.testing as tm
 import pyarrow as pa
 import pyarrow.csv as pcsv
 import pytest
@@ -404,7 +403,7 @@ def test_to_pyarrow_decimal(backend, dtype, pyarrow_dtype):
     raises=pa.lib.ArrowTypeError,
     reason="arrow type conversion fails in `to_delta` call",
 )
-def test_roundtrip_delta(con, alltypes, tmp_path, monkeypatch):
+def test_roundtrip_delta(backend, con, alltypes, tmp_path, monkeypatch):
     if con.name == "pyspark":
         pytest.importorskip("delta")
     else:
@@ -419,7 +418,7 @@ def test_roundtrip_delta(con, alltypes, tmp_path, monkeypatch):
     dt = ibis.read_delta(path)
     result = dt.to_pandas()
 
-    tm.assert_frame_equal(result, expected)
+    backend.assert_frame_equal(result, expected)
 
 
 @pytest.mark.xfail_version(

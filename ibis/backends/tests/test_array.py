@@ -17,11 +17,6 @@ import ibis.expr.datatypes as dt
 import ibis.expr.types as ir
 
 try:
-    import duckdb
-except ImportError:
-    duckdb = None
-
-try:
     from clickhouse_connect.driver.exceptions import (
         DatabaseError as ClickhouseDatabaseError,
     )
@@ -371,7 +366,7 @@ def test_unnest_simple(backend):
     )
     expr = array_types.x.cast("!array<float64>").unnest()
     result = expr.execute().astype("Float64").rename("tmp")
-    tm.assert_series_equal(result, expected)
+    backend.assert_series_equal(result, expected)
 
 
 @builtin_array
@@ -398,7 +393,7 @@ def test_unnest_complex(backend):
         .reset_index(drop=True)
     )
     result = expr.execute()
-    tm.assert_frame_equal(result, expected)
+    backend.assert_frame_equal(result, expected)
 
     # test that unnest works with to_pyarrow
     assert len(expr.to_pyarrow()) == len(result)
@@ -475,7 +470,7 @@ def test_unnest_default_name(backend):
 
     result = expr.name("x").execute()
     expected = df.x.map(lambda x: x + [1]).explode("x")
-    tm.assert_series_equal(
+    backend.assert_series_equal(
         result.astype(object).fillna(pd.NA), expected.fillna(pd.NA), check_dtype=False
     )
 
@@ -918,20 +913,13 @@ def test_array_flatten(backend, flatten_data, column, expected):
     backend.assert_series_equal(result, expected, check_names=False)
 
 
-polars_overflow = pytest.mark.notyet(
-    ["polars"],
-    reason="but polars overflows allocation with some inputs",
-    raises=BaseException,
-)
-
-
 @pytest.mark.notyet(
     ["datafusion"],
     reason="range isn't implemented upstream",
     raises=com.OperationNotDefinedError,
 )
 @pytest.mark.notimpl(["flink", "pandas", "dask"], raises=com.OperationNotDefinedError)
-@pytest.mark.parametrize("n", [param(-2, marks=[polars_overflow]), 0, 2])
+@pytest.mark.parametrize("n", [-2, 0, 2])
 def test_range_single_argument(con, n):
     expr = ibis.range(n)
     result = con.execute(expr)
@@ -947,54 +935,28 @@ def test_range_single_argument(con, n):
 @pytest.mark.notimpl(
     ["polars", "flink", "pandas", "dask"], raises=com.OperationNotDefinedError
 )
-def test_range_single_argument_unnest(con, n):
+def test_range_single_argument_unnest(backend, con, n):
     expr = ibis.range(n).unnest()
     result = con.execute(expr)
-    tm.assert_series_equal(
+    backend.assert_series_equal(
         result,
         pd.Series(list(range(n)), dtype=result.dtype, name=expr.get_name()),
         check_index=False,
     )
 
 
-@pytest.mark.parametrize(
-    "step",
-    [
-        param(
-            -2,
-            marks=[
-                pytest.mark.notyet(
-                    ["polars"],
-                    reason="panic upstream",
-                    raises=PolarsInvalidOperationError,
-                )
-            ],
-        ),
-        param(
-            -1,
-            marks=[
-                pytest.mark.notyet(
-                    ["polars"],
-                    reason="panic upstream",
-                    raises=PolarsInvalidOperationError,
-                )
-            ],
-        ),
-        1,
-        2,
-    ],
-)
+@pytest.mark.parametrize("step", [-2, -1, 1, 2])
 @pytest.mark.parametrize(
     ("start", "stop"),
     [
         param(-7, -7),
         param(-7, 0),
         param(-7, 7),
-        param(0, -7, marks=[polars_overflow]),
+        param(0, -7),
         param(0, 0),
         param(0, 7),
-        param(7, -7, marks=[polars_overflow]),
-        param(7, 0, marks=[polars_overflow]),
+        param(7, -7),
+        param(7, 0),
         param(7, 7),
     ],
 )

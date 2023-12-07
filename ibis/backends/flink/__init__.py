@@ -145,6 +145,33 @@ class Backend(BaseBackend, CanCreateDatabase):
         # but executing the SQL string directly yields a `TableResult` object
         return self._filter_with_like(tables, like)
 
+    def _list_views(
+        self,
+        like: str | None = None,
+        temporary: bool = True,
+    ) -> list[str]:
+        """Return the list of view names.
+
+        Return the list of view names.
+
+        Parameters
+        ----------
+        like : str, optional
+            A pattern in Python's regex format.
+        temporary : bool, optional
+            Whether to list temporary views or permanent views.
+
+        Returns
+        -------
+        list[str]
+            The list of the view names that match the pattern `like`.
+        """
+        if temporary:
+            views = self._table_env.list_temporary_views()
+        else:
+            views = self._table_env.list_views()
+        return self._filter_with_like(views, like)
+
     def _fully_qualified_name(
         self,
         name: str,
@@ -282,12 +309,11 @@ class Backend(BaseBackend, CanCreateDatabase):
         name
             Name of the new table.
         obj
-            An Ibis table expression or pandas table that will be used to
-            extract the schema and the data of the new table. If not provided,
-            `schema` must be given.
+            An Ibis table expression, pandas DataFrame, or PyArrow Table that will
+            be used to extract the schema and the data of the new table. An
+            optional `schema` can be used to override the schema.
         schema
-            The schema for the new table. Only one of `schema` or `obj` can be
-            provided.
+            The schema for the new table. Required if `obj` is not provided.
         database
             Name of the database where the table will be created, if not the
             default.
@@ -315,30 +341,34 @@ class Backend(BaseBackend, CanCreateDatabase):
         import pyarrow_hotfix  # noqa: F401
 
         import ibis.expr.types as ir
+        from ibis.backends.flink.datatypes import FlinkRowSchema
 
         if obj is None and schema is None:
             raise exc.IbisError("The schema or obj parameter is required")
 
-        if overwrite:
-            self.drop_table(name=name, catalog=catalog, database=database, force=True)
+        # in-memory data is created as views in `pyflink`
+        elif obj is not None:
+            if isinstance(obj, pa.Table):
+                obj = obj.to_pandas()
+            if isinstance(obj, pd.DataFrame):
+                table = self._table_env.from_pandas(
+                    obj, FlinkRowSchema.from_ibis(schema)
+                )
+            if isinstance(obj, ir.Table):
+                table = obj
+            return self.create_view(name, table, database=database, overwrite=overwrite)
 
-        if isinstance(obj, pa.Table):
-            obj = obj.to_pandas()
-        if isinstance(obj, pd.DataFrame):
-            qualified_name = self._fully_qualified_name(name, database, catalog)
-            table = self._table_env.from_pandas(obj)
-            # in-memory data is created as views in `pyflink`
-            # TODO(chloeh13q): alternatively, we can do CREATE TABLE and then INSERT
-            # INTO ... VALUES to keep things consistent
-            self._table_env.create_temporary_view(qualified_name, table)
-        if isinstance(obj, ir.Table):
-            # TODO(chloeh13q): implement CREATE TABLE for expressions
-            raise NotImplementedError
-        if schema is not None:
+        # external data is created as tables in `pyflink`
+        else:
             if not tbl_properties:
                 raise exc.IbisError(
                     "tbl_properties is required when creating table with schema"
                 )
+            if overwrite:
+                self.drop_table(
+                    name=name, catalog=catalog, database=database, force=True
+                )
+
             statement = CreateTableFromConnector(
                 table_name=name,
                 schema=schema,
@@ -349,8 +379,7 @@ class Backend(BaseBackend, CanCreateDatabase):
                 catalog=catalog,
             )
             self._exec_sql(statement.compile())
-
-        return self.table(name, database=database)
+            return self.table(name, database=database, catalog=catalog)
 
     def drop_table(
         self,
@@ -388,9 +417,10 @@ class Backend(BaseBackend, CanCreateDatabase):
     def create_view(
         self,
         name: str,
-        obj: ir.Table,
+        obj: pd.DataFrame | ir.Table,
         *,
         database: str | None = None,
+        catalog: str | None = None,
         overwrite: bool = False,
     ) -> ir.Table:
         """Create a new view from an expression.
@@ -404,6 +434,8 @@ class Backend(BaseBackend, CanCreateDatabase):
         database
             Name of the database where the view will be created, if not
             provided the database's default is used.
+        catalog
+            Name of the catalog where the table exists, if not the default.
         overwrite
             Whether to clobber an existing view with the same name.
 
@@ -412,7 +444,16 @@ class Backend(BaseBackend, CanCreateDatabase):
         Table
             The view that was created.
         """
-        raise NotImplementedError
+        if isinstance(obj, ir.Table):
+            # TODO(chloeh13q): implement CREATE VIEW for expressions
+            raise NotImplementedError
+
+        if overwrite and name in self._list_views():
+            self.drop_view(name=name, catalog=catalog, database=database, force=True)
+
+        qualified_name = self._fully_qualified_name(name, database, catalog)
+        self._table_env.create_temporary_view(qualified_name, obj)
+        return self.table(name, database=database, catalog=catalog)
 
     def drop_view(
         self,
