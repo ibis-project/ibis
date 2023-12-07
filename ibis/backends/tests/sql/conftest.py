@@ -77,8 +77,6 @@ def to_sql(expr, *args, **kwargs) -> str:
     if kwargs:
         raise TypeError("Unexpected keyword arguments")
 
-    expr = expr.optimize()
-
     sql = DuckDBBackend.compiler.translate(expr.op(), params={})
     if isinstance(sql, sg.exp.Table):
         sql = sg.select("*").from_(sql)
