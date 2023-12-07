@@ -44,6 +44,28 @@ class RowsFrame:
         self.prepend_nan = prepend_nan
         self.append_nan = append_nan
 
+    @staticmethod
+    def adjust(length, index, start_offset, end_offset):
+        if start_offset is None:
+            start_index = 0
+        else:
+            start_index = index + start_offset
+            if start_index < 0:
+                start_index = 0
+            elif start_index > length:
+                start_index = length
+
+        if end_offset is None:
+            end_index = length
+        else:
+            end_index = index + end_offset + 1
+            if end_index < 0:
+                end_index = 0
+            elif end_index > length:
+                end_index = length
+
+        return (start_index, end_index)
+
     def apply(self, func, **kwargs):
         results = {}
         for df in self.parent.groups():
@@ -52,15 +74,8 @@ class RowsFrame:
                 start = row["_start"]
                 end = row["_end"]
 
-                if start is None and end is None:
-                    subdf = df
-                elif start is None:
-                    subdf = df.iloc[: i + end + 1]
-
-                elif end is None:
-                    subdf = df.iloc[i + start :]
-                else:
-                    subdf = df.iloc[i + start : i + end + 1]
+                start_index, end_index = self.adjust(len(df), i, start, end)
+                subdf = df.iloc[start_index:end_index]
 
                 res = func(subdf, **kwargs)
                 if isinstance(res, pd.Series):

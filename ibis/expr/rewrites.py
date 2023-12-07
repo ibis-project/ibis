@@ -158,6 +158,9 @@ def reorder_filter_project(_, y):
     return ops.Project(inner, projs)
 
 
+# TODO(kszucs): @replace(p.Aggregate(y @ p.Project)) -> Aggregate()
+
+
 # TODO(kszucs): rewrite projection not actually depending on the parent table,
 # it should rather use a DummyTable object, see the following repr:
 # r0 := UnboundTable: t
