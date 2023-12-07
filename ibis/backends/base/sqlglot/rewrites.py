@@ -5,12 +5,11 @@ from public import public
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 from ibis.common.annotations import attribute
-from ibis.common.collections import FrozenDict
+from ibis.common.collections import FrozenDict  # noqa: TCH001
 from ibis.common.patterns import replace
 from ibis.common.typing import VarTuple  # noqa: TCH001
 from ibis.expr.rewrites import p
 from ibis.expr.schema import Schema
-from ibis.util import gen_name
 
 
 @public
@@ -36,12 +35,12 @@ def project_to_select(_):
 
 @replace(p.Filter)
 def filter_to_select(_):
-    return Select(_.parent, _.parent.fields, _.predicates, ())
+    return Select(_.parent, _.fields, _.predicates, ())
 
 
 @replace(p.Sort)
 def sort_to_select(_):
-    return Select(_.parent, _.parent.fields, (), _.sort_keys)
+    return Select(_.parent, _.fields, (), _.sort_keys)
 
 
 @replace(p.Project(Select))
