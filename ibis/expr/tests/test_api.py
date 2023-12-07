@@ -11,7 +11,7 @@ import ibis
 import ibis.expr.datatypes as dt
 import ibis.expr.schema as sch
 from ibis import _
-from ibis.common.exceptions import IntegrityError
+from ibis.common.exceptions import IbisInputError, IntegrityError
 
 
 def test_schema_from_names_types():
@@ -117,3 +117,10 @@ def test_repr_deferred_with_exprs(f, sol):
     expr = f(t)
     res = repr(expr)
     assert res == sol
+
+
+def test_duplicate_columns_in_memtable_not_allowed():
+    df = pd.DataFrame([[1, 2], [3, 4]], columns=["a", "a"])
+
+    with pytest.raises(IbisInputError, match="Duplicate column names"):
+        ibis.memtable(df)

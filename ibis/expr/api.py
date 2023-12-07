@@ -7,6 +7,7 @@ import datetime
 import functools
 import numbers
 import operator
+from collections import Counter
 from typing import TYPE_CHECKING, Any, NamedTuple, overload
 
 import ibis.expr.builders as bl
@@ -476,6 +477,16 @@ def _memtable_from_dataframe(
             (f"col{i:d}" for i in builtins.range(len(cols))),
         )
         df = df.rename(columns=dict(zip(cols, newcols)))
+
+    # verify that the DataFrame has no duplicate column names because ibis
+    # doesn't allow that
+    cols = df.columns
+    dupes = [name for name, count in Counter(cols).items() if count > 1]
+    if dupes:
+        raise IbisInputError(
+            f"Duplicate column names found in DataFrame when constructing memtable: {dupes}"
+        )
+
     op = ops.InMemoryTable(
         name=name if name is not None else util.gen_name("pandas_memtable"),
         schema=sch.infer(df) if schema is None else schema,
