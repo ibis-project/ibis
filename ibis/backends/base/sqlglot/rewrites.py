@@ -51,7 +51,7 @@ def join_chain_to_select(_):
 
 @replace(
     Object(Select, Object(Select))
-    & ~Check(_.find(ops.WindowFunction, filter=ops.Value))
+    & ~Check(_.parent.find(ops.WindowFunction, filter=ops.Value))
 )
 def merge_select_select(_):
     subs = {ops.Field(_.parent, k): v for k, v in _.parent.fields.items()}
