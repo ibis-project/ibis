@@ -123,8 +123,8 @@ def test_context_adjustment_filter_before_window(
 @pytest.mark.notimpl(["duckdb", "pyspark"])
 @pytest.mark.notimpl(
     ["flink"],
-    raises=com.OperationNotDefinedError,
-    reason="No translation rule for <class 'ibis.expr.operations.structs.StructField'>",
+    raises=com.UnsupportedOperationError,
+    reason="Flink engine does not support generic window clause with no order by",
 )
 def test_context_adjustment_multi_col_udf_non_grouped(
     backend, alltypes, context, monkeypatch

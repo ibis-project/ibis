@@ -4,7 +4,13 @@ from typing import TYPE_CHECKING
 
 import ibis.common.exceptions as com
 import ibis.expr.operations as ops
-from ibis.backends.base.sql.registry import aggregate, fixed_arity, helpers, unary
+from ibis.backends.base.sql.registry import (
+    aggregate,
+    fixed_arity,
+    helpers,
+    quote_identifier,
+    unary,
+)
 from ibis.backends.base.sql.registry import (
     operation_registry as base_operation_registry,
 )
@@ -15,6 +21,12 @@ if TYPE_CHECKING:
     from ibis.backends.base.sql.compiler import ExprTranslator
 
 operation_registry = base_operation_registry.copy()
+
+
+def type_to_sql_string(tval):
+    if tval.is_array():
+        return f"array<{helpers.type_to_sql_string(tval.value_type)}>"
+    return helpers.type_to_sql_string(tval)
 
 
 def _not(translator: ExprTranslator, op: ops.Node) -> str:
@@ -61,10 +73,11 @@ def _cast(translator: ExprTranslator, op: ops.generic.Cast) -> str:
         return f"CAST({arg_translated} AS date)"
     elif to.is_json():
         return arg_translated
-
-    from ibis.backends.base.sql.registry.main import cast
-
-    return cast(translator=translator, op=op)
+    elif op.arg.dtype.is_temporal() and op.to.is_int64():
+        return f"1000000 * unix_timestamp({arg_translated})"
+    else:
+        sql_type = type_to_sql_string(op.to)
+        return f"CAST({arg_translated} AS {sql_type})"
 
 
 def _left_op_right(translator: ExprTranslator, op_node: ops.Node, op_sign: str) -> str:
@@ -96,7 +109,7 @@ def _try_cast(translator: ExprTranslator, op: ops.Node) -> str:
         # It's recommended to use UNIX_TIMESTAMP(CAST(timestamp_col AS STRING)) instead.
         return f"UNIX_TIMESTAMP(TRY_CAST({arg_formatted} AS STRING))"
     else:
-        sql_type = helpers.type_to_sql_string(op.to)
+        sql_type = type_to_sql_string(op.to)
         return f"TRY_CAST({arg_formatted} AS {sql_type})"
 
 
@@ -382,6 +395,11 @@ def _timestamp_from_ymdhms(
     return f"CAST({concat_string} AS TIMESTAMP)"
 
 
+def _struct_field(translator, op):
+    arg = translator.translate(op.arg)
+    return f"{arg}.{quote_identifier(op.field, force=True)}"
+
+
 operation_registry.update(
     {
         # Unary operations
@@ -444,6 +462,7 @@ operation_registry.update(
         ops.TimestampFromUNIX: _timestamp_from_unix,
         ops.TimestampFromYMDHMS: _timestamp_from_ymdhms,
         ops.TimestampSub: _timestamp_sub,
+        ops.StructField: _struct_field,
     }
 )
 

@@ -13,7 +13,7 @@ import ibis.expr.datatypes as dt
 pytestmark = [
     pytest.mark.never(["mysql", "sqlite", "mssql"], reason="No struct support"),
     pytest.mark.notyet(["impala"]),
-    pytest.mark.notimpl(["datafusion", "druid", "oracle", "flink"]),
+    pytest.mark.notimpl(["datafusion", "druid", "oracle"]),
 ]
 
 
@@ -55,6 +55,9 @@ _NULL_STRUCT_LITERAL = ibis.NA.cast("struct<a: int64, b: string, c: float64>")
 
 @pytest.mark.notimpl(["postgres"])
 @pytest.mark.parametrize("field", ["a", "b", "c"])
+@pytest.mark.notyet(
+    ["flink"], reason="flink doesn't support creating struct columns from literals"
+)
 def test_literal(backend, con, field):
     query = _STRUCT_LITERAL[field]
     dtype = query.type().to_pandas()
@@ -69,6 +72,9 @@ def test_literal(backend, con, field):
 @pytest.mark.notyet(
     ["clickhouse"], reason="clickhouse doesn't support nullable nested types"
 )
+@pytest.mark.notyet(
+    ["flink"], reason="flink doesn't support creating struct columns from literals"
+)
 def test_null_literal(backend, con, field):
     query = _NULL_STRUCT_LITERAL[field]
     result = pd.Series([con.execute(query)])
@@ -78,6 +84,9 @@ def test_null_literal(backend, con, field):
 
 
 @pytest.mark.notimpl(["dask", "pandas", "postgres"])
+@pytest.mark.notyet(
+    ["flink"], reason="flink doesn't support creating struct columns from literals"
+)
 def test_struct_column(backend, alltypes, df):
     t = alltypes
     expr = ibis.struct(dict(a=t.string_col, b=1, c=t.bigint_col)).name("s")
@@ -91,6 +100,9 @@ def test_struct_column(backend, alltypes, df):
 
 
 @pytest.mark.notimpl(["dask", "pandas", "postgres", "polars"])
+@pytest.mark.notyet(
+    ["flink"], reason="flink doesn't support creating struct columns from collect"
+)
 def test_collect_into_struct(alltypes):
     from ibis import _
 
