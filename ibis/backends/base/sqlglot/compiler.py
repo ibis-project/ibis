@@ -846,9 +846,9 @@ class SQLGlotCompiler(abc.ABC):
     ## relations
 
     @visit_node.register(Select)
-    def visit_Select(self, op, *, parent, selections, predicates, sort_keys):
+    def visit_Select(self, op, *, parent, joins, selections, predicates, sort_keys):
         # if we've constructed a useless projection return the parent relation
-        if not selections and not predicates and not sort_keys:
+        if not selections and not joins and not predicates and not sort_keys:
             return parent
 
         result = parent
@@ -857,6 +857,11 @@ class SQLGlotCompiler(abc.ABC):
             result = sg.select(
                 *(sel.as_(name, quoted=self.quoted) for name, sel in selections.items())
             ).from_(result)
+
+        for link in joins:
+            if isinstance(link, sge.Alias):
+                link = link.this
+            result = result.join(link)
 
         if predicates:
             result = result.where(*predicates)
