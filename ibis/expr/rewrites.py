@@ -177,31 +177,3 @@ def reorder_filter_project(_, y):
 # TODO(kszucs): should use node.map() instead of node.replace() to match on the
 # largest possible pattern, or even better `graph.traverse()` to go top-down
 # possibly need a top-to-bottom rewriter for rules like the one below
-
-
-# replacement rule to convert a sequence of project filter operations into a
-# SQL-like ops.Selection operation
-@replace(
-    "sort" @ p.Sort("proj" @ p.Project("filt" @ p.Filter("root" @ p.Relation)))
-    | "proj" @ p.Project("filt" @ p.Filter("root" @ p.Relation))
-    | "sort" @ p.Sort("root" @ p.Relation)
-    | "filt" @ p.Filter("root" @ p.Relation)
-    | "proj" @ p.Project("root" @ p.Relation)
-)
-def sequalize(_, root, filt=None, proj=None, sort=None):
-    selections = proj.values if proj else {}
-    predicates = filt.predicates if filt else ()
-    sort_keys = sort.keys if sort else ()
-    parent = root
-
-    if filt:
-        rule = p.Field(filt, name) >> d.Field(root, name)
-        selections = {k: v.replace(rule) for k, v in selections.items()}
-
-    if proj:
-        rule = p.Field(proj, name) >> Item(selections, name)
-        sort_keys = tuple(v.replace(rule) for v in sort_keys)
-
-    return ops.Selection(
-        parent=parent, selections=selections, predicates=predicates, sort_keys=sort_keys
-    )
