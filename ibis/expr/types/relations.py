@@ -4357,10 +4357,10 @@ class TableExpr(Expr, _FixedTextJupyterMixin):
         from ibis.expr.rewrites import sequalize
         from ibis.common.patterns import NoMatch, match
 
-        expr = self.optimize()
+        expr = self
         node = expr.op()
         if (result := match(sequalize, node)) is not NoMatch:
-            return result
+            return result.to_expr()
 
         raise ValueError(f"Cannot sequalize {expr!r}")
 
