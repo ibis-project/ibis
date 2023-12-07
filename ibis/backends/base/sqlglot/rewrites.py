@@ -41,7 +41,7 @@ def filter_to_select(_):
 
 @replace(p.Sort)
 def sort_to_select(_):
-    return Select(_.parent, selections=_.fields, sort_keys=_.sort_keys)
+    return Select(_.parent, selections=_.fields, sort_keys=_.keys)
 
 
 @replace(p.JoinChain)
