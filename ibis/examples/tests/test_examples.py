@@ -119,3 +119,14 @@ def test_load_example(backend_name, example, columns):
     con = getattr(ibis, backend_name).connect()
     t = getattr(ibis.examples, example).fetch(backend=con)
     assert t.columns == columns
+
+
+def test_union_bug():
+    t = ibis.examples.penguins.fetch()
+    t = t.head(100)
+
+    sub1 = t.inner_join(t.view(), "island").mutate(island_right=lambda t: t.island)
+    sub2 = t.inner_join(t.view(), "sex").mutate(sex_right=lambda t: t.sex)
+    u = ibis.union(sub1, sub2)
+
+    assert len(u.execute())
