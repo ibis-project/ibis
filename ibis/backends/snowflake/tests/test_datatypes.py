@@ -156,3 +156,18 @@ def test_extract_timestamp_from_table_sqlalchemy(con, snowflake_type, ibis_type)
 
     t = con.table(name)
     assert t.schema() == expected_schema
+
+
+def test_array_discovery(con):
+    t = con.tables.ARRAY_TYPES
+    expected = ibis.schema(
+        dict(
+            x=dt.Array(dt.json),
+            y=dt.Array(dt.json),
+            z=dt.Array(dt.json),
+            grouper=dt.string,
+            scalar_column=dt.float64,
+            multi_dim=dt.Array(dt.json),
+        )
+    )
+    assert t.schema() == expected

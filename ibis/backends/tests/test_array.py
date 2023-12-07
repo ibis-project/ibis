@@ -34,17 +34,9 @@ try:
 except ImportError:
     PySparkAnalysisException = None
 
-
-try:
-    from polars.exceptions import PolarsInvalidOperationError
-except ImportError:
-    PolarsInvalidOperationError = None
-
 pytestmark = [
     pytest.mark.never(
-        ["sqlite", "mysql", "mssql"],
-        reason="No array support",
-        raises=Exception,
+        ["sqlite", "mysql", "mssql"], reason="No array support", raises=Exception
     ),
     pytest.mark.notyet(["impala"], reason="No array support", raises=Exception),
     pytest.mark.notimpl(["druid", "oracle"], raises=Exception),
@@ -194,92 +186,9 @@ builtin_array = toolz.compose(
     pytest.mark.never(
         ["sqlite"], reason="array types are unsupported", raises=NotImplementedError
     ),
-    # someone just needs to implement these
+    # someone needs to implement these
     pytest.mark.notimpl(["flink"], raises=Exception),
 )
-
-
-@builtin_array
-@pytest.mark.never(
-    [
-        "clickhouse",
-        "duckdb",
-        "pandas",
-        "pyspark",
-        "snowflake",
-        "polars",
-        "trino",
-        "datafusion",
-    ],
-    reason="backend does not flatten array types",
-    raises=AssertionError,
-)
-@pytest.mark.never(
-    ["snowflake"],
-    reason="snowflake has an extremely specialized way of implementing arrays",
-    raises=AssertionError,
-)
-@pytest.mark.never(
-    ["bigquery"], reason="doesn't support arrays of arrays", raises=AssertionError
-)
-@pytest.mark.notimpl(["dask"], raises=AssertionError)
-def test_array_discovery_postgres(backend):
-    t = backend.array_types
-    expected = ibis.schema(
-        dict(
-            x=dt.Array(dt.int64),
-            y=dt.Array(dt.string),
-            z=dt.Array(dt.float64),
-            grouper=dt.string,
-            scalar_column=dt.float64,
-            multi_dim=dt.Array(dt.int64),
-        )
-    )
-    assert t.schema() == expected
-
-
-@builtin_array
-@pytest.mark.never(
-    ["snowflake"],
-    reason="snowflake has an extremely specialized way of implementing arrays",
-    raises=AssertionError,
-)
-@pytest.mark.never(
-    [
-        "duckdb",
-        "pandas",
-        "postgres",
-        "pyspark",
-        "snowflake",
-        "polars",
-        "trino",
-        "datafusion",
-    ],
-    reason="backend supports nullable nested types",
-    raises=AssertionError,
-)
-@pytest.mark.never(
-    ["bigquery"],
-    reason="doesn't support arrays of arrays",
-    raises=AssertionError,
-)
-@pytest.mark.never(["dask"], raises=AssertionError, reason="allows nullable types")
-def test_array_discovery_clickhouse(backend):
-    t = backend.array_types
-    expected = ibis.schema(
-        dict(
-            x=dt.Array(dt.int64, nullable=False),
-            y=dt.Array(dt.string, nullable=False),
-            z=dt.Array(dt.float64, nullable=False),
-            grouper=dt.string,
-            scalar_column=dt.float64,
-            multi_dim=dt.Array(
-                dt.Array(dt.int64, nullable=False),
-                nullable=False,
-            ),
-        )
-    )
-    assert t.schema() == expected
 
 
 @builtin_array
@@ -289,16 +198,14 @@ def test_array_discovery_clickhouse(backend):
     raises=AssertionError,
 )
 @pytest.mark.never(
-    ["bigquery"],
-    reason="doesn't support arrays of arrays",
-    raises=AssertionError,
+    ["bigquery"], reason="doesn't support arrays of arrays", raises=AssertionError
 )
 @pytest.mark.never(
     ["snowflake"],
     reason="snowflake has an extremely specialized way of implementing arrays",
     raises=AssertionError,
 )
-def test_array_discovery_desired(backend):
+def test_array_discovery(backend):
     t = backend.array_types
     expected = ibis.schema(
         dict(
@@ -308,40 +215,6 @@ def test_array_discovery_desired(backend):
             grouper=dt.string,
             scalar_column=dt.float64,
             multi_dim=dt.Array(dt.Array(dt.int64)),
-        )
-    )
-    assert t.schema() == expected
-
-
-@builtin_array
-@pytest.mark.never(
-    [
-        "bigquery",
-        "clickhouse",
-        "dask",
-        "datafusion",
-        "duckdb",
-        "mysql",
-        "pandas",
-        "polars",
-        "postgres",
-        "pyspark",
-        "sqlite",
-        "trino",
-    ],
-    reason="backend does not implement arrays like snowflake",
-    raises=AssertionError,
-)
-def test_array_discovery_snowflake(backend):
-    t = backend.array_types
-    expected = ibis.schema(
-        dict(
-            x=dt.Array(dt.json),
-            y=dt.Array(dt.json),
-            z=dt.Array(dt.json),
-            grouper=dt.string,
-            scalar_column=dt.float64,
-            multi_dim=dt.Array(dt.json),
         )
     )
     assert t.schema() == expected
@@ -401,9 +274,7 @@ def test_unnest_complex(backend):
 
 @builtin_array
 @pytest.mark.never(
-    "pyspark",
-    reason="pyspark throws away nulls in collect_list",
-    raises=AssertionError,
+    "pyspark", reason="pyspark throws away nulls in collect_list", raises=AssertionError
 )
 @pytest.mark.never(
     "clickhouse",
@@ -775,9 +646,7 @@ def test_unnest_struct(con):
 
 @builtin_array
 @pytest.mark.never(
-    ["impala", "mssql"],
-    raises=com.OperationNotDefinedError,
-    reason="no array support",
+    ["impala", "mssql"], raises=com.OperationNotDefinedError, reason="no array support"
 )
 @pytest.mark.notimpl(
     ["dask", "datafusion", "druid", "oracle", "pandas", "polars", "postgres"],
@@ -859,9 +728,7 @@ def flatten_data():
 
 
 @pytest.mark.notyet(
-    ["bigquery"],
-    reason="BigQuery doesn't support arrays of arrays",
-    raises=TypeError,
+    ["bigquery"], reason="BigQuery doesn't support arrays of arrays", raises=TypeError
 )
 @pytest.mark.notyet(
     ["postgres"],
