@@ -4,6 +4,7 @@ from __future__ import annotations
 import sqlite3
 
 import pandas as pd
+import pandas.testing as tm
 import pytest
 from packaging.version import parse as vparse
 from pytest import param
@@ -39,10 +40,10 @@ pytestmark = [
     ["flink"],
     reason="https://github.com/ibis-project/ibis/pull/6920#discussion_r1373212503",
 )
-def test_json_getitem(backend, json_t, expr_fn, expected):
+def test_json_getitem(json_t, expr_fn, expected):
     expr = expr_fn(json_t)
     result = expr.execute()
-    backend.assert_series_equal(result.fillna(pd.NA), expected.fillna(pd.NA))
+    tm.assert_series_equal(result.fillna(pd.NA), expected.fillna(pd.NA))
 
 
 @pytest.mark.notimpl(["dask", "mysql", "pandas"])

@@ -762,7 +762,7 @@ def test_array_intersect(con, data):
 )
 @pytest.mark.notimpl(["postgres"], raises=sa.exc.ProgrammingError)
 @pytest.mark.notimpl(["datafusion"], raises=com.OperationNotDefinedError)
-def test_unnest_struct(backend, con):
+def test_unnest_struct(con):
     data = {"value": [[{"a": 1}, {"a": 2}], [{"a": 3}, {"a": 4}]]}
     t = ibis.memtable(data, schema=ibis.schema({"value": "!array<!struct<a: !int>>"}))
     expr = t.value.unnest()
@@ -770,7 +770,7 @@ def test_unnest_struct(backend, con):
     result = con.execute(expr)
 
     expected = pd.DataFrame(data).explode("value").iloc[:, 0].reset_index(drop=True)
-    backend.assert_series_equal(result, expected)
+    tm.assert_series_equal(result, expected)
 
 
 @builtin_array
