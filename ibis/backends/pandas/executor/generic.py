@@ -7,10 +7,10 @@ import numpy as np
 import pandas as pd
 
 import ibis.expr.operations as ops
+from ibis.backends.pandas.convert import PandasConverter
 from ibis.backends.pandas.executor.core import execute
 from ibis.backends.pandas.executor.utils import asframe, columnwise
 from ibis.common.exceptions import OperationNotDefinedError
-from ibis.formats.pandas import PandasData
 
 
 @execute.register(ops.Literal)
@@ -62,9 +62,9 @@ def execute_negate(op, arg):
 @execute.register(ops.Cast)
 def execute_cast(op, arg, to):
     if isinstance(arg, pd.Series):
-        return PandasData.convert_column(arg, to)
+        return PandasConverter.convert_column(arg, to)
     else:
-        return PandasData.convert_scalar(arg, to)
+        return PandasConverter.convert_scalar(arg, to)
 
 
 @execute.register(ops.E)

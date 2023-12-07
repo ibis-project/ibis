@@ -17,6 +17,9 @@ class UngroupedFrame:
     def apply(self, func, **kwargs):
         return func(self.df, **kwargs)
 
+    def apply_analytic(self, func, **kwargs):
+        return func(self.df, **kwargs)
+
 
 class GroupedFrame:
     def __init__(self, df, group_keys):
@@ -36,6 +39,9 @@ class GroupedFrame:
         else:
             # FIXME(kszucs): this must be supported
             raise NotImplementedError("Only single group key is supported")
+
+    def apply_analytic(self, func, **kwargs):
+        return self.apply(func, **kwargs)
 
 
 class RowsFrame:
@@ -71,18 +77,20 @@ class RowsFrame:
         for df in self.parent.groups():
             for i, (ix, row) in enumerate(df.iterrows()):
                 # TODO(kszucs): use unique column names for _start, _end
-                start = row["_start"]
-                end = row["_end"]
-
+                start, end = row["_start"], row["_end"]
                 start_index, end_index = self.adjust(len(df), i, start, end)
                 subdf = df.iloc[start_index:end_index]
+                results[ix] = func(subdf, **kwargs)
 
-                res = func(subdf, **kwargs)
-                if isinstance(res, pd.Series):
-                    results[ix] = res[ix]
-                else:
-                    results[ix] = res
+        return pd.Series(results)
 
+    def apply_analytic(self, func, **kwargs):
+        results = {}
+        for df in self.parent.groups():
+            for i, (ix, row) in enumerate(df.iterrows()):
+                # start, end = row["_start"], row["_end"]
+                result = func(df, **kwargs)
+                results[ix] = result[ix]
         return pd.Series(results)
 
 
@@ -133,13 +141,17 @@ def execute_window_frame(op, table, start, end, group_by, order_by, **kwargs):
 
 @execute.register(ops.WindowFunction)
 def execute_window_function(op, func, frame):
-    return frame.apply(func)
+    if isinstance(op.func, (ops.Lead, ops.Lag)):
+        return frame.apply_analytic(func)
+    else:
+        return frame.apply(func)
 
 
 @execute.register(ops.Lag)
 def execute_lag(op, arg, offset, default):
     def agg(df):
-        return df[arg.name].shift(1, fill_value=default)
+        shift_by = 1 if offset is None else offset
+        return df[arg.name].shift(shift_by, fill_value=default)
 
     return agg
 
@@ -147,6 +159,7 @@ def execute_lag(op, arg, offset, default):
 @execute.register(ops.Lead)
 def execute_lead(op, arg, offset, default):
     def agg(df):
-        return df[arg.name].shift(-1, fill_value=default)
+        shift_by = -1 if offset is None else -offset
+        return df[arg.name].shift(shift_by, fill_value=default)
 
     return agg
