@@ -6,9 +6,9 @@ import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 from ibis.common.annotations import attribute
 from ibis.common.collections import FrozenDict  # noqa: TCH001
-from ibis.common.patterns import Object, replace
+from ibis.common.patterns import Check, Object, replace
 from ibis.common.typing import VarTuple  # noqa: TCH001
-from ibis.expr.rewrites import p
+from ibis.expr.rewrites import _, p
 from ibis.expr.schema import Schema
 
 
@@ -49,7 +49,10 @@ def join_chain_to_select(_):
     return Select(_.first, selections=_.fields, joins=_.rest)
 
 
-@replace(Object(Select, Object(Select)))
+@replace(
+    Object(Select, Object(Select))
+    & ~Check(_.find(ops.WindowFunction, filter=ops.Value))
+)
 def merge_select_select(_):
     subs = {ops.Field(_.parent, k): v for k, v in _.parent.fields.items()}
     joins = tuple(j.replace(subs) for j in _.joins)
