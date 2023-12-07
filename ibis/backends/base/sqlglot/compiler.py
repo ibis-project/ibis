@@ -18,6 +18,7 @@ from public import public
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
+from ibis.backends.base.sqlglot.rewrites import Select, sqlize
 from ibis.common.deferred import _
 from ibis.common.patterns import replace
 from ibis.expr.analysis import p, x
@@ -254,6 +255,7 @@ class SQLGlotCompiler(abc.ABC):
         op = op.replace(
             replace_literals | functools.reduce(operator.or_, self.rewrites)
         )
+        op = sqlize(op)
         # apply translate rules in topological order
         results = op.map(fn)
         node = results[op]
@@ -842,6 +844,27 @@ class SQLGlotCompiler(abc.ABC):
         return sge.ArrayContains(this=arg, expression=other)
 
     ## relations
+
+    @visit_node.register(Select)
+    def visit_Select(self, op, *, parent, selections, predicates, sort_keys):
+        # if we've constructed a useless projection return the parent relation
+        if not selections and not predicates and not sort_keys:
+            return parent
+
+        result = parent
+
+        if selections:
+            result = sg.select(
+                *(sel.as_(name, quoted=self.quoted) for name, sel in selections.items())
+            ).from_(result)
+
+        if predicates:
+            result = result.where(*predicates)
+
+        if sort_keys:
+            result = result.order_by(*sort_keys)
+
+        return result
 
     @visit_node.register(ops.DummyTable)
     def visit_DummyTable(self, op, *, values):
