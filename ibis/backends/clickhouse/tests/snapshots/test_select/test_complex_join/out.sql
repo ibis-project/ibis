@@ -6,6 +6,6 @@ SELECT
   t1.c / (
     t0.a - t0.b
   ) AS e
-FROM unbound_table_0 AS t0
-INNER JOIN unbound_table_1 AS t1
+FROM s AS t0
+INNER JOIN t AS t1
   ON t0.a = t1.c
