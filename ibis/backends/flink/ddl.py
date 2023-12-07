@@ -15,7 +15,8 @@ from ibis.backends.base.sql.ddl import (
     format_partition,
     is_fully_qualified,
 )
-from ibis.backends.base.sql.registry import quote_identifier, type_to_sql_string
+from ibis.backends.base.sql.registry import quote_identifier
+from ibis.backends.flink.registry import type_to_sql_string
 
 if TYPE_CHECKING:
     from ibis.api import Watermark
