@@ -52,15 +52,17 @@ def join_chain_to_select(_):
 @replace(Object(Select, Object(Select)))
 def merge_select_select(_):
     subs = {ops.Field(_.parent, k): v for k, v in _.parent.fields.items()}
+    joins = tuple(j.replace(subs) for j in _.joins)
     selections = {k: v.replace(subs) for k, v in _.selections.items()}
     predicates = tuple(p.replace(subs) for p in _.predicates)
     sort_keys = tuple(s.replace(subs) for s in _.sort_keys)
+
     return Select(
         _.parent.parent,
-        joins=_.parent.joins,
+        joins=_.parent.joins + joins,
         selections=selections,
-        predicates=predicates,
-        sort_keys=sort_keys,
+        predicates=_.parent.predicates + predicates,
+        sort_keys=_.parent.sort_keys + sort_keys,
     )
 
 
