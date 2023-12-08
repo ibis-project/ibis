@@ -124,16 +124,26 @@ def test_filter_self_join():
     metric = (left.total - right.total).name("diff")
     what = [left.region, metric]
     projected = joined.select(what)
-    assert projected.op() == ops.JoinChain(
+
+    join = ops.JoinChain(
         first=left,
         rest=[
             ops.JoinLink("inner", right, [cond]),
         ],
         fields={
             "region": left.region,
-            "diff": left.total - right.total,
+            "total": left.total,
+            "total_1": right.total,
+        },
+    ).to_expr()
+    proj = ops.Project(
+        join,
+        values={
+            "region": join.region,
+            "diff": join.total - join.total_1,
         },
     )
+    assert projected.op() == proj
 
 
 def test_is_ancestor_analytic():

@@ -281,7 +281,8 @@ class JoinLink(Node):
 class JoinChain(Relation):
     first: Relation
     rest: VarTuple[JoinLink]
-    fields: FrozenDict[str, Annotated[Value, ~InstanceOf(Alias)]]
+    # fields: FrozenDict[str, Annotated[Value, ~InstanceOf(Alias)]]
+    fields: FrozenDict[str, Field]
 
     def __init__(self, first, rest, fields):
         allowed_parents = {first}

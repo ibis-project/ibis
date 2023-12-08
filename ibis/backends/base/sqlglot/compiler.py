@@ -18,7 +18,7 @@ from public import public
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
-from ibis.backends.base.sqlglot.rewrites import Select, sqlize
+from ibis.backends.base.sqlglot.rewrites import Select, Window, sqlize
 from ibis.common.deferred import _
 from ibis.common.patterns import replace
 from ibis.expr.analysis import p, x
@@ -748,22 +748,15 @@ class SQLGlotCompiler(abc.ABC):
         # that corresponds to _only_ this information
         return {"value": value, "side": "preceding" if preceding else "following"}
 
-    @visit_node.register(ops.WindowFrame)
-    def visit_WindowFrame(
-        self, op, *, group_by, order_by, start, end, table, max_lookback=None
-    ):
-        if max_lookback is not None:
-            raise com.UnsupportedOperationError("`max_lookback` not supported")
-
+    @visit_node.register(Window)
+    def visit_Window(self, op, *, how, func, start, end, group_by, order_by):
         if start is None:
             start = {}
-
-        start_value = start.get("value", "UNBOUNDED")
-        start_side = start.get("side", "PRECEDING")
-
         if end is None:
             end = {}
 
+        start_value = start.get("value", "UNBOUNDED")
+        start_side = start.get("side", "PRECEDING")
         end_value = end.get("value", "UNBOUNDED")
         end_side = end.get("side", "FOLLOWING")
 
@@ -775,16 +768,9 @@ class SQLGlotCompiler(abc.ABC):
             end_side=end_side,
             over="OVER",
         )
-
         order = sge.Order(expressions=order_by) if order_by else None
 
-        # TODO: bit of a hack to return a partial, but similar to `WindowBoundary`
-        # there's no sqlglot expression that corresponds to _only_ this information
-        return partial(sge.Window, partition_by=group_by, order=order, spec=spec)
-
-    @visit_node.register(ops.WindowFunction)
-    def visit_WindowFunction(self, op, *, func, frame, **_: Any):
-        return frame(this=func)
+        return sge.Window(this=func, partition_by=group_by, order=order, spec=spec)
 
     @visit_node.register(ops.Lag)
     @visit_node.register(ops.Lead)

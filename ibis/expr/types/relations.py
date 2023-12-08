@@ -4347,23 +4347,6 @@ class TableExpr(Expr, _FixedTextJupyterMixin):
 
         return WindowedTable(self, time_col)
 
-    def sequelize(self):
-        """Convert an Ibis expression to a SQLAlchemy expression.
-
-        Returns
-        -------
-        sqlalchemy.sql.expression.ClauseElement
-        """
-        from ibis.expr.rewrites import sequalize
-        from ibis.common.patterns import NoMatch, match
-
-        expr = self
-        node = expr.op()
-        if (result := match(sequalize, node)) is not NoMatch:
-            return result.to_expr()
-
-        raise ValueError(f"Cannot sequalize {expr!r}")
-
 
 def _coerce_join_predicate(left, right, pred):
     left, right = left.to_expr(), right.to_expr()
@@ -4472,21 +4455,43 @@ class JoinExpr(TableExpr):
 
     def select(self, *args, **kwargs):
         """Select expressions."""
-        # do the fields projection here
-        # TODO(kszucs): need to do smarter binding here since references may
-        # point to any of the relations in the join chain
         values = bind(self, (args, kwargs))
         values = unwrap_aliases(values)
 
-        # TODO(kszucs): factor this out into a separate function
-        # we need to replace fields referencing the current state of the join chain
-        # with a field referencing one of the relations in the join chain
-        fields = {ops.Field(self, k): v for k, v in self.op().fields.items()}
-        values = {k: v.replace(fields, filter=ops.Value) for k, v in values.items()}
+        # if there are values referencing fields from the join chain constructed
+        # so far, we need to replace them the fields from one of the join links
+        subs = {ops.Field(self, k): v for k, v in self.op().fields.items()}
+        values = {k: v.replace(subs) for k, v in values.items()}
         values = dereference_values(self.tables(), values)
-        # TODO(kszucs): add reduction conversion here detect_foreign_values(values)?
 
-        return self.finish(values)
+        # locate the fields referenced in any of the values
+        table_ids = {t: i for i, t in enumerate(self.tables())}
+        values_names = {v: k for k, v in values.items()}
+        unique_fields = toolz.unique(
+            toolz.concat(v.find(ops.Field, filter=ops.Value) for k, v in values.items())
+        )
+
+        fields = {}
+        for field in unique_fields:
+            postfix = getattr(field.rel, "name", str(table_ids[field.rel]))
+            aliases = [values_names.get(field, field.name), f"{field.name}_{postfix}"]
+            for alias in aliases:
+                if alias not in fields:
+                    fields[alias] = field
+                    break
+            else:
+                raise com.IntegrityError(f"Name collision: {aliases}")
+
+        # finish the join chain with the new fields
+        join = self.finish(fields)
+        if all(isinstance(v, ops.Field) for v in values.values()):
+            return join
+
+        # construct a following projection if the values are not consisted of
+        # only fields
+        subs = {v: ops.Field(join, k) for k, v in fields.items()}
+        values = {k: v.replace(subs, filter=ops.Value) for k, v in values.items()}
+        return join.select(values)
 
     # TODO(kszucs): figure out a solution to automatically wrap all the
     # TableExpr methods including the docstrings and the signature

@@ -1,8 +1,6 @@
 from __future__ import annotations
 
 import pytest
-import sqlglot as sg
-from packaging.version import parse as vparse
 from pytest import param
 
 import ibis.common.exceptions as exc

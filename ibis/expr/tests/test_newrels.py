@@ -512,17 +512,78 @@ def test_join_unambiguous_select():
     )
 
 
-def test_join_with_subsequent_value_projection():
+def test_join_with_subsequent_projection():
     t1 = ibis.table(name="t1", schema={"a": "int64", "b": "string"})
     t2 = ibis.table(name="t2", schema={"c": "int64", "d": "string"})
 
+    # a single computed value is pulled to a subsequent projection
     joined = t1.join(t2, [t1.a == t2.c])
     expr = joined.select(t1.a, t1.b, col=t2.c + 1)
-    assert expr.op() == JoinChain(
+    join = JoinChain(
         first=t1,
         rest=[JoinLink("inner", t2, [t1.a == t2.c])],
-        fields={"a": t1.a, "b": t1.b, "col": t2.c + 1},
+        fields={"a": t1.a, "b": t1.b, "c": t2.c},
+    ).to_expr()
+    proj = Project(join, {"a": join.a, "b": join.b, "col": join.c + 1})
+    assert expr.op() == proj
+
+    # multiple computed values
+    joined = t1.join(t2, [t1.a == t2.c])
+    expr = joined.select(
+        t1.a,
+        t1.b,
+        foo=t2.c + 1,
+        bar=t2.c + 2,
+        baz=t2.d.name("bar") + "3",
+        baz2=(t2.c + t1.a).name("foo"),
     )
+    join = JoinChain(
+        first=t1,
+        rest=[JoinLink("inner", t2, [t1.a == t2.c])],
+        fields={"a": t1.a, "b": t1.b, "c": t2.c, "d": t2.d},
+    ).to_expr()
+    proj = Project(
+        join,
+        {
+            "a": join.a,
+            "b": join.b,
+            "foo": join.c + 1,
+            "bar": join.c + 2,
+            "baz": join.d.name("bar") + "3",
+            "baz2": join.c + join.a,
+        },
+    )
+    assert expr.op() == proj
+
+
+def test_join_with_subsequent_projection_colliding_names():
+    t1 = ibis.table(name="t1", schema={"a": "int64", "b": "string"})
+    t2 = ibis.table(
+        name="t2", schema={"a": "int64", "b": "string", "c": "float", "d": "string"}
+    )
+
+    joined = t1.join(t2, [t1.a == t2.a])
+    expr = joined.select(
+        t1.a,
+        t1.b,
+        foo=t2.a + 1,
+        bar=t1.a + t2.a,
+    )
+    join = JoinChain(
+        first=t1,
+        rest=[JoinLink("inner", t2, [t1.a == t2.a])],
+        fields={"a": t1.a, "b": t1.b, "a_t2": t2.a},
+    ).to_expr()
+    proj = Project(
+        join,
+        values={
+            "a": join.a,
+            "b": join.b,
+            "foo": join.a_t2 + 1,
+            "bar": join.a + join.a_t2,
+        },
+    )
+    assert expr.op() == proj
 
 
 def test_chained_join():
@@ -814,16 +875,6 @@ def test_aggregate_field_dereferencing():
         parent=a,
         keys=[a.l_returnflag, a.l_linestatus],
     )
-
-
-def test_sequelize():
-    expr = (
-        t.select(t.bool_col, t.int_col, incremented=t.int_col + 1)
-        .filter(_.incremented < 5)
-        .order_by(t.int_col + 1)
-    )
-    selection = expr.sequelize()
-    assert isinstance(selection.to_expr(), ir.Expr)
 
 
 def test_isin_subquery():
