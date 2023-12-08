@@ -18,7 +18,6 @@ from ibis.expr.schema import Schema
 @public
 class Select(ops.Relation):
     parent: ops.Relation
-    joins: VarTuple[ops.JoinLink] = ()
     selections: FrozenDict[str, ops.Value] = {}
     predicates: VarTuple[ops.Value[dt.Boolean]] = ()
     sort_keys: VarTuple[ops.SortKey] = ()
@@ -63,11 +62,6 @@ def sort_to_select(_):
     return Select(_.parent, selections=_.fields, sort_keys=_.keys)
 
 
-@replace(p.JoinChain)
-def join_chain_to_select(_):
-    return Select(_.first, selections=_.fields, joins=_.rest)
-
-
 @replace(p.WindowFunction)
 def window_function_to_window(_):
     if isinstance(_.frame, ops.RowsWindowFrame) and _.frame.max_lookback is not None:
@@ -84,22 +78,13 @@ def window_function_to_window(_):
 
 @replace(Object(Select, Object(Select)))
 def merge_select_select(_):
-    # don't merge if there is a window function because otherwise join keys
-    # could be replaced with window functions which is invalid in SQL
-    subs = {}
-    for k, v in _.parent.fields.items():
-        if v.find(Window, filter=ops.Value):
-            return _
-        subs[ops.Field(_.parent, k)] = v
-
-    joins = tuple(j.replace(subs) for j in _.joins)
+    subs = {ops.Field(_.parent, k): v for k, v in _.parent.fields.items()}
     selections = {k: v.replace(subs) for k, v in _.selections.items()}
     predicates = tuple(p.replace(subs) for p in _.predicates)
     sort_keys = tuple(s.replace(subs) for s in _.sort_keys)
 
     return Select(
         _.parent.parent,
-        joins=_.parent.joins + joins,
         selections=selections,
         predicates=_.parent.predicates + predicates,
         sort_keys=_.parent.sort_keys + sort_keys,
@@ -109,7 +94,6 @@ def merge_select_select(_):
 def sqlize(node):
     step1 = node.replace(
         window_function_to_window
-        | join_chain_to_select
         | project_to_select
         | filter_to_select
         | sort_to_select
