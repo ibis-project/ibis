@@ -915,7 +915,9 @@ class TableExpr(Expr, _FixedTextJupyterMixin):
         Table
             Table expression
         """
-        return ops.SelfReference(self).to_expr()
+        if isinstance(self.op(), ops.BoxedRelation):
+            return self
+        return ops.BoxedRelation(self).to_expr()
 
     def difference(self, table: Table, *rest: Table, distinct: bool = True) -> Table:
         """Compute the set difference of multiple table expressions.
@@ -2768,7 +2770,7 @@ class TableExpr(Expr, _FixedTextJupyterMixin):
         return ibis.union(*aggs).order_by(ibis.asc("pos"))
 
     def join(
-        left: Table,
+        self: Table,
         right: Table,
         predicates: str
         | Sequence[
@@ -2951,7 +2953,8 @@ class TableExpr(Expr, _FixedTextJupyterMixin):
         └─────────┴───────────────────┴───────────────┴───────────────────┘
         """
         # construct an empty join chain and wrap it with a JoinExpr
-        fields = {k: ops.Field(left, k) for k in left.schema().names}
+        left = self.view()
+        fields = {k: ops.Field(left, k) for k in left.schema()}
         node = ops.JoinChain(left, rest=(), fields=fields)
         # add the first join link to the join chain and return the result
         if how == "left_semi":
@@ -4419,28 +4422,22 @@ class JoinExpr(TableExpr):
                 f"right operand must be a TableExpr, got {type(right).__name__}"
             )
 
-        right = right.op()
         chain = self.op()
-        if chain == right:
-            right = ops.SelfReference(right)
-
+        right = right.view().op()
         preds = [
             _coerce_join_predicate(chain, right, pred)
             for pred in util.promote_list(predicates)
         ]
         preds = flatten_predicates(preds)
-
-        # TODO(kszucs): clean this up
         preds = dict(enumerate(preds))
-        preds = dereference_values(self.tables(), preds)
-        preds = list(preds.values())
+        preds = dereference_values(self.tables() + [right], preds)
 
         # TODO(kszucs): factor this out into a separate function, e.g. defereference_values_from()
         # and defereference_values() could be renamed to dereference_values_to()
         # we need to replace fields referencing the current state of the join chain
         # with a field referencing one of the relations in the join chain
         fields = {ops.Field(chain, k): v for k, v in chain.fields.items()}
-        preds = [v.replace(fields, filter=ops.Value) for v in preds]
+        preds = [v.replace(fields, filter=ops.Value) for v in preds.values()]
 
         # calculate the fields based in lname and rname, this should be a best effort
         # guess but shouldn't raise on conflicts, if there are conflicts they will be
@@ -4476,7 +4473,7 @@ class JoinExpr(TableExpr):
 
         fields = {}
         for field in unique_fields:
-            postfix = getattr(field.rel, "name", str(table_ids[field.rel]))
+            postfix = str(table_ids[field.rel])
             aliases = [values_names.get(field, field.name), f"{field.name}_{postfix}"]
             for alias in aliases:
                 if alias not in fields:
@@ -4508,11 +4505,12 @@ class JoinExpr(TableExpr):
 
     def tables(self) -> Iterator[ops.TableNode]:
         """Yield all tables in this join expression."""
-        node = self.op()
-        yield node.first
-        for join in node.rest:
+        chain = self.op()
+        result = [chain.first]
+        for join in chain.rest:
             if join.how not in ("semi", "anti"):
-                yield join.table
+                result.append(join.table)
+        return result
 
     def finish(self, fields: Mapping[str, ops.Field] | None = None) -> ir.Table:
         """Construct a valid table expression from this join expression."""

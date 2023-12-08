@@ -35,7 +35,6 @@ _method_overrides = {
     # ops.LeftSemiJoin: "semi_join",
     ops.Lowercase: "lower",
     ops.RegexSearch: "re_search",
-    # ops.SelfReference: "view",
     ops.StartsWith: "startswith",
     ops.StringContains: "contains",
     ops.StringSQLILike: "ilike",
@@ -87,7 +86,6 @@ def translate(op, *args, **kwargs):
 
 
 @translate.register(ops.Value)
-# @translate.register(ops.TableNode)
 def value(op, *args, **kwargs):
     method = _get_method_name(op)
     kwargs = [(k, v) for k, v in kwargs.items() if v is not None]
@@ -180,6 +178,11 @@ def aggregation(op, parent, groups, metrics):
         return f"{parent}.aggregate([{_inline(metrics)}])"
     else:
         raise ValueError("No metrics to aggregate")
+
+
+@translate.register(ops.BoxedRelation)
+def boxed_relation(op, parent, **kwargs):
+    return parent
 
 
 @translate.register(ops.JoinLink)
@@ -324,7 +327,13 @@ def isin(op, value, options):
 
 class CodeContext:
     always_assign = (ops.ScalarParameter, ops.UnboundTable, ops.Aggregate)
-    always_ignore = (ops.Field, dt.Primitive, dt.Variadic, dt.Temporal)
+    always_ignore = (
+        ops.Field,
+        dt.Primitive,
+        dt.Variadic,
+        dt.Temporal,
+        ops.BoxedRelation,
+    )
     shorthands = {
         ops.Aggregate: "agg",
         ops.Literal: "lit",

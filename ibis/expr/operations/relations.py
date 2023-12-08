@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import itertools
 import typing
 from abc import abstractmethod
 from typing import TYPE_CHECKING, Annotated, Any, Literal, Optional
@@ -19,7 +20,7 @@ from ibis.common.typing import Coercible, VarTuple
 from ibis.expr.operations.core import Alias, Column, Node, Scalar, Value
 from ibis.expr.operations.sortkeys import SortKey  # noqa: TCH001
 from ibis.expr.schema import Schema
-from ibis.util import Namespace, PseudoHashable, gen_name, indent
+from ibis.util import Namespace, PseudoHashable, indent
 
 if TYPE_CHECKING:
     import pandas as pd
@@ -112,6 +113,16 @@ class Relation(Node, Coercible):
         return TableExpr(self)
 
     # cardinality property marking if the relation has a single row like SELECT COUNT(*)
+
+    # @attribute
+    # def name(self) -> str:
+    #     if (name := getattr(self.parent, "name", None)) is not None:
+    #         return f"{name}_ref"
+    #     return gen_name("self_ref")
+
+    # @attribute
+    # def fields(self):
+    #     return FrozenDict()
 
 
 # just to reduce boilerplate
@@ -260,6 +271,20 @@ class Project(Relation):
 
 
 @public
+class BoxedRelation(SimpleRelation):
+    _uid_counter = itertools.count()
+
+    uid: Optional[int] = None
+
+    def __init__(self, parent, uid):
+        if isinstance(parent, self.__class__):
+            raise TypeError(f"Cannot box {parent!r} relation, it is already boxed")
+        if uid is None:
+            uid = next(self._uid_counter)
+        super().__init__(parent=parent, uid=uid)
+
+
+@public
 class JoinLink(Node):
     how: Literal[
         "inner",
@@ -273,15 +298,14 @@ class JoinLink(Node):
         "any_left",
         "cross",
     ]
-    table: Relation
+    table: BoxedRelation
     predicates: VarTuple[Value[dt.Boolean]]
 
 
 @public
 class JoinChain(Relation):
-    first: Relation
+    first: BoxedRelation
     rest: VarTuple[JoinLink]
-    # fields: FrozenDict[str, Annotated[Value, ~InstanceOf(Alias)]]
     fields: FrozenDict[str, Field]
 
     def __init__(self, first, rest, fields):
@@ -473,19 +497,6 @@ class DummyTable(Relation):
     @attribute
     def schema(self):
         return Schema({k: v.dtype for k, v in self.values.items()})
-
-
-@public
-class SelfReference(SimpleRelation):
-    @attribute
-    def name(self) -> str:
-        if (name := getattr(self.parent, "name", None)) is not None:
-            return f"{name}_ref"
-        return gen_name("self_ref")
-
-    @attribute
-    def fields(self):
-        return FrozenDict()
 
 
 @public

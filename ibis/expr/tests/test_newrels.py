@@ -480,16 +480,18 @@ def test_join():
     assert isinstance(joined.op(), JoinChain)
     assert isinstance(joined.op().to_expr(), ir.JoinExpr)
 
+    r1 = joined.op().first.to_expr()
+    r2 = joined.op().rest[0].table.to_expr()
     assert result.op() == JoinChain(
-        first=t1,
+        first=r1,
         rest=[
-            JoinLink("inner", t2, [t1.a == t2.c]),
+            JoinLink("inner", r2, [r1.a == r2.c]),
         ],
         fields={
-            "a": t1.a,
-            "b": t1.b,
-            "c": t2.c,
-            "d": t2.d,
+            "a": r1.a,
+            "b": r1.b,
+            "c": r2.c,
+            "d": r2.d,
         },
     )
 
@@ -502,12 +504,15 @@ def test_join_unambiguous_select():
     expr1 = join["a_int", "b_int"]
     expr2 = join.select("a_int", "b_int")
     assert expr1.equals(expr2)
+
+    left = join.op().first.to_expr()
+    right = join.op().rest[0].table.to_expr()
     assert expr1.op() == JoinChain(
-        first=a,
-        rest=[JoinLink("inner", b, [a.a_int == b.b_int])],
+        first=left,
+        rest=[JoinLink("inner", right, [left.a_int == right.b_int])],
         fields={
-            "a_int": a.a_int,
-            "b_int": b.b_int,
+            "a_int": left.a_int,
+            "b_int": right.b_int,
         },
     )
 
@@ -519,10 +524,13 @@ def test_join_with_subsequent_projection():
     # a single computed value is pulled to a subsequent projection
     joined = t1.join(t2, [t1.a == t2.c])
     expr = joined.select(t1.a, t1.b, col=t2.c + 1)
+
+    r1 = joined.op().first.to_expr()
+    r2 = joined.op().rest[0].table.to_expr()
     join = JoinChain(
-        first=t1,
-        rest=[JoinLink("inner", t2, [t1.a == t2.c])],
-        fields={"a": t1.a, "b": t1.b, "c": t2.c},
+        first=r1,
+        rest=[JoinLink("inner", r2, [r1.a == r2.c])],
+        fields={"a": r1.a, "b": r1.b, "c": r2.c},
     ).to_expr()
     proj = Project(join, {"a": join.a, "b": join.b, "col": join.c + 1})
     assert expr.op() == proj
@@ -537,10 +545,12 @@ def test_join_with_subsequent_projection():
         baz=t2.d.name("bar") + "3",
         baz2=(t2.c + t1.a).name("foo"),
     )
+    r1 = joined.op().first.to_expr()
+    r2 = joined.op().rest[0].table.to_expr()
     join = JoinChain(
-        first=t1,
-        rest=[JoinLink("inner", t2, [t1.a == t2.c])],
-        fields={"a": t1.a, "b": t1.b, "c": t2.c, "d": t2.d},
+        first=r1,
+        rest=[JoinLink("inner", r2, [r1.a == r2.c])],
+        fields={"a": r1.a, "b": r1.b, "c": r2.c, "d": r2.d},
     ).to_expr()
     proj = Project(
         join,
@@ -569,18 +579,23 @@ def test_join_with_subsequent_projection_colliding_names():
         foo=t2.a + 1,
         bar=t1.a + t2.a,
     )
+
+    r1 = joined.op().first.to_expr()
+    r2 = joined.op().rest[0].table.to_expr()
     join = JoinChain(
-        first=t1,
-        rest=[JoinLink("inner", t2, [t1.a == t2.a])],
-        fields={"a": t1.a, "b": t1.b, "a_t2": t2.a},
+        first=r1,
+        rest=[JoinLink("inner", r2, [r1.a == r2.a])],
+        fields={"a": r1.a, "b": r1.b, "a_1": r2.a},
     ).to_expr()
+    assert expr.op().parent == join.op()
+
     proj = Project(
         join,
         values={
             "a": join.a,
             "b": join.b,
-            "foo": join.a_t2 + 1,
-            "bar": join.a + join.a_t2,
+            "foo": join.a_1 + 1,
+            "bar": join.a + join.a_1,
         },
     )
     assert expr.op() == proj
@@ -593,42 +608,53 @@ def test_chained_join():
 
     joined = a.join(b, [a.a == b.c]).join(c, [a.a == c.e])
     result = joined.finish()
+
+    r0 = joined.op().first.to_expr()
+    r1 = joined.op().rest[0].table.to_expr()
+    r2 = joined.op().rest[1].table.to_expr()
+    for r in [r0, r1, r2]:
+        assert isinstance(r.op(), ops.BoxedRelation)
+
     assert result.op() == JoinChain(
-        first=a,
+        first=r0,
         rest=[
-            JoinLink("inner", b, [a.a == b.c]),
-            JoinLink("inner", c, [a.a == c.e]),
+            JoinLink("inner", r1, [r0.a == r1.c]),
+            JoinLink("inner", r2, [r0.a == r2.e]),
         ],
         fields={
-            "a": a.a,
-            "b": a.b,
-            "c": b.c,
-            "d": b.d,
-            "e": c.e,
-            "f": c.f,
+            "a": r0.a,
+            "b": r0.b,
+            "c": r1.c,
+            "d": r1.d,
+            "e": r2.e,
+            "f": r2.f,
         },
     )
 
     joined = a.join(b, [a.a == b.c]).join(c, [b.c == c.e])
     result = joined.select(a.a, b.d, c.f)
+
+    r0 = joined.op().first.to_expr()
+    r1 = joined.op().rest[0].table.to_expr()
+    r2 = joined.op().rest[1].table.to_expr()
     assert result.op() == JoinChain(
-        first=a,
+        first=r0,
         rest=[
-            JoinLink("inner", b, [a.a == b.c]),
-            JoinLink("inner", c, [b.c == c.e]),
+            JoinLink("inner", r1, [r0.a == r1.c]),
+            JoinLink("inner", r2, [r1.c == r2.e]),
         ],
         fields={
-            "a": a.a,
-            "d": b.d,
-            "f": c.f,
+            "a": r0.a,
+            "d": r1.d,
+            "f": r2.f,
         },
     )
 
 
 def test_chained_join_referencing_intermediate_table():
-    a = ibis.table(name="a", schema={"a": "int64", "b": "string"})
-    b = ibis.table(name="b", schema={"c": "int64", "d": "string"})
-    c = ibis.table(name="c", schema={"e": "int64", "f": "string"})
+    a = ibis.table(name="a", schema={"a": "int64", "b": "string"}).view()
+    b = ibis.table(name="b", schema={"c": "int64", "d": "string"}).view()
+    c = ibis.table(name="c", schema={"e": "int64", "f": "string"}).view()
 
     ab = a.join(b, [a.a == b.c])
     assert isinstance(ab, ir.JoinExpr)
@@ -657,40 +683,45 @@ def test_join_predicate_dereferencing():
 
     # dereference table.foo_id to filtered.foo_id
     j1 = filtered.left_join(table2, table["foo_id"] == table2["foo_id"])
+    r0 = j1.op().first.to_expr()
+    r1 = j1.op().rest[0].table.to_expr()
     expected = ops.JoinChain(
-        first=filtered,
+        first=r0,
         rest=[
-            ops.JoinLink("left", table2, [filtered.foo_id == table2.foo_id]),
+            ops.JoinLink("left", r1, [r0.foo_id == r1.foo_id]),
         ],
         fields={
-            "c": filtered.c,
-            "f": filtered.f,
-            "foo_id": filtered.foo_id,
-            "bar_id": filtered.bar_id,
-            "foo_id_right": table2.foo_id,
-            "value1": table2.value1,
-            "value3": table2.value3,
+            "c": r0.c,
+            "f": r0.f,
+            "foo_id": r0.foo_id,
+            "bar_id": r0.bar_id,
+            "foo_id_right": r1.foo_id,
+            "value1": r1.value1,
+            "value3": r1.value3,
         },
     )
     assert j1.op() == expected
 
     j2 = j1.inner_join(table3, filtered["bar_id"] == table3["bar_id"])
+    r0 = j2.op().first.to_expr()
+    r1 = j2.op().rest[0].table.to_expr()
+    r2 = j2.op().rest[1].table.to_expr()
     expected = ops.JoinChain(
-        first=filtered,
+        first=r0,
         rest=[
-            ops.JoinLink("left", table2, [filtered.foo_id == table2.foo_id]),
-            ops.JoinLink("inner", table3, [filtered.bar_id == table3.bar_id]),
+            ops.JoinLink("left", r1, [r0.foo_id == r1.foo_id]),
+            ops.JoinLink("inner", r2, [r0.bar_id == r2.bar_id]),
         ],
         fields={
-            "c": filtered.c,
-            "f": filtered.f,
-            "foo_id": filtered.foo_id,
-            "bar_id": filtered.bar_id,
-            "foo_id_right": table2.foo_id,
-            "value1": table2.value1,
-            "value3": table2.value3,
-            "bar_id_right": table3.bar_id,
-            "value2": table3.value2,
+            "c": r0.c,
+            "f": r0.f,
+            "foo_id": r0.foo_id,
+            "bar_id": r0.bar_id,
+            "foo_id_right": r1.foo_id,
+            "value1": r1.value1,
+            "value3": r1.value3,
+            "bar_id_right": r2.bar_id,
+            "value2": r2.value2,
         },
     )
     assert j2.op() == expected
@@ -698,18 +729,18 @@ def test_join_predicate_dereferencing():
     # Project out the desired fields
     view = j2[[filtered, table2["value1"], table3["value2"]]]
     expected = ops.JoinChain(
-        first=filtered,
+        first=r0,
         rest=[
-            ops.JoinLink("left", table2, [filtered.foo_id == table2.foo_id]),
-            ops.JoinLink("inner", table3, [filtered.bar_id == table3.bar_id]),
+            ops.JoinLink("left", r1, [r0.foo_id == r1.foo_id]),
+            ops.JoinLink("inner", r2, [r0.bar_id == r2.bar_id]),
         ],
         fields={
-            "c": filtered.c,
-            "f": filtered.f,
-            "foo_id": filtered.foo_id,
-            "bar_id": filtered.bar_id,
-            "value1": table2.value1,
-            "value2": table3.value2,
+            "c": r0.c,
+            "f": r0.f,
+            "foo_id": r0.foo_id,
+            "bar_id": r0.bar_id,
+            "value1": r1.value1,
+            "value2": r2.value2,
         },
     )
     assert view.op() == expected

@@ -125,10 +125,12 @@ def test_filter_self_join():
     what = [left.region, metric]
     projected = joined.select(what)
 
+    left = joined.op().first.to_expr()
+    right = joined.op().rest[0].table.to_expr()
     join = ops.JoinChain(
         first=left,
         rest=[
-            ops.JoinLink("inner", right, [cond]),
+            ops.JoinLink("inner", right, [left.region == right.region]),
         ],
         fields={
             "region": left.region,
@@ -136,6 +138,7 @@ def test_filter_self_join():
             "total_1": right.total,
         },
     ).to_expr()
+
     proj = ops.Project(
         join,
         values={
