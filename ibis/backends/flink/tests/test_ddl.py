@@ -431,3 +431,104 @@ def test_insert_simple_select(con, tempdir_sink_configs):
         temporary_file = next(iter(os.listdir(tempdir)))
         with open(os.path.join(tempdir, temporary_file)) as f:
             assert f.read() == '"fred flintstone",35\n"barney rubble",32\n'
+
+
+@pytest.mark.broken(
+    ["flink"],
+    raises=Py4JJavaError,
+    reason=("""
+    py4j.protocol.Py4JJavaError: An error occurred while calling z:org.apache.flink.table.runtime.arrow.ArrowUtils.collectAsPandasDataFrame.
+    : org.apache.flink.table.api.ValidationException: Temporal table join currently only supports 'FOR SYSTEM_TIME AS OF' left table's time attribute field
+
+    This error is thrown when the watermark is not correctly set for the column
+    used in the join predicate. In this case, left and right tables are created
+    from in-memory. This is why, they are actually create as temporary views not
+    tables. Hence the error raised while executing join.
+    """),
+)
+def test_temporal_join_w_in_memory_objs(con):
+    schema = sch.Schema(
+        {
+            "key": dt.string,
+            "value": dt.float32,
+            "time": dt.timestamp(scale=9),
+        }
+    )
+
+    pd_left = pd.DataFrame(
+        {
+            "key": ["x", "x", "x", "x"],
+            "value": [1.1, 2.2, 3.3, 4.4],
+            "time": pd.to_datetime([1, 2, 3, 4])
+        }
+    )
+    table_left = con.create_table(
+        "table_left",
+        pd_left,
+        schema=schema,
+        watermark=ibis.watermark(
+            time_col="time", allowed_delay=ibis.interval(seconds=15)
+        ),
+    )
+
+    pd_right = pd.DataFrame(
+        {
+            "key": ["x", "x"],
+            "value": [1.2, 2.0],
+            "time": pd.to_datetime([2, 4])
+        }
+    )
+    table_right = con.create_table(
+        "table_right",
+        pd_right,
+        schema=schema,
+        watermark=ibis.watermark(
+            time_col="time", allowed_delay=ibis.interval(seconds=15)
+        ),
+    )
+
+    expr = table_left.asof_join(
+        table_right,
+        predicates=[
+            table_left["key"] == table_right["key"],
+            table_left["time"] >= table_right["time"],
+        ],
+    )
+    sql = con.compile(expr)
+    print(f"sql = \n{sql}")
+
+    df = expr.to_pandas()
+    print(f"df = \n{df}")
+
+
+def test_temporal_join(con, functional_alltypes_schema, csv_source_configs):
+    table_left = con.create_table(
+        "table_left",
+        schema=functional_alltypes_schema,
+        tbl_properties=csv_source_configs("functional_alltypes"),
+        watermark=ibis.watermark(
+            time_col="timestamp_col", allowed_delay=ibis.interval(seconds=15)
+        ),
+    )
+
+    table_right = con.create_table(
+        "table_right",
+        schema=functional_alltypes_schema,
+        tbl_properties=csv_source_configs("functional_alltypes"),
+        watermark=ibis.watermark(
+            time_col="timestamp_col", allowed_delay=ibis.interval(seconds=15)
+        ),
+    )
+
+    expr = table_left.asof_join(
+        table_right,
+        predicates=[
+            table_left["string_col"] == table_right["string_col"],
+            table_left["timestamp_col"] >= table_right["timestamp_col"],
+        ],
+    )
+    sql = con.compile(expr)
+    print(f"sql = \n{sql}")
+
+    df = expr.to_pandas()
+    print(f"df = \n{df}")

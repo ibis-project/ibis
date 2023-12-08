@@ -447,7 +447,6 @@ class Backend(BaseBackend, CanCreateDatabase):
             )
             sql = statement.compile()
             self._exec_sql(sql)
-
             return self.table(name, database=database, catalog=catalog)
 
     def drop_table(

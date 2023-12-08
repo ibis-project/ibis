@@ -41,11 +41,18 @@ class TableSetFormatter:
         self.indent = indent
 
         self.join_tables = []
+        self.join_table_aliases = []
         self.join_types = []
         self.join_predicates = []
 
     def _translate(self, expr):
         return self.parent._translate(expr)
+
+    def record_join_tables(self, op: ops.Relation):
+        table_str = self._format_table(op=op)
+        [table_name, alias] = table_str.split()
+        self.join_tables.append(table_name)
+        self.join_table_aliases.append(alias)
 
     # TODO(kszucs): could use lin.traverse here
     def _walk_join_tree(self, op):
@@ -58,14 +65,16 @@ class TableSetFormatter:
         # depth-first order
         if isinstance(op.left, ops.Join):
             self._walk_join_tree(op.left)
-            self.join_tables.append(self._format_table(op.right))
+            self.record_join_tables(op.right)
+
         elif isinstance(op.right, ops.Join):
-            self.join_tables.append(self._format_table(op.left))
+            self.record_join_tables(op.left)
             self._walk_join_tree(op.right)
+
         else:
             # Both tables
-            self.join_tables.append(self._format_table(op.left))
-            self.join_tables.append(self._format_table(op.right))
+            self.record_join_tables(op.left)
+            self.record_join_tables(op.right)
 
         self.join_types.append(jname)
         self.join_predicates.append(op.predicates)
@@ -98,7 +107,7 @@ class TableSetFormatter:
             rows = " UNION ALL ".join(f"(SELECT {raw_row})" for raw_row in raw_rows)
             return f"({rows})"
 
-    def _format_table(self, op):
+    def _format_table(self, op, no_alias: bool = False):
         # TODO: This could probably go in a class and be significantly nicer
         ctx = self.context
 
@@ -136,7 +145,12 @@ class TableSetFormatter:
             result = f"(\n{util.indent(subquery, self.indent)}\n)"
 
         if result != alias:
-            result = f"{result} {alias}"
+            result = (
+                f"{result}"
+                if no_alias
+                else
+                f"{result} {alias}"
+            )
 
         if isinstance(orig_op, ops.Sample):
             result = self._format_sample(orig_op, result)
