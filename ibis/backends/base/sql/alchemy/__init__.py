@@ -992,7 +992,10 @@ class AlchemyCrossSchemaBackend(BaseAlchemyBackend):
             catalog=db,
             quoted=self.compiler.translator_class._quote_table_names,
         ).transform(
-            lambda node: node.__class__(this=node.this, quoted=True)
+            lambda node: node.__class__(
+                this=node.this,
+                quoted=node.quoted or self.compiler.translator_class._quote_table_names,
+            )
             if isinstance(node, sg.exp.Identifier)
             else node
         )
