@@ -991,6 +991,10 @@ class AlchemyCrossSchemaBackend(BaseAlchemyBackend):
             db=schema,
             catalog=db,
             quoted=self.compiler.translator_class._quote_table_names,
+        ).transform(
+            lambda node: node.__class__(this=node.this, quoted=True)
+            if isinstance(node, sg.exp.Identifier)
+            else node
         )
         return table
 
@@ -1015,7 +1019,9 @@ class AlchemyCrossSchemaBackend(BaseAlchemyBackend):
     def drop_table(
         self, name: str, database: str | None = None, force: bool = False
     ) -> None:
-        table = sg.table(name, db=database)
+        table = sg.table(
+            name, db=database, quoted=self.compiler.translator_class._quote_table_names
+        )
         drop_table = sg.exp.Drop(kind="TABLE", exists=force, this=table)
         drop_table_sql = drop_table.sql(dialect=self.name)
         with self.begin() as con:

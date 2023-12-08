@@ -551,19 +551,19 @@ $$""".format(**self._get_udf_source(udf_node))
         yield f"CREATE OR REPLACE TEMPORARY VIEW {name} AS {definition}"
 
     def create_database(self, name: str, force: bool = False) -> None:
-        current_database = self.current_database
-        current_schema = self.current_schema
-        name = self._quote(name)
-        if_not_exists = "IF NOT EXISTS " * force
+        create_stmt = sg.exp.Create(
+            kind="DATABASE", this=sg.to_identifier(name, quoted=True), exists=force
+        ).sql(self.name)
+        current_ident = sg.table(
+            self.current_schema, db=self.current_database, quoted=True
+        ).sql(self.name)
         with self.begin() as con:
-            con.exec_driver_sql(f"CREATE DATABASE {if_not_exists}{name}")
+            con.exec_driver_sql(create_stmt)
             # Snowflake automatically switches to the new database after creating
             # it per
             # https://docs.snowflake.com/en/sql-reference/sql/create-database#general-usage-notes
             # so we switch back to the original database and schema
-            con.exec_driver_sql(
-                f"USE SCHEMA {self._quote(current_database)}.{self._quote(current_schema)}"
-            )
+            con.exec_driver_sql(f"USE SCHEMA {current_ident}")
 
     def drop_database(self, name: str, force: bool = False) -> None:
         current_database = self.current_database
@@ -571,27 +571,28 @@ $$""".format(**self._get_udf_source(udf_node))
             raise com.UnsupportedOperationError(
                 "Dropping the current database is not supported because its behavior is undefined"
             )
-        name = self._quote(name)
-        if_exists = "IF EXISTS " * force
+        drop_stmt = sg.exp.Drop(
+            kind="DATABASE", this=sg.to_identifier(name, quoted=True), exists=force
+        ).sql(self.name)
         with self.begin() as con:
-            con.exec_driver_sql(f"DROP DATABASE {if_exists}{name}")
+            con.exec_driver_sql(drop_stmt)
 
     def create_schema(
         self, name: str, database: str | None = None, force: bool = False
     ) -> None:
-        name = ".".join(map(self._quote, filter(None, [database, name])))
-        if_not_exists = "IF NOT EXISTS " * force
-        current_database = self.current_database
-        current_schema = self.current_schema
+        create_stmt = sg.exp.Create(
+            kind="SCHEMA", this=sg.table(name, db=database, quoted=True), exists=force
+        ).sql(self.name)
+        current_ident = sg.table(
+            self.current_schema, db=self.current_database, quoted=True
+        ).sql(self.name)
         with self.begin() as con:
-            con.exec_driver_sql(f"CREATE SCHEMA {if_not_exists}{name}")
+            con.exec_driver_sql(create_stmt)
             # Snowflake automatically switches to the new schema after creating
             # it per
             # https://docs.snowflake.com/en/sql-reference/sql/create-schema#usage-notes
             # so we switch back to the original schema
-            con.exec_driver_sql(
-                f"USE SCHEMA {self._quote(current_database)}.{self._quote(current_schema)}"
-            )
+            con.exec_driver_sql(f"USE SCHEMA {current_ident}")
 
     def drop_schema(
         self, name: str, database: str | None = None, force: bool = False
@@ -603,10 +604,11 @@ $$""".format(**self._get_udf_source(udf_node))
                 "Dropping the current schema is not supported because its behavior is undefined"
             )
 
-        name = ".".join(map(self._quote, filter(None, [database, name])))
-        if_exists = "IF EXISTS " * force
+        drop_stmt = sg.exp.Drop(
+            kind="SCHEMA", this=sg.table(name, db=database, quoted=True), exists=force
+        ).sql(self.name)
         with self.begin() as con:
-            con.exec_driver_sql(f"DROP SCHEMA {if_exists}{name}")
+            con.exec_driver_sql(drop_stmt)
 
     def create_table(
         self,
