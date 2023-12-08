@@ -1,4 +1,3 @@
-version: "3.4"
 services:
   clickhouse:
     image: clickhouse/clickhouse-server:23.11.1.2711-alpine

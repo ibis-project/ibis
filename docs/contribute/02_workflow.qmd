@@ -42,7 +42,7 @@ pytest -m sqlite
 ## Setting up non-trivial backends
 
 These client-server backends need to be started before testing them.
-They can be started with `docker-compose` directly, or using the `just` tool.
+They can be started with `docker compose` directly, or using the `just` tool.
 
 - ClickHouse: `just up clickhouse`
 - PostgreSQL: `just up postgres`

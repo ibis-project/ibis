@@ -346,9 +346,9 @@ class ServiceBackendTest(BackendTest):
     """
 
     service_name: str | None = None
-    "Name of service defined in docker-compose.yml corresponding to backend."
+    "Name of service defined in compose.yaml corresponding to backend."
     data_volume = "/data"
-    "Data volume defined in docker-compose.yml corresponding to backend."
+    "Data volume defined in compose.yaml corresponding to backend."
 
     @property
     @abc.abstractmethod
