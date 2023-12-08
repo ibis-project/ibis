@@ -109,7 +109,10 @@ class _AlchemyTableSetFormatter(TableSetFormatter):
             )
             dialect = translator._dialect_name
             result.fullname = sg.table(
-                name, db=namespace.schema, catalog=namespace.database
+                name,
+                db=namespace.schema,
+                catalog=namespace.database,
+                quoted=translator._quote_table_names,
             ).sql(dialect=_SQLALCHEMY_TO_SQLGLOT_DIALECT.get(dialect, dialect))
         elif isinstance(op, ops.SQLQueryResult):
             columns = translator._schema_to_sqlalchemy_columns(op.schema)
