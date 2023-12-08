@@ -88,7 +88,10 @@ class FlinkType(TypeMapper):
         elif dtype.is_time():
             return DataTypes.TIME(nullable=dtype.nullable)
         elif dtype.is_timestamp():
-            return DataTypes.TIMESTAMP(nullable=dtype.nullable)
+            return DataTypes.TIMESTAMP(
+                precision=dtype.scale,
+                nullable=dtype.nullable,
+            )
         else:
             return super().from_ibis(dtype)
 

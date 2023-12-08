@@ -606,14 +606,27 @@ def _dedup_join_columns(expr: ir.Table, lname: str, rname: str):
     overlap = frozenset(column for column in left.columns if column in right_columns)
     equal = set()
 
-    if isinstance(op, InnerJoin) and util.all_of(op.predicates, Equals):
-        # For inner joins composed exclusively of equality predicates, we can
-        # avoid renaming columns with colliding names if their values are
-        # guaranteed to be equal due to the predicate. Here we collect a set of
-        # colliding column names that are known to have equal values between
-        # the left and right tables in the join.
+    # For inner joins composed exclusively of equality predicates, we can
+    # avoid renaming columns with colliding names if their values are
+    # guaranteed to be equal due to the predicate. Here we collect a set of
+    # colliding column names that are known to have equal values between
+    # the left and right tables in the join.
+    #
+    # TODO (mehmet): Included also asof joins, check with the reviewers about
+    # the implications!
+    # Edit: This change leads to assert failures in tests for other backends.
+    # Q. Why was the deduplication of columns implemented only for `InnerJoin`?
+    if (
+        isinstance(op, AsOfJoin)
+        or (
+            isinstance(op, InnerJoin) and util.all_of(op.predicates, Equals)
+        )
+    ):
         tables = {op.left, op.right}
         for pred in op.predicates:
+            if not isinstance(pred, Equals):
+                continue
+
             if (
                 isinstance(pred.left, TableColumn)
                 and isinstance(pred.right, TableColumn)
