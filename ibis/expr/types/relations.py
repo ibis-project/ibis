@@ -4421,6 +4421,9 @@ class JoinExpr(TableExpr):
 
         right = right.op()
         chain = self.op()
+        if chain == right:
+            right = ops.SelfReference(right)
+
         preds = [
             _coerce_join_predicate(chain, right, pred)
             for pred in util.promote_list(predicates)
