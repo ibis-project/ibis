@@ -1,7 +1,7 @@
 SELECT
-  t5.street AS street,
-  t5.key AS key,
-  t5.key_right AS key_right
+  t4.street AS street,
+  t4.key AS key,
+  t4.key_right AS key_right
 FROM (
   SELECT
     t1.street AS street,
@@ -24,10 +24,10 @@ FROM (
     ) AS t1
   ) AS t2
     ON t1.key = t2.key
-) AS t5
+) AS t4
 INNER JOIN (
   SELECT
-    t5.key AS key
+    t4.key AS key
   FROM (
     SELECT
       t1.street AS street,
@@ -50,6 +50,6 @@ INNER JOIN (
       ) AS t1
     ) AS t2
       ON t1.key = t2.key
-  ) AS t5
-) AS t6
-  ON t5.key = t6.key
+  ) AS t4
+) AS t5
+  ON t4.key = t5.key
