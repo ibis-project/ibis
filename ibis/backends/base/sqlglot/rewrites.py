@@ -84,7 +84,14 @@ def window_function_to_window(_):
 
 @replace(Object(Select, Object(Select)))
 def merge_select_select(_):
-    subs = {ops.Field(_.parent, k): v for k, v in _.parent.fields.items()}
+    # don't merge if there is a window function because otherwise join keys
+    # could be replaced with window functions which is invalid in SQL
+    subs = {}
+    for k, v in _.parent.fields.items():
+        if v.find(Window, filter=ops.Value):
+            return _
+        subs[ops.Field(_.parent, k)] = v
+
     joins = tuple(j.replace(subs) for j in _.joins)
     selections = {k: v.replace(subs) for k, v in _.selections.items()}
     predicates = tuple(p.replace(subs) for p in _.predicates)
