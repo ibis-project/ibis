@@ -78,6 +78,11 @@ def window_function_to_window(_):
 
 @replace(Object(Select, Object(Select)))
 def merge_select_select(_):
+    # don't merge if the outer select has window functions
+    for v in _.selections.values():
+        if v.find(Window, filter=ops.Value):
+            return _
+
     subs = {ops.Field(_.parent, k): v for k, v in _.parent.fields.items()}
     selections = {k: v.replace(subs) for k, v in _.selections.items()}
     predicates = tuple(p.replace(subs) for p in _.predicates)
