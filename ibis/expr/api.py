@@ -371,7 +371,8 @@ def memtable(
         Do not depend on the underlying storage type (e.g., pyarrow.Table), it's subject
         to change across non-major releases.
     columns
-        Optional [](`typing.Iterable`) of [](`str`) column names.
+        Optional [](`typing.Iterable`) of [](`str`) column names. If provided,
+        must match the number of columns in `data`.
     schema
         Optional [`Schema`](./schemas.qmd#ibis.expr.schema.Schema).
         The functions use `data` to infer a schema if not passed.
@@ -468,7 +469,11 @@ def _memtable_from_dataframe(
 
     from ibis.expr.operations.relations import PandasDataFrameProxy
 
-    df = pd.DataFrame(data, columns=columns)
+    if not isinstance(data, pd.DataFrame):
+        df = pd.DataFrame(data, columns=columns)
+    else:
+        df = data
+
     if df.columns.inferred_type != "string":
         cols = df.columns
         newcols = getattr(
@@ -477,6 +482,15 @@ def _memtable_from_dataframe(
             (f"col{i:d}" for i in builtins.range(len(cols))),
         )
         df = df.rename(columns=dict(zip(cols, newcols)))
+
+    if columns is not None:
+        if (provided_col := len(columns)) != (exist_col := len(df.columns)):
+            raise ValueError(
+                "Provided `columns` must have an entry for each column in `data`.\n"
+                f"`columns` has {provided_col} elements but `data` has {exist_col} columns."
+            )
+
+        df = df.rename(columns=dict(zip(df.columns, columns)))
 
     # verify that the DataFrame has no duplicate column names because ibis
     # doesn't allow that

@@ -947,6 +947,39 @@ def test_memtable_construct(backend, con, monkeypatch):
     )
 
 
+@pytest.mark.parametrize(
+    "df, columns, expected",
+    [
+        (pd.DataFrame([("a", 1.0)], columns=["d", "f"]), ["a", "b"], ["a", "b"]),
+        (pd.DataFrame([("a", 1.0)]), ["A", "B"], ["A", "B"]),
+        (pd.DataFrame([("a", 1.0)], columns=["c", "d"]), None, ["c", "d"]),
+        ([("a", "1.0")], None, ["col0", "col1"]),
+        ([("a", "1.0")], ["d", "e"], ["d", "e"]),
+    ],
+)
+def test_memtable_column_naming(backend, con, monkeypatch, df, columns, expected):
+    monkeypatch.setattr(ibis.options, "default_backend", con)
+
+    t = ibis.memtable(df, columns=columns)
+    assert all(t.to_pandas().columns == expected)
+
+
+@pytest.mark.parametrize(
+    "df, columns",
+    [
+        (pd.DataFrame([("a", 1.0)], columns=["d", "f"]), ["a"]),
+        (pd.DataFrame([("a", 1.0)]), ["A", "B", "C"]),
+        ([("a", "1.0")], ["col0", "col1", "col2"]),
+        ([("a", "1.0")], ["d"]),
+    ],
+)
+def test_memtable_column_naming_mismatch(backend, con, monkeypatch, df, columns):
+    monkeypatch.setattr(ibis.options, "default_backend", con)
+
+    with pytest.raises(ValueError):
+        ibis.memtable(df, columns=columns)
+
+
 @pytest.mark.notimpl(
     ["dask", "datafusion", "pandas", "polars"],
     raises=NotImplementedError,
