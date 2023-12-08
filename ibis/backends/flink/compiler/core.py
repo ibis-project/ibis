@@ -3,10 +3,12 @@
 from __future__ import annotations
 
 import functools
+from io import StringIO
 
 import ibis.common.exceptions as com
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
+from ibis import util
 from ibis.backends.base.sql.compiler import (
     Compiler,
     Select,
@@ -18,6 +20,11 @@ from ibis.backends.flink.translator import FlinkExprTranslator
 
 
 class FlinkTableSetFormatter(TableSetFormatter):
+    _join_names = {
+        **TableSetFormatter._join_names,
+        ops.AsOfJoin: "JOIN",
+    }
+
     def _quote_identifier(self, name):
         return quote_identifier(name, force=True)
 
@@ -59,6 +66,92 @@ class FlinkTableSetFormatter(TableSetFormatter):
             result += f"({', '.join(self._quote_identifier(name) for name in names)})"
 
         return result
+
+    def get_result(self):
+        # Got to unravel the join stack; the nesting order could be
+        # arbitrary, so we do a depth first search and push the join tokens
+        # and predicates onto a flat list, then format them
+        op = self.node
+
+        if isinstance(op, ops.Join):
+            self._walk_join_tree(op)
+        else:
+            self.join_tables.append(self._format_table(op))
+
+        # TODO: Now actually format the things
+        buf = StringIO()
+        buf.write(self.join_tables[0])
+        for jtype, table, preds in zip(
+            self.join_types, self.join_tables[1:], self.join_predicates
+        ):
+            buf.write("\n")
+            buf.write(util.indent(f"{jtype} {table}", self.indent))
+
+            fmt_preds = []
+            npreds = len(preds)
+
+            if jtype == "JOIN":
+                # extract the closest match condition
+                pred = [pred for pred in preds if not isinstance(pred, ops.Equals)]
+                if len(pred) < 1:
+                    raise com.UnsupportedArgumentError(
+                        "ASOF JOIN requires exactly one closest match condition in the predicate,"
+                        " none is provided"
+                    )
+                if len(pred) > 1:
+                    raise com.UnsupportedOperationError(
+                        f"ASOF JOIN requires exactly one closest match condition in the predicate, "
+                        f"{len(pred)} are provided ({pred})"
+                    )
+                closest_match = next(iter(pred))
+
+                # extract the column from the condition
+                if isinstance(closest_match, (ops.GreaterEqual, ops.Greater)):
+                    asof = closest_match.left
+                elif isinstance(closest_match, (ops.LessEqual, ops.Less)):
+                    asof = closest_match.right
+                else:
+                    raise com.UnsupportedArgumentError(
+                        "ASOF JOIN only supports >, >=, <, <= for the closest match condition"
+                    )
+                if self._format_table(asof.table) != self.join_tables[0]:
+                    raise com.UnsupportedArgumentError(
+                        "ASOF JOIN condition must be defined on the left table"
+                    )
+
+                buf.write(f" FOR SYSTEM_TIME AS OF {self._translate(asof)}")
+
+                for pred in [pred for pred in preds if isinstance(pred, ops.Equals)]:
+                    new_pred = self._translate(pred)
+                    if npreds > 1:
+                        new_pred = f"({new_pred})"
+                    fmt_preds.append(new_pred)
+
+                if len(fmt_preds):
+                    buf.write("\n")
+
+                    conj = " AND\n{}".format(" " * 3)
+                    fmt_preds = util.indent(
+                        "ON " + conj.join(fmt_preds), self.indent * 2
+                    )
+                    buf.write(fmt_preds)
+            else:
+                for pred in preds:
+                    new_pred = self._translate(pred)
+                    if npreds > 1:
+                        new_pred = f"({new_pred})"
+                    fmt_preds.append(new_pred)
+
+                if len(fmt_preds):
+                    buf.write("\n")
+
+                    conj = " AND\n{}".format(" " * 3)
+                    fmt_preds = util.indent(
+                        "ON " + conj.join(fmt_preds), self.indent * 2
+                    )
+                    buf.write(fmt_preds)
+
+        return buf.getvalue()
 
 
 class FlinkSelectBuilder(SelectBuilder):
