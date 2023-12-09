@@ -44,12 +44,13 @@ def new_schema():
 
 
 def _create_temp_table_with_schema(backend, con, temp_table_name, schema, data=None):
-    temporary = con.create_table(temp_table_name, schema=schema)
+    temp = (con.supports_temporary_tables and con.supports_create_or_replace) or None
+    temporary = con.create_table(temp_table_name, schema=schema, temp=temp)
     assert temporary.to_pandas().empty
 
     if data is not None and isinstance(data, pd.DataFrame):
         assert not data.empty
-        tmp = con.create_table(temp_table_name, data, overwrite=True)
+        tmp = con.create_table(temp_table_name, data, overwrite=True, temp=temp)
         result = tmp.to_pandas()
         assert len(result) == len(data.index)
         backend.assert_frame_equal(
@@ -108,6 +109,7 @@ def test_create_table(backend, con, temp_table, lamduh, sch):
         obj,
         schema=sch,
         **{"tbl_properties": {"connector": None}} if backend.name() == "flink" else {},
+        temp=con.supports_temporary_tables or None,
     )
     result = (
         con.table(temp_table).execute().sort_values("first_name").reset_index(drop=True)
@@ -141,7 +143,17 @@ def test_load_data_sqlalchemy(alchemy_backend, alchemy_con, alchemy_temp_table, 
     )
 
     obj = lamduh(df)
-    alchemy_con.create_table(alchemy_temp_table, obj, schema=sch, overwrite=True)
+    alchemy_con.create_table(
+        alchemy_temp_table,
+        obj,
+        schema=sch,
+        overwrite=True,
+        temp=(
+            alchemy_con.supports_temporary_tables
+            or alchemy_con.supports_create_or_replace
+        )
+        or None,
+    )
     result = (
         alchemy_con.table(alchemy_temp_table)
         .execute()
@@ -217,7 +229,9 @@ backend_type_mapping = {
 
 @mark.notimpl(["datafusion", "druid", "flink"])
 def test_create_table_from_schema(con, new_schema, temp_table):
-    new_table = con.create_table(temp_table, schema=new_schema)
+    new_table = con.create_table(
+        temp_table, schema=new_schema, temp=con.supports_temporary_tables or None
+    )
     backend_mapping = backend_type_mapping.get(con.name, {})
 
     result = ibis.schema(
@@ -290,7 +304,9 @@ def test_create_temporary_table_from_schema(tmpcon, new_schema):
 )
 def test_rename_table(con, temp_table, temp_table_orig):
     schema = ibis.schema({"a": "string", "b": "bool", "c": "int32"})
-    con.create_table(temp_table_orig, schema=schema)
+    con.create_table(
+        temp_table_orig, schema=schema, temp=con.supports_temporary_tables or None
+    )
     con.rename_table(temp_table_orig, temp_table)
     new = con.table(temp_table)
     assert new.schema().equals(schema)
@@ -311,6 +327,7 @@ def test_nullable_input_output(con, temp_table):
         temp_table,
         schema=sch,
         **{"tbl_properties": {"connector": None}} if con.name == "flink" else {},
+        temp=con.supports_temporary_tables or None,
     )
 
     assert t.schema().types[0].nullable
@@ -380,14 +397,15 @@ def employee_data_1_temp_table(
     test_employee_data_1,
 ):
     temp_table_name = f"temp_employee_data_1_{guid()[:6]}"
-    _create_temp_table_with_schema(
+    s = _create_temp_table_with_schema(
         alchemy_backend,
         alchemy_con,
         temp_table_name,
         test_employee_schema,
         data=test_employee_data_1,
     )
-    assert temp_table_name in alchemy_con.list_tables()
+    t = alchemy_con.table(temp_table_name)
+    assert s.equals(t)
     yield temp_table_name
     alchemy_con.drop_table(temp_table_name, force=True)
 
@@ -533,7 +551,11 @@ def test_insert_from_memtable(alchemy_con, alchemy_temp_table):
     df = pd.DataFrame({"x": range(3)})
     table_name = alchemy_temp_table
     mt = ibis.memtable(df)
-    alchemy_con.create_table(table_name, schema=mt.schema())
+    alchemy_con.create_table(
+        table_name,
+        schema=mt.schema(),
+        temp=alchemy_con.supports_temporary_tables or None,
+    )
     alchemy_con.insert(table_name, mt)
     alchemy_con.insert(table_name, mt)
 
@@ -587,6 +609,11 @@ def test_unsigned_integer_type(alchemy_con, alchemy_temp_table):
         alchemy_temp_table,
         schema=ibis.schema(dict(a="uint8", b="uint16", c="uint32", d="uint64")),
         overwrite=True,
+        temp=(
+            alchemy_con.supports_temporary_tables
+            and alchemy_con.supports_create_or_replace
+        )
+        or None,
     )
     assert alchemy_temp_table in alchemy_con.list_tables()
 
@@ -885,8 +912,9 @@ def test_self_join_memory_table(backend, con):
 )
 @pytest.mark.notimpl(["dask", "datafusion", "druid"])
 def test_create_from_in_memory_table(con, t, temp_table):
-    con.create_table(temp_table, t)
-    assert temp_table in con.list_tables()
+    s = con.create_table(temp_table, t, temp=con.supports_temporary_tables or None)
+    t = con.table(temp_table)
+    assert s.equals(t)
 
 
 @pytest.mark.usefixtures("backend")
@@ -1218,6 +1246,7 @@ def test_create_table_timestamp(con, temp_table):
         schema=schema,
         **{"tbl_properties": {"connector": None}} if con.name == "flink" else {},
         overwrite=True,
+        temp=(con.supports_temporary_tables and con.supports_create_or_replace) or None,
     )
     rows = con.raw_sql(f"DESCRIBE {temp_table}").fetchall()
     result = ibis.schema((name, typ) for name, typ, *_ in rows)
@@ -1382,19 +1411,25 @@ def gen_test_name(con: BaseBackend) -> str:
 @mark.notimpl(["flink", "pyspark"])
 def test_overwrite(ddl_con):
     t0 = ibis.memtable({"a": [1, 2, 3]})
+    temp = (
+        ddl_con.supports_temporary_tables and ddl_con.supports_create_or_replace
+    ) or None
 
     with gen_test_name(ddl_con) as x:
-        t1 = ddl_con.create_table(x, t0)
+        t1 = ddl_con.create_table(x, t0, temp=temp)
         t2 = t1.filter(t1.a < 3)
         expected_count = 2
 
         assert t2.count().execute() == expected_count
 
         with gen_test_name(ddl_con) as y:
-            assert ddl_con.create_table(y, t2).count().execute() == expected_count
+            assert (
+                ddl_con.create_table(y, t2, temp=temp).count().execute()
+                == expected_count
+            )
 
         assert (
-            ddl_con.create_table(x, t2, overwrite=True).count().execute()
+            ddl_con.create_table(x, t2, overwrite=True, temp=temp).count().execute()
             == expected_count
         )
         assert t2.count().execute() == expected_count
