@@ -670,6 +670,8 @@ def alchemy_temp_table(alchemy_con) -> str:
     name = util.gen_name("alchemy_table")
     yield name
     with contextlib.suppress(NotImplementedError):
+        alchemy_con.truncate_table(name)
+    with contextlib.suppress(NotImplementedError):
         alchemy_con.drop_table(name, force=True)
 
 
@@ -688,6 +690,8 @@ def temp_table(con) -> str:
     """
     name = util.gen_name("temp_table")
     yield name
+    with contextlib.suppress(NotImplementedError):
+        con.truncate_table(name)
     with contextlib.suppress(NotImplementedError):
         con.drop_table(name, force=True)
 

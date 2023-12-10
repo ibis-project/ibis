@@ -287,6 +287,11 @@ class Backend(BaseAlchemyBackend):
                 typ = OracleType.from_string(type_string, nullable=nullable)
             yield name, typ
 
+    def truncate_table(self, name: str, database: str | None = None) -> None:
+        ident = sg.table(name, catalog=database, quoted=True).sql(self.name)
+        with self.begin() as con:
+            con.exec_driver_sql(f"TRUNCATE TABLE {ident}")
+
     def _table_from_schema(
         self,
         name: str,
