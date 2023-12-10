@@ -402,7 +402,7 @@ class Backend(BaseSQLBackend, CanCreateDatabase):
                 spark_df = self._session.createDataFrame(obj)
                 mode = "overwrite" if overwrite else "error"
                 spark_df.write.saveAsTable(name, format=format, mode=mode)
-                return None
+                return self.table(name)
             else:
                 self._register_in_memory_tables(obj)
 
