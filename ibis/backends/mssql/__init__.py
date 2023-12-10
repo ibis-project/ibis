@@ -8,6 +8,7 @@ import sqlalchemy as sa
 import sqlglot as sg
 import toolz
 
+import ibis.expr.operations as ops
 from ibis.backends.base import CanCreateDatabase
 from ibis.backends.base.sql.alchemy import AlchemyCanCreateSchema, BaseAlchemyBackend
 from ibis.backends.mssql.compiler import MsSqlCompiler
@@ -125,6 +126,23 @@ class Backend(BaseAlchemyBackend, CanCreateDatabase, AlchemyCanCreateSchema):
     ) -> str:
         yield f"CREATE OR ALTER VIEW {name} AS {definition}"
 
+    def _get_sqla_table(
+        self,
+        name: str,
+        *,
+        namespace: ops.Namespace = ops.Namespace(),  # noqa: B008
+        autoload: bool = True,
+        **kwargs: Any,
+    ) -> sa.Table:
+        try:
+            return super()._get_sqla_table(
+                name, namespace=namespace, autoload=autoload, **kwargs
+            )
+        except sa.exc.NoSuchTableError:
+            return super()._get_sqla_table(
+                f"#{name}", namespace=namespace, autoload=autoload, **kwargs
+            )
+
     def _table_from_schema(
         self,
         name: str,
@@ -133,7 +151,7 @@ class Backend(BaseAlchemyBackend, CanCreateDatabase, AlchemyCanCreateSchema):
         temp: bool = False,
     ) -> sa.Table:
         return super()._table_from_schema(
-            temp * "#" + name, schema=schema, database=database, temp=False
+            bool(temp) * "#" + name, schema=schema, database=database, temp=False
         )
 
     def _cursor_batches(
