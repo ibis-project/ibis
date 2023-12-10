@@ -33,5 +33,17 @@ class TestConf(BackendTest):
         ...
 ```
 
-{{< include ../reference/BackendTest.qmd >}}
-{{< include ../reference/ServiceBackendTest.qmd >}}
+```{python}
+#| echo: false
+#| output: asis
+import os
+
+paths = [
+    "../reference/BackendTest.qmd",
+    "../reference/ServiceBackendTest.qmd",
+]
+
+for path in filter(os.path.exists, paths):
+    with open(path) as f:
+        print(f.read())
+```
