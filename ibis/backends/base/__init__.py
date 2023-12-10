@@ -1224,6 +1224,12 @@ class BaseBackend(abc.ABC, _FileIOHandler):
             )
         return query
 
+    def truncate_table(
+        self, name: str, database: str | None = None, schema: str | None = None
+    ) -> None:
+        """Delete all rows from a table without dropping it."""
+        raise NotImplementedError(self.name)
+
 
 @functools.cache
 def _get_backend_names() -> frozenset[str]:
