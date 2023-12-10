@@ -690,7 +690,8 @@ def temp_table(con) -> str:
     """
     name = util.gen_name("temp_table")
     yield name
-    with contextlib.suppress(NotImplementedError):
+    # some backends don't implement truncate_table
+    with contextlib.suppress((AttributeError, NotImplementedError)):
         con.truncate_table(name)
     with contextlib.suppress(NotImplementedError):
         con.drop_table(name, force=True)
