@@ -1,0 +1,279 @@
+---
+title: "Ibis versus X: Performance across the ecosystem part 2"
+author: "Phillip Cloud"
+date: 2023-12-11
+categories:
+  - blog
+  - case study
+  - ecosystem
+  - performance
+---
+
+**TL; DR**: Ibis supports both Polars and DataFusion. Both backends are have
+about the same runtime performance, and lag far behind DuckDB on this workload.
+
+## Motivation
+
+This is part 2 of a series of posts showing performance across various backends
+that Ibis supports.
+
+Check out [part 1](../pydata-performance/) if you haven't already!
+
+In this post, I'll continue with the [Polars](../../backends/polars.qmd) and
+[DataFusion](../../backends/datafusion.qmd) backends.
+
+I show each tool using both the Ibis API and the tool's native API. We'll see
+that the performance difference between these approaches is negligible.
+
+```{python}
+#| echo: false
+def show_file(path, language: str = "python") -> None:
+    with open(path) as f:
+        source = f.read()
+    print(f"```{language}\n{source}\n```")
+```
+
+## Setup
+
+I ran all of the code in this blog post on a machine with these specs.
+
+```{python}
+#| echo: false
+#| output: asis
+import os
+import platform
+import shutil
+
+import cpuinfo
+import psutil
+
+info = cpuinfo.get_cpu_info()
+uname = platform.uname()
+
+MiB = 1 << 20
+GiB = 1 << 30
+TiB = 1 << 40
+
+ram_gib = psutil.virtual_memory().total / GiB
+disk_tib = shutil.disk_usage("/").total / TiB
+
+lines = [
+    "| Component | Specification |",
+    "| --------- | ------------- |",
+    f"| CPU | {info['brand_raw']} ({os.cpu_count()} threads) |",
+    f"| RAM | {ram_gib:.0f} GiB |",
+    f"| Disk | {disk_tib:.1f} TiB SSD |",
+    f"| OS | NixOS ({uname.system} {uname.release}) |",
+]
+print("\n".join(lines))
+```
+
+### Library versions
+
+Here are the versions I used to run this experiment at the time of writing.
+
+```{python}
+#| echo: false
+#| output: asis
+import importlib
+import subprocess
+import sys
+
+import pandas as pd
+
+
+subprocess.run(("git", "fetch", "upstream"), check=True, capture_output=True)
+
+cmd = "git", "rev-parse", "--short", "upstream/master"
+proc = subprocess.run(cmd, check=True, text=True, capture_output=True)
+commit = proc.stdout.strip()
+link = f"https://github.com/ibis-project/ibis/tree/{commit}"
+
+version_pair = lambda name: (name, importlib.import_module(name).__version__)
+versions = pd.DataFrame(
+    [("Python", sys.version)] + sorted(
+        [
+            *map(version_pair, ("pandas", "polars", "datafusion", "pyarrow")),
+            ("ibis", f"[`{commit}`]({link})"),
+        ]
+    ),
+    columns=["Dependency", "Version"],
+)
+
+print(versions.to_markdown(index=False))
+```
+
+## Running the query across backends
+
+Here are the different Ibis expressions for each backend as well as the same
+query with native APIs, along with timed executions of the query.
+
+### DuckDB
+
+First, let's run the Ibis + DuckDB version of the query from the original post:
+
+```{python}
+#| echo: false
+#| output: asis
+show_file("./duckdb_ibis.py")
+```
+
+```{python}
+duckdb_ibis_results = %timeit -n1 -r1 -o %run duckdb_ibis.py
+df.head()
+```
+
+::: {.panel-tabset}
+
+::: {.callout-note}
+## The full dataset results are not shown here for DataFusion and Polars
+These two engines took anywhere from 7 to 10 minutes to complete the workload,
+making iteration on the blog post impractical.
+:::
+
+## DataFusion
+
+::: {.panel-tabset}
+
+## Ibis
+
+```{python}
+#| echo: false
+#| output: asis
+show_file("./datafusion_ibis.py")
+```
+
+```{python}
+datafusion_ibis_results = %timeit -n1 -r1 -o %run datafusion_ibis.py
+df.head()
+```
+
+## DataFusion native
+
+<details>
+
+<summary>DataFusion SQL</summary>
+
+```{python}
+#| echo: false
+#| output: asis
+show_file("./datafusion_native.sql", language="sql")
+```
+
+</details>
+
+```{python}
+#| echo: false
+#| output: asis
+show_file("./datafusion_native.py")
+```
+
+```{python}
+datafusion_native_results = %timeit -n1 -r1 -o %run datafusion_native.py
+df.head()
+```
+
+:::
+
+## Polars
+
+::: {.panel-tabset}
+
+## Ibis
+
+```{python}
+#| echo: false
+#| output: asis
+show_file("./polars_ibis.py")
+```
+
+```{python}
+polars_ibis_results = %timeit -n1 -r1 -o %run polars_ibis.py
+df.head()
+```
+
+## Polars native
+
+```{python}
+#| echo: false
+#| output: asis
+show_file("./polars_native.py")
+```
+
+```{python}
+polars_native_results = %timeit -n1 -r1 -o %run polars_native.py
+df.head()
+```
+
+:::
+
+:::
+
+## Takeaways
+
+**Ibis + DuckDB is the only system tested that handles this workload well out of the box**
+
+* Both Polars and DataFusion are much slower than DuckDB and Dask on this
+  workload.
+* Polars memory use fluctuated quite bit, while DataFusion's memory profile was
+  similar to DuckDB.
+
+Let's recap the results with some numbers:
+
+### Numbers
+
+```{python}
+#| echo: false
+#| output: asis
+import glob
+
+allfiles = glob.glob("/data/pypi-parquet/*.parquet")
+total_size = sum(map(os.path.getsize, allfiles))
+
+
+def make_line(name, results, file_size: int = total_size):
+    duration = results.best
+    mib = file_size / MiB
+    throughput = mib / duration
+    data = [
+        name, f"{mib:,.0f} MiB", f"{duration:.0f} seconds", f"{throughput:.0f} MiB/s"
+    ]
+    row = " | ".join(data)
+    return f"| {row} |"
+
+
+results = sorted(
+    [
+        {"name": "Ibis + DuckDB", "results": duckdb_ibis_results},
+        {"name": "Ibis + Polars", "results": polars_ibis_results},
+        {"name": "Polars native API", "results": polars_native_results},
+        {"name": "Ibis + DataFusion", "results": datafusion_ibis_results},
+        {"name": "DataFusion native API", "results": datafusion_native_results},
+    ],
+    key=lambda run: total_size / run["results"].best,
+    reverse=True,
+)
+header = "| Toolset | Data size | Duration | Throughput |"
+sep = "| ------------------ | --------: | -----------: | ---------: |"
+
+rows = [header, sep]
+rows.extend(make_line(**result) for result in results)
+
+print("\n".join(rows))
+```
+
+## Conclusion
+
+If you're considering Polars for new code, give Ibis a try with the [DuckDB
+backend](../../backends/duckdb.qmd).
+
+You'll get better performance than Polars on some workloads, and with a broader
+cross-backend API that helps you scale from development to production.
+
+If you find that Polars has better performance than DuckDB on a particular
+workload you can always switch to the Polars backend for that workload.
+
+Everyone wins!
+
+In the next post in this series we'll cover the cloud backends: Snowflake,
+BigQuery, Trino and ClickHouse.

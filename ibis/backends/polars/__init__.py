@@ -410,9 +410,9 @@ class Backend(BaseBackend):
         if limit == "default":
             limit = ibis.options.sql.default_limit
         if limit is not None:
-            df = lf.fetch(limit)
+            df = lf.fetch(limit, streaming=True)
         else:
-            df = lf.collect()
+            df = lf.collect(streaming=True)
 
         if isinstance(expr, (ir.Table, ir.Scalar)):
             return expr.__pandas_result__(df.to_pandas())
@@ -433,9 +433,9 @@ class Backend(BaseBackend):
     ):
         lf = self.compile(expr, params=params, **kwargs)
         if limit is not None:
-            df = lf.fetch(limit)
+            df = lf.fetch(limit, streaming=True)
         else:
-            df = lf.collect()
+            df = lf.collect(streaming=True)
 
         table = df.to_arrow()
         if isinstance(expr, (ir.Table, ir.Value)):

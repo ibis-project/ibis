@@ -484,12 +484,12 @@ required-imports = ["from __future__ import annotations"]
 "*test*.py" = [
   "D", # ignore all docstring lints in tests
 ]
-"ci/*.py" = ["INP001"]
-"docs/*.py" = ["INP001"]
+"{docs,ci}/**/*.py" = ["INP001"]
 "*/decompiled.py" = ["ALL"]
-"ci/release/verify_release.py" = ["T201"] # CLI tool that prints stuff
-"pandas_impl.py" = ["T201"] # prints output using `print`
-"dask_impl.py" = ["T201"] # prints output using `print`
+"{ci/release/verify_release,docs/**/*_impl}.py" = [
+  "T201",
+] # prints output using `print`
+"docs/**/{datafusion,polars}_*.py" = ["T201"] # prints output using `print`
 
 [tool.blackdoc]
 extend_exclude = 'ibis/examples/__init__\.py'
