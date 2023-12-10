@@ -48,20 +48,12 @@ class Backend(BaseAlchemyBackend, CanListDatabases):
 
     def __getstate__(self) -> dict:
         r = super().__getstate__()
-        r.update(
-            dict(
-                compiler=self.compiler,
-                database_name=self.database_name,
-                _con=None,  # clear connection on copy()
-                _meta=None,
-            )
-        )
+        r.update(dict(compiler=self.compiler, _con=None, _meta=None))
         return r
 
     @property
     def current_database(self) -> str:
-        # AFAICT there is no notion of a schema in SQLite
-        return "main"
+        return None
 
     def list_databases(self, like: str | None = None) -> list[str]:
         with self.begin() as con:
@@ -96,8 +88,6 @@ class Backend(BaseAlchemyBackend, CanListDatabases):
         >>> ibis.sqlite.connect("path/to/my/sqlite.db")
         """
         import pandas as pd
-
-        self.database_name = "main"
 
         engine = sa.create_engine(
             f"sqlite:///{database if database is not None else ':memory:'}",
