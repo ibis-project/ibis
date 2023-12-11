@@ -16,8 +16,6 @@ from ibis.backends.pandas.rewrites import (
 )
 from ibis.util import gen_name
 
-################## PANDAS SPECIFIC NODES ######################
-
 
 @execute.register(ops.DatabaseTable)
 def execute_database_table(op, name, schema, source, namespace):
@@ -96,7 +94,7 @@ def execute_join(op, left, right, left_on, right_on, how):
 
 
 @execute.register(ops.SelfReference)
-def execute_self_reference(op, parent):
+def execute_self_reference(op, parent, identifier):
     return parent
 
 

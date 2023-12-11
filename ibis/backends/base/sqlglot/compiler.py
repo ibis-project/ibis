@@ -873,13 +873,13 @@ class SQLGlotCompiler(abc.ABC):
         )
 
     @visit_node.register(ops.SelfReference)
-    def visit_SelfReference(self, op, *, parent):
+    def visit_SelfReference(self, op, *, parent, identifier):
         return parent.as_(op.name, quoted=self.quoted)
 
     @visit_node.register(ops.JoinChain)
-    def visit_JoinChain(self, op, *, first, rest, fields):
+    def visit_JoinChain(self, op, *, first, rest, values):
         result = sg.select(
-            *(value.as_(key, quoted=self.quoted) for key, value in fields.items())
+            *(value.as_(key, quoted=self.quoted) for key, value in values.items())
         ).from_(first)
 
         for link in rest:

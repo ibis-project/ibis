@@ -96,12 +96,25 @@ def merge_select_select(_):
     )
 
 
+DEBUG = False
+
+
 def sqlize(node):
+    if DEBUG:
+        print()
+        print("--------- INPUT ---------")
+        print(node.to_expr())
     step1 = node.replace(
         window_function_to_window
         | project_to_select
         | filter_to_select
         | sort_to_select
     )
+    if DEBUG:
+        print("--------- STEP 1 ---------")
+        print(step1.to_expr())
     step2 = step1.replace(merge_select_select)
+    if DEBUG:
+        print("--------- STEP 2 ---------")
+        print(step2.to_expr())
     return step2

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import itertools
 import typing
 from abc import abstractmethod
 from typing import TYPE_CHECKING, Annotated, Any, Literal, Optional
@@ -260,6 +261,33 @@ class Project(Relation):
 
 
 @public
+class SelfReference(Relation):
+    _uid_counter = itertools.count()
+
+    parent: Relation
+    identifier: Optional[int] = None
+
+    def __init__(self, parent, identifier):
+        if identifier is None:
+            identifier = next(self._uid_counter)
+        super().__init__(parent=parent, identifier=identifier)
+
+    @attribute
+    def name(self) -> str:
+        if (name := getattr(self.parent, "name", None)) is not None:
+            return f"{name}_ref"
+        return gen_name("self_ref")
+
+    @attribute
+    def fields(self):
+        return FrozenDict({k: Field(self.parent, k) for k in self.parent.schema})
+
+    @attribute
+    def schema(self):
+        return self.parent.schema
+
+
+@public
 class JoinLink(Node):
     how: Literal[
         "inner",
@@ -273,7 +301,7 @@ class JoinLink(Node):
         "any_left",
         "cross",
     ]
-    table: Relation
+    table: SelfReference
     predicates: VarTuple[Value[dt.Boolean]]
 
 
@@ -281,20 +309,23 @@ class JoinLink(Node):
 class JoinChain(Relation):
     first: Relation
     rest: VarTuple[JoinLink]
-    # fields: FrozenDict[str, Annotated[Value, ~InstanceOf(Alias)]]
-    fields: FrozenDict[str, Field]
+    values: FrozenDict[str, Annotated[Value, ~InstanceOf(Alias)]]
 
-    def __init__(self, first, rest, fields):
+    def __init__(self, first, rest, values):
         allowed_parents = {first}
         for join in rest:
             allowed_parents.add(join.table)
             _check_integrity(join.predicates, allowed_parents)
-        _check_integrity(fields.values(), allowed_parents)
-        super().__init__(first=first, rest=rest, fields=fields)
+        _check_integrity(values.values(), allowed_parents)
+        super().__init__(first=first, rest=rest, values=values)
+
+    @attribute
+    def fields(self):
+        return self.values
 
     @attribute
     def schema(self):
-        return Schema({k: v.dtype.copy(nullable=True) for k, v in self.fields.items()})
+        return Schema({k: v.dtype.copy(nullable=True) for k, v in self.values.items()})
 
     def to_expr(self):
         import ibis.expr.types as ir
@@ -473,19 +504,6 @@ class DummyTable(Relation):
     @attribute
     def schema(self):
         return Schema({k: v.dtype for k, v in self.values.items()})
-
-
-@public
-class SelfReference(SimpleRelation):
-    @attribute
-    def name(self) -> str:
-        if (name := getattr(self.parent, "name", None)) is not None:
-            return f"{name}_ref"
-        return gen_name("self_ref")
-
-    @attribute
-    def fields(self):
-        return FrozenDict()
 
 
 @public

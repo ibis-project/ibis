@@ -228,6 +228,7 @@ class Concrete(Immutable, Comparable, Annotable):
         return self.__argnames__
 
     def copy(self, **overrides) -> Self:
+        # TODO(kszucs): raise if overrides contains unknown arguments
         kwargs = dict(zip(self.__argnames__, self.__args__))
         kwargs.update(overrides)
         return self.__recreate__(kwargs)

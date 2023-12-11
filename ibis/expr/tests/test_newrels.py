@@ -905,3 +905,21 @@ def test_filter_condition_referencing_agg_without_groupby_turns_it_into_a_subque
     expected = Filter(parent=r3, predicates=[r3.value > subquery * 0.0001])
 
     assert r5.op() == expected
+
+
+def test_e():
+    mr0 = ibis.table(schema=ibis.schema(dict(key="int")), name="leaf")
+
+    mr1 = mr0.filter(ibis.literal(True))
+
+    mr2 = mr1.join(mr1[["key"]], ["key"])
+    mr3 = mr2.join(mr2, ["key"])
+
+    print(mr3)
+
+
+def test_f():
+    t = ibis.memtable({"x": [1, 2], "y": [2, 1], "z": ["a", "b"]})
+    t_view = t.view()
+    expr = t.join(t_view, t.x == t_view.y).select("x", "y", "z", "z_right")
+    print(expr)
