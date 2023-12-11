@@ -43,7 +43,7 @@ class TestConf(BackendTest):
     def preload(self):
         if not SANDBOXED:
             self.connection._load_extensions(
-                ["httpfs", "postgres_scanner", "sqlite_scanner"]
+                ["httpfs", "postgres_scanner", "sqlite_scanner", "spatial"]
             )
 
     @property
@@ -59,16 +59,23 @@ class TestConf(BackendTest):
                 SELECT * FROM read_parquet('{parquet_dir / f'{table}.parquet'}')
                 """
             )
-        if geospatial_supported:
+        if geospatial_supported and not SANDBOXED:
             for table in TEST_TABLES_GEO:
                 yield (
                     f"""
-                    INSTALL spatial;
-                    LOAD spatial;
                     CREATE OR REPLACE TABLE {table} AS
                     SELECT * FROM st_read('{geojson_dir / f'{table}.geojson'}')
                     """
                 )
+            yield (
+                """
+                CREATE or REPLACE TABLE geo (name VARCHAR, geom GEOMETRY);
+                INSERT INTO geo VALUES
+                    ('Point', ST_GeomFromText('POINT(-100 40)')),
+                    ('Linestring', ST_GeomFromText('LINESTRING(0 0, 1 1, 2 1, 2 2)')),
+                    ('Polygon', ST_GeomFromText('POLYGON((0 0, 1 0, 1 1, 0 1, 0 0))'));
+                """
+            )
         yield from super().ddl_script
 
     @staticmethod
@@ -113,3 +120,13 @@ def lines_gdf(data_dir):
     gpd = pytest.importorskip("geopandas")
     lines_gdf = gpd.read_file(data_dir / "geojson" / "lines.geojson")
     return lines_gdf
+
+
+@pytest.fixture(scope="session")
+def geotable(con):
+    return con.table("geo")
+
+
+@pytest.fixture(scope="session")
+def gdf(geotable):
+    return geotable.execute()

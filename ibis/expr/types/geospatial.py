@@ -671,6 +671,25 @@ class GeoSpatialValue(NumericValue):
         """
         return ops.GeoTransform(self, srid).to_expr()
 
+    def convert(
+        self, source: ir.StringValue, target: ir.StringValue | ir.IntegerValue
+    ) -> GeoSpatialValue:
+        """Transform a geometry into a new SRID (CRS).
+
+        Parameters
+        ----------
+        source
+            CRS/SRID of input geometry
+        target
+            Target CRS/SRID
+
+        Returns
+        -------
+        GeoSpatialValue
+            Transformed geometry
+        """
+        return ops.GeoConvert(self, source, target).to_expr()
+
     def line_locate_point(self, right: PointValue) -> ir.FloatingValue:
         """Locate the distance a point falls along the length of a line.
 
