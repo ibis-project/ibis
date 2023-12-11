@@ -62,7 +62,7 @@ con.list_tables()
 We have multiple tables with information about New York City. Following Dr. Wu's class, we'll take a look at some
 spatial relations.
 
-We can start by taking a peak at the `nyc_subway_stations` table.
+We can start by taking a peek at the `nyc_subway_stations` table.
 
 ```{python}
 subway_stations = con.table("nyc_subway_stations")
@@ -132,7 +132,7 @@ In the previous query, `streets` and `broad_station` are different tables. We us
 scalar subquery from a table with a single column (whose shape is scalar).
 :::
 
-To visualize the findings, we will convert the tables to Geopandas DataFrames.
+To visualize the findings, we will convert the tables to GeoPandas DataFrames.
 
 ```{python}
 broad_station_gdf = broad_station.to_pandas()
@@ -160,7 +160,7 @@ m.add_vector(streets_gdf, get_color="grey", zoom_to_layer=False, opacity=0.3)
 m
 ```
 
-You can zoom in and out, and hover over the map to check on the streets names.
+You can zoom in and out, and hover over the map to check on the street names.
 
 ### `buffer` (ST_Buffer)
 
@@ -231,7 +231,7 @@ mh
 
 ## Functions supported and next steps
 
-At the moment in Ibis we have support for around thirty geospatial functions for the DuckDB and we will add some more
+At the moment in Ibis we have support for around thirty geospatial functions in DuckDB and we will add some more
 (see list [here](https://gist.github.com/ncclementi/fbc5564af709e2d7f8882821e3a8649f)).
 
 We also support reading multiple geospatial formats via [`read_geo()`](../../backends/duckdb.qmd#ibis.backends.duckdb.Backend.read_geo).
