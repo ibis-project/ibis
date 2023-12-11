@@ -126,3 +126,17 @@ def test_builtin_agg_udf_filtered(con):
 
     expr = count_big(ft.id, where=ft.id == 1)
     assert expr.execute() == ft[ft.id == 1].count().execute()
+
+
+@pytest.mark.parametrize("string", ["a", " ", "a ", " a", ""])
+def test_glorious_length_function_hack(con, string):
+    """Test that the length function works as expected.
+
+    Why wouldn't it, you ask?
+
+    https://learn.microsoft.com/en-us/sql/t-sql/functions/len-transact-sql?view=sql-server-ver16#remarks
+    """
+    lit = ibis.literal(string)
+    expr = lit.length()
+    result = con.execute(expr)
+    assert result == len(string)
