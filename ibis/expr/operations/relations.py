@@ -260,6 +260,7 @@ class Project(Relation):
         return Schema({k: v.dtype for k, v in self.values.items()})
 
 
+# TODO(kszucs): rename to View
 @public
 class SelfReference(Relation):
     _uid_counter = itertools.count()

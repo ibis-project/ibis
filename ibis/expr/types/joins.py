@@ -131,35 +131,6 @@ class JoinExpr(TableExpr):
 
         return self.finish(values)
 
-        # # locate the fields referenced in any of the values
-        # table_ids = {t: i for i, t in enumerate(self.tables())}
-        # values_names = {v: k for k, v in values.items()}
-        # unique_fields = toolz.unique(
-        #     toolz.concat(v.find(ops.Field, filter=ops.Value) for k, v in values.items())
-        # )
-
-        # fields = {}
-        # for field in unique_fields:
-        #     postfix = getattr(field.rel, "name", str(table_ids[field.rel]))
-        #     aliases = [values_names.get(field, field.name), f"{field.name}_{postfix}"]
-        #     for alias in aliases:
-        #         if alias not in fields:
-        #             fields[alias] = field
-        #             break
-        #     else:
-        #         raise com.IntegrityError(f"Name collision: {aliases}")
-
-        # # finish the join chain with the new fields
-        # join = self.finish(fields)
-        # if all(isinstance(v, ops.Field) for v in values.values()):
-        #     return join
-
-        # # construct a following projection if the values are not consisted of
-        # # only fields
-        # subs = {v: ops.Field(join, k) for k, v in fields.items()}
-        # values = {k: v.replace(subs, filter=ops.Value) for k, v in values.items()}
-        # return join.select(values)
-
     # TODO(kszucs): figure out a solution to automatically wrap all the
     # TableExpr methods including the docstrings and the signature
     def filter(self, *predicates):
