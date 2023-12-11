@@ -30,4 +30,4 @@ expr = (
     .dropna("ext")
     .order_by([_.month.desc(), _.project_count.desc()])
 )
-df = expr.to_pandas()
+df = expr.to_pandas(streaming=True)

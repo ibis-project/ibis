@@ -404,15 +404,16 @@ class Backend(BaseBackend):
         expr: ir.Expr,
         params: Mapping[ir.Expr, object] | None = None,
         limit: int | None = None,
+        streaming: bool = False,
         **kwargs: Any,
     ):
         lf = self.compile(expr, params=params, **kwargs)
         if limit == "default":
             limit = ibis.options.sql.default_limit
         if limit is not None:
-            df = lf.fetch(limit, streaming=True)
+            df = lf.fetch(limit, streaming=streaming)
         else:
-            df = lf.collect(streaming=True)
+            df = lf.collect(streaming=streaming)
 
         if isinstance(expr, (ir.Table, ir.Scalar)):
             return expr.__pandas_result__(df.to_pandas())
@@ -429,13 +430,14 @@ class Backend(BaseBackend):
         expr: ir.Expr,
         params: Mapping[ir.Expr, object] | None = None,
         limit: int | None = None,
+        streaming: bool = False,
         **kwargs: Any,
     ):
         lf = self.compile(expr, params=params, **kwargs)
         if limit is not None:
-            df = lf.fetch(limit, streaming=True)
+            df = lf.fetch(limit, streaming=streaming)
         else:
-            df = lf.collect(streaming=True)
+            df = lf.collect(streaming=streaming)
 
         table = df.to_arrow()
         if isinstance(expr, (ir.Table, ir.Value)):
