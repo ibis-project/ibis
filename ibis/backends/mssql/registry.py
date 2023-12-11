@@ -145,6 +145,23 @@ def _not(t, op):
         return sa.case((arg == 0, True), else_=False)
 
 
+def _len(x):
+    """The MSSQL LEN function doesn't count trailing spaces.
+
+    Also, DATALENGTH (the suggested alternative) counts bytes and thus its
+    result depends on the string's encoding.
+
+    https://learn.microsoft.com/en-us/sql/t-sql/functions/len-transact-sql?view=sql-server-ver16#remarks
+
+    The solution is to add a character to the beginning and end of the string
+    that are guaranteed to have one character in length and are not spaces, and
+    then subtract 2 from the result of `LEN` of that input.
+
+    Thanks to @arkanovicz for this glorious hack.
+    """
+    return sa.func.len("A" + x + "Z") - 2
+
+
 operation_registry = sqlalchemy_operation_registry.copy()
 operation_registry.update(sqlalchemy_window_functions_registry)
 
@@ -162,7 +179,7 @@ operation_registry.update(
         ops.Capitalize: unary(
             lambda arg: sa.func.concat(
                 sa.func.upper(sa.func.substring(arg, 1, 1)),
-                sa.func.lower(sa.func.substring(arg, 2, sa.func.datalength(arg) - 1)),
+                sa.func.lower(sa.func.substring(arg, 2, _len(arg) - 1)),
             )
         ),
         ops.LStrip: unary(sa.func.ltrim),
@@ -171,7 +188,7 @@ operation_registry.update(
         ops.Repeat: fixed_arity(sa.func.replicate, 2),
         ops.Reverse: unary(sa.func.reverse),
         ops.StringFind: _string_find,
-        ops.StringLength: unary(sa.func.datalength),
+        ops.StringLength: unary(_len),
         ops.StringReplace: fixed_arity(sa.func.replace, 3),
         ops.Strip: unary(sa.func.trim),
         ops.Uppercase: unary(sa.func.upper),
