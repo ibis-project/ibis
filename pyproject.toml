@@ -107,6 +107,7 @@ codespell = { version = ">=2.2.6,<3", extras = [
 ] }
 google-cloud-storage = ">=2.7.0,<3"
 ipython = ">=8.7.0,<9"
+poetry-plugin-export = ">=1.6.0,<2"
 poetry-dynamic-versioning = ">=0.18.0,<2"
 pre-commit = ">=3.1,<4"
 pydeps = ">=1.12.7,<2"

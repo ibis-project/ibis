@@ -9,7 +9,7 @@ clean:
 # lock dependencies without updating existing versions
 lock:
     #!/usr/bin/env bash
-    required_version="1.7.0"
+    required_version="1.7.1"
     version="$(poetry --version)"
     if ! grep -qF "${required_version}" <<< "${version}"; then
         >&2 echo "poetry version must be ${required_version}, got ${version}"
