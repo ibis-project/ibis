@@ -332,6 +332,10 @@ jobs:
       - name: install ibis
         run: poetry install --without dev --without docs --extras "${{ join(matrix.backend.extras, ' ') }}"
 
+      - name: install deps for broken avro-python setup
+        if: matrix.backend.name == 'flink'
+        run: poetry run pip install wheel
+
       - name: install other deps
         if: matrix.backend.additional_deps != null
         run: poetry run pip install ${{ join(matrix.backend.additional_deps, ' ') }}
