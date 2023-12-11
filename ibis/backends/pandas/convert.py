@@ -1,0 +1,84 @@
+from __future__ import annotations
+
+import pandas as pd
+import pandas.api.types as pdt
+
+import ibis.expr.datatypes as dt
+from ibis.formats.pandas import DataMapper, PandasType
+
+
+class PandasConverter(DataMapper):
+    @classmethod
+    def convert_scalar(cls, obj, dtype):
+        series = pd.Series([obj])
+        casted = cls.convert_column(series, dtype)
+        return casted[0]
+
+    @classmethod
+    def convert_column(cls, obj, dtype):
+        pandas_type = PandasType.from_ibis(dtype)
+
+        method_name = f"convert_{dtype.__class__.__name__}"
+        convert_method = getattr(cls, method_name, cls.convert_default)
+
+        return convert_method(obj, dtype, pandas_type)
+
+    @staticmethod
+    def convert_default(s, dtype, pandas_type):
+        if pandas_type == object:
+            func = lambda x: dt.normalize(
+                dtype, x, none=pd.NA, immutable=False, strict=False
+            )
+            return s.map(func, na_action="ignore").astype(pandas_type)
+        else:
+            return s.astype(pandas_type)
+
+    @staticmethod
+    def convert_Integer(s, dtype, pandas_type):
+        if pdt.is_datetime64_any_dtype(s.dtype):
+            return s.astype("int64").floordiv(int(1e9)).astype(pandas_type)
+        else:
+            return s.astype(pandas_type, errors="ignore")
+
+    convert_SignedInteger = convert_UnsignedInteger = convert_Integer
+    convert_Int64 = convert_Int32 = convert_Int16 = convert_Int8 = convert_SignedInteger
+    convert_UInt64 = (
+        convert_UInt32
+    ) = convert_UInt16 = convert_UInt8 = convert_UnsignedInteger
+
+    @staticmethod
+    def convert_Floating(s, dtype, pandas_type):
+        if pdt.is_datetime64_any_dtype(s.dtype):
+            return s.astype("int64").floordiv(int(1e9)).astype(pandas_type)
+        else:
+            return s.astype(pandas_type, errors="ignore")
+
+    convert_Float64 = convert_Float32 = convert_Float16 = convert_Floating
+
+    @staticmethod
+    def convert_Timestamp(s, dtype, pandas_type):
+        if isinstance(dtype, pd.DatetimeTZDtype):
+            return s.dt.tz_convert(dtype.timezone)
+        elif pdt.is_datetime64_dtype(s.dtype):
+            return s.dt.tz_localize(dtype.timezone)
+        elif pdt.is_numeric_dtype(s.dtype):
+            return pd.to_datetime(s, unit="s").dt.tz_localize(dtype.timezone)
+        else:
+            return s.astype(pandas_type)
+
+    @staticmethod
+    def convert_Date(s, dtype, pandas_type):
+        if isinstance(s.dtype, pd.DatetimeTZDtype):
+            s = s.dt.tz_convert("UTC").dt.tz_localize(None)
+        elif pdt.is_numeric_dtype(s.dtype):
+            s = pd.to_datetime(s, unit="D")
+        else:
+            s = pd.to_datetime(s).astype(pandas_type, errors="ignore")
+
+        return s.dt.normalize()
+
+    @staticmethod
+    def convert_String(s, dtype, pandas_type):
+        # TODO(kszucs): should switch to the new pandas string type and convert
+        # object columns using s.convert_dtypes() method
+        return s.map(str, na_action="ignore").astype(object)
