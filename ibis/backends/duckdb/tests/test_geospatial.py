@@ -195,3 +195,18 @@ def test_geospatial_buffer(zones, zones_gdf):
     gp_buffer = zones_gdf.geometry.buffer(100.0, resolution=8)
 
     gtm.assert_geoseries_equal(buffer.to_pandas(), gp_buffer, check_crs=False)
+
+
+# using a smaller dataset for time purposes
+def test_geospatial_convert(geotable, gdf):
+    # geotable is fabricated but let's say the
+    # data is in CRS: EPSG:2263
+    # let's transform to EPSG:4326 (latitude-longitude projection)
+    geo_ll = geotable.geom.convert("EPSG:2263", "EPSG:4326")
+
+    gdf.crs = "EPSG:2263"
+    gdf_ll = gdf.geometry.to_crs(crs=4326)
+
+    gtm.assert_geoseries_equal(
+        geo_ll.to_pandas(), gdf_ll, check_less_precise=True, check_crs=False
+    )

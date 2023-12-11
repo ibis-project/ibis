@@ -111,6 +111,15 @@ def _geo_union(t, op):
     return sa.func.st_union(left, right, type_=Geometry_WKB)
 
 
+def _geo_convert(t, op):
+    arg = t.translate(op.arg)
+    source = op.source
+    target = op.target
+
+    # sa.true() setting always_xy=True
+    return sa.func.st_transform(arg, source, target, sa.true(), type_=Geometry_WKB)
+
+
 def _generic_log(arg, base, *, type_):
     return sa.func.ln(arg, type_=type_) / sa.func.ln(base, type_=type_)
 
@@ -550,6 +559,7 @@ operation_registry.update(
         ops.GeoWithin: fixed_arity(sa.func.ST_Within, 2),
         ops.GeoX: unary(sa.func.ST_X),
         ops.GeoY: unary(sa.func.ST_Y),
+        ops.GeoConvert: _geo_convert,
         # other ops
         ops.TimestampRange: fixed_arity(sa.func.range, 3),
     }

@@ -452,6 +452,16 @@ class GeoTransform(GeoSpatialUnOp):
 
 
 @public
+class GeoConvert(GeoSpatialUnOp):
+    """Returns a transformed version of the given geometry from source crs/srid to a target crs/srid."""
+
+    source: str
+    target: str
+
+    dtype = dt.geometry
+
+
+@public
 class GeoAsBinary(GeoSpatialUnOp):
     """Return the Well-Known Binary (WKB) representation of the input, without SRID meta data."""
 
