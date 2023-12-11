@@ -846,46 +846,16 @@ def test_join_no_predicate_list(con):
 
     pred = region.r_regionkey == nation.n_regionkey
     joined = region.inner_join(nation, pred)
-
-    r0 = joined.op().first.to_expr()
-    r1 = joined.op().rest[0].table.to_expr()
-    expected = ops.JoinChain(
-        first=r0,
-        rest=[ops.JoinLink("inner", r1, [r0.r_regionkey == r1.n_regionkey])],
-        fields={
-            "r_regionkey": r0.r_regionkey,
-            "r_name": r0.r_name,
-            "r_comment": r0.r_comment,
-            "n_nationkey": r1.n_nationkey,
-            "n_name": r1.n_name,
-            "n_regionkey": r1.n_regionkey,
-            "n_comment": r1.n_comment,
-        },
-    )
-    assert joined.op() == expected
+    expected = region.inner_join(nation, [pred])
+    assert_equal(joined, expected)
 
 
 def test_join_deferred(con):
     region = con.table("tpch_region")
     nation = con.table("tpch_nation")
     res = region.join(nation, _.r_regionkey == nation.n_regionkey)
-
-    r0 = res.op().first.to_expr()
-    r1 = res.op().rest[0].table.to_expr()
-    expected = ops.JoinChain(
-        first=r0,
-        rest=[ops.JoinLink("inner", r1, [r0.r_regionkey == r1.n_regionkey])],
-        fields={
-            "r_regionkey": r0.r_regionkey,
-            "r_name": r0.r_name,
-            "r_comment": r0.r_comment,
-            "n_nationkey": r1.n_nationkey,
-            "n_name": r1.n_name,
-            "n_regionkey": r1.n_regionkey,
-            "n_comment": r1.n_comment,
-        },
-    )
-    assert res.op() == expected
+    exp = region.join(nation, region.r_regionkey == nation.n_regionkey)
+    assert_equal(res, exp)
 
 
 def test_asof_join():
@@ -909,45 +879,36 @@ def test_asof_join_with_by():
     right = ibis.table([("time", "int32"), ("key", "int32"), ("value2", "double")])
 
     join_without_by = api.asof_join(left, right, "time")
-
-    r0 = join_without_by.op().first.to_expr()
-    r1 = join_without_by.op().rest[0].table.to_expr()
     assert join_without_by.op() == ops.JoinChain(
-        first=r0,
-        rest=[ops.JoinLink("asof", r1, [r0.time == r1.time])],
+        first=left,
+        rest=[ops.JoinLink("asof", right, [left.time == right.time])],
         fields={
-            "time": r0.time,
-            "key": r0.key,
-            "value": r0.value,
-            "time_right": r1.time,
-            "key_right": r1.key,
-            "value2": r1.value2,
+            "time": left.time,
+            "key": left.key,
+            "value": left.value,
+            "time_right": right.time,
+            "key_right": right.key,
+            "value2": right.value2,
         },
     )
 
     join_with_by = api.asof_join(left, right, "time", by="key")
-
-    node = join_with_by.op()
-    r0 = node.first.to_expr()
-    r1 = node.rest[0].table.to_expr()
-    r2 = node.rest[1].table.to_expr()
-    expected = ops.JoinChain(
-        first=r0,
+    assert join_with_by.op() == ops.JoinChain(
+        first=left,
         rest=[
-            ops.JoinLink("inner", r1, [r0.key == r1.key]),
-            ops.JoinLink("asof", r2, [r0.time == r2.time]),
+            ops.JoinLink("inner", right, [left.key == right.key]),
+            ops.JoinLink("asof", right, [left.time == right.time]),
         ],
         fields={
-            "time": r0.time,
-            "key": r0.key,
-            "value": r0.value,
-            "time_right": r1.time,
-            "key_right": r1.key,
-            "value2": r1.value2,
-            "value2_right": r2.value2,
+            "time": left.time,
+            "key": left.key,
+            "value": left.value,
+            "time_right": right.time,
+            "key_right": right.key,
+            "value2": right.value2,
+            "value2_right": right.value2,
         },
     )
-    assert node == expected
 
 
 @pytest.mark.parametrize(
@@ -974,25 +935,22 @@ def test_asof_join_with_tolerance(ibis_interval, timedelta_interval):
 
     for interval in [ibis_interval, timedelta_interval]:
         joined = api.asof_join(left, right, "time", tolerance=interval)
-
-        r0 = ops.BoxedRelation(left, uid=joined.op().first.uid).to_expr()
-        r1 = ops.BoxedRelation(right, uid=joined.op().rest[0].table.uid).to_expr()
         expected = ops.JoinChain(
-            first=r0,
+            first=left,
             rest=[
                 ops.JoinLink(
                     "asof",
-                    r1,
-                    [r0.time == r1.time, (r0.time - r1.time) <= interval],
+                    right,
+                    [left.time == right.time, (left.time - right.time) <= interval],
                 )
             ],
             fields={
-                "time": r0.time,
-                "key": r0.key,
-                "value": r0.value,
-                "time_right": r1.time,
-                "key_right": r1.key,
-                "value2": r1.value2,
+                "time": left.time,
+                "key": left.key,
+                "value": left.value,
+                "time_right": right.time,
+                "key_right": right.key,
+                "value2": right.value2,
             },
         )
         assert joined.op() == expected
@@ -1155,27 +1113,20 @@ def test_cross_join_multiple(table):
     c = table["f", "h"]
 
     joined = ibis.cross_join(a, b, c)
-    for t in joined.tables():
-        assert isinstance(t, ops.BoxedRelation)
-
-    t1 = joined.op().first.to_expr()
-    t2 = joined.op().rest[0].table.to_expr()
-    t3 = joined.op().rest[1].table.to_expr()
-
     assert joined.op() == ops.JoinChain(
-        first=t1,
+        first=a,
         rest=[
-            ops.JoinLink("cross", t2, []),
-            ops.JoinLink("cross", t3, []),
+            ops.JoinLink("cross", b, []),
+            ops.JoinLink("cross", c, []),
         ],
         fields={
-            "a": t1.a,
-            "b": t1.b,
-            "c": t1.c,
-            "d": t2.d,
-            "e": t2.e,
-            "f": t3.f,
-            "h": t3.h,
+            "a": a.a,
+            "b": a.b,
+            "c": a.c,
+            "d": b.d,
+            "e": b.e,
+            "f": c.f,
+            "h": c.h,
         },
     )
     # TODO(kszucs): it must be simplified first using an appropriate rewrite rule
@@ -1246,25 +1197,10 @@ def test_filter_join():
 def test_join_key_alternatives(con, key_maker):
     t1 = con.table("star1")
     t2 = con.table("star2")
+    expected = t1.inner_join(t2, [t1.foo_id == t2.foo_id])
     key = key_maker(t1, t2)
     joined = t1.inner_join(t2, key)
-
-    left = ops.BoxedRelation(t1, uid=joined.op().first.uid).to_expr()
-    right = ops.BoxedRelation(t2, uid=joined.op().rest[0].table.uid).to_expr()
-    expected = ops.JoinChain(
-        first=left,
-        rest=[ops.JoinLink("inner", right, [left.foo_id == right.foo_id])],
-        fields={
-            "c": left.c,
-            "f": left.f,
-            "foo_id": left.foo_id,
-            "bar_id": left.bar_id,
-            "foo_id_right": right.foo_id,
-            "value1": right.value1,
-            "value3": right.value3,
-        },
-    )
-    assert joined.op() == expected
+    assert_equal(joined, expected)
 
 
 def test_join_key_invalid(con):
@@ -1276,6 +1212,8 @@ def test_join_key_invalid(con):
 
     # it is working now
     t1.inner_join(t2, [(s.c("foo_id"), s.c("foo_id"))])
+    # with pytest.raises(ValueError):
+    #     t1.inner_join(t2, [(s.c("foo_id"), s.c("foo_id"))])
 
 
 def test_join_invalid_refs(con):
@@ -1333,30 +1271,8 @@ def test_unravel_compound_equijoin(table):
     p3 = t1.key3 == t2.key3
 
     joined = t1.inner_join(t2, [p1 & p2 & p3])
-
-    r0 = joined.op().first.to_expr()
-    r1 = joined.op().rest[0].table.to_expr()
-    expected = ops.JoinChain(
-        first=r0,
-        rest=[
-            ops.JoinLink(
-                "inner",
-                r1,
-                [r0.key1 == r1.key1, r0.key2 == r1.key2, r0.key3 == r1.key3],
-            )
-        ],
-        fields={
-            "key1": r0.key1,
-            "key2": r0.key2,
-            "key3": r0.key3,
-            "value1": r0.value1,
-            "key1_right": r1.key1,
-            "key2_right": r1.key2,
-            "key3_right": r1.key3,
-            "value2": r1.value2,
-        },
-    )
-    assert joined.op() == expected
+    expected = t1.inner_join(t2, [p1, p2, p3])
+    assert_equal(joined, expected)
 
 
 def test_union(

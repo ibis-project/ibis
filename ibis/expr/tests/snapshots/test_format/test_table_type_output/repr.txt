@@ -4,4 +4,6 @@ r0 := UnboundTable: foo
   year    int32
   y       float64
 
-Equals(dept_id, dept_id): r0.dept_id == r0.dept_id
+r1 := SelfReference[r0]
+
+Equals(dept_id, dept_id): r0.dept_id == r1.dept_id

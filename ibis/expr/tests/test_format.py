@@ -11,9 +11,15 @@ import ibis.expr.format
 import ibis.expr.operations as ops
 import ibis.legacy.udf.vectorized as udf
 from ibis import util
+from ibis.expr.operations.relations import SimpleRelation
 
 # easier to switch implementation if needed
 fmt = repr
+
+
+@pytest.mark.parametrize("cls", set(ops.Relation.__subclasses__()) - {SimpleRelation})
+def test_tables_have_format_rules(cls):
+    assert cls in ibis.expr.format.fmt.registry
 
 
 @pytest.mark.parametrize("cls", [ops.PhysicalTable, ops.Relation])
@@ -56,9 +62,7 @@ def test_table_type_output(snapshot):
 
     expr = foo.dept_id == foo.view().dept_id
     result = fmt(expr)
-    # TODO(kszucs): removed it because we use the new BoxedRelation more
-    # extensively which makes the formatted output noisy
-    # assert "SelfReference[r0]" in result
+    assert "SelfReference[r0]" in result
     assert "UnboundTable: foo" in result
     snapshot.assert_match(result, "repr.txt")
 

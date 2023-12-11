@@ -162,7 +162,7 @@ def pretty(node):
 
     def mapper(op, _, **kwargs):
         result = fmt(op, **kwargs)
-        if isinstance(op, ops.Relation) and not isinstance(op, ops.BoxedRelation):
+        if isinstance(op, ops.Relation):
             tables[op] = result
             result = f"r{next(refcnt)}"
         return Rendered(result)
@@ -200,11 +200,6 @@ def _relation(op, parent=None, **kwargs):
         top = f"{op.__class__.__name__}[{parent}]\n"
     kwargs["schema"] = render_schema(op.schema)
     return top + render_fields(kwargs, 1)
-
-
-@fmt.register(ops.BoxedRelation)
-def _boxed_relation(op, parent, uid):
-    return parent
 
 
 @fmt.register(ops.PhysicalTable)
@@ -336,8 +331,9 @@ def _limit(op, parent, **kwargs):
     return f"{op.__class__.__name__}[{parent}, {params}]"
 
 
+@fmt.register(ops.SelfReference)
 @fmt.register(ops.Distinct)
-def _distinct(op, parent, **kwargs):
+def _self_reference(op, parent, **kwargs):
     return f"{op.__class__.__name__}[{parent}]"
 
 

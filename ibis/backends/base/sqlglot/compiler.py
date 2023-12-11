@@ -872,9 +872,9 @@ class SQLGlotCompiler(abc.ABC):
             name, db=namespace.schema, catalog=namespace.database, quoted=self.quoted
         )
 
-    @visit_node.register(ops.BoxedRelation)
-    def visit_BoxedRelation(self, op, *, parent, uid):
-        return parent.as_(f"br{uid}", quoted=self.quoted)
+    @visit_node.register(ops.SelfReference)
+    def visit_SelfReference(self, op, *, parent):
+        return parent.as_(op.name, quoted=self.quoted)
 
     @visit_node.register(ops.JoinChain)
     def visit_JoinChain(self, op, *, first, rest, fields):

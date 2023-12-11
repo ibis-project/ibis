@@ -72,17 +72,13 @@ def test_lift_join(t, s):
     join = t.join(s, t.d == s.a.g)
     result = join.a_right.lift()
 
-    r0 = join.op().first.to_expr()
-    r1 = join.op().rest[0].table.to_expr()
-
     join = ops.JoinChain(
-        first=r0,
+        first=t,
         rest=[
-            ops.JoinLink("inner", r1, [r0.d == r1.a.g]),
+            ops.JoinLink("inner", s, [t.d == s.a.g]),
         ],
-        fields={"a": r1.a},
+        fields={"a": s.a},
     ).to_expr()
-
     proj = ops.Project(join, {"f": join.a.f, "g": join.a.g})
     assert result.op() == proj
 
