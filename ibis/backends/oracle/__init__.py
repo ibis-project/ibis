@@ -237,14 +237,19 @@ class Backend(BaseAlchemyBackend):
             sa.column("data_precision"),
             sa.column("data_scale"),
             sa.column("nullable"),
+            sa.column("column_id"),
         )
-        metadata_query = sa.select(
-            t.c.column_name,
-            t.c.data_type,
-            t.c.data_precision,
-            t.c.data_scale,
-            case((t.c.nullable == "Y", True), else_=False).label("nullable"),
-        ).where(t.c.table_name == name)
+        metadata_query = (
+            sa.select(
+                t.c.column_name,
+                t.c.data_type,
+                t.c.data_precision,
+                t.c.data_scale,
+                case((t.c.nullable == "Y", True), else_=False).label("nullable"),
+            )
+            .where(t.c.table_name == name)
+            .order_by(t.c.column_id)
+        )
 
         with self.begin() as con:
             con.execute(create_view)
