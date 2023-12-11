@@ -1526,3 +1526,19 @@ def test_value_counts_on_expr(backend, alltypes, df):
     expected.columns = columns
     expected = expected.sort_values(by=columns).reset_index(drop=True)
     backend.assert_frame_equal(result, expected)
+
+
+def test_group_by_expr(backend, con):
+    expr = (
+        ibis.memtable(
+            {"project_name": ["duckdb", "ibis-framework", "ibis", "numpy", "pandas"]}
+        )
+        .group_by(n=_.project_name.length())
+        .aggregate(c=_.project_name.nunique())
+        .order_by(_.n.desc())
+    )
+    result = con.execute(expr)
+    expected = pd.DataFrame(dict(n=[14, 6, 5, 4], c=[1, 2, 1, 1])).astype(
+        dict(n="int32", c="int64")
+    )
+    backend.assert_frame_equal(result, expected)
