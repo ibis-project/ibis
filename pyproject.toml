@@ -200,9 +200,9 @@ mssql = ["sqlalchemy", "pymssql", "sqlalchemy-views"]
 mysql = ["sqlalchemy", "pymysql", "sqlalchemy-views"]
 oracle = ["sqlalchemy", "oracledb", "packaging", "sqlalchemy-views"]
 pandas = ["regex"]
-polars = ["polars"]
+polars = ["polars", "packaging"]
 postgres = ["psycopg2", "sqlalchemy", "sqlalchemy-views"]
-pyspark = ["pyspark", "sqlalchemy"]
+pyspark = ["pyspark", "sqlalchemy", "packaging"]
 snowflake = [
   "snowflake-connector-python",
   "snowflake-sqlalchemy",
