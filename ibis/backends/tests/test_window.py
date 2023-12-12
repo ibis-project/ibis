@@ -1106,7 +1106,7 @@ def test_grouped_ordered_window_coalesce(backend, alltypes, df):
 
 
 @pytest.mark.notimpl(["polars"], raises=com.OperationNotDefinedError)
-def test_mutate_window_filter(backend, alltypes, df):
+def test_mutate_window_filter(backend, alltypes):
     t = alltypes
     win = ibis.window(order_by=[t.id])
     expr = (
