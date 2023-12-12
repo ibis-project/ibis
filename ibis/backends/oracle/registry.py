@@ -43,13 +43,29 @@ def _corr(t, op):
 
 
 def _literal(t, op):
-    if (
+    dtype = op.dtype
+    value = op.value
+
+    if value is None:
+        return sa.null()
+    elif (
         # handle UUIDs in sqlalchemy < 2
-        vparse(sa.__version__) < vparse("2")
-        and (dtype := op.dtype).is_uuid()
-        and (value := op.value) is not None
+        vparse(sa.__version__) < vparse("2") and dtype.is_uuid()
     ):
         return sa.literal(str(value), type_=t.get_sqla_type(dtype))
+    elif dtype.is_timestamp():
+        if dtype.timezone is not None:
+            return sa.func.to_utc_timestamp_tz(value.isoformat(timespec="microseconds"))
+        return sa.func.to_timestamp(
+            # comma for sep here because T is a special character in Oracle
+            # the FX prefix means "requires an exact match"
+            value.isoformat(sep=",", timespec="microseconds"),
+            "FXYYYY-MM-DD,HH24:MI:SS.FF6",
+        )
+    elif dtype.is_date():
+        return sa.func.to_date(value.isoformat(), "FXYYYY-MM-DD")
+    elif dtype.is_time():
+        raise NotImplementedError("Time values are not supported in Oracle")
     return _alchemy_literal(t, op)
 
 
