@@ -316,6 +316,22 @@ class DuckDBCompiler(SQLGlotCompiler):
             arg_length + self.f.greatest(idx, -arg_length),
         )
 
+    @visit_node.register(ops.Correlation)
+    def visit_Correlation(self, op, *, left, right, how, where):
+        if how == "sample":
+            raise com.UnsupportedOperationError(
+                f"{self.dialect} only implements `pop` correlation coefficient"
+            )
+
+        # TODO: rewrite rule?
+        if (left_type := op.left.dtype).is_boolean():
+            left = self.cast(left, dt.Int32(nullable=left_type.nullable))
+
+        if (right_type := op.right.dtype).is_boolean():
+            right = self.cast(right, dt.Int32(nullable=right_type.nullable))
+
+        return self.agg.corr(left, right, where=where)
+
 
 _SIMPLE_OPS = {
     ops.ArrayPosition: "list_indexof",
