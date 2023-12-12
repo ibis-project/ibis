@@ -65,7 +65,7 @@ class TestConf(ServiceBackendTest):
             "exec",
             self.service_name,
             "find",
-            "/",
+            "/usr",
             "-name",
             "exaplus",
             "-type",
