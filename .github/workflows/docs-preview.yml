@@ -1,15 +1,20 @@
 name: Docs Preview
 
 on:
-  issue_comment:
+  pull_request:
     types:
-      - created
+      - labeled
 
 jobs:
   docs_preview:
     runs-on: ubuntu-latest
-    if: github.event.comment.body == '/preview'
+    if: github.event.label.name == 'docs-preview'
     steps:
+      - name: reset label
+        uses: actions-ecosystem/action-remove-labels@v1
+        with:
+          labels: docs-preview
+
       - uses: tibdex/github-app-token@v2
         id: generate_token
         with:
@@ -54,7 +59,7 @@ jobs:
       - name: generate url alias
         id: get_alias
         run: |
-          echo "id=pr-${{ github.event.issue.number }}-${{ steps.get_commit.outputs.sha }}" >> "$GITHUB_OUTPUT"
+          echo "id=pr-${{ github.event.pull_request.number }}-${{ steps.get_commit.outputs.sha }}" >> "$GITHUB_OUTPUT"
 
       - name: build and push quarto docs to preview url
         run: netlify deploy --dir=docs/_output --alias="${{ steps.get_alias.outputs.id }}"
@@ -67,6 +72,6 @@ jobs:
         uses: peter-evans/create-or-update-comment@v3
         with:
           token: ${{ steps.generate_token.outputs.token }}
-          issue-number: ${{ github.event.issue.number }}
+          issue-number: ${{ github.event.pull_request.number }}
           body: |
             Docs preview: https://${{ steps.get_alias.outputs.id }}--ibis-quarto.netlify.app
