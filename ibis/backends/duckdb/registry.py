@@ -176,7 +176,9 @@ def _literal(t, op):
     value = op.value
 
     if value is None:
-        return sa.null()
+        return (
+            sa.null() if dtype.is_null() else sa.cast(sa.null(), t.get_sqla_type(dtype))
+        )
 
     sqla_type = t.get_sqla_type(dtype)
 
@@ -209,7 +211,7 @@ def _literal(t, op):
             sa.func.list_value(*value.keys()), sa.func.list_value(*value.values())
         )
     elif dtype.is_timestamp():
-        return sa.cast(value.isoformat(), t.get_sqla_type(dtype))
+        return sa.cast(sa.literal(value.isoformat()), t.get_sqla_type(dtype))
     elif dtype.is_date():
         return sa.func.make_date(value.year, value.month, value.day)
     elif dtype.is_time():
