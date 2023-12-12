@@ -1,0 +1,2 @@
+SELECT
+  TIMEFROMPARTS(4, 5, 6, 234567, 0) AS "datetime.time(4, 5, 6, 234567)"
