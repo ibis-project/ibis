@@ -873,7 +873,7 @@ class SQLGlotCompiler(abc.ABC):
         )
 
     @visit_node.register(ops.SelfReference)
-    def visit_SelfReference(self, op, *, parent, identifier):
+    def visit_SelfReference(self, op, *, parent):
         return parent.as_(op.name, quoted=self.quoted)
 
     @visit_node.register(ops.JoinChain)
