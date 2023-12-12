@@ -208,8 +208,14 @@ def _literal(t, op):
         return sa.func.map(
             sa.func.list_value(*value.keys()), sa.func.list_value(*value.values())
         )
+    elif dtype.is_timestamp():
+        return sa.cast(value.isoformat(), t.get_sqla_type(dtype))
     elif dtype.is_date():
-        return sa.cast(sa.literal(str(value)), sqla_type)
+        return sa.func.make_date(value.year, value.month, value.day)
+    elif dtype.is_time():
+        return sa.func.make_time(
+            value.hour, value.minute, value.second + value.microsecond / 1e6
+        )
     else:
         return sa.cast(sa.literal(value), sqla_type)
 
