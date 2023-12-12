@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import itertools
 import typing
 from abc import abstractmethod
 from typing import TYPE_CHECKING, Annotated, Any, Literal, Optional
@@ -261,11 +262,15 @@ class Project(Relation):
 
 @public
 class SelfReference(Relation):
-    parent: Relation
+    _uid_counter = itertools.count()
 
-    @attribute
-    def identifier(self):
-        return hash(self.parent)
+    parent: Relation
+    identifier: Optional[int] = None
+
+    def __init__(self, parent, identifier):
+        if identifier is None:
+            identifier = next(self._uid_counter)
+        super().__init__(parent=parent, identifier=identifier)
 
     @attribute
     def name(self) -> str:
