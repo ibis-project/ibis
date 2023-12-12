@@ -98,6 +98,11 @@ def _literal(_, op):
         #
         # This lets the database handle encoding rather than ibis
         return sa.cast(sa.literal(value), type_=sa.BINARY())
+    elif dtype.is_date():
+        return sa.func.date(value.isoformat())
+    elif dtype.is_timestamp():
+        # TODO: timezones
+        return sa.func.timestamp(value.isoformat())
     elif dtype.is_time():
         return sa.func.maketime(
             value.hour, value.minute, value.second + value.microsecond / 1e6
