@@ -37,6 +37,7 @@ from ibis.backends.base.sql.alchemy import (  # noqa: E402
     AlchemyExprTranslator,
     BaseAlchemyBackend,
 )
+from ibis.backends.base.sqlglot import STAR, C  # noqa: E402
 from ibis.backends.oracle.datatypes import OracleType  # noqa: E402
 from ibis.backends.oracle.registry import operation_registry  # noqa: E402
 from ibis.expr.rewrites import rewrite_sample  # noqa: E402
@@ -209,55 +210,45 @@ class Backend(BaseAlchemyBackend):
         return self._filter_with_like(tables + views, like)
 
     def _metadata(self, query: str) -> Iterable[tuple[str, dt.DataType]]:
-        from sqlalchemy import case
-        from sqlalchemy_views import CreateView, DropView
-
         name = util.gen_name("oracle_metadata")
+        dialect = self.name
 
         try:
-            sg_expr = sg.parse_one(query, into=sg.exp.Table, dialect="oracle")
+            sg_expr = sg.parse_one(query, into=sg.exp.Table, dialect=dialect)
         except sg.ParseError:
-            sg_expr = sg.parse_one(query, dialect="oracle")
+            sg_expr = sg.parse_one(query, dialect=dialect)
 
         # If query is a table, adjust the query accordingly
         if isinstance(sg_expr, sg.exp.Table):
-            sg_expr = sg.select("*").from_(sg_expr)
+            sg_expr = sg.select(STAR).from_(sg_expr)
 
-        query = sg_expr.sql(dialect="oracle")
-
-        view = sa.table(name)
-        create_view = CreateView(view, sa.text(query))
-        drop_view = DropView(view, if_exists=False)
-
-        t = sa.table(
-            "all_tab_columns",
-            sa.column("table_name"),
-            sa.column("column_name"),
-            sa.column("data_type"),
-            sa.column("data_precision"),
-            sa.column("data_scale"),
-            sa.column("nullable"),
-            sa.column("column_id"),
+        this = sg.table(name, quoted=True)
+        create_view = sg.exp.Create(kind="VIEW", this=this, expression=sg_expr).sql(
+            dialect
         )
+        drop_view = sg.exp.Drop(kind="VIEW", this=this).sql(dialect)
+
         metadata_query = (
-            sa.select(
-                t.c.column_name,
-                t.c.data_type,
-                t.c.data_precision,
-                t.c.data_scale,
-                case((t.c.nullable == "Y", True), else_=False).label("nullable"),
+            sg.select(
+                C.column_name,
+                C.data_type,
+                C.data_precision,
+                C.data_scale,
+                C.nullable.eq("Y"),
             )
-            .where(t.c.table_name == name)
-            .order_by(t.c.column_id)
+            .from_("all_tab_columns")
+            .where(C.table_name.eq(name))
+            .order_by(C.column_id)
+            .sql(dialect)
         )
 
         with self.begin() as con:
-            con.execute(create_view)
+            con.exec_driver_sql(create_view)
             try:
-                results = con.execute(metadata_query).fetchall()
+                results = con.exec_driver_sql(metadata_query).fetchall()
             finally:
                 # drop the view no matter what
-                con.execute(drop_view)
+                con.exec_driver_sql(drop_view)
 
         for name, type_string, precision, scale, nullable in results:
             # NUMBER(null, null) --> FLOAT
