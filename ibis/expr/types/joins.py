@@ -2,7 +2,6 @@ from ibis.expr.types.relations import (
     bind,
     dereference_values,
     unwrap_aliases,
-    dereference_mapping,
 )
 from public import public
 import ibis.expr.operations as ops
@@ -40,7 +39,7 @@ def disambiguate_fields(how, left_fields, right_fields, lname, rname):
     return fields
 
 
-def prepare_predicates(left, right, predicates, deref_left, deref_right, deref_all):
+def prepare_predicates(left, right, predicates, deref_left, deref_right, deref_both):
     """Bind predicates to the left and right tables."""
 
     for pred in util.promote_list(predicates):
@@ -48,11 +47,11 @@ def prepare_predicates(left, right, predicates, deref_left, deref_right, deref_a
             yield ops.Literal(pred, dtype="bool")
         elif isinstance(pred, ValueExpr):
             node = pred.op()
-            yield node.replace(deref_all, filter=ops.Value)
+            yield node.replace(deref_both, filter=ops.Value)
         elif isinstance(pred, Deferred):
             # resolve deferred expressions on the left table
             node = pred.resolve(left).op()
-            yield node.replace(deref_all, filter=ops.Value)
+            yield node.replace(deref_both, filter=ops.Value)
         else:
             if isinstance(pred, tuple):
                 if len(pred) != 2:
@@ -98,15 +97,18 @@ class JoinExpr(TableExpr):
         left = self.op()
         right = right.op()
         if isinstance(right, ops.SelfReference):
-            tables = list(self._relations())
+            deref_right = {}
         else:
             right = ops.SelfReference(right)
-            tables = list(self._relations()) + [right]
+            deref_right = {v: ops.Field(right, k) for k, v in right.fields.items()}
 
         # construct the various dereference mappings
         deref_left = {ops.Field(left, k): v for k, v in left.fields.items()}
-        deref_right = {v: ops.Field(right, k) for k, v in right.fields.items()}
-        deref_all = dereference_mapping(tables, extra=deref_left)
+        deref_both = deref_left.copy()
+        for table in self._relations():
+            deref_both.update({v: ops.Field(table, k) for k, v in table.fields.items()})
+        # finally add the right dereferences to take precedence
+        deref_both.update(deref_right)
 
         # bind and dereference the predicates
         preds = prepare_predicates(
@@ -115,7 +117,7 @@ class JoinExpr(TableExpr):
             predicates,
             deref_left=deref_left,
             deref_right=deref_right,
-            deref_all=deref_all,
+            deref_both=deref_both,
         )
         preds = flatten_predicates(list(preds))
 
@@ -133,14 +135,19 @@ class JoinExpr(TableExpr):
 
     def select(self, *args, **kwargs):
         """Select expressions."""
+        chain = self.op()
         values = bind(self, (args, kwargs))
         values = unwrap_aliases(values)
 
         # if there are values referencing fields from the join chain constructed
         # so far, we need to replace them the fields from one of the join links
-        tables = list(self._relations())
-        extra = {ops.Field(self, k): v for k, v in self.op().fields.items()}
-        values = dereference_values(tables, values, extra=extra)
+        subs = {ops.Field(chain, k): v for k, v in chain.fields.items()}
+        tables = set(self._relations())
+        for table in self._relations():
+            for k, v in table.fields.items():
+                if isinstance(v, ops.Field) and v.rel not in tables:
+                    subs[v] = ops.Field(table, k)
+        values = {k: v.replace(subs, filter=ops.Value) for k, v in values.items()}
 
         return self.finish(values)
 

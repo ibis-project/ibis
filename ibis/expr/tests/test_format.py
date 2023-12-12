@@ -62,7 +62,6 @@ def test_table_type_output(snapshot):
 
     expr = foo.dept_id == foo.view().dept_id
     result = fmt(expr)
-    assert "SelfReference[r0]" in result
     assert "UnboundTable: foo" in result
     snapshot.assert_match(result, "repr.txt")
 

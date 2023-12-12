@@ -152,9 +152,9 @@ def unwrap_aliases(values: Iterator[ir.Value]) -> Mapping[str, ir.Value]:
     return result
 
 
-def dereference_mapping(parents, extra=None):
-    """Generate substitution mapping."""
-    mapping = extra.copy() if extra is not None else {}
+def dereference_values(parents, values):
+    """Trace and replace fields from earlier relations in the hierarchy."""
+    mapping = {}
     for parent in util.promote_list(parents):
         for k, v in parent.fields.items():
             if isinstance(v, ops.Field):
@@ -164,12 +164,6 @@ def dereference_mapping(parents, extra=None):
             elif v.relations:
                 # do not dereference literal expressions
                 mapping[v] = ops.Field(parent, k)
-    return mapping
-
-
-def dereference_values(parents, values, extra=None):
-    """Trace and replace fields from earlier relations in the hierarchy."""
-    mapping = dereference_mapping(parents, extra=extra)
     return {k: v.replace(mapping, filter=ops.Value) for k, v in values.items()}
 
 
@@ -920,10 +914,10 @@ class TableExpr(Expr, _FixedTextJupyterMixin):
         Table
             Table expression
         """
-        node = self.op()
-        if isinstance(node, ops.SelfReference):
-            node = node.parent
-        return ops.SelfReference(node).to_expr()
+        if isinstance(self.op(), ops.SelfReference):
+            return self
+        else:
+            return ops.SelfReference(self).to_expr()
 
     def difference(self, table: Table, *rest: Table, distinct: bool = True) -> Table:
         """Compute the set difference of multiple table expressions.
@@ -2960,8 +2954,13 @@ class TableExpr(Expr, _FixedTextJupyterMixin):
         """
         from ibis.expr.types.joins import JoinExpr
 
+        # the first participant of the join shouldn't be a self reference
+        left = left.op()
+        if isinstance(left, ops.SelfReference):
+            left = left.parent
+
         # construct an empty join chain and wrap it with a JoinExpr
-        values = {k: ops.Field(left, k) for k in left.schema().names}
+        values = {k: ops.Field(left, k) for k in left.schema}
         node = ops.JoinChain(left, rest=(), values=values)
         # add the first join link to the join chain and return the result
         if how == "left_semi":

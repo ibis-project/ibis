@@ -960,11 +960,59 @@ def test_self_join_view():
     t_view = t.view()
     expr = t.join(t_view, t.x == t_view.y).select("x", "y", "z", "z_right")
 
+    t_view_ = expr.op().rest[0].table.to_expr()
     expected = ops.JoinChain(
         first=t,
         rest=[
-            ops.JoinLink("inner", t_view, [t.x == t_view.y]),
+            ops.JoinLink("inner", t_view_, [t.x == t_view_.y]),
         ],
-        values={"x": t.x, "y": t.y, "z": t.z, "z_right": t_view.z},
+        values={"x": t.x, "y": t.y, "z": t.z, "z_right": t_view_.z},
     )
     assert expr.op() == expected
+
+
+def test_self_join_with_view_projection():
+    t1 = ibis.memtable({"x": [1, 2], "y": [2, 1], "z": ["a", "b"]})
+    t2 = t1.view()
+    expr = t1.inner_join(t2, ["x"])[[t1]]
+
+    t2_ = expr.op().rest[0].table.to_expr()
+    expected = ops.JoinChain(
+        first=t1,
+        rest=[
+            ops.JoinLink("inner", t2_, [t1.x == t2_.x]),
+        ],
+        values={"x": t1.x, "y": t1.y, "z": t1.z},
+    )
+    assert expr.op() == expected
+
+
+def test_joining_same_table_twice():
+    left = ibis.table(name="left", schema={"time1": int, "value": float, "a": str})
+    right = ibis.table(name="right", schema={"time2": int, "value2": float, "b": str})
+
+    joined = left.inner_join(right, left.a == right.b).inner_join(
+        right, left.value == right.value2
+    )
+
+    right_ = joined.op().rest[0].table.to_expr()
+    right__ = joined.op().rest[1].table.to_expr()
+    expected = ops.JoinChain(
+        first=left,
+        rest=[
+            ops.JoinLink("inner", right_, [left.a == right_.b]),
+            ops.JoinLink("inner", right__, [left.value == right__.value2]),
+        ],
+        values={
+            "time1": left.time1,
+            "value": left.value,
+            "a": left.a,
+            "time2": right_.time2,
+            "value2": right_.value2,
+            "b": right_.b,
+            "time2_right": right__.time2,
+            "value2_right": right__.value2,
+            "b_right": right__.b,
+        },
+    )
+    assert joined.op() == expected
