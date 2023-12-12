@@ -6,8 +6,7 @@ WITH t0 AS (
     )) AS total_revenue
   FROM main.lineitem AS t3
   WHERE
-    t3.l_shipdate >= CAST('1996-01-01' AS DATE)
-    AND t3.l_shipdate < CAST('1996-04-01' AS DATE)
+    t3.l_shipdate >= MAKE_DATE(1996, 1, 1) AND t3.l_shipdate < MAKE_DATE(1996, 4, 1)
   GROUP BY
     1
 ), t1 AS (

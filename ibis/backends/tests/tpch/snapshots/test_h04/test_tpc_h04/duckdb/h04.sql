@@ -12,8 +12,8 @@ WHERE
         t1.l_orderkey = t0.o_orderkey AND t1.l_commitdate < t1.l_receiptdate
     )
   )
-  AND t0.o_orderdate >= CAST('1993-07-01' AS DATE)
-  AND t0.o_orderdate < CAST('1993-10-01' AS DATE)
+  AND t0.o_orderdate >= MAKE_DATE(1993, 7, 1)
+  AND t0.o_orderdate < MAKE_DATE(1993, 10, 1)
 GROUP BY
   1
 ORDER BY

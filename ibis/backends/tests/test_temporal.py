@@ -2958,7 +2958,7 @@ no_sqlglot_dialect = sorted(
         *no_sqlglot_dialect,
     ],
 )
-def test_temporal_literals(value, dialect, snapshot):
+def test_temporal_literal_sql(value, dialect, snapshot):
     expr = ibis.literal(value)
     sql = ibis.to_sql(expr, dialect=dialect)
     snapshot.assert_match(sql, "out.sql")
@@ -2995,7 +2995,7 @@ def test_temporal_literals(value, dialect, snapshot):
     ],
 )
 @pytest.mark.parametrize("micros", [0, 234567])
-def test_time_literals(dialect, snapshot, micros):
+def test_time_literal_sql(dialect, snapshot, micros):
     value = datetime.time(4, 5, 6, microsecond=micros)
     expr = ibis.literal(value)
     sql = ibis.to_sql(expr, dialect=dialect)

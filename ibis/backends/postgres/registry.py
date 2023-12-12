@@ -396,6 +396,10 @@ def _literal(t, op):
     dtype = op.dtype
     value = op.value
 
+    if value is None:
+        return (
+            sa.null() if dtype.is_null() else sa.cast(sa.null(), t.get_sqla_type(dtype))
+        )
     if dtype.is_interval():
         return sa.literal_column(f"INTERVAL '{value} {dtype.resolution}'")
     elif dtype.is_geospatial():
@@ -405,6 +409,16 @@ def _literal(t, op):
         return pg.array(value)
     elif dtype.is_map():
         return pg.hstore(list(value.keys()), list(value.values()))
+    elif dtype.is_time():
+        return sa.func.make_time(
+            value.hour, value.minute, value.second + value.microsecond / 1e6
+        )
+    elif dtype.is_date():
+        return sa.func.make_date(value.year, value.month, value.day)
+    elif dtype.is_timestamp():
+        if (tz := dtype.timezone) is not None:
+            return sa.func.to_timestamp(value.timestamp()).op("AT TIME ZONE")(tz)
+        return sa.cast(sa.literal(value.isoformat()), sa.TIMESTAMP())
     else:
         return sa.literal(value)
 
