@@ -15,8 +15,13 @@ FROM (
   ) AS t1
   INNER JOIN (
     SELECT
-      ROW_NUMBER() OVER (ORDER BY t0.street ASC ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) - 1 AS key
-    FROM data AS t0
+      t1.key AS key
+    FROM (
+      SELECT
+        t0.street AS street,
+        ROW_NUMBER() OVER (ORDER BY t0.street ASC ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) - 1 AS key
+      FROM data AS t0
+    ) AS t1
   ) AS t3
     ON t1.key = t3.key
 ) AS t5
@@ -36,8 +41,13 @@ INNER JOIN (
     ) AS t1
     INNER JOIN (
       SELECT
-        ROW_NUMBER() OVER (ORDER BY t0.street ASC ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) - 1 AS key
-      FROM data AS t0
+        t1.key AS key
+      FROM (
+        SELECT
+          t0.street AS street,
+          ROW_NUMBER() OVER (ORDER BY t0.street ASC ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) - 1 AS key
+        FROM data AS t0
+      ) AS t1
     ) AS t3
       ON t1.key = t3.key
   ) AS t5

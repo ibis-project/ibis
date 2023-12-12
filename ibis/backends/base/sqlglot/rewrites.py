@@ -78,8 +78,11 @@ def window_function_to_window(_):
 
 @replace(Object(Select, Object(Select)))
 def merge_select_select(_):
-    # don't merge if the outer select has window functions
+    # don't merge if either the outer or the inner select has window functions
     for v in _.selections.values():
+        if v.find(Window, filter=ops.Value):
+            return _
+    for v in _.parent.selections.values():
         if v.find(Window, filter=ops.Value):
             return _
 
