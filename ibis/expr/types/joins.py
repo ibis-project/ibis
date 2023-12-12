@@ -10,48 +10,10 @@ from ibis.expr.types import TableExpr, ValueExpr
 from typing import Any
 from collections.abc import Iterator, Mapping
 from ibis.common.deferred import Deferred
+from ibis.expr.analysis import flatten_predicates
+from ibis.common.exceptions import ExpressionError, IntegrityError
 from ibis import util
 import ibis
-
-
-def prepare_predicates(chain, right, predicates, dereference_tables):
-    """Bind predicates to the left and right tables."""
-    # we need to replace fields referencing the current state of the join
-    # chain with a field referencing one of the relations in the join chain
-    chain_fields = {ops.Field(chain, k): v for k, v in chain.fields.items()}
-    # dereference the values in the predicates to one of the join tables but
-    # only if the origin of the input is unclear to minimize the change of
-    # dereferencing a value to the wrong table in case of self joins
-    deref_mapping = dereference_mapping(dereference_tables, extra=chain_fields)
-
-    chain_expr = chain.to_expr()
-    right_expr = right.to_expr()
-    for pred in util.promote_list(predicates):
-        if pred is True or pred is False:
-            yield ops.Literal(pred, dtype="bool")
-        elif isinstance(pred, ValueExpr):
-            node = pred.op()
-            yield node.replace(deref_mapping, filter=ops.Value)
-        elif isinstance(pred, Deferred):
-            # resolve deferred expressions on the left table
-            node = pred.resolve(chain_expr).op()
-            yield node.replace(deref_mapping, filter=ops.Value)
-        else:
-            if isinstance(pred, tuple):
-                if len(pred) != 2:
-                    raise com.ExpressionError("Join key tuple must be length 2")
-                lk, rk = pred
-            else:
-                lk = rk = pred
-
-            # bind the predicates to the join chain
-            (left_value,) = bind(chain_expr, lk)
-            (right_value,) = bind(right_expr, rk)
-
-            # dereference the left value to one of the relations in the join chain
-            left_value = left_value.op().replace(chain_fields, filter=ops.Value)
-
-            yield ops.Equals(left_value, right_value).to_expr()
 
 
 def disambiguate_fields(how, left_fields, right_fields, lname, rname):
@@ -78,6 +40,38 @@ def disambiguate_fields(how, left_fields, right_fields, lname, rname):
     return fields
 
 
+def prepare_predicates(left, right, predicates, deref_left, deref_right, deref_all):
+    """Bind predicates to the left and right tables."""
+
+    for pred in util.promote_list(predicates):
+        if pred is True or pred is False:
+            yield ops.Literal(pred, dtype="bool")
+        elif isinstance(pred, ValueExpr):
+            node = pred.op()
+            yield node.replace(deref_all, filter=ops.Value)
+        elif isinstance(pred, Deferred):
+            # resolve deferred expressions on the left table
+            node = pred.resolve(left).op()
+            yield node.replace(deref_all, filter=ops.Value)
+        else:
+            if isinstance(pred, tuple):
+                if len(pred) != 2:
+                    raise ExpressionError("Join key tuple must be length 2")
+                lk, rk = pred
+            else:
+                lk = rk = pred
+
+            # bind the predicates to the join chain
+            (left_value,) = bind(left, lk)
+            (right_value,) = bind(right, rk)
+
+            # dereference the left value to one of the relations in the join chain
+            left_value = left_value.op().replace(deref_left, filter=ops.Value)
+            right_value = right_value.op().replace(deref_right, filter=ops.Value)
+
+            yield ops.Equals(left_value, right_value).to_expr()
+
+
 @public
 class JoinExpr(TableExpr):
     def join(
@@ -91,7 +85,6 @@ class JoinExpr(TableExpr):
         rname: str = "{name}_right",
     ):
         """Join with another table."""
-        from ibis.expr.analysis import flatten_predicates
         import pyarrow as pa
         import pandas as pd
 
@@ -102,34 +95,41 @@ class JoinExpr(TableExpr):
                 f"right operand must be a TableExpr, got {type(right).__name__}"
             )
 
-        chain = self.op()
+        left = self.op()
         right = right.op()
-        tables = list(self._relations())
-        if not isinstance(right, ops.SelfReference):
-            # dereference the values in the predicates, if the right table is
-            # already a self reference, we don't try to dereference fields to
-            # the right side because we assume that the underlying table is
-            # already contained by the join chain
+        if isinstance(right, ops.SelfReference):
+            tables = list(self._relations())
+        else:
             right = ops.SelfReference(right)
-            tables.append(right)
+            tables = list(self._relations()) + [right]
 
-        # bind the predicates to the left and right tables
-        preds = prepare_predicates(chain, right, predicates, tables)
+        # construct the various dereference mappings
+        deref_left = {ops.Field(left, k): v for k, v in left.fields.items()}
+        deref_right = {v: ops.Field(right, k) for k, v in right.fields.items()}
+        deref_all = dereference_mapping(tables, extra=deref_left)
+
+        # bind and dereference the predicates
+        preds = prepare_predicates(
+            left.to_expr(),
+            right.to_expr(),
+            predicates,
+            deref_left=deref_left,
+            deref_right=deref_right,
+            deref_all=deref_all,
+        )
         preds = flatten_predicates(list(preds))
 
         # calculate the fields based in lname and rname, this should be a best
-        # effort guess but shouldn't raise on conflicts, if there are conflicts
-        # they will be raised later on when the join is finished
-        left_fields = chain.values
+        left_fields = left.values
         right_fields = {k: ops.Field(right, k) for k in right.schema}
         values = disambiguate_fields(how, left_fields, right_fields, lname, rname)
 
         # construct a new join link and add it to the join chain
         link = ops.JoinLink(how, table=right, predicates=preds)
-        chain = chain.copy(rest=chain.rest + (link,), values=values)
+        left = left.copy(rest=left.rest + (link,), values=values)
 
         # return with a new JoinExpr wrapping the new join chain
-        return self.__class__(chain)
+        return self.__class__(left)
 
     def select(self, *args, **kwargs):
         """Select expressions."""
@@ -177,7 +177,7 @@ class JoinExpr(TableExpr):
                     if f not in values:
                         collisions.append(f)
             if collisions:
-                raise com.IntegrityError(f"Name collisions: {collisions}")
+                raise IntegrityError(f"Name collisions: {collisions}")
         else:
             node = node.copy(values=values)
         # important to explicitly create a TableExpr because .to_expr() would construct

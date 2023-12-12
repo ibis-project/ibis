@@ -31,11 +31,8 @@ _method_overrides = {
     ops.ExtractYear: "year",
     ops.Intersection: "intersect",
     ops.IsNull: "isnull",
-    # ops.LeftAntiJoin: "anti_join",
-    # ops.LeftSemiJoin: "semi_join",
     ops.Lowercase: "lower",
     ops.RegexSearch: "re_search",
-    # ops.SelfReference: "view",
     ops.StartsWith: "startswith",
     ops.StringContains: "contains",
     ops.StringSQLILike: "ilike",
@@ -182,13 +179,18 @@ def aggregation(op, parent, groups, metrics):
         raise ValueError("No metrics to aggregate")
 
 
+@translate.register(ops.SelfReference)
+def self_reference(op, parent, identifier):
+    return parent
+
+
 @translate.register(ops.JoinLink)
 def join_link(op, table, predicates, how):
     return f".{how}_join({table}, {_try_unwrap(predicates)})"
 
 
 @translate.register(ops.JoinChain)
-def join(op, first, rest, fields):
+def join(op, first, rest, values):
     calls = "".join(rest)
     return f"{first}{calls}"
 
@@ -324,7 +326,13 @@ def isin(op, value, options):
 
 class CodeContext:
     always_assign = (ops.ScalarParameter, ops.UnboundTable, ops.Aggregate)
-    always_ignore = (ops.Field, dt.Primitive, dt.Variadic, dt.Temporal)
+    always_ignore = (
+        ops.SelfReference,
+        ops.Field,
+        dt.Primitive,
+        dt.Variadic,
+        dt.Temporal,
+    )
     shorthands = {
         ops.Aggregate: "agg",
         ops.Literal: "lit",
@@ -387,7 +395,7 @@ def decompile(
 
     Parameters
     ----------
-    node
+    expr
         node or expression to decompile
     render_import
         Whether to add `import ibis` to the result.

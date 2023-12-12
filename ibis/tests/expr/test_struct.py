@@ -72,15 +72,15 @@ def test_lift_join(t, s):
     join = t.join(s, t.d == s.a.g)
     result = join.a_right.lift()
 
+    s_ = join.op().rest[0].table.to_expr()
     join = ops.JoinChain(
         first=t,
         rest=[
-            ops.JoinLink("inner", s, [t.d == s.a.g]),
+            ops.JoinLink("inner", s_, [t.d == s_.a.g]),
         ],
-        fields={"a": s.a},
-    ).to_expr()
-    proj = ops.Project(join, {"f": join.a.f, "g": join.a.g})
-    assert result.op() == proj
+        values={"f": s_.a.f, "g": s_.a.g},
+    )
+    assert result.op() == join
 
 
 def test_unpack_join_from_table(t, s):

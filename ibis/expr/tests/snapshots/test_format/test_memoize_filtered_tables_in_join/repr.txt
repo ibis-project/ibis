@@ -17,11 +17,13 @@ r2 := Filter[r1]
 r3 := Filter[r1]
   r1.kind == 'bar'
 
+r4 := SelfReference[r3]
+
 JoinChain[r2]
-  JoinLink[inner, r3]
-    r2.region == r3.region
-  fields:
+  JoinLink[inner, r4]
+    r2.region == r4.region
+  values:
     region:      r2.region
     kind:        r2.kind
     total:       r2.total
-    right_total: r3.total
+    right_total: r4.total

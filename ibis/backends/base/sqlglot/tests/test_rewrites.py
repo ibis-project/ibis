@@ -20,9 +20,6 @@ def test_sqlize():
     t = t.filter(t.a > 0)
     t = t.order_by(t.b)
     t = t.mutate(f=t.a + 1)
-    print(t)
-
     s = sqlize(t.op())
-    print(s.to_expr())
 
     assert isinstance(s, Select)

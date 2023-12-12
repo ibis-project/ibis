@@ -551,7 +551,7 @@ def test_join_with_subsequent_projection():
             "bar": t2_.c + 2,
             "baz": t2_.d.name("bar") + "3",
             "baz2": t2_.c + t1.a,
-        }
+        },
     )
     assert expr.op() == expected
 
@@ -578,7 +578,7 @@ def test_join_with_subsequent_projection_colliding_names():
             "b": t1.b,
             "foo": t2_.a + 1,
             "bar": t1.a + t2_.a,
-        }
+        },
     )
     assert expr.op() == expected
 
@@ -646,7 +646,10 @@ def test_chained_join_referencing_intermediate_table():
     c_ = abc.op().rest[1].table.to_expr()
     assert result.op() == JoinChain(
         first=a,
-        rest=[JoinLink("inner", b_, [a.a == b_.c]), JoinLink("inner", c_, [a.a == c_.e])],
+        rest=[
+            JoinLink("inner", b_, [a.a == b_.c]),
+            JoinLink("inner", c_, [a.a == c_.e]),
+        ],
         values={"a": a.a, "b": a.b, "c": b_.c, "d": b_.d, "e": c_.e, "f": c_.f},
     )
 
@@ -930,34 +933,38 @@ def test_self_join():
         rest=[
             ops.JoinLink("inner", t2_, [t2.key == t2_.key]),
         ],
-        values={
-            "key": t2.key,
-            "key_right": t2_.key
-        },
+        values={"key": t2.key, "key_right": t2_.key},
     )
     assert t3.op() == expected
 
     t4 = t3.join(t3, ["key"])
     t3_ = t4.op().rest[1].table.to_expr()
+
     expected = ops.JoinChain(
-        first=t3,
+        first=t2,
         rest=[
+            ops.JoinLink("inner", t2_, [t2.key == t2_.key]),
             ops.JoinLink("inner", t3_, [t2.key == t3_.key]),
         ],
         values={
-            "key": t3.key,
-            "key_right": t3.key_right,
+            "key": t2.key,
+            "key_right": t2_.key,
             "key_right_right": t3_.key_right,
         },
     )
     assert t4.op() == expected
 
 
-
-
-
-def test_f():
+def test_self_join_view():
     t = ibis.memtable({"x": [1, 2], "y": [2, 1], "z": ["a", "b"]})
     t_view = t.view()
     expr = t.join(t_view, t.x == t_view.y).select("x", "y", "z", "z_right")
-    print(expr)
+
+    expected = ops.JoinChain(
+        first=t,
+        rest=[
+            ops.JoinLink("inner", t_view, [t.x == t_view.y]),
+        ],
+        values={"x": t.x, "y": t.y, "z": t.z, "z_right": t_view.z},
+    )
+    assert expr.op() == expected
