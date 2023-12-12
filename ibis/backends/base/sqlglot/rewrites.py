@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 from typing import Literal, Optional
 
 from public import public
@@ -83,7 +84,7 @@ def merge_select_select(_):
         if v.find(Window, filter=ops.Value):
             return _
     for v in _.parent.selections.values():
-        if v.find(Window, filter=ops.Value):
+        if v.find((Window, ops.Unnest), filter=ops.Value):
             return _
 
     subs = {ops.Field(_.parent, k): v for k, v in _.parent.fields.items()}
@@ -99,7 +100,7 @@ def merge_select_select(_):
     )
 
 
-DEBUG = False
+DEBUG = os.environ.get("IBIS_SQL_DEBUG", False)
 
 
 def sqlize(node):
