@@ -11,6 +11,8 @@ categories:
 
 **TL; DR**: Ibis supports both Polars and DataFusion. Both backends are have
 about the same runtime performance, and lag far behind DuckDB on this workload.
+There's negligible performance difference between Ibis and the backend native
+APIs.
 
 ## Motivation
 
@@ -82,9 +84,7 @@ import sys
 import pandas as pd
 
 
-subprocess.run(("git", "fetch", "upstream"), check=True, capture_output=True)
-
-cmd = "git", "rev-parse", "--short", "upstream/master"
+cmd = "git", "rev-parse", "--short", "HEAD"
 proc = subprocess.run(cmd, check=True, text=True, capture_output=True)
 commit = proc.stdout.strip()
 link = f"https://github.com/ibis-project/ibis/tree/{commit}"
@@ -123,13 +123,9 @@ duckdb_ibis_results = %timeit -n1 -r1 -o %run duckdb_ibis.py
 df.head()
 ```
 
-::: {.panel-tabset}
+### DataFusion and Polars
 
-::: {.callout-note}
-## The full dataset results are not shown here for DataFusion and Polars
-These two engines took anywhere from 7 to 10 minutes to complete the workload,
-making iteration on the blog post impractical.
-:::
+::: {.panel-tabset}
 
 ## DataFusion
 
@@ -150,7 +146,7 @@ df.head()
 
 ## DataFusion native
 
-<details>
+<details open>
 
 <summary>DataFusion SQL</summary>
 
@@ -215,7 +211,7 @@ df.head()
 
 * Both Polars and DataFusion are much slower than DuckDB and Dask on this
   workload.
-* Polars memory use fluctuated quite bit, while DataFusion's memory profile was
+* Polars memory use fluctuates quite bit, while DataFusion's memory profile is
   similar to DuckDB.
 
 Let's recap the results with some numbers:
@@ -261,6 +257,12 @@ rows.extend(make_line(**result) for result in results)
 
 print("\n".join(rows))
 ```
+
+::: {.callout-warning}
+## The Polars run durations were highly variable
+
+I couldn't figure out how to get consistent run times.
+:::
 
 ## Conclusion
 
