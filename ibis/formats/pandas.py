@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import warnings
+from functools import partial
 
 import numpy as np
 import pandas as pd
@@ -163,12 +164,10 @@ class PandasData(DataMapper):
 
     @staticmethod
     def convert_Decimal(s, dtype, pandas_type):
-        import decimal
+        from ibis.common.numeric import normalize_decimal
 
-        import pyarrow as pa
-
-        arr = pa.array(s.map(decimal.Decimal, na_action="ignore").values)
-        return arr.cast(dtype.to_pyarrow(), safe=False)
+        func = partial(normalize_decimal, precision=dtype.precision, scale=dtype.scale)
+        return s.map(func, na_action="ignore")
 
     @staticmethod
     def convert_Timestamp(s, dtype, pandas_type):
