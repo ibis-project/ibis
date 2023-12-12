@@ -1,4 +1,9 @@
-from ibis.expr.types.relations import bind, dereference_values, unwrap_aliases
+from ibis.expr.types.relations import (
+    bind,
+    dereference_values,
+    unwrap_aliases,
+    dereference_mapping,
+)
 from public import public
 import ibis.expr.operations as ops
 from ibis.expr.types import TableExpr, ValueExpr
@@ -9,19 +14,28 @@ from ibis import util
 import ibis
 
 
-def bind_predicates(
-    left: TableExpr, right: TableExpr, predicates: Iterator[ValueExpr]
-) -> Iterator[ValueExpr]:
+def prepare_predicates(chain, right, predicates, dereference_tables):
     """Bind predicates to the left and right tables."""
+    # we need to replace fields referencing the current state of the join
+    # chain with a field referencing one of the relations in the join chain
+    chain_fields = {ops.Field(chain, k): v for k, v in chain.fields.items()}
+    # dereference the values in the predicates to one of the join tables but
+    # only if the origin of the input is unclear to minimize the change of
+    # dereferencing a value to the wrong table in case of self joins
+    deref_mapping = dereference_mapping(dereference_tables, extra=chain_fields)
 
+    chain_expr = chain.to_expr()
+    right_expr = right.to_expr()
     for pred in util.promote_list(predicates):
         if pred is True or pred is False:
-            yield ops.Literal(pred, dtype="bool").to_expr()
+            yield ops.Literal(pred, dtype="bool")
         elif isinstance(pred, ValueExpr):
-            yield pred
+            node = pred.op()
+            yield node.replace(deref_mapping, filter=ops.Value)
         elif isinstance(pred, Deferred):
             # resolve deferred expressions on the left table
-            yield pred.resolve(left)
+            node = pred.resolve(chain_expr).op()
+            yield node.replace(deref_mapping, filter=ops.Value)
         else:
             if isinstance(pred, tuple):
                 if len(pred) != 2:
@@ -30,8 +44,13 @@ def bind_predicates(
             else:
                 lk = rk = pred
 
-            (left_value,) = bind(left, lk)
-            (right_value,) = bind(right, rk)
+            # bind the predicates to the join chain
+            (left_value,) = bind(chain_expr, lk)
+            (right_value,) = bind(right_expr, rk)
+
+            # dereference the left value to one of the relations in the join chain
+            left_value = left_value.op().replace(chain_fields, filter=ops.Value)
+
             yield ops.Equals(left_value, right_value).to_expr()
 
 
@@ -83,26 +102,20 @@ class JoinExpr(TableExpr):
                 f"right operand must be a TableExpr, got {type(right).__name__}"
             )
 
-        # bind the predicates to the left and right tables
-        preds = bind_predicates(self, right, predicates)
-        preds = {k: v.op() for k, v in enumerate(preds)}
-
-        # dereference the values in the predicates, if the right table is
-        # already a self reference, we don't try to dereference fields to
-        # the right side because we assume that the underlying table is
-        # already already in the join chain
         chain = self.op()
         right = right.op()
         tables = list(self._relations())
         if not isinstance(right, ops.SelfReference):
+            # dereference the values in the predicates, if the right table is
+            # already a self reference, we don't try to dereference fields to
+            # the right side because we assume that the underlying table is
+            # already contained by the join chain
             right = ops.SelfReference(right)
             tables.append(right)
 
-        # we need to replace fields referencing the current state of the join
-        # chain with a field referencing one of the relations in the join chain
-        extra = {ops.Field(chain, k): v for k, v in chain.fields.items()}
-        preds = dereference_values(tables, preds, extra=extra)
-        preds = flatten_predicates(list(preds.values()))
+        # bind the predicates to the left and right tables
+        preds = prepare_predicates(chain, right, predicates, tables)
+        preds = flatten_predicates(list(preds))
 
         # calculate the fields based in lname and rname, this should be a best
         # effort guess but shouldn't raise on conflicts, if there are conflicts

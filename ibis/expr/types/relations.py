@@ -152,9 +152,9 @@ def unwrap_aliases(values: Iterator[ir.Value]) -> Mapping[str, ir.Value]:
     return result
 
 
-def dereference_values(parents, values, extra=None):
-    """Trace and replace fields from earlier relations in the hierarchy."""
-    mapping = extra if extra is not None else {}
+def dereference_mapping(parents, extra=None):
+    """Generate substitution mapping."""
+    mapping = extra.copy() if extra is not None else {}
     for parent in util.promote_list(parents):
         for k, v in parent.fields.items():
             if isinstance(v, ops.Field):
@@ -164,6 +164,12 @@ def dereference_values(parents, values, extra=None):
             elif v.relations:
                 # do not dereference literal expressions
                 mapping[v] = ops.Field(parent, k)
+    return mapping
+
+
+def dereference_values(parents, values, extra=None):
+    """Trace and replace fields from earlier relations in the hierarchy."""
+    mapping = dereference_mapping(parents, extra=extra)
     return {k: v.replace(mapping, filter=ops.Value) for k, v in values.items()}
 
 
