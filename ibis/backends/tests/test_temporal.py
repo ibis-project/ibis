@@ -15,6 +15,7 @@ from pytest import param
 import ibis
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
+from ibis.backends.base import _get_backend_names
 from ibis.backends.pandas.execution.temporal import day_name
 from ibis.common.annotations import ValidationError
 
@@ -176,11 +177,6 @@ def test_timestamp_extract(backend, alltypes, df, attr):
                     raises=sa.exc.CompileError,
                     reason='No literal value renderer is available for literal value "datetime.datetime(2015, 9, 1, 14, 48, 5, 359000)" with datatype DATETIME',
                 ),
-                pytest.mark.notimpl(
-                    ["oracle"],
-                    raises=sa.exc.DatabaseError,
-                    reason="ORA-30076: invalid extract field for extract source",
-                ),
             ],
         ),
         param(
@@ -193,11 +189,6 @@ def test_timestamp_extract(backend, alltypes, df, attr):
                     raises=sa.exc.CompileError,
                     reason='No literal value renderer is available for literal value "datetime.datetime(2015, 9, 1, 14, 48, 5, 359000)" with datatype DATETIME',
                 ),
-                pytest.mark.notimpl(
-                    ["oracle"],
-                    raises=sa.exc.DatabaseError,
-                    reason="ORA-30076: invalid extract field for extract source",
-                ),
             ],
         ),
         param(
@@ -209,11 +200,6 @@ def test_timestamp_extract(backend, alltypes, df, attr):
                     ["druid"],
                     raises=sa.exc.CompileError,
                     reason='No literal value renderer is available for literal value "datetime.datetime(2015, 9, 1, 14, 48, 5, 359000)" with datatype DATETIME',
-                ),
-                pytest.mark.notimpl(
-                    ["oracle"],
-                    raises=sa.exc.DatabaseError,
-                    reason="ORA-30076: invalid extract field for extract source",
                 ),
             ],
         ),
@@ -2950,3 +2936,67 @@ def test_timestamp_bucket_offset(backend, offset_mins):
     td = pd.Timedelta(minutes=offset_mins)
     sol = ((ts.execute() - td).dt.floor("300s") + td).astype("datetime64[ns]")
     backend.assert_series_equal(res, sol)
+
+
+_NO_SQLGLOT_DIALECT = {"pandas", "dask", "druid", "flink", "datafusion", "polars"}
+no_sqlglot_dialect = sorted(
+    param(backend, marks=pytest.mark.xfail) for backend in _NO_SQLGLOT_DIALECT
+)
+
+
+@pytest.mark.parametrize(
+    "value",
+    [
+        param(datetime.date(2023, 4, 7), id="date"),
+        param(datetime.datetime(2023, 4, 7, 4, 5, 6, 230136), id="timestamp"),
+    ],
+)
+@pytest.mark.parametrize(
+    "dialect",
+    [
+        *sorted(_get_backend_names() - {"pyspark", *_NO_SQLGLOT_DIALECT}),
+        *no_sqlglot_dialect,
+    ],
+)
+def test_temporal_literals(value, dialect, snapshot):
+    expr = ibis.literal(value)
+    sql = ibis.to_sql(expr, dialect=dialect)
+    snapshot.assert_match(sql, "out.sql")
+
+
+@pytest.mark.parametrize(
+    "dialect",
+    [
+        *sorted(
+            _get_backend_names()
+            - {"pyspark", "impala", "clickhouse", "oracle", *_NO_SQLGLOT_DIALECT}
+        ),
+        *no_sqlglot_dialect,
+        *[
+            param(
+                "impala",
+                marks=pytest.mark.xfail(
+                    raises=NotImplementedError, reason="no time type support"
+                ),
+            ),
+            param(
+                "clickhouse",
+                marks=pytest.mark.xfail(
+                    raises=NotImplementedError, reason="no time type support"
+                ),
+            ),
+            param(
+                "oracle",
+                marks=pytest.mark.xfail(
+                    raises=NotImplementedError, reason="no time type support"
+                ),
+            ),
+        ],
+    ],
+)
+@pytest.mark.parametrize("micros", [0, 234567])
+def test_time_literals(dialect, snapshot, micros):
+    value = datetime.time(4, 5, 6, microsecond=micros)
+    expr = ibis.literal(value)
+    sql = ibis.to_sql(expr, dialect=dialect)
+    snapshot.assert_match(sql, "out.sql")

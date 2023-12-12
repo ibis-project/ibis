@@ -1,0 +1,2 @@
+SELECT
+  CAST('04:05:06.230136' AS TIME) AS `datetime_time_4_ 5_ 6_ 230136`
