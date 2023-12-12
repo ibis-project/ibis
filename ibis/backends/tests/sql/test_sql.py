@@ -522,3 +522,50 @@ def test_order_by_expr(snapshot):
     t = ibis.table(dict(a="int", b="string"), name="t")
     expr = t[lambda t: t.a == 1].order_by(lambda t: t.b + "a")
     snapshot.assert_match(to_sql(expr), "out.sql")
+
+
+def test_no_cartesian_join(snapshot):
+    customers = ibis.table(
+        dict(customer_id="int64", first_name="string", last_name="string"),
+        name="customers",
+    )
+    orders = ibis.table(
+        dict(order_id="int64", customer_id="int64", order_date="date", status="string"),
+        name="orders",
+    )
+    payments = ibis.table(
+        dict(
+            payment_id="int64",
+            order_id="int64",
+            payment_method="string",
+            amount="float64",
+        ),
+        name="payments",
+    )
+
+    customer_orders = orders.group_by("customer_id").aggregate(
+        first_order=orders.order_date.min(),
+        most_recent_order=orders.order_date.max(),
+        number_of_orders=orders.order_id.count(),
+    )
+
+    customer_payments = (
+        payments.left_join(orders, "order_id")
+        .group_by(orders.customer_id)
+        .aggregate(total_amount=payments.amount.sum())
+    )
+
+    final = (
+        customers.left_join(customer_orders, "customer_id")
+        .drop("customer_id_right")
+        .left_join(customer_payments, "customer_id")[
+            customers.customer_id,
+            customers.first_name,
+            customers.last_name,
+            customer_orders.first_order,
+            customer_orders.most_recent_order,
+            customer_orders.number_of_orders,
+            customer_payments.total_amount.name("customer_lifetime_value"),
+        ]
+    )
+    snapshot.assert_match(ibis.to_sql(final, dialect="duckdb"), "out.sql")
