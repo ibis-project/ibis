@@ -20,7 +20,7 @@ jobs:
         uses: actions-ecosystem/action-remove-labels@v1
         with:
           labels: docs-preview
-          token: ${{ steps.generate_token.outputs.token }}
+          github_token: ${{ steps.generate_token.outputs.token }}
 
       - name: install nix
         uses: cachix/install-nix-action@v24
