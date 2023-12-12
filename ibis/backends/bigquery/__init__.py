@@ -94,7 +94,7 @@ def _anonymous_unnest_to_explode(node: sg.exp.Expression):
     return node
 
 
-_MEMTABLE_PATTERN = re.compile(r"^_ibis_(?:pandas|pyarrow)_memtable_[a-z0-9]{26}$")
+_MEMTABLE_PATTERN = re.compile(r"^_?ibis_(?:pandas|pyarrow)_memtable_[a-z0-9]{26}$")
 
 
 def _qualify_memtable(
