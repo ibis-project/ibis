@@ -166,7 +166,12 @@ class PandasData(DataMapper):
     def convert_Decimal(s, dtype, pandas_type):
         from ibis.common.numeric import normalize_decimal
 
-        func = partial(normalize_decimal, precision=dtype.precision, scale=dtype.scale)
+        func = partial(
+            normalize_decimal,
+            precision=dtype.precision,
+            scale=dtype.scale,
+            strict=False,
+        )
         return s.map(func, na_action="ignore")
 
     @staticmethod
