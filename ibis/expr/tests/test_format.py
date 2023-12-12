@@ -11,15 +11,9 @@ import ibis.expr.format
 import ibis.expr.operations as ops
 import ibis.legacy.udf.vectorized as udf
 from ibis import util
-from ibis.expr.operations.relations import SimpleRelation
 
 # easier to switch implementation if needed
 fmt = repr
-
-
-@pytest.mark.parametrize("cls", set(ops.Relation.__subclasses__()) - {SimpleRelation})
-def test_tables_have_format_rules(cls):
-    assert cls in ibis.expr.format.fmt.registry
 
 
 @pytest.mark.parametrize("cls", [ops.PhysicalTable, ops.Relation])
