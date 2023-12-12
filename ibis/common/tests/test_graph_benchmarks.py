@@ -6,8 +6,10 @@ import pytest
 from typing_extensions import Self  # noqa: TCH002
 
 from ibis.common.collections import frozendict
+from ibis.common.deferred import _
 from ibis.common.graph import Graph, Node
 from ibis.common.grounds import Concrete
+from ibis.common.patterns import Between, Object
 
 
 class MyNode(Concrete, Node):
@@ -24,7 +26,7 @@ def generate_node(depth):
     if depth == 0:
         return MyNode(10, "20", c=(30, 40), d=frozendict(e=50, f=60))
     return MyNode(
-        1,
+        depth,
         "2",
         c=(3, 4),
         d=frozendict(e=5, f=6),
@@ -48,3 +50,9 @@ def test_bfs(benchmark):
 def test_dfs(benchmark):
     node = generate_node(500)
     benchmark(Graph.from_dfs, node)
+
+
+def test_replace(benchmark):
+    node = generate_node(500)
+    pattern = Object(MyNode, a=Between(lower=100)) >> _.copy(a=_.a + 1)
+    benchmark(node.replace, pattern)
