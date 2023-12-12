@@ -1,3 +1,0 @@
-SELECT
-  TO_DATE('2023-04-07', 'YYYY-MM-DD') AS "datetime.date(2023, 4, 7)"
-FROM DUAL

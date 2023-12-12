@@ -31,7 +31,7 @@ FROM (
     COUNT(*) AS count_order
   FROM main.lineitem AS t1
   WHERE
-    t1.l_shipdate <= CAST('1998-09-02' AS DATE)
+    t1.l_shipdate <= MAKE_DATE(1998, 9, 2)
   GROUP BY
     1,
     2

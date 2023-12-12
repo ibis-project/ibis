@@ -39,7 +39,7 @@ FROM (
       OR t0.cust_nation = 'GERMANY'
       AND t0.supp_nation = 'FRANCE'
     )
-    AND t0.l_shipdate BETWEEN CAST('1995-01-01' AS DATE) AND CAST('1996-12-31' AS DATE)
+    AND t0.l_shipdate BETWEEN MAKE_DATE(1995, 1, 1) AND MAKE_DATE(1996, 12, 31)
   GROUP BY
     1,
     2,

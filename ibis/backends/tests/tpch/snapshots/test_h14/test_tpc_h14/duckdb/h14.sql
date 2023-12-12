@@ -18,5 +18,4 @@ FROM main.lineitem AS t0
 JOIN main.part AS t1
   ON t0.l_partkey = t1.p_partkey
 WHERE
-  t0.l_shipdate >= CAST('1995-09-01' AS DATE)
-  AND t0.l_shipdate < CAST('1995-10-01' AS DATE)
+  t0.l_shipdate >= MAKE_DATE(1995, 9, 1) AND t0.l_shipdate < MAKE_DATE(1995, 10, 1)

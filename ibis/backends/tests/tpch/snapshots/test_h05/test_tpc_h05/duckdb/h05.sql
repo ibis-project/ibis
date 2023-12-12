@@ -20,8 +20,8 @@ FROM (
     ON t5.n_regionkey = t6.r_regionkey
   WHERE
     t6.r_name = 'ASIA'
-    AND t2.o_orderdate >= CAST('1994-01-01' AS DATE)
-    AND t2.o_orderdate < CAST('1995-01-01' AS DATE)
+    AND t2.o_orderdate >= MAKE_DATE(1994, 1, 1)
+    AND t2.o_orderdate < MAKE_DATE(1995, 1, 1)
   GROUP BY
     1
 ) AS t0
