@@ -22,5 +22,5 @@ SELECT
   t0.SF AS SF,
   t0.GIDP AS GIDP
 FROM batting AS t0
-LEFT OUTER JOIN awards_players AS t1
-  ON t0.playerID = t1.playerID
+LEFT OUTER JOIN awards_players AS t2
+  ON t0.playerID = t2.playerID
