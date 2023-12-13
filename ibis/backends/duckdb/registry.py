@@ -329,46 +329,6 @@ def _array_intersect(t, op):
     )
 
 
-def _map_keys(t, op):
-    m = t.translate(op.arg)
-    return sa.cast(sa.func.json_keys(sa.func.to_json(m)), t.get_sqla_type(op.dtype))
-
-
-def _is_map_literal(op):
-    return isinstance(op, ops.Literal) or (
-        isinstance(op, ops.Map)
-        and isinstance(op.keys, ops.Literal)
-        and isinstance(op.values, ops.Literal)
-    )
-
-
-def _map_values(t, op):
-    if not _is_map_literal(arg := op.arg):
-        raise UnsupportedOperationError(
-            "Extracting values of non-literal maps is not yet supported by DuckDB"
-        )
-    m_json = sa.func.to_json(t.translate(arg))
-    return sa.cast(
-        sa.func.json_extract_string(m_json, sa.func.json_keys(m_json)),
-        t.get_sqla_type(op.dtype),
-    )
-
-
-def _map_merge(t, op):
-    if not (_is_map_literal(op.left) and _is_map_literal(op.right)):
-        raise UnsupportedOperationError(
-            "Merging non-literal maps is not yet supported by DuckDB"
-        )
-    left = sa.func.to_json(t.translate(op.left))
-    right = sa.func.to_json(t.translate(op.right))
-    pairs = sa.func.json_merge_patch(left, right)
-    keys = sa.func.json_keys(pairs)
-    return sa.cast(
-        sa.func.map(keys, sa.func.json_extract_string(pairs, keys)),
-        t.get_sqla_type(op.dtype),
-    )
-
-
 def _array_zip(t, op):
     args = tuple(map(t.translate, op.arg))
 
