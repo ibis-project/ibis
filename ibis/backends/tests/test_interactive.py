@@ -16,12 +16,6 @@ from __future__ import annotations
 import pytest
 
 from ibis import config
-from ibis.tests.expr.mocks import MockBackend
-
-
-@pytest.fixture
-def con():
-    return MockBackend()
 
 
 def test_interactive_execute_on_repr(con):

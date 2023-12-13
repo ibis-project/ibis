@@ -22,6 +22,8 @@ if TYPE_CHECKING:
     import pandas as pd
     import pyarrow as pa
 
+raise RuntimeError("Temporarily make the SQL backends dysfunctional")
+
 __all__ = ["BaseSQLBackend"]
 
 
@@ -90,9 +92,8 @@ class BaseSQLBackend(BaseBackend):
             )
         qualified_name = self._fully_qualified_name(name, database)
         schema = self.get_schema(qualified_name)
-        node = ops.DatabaseTable(
-            name, schema, self, namespace=ops.Namespace(database=database)
-        )
+        namespace = ops.Namespace(database=database)
+        node = ops.DatabaseTable(name, schema, self, namespace=namespace)
         return node.to_expr()
 
     def _fully_qualified_name(self, name, database):
