@@ -11,6 +11,7 @@ on:
       - ".envrc"
     branches:
       - master
+      - "!the-epic-split"
 
 permissions:
   # this allows extractions/setup-just to list releases for `just` at a higher
