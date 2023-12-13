@@ -318,13 +318,13 @@ def _array_filter(t, op):
 
 
 def _array_intersect(t, op):
-    name = "__array_filter_param__"
+    name = "x"
     parameter = ops.Argument(
         name=name, shape=op.left.shape, dtype=op.left.dtype.value_type
     )
     return t.translate(
         ops.ArrayFilter(
-            op.left, param=name, body=ops.ArrayContains(op.right, parameter)
+            op.left, param=parameter.param, body=ops.ArrayContains(op.right, parameter)
         )
     )
 
@@ -369,6 +369,15 @@ _temporal_delta = fixed_arity(
 def _to_json_collection(t, op):
     typ = t.get_sqla_type(op.dtype)
     return try_cast(t.translate(op.arg), typ, type_=typ)
+
+
+def _array_remove(t, op):
+    arg = op.arg
+    param = ops.Argument(name="x", shape=arg.shape, dtype=arg.dtype.value_type)
+    return _array_filter(
+        t,
+        ops.ArrayFilter(arg, param=param.param, body=ops.NotEquals(param, op.other)),
+    )
 
 
 operation_registry.update(
@@ -419,21 +428,7 @@ operation_registry.update(
             1,
         ),
         ops.ArraySort: fixed_arity(sa.func.list_sort, 1),
-        ops.ArrayRemove: lambda t, op: _array_filter(
-            t,
-            ops.ArrayFilter(
-                op.arg,
-                param="__array_filter_param__",
-                body=ops.NotEquals(
-                    ops.Argument(
-                        name="__array_filter_param__",
-                        shape=op.arg.shape,
-                        dtype=op.arg.dtype.value_type,
-                    ),
-                    op.other,
-                ),
-            ),
-        ),
+        ops.ArrayRemove: _array_remove,
         ops.ArrayUnion: lambda t, op: t.translate(
             ops.ArrayDistinct(ops.ArrayConcat((op.left, op.right)))
         ),
@@ -496,7 +491,7 @@ operation_registry.update(
         ),
         ops.StartsWith: fixed_arity(sa.func.prefix, 2),
         ops.EndsWith: fixed_arity(sa.func.suffix, 2),
-        ops.Argument: lambda _, op: sa.literal_column(op.name),
+        ops.Argument: lambda _, op: sa.literal_column(op.param),
         ops.Unnest: unary(sa.func.unnest),
         ops.MapGet: fixed_arity(
             lambda arg, key, default: sa.func.coalesce(

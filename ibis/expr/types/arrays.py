@@ -426,11 +426,12 @@ class ArrayValue(Value):
         └────────────────────────┘
         """
         name = next(iter(inspect.signature(func).parameters.keys()))
-        param = f"__array_map_param_{name}__"
         parameter = ops.Argument(
-            name=param, shape=self.op().shape, dtype=self.type().value_type
+            name=name, shape=self.op().shape, dtype=self.type().value_type
+        )
+        return ops.ArrayMap(
+            self, param=parameter.param, body=func(parameter.to_expr())
         ).to_expr()
-        return ops.ArrayMap(self, param=param, body=func(parameter)).to_expr()
 
     def filter(
         self, predicate: Callable[[ir.Value], bool | ir.BooleanValue]
@@ -504,13 +505,14 @@ class ArrayValue(Value):
         └───────────────────────────────┘
         """
         name = next(iter(inspect.signature(predicate).parameters.keys()))
-        param = f"__array_filter_param_{name}__"
         parameter = ops.Argument(
-            name=param,
+            name=name,
             shape=self.op().shape,
             dtype=self.type().value_type,
+        )
+        return ops.ArrayFilter(
+            self, param=parameter.param, body=predicate(parameter.to_expr())
         ).to_expr()
-        return ops.ArrayFilter(self, param=param, body=predicate(parameter)).to_expr()
 
     def contains(self, other: ir.Value) -> ir.BooleanValue:
         """Return whether the array contains `other`.

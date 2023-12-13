@@ -958,8 +958,8 @@ def _array_string_join(op, *, arg, sep, **_):
 
 
 @translate_val.register(ops.Argument)
-def _argument(op, *, name, **_):
-    return sg.to_identifier(name)
+def _argument(op, **_):
+    return sg.to_identifier(op.param)
 
 
 @translate_val.register(ops.ArrayMap)
