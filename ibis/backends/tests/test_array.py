@@ -871,3 +871,28 @@ def test_unnest_empty_array(con):
     expr = t.arr.unnest()
     result = con.execute(expr)
     assert len(result) == 3
+
+
+@builtin_array
+@pytest.mark.notimpl(
+    ["datafusion", "impala", "mssql", "polars", "snowflake", "sqlite", "mysql"],
+    raises=com.OperationNotDefinedError,
+)
+@pytest.mark.notimpl(
+    ["dask", "pandas"],
+    raises=com.OperationNotDefinedError,
+    reason="Operation 'ArrayMap' is not implemented for this backend",
+)
+@pytest.mark.notimpl(
+    ["sqlite"],
+    raises=NotImplementedError,
+    reason="Unsupported type: Array: ...",
+)
+def test_array_map_with_conflicting_names(backend, con):
+    t = ibis.memtable({"x": [[1, 2]]}, schema=ibis.schema(dict(x="!array<int8>")))
+    expr = t.select(a=t.x.map(lambda x: x + 1)).select(
+        b=lambda t: t.a.filter(lambda a: a > 2)
+    )
+    result = con.execute(expr)
+    expected = pd.DataFrame({"b": [[3]]})
+    backend.assert_frame_equal(result, expected)
