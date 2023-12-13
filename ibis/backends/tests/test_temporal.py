@@ -16,7 +16,6 @@ import ibis
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 from ibis.backends.base import _get_backend_names
-from ibis.backends.pandas.execution.temporal import day_name
 from ibis.common.annotations import ValidationError
 
 try:
@@ -76,6 +75,20 @@ try:
     from pyspark.sql.utils import IllegalArgumentException
 except ImportError:
     IllegalArgumentException = None
+
+
+def day_name(obj: pd.core.indexes.accessors.DatetimeProperties | pd.Timestamp) -> str:
+    """Backwards compatible name-of-day getting function.
+
+    Returns
+    -------
+    str
+        The name of the day corresponding to `obj`
+    """
+    try:
+        return obj.day_name()
+    except AttributeError:
+        return obj.weekday_name
 
 
 @pytest.mark.parametrize("attr", ["year", "month", "day"])
