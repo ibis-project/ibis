@@ -111,7 +111,7 @@ import ibis
 con = ibis.connect("duckdb://local.ddb")
 ```
 
-Without an empty path, `ibis.connect` will connect to an ephemeral, in-memory database.
+Given an empty path, `ibis.connect` will connect to an ephemeral, in-memory database.
 
 ```{python}
 con = ibis.connect("duckdb://")
