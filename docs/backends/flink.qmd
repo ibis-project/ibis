@@ -1,0 +1,64 @@
+# Flink
+
+[https://nightlies.apache.org/flink/flink-docs-stable/](https://nightlies.apache.org/flink/flink-docs-stable/)
+
+![](https://img.shields.io/badge/memtables-native-green?style=flat-square) ![](https://img.shields.io/badge/inputs-Flink tables-blue?style=flat-square) ![](https://img.shields.io/badge/outputs-Flink tables | pandas-orange?style=flat-square)
+
+## Install
+
+Install Ibis and dependencies for the Flink backend:
+
+::: {.panel-tabset}
+
+## `pip`
+
+Install alongside the `apache-flink` package:
+
+```{.bash}
+pip install ibis-framework apache-flink
+```
+
+And connect:
+
+```{.python}
+import ibis
+
+con = ibis.flink.connect()  # <1>
+```
+
+1. Adjust connection parameters as needed.
+
+:::
+
+## Connect
+
+### `ibis.flink.connect`
+
+```python
+con = ibis.flink.connect(table_env=table_env)
+```
+
+::: {.callout-note}
+`ibis.flink.connect` is a thin wrapper around [`ibis.backends.flink.Backend.do_connect`](#ibis.backends.flink.Backend.do_connect).
+:::
+
+::: {.callout-note}
+The `flink` backend does not create `TableEnvironment` objects; you must create a `TableEnvironment` and pass that to `ibis.flink.connect`.
+:::
+
+### Connection Parameters
+
+```{python}
+#| echo: false
+#| output: asis
+from _utils import render_do_connect
+
+render_do_connect("flink")
+```
+
+```{python}
+#| echo: false
+BACKEND = "Flink"
+```
+
+{{< include ./_templates/api.qmd >}}
