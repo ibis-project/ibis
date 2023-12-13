@@ -16,19 +16,14 @@ from __future__ import annotations
 
 import contextlib
 
-import pytest
-import sqlalchemy as sa
-
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
-from ibis.backends.base.sql import BaseSQLBackend
-from ibis.backends.base.sql.alchemy import AlchemyCompiler
-from ibis.backends.base.sql.alchemy.datatypes import AlchemyType
+from ibis.backends.base import BaseBackend
 from ibis.expr.schema import Schema
 from ibis.expr.tests.conftest import MOCK_TABLES
 
 
-class MockBackend(BaseSQLBackend):
+class MockBackend(BaseBackend):
     name = "mock"
     version = "1.0"
     current_database = "mockdb"
@@ -40,6 +35,11 @@ class MockBackend(BaseSQLBackend):
 
     def do_connect(self):
         pass
+
+    def table(self, name, **kwargs):
+        schema = self.get_schema(name)
+        node = ops.DatabaseTable(source=self, name=name, schema=schema)
+        return node.to_expr()
 
     def list_tables(self):
         return list(MOCK_TABLES)
@@ -54,33 +54,14 @@ class MockBackend(BaseSQLBackend):
         name = name.replace("`", "")
         return Schema.from_tuples(MOCK_TABLES[name])
 
-    def to_pyarrow(self, expr, limit=None, params=None, **kwargs):
-        ast = self.compiler.to_ast_ensure_limit(expr, limit, params=params)
-        for query in ast.queries:
-            self.executed_queries.append(query.compile())
+    def to_pyarrow(self, *_, **__):
+        raise NotImplementedError(self.name)
 
-        if isinstance(expr, ir.Scalar):
-            return None
-        elif isinstance(expr, ir.Column):
-            schema = expr.as_table().schema()
-            return schema.to_pyarrow().empty_table()[0]
-        else:
-            return expr.schema().to_pyarrow().empty_table()
+    def execute(self, *_, **__):
+        raise NotImplementedError(self.name)
 
-    def execute(self, expr, limit=None, params=None, **kwargs):
-        out = self.to_pyarrow(expr, limit=limit, params=params, **kwargs)
-        return None if out is None else out.to_pandas()
-
-    def compile(
-        self,
-        expr,
-        limit=None,
-        params=None,
-        timecontext=None,
-    ):
-        ast = self.compiler.to_ast_ensure_limit(expr, limit, params=params)
-        queries = [q.compile() for q in ast.queries]
-        return queries[0] if len(queries) == 1 else queries
+    def compile(self, *_, **__):
+        raise NotImplementedError(self.name)
 
     def create_table(self, *_, **__) -> ir.Table:
         raise NotImplementedError(self.name)
@@ -108,69 +89,3 @@ class MockBackend(BaseSQLBackend):
         self.sql_query_schemas[query] = schema
         yield
         self.sql_query_schemas.pop(query, None)
-
-
-def table_from_schema(name, meta, schema, *, database: str | None = None):
-    # Convert Ibis schema to SQLA table
-    columns = []
-
-    for colname, dtype in zip(schema.names, schema.types):
-        satype = AlchemyType.from_ibis(dtype)
-        column = sa.Column(colname, satype, nullable=dtype.nullable)
-        columns.append(column)
-
-    return sa.Table(name, meta, *columns, schema=database)
-
-
-class MockAlchemyBackend(MockBackend):
-    compiler = AlchemyCompiler
-
-    def __init__(self):
-        super().__init__()
-        pytest.importorskip("sqlalchemy")
-        self.tables = {}
-
-    def table(self, name, **_):
-        schema = self.get_schema(name)
-        return self._inject_table(name, schema)
-
-    def _inject_table(self, name, schema):
-        if name not in self.tables:
-            self.tables[name] = table_from_schema(name, sa.MetaData(), schema)
-        return ops.DatabaseTable(source=self, name=name, schema=schema).to_expr()
-
-    def _get_sqla_table(self, name, **_):
-        return self.tables[name]
-
-
-GEO_TABLE = {
-    "geo": [
-        ("id", "int32"),
-        ("geo_point", "point"),
-        ("geo_linestring", "linestring"),
-        ("geo_polygon", "polygon"),
-        ("geo_multipolygon", "multipolygon"),
-    ]
-}
-
-
-class GeoMockConnectionPostGIS(MockAlchemyBackend):
-    _tables = GEO_TABLE
-
-    def __init__(self):
-        super().__init__()
-        self.executed_queries = []
-
-    def get_schema(self, name):
-        return Schema.from_tuples(self._tables[name])
-
-
-class GeoMockConnectionOmniSciDB(MockBackend):
-    _tables = GEO_TABLE
-
-    def __init__(self):
-        super().__init__()
-        self.executed_queries = []
-
-    def get_schema(self, name):
-        return Schema.from_tuples(self._tables[name])
