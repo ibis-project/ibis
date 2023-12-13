@@ -31,6 +31,7 @@ if TYPE_CHECKING:
     import pyarrow as pa
     import torch
 
+
 __all__ = ("BaseBackend", "Database", "connect")
 
 _IBIS_TO_SQLGLOT_DIALECT = {
