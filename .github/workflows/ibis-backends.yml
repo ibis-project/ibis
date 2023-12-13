@@ -12,6 +12,7 @@ on:
     branches:
       - main
       - "*.x.x"
+      - "!the-epic-split"
   pull_request:
     # Skip the backend suite if all changes are docs
     paths-ignore:
@@ -23,6 +24,7 @@ on:
     branches:
       - main
       - "*.x.x"
+      - "!the-epic-split"
   merge_group:
 
 permissions:
