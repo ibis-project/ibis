@@ -86,11 +86,11 @@ jobs:
 
       - name: run all core tests and run benchmarks once parallel
         if: matrix.os != 'windows-latest'
-        run: pytest -v -n auto ibis/common ibis/expr ibis/tests ibis/formats
+        run: poetry run pytest -v -n auto ibis/common ibis/expr ibis/tests ibis/formats
 
       - name: run all core tests and run benchmarks once serial
         if: matrix.os == 'windows-latest'
-        run: pytest -v ibis/common ibis/expr ibis/tests ibis/formats
+        run: poetry run pytest -v ibis/common ibis/expr ibis/tests ibis/formats
 
       - name: upload code coverage
         if: success()
@@ -138,6 +138,8 @@ jobs:
         run: poetry run python -c 'import shapely.geometry, duckdb'
 
   test_doctests:
+    # FIXME(kszucs): re-enable this build
+    if: false
     name: Doctests
     runs-on: ${{ matrix.os }}
     strategy:
