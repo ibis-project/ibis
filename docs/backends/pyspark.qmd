@@ -92,6 +92,15 @@ from _utils import render_do_connect
 render_do_connect("pyspark")
 ```
 
+### `ibis.connect` URL format
+
+In addition to `ibis.pyspark.connect`, you can also connect to PySpark by
+passing a properly-formatted PySpark connection URL to `ibis.connect`:
+
+```python
+con = ibis.connect(f"pyspark://{warehouse-dir}?spark.app.name=CountingSheep&spark.master=local[2]")
+```
+
 ```{python}
 #| echo: false
 BACKEND = "PySpark"
