@@ -1689,7 +1689,7 @@ def compile_array_collect(t, op, **kwargs):
 
 @compiles(ops.Argument)
 def compile_argument(t, op, arg_columns, **kwargs):
-    return arg_columns[op.name]
+    return arg_columns[op.param]
 
 
 @compiles(ops.ArrayFilter)
