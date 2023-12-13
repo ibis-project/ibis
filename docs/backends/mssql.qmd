@@ -96,7 +96,7 @@ render_do_connect("mssql")
 ### `ibis.connect` URL format
 
 In addition to `ibis.mssql.connect`, you can also connect to MSSQL by
-passing a properly formatted MSSQL connection URL to `ibis.connect`
+passing a properly-formatted MSSQL connection URL to `ibis.connect`:
 
 ```python
 con = ibis.connect(f"mssql://{user}:{password}@{host}:{port}")

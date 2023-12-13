@@ -99,7 +99,7 @@ render_do_connect("clickhouse")
 ### `ibis.connect` URL format
 
 In addition to `ibis.clickhouse.connect`, you can also connect to ClickHouse by
-passing a properly formatted ClickHouse connection URL to `ibis.connect`
+passing a properly-formatted ClickHouse connection URL to `ibis.connect`:
 
 ```python
 con = ibis.connect(f"clickhouse://{user}:{password}@{host}:{port}?secure={secure}")

@@ -97,7 +97,7 @@ render_do_connect("postgres")
 ### `ibis.connect` URL format
 
 In addition to `ibis.postgres.connect`, you can also connect to Postgres by
-passing a properly formatted Postgres connection URL to `ibis.connect`
+passing a properly-formatted Postgres connection URL to `ibis.connect`:
 
 ```python
 con = ibis.connect(f"postgres://{user}:{password}@{host}:{port}/{database}")
