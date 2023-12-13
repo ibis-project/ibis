@@ -318,7 +318,7 @@ def _array_filter(t, op):
 
 
 def _array_intersect(t, op):
-    name = "x"
+    name = "__array_filter_param__"
     parameter = ops.Argument(
         name=name, shape=op.left.shape, dtype=op.left.dtype.value_type
     )
@@ -423,10 +423,12 @@ operation_registry.update(
             t,
             ops.ArrayFilter(
                 op.arg,
-                param="x",
+                param="__array_filter_param__",
                 body=ops.NotEquals(
                     ops.Argument(
-                        name="x", shape=op.arg.shape, dtype=op.arg.dtype.value_type
+                        name="__array_filter_param__",
+                        shape=op.arg.shape,
+                        dtype=op.arg.dtype.value_type,
                     ),
                     op.other,
                 ),

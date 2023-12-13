@@ -425,7 +425,8 @@ class ArrayValue(Value):
         │ []                     │
         └────────────────────────┘
         """
-        param = next(iter(inspect.signature(func).parameters.keys()))
+        name = next(iter(inspect.signature(func).parameters.keys()))
+        param = f"__array_map_param_{name}__"
         parameter = ops.Argument(
             name=param, shape=self.op().shape, dtype=self.type().value_type
         ).to_expr()
@@ -502,9 +503,12 @@ class ArrayValue(Value):
         │ []                            │
         └───────────────────────────────┘
         """
-        param = next(iter(inspect.signature(predicate).parameters.keys()))
+        name = next(iter(inspect.signature(predicate).parameters.keys()))
+        param = f"__array_filter_param_{name}__"
         parameter = ops.Argument(
-            name=param, shape=self.op().shape, dtype=self.type().value_type
+            name=param,
+            shape=self.op().shape,
+            dtype=self.type().value_type,
         ).to_expr()
         return ops.ArrayFilter(self, param=param, body=predicate(parameter)).to_expr()
 
