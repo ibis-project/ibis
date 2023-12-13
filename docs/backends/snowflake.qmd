@@ -100,7 +100,7 @@ render_do_connect("snowflake")
 ### `ibis.connect` URL format
 
 In addition to `ibis.snowflake.connect`, you can also connect to Snowflake by
-passing a properly formatted Snowflake connection URL to `ibis.connect`
+passing a properly-formatted Snowflake connection URL to `ibis.connect`:
 
 ```python
 con = ibis.connect(f"snowflake://{user}:{password}@{account}/{database}")

@@ -103,7 +103,7 @@ render_do_connect("duckdb")
 ### `ibis.connect` URL format
 
 In addition to `ibis.duckdb.connect`, you can also connect to DuckDB by
-passing a properly formatted DuckDB connection URL to `ibis.connect`
+passing a properly-formatted DuckDB connection URL to `ibis.connect`:
 
 ```{python}
 import ibis
