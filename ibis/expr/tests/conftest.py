@@ -45,6 +45,13 @@ MOCK_TABLES = {
     "star3": [("bar_id", "string"), ("value2", "double")],
     "test1": [("c", "int32"), ("f", "double"), ("g", "string")],
     "test2": [("key", "string"), ("value", "double")],
+    "geo": [
+        ("id", "int32"),
+        ("geo_point", "point"),
+        ("geo_linestring", "linestring"),
+        ("geo_polygon", "polygon"),
+        ("geo_multipolygon", "multipolygon"),
+    ],
     "tpch_region": [
         ("r_regionkey", "int16"),
         ("r_name", "string"),
