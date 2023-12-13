@@ -10,6 +10,7 @@ import ibis.expr.datashape as ds
 import ibis.expr.datatypes as dt
 import ibis.expr.rules as rlz
 from ibis import util
+from ibis.common.annotations import attribute
 from ibis.common.bases import Abstract
 from ibis.common.graph import Node as Traversable
 from ibis.common.grounds import Concrete
@@ -182,6 +183,10 @@ class Argument(Value):
     name: str
     shape: ds.DataShape
     dtype: dt.DataType
+
+    @attribute
+    def param(self) -> str:
+        return f"__ibis_param_{self.name}__"
 
 
 public(ValueOp=Value, UnaryOp=Unary, BinaryOp=Binary, Scalar=Scalar, Column=Column)
