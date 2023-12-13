@@ -23,7 +23,6 @@ from ibis.common.annotations import ValidationError
 from ibis.common.exceptions import RelationError
 from ibis.expr import api
 from ibis.expr.types import Column, Table
-from ibis.tests.expr.mocks import MockAlchemyBackend, MockBackend
 from ibis.tests.util import assert_equal, assert_pickle_roundtrip
 
 
@@ -1509,24 +1508,26 @@ def test_mutate_chain():
 
 # TODO(kszucs): move this test case to ibis/tests/sql since it requires the
 # sql backend to be executed
-def test_multiple_dbcon():
-    """Expr from multiple connections to same DB should be compatible."""
-    con1 = MockBackend()
-    con2 = MockBackend()
+# def test_multiple_dbcon():
+#     """Expr from multiple connections to same DB should be compatible."""
+#     con1 = MockBackend()
+#     con2 = MockBackend()
 
-    con1.table("alltypes").union(con2.table("alltypes")).execute()
+#     con1.table("alltypes").union(con2.table("alltypes")).execute()
 
 
-def test_multiple_db_different_backends():
-    con1 = MockBackend()
-    con2 = MockAlchemyBackend()
+# TODO(kszucs): move this test to ibis/tests/sql since it requires the
+# sql backend to be executed
+# def test_multiple_db_different_backends():
+#     con1 = MockBackend()
+#     con2 = MockAlchemyBackend()
 
-    backend1_table = con1.table("alltypes")
-    backend2_table = con2.table("alltypes")
+#     backend1_table = con1.table("alltypes")
+#     backend2_table = con2.table("alltypes")
 
-    expr = backend1_table.union(backend2_table)
-    with pytest.raises(com.IbisError, match="Multiple backends"):
-        expr.compile()
+#     expr = backend1_table.union(backend2_table)
+#     with pytest.raises(com.IbisError, match="Multiple backends"):
+#         expr.compile()
 
 
 def test_merge_as_of_allows_overlapping_columns():
