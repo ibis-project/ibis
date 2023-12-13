@@ -100,7 +100,7 @@ render_do_connect("sqlite")
 ### `ibis.connect` URL format
 
 In addition to `ibis.sqlite.connect`, you can also connect to SQLite by
-passing a properly formatted SQLite connection URL to `ibis.connect`:
+passing a properly-formatted SQLite connection URL to `ibis.connect`:
 
 ```python
 con = ibis.connect("sqlite:///path/to/local/file")

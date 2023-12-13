@@ -97,7 +97,7 @@ render_do_connect("mysql")
 ### `ibis.connect` URL format
 
 In addition to `ibis.mysql.connect`, you can also connect to MySQL by
-passing a properly formatted MySQL connection URL to `ibis.connect`
+passing a properly-formatted MySQL connection URL to `ibis.connect`:
 
 ```python
 con = ibis.connect(f"mysql://{user}:{password}@{host}:{port}/{database}")

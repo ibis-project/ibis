@@ -96,7 +96,7 @@ render_do_connect("bigquery")
 ### `ibis.connect` URL format
 
 In addition to `ibis.bigquery.connect`, you can also connect to BigQuery by
-passing a properly formatted BigQuery connection URL to `ibis.connect`
+passing a properly-formatted BigQuery connection URL to `ibis.connect`:
 
 ```python
 con = ibis.connect(f"bigquery://{project_id}/{dataset_id}")

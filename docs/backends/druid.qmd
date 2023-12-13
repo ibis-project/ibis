@@ -97,7 +97,7 @@ render_do_connect("druid")
 ### `ibis.connect` URL format
 
 In addition to `ibis.druid.connect`, you can also connect to Druid by
-passing a properly formatted Druid connection URL to `ibis.connect`
+passing a properly-formatted Druid connection URL to `ibis.connect`:
 
 ```python
 con = ibis.connect("druid://localhost:8082/druid/v2/sql")
