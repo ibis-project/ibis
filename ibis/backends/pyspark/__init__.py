@@ -31,6 +31,8 @@ from ibis.backends.pyspark import ddl
 from ibis.backends.pyspark.client import PySparkTable
 from ibis.backends.pyspark.compiler import PySparkExprTranslator
 from ibis.backends.pyspark.datatypes import PySparkType
+from ibis.common.temporal import normalize_timezone
+from ibis.formats.pandas import PandasData
 
 if TYPE_CHECKING:
     from collections.abc import Mapping, Sequence
@@ -102,6 +104,18 @@ class PySparkTableSetFormatter(TableSetFormatter):
 class PySparkCompiler(Compiler):
     cheap_in_memory_tables = True
     table_set_formatter_class = PySparkTableSetFormatter
+
+
+class PySparkPandasData(PandasData):
+    @classmethod
+    def convert_Timestamp_element(cls, dtype):
+        def converter(value, dtype=dtype):
+            if (tz := dtype.timezone) is not None:
+                return value.astimezone(normalize_timezone(tz))
+
+            return value.astimezone(normalize_timezone("UTC")).replace(tzinfo=None)
+
+        return converter
 
 
 class Backend(BaseSQLBackend, CanCreateDatabase):
@@ -219,7 +233,9 @@ class Backend(BaseSQLBackend, CanCreateDatabase):
         df = self.compile(table_expr, **kwargs).toPandas()
 
         # TODO: remove the extra conversion
-        return expr.__pandas_result__(table_expr.__pandas_result__(df))
+        return expr.__pandas_result__(
+            PySparkPandasData.convert_table(df, table_expr.schema())
+        )
 
     def _fully_qualified_name(self, name, database):
         if is_fully_qualified(name):
@@ -232,8 +248,7 @@ class Backend(BaseSQLBackend, CanCreateDatabase):
         self._context.stop()
 
     def fetch_from_cursor(self, cursor, schema):
-        df = cursor.query.toPandas()  # blocks until finished
-        return schema.apply_to(df)
+        return cursor.query.toPandas()  # blocks until finished
 
     def raw_sql(self, query: str) -> _PySparkCursor:
         query = self._session.sql(query)
@@ -241,8 +256,7 @@ class Backend(BaseSQLBackend, CanCreateDatabase):
 
     def _get_schema_using_query(self, query):
         cursor = self.raw_sql(f"SELECT * FROM ({query}) t0 LIMIT 0")
-        struct = PySparkType.to_ibis(cursor.query.schema)
-        return sch.Schema(struct)
+        return sch.Schema(PySparkType.to_ibis(cursor.query.schema))
 
     def _get_jtable(self, name, database=None):
         get_table = self._catalog._jcatalog.getTable
