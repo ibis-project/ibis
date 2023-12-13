@@ -293,7 +293,7 @@ operation_registry.update(
         ops.Map: fixed_arity(
             lambda keys, values: sa.func.iff(
                 sa.func.is_array(keys) & sa.func.is_array(values),
-                sa.func.ibis_udfs.public.object_from_arrays(keys, values),
+                sa.func.arrays_to_object(keys, values),
                 sa.null(),
             ),
             2,

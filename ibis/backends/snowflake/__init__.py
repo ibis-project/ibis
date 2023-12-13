@@ -95,11 +95,6 @@ _SNOWFLAKE_MAP_UDFS = {
         "returns": ARRAY,
         "source": "return Object.values(obj)",
     },
-    "ibis_udfs.public.object_from_arrays": {
-        "inputs": {"ks": ARRAY, "vs": ARRAY},
-        "returns": OBJECT,
-        "source": "return Object.assign(...ks.map((k, i) => ({[k]: vs[i]})))",
-    },
     "ibis_udfs.public.array_zip": {
         "inputs": {"arrays": ARRAY},
         "returns": ARRAY,
