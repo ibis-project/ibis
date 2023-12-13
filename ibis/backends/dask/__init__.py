@@ -24,6 +24,9 @@ if TYPE_CHECKING:
     import pathlib
     from collections.abc import Mapping, MutableMapping
 
+
+raise RuntimeError("Temporarily make the dask backend dysfunctional")
+
 # Make sure that the pandas backend options have been loaded
 ibis.pandas  # noqa: B018
 
