@@ -6,7 +6,7 @@ import ibis
 
 pytest.importorskip("duckdb")
 
-from ibis.backends.duckdb import Backend as DuckDBBackend  # noqa: E402
+
 from ibis.tests.expr.mocks import MockBackend  # noqa: E402
 
 
