@@ -327,7 +327,7 @@ def _try_cast(t, op):
 def _array_intersect(t, op):
     x = ops.Argument(name="x", shape=op.left.shape, dtype=op.left.dtype.value_type)
     return t.translate(
-        ops.ArrayFilter(op.left, param="x", body=ops.ArrayContains(op.right, x))
+        ops.ArrayFilter(op.left, param=x.param, body=ops.ArrayContains(op.right, x))
     )
 
 
@@ -538,7 +538,7 @@ operation_registry.update(
             lambda sep, arr: sa.func.array_join(arr, sep), 2
         ),
         ops.StartsWith: fixed_arity(sa.func.starts_with, 2),
-        ops.Argument: lambda _, op: sa.literal_column(op.name),
+        ops.Argument: lambda _, op: sa.literal_column(op.param),
         ops.First: partial(_first_last, offset=1),
         ops.Last: partial(_first_last, offset=-1),
         ops.ArrayZip: _zip,

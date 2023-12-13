@@ -944,7 +944,7 @@ OPERATION_REGISTRY = {
     ops.EndsWith: fixed_arity("ENDS_WITH", 2),
     ops.TableColumn: table_column,
     ops.CountDistinctStar: _count_distinct_star,
-    ops.Argument: lambda _, op: op.name,
+    ops.Argument: lambda _, op: op.param,
     ops.Unnest: unary("UNNEST"),
     ops.TimeDelta: _time_delta,
     ops.DateDelta: _date_delta,
