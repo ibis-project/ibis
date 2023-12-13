@@ -33,6 +33,20 @@ from ibis.backends.tests.errors import (
 from ibis.common.annotations import ValidationError
 
 
+def day_name(obj: pd.core.indexes.accessors.DatetimeProperties | pd.Timestamp) -> str:
+    """Backwards compatible name-of-day getting function.
+
+    Returns
+    -------
+    str
+        The name of the day corresponding to `obj`
+    """
+    try:
+        return obj.day_name()
+    except AttributeError:
+        return obj.weekday_name
+
+
 @pytest.mark.parametrize("attr", ["year", "month", "day"])
 @pytest.mark.parametrize(
     "expr_fn",
