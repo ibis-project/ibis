@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import contextlib
 import json
 import warnings
 
@@ -10,6 +11,7 @@ import pyarrow as pa
 
 import ibis.expr.datatypes as dt
 import ibis.expr.schema as sch
+from ibis.common.temporal import normalize_timezone
 from ibis.formats import DataMapper, SchemaMapper, TableProxy
 from ibis.formats.numpy import NumpyType
 from ibis.formats.pyarrow import PyArrowData, PyArrowSchema, PyArrowType
@@ -132,8 +134,8 @@ class PandasData(DataMapper):
         assert not isinstance(result, np.ndarray), f"{convert_method} -> {type(result)}"
         return result
 
-    @staticmethod
-    def convert_GeoSpatial(s, dtype, pandas_type):
+    @classmethod
+    def convert_GeoSpatial(cls, s, dtype, pandas_type):
         return s
 
     convert_Point = (
@@ -144,15 +146,15 @@ class PandasData(DataMapper):
         convert_MultiLineString
     ) = convert_MultiPoint = convert_MultiPolygon = convert_GeoSpatial
 
-    @staticmethod
-    def convert_default(s, dtype, pandas_type):
+    @classmethod
+    def convert_default(cls, s, dtype, pandas_type):
         try:
             return s.astype(pandas_type)
         except Exception:  # noqa: BLE001
             return s
 
-    @staticmethod
-    def convert_Boolean(s, dtype, pandas_type):
+    @classmethod
+    def convert_Boolean(cls, s, dtype, pandas_type):
         if s.empty:
             return s.astype(pandas_type)
         elif pdt.is_object_dtype(s.dtype):
@@ -162,8 +164,8 @@ class PandasData(DataMapper):
         else:
             return s
 
-    @staticmethod
-    def convert_Timestamp(s, dtype, pandas_type):
+    @classmethod
+    def convert_Timestamp(cls, s, dtype, pandas_type):
         if isinstance(dtype, pd.DatetimeTZDtype):
             return s.dt.tz_convert(dtype.timezone)
         elif pdt.is_datetime64_dtype(s.dtype):
@@ -184,14 +186,14 @@ class PandasData(DataMapper):
                 except TypeError:
                     return pd.to_datetime(s).dt.tz_localize(dtype.timezone)
 
-    @staticmethod
-    def convert_Date(s, dtype, pandas_type):
+    @classmethod
+    def convert_Date(cls, s, dtype, pandas_type):
         if isinstance(s.dtype, pd.DatetimeTZDtype):
             s = s.dt.tz_convert("UTC").dt.tz_localize(None)
         return s.astype(pandas_type, errors="ignore").dt.normalize()
 
-    @staticmethod
-    def convert_Interval(s, dtype, pandas_type):
+    @classmethod
+    def convert_Interval(cls, s, dtype, pandas_type):
         values = s.values
         try:
             result = values.astype(pandas_type)
@@ -201,42 +203,41 @@ class PandasData(DataMapper):
             result = s.__class__(result, index=s.index, name=s.name)
         return result
 
-    @staticmethod
-    def convert_String(s, dtype, pandas_type):
+    @classmethod
+    def convert_String(cls, s, dtype, pandas_type):
         return s.astype(pandas_type, errors="ignore")
 
-    @staticmethod
-    def convert_UUID(s, dtype, pandas_type):
-        return s.map(PandasData.get_element_converter(dtype), na_action="ignore")
+    @classmethod
+    def convert_UUID(cls, s, dtype, pandas_type):
+        return s.map(cls.get_element_converter(dtype), na_action="ignore")
 
-    @staticmethod
-    def convert_Struct(s, dtype, pandas_type):
-        return s.map(PandasData.get_element_converter(dtype), na_action="ignore")
+    @classmethod
+    def convert_Struct(cls, s, dtype, pandas_type):
+        return s.map(cls.get_element_converter(dtype), na_action="ignore")
 
-    @staticmethod
-    def convert_Array(s, dtype, pandas_type):
-        return s.map(PandasData.get_element_converter(dtype), na_action="ignore")
+    @classmethod
+    def convert_Array(cls, s, dtype, pandas_type):
+        return s.map(cls.get_element_converter(dtype), na_action="ignore")
 
-    @staticmethod
-    def convert_Map(s, dtype, pandas_type):
-        return s.map(PandasData.get_element_converter(dtype), na_action="ignore")
+    @classmethod
+    def convert_Map(cls, s, dtype, pandas_type):
+        return s.map(cls.get_element_converter(dtype), na_action="ignore")
 
-    @staticmethod
-    def convert_JSON(s, dtype, pandas_type):
-        return s.map(
-            PandasData.get_element_converter(dtype), na_action="ignore"
-        ).astype("object")
-
-    @staticmethod
-    def get_element_converter(dtype):
-        funcgen = getattr(
-            PandasData, f"convert_{type(dtype).__name__}_element", lambda _: lambda x: x
+    @classmethod
+    def convert_JSON(cls, s, dtype, pandas_type):
+        return s.map(cls.get_element_converter(dtype), na_action="ignore").astype(
+            "object"
         )
+
+    @classmethod
+    def get_element_converter(cls, dtype):
+        name = f"convert_{type(dtype).__name__}_element"
+        funcgen = getattr(cls, name, lambda _: lambda x: x)
         return funcgen(dtype)
 
-    @staticmethod
-    def convert_Struct_element(dtype):
-        converters = tuple(map(PandasData.get_element_converter, dtype.types))
+    @classmethod
+    def convert_Struct_element(cls, dtype):
+        converters = tuple(map(cls.get_element_converter, dtype.types))
 
         def convert(values, names=dtype.names, converters=converters):
             items = values.items() if isinstance(values, dict) else zip(names, values)
@@ -247,8 +248,8 @@ class PandasData(DataMapper):
 
         return convert
 
-    @staticmethod
-    def convert_JSON_element(_):
+    @classmethod
+    def convert_JSON_element(cls, _):
         def try_json(x):
             if x is None:
                 return x
@@ -259,23 +260,36 @@ class PandasData(DataMapper):
 
         return try_json
 
-    @staticmethod
-    def convert_Array_element(dtype):
-        convert_value = PandasData.get_element_converter(dtype.value_type)
+    @classmethod
+    def convert_Timestamp_element(cls, dtype):
+        def converter(value, dtype=dtype):
+            with contextlib.suppress(AttributeError):
+                value = value.item()
+
+            if (tz := dtype.timezone) is not None:
+                return value.astimezone(normalize_timezone(tz))
+
+            return value.replace(tzinfo=None)
+
+        return converter
+
+    @classmethod
+    def convert_Array_element(cls, dtype):
+        convert_value = cls.get_element_converter(dtype.value_type)
         return lambda values: [
             convert_value(value) if value is not None else value for value in values
         ]
 
-    @staticmethod
-    def convert_Map_element(dtype):
-        convert_value = PandasData.get_element_converter(dtype.value_type)
+    @classmethod
+    def convert_Map_element(cls, dtype):
+        convert_value = cls.get_element_converter(dtype.value_type)
         return lambda row: {
             key: convert_value(value) if value is not None else value
             for key, value in dict(row).items()
         }
 
-    @staticmethod
-    def convert_UUID_element(_):
+    @classmethod
+    def convert_UUID_element(cls, _):
         from uuid import UUID
 
         return lambda v: v if isinstance(v, UUID) else UUID(v)

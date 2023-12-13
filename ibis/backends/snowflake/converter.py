@@ -14,35 +14,29 @@ if TYPE_CHECKING:
 
 
 class SnowflakePandasData(PandasData):
-    @staticmethod
-    def convert_JSON(s, dtype, pandas_type):
-        converter = SnowflakePandasData.convert_JSON_element(dtype)
+    @classmethod
+    def convert_JSON(cls, s, dtype, pandas_type):
+        converter = cls.convert_JSON_element(dtype)
         return s.map(converter, na_action="ignore").astype("object")
 
     convert_Struct = convert_Map = convert_JSON
 
-    @staticmethod
-    def get_element_converter(dtype):
-        funcgen = getattr(
-            SnowflakePandasData,
-            f"convert_{type(dtype).__name__}_element",
-            lambda _: lambda x: x,
-        )
-        return funcgen(dtype)
+    @classmethod
+    def convert_Timestamp_element(cls, dtype):
+        return datetime.datetime.fromisoformat
 
-    def convert_Timestamp_element(dtype):
-        return lambda values: list(map(datetime.datetime.fromisoformat, values))
+    @classmethod
+    def convert_Date_element(cls, dtype):
+        return datetime.date.fromisoformat
 
-    def convert_Date_element(dtype):
-        return lambda values: list(map(datetime.date.fromisoformat, values))
+    @classmethod
+    def convert_Time_element(cls, dtype):
+        return datetime.time.fromisoformat
 
-    def convert_Time_element(dtype):
-        return lambda values: list(map(datetime.time.fromisoformat, values))
-
-    @staticmethod
-    def convert_Array(s, dtype, pandas_type):
-        raw_json_objects = SnowflakePandasData.convert_JSON(s, dtype, pandas_type)
-        converter = SnowflakePandasData.get_element_converter(dtype.value_type)
+    @classmethod
+    def convert_Array(cls, s, dtype, pandas_type):
+        raw_json_objects = cls.convert_JSON(s, dtype, pandas_type)
+        converter = cls.get_element_converter(dtype.value_type)
         return raw_json_objects.map(converter, na_action="ignore")
 
 
