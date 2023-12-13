@@ -22,6 +22,9 @@ from ibis.backends.pandas.udf import udf
 
 pytestmark = pytest.mark.benchmark
 
+# TODO(kszucs): this should be moved under the backends since the benchmarks are
+# backend specific
+
 
 def make_t():
     return ibis.table(
