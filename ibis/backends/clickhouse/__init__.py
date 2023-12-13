@@ -3,7 +3,6 @@ from __future__ import annotations
 import ast
 import atexit
 import glob
-import warnings
 from contextlib import closing, suppress
 from functools import partial
 from typing import TYPE_CHECKING, Any, Literal
@@ -123,6 +122,7 @@ class Backend(BaseBackend, CanCreateDatabase):
         client_name: str = "ibis",
         secure: bool | None = None,
         compression: str | bool = True,
+        settings: Mapping[str, Any] | None = None,
         **kwargs: Any,
     ):
         """Create a ClickHouse client for use with Ibis.
@@ -148,6 +148,8 @@ class Backend(BaseBackend, CanCreateDatabase):
             The kind of compression to use for requests. See
             https://clickhouse.com/docs/en/integrations/python#compression for
             more information.
+        settings
+            ClickHouse session settings
         kwargs
             Client specific keyword arguments
 
@@ -158,6 +160,10 @@ class Backend(BaseBackend, CanCreateDatabase):
         >>> client
         <ibis.clickhouse.client.ClickhouseClient object at 0x...>
         """
+        if settings is None:
+            settings = {}
+        settings.setdefault("session_timezone", "UTC")
+
         self.con = cc.get_client(
             host=host,
             # 8123 is the default http port 443 is https
@@ -170,11 +176,6 @@ class Backend(BaseBackend, CanCreateDatabase):
             compress=compression,
             **kwargs,
         )
-        try:
-            with closing(self.raw_sql("SET session_timezone = 'UTC'")):
-                pass
-        except Exception as e:  # noqa: BLE001
-            warnings.warn(f"Could not set timezone to UTC: {e}", category=UserWarning)
         self._temp_views = set()
 
     @property
