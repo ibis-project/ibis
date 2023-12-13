@@ -22,7 +22,6 @@ if TYPE_CHECKING:
     import pandas as pd
     import pyarrow as pa
 
-raise RuntimeError("Temporarily make the SQL backends dysfunctional")
 
 __all__ = ["BaseSQLBackend"]
 

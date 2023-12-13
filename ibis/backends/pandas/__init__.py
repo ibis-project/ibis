@@ -22,8 +22,6 @@ if TYPE_CHECKING:
     import pathlib
     from collections.abc import Mapping, MutableMapping
 
-raise RuntimeError("Temporarily make the pandas backend dysfunctional")
-
 
 class BasePandasBackend(BaseBackend):
     """Base class for backends based on pandas."""
