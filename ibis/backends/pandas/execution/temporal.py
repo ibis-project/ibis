@@ -65,9 +65,19 @@ def execute_extract_microsecond_series(op, data, **kwargs):
     return data.dt.microsecond.astype(np.int32)
 
 
-@execute_node.register(ops.ExtractEpochSeconds, (datetime.datetime, pd.Series))
-def execute_epoch_seconds(op, data, **kwargs):
-    return data.astype("datetime64[s]").astype("int64").astype("int32")
+@execute_node.register(ops.ExtractEpochSeconds, pd.Series)
+def execute_epoch_seconds_series(op, data, **kwargs):
+    return (
+        data.astype("datetime64[ns]")
+        .astype("int64")
+        .floordiv(1_000_000_000)
+        .astype("int32")
+    )
+
+
+@execute_node.register(ops.ExtractEpochSeconds, (pd.Timestamp, datetime.datetime))
+def execute_epoch_seconds_literal(op, data, **kwargs):
+    return pd.Timestamp(data).floor("s").value // 1_000_000_000
 
 
 @execute_node.register(

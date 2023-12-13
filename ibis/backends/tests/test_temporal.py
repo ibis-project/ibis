@@ -354,7 +354,11 @@ def test_timestamp_extract_epoch_seconds(backend, alltypes, df):
     result = expr.execute()
 
     expected = backend.default_series_rename(
-        df.timestamp_col.astype("datetime64[s]").astype("int64").astype("int32")
+        df.timestamp_col.astype("datetime64[ns]")
+        .dt.floor("s")
+        .astype("int64")
+        .floordiv(1_000_000_000)
+        .astype("int32")
     )
     backend.assert_series_equal(result, expected)
 
