@@ -134,9 +134,16 @@ class TestConf(BackendTest):
     def connect(*, tmpdir, worker_id, **kw):
         from pyspark.sql import SparkSession
 
+        # Spark internally stores timestamps as UTC values, and timestamp
+        # data that is brought in without a specified time zone is
+        # converted as local time to UTC with microsecond resolution.
+        # https://spark.apache.org/docs/latest/sql-pyspark-pandas-with-arrow.html#timestamp-with-time-zone-semantics
         spark = (
             SparkSession.builder.appName("ibis_testing")
             .master("local[1]")
+            .config("spark.sql.session.timeZone", "UTC")
+            .config("spark.driver.extraJavaOptions", "-Duser.timezone=GMT")
+            .config("spark.executor.extraJavaOptions", "-Duser.timezone=GMT")
             .config("spark.cores.max", 1)
             .config("spark.executor.heartbeatInterval", "3600s")
             .config("spark.executor.instances", 1)
