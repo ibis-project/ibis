@@ -32,7 +32,7 @@ from ibis.backends.pandas.execution.temporal import (
     execute_date_sub_diff_series_date,
     execute_day_of_week_index_series,
     execute_day_of_week_name_series,
-    execute_epoch_seconds,
+    execute_epoch_seconds_series,
     execute_extract_microsecond_series,
     execute_extract_millisecond_series,
     execute_extract_timestamp_field_series,
@@ -61,7 +61,7 @@ DASK_DISPATCH_TYPES: TypeRegistrationDict = {
     ops.ExtractTemporalField: [((dd.Series,), execute_extract_timestamp_field_series)],
     ops.ExtractMicrosecond: [((dd.Series,), execute_extract_microsecond_series)],
     ops.ExtractMillisecond: [((dd.Series,), execute_extract_millisecond_series)],
-    ops.ExtractEpochSeconds: [((dd.Series,), execute_epoch_seconds)],
+    ops.ExtractEpochSeconds: [((dd.Series,), execute_epoch_seconds_series)],
     ops.IntervalFromInteger: [((dd.Series,), execute_interval_from_integer_series)],
     ops.IntervalAdd: [
         (
