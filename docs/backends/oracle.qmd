@@ -99,7 +99,7 @@ render_do_connect("oracle")
 ### `ibis.connect` URL format
 
 In addition to `ibis.oracle.connect`, you can also connect to Oracle by
-passing a properly formatted Oracle connection URL to `ibis.connect`
+passing a properly-formatted Oracle connection URL to `ibis.connect`:
 
 ```python
 con = ibis.connect(f"oracle://{user}:{password}@{host}:{port}/{database}")
