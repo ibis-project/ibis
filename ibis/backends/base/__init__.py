@@ -40,7 +40,7 @@ _IBIS_TO_SQLGLOT_DIALECT = {
     "polars": "postgres",
     "datafusion": "postgres",
     # closest match see https://github.com/ibis-project/ibis/pull/7303#discussion_r1350223901
-    "exa.websocket": "oracle",
+    "exasol": "oracle",
 }
 
 _SQLALCHEMY_TO_SQLGLOT_DIALECT = {
