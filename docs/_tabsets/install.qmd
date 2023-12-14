@@ -5,6 +5,7 @@ You can install Ibis and a supported backend with `pip`, `conda`, `mamba`, or `p
 ```{python}
 #| echo: false
 #| output: asis
+from textwrap import dedent
 
 backends = [
     {"name": "BigQuery", "module": "bigquery"},
@@ -13,6 +14,7 @@ backends = [
     {"name": "DataFusion", "module": "datafusion"},
     {"name": "Druid", "module": "druid"},
     {"name": "DuckDB", "module": "duckdb"},
+    {"name": "Flink", "module": "flink"},
     {"name": "Impala", "module": "impala"},
     {"name": "MSSQL", "module": "mssql"},
     {"name": "MySQL", "module": "mysql"},
@@ -34,30 +36,52 @@ installers = [
 ]
 
 for installer in installers:
-    name = installer["name"]
+    installer_name = installer["name"]
     cmd = installer["cmd"]
     line = installer["line"]
 
-    print(f"## `{name}`")
+    print(f"## `{installer_name}`")
 
     print("::: {.panel-tabset}")
     print()
 
     for backend in backends:
-        name = backend["name"]
+        backend_name = backend["name"]
         mod = backend["module"]
-        extra = backend.get("extra", mod)
 
-        print(f"## {name}")
-        print()
-        print(line.format(extra=extra))
-        print()
-        print(f"```bash\n{cmd.format(extra=extra)}\n```")
-        print()
-        print(f"Connect using [`ibis.{mod}.connect`](./backends/{name.lower()}.qmd#ibis.{mod}.connect).")
+        print(f"## {backend_name}")
         print()
 
-    if name == "pip":
+        if backend_name == "Flink":
+            if installer_name == "pip":
+                print("Install alongside the `apache-flink` package:")
+                print()
+                print(f"```bash\npip install ibis-framework apache-flink\n```")
+
+            else:
+                print(
+                    dedent(
+                        """\
+                        ::: {.callout-important}
+                        ## PyFlink is not available on conda-forge; please
+                        use `pip` to install the PyFlink backend instead.
+                        :::"""
+                    )
+                )
+                continue
+
+        else:
+            extra = backend.get("extra", mod)
+
+            print(line.format(extra=extra))
+            print()
+            print(f"```bash\n{cmd.format(extra=extra)}\n```")
+
+        print()
+        print(f"Connect using [`ibis.{mod}.connect`](./backends/{backend_name.lower()}.qmd#ibis.{mod}.connect).")
+        print()
+
+    if installer_name == "pip":
         print("{{< include /_callouts/pypi_warning.qmd >}}")
 
     print()
