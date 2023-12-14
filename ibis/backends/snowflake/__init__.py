@@ -20,7 +20,7 @@ from typing import TYPE_CHECKING, Any
 from urllib.parse import parse_qs, urlparse
 
 import pyarrow as pa
-import yarrow_hotfix  # noqa: F401
+import pyarrow_hotfix  # noqa: F401
 import sqlglot as sg
 from packaging.version import parse as vparse
 
@@ -768,7 +768,7 @@ $$"""
         with self._safe_raw_sql(create_stmt):
             pass
 
-        return self.table(name, schema=db, database=catalog)
+        return self.table(name, database=database)
 
     def read_csv(
         self, path: str | Path, table_name: str | None = None, **kwargs: Any
