@@ -135,7 +135,6 @@ from ibis.backends.pandas.trace import trace
 if TYPE_CHECKING:
     from collections.abc import Iterable, Mapping
 
-
 integer_types = np.integer, int
 floating_types = (numbers.Real,)
 numeric_types = integer_types + floating_types
