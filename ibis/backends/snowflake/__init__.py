@@ -34,6 +34,7 @@ from ibis.backends.base import CanCreateDatabase, CanCreateSchema
 from ibis.backends.base.sqlglot import SQLGlotBackend
 from ibis.backends.snowflake.compiler import SnowflakeCompiler
 from ibis.backends.snowflake.converter import SnowflakePandasData
+from ibis.backends.snowflake.datatypes import SnowflakeType
 
 with warnings.catch_warnings():
     if vparse(importlib.metadata.version("snowflake-connector-python")) >= vparse(
@@ -278,7 +279,7 @@ $$ {defn["source"]} $$"""
             f"{name} {self.compiler.type_mapper.to_string(arg.dtype)}"
             for name, arg in zip(udf_node.argnames, udf_node.args)
         )
-        return_type = self._compile_type(udf_node.dtype)
+        return_type = SnowflakeType.to_string(udf_node.dtype)
         lines, _ = inspect.getsourcelines(udf_node.__func__)
         source = textwrap.dedent(
             "".join(
