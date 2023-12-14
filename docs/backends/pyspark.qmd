@@ -79,7 +79,7 @@ con = ibis.pyspark.connect(session=session)
 :::
 
 ::: {.callout-note}
-The `pyspark` backend does not create `SparkSession` objects; you must create a `SparkSession` and pass that to `ibis.pyspark.connect`.
+The `pyspark` backend does not create `SparkSession` objects (unless you [connect using a URL](#ibis.connect-url-format)); you must create a `SparkSession` and pass that to `ibis.pyspark.connect`.
 :::
 
 ### Connection Parameters
