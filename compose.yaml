@@ -1,6 +1,6 @@
 services:
   clickhouse:
-    image: clickhouse/clickhouse-server:23.11.1.2711-alpine
+    image: clickhouse/clickhouse-server:23.11.2.11-alpine
     ports:
       - 8123:8123 # http port
       - 9000:9000 # native protocol port
