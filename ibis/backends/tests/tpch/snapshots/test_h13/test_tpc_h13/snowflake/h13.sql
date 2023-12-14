@@ -1,13 +1,14 @@
 SELECT
-  *
+  "t8"."c_count" AS "c_count",
+  "t8"."custdist" AS "custdist"
 FROM (
   SELECT
-    "t6"."c_count" AS "c_count",
+    "t7"."c_count" AS "c_count",
     COUNT(*) AS "custdist"
   FROM (
     SELECT
-      "t5"."c_custkey" AS "c_custkey",
-      COUNT("t5"."o_orderkey") AS "c_count"
+      "t6"."c_custkey" AS "c_custkey",
+      COUNT("t6"."o_orderkey") AS "c_count"
     FROM (
       SELECT
         "t2"."c_custkey" AS "c_custkey",
@@ -18,15 +19,15 @@ FROM (
         "t2"."c_acctbal" AS "c_acctbal",
         "t2"."c_mktsegment" AS "c_mktsegment",
         "t2"."c_comment" AS "c_comment",
-        "t3"."o_orderkey" AS "o_orderkey",
-        "t3"."o_custkey" AS "o_custkey",
-        "t3"."o_orderstatus" AS "o_orderstatus",
-        "t3"."o_totalprice" AS "o_totalprice",
-        "t3"."o_orderdate" AS "o_orderdate",
-        "t3"."o_orderpriority" AS "o_orderpriority",
-        "t3"."o_clerk" AS "o_clerk",
-        "t3"."o_shippriority" AS "o_shippriority",
-        "t3"."o_comment" AS "o_comment"
+        "t4"."o_orderkey" AS "o_orderkey",
+        "t4"."o_custkey" AS "o_custkey",
+        "t4"."o_orderstatus" AS "o_orderstatus",
+        "t4"."o_totalprice" AS "o_totalprice",
+        "t4"."o_orderdate" AS "o_orderdate",
+        "t4"."o_orderpriority" AS "o_orderpriority",
+        "t4"."o_clerk" AS "o_clerk",
+        "t4"."o_shippriority" AS "o_shippriority",
+        "t4"."o_comment" AS "o_comment"
       FROM (
         SELECT
           "t0"."C_CUSTKEY" AS "c_custkey",
@@ -51,18 +52,18 @@ FROM (
           "t1"."O_SHIPPRIORITY" AS "o_shippriority",
           "t1"."O_COMMENT" AS "o_comment"
         FROM "ORDERS" AS "t1"
-      ) AS "t3"
-        ON "t2"."c_custkey" = "t3"."o_custkey"
+      ) AS "t4"
+        ON "t2"."c_custkey" = "t4"."o_custkey"
         AND NOT (
-          "t3"."o_comment" LIKE '%special%requests%'
+          "t4"."o_comment" LIKE '%special%requests%'
         )
-    ) AS "t5"
+    ) AS "t6"
     GROUP BY
       1
-  ) AS "t6"
+  ) AS "t7"
   GROUP BY
     1
-) AS "t7"
+) AS "t8"
 ORDER BY
-  "t7"."custdist" DESC NULLS LAST,
-  "t7"."c_count" DESC NULLS LAST
+  "t8"."custdist" DESC NULLS LAST,
+  "t8"."c_count" DESC NULLS LAST

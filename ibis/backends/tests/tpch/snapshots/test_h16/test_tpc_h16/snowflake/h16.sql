@@ -1,14 +1,30 @@
 SELECT
-  *
+  "t10"."p_brand" AS "p_brand",
+  "t10"."p_type" AS "p_type",
+  "t10"."p_size" AS "p_size",
+  "t10"."supplier_cnt" AS "supplier_cnt"
 FROM (
   SELECT
-    "t10"."p_brand" AS "p_brand",
-    "t10"."p_type" AS "p_type",
-    "t10"."p_size" AS "p_size",
-    COUNT(DISTINCT "t10"."ps_suppkey") AS "supplier_cnt"
+    "t9"."p_brand" AS "p_brand",
+    "t9"."p_type" AS "p_type",
+    "t9"."p_size" AS "p_size",
+    COUNT(DISTINCT "t9"."ps_suppkey") AS "supplier_cnt"
   FROM (
     SELECT
-      *
+      "t8"."ps_partkey" AS "ps_partkey",
+      "t8"."ps_suppkey" AS "ps_suppkey",
+      "t8"."ps_availqty" AS "ps_availqty",
+      "t8"."ps_supplycost" AS "ps_supplycost",
+      "t8"."ps_comment" AS "ps_comment",
+      "t8"."p_partkey" AS "p_partkey",
+      "t8"."p_name" AS "p_name",
+      "t8"."p_mfgr" AS "p_mfgr",
+      "t8"."p_brand" AS "p_brand",
+      "t8"."p_type" AS "p_type",
+      "t8"."p_size" AS "p_size",
+      "t8"."p_container" AS "p_container",
+      "t8"."p_retailprice" AS "p_retailprice",
+      "t8"."p_comment" AS "p_comment"
     FROM (
       SELECT
         "t3"."ps_partkey" AS "ps_partkey",
@@ -16,15 +32,15 @@ FROM (
         "t3"."ps_availqty" AS "ps_availqty",
         "t3"."ps_supplycost" AS "ps_supplycost",
         "t3"."ps_comment" AS "ps_comment",
-        "t4"."p_partkey" AS "p_partkey",
-        "t4"."p_name" AS "p_name",
-        "t4"."p_mfgr" AS "p_mfgr",
-        "t4"."p_brand" AS "p_brand",
-        "t4"."p_type" AS "p_type",
-        "t4"."p_size" AS "p_size",
-        "t4"."p_container" AS "p_container",
-        "t4"."p_retailprice" AS "p_retailprice",
-        "t4"."p_comment" AS "p_comment"
+        "t6"."p_partkey" AS "p_partkey",
+        "t6"."p_name" AS "p_name",
+        "t6"."p_mfgr" AS "p_mfgr",
+        "t6"."p_brand" AS "p_brand",
+        "t6"."p_type" AS "p_type",
+        "t6"."p_size" AS "p_size",
+        "t6"."p_container" AS "p_container",
+        "t6"."p_retailprice" AS "p_retailprice",
+        "t6"."p_comment" AS "p_comment"
       FROM (
         SELECT
           "t0"."PS_PARTKEY" AS "ps_partkey",
@@ -36,23 +52,21 @@ FROM (
       ) AS "t3"
       INNER JOIN (
         SELECT
-          "t1"."P_PARTKEY" AS "p_partkey",
-          "t1"."P_NAME" AS "p_name",
-          "t1"."P_MFGR" AS "p_mfgr",
-          "t1"."P_BRAND" AS "p_brand",
-          "t1"."P_TYPE" AS "p_type",
-          "t1"."P_SIZE" AS "p_size",
-          "t1"."P_CONTAINER" AS "p_container",
-          "t1"."P_RETAILPRICE" AS "p_retailprice",
-          "t1"."P_COMMENT" AS "p_comment"
-        FROM "PART" AS "t1"
-      ) AS "t4"
-        ON "t4"."p_partkey" = "t3"."ps_partkey"
+          "t2"."P_PARTKEY" AS "p_partkey",
+          "t2"."P_NAME" AS "p_name",
+          "t2"."P_MFGR" AS "p_mfgr",
+          "t2"."P_BRAND" AS "p_brand",
+          "t2"."P_TYPE" AS "p_type",
+          "t2"."P_SIZE" AS "p_size",
+          "t2"."P_CONTAINER" AS "p_container",
+          "t2"."P_RETAILPRICE" AS "p_retailprice",
+          "t2"."P_COMMENT" AS "p_comment"
+        FROM "PART" AS "t2"
+      ) AS "t6"
+        ON "t6"."p_partkey" = "t3"."ps_partkey"
     ) AS "t8"
     WHERE
-      (
-        "t8"."p_brand" <> 'Brand#45'
-      )
+      "t8"."p_brand" <> 'Brand#45'
       AND NOT (
         "t8"."p_type" LIKE 'MEDIUM POLISHED%'
       )
@@ -60,34 +74,20 @@ FROM (
       AND NOT (
         "t8"."ps_suppkey" IN ((
           SELECT
-            "t7"."s_suppkey" AS "s_suppkey"
-          FROM (
-            SELECT
-              *
-            FROM (
-              SELECT
-                "t2"."S_SUPPKEY" AS "s_suppkey",
-                "t2"."S_NAME" AS "s_name",
-                "t2"."S_ADDRESS" AS "s_address",
-                "t2"."S_NATIONKEY" AS "s_nationkey",
-                "t2"."S_PHONE" AS "s_phone",
-                "t2"."S_ACCTBAL" AS "s_acctbal",
-                "t2"."S_COMMENT" AS "s_comment"
-              FROM "SUPPLIER" AS "t2"
-            ) AS "t5"
-            WHERE
-              "t5"."s_comment" LIKE '%Customer%Complaints%'
-          ) AS "t7"
+            "t1"."S_SUPPKEY" AS "s_suppkey"
+          FROM "SUPPLIER" AS "t1"
+          WHERE
+            "t1"."S_COMMENT" LIKE '%Customer%Complaints%'
         ))
       )
-  ) AS "t10"
+  ) AS "t9"
   GROUP BY
     1,
     2,
     3
-) AS "t11"
+) AS "t10"
 ORDER BY
-  "t11"."supplier_cnt" DESC NULLS LAST,
-  "t11"."p_brand" ASC,
-  "t11"."p_type" ASC,
-  "t11"."p_size" ASC
+  "t10"."supplier_cnt" DESC NULLS LAST,
+  "t10"."p_brand" ASC,
+  "t10"."p_type" ASC,
+  "t10"."p_size" ASC
