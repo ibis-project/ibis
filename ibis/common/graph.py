@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from abc import abstractmethod
 from collections import deque
-from collections.abc import Iterable, Iterator, KeysView, Sequence
+from collections.abc import Iterable, Iterator, KeysView, Mapping, Sequence
 from typing import TYPE_CHECKING, Any, Callable, Optional, TypeVar
 
 from ibis.common.bases import Hashable
@@ -233,24 +233,33 @@ class Node(Hashable):
         -------
         The root node of the graph with the replaced nodes.
         """
-        pat = pattern(pat)
-        ctx = context or {}
 
-        def fn(node, _, **kwargs):
-            # need to first reconstruct the node from the possible rewritten
-            # children, so we can match on the new node containing the rewritten
-            # child arguments, this way we can propagate the rewritten nodes
-            # upward in the hierarchy
-            # TODO(kszucs): add a __recreate__() method to the Node interface
-            # with a default implementation that uses the __class__ constructor
-            # which is supposed to provide an implementation for quick object
-            # reconstruction (the __recreate__ implementation in grounds.py
-            # should be sped up as well by totally avoiding the validation)
-            recreated = node.__class__(**kwargs)
-            if (result := pat.match(recreated, ctx)) is NoMatch:
-                return recreated
-            else:
-                return result
+        if isinstance(pat, Mapping):
+
+            def fn(node, _, **kwargs):
+                try:
+                    return pat[node]
+                except KeyError:
+                    return node.__class__(**kwargs)
+        else:
+            pat = pattern(pat)
+            ctx = context or {}
+
+            def fn(node, _, **kwargs):
+                # need to first reconstruct the node from the possible rewritten
+                # children, so we can match on the new node containing the rewritten
+                # child arguments, this way we can propagate the rewritten nodes
+                # upward in the hierarchy
+                # TODO(kszucs): add a __recreate__() method to the Node interface
+                # with a default implementation that uses the __class__ constructor
+                # which is supposed to provide an implementation for quick object
+                # reconstruction (the __recreate__ implementation in grounds.py
+                # should be sped up as well by totally avoiding the validation)
+                recreated = node.__class__(**kwargs)
+                if (result := pat.match(recreated, ctx)) is NoMatch:
+                    return recreated
+                else:
+                    return result
 
         results = self.map(fn, filter=filter)
         return results.get(self, self)

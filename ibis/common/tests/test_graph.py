@@ -28,11 +28,11 @@ class MyNode(Node):
 
     @property
     def __args__(self):
-        return (self.children,)
+        return (self.name, self.children)
 
     @property
     def __argnames__(self):
-        return ("children",)
+        return ("name", "children")
 
     def __repr__(self):
         return f"{self.__class__.__name__}({self.name})"
@@ -143,6 +143,20 @@ def test_replace_with_filtering_out_root():
     rule = InstanceOf(MyNode) >> MyNode(name="new", children=[])
     result = A.replace(rule, filter=If(lambda x: x.name != "A"))
     assert result == A
+
+
+def test_replace_with_mapping():
+    new_E = MyNode(name="e", children=[])
+    new_D = MyNode(name="d", children=[])
+    new_B = MyNode(name="B", children=[new_D, new_E])
+    new_A = MyNode(name="A", children=[new_B, C])
+
+    subs = {
+        E: new_E,
+        D: new_D,
+    }
+    result = A.replace(subs)
+    assert result == new_A
 
 
 def test_example():
