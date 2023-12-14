@@ -229,5 +229,7 @@ class Concrete(Immutable, Comparable, Annotable):
 
     def copy(self, **overrides) -> Self:
         kwargs = dict(zip(self.__argnames__, self.__args__))
+        if unknown_args := overrides.keys() - kwargs.keys():
+            raise AttributeError(f"Unexpected arguments: {unknown_args}")
         kwargs.update(overrides)
         return self.__recreate__(kwargs)

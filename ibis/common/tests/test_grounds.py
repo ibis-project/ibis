@@ -616,21 +616,39 @@ def test_variadic_keyword_argument():
     assert Test(1, 2, a=3, b=4, c=5).options == {"a": 3, "b": 4, "c": 5}
 
 
-def test_concrete_copy_with_variadic_argument():
-    class Test(Annotable):
+def test_copy_with_variadic_argument():
+    class Foo(Annotable):
         a = is_int
         b = is_int
         args = varargs(is_int)
 
-    t = Test(1, 2, 3, 4, 5)
+    class Bar(Concrete):
+        a = is_int
+        b = is_int
+        args = varargs(is_int)
+
+    for t in [Foo(1, 2, 3, 4, 5), Bar(1, 2, 3, 4, 5)]:
+        assert t.a == 1
+        assert t.b == 2
+        assert t.args == (3, 4, 5)
+
+        u = t.copy(a=6, args=(8, 9, 10))
+        assert u.a == 6
+        assert u.b == 2
+        assert u.args == (8, 9, 10)
+
+
+def test_concrete_copy_with_unknown_argument_raise():
+    class Bar(Concrete):
+        a = is_int
+        b = is_int
+
+    t = Bar(1, 2)
     assert t.a == 1
     assert t.b == 2
-    assert t.args == (3, 4, 5)
 
-    u = t.copy(a=6, args=(8, 9, 10))
-    assert u.a == 6
-    assert u.b == 2
-    assert u.args == (8, 9, 10)
+    with pytest.raises(AttributeError, match="Unexpected arguments"):
+        t.copy(c=3, d=4)
 
 
 def test_concrete_pickling_variadic_arguments():
