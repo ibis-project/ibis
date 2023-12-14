@@ -296,11 +296,8 @@ class DuckDBCompiler(SQLGlotCompiler):
 
     @visit_node.register(ops.Capitalize)
     def visit_Capitalize(self, op, *, arg):
-        return sge.Concat(
-            expressions=[
-                self.f.upper(self.f.substr(arg, 1, 1)),
-                self.f.lower(self.f.substr(arg, 2)),
-            ]
+        return self.f.concat(
+            self.f.upper(self.f.substr(arg, 1, 1)), self.f.lower(self.f.substr(arg, 2))
         )
 
     def _neg_idx_to_pos(self, array, idx):

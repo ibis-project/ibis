@@ -61,7 +61,7 @@ class FuncGen:
         return sge.Exists(this=query)
 
     def concat(self, *args):
-        return sge.Concat.from_arg_list(list(map(sge.convert, args)))
+        return sge.Concat(expressions=list(map(sge.convert, args)))
 
     def map(self, keys, values):
         return sge.Map(keys=keys, values=values)
@@ -591,7 +591,7 @@ class SQLGlotCompiler(abc.ABC):
 
     @visit_node.register(ops.StringConcat)
     def visit_StringConcat(self, op, *, arg):
-        return sge.Concat.from_arg_list(list(arg))
+        return self.f.concat(*arg)
 
     @visit_node.register(ops.StringSQLLike)
     def visit_StringSQLLike(self, op, *, arg, pattern, escape):
