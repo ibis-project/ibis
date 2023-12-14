@@ -22,6 +22,7 @@ from urllib.parse import parse_qs, urlparse
 import pyarrow as pa
 import pyarrow_hotfix  # noqa: F401
 import sqlglot as sg
+import sqlglot.expressions as sge
 from packaging.version import parse as vparse
 
 import ibis
@@ -244,31 +245,30 @@ $$ {defn["source"]} $$"""
         if create_object_udfs:
             database = con.database
             schema = con.schema
-            create_stmt = sg.exp.Create(
-                kind="DATABASE", this=sg.to_identifier("ibis_udfs"), exists=True
-            ).sql(self.name)
-            use_stmt = sg.exp.Use(
+            dialect = self.name
+            create_stmt = sge.Create(
+                kind="DATABASE", this="ibis_udfs", exists=True
+            ).sql(dialect)
+            use_stmt = sge.Use(
                 kind="SCHEMA",
                 this=sg.table(schema, db=database, quoted=self.compiler.quoted),
-            ).sql(self.name)
+            ).sql(dialect)
 
             stmts = [
                 create_stmt,
                 # snowflake activates a database on creation, so reset it back
                 # to the original database and schema
                 use_stmt,
-                *(
-                    self._make_udf(name, defn)
-                    for name, defn in _SNOWFLAKE_MAP_UDFS.items()
-                ),
+                *itertools.starmap(self._make_udf, _SNOWFLAKE_MAP_UDFS.items()),
             ]
+
             stmt = ";\n".join(stmts)
             with contextlib.closing(con.cursor()) as cur:
                 try:
                     cur.execute(stmt)
                 except Exception as e:  # noqa: BLE001
                     warnings.warn(
-                        f"Unable to create map UDFs, some functionality will not work: {e}"
+                        f"Unable to create Ibis UDFs, some functionality will not work: {e}"
                     )
         self.con = con
         self._temp_views: set[str] = set()
@@ -464,8 +464,8 @@ $$"""
     ) -> Iterable[tuple[str, dt.DataType]]:
         table = sg.table(
             table_name, db=schema, catalog=database, quoted=self.compiler.quoted
-        ).sql(self.name)
-        with self._safe_raw_sql(f"DESCRIBE TABLE {table}") as cur:
+        )
+        with self._safe_raw_sql(sge.Describe(kind="TABLE", this=table)) as cur:
             result = cur.fetchall()
 
         type_mapper = self.compiler.type_mapper
@@ -477,8 +477,10 @@ $$"""
         )
 
     def _metadata(self, query: str) -> Iterable[tuple[str, dt.DataType]]:
-        with self._safe_raw_sql(query) as cur:
-            rows = cur.execute("DESC RESULT last_query_id()").fetchall()
+        with self._safe_raw_sql(
+            sge.Describe(kind="RESULT", this=self.compiler.f.last_query_id())
+        ) as cur:
+            rows = cur.fetchall()
 
         type_mapper = self.compiler.type_mapper
         return (
@@ -540,9 +542,9 @@ $$"""
                 as_of="7.1",
                 removed_in="8.0",
             )
-            database = sg.parse_one(database, into=sg.exp.Table).sql(dialect=self.name)
+            database = sg.parse_one(database, into=sge.Table).sql(dialect=self.name)
         elif database is None and schema is not None:
-            database = sg.parse_one(schema, into=sg.exp.Table).sql(dialect=self.name)
+            database = sg.parse_one(schema, into=sge.Table).sql(dialect=self.name)
         else:
             database = (
                 sg.table(schema, db=database, quoted=True).sql(dialect=self.name)
@@ -586,16 +588,13 @@ $$"""
     def create_database(self, name: str, force: bool = False) -> None:
         current_database = self.current_database
         current_schema = self.current_schema
-        create_stmt = sg.exp.Create(
-            this=sg.to_identifier(name, quoted=self.compiler.quoted),
-            kind="DATABASE",
-            exists=force,
+        quoted = self.compiler.quoted
+        create_stmt = sge.Create(
+            this=sg.to_identifier(name, quoted=quoted), kind="DATABASE", exists=force
         )
-        use_stmt = sg.exp.Use(
+        use_stmt = sge.Use(
             kind="SCHEMA",
-            this=sg.table(
-                current_schema, db=current_database, quoted=self.compiler.quoted
-            ),
+            this=sg.table(current_schema, db=current_database, quoted=quoted),
         ).sql(self.name)
         with self._safe_raw_sql(create_stmt) as cur:
             # Snowflake automatically switches to the new database after creating
@@ -610,7 +609,7 @@ $$"""
             raise com.UnsupportedOperationError(
                 "Dropping the current database is not supported because its behavior is undefined"
             )
-        drop_stmt = sg.exp.Drop(
+        drop_stmt = sge.Drop(
             this=sg.to_identifier(name, quoted=self.compiler.quoted),
             kind="DATABASE",
             exists=force,
@@ -623,16 +622,13 @@ $$"""
     ) -> None:
         current_database = self.current_database
         current_schema = self.current_schema
-        create_stmt = sg.exp.Create(
-            this=sg.table(name, db=database, quoted=self.compiler.quoted),
+        quoted = self.compiler.quoted
+        create_stmt = sge.Create(
+            this=sg.table(name, db=database, quoted=quoted), kind="SCHEMA", exists=force
+        )
+        use_stmt = sge.Use(
             kind="SCHEMA",
-            exists=force,
-        ).sql(self.name)
-        use_stmt = sg.exp.Use(
-            kind="SCHEMA",
-            this=sg.table(
-                current_schema, db=current_database, quoted=self.compiler.quoted
-            ),
+            this=sg.table(current_schema, db=current_database, quoted=quoted),
         ).sql(self.name)
         with self._safe_raw_sql(create_stmt) as cur:
             # Snowflake automatically switches to the new schema after creating
@@ -671,7 +667,7 @@ $$"""
                 "Dropping the current schema is not supported because its behavior is undefined"
             )
 
-        drop_stmt = sg.exp.Drop(
+        drop_stmt = sge.Drop(
             this=sg.table(name, db=database, quoted=self.compiler.quoted),
             kind="SCHEMA",
             exists=force,
@@ -716,35 +712,40 @@ $$"""
         if obj is None and schema is None:
             raise ValueError("Either `obj` or `schema` must be specified")
 
+        quoted = self.compiler.quoted
+
+        if database is None:
+            target = sg.table(name, quoted=quoted)
+            catalog = db = database
+        else:
+            db = sg.parse_one(database, into=sge.Table, read=self.name)
+            catalog = db.db
+            db = db.name
+            target = sg.table(name, db=db, catalog=catalog, quoted=quoted)
+
         column_defs = [
-            sg.exp.ColumnDef(
-                this=sg.to_identifier(name, quoted=self.compiler.quoted),
+            sge.ColumnDef(
+                this=sg.to_identifier(name, quoted=quoted),
                 kind=self.compiler.type_mapper.from_ibis(typ),
                 constraints=(
                     None
                     if typ.nullable
-                    else [
-                        sg.exp.ColumnConstraint(kind=sg.exp.NotNullColumnConstraint())
-                    ]
+                    else [sge.ColumnConstraint(kind=sge.NotNullColumnConstraint())]
                 ),
             )
             for name, typ in (schema or {}).items()
         ]
 
-        target = sg.table(name, db=database, quoted=self.compiler.quoted)
-
         if column_defs:
-            target = sg.exp.Schema(this=target, expressions=column_defs)
+            target = sge.Schema(this=target, expressions=column_defs)
 
         properties = []
 
         if temp:
-            properties.append(sg.exp.TemporaryProperty())
+            properties.append(sge.TemporaryProperty())
 
         if comment is not None:
-            properties.append(
-                sg.exp.SchemaCommentProperty(this=sg.exp.convert(comment))
-            )
+            properties.append(sge.SchemaCommentProperty(this=sge.convert(comment)))
 
         if obj is not None:
             if not isinstance(obj, ir.Expr):
@@ -758,18 +759,18 @@ $$"""
         else:
             query = None
 
-        create_stmt = sg.exp.Create(
+        create_stmt = sge.Create(
             kind="TABLE",
             this=target,
             replace=overwrite,
-            properties=sg.exp.Properties(expressions=properties),
+            properties=sge.Properties(expressions=properties),
             expression=query,
         )
 
         with self._safe_raw_sql(create_stmt):
             pass
 
-        return self.table(name, database=database)
+        return self.table(name, schema=db, database=catalog)
 
     def read_csv(
         self, path: str | Path, table_name: str | None = None, **kwargs: Any
@@ -797,7 +798,8 @@ $$"""
         # https://docs.snowflake.com/en/sql-reference/sql/put#optional-parameters
         threads = min((os.cpu_count() or 2) // 2, 99)
         table = table_name or ibis.util.gen_name("read_csv_snowflake")
-        qtable = sg.to_identifier(table, quoted=self.compiler.quoted)
+        quoted = self.compiler.quoted
+        qtable = sg.to_identifier(table, quoted=quoted)
 
         parse_header = header = kwargs.pop("parse_header", True)
         skip_header = kwargs.pop("skip_header", True)
@@ -845,9 +847,9 @@ $$"""
             ).fetchone()
             columns = ", ".join(
                 "{} {}{}".format(
-                    sg.to_identifier(
-                        field["COLUMN_NAME"], quoted=self.compiler.quoted
-                    ).sql(self.name),
+                    sg.to_identifier(field["COLUMN_NAME"], quoted=quoted).sql(
+                        self.name
+                    ),
                     field["TYPE"],
                     " NOT NULL" if not field["NULLABLE"] else "",
                 )
@@ -971,7 +973,8 @@ $$"""
 
         stage = util.gen_name("read_parquet_stage")
         table = table_name or util.gen_name("read_parquet_snowflake")
-        qtable = sg.to_identifier(table, quoted=self.compiler.quoted)
+        quoted = self.compiler.quoted
+        qtable = sg.to_identifier(table, quoted=quoted)
         threads = min((os.cpu_count() or 2) // 2, 99)
 
         options = " " * bool(kwargs) + " ".join(
@@ -993,7 +996,7 @@ $$"""
             for name, typ in schema.items()
         ]
         snowflake_schema = ", ".join(
-            f"{sg.to_identifier(col, quoted=self.compiler.quoted)} {typ}{' NOT NULL' * (not nullable)}"
+            f"{sg.to_identifier(col, quoted=quoted)} {typ}{' NOT NULL' * (not nullable)}"
             for col, typ, nullable, _ in names_types
         )
         cols = ", ".join(

@@ -52,7 +52,7 @@ def test_cross_db_create_table(con, temp_db, temp_schema):
     table_name = gen_name("tmp_table")
     data = pd.DataFrame({"key": list("abc"), "value": [[1], [2], [3]]})
     table = con.create_table(table_name, data, database=f"{temp_db}.{temp_schema}")
-    queried_table = con.table(table_name, schema=f"{temp_db}.{temp_schema}")
+    queried_table = con.table(table_name, database=temp_db, schema=temp_schema)
 
     tm.assert_frame_equal(table.execute(), data)
     tm.assert_frame_equal(queried_table.execute(), data)
