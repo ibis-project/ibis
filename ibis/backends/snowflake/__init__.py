@@ -477,10 +477,12 @@ $$"""
         )
 
     def _metadata(self, query: str) -> Iterable[tuple[str, dt.DataType]]:
-        with self._safe_raw_sql(
-            sge.Describe(kind="RESULT", this=self.compiler.f.last_query_id())
-        ) as cur:
-            rows = cur.fetchall()
+        dialect = self.name
+        sql = sge.Describe(kind="RESULT", this=self.compiler.f.last_query_id()).sql(
+            dialect
+        )
+        with self._safe_raw_sql(sg.parse_one(query, read=dialect).limit(0)) as cur:
+            rows = cur.execute(sql).fetchall()
 
         type_mapper = self.compiler.type_mapper
         return (
