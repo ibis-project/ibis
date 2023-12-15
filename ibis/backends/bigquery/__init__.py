@@ -9,7 +9,7 @@ import os
 import re
 import warnings
 from functools import partial
-from typing import TYPE_CHECKING, Any, Callable
+from typing import TYPE_CHECKING, Any, Callable, Optional
 from urllib.parse import parse_qs, urlparse
 
 import google.auth.credentials
@@ -784,6 +784,12 @@ class Backend(BaseSQLBackend, CanCreateSchema):
             chunk_size=chunk_size,
         )
         return pa.RecordBatchReader.from_batches(schema.to_pyarrow(), batch_iter)
+
+    def _gen_udf_name(self, name: str, schema: Optional[str]) -> str:
+        func = ".".join(filter(None, (schema, name)))
+        if "." in func:
+            return ".".join(f"`{part}`" for part in func.split("."))
+        return func
 
     def get_schema(self, name, schema: str | None = None, database: str | None = None):
         table_ref = bq.TableReference(
