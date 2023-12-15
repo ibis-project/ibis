@@ -4,7 +4,7 @@ import abc
 import contextlib
 import os
 from functools import lru_cache
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Optional
 
 import toolz
 
@@ -255,10 +255,13 @@ class BaseSQLBackend(BaseBackend):
         if self.supports_python_udfs:
             raise NotImplementedError(self.name)
 
+    def _gen_udf_name(self, name: str, schema: Optional[str]) -> str:
+        return ".".join(filter(None, (schema, name)))
+
     def _gen_udf_rule(self, op: ops.ScalarUDF):
         @self.add_operation(type(op))
         def _(t, op):
-            func = ".".join(filter(None, (op.__udf_namespace__, op.__func_name__)))
+            func = self._gen_udf_name(op.__func_name__, schema=op.__udf_namespace__)
             return f"{func}({', '.join(map(t.translate, op.args))})"
 
     def _gen_udaf_rule(self, op: ops.AggUDF):
@@ -266,7 +269,7 @@ class BaseSQLBackend(BaseBackend):
 
         @self.add_operation(type(op))
         def _(t, op):
-            func = ".".join(filter(None, (op.__udf_namespace__, op.__func_name__)))
+            func = self._gen_udf_name(op.__func_name__, schema=op.__udf_namespace__)
             args = ", ".join(
                 t.translate(
                     ops.IfElse(where, arg, NA)
