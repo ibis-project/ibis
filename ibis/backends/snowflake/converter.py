@@ -15,13 +15,6 @@ if TYPE_CHECKING:
 
 class SnowflakePandasData(PandasData):
     @classmethod
-    def convert_JSON(cls, s, dtype, pandas_type):
-        converter = cls.convert_JSON_element(dtype)
-        return s.map(converter, na_action="ignore").astype("object")
-
-    convert_Struct = convert_Map = convert_JSON
-
-    @classmethod
     def convert_Timestamp_element(cls, dtype):
         return datetime.datetime.fromisoformat
 
@@ -34,10 +27,24 @@ class SnowflakePandasData(PandasData):
         return datetime.time.fromisoformat
 
     @classmethod
+    def convert_JSON(cls, s, dtype, pandas_type):
+        converter = cls.convert_JSON_element(dtype)
+        return s.map(converter, na_action="ignore").astype("object")
+
+    @classmethod
     def convert_Array(cls, s, dtype, pandas_type):
         raw_json_objects = cls.convert_JSON(s, dtype, pandas_type)
-        converter = cls.get_element_converter(dtype.value_type)
-        return raw_json_objects.map(converter, na_action="ignore")
+        return super().convert_Array(raw_json_objects, dtype, pandas_type)
+
+    @classmethod
+    def convert_Map(cls, s, dtype, pandas_type):
+        raw_json_objects = cls.convert_JSON(s, dtype, pandas_type)
+        return super().convert_Map(raw_json_objects, dtype, pandas_type)
+
+    @classmethod
+    def convert_Struct(cls, s, dtype, pandas_type):
+        raw_json_objects = cls.convert_JSON(s, dtype, pandas_type)
+        return super().convert_Struct(raw_json_objects, dtype, pandas_type)
 
 
 class SnowflakePyArrowData(PyArrowData):
