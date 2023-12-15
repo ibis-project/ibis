@@ -224,7 +224,7 @@ services:
       test:
         - CMD-SHELL
         - trino --output-format null --execute 'show schemas in hive; show schemas in memory'
-    image: trinodb/trino:434
+    image: trinodb/trino:435
     ports:
       - 8080:8080
     networks:
