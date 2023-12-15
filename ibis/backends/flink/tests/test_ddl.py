@@ -28,7 +28,7 @@ _awards_players_schema = sch.Schema(
     }
 )
 
-_functiona_alltypes_schema = sch.Schema(
+_functional_alltypes_schema = sch.Schema(
     {
         "id": dt.int32,
         "bool_col": dt.bool,
@@ -60,8 +60,8 @@ def awards_players_schema():
 
 
 @pytest.fixture
-def functiona_alltypes_schema():
-    return _functiona_alltypes_schema
+def functional_alltypes_schema():
+    return _functional_alltypes_schema
 
 
 @pytest.fixture
@@ -263,18 +263,18 @@ def test_force_recreate_in_mem_table(
 
 
 def test_create_source_table_with_watermark(
-    con, functiona_alltypes_schema, temp_table, csv_source_configs
+    con, functional_alltypes_schema, temp_table, csv_source_configs
 ):
     new_table = con.create_table(
         temp_table,
-        schema=functiona_alltypes_schema,
+        schema=functional_alltypes_schema,
         tbl_properties=csv_source_configs("functional_alltypes"),
         watermark=ibis.watermark(
             time_col="timestamp_col", allowed_delay=ibis.interval(seconds=15)
         ),
     )
     assert temp_table in con.list_tables()
-    assert new_table.schema() == functiona_alltypes_schema
+    assert new_table.schema() == functional_alltypes_schema
 
 
 @pytest.mark.parametrize("temp", [True, False])
