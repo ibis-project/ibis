@@ -108,6 +108,20 @@ def test_read_geo_to_geopandas(con, data_dir):
     assert isinstance(gdf, gpd.GeoDataFrame)
 
 
+def test_read_geo_from_url(con, monkeypatch):
+    loaded_exts = []
+    monkeypatch.setattr(con, "_load_extensions", lambda x, **kw: loaded_exts.extend(x))
+
+    with pytest.raises((sa.exc.OperationalError, sa.exc.ProgrammingError)):
+        # The read will fail, either because the URL is bogus (which it is) or
+        # because the current connection doesn't have the spatial extension
+        # installed and so the call to `st_read` will raise a catalog error.
+        con.read_geo("https://...")
+
+    assert "spatial" in loaded_exts
+    assert "httpfs" in loaded_exts
+
+
 @pytest.mark.xfail_version(
     duckdb=["duckdb<0.7.0"], reason="read_json_auto doesn't exist", raises=exc.IbisError
 )

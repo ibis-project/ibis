@@ -528,8 +528,13 @@ WHERE catalog_name = :database"""
         # load geospatial extension
         self.load_extension("spatial")
 
+        source = util.normalize_filename(source)
+
+        if source.startswith(("http://", "https://", "s3://")):
+            self._load_extensions(["httpfs"])
+
         source_expr = sa.select(sa.literal_column("*")).select_from(
-            sa.func.st_read(util.normalize_filename(source), _format_kwargs(kwargs))
+            sa.func.st_read(source, _format_kwargs(kwargs))
         )
 
         view = self._compile_temp_view(table_name, source_expr)
