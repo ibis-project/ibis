@@ -22,9 +22,11 @@ from ibis.backends.flink.ddl import (
     InsertSelect,
     RenameTable,
 )
+from ibis.util import gen_name, normalize_filename
 
 if TYPE_CHECKING:
     from collections.abc import Mapping
+    from pathlib import Path
 
     import pandas as pd
     import pyarrow as pa
@@ -119,9 +121,10 @@ class Backend(BaseBackend, CanCreateDatabase):
     def list_tables(
         self,
         like: str | None = None,
-        temp: bool = False,
+        *,
         database: str | None = None,
         catalog: str | None = None,
+        temp: bool = False,
     ) -> list[str]:
         """Return the list of table/view names.
 
@@ -198,7 +201,7 @@ class Backend(BaseBackend, CanCreateDatabase):
         database: str | None = None,
         catalog: str | None = None,
     ) -> str:
-        if is_fully_qualified(name):
+        if name and is_fully_qualified(name):
             return name
 
         return sg.table(
@@ -634,6 +637,111 @@ class Backend(BaseBackend, CanCreateDatabase):
         )
         sql = statement.compile()
         self._exec_sql(sql)
+
+    def _get_dataframe_from_path(self, path: str | Path) -> pd.DataFrame:
+        import glob
+
+        import pandas as pd
+
+        dataframe_list = []
+        path_str = str(path)
+        path_normalized = normalize_filename(path)
+        for file_path in glob.glob(path_normalized):
+            if path_str.startswith(("parquet://", "parq://")) or path_str.endswith(
+                ("parq", "parquet")
+            ):
+                dataframe = pd.read_parquet(file_path)
+            elif path_str.startswith("csv://") or path_str.endswith(("csv", "csv.gz")):
+                dataframe = pd.read_csv(file_path)
+            elif path_str.endswith("json"):
+                dataframe = pd.read_json(file_path, lines=True)
+            else:
+                raise ValueError(f"Unsupported file_path: {file_path}")
+
+            dataframe_list.append(dataframe)
+
+        return pd.concat(dataframe_list, ignore_index=True, sort=False)
+
+    def _read_file(
+        self,
+        file_type: str,
+        path: str | Path,
+        table_name: str | None = None,
+    ) -> ir.Table:
+        """Register a file as a table in the current database.
+
+        Parameters
+        ----------
+        file_type
+            File type, e.g., parquet, csv, json.
+        path
+            The data source.
+        table_name
+            An optional name to use for the created table. This defaults to
+            a sequentially generated name.
+
+        Returns
+        -------
+        ir.Table
+            The just-registered table
+        """
+        obj = self._get_dataframe_from_path(path)
+        table_name = table_name or gen_name(f"read_{file_type}")
+        return self.create_table(table_name, obj, temp=True, overwrite=True)
+
+    def read_parquet(self, path: str | Path, table_name: str | None = None) -> ir.Table:
+        """Register a parquet file as a table in the current database.
+
+        Parameters
+        ----------
+        path
+            The data source.
+        table_name
+            An optional name to use for the created table. This defaults to
+            a sequentially generated name.
+
+        Returns
+        -------
+        ir.Table
+            The just-registered table
+        """
+        return self._read_file(file_type="parquet", path=path, table_name=table_name)
+
+    def read_csv(self, path: str | Path, table_name: str | None = None) -> ir.Table:
+        """Register a csv file as a table in the current database.
+
+        Parameters
+        ----------
+        path
+            The data source.
+        table_name
+            An optional name to use for the created table. This defaults to
+            a sequentially generated name.
+
+        Returns
+        -------
+        ir.Table
+            The just-registered table
+        """
+        return self._read_file(file_type="csv", path=path, table_name=table_name)
+
+    def read_json(self, path: str | Path, table_name: str | None = None) -> ir.Table:
+        """Register a json file as a table in the current database.
+
+        Parameters
+        ----------
+        path
+            The data source.
+        table_name
+            An optional name to use for the created table. This defaults to
+            a sequentially generated name.
+
+        Returns
+        -------
+        ir.Table
+            The just-registered table
+        """
+        return self._read_file(file_type="json", path=path, table_name=table_name)
 
     @classmethod
     @lru_cache
