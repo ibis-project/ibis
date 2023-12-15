@@ -8,7 +8,7 @@ import pyarrow_hotfix  # noqa: F401
 
 import ibis.expr.datatypes as dt
 from ibis.expr.schema import Schema
-from ibis.formats import DataMapper, SchemaMapper, TypeMapper
+from ibis.formats import DataMapper, SchemaMapper, TableProxy, TypeMapper
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
@@ -291,6 +291,14 @@ class PyArrowData(DataMapper):
             return table.cast(desired_schema)
         else:
             return table
+
+
+class PyArrowTableProxy(TableProxy[pa.Table]):
+    def to_frame(self):
+        return self.obj.to_pandas()
+
+    def to_pyarrow(self, schema: Schema) -> pa.Table:
+        return self.obj
 
 
 PYARROW_JSON_TYPE = JSONType()
