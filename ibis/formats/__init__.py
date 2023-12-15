@@ -1,8 +1,14 @@
 from __future__ import annotations
 
+from abc import abstractmethod
 from typing import TYPE_CHECKING, Generic, TypeVar
 
+from ibis.util import PseudoHashable, indent
+
 if TYPE_CHECKING:
+    import pandas as pd
+    import pyarrow as pa
+
     from ibis.expr.datatypes import DataType
     from ibis.expr.schema import Schema
 
@@ -214,3 +220,30 @@ class DataMapper(Generic[S, C, T]):
         Ibis schema corresponding to the given format-specific table.
         """
         raise NotImplementedError
+
+
+class TableProxy(PseudoHashable[T]):
+    def __repr__(self) -> str:
+        data_repr = indent(repr(self.obj), spaces=2)
+        return f"{self.__class__.__name__}:\n{data_repr}"
+
+    def __len__(self) -> int:
+        return len(self.obj)
+
+    @abstractmethod
+    def to_frame(self) -> pd.DataFrame:  # pragma: no cover
+        """Convert this input to a pandas DataFrame."""
+
+    @abstractmethod
+    def to_pyarrow(self, schema: Schema) -> pa.Table:  # pragma: no cover
+        """Convert this input to a PyArrow Table."""
+
+    def to_pyarrow_bytes(self, schema: Schema) -> bytes:
+        import pyarrow as pa
+        import pyarrow_hotfix  # noqa: F401
+
+        data = self.to_pyarrow(schema=schema)
+        out = pa.BufferOutputStream()
+        with pa.RecordBatchFileWriter(out, data.schema) as writer:
+            writer.write(data)
+        return out.getvalue()

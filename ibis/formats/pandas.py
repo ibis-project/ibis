@@ -6,12 +6,13 @@ import warnings
 import numpy as np
 import pandas as pd
 import pandas.api.types as pdt
+import pyarrow as pa
 
 import ibis.expr.datatypes as dt
 import ibis.expr.schema as sch
-from ibis.formats import DataMapper, SchemaMapper
+from ibis.formats import DataMapper, SchemaMapper, TableProxy
 from ibis.formats.numpy import NumpyType
-from ibis.formats.pyarrow import PyArrowData, PyArrowType
+from ibis.formats.pyarrow import PyArrowData, PyArrowSchema, PyArrowType
 
 _has_arrow_dtype = hasattr(pd, "ArrowDtype")
 
@@ -284,3 +285,12 @@ class DaskData(PandasData):
     @classmethod
     def infer_column(cls, s):
         return PyArrowData.infer_column(s.compute())
+
+
+class PandasDataFrameProxy(TableProxy[pd.DataFrame]):
+    def to_frame(self) -> pd.DataFrame:
+        return self.obj
+
+    def to_pyarrow(self, schema: sch.Schema) -> pa.Table:
+        pyarrow_schema = PyArrowSchema.from_ibis(schema)
+        return pa.Table.from_pandas(self.obj, schema=pyarrow_schema)

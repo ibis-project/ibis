@@ -20,11 +20,14 @@ from typing import (
     TYPE_CHECKING,
     Any,
     Callable,
+    Generic,
     TypeVar,
 )
 from uuid import uuid4
 
 import toolz
+
+from ibis.common.typing import Coercible
 
 if TYPE_CHECKING:
     from collections.abc import Iterator, Sequence
@@ -652,13 +655,13 @@ class Namespace:
         return self._factory(obj)
 
 
-# TODO(kszucs): use this for the TableProxy objects
-class PseudoHashable:
+class PseudoHashable(Coercible, Generic[V]):
     """A wrapper that provides a best effort precomputed hash."""
 
     __slots__ = ("obj", "hash")
+    obj: V
 
-    def __init__(self, obj):
+    def __init__(self, obj: V):
         if isinstance(obj, collections.abc.Hashable):
             raise TypeError(f"Cannot wrap a hashable object: {obj!r}")
         elif isinstance(obj, collections.abc.Sequence):
@@ -672,6 +675,12 @@ class PseudoHashable:
 
         self.obj = obj
         self.hash = hash((type(obj), hashable_obj))
+
+    @classmethod
+    def __coerce__(cls, value: V) -> PseudoHashable[V]:
+        if isinstance(value, cls):
+            return value
+        return cls(value)
 
     def __hash__(self):
         return self.hash

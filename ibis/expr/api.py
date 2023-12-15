@@ -445,7 +445,7 @@ def _memtable_from_pyarrow_table(
     schema: SupportsSchema | None = None,
     columns: Iterable[str] | None = None,
 ):
-    from ibis.expr.operations.relations import PyArrowTableProxy
+    from ibis.formats.pyarrow import PyArrowTableProxy
 
     if columns is not None:
         assert schema is None, "if `columns` is not `None` then `schema` must be `None`"
@@ -467,7 +467,7 @@ def _memtable_from_dataframe(
 ) -> Table:
     import pandas as pd
 
-    from ibis.expr.operations.relations import PandasDataFrameProxy
+    from ibis.formats.pandas import PandasDataFrameProxy
 
     if not isinstance(data, pd.DataFrame):
         df = pd.DataFrame(data, columns=columns)

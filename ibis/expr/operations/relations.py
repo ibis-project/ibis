@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import abc
 import itertools
 from abc import abstractmethod
 from typing import TYPE_CHECKING, Annotated, Any, Literal, Optional
@@ -15,17 +14,15 @@ from ibis import util
 from ibis.common.annotations import annotated, attribute
 from ibis.common.collections import FrozenDict  # noqa: TCH001
 from ibis.common.deferred import Deferred
-from ibis.common.grounds import Concrete, Immutable
+from ibis.common.grounds import Concrete
 from ibis.common.patterns import Between, Coercible, Eq
 from ibis.common.typing import VarTuple  # noqa: TCH001
 from ibis.expr.operations.core import Column, Named, Node, Scalar, Value
 from ibis.expr.operations.sortkeys import SortKey  # noqa: TCH001
 from ibis.expr.schema import Schema
+from ibis.formats import TableProxy  # noqa: TCH001
 
 if TYPE_CHECKING:
-    import pandas as pd
-    import pyarrow as pa
-
     import ibis.expr.types as ir
 
 
@@ -110,73 +107,6 @@ class SQLQueryResult(TableNode):
     query: str
     schema: Schema
     source: Any
-
-
-# TODO(kszucs): Add a pseudohashable wrapper and use that from InMemoryTable
-# subclasses PandasTable, PyArrowTable
-
-
-class TableProxy(Immutable):
-    __slots__ = ("_data", "_hash")
-    _data: Any
-    _hash: int
-
-    def __init__(self, data) -> None:
-        object.__setattr__(self, "_data", data)
-        object.__setattr__(self, "_hash", hash((type(data), id(data))))
-
-    def __hash__(self) -> int:
-        return self._hash
-
-    def __repr__(self) -> str:
-        data_repr = util.indent(repr(self._data), spaces=2)
-        return f"{self.__class__.__name__}:\n{data_repr}"
-
-    @abc.abstractmethod
-    def to_frame(self) -> pd.DataFrame:  # pragma: no cover
-        """Convert this input to a pandas DataFrame."""
-
-    @abc.abstractmethod
-    def to_pyarrow(self, schema: Schema) -> pa.Table:  # pragma: no cover
-        """Convert this input to a PyArrow Table."""
-
-    def to_pyarrow_bytes(self, schema: Schema) -> bytes:
-        import pyarrow as pa
-        import pyarrow_hotfix  # noqa: F401
-
-        data = self.to_pyarrow(schema=schema)
-        out = pa.BufferOutputStream()
-        with pa.RecordBatchFileWriter(out, data.schema) as writer:
-            writer.write(data)
-        return out.getvalue()
-
-    def __len__(self) -> int:
-        return len(self._data)
-
-
-class PyArrowTableProxy(TableProxy):
-    __slots__ = ()
-
-    def to_frame(self):
-        return self._data.to_pandas()
-
-    def to_pyarrow(self, schema: Schema) -> pa.Table:
-        return self._data
-
-
-class PandasDataFrameProxy(TableProxy):
-    __slots__ = ()
-
-    def to_frame(self) -> pd.DataFrame:
-        return self._data
-
-    def to_pyarrow(self, schema: Schema) -> pa.Table:
-        import pyarrow as pa
-        import pyarrow_hotfix  # noqa: F401
-
-        from ibis.formats.pyarrow import PyArrowSchema
-
-        return pa.Table.from_pandas(self._data, schema=PyArrowSchema.from_ibis(schema))
 
 
 @public
