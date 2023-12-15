@@ -5,7 +5,12 @@ hide:
 
 # Operation support matrix
 
-We provide Ibis's operation support matrix as a [Streamlit](https://streamlit.io/) app that shows supported operations for each backend. Ibis defines a common API for analytics and data transformation code that is transpiled to native code for each backend. This code is often, but not always, SQL -- see the [backends concept page](/concepts/backend.qmd) for details. Due to differences in SQL dialects and support for different operations in different backends, support for the full breadth of the Ibis API varies.
+We provide Ibis's operation support matrix as
+a [Streamlit](https://streamlit.io/) app that shows supported operations for
+each backend. Ibis defines a common API for analytics and data transformation
+code that is transpiled to native code for each backend. Due to differences in
+SQL dialects and upstream support for different operations in different
+backends, support for the full breadth of the Ibis API varies.
 
 You can use this page to see which operations are supported on each backend.
 
