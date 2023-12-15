@@ -93,7 +93,7 @@ CREATE TABLE hive.default.awards_players (
     "tie" VARCHAR,
     "notes" VARCHAR
 ) WITH (
-    external_location = 's3a://warehouse/awards_players',
+    external_location = 's3a://warehouse/awards-players',
     format = 'PARQUET'
 );
 
@@ -116,7 +116,7 @@ CREATE TABLE hive.default.functional_alltypes (
     "year" INTEGER,
     "month" INTEGER
 ) WITH (
-    external_location = 's3a://warehouse/functional_alltypes',
+    external_location = 's3a://warehouse/functional-alltypes',
     format = 'PARQUET'
 );
 CREATE OR REPLACE VIEW memory.default.functional_alltypes AS

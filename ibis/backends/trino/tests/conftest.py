@@ -11,7 +11,7 @@ import ibis
 import ibis.expr.datatypes as dt
 import ibis.selectors as s
 from ibis.backends.conftest import TEST_TABLES
-from ibis.backends.tests.base import BackendTest
+from ibis.backends.tests.base import ServiceBackendTest
 
 if TYPE_CHECKING:
     from collections.abc import Iterable
@@ -32,10 +32,11 @@ TRINO_PORT = int(
 )
 
 
-class TestConf(BackendTest):
+class TestConf(ServiceBackendTest):
     # trino rounds half to even for double precision and half away from zero
     # for numeric and decimal
 
+    service_name = "minio"
     returned_timestamp_unit = "s"
     supports_structs = True
     supports_map = True
@@ -46,14 +47,27 @@ class TestConf(BackendTest):
     _tpch_query_schema = "hive.ibis_sf1"
 
     def preload(self):
+        # create buckets
+        subprocess.run(
+            [
+                "docker",
+                "compose",
+                "exec",
+                "minio",
+                "mc",
+                "mb",
+                "--ignore-existing",
+                "trino/warehouse",
+            ],
+            check=True,
+        )
+
+        # copy files to the minio host
+        super().preload()
+
         for path in self.test_files:
-            directory = path.with_suffix("").name
-            raw_data_path = f"/opt/data/raw/{path.name}"
-            # copy from local to minio container
-            subprocess.run(
-                ["docker", "compose", "cp", str(path), f"minio:{raw_data_path}"],
-                check=True,
-            )
+            # minio doesn't allow underscores in bucket names
+            dirname = path.with_suffix("").name.replace("_", "-")
             # copy from minio container to trino minio host
             subprocess.run(
                 [
@@ -63,8 +77,8 @@ class TestConf(BackendTest):
                     "minio",
                     "mc",
                     "cp",
-                    raw_data_path,
-                    f"trino/warehouse/{directory}/{path.name}",
+                    f"{self.data_volume}/{path.name}",
+                    f"trino/warehouse/{dirname}/{path.name}",
                 ],
                 check=True,
             )

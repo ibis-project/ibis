@@ -366,7 +366,7 @@ class ServiceBackendTest(BackendTest):
         with concurrent.futures.ThreadPoolExecutor() as e:
             for fut in concurrent.futures.as_completed(
                 e.submit(
-                    subprocess.check_call,
+                    subprocess.run,
                     [
                         "docker",
                         "compose",
@@ -374,6 +374,7 @@ class ServiceBackendTest(BackendTest):
                         str(path),
                         f"{service}:{data_volume}/{path.name}",
                     ],
+                    check=True,
                 )
                 for path in self.test_files
             ):
