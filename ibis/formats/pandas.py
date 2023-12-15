@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import contextlib
-import json
 import warnings
 
 import numpy as np
@@ -240,6 +239,9 @@ class PandasData(DataMapper):
         converters = tuple(map(cls.get_element_converter, dtype.types))
 
         def convert(values, names=dtype.names, converters=converters):
+            if values is None:
+                return values
+
             items = values.items() if isinstance(values, dict) else zip(names, values)
             return {
                 k: converter(v) if v is not None else v
@@ -250,19 +252,24 @@ class PandasData(DataMapper):
 
     @classmethod
     def convert_JSON_element(cls, _):
-        def try_json(x):
-            if x is None:
-                return x
-            try:
-                return json.loads(x)
-            except (TypeError, json.JSONDecodeError):
-                return x
+        import json
 
-        return try_json
+        def convert(value):
+            if value is None:
+                return value
+            try:
+                return json.loads(value)
+            except (TypeError, json.JSONDecodeError):
+                return value
+
+        return convert
 
     @classmethod
     def convert_Timestamp_element(cls, dtype):
         def converter(value, dtype=dtype):
+            if value is None:
+                return value
+
             with contextlib.suppress(AttributeError):
                 value = value.item()
 
@@ -276,23 +283,45 @@ class PandasData(DataMapper):
     @classmethod
     def convert_Array_element(cls, dtype):
         convert_value = cls.get_element_converter(dtype.value_type)
-        return lambda values: [
-            convert_value(value) if value is not None else value for value in values
-        ]
+
+        def convert(values):
+            if values is None:
+                return values
+
+            return [
+                convert_value(value) if value is not None else value for value in values
+            ]
+
+        return convert
 
     @classmethod
     def convert_Map_element(cls, dtype):
+        convert_key = cls.get_element_converter(dtype.key_type)
         convert_value = cls.get_element_converter(dtype.value_type)
-        return lambda row: {
-            key: convert_value(value) if value is not None else value
-            for key, value in dict(row).items()
-        }
+
+        def convert(raw_row):
+            if raw_row is None:
+                return raw_row
+
+            row = dict(raw_row)
+            return dict(
+                zip(map(convert_key, row.keys()), map(convert_value, row.values()))
+            )
+
+        return convert
 
     @classmethod
     def convert_UUID_element(cls, _):
         from uuid import UUID
 
-        return lambda v: v if isinstance(v, UUID) else UUID(v)
+        def convert(value):
+            if value is None:
+                return value
+            elif isinstance(value, UUID):
+                return value
+            return UUID(value)
+
+        return convert
 
 
 class DaskData(PandasData):
