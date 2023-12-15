@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import os
 import tempfile
+from pathlib import Path
 
 import pandas as pd
 import pyarrow as pa
@@ -427,3 +428,65 @@ def test_insert_simple_select(con, tempdir_sink_configs):
         temporary_file = next(iter(os.listdir(tempdir)))
         with open(os.path.join(tempdir, temporary_file)) as f:
             assert f.read() == '"fred flintstone",35\n"barney rubble",32\n'
+
+
+@pytest.mark.parametrize("table_name", ["new_table", None])
+def test_read_csv(con, awards_players_schema, csv_source_configs, table_name):
+    source_configs = csv_source_configs("awards_players")
+    table = con.read_csv(
+        path=source_configs["path"],
+        schema=awards_players_schema,
+        table_name=table_name,
+    )
+
+    if table_name is None:
+        table_name = table.get_name()
+    assert table_name in con.list_tables()
+    assert table.schema() == awards_players_schema
+
+    con.drop_table(table_name)
+    assert table_name not in con.list_tables()
+
+
+@pytest.mark.parametrize("table_name", ["new_table", None])
+def test_read_parquet(con, data_dir, tmp_path, table_name):
+    fname = Path("functional_alltypes.parquet")
+    fname = Path(data_dir) / "parquet" / fname.name
+    table = con.read_parquet(
+        path=tmp_path / fname.name,
+        schema=_functional_alltypes_schema,
+        table_name=table_name,
+    )
+
+    if table_name is None:
+        table_name = table.get_name()
+    assert table_name in con.list_tables()
+    assert table.schema() == _functional_alltypes_schema
+
+    con.drop_table(table_name)
+    assert table_name not in con.list_tables()
+
+
+@pytest.mark.parametrize("table_name", ["new_table", None])
+def test_read_json(con, data_dir, tmp_path, table_name):
+    pq = pytest.importorskip("pyarrow.parquet")
+
+    pq_table = pq.read_table(
+        data_dir.joinpath("parquet", "functional_alltypes.parquet")
+    )
+    df = pq_table.to_pandas()
+
+    path = tmp_path / "functional_alltypes.json"
+    df.to_json(path, orient="records", lines=True, date_format="iso")
+    table = con.read_json(
+        path=path, schema=_functional_alltypes_schema, table_name=table_name
+    )
+
+    if table_name is None:
+        table_name = table.get_name()
+    assert table_name in con.list_tables()
+    assert table.schema() == _functional_alltypes_schema
+    assert table.count().execute() == len(pq_table)
+
+    con.drop_table(table_name)
+    assert table_name not in con.list_tables()

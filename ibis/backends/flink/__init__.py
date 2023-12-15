@@ -22,9 +22,11 @@ from ibis.backends.flink.ddl import (
     InsertSelect,
     RenameTable,
 )
+from ibis.util import gen_name
 
 if TYPE_CHECKING:
     from collections.abc import Mapping
+    from pathlib import Path
 
     import pandas as pd
     import pyarrow as pa
@@ -119,9 +121,10 @@ class Backend(BaseBackend, CanCreateDatabase):
     def list_tables(
         self,
         like: str | None = None,
-        temp: bool = False,
+        *,
         database: str | None = None,
         catalog: str | None = None,
+        temp: bool = False,
     ) -> list[str]:
         """Return the list of table/view names.
 
@@ -198,7 +201,7 @@ class Backend(BaseBackend, CanCreateDatabase):
         database: str | None = None,
         catalog: str | None = None,
     ) -> str:
-        if is_fully_qualified(name):
+        if name and is_fully_qualified(name):
             return name
 
         return sg.table(
@@ -634,6 +637,136 @@ class Backend(BaseBackend, CanCreateDatabase):
         )
         sql = statement.compile()
         self._exec_sql(sql)
+
+    def _read_file(
+        self,
+        file_type: str,
+        path: str | Path,
+        schema: sch.Schema | None = None,
+        table_name: str | None = None,
+    ) -> ir.Table:
+        """Register a file as a table in the current database.
+
+        Parameters
+        ----------
+        file_type
+            File type, e.g., parquet, csv, json.
+        path
+            The data source.
+        schema
+            The schema for the new table.
+        table_name
+            An optional name to use for the created table. This defaults to
+            a sequentially generated name.
+
+        Returns
+        -------
+        ir.Table
+            The just-registered table
+
+        Raises
+        ------
+        ValueError
+            If `schema` is None.
+        """
+        if schema is None:
+            raise ValueError(
+                f"`schema` must be explicitly provided when calling `read_{file_type}`"
+            )
+
+        table_name = table_name or gen_name(f"read_{file_type}")
+        tbl_properties = {
+            "connector": "filesystem",
+            "path": path,
+            "format": file_type,
+        }
+
+        return self.create_table(
+            name=table_name,
+            schema=schema,
+            tbl_properties=tbl_properties,
+        )
+
+    def read_parquet(
+        self,
+        path: str | Path,
+        schema: sch.Schema | None = None,
+        table_name: str | None = None,
+    ) -> ir.Table:
+        """Register a parquet file as a table in the current database.
+
+        Parameters
+        ----------
+        path
+            The data source.
+        schema
+            The schema for the new table.
+        table_name
+            An optional name to use for the created table. This defaults to
+            a sequentially generated name.
+
+        Returns
+        -------
+        ir.Table
+            The just-registered table
+        """
+        return self._read_file(
+            file_type="parquet", path=path, schema=schema, table_name=table_name
+        )
+
+    def read_csv(
+        self,
+        path: str | Path,
+        schema: sch.Schema | None = None,
+        table_name: str | None = None,
+    ) -> ir.Table:
+        """Register a csv file as a table in the current database.
+
+        Parameters
+        ----------
+        path
+            The data source.
+        schema
+            The schema for the new table.
+        table_name
+            An optional name to use for the created table. This defaults to
+            a sequentially generated name.
+
+        Returns
+        -------
+        ir.Table
+            The just-registered table
+        """
+        return self._read_file(
+            file_type="csv", path=path, schema=schema, table_name=table_name
+        )
+
+    def read_json(
+        self,
+        path: str | Path,
+        schema: sch.Schema | None = None,
+        table_name: str | None = None,
+    ) -> ir.Table:
+        """Register a json file as a table in the current database.
+
+        Parameters
+        ----------
+        path
+            The data source.
+        schema
+            The schema for the new table.
+        table_name
+            An optional name to use for the created table. This defaults to
+            a sequentially generated name.
+
+        Returns
+        -------
+        ir.Table
+            The just-registered table
+        """
+        return self._read_file(
+            file_type="json", path=path, schema=schema, table_name=table_name
+        )
 
     @classmethod
     @lru_cache
