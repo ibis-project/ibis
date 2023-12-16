@@ -244,21 +244,22 @@ def param(type: dt.DataType) -> ir.Scalar:
 
     Examples
     --------
+    >>> from datetime import date
     >>> import ibis
     >>> start = ibis.param("date")
-    >>> end = ibis.param("date")
-    >>> schema = dict(timestamp_col="timestamp", value="double")
-    >>> t = ibis.table(schema, name="t")
-    >>> predicates = [t.timestamp_col >= start, t.timestamp_col <= end]
-    >>> t.filter(predicates).value.sum()
-    r0 := UnboundTable: t
-      timestamp_col timestamp
-      value         float64
-    r1 := Selection[r0]
-      predicates:
-        r0.timestamp_col >= $(date)
-        r0.timestamp_col <= $(date)
-    Sum(value): Sum(r1.value)
+    >>> t = ibis.memtable(
+    ...     {
+    ...         "date_col": [date(2013, 1, 1), date(2013, 1, 2), date(2013, 1, 3)],
+    ...         "value": [1.0, 2.0, 3.0],
+    ...     },
+    ... )
+    >>> expr = t.filter(t.date_col >= start).value.sum()
+    >>> expr.execute(params={start: date(2013, 1, 1)})
+    6.0
+    >>> expr.execute(params={start: date(2013, 1, 2)})
+    5.0
+    >>> expr.execute(params={start: date(2013, 1, 3)})
+    3.0
     """
     return ops.ScalarParameter(type).to_expr()
 
