@@ -42,11 +42,26 @@ class Value(Expr):
         Examples
         --------
         >>> import ibis
-        >>> t = ibis.table(dict(a="int64"), name="t")
+        >>> ibis.options.interactive = True
+        >>> t = ibis.memtable({"a": [1, 2]}, name="t")
+        >>> t.a
+        ┏━━━━━━━┓
+        ┃ a     ┃
+        ┡━━━━━━━┩
+        │ int64 │
+        ├───────┤
+        │     1 │
+        │     2 │
+        └───────┘
         >>> t.a.name("b")
-        r0 := UnboundTable: t
-          a int64
-        b: r0.a
+        ┏━━━━━━━┓
+        ┃ b     ┃
+        ┡━━━━━━━┩
+        │ int64 │
+        ├───────┤
+        │     1 │
+        │     2 │
+        └───────┘
         """
         # TODO(kszucs): shouldn't do simplification here, but rather later
         # when simplifying the whole operation tree
