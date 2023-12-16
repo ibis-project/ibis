@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import pytest
+from pytest import param
 
 from ibis import udf
 
@@ -84,4 +85,22 @@ def test_builtin_agg(con, func):
             f"SELECT {func.__name__}(a) FROM UNNEST({raw_data!r}) _ (a)"
         ).scalar()
 
+    assert con.execute(expr) == expected
+
+
+@udf.scalar.python
+def dont_intercept_null(x: int) -> int:
+    assert x is not None
+    return x
+
+
+@pytest.mark.parametrize(
+    ("expr", "expected"),
+    [
+        param(dont_intercept_null(5), 5, id="notnull"),
+        param(dont_intercept_null(None), None, id="null"),
+        param(dont_intercept_null(5) + dont_intercept_null(None), None, id="mixed"),
+    ],
+)
+def test_dont_intercept_null(con, expr, expected):
     assert con.execute(expr) == expected
