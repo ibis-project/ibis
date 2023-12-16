@@ -1272,7 +1272,10 @@ WHERE catalog_name = :database"""
     def _compile_udf(self, udf_node: ops.ScalarUDF) -> None:
         func = udf_node.__func__
         name = func.__name__
-        input_types = [DuckDBType.to_string(arg.dtype) for arg in udf_node.args]
+        input_types = [
+            DuckDBType.to_string(param.annotation.pattern.dtype)
+            for param in udf_node.__signature__.parameters.values()
+        ]
         output_type = DuckDBType.to_string(udf_node.dtype)
 
         def register_udf(con):
