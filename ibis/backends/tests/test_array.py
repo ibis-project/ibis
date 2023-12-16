@@ -875,19 +875,20 @@ def test_unnest_empty_array(con):
 
 @builtin_array
 @pytest.mark.notimpl(
-    ["datafusion", "impala", "mssql", "polars", "snowflake", "sqlite", "mysql"],
+    [
+        "datafusion",
+        "impala",
+        "mssql",
+        "polars",
+        "snowflake",
+        "sqlite",
+        "mysql",
+        "dask",
+        "pandas",
+    ],
     raises=com.OperationNotDefinedError,
 )
-@pytest.mark.notimpl(
-    ["dask", "pandas"],
-    raises=com.OperationNotDefinedError,
-    reason="Operation 'ArrayMap' is not implemented for this backend",
-)
-@pytest.mark.notimpl(
-    ["sqlite"],
-    raises=NotImplementedError,
-    reason="Unsupported type: Array: ...",
-)
+@pytest.mark.notimpl(["sqlite"], raises=NotImplementedError)
 def test_array_map_with_conflicting_names(backend, con):
     t = ibis.memtable({"x": [[1, 2]]}, schema=ibis.schema(dict(x="!array<int8>")))
     expr = t.select(a=t.x.map(lambda x: x + 1)).select(
@@ -896,3 +897,37 @@ def test_array_map_with_conflicting_names(backend, con):
     result = con.execute(expr)
     expected = pd.DataFrame({"b": [[3]]})
     backend.assert_frame_equal(result, expected)
+
+
+@builtin_array
+@pytest.mark.notimpl(
+    [
+        "datafusion",
+        "impala",
+        "mssql",
+        "polars",
+        "snowflake",
+        "sqlite",
+        "mysql",
+        "dask",
+        "pandas",
+    ],
+    raises=com.OperationNotDefinedError,
+)
+def test_complex_array_map(con):
+    def upper(token):
+        return token.upper()
+
+    def swap(token):
+        return token.substitute({"abc": "ABC"})
+
+    arr = ibis.array(["abc", "xyz"])
+
+    expr = arr.map(upper)
+    assert con.execute(expr) == ["ABC", "XYZ"]
+
+    expr = arr.map(swap)
+    assert con.execute(expr) == ["ABC", "xyz"]
+
+    expr = arr.map(lambda token: token.substitute({"abc": "ABC"}))
+    assert con.execute(expr) == ["ABC", "xyz"]
