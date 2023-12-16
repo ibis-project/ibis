@@ -484,15 +484,15 @@ show_file("./step2.py")
 
 #### Don't repeat yourself
 
-Notice that we are now
+Notice that we are now:
 
-1. grouping
-2. aggregating
-3. grouping again by the **same keys**
-4. aggregating
+* grouping
+* aggregating
+* grouping again by the **same keys**
+* aggregating
 
-This is less optimal than it could be. Notice that we are also flattening an
-array, computing its distinct values and then computing its length.
+This is less optimal than it could be. We are also flattening an array,
+computing its distinct values and then computing its length.
 
 We are computing the grouped number of distinct values, and we likely don't
 need to collect values into an array to do that.
