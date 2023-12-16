@@ -3,9 +3,11 @@ title: "Ibis + DuckDB geospatial: a match made on Earth"
 author: Naty Clementi
 date: 2023-12-07
 categories:
-    - blog
-    - duckdb
-    - geospatial
+  - blog
+  - duckdb
+  - geospatial
+execute:
+  freeze: false
 ---
 
 Ibis now has support for [DuckDB geospatial functions](https://gist.github.com/ncclementi/fbc5564af709e2d7f8882821e3a8649f)!
