@@ -1248,3 +1248,21 @@ def test_range_expression_bounds(backend):
 
     assert not result.empty
     assert len(result) == con.execute(t.count())
+
+
+def test_rank_followed_by_over_call_merge_frames(backend, alltypes, df):
+    # GH #7631
+    t = alltypes
+    expr = t.int_col.percent_rank().over(ibis.window(group_by=t.int_col.notnull()))
+    result = expr.execute()
+
+    expected = (
+        df.sort_values("int_col")
+        .groupby(df["int_col"].notnull())
+        .apply(lambda df: (df.int_col.rank(method="min").sub(1).div(len(df) - 1)))
+        .T.reset_index(drop=True)
+        .iloc[:, 0]
+        .rename(expr.get_name())
+    )
+
+    backend.assert_series_equal(result, expected)

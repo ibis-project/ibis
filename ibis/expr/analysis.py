@@ -10,9 +10,9 @@ import ibis.expr.operations as ops
 import ibis.expr.operations.relations as rels
 import ibis.expr.types as ir
 from ibis import util
-from ibis.common.deferred import _, deferred, var
+from ibis.common.deferred import deferred, var
 from ibis.common.exceptions import IbisTypeError, IntegrityError
-from ibis.common.patterns import Eq, In, pattern
+from ibis.common.patterns import Eq, In, pattern, replace
 from ibis.util import Namespace
 
 if TYPE_CHECKING:
@@ -163,25 +163,25 @@ def pushdown_selection_filters(parent, predicates):
     return parent.copy(predicates=parent.predicates + tuple(simplified))
 
 
+@replace(p.Analytic | p.Reduction)
+def wrap_analytic(_, default_frame):
+    return ops.WindowFunction(_, default_frame)
+
+
+@replace(p.WindowFunction)
+def merge_windows(_, default_frame):
+    group_by = tuple(toolz.unique(_.frame.group_by + default_frame.group_by))
+    order_by = tuple(toolz.unique(_.frame.order_by + default_frame.order_by))
+    frame = _.frame.copy(group_by=group_by, order_by=order_by)
+    return ops.WindowFunction(_.func, frame)
+
+
 def windowize_function(expr, default_frame, merge_frames=False):
-    func, frame = var("func"), var("frame")
-
-    wrap_analytic = (p.Analytic | p.Reduction) >> c.WindowFunction(_, default_frame)
-    merge_windows = p.WindowFunction(func, frame) >> c.WindowFunction(
-        func,
-        frame.copy(
-            order_by=frame.order_by + default_frame.order_by,
-            group_by=frame.group_by + default_frame.group_by,
-        ),
-    )
-
+    ctx = {"default_frame": default_frame}
     node = expr.op()
     if merge_frames:
-        # it only happens in ibis.expr.groupby.GroupedTable, but the projector
-        # changes the windowization order to put everything here
-        node = node.replace(merge_windows, filter=p.Value)
-    node = node.replace(wrap_analytic, filter=p.Value & ~p.WindowFunction)
-
+        node = node.replace(merge_windows, filter=p.Value, context=ctx)
+    node = node.replace(wrap_analytic, filter=p.Value & ~p.WindowFunction, context=ctx)
     return node.to_expr()
 
 

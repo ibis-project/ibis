@@ -55,3 +55,10 @@ def test_value_over_api(alltypes):
     expr = t.f.cumsum().over(range=(-1, 1), group_by=[t.g, t.a], order_by=[t.f])
     expected = t.f.cumsum().over(w2)
     assert expr.equals(expected)
+
+
+def test_rank_followed_by_over_call_merge_frames(alltypes):
+    t = alltypes
+    expr1 = t.f.percent_rank().over(ibis.window(group_by=t.f.notnull()))
+    expr2 = ibis.percent_rank().over(group_by=t.f.notnull(), order_by=t.f).resolve(t)
+    assert expr1.equals(expr2)
