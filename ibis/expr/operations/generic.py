@@ -195,6 +195,9 @@ class Literal(Scalar[T]):
         return repr(self.value)
 
 
+NULL = Literal(None, dt.null)
+
+
 @public
 class ScalarParameter(Scalar, Named):
     _counter = itertools.count()
@@ -313,3 +316,6 @@ class SearchedCase(Value):
     def dtype(self):
         exprs = [*self.results, self.default]
         return rlz.highest_precedence_dtype(exprs)
+
+
+public(NULL=NULL)

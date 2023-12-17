@@ -1998,7 +1998,7 @@ class NullColumn(Column, NullValue):
 @public
 def null():
     """Create a NULL/NA scalar."""
-    return literal(None)
+    return ops.NULL.to_expr()
 
 
 @public

@@ -68,13 +68,19 @@ class Value(Node, Named, Coercible, DefaultTypeVars, Generic[T, S]):
     ) -> Self:
         # note that S=Shape is unused here since the pattern will check the
         # shape of the value expression after executing Value.__coerce__()
-        from ibis.expr.operations import Literal
+        from ibis.expr.operations.generic import NULL, Literal
         from ibis.expr.types import Expr
 
         if isinstance(value, Expr):
             value = value.op()
+
         if isinstance(value, Value):
-            return value
+            if value == NULL:
+                # treat the NULL literal the same as None to implicitly cast to
+                # the requested datatype if any
+                value = None
+            else:
+                return value
 
         if T is dt.Integer:
             dtype = dt.infer(int(value))
