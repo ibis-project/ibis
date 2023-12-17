@@ -11,7 +11,7 @@ import ibis.expr.operations.relations as rels
 import ibis.expr.types as ir
 from ibis import util
 from ibis.common.deferred import deferred, var
-from ibis.common.exceptions import IbisTypeError, IntegrityError
+from ibis.common.exceptions import ExpressionError, IbisTypeError, IntegrityError
 from ibis.common.patterns import Eq, In, pattern, replace
 from ibis.util import Namespace
 
@@ -170,17 +170,30 @@ def wrap_analytic(_, default_frame):
 
 @replace(p.WindowFunction)
 def merge_windows(_, default_frame):
+    if _.frame.start and default_frame.start and _.frame.start != default_frame.start:
+        raise ExpressionError(
+            "Unable to merge windows with conflicting `start` boundary"
+        )
+    if _.frame.end and default_frame.end and _.frame.end != default_frame.end:
+        raise ExpressionError("Unable to merge windows with conflicting `end` boundary")
+
+    start = _.frame.start or default_frame.start
+    end = _.frame.end or default_frame.end
     group_by = tuple(toolz.unique(_.frame.group_by + default_frame.group_by))
-    order_by = tuple(toolz.unique(_.frame.order_by + default_frame.order_by))
-    frame = _.frame.copy(group_by=group_by, order_by=order_by)
+
+    order_by = {}
+    for sort_key in _.frame.order_by + default_frame.order_by:
+        order_by[sort_key.expr] = sort_key.ascending
+    order_by = tuple(ops.SortKey(k, v) for k, v in order_by.items())
+
+    frame = _.frame.copy(start=start, end=end, group_by=group_by, order_by=order_by)
     return ops.WindowFunction(_.func, frame)
 
 
-def windowize_function(expr, default_frame, merge_frames=False):
+def windowize_function(expr, default_frame):
     ctx = {"default_frame": default_frame}
     node = expr.op()
-    if merge_frames:
-        node = node.replace(merge_windows, filter=p.Value, context=ctx)
+    node = node.replace(merge_windows, filter=p.Value, context=ctx)
     node = node.replace(wrap_analytic, filter=p.Value & ~p.WindowFunction, context=ctx)
     return node.to_expr()
 

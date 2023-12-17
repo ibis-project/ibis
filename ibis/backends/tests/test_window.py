@@ -207,8 +207,8 @@ def calc_zscore(s):
                 ),
                 pytest.mark.broken(
                     ["flink"],
-                    raises=Py4JJavaError,
-                    reason="CalciteContextException: Argument to function 'NTILE' must be a literal",
+                    raises=com.UnsupportedOperationError,
+                    reason="Windows in Flink can only be ordered by a single time column",
                 ),
             ],
         ),
@@ -1250,6 +1250,21 @@ def test_range_expression_bounds(backend):
     assert len(result) == con.execute(t.count())
 
 
+@pytest.mark.notimpl(["polars", "dask"], raises=com.OperationNotDefinedError)
+@pytest.mark.notyet(
+    ["clickhouse"],
+    reason="clickhouse doesn't implement percent_rank",
+    raises=com.OperationNotDefinedError,
+)
+@pytest.mark.broken(
+    ["pandas"], reason="missing column during execution", raises=KeyError
+)
+@pytest.mark.broken(
+    ["mssql"], reason="lack of support for booleans", raises=sa.exc.OperationalError
+)
+@pytest.mark.broken(
+    ["pyspark"], reason="pyspark requires CURRENT ROW", raises=AnalysisException
+)
 def test_rank_followed_by_over_call_merge_frames(backend, alltypes, df):
     # GH #7631
     t = alltypes

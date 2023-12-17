@@ -254,12 +254,12 @@ class GroupedTable:
             order_by=bind_expr(self.table, self._order_by),
         )
         return [
-            an.windowize_function(e2, default_frame, merge_frames=True)
+            an.windowize_function(e2, default_frame)
             for expr in exprs
             for e1 in util.promote_list(expr)
             for e2 in util.promote_list(table._ensure_expr(e1))
         ] + [
-            an.windowize_function(e, default_frame, merge_frames=True).name(k)
+            an.windowize_function(e, default_frame).name(k)
             for k, expr in kwexprs.items()
             for e in util.promote_list(table._ensure_expr(expr))
         ]

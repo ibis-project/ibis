@@ -4338,7 +4338,8 @@ def _resolve_predicates(
     table: Table, predicates
 ) -> tuple[list[ir.BooleanValue], list[tuple[ir.BooleanValue, ir.Table]]]:
     import ibis.expr.types as ir
-    from ibis.expr.analysis import _, flatten_predicate, p
+    from ibis.common.deferred import _
+    from ibis.expr.analysis import flatten_predicate, p
 
     # TODO(kszucs): clean this up, too much flattening and resolving happens here
     predicates = [
