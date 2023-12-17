@@ -758,7 +758,7 @@ class Value(Expr):
 
         def bind(table):
             frame = window.bind(table)
-            expr = an.windowize_function(self, frame)
+            expr = an.windowize_function(self, frame, merge_frames=True)
             if expr.equals(self):
                 raise com.IbisTypeError(
                     "No reduction or analytic function found to construct a window expression"
@@ -766,9 +766,7 @@ class Value(Expr):
             return expr
 
         op = self.op()
-        if isinstance(op, ops.WindowFunction):
-            return op.func.to_expr().over(window)
-        elif isinstance(window, bl.WindowBuilder):
+        if isinstance(window, bl.WindowBuilder):
             if table := an.find_first_base_table(self.op()):
                 return bind(table)
             else:
