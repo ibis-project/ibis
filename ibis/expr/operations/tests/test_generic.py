@@ -122,3 +122,24 @@ def test_error_message_when_constructing_literal(call, error, snapshot):
     with pytest.raises(ValidationError) as exc:
         call()
     snapshot.assert_match(str(exc.value), f"{error}.txt")
+
+
+def test_implicit_coercion_of_null_literal():
+    # GH #7775
+    NULL = ops.Literal(None, dt.null)
+
+    value = ops.Value.__coerce__(None, dt.Int8)
+    expected = ops.Literal(None, dt.int8)
+    assert value == expected
+
+    value = ops.Value.__coerce__(NULL, dt.Float64)
+    expected = ops.Literal(None, dt.float64)
+    assert value == expected
+
+
+def test_NULL():
+    assert isinstance(ops.NULL, ops.Literal)
+    assert ops.NULL.value is None
+    assert ops.NULL.dtype is dt.null
+    assert ops.NULL == ops.Literal(None, dt.null)
+    assert ops.NULL is not ops.Literal(None, dt.int8)

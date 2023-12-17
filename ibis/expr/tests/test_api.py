@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import operator
 from datetime import datetime
 
 import pandas as pd
@@ -9,6 +10,7 @@ from pytest import param
 
 import ibis
 import ibis.expr.datatypes as dt
+import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 from ibis import _
 from ibis.common.exceptions import IbisInputError, IntegrityError
@@ -124,3 +126,24 @@ def test_duplicate_columns_in_memtable_not_allowed():
 
     with pytest.raises(IbisInputError, match="Duplicate column names"):
         ibis.memtable(df)
+
+
+@pytest.mark.parametrize(
+    "op",
+    [
+        operator.and_,
+        operator.or_,
+        operator.xor,
+    ],
+)
+def test_implicit_coercion_of_null_literal(op):
+    # GH #7775
+    expr1 = op(ibis.literal(True), ibis.null())
+    expr2 = op(ibis.literal(True), None)
+
+    expected = expr1.op().__class__(
+        ops.Literal(True, dtype=dt.boolean), ops.Literal(None, dtype=dt.boolean)
+    )
+
+    assert expr1.op() == expected
+    assert expr2.op() == expected
