@@ -589,7 +589,8 @@ class Expr(Immutable, Coercible):
 
     def unbind(self) -> ir.Table:
         """Return an expression built on `UnboundTable` instead of backend-specific objects."""
-        from ibis.expr.analysis import p, c, _
+        from ibis.expr.analysis import p, c
+        from ibis.common.deferred import _
 
         rule = p.DatabaseTable >> c.UnboundTable(name=_.name, schema=_.schema)
         return self.op().replace(rule).to_expr()

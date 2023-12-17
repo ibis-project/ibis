@@ -758,7 +758,7 @@ class Value(Expr):
 
         def bind(table):
             frame = window.bind(table)
-            expr = an.windowize_function(self, frame, merge_frames=True)
+            expr = an.windowize_function(self, frame)
             if expr.equals(self):
                 raise com.IbisTypeError(
                     "No reduction or analytic function found to construct a window expression"

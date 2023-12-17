@@ -1,7 +1,10 @@
 from __future__ import annotations
 
+import pytest
+
 import ibis
 import ibis.expr.operations as ops
+from ibis.common.exceptions import ExpressionError
 
 
 def test_mutate_with_analytic_functions(alltypes):
@@ -48,13 +51,20 @@ def test_value_over_api(alltypes):
     w1 = ibis.window(rows=(0, 1), group_by=t.g, order_by=[t.f, t.h])
     w2 = ibis.window(range=(-1, 1), group_by=[t.g, t.a], order_by=[t.f])
 
-    expr = t.f.cumsum().over(rows=(0, 1), group_by=t.g, order_by=[t.f, t.h])
-    expected = t.f.cumsum().over(w1)
+    expr = t.f.sum().over(rows=(0, 1), group_by=t.g, order_by=[t.f, t.h])
+    expected = t.f.sum().over(w1)
     assert expr.equals(expected)
 
-    expr = t.f.cumsum().over(range=(-1, 1), group_by=[t.g, t.a], order_by=[t.f])
-    expected = t.f.cumsum().over(w2)
+    expr = t.f.sum().over(range=(-1, 1), group_by=[t.g, t.a], order_by=[t.f])
+    expected = t.f.sum().over(w2)
     assert expr.equals(expected)
+
+
+def test_conflicting_window_boundaries(alltypes):
+    t = alltypes
+
+    with pytest.raises(ExpressionError, match="Unable to merge windows"):
+        t.f.cumsum().over(rows=(0, 1))
 
 
 def test_rank_followed_by_over_call_merge_frames(alltypes):
