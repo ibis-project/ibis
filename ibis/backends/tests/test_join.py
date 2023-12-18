@@ -334,6 +334,15 @@ def test_join_with_trivial_predicate(awards_players, predicate, how, pandas_valu
     assert len(result) == len(expected)
 
 
+outer_join_nullability_failures = [
+    pytest.mark.notyet(
+        ["mysql"],
+        raises=sa.exc.ProgrammingError,
+        reason="mysql doesn't support full outer joins",
+    )
+] + [pytest.mark.notyet(["sqlite"])] * (vparse(sqlite3.sqlite_version) < vparse("3.39"))
+
+
 @pytest.mark.notimpl(
     ["druid", "exasol"],
     raises=sa.exc.NoSuchTableError,
@@ -341,39 +350,58 @@ def test_join_with_trivial_predicate(awards_players, predicate, how, pandas_valu
 )
 @pytest.mark.notimpl(["flink"], reason="`win` table isn't loaded")
 @pytest.mark.parametrize(
-    ("how", "nrows"),
+    ("how", "nrows", "gen_right", "keys"),
     [
-        param("left", 2, id="left"),
-        param("right", 1, id="right"),
+        param(
+            "left",
+            2,
+            lambda left: left.filter(lambda t: t.x == 1).select(y=lambda t: t.x),
+            [("x", "y")],
+            id="left-xy",
+            marks=pytest.mark.notyet(["polars"], reason="renaming fails"),
+        ),
+        param(
+            "left",
+            2,
+            lambda left: left.filter(lambda t: t.x == 1),
+            "x",
+            id="left-x",
+            marks=pytest.mark.notimpl(["pyspark"], reason="overlapping columns"),
+        ),
+        param(
+            "right",
+            1,
+            lambda left: left.filter(lambda t: t.x == 1).select(y=lambda t: t.x),
+            [("x", "y")],
+            id="right-xy",
+            marks=pytest.mark.notyet(["polars"], reason="renaming fails"),
+        ),
+        param(
+            "right",
+            1,
+            lambda left: left.filter(lambda t: t.x == 1),
+            "x",
+            id="right-x",
+            marks=pytest.mark.notimpl(["pyspark"], reason="overlapping columns"),
+        ),
         param(
             "outer",
             2,
-            id="outer",
-            marks=[
-                pytest.mark.notyet(
-                    ["mysql"],
-                    raises=sa.exc.ProgrammingError,
-                    reason="mysql doesn't support full outer joins",
-                )
-            ]
-            + [pytest.mark.notyet(["sqlite"])]
-            * (vparse(sqlite3.sqlite_version) < vparse("3.39")),
-        ),
-    ],
-)
-@pytest.mark.parametrize(
-    ("gen_right", "keys"),
-    [
-        param(
             lambda left: left.filter(lambda t: t.x == 1).select(y=lambda t: t.x),
             [("x", "y")],
-            id="non_overlapping",
+            id="outer-xy",
+            marks=outer_join_nullability_failures,
         ),
         param(
+            "outer",
+            2,
             lambda left: left.filter(lambda t: t.x == 1),
             "x",
-            id="overlapping",
-            marks=[pytest.mark.notimpl(["pyspark"], reason="overlapping columns")],
+            id="outer-x",
+            marks=[
+                pytest.mark.notimpl(["pyspark"], reason="overlapping columns"),
+                *outer_join_nullability_failures,
+            ],
         ),
     ],
 )
