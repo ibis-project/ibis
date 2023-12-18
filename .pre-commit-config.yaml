@@ -21,11 +21,6 @@ repos:
     rev: v1.6.26
     hooks:
       - id: actionlint-system
-  - repo: https://github.com/keewis/blackdoc
-    rev: v0.3.9
-    hooks:
-      - id: blackdoc
-        exclude: ibis/examples/__init__\.py
   - repo: https://github.com/codespell-project/codespell
     rev: v2.2.6
     hooks:

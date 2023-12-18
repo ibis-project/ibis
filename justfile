@@ -26,7 +26,6 @@ lock:
 # format code
 fmt:
     ruff format .
-    blackdoc .
     ruff --fix .
 
 # run all non-backend tests; additional arguments are forwarded to pytest
