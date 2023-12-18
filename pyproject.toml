@@ -276,72 +276,72 @@ norecursedirs = [
 filterwarnings = [
   # fail on any warnings that are not explicitly matched below
   "error",
-  # pyspark and impala leave sockets open
-  "ignore:Exception ignored in:",
-  # dask
-  "ignore:index is deprecated and will be removed in a future release:FutureWarning",
-  "ignore:`meta` is not specified:UserWarning",
-  "ignore:Concatenating dataframes with unknown divisions:UserWarning",
-  "ignore:Possible nested set at position:FutureWarning",
-  'ignore:\s+You did not provide metadata:UserWarning',
-  # numpy by way of dask
-  'ignore:np\.find_common_type is deprecated:DeprecationWarning',
-  # pandas
-  "ignore:Boolean Series key will be reindexed:UserWarning",
-  'ignore:Using \.astype to convert from timezone-(naive|aware) dtype:FutureWarning',
-  "ignore:The default dtype for empty Series will be 'object':FutureWarning",
-  # pandas 1.5.x
-  "ignore:iteritems is deprecated and will be removed in a future version:FutureWarning",
-  'ignore:Passing unit-less datetime64 dtype to \.astype is deprecated:FutureWarning',
-  'ignore:The default value of numeric_only in DataFrameGroupBy\.sum is deprecated:FutureWarning',
-  # numpy
-  "ignore:Creating an ndarray from ragged nested sequences:",
-  'ignore:`np\.bool` is a deprecated alias for the builtin `bool`:DeprecationWarning',
-  # numpy, coming from a pandas call
-  'ignore:In the future `np\.bool` will be defined as the corresponding NumPy scalar:FutureWarning',
-  # duckdb-engine
-  'ignore:Dialect .+ does \*not\* support Decimal:',
-  "ignore:duckdb-engine doesn't yet support reflection on indices:",
-  # druid
-  'ignore:Dialect druid.rest will not make use of SQL compilation caching:',
-  # ibis
-  'ignore:`(Base)?Backend.database` is deprecated:FutureWarning',
-  # spark
-  "ignore:distutils Version classes are deprecated:DeprecationWarning",
-  "ignore:The distutils package is deprecated and slated for removal:DeprecationWarning",
-  "ignore:In Python .*, it is preferred .* type hints .* UDF:UserWarning",
-  "ignore:`np.object` is a deprecated alias for the builtin `object`:DeprecationWarning",
-  # windows
-  "ignore:getargs.* The 'u' format is deprecated:DeprecationWarning",
-  # sqlalchemy
-  "ignore:Class ST_.+ will not make use of SQL compilation caching:",
-  "ignore:UserDefinedType Geometry:",
-  # google
-  "ignore:Deprecated call to `pkg_resources\\.declare_namespace\\('.*'\\):DeprecationWarning",
-  # pyspark on python 3.11
-  "ignore:typing\\.io is deprecated:DeprecationWarning",
-  # warnings from google's use of the cgi module
-  "ignore:'cgi' is deprecated and slated for removal in Python 3\\.13:DeprecationWarning",
-  # warnings from google's use of pkg_resources
-  "ignore:pkg_resources is deprecated as an API:DeprecationWarning",
-  # sqlalchemy warns about mysql's inability to cast to bool;
-  # this has no effect on ibis's output because we convert types after
-  # execution
-  "ignore:Datatype BOOL does not support CAST on MySQL/MariaDB; the cast will be skipped:sqlalchemy.exc.SAWarning",
-  # snowflake vendors an older version requests
-  "ignore:'urllib3\\.contrib\\.pyopenssl' module is deprecated and will be removed in a future release of urllib3:DeprecationWarning",
-  # apache-beam
-  "ignore:the imp module is deprecated in favour of importlib:DeprecationWarning",
-  # pytest raises a syntax error when encountering this from *any* module, including third party modules
-  "ignore:invalid escape sequence:DeprecationWarning",
-  # geopandas raises usr warning on geometry column
-  "ignore:Geometry is in a geographic CRS",
-  # `is_sparse` deprecation was addressed in pyarrow 13.0.0 (see https://github.com/apache/arrow/pull/35366),
-  # but flink requires apache-beam<2.49, which caps its pyarrow dependency (see https://github.com/apache/beam/blob/v2.48.0/sdks/python/setup.py#L144)
-  "ignore:is_sparse is deprecated and will be removed in a future version:FutureWarning",
-  "ignore:is_sparse is deprecated and will be removed in a future version:DeprecationWarning",
-  # google-api-core
-  "ignore:Please install grpcio-status to obtain helpful grpc error messages.",
+  # # pyspark and impala leave sockets open
+  # "ignore:Exception ignored in:",
+  # # dask
+  # "ignore:index is deprecated and will be removed in a future release:FutureWarning",
+  # "ignore:`meta` is not specified:UserWarning",
+  # "ignore:Concatenating dataframes with unknown divisions:UserWarning",
+  # "ignore:Possible nested set at position:FutureWarning",
+  # 'ignore:\s+You did not provide metadata:UserWarning',
+  # # numpy by way of dask
+  # 'ignore:np\.find_common_type is deprecated:DeprecationWarning',
+  # # pandas
+  # "ignore:Boolean Series key will be reindexed:UserWarning",
+  # 'ignore:Using \.astype to convert from timezone-(naive|aware) dtype:FutureWarning',
+  # "ignore:The default dtype for empty Series will be 'object':FutureWarning",
+  # # pandas 1.5.x
+  # "ignore:iteritems is deprecated and will be removed in a future version:FutureWarning",
+  # 'ignore:Passing unit-less datetime64 dtype to \.astype is deprecated:FutureWarning',
+  # 'ignore:The default value of numeric_only in DataFrameGroupBy\.sum is deprecated:FutureWarning',
+  # # numpy
+  # "ignore:Creating an ndarray from ragged nested sequences:",
+  # 'ignore:`np\.bool` is a deprecated alias for the builtin `bool`:DeprecationWarning',
+  # # numpy, coming from a pandas call
+  # 'ignore:In the future `np\.bool` will be defined as the corresponding NumPy scalar:FutureWarning',
+  # # duckdb-engine
+  # 'ignore:Dialect .+ does \*not\* support Decimal:',
+  # "ignore:duckdb-engine doesn't yet support reflection on indices:",
+  # # druid
+  # 'ignore:Dialect druid.rest will not make use of SQL compilation caching:',
+  # # ibis
+  # 'ignore:`(Base)?Backend.database` is deprecated:FutureWarning',
+  # # spark
+  # "ignore:distutils Version classes are deprecated:DeprecationWarning",
+  # "ignore:The distutils package is deprecated and slated for removal:DeprecationWarning",
+  # "ignore:In Python .*, it is preferred .* type hints .* UDF:UserWarning",
+  # "ignore:`np.object` is a deprecated alias for the builtin `object`:DeprecationWarning",
+  # # windows
+  # "ignore:getargs.* The 'u' format is deprecated:DeprecationWarning",
+  # # sqlalchemy
+  # "ignore:Class ST_.+ will not make use of SQL compilation caching:",
+  # "ignore:UserDefinedType Geometry:",
+  # # google
+  # "ignore:Deprecated call to `pkg_resources\\.declare_namespace\\('.*'\\):DeprecationWarning",
+  # # pyspark on python 3.11
+  # "ignore:typing\\.io is deprecated:DeprecationWarning",
+  # # warnings from google's use of the cgi module
+  # "ignore:'cgi' is deprecated and slated for removal in Python 3\\.13:DeprecationWarning",
+  # # warnings from google's use of pkg_resources
+  # "ignore:pkg_resources is deprecated as an API:DeprecationWarning",
+  # # sqlalchemy warns about mysql's inability to cast to bool;
+  # # this has no effect on ibis's output because we convert types after
+  # # execution
+  # "ignore:Datatype BOOL does not support CAST on MySQL/MariaDB; the cast will be skipped:sqlalchemy.exc.SAWarning",
+  # # snowflake vendors an older version requests
+  # "ignore:'urllib3\\.contrib\\.pyopenssl' module is deprecated and will be removed in a future release of urllib3:DeprecationWarning",
+  # # apache-beam
+  # "ignore:the imp module is deprecated in favour of importlib:DeprecationWarning",
+  # # pytest raises a syntax error when encountering this from *any* module, including third party modules
+  # "ignore:invalid escape sequence:DeprecationWarning",
+  # # geopandas raises usr warning on geometry column
+  # "ignore:Geometry is in a geographic CRS",
+  # # `is_sparse` deprecation was addressed in pyarrow 13.0.0 (see https://github.com/apache/arrow/pull/35366),
+  # # but flink requires apache-beam<2.49, which caps its pyarrow dependency (see https://github.com/apache/beam/blob/v2.48.0/sdks/python/setup.py#L144)
+  # "ignore:is_sparse is deprecated and will be removed in a future version:FutureWarning",
+  # "ignore:is_sparse is deprecated and will be removed in a future version:DeprecationWarning",
+  # # google-api-core
+  # "ignore:Please install grpcio-status to obtain helpful grpc error messages.",
 ]
 empty_parameter_set_mark = "fail_at_collect"
 markers = [
