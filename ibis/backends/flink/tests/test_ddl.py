@@ -258,19 +258,38 @@ def test_force_recreate_in_mem_table(
         assert new_table.schema() == schema
 
 
-def test_create_source_table_with_watermark(
-    con, functional_alltypes_schema, temp_table, csv_source_configs
+@pytest.mark.parametrize("primary_key", [None, "id", "id,string_col"])
+def test_create_source_table_with_watermark_and_primary_keys(
+    con, temp_table, csv_source_configs, primary_key
 ):
+    schema = sch.Schema(
+        {
+            "id": dt.int32(nullable=False),
+            "bool_col": dt.bool,
+            "smallint_col": dt.int16,
+            "int_col": dt.int32,
+            "bigint_col": dt.int64,
+            "float_col": dt.float32,
+            "double_col": dt.float64,
+            "date_string_col": dt.string,
+            "string_col": dt.string(nullable=False),
+            "timestamp_col": dt.timestamp(scale=3),
+            "year": dt.int32,
+            "month": dt.int32,
+        }
+    )
+
     new_table = con.create_table(
         temp_table,
-        schema=functional_alltypes_schema,
+        schema=schema,
         tbl_properties=csv_source_configs("functional_alltypes"),
         watermark=ibis.watermark(
             time_col="timestamp_col", allowed_delay=ibis.interval(seconds=15)
         ),
+        primary_key=primary_key,
     )
     assert temp_table in con.list_tables()
-    assert new_table.schema() == functional_alltypes_schema
+    assert new_table.schema() == schema
 
 
 @pytest.mark.parametrize("temp", [True, False])
