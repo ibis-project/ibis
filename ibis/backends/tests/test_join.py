@@ -370,7 +370,6 @@ def test_join_with_trivial_predicate(awards_players, predicate, how, pandas_valu
             lambda left: left.filter(lambda t: t.x == 1).select(y=lambda t: t.x),
             [("x", "y")],
             id="non_overlapping",
-            marks=[pytest.mark.notyet(["polars"], reason="renaming fails")],
         ),
         param(
             lambda left: left.filter(lambda t: t.x == 1),
