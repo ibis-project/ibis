@@ -177,7 +177,6 @@ class BaseSQLBackend(BaseBackend):
         >>> con = ibis.connect("duckdb://")
         >>> with con.raw_sql("SELECT 1") as cursor:
         ...     result = cursor.fetchall()
-        ...
         >>> result
         [(1,)]
         >>> cursor.closed

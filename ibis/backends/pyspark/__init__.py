@@ -381,9 +381,7 @@ class Backend(BaseSQLBackend, CanCreateDatabase):
 
         Examples
         --------
-        >>> con.create_table(
-        ...     "new_table_name", table_expr
-        ... )  # quartodoc: +SKIP # doctest: +SKIP
+        >>> con.create_table("new_table_name", table_expr)  # quartodoc: +SKIP # doctest: +SKIP
         """
         import pandas as pd
         import pyarrow as pa
@@ -507,9 +505,7 @@ class Backend(BaseSQLBackend, CanCreateDatabase):
         --------
         >>> table = "my_table"
         >>> db = "operations"
-        >>> con.drop_table_or_view(
-        ...     table, db, force=True
-        ... )  # quartodoc: +SKIP # doctest: +SKIP
+        >>> con.drop_table_or_view(table, db, force=True)  # quartodoc: +SKIP # doctest: +SKIP
         """
         statement = DropTable(name, database=database, must_exist=not force)
         self.raw_sql(statement.compile())
@@ -557,9 +553,7 @@ class Backend(BaseSQLBackend, CanCreateDatabase):
         >>> con.insert(table, table_expr)  # quartodoc: +SKIP # doctest: +SKIP
 
         # Completely overwrite contents
-        >>> con.insert(
-        ...     table, table_expr, overwrite=True
-        ... )  # quartodoc: +SKIP # doctest: +SKIP
+        >>> con.insert(table, table_expr, overwrite=True)  # quartodoc: +SKIP # doctest: +SKIP
         """
         table = self.table(table_name, database=database)
         return table.insert(

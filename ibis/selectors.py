@@ -212,9 +212,7 @@ def of_type(dtype: dt.DataType | str | type[dt.DataType]) -> Predicate:
     >>> import ibis
     >>> import ibis.expr.datatypes as dt
     >>> import ibis.selectors as s
-    >>> t = ibis.table(
-    ...     dict(name="string", siblings="array<string>", parents="array<int64>")
-    ... )
+    >>> t = ibis.table(dict(name="string", siblings="array<string>", parents="array<int64>"))
     >>> expr = t.select(s.of_type(dt.Array(dt.string)))
     >>> expr.columns
     ['siblings']
@@ -329,9 +327,7 @@ def contains(
     >>> import ibis
     >>> import ibis.selectors as s
     >>> t = ibis.table(
-    ...     dict(
-    ...         a="int64", b="string", c="float", d="array<int16>", ab="struct<x: int>"
-    ...     )
+    ...     dict(a="int64", b="string", c="float", d="array<int16>", ab="struct<x: int>")
     ... )
     >>> expr = t.select(s.contains(("a", "b")))
     >>> expr.columns
