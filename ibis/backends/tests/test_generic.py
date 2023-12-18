@@ -1286,8 +1286,30 @@ def test_hash_consistent(backend, alltypes):
     [
         param(0, "float", 0.0),
         param(0.0, "int", 0),
-        param("0", "int", 0),
-        param("0.0", "float", 0.0),
+        param(
+            "0",
+            "int",
+            0,
+            marks=[
+                pytest.mark.broken(
+                    ["polars"],
+                    raises=AssertionError,
+                    reason="Polars returns None for this cast",
+                )
+            ],
+        ),
+        param(
+            "0.0",
+            "float",
+            0.0,
+            marks=[
+                pytest.mark.broken(
+                    ["polars"],
+                    raises=AssertionError,
+                    reason="Polars returns None for this cast",
+                )
+            ],
+        ),
         param(
             "a",
             "int",
@@ -1381,11 +1403,11 @@ def test_try_cast_table(backend, con):
 @pytest.mark.parametrize(
     ("from_val", "to_type", "func"),
     [
-        param("a", "float", np.isnan),
+        param("a", "float", lambda x: x is None or np.isnan(x)),
         param(
             datetime.datetime(2023, 1, 1),
             "float",
-            np.isnan,
+            lambda x: x is None or np.isnan(x),
             marks=[
                 pytest.mark.notyet(
                     ["clickhouse", "polars", "flink"],
