@@ -1292,7 +1292,7 @@ def test_hash_consistent(backend, alltypes):
             "a",
             "int",
             None,
-            marks=pytest.mark.notyet(["polars", "flink"], reason="casts to nan"),
+            marks=pytest.mark.notyet(["flink"], reason="casts to nan"),
         ),
         param(
             datetime.datetime(2023, 1, 1),
