@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import Optional
 
 import pytest
-from typing_extensions import Self  # noqa: TCH002
+from typing_extensions import Self
 
 from ibis.common.collections import frozendict
 from ibis.common.deferred import _

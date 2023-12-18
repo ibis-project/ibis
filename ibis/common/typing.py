@@ -30,7 +30,7 @@ if sys.version_info >= (3, 10):
     # Keep this alias in sync with unittest.case._ClassInfo
     _ClassInfo: TypeAlias = type | UnionType | tuple["_ClassInfo", ...]
 else:
-    from typing_extensions import TypeAlias  # noqa: TCH002
+    from typing_extensions import TypeAlias
 
     UnionType = object()
     _ClassInfo: TypeAlias = Union[type, tuple["_ClassInfo", ...]]
