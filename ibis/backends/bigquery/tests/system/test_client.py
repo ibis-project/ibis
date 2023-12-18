@@ -250,8 +250,8 @@ def test_multiple_project_queries(con, snapshot):
 def test_multiple_project_queries_execute(con):
     posts_questions = con.table(
         "posts_questions", database="bigquery-public-data", schema="stackoverflow"
-    )
-    trips = con.table("trips", database="nyc-taxi", schema="yellow").limit(5)
+    ).limit(5)
+    trips = con.table("trips", database="nyc-tlc", schema="yellow").limit(5)
     predicate = posts_questions.tags == trips.rate_code
     cols = [posts_questions.title]
     join = posts_questions.left_join(trips, predicate)[cols]
