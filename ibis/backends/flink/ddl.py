@@ -4,6 +4,7 @@ from typing import TYPE_CHECKING
 
 import sqlglot as sg
 
+import ibis.common.exceptions as exc
 import ibis.expr.schema as sch
 from ibis.backends.base.sql.ddl import (
     CreateTable,
@@ -19,15 +20,19 @@ from ibis.backends.base.sql.ddl import (
 )
 from ibis.backends.base.sql.registry import quote_identifier
 from ibis.backends.flink.registry import type_to_sql_string
+from ibis.util import promote_list
 
 if TYPE_CHECKING:
+    from collections.abc import Sequence
+
     from ibis.api import Watermark
 
 
-def format_schema(schema):
+def format_schema(schema: sch.Schema):
     elements = [
         _format_schema_element(name, t) for name, t in zip(schema.names, schema.types)
     ]
+
     return "({})".format(",\n ".join(elements))
 
 
@@ -54,15 +59,31 @@ def _format_watermark_strategy(watermark: Watermark) -> str:
 
 
 def format_schema_with_watermark(
-    schema: sch.Schema, watermark: Watermark | None = None
+    schema: sch.Schema,
+    watermark: Watermark | None = None,
+    primary_keys: Sequence[str] | None = None,
 ) -> str:
     elements = [
         _format_schema_element(name, t) for name, t in zip(schema.names, schema.types)
     ]
+
     if watermark is not None:
         elements.append(
             f"WATERMARK FOR {watermark.time_col} AS {_format_watermark_strategy(watermark)}"
         )
+
+    if primary_keys is not None and primary_keys:
+        # Note (mehmet): Currently supports "NOT ENFORCED" only. For the reason
+        # of this choice, the following quote from Flink docs is self-explanatory:
+        # "SQL standard specifies that a constraint can either be ENFORCED or
+        # NOT ENFORCED. This controls if the constraint checks are performed on
+        # the incoming/outgoing data. Flink does not own the data therefore the
+        # only mode we want to support is the NOT ENFORCED mode. It is up to the
+        # user to ensure that the query enforces key integrity."
+        # Ref: https://nightlies.apache.org/flink/flink-docs-release-1.18/docs/dev/table/sql/create/#primary-key
+        comma_separated_keys = ", ".join(f"`{key}`" for key in primary_keys)
+        elements.append(f"PRIMARY KEY ({comma_separated_keys}) NOT ENFORCED")
+
     return "({})".format(",\n ".join(elements))
 
 
@@ -88,6 +109,7 @@ class CreateTableFromConnector(
         schema: sch.Schema,
         tbl_properties: dict,
         watermark: Watermark | None = None,
+        primary_key: str | Sequence[str] | None = None,
         database: str | None = None,
         catalog: str | None = None,
         temporary: bool = False,
@@ -106,6 +128,16 @@ class CreateTableFromConnector(
         self.catalog = catalog
         self.temporary = temporary
         self.watermark = watermark
+
+        self.primary_keys = promote_list(primary_key)
+
+        # Check if `primary_keys` is a subset of the columns in `schema`.
+        if self.primary_keys and not set(self.primary_keys) <= set(schema.names):
+            raise exc.IbisError(
+                "`primary_key` must be a subset of the columns in `schema`. \n"
+                f"\t primary_key= {primary_key} \n"
+                f"\t schema.names= {schema.names}"
+            )
 
     def _storage(self) -> str:
         return f"STORED AS {self.format}" if self.format else None
@@ -142,10 +174,14 @@ class CreateTableFromConnector(
             }
             main_schema = sch.Schema(fields)
 
-            yield format_schema_with_watermark(main_schema, self.watermark)
+            yield format_schema_with_watermark(
+                main_schema, self.watermark, self.primary_keys
+            )
             yield f"PARTITIONED BY {format_schema(part_schema)}"
         else:
-            yield format_schema_with_watermark(self.schema, self.watermark)
+            yield format_schema_with_watermark(
+                self.schema, self.watermark, self.primary_keys
+            )
 
         yield self._format_tbl_properties()
 

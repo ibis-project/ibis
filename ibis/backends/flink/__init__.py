@@ -312,6 +312,7 @@ class Backend(BaseBackend, CanCreateDatabase):
         catalog: str | None = None,
         tbl_properties: dict | None = None,
         watermark: Watermark | None = None,
+        primary_key: str | list[str] | None = None,
         temp: bool = False,
         overwrite: bool = False,
     ) -> ir.Table:
@@ -349,6 +350,11 @@ class Backend(BaseBackend, CanCreateDatabase):
             dictionary of key-value pairs (key1=val1, key2=val2, ...).
         watermark
             Watermark strategy for the table, only applicable on sources.
+        primary_key
+            A single column or a list of columns to be marked as primary. Raises
+            an error if the column(s) in `primary_key` is NOT a subset of the
+            columns in `schema`. Primary keys must be non-nullable in Flink and
+            the columns indicated as primary key will be designated as non-nullable.
         temp
             Whether a table is temporary or not.
         overwrite
@@ -441,6 +447,7 @@ class Backend(BaseBackend, CanCreateDatabase):
                 schema=schema,
                 tbl_properties=tbl_properties,
                 watermark=watermark,
+                primary_key=primary_key,
                 temporary=temp,
                 database=database,
                 catalog=catalog,
