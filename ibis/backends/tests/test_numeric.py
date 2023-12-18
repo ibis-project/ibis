@@ -686,7 +686,7 @@ def test_numeric_literal(con, backend, expr, expected_types):
         ),
     ],
 )
-@pytest.mark.notimpl(["polars"], raises=ValueError)
+@pytest.mark.notimpl(["polars"], raises=TypeError)
 def test_decimal_literal(con, backend, expr, expected_types, expected_result):
     backend_name = backend.name()
 
