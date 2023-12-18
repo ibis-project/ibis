@@ -778,7 +778,7 @@ $$"""
             )
             con.exec_driver_sql(create_infer_fmt)
 
-            if path.startswith("https://"):
+            if str(path).startswith("https://"):
                 with tempfile.NamedTemporaryFile() as tmp:
                     urlretrieve(path, filename=tmp.name)
                     tmp.flush()
