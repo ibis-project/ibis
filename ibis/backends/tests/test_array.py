@@ -996,7 +996,11 @@ timestamp_range_tzinfos = pytest.mark.parametrize(
             ibis.interval(hours=-1),
             "-1H",
             id="neg_inner",
-            marks=[pytest.mark.notyet(["polars"], raises=PolarsComputeError)],
+            marks=[
+                pytest.mark.broken(
+                    ["polars"], raises=AssertionError, reason="returns an empty array"
+                )
+            ],
         ),
         param(
             datetime(2017, 1, 2),
