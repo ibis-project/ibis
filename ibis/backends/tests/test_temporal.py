@@ -2589,26 +2589,12 @@ def test_integer_cast_to_timestamp_scalar(alltypes, df):
 
 
 @pytest.mark.broken(
-    ["clickhouse"],
-    raises=AssertionError,
-)
-@pytest.mark.notimpl(
-    ["polars", "druid"],
-    reason="Arrow backends assume a ns resolution timestamps",
-    raises=com.OperationNotDefinedError,
+    ["clickhouse"], raises=AssertionError, reason="clickhouse truncates the result"
 )
 @pytest.mark.notimpl(
     ["druid"],
     reason='No literal value renderer is available for literal value "datetime.datetime(2419, 10, 11, 10, 10, 25)" with datatype DATETIME',
     raises=sa.exc.CompileError,
-)
-@pytest.mark.notimpl(
-    ["polars"],
-    raises=(AssertionError, PolarsComputeError),
-    reason=(
-        "Casting from timestamp[us] to timestamp[ns] would "
-        "result in out of bounds timestamp: 14193569425000000"
-    ),
 )
 @pytest.mark.notyet(
     ["pyspark"],
@@ -2620,11 +2606,13 @@ def test_integer_cast_to_timestamp_scalar(alltypes, df):
     reason="Casting from timestamp[s] to timestamp[ns] would result in out of bounds timestamp: 81953424000",
     raises=ArrowInvalid,
 )
+@pytest.mark.notyet(["polars"], raises=PolarsComputeError)
 def test_big_timestamp(con):
     # TODO: test with a timezone
-    value = ibis.timestamp("2419-10-11 10:10:25")
+    ts = "2419-10-11 10:10:25"
+    value = ibis.timestamp(ts)
     result = con.execute(value.name("tmp"))
-    expected = datetime.datetime(2419, 10, 11, 10, 10, 25)
+    expected = datetime.datetime.fromisoformat(ts)
     assert result == expected
 
 
