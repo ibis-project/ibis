@@ -8,6 +8,7 @@ import pyarrow as pa
 import pytest
 
 import ibis
+import ibis.common.exceptions as exc
 import ibis.expr.datatypes as dt
 import ibis.expr.schema as sch
 from ibis.backends.conftest import TEST_TABLES
@@ -258,19 +259,80 @@ def test_force_recreate_in_mem_table(
         assert new_table.schema() == schema
 
 
-def test_create_source_table_with_watermark(
-    con, functional_alltypes_schema, temp_table, csv_source_configs
+@pytest.fixture
+def functional_alltypes_schema_w_nonnullable_columns():
+    return sch.Schema(
+        {
+            "id": dt.int32(nullable=False),
+            "bool_col": dt.bool(nullable=False),
+            "smallint_col": dt.int16(nullable=False),
+            "int_col": dt.int32(nullable=False),
+            "bigint_col": dt.int64(nullable=False),
+            "float_col": dt.float32(nullable=False),
+            "double_col": dt.float64(nullable=False),
+            "date_string_col": dt.string(nullable=False),
+            "string_col": dt.string(nullable=False),
+            "year": dt.int32(nullable=False),
+            "month": dt.int32(nullable=False),
+            "timestamp_col": dt.timestamp(scale=3),
+        }
+    )
+
+
+@pytest.mark.parametrize(
+    "primary_key",
+    [
+        None,
+        "id",
+        ["id"],
+        ["month"],
+        ["id", "string_col"],
+        ["id", "string_col", "year"],
+    ],
+)
+def test_create_source_table_with_watermark_and_primary_key(
+    con,
+    temp_table,
+    functional_alltypes_schema_w_nonnullable_columns,
+    csv_source_configs,
+    primary_key,
 ):
     new_table = con.create_table(
         temp_table,
-        schema=functional_alltypes_schema,
+        schema=functional_alltypes_schema_w_nonnullable_columns,
         tbl_properties=csv_source_configs("functional_alltypes"),
         watermark=ibis.watermark(
             time_col="timestamp_col", allowed_delay=ibis.interval(seconds=15)
         ),
+        primary_key=primary_key,
     )
     assert temp_table in con.list_tables()
-    assert new_table.schema() == functional_alltypes_schema
+    assert new_table.schema() == functional_alltypes_schema_w_nonnullable_columns
+
+
+@pytest.mark.parametrize(
+    "primary_key",
+    [
+        "nonexistent_column",
+        ["nonexistent_column"],
+        ["id", "nonexistent_column"],
+    ],
+)
+def test_create_table_failure_with_invalid_primary_keys(
+    con,
+    temp_table,
+    functional_alltypes_schema_w_nonnullable_columns,
+    csv_source_configs,
+    primary_key,
+):
+    with pytest.raises(exc.IbisError):
+        con.create_table(
+            temp_table,
+            schema=functional_alltypes_schema_w_nonnullable_columns,
+            tbl_properties=csv_source_configs("functional_alltypes"),
+            primary_key=primary_key,
+        )
+    assert temp_table not in con.list_tables()
 
 
 @pytest.mark.parametrize("temp", [True, False])
