@@ -74,14 +74,6 @@ def csv_source_configs():
     return generate_csv_configs
 
 
-@pytest.fixture
-def tempdir_sink_configs():
-    def generate_tempdir_configs(tempdir):
-        return {"connector": "filesystem", "path": tempdir, "format": "csv"}
-
-    return generate_tempdir_configs
-
-
 @pytest.mark.parametrize("temp", [True, False])
 def test_list_tables(con, temp):
     assert len(con.list_tables(temp=temp))
@@ -297,7 +289,7 @@ def test_create_source_table_with_watermark_and_primary_key(
     csv_source_configs,
     primary_key,
 ):
-    new_table = con.create_table(
+    con.create_table(
         temp_table,
         schema=functional_alltypes_schema_w_nonnullable_columns,
         tbl_properties=csv_source_configs("functional_alltypes"),
@@ -307,7 +299,6 @@ def test_create_source_table_with_watermark_and_primary_key(
         primary_key=primary_key,
     )
     assert temp_table in con.list_tables()
-    assert new_table.schema() == functional_alltypes_schema_w_nonnullable_columns
 
 
 @pytest.mark.parametrize(

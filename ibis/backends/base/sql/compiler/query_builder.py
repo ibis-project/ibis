@@ -98,7 +98,7 @@ class TableSetFormatter:
             rows = " UNION ALL ".join(f"(SELECT {raw_row})" for raw_row in raw_rows)
             return f"({rows})"
 
-    def _format_table(self, op):
+    def _format_table(self, op, include_alias: bool = True):
         # TODO: This could probably go in a class and be significantly nicer
         ctx = self.context
 
@@ -135,7 +135,7 @@ class TableSetFormatter:
             subquery = ctx.get_compiled_expr(op)
             result = f"(\n{util.indent(subquery, self.indent)}\n)"
 
-        if result != alias:
+        if include_alias and result != alias:
             result = f"{result} {alias}"
 
         if isinstance(orig_op, ops.Sample):

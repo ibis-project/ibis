@@ -135,3 +135,11 @@ def temp_view(con) -> str:
     yield name
 
     con.drop_view(name, force=True)
+
+
+@pytest.fixture
+def tempdir_sink_configs():
+    def generate_tempdir_configs(tempdir):
+        return {"connector": "filesystem", "path": tempdir, "format": "csv"}
+
+    return generate_tempdir_configs

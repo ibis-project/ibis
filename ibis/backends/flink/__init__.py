@@ -454,7 +454,6 @@ class Backend(BaseBackend, CanCreateDatabase):
             )
             sql = statement.compile()
             self._exec_sql(sql)
-
             return self.table(name, database=database, catalog=catalog)
 
     def drop_table(
@@ -656,6 +655,8 @@ class Backend(BaseBackend, CanCreateDatabase):
         self,
         table_name: str,
         obj: pa.Table | pd.DataFrame | ir.Table | list | dict,
+        *,
+        schema: sch.Schema | None = None,
         database: str | None = None,
         catalog: str | None = None,
         overwrite: bool = False,
@@ -668,6 +669,8 @@ class Backend(BaseBackend, CanCreateDatabase):
             The name of the table to insert data into.
         obj
             The source data or expression to insert.
+        schema
+            Schema for the obj.
         database
             Name of the attached database that the table is located in.
         catalog
@@ -689,6 +692,8 @@ class Backend(BaseBackend, CanCreateDatabase):
         import pyarrow as pa
         import pyarrow_hotfix  # noqa: F401
 
+        from ibis.backends.flink.datatypes import FlinkRowSchema
+
         if isinstance(obj, ir.Table):
             expr = obj
             ast = self.compiler.to_ast(expr)
@@ -700,14 +705,20 @@ class Backend(BaseBackend, CanCreateDatabase):
                 catalog=catalog,
                 overwrite=overwrite,
             )
-            return self._exec_sql(statement.compile())
+            sql = statement.compile()
+            return self._exec_sql(sql)
 
         if isinstance(obj, pa.Table):
             obj = obj.to_pandas()
         if isinstance(obj, dict):
             obj = pd.DataFrame.from_dict(obj)
         if isinstance(obj, pd.DataFrame):
-            table = self._table_env.from_pandas(obj)
+            if schema:
+                schema_ = FlinkRowSchema.from_ibis(schema)
+                table = self._table_env.from_pandas(obj, schema_)
+            else:
+                table = self._table_env.from_pandas(obj)
+
             return table.execute_insert(table_name, overwrite=overwrite)
 
         if isinstance(obj, list):
