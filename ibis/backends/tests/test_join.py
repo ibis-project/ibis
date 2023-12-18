@@ -64,16 +64,14 @@ def check_eq(left, right, how, **kwargs):
                     + ["sqlite"] * (vparse(sqlite3.sqlite_version) < vparse("3.39"))
                 ),
                 pytest.mark.xfail_version(datafusion=["datafusion<31"]),
+                pytest.mark.broken(
+                    ["polars"], reason="upstream outer joins are broken"
+                ),
             ],
         ),
     ],
 )
 @pytest.mark.notimpl(["druid"])
-@pytest.mark.xfail_version(
-    polars=["polars>=0.18.6,<0.18.8"],
-    reason="https://github.com/pola-rs/polars/issues/9955",
-    raises=ColumnNotFoundError,
-)
 @pytest.mark.notimpl(["exasol"], raises=AttributeError)
 def test_mutating_join(backend, batting, awards_players, how):
     left = batting[batting.yearID == 2015]
