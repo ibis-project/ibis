@@ -2719,7 +2719,7 @@ class Table(Expr, _FixedTextJupyterMixin):
             ).agg(
                 name=lit(colname),
                 type=lit(str(typ)),
-                nullable=lit(int(typ.nullable)).cast("bool"),
+                nullable=lit(typ.nullable),
                 nulls=lambda t: t.isna.sum(),
                 non_nulls=lambda t: (1 - t.isna).sum(),
                 null_frac=lambda t: t.isna.mean(),
