@@ -29,6 +29,11 @@ _to_polars_types = {
 _from_polars_types = {v: k for k, v in _to_polars_types.items()}
 _from_polars_types[pl.Categorical] = dt.String
 
+# `physical` and `lexical` were introduced in polars 0.20, but the constructor
+# always accepted any string here
+_from_polars_types[pl.Categorical(ordering="physical")] = dt.String
+_from_polars_types[pl.Categorical(ordering="lexical")] = dt.String
+
 
 @functools.singledispatch
 def dtype_to_polars(dtype):
