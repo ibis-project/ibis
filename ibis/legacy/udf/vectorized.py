@@ -134,16 +134,12 @@ def _coerce_to_dataframe(
     Examples
     --------
     >>> import pandas as pd
-    >>> _coerce_to_dataframe(
-    ...     pd.DataFrame({"a": [1, 2, 3]}), dt.Struct(dict(b="int32"))
-    ... )  # noqa: E501
+    >>> _coerce_to_dataframe(pd.DataFrame({"a": [1, 2, 3]}), dt.Struct(dict(b="int32")))  # noqa: E501
        b
     0  1
     1  2
     2  3
-    >>> _coerce_to_dataframe(
-    ...     pd.Series([[1, 2, 3]]), dt.Struct(dict.fromkeys("abc", "int32"))
-    ... )  # noqa: E501
+    >>> _coerce_to_dataframe(pd.Series([[1, 2, 3]]), dt.Struct(dict.fromkeys("abc", "int32")))  # noqa: E501
        a  b  c
     0  1  2  3
     >>> _coerce_to_dataframe(
@@ -157,9 +153,7 @@ def _coerce_to_dataframe(
     ... )  # noqa: E501
        a  b  c
     0  1  2  3
-    >>> _coerce_to_dataframe(
-    ...     [1, 2, 3], dt.Struct(dict.fromkeys("abc", "int32"))
-    ... )  # noqa: E501
+    >>> _coerce_to_dataframe([1, 2, 3], dt.Struct(dict.fromkeys("abc", "int32")))  # noqa: E501
        a  b  c
     0  1  2  3
     """
@@ -287,7 +281,6 @@ def analytic(input_type, output_type):
     >>> @analytic(input_type=[dt.double], output_type=dt.double)
     ... def zscore(series):  # note the use of aggregate functions
     ...     return (series - series.mean()) / series.std()
-    ...
 
     Define and use an UDF with multiple return columns:
 
@@ -329,14 +322,12 @@ def elementwise(input_type, output_type):
     >>> @elementwise(input_type=[dt.string], output_type=dt.int64)
     ... def my_string_length(series):
     ...     return series.str.len() * 2
-    ...
 
     Define an UDF with non-column parameters:
 
     >>> @elementwise(input_type=[dt.string], output_type=dt.int64)
     ... def my_string_length(series, *, times):
     ...     return series.str.len() * times
-    ...
 
     Define and use an UDF with multiple return columns:
 
@@ -375,7 +366,6 @@ def reduction(input_type, output_type):
     >>> @reduction(input_type=[dt.string], output_type=dt.int64)
     ... def my_string_length_agg(series, **kwargs):
     ...     return (series.str.len() * 2).sum()
-    ...
 
     Define and use an UDF with multiple return columns:
 

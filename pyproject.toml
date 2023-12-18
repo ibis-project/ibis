@@ -500,6 +500,7 @@ required-imports = ["from __future__ import annotations"]
 [tool.ruff.format]
 exclude = [".direnv", "result-*", "_py310.py", "decompiled.py"]
 docstring-code-format = true
+docstring-code-line-length = 88
 
 [tool.conda-lock]
 channels = ["conda-forge"]

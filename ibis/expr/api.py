@@ -1278,7 +1278,6 @@ def read_csv(
     ... '''
     >>> with open("/tmp/lines.csv", mode="w") as f:
     ...     nbytes = f.write(lines)  # nbytes is unused
-    ...
     >>> t = ibis.read_csv("/tmp/lines.csv")
     >>> t
     ┏━━━━━━━┳━━━━━━━━┓
@@ -1334,7 +1333,6 @@ def read_json(
     ... '''
     >>> with open("/tmp/lines.json", mode="w") as f:
     ...     nbytes = f.write(lines)  # nbytes is unused
-    ...
     >>> t = ibis.read_json("/tmp/lines.json")
     >>> t
     ┏━━━━━━━┳━━━━━━━━┓

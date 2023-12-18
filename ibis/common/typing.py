@@ -102,14 +102,12 @@ def get_type_params(obj: Any) -> dict[str, type]:
     >>>
     >>> class MyList(List[T]):
     ...     ...
-    ...
     >>>
     >>> get_type_params(MyList[int])
     {'T': <class 'int'>}
     >>>
     >>> class MyDict(Dict[T, U]):
     ...     ...
-    ...
     >>>
     >>> get_type_params(MyDict[int, str])
     {'T': <class 'int'>, 'U': <class 'str'>}
@@ -147,7 +145,6 @@ def get_bound_typevars(obj: Any) -> dict[TypeVar, tuple[str, type]]:
     >>> class MyStruct(Generic[T, U]):
     ...     a: T
     ...     b: U
-    ...
     >>> get_bound_typevars(MyStruct[int, str])
     {~T: ('a', <class 'int'>), ~U: ('b', <class 'str'>)}
     >>>
@@ -157,7 +154,6 @@ def get_bound_typevars(obj: Any) -> dict[TypeVar, tuple[str, type]]:
     ...     @property
     ...     def myprop(self) -> U:
     ...         ...
-    ...
     >>> get_bound_typevars(MyStruct[float, bytes])
     {~T: ('a', <class 'float'>), ~U: ('myprop', <class 'bytes'>)}
     """

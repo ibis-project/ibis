@@ -73,7 +73,6 @@ class _BigQueryUDF:
         >>> @udf.python(input_type=[dt.double], output_type=dt.double)
         ... def add_one(x):
         ...     return x + 1
-        ...
         >>> print(add_one.sql)
         CREATE TEMPORARY FUNCTION add_one_0(x FLOAT64)
         RETURNS FLOAT64
@@ -84,9 +83,7 @@ class _BigQueryUDF:
         }
         return add_one(x);
         """;
-        >>> @udf.python(
-        ...     input_type=[dt.double, dt.double], output_type=dt.Array(dt.double)
-        ... )
+        >>> @udf.python(input_type=[dt.double, dt.double], output_type=dt.Array(dt.double))
         ... def my_range(start, stop):
         ...     def gen(start, stop):
         ...         curr = start
@@ -121,9 +118,7 @@ class _BigQueryUDF:
         """;
         >>> @udf.python(
         ...     input_type=[dt.double, dt.double],
-        ...     output_type=dt.Struct.from_tuples(
-        ...         [("width", "double"), ("height", "double")]
-        ...     ),
+        ...     output_type=dt.Struct.from_tuples([("width", "double"), ("height", "double")]),
         ... )
         ... def my_rectangle(width, height):
         ...     class Rectangle:

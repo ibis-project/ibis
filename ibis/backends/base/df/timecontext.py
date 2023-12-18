@@ -183,9 +183,7 @@ def construct_time_context_aware_series(
     1    2.2
     2    3.3
     Name: value, dtype: float64
-    >>> construct_time_context_aware_series(
-    ...     series, df
-    ... )  # quartodoc: +SKIP # doctest: +SKIP
+    >>> construct_time_context_aware_series(series, df)  # quartodoc: +SKIP # doctest: +SKIP
        time
     0  2017-01-02    1.1
     1  2017-01-03    2.2

@@ -190,7 +190,6 @@ class MapSet(Mapping[K, V]):
     ...
     ...     def __repr__(self):
     ...         return f"MyMap({repr(self._data)})"
-    ...
     >>> m = MyMap(a=1, b=2)
     >>> n = dict(a=1, b=2, c=3)
     >>> m <= n

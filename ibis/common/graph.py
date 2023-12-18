@@ -49,7 +49,6 @@ def _flatten_collections(node: Any) -> Iterator[N]:
     ...     number: int
     ...     string: str
     ...     children: tuple[Node, ...]
-    ...
     >>> a = MyNode(4, "a", ())
     >>>
     >>> b = MyNode(3, "b", ())
@@ -96,7 +95,6 @@ def _recursive_lookup(obj: Any, dct: dict) -> Any:
     ...     number: int
     ...     string: str
     ...     children: tuple[Node, ...]
-    ...
     >>> a = MyNode(4, "a", ())
     >>>
     >>> b = MyNode(3, "b", ())

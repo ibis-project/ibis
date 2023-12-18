@@ -658,7 +658,6 @@ class GenericInstanceOf(Slotted, Pattern):
     ...
     ...     def __eq__(self, other):
     ...         return type(self) is type(other) and self.value == other.value
-    ...
     >>> p = GenericInstanceOf(MyNumber[int])
     >>> assert p.match(MyNumber(1), {}) == MyNumber(1)
     >>> assert p.match(MyNumber(1.0), {}) is NoMatch
@@ -802,7 +801,6 @@ class GenericCoercedTo(Slotted, Pattern):
     ...             return cls(float(value))
     ...         else:
     ...             raise CoercionError(f"Cannot coerce to {T}")
-    ...
     >>> p = GenericCoercedTo(MyNumber[int])
     >>> assert p.match(3.14, {}) == MyNumber(3)
     >>> assert p.match("15", {}) == MyNumber(15)
@@ -1571,7 +1569,6 @@ def pattern(obj: AnyType) -> Pattern:
     >>> @pattern
     ... def as_int(x, context):
     ...     return int(x)
-    ...
     >>>
     >>> assert as_int.match(1, {}) == 1
 
