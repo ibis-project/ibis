@@ -125,6 +125,30 @@ def test_cte_refs_in_topo_order(backend, snapshot):
     snapshot.assert_match(sql, "out.sql")
 
 
+def test_cte_order_select_filter(snapshot):
+    # Build the extraction query from each table.
+    table1 = ibis.table(dict(date="date", A="int64"), name="X1")
+    table2 = ibis.table(dict(date="date", B="int64"), name="X2")
+
+    sel1 = table1.select("date", value="A")
+    sel2 = table2.select("date", value="B")
+
+    # Combine all the data from subtables into a single UNION expression.
+    combined = ibis.union(sel1, sel2)
+
+    # Final output
+    df_out = combined.select("date", "value").filter(
+        [
+            lambda t: t.date >= "2023-01-01",
+            lambda t: t.value.notnull(),
+        ]
+    )
+
+    # Generate SQL
+    out = ibis.to_sql(df_out, dialect="duckdb")
+    snapshot.assert_match(out, "out.sql")
+
+
 @pytest.mark.never(["pandas", "dask", "polars", "pyspark"], reason="not SQL")
 def test_isin_bug(con, snapshot):
     t = ibis.table(dict(x="int"), name="t")
