@@ -117,9 +117,15 @@ def extract_hour_time(array: dt.time) -> dt.int32:
 
 
 def regex_split(s: str, pattern: str) -> list[str]:
-    patterns = pattern.to_pylist()
+    # TODO: pretty inefficient, but this is a stopgap until we can get an
+    # upstream version of this function
+    #
+    # unique is necessary because when `s` is coming from a column, `pattern`
+    # is repeated to match the length of `s`
+    patterns = pattern.unique()
     if len(patterns) != 1:
         raise com.IbisError(
             "Only a single scalar pattern is supported for DataFusion re_split"
         )
-    return pc.split_pattern_regex(s, patterns[0])
+    pattern = patterns[0].as_py()
+    return pc.split_pattern_regex(s, pattern)

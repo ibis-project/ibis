@@ -20,6 +20,14 @@ except ImportError:
     PythonException = None
 
 
+try:
+    from clickhouse_connect.driver.exceptions import (
+        DatabaseError as ClickhouseDatabaseError,
+    )
+except ImportError:
+    ClickhouseDatabaseError = None
+
+
 @pytest.mark.parametrize(
     ("text_value", "expected_types"),
     [
