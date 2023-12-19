@@ -19,11 +19,6 @@ try:
 except ImportError:
     PythonException = None
 
-try:
-    from google.api_core.exceptions import BadRequest
-except ImportError:
-    BadRequest = None
-
 
 @pytest.mark.parametrize(
     ("text_value", "expected_types"),
@@ -1103,3 +1098,28 @@ def test_non_match_regex_search_is_false(con):
     result = con.execute(expr)
     assert isinstance(result, (bool, np.bool_))
     assert not result
+
+
+@pytest.mark.notimpl(
+    [
+        "dask",
+        "datafusion",
+        "impala",
+        "mysql",
+        "sqlite",
+        "mssql",
+        "druid",
+        "oracle",
+        "flink",
+        "exasol",
+        "pandas",
+        "bigquery",
+        "polars",
+    ],
+    raises=com.OperationNotDefinedError,
+)
+def test_re_split(con):
+    lit = ibis.literal(",a,,,,c")
+    expr = lit.re_split(",+")
+    result = con.execute(expr)
+    assert result == ["", "a", "c"]
