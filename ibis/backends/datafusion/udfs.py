@@ -7,7 +7,8 @@ import pyarrow as pa
 import pyarrow.compute as pc
 import pyarrow_hotfix  # noqa: F401
 
-import ibis.expr.datatypes as dt  # noqa: TCH001
+import ibis.common.exceptions as com
+import ibis.expr.datatypes as dt
 
 
 def _extract_epoch_seconds(array) -> dt.int32:
@@ -113,3 +114,12 @@ def extract_minute_timestamp(array: dt.Timestamp(scale=9)) -> dt.int32:
 
 def extract_hour_time(array: dt.time) -> dt.int32:
     return pc.cast(pc.hour(array), pa.int32())
+
+
+def regex_split(s: str, pattern: str) -> list[str]:
+    patterns = pattern.to_pylist()
+    if len(patterns) != 1:
+        raise com.IbisError(
+            "Only a single scalar pattern is supported for DataFusion re_split"
+        )
+    return pc.split_pattern_regex(s, patterns[0])
