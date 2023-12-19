@@ -428,11 +428,9 @@ services:
       - exasol:/data
 
   flink-jobmanager:
-    build: ./docker/flink
-    image: ibis-flink
+    image: flink:1.18.0
     environment:
-      - |
-        FLINK_PROPERTIES=
+      FLINK_PROPERTIES: |
         jobmanager.rpc.address: flink-jobmanager
     ports:
       - 8081:8081
@@ -444,8 +442,7 @@ services:
     build: ./docker/flink
     image: ibis-flink
     environment:
-      - |
-        FLINK_PROPERTIES=
+      FLINK_PROPERTIES: |
         jobmanager.rpc.address: flink-jobmanager
         taskmanager.numberOfTaskSlots: 2
         taskmanager.memory.process.size: 2048m
