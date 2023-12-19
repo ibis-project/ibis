@@ -923,10 +923,6 @@ def test_self_join_memory_table(backend, con, monkeypatch):
             pd.DataFrame([("a", 1.0)], columns=["a", "b"]),
             lambda arg: ibis.memtable(arg),
             id="pandas-memtable",
-        ),
-        param(
-            pd.DataFrame([("a", 1.0)], columns=["a", "b"]),
-            id="pandas",
             marks=[pytest.mark.notimpl(["impala"])],
         ),
     ],
