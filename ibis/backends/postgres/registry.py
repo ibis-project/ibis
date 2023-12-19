@@ -858,5 +858,6 @@ operation_registry.update(
         ops.ArrayFilter: _array_filter,
         ops.IntegerRange: _range,
         ops.TimestampRange: _range,
+        ops.RegexSplit: fixed_arity(sa.func.regexp_split_to_array, 2),
     }
 )
