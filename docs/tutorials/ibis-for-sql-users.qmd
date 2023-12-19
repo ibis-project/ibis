@@ -1144,7 +1144,7 @@ SQL dialects often support two kinds of `UNION` operations:
 - `UNION ALL`: the combination of all rows from each table, whether or
   not they are distinct.
 
-The Ibis `union` function by distinct is a `UNION ALL`, and you can set
+The Ibis `union` function by default is a `UNION ALL`, and you can set
 `distinct=True` to get the normal `UNION` behavior:
 
 ```{python}
