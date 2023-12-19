@@ -356,10 +356,8 @@ def _literal(op, *, value, dtype, **kw):
         args = [value.isoformat()]
 
         if micros % 1000:
-            args.append(micros)
             args.append(6)
-        elif millis := micros // 1000:
-            args.append(millis)
+        elif micros // 1000:
             args.append(3)
 
         if (timezone := dtype.timezone) is not None:
