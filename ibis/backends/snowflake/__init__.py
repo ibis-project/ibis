@@ -49,7 +49,7 @@ with warnings.catch_warnings():
             message="You have an incompatible version of 'pyarrow' installed",
             category=UserWarning,
         )
-    from snowflake.sqlalchemy import ARRAY, DOUBLE, OBJECT, URL
+    from snowflake.sqlalchemy import ARRAY, DOUBLE, OBJECT, URL, VARCHAR
 
     from ibis.backends.snowflake.converter import SnowflakePandasData
     from ibis.backends.snowflake.datatypes import SnowflakeType
@@ -112,6 +112,11 @@ return longest.map((_, i) => {
         "inputs": {"value": ARRAY, "count": DOUBLE},
         "returns": ARRAY,
         "source": """return Array(count).fill(value).flat();""",
+    },
+    "ibis_udfs.public.regexp_split": {
+        "inputs": {"value": VARCHAR, "pattern": VARCHAR},
+        "returns": ARRAY,
+        "source": """return value.split(new RegExp(pattern, "g"));""",
     },
 }
 

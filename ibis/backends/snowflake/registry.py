@@ -564,6 +564,7 @@ operation_registry.update(
             3,
         ),
         ops.TimestampRange: _timestamp_range,
+        ops.RegexSplit: fixed_arity(sa.func.ibis_udfs.public.regexp_split, 2),
     }
 )
 
