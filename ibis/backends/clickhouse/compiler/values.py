@@ -1050,3 +1050,8 @@ def _timestamp_range(op, *, start, stop, step, **_):
         func, F.range(0, F.timestampDiff(unit, start, stop), step_value)
     )
     return result
+
+
+@translate_val.register(ops.RegexSplit)
+def _regex_split(op, *, arg, pattern, **_):
+    return F.splitByRegexp(pattern, cast(arg, dt.String(nullable=False)))
