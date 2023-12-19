@@ -1202,6 +1202,25 @@ def execute_agg_udf(op, **kw):
     return getattr(first, op.__func_name__)(*rest)
 
 
+@translate.register(ops.RegexSplit)
+def execute_regex_split(op, **kw):
+    import pyarrow.compute as pc
+
+    def split(args):
+        arg, patterns = args
+        if len(patterns) != 1:
+            raise com.IbisError(
+                "Only a single scalar pattern is supported for Polars re_split"
+            )
+        return pl.from_arrow(pc.split_pattern_regex(arg.to_arrow(), patterns[0]))
+
+    arg = translate(op.arg, **kw)
+    pattern = translate(op.pattern, **kw)
+    return pl.map_batches(
+        exprs=(arg, pattern), function=split, return_dtype=dtype_to_polars(op.dtype)
+    )
+
+
 @translate.register(ops.IntegerRange)
 def execute_integer_range(op, **kw):
     if not isinstance(op.step, ops.Literal):
