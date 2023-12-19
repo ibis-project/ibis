@@ -109,6 +109,7 @@ _simple_ops = {
     ops.ArrayContains: "array_contains",
     ops.ArrayLength: "array_length",
     ops.ArrayRemove: "array_remove_all",
+    ops.RegexSplit: "regex_split",
 }
 
 for _op, _name in _simple_ops.items():

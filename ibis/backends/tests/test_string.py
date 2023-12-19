@@ -1103,7 +1103,6 @@ def test_non_match_regex_search_is_false(con):
 @pytest.mark.notimpl(
     [
         "dask",
-        "datafusion",
         "impala",
         "mysql",
         "sqlite",
