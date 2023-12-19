@@ -1122,4 +1122,76 @@ def test_re_split(con):
     lit = ibis.literal(",a,,,,c")
     expr = lit.re_split(",+")
     result = con.execute(expr)
-    assert result == ["", "a", "c"]
+    assert list(result) == ["", "a", "c"]
+
+
+@pytest.mark.notimpl(
+    [
+        "dask",
+        "impala",
+        "mysql",
+        "sqlite",
+        "mssql",
+        "druid",
+        "oracle",
+        "flink",
+        "exasol",
+        "pandas",
+        "bigquery",
+    ],
+    raises=com.OperationNotDefinedError,
+)
+def test_re_split_column(alltypes):
+    expr = alltypes.limit(5).string_col.re_split(r"\d+")
+    result = expr.execute()
+    assert all(not any(element) for element in result)
+
+
+@pytest.mark.notimpl(
+    [
+        "dask",
+        "impala",
+        "mysql",
+        "sqlite",
+        "mssql",
+        "druid",
+        "oracle",
+        "flink",
+        "exasol",
+        "pandas",
+        "bigquery",
+    ],
+    raises=com.OperationNotDefinedError,
+)
+@pytest.mark.notyet(
+    ["clickhouse"],
+    raises=ClickhouseDatabaseError,
+    reason="clickhouse only supports pattern constants",
+)
+@pytest.mark.notyet(
+    ["polars"],
+    raises=BaseException,  # yikes, panic exception
+    reason="pyarrow doesn't support splitting on a pattern per row",
+)
+@pytest.mark.notyet(
+    ["datafusion"],
+    raises=Exception,
+    reason="pyarrow doesn't support splitting on a pattern per row",
+)
+@pytest.mark.notyet(
+    ["pyspark"],
+    raises=com.UnsupportedOperationError,
+    reason="pyspark only supports pattern constants",
+)
+def test_re_split_column_multiple_patterns(alltypes):
+    expr = (
+        alltypes.filter(lambda t: t.string_col.isin(("1", "2")))
+        .select(
+            splits=lambda t: t.string_col.re_split(
+                ibis.ifelse(t.string_col == "1", "0|1", r"\d+")
+            )
+        )
+        .splits
+    )
+    result = expr.execute()
+    assert all(not any(element) for element in result)

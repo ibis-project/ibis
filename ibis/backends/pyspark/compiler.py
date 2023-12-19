@@ -2124,3 +2124,14 @@ def compile_timestamp_range(t, op, **kwargs):
     step = F.expr(f"INTERVAL {step_value} {unit}")
 
     return _build_sequence(start, stop, step, _zero_value(op.step.dtype))
+
+
+@compiles(ops.RegexSplit)
+def compile_regex_split(t, op, **kwargs):
+    src_column = t.translate(op.arg, **kwargs)
+    if not isinstance(op.pattern, ops.Literal):
+        raise com.UnsupportedOperationError(
+            "`pattern` argument of re_split must be a literal"
+        )
+    pattern = t.translate(op.pattern, raw=True, **kwargs)
+    return F.split(src_column, pattern)
