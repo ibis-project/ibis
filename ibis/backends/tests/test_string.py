@@ -1113,7 +1113,6 @@ def test_non_match_regex_search_is_false(con):
         "exasol",
         "pandas",
         "bigquery",
-        "polars",
     ],
     raises=com.OperationNotDefinedError,
 )
