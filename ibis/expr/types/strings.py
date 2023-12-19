@@ -1081,6 +1081,52 @@ class StringValue(Value):
     @util.backend_sensitive(
         why="Different backends support different regular expression syntax."
     )
+    def re_split(self, pattern: str | StringValue) -> ir.ArrayValue:
+        """Split a string by a regular expression `pattern`.
+
+        Parameters
+        ----------
+        pattern
+            Regular expression string to split by
+
+        Returns
+        -------
+        ArrayValue
+            Array of strings from splitting by `pattern`
+
+        Examples
+        --------
+        >>> import ibis
+        >>> ibis.options.interactive = True
+        >>> t = ibis.memtable(dict(s=["a.b", "b.....c", "c.........a", "def"]))
+        >>> t.s
+        ┏━━━━━━━━━━━━━┓
+        ┃ s           ┃
+        ┡━━━━━━━━━━━━━┩
+        │ string      │
+        ├─────────────┤
+        │ a.b         │
+        │ b.....c     │
+        │ c.........a │
+        │ def         │
+        └─────────────┘
+        >>> t.s.re_split("\.+").name("splits")
+        ┏━━━━━━━━━━━━━━━━━━━━━━┓
+        ┃ splits               ┃
+        ┡━━━━━━━━━━━━━━━━━━━━━━┩
+        │ array<string>        │
+        ├──────────────────────┤
+        │ ['a', 'b']           │
+        │ ['b', 'c']           │
+        │ ['c', 'a']           │
+        │ ['def']              │
+        └──────────────────────┘
+        """
+        return ops.RegexSplit(self, pattern).to_expr()
+
+    @util.backend_sensitive(
+        why="Different backends support different regular expression syntax."
+    )
     def re_replace(
         self,
         pattern: str | StringValue,
