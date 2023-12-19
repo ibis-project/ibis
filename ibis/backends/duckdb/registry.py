@@ -562,6 +562,7 @@ operation_registry.update(
         ops.GeoConvert: _geo_convert,
         # other ops
         ops.TimestampRange: fixed_arity(sa.func.range, 3),
+        ops.RegexSplit: fixed_arity(sa.func.str_split_regex, 2),
     }
 )
 
