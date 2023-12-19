@@ -1258,7 +1258,7 @@ def test_range_expression_bounds(backend):
     ["pandas"], reason="missing column during execution", raises=KeyError
 )
 @pytest.mark.broken(
-    ["mssql"], reason="lack of support for booleans", raises=sa.exc.OperationalError
+    ["mssql"], reason="lack of support for booleans", raises=sa.exc.ProgrammingError
 )
 @pytest.mark.broken(
     ["pyspark"], reason="pyspark requires CURRENT ROW", raises=AnalysisException
