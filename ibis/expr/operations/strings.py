@@ -208,6 +208,18 @@ class RegexExtract(Value):
 
 
 @public
+class RegexSplit(Value):
+    arg: Value[dt.String]
+    pattern: Value[dt.String]
+
+    dtype = dt.Array(dt.string)
+
+    @attribute
+    def shape(self):
+        return rlz.highest_precedence_shape((self.arg, self.pattern))
+
+
+@public
 class RegexReplace(Value):
     arg: Value[dt.String]
     pattern: Value[dt.String]
