@@ -912,30 +912,22 @@ def test_self_join_memory_table(backend, con, monkeypatch):
 
 
 @pytest.mark.parametrize(
-    ("arg", "lambda_"),
+    ("arg", "func"),
     [
-        param(
-            [("a", 1.0)],
-            lambda arg: ibis.memtable(arg, columns=["a", "b"]),
-            id="python",
-        ),
-        param(
-            pd.DataFrame([("a", 1.0)], columns=["a", "b"]),
-            lambda arg: ibis.memtable(arg),
-            id="pandas-memtable",
-            marks=[pytest.mark.notimpl(["impala"])],
-        ),
+        ([("a", 1.0)], lambda arg: ibis.memtable(arg, columns=["a", "b"])),
+        (pd.DataFrame([("a", 1.0)], columns=["a", "b"]), ibis.memtable),
     ],
+    ids=["python", "pandas"],
 )
 @pytest.mark.notimpl(["dask", "datafusion", "druid"])
 @pytest.mark.notimpl(
     ["flink"],
     reason="Flink backend supports creating only TEMPORARY VIEW for in-memory data.",
 )
-def test_create_from_in_memory_table(con, temp_table, arg, lambda_, monkeypatch):
+def test_create_from_in_memory_table(con, temp_table, arg, func, monkeypatch):
     monkeypatch.setattr(ibis.options, "default_backend", con)
 
-    t = lambda_(arg)
+    t = func(arg)
     con.create_table(temp_table, t)
     assert temp_table in con.list_tables()
 
