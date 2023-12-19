@@ -291,6 +291,18 @@ class PandasData(DataMapper):
             with contextlib.suppress(AttributeError):
                 value = value.item()
 
+            if isinstance(value, int):
+                # this can only mean a numpy or pandas timestamp because they
+                # both support nanosecond precision
+                #
+                # when the precision is less than or equal to the value
+                # supported by Python datetime.dateimte a call to .item() will
+                # return a datetime.datetime but when the precision is higher
+                # than the value supported by Python the value is an integer
+                #
+                # TODO: can we do better than implicit truncation to microseconds?
+                value = datetime.datetime.utcfromtimestamp(value / 1e9)
+
             if (tz := dtype.timezone) is not None:
                 return value.astimezone(normalize_timezone(tz))
 
