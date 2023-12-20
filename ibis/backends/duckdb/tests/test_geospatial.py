@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from operator import methodcaller
+
 import numpy.testing as npt
 import pandas.testing as tm
 import pyarrow as pa
@@ -210,3 +212,14 @@ def test_geospatial_convert(geotable, gdf):
     gtm.assert_geoseries_equal(
         geo_ll.to_pandas(), gdf_ll, check_less_precise=True, check_crs=False
     )
+
+
+def test_create_table_geospatial_types(geotable, con):
+    name = ibis.util.gen_name("geotable")
+
+    # con = ibis.get_backend(geotable)
+
+    t = con.create_table(name, geotable, temp=True)
+
+    assert t.op().name in con.list_tables()
+    assert any(map(methodcaller("is_geospatial"), t.schema().values()))
