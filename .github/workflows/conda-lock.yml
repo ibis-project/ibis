@@ -44,7 +44,7 @@ jobs:
         run: mamba create --name ibis${{ matrix.python-version }} --file conda-lock/linux-64/${{ matrix.python-version }}.lock
 
       - name: upload conda lock files
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v3
         with:
           name: conda-lock-files-${{ github.run_attempt }}
           path: ci/conda-lock/*/${{ matrix.python-version }}.lock
