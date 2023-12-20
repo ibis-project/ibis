@@ -40,9 +40,10 @@ jobs:
           body-regex: '\*\*ACTION NEEDED\*\*.+'
 
       - name: post a message if the pull request title and body fail `commitlint`
-        if: steps.fc.outputs.comment-body == ''
+        if: success() && steps.fc.outputs.comment-body == ''
         uses: peter-evans/create-or-update-comment@v3
         with:
+          comment-id: steps.fc.outputs.comment-id
           body: |
             **ACTION NEEDED**
 
