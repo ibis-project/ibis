@@ -26,7 +26,7 @@ jobs:
       - name: run commitlint
         run: npx commitlint --extends "@commitlint/config-conventional" --verbose <<< "$COMMIT_MSG"
         env:
-          COMMIT_MSG: >
+          COMMIT_MSG: |
             ${{ github.event.pull_request.title }}
 
             ${{ github.event.pull_request.body }}
