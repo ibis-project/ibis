@@ -673,6 +673,7 @@ _reductions = {
     ops.Mean: "mean",
     ops.Median: "median",
     ops.Min: "min",
+    ops.Mode: "mode",
     ops.StandardDev: "std",
     ops.Sum: "sum",
     ops.Variance: "var",
@@ -682,22 +683,36 @@ for reduction in _reductions.keys():
 
     @translate.register(reduction)
     def reduction(op, **kw):
-        arg = translate(op.arg, **kw)
+        args = [
+            translate(arg, **kw)
+            for name, arg in zip(op.argnames, op.args)
+            if name not in ("where", "how")
+        ]
+
         agg = _reductions[type(op)]
-        filt = arg.is_not_null()
+
+        predicates = [arg.is_not_null() for arg in args]
         if (where := op.where) is not None:
-            filt &= translate(where, **kw)
-        arg = arg.filter(filt)
-        method = getattr(arg, agg)
-        return method().cast(dtype_to_polars(op.dtype))
+            predicates.append(translate(where, **kw))
+
+        first, *rest = args
+        method = operator.methodcaller(agg, *rest)
+        return method(first.filter(reduce(operator.and_, predicates))).cast(
+            dtype_to_polars(op.dtype)
+        )
 
 
-@translate.register(ops.Mode)
-def mode(op, **kw):
+@translate.register(ops.Quantile)
+def execute_quantile(op, **kw):
     arg = translate(op.arg, **kw)
+    quantile = translate(op.quantile, **kw)
+    filt = arg.is_not_null() & quantile.is_not_null()
     if (where := op.where) is not None:
-        arg = arg.filter(translate(where, **kw))
-    return arg.mode().min()
+        filt &= translate(where, **kw)
+
+    # we can't throw quantile into the _reductions mapping because Polars'
+    # default interpolation of "nearest" doesn't match the rest of our backends
+    return arg.filter(filt).quantile(quantile, interpolation="linear")
 
 
 @translate.register(ops.Correlation)

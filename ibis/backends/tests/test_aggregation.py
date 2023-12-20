@@ -901,7 +901,6 @@ def test_count_distinct_star(alltypes, df, ibis_cond, pandas_cond):
                         "impala",
                         "mssql",
                         "mysql",
-                        "polars",
                         "sqlite",
                         "druid",
                         "oracle",
