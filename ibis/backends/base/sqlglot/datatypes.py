@@ -354,6 +354,8 @@ class DuckDBType(SqlglotType):
     default_decimal_scale = 3
     default_interval_precision = "us"
 
+    unknown_type_strings = FrozenDict({"wkb_blob": dt.binary})
+
     @classmethod
     def _from_sqlglot_TIMESTAMP(cls) -> dt.Timestamp:
         return dt.Timestamp(scale=6, nullable=cls.default_nullable)
