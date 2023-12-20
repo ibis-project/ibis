@@ -52,7 +52,6 @@ jobs:
         if: steps.lint.outputs.failed == '1' && steps.fc.outputs.comment-body == ''
         uses: peter-evans/create-or-update-comment@v3
         with:
-          comment-id: ${{ steps.fc.outputs.comment-id }}
           issue-number: ${{ github.event.pull_request.number }}
           body: |
             **ACTION NEEDED**
@@ -62,3 +61,7 @@ jobs:
             The PR title and description are used as the merge commit message.
 
             Please update your PR title and description to match the specification.
+
+      - name: fail the check if commitlint failed
+        if: steps.lint.outputs.failed == '1'
+        run: exit 1 # templating not allowed here it seems
