@@ -219,7 +219,7 @@ def test_create_table_geospatial_types(geotable, con):
 
     # con = ibis.get_backend(geotable)
 
-    t = con.create_table(name, geotable)
+    t = con.create_table(name, geotable, temp=True)
 
     assert t.op().name in con.list_tables()
     assert any(map(methodcaller("is_geospatial"), t.schema().values()))
