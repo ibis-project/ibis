@@ -27,7 +27,13 @@ jobs:
         run: npm install "@commitlint/config-conventional"
 
       - name: run commitlint
-        run: npx commitlint --extends "@commitlint/config-conventional" --verbose <<< "$COMMIT_MSG"
+        id: lint
+        run: |
+          failed=0
+          if ! npx commitlint --extends "@commitlint/config-conventional" --verbose <<< "$COMMIT_MSG"; then
+            failed=1
+          fi
+          echo "failed=$failed" >> "$GITHUB_OUTPUT"
         env:
           COMMIT_MSG: |
             ${{ github.event.pull_request.title }}
@@ -35,7 +41,7 @@ jobs:
             ${{ github.event.pull_request.body }}
 
       - name: find existing comment
-        if: failure()
+        if: steps.lint.outputs.failed == '1'
         uses: peter-evans/find-comment@v2
         id: fc
         with:
@@ -43,7 +49,7 @@ jobs:
           body-regex: '\*\*ACTION NEEDED\*\*.+'
 
       - name: post a message if the pull request title and body fail `commitlint`
-        if: success() && steps.fc.outputs.comment-body == ''
+        if: steps.lint.outputs.failed == '1' && steps.fc.outputs.comment-body == ''
         uses: peter-evans/create-or-update-comment@v3
         with:
           issue-number: ${{ github.event.pull_request.number }}
