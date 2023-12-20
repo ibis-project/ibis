@@ -187,29 +187,38 @@ class Mean(Filterable, Reduction):
             return dt.higher_precedence(dtype, dt.float64)
 
 
-@public
-class Median(Filterable, Reduction):
-    arg: Column[dt.Numeric | dt.Boolean]
+class QuantileBase(Filterable, Reduction):
+    arg: Column
 
     @attribute
     def dtype(self):
-        return dt.higher_precedence(self.arg.dtype, dt.float64)
+        dtype = self.arg.dtype
+        if dtype.is_numeric():
+            dtype = dt.higher_precedence(dtype, dt.float64)
+        return dtype
 
 
 @public
-class Quantile(Filterable, Reduction):
-    arg: Value
-    quantile: Value[dt.Numeric]
+class Median(QuantileBase):
+    pass
 
-    dtype = dt.float64
+
+@public
+class Quantile(QuantileBase):
+    quantile: Value[dt.Numeric]
 
 
 @public
 class MultiQuantile(Filterable, Reduction):
-    arg: Value
-    quantile: Value[dt.Array[dt.Float64]]
+    arg: Column
+    quantile: Value[dt.Array[dt.Numeric]]
 
-    dtype = dt.Array(dt.float64)
+    @attribute
+    def dtype(self):
+        dtype = self.arg.dtype
+        if dtype.is_numeric():
+            dtype = dt.higher_precedence(dtype, dt.float64)
+        return dt.Array(dtype)
 
 
 @public

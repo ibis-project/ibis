@@ -1571,6 +1571,131 @@ class Column(Value, _FixedTextJupyterMixin):
             self, key=key, where=self._bind_reduction_filter(where)
         ).to_expr()
 
+    def median(self, where: ir.BooleanValue | None = None) -> Scalar:
+        """Return the median of the column.
+
+        Parameters
+        ----------
+        where
+            Optional boolean expression. If given, only the values where
+            `where` evaluates to true will be considered for the median.
+
+        Returns
+        -------
+        Scalar
+            Median of the column
+
+        Examples
+        --------
+        >>> import ibis
+        >>> ibis.options.interactive = True
+        >>> t = ibis.examples.penguins.fetch()
+
+        Compute the median of `bill_depth_mm`
+
+        >>> t.bill_depth_mm.median()
+        17.3
+        >>> t.group_by(t.species).agg(
+        ...     median_bill_depth=t.bill_depth_mm.median()
+        ... ).order_by(ibis.desc("median_bill_depth"))
+        ┏━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━┓
+        ┃ species   ┃ median_bill_depth ┃
+        ┡━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━┩
+        │ string    │ float64           │
+        ├───────────┼───────────────────┤
+        │ Chinstrap │             18.45 │
+        │ Adelie    │             18.40 │
+        │ Gentoo    │             15.00 │
+        └───────────┴───────────────────┘
+
+        In addition to numeric types, any orderable non-numeric types such as
+        strings and dates work with `median`.
+
+        >>> t.group_by(t.island).agg(
+        ...     median_species=t.species.median()
+        ... ).order_by(ibis.desc("median_species"))
+        ┏━━━━━━━━━━━┳━━━━━━━━━━━━━━━━┓
+        ┃ island    ┃ median_species ┃
+        ┡━━━━━━━━━━━╇━━━━━━━━━━━━━━━━┩
+        │ string    │ string         │
+        ├───────────┼────────────────┤
+        │ Biscoe    │ Gentoo         │
+        │ Dream     │ Chinstrap      │
+        │ Torgersen │ Adelie         │
+        └───────────┴────────────────┘
+        """
+        return ops.Median(self, where=where).to_expr()
+
+    def quantile(
+        self,
+        quantile: float | ir.NumericValue | Sequence[ir.NumericValue | float],
+        where: ir.BooleanValue | None = None,
+    ) -> Scalar:
+        """Return value at the given quantile.
+
+        The output of this method is a continuous quantile if the input is
+        numeric, otherwise the output is a discrete quantile.
+
+        Parameters
+        ----------
+        quantile
+            `0 <= quantile <= 1`, or an array of such values
+            indicating the quantile or quantiles to compute
+        where
+            Boolean filter for input values
+
+        Returns
+        -------
+        Scalar
+            Quantile of the input
+
+        Examples
+        --------
+        >>> import ibis
+        >>> ibis.options.interactive = True
+        >>> t = ibis.examples.penguins.fetch()
+
+        Compute the 99th percentile of `bill_depth`
+
+        >>> t.bill_depth_mm.quantile(0.99)
+        21.1
+        >>> t.group_by(t.species).agg(
+        ...     p99_bill_depth=t.bill_depth_mm.quantile(0.99)
+        ... ).order_by(ibis.desc("p99_bill_depth"))
+        ┏━━━━━━━━━━━┳━━━━━━━━━━━━━━━━┓
+        ┃ species   ┃ p99_bill_depth ┃
+        ┡━━━━━━━━━━━╇━━━━━━━━━━━━━━━━┩
+        │ string    │ float64        │
+        ├───────────┼────────────────┤
+        │ Adelie    │         21.200 │
+        │ Chinstrap │         20.733 │
+        │ Gentoo    │         17.256 │
+        └───────────┴────────────────┘
+
+        In addition to numeric types, any orderable non-numeric types such as
+        strings and dates work with `quantile`.
+
+        Let's compute the 99th percentile of the `species` column
+
+        >>> t.group_by(t.island).agg(
+        ...     p99_species=t.species.quantile(0.99)
+        ... ).order_by(ibis.desc("p99_species"))
+        ┏━━━━━━━━━━━┳━━━━━━━━━━━━━┓
+        ┃ island    ┃ p99_species ┃
+        ┡━━━━━━━━━━━╇━━━━━━━━━━━━━┩
+        │ string    │ string      │
+        ├───────────┼─────────────┤
+        │ Biscoe    │ Gentoo      │
+        │ Dream     │ Chinstrap   │
+        │ Torgersen │ Adelie      │
+        └───────────┴─────────────┘
+        """
+        if isinstance(quantile, Sequence):
+            op = ops.MultiQuantile
+        else:
+            op = ops.Quantile
+        return op(self, quantile, where=where).to_expr()
+
     def nunique(self, where: ir.BooleanValue | None = None) -> ir.IntegerScalar:
         """Compute the number of distinct rows in an expression.
 

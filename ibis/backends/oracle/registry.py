@@ -81,6 +81,19 @@ def _string_join(t, op):
     return sa.func.concat(*toolz.interpose(sep, values))
 
 
+def _median(t, op):
+    arg = op.arg
+    if (where := op.where) is not None:
+        arg = ops.IfElse(where, arg, None)
+
+    if arg.dtype.is_numeric():
+        return sa.func.median(t.translate(arg))
+    return sa.cast(
+        sa.func.percentile_disc(0.5).within_group(t.translate(arg)),
+        t.get_sqla_type(op.dtype),
+    )
+
+
 operation_registry.update(
     {
         ops.Log2: unary(lambda arg: sa.func.log(2, arg)),
@@ -96,7 +109,7 @@ operation_registry.update(
         ops.Covariance: _cov,
         ops.Correlation: _corr,
         ops.ApproxMedian: reduction(sa.func.approx_median),
-        ops.Median: reduction(sa.func.median),
+        ops.Median: _median,
         # Temporal
         ops.ExtractSecond: _second,
         # String

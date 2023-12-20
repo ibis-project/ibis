@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+from datetime import date
+from operator import methodcaller
+
 import numpy as np
 import pandas as pd
 import pytest
@@ -24,11 +27,6 @@ except ImportError:
     GoogleBadRequest = None
 
 try:
-    from polars.exceptions import ComputeError
-except ImportError:
-    ComputeError = None
-
-try:
     from clickhouse_connect.driver.exceptions import (
         DatabaseError as ClickhouseDatabaseError,
     )
@@ -40,11 +38,15 @@ try:
 except ImportError:
     Py4JError = None
 
-
 try:
     from pyexasol.exceptions import ExaQueryError
 except ImportError:
     ExaQueryError = None
+
+try:
+    from polars.exceptions import InvalidOperationError as PolarsInvalidOperationError
+except ImportError:
+    PolarsInvalidOperationError = None
 
 
 @reduction(input_type=[dt.double], output_type=dt.double)
@@ -899,7 +901,6 @@ def test_count_distinct_star(alltypes, df, ibis_cond, pandas_cond):
                         "impala",
                         "mssql",
                         "mysql",
-                        "polars",
                         "sqlite",
                         "druid",
                         "oracle",
@@ -1208,6 +1209,102 @@ def test_median(alltypes, df):
     result = expr.execute()
     expected = df.double_col.median()
     assert result == expected
+
+
+@pytest.mark.notimpl(
+    ["bigquery", "druid", "sqlite"], raises=com.OperationNotDefinedError
+)
+@pytest.mark.notyet(
+    ["impala", "mysql", "mssql", "trino", "exasol", "flink"],
+    raises=com.OperationNotDefinedError,
+)
+@pytest.mark.notyet(
+    ["clickhouse"],
+    raises=ClickhouseDatabaseError,
+    reason="doesn't support median of strings",
+)
+@pytest.mark.notyet(
+    ["oracle"], raises=sa.exc.DatabaseError, reason="doesn't support median of strings"
+)
+@pytest.mark.broken(
+    ["pyspark"], raises=AssertionError, reason="pyspark returns null for string median"
+)
+@pytest.mark.notimpl(["dask"], raises=(AssertionError, NotImplementedError, TypeError))
+@pytest.mark.notyet(
+    ["snowflake"],
+    raises=sa.exc.ProgrammingError,
+    reason="doesn't support median of strings",
+)
+@pytest.mark.notyet(["polars"], raises=PolarsInvalidOperationError)
+@pytest.mark.notyet(["datafusion"], raises=Exception, reason="not supported upstream")
+@pytest.mark.notimpl(
+    ["pandas"], raises=TypeError, reason="results aren't correctly typed"
+)
+@pytest.mark.parametrize(
+    "func",
+    [
+        param(
+            methodcaller("quantile", 0.5),
+            id="quantile",
+            marks=[
+                pytest.mark.notimpl(["oracle"], raises=com.OperationNotDefinedError)
+            ],
+        ),
+        param(
+            methodcaller("median"),
+            id="median",
+            marks=[
+                pytest.mark.notimpl(["pyspark"], raises=com.OperationNotDefinedError)
+            ],
+        ),
+    ],
+)
+def test_string_quantile(alltypes, func):
+    expr = func(alltypes.select(col=ibis.literal("a")).limit(5).col)
+    result = expr.execute()
+    assert result == "a"
+
+
+@pytest.mark.notimpl(["bigquery", "sqlite"], raises=com.OperationNotDefinedError)
+@pytest.mark.notyet(
+    ["impala", "mysql", "mssql", "trino", "exasol", "flink"],
+    raises=com.OperationNotDefinedError,
+)
+@pytest.mark.broken(["druid"], raises=AttributeError)
+@pytest.mark.notyet(
+    ["snowflake"],
+    raises=sa.exc.ProgrammingError,
+    reason="doesn't support median of dates",
+)
+@pytest.mark.notimpl(["dask"], raises=(AssertionError, NotImplementedError, TypeError))
+@pytest.mark.notyet(["polars"], raises=PolarsInvalidOperationError)
+@pytest.mark.notyet(["datafusion"], raises=Exception, reason="not supported upstream")
+@pytest.mark.broken(
+    ["pandas"], raises=AssertionError, reason="possibly incorrect results"
+)
+@pytest.mark.parametrize(
+    "func",
+    [
+        param(
+            methodcaller("quantile", 0.5),
+            id="quantile",
+            marks=[
+                pytest.mark.notimpl(["oracle"], raises=com.OperationNotDefinedError)
+            ],
+        ),
+        param(
+            methodcaller("median"),
+            id="median",
+            marks=[
+                pytest.mark.notimpl(["pyspark"], raises=com.OperationNotDefinedError)
+            ],
+        ),
+    ],
+)
+def test_date_quantile(alltypes, func):
+    expr = func(alltypes.timestamp_col.date())
+    result = expr.execute()
+    assert result == date(2009, 12, 31)
 
 
 @pytest.mark.parametrize(
