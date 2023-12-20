@@ -9,6 +9,9 @@ jobs:
   commitlint:
     name: Check PR title conforms to semantic-release
     runs-on: ubuntu-latest
+    permissions:
+      issues: write
+      pull-requests: write
     steps:
       - name: install node
         uses: actions/setup-node@v4
