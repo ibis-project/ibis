@@ -43,7 +43,7 @@ jobs:
         if: success() && steps.fc.outputs.comment-body == ''
         uses: peter-evans/create-or-update-comment@v3
         with:
-          comment-id: steps.fc.outputs.comment-id
+          comment-id: ${{ steps.fc.outputs.comment-id }}
           body: |
             **ACTION NEEDED**
 
