@@ -90,7 +90,6 @@ _to_pyarrow_types = {
     dt.Unknown: pa.string(),
     dt.MACADDR: pa.string(),
     dt.INET: pa.string(),
-    dt.GeoSpatial: pa.binary(),
 }
 
 
@@ -191,6 +190,8 @@ class PyArrowType(TypeMapper):
             return pa.map_(key_field, value_field, keys_sorted=False)
         elif dtype.is_json():
             return PYARROW_JSON_TYPE
+        elif dtype.is_geospatial():
+            return pa.binary()
         else:
             try:
                 return _to_pyarrow_types[type(dtype)]

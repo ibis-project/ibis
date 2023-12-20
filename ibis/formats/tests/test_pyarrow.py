@@ -159,3 +159,20 @@ def test_schema_roundtrip(pyarrow_schema):
 
 def test_unknown_dtype_gets_converted_to_string():
     assert PyArrowType.from_ibis(dt.unknown) == pa.string()
+
+
+@pytest.mark.parametrize(
+    "ibis_type",
+    [
+        pytest.param(dt.geometry, id="geometry"),
+        pytest.param(dt.geography, id="geography"),
+        pytest.param(dt.point, id="point"),
+        pytest.param(dt.linestring, id="linestring"),
+        pytest.param(dt.polygon, id="polygon"),
+        pytest.param(dt.multilinestring, id="multilinestring"),
+        pytest.param(dt.multipoint, id="multipoint"),
+        pytest.param(dt.multipolygon, id="multipolygon"),
+    ],
+)
+def test_geo_gets_converted_to_binary(ibis_type):
+    assert PyArrowType.from_ibis(ibis_type) == pa.binary()
