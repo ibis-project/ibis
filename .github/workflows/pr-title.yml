@@ -46,7 +46,8 @@ jobs:
         id: fc
         with:
           issue-number: ${{ github.event.pull_request.number }}
-          body-regex: '\*\*ACTION NEEDED\*\*.+'
+          body-includes: "ACTION NEEDED"
+          comment-author: github-actions
 
       - name: post a message if the pull request title and body fail `commitlint`
         if: steps.lint.outputs.failed == '1' && steps.fc.outputs.comment-body == ''
