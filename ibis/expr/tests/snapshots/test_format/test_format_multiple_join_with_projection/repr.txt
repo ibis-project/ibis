@@ -19,15 +19,17 @@ r4 := SelfReference[r2]
 r5 := Filter[r0]
   r0.f > 0
 
-JoinChain[r5]
+r6 := SelfReference[r5]
+
+JoinChain[r6]
   JoinLink[left, r3]
-    r5.foo_id == r3.foo_id
+    r6.foo_id == r3.foo_id
   JoinLink[inner, r4]
-    r5.bar_id == r4.bar_id
+    r6.bar_id == r4.bar_id
   values:
-    c:      r5.c
-    f:      r5.f
-    foo_id: r5.foo_id
-    bar_id: r5.bar_id
+    c:      r6.c
+    f:      r6.f
+    foo_id: r6.foo_id
+    bar_id: r6.bar_id
     value1: r3.value1
     value2: r4.value2

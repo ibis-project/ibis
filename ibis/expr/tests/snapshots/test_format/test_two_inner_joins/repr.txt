@@ -8,22 +8,24 @@ r1 := UnboundTable: right
   value2 float64
   b      string
 
-r2 := SelfReference[r1]
+r2 := SelfReference[r0]
 
 r3 := SelfReference[r1]
 
-JoinChain[r0]
-  JoinLink[inner, r2]
-    r0.a == r2.b
+r4 := SelfReference[r1]
+
+JoinChain[r2]
   JoinLink[inner, r3]
-    r0.value == r3.value2
+    r2.a == r3.b
+  JoinLink[inner, r4]
+    r2.value == r4.value2
   values:
-    time1:        r0.time1
-    value:        r0.value
-    a:            r0.a
-    time2:        r2.time2
-    value2:       r2.value2
-    b:            r2.b
-    time2_right:  r3.time2
-    value2_right: r3.value2
-    b_right:      r3.b
+    time1:        r2.time1
+    value:        r2.value
+    a:            r2.a
+    time2:        r3.time2
+    value2:       r3.value2
+    b:            r3.b
+    time2_right:  r4.time2
+    value2_right: r4.value2
+    b_right:      r4.b
