@@ -204,7 +204,6 @@ def test_scalar_param(backend, alltypes, df, value, dtype, col):
     ids=["string", "date", "datetime"],
 )
 @pytest.mark.notimpl(["druid", "oracle"])
-@pytest.mark.notyet(["impala"], reason="impala doesn't support dates")
 def test_scalar_param_date(backend, alltypes, value):
     param = ibis.param("date")
     ds_col = alltypes.date_string_col

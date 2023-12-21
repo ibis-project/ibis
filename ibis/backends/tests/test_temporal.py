@@ -81,14 +81,7 @@ except ImportError:
 @pytest.mark.parametrize("attr", ["year", "month", "day"])
 @pytest.mark.parametrize(
     "expr_fn",
-    [
-        param(lambda c: c.date(), id="date"),
-        param(
-            lambda c: c.cast("date"),
-            id="cast",
-            marks=pytest.mark.notimpl(["impala"], raises=com.UnsupportedBackendType),
-        ),
-    ],
+    [param(lambda c: c.date(), id="date"), param(lambda c: c.cast("date"), id="cast")],
 )
 @pytest.mark.notimpl(
     ["druid"],
@@ -1957,7 +1950,6 @@ def test_string_to_timestamp(alltypes, fmt):
     ],
 )
 @pytest.mark.notimpl(["mssql", "druid", "oracle"], raises=com.OperationNotDefinedError)
-@pytest.mark.notimpl(["impala"], raises=com.UnsupportedBackendType)
 @pytest.mark.notimpl(
     ["flink"],
     raises=Py4JJavaError,
@@ -2494,7 +2486,6 @@ def test_timestamp_column_from_ymdhms(backend, con, alltypes, df):
         "java.lang.UnsupportedOperationException: class org.apache.calcite.sql.SqlIdentifier: LONG"
     ),
 )
-@pytest.mark.notimpl(["impala"], raises=com.UnsupportedBackendType)
 @pytest.mark.notimpl(
     ["oracle"], raises=sa.exc.DatabaseError, reason="ORA-01861 literal does not match"
 )
@@ -2512,7 +2503,6 @@ def test_date_scalar_from_iso(con):
     raises=sa.exc.ProgrammingError,
     reason="java.lang.UnsupportedOperationException: class org.apache.calcite.sql.SqlIdentifier: STRING",
 )
-@pytest.mark.notimpl(["impala"], raises=com.UnsupportedBackendType)
 @pytest.mark.notyet(
     ["oracle"],
     raises=sa.exc.DatabaseError,
@@ -2647,11 +2637,6 @@ def build_date_col(t):
     ["druid"],
     raises=sa.exc.CompileError,
     reason='No literal value renderer is available for literal value "datetime.date(2010, 11, 1)" with datatype DATE',
-)
-@pytest.mark.notyet(
-    ["impala"],
-    reason="impala doesn't support dates",
-    raises=com.UnsupportedBackendType,
 )
 @pytest.mark.notimpl(["oracle"], raises=sa.exc.DatabaseError)
 @pytest.mark.parametrize(
