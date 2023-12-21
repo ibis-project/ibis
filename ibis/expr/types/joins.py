@@ -95,7 +95,7 @@ def dereference_value(pred, deref_left, deref_right):
         return pred.replace(deref_both, filter=ops.Value)
 
 
-def prepare_predicates(left, right, predicates, deref_left, deref_right, deref_both):
+def prepare_predicates(left, right, predicates, deref_left, deref_right):
     """Bind and dereference predicates to the left and right tables."""
 
     for pred in util.promote_list(predicates):
@@ -104,12 +104,10 @@ def prepare_predicates(left, right, predicates, deref_left, deref_right, deref_b
         elif isinstance(pred, ValueExpr):
             node = pred.op()
             yield dereference_value(node, deref_left, deref_right)
-            # yield node.replace(deref_both, filter=ops.Value)
         elif isinstance(pred, Deferred):
             # resolve deferred expressions on the left table
             node = pred.resolve(left).op()
             yield dereference_value(node, deref_left, deref_right)
-            # yield node.replace(deref_both, filter=ops.Value)
         else:
             if isinstance(pred, tuple):
                 if len(pred) != 2:
@@ -180,7 +178,6 @@ class JoinExpr(Table):
         right = right.op()
         subs_left = dereference_mapping_left(left)
         subs_right, right = dereference_mapping_right(right)
-        subs_both = {**subs_left, **subs_right}
 
         # bind and dereference the predicates
         preds = prepare_predicates(
@@ -189,7 +186,6 @@ class JoinExpr(Table):
             predicates,
             deref_left=subs_left,
             deref_right=subs_right,
-            deref_both=subs_both,
         )
         preds = flatten_predicates(list(preds))
 

@@ -7,25 +7,27 @@ r1 := DatabaseTable: test1
   f float64
   g string
 
-r2 := Filter[r1]
+r2 := SelfReference[r0]
+
+r3 := Filter[r1]
   r1.f > 0
 
-r3 := SelfReference[r2]
+r4 := SelfReference[r3]
 
-r4 := JoinChain[r0]
-  JoinLink[inner, r3]
-    r3.g == r0.key
+r5 := JoinChain[r2]
+  JoinLink[inner, r4]
+    r4.g == r2.key
   values:
-    key:   r0.key
-    value: r0.value
-    c:     r3.c
-    f:     r3.f
-    g:     r3.g
+    key:   r2.key
+    value: r2.value
+    c:     r4.c
+    f:     r4.f
+    g:     r4.g
 
-Aggregate[r4]
+Aggregate[r5]
   groups:
-    g:   r4.g
-    key: r4.key
+    g:   r5.g
+    key: r5.key
   metrics:
-    foo: Mean(r4.f - r4.value)
-    bar: Sum(r4.f)
+    foo: Mean(r5.f - r5.value)
+    bar: Sum(r5.f)

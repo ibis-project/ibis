@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+import contextlib
+import itertools
+
 import pytest
 
 import ibis
@@ -30,6 +33,19 @@ t = ibis.table(
         "string_col": "string",
     },
 )
+
+
+@contextlib.contextmanager
+def self_references(*tables):
+    old_counter = ops.SelfReference._uid_counter
+    # set a new counter with 1000 to avoid colliding with manually created
+    # self-references using t.view()
+    new_counter = itertools.count(1000)
+    try:
+        ops.SelfReference._uid_counter = new_counter
+        yield tuple(ops.SelfReference(t).to_expr() for t in tables)
+    finally:
+        ops.SelfReference._uid_counter = old_counter
 
 
 def test_field():
@@ -471,7 +487,9 @@ def test_join():
     t1 = ibis.table(name="t1", schema={"a": "int64", "b": "string"})
     t2 = ibis.table(name="t2", schema={"c": "int64", "d": "string"})
 
-    joined = t1.join(t2, [t1.a == t2.c])
+    with self_references():
+        joined = t1.join(t2, [t1.a == t2.c])
+
     assert isinstance(joined, ir.JoinExpr)
     assert isinstance(joined.op(), JoinChain)
     assert isinstance(joined.op().to_expr(), ir.JoinExpr)
@@ -481,39 +499,39 @@ def test_join():
     assert isinstance(joined.op(), JoinChain)
     assert isinstance(joined.op().to_expr(), ir.JoinExpr)
 
-    t2_ = joined.op().rest[0].table.to_expr()
-    assert result.op() == JoinChain(
-        first=t1,
-        rest=[
-            JoinLink("inner", t2_, [t1.a == t2_.c]),
-        ],
-        values={
-            "a": t1.a,
-            "b": t1.b,
-            "c": t2_.c,
-            "d": t2_.d,
-        },
-    )
+    with self_references(t1, t2) as (t1, t2):
+        assert result.op() == JoinChain(
+            first=t1,
+            rest=[
+                JoinLink("inner", t2, [t1.a == t2.c]),
+            ],
+            values={
+                "a": t1.a,
+                "b": t1.b,
+                "c": t2.c,
+                "d": t2.d,
+            },
+        )
 
 
 def test_join_unambiguous_select():
     a = ibis.table(name="a", schema={"a_int": "int64", "a_str": "string"})
     b = ibis.table(name="b", schema={"b_int": "int64", "b_str": "string"})
 
-    join = a.join(b, a.a_int == b.b_int)
-    expr1 = join["a_int", "b_int"]
-    expr2 = join.select("a_int", "b_int")
-    assert expr1.equals(expr2)
-
-    b_ = join.op().rest[0].table.to_expr()
-    assert expr1.op() == JoinChain(
-        first=a,
-        rest=[JoinLink("inner", b_, [a.a_int == b_.b_int])],
-        values={
-            "a_int": a.a_int,
-            "b_int": b_.b_int,
-        },
-    )
+    with self_references():
+        join = a.join(b, a.a_int == b.b_int)
+        expr1 = join["a_int", "b_int"]
+        expr2 = join.select("a_int", "b_int")
+        assert expr1.equals(expr2)
+    with self_references(a, b) as (r1, r2):
+        assert expr1.op() == JoinChain(
+            first=r1,
+            rest=[JoinLink("inner", r2, [r1.a_int == r2.b_int])],
+            values={
+                "a_int": r1.a_int,
+                "b_int": r2.b_int,
+            },
+        )
 
 
 def test_join_with_subsequent_projection():
@@ -521,40 +539,42 @@ def test_join_with_subsequent_projection():
     t2 = ibis.table(name="t2", schema={"c": "int64", "d": "string"})
 
     # a single computed value is pulled to a subsequent projection
-    joined = t1.join(t2, [t1.a == t2.c])
-    expr = joined.select(t1.a, t1.b, col=t2.c + 1)
-    t2_ = joined.op().rest[0].table.to_expr()
-    expected = JoinChain(
-        first=t1,
-        rest=[JoinLink("inner", t2_, [t1.a == t2_.c])],
-        values={"a": t1.a, "b": t1.b, "col": t2_.c + 1},
-    )
-    assert expr.op() == expected
+    with self_references():
+        joined = t1.join(t2, [t1.a == t2.c])
+        expr = joined.select(t1.a, t1.b, col=t2.c + 1)
+    with self_references(t1, t2) as (r1, r2):
+        expected = JoinChain(
+            first=r1,
+            rest=[JoinLink("inner", r2, [r1.a == r2.c])],
+            values={"a": r1.a, "b": r1.b, "col": r2.c + 1},
+        )
+        assert expr.op() == expected
 
     # multiple computed values
-    joined = t1.join(t2, [t1.a == t2.c])
-    expr = joined.select(
-        t1.a,
-        t1.b,
-        foo=t2.c + 1,
-        bar=t2.c + 2,
-        baz=t2.d.name("bar") + "3",
-        baz2=(t2.c + t1.a).name("foo"),
-    )
-    t2_ = joined.op().rest[0].table.to_expr()
-    expected = JoinChain(
-        first=t1,
-        rest=[JoinLink("inner", t2_, [t1.a == t2_.c])],
-        values={
-            "a": t1.a,
-            "b": t1.b,
-            "foo": t2_.c + 1,
-            "bar": t2_.c + 2,
-            "baz": t2_.d.name("bar") + "3",
-            "baz2": t2_.c + t1.a,
-        },
-    )
-    assert expr.op() == expected
+    with self_references():
+        joined = t1.join(t2, [t1.a == t2.c])
+        expr = joined.select(
+            t1.a,
+            t1.b,
+            foo=t2.c + 1,
+            bar=t2.c + 2,
+            baz=t2.d.name("bar") + "3",
+            baz2=(t2.c + t1.a).name("foo"),
+        )
+    with self_references(t1, t2) as (r1, r2):
+        expected = JoinChain(
+            first=r1,
+            rest=[JoinLink("inner", r2, [r1.a == r2.c])],
+            values={
+                "a": r1.a,
+                "b": r1.b,
+                "foo": r2.c + 1,
+                "bar": r2.c + 2,
+                "baz": r2.d.name("bar") + "3",
+                "baz2": r2.c + r1.a,
+            },
+        )
+        assert expr.op() == expected
 
 
 def test_join_with_subsequent_projection_colliding_names():
@@ -563,25 +583,26 @@ def test_join_with_subsequent_projection_colliding_names():
         name="t2", schema={"a": "int64", "b": "string", "c": "float", "d": "string"}
     )
 
-    joined = t1.join(t2, [t1.a == t2.a])
-    expr = joined.select(
-        t1.a,
-        t1.b,
-        foo=t2.a + 1,
-        bar=t1.a + t2.a,
-    )
-    t2_ = joined.op().rest[0].table.to_expr()
-    expected = JoinChain(
-        first=t1,
-        rest=[JoinLink("inner", t2_, [t1.a == t2_.a])],
-        values={
-            "a": t1.a,
-            "b": t1.b,
-            "foo": t2_.a + 1,
-            "bar": t1.a + t2_.a,
-        },
-    )
-    assert expr.op() == expected
+    with self_references():
+        joined = t1.join(t2, [t1.a == t2.a])
+        expr = joined.select(
+            t1.a,
+            t1.b,
+            foo=t2.a + 1,
+            bar=t1.a + t2.a,
+        )
+    with self_references(t1, t2) as (r1, r2):
+        expected = JoinChain(
+            first=r1,
+            rest=[JoinLink("inner", r2, [r1.a == r2.a])],
+            values={
+                "a": r1.a,
+                "b": r1.b,
+                "foo": r2.a + 1,
+                "bar": r1.a + r2.a,
+            },
+        )
+        assert expr.op() == expected
 
 
 def test_chained_join():
@@ -589,44 +610,44 @@ def test_chained_join():
     b = ibis.table(name="b", schema={"c": "int64", "d": "string"})
     c = ibis.table(name="c", schema={"e": "int64", "f": "string"})
 
-    joined = a.join(b, [a.a == b.c]).join(c, [a.a == c.e])
-    result = joined._finish()
+    with self_references():
+        joined = a.join(b, [a.a == b.c]).join(c, [a.a == c.e])
+        result = joined._finish()
 
-    b_ = joined.op().rest[0].table.to_expr()
-    c_ = joined.op().rest[1].table.to_expr()
-    assert result.op() == JoinChain(
-        first=a,
-        rest=[
-            JoinLink("inner", b_, [a.a == b_.c]),
-            JoinLink("inner", c_, [a.a == c_.e]),
-        ],
-        values={
-            "a": a.a,
-            "b": a.b,
-            "c": b_.c,
-            "d": b_.d,
-            "e": c_.e,
-            "f": c_.f,
-        },
-    )
+    with self_references(a, b, c) as (r1, r2, r3):
+        assert result.op() == JoinChain(
+            first=r1,
+            rest=[
+                JoinLink("inner", r2, [r1.a == r2.c]),
+                JoinLink("inner", r3, [r1.a == r3.e]),
+            ],
+            values={
+                "a": r1.a,
+                "b": r1.b,
+                "c": r2.c,
+                "d": r2.d,
+                "e": r3.e,
+                "f": r3.f,
+            },
+        )
 
-    joined = a.join(b, [a.a == b.c]).join(c, [b.c == c.e])
-    result = joined.select(a.a, b.d, c.f)
+    with self_references():
+        joined = a.join(b, [a.a == b.c]).join(c, [b.c == c.e])
+        result = joined.select(a.a, b.d, c.f)
 
-    b_ = joined.op().rest[0].table.to_expr()
-    c_ = joined.op().rest[1].table.to_expr()
-    assert result.op() == JoinChain(
-        first=a,
-        rest=[
-            JoinLink("inner", b_, [a.a == b_.c]),
-            JoinLink("inner", c_, [b_.c == c_.e]),
-        ],
-        values={
-            "a": a.a,
-            "d": b_.d,
-            "f": c_.f,
-        },
-    )
+    with self_references(a, b, c) as (r1, r2, r3):
+        assert result.op() == JoinChain(
+            first=r1,
+            rest=[
+                JoinLink("inner", r2, [r1.a == r2.c]),
+                JoinLink("inner", r3, [r2.c == r3.e]),
+            ],
+            values={
+                "a": r1.a,
+                "d": r2.d,
+                "f": r3.f,
+            },
+        )
 
 
 def test_chained_join_referencing_intermediate_table():
@@ -634,25 +655,29 @@ def test_chained_join_referencing_intermediate_table():
     b = ibis.table(name="b", schema={"c": "int64", "d": "string"})
     c = ibis.table(name="c", schema={"e": "int64", "f": "string"})
 
-    ab = a.join(b, [a.a == b.c])
+    with self_references():
+        ab = a.join(b, [a.a == b.c])
+        abc = ab.join(c, [ab.a == c.e])
+        result = abc._finish()
+    with self_references(a, b, c) as (r1, r2, r3):
+        assert result.op() == JoinChain(
+            first=r1,
+            rest=[
+                JoinLink("inner", r2, [r1.a == r2.c]),
+                JoinLink("inner", r3, [r1.a == r3.e]),
+            ],
+            values={
+                "a": r1.a,
+                "b": r1.b,
+                "c": r2.c,
+                "d": r2.d,
+                "e": r3.e,
+                "f": r3.f,
+            },
+        )
+
     assert isinstance(ab, ir.JoinExpr)
-
-    # assert ab.a.op() == Field(ab, "a")
-    abc = ab.join(c, [ab.a == c.e])
     assert isinstance(abc, ir.JoinExpr)
-
-    result = abc._finish()
-
-    b_ = abc.op().rest[0].table.to_expr()
-    c_ = abc.op().rest[1].table.to_expr()
-    assert result.op() == JoinChain(
-        first=a,
-        rest=[
-            JoinLink("inner", b_, [a.a == b_.c]),
-            JoinLink("inner", c_, [a.a == c_.e]),
-        ],
-        values={"a": a.a, "b": a.b, "c": b_.c, "d": b_.d, "e": c_.e, "f": c_.f},
-    )
 
 
 def test_join_predicate_dereferencing():
@@ -666,68 +691,60 @@ def test_join_predicate_dereferencing():
     filtered = table[table["f"] > 0]
 
     # dereference table.foo_id to filtered.foo_id
-    j1 = filtered.left_join(table2, table["foo_id"] == table2["foo_id"])
+    with self_references():
+        j1 = filtered.left_join(table2, table["foo_id"] == table2["foo_id"])
+    with self_references(filtered, table2) as (r1, r2):
+        expected = ops.JoinChain(
+            first=r1,
+            rest=[
+                ops.JoinLink("left", r2, [r1.foo_id == r2.foo_id]),
+            ],
+            values={
+                "c": r1.c,
+                "f": r1.f,
+                "foo_id": r1.foo_id,
+                "bar_id": r1.bar_id,
+                "foo_id_right": r2.foo_id,
+                "value1": r2.value1,
+                "value3": r2.value3,
+            },
+        )
+        assert j1.op() == expected
 
-    table2_ = j1.op().rest[0].table.to_expr()
-    expected = ops.JoinChain(
-        first=filtered,
-        rest=[
-            ops.JoinLink("left", table2_, [filtered.foo_id == table2_.foo_id]),
-        ],
-        values={
-            "c": filtered.c,
-            "f": filtered.f,
-            "foo_id": filtered.foo_id,
-            "bar_id": filtered.bar_id,
-            "foo_id_right": table2_.foo_id,
-            "value1": table2_.value1,
-            "value3": table2_.value3,
-        },
-    )
-    assert j1.op() == expected
-
-    j2 = j1.inner_join(table3, filtered["bar_id"] == table3["bar_id"])
-
-    table2_ = j2.op().rest[0].table.to_expr()
-    table3_ = j2.op().rest[1].table.to_expr()
-    expected = ops.JoinChain(
-        first=filtered,
-        rest=[
-            ops.JoinLink("left", table2_, [filtered.foo_id == table2_.foo_id]),
-            ops.JoinLink("inner", table3_, [filtered.bar_id == table3_.bar_id]),
-        ],
-        values={
-            "c": filtered.c,
-            "f": filtered.f,
-            "foo_id": filtered.foo_id,
-            "bar_id": filtered.bar_id,
-            "foo_id_right": table2_.foo_id,
-            "value1": table2_.value1,
-            "value3": table2_.value3,
-            "bar_id_right": table3_.bar_id,
-            "value2": table3_.value2,
-        },
-    )
-    assert j2.op() == expected
-
-    # Project out the desired fields
-    view = j2[[filtered, table2["value1"], table3["value2"]]]
-    expected = ops.JoinChain(
-        first=filtered,
-        rest=[
-            ops.JoinLink("left", table2_, [filtered.foo_id == table2_.foo_id]),
-            ops.JoinLink("inner", table3_, [filtered.bar_id == table3_.bar_id]),
-        ],
-        values={
-            "c": filtered.c,
-            "f": filtered.f,
-            "foo_id": filtered.foo_id,
-            "bar_id": filtered.bar_id,
-            "value1": table2_.value1,
-            "value2": table3_.value2,
-        },
-    )
-    assert view.op() == expected
+    with self_references():
+        j1 = filtered.left_join(table2, table["foo_id"] == table2["foo_id"])
+        j2 = j1.inner_join(table3, filtered["bar_id"] == table3["bar_id"])
+        view = j2[[filtered, table2["value1"], table3["value2"]]]
+    with self_references(filtered, table2, table3) as (r1, r2, r3):
+        expected = ops.JoinChain(
+            first=r1,
+            rest=[
+                ops.JoinLink("left", r2, [r1.foo_id == r2.foo_id]),
+                ops.JoinLink("inner", r3, [r1.bar_id == r3.bar_id]),
+            ],
+            values={
+                "c": r1.c,
+                "f": r1.f,
+                "foo_id": r1.foo_id,
+                "bar_id": r1.bar_id,
+                "foo_id_right": r2.foo_id,
+                "value1": r2.value1,
+                "value3": r2.value3,
+                "bar_id_right": r3.bar_id,
+                "value2": r3.value2,
+            },
+        )
+        assert j2.op() == expected
+        assert view.op() == expected.copy(
+            values={
+                "c": r1.c,
+                "f": r1.f,
+                "foo_id": r1.foo_id,
+                "bar_id": r1.bar_id,
+                "value1": r2.value1,
+                "value2": r3.value2,
+            }
+        )
 
 
 def test_aggregate():
@@ -927,96 +944,100 @@ def test_self_join():
     t1 = t0.filter(ibis.literal(True))
     t2 = t1[["key"]]
 
-    t3 = t2.join(t2, ["key"])
-    t2_ = t3.op().rest[0].table.to_expr()
-    expected = ops.JoinChain(
-        first=t2,
-        rest=[
-            ops.JoinLink("inner", t2_, [t2.key == t2_.key]),
-        ],
-        values={"key": t2.key, "key_right": t2_.key},
-    )
-    assert t3.op() == expected
+    with self_references():
+        t3 = t2.join(t2, ["key"])
+        t4 = t3.join(t3, ["key"])
 
-    t4 = t3.join(t3, ["key"])
-    t3_ = t4.op().rest[1].table.to_expr()
+    with self_references(t2, t2, t3) as (r1, r2, r3):
+        expected = ops.JoinChain(
+            first=r1,
+            rest=[
+                ops.JoinLink("inner", r2, [r1.key == r2.key]),
+            ],
+            values={"key": r1.key, "key_right": r2.key},
+        )
+        assert t3.op() == expected
 
-    expected = ops.JoinChain(
-        first=t2,
-        rest=[
-            ops.JoinLink("inner", t2_, [t2.key == t2_.key]),
-            ops.JoinLink("inner", t3_, [t2.key == t3_.key]),
-        ],
-        values={
-            "key": t2.key,
-            "key_right": t2_.key,
-            "key_right_right": t3_.key_right,
-        },
-    )
-    assert t4.op() == expected
+        expected = ops.JoinChain(
+            first=r1,
+            rest=[
+                ops.JoinLink("inner", r2, [r1.key == r2.key]),
+                ops.JoinLink("inner", r3, [r1.key == r3.key]),
+            ],
+            values={
+                "key": r1.key,
+                "key_right": r2.key,
+                "key_right_right": r3.key_right,
+            },
+        )
+        assert t4.op() == expected
 
 
 def test_self_join_view():
     t = ibis.memtable({"x": [1, 2], "y": [2, 1], "z": ["a", "b"]})
     t_view = t.view()
-    expr = t.join(t_view, t.x == t_view.y).select("x", "y", "z", "z_right")
 
-    t_view_ = expr.op().rest[0].table.to_expr()
-    expected = ops.JoinChain(
-        first=t,
-        rest=[
-            ops.JoinLink("inner", t_view_, [t.x == t_view_.y]),
-        ],
-        values={"x": t.x, "y": t.y, "z": t.z, "z_right": t_view_.z},
-    )
-    assert expr.op() == expected
+    with self_references():
+        expr = t.join(t_view, t.x == t_view.y).select("x", "y", "z", "z_right")
+
+    with self_references(t) as (r1,):
+        r2 = t_view
+        expected = ops.JoinChain(
+            first=r1,
+            rest=[
+                ops.JoinLink("inner", r2, [r1.x == r2.y]),
+            ],
+            values={"x": r1.x, "y": r1.y, "z": r1.z, "z_right": r2.z},
+        )
+        assert expr.op() == expected
 
 
 def test_self_join_with_view_projection():
     t1 = ibis.memtable({"x": [1, 2], "y": [2, 1], "z": ["a", "b"]})
     t2 = t1.view()
-    expr = t1.inner_join(t2, ["x"])[[t1]]
 
-    t2_ = expr.op().rest[0].table.to_expr()
-    expected = ops.JoinChain(
-        first=t1,
-        rest=[
-            ops.JoinLink("inner", t2_, [t1.x == t2_.x]),
-        ],
-        values={"x": t1.x, "y": t1.y, "z": t1.z},
-    )
-    assert expr.op() == expected
+    with self_references():
+        expr = t1.inner_join(t2, ["x"])[[t1]]
+    with self_references(t1) as (r1,):
+        r2 = t2
+        expected = ops.JoinChain(
+            first=r1,
+            rest=[
+                ops.JoinLink("inner", r2, [r1.x == r2.x]),
+            ],
+            values={"x": r1.x, "y": r1.y, "z": r1.z},
+        )
+        assert expr.op() == expected
 
 
 def test_joining_same_table_twice():
     left = ibis.table(name="left", schema={"time1": int, "value": float, "a": str})
     right = ibis.table(name="right", schema={"time2": int, "value2": float, "b": str})
 
-    joined = left.inner_join(right, left.a == right.b).inner_join(
-        right, left.value == right.value2
-    )
-
-    right_ = joined.op().rest[0].table.to_expr()
-    right__ = joined.op().rest[1].table.to_expr()
-    expected = ops.JoinChain(
-        first=left,
-        rest=[
-            ops.JoinLink("inner", right_, [left.a == right_.b]),
-            ops.JoinLink("inner", right__, [left.value == right__.value2]),
-        ],
-        values={
-            "time1": left.time1,
-            "value": left.value,
-            "a": left.a,
-            "time2": right_.time2,
-            "value2": right_.value2,
-            "b": right_.b,
-            "time2_right": right__.time2,
-            "value2_right": right__.value2,
-            "b_right": right__.b,
-        },
-    )
-    assert joined.op() == expected
+    with self_references():
+        joined = left.inner_join(right, left.a == right.b).inner_join(
+            right, left.value == right.value2
+        )
+    with self_references(left, right, right) as (r1, r2, r3):
+        expected = ops.JoinChain(
+            first=r1,
+            rest=[
+                ops.JoinLink("inner", r2, [r1.a == r2.b]),
+                ops.JoinLink("inner", r3, [r1.value == r3.value2]),
+            ],
+            values={
+                "time1": r1.time1,
+                "value": r1.value,
+                "a": r1.a,
+                "time2": r2.time2,
+                "value2": r2.value2,
+                "b": r2.b,
+                "time2_right": r3.time2,
+                "value2_right": r3.value2,
+                "b_right": r3.b,
+            },
+        )
+        assert joined.op() == expected
 
 
 def test_join_chain_gets_reused_and_continued_after_a_select():
@@ -1024,129 +1045,122 @@ def test_join_chain_gets_reused_and_continued_after_a_select():
     b = ibis.table(name="b", schema={"c": "int64", "d": "string"})
     c = ibis.table(name="c", schema={"e": "int64", "f": "string"})
 
-    ab = a.join(b, [a.a == b.c])
-    abc = ab[a.b, b.d].join(c, [a.a == c.e])
-
-    b_ = abc.op().rest[0].table.to_expr()
-    c_ = abc.op().rest[1].table.to_expr()
-    expected = ops.JoinChain(
-        first=a,
-        rest=[
-            ops.JoinLink("inner", b_, [a.a == b_.c]),
-            ops.JoinLink("inner", c_, [a.a == c_.e]),
-        ],
-        values={
-            "b": a.b,
-            "d": b_.d,
-            "e": c_.e,
-            "f": c_.f,
-        },
-    )
-    assert abc.op() == expected
-    assert abc._finish().op() == expected
+    with self_references():
+        ab = a.join(b, [a.a == b.c])
+        abc = ab[a.b, b.d].join(c, [a.a == c.e])
+    with self_references(a, b, c) as (r1, r2, r3):
+        expected = ops.JoinChain(
+            first=r1,
+            rest=[
+                ops.JoinLink("inner", r2, [r1.a == r2.c]),
+                ops.JoinLink("inner", r3, [r1.a == r3.e]),
+            ],
+            values={
+                "b": r1.b,
+                "d": r2.d,
+                "e": r3.e,
+                "f": r3.f,
+            },
+        )
+        assert abc.op() == expected
 
 
 def test_self_join_extensive():
     a = ibis.table(name="a", schema={"a": "int64", "b": "string"})
 
-    aa = a.join(a, [a.a == a.a])
-    aa_ = a.join(a, "a")
-    aa__ = a.join(a, [("a", "a")])
-    for join in [aa, aa_, aa__]:
-        a1 = join.op().rest[0].table.to_expr()
+    with self_references():
+        aa = a.join(a, [a.a == a.a])
+    with self_references():
+        aa1 = a.join(a, "a")
+    with self_references():
+        aa2 = a.join(a, [("a", "a")])
+    with self_references(a, a) as (r1, r2):
         expected = ops.JoinChain(
-            first=a,
+            first=r1,
             rest=[
-                ops.JoinLink("inner", a1, [a.a == a1.a]),
+                ops.JoinLink("inner", r2, [r1.a == r2.a]),
             ],
             values={
-                "a": a.a,
-                "b": a.b,
-                "a_right": a1.a,
-                "b_right": a1.b,
+                "a": r1.a,
+                "b": r1.b,
+                "a_right": r2.a,
+                "b_right": r2.b,
             },
         )
-        assert join.op() == expected
+        assert aa.op() == expected
+        assert aa1.op() == expected
+        assert aa2.op() == expected
 
-    aaa = a.join(a, [a.a == a.a]).join(a, [a.a == a.a])
-    a0 = a
-    a1 = aaa.op().rest[0].table.to_expr()
-    a2 = aaa.op().rest[1].table.to_expr()
-    expected = ops.JoinChain(
-        first=a0,
-        rest=[
-            ops.JoinLink("inner", a1, [a0.a == a1.a]),
-            ops.JoinLink("inner", a2, [a0.a == a2.a]),
-        ],
-        values={
-            "a": a0.a,
-            "b": a0.b,
-            "a_right": a1.a,
-            "b_right": a1.b,
-        },
-    )
-
-    aaa = aa.join(a, [aa.a == a.a])
-    aaa_ = aa.join(a, "a")
-    aaa__ = aa.join(a, [("a", "a")])
-    for join in [aaa, aaa_, aaa__]:
-        a1 = join.op().rest[0].table.to_expr()
-        a2 = join.op().rest[1].table.to_expr()
+    with self_references():
+        aaa = a.join(a, [a.a == a.a]).join(a, [a.a == a.a])
+    with self_references():
+        aa = a.join(a, [a.a == a.a])
+        aaa1 = aa.join(a, [aa.a == a.a])
+    with self_references():
+        aa = a.join(a, [a.a == a.a])
+        aaa2 = aa.join(a, "a")
+    with self_references():
+        aa = a.join(a, [a.a == a.a])
+        aaa3 = aa.join(a, [("a", "a")])
+    with self_references(a, a, a) as (r1, r2, r3):
         expected = ops.JoinChain(
-            first=a,
+            first=r1,
             rest=[
-                ops.JoinLink("inner", a1, [a.a == a1.a]),
-                ops.JoinLink("inner", a2, [a.a == a2.a]),
+                ops.JoinLink("inner", r2, [r1.a == r2.a]),
+                ops.JoinLink("inner", r3, [r1.a == r3.a]),
             ],
             values={
-                "a": a.a,
-                "b": a.b,
-                "a_right": a1.a,
-                "b_right": a1.b,
+                "a": r1.a,
+                "b": r1.b,
+                "a_right": r2.a,
+                "b_right": r2.b,
             },
         )
-        assert join.op() == expected
+        assert aaa.op() == expected
+        assert aaa1.op() == expected
+        assert aaa2.op() == expected
+        assert aaa3.op() == expected
 
 
 def test_self_join_with_intermediate_selection():
     a = ibis.table(name="a", schema={"a": "int64", "b": "string"})
 
-    join = a[["b", "a"]].join(a, [a.a == a.a])
-    a0 = a[["b", "a"]]
-    a1 = join.op().rest[0].table.to_expr()
-    expected = ops.JoinChain(
-        first=a0,
-        rest=[
-            ops.JoinLink("inner", a1, [a0.a == a1.a]),
-        ],
-        values={
-            "b": a0.b,
-            "a": a0.a,
-            "a_right": a1.a,
-            "b_right": a1.b,
-        },
-    )
-    assert join.op() == expected
+    with self_references():
+        proj = a[["b", "a"]]
+        join = proj.join(a, [a.a == a.a])
+    with self_references(proj, a) as (r1, r2):
+        expected = ops.JoinChain(
+            first=r1,
+            rest=[
+                ops.JoinLink("inner", r2, [r1.a == r2.a]),
+            ],
+            values={
+                "b": r1.b,
+                "a": r1.a,
+                "a_right": r2.a,
+                "b_right": r2.b,
+            },
+        )
+        assert join.op() == expected
 
-    aa_ = a.join(a, [a.a == a.a])["a", "b_right"]
-    aaa_ = aa_.join(a, [aa_.a == a.a])
-    a0 = a
-    a1 = aaa_.op().rest[0].table.to_expr()
-    a2 = aaa_.op().rest[1].table.to_expr()
-    expected = ops.JoinChain(
-        first=a0,
-        rest=[
-            ops.JoinLink("inner", a1, [a0.a == a1.a]),
-            ops.JoinLink("inner", a2, [a0.a == a2.a]),
-        ],
-        values={
-            "a": a0.a,
-            "b_right": a1.b,
-            "a_right": a2.a,
-            "b": a2.b,
-        },
-    )
-    assert aaa_.op() == expected
+    with self_references():
+        aa = a.join(a, [a.a == a.a])["a", "b_right"]
+        aaa = aa.join(a, [aa.a == a.a])
+    with self_references(a, a, a) as (r1, r2, r3):
+        expected = ops.JoinChain(
+            first=r1,
+            rest=[
+                ops.JoinLink("inner", r2, [r1.a == r2.a]),
+                ops.JoinLink("inner", r3, [r1.a == r3.a]),
+            ],
+            values={
+                "a": r1.a,
+                "b_right": r2.b,
+                "a_right": r3.a,
+                "b": r3.b,
+            },
+        )
+        assert aaa.op() == expected
 
     # TODO(kszucs): this use case could be supported if `_get_column` gets
     # overridden to return underlying column reference, but that would mean
@@ -1191,3 +1205,46 @@ def test_name_collisions_raise():
     abc = a.join(b, [a.a == b.a]).join(c, [a.a == c.a])
     with pytest.raises(IntegrityError):
         abc.filter(abc.a < 1)
+
+
+def test_self_view_join_followed_by_aggregate_correctly_dereference_fields():
+    t = ibis.table(
+        name="t", schema={"a": "int64", "b": "int64", "f": "int64", "g": "string"}
+    )
+
+    agged = t.aggregate([t.f.sum().name("total")], by=["g", "a", "b"])
+    view = agged.view()
+    metrics = [(agged.total - view.total).max().name("metric")]
+
+    with self_references():
+        join = agged.inner_join(view, [agged.a == view.b])
+        agg = join.aggregate(metrics, by=[agged.g])
+    with self_references(agged) as (r1,):
+        r2 = view
+        expected_join = ops.JoinChain(
+            first=r1,
+            rest=[
+                ops.JoinLink("inner", r2, [r1.a == r2.b]),
+            ],
+            values={
+                "g": r1.g,
+                "a": r1.a,
+                "b": r1.b,
+                "total": r1.total,
+                "g_right": r2.g,
+                "a_right": r2.a,
+                "b_right": r2.b,
+                "total_right": r2.total,
+            },
+        ).to_expr()
+        expected_agg = ops.Aggregate(
+            parent=join,
+            groups={
+                "g": join.g,
+            },
+            metrics={
+                "metric": (join.total - join.total_right).max(),
+            },
+        ).to_expr()
+        assert join.equals(expected_join)
+        assert agg.equals(expected_agg)
