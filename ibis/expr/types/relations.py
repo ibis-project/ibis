@@ -154,10 +154,10 @@ def dereference_mapping(parents):
                 # also stop tracking if the field belongs to a parent which
                 # we want to dereference to, see the docstring of
                 # `dereference_values()` for more details
-                while isinstance(v, ops.Field) and v.rel not in parents:
+                while isinstance(v, ops.Field) and v not in mapping:
                     mapping[v] = ops.Field(parent, k)
                     v = v.rel.values.get(v.name)
-            elif v.relations:
+            elif v.relations and v not in mapping:
                 # do not dereference literal expressions
                 mapping[v] = ops.Field(parent, k)
     return mapping
@@ -2976,9 +2976,6 @@ class Table(Expr, _FixedTextJupyterMixin):
         """
         from ibis.expr.types.joins import JoinExpr
 
-        # the first participant of the join can be any Relation, but the rest
-        # must be wrapped in SelfReferences so that we can join the same table
-        # with itself multiple times and to enable optimization passes later on
         left = left.op()
         if isinstance(left, ops.JoinChain):
             # if the left side is already a join chain, we can reuse it, for
@@ -2987,8 +2984,11 @@ class Table(Expr, _FixedTextJupyterMixin):
             # `ir.Table(ops.JoinChain())` expression, which we can reuse here
             expr = left.to_expr()
         else:
-            if isinstance(left, ops.SelfReference):
-                left = left.parent
+            # all participants of the join must be wrapped in SelfReferences so
+            # that we can join the same table with itself multiple times and to
+            # enable optimization passes later on
+            if not isinstance(left, ops.SelfReference):
+                left = ops.SelfReference(left)
             # construct an empty join chain and wrap it with a JoinExpr, the
             # projected fields are the fields of the starting table
             expr = ops.JoinChain(left, rest=(), values=left.fields).to_expr()
