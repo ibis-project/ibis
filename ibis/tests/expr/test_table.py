@@ -22,6 +22,7 @@ from ibis.common.deferred import Deferred
 from ibis.common.exceptions import ExpressionError, IntegrityError, RelationError
 from ibis.expr import api
 from ibis.expr.rewrites import simplify
+from ibis.expr.tests.test_newrels import self_references
 from ibis.expr.types import Column, Table
 from ibis.tests.util import assert_equal, assert_pickle_roundtrip
 
@@ -846,50 +847,47 @@ def test_join_no_predicate_list(con):
     region = con.table("tpch_region")
     nation = con.table("tpch_nation")
 
-    pred = region.r_regionkey == nation.n_regionkey
-    joined = region.inner_join(nation, pred)
-
-    nation_ = joined.op().rest[0].table.to_expr()
-    expected = ops.JoinChain(
-        first=region,
-        rest=[
-            ops.JoinLink("inner", nation_, [region.r_regionkey == nation_.n_regionkey])
-        ],
-        values={
-            "r_regionkey": region.r_regionkey,
-            "r_name": region.r_name,
-            "r_comment": region.r_comment,
-            "n_nationkey": nation_.n_nationkey,
-            "n_name": nation_.n_name,
-            "n_regionkey": nation_.n_regionkey,
-            "n_comment": nation_.n_comment,
-        },
-    )
-    assert joined.op() == expected
+    with self_references():
+        pred = region.r_regionkey == nation.n_regionkey
+        joined = region.inner_join(nation, pred)
+    with self_references(region, nation) as (r1, r2):
+        expected = ops.JoinChain(
+            first=r1,
+            rest=[ops.JoinLink("inner", r2, [r1.r_regionkey == r2.n_regionkey])],
+            values={
+                "r_regionkey": r1.r_regionkey,
+                "r_name": r1.r_name,
+                "r_comment": r1.r_comment,
+                "n_nationkey": r2.n_nationkey,
+                "n_name": r2.n_name,
+                "n_regionkey": r2.n_regionkey,
+                "n_comment": r2.n_comment,
+            },
+        )
+        assert joined.op() == expected
 
 
 def test_join_deferred(con):
     region = con.table("tpch_region")
     nation = con.table("tpch_nation")
-    res = region.join(nation, _.r_regionkey == nation.n_regionkey)
 
-    nation_ = res.op().rest[0].table.to_expr()
-    expected = ops.JoinChain(
-        first=region,
-        rest=[
-            ops.JoinLink("inner", nation_, [region.r_regionkey == nation_.n_regionkey])
-        ],
-        values={
-            "r_regionkey": region.r_regionkey,
-            "r_name": region.r_name,
-            "r_comment": region.r_comment,
-            "n_nationkey": nation_.n_nationkey,
-            "n_name": nation_.n_name,
-            "n_regionkey": nation_.n_regionkey,
-            "n_comment": nation_.n_comment,
-        },
-    )
-    assert res.op() == expected
+    with self_references():
+        res = region.join(nation, _.r_regionkey == nation.n_regionkey)
+    with self_references(region, nation) as (r1, r2):
+        expected = ops.JoinChain(
+            first=r1,
+            rest=[ops.JoinLink("inner", r2, [r1.r_regionkey == r2.n_regionkey])],
+            values={
+                "r_regionkey": r1.r_regionkey,
+                "r_name": r1.r_name,
+                "r_comment": r1.r_comment,
+                "n_nationkey": r2.n_nationkey,
+                "n_name": r2.n_name,
+                "n_regionkey": r2.n_regionkey,
+                "n_comment": r2.n_comment,
+            },
+        )
+        assert res.op() == expected
 
 
 def test_join_invalid_predicate(con):
@@ -920,42 +918,44 @@ def test_asof_join_with_by():
     left = ibis.table([("time", "int32"), ("key", "int32"), ("value", "double")])
     right = ibis.table([("time", "int32"), ("key", "int32"), ("value2", "double")])
 
-    join_without_by = api.asof_join(left, right, "time")
-    right_ = join_without_by.op().rest[0].table.to_expr()
-    expected = ops.JoinChain(
-        first=left,
-        rest=[ops.JoinLink("asof", right_, [left.time == right_.time])],
-        values={
-            "time": left.time,
-            "key": left.key,
-            "value": left.value,
-            "time_right": right_.time,
-            "key_right": right_.key,
-            "value2": right_.value2,
-        },
-    )
-    assert join_without_by.op() == expected
+    with self_references():
+        join_without_by = api.asof_join(left, right, "time")
+    with self_references(left, right) as (r1, r2):
+        r2 = join_without_by.op().rest[0].table.to_expr()
+        expected = ops.JoinChain(
+            first=r1,
+            rest=[ops.JoinLink("asof", r2, [r1.time == r2.time])],
+            values={
+                "time": r1.time,
+                "key": r1.key,
+                "value": r1.value,
+                "time_right": r2.time,
+                "key_right": r2.key,
+                "value2": r2.value2,
+            },
+        )
+        assert join_without_by.op() == expected
 
-    join_with_by = api.asof_join(left, right, "time", by="key")
-    right_ = join_with_by.op().rest[0].table.to_expr()
-    right__ = join_with_by.op().rest[1].table.to_expr()
-    expected = ops.JoinChain(
-        first=left,
-        rest=[
-            ops.JoinLink("inner", right_, [left.key == right_.key]),
-            ops.JoinLink("asof", right__, [left.time == right__.time]),
-        ],
-        values={
-            "time": left.time,
-            "key": left.key,
-            "value": left.value,
-            "time_right": right_.time,
-            "key_right": right_.key,
-            "value2": right_.value2,
-            "value2_right": right__.value2,
-        },
-    )
-    assert join_with_by.op() == expected
+    with self_references():
+        join_with_by = api.asof_join(left, right, "time", by="key")
+    with self_references(left, right, right) as (r1, r2, r3):
+        expected = ops.JoinChain(
+            first=r1,
+            rest=[
+                ops.JoinLink("inner", r2, [r1.key == r2.key]),
+                ops.JoinLink("asof", r3, [r1.time == r3.time]),
+            ],
+            values={
+                "time": r1.time,
+                "key": r1.key,
+                "value": r1.value,
+                "time_right": r2.time,
+                "key_right": r2.key,
+                "value2": r2.value2,
+                "value2_right": r3.value2,
+            },
+        )
+        assert join_with_by.op() == expected
 
 
 @pytest.mark.parametrize(
@@ -981,27 +981,28 @@ def test_asof_join_with_tolerance(ibis_interval, timedelta_interval):
     right = ibis.table([("time", "int32"), ("key", "int32"), ("value2", "double")])
 
     for interval in [ibis_interval, timedelta_interval]:
-        joined = api.asof_join(left, right, "time", tolerance=interval)
-        right_ = joined.op().rest[0].table.to_expr()
-        expected = ops.JoinChain(
-            first=left,
-            rest=[
-                ops.JoinLink(
-                    "asof",
-                    right_,
-                    [left.time == right_.time, (left.time - right_.time) <= interval],
-                )
-            ],
-            values={
-                "time": left.time,
-                "key": left.key,
-                "value": left.value,
-                "time_right": right_.time,
-                "key_right": right_.key,
-                "value2": right_.value2,
-            },
-        )
-        assert joined.op() == expected
+        with self_references():
+            joined = api.asof_join(left, right, "time", tolerance=interval)
+        with self_references(left, right) as (r1, r2):
+            expected = ops.JoinChain(
+                first=r1,
+                rest=[
+                    ops.JoinLink(
+                        "asof",
+                        r2,
+                        [r1.time == r2.time, (r1.time - r2.time) <= interval],
+                    )
+                ],
+                values={
+                    "time": r1.time,
+                    "key": r1.key,
+                    "value": r1.value,
+                    "time_right": r2.time,
+                    "key_right": r2.key,
+                    "value2": r2.value2,
+                },
+            )
+            assert joined.op() == expected
 
 
 def test_equijoin_schema_merge():
@@ -1160,27 +1161,28 @@ def test_cross_join_multiple(table):
     b = table["d", "e"]
     c = table["f", "h"]
 
-    joined = ibis.cross_join(a, b, c)
-    b_ = joined.op().rest[0].table.to_expr()
-    c_ = joined.op().rest[1].table.to_expr()
-    assert joined.op() == ops.JoinChain(
-        first=a,
-        rest=[
-            ops.JoinLink("cross", b_, []),
-            ops.JoinLink("cross", c_, []),
-        ],
-        values={
-            "a": a.a,
-            "b": a.b,
-            "c": a.c,
-            "d": b_.d,
-            "e": b_.e,
-            "f": c_.f,
-            "h": c_.h,
-        },
-    )
-    # TODO(kszucs): it must be simplified first using an appropriate rewrite rule
-    assert not joined.equals(a.cross_join(b.cross_join(c)))
+    with self_references():
+        joined = ibis.cross_join(a, b, c)
+    with self_references(a, b, c) as (r1, r2, r3):
+        expected = ops.JoinChain(
+            first=r1,
+            rest=[
+                ops.JoinLink("cross", r2, []),
+                ops.JoinLink("cross", r3, []),
+            ],
+            values={
+                "a": r1.a,
+                "b": r1.b,
+                "c": r1.c,
+                "d": r2.d,
+                "e": r2.e,
+                "f": r3.f,
+                "h": r3.h,
+            },
+        )
+        assert joined.op() == expected
+        # TODO(kszucs): it must be simplified first using an appropriate rewrite rule
+        assert not joined.equals(a.cross_join(b.cross_join(c)))
 
 
 def test_filter_join():
@@ -1249,25 +1251,25 @@ def test_join_key_alternatives(con, key_maker):
     t2 = con.table("star2")
     key = key_maker(t1, t2)
 
-    joined = t1.inner_join(t2, key)
-
-    t2_ = joined.op().rest[0].table.to_expr()
-    expected = ops.JoinChain(
-        first=t1,
-        rest=[
-            ops.JoinLink("inner", t2_, [t1.foo_id == t2_.foo_id]),
-        ],
-        values={
-            "c": t1.c,
-            "f": t1.f,
-            "foo_id": t1.foo_id,
-            "bar_id": t1.bar_id,
-            "foo_id_right": t2_.foo_id,
-            "value1": t2_.value1,
-            "value3": t2_.value3,
-        },
-    )
-    assert joined.op() == expected
+    with self_references():
+        joined = t1.inner_join(t2, key)
+    with self_references(t1, t2) as (r1, r2):
+        expected = ops.JoinChain(
+            first=r1,
+            rest=[
+                ops.JoinLink("inner", r2, [r1.foo_id == r2.foo_id]),
+            ],
+            values={
+                "c": r1.c,
+                "f": r1.f,
+                "foo_id": r1.foo_id,
+                "bar_id": r1.bar_id,
+                "foo_id_right": r2.foo_id,
+                "value1": r2.value1,
+                "value3": r2.value3,
+            },
+        )
+        assert joined.op() == expected
 
 
 def test_join_key_invalid(con):
@@ -1335,29 +1337,30 @@ def test_unravel_compound_equijoin(table):
     p2 = t1.key2 == t2.key2
     p3 = t1.key3 == t2.key3
 
-    joined = t1.inner_join(t2, [p1 & p2 & p3])
-    t2_ = joined.op().rest[0].table.to_expr()
-    expected = ops.JoinChain(
-        first=t1,
-        rest=[
-            ops.JoinLink(
-                "inner",
-                t2_,
-                [t1.key1 == t2_.key1, t1.key2 == t2_.key2, t1.key3 == t2_.key3],
-            )
-        ],
-        values={
-            "key1": t1.key1,
-            "key2": t1.key2,
-            "key3": t1.key3,
-            "value1": t1.value1,
-            "key1_right": t2_.key1,
-            "key2_right": t2_.key2,
-            "key3_right": t2_.key3,
-            "value2": t2_.value2,
-        },
-    )
-    assert joined.op() == expected
+    with self_references():
+        joined = t1.inner_join(t2, [p1 & p2 & p3])
+    with self_references(t1, t2) as (r1, r2):
+        expected = ops.JoinChain(
+            first=r1,
+            rest=[
+                ops.JoinLink(
+                    "inner",
+                    r2,
+                    [r1.key1 == r2.key1, r1.key2 == r2.key2, r1.key3 == r2.key3],
+                )
+            ],
+            values={
+                "key1": r1.key1,
+                "key2": r1.key2,
+                "key3": r1.key3,
+                "value1": r1.value1,
+                "key1_right": r2.key1,
+                "key2_right": r2.key2,
+                "key3_right": r2.key3,
+                "value2": r2.value2,
+            },
+        )
+        assert joined.op() == expected
 
 
 def test_union(
