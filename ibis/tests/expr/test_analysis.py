@@ -6,6 +6,7 @@ import ibis
 import ibis.common.exceptions as com
 import ibis.expr.operations as ops
 from ibis.expr.rewrites import simplify
+from ibis.expr.tests.test_newrels import self_references
 
 # Place to collect esoteric expression analysis bugs and tests
 
@@ -21,39 +22,37 @@ def test_rewrite_join_projection_without_other_ops(con):
     pred1 = table["foo_id"] == table2["foo_id"]
     pred2 = filtered["bar_id"] == table3["bar_id"]
 
-    j1 = filtered.left_join(table2, [pred1])
-    j2 = j1.inner_join(table3, [pred2])
-
-    # Project out the desired fields
-    view = j2[[filtered, table2["value1"], table3["value2"]]]
-
-    # Construct the thing we expect to obtain
-    table2_ref = j2.op().rest[0].table.to_expr()
-    table3_ref = j2.op().rest[1].table.to_expr()
-    expected = ops.JoinChain(
-        first=filtered,
-        rest=[
-            ops.JoinLink(
-                how="left",
-                table=table2_ref,
-                predicates=[filtered["foo_id"] == table2_ref["foo_id"]],
-            ),
-            ops.JoinLink(
-                how="inner",
-                table=table3_ref,
-                predicates=[filtered["bar_id"] == table3_ref["bar_id"]],
-            ),
-        ],
-        values={
-            "c": filtered.c,
-            "f": filtered.f,
-            "foo_id": filtered.foo_id,
-            "bar_id": filtered.bar_id,
-            "value1": table2_ref.value1,
-            "value2": table3_ref.value2,
-        },
-    )
-    assert view.op() == expected
+    with self_references():
+        j1 = filtered.left_join(table2, [pred1])
+        j2 = j1.inner_join(table3, [pred2])
+        # Project out the desired fields
+        view = j2[[filtered, table2["value1"], table3["value2"]]]
+    with self_references(filtered, table2, table3) as (r1, r2, r3):
+        # Construct the thing we expect to obtain
+        expected = ops.JoinChain(
+            first=r1,
+            rest=[
+                ops.JoinLink(
+                    how="left",
+                    table=r2,
+                    predicates=[r1["foo_id"] == r2["foo_id"]],
+                ),
+                ops.JoinLink(
+                    how="inner",
+                    table=r3,
+                    predicates=[r1["bar_id"] == r3["bar_id"]],
+                ),
+            ],
+            values={
+                "c": r1.c,
+                "f": r1.f,
+                "foo_id": r1.foo_id,
+                "bar_id": r1.bar_id,
+                "value1": r2.value1,
+                "value2": r3.value2,
+            },
+        )
+        assert view.op() == expected
 
 
 def test_multiple_join_deeper_reference():
@@ -166,24 +165,24 @@ def test_filter_self_join():
     )
 
     cond = left.region == right.region
-    joined = left.join(right, cond)
+    with self_references():
+        joined = left.join(right, cond)
+        metric = (left.total - right.total).name("diff")
+        what = [left.region, metric]
+        projected = joined.select(what)
 
-    metric = (left.total - right.total).name("diff")
-    what = [left.region, metric]
-    projected = joined.select(what)
-
-    right_ = joined.op().rest[0].table.to_expr()
-    join = ops.JoinChain(
-        first=left,
-        rest=[
-            ops.JoinLink("inner", right_, [left.region == right_.region]),
-        ],
-        values={
-            "region": left.region,
-            "diff": left.total - right_.total,
-        },
-    )
-    assert projected.op() == join
+    with self_references(left, right) as (r1, r2):
+        join = ops.JoinChain(
+            first=r1,
+            rest=[
+                ops.JoinLink("inner", r2, [r1.region == r2.region]),
+            ],
+            values={
+                "region": r1.region,
+                "diff": r1.total - r2.total,
+            },
+        )
+        assert projected.op() == join
 
 
 def test_is_ancestor_analytic():
