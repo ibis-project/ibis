@@ -1328,16 +1328,16 @@ class Column(Value, _FixedTextJupyterMixin):
         return PandasData.convert_column(df.loc[:, column], self.type())
 
     def _bind_reduction_filter(self, where):
-        node = self.op()
+        rels = self.op().relations
         if isinstance(where, Deferred):
-            if len(node.relations) == 0:
+            if len(rels) == 0:
                 raise com.IbisInputError(
                     "Unable to bind deferred expression to a table because "
                     "the expression doesn't depend on any tables"
                 )
-            elif len(node.relations) == 1:
-                (table,) = node.relations
-                return where.resolve(table)
+            elif len(rels) == 1:
+                (table,) = rels
+                return where.resolve(table.to_expr())
             else:
                 raise com.RelationError(
                     "Cannot bind deferred expression to a table because the "
