@@ -238,7 +238,7 @@ class JoinLink(Node):
 
 @public
 class JoinChain(Relation):
-    first: Relation
+    first: SelfReference
     rest: VarTuple[JoinLink]
     values: FrozenDict[str, Unaliased[Value]]
 
