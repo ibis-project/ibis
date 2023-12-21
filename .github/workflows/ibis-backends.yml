@@ -638,7 +638,7 @@ jobs:
         run: poetry show sqlalchemy --no-ansi | grep version | cut -d ':' -f2- | sed 's/ //g' | grep -P '^2\.'
 
       - name: upload deps file
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: deps
           path: |
