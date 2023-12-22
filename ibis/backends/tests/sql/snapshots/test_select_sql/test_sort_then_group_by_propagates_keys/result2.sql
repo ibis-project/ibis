@@ -1,16 +1,12 @@
 SELECT
-  t2.b AS b,
+  t1.b,
   COUNT(*) AS b_count
 FROM (
   SELECT
-    t1.b AS b
-  FROM (
-    SELECT
-      *
-    FROM t AS t0
-    ORDER BY
-      t0.b ASC
-  ) AS t1
-) AS t2
+    t0.b
+  FROM t AS t0
+  ORDER BY
+    t0.b ASC
+) AS t1
 GROUP BY
   1

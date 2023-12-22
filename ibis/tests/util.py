@@ -30,7 +30,9 @@ def assert_pickle_roundtrip(obj):
 
 
 def schemas_eq(left: ir.Expr, right: ir.Expr) -> bool:
-    assert left.as_table().schema().equals(right.as_table().schema())
+    left_schema = left.as_table().schema()
+    right_schema = right.as_table().schema()
+    return left_schema == right_schema
 
 
 def assert_decompile_roundtrip(

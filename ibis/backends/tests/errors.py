@@ -3,8 +3,12 @@ from __future__ import annotations
 try:
     from duckdb import ConversionException as DuckDBConversionException
     from duckdb import InvalidInputException as DuckDBInvalidInputException
+    from duckdb import NotImplementedException as DuckDBNotImplementedException
+    from duckdb import ParserException as DuckDBParserException
 except ImportError:
-    DuckDBConversionException = DuckDBInvalidInputException = None
+    DuckDBConversionException = (
+        DuckDBInvalidInputException
+    ) = DuckDBParserException = DuckDBNotImplementedException = None
 
 try:
     from clickhouse_connect.driver.exceptions import (
@@ -15,6 +19,7 @@ try:
     )
 except ImportError:
     ClickHouseDatabaseError = ClickHouseInternalError = None
+
 
 try:
     from pyexasol.exceptions import ExaQueryError

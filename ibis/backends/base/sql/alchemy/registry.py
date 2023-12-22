@@ -605,7 +605,7 @@ sqlalchemy_operation_registry: dict[Any, Any] = {
     ops.Coalesce: varargs(sa.func.coalesce),
     ops.NullIf: fixed_arity(sa.func.nullif, 2),
     ops.InValues: _in_values,
-    ops.InColumn: _in_column,
+    ops.InSubquery: _in_column,
     ops.Count: reduction(sa.func.count),
     ops.CountStar: _count_star,
     ops.CountDistinctStar: _count_distinct_star,

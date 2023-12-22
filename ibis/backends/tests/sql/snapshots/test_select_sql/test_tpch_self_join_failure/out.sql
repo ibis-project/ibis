@@ -1,53 +1,53 @@
 SELECT
-  t8.region AS region,
-  t8.year AS year,
-  t8.total - t9.total AS yoy_change
+  t13.region,
+  t13.year,
+  t13.total - t15.total AS yoy_change
 FROM (
   SELECT
-    t7.region AS region,
-    EXTRACT('year' FROM t7.odate) AS year,
-    CAST(SUM(t7.amount) AS DOUBLE) AS total
+    t11.region,
+    EXTRACT('year' FROM t11.odate) AS year,
+    CAST(SUM(t11.amount) AS DOUBLE) AS total
   FROM (
     SELECT
-      t0.r_name AS region,
-      t1.n_name AS nation,
-      t3.o_totalprice AS amount,
-      CAST(t3.o_orderdate AS TIMESTAMP) AS odate
-    FROM tpch_region AS t0
-    INNER JOIN tpch_nation AS t1
-      ON t0.r_regionkey = t1.n_regionkey
-    INNER JOIN tpch_customer AS t2
-      ON t2.c_nationkey = t1.n_nationkey
-    INNER JOIN tpch_orders AS t3
-      ON t3.o_custkey = t2.c_custkey
-  ) AS t7
+      t4.r_name AS region,
+      t5.n_name AS nation,
+      t7.o_totalprice AS amount,
+      CAST(t7.o_orderdate AS TIMESTAMP) AS odate
+    FROM tpch_region AS t4
+    INNER JOIN tpch_nation AS t5
+      ON t4.r_regionkey = t5.n_regionkey
+    INNER JOIN tpch_customer AS t6
+      ON t6.c_nationkey = t5.n_nationkey
+    INNER JOIN tpch_orders AS t7
+      ON t7.o_custkey = t6.c_custkey
+  ) AS t11
   GROUP BY
     1,
     2
-) AS t8
+) AS t13
 INNER JOIN (
   SELECT
-    t7.region AS region,
-    EXTRACT('year' FROM t7.odate) AS year,
-    CAST(SUM(t7.amount) AS DOUBLE) AS total
+    t11.region,
+    EXTRACT('year' FROM t11.odate) AS year,
+    CAST(SUM(t11.amount) AS DOUBLE) AS total
   FROM (
     SELECT
-      t0.r_name AS region,
-      t1.n_name AS nation,
-      t3.o_totalprice AS amount,
-      CAST(t3.o_orderdate AS TIMESTAMP) AS odate
-    FROM tpch_region AS t0
-    INNER JOIN tpch_nation AS t1
-      ON t0.r_regionkey = t1.n_regionkey
-    INNER JOIN tpch_customer AS t2
-      ON t2.c_nationkey = t1.n_nationkey
-    INNER JOIN tpch_orders AS t3
-      ON t3.o_custkey = t2.c_custkey
-  ) AS t7
+      t4.r_name AS region,
+      t5.n_name AS nation,
+      t7.o_totalprice AS amount,
+      CAST(t7.o_orderdate AS TIMESTAMP) AS odate
+    FROM tpch_region AS t4
+    INNER JOIN tpch_nation AS t5
+      ON t4.r_regionkey = t5.n_regionkey
+    INNER JOIN tpch_customer AS t6
+      ON t6.c_nationkey = t5.n_nationkey
+    INNER JOIN tpch_orders AS t7
+      ON t7.o_custkey = t6.c_custkey
+  ) AS t11
   GROUP BY
     1,
     2
-) AS t9
-  ON t8.year = (
-    t9.year - CAST(1 AS TINYINT)
+) AS t15
+  ON t13.year = (
+    t15.year - CAST(1 AS TINYINT)
   )

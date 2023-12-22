@@ -1,73 +1,73 @@
 SELECT
-  t8.p_brand AS p_brand,
-  t8.p_type AS p_type,
-  t8.p_size AS p_size,
-  t8.supplier_cnt AS supplier_cnt
+  t9.p_brand,
+  t9.p_type,
+  t9.p_size,
+  t9.supplier_cnt
 FROM (
   SELECT
-    t7.p_brand AS p_brand,
-    t7.p_type AS p_type,
-    t7.p_size AS p_size,
-    COUNT(DISTINCT t7.ps_suppkey) AS supplier_cnt
+    t8.p_brand,
+    t8.p_type,
+    t8.p_size,
+    COUNT(DISTINCT t8.ps_suppkey) AS supplier_cnt
   FROM (
     SELECT
-      t6.ps_partkey AS ps_partkey,
-      t6.ps_suppkey AS ps_suppkey,
-      t6.ps_availqty AS ps_availqty,
-      t6.ps_supplycost AS ps_supplycost,
-      t6.ps_comment AS ps_comment,
-      t6.p_partkey AS p_partkey,
-      t6.p_name AS p_name,
-      t6.p_mfgr AS p_mfgr,
-      t6.p_brand AS p_brand,
-      t6.p_type AS p_type,
-      t6.p_size AS p_size,
-      t6.p_container AS p_container,
-      t6.p_retailprice AS p_retailprice,
-      t6.p_comment AS p_comment
+      t7.ps_partkey,
+      t7.ps_suppkey,
+      t7.ps_availqty,
+      t7.ps_supplycost,
+      t7.ps_comment,
+      t7.p_partkey,
+      t7.p_name,
+      t7.p_mfgr,
+      t7.p_brand,
+      t7.p_type,
+      t7.p_size,
+      t7.p_container,
+      t7.p_retailprice,
+      t7.p_comment
     FROM (
       SELECT
-        t0.ps_partkey AS ps_partkey,
-        t0.ps_suppkey AS ps_suppkey,
-        t0.ps_availqty AS ps_availqty,
-        t0.ps_supplycost AS ps_supplycost,
-        t0.ps_comment AS ps_comment,
-        t3.p_partkey AS p_partkey,
-        t3.p_name AS p_name,
-        t3.p_mfgr AS p_mfgr,
-        t3.p_brand AS p_brand,
-        t3.p_type AS p_type,
-        t3.p_size AS p_size,
-        t3.p_container AS p_container,
-        t3.p_retailprice AS p_retailprice,
-        t3.p_comment AS p_comment
-      FROM partsupp AS t0
-      INNER JOIN part AS t3
-        ON t3.p_partkey = t0.ps_partkey
-    ) AS t6
+        t3.ps_partkey,
+        t3.ps_suppkey,
+        t3.ps_availqty,
+        t3.ps_supplycost,
+        t3.ps_comment,
+        t4.p_partkey,
+        t4.p_name,
+        t4.p_mfgr,
+        t4.p_brand,
+        t4.p_type,
+        t4.p_size,
+        t4.p_container,
+        t4.p_retailprice,
+        t4.p_comment
+      FROM partsupp AS t3
+      INNER JOIN part AS t4
+        ON t4.p_partkey = t3.ps_partkey
+    ) AS t7
     WHERE
-      t6.p_brand <> 'Brand#45'
+      t7.p_brand <> 'Brand#45'
       AND NOT (
-        t6.p_type LIKE 'MEDIUM POLISHED%'
+        t7.p_type LIKE 'MEDIUM POLISHED%'
       )
-      AND t6.p_size IN (CAST(49 AS TINYINT), CAST(14 AS TINYINT), CAST(23 AS TINYINT), CAST(45 AS TINYINT), CAST(19 AS TINYINT), CAST(3 AS TINYINT), CAST(36 AS TINYINT), CAST(9 AS TINYINT))
+      AND t7.p_size IN (CAST(49 AS TINYINT), CAST(14 AS TINYINT), CAST(23 AS TINYINT), CAST(45 AS TINYINT), CAST(19 AS TINYINT), CAST(3 AS TINYINT), CAST(36 AS TINYINT), CAST(9 AS TINYINT))
       AND NOT (
-        t6.ps_suppkey IN ((
+        t7.ps_suppkey IN (
           SELECT
-            t2.s_suppkey AS s_suppkey
+            t2.s_suppkey
           FROM supplier AS t2
           WHERE
             t2.s_comment LIKE '%Customer%Complaints%'
-        ))
+        )
       )
-  ) AS t7
+  ) AS t8
   GROUP BY
     1,
     2,
     3
-) AS t8
+) AS t9
 ORDER BY
-  t8.supplier_cnt DESC,
-  t8.p_brand ASC,
-  t8.p_type ASC,
-  t8.p_size ASC
+  t9.supplier_cnt DESC,
+  t9.p_brand ASC,
+  t9.p_type ASC,
+  t9.p_size ASC
