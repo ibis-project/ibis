@@ -1,3 +1,3 @@
 SELECT
-  t0.smallint_col AS smallint_col
+  t0.smallint_col
 FROM functional_alltypes AS t0

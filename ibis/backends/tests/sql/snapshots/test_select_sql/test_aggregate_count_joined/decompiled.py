@@ -15,6 +15,16 @@ tpch_nation = ibis.table(
     },
 )
 
-result = tpch_region.inner_join(
-    tpch_nation, tpch_region.r_regionkey == tpch_nation.n_regionkey
-).count()
+result = (
+    tpch_region.inner_join(
+        tpch_nation, tpch_region.r_regionkey == tpch_nation.n_regionkey
+    )
+    .select(
+        tpch_nation.n_nationkey,
+        tpch_nation.n_name,
+        tpch_nation.n_regionkey,
+        tpch_nation.n_comment,
+        tpch_region.r_name.name("region"),
+    )
+    .count()
+)

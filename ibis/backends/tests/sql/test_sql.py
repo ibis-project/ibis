@@ -141,10 +141,7 @@ def test_named_expr(functional_alltypes, snapshot):
     ],
     ids=["inner", "left", "outer", "inner_select", "left_select", "outer_select"],
 )
-def test_joins(tpch_region, tpch_nation, expr_fn, snapshot):
-    region = tpch_region
-    nation = tpch_nation
-
+def test_joins(region, nation, expr_fn, snapshot):
     expr = expr_fn(region, nation)
     snapshot.assert_match(to_sql(expr), "out.sql")
 
@@ -160,15 +157,12 @@ def test_join_just_materialized(nation, region, customer, snapshot):
     snapshot.assert_match(to_sql(joined), "out.sql")
 
 
-def test_full_outer_join(tpch_region, tpch_nation):
+def test_full_outer_join(region, nation):
     """Testing full outer join separately due to previous issue with outer join
     resulting in left outer join (issue #1773)"""
-    region = tpch_region
-    nation = tpch_nation
-
     predicate = region.r_regionkey == nation.n_regionkey
     joined = region.outer_join(nation, predicate)
-    joined_sql_str = str(joined.compile())
+    joined_sql_str = to_sql(joined)
     assert "full" in joined_sql_str.lower()
     assert "left" not in joined_sql_str.lower()
 

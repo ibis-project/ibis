@@ -311,12 +311,17 @@ def test_rename_table(con, temp_table, temp_table_orig):
     assert temp_table_orig not in con.list_tables()
 
 
-@mark.notimpl(["polars", "druid"])
+@mark.notimpl(["datafusion", "polars", "druid"])
 @mark.never(["impala", "pyspark"], reason="No non-nullable datatypes")
 @mark.notyet(
     ["trino"], reason="trino doesn't support NOT NULL in its in-memory catalog"
 )
-@mark.broken(["flink"], reason="shows not nullable column as nullable")
+@mark.broken(["snowflake"], reason="snowflake shows not nullable column as nullable")
+@pytest.mark.notimpl(
+    ["flink"],
+    raises=com.IbisError,
+    reason="`tbl_properties` is required when creating table with schema",
+)
 def test_nullable_input_output(con, temp_table):
     sch = ibis.schema(
         [("foo", "int64"), ("bar", dt.int64(nullable=False)), ("baz", "boolean")]
@@ -899,12 +904,10 @@ def test_self_join_memory_table(backend, con, monkeypatch):
     t = ibis.memtable({"x": [1, 2], "y": [2, 1], "z": ["a", "b"]})
     t_view = t.view()
     expr = t.join(t_view, t.x == t_view.y).select("x", "y", "z", "z_right")
-
     result = con.execute(expr).sort_values("x").reset_index(drop=True)
     expected = pd.DataFrame(
         {"x": [1, 2], "y": [2, 1], "z": ["a", "b"], "z_right": ["b", "a"]}
     )
-
     backend.assert_frame_equal(result, expected)
 
 
@@ -931,9 +934,16 @@ def test_create_from_in_memory_table(con, temp_table, arg, func, monkeypatch):
 
 @pytest.mark.usefixtures("backend")
 def test_default_backend_option(monkeypatch):
-    monkeypatch.setattr(ibis.options, "default_backend", ibis.pandas)
+    pytest.importorskip("duckdb")
+
+    # verify that there's nothing already set
+    assert ibis.options.default_backend is None
+
+    # patch in duckdb
+    monkeypatch.setattr(ibis.options, "default_backend", ibis.duckdb)
+
     backend = ibis.config._default_backend()
-    assert backend.name == "pandas"
+    assert backend.name == "duckdb"
 
 
 # backend is used to ensure that this test runs in CI in the setting
@@ -1418,7 +1428,7 @@ def gen_test_name(con: BaseBackend) -> str:
 
 
 @mark.notimpl(
-    ["polars"],
+    ["datafusion", "polars"],
     raises=NotImplementedError,
     reason="overwriting not implemented in ibis for this backend",
 )
