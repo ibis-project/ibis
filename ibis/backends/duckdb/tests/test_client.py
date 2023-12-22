@@ -189,6 +189,7 @@ def test_insert(con):
     assert t.count().execute() == 2
 
 
+@pytest.mark.xfail(reason="snowflake backend not yet rewritten")
 def test_to_other_sql(con, snapshot):
     pytest.importorskip("snowflake.connector")
 

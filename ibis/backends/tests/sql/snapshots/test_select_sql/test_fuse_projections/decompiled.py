@@ -4,11 +4,8 @@ import ibis
 tbl = ibis.table(
     name="tbl", schema={"foo": "int32", "bar": "int64", "value": "float64"}
 )
-alias = (tbl.foo + tbl.bar).name("baz")
-proj = tbl.select([tbl, alias])
+f = tbl.filter(tbl.value > 0)
 
-result = (
-    tbl.select([tbl, alias])
-    .filter(tbl.value > 0)
-    .select([proj, (proj.foo * 2).name("qux")])
+result = f.select(
+    f.foo, f.bar, f.value, (f.foo + f.bar).name("baz"), (f.foo * 2).name("qux")
 )
