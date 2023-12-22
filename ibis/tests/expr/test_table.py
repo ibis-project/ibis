@@ -22,7 +22,7 @@ from ibis.common.deferred import Deferred
 from ibis.common.exceptions import ExpressionError, IntegrityError, RelationError
 from ibis.expr import api
 from ibis.expr.rewrites import simplify
-from ibis.expr.tests.test_newrels import self_references
+from ibis.expr.tests.test_newrels import join_tables
 from ibis.expr.types import Column, Table
 from ibis.tests.util import assert_equal, assert_pickle_roundtrip
 
@@ -847,10 +847,10 @@ def test_join_no_predicate_list(con):
     region = con.table("tpch_region")
     nation = con.table("tpch_nation")
 
-    with self_references():
-        pred = region.r_regionkey == nation.n_regionkey
-        joined = region.inner_join(nation, pred)
-    with self_references(region, nation) as (r1, r2):
+    pred = region.r_regionkey == nation.n_regionkey
+    joined = region.inner_join(nation, pred)
+
+    with join_tables(region, nation) as (r1, r2):
         expected = ops.JoinChain(
             first=r1,
             rest=[ops.JoinLink("inner", r2, [r1.r_regionkey == r2.n_regionkey])],
@@ -871,9 +871,9 @@ def test_join_deferred(con):
     region = con.table("tpch_region")
     nation = con.table("tpch_nation")
 
-    with self_references():
-        res = region.join(nation, _.r_regionkey == nation.n_regionkey)
-    with self_references(region, nation) as (r1, r2):
+    res = region.join(nation, _.r_regionkey == nation.n_regionkey)
+
+    with join_tables(region, nation) as (r1, r2):
         expected = ops.JoinChain(
             first=r1,
             rest=[ops.JoinLink("inner", r2, [r1.r_regionkey == r2.n_regionkey])],
@@ -918,9 +918,8 @@ def test_asof_join_with_by():
     left = ibis.table([("time", "int32"), ("key", "int32"), ("value", "double")])
     right = ibis.table([("time", "int32"), ("key", "int32"), ("value2", "double")])
 
-    with self_references():
-        join_without_by = api.asof_join(left, right, "time")
-    with self_references(left, right) as (r1, r2):
+    join_without_by = api.asof_join(left, right, "time")
+    with join_tables(left, right) as (r1, r2):
         r2 = join_without_by.op().rest[0].table.to_expr()
         expected = ops.JoinChain(
             first=r1,
@@ -936,9 +935,8 @@ def test_asof_join_with_by():
         )
         assert join_without_by.op() == expected
 
-    with self_references():
-        join_with_by = api.asof_join(left, right, "time", by="key")
-    with self_references(left, right, right) as (r1, r2, r3):
+    join_with_by = api.asof_join(left, right, "time", by="key")
+    with join_tables(left, right, right) as (r1, r2, r3):
         expected = ops.JoinChain(
             first=r1,
             rest=[
@@ -981,9 +979,8 @@ def test_asof_join_with_tolerance(ibis_interval, timedelta_interval):
     right = ibis.table([("time", "int32"), ("key", "int32"), ("value2", "double")])
 
     for interval in [ibis_interval, timedelta_interval]:
-        with self_references():
-            joined = api.asof_join(left, right, "time", tolerance=interval)
-        with self_references(left, right) as (r1, r2):
+        joined = api.asof_join(left, right, "time", tolerance=interval)
+        with join_tables(left, right) as (r1, r2):
             expected = ops.JoinChain(
                 first=r1,
                 rest=[
@@ -1161,9 +1158,8 @@ def test_cross_join_multiple(table):
     b = table["d", "e"]
     c = table["f", "h"]
 
-    with self_references():
-        joined = ibis.cross_join(a, b, c)
-    with self_references(a, b, c) as (r1, r2, r3):
+    joined = ibis.cross_join(a, b, c)
+    with join_tables(a, b, c) as (r1, r2, r3):
         expected = ops.JoinChain(
             first=r1,
             rest=[
@@ -1251,9 +1247,8 @@ def test_join_key_alternatives(con, key_maker):
     t2 = con.table("star2")
     key = key_maker(t1, t2)
 
-    with self_references():
-        joined = t1.inner_join(t2, key)
-    with self_references(t1, t2) as (r1, r2):
+    joined = t1.inner_join(t2, key)
+    with join_tables(t1, t2) as (r1, r2):
         expected = ops.JoinChain(
             first=r1,
             rest=[
@@ -1337,9 +1332,8 @@ def test_unravel_compound_equijoin(table):
     p2 = t1.key2 == t2.key2
     p3 = t1.key3 == t2.key3
 
-    with self_references():
-        joined = t1.inner_join(t2, [p1 & p2 & p3])
-    with self_references(t1, t2) as (r1, r2):
+    joined = t1.inner_join(t2, [p1 & p2 & p3])
+    with join_tables(t1, t2) as (r1, r2):
         expected = ops.JoinChain(
             first=r1,
             rest=[
