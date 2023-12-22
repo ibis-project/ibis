@@ -31,12 +31,6 @@ pytestmark = pytest.mark.notimpl(
 )
 
 
-try:
-    from snowflake.connector.errors import ProgrammingError as SnowflakeProgrammingError
-except ImportError:
-    SnowflakeProgrammingError = None
-
-
 # adapted from https://gist.github.com/xmnlab/2c1f93df1a6c6bde4e32c8579117e9cc
 def pandas_ntile(x, bucket: int):
     """Divide values into a number of buckets.
@@ -115,6 +109,11 @@ def calc_zscore(s):
                     ["clickhouse"],
                     reason="upstream is broken; returns all nulls",
                     raises=AssertionError,
+                ),
+                pytest.mark.broken(
+                    ["datafusion"],
+                    reason="Exception: Internal error: Expects default value to have Int64 type.",
+                    raises=BaseException,
                 ),
                 pytest.mark.notimpl(["dask"], raises=NotImplementedError),
                 pytest.mark.notimpl(
@@ -646,7 +645,6 @@ def test_grouped_unbounded_window(
     # 1) Grouped
     # 2) Ordered if `ordered` is True
     df = df.sort_values("id") if ordered else df
-
     expected = df.assign(val=expected_fn(df.groupby("string_col")))
     expected = expected.set_index("id").sort_index()
 
@@ -663,7 +661,7 @@ def test_grouped_unbounded_window(
     ],
 )
 @pytest.mark.broken(["snowflake"], raises=AssertionError)
-@pytest.mark.broken(["dask", "mssql"], raises=AssertionError)
+@pytest.mark.broken(["dask", "pandas", "mssql"], raises=AssertionError)
 @pytest.mark.notimpl(["polars"], raises=com.OperationNotDefinedError)
 @pytest.mark.notimpl(
     ["flink"],
@@ -730,6 +728,7 @@ def test_simple_ungrouped_window_with_scalar_order_by(alltypes):
             True,
             id="ordered-mean",
             marks=[
+                pytest.mark.broken(["pandas"], raises=AssertionError),
                 pytest.mark.notimpl(
                     ["dask"],
                     raises=NotImplementedError,
@@ -806,6 +805,7 @@ def test_simple_ungrouped_window_with_scalar_order_by(alltypes):
                     ],
                     raises=com.OperationNotDefinedError,
                 ),
+                pytest.mark.broken(["pandas"], raises=AssertionError),
                 pytest.mark.broken(
                     ["dask"],
                     raises=ValueError,
@@ -875,6 +875,11 @@ def test_simple_ungrouped_window_with_scalar_order_by(alltypes):
                     raises=AssertionError,
                 ),
                 pytest.mark.broken(["oracle"], raises=AssertionError),
+                pytest.mark.broken(
+                    ["datafusion"],
+                    raises=Exception,
+                    reason="Exception: Internal error: Expects default value to have Int64 type.",
+                ),
                 pytest.mark.notimpl(
                     ["pyspark"],
                     raises=PySparkAnalysisException,
@@ -890,7 +895,7 @@ def test_simple_ungrouped_window_with_scalar_order_by(alltypes):
                 pytest.mark.notyet(
                     ["snowflake"],
                     reason="backend requires ordering",
-                    raises=SnowflakeProgrammingError,
+                    raises=sa.exc.ProgrammingError,
                 ),
                 pytest.mark.notimpl(
                     ["risingwave"],
@@ -931,6 +936,11 @@ def test_simple_ungrouped_window_with_scalar_order_by(alltypes):
                     ),
                     raises=AssertionError,
                 ),
+                pytest.mark.broken(
+                    ["datafusion"],
+                    raises=Exception,
+                    reason="Exception: Internal error: Expects default value to have Int64 type.",
+                ),
                 pytest.mark.broken(["oracle"], raises=AssertionError),
                 pytest.mark.notimpl(
                     ["pyspark"],
@@ -947,7 +957,7 @@ def test_simple_ungrouped_window_with_scalar_order_by(alltypes):
                 pytest.mark.notyet(
                     ["snowflake"],
                     reason="backend requires ordering",
-                    raises=SnowflakeProgrammingError,
+                    raises=sa.exc.ProgrammingError,
                 ),
                 pytest.mark.notimpl(
                     ["risingwave"],
@@ -1056,11 +1066,7 @@ def test_ungrouped_unbounded_window(
 
 
 @pytest.mark.notimpl(["polars"], raises=com.OperationNotDefinedError)
-@pytest.mark.notimpl(
-    ["snowflake"],
-    raises=SnowflakeProgrammingError,
-    reason="snowflake doesn't support sliding range windows",
-)
+@pytest.mark.notimpl(["snowflake"], raises=sa.exc.ProgrammingError)
 @pytest.mark.notimpl(
     ["impala"], raises=ImpalaHiveServer2Error, reason="limited RANGE support"
 )
@@ -1161,6 +1167,11 @@ def test_percent_rank_whole_table_no_order_by(backend, alltypes, df):
 @pytest.mark.notimpl(["dask"], raises=NotImplementedError)
 @pytest.mark.broken(
     ["pandas"], reason="pandas returns incorrect results", raises=AssertionError
+)
+@pytest.mark.broken(
+    ["datafusion"],
+    reason="Exception: External error: Internal error: Expects default value to have Int64 type",
+    raises=Exception,
 )
 def test_grouped_ordered_window_coalesce(backend, alltypes, df):
     t = alltypes

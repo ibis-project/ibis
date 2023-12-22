@@ -3,6 +3,7 @@ from __future__ import annotations
 import contextlib
 import datetime
 import warnings
+from importlib.util import find_spec as _find_spec
 
 import numpy as np
 import pandas as pd
@@ -23,6 +24,8 @@ if not _has_arrow_dtype:
         f"The `ArrowDtype` class is not available in pandas {pd.__version__}. "
         "Install pandas >= 1.5.0 for interop with pandas and arrow dtype support"
     )
+
+geospatial_supported = _find_spec("geopandas") is not None
 
 
 class PandasType(NumpyType):
@@ -120,6 +123,23 @@ class PandasData(DataMapper):
         # return data with the schema's columns which may be different than the
         # input columns
         df.columns = schema.names
+
+        if geospatial_supported:
+            from geopandas import GeoDataFrame
+            from geopandas.array import GeometryDtype
+
+            if (
+                # pluck out the first geometry column if it exists
+                geom := next(
+                    (
+                        name
+                        for name, c in df.items()
+                        if isinstance(c.dtype, GeometryDtype)
+                    ),
+                    None,
+                )
+            ) is not None:
+                return GeoDataFrame(df, geometry=geom)
         return df
 
     @classmethod
@@ -143,7 +163,11 @@ class PandasData(DataMapper):
 
     @classmethod
     def convert_GeoSpatial(cls, s, dtype, pandas_type):
-        return s
+        import geopandas as gpd
+
+        if isinstance(s.dtype, gpd.array.GeometryDtype):
+            return gpd.GeoSeries(s)
+        return gpd.GeoSeries.from_wkb(s)
 
     convert_Point = (
         convert_LineString

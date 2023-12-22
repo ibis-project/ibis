@@ -9,6 +9,7 @@ import warnings
 from operator import itemgetter
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
+from urllib.parse import parse_qs, urlparse
 
 import duckdb
 import pandas as pd
@@ -16,7 +17,6 @@ import pyarrow as pa
 import pyarrow_hotfix  # noqa: F401
 import sqlglot as sg
 import sqlglot.expressions as sge
-import toolz
 
 import ibis
 import ibis.common.exceptions as exc
@@ -26,7 +26,6 @@ import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis import util
 from ibis.backends.base import CanCreateSchema
-from ibis.backends.base.sql.alchemy.geospatial import geospatial_supported
 from ibis.backends.base.sqlglot import SQLGlotBackend
 from ibis.backends.base.sqlglot.compiler import STAR, C, F
 from ibis.backends.base.sqlglot.datatypes import DuckDBType
@@ -107,9 +106,12 @@ class Backend(SQLGlotBackend, CanCreateSchema):
             query = query.sql(dialect=self.name)
         return self.con.execute(query, **kwargs)
 
-    def _transform(
-        self, sql: sge.Expression, table_expr: ir.TableExpr
-    ) -> sge.Expression:
+    def _to_sqlglot(
+        self, expr: ir.Expr, limit: str | None = None, params=None, **_: Any
+    ):
+        sql = super()._to_sqlglot(expr, limit=limit, params=params)
+
+        table_expr = expr.as_table()
         geocols = frozenset(
             name for name, typ in table_expr.schema().items() if typ.is_geospatial()
         )
@@ -175,7 +177,7 @@ class Backend(SQLGlotBackend, CanCreateSchema):
 
             self._run_pre_execute_hooks(table)
 
-            (query,) = self._to_sqlglot(table)
+            query = self._to_sqlglot(table)
         else:
             query = None
 
@@ -454,22 +456,20 @@ class Backend(SQLGlotBackend, CanCreateSchema):
         BaseBackend
             A backend instance
         """
-        import sqlalchemy as sa
+        url = urlparse(url)
+        database = url.path[1:] or ":memory:"
+        query_params = parse_qs(url.query)
 
-        url = sa.engine.make_url(url)
+        for name, value in query_params.items():
+            if len(value) > 1:
+                kwargs[name] = value
+            elif len(value) == 1:
+                kwargs[name] = value[0]
+            else:
+                raise exc.IbisError(f"Invalid URL parameter: {name}")
 
-        kwargs = toolz.merge(
-            {
-                name: value
-                for name in ("database", "read_only", "temp_directory")
-                if (value := getattr(url, name, None))
-            },
-            kwargs,
-        )
-
-        kwargs.update(url.query)
         self._convert_kwargs(kwargs)
-        return self.connect(**kwargs)
+        return self.connect(database=database, **kwargs)
 
     def load_extension(self, extension: str, force_install: bool = False) -> None:
         """Install and load a duckdb extension by name or path.
@@ -921,10 +921,7 @@ class Backend(SQLGlotBackend, CanCreateSchema):
         >>> con.list_tables(schema="my_schema")
         []
         >>> with con.begin() as c:
-        ...     c.exec_driver_sql(
-        ...         "CREATE TABLE my_schema.baz (a INTEGER)"
-        ...     )  # doctest: +ELLIPSIS
-        ...
+        ...     c.exec_driver_sql("CREATE TABLE my_schema.baz (a INTEGER)")  # doctest: +ELLIPSIS
         <...>
         >>> con.list_tables(schema="my_schema")
         ['baz']
@@ -1360,7 +1357,7 @@ class Backend(SQLGlotBackend, CanCreateSchema):
         with self._safe_raw_sql(copy_cmd):
             pass
 
-    def fetch_from_cursor(
+    def _fetch_from_cursor(
         self, cursor: duckdb.DuckDBPyConnection, schema: sch.Schema
     ) -> pd.DataFrame:
         import pandas as pd
@@ -1384,10 +1381,7 @@ class Backend(SQLGlotBackend, CanCreateSchema):
                 for name, col in zip(table.column_names, table.columns)
             }
         )
-        df = DuckDBPandasData.convert_table(df, schema)
-        if not df.empty and geospatial_supported:
-            return self._to_geodataframe(df, schema)
-        return df
+        return DuckDBPandasData.convert_table(df, schema)
 
     # TODO(gforsyth): this may not need to be specialized in the future
     @staticmethod

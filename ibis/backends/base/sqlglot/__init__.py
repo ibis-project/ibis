@@ -32,11 +32,6 @@ class SQLGlotBackend(BaseBackend):
         dispatcher = cls.compiler.visit_node.register.__self__.dispatcher
         return dispatcher.dispatch(operation) is not dispatcher.dispatch(object)
 
-    def _transform(
-        self, sql: sge.Expression, table_expr: ir.TableExpr
-    ) -> sge.Expression:
-        return sql
-
     def table(
         self, name: str, schema: str | None = None, database: str | None = None
     ) -> ir.Table:
@@ -85,17 +80,16 @@ class SQLGlotBackend(BaseBackend):
             sql = sg.select(STAR).from_(sql)
 
         assert not isinstance(sql, sge.Subquery)
-        return [self._transform(sql, table_expr)]
+        return sql
 
     def compile(
         self, expr: ir.Expr, limit: str | None = None, params=None, **kwargs: Any
     ):
-        """Compile an Ibis expression to a ClickHouse SQL string."""
-        queries = self._to_sqlglot(expr, limit=limit, params=params, **kwargs)
-
-        return ";\n\n".join(
-            query.sql(dialect=self.name, pretty=True) for query in queries
-        )
+        """Compile an Ibis expression to a SQL string."""
+        query = self._to_sqlglot(expr, limit=limit, params=params, **kwargs)
+        sql = query.sql(dialect=self.name, pretty=True)
+        self._log(sql)
+        return sql
 
     def _to_sql(self, expr: ir.Expr, **kwargs) -> str:
         return self.compile(expr, **kwargs)
@@ -221,10 +215,9 @@ class SQLGlotBackend(BaseBackend):
         sql = self.compile(table, limit=limit, **kwargs)
 
         schema = table.schema()
-        self._log(sql)
 
         with self._safe_raw_sql(sql) as cur:
-            result = self.fetch_from_cursor(cur, schema)
+            result = self._fetch_from_cursor(cur, schema)
         return expr.__pandas_result__(result)
 
     def drop_table(

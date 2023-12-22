@@ -7,21 +7,28 @@ import itertools
 import math
 import operator
 import string
-from collections.abc import Mapping
+from collections.abc import Iterator, Mapping
 from functools import partial, singledispatchmethod
+from itertools import starmap
 from typing import TYPE_CHECKING, Any, Callable
 
 import sqlglot as sg
 import sqlglot.expressions as sge
+import toolz
 from public import public
 
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 from ibis.backends.base.sqlglot.rewrites import Select, Window, sqlize
-from ibis.common.deferred import _
-from ibis.common.patterns import replace
-from ibis.expr.analysis import p, x
+from ibis.expr.rewrites import (
+    add_one_to_nth_value_input,
+    add_order_by_to_empty_ranking_window_functions,
+    empty_in_values_right_side,
+    one_to_zero_index,
+    replace_scalar_parameter,
+    unwrap_scalar_parameter,
+)
 
 if TYPE_CHECKING:
     import ibis.expr.schema as sch
@@ -95,43 +102,6 @@ NULL = sge.NULL
 FALSE = sge.FALSE
 TRUE = sge.TRUE
 STAR = sge.Star()
-
-
-@replace(p.InValues(..., ()))
-def empty_in_values_right_side(_):
-    """Replace checks against an empty right side with `False`."""
-    return ops.Literal(False, dtype=dt.bool)
-
-
-@replace(
-    p.WindowFunction(
-        p.PercentRank(x) | p.RankBase(x) | p.CumeDist(x) | p.NTile(x),
-        p.WindowFrame(..., order_by=()) >> _.copy(order_by=(x,)),
-    )
-)
-def add_order_by_to_empty_ranking_window_functions(_):
-    """Add an ORDER BY clause to rank window functions that don't have one."""
-    return _
-
-
-@replace(
-    p.WindowFunction(p.RankBase | p.NTile)
-    | p.StringFind
-    | p.FindInSet
-    | p.ArrayPosition
-)
-def one_to_zero_index(_, **__):
-    """Subtract one from one-index functions."""
-    return ops.Subtract(_, 1)
-
-
-@replace(ops.NthValue)
-def add_one_to_nth_value_input(_, **__):
-    if isinstance(_.nth, ops.Literal):
-        nth = ops.Literal(_.nth.value + 1, dtype=_.nth.dtype)
-    else:
-        nth = ops.Add(_.nth, 1)
-    return _.copy(nth=nth)
 
 
 @public
@@ -244,16 +214,18 @@ class SQLGlotCompiler(abc.ABC):
         # substitute parameters immediately to avoid having to define a
         # ScalarParameter translation rule
         #
-        # this lets us avoid threading `params` through every `translate_val` call
-        # only to be used in the one place it would be needed: the ScalarParameter
-        # `translate_val` rule
-        params = {param.op(): value for param, value in (params or {}).items()}
-        replace_literals = p.ScalarParameter >> (
-            lambda _: ops.Literal(value=params[_], dtype=_.dtype)
-        )
+        # this lets us avoid threading `params` through every `translate_val`
+        # call only to be used in the one place it would be needed: the
+        # ScalarParameter `translate_val` rule
+        params = {
+            # remove aliases from scalar parameters
+            param.op().replace(unwrap_scalar_parameter): value
+            for param, value in (params or {}).items()
+        }
 
         op = op.replace(
-            replace_literals | functools.reduce(operator.or_, self.rewrites)
+            replace_scalar_parameter(params)
+            | functools.reduce(operator.or_, self.rewrites)
         )
         op = sqlize(op)
         # apply translate rules in topological order
@@ -279,7 +251,7 @@ class SQLGlotCompiler(abc.ABC):
 
     @visit_node.register(ops.Alias)
     def visit_Alias(self, op, *, arg, name):
-        return arg.as_(self._gen_valid_name(name), quoted=self.quoted)
+        return arg
 
     @visit_node.register(ops.Literal)
     def visit_Literal(self, op, *, value, dtype, **kw):
@@ -422,18 +394,8 @@ class SQLGlotCompiler(abc.ABC):
     @visit_node.register(ops.Not)
     def visit_Not(self, op, *, arg):
         if isinstance(arg, sge.Filter):
-            return sge.Filter(
-                this=self._de_morgan_law(arg.this), expression=arg.expression
-            )  # transform the not expression using _de_morgan_law
+            return sge.Filter(this=sg.not_(arg.this), expression=arg.expression)
         return sg.not_(paren(arg))
-
-    @staticmethod
-    def _de_morgan_law(logical_op: sge.Expression):
-        if isinstance(logical_op, sge.LogicalAnd):
-            return sge.LogicalOr(this=sg.not_(paren(logical_op.this)))
-        if isinstance(logical_op, sge.LogicalOr):
-            return sge.LogicalAnd(this=sg.not_(paren(logical_op.this)))
-        return None
 
     ### Timey McTimeFace
 
@@ -535,7 +497,7 @@ class SQLGlotCompiler(abc.ABC):
         # Saturday == 6
         return sge.Case(
             this=(self.f.dayofweek(arg) + 6) % 7,
-            ifs=list(itertools.starmap(self.if_, enumerate(calendar.day_name))),
+            ifs=list(starmap(self.if_, enumerate(calendar.day_name))),
         )
 
     @visit_node.register(ops.IntervalFromInteger)
@@ -648,7 +610,8 @@ class SQLGlotCompiler(abc.ABC):
     @visit_node.register(ops.Quantile)
     @visit_node.register(ops.MultiQuantile)
     def visit_Quantile(self, op, *, arg, quantile, where):
-        return self.agg.quantile_cont(arg, quantile, where=where)
+        suffix = "cont" if op.arg.dtype.is_numeric() else "disc"
+        return self.agg[f"quantile_{suffix}"](arg, quantile, where=where)
 
     @visit_node.register(ops.Variance)
     @visit_node.register(ops.StandardDev)
@@ -688,11 +651,11 @@ class SQLGlotCompiler(abc.ABC):
 
     @visit_node.register(ops.ExistsSubquery)
     def visit_ExistsSubquery(self, op, *, rel):
-        return self.f.exists(rel.this.subquery())
+        return self.f.exists(rel.this)
 
     @visit_node.register(ops.InSubquery)
     def visit_InSubquery(self, op, *, rel, needle):
-        return needle.isin(rel.this.subquery())
+        return needle.isin(rel.this)
 
     @visit_node.register(ops.Array)
     def visit_Array(self, op, *, exprs):
@@ -709,8 +672,7 @@ class SQLGlotCompiler(abc.ABC):
 
     @visit_node.register(ops.StructField)
     def visit_StructField(self, op, *, arg, field):
-        val = arg.this if isinstance(op.arg, ops.Alias) else arg
-        return val[sge.convert(field)]
+        return arg[sge.convert(field)]
 
     @visit_node.register(ops.IdenticalTo)
     def visit_IdenticalTo(self, op, *, left, right):
@@ -790,7 +752,7 @@ class SQLGlotCompiler(abc.ABC):
 
     @visit_node.register(ops.Argument)
     def visit_Argument(self, op, *, name: str, shape, dtype):
-        return sg.to_identifier(name)
+        return sg.to_identifier(op.param)
 
     @visit_node.register(ops.RowID)
     def visit_RowID(self, op, *, table):
@@ -831,6 +793,15 @@ class SQLGlotCompiler(abc.ABC):
 
     ## relations
 
+    def _dedup_name(
+        self, key: str, value: sge.Expression
+    ) -> Iterator[sge.Alias | sge.Column]:
+        return (
+            value.as_(key, quoted=self.quoted)
+            if not isinstance(value, sge.Column) or key != value.name
+            else value
+        )
+
     @visit_node.register(Select)
     def visit_Select(self, op, *, parent, selections, predicates, sort_keys):
         # if we've constructed a useless projection return the parent relation
@@ -840,9 +811,9 @@ class SQLGlotCompiler(abc.ABC):
         result = parent
 
         if selections:
-            result = sg.select(
-                *(sel.as_(name, quoted=self.quoted) for name, sel in selections.items())
-            ).from_(result)
+            result = sg.select(*starmap(self._dedup_name, selections.items())).from_(
+                result
+            )
 
         if predicates:
             result = result.where(*predicates)
@@ -854,9 +825,7 @@ class SQLGlotCompiler(abc.ABC):
 
     @visit_node.register(ops.DummyTable)
     def visit_DummyTable(self, op, *, values):
-        return sg.select(
-            *(value.as_(key, quoted=self.quoted) for key, value in values.items())
-        )
+        return sg.select(*starmap(self._dedup_name, values.items()))
 
     @visit_node.register(ops.UnboundTable)
     def visit_UnboundTable(self, op, *, name: str, schema: sch.Schema):
@@ -874,13 +843,11 @@ class SQLGlotCompiler(abc.ABC):
 
     @visit_node.register(ops.SelfReference)
     def visit_SelfReference(self, op, *, parent, identifier):
-        return parent.as_(op.name, quoted=self.quoted)
+        return parent
 
     @visit_node.register(ops.JoinChain)
     def visit_JoinChain(self, op, *, first, rest, values):
-        result = sg.select(
-            *(value.as_(key, quoted=self.quoted) for key, value in values.items())
-        ).from_(first)
+        result = sg.select(*starmap(self._dedup_name, values.items())).from_(first)
 
         for link in rest:
             if isinstance(link, sge.Alias):
@@ -914,6 +881,7 @@ class SQLGlotCompiler(abc.ABC):
             "cross": "cross",
             "outer": "outer",
         }
+        assert predicates
         return sge.Join(
             this=table, side=sides[how], kind=kinds[how], on=sg.and_(*predicates)
         )
@@ -926,12 +894,7 @@ class SQLGlotCompiler(abc.ABC):
     def visit_Project(self, op, *, parent, values):
         # needs_alias should never be true here in explicitly, but it may get
         # passed via a (recursive) call to translate_val
-        return sg.select(
-            *(
-                value.as_(self._gen_valid_name(key), quoted=self.quoted)
-                for key, value in values.items()
-            )
-        ).from_(parent)
+        return sg.select(*starmap(self._dedup_name, values.items())).from_(parent)
 
     @staticmethod
     def _generate_groups(groups):
@@ -940,13 +903,11 @@ class SQLGlotCompiler(abc.ABC):
     @visit_node.register(ops.Aggregate)
     def visit_Aggregate(self, op, *, parent, groups, metrics):
         sel = sg.select(
-            *(
-                value.as_(self._gen_valid_name(key), quoted=self.quoted)
-                for key, value in groups.items()
+            *starmap(
+                self._dedup_name, toolz.keymap(self._gen_valid_name, groups).items()
             ),
-            *(
-                value.as_(self._gen_valid_name(key), quoted=self.quoted)
-                for key, value in metrics.items()
+            *starmap(
+                self._dedup_name, toolz.keymap(self._gen_valid_name, metrics).items()
             ),
         ).from_(parent)
 
@@ -1112,12 +1073,12 @@ class SQLGlotCompiler(abc.ABC):
         ]
         return sg.select(*exprs).from_(parent)
 
-    # @visit_node.register(ops.View)
-    # def visit_View(self, op, *, child, name: str):
-    #     # TODO: find a way to do this without creating a temporary view
-    #     backend = op.child.to_expr()._find_backend()
-    #     backend._create_temp_view(table_name=name, source=sg.select(STAR).from_(child))
-    #     return sg.table(name, quoted=self.quoted)
+    @visit_node.register(ops.View)
+    def visit_View(self, op, *, child, name: str):
+        # TODO: find a way to do this without creating a temporary view
+        backend = op.child.to_expr()._find_backend()
+        backend._create_temp_view(table_name=name, source=sg.select(STAR).from_(child))
+        return sg.table(name, quoted=self.quoted)
 
     @visit_node.register(ops.SQLStringView)
     def visit_SQLStringView(self, op, *, query: str, name: str, child):
@@ -1133,6 +1094,18 @@ class SQLGlotCompiler(abc.ABC):
     @visit_node.register(ops.Unnest)
     def visit_Unnest(self, op, *, arg):
         return sge.Explode(this=arg)
+
+    @visit_node.register(ops.RegexSplit)
+    def visit_RegexSplit(self, op, *, arg, pattern):
+        return sge.RegexpSplit(this=arg, expression=pattern)
+
+    @visit_node.register(ops.Levenshtein)
+    def visit_Levenshtein(self, op, *, left, right):
+        return sge.Levenshtein(this=left, expression=right)
+
+    @visit_node.register(ops.JoinTable)
+    def visit_JoinTable(self, op, *, parent, index):
+        return parent
 
 
 _SIMPLE_OPS = {

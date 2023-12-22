@@ -362,11 +362,7 @@ def test_format_literal(literal, typ, output):
 
 
 def test_format_dummy_table(snapshot):
-<<<<<<< HEAD
-    t = ops.DummyTable([ibis.array([1]).cast("array<int8>").name("foo")]).to_expr()
-=======
-    t = ops.DummyTable({"foo": ibis.array([1], type="array<int8>")}).to_expr()
->>>>>>> 2189ab71b (refactor(ir): split the relational operations)
+    t = ops.DummyTable({"foo": ibis.array([1]).cast("array<int8>")}).to_expr()
 
     result = fmt(t)
     snapshot.assert_match(result, "repr.txt")

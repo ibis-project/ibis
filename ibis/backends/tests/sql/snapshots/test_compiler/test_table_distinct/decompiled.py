@@ -21,5 +21,5 @@ functional_alltypes = ibis.table(
 )
 
 result = functional_alltypes.select(
-    [functional_alltypes.string_col, functional_alltypes.int_col]
+    functional_alltypes.string_col, functional_alltypes.int_col
 ).distinct()
