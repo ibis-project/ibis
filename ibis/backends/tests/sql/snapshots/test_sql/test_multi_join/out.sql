@@ -1,20 +1,20 @@
 SELECT
-  t0.x1 AS x1,
-  t0.y1 AS y1,
-  t1.x2 AS x2,
-  t6.x3 AS x3,
-  t6.y2 AS y2,
-  t6.x4 AS x4
-FROM t1 AS t0
-INNER JOIN t2 AS t1
-  ON t0.x1 = t1.x2
+  t4.x1,
+  t4.y1,
+  t5.x2,
+  t11.x3,
+  t11.y2,
+  t11.x4
+FROM t1 AS t4
+INNER JOIN t2 AS t5
+  ON t4.x1 = t5.x2
 INNER JOIN (
   SELECT
-    t2.x3 AS x3,
-    t2.y2 AS y2,
-    t3.x4 AS x4
-  FROM t3 AS t2
-  INNER JOIN t4 AS t3
-    ON t2.x3 = t3.x4
-) AS t6
-  ON t0.y1 = t6.y2
+    t6.x3,
+    t6.y2,
+    t7.x4
+  FROM t3 AS t6
+  INNER JOIN t4 AS t7
+    ON t6.x3 = t7.x4
+) AS t11
+  ON t4.y1 = t11.y2

@@ -1,8 +1,9 @@
 SELECT
-  *
+  t1.string_col,
+  t1.foo
 FROM (
   SELECT
-    t0.string_col AS string_col,
+    t0.string_col,
     MAX(t0.double_col) AS foo
   FROM functional_alltypes AS t0
   GROUP BY

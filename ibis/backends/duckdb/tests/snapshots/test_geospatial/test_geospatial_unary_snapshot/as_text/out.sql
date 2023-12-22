@@ -1,3 +1,3 @@
 SELECT
-  ST_ASTEXT(t0.geom) AS "GeoAsText(geom)"
+  ST_ASTEXT(t0.geom) AS tmp
 FROM t AS t0

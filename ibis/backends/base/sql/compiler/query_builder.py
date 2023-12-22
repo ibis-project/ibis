@@ -23,16 +23,6 @@ if TYPE_CHECKING:
 
 
 class TableSetFormatter:
-    _join_names = {
-        ops.InnerJoin: "INNER JOIN",
-        ops.LeftJoin: "LEFT OUTER JOIN",
-        ops.RightJoin: "RIGHT OUTER JOIN",
-        ops.OuterJoin: "FULL OUTER JOIN",
-        ops.LeftAntiJoin: "LEFT ANTI JOIN",
-        ops.LeftSemiJoin: "LEFT SEMI JOIN",
-        ops.CrossJoin: "CROSS JOIN",
-    }
-
     def __init__(self, parent, node, indent=2):
         # `parent` is a `Select` instance, not a `TableSetFormatter`
         self.parent = parent
