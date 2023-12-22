@@ -60,3 +60,7 @@ class ImpalaCompiler(Compiler):
     translator_class = ImpalaExprTranslator
     table_set_formatter_class = ImpalaTableSetFormatter
     rewrites = Compiler.rewrites | rewrite_sample
+
+    # impala supports this but sqlglot fails to parse the aliasing in
+    # (VALUES (a AS b))
+    support_values_syntax_in_select = False
