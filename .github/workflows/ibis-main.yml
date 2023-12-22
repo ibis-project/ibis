@@ -86,12 +86,13 @@ jobs:
 
       - name: run all core tests and run benchmarks once parallel
         if: matrix.os != 'windows-latest'
-        # TODO(kszucs): restore "just ci-check -m "'core or benchmark'" -n auto"
-        run: poetry run pytest -v -n auto ibis/common ibis/expr ibis/tests ibis/formats
+        # TODO(cpcloud): bring back benchmarks smoke tests -m 'core or benchmarks'
+        run: just ci-check -m core --numprocesses auto
 
       - name: run all core tests and run benchmarks once serial
         if: matrix.os == 'windows-latest'
-        run: poetry run pytest -v ibis/common ibis/expr ibis/tests ibis/formats
+        # TODO(cpcloud): bring back benchmarks smoke tests -m 'core or benchmarks'
+        run: just ci-check -m core
 
       - name: upload code coverage
         if: success()
