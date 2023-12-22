@@ -1,33 +1,31 @@
 SELECT
-  *
+  t9.p_partkey,
+  t9.ps_supplycost
 FROM (
   SELECT
-    t0.p_partkey AS p_partkey,
-    t1.ps_supplycost AS ps_supplycost
-  FROM part AS t0
-  INNER JOIN partsupp AS t1
-    ON t0.p_partkey = t1.ps_partkey
-) AS t5
+    t3.p_partkey,
+    t4.ps_supplycost
+  FROM part AS t3
+  INNER JOIN partsupp AS t4
+    ON t3.p_partkey = t4.ps_partkey
+) AS t9
 WHERE
-  (
-    t5.ps_supplycost = (
+  t9.ps_supplycost = (
+    SELECT
+      MIN(t11.ps_supplycost) AS "Min(ps_supplycost)"
+    FROM (
       SELECT
-        MIN(t7.ps_supplycost) AS "Min(ps_supplycost)"
+        t10.ps_partkey,
+        t10.ps_supplycost
       FROM (
         SELECT
-          *
-        FROM (
-          SELECT
-            t1.ps_partkey AS ps_partkey,
-            t1.ps_supplycost AS ps_supplycost
-          FROM partsupp AS t1
-          INNER JOIN supplier AS t2
-            ON t2.s_suppkey = t1.ps_suppkey
-        ) AS t6
-        WHERE
-          (
-            t6.ps_partkey = t5.p_partkey
-          )
-      ) AS t7
-    )
+          t5.ps_partkey,
+          t5.ps_supplycost
+        FROM partsupp AS t5
+        INNER JOIN supplier AS t6
+          ON t6.s_suppkey = t5.ps_suppkey
+      ) AS t10
+      WHERE
+        t10.ps_partkey = t9.p_partkey
+    ) AS t11
   )

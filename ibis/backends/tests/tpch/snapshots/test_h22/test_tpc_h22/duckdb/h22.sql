@@ -1,10 +1,10 @@
 SELECT
-  t6.cntrycode AS cntrycode,
-  t6.numcust AS numcust,
-  t6.totacctbal AS totacctbal
+  t6.cntrycode,
+  t6.numcust,
+  t6.totacctbal
 FROM (
   SELECT
-    t5.cntrycode AS cntrycode,
+    t5.cntrycode,
     COUNT(*) AS numcust,
     SUM(t5.c_acctbal) AS totacctbal
   FROM (
@@ -14,7 +14,7 @@ FROM (
         THEN SUBSTRING(t0.c_phone, CAST(0 AS TINYINT) + 1, CAST(2 AS TINYINT))
         ELSE SUBSTRING(t0.c_phone, CAST(0 AS TINYINT), CAST(2 AS TINYINT))
       END AS cntrycode,
-      t0.c_acctbal AS c_acctbal
+      t0.c_acctbal
     FROM customer AS t0
     WHERE
       CASE
@@ -27,14 +27,14 @@ FROM (
           AVG(t3.c_acctbal) AS "Mean(c_acctbal)"
         FROM (
           SELECT
-            t0.c_custkey AS c_custkey,
-            t0.c_name AS c_name,
-            t0.c_address AS c_address,
-            t0.c_nationkey AS c_nationkey,
-            t0.c_phone AS c_phone,
-            t0.c_acctbal AS c_acctbal,
-            t0.c_mktsegment AS c_mktsegment,
-            t0.c_comment AS c_comment
+            t0.c_custkey,
+            t0.c_name,
+            t0.c_address,
+            t0.c_nationkey,
+            t0.c_phone,
+            t0.c_acctbal,
+            t0.c_mktsegment,
+            t0.c_comment
           FROM customer AS t0
           WHERE
             t0.c_acctbal > CAST(0.0 AS DOUBLE)
@@ -47,13 +47,11 @@ FROM (
       )
       AND NOT (
         EXISTS(
-          (
-            SELECT
-              CAST(1 AS TINYINT) AS "1"
-            FROM orders AS t1
-            WHERE
-              t1.o_custkey = t0.c_custkey
-          )
+          SELECT
+            CAST(1 AS TINYINT) AS "1"
+          FROM orders AS t1
+          WHERE
+            t1.o_custkey = t0.c_custkey
         )
       )
   ) AS t5

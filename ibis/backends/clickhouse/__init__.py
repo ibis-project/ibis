@@ -7,11 +7,11 @@ import glob
 from contextlib import closing
 from functools import partial
 from typing import TYPE_CHECKING, Any, Literal
+from urllib.parse import parse_qs, urlparse
 
 import clickhouse_connect as cc
 import pyarrow as pa
 import pyarrow_hotfix  # noqa: F401
-import sqlalchemy as sa
 import sqlglot as sg
 import sqlglot.expressions as sge
 import toolz
@@ -26,7 +26,7 @@ import ibis.expr.types as ir
 from ibis import util
 from ibis.backends.base import BaseBackend, CanCreateDatabase
 from ibis.backends.base.sqlglot import SQLGlotBackend
-from ibis.backends.base.sqlglot.compiler import C, F
+from ibis.backends.base.sqlglot.compiler import C
 from ibis.backends.clickhouse.compiler import ClickHouseCompiler
 from ibis.backends.clickhouse.datatypes import ClickhouseType
 
@@ -74,21 +74,28 @@ class Backend(SQLGlotBackend, CanCreateDatabase):
         BaseBackend
             A backend instance
         """
-        url = sa.engine.make_url(url)
+        url = urlparse(url)
+        database = url.path[1:]
+        query_params = parse_qs(url.query)
 
-        kwargs = toolz.merge(
-            {
-                name: value
-                for name in ("host", "port", "database", "password")
-                if (value := getattr(url, name, None))
-            },
-            kwargs,
-        )
-        if username := url.username:
-            kwargs["user"] = username
+        connect_args = {
+            "user": url.username,
+            "password": url.password or "",
+            "host": url.hostname,
+            "database": database or "",
+        }
 
-        kwargs.update(url.query)
+        for name, value in query_params.items():
+            if len(value) > 1:
+                connect_args[name] = value
+            elif len(value) == 1:
+                connect_args[name] = value[0]
+            else:
+                raise com.IbisError(f"Invalid URL parameter: {name}")
+
+        kwargs.update(connect_args)
         self._convert_kwargs(kwargs)
+
         return self.connect(**kwargs)
 
     def _convert_kwargs(self, kwargs):
@@ -172,7 +179,7 @@ class Backend(SQLGlotBackend, CanCreateDatabase):
 
     @property
     def current_database(self) -> str:
-        with self._safe_raw_sql(sg.select(F.currentDatabase())) as result:
+        with self._safe_raw_sql(sg.select(self.compiler.f.currentDatabase())) as result:
             [(db,)] = result.result_rows
         return db
 
@@ -194,7 +201,7 @@ class Backend(SQLGlotBackend, CanCreateDatabase):
         query = sg.select(C.name).from_(sg.table("tables", db="system"))
 
         if database is None:
-            database = F.currentDatabase()
+            database = self.compiler.f.currentDatabase()
         else:
             database = sge.convert(database)
 
@@ -681,7 +688,7 @@ class Backend(SQLGlotBackend, CanCreateDatabase):
         expression = None
 
         if obj is not None:
-            (expression,) = self._to_sqlglot(obj)
+            expression = self._to_sqlglot(obj)
             external_tables.update(self._collect_in_memory_tables(obj))
 
         code = sge.Create(
@@ -708,7 +715,7 @@ class Backend(SQLGlotBackend, CanCreateDatabase):
         database: str | None = None,
         overwrite: bool = False,
     ) -> ir.Table:
-        (expression,) = self._to_sqlglot(obj)
+        expression = self._to_sqlglot(obj)
         src = sge.Create(
             this=sg.table(name, db=database),
             kind="VIEW",

@@ -1,29 +1,17 @@
 SELECT
-  t5.key AS key
+  t3.key
 FROM (
   SELECT
-    t1.string_col AS key,
-    CAST(t1.float_col AS DOUBLE) AS value
-  FROM (
-    SELECT
-      *
-    FROM functional_alltypes AS t0
-    WHERE
-      (
-        t0.int_col > CAST(0 AS TINYINT)
-      )
-  ) AS t1
+    t0.string_col AS key,
+    CAST(t0.float_col AS DOUBLE) AS value
+  FROM functional_alltypes AS t0
+  WHERE
+    t0.int_col > CAST(0 AS TINYINT)
   UNION ALL
   SELECT
-    t2.string_col AS key,
-    t2.double_col AS value
-  FROM (
-    SELECT
-      *
-    FROM functional_alltypes AS t0
-    WHERE
-      (
-        t0.int_col <= CAST(0 AS TINYINT)
-      )
-  ) AS t2
-) AS t5
+    t0.string_col AS key,
+    t0.double_col AS value
+  FROM functional_alltypes AS t0
+  WHERE
+    t0.int_col <= CAST(0 AS TINYINT)
+) AS t3

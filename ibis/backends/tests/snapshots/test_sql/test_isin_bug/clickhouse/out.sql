@@ -1,9 +1,9 @@
 SELECT
-  t0.x IN ((
+  t0.x IN (
     SELECT
-      t0.x AS x
+      t0.x
     FROM t AS t0
     WHERE
       t0.x > 2
-  )) AS "InSubquery(x)"
+  ) AS "InSubquery(x)"
 FROM t AS t0
