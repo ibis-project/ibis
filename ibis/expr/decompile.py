@@ -184,6 +184,11 @@ def self_reference(op, parent, identifier):
     return parent
 
 
+@translate.register(ops.JoinTable)
+def join_table(op, parent, index):
+    return parent
+
+
 @translate.register(ops.JoinLink)
 def join_link(op, table, predicates, how):
     return f".{how}_join({table}, {_try_unwrap(predicates)})"
@@ -327,7 +332,7 @@ def isin(op, value, options):
 class CodeContext:
     always_assign = (ops.ScalarParameter, ops.UnboundTable, ops.Aggregate)
     always_ignore = (
-        ops.SelfReference,
+        ops.JoinTable,
         ops.Field,
         dt.Primitive,
         dt.Variadic,
