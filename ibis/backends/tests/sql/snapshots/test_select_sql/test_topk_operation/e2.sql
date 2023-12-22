@@ -1,23 +1,24 @@
 SELECT
-  t0.foo AS foo,
-  t0.bar AS bar,
-  t0.city AS city,
-  t0.v1 AS v1,
-  t0.v2 AS v2
-FROM tbl AS t0
+  t1.foo,
+  t1.bar,
+  t1.city,
+  t1.v1,
+  t1.v2
+FROM tbl AS t1
 SEMI JOIN (
   SELECT
-    *
+    t2.city,
+    t2."Count(city)"
   FROM (
     SELECT
-      t0.city AS city,
+      t0.city,
       COUNT(t0.city) AS "Count(city)"
     FROM tbl AS t0
     GROUP BY
       1
-  ) AS t1
+  ) AS t2
   ORDER BY
-    t1."Count(city)" DESC
+    t2."Count(city)" DESC
   LIMIT 10
-) AS t3
-  ON t0.city = t3.city
+) AS t5
+  ON t1.city = t5.city

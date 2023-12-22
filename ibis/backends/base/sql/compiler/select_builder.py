@@ -86,9 +86,9 @@ class SelectBuilder:
     def _make_table_aliases(self, node):
         ctx = self.context
 
-        if isinstance(node, ops.Join):
+        if isinstance(node, ops.JoinChain):
             for arg in node.args:
-                if isinstance(arg, ops.TableNode):
+                if isinstance(arg, ops.Relation):
                     self._make_table_aliases(arg)
         elif not ctx.is_extracted(node):
             ctx.make_alias(node)
@@ -112,7 +112,7 @@ class SelectBuilder:
 
         if isinstance(self.op, ops.DummyTable):
             self.select_set = list(self.op.values)
-        elif isinstance(self.op, ops.TableNode):
+        elif isinstance(self.op, ops.Relation):
             self._collect(self.op, toplevel=True)
         else:
             self.select_set = [self.op]
@@ -125,7 +125,7 @@ class SelectBuilder:
             f(op, toplevel=toplevel)
         elif isinstance(op, (ops.PhysicalTable, ops.SQLQueryResult)):
             self._collect_PhysicalTable(op, toplevel=toplevel)
-        elif isinstance(op, ops.Join):
+        elif isinstance(op, ops.JoinChain):
             self._collect_Join(op, toplevel=toplevel)
         elif isinstance(op, ops.WindowingTVF):
             self._collect_WindowingTVF(op, toplevel=toplevel)
@@ -140,7 +140,7 @@ class SelectBuilder:
 
     def _collect_Limit(self, op, toplevel=False):
         if toplevel:
-            if isinstance(table := op.table, ops.Limit):
+            if isinstance(table := op.parent, ops.Limit):
                 self.table_set = table
                 self.select_set = [table]
             else:
@@ -184,27 +184,18 @@ class SelectBuilder:
 
             self._collect(op.table)
 
-    def _collect_Selection(self, op, toplevel=False):
-        table = op.table
+    def _collect_Project(self, op, toplevel=False):
+        table = op.parent
 
         if toplevel:
-            if isinstance(table, ops.Join):
+            if isinstance(table, ops.JoinChain):
                 self._collect_Join(table)
             else:
                 self._collect(table)
 
-            selections = op.selections
-            sort_keys = op.sort_keys
-            filters = op.predicates
-
-            if not selections:
-                # select *
-                selections = [table]
-
-            self.order_by = sort_keys
-            self.select_set = selections
+            selections = op.values
+            self.select_set = list(selections.values())
             self.table_set = table
-            self.filters = filters
 
     def _collect_InMemoryTable(self, node, toplevel=False):
         if toplevel:

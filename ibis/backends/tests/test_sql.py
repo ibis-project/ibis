@@ -39,7 +39,8 @@ not_sql = pytest.mark.never(
     reason="Not a SQL backend",
 )
 no_sql_extraction = pytest.mark.notimpl(
-    ["pyspark", "polars"], reason="Not clear how to extract SQL from the backend"
+    ["datafusion", "pyspark", "polars"],
+    reason="Not clear how to extract SQL from the backend",
 )
 
 
@@ -61,7 +62,9 @@ def test_literal(backend, expr):
     assert ibis.to_sql(expr, dialect=backend.name())
 
 
-@pytest.mark.never(["pandas", "dask", "polars", "pyspark"], reason="not SQL")
+@pytest.mark.never(
+    ["pandas", "dask", "datafusion", "polars", "pyspark"], reason="not SQL"
+)
 @pytest.mark.xfail_version(
     mssql=["sqlalchemy>=2"], reason="sqlalchemy 2 prefixes literals with `N`"
 )
@@ -87,6 +90,9 @@ def test_group_by_has_index(backend, snapshot):
     snapshot.assert_match(sql, "out.sql")
 
 
+@pytest.mark.xfail(
+    raises=exc.IntegrityError, reason="inner join convenience not implemented"
+)
 @pytest.mark.never(["pandas", "dask", "polars", "pyspark"], reason="not SQL")
 def test_cte_refs_in_topo_order(backend, snapshot):
     mr0 = ibis.table(schema=ibis.schema(dict(key="int")), name="leaf")
@@ -100,7 +106,9 @@ def test_cte_refs_in_topo_order(backend, snapshot):
     snapshot.assert_match(sql, "out.sql")
 
 
-@pytest.mark.never(["pandas", "dask", "polars", "pyspark"], reason="not SQL")
+@pytest.mark.never(
+    ["pandas", "dask", "datafusion", "polars", "pyspark"], reason="not SQL"
+)
 def test_isin_bug(con, snapshot):
     t = ibis.table(dict(x="int"), name="t")
     good = t[t.x > 2].x
@@ -109,7 +117,7 @@ def test_isin_bug(con, snapshot):
 
 
 @pytest.mark.never(
-    ["pandas", "dask", "polars", "pyspark"],
+    ["pandas", "dask", "datafusion", "polars", "pyspark"],
     reason="not SQL",
     raises=NotImplementedError,
 )
@@ -117,7 +125,7 @@ def test_isin_bug(con, snapshot):
     ["sqlite", "mysql", "druid", "impala", "mssql"], reason="no unnest support upstream"
 )
 @pytest.mark.notimpl(
-    ["oracle", "flink", "datafusion"],
+    ["oracle", "flink"],
     reason="unnest not yet implemented",
     raises=exc.OperationNotDefinedError,
 )

@@ -1,1 +1,3 @@
-t0.int_col + CAST(4 AS TINYINT)
+SELECT
+  t0.int_col + CAST(4 AS TINYINT) AS "Add(int_col, 4)"
+FROM int_col_table AS t0

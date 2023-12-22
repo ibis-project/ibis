@@ -132,7 +132,10 @@ def _wrap_alias(values, rendered):
     for k, v in values.items():
         text = rendered[k]
         if v.name != k:
-            text = f"{text}.name({k!r})"
+            if isinstance(v, ops.Binary):
+                text = f"({text}).name({k!r})"
+            else:
+                text = f"{text}.name({k!r})"
         result.append(text)
     return result
 
@@ -189,6 +192,11 @@ def self_reference(op, parent, identifier):
     return f"{parent}.view()"
 
 
+@translate.register(ops.Distinct)
+def distinct(op, parent):
+    return f"{parent}.distinct()"
+
+
 @translate.register(ops.JoinTable)
 def join_table(op, parent, index):
     return parent
@@ -202,7 +210,12 @@ def join_link(op, table, predicates, how):
 @translate.register(ops.JoinChain)
 def join(op, first, rest, values):
     calls = "".join(rest)
-    return f"{first}{calls}"
+    pieces = [f"{first}{calls}"]
+    if values:
+        values = _wrap_alias(op.values, values)
+        pieces.append(f"select({_inline(values)})")
+    result = ".".join(pieces)
+    return result
 
 
 @translate.register(ops.Set)
@@ -224,7 +237,9 @@ def limit(op, parent, n, offset):
 
 @translate.register(ops.Field)
 def table_column(op, rel, name):
-    return f"{rel}.{name}"
+    if name.isidentifier():
+        return f"{rel}.{name}"
+    return f"{rel}[{name!r}]"
 
 
 @translate.register(ops.SortKey)
@@ -337,10 +352,11 @@ def isin(op, value, options):
 class CodeContext:
     always_assign = (
         ops.ScalarParameter,
-        ops.UnboundTable,
         ops.Aggregate,
+        ops.PhysicalTable,
         ops.SelfReference,
     )
+
     always_ignore = (
         ops.JoinTable,
         ops.Field,

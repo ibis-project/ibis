@@ -1,8 +1,13 @@
 """Some common rewrite functions to be shared between backends."""
 from __future__ import annotations
 
+import functools
+from collections.abc import Mapping
+
 import toolz
 
+import ibis.common.exceptions as com
+import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 from ibis.common.deferred import Item, _, deferred, var
 from ibis.common.exceptions import ExpressionError
@@ -20,6 +25,85 @@ name = var("name")
 @replace(p.Field(p.JoinChain))
 def peel_join_field(_):
     return _.rel.values[_.name]
+
+
+@replace(p.Alias(p.ScalarParameter))
+def unwrap_scalar_parameter(_):
+    """Replace aliased scalar parameters with the parameter itself."""
+    return _.arg
+
+
+def replace_scalar_parameter(params):
+    """Replace scalar parameters with their values."""
+
+    @replace(p.ScalarParameter)
+    def repl(_):
+        return ops.Literal(value=params[_], dtype=_.dtype)
+
+    return repl
+
+
+@replace(p.FillNa)
+def rewrite_fillna(_):
+    """Rewrite FillNa expressions to use more common operations."""
+    if isinstance(_.replacements, Mapping):
+        mapping = _.replacements
+    else:
+        mapping = {
+            name: _.replacements
+            for name, type in _.parent.schema.items()
+            if type.nullable
+        }
+
+    if not mapping:
+        return _.parent
+
+    selections = []
+    for name in _.parent.schema.names:
+        col = ops.TableColumn(_.parent, name)
+        if (value := mapping.get(name)) is not None:
+            col = ops.Alias(ops.Coalesce((col, value)), name)
+        selections.append(col)
+
+    return ops.Project(_.parent, selections)
+
+
+@replace(p.DropNa)
+def rewrite_dropna(_):
+    """Rewrite DropNa expressions to use more common operations."""
+    if _.subset is None:
+        columns = [ops.TableColumn(_.parent, name) for name in _.parent.schema.names]
+    else:
+        columns = _.subset
+
+    if columns:
+        preds = [
+            functools.reduce(
+                ops.And if _.how == "any" else ops.Or,
+                [ops.NotNull(c) for c in columns],
+            )
+        ]
+    elif _.how == "all":
+        preds = [ops.Literal(False, dtype=dt.bool)]
+    else:
+        return _.parent
+
+    return ops.Filter(_.parent, tuple(preds))
+
+
+@replace(p.Sample)
+def rewrite_sample(_):
+    """Rewrite Sample as `t.filter(random() <= fraction)`.
+
+    Errors as unsupported if a `seed` is specified.
+    """
+
+    if _.seed is not None:
+        raise com.UnsupportedOperationError(
+            "`Table.sample` with a random seed is unsupported"
+        )
+
+    return ops.Filter(_.parent, (ops.LessEqual(ops.RandomScalar(), _.fraction),))
 
 
 @replace(ops.Analytic)
@@ -116,6 +200,43 @@ def rewrite_window_input(value, frame):
     # if self is already a window function, merge the existing window frame
     # with the requested window frame
     return node.replace(window_merge_frames, filter=p.Value, context=context)
+
+
+@replace(p.InValues(..., ()))
+def empty_in_values_right_side(_):
+    """Replace checks against an empty right side with `False`."""
+    return ops.Literal(False, dtype=dt.bool)
+
+
+@replace(
+    p.WindowFunction(
+        p.PercentRank(y) | p.RankBase(y) | p.CumeDist(y) | p.NTile(y),
+        p.WindowFrame(..., order_by=()) >> _.copy(order_by=(y,)),
+    )
+)
+def add_order_by_to_empty_ranking_window_functions(_):
+    """Add an ORDER BY clause to rank window functions that don't have one."""
+    return _
+
+
+@replace(
+    p.WindowFunction(p.RankBase | p.NTile)
+    | p.StringFind
+    | p.FindInSet
+    | p.ArrayPosition
+)
+def one_to_zero_index(_, **__):
+    """Subtract one from one-index functions."""
+    return ops.Subtract(_, 1)
+
+
+@replace(ops.NthValue)
+def add_one_to_nth_value_input(_, **__):
+    if isinstance(_.nth, ops.Literal):
+        nth = ops.Literal(_.nth.value + 1, dtype=_.nth.dtype)
+    else:
+        nth = ops.Add(_.nth, 1)
+    return _.copy(nth=nth)
 
 
 # TODO(kszucs): schema comparison should be updated to not distinguish between

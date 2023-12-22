@@ -185,6 +185,11 @@ class JoinExpr(Table):
         )
         preds = flatten_predicates(list(preds))
 
+        # if there are no predicates, default to every row matching unless the
+        # join is a cross join, because a cross join already has this behavior
+        if not preds and how != "cross":
+            preds.append(ops.Literal(True, dtype="bool"))
+
         # calculate the fields based in lname and rname, this should be a best
         # effort to avoid collisions, but does not raise if there are any
         # if no disambiaution happens using a final .select() call, then

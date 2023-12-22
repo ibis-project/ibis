@@ -1,40 +1,45 @@
 SELECT
-  t6.origin AS origin,
+  t8.origin,
   COUNT(*) AS "CountStar()"
 FROM (
   SELECT
-    t1.dest AS dest,
-    t1.origin AS origin,
-    t1.arrdelay AS arrdelay
+    t2.dest,
+    t2.origin,
+    t2.arrdelay
   FROM (
     SELECT
-      *
+      t0.dest,
+      t0.origin,
+      t0.arrdelay
     FROM airlines AS t0
     WHERE
       t0.dest IN ('ORD', 'JFK', 'SFO')
-  ) AS t1
+  ) AS t2
   SEMI JOIN (
     SELECT
-      *
+      t3.dest,
+      t3."Mean(arrdelay)"
     FROM (
       SELECT
-        t1.dest AS dest,
+        t1.dest,
         AVG(t1.arrdelay) AS "Mean(arrdelay)"
       FROM (
         SELECT
-          *
+          t0.dest,
+          t0.origin,
+          t0.arrdelay
         FROM airlines AS t0
         WHERE
           t0.dest IN ('ORD', 'JFK', 'SFO')
       ) AS t1
       GROUP BY
         1
-    ) AS t2
+    ) AS t3
     ORDER BY
-      t2."Mean(arrdelay)" DESC
+      t3."Mean(arrdelay)" DESC
     LIMIT 10
-  ) AS t4
-    ON t1.dest = t4.dest
-) AS t6
+  ) AS t6
+    ON t2.dest = t6.dest
+) AS t8
 GROUP BY
   1

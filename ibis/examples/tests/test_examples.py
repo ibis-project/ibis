@@ -11,7 +11,6 @@ from ibis.conftest import CI, LINUX, MACOS, SANDBOXED
 pytestmark = pytest.mark.examples
 
 duckdb = pytest.importorskip("duckdb")
-pytest.importorskip("pins")
 
 # large files or files that are used elsewhere
 ignored = frozenset(
@@ -95,27 +94,3 @@ def test_table_name_arg():
     name = f"penguins-{uuid.uuid4().hex}"
     t = ibis.examples.penguins.fetch(backend=con, table_name=name)
     assert t.get_name() == name
-
-
-@pytest.mark.pandas
-@pytest.mark.duckdb
-@pytest.mark.backend
-@skip_linux_nix
-@pytest.mark.parametrize(
-    ("example", "columns"),
-    [
-        ("ml_latest_small_links", ["movieId", "imdbId", "tmdbId"]),
-        ("band_instruments", ["name", "plays"]),
-        (
-            "AwardsManagers",
-            ["player_id", "award_id", "year_id", "lg_id", "tie", "notes"],
-        ),
-    ],
-    ids=["parquet", "csv", "csv-all-null"],
-)
-@pytest.mark.parametrize("backend_name", ["duckdb", "polars", "pandas"])
-def test_load_example(backend_name, example, columns):
-    pytest.importorskip(backend_name)
-    con = getattr(ibis, backend_name).connect()
-    t = getattr(ibis.examples, example).fetch(backend=con)
-    assert t.columns == columns

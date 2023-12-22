@@ -14,7 +14,7 @@ on:
     branches:
       - main
       - "*.x.x"
-      - "!the-epic-split"
+      - the-epic-split
   pull_request:
     paths:
       - "docs/**"
@@ -26,7 +26,7 @@ on:
     branches:
       - main
       - "*.x.x"
-      - "!the-epic-split"
+      - the-epic-split
   merge_group:
 jobs:
   test_backends:
