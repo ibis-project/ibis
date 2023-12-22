@@ -6,7 +6,7 @@ import ibis
 import ibis.common.exceptions as com
 import ibis.expr.operations as ops
 from ibis.expr.rewrites import simplify
-from ibis.expr.tests.test_newrels import self_references
+from ibis.expr.tests.test_newrels import join_tables
 
 # Place to collect esoteric expression analysis bugs and tests
 
@@ -22,12 +22,12 @@ def test_rewrite_join_projection_without_other_ops(con):
     pred1 = table["foo_id"] == table2["foo_id"]
     pred2 = filtered["bar_id"] == table3["bar_id"]
 
-    with self_references():
-        j1 = filtered.left_join(table2, [pred1])
-        j2 = j1.inner_join(table3, [pred2])
-        # Project out the desired fields
-        view = j2[[filtered, table2["value1"], table3["value2"]]]
-    with self_references(filtered, table2, table3) as (r1, r2, r3):
+    j1 = filtered.left_join(table2, [pred1])
+    j2 = j1.inner_join(table3, [pred2])
+    # Project out the desired fields
+    view = j2[[filtered, table2["value1"], table3["value2"]]]
+
+    with join_tables(filtered, table2, table3) as (r1, r2, r3):
         # Construct the thing we expect to obtain
         expected = ops.JoinChain(
             first=r1,
@@ -165,13 +165,12 @@ def test_filter_self_join():
     )
 
     cond = left.region == right.region
-    with self_references():
-        joined = left.join(right, cond)
-        metric = (left.total - right.total).name("diff")
-        what = [left.region, metric]
-        projected = joined.select(what)
+    joined = left.join(right, cond)
+    metric = (left.total - right.total).name("diff")
+    what = [left.region, metric]
+    projected = joined.select(what)
 
-    with self_references(left, right) as (r1, r2):
+    with join_tables(left, right) as (r1, r2):
         join = ops.JoinChain(
             first=r1,
             rest=[

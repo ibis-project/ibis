@@ -230,25 +230,36 @@ JoinKind = Literal[
 
 
 @public
+class JoinTable(Simple):
+    index: int
+
+
+@public
 class JoinLink(Node):
     how: JoinKind
-    table: SelfReference
+    table: JoinTable
     predicates: VarTuple[Value[dt.Boolean]]
 
 
 @public
 class JoinChain(Relation):
-    first: SelfReference
+    first: JoinTable
     rest: VarTuple[JoinLink]
     values: FrozenDict[str, Unaliased[Value]]
 
     def __init__(self, first, rest, values):
         allowed_parents = {first}
+        assert first.index == 0
         for join in rest:
+            assert join.table.index == len(allowed_parents)
             allowed_parents.add(join.table)
             _check_integrity(join.predicates, allowed_parents)
         _check_integrity(values.values(), allowed_parents)
         super().__init__(first=first, rest=rest, values=values)
+
+    @property
+    def length(self):
+        return len(self.rest) + 1
 
     @attribute
     def schema(self):
