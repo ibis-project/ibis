@@ -2984,13 +2984,10 @@ class Table(Expr, _FixedTextJupyterMixin):
             # `ir.Table(ops.JoinChain())` expression, which we can reuse here
             expr = left.to_expr()
         else:
-            # all participants of the join must be wrapped in SelfReferences so
-            # that we can join the same table with itself multiple times and to
-            # enable optimization passes later on
-            if not isinstance(left, ops.SelfReference):
-                left = ops.SelfReference(left)
-            # construct an empty join chain and wrap it with a JoinExpr, the
-            # projected fields are the fields of the starting table
+            # all participants of the join must be wrapped in JoinTable nodes
+            # so that we can join the same table with itself multiple times and
+            # to enable optimization passes later on
+            left = ops.JoinTable(left, index=0)
             expr = ops.JoinChain(left, rest=(), values=left.fields).to_expr()
 
         return expr.join(right, predicates, how=how, lname=lname, rname=rname)
