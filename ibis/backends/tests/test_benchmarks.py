@@ -717,7 +717,6 @@ def test_repr_join(benchmark, customers, orders, orders_items, products):
 @pytest.mark.parametrize("overwrite", [True, False], ids=["overwrite", "no_overwrite"])
 def test_insert_duckdb(benchmark, overwrite, tmp_path):
     pytest.importorskip("duckdb")
-    pytest.importorskip("duckdb_engine")
 
     n_rows = int(1e4)
     table_name = "t"
@@ -806,7 +805,6 @@ def test_duckdb_to_pyarrow(benchmark, sql, ddb) -> None:
 
 def test_ibis_duckdb_to_pyarrow(benchmark, sql, ddb) -> None:
     pytest.importorskip("duckdb")
-    pytest.importorskip("duckdb_engine")
 
     con = ibis.duckdb.connect(ddb, read_only=True)
 
@@ -876,7 +874,6 @@ def test_big_join_expr(benchmark, src, diff):
 
 def test_big_join_execute(benchmark, nrels):
     pytest.importorskip("duckdb")
-    pytest.importorskip("duckdb_engine")
 
     con = ibis.duckdb.connect()
 

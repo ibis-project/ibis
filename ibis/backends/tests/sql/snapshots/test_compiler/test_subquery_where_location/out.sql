@@ -1,11 +1,19 @@
-WITH t0 AS (
-  SELECT t2.`float_col`, t2.`timestamp_col`, t2.`int_col`, t2.`string_col`
-  FROM alltypes t2
-  WHERE t2.`timestamp_col` < '2014-01-01T00:00:00'
-)
-SELECT count(t1.`foo`) AS `Count(foo)`
+SELECT
+  COUNT(t2.foo) AS "Count(foo)"
 FROM (
-  SELECT t0.`string_col`, sum(t0.`float_col`) AS `foo`
-  FROM t0
-  GROUP BY 1
-) t1
+  SELECT
+    t1.string_col,
+    SUM(t1.float_col) AS foo
+  FROM (
+    SELECT
+      t0.float_col,
+      t0.timestamp_col,
+      t0.int_col,
+      t0.string_col
+    FROM alltypes AS t0
+    WHERE
+      t0.timestamp_col < MAKE_TIMESTAMP(2014, 1, 1, 0, 0, 0.0)
+  ) AS t1
+  GROUP BY
+    1
+) AS t2

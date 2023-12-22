@@ -18,7 +18,6 @@ from ibis import _
 from ibis import literal as L
 from ibis.backends.tests.errors import (
     ArrowNotImplementedError,
-    DuckDBConversionException,
     ExaQueryError,
     GoogleBadRequest,
     ImpalaHiveServer2Error,
@@ -26,11 +25,6 @@ from ibis.backends.tests.errors import (
 )
 from ibis.expr import datatypes as dt
 from ibis.tests.util import assert_equal
-
-try:
-    from snowflake.connector.errors import ProgrammingError as SnowflakeProgrammingError
-except ImportError:
-    SnowflakeProgrammingError = None
 
 
 @pytest.mark.parametrize(
@@ -248,7 +242,7 @@ def test_numeric_literal(con, backend, expr, expected_types):
             # TODO(krzysztof-kwitt): Should we unify it?
             {
                 "bigquery": decimal.Decimal("1.1"),
-                "snowflake": decimal.Decimal("1.1"),
+                "snowflake": "1.1",
                 "sqlite": 1.1,
                 "trino": 1.1,
                 "dask": decimal.Decimal("1.1"),
@@ -265,7 +259,7 @@ def test_numeric_literal(con, backend, expr, expected_types):
             },
             {
                 "bigquery": "NUMERIC",
-                "snowflake": "DECIMAL",
+                "snowflake": "VARCHAR",
                 "sqlite": "real",
                 "trino": "decimal(2,1)",
                 "duckdb": "DECIMAL(18,3)",
@@ -300,7 +294,7 @@ def test_numeric_literal(con, backend, expr, expected_types):
             # TODO(krzysztof-kwitt): Should we unify it?
             {
                 "bigquery": decimal.Decimal("1.1"),
-                "snowflake": decimal.Decimal("1.1"),
+                "snowflake": "1.100000000",
                 "sqlite": 1.1,
                 "trino": 1.1,
                 "duckdb": decimal.Decimal("1.100000000"),
@@ -319,7 +313,7 @@ def test_numeric_literal(con, backend, expr, expected_types):
             {
                 "bigquery": "NUMERIC",
                 "clickhouse": "Decimal(38, 9)",
-                "snowflake": "DECIMAL",
+                "snowflake": "VARCHAR",
                 "sqlite": "real",
                 "trino": "decimal(2,1)",
                 "duckdb": "DECIMAL(38,9)",
@@ -349,6 +343,7 @@ def test_numeric_literal(con, backend, expr, expected_types):
             # TODO(krzysztof-kwitt): Should we unify it?
             {
                 "bigquery": decimal.Decimal("1.1"),
+                "snowflake": "1.10000000000000000000000000000000000000",
                 "sqlite": 1.1,
                 "trino": 1.1,
                 "dask": decimal.Decimal("1.1"),
@@ -366,6 +361,7 @@ def test_numeric_literal(con, backend, expr, expected_types):
             {
                 "bigquery": "BIGNUMERIC",
                 "clickhouse": "Decimal(76, 38)",
+                "snowflake": "VARCHAR",
                 "sqlite": "real",
                 "trino": "decimal(2,1)",
                 "duckdb": "DECIMAL(18,3)",
@@ -395,11 +391,6 @@ def test_numeric_literal(con, backend, expr, expected_types):
                     "The precision can be up to 38 in Flink",
                     raises=ValueError,
                 ),
-                pytest.mark.broken(
-                    ["snowflake"],
-                    "Invalid number precision: 76. Must be between 0 and 38.",
-                    raises=SnowflakeProgrammingError,
-                ),
             ],
             id="decimal-big",
         ),
@@ -408,6 +399,7 @@ def test_numeric_literal(con, backend, expr, expected_types):
             # TODO(krzysztof-kwitt): Should we unify it?
             {
                 "bigquery": float("inf"),
+                "snowflake": "Infinity",
                 "sqlite": float("inf"),
                 "postgres": float("nan"),
                 "pandas": decimal.Decimal("Infinity"),
@@ -418,6 +410,7 @@ def test_numeric_literal(con, backend, expr, expected_types):
             },
             {
                 "bigquery": "FLOAT64",
+                "snowflake": "VARCHAR",
                 "sqlite": "real",
                 "trino": "decimal(2,1)",
                 "postgres": "numeric",
@@ -436,11 +429,6 @@ def test_numeric_literal(con, backend, expr, expected_types):
                     "message=\"line 1:51: 'Infinity' is not a valid decimal literal\", "
                     "query_id=20230128_024107_01084_y8zm3)",
                     raises=sa.exc.ProgrammingError,
-                ),
-                pytest.mark.broken(
-                    ["snowflake"],
-                    "snowflake.connector.errors.ProgrammingError: 100038 (22018): Numeric value 'Infinity' is not recognized",
-                    raises=SnowflakeProgrammingError,
                 ),
                 pytest.mark.broken(
                     ["pyspark"],
@@ -488,6 +476,7 @@ def test_numeric_literal(con, backend, expr, expected_types):
             # TODO(krzysztof-kwitt): Should we unify it?
             {
                 "bigquery": float("-inf"),
+                "snowflake": "-Infinity",
                 "sqlite": float("-inf"),
                 "postgres": float("nan"),
                 "pandas": decimal.Decimal("-Infinity"),
@@ -498,6 +487,7 @@ def test_numeric_literal(con, backend, expr, expected_types):
             },
             {
                 "bigquery": "FLOAT64",
+                "snowflake": "VARCHAR",
                 "sqlite": "real",
                 "trino": "decimal(2,1)",
                 "postgres": "numeric",
@@ -516,11 +506,6 @@ def test_numeric_literal(con, backend, expr, expected_types):
                     "message=\"line 1:51: '-Infinity' is not a valid decimal literal\", "
                     "query_id=20230128_024107_01084_y8zm3)",
                     raises=sa.exc.ProgrammingError,
-                ),
-                pytest.mark.broken(
-                    ["snowflake"],
-                    "snowflake.connector.errors.ProgrammingError: 100038 (22018): Numeric value '-Infinity' is not recognized",
-                    raises=SnowflakeProgrammingError,
                 ),
                 pytest.mark.broken(
                     ["pyspark"],
@@ -568,6 +553,7 @@ def test_numeric_literal(con, backend, expr, expected_types):
             # TODO(krzysztof-kwitt): Should we unify it?
             {
                 "bigquery": float("nan"),
+                "snowflake": "NaN",
                 "sqlite": None,
                 "postgres": float("nan"),
                 "pandas": decimal.Decimal("NaN"),
@@ -578,6 +564,7 @@ def test_numeric_literal(con, backend, expr, expected_types):
             },
             {
                 "bigquery": "FLOAT64",
+                "snowflake": "VARCHAR",
                 "sqlite": "null",
                 "trino": "decimal(2,1)",
                 "postgres": "numeric",
@@ -598,11 +585,6 @@ def test_numeric_literal(con, backend, expr, expected_types):
                     raises=sa.exc.ProgrammingError,
                 ),
                 pytest.mark.broken(
-                    ["snowflake"],
-                    "snowflake.connector.errors.ProgrammingError: 100038 (22018): Numeric value 'NaN' is not recognized",
-                    raises=SnowflakeProgrammingError,
-                ),
-                pytest.mark.broken(
                     ["pyspark"],
                     "An error occurred while calling z:org.apache.spark.sql.functions.lit.",
                     raises=Py4JError,
@@ -620,6 +602,14 @@ def test_numeric_literal(con, backend, expr, expected_types):
                     'Check messages from the SQL Server\n")'
                     "[SQL: SELECT %(param_1)s AS [Decimal('NaN')]]",
                     raises=(sa.exc.ProgrammingError, KeyError),
+                ),
+                pytest.mark.broken(
+                    ["mssql"],
+                    "(pydruid.db.exceptions.ProgrammingError) Plan validation failed "
+                    "(org.apache.calcite.tools.ValidationException): "
+                    "org.apache.calcite.runtime.CalciteContextException: From line 1, column 8 to line 1, column 10: Column 'NaN' not found in any table"
+                    "[SQL: SELECT NaN AS \"Decimal('NaN')\"]",
+                    raises=sa.exc.ProgrammingError,
                 ),
                 pytest.mark.broken(
                     ["druid"],
@@ -761,14 +751,28 @@ def test_decimal_literal(con, backend, expr, expected_types, expected_result):
         param(
             operator.methodcaller("isnan"),
             np.isnan,
-            marks=pytest.mark.notimpl(["exasol"], raises=com.OperationNotDefinedError),
+            marks=[
+                pytest.mark.notimpl(
+                    ["exasol"],
+                    raises=com.OperationNotDefinedError,
+                ),
+            ],
             id="isnan",
         ),
         param(
             operator.methodcaller("isinf"),
             np.isinf,
             id="isinf",
-            marks=pytest.mark.notimpl(["exasol"], raises=com.OperationNotDefinedError),
+            marks=[
+                pytest.mark.notimpl(
+                    ["exasol"],
+                    raises=com.OperationNotDefinedError,
+                ),
+                pytest.mark.notimpl(
+                    ["datafusion"],
+                    raises=com.OperationNotDefinedError,
+                ),
+            ],
         ),
     ],
 )
@@ -1388,7 +1392,7 @@ def test_floating_mod(backend, alltypes, df):
 )
 @pytest.mark.notyet(["mssql"], raises=(sa.exc.OperationalError, sa.exc.DataError))
 @pytest.mark.notyet(["postgres"], raises=sa.exc.DataError)
-@pytest.mark.notyet(["snowflake"], raises=SnowflakeProgrammingError)
+@pytest.mark.notyet(["snowflake"], raises=sa.exc.ProgrammingError)
 @pytest.mark.notimpl(["exasol"], raises=(sa.exc.DBAPIError, com.IbisTypeError))
 def test_divide_by_zero(backend, alltypes, df, column, denominator):
     expr = alltypes[column] / denominator
@@ -1437,7 +1441,6 @@ def test_divide_by_zero(backend, alltypes, df, column, denominator):
         "pyspark",
         "polars",
         "flink",
-        "snowflake",
     ],
     reason="Not SQLAlchemy backends",
 )
@@ -1538,8 +1541,7 @@ def test_random(con):
 @pytest.mark.notimpl(["datafusion"], raises=com.OperationNotDefinedError)
 def test_clip(backend, alltypes, df, ibis_func, pandas_func):
     result = ibis_func(alltypes.int_col).execute()
-    raw_expected = pandas_func(df.int_col)
-    expected = raw_expected.astype(result.dtype)
+    expected = pandas_func(df.int_col).astype(result.dtype)
     # Names won't match in the PySpark backend since PySpark
     # gives 'tmp' name when executing a Column
     backend.assert_series_equal(result, expected, check_names=False)
