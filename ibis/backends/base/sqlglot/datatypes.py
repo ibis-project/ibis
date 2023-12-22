@@ -419,6 +419,13 @@ class DuckDBType(SqlglotType):
     def _from_sqlglot_TIMESTAMP_NS(cls) -> dt.Timestamp:
         return dt.Timestamp(scale=9, nullable=cls.default_nullable)
 
+    @classmethod
+    def _from_ibis_GeoSpatial(cls, dtype: dt.GeoSpatial):
+        assert (
+            dtype.geotype == "geometry"
+        ), "DuckDB only supports geometry types; geography types are not supported"
+        return sge.DataType(this=typecode.GEOMETRY)
+
 
 class TrinoType(SqlglotType):
     dialect = "trino"
@@ -442,6 +449,27 @@ class DruidType(SqlglotType):
 
 class OracleType(SqlglotType):
     dialect = "oracle"
+
+
+class SnowflakeType(SqlglotType):
+    dialect = "snowflake"
+    default_temporal_scale = 9
+
+    @classmethod
+    def _from_sqlglot_FLOAT(cls) -> dt.Float64:
+        return dt.Float64(nullable=cls.default_nullable)
+
+    @classmethod
+    def _from_sqlglot_DECIMAL(cls, precision=None, scale=None) -> dt.Decimal:
+        if scale is None or int(scale.this.this) == 0:
+            return dt.Int64(nullable=cls.default_nullable)
+        else:
+            return super()._from_sqlglot_DECIMAL(precision, scale)
+
+    @classmethod
+    def _from_sqlglot_ARRAY(cls, value_type=None) -> dt.Array:
+        assert value_type is None
+        return dt.Array(dt.json, nullable=cls.default_nullable)
 
 
 class SQLiteType(SqlglotType):

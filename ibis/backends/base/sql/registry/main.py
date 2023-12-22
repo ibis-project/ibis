@@ -355,7 +355,7 @@ operation_registry = {
     ops.IfElse: fixed_arity("if", 3),
     ops.Between: between,
     ops.InValues: binary_infix.in_values,
-    ops.InColumn: binary_infix.in_column,
+    ops.InSubquery: binary_infix.in_column,
     ops.SimpleCase: case.simple_case,
     ops.SearchedCase: case.searched_case,
     ops.Field: table_column,
