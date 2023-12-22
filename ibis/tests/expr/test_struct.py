@@ -8,7 +8,7 @@ import ibis
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
 from ibis import _
-from ibis.expr.tests.test_newrels import self_references
+from ibis.expr.tests.test_newrels import join_tables
 from ibis.tests.util import assert_pickle_roundtrip
 
 
@@ -70,10 +70,10 @@ def test_unpack_from_table(t):
 
 
 def test_lift_join(t, s):
-    with self_references():
-        join = t.join(s, t.d == s.a.g)
-        result = join.a_right.lift()
-    with self_references(t, s) as (r1, r2):
+    join = t.join(s, t.d == s.a.g)
+    result = join.a_right.lift()
+
+    with join_tables(t, s) as (r1, r2):
         join = ops.JoinChain(
             first=r1,
             rest=[
