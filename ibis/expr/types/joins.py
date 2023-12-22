@@ -46,34 +46,28 @@ def disambiguate_fields(how, left_fields, right_fields, lname, rname):
     return fields, collisions
 
 
-def dereference_targets(chain):
-    yield chain.first
-    for join in chain.rest:
-        if join.how not in ("semi", "anti"):
-            yield join.table
-
-
 def dereference_mapping_left(chain):
-    rels = dereference_targets(chain)
+    # construct the list of join table we wish to dereference fields to
+    rels = [chain.first]
+    for link in chain.rest:
+        if link.how not in ("semi", "anti"):
+            rels.append(link.table)
+
+    # create the dereference mapping suitable to disambiguate field references
+    # from earlier in the relation hierarchy to one of the join tables
     subs = dereference_mapping(rels)
-    # join chain fields => link table fields
+
+    # also allow to dereference fields of the join chain itself
     for k, v in chain.values.items():
         subs[ops.Field(chain, k)] = v
+
     return subs
 
 
 def dereference_mapping_right(right):
-    if isinstance(right, ops.SelfReference):
-        # no support for dereferencing, the user must use the right table
-        # directly in the predicates
-        return {}, right
-
-    # wrap the right table in a self reference to ensure its uniqueness in the
-    # join chain which requires dereferencing the predicates from
-    # right => SelfReference(right)
-    right = ops.SelfReference(right)
-    subs = {v: ops.Field(right, k) for k, v in right.values.items()}
-    return subs, right
+    # the right table is wrapped in a JoinTable the uniqueness of the underlying
+    # table which requires the predicates to be dereferenced to the wrapped
+    return {v: ops.Field(right, k) for k, v in right.values.items()}
 
 
 def dereference_sides(left, right, deref_left, deref_right):
@@ -175,9 +169,9 @@ class JoinExpr(Table):
             how = "semi"
 
         left = self.op()
-        right = right.op()
+        right = ops.JoinTable(right, index=left.length)
         subs_left = dereference_mapping_left(left)
-        subs_right, right = dereference_mapping_right(right)
+        subs_right = dereference_mapping_right(right)
 
         # bind and dereference the predicates
         preds = prepare_predicates(
