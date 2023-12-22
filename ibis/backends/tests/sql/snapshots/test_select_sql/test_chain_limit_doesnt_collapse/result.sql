@@ -2,10 +2,11 @@ SELECT
   *
 FROM (
   SELECT
-    *
+    t1.city,
+    t1."Count(city)"
   FROM (
     SELECT
-      t0.city AS city,
+      t0.city,
       COUNT(t0.city) AS "Count(city)"
     FROM tbl AS t0
     GROUP BY
@@ -21,10 +22,11 @@ OFFSET (
     COUNT(*) + CAST(-5 AS TINYINT)
   FROM (
     SELECT
-      *
+      t1.city,
+      t1."Count(city)"
     FROM (
       SELECT
-        t0.city AS city,
+        t0.city,
         COUNT(t0.city) AS "Count(city)"
       FROM tbl AS t0
       GROUP BY

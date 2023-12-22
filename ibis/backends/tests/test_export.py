@@ -130,7 +130,7 @@ def test_column_to_pyarrow_table_schema(awards_players):
     assert array.type == pa.string() or array.type == pa.large_string()
 
 
-@pytest.mark.notimpl(["dask", "datafusion", "flink"])
+@pytest.mark.notimpl(["pandas", "dask", "datafusion", "flink"])
 @pytest.mark.notyet(
     ["clickhouse"],
     raises=AssertionError,
@@ -145,7 +145,7 @@ def test_table_pyarrow_batch_chunk_size(awards_players):
         util.consume(batch_reader)
 
 
-@pytest.mark.notimpl(["dask", "datafusion", "flink"])
+@pytest.mark.notimpl(["pandas", "dask", "datafusion", "flink"])
 @pytest.mark.notyet(
     ["clickhouse"],
     raises=AssertionError,
@@ -348,8 +348,10 @@ def test_table_to_csv_writer_kwargs(delimiter, tmp_path, awards_players):
             marks=[
                 pytest.mark.notyet(["impala"], reason="precision not supported"),
                 pytest.mark.notyet(["duckdb"], reason="precision is out of range"),
-                pytest.mark.notyet(["druid", "trino"], raises=sa.exc.ProgrammingError),
-                pytest.mark.notyet(["snowflake"], raises=SnowflakeProgrammingError),
+                pytest.mark.notyet(
+                    ["druid", "mssql", "snowflake", "trino"],
+                    raises=sa.exc.ProgrammingError,
+                ),
                 pytest.mark.notyet(["oracle"], raises=sa.exc.DatabaseError),
                 pytest.mark.notyet(["mysql"], raises=sa.exc.OperationalError),
                 pytest.mark.notyet(
@@ -380,6 +382,7 @@ def test_to_pyarrow_decimal(backend, dtype, pyarrow_dtype):
         "mysql",
         "oracle",
         "postgres",
+        "snowflake",
         "sqlite",
         "bigquery",
         "dask",
@@ -391,11 +394,6 @@ def test_to_pyarrow_decimal(backend, dtype, pyarrow_dtype):
     reason="read_delta not yet implemented",
 )
 @pytest.mark.notyet(["clickhouse"], raises=Exception)
-@pytest.mark.notyet(
-    ["snowflake"],
-    raises=Exception,
-    reason="deltalake doesn't support nanosecond timestamps",
-)
 @pytest.mark.notyet(["mssql", "pandas"], raises=PyDeltaTableError)
 @pytest.mark.notyet(
     ["druid"],
