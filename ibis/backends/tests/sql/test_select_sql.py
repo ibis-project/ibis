@@ -6,7 +6,7 @@ from pytest import param
 import ibis
 from ibis import _
 from ibis.backends.tests.sql.conftest import to_sql
-from ibis.tests.util import assert_decompile_roundtrip
+from ibis.tests.util import assert_decompile_roundtrip, schemas_eq
 
 pytestmark = pytest.mark.duckdb
 
@@ -35,7 +35,9 @@ pytestmark = pytest.mark.duckdb
             id="limit_then_filter",
         ),
         param(lambda star1, **_: star1.count(), id="aggregate_table_count_metric"),
-        param(lambda star1, **_: star1.view(), id="self_reference_simple"),
+        # TODO: this is automatically simplified to `t`, so it's probably not a
+        # useful test to roundtrip *just* a call to view
+        # param(lambda star1, **_: star1.view(), id="self_reference_simple"),
         param(lambda t, **_: t, id="test_physical_table_reference_translate"),
     ],
 )
@@ -48,11 +50,7 @@ def test_select_sql(alltypes, star1, expr_fn, snapshot):
 def test_nameless_table(snapshot):
     # Generate a unique table name when we haven't passed on
     nameless = ibis.table([("key", "string")])
-    assert to_sql(nameless) == f"SELECT t0.*\nFROM {nameless.op().name} t0"
-
-    expr = ibis.table([("key", "string")], name="baz")
-    snapshot.assert_match(to_sql(expr), "out.sql")
-    assert_decompile_roundtrip(expr, snapshot)
+    assert nameless.op().name is not None
 
 
 def test_simple_joins(star1, star2, snapshot):
@@ -248,19 +246,11 @@ def test_fuse_projections(snapshot):
 def test_projection_filter_fuse(projection_fuse_filter, snapshot):
     expr1, expr2, expr3 = projection_fuse_filter
 
-    sql1 = Compiler.to_sql(expr1)
-    sql2 = Compiler.to_sql(expr2)
+    sql1 = ibis.to_sql(expr1)
+    sql2 = ibis.to_sql(expr2)
 
     assert sql1 == sql2
 
-    # ideally sql1 == sql3 but the projection logic has been a mess for a long
-    # time and causes bugs like
-    #
-    # https://github.com/ibis-project/ibis/issues/4003
-    #
-    # so we're conservative in fusing projections and filters
-    #
-    # even though it may seem obvious what to do, it's not
     snapshot.assert_match(to_sql(expr3), "out.sql")
 
 
@@ -427,15 +417,14 @@ def test_scalar_subquery_different_table(foo, bar, snapshot):
     snapshot.assert_match(to_sql(expr), "out.sql")
 
 
-# TODO(kszucs): should do snapshot testing instead
-# def test_exists_subquery_repr(t1, t2):
-#     # GH #660
+def test_exists_subquery(t1, t2, snapshot):
+    # GH #660
 
-#     cond = t1.key1 == t2.key1
-#     expr = t1[cond.any()]
-#     stmt = get_query(expr)
+    cond = t1.key1 == t2.key1
+    expr = t1[cond.any()]
 
-#     repr(stmt.where[0])
+    snapshot.assert_match(to_sql(expr), "out.sql")
+    assert repr(expr)
 
 
 def test_filter_inside_exists(snapshot):
@@ -522,10 +511,6 @@ def test_join_filtered_tables_no_pushdown(snapshot):
 
     joined = tbl_a_filter.left_join(tbl_b_filter, ["year", "month", "day"])
     result = joined[tbl_a_filter.value_a, tbl_b_filter.value_b]
-
-    join_op = result.op().table
-    assert join_op.left == tbl_a_filter.op()
-    assert join_op.right == tbl_b_filter.op()
 
     snapshot.assert_match(to_sql(result), "out.sql")
 

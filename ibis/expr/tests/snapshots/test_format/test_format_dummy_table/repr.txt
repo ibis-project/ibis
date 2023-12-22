@@ -1,2 +1,2 @@
 DummyTable
-  foo: [1]
+  foo: Array([1])

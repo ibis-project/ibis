@@ -3,6 +3,7 @@ from __future__ import annotations
 import duckdb_engine
 import numpy as np
 import pytest
+from packaging.version import parse as vparse
 from pytest import param
 
 import ibis

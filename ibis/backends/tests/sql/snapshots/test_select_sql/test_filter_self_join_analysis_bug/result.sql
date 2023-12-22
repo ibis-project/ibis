@@ -1,13 +1,15 @@
 SELECT
-  t2.region AS region,
-  t2.total - t3.total AS diff
+  t4.region,
+  t4.total - t5.total AS diff
 FROM (
   SELECT
-    *
+    t1.region,
+    t1.kind,
+    t1.total
   FROM (
     SELECT
-      t0.region AS region,
-      t0.kind AS kind,
+      t0.region,
+      t0.kind,
       SUM(t0.amount) AS total
     FROM purchases AS t0
     GROUP BY
@@ -15,17 +17,17 @@ FROM (
       2
   ) AS t1
   WHERE
-    (
-      t1.kind = 'foo'
-    )
-) AS t2
+    t1.kind = 'foo'
+) AS t4
 INNER JOIN (
   SELECT
-    *
+    t1.region,
+    t1.kind,
+    t1.total
   FROM (
     SELECT
-      t0.region AS region,
-      t0.kind AS kind,
+      t0.region,
+      t0.kind,
       SUM(t0.amount) AS total
     FROM purchases AS t0
     GROUP BY
@@ -33,8 +35,6 @@ INNER JOIN (
       2
   ) AS t1
   WHERE
-    (
-      t1.kind = 'bar'
-    )
-) AS t3
-  ON t2.region = t3.region
+    t1.kind = 'bar'
+) AS t5
+  ON t4.region = t5.region

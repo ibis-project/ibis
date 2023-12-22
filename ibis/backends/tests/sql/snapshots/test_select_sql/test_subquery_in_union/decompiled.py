@@ -17,11 +17,11 @@ alltypes = ibis.table(
         "k": "time",
     },
 )
-agg = alltypes.group_by([alltypes.a, alltypes.g]).aggregate(
-    alltypes.f.sum().name("metric")
-)
+agg = alltypes.aggregate([alltypes.f.sum().name("metric")], by=[alltypes.a, alltypes.g])
 selfreference = agg.view()
-proj = agg.inner_join(selfreference, agg.g == selfreference.g).select(agg)
-union = proj.union(proj.view())
+joinchain = agg.inner_join(selfreference, agg.g == selfreference.g).select(
+    agg.a, agg.g, agg.metric
+)
+selfreference1 = joinchain.view()
 
-result = union.select([union.a, union.g, union.metric])
+result = joinchain.union(selfreference1)

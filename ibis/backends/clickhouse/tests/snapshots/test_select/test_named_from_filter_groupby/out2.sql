@@ -1,5 +1,5 @@
 SELECT
-  t1.key AS key,
+  t1.key,
   SUM((
     (
       t1.value + 1
@@ -7,8 +7,8 @@ SELECT
   ) + 3) AS foo
 FROM (
   SELECT
-    t0.key AS key,
-    t0.value AS value
+    t0.key,
+    t0.value
   FROM t0 AS t0
   WHERE
     t0.value = 42

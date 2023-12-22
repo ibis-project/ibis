@@ -15,7 +15,16 @@ call = ibis.table(
         "call_attempts": "int64",
     },
 )
-joinchain = employee.left_join(call, employee.id == call.employee_id)
+joinchain = employee.left_join(call, employee.id == call.employee_id).select(
+    employee.first_name,
+    employee.last_name,
+    employee.id,
+    call.start_time,
+    call.end_time,
+    call.employee_id,
+    call.call_outcome_id,
+    call.call_attempts,
+)
 
 result = joinchain.aggregate(
     [joinchain.call_attempts.sum().name("attempts")], by=[joinchain.id]

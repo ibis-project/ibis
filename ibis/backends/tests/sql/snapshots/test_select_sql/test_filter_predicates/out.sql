@@ -1,5 +1,5 @@
 SELECT
-  *
+  t0.color
 FROM t AS t0
 WHERE
   LOWER(t0.color) LIKE '%de%'
