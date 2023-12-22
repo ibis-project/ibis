@@ -1746,3 +1746,24 @@ def test_substitute(backend):
         .filter(lambda t: t.subs == val)
     )
     assert expr["subs_count"].execute()[0] == t.count().execute() // 10
+
+
+@pytest.mark.notimpl(
+    ["dask", "datafusion", "pandas", "polars"],
+    raises=NotImplementedError,
+    reason="not a SQL backend",
+)
+@pytest.mark.notimpl(
+    ["pyspark"], reason="pyspark doesn't generate SQL", raises=NotImplementedError
+)
+@pytest.mark.notimpl(["druid", "flink"], reason="no sqlglot dialect", raises=ValueError)
+@pytest.mark.notimpl(["exasol"], raises=ValueError, reason="unknown dialect")
+def test_simple_memtable_construct(con, snapshot):
+    t = ibis.memtable({"a": [1, 2]})
+    expr = t.a
+    expected = [1.0, 2.0]
+    assert sorted(con.to_pandas(expr).tolist()) == expected
+    # we can't generically check for specific sql, even with a snapshot,
+    # because memtables have a unique name per table per process, so smoke test
+    # it
+    assert str(ibis.to_sql(expr, dialect=con.name)).startswith("SELECT")
