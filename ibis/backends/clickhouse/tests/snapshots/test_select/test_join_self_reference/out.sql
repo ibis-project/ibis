@@ -1,17 +1,17 @@
 SELECT
-  t0.id AS id,
-  t0.bool_col AS bool_col,
-  t0.tinyint_col AS tinyint_col,
-  t0.smallint_col AS smallint_col,
-  t0.int_col AS int_col,
-  t0.bigint_col AS bigint_col,
-  t0.float_col AS float_col,
-  t0.double_col AS double_col,
-  t0.date_string_col AS date_string_col,
-  t0.string_col AS string_col,
-  t0.timestamp_col AS timestamp_col,
-  t0.year AS year,
-  t0.month AS month
-FROM functional_alltypes AS t0
-INNER JOIN functional_alltypes AS t1
-  ON t0.id = t1.id
+  t1.id,
+  t1.bool_col,
+  t1.tinyint_col,
+  t1.smallint_col,
+  t1.int_col,
+  t1.bigint_col,
+  t1.float_col,
+  t1.double_col,
+  t1.date_string_col,
+  t1.string_col,
+  t1.timestamp_col,
+  t1.year,
+  t1.month
+FROM functional_alltypes AS t1
+INNER JOIN functional_alltypes AS t3
+  ON t1.id = t3.id

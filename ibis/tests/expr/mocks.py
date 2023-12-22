@@ -47,6 +47,11 @@ class MockBackend(BaseBackend):
     def list_databases(self):
         return ["mockdb"]
 
+    def _to_sql(self, expr, **kwargs):
+        import ibis
+
+        return ibis.to_sql(expr, dialect="duckdb", **kwargs)
+
     def fetch_from_cursor(self, cursor, schema):
         pass
 

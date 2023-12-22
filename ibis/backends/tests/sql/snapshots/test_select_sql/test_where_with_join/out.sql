@@ -1,20 +1,21 @@
 SELECT
-  *
+  t5.c,
+  t5.f,
+  t5.foo_id,
+  t5.bar_id,
+  t5.value1,
+  t5.value3
 FROM (
   SELECT
-    t0.c AS c,
-    t0.f AS f,
-    t0.foo_id AS foo_id,
-    t0.bar_id AS bar_id,
-    t1.value1 AS value1,
-    t1.value3 AS value3
-  FROM star1 AS t0
-  INNER JOIN star2 AS t1
-    ON t0.foo_id = t1.foo_id
-) AS t3
+    t2.c,
+    t2.f,
+    t2.foo_id,
+    t2.bar_id,
+    t3.value1,
+    t3.value3
+  FROM star1 AS t2
+  INNER JOIN star2 AS t3
+    ON t2.foo_id = t3.foo_id
+) AS t5
 WHERE
-  (
-    t3.f > CAST(0 AS TINYINT)
-  ) AND (
-    t3.value3 < CAST(1000 AS SMALLINT)
-  )
+  t5.f > CAST(0 AS TINYINT) AND t5.value3 < CAST(1000 AS SMALLINT)

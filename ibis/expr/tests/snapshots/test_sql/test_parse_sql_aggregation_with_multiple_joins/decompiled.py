@@ -18,8 +18,21 @@ call = ibis.table(
 call_outcome = ibis.table(
     name="call_outcome", schema={"outcome_text": "string", "id": "int64"}
 )
-joinchain = employee.inner_join(call, employee.id == call.employee_id).inner_join(
-    call_outcome, call.call_outcome_id == call_outcome.id
+joinchain = (
+    employee.inner_join(call, employee.id == call.employee_id)
+    .inner_join(call_outcome, call.call_outcome_id == call_outcome.id)
+    .select(
+        employee.first_name,
+        employee.last_name,
+        employee.id,
+        call.start_time,
+        call.end_time,
+        call.employee_id,
+        call.call_outcome_id,
+        call.call_attempts,
+        call_outcome.outcome_text,
+        call_outcome.id.name("id_right"),
+    )
 )
 
 result = joinchain.aggregate(

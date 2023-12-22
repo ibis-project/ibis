@@ -15,29 +15,36 @@ from __future__ import annotations
 
 import pytest
 
+import ibis
 from ibis import config
 
 
-def test_interactive_execute_on_repr(con):
-    table = con.table("functional_alltypes")
-    expr = table.bigint_col.sum()
-    with config.option_context("interactive", True):
-        repr(expr)
+@pytest.fixture
+def queries(monkeypatch):
+    queries = []
+    monkeypatch.setattr(ibis.options, "verbose", True)
+    monkeypatch.setattr(ibis.options, "verbose_log", queries.append)
+    monkeypatch.setattr(ibis.options, "interactive", True)
+    return queries
 
-    assert len(con.executed_queries) > 0
+
+@pytest.fixture(scope="module")
+def table(con):
+    return con.table("functional_alltypes")
 
 
-def test_repr_png_is_none_in_interactive(con):
-    table = con.table("functional_alltypes")
+def test_interactive_execute_on_repr(table, queries, snapshot):
+    repr(table.bigint_col.sum())
+    snapshot.assert_match(queries[0], "out.sql")
 
+
+def test_repr_png_is_none_in_interactive(table):
     with config.option_context("interactive", True):
         assert table._repr_png_() is None
 
 
-def test_repr_png_is_not_none_in_not_interactive(con):
+def test_repr_png_is_not_none_in_not_interactive(table):
     pytest.importorskip("ibis.expr.visualize")
-
-    table = con.table("functional_alltypes")
 
     with config.option_context("interactive", False), config.option_context(
         "graphviz_repr", True
@@ -45,63 +52,43 @@ def test_repr_png_is_not_none_in_not_interactive(con):
         assert table._repr_png_() is not None
 
 
-def test_default_limit(con, snapshot):
-    table = con.table("functional_alltypes").select("id", "bool_col")
+def test_default_limit(table, snapshot, queries):
+    repr(table.select("id", "bool_col"))
 
-    with config.option_context("interactive", True):
-        repr(table)
-
-    snapshot.assert_match(con.executed_queries[0], "out.sql")
+    snapshot.assert_match(queries[0], "out.sql")
 
 
-def test_respect_set_limit(con, snapshot):
-    table = con.table("functional_alltypes").select("id", "bool_col").limit(10)
+def test_respect_set_limit(table, snapshot, queries):
+    repr(table.select("id", "bool_col").limit(10))
 
-    with config.option_context("interactive", True):
-        repr(table)
-
-    snapshot.assert_match(con.executed_queries[0], "out.sql")
+    snapshot.assert_match(queries[0], "out.sql")
 
 
-def test_disable_query_limit(con, snapshot):
-    table = con.table("functional_alltypes").select("id", "bool_col")
+def test_disable_query_limit(table, snapshot, queries):
+    assert ibis.options.sql.default_limit is None
 
-    with config.option_context("interactive", True):
-        with config.option_context("sql.default_limit", None):
-            repr(table)
+    with config.option_context("sql.default_limit", 10):
+        assert ibis.options.sql.default_limit == 10
+        repr(table.select("id", "bool_col"))
 
-    snapshot.assert_match(con.executed_queries[0], "out.sql")
-
-
-def test_interactive_non_compilable_repr_not_fail(con):
-    # #170
-    table = con.table("functional_alltypes")
-
-    expr = table.string_col.topk(3)
-
-    # it works!
-    with config.option_context("interactive", True):
-        repr(expr)
+    snapshot.assert_match(queries[0], "out.sql")
 
 
-def test_histogram_repr_no_query_execute(con):
-    t = con.table("functional_alltypes")
-    tier = t.double_col.histogram(10).name("bucket")
-    expr = t.group_by(tier).size()
-    with config.option_context("interactive", True):
-        expr._repr()
-    assert con.executed_queries == []
+def test_interactive_non_compilable_repr_does_not_fail(table):
+    """https://github.com/ibis-project/ibis/issues/170"""
+    repr(table.string_col.topk(3))
 
 
-def test_compile_no_execute(con):
-    t = con.table("functional_alltypes")
-    t.double_col.sum().compile()
-    assert con.executed_queries == []
+def test_histogram_repr_no_query_execute(table, queries):
+    tier = table.double_col.histogram(10).name("bucket")
+    expr = table.group_by(tier).size()
+    expr._repr()
+
+    assert not queries
 
 
-def test_isin_rule_suppressed_exception_repr_not_fail(con):
-    with config.option_context("interactive", True):
-        t = con.table("functional_alltypes")
-        bool_clause = t["string_col"].notin(["1", "4", "7"])
-        expr = t[bool_clause]["string_col"].value_counts()
-        repr(expr)
+def test_isin_rule_suppressed_exception_repr_not_fail(table):
+    bool_clause = table["string_col"].notin(["1", "4", "7"])
+    expr = table[bool_clause]["string_col"].value_counts()
+
+    repr(expr)

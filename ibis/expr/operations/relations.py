@@ -20,7 +20,6 @@ from ibis.expr.operations.core import Alias, Column, Node, Scalar, Value
 from ibis.expr.operations.sortkeys import SortKey  # noqa: TCH001
 from ibis.expr.schema import Schema
 from ibis.formats import TableProxy  # noqa: TCH001
-from ibis.util import gen_name
 
 T = TypeVar("T")
 
@@ -112,12 +111,9 @@ class Subquery(Value):
         super().__init__(rel=rel, **kwargs)
 
     @attribute
-    def name(self):
-        return self.rel.schema.names[0]
-
-    @attribute
     def value(self):
-        return self.rel.values[self.name]
+        name = self.rel.schema.names[0]
+        return self.rel.values[name]
 
     @attribute
     def relations(self):
@@ -207,12 +203,6 @@ class SelfReference(Simple):
         if identifier is None:
             identifier = next(self._uid_counter)
         super().__init__(parent=parent, identifier=identifier)
-
-    @attribute
-    def name(self) -> str:
-        if (name := getattr(self.parent, "name", None)) is not None:
-            return f"{name}_ref"
-        return gen_name("self_ref")
 
 
 JoinKind = Literal[
@@ -425,6 +415,18 @@ class SQLStringView(PhysicalTable):
         # TODO(kszucs): avoid converting to expression
         backend = self.child.to_expr()._find_backend()
         return backend._get_schema_using_query(self.query)
+
+
+@public
+class View(PhysicalTable):
+    """A view created from an expression."""
+
+    child: Relation
+    name: str
+
+    @attribute
+    def schema(self):
+        return self.child.schema
 
 
 @public

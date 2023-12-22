@@ -8,6 +8,8 @@ star1 = ibis.table(
 star2 = ibis.table(
     name="star2", schema={"foo_id": "string", "value1": "float64", "value3": "float64"}
 )
-joinchain = star1.inner_join(star2, star1.foo_id == star2.foo_id)
+joinchain = star1.inner_join(star2, star1.foo_id == star2.foo_id).select(
+    star1.c, star1.f, star1.foo_id, star1.bar_id, star2.value1, star2.value3
+)
 
 result = joinchain.filter(joinchain.f > 0, joinchain.value3 < 1000)

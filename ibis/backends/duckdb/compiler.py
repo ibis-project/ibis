@@ -329,6 +329,16 @@ class DuckDBCompiler(SQLGlotCompiler):
 
         return self.agg.corr(left, right, where=where)
 
+    @visit_node.register(ops.GeoConvert)
+    def visit_GeoConvert(self, op, *, arg, source, target):
+        # 4th argument is to specify that the result is always_xy so that it
+        # matches the behavior of the equivalent geopandas functionality
+        return self.f.st_transform(arg, source, target, True)
+
+    @visit_node.register(ops.HexDigest)
+    def visit_HexDigest(self, op, *, arg, how):
+        return self.f[how](arg)
+
 
 _SIMPLE_OPS = {
     ops.ArrayPosition: "list_indexof",
@@ -338,8 +348,8 @@ _SIMPLE_OPS = {
     ops.EndsWith: "suffix",
     ops.Hash: "hash",
     ops.IntegerRange: "range",
+    ops.TimestampRange: "range",
     ops.LPad: "lpad",
-    ops.Levenshtein: "levenshtein",
     ops.MapKeys: "map_keys",
     ops.MapLength: "cardinality",
     ops.MapMerge: "map_concat",
@@ -349,7 +359,6 @@ _SIMPLE_OPS = {
     ops.StringAscii: "ascii",
     ops.TimeFromHMS: "make_time",
     ops.TypeOf: "typeof",
-    ops.Unnest: "unnest",
     ops.GeoPoint: "st_point",
     ops.GeoAsText: "st_astext",
     ops.GeoArea: "st_area",

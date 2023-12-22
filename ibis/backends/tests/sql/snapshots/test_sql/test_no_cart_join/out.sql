@@ -1,24 +1,25 @@
 SELECT
-  *
+  t7.ancestor_node_sort_order,
+  t7.n
 FROM (
   SELECT
-    t4.ancestor_node_sort_order AS ancestor_node_sort_order,
+    t6.ancestor_node_sort_order,
     CAST(1 AS TINYINT) AS n
   FROM (
     SELECT
-      t0.product_id AS product_id,
-      t2.ancestor_level_name AS ancestor_level_name,
-      t2.ancestor_level_number AS ancestor_level_number,
-      t2.ancestor_node_sort_order AS ancestor_node_sort_order,
-      t2.descendant_node_natural_key AS descendant_node_natural_key,
-      t2.product_level_name AS product_level_name
-    FROM facts AS t0
+      t2.product_id,
+      t4.ancestor_level_name,
+      t4.ancestor_level_number,
+      t4.ancestor_node_sort_order,
+      t4.descendant_node_natural_key,
+      t4.product_level_name
+    FROM facts AS t2
     INNER JOIN (
       SELECT
-        t1.ancestor_level_name AS ancestor_level_name,
-        t1.ancestor_level_number AS ancestor_level_number,
-        t1.ancestor_node_sort_order AS ancestor_node_sort_order,
-        t1.descendant_node_natural_key AS descendant_node_natural_key,
+        t1.ancestor_level_name,
+        t1.ancestor_level_number,
+        t1.ancestor_node_sort_order,
+        t1.descendant_node_natural_key,
         CONCAT(
           LPAD('-', (
             t1.ancestor_level_number - CAST(1 AS TINYINT)
@@ -26,11 +27,11 @@ FROM (
           t1.ancestor_level_name
         ) AS product_level_name
       FROM products AS t1
-    ) AS t2
-      ON t0.product_id = t2.descendant_node_natural_key
-  ) AS t4
+    ) AS t4
+      ON t2.product_id = t4.descendant_node_natural_key
+  ) AS t6
   GROUP BY
     1
-) AS t5
+) AS t7
 ORDER BY
-  t5.ancestor_node_sort_order ASC
+  t7.ancestor_node_sort_order ASC

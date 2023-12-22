@@ -10,6 +10,8 @@ star2 = ibis.table(
 )
 star3 = ibis.table(name="star3", schema={"bar_id": "string", "value2": "float64"})
 
-result = star1.left_join(star2, star1.foo_id == star2.foo_id).inner_join(
-    star3, star1.bar_id == star3.bar_id
+result = (
+    star1.left_join(star2, star1.foo_id == star2.foo_id)
+    .inner_join(star3, star1.bar_id == star3.bar_id)
+    .select(star1.c, star1.f, star1.foo_id, star1.bar_id, star2.value1, star3.value2)
 )
