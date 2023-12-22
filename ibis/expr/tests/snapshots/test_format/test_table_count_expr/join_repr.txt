@@ -6,17 +6,13 @@ r1 := UnboundTable: t2
   a int64
   b float64
 
-r2 := SelfReference[r0]
-
-r3 := SelfReference[r1]
-
-r4 := JoinChain[r2]
-  JoinLink[inner, r3]
-    r2.a == r3.a
+r2 := JoinChain[r0]
+  JoinLink[inner, r1]
+    r0.a == r1.a
   values:
-    a:       r2.a
-    b:       r2.b
-    a_right: r3.a
-    b_right: r3.b
+    a:       r0.a
+    b:       r0.b
+    a_right: r1.a
+    b_right: r1.b
 
-CountStar(): CountStar(r4)
+CountStar(): CountStar(r2)

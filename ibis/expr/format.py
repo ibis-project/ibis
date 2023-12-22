@@ -162,7 +162,7 @@ def pretty(node):
 
     def mapper(op, _, **kwargs):
         result = fmt(op, **kwargs)
-        if isinstance(op, ops.Relation):
+        if isinstance(op, ops.Relation) and not isinstance(op, ops.JoinTable):
             tables[op] = result
             result = f"r{next(refcnt)}"
         return Rendered(result)
@@ -335,6 +335,11 @@ def _limit(op, parent, **kwargs):
 @fmt.register(ops.Distinct)
 def _self_reference(op, parent, **kwargs):
     return f"{op.__class__.__name__}[{parent}]"
+
+
+@fmt.register(ops.JoinTable)
+def _join_table(op, parent, index):
+    return parent
 
 
 @fmt.register(ops.Literal)
