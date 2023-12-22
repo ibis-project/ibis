@@ -46,7 +46,7 @@
       "addLabels": ["bigquery"]
     },
     {
-      "matchPackagePatterns": ["duckdb", "duckdb-engine"],
+      "matchPackagePatterns": ["duckdb"],
       "addLabels": ["duckdb"]
     },
     {

@@ -1,13 +1,8 @@
 SELECT
-  *
-FROM (
-  SELECT
-    *
-  FROM t AS t0
-  WHERE
-    (
-      t0.a = CAST(1 AS TINYINT)
-    )
-) AS t1
+  t0.a,
+  t0.b
+FROM t AS t0
+WHERE
+  t0.a = CAST(1 AS TINYINT)
 ORDER BY
-  CONCAT(t1.b, 'a') ASC
+  CONCAT(t0.b, 'a') ASC
