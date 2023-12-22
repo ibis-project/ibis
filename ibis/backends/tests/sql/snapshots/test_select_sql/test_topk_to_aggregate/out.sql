@@ -1,8 +1,9 @@
 SELECT
-  *
+  t1.dest,
+  t1."Mean(arrdelay)"
 FROM (
   SELECT
-    t0.dest AS dest,
+    t0.dest,
     AVG(t0.arrdelay) AS "Mean(arrdelay)"
   FROM airlines AS t0
   GROUP BY

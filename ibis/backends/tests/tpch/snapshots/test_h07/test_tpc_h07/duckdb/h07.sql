@@ -1,51 +1,71 @@
-WITH t0 AS (
-  SELECT
-    t6.n_name AS supp_nation,
-    t7.n_name AS cust_nation,
-    t3.l_shipdate AS l_shipdate,
-    t3.l_extendedprice AS l_extendedprice,
-    t3.l_discount AS l_discount,
-    CAST(EXTRACT(year FROM t3.l_shipdate) AS SMALLINT) AS l_year,
-    t3.l_extendedprice * (
-      CAST(1 AS TINYINT) - t3.l_discount
-    ) AS volume
-  FROM main.supplier AS t2
-  JOIN main.lineitem AS t3
-    ON t2.s_suppkey = t3.l_suppkey
-  JOIN main.orders AS t4
-    ON t4.o_orderkey = t3.l_orderkey
-  JOIN main.customer AS t5
-    ON t5.c_custkey = t4.o_custkey
-  JOIN main.nation AS t6
-    ON t2.s_nationkey = t6.n_nationkey
-  JOIN main.nation AS t7
-    ON t5.c_nationkey = t7.n_nationkey
-)
 SELECT
-  t1.supp_nation,
-  t1.cust_nation,
-  t1.l_year,
-  t1.revenue
+  t19.supp_nation,
+  t19.cust_nation,
+  t19.l_year,
+  t19.revenue
 FROM (
   SELECT
-    t0.supp_nation AS supp_nation,
-    t0.cust_nation AS cust_nation,
-    t0.l_year AS l_year,
-    SUM(t0.volume) AS revenue
-  FROM t0
-  WHERE
-    (
-      t0.cust_nation = 'FRANCE' AND t0.supp_nation = 'GERMANY'
-      OR t0.cust_nation = 'GERMANY'
-      AND t0.supp_nation = 'FRANCE'
-    )
-    AND t0.l_shipdate BETWEEN MAKE_DATE(1995, 1, 1) AND MAKE_DATE(1996, 12, 31)
+    t18.supp_nation,
+    t18.cust_nation,
+    t18.l_year,
+    SUM(t18.volume) AS revenue
+  FROM (
+    SELECT
+      t17.supp_nation,
+      t17.cust_nation,
+      t17.l_shipdate,
+      t17.l_extendedprice,
+      t17.l_discount,
+      t17.l_year,
+      t17.volume
+    FROM (
+      SELECT
+        t9.n_name AS supp_nation,
+        t11.n_name AS cust_nation,
+        t6.l_shipdate,
+        t6.l_extendedprice,
+        t6.l_discount,
+        EXTRACT('year' FROM t6.l_shipdate) AS l_year,
+        t6.l_extendedprice * (
+          CAST(1 AS TINYINT) - t6.l_discount
+        ) AS volume
+      FROM supplier AS t5
+      INNER JOIN lineitem AS t6
+        ON t5.s_suppkey = t6.l_suppkey
+      INNER JOIN orders AS t7
+        ON t7.o_orderkey = t6.l_orderkey
+      INNER JOIN customer AS t8
+        ON t8.c_custkey = t7.o_custkey
+      INNER JOIN nation AS t9
+        ON t5.s_nationkey = t9.n_nationkey
+      INNER JOIN nation AS t11
+        ON t8.c_nationkey = t11.n_nationkey
+    ) AS t17
+    WHERE
+      (
+        (
+          (
+            t17.cust_nation = 'FRANCE'
+          ) AND (
+            t17.supp_nation = 'GERMANY'
+          )
+        )
+        OR (
+          (
+            t17.cust_nation = 'GERMANY'
+          ) AND (
+            t17.supp_nation = 'FRANCE'
+          )
+        )
+      )
+      AND t17.l_shipdate BETWEEN MAKE_DATE(1995, 1, 1) AND MAKE_DATE(1996, 12, 31)
+  ) AS t18
   GROUP BY
     1,
     2,
     3
-) AS t1
+) AS t19
 ORDER BY
-  t1.supp_nation ASC,
-  t1.cust_nation ASC,
-  t1.l_year ASC
+  t19.supp_nation ASC,
+  t19.cust_nation ASC,
+  t19.l_year ASC

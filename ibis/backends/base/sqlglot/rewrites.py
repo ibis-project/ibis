@@ -3,9 +3,9 @@
 
 from __future__ import annotations
 
-import os
 from typing import Literal, Optional
 
+import toolz
 from public import public
 
 import ibis.expr.datashape as ds
@@ -115,12 +115,9 @@ def merge_select_select(_):
     return Select(
         _.parent.parent,
         selections=selections,
-        predicates=_.parent.predicates + predicates,
-        sort_keys=_.parent.sort_keys + sort_keys,
+        predicates=tuple(toolz.unique(_.parent.predicates + predicates)),
+        sort_keys=tuple(toolz.unique(_.parent.sort_keys + sort_keys)),
     )
-
-
-DEBUG = os.environ.get("IBIS_SQL_DEBUG", False)
 
 
 def sqlize(node):
@@ -131,11 +128,5 @@ def sqlize(node):
         | filter_to_select
         | sort_to_select
     )
-    if DEBUG:
-        print("--------- STEP 1 ---------")
-        print(step1.to_expr())
     step2 = step1.replace(merge_select_select)
-    if DEBUG:
-        print("--------- STEP 2 ---------")
-        print(step2.to_expr())
     return step2

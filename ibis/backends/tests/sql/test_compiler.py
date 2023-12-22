@@ -5,7 +5,6 @@ import datetime
 import pytest
 
 import ibis
-
 from ibis.backends.tests.sql.conftest import to_sql
 from ibis.tests.util import assert_decompile_roundtrip, schemas_eq
 
@@ -206,7 +205,7 @@ def test_subquery_where_location(snapshot):
         .aggregate(foo=lambda t: t.float_col.sum())
         .foo.count()
     )
-    out = Compiler.to_sql(expr, params={param: "20140101"})
+    out = to_sql(expr, params={param: "20140101"})
     snapshot.assert_match(out, "out.sql")
     # params get different auto incremented counter identifiers
     assert_decompile_roundtrip(expr, snapshot, eq=schemas_eq)

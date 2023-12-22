@@ -15,7 +15,16 @@ call = ibis.table(
         "call_attempts": "int64",
     },
 )
-joinchain = employee.inner_join(call, employee.id == call.employee_id)
+joinchain = employee.inner_join(call, employee.id == call.employee_id).select(
+    employee.first_name,
+    employee.last_name,
+    employee.id,
+    call.start_time,
+    call.end_time,
+    call.employee_id,
+    call.call_outcome_id,
+    call.call_attempts,
+)
 f = joinchain.filter(joinchain.id < 5)
 s = f.order_by(f.id.desc())
 

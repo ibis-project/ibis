@@ -6,6 +6,7 @@ from functools import singledispatchmethod
 from typing import Any
 
 import sqlglot as sg
+import sqlglot.expressions as sge
 from sqlglot import exp
 from sqlglot.dialects import ClickHouse
 from sqlglot.dialects.dialect import rename_func
@@ -79,7 +80,7 @@ class ClickHouseCompiler(SQLGlotCompiler):
     @visit_node.register(ops.ArrayRepeat)
     def visit_ArrayRepeat(self, op, *, arg, times):
         param = sg.to_identifier("_")
-        func = sg.exp.Lambda(this=arg, expressions=[param])
+        func = sge.Lambda(this=arg, expressions=[param])
         return self.f.arrayFlatten(self.f.arrayMap(func, self.f.range(times)))
 
     @visit_node.register(ops.ArraySlice)
@@ -107,7 +108,7 @@ class ClickHouseCompiler(SQLGlotCompiler):
     def visit_CountStar(self, op, *, where, arg):
         if where is not None:
             return self.f.countIf(where)
-        return sg.exp.Count(this=STAR)
+        return sge.Count(this=STAR)
 
     @visit_node.register(ops.Quantile)
     @visit_node.register(ops.MultiQuantile)
@@ -116,7 +117,7 @@ class ClickHouseCompiler(SQLGlotCompiler):
             return self.agg.quantile(arg, quantile, where=where)
 
         func = "quantile" + "s" * isinstance(op, ops.MultiQuantile)
-        return sg.exp.ParameterizedAgg(
+        return sge.ParameterizedAgg(
             this=f"{func}If",
             expressions=util.promote_list(quantile),
             params=[arg, where],
@@ -162,7 +163,7 @@ class ClickHouseCompiler(SQLGlotCompiler):
 
     @visit_node.register(ops.RegexSearch)
     def visit_RegexSearch(self, op, *, arg, pattern):
-        return sg.exp.RegexpLike(this=arg, expression=pattern)
+        return sge.RegexpLike(this=arg, expression=pattern)
 
     @visit_node.register(ops.RegexExtract)
     def visit_RegexExtract(self, op, *, arg, pattern, index):
@@ -230,7 +231,7 @@ class ClickHouseCompiler(SQLGlotCompiler):
             v = str(value)
             return self.f.toIPv6(v) if ":" in v else self.f.toIPv4(v)
         elif dtype.is_string():
-            return sg.exp.convert(str(value).replace(r"\0", r"\\0"))
+            return sge.convert(str(value).replace(r"\0", r"\\0"))
         elif dtype.is_decimal():
             precision = dtype.precision
             if precision is None or not 1 <= precision <= 76:
@@ -249,26 +250,26 @@ class ClickHouseCompiler(SQLGlotCompiler):
             return type_name(value, dtype.scale)
         elif dtype.is_numeric():
             if not math.isfinite(value):
-                return sg.exp.Literal.number(str(value))
-            return sg.exp.convert(value)
+                return sge.Literal.number(str(value))
+            return sge.convert(value)
         elif dtype.is_interval():
             if dtype.unit.short in ("ms", "us", "ns"):
                 raise com.UnsupportedOperationError(
                     "Clickhouse doesn't support subsecond interval resolutions"
                 )
 
-            return sg.exp.Interval(
-                this=sg.exp.convert(str(value)), unit=dtype.resolution.upper()
+            return sge.Interval(
+                this=sge.convert(str(value)), unit=dtype.resolution.upper()
             )
         elif dtype.is_timestamp():
-            funcname = "toDateTime"
-            fmt = "%Y-%m-%dT%H:%M:%S"
+            funcname = "parseDateTime"
 
             if micros := value.microsecond:
                 funcname += "64"
-                fmt += ".%f"
 
-            args = [value.strftime(fmt)]
+            funcname += "BestEffort"
+
+            args = [value.isoformat()]
 
             if micros % 1000:
                 args.append(6)
@@ -280,7 +281,33 @@ class ClickHouseCompiler(SQLGlotCompiler):
 
             return self.f[funcname](*args)
         elif dtype.is_date():
-            return self.f.toDate(value.strftime("%Y-%m-%d"))
+            return self.f.toDate(value.isoformat())
+        elif dtype.is_array():
+            value_type = dtype.value_type
+            values = [
+                self.visit_Literal(
+                    ops.Literal(v, dtype=value_type), value=v, dtype=value_type, **kw
+                )
+                for v in value
+            ]
+            return self.f.array(*values)
+        elif dtype.is_map():
+            value_type = dtype.value_type
+            keys = []
+            values = []
+
+            for k, v in value.items():
+                keys.append(sge.convert(k))
+                values.append(
+                    self.visit_Literal(
+                        ops.Literal(v, dtype=value_type),
+                        value=v,
+                        dtype=value_type,
+                        **kw,
+                    )
+                )
+
+            return self.f.map(self.f.array(*keys), self.f.array(*values))
         elif dtype.is_struct():
             fields = [
                 self.visit_Literal(
@@ -407,9 +434,7 @@ class ClickHouseCompiler(SQLGlotCompiler):
     def visit_StructField(self, op, *, arg, field: str):
         arg_dtype = op.arg.dtype
         idx = arg_dtype.names.index(field)
-        return self.cast(
-            sg.exp.Dot(this=arg, expression=sg.exp.convert(idx + 1)), op.dtype
-        )
+        return self.cast(sge.Dot(this=arg, expression=sge.convert(idx + 1)), op.dtype)
 
     @visit_node.register(ops.Repeat)
     def visit_Repeat(self, op, *, arg, times):
@@ -440,10 +465,10 @@ class ClickHouseCompiler(SQLGlotCompiler):
         base = (
             ((self.f.toDayOfWeek(arg) - 1) % num_weekdays) + num_weekdays
         ) % num_weekdays
-        return sg.exp.Case(
+        return sge.Case(
             this=base,
             ifs=list(map(self.if_, *zip(*enumerate(days)))),
-            default=sg.exp.convert(""),
+            default=sge.convert(""),
         )
 
     @visit_node.register(ops.Map)
@@ -541,19 +566,19 @@ class ClickHouseCompiler(SQLGlotCompiler):
 
     @visit_node.register(ops.ArrayMap)
     def visit_ArrayMap(self, op, *, arg, param, body):
-        func = sg.exp.Lambda(this=body, expressions=[param])
+        func = sge.Lambda(this=body, expressions=[param])
         return self.f.arrayMap(func, arg)
 
     @visit_node.register(ops.ArrayFilter)
     def visit_ArrayFilter(self, op, *, arg, param, body):
-        func = sg.exp.Lambda(this=body, expressions=[param])
+        func = sge.Lambda(this=body, expressions=[param])
         return self.f.arrayFilter(func, arg)
 
     @visit_node.register(ops.ArrayRemove)
     def visit_ArrayRemove(self, op, *, arg, other):
         x = sg.to_identifier("x")
         body = x.neq(other)
-        return self.f.arrayFilter(sg.exp.Lambda(this=body, expressions=[x]), arg)
+        return self.f.arrayFilter(sge.Lambda(this=body, expressions=[x]), arg)
 
     @visit_node.register(ops.ArrayUnion)
     def visit_ArrayUnion(self, op, *, left, right):
@@ -578,6 +603,35 @@ class ClickHouseCompiler(SQLGlotCompiler):
         else:
             return self.f.countDistinct(columns)
 
+    @visit_node.register(ops.TimestampRange)
+    def visit_TimestampRange(self, op, *, start, stop, step):
+        unit = op.step.dtype.unit.name.lower()
+
+        if not isinstance(op.step, ops.Literal):
+            raise com.UnsupportedOperationError(
+                "ClickHouse doesn't support non-literal step values"
+            )
+
+        step_value = op.step.value
+
+        offset = sg.to_identifier("offset")
+
+        func = sge.Lambda(
+            this=self.f.dateAdd(sg.to_identifier(unit), offset, start),
+            expressions=[offset],
+        )
+
+        if step_value == 0:
+            return self.f.array()
+
+        return self.f.arrayMap(
+            func, self.f.range(0, self.f.timestampDiff(unit, start, stop), step_value)
+        )
+
+    @visit_node.register(ops.RegexSplit)
+    def visit_RegexSplit(self, op, *, arg, pattern):
+        return self.f.splitByRegexp(pattern, self.cast(arg, dt.String(nullable=False)))
+
     @staticmethod
     def _generate_groups(groups):
         return groups
@@ -588,6 +642,7 @@ class ClickHouseCompiler(SQLGlotCompiler):
     @visit_node.register(ops.Time)
     @visit_node.register(ops.TimeDelta)
     @visit_node.register(ops.StringToTimestamp)
+    @visit_node.register(ops.Levenshtein)
     def visit_Undefined(self, op, **_):
         raise com.OperationNotDefinedError(type(op).__name__)
 

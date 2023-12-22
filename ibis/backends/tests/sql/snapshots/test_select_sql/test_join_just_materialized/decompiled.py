@@ -28,6 +28,26 @@ tpch_customer = ibis.table(
     },
 )
 
-result = tpch_nation.inner_join(
-    tpch_region, tpch_nation.n_regionkey == tpch_region.r_regionkey
-).inner_join(tpch_customer, tpch_nation.n_nationkey == tpch_customer.c_nationkey)
+result = (
+    tpch_nation.inner_join(
+        tpch_region, tpch_nation.n_regionkey == tpch_region.r_regionkey
+    )
+    .inner_join(tpch_customer, tpch_nation.n_nationkey == tpch_customer.c_nationkey)
+    .select(
+        tpch_nation.n_nationkey,
+        tpch_nation.n_name,
+        tpch_nation.n_regionkey,
+        tpch_nation.n_comment,
+        tpch_region.r_regionkey,
+        tpch_region.r_name,
+        tpch_region.r_comment,
+        tpch_customer.c_custkey,
+        tpch_customer.c_name,
+        tpch_customer.c_address,
+        tpch_customer.c_nationkey,
+        tpch_customer.c_phone,
+        tpch_customer.c_acctbal,
+        tpch_customer.c_mktsegment,
+        tpch_customer.c_comment,
+    )
+)

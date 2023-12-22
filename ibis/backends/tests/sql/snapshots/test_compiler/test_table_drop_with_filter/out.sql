@@ -1,27 +1,19 @@
 SELECT
-  *
+  t6.a
 FROM (
   SELECT
-    t3.a AS a
+    t4.a
   FROM (
     SELECT
-      t2.a AS a,
-      t2.b AS b,
+      t0.a,
+      t0.b,
       MAKE_TIMESTAMP(2018, 1, 1, 0, 0, 0.0) AS the_date
-    FROM (
-      SELECT
-        *
-      FROM t AS t1
-      WHERE
-        (
-          t1.c = MAKE_TIMESTAMP(2018, 1, 1, 0, 0, 0.0)
-        )
-    ) AS t2
-  ) AS t3
-  INNER JOIN s AS t0
-    ON t3.b = t0.b
-) AS t5
+    FROM t AS t0
+    WHERE
+      t0.c = MAKE_TIMESTAMP(2018, 1, 1, 0, 0, 0.0)
+  ) AS t4
+  INNER JOIN s AS t2
+    ON t4.b = t2.b
+) AS t6
 WHERE
-  (
-    t5.a < CAST(1.0 AS DOUBLE)
-  )
+  t6.a < CAST(1.0 AS DOUBLE)
