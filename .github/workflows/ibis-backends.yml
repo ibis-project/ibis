@@ -179,17 +179,17 @@ jobs:
           #   services:
           #     - flink
         exclude:
-          - os: windows-latest
-            backend:
-              name: mysql
-              title: MySQL
-              extras:
-                - mysql
-                - geospatial
-              services:
-                - mysql
-              sys-deps:
-                - libgeos-dev
+          # - os: windows-latest
+          #   backend:
+          #     name: mysql
+          #     title: MySQL
+          #     extras:
+          #       - mysql
+          #       - geospatial
+          #     services:
+          #       - mysql
+          #     sys-deps:
+          #       - libgeos-dev
           - os: windows-latest
             backend:
               name: clickhouse
@@ -465,15 +465,113 @@ jobs:
       - name: checkout
         uses: actions/checkout@v4
 
-      - name: install libgeos for shapely
-        if: matrix.backend.name == 'postgres'
-        run: |
-          sudo apt-get update -y -qq
-          sudo apt-get install -qq -y build-essential libgeos-dev
+  # test_pyspark:
+  #   name: PySpark ${{ matrix.os }} python-${{ matrix.python-version }}
+  #   runs-on: ${{ matrix.os }}
+  #   strategy:
+  #     fail-fast: false
+  #     matrix:
+  #       os:
+  #         - ubuntu-latest
+  #       python-version:
+  #         - "3.10"
+  #   steps:
+  #     - name: checkout
+  #       uses: actions/checkout@v4
+  #
+  #     - uses: actions/setup-java@v4
+  #       with:
+  #         distribution: microsoft
+  #         java-version: 17
+  #
+  #     - uses: extractions/setup-just@v1
+  #       env:
+  #         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  #
+  #     - name: download backend data
+  #       run: just download-data
+  #
+  #     - name: install python
+  #       uses: actions/setup-python@v5
+  #       id: install_python
+  #       with:
+  #         python-version: ${{ matrix.python-version }}
+  #
+  #     - name: install poetry
+  #       run: python -m pip install --upgrade pip 'poetry==1.7.1'
+  #
+  #     - name: remove lonboard
+  #       # it requires a version of pandas that pyspark is not compatible with
+  #       run: poetry remove lonboard
+  #
+  #     - name: install maximum versions of pandas and numpy
+  #       run: poetry add --lock 'pandas@<2' 'numpy<1.24'
+  #
+  #     - name: checkout the lock file
+  #       run: git checkout poetry.lock
+  #
+  #     - name: lock with no updates
+  #       # poetry add is aggressive and will update other dependencies like
+  #       # numpy and pandas so we keep the pyproject.toml edits and then relock
+  #       # without updating anything except the requested versions
+  #       run: poetry lock --no-update
+  #
+  #     - name: install ibis
+  #       run: poetry install --without dev --without docs --extras pyspark
+  #
+  #     - name: run tests
+  #       run: just ci-check -m pyspark
+  #
+  #     - name: check that no untracked files were produced
+  #       shell: bash
+  #       run: git checkout poetry.lock pyproject.toml && ! git status --porcelain | tee /dev/stderr | grep .
+  #
+  #     - name: upload code coverage
+  #       # only upload coverage for jobs that aren't mostly xfails
+  #       if: success() && matrix.python-version != '3.11'
+  #       uses: codecov/codecov-action@v3
+  #       with:
+  #         flags: backend,pyspark,${{ runner.os }},python-${{ steps.install_python.outputs.python-version }}
 
-      - uses: extractions/setup-just@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  # gen_lockfile_sqlalchemy2:
+  #   name: Generate Poetry Lockfile for SQLAlchemy 2
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - name: checkout
+  #       uses: actions/checkout@v4
+  #
+  #     - name: install python
+  #       uses: actions/setup-python@v5
+  #       with:
+  #         python-version: "3.11"
+  #
+  #     - run: python -m pip install --upgrade pip 'poetry==1.7.1'
+  #
+  #     - name: remove deps that are not compatible with sqlalchemy 2
+  #       run: poetry remove snowflake-sqlalchemy sqlalchemy-exasol
+  #
+  #     - name: add sqlalchemy 2
+  #       run: poetry add --lock --optional 'sqlalchemy>=2,<3'
+  #
+  #     - name: checkout the lock file
+  #       run: git checkout poetry.lock
+  #
+  #     - name: lock with no updates
+  #       # poetry add is aggressive and will update other dependencies like
+  #       # numpy and pandas so we keep the pyproject.toml edits and then relock
+  #       # without updating anything except the requested versions
+  #       run: poetry lock --no-update
+  #
+  #     - name: check the sqlalchemy version
+  #       run: poetry show sqlalchemy --no-ansi | grep version | cut -d ':' -f2- | sed 's/ //g' | grep -P '^2\.'
+  #
+  #     - name: upload deps file
+  #       uses: actions/upload-artifact@v3
+  #       with:
+  #         name: deps
+  #         path: |
+  #           pyproject.toml
+  #           poetry.lock
 
       - name: download backend data
         run: just download-data

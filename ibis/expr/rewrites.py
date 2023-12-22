@@ -1,6 +1,9 @@
 """Some common rewrite functions to be shared between backends."""
 from __future__ import annotations
 
+import functools
+from collections.abc import Mapping
+
 import toolz
 
 import toolz

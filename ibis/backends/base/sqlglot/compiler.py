@@ -583,7 +583,7 @@ class SQLGlotCompiler(abc.ABC):
         # Saturday == 6
         return sge.Case(
             this=(self.f.dayofweek(arg) + 6) % 7,
-            ifs=list(itertools.starmap(self.if_, enumerate(calendar.day_name))),
+            ifs=list(starmap(self.if_, enumerate(calendar.day_name))),
         )
 
     @visit_node.register(ops.IntervalFromInteger)
@@ -1245,6 +1245,18 @@ class SQLGlotCompiler(abc.ABC):
     @visit_node.register(ops.RegexExtract)
     def visit_RegexExtract(self, op, *, arg, pattern, index):
         return self.f.regexp_extract(arg, pattern, index, dialect=self.dialect)
+
+    @visit_node.register(ops.RegexSplit)
+    def visit_RegexSplit(self, op, *, arg, pattern):
+        return sge.RegexpSplit(this=arg, expression=pattern)
+
+    @visit_node.register(ops.Levenshtein)
+    def visit_Levenshtein(self, op, *, left, right):
+        return sge.Levenshtein(this=left, expression=right)
+
+    @visit_node.register(ops.JoinTable)
+    def visit_JoinTable(self, op, *, parent, index):
+        return parent
 
 
 _SIMPLE_OPS = {

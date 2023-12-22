@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import pytest
-import sqlglot as sg
 
 import ibis
 from ibis.tests.expr.mocks import MockBackend

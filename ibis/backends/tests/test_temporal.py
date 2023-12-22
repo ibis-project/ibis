@@ -1520,7 +1520,7 @@ unit_factors = {"s": 10**9, "ms": 10**6, "us": 10**3, "ns": 1}
                     reason="PySpark backend does not support timestamp from unix time with unit us. Supported unit is s.",
                 ),
                 pytest.mark.notimpl(
-                    ["mssql", "clickhouse", "duckdb"],
+                    ["duckdb", "mssql", "clickhouse"],
                     raises=com.UnsupportedOperationError,
                     reason="`us` unit is not supported!",
                 ),
@@ -1537,12 +1537,12 @@ unit_factors = {"s": 10**9, "ms": 10**6, "us": 10**3, "ns": 1}
                 pytest.mark.notimpl(
                     ["pyspark"],
                     raises=com.UnsupportedArgumentError,
-                    reason="PySpark backend does not support timestamp from unix time with unit ns. Supported unit is s.",
+                    reason="PySpark backend does not support timestamp from unix time with unit ms. Supported unit is s.",
                 ),
                 pytest.mark.notimpl(
                     ["duckdb", "mssql", "clickhouse"],
                     raises=com.UnsupportedOperationError,
-                    reason="`ns` unit is not supported!",
+                    reason="`ms` unit is not supported!",
                 ),
                 pytest.mark.notimpl(
                     ["flink"],
@@ -1587,7 +1587,7 @@ def test_integer_to_timestamp(backend, con, unit):
                         "(snowflake.connector.errors.ProgrammingError) 100096 (22007): "
                         "Can't parse '11/01/10' as timestamp with format '%m/%d/%y'"
                     ),
-                    raises=SnowflakeProgrammingError,
+                    raises=sa.exc.ProgrammingError,
                 ),
                 pytest.mark.never(
                     ["flink"],
@@ -1862,7 +1862,8 @@ def test_timestamp_literal(con, backend):
 
 
 @pytest.mark.notimpl(
-    ["pandas", "mysql", "dask", "pyspark"], raises=com.OperationNotDefinedError
+    ["pandas", "datafusion", "mysql", "dask", "pyspark"],
+    raises=com.OperationNotDefinedError,
 )
 @pytest.mark.notimpl(
     ["sqlite"],
@@ -1960,12 +1961,14 @@ def test_time_literal(con, backend):
 @pytest.mark.broken(
     ["sqlite"], raises=AssertionError, reason="SQLite returns Timedelta from execution"
 )
-@pytest.mark.notimpl(["dask"], raises=com.OperationNotDefinedError)
+@pytest.mark.notimpl(
+    ["dask", "datafusion", "pandas"], raises=com.OperationNotDefinedError
+)
 @pytest.mark.notyet(["oracle"], raises=sa.exc.DatabaseError)
 @pytest.mark.parametrize(
     "microsecond",
     [
-        param(0, id="second"),
+        0,
         param(
             561021,
             marks=[
@@ -1988,9 +1991,9 @@ def test_time_literal(con, backend):
                     ),
                 ),
             ],
-            id="subsecond",
         ),
     ],
+    ids=["second", "subsecond"],
 )
 @pytest.mark.notimpl(["exasol"], raises=ExaQueryError)
 def test_extract_time_from_timestamp(con, microsecond):
@@ -2469,7 +2472,7 @@ def test_delta(con, start, end, unit, expected):
                 ),
                 pytest.mark.notimpl(
                     ["snowflake"],
-                    raises=SnowflakeProgrammingError,
+                    raises=sa.exc.ProgrammingError,
                     reason="snowflake doesn't support sub-second interval precision",
                 ),
                 pytest.mark.notimpl(

@@ -688,7 +688,7 @@ class Backend(SQLGlotBackend, CanCreateDatabase):
         expression = None
 
         if obj is not None:
-            (expression,) = self._to_sqlglot(obj)
+            expression = self._to_sqlglot(obj)
             external_tables.update(self._collect_in_memory_tables(obj))
 
         code = sge.Create(

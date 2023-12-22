@@ -1219,9 +1219,9 @@ class BaseBackend(abc.ABC, _FileIOHandler):
         if (result := self._query_cache.get(op)) is None:
             self._query_cache.store(expr)
             result = self._query_cache[op]
-        return ir.CachedTableExpr(result)
+        return ir.CachedTable(result)
 
-    def _release_cached(self, expr: ir.CachedTableExpr) -> None:
+    def _release_cached(self, expr: ir.CachedTable) -> None:
         """Releases the provided cached expression.
 
         Parameters

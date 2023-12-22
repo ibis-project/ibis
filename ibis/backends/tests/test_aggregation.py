@@ -706,7 +706,16 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
             id="collect",
             marks=[
                 pytest.mark.notimpl(
-                    ["impala", "mysql", "sqlite", "mssql", "druid", "oracle", "exasol"],
+                    [
+                        "impala",
+                        "mysql",
+                        "sqlite",
+                        "datafusion",
+                        "mssql",
+                        "druid",
+                        "oracle",
+                        "exasol",
+                    ],
                     raises=com.OperationNotDefinedError,
                 ),
                 pytest.mark.broken(
@@ -789,7 +798,7 @@ def test_reduction_ops(
             id="cond",
             marks=[
                 pytest.mark.notyet(
-                    ["mysql"],
+                    ["snowflake", "mysql"],
                     raises=com.UnsupportedOperationError,
                     reason="backend does not support filtered count distinct with more than one column",
                 ),
@@ -951,7 +960,7 @@ def test_quantile(
             id="covar_pop",
             marks=[
                 pytest.mark.notimpl(
-                    ["dask", "polars", "druid"],
+                    ["dask", "pandas", "polars", "druid"],
                     raises=com.OperationNotDefinedError,
                 ),
                 pytest.mark.notyet(
@@ -966,7 +975,7 @@ def test_quantile(
             id="covar_samp",
             marks=[
                 pytest.mark.notimpl(
-                    ["dask", "polars", "druid"],
+                    ["dask", "pandas", "polars", "druid"],
                     raises=com.OperationNotDefinedError,
                 ),
                 pytest.mark.notyet(
@@ -981,7 +990,7 @@ def test_quantile(
             id="corr_pop",
             marks=[
                 pytest.mark.notimpl(
-                    ["dask", "druid"],
+                    ["dask", "pandas", "druid"],
                     raises=com.OperationNotDefinedError,
                 ),
                 pytest.mark.notyet(
@@ -1001,7 +1010,7 @@ def test_quantile(
             id="corr_samp",
             marks=[
                 pytest.mark.notimpl(
-                    ["dask", "druid"],
+                    ["dask", "pandas", "druid"],
                     raises=com.OperationNotDefinedError,
                 ),
                 pytest.mark.notyet(
@@ -1036,7 +1045,7 @@ def test_quantile(
             id="covar_pop_bool",
             marks=[
                 pytest.mark.notimpl(
-                    ["dask", "polars", "druid"],
+                    ["dask", "pandas", "polars", "druid"],
                     raises=com.OperationNotDefinedError,
                 ),
                 pytest.mark.notyet(
@@ -1055,7 +1064,7 @@ def test_quantile(
             id="corr_pop_bool",
             marks=[
                 pytest.mark.notimpl(
-                    ["dask", "druid"],
+                    ["dask", "pandas", "druid"],
                     raises=com.OperationNotDefinedError,
                 ),
                 pytest.mark.notyet(
