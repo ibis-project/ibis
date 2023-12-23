@@ -179,9 +179,14 @@ def aggregation(op, parent, groups, metrics):
         raise ValueError("No metrics to aggregate")
 
 
+@translate.register(ops.Distinct)
+def distinct(op, parent):
+    return f"{parent}.distinct()"
+
+
 @translate.register(ops.SelfReference)
 def self_reference(op, parent, identifier):
-    return parent
+    return f"{parent}.view()"
 
 
 @translate.register(ops.JoinTable)
@@ -330,7 +335,12 @@ def isin(op, value, options):
 
 
 class CodeContext:
-    always_assign = (ops.ScalarParameter, ops.UnboundTable, ops.Aggregate)
+    always_assign = (
+        ops.ScalarParameter,
+        ops.UnboundTable,
+        ops.Aggregate,
+        ops.SelfReference,
+    )
     always_ignore = (
         ops.JoinTable,
         ops.Field,

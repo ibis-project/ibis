@@ -465,9 +465,9 @@ def test_gh_1045(test1, test2, test3, snapshot):
     t2 = test2
     t3 = test3
 
-    t3 = t3[[c for c in t3.columns if c != "id3"]].mutate(id3=t3.id3.cast("int64"))
+    t3 = t3.mutate(id3=t3.id3.cast("int64"))
 
-    t3 = t3[[c for c in t3.columns if c != "val2"]].mutate(t3_val2=t3.id3)
+    t3 = t3.mutate(t3_val2=t3.id3)
     t4 = t3.join(t2, t2.id2b == t3.id3)
 
     t1 = t1[[t1[c].name(f"t1_{c}") for c in t1.columns]]

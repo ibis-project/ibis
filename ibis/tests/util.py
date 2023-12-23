@@ -3,8 +3,10 @@
 from __future__ import annotations
 
 import pickle
+from typing import Callable
 
 import ibis
+import ibis.expr.types as ir
 from ibis import util
 
 
@@ -27,8 +29,30 @@ def assert_pickle_roundtrip(obj):
         assert obj == loaded
 
 
-def assert_decompile_roundtrip(expr, snapshot=None, check_equality=True):
-    """Assert that an ibis expression remains the same after decompilation."""
+def schemas_eq(left: ir.Expr, right: ir.Expr) -> bool:
+    assert left.as_table().schema().equals(right.as_table().schema())
+
+
+def assert_decompile_roundtrip(
+    expr: ir.Expr,
+    snapshot=None,
+    eq: Callable[[ir.Expr, ir.Expr], bool] = ir.Expr.equals,
+):
+    """Assert that an ibis expression remains the same after decompilation.
+
+    Parameters
+    ----------
+    expr
+        The expression to decompile.
+    snapshot
+        A snapshot fixture.
+    eq
+        A callable that returns whether two Ibis expressions are equal.
+        Defaults to `ibis.expr.types.Expr.equals`. Use this to adjust
+        comparison behavior for expressions that contain `SelfReference`
+        operations from table.view() calls, or other relations whose equality
+        is difficult to roundtrip.
+    """
     rendered = ibis.decompile(expr, format=True)
     if snapshot is not None:
         snapshot.assert_match(rendered, "decompiled.py")
@@ -38,7 +62,4 @@ def assert_decompile_roundtrip(expr, snapshot=None, check_equality=True):
     exec(rendered, {}, locals_)
     restored = locals_["result"]
 
-    if check_equality:
-        assert expr.unbind().equals(restored)
-    else:
-        assert expr.as_table().schema().equals(restored.as_table().schema())
+    assert eq(expr.unbind(), restored)
