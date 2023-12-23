@@ -8,7 +8,7 @@ from ibis import _
 
 # from ibis.backends.base.sql.compiler import Compiler
 from ibis.backends.tests.sql.conftest import get_query, to_sql
-from ibis.tests.util import assert_decompile_roundtrip
+from ibis.tests.util import assert_decompile_roundtrip, schemas_eq
 
 pytestmark = pytest.mark.duckdb
 
@@ -117,7 +117,7 @@ def test_join_between_joins(snapshot):
     exprs = [left, right.value3, right.value4]
     expr = joined.select(exprs)
     snapshot.assert_match(to_sql(expr), "out.sql")
-    assert_decompile_roundtrip(expr, snapshot, check_equality=False)
+    assert_decompile_roundtrip(expr, snapshot, eq=schemas_eq)
 
 
 def test_join_just_materialized(nation, region, customer, snapshot):
@@ -178,7 +178,7 @@ def test_where_analyze_scalar_op(functional_alltypes, snapshot):
         ]
     ).count()
     snapshot.assert_match(to_sql(expr), "out.sql")
-    assert_decompile_roundtrip(expr, snapshot, check_equality=False)
+    assert_decompile_roundtrip(expr, snapshot, eq=schemas_eq)
 
 
 def test_bug_duplicated_where(airlines, snapshot):
@@ -244,7 +244,7 @@ def test_fuse_projections(snapshot):
     # fusion works even if there's a filter
     table3_filtered = table2_filtered.select([table2, f2])
     snapshot.assert_match(to_sql(table3_filtered), "project_filter.sql")
-    assert_decompile_roundtrip(table3_filtered, snapshot, check_equality=False)
+    assert_decompile_roundtrip(table3_filtered, snapshot, eq=schemas_eq)
 
 
 def test_projection_filter_fuse(projection_fuse_filter, snapshot):
@@ -342,7 +342,7 @@ def test_subquery_in_union(alltypes, snapshot):
 
     expr = join1.union(join2)
     snapshot.assert_match(to_sql(expr), "out.sql")
-    assert_decompile_roundtrip(expr, snapshot, check_equality=False)
+    assert_decompile_roundtrip(expr, snapshot, eq=schemas_eq)
 
 
 def test_limit_with_self_join(functional_alltypes, snapshot):
@@ -351,7 +351,7 @@ def test_limit_with_self_join(functional_alltypes, snapshot):
 
     expr = t.join(t2, t.tinyint_col < t2.timestamp_col.minute()).count()
     snapshot.assert_match(to_sql(expr), "out.sql")
-    assert_decompile_roundtrip(expr, snapshot)
+    assert_decompile_roundtrip(expr, snapshot, eq=lambda x, y: repr(x) == repr(y))
 
 
 def test_topk_predicate_pushdown_bug(nation, customer, region, snapshot):
@@ -414,7 +414,7 @@ def test_case_in_projection(alltypes, snapshot):
     expr = t[expr.name("col1"), expr2.name("col2"), t]
 
     snapshot.assert_match(to_sql(expr), "out.sql")
-    assert_decompile_roundtrip(expr, snapshot, check_equality=False)
+    assert_decompile_roundtrip(expr, snapshot, eq=schemas_eq)
 
 
 def test_identifier_quoting(snapshot):
