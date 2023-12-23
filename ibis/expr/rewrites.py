@@ -17,6 +17,11 @@ y = var("y")
 name = var("name")
 
 
+@replace(p.Field(p.JoinChain))
+def peel_join_field(_):
+    return _.rel.values[_.name]
+
+
 @replace(ops.Analytic)
 def project_wrap_analytic(_, rel):
     # Wrap analytic functions in a window function

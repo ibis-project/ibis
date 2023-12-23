@@ -17,6 +17,8 @@ import functools
 from ibis.expr.types.relations import dereference_mapping
 import ibis
 
+from ibis.expr.rewrites import peel_join_field
+
 
 def disambiguate_fields(how, left_fields, right_fields, lname, rname):
     collisions = set()
@@ -207,6 +209,9 @@ class JoinExpr(Table):
         # if there are values referencing fields from the join chain constructed
         # so far, we need to replace them the fields from one of the join links
         subs = dereference_mapping_left(chain)
+        values = {
+            k: v.replace(peel_join_field, filter=ops.Value) for k, v in values.items()
+        }
         values = {k: v.replace(subs, filter=ops.Value) for k, v in values.items()}
 
         node = chain.copy(values=values)

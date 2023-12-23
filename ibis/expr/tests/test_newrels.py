@@ -1215,3 +1215,44 @@ def test_join_expressions_are_equal():
     join1 = t1.inner_join(t2, [t1.a == t2.a])
     join2 = t1.inner_join(t2, [t1.a == t2.a])
     assert join1.equals(join2)
+
+
+def test_join_between_joins():
+    t1 = ibis.table(
+        [("key1", "string"), ("key2", "string"), ("value1", "double")],
+        "first",
+    )
+    t2 = ibis.table([("key1", "string"), ("value2", "double")], "second")
+    t3 = ibis.table(
+        [("key2", "string"), ("key3", "string"), ("value3", "double")],
+        "third",
+    )
+    t4 = ibis.table([("key3", "string"), ("value4", "double")], "fourth")
+
+    left = t1.inner_join(t2, [("key1", "key1")])[t1, t2.value2]
+    right = t3.inner_join(t4, [("key3", "key3")])[t3, t4.value4]
+
+    joined = left.inner_join(right, left.key2 == right.key2)
+
+    # At one point, the expression simplification was resulting in bad refs
+    # here (right.value3 referencing the table inside the right join)
+    exprs = [left, right.value3, right.value4]
+    expr = joined.select(exprs)
+
+    with join_tables(t1, t2, right) as (r1, r2, r3):
+        expected = ops.JoinChain(
+            first=r1,
+            rest=[
+                ops.JoinLink("inner", r2, [r1.key1 == r2.key1]),
+                ops.JoinLink("inner", r3, [r1.key2 == r3.key2]),
+            ],
+            values={
+                "key1": r1.key1,
+                "key2": r1.key2,
+                "value1": r1.value1,
+                "value2": r2.value2,
+                "value3": r3.value3,
+                "value4": r3.value4,
+            },
+        )
+        assert expr.op() == expected
