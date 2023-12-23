@@ -36,14 +36,13 @@ concurrency:
 
 env:
   FORCE_COLOR: "1"
+  ODBCSYSINI: "${{ github.workspace }}/ci/odbc"
+  SQLALCHEMY_WARN_20: "1"
 
 jobs:
   test_backends:
     name: ${{ matrix.backend.title }} ${{ matrix.os }} python-${{ matrix.python-version }}
     runs-on: ${{ matrix.os }}
-    env:
-      SQLALCHEMY_WARN_20: "1"
-      ODBCSYSINI: "${{ github.workspace }}/.odbc"
     strategy:
       fail-fast: false
       matrix:
@@ -312,16 +311,6 @@ jobs:
       - name: checkout
         uses: actions/checkout@v4
 
-      - name: setup odbc for mssql
-        if: ${{ matrix.backend.name == 'mssql' }}
-        run: |
-          mkdir -p "$ODBCSYSINI"
-
-          {
-            echo '[FreeTDS]'
-            echo "Driver = libtdsodbc.so"
-          } > "$ODBCSYSINI/odbcinst.ini"
-
       - uses: extractions/setup-just@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -411,8 +400,6 @@ jobs:
   test_backends_min_version:
     name: ${{ matrix.backend.title }} Min Version ${{ matrix.os }} python-${{ matrix.python-version }}
     runs-on: ${{ matrix.os }}
-    env:
-      SQLALCHEMY_WARN_20: "1"
     strategy:
       fail-fast: false
       matrix:
@@ -706,8 +693,6 @@ jobs:
               - oracle
             services:
               - oracle
-    env:
-      ODBCSYSINI: "${{ github.workspace }}/.odbc"
     steps:
       - name: checkout
         uses: actions/checkout@v4
@@ -719,16 +704,6 @@ jobs:
 
           sudo apt-get update -qq -y
           sudo apt-get install -qq -y build-essential ${{ join(matrix.backend.sys-deps, ' ') }}
-
-      - name: setup odbc for mssql
-        if: ${{ matrix.backend.name == 'mssql' }}
-        run: |
-          mkdir -p "$ODBCSYSINI"
-
-          {
-            echo '[FreeTDS]'
-            echo "Driver = libtdsodbc.so"
-          } > "$ODBCSYSINI/odbcinst.ini"
 
       - uses: extractions/setup-just@v1
         env:
