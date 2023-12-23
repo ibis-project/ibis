@@ -8,45 +8,45 @@ import ibis
 
 # from ibis.backends.base.sql.compiler import Compiler
 from ibis.backends.tests.sql.conftest import to_sql
-from ibis.tests.util import assert_decompile_roundtrip
+from ibis.tests.util import assert_decompile_roundtrip, schemas_eq
 
 pytestmark = pytest.mark.duckdb
 
 
 def test_union(union, snapshot):
     snapshot.assert_match(to_sql(union), "out.sql")
-    assert_decompile_roundtrip(union, snapshot, check_equality=False)
+    assert_decompile_roundtrip(union, snapshot, eq=schemas_eq)
 
 
 def test_union_project_column(union_all, snapshot):
     # select a column, get a subquery
     expr = union_all[[union_all.key]]
     snapshot.assert_match(to_sql(expr), "out.sql")
-    assert_decompile_roundtrip(expr, snapshot, check_equality=False)
+    assert_decompile_roundtrip(expr, snapshot, eq=schemas_eq)
 
 
 def test_table_intersect(intersect, snapshot):
     snapshot.assert_match(to_sql(intersect), "out.sql")
-    assert_decompile_roundtrip(intersect, snapshot, check_equality=False)
+    assert_decompile_roundtrip(intersect, snapshot, eq=schemas_eq)
 
 
 def test_table_difference(difference, snapshot):
     snapshot.assert_match(to_sql(difference), "out.sql")
-    assert_decompile_roundtrip(difference, snapshot, check_equality=False)
+    assert_decompile_roundtrip(difference, snapshot, eq=schemas_eq)
 
 
 def test_intersect_project_column(intersect, snapshot):
     # select a column, get a subquery
     expr = intersect[[intersect.key]]
     snapshot.assert_match(to_sql(expr), "out.sql")
-    assert_decompile_roundtrip(expr, snapshot, check_equality=False)
+    assert_decompile_roundtrip(expr, snapshot, eq=schemas_eq)
 
 
 def test_difference_project_column(difference, snapshot):
     # select a column, get a subquery
     expr = difference[[difference.key]]
     snapshot.assert_match(to_sql(expr), "out.sql")
-    assert_decompile_roundtrip(expr, snapshot, check_equality=False)
+    assert_decompile_roundtrip(expr, snapshot, eq=schemas_eq)
 
 
 def test_table_distinct(con, snapshot):
@@ -125,7 +125,7 @@ def test_having_from_filter(snapshot):
     expr = having.aggregate(filt.a.sum().name("sum"))
     snapshot.assert_match(to_sql(expr), "out.sql")
     # params get different auto incremented counter identifiers
-    assert_decompile_roundtrip(expr, snapshot, check_equality=False)
+    assert_decompile_roundtrip(expr, snapshot, eq=schemas_eq)
 
 
 def test_simple_agg_filter(snapshot):
@@ -174,7 +174,7 @@ def test_table_drop_with_filter(snapshot):
     joined = joined[left.a]
     expr = joined.filter(joined.a < 1.0)
     snapshot.assert_match(to_sql(expr), "out.sql")
-    assert_decompile_roundtrip(expr, snapshot, check_equality=False)
+    assert_decompile_roundtrip(expr, snapshot, eq=schemas_eq)
 
 
 def test_table_drop_consistency():
@@ -210,7 +210,7 @@ def test_subquery_where_location(snapshot):
     out = Compiler.to_sql(expr, params={param: "20140101"})
     snapshot.assert_match(out, "out.sql")
     # params get different auto incremented counter identifiers
-    assert_decompile_roundtrip(expr, snapshot, check_equality=False)
+    assert_decompile_roundtrip(expr, snapshot, eq=schemas_eq)
 
 
 def test_column_expr_retains_name(snapshot):
@@ -231,4 +231,4 @@ def test_union_order_by(snapshot):
     t = ibis.table(dict(a="int", b="string"), name="t")
     expr = t.order_by("b").union(t.order_by("b"))
     snapshot.assert_match(to_sql(expr), "out.sql")
-    assert_decompile_roundtrip(expr, snapshot, check_equality=False)
+    assert_decompile_roundtrip(expr, snapshot, eq=schemas_eq)
