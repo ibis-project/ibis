@@ -131,4 +131,6 @@ ibis/examples/descriptions
 
 # chat
 *zuliprc*
-.odbc
+
+# automatically generated odbc file for ci
+ci/odbc/odbc.ini
