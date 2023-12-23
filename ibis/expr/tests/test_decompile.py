@@ -76,3 +76,13 @@ def test_basic(expr, expected):
         assert restored.equals(expected)
     else:
         assert restored == expected
+
+
+def test_view():
+    expr = ibis.table({"x": "int"}, name="t").view()
+    assert "t.view()" in decompile(expr)
+
+
+def test_distinct():
+    expr = ibis.table({"x": "int"}, name="t").distinct()
+    assert "t.distinct()" in decompile(expr)
