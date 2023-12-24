@@ -133,7 +133,6 @@ def test_array_concat_variadic(con):
 
 
 # Issues #2370
-@pytest.mark.notimpl(["datafusion"], raises=BaseException)
 @pytest.mark.notimpl(["flink"], raises=com.OperationNotDefinedError)
 @pytest.mark.notyet(
     ["postgres", "trino"],
@@ -182,7 +181,7 @@ def test_np_array_literal(con):
 
 
 @pytest.mark.parametrize("idx", range(3))
-@pytest.mark.notimpl(["polars", "datafusion"], raises=com.OperationNotDefinedError)
+@pytest.mark.notimpl(["polars"], raises=com.OperationNotDefinedError)
 def test_array_index(con, idx):
     arr = [1, 2, 3]
     expr = ibis.literal(arr)
