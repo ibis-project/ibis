@@ -1,8 +1,8 @@
 from __future__ import annotations
 
+import contextlib
 import inspect
 import typing
-from contextlib import suppress
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
@@ -11,9 +11,7 @@ import pyarrow as pa
 import pyarrow.dataset as ds
 import pyarrow_hotfix  # noqa: F401
 import sqlglot as sg
-from sqlglot import exp, transforms
-from sqlglot.dialects import Postgres
-from sqlglot.dialects.dialect import rename_func
+import sqlglot.expressions as sge
 
 import ibis
 import ibis.common.exceptions as com
@@ -21,12 +19,13 @@ import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
-from ibis.backends.base import BaseBackend, CanCreateDatabase, CanCreateSchema
-from ibis.backends.base.sqlglot import STAR, C
-from ibis.backends.datafusion.compiler.core import translate
+from ibis.backends.base import CanCreateDatabase, CanCreateSchema
+from ibis.backends.base.sqlglot import SQLGlotBackend
+from ibis.backends.base.sqlglot.compiler import C
+from ibis.backends.datafusion.compiler import DataFusionCompiler
 from ibis.expr.operations.udf import InputType
 from ibis.formats.pyarrow import PyArrowType
-from ibis.util import gen_name, log, normalize_filename
+from ibis.util import gen_name, normalize_filename
 
 try:
     from datafusion import ExecutionContext as SessionContext
@@ -39,44 +38,18 @@ except ImportError:
     SessionConfig = None
 
 if TYPE_CHECKING:
-    from collections.abc import Mapping
+    from collections.abc import Iterator, Mapping
 
     import pandas as pd
 
-_exclude_exp = (exp.Pow, exp.ArrayContains)
 
-
-def _lower_unit(self, expr):
-    value = expr.this.sql(dialect=self.dialect)
-    unit = expr.unit.this.lower()
-    return f"INTERVAL '{value} {unit}'"
-
-
-# the DataFusion dialect was created to skip the power function to operator transformation
-# in the future this could be used to optimize sqlglot for datafusion
-class DataFusion(Postgres):
-    class Generator(Postgres.Generator):
-        TRANSFORMS = {
-            exp: trans
-            for exp, trans in Postgres.Generator.TRANSFORMS.items()
-            if exp not in _exclude_exp
-        } | {
-            exp.Select: transforms.preprocess(
-                [
-                    transforms.eliminate_qualify,
-                ]
-            ),
-            exp.IsNan: rename_func("isnan"),
-            exp.Interval: _lower_unit,
-        }
-
-
-class Backend(BaseBackend, CanCreateDatabase, CanCreateSchema):
+class Backend(SQLGlotBackend, CanCreateDatabase, CanCreateSchema):
     name = "datafusion"
     dialect = "datafusion"
     builder = None
     supports_in_memory_tables = True
     supports_arrays = True
+    compiler = DataFusionCompiler()
 
     @property
     def version(self):
@@ -118,6 +91,43 @@ class Backend(BaseBackend, CanCreateDatabase, CanCreateSchema):
 
         for name, path in config.items():
             self.register(path, table_name=name)
+
+        self._temp_views = set()
+
+    @contextlib.contextmanager
+    def _safe_raw_sql(self, sql: sge.Statement) -> Any:
+        yield self.raw_sql(sql)
+
+    def _metadata(self, query: str) -> Iterator[tuple[str, dt.DataType]]:
+        name = gen_name("datafusion_metadata_view")
+        table = sg.table(name, quoted=self.compiler.quoted)
+        src = sge.Create(
+            this=table,
+            kind="VIEW",
+            expression=sg.parse_one(query, read="datafusion"),
+            properties=sge.Properties(expressions=[sge.TemporaryProperty()]),
+        )
+        self.raw_sql(src)
+
+        try:
+            result = (
+                self.raw_sql(f"DESCRIBE {table.sql(self.name)}")
+                .to_arrow_table()
+                .to_pydict()
+            )
+        finally:
+            self.drop_view(name)
+        return (
+            (
+                name,
+                self.compiler.type_mapper.from_string(
+                    type_string, nullable=is_nullable == "YES"
+                ),
+            )
+            for name, type_string, is_nullable in zip(
+                result["column_name"], result["data_type"], result["is_nullable"]
+            )
+        )
 
     def _register_builtin_udfs(self):
         from ibis.backends.datafusion import udfs
@@ -172,14 +182,6 @@ class Backend(BaseBackend, CanCreateDatabase, CanCreateSchema):
             name=udf_node.func.__name__,
         )
 
-    def _log(self, sql: str) -> None:
-        """Log `sql`.
-
-        This method can be implemented by subclasses. Logging occurs when
-        `ibis.options.verbose` is `True`.
-        """
-        log(sql)
-
     def raw_sql(self, query: str | sg.exp.Expression) -> Any:
         """Execute a SQL string `query` against the database.
 
@@ -190,7 +192,7 @@ class Backend(BaseBackend, CanCreateDatabase, CanCreateSchema):
         kwargs
             Backend specific query arguments
         """
-        with suppress(AttributeError):
+        with contextlib.suppress(AttributeError):
             query = query.sql(dialect=self.dialect, pretty=True)
         self._log(query)
         return self.con.sql(query)
@@ -253,26 +255,21 @@ class Backend(BaseBackend, CanCreateDatabase, CanCreateSchema):
         """List the available tables."""
         return self._filter_with_like(self.con.tables(), like)
 
-    def table(self, name: str, schema: sch.Schema | None = None) -> ir.Table:
-        """Get an ibis expression representing a DataFusion table.
+    def get_schema(
+        self, table_name: str, schema: str | None = None, database: str | None = None
+    ) -> sch.Schema:
+        if database is not None:
+            catalog = self.con.catalog(database)
+        else:
+            catalog = self.con.catalog()
 
-        Parameters
-        ----------
-        name
-            The name of the table to retrieve
-        schema
-            An optional schema for the table
+        if schema is not None:
+            database = catalog.database(schema)
+        else:
+            database = catalog.database()
 
-        Returns
-        -------
-        Table
-            A table expression
-        """
-        catalog = self.con.catalog()
-        database = catalog.database()
-        table = database.table(name)
-        schema = sch.schema(table.schema)
-        return ops.DatabaseTable(name, schema, self).to_expr()
+        table = database.table(table_name)
+        return sch.schema(table.schema)
 
     def register(
         self,
@@ -520,51 +517,86 @@ class Backend(BaseBackend, CanCreateDatabase, CanCreateSchema):
             batch_reader.read_pandas(timestamp_as_object=True)
         )
 
-    def _to_sqlglot(
-        self, expr: ir.Expr, limit: str | None = None, params=None, **_: Any
-    ):
-        """Compile an Ibis expression to a sqlglot object."""
-        table_expr = expr.as_table()
+    def create_table(
+        self,
+        name: str,
+        obj: pd.DataFrame | pa.Table | ir.Table | None = None,
+        *,
+        schema: sch.Schema | None = None,
+        database: str | None = None,
+        temp: bool = False,
+        overwrite: bool = False,
+    ) -> ir.Table:
+        """Create a table in DataFusion.
 
-        if limit == "default":
-            limit = ibis.options.sql.default_limit
-        if limit is not None:
-            table_expr = table_expr.limit(limit)
+        Parameters
+        ----------
+        name
+            Name of the table to create
+        obj
+            The data with which to populate the table; optional, but at least
+            one of `obj` or `schema` must be specified
+        schema
+            The schema of the table to create; optional, but at least one of
+            `obj` or `schema` must be specified
+        database
+            The name of the database in which to create the table; if not
+            passed, the current database is used.
+        temp
+            Create a temporary table
+        overwrite
+            If `True`, replace the table if it already exists, otherwise fail
+            if the table exists
+        """
+        if obj is None and schema is None:
+            raise ValueError("Either `obj` or `schema` must be specified")
 
-        if params is None:
-            params = {}
+        column_defs = [
+            sg.exp.ColumnDef(
+                this=sg.to_identifier(name, quoted=self.compiler.quoted),
+                kind=self.compiler.type_mapper.from_ibis(typ),
+                constraints=(
+                    None
+                    if typ.nullable
+                    else [
+                        sg.exp.ColumnConstraint(kind=sg.exp.NotNullColumnConstraint())
+                    ]
+                ),
+            )
+            for name, typ in (schema or {}).items()
+        ]
 
-        sql = translate(table_expr.op(), params=params)
-        assert not isinstance(sql, sg.exp.Subquery)
+        target = sg.table(name, db=database, quoted=self.compiler.quoted)
 
-        if isinstance(sql, sg.exp.Table):
-            sql = sg.select(STAR).from_(sql)
+        if column_defs:
+            target = sg.exp.Schema(this=target, expressions=column_defs)
 
-        assert not isinstance(sql, sg.exp.Subquery)
-        return sql
+        properties = []
 
-    def compile(
-        self, expr: ir.Expr, limit: str | None = None, params=None, **kwargs: Any
-    ):
-        """Compile an Ibis expression to a DataFusion SQL string."""
-        return self._to_sqlglot(expr, limit=limit, params=params, **kwargs).sql(
-            dialect=self.dialect, pretty=True
+        if temp:
+            properties.append(sg.exp.TemporaryProperty())
+
+        if obj is not None:
+            if not isinstance(obj, ir.Expr):
+                table = ibis.memtable(obj)
+            else:
+                table = obj
+
+            self._run_pre_execute_hooks(table)
+
+            query = self._to_sqlglot(table)
+        else:
+            query = None
+
+        create_stmt = sg.exp.Create(
+            kind="TABLE",
+            this=target,
+            replace=overwrite,
+            properties=sg.exp.Properties(expressions=properties),
+            expression=query,
         )
 
-    @classmethod
-    def has_operation(cls, operation: type[ops.Value]) -> bool:
-        from ibis.backends.datafusion.compiler.values import translate_val
+        with self._safe_raw_sql(create_stmt):
+            pass
 
-        return translate_val.dispatch(operation) is not translate_val.dispatch(object)
-
-    def create_table(self, *_, **__) -> ir.Table:
-        raise NotImplementedError(self.name)
-
-    def create_view(self, *_, **__) -> ir.Table:
-        raise NotImplementedError(self.name)
-
-    def drop_table(self, *_, **__) -> ir.Table:
-        raise NotImplementedError(self.name)
-
-    def drop_view(self, *_, **__) -> ir.Table:
-        raise NotImplementedError(self.name)
+        return self.table(name, schema=database)
