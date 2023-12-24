@@ -87,7 +87,7 @@ def _create_temp_table_with_schema(backend, con, temp_table_name, schema, data=N
         ),
     ],
 )
-@pytest.mark.notimpl(["dask", "datafusion", "druid", "impala"])
+@pytest.mark.notimpl(["dask", "druid", "impala"])
 @pytest.mark.notimpl(
     ["flink"],
     reason="Flink backend supports creating only TEMPORARY VIEW for in-memory data.",
@@ -214,7 +214,7 @@ backend_type_mapping = {
 }
 
 
-@mark.notimpl(["datafusion", "druid"])
+@mark.notimpl(["druid"])
 @pytest.mark.notimpl(
     ["flink"],
     raises=com.IbisError,
@@ -313,7 +313,7 @@ def test_rename_table(con, temp_table, temp_table_orig):
     assert temp_table_orig not in con.list_tables()
 
 
-@mark.notimpl(["datafusion", "polars", "druid"])
+@mark.notimpl(["polars", "druid"])
 @mark.never(["impala", "pyspark"], reason="No non-nullable datatypes")
 @mark.notyet(
     ["trino"], reason="trino doesn't support NOT NULL in its in-memory catalog"
@@ -340,7 +340,7 @@ def test_nullable_input_output(con, temp_table):
     assert t.schema().types[2].nullable
 
 
-@mark.notimpl(["datafusion", "druid", "polars"])
+@mark.notimpl(["druid", "polars"])
 @pytest.mark.broken(
     ["flink"],
     raises=ValueError,
@@ -932,7 +932,7 @@ def test_self_join_memory_table(backend, con, monkeypatch):
     ],
     ids=["python", "pandas"],
 )
-@pytest.mark.notimpl(["dask", "datafusion", "druid"])
+@pytest.mark.notimpl(["dask", "druid"])
 @pytest.mark.notimpl(
     ["flink"],
     reason="Flink backend supports creating only TEMPORARY VIEW for in-memory data.",
@@ -1459,7 +1459,7 @@ def gen_test_name(con: BaseBackend) -> str:
 
 
 @mark.notimpl(
-    ["datafusion", "polars"],
+    ["polars"],
     raises=NotImplementedError,
     reason="overwriting not implemented in ibis for this backend",
 )
