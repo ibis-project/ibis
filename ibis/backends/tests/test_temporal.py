@@ -646,7 +646,7 @@ def test_timestamp_truncate(backend, alltypes, df, unit):
     ["polars", "druid"], reason="snaps to the UNIX epoch", raises=AssertionError
 )
 @pytest.mark.notimpl(
-    ["datafusion", "oracle"],
+    ["oracle"],
     raises=com.OperationNotDefinedError,
 )
 @pytest.mark.broken(
@@ -2054,10 +2054,7 @@ DATE_BACKEND_TYPES = {
 }
 
 
-@pytest.mark.notimpl(
-    ["pandas", "datafusion", "dask", "pyspark"],
-    raises=com.OperationNotDefinedError,
-)
+@pytest.mark.notimpl(["pandas", "dask", "pyspark"], raises=com.OperationNotDefinedError)
 @pytest.mark.notimpl(
     ["druid"], raises=sa.exc.ProgrammingError, reason="SQL parse failed"
 )
@@ -2099,10 +2096,7 @@ TIMESTAMP_BACKEND_TYPES = {
 }
 
 
-@pytest.mark.notimpl(
-    ["pandas", "datafusion", "dask", "pyspark"],
-    raises=com.OperationNotDefinedError,
-)
+@pytest.mark.notimpl(["pandas", "dask", "pyspark"], raises=com.OperationNotDefinedError)
 @pytest.mark.notimpl(
     ["druid"],
     raises=sa.exc.ProgrammingError,
@@ -2136,8 +2130,7 @@ def test_timestamp_literal(con, backend):
 
 
 @pytest.mark.notimpl(
-    ["pandas", "datafusion", "mysql", "dask", "pyspark"],
-    raises=com.OperationNotDefinedError,
+    ["pandas", "mysql", "dask", "pyspark"], raises=com.OperationNotDefinedError
 )
 @pytest.mark.notimpl(
     ["mysql"],
@@ -2164,6 +2157,13 @@ def test_timestamp_literal(con, backend):
             "PST8PDT",
             "2022-02-04 08:20:00PST",  # The time zone for Berkeley, California.
             id="iso",
+            marks=[
+                pytest.mark.broken(
+                    ["datafusion"],
+                    raises=AssertionError,
+                    reason="timezones don't seem to work",
+                ),
+            ],
         ),
     ],
 )
@@ -2253,9 +2253,7 @@ def test_time_literal(con, backend):
 @pytest.mark.broken(
     ["sqlite"], raises=AssertionError, reason="SQLite returns Timedelta from execution"
 )
-@pytest.mark.notimpl(
-    ["dask", "datafusion", "pandas"], raises=com.OperationNotDefinedError
-)
+@pytest.mark.notimpl(["dask", "pandas"], raises=com.OperationNotDefinedError)
 @pytest.mark.notyet(["oracle"], raises=sa.exc.DatabaseError)
 @pytest.mark.parametrize(
     "microsecond",
@@ -2374,10 +2372,7 @@ def test_interval_literal(con, backend):
         assert con.execute(expr.typeof()) == INTERVAL_BACKEND_TYPES[backend_name]
 
 
-@pytest.mark.notimpl(
-    ["pandas", "datafusion", "dask", "pyspark"],
-    raises=com.OperationNotDefinedError,
-)
+@pytest.mark.notimpl(["pandas", "dask", "pyspark"], raises=com.OperationNotDefinedError)
 @pytest.mark.broken(
     ["mysql"],
     raises=sa.exc.ProgrammingError,
@@ -2407,10 +2402,7 @@ def test_date_column_from_ymd(backend, con, alltypes, df):
     backend.assert_series_equal(golden, result.timestamp_col)
 
 
-@pytest.mark.notimpl(
-    ["pandas", "datafusion", "dask", "pyspark"],
-    raises=com.OperationNotDefinedError,
-)
+@pytest.mark.notimpl(["pandas", "dask", "pyspark"], raises=com.OperationNotDefinedError)
 @pytest.mark.broken(
     ["druid"],
     raises=AttributeError,
