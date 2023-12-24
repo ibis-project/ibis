@@ -788,14 +788,7 @@ def test_decimal_literal(con, backend, expr, expected_types, expected_result):
             np.isinf,
             id="isinf",
             marks=[
-                pytest.mark.notimpl(
-                    ["exasol"],
-                    raises=com.OperationNotDefinedError,
-                ),
-                pytest.mark.notimpl(
-                    ["datafusion"],
-                    raises=com.OperationNotDefinedError,
-                ),
+                pytest.mark.notimpl(["exasol"], raises=com.OperationNotDefinedError)
             ],
         ),
     ],

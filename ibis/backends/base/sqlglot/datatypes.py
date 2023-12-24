@@ -360,6 +360,13 @@ class PostgresType(SqlglotType):
     )
 
 
+class DataFusionType(PostgresType):
+    unknown_type_strings = {
+        "utf8": dt.string,
+        "float64": dt.float64,
+    }
+
+
 class MySQLType(SqlglotType):
     dialect = "mysql"
 
