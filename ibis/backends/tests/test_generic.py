@@ -144,6 +144,7 @@ def test_isna(backend, alltypes, col, filt):
                     [
                         "bigquery",
                         "clickhouse",
+                        "datafusion",
                         "duckdb",
                         "impala",
                         "postgres",
@@ -616,7 +617,7 @@ def test_isin_notin(backend, alltypes, df, ibis_op, pandas_op):
     reason="dask doesn't support Series as isin/notin argument",
     raises=NotImplementedError,
 )
-@pytest.mark.notimpl(["datafusion", "druid"])
+@pytest.mark.notimpl(["druid"])
 @pytest.mark.parametrize(
     ("ibis_op", "pandas_op"),
     [
@@ -634,11 +635,13 @@ def test_isin_notin(backend, alltypes, df, ibis_op, pandas_op):
             _.string_col.notin(_.string_col),
             lambda df: ~df.string_col.isin(df.string_col),
             id="notin_col",
+            marks=[pytest.mark.notimpl(["datafusion"])],
         ),
         param(
             (_.bigint_col + 1).notin(_.string_col.length() + 1),
             lambda df: ~(df.bigint_col.add(1)).isin(df.string_col.str.len().add(1)),
             id="notin_expr",
+            marks=[pytest.mark.notimpl(["datafusion"])],
         ),
     ],
 )
@@ -1298,6 +1301,7 @@ def test_try_cast(con, from_val, to_type, expected):
                 pytest.mark.notyet(["bigquery"], raises=GoogleBadRequest),
                 pytest.mark.notyet(["trino"], raises=TrinoUserError),
                 pytest.mark.broken(["polars"], reason="casts to 1672531200000000000"),
+                pytest.mark.broken(["datafusion"], reason="casts to 1672531200000000"),
             ],
         ),
     ],

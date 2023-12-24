@@ -299,7 +299,7 @@ def test_rename_table(con, temp_table, temp_table_orig):
     assert temp_table_orig not in con.list_tables()
 
 
-@mark.notimpl(["datafusion", "polars", "druid"])
+@mark.notimpl(["polars", "druid"])
 @mark.never(["impala", "pyspark"], reason="No non-nullable datatypes")
 @mark.notyet(
     ["trino"], reason="trino doesn't support NOT NULL in its in-memory catalog"
@@ -1407,7 +1407,7 @@ def gen_test_name(con: BaseBackend) -> str:
 
 
 @mark.notimpl(
-    ["datafusion", "polars"],
+    ["polars"],
     raises=NotImplementedError,
     reason="overwriting not implemented in ibis for this backend",
 )

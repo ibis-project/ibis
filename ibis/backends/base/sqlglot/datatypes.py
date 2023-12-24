@@ -401,6 +401,13 @@ class DataFusionType(PostgresType):
     }
 
 
+class DataFusionType(PostgresType):
+    unknown_type_strings = {
+        "utf8": dt.string,
+        "float64": dt.float64,
+    }
+
+
 class MySQLType(SqlglotType):
     dialect = "mysql"
     # these are mysql's defaults, see

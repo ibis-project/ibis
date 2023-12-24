@@ -1862,8 +1862,7 @@ def test_timestamp_literal(con, backend):
 
 
 @pytest.mark.notimpl(
-    ["pandas", "datafusion", "mysql", "dask", "pyspark"],
-    raises=com.OperationNotDefinedError,
+    ["pandas", "mysql", "dask", "pyspark"], raises=com.OperationNotDefinedError
 )
 @pytest.mark.notimpl(
     ["sqlite"],
@@ -1961,9 +1960,7 @@ def test_time_literal(con, backend):
 @pytest.mark.broken(
     ["sqlite"], raises=AssertionError, reason="SQLite returns Timedelta from execution"
 )
-@pytest.mark.notimpl(
-    ["dask", "datafusion", "pandas"], raises=com.OperationNotDefinedError
-)
+@pytest.mark.notimpl(["dask", "pandas"], raises=com.OperationNotDefinedError)
 @pytest.mark.notyet(["oracle"], raises=sa.exc.DatabaseError)
 @pytest.mark.parametrize(
     "microsecond",
