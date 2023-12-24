@@ -87,10 +87,10 @@ jobs:
           #   title: SQLite
           #   extras:
           #     - sqlite
-          # - name: datafusion
-          #   title: Datafusion
-          #   extras:
-          #     - datafusion
+          - name: datafusion
+            title: Datafusion
+            extras:
+              - datafusion
           # - name: polars
           #   title: Polars
           #   extras:
