@@ -772,16 +772,7 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
             id="collect",
             marks=[
                 pytest.mark.notimpl(
-                    [
-                        "impala",
-                        "mysql",
-                        "sqlite",
-                        "datafusion",
-                        "mssql",
-                        "druid",
-                        "oracle",
-                        "exasol",
-                    ],
+                    ["impala", "mysql", "sqlite", "mssql", "druid", "oracle", "exasol"],
                     raises=com.OperationNotDefinedError,
                 ),
                 pytest.mark.broken(

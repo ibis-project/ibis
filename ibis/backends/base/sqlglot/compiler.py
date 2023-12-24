@@ -555,6 +555,10 @@ class SQLGlotCompiler(abc.ABC):
     def visit_StringConcat(self, op, *, arg):
         return self.f.concat(*arg)
 
+    @visit_node.register(ops.StringJoin)
+    def visit_StringJoin(self, op, *, sep, arg):
+        return self.f.concat_ws(sep, *arg)
+
     @visit_node.register(ops.StringSQLLike)
     def visit_StringSQLLike(self, op, *, arg, pattern, escape):
         return arg.like(pattern)

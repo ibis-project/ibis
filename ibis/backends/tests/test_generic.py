@@ -142,6 +142,7 @@ def test_isna(backend, alltypes, col, filt):
                     [
                         "bigquery",
                         "clickhouse",
+                        "datafusion",
                         "duckdb",
                         "impala",
                         "postgres",
@@ -195,9 +196,7 @@ def test_coalesce(con, expr, expected):
 
 
 # TODO(dask) - identicalTo - #2553
-@pytest.mark.notimpl(
-    ["clickhouse", "datafusion", "dask", "pyspark", "mssql", "druid", "exasol"]
-)
+@pytest.mark.notimpl(["clickhouse", "dask", "pyspark", "mssql", "druid", "exasol"])
 def test_identical_to(backend, alltypes, sorted_df):
     sorted_alltypes = alltypes.order_by("id")
     df = sorted_df
@@ -623,7 +622,7 @@ def test_isin_notin(backend, alltypes, df, ibis_op, pandas_op):
     reason="dask doesn't support Series as isin/notin argument",
     raises=NotImplementedError,
 )
-@pytest.mark.notimpl(["datafusion", "druid"])
+@pytest.mark.notimpl(["druid"])
 @pytest.mark.parametrize(
     ("ibis_op", "pandas_op"),
     [
@@ -641,11 +640,13 @@ def test_isin_notin(backend, alltypes, df, ibis_op, pandas_op):
             _.string_col.notin(_.string_col),
             lambda df: ~df.string_col.isin(df.string_col),
             id="notin_col",
+            marks=[pytest.mark.notimpl(["datafusion"])],
         ),
         param(
             (_.bigint_col + 1).notin(_.string_col.length() + 1),
             lambda df: ~(df.bigint_col.add(1)).isin(df.string_col.str.len().add(1)),
             id="notin_expr",
+            marks=[pytest.mark.notimpl(["datafusion"])],
         ),
     ],
 )
@@ -762,7 +763,6 @@ def test_select_filter_select(backend, alltypes, df):
     backend.assert_series_equal(result, expected)
 
 
-@pytest.mark.notimpl(["datafusion"], raises=com.OperationNotDefinedError)
 @pytest.mark.broken(["mssql"], raises=sa.exc.ProgrammingError)
 def test_between(backend, alltypes, df):
     expr = alltypes.double_col.between(5, 10)
@@ -898,7 +898,7 @@ def test_isin_uncorrelated(
 
 
 @pytest.mark.broken(["polars"], reason="incorrect answer")
-@pytest.mark.notimpl(["datafusion", "pyspark", "druid", "exasol"])
+@pytest.mark.notimpl(["pyspark", "druid", "exasol"])
 @pytest.mark.notyet(["dask"], reason="not supported by the backend")
 def test_isin_uncorrelated_filter(
     backend, batting, awards_players, batting_df, awards_players_df
@@ -1367,7 +1367,6 @@ def test_hexdigest(backend, alltypes):
         "pandas",
         "dask",
         "bigquery",
-        "datafusion",
         "druid",
         "impala",
         "mssql",
@@ -1400,6 +1399,7 @@ def test_hexdigest(backend, alltypes):
                     reason="raises TrinoUserError",
                 ),
                 pytest.mark.broken(["polars"], reason="casts to 1672531200000000000"),
+                pytest.mark.broken(["datafusion"], reason="casts to 1672531200000000"),
             ],
         ),
     ],
@@ -1887,9 +1887,7 @@ def test_substitute(backend):
 
 
 @pytest.mark.notimpl(
-    ["dask", "datafusion", "pandas", "polars"],
-    raises=NotImplementedError,
-    reason="not a SQL backend",
+    ["dask", "pandas", "polars"], raises=NotImplementedError, reason="not a SQL backend"
 )
 @pytest.mark.notimpl(
     ["pyspark"], reason="pyspark doesn't generate SQL", raises=NotImplementedError
