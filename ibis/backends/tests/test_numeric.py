@@ -10,7 +10,6 @@ import numpy as np
 import pandas as pd
 import pytest
 import sqlalchemy as sa
-from packaging.version import parse as vparse
 from pytest import param
 
 import ibis
@@ -799,14 +798,7 @@ def test_decimal_literal(con, backend, expr, expected_types, expected_result):
             np.isinf,
             id="isinf",
             marks=[
-                pytest.mark.notimpl(
-                    ["exasol"],
-                    raises=com.OperationNotDefinedError,
-                ),
-                pytest.mark.notimpl(
-                    ["datafusion"],
-                    raises=com.OperationNotDefinedError,
-                ),
+                pytest.mark.notimpl(["exasol"], raises=com.OperationNotDefinedError)
             ],
         ),
     ],
@@ -814,10 +806,6 @@ def test_decimal_literal(con, backend, expr, expected_types, expected_result):
 @pytest.mark.notimpl(
     ["mysql", "sqlite", "mssql", "oracle", "flink"],
     raises=com.OperationNotDefinedError,
-)
-@pytest.mark.xfail(
-    duckdb is not None and vparse(duckdb.__version__) < vparse("0.3.3"),
-    reason="<0.3.3 does not support isnan/isinf properly",
 )
 def test_isnan_isinf(
     backend,
