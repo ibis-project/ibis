@@ -130,9 +130,7 @@ def uses_java_re(t):
             lambda t: t.string_col.str.contains("6.*"),
             id="like",
             marks=[
-                pytest.mark.notimpl(
-                    ["datafusion", "polars"], raises=com.OperationNotDefinedError
-                ),
+                pytest.mark.notimpl(["polars"], raises=com.OperationNotDefinedError),
                 pytest.mark.broken(
                     ["mssql"],
                     reason="mssql doesn't allow like outside of filters",
@@ -145,9 +143,7 @@ def uses_java_re(t):
             lambda t: t.string_col.str.contains("6%"),
             id="complex_like_escape",
             marks=[
-                pytest.mark.notimpl(
-                    ["datafusion", "polars"], raises=com.OperationNotDefinedError
-                ),
+                pytest.mark.notimpl(["polars"], raises=com.OperationNotDefinedError),
                 pytest.mark.broken(
                     ["mssql"],
                     reason="mssql doesn't allow like outside of filters",
@@ -160,9 +156,7 @@ def uses_java_re(t):
             lambda t: t.string_col.str.contains("6%.*"),
             id="complex_like_escape_match",
             marks=[
-                pytest.mark.notimpl(
-                    ["datafusion", "polars"], raises=com.OperationNotDefinedError
-                ),
+                pytest.mark.notimpl(["polars"], raises=com.OperationNotDefinedError),
                 pytest.mark.broken(
                     ["mssql"],
                     reason="mssql doesn't allow like outside of filters",
@@ -176,7 +170,7 @@ def uses_java_re(t):
             id="ilike",
             marks=[
                 pytest.mark.notimpl(
-                    ["datafusion", "pyspark", "polars"],
+                    ["pyspark", "polars"],
                     raises=com.OperationNotDefinedError,
                 ),
                 pytest.mark.broken(
@@ -768,7 +762,6 @@ def uses_java_re(t):
             marks=pytest.mark.notimpl(
                 [
                     "dask",
-                    "datafusion",
                     "impala",
                     "mysql",
                     "sqlite",
