@@ -196,10 +196,6 @@ class DuckDBCompiler(SQLGlotCompiler):
         )
         return self.agg.count(sge.Distinct(expressions=[row]), where=where)
 
-    @visit_node.register(ops.StringJoin)
-    def visit_StringJoin(self, op, *, arg, sep):
-        return self.f.list_aggr(self.f.array(*arg), "string_agg", sep)
-
     @visit_node.register(ops.ExtractMillisecond)
     def visit_ExtractMillisecond(self, op, *, arg):
         return self.f.mod(self.f.extract("ms", arg), 1_000)
