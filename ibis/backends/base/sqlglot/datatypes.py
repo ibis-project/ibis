@@ -6,6 +6,7 @@ from functools import partial
 import sqlglot as sg
 import sqlglot.expressions as sge
 
+import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 from ibis.common.collections import FrozenDict
 from ibis.formats import TypeMapper
@@ -230,11 +231,20 @@ class SqlglotType(TypeMapper):
 
     @classmethod
     def _from_sqlglot_INTERVAL(
-        cls, precision: sge.DataTypeParam | None = None
+        cls, precision_or_span: sge.DataTypeParam | sge.IntervalSpan | None = None
     ) -> dt.Interval:
-        if precision is None:
-            precision = cls.default_interval_precision
-        return dt.Interval(str(precision), nullable=cls.default_nullable)
+        nullable = cls.default_nullable
+        if precision_or_span is None:
+            precision_or_span = cls.default_interval_precision
+
+        if isinstance(precision_or_span, str):
+            return dt.Interval(precision_or_span, nullable=nullable)
+        elif isinstance(precision_or_span, sge.DataTypeParam):
+            return dt.Interval(str(precision_or_span), nullable=nullable)
+        elif isinstance(precision_or_span, sge.IntervalSpan):
+            return dt.Interval(unit=precision_or_span.this.this, nullable=nullable)
+        else:
+            raise com.IbisTypeError(precision_or_span)
 
     @classmethod
     def _from_sqlglot_DECIMAL(
@@ -264,7 +274,13 @@ class SqlglotType(TypeMapper):
 
     @classmethod
     def _from_ibis_Interval(cls, dtype: dt.Interval) -> sge.DataType:
-        return sge.DataType(this=typecode.INTERVAL)
+        if (unit := dtype.unit) is None:
+            return sge.DataType(this=typecode.INTERVAL)
+
+        return sge.DataType(
+            this=typecode.INTERVAL,
+            expressions=[sge.IntervalSpan(this=sge.Var(this=unit.name))],
+        )
 
     @classmethod
     def _from_ibis_Array(cls, dtype: dt.Array) -> sge.DataType:
