@@ -541,7 +541,6 @@ def ddl_con(ddl_backend):
             "oracle",
             "postgres",
             "risingwave",
-            "snowflake",
             "sqlite",
             "trino",
         )

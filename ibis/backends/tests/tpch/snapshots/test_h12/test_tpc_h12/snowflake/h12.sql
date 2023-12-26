@@ -1,70 +1,70 @@
 SELECT
-  "t8"."l_shipmode" AS "l_shipmode",
-  "t8"."high_line_count" AS "high_line_count",
-  "t8"."low_line_count" AS "low_line_count"
+  "t9"."l_shipmode",
+  "t9"."high_line_count",
+  "t9"."low_line_count"
 FROM (
   SELECT
-    "t7"."l_shipmode" AS "l_shipmode",
+    "t8"."l_shipmode",
     SUM(
-      CASE "t7"."o_orderpriority" WHEN '1-URGENT' THEN 1 WHEN '2-HIGH' THEN 1 ELSE 0 END
+      CASE "t8"."o_orderpriority" WHEN '1-URGENT' THEN 1 WHEN '2-HIGH' THEN 1 ELSE 0 END
     ) AS "high_line_count",
     SUM(
-      CASE "t7"."o_orderpriority" WHEN '1-URGENT' THEN 0 WHEN '2-HIGH' THEN 0 ELSE 1 END
+      CASE "t8"."o_orderpriority" WHEN '1-URGENT' THEN 0 WHEN '2-HIGH' THEN 0 ELSE 1 END
     ) AS "low_line_count"
   FROM (
     SELECT
-      "t6"."o_orderkey" AS "o_orderkey",
-      "t6"."o_custkey" AS "o_custkey",
-      "t6"."o_orderstatus" AS "o_orderstatus",
-      "t6"."o_totalprice" AS "o_totalprice",
-      "t6"."o_orderdate" AS "o_orderdate",
-      "t6"."o_orderpriority" AS "o_orderpriority",
-      "t6"."o_clerk" AS "o_clerk",
-      "t6"."o_shippriority" AS "o_shippriority",
-      "t6"."o_comment" AS "o_comment",
-      "t6"."l_orderkey" AS "l_orderkey",
-      "t6"."l_partkey" AS "l_partkey",
-      "t6"."l_suppkey" AS "l_suppkey",
-      "t6"."l_linenumber" AS "l_linenumber",
-      "t6"."l_quantity" AS "l_quantity",
-      "t6"."l_extendedprice" AS "l_extendedprice",
-      "t6"."l_discount" AS "l_discount",
-      "t6"."l_tax" AS "l_tax",
-      "t6"."l_returnflag" AS "l_returnflag",
-      "t6"."l_linestatus" AS "l_linestatus",
-      "t6"."l_shipdate" AS "l_shipdate",
-      "t6"."l_commitdate" AS "l_commitdate",
-      "t6"."l_receiptdate" AS "l_receiptdate",
-      "t6"."l_shipinstruct" AS "l_shipinstruct",
-      "t6"."l_shipmode" AS "l_shipmode",
-      "t6"."l_comment" AS "l_comment"
+      "t7"."o_orderkey",
+      "t7"."o_custkey",
+      "t7"."o_orderstatus",
+      "t7"."o_totalprice",
+      "t7"."o_orderdate",
+      "t7"."o_orderpriority",
+      "t7"."o_clerk",
+      "t7"."o_shippriority",
+      "t7"."o_comment",
+      "t7"."l_orderkey",
+      "t7"."l_partkey",
+      "t7"."l_suppkey",
+      "t7"."l_linenumber",
+      "t7"."l_quantity",
+      "t7"."l_extendedprice",
+      "t7"."l_discount",
+      "t7"."l_tax",
+      "t7"."l_returnflag",
+      "t7"."l_linestatus",
+      "t7"."l_shipdate",
+      "t7"."l_commitdate",
+      "t7"."l_receiptdate",
+      "t7"."l_shipinstruct",
+      "t7"."l_shipmode",
+      "t7"."l_comment"
     FROM (
       SELECT
-        "t2"."o_orderkey" AS "o_orderkey",
-        "t2"."o_custkey" AS "o_custkey",
-        "t2"."o_orderstatus" AS "o_orderstatus",
-        "t2"."o_totalprice" AS "o_totalprice",
-        "t2"."o_orderdate" AS "o_orderdate",
-        "t2"."o_orderpriority" AS "o_orderpriority",
-        "t2"."o_clerk" AS "o_clerk",
-        "t2"."o_shippriority" AS "o_shippriority",
-        "t2"."o_comment" AS "o_comment",
-        "t4"."l_orderkey" AS "l_orderkey",
-        "t4"."l_partkey" AS "l_partkey",
-        "t4"."l_suppkey" AS "l_suppkey",
-        "t4"."l_linenumber" AS "l_linenumber",
-        "t4"."l_quantity" AS "l_quantity",
-        "t4"."l_extendedprice" AS "l_extendedprice",
-        "t4"."l_discount" AS "l_discount",
-        "t4"."l_tax" AS "l_tax",
-        "t4"."l_returnflag" AS "l_returnflag",
-        "t4"."l_linestatus" AS "l_linestatus",
-        "t4"."l_shipdate" AS "l_shipdate",
-        "t4"."l_commitdate" AS "l_commitdate",
-        "t4"."l_receiptdate" AS "l_receiptdate",
-        "t4"."l_shipinstruct" AS "l_shipinstruct",
-        "t4"."l_shipmode" AS "l_shipmode",
-        "t4"."l_comment" AS "l_comment"
+        "t4"."o_orderkey",
+        "t4"."o_custkey",
+        "t4"."o_orderstatus",
+        "t4"."o_totalprice",
+        "t4"."o_orderdate",
+        "t4"."o_orderpriority",
+        "t4"."o_clerk",
+        "t4"."o_shippriority",
+        "t4"."o_comment",
+        "t5"."l_orderkey",
+        "t5"."l_partkey",
+        "t5"."l_suppkey",
+        "t5"."l_linenumber",
+        "t5"."l_quantity",
+        "t5"."l_extendedprice",
+        "t5"."l_discount",
+        "t5"."l_tax",
+        "t5"."l_returnflag",
+        "t5"."l_linestatus",
+        "t5"."l_shipdate",
+        "t5"."l_commitdate",
+        "t5"."l_receiptdate",
+        "t5"."l_shipinstruct",
+        "t5"."l_shipmode",
+        "t5"."l_comment"
       FROM (
         SELECT
           "t0"."O_ORDERKEY" AS "o_orderkey",
@@ -77,7 +77,7 @@ FROM (
           "t0"."O_SHIPPRIORITY" AS "o_shippriority",
           "t0"."O_COMMENT" AS "o_comment"
         FROM "ORDERS" AS "t0"
-      ) AS "t2"
+      ) AS "t4"
       INNER JOIN (
         SELECT
           "t1"."L_ORDERKEY" AS "l_orderkey",
@@ -97,18 +97,18 @@ FROM (
           "t1"."L_SHIPMODE" AS "l_shipmode",
           "t1"."L_COMMENT" AS "l_comment"
         FROM "LINEITEM" AS "t1"
-      ) AS "t4"
-        ON "t2"."o_orderkey" = "t4"."l_orderkey"
-    ) AS "t6"
+      ) AS "t5"
+        ON "t4"."o_orderkey" = "t5"."l_orderkey"
+    ) AS "t7"
     WHERE
-      "t6"."l_shipmode" IN ('MAIL', 'SHIP')
-      AND "t6"."l_commitdate" < "t6"."l_receiptdate"
-      AND "t6"."l_shipdate" < "t6"."l_commitdate"
-      AND "t6"."l_receiptdate" >= DATEFROMPARTS(1994, 1, 1)
-      AND "t6"."l_receiptdate" < DATEFROMPARTS(1995, 1, 1)
-  ) AS "t7"
+      "t7"."l_shipmode" IN ('MAIL', 'SHIP')
+      AND "t7"."l_commitdate" < "t7"."l_receiptdate"
+      AND "t7"."l_shipdate" < "t7"."l_commitdate"
+      AND "t7"."l_receiptdate" >= DATEFROMPARTS(1994, 1, 1)
+      AND "t7"."l_receiptdate" < DATEFROMPARTS(1995, 1, 1)
+  ) AS "t8"
   GROUP BY
     1
-) AS "t8"
+) AS "t9"
 ORDER BY
-  "t8"."l_shipmode" ASC
+  "t9"."l_shipmode" ASC

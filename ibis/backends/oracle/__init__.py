@@ -16,11 +16,10 @@ from ibis import util
 # Wow, this is truly horrible
 # Get out your clippers, it's time to shave a yak.
 #
-# 1. snowflake-sqlalchemy doesn't support sqlalchemy 2.0
-# 2. oracledb is only supported in sqlalchemy 2.0
-# 3. Ergo, module hacking is required to avoid doing a silly amount of work
+# 1. oracledb is only supported in sqlalchemy 2.0
+# 2. Ergo, module hacking is required to avoid doing a silly amount of work
 #    to create multiple lockfiles or port snowflake away from sqlalchemy
-# 4. Also the version needs to be spoofed to be >= 7 or else the cx_Oracle
+# 3. Also the version needs to be spoofed to be >= 7 or else the cx_Oracle
 #    dialect barfs
 oracledb.__version__ = oracledb.version = "7"
 

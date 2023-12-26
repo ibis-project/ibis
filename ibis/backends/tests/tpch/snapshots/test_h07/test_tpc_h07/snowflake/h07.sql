@@ -1,24 +1,33 @@
 SELECT
-  *
+  "t24"."supp_nation",
+  "t24"."cust_nation",
+  "t24"."l_year",
+  "t24"."revenue"
 FROM (
   SELECT
-    "t17"."supp_nation" AS "supp_nation",
-    "t17"."cust_nation" AS "cust_nation",
-    "t17"."l_year" AS "l_year",
-    SUM("t17"."volume") AS "revenue"
+    "t23"."supp_nation",
+    "t23"."cust_nation",
+    "t23"."l_year",
+    SUM("t23"."volume") AS "revenue"
   FROM (
     SELECT
-      *
+      "t22"."supp_nation",
+      "t22"."cust_nation",
+      "t22"."l_shipdate",
+      "t22"."l_extendedprice",
+      "t22"."l_discount",
+      "t22"."l_year",
+      "t22"."volume"
     FROM (
       SELECT
-        "t9"."n_name" AS "supp_nation",
-        "t10"."n_name" AS "cust_nation",
-        "t6"."l_shipdate" AS "l_shipdate",
-        "t6"."l_extendedprice" AS "l_extendedprice",
-        "t6"."l_discount" AS "l_discount",
-        DATE_PART('year', "t6"."l_shipdate") AS "l_year",
-        "t6"."l_extendedprice" * (
-          1 - "t6"."l_discount"
+        "t14"."n_name" AS "supp_nation",
+        "t16"."n_name" AS "cust_nation",
+        "t11"."l_shipdate",
+        "t11"."l_extendedprice",
+        "t11"."l_discount",
+        DATE_PART('year', "t11"."l_shipdate") AS "l_year",
+        "t11"."l_extendedprice" * (
+          1 - "t11"."l_discount"
         ) AS "volume"
       FROM (
         SELECT
@@ -30,7 +39,7 @@ FROM (
           "t0"."S_ACCTBAL" AS "s_acctbal",
           "t0"."S_COMMENT" AS "s_comment"
         FROM "SUPPLIER" AS "t0"
-      ) AS "t5"
+      ) AS "t10"
       INNER JOIN (
         SELECT
           "t1"."L_ORDERKEY" AS "l_orderkey",
@@ -50,8 +59,8 @@ FROM (
           "t1"."L_SHIPMODE" AS "l_shipmode",
           "t1"."L_COMMENT" AS "l_comment"
         FROM "LINEITEM" AS "t1"
-      ) AS "t6"
-        ON "t5"."s_suppkey" = "t6"."l_suppkey"
+      ) AS "t11"
+        ON "t10"."s_suppkey" = "t11"."l_suppkey"
       INNER JOIN (
         SELECT
           "t2"."O_ORDERKEY" AS "o_orderkey",
@@ -64,8 +73,8 @@ FROM (
           "t2"."O_SHIPPRIORITY" AS "o_shippriority",
           "t2"."O_COMMENT" AS "o_comment"
         FROM "ORDERS" AS "t2"
-      ) AS "t7"
-        ON "t7"."o_orderkey" = "t6"."l_orderkey"
+      ) AS "t12"
+        ON "t12"."o_orderkey" = "t11"."l_orderkey"
       INNER JOIN (
         SELECT
           "t3"."C_CUSTKEY" AS "c_custkey",
@@ -77,8 +86,8 @@ FROM (
           "t3"."C_MKTSEGMENT" AS "c_mktsegment",
           "t3"."C_COMMENT" AS "c_comment"
         FROM "CUSTOMER" AS "t3"
-      ) AS "t8"
-        ON "t8"."c_custkey" = "t7"."o_custkey"
+      ) AS "t13"
+        ON "t13"."c_custkey" = "t12"."o_custkey"
       INNER JOIN (
         SELECT
           "t4"."N_NATIONKEY" AS "n_nationkey",
@@ -86,8 +95,8 @@ FROM (
           "t4"."N_REGIONKEY" AS "n_regionkey",
           "t4"."N_COMMENT" AS "n_comment"
         FROM "NATION" AS "t4"
-      ) AS "t9"
-        ON "t5"."s_nationkey" = "t9"."n_nationkey"
+      ) AS "t14"
+        ON "t10"."s_nationkey" = "t14"."n_nationkey"
       INNER JOIN (
         SELECT
           "t4"."N_NATIONKEY" AS "n_nationkey",
@@ -95,34 +104,34 @@ FROM (
           "t4"."N_REGIONKEY" AS "n_regionkey",
           "t4"."N_COMMENT" AS "n_comment"
         FROM "NATION" AS "t4"
-      ) AS "t10"
-        ON "t8"."c_nationkey" = "t10"."n_nationkey"
-    ) AS "t16"
+      ) AS "t16"
+        ON "t13"."c_nationkey" = "t16"."n_nationkey"
+    ) AS "t22"
     WHERE
       (
         (
           (
-            "t16"."cust_nation" = 'FRANCE'
+            "t22"."cust_nation" = 'FRANCE'
           ) AND (
-            "t16"."supp_nation" = 'GERMANY'
+            "t22"."supp_nation" = 'GERMANY'
           )
         )
         OR (
           (
-            "t16"."cust_nation" = 'GERMANY'
+            "t22"."cust_nation" = 'GERMANY'
           ) AND (
-            "t16"."supp_nation" = 'FRANCE'
+            "t22"."supp_nation" = 'FRANCE'
           )
         )
       )
-      AND "t16"."l_shipdate" BETWEEN DATEFROMPARTS(1995, 1, 1) AND DATEFROMPARTS(1996, 12, 31)
-  ) AS "t17"
+      AND "t22"."l_shipdate" BETWEEN DATEFROMPARTS(1995, 1, 1) AND DATEFROMPARTS(1996, 12, 31)
+  ) AS "t23"
   GROUP BY
     1,
     2,
     3
-) AS "t18"
+) AS "t24"
 ORDER BY
-  "t18"."supp_nation" ASC,
-  "t18"."cust_nation" ASC,
-  "t18"."l_year" ASC
+  "t24"."supp_nation" ASC,
+  "t24"."cust_nation" ASC,
+  "t24"."l_year" ASC

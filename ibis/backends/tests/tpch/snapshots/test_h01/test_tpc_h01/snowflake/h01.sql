@@ -1,18 +1,18 @@
 SELECT
-  "t2"."l_returnflag" AS "l_returnflag",
-  "t2"."l_linestatus" AS "l_linestatus",
-  "t2"."sum_qty" AS "sum_qty",
-  "t2"."sum_base_price" AS "sum_base_price",
-  "t2"."sum_disc_price" AS "sum_disc_price",
-  "t2"."sum_charge" AS "sum_charge",
-  "t2"."avg_qty" AS "avg_qty",
-  "t2"."avg_price" AS "avg_price",
-  "t2"."avg_disc" AS "avg_disc",
-  "t2"."count_order" AS "count_order"
+  "t2"."l_returnflag",
+  "t2"."l_linestatus",
+  "t2"."sum_qty",
+  "t2"."sum_base_price",
+  "t2"."sum_disc_price",
+  "t2"."sum_charge",
+  "t2"."avg_qty",
+  "t2"."avg_price",
+  "t2"."avg_disc",
+  "t2"."count_order"
 FROM (
   SELECT
-    "t1"."l_returnflag" AS "l_returnflag",
-    "t1"."l_linestatus" AS "l_linestatus",
+    "t1"."l_returnflag",
+    "t1"."l_linestatus",
     SUM("t1"."l_quantity") AS "sum_qty",
     SUM("t1"."l_extendedprice") AS "sum_base_price",
     SUM("t1"."l_extendedprice" * (
