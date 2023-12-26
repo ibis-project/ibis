@@ -730,7 +730,6 @@ def test_insert_duckdb(benchmark, overwrite, tmp_path):
 
 def test_snowflake_medium_sized_to_pandas(benchmark):
     pytest.importorskip("snowflake.connector")
-    pytest.importorskip("snowflake.sqlalchemy")
 
     if (url := os.environ.get("SNOWFLAKE_URL")) is None:
         pytest.skip("SNOWFLAKE_URL environment variable not set")
