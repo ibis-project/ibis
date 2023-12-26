@@ -1,30 +1,30 @@
 SELECT
-  "t24"."nation" AS "nation",
-  "t24"."o_year" AS "o_year",
-  "t24"."sum_profit" AS "sum_profit"
+  "t25"."nation",
+  "t25"."o_year",
+  "t25"."sum_profit"
 FROM (
   SELECT
-    "t23"."nation" AS "nation",
-    "t23"."o_year" AS "o_year",
-    SUM("t23"."amount") AS "sum_profit"
+    "t24"."nation",
+    "t24"."o_year",
+    SUM("t24"."amount") AS "sum_profit"
   FROM (
     SELECT
-      "t22"."amount" AS "amount",
-      "t22"."o_year" AS "o_year",
-      "t22"."nation" AS "nation",
-      "t22"."p_name" AS "p_name"
+      "t23"."amount",
+      "t23"."o_year",
+      "t23"."nation",
+      "t23"."p_name"
     FROM (
       SELECT
         (
-          "t6"."l_extendedprice" * (
-            1 - "t6"."l_discount"
+          "t12"."l_extendedprice" * (
+            1 - "t12"."l_discount"
           )
         ) - (
-          "t13"."ps_supplycost" * "t6"."l_quantity"
+          "t14"."ps_supplycost" * "t12"."l_quantity"
         ) AS "amount",
-        DATE_PART('year', "t15"."o_orderdate") AS "o_year",
-        "t16"."n_name" AS "nation",
-        "t14"."p_name" AS "p_name"
+        DATE_PART('year', "t16"."o_orderdate") AS "o_year",
+        "t17"."n_name" AS "nation",
+        "t15"."p_name"
       FROM (
         SELECT
           "t0"."L_ORDERKEY" AS "l_orderkey",
@@ -44,7 +44,7 @@ FROM (
           "t0"."L_SHIPMODE" AS "l_shipmode",
           "t0"."L_COMMENT" AS "l_comment"
         FROM "LINEITEM" AS "t0"
-      ) AS "t6"
+      ) AS "t12"
       INNER JOIN (
         SELECT
           "t1"."S_SUPPKEY" AS "s_suppkey",
@@ -55,8 +55,8 @@ FROM (
           "t1"."S_ACCTBAL" AS "s_acctbal",
           "t1"."S_COMMENT" AS "s_comment"
         FROM "SUPPLIER" AS "t1"
-      ) AS "t12"
-        ON "t12"."s_suppkey" = "t6"."l_suppkey"
+      ) AS "t13"
+        ON "t13"."s_suppkey" = "t12"."l_suppkey"
       INNER JOIN (
         SELECT
           "t2"."PS_PARTKEY" AS "ps_partkey",
@@ -65,8 +65,8 @@ FROM (
           "t2"."PS_SUPPLYCOST" AS "ps_supplycost",
           "t2"."PS_COMMENT" AS "ps_comment"
         FROM "PARTSUPP" AS "t2"
-      ) AS "t13"
-        ON "t13"."ps_suppkey" = "t6"."l_suppkey" AND "t13"."ps_partkey" = "t6"."l_partkey"
+      ) AS "t14"
+        ON "t14"."ps_suppkey" = "t12"."l_suppkey" AND "t14"."ps_partkey" = "t12"."l_partkey"
       INNER JOIN (
         SELECT
           "t3"."P_PARTKEY" AS "p_partkey",
@@ -79,8 +79,8 @@ FROM (
           "t3"."P_RETAILPRICE" AS "p_retailprice",
           "t3"."P_COMMENT" AS "p_comment"
         FROM "PART" AS "t3"
-      ) AS "t14"
-        ON "t14"."p_partkey" = "t6"."l_partkey"
+      ) AS "t15"
+        ON "t15"."p_partkey" = "t12"."l_partkey"
       INNER JOIN (
         SELECT
           "t4"."O_ORDERKEY" AS "o_orderkey",
@@ -93,8 +93,8 @@ FROM (
           "t4"."O_SHIPPRIORITY" AS "o_shippriority",
           "t4"."O_COMMENT" AS "o_comment"
         FROM "ORDERS" AS "t4"
-      ) AS "t15"
-        ON "t15"."o_orderkey" = "t6"."l_orderkey"
+      ) AS "t16"
+        ON "t16"."o_orderkey" = "t12"."l_orderkey"
       INNER JOIN (
         SELECT
           "t5"."N_NATIONKEY" AS "n_nationkey",
@@ -102,16 +102,16 @@ FROM (
           "t5"."N_REGIONKEY" AS "n_regionkey",
           "t5"."N_COMMENT" AS "n_comment"
         FROM "NATION" AS "t5"
-      ) AS "t16"
-        ON "t12"."s_nationkey" = "t16"."n_nationkey"
-    ) AS "t22"
+      ) AS "t17"
+        ON "t13"."s_nationkey" = "t17"."n_nationkey"
+    ) AS "t23"
     WHERE
-      "t22"."p_name" LIKE '%green%'
-  ) AS "t23"
+      "t23"."p_name" LIKE '%green%'
+  ) AS "t24"
   GROUP BY
     1,
     2
-) AS "t24"
+) AS "t25"
 ORDER BY
-  "t24"."nation" ASC,
-  "t24"."o_year" DESC NULLS LAST
+  "t25"."nation" ASC,
+  "t25"."o_year" DESC NULLS LAST

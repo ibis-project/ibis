@@ -40,8 +40,8 @@ def test_builtin_scalar_udf(con, func, args):
     expr = func(*args)
 
     query = f"SELECT {func.__name__}({', '.join(map(repr, args))})"
-    with con.begin() as c:
-        expected = c.exec_driver_sql(query).scalar()
+    with con._safe_raw_sql(query) as cur:
+        [(expected,)] = cur.fetchall()
 
     assert con.execute(expr) == expected
 
@@ -57,8 +57,8 @@ def test_compress(con, func, pyargs, snowargs):
     expr = func(*pyargs)
 
     query = f"SELECT compress({', '.join(snowargs)})"
-    with con.begin() as c:
-        expected = c.exec_driver_sql(query).scalar()
+    with con._safe_raw_sql(query) as cur:
+        [(expected,)] = cur.fetchall()
 
     assert con.execute(expr) == expected
 
@@ -88,8 +88,8 @@ def test_builtin_agg_udf(con):
         )
     )
     """
-    with con.begin() as c:
-        expected = c.exec_driver_sql(query).cursor.fetch_pandas_all()
+    with con._safe_raw_sql(query) as cur:
+        expected = cur.fetch_pandas_all()
 
     tm.assert_frame_equal(result, expected)
 
