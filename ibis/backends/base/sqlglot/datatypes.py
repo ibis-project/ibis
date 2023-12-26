@@ -255,6 +255,18 @@ class SqlglotType(TypeMapper):
         return dt.Decimal(precision, scale, nullable=cls.default_nullable)
 
     @classmethod
+    def _from_sqlglot_GEOMETRY(cls) -> sge.DataType:
+        return dt.GeoSpatial(geotype="geometry", nullable=cls.default_nullable)
+
+    @classmethod
+    def _from_sqlglot_GEOGRAPHY(cls) -> sge.DataType:
+        return dt.GeoSpatial(geotype="geography", nullable=cls.default_nullable)
+
+    @classmethod
+    def _from_ibis_Interval(cls, dtype: dt.Interval) -> sge.DataType:
+        return sge.DataType(this=typecode.INTERVAL)
+
+    @classmethod
     def _from_ibis_Array(cls, dtype: dt.Array) -> sge.DataType:
         value_type = cls.from_ibis(dtype.value_type)
         return sge.DataType(this=typecode.ARRAY, expressions=[value_type], nested=True)
@@ -277,11 +289,17 @@ class SqlglotType(TypeMapper):
 
     @classmethod
     def _from_ibis_Decimal(cls, dtype: dt.Decimal) -> sge.DataType:
+        if (precision := dtype.precision) is None:
+            precision = cls.default_decimal_precision
+
+        if (scale := dtype.scale) is None:
+            scale = cls.default_decimal_scale
+
         return sge.DataType(
             this=typecode.DECIMAL,
             expressions=[
-                sge.DataTypeParam(this=sge.Literal.number(dtype.precision)),
-                sge.DataTypeParam(this=sge.Literal.number(dtype.scale)),
+                sge.DataTypeParam(this=sge.Literal.number(precision)),
+                sge.DataTypeParam(this=sge.Literal.number(scale)),
             ],
         )
 
@@ -293,6 +311,20 @@ class SqlglotType(TypeMapper):
             return sge.DataType(this=code, expressions=[scale])
         else:
             return sge.DataType(this=code)
+
+    @classmethod
+    def _from_ibis_GeoSpatial(cls, dtype: dt.GeoSpatial):
+        if (geotype := dtype.geotype) is not None:
+            return sge.DataType(this=getattr(typecode, geotype.upper()))
+        return sge.DataType(this=typecode.GEOMETRY)
+
+    _from_ibis_Point = (
+        _from_ibis_LineString
+    ) = (
+        _from_ibis_Polygon
+    ) = (
+        _from_ibis_MultiLineString
+    ) = _from_ibis_MultiPoint = _from_ibis_MultiPolygon = _from_ibis_GeoSpatial
 
 
 class PostgresType(SqlglotType):
