@@ -186,7 +186,7 @@ def geography_dtypes(nullable=_nullable):
     return st.builds(dt.GeoSpatial, geotype=st.just("geography"), nullable=nullable)
 
 
-def geospatial_dtypes(nullable=_nullable):
+def specific_geometry_dtypes(nullable=_nullable):
     return st.one_of(
         st.builds(dt.Point, nullable=nullable),
         st.builds(dt.LineString, nullable=nullable),
@@ -194,6 +194,12 @@ def geospatial_dtypes(nullable=_nullable):
         st.builds(dt.MultiPoint, nullable=nullable),
         st.builds(dt.MultiLineString, nullable=nullable),
         st.builds(dt.MultiPolygon, nullable=nullable),
+    )
+
+
+def geospatial_dtypes(nullable=_nullable):
+    return st.one_of(
+        specific_geometry_dtypes(nullable=nullable),
         geometry_dtypes(nullable=nullable),
         geography_dtypes(nullable=nullable),
     )
