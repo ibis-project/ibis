@@ -2,11 +2,13 @@ from __future__ import annotations
 
 import hypothesis as h
 import hypothesis.strategies as st
+import pytest
 import sqlglot.expressions as sge
 
+import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.tests.strategies as its
-from ibis.backends.base.sqlglot.datatypes import SqlglotType
+from ibis.backends.base.sqlglot.datatypes import DuckDBType, PostgresType, SqlglotType
 
 
 def assert_dtype_roundtrip(ibis_type, sqlglot_expected=None):
@@ -65,3 +67,10 @@ def test_specific_geometry_types(ibis_type):
     assert SqlglotType.to_ibis(sqlglot_result) == dt.GeoSpatial(
         geotype="geometry", nullable=ibis_type.nullable
     )
+
+
+def test_interval_without_unit():
+    with pytest.raises(com.IbisTypeError, match="precision is None"):
+        SqlglotType.from_string("INTERVAL")
+    assert PostgresType.from_string("INTERVAL") == dt.Interval("s")
+    assert DuckDBType.from_string("INTERVAL") == dt.Interval("us")
