@@ -335,6 +335,11 @@ class DuckDBCompiler(SQLGlotCompiler):
     def visit_HexDigest(self, op, *, arg, how):
         return self.f[how](arg)
 
+    @visit_node.register(ops.TimestampNow)
+    def visit_TimestampNow(self, op):
+        """DuckDB current timestamp defaults to timestamp + tz."""
+        return self.cast(super().visit_TimestampNow(op), dt.timestamp)
+
 
 _SIMPLE_OPS = {
     ops.ArrayPosition: "list_indexof",

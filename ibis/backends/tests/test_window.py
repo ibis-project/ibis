@@ -18,6 +18,7 @@ from ibis.backends.tests.errors import (
     ImpalaHiveServer2Error,
     Py4JJavaError,
     PySparkAnalysisException,
+    SnowflakeProgrammingError,
 )
 from ibis.legacy.udf.vectorized import analytic, reduction
 
@@ -875,7 +876,7 @@ def test_simple_ungrouped_window_with_scalar_order_by(alltypes):
                 pytest.mark.notyet(
                     ["snowflake"],
                     reason="backend requires ordering",
-                    raises=sa.exc.ProgrammingError,
+                    raises=SnowflakeProgrammingError,
                 ),
                 pytest.mark.notimpl(
                     ["risingwave"],
@@ -927,7 +928,7 @@ def test_simple_ungrouped_window_with_scalar_order_by(alltypes):
                 pytest.mark.notyet(
                     ["snowflake"],
                     reason="backend requires ordering",
-                    raises=sa.exc.ProgrammingError,
+                    raises=SnowflakeProgrammingError,
                 ),
                 pytest.mark.notimpl(
                     ["risingwave"],
@@ -1036,7 +1037,7 @@ def test_ungrouped_unbounded_window(
 
 
 @pytest.mark.notimpl(["polars"], raises=com.OperationNotDefinedError)
-@pytest.mark.notimpl(["snowflake"], raises=sa.exc.ProgrammingError)
+@pytest.mark.notimpl(["snowflake"], raises=SnowflakeProgrammingError)
 @pytest.mark.notimpl(
     ["impala"], raises=ImpalaHiveServer2Error, reason="limited RANGE support"
 )
