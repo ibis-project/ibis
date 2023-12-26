@@ -312,7 +312,6 @@ def test_rename_table(con, temp_table, temp_table_orig):
 @mark.notyet(
     ["trino"], reason="trino doesn't support NOT NULL in its in-memory catalog"
 )
-@mark.broken(["snowflake"], reason="snowflake shows not nullable column as nullable")
 @pytest.mark.notimpl(
     ["flink"],
     raises=com.IbisError,
@@ -590,7 +589,7 @@ def test_list_databases(alchemy_con):
 
 
 @pytest.mark.never(
-    ["bigquery", "postgres", "mssql", "mysql", "snowflake", "oracle"],
+    ["bigquery", "postgres", "mssql", "mysql", "oracle"],
     reason="backend does not support client-side in-memory tables",
     raises=(sa.exc.OperationalError, TypeError, sa.exc.InterfaceError),
 )

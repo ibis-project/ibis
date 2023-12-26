@@ -1,46 +1,46 @@
 SELECT
-  "t10"."p_brand" AS "p_brand",
-  "t10"."p_type" AS "p_type",
-  "t10"."p_size" AS "p_size",
-  "t10"."supplier_cnt" AS "supplier_cnt"
+  "t11"."p_brand",
+  "t11"."p_type",
+  "t11"."p_size",
+  "t11"."supplier_cnt"
 FROM (
   SELECT
-    "t9"."p_brand" AS "p_brand",
-    "t9"."p_type" AS "p_type",
-    "t9"."p_size" AS "p_size",
-    COUNT(DISTINCT "t9"."ps_suppkey") AS "supplier_cnt"
+    "t10"."p_brand",
+    "t10"."p_type",
+    "t10"."p_size",
+    COUNT(DISTINCT "t10"."ps_suppkey") AS "supplier_cnt"
   FROM (
     SELECT
-      "t8"."ps_partkey" AS "ps_partkey",
-      "t8"."ps_suppkey" AS "ps_suppkey",
-      "t8"."ps_availqty" AS "ps_availqty",
-      "t8"."ps_supplycost" AS "ps_supplycost",
-      "t8"."ps_comment" AS "ps_comment",
-      "t8"."p_partkey" AS "p_partkey",
-      "t8"."p_name" AS "p_name",
-      "t8"."p_mfgr" AS "p_mfgr",
-      "t8"."p_brand" AS "p_brand",
-      "t8"."p_type" AS "p_type",
-      "t8"."p_size" AS "p_size",
-      "t8"."p_container" AS "p_container",
-      "t8"."p_retailprice" AS "p_retailprice",
-      "t8"."p_comment" AS "p_comment"
+      "t9"."ps_partkey",
+      "t9"."ps_suppkey",
+      "t9"."ps_availqty",
+      "t9"."ps_supplycost",
+      "t9"."ps_comment",
+      "t9"."p_partkey",
+      "t9"."p_name",
+      "t9"."p_mfgr",
+      "t9"."p_brand",
+      "t9"."p_type",
+      "t9"."p_size",
+      "t9"."p_container",
+      "t9"."p_retailprice",
+      "t9"."p_comment"
     FROM (
       SELECT
-        "t3"."ps_partkey" AS "ps_partkey",
-        "t3"."ps_suppkey" AS "ps_suppkey",
-        "t3"."ps_availqty" AS "ps_availqty",
-        "t3"."ps_supplycost" AS "ps_supplycost",
-        "t3"."ps_comment" AS "ps_comment",
-        "t6"."p_partkey" AS "p_partkey",
-        "t6"."p_name" AS "p_name",
-        "t6"."p_mfgr" AS "p_mfgr",
-        "t6"."p_brand" AS "p_brand",
-        "t6"."p_type" AS "p_type",
-        "t6"."p_size" AS "p_size",
-        "t6"."p_container" AS "p_container",
-        "t6"."p_retailprice" AS "p_retailprice",
-        "t6"."p_comment" AS "p_comment"
+        "t5"."ps_partkey",
+        "t5"."ps_suppkey",
+        "t5"."ps_availqty",
+        "t5"."ps_supplycost",
+        "t5"."ps_comment",
+        "t7"."p_partkey",
+        "t7"."p_name",
+        "t7"."p_mfgr",
+        "t7"."p_brand",
+        "t7"."p_type",
+        "t7"."p_size",
+        "t7"."p_container",
+        "t7"."p_retailprice",
+        "t7"."p_comment"
       FROM (
         SELECT
           "t0"."PS_PARTKEY" AS "ps_partkey",
@@ -49,7 +49,7 @@ FROM (
           "t0"."PS_SUPPLYCOST" AS "ps_supplycost",
           "t0"."PS_COMMENT" AS "ps_comment"
         FROM "PARTSUPP" AS "t0"
-      ) AS "t3"
+      ) AS "t5"
       INNER JOIN (
         SELECT
           "t2"."P_PARTKEY" AS "p_partkey",
@@ -62,32 +62,32 @@ FROM (
           "t2"."P_RETAILPRICE" AS "p_retailprice",
           "t2"."P_COMMENT" AS "p_comment"
         FROM "PART" AS "t2"
-      ) AS "t6"
-        ON "t6"."p_partkey" = "t3"."ps_partkey"
-    ) AS "t8"
+      ) AS "t7"
+        ON "t7"."p_partkey" = "t5"."ps_partkey"
+    ) AS "t9"
     WHERE
-      "t8"."p_brand" <> 'Brand#45'
+      "t9"."p_brand" <> 'Brand#45'
       AND NOT (
-        "t8"."p_type" LIKE 'MEDIUM POLISHED%'
+        "t9"."p_type" LIKE 'MEDIUM POLISHED%'
       )
-      AND "t8"."p_size" IN (49, 14, 23, 45, 19, 3, 36, 9)
+      AND "t9"."p_size" IN (49, 14, 23, 45, 19, 3, 36, 9)
       AND NOT (
-        "t8"."ps_suppkey" IN ((
+        "t9"."ps_suppkey" IN (
           SELECT
             "t1"."S_SUPPKEY" AS "s_suppkey"
           FROM "SUPPLIER" AS "t1"
           WHERE
             "t1"."S_COMMENT" LIKE '%Customer%Complaints%'
-        ))
+        )
       )
-  ) AS "t9"
+  ) AS "t10"
   GROUP BY
     1,
     2,
     3
-) AS "t10"
+) AS "t11"
 ORDER BY
-  "t10"."supplier_cnt" DESC NULLS LAST,
-  "t10"."p_brand" ASC,
-  "t10"."p_type" ASC,
-  "t10"."p_size" ASC
+  "t11"."supplier_cnt" DESC NULLS LAST,
+  "t11"."p_brand" ASC,
+  "t11"."p_type" ASC,
+  "t11"."p_size" ASC

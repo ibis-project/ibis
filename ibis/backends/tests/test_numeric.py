@@ -242,7 +242,7 @@ def test_numeric_literal(con, backend, expr, expected_types):
             # TODO(krzysztof-kwitt): Should we unify it?
             {
                 "bigquery": decimal.Decimal("1.1"),
-                "snowflake": "1.1",
+                "snowflake": 1.1,
                 "sqlite": 1.1,
                 "trino": 1.1,
                 "dask": decimal.Decimal("1.1"),
@@ -259,7 +259,7 @@ def test_numeric_literal(con, backend, expr, expected_types):
             },
             {
                 "bigquery": "NUMERIC",
-                "snowflake": "VARCHAR",
+                "snowflake": "DECIMAL",
                 "sqlite": "real",
                 "trino": "decimal(2,1)",
                 "duckdb": "DECIMAL(18,3)",
@@ -294,7 +294,7 @@ def test_numeric_literal(con, backend, expr, expected_types):
             # TODO(krzysztof-kwitt): Should we unify it?
             {
                 "bigquery": decimal.Decimal("1.1"),
-                "snowflake": "1.100000000",
+                "snowflake": 1.1,
                 "sqlite": 1.1,
                 "trino": 1.1,
                 "duckdb": decimal.Decimal("1.100000000"),
@@ -313,7 +313,7 @@ def test_numeric_literal(con, backend, expr, expected_types):
             {
                 "bigquery": "NUMERIC",
                 "clickhouse": "Decimal(38, 9)",
-                "snowflake": "VARCHAR",
+                "snowflake": "DECIMAL",
                 "sqlite": "real",
                 "trino": "decimal(2,1)",
                 "duckdb": "DECIMAL(38,9)",
@@ -343,7 +343,6 @@ def test_numeric_literal(con, backend, expr, expected_types):
             # TODO(krzysztof-kwitt): Should we unify it?
             {
                 "bigquery": decimal.Decimal("1.1"),
-                "snowflake": "1.10000000000000000000000000000000000000",
                 "sqlite": 1.1,
                 "trino": 1.1,
                 "dask": decimal.Decimal("1.1"),
@@ -361,17 +360,14 @@ def test_numeric_literal(con, backend, expr, expected_types):
             {
                 "bigquery": "BIGNUMERIC",
                 "clickhouse": "Decimal(76, 38)",
-                "snowflake": "VARCHAR",
                 "sqlite": "real",
                 "trino": "decimal(2,1)",
                 "duckdb": "DECIMAL(18,3)",
                 "postgres": "numeric",
             },
             marks=[
-                pytest.mark.notimpl(
-                    ["exasol"],
-                    raises=ExaQueryError,
-                ),
+                pytest.mark.notimpl(["exasol"], raises=ExaQueryError),
+                pytest.mark.notyet(["snowflake"], raises=SnowflakeProgrammingError),
                 pytest.mark.broken(
                     ["impala"],
                     "impala.error.HiveServer2Error: AnalysisException: Syntax error in line 1:"
@@ -399,7 +395,6 @@ def test_numeric_literal(con, backend, expr, expected_types):
             # TODO(krzysztof-kwitt): Should we unify it?
             {
                 "bigquery": float("inf"),
-                "snowflake": "Infinity",
                 "sqlite": float("inf"),
                 "postgres": float("nan"),
                 "pandas": decimal.Decimal("Infinity"),
@@ -410,7 +405,6 @@ def test_numeric_literal(con, backend, expr, expected_types):
             },
             {
                 "bigquery": "FLOAT64",
-                "snowflake": "VARCHAR",
                 "sqlite": "real",
                 "trino": "decimal(2,1)",
                 "postgres": "numeric",
@@ -468,6 +462,11 @@ def test_numeric_literal(con, backend, expr, expected_types):
                     "Infinity is not supported in Flink SQL",
                     raises=ValueError,
                 ),
+                pytest.mark.notyet(
+                    ["snowflake"],
+                    "infinity is not allowed as a decimal value",
+                    raises=SnowflakeProgrammingError,
+                ),
             ],
             id="decimal-infinity+",
         ),
@@ -476,7 +475,6 @@ def test_numeric_literal(con, backend, expr, expected_types):
             # TODO(krzysztof-kwitt): Should we unify it?
             {
                 "bigquery": float("-inf"),
-                "snowflake": "-Infinity",
                 "sqlite": float("-inf"),
                 "postgres": float("nan"),
                 "pandas": decimal.Decimal("-Infinity"),
@@ -487,7 +485,6 @@ def test_numeric_literal(con, backend, expr, expected_types):
             },
             {
                 "bigquery": "FLOAT64",
-                "snowflake": "VARCHAR",
                 "sqlite": "real",
                 "trino": "decimal(2,1)",
                 "postgres": "numeric",
@@ -545,6 +542,11 @@ def test_numeric_literal(con, backend, expr, expected_types):
                     "Infinity is not supported in Flink SQL",
                     raises=ValueError,
                 ),
+                pytest.mark.notyet(
+                    ["snowflake"],
+                    "infinity is not allowed as a decimal value",
+                    raises=SnowflakeProgrammingError,
+                ),
             ],
             id="decimal-infinity-",
         ),
@@ -553,7 +555,7 @@ def test_numeric_literal(con, backend, expr, expected_types):
             # TODO(krzysztof-kwitt): Should we unify it?
             {
                 "bigquery": float("nan"),
-                "snowflake": "NaN",
+                "snowflake": float("nan"),
                 "sqlite": None,
                 "postgres": float("nan"),
                 "pandas": decimal.Decimal("NaN"),
@@ -564,7 +566,7 @@ def test_numeric_literal(con, backend, expr, expected_types):
             },
             {
                 "bigquery": "FLOAT64",
-                "snowflake": "VARCHAR",
+                "snowflake": "DOUBLE",
                 "sqlite": "null",
                 "trino": "decimal(2,1)",
                 "postgres": "numeric",
@@ -629,6 +631,11 @@ def test_numeric_literal(con, backend, expr, expected_types):
                     ["flink"],
                     "NaN is not supported in Flink SQL",
                     raises=ValueError,
+                ),
+                pytest.mark.notyet(
+                    ["snowflake"],
+                    "NaN is not allowed as a decimal value",
+                    raises=SnowflakeProgrammingError,
                 ),
             ],
             id="decimal-NaN",
@@ -1385,7 +1392,7 @@ def test_floating_mod(backend, alltypes, df):
 )
 @pytest.mark.notyet(["mssql"], raises=(sa.exc.OperationalError, sa.exc.DataError))
 @pytest.mark.notyet(["postgres"], raises=sa.exc.DataError)
-@pytest.mark.notyet(["snowflake"], raises=sa.exc.ProgrammingError)
+@pytest.mark.notyet(["snowflake"], raises=SnowflakeProgrammingError)
 @pytest.mark.notimpl(["exasol"], raises=(sa.exc.DBAPIError, com.IbisTypeError))
 def test_divide_by_zero(backend, alltypes, df, column, denominator):
     expr = alltypes[column] / denominator
@@ -1434,6 +1441,7 @@ def test_divide_by_zero(backend, alltypes, df, column, denominator):
         "pyspark",
         "polars",
         "flink",
+        "snowflake",
     ],
     reason="Not SQLAlchemy backends",
 )

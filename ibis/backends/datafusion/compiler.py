@@ -171,10 +171,6 @@ class DataFusionCompiler(SQLGlotCompiler):
             )
         return self.f.regexp_match(arg, self.f.concat("(", pattern, ")"))[index]
 
-    # @visit_node.register(ops.RegexReplace)
-    # def regex_replace(self, op, *, arg, pattern, replacement):
-    #     return self.f.regexp_replace(arg, pattern, replacement, sg.exp.convert("g"))
-
     @visit_node.register(ops.StringFind)
     def visit_StringFind(self, op, *, arg, substr, start, end):
         if end is not None:
