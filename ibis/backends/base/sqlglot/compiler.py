@@ -50,9 +50,13 @@ class AggGen:
 
 
 class FuncGen:
-    __slots__ = ()
+    __slots__ = ("namespace",)
+
+    def __init__(self, namespace: str | None = None) -> None:
+        self.namespace = namespace
 
     def __getattr__(self, name: str) -> partial:
+        name = ".".join(filter(None, (self.namespace, name)))
         return lambda *args, **kwargs: sg.func(name, *map(sge.convert, args), **kwargs)
 
     def __getitem__(self, key: str) -> partial:
@@ -413,15 +417,10 @@ class SQLGlotCompiler(abc.ABC):
 
     @visit_node.register(ops.TimestampNow)
     def visit_TimestampNow(self, op):
-        """DuckDB current timestamp defaults to timestamp + tz."""
-        return self.cast(sge.CurrentTimestamp(), dt.timestamp)
+        return sge.CurrentTimestamp()
 
     @visit_node.register(ops.Strftime)
     def visit_Strftime(self, op, *, arg, format_str):
-        if not isinstance(op.format_str, ops.Literal):
-            raise com.UnsupportedOperationError(
-                f"{self.dialect} `format_str` must be a literal `str`; got {type(op.format_str)}"
-            )
         return sge.TimeToStr(this=arg, format=format_str)
 
     @visit_node.register(ops.ExtractEpochSeconds)
@@ -541,7 +540,7 @@ class SQLGlotCompiler(abc.ABC):
 
     @visit_node.register(ops.RegexSearch)
     def visit_RegexSearch(self, op, *, arg, pattern):
-        return self.f.regexp_matches(arg, pattern, "s")
+        return sge.RegexpLike(this=arg, expression=pattern, flag=sge.convert("s"))
 
     @visit_node.register(ops.RegexReplace)
     def visit_RegexReplace(self, op, *, arg, pattern, replacement):

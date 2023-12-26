@@ -624,7 +624,7 @@ jobs:
   #     - run: python -m pip install --upgrade pip 'poetry==1.7.1'
   #
   #     - name: remove deps that are not compatible with sqlalchemy 2
-  #       run: poetry remove snowflake-sqlalchemy sqlalchemy-exasol
+  #       run: poetry remove sqlalchemy-exasol
   #
   #     - name: add sqlalchemy 2
   #       run: poetry add --lock --optional 'sqlalchemy>=2,<3'

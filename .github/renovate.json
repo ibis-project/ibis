@@ -83,10 +83,7 @@
       "addLabels": ["pyspark"]
     },
     {
-      "matchPackagePatterns": [
-        "snowflake-connector-python",
-        "snowflake-sqlalchemy"
-      ],
+      "matchPackagePatterns": ["snowflake-connector-python"],
       "addLabels": ["snowflake"]
     },
     {

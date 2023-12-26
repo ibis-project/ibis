@@ -69,3 +69,8 @@ try:
     from deltalake import PyDeltaTableError
 except ImportError:
     PyDeltaTableError = None
+
+try:
+    from snowflake.connector.errors import ProgrammingError as SnowflakeProgrammingError
+except ImportError:
+    SnowflakeProgrammingError = None
