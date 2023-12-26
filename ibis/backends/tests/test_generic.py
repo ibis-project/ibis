@@ -1542,6 +1542,11 @@ def test_static_table_slice(backend, slc, expected_count_fn):
     raises=TrinoUserError,
     reason="backend doesn't support dynamic limit/offset",
 )
+@pytest.mark.notyet(
+    ["snowflake"],
+    raises=SnowflakeProgrammingError,
+    reason="backend doesn't support dynamic limit/offset",
+)
 @pytest.mark.notimpl(
     ["mssql"],
     raises=sa.exc.CompileError,
@@ -1588,6 +1593,11 @@ def test_dynamic_table_slice(backend, slc, expected_count_fn):
 @pytest.mark.notyet(
     ["mysql"],
     raises=MySQLProgrammingError,
+    reason="backend doesn't support dynamic limit/offset",
+)
+@pytest.mark.notyet(
+    ["snowflake"],
+    raises=SnowflakeProgrammingError,
     reason="backend doesn't support dynamic limit/offset",
 )
 @pytest.mark.notyet(

@@ -788,7 +788,7 @@ def test_simple_ungrouped_window_with_scalar_order_by(alltypes):
                 pytest.mark.notyet(
                     ["snowflake"],
                     reason="backend requires ordering",
-                    raises=sa.exc.ProgrammingError,
+                    raises=SnowflakeProgrammingError,
                 ),
             ],
         ),
@@ -823,7 +823,7 @@ def test_simple_ungrouped_window_with_scalar_order_by(alltypes):
                 pytest.mark.notyet(
                     ["snowflake"],
                     reason="backend requires ordering",
-                    raises=sa.exc.ProgrammingError,
+                    raises=SnowflakeProgrammingError,
                 ),
             ],
         ),

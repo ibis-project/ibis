@@ -250,7 +250,7 @@ def test_numeric_literal(con, backend, expr, expected_types):
             # TODO(krzysztof-kwitt): Should we unify it?
             {
                 "bigquery": decimal.Decimal("1.1"),
-                "snowflake": "1.1",
+                "snowflake": 1.1,
                 "sqlite": 1.1,
                 "trino": decimal.Decimal("1.1"),
                 "dask": decimal.Decimal("1.1"),
@@ -268,7 +268,7 @@ def test_numeric_literal(con, backend, expr, expected_types):
             },
             {
                 "bigquery": "NUMERIC",
-                "snowflake": "VARCHAR",
+                "snowflake": "DECIMAL",
                 "sqlite": "real",
                 "impala": "DECIMAL(9,0)",
                 "trino": "decimal(18,3)",
@@ -291,7 +291,7 @@ def test_numeric_literal(con, backend, expr, expected_types):
             # TODO(krzysztof-kwitt): Should we unify it?
             {
                 "bigquery": decimal.Decimal("1.1"),
-                "snowflake": "1.100000000",
+                "snowflake": 1.1,
                 "sqlite": 1.1,
                 "trino": decimal.Decimal("1.1"),
                 "duckdb": decimal.Decimal("1.100000000"),
@@ -327,7 +327,6 @@ def test_numeric_literal(con, backend, expr, expected_types):
             # TODO(krzysztof-kwitt): Should we unify it?
             {
                 "bigquery": decimal.Decimal("1.1"),
-                "snowflake": "1.10000000000000000000000000000000000000",
                 "sqlite": 1.1,
                 "dask": decimal.Decimal("1.1"),
                 "postgres": decimal.Decimal("1.1"),
@@ -343,7 +342,6 @@ def test_numeric_literal(con, backend, expr, expected_types):
             {
                 "bigquery": "BIGNUMERIC",
                 "clickhouse": "Decimal(76, 38)",
-                "snowflake": "VARCHAR",
                 "sqlite": "real",
                 "trino": "decimal(2,1)",
                 "duckdb": "DECIMAL(18,3)",

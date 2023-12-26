@@ -1445,6 +1445,7 @@ def test_interval_add_cast_column(backend, alltypes, df):
             ),
             "%Y%m%d",
             marks=[
+                pytest.mark.notimpl(["pandas"], raises=com.OperationNotDefinedError),
                 pytest.mark.notimpl(
                     ["polars"],
                     raises=com.UnsupportedArgumentError,
@@ -1587,7 +1588,7 @@ def test_integer_to_timestamp(backend, con, unit):
                         "(snowflake.connector.errors.ProgrammingError) 100096 (22007): "
                         "Can't parse '11/01/10' as timestamp with format '%m/%d/%y'"
                     ),
-                    raises=sa.exc.ProgrammingError,
+                    raises=SnowflakeProgrammingError,
                 ),
                 pytest.mark.never(
                     ["flink"],
@@ -2469,7 +2470,7 @@ def test_delta(con, start, end, unit, expected):
                 ),
                 pytest.mark.notimpl(
                     ["snowflake"],
-                    raises=sa.exc.ProgrammingError,
+                    raises=SnowflakeProgrammingError,
                     reason="snowflake doesn't support sub-second interval precision",
                 ),
                 pytest.mark.notimpl(
