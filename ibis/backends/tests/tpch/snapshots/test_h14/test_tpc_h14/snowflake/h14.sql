@@ -1,67 +1,67 @@
 SELECT
   (
     SUM(
-      IFF("t7"."p_type" LIKE 'PROMO%', "t7"."l_extendedprice" * (
-        1 - "t7"."l_discount"
+      IFF("t8"."p_type" LIKE 'PROMO%', "t8"."l_extendedprice" * (
+        1 - "t8"."l_discount"
       ), 0)
     ) * 100
-  ) / SUM("t7"."l_extendedprice" * (
-    1 - "t7"."l_discount"
+  ) / SUM("t8"."l_extendedprice" * (
+    1 - "t8"."l_discount"
   )) AS "promo_revenue"
 FROM (
   SELECT
-    "t6"."l_orderkey" AS "l_orderkey",
-    "t6"."l_partkey" AS "l_partkey",
-    "t6"."l_suppkey" AS "l_suppkey",
-    "t6"."l_linenumber" AS "l_linenumber",
-    "t6"."l_quantity" AS "l_quantity",
-    "t6"."l_extendedprice" AS "l_extendedprice",
-    "t6"."l_discount" AS "l_discount",
-    "t6"."l_tax" AS "l_tax",
-    "t6"."l_returnflag" AS "l_returnflag",
-    "t6"."l_linestatus" AS "l_linestatus",
-    "t6"."l_shipdate" AS "l_shipdate",
-    "t6"."l_commitdate" AS "l_commitdate",
-    "t6"."l_receiptdate" AS "l_receiptdate",
-    "t6"."l_shipinstruct" AS "l_shipinstruct",
-    "t6"."l_shipmode" AS "l_shipmode",
-    "t6"."l_comment" AS "l_comment",
-    "t6"."p_partkey" AS "p_partkey",
-    "t6"."p_name" AS "p_name",
-    "t6"."p_mfgr" AS "p_mfgr",
-    "t6"."p_brand" AS "p_brand",
-    "t6"."p_type" AS "p_type",
-    "t6"."p_size" AS "p_size",
-    "t6"."p_container" AS "p_container",
-    "t6"."p_retailprice" AS "p_retailprice",
-    "t6"."p_comment" AS "p_comment"
+    "t7"."l_orderkey",
+    "t7"."l_partkey",
+    "t7"."l_suppkey",
+    "t7"."l_linenumber",
+    "t7"."l_quantity",
+    "t7"."l_extendedprice",
+    "t7"."l_discount",
+    "t7"."l_tax",
+    "t7"."l_returnflag",
+    "t7"."l_linestatus",
+    "t7"."l_shipdate",
+    "t7"."l_commitdate",
+    "t7"."l_receiptdate",
+    "t7"."l_shipinstruct",
+    "t7"."l_shipmode",
+    "t7"."l_comment",
+    "t7"."p_partkey",
+    "t7"."p_name",
+    "t7"."p_mfgr",
+    "t7"."p_brand",
+    "t7"."p_type",
+    "t7"."p_size",
+    "t7"."p_container",
+    "t7"."p_retailprice",
+    "t7"."p_comment"
   FROM (
     SELECT
-      "t2"."l_orderkey" AS "l_orderkey",
-      "t2"."l_partkey" AS "l_partkey",
-      "t2"."l_suppkey" AS "l_suppkey",
-      "t2"."l_linenumber" AS "l_linenumber",
-      "t2"."l_quantity" AS "l_quantity",
-      "t2"."l_extendedprice" AS "l_extendedprice",
-      "t2"."l_discount" AS "l_discount",
-      "t2"."l_tax" AS "l_tax",
-      "t2"."l_returnflag" AS "l_returnflag",
-      "t2"."l_linestatus" AS "l_linestatus",
-      "t2"."l_shipdate" AS "l_shipdate",
-      "t2"."l_commitdate" AS "l_commitdate",
-      "t2"."l_receiptdate" AS "l_receiptdate",
-      "t2"."l_shipinstruct" AS "l_shipinstruct",
-      "t2"."l_shipmode" AS "l_shipmode",
-      "t2"."l_comment" AS "l_comment",
-      "t4"."p_partkey" AS "p_partkey",
-      "t4"."p_name" AS "p_name",
-      "t4"."p_mfgr" AS "p_mfgr",
-      "t4"."p_brand" AS "p_brand",
-      "t4"."p_type" AS "p_type",
-      "t4"."p_size" AS "p_size",
-      "t4"."p_container" AS "p_container",
-      "t4"."p_retailprice" AS "p_retailprice",
-      "t4"."p_comment" AS "p_comment"
+      "t4"."l_orderkey",
+      "t4"."l_partkey",
+      "t4"."l_suppkey",
+      "t4"."l_linenumber",
+      "t4"."l_quantity",
+      "t4"."l_extendedprice",
+      "t4"."l_discount",
+      "t4"."l_tax",
+      "t4"."l_returnflag",
+      "t4"."l_linestatus",
+      "t4"."l_shipdate",
+      "t4"."l_commitdate",
+      "t4"."l_receiptdate",
+      "t4"."l_shipinstruct",
+      "t4"."l_shipmode",
+      "t4"."l_comment",
+      "t5"."p_partkey",
+      "t5"."p_name",
+      "t5"."p_mfgr",
+      "t5"."p_brand",
+      "t5"."p_type",
+      "t5"."p_size",
+      "t5"."p_container",
+      "t5"."p_retailprice",
+      "t5"."p_comment"
     FROM (
       SELECT
         "t0"."L_ORDERKEY" AS "l_orderkey",
@@ -81,7 +81,7 @@ FROM (
         "t0"."L_SHIPMODE" AS "l_shipmode",
         "t0"."L_COMMENT" AS "l_comment"
       FROM "LINEITEM" AS "t0"
-    ) AS "t2"
+    ) AS "t4"
     INNER JOIN (
       SELECT
         "t1"."P_PARTKEY" AS "p_partkey",
@@ -94,10 +94,10 @@ FROM (
         "t1"."P_RETAILPRICE" AS "p_retailprice",
         "t1"."P_COMMENT" AS "p_comment"
       FROM "PART" AS "t1"
-    ) AS "t4"
-      ON "t2"."l_partkey" = "t4"."p_partkey"
-  ) AS "t6"
+    ) AS "t5"
+      ON "t4"."l_partkey" = "t5"."p_partkey"
+  ) AS "t7"
   WHERE
-    "t6"."l_shipdate" >= DATEFROMPARTS(1995, 9, 1)
-    AND "t6"."l_shipdate" < DATEFROMPARTS(1995, 10, 1)
-) AS "t7"
+    "t7"."l_shipdate" >= DATEFROMPARTS(1995, 9, 1)
+    AND "t7"."l_shipdate" < DATEFROMPARTS(1995, 10, 1)
+) AS "t8"
