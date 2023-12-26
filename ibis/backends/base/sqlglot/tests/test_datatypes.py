@@ -42,6 +42,7 @@ roundtripable_types = st.deferred(
         | its.geometry_dtypes(nullable=true)
         | its.geography_dtypes(nullable=true)
         | its.decimal_dtypes(nullable=true)
+        | its.interval_dtype(nullable=true)
     )
 )
 
