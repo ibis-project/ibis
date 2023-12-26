@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import abc
 from functools import partial
 
 import sqlglot as sg
@@ -123,10 +122,8 @@ _to_sqlglot_types = {
 
 
 class SqlglotType(TypeMapper):
-    @property
-    @abc.abstractmethod
-    def dialect(self) -> str:
-        """The dialect this parser is for."""
+    dialect: str | None = None
+    """The dialect this parser is for."""
 
     default_nullable = True
     """Default nullability when not specified."""
@@ -231,7 +228,7 @@ class SqlglotType(TypeMapper):
 
     @classmethod
     def _from_sqlglot_INTERVAL(
-        cls, precision_or_span: sge.DataTypeParam | sge.IntervalSpan | None = None
+        cls, precision_or_span: sge.IntervalSpan | None = None
     ) -> dt.Interval:
         nullable = cls.default_nullable
         if precision_or_span is None:
@@ -239,10 +236,10 @@ class SqlglotType(TypeMapper):
 
         if isinstance(precision_or_span, str):
             return dt.Interval(precision_or_span, nullable=nullable)
-        elif isinstance(precision_or_span, sge.DataTypeParam):
-            return dt.Interval(str(precision_or_span), nullable=nullable)
         elif isinstance(precision_or_span, sge.IntervalSpan):
             return dt.Interval(unit=precision_or_span.this.this, nullable=nullable)
+        elif precision_or_span is None:
+            raise com.IbisTypeError("Interval precision is None")
         else:
             raise com.IbisTypeError(precision_or_span)
 
@@ -274,12 +271,10 @@ class SqlglotType(TypeMapper):
 
     @classmethod
     def _from_ibis_Interval(cls, dtype: dt.Interval) -> sge.DataType:
-        if (unit := dtype.unit) is None:
-            return sge.DataType(this=typecode.INTERVAL)
-
+        assert dtype.unit is not None, "interval unit cannot be None"
         return sge.DataType(
             this=typecode.INTERVAL,
-            expressions=[sge.IntervalSpan(this=sge.Var(this=unit.name))],
+            expressions=[sge.IntervalSpan(this=sge.Var(this=dtype.unit.name))],
         )
 
     @classmethod
