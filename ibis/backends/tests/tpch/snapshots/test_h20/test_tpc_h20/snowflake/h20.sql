@@ -1,19 +1,19 @@
 SELECT
-  "t12"."s_name" AS "s_name",
-  "t12"."s_address" AS "s_address"
+  "t13"."s_name",
+  "t13"."s_address"
 FROM (
   SELECT
-    "t5"."s_suppkey" AS "s_suppkey",
-    "t5"."s_name" AS "s_name",
-    "t5"."s_address" AS "s_address",
-    "t5"."s_nationkey" AS "s_nationkey",
-    "t5"."s_phone" AS "s_phone",
-    "t5"."s_acctbal" AS "s_acctbal",
-    "t5"."s_comment" AS "s_comment",
-    "t7"."n_nationkey" AS "n_nationkey",
-    "t7"."n_name" AS "n_name",
-    "t7"."n_regionkey" AS "n_regionkey",
-    "t7"."n_comment" AS "n_comment"
+    "t8"."s_suppkey",
+    "t8"."s_name",
+    "t8"."s_address",
+    "t8"."s_nationkey",
+    "t8"."s_phone",
+    "t8"."s_acctbal",
+    "t8"."s_comment",
+    "t9"."n_nationkey",
+    "t9"."n_name",
+    "t9"."n_regionkey",
+    "t9"."n_comment"
   FROM (
     SELECT
       "t0"."S_SUPPKEY" AS "s_suppkey",
@@ -24,7 +24,7 @@ FROM (
       "t0"."S_ACCTBAL" AS "s_acctbal",
       "t0"."S_COMMENT" AS "s_comment"
     FROM "SUPPLIER" AS "t0"
-  ) AS "t5"
+  ) AS "t8"
   INNER JOIN (
     SELECT
       "t2"."N_NATIONKEY" AS "n_nationkey",
@@ -32,27 +32,35 @@ FROM (
       "t2"."N_REGIONKEY" AS "n_regionkey",
       "t2"."N_COMMENT" AS "n_comment"
     FROM "NATION" AS "t2"
-  ) AS "t7"
-    ON "t5"."s_nationkey" = "t7"."n_nationkey"
-) AS "t12"
+  ) AS "t9"
+    ON "t8"."s_nationkey" = "t9"."n_nationkey"
+) AS "t13"
 WHERE
-  "t12"."n_name" = 'CANADA'
-  AND "t12"."s_suppkey" IN ((
+  "t13"."n_name" = 'CANADA'
+  AND "t13"."s_suppkey" IN (
     SELECT
-      "t1"."PS_SUPPKEY" AS "ps_suppkey"
-    FROM "PARTSUPP" AS "t1"
+      "t6"."ps_suppkey"
+    FROM (
+      SELECT
+        "t1"."PS_PARTKEY" AS "ps_partkey",
+        "t1"."PS_SUPPKEY" AS "ps_suppkey",
+        "t1"."PS_AVAILQTY" AS "ps_availqty",
+        "t1"."PS_SUPPLYCOST" AS "ps_supplycost",
+        "t1"."PS_COMMENT" AS "ps_comment"
+      FROM "PARTSUPP" AS "t1"
+    ) AS "t6"
     WHERE
-      "t1"."PS_PARTKEY" IN ((
+      "t6"."ps_partkey" IN (
         SELECT
           "t3"."P_PARTKEY" AS "p_partkey"
         FROM "PART" AS "t3"
         WHERE
           "t3"."P_NAME" LIKE 'forest%'
-      ))
-      AND "t1"."PS_AVAILQTY" > (
+      )
+      AND "t6"."ps_availqty" > (
         (
           SELECT
-            SUM("t9"."l_quantity") AS "Sum(l_quantity)"
+            SUM("t11"."l_quantity") AS "Sum(l_quantity)"
           FROM (
             SELECT
               "t4"."L_ORDERKEY" AS "l_orderkey",
@@ -73,13 +81,13 @@ WHERE
               "t4"."L_COMMENT" AS "l_comment"
             FROM "LINEITEM" AS "t4"
             WHERE
-              "t4"."L_PARTKEY" = "t1"."PS_PARTKEY"
-              AND "t4"."L_SUPPKEY" = "t1"."PS_SUPPKEY"
+              "t4"."L_PARTKEY" = "t6"."ps_partkey"
+              AND "t4"."L_SUPPKEY" = "t6"."ps_suppkey"
               AND "t4"."L_SHIPDATE" >= DATEFROMPARTS(1994, 1, 1)
               AND "t4"."L_SHIPDATE" < DATEFROMPARTS(1995, 1, 1)
-          ) AS "t9"
+          ) AS "t11"
         ) * 0.5
       )
-  ))
+  )
 ORDER BY
-  "t12"."s_name" ASC
+  "t13"."s_name" ASC

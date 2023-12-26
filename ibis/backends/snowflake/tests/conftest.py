@@ -3,19 +3,21 @@ from __future__ import annotations
 import concurrent.futures
 import os
 import tempfile
+from contextlib import closing
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
+from urllib.parse import parse_qs, urlparse
 from urllib.request import urlretrieve
 
 import pyarrow.parquet as pq
 import pyarrow_hotfix  # noqa: F401
 import pytest
-import sqlalchemy as sa
+import snowflake.connector as sc
 import sqlglot as sg
 
 import ibis
+from ibis.backends.base.sqlglot.datatypes import SnowflakeType
 from ibis.backends.conftest import TEST_TABLES
-from ibis.backends.snowflake.datatypes import SnowflakeType
 from ibis.backends.tests.base import BackendTest
 from ibis.formats.pyarrow import PyArrowSchema
 
@@ -54,8 +56,8 @@ def copy_into(con, data_dir: Path, table: str) -> None:
         f"$1:{name}{'::VARCHAR' * typ.is_timestamp()}::{SnowflakeType.to_string(typ)}"
         for name, typ in schema.items()
     )
-    con.exec_driver_sql(f"PUT {file.as_uri()} @{stage}/{file.name}")
-    con.exec_driver_sql(
+    con.execute(f"PUT {file.as_uri()} @{stage}/{file.name}")
+    con.execute(
         f"""
         COPY INTO {table}
         FROM (SELECT {columns} FROM @{stage}/{file.name})
@@ -67,7 +69,7 @@ def copy_into(con, data_dir: Path, table: str) -> None:
 class TestConf(BackendTest):
     supports_map = True
     default_identifier_case_fn = staticmethod(str.upper)
-    deps = ("snowflake.connector", "snowflake.sqlalchemy")
+    deps = ("snowflake.connector",)
     supports_tpch = True
 
     def load_tpch(self) -> None:
@@ -76,7 +78,8 @@ class TestConf(BackendTest):
     def _tpch_table(self, name: str):
         t = self.connection.table(
             self.default_identifier_case_fn(name),
-            schema="SNOWFLAKE_SAMPLE_DATA.TPCH_SF1",
+            database="SNOWFLAKE_SAMPLE_DATA",
+            schema="TPCH_SF1",
         )
         return t.rename("snake_case")
 
@@ -97,42 +100,50 @@ class TestConf(BackendTest):
 
     def _load_data(self, **_: Any) -> None:
         """Load test data into a Snowflake backend instance."""
-        snowflake_url = _get_url()
 
-        raw_url = sa.engine.make_url(snowflake_url)
-        _, schema = raw_url.database.rsplit("/", 1)
-        url = raw_url.set(database="")
-        con = sa.create_engine(
-            url, connect_args={"session_parameters": {"MULTI_STATEMENT_COUNT": "0"}}
-        )
+        url = urlparse(_get_url())
+        db, schema = url.path[1:].split("/", 1)
+        (warehouse,) = parse_qs(url.query)["warehouse"]
+        connect_args = {
+            "user": url.username,
+            "password": url.password,
+            "account": url.hostname,
+            "warehouse": warehouse,
+        }
 
-        dbschema = f"ibis_testing.{schema}"
+        session_parameters = {
+            "MULTI_STATEMENT_COUNT": 0,
+            "JSON_INDENT": 0,
+            "PYTHON_CONNECTOR_QUERY_RESULT_FORMAT": "arrow_force",
+        }
 
-        with con.begin() as c:
-            c.exec_driver_sql(
-                f"""\
-CREATE DATABASE IF NOT EXISTS ibis_testing;
-USE DATABASE ibis_testing;
-CREATE SCHEMA IF NOT EXISTS {dbschema};
-USE SCHEMA {dbschema};
-CREATE TEMP STAGE ibis_testing;
-CREATE STAGE IF NOT EXISTS models;
-{self.script_dir.joinpath("snowflake.sql").read_text()}"""
+        dbschema = f"{db}.{schema}"
+
+        with closing(
+            sc.connect(**connect_args, session_parameters=session_parameters)
+        ) as con, closing(con.cursor()) as c:
+            c.execute(
+                f"""
+                CREATE DATABASE IF NOT EXISTS {db};
+                CREATE SCHEMA IF NOT EXISTS {dbschema};
+                USE {dbschema};
+                CREATE TEMP STAGE {db};
+                CREATE STAGE IF NOT EXISTS models;
+                {self.script_dir.joinpath("snowflake.sql").read_text()}
+                """
             )
 
-        with tempfile.TemporaryDirectory() as d:
-            path, _ = urlretrieve(
-                "https://storage.googleapis.com/ibis-testing-data/model.joblib",
-                os.path.join(d, "model.joblib"),
-            )
+            with tempfile.TemporaryDirectory() as d:
+                path, _ = urlretrieve(
+                    "https://storage.googleapis.com/ibis-testing-data/model.joblib",
+                    os.path.join(d, "model.joblib"),
+                )
 
-            assert os.path.exists(path)
-            assert os.path.getsize(path) > 0
+                assert os.path.exists(path)
+                assert os.path.getsize(path)
 
-            with con.begin() as c:
-                c.exec_driver_sql(f"PUT {Path(path).as_uri()} @MODELS")
+                c.execute(f"PUT {Path(path).as_uri()} @MODELS")
 
-        with con.begin() as c:
             # not much we can do to make this faster, but running these in
             # multiple threads seems to save about 2x
             with concurrent.futures.ThreadPoolExecutor() as exe:

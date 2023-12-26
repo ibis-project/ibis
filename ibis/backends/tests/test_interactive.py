@@ -29,8 +29,8 @@ def queries(monkeypatch):
 
 
 @pytest.fixture(scope="module")
-def table(con):
-    return con.table("functional_alltypes")
+def table(backend):
+    return backend.functional_alltypes
 
 
 def test_interactive_execute_on_repr(table, queries, snapshot):
