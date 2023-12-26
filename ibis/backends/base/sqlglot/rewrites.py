@@ -88,6 +88,16 @@ def window_function_to_window(_):
     )
 
 
+@replace(p.Log2)
+def replace_log2(_):
+    return ops.Log(_.arg, base=2)
+
+
+@replace(p.Log10)
+def replace_log10(_):
+    return ops.Log(_.arg, base=10)
+
+
 @replace(Object(Select, Object(Select)))
 def merge_select_select(_):
     """Merge subsequent Select relations into one.
