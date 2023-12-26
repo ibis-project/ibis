@@ -395,10 +395,6 @@ class ClickHouseCompiler(SQLGlotCompiler):
             delimiter, self.cast(arg, dt.String(nullable=False))
         )
 
-    @visit_node.register(ops.StringJoin)
-    def visit_StringJoin(self, op, *, sep, arg):
-        return self.f.arrayStringConcat(self.f.array(*arg), sep)
-
     @visit_node.register(ops.Capitalize)
     def visit_Capitalize(self, op, *, arg):
         return self.f.concat(
