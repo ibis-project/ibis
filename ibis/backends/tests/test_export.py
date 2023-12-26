@@ -22,12 +22,16 @@ try:
 except ImportError:
     PyDeltaTableError = None
 
-
 try:
     from duckdb import NotImplementedException as DuckDBNotImplementedException
     from duckdb import ParserException as DuckDBParserException
 except ImportError:
     DuckDBNotImplementedException = DuckDBParserException = None
+
+try:
+    from snowflake.connector.errors import ProgrammingError as SnowflakeProgrammingError
+except ImportError:
+    SnowflakeProgrammingError = None
 
 
 limit = [
@@ -366,9 +370,9 @@ def test_table_to_csv_writer_kwargs(delimiter, tmp_path, awards_players):
                 pytest.mark.notyet(["impala"], reason="precision not supported"),
                 pytest.mark.notyet(["duckdb"], reason="precision is out of range"),
                 pytest.mark.notyet(
-                    ["druid", "mssql", "snowflake", "trino"],
-                    raises=sa.exc.ProgrammingError,
+                    ["druid", "mssql", "trino"], raises=sa.exc.ProgrammingError
                 ),
+                pytest.mark.notyet(["snowflake"], raises=SnowflakeProgrammingError),
                 pytest.mark.notyet(["oracle"], raises=sa.exc.DatabaseError),
                 pytest.mark.notyet(["mysql"], raises=sa.exc.OperationalError),
                 pytest.mark.notyet(

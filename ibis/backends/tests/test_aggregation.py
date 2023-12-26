@@ -48,6 +48,11 @@ try:
 except ImportError:
     PolarsInvalidOperationError = None
 
+try:
+    from snowflake.connector.errors import ProgrammingError as SnowflakeProgrammingError
+except ImportError:
+    SnowflakeProgrammingError = None
+
 
 @reduction(input_type=[dt.double], output_type=dt.double)
 def mean_udf(s):
@@ -842,7 +847,7 @@ def test_reduction_ops(
             id="cond",
             marks=[
                 pytest.mark.notyet(
-                    ["snowflake", "mysql"],
+                    ["mysql"],
                     raises=com.UnsupportedOperationError,
                     reason="backend does not support filtered count distinct with more than one column",
                 ),
@@ -1228,7 +1233,7 @@ def test_median(alltypes, df):
 @pytest.mark.notimpl(["dask"], raises=(AssertionError, NotImplementedError, TypeError))
 @pytest.mark.notyet(
     ["snowflake"],
-    raises=sa.exc.ProgrammingError,
+    raises=SnowflakeProgrammingError,
     reason="doesn't support median of strings",
 )
 @pytest.mark.notyet(["polars"], raises=PolarsInvalidOperationError)
@@ -1269,7 +1274,7 @@ def test_string_quantile(alltypes, func):
 @pytest.mark.broken(["druid"], raises=AttributeError)
 @pytest.mark.notyet(
     ["snowflake"],
-    raises=sa.exc.ProgrammingError,
+    raises=SnowflakeProgrammingError,
     reason="doesn't support median of dates",
 )
 @pytest.mark.notimpl(["dask"], raises=(AssertionError, NotImplementedError, TypeError))
@@ -1640,7 +1645,8 @@ def test_grouped_case(backend, con):
 )
 @pytest.mark.notyet(["impala", "flink"], raises=com.UnsupportedOperationError)
 @pytest.mark.notyet(["clickhouse"], raises=ClickhouseDatabaseError)
-@pytest.mark.notyet(["druid", "trino", "snowflake"], raises=sa.exc.ProgrammingError)
+@pytest.mark.notyet(["druid", "trino"], raises=sa.exc.ProgrammingError)
+@pytest.mark.notyet(["snowflake"], raises=SnowflakeProgrammingError)
 @pytest.mark.notyet(["mysql"], raises=sa.exc.NotSupportedError)
 @pytest.mark.notyet(["oracle"], raises=sa.exc.DatabaseError)
 @pytest.mark.notyet(["pyspark"], raises=PysparkAnalysisException)

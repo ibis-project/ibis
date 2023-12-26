@@ -5,7 +5,7 @@ from pytest import param
 
 import ibis
 import ibis.expr.datatypes as dt
-from ibis.backends.snowflake.datatypes import SnowflakeType
+from ibis.backends.base.sqlglot.datatypes import SnowflakeType
 from ibis.backends.snowflake.tests.conftest import _get_url
 from ibis.util import gen_name
 
@@ -87,70 +87,32 @@ user_dtypes = [
 )
 def test_extract_type_from_table_query(con, snowflake_type, ibis_type):
     name = gen_name("test_extract_type_from_table")
-    with con.begin() as c:
-        c.exec_driver_sql(f'CREATE TEMP TABLE "{name}" ("a" {snowflake_type})')
-
+    query = f'CREATE TEMP TABLE "{name}" ("a" {snowflake_type})'
+    con.raw_sql(query).close()
     expected_schema = ibis.schema(dict(a=ibis_type))
 
     t = con.sql(f'SELECT "a" FROM "{name}"')
     assert t.schema() == expected_schema
 
 
-broken_timestamps = pytest.mark.xfail(
-    raises=AssertionError,
-    reason=(
-        "snowflake-sqlalchemy timestamp types are broken and do not preserve scale "
-        "information"
-    ),
-)
-
-
 @pytest.mark.parametrize(
     ("snowflake_type", "ibis_type"),
     [
-        # what the result SHOULD be
-        param("DATETIME", dt.Timestamp(scale=9), marks=broken_timestamps),
-        param("TIMESTAMP", dt.Timestamp(scale=9), marks=broken_timestamps),
-        param("TIMESTAMP(3)", dt.Timestamp(scale=3), marks=broken_timestamps),
-        param(
-            "TIMESTAMP_LTZ",
-            dt.Timestamp(timezone="UTC", scale=9),
-            marks=broken_timestamps,
-        ),
-        param(
-            "TIMESTAMP_LTZ(3)",
-            dt.Timestamp(timezone="UTC", scale=3),
-            marks=broken_timestamps,
-        ),
-        param("TIMESTAMP_NTZ", dt.Timestamp(scale=9), marks=broken_timestamps),
-        param("TIMESTAMP_NTZ(3)", dt.Timestamp(scale=3), marks=broken_timestamps),
-        param(
-            "TIMESTAMP_TZ",
-            dt.Timestamp(timezone="UTC", scale=9),
-            marks=broken_timestamps,
-        ),
-        param(
-            "TIMESTAMP_TZ(3)",
-            dt.Timestamp(timezone="UTC", scale=3),
-            marks=broken_timestamps,
-        ),
-        # what the result ACTUALLY is
-        ("DATETIME", dt.timestamp),
-        ("TIMESTAMP", dt.timestamp),
-        ("TIMESTAMP(3)", dt.timestamp),
-        ("TIMESTAMP_LTZ", dt.Timestamp(timezone="UTC")),
-        ("TIMESTAMP_LTZ(3)", dt.Timestamp(timezone="UTC")),
-        ("TIMESTAMP_NTZ", dt.timestamp),
-        ("TIMESTAMP_NTZ(3)", dt.timestamp),
-        ("TIMESTAMP_TZ", dt.Timestamp(timezone="UTC")),
-        ("TIMESTAMP_TZ(3)", dt.Timestamp(timezone="UTC")),
+        param("DATETIME", dt.Timestamp(scale=9)),
+        param("TIMESTAMP", dt.Timestamp(scale=9)),
+        param("TIMESTAMP(3)", dt.Timestamp(scale=3)),
+        param("TIMESTAMP_LTZ", dt.Timestamp(timezone="UTC", scale=9)),
+        param("TIMESTAMP_LTZ(3)", dt.Timestamp(timezone="UTC", scale=3)),
+        param("TIMESTAMP_NTZ", dt.Timestamp(scale=9)),
+        param("TIMESTAMP_NTZ(3)", dt.Timestamp(scale=3)),
+        param("TIMESTAMP_TZ", dt.Timestamp(timezone="UTC", scale=9)),
+        param("TIMESTAMP_TZ(3)", dt.Timestamp(timezone="UTC", scale=3)),
     ],
 )
-def test_extract_timestamp_from_table_sqlalchemy(con, snowflake_type, ibis_type):
-    """snowflake-sqlalchemy doesn't preserve timestamp scale information"""
+def test_extract_timestamp_from_table(con, snowflake_type, ibis_type):
     name = gen_name("test_extract_type_from_table")
-    with con.begin() as c:
-        c.exec_driver_sql(f'CREATE TEMP TABLE "{name}" ("a" {snowflake_type})')
+    query = f'CREATE TEMP TABLE "{name}" ("a" {snowflake_type})'
+    con.raw_sql(query).close()
 
     expected_schema = ibis.schema(dict(a=ibis_type))
 

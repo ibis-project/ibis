@@ -30,12 +30,10 @@ try:
 except ImportError:
     ClickHouseOperationalError = None
 
-
 try:
     from pyspark.sql.utils import AnalysisException
 except ImportError:
     AnalysisException = None
-
 
 try:
     from impala.error import HiveServer2Error
@@ -47,11 +45,15 @@ try:
 except ImportError:
     Py4JJavaError = None
 
-
 try:
     from google.api_core.exceptions import BadRequest as GoogleBadRequest
 except ImportError:
     GoogleBadRequest = None
+
+try:
+    from snowflake.connector.errors import ProgrammingError as SnowflakeProgrammingError
+except ImportError:
+    SnowflakeProgrammingError = None
 
 
 # adapted from https://gist.github.com/xmnlab/2c1f93df1a6c6bde4e32c8579117e9cc
@@ -829,7 +831,7 @@ def test_simple_ungrouped_window_with_scalar_order_by(alltypes):
                 pytest.mark.notyet(
                     ["snowflake"],
                     reason="backend requires ordering",
-                    raises=sa.exc.ProgrammingError,
+                    raises=SnowflakeProgrammingError,
                 ),
             ],
         ),
@@ -869,7 +871,7 @@ def test_simple_ungrouped_window_with_scalar_order_by(alltypes):
                 pytest.mark.notyet(
                     ["snowflake"],
                     reason="backend requires ordering",
-                    raises=sa.exc.ProgrammingError,
+                    raises=SnowflakeProgrammingError,
                 ),
             ],
         ),
@@ -970,7 +972,7 @@ def test_ungrouped_unbounded_window(
 
 
 @pytest.mark.notimpl(["polars"], raises=com.OperationNotDefinedError)
-@pytest.mark.notimpl(["snowflake"], raises=sa.exc.ProgrammingError)
+@pytest.mark.notimpl(["snowflake"], raises=SnowflakeProgrammingError)
 @pytest.mark.notimpl(
     ["impala"], raises=HiveServer2Error, reason="limited RANGE support"
 )

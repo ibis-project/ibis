@@ -43,13 +43,10 @@ except ImportError:
 
 try:
     from clickhouse_connect.driver.exceptions import (
-        DatabaseError as ClickhouseDatabaseError,
-    )
-    from clickhouse_connect.driver.exceptions import (
         InternalError as ClickhouseOperationalError,
     )
 except ImportError:
-    ClickhouseOperationalError = ClickhouseDatabaseError = None
+    ClickhouseOperationalError = None
 
 try:
     from impala.error import (
@@ -75,6 +72,11 @@ try:
     from pyspark.sql.utils import IllegalArgumentException
 except ImportError:
     IllegalArgumentException = None
+
+try:
+    from snowflake.connector.errors import ProgrammingError as SnowflakeProgrammingError
+except ImportError:
+    SnowflakeProgrammingError = None
 
 
 @pytest.mark.parametrize("attr", ["year", "month", "day"])
@@ -1653,42 +1655,14 @@ def test_interval_add_cast_column(backend, alltypes, df):
         param(
             lambda t: (
                 t.mutate(suffix="%d")
-                .select(
-                    [
-                        lambda t: t.timestamp_col.strftime("%Y%m" + t.suffix).name(
-                            "formatted"
-                        )
-                    ]
-                )
+                .select(formatted=lambda t: t.timestamp_col.strftime("%Y%m" + t.suffix))
                 .formatted
             ),
             "%Y%m%d",
             marks=[
+                pytest.mark.notimpl(["pandas"], raises=com.OperationNotDefinedError),
                 pytest.mark.notimpl(
-                    [
-                        "pandas",
-                    ],
-                    raises=com.OperationNotDefinedError,
-                ),
-                pytest.mark.notimpl(
-                    [
-                        "pyspark",
-                    ],
-                    raises=AttributeError,
-                    reason="'StringConcat' object has no attribute 'value'",
-                ),
-                pytest.mark.notimpl(
-                    [
-                        "postgres",
-                        "snowflake",
-                    ],
-                    raises=AttributeError,
-                    reason="Neither 'concat' object nor 'Comparator' object has an attribute 'value'",
-                ),
-                pytest.mark.notimpl(
-                    [
-                        "polars",
-                    ],
+                    ["polars"],
                     raises=com.UnsupportedArgumentError,
                     reason="Polars does not support columnar argument StringConcat()",
                 ),
@@ -1698,23 +1672,8 @@ def test_interval_add_cast_column(backend, alltypes, df):
                     raises=AttributeError,
                     reason="'StringConcat' object has no attribute 'value'",
                 ),
-                pytest.mark.notyet(
-                    ["duckdb"],
-                    raises=com.UnsupportedOperationError,
-                    reason=(
-                        "DuckDB format_str must be a literal `str`; got "
-                        "<class 'ibis.expr.operations.strings.StringConcat'>"
-                    ),
-                ),
                 pytest.mark.notimpl(
-                    ["druid"],
-                    raises=AttributeError,
-                    reason="'StringColumn' object has no attribute 'strftime'",
-                ),
-                pytest.mark.notimpl(
-                    ["flink"],
-                    raises=AttributeError,
-                    reason="'StringConcat' object has no attribute 'value'",
+                    ["druid", "flink", "postgres", "pyspark"], raises=AttributeError
                 ),
             ],
             id="column_format_str",
@@ -1863,7 +1822,7 @@ def test_integer_to_timestamp(backend, con, unit):
                         "(snowflake.connector.errors.ProgrammingError) 100096 (22007): "
                         "Can't parse '11/01/10' as timestamp with format '%m/%d/%y'"
                     ),
-                    raises=sa.exc.ProgrammingError,
+                    raises=SnowflakeProgrammingError,
                 ),
                 pytest.mark.never(
                     ["flink"],
@@ -2344,7 +2303,7 @@ INTERVAL_BACKEND_TYPES = {
     ["snowflake"],
     "(snowflake.connector.errors.ProgrammingError) 001007 (22023): SQL compilation error:"
     "invalid type [CAST(INTERVAL_LITERAL('second', '1') AS VARIANT)] for parameter 'TO_VARIANT'",
-    raises=sa.exc.ProgrammingError,
+    raises=SnowflakeProgrammingError,
 )
 @pytest.mark.broken(
     ["druid"],
@@ -2864,7 +2823,7 @@ def test_delta(con, start, end, unit, expected):
                 ),
                 pytest.mark.notimpl(
                     ["snowflake"],
-                    raises=sa.exc.ProgrammingError,
+                    raises=SnowflakeProgrammingError,
                     reason="snowflake doesn't support sub-second interval precision",
                 ),
                 pytest.mark.notimpl(
