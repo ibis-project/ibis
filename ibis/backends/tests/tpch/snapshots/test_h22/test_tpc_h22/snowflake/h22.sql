@@ -9,7 +9,13 @@ FROM (
     SUM("t6"."c_acctbal") AS "totacctbal"
   FROM (
     SELECT
-      IFF(0 >= 0, SUBSTRING("t2"."c_phone", 0 + 1, 2), SUBSTRING("t2"."c_phone", 0, 2)) AS "cntrycode",
+      IFF(
+        (
+          0 + 1
+        ) >= 1,
+        SUBSTRING("t2"."c_phone", 0 + 1, 2),
+        SUBSTRING("t2"."c_phone", 0 + 1 + LENGTH("t2"."c_phone"), 2)
+      ) AS "cntrycode",
       "t2"."c_acctbal"
     FROM (
       SELECT
@@ -24,7 +30,13 @@ FROM (
       FROM "CUSTOMER" AS "t0"
     ) AS "t2"
     WHERE
-      IFF(0 >= 0, SUBSTRING("t2"."c_phone", 0 + 1, 2), SUBSTRING("t2"."c_phone", 0, 2)) IN ('13', '31', '23', '29', '30', '18', '17')
+      IFF(
+        (
+          0 + 1
+        ) >= 1,
+        SUBSTRING("t2"."c_phone", 0 + 1, 2),
+        SUBSTRING("t2"."c_phone", 0 + 1 + LENGTH("t2"."c_phone"), 2)
+      ) IN ('13', '31', '23', '29', '30', '18', '17')
       AND "t2"."c_acctbal" > (
         SELECT
           AVG("t3"."c_acctbal") AS "Mean(c_acctbal)"
@@ -41,7 +53,13 @@ FROM (
           FROM "CUSTOMER" AS "t0"
           WHERE
             "t0"."C_ACCTBAL" > 0.0
-            AND IFF(0 >= 0, SUBSTRING("t0"."C_PHONE", 0 + 1, 2), SUBSTRING("t0"."C_PHONE", 0, 2)) IN ('13', '31', '23', '29', '30', '18', '17')
+            AND IFF(
+              (
+                0 + 1
+              ) >= 1,
+              SUBSTRING("t0"."C_PHONE", 0 + 1, 2),
+              SUBSTRING("t0"."C_PHONE", 0 + 1 + LENGTH("t0"."C_PHONE"), 2)
+            ) IN ('13', '31', '23', '29', '30', '18', '17')
         ) AS "t3"
       )
       AND NOT (

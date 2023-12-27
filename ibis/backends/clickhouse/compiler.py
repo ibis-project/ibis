@@ -27,6 +27,8 @@ from ibis.expr.rewrites import rewrite_sample
 ClickHouse.Generator.TRANSFORMS |= {
     exp.ArraySize: rename_func("length"),
     exp.ArraySort: rename_func("arraySort"),
+    exp.LogicalAnd: rename_func("min"),
+    exp.LogicalOr: rename_func("max"),
 }
 
 

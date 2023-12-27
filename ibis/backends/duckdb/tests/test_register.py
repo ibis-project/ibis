@@ -49,7 +49,8 @@ def test_read_parquet(con, data_dir):
     reason="nix on linux cannot download duckdb extensions or data due to sandboxing",
 )
 def test_load_spatial_when_geo_column(tmpdir):
-    pytest.importorskip("geoalchemy2")
+    pytest.importorskip("geopandas")
+    pytest.importorskip("shapely")
 
     path = str(tmpdir.join("test_load_spatial.ddb"))
 

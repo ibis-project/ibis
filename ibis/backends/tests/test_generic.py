@@ -23,6 +23,7 @@ from ibis.backends.tests.errors import (
     ExaQueryError,
     GoogleBadRequest,
     ImpalaHiveServer2Error,
+    PsycoPg2InvalidTextRepresentation,
     SnowflakeProgrammingError,
     TrinoUserError,
 )
@@ -1264,7 +1265,6 @@ def test_hash_consistent(backend, alltypes):
         "mssql",
         "mysql",
         "oracle",
-        "postgres",
         "pyspark",
         "snowflake",
         "sqlite",
@@ -1307,6 +1307,10 @@ def test_hash_consistent(backend, alltypes):
             marks=[
                 pytest.mark.notyet(["flink"], reason="casts to nan"),
                 pytest.mark.notyet(["datafusion"]),
+                pytest.mark.notimpl(
+                    ["postgres"],
+                    raises=PsycoPg2InvalidTextRepresentation,
+                ),
             ],
         ),
         param(
@@ -1315,7 +1319,7 @@ def test_hash_consistent(backend, alltypes):
             None,
             marks=[
                 pytest.mark.never(
-                    ["clickhouse", "flink"], reason="casts to 1672531200"
+                    ["clickhouse", "flink", "postgres"], reason="casts to 1672531200"
                 ),
                 pytest.mark.notyet(["trino"], raises=TrinoUserError),
                 pytest.mark.broken(["datafusion"], reason="casts to the wrong value"),
