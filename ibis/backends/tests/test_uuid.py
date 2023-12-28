@@ -66,6 +66,11 @@ pytestmark = pytest.mark.notimpl(
 @pytest.mark.notimpl(
     ["impala", "datafusion", "polars", "clickhouse"], raises=NotImplementedError
 )
+@pytest.mark.notimpl(
+    ["risingwave"],
+    raises=sqlalchemy.exc.InternalError,
+    reason="Feature is not yet implemented: unsupported data type: UUID",
+)
 def test_uuid_literal(con, backend):
     backend_name = backend.name()
 

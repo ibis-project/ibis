@@ -256,6 +256,11 @@ def tmpcon(alchemy_con):
     reason="mssql supports support temporary tables through naming conventions",
 )
 @mark.notimpl(["exasol"], reason="Exasol does not support temporary tables")
+@pytest.mark.never(
+    ["risingwave"],
+    raises=sa.exc.InternalError,
+    reason="Feature is not yet implemented: CREATE TEMPORARY TABLE",
+)
 def test_create_temporary_table_from_schema(tmpcon, new_schema):
     temp_table = f"_{guid()}"
     table = tmpcon.create_table(temp_table, schema=new_schema, temp=True)
@@ -288,6 +293,7 @@ def test_create_temporary_table_from_schema(tmpcon, new_schema):
         "pandas",
         "polars",
         "postgres",
+        "risingwave",
         "snowflake",
         "sqlite",
         "trino",
@@ -317,6 +323,11 @@ def test_rename_table(con, temp_table, temp_table_orig):
     ["flink"],
     raises=com.IbisError,
     reason="`tbl_properties` is required when creating table with schema",
+)
+@pytest.mark.never(
+    ["risingwave"],
+    raises=sa.exc.InternalError,
+    reason='Feature is not yet implemented: column constraints "NOT NULL"',
 )
 def test_nullable_input_output(con, temp_table):
     sch = ibis.schema(
@@ -363,7 +374,7 @@ def test_create_drop_view(ddl_con, temp_view):
     assert set(t_expr.schema().names) == set(v_expr.schema().names)
 
 
-@mark.notimpl(["postgres", "polars"])
+@mark.notimpl(["postgres", "risingwave", "polars"])
 @mark.notimpl(
     ["datafusion"],
     raises=NotImplementedError,
@@ -578,6 +589,7 @@ def test_list_databases(alchemy_con):
     test_databases = {
         "sqlite": {"main"},
         "postgres": {"postgres", "ibis_testing"},
+        "risingwave": {"dev"},
         "mssql": {"ibis_testing"},
         "mysql": {"ibis_testing", "information_schema"},
         "duckdb": {"memory"},
@@ -590,7 +602,7 @@ def test_list_databases(alchemy_con):
 
 
 @pytest.mark.never(
-    ["bigquery", "postgres", "mssql", "mysql", "snowflake", "oracle"],
+    ["bigquery", "postgres", "risingwave", "mssql", "mysql", "snowflake", "oracle"],
     reason="backend does not support client-side in-memory tables",
     raises=(sa.exc.OperationalError, TypeError, sa.exc.InterfaceError),
 )
@@ -662,6 +674,11 @@ def test_unsigned_integer_type(alchemy_con, alchemy_temp_table):
             "postgresql://postgres:postgres@localhost:5432/postgres",
             marks=mark.postgres,
             id="postgresql",
+        ),
+        param(
+            "postgresql://root:@localhost:4566/dev",
+            marks=mark.risingwave,
+            id="risingwave",
         ),
         param(
             "pyspark://?spark.app.name=test-pyspark",
@@ -1193,6 +1210,11 @@ def test_set_backend_name(name, monkeypatch):
             marks=mark.postgres,
             id="postgres",
         ),
+        param(
+            "postgres://root:@localhost:4566/dev",
+            marks=mark.risingwave,
+            id="risingwave",
+        ),
     ],
 )
 def test_set_backend_url(url, monkeypatch):
@@ -1217,6 +1239,7 @@ def test_set_backend_url(url, monkeypatch):
         "pandas",
         "polars",
         "postgres",
+        "risingwave",
         "pyspark",
         "sqlite",
     ],
@@ -1253,6 +1276,11 @@ def test_create_table_timestamp(con, temp_table):
     reason="mssql supports support temporary tables through naming conventions",
 )
 @mark.notimpl(["exasol"], reason="Exasol does not support temporary tables")
+@pytest.mark.never(
+    ["risingwave"],
+    raises=sa.exc.InternalError,
+    reason="Feature is not yet implemented: CREATE TEMPORARY TABLE",
+)
 def test_persist_expression_ref_count(backend, con, alltypes):
     non_persisted_table = alltypes.mutate(test_column="calculation")
     persisted_table = non_persisted_table.cache()
@@ -1273,6 +1301,11 @@ def test_persist_expression_ref_count(backend, con, alltypes):
     reason="mssql supports support temporary tables through naming conventions",
 )
 @mark.notimpl(["exasol"], reason="Exasol does not support temporary tables")
+@pytest.mark.never(
+    ["risingwave"],
+    raises=sa.exc.InternalError,
+    reason="Feature is not yet implemented: CREATE TEMPORARY TABLE",
+)
 def test_persist_expression(backend, alltypes):
     non_persisted_table = alltypes.mutate(test_column="calculation", other_calc="xyz")
     persisted_table = non_persisted_table.cache()
@@ -1287,6 +1320,11 @@ def test_persist_expression(backend, alltypes):
     reason="mssql supports support temporary tables through naming conventions",
 )
 @mark.notimpl(["exasol"], reason="Exasol does not support temporary tables")
+@pytest.mark.never(
+    ["risingwave"],
+    raises=sa.exc.InternalError,
+    reason="Feature is not yet implemented: CREATE TEMPORARY TABLE",
+)
 def test_persist_expression_contextmanager(backend, alltypes):
     non_cached_table = alltypes.mutate(
         test_column="calculation", other_column="big calc"
@@ -1303,6 +1341,11 @@ def test_persist_expression_contextmanager(backend, alltypes):
     reason="mssql supports support temporary tables through naming conventions",
 )
 @mark.notimpl(["exasol"], reason="Exasol does not support temporary tables")
+@pytest.mark.never(
+    ["risingwave"],
+    raises=sa.exc.InternalError,
+    reason="Feature is not yet implemented: CREATE TEMPORARY TABLE",
+)
 def test_persist_expression_contextmanager_ref_count(backend, con, alltypes):
     non_cached_table = alltypes.mutate(
         test_column="calculation", other_column="big calc 2"
@@ -1320,6 +1363,11 @@ def test_persist_expression_contextmanager_ref_count(backend, con, alltypes):
 @mark.never(
     ["mssql"],
     reason="mssql supports support temporary tables through naming conventions",
+)
+@pytest.mark.never(
+    ["risingwave"],
+    raises=sa.exc.InternalError,
+    reason="Feature is not yet implemented: CREATE TEMPORARY TABLE",
 )
 @mark.notimpl(["exasol"], reason="Exasol does not support temporary tables")
 def test_persist_expression_multiple_refs(backend, con, alltypes):
@@ -1358,6 +1406,11 @@ def test_persist_expression_multiple_refs(backend, con, alltypes):
     reason="mssql supports support temporary tables through naming conventions",
 )
 @mark.notimpl(["exasol"], reason="Exasol does not support temporary tables")
+@pytest.mark.never(
+    ["risingwave"],
+    raises=sa.exc.InternalError,
+    reason="Feature is not yet implemented: CREATE TEMPORARY TABLE",
+)
 def test_persist_expression_repeated_cache(alltypes):
     non_cached_table = alltypes.mutate(
         test_column="calculation", other_column="big calc 2"
@@ -1373,6 +1426,11 @@ def test_persist_expression_repeated_cache(alltypes):
     reason="mssql supports support temporary tables through naming conventions",
 )
 @mark.notimpl(["exasol"], reason="Exasol does not support temporary tables")
+@pytest.mark.never(
+    ["risingwave"],
+    raises=sa.exc.InternalError,
+    reason="Feature is not yet implemented: CREATE TEMPORARY TABLE",
+)
 def test_persist_expression_release(con, alltypes):
     non_cached_table = alltypes.mutate(
         test_column="calculation", other_column="big calc 3"
@@ -1453,6 +1511,11 @@ def test_create_schema(con_create_schema):
     con_create_schema.drop_schema(schema)
 
 
+@pytest.mark.notimpl(
+    ["risingwave"],
+    raises=sa.exc.InternalError,
+    reason="Feature is not yet implemented: information_schema.schemata is not supported,",
+)
 def test_list_schemas(con_create_schema):
     schemas = con_create_schema.list_schemas()
     assert len(schemas) == len(set(schemas))

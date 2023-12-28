@@ -10,7 +10,7 @@ import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 from ibis.legacy.udf.vectorized import analytic, elementwise, reduction
 
-pytestmark = pytest.mark.notimpl(["druid", "oracle"])
+pytestmark = pytest.mark.notimpl(["druid", "oracle", "risingwave"])
 
 
 def _format_udf_return_type(func, result_formatter):

@@ -121,6 +121,12 @@ jobs:
               - postgres
             sys-deps:
               - libgeos-dev
+          - name: risingwave
+            title: Risingwave
+            services:
+              - risingwave
+            extras:
+              - risingwave
           - name: impala
             title: Impala
             extras:
@@ -209,6 +215,14 @@ jobs:
                 - postgres
               sys-deps:
                 - libgeos-dev
+          - os: windows-latest
+            backend:
+              name: risingwave
+              title: Risingwave
+              services:
+                - risingwave
+              extras:
+                - risingwave
           - os: windows-latest
             backend:
               name: postgres
@@ -677,7 +691,7 @@ jobs:
           python-version: ${{ matrix.python-version }}
 
       - name: remove deps that are not compatible with sqlalchemy 2
-        run: poetry remove snowflake-sqlalchemy sqlalchemy-exasol
+        run: poetry remove snowflake-sqlalchemy sqlalchemy-exasol sqlalchemy-risingwave
 
       - name: add sqlalchemy 2
         run: poetry update sqlalchemy
