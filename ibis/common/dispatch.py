@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import abc
 import functools
+import inspect
 import re
 from collections import defaultdict
 
@@ -91,3 +92,70 @@ def lazy_singledispatch(func):
     call.register = register
 
     return call
+
+
+class _MultiDict(dict):
+    """A dictionary that allows multiple values for a single key."""
+
+    def __setitem__(self, key, value):
+        if key in self:
+            self[key].append(value)
+        else:
+            super().__setitem__(key, [value])
+
+
+class DispatchedMeta(type):
+    """Metaclass that allows multiple implementations of a method to be defined."""
+
+    def __new__(cls, name, bases, dct):
+        namespace = {}
+        for key, value in dct.items():
+            if len(value) == 1:
+                # there is just a single attribute so pick that
+                namespace[key] = value[0]
+            elif all(inspect.isfunction(v) for v in value):
+                # multiple functions are defined with the same name, so create
+                # a dispatcher function
+                first, *rest = value
+                func = functools.singledispatchmethod(first)
+                for impl in rest:
+                    func.register(impl)
+                namespace[key] = func
+            elif all(isinstance(v, classmethod) for v in value):
+                first, *rest = value
+                func = functools.singledispatchmethod(first.__func__)
+                for v in rest:
+                    func.register(v.__func__)
+                namespace[key] = classmethod(func)
+            elif all(isinstance(v, staticmethod) for v in value):
+                first, *rest = value
+                func = functools.singledispatch(first.__func__)
+                for v in rest:
+                    func.register(v.__func__)
+                namespace[key] = staticmethod(func)
+            else:
+                raise TypeError(f"Multiple attributes are defined with name {key}")
+
+        return type.__new__(cls, name, bases, namespace)
+
+    @classmethod
+    def __prepare__(cls, name, bases):
+        return _MultiDict()
+
+
+class Dispatched(metaclass=DispatchedMeta):
+    """Base class supporting multiple implementations of a method.
+
+    Methods with the same name can be defined multiple times. The first method
+    defined is the default implementation, and subsequent methods are registered
+    as implementations for specific types of the first argument.
+
+    The constructed methods are equivalent as if they were defined with
+    `functools.singledispatchmethod` but without the need to use the decorator
+    syntax. The recommended application of this class is to implement visitor
+    patterns.
+
+    Besides ordinary methods, classmethods and staticmethods are also supported.
+    The implementation can be extended to overload multiple arguments by using
+    `multimethod` instead of `singledispatchmethod` as the dispatcher.
+    """
