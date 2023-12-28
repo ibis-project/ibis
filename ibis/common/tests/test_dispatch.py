@@ -3,7 +3,9 @@ from __future__ import annotations
 import collections
 import decimal
 
-from ibis.common.dispatch import lazy_singledispatch
+from ibis.common.dispatch import Dispatched, lazy_singledispatch
+
+# ruff: noqa: F811
 
 
 def test_lazy_singledispatch():
@@ -118,3 +120,76 @@ def test_lazy_singledispatch_abc():
     assert foo({}) == "mapping"
     assert foo(mydict()) == "mydict"  # concrete takes precedence
     assert foo(sum) == "callable"
+
+
+class Visitor(Dispatched):
+    def a(self):
+        return "a"
+
+    def b(self, x: int):
+        return "b_int"
+
+    def b(self, x: str):
+        return "b_str"
+
+    @classmethod
+    def c(cls, x: int, **kwargs):
+        return "c_int"
+
+    @classmethod
+    def c(cls, x: str, a=0, b=1):
+        return "c_str"
+
+    def d(self, x: int):
+        return "d_int"
+
+    def d(self, x: str):
+        return "d_str"
+
+    @staticmethod
+    def e(x: int):
+        return "e_int"
+
+    @staticmethod
+    def e(x: str):
+        return "e_str"
+
+
+class Subvisitor(Visitor):
+    def b(self, x):
+        return super().b(x)
+
+    def b(self, x: float):
+        return "b_float"
+
+    @classmethod
+    def c(cls, x):
+        return super().c(x)
+
+    @classmethod
+    def c(cls, s: float):
+        return "c_float"
+
+
+def test_dispatched():
+    v = Visitor()
+    assert v.a == v.a
+    assert v.b(1) == "b_int"
+    assert v.b("1") == "b_str"
+    assert v.d(1) == "d_int"
+    assert v.d("1") == "d_str"
+
+    w = Subvisitor()
+    assert w.b(1) == "b_int"
+    assert w.b(1.1) == "b_float"
+
+    assert Visitor.c(1, a=0, b=0) == "c_int"
+    assert Visitor.c("1") == "c_str"
+
+    assert Visitor.e("1") == "e_str"
+    assert Visitor.e(1) == "e_int"
+
+    assert Subvisitor.c(1) == "c_int"
+    assert Subvisitor.c(1.1) == "c_float"
+
+    assert Subvisitor.e(1) == "e_int"
