@@ -23,6 +23,7 @@ from ibis.backends.tests.errors import (
     PolarsComputeError,
     Py4JJavaError,
     PySparkAnalysisException,
+    TrinoUserError,
 )
 
 pytestmark = [
@@ -95,8 +96,7 @@ def test_array_concat(con):
     right = ibis.literal([2, 1])
     expr = left + right
     result = con.execute(expr.name("tmp"))
-    expected = np.array([1, 2, 3, 2, 1])
-    assert np.array_equal(result, expected)
+    assert sorted(result) == sorted([1, 2, 3, 2, 1])
 
 
 # Issues #2370
@@ -113,10 +113,11 @@ def test_array_concat_variadic(con):
 # Issues #2370
 @pytest.mark.notimpl(["flink"], raises=com.OperationNotDefinedError)
 @pytest.mark.notyet(
-    ["postgres", "trino"],
+    ["postgres"],
     raises=sa.exc.ProgrammingError,
     reason="backend can't infer the type of an empty array",
 )
+@pytest.mark.notyet(["trino"], raises=TrinoUserError)
 def test_array_concat_some_empty(con):
     left = ibis.literal([])
     right = ibis.literal([2, 1])
@@ -401,17 +402,17 @@ def test_array_slice(backend, start, stop):
         param({"a": [[1, 2], [4]]}, {"a": [[2, 3], [5]]}, id="no_nulls"),
     ],
 )
-def test_array_map(backend, con, input, output):
+def test_array_map(con, input, output):
     t = ibis.memtable(input, schema=ibis.schema(dict(a="!array<int8>")))
     expected = pd.DataFrame(output)
 
     expr = t.select(a=t.a.map(lambda x: x + 1))
     result = con.execute(expr)
-    backend.assert_frame_equal(result, expected)
+    assert frozenset(map(tuple, result["a"])) == frozenset(map(tuple, expected["a"]))
 
     expr = t.select(a=t.a.map(functools.partial(lambda x, y: x + y, y=1)))
     result = con.execute(expr)
-    backend.assert_frame_equal(result, expected)
+    assert frozenset(map(tuple, result["a"])) == frozenset(map(tuple, expected["a"]))
 
 
 @builtin_array
@@ -445,23 +446,22 @@ def test_array_map(backend, con, input, output):
         param({"a": [[1, 2], [4]]}, {"a": [[2], [4]]}, id="no_nulls"),
     ],
 )
-def test_array_filter(backend, con, input, output):
+def test_array_filter(con, input, output):
     t = ibis.memtable(input, schema=ibis.schema(dict(a="!array<int8>")))
     expected = pd.DataFrame(output)
 
     expr = t.select(a=t.a.filter(lambda x: x > 1))
     result = con.execute(expr)
-    backend.assert_frame_equal(result, expected)
+    assert frozenset(map(tuple, result["a"])) == frozenset(map(tuple, expected["a"]))
 
     expr = t.select(a=t.a.filter(functools.partial(lambda x, y: x > y, y=1)))
     result = con.execute(expr)
-    backend.assert_frame_equal(result, expected)
+    assert frozenset(map(tuple, result["a"])) == frozenset(map(tuple, expected["a"]))
 
 
 @builtin_array
 @pytest.mark.notimpl(
-    ["mssql", "polars", "postgres"],
-    raises=com.OperationNotDefinedError,
+    ["mssql", "polars", "postgres"], raises=com.OperationNotDefinedError
 )
 @pytest.mark.notimpl(["dask"], raises=com.OperationNotDefinedError)
 @pytest.mark.never(["impala"], reason="array_types table isn't defined")
@@ -475,31 +475,29 @@ def test_array_contains(backend, con):
 
 @builtin_array
 @pytest.mark.notimpl(
-    ["dask", "impala", "mssql", "polars"],
-    raises=com.OperationNotDefinedError,
+    ["dask", "impala", "mssql", "polars"], raises=com.OperationNotDefinedError
 )
 @pytest.mark.broken(
     ["datafusion"], reason="internal error as of 34.0.0", raises=Exception
 )
 def test_array_position(backend, con):
-    t = ibis.memtable({"a": [[1], [], [42, 42], []]})
-    expr = t.a.index(42)
+    t = ibis.memtable({"a": [[1], [], [42, 42], []], "id": range(4)})
+    expr = t.mutate(idx=t.a.index(42)).order_by("id")
     result = con.execute(expr)
-    expected = pd.Series([-1, -1, 0, -1], dtype="object")
-    backend.assert_series_equal(result, expected, check_names=False, check_dtype=False)
+    expected = pd.Series([-1, -1, 0, -1], name="idx")
+    backend.assert_series_equal(result.idx, expected, check_dtype=False)
 
 
 @builtin_array
 @pytest.mark.notimpl(
-    ["dask", "impala", "mssql", "polars"],
-    raises=com.OperationNotDefinedError,
+    ["dask", "impala", "mssql", "polars"], raises=com.OperationNotDefinedError
 )
-def test_array_remove(backend, con):
+def test_array_remove(con):
     t = ibis.memtable({"a": [[3, 2], [], [42, 2], [2, 2], []]})
     expr = t.a.remove(2)
     result = con.execute(expr)
-    expected = pd.Series([[3], [], [42], [], []], dtype="object")
-    backend.assert_series_equal(result, expected, check_names=False)
+    expected = frozenset(map(tuple, ([3], [], [42], [], [])))
+    assert frozenset(map(tuple, result.values)) == expected
 
 
 @builtin_array
@@ -540,12 +538,12 @@ def test_array_remove(backend, con):
         ),
     ],
 )
-def test_array_unique(backend, con, input, expected):
+def test_array_unique(con, input, expected):
     t = ibis.memtable(input)
     expr = t.a.unique()
-    result = con.execute(expr).map(set, na_action="ignore")
-    expected = pd.Series(expected, dtype="object")
-    backend.assert_series_equal(result, expected, check_names=False)
+    result = con.execute(expr).map(frozenset, na_action="ignore")
+    expected = pd.Series(expected, dtype="object").map(frozenset, na_action="ignore")
+    assert set(result) == set(expected)
 
 
 @builtin_array
@@ -554,11 +552,11 @@ def test_array_unique(backend, con, input, expected):
     raises=com.OperationNotDefinedError,
 )
 def test_array_sort(backend, con):
-    t = ibis.memtable({"a": [[3, 2], [], [42, 42], []]})
-    expr = t.a.sort()
+    t = ibis.memtable({"a": [[3, 2], [], [42, 42], []], "id": range(4)})
+    expr = t.mutate(a=t.a.sort()).order_by("id")
     result = con.execute(expr)
     expected = pd.Series([[2, 3], [], [42, 42], []], dtype="object")
-    backend.assert_series_equal(result, expected, check_names=False)
+    backend.assert_series_equal(result.a, expected, check_names=False)
 
 
 @builtin_array
@@ -575,11 +573,10 @@ def test_array_union(con):
     t = ibis.memtable({"a": [[3, 2], [], []], "b": [[1, 3], [None], [5]]})
     expr = t.a.union(t.b)
     result = con.execute(expr).map(set, na_action="ignore")
-    expected = pd.Series([{1, 2, 3}, {None}, {5}], dtype="object")
-    assert len(result) == len(expected)
 
-    for i, (lhs, rhs) in enumerate(zip(result, expected)):
-        assert lhs == rhs, f"row {i:d} differs"
+    # turn everything into frozensets for unordered comparison
+    expected = frozenset(((1, 2, 3), (None,), (5,)))
+    assert frozenset(map(tuple, result.values)) == expected
 
 
 @pytest.mark.notimpl(
@@ -628,6 +625,9 @@ def test_array_intersect(con, data):
 )
 @pytest.mark.notimpl(["postgres"], raises=sa.exc.ProgrammingError)
 @pytest.mark.notimpl(["datafusion"], raises=com.OperationNotDefinedError)
+@pytest.mark.broken(
+    ["trino"], reason="inserting maps into structs doesn't work", raises=TrinoUserError
+)
 def test_unnest_struct(con):
     data = {"value": [[{"a": 1}, {"a": 2}], [{"a": 3}, {"a": 4}]]}
     t = ibis.memtable(data, schema=ibis.schema({"value": "!array<!struct<a: !int>>"}))
@@ -682,6 +682,9 @@ def test_zip(backend):
     ["pyspark"],
     reason="pyspark doesn't seem to support field selection on explode",
     raises=PySparkAnalysisException,
+)
+@pytest.mark.broken(
+    ["trino"], reason="inserting maps into structs doesn't work", raises=TrinoUserError
 )
 def test_array_of_struct_unnest(con):
     jobs = ibis.memtable(
@@ -767,12 +770,14 @@ def flatten_data():
 @pytest.mark.notyet(["datafusion"], raises=com.OperationNotDefinedError)
 def test_array_flatten(backend, flatten_data, column, expected):
     data = flatten_data[column]
-    t = ibis.memtable(
-        {column: data["data"]}, schema=ibis.schema({column: data["type"]})
-    )
+    t = ibis.memtable({column: data["data"]}, schema={column: data["type"]})
     expr = t[column].flatten()
     result = backend.connection.execute(expr)
-    backend.assert_series_equal(result, expected, check_names=False)
+    backend.assert_series_equal(
+        result.sort_values().reset_index(drop=True),
+        expected.sort_values().reset_index(drop=True),
+        check_names=False,
+    )
 
 
 @pytest.mark.notyet(
@@ -944,7 +949,7 @@ timestamp_range_tzinfos = pytest.mark.parametrize(
             marks=[
                 pytest.mark.notyet(
                     ["trino"],
-                    raises=sa.exc.ProgrammingError,
+                    raises=TrinoUserError,
                     reason="trino doesn't support timestamp with time zone arguments to its sequence function",
                 ),
                 pytest.mark.notyet(
