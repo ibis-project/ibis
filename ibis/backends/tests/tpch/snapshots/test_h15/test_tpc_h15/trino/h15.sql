@@ -1,54 +1,125 @@
-WITH t0 AS (
-  SELECT
-    t3.l_suppkey AS l_suppkey,
-    SUM(t3.l_extendedprice * (
-      1 - t3.l_discount
-    )) AS total_revenue
-  FROM hive.ibis_sf1.lineitem AS t3
-  WHERE
-    t3.l_shipdate >= FROM_ISO8601_DATE('1996-01-01')
-    AND t3.l_shipdate < FROM_ISO8601_DATE('1996-04-01')
-  GROUP BY
-    1
-), t1 AS (
-  SELECT
-    t3.s_suppkey AS s_suppkey,
-    t3.s_name AS s_name,
-    t3.s_address AS s_address,
-    t3.s_nationkey AS s_nationkey,
-    t3.s_phone AS s_phone,
-    t3.s_acctbal AS s_acctbal,
-    t3.s_comment AS s_comment,
-    t0.l_suppkey AS l_suppkey,
-    t0.total_revenue AS total_revenue
-  FROM hive.ibis_sf1.supplier AS t3
-  JOIN t0
-    ON t3.s_suppkey = t0.l_suppkey
-  WHERE
-    t0.total_revenue = (
-      SELECT
-        MAX(t0.total_revenue) AS "Max(total_revenue)"
-      FROM t0
-    )
-)
 SELECT
-  t2.s_suppkey,
-  t2.s_name,
-  t2.s_address,
-  t2.s_phone,
-  t2.total_revenue
+  "t8"."s_suppkey",
+  "t8"."s_name",
+  "t8"."s_address",
+  "t8"."s_phone",
+  "t8"."total_revenue"
 FROM (
   SELECT
-    t1.s_suppkey AS s_suppkey,
-    t1.s_name AS s_name,
-    t1.s_address AS s_address,
-    t1.s_nationkey AS s_nationkey,
-    t1.s_phone AS s_phone,
-    t1.s_acctbal AS s_acctbal,
-    t1.s_comment AS s_comment,
-    t1.l_suppkey AS l_suppkey,
-    t1.total_revenue AS total_revenue
-  FROM t1
-  ORDER BY
-    t1.s_suppkey ASC
-) AS t2
+    "t4"."s_suppkey",
+    "t4"."s_name",
+    "t4"."s_address",
+    "t4"."s_nationkey",
+    "t4"."s_phone",
+    "t4"."s_acctbal",
+    "t4"."s_comment",
+    "t6"."l_suppkey",
+    "t6"."total_revenue"
+  FROM (
+    SELECT
+      "t0"."s_suppkey",
+      "t0"."s_name",
+      "t0"."s_address",
+      "t0"."s_nationkey",
+      "t0"."s_phone",
+      CAST("t0"."s_acctbal" AS DECIMAL(15, 2)) AS "s_acctbal",
+      "t0"."s_comment"
+    FROM "supplier" AS "t0"
+  ) AS "t4"
+  INNER JOIN (
+    SELECT
+      "t3"."l_suppkey",
+      SUM("t3"."l_extendedprice" * (
+        1 - "t3"."l_discount"
+      )) AS "total_revenue"
+    FROM (
+      SELECT
+        "t1"."l_orderkey",
+        "t1"."l_partkey",
+        "t1"."l_suppkey",
+        "t1"."l_linenumber",
+        CAST("t1"."l_quantity" AS DECIMAL(15, 2)) AS "l_quantity",
+        CAST("t1"."l_extendedprice" AS DECIMAL(15, 2)) AS "l_extendedprice",
+        CAST("t1"."l_discount" AS DECIMAL(15, 2)) AS "l_discount",
+        CAST("t1"."l_tax" AS DECIMAL(15, 2)) AS "l_tax",
+        "t1"."l_returnflag",
+        "t1"."l_linestatus",
+        "t1"."l_shipdate",
+        "t1"."l_commitdate",
+        "t1"."l_receiptdate",
+        "t1"."l_shipinstruct",
+        "t1"."l_shipmode",
+        "t1"."l_comment"
+      FROM "lineitem" AS "t1"
+      WHERE
+        "t1"."l_shipdate" >= FROM_ISO8601_DATE('1996-01-01')
+        AND "t1"."l_shipdate" < FROM_ISO8601_DATE('1996-04-01')
+    ) AS "t3"
+    GROUP BY
+      1
+  ) AS "t6"
+    ON "t4"."s_suppkey" = "t6"."l_suppkey"
+) AS "t8"
+WHERE
+  "t8"."total_revenue" = (
+    SELECT
+      MAX("t8"."total_revenue") AS "Max(total_revenue)"
+    FROM (
+      SELECT
+        "t4"."s_suppkey",
+        "t4"."s_name",
+        "t4"."s_address",
+        "t4"."s_nationkey",
+        "t4"."s_phone",
+        "t4"."s_acctbal",
+        "t4"."s_comment",
+        "t6"."l_suppkey",
+        "t6"."total_revenue"
+      FROM (
+        SELECT
+          "t0"."s_suppkey",
+          "t0"."s_name",
+          "t0"."s_address",
+          "t0"."s_nationkey",
+          "t0"."s_phone",
+          CAST("t0"."s_acctbal" AS DECIMAL(15, 2)) AS "s_acctbal",
+          "t0"."s_comment"
+        FROM "supplier" AS "t0"
+      ) AS "t4"
+      INNER JOIN (
+        SELECT
+          "t3"."l_suppkey",
+          SUM("t3"."l_extendedprice" * (
+            1 - "t3"."l_discount"
+          )) AS "total_revenue"
+        FROM (
+          SELECT
+            "t1"."l_orderkey",
+            "t1"."l_partkey",
+            "t1"."l_suppkey",
+            "t1"."l_linenumber",
+            CAST("t1"."l_quantity" AS DECIMAL(15, 2)) AS "l_quantity",
+            CAST("t1"."l_extendedprice" AS DECIMAL(15, 2)) AS "l_extendedprice",
+            CAST("t1"."l_discount" AS DECIMAL(15, 2)) AS "l_discount",
+            CAST("t1"."l_tax" AS DECIMAL(15, 2)) AS "l_tax",
+            "t1"."l_returnflag",
+            "t1"."l_linestatus",
+            "t1"."l_shipdate",
+            "t1"."l_commitdate",
+            "t1"."l_receiptdate",
+            "t1"."l_shipinstruct",
+            "t1"."l_shipmode",
+            "t1"."l_comment"
+          FROM "lineitem" AS "t1"
+          WHERE
+            "t1"."l_shipdate" >= FROM_ISO8601_DATE('1996-01-01')
+            AND "t1"."l_shipdate" < FROM_ISO8601_DATE('1996-04-01')
+        ) AS "t3"
+        GROUP BY
+          1
+      ) AS "t6"
+        ON "t4"."s_suppkey" = "t6"."l_suppkey"
+    ) AS "t8"
+  )
+ORDER BY
+  "t8"."s_suppkey" ASC

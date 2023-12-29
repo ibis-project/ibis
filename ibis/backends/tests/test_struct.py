@@ -24,26 +24,25 @@ pytestmark = [
     [
         param(
             "a",
-            [1.0, 2.0, 3.0, np.nan, 2.0, np.nan, 3.0],
+            [1.0, 2.0, 2.0, 3.0, 3.0, np.nan, np.nan],
             id="a",
             marks=pytest.mark.notimpl(["snowflake"]),
         ),
         param(
-            "b", ["banana", "apple", "orange", "banana", None, None, "orange"], id="b"
+            "b", ["apple", "banana", "banana", "orange", "orange", None, None], id="b"
         ),
         param(
             "c",
-            [2, 3, 4, 2, 3, np.nan, np.nan],
+            [2, 2, 3, 3, 4, np.nan, np.nan],
             id="c",
             marks=pytest.mark.notimpl(["snowflake"]),
         ),
     ],
 )
 def test_single_field(struct, field, expected):
-    expr = struct.abc[field]
+    expr = struct.select(field=lambda t: t.abc[field]).order_by("field")
     result = expr.execute()
-    equal_nan = expr.type().is_numeric()
-    assert np.array_equal(result, expected, equal_nan=equal_nan)
+    tm.assert_series_equal(result.field, pd.Series(expected, name="field"))
 
 
 @pytest.mark.notimpl(["dask"])

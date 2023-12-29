@@ -8,15 +8,20 @@ from typing import Literal, Optional
 import toolz
 from public import public
 
+import ibis.common.exceptions as com
 import ibis.expr.datashape as ds
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 from ibis.common.annotations import attribute
 from ibis.common.collections import FrozenDict  # noqa: TCH001
+from ibis.common.deferred import var
 from ibis.common.patterns import Object, replace
 from ibis.common.typing import VarTuple  # noqa: TCH001
 from ibis.expr.rewrites import p
 from ibis.expr.schema import Schema
+
+x = var("x")
+y = var("y")
 
 
 @public
@@ -140,3 +145,45 @@ def sqlize(node):
     )
     step2 = step1.replace(merge_select_select)
     return step2
+
+
+@replace(p.WindowFunction(p.First(x, y)))
+def rewrite_first_to_first_value(_, x, y):
+    """Rewrite Ibis's first to first_value when used in a window function."""
+    if y is not None:
+        raise com.UnsupportedOperationError(
+            "`first` with `where` is unsupported in a window function"
+        )
+    return _.copy(func=ops.FirstValue(x))
+
+
+@replace(p.WindowFunction(p.Last(x, y)))
+def rewrite_last_to_last_value(_, x, y):
+    """Rewrite Ibis's last to last_value when used in a window function."""
+    if y is not None:
+        raise com.UnsupportedOperationError(
+            "`last` with `where` is unsupported in a window function"
+        )
+    return _.copy(func=ops.LastValue(x))
+
+
+@replace(p.WindowFunction(frame=y @ p.WindowFrame(order_by=())))
+def rewrite_empty_order_by_window(_, y):
+    import ibis
+
+    return _.copy(frame=y.copy(order_by=(ibis.NA,)))
+
+
+@replace(p.WindowFunction(p.RowNumber | p.NTile, y))
+def exclude_unsupported_window_frame_from_row_number(_, y):
+    return ops.Subtract(_.copy(frame=y.copy(start=None, end=None)), 1)
+
+
+@replace(
+    p.WindowFunction(
+        p.Lag | p.Lead | p.PercentRank | p.CumeDist | p.Any | p.All,
+        y @ p.WindowFrame(start=None),
+    )
+)
+def exclude_unsupported_window_frame_from_ops(_, y):
+    return _.copy(frame=y.copy(start=None, end=0, order_by=y.order_by or (ops.NULL,)))

@@ -3,6 +3,7 @@ from __future__ import annotations
 import contextlib
 import datetime
 import decimal
+from collections import Counter
 from operator import invert, methodcaller, neg
 
 import numpy as np
@@ -23,6 +24,7 @@ from ibis.backends.tests.errors import (
     GoogleBadRequest,
     ImpalaHiveServer2Error,
     SnowflakeProgrammingError,
+    TrinoUserError,
 )
 from ibis.common.annotations import ValidationError
 
@@ -925,10 +927,9 @@ def test_literal_na(con, dtype):
 
 @pytest.mark.notimpl(["exasol"])
 def test_memtable_bool_column(backend, con):
-    t = ibis.memtable({"a": [True, False, True]})
-    backend.assert_series_equal(
-        con.execute(t.a), pd.Series([True, False, True], name="a")
-    )
+    data = [True, False, True]
+    t = ibis.memtable({"a": data})
+    assert Counter(con.execute(t.a)) == Counter(data)
 
 
 @pytest.mark.broken(
@@ -953,7 +954,7 @@ def test_memtable_construct(backend, con, monkeypatch):
     )
     t = ibis.memtable(pa_t)
     backend.assert_frame_equal(
-        t.execute().fillna(pd.NA), pa_t.to_pandas().fillna(pd.NA)
+        t.order_by("a").execute().fillna(pd.NA), pa_t.to_pandas().fillna(pd.NA)
     )
 
 
@@ -1024,6 +1025,11 @@ def test_many_subqueries(con, snapshot):
     ["datafusion", "impala", "mssql", "mysql", "sqlite"],
     reason="backend doesn't support arrays and we don't implement pivot_longer with unions yet",
     raises=com.OperationNotDefinedError,
+)
+@pytest.mark.broken(
+    ["trino"],
+    reason="invalid code generated for unnesting a struct",
+    raises=TrinoUserError,
 )
 def test_pivot_longer(backend):
     diamonds = backend.diamonds
@@ -1311,11 +1317,7 @@ def test_hash_consistent(backend, alltypes):
                 pytest.mark.never(
                     ["clickhouse", "flink"], reason="casts to 1672531200"
                 ),
-                pytest.mark.notyet(
-                    ["trino"],
-                    raises=sa.exc.ProgrammingError,
-                    reason="raises TrinoUserError",
-                ),
+                pytest.mark.notyet(["trino"], raises=TrinoUserError),
                 pytest.mark.broken(["datafusion"], reason="casts to the wrong value"),
                 pytest.mark.broken(["polars"], reason="casts to 1672531200000000000"),
             ],
@@ -1326,11 +1328,7 @@ def test_hash_consistent(backend, alltypes):
             1672531200,
             marks=[
                 pytest.mark.notyet(["duckdb"], reason="casts to None"),
-                pytest.mark.notyet(
-                    ["trino"],
-                    raises=sa.exc.ProgrammingError,
-                    reason="raises TrinoUserError",
-                ),
+                pytest.mark.notyet(["trino"], raises=TrinoUserError),
                 pytest.mark.broken(["polars"], reason="casts to 1672531200000000000"),
                 pytest.mark.broken(["datafusion"], reason="casts to 1672531200000000"),
             ],
@@ -1367,7 +1365,7 @@ def test_try_cast_table(backend, con):
     t = ibis.memtable(df)
 
     backend.assert_frame_equal(
-        con.execute(t.try_cast({"a": "int", "b": "float"})), expected
+        con.execute(t.try_cast({"a": "int", "b": "float"}).order_by("a")), expected
     )
 
 
@@ -1402,11 +1400,7 @@ def test_try_cast_table(backend, con):
                     ["clickhouse", "polars", "flink"],
                     reason="casts this to to a number",
                 ),
-                pytest.mark.notyet(
-                    ["trino"],
-                    raises=sa.exc.ProgrammingError,
-                    reason="raises TrinoUserError",
-                ),
+                pytest.mark.notyet(["trino"], raises=TrinoUserError),
             ],
         ),
     ],
@@ -1552,13 +1546,18 @@ def test_static_table_slice(backend, slc, expected_count_fn):
     ids=str,
 )
 @pytest.mark.notyet(
-    ["mysql", "trino"],
+    ["mysql"],
     raises=sa.exc.ProgrammingError,
     reason="backend doesn't support dynamic limit/offset",
 )
 @pytest.mark.notyet(
     ["snowflake"],
     raises=SnowflakeProgrammingError,
+    reason="backend doesn't support dynamic limit/offset",
+)
+@pytest.mark.notyet(
+    ["trino"],
+    raises=TrinoUserError,
     reason="backend doesn't support dynamic limit/offset",
 )
 @pytest.mark.notimpl(
@@ -1605,7 +1604,7 @@ def test_dynamic_table_slice(backend, slc, expected_count_fn):
 
 
 @pytest.mark.notyet(
-    ["mysql", "trino"],
+    ["mysql"],
     raises=sa.exc.ProgrammingError,
     reason="backend doesn't support dynamic limit/offset",
 )
@@ -1615,9 +1614,11 @@ def test_dynamic_table_slice(backend, slc, expected_count_fn):
     reason="backend doesn't support dynamic limit/offset",
 )
 @pytest.mark.notimpl(
-    ["exasol"],
-    raises=sa.exc.CompileError,
+    ["trino"],
+    raises=TrinoUserError,
+    reason="backend doesn't support dynamic limit/offset",
 )
+@pytest.mark.notimpl(["exasol"], raises=sa.exc.CompileError)
 @pytest.mark.notyet(
     ["clickhouse"],
     raises=ClickHouseDatabaseError,

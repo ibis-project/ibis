@@ -447,6 +447,70 @@ class TrinoType(SqlglotType):
         }
     )
 
+    @classmethod
+    def _from_ibis_Interval(cls, dtype: dt.Interval) -> sge.DataType:
+        assert dtype.unit is not None, "interval unit cannot be None"
+        if (short := dtype.unit.short) in ("Y", "Q", "M"):
+            return sge.DataType(
+                this=typecode.INTERVAL,
+                expressions=[
+                    sge.IntervalSpan(
+                        this=sge.Var(this="YEAR"), expression=sge.Var(this="MONTH")
+                    )
+                ],
+            )
+        elif short in ("D", "h", "m", "s", "ms", "us", "ns"):
+            return sge.DataType(
+                this=typecode.INTERVAL,
+                expressions=[
+                    sge.IntervalSpan(
+                        this=sge.Var(this="DAY"), expression=sge.Var(this="SECOND")
+                    )
+                ],
+            )
+        else:
+            raise NotImplementedError(
+                f"Trino does not support {dtype.unit.name} intervals"
+            )
+
+    @classmethod
+    def _from_sqlglot_UBIGINT(cls):
+        return dt.Decimal(precision=19, scale=0, nullable=cls.default_nullable)
+
+    @classmethod
+    def _from_ibis_UInt64(cls, dtype):
+        return sge.DataType(
+            this=typecode.DECIMAL,
+            expressions=[
+                sge.DataTypeParam(this=sge.convert(19)),
+                sge.DataTypeParam(this=sge.convert(0)),
+            ],
+        )
+
+    @classmethod
+    def _from_sqlglot_UINT(cls):
+        return dt.Int64(nullable=cls.default_nullable)
+
+    @classmethod
+    def _from_ibis_UInt32(cls, dtype):
+        return sge.DataType(this=typecode.BIGINT)
+
+    @classmethod
+    def _from_sqlglot_USMALLINT(cls):
+        return dt.Int32(nullable=cls.default_nullable)
+
+    @classmethod
+    def _from_ibis_UInt16(cls, dtype):
+        return sge.DataType(this=typecode.INT)
+
+    @classmethod
+    def _from_sqlglot_UTINYINT(cls):
+        return dt.Int16(nullable=cls.default_nullable)
+
+    @classmethod
+    def _from_ibis_UInt8(cls, dtype):
+        return sge.DataType(this=typecode.SMALLINT)
+
 
 class DruidType(SqlglotType):
     # druid doesn't have a sophisticated type system and hive is close enough
