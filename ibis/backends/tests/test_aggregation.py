@@ -22,6 +22,7 @@ from ibis.backends.tests.errors import (
     Py4JError,
     PySparkAnalysisException,
     SnowflakeProgrammingError,
+    TrinoUserError,
 )
 from ibis.legacy.udf.vectorized import reduction
 
@@ -1111,7 +1112,6 @@ def test_quantile(
                 ),
                 pytest.mark.notyet(
                     [
-                        "trino",
                         "postgres",
                         "risingwave",
                         "snowflake",
@@ -1120,6 +1120,7 @@ def test_quantile(
                     raises=ValueError,
                     reason="XXXXSQLExprTranslator only implements population correlation coefficient",
                 ),
+                pytest.mark.notyet(["trino"], raises=com.UnsupportedOperationError),
             ],
         ),
         param(
@@ -1359,7 +1360,6 @@ def test_date_quantile(alltypes, func):
             "::",
             id="expr",
             marks=[
-                pytest.mark.notyet(["trino"], raises=com.UnsupportedOperationError),
                 pytest.mark.notyet(
                     ["bigquery"],
                     raises=GoogleBadRequest,
@@ -1383,13 +1383,19 @@ def test_date_quantile(alltypes, func):
         param(
             lambda t: t.string_col.isin(["1", "7"]),
             lambda t: t.string_col.isin(["1", "7"]),
-            marks=pytest.mark.notimpl(["dask"], raises=com.OperationNotDefinedError),
+            marks=[
+                pytest.mark.notyet(["trino"], raises=TrinoUserError),
+                pytest.mark.notimpl(["dask"], raises=com.OperationNotDefinedError),
+            ],
             id="is_in",
         ),
         param(
             lambda t: t.string_col.notin(["1", "7"]),
             lambda t: ~t.string_col.isin(["1", "7"]),
-            marks=pytest.mark.notimpl(["dask"], raises=com.OperationNotDefinedError),
+            marks=[
+                pytest.mark.notyet(["trino"], raises=TrinoUserError),
+                pytest.mark.notimpl(["dask"], raises=com.OperationNotDefinedError),
+            ],
             id="not_in",
         ),
     ],
@@ -1672,8 +1678,9 @@ def test_grouped_case(backend, con):
 )
 @pytest.mark.notyet(["impala", "flink"], raises=com.UnsupportedOperationError)
 @pytest.mark.notyet(["clickhouse"], raises=ClickHouseDatabaseError)
-@pytest.mark.notyet(["druid", "trino"], raises=sa.exc.ProgrammingError)
+@pytest.mark.notyet(["druid"], raises=sa.exc.ProgrammingError)
 @pytest.mark.notyet(["snowflake"], raises=SnowflakeProgrammingError)
+@pytest.mark.notyet(["trino"], raises=TrinoUserError)
 @pytest.mark.notyet(["mysql"], raises=sa.exc.NotSupportedError)
 @pytest.mark.notyet(["oracle"], raises=sa.exc.DatabaseError)
 @pytest.mark.notyet(["pyspark"], raises=PySparkAnalysisException)

@@ -29,6 +29,7 @@ from ibis.backends.tests.errors import (
     Py4JJavaError,
     PySparkIllegalArgumentException,
     SnowflakeProgrammingError,
+    TrinoUserError,
 )
 from ibis.common.annotations import ValidationError
 
@@ -1836,7 +1837,7 @@ def test_integer_to_timestamp(backend, con, unit):
                 pytest.mark.never(
                     ["trino"],
                     reason="datetime formatting style not supported",
-                    raises=sa.exc.ProgrammingError,
+                    raises=TrinoUserError,
                 ),
                 pytest.mark.never(
                     ["polars"],

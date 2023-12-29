@@ -16,6 +16,7 @@ from ibis.backends.tests.errors import (
     PyDeltaTableError,
     PySparkAnalysisException,
     SnowflakeProgrammingError,
+    TrinoUserError,
 )
 from ibis.formats.pyarrow import PyArrowType
 
@@ -351,10 +352,9 @@ def test_table_to_csv_writer_kwargs(delimiter, tmp_path, awards_players):
             marks=[
                 pytest.mark.notyet(["impala"], reason="precision not supported"),
                 pytest.mark.notyet(["duckdb"], reason="precision is out of range"),
-                pytest.mark.notyet(
-                    ["druid", "mssql", "trino"], raises=sa.exc.ProgrammingError
-                ),
+                pytest.mark.notyet(["druid", "mssql"], raises=sa.exc.ProgrammingError),
                 pytest.mark.notyet(["snowflake"], raises=SnowflakeProgrammingError),
+                pytest.mark.notyet(["trino"], raises=TrinoUserError),
                 pytest.mark.notyet(["oracle"], raises=sa.exc.DatabaseError),
                 pytest.mark.notyet(["mysql"], raises=sa.exc.OperationalError),
                 pytest.mark.notyet(

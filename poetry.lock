@@ -6727,7 +6727,6 @@ files = [
 python-dateutil = "*"
 pytz = "*"
 requests = ">=2.31.0"
-sqlalchemy = {version = ">=1.3", optional = true, markers = "extra == \"sqlalchemy\""}
 tzlocal = "*"
 
 [package.extras]
@@ -7375,10 +7374,10 @@ pyspark = ["packaging", "pyspark", "sqlalchemy"]
 risingwave = ["psycopg2", "sqlalchemy", "sqlalchemy-risingwave", "sqlalchemy-views"]
 snowflake = ["packaging", "snowflake-connector-python"]
 sqlite = ["regex", "sqlalchemy", "sqlalchemy-views"]
-trino = ["sqlalchemy", "sqlalchemy-views", "trino"]
+trino = ["trino"]
 visualization = ["graphviz"]
 
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.9"
-content-hash = "2191160a6ebf9c3e237ada9bba709eb3a912f31f60a25138c9c6b5aace96ee9f"
+content-hash = "083f8f6a6d3dab493009395aabe051d1758183ba4e2588fc505aac883e3beafe"
