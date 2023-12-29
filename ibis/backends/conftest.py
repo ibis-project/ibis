@@ -542,7 +542,6 @@ def ddl_con(ddl_backend):
             "postgres",
             "risingwave",
             "sqlite",
-            "trino",
         )
     ),
     scope="session",

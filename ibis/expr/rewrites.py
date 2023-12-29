@@ -18,6 +18,7 @@ p = Namespace(pattern, module=ops)
 d = Namespace(deferred, module=ops)
 
 
+x = var("x")
 y = var("y")
 name = var("name")
 

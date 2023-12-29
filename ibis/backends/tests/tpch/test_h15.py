@@ -1,11 +1,19 @@
 from __future__ import annotations
 
+import pytest
+
 import ibis
 
 from .conftest import add_date, tpch_test
 
 
 @tpch_test
+@pytest.mark.notyet(
+    ["trino"],
+    reason="unreliable due to floating point differences in repeated evaluations of identical subqueries",
+    raises=AssertionError,
+    strict=False,
+)
 def test_tpc_h15(lineitem, supplier):
     """Top Supplier Query (Q15)"""
 
@@ -26,6 +34,5 @@ def test_tpc_h15(lineitem, supplier):
 
     q = supplier.join(qrev, supplier.s_suppkey == qrev.l_suppkey)
     q = q.filter([q.total_revenue == qrev.total_revenue.max()])
-    q = q.order_by([q.s_suppkey])
     q = q[q.s_suppkey, q.s_name, q.s_address, q.s_phone, q.total_revenue]
-    return q
+    return q.order_by([q.s_suppkey])
