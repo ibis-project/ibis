@@ -537,7 +537,7 @@ def ddl_con(ddl_backend):
 
 @pytest.fixture(
     params=_get_backends_to_test(
-        keep=("exasol", "mssql", "mysql", "oracle", "postgres", "sqlite", "trino")
+        keep=("exasol", "mssql", "mysql", "oracle", "postgres", "sqlite")
     ),
     scope="session",
 )
