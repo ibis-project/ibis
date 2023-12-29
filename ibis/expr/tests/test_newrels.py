@@ -139,10 +139,18 @@ def test_select_windowizing_analytic_function():
 
 def test_subquery_integrity_check():
     t = ibis.table(name="t", schema={"a": "int64", "b": "string"})
+    agg = t.agg([t.a.sum(), t.a.mean()])
 
     msg = "Subquery must have exactly one column, got 2"
     with pytest.raises(IntegrityError, match=msg):
+        ops.ScalarSubquery(agg)
+    with pytest.raises(IntegrityError, match=msg):
         ops.ScalarSubquery(t)
+
+    agg = t.agg(t.a.sum() + 1)
+    msg = "is not a reduction"
+    with pytest.raises(IntegrityError, match=msg):
+        ops.ScalarSubquery(agg)
 
 
 def test_select_turns_scalar_reduction_into_subquery():
