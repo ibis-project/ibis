@@ -1,73 +1,93 @@
-WITH t0 AS (
-  SELECT
-    t2.s_suppkey AS s_suppkey,
-    t2.s_name AS s_name,
-    t2.s_address AS s_address,
-    t2.s_nationkey AS s_nationkey,
-    t2.s_phone AS s_phone,
-    t2.s_acctbal AS s_acctbal,
-    t2.s_comment AS s_comment,
-    t3.n_nationkey AS n_nationkey,
-    t3.n_name AS n_name,
-    t3.n_regionkey AS n_regionkey,
-    t3.n_comment AS n_comment
-  FROM hive.ibis_sf1.supplier AS t2
-  JOIN hive.ibis_sf1.nation AS t3
-    ON t2.s_nationkey = t3.n_nationkey
-  WHERE
-    t3.n_name = 'CANADA'
-    AND t2.s_suppkey IN (
-      SELECT
-        t4.ps_suppkey
-      FROM (
-        SELECT
-          t5.ps_partkey AS ps_partkey,
-          t5.ps_suppkey AS ps_suppkey,
-          t5.ps_availqty AS ps_availqty,
-          t5.ps_supplycost AS ps_supplycost,
-          t5.ps_comment AS ps_comment
-        FROM hive.ibis_sf1.partsupp AS t5
-        WHERE
-          t5.ps_partkey IN (
-            SELECT
-              t6.p_partkey
-            FROM (
-              SELECT
-                t7.p_partkey AS p_partkey,
-                t7.p_name AS p_name,
-                t7.p_mfgr AS p_mfgr,
-                t7.p_brand AS p_brand,
-                t7.p_type AS p_type,
-                t7.p_size AS p_size,
-                t7.p_container AS p_container,
-                t7.p_retailprice AS p_retailprice,
-                t7.p_comment AS p_comment
-              FROM hive.ibis_sf1.part AS t7
-              WHERE
-                t7.p_name LIKE 'forest%'
-            ) AS t6
-          )
-          AND t5.ps_availqty > (
-            SELECT
-              SUM(t6.l_quantity) AS "Sum(l_quantity)"
-            FROM hive.ibis_sf1.lineitem AS t6
-            WHERE
-              t6.l_partkey = t5.ps_partkey
-              AND t6.l_suppkey = t5.ps_suppkey
-              AND t6.l_shipdate >= FROM_ISO8601_DATE('1994-01-01')
-              AND t6.l_shipdate < FROM_ISO8601_DATE('1995-01-01')
-          ) * 0.5
-      ) AS t4
-    )
-)
 SELECT
-  t1.s_name,
-  t1.s_address
+  "t13"."s_name",
+  "t13"."s_address"
 FROM (
   SELECT
-    t0.s_name AS s_name,
-    t0.s_address AS s_address
-  FROM t0
-) AS t1
+    "t10"."s_suppkey",
+    "t10"."s_name",
+    "t10"."s_address",
+    "t10"."s_nationkey",
+    "t10"."s_phone",
+    "t10"."s_acctbal",
+    "t10"."s_comment",
+    "t8"."n_nationkey",
+    "t8"."n_name",
+    "t8"."n_regionkey",
+    "t8"."n_comment"
+  FROM (
+    SELECT
+      "t0"."s_suppkey",
+      "t0"."s_name",
+      "t0"."s_address",
+      "t0"."s_nationkey",
+      "t0"."s_phone",
+      CAST("t0"."s_acctbal" AS DECIMAL(15, 2)) AS "s_acctbal",
+      "t0"."s_comment"
+    FROM "supplier" AS "t0"
+  ) AS "t10"
+  INNER JOIN (
+    SELECT
+      "t2"."n_nationkey",
+      "t2"."n_name",
+      "t2"."n_regionkey",
+      "t2"."n_comment"
+    FROM "nation" AS "t2"
+  ) AS "t8"
+    ON "t10"."s_nationkey" = "t8"."n_nationkey"
+) AS "t13"
+WHERE
+  "t13"."n_name" = 'CANADA'
+  AND "t13"."s_suppkey" IN (
+    SELECT
+      "t7"."ps_suppkey"
+    FROM (
+      SELECT
+        "t1"."ps_partkey",
+        "t1"."ps_suppkey",
+        "t1"."ps_availqty",
+        CAST("t1"."ps_supplycost" AS DECIMAL(15, 2)) AS "ps_supplycost",
+        "t1"."ps_comment"
+      FROM "partsupp" AS "t1"
+    ) AS "t7"
+    WHERE
+      "t7"."ps_partkey" IN (
+        SELECT
+          "t3"."p_partkey"
+        FROM "part" AS "t3"
+        WHERE
+          "t3"."p_name" LIKE 'forest%'
+      )
+      AND "t7"."ps_availqty" > (
+        (
+          SELECT
+            SUM("t11"."l_quantity") AS "Sum(l_quantity)"
+          FROM (
+            SELECT
+              "t4"."l_orderkey",
+              "t4"."l_partkey",
+              "t4"."l_suppkey",
+              "t4"."l_linenumber",
+              CAST("t4"."l_quantity" AS DECIMAL(15, 2)) AS "l_quantity",
+              CAST("t4"."l_extendedprice" AS DECIMAL(15, 2)) AS "l_extendedprice",
+              CAST("t4"."l_discount" AS DECIMAL(15, 2)) AS "l_discount",
+              CAST("t4"."l_tax" AS DECIMAL(15, 2)) AS "l_tax",
+              "t4"."l_returnflag",
+              "t4"."l_linestatus",
+              "t4"."l_shipdate",
+              "t4"."l_commitdate",
+              "t4"."l_receiptdate",
+              "t4"."l_shipinstruct",
+              "t4"."l_shipmode",
+              "t4"."l_comment"
+            FROM "lineitem" AS "t4"
+            WHERE
+              "t4"."l_partkey" = "t7"."ps_partkey"
+              AND "t4"."l_suppkey" = "t7"."ps_suppkey"
+              AND "t4"."l_shipdate" >= FROM_ISO8601_DATE('1994-01-01')
+              AND "t4"."l_shipdate" < FROM_ISO8601_DATE('1995-01-01')
+          ) AS "t11"
+        ) * CAST(0.5 AS DOUBLE)
+      )
+  )
 ORDER BY
-  t1.s_name ASC
+  "t13"."s_name" ASC
