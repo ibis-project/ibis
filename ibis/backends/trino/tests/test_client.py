@@ -41,7 +41,8 @@ def test_table_properties(tmp_name):
     )
     assert t.schema() == schema
     with con.begin() as c:
-        ddl = c.exec_driver_sql(f"SHOW CREATE TABLE {tmp_name}").scalar()
+        c.execute(f"SHOW CREATE TABLE {tmp_name}")
+        [(ddl,)] = c.fetchall()
     assert "ORC" in ddl
     assert "bucketed_by" in ddl
 
@@ -78,20 +79,20 @@ def test_con_source(source, expected):
         schema="default",
         source=source,
     )
-    assert con.con.url.query["source"] == expected
+    assert con.con.source == expected
 
 
 @pytest.mark.parametrize(
-    ("schema", "table"),
+    ("database", "schema", "table"),
     [
         # tables known to exist
-        ("system.metadata", "table_comments"),
-        ("tpcds.sf1", "store"),
-        ("tpch.sf1", "nation"),
+        ("system", "metadata", "table_comments"),
+        ("tpcds", "sf1", "store"),
+        ("tpch", "sf1", "nation"),
     ],
 )
-def test_cross_schema_table_access(con, schema, table):
-    t = con.table(table, schema=schema)
+def test_cross_schema_table_access(con, database, schema, table):
+    t = con.table(table, schema=schema, database=database)
     assert t.count().execute()
 
 
@@ -115,9 +116,8 @@ def test_builtin_agg_udf(con):
     result_n, result = expr.execute().squeeze().tolist()
 
     with con.begin() as c:
-        expected_n, expected = c.exec_driver_sql(
-            "SELECT COUNT(*), GEOMETRIC_MEAN(price) FROM diamonds"
-        ).one()
+        c.execute("SELECT COUNT(*), GEOMETRIC_MEAN(price) FROM diamonds")
+        [(expected_n, expected)] = c.fetchall()
 
     # check the count
     assert result_n > 0
@@ -148,28 +148,14 @@ def test_create_table_timestamp():
         assert table not in con.list_tables()
 
 
-def test_table_access_from_connection_without_catalog_or_schema():
-    con = ibis.trino.connect()
-    # can't use the `system` catalog to test here, because the trino sqlalchemy
-    # dialect defaults to `system` if no catalog is passed, so it wouldn't be a
-    # useful test
-    assert con.current_database != "tpch"
-    assert con.current_schema is None
-
-    t = con.table("region", schema="tpch.sf1")
-
-    assert con.current_database != "tpch"
-    assert con.current_schema is None
-
-    assert t.count().execute()
-
-
 def test_table_access_database_schema(con):
     t = con.table("region", schema="sf1", database="tpch")
     assert t.count().execute()
 
-    with pytest.raises(exc.IbisError, match="Cannot specify both"):
+    with pytest.raises(exc.IbisError, match='Table not found: tpch."tpch.sf1".region'):
         con.table("region", schema="tpch.sf1", database="tpch")
 
-    with pytest.raises(exc.IbisError, match="Cannot specify both"):
+    with pytest.raises(
+        exc.IbisError, match='Table not found: system."tpch.sf1".region'
+    ):
         con.table("region", schema="tpch.sf1", database="system")
