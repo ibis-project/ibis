@@ -245,14 +245,66 @@ class Node(Hashable):
         A mapping of nodes to their results.
         """
         results: dict[Node, Any] = {}
-        for node in Graph.from_bfs(self, filter=filter).toposort():
+
+        graph, _ = Graph.from_bfs(self, filter=filter).toposort()
+        for node in graph:
             # minor optimization to directly recurse into the children
             kwargs = {
                 k: _recursive_lookup(v, results)
                 for k, v in zip(node.__argnames__, node.__args__)
             }
             results[node] = fn(node, results, **kwargs)
+
         return results
+
+    @experimental
+    def map_clear(
+        self, fn: Callable, filter: Optional[Finder] = None
+    ) -> dict[Node, Any]:
+        """Apply a function to all nodes in the graph more memory efficiently.
+
+        Alternative implementation of `map` to reduce memory usage. While `map` keeps
+        all the results in memory until the end of the traversal, this method removes
+        intermediate results as soon as they are not needed anymore.
+
+        Prefer this method over `map` if the results consume significant amount of
+        memory and if the intermediate results are not needed.
+
+        Parameters
+        ----------
+        fn
+            Function to apply to each node. It receives the node as the first argument,
+            the results as the second and the results of the children as keyword
+            arguments.
+        filter
+            Pattern-like object to filter out nodes from the traversal. The traversal
+            will only visit nodes that match the given pattern and stop otherwise.
+
+        Returns
+        -------
+        In contrast to `map`, this method returns the result of the root node only since
+        the rest of the results are already discarded.
+        """
+        results: dict[Node, Any] = {}
+
+        graph, dependents = Graph.from_bfs(self, filter=filter).toposort()
+        dependents = {k: set(v) for k, v in dependents.items()}
+
+        for node, dependencies in graph.items():
+            kwargs = {
+                k: _recursive_lookup(v, results)
+                for k, v in zip(node.__argnames__, node.__args__)
+            }
+            results[node] = fn(node, results, **kwargs)
+
+            # remove the results belonging to the dependencies if they are not
+            # needed by other nodes during the rest of the traversal
+            for dependency in dependencies:
+                dependents[dependency].remove(node)
+                if not dependents[dependency]:
+                    del results[dependency]
+
+        return results[self]
 
     # TODO(kszucs): perhaps rename it to find_all() for better clarity
     def find(
@@ -489,7 +541,7 @@ class Graph(dict[Node, Sequence[Node]]):
         if any(in_degree.values()):
             raise ValueError("cycle detected in the graph")
 
-        return result
+        return result, dependents
 
 
 # these could be callables instead
