@@ -2,10 +2,11 @@ from __future__ import annotations
 
 import os
 import subprocess
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import pytest
 import sqlglot as sg
+import sqlglot.expressions as sge
 
 import ibis
 import ibis.expr.datatypes as dt
@@ -42,10 +43,7 @@ class TestConf(ServiceBackendTest):
     supports_structs = True
     supports_map = True
     supports_tpch = True
-    deps = ("sqlalchemy", "trino.sqlalchemy")
-
-    _tpch_data_schema = "tpch.tiny"
-    _tpch_query_schema = "hive.ibis_sf1"
+    deps = ("trino",)
 
     def preload(self):
         # copy files to the minio host
@@ -72,7 +70,8 @@ class TestConf(ServiceBackendTest):
     def _transform_tpch_sql(self, parsed):
         def add_catalog_and_schema(node):
             if isinstance(node, sg.exp.Table):
-                catalog, db = self._tpch_query_schema.split(".")
+                catalog = "hive"
+                db = "ibis_sf1"
                 return node.__class__(
                     db=db,
                     catalog=catalog,
@@ -93,11 +92,10 @@ class TestConf(ServiceBackendTest):
         to match the DuckDB TPC-H query conventions.
         """
         con = self.connection
-        query_schema = self._tpch_query_schema
-        data_schema = self._tpch_data_schema
-        database, schema = query_schema.split(".")
+        database = "hive"
+        schema = "ibis_sf1"
 
-        tables = con.list_tables(schema=self._tpch_data_schema)
+        tables = con.list_tables(schema="tiny", database="tpch")
         con.create_schema(schema, database=database, force=True)
 
         prefixes = {"partsupp": "ps"}
@@ -110,7 +108,7 @@ class TestConf(ServiceBackendTest):
                 prefix = prefixes.get(table, table[0])
 
                 t = (
-                    con.table(table, schema=data_schema)
+                    con.table(table, schema="tiny", database="tpch")
                     .rename(f"{prefix}_{{}}".format)
                     # https://github.com/trinodb/trino/issues/19477
                     .mutate(
@@ -118,16 +116,29 @@ class TestConf(ServiceBackendTest):
                     )
                 )
 
-                sql = ibis.to_sql(t, dialect="trino")
-                c.exec_driver_sql(
-                    f"CREATE OR REPLACE VIEW {query_schema}.{table} AS {sql}"
-                )
+                sql = sge.Create(
+                    kind="VIEW",
+                    this=sg.table(table, db=schema, catalog=database),
+                    expression=self.connection._to_sqlglot(t),
+                    replace=True,
+                ).sql("trino", pretty=True)
+
+                c.execute(sql)
+
+    def _load_data(self, **_: Any) -> None:
+        """Load test data into a backend."""
+        with self.connection.begin() as cur:
+            for stmt in self.ddl_script:
+                cur.execute(stmt)
 
     def _tpch_table(self, name: str):
-        return self.connection.table(
-            self.default_identifier_case_fn(name),
-            schema=self._tpch_query_schema,
+        from ibis import _
+
+        table = self.connection.table(
+            self.default_identifier_case_fn(name), schema="ibis_sf1", database="hive"
         )
+        table = table.mutate(s.across(s.of_type("double"), _.cast("decimal(15, 2)")))
+        return table
 
     @property
     def test_files(self) -> Iterable[Path]:

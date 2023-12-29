@@ -851,6 +851,7 @@ def test_simple_ungrouped_window_with_scalar_order_by(alltypes):
                     ["trino"],
                     reason="this isn't actually broken: the backend result is equal up to ordering",
                     raises=AssertionError,
+                    strict=False,  # sometimes it passes
                 ),
                 pytest.mark.broken(["oracle"], raises=AssertionError),
                 pytest.mark.notimpl(
@@ -903,6 +904,7 @@ def test_simple_ungrouped_window_with_scalar_order_by(alltypes):
                         "result is equal up to ordering"
                     ),
                     raises=AssertionError,
+                    strict=False,  # sometimes it passes
                 ),
                 pytest.mark.broken(["oracle"], raises=AssertionError),
                 pytest.mark.notimpl(

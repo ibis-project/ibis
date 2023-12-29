@@ -145,13 +145,12 @@ jobs:
           #     - freetds-dev
           #     - unixodbc-dev
           #     - tdsodbc
-          # - name: trino
-          #   title: Trino
-          #   extras:
-          #     - trino
-          #     - postgres
-          #   services:
-          #     - trino
+          - name: trino
+            title: Trino
+            extras:
+              - trino
+            services:
+              - trino
           # - name: druid
           #   title: Druid
           #   extras:
@@ -257,15 +256,14 @@ jobs:
           #       - freetds-dev
           #       - unixodbc-dev
           #       - tdsodbc
-          # - os: windows-latest
-          #   backend:
-          #     name: trino
-          #     title: Trino
-          #     services:
-          #       - trino
-          #     extras:
-          #       - trino
-          #       - postgres
+          - os: windows-latest
+            backend:
+              name: trino
+              title: Trino
+              services:
+                - trino
+              extras:
+                - trino
           # - os: windows-latest
           #   backend:
           #     name: druid
@@ -694,13 +692,6 @@ jobs:
   #           title: SQLite
   #           extras:
   #             - sqlite
-  #         - name: trino
-  #           title: Trino
-  #           services:
-  #             - trino
-  #           extras:
-  #             - trino
-  #             - postgres
   #         - name: oracle
   #           title: Oracle
   #           serial: true

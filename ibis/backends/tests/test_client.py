@@ -884,7 +884,7 @@ def test_in_memory_table(backend, con, arg, lambda_, expected, monkeypatch):
     monkeypatch.setattr(ibis.options, "default_backend", con)
 
     expr = lambda_(arg)
-    result = con.execute(expr)
+    result = con.execute(expr.order_by(expr.columns[0]))
     backend.assert_frame_equal(result, expected)
 
 
@@ -892,7 +892,7 @@ def test_filter_memory_table(backend, con, monkeypatch):
     monkeypatch.setattr(ibis.options, "default_backend", con)
 
     t = ibis.memtable([(1, 2), (3, 4), (5, 6)], columns=["x", "y"])
-    expr = t.filter(t.x > 1)
+    expr = t.filter(t.x > 1).order_by("x")
     expected = pd.DataFrame({"x": [3, 5], "y": [4, 6]})
     result = con.execute(expr)
     backend.assert_frame_equal(result, expected)
