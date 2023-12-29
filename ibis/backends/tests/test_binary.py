@@ -14,19 +14,14 @@ BINARY_BACKEND_TYPES = {
     "duckdb": "BLOB",
     "snowflake": "BINARY",
     "sqlite": "blob",
-    "trino": "STRING",
+    "trino": "varbinary",
     "postgres": "bytea",
     "risingwave": "bytea",
     "flink": "BINARY(1) NOT NULL",
 }
 
 
-@pytest.mark.broken(
-    ["trino"],
-    "(builtins.AttributeError) 'bytes' object has no attribute 'encode'",
-    raises=sqlalchemy.exc.StatementError,
-)
-@pytest.mark.broken(
+@pytest.mark.notimpl(
     ["clickhouse", "impala"],
     "Unsupported type: Binary(nullable=True)",
     raises=NotImplementedError,

@@ -74,3 +74,8 @@ try:
     from snowflake.connector.errors import ProgrammingError as SnowflakeProgrammingError
 except ImportError:
     SnowflakeProgrammingError = None
+
+try:
+    from trino.exceptions import TrinoUserError
+except ImportError:
+    TrinoUserError = None

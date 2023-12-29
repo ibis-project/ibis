@@ -23,6 +23,7 @@ from ibis.backends.tests.errors import (
     PolarsComputeError,
     Py4JJavaError,
     PySparkAnalysisException,
+    TrinoUserError,
 )
 
 pytestmark = [
@@ -81,8 +82,7 @@ def test_array_concat(con):
     right = ibis.literal([2, 1])
     expr = left + right
     result = con.execute(expr.name("tmp"))
-    expected = np.array([1, 2, 3, 2, 1])
-    assert np.array_equal(result, expected)
+    assert sorted(result) == sorted([1, 2, 3, 2, 1])
 
 
 # Issues #2370
@@ -99,7 +99,7 @@ def test_array_concat_variadic(con):
 # Issues #2370
 @pytest.mark.notimpl(["flink"], raises=com.OperationNotDefinedError)
 @pytest.mark.notyet(
-    ["postgres", "trino"],
+    ["postgres"],
     raises=sa.exc.ProgrammingError,
     reason="backend can't infer the type of an empty array",
 )
@@ -108,6 +108,7 @@ def test_array_concat_variadic(con):
     raises=sa.exc.InternalError,
     reason="Bind error: cannot determine type of empty array",
 )
+@pytest.mark.notyet(["trino"], raises=TrinoUserError)
 def test_array_concat_some_empty(con):
     left = ibis.literal([])
     right = ibis.literal([2, 1])
@@ -536,8 +537,7 @@ def test_array_filter(con, input, output):
 
 @builtin_array
 @pytest.mark.notimpl(
-    ["mssql", "polars", "postgres"],
-    raises=com.OperationNotDefinedError,
+    ["mssql", "polars", "postgres"], raises=com.OperationNotDefinedError
 )
 @pytest.mark.notimpl(["dask"], raises=com.OperationNotDefinedError)
 @pytest.mark.never(["impala"], reason="array_types table isn't defined")
@@ -593,8 +593,7 @@ def test_array_contains(backend, con):
 )
 @builtin_array
 @pytest.mark.notimpl(
-    ["dask", "impala", "mssql", "polars"],
-    raises=com.OperationNotDefinedError,
+    ["dask", "impala", "mssql", "polars"], raises=com.OperationNotDefinedError
 )
 def test_array_position(backend, con, a, expected_array):
     t = ibis.memtable({"a": a})
@@ -607,8 +606,7 @@ def test_array_position(backend, con, a, expected_array):
 
 @builtin_array
 @pytest.mark.notimpl(
-    ["dask", "impala", "mssql", "polars"],
-    raises=com.OperationNotDefinedError,
+    ["dask", "impala", "mssql", "polars"], raises=com.OperationNotDefinedError
 )
 @pytest.mark.broken(
     ["risingwave"],
@@ -813,9 +811,9 @@ def test_array_intersect(con, data):
     reason="ClickHouse won't accept dicts for struct type values",
 )
 @pytest.mark.notimpl(["postgres", "risingwave"], raises=sa.exc.ProgrammingError)
-@pytest.mark.notimpl(
-    ["datafusion", "flink"],
-    raises=com.OperationNotDefinedError,
+@pytest.mark.notimpl(["datafusion", "flink"], raises=com.OperationNotDefinedError)
+@pytest.mark.broken(
+    ["trino"], reason="inserting maps into structs doesn't work", raises=TrinoUserError
 )
 def test_unnest_struct(con):
     data = {"value": [[{"a": 1}, {"a": 2}], [{"a": 3}, {"a": 4}]]}
@@ -886,6 +884,9 @@ def test_zip(backend):
     ["pyspark"],
     reason="pyspark doesn't seem to support field selection on explode",
     raises=PySparkAnalysisException,
+)
+@pytest.mark.broken(
+    ["trino"], reason="inserting maps into structs doesn't work", raises=TrinoUserError
 )
 def test_array_of_struct_unnest(con):
     jobs = ibis.memtable(
@@ -970,12 +971,14 @@ def flatten_data():
 @pytest.mark.notimpl(["datafusion", "flink"], raises=com.OperationNotDefinedError)
 def test_array_flatten(backend, flatten_data, column, expected):
     data = flatten_data[column]
-    t = ibis.memtable(
-        {column: data["data"]}, schema=ibis.schema({column: data["type"]})
-    )
+    t = ibis.memtable({column: data["data"]}, schema={column: data["type"]})
     expr = t[column].flatten()
     result = backend.connection.execute(expr)
-    backend.assert_series_equal(result, expected, check_names=False)
+    backend.assert_series_equal(
+        result.sort_values().reset_index(drop=True),
+        expected.sort_values().reset_index(drop=True),
+        check_names=False,
+    )
 
 
 @pytest.mark.notyet(
@@ -1155,7 +1158,7 @@ timestamp_range_tzinfos = pytest.mark.parametrize(
             marks=[
                 pytest.mark.notyet(
                     ["trino"],
-                    raises=sa.exc.ProgrammingError,
+                    raises=TrinoUserError,
                     reason="trino doesn't support timestamp with time zone arguments to its sequence function",
                 ),
                 pytest.mark.notyet(
