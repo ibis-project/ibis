@@ -9,11 +9,7 @@ from pytest import param
 import ibis
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
-
-try:
-    from pyexasol.exceptions import ExaQueryError
-except ImportError:
-    ExaQueryError = None
+from ibis.backends.tests.errors import ExaQueryError
 
 MACADDR_BACKEND_TYPE = {
     "bigquery": "STRING",

@@ -11,11 +11,7 @@ import ibis
 import ibis.expr.datatypes as dt
 import ibis.expr.schema as sch
 from ibis.backends.conftest import TEST_TABLES
-
-try:
-    from py4j.protocol import Py4JJavaError
-except ImportError:
-    Py4JJavaError = None
+from ibis.backends.tests.errors import Py4JJavaError
 
 _awards_players_schema = sch.Schema(
     {

@@ -13,16 +13,6 @@ import ibis
 import ibis.common.exceptions as com
 import ibis.expr.schema as sch
 
-try:
-    from polars.exceptions import ColumnNotFoundError
-except ImportError:
-    ColumnNotFoundError = None
-
-try:
-    from impala.error import HiveServer2Error
-except ImportError:
-    HiveServer2Error = None
-
 
 def _pandas_semi_join(left, right, on, **_):
     assert len(on) == 1, str(on)

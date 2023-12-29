@@ -12,6 +12,13 @@ from pytest import param
 import ibis
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
+from ibis.backends.tests.errors import (
+    ClickHouseDatabaseError,
+    GoogleBadRequest,
+    ImpalaHiveServer2Error,
+    Py4JJavaError,
+    PySparkAnalysisException,
+)
 from ibis.legacy.udf.vectorized import analytic, reduction
 
 pytestmark = pytest.mark.notimpl(
@@ -22,36 +29,6 @@ pytestmark = pytest.mark.notimpl(
         com.OperationNotDefinedError,
     ),
 )
-
-try:
-    from clickhouse_connect.driver.exceptions import (
-        DatabaseError as ClickHouseOperationalError,
-    )
-except ImportError:
-    ClickHouseOperationalError = None
-
-
-try:
-    from pyspark.sql.utils import AnalysisException
-except ImportError:
-    AnalysisException = None
-
-
-try:
-    from impala.error import HiveServer2Error
-except ImportError:
-    HiveServer2Error = None
-
-try:
-    from py4j.protocol import Py4JJavaError
-except ImportError:
-    Py4JJavaError = None
-
-
-try:
-    from google.api_core.exceptions import BadRequest as GoogleBadRequest
-except ImportError:
-    GoogleBadRequest = None
 
 
 # adapted from https://gist.github.com/xmnlab/2c1f93df1a6c6bde4e32c8579117e9cc
@@ -192,7 +169,7 @@ def calc_zscore(s):
                 ),
                 pytest.mark.notyet(
                     ["clickhouse"],
-                    raises=ClickHouseOperationalError,
+                    raises=ClickHouseDatabaseError,
                     reason="ClickHouse requires a specific window frame: unbounded preceding and unbounded following ONLY",
                 ),
                 pytest.mark.broken(
@@ -669,7 +646,9 @@ def test_simple_ungrouped_unbound_following_window(
     reason="support scalar sorting keys are not yet implemented",
 )
 @pytest.mark.broken(
-    ["pyspark"], raises=AnalysisException, reason="pyspark tries to locate None column"
+    ["pyspark"],
+    raises=PySparkAnalysisException,
+    reason="pyspark tries to locate None column",
 )
 @pytest.mark.never(
     ["mssql"], raises=Exception, reason="order by constant is not supported"
@@ -734,7 +713,7 @@ def test_simple_ungrouped_window_with_scalar_order_by(alltypes):
                 ),
                 pytest.mark.notyet(
                     ["pyspark"],
-                    raises=AnalysisException,
+                    raises=PySparkAnalysisException,
                     reason="pyspark requires CURRENT ROW",
                 ),
                 pytest.mark.notyet(
@@ -838,7 +817,7 @@ def test_simple_ungrouped_window_with_scalar_order_by(alltypes):
                 ),
                 pytest.mark.notimpl(
                     ["pyspark"],
-                    raises=AnalysisException,
+                    raises=PySparkAnalysisException,
                     reason="pyspark requires ORDER BY",
                 ),
                 pytest.mark.notimpl(
@@ -890,7 +869,7 @@ def test_simple_ungrouped_window_with_scalar_order_by(alltypes):
                 pytest.mark.broken(["oracle"], raises=AssertionError),
                 pytest.mark.notimpl(
                     ["pyspark"],
-                    raises=AnalysisException,
+                    raises=PySparkAnalysisException,
                     reason="pyspark requires ORDER BY",
                 ),
                 pytest.mark.notimpl(
@@ -1006,7 +985,7 @@ def test_ungrouped_unbounded_window(
 @pytest.mark.notimpl(["polars"], raises=com.OperationNotDefinedError)
 @pytest.mark.notimpl(["snowflake"], raises=sa.exc.ProgrammingError)
 @pytest.mark.notimpl(
-    ["impala"], raises=HiveServer2Error, reason="limited RANGE support"
+    ["impala"], raises=ImpalaHiveServer2Error, reason="limited RANGE support"
 )
 @pytest.mark.notimpl(["dask"], raises=NotImplementedError)
 @pytest.mark.notimpl(
@@ -1022,7 +1001,7 @@ def test_ungrouped_unbounded_window(
 @pytest.mark.notyet(
     ["clickhouse"],
     reason="RANGE OFFSET frame for 'DB::ColumnNullable' ORDER BY column is not implemented",
-    raises=ClickHouseOperationalError,
+    raises=ClickHouseDatabaseError,
 )
 @pytest.mark.notyet(["mssql"], raises=sa.exc.ProgrammingError)
 def test_grouped_bounded_range_window(backend, alltypes, df):
@@ -1075,7 +1054,7 @@ def test_grouped_bounded_range_window(backend, alltypes, df):
 
 @pytest.mark.notimpl(["clickhouse", "polars"], raises=com.OperationNotDefinedError)
 @pytest.mark.notimpl(["dask"], raises=AttributeError)
-@pytest.mark.notimpl(["pyspark"], raises=AnalysisException)
+@pytest.mark.notimpl(["pyspark"], raises=PySparkAnalysisException)
 @pytest.mark.notyet(
     ["clickhouse"],
     reason="clickhouse doesn't implement percent_rank",
@@ -1194,15 +1173,13 @@ def test_first_last(backend):
     ["bigquery"], raises=GoogleBadRequest, reason="not supported by BigQuery"
 )
 @pytest.mark.notyet(
-    ["clickhouse"],
-    raises=ClickHouseOperationalError,
-    reason="not supported by ClickHouse",
+    ["clickhouse"], raises=ClickHouseDatabaseError, reason="not supported by ClickHouse"
 )
 @pytest.mark.notyet(
     ["datafusion"], raises=Exception, reason="not supported by DataFusion"
 )
 @pytest.mark.notyet(
-    ["impala"], raises=HiveServer2Error, reason="not supported by Impala"
+    ["impala"], raises=ImpalaHiveServer2Error, reason="not supported by Impala"
 )
 @pytest.mark.notyet(
     ["mysql"], raises=sa.exc.ProgrammingError, reason="not supported by MySQL"
@@ -1261,7 +1238,7 @@ def test_range_expression_bounds(backend):
     ["mssql"], reason="lack of support for booleans", raises=sa.exc.ProgrammingError
 )
 @pytest.mark.broken(
-    ["pyspark"], reason="pyspark requires CURRENT ROW", raises=AnalysisException
+    ["pyspark"], reason="pyspark requires CURRENT ROW", raises=PySparkAnalysisException
 )
 def test_rank_followed_by_over_call_merge_frames(backend, alltypes, df):
     # GH #7631

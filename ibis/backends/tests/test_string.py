@@ -11,21 +11,9 @@ from pytest import param
 import ibis
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
+from ibis.backends.tests.errors import ClickHouseDatabaseError, PySparkPythonException
 from ibis.common.annotations import ValidationError
 from ibis.common.exceptions import OperationNotDefinedError
-
-try:
-    from pyspark.sql.utils import PythonException
-except ImportError:
-    PythonException = None
-
-
-try:
-    from clickhouse_connect.driver.exceptions import (
-        DatabaseError as ClickhouseDatabaseError,
-    )
-except ImportError:
-    ClickhouseDatabaseError = None
 
 
 @pytest.mark.parametrize(
@@ -242,7 +230,7 @@ def uses_java_re(t):
                     ["mssql", "oracle", "exasol"],
                     raises=com.OperationNotDefinedError,
                 ),
-                pytest.mark.broken(["pyspark"], raises=PythonException),
+                pytest.mark.broken(["pyspark"], raises=PySparkPythonException),
                 pytest.mark.never(
                     ["druid"],
                     reason="No posix support; regex is interpreted literally",
@@ -1124,7 +1112,7 @@ def test_re_split_column(alltypes):
 )
 @pytest.mark.notyet(
     ["clickhouse"],
-    raises=ClickhouseDatabaseError,
+    raises=ClickHouseDatabaseError,
     reason="clickhouse only supports pattern constants",
 )
 @pytest.mark.notyet(

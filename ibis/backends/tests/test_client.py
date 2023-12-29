@@ -27,15 +27,11 @@ import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 from ibis.backends.conftest import ALL_BACKENDS
+from ibis.backends.tests.errors import Py4JJavaError
 from ibis.util import gen_name, guid
 
 if TYPE_CHECKING:
     from ibis.backends.base import BaseBackend
-
-try:
-    from py4j.protocol import Py4JJavaError
-except ImportError:
-    Py4JJavaError = None
 
 
 @pytest.fixture

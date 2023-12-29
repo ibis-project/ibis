@@ -12,11 +12,6 @@ import ibis.common.exceptions as com
 import ibis.expr.types as ir
 from ibis import _
 
-try:
-    from pyexasol.exceptions import ExaQueryError
-except ImportError:
-    ExaQueryError = None
-
 
 @pytest.fixture
 def union_subsets(alltypes, df):

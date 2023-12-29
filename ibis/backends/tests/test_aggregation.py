@@ -14,39 +14,15 @@ import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 from ibis import _
 from ibis import literal as L
+from ibis.backends.tests.errors import (
+    ClickHouseDatabaseError,
+    ExaQueryError,
+    GoogleBadRequest,
+    PolarsInvalidOperationError,
+    Py4JError,
+    PySparkAnalysisException,
+)
 from ibis.legacy.udf.vectorized import reduction
-
-try:
-    from pyspark.sql.utils import AnalysisException as PysparkAnalysisException
-except ImportError:
-    PysparkAnalysisException = None
-
-try:
-    from google.api_core.exceptions import BadRequest as GoogleBadRequest
-except ImportError:
-    GoogleBadRequest = None
-
-try:
-    from clickhouse_connect.driver.exceptions import (
-        DatabaseError as ClickhouseDatabaseError,
-    )
-except ImportError:
-    ClickhouseDatabaseError = None
-
-try:
-    from py4j.protocol import Py4JError
-except ImportError:
-    Py4JError = None
-
-try:
-    from pyexasol.exceptions import ExaQueryError
-except ImportError:
-    ExaQueryError = None
-
-try:
-    from polars.exceptions import InvalidOperationError as PolarsInvalidOperationError
-except ImportError:
-    PolarsInvalidOperationError = None
 
 
 @reduction(input_type=[dt.double], output_type=dt.double)
@@ -410,7 +386,7 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
             marks=[
                 pytest.mark.notimpl(
                     ["pyspark"],
-                    raises=PysparkAnalysisException,
+                    raises=PySparkAnalysisException,
                     reason=(
                         "pyspark.sql.utils.AnalysisException: "
                         "function sum requires numeric or interval types, not boolean;"
@@ -1220,7 +1196,7 @@ def test_median(alltypes, df):
 )
 @pytest.mark.notyet(
     ["clickhouse"],
-    raises=ClickhouseDatabaseError,
+    raises=ClickHouseDatabaseError,
     reason="doesn't support median of strings",
 )
 @pytest.mark.notyet(
@@ -1646,11 +1622,11 @@ def test_grouped_case(backend, con):
     raises=AssertionError,
 )
 @pytest.mark.notyet(["impala", "flink"], raises=com.UnsupportedOperationError)
-@pytest.mark.notyet(["clickhouse"], raises=ClickhouseDatabaseError)
+@pytest.mark.notyet(["clickhouse"], raises=ClickHouseDatabaseError)
 @pytest.mark.notyet(["druid", "trino", "snowflake"], raises=sa.exc.ProgrammingError)
 @pytest.mark.notyet(["mysql"], raises=sa.exc.NotSupportedError)
 @pytest.mark.notyet(["oracle"], raises=sa.exc.DatabaseError)
-@pytest.mark.notyet(["pyspark"], raises=PysparkAnalysisException)
+@pytest.mark.notyet(["pyspark"], raises=PySparkAnalysisException)
 def test_group_concat_over_window(backend, con):
     input_df = pd.DataFrame(
         {

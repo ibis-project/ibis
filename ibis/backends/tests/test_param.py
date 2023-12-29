@@ -12,16 +12,7 @@ from pytest import param
 import ibis
 import ibis.expr.datatypes as dt
 from ibis import _
-
-try:
-    from google.api_core.exceptions import BadRequest as GoogleBadRequest
-except ImportError:
-    GoogleBadRequest = None
-
-try:
-    from py4j.protocol import Py4JJavaError
-except ImportError:
-    Py4JJavaError = None
+from ibis.backends.tests.errors import GoogleBadRequest, Py4JJavaError
 
 
 @pytest.mark.parametrize(

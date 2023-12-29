@@ -17,36 +17,13 @@ import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.selectors as s
 from ibis import _
+from ibis.backends.tests.errors import (
+    ClickHouseDatabaseError,
+    ExaQueryError,
+    GoogleBadRequest,
+    ImpalaHiveServer2Error,
+)
 from ibis.common.annotations import ValidationError
-
-try:
-    import duckdb
-
-    DuckDBConversionException = duckdb.ConversionException
-except ImportError:
-    DuckDBConversionException = None
-
-try:
-    import clickhouse_connect as cc
-
-    ClickhouseDriverDatabaseError = cc.driver.exceptions.DatabaseError
-except ImportError:
-    ClickhouseDriverDatabaseError = None
-
-try:
-    from google.api_core.exceptions import BadRequest
-except ImportError:
-    BadRequest = None
-
-try:
-    from impala.error import HiveServer2Error
-except ImportError:
-    HiveServer2Error = None
-
-try:
-    from pyexasol.exceptions import ExaQueryError
-except ImportError:
-    ExaQueryError = None
 
 NULL_BACKEND_TYPES = {
     "bigquery": "NULL",
@@ -1471,7 +1448,7 @@ def test_try_cast_func(con, from_val, to_type, func):
             marks=[
                 pytest.mark.notyet(
                     ["bigquery"],
-                    raises=BadRequest,
+                    raises=GoogleBadRequest,
                     reason="bigquery doesn't support OFFSET without LIMIT",
                 ),
                 pytest.mark.notyet(
@@ -1485,7 +1462,7 @@ def test_try_cast_func(con, from_val, to_type, func):
                 ),
                 pytest.mark.never(
                     ["impala"],
-                    raises=HiveServer2Error,
+                    raises=ImpalaHiveServer2Error,
                     reason="impala doesn't support OFFSET without ORDER BY",
                 ),
                 pytest.mark.notyet(
@@ -1513,7 +1490,7 @@ def test_try_cast_func(con, from_val, to_type, func):
                 ),
                 pytest.mark.notyet(
                     ["impala"],
-                    raises=HiveServer2Error,
+                    raises=ImpalaHiveServer2Error,
                     reason="impala doesn't support OFFSET without ORDER BY",
                 ),
                 pytest.mark.notyet(
@@ -1575,7 +1552,7 @@ def test_static_table_slice(backend, slc, expected_count_fn):
 )
 @pytest.mark.notyet(
     ["clickhouse"],
-    raises=ClickhouseDriverDatabaseError,
+    raises=ClickHouseDatabaseError,
     reason="clickhouse doesn't support dynamic limit/offset",
 )
 @pytest.mark.notyet(["druid"], reason="druid doesn't support dynamic limit/offset")
@@ -1583,7 +1560,7 @@ def test_static_table_slice(backend, slc, expected_count_fn):
 @pytest.mark.notyet(
     ["bigquery"],
     reason="bigquery doesn't support dynamic limit/offset",
-    raises=BadRequest,
+    raises=GoogleBadRequest,
 )
 @pytest.mark.notyet(
     ["datafusion"],
@@ -1593,7 +1570,7 @@ def test_static_table_slice(backend, slc, expected_count_fn):
 @pytest.mark.never(
     ["impala"],
     reason="impala doesn't support dynamic limit/offset",
-    raises=HiveServer2Error,
+    raises=ImpalaHiveServer2Error,
 )
 @pytest.mark.notyet(["pyspark"], reason="pyspark doesn't support dynamic limit/offset")
 @pytest.mark.notyet(["flink"], reason="flink doesn't support dynamic limit/offset")
@@ -1618,7 +1595,7 @@ def test_dynamic_table_slice(backend, slc, expected_count_fn):
 )
 @pytest.mark.notyet(
     ["clickhouse"],
-    raises=ClickhouseDriverDatabaseError,
+    raises=ClickHouseDatabaseError,
     reason="clickhouse doesn't support dynamic limit/offset",
 )
 @pytest.mark.notyet(["druid"], reason="druid doesn't support dynamic limit/offset")
@@ -1626,7 +1603,7 @@ def test_dynamic_table_slice(backend, slc, expected_count_fn):
 @pytest.mark.notyet(
     ["bigquery"],
     reason="bigquery doesn't support dynamic limit/offset",
-    raises=BadRequest,
+    raises=GoogleBadRequest,
 )
 @pytest.mark.notyet(
     ["datafusion"],
@@ -1636,7 +1613,7 @@ def test_dynamic_table_slice(backend, slc, expected_count_fn):
 @pytest.mark.never(
     ["impala"],
     reason="impala doesn't support dynamic limit/offset",
-    raises=HiveServer2Error,
+    raises=ImpalaHiveServer2Error,
 )
 @pytest.mark.notyet(["pyspark"], reason="pyspark doesn't support dynamic limit/offset")
 @pytest.mark.xfail_version(
@@ -1758,7 +1735,7 @@ def test_substitute(backend):
 )
 @pytest.mark.notimpl(["druid", "flink"], reason="no sqlglot dialect", raises=ValueError)
 @pytest.mark.notimpl(["exasol"], raises=ValueError, reason="unknown dialect")
-def test_simple_memtable_construct(con, snapshot):
+def test_simple_memtable_construct(con):
     t = ibis.memtable({"a": [1, 2]})
     expr = t.a
     expected = [1.0, 2.0]
