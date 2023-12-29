@@ -2,60 +2,175 @@
 
 from __future__ import annotations
 
-import collections
+import atexit
 import contextlib
-import warnings
 from functools import cached_property
+from operator import itemgetter
 from typing import TYPE_CHECKING, Any
 
-import pandas as pd
-import sqlalchemy as sa
 import sqlglot as sg
-import toolz
-from trino.sqlalchemy.datatype import ROW as _ROW
-from trino.sqlalchemy.dialect import TrinoDialect
+import sqlglot.expressions as sge
+import trino
 
 import ibis
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
+import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis import util
 from ibis.backends.base import CanListDatabases
-from ibis.backends.base.sql.alchemy import (
-    AlchemyCanCreateSchema,
-    AlchemyCrossSchemaBackend,
-)
-from ibis.backends.base.sql.alchemy.datatypes import ArrayType
-from ibis.backends.trino.compiler import TrinoSQLCompiler
-from ibis.backends.trino.datatypes import INTERVAL, ROW, TrinoType
+from ibis.backends.base.sqlglot import SQLGlotBackend
+from ibis.backends.base.sqlglot.compiler import C
+from ibis.backends.trino.compiler import TrinoCompiler
 
 if TYPE_CHECKING:
     from collections.abc import Iterator, Mapping
 
+    import pandas as pd
     import pyarrow as pa
 
-    import ibis.expr.schema as sch
+    import ibis.expr.operations as ops
 
 
-class Backend(AlchemyCrossSchemaBackend, AlchemyCanCreateSchema, CanListDatabases):
+class Backend(SQLGlotBackend, CanListDatabases):
     name = "trino"
-    compiler = TrinoSQLCompiler
+    compiler = TrinoCompiler()
     supports_create_or_replace = False
     supports_temporary_tables = False
 
+    def raw_sql(self, query: str | sg.Expression) -> Any:
+        """Execute a raw SQL query."""
+        with contextlib.suppress(AttributeError):
+            query = query.sql(dialect=self.name, pretty=True)
+
+        con = self.con
+        cur = con.cursor()
+        try:
+            cur.execute(query)
+        except Exception:
+            if con.transaction is not None:
+                con.rollback()
+            if cur._query:
+                cur.close()
+            raise
+        else:
+            if con.transaction is not None:
+                con.commit()
+            return cur
+
+    @contextlib.contextmanager
+    def begin(self):
+        con = self.con
+        cur = con.cursor()
+        try:
+            yield cur
+        except Exception:
+            if con.transaction is not None:
+                con.rollback()
+            raise
+        else:
+            if con.transaction is not None:
+                con.commit()
+        finally:
+            if cur._query:
+                cur.close()
+
+    @contextlib.contextmanager
+    def _safe_raw_sql(
+        self, query: str | sge.Expression
+    ) -> Iterator[trino.dbapi.Cursor]:
+        """Execute a raw SQL query, yielding the cursor.
+
+        Parameters
+        ----------
+        query
+            The query to execute.
+
+        Yields
+        ------
+        trino.dbapi.Cursor
+            The cursor of the executed query.
+        """
+        cur = self.raw_sql(query)
+        try:
+            yield cur
+        finally:
+            if cur._query:
+                cur.close()
+
+    def get_schema(
+        self, table_name: str, schema: str | None = None, database: str | None = None
+    ) -> sch.Schema:
+        """Compute the schema of a `table`.
+
+        Parameters
+        ----------
+        table_name
+            May **not** be fully qualified. Use `database` if you want to
+            qualify the identifier.
+        schema
+            Schema name
+        database
+            Database name
+
+        Returns
+        -------
+        sch.Schema
+            Ibis schema
+        """
+        conditions = [sg.column("table_name").eq(sge.convert(table_name))]
+
+        if schema is not None:
+            conditions.append(sg.column("table_schema").eq(sge.convert(schema)))
+
+        query = (
+            sg.select(
+                "column_name",
+                "data_type",
+                sg.column("is_nullable").eq(sge.convert("YES")).as_("nullable"),
+            )
+            .from_(sg.table("columns", db="information_schema", catalog=database))
+            .where(sg.and_(*conditions))
+            .order_by("ordinal_position")
+        )
+
+        with self._safe_raw_sql(query) as cur:
+            meta = cur.fetchall()
+
+        if not meta:
+            fqn = sg.table(table_name, db=schema, catalog=database).sql(self.name)
+            raise com.IbisError(f"Table not found: {fqn}")
+
+        return sch.Schema(
+            {
+                name: self.compiler.type_mapper.from_string(typ, nullable=nullable)
+                for name, typ, nullable in meta
+            }
+        )
+
     @cached_property
     def version(self) -> str:
-        return self._scalar_query(sa.select(sa.func.version()))
+        with self._safe_raw_sql(sg.select(self.compiler.f.version())) as cur:
+            [(version,)] = cur.fetchall()
+        return version
 
     @property
     def current_database(self) -> str:
-        return self._scalar_query(sa.select(sa.literal_column("current_catalog")))
+        with self._safe_raw_sql(sg.select(C.current_catalog)) as cur:
+            [(database,)] = cur.fetchall()
+        return database
+
+    @property
+    def current_schema(self) -> str:
+        with self._safe_raw_sql(sg.select(C.current_schema)) as cur:
+            [(schema,)] = cur.fetchall()
+        return schema
 
     def list_databases(self, like: str | None = None) -> list[str]:
         query = "SHOW CATALOGS"
-        with self.begin() as con:
-            catalogs = list(con.exec_driver_sql(query).scalars())
-        return self._filter_with_like(catalogs, like=like)
+        with self._safe_raw_sql(query) as cur:
+            catalogs = cur.fetchall()
+        return self._filter_with_like(list(map(itemgetter(0), catalogs)), like=like)
 
     def list_schemas(
         self, like: str | None = None, database: str | None = None
@@ -63,15 +178,14 @@ class Backend(AlchemyCrossSchemaBackend, AlchemyCanCreateSchema, CanListDatabase
         query = "SHOW SCHEMAS"
 
         if database is not None:
-            query += f" IN {self._quote(database)}"
+            database = sg.to_identifier(database, quoted=self.compiler.quoted).sql(
+                self.name
+            )
+            query += f" IN {database}"
 
-        with self.begin() as con:
-            schemata = list(con.exec_driver_sql(query).scalars())
-        return self._filter_with_like(schemata, like)
-
-    @property
-    def current_schema(self) -> str:
-        return self._scalar_query(sa.select(sa.literal_column("current_schema")))
+        with self._safe_raw_sql(query) as cur:
+            schemata = cur.fetchall()
+        return self._filter_with_like(list(map(itemgetter(0), schemata)), like)
 
     def list_tables(
         self,
@@ -111,10 +225,10 @@ class Backend(AlchemyCrossSchemaBackend, AlchemyCanCreateSchema, CanListDatabase
         if database is not None:
             query += f" IN {database}"
 
-        with self.begin() as con:
-            tables = list(con.exec_driver_sql(query).scalars())
+        with self._safe_raw_sql(query) as cur:
+            tables = cur.fetchall()
 
-        return self._filter_with_like(tables, like=like)
+        return self._filter_with_like(list(map(itemgetter(0), tables)), like=like)
 
     def do_connect(
         self,
@@ -125,6 +239,7 @@ class Backend(AlchemyCrossSchemaBackend, AlchemyCanCreateSchema, CanListDatabase
         database: str | None = None,
         schema: str | None = None,
         source: str | None = None,
+        timezone: str = "UTC",
         **connect_args,
     ) -> None:
         """Connect to Trino.
@@ -145,6 +260,8 @@ class Backend(AlchemyCrossSchemaBackend, AlchemyCanCreateSchema, CanListDatabase
             Schema to use on the Trino server
         source
             Application name passed to Trino
+        timezone
+            Timezone to use for the connection
         connect_args
             Additional keyword arguments passed directly to SQLAlchemy's
             `create_engine`
@@ -167,97 +284,83 @@ class Backend(AlchemyCrossSchemaBackend, AlchemyCanCreateSchema, CanListDatabase
         >>> con = ibis.trino.connect(database=catalog, schema=schema)
         >>> con = ibis.trino.connect(database=catalog, schema=schema, source="my-app")
         """
-        database = "/".join(filter(None, (database, schema)))
-        url = sa.engine.URL.create(
-            drivername="trino",
-            username=user,
-            password=password,
+        self.con = trino.dbapi.connect(
+            user=user,
+            auth=password,
             host=host,
             port=port,
-            database=database,
-            query=dict(source="ibis" if source is None else source),
+            catalog=database,
+            schema=schema,
+            source=source or "ibis",
+            timezone=timezone,
+            **connect_args,
         )
-        connect_args.setdefault("timezone", "UTC")
-        with warnings.catch_warnings():
-            warnings.filterwarnings(
-                "ignore",
-                message=r"The dbapi\(\) classmethod on dialect classes has been renamed",
-                category=sa.exc.SADeprecationWarning,
-            )
-            super().do_connect(
-                sa.create_engine(
-                    url, connect_args=connect_args, poolclass=sa.pool.StaticPool
-                )
-            )
-
-    @staticmethod
-    def _new_sa_metadata():
-        meta = sa.MetaData()
-
-        @sa.event.listens_for(meta, "column_reflect")
-        def column_reflect(inspector, table, column_info):
-            if isinstance(typ := column_info["type"], _ROW):
-                column_info["type"] = ROW(typ.attr_types)
-            elif isinstance(typ, sa.ARRAY):
-                column_info["type"] = toolz.nth(
-                    typ.dimensions or 1, toolz.iterate(ArrayType, typ.item_type)
-                )
-            elif isinstance(typ, sa.Interval):
-                column_info["type"] = INTERVAL(
-                    native=typ.native,
-                    day_precision=typ.day_precision,
-                    second_precision=typ.second_precision,
-                )
-
-        return meta
+        self._temp_views = set()
 
     @contextlib.contextmanager
     def _prepare_metadata(self, query: str) -> Iterator[dict[str, str]]:
-        name = util.gen_name("trino_metadata")
-        with self.begin() as con:
-            con.exec_driver_sql(f"PREPARE {name} FROM {query}")
+        name = util.gen_name(f"{self.name}_metadata")
+        with self.begin() as cur:
+            cur.execute(f"PREPARE {name} FROM {query}")
             try:
-                yield con.exec_driver_sql(f"DESCRIBE OUTPUT {name}").mappings()
+                cur.execute(f"DESCRIBE OUTPUT {name}")
+                yield cur.fetchall()
             finally:
-                con.exec_driver_sql(f"DEALLOCATE PREPARE {name}")
+                cur.execute(f"DEALLOCATE PREPARE {name}")
 
     def _metadata(self, query: str) -> Iterator[tuple[str, dt.DataType]]:
-        with self._prepare_metadata(query) as mappings:
+        with self._prepare_metadata(query) as info:
             yield from (
                 # trino types appear to be always nullable
-                (name, TrinoType.from_string(trino_type).copy(nullable=True))
-                for name, trino_type in toolz.pluck(["Column Name", "Type"], mappings)
+                (
+                    name,
+                    self.compiler.type_mapper.from_string(trino_type).copy(
+                        nullable=True
+                    ),
+                )
+                for name, _, _, _, trino_type, *_ in info
             )
 
     def _execute_view_creation(self, name, definition):
-        from sqlalchemy_views import CreateView
-
         # NB: trino doesn't support temporary views so we use the less
         # desirable method of cleaning up when the Python process exits using
         # an atexit hook
         #
         # the method that defines the atexit hook is defined in the parent
         # class
-        view = CreateView(sa.table(name), definition, or_replace=True)
+        view = sg.Create(
+            kind="VIEW",
+            this=sg.table(name, quoted=self.compiler.quoted),
+            expression=definition,
+            replace=True,
+        )
 
-        with self.begin() as con:
-            con.execute(view)
+        with self._safe_raw_sql(view):
+            pass
 
     def create_schema(
         self, name: str, database: str | None = None, force: bool = False
     ) -> None:
-        name = ".".join(map(self._quote, filter(None, [database, name])))
-        if_not_exists = "IF NOT EXISTS " * force
-        with self.begin() as con:
-            con.exec_driver_sql(f"CREATE SCHEMA {if_not_exists}{name}")
+        with self._safe_raw_sql(
+            sge.Create(
+                this=sg.table(name, catalog=database, quoted=self.compiler.quoted),
+                kind="SCHEMA",
+                exists=force,
+            )
+        ):
+            pass
 
     def drop_schema(
         self, name: str, database: str | None = None, force: bool = False
     ) -> None:
-        name = ".".join(map(self._quote, filter(None, [database, name])))
-        if_exists = "IF EXISTS " * force
-        with self.begin() as con:
-            con.exec_driver_sql(f"DROP SCHEMA {if_exists}{name}")
+        with self._safe_raw_sql(
+            sge.Drop(
+                this=sg.table(name, catalog=database, quoted=self.compiler.quoted),
+                kind="SCHEMA",
+                exists=force,
+            )
+        ):
+            pass
 
     def create_table(
         self,
@@ -301,49 +404,46 @@ class Backend(AlchemyCrossSchemaBackend, AlchemyCanCreateSchema, CanListDatabase
 
         if temp:
             raise NotImplementedError(
-                "Temporary tables in the Trino backend are not yet supported"
+                "Temporary tables are not supported in the Trino backend"
             )
 
-        orig_table_ref = name
+        quoted = self.compiler.quoted
+        orig_table_ref = sg.to_identifier(name, quoted=quoted)
 
         if overwrite:
-            name = util.gen_name("trino_overwrite")
+            name = util.gen_name(f"{self.name}_overwrite")
 
-        create_stmt = "CREATE TABLE"
-
-        table_ref = self._quote(name)
-
-        create_stmt += f" {table_ref}"
+        table_ref = sg.table(name, catalog=database, quoted=quoted)
 
         if schema is not None and obj is None:
-            schema_str = ", ".join(
-                (
-                    f"{self._quote(name)} {TrinoType.to_string(typ)}"
-                    + " NOT NULL" * (not typ.nullable)
+            column_defs = [
+                sg.exp.ColumnDef(
+                    this=sg.to_identifier(name, quoted=self.compiler.quoted),
+                    kind=self.compiler.type_mapper.from_ibis(typ),
+                    # TODO(cpcloud): not null constraints are unreliable in
+                    # trino, so we ignore them
+                    # https://github.com/trinodb/trino/issues/2923
+                    constraints=None,
                 )
                 for name, typ in schema.items()
+            ]
+            target = sge.Schema(this=table_ref, expressions=column_defs)
+        else:
+            target = table_ref
+
+        property_list = [
+            sge.Property(
+                this=sg.to_identifier(k),
+                value=self.compiler.translate(ibis.literal(v).op(), params={}),
             )
-            create_stmt += f" ({schema_str})"
+            for k, v in (properties or {}).items()
+        ]
 
-        if comment is not None:
-            create_stmt += f" COMMENT {comment!r}"
-
-        if properties:
-
-            def literal_compile(v):
-                if isinstance(v, collections.abc.Mapping):
-                    return f"MAP(ARRAY{list(v.keys())!r}, ARRAY{list(v.values())!r})"
-                elif util.is_iterable(v):
-                    return f"ARRAY{list(v)!r}"
-                else:
-                    return repr(v)
-
-            pairs = ", ".join(
-                f"{k} = {literal_compile(v)}" for k, v in properties.items()
-            )
-            create_stmt += f" WITH ({pairs})"
+        if comment:
+            property_list.append(sge.SchemaCommentProperty(this=sge.convert(comment)))
 
         if obj is not None:
+            import pandas as pd
             import pyarrow as pa
             import pyarrow_hotfix  # noqa: F401
 
@@ -354,53 +454,119 @@ class Backend(AlchemyCrossSchemaBackend, AlchemyCanCreateSchema, CanListDatabase
 
             self._run_pre_execute_hooks(table)
 
-            compiled_table = self.compile(table)
-
             # cast here because trino doesn't allow specifying a schema in
             # CTAS, e.g., `CREATE TABLE (schema) AS SELECT`
-            subquery = compiled_table.subquery()
-            columns = subquery.columns
-            select = sa.select(
+            select = sg.select(
                 *(
-                    sa.cast(columns[name], TrinoType.from_ibis(typ))
+                    self.compiler.cast(sg.column(name, quoted=quoted), typ).as_(
+                        name, quoted=quoted
+                    )
                     for name, typ in (schema or table.schema()).items()
                 )
-            )
+            ).from_(self._to_sqlglot(table).subquery())
+        else:
+            select = None
 
-            compiled = select.compile(
-                dialect=TrinoDialect(), compile_kwargs=dict(literal_binds=True)
-            )
+        create_stmt = sge.Create(
+            kind="TABLE",
+            this=target,
+            expression=select,
+            properties=(
+                sge.Properties(expressions=property_list) if property_list else None
+            ),
+        )
 
-            create_stmt += f" AS {compiled}"
-
-        with self.begin() as con:
-            con.exec_driver_sql(create_stmt)
-
+        with self._safe_raw_sql(create_stmt) as cur:
             if overwrite:
                 # drop the original table
-                con.exec_driver_sql(
-                    f"DROP TABLE IF EXISTS {self._quote(orig_table_ref)}"
+                cur.execute(
+                    sge.Drop(kind="TABLE", this=orig_table_ref, exists=True).sql(
+                        self.name
+                    )
                 )
 
                 # rename the new table to the original table name
-                con.exec_driver_sql(
-                    f"ALTER TABLE IF EXISTS {table_ref} RENAME TO {self._quote(orig_table_ref)}"
+                cur.execute(
+                    sge.AlterTable(
+                        this=table_ref,
+                        exists=True,
+                        actions=[sge.RenameTable(this=orig_table_ref, exists=True)],
+                    ).sql(self.name)
                 )
 
-        return self.table(orig_table_ref)
+        return self.table(orig_table_ref.name)
 
-    def _table_from_schema(
-        self,
-        name: str,
-        schema: sch.Schema,
-        temp: bool = False,
-        database: str | None = None,
-        **kwargs: Any,
-    ) -> sa.Table:
-        return super()._table_from_schema(
-            name,
-            schema,
-            temp=temp,
-            trino_catalog=database or self.current_database,
-            **kwargs,
+    def _get_temp_view_definition(self, name: str, definition: str) -> str:
+        return sge.Create(
+            this=sg.to_identifier(name, quoted=self.compiler.quoted),
+            kind="VIEW",
+            expression=definition,
+            replace=True,
         )
+
+    def _register_temp_view_cleanup(self, name: str) -> None:
+        def drop(self, name: str, query: str):
+            self.raw_sql(query)
+            self._temp_views.discard(name)
+
+        query = sge.Drop(this=sg.table(name), kind="VIEW", exists=True)
+        atexit.register(drop, self, name=name, query=query)
+
+    def _fetch_from_cursor(self, cursor, schema: sch.Schema) -> pd.DataFrame:
+        import pandas as pd
+
+        from ibis.backends.trino.converter import TrinoPandasData
+
+        try:
+            df = pd.DataFrame.from_records(
+                cursor.fetchall(), columns=schema.names, coerce_float=True
+            )
+        except Exception:
+            # clean up the cursor if we fail to create the DataFrame
+            #
+            # in the sqlite case failing to close the cursor results in
+            # artificially locked tables
+            cursor.close()
+            raise
+        df = TrinoPandasData.convert_table(df, schema)
+        return df
+
+    def _register_in_memory_table(self, op: ops.InMemoryTable) -> None:
+        schema = op.schema
+        if null_columns := [col for col, dtype in schema.items() if dtype.is_null()]:
+            raise com.IbisTypeError(
+                "Trino cannot yet reliably handle `null` typed columns; "
+                f"got null typed columns: {null_columns}"
+            )
+
+        # only register if we haven't already done so
+        if (name := op.name) not in self.list_tables():
+            quoted = self.compiler.quoted
+            column_defs = [
+                sg.exp.ColumnDef(
+                    this=sg.to_identifier(colname, quoted=quoted),
+                    kind=self.compiler.type_mapper.from_ibis(typ),
+                    # we don't support `NOT NULL` constraints in trino because
+                    # because each trino connector differs in whether it
+                    # supports nullability constraints, and whether the
+                    # connector supports it isn't visible to ibis via a
+                    # metadata query
+                )
+                for colname, typ in schema.items()
+            ]
+
+            create_stmt = sg.exp.Create(
+                kind="TABLE",
+                this=sg.exp.Schema(
+                    this=sg.to_identifier(name, quoted=quoted), expressions=column_defs
+                ),
+            ).sql(self.name, pretty=True)
+
+            data = op.data.to_frame().itertuples(index=False)
+            specs = ", ".join("?" * len(schema))
+            table = sg.table(name, quoted=quoted).sql(self.name)
+            insert_stmt = f"INSERT INTO {table} VALUES ({specs})"
+            with self.begin() as cur:
+                cur.execute(create_stmt)
+                for row in data:
+                    cur.execute(insert_stmt, row)
