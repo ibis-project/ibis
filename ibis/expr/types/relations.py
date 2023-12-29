@@ -2974,28 +2974,17 @@ class Table(Expr, _FixedTextJupyterMixin):
         │  106782 │ Leonardo DiCaprio │          5989 │ Leonardo DiCaprio │
         └─────────┴───────────────────┴───────────────┴───────────────────┘
         """
-        from ibis.expr.types.joins import JoinExpr
+        from ibis.expr.types.joins import Join
 
-        left = left.op()
-        if isinstance(left, ops.JoinChain):
-            # if the left side is already a join chain, we can reuse it, for
-            # example in the `a.join(b)[fields].join(c)` expression the first
-            # join followed by a projection `a.join(b)[...]` constructs a
-            # `ir.Table(ops.JoinChain())` expression, which we can reuse here
-            expr = left.to_expr()
-        else:
-            # all participants of the join must be wrapped in JoinTable nodes
-            # so that we can join the same table with itself multiple times and
-            # to enable optimization passes later on
-            left = ops.JoinTable(left, index=0)
-            expr = ops.JoinChain(left, rest=(), values=left.fields).to_expr()
-
-        return expr.join(right, predicates, how=how, lname=lname, rname=rname)
+        return Join(left.op()).join(
+            right, predicates, how=how, lname=lname, rname=rname
+        )
 
     def asof_join(
         left: Table,
         right: Table,
-        predicates: str | ir.BooleanColumn | Sequence[str | ir.BooleanColumn] = (),
+        on: str | ir.BooleanColumn,
+        predicates: str | ir.Column | Sequence[str | ir.Column] = (),
         by: str | ir.Column | Sequence[str | ir.Column] = (),
         tolerance: str | ir.IntervalScalar | None = None,
         *,
@@ -3015,10 +3004,10 @@ class Table(Expr, _FixedTextJupyterMixin):
             Table expression
         right
             Table expression
+        on
+            Closest match inequality condition
         predicates
-            Join expressions
-        by
-            column to group by before joining
+            Additional join predicates
         tolerance
             Amount of time to look behind when joining
         lname
@@ -3033,22 +3022,11 @@ class Table(Expr, _FixedTextJupyterMixin):
         Table
             Table expression
         """
-        if by:
-            # `by` is an argument that comes from pandas, which for pandas was
-            # a convenient and fast way to perform a standard join before the
-            # asof join, so we implement the equivalent behavior here for
-            # consistency across backends.
-            left = left.join(right, by, lname=lname, rname=rname)
+        from ibis.expr.types.joins import Join
 
-        if tolerance is not None:
-            if not isinstance(predicates, str):
-                raise TypeError(
-                    "tolerance can only be specified when predicates is a string"
-                )
-            left_key, right_key = left[predicates], right[predicates]
-            predicates = [left_key == right_key, left_key - right_key <= tolerance]
-
-        return left.join(right, predicates, how="asof", lname=lname, rname=rname)
+        return Join(left.op()).asof_join(
+            right, on, predicates, by=by, tolerance=tolerance, lname=lname, rname=rname
+        )
 
     def cross_join(
         left: Table,
@@ -3124,12 +3102,9 @@ class Table(Expr, _FixedTextJupyterMixin):
         >>> expr.count()
         344
         """
-        left = left.join(right, how="cross", predicates=(), lname=lname, rname=rname)
-        for right in rest:
-            left = left.join(
-                right, how="cross", predicates=(), lname=lname, rname=rname
-            )
-        return left
+        from ibis.expr.types.joins import Join
+
+        return Join(left.op()).cross_join(right, *rest, lname=lname, rname=rname)
 
     inner_join = _regular_join_method("inner_join", "inner")
     left_join = _regular_join_method("left_join", "left")
