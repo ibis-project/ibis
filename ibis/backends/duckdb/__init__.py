@@ -1383,26 +1383,6 @@ class Backend(SQLGlotBackend, CanCreateSchema):
         )
         return DuckDBPandasData.convert_table(df, schema)
 
-    # TODO(gforsyth): this may not need to be specialized in the future
-    @staticmethod
-    def _to_geodataframe(df, schema):
-        """Convert `df` to a `GeoDataFrame`.
-
-        Required libraries for geospatial support must be installed and
-        a geospatial column is present in the dataframe.
-        """
-        import geopandas as gpd
-
-        geom_col = None
-        for name, dtype in schema.items():
-            if dtype.is_geospatial():
-                if not geom_col:
-                    geom_col = name
-                df[name] = gpd.GeoSeries.from_wkb(df[name])
-        if geom_col:
-            df = gpd.GeoDataFrame(df, geometry=geom_col)
-        return df
-
     def _metadata(self, query: str) -> Iterator[tuple[str, dt.DataType]]:
         with self._safe_raw_sql(f"DESCRIBE {query}") as cur:
             rows = cur.fetch_arrow_table()
