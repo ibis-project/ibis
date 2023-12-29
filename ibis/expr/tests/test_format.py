@@ -311,7 +311,7 @@ def test_fillna(snapshot):
 def test_asof_join(snapshot):
     left = ibis.table([("time1", "int32"), ("value", "double")], name="left")
     right = ibis.table([("time2", "int32"), ("value2", "double")], name="right")
-    joined = left.asof_join(right, [("time1", "time2")]).inner_join(
+    joined = left.asof_join(right, ("time1", "time2")).inner_join(
         right, left.value == right.value2
     )
 
