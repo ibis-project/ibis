@@ -17,65 +17,20 @@ import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 from ibis.backends.base import _get_backend_names
 from ibis.backends.pandas.execution.temporal import day_name
+from ibis.backends.tests.errors import (
+    ArrowInvalid,
+    ClickHouseDatabaseError,
+    DuckDBInvalidInputException,
+    ExaQueryError,
+    GoogleBadRequest,
+    ImpalaHiveServer2Error,
+    ImpalaOperationalError,
+    PolarsComputeError,
+    PolarsPanicException,
+    Py4JJavaError,
+    PySparkIllegalArgumentException,
+)
 from ibis.common.annotations import ValidationError
-
-try:
-    from duckdb import InvalidInputException as DuckDBInvalidInputException
-except ImportError:
-    DuckDBInvalidInputException = None
-
-try:
-    from polars import ComputeError as PolarsComputeError
-    from polars import PanicException as PolarsPanicException
-
-except ImportError:
-    PolarsComputeError = None
-    PolarsPanicException = None
-
-try:
-    from google.api_core.exceptions import BadRequest as GoogleBadRequest
-except ImportError:
-    GoogleBadRequest = None
-
-try:
-    from pyarrow import ArrowInvalid
-except ImportError:
-    ArrowInvalid = None
-
-try:
-    from clickhouse_connect.driver.exceptions import (
-        DatabaseError as ClickhouseDatabaseError,
-    )
-    from clickhouse_connect.driver.exceptions import (
-        InternalError as ClickhouseOperationalError,
-    )
-except ImportError:
-    ClickhouseOperationalError = ClickhouseDatabaseError = None
-
-try:
-    from impala.error import (
-        HiveServer2Error as ImpalaHiveServer2Error,
-    )
-    from impala.error import (
-        OperationalError as ImpalaOperationalError,
-    )
-except ImportError:
-    ImpalaHiveServer2Error = ImpalaOperationalError = None
-
-try:
-    from py4j.protocol import Py4JJavaError
-except ImportError:
-    Py4JJavaError = None
-
-try:
-    from pyexasol.exceptions import ExaQueryError
-except ImportError:
-    ExaQueryError = None
-
-try:
-    from pyspark.sql.utils import IllegalArgumentException
-except ImportError:
-    IllegalArgumentException = None
 
 
 @pytest.mark.parametrize("attr", ["year", "month", "day"])
@@ -2388,7 +2343,7 @@ INTERVAL_BACKEND_TYPES = {
 @pytest.mark.notyet(
     ["clickhouse"],
     reason="Driver doesn't know how to handle intervals",
-    raises=ClickhouseOperationalError,
+    raises=ClickHouseDatabaseError,
 )
 @pytest.mark.xfail_version(
     duckdb=["duckdb>=0.8.0"],
@@ -3061,7 +3016,7 @@ def test_time_literal_sql(dialect, snapshot, micros):
                     reason="clickhouse doesn't support dates before the UNIX epoch",
                 ),
                 pytest.mark.notyet(["datafusion"], raises=Exception),
-                pytest.mark.notyet(["pyspark"], raises=IllegalArgumentException),
+                pytest.mark.notyet(["pyspark"], raises=PySparkIllegalArgumentException),
             ],
         ),
         param(

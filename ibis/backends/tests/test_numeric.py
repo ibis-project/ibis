@@ -10,55 +10,22 @@ import numpy as np
 import pandas as pd
 import pytest
 import sqlalchemy as sa
-from packaging.version import parse as vparse
 from pytest import param
 
 import ibis
 import ibis.common.exceptions as com
 from ibis import _
 from ibis import literal as L
+from ibis.backends.tests.errors import (
+    ArrowNotImplementedError,
+    DuckDBConversionException,
+    ExaQueryError,
+    GoogleBadRequest,
+    ImpalaHiveServer2Error,
+    Py4JError,
+)
 from ibis.expr import datatypes as dt
 from ibis.tests.util import assert_equal
-
-try:
-    import duckdb
-
-    DuckDBConversionException = duckdb.ConversionException
-except ImportError:
-    duckdb = None
-    DuckDBConversionException = None
-
-try:
-    import clickhouse_connect as cc
-
-    ClickhouseDriverOperationalError = cc.driver.ProgrammingError
-except ImportError:
-    ClickhouseDriverOperationalError = None
-
-try:
-    from py4j.protocol import Py4JError
-except ImportError:
-    Py4JError = None
-
-try:
-    from pyarrow import ArrowNotImplementedError, ArrowTypeError
-except ImportError:
-    ArrowTypeError = None
-
-try:
-    from google.api_core.exceptions import BadRequest as GoogleBadRequest
-except ImportError:
-    GoogleBadRequest = None
-
-try:
-    from impala.error import HiveServer2Error as ImpalaHiveServer2Error
-except ImportError:
-    ImpalaHiveServer2Error = None
-
-try:
-    from pyexasol.exceptions import ExaQueryError
-except ImportError:
-    ExaQueryError = None
 
 
 @pytest.mark.parametrize(
@@ -830,10 +797,6 @@ def test_decimal_literal(con, backend, expr, expected_types, expected_result):
 @pytest.mark.notimpl(
     ["mysql", "sqlite", "mssql", "oracle", "flink"],
     raises=com.OperationNotDefinedError,
-)
-@pytest.mark.xfail(
-    duckdb is not None and vparse(duckdb.__version__) < vparse("0.3.3"),
-    reason="<0.3.3 does not support isnan/isinf properly",
 )
 def test_isnan_isinf(
     backend,

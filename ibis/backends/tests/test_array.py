@@ -17,35 +17,13 @@ import ibis
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.types as ir
-
-try:
-    from clickhouse_connect.driver.exceptions import (
-        DatabaseError as ClickhouseDatabaseError,
-    )
-except ImportError:
-    ClickhouseDatabaseError = None
-
-
-try:
-    from google.api_core.exceptions import BadRequest
-except ImportError:
-    BadRequest = None
-
-try:
-    from pyspark.sql.utils import AnalysisException as PySparkAnalysisException
-except ImportError:
-    PySparkAnalysisException = None
-
-try:
-    from polars.exceptions import ComputeError as PolarsComputeError
-except ImportError:
-    PolarsComputeError = None
-
-try:
-    from py4j.protocol import Py4JJavaError
-except ImportError:
-    Py4JJavaError = None
-
+from ibis.backends.tests.errors import (
+    ClickHouseDatabaseError,
+    GoogleBadRequest,
+    PolarsComputeError,
+    Py4JJavaError,
+    PySparkAnalysisException,
+)
 
 pytestmark = [
     pytest.mark.never(
@@ -239,7 +217,7 @@ def test_array_discovery(backend):
 @pytest.mark.notyet(
     ["bigquery"],
     reason="BigQuery doesn't support casting array<T> to array<U>",
-    raises=BadRequest,
+    raises=GoogleBadRequest,
 )
 @pytest.mark.notimpl(["dask"], raises=ValueError)
 @pytest.mark.notimpl(["datafusion"], raises=com.OperationNotDefinedError)
@@ -415,7 +393,7 @@ def test_array_slice(backend, start, stop):
             marks=[
                 pytest.mark.notyet(
                     ["bigquery"],
-                    raises=BadRequest,
+                    raises=GoogleBadRequest,
                     reason="BigQuery doesn't support arrays with null elements",
                 )
             ],
@@ -460,7 +438,7 @@ def test_array_map(backend, con, input, output):
             marks=[
                 pytest.mark.notyet(
                     ["bigquery"],
-                    raises=BadRequest,
+                    raises=GoogleBadRequest,
                     reason="NULLs are not allowed as array elements",
                 )
             ],
@@ -532,7 +510,7 @@ def test_array_remove(backend, con):
 )
 @pytest.mark.notyet(
     ["bigquery"],
-    raises=BadRequest,
+    raises=GoogleBadRequest,
     reason="BigQuery doesn't support arrays with null elements",
 )
 @pytest.mark.notyet(
@@ -542,7 +520,7 @@ def test_array_remove(backend, con):
 )
 @pytest.mark.notyet(
     ["bigquery"],
-    raises=(AssertionError, BadRequest),
+    raises=(AssertionError, GoogleBadRequest),
     reason="bigquery doesn't support null elements in arrays",
 )
 @pytest.mark.parametrize(
@@ -588,7 +566,7 @@ def test_array_sort(backend, con):
 )
 @pytest.mark.notyet(
     ["bigquery"],
-    raises=BadRequest,
+    raises=GoogleBadRequest,
     reason="BigQuery doesn't support arrays with null elements",
 )
 def test_array_union(con):
@@ -618,7 +596,7 @@ def test_array_union(con):
             marks=[
                 pytest.mark.notyet(
                     ["bigquery"],
-                    raises=BadRequest,
+                    raises=GoogleBadRequest,
                     reason="BigQuery doesn't support arrays with null elements",
                 )
             ],
@@ -643,7 +621,7 @@ def test_array_intersect(con, data):
 @builtin_array
 @pytest.mark.notimpl(
     ["clickhouse"],
-    raises=ClickhouseDatabaseError,
+    raises=ClickHouseDatabaseError,
     reason="ClickHouse won't accept dicts for struct type values",
 )
 @pytest.mark.notimpl(["postgres"], raises=sa.exc.ProgrammingError)
@@ -688,7 +666,7 @@ def test_zip(backend):
 @builtin_array
 @pytest.mark.notyet(
     ["clickhouse"],
-    raises=ClickhouseDatabaseError,
+    raises=ClickHouseDatabaseError,
     reason="https://github.com/ClickHouse/ClickHouse/issues/41112",
 )
 @pytest.mark.notimpl(["postgres"], raises=sa.exc.ProgrammingError)
@@ -765,7 +743,7 @@ def flatten_data():
                 pytest.mark.notyet(
                     ["clickhouse"],
                     reason="doesn't support nullable array elements",
-                    raises=ClickhouseDatabaseError,
+                    raises=ClickHouseDatabaseError,
                 )
             ],
         ),
@@ -777,7 +755,7 @@ def flatten_data():
                 pytest.mark.notyet(
                     ["clickhouse"],
                     reason="doesn't support nullable array elements",
-                    raises=ClickhouseDatabaseError,
+                    raises=ClickHouseDatabaseError,
                 )
             ],
         ),
@@ -857,7 +835,7 @@ def test_range_start_stop_step(con, start, stop, step):
 @pytest.mark.parametrize("stop", [-7, 0, 7])
 @pytest.mark.parametrize("start", [-7, 0, 7])
 @pytest.mark.notyet(
-    ["clickhouse"], raises=ClickhouseDatabaseError, reason="not supported upstream"
+    ["clickhouse"], raises=ClickHouseDatabaseError, reason="not supported upstream"
 )
 @pytest.mark.notyet(
     ["datafusion"], raises=com.OperationNotDefinedError, reason="not supported upstream"
@@ -1010,7 +988,7 @@ timestamp_range_tzinfos = pytest.mark.parametrize(
             id="neg_outer",
             marks=[
                 pytest.mark.notyet(["polars"], raises=com.UnsupportedOperationError),
-                pytest.mark.notyet(["bigquery"], raises=BadRequest),
+                pytest.mark.notyet(["bigquery"], raises=GoogleBadRequest),
                 pytest.mark.notyet(
                     ["clickhouse", "pyspark", "snowflake"],
                     raises=com.UnsupportedOperationError,
@@ -1049,7 +1027,7 @@ def test_timestamp_range(con, start, stop, step, freq, tzinfo):
             id="neg",
             marks=[
                 pytest.mark.notyet(["polars"], raises=com.UnsupportedOperationError),
-                pytest.mark.notyet(["bigquery"], raises=BadRequest),
+                pytest.mark.notyet(["bigquery"], raises=GoogleBadRequest),
                 pytest.mark.notyet(
                     ["clickhouse", "pyspark", "snowflake"],
                     raises=com.UnsupportedOperationError,

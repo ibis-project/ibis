@@ -10,18 +10,8 @@ from pytest import param
 import ibis
 import ibis.expr.datatypes as dt
 from ibis import util
+from ibis.backends.tests.errors import PyDeltaTableError, PySparkAnalysisException
 from ibis.formats.pyarrow import PyArrowType
-
-try:
-    from pyspark.sql.utils import AnalysisException
-except ImportError:
-    AnalysisException = None
-
-try:
-    from deltalake import PyDeltaTableError
-except ImportError:
-    PyDeltaTableError = None
-
 
 limit = [
     param(
@@ -366,7 +356,7 @@ def test_table_to_csv_writer_kwargs(delimiter, tmp_path, awards_players):
                 pytest.mark.notyet(["mysql"], raises=sa.exc.OperationalError),
                 pytest.mark.notyet(
                     ["pyspark"],
-                    raises=AnalysisException,
+                    raises=PySparkAnalysisException,
                     reason="precision is out of range",
                 ),
                 pytest.mark.notyet(["flink"], raises=NotImplementedError),

@@ -7,13 +7,8 @@ from pytest import param
 
 import ibis
 import ibis.common.exceptions as com
+from ibis.backends.tests.errors import Py4JJavaError
 from ibis.backends.tests.test_vectorized_udf import calc_mean, create_demean_struct_udf
-
-try:
-    from py4j.protocol import Py4JJavaError
-except ImportError:
-    Py4JJavaError = None
-
 
 pytestmark = pytest.mark.notimpl(
     [

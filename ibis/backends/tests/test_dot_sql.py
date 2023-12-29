@@ -8,11 +8,7 @@ from pytest import param
 import ibis
 from ibis import _
 from ibis.backends.base import _IBIS_TO_SQLGLOT_DIALECT, _get_backend_names
-
-try:
-    from polars.exceptions import ComputeError as PolarsComputeError
-except ImportError:
-    PolarsComputeError = None
+from ibis.backends.tests.errors import PolarsComputeError
 
 table_dot_sql_notimpl = pytest.mark.notimpl(["bigquery", "impala", "druid"])
 dot_sql_notimpl = pytest.mark.notimpl(["datafusion", "exasol", "flink"])
@@ -29,11 +25,6 @@ pytestmark = [pytest.mark.xdist_group("dot_sql")]
 _NAMES = {
     "bigquery": "ibis_gbq_testing.functional_alltypes",
 }
-
-try:
-    from clickhouse_connect.driver.exceptions import DatabaseError
-except ImportError:
-    DatabaseError = None
 
 
 @dot_sql_notimpl
