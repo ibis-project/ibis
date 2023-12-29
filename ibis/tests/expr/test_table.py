@@ -923,7 +923,7 @@ def test_asof_join_with_by():
         r2 = join_without_by.op().rest[0].table.to_expr()
         expected = ops.JoinChain(
             first=r1,
-            rest=[ops.JoinLink("asof", r2, [r1.time == r2.time])],
+            rest=[ops.JoinLink("asof", r2, [r1.time <= r2.time])],
             values={
                 "time": r1.time,
                 "key": r1.key,
@@ -936,12 +936,11 @@ def test_asof_join_with_by():
         assert join_without_by.op() == expected
 
     join_with_by = api.asof_join(left, right, "time", by="key")
-    with join_tables(left, right, right) as (r1, r2, r3):
+    with join_tables(left, right) as (r1, r2):
         expected = ops.JoinChain(
             first=r1,
             rest=[
-                ops.JoinLink("inner", r2, [r1.key == r2.key]),
-                ops.JoinLink("asof", r3, [r1.time == r3.time]),
+                ops.JoinLink("asof", r2, [r1.time <= r2.time, r1.key == r2.key]),
             ],
             values={
                 "time": r1.time,
@@ -950,7 +949,6 @@ def test_asof_join_with_by():
                 "time_right": r2.time,
                 "key_right": r2.key,
                 "value2": r2.value2,
-                "value2_right": r3.value2,
             },
         )
         assert join_with_by.op() == expected
@@ -975,8 +973,8 @@ def test_asof_join_with_by():
     ],
 )
 def test_asof_join_with_tolerance(ibis_interval, timedelta_interval):
-    left = ibis.table([("time", "int32"), ("key", "int32"), ("value", "double")])
-    right = ibis.table([("time", "int32"), ("key", "int32"), ("value2", "double")])
+    left = ibis.table([("time", "timestamp"), ("key", "int32"), ("value", "double")])
+    right = ibis.table([("time", "timestamp"), ("key", "int32"), ("value2", "double")])
 
     for interval in [ibis_interval, timedelta_interval]:
         joined = api.asof_join(left, right, "time", tolerance=interval)
@@ -987,7 +985,7 @@ def test_asof_join_with_tolerance(ibis_interval, timedelta_interval):
                     ops.JoinLink(
                         "asof",
                         r2,
-                        [r1.time == r2.time, (r1.time - r2.time) <= interval],
+                        [r1.time <= r2.time, r1.time <= (r2.time + interval)],
                     )
                 ],
                 values={
