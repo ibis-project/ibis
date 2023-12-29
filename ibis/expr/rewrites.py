@@ -140,10 +140,10 @@ def rewrite_project_input(value, relation):
     )
 
 
-ReductionValue = p.Reduction | p.Field(p.Aggregate(groups={}))
+ReductionLike = p.Reduction | p.Field(p.Aggregate(groups={}))
 
 
-@replace(ReductionValue)
+@replace(ReductionLike)
 def filter_wrap_reduction(_):
     # Wrap reductions or fields referencing an aggregation without a group by -
     # which are scalar fields - in a scalar subquery. In the latter case we
