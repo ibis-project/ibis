@@ -24,6 +24,7 @@ from ibis.backends.tests.errors import (
     ImpalaHiveServer2Error,
     Py4JError,
     SnowflakeProgrammingError,
+    TrinoUserError,
 )
 from ibis.expr import datatypes as dt
 from ibis.tests.util import assert_equal
@@ -160,7 +161,7 @@ from ibis.tests.util import assert_equal
                 "impala": "DECIMAL(2,1)",
                 "snowflake": "INTEGER",
                 "sqlite": "real",
-                "trino": "double",
+                "trino": "real",
                 "duckdb": "FLOAT",
                 "postgres": "numeric",
                 "flink": "FLOAT NOT NULL",
@@ -191,7 +192,7 @@ from ibis.tests.util import assert_equal
                 "impala": "DECIMAL(2,1)",
                 "snowflake": "INTEGER",
                 "sqlite": "real",
-                "trino": "double",
+                "trino": "real",
                 "duckdb": "FLOAT",
                 "postgres": "numeric",
                 "flink": "FLOAT NOT NULL",
@@ -246,7 +247,7 @@ def test_numeric_literal(con, backend, expr, expected_types):
                 "bigquery": decimal.Decimal("1.1"),
                 "snowflake": decimal.Decimal("1.1"),
                 "sqlite": 1.1,
-                "trino": 1.1,
+                "trino": decimal.Decimal("1.1"),
                 "dask": decimal.Decimal("1.1"),
                 "duckdb": decimal.Decimal("1.1"),
                 "postgres": 1.1,
@@ -263,7 +264,7 @@ def test_numeric_literal(con, backend, expr, expected_types):
                 "bigquery": "NUMERIC",
                 "snowflake": "DECIMAL",
                 "sqlite": "real",
-                "trino": "decimal(2,1)",
+                "trino": "decimal(18,3)",
                 "duckdb": "DECIMAL(18,3)",
                 "postgres": "numeric",
                 "flink": "DECIMAL(38, 18) NOT NULL",
@@ -298,7 +299,7 @@ def test_numeric_literal(con, backend, expr, expected_types):
                 "bigquery": decimal.Decimal("1.1"),
                 "snowflake": decimal.Decimal("1.1"),
                 "sqlite": 1.1,
-                "trino": 1.1,
+                "trino": decimal.Decimal("1.1"),
                 "duckdb": decimal.Decimal("1.100000000"),
                 "postgres": 1.1,
                 "pandas": decimal.Decimal("1.1"),
@@ -317,7 +318,7 @@ def test_numeric_literal(con, backend, expr, expected_types):
                 "clickhouse": "Decimal(38, 9)",
                 "snowflake": "DECIMAL",
                 "sqlite": "real",
-                "trino": "decimal(2,1)",
+                "trino": "decimal(38,9)",
                 "duckdb": "DECIMAL(38,9)",
                 "postgres": "numeric",
                 "flink": "DECIMAL(38, 9) NOT NULL",
@@ -346,7 +347,6 @@ def test_numeric_literal(con, backend, expr, expected_types):
             {
                 "bigquery": decimal.Decimal("1.1"),
                 "sqlite": 1.1,
-                "trino": 1.1,
                 "dask": decimal.Decimal("1.1"),
                 "postgres": 1.1,
                 "pandas": decimal.Decimal("1.1"),
@@ -381,7 +381,12 @@ def test_numeric_literal(con, backend, expr, expected_types):
                     raises=ImpalaHiveServer2Error,
                 ),
                 pytest.mark.broken(
-                    ["duckdb"], "Unsupported precision.", raises=DuckDBParserException
+                    ["duckdb"],
+                    reason="Unsupported precision.",
+                    raises=DuckDBParserException,
+                ),
+                pytest.mark.broken(
+                    ["trino"], reason="Unsupported precision.", raises=TrinoUserError
                 ),
                 pytest.mark.notyet(["datafusion"], raises=Exception),
                 pytest.mark.notyet(
@@ -408,7 +413,6 @@ def test_numeric_literal(con, backend, expr, expected_types):
             {
                 "bigquery": "FLOAT64",
                 "sqlite": "real",
-                "trino": "decimal(2,1)",
                 "postgres": "numeric",
                 "impala": "DOUBLE",
                 "duckdb": "FLOAT",
@@ -460,6 +464,11 @@ def test_numeric_literal(con, backend, expr, expected_types):
                     raises=sa.exc.DatabaseError,
                 ),
                 pytest.mark.notyet(
+                    ["trino"],
+                    raises=TrinoUserError,
+                    reason="can't cast infinity to decimal",
+                ),
+                pytest.mark.notyet(
                     ["flink"],
                     "Infinity is not supported in Flink SQL",
                     raises=ValueError,
@@ -488,7 +497,6 @@ def test_numeric_literal(con, backend, expr, expected_types):
             {
                 "bigquery": "FLOAT64",
                 "sqlite": "real",
-                "trino": "decimal(2,1)",
                 "postgres": "numeric",
                 "impala": "DOUBLE",
                 "duckdb": "FLOAT",
@@ -549,6 +557,11 @@ def test_numeric_literal(con, backend, expr, expected_types):
                     "infinity is not allowed as a decimal value",
                     raises=SnowflakeProgrammingError,
                 ),
+                pytest.mark.notyet(
+                    ["trino"],
+                    raises=TrinoUserError,
+                    reason="can't cast infinity to decimal",
+                ),
             ],
             id="decimal-infinity-",
         ),
@@ -570,7 +583,6 @@ def test_numeric_literal(con, backend, expr, expected_types):
                 "bigquery": "FLOAT64",
                 "snowflake": "DOUBLE",
                 "sqlite": "null",
-                "trino": "decimal(2,1)",
                 "postgres": "numeric",
                 "impala": "DOUBLE",
                 "duckdb": "FLOAT",
@@ -638,6 +650,11 @@ def test_numeric_literal(con, backend, expr, expected_types):
                     ["snowflake"],
                     "NaN is not allowed as a decimal value",
                     raises=SnowflakeProgrammingError,
+                ),
+                pytest.mark.notyet(
+                    ["trino"],
+                    raises=TrinoUserError,
+                    reason="can't cast nan to decimal",
                 ),
             ],
             id="decimal-NaN",
@@ -1444,6 +1461,7 @@ def test_divide_by_zero(backend, alltypes, df, column, denominator):
         "polars",
         "flink",
         "snowflake",
+        "trino",
     ],
     reason="Not SQLAlchemy backends",
 )
