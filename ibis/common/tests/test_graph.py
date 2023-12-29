@@ -101,8 +101,9 @@ def test_invert():
 
 
 def test_toposort():
-    g = Graph(A).toposort()
+    g, dependents = Graph(A).toposort()
     assert list(g.keys()) == [C, D, E, B, A]
+    assert dependents == Graph(A).invert()
 
 
 def test_toposort_cycle_detection():
@@ -427,3 +428,24 @@ def test_node_find_topmost_dont_traverse_the_same_node_twice():
     result = E.find_topmost(If(_.name == "G"))
     expected = [G]
     assert result == expected
+
+
+def test_map_clear():
+    Z = MyNode(name="Z", children=[A])
+    result_sequence = {}
+
+    def record_result_keys(node, results, **kwargs):
+        result_sequence[node] = tuple(results.keys())
+        return node
+
+    expected_result_sequence = {
+        C: (),
+        D: (C,),
+        E: (C, D),
+        B: (C, D, E),
+        A: (C, B),
+        Z: (A,),
+    }
+    result = Z.map_clear(record_result_keys)
+    assert result == Z
+    assert result_sequence == expected_result_sequence
