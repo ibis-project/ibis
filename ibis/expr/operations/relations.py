@@ -259,7 +259,7 @@ class JoinChain(Relation):
     def to_expr(self):
         import ibis.expr.types as ir
 
-        return ir.JoinExpr(self)
+        return ir.Join(self)
 
 
 @public
