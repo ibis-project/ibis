@@ -491,8 +491,9 @@ class Backend(SQLGlotBackend, CanCreateSchema):
                 "DuckDB cannot create a schema in another database."
             )
 
-        name = sg.to_identifier(database, quoted=True)
-        return sge.Create(this=name, kind="SCHEMA", replace=force)
+        name = sg.table(name, catalog=database, quoted=self.compiler.quoted)
+        with self._safe_raw_sql(sge.Create(this=name, kind="SCHEMA", replace=force)):
+            pass
 
     def drop_schema(
         self, name: str, database: str | None = None, force: bool = False
@@ -502,8 +503,9 @@ class Backend(SQLGlotBackend, CanCreateSchema):
                 "DuckDB cannot drop a schema in another database."
             )
 
-        name = sg.to_identifier(database, quoted=True)
-        return sge.Drop(this=name, kind="SCHEMA", replace=force)
+        name = sg.table(name, catalog=database, quoted=self.compiler.quoted)
+        with self._safe_raw_sql(sge.Drop(this=name, kind="SCHEMA", replace=force)):
+            pass
 
     def register(
         self,
