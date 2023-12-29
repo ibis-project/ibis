@@ -1502,13 +1502,17 @@ def test_overwrite(ddl_con, monkeypatch):
 def test_create_database(con_create_database):
     database = gen_name("test_create_database")
     con_create_database.create_database(database)
+    assert database in con_create_database.list_databases()
     con_create_database.drop_database(database)
+    assert database not in con_create_database.list_databases()
 
 
 def test_create_schema(con_create_schema):
     schema = gen_name("test_create_schema")
     con_create_schema.create_schema(schema)
+    assert schema in con_create_schema.list_schemas()
     con_create_schema.drop_schema(schema)
+    assert schema not in con_create_schema.list_schemas()
 
 
 @pytest.mark.notimpl(
