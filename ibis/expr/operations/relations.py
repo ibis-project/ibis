@@ -112,8 +112,8 @@ class Subquery(Value):
 
     @attribute
     def value(self):
-        name = self.rel.schema.names[0]
-        return self.rel.values[name]
+        (value,) = self.rel.values.values()
+        return value
 
     @attribute
     def relations(self):
@@ -127,12 +127,13 @@ class Subquery(Value):
 @public
 class ScalarSubquery(Subquery):
     def __init__(self, rel):
-        from ibis.expr.rewrites import ReductionValue
+        from ibis.expr.operations import Reduction
 
         super().__init__(rel=rel)
-        if not self.value.find(ReductionValue, filter=Value):
+        if not isinstance(self.value, Reduction):
             raise IntegrityError(
-                f"Subquery {self.value!r} is not scalar, it must be turned into a scalar subquery first"
+                f"Subquery {self.value!r} is not a reduction, only "
+                "reductions can be used as scalar subqueries"
             )
 
 
@@ -146,8 +147,8 @@ class InSubquery(Subquery):
     needle: Value
     dtype = dt.boolean
 
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
+    def __init__(self, rel, needle):
+        super().__init__(rel=rel, needle=needle)
         if not rlz.comparable(self.value, self.needle):
             raise IntegrityError(
                 f"Subquery {self.needle!r} is not comparable to {self.value!r}"
@@ -275,12 +276,13 @@ class Filter(Simple):
     predicates: VarTuple[Value[dt.Boolean]]
 
     def __init__(self, parent, predicates):
-        from ibis.expr.rewrites import ReductionValue
+        from ibis.expr.rewrites import ReductionLike
 
         for pred in predicates:
-            if pred.find(ReductionValue, filter=Value):
+            if pred.find(ReductionLike, filter=Value):
                 raise IntegrityError(
-                    f"Cannot add {pred!r} to filter, it is a reduction"
+                    f"Cannot add {pred!r} to filter, it is a reduction which "
+                    "must be converted to a scalar subquery first"
                 )
             if pred.relations and parent not in pred.relations:
                 raise IntegrityError(
@@ -291,6 +293,8 @@ class Filter(Simple):
 
 @public
 class Limit(Simple):
+    # TODO(kszucs): dynamic limit should contain ScalarSubqueries rather than
+    # plain scalar values
     n: typing.Union[int, Scalar[dt.Integer], None] = None
     offset: typing.Union[int, Scalar[dt.Integer]] = 0
 
@@ -324,6 +328,7 @@ class Set(Relation):
     left: Relation
     right: Relation
     distinct: bool = False
+    values = FrozenDict()
 
     def __init__(self, left, right, **kwargs):
         # convert to dictionary first, to get key-unordered comparison semantics
@@ -335,10 +340,6 @@ class Set(Relation):
             cols = {name: Field(right, name) for name in left.schema.names}
             right = Project(right, cols)
         super().__init__(left=left, right=right, **kwargs)
-
-    @attribute
-    def values(self):
-        return FrozenDict()
 
     @attribute
     def schema(self):
@@ -363,10 +364,7 @@ class Difference(Set):
 @public
 class PhysicalTable(Relation):
     name: str
-
-    @attribute
-    def values(self):
-        return FrozenDict()
+    values = FrozenDict()
 
 
 @public
