@@ -91,7 +91,7 @@ sqlalchemy = { version = ">=1.4,<3", optional = true }
 sqlalchemy-exasol = { version = ">=4.6.0", optional = true }
 sqlalchemy-views = { version = ">=0.3.1,<1", optional = true }
 sqlalchemy-risingwave = { version = ">=1.0.0,<2", optional = true }
-trino = { version = ">=0.321,<1", optional = true, extras = ["sqlalchemy"] }
+trino = { version = ">=0.321,<1", optional = true }
 
 [tool.poetry.group.dev.dependencies]
 codespell = { version = ">=2.2.6,<3", extras = [
@@ -206,7 +206,7 @@ risingwave = [
 pyspark = ["pyspark", "sqlalchemy", "packaging"]
 snowflake = ["snowflake-connector-python", "packaging"]
 sqlite = ["regex", "sqlalchemy", "sqlalchemy-views"]
-trino = ["trino", "sqlalchemy", "sqlalchemy-views"]
+trino = ["trino"]
 # non-backend extras
 visualization = ["graphviz"]
 decompiler = ["black"]
