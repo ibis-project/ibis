@@ -1547,6 +1547,11 @@ def test_static_table_slice(backend, slc, expected_count_fn):
     raises=SnowflakeProgrammingError,
     reason="backend doesn't support dynamic limit/offset",
 )
+@pytest.mark.notyet(
+    ["trino"],
+    raises=TrinoUserError,
+    reason="backend doesn't support dynamic limit/offset",
+)
 @pytest.mark.notimpl(
     ["mssql"],
     raises=sa.exc.CompileError,
