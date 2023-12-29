@@ -371,9 +371,9 @@ def test_join_with_external_table(alltypes, df):
 def test_asof_join(time_left, time_right):
     expr = time_left.asof_join(
         time_right,
+        on=time_left["time"] >= time_right["time"],
         predicates=[
             time_left["key"] == time_right["key"],
-            time_left["time"] >= time_right["time"],
         ],
     ).drop("time_right")
     result = expr.execute()
