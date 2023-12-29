@@ -299,7 +299,7 @@ class Node(Hashable):
 
             # remove the results belonging to the dependencies if they are not
             # needed by other nodes during the rest of the traversal
-            for dependency in dependencies:
+            for dependency in set(dependencies):
                 dependents[dependency].remove(node)
                 if not dependents[dependency]:
                     del results[dependency]
