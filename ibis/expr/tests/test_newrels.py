@@ -487,14 +487,14 @@ def test_join():
     t2 = ibis.table(name="t2", schema={"c": "int64", "d": "string"})
     joined = t1.join(t2, [t1.a == t2.c])
 
-    assert isinstance(joined, ir.JoinExpr)
+    assert isinstance(joined, ir.Join)
     assert isinstance(joined.op(), JoinChain)
-    assert isinstance(joined.op().to_expr(), ir.JoinExpr)
+    assert isinstance(joined.op().to_expr(), ir.Join)
 
     result = joined._finish()
     assert isinstance(joined, ir.TableExpr)
     assert isinstance(joined.op(), JoinChain)
-    assert isinstance(joined.op().to_expr(), ir.JoinExpr)
+    assert isinstance(joined.op().to_expr(), ir.Join)
 
     with join_tables(t1, t2) as (t1, t2):
         assert result.op() == JoinChain(
@@ -1264,3 +1264,32 @@ def test_join_between_joins():
             },
         )
         assert expr.op() == expected
+
+
+def test_join_method_docstrings():
+    t1 = ibis.table(name="t1", schema={"a": "int64", "b": "string"})
+    t2 = ibis.table(name="t2", schema={"c": "int64", "d": "string"})
+    joined = t1.join(t2, [t1.a == t2.c])
+
+    assert isinstance(t1, ir.Table)
+    assert isinstance(joined, ir.Join)
+    assert isinstance(joined, ir.Table)
+
+    method_names = [
+        "select",
+        "join",
+        "inner_join",
+        "left_join",
+        "outer_join",
+        "semi_join",
+        "anti_join",
+        "asof_join",
+        "cross_join",
+        "right_join",
+        "any_inner_join",
+        "any_left_join",
+    ]
+    for method in method_names:
+        join_method = getattr(joined, method)
+        table_method = getattr(t1, method)
+        assert join_method.__doc__ == table_method.__doc__
