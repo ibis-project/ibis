@@ -1,22 +1,25 @@
+from __future__ import annotations
+
+import functools
+from public import public
+from typing import Any, Optional
+from collections.abc import Iterator, Mapping
+
+import ibis
+import ibis.expr.operations as ops
+
+from ibis import util
+from ibis.expr.types import Table, ValueExpr
+from ibis.common.deferred import Deferred
+from ibis.expr.analysis import flatten_predicates
+from ibis.common.exceptions import ExpressionError, IntegrityError
 from ibis.expr.types.relations import (
     bind,
     dereference_values,
+    dereference_mapping,
     unwrap_aliases,
 )
-from public import public
-import ibis.expr.operations as ops
-from ibis.expr.types import Table, ValueExpr
-from typing import Any, Optional
-from collections.abc import Iterator, Mapping
-from ibis.common.deferred import Deferred
-from ibis.expr.analysis import flatten_predicates
 from ibis.expr.operations.relations import JoinKind
-from ibis.common.exceptions import ExpressionError, IntegrityError
-from ibis import util
-import functools
-from ibis.expr.types.relations import dereference_mapping
-import ibis
-
 from ibis.expr.rewrites import peel_join_field
 
 
@@ -91,9 +94,12 @@ def dereference_value(pred, deref_left, deref_right):
         return pred.replace(deref_both, filter=ops.Value)
 
 
-def prepare_predicates(left, right, predicates, deref_left, deref_right):
+def prepare_predicates(
+    left, right, predicates, deref_left, deref_right, comparison=ops.Equals
+):
     """Bind and dereference predicates to the left and right tables."""
 
+    left, right = left.to_expr(), right.to_expr()
     for pred in util.promote_list(predicates):
         if pred is True or pred is False:
             yield ops.Literal(pred, dtype="bool")
@@ -120,7 +126,7 @@ def prepare_predicates(left, right, predicates, deref_left, deref_right):
             left_value, right_value = dereference_sides(
                 left_value.op(), right_value.op(), deref_left, deref_right
             )
-            yield ops.Equals(left_value, right_value).to_expr()
+            yield comparison(left_value, right_value)
 
 
 def finished(method):
@@ -134,10 +140,18 @@ def finished(method):
 
 
 @public
-class JoinExpr(Table):
+class Join(Table):
     __slots__ = ("_collisions",)
 
     def __init__(self, arg, collisions=None):
+        assert isinstance(arg, ops.Node)
+        if not isinstance(arg, ops.JoinChain):
+            # coerce the input node to a join chain operation by first wrapping
+            # the input relation in a JoinTable so that we can join the same
+            # table with itself multiple times and to enable optimization
+            # passes later on
+            arg = ops.JoinTable(arg, index=0)
+            arg = ops.JoinChain(arg, rest=(), values=arg.fields)
         super().__init__(arg)
         object.__setattr__(self, "_collisions", collisions or set())
 
@@ -147,7 +161,8 @@ class JoinExpr(Table):
             raise IntegrityError(f"Name collisions: {self._collisions}")
         return Table(self.op())
 
-    def join(
+    @functools.wraps(Table.join)
+    def join(  # noqa: D102
         self,
         right,
         predicates: Any,
@@ -156,10 +171,10 @@ class JoinExpr(Table):
         lname: str = "",
         rname: str = "{name}_right",
     ):
-        """Join with another table."""
         import pyarrow as pa
         import pandas as pd
 
+        # TODO(kszucs): factor out to a helper function
         if isinstance(right, (pd.DataFrame, pa.Table)):
             right = ibis.memtable(right)
         elif not isinstance(right, Table):
@@ -169,6 +184,8 @@ class JoinExpr(Table):
 
         if how == "left_semi":
             how = "semi"
+        elif how == "asof":
+            raise IbisInputError("use table.asof_join(...) instead")
 
         left = self.op()
         right = ops.JoinTable(right, index=left.length)
@@ -177,17 +194,17 @@ class JoinExpr(Table):
 
         # bind and dereference the predicates
         preds = prepare_predicates(
-            left.to_expr(),
-            right.to_expr(),
+            left,
+            right,
             predicates,
             deref_left=subs_left,
             deref_right=subs_right,
         )
         preds = flatten_predicates(list(preds))
-
-        # if there are no predicates, default to every row matching unless the
-        # join is a cross join, because a cross join already has this behavior
         if not preds and how != "cross":
+            # if there are no predicates, default to every row matching unless
+            # the join is a cross join, because a cross join already has this
+            # behavior
             preds.append(ops.Literal(True, dtype="bool"))
 
         # calculate the fields based in lname and rname, this should be a best
@@ -205,8 +222,83 @@ class JoinExpr(Table):
         # return with a new JoinExpr wrapping the new join chain
         return self.__class__(left, collisions=collisions)
 
-    def select(self, *args, **kwargs):
-        """Select expressions."""
+    @functools.wraps(Table.asof_join)
+    def asof_join(  # noqa: D102
+        self: Table,
+        right: Table,
+        on,
+        predicates=(),
+        by=(),
+        tolerance=None,
+        *,
+        lname: str = "",
+        rname: str = "{name}_right",
+    ):
+        predicates = util.promote_list(predicates) + util.promote_list(by)
+        if tolerance is not None:
+            if not isinstance(on, str):
+                raise TypeError(
+                    "tolerance can only be specified when predicates is a string"
+                )
+            # construct a predicate with two sides from the two tables
+            predicates.append(self[on] <= right[on] + tolerance)
+
+        left = self.op()
+        right = ops.JoinTable(right, index=left.length)
+        subs_left = dereference_mapping_left(left)
+        subs_right = dereference_mapping_right(right)
+
+        # TODO(kszucs): add extra validation for `on` with clear error messages
+        preds = list(
+            prepare_predicates(
+                left,
+                right,
+                [on],
+                deref_left=subs_left,
+                deref_right=subs_right,
+                comparison=ops.LessEqual,
+            )
+        )
+        preds += flatten_predicates(
+            list(
+                prepare_predicates(
+                    left,
+                    right,
+                    predicates,
+                    deref_left=subs_left,
+                    deref_right=subs_right,
+                    comparison=ops.Equals,
+                )
+            )
+        )
+        values, collisions = disambiguate_fields(
+            "asof", left.values, right.fields, lname, rname
+        )
+
+        # construct a new join link and add it to the join chain
+        link = ops.JoinLink("asof", table=right, predicates=preds)
+        left = left.copy(rest=left.rest + (link,), values=values)
+
+        # return with a new JoinExpr wrapping the new join chain
+        return self.__class__(left, collisions=collisions)
+
+    @functools.wraps(Table.cross_join)
+    def cross_join(  # noqa: D102
+        self: Table,
+        right: Table,
+        *rest: Table,
+        lname: str = "",
+        rname: str = "{name}_right",
+    ):
+        left = self.join(right, how="cross", predicates=(), lname=lname, rname=rname)
+        for right in rest:
+            left = left.join(
+                right, how="cross", predicates=(), lname=lname, rname=rname
+            )
+        return left
+
+    @functools.wraps(Table.select)
+    def select(self, *args, **kwargs):  # noqa: D102
         chain = self.op()
         values = bind(self, (args, kwargs))
         values = unwrap_aliases(values)
@@ -245,3 +337,6 @@ class JoinExpr(Table):
     unbind = finished(Table.unbind)
     union = finished(Table.union)
     view = finished(Table.view)
+
+
+public(JoinExpr=Join)
