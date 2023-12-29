@@ -431,7 +431,9 @@ def test_node_find_topmost_dont_traverse_the_same_node_twice():
 
 
 def test_map_clear():
-    Z = MyNode(name="Z", children=[A])
+    Z = MyNode(name="Z", children=[A, A])
+    Y = MyNode(name="Y", children=[A])
+    X = MyNode(name="X", children=[Z, Y])
     result_sequence = {}
 
     def record_result_keys(node, results, **kwargs):
@@ -445,7 +447,9 @@ def test_map_clear():
         B: (C, D, E),
         A: (C, B),
         Z: (A,),
+        Y: (A, Z),
+        X: (Z, Y),
     }
-    result = Z.map_clear(record_result_keys)
-    assert result == Z
+    result = X.map_clear(record_result_keys)
+    assert result == X
     assert result_sequence == expected_result_sequence
