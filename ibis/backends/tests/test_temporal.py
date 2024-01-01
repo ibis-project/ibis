@@ -1213,6 +1213,7 @@ minus = lambda t, td: t.timestamp_col - pd.Timedelta(td)
         param(
             "36500d",
             plus,
+            id="large-days-plus",
             marks=[
                 pytest.mark.broken(
                     ["druid"],
@@ -1241,6 +1242,7 @@ minus = lambda t, td: t.timestamp_col - pd.Timedelta(td)
         param(
             "5W",
             plus,
+            id="weeks-plus",
             marks=[
                 pytest.mark.broken(
                     ["druid"],
@@ -1252,6 +1254,7 @@ minus = lambda t, td: t.timestamp_col - pd.Timedelta(td)
         param(
             "3d",
             plus,
+            id="three-days-plus",
             marks=[
                 pytest.mark.broken(
                     ["druid"],
@@ -1263,6 +1266,7 @@ minus = lambda t, td: t.timestamp_col - pd.Timedelta(td)
         param(
             "2h",
             plus,
+            id="two-hours-plus",
             marks=[
                 pytest.mark.broken(
                     ["druid"],
@@ -1274,6 +1278,7 @@ minus = lambda t, td: t.timestamp_col - pd.Timedelta(td)
         param(
             "3m",
             plus,
+            id="three-minutes-plus",
             marks=[
                 pytest.mark.broken(
                     ["druid"],
@@ -1285,6 +1290,7 @@ minus = lambda t, td: t.timestamp_col - pd.Timedelta(td)
         param(
             "10s",
             plus,
+            id="ten-seconds-plus",
             marks=[
                 pytest.mark.broken(
                     ["druid"],
@@ -1296,6 +1302,7 @@ minus = lambda t, td: t.timestamp_col - pd.Timedelta(td)
         param(
             "36500d",
             minus,
+            id="large-days-minus",
             marks=[
                 pytest.mark.broken(
                     ["druid"],
@@ -1324,6 +1331,7 @@ minus = lambda t, td: t.timestamp_col - pd.Timedelta(td)
         param(
             "5W",
             minus,
+            id="weeks-minus",
             marks=[
                 pytest.mark.broken(
                     ["druid"],
@@ -1335,6 +1343,7 @@ minus = lambda t, td: t.timestamp_col - pd.Timedelta(td)
         param(
             "3d",
             minus,
+            id="three-days-minus",
             marks=[
                 pytest.mark.broken(
                     ["druid"],
@@ -1346,6 +1355,7 @@ minus = lambda t, td: t.timestamp_col - pd.Timedelta(td)
         param(
             "2h",
             minus,
+            id="two-hours-minus",
             marks=[
                 pytest.mark.broken(
                     ["druid"],
@@ -1357,6 +1367,7 @@ minus = lambda t, td: t.timestamp_col - pd.Timedelta(td)
         param(
             "3m",
             minus,
+            id="three-minutes-minus",
             marks=[
                 pytest.mark.broken(
                     ["druid"],
@@ -1368,6 +1379,7 @@ minus = lambda t, td: t.timestamp_col - pd.Timedelta(td)
         param(
             "10s",
             minus,
+            id="ten-seconds-minus",
             marks=[
                 pytest.mark.broken(
                     ["druid"],
