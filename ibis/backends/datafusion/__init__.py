@@ -46,6 +46,12 @@ if TYPE_CHECKING:
 _exclude_exp = (exp.Pow, exp.ArrayContains)
 
 
+def _lower_unit(self, expr):
+    value = expr.this.sql(dialect=self.dialect)
+    unit = expr.unit.this.lower()
+    return f"INTERVAL '{value} {unit}'"
+
+
 # the DataFusion dialect was created to skip the power function to operator transformation
 # in the future this could be used to optimize sqlglot for datafusion
 class DataFusion(Postgres):
@@ -61,6 +67,7 @@ class DataFusion(Postgres):
                 ]
             ),
             exp.IsNan: rename_func("isnan"),
+            exp.Interval: _lower_unit,
         }
 
 
