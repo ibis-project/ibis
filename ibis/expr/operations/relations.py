@@ -205,6 +205,10 @@ class SelfReference(Simple):
             identifier = next(self._uid_counter)
         super().__init__(parent=parent, identifier=identifier)
 
+    @attribute
+    def values(self):
+        return FrozenDict()
+
 
 JoinKind = Literal[
     "inner",
