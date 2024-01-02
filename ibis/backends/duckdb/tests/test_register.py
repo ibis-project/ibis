@@ -433,7 +433,7 @@ def test_csv_with_slash_n_null(con, tmp_path):
     reason=("nix can't hit GCS because it is sandboxed."),
 )
 def test_register_filesystem_gcs(con):
-    import fsspec
+    fsspec = pytest.importorskip("fsspec")
 
     gcs = fsspec.filesystem("gcs")
 
