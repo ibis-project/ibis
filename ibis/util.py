@@ -494,6 +494,20 @@ def backend_entry_points() -> list[importlib.metadata.EntryPoint]:
     return sorted(eps)
 
 
+_common_package_aliases = {
+    "pa": "pyarrow",
+    "pd": "pandas",
+    "np": "numpy",
+    "sk": "sklearn",
+    "sp": "scipy",
+    "tf": "tensorflow",
+}
+
+
+def unalias_package(name: str) -> str:
+    return _common_package_aliases.get(name, name)
+
+
 def import_object(qualname: str) -> Any:
     """Attempt to import an object given its full qualname.
 
