@@ -923,7 +923,7 @@ def test_asof_join_with_by():
         r2 = join_without_by.op().rest[0].table.to_expr()
         expected = ops.JoinChain(
             first=r1,
-            rest=[ops.JoinLink("asof", r2, [r1.time <= r2.time])],
+            rest=[ops.JoinLink("asof", r2, [r1.time >= r2.time])],
             values={
                 "time": r1.time,
                 "key": r1.key,
@@ -940,7 +940,7 @@ def test_asof_join_with_by():
         expected = ops.JoinChain(
             first=r1,
             rest=[
-                ops.JoinLink("asof", r2, [r1.time <= r2.time, r1.key == r2.key]),
+                ops.JoinLink("asof", r2, [r1.time >= r2.time, r1.key == r2.key]),
             ],
             values={
                 "time": r1.time,
@@ -978,26 +978,23 @@ def test_asof_join_with_tolerance(ibis_interval, timedelta_interval):
 
     for interval in [ibis_interval, timedelta_interval]:
         joined = api.asof_join(left, right, "time", tolerance=interval)
-        with join_tables(left, right) as (r1, r2):
-            expected = ops.JoinChain(
-                first=r1,
-                rest=[
-                    ops.JoinLink(
-                        "asof",
-                        r2,
-                        [r1.time <= r2.time, r1.time <= (r2.time + interval)],
-                    )
-                ],
-                values={
-                    "time": r1.time,
-                    "key": r1.key,
-                    "value": r1.value,
-                    "time_right": r2.time,
-                    "key_right": r2.key,
-                    "value2": r2.value2,
-                },
-            )
-            assert joined.op() == expected
+
+        asof = left.asof_join(right, "time")
+        filt = asof.filter(
+            [
+                asof.time <= asof.time_right + interval,
+                asof.time >= asof.time_right - interval,
+            ]
+        )
+        join = left.left_join(filt, [left.time == filt.time])
+        expected = join.select(
+            left,
+            time_right=filt.time_right,
+            key_right=filt.key_right,
+            value2=filt.value2,
+        )
+
+        assert joined.equals(expected)
 
 
 def test_equijoin_schema_merge():
