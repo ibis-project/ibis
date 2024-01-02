@@ -31,7 +31,6 @@ from ibis.common.deferred import (
     _,  # noqa: F401
     resolver,
 )
-from ibis.common.dispatch import lazy_singledispatch
 from ibis.common.typing import (
     Coercible,
     CoercionError,
@@ -42,7 +41,7 @@ from ibis.common.typing import (
     get_bound_typevars,
     get_type_params,
 )
-from ibis.util import is_iterable, promote_tuple
+from ibis.util import import_object, is_iterable, unalias_package
 
 T_co = TypeVar("T_co", covariant=True)
 
@@ -719,21 +718,28 @@ class LazyInstanceOf(Slotted, Pattern):
         The types to check against.
     """
 
-    __slots__ = ("types", "check")
-    types: tuple[type, ...]
-    check: Callable
+    __fields__ = ("qualname", "package")
+    __slots__ = ("qualname", "package", "loaded")
+    qualname: str
+    package: str
+    loaded: type
 
-    def __init__(self, types):
-        types = promote_tuple(types)
-        check = lazy_singledispatch(lambda x: False)
-        check.register(types, lambda x: True)
-        super().__init__(types=types, check=check)
+    def __init__(self, qualname):
+        package = unalias_package(qualname.split(".", 1)[0])
+        super().__init__(qualname=qualname, package=package)
 
     def match(self, value, context):
-        if self.check(value):
-            return value
-        else:
-            return NoMatch
+        if hasattr(self, "loaded"):
+            return value if isinstance(value, self.loaded) else NoMatch
+
+        for klass in type(value).__mro__:
+            package = klass.__module__.split(".", 1)[0]
+            if package == self.package:
+                typ = import_object(self.qualname)
+                object.__setattr__(self, "loaded", typ)
+                return value if isinstance(value, typ) else NoMatch
+
+        return NoMatch
 
 
 class CoercedTo(Slotted, Pattern, Generic[T_co]):
