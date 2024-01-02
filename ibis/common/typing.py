@@ -172,6 +172,7 @@ def evaluate_annotations(
     annots: dict[str, str],
     module_name: str,
     class_name: Optional[str] = None,
+    best_effort: bool = False,
 ) -> dict[str, Any]:
     """Evaluate type annotations that are strings.
 
@@ -185,6 +186,8 @@ def evaluate_annotations(
     class_name
         The name of the class that the annotations are defined in, hence
         providing Self type.
+    best_effort
+        Whether to ignore errors when evaluating type annotations.
 
     Returns
     -------
@@ -202,10 +205,18 @@ def evaluate_annotations(
         localns = None
     else:
         localns = dict(Self=f"{module_name}.{class_name}")
-    return {
-        k: eval(v, globalns, localns) if isinstance(v, str) else v
-        for k, v in annots.items()
-    }
+
+    result = {}
+    for k, v in annots.items():
+        if isinstance(v, str):
+            try:
+                v = eval(v, globalns, localns)
+            except NameError:
+                if not best_effort:
+                    raise
+        result[k] = v
+
+    return result
 
 
 def format_typehint(typ: Any) -> str:
