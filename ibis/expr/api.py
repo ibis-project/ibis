@@ -345,17 +345,6 @@ def table(
     return ops.UnboundTable(name=name, schema=schema).to_expr()
 
 
-@lazy_singledispatch
-def _memtable(
-    data,
-    *,
-    columns: Iterable[str] | None = None,
-    schema: SupportsSchema | None = None,
-    name: str | None = None,
-):
-    raise NotImplementedError(type(data))
-
-
 def memtable(
     data,
     *,
@@ -443,33 +432,13 @@ def memtable(
     return _memtable(data, name=name, schema=schema, columns=columns)
 
 
-@_memtable.register("pyarrow.Table")
-def _memtable_from_pyarrow_table(
-    data: pa.Table,
-    *,
-    name: str | None = None,
-    schema: SupportsSchema | None = None,
-    columns: Iterable[str] | None = None,
-):
-    from ibis.formats.pyarrow import PyArrowTableProxy
-
-    if columns is not None:
-        assert schema is None, "if `columns` is not `None` then `schema` must be `None`"
-        schema = sch.Schema(dict(zip(columns, sch.infer(data).values())))
-    return ops.InMemoryTable(
-        name=name if name is not None else util.gen_name("pyarrow_memtable"),
-        schema=sch.infer(data) if schema is None else schema,
-        data=PyArrowTableProxy(data),
-    ).to_expr()
-
-
-@_memtable.register(object)
-def _memtable_from_dataframe(
+@lazy_singledispatch
+def _memtable(
     data: pd.DataFrame | Any,
     *,
-    name: str | None = None,
-    schema: SupportsSchema | None = None,
     columns: Iterable[str] | None = None,
+    schema: SupportsSchema | None = None,
+    name: str | None = None,
 ) -> Table:
     import pandas as pd
 
@@ -513,6 +482,26 @@ def _memtable_from_dataframe(
         data=PandasDataFrameProxy(df),
     )
     return op.to_expr()
+
+
+@_memtable.register("pyarrow.Table")
+def _memtable_from_pyarrow_table(
+    data: pa.Table,
+    *,
+    name: str | None = None,
+    schema: SupportsSchema | None = None,
+    columns: Iterable[str] | None = None,
+):
+    from ibis.formats.pyarrow import PyArrowTableProxy
+
+    if columns is not None:
+        assert schema is None, "if `columns` is not `None` then `schema` must be `None`"
+        schema = sch.Schema(dict(zip(columns, sch.infer(data).values())))
+    return ops.InMemoryTable(
+        name=name if name is not None else util.gen_name("pyarrow_memtable"),
+        schema=sch.infer(data) if schema is None else schema,
+        data=PyArrowTableProxy(data),
+    ).to_expr()
 
 
 def _deferred_method_call(expr, method_name):
