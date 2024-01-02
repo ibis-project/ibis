@@ -2,10 +2,14 @@ from __future__ import annotations
 
 import collections
 import decimal
+from typing import TYPE_CHECKING, Union
 
 from ibis.common.dispatch import Dispatched, lazy_singledispatch
 
 # ruff: noqa: F811
+if TYPE_CHECKING:
+    import pandas as pd
+    import pyarrow as pa
 
 
 def test_lazy_singledispatch():
@@ -122,6 +126,14 @@ def test_lazy_singledispatch_abc():
     assert foo(sum) == "callable"
 
 
+class A:
+    pass
+
+
+class B:
+    pass
+
+
 class Visitor(Dispatched):
     def a(self):
         return "a"
@@ -131,6 +143,9 @@ class Visitor(Dispatched):
 
     def b(self, x: str):
         return "b_str"
+
+    def b(self, x: Union[A, B]):
+        return "b_union"
 
     @classmethod
     def c(cls, x: int, **kwargs):
@@ -154,6 +169,15 @@ class Visitor(Dispatched):
     def e(x: str):
         return "e_str"
 
+    def f(self, df: dict):
+        return "f_dict"
+
+    def f(self, df: pd.DataFrame):
+        return "f_pandas"
+
+    def f(self, df: pa.Table):
+        return "f_pyarrow"
+
 
 class Subvisitor(Visitor):
     def b(self, x):
@@ -173,9 +197,11 @@ class Subvisitor(Visitor):
 
 def test_dispatched():
     v = Visitor()
-    assert v.a == v.a
+    assert v.a() == "a"
     assert v.b(1) == "b_int"
     assert v.b("1") == "b_str"
+    assert v.b(A()) == "b_union"
+    assert v.b(B()) == "b_union"
     assert v.d(1) == "d_int"
     assert v.d("1") == "d_str"
 
@@ -193,3 +219,15 @@ def test_dispatched():
     assert Subvisitor.c(1.1) == "c_float"
 
     assert Subvisitor.e(1) == "e_int"
+
+
+def test_dispatched_lazy():
+    import pyarrow as pa
+
+    empty_pyarrow_table = pa.Table.from_arrays([])
+    empty_pandas_table = empty_pyarrow_table.to_pandas()
+
+    v = Visitor()
+    assert v.f({}) == "f_dict"
+    assert v.f(empty_pyarrow_table) == "f_pyarrow"
+    assert v.f(empty_pandas_table) == "f_pandas"
