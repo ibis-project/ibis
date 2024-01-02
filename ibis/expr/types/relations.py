@@ -155,8 +155,14 @@ def unwrap_aliases(values: Iterator[ir.Value]) -> Mapping[str, ir.Value]:
 
 
 def dereference_mapping(parents):
-    mapping = {}
     parents = util.promote_list(parents)
+    mapping = {}
+
+    for parent in parents:
+        # do not defereference fields referencing the requested parents
+        for k, v in parent.fields.items():
+            mapping[v] = v
+
     for parent in parents:
         for k, v in parent.values.items():
             if isinstance(v, ops.Field):
@@ -171,6 +177,7 @@ def dereference_mapping(parents):
             elif v.relations and v not in mapping:
                 # do not dereference literal expressions
                 mapping[v] = ops.Field(parent, k)
+
     return mapping
 
 
