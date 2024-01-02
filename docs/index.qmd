@@ -40,10 +40,10 @@ about:
 We recommend starting with the default backend (DuckDB).
 
 ```bash
-pip install 'ibis-framework[duckdb]' # <1>
+pip install 'ibis-framework[duckdb,examples]' # <1>
 ```
 
-1. Install Ibis with optional dependencies (DuckDB in this case).
+1. Install Ibis with the DuckDB backend along with examples.
 
 <div class="d-grid gap-2"><a class="btn btn-lg btn-primary" data-bs-toggle="collapse" href="#collapseBackends" role="button" aria-expanded="false" aria-controls="collapseBackends"  margin="100px">Show supported backends</a></div>
 

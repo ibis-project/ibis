@@ -8,6 +8,8 @@ from ibis.conftest import LINUX, MACOS, SANDBOXED
 
 pytestmark = pytest.mark.examples
 
+pytest.importorskip("pins")
+
 
 @pytest.mark.skipif(
     (LINUX or MACOS) and SANDBOXED,

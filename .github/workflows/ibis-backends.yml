@@ -63,6 +63,7 @@ jobs:
               - duckdb
               - deltalake
               - geospatial
+              - examples
             additional_deps:
               - torch
           - name: pandas
@@ -82,6 +83,7 @@ jobs:
             extras:
               - polars
               - deltalake
+              - examples
           - name: mysql
             title: MySQL
             services:
@@ -97,6 +99,7 @@ jobs:
               - clickhouse
             extras:
               - clickhouse
+              - examples
           - name: postgres
             title: PostgreSQL
             extras:
@@ -191,6 +194,7 @@ jobs:
               title: ClickHouse
               extras:
                 - clickhouse
+                - examples
               services:
                 - clickhouse
           - os: windows-latest
