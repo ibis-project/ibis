@@ -8,7 +8,7 @@ r1 := UnboundTable: right
 
 JoinChain[r0]
   JoinLink[asof, r1]
-    r0.time1 <= r1.time2
+    r0.time1 >= r1.time2
   JoinLink[inner, r1]
     r0.value == r1.value2
   values:
