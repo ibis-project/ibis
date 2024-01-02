@@ -70,7 +70,7 @@ WHERE
           ON t7.o_custkey = t6.c_custkey
       ) AS t12
       WHERE
-        t12.region = t12.region
+        t12.region = t11.region
     ) AS t13
   )
 LIMIT 10
