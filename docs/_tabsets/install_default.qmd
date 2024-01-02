@@ -5,7 +5,7 @@ We recommend starting with the default (DuckDB) backend for a performant, fully-
 ## Using `pip`
 
 ```bash
-pip install 'ibis-framework[duckdb]'
+pip install 'ibis-framework[duckdb,examples]'
 ```
 
 {{< include /_callouts/pypi_warning.qmd >}}
