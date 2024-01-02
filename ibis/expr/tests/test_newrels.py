@@ -1266,6 +1266,27 @@ def test_join_between_joins():
         assert expr.op() == expected
 
 
+def test_join_with_filtered_join_of_left():
+    t1 = ibis.table(name="t1", schema={"a": "int64", "b": "string"})
+    t2 = ibis.table(name="t2", schema={"a": "int64", "b": "string"})
+
+    joined = t1.left_join(t2, [t1.a == t2.a]).filter(t1.a < 5)
+    expr = t1.left_join(joined, [t1.a == joined.a]).select(t1)
+
+    with join_tables(t1, joined) as (r1, r2):
+        expected = ops.JoinChain(
+            first=r1,
+            rest=[
+                ops.JoinLink("left", r2, [r1.a == r2.a]),
+            ],
+            values={
+                "a": r1.a,
+                "b": r1.b,
+            },
+        )
+        assert expr.op() == expected
+
+
 def test_join_method_docstrings():
     t1 = ibis.table(name="t1", schema={"a": "int64", "b": "string"})
     t2 = ibis.table(name="t2", schema={"c": "int64", "d": "string"})
