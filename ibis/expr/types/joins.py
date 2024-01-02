@@ -9,7 +9,7 @@ import ibis
 import ibis.expr.operations as ops
 
 from ibis import util
-from ibis.expr.types import Table, ValueExpr
+from ibis.expr.types import Table, Value
 from ibis.common.deferred import Deferred
 from ibis.expr.analysis import flatten_predicates
 from ibis.common.exceptions import ExpressionError, IntegrityError
@@ -88,7 +88,7 @@ def dereference_binop(pred, deref_left, deref_right):
 
 def dereference_value(pred, deref_left, deref_right):
     deref_both = {**deref_left, **deref_right}
-    if isinstance(pred, ops.Binary) and pred.left == pred.right:
+    if isinstance(pred, ops.Binary) and pred.left.relations == pred.right.relations:
         return dereference_binop(pred, deref_left, deref_right)
     else:
         return pred.replace(deref_both, filter=ops.Value)
@@ -103,13 +103,14 @@ def prepare_predicates(
     for pred in util.promote_list(predicates):
         if pred is True or pred is False:
             yield ops.Literal(pred, dtype="bool")
-        elif isinstance(pred, ValueExpr):
-            node = pred.op()
-            yield dereference_value(node, deref_left, deref_right)
+        elif isinstance(pred, Value):
+            for node in flatten_predicates(pred.op()):
+                yield dereference_value(node, deref_left, deref_right)
         elif isinstance(pred, Deferred):
             # resolve deferred expressions on the left table
-            node = pred.resolve(left).op()
-            yield dereference_value(node, deref_left, deref_right)
+            pred = pred.resolve(left).op()
+            for node in flatten_predicates(pred):
+                yield dereference_value(node, deref_left, deref_right)
         else:
             if isinstance(pred, tuple):
                 if len(pred) != 2:
@@ -193,14 +194,15 @@ class Join(Table):
         subs_right = dereference_mapping_right(right)
 
         # bind and dereference the predicates
-        preds = prepare_predicates(
-            left,
-            right,
-            predicates,
-            deref_left=subs_left,
-            deref_right=subs_right,
+        preds = list(
+            prepare_predicates(
+                left,
+                right,
+                predicates,
+                deref_left=subs_left,
+                deref_right=subs_right,
+            )
         )
-        preds = flatten_predicates(list(preds))
         if not preds and how != "cross":
             # if there are no predicates, default to every row matching unless
             # the join is a cross join, because a cross join already has this
@@ -236,12 +238,33 @@ class Join(Table):
     ):
         predicates = util.promote_list(predicates) + util.promote_list(by)
         if tolerance is not None:
-            if not isinstance(on, str):
-                raise TypeError(
-                    "tolerance can only be specified when predicates is a string"
-                )
-            # construct a predicate with two sides from the two tables
-            predicates.append(self[on] <= right[on] + tolerance)
+            if isinstance(on, str):
+                # self is always a JoinChain so reference one of the join tables
+                left_on = self.op().values[on].to_expr()
+                right_on = right[on]
+                on = left_on >= right_on
+            elif isinstance(on, Value):
+                node = on.op()
+                if not isinstance(node, ops.Binary):
+                    raise InputTypeError("`on` must be a comparison expression")
+                left_on = node.left.to_expr()
+                right_on = node.right.to_expr()
+            else:
+                raise TypeError("`on` must be a string or a ValueExpr")
+
+            joined = self.asof_join(
+                right, on=on, predicates=predicates, lname=lname, rname=rname
+            )
+            filtered = joined.filter(
+                left_on <= right_on + tolerance, left_on >= right_on - tolerance
+            )
+            right_on = right_on.op().replace({right.op(): filtered.op()}).to_expr()
+
+            result = self.left_join(
+                filtered, predicates=[left_on == right_on] + predicates
+            )
+            values = {**self.op().values, **filtered.op().values}
+            return result.select(values)
 
         left = self.op()
         right = ops.JoinTable(right, index=left.length)
@@ -249,28 +272,24 @@ class Join(Table):
         subs_right = dereference_mapping_right(right)
 
         # TODO(kszucs): add extra validation for `on` with clear error messages
-        preds = list(
-            prepare_predicates(
-                left,
-                right,
-                [on],
-                deref_left=subs_left,
-                deref_right=subs_right,
-                comparison=ops.LessEqual,
-            )
+        (on,) = prepare_predicates(
+            left,
+            right,
+            [on],
+            deref_left=subs_left,
+            deref_right=subs_right,
+            comparison=ops.GreaterEqual,
         )
-        preds += flatten_predicates(
-            list(
-                prepare_predicates(
-                    left,
-                    right,
-                    predicates,
-                    deref_left=subs_left,
-                    deref_right=subs_right,
-                    comparison=ops.Equals,
-                )
-            )
+        predicates = prepare_predicates(
+            left,
+            right,
+            predicates,
+            deref_left=subs_left,
+            deref_right=subs_right,
+            comparison=ops.Equals,
         )
+        preds = [on, *predicates]
+
         values, collisions = disambiguate_fields(
             "asof", left.values, right.fields, lname, rname
         )
