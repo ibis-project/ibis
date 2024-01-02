@@ -254,25 +254,25 @@ def complete_reprojection(_, y):
 @replace(p.Project(y @ p.Project))
 def subsequent_projects(_, y):
     rule = p.Field(y, name) >> Item(y.values, name)
-    values = {k: v.replace(rule) for k, v in _.values.items()}
+    values = {k: v.replace(rule, filter=ops.Value) for k, v in _.values.items()}
     return ops.Project(y.parent, values)
 
 
 @replace(p.Filter(y @ p.Filter))
 def subsequent_filters(_, y):
     rule = p.Field(y, name) >> d.Field(y.parent, name)
-    preds = tuple(v.replace(rule) for v in _.predicates)
+    preds = tuple(v.replace(rule, filter=ops.Value) for v in _.predicates)
     return ops.Filter(y.parent, y.predicates + preds)
 
 
 @replace(p.Filter(y @ p.Project))
 def reorder_filter_project(_, y):
     rule = p.Field(y, name) >> Item(y.values, name)
-    preds = tuple(v.replace(rule) for v in _.predicates)
+    preds = tuple(v.replace(rule, filter=ops.Value) for v in _.predicates)
 
     inner = ops.Filter(y.parent, preds)
     rule = p.Field(y.parent, name) >> d.Field(inner, name)
-    projs = {k: v.replace(rule) for k, v in y.values.items()}
+    projs = {k: v.replace(rule, filter=ops.Value) for k, v in y.values.items()}
 
     return ops.Project(inner, projs)
 

@@ -104,13 +104,13 @@ def merge_select_select(_):
         if v.find((Window, ops.Unnest), filter=ops.Value):
             return _
     for v in _.predicates:
-        if v.find(ops.ExistsSubquery, filter=ops.Value):
+        if v.find((ops.ExistsSubquery, ops.InSubquery), filter=ops.Value):
             return _
 
     subs = {ops.Field(_.parent, k): v for k, v in _.parent.values.items()}
-    selections = {k: v.replace(subs) for k, v in _.selections.items()}
+    selections = {k: v.replace(subs, filter=ops.Value) for k, v in _.selections.items()}
     predicates = tuple(p.replace(subs, filter=ops.Value) for p in _.predicates)
-    sort_keys = tuple(s.replace(subs) for s in _.sort_keys)
+    sort_keys = tuple(s.replace(subs, filter=ops.Value) for s in _.sort_keys)
 
     return Select(
         _.parent.parent,
