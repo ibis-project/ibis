@@ -1,5 +1,5 @@
 SELECT
-  t7.r_name,
+  t2.r_name,
   t7.n_name
 FROM tpch_region AS t2
 INNER JOIN tpch_nation AS t3
