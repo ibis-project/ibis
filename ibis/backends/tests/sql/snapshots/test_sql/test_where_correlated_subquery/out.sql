@@ -16,6 +16,6 @@ WHERE
         t1.y
       FROM foo AS t1
       WHERE
-        t1.dept_id = t1.dept_id
+        t0.dept_id = t1.dept_id
     ) AS t2
   )
