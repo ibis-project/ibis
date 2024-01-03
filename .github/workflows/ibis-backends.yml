@@ -10,7 +10,7 @@ on:
       - "codecov.yml"
       - ".envrc"
     branches:
-      - master
+      - main
       - "*.x.x"
   pull_request:
     # Skip the backend suite if all changes are docs
@@ -21,7 +21,7 @@ on:
       - "codecov.yml"
       - ".envrc"
     branches:
-      - master
+      - main
       - "*.x.x"
   merge_group:
 

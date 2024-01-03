@@ -4,9 +4,9 @@
 [![Project Chat](https://img.shields.io/badge/zulip-join_chat-purple.svg?logo=zulip)](https://ibis-project.zulipchat.com)
 [![Anaconda-Server Badge](https://anaconda.org/conda-forge/ibis-framework/badges/version.svg)](https://anaconda.org/conda-forge/ibis-framework)
 [![PyPI](https://img.shields.io/pypi/v/ibis-framework.svg)](https://pypi.org/project/ibis-framework)
-[![Build status](https://github.com/ibis-project/ibis/actions/workflows/ibis-main.yml/badge.svg)](https://github.com/ibis-project/ibis/actions/workflows/ibis-main.yml?query=branch%3Amaster)
-[![Build status](https://github.com/ibis-project/ibis/actions/workflows/ibis-backends.yml/badge.svg)](https://github.com/ibis-project/ibis/actions/workflows/ibis-backends.yml?query=branch%3Amaster)
-[![Codecov branch](https://img.shields.io/codecov/c/github/ibis-project/ibis/master.svg)](https://codecov.io/gh/ibis-project/ibis)
+[![Build status](https://github.com/ibis-project/ibis/actions/workflows/ibis-main.yml/badge.svg)](https://github.com/ibis-project/ibis/actions/workflows/ibis-main.yml?query=branch%3Amain)
+[![Build status](https://github.com/ibis-project/ibis/actions/workflows/ibis-backends.yml/badge.svg)](https://github.com/ibis-project/ibis/actions/workflows/ibis-backends.yml?query=branch%3Amain)
+[![Codecov branch](https://img.shields.io/codecov/c/github/ibis-project/ibis/main.svg)](https://codecov.io/gh/ibis-project/ibis)
 
 ## What is Ibis?
 
@@ -74,7 +74,7 @@ Ibis acts as a universal frontend to the following systems:
 
 The list of supported backends is continuously growing. Anyone can get involved
 in adding new ones! Learn more about contributing to ibis in our contributing
-documentation at https://github.com/ibis-project/ibis/blob/master/docs/CONTRIBUTING.md
+documentation at https://github.com/ibis-project/ibis/blob/main/docs/CONTRIBUTING.md
 
 ## Installation
 
@@ -184,9 +184,9 @@ Show the 5 least populous countries in Asia
 
 Ibis is an open source project and welcomes contributions from anyone in the community.
 
-- Read [the contributing guide](https://github.com/ibis-project/ibis/blob/master/docs/CONTRIBUTING.md).
-- We care about keeping the community welcoming for all. Check out [the code of conduct](https://github.com/ibis-project/ibis/blob/master/docs/CODE_OF_CONDUCT.md).
-- The Ibis project is open sourced under the [Apache License](https://github.com/ibis-project/ibis/blob/master/LICENSE.txt).
+- Read [the contributing guide](https://github.com/ibis-project/ibis/blob/main/docs/CONTRIBUTING.md).
+- We care about keeping the community welcoming for all. Check out [the code of conduct](https://github.com/ibis-project/ibis/blob/main/docs/CODE_OF_CONDUCT.md).
+- The Ibis project is open sourced under the [Apache License](https://github.com/ibis-project/ibis/blob/main/LICENSE.txt).
 
 Join our community by interacting on GitHub or chatting with us on [Zulip](https://ibis-project.zulipchat.com/).
 

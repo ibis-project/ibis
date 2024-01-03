@@ -11,7 +11,7 @@ on:
       - "**/*.qmd"
       - ".envrc"
     branches:
-      - master
+      - main
       - "*.x.x"
   pull_request:
     paths:
@@ -20,7 +20,7 @@ on:
       - "**/*.qmd"
       - ".envrc"
     branches:
-      - master
+      - main
       - "*.x.x"
   merge_group:
 

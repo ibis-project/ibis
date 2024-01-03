@@ -149,7 +149,7 @@ def version_pair(module):
 
 subprocess.run(("git", "fetch", "upstream"), check=True, capture_output=True)
 
-cmd = "git", "rev-parse", "--short", "upstream/master"
+cmd = "git", "rev-parse", "--short", "upstream/main"
 proc = subprocess.run(cmd, check=True, text=True, capture_output=True)
 commit = proc.stdout.strip()
 link = f"https://github.com/ibis-project/ibis/tree/{commit}"
