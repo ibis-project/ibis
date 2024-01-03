@@ -2536,15 +2536,6 @@ def test_integer_cast_to_timestamp_column(backend, alltypes, df):
 
 
 @pytest.mark.notimpl(
-    ["datafusion"],
-    raises=Exception,
-    reason=(
-        "Internal error: Invalid aggregate expression 'CAST(MIN(functional_alltypes.int_col) "
-        "AS Timestamp(Nanosecond, None)) AS tmp'. This was likely caused by a bug in "
-        "DataFusion's code and we would welcome that you file an bug report in our issue tracker"
-    ),
-)
-@pytest.mark.notimpl(
     ["druid"],
     raises=sa.exc.ProgrammingError,
     reason="No match found for function signature to_timestamp(<NUMERIC>)",

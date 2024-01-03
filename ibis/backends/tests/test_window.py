@@ -654,11 +654,6 @@ def test_simple_ungrouped_unbound_following_window(
     ["mssql"], raises=Exception, reason="order by constant is not supported"
 )
 @pytest.mark.notimpl(["polars"], raises=com.OperationNotDefinedError)
-@pytest.mark.broken(
-    ["datafusion"],
-    raises=Exception,
-    reason="Exception: Error during planning: Sort operation is not applicable to scalar value NULL",
-)
 def test_simple_ungrouped_window_with_scalar_order_by(alltypes):
     t = alltypes[alltypes.double_col < 50].order_by("id")
     w = ibis.window(rows=(0, None), order_by=ibis.NA)
