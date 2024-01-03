@@ -49,7 +49,7 @@ across numerous enterprises. The API is stable and while there are breaking
 changes across major versions, we do our best to minimize them and provide easy
 migration.
 
-Voltron Data [offers commerical support for
+Voltron Data [offers commercial support for
 Ibis](https://voltrondata.com/enterprise-support) if you're interested.
 Otherwise, interacting through the open-source project channels
 ([GitHub](https://github.com/ibis-project/ibis) and
