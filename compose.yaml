@@ -140,8 +140,10 @@ services:
       AZURE_ABFS_OAUTH_ENDPOINT: ""
       AZURE_WASB_ACCESS_KEY: ""
     depends_on:
-      - hive-metastore-db
-      - minio
+      hive-metastore-db:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
     networks:
       - trino
 
@@ -204,8 +206,10 @@ services:
       - druid:/opt/shared
       - coordinator_var:/opt/druid/var
     depends_on:
-      - druid-zookeeper
-      - druid-postgres
+      druid-zookeeper:
+        condition: service_healthy
+      druid-postgres:
+        condition: service_healthy
     command:
       - coordinator
     healthcheck:
@@ -226,9 +230,12 @@ services:
     volumes:
       - broker_var:/opt/druid/var
     depends_on:
-      - druid-zookeeper
-      - druid-postgres
-      - druid-coordinator
+      druid-zookeeper:
+        condition: service_healthy
+      druid-postgres:
+        condition: service_healthy
+      druid-coordinator:
+        condition: service_healthy
     command:
       - broker
     healthcheck:
@@ -252,9 +259,12 @@ services:
       - druid:/opt/shared
       - historical_var:/opt/druid/var
     depends_on:
-      - druid-zookeeper
-      - druid-postgres
-      - druid-coordinator
+      druid-zookeeper:
+        condition: service_healthy
+      druid-postgres:
+        condition: service_healthy
+      druid-coordinator:
+        condition: service_healthy
     command:
       - historical
     healthcheck:
@@ -277,9 +287,12 @@ services:
       - middle_var:/opt/druid/var
       - druid-data:/data
     depends_on:
-      - druid-zookeeper
-      - druid-postgres
-      - druid-coordinator
+      druid-zookeeper:
+        condition: service_healthy
+      druid-postgres:
+        condition: service_healthy
+      druid-coordinator:
+        condition: service_healthy
     command:
       - middleManager
     healthcheck:
@@ -300,12 +313,18 @@ services:
     volumes:
       - router_var:/opt/druid/var
     depends_on:
-      - druid-zookeeper
-      - druid-postgres
-      - druid-coordinator
-      - druid-middlemanager
-      - druid-historical
-      - druid-broker
+      druid-zookeeper:
+        condition: service_healthy
+      druid-postgres:
+        condition: service_healthy
+      druid-coordinator:
+        condition: service_healthy
+      druid-middlemanager:
+        condition: service_healthy
+      druid-historical:
+        condition: service_healthy
+      druid-broker:
+        condition: service_healthy
     ports:
       - 8888:8888
     command:
@@ -406,7 +425,8 @@ services:
       - SYS_TIME
     image: apache/kudu:1.17.0
     depends_on:
-      - kudu
+      kudu:
+        condition: service_healthy
     networks:
       - impala
     command: kudu tserver run --fs_wal_dir=/var/lib/kudu/master --fs_data_dirs=/var/lib/kudu/master --tserver_master_addrs=kudu
@@ -455,8 +475,10 @@ services:
 
   catalogd:
     depends_on:
-      - statestored
-      - impala-hive-metastore
+      impala-hive-metastore:
+        condition: service_started
+      statestored:
+        condition: service_healthy
     image: apache/impala:4.0.0-catalogd
     ports:
       - 25020:25020 # Web debug UI
@@ -483,10 +505,14 @@ services:
   impala:
     image: apache/impala:4.0.0-impalad_coord_exec
     depends_on:
-      - statestored
-      - catalogd
-      - kudu
-      - kudu-tserver
+      statestored:
+        condition: service_healthy
+      catalogd:
+        condition: service_healthy
+      kudu:
+        condition: service_healthy
+      kudu-tserver:
+        condition: service_healthy
     ports:
       - 21050:21050 # HS2 endpoint
     healthcheck:
