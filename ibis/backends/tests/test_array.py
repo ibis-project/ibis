@@ -111,7 +111,6 @@ def test_array_concat_variadic(con):
 
 
 # Issues #2370
-@pytest.mark.notimpl(["datafusion"], raises=BaseException)
 @pytest.mark.notimpl(["flink"], raises=com.OperationNotDefinedError)
 @pytest.mark.notyet(
     ["postgres", "trino"],
