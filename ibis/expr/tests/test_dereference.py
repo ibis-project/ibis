@@ -18,7 +18,7 @@ def dereference_expect(expected):
 
 
 def test_dereference_project():
-    p = t.projection([t.int_col, t.double_col])
+    p = t.select([t.int_col, t.double_col])
 
     mapping = dereference_mapping([p.op()])
     expected = dereference_expect(
