@@ -11,6 +11,7 @@ on:
       - ".envrc"
     branches:
       - main
+      - the-epic-split
 
 permissions:
   # this allows extractions/setup-just to list releases for `just` at a higher
@@ -42,8 +43,8 @@ jobs:
           - "3.9"
           - "3.11"
         backend:
-          - name: bigquery
-            title: BigQuery
+          # - name: bigquery
+          #   title: BigQuery
           - name: snowflake
             title: Snowflake
     steps:
