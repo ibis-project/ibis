@@ -1,0 +1,78 @@
+# User testimonials
+
+This page collects user testimonials about Ibis from the community! They may be
+been lightly edited for clarity, with the originals linked.
+
+## From the community
+
+From [Nick Crews on GitHub](https://github.com/ibis-project/ibis/issues/7743#issuecomment-1856391530):
+
+> I have been very impressed with the responsiveness of the team. When I report
+> bugs they are usually addressed within the next release in the next 1-2 months,
+> and some feature requests of mine have been implemented with little convincing
+> needed. The detailed CHANGELOG has made version transitions fairly easy, though
+> there has been some bulk refactoring occasionally needed, but through the last 3
+> major version upgrades I've gone through the process has never been that bad.
+> Nothing but good things to say :), I hope you join along!
+
+---
+
+From [Daniel Kim on Zulip](https://ibis-project.zulipchat.com/#narrow/stream/405263-general/topic/.E2.9C.94.20ibis-on-reddit/near/407807779):
+
+> We have a production DB2 server that is already under a heavy load. So what I've
+> done was extract a subset of the data it has locally onto my machine and then
+> use ibis w/duckdb backend to perform ad-hoc analysis on this local data which is
+> a bit too big for pandas, instead of hammering the production server. Often
+> times, I don't know what queries I'll be building or what kind of rabbit hole my
+> analysis may take me. So it's great that I can just query away with my local
+> data. Performance has been great.
+
+[And later in the same topic](https://ibis-project.zulipchat.com/#narrow/stream/405263-general/topic/.E2.9C.94.20ibis-on-reddit/near/407813572):
+
+> ...I have a lot of "medium" data that I need to work with locally, and so Ibis
+> has been perfect for my use cases. We have this metric called cumulative defect
+> rate that I need to forecast. It requires making cumulative sums and then having
+> to pivot this data, along with some wonky transformations requiring UDFs. The
+> need to dynamically pivot this data is where I turn to Ibis. Love that with
+> Ibis, I can use SQL for the heavy lifting or aggregations, and then being able
+> to switch to dataframe-like API for the type of dynamic transformations (pivot,
+> forward fill, etc) that would otherwise be tedious to do in pure SQL.
+
+---
+
+From [stereoF on GitHub](https://github.com/ibis-project/ibis/issues/7341#issuecomment-1760625921):
+
+> My story around pyspark -> trying a bunch of stuff -> Ibis, which has feature of
+> lazy computation.
+> 
+> Our company has implemented an OLAP platform with its persistence layer on hdfs
+> and the query engine being Presto. Typically, the OLAP platform is geared
+> towards agile analysis, and its table structure is based on an event-driven
+> model. As we delve deeper into machine learning modeling, we often need to
+> transition from this event-based structure to a wide-table feature construction.
+> 
+> Back between 2019 and 2020, I worked on a similar OLAP platform during my tenure
+> at Tencent. I developed some generic analysis model tools, and at that time, the
+> query engine was Impala. My approach was to dynamically concatenate SQL, which
+> unfortunately was not conducive to code encapsulation, modularization, and
+> future maintenance.
+> 
+> In my pursuit of better code encapsulation and to decouple different parts of
+> logic, I was initially inclined to use PySpark. However, when PySpark connects
+> to Presto via JDBC, if we use the dataframe interface, the aggregation
+> operations run on Spark. This doesn't harness the full power of Presto, leading
+> to slow performances. On the other hand, if we use Spark's SQL interface,
+> aggregation is processed on Presto. But in doing so, we lose the original intent
+> of using Spark - which is better code encapsulation and the decoupling of
+> different processes.
+> 
+> The dataframe interface of Ibis and its feature of lazy computation perfectly
+> align with my needs. In fact, back in 2019, I was on the hunt for such a tool.
+> Sadly, I didn't come across Ibis at that time and even contemplated creating a
+> set on my own.
+
+## Have a story to share?
+
+Let us know! We'd love to include it here. Please share your experience with
+Ibis [in our Zulip community chat](https://ibis-project.zulipchat.com) and make
+a PR to this page (or ask us to do it for you).
