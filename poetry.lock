@@ -1247,17 +1247,17 @@ test = ["pandas[test]", "pre-commit", "pytest", "pytest-cov", "pytest-rerunfailu
 
 [[package]]
 name = "datafusion"
-version = "33.0.0"
+version = "34.0.0"
 description = "Build and run queries against data"
 optional = true
 python-versions = ">=3.6"
 files = [
-    {file = "datafusion-33.0.0-cp38-abi3-macosx_10_12_x86_64.whl", hash = "sha256:183926f981dedc00b9dc0d591ff644092b399b105ff3037ad1b8343df0312402"},
-    {file = "datafusion-33.0.0-cp38-abi3-macosx_11_0_arm64.whl", hash = "sha256:4e929bcdb730efa187f35c6545ff4e1a41048696746dbc81e3eeaf463b8787eb"},
-    {file = "datafusion-33.0.0-cp38-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:c563ad09c22a326e715442721c83cda77b724d50f6bf42271db95648d7e73f2b"},
-    {file = "datafusion-33.0.0-cp38-abi3-manylinux_2_28_aarch64.whl", hash = "sha256:76db1e6dad256ec441a4634d782a3b9d0a744f72477856fa78278e56e433bcb4"},
-    {file = "datafusion-33.0.0-cp38-abi3-win_amd64.whl", hash = "sha256:5c3514d5feb8ce84151bacc89c96f7eb0ffce02aa46159fd30abe39de56eb994"},
-    {file = "datafusion-33.0.0.tar.gz", hash = "sha256:60e42fc872e1936fb58871e73c863fe47dc7026a01e5e9ae06aa3b8a1586e149"},
+    {file = "datafusion-34.0.0-cp38-abi3-macosx_10_12_x86_64.whl", hash = "sha256:b52dc70b0b3274e8e6fae8ddb1cca410677bea7977b061506e07f8b9ebd0150a"},
+    {file = "datafusion-34.0.0-cp38-abi3-macosx_11_0_arm64.whl", hash = "sha256:c1b6ea5bed05365d549a20279117887d05aafad3ddf2b3bb8d0c37ec86c588ea"},
+    {file = "datafusion-34.0.0-cp38-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:6f5bf0f8977c36a3cd77ed449f8f12083c1897310150fdd8e9df2eae1edd5bb5"},
+    {file = "datafusion-34.0.0-cp38-abi3-manylinux_2_28_aarch64.whl", hash = "sha256:96693f9efc0cb2dbd7d57544bcb94eac23f9fddbe2354e19cf3101c0bccdb383"},
+    {file = "datafusion-34.0.0-cp38-abi3-win_amd64.whl", hash = "sha256:c6a9212ebe42b24e0e220aff7224a24ff3b025de86cd7dca75e69a518a11ecfc"},
+    {file = "datafusion-34.0.0.tar.gz", hash = "sha256:f47144c143072bd32640869c6a395e2b9351ff9cd7539391eaae13636058cb9e"},
 ]
 
 [package.dependencies]
@@ -4322,6 +4322,8 @@ files = [
     {file = "psycopg2-2.9.9-cp310-cp310-win_amd64.whl", hash = "sha256:426f9f29bde126913a20a96ff8ce7d73fd8a216cfb323b1f04da402d452853c3"},
     {file = "psycopg2-2.9.9-cp311-cp311-win32.whl", hash = "sha256:ade01303ccf7ae12c356a5e10911c9e1c51136003a9a1d92f7aa9d010fb98372"},
     {file = "psycopg2-2.9.9-cp311-cp311-win_amd64.whl", hash = "sha256:121081ea2e76729acfb0673ff33755e8703d45e926e416cb59bae3a86c6a4981"},
+    {file = "psycopg2-2.9.9-cp312-cp312-win32.whl", hash = "sha256:d735786acc7dd25815e89cc4ad529a43af779db2e25aa7c626de864127e5a024"},
+    {file = "psycopg2-2.9.9-cp312-cp312-win_amd64.whl", hash = "sha256:a7653d00b732afb6fc597e29c50ad28087dcb4fbfb28e86092277a559ae4e693"},
     {file = "psycopg2-2.9.9-cp37-cp37m-win32.whl", hash = "sha256:5e0d98cade4f0e0304d7d6f25bbfbc5bd186e07b38eac65379309c4ca3193efa"},
     {file = "psycopg2-2.9.9-cp37-cp37m-win_amd64.whl", hash = "sha256:7e2dacf8b009a1c1e843b5213a87f7c544b2b042476ed7755be813eaf4e8347a"},
     {file = "psycopg2-2.9.9-cp38-cp38-win32.whl", hash = "sha256:ff432630e510709564c01dafdbe996cb552e0b9f3f065eb89bdce5bd31fabf4c"},
@@ -7367,4 +7369,4 @@ visualization = ["graphviz"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.9"
-content-hash = "24a9d0641efe02475497e86a5212c75209f8deed0bcdc67263e3f975c4b53187"
+content-hash = "c4185d5717ea0becf3befb1a4a56cd24571b8b159e778eef292b8a76ce81b187"
