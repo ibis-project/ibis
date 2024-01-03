@@ -150,11 +150,14 @@ class PandasData(DataMapper):
     def convert_column(cls, obj, dtype):
         pandas_type = PandasType.from_ibis(dtype)
 
-        if obj.dtype == pandas_type and dtype.is_primitive():
-            return obj
-
         method_name = f"convert_{dtype.__class__.__name__}"
         convert_method = getattr(cls, method_name, cls.convert_default)
+
+        if convert_method is cls.convert_default:
+            # only take the fast path if it isn't overridden in a subclass
+            if obj.dtype == pandas_type and dtype.is_primitive():
+                return obj
+            convert_method = cls.convert_default
 
         result = convert_method(obj, dtype, pandas_type)
         assert not isinstance(result, np.ndarray), f"{convert_method} -> {type(result)}"

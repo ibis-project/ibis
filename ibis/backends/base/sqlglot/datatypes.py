@@ -50,7 +50,9 @@ _from_sqlglot_types = {
     typecode.TEXT: dt.String,
     typecode.TIME: dt.Time,
     typecode.TIMETZ: dt.Time,
+    typecode.TINYBLOB: dt.Binary,
     typecode.TINYINT: dt.Int8,
+    typecode.TINYTEXT: dt.String,
     typecode.UBIGINT: dt.UInt64,
     typecode.UINT: dt.UInt32,
     typecode.USMALLINT: dt.UInt16,
@@ -427,6 +429,10 @@ class MySQLType(SqlglotType):
     @classmethod
     def _from_sqlglot_TIMESTAMP(cls) -> dt.Timestamp:
         return dt.Timestamp(timezone="UTC", nullable=cls.default_nullable)
+
+    @classmethod
+    def _from_ibis_String(cls, dtype: dt.String) -> sge.DataType:
+        return sge.DataType(this=typecode.TEXT)
 
 
 class DuckDBType(SqlglotType):

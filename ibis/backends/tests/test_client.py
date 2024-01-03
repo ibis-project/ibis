@@ -70,10 +70,7 @@ def _create_temp_table_with_schema(backend, con, temp_table_name, schema, data=N
 @pytest.mark.parametrize(
     "sch",
     [
-        param(
-            None,
-            id="no schema",
-        ),
+        param(None, id="no schema"),
         param(
             ibis.schema(
                 [
@@ -102,12 +99,7 @@ def test_create_table(backend, con, temp_table, lamduh, sch):
         }
     )
 
-    obj = lamduh(df)
-    con.create_table(
-        temp_table,
-        obj,
-        schema=sch,
-    )
+    con.create_table(temp_table, lamduh(df), schema=sch)
     result = (
         con.table(temp_table).execute().sort_values("first_name").reset_index(drop=True)
     )
