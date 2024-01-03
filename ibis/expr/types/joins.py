@@ -238,6 +238,15 @@ class Join(Table):
     ):
         predicates = util.promote_list(predicates) + util.promote_list(by)
         if tolerance is not None:
+            # `tolerance` parameter is mimicking the pandas API, but we express
+            # it at the expression level by a sequence of operations:
+            # 1. perform the `asof` join with the `on` an `predicates` parameters
+            #    where the `on` parameter is an inequality predicate
+            # 2. filter the asof join result using the `tolerance` parameter and
+            #    the `on` parameter
+            # 3. perform a left join between the original left table and the
+            #    filtered asof join result using the `on` parameter but this
+            #    time as an equality predicate
             if isinstance(on, str):
                 # self is always a JoinChain so reference one of the join tables
                 left_on = self.op().values[on].to_expr()
@@ -260,6 +269,9 @@ class Join(Table):
             )
             right_on = right_on.op().replace({right.op(): filtered.op()}).to_expr()
 
+            # without joining twice the table would not contain the rows from
+            # the left table that do not match any row from the right table
+            # given the tolerance filter
             result = self.left_join(
                 filtered, predicates=[left_on == right_on] + predicates
             )
