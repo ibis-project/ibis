@@ -868,14 +868,14 @@ class SQLGlotCompiler(abc.ABC):
             "anti": "left",
             "cross": None,
             "outer": "full",
-            "asof": "left",
+            "asof": "asof",
             "any_left": "left",
             "any_inner": None,
         }
         kinds = {
             "any_left": "any",
             "any_inner": "any",
-            "asof": "asof",
+            "asof": "left",
             "inner": "inner",
             "left": "outer",
             "right": "outer",
