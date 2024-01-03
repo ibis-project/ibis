@@ -478,6 +478,9 @@ def test_array_contains(backend, con):
     ["dask", "impala", "mssql", "pandas", "polars"],
     raises=com.OperationNotDefinedError,
 )
+@pytest.mark.broken(
+    ["datafusion"], reason="internal error as of 34.0.0", raises=Exception
+)
 def test_array_position(backend, con):
     t = ibis.memtable({"a": [[1], [], [42, 42], []]})
     expr = t.a.index(42)
