@@ -1,0 +1,60 @@
+# Who supports Ibis?
+
+Ibis is an open-source project that welcomes contributions from anyone! We have
+a growing community of users and contributors, and we'd love to have you join
+us. If you're interested in contributing, please see our [contributing
+guide](/contribute).
+
+## Voltron Data
+
+[Voltron Data](https://voltrondata.com) is the primary sponsor of Ibis, with
+most of the core development team employed there. As of writing, this includes
+five full-time developers, one technical product manager, and other staff who
+contribute to Ibis.
+
+## Other companies
+
+Ibis is used by many other companies, with various tools built on top of it.
+These include:
+
+- [Google BigQuery
+DataFrames](https://github.com/googleapis/python-bigquery-dataframes), a clone of the pandas API built on Ibis 
+- [Starburst Galaxy Python DataFrames](https://www.starburst.io/blog/introducing-python-dataframes/), with support for Ibis 
+- [Claypot AI's contribution of the Flink backend](https://github.com/claypotai/ibis-flink-example), working in collaboration with Voltron Data 
+- [Microsoft's Magpie project](https://www.microsoft.com/en-us/research/project/magpie-2/), built on top of Ibis 
+- [SuperDuperDB](https://github.com/SuperDuperDB/superduperdb), bringing AI to any backend Ibis supports
+
+## History
+
+Ibis was originally created by [Wes McKinney](https://wesmckinney.com/). Wes
+created pandas, co-created Apache Arrrow, and co-founded Voltron Data (among
+other things). Ibis was initially a pandas-like dataframe library for Apache
+Impala, but has since grown to support many other backends and mature under the
+stewardship of [Phillip Cloud](https://github.com/cpcloud) and others on the
+Ibis team.
+
+The Ibis project is part of a broader composable data ecosystem envisioned by
+Wes, Voltron Data, and others to solve problems seen throughout the space that
+are compounding as data volume and AI complexity increase. Some good background
+material on the composable data ecosystem and Ibis can be found at:
+
+- ["Apache Arrow and the '10 Things I Hate About pandas'" by Wes](https://wesmckinney.com/blog/apache-arrow-pandas-internals/)
+- ["The Road to Composable Data Systems: Thoughts on the Last 15 Years and the Future" by Wes](https://wesmckinney.com/blog/looking-back-15-years/)
+- ["The Composable Codex" by Voltron Data](https://voltrondata.com/codex)
+
+## Support for production workloads
+
+Voltron Data is committed to the success of Ibis, and it's already in production
+across numerous enterprises. The API is stable and while there are breaking
+changes across major versions, we do our best to minimize them and provide easy
+migration.
+
+Voltron Data [offers commerical support for
+Ibis](https://voltrondata.com/enterprise-support) if you're interested.
+Otherwise, interacting through the open-source project channels
+([GitHub](https://github.com/ibis-project/ibis) and
+[Zulip](https://ibis-project.zulipchat.com)) is the best way to get help.
+
+## Next steps
+
+If you're interested, [get started with Ibis!](/tutorials/getting-started)
