@@ -10,17 +10,33 @@ categories:
 
 ## Overview
 
-The Ibis project has moved to Zulip for its community chat! We've been testing it out for a few months and are happy with the results. From the [Zulip repository's README](https://github.com/zulip/zulip):
+The Ibis project has moved to Zulip for its community chat! We've been testing
+it out for a few months and are happy with the results. From the [Zulip
+repository's README](https://github.com/zulip/zulip):
 
-> Zulip is an open-source team collaboration tool with unique topic-based threading that combines the best of email and chat to make remote work productive and delightful. Fortune 500 companies, leading open source projects, and thousands of other organizations use Zulip every day. Zulip is the only modern team chat app that is designed for both live and asynchronous conversations.
-> 
-> Zulip is built by a distributed community of developers from all around the world, with 74+ people who have each contributed 100+ commits. With over 1000 contributors merging over 500 commits a month, Zulip is the largest and fastest growing open source team chat project.
+> Zulip is an open-source team collaboration tool with unique topic-based
+> threading that combines the best of email and chat to make remote work
+> productive and delightful. Fortune 500 companies, leading open source projects,
+> and thousands of other organizations use Zulip every day. Zulip is the only
+> modern team chat app that is designed for both live and asynchronous
+> conversations.
+>
+> Zulip is built by a distributed community of developers from
+> all around the world, with 74+ people who have each contributed 100+ commits.
+> With over 1000 contributors merging over 500 commits a month, Zulip is the
+> largest and fastest growing open source team chat project.
 
 ## Benefits for Ibis users
 
-GitHub issues remain the source of truth for work item tracking and bug reports, while Zulip offers a more interactive chat experience. This is useful when you're not sure if you've found a bug or just need help with something. It's also a great place to ask questions about Ibis or get help with your code.
+GitHub issues remain the source of truth for work item tracking and bug reports,
+while Zulip offers a more interactive chat experience. This is useful when
+you're not sure if you've found a bug or just need help with something. It's
+also a great place to ask questions about Ibis or get help with your code.
 
-Zulip splits conversations into streams (like channels in Slack or Teams), but uniquely requires each individual conversation to also have a topic. This makes it easy to follow along with conversations that are relevant to you, and to find conversations that you've participated in.
+Zulip splits conversations into streams (like channels in Slack or Teams), but
+uniquely requires each individual conversation to also have a topic. This makes
+it easy to follow along with conversations that are relevant to you, and to find
+conversations that you've participated in.
 
 ## Next steps
 
