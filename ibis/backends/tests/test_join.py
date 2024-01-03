@@ -289,9 +289,9 @@ def test_join_with_pandas_non_null_typed_columns(batting, awards_players):
     reason="polars doesn't support join predicates",
 )
 @pytest.mark.notimpl(
-    ["dask", "pandas"],
+    ["dask"],
     raises=TypeError,
-    reason="dask and pandas don't support join predicates",
+    reason="dask doesn't support join predicates",
 )
 @pytest.mark.notimpl(
     ["exasol"],
