@@ -56,4 +56,4 @@ Otherwise, interacting through the open-source project channels
 
 ## Next steps
 
-If you're interested, [get started with Ibis!](/tutorials/getting_started/)
+If you're interested, [get started with Ibis!](../tutorials/getting_started.qmd)
