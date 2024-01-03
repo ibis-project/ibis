@@ -10,7 +10,7 @@ on:
       - "codecov.yml"
       - ".envrc"
     branches:
-      - master
+      - main
 
 permissions:
   # this allows extractions/setup-just to list releases for `just` at a higher

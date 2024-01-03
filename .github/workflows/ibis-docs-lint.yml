@@ -3,11 +3,11 @@ name: Docs/Linting/Benchmarks
 on:
   push:
     branches:
-      - master
+      - main
       - "*.x.x"
   pull_request:
     branches:
-      - master
+      - main
       - "*.x.x"
   merge_group:
 
