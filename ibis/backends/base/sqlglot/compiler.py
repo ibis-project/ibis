@@ -49,6 +49,16 @@ class AggGen:
         return getattr(self, key)
 
 
+class VarGen:
+    __slots__ = ()
+
+    def __getattr__(self, name: str) -> sge.Var:
+        return sge.Var(this=name)
+
+    def __getitem__(self, key: str) -> sge.Var:
+        return sge.Var(this=key)
+
+
 class FuncGen:
     __slots__ = ("namespace",)
 
@@ -110,7 +120,7 @@ STAR = sge.Star()
 
 @public
 class SQLGlotCompiler(abc.ABC):
-    __slots__ = "agg", "f"
+    __slots__ = "agg", "f", "v"
 
     rewrites: tuple = (
         empty_in_values_right_side,
@@ -138,6 +148,7 @@ class SQLGlotCompiler(abc.ABC):
     def __init__(self) -> None:
         self.agg = AggGen(aggfunc=self._aggregate)
         self.f = FuncGen()
+        self.v = VarGen()
 
     @property
     @abc.abstractmethod
@@ -258,14 +269,56 @@ class SQLGlotCompiler(abc.ABC):
         return arg
 
     @visit_node.register(ops.Literal)
-    def visit_Literal(self, op, *, value, dtype, **kw):
+    def visit_Literal(self, op, *, value, dtype):
+        """Compile a literal value.
+
+        This is the default implementation for compiling literal values.
+
+        Most backends should not need to override this method unless they want
+        to handle NULL literals as well as every other type of non-null literal
+        including integers, floating point numbers, decimals, strings, etc.
+
+        The logic here is:
+
+        1. If the value is None and the type is nullable, return NULL
+        1. If the value is None and the type is not nullable, raise an error
+        1. Call `visit_NonNullLiteral` method.
+        1. If the previous returns `None`, call `visit_DefaultLiteral` method
+           else return the result of the previous step.
+        """
         if value is None:
             if dtype.nullable:
                 return NULL if dtype.is_null() else self.cast(NULL, dtype)
             raise com.UnsupportedOperationError(
                 f"Unsupported NULL for non-nullable type: {dtype!r}"
             )
-        elif dtype.is_integer():
+        else:
+            result = self.visit_NonNullLiteral(op, value=value, dtype=dtype)
+            if result is None:
+                return self.visit_DefaultLiteral(op, value=value, dtype=dtype)
+            return result
+
+    def visit_NonNullLiteral(self, op, *, value, dtype):
+        """Compile a non-null literal differently than the default implementation.
+
+        Most backends should implement this, but only when they need to handle
+        some non-null literal differently than the default implementation
+        (`visit_DefaultLiteral`).
+
+        Return `None` from an override of this method to fall back to
+        `visit_DefaultLiteral`.
+        """
+        return self.visit_DefaultLiteral(op, value=value, dtype=dtype)
+
+    def visit_DefaultLiteral(self, op, *, value, dtype):
+        """Compile a literal with a non-null value.
+
+        This is the default implementation for compiling non-null literals.
+
+        Most backends should not need to override this method unless they want
+        to handle compiling every kind of non-null literal value.
+        """
+        if dtype.is_integer():
             return sge.convert(value)
         elif dtype.is_floating():
             if math.isnan(value):
@@ -274,7 +327,7 @@ class SQLGlotCompiler(abc.ABC):
                 return self.POS_INF if value < 0 else self.NEG_INF
             return sge.convert(value)
         elif dtype.is_decimal():
-            return self.cast(sge.convert(str(value)), dtype)
+            return self.cast(str(value), dtype)
         elif dtype.is_interval():
             return sge.Interval(
                 this=sge.convert(str(value)), unit=dtype.resolution.upper()
@@ -304,7 +357,7 @@ class SQLGlotCompiler(abc.ABC):
             keys = self.f.array(
                 *(
                     self.visit_Literal(
-                        ops.Literal(k, key_type), value=k, dtype=key_type, **kw
+                        ops.Literal(k, key_type), value=k, dtype=key_type
                     )
                     for k in value.keys()
                 )
@@ -314,7 +367,7 @@ class SQLGlotCompiler(abc.ABC):
             values = self.f.array(
                 *(
                     self.visit_Literal(
-                        ops.Literal(v, value_type), value=v, dtype=value_type, **kw
+                        ops.Literal(v, value_type), value=v, dtype=value_type
                     )
                     for v in value.values()
                 )
@@ -323,15 +376,14 @@ class SQLGlotCompiler(abc.ABC):
             return self.f.map(keys, values)
         elif dtype.is_struct():
             items = [
-                sge.Slice(
-                    this=sge.convert(k),
-                    expression=self.visit_Literal(
-                        ops.Literal(v, field_dtype), value=v, dtype=field_dtype, **kw
-                    ),
-                )
+                self.visit_Literal(
+                    ops.Literal(v, field_dtype), value=v, dtype=field_dtype
+                ).as_(k, quoted=self.quoted)
                 for field_dtype, (k, v) in zip(dtype.types, value.items())
             ]
             return sge.Struct.from_arg_list(items)
+        elif dtype.is_uuid():
+            return self.cast(str(value), dtype)
         else:
             raise NotImplementedError(f"Unsupported type: {dtype!r}")
 
@@ -403,14 +455,6 @@ class SQLGlotCompiler(abc.ABC):
 
     ### Timey McTimeFace
 
-    @visit_node.register(ops.Date)
-    def visit_Date(self, op, *, arg):
-        return sge.Date(this=arg)
-
-    @visit_node.register(ops.DateFromYMD)
-    def visit_DateFromYMD(self, op, *, year, month, day):
-        return sge.DateFromParts(year=year, month=month, day=day)
-
     @visit_node.register(ops.Time)
     def visit_Time(self, op, *, arg):
         return self.cast(arg, to=dt.time)
@@ -429,39 +473,39 @@ class SQLGlotCompiler(abc.ABC):
 
     @visit_node.register(ops.ExtractYear)
     def visit_ExtractYear(self, op, *, arg):
-        return self.f.extract("year", arg)
+        return self.f.extract(self.v.year, arg)
 
     @visit_node.register(ops.ExtractMonth)
     def visit_ExtractMonth(self, op, *, arg):
-        return self.f.extract("month", arg)
+        return self.f.extract(self.v.month, arg)
 
     @visit_node.register(ops.ExtractDay)
     def visit_ExtractDay(self, op, *, arg):
-        return self.f.extract("day", arg)
+        return self.f.extract(self.v.day, arg)
 
     @visit_node.register(ops.ExtractDayOfYear)
     def visit_ExtractDayOfYear(self, op, *, arg):
-        return self.f.extract("dayofyear", arg)
+        return self.f.extract(self.v.dayofyear, arg)
 
     @visit_node.register(ops.ExtractQuarter)
     def visit_ExtractQuarter(self, op, *, arg):
-        return self.f.extract("quarter", arg)
+        return self.f.extract(self.v.quarter, arg)
 
     @visit_node.register(ops.ExtractWeekOfYear)
     def visit_ExtractWeekOfYear(self, op, *, arg):
-        return self.f.extract("week", arg)
+        return self.f.extract(self.v.week, arg)
 
     @visit_node.register(ops.ExtractHour)
     def visit_ExtractHour(self, op, *, arg):
-        return self.f.extract("hour", arg)
+        return self.f.extract(self.v.hour, arg)
 
     @visit_node.register(ops.ExtractMinute)
     def visit_ExtractMinute(self, op, *, arg):
-        return self.f.extract("minute", arg)
+        return self.f.extract(self.v.minute, arg)
 
     @visit_node.register(ops.ExtractSecond)
     def visit_ExtractSecond(self, op, *, arg):
-        return self.f.extract("second", arg)
+        return self.f.extract(self.v.second, arg)
 
     @visit_node.register(ops.TimestampTruncate)
     @visit_node.register(ops.DateTruncate)
@@ -479,11 +523,10 @@ class SQLGlotCompiler(abc.ABC):
             "us": "us",
         }
 
-        unit = unit.short
-        if (duckunit := unit_mapping.get(unit)) is None:
+        if (unit := unit_mapping.get(unit.short)) is None:
             raise com.UnsupportedOperationError(f"Unsupported truncate unit {unit}")
 
-        return self.f.date_trunc(duckunit, arg)
+        return self.f.date_trunc(unit, arg)
 
     @visit_node.register(ops.DayOfWeekIndex)
     def visit_DayOfWeekIndex(self, op, *, arg):
@@ -521,7 +564,6 @@ class SQLGlotCompiler(abc.ABC):
     def visit_Substring(self, op, *, arg, start, length):
         if_pos = sge.Substring(this=arg, start=start + 1, length=length)
         if_neg = sge.Substring(this=arg, start=start, length=length)
-
         return self.if_(start >= 0, if_pos, if_neg)
 
     @visit_node.register(ops.StringFind)
@@ -538,17 +580,9 @@ class SQLGlotCompiler(abc.ABC):
 
         return self.f.strpos(arg, substr)
 
-    @visit_node.register(ops.RegexSearch)
-    def visit_RegexSearch(self, op, *, arg, pattern):
-        return sge.RegexpLike(this=arg, expression=pattern, flag=sge.convert("s"))
-
     @visit_node.register(ops.RegexReplace)
     def visit_RegexReplace(self, op, *, arg, pattern, replacement):
         return self.f.regexp_replace(arg, pattern, replacement, "g")
-
-    @visit_node.register(ops.RegexExtract)
-    def visit_RegexExtract(self, op, *, arg, pattern, index):
-        return self.f.regexp_extract(arg, pattern, index, dialect=self.dialect)
 
     @visit_node.register(ops.StringConcat)
     def visit_StringConcat(self, op, *, arg):
@@ -566,10 +600,6 @@ class SQLGlotCompiler(abc.ABC):
     def visit_StringSQLILike(self, op, *, arg, pattern, escape):
         return arg.ilike(pattern)
 
-    @visit_node.register(ops.StringToTimestamp)
-    def visit_StringToTimestamp(self, op, *, arg, format_str):
-        return sge.StrToTime(this=arg, format=format_str)
-
     ### NULL PLAYER CHARACTER
     @visit_node.register(ops.IsNull)
     def visit_IsNull(self, op, *, arg):
@@ -582,12 +612,6 @@ class SQLGlotCompiler(abc.ABC):
     @visit_node.register(ops.InValues)
     def visit_InValues(self, op, *, value, options):
         return value.isin(*options)
-
-    ### Definitely Not Tensors
-
-    @visit_node.register(ops.ArrayStringJoin)
-    def visit_ArrayStringJoin(self, op, *, sep, arg):
-        return self.f.array_to_string(arg, sep)
 
     ### Counting
 
@@ -667,15 +691,12 @@ class SQLGlotCompiler(abc.ABC):
     @visit_node.register(ops.StructColumn)
     def visit_StructColumn(self, op, *, names, values):
         return sge.Struct.from_arg_list(
-            [
-                sge.Slice(this=sge.convert(name), expression=value)
-                for name, value in zip(names, values)
-            ]
+            [value.as_(name, quoted=self.quoted) for name, value in zip(names, values)]
         )
 
     @visit_node.register(ops.StructField)
     def visit_StructField(self, op, *, arg, field):
-        return arg[sge.convert(field)]
+        return sge.Dot(this=arg, expression=sg.to_identifier(field, quoted=self.quoted))
 
     @visit_node.register(ops.IdenticalTo)
     def visit_IdenticalTo(self, op, *, left, right):
@@ -694,10 +715,6 @@ class SQLGlotCompiler(abc.ABC):
         return self.f.coalesce(*arg)
 
     ### Ordering and window functions
-
-    @visit_node.register(ops.RowNumber)
-    def visit_RowNumber(self, op):
-        return sge.RowNumber()
 
     @visit_node.register(ops.SortKey)
     def visit_SortKey(self, op, *, expr, ascending: bool):
@@ -726,7 +743,7 @@ class SQLGlotCompiler(abc.ABC):
         end_side = end.get("side", "FOLLOWING")
 
         spec = sge.WindowSpec(
-            kind=op.how.upper(),
+            kind=how.upper(),
             start=start_value,
             start_side=start_side,
             end=end_value,
@@ -735,7 +752,13 @@ class SQLGlotCompiler(abc.ABC):
         )
         order = sge.Order(expressions=order_by) if order_by else None
 
+        spec = self._minimize_spec(op.start, op.end, spec)
+
         return sge.Window(this=func, partition_by=group_by, order=order, spec=spec)
+
+    @staticmethod
+    def _minimize_spec(start, end, spec):
+        return spec
 
     @visit_node.register(ops.Lag)
     @visit_node.register(ops.Lead)
@@ -789,10 +812,6 @@ class SQLGlotCompiler(abc.ABC):
     @visit_node.register(ops.ArrayConcat)
     def visit_ArrayConcat(self, op, *, arg):
         return sge.ArrayConcat(this=arg[0], expressions=list(arg[1:]))
-
-    @visit_node.register(ops.ArrayContains)
-    def visit_ArrayContains(self, op, *, arg, other):
-        return sge.ArrayContains(this=arg, expression=other)
 
     ## relations
 
@@ -1094,21 +1113,17 @@ class SQLGlotCompiler(abc.ABC):
     def visit_SQLQueryResult(self, op, *, query, schema, source):
         return sg.parse_one(query, read=self.dialect).subquery()
 
-    @visit_node.register(ops.Unnest)
-    def visit_Unnest(self, op, *, arg):
-        return sge.Explode(this=arg)
-
-    @visit_node.register(ops.RegexSplit)
-    def visit_RegexSplit(self, op, *, arg, pattern):
-        return sge.RegexpSplit(this=arg, expression=pattern)
-
-    @visit_node.register(ops.Levenshtein)
-    def visit_Levenshtein(self, op, *, left, right):
-        return sge.Levenshtein(this=left, expression=right)
-
     @visit_node.register(ops.JoinTable)
     def visit_JoinTable(self, op, *, parent, index):
         return parent
+
+    @visit_node.register(ops.Cast)
+    def visit_Cast(self, op, *, arg, to):
+        return self.cast(arg, to)
+
+    @visit_node.register(ops.Value)
+    def visit_Undefined(self, op, **_):
+        raise com.OperationNotDefinedError(type(op).__name__)
 
 
 _SIMPLE_OPS = {
@@ -1117,7 +1132,6 @@ _SIMPLE_OPS = {
     ops.ArgMax: "max_by",
     ops.ArgMin: "min_by",
     ops.Power: "pow",
-    # Unary operations
     ops.IsNan: "isnan",
     ops.IsInf: "isinf",
     ops.Abs: "abs",
@@ -1137,7 +1151,6 @@ _SIMPLE_OPS = {
     ops.Pi: "pi",
     ops.RandomScalar: "random",
     ops.Sign: "sign",
-    # Unary aggregates
     ops.ApproxCountDistinct: "approx_distinct",
     ops.Median: "median",
     ops.Mean: "avg",
@@ -1152,14 +1165,12 @@ _SIMPLE_OPS = {
     ops.Any: "bool_or",
     ops.ArrayCollect: "array_agg",
     ops.GroupConcat: "group_concat",
-    # string operations
     ops.StringContains: "contains",
     ops.StringLength: "length",
     ops.Lowercase: "lower",
     ops.Uppercase: "upper",
     ops.StartsWith: "starts_with",
     ops.StrRight: "right",
-    # Other operations
     ops.IfElse: "if",
     ops.ArrayLength: "length",
     ops.NullIf: "nullif",
@@ -1167,7 +1178,6 @@ _SIMPLE_OPS = {
     ops.Map: "map",
     ops.JSONGetItem: "json_extract",
     ops.ArrayFlatten: "flatten",
-    # common enough to be in the base, but not modeled in sqlglot
     ops.NTile: "ntile",
     ops.Degrees: "degrees",
     ops.Radians: "radians",
@@ -1185,6 +1195,17 @@ _SIMPLE_OPS = {
     ops.StringReplace: "replace",
     ops.Reverse: "reverse",
     ops.StringSplit: "split",
+    ops.RegexSearch: "regexp_like",
+    ops.DateFromYMD: "datefromparts",
+    ops.Date: "date",
+    ops.RowNumber: "row_number",
+    ops.StringToTimestamp: "str_to_time",
+    ops.ArrayStringJoin: "array_to_string",
+    ops.Levenshtein: "levenshtein",
+    ops.Unnest: "explode",
+    ops.RegexSplit: "regexp_split",
+    ops.ArrayContains: "array_contains",
+    ops.RegexExtract: "regexp_extract",
 }
 
 _BINARY_INFIX_OPS = {

@@ -239,11 +239,8 @@ class DuckDBCompiler(SQLGlotCompiler):
 
         return self.cast(arg, to)
 
-    @visit_node.register(ops.Literal)
-    def visit_Literal(self, op, *, value, dtype, **kw):
-        if value is None:
-            return super().visit_node(op, value=value, dtype=dtype, **kw)
-        elif dtype.is_interval():
+    def visit_NonNullLiteral(self, op, *, value, dtype):
+        if dtype.is_interval():
             if dtype.unit.short == "ns":
                 raise com.UnsupportedOperationError(
                     f"{self.dialect} doesn't support nanosecond interval resolutions"
@@ -288,7 +285,7 @@ class DuckDBCompiler(SQLGlotCompiler):
 
             return self.f[funcname](*args)
         else:
-            return super().visit_node(op, value=value, dtype=dtype, **kw)
+            return None
 
     @visit_node.register(ops.Capitalize)
     def visit_Capitalize(self, op, *, arg):
@@ -339,6 +336,10 @@ class DuckDBCompiler(SQLGlotCompiler):
     def visit_TimestampNow(self, op):
         """DuckDB current timestamp defaults to timestamp + tz."""
         return self.cast(super().visit_TimestampNow(op), dt.timestamp)
+
+    @visit_node.register(ops.RegexExtract)
+    def visit_RegexExtract(self, op, *, arg, pattern, index):
+        return self.f.regexp_extract(arg, pattern, index, dialect=self.dialect)
 
 
 _SIMPLE_OPS = {
