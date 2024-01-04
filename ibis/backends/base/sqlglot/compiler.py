@@ -584,12 +584,6 @@ class SQLGlotCompiler(abc.ABC):
     def visit_InValues(self, op, *, value, options):
         return value.isin(*options)
 
-    ### Definitely Not Tensors
-
-    @visit_node.register(ops.ArrayStringJoin)
-    def visit_ArrayStringJoin(self, op, *, sep, arg):
-        return self.f.array_to_string(arg, sep)
-
     ### Counting
 
     @visit_node.register(ops.CountDistinct)
