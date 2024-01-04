@@ -21,6 +21,7 @@ from ibis.backends.tests.errors import (
     PolarsInvalidOperationError,
     Py4JError,
     PySparkAnalysisException,
+    SnowflakeProgrammingError,
 )
 from ibis.legacy.udf.vectorized import reduction
 
@@ -1612,12 +1613,12 @@ def test_grouped_case(backend, con):
     raises=AssertionError,
 )
 @pytest.mark.notyet(["impala", "flink"], raises=com.UnsupportedOperationError)
-@pytest.mark.notyet(["clickhouse"], raises=ClickhouseDatabaseError)
+@pytest.mark.notyet(["clickhouse"], raises=ClickHouseDatabaseError)
 @pytest.mark.notyet(["druid", "trino"], raises=sa.exc.ProgrammingError)
 @pytest.mark.notyet(["snowflake"], raises=SnowflakeProgrammingError)
 @pytest.mark.notyet(["mysql"], raises=sa.exc.NotSupportedError)
 @pytest.mark.notyet(["oracle"], raises=sa.exc.DatabaseError)
-@pytest.mark.notyet(["pyspark"], raises=PysparkAnalysisException)
+@pytest.mark.notyet(["pyspark"], raises=PySparkAnalysisException)
 def test_group_concat_over_window(backend, con):
     input_df = pd.DataFrame(
         {
