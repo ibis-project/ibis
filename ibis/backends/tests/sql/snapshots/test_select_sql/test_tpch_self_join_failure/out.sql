@@ -5,7 +5,7 @@ SELECT
 FROM (
   SELECT
     t11.region,
-    EXTRACT('year' FROM t11.odate) AS year,
+    EXTRACT(year FROM t11.odate) AS year,
     CAST(SUM(t11.amount) AS DOUBLE) AS total
   FROM (
     SELECT
@@ -28,7 +28,7 @@ FROM (
 INNER JOIN (
   SELECT
     t11.region,
-    EXTRACT('year' FROM t11.odate) AS year,
+    EXTRACT(year FROM t11.odate) AS year,
     CAST(SUM(t11.amount) AS DOUBLE) AS total
   FROM (
     SELECT

@@ -112,6 +112,8 @@ class PandasData(DataMapper):
 
         return sch.Schema.from_tuples(pairs)
 
+    concat = staticmethod(pd.concat)
+
     @classmethod
     def convert_table(cls, df, schema):
         if len(schema) != len(df.columns):
@@ -122,7 +124,7 @@ class PandasData(DataMapper):
         columns = []
         for (_, series), dtype in zip(df.items(), schema.types):
             columns.append(cls.convert_column(series, dtype))
-        df = pd.concat(columns, axis=1)
+        df = cls.concat(columns, axis=1)
 
         # return data with the schema's columns which may be different than the
         # input columns
@@ -395,6 +397,12 @@ class PandasData(DataMapper):
 
 
 class DaskData(PandasData):
+    @staticmethod
+    def concat(*args, **kwargs):
+        import dask.dataframe as dd
+
+        return dd.concat(*args, **kwargs)
+
     @classmethod
     def infer_column(cls, s):
         return PyArrowData.infer_column(s.compute())
