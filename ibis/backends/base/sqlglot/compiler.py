@@ -269,14 +269,24 @@ class SQLGlotCompiler(abc.ABC):
         return arg
 
     @visit_node.register(ops.Literal)
-    def visit_Literal(self, op, *, value, dtype, **kw):
+    def visit_Literal(self, op, *, value, dtype):
         if value is None:
             if dtype.nullable:
                 return NULL if dtype.is_null() else self.cast(NULL, dtype)
             raise com.UnsupportedOperationError(
                 f"Unsupported NULL for non-nullable type: {dtype!r}"
             )
-        elif dtype.is_integer():
+        else:
+            result = self.visit_NonNullLiteral(op, value=value, dtype=dtype)
+            if result is None:
+                return self.visit_DefaultLiteral(op, value=value, dtype=dtype)
+            return result
+
+    def visit_NonNullLiteral(self, op, *, value, dtype):
+        return self.visit_DefaultLiteral(op, value=value, dtype=dtype)
+
+    def visit_DefaultLiteral(self, op, *, value, dtype):
+        if dtype.is_integer():
             return sge.convert(value)
         elif dtype.is_floating():
             if math.isnan(value):
@@ -315,7 +325,7 @@ class SQLGlotCompiler(abc.ABC):
             keys = self.f.array(
                 *(
                     self.visit_Literal(
-                        ops.Literal(k, key_type), value=k, dtype=key_type, **kw
+                        ops.Literal(k, key_type), value=k, dtype=key_type
                     )
                     for k in value.keys()
                 )
@@ -325,7 +335,7 @@ class SQLGlotCompiler(abc.ABC):
             values = self.f.array(
                 *(
                     self.visit_Literal(
-                        ops.Literal(v, value_type), value=v, dtype=value_type, **kw
+                        ops.Literal(v, value_type), value=v, dtype=value_type
                     )
                     for v in value.values()
                 )
@@ -337,7 +347,7 @@ class SQLGlotCompiler(abc.ABC):
                 sge.Slice(
                     this=sge.convert(k),
                     expression=self.visit_Literal(
-                        ops.Literal(v, field_dtype), value=v, dtype=field_dtype, **kw
+                        ops.Literal(v, field_dtype), value=v, dtype=field_dtype
                     ),
                 )
                 for field_dtype, (k, v) in zip(dtype.types, value.items())
