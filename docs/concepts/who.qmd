@@ -14,8 +14,8 @@ contribute to Ibis.
 
 ## Other companies
 
-Ibis is contributed to used by many other companies. Various tools built on
-top of it. Some publicly available include:
+Ibis is used by many other companies, with various tools built on top of it.
+Some include:
 
 - [Google BigQuery DataFrames](https://github.com/googleapis/python-bigquery-dataframes), a clone of the pandas API built on Ibis
 - [Starburst Galaxy Python DataFrames](https://www.starburst.io/blog/introducing-python-dataframes/), with support for Ibis
@@ -23,7 +23,8 @@ top of it. Some publicly available include:
 - [Microsoft's Magpie project](https://www.microsoft.com/en-us/research/project/magpie-2/), built on top of Ibis
 - [SuperDuperDB](https://github.com/SuperDuperDB/superduperdb), bringing AI to any backend Ibis supports
 
-You can [look through the full list of contributors on
+Ibis is also contributed to by other companies. You can [look through the full
+list of contributors on
 GitHub](https://github.com/ibis-project/ibis/graphs/contributors).
 
 ## History
