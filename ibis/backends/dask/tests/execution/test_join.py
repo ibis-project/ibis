@@ -96,6 +96,7 @@ def test_join_with_multiple_predicates(how, left, right, df1, df2):
         left, right.key3, right.other_value
     ]
     result = expr.execute().sort_values(by=["key"]).reset_index(drop=True)
+
     expected = (
         dd.merge(df1, df2, how=how, left_on=["key", "key2"], right_on=["key", "key3"])
         .compute(scheduler="single-threaded")

@@ -460,7 +460,7 @@ def test_array_filter(backend, con, input, output):
 
 @builtin_array
 @pytest.mark.notimpl(
-    ["mssql", "pandas", "polars", "postgres"],
+    ["mssql", "polars", "postgres"],
     raises=com.OperationNotDefinedError,
 )
 @pytest.mark.notimpl(["dask"], raises=com.OperationNotDefinedError)
@@ -475,7 +475,7 @@ def test_array_contains(backend, con):
 
 @builtin_array
 @pytest.mark.notimpl(
-    ["dask", "impala", "mssql", "pandas", "polars"],
+    ["dask", "impala", "mssql", "polars"],
     raises=com.OperationNotDefinedError,
 )
 @pytest.mark.broken(
@@ -491,7 +491,7 @@ def test_array_position(backend, con):
 
 @builtin_array
 @pytest.mark.notimpl(
-    ["dask", "impala", "mssql", "pandas", "polars"],
+    ["dask", "impala", "mssql", "polars"],
     raises=com.OperationNotDefinedError,
 )
 def test_array_remove(backend, con):
@@ -504,7 +504,7 @@ def test_array_remove(backend, con):
 
 @builtin_array
 @pytest.mark.notimpl(
-    ["dask", "datafusion", "impala", "mssql", "pandas", "polars", "mysql"],
+    ["dask", "datafusion", "impala", "mssql", "polars", "mysql"],
     raises=com.OperationNotDefinedError,
 )
 @pytest.mark.notimpl(
@@ -550,7 +550,7 @@ def test_array_unique(backend, con, input, expected):
 
 @builtin_array
 @pytest.mark.notimpl(
-    ["dask", "datafusion", "impala", "mssql", "pandas", "polars"],
+    ["dask", "datafusion", "impala", "mssql", "polars"],
     raises=com.OperationNotDefinedError,
 )
 def test_array_sort(backend, con):
@@ -563,7 +563,7 @@ def test_array_sort(backend, con):
 
 @builtin_array
 @pytest.mark.notimpl(
-    ["dask", "datafusion", "impala", "mssql", "pandas", "polars"],
+    ["dask", "datafusion", "impala", "mssql", "polars"],
     raises=com.OperationNotDefinedError,
 )
 @pytest.mark.notyet(
@@ -780,7 +780,7 @@ def test_array_flatten(backend, flatten_data, column, expected):
     reason="range isn't implemented upstream",
     raises=com.OperationNotDefinedError,
 )
-@pytest.mark.notimpl(["flink", "pandas", "dask"], raises=com.OperationNotDefinedError)
+@pytest.mark.notimpl(["flink", "dask"], raises=com.OperationNotDefinedError)
 @pytest.mark.parametrize("n", [-2, 0, 2])
 def test_range_single_argument(con, n):
     expr = ibis.range(n)
@@ -794,9 +794,7 @@ def test_range_single_argument(con, n):
     raises=com.OperationNotDefinedError,
 )
 @pytest.mark.parametrize("n", [-2, 0, 2])
-@pytest.mark.notimpl(
-    ["polars", "flink", "pandas", "dask"], raises=com.OperationNotDefinedError
-)
+@pytest.mark.notimpl(["polars", "flink", "dask"], raises=com.OperationNotDefinedError)
 def test_range_single_argument_unnest(backend, con, n):
     expr = ibis.range(n).unnest()
     result = con.execute(expr)
@@ -827,7 +825,7 @@ def test_range_single_argument_unnest(backend, con, n):
     reason="range and unnest aren't implemented upstream",
     raises=com.OperationNotDefinedError,
 )
-@pytest.mark.notimpl(["flink", "pandas", "dask"], raises=com.OperationNotDefinedError)
+@pytest.mark.notimpl(["flink", "dask"], raises=com.OperationNotDefinedError)
 def test_range_start_stop_step(con, start, stop, step):
     expr = ibis.range(start, stop, step)
     result = con.execute(expr)
@@ -842,7 +840,7 @@ def test_range_start_stop_step(con, start, stop, step):
 @pytest.mark.notyet(
     ["datafusion"], raises=com.OperationNotDefinedError, reason="not supported upstream"
 )
-@pytest.mark.notimpl(["flink", "pandas", "dask"], raises=com.OperationNotDefinedError)
+@pytest.mark.notimpl(["flink", "dask"], raises=com.OperationNotDefinedError)
 def test_range_start_stop_step_zero(con, start, stop):
     expr = ibis.range(start, stop, 0)
     result = con.execute(expr)
@@ -1001,7 +999,7 @@ timestamp_range_tzinfos = pytest.mark.parametrize(
 )
 @timestamp_range_tzinfos
 @pytest.mark.notimpl(
-    ["pandas", "dask", "flink", "datafusion"], raises=com.OperationNotDefinedError
+    ["dask", "flink", "datafusion"], raises=com.OperationNotDefinedError
 )
 def test_timestamp_range(con, start, stop, step, freq, tzinfo):
     start = start.replace(tzinfo=tzinfo)
@@ -1040,7 +1038,7 @@ def test_timestamp_range(con, start, stop, step, freq, tzinfo):
 )
 @timestamp_range_tzinfos
 @pytest.mark.notimpl(
-    ["pandas", "dask", "flink", "datafusion"], raises=com.OperationNotDefinedError
+    ["dask", "flink", "datafusion"], raises=com.OperationNotDefinedError
 )
 def test_timestamp_range_zero_step(con, start, stop, step, tzinfo):
     start = start.replace(tzinfo=tzinfo)

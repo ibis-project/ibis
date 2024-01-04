@@ -9,9 +9,9 @@ import pytest
 from packaging.version import parse as parse_version
 from pytest import param
 
+import ibis
 from ibis import literal as L
 from ibis.backends.pandas import Backend
-from ibis.backends.pandas.execution import execute
 from ibis.backends.pandas.tests.conftest import TestConf as tm
 from ibis.expr import datatypes as dt
 
@@ -44,6 +44,7 @@ from ibis.expr import datatypes as dt
     ],
 )
 def test_timestamp_functions(case_func, expected_func):
+    con = ibis.pandas.connect()
     v = L("2015-09-01 14:48:05.359").cast("timestamp")
     vt = datetime.datetime(
         year=2015,
@@ -56,7 +57,7 @@ def test_timestamp_functions(case_func, expected_func):
     )
     result = case_func(v)
     expected = expected_func(vt)
-    assert execute(result.op()) == expected
+    assert con.execute(result) == expected
 
 
 @pytest.mark.parametrize(
