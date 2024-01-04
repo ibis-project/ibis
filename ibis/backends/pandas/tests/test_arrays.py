@@ -36,6 +36,13 @@ def test_array_length(t):
     tm.assert_frame_equal(result, expected)
 
 
+def test_array_slice_using_column(t):
+    expr = t.array_of_int64[t.plain_int64 :]
+    result = expr.execute()
+    expected = pd.Series([[2], [], []])
+    tm.assert_series_equal(result, expected)
+
+
 def test_array_length_scalar(client):
     raw_value = np.array([1, 2, 4])
     value = ibis.array(raw_value)

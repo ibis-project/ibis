@@ -217,7 +217,6 @@ def calc_zscore(s):
             id="row_number",
             marks=[
                 pytest.mark.notimpl(["dask"], raises=NotImplementedError),
-                pytest.mark.notimpl(["pandas"], raises=com.OperationNotDefinedError),
             ],
         ),
         param(
@@ -431,7 +430,6 @@ def test_ungrouped_bounded_expanding_window(
 )
 @pytest.mark.notimpl(["polars"], raises=com.OperationNotDefinedError)
 @pytest.mark.notimpl(["dask"], raises=NotImplementedError)
-@pytest.mark.notimpl(["pandas"], raises=AssertionError)
 @pytest.mark.notimpl(["flink"], raises=com.UnsupportedOperationError)
 def test_grouped_bounded_following_window(backend, alltypes, df, preceding, following):
     window = ibis.window(
@@ -609,7 +607,7 @@ def test_grouped_unbounded_window(
     ],
 )
 @pytest.mark.broken(["snowflake"], raises=AssertionError)
-@pytest.mark.broken(["dask", "pandas", "mssql"], raises=AssertionError)
+@pytest.mark.broken(["dask", "mssql"], raises=AssertionError)
 @pytest.mark.notimpl(["polars"], raises=com.OperationNotDefinedError)
 @pytest.mark.notimpl(["flink"], raises=com.UnsupportedOperationError)
 def test_simple_ungrouped_unbound_following_window(
@@ -631,7 +629,7 @@ def test_simple_ungrouped_unbound_following_window(
     reason="OVER RANGE FOLLOWING windows are not supported in Flink yet",
 )
 @pytest.mark.notimpl(
-    ["pandas", "dask"],
+    ["dask"],
     raises=NotImplementedError,
     reason="support scalar sorting keys are not yet implemented",
 )
@@ -662,7 +660,6 @@ def test_simple_ungrouped_window_with_scalar_order_by(alltypes):
             True,
             id="ordered-mean",
             marks=[
-                pytest.mark.broken(["pandas"], raises=AssertionError),
                 pytest.mark.notimpl(
                     ["dask"],
                     raises=NotImplementedError,
@@ -732,7 +729,6 @@ def test_simple_ungrouped_window_with_scalar_order_by(alltypes):
                     ],
                     raises=com.OperationNotDefinedError,
                 ),
-                pytest.mark.broken(["pandas"], raises=AssertionError),
                 pytest.mark.broken(
                     ["dask"],
                     raises=ValueError,
@@ -872,11 +868,6 @@ def test_simple_ungrouped_window_with_scalar_order_by(alltypes):
                     ],
                     raises=com.OperationNotDefinedError,
                 ),
-                pytest.mark.notimpl(
-                    ["pandas"],
-                    raises=RuntimeWarning,
-                    reason="invalid value encountered in divide",
-                ),
                 pytest.mark.broken(
                     ["dask"],
                     raises=ValueError,
@@ -949,11 +940,6 @@ def test_ungrouped_unbounded_window(
     ["impala"], raises=ImpalaHiveServer2Error, reason="limited RANGE support"
 )
 @pytest.mark.notimpl(["dask"], raises=NotImplementedError)
-@pytest.mark.notimpl(
-    ["pandas"],
-    raises=NotImplementedError,
-    reason="The pandas backend only implements range windows with temporal ordering keys",
-)
 @pytest.mark.notimpl(
     ["flink"],
     raises=com.UnsupportedOperationError,
@@ -1181,9 +1167,6 @@ def test_range_expression_bounds(backend):
     ["clickhouse"],
     reason="clickhouse doesn't implement percent_rank",
     raises=com.OperationNotDefinedError,
-)
-@pytest.mark.broken(
-    ["pandas"], reason="missing column during execution", raises=KeyError
 )
 @pytest.mark.broken(
     ["mssql"], reason="lack of support for booleans", raises=sa.exc.ProgrammingError
