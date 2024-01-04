@@ -22,6 +22,7 @@ from ibis.backends.tests.errors import (
     ExaQueryError,
     GoogleBadRequest,
     ImpalaHiveServer2Error,
+    SnowflakeProgrammingError,
 )
 from ibis.common.annotations import ValidationError
 

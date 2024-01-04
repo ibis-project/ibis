@@ -18,6 +18,7 @@ from ibis.backends.tests.errors import (
     ImpalaHiveServer2Error,
     Py4JJavaError,
     PySparkAnalysisException,
+    SnowflakeProgrammingError,
 )
 from ibis.legacy.udf.vectorized import analytic, reduction
 
