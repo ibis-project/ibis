@@ -65,9 +65,9 @@ jobs:
               - deltalake
               - geospatial
               - examples
+              - decompiler
             additional_deps:
               - torch
-              - decompiler
           - name: clickhouse
             title: ClickHouse
             services:
