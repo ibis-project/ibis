@@ -255,7 +255,7 @@ def test_numeric_literal(con, backend, expr, expected_types):
             # TODO(krzysztof-kwitt): Should we unify it?
             {
                 "bigquery": decimal.Decimal("1.1"),
-                "snowflake": 1.1,
+                "snowflake": decimal.Decimal("1.1"),
                 "sqlite": 1.1,
                 "trino": 1.1,
                 "dask": decimal.Decimal("1.1"),
@@ -309,7 +309,7 @@ def test_numeric_literal(con, backend, expr, expected_types):
             # TODO(krzysztof-kwitt): Should we unify it?
             {
                 "bigquery": decimal.Decimal("1.1"),
-                "snowflake": 1.1,
+                "snowflake": decimal.Decimal("1.1"),
                 "sqlite": 1.1,
                 "trino": 1.1,
                 "duckdb": decimal.Decimal("1.100000000"),
