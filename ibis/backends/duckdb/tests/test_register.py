@@ -14,18 +14,17 @@ import pytest
 import sqlalchemy as sa
 
 import ibis
-import ibis.common.exceptions as exc
 import ibis.expr.datatypes as dt
 from ibis.conftest import LINUX, SANDBOXED
 
 
-def test_read_csv(data_dir):
-    t = ibis.read_csv(data_dir / "csv" / "functional_alltypes.csv")
+def test_read_csv(con, data_dir):
+    t = con.read_csv(data_dir / "csv" / "functional_alltypes.csv")
     assert t.count().execute()
 
 
-def test_read_csv_with_columns(data_dir):
-    t = ibis.read_csv(
+def test_read_csv_with_columns(con, data_dir):
+    t = con.read_csv(
         data_dir / "csv" / "awards_players.csv",
         header=True,
         columns={
@@ -41,8 +40,8 @@ def test_read_csv_with_columns(data_dir):
     assert t.count().execute()
 
 
-def test_read_parquet(data_dir):
-    t = ibis.read_parquet(data_dir / "parquet" / "functional_alltypes.parquet")
+def test_read_parquet(con, data_dir):
+    t = con.read_parquet(data_dir / "parquet" / "functional_alltypes.parquet")
     assert t.count().execute()
 
 
@@ -122,16 +121,13 @@ def test_read_geo_from_url(con, monkeypatch):
     assert "httpfs" in loaded_exts
 
 
-@pytest.mark.xfail_version(
-    duckdb=["duckdb<0.7.0"], reason="read_json_auto doesn't exist", raises=exc.IbisError
-)
-def test_read_json(data_dir, tmp_path):
-    pqt = ibis.read_parquet(data_dir / "parquet" / "functional_alltypes.parquet")
+def test_read_json(con, data_dir, tmp_path):
+    pqt = con.read_parquet(data_dir / "parquet" / "functional_alltypes.parquet")
 
     path = tmp_path.joinpath("ft.json")
     path.write_text(pqt.execute().to_json(orient="records", lines=True))
 
-    jst = ibis.read_json(path)
+    jst = con.read_json(path)
 
     nrows = pqt.count().execute()
     assert nrows
@@ -301,7 +297,7 @@ def test_re_read_in_memory_overwrite(con):
     assert table.schema() == ibis.schema([("a", "int"), ("c", "float")])
 
 
-def test_memtable_with_nullable_dtypes():
+def test_memtable_with_nullable_dtypes(con):
     data = pd.DataFrame(
         {
             "a": pd.Series(["a", None, "c"], dtype="string"),
@@ -317,19 +313,19 @@ def test_memtable_with_nullable_dtypes():
         }
     )
     expr = ibis.memtable(data)
-    res = expr.execute()
+    res = con.execute(expr)
     assert len(res) == len(data)
 
 
-def test_memtable_with_nullable_pyarrow_string():
+def test_memtable_with_nullable_pyarrow_string(con):
     pytest.importorskip("pyarrow")
     data = pd.DataFrame({"a": pd.Series(["a", None, "c"], dtype="string[pyarrow]")})
     expr = ibis.memtable(data)
-    res = expr.execute()
+    res = con.execute(expr)
     assert len(res) == len(data)
 
 
-def test_memtable_with_nullable_pyarrow_not_string():
+def test_memtable_with_nullable_pyarrow_not_string(con):
     pytest.importorskip("pyarrow")
 
     data = pd.DataFrame(
@@ -346,7 +342,7 @@ def test_memtable_with_nullable_pyarrow_not_string():
         }
     )
     expr = ibis.memtable(data)
-    res = expr.execute()
+    res = con.execute(expr)
     assert len(res) == len(data)
 
 
@@ -447,7 +443,7 @@ def test_register_filesystem_gcs(con):
 
 def test_memtable_null_column_parquet_dtype_roundtrip(con, tmp_path):
     before = ibis.memtable({"a": [None, None, None]}, schema={"a": "string"})
-    before.to_parquet(tmp_path / "tmp.parquet")
-    after = ibis.read_parquet(tmp_path / "tmp.parquet")
+    con.to_parquet(before, tmp_path / "tmp.parquet")
+    after = con.read_parquet(tmp_path / "tmp.parquet")
 
     assert before.a.type() == after.a.type()

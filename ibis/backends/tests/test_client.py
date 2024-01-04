@@ -929,10 +929,14 @@ def test_create_from_in_memory_table(con, temp_table, arg, func, monkeypatch):
 
 
 @pytest.mark.usefixtures("backend")
-def test_default_backend_option(monkeypatch):
-    monkeypatch.setattr(ibis.options, "default_backend", ibis.pandas)
+def test_default_backend_option(con, monkeypatch):
+    # verify that there's nothing already set
+    assert ibis.options.default_backend is None
+
+    monkeypatch.setattr(ibis.options, "default_backend", con)
+
     backend = ibis.config._default_backend()
-    assert backend.name == "pandas"
+    assert backend.name == con.name
 
 
 # backend is used to ensure that this test runs in CI in the setting
