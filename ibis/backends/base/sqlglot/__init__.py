@@ -62,7 +62,7 @@ class SQLGlotBackend(BaseBackend):
         ).to_expr()
 
     def _to_sqlglot(
-        self, expr: ir.Expr, limit: str | None = None, params=None, **_: Any
+        self, expr: ir.Expr, *, limit: str | None = None, params=None, **_: Any
     ):
         """Compile an Ibis expression to a sqlglot object."""
         table_expr = expr.as_table()
@@ -208,13 +208,17 @@ class SQLGlotBackend(BaseBackend):
         self.drop_table(op.name)
 
     def execute(
-        self, expr: ir.Expr, limit: str | None = "default", **kwargs: Any
+        self,
+        expr: ir.Expr,
+        params: Mapping | None = None,
+        limit: str | None = "default",
+        **kwargs: Any,
     ) -> Any:
         """Execute an expression."""
 
         self._run_pre_execute_hooks(expr)
         table = expr.as_table()
-        sql = self.compile(table, limit=limit, **kwargs)
+        sql = self.compile(table, params=params, limit=limit, **kwargs)
 
         schema = table.schema()
 
