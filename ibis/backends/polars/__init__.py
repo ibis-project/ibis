@@ -12,9 +12,13 @@ import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis.backends.base import BaseBackend, Database
+from ibis.backends.pandas.rewrites import (
+    bind_unbound_table,
+    replace_parameter,
+    rewrite_join,
+)
 from ibis.backends.polars.compiler import translate
 from ibis.backends.polars.datatypes import dtype_to_polars, schema_from_polars
-from ibis.common.patterns import Replace
 from ibis.util import gen_name, normalize_filename
 
 if TYPE_CHECKING:
@@ -379,20 +383,18 @@ class Backend(BaseBackend):
     def compile(
         self, expr: ir.Expr, params: Mapping[ir.Expr, object] | None = None, **_: Any
     ):
-        node = expr.op()
-        ctx = self._context
-
-        if params:
+        if params is None:
+            params = dict()
+        else:
             params = {param.op(): value for param, value in params.items()}
-            rule = Replace(
-                ops.ScalarParameter,
-                lambda _: ops.Literal(value=params[_], dtype=_.dtype),
-            )
-            node = node.replace(rule)
-            expr = node.to_expr()
 
         node = expr.as_table().op()
-        return translate(node, ctx=ctx)
+        node = node.replace(
+            rewrite_join | replace_parameter | bind_unbound_table,
+            context={"params": params, "backend": self},
+        )
+
+        return translate(node, ctx=self._context)
 
     def _get_schema_using_query(self, query: str) -> sch.Schema:
         return schema_from_polars(self._context.execute(query).schema)
