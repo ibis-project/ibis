@@ -73,8 +73,7 @@ them cheap and efficient.
 (ADBC)](https://arrow.apache.org/docs/format/ADBC.html) is a relatively new
 standard for database connectivity. It is a low-level protocol for exchanging
 data between a client and a database. It is a successor to ODBC and JDBC, and is
-designed to be a more modern, lightweight, and performant alternative to these
-standards.
+designed to be a more modern and performant alternative to these standards.
 
 While Ibis does not currently use ADBC for its backends, as the project matures
 we expect an increase in performance and a decrease in complexity for backends
