@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import contextlib
 import datetime
+import decimal
 import warnings
 from importlib.util import find_spec as _find_spec
 
@@ -117,8 +118,10 @@ class PandasData(DataMapper):
                 "schema column count does not match input data column count"
             )
 
-        for (name, series), dtype in zip(df.items(), schema.types):
-            df[name] = cls.convert_column(series, dtype)
+        columns = []
+        for (_, series), dtype in zip(df.items(), schema.types):
+            columns.append(cls.convert_column(series, dtype))
+        df = pd.concat(columns, axis=1)
 
         # return data with the schema's columns which may be different than the
         # input columns
@@ -249,6 +252,23 @@ class PandasData(DataMapper):
     @classmethod
     def convert_String(cls, s, dtype, pandas_type):
         return s.astype(pandas_type, errors="ignore")
+
+    @classmethod
+    def convert_Decimal(cls, s, dtype, pandas_type):
+        context = decimal.Context(prec=dtype.precision)
+
+        if dtype.scale is None:
+            normalize = context.create_decimal
+        else:
+            exponent = decimal.Decimal(10) ** -dtype.scale
+
+            def normalize(x, exponent=exponent):
+                try:
+                    return context.create_decimal(x).quantize(exponent)
+                except decimal.InvalidOperation:
+                    return x
+
+        return s.map(normalize, na_action="ignore").astype(pandas_type)
 
     @classmethod
     def convert_UUID(cls, s, dtype, pandas_type):

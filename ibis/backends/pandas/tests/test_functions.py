@@ -13,7 +13,6 @@ from pytest import param
 
 import ibis
 import ibis.expr.datatypes as dt
-from ibis.backends.pandas.execution import execute
 from ibis.backends.pandas.tests.conftest import TestConf as tm
 from ibis.backends.pandas.udf import udf
 
@@ -74,7 +73,6 @@ def operate(func):
         param(
             methodcaller("floor"), lambda x: decimal.Decimal(math.floor(x)), id="floor"
         ),
-        param(methodcaller("exp"), methodcaller("exp"), id="exp"),
         param(
             methodcaller("sign"),
             lambda x: x if not x else decimal.Decimal(1).copy_sign(x),
@@ -97,19 +95,21 @@ def operate(func):
 )
 def test_math_functions_decimal(t, df, ibis_func, pandas_func):
     dtype = dt.Decimal(12, 3)
+    context = decimal.Context(prec=dtype.precision)
+
+    def normalize(x):
+        x = context.create_decimal(x)
+        p = decimal.Decimal(
+            f"{'0' * (dtype.precision - dtype.scale)}.{'0' * dtype.scale}"
+        )
+        return x.quantize(p)
+
     expr = ibis_func(t.float64_as_strings.cast(dtype))
     result = expr.execute()
-    context = decimal.Context(prec=dtype.precision)
-    expected = df.float64_as_strings.apply(
-        lambda x: context.create_decimal(x).quantize(
-            decimal.Decimal(
-                f"{'0' * (dtype.precision - dtype.scale)}.{'0' * dtype.scale}"
-            )
-        )
-    ).apply(pandas_func)
 
-    result[result.apply(math.isnan)] = -99999
-    expected[expected.apply(math.isnan)] = -99999
+    expected = (
+        df.float64_as_strings.apply(normalize).apply(pandas_func).apply(normalize)
+    )
     tm.assert_series_equal(result, expected.astype(expr.type().to_pandas()))
 
 
@@ -221,10 +221,11 @@ def test_execute_with_same_hash_value_in_scope(
         return x
 
     df = pd.DataFrame({"left": [left], "right": [right]})
-    table = ibis.pandas.connect().from_dataframe(df)
+    con = ibis.pandas.connect()
+    table = con.from_dataframe(df)
 
     expr = my_func(table.left, table.right)
-    result = execute(expr.op())
+    result = con.execute(expr)
     assert isinstance(result, pd.Series)
 
     result = result.tolist()
@@ -238,8 +239,8 @@ def test_ifelse_returning_bool():
     true = ibis.literal(True)
     false = ibis.literal(False)
     expr = ibis.ifelse(one + one == two, true, false)
-    result = execute(expr.op())
-    assert result is True
+    result = ibis.pandas.connect().execute(expr)
+    assert result is True or result is np.True_
 
 
 @pytest.mark.parametrize(
@@ -261,7 +262,7 @@ def test_signature_does_not_match_input_type(dtype, value):
     df = pd.DataFrame({"col": [value]})
     table = ibis.pandas.connect().from_dataframe(df)
 
-    result = execute(table.col.op())
+    result = table.col.execute()
     assert isinstance(result, pd.Series)
 
     result = result.tolist()

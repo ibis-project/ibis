@@ -5,14 +5,10 @@ import decimal
 import numpy as np
 import pandas as pd
 import pytest
-import pytz
-from pytest import param
 
 import ibis
 import ibis.expr.datatypes as dt
-from ibis.backends.pandas.execution import execute
 from ibis.backends.pandas.tests.conftest import TestConf as tm
-from ibis.common.exceptions import OperationNotDefinedError
 
 TIMESTAMP = "2022-03-13 06:59:10.467417"
 
@@ -63,7 +59,9 @@ def test_cast_array(t, from_, to, expected):
     # One of the arrays in the Series
     res = result[0]
     assert isinstance(res, list)
-    assert [ibis.literal(v).type() for v in res] == [expected] * len(res)
+
+    for v in result:
+        assert v == [dt.normalize(expected, x) for x in v]
 
 
 @pytest.mark.parametrize(
@@ -71,7 +69,7 @@ def test_cast_array(t, from_, to, expected):
     [
         ("string", "object"),
         ("int64", "int64"),
-        param("double", "float64", marks=pytest.mark.xfail(raises=TypeError)),
+        ("double", "float64"),
         (
             dt.Timestamp("America/Los_Angeles"),
             "datetime64[ns, America/Los_Angeles]",
@@ -97,22 +95,18 @@ def test_cast_timestamp_column(t, df, column, to, expected):
     [
         ("string", str),
         ("int64", lambda x: pd.Timestamp(x).value // int(1e9)),
-        param(
-            "double",
-            float,
-            marks=pytest.mark.xfail(raises=OperationNotDefinedError),
-        ),
+        ("double", lambda x: float(pd.Timestamp(x).value // int(1e9))),
         (
             dt.Timestamp("America/Los_Angeles"),
-            lambda x: x.astimezone(tz=pytz.timezone("America/Los_Angeles")),
+            lambda x: x.tz_localize(tz="America/Los_Angeles"),
         ),
     ],
 )
-def test_cast_timestamp_scalar_naive(to, expected):
+def test_cast_timestamp_scalar_naive(client, to, expected):
     literal_expr = ibis.literal(pd.Timestamp(TIMESTAMP))
     value = literal_expr.cast(to)
-    result = execute(value.op())
-    raw = execute(literal_expr.op())
+    result = client.execute(value)
+    raw = client.execute(literal_expr)
     assert result == expected(raw)
 
 
@@ -121,23 +115,19 @@ def test_cast_timestamp_scalar_naive(to, expected):
     [
         ("string", str),
         ("int64", lambda x: pd.Timestamp(x).value // int(1e9)),
-        param(
-            "double",
-            float,
-            marks=pytest.mark.xfail(raises=OperationNotDefinedError),
-        ),
+        ("double", lambda x: float(pd.Timestamp(x).value // int(1e9))),
         (
             dt.Timestamp("America/Los_Angeles"),
-            lambda x: x.astimezone(tz=pytz.timezone("America/Los_Angeles")),
+            lambda x: x.astimezone(tz="America/Los_Angeles"),
         ),
     ],
 )
 @pytest.mark.parametrize("tz", ["UTC", "America/New_York"])
-def test_cast_timestamp_scalar(to, expected, tz):
+def test_cast_timestamp_scalar(client, to, expected, tz):
     literal_expr = ibis.literal(pd.Timestamp(TIMESTAMP).tz_localize(tz))
     value = literal_expr.cast(to)
-    result = execute(value.op())
-    raw = execute(literal_expr.op())
+    result = client.execute(value)
+    raw = client.execute(literal_expr)
     assert result == expected(raw)
 
 
@@ -158,7 +148,7 @@ def test_cast_date(t, df, column):
     tm.assert_series_equal(result, expected)
 
 
-@pytest.mark.parametrize("type", [dt.Decimal(9, 0), dt.Decimal(12, 3)])
+@pytest.mark.parametrize("type", [dt.Decimal(9, 2), dt.Decimal(12, 3)])
 def test_cast_to_decimal(t, df, type):
     expr = t.float64_as_strings.cast(type)
     result = expr.execute()

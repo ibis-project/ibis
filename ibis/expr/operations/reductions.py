@@ -17,6 +17,7 @@ from ibis.expr.operations.relations import Relation  # noqa: TCH001
 class Reduction(Value):
     shape = ds.scalar
 
+    # TODO(kszucs): remove this
     @property
     def __window_op__(self):
         return self

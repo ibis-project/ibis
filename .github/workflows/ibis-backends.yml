@@ -79,10 +79,10 @@ jobs:
           #   title: Dask
           #   extras:
           #     - dask
-          # - name: pandas
-          #   title: Pandas
-          #   extras:
-          #     - pandas
+          - name: pandas
+            title: Pandas
+            extras:
+              - pandas
           # - name: sqlite
           #   title: SQLite
           #   extras:

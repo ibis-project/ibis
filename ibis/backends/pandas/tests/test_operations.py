@@ -13,7 +13,6 @@ import ibis
 import ibis.expr.datatypes as dt
 from ibis import _
 from ibis.backends.pandas import Backend
-from ibis.backends.pandas.execution import execute
 from ibis.backends.pandas.tests.conftest import TestConf as tm
 
 
@@ -183,7 +182,6 @@ def test_group_by_rename_key(t, df):
     expr = t.group_by(t.dup_strings.name("foo")).aggregate(
         dup_string_count=t.dup_strings.count()
     )
-
     assert "foo" in expr.schema()
     result = expr.execute()
     assert "foo" in result.columns
@@ -281,7 +279,7 @@ def test_nullif_zero(t, df, column):
         param(
             lambda t: ibis.literal("a"),
             lambda t: t.dup_strings,
-            lambda _: pd.Series(["d", np.nan, "d"], name="dup_strings"),
+            lambda _: pd.Series(["a", np.nan, "a"], name="dup_strings"),
             tm.assert_series_equal,
             id="literal_series",
         ),
@@ -289,7 +287,7 @@ def test_nullif_zero(t, df, column):
 )
 def test_nullif(t, df, left, right, expected, compare):
     expr = left(t).nullif(right(t))
-    result = execute(expr.op())
+    result = Backend().execute(expr)
     compare(result, expected(df))
 
 
