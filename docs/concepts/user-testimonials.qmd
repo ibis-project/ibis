@@ -48,19 +48,19 @@ GitHub](https://github.com/ibis-project/ibis/issues/7341#issuecomment-1760625921
 
 > My story around pyspark -> trying a bunch of stuff -> Ibis, which has feature of
 > lazy computation.
-> 
+
 > Our company has implemented an OLAP platform with its persistence layer on hdfs
 > and the query engine being Presto. Typically, the OLAP platform is geared
 > towards agile analysis, and its table structure is based on an event-driven
 > model. As we delve deeper into machine learning modeling, we often need to
 > transition from this event-based structure to a wide-table feature construction.
-> 
+
 > Back between 2019 and 2020, I worked on a similar OLAP platform during my tenure
 > at Tencent. I developed some generic analysis model tools, and at that time, the
 > query engine was Impala. My approach was to dynamically concatenate SQL, which
 > unfortunately was not conducive to code encapsulation, modularization, and
 > future maintenance.
-> 
+
 > In my pursuit of better code encapsulation and to decouple different parts of
 > logic, I was initially inclined to use PySpark. However, when PySpark connects
 > to Presto via JDBC, if we use the dataframe interface, the aggregation
@@ -69,7 +69,7 @@ GitHub](https://github.com/ibis-project/ibis/issues/7341#issuecomment-1760625921
 > aggregation is processed on Presto. But in doing so, we lose the original intent
 > of using Spark - which is better code encapsulation and the decoupling of
 > different processes.
-> 
+
 > The dataframe interface of Ibis and its feature of lazy computation perfectly
 > align with my needs. In fact, back in 2019, I was on the hunt for such a tool.
 > Sadly, I didn't come across Ibis at that time and even contemplated creating a
