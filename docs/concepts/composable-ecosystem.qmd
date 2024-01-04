@@ -49,8 +49,8 @@ support many backends. It currently leverages open-source projects like
 [SQLAlchemy](https://github.com/sqlalchemy/sqlalchemy) and
 [SQLGlot](https://github.com/tobymao/sqlglot) to work with many backends. While
 these projects are great, they rely on backend-specific SQL that does not
-consitute a standard. Going forward, we expect ADBC and Substrait to be the
-standards for connectivity and intermediate represetation, respectively.
+constitute a standard. Going forward, we expect ADBC and Substrait to be the
+standards for connectivity and intermediate representation, respectively.
 
 ## Apache Arrow
 
@@ -97,7 +97,7 @@ referenced [ANSI Standard for
 SQL](https://blog.ansi.org/sql-standard-iso-iec-9075-2023-ansi-x3-135) that you
 can pay a lot of money to access, and most execution engines claim to support.
 However, most execution engines extend or subtly deviate from the standard and
-in practice it is not possible to simply re-use SQL from one execution engine on
+in practice it is not possible to simply reuse SQL from one execution engine on
 another. This leads to notoriously difficult database migrations and vendor
 lock-in.
 
