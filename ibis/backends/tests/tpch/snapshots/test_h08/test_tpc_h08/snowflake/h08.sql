@@ -16,7 +16,7 @@ FROM (
       CASE WHEN "t30"."nation" = 'BRAZIL' THEN "t30"."volume" ELSE 0 END AS "nation_volume"
     FROM (
       SELECT
-        DATE_PART('year', "t17"."o_orderdate") AS "o_year",
+        DATE_PART(year, "t17"."o_orderdate") AS "o_year",
         "t15"."l_extendedprice" * (
           1 - "t15"."l_discount"
         ) AS "volume",

@@ -25,7 +25,7 @@ FROM (
         "t11"."l_shipdate",
         "t11"."l_extendedprice",
         "t11"."l_discount",
-        DATE_PART('year', "t11"."l_shipdate") AS "l_year",
+        DATE_PART(year, "t11"."l_shipdate") AS "l_year",
         "t11"."l_extendedprice" * (
           1 - "t11"."l_discount"
         ) AS "volume"
