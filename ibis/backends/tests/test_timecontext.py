@@ -54,7 +54,7 @@ broken_pandas_grouped_rolling = pytest.mark.xfail(
 )
 
 
-@pytest.mark.notimpl(["dask", "duckdb"])
+@pytest.mark.notimpl(["dask", "duckdb", "pandas"])
 @pytest.mark.notimpl(
     ["flink"],
     raises=com.OperationNotDefinedError,
@@ -91,7 +91,7 @@ def test_context_adjustment_window_udf(backend, alltypes, context, window, monke
     backend.assert_frame_equal(result, expected)
 
 
-@pytest.mark.notimpl(["dask", "duckdb"])
+@pytest.mark.notimpl(["dask", "duckdb", "pandas"])
 @pytest.mark.broken(
     # TODO (mehmet): Check with the team.
     ["flink"],

@@ -1022,7 +1022,7 @@ def test_quantile(
             id="covar_pop",
             marks=[
                 pytest.mark.notimpl(
-                    ["dask", "pandas", "polars", "druid"],
+                    ["dask", "polars", "druid"],
                     raises=com.OperationNotDefinedError,
                 ),
                 pytest.mark.notyet(
@@ -1042,7 +1042,7 @@ def test_quantile(
             id="covar_samp",
             marks=[
                 pytest.mark.notimpl(
-                    ["dask", "pandas", "polars", "druid"],
+                    ["dask", "polars", "druid"],
                     raises=com.OperationNotDefinedError,
                 ),
                 pytest.mark.notyet(
@@ -1062,7 +1062,7 @@ def test_quantile(
             id="corr_pop",
             marks=[
                 pytest.mark.notimpl(
-                    ["dask", "pandas", "druid"],
+                    ["dask", "druid"],
                     raises=com.OperationNotDefinedError,
                 ),
                 pytest.mark.notyet(
@@ -1092,7 +1092,7 @@ def test_quantile(
             id="corr_samp",
             marks=[
                 pytest.mark.notimpl(
-                    ["dask", "pandas", "druid"],
+                    ["dask", "druid"],
                     raises=com.OperationNotDefinedError,
                 ),
                 pytest.mark.notyet(
@@ -1132,7 +1132,7 @@ def test_quantile(
             id="covar_pop_bool",
             marks=[
                 pytest.mark.notimpl(
-                    ["dask", "pandas", "polars", "druid"],
+                    ["dask", "polars", "druid"],
                     raises=com.OperationNotDefinedError,
                 ),
                 pytest.mark.notyet(
@@ -1156,7 +1156,7 @@ def test_quantile(
             id="corr_pop_bool",
             marks=[
                 pytest.mark.notimpl(
-                    ["dask", "pandas", "druid"],
+                    ["dask", "druid"],
                     raises=com.OperationNotDefinedError,
                 ),
                 pytest.mark.notyet(
@@ -1325,9 +1325,6 @@ def test_string_quantile(alltypes, func):
 @pytest.mark.notimpl(["dask"], raises=(AssertionError, NotImplementedError, TypeError))
 @pytest.mark.notyet(["polars"], raises=PolarsInvalidOperationError)
 @pytest.mark.notyet(["datafusion"], raises=Exception, reason="not supported upstream")
-@pytest.mark.broken(
-    ["pandas"], raises=AssertionError, reason="possibly incorrect results"
-)
 @pytest.mark.parametrize(
     "func",
     [
@@ -1686,8 +1683,8 @@ def test_grouped_case(backend, con):
     ["datafusion", "mssql", "polars", "exasol"], raises=com.OperationNotDefinedError
 )
 @pytest.mark.broken(
-    ["dask", "pandas"],
-    reason="Dask and Pandas do not windowize this operation correctly",
+    ["dask"],
+    reason="Dask does not windowize this operation correctly",
     raises=AssertionError,
 )
 @pytest.mark.notyet(["impala", "flink"], raises=com.UnsupportedOperationError)

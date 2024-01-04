@@ -65,9 +65,7 @@ def test_timestamp_accepts_date_literals(alltypes):
     assert expr.compile(params=params) is not None
 
 
-@pytest.mark.notimpl(
-    ["dask", "impala", "pandas", "pyspark", "druid", "oracle", "exasol"]
-)
+@pytest.mark.notimpl(["dask", "impala", "pyspark", "druid", "oracle", "exasol"])
 @pytest.mark.never(
     ["mysql", "sqlite", "mssql"], reason="backend will never implement array types"
 )

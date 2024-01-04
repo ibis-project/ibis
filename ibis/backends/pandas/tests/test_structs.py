@@ -8,7 +8,6 @@ import pytest
 import ibis
 import ibis.expr.datatypes as dt
 from ibis.backends.pandas import Backend
-from ibis.backends.pandas.execution import execute
 from ibis.backends.pandas.tests.conftest import TestConf as tm
 
 
@@ -48,13 +47,14 @@ def test_struct_field_literal(value):
     assert struct.type() == dt.Struct.from_tuples(
         [("fruit", dt.string), ("weight", dt.int8)]
     )
+    con = ibis.pandas.connect()
 
     expr = struct["fruit"]
-    result = execute(expr.op())
+    result = con.execute(expr)
     assert result == "pear"
 
     expr = struct["weight"]
-    result = execute(expr.op())
+    result = con.execute(expr)
     assert result == 0
 
 
