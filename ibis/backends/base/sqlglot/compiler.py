@@ -295,7 +295,7 @@ class SQLGlotCompiler(abc.ABC):
                 return self.POS_INF if value < 0 else self.NEG_INF
             return sge.convert(value)
         elif dtype.is_decimal():
-            return self.cast(sge.convert(str(value)), dtype)
+            return self.cast(str(value), dtype)
         elif dtype.is_interval():
             return sge.Interval(
                 this=sge.convert(str(value)), unit=dtype.resolution.upper()
@@ -424,14 +424,6 @@ class SQLGlotCompiler(abc.ABC):
 
     ### Timey McTimeFace
 
-    @visit_node.register(ops.Date)
-    def visit_Date(self, op, *, arg):
-        return sge.Date(this=arg)
-
-    @visit_node.register(ops.DateFromYMD)
-    def visit_DateFromYMD(self, op, *, year, month, day):
-        return sge.DateFromParts(year=year, month=month, day=day)
-
     @visit_node.register(ops.Time)
     def visit_Time(self, op, *, arg):
         return self.cast(arg, to=dt.time)
@@ -500,11 +492,10 @@ class SQLGlotCompiler(abc.ABC):
             "us": "us",
         }
 
-        unit = unit.short
-        if (duckunit := unit_mapping.get(unit)) is None:
+        if (unit := unit_mapping.get(unit.short)) is None:
             raise com.UnsupportedOperationError(f"Unsupported truncate unit {unit}")
 
-        return self.f.date_trunc(duckunit, arg)
+        return self.f.date_trunc(unit, arg)
 
     @visit_node.register(ops.DayOfWeekIndex)
     def visit_DayOfWeekIndex(self, op, *, arg):
@@ -542,7 +533,6 @@ class SQLGlotCompiler(abc.ABC):
     def visit_Substring(self, op, *, arg, start, length):
         if_pos = sge.Substring(this=arg, start=start + 1, length=length)
         if_neg = sge.Substring(this=arg, start=start, length=length)
-
         return self.if_(start >= 0, if_pos, if_neg)
 
     @visit_node.register(ops.StringFind)
@@ -559,17 +549,9 @@ class SQLGlotCompiler(abc.ABC):
 
         return self.f.strpos(arg, substr)
 
-    @visit_node.register(ops.RegexSearch)
-    def visit_RegexSearch(self, op, *, arg, pattern):
-        return sge.RegexpLike(this=arg, expression=pattern, flag=sge.convert("s"))
-
     @visit_node.register(ops.RegexReplace)
     def visit_RegexReplace(self, op, *, arg, pattern, replacement):
         return self.f.regexp_replace(arg, pattern, replacement, "g")
-
-    @visit_node.register(ops.RegexExtract)
-    def visit_RegexExtract(self, op, *, arg, pattern, index):
-        return self.f.regexp_extract(arg, pattern, index, dialect=self.dialect)
 
     @visit_node.register(ops.StringConcat)
     def visit_StringConcat(self, op, *, arg):
@@ -586,10 +568,6 @@ class SQLGlotCompiler(abc.ABC):
     @visit_node.register(ops.StringSQLILike)
     def visit_StringSQLILike(self, op, *, arg, pattern, escape):
         return arg.ilike(pattern)
-
-    @visit_node.register(ops.StringToTimestamp)
-    def visit_StringToTimestamp(self, op, *, arg, format_str):
-        return sge.StrToTime(this=arg, format=format_str)
 
     ### NULL PLAYER CHARACTER
     @visit_node.register(ops.IsNull)
@@ -716,10 +694,6 @@ class SQLGlotCompiler(abc.ABC):
 
     ### Ordering and window functions
 
-    @visit_node.register(ops.RowNumber)
-    def visit_RowNumber(self, op):
-        return sge.RowNumber()
-
     @visit_node.register(ops.SortKey)
     def visit_SortKey(self, op, *, expr, ascending: bool):
         return sge.Ordered(this=expr, desc=not ascending)
@@ -747,7 +721,7 @@ class SQLGlotCompiler(abc.ABC):
         end_side = end.get("side", "FOLLOWING")
 
         spec = sge.WindowSpec(
-            kind=op.how.upper(),
+            kind=how.upper(),
             start=start_value,
             start_side=start_side,
             end=end_value,
@@ -810,10 +784,6 @@ class SQLGlotCompiler(abc.ABC):
     @visit_node.register(ops.ArrayConcat)
     def visit_ArrayConcat(self, op, *, arg):
         return sge.ArrayConcat(this=arg[0], expressions=list(arg[1:]))
-
-    @visit_node.register(ops.ArrayContains)
-    def visit_ArrayContains(self, op, *, arg, other):
-        return sge.ArrayContains(this=arg, expression=other)
 
     ## relations
 
@@ -1115,21 +1085,17 @@ class SQLGlotCompiler(abc.ABC):
     def visit_SQLQueryResult(self, op, *, query, schema, source):
         return sg.parse_one(query, read=self.dialect).subquery()
 
-    @visit_node.register(ops.Unnest)
-    def visit_Unnest(self, op, *, arg):
-        return sge.Explode(this=arg)
-
-    @visit_node.register(ops.RegexSplit)
-    def visit_RegexSplit(self, op, *, arg, pattern):
-        return sge.RegexpSplit(this=arg, expression=pattern)
-
-    @visit_node.register(ops.Levenshtein)
-    def visit_Levenshtein(self, op, *, left, right):
-        return sge.Levenshtein(this=left, expression=right)
-
     @visit_node.register(ops.JoinTable)
     def visit_JoinTable(self, op, *, parent, index):
         return parent
+
+    @visit_node.register(ops.Cast)
+    def visit_Cast(self, op, *, arg, to):
+        return self.cast(arg, to)
+
+    @visit_node.register(ops.Value)
+    def visit_Undefined(self, op, **_):
+        raise com.OperationNotDefinedError(type(op).__name__)
 
 
 _SIMPLE_OPS = {
@@ -1138,7 +1104,6 @@ _SIMPLE_OPS = {
     ops.ArgMax: "max_by",
     ops.ArgMin: "min_by",
     ops.Power: "pow",
-    # Unary operations
     ops.IsNan: "isnan",
     ops.IsInf: "isinf",
     ops.Abs: "abs",
@@ -1158,7 +1123,6 @@ _SIMPLE_OPS = {
     ops.Pi: "pi",
     ops.RandomScalar: "random",
     ops.Sign: "sign",
-    # Unary aggregates
     ops.ApproxCountDistinct: "approx_distinct",
     ops.Median: "median",
     ops.Mean: "avg",
@@ -1173,14 +1137,12 @@ _SIMPLE_OPS = {
     ops.Any: "bool_or",
     ops.ArrayCollect: "array_agg",
     ops.GroupConcat: "group_concat",
-    # string operations
     ops.StringContains: "contains",
     ops.StringLength: "length",
     ops.Lowercase: "lower",
     ops.Uppercase: "upper",
     ops.StartsWith: "starts_with",
     ops.StrRight: "right",
-    # Other operations
     ops.IfElse: "if",
     ops.ArrayLength: "length",
     ops.NullIf: "nullif",
@@ -1188,7 +1150,6 @@ _SIMPLE_OPS = {
     ops.Map: "map",
     ops.JSONGetItem: "json_extract",
     ops.ArrayFlatten: "flatten",
-    # common enough to be in the base, but not modeled in sqlglot
     ops.NTile: "ntile",
     ops.Degrees: "degrees",
     ops.Radians: "radians",
@@ -1206,6 +1167,17 @@ _SIMPLE_OPS = {
     ops.StringReplace: "replace",
     ops.Reverse: "reverse",
     ops.StringSplit: "split",
+    ops.RegexSearch: "regexp_like",
+    ops.DateFromYMD: "datefromparts",
+    ops.Date: "date",
+    ops.RowNumber: "row_number",
+    ops.StringToTimestamp: "str_to_time",
+    ops.ArrayStringJoin: "array_to_string",
+    ops.Levenshtein: "levenshtein",
+    ops.Unnest: "explode",
+    ops.RegexSplit: "regexp_split",
+    ops.ArrayContains: "array_contains",
+    ops.RegexExtract: "regexp_extract",
 }
 
 _BINARY_INFIX_OPS = {

@@ -328,10 +328,9 @@ class DuckDBCompiler(SQLGlotCompiler):
         # matches the behavior of the equivalent geopandas functionality
         return self.f.st_transform(arg, source, target, True)
 
-    @visit_node.register(ops.TimestampNow)
-    def visit_TimestampNow(self, op):
-        """DuckDB current timestamp defaults to timestamp + tz."""
-        return self.cast(super().visit_TimestampNow(op), dt.timestamp)
+    @visit_node.register(ops.RegexExtract)
+    def visit_RegexExtract(self, op, *, arg, pattern, index):
+        return self.f.regexp_extract(arg, pattern, index, dialect=self.dialect)
 
 
 _SIMPLE_OPS = {
