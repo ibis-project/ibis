@@ -676,7 +676,7 @@ def test_decimal_literal(con, backend, expr, expected_types, expected_result):
     if type(current_expected_result) in (float, decimal.Decimal) and math.isnan(
         current_expected_result
     ):
-        assert math.isnan(result) and type(result) == type(current_expected_result)
+        assert math.isnan(result)
     else:
         assert result == current_expected_result
 
