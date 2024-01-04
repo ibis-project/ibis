@@ -9,6 +9,7 @@ from pytest import param
 import ibis
 import ibis.common.exceptions as exc
 import ibis.expr.datatypes as dt
+from ibis.backends.tests.errors import Py4JJavaError
 
 pytestmark = [
     pytest.mark.never(
@@ -282,8 +283,8 @@ def test_map_construct_dict(con, keys, values):
 )
 @pytest.mark.notimpl(
     ["flink"],
-    raises=exc.OperationNotDefinedError,
-    reason="No translation rule for <class 'ibis.expr.operations.arrays.Array'>",
+    raises=Py4JJavaError,
+    reason="Map key type should be non-nullable",
 )
 def test_map_construct_array_column(con, alltypes, df):
     expr = ibis.map(ibis.array([alltypes.string_col]), ibis.array([alltypes.int_col]))
