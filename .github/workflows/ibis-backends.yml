@@ -319,13 +319,13 @@ jobs:
           #     extras:
           #       - risingwave
     steps:
-      - name: update and install system dependencies
-        if: matrix.os == 'ubuntu-latest' && matrix.backend.sys-deps != null
-        run: |
-          set -euo pipefail
-
-          sudo apt-get update -qq -y
-          sudo apt-get install -qq -y build-essential ${{ join(matrix.backend.sys-deps, ' ') }}
+      # - name: update and install system dependencies
+      #   if: matrix.os == 'ubuntu-latest' && matrix.backend.sys-deps != null
+      #   run: |
+      #     set -euo pipefail
+      #
+      #     sudo apt-get update -qq -y
+      #     sudo apt-get install -qq -y build-essential ${{ join(matrix.backend.sys-deps, ' ') }}
 
       - name: install sqlite
         if: matrix.os == 'windows-latest' && matrix.backend.name == 'sqlite'
