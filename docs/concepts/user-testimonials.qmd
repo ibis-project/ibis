@@ -5,7 +5,8 @@ been lightly edited for clarity, with the originals linked.
 
 ## From the community
 
-From [Nick Crews on GitHub](https://github.com/ibis-project/ibis/issues/7743#issuecomment-1856391530):
+From [Nick Crews on
+GitHub](https://github.com/ibis-project/ibis/issues/7743#issuecomment-1856391530):
 
 > I have been very impressed with the responsiveness of the team. When I report
 > bugs they are usually addressed within the next release in the next 1-2 months,
@@ -17,7 +18,8 @@ From [Nick Crews on GitHub](https://github.com/ibis-project/ibis/issues/7743#iss
 
 ---
 
-From [Daniel Kim on Zulip](https://ibis-project.zulipchat.com/#narrow/stream/405263-general/topic/.E2.9C.94.20ibis-on-reddit/near/407807779):
+From [Daniel Kim on
+Zulip](https://ibis-project.zulipchat.com/#narrow/stream/405263-general/topic/.E2.9C.94.20ibis-on-reddit/near/407807779):
 
 > We have a production DB2 server that is already under a heavy load. So what I've
 > done was extract a subset of the data it has locally onto my machine and then
@@ -27,7 +29,8 @@ From [Daniel Kim on Zulip](https://ibis-project.zulipchat.com/#narrow/stream/405
 > analysis may take me. So it's great that I can just query away with my local
 > data. Performance has been great.
 
-[And later in the same topic](https://ibis-project.zulipchat.com/#narrow/stream/405263-general/topic/.E2.9C.94.20ibis-on-reddit/near/407813572):
+[And later in the same
+topic](https://ibis-project.zulipchat.com/#narrow/stream/405263-general/topic/.E2.9C.94.20ibis-on-reddit/near/407813572):
 
 > ...I have a lot of "medium" data that I need to work with locally, and so Ibis
 > has been perfect for my use cases. We have this metric called cumulative defect
@@ -40,7 +43,8 @@ From [Daniel Kim on Zulip](https://ibis-project.zulipchat.com/#narrow/stream/405
 
 ---
 
-From [stereoF on GitHub](https://github.com/ibis-project/ibis/issues/7341#issuecomment-1760625921):
+From [stereoF on
+GitHub](https://github.com/ibis-project/ibis/issues/7341#issuecomment-1760625921):
 
 > My story around pyspark -> trying a bunch of stuff -> Ibis, which has feature of
 > lazy computation.
