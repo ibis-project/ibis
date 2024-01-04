@@ -133,8 +133,8 @@ class FindInSet(Value):
 
 @public
 class StringJoin(Value):
-    sep: Value[dt.String]
     arg: VarTuple[Value[dt.String]]
+    sep: Value[dt.String]
 
     dtype = dt.string
 
@@ -145,8 +145,8 @@ class StringJoin(Value):
 
 @public
 class ArrayStringJoin(Value):
-    sep: Value[dt.String]
     arg: Value[dt.Array[dt.String]]
+    sep: Value[dt.String]
 
     dtype = dt.string
     shape = rlz.shape_like("args")
