@@ -3,7 +3,12 @@ from __future__ import annotations
 from decimal import Context, Decimal, InvalidOperation
 
 
-def normalize_decimal(value, precision: int | None = None, scale: int | None = None):
+def normalize_decimal(
+    value,
+    precision: int | None = None,
+    scale: int | None = None,
+    strict: bool = True,
+):
     context = Context(prec=38 if precision is None else precision)
 
     try:
@@ -25,7 +30,7 @@ def normalize_decimal(value, precision: int | None = None, scale: int | None = N
         )
 
     if scale is not None:
-        if exponent < -scale:
+        if strict and exponent < -scale:
             raise TypeError(
                 f"Normalizing {value} with scale {exponent} to scale -{scale} "
                 "would loose precision"
