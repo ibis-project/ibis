@@ -54,9 +54,6 @@ def check_eq(left, right, how, **kwargs):
                     + ["sqlite"] * (vparse(sqlite3.sqlite_version) < vparse("3.39"))
                 ),
                 pytest.mark.xfail_version(datafusion=["datafusion<31"]),
-                pytest.mark.broken(
-                    ["polars"], reason="upstream outer joins are broken"
-                ),
             ],
         ),
     ],
@@ -141,11 +138,6 @@ def test_filtering_join(backend, batting, awards_players, how):
     backend.assert_frame_equal(result, expected, check_like=True)
 
 
-@pytest.mark.broken(
-    ["polars"],
-    raises=ValueError,
-    reason="https://github.com/pola-rs/polars/issues/9335",
-)
 @pytest.mark.notimpl(["exasol"], raises=com.IbisTypeError)
 def test_join_then_filter_no_column_overlap(awards_players, batting):
     left = batting[batting.yearID == 2015]
@@ -159,11 +151,6 @@ def test_join_then_filter_no_column_overlap(awards_players, batting):
     assert not q.execute().empty
 
 
-@pytest.mark.broken(
-    ["polars"],
-    raises=ValueError,
-    reason="https://github.com/pola-rs/polars/issues/9335",
-)
 @pytest.mark.notimpl(["exasol"], raises=com.IbisTypeError)
 def test_mutate_then_join_no_column_overlap(batting, awards_players):
     left = batting.mutate(year=batting.yearID).filter(lambda t: t.year == 2015)
@@ -176,11 +163,6 @@ def test_mutate_then_join_no_column_overlap(batting, awards_players):
 @pytest.mark.notimpl(["druid"])
 @pytest.mark.notyet(["dask"], reason="dask doesn't support descending order by")
 @pytest.mark.notyet(["flink"], reason="Flink doesn't support semi joins")
-@pytest.mark.broken(
-    ["polars"],
-    raises=ValueError,
-    reason="https://github.com/pola-rs/polars/issues/9335",
-)
 @pytest.mark.parametrize(
     "func",
     [
@@ -284,11 +266,6 @@ def test_join_with_pandas_non_null_typed_columns(batting, awards_players):
     ],
 )
 @pytest.mark.notimpl(
-    ["polars"],
-    raises=com.TranslationError,
-    reason="polars doesn't support join predicates",
-)
-@pytest.mark.notimpl(
     ["dask"],
     raises=TypeError,
     reason="dask doesn't support join predicates",
@@ -339,7 +316,6 @@ outer_join_nullability_failures = [
             lambda left: left.filter(lambda t: t.x == 1).select(y=lambda t: t.x),
             [("x", "y")],
             id="left-xy",
-            marks=pytest.mark.notyet(["polars"], reason="renaming fails"),
         ),
         param(
             "left",
@@ -355,7 +331,6 @@ outer_join_nullability_failures = [
             lambda left: left.filter(lambda t: t.x == 1).select(y=lambda t: t.x),
             [("x", "y")],
             id="right-xy",
-            marks=pytest.mark.notyet(["polars"], reason="renaming fails"),
         ),
         param(
             "right",
