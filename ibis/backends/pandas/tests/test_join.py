@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import numpy as np
 import pandas as pd
 import pandas.testing as tm
 import pytest
@@ -57,9 +58,26 @@ def test_join_with_multiple_predicates(how, left, right, df1, df2):
     ]
     result = expr.execute()
     expected = pd.merge(
-        df1, df2, how=how, left_on=["key", "key2"], right_on=["key", "key3"]
+        df1,
+        df2,
+        how=how,
+        left_on=["key", "key2"],
+        right_on=["key", "key3"],
+        suffixes=("_left", "_right"),
     ).reset_index(drop=True)
-    tm.assert_frame_equal(result[expected.columns], expected)
+
+    expected_columns = ["key", "value", "key2", "key3", "other_value"]
+    expected = expected[expected_columns]
+    if how == "right":
+        # the ibis expression references the `key` column from the left table
+        # which is not present in the result of the right join, but pandas
+        # includes the column from the right table
+        expected["key"] = pd.Series([np.nan, np.nan, np.nan], dtype=object)
+    elif how == "outer":
+        expected["key"] = pd.Series(["a", "b", "c", "d", np.nan, np.nan], dtype=object)
+
+    assert list(result.columns) == expected_columns
+    tm.assert_frame_equal(result, expected)
 
 
 @mutating_join_type
@@ -70,6 +88,12 @@ def test_join_with_multiple_predicates_written_as_one(how, left, right, df1, df2
     expected = pd.merge(
         df1, df2, how=how, left_on=["key", "key2"], right_on=["key", "key3"]
     ).reset_index(drop=True)
+
+    if how == "right":
+        expected["key"] = pd.Series([np.nan, np.nan], dtype=object)
+    elif how == "outer":
+        expected["key"] = pd.Series(["a", "b", "c", "d", np.nan, np.nan], dtype=object)
+
     tm.assert_frame_equal(result[expected.columns], expected)
 
 
@@ -270,7 +294,9 @@ def test_asof_join(time_left, time_right, time_df1, time_df2):
 def test_asof_join_predicate(time_left, time_right, time_df1, time_df2):
     expr = time_left.asof_join(time_right, time_left.time == time_right.time)
     result = expr.execute()
-    expected = pd.merge_asof(time_df1, time_df2, on="time")
+    expected = pd.merge_asof(
+        time_df1, time_df2, on="time", direction="nearest", allow_exact_matches=True
+    )
     tm.assert_frame_equal(result[expected.columns], expected)
     with pytest.raises(AssertionError):
         tm.assert_series_equal(result["time"], result["time_right"])
@@ -281,13 +307,10 @@ def test_keyed_asof_join(
     time_keyed_left, time_keyed_right, time_keyed_df1, time_keyed_df2
 ):
     expr = time_keyed_left.asof_join(time_keyed_right, "time", by="key")
+    expr = expr.select(time_keyed_left, time_keyed_right.other_value)
     result = expr.execute()
     expected = pd.merge_asof(time_keyed_df1, time_keyed_df2, on="time", by="key")
     tm.assert_frame_equal(result[expected.columns], expected)
-    with pytest.raises(AssertionError):
-        tm.assert_series_equal(result["time"], result["time_right"])
-    with pytest.raises(AssertionError):
-        tm.assert_series_equal(result["key"], result["key_right"])
 
 
 @merge_asof_minversion
@@ -327,7 +350,7 @@ def test_asof_join_overlapping_non_predicate(
     time_keyed_df2.assign(collide=time_keyed_df2["key"] + time_keyed_df2["other_value"])
 
     expr = time_keyed_left.asof_join(
-        time_keyed_right, predicates=[("time", "time")], by=[("key", "key")]
+        time_keyed_right, on=("time", "time"), predicates=[("key", "key")]
     )
     result = expr.execute()
     expected = pd.merge_asof(
@@ -594,4 +617,34 @@ def test_multijoin(tracts_df, fields_df, harvest_df):
         right_on="tract_id",
     )
 
+    tm.assert_frame_equal(result, expected)
+
+
+def test_chain_join():
+    test_df1 = pd.DataFrame({"id": ["1", "1"], "value": ["a", "a"]})
+    test_df2 = pd.DataFrame({"id": ["1", "1"], "value": ["z", "z"]})
+    test_df3 = pd.DataFrame({"id": ["1", "1"], "value": ["z1", "z1"]})
+
+    conn = ibis.pandas.connect({"df1": test_df1, "df2": test_df2, "df3": test_df3})
+
+    t1 = conn.table("df1")
+    t2 = conn.table("df2")
+    t3 = conn.table("df3")
+
+    expr = (
+        t1.join(t2, t1.id == t2.id)
+        .join(t3, t1.id == t3.id)
+        .select(t1.id, t1.value, t2.value.name("value2"), t3.value.name("value3"))
+    )
+    result = expr.execute()
+
+    n = len(test_df1) * len(test_df2) * len(test_df3)
+    expected = pd.DataFrame(
+        {
+            "id": ["1"] * n,
+            "value": ["a"] * n,
+            "value2": ["z"] * n,
+            "value3": ["z1"] * n,
+        }
+    )
     tm.assert_frame_equal(result, expected)

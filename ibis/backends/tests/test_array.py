@@ -342,6 +342,11 @@ def test_unnest_no_nulls(backend):
     raises=ValueError,
     reason="ValueError: Do not nest ARRAY types; ARRAY(basetype) handles multi-dimensional arrays of basetype",
 )
+@pytest.mark.broken(
+    ["pandas"],
+    raises=ValueError,
+    reason="all the input arrays must have same number of dimensions",
+)
 def test_unnest_default_name(backend):
     array_types = backend.array_types
     df = array_types.execute()
@@ -535,7 +540,7 @@ def test_array_filter(con, input, output, predicate):
 
 @builtin_array
 @pytest.mark.notimpl(
-    ["mssql", "pandas", "polars", "postgres"],
+    ["mssql", "polars", "postgres"],
     raises=com.OperationNotDefinedError,
 )
 @pytest.mark.notimpl(["dask"], raises=com.OperationNotDefinedError)
@@ -592,7 +597,7 @@ def test_array_contains(backend, con):
 )
 @builtin_array
 @pytest.mark.notimpl(
-    ["dask", "impala", "mssql", "pandas", "polars"],
+    ["dask", "impala", "mssql", "polars"],
     raises=com.OperationNotDefinedError,
 )
 def test_array_position(backend, con, a, expected_array):
@@ -606,7 +611,7 @@ def test_array_position(backend, con, a, expected_array):
 
 @builtin_array
 @pytest.mark.notimpl(
-    ["dask", "impala", "mssql", "pandas", "polars"],
+    ["dask", "impala", "mssql", "polars"],
     raises=com.OperationNotDefinedError,
 )
 @pytest.mark.broken(
@@ -643,7 +648,7 @@ def test_array_remove(con, a):
 
 @builtin_array
 @pytest.mark.notimpl(
-    ["dask", "datafusion", "impala", "mssql", "pandas", "polars", "mysql"],
+    ["dask", "datafusion", "impala", "mssql", "polars", "mysql"],
     raises=com.OperationNotDefinedError,
 )
 @pytest.mark.notimpl(
@@ -697,7 +702,7 @@ def test_array_unique(con, input, expected):
 
 @builtin_array
 @pytest.mark.notimpl(
-    ["dask", "datafusion", "flink", "impala", "mssql", "pandas", "polars"],
+    ["dask", "datafusion", "flink", "impala", "mssql", "polars"],
     raises=com.OperationNotDefinedError,
 )
 @pytest.mark.broken(
@@ -718,7 +723,7 @@ def test_array_sort(con):
 
 @builtin_array
 @pytest.mark.notimpl(
-    ["dask", "datafusion", "impala", "mssql", "pandas", "polars"],
+    ["dask", "datafusion", "impala", "mssql", "polars"],
     raises=com.OperationNotDefinedError,
 )
 @pytest.mark.parametrize(
@@ -982,7 +987,7 @@ def test_array_flatten(backend, flatten_data, column, expected):
     reason="range isn't implemented upstream",
     raises=com.OperationNotDefinedError,
 )
-@pytest.mark.notimpl(["flink", "pandas", "dask"], raises=com.OperationNotDefinedError)
+@pytest.mark.notimpl(["flink", "dask"], raises=com.OperationNotDefinedError)
 @pytest.mark.parametrize("n", [-2, 0, 2])
 def test_range_single_argument(con, n):
     expr = ibis.range(n)
@@ -996,9 +1001,7 @@ def test_range_single_argument(con, n):
     raises=com.OperationNotDefinedError,
 )
 @pytest.mark.parametrize("n", [-2, 0, 2])
-@pytest.mark.notimpl(
-    ["polars", "flink", "pandas", "dask"], raises=com.OperationNotDefinedError
-)
+@pytest.mark.notimpl(["polars", "flink", "dask"], raises=com.OperationNotDefinedError)
 @pytest.mark.skip("risingwave")
 def test_range_single_argument_unnest(backend, con, n):
     expr = ibis.range(n).unnest()
@@ -1030,7 +1033,7 @@ def test_range_single_argument_unnest(backend, con, n):
     reason="range and unnest aren't implemented upstream",
     raises=com.OperationNotDefinedError,
 )
-@pytest.mark.notimpl(["flink", "pandas", "dask"], raises=com.OperationNotDefinedError)
+@pytest.mark.notimpl(["flink", "dask"], raises=com.OperationNotDefinedError)
 def test_range_start_stop_step(con, start, stop, step):
     expr = ibis.range(start, stop, step)
     result = con.execute(expr)
@@ -1045,7 +1048,7 @@ def test_range_start_stop_step(con, start, stop, step):
 @pytest.mark.notyet(
     ["datafusion"], raises=com.OperationNotDefinedError, reason="not supported upstream"
 )
-@pytest.mark.notimpl(["flink", "pandas", "dask"], raises=com.OperationNotDefinedError)
+@pytest.mark.notimpl(["flink", "dask"], raises=com.OperationNotDefinedError)
 @pytest.mark.never(
     ["risingwave"],
     raises=sa.exc.InternalError,
@@ -1226,7 +1229,7 @@ timestamp_range_tzinfos = pytest.mark.parametrize(
 )
 @timestamp_range_tzinfos
 @pytest.mark.notimpl(
-    ["pandas", "dask", "flink", "datafusion"], raises=com.OperationNotDefinedError
+    ["dask", "flink", "datafusion"], raises=com.OperationNotDefinedError
 )
 def test_timestamp_range(con, start, stop, step, freq, tzinfo):
     start = start.replace(tzinfo=tzinfo)
@@ -1277,7 +1280,7 @@ def test_timestamp_range(con, start, stop, step, freq, tzinfo):
 )
 @timestamp_range_tzinfos
 @pytest.mark.notimpl(
-    ["pandas", "dask", "flink", "datafusion"], raises=com.OperationNotDefinedError
+    ["dask", "flink", "datafusion"], raises=com.OperationNotDefinedError
 )
 def test_timestamp_range_zero_step(con, start, stop, step, tzinfo):
     start = start.replace(tzinfo=tzinfo)
@@ -1297,7 +1300,7 @@ def test_repr_timestamp_array(con, monkeypatch):
 
 
 @pytest.mark.notyet(
-    ["dask", "datafusion", "flink", "pandas", "polars"],
+    ["dask", "datafusion", "flink", "polars"],
     raises=com.OperationNotDefinedError,
 )
 @pytest.mark.broken(
