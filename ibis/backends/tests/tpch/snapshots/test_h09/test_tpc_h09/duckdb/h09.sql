@@ -22,7 +22,7 @@ FROM (
         ) - (
           t8.ps_supplycost * t6.l_quantity
         ) AS amount,
-        EXTRACT('year' FROM t10.o_orderdate) AS o_year,
+        EXTRACT(year FROM t10.o_orderdate) AS o_year,
         t11.n_name AS nation,
         t9.p_name
       FROM lineitem AS t6

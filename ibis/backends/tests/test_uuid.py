@@ -25,6 +25,7 @@ UUID_BACKEND_TYPE = {
     "snowflake": "VARCHAR",
     "trino": "varchar(32)" if SQLALCHEMY2 else "uuid",
     "postgres": "uuid",
+    "clickhouse": "Nullable(UUID)",
 }
 
 UUID_EXPECTED_VALUES = {
@@ -41,6 +42,7 @@ UUID_EXPECTED_VALUES = {
     "oracle": TEST_UUID,
     "flink": TEST_UUID,
     "exasol": TEST_UUID,
+    "clickhouse": TEST_UUID,
 }
 
 pytestmark = pytest.mark.notimpl(
@@ -58,14 +60,8 @@ pytestmark = pytest.mark.notimpl(
     "'UUID' object has no attribute '_get_object_id'",
     raises=AttributeError,
 )
-@pytest.mark.xfail_version(
-    duckdb=["duckdb<0.7.0"],
-    reason='(duckdb.NotImplementedException) Not implemented Error: Unsupported type: "UUID"',
-    raises=sqlalchemy.exc.NotSupportedError,
-)
-@pytest.mark.notimpl(
-    ["impala", "datafusion", "polars", "clickhouse"], raises=NotImplementedError
-)
+@pytest.mark.notimpl(["impala", "datafusion", "polars"], raises=NotImplementedError)
+@pytest.mark.notimpl(["datafusion"], raises=Exception)
 def test_uuid_literal(con, backend):
     backend_name = backend.name()
 
