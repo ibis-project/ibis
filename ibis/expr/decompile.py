@@ -192,11 +192,6 @@ def self_reference(op, parent, identifier):
     return f"{parent}.view()"
 
 
-@translate.register(ops.Distinct)
-def distinct(op, parent):
-    return f"{parent}.distinct()"
-
-
 @translate.register(ops.JoinTable)
 def join_table(op, parent, index):
     return parent
