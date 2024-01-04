@@ -18,10 +18,12 @@ from ibis import _
 from ibis import literal as L
 from ibis.backends.tests.errors import (
     ArrowNotImplementedError,
+    DuckDBParserException,
     ExaQueryError,
     GoogleBadRequest,
     ImpalaHiveServer2Error,
     Py4JError,
+    SnowflakeProgrammingError,
 )
 from ibis.expr import datatypes as dt
 from ibis.tests.util import assert_equal

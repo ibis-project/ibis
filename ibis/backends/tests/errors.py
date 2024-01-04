@@ -3,8 +3,12 @@ from __future__ import annotations
 try:
     from duckdb import ConversionException as DuckDBConversionException
     from duckdb import InvalidInputException as DuckDBInvalidInputException
+    from duckdb import NotImplementedException as DuckDBNotImplementedException
+    from duckdb import ParserException as DuckDBParserException
 except ImportError:
-    DuckDBConversionException = DuckDBInvalidInputException = None
+    DuckDBConversionException = (
+        DuckDBInvalidInputException
+    ) = DuckDBParserException = DuckDBNotImplementedException = None
 
 try:
     from clickhouse_connect.driver.exceptions import (
@@ -64,3 +68,8 @@ try:
     from deltalake import PyDeltaTableError
 except ImportError:
     PyDeltaTableError = None
+
+try:
+    from snowflake.connector.errors import ProgrammingError as SnowflakeProgrammingError
+except ImportError:
+    SnowflakeProgrammingError = None

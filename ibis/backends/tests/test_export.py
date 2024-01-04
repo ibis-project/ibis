@@ -10,7 +10,13 @@ from pytest import param
 import ibis
 import ibis.expr.datatypes as dt
 from ibis import util
-from ibis.backends.tests.errors import PyDeltaTableError, PySparkAnalysisException
+from ibis.backends.tests.errors import (
+    DuckDBNotImplementedException,
+    DuckDBParserException,
+    PyDeltaTableError,
+    PySparkAnalysisException,
+    SnowflakeProgrammingError,
+)
 from ibis.formats.pyarrow import PyArrowType
 
 limit = [
