@@ -1099,7 +1099,7 @@ def test_no_conditional_percent_escape(con, expr):
 
 
 @pytest.mark.notimpl(
-    ["dask", "pandas", "mssql", "oracle", "exasol"], raises=com.OperationNotDefinedError
+    ["dask", "mssql", "oracle", "exasol"], raises=com.OperationNotDefinedError
 )
 def test_non_match_regex_search_is_false(con):
     expr = ibis.literal("foo").re_search("bar")

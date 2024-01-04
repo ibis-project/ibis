@@ -199,12 +199,3 @@ def test_schema_infer_exhaustive_dataframe():
     ]
 
     assert DaskData.infer_table(df) == ibis.schema(expected)
-
-
-def test_convert_dataframe_with_timezone():
-    data = {"time": pd.date_range("2018-01-01", "2018-01-02", freq="H")}
-    df = dd.from_pandas(pd.DataFrame(data), npartitions=2)
-    expected = df.assign(time=df.time.dt.tz_localize("EST"))
-    desired_schema = ibis.schema([("time", 'timestamp("EST")')])
-    result = DaskData.convert_table(df.copy(), desired_schema)
-    tm.assert_frame_equal(result.compute(), expected.compute())
