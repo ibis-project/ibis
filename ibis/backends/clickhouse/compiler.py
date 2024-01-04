@@ -41,7 +41,19 @@ class ClickHouseCompiler(SQLGlotCompiler):
         has_filter = where is not None
         func = self.f[funcname + "If" * has_filter]
         args += (where,) * has_filter
-        return func(*args)
+
+        return func(*args, dialect=self.dialect)
+
+    @staticmethod
+    def _minimize_spec(start, end, spec):
+        if (
+            start is None
+            and isinstance(getattr(end, "value", None), ops.Literal)
+            and end.value.value == 0
+            and end.following
+        ):
+            return None
+        return spec
 
     @singledispatchmethod
     def visit_node(self, op, **kw):

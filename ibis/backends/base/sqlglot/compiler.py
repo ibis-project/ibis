@@ -726,7 +726,13 @@ class SQLGlotCompiler(abc.ABC):
         )
         order = sge.Order(expressions=order_by) if order_by else None
 
+        spec = self._minimize_spec(op.start, op.end, spec)
+
         return sge.Window(this=func, partition_by=group_by, order=order, spec=spec)
+
+    @staticmethod
+    def _minimize_spec(start, end, spec):
+        return spec
 
     @visit_node.register(ops.Lag)
     @visit_node.register(ops.Lead)
