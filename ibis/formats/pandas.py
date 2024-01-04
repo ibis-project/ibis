@@ -2,8 +2,8 @@ from __future__ import annotations
 
 import contextlib
 import datetime
-import decimal
 import warnings
+from functools import partial
 from importlib.util import find_spec as _find_spec
 
 import numpy as np
@@ -13,6 +13,7 @@ import pyarrow as pa
 
 import ibis.expr.datatypes as dt
 import ibis.expr.schema as sch
+from ibis.common.numeric import normalize_decimal
 from ibis.common.temporal import normalize_timezone
 from ibis.formats import DataMapper, SchemaMapper, TableProxy
 from ibis.formats.numpy import NumpyType
@@ -255,20 +256,13 @@ class PandasData(DataMapper):
 
     @classmethod
     def convert_Decimal(cls, s, dtype, pandas_type):
-        context = decimal.Context(prec=dtype.precision)
-
-        if dtype.scale is None:
-            normalize = context.create_decimal
-        else:
-            exponent = decimal.Decimal(10) ** -dtype.scale
-
-            def normalize(x, exponent=exponent):
-                try:
-                    return context.create_decimal(x).quantize(exponent)
-                except decimal.InvalidOperation:
-                    return x
-
-        return s.map(normalize, na_action="ignore").astype(pandas_type)
+        func = partial(
+            normalize_decimal,
+            precision=dtype.precision,
+            scale=dtype.scale,
+            strict=False,
+        )
+        return s.map(func, na_action="ignore")
 
     @classmethod
     def convert_UUID(cls, s, dtype, pandas_type):
