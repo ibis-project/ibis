@@ -7,7 +7,9 @@ import pandas.testing as tm
 import pytest
 from pytest import param
 
-from ibis.backends.pandas.execution.strings import sql_like_to_regex
+import ibis
+from ibis.backends.pandas import Backend
+from ibis.backends.pandas.kernels import sql_like_to_regex
 
 
 @pytest.mark.parametrize(
@@ -165,3 +167,23 @@ def test_translate(
     table = str.maketrans(from_str, to_str)
     series = df.strings_with_space.str.translate(table)
     tm.assert_series_equal(result, series, check_names=False)
+
+
+def test_string_repeat(t):
+    int_col = t.plain_int64
+    int_lit = ibis.literal(3)
+    string_col = t.strings_with_space
+    string_lit = ibis.literal("abc")
+
+    expr1 = string_col.repeat(int_col)
+    expr2 = string_col.repeat(int_lit)
+    expr3 = string_lit.repeat(int_col)
+    expr4 = string_lit.repeat(int_lit)
+
+    con = Backend()
+    con.execute(expr1)
+    con.execute(expr2)
+    con.execute(expr3)
+    con.execute(expr4)
+
+    # TODO(kszucs): add assertions or rather parametrize the tests above
