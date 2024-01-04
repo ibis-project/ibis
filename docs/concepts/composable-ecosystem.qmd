@@ -38,7 +38,7 @@ And a table explaining the standards:
 
 The composable data ecosystem has been envisioned for some time. [Wes
 McKinney](https://wesmckinney.com) has been instrumental in the development of
-the composable data ecosystem, co-foudning Voltron Data, Apache Arrow, and
+the composable data ecosystem, co-founding Voltron Data, Apache Arrow, and
 initially creating Ibis. [Wes looked back on 15 years on the road to composable
 data systems](https://wesmckinney.com/blog/looking-back-15-years/) and gave some
 motivation for Ibis in his infamous ["Apache Arrow and the '10 Things I Hate
