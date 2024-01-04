@@ -94,7 +94,7 @@ future.
 Structured Query Language (SQL) is not a standard. There is a commonly
 referenced [ANSI Standard for
 SQL](https://blog.ansi.org/sql-standard-iso-iec-9075-2023-ansi-x3-135) that you
-can pay a lot of money to access, and most execution engines claim to support.
+can pay a lot of money to access and most execution engines claim to support.
 However, most execution engines extend or subtly deviate from the standard and
 in practice it is not possible to simply reuse SQL from one execution engine on
 another. This leads to notoriously difficult database migrations and vendor
