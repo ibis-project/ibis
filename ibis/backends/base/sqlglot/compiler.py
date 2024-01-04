@@ -670,7 +670,7 @@ class SQLGlotCompiler(abc.ABC):
 
     @visit_node.register(ops.StructField)
     def visit_StructField(self, op, *, arg, field):
-        return arg[sge.convert(field)]
+        return sge.Dot(this=arg, expression=sg.to_identifier(field, quoted=self.quoted))
 
     @visit_node.register(ops.IdenticalTo)
     def visit_IdenticalTo(self, op, *, left, right):
