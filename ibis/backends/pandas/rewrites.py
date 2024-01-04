@@ -224,6 +224,7 @@ def split_join_predicates(left, right, predicates, only_equality=True):
 
 @replace(ops.JoinChain)
 def rewrite_join(_, **kwargs):
+    # TODO(kszucs): JoinTable.index can be used as a prefix
     prefixes = {}
     prefixes[_.first] = prefix = str(len(prefixes))
     left = PandasRename.from_prefix(_.first, prefix)

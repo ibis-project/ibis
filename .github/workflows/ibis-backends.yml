@@ -91,11 +91,11 @@ jobs:
             title: Datafusion
             extras:
               - datafusion
-          # - name: polars
-          #   title: Polars
-          #   extras:
-          #     - polars
-          #     - deltalake
+          - name: polars
+            title: Polars
+            extras:
+              - polars
+              - deltalake
           # - name: mysql
           #   title: MySQL
           #   services:
