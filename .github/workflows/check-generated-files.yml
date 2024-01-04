@@ -13,7 +13,6 @@ on:
       - poetry.lock
       - pyproject.toml
       - requirements-dev.txt
-  merge_group:
 
 concurrency:
   group: ${{ github.repository }}-${{ github.head_ref || github.sha }}-${{ github.workflow }}
