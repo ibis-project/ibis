@@ -1430,21 +1430,6 @@ files = [
 ]
 
 [[package]]
-name = "duckdb-engine"
-version = "0.10.0"
-description = "SQLAlchemy driver for duckdb"
-optional = true
-python-versions = ">=3.7"
-files = [
-    {file = "duckdb_engine-0.10.0-py3-none-any.whl", hash = "sha256:c408d002e83630b6bbb05fc3b26a43406085b1c22dd43e8cab00bf0b9c011ea8"},
-    {file = "duckdb_engine-0.10.0.tar.gz", hash = "sha256:5e3dad3b3513f055a4f5ec5430842249cfe03015743a7597ed1dcc0447dca565"},
-]
-
-[package.dependencies]
-duckdb = ">=0.4.0"
-sqlalchemy = ">=1.3.22"
-
-[[package]]
 name = "dulwich"
 version = "0.21.7"
 description = "Python Git Library"
@@ -6259,25 +6244,6 @@ pandas = ["pandas (>=1.0.0,<2.2.0)", "pyarrow"]
 secure-local-storage = ["keyring (!=16.1.0,<25.0.0)"]
 
 [[package]]
-name = "snowflake-sqlalchemy"
-version = "1.5.1"
-description = "Snowflake SQLAlchemy Dialect"
-optional = true
-python-versions = ">=3.7"
-files = [
-    {file = "snowflake-sqlalchemy-1.5.1.tar.gz", hash = "sha256:4f1383402ffc89311974bd810dee22003aef4af0f312a0fdb55778333ad1abf7"},
-    {file = "snowflake_sqlalchemy-1.5.1-py2.py3-none-any.whl", hash = "sha256:df022fb73bc04d68dfb3216ebf7a1bfbd14d22def9c38bbe05275beb258adcd0"},
-]
-
-[package.dependencies]
-snowflake-connector-python = "<4.0.0"
-sqlalchemy = ">=1.4.0,<2.0.0"
-
-[package.extras]
-development = ["mock", "numpy", "pytest", "pytest-cov", "pytest-rerunfailures", "pytest-timeout", "pytz"]
-pandas = ["snowflake-connector-python[pandas] (<4.0.0)"]
-
-[[package]]
 name = "sortedcontainers"
 version = "2.4.0"
 description = "Sorted Containers -- Sorted List, Sorted Dict, Sorted Set"
@@ -7340,15 +7306,15 @@ cffi = {version = ">=1.11", markers = "platform_python_implementation == \"PyPy\
 cffi = ["cffi (>=1.11)"]
 
 [extras]
-all = ["black", "clickhouse-connect", "dask", "datafusion", "db-dtypes", "deltalake", "duckdb", "duckdb-engine", "geoalchemy2", "geopandas", "google-cloud-bigquery", "google-cloud-bigquery-storage", "graphviz", "impyla", "oracledb", "packaging", "pins", "polars", "psycopg2", "pydata-google-auth", "pydruid", "pymysql", "pyodbc", "pyspark", "regex", "shapely", "snowflake-connector-python", "snowflake-sqlalchemy", "sqlalchemy", "sqlalchemy-exasol", "sqlalchemy-views", "trino"]
+all = ["black", "clickhouse-connect", "dask", "datafusion", "db-dtypes", "deltalake", "duckdb", "geoalchemy2", "geopandas", "google-cloud-bigquery", "google-cloud-bigquery-storage", "graphviz", "impyla", "oracledb", "packaging", "pins", "polars", "psycopg2", "pydata-google-auth", "pydruid", "pymysql", "pyodbc", "pyspark", "regex", "shapely", "snowflake-connector-python", "sqlalchemy", "sqlalchemy-exasol", "sqlalchemy-views", "trino"]
 bigquery = ["db-dtypes", "google-cloud-bigquery", "google-cloud-bigquery-storage", "pydata-google-auth"]
-clickhouse = ["clickhouse-connect", "sqlalchemy"]
+clickhouse = ["clickhouse-connect"]
 dask = ["dask", "regex"]
 datafusion = ["datafusion"]
 decompiler = ["black"]
 deltalake = ["deltalake"]
 druid = ["pydruid", "sqlalchemy"]
-duckdb = ["duckdb", "duckdb-engine", "sqlalchemy", "sqlalchemy-views"]
+duckdb = ["duckdb"]
 examples = ["pins"]
 exasol = ["sqlalchemy", "sqlalchemy-exasol", "sqlalchemy-views"]
 flink = []
@@ -7361,7 +7327,7 @@ pandas = ["regex"]
 polars = ["packaging", "polars"]
 postgres = ["psycopg2", "sqlalchemy", "sqlalchemy-views"]
 pyspark = ["packaging", "pyspark", "sqlalchemy"]
-snowflake = ["packaging", "snowflake-connector-python", "snowflake-sqlalchemy", "sqlalchemy-views"]
+snowflake = ["packaging", "snowflake-connector-python"]
 sqlite = ["regex", "sqlalchemy", "sqlalchemy-views"]
 trino = ["sqlalchemy", "sqlalchemy-views", "trino"]
 visualization = ["graphviz"]
@@ -7369,4 +7335,4 @@ visualization = ["graphviz"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.9"
-content-hash = "c4185d5717ea0becf3befb1a4a56cd24571b8b159e778eef292b8a76ce81b187"
+content-hash = "cbcc7341639b579de656469a0f95dd7a4ffb5a8a1bc69a77520ef8b172bf0146"
