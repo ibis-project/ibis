@@ -49,6 +49,16 @@ class AggGen:
         return getattr(self, key)
 
 
+class VarGen:
+    __slots__ = ()
+
+    def __getattr__(self, name: str) -> sge.Var:
+        return sge.Var(this=name)
+
+    def __getitem__(self, key: str) -> sge.Var:
+        return sge.Var(this=key)
+
+
 class FuncGen:
     __slots__ = ("namespace",)
 
@@ -110,7 +120,7 @@ STAR = sge.Star()
 
 @public
 class SQLGlotCompiler(abc.ABC):
-    __slots__ = "agg", "f"
+    __slots__ = "agg", "f", "v"
 
     rewrites: tuple = (
         empty_in_values_right_side,
@@ -138,6 +148,7 @@ class SQLGlotCompiler(abc.ABC):
     def __init__(self) -> None:
         self.agg = AggGen(aggfunc=self._aggregate)
         self.f = FuncGen()
+        self.v = VarGen()
 
     @property
     @abc.abstractmethod
@@ -429,39 +440,39 @@ class SQLGlotCompiler(abc.ABC):
 
     @visit_node.register(ops.ExtractYear)
     def visit_ExtractYear(self, op, *, arg):
-        return self.f.extract("year", arg)
+        return self.f.extract(self.v.year, arg)
 
     @visit_node.register(ops.ExtractMonth)
     def visit_ExtractMonth(self, op, *, arg):
-        return self.f.extract("month", arg)
+        return self.f.extract(self.v.month, arg)
 
     @visit_node.register(ops.ExtractDay)
     def visit_ExtractDay(self, op, *, arg):
-        return self.f.extract("day", arg)
+        return self.f.extract(self.v.day, arg)
 
     @visit_node.register(ops.ExtractDayOfYear)
     def visit_ExtractDayOfYear(self, op, *, arg):
-        return self.f.extract("dayofyear", arg)
+        return self.f.extract(self.v.dayofyear, arg)
 
     @visit_node.register(ops.ExtractQuarter)
     def visit_ExtractQuarter(self, op, *, arg):
-        return self.f.extract("quarter", arg)
+        return self.f.extract(self.v.quarter, arg)
 
     @visit_node.register(ops.ExtractWeekOfYear)
     def visit_ExtractWeekOfYear(self, op, *, arg):
-        return self.f.extract("week", arg)
+        return self.f.extract(self.v.week, arg)
 
     @visit_node.register(ops.ExtractHour)
     def visit_ExtractHour(self, op, *, arg):
-        return self.f.extract("hour", arg)
+        return self.f.extract(self.v.hour, arg)
 
     @visit_node.register(ops.ExtractMinute)
     def visit_ExtractMinute(self, op, *, arg):
-        return self.f.extract("minute", arg)
+        return self.f.extract(self.v.minute, arg)
 
     @visit_node.register(ops.ExtractSecond)
     def visit_ExtractSecond(self, op, *, arg):
-        return self.f.extract("second", arg)
+        return self.f.extract(self.v.second, arg)
 
     @visit_node.register(ops.TimestampTruncate)
     @visit_node.register(ops.DateTruncate)
