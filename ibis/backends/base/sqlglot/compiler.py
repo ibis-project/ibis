@@ -376,12 +376,9 @@ class SQLGlotCompiler(abc.ABC):
             return self.f.map(keys, values)
         elif dtype.is_struct():
             items = [
-                sge.Slice(
-                    this=sge.convert(k),
-                    expression=self.visit_Literal(
-                        ops.Literal(v, field_dtype), value=v, dtype=field_dtype
-                    ),
-                )
+                self.visit_Literal(
+                    ops.Literal(v, field_dtype), value=v, dtype=field_dtype
+                ).as_(k, quoted=self.quoted)
                 for field_dtype, (k, v) in zip(dtype.types, value.items())
             ]
             return sge.Struct.from_arg_list(items)
@@ -694,10 +691,7 @@ class SQLGlotCompiler(abc.ABC):
     @visit_node.register(ops.StructColumn)
     def visit_StructColumn(self, op, *, names, values):
         return sge.Struct.from_arg_list(
-            [
-                sge.Slice(this=sge.convert(name), expression=value)
-                for name, value in zip(names, values)
-            ]
+            [value.as_(name, quoted=self.quoted) for name, value in zip(names, values)]
         )
 
     @visit_node.register(ops.StructField)
