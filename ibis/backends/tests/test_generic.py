@@ -313,12 +313,14 @@ def test_filter(backend, alltypes, sorted_df, predicate_fn, expected_fn):
         "druid",
         "oracle",
         "exasol",
+        "pandas",
     ]
 )
 @pytest.mark.never(
     ["flink"],
     reason="Flink engine does not support generic window clause with no order by",
 )
+# TODO(kszucs): this is not supported at the expression level
 def test_filter_with_window_op(backend, alltypes, sorted_df):
     sorted_alltypes = alltypes.order_by("id")
     table = sorted_alltypes
@@ -1154,7 +1156,7 @@ def test_pivot_wider(backend):
     reason="backend doesn't implement window functions",
 )
 @pytest.mark.notimpl(
-    ["pandas", "polars"],
+    ["polars"],
     raises=com.OperationNotDefinedError,
     reason="backend doesn't implement ops.WindowFunction",
 )
@@ -1232,7 +1234,7 @@ def test_distinct_on_keep(backend, on, keep):
     reason="backend doesn't implement window functions",
 )
 @pytest.mark.notimpl(
-    ["pandas", "polars"],
+    ["polars"],
     raises=com.OperationNotDefinedError,
     reason="backend doesn't implement ops.WindowFunction",
 )
