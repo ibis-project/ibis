@@ -25,7 +25,7 @@ FROM (
         t6.l_shipdate,
         t6.l_extendedprice,
         t6.l_discount,
-        EXTRACT('year' FROM t6.l_shipdate) AS l_year,
+        EXTRACT(year FROM t6.l_shipdate) AS l_year,
         t6.l_extendedprice * (
           CAST(1 AS TINYINT) - t6.l_discount
         ) AS volume

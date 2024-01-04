@@ -30,5 +30,5 @@ FROM (
     t3.month AS month_right
   FROM functional_alltypes AS t1
   INNER JOIN functional_alltypes AS t3
-    ON t1.tinyint_col < EXTRACT('minute' FROM t3.timestamp_col)
+    ON t1.tinyint_col < EXTRACT(minute FROM t3.timestamp_col)
 ) AS t5
