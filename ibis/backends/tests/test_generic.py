@@ -1653,16 +1653,7 @@ def test_dynamic_table_slice_with_computed_offset(backend):
     backend.assert_frame_equal(result, expected)
 
 
-@pytest.mark.notimpl(
-    [
-        "bigquery",
-        "druid",
-        "flink",
-        "polars",
-        "snowflake",
-        "exasol",
-    ]
-)
+@pytest.mark.notimpl(["bigquery", "druid", "flink", "polars", "snowflake", "exasol"])
 def test_sample(backend):
     t = backend.functional_alltypes.filter(_.int_col >= 2)
 
@@ -1678,16 +1669,7 @@ def test_sample(backend):
     backend.assert_frame_equal(empty, df.iloc[:0])
 
 
-@pytest.mark.notimpl(
-    [
-        "bigquery",
-        "druid",
-        "flink",
-        "polars",
-        "snowflake",
-        "exasol",
-    ]
-)
+@pytest.mark.notimpl(["bigquery", "druid", "flink", "polars", "snowflake", "exasol"])
 def test_sample_memtable(con, backend):
     df = pd.DataFrame({"x": [1, 2, 3, 4]})
     res = con.execute(ibis.memtable(df).sample(0.5))

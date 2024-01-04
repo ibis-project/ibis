@@ -16,7 +16,7 @@ FROM (
       CASE WHEN t23.nation = 'BRAZIL' THEN t23.volume ELSE CAST(0 AS TINYINT) END AS nation_volume
     FROM (
       SELECT
-        EXTRACT('year' FROM t10.o_orderdate) AS o_year,
+        EXTRACT(year FROM t10.o_orderdate) AS o_year,
         t8.l_extendedprice * (
           CAST(1 AS TINYINT) - t8.l_discount
         ) AS volume,
