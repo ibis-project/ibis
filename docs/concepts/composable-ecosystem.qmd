@@ -1,0 +1,37 @@
+# Composable data ecosystem
+
+Ibis exists in a broader composable data ecosystem. This page describes how Ibis fits in with other projects.
+
+## Overview
+
+Ibis is the portable Python dataframe API, providing a single frontend interface for 18+ data platforms (backends). Ibis achieves this by decoupling the API from the execution engine. To achieve this, Ibis must connect to a backend and compile Ibis expressions into backend-native code. Today this is typically SQL, though sometimes it is backend-native dataframe code (e.g. pandas, Polars, Dask). 
+
+### History
+
+The composable data ecosystem has been envisioned for some time, but is still early in its implementation. Years of experience from experts in the space has led to [The Composable Codex by Voltron Data](https://voltrondata.com/codex), providing an in-depth overview of the "why?" to composable data systems. [Wes McKinney](https://wesmckinney.com) has been instrumental in the development of the composable data ecosystem, co-foudning Voltron Data, Apache Arrow, and initially creating Ibis. Wes [looked back on 15 years on the road to composable data systems](https://wesmckinney.com/blog/looking-back-15-years/) and gave some motivation for Ibis in his infamous ["Apache Arrow and the '10 Things I Hate About pandas'"](https://wesmckinney.com/blog/apache-arrow-pandas-internals/).
+
+## Apache Arrow and data interchange
+
+Ibis leverages [Apache Arrow](https://arrow.apache.org/) to provide a common data format for data interchange between Ibis and backends. It supports [the dataframe interchange protocol](https://data-apis.org/dataframe-protocol/latest/purpose_and_scope.html) for data interchange between Ibis and other libraries, including Python dataframe and visualization libraries.
+
+Separately, Apache Arrow is often used by backends as the in-memory data format.
+
+## Apache Arrow Database Connectivity (ADBC)
+
+[Apache Arrow Database Connectivity (ADBC)](https://arrow.apache.org/docs/format/ADBC.html) is a relatively new standard for database connectivity. It is a low-level protocol for exchanging data between a client and a database. It is a successor to ODBC and JDBC, and is designed to be a more modern, lightweight, and performant alternative to these standards.
+
+## Substrait
+
+[Substrait](https://substrait.io/) is a relatively new standard for cross-language serialization of relational algebra.
+
+### Why not SQL?
+
+Structured Query Language (SQL) is not a standard. Many different dialects exist, ...
+
+### Why Substrait?
+
+...
+
+## Going forward
+
+Going forward, Ibis intends to leverage other standards in the broader composable data ecosystem to simplify its implementation and improve performance.
