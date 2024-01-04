@@ -243,9 +243,9 @@ class DataType(Concrete, Coercible):
 
     def to_numpy(self):
         """Return the equivalent numpy datatype."""
-        from ibis.formats.numpy import NumpyFormat
+        from ibis.formats.numpy import NumpyType
 
-        return NumpyFormat.from_dtype(self)
+        return NumpyType.from_ibis(self)
 
     def to_pandas(self):
         """Return the equivalent pandas datatype."""
