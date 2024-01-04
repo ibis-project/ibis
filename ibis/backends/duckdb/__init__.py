@@ -28,7 +28,6 @@ from ibis import util
 from ibis.backends.base import CanCreateSchema
 from ibis.backends.base.sqlglot import SQLGlotBackend
 from ibis.backends.base.sqlglot.compiler import STAR, C, F
-from ibis.backends.base.sqlglot.datatypes import DuckDBType
 from ibis.backends.duckdb.compiler import DuckDBCompiler
 from ibis.backends.duckdb.datatypes import DuckDBPandasData
 from ibis.expr.operations.udf import InputType
@@ -311,7 +310,7 @@ class Backend(SQLGlotBackend, CanCreateSchema):
 
         return sch.Schema(
             {
-                name: DuckDBType.from_string(typ, nullable=nullable)
+                name: self.compiler.type_mapper.from_string(typ, nullable=nullable)
                 for name, typ, nullable in zip(names, types, nullables)
             }
         )
@@ -1394,7 +1393,10 @@ class Backend(SQLGlotBackend, CanCreateSchema):
         for name, typ, null in zip(
             rows["column_name"], rows["column_type"], rows["null"]
         ):
-            yield name, DuckDBType.from_string(typ, nullable=null == "YES")
+            yield (
+                name,
+                self.compiler.type_mapper.from_string(typ, nullable=null == "YES"),
+            )
 
     def _register_in_memory_tables(self, expr: ir.Expr) -> None:
         for memtable in expr.op().find(ops.InMemoryTable):
@@ -1434,10 +1436,10 @@ class Backend(SQLGlotBackend, CanCreateSchema):
         func = udf_node.__func__
         name = func.__name__
         input_types = [
-            DuckDBType.to_string(param.annotation.pattern.dtype)
+            self.compiler.type_mapper.to_string(param.annotation.pattern.dtype)
             for param in udf_node.__signature__.parameters.values()
         ]
-        output_type = DuckDBType.to_string(udf_node.dtype)
+        output_type = self.compiler.type_mapper.to_string(udf_node.dtype)
 
         def register_udf(con):
             return con.create_function(
