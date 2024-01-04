@@ -22,7 +22,7 @@ FROM (
         ) - (
           "t14"."ps_supplycost" * "t12"."l_quantity"
         ) AS "amount",
-        DATE_PART('year', "t16"."o_orderdate") AS "o_year",
+        DATE_PART(year, "t16"."o_orderdate") AS "o_year",
         "t17"."n_name" AS "nation",
         "t15"."p_name"
       FROM (
