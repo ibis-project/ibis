@@ -8,6 +8,7 @@ from dataclasses import dataclass
 from typing import Annotated, NamedTuple
 
 import pytest
+from pytest import param
 
 import ibis.expr.datatypes as dt
 from ibis.common.annotations import ValidationError
@@ -672,3 +673,23 @@ def test_type_coercion():
     p = Pattern.from_typehint(Annotated[dt.Interval, Attrs(unit=As(TimeUnit))])
     assert p.match(dt.Interval("s"), {}) == dt.Interval("s")
     assert p.match(dt.Interval("ns"), {}) == dt.Interval("ns")
+
+
+@pytest.mark.parametrize(
+    "dtype",
+    [
+        param(dt.int16, id="int16"),
+        param(dt.int32, id="int32"),
+        param(dt.int64, id="int64"),
+        param(dt.uint8, id="uint8"),
+        param(dt.uint16, id="uint16"),
+        param(dt.uint32, id="uint32"),
+        param(dt.uint64, id="uint64"),
+        param(dt.float32, id="float32"),
+        param(dt.float64, id="float64"),
+        param(dt.boolean, id="boolean"),
+    ],
+)
+@pytest.mark.parametrize("fmt", ["numpy", "pandas", "pyarrow"])
+def test_type_roundtrip(dtype, fmt):
+    assert getattr(dt.DataType, f"from_{fmt}")(getattr(dtype, f"to_{fmt}")()) == dtype
