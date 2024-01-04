@@ -1351,33 +1351,6 @@ def test_date_quantile(alltypes, func):
 
 
 @pytest.mark.parametrize(
-    ("result_fn", "expected_fn"),
-    [
-        param(
-            lambda t, where, sep: (
-                t.group_by("bigint_col")
-                .aggregate(tmp=lambda t: t.string_col.group_concat(sep, where=where))
-                .order_by("bigint_col")
-            ),
-            lambda t, where, sep: (
-                (
-                    t
-                    if isinstance(where, slice)
-                    else t.assign(string_col=t.string_col.where(where))
-                )
-                .groupby("bigint_col")
-                .string_col.agg(
-                    lambda s: (np.nan if pd.isna(s).all() else sep.join(s.values))
-                )
-                .rename("tmp")
-                .sort_index()
-                .reset_index()
-            ),
-            id="group_concat",
-        )
-    ],
-)
-@pytest.mark.parametrize(
     ("ibis_sep", "pandas_sep"),
     [
         param(":", ":", id="const"),
@@ -1422,8 +1395,7 @@ def test_date_quantile(alltypes, func):
     ],
 )
 @pytest.mark.notimpl(
-    ["datafusion", "polars", "mssql"],
-    raises=com.OperationNotDefinedError,
+    ["datafusion", "polars", "mssql"], raises=com.OperationNotDefinedError
 )
 @pytest.mark.notimpl(
     ["druid"],
@@ -1442,19 +1414,30 @@ def test_date_quantile(alltypes, func):
     reason='SQL parse failed. Encountered "group_concat ("',
 )
 def test_group_concat(
-    backend,
-    alltypes,
-    df,
-    result_fn,
-    expected_fn,
-    ibis_cond,
-    pandas_cond,
-    ibis_sep,
-    pandas_sep,
+    backend, alltypes, df, ibis_cond, pandas_cond, ibis_sep, pandas_sep
 ):
-    expr = result_fn(alltypes, ibis_cond(alltypes), ibis_sep)
+    expr = (
+        alltypes.group_by("bigint_col")
+        .aggregate(
+            tmp=lambda t: t.string_col.group_concat(ibis_sep, where=ibis_cond(t))
+        )
+        .order_by("bigint_col")
+    )
     result = expr.execute()
-    expected = expected_fn(df, pandas_cond(df), pandas_sep)
+    expected = (
+        (
+            df
+            if isinstance(pandas_cond(df), slice)
+            else df.assign(string_col=df.string_col.where(pandas_cond(df)))
+        )
+        .groupby("bigint_col")
+        .string_col.agg(
+            lambda s: (np.nan if pd.isna(s).all() else pandas_sep.join(s.values))
+        )
+        .rename("tmp")
+        .sort_index()
+        .reset_index()
+    )
 
     backend.assert_frame_equal(result.fillna(pd.NA), expected.fillna(pd.NA))
 

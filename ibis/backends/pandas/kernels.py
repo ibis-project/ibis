@@ -308,7 +308,7 @@ _generic_impls = {
     ops.Pi: lambda: np.pi,
     ops.TimestampNow: lambda: pd.Timestamp("now", tz="UTC").tz_localize(None),
     ops.StringConcat: lambda xs: reduce(operator.add, xs),
-    ops.StringJoin: lambda sep, xs: reduce(lambda x, y: x + sep + y, xs),
+    ops.StringJoin: lambda xs, sep: reduce(lambda x, y: x + sep + y, xs),
     ops.Log: lambda x, base: np.log(x) if base is None else np.log(x) / np.log(base),
 }
 

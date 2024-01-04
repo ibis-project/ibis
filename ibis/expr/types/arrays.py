@@ -356,7 +356,7 @@ class ArrayValue(Value):
         --------
         [`StringValue.join`](./expression-strings.qmd#ibis.expr.types.strings.StringValue.join)
         """
-        return ops.ArrayStringJoin(sep, self).to_expr()
+        return ops.ArrayStringJoin(self, sep=sep).to_expr()
 
     def map(self, func: Callable[[ir.Value], ir.Value]) -> ir.ArrayValue:
         """Apply a callable `func` to each element of this array expression.
