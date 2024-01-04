@@ -353,6 +353,8 @@ class SQLGlotCompiler(abc.ABC):
                 for field_dtype, (k, v) in zip(dtype.types, value.items())
             ]
             return sge.Struct.from_arg_list(items)
+        elif dtype.is_uuid():
+            return self.cast(str(value), dtype)
         else:
             raise NotImplementedError(f"Unsupported type: {dtype!r}")
 
