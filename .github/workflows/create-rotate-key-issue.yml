@@ -27,4 +27,4 @@ jobs:
           title: "chore: rotate ibis bot keys"
           content-filepath: .github/rotate-key-template.md
           labels: ci
-          assignees: cpcloud,jreback
+          assignees: cpcloud
