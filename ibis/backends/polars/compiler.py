@@ -15,8 +15,10 @@ from packaging.version import parse as vparse
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
+from ibis.backends.pandas.rewrites import PandasAsofJoin, PandasJoin, PandasRename
 from ibis.backends.polars.datatypes import dtype_to_polars, schema_from_polars
 from ibis.expr.operations.udf import InputType
+from ibis.util import gen_name
 
 
 def _expr_method(expr, op, methods):
@@ -59,7 +61,7 @@ def table(op, **_):
 
 @translate.register(ops.DummyTable)
 def dummy_table(op, **kw):
-    selections = [translate(arg, **kw) for arg in op.values]
+    selections = [translate(arg, **kw) for name, arg in op.values.items()]
     return pl.DataFrame().lazy().select(selections)
 
 
@@ -181,7 +183,7 @@ def _cast(op, strict=True, **kw):
     return arg.cast(typ, strict=strict)
 
 
-@translate.register(ops.TableColumn)
+@translate.register(ops.Field)
 def column(op, **_):
     return pl.col(op.name)
 
@@ -196,35 +198,24 @@ def sort_key(op, **kw):
         return arg.sort(reverse=descending)  # pragma: no cover
 
 
-@translate.register(ops.Selection)
-def selection(op, **kw):
-    lf = translate(op.table, **kw)
-
-    if op.predicates:
-        predicates = map(partial(translate, **kw), op.predicates)
-        predicate = reduce(operator.and_, predicates)
-        lf = lf.filter(predicate)
+@translate.register(ops.Project)
+def project(op, **kw):
+    lf = translate(op.parent, **kw)
 
     selections = []
     unnests = []
-    for arg in op.selections:
-        if isinstance(arg, ops.TableNode):
-            for name in arg.schema.names:
-                column = ops.TableColumn(table=arg, name=name)
-                selections.append(translate(column, **kw))
-        elif (
-            isinstance(arg, ops.Alias) and isinstance(unnest := arg.arg, ops.Unnest)
-        ) or isinstance(unnest := arg, ops.Unnest):
-            name = arg.name
+    for name, arg in op.values.items():
+        if isinstance(arg, ops.Unnest):
             unnests.append(name)
-            selections.append(translate(unnest.arg, **kw).alias(name))
+            translated = translate(arg.arg, **kw)
         elif isinstance(arg, ops.Value):
-            selections.append(translate(arg, **kw))
+            translated = translate(arg, **kw)
         else:
             raise com.TranslationError(
                 "Polars backend is unable to compile selection with "
                 f"operation type of {type(arg)}"
             )
+        selections.append(translated.alias(name))
 
     if selections:
         lf = lf.select(selections)
@@ -232,13 +223,32 @@ def selection(op, **kw):
         if unnests:
             lf = lf.explode(*unnests)
 
-    if op.sort_keys:
-        by = [key.name for key in op.sort_keys]
-        descending = [key.descending for key in op.sort_keys]
+    return lf
+
+
+@translate.register(ops.Sort)
+def sort(op, **kw):
+    lf = translate(op.parent, **kw)
+
+    if op.keys:
+        by = [key.name for key in op.keys]
+        descending = [key.descending for key in op.keys]
         try:
             lf = lf.sort(by, descending=descending)
         except TypeError:  # pragma: no cover
             lf = lf.sort(by, reverse=descending)  # pragma: no cover
+
+    return lf
+
+
+@translate.register(ops.Filter)
+def filter_(op, **kw):
+    lf = translate(op.parent, **kw)
+
+    if op.predicates:
+        predicates = map(partial(translate, **kw), op.predicates)
+        predicate = reduce(operator.and_, predicates)
+        lf = lf.filter(predicate)
 
     return lf
 
@@ -251,75 +261,99 @@ def limit(op, **kw):
     if not isinstance(offset := op.offset, int):
         raise NotImplementedError("Dynamic offset not supported")
 
-    lf = translate(op.table, **kw)
+    lf = translate(op.parent, **kw)
     return lf.slice(offset, n)
 
 
-@translate.register(ops.Aggregation)
+@translate.register(ops.Aggregate)
 def aggregation(op, **kw):
-    lf = translate(op.table, **kw)
+    lf = translate(op.parent, **kw)
 
-    if op.predicates:
-        lf = lf.filter(
-            reduce(
-                operator.and_,
-                map(partial(translate, **kw), op.predicates),
+    if op.groups:
+        # project first to handle computed group by columns
+        lf = (
+            lf.with_columns(
+                [translate(arg, **kw).alias(name) for name, arg in op.groups.items()]
             )
+            .group_by(list(op.groups.keys()))
+            .agg
         )
-
-    # project first to handle computed group by columns
-    lf = lf.with_columns([translate(arg, **kw) for arg in op.by])
-
-    if op.by:
-        lf = lf.group_by([pl.col(by.name) for by in op.by]).agg
     else:
         lf = lf.select
 
     if op.metrics:
-        metrics = [translate(arg, **kw).alias(arg.name) for arg in op.metrics]
+        metrics = [translate(arg, **kw).alias(name) for name, arg in op.metrics.items()]
         lf = lf(metrics)
 
     return lf
 
 
-_join_types = {
-    ops.InnerJoin: "inner",
-    ops.LeftJoin: "left",
-    ops.RightJoin: "right",
-    ops.OuterJoin: "outer",
-    ops.LeftAntiJoin: "anti",
-    ops.LeftSemiJoin: "semi",
-}
+@translate.register(PandasRename)
+def rename(op, **kw):
+    parent = translate(op.parent, **kw)
+    return parent.rename(op.mapping)
 
 
-@translate.register(ops.Join)
+@translate.register(PandasJoin)
 def join(op, **kw):
+    how = op.how
     left = translate(op.left, **kw)
     right = translate(op.right, **kw)
 
-    if isinstance(op, ops.RightJoin):
+    # workaround required for https://github.com/pola-rs/polars/issues/13130
+    prefix = gen_name("on")
+    left_on = {f"{prefix}_{i}": translate(v, **kw) for i, v in enumerate(op.left_on)}
+    right_on = {f"{prefix}_{i}": translate(v, **kw) for i, v in enumerate(op.right_on)}
+    left = left.with_columns(**left_on)
+    right = right.with_columns(**right_on)
+    on = list(left_on.keys())
+
+    if how == "right":
         how = "left"
         left, right = right, left
+
+    joined = left.join(right, on=on, how=how)
+    joined = joined.drop(columns=on)
+
+    return joined
+
+
+@translate.register(PandasAsofJoin)
+def asof_join(op, **kw):
+    left = translate(op.left, **kw)
+    right = translate(op.right, **kw)
+
+    # workaround required for https://github.com/pola-rs/polars/issues/13130
+    on, by = gen_name("on"), gen_name("by")
+    left_on = {f"{on}_{i}": translate(v, **kw) for i, v in enumerate(op.left_on)}
+    right_on = {f"{on}_{i}": translate(v, **kw) for i, v in enumerate(op.right_on)}
+    left_by = {f"{by}_{i}": translate(v, **kw) for i, v in enumerate(op.left_by)}
+    right_by = {f"{by}_{i}": translate(v, **kw) for i, v in enumerate(op.right_by)}
+
+    left = left.with_columns(**left_on, **left_by)
+    right = right.with_columns(**right_on, **right_by)
+
+    on = list(left_on.keys())
+    by = list(left_by.keys())
+
+    if op.operator in {ops.Less, ops.LessEqual}:
+        direction = "forward"
+    elif op.operator in {ops.Greater, ops.GreaterEqual}:
+        direction = "backward"
+    elif op.operator == ops.Equals:
+        direction = "nearest"
     else:
-        how = _join_types[type(op)]
+        raise NotImplementedError(f"Operator {operator} not supported for asof join")
 
-    left_on, right_on = [], []
-    for pred in op.predicates:
-        if isinstance(pred, ops.Equals):
-            left_on.append(translate(pred.left, **kw))
-            right_on.append(translate(pred.right, **kw))
-        else:
-            raise com.TranslationError(
-                "Polars backend is unable to compile join predicate "
-                f"with operation type of {type(pred)}"
-            )
-
-    return left.join(right, left_on=left_on, right_on=right_on, how=how)
+    assert len(on) == 1
+    joined = left.join_asof(right, on=on[0], by=by, strategy=direction)
+    joined = joined.drop(columns=on + by)
+    return joined
 
 
 @translate.register(ops.DropNa)
 def dropna(op, **kw):
-    lf = translate(op.table, **kw)
+    lf = translate(op.parent, **kw)
 
     if op.subset is None:
         subset = None
@@ -337,10 +371,28 @@ def dropna(op, **kw):
 
 @translate.register(ops.FillNa)
 def fillna(op, **kw):
-    table = translate(op.table, **kw)
+    table = translate(op.parent, **kw)
 
     columns = []
-    for name, dtype in op.table.schema.items():
+
+    repls = op.replacements
+
+    if isinstance(repls, Mapping):
+
+        def get_replacement(name):
+            repl = repls.get(name)
+            if repl is not None:
+                return repl.value
+            else:
+                return None
+
+    else:
+        value = repls.value
+
+        def get_replacement(_):
+            return value
+
+    for name, dtype in op.parent.schema.items():
         column = pl.col(name)
         if isinstance(op.replacements, Mapping):
             value = op.replacements.get(name)
@@ -422,11 +474,11 @@ def greatest(op, **kw):
     return pl.max_horizontal(arg)
 
 
-@translate.register(ops.InColumn)
+@translate.register(ops.InSubquery)
 def in_column(op, **kw):
     value = translate(op.value, **kw)
-    options = translate(op.options, **kw)
-    return value.is_in(options)
+    needle = translate(op.needle, **kw)
+    return needle.is_in(value)
 
 
 @translate.register(ops.InValues)
@@ -734,7 +786,7 @@ def correlation(op, **kw):
 
 @translate.register(ops.Distinct)
 def distinct(op, **kw):
-    table = translate(op.table, **kw)
+    table = translate(op.parent, **kw)
     return table.unique()
 
 
@@ -1161,6 +1213,11 @@ def execute_view(op, *, ctx: pl.SQLContext, **kw):
 @translate.register(ops.SelfReference)
 def execute_self_reference(op, **kw):
     return translate(op.table, **kw)
+
+
+@translate.register(ops.JoinTable)
+def execute_join_table(op, **kw):
+    return translate(op.parent, **kw)
 
 
 @translate.register(ops.CountDistinctStar)
