@@ -177,11 +177,6 @@ def calc_zscore(s):
                     ["dask", "pandas", "polars"],
                     raises=com.OperationNotDefinedError,
                 ),
-                pytest.mark.notyet(
-                    ["clickhouse"],
-                    raises=ClickHouseDatabaseError,
-                    reason="ClickHouse requires a specific window frame: unbounded preceding and unbounded following ONLY",
-                ),
                 pytest.mark.broken(
                     ["impala"],
                     raises=AssertionError,

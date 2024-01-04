@@ -41,7 +41,19 @@ class ClickHouseCompiler(SQLGlotCompiler):
         has_filter = where is not None
         func = self.f[funcname + "If" * has_filter]
         args += (where,) * has_filter
-        return func(*args)
+
+        return func(*args, dialect=self.dialect)
+
+    @staticmethod
+    def _minimize_spec(start, end, spec):
+        if (
+            start is None
+            and isinstance(getattr(end, "value", None), ops.Literal)
+            and end.value.value == 0
+            and end.following
+        ):
+            return None
+        return spec
 
     @singledispatchmethod
     def visit_node(self, op, **kw):
@@ -223,11 +235,8 @@ class ClickHouseCompiler(SQLGlotCompiler):
             )
         return super().visit_node(op, arg=arg, unit=unit)
 
-    @visit_node.register(ops.Literal)
-    def visit_Literal(self, op, *, value, dtype, **kw):
-        if value is None:
-            return super().visit_node(op, value=value, dtype=dtype, **kw)
-        elif dtype.is_inet():
+    def visit_NonNullLiteral(self, op, *, value, dtype):
+        if dtype.is_inet():
             v = str(value)
             return self.f.toIPv6(v) if ":" in v else self.f.toIPv4(v)
         elif dtype.is_string():
@@ -286,7 +295,7 @@ class ClickHouseCompiler(SQLGlotCompiler):
             value_type = dtype.value_type
             values = [
                 self.visit_Literal(
-                    ops.Literal(v, dtype=value_type), value=v, dtype=value_type, **kw
+                    ops.Literal(v, dtype=value_type), value=v, dtype=value_type
                 )
                 for v in value
             ]
@@ -303,7 +312,6 @@ class ClickHouseCompiler(SQLGlotCompiler):
                         ops.Literal(v, dtype=value_type),
                         value=v,
                         dtype=value_type,
-                        **kw,
                     )
                 )
 
@@ -311,13 +319,13 @@ class ClickHouseCompiler(SQLGlotCompiler):
         elif dtype.is_struct():
             fields = [
                 self.visit_Literal(
-                    ops.Literal(v, dtype=field_type), value=v, dtype=field_type, **kw
+                    ops.Literal(v, dtype=field_type), value=v, dtype=field_type
                 )
                 for field_type, v in zip(dtype.types, value.values())
             ]
             return self.f.tuple(*fields)
         else:
-            return super().visit_node(op, value=value, dtype=dtype, **kw)
+            return None
 
     @visit_node.register(ops.TimestampFromUNIX)
     def visit_TimestampFromUNIX(self, op, *, arg, unit):
