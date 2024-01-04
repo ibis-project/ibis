@@ -28,6 +28,7 @@ from ibis.backends.tests.errors import (
     PolarsPanicException,
     Py4JJavaError,
     PySparkIllegalArgumentException,
+    SnowflakeProgrammingError,
 )
 from ibis.common.annotations import ValidationError
 
