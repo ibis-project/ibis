@@ -25,6 +25,7 @@ UUID_BACKEND_TYPE = {
     "snowflake": "VARCHAR",
     "trino": "varchar(32)" if SQLALCHEMY2 else "uuid",
     "postgres": "uuid",
+    "clickhouse": "Nullable(UUID)",
 }
 
 UUID_EXPECTED_VALUES = {
@@ -41,6 +42,7 @@ UUID_EXPECTED_VALUES = {
     "oracle": TEST_UUID,
     "flink": TEST_UUID,
     "exasol": TEST_UUID,
+    "clickhouse": TEST_UUID,
 }
 
 pytestmark = pytest.mark.notimpl(
@@ -64,7 +66,7 @@ pytestmark = pytest.mark.notimpl(
     raises=sqlalchemy.exc.NotSupportedError,
 )
 @pytest.mark.notimpl(
-    ["impala", "datafusion", "polars", "clickhouse"], raises=NotImplementedError
+    ["impala", "datafusion", "polars"], raises=NotImplementedError
 )
 @pytest.mark.notimpl(
     ["risingwave"],

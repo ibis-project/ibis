@@ -13,7 +13,9 @@ from ibis.backends.base import BaseBackend
 from ibis.backends.base.sqlglot.compiler import STAR
 
 if TYPE_CHECKING:
-    from collections.abc import Iterator
+    from collections.abc import Iterable, Iterator, Mapping
+
+    import pyarrow as pa
 
     import ibis.expr.datatypes as dt
     import ibis.expr.types as ir
@@ -60,7 +62,7 @@ class SQLGlotBackend(BaseBackend):
         ).to_expr()
 
     def _to_sqlglot(
-        self, expr: ir.Expr, limit: str | None = None, params=None, **_: Any
+        self, expr: ir.Expr, *, limit: str | None = None, params=None, **_: Any
     ):
         """Compile an Ibis expression to a sqlglot object."""
         table_expr = expr.as_table()
@@ -206,13 +208,17 @@ class SQLGlotBackend(BaseBackend):
         self.drop_table(op.name)
 
     def execute(
-        self, expr: ir.Expr, limit: str | None = "default", **kwargs: Any
+        self,
+        expr: ir.Expr,
+        params: Mapping | None = None,
+        limit: str | None = "default",
+        **kwargs: Any,
     ) -> Any:
         """Execute an expression."""
 
         self._run_pre_execute_hooks(expr)
         table = expr.as_table()
-        sql = self.compile(table, limit=limit, **kwargs)
+        sql = self.compile(table, params=params, limit=limit, **kwargs)
 
         schema = table.schema()
 
@@ -236,3 +242,63 @@ class SQLGlotBackend(BaseBackend):
         )
         with self._safe_raw_sql(drop_stmt):
             pass
+
+    def _cursor_batches(
+        self,
+        expr: ir.Expr,
+        params: Mapping[ir.Scalar, Any] | None = None,
+        limit: int | str | None = None,
+        chunk_size: int = 1 << 20,
+    ) -> Iterable[list]:
+        self._run_pre_execute_hooks(expr)
+
+        with self._safe_raw_sql(
+            self.compile(expr, limit=limit, params=params)
+        ) as cursor:
+            while batch := cursor.fetchmany(chunk_size):
+                yield batch
+
+    def to_pyarrow_batches(
+        self,
+        expr: ir.Expr,
+        *,
+        params: Mapping[ir.Scalar, Any] | None = None,
+        limit: int | str | None = None,
+        chunk_size: int = 1_000_000,
+        **_: Any,
+    ) -> pa.ipc.RecordBatchReader:
+        """Execute expression and return an iterator of pyarrow record batches.
+
+        This method is eager and will execute the associated expression
+        immediately.
+
+        Parameters
+        ----------
+        expr
+            Ibis expression to export to pyarrow
+        limit
+            An integer to effect a specific row limit. A value of `None` means
+            "no limit". The default is in `ibis/config.py`.
+        params
+            Mapping of scalar parameter expressions to value.
+        chunk_size
+            Maximum number of rows in each returned record batch.
+
+        Returns
+        -------
+        RecordBatchReader
+            Collection of pyarrow `RecordBatch`s.
+        """
+        pa = self._import_pyarrow()
+
+        schema = expr.as_table().schema()
+        array_type = schema.as_struct().to_pyarrow()
+        arrays = (
+            pa.array(map(tuple, batch), type=array_type)
+            for batch in self._cursor_batches(
+                expr, params=params, limit=limit, chunk_size=chunk_size
+            )
+        )
+        batches = map(pa.RecordBatch.from_struct_array, arrays)
+
+        return pa.ipc.RecordBatchReader.from_batches(schema.to_pyarrow(), batches)

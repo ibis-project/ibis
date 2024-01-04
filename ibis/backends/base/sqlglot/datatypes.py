@@ -274,7 +274,7 @@ class SqlglotType(TypeMapper):
         assert dtype.unit is not None, "interval unit cannot be None"
         return sge.DataType(
             this=typecode.INTERVAL,
-            expressions=[sge.IntervalSpan(this=sge.Var(this=dtype.unit.name))],
+            expressions=[sge.Var(this=dtype.unit.name)],
         )
 
     @classmethod
