@@ -2597,8 +2597,8 @@ multiple hash functions working.
     methods have been removed, `DataType.scalar` and `DataType.column` class
     fields can be used to directly construct a corresponding expression instance
     (though prefer to use `operation.to_expr()`)
-  - `ibis.expr.types.ValueExpr._name` and `ValueExpr._dtype`` fields are not
-    accassible anymore. While these were not supposed to used directly now
+  - `ibis.expr.types.ValueExpr._name` and `ValueExpr._dtype` fields are not
+    accessible anymore. While these were not supposed to used directly, now
     `ValueExpr.has_name()`, `ValueExpr.get_name()` and `ValueExpr.type()` methods
     are the only way to retrieve the expression's name and datatype.
   - `ibis.expr.operations.Node.output_type` is a property now not a method,
