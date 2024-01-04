@@ -270,6 +270,22 @@ class SQLGlotCompiler(abc.ABC):
 
     @visit_node.register(ops.Literal)
     def visit_Literal(self, op, *, value, dtype):
+        """Compile a literal value.
+
+        This is the default implementation for compiling literal values.
+
+        Most backends should not need to override this method unless they want
+        to handle NULL literals as well as every other type of non-null literal
+        including integers, floating point numbers, decimals, strings, etc.
+
+        The logic here is:
+
+        1. If the value is None and the type is nullable, return NULL
+        1. If the value is None and the type is not nullable, raise an error
+        1. Call `visit_NonNullLiteral` method.
+        1. If the previous returns `None`, call `visit_DefaultLiteral` method
+           else return the result of the previous step.
+        """
         if value is None:
             if dtype.nullable:
                 return NULL if dtype.is_null() else self.cast(NULL, dtype)
@@ -283,9 +299,25 @@ class SQLGlotCompiler(abc.ABC):
             return result
 
     def visit_NonNullLiteral(self, op, *, value, dtype):
+        """Compile a non-null literal differently than the default implementation.
+
+        Most backends should implement this, but only when they need to handle
+        some non-null literal differently than the default implementation
+        (`visit_DefaultLiteral`).
+
+        Return `None` from an override of this method to fall back to
+        `visit_DefaultLiteral`.
+        """
         return self.visit_DefaultLiteral(op, value=value, dtype=dtype)
 
     def visit_DefaultLiteral(self, op, *, value, dtype):
+        """Compile a literal with a non-null value.
+
+        This is the default implementation for compiling non-null literals.
+
+        Most backends should not need to override this method unless they want
+        to handle compiling every kind of non-null literal value.
+        """
         if dtype.is_integer():
             return sge.convert(value)
         elif dtype.is_floating():
