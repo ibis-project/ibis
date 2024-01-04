@@ -15,13 +15,17 @@ contribute to Ibis.
 ## Other companies
 
 Ibis is used by many other companies, with various tools built on top of it.
-These include:
+Some include:
 
 - [Google BigQuery DataFrames](https://github.com/googleapis/python-bigquery-dataframes), a clone of the pandas API built on Ibis
 - [Starburst Galaxy Python DataFrames](https://www.starburst.io/blog/introducing-python-dataframes/), with support for Ibis
 - [Claypot AI's contribution of the Flink backend](https://github.com/claypotai/ibis-flink-example), working in collaboration with Voltron Data
 - [Microsoft's Magpie project](https://www.microsoft.com/en-us/research/project/magpie-2/), built on top of Ibis
 - [SuperDuperDB](https://github.com/SuperDuperDB/superduperdb), bringing AI to any backend Ibis supports
+
+Ibis is also contributed to by other companies. You can [look through the full
+list of contributors on
+GitHub](https://github.com/ibis-project/ibis/graphs/contributors).
 
 ## History
 
@@ -48,7 +52,7 @@ across numerous enterprises. The API is stable and while there are breaking
 changes across major versions, we do our best to minimize them and provide easy
 migration.
 
-Voltron Data [offers commercial support for
+[Voltron Data offers commercial support for
 Ibis](https://voltrondata.com/enterprise-support) if you're interested.
 Otherwise, interacting through the open-source project channels
 ([GitHub](https://github.com/ibis-project/ibis) and
