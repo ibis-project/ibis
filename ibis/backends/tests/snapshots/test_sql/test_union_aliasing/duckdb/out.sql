@@ -27,8 +27,8 @@ FROM (
         FROM (
           SELECT
             t1.field_of_study,
-            t1.__pivoted__['years'] AS years,
-            t1.__pivoted__['degrees'] AS degrees
+            t1.__pivoted__.years AS years,
+            t1.__pivoted__.degrees AS degrees
           FROM (
             SELECT
               t0.field_of_study,
@@ -72,8 +72,8 @@ FROM (
         FROM (
           SELECT
             t1.field_of_study,
-            t1.__pivoted__['years'] AS years,
-            t1.__pivoted__['degrees'] AS degrees
+            t1.__pivoted__.years AS years,
+            t1.__pivoted__.degrees AS degrees
           FROM (
             SELECT
               t0.field_of_study,

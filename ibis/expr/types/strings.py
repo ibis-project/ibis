@@ -864,7 +864,7 @@ class StringValue(Value):
             cls = ops.ArrayStringJoin
         else:
             cls = ops.StringJoin
-        return cls(self, strings).to_expr()
+        return cls(strings, sep=self).to_expr()
 
     def startswith(self, start: str | StringValue) -> ir.BooleanValue:
         """Determine whether `self` starts with `end`.

@@ -73,11 +73,8 @@ class DataFusionCompiler(SQLGlotCompiler):
     def visit_node(self, op, **kw):
         return super().visit_node(op, **kw)
 
-    @visit_node.register(ops.Literal)
-    def visit_Literal(self, op, *, value, dtype, **kw):
-        if value is None:
-            return super().visit_node(op, value=value, dtype=dtype, **kw)
-        elif dtype.is_decimal():
+    def visit_NonNullLiteral(self, op, *, value, dtype):
+        if dtype.is_decimal():
             return self.cast(
                 sg.exp.convert(str(value)),
                 dt.Decimal(precision=dtype.precision or 38, scale=dtype.scale or 9),
@@ -106,7 +103,7 @@ class DataFusionCompiler(SQLGlotCompiler):
         elif dtype.is_binary():
             return sg.exp.HexString(this=value.hex())
         else:
-            return super().visit_node(op, value=value, dtype=dtype, **kw)
+            return None
 
     @visit_node.register(ops.Cast)
     def visit_Cast(self, op, *, arg, to):

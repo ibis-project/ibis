@@ -85,7 +85,14 @@ def tpch_test(test: Callable[..., ir.Table]):
         assert not expected.empty
 
         assert len(expected) == len(result)
-        backend.assert_frame_equal(result, expected, check_dtype=False)
+        assert result.columns.tolist() == expected.columns.tolist()
+        for column in result.columns:
+            left = result.loc[:, column]
+            right = expected.loc[:, column]
+            assert (
+                pytest.approx(left.values.tolist(), nan_ok=True)
+                == right.values.tolist()
+            )
 
         # only write sql if the execution passes
         snapshot.assert_match(ibis_sql, sql_path_name)
