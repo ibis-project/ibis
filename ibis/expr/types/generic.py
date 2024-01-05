@@ -8,8 +8,8 @@ from public import public
 import ibis
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
-from ibis.common.deferred import Deferred
 import ibis.expr.operations as ops
+from ibis.common.deferred import Deferred
 from ibis.common.grounds import Singleton
 from ibis.expr.types.core import Expr, _binop, _FixedTextJupyterMixin
 from ibis.util import deprecated
@@ -724,7 +724,7 @@ class Value(Expr):
         """
         import ibis.expr.analysis as an
         import ibis.expr.builders as bl
-        from ibis.common.deferred import Deferred, Call
+        from ibis.common.deferred import Call
         from ibis import _
 
         if window is None:
