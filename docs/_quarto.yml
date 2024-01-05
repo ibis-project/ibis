@@ -227,6 +227,9 @@ quartodoc:
             - name: union
               dynamic: true
               signature_name: full
+            - name: join
+              dynamic: true
+              signature_name: full
             - name: row_number
               dynamic: true
               signature_name: full
