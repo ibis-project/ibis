@@ -34,6 +34,7 @@ website:
   description: "the portable Python dataframe library"
   favicon: logo.svg
   open-graph: true
+  image: logo.png
   twitter-card:
     image: logo.png
 
