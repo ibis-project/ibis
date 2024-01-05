@@ -44,7 +44,6 @@ website:
 
   # options
   reader-mode: false
-  twitter-card: true
   back-to-top-navigation: true
   repo-url: https://github.com/ibis-project/ibis
   repo-actions: [edit, issue]
