@@ -293,6 +293,8 @@ filterwarnings = [
   'ignore:`np\.bool` is a deprecated alias for the builtin `bool`:DeprecationWarning',
   # numpy, coming from a pandas call
   'ignore:In the future `np\.bool` will be defined as the corresponding NumPy scalar:FutureWarning',
+  # pandas by way of polars when comparing arrays
+  'ignore:The truth value of an empty array is ambiguous.:DeprecationWarning',
   # druid
   'ignore:Dialect druid.rest will not make use of SQL compilation caching:',
   # ibis
