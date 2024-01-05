@@ -234,9 +234,9 @@ def sort(op, **kw):
         by = [key.name for key in op.keys]
         descending = [key.descending for key in op.keys]
         try:
-            lf = lf.sort(by, descending=descending)
+            lf = lf.sort(by, descending=descending, nulls_last=True)
         except TypeError:  # pragma: no cover
-            lf = lf.sort(by, reverse=descending)  # pragma: no cover
+            lf = lf.sort(by, reverse=descending, nulls_last=True)  # pragma: no cover
 
     return lf
 
