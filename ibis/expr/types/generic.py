@@ -12,6 +12,7 @@ from ibis.common.deferred import Deferred
 import ibis.expr.operations as ops
 from ibis.common.grounds import Singleton
 from ibis.expr.types.core import Expr, _binop, _FixedTextJupyterMixin
+from ibis.util import deprecated
 
 if TYPE_CHECKING:
     import pandas as pd
@@ -297,34 +298,12 @@ class Value(Expr):
         """
         return ops.Coalesce((self, *args)).to_expr()
 
-    def greatest(self, *args: ir.Value) -> ir.Value:
-        """Compute the largest value among the supplied arguments.
-
-        Parameters
-        ----------
-        args
-            Arguments to choose from
-
-        Returns
-        -------
-        Value
-            Maximum of the passed arguments
-        """
+    @deprecated(as_of="8.0.0", instead="use ibis.greatest(self, rest...) instead")
+    def greatest(self, *args: ir.Value) -> ir.Value:  # noqa: D102
         return ops.Greatest((self, *args)).to_expr()
 
-    def least(self, *args: ir.Value) -> ir.Value:
-        """Compute the smallest value among the supplied arguments.
-
-        Parameters
-        ----------
-        args
-            Arguments to choose from
-
-        Returns
-        -------
-        Value
-            Minimum of the passed arguments
-        """
+    @deprecated(as_of="8.0.0", instead="use ibis.least(self, rest...) instead")
+    def least(self, *args: ir.Value) -> ir.Value:  # noqa: D102
         return ops.Least((self, *args)).to_expr()
 
     def typeof(self) -> ir.StringValue:
