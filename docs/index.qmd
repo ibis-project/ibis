@@ -3,6 +3,8 @@ title: "Ibis"
 description: "the portable Python dataframe library"
 repo-actions: false
 code-annotations: hover
+twitter-card:
+  image: logo.svg
 format:
   html:
     toc: false
