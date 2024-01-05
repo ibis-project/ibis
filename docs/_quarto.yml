@@ -33,6 +33,9 @@ website:
   site-url: https://ibis-project.org
   description: "the portable Python dataframe library"
   favicon: logo.svg
+  open-graph: true
+  twitter-card:
+    image: logo.png
 
   # search
   search:
