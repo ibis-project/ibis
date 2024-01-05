@@ -33,6 +33,10 @@ website:
   site-url: https://ibis-project.org
   description: "the portable Python dataframe library"
   favicon: logo.svg
+  open-graph:
+    image: logo.png
+  twitter-card:
+    image: logo.png
 
   # search
   search:
@@ -41,7 +45,6 @@ website:
 
   # options
   reader-mode: false
-  twitter-card: true
   back-to-top-navigation: true
   repo-url: https://github.com/ibis-project/ibis
   repo-actions: [edit, issue]
