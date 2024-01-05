@@ -4,7 +4,7 @@ description: "the portable Python dataframe library"
 repo-actions: false
 code-annotations: hover
 twitter-card:
-  image: logo.svg
+  image: logo.png
 format:
   html:
     toc: false
