@@ -1,0 +1,6 @@
+SELECT
+  ST_ASEWKB("t0"."<MULTILINESTRING ((0 0, 1 1, 2 2), (2 2, 1 1, 0 0))>") AS "<MULTILINESTRING ((0 0, 1 1, 2 2), (2 2, 1 1, 0 0))>"
+FROM (
+  SELECT
+    ST_GEOMFROMTEXT('MULTILINESTRING ((0 0, 1 1, 2 2), (2 2, 1 1, 0 0))') AS "<MULTILINESTRING ((0 0, 1 1, 2 2), (2 2, 1 1, 0 0))>"
+) AS "t0"

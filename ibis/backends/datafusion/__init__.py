@@ -169,8 +169,10 @@ class Backend(SQLGlotBackend, CanCreateDatabase, CanCreateSchema):
             udf_node.__func__,
             input_types=[PyArrowType.from_ibis(arg.dtype) for arg in udf_node.args],
             return_type=PyArrowType.from_ibis(udf_node.dtype),
-            volatility=getattr(udf_node, "config", {}).get("volatility", "volatile"),
-            name=udf_node.__full_name__,
+            volatility=getattr(udf_node, "__config__", {}).get(
+                "volatility", "volatile"
+            ),
+            name=udf_node.__func_name__,
         )
 
     def _compile_elementwise_udf(self, udf_node):

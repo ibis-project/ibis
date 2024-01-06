@@ -196,13 +196,8 @@ mysql = ["sqlalchemy", "pymysql", "sqlalchemy-views"]
 oracle = ["sqlalchemy", "oracledb", "packaging", "sqlalchemy-views"]
 pandas = ["regex"]
 polars = ["polars", "packaging"]
-postgres = ["psycopg2", "sqlalchemy", "sqlalchemy-views"]
-risingwave = [
-  "psycopg2",
-  "sqlalchemy",
-  "sqlalchemy-views",
-  "sqlalchemy-risingwave",
-]
+risingwave = ["psycopg2"]
+postgres = ["psycopg2"]
 pyspark = ["pyspark", "sqlalchemy", "packaging"]
 snowflake = ["snowflake-connector-python", "packaging"]
 sqlite = ["regex", "sqlalchemy", "sqlalchemy-views"]
