@@ -5,7 +5,6 @@ import contextlib
 import numpy as np
 import pandas as pd
 import pytest
-import sqlalchemy as sa
 from pytest import param
 
 import ibis
@@ -15,6 +14,7 @@ from ibis.backends.tests.errors import (
     ClickHouseDatabaseError,
     OracleDatabaseError,
     PyDruidProgrammingError,
+    PyODBCProgrammingError,
 )
 from ibis.common.annotations import ValidationError
 
@@ -115,16 +115,7 @@ def uses_java_re(t):
             id="contains",
             marks=[
                 pytest.mark.broken(
-                    ["mssql"],
-                    raises=sa.exc.ProgrammingError,
-                    reason=(
-                        "(pymssql._pymssql.ProgrammingError) (102, b\"Incorrect syntax near '>'."
-                        "DB-Lib error message 20018, severity 15:\nGeneral SQL Server error: "
-                        'Check messages from the SQL Server\n")'
-                        "[SQL: SELECT charindex(%(param_1)s, t0.string_col) - %(charindex_1)s >= "
-                        "%(param_2)s AS tmp"
-                        "FROM functional_alltypes AS t0]"
-                    ),
+                    ["mssql"], raises=PyODBCProgrammingError, reason="incorrect syntax"
                 ),
             ],
         ),
@@ -133,12 +124,7 @@ def uses_java_re(t):
             lambda t: t.string_col.str.contains("6.*"),
             id="like",
             marks=[
-                pytest.mark.notimpl(["polars"], raises=com.OperationNotDefinedError),
-                pytest.mark.broken(
-                    ["mssql"],
-                    reason="mssql doesn't allow like outside of filters",
-                    raises=sa.exc.ProgrammingError,
-                ),
+                pytest.mark.notimpl(["polars"], raises=com.OperationNotDefinedError)
             ],
         ),
         param(
@@ -146,12 +132,7 @@ def uses_java_re(t):
             lambda t: t.string_col.str.contains("6%"),
             id="complex_like_escape",
             marks=[
-                pytest.mark.notimpl(["polars"], raises=com.OperationNotDefinedError),
-                pytest.mark.broken(
-                    ["mssql"],
-                    reason="mssql doesn't allow like outside of filters",
-                    raises=sa.exc.ProgrammingError,
-                ),
+                pytest.mark.notimpl(["polars"], raises=com.OperationNotDefinedError)
             ],
         ),
         param(
@@ -159,12 +140,7 @@ def uses_java_re(t):
             lambda t: t.string_col.str.contains("6%.*"),
             id="complex_like_escape_match",
             marks=[
-                pytest.mark.notimpl(["polars"], raises=com.OperationNotDefinedError),
-                pytest.mark.broken(
-                    ["mssql"],
-                    reason="mssql doesn't allow like outside of filters",
-                    raises=sa.exc.ProgrammingError,
-                ),
+                pytest.mark.notimpl(["polars"], raises=com.OperationNotDefinedError)
             ],
         ),
         param(
@@ -179,7 +155,7 @@ def uses_java_re(t):
                 pytest.mark.broken(
                     ["mssql"],
                     reason="mssql doesn't allow like outside of filters",
-                    raises=sa.exc.ProgrammingError,
+                    raises=PyODBCProgrammingError,
                 ),
             ],
         ),
@@ -392,8 +368,7 @@ def uses_java_re(t):
             id="translate",
             marks=[
                 pytest.mark.notimpl(
-                    ["mssql", "mysql", "polars", "druid"],
-                    raises=com.OperationNotDefinedError,
+                    ["mysql", "polars", "druid"], raises=com.OperationNotDefinedError
                 ),
                 pytest.mark.notyet(
                     ["flink"],
@@ -521,8 +496,9 @@ def uses_java_re(t):
             id="startswith",
             # pyspark doesn't support `cases` yet
             marks=[
-                pytest.mark.notimpl(["dask"], raises=com.OperationNotDefinedError),
-                pytest.mark.broken(["mssql"], raises=sa.exc.ProgrammingError),
+                pytest.mark.notimpl(
+                    ["dask", "mssql"], raises=com.OperationNotDefinedError
+                ),
             ],
         ),
         param(
@@ -534,9 +510,8 @@ def uses_java_re(t):
             # pyspark doesn't support `cases` yet
             marks=[
                 pytest.mark.notimpl(
-                    ["dask", "datafusion"], raises=com.OperationNotDefinedError
+                    ["dask", "datafusion", "mssql"], raises=com.OperationNotDefinedError
                 ),
-                pytest.mark.broken(["mssql"], raises=sa.exc.ProgrammingError),
             ],
         ),
         param(
@@ -544,8 +519,9 @@ def uses_java_re(t):
             lambda t: t.date_string_col.str.startswith("2010-01"),
             id="startswith-simple",
             marks=[
-                pytest.mark.notimpl(["dask"], raises=com.OperationNotDefinedError),
-                pytest.mark.broken(["mssql"], raises=sa.exc.ProgrammingError),
+                pytest.mark.notimpl(
+                    ["dask", "mssql"], raises=com.OperationNotDefinedError
+                ),
             ],
         ),
         param(
@@ -554,10 +530,8 @@ def uses_java_re(t):
             id="endswith-simple",
             marks=[
                 pytest.mark.notimpl(
-                    ["dask", "datafusion"],
-                    raises=com.OperationNotDefinedError,
+                    ["dask", "datafusion", "mssql"], raises=com.OperationNotDefinedError
                 ),
-                pytest.mark.broken(["mssql"], raises=sa.exc.ProgrammingError),
             ],
         ),
         param(
@@ -593,7 +567,7 @@ def uses_java_re(t):
                 pytest.mark.broken(
                     ["mssql"],
                     reason="substr requires 3 arguments",
-                    raises=sa.exc.ProgrammingError,
+                    raises=PyODBCProgrammingError,
                 ),
             ],
         ),
@@ -781,7 +755,6 @@ def test_re_replace_global(con):
     assert result == "cbc"
 
 
-@pytest.mark.broken(["mssql"], raises=sa.exc.ProgrammingError)
 @pytest.mark.notimpl(["druid"], raises=ValidationError)
 def test_substr_with_null_values(backend, alltypes, df):
     table = alltypes.mutate(
@@ -896,14 +869,11 @@ def test_capitalize(con):
 @pytest.mark.notimpl(
     ["dask", "pandas", "polars", "oracle", "flink"], raises=com.OperationNotDefinedError
 )
-@pytest.mark.notyet(
-    ["mssql", "sqlite"], reason="no arrays", raises=com.OperationNotDefinedError
-)
+@pytest.mark.notyet(["sqlite"], reason="no arrays", raises=com.OperationNotDefinedError)
 @pytest.mark.never(
-    ["mysql", "exasol"], raises=com.UnsupportedBackendType, reason="no array support"
-)
-@pytest.mark.notimpl(
-    ["impala"], raises=com.UnsupportedBackendType, reason="no array support"
+    ["mysql", "mssql", "exasol", "impala"],
+    raises=com.UnsupportedBackendType,
+    reason="no array support",
 )
 def test_array_string_join(con):
     s = ibis.array(["a", "b", "c"])
@@ -958,11 +928,6 @@ def test_levenshtein(con, right):
     assert result == 3
 
 
-@pytest.mark.notyet(
-    ["mssql"],
-    reason="doesn't allow boolean expressions in select statements",
-    raises=sa.exc.ProgrammingError,
-)
 @pytest.mark.parametrize(
     "expr",
     [

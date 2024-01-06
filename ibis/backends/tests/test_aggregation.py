@@ -24,6 +24,7 @@ from ibis.backends.tests.errors import (
     PolarsInvalidOperationError,
     Py4JError,
     PyDruidProgrammingError,
+    PyODBCProgrammingError,
     PySparkAnalysisException,
     SnowflakeProgrammingError,
     TrinoUserError,
@@ -284,6 +285,7 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
                     raises=AttributeError,
                     reason="'IntegerColumn' object has no attribute 'any'",
                 ),
+                pytest.mark.notimpl(["mssql"], raises=com.OperationNotDefinedError),
             ],
         ),
         param(
@@ -304,6 +306,7 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
                 pytest.mark.notimpl(
                     ["exasol"], raises=(sa.exc.DBAPIError, ExaQueryError)
                 ),
+                pytest.mark.notimpl(["mssql"], raises=com.OperationNotDefinedError),
             ],
         ),
         param(
@@ -324,6 +327,7 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
                 pytest.mark.notimpl(
                     ["exasol"], raises=(sa.exc.DBAPIError, ExaQueryError)
                 ),
+                pytest.mark.notimpl(["mssql"], raises=com.OperationNotDefinedError),
             ],
         ),
         param(
@@ -336,6 +340,7 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
                     raises=AttributeError,
                     reason="'IntegerColumn' object has no attribute 'all'",
                 ),
+                pytest.mark.notimpl(["mssql"], raises=com.OperationNotDefinedError),
             ],
         ),
         param(
@@ -356,6 +361,7 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
                 pytest.mark.notimpl(
                     ["exasol"], raises=(sa.exc.DBAPIError, ExaQueryError)
                 ),
+                pytest.mark.notimpl(["mssql"], raises=com.OperationNotDefinedError),
             ],
         ),
         param(
@@ -376,6 +382,7 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
                 pytest.mark.notimpl(
                     ["exasol"], raises=(sa.exc.DBAPIError, ExaQueryError)
                 ),
+                pytest.mark.notimpl(["mssql"], raises=com.OperationNotDefinedError),
             ],
         ),
         param(
@@ -862,7 +869,6 @@ def test_count_distinct_star(alltypes, df, ibis_cond, pandas_cond):
                         "bigquery",
                         "dask",
                         "datafusion",
-                        "mssql",
                         "polars",
                         "sqlite",
                         "druid",
@@ -871,7 +877,8 @@ def test_count_distinct_star(alltypes, df, ibis_cond, pandas_cond):
                     raises=com.OperationNotDefinedError,
                 ),
                 pytest.mark.notyet(
-                    ["mysql", "impala", "exasol"], raises=com.UnsupportedBackendType
+                    ["mysql", "mssql", "impala", "exasol"],
+                    raises=com.UnsupportedBackendType,
                 ),
                 pytest.mark.notyet(
                     ["snowflake"],
@@ -1249,9 +1256,7 @@ def test_date_quantile(alltypes, func):
         ),
     ],
 )
-@pytest.mark.notimpl(
-    ["datafusion", "polars", "mssql"], raises=com.OperationNotDefinedError
-)
+@pytest.mark.notimpl(["datafusion", "polars"], raises=com.OperationNotDefinedError)
 @pytest.mark.notyet(
     ["oracle"],
     raises=OracleDatabaseError,
@@ -1302,6 +1307,7 @@ def test_group_concat(
     raises=NotImplementedError,
     reason="sorting on aggregations not yet implemented",
 )
+@pytest.mark.notimpl(["mssql"], raises=PyODBCProgrammingError)
 def test_topk_op(alltypes, df):
     # TopK expression will order rows by "count" but each backend
     # can have different result for that.
@@ -1326,6 +1332,7 @@ def test_topk_op(alltypes, df):
                 )
             ],
             id="string_col_filter_top3",
+            marks=pytest.mark.notimpl(["mssql"], raises=PyODBCProgrammingError),
         )
     ],
 )
@@ -1509,9 +1516,7 @@ def test_grouped_case(backend, con):
     backend.assert_frame_equal(result, expected)
 
 
-@pytest.mark.notimpl(
-    ["datafusion", "mssql", "polars"], raises=com.OperationNotDefinedError
-)
+@pytest.mark.notimpl(["datafusion", "polars"], raises=com.OperationNotDefinedError)
 @pytest.mark.notimpl(["exasol"], raises=ExaQueryError)
 @pytest.mark.broken(
     ["dask"],
@@ -1527,6 +1532,7 @@ def test_grouped_case(backend, con):
 @pytest.mark.notyet(["mysql"], raises=MySQLNotSupportedError)
 @pytest.mark.notyet(["oracle"], raises=OracleDatabaseError)
 @pytest.mark.notyet(["pyspark"], raises=PySparkAnalysisException)
+@pytest.mark.notyet(["mssql"], raises=PyODBCProgrammingError)
 def test_group_concat_over_window(backend, con):
     input_df = pd.DataFrame(
         {

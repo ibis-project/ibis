@@ -7323,7 +7323,7 @@ exasol = ["pyexasol"]
 flink = []
 geospatial = ["geopandas", "shapely"]
 impala = ["impyla"]
-mssql = ["pyodbc", "sqlalchemy", "sqlalchemy-views"]
+mssql = ["pyodbc"]
 mysql = ["pymysql"]
 oracle = ["oracledb", "packaging"]
 pandas = ["regex"]
@@ -7338,4 +7338,4 @@ visualization = ["graphviz"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.9"
-content-hash = "f7f31dc794bdbd0993a76f0d8cac3a6b2debb6f5668be01dcd783eeb64f1faa8"
+content-hash = "11da6bdc8c65ae8790ee2cbc799ca82af0c1f783f8c5ec6d0ab1477fd21b03b7"
