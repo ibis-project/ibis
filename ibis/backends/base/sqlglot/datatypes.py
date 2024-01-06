@@ -402,6 +402,10 @@ class DataFusionType(PostgresType):
 
 class MySQLType(SqlglotType):
     dialect = "mysql"
+    # these are mysql's defaults, see
+    # https://dev.mysql.com/doc/refman/8.0/en/fixed-point-types.html
+    default_decimal_precision = 10
+    default_decimal_scale = 0
 
     unknown_type_strings = FrozenDict(
         {
