@@ -1,89 +1,12 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
-
 import sqlalchemy as sa
 import sqlalchemy.types as sat
-import toolz
 from sqlalchemy.ext.compiler import compiles
 
 import ibis.expr.datatypes as dt
-from ibis.backends.base.sql.alchemy.geospatial import geospatial_supported
 from ibis.backends.base.sqlglot.datatypes import SqlglotType
-from ibis.common.collections import FrozenDict
 from ibis.formats import TypeMapper
-
-if TYPE_CHECKING:
-    from collections.abc import Mapping
-
-if geospatial_supported:
-    import geoalchemy2 as ga
-
-
-class ArrayType(sat.UserDefinedType):
-    def __init__(self, value_type: sat.TypeEngine):
-        self.value_type = sat.to_instance(value_type)
-
-    def result_processor(self, dialect, coltype) -> None:
-        if not coltype.lower().startswith("array"):
-            return None
-
-        inner_processor = (
-            self.value_type.result_processor(dialect, coltype[len("array(") : -1])
-            or toolz.identity
-        )
-
-        return lambda v: v if v is None else list(map(inner_processor, v))
-
-
-@compiles(ArrayType, "default")
-def compiles_array(element, compiler, **kw):
-    return f"ARRAY({compiler.process(element.value_type, **kw)})"
-
-
-@compiles(sat.FLOAT, "duckdb")
-def compiles_float(element, compiler, **kw):
-    precision = element.precision
-    if precision is None or 1 <= precision <= 24:
-        return "FLOAT"
-    elif 24 < precision <= 53:
-        return "DOUBLE"
-    else:
-        raise ValueError(
-            "FLOAT precision must be between 1 and 53 inclusive, or `None`"
-        )
-
-
-class StructType(sat.UserDefinedType):
-    cache_ok = True
-
-    def __init__(self, fields: Mapping[str, sat.TypeEngine]) -> None:
-        self.fields = FrozenDict(
-            {name: sat.to_instance(typ) for name, typ in fields.items()}
-        )
-
-
-@compiles(StructType, "default")
-def compiles_struct(element, compiler, **kw):
-    quote = compiler.dialect.identifier_preparer.quote
-    content = ", ".join(
-        f"{quote(field)} {compiler.process(typ, **kw)}"
-        for field, typ in element.fields.items()
-    )
-    return f"STRUCT({content})"
-
-
-class MapType(sat.UserDefinedType):
-    def __init__(self, key_type: sat.TypeEngine, value_type: sat.TypeEngine):
-        self.key_type = sat.to_instance(key_type)
-        self.value_type = sat.to_instance(value_type)
-
-
-@compiles(MapType, "default")
-def compiles_map(element, compiler, **kw):
-    key_type = compiler.process(element.key_type, **kw)
-    value_type = compiler.process(element.value_type, **kw)
-    return f"MAP({key_type}, {value_type})"
 
 
 class UInt64(sat.Integer):
@@ -102,30 +25,14 @@ class UInt8(sat.Integer):
     pass
 
 
-@compiles(UInt64, "postgresql")
-@compiles(UInt32, "postgresql")
-@compiles(UInt16, "postgresql")
-@compiles(UInt8, "postgresql")
 @compiles(UInt64, "mssql")
 @compiles(UInt32, "mssql")
 @compiles(UInt16, "mssql")
 @compiles(UInt8, "mssql")
-@compiles(UInt64, "mysql")
-@compiles(UInt32, "mysql")
-@compiles(UInt16, "mysql")
-@compiles(UInt8, "mysql")
-@compiles(UInt64, "snowflake")
-@compiles(UInt32, "snowflake")
-@compiles(UInt16, "snowflake")
-@compiles(UInt8, "snowflake")
 @compiles(UInt64, "sqlite")
 @compiles(UInt32, "sqlite")
 @compiles(UInt16, "sqlite")
 @compiles(UInt8, "sqlite")
-@compiles(UInt64, "trino")
-@compiles(UInt32, "trino")
-@compiles(UInt16, "trino")
-@compiles(UInt8, "trino")
 def compile_uint(element, compiler, **kw):
     dialect_name = compiler.dialect.name
     raise TypeError(
@@ -220,17 +127,6 @@ _FLOAT_PREC_TO_TYPE = {
     53: dt.Float64,
 }
 
-_GEOSPATIAL_TYPES = {
-    "POINT": dt.Point,
-    "LINESTRING": dt.LineString,
-    "POLYGON": dt.Polygon,
-    "MULTILINESTRING": dt.MultiLineString,
-    "MULTIPOINT": dt.MultiPoint,
-    "MULTIPOLYGON": dt.MultiPolygon,
-    "GEOMETRY": dt.Geometry,
-    "GEOGRAPHY": dt.Geography,
-}
-
 
 class AlchemyType(TypeMapper):
     @classmethod
@@ -261,25 +157,6 @@ class AlchemyType(TypeMapper):
             return sat.NUMERIC(dtype.precision, dtype.scale)
         elif dtype.is_timestamp():
             return sat.TIMESTAMP(timezone=bool(dtype.timezone))
-        elif dtype.is_array():
-            return ArrayType(cls.from_ibis(dtype.value_type))
-        elif dtype.is_struct():
-            fields = {k: cls.from_ibis(v) for k, v in dtype.fields.items()}
-            return StructType(fields)
-        elif dtype.is_map():
-            return MapType(
-                cls.from_ibis(dtype.key_type), cls.from_ibis(dtype.value_type)
-            )
-        elif dtype.is_geospatial():
-            if geospatial_supported:
-                if dtype.geotype == "geometry":
-                    return ga.Geometry
-                elif dtype.geotype == "geography":
-                    return ga.Geography
-                else:
-                    return ga.types._GISType
-            else:
-                raise TypeError("geospatial types are not supported")
         else:
             return _to_sqlalchemy_types[type(dtype)]
 
@@ -306,32 +183,10 @@ class AlchemyType(TypeMapper):
             return dt.Decimal(typ.precision, typ.scale, nullable=nullable)
         elif isinstance(typ, sat.Numeric):
             return dt.Decimal(typ.precision, typ.scale, nullable=nullable)
-        elif isinstance(typ, ArrayType):
-            return dt.Array(cls.to_ibis(typ.value_type), nullable=nullable)
-        elif isinstance(typ, sat.ARRAY):
-            ndim = typ.dimensions
-            if ndim is not None and ndim != 1:
-                raise NotImplementedError("Nested array types not yet supported")
-            return dt.Array(cls.to_ibis(typ.item_type), nullable=nullable)
-        elif isinstance(typ, StructType):
-            fields = {k: cls.to_ibis(v) for k, v in typ.fields.items()}
-            return dt.Struct(fields, nullable=nullable)
-        elif isinstance(typ, MapType):
-            return dt.Map(
-                cls.to_ibis(typ.key_type),
-                cls.to_ibis(typ.value_type),
-                nullable=nullable,
-            )
         elif isinstance(typ, sa.DateTime):
             timezone = "UTC" if typ.timezone else None
             return dt.Timestamp(timezone, nullable=nullable)
         elif isinstance(typ, sat.String):
             return dt.String(nullable=nullable)
-        elif geospatial_supported and isinstance(typ, ga.types._GISType):
-            name = typ.geometry_type.upper()
-            try:
-                return _GEOSPATIAL_TYPES[name](geotype=typ.name, nullable=nullable)
-            except KeyError:
-                raise ValueError(f"Unrecognized geometry type: {name}")
         else:
             raise TypeError(f"Unable to convert type: {typ!r}")

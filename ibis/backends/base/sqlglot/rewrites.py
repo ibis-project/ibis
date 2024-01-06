@@ -176,7 +176,7 @@ def rewrite_empty_order_by_window(_, y):
 
 @replace(p.WindowFunction(p.RowNumber | p.NTile, y))
 def exclude_unsupported_window_frame_from_row_number(_, y):
-    return ops.Subtract(_.copy(frame=y.copy(start=None, end=None)), 1)
+    return ops.Subtract(_.copy(frame=y.copy(start=None, end=0)), 1)
 
 
 @replace(
