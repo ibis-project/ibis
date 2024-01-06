@@ -7,7 +7,6 @@ from pytest import param
 import ibis
 import ibis.expr.datatypes as dt
 from ibis import udf
-from ibis.backends.base.sql.alchemy.geospatial import geospatial_supported
 
 DB_TYPES = [
     # Exact numbers
@@ -53,10 +52,6 @@ DB_TYPES = [
 ]
 
 
-skipif_no_geospatial_deps = pytest.mark.skipif(
-    not geospatial_supported, reason="geospatial dependencies not installed"
-)
-
 broken_sqlalchemy_autoload = pytest.mark.xfail(
     reason="scale not inferred by sqlalchemy autoload"
 )
@@ -65,10 +60,6 @@ broken_sqlalchemy_autoload = pytest.mark.xfail(
 @pytest.mark.parametrize(
     ("server_type", "expected_type"),
     DB_TYPES
-    + [
-        param("GEOMETRY", dt.geometry, marks=[skipif_no_geospatial_deps]),
-        param("GEOGRAPHY", dt.geography, marks=[skipif_no_geospatial_deps]),
-    ]
     + [
         param(
             "DATETIME2(4)", dt.timestamp(scale=4), marks=[broken_sqlalchemy_autoload]

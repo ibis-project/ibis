@@ -78,13 +78,9 @@ def time_keyed_right(time_keyed_df2):
 
 
 @pytest.mark.parametrize(
-    ("direction", "op"),
-    [
-        ("backward", operator.ge),
-        ("forward", operator.le),
-    ],
+    ("direction", "op"), [("backward", operator.ge), ("forward", operator.le)]
 )
-@pytest.mark.notimpl(["datafusion", "snowflake", "trino", "postgres"])
+@pytest.mark.notyet(["datafusion", "snowflake", "trino", "postgres", "mysql"])
 def test_asof_join(con, time_left, time_right, time_df1, time_df2, direction, op):
     on = op(time_left["time"], time_right["time"])
     expr = time_left.asof_join(time_right, on=on, predicates="group")
@@ -103,16 +99,12 @@ def test_asof_join(con, time_left, time_right, time_df1, time_df2, direction, op
 
 
 @pytest.mark.parametrize(
-    ("direction", "op"),
-    [
-        ("backward", operator.ge),
-        ("forward", operator.le),
-    ],
+    ("direction", "op"), [("backward", operator.ge), ("forward", operator.le)]
 )
 @pytest.mark.broken(
     ["clickhouse"], raises=AssertionError, reason="`time` is truncated to seconds"
 )
-@pytest.mark.notimpl(["datafusion", "snowflake", "trino", "postgres"])
+@pytest.mark.notyet(["datafusion", "snowflake", "trino", "postgres", "mysql"])
 def test_keyed_asof_join_with_tolerance(
     con,
     time_keyed_left,

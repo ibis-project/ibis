@@ -24,7 +24,7 @@ from ibis.backends.tests.errors import (
     GoogleBadRequest,
     ImpalaHiveServer2Error,
     Py4JJavaError,
-    PsycoPg2InvalidTextRepresentation,
+    MySQLProgrammingError,
     SnowflakeProgrammingError,
     TrinoUserError,
 )
@@ -1188,10 +1188,6 @@ def test_distinct_on_keep(backend, on, keep):
         idx=ibis.row_number().over(order_by=_.one, rows=(None, 0))
     )
 
-    requires_cache = backend.name() in ("mysql", "impala")
-
-    if requires_cache:
-        t = t.cache()
     expr = t.distinct(on=on, keep=keep).order_by(ibis.asc("idx"))
     result = expr.execute()
     df = t.execute()
@@ -1267,10 +1263,6 @@ def test_distinct_on_keep_is_none(backend, on):
         idx=ibis.row_number().over(order_by=_.one, rows=(None, 0))
     )
 
-    requires_cache = backend.name() in ("mysql", "impala")
-
-    if requires_cache:
-        t = t.cache()
     expr = t.distinct(on=on, keep=None).order_by(ibis.asc("idx"))
     result = expr.execute()
     df = t.execute()
@@ -1380,7 +1372,6 @@ def test_hexdigest(backend, alltypes):
         "druid",
         "impala",
         "mssql",
-        "mysql",
         "oracle",
         "risingwave",
         "pyspark",
@@ -1405,6 +1396,7 @@ def test_hexdigest(backend, alltypes):
                 pytest.mark.notyet(["trino"], raises=TrinoUserError),
                 pytest.mark.broken(["polars"], reason="casts to 1672531200000000000"),
                 pytest.mark.broken(["datafusion"], reason="casts to 1672531200000000"),
+                pytest.mark.broken(["mysql"], reason="returns 20230101000000"),
             ],
         ),
     ],
@@ -1684,7 +1676,7 @@ def test_static_table_slice(backend, slc, expected_count_fn):
 )
 @pytest.mark.notyet(
     ["mysql"],
-    raises=sa.exc.ProgrammingError,
+    raises=MySQLProgrammingError,
     reason="backend doesn't support dynamic limit/offset",
 )
 @pytest.mark.notyet(
@@ -1747,7 +1739,7 @@ def test_dynamic_table_slice(backend, slc, expected_count_fn):
 
 @pytest.mark.notyet(
     ["mysql"],
-    raises=sa.exc.ProgrammingError,
+    raises=MySQLProgrammingError,
     reason="backend doesn't support dynamic limit/offset",
 )
 @pytest.mark.notyet(
