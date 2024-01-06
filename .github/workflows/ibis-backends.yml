@@ -136,16 +136,16 @@ jobs:
             sys-deps:
               - cmake
               - ninja-build
-          # - name: mssql
-          #   title: MS SQL Server
-          #   extras:
-          #     - mssql
-          #   services:
-          #     - mssql
-          #   sys-deps:
-          #     - freetds-dev
-          #     - unixodbc-dev
-          #     - tdsodbc
+          - name: mssql
+            title: MS SQL Server
+            extras:
+              - mssql
+            services:
+              - mssql
+            sys-deps:
+              - freetds-dev
+              - unixodbc-dev
+              - tdsodbc
           - name: trino
             title: Trino
             extras:
@@ -246,18 +246,18 @@ jobs:
               sys-deps:
                 - cmake
                 - ninja-build
-          # - os: windows-latest
-          #   backend:
-          #     name: mssql
-          #     title: MS SQL Server
-          #     extras:
-          #       - mssql
-          #     services:
-          #       - mssql
-          #     sys-deps:
-          #       - freetds-dev
-          #       - unixodbc-dev
-          #       - tdsodbc
+          - os: windows-latest
+            backend:
+              name: mssql
+              title: MS SQL Server
+              extras:
+                - mssql
+              services:
+                - mssql
+              sys-deps:
+                - freetds-dev
+                - unixodbc-dev
+                - tdsodbc
           - os: windows-latest
             backend:
               name: trino
