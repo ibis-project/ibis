@@ -18,12 +18,7 @@ array_literal = param(
     ibis.array([1]),
     marks=[
         pytest.mark.never(
-            ["mssql"],
-            raises=sa.exc.CompileError,
-            reason="arrays not supported in the backend",
-        ),
-        pytest.mark.never(
-            ["mysql"],
+            ["mysql", "mssql"],
             raises=exc.UnsupportedBackendType,
             reason="arrays not supported in the backend",
         ),

@@ -31,9 +31,16 @@ from ibis.backends.tests.errors import (
 
 pytestmark = [
     pytest.mark.never(
-        ["sqlite", "mysql", "mssql", "exasol"],
+        ["sqlite", "mysql", "exasol"], reason="No array support", raises=Exception
+    ),
+    pytest.mark.never(
+        ["mssql"],
         reason="No array support",
-        raises=Exception,
+        raises=(
+            com.UnsupportedBackendType,
+            com.OperationNotDefinedError,
+            AssertionError,
+        ),
     ),
     pytest.mark.notyet(
         ["impala"],
@@ -381,8 +388,7 @@ def test_array_slice(backend, start, stop):
 
 @builtin_array
 @pytest.mark.notimpl(
-    ["datafusion", "mssql", "polars", "snowflake", "sqlite"],
-    raises=com.OperationNotDefinedError,
+    ["datafusion", "polars", "snowflake", "sqlite"], raises=com.OperationNotDefinedError
 )
 @pytest.mark.notimpl(
     ["dask", "pandas"],
@@ -425,7 +431,7 @@ def test_array_map(con, input, output):
 
 @builtin_array
 @pytest.mark.notimpl(
-    ["dask", "datafusion", "mssql", "pandas", "polars", "snowflake"],
+    ["dask", "datafusion", "pandas", "polars", "snowflake"],
     raises=com.OperationNotDefinedError,
 )
 @pytest.mark.notimpl(
@@ -468,7 +474,7 @@ def test_array_filter(con, input, output):
 
 
 @builtin_array
-@pytest.mark.notimpl(["mssql", "polars"], raises=com.OperationNotDefinedError)
+@pytest.mark.notimpl(["polars"], raises=com.OperationNotDefinedError)
 @pytest.mark.notimpl(["dask"], raises=com.OperationNotDefinedError)
 def test_array_contains(backend, con):
     t = backend.array_types
@@ -479,7 +485,7 @@ def test_array_contains(backend, con):
 
 
 @builtin_array
-@pytest.mark.notimpl(["dask", "mssql", "polars"], raises=com.OperationNotDefinedError)
+@pytest.mark.notimpl(["dask", "polars"], raises=com.OperationNotDefinedError)
 @pytest.mark.broken(
     ["datafusion"], reason="internal error as of 34.0.0", raises=Exception
 )
@@ -492,7 +498,7 @@ def test_array_position(backend, con):
 
 
 @builtin_array
-@pytest.mark.notimpl(["dask", "mssql", "polars"], raises=com.OperationNotDefinedError)
+@pytest.mark.notimpl(["dask", "polars"], raises=com.OperationNotDefinedError)
 def test_array_remove(con):
     t = ibis.memtable({"a": [[3, 2], [], [42, 2], [2, 2], []]})
     expr = t.a.remove(2)
@@ -503,7 +509,7 @@ def test_array_remove(con):
 
 @builtin_array
 @pytest.mark.notimpl(
-    ["dask", "datafusion", "mssql", "polars"], raises=com.OperationNotDefinedError
+    ["dask", "datafusion", "polars"], raises=com.OperationNotDefinedError
 )
 @pytest.mark.notimpl(
     ["sqlite"], raises=NotImplementedError, reason="Unsupported type: Array..."
@@ -548,7 +554,7 @@ def test_array_unique(con, input, expected):
 
 @builtin_array
 @pytest.mark.notimpl(
-    ["dask", "datafusion", "mssql", "polars"], raises=com.OperationNotDefinedError
+    ["dask", "datafusion", "polars"], raises=com.OperationNotDefinedError
 )
 def test_array_sort(backend, con):
     t = ibis.memtable({"a": [[3, 2], [], [42, 42], []], "id": range(4)})
@@ -560,7 +566,7 @@ def test_array_sort(backend, con):
 
 @builtin_array
 @pytest.mark.notimpl(
-    ["dask", "datafusion", "mssql", "polars"], raises=com.OperationNotDefinedError
+    ["dask", "datafusion", "polars"], raises=com.OperationNotDefinedError
 )
 @pytest.mark.notyet(
     ["bigquery"],
@@ -579,7 +585,7 @@ def test_array_union(con):
 
 @builtin_array
 @pytest.mark.notimpl(
-    ["dask", "datafusion", "mssql", "pandas", "polars", "flink"],
+    ["dask", "datafusion", "pandas", "polars", "flink"],
     raises=com.OperationNotDefinedError,
 )
 @pytest.mark.notimpl(
@@ -639,9 +645,6 @@ def test_unnest_struct(con):
 
 
 @builtin_array
-@pytest.mark.never(
-    ["mssql"], raises=com.OperationNotDefinedError, reason="no array support"
-)
 @pytest.mark.notimpl(
     ["dask", "datafusion", "druid", "oracle", "pandas", "polars", "postgres"],
     raises=com.OperationNotDefinedError,
@@ -870,7 +873,7 @@ def test_unnest_empty_array(con):
 
 @builtin_array
 @pytest.mark.notimpl(
-    ["datafusion", "mssql", "polars", "snowflake", "sqlite", "dask", "pandas"],
+    ["datafusion", "polars", "snowflake", "sqlite", "dask", "pandas"],
     raises=com.OperationNotDefinedError,
 )
 @pytest.mark.notimpl(["sqlite"], raises=NotImplementedError)
@@ -886,7 +889,7 @@ def test_array_map_with_conflicting_names(backend, con):
 
 @builtin_array
 @pytest.mark.notimpl(
-    ["datafusion", "mssql", "polars", "snowflake", "sqlite", "dask", "pandas"],
+    ["datafusion", "polars", "snowflake", "sqlite", "dask", "pandas"],
     raises=com.OperationNotDefinedError,
 )
 def test_complex_array_map(con):

@@ -9,7 +9,6 @@ from operator import methodcaller
 import numpy as np
 import pandas as pd
 import pytest
-import sqlalchemy as sa
 import sqlglot as sg
 from pytest import param
 
@@ -32,6 +31,7 @@ from ibis.backends.tests.errors import (
     PolarsPanicException,
     Py4JJavaError,
     PyDruidProgrammingError,
+    PyODBCProgrammingError,
     SnowflakeProgrammingError,
     TrinoUserError,
 )
@@ -143,7 +143,7 @@ def test_timestamp_extract(backend, alltypes, df, attr):
             id="day_of_week_full_name",
             marks=[
                 pytest.mark.notimpl(
-                    ["mssql", "druid", "oracle", "exasol"],
+                    ["druid", "oracle", "exasol"],
                     raises=com.OperationNotDefinedError,
                 ),
                 pytest.mark.never(
@@ -1417,7 +1417,7 @@ def test_interval_add_cast_column(backend, alltypes, df):
         ),
     ],
 )
-@pytest.mark.notimpl(["datafusion", "mssql"], raises=com.OperationNotDefinedError)
+@pytest.mark.notimpl(["datafusion"], raises=com.OperationNotDefinedError)
 @pytest.mark.broken(
     ["druid"],
     raises=AttributeError,
@@ -1624,7 +1624,7 @@ def test_string_to_timestamp(alltypes, fmt):
         param("2017-01-07", 5, "Saturday", id="saturday"),
     ],
 )
-@pytest.mark.notimpl(["mssql", "druid", "oracle"], raises=com.OperationNotDefinedError)
+@pytest.mark.notimpl(["druid", "oracle"], raises=com.OperationNotDefinedError)
 @pytest.mark.notimpl(
     ["flink"],
     raises=Py4JJavaError,
@@ -1640,7 +1640,7 @@ def test_day_of_week_scalar(con, date, expected_index, expected_day):
     assert result_day.lower() == expected_day.lower()
 
 
-@pytest.mark.notimpl(["mssql", "oracle"], raises=com.OperationNotDefinedError)
+@pytest.mark.notimpl(["oracle"], raises=com.OperationNotDefinedError)
 @pytest.mark.broken(
     ["druid"],
     raises=AttributeError,
@@ -1683,10 +1683,6 @@ def test_day_of_week_column(backend, alltypes, df):
             lambda s: s.dt.day_name().str.len().sum(),
             id="day_of_week_full_name",
             marks=[
-                pytest.mark.notimpl(
-                    ["mssql"],
-                    raises=com.OperationNotDefinedError,
-                ),
                 pytest.mark.never(
                     ["flink"],
                     raises=Py4JJavaError,
@@ -2008,6 +2004,7 @@ INTERVAL_BACKEND_TYPES = {
         "support logical type INTERVAL SECOND(3) NOT NULL currently"
     ),
 )
+@pytest.mark.notyet(["mssql"], raises=PyODBCProgrammingError)
 def test_interval_literal(con, backend):
     expr = ibis.interval(1, unit="s")
     result = con.execute(expr)
@@ -2276,7 +2273,7 @@ def test_large_timestamp(con):
                 pytest.mark.notyet(
                     ["mssql"],
                     reason="doesn't support nanoseconds",
-                    raises=sa.exc.ProgrammingError,
+                    raises=PyODBCProgrammingError,
                 ),
                 pytest.mark.notyet(
                     ["mysql"],

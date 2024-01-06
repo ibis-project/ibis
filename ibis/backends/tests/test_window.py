@@ -6,7 +6,6 @@ from operator import methodcaller
 import numpy as np
 import pandas as pd
 import pytest
-import sqlalchemy as sa
 from pytest import param
 
 import ibis
@@ -21,6 +20,7 @@ from ibis.backends.tests.errors import (
     OracleDatabaseError,
     Py4JJavaError,
     PyDruidProgrammingError,
+    PyODBCProgrammingError,
     SnowflakeProgrammingError,
 )
 from ibis.legacy.udf.vectorized import analytic, reduction
@@ -257,6 +257,7 @@ def calc_zscore(s):
             id="cumany",
             marks=[
                 pytest.mark.notimpl(["dask"], raises=NotImplementedError),
+                pytest.mark.broken(["mssql"], raises=com.OperationNotDefinedError),
             ],
         ),
         param(
@@ -271,6 +272,7 @@ def calc_zscore(s):
             marks=[
                 pytest.mark.notimpl(["dask"], raises=NotImplementedError),
                 pytest.mark.broken(["oracle"], raises=OracleDatabaseError),
+                pytest.mark.broken(["mssql"], raises=com.OperationNotDefinedError),
             ],
         ),
         param(
@@ -284,6 +286,7 @@ def calc_zscore(s):
             id="cumall",
             marks=[
                 pytest.mark.notimpl(["dask"], raises=NotImplementedError),
+                pytest.mark.broken(["mssql"], raises=com.OperationNotDefinedError),
             ],
         ),
         param(
@@ -298,6 +301,7 @@ def calc_zscore(s):
             marks=[
                 pytest.mark.notimpl(["dask"], raises=NotImplementedError),
                 pytest.mark.broken(["oracle"], raises=OracleDatabaseError),
+                pytest.mark.broken(["mssql"], raises=com.OperationNotDefinedError),
             ],
         ),
         param(
@@ -567,7 +571,14 @@ def test_grouped_bounded_preceding_window(backend, alltypes, df, window_fn):
         param(
             False,
             id="unordered",
-            marks=pytest.mark.notimpl(["flink"], raises=com.UnsupportedOperationError),
+            marks=[
+                pytest.mark.notimpl(["flink"], raises=com.UnsupportedOperationError),
+                pytest.mark.broken(
+                    ["mssql"],
+                    raises=PyODBCProgrammingError,
+                    reason="unbounded window frames are not supported",
+                ),
+            ],
         ),
     ],
 )
@@ -610,7 +621,8 @@ def test_grouped_unbounded_window(
     ],
 )
 @pytest.mark.broken(["snowflake"], raises=AssertionError)
-@pytest.mark.broken(["dask", "mssql"], raises=AssertionError)
+@pytest.mark.broken(["dask"], raises=AssertionError)
+@pytest.mark.notyet(["mssql"], raises=PyODBCProgrammingError)
 @pytest.mark.notimpl(["polars"], raises=com.OperationNotDefinedError)
 @pytest.mark.notimpl(["flink"], raises=com.UnsupportedOperationError)
 def test_simple_ungrouped_unbound_following_window(
@@ -679,6 +691,11 @@ def test_simple_ungrouped_window_with_scalar_order_by(alltypes):
                 pytest.mark.notimpl(
                     ["flink"],
                     raises=com.UnsupportedOperationError,
+                ),
+                pytest.mark.broken(
+                    ["mssql"],
+                    raises=PyODBCProgrammingError,
+                    reason="unbounded window frames are not supported",
                 ),
             ],
         ),
@@ -789,7 +806,7 @@ def test_simple_ungrouped_window_with_scalar_order_by(alltypes):
                     raises=com.UnsupportedOperationError,
                     reason="Flink engine does not support generic window clause with no order by",
                 ),
-                pytest.mark.broken(["mssql"], raises=sa.exc.ProgrammingError),
+                pytest.mark.broken(["mssql"], raises=PyODBCProgrammingError),
                 pytest.mark.notyet(
                     ["snowflake"],
                     reason="backend requires ordering",
@@ -828,7 +845,7 @@ def test_simple_ungrouped_window_with_scalar_order_by(alltypes):
                     raises=com.UnsupportedOperationError,
                     reason="Flink engine does not support generic window clause with no order by",
                 ),
-                pytest.mark.broken(["mssql"], raises=sa.exc.ProgrammingError),
+                pytest.mark.broken(["mssql"], raises=PyODBCProgrammingError),
                 pytest.mark.notyet(
                     ["snowflake"],
                     reason="backend requires ordering",
@@ -945,7 +962,7 @@ def test_ungrouped_unbounded_window(
     reason="RANGE OFFSET frame for 'DB::ColumnNullable' ORDER BY column is not implemented",
     raises=ClickHouseDatabaseError,
 )
-@pytest.mark.notyet(["mssql"], raises=sa.exc.ProgrammingError)
+@pytest.mark.notyet(["mssql"], raises=PyODBCProgrammingError)
 @pytest.mark.broken(
     ["mysql"],
     raises=MySQLOperationalError,
@@ -1113,9 +1130,12 @@ def test_first_last(backend):
     ["mysql"], raises=MySQLOperationalError, reason="not supported by MySQL"
 )
 @pytest.mark.notyet(
-    ["mssql", "polars", "snowflake", "sqlite"],
+    ["polars", "snowflake", "sqlite"],
     raises=com.OperationNotDefinedError,
     reason="not support by the backend",
+)
+@pytest.mark.notyet(
+    ["mssql"], raises=PyODBCProgrammingError, reason="not support by the backend"
 )
 @pytest.mark.broken(["flink"], raises=Py4JJavaError, reason="bug in Flink")
 @pytest.mark.broken(
@@ -1165,7 +1185,7 @@ def test_range_expression_bounds(backend):
     raises=com.OperationNotDefinedError,
 )
 @pytest.mark.broken(
-    ["mssql"], reason="lack of support for booleans", raises=sa.exc.ProgrammingError
+    ["mssql"], reason="lack of support for booleans", raises=PyODBCProgrammingError
 )
 def test_rank_followed_by_over_call_merge_frames(backend, alltypes, df):
     # GH #7631
@@ -1193,7 +1213,7 @@ def test_rank_followed_by_over_call_merge_frames(backend, alltypes, df):
 @pytest.mark.notyet(
     ["mssql"],
     reason="IS NULL not valid syntax for mssql",
-    raises=sa.exc.ProgrammingError,
+    raises=PyODBCProgrammingError,
 )
 @pytest.mark.notimpl(["polars"], raises=com.OperationNotDefinedError)
 @pytest.mark.notyet(["flink"], raises=com.UnsupportedOperationError)

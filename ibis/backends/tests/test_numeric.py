@@ -27,6 +27,8 @@ from ibis.backends.tests.errors import (
     PsycoPg2DivisionByZero,
     Py4JError,
     PyDruidProgrammingError,
+    PyODBCDataError,
+    PyODBCProgrammingError,
     PySparkArithmeticException,
     PySparkParseException,
     SnowflakeProgrammingError,
@@ -246,7 +248,7 @@ def test_numeric_literal(con, backend, expr, expected_types):
                 "pandas": decimal.Decimal("1.1"),
                 "pyspark": decimal.Decimal("1.1"),
                 "mysql": decimal.Decimal("1"),
-                "mssql": 1.1,
+                "mssql": decimal.Decimal("1"),
                 "druid": decimal.Decimal("1.1"),
                 "datafusion": decimal.Decimal("1.1"),
                 "oracle": decimal.Decimal("1.1"),
@@ -288,7 +290,7 @@ def test_numeric_literal(con, backend, expr, expected_types):
                 "mysql": decimal.Decimal("1.1"),
                 "clickhouse": decimal.Decimal("1.1"),
                 "dask": decimal.Decimal("1.1"),
-                "mssql": 1.1,
+                "mssql": decimal.Decimal("1.1"),
                 "druid": decimal.Decimal("1.1"),
                 "datafusion": decimal.Decimal("1.1"),
                 "oracle": decimal.Decimal("1.1"),
@@ -321,7 +323,6 @@ def test_numeric_literal(con, backend, expr, expected_types):
                 "clickhouse": decimal.Decimal(
                     "1.10000000000000003193790845333396190208"
                 ),
-                "mssql": 1.1,
                 "druid": decimal.Decimal("1.1"),
                 "oracle": 1.1,
             },
@@ -358,6 +359,7 @@ def test_numeric_literal(con, backend, expr, expected_types):
                     "The precision can be up to 38 in Flink",
                     raises=ValueError,
                 ),
+                pytest.mark.notyet(["mssql"], raises=PyODBCProgrammingError),
             ],
             id="decimal-big",
         ),
@@ -394,14 +396,7 @@ def test_numeric_literal(con, backend, expr, expected_types):
                 pytest.mark.notyet(
                     ["mysql", "impala"], raises=com.UnsupportedOperationError
                 ),
-                pytest.mark.broken(
-                    ["mssql"],
-                    "(pymssql._pymssql.ProgrammingError) (207, b\"Invalid column name 'Infinity'."
-                    "DB-Lib error message 20018, severity 16:\nGeneral SQL Server error: "
-                    'Check messages from the SQL Server\n")'
-                    "[SQL: SELECT %(param_1)s AS [Decimal('Infinity')]]",
-                    raises=(sa.exc.ProgrammingError, KeyError),
-                ),
+                pytest.mark.notyet(["mssql"], raises=PyODBCProgrammingError),
                 pytest.mark.broken(
                     ["druid"],
                     "(pydruid.db.exceptions.ProgrammingError) Plan validation failed "
@@ -469,14 +464,7 @@ def test_numeric_literal(con, backend, expr, expected_types):
                 pytest.mark.notyet(
                     ["mysql", "impala"], raises=com.UnsupportedOperationError
                 ),
-                pytest.mark.broken(
-                    ["mssql"],
-                    "(pymssql._pymssql.ProgrammingError) (207, b\"Invalid column name 'Infinity'."
-                    "DB-Lib error message 20018, severity 16:\nGeneral SQL Server error: "
-                    'Check messages from the SQL Server\n")'
-                    "[SQL: SELECT %(param_1)s AS [Decimal('-Infinity')]]",
-                    raises=(sa.exc.ProgrammingError, KeyError),
-                ),
+                pytest.mark.notyet(["mssql"], raises=PyODBCProgrammingError),
                 pytest.mark.broken(
                     ["druid"],
                     "(pydruid.db.exceptions.ProgrammingError) Plan validation failed "
@@ -548,22 +536,7 @@ def test_numeric_literal(con, backend, expr, expected_types):
                 pytest.mark.notyet(
                     ["mysql", "impala"], raises=com.UnsupportedOperationError
                 ),
-                pytest.mark.broken(
-                    ["mssql"],
-                    "(pymssql._pymssql.ProgrammingError) (207, b\"Invalid column name 'NaN'."
-                    "DB-Lib error message 20018, severity 16:\nGeneral SQL Server error: "
-                    'Check messages from the SQL Server\n")'
-                    "[SQL: SELECT %(param_1)s AS [Decimal('NaN')]]",
-                    raises=(sa.exc.ProgrammingError, KeyError),
-                ),
-                pytest.mark.broken(
-                    ["mssql"],
-                    "(pydruid.db.exceptions.ProgrammingError) Plan validation failed "
-                    "(org.apache.calcite.tools.ValidationException): "
-                    "org.apache.calcite.runtime.CalciteContextException: From line 1, column 8 to line 1, column 10: Column 'NaN' not found in any table"
-                    "[SQL: SELECT NaN AS \"Decimal('NaN')\"]",
-                    raises=sa.exc.ProgrammingError,
-                ),
+                pytest.mark.notyet(["mssql"], raises=PyODBCProgrammingError),
                 pytest.mark.broken(
                     ["druid"],
                     "(pydruid.db.exceptions.ProgrammingError) Plan validation failed "
@@ -1054,9 +1027,7 @@ def test_mod(backend, alltypes, df):
     backend.assert_series_equal(result, expected, check_dtype=False)
 
 
-@pytest.mark.notimpl(
-    ["mssql"], raises=(sa.exc.OperationalError, sa.exc.ProgrammingError)
-)
+@pytest.mark.notimpl(["mssql"], raises=PyODBCProgrammingError)
 @pytest.mark.notyet(
     ["druid"], raises=AssertionError, reason="mod with floats is integer mod"
 )
@@ -1219,7 +1190,7 @@ def test_floating_mod(backend, alltypes, df):
     raises=AssertionError,
     reason="returns NULL when dividing by zero",
 )
-@pytest.mark.notyet(["mssql"], raises=(sa.exc.OperationalError, sa.exc.DataError))
+@pytest.mark.notyet(["mssql"], raises=PyODBCDataError)
 @pytest.mark.notyet(["snowflake"], raises=SnowflakeProgrammingError)
 @pytest.mark.notyet(["postgres"], raises=PsycoPg2DivisionByZero)
 @pytest.mark.notimpl(["exasol"], raises=ExaQueryError)
@@ -1276,10 +1247,11 @@ def test_divide_by_zero(backend, alltypes, df, column, denominator):
         "postgres",
         "mysql",
         "druid",
+        "mssql",
+        "exasol",
     ],
     reason="Not SQLAlchemy backends",
 )
-@pytest.mark.notimpl(["exasol"], raises=KeyError)
 def test_sa_default_numeric_precision_and_scale(
     con, backend, default_precisions, default_scales, temp_table
 ):
@@ -1371,6 +1343,11 @@ def test_clip(backend, alltypes, df, ibis_func, pandas_func):
     backend.assert_series_equal(result, expected, check_names=False)
 
 
+@pytest.mark.broken(
+    ["mssql"],
+    raises=PyODBCProgrammingError,
+    reason="unbounded window frames are not supported",
+)
 @pytest.mark.notimpl(["polars"], raises=com.OperationNotDefinedError)
 @pytest.mark.broken(
     ["druid"],

@@ -837,3 +837,56 @@ class ExasolType(SqlglotType):
     @classmethod
     def _from_sqlglot_STRUCT(cls, *cols: sge.ColumnDef) -> NoReturn:
         raise com.UnsupportedBackendType("Structs not supported in Exasol")
+
+
+class MSSQLType(SqlglotType):
+    dialect = "tsql"
+
+    @classmethod
+    def _from_sqlglot_BIT(cls):
+        return dt.Boolean(nullable=cls.default_nullable)
+
+    @classmethod
+    def _from_sqlglot_IMAGE(cls):
+        return dt.Binary(nullable=cls.default_nullable)
+
+    @classmethod
+    def _from_sqlglot_DATETIME(cls, n=None):
+        return dt.Timestamp(
+            scale=n if n is None else int(n.this.this), nullable=cls.default_nullable
+        )
+
+    @classmethod
+    def _from_sqlglot_TIMESTAMP(cls):
+        return dt.Binary(nullable=False)
+
+    @classmethod
+    def _from_ibis_String(cls, dtype: dt.String) -> sge.DataType:
+        return sge.DataType(
+            this=typecode.VARCHAR,
+            expressions=[sge.DataTypeParam(this=sge.Var(this="max"))],
+        )
+
+    @classmethod
+    def _from_ibis_Array(cls, dtype: dt.String) -> sge.DataType:
+        raise com.UnsupportedBackendType("SQL Server does not support arrays")
+
+    @classmethod
+    def _from_ibis_Map(cls, dtype: dt.String) -> sge.DataType:
+        raise com.UnsupportedBackendType("SQL Server does not support ")
+
+    @classmethod
+    def _from_ibis_Struct(cls, dtype: dt.String) -> sge.DataType:
+        raise com.UnsupportedBackendType("SQL Server does not support structs")
+
+    @classmethod
+    def _from_sqlglot_ARRAY(cls) -> sge.DataType:
+        raise com.UnsupportedBackendType("SQL Server does not support arrays")
+
+    @classmethod
+    def _from_sqlglot_MAP(cls) -> sge.DataType:
+        raise com.UnsupportedBackendType("SQL Server does not support map")
+
+    @classmethod
+    def _from_sqlglot_STRUCT(cls) -> sge.DataType:
+        raise com.UnsupportedBackendType("SQL Server does not support structs")
