@@ -79,3 +79,15 @@ try:
     from trino.exceptions import TrinoUserError
 except ImportError:
     TrinoUserError = None
+
+try:
+    from psycopg2.errors import DivisionByZero as PsycoPg2DivisionByZero
+    from psycopg2.errors import IndeterminateDatatype as PsycoPg2IndeterminateDatatype
+    from psycopg2.errors import (
+        InvalidTextRepresentation as PsycoPg2InvalidTextRepresentation,
+    )
+    from psycopg2.errors import SyntaxError as PsycoPg2SyntaxError
+except ImportError:
+    PsycoPg2SyntaxError = (
+        PsycoPg2IndeterminateDatatype
+    ) = PsycoPg2InvalidTextRepresentation = PsycoPg2DivisionByZero = None

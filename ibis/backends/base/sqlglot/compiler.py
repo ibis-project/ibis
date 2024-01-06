@@ -26,6 +26,7 @@ from ibis.expr.rewrites import (
     add_order_by_to_empty_ranking_window_functions,
     empty_in_values_right_side,
     one_to_zero_index,
+    replace_bucket,
     replace_scalar_parameter,
     unwrap_scalar_parameter,
 )
@@ -89,13 +90,16 @@ class FuncGen:
 
 
 class ColGen:
-    __slots__ = ()
+    __slots__ = ("table",)
+
+    def __init__(self, table: str | None = None) -> None:
+        self.table = table
 
     def __getattr__(self, name: str) -> sge.Column:
-        return sg.column(name)
+        return sg.column(name, table=self.table)
 
     def __getitem__(self, key: str) -> sge.Column:
-        return sg.column(key)
+        return sg.column(key, table=self.table)
 
 
 def paren(expr):
@@ -127,6 +131,7 @@ class SQLGlotCompiler(abc.ABC):
         add_order_by_to_empty_ranking_window_functions,
         one_to_zero_index,
         add_one_to_nth_value_input,
+        replace_bucket,
     )
     """A sequence of rewrites to apply to the expression tree before compilation."""
 
@@ -260,6 +265,10 @@ class SQLGlotCompiler(abc.ABC):
             self._gen_valid_name(name), table=rel.alias_or_name, quoted=self.quoted
         )
 
+    @visit_node.register(ops.Cast)
+    def visit_Cast(self, op, *, arg, to):
+        return self.cast(arg, to)
+
     @visit_node.register(ops.ScalarSubquery)
     def visit_ScalarSubquery(self, op, *, rel):
         return rel.this.subquery()
@@ -384,8 +393,13 @@ class SQLGlotCompiler(abc.ABC):
             return sge.Struct.from_arg_list(items)
         elif dtype.is_uuid():
             return self.cast(str(value), dtype)
-        else:
-            raise NotImplementedError(f"Unsupported type: {dtype!r}")
+        elif dtype.is_geospatial():
+            args = [value.wkt]
+            if (srid := dtype.srid) is not None:
+                args.append(srid)
+            return self.f.st_geomfromtext(*args)
+
+        raise NotImplementedError(f"Unsupported type: {dtype!r}")
 
     @visit_node.register(ops.BitwiseNot)
     def visit_BitwiseNot(self, op, *, arg):
@@ -562,9 +576,20 @@ class SQLGlotCompiler(abc.ABC):
 
     @visit_node.register(ops.Substring)
     def visit_Substring(self, op, *, arg, start, length):
-        if_pos = sge.Substring(this=arg, start=start + 1, length=length)
-        if_neg = sge.Substring(this=arg, start=start, length=length)
-        return self.if_(start >= 0, if_pos, if_neg)
+        start += 1
+        arg_length = self.f.length(arg)
+
+        if length is None:
+            return self.if_(
+                start >= 1,
+                self.f.substring(arg, start),
+                self.f.substring(arg, start + arg_length),
+            )
+        return self.if_(
+            start >= 1,
+            self.f.substring(arg, start, length),
+            self.f.substring(arg, start + arg_length, length),
+        )
 
     @visit_node.register(ops.StringFind)
     def visit_StringFind(self, op, *, arg, substr, start, end):
@@ -629,8 +654,27 @@ class SQLGlotCompiler(abc.ABC):
 
     @visit_node.register(ops.Sum)
     def visit_Sum(self, op, *, arg, where):
-        arg = self.cast(arg, op.dtype) if op.arg.dtype.is_boolean() else arg
+        if op.arg.dtype.is_boolean():
+            arg = self.cast(arg, dt.int32)
         return self.agg.sum(arg, where=where)
+
+    @visit_node.register(ops.Mean)
+    def visit_Mean(self, op, *, arg, where):
+        if op.arg.dtype.is_boolean():
+            arg = self.cast(arg, dt.int32)
+        return self.agg.avg(arg, where=where)
+
+    @visit_node.register(ops.Min)
+    def visit_Min(self, op, *, arg, where):
+        if op.arg.dtype.is_boolean():
+            return self.agg.bool_and(arg, where=where)
+        return self.agg.min(arg, where=where)
+
+    @visit_node.register(ops.Max)
+    def visit_Max(self, op, *, arg, where):
+        if op.arg.dtype.is_boolean():
+            return self.agg.bool_or(arg, where=where)
+        return self.agg.max(arg, where=where)
 
     ### Stats
 
@@ -638,7 +682,14 @@ class SQLGlotCompiler(abc.ABC):
     @visit_node.register(ops.MultiQuantile)
     def visit_Quantile(self, op, *, arg, quantile, where):
         suffix = "cont" if op.arg.dtype.is_numeric() else "disc"
-        return self.agg[f"quantile_{suffix}"](arg, quantile, where=where)
+        funcname = f"percentile_{suffix}"
+        expr = sge.WithinGroup(
+            this=self.f[funcname](quantile),
+            expression=sge.Order(expressions=[sge.Ordered(this=arg)]),
+        )
+        if where is not None:
+            expr = sge.Filter(this=expr, expression=sge.Where(this=where))
+        return expr
 
     @visit_node.register(ops.Variance)
     @visit_node.register(ops.StandardDev)
@@ -784,13 +835,18 @@ class SQLGlotCompiler(abc.ABC):
     def visit_RowID(self, op, *, table):
         return sg.column(op.name, table=table.alias_or_name, quoted=self.quoted)
 
+    def __sql_name__(self, op: ops.ScalarUDF | ops.AggUDF) -> str:
+        # not actually a table, but easier to quote individual namespace
+        # components this way
+        return sg.table(op.__func_name__, db=op.__udf_namespace__).sql(self.dialect)
+
     @visit_node.register(ops.ScalarUDF)
     def visit_ScalarUDF(self, op, **kw):
-        return self.f[op.__full_name__](*kw.values())
+        return self.f[self.__sql_name__(op)](*kw.values())
 
     @visit_node.register(ops.AggUDF)
     def visit_AggUDF(self, op, *, where, **kw):
-        return self.agg[op.__full_name__](*kw.values(), where=where)
+        return self.agg[self.__sql_name__(op)](*kw.values(), where=where)
 
     @visit_node.register(ops.TimeDelta)
     @visit_node.register(ops.DateDelta)
@@ -1113,17 +1169,21 @@ class SQLGlotCompiler(abc.ABC):
     def visit_SQLQueryResult(self, op, *, query, schema, source):
         return sg.parse_one(query, read=self.dialect).subquery()
 
+    @visit_node.register(ops.Unnest)
+    def visit_Unnest(self, op, *, arg):
+        return sge.Explode(this=arg)
+
     @visit_node.register(ops.JoinTable)
     def visit_JoinTable(self, op, *, parent, index):
         return parent
 
-    @visit_node.register(ops.Cast)
-    def visit_Cast(self, op, *, arg, to):
-        return self.cast(arg, to)
-
     @visit_node.register(ops.Value)
     def visit_Undefined(self, op, **_):
         raise com.OperationNotDefinedError(type(op).__name__)
+
+    @visit_node.register(ops.RegexExtract)
+    def visit_RegexExtract(self, op, *, arg, pattern, index):
+        return self.f.regexp_extract(arg, pattern, index, dialect=self.dialect)
 
 
 _SIMPLE_OPS = {
@@ -1153,16 +1213,11 @@ _SIMPLE_OPS = {
     ops.Sign: "sign",
     ops.ApproxCountDistinct: "approx_distinct",
     ops.Median: "median",
-    ops.Mean: "avg",
-    ops.Max: "max",
-    ops.Min: "min",
     ops.ArgMin: "argmin",
     ops.ArgMax: "argmax",
     ops.First: "first",
     ops.Last: "last",
     ops.Count: "count",
-    ops.All: "bool_and",
-    ops.Any: "bool_or",
     ops.ArrayCollect: "array_agg",
     ops.GroupConcat: "group_concat",
     ops.StringContains: "contains",
@@ -1205,7 +1260,6 @@ _SIMPLE_OPS = {
     ops.Unnest: "explode",
     ops.RegexSplit: "regexp_split",
     ops.ArrayContains: "array_contains",
-    ops.RegexExtract: "regexp_extract",
 }
 
 _BINARY_INFIX_OPS = {
@@ -1215,6 +1269,7 @@ _BINARY_INFIX_OPS = {
     ops.Multiply: sge.Mul,
     ops.Divide: sge.Div,
     ops.Modulus: sge.Mod,
+    ops.Power: sge.Pow,
     # Comparisons
     ops.GreaterEqual: sge.GTE,
     ops.Greater: sge.GT,
