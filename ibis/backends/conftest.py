@@ -536,9 +536,7 @@ def ddl_con(ddl_backend):
 
 
 @pytest.fixture(
-    params=_get_backends_to_test(
-        keep=("exasol", "mssql", "mysql", "oracle", "postgres", "sqlite")
-    ),
+    params=_get_backends_to_test(keep=("exasol", "mssql", "mysql", "oracle", "sqlite")),
     scope="session",
 )
 def alchemy_backend(request, data_dir, tmp_path_factory, worker_id):

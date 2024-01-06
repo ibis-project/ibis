@@ -115,6 +115,16 @@ multipolygon1 = [polygon1, polygon2]
         ("foo", "string"),
         (ipaddress.ip_address("1.2.3.4"), "inet"),
         (ipaddress.ip_address("::1"), "inet"),
+    ],
+)
+def test_literal_with_explicit_type(value, expected_type):
+    expr = ibis.literal(value, type=expected_type)
+    assert expr.type().equals(dt.validate_type(expected_type))
+
+
+@pytest.mark.parametrize(
+    ["value", "expected_type"],
+    [
         (list(pointA), "point"),
         (tuple(pointA), "point"),
         (list(lineAB), "linestring"),
@@ -133,7 +143,8 @@ multipolygon1 = [polygon1, polygon2]
         param(234234, "decimal(9, 3)", id="decimal_int"),
     ],
 )
-def test_literal_with_explicit_type(value, expected_type):
+def test_literal_with_explicit_geotype(value, expected_type):
+    pytest.importorskip("shapely")
     expr = ibis.literal(value, type=expected_type)
     assert expr.type().equals(dt.validate_type(expected_type))
 
@@ -247,6 +258,9 @@ def test_list_and_tuple_literals():
     # it works!
     repr(expr)
 
+
+def test_list_and_tuple_literals_geotype():
+    pytest.importorskip("shapely")
     # test using explicit type
     point = ibis.literal((1, 2, 1000), type="point")
     assert point.type() == dt.point
