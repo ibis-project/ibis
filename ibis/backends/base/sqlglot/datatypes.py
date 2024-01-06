@@ -148,6 +148,14 @@ class SqlglotType(TypeMapper):
         """Convert a sqlglot type to an ibis type."""
         typecode = typ.this
 
+        # broken sqlglot thing
+        if isinstance(typecode, sge.Interval):
+            typ = sge.DataType(
+                this=sge.DataType.Type.INTERVAL,
+                expressions=[sge.IntervalSpan(this=typecode.unit)],
+            )
+            typecode = typ.this
+
         if method := getattr(cls, f"_from_sqlglot_{typecode.name}", None):
             dtype = method(*typ.expressions)
         else:
@@ -237,7 +245,11 @@ class SqlglotType(TypeMapper):
         if isinstance(precision_or_span, str):
             return dt.Interval(precision_or_span, nullable=nullable)
         elif isinstance(precision_or_span, sge.IntervalSpan):
-            return dt.Interval(unit=precision_or_span.this.this, nullable=nullable)
+            if (expression := precision_or_span.expression) is not None:
+                unit = expression.this
+            else:
+                unit = precision_or_span.this.this
+            return dt.Interval(unit=unit, nullable=nullable)
         elif precision_or_span is None:
             raise com.IbisTypeError("Interval precision is None")
         else:
@@ -262,7 +274,11 @@ class SqlglotType(TypeMapper):
         return dt.Decimal(precision, scale, nullable=cls.default_nullable)
 
     @classmethod
-    def _from_sqlglot_GEOMETRY(cls) -> sge.DataType:
+    def _from_sqlglot_GEOMETRY(
+        cls, arg: sge.DataTypeParam | None = None
+    ) -> sge.DataType:
+        if arg is not None:
+            return getattr(dt, str(arg))(nullable=cls.default_nullable)
         return dt.GeoSpatial(geotype="geometry", nullable=cls.default_nullable)
 
     @classmethod
@@ -306,13 +322,19 @@ class SqlglotType(TypeMapper):
         if (scale := dtype.scale) is None:
             scale = cls.default_decimal_scale
 
-        return sge.DataType(
-            this=typecode.DECIMAL,
-            expressions=[
-                sge.DataTypeParam(this=sge.Literal.number(precision)),
-                sge.DataTypeParam(this=sge.Literal.number(scale)),
-            ],
-        )
+        expressions = []
+
+        if precision is not None:
+            expressions.append(sge.DataTypeParam(this=sge.Literal.number(precision)))
+
+        if scale is not None:
+            if precision is None:
+                raise com.IbisTypeError(
+                    "Decimal scale cannot be specified without precision"
+                )
+            expressions.append(sge.DataTypeParam(this=sge.Literal.number(scale)))
+
+        return sge.DataType(this=typecode.DECIMAL, expressions=expressions or None)
 
     @classmethod
     def _from_ibis_Timestamp(cls, dtype: dt.Timestamp) -> sge.DataType:
@@ -341,6 +363,7 @@ class SqlglotType(TypeMapper):
 class PostgresType(SqlglotType):
     dialect = "postgres"
     default_interval_precision = "s"
+    default_temporal_scale = 6
 
     unknown_type_strings = FrozenDict(
         {
@@ -358,6 +381,14 @@ class PostgresType(SqlglotType):
             "macaddr8[]": dt.Array(dt.macaddr),
         }
     )
+
+    @classmethod
+    def _from_ibis_Map(cls, dtype: dt.Map) -> sge.DataType:
+        if not dtype.key_type.is_string():
+            raise com.IbisTypeError("Postgres only supports string keys in maps")
+        if not dtype.value_type.is_string():
+            raise com.IbisTypeError("Postgres only supports string values in maps")
+        return sge.DataType(this=typecode.HSTORE)
 
 
 class DataFusionType(PostgresType):

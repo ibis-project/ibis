@@ -116,7 +116,6 @@ class _UDF(abc.ABC):
                 "__udf_namespace__": schema,
                 "__module__": fn.__module__,
                 "__func_name__": func_name,
-                "__full_name__": ".".join(filter(None, (schema, func_name))),
             }
         )
 

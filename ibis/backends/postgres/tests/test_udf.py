@@ -14,17 +14,14 @@ from ibis import udf
 from ibis.util import guid
 
 pytest.importorskip("psycopg2")
-sa = pytest.importorskip("sqlalchemy")
 
 
 @pytest.fixture(scope="session")
 def test_schema(con):
     schema_name = f"udf_test_{guid()}"
-    with con.begin() as c:
-        c.exec_driver_sql(f"CREATE SCHEMA IF NOT EXISTS {schema_name}")
+    con.create_schema(schema_name, force=True)
     yield schema_name
-    with con.begin() as c:
-        c.exec_driver_sql(f"DROP SCHEMA IF EXISTS {schema_name} CASCADE")
+    con.drop_schema(schema_name, force=True, cascade=True)
 
 
 @pytest.fixture(scope="session")
@@ -74,9 +71,9 @@ $$"""
 @pytest.fixture(scope="session")
 def con_for_udf(con, sql_table_setup, sql_define_udf, sql_define_py_udf, test_schema):
     with con.begin() as c:
-        c.exec_driver_sql(sql_table_setup)
-        c.exec_driver_sql(sql_define_udf)
-        c.exec_driver_sql(sql_define_py_udf)
+        c.execute(sql_table_setup)
+        c.execute(sql_define_udf)
+        c.execute(sql_define_py_udf)
     yield con
 
 

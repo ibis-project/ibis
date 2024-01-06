@@ -10,17 +10,21 @@ FROM (
   FROM (
     SELECT
       CASE
-        WHEN CAST(0 AS TINYINT) >= 0
+        WHEN (
+          CAST(0 AS TINYINT) + 1
+        ) >= 1
         THEN SUBSTRING(t0.c_phone, CAST(0 AS TINYINT) + 1, CAST(2 AS TINYINT))
-        ELSE SUBSTRING(t0.c_phone, CAST(0 AS TINYINT), CAST(2 AS TINYINT))
+        ELSE SUBSTRING(t0.c_phone, CAST(0 AS TINYINT) + 1 + LENGTH(t0.c_phone), CAST(2 AS TINYINT))
       END AS cntrycode,
       t0.c_acctbal
     FROM customer AS t0
     WHERE
       CASE
-        WHEN CAST(0 AS TINYINT) >= 0
+        WHEN (
+          CAST(0 AS TINYINT) + 1
+        ) >= 1
         THEN SUBSTRING(t0.c_phone, CAST(0 AS TINYINT) + 1, CAST(2 AS TINYINT))
-        ELSE SUBSTRING(t0.c_phone, CAST(0 AS TINYINT), CAST(2 AS TINYINT))
+        ELSE SUBSTRING(t0.c_phone, CAST(0 AS TINYINT) + 1 + LENGTH(t0.c_phone), CAST(2 AS TINYINT))
       END IN ('13', '31', '23', '29', '30', '18', '17')
       AND t0.c_acctbal > (
         SELECT
@@ -39,9 +43,11 @@ FROM (
           WHERE
             t0.c_acctbal > CAST(0.0 AS DOUBLE)
             AND CASE
-              WHEN CAST(0 AS TINYINT) >= 0
+              WHEN (
+                CAST(0 AS TINYINT) + 1
+              ) >= 1
               THEN SUBSTRING(t0.c_phone, CAST(0 AS TINYINT) + 1, CAST(2 AS TINYINT))
-              ELSE SUBSTRING(t0.c_phone, CAST(0 AS TINYINT), CAST(2 AS TINYINT))
+              ELSE SUBSTRING(t0.c_phone, CAST(0 AS TINYINT) + 1 + LENGTH(t0.c_phone), CAST(2 AS TINYINT))
             END IN ('13', '31', '23', '29', '30', '18', '17')
         ) AS t3
       )
