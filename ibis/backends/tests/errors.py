@@ -117,3 +117,9 @@ try:
     from oracledb.exceptions import DatabaseError as OracleDatabaseError
 except ImportError:
     OracleDatabaseError = None
+
+try:
+    from pyodbc import DataError as PyODBCDataError
+    from pyodbc import ProgrammingError as PyODBCProgrammingError
+except ImportError:
+    PyODBCProgrammingError = PyODBCDataError = None

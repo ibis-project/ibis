@@ -4,10 +4,8 @@ import os
 from typing import TYPE_CHECKING, Any
 
 import pytest
-import sqlalchemy as sa
 
 import ibis
-from ibis.backends.conftest import init_database
 from ibis.backends.tests.base import ServiceBackendTest
 
 if TYPE_CHECKING:
@@ -27,28 +25,18 @@ class TestConf(ServiceBackendTest):
     check_dtype = False
     supports_window_operations = False
     returned_timestamp_unit = "s"
-    supports_arrays = False
-    supports_arrays_outside_of_select = supports_arrays
+    supports_arrays_outside_of_select = supports_arrays = False
     supports_structs = False
     supports_json = False
     rounding_method = "half_to_even"
     service_name = "mssql"
-    deps = "pyodbc", "sqlalchemy"
+    deps = ("pyodbc",)
 
     @property
     def test_files(self) -> Iterable[Path]:
         return self.data_dir.joinpath("csv").glob("*.csv")
 
-    def _load_data(
-        self,
-        *,
-        user: str = MSSQL_USER,
-        password: str = MSSQL_PASS,
-        host: str = MSSQL_HOST,
-        port: int = MSSQL_PORT,
-        database: str = IBIS_TEST_MSSQL_DB,
-        **_: Any,
-    ) -> None:
+    def _load_data(self, **_: Any) -> None:
         """Load test data into a MSSQL backend instance.
 
         Parameters
@@ -58,17 +46,9 @@ class TestConf(ServiceBackendTest):
         script_dir
             Location of scripts defining schemas
         """
-        params = f"driver={MSSQL_PYODBC_DRIVER}"
-        url = sa.engine.make_url(
-            f"mssql+pyodbc://{user}:{password}@{host}:{port:d}/{database}?{params}"
-        )
-        init_database(
-            url=url,
-            database=database,
-            schema=self.ddl_script,
-            isolation_level="AUTOCOMMIT",
-            recreate=False,
-        )
+        with self.connection.begin() as cur:
+            for stmt in self.ddl_script:
+                cur.execute(stmt)
 
     @staticmethod
     def connect(*, tmpdir, worker_id, **kw):
@@ -79,6 +59,7 @@ class TestConf(ServiceBackendTest):
             database=IBIS_TEST_MSSQL_DB,
             port=MSSQL_PORT,
             driver=MSSQL_PYODBC_DRIVER,
+            autocommit=True,
             **kw,
         )
 
