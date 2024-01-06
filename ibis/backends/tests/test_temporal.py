@@ -9,9 +9,9 @@ from operator import methodcaller
 import numpy as np
 import pandas as pd
 import pytest
-import sqlalchemy as sa
 import sqlglot as sg
 from pytest import param
+import sqlalchemy as sa
 
 import ibis
 import ibis.common.exceptions as com
@@ -32,6 +32,7 @@ from ibis.backends.tests.errors import (
     PolarsPanicException,
     Py4JJavaError,
     PyDruidProgrammingError,
+    PyODBCProgrammingError,
     SnowflakeProgrammingError,
     TrinoUserError,
 )
@@ -143,7 +144,7 @@ def test_timestamp_extract(backend, alltypes, df, attr):
             id="day_of_week_full_name",
             marks=[
                 pytest.mark.notimpl(
-                    ["mssql", "druid", "oracle", "exasol"],
+                    ["druid", "oracle", "exasol"],
                     raises=com.OperationNotDefinedError,
                 ),
                 pytest.mark.broken(
@@ -1471,7 +1472,7 @@ def test_interval_add_cast_column(backend, alltypes, df):
         ),
     ],
 )
-@pytest.mark.notimpl(["datafusion", "mssql"], raises=com.OperationNotDefinedError)
+@pytest.mark.notimpl(["datafusion"], raises=com.OperationNotDefinedError)
 @pytest.mark.broken(
     ["druid"],
     raises=AttributeError,
@@ -1662,7 +1663,12 @@ def test_string_to_timestamp(alltypes, fmt):
         param("2017-01-07", 5, "Saturday", id="saturday"),
     ],
 )
-@pytest.mark.notimpl(["mssql", "druid", "oracle"], raises=com.OperationNotDefinedError)
+@pytest.mark.notimpl(["druid", "oracle"], raises=com.OperationNotDefinedError)
+@pytest.mark.notimpl(
+    ["flink"],
+    raises=Py4JJavaError,
+    reason="DayOfWeekName is not supported in Flink",
+)
 @pytest.mark.notimpl(["exasol"], raises=com.OperationNotDefinedError)
 @pytest.mark.broken(
     ["risingwave"],
@@ -1678,7 +1684,7 @@ def test_day_of_week_scalar(con, date, expected_index, expected_day):
     assert result_day.lower() == expected_day.lower()
 
 
-@pytest.mark.notimpl(["mssql", "oracle"], raises=com.OperationNotDefinedError)
+@pytest.mark.notimpl(["oracle"], raises=com.OperationNotDefinedError)
 @pytest.mark.broken(
     ["druid"],
     raises=AttributeError,
@@ -1717,14 +1723,19 @@ def test_day_of_week_column(backend, alltypes, df):
             lambda s: s.dt.day_name().str.len().sum(),
             id="day_of_week_full_name",
             marks=[
-                pytest.mark.notimpl(
-                    ["mssql"],
-                    raises=com.OperationNotDefinedError,
-                ),
                 pytest.mark.broken(
                     ["risingwave"],
                     raises=AssertionError,
                     reason="Refer to https://github.com/risingwavelabs/risingwave/issues/14670",
+                ),
+                pytest.mark.never(
+                    ["flink"],
+                    raises=Py4JJavaError,
+                    reason=(
+                        "SqlValidatorException: No match found for function signature dayname(<TIMESTAMP>)"
+                        "`day_of_week_name` is not supported in Flink"
+                        "Ref: https://nightlies.apache.org/flink/flink-docs-release-1.13/docs/dev/table/functions/systemfunctions/#temporal-functions"
+                    ),
                 ),
             ],
         ),
@@ -2065,6 +2076,7 @@ INTERVAL_BACKEND_TYPES = {
         "support logical type INTERVAL SECOND(3) NOT NULL currently"
     ),
 )
+@pytest.mark.notyet(["mssql"], raises=PyODBCProgrammingError)
 def test_interval_literal(con, backend):
     expr = ibis.interval(1, unit="s")
     result = con.execute(expr)
@@ -2348,7 +2360,7 @@ def test_large_timestamp(con):
                 pytest.mark.notyet(
                     ["mssql"],
                     reason="doesn't support nanoseconds",
-                    raises=sa.exc.ProgrammingError,
+                    raises=PyODBCProgrammingError,
                 ),
                 pytest.mark.notyet(
                     ["mysql"],

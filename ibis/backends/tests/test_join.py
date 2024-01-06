@@ -190,7 +190,7 @@ def test_semi_join_topk(batting, awards_players, func):
 
 @pytest.mark.notimpl(["dask", "druid", "exasol", "oracle"])
 @pytest.mark.notimpl(
-    ["postgres"],
+    ["postgres", "mssql"],
     raises=com.IbisTypeError,
     reason="postgres can't handle null types columns",
 )

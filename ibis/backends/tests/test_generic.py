@@ -9,9 +9,9 @@ from operator import invert, methodcaller, neg
 import numpy as np
 import pandas as pd
 import pytest
-import sqlalchemy as sa
 import toolz
 from pytest import param
+import sqlalchemy as sa
 
 import ibis
 import ibis.common.exceptions as com
@@ -28,6 +28,8 @@ from ibis.backends.tests.errors import (
     MySQLProgrammingError,
     OracleDatabaseError,
     PyDruidProgrammingError,
+    PyODBCDataError,
+    PyODBCProgrammingError,
     SnowflakeProgrammingError,
     TrinoUserError,
     PsycoPg2InvalidTextRepresentation
@@ -113,7 +115,7 @@ def test_scalar_fillna_nullif(con, expr, expected):
             ibis.literal(np.nan),
             methodcaller("isnan"),
             marks=[
-                pytest.mark.notimpl(["mysql", "sqlite", "druid"]),
+                pytest.mark.notimpl(["mysql", "mssql", "sqlite", "druid"]),
                 pytest.mark.notyet(
                     ["exasol"],
                     raises=ExaQueryError,
@@ -127,7 +129,6 @@ def test_scalar_fillna_nullif(con, expr, expected):
         ),
     ],
 )
-@pytest.mark.notimpl(["mssql"])
 @pytest.mark.notyet(["flink"], "NaN is not supported in Flink SQL", raises=ValueError)
 def test_isna(backend, alltypes, col, value, filt):
     table = alltypes.select(**{col: value})
@@ -205,7 +206,7 @@ def test_coalesce(con, expr, expected):
 
 
 # TODO(dask) - identicalTo - #2553
-@pytest.mark.notimpl(["clickhouse", "dask", "mssql", "druid", "exasol"])
+@pytest.mark.notimpl(["clickhouse", "dask", "druid", "exasol"])
 def test_identical_to(backend, alltypes, sorted_df):
     sorted_alltypes = alltypes.order_by("id")
     df = sorted_df
@@ -234,7 +235,7 @@ def test_identical_to(backend, alltypes, sorted_df):
         ("int_col", frozenset({1})),
     ],
 )
-@pytest.mark.notimpl(["mssql", "druid"])
+@pytest.mark.notimpl(["druid"])
 def test_isin(backend, alltypes, sorted_df, column, elements):
     sorted_alltypes = alltypes.order_by("id")
     expr = sorted_alltypes[
@@ -258,7 +259,7 @@ def test_isin(backend, alltypes, sorted_df, column, elements):
         ("int_col", frozenset({1})),
     ],
 )
-@pytest.mark.notimpl(["mssql", "druid"])
+@pytest.mark.notimpl(["druid"])
 def test_notin(backend, alltypes, sorted_df, column, elements):
     sorted_alltypes = alltypes.order_by("id")
     expr = sorted_alltypes[
@@ -744,7 +745,6 @@ def test_select_filter_select(backend, alltypes, df):
     backend.assert_series_equal(result, expected)
 
 
-@pytest.mark.broken(["mssql"], raises=sa.exc.ProgrammingError)
 def test_between(backend, alltypes, df):
     expr = alltypes.double_col.between(5, 10)
     result = expr.execute().rename("double_col")
@@ -852,7 +852,7 @@ def test_typeof(con):
 @pytest.mark.notyet(["impala"], reason="can't find table in subquery")
 @pytest.mark.notimpl(["datafusion", "druid"])
 @pytest.mark.notimpl(["pyspark"], condition=is_older_than("pyspark", "3.5.0"))
-@pytest.mark.notyet(["dask", "mssql"], reason="not supported by the backend")
+@pytest.mark.notyet(["dask"], reason="not supported by the backend")
 @pytest.mark.broken(
     ["risingwave"],
     raises=sa.exc.InternalError,
@@ -902,13 +902,16 @@ def test_isin_uncorrelated_filter(
 @pytest.mark.parametrize(
     "dtype",
     [
-        "bool",
+        param(
+            "bool",
+            marks=[pytest.mark.notimpl(["mssql"], raises=AssertionError)],
+        ),
         param(
             "bytes",
             marks=[
                 pytest.mark.notyet(
                     ["exasol"], raises=ExaQueryError, reason="no binary type"
-                )
+                ),
             ],
         ),
         "str",
@@ -1346,7 +1349,6 @@ def test_hexdigest(backend, alltypes):
     [
         "pandas",
         "dask",
-        "mssql",
         "oracle",
         "risingwave",
         "snowflake",
@@ -1379,6 +1381,7 @@ def test_hexdigest(backend, alltypes):
                     ["datafusion"], reason="casts to 1672531200000000 (microseconds)"
                 ),
                 pytest.mark.broken(["mysql"], reason="returns 20230101000000"),
+                pytest.mark.notyet(["mssql"], raises=PyODBCDataError),
             ],
         ),
     ],
@@ -1396,7 +1399,6 @@ def test_try_cast(con, from_val, to_type, expected):
         "datafusion",
         "druid",
         "exasol",
-        "mssql",
         "mysql",
         "oracle",
         "pandas",
@@ -1419,6 +1421,7 @@ def test_try_cast(con, from_val, to_type, expected):
                 ),
                 pytest.mark.notyet(["bigquery"], raises=GoogleBadRequest),
                 pytest.mark.notyet(["trino"], raises=TrinoUserError),
+                pytest.mark.notyet(["mssql"], raises=PyODBCDataError),
                 pytest.mark.broken(["polars"], reason="casts to 1672531200000000000"),
             ],
         ),
@@ -1435,7 +1438,6 @@ def test_try_cast_null(con, from_val, to_type):
         "dask",
         "datafusion",
         "druid",
-        "mssql",
         "mysql",
         "oracle",
         "postgres",
@@ -1463,7 +1465,6 @@ def test_try_cast_table(backend, con):
         "pandas",
         "dask",
         "datafusion",
-        "mssql",
         "mysql",
         "oracle",
         "postgres",
@@ -1489,6 +1490,7 @@ def test_try_cast_table(backend, con):
                 ),
                 pytest.mark.notyet(["bigquery"], raises=GoogleBadRequest),
                 pytest.mark.notyet(["trino"], raises=TrinoUserError),
+                pytest.mark.notyet(["mssql"], raises=PyODBCDataError),
             ],
             id="datetime-to-float",
         ),
@@ -1576,7 +1578,7 @@ def test_try_cast_func(con, from_val, to_type, func):
                 ),
                 pytest.mark.notyet(
                     ["mssql"],
-                    raises=sa.exc.CompileError,
+                    raises=PyODBCProgrammingError,
                     reason="mssql doesn't support OFFSET without LIMIT",
                 ),
                 pytest.mark.notyet(["exasol"], raises=ExaQueryError),
@@ -1617,11 +1619,6 @@ def test_try_cast_func(con, from_val, to_type, func):
             lambda _: 1,
             id="[3:4]",
             marks=[
-                pytest.mark.notyet(
-                    ["mssql"],
-                    raises=sa.exc.CompileError,
-                    reason="mssql doesn't support OFFSET without LIMIT",
-                ),
                 pytest.mark.notyet(["exasol"], raises=ExaQueryError),
                 pytest.mark.notyet(["oracle"], raises=com.UnsupportedArgumentError),
                 pytest.mark.notyet(
@@ -1686,11 +1683,6 @@ def test_static_table_slice(backend, slc, expected_count_fn):
     ["trino"],
     raises=TrinoUserError,
     reason="backend doesn't support dynamic limit/offset",
-)
-@pytest.mark.notimpl(
-    ["mssql"],
-    raises=sa.exc.CompileError,
-    reason="mssql doesn't support dynamic limit/offset without an ORDER BY",
 )
 @pytest.mark.notimpl(
     ["risingwave"],
@@ -1781,6 +1773,11 @@ def test_dynamic_table_slice(backend, slc, expected_count_fn):
     ["risingwave"],
     raises=sa.exc.InternalError,
     reason="risingwave doesn't support limit/offset",
+)
+@pytest.mark.notyet(
+    ["mssql"],
+    reason="doesn't support dynamic limit/offset; compiles incorrectly in sqlglot",
+    raises=AssertionError,
 )
 def test_dynamic_table_slice_with_computed_offset(backend):
     t = backend.functional_alltypes

@@ -16,6 +16,7 @@ from ibis.backends.base.sqlglot.compiler import STAR
 if TYPE_CHECKING:
     from collections.abc import Iterable, Iterator, Mapping
 
+    import pandas as pd
     import pyarrow as pa
 
     import ibis.expr.datatypes as dt
@@ -28,6 +29,10 @@ class SQLGlotBackend(BaseBackend):
     compiler: ClassVar[SQLGlotCompiler]
     name: ClassVar[str]
 
+    @property
+    def _sqlglot_dialect(self) -> str:
+        return self.compiler.dialect
+
     @classmethod
     def has_operation(cls, operation: type[ops.Value]) -> bool:
         # singledispatchmethod overrides `__get__` so we can't directly access
@@ -35,7 +40,25 @@ class SQLGlotBackend(BaseBackend):
         dispatcher = cls.compiler.visit_node.register.__self__.dispatcher
         return dispatcher.dispatch(operation) is not dispatcher.dispatch(object)
 
-    # TODO(kszucs): get_schema() is not registered as an abstract method
+    def _fetch_from_cursor(self, cursor, schema: sch.Schema) -> pd.DataFrame:
+        import pandas as pd
+
+        from ibis.formats.pandas import PandasData
+
+        try:
+            df = pd.DataFrame.from_records(
+                cursor, columns=schema.names, coerce_float=True
+            )
+        except Exception:
+            # clean up the cursor if we fail to create the DataFrame
+            #
+            # in the sqlite case failing to close the cursor results in
+            # artificially locked tables
+            cursor.close()
+            raise
+        df = PandasData.convert_table(df, schema)
+        return df
+
     def table(
         self, name: str, schema: str | None = None, database: str | None = None
     ) -> ir.Table:
