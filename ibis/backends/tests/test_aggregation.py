@@ -18,6 +18,7 @@ from ibis.backends.tests.errors import (
     ClickHouseDatabaseError,
     ExaQueryError,
     GoogleBadRequest,
+    MySQLNotSupportedError,
     PolarsInvalidOperationError,
     Py4JError,
     PySparkAnalysisException,
@@ -948,7 +949,6 @@ def test_count_distinct_star(alltypes, df, ibis_cond, pandas_cond):
                         "datafusion",
                         "impala",
                         "mssql",
-                        "mysql",
                         "polars",
                         "sqlite",
                         "druid",
@@ -957,6 +957,7 @@ def test_count_distinct_star(alltypes, df, ibis_cond, pandas_cond):
                     ],
                     raises=com.OperationNotDefinedError,
                 ),
+                pytest.mark.notyet(["mysql"], raises=com.UnsupportedBackendType),
                 pytest.mark.notyet(
                     ["snowflake"],
                     reason="backend doesn't implement array of quantiles as input",
@@ -1359,6 +1360,7 @@ def test_date_quantile(alltypes, func):
             "::",
             id="expr",
             marks=[
+                pytest.mark.notyet(["mysql"], raises=com.UnsupportedOperationError),
                 pytest.mark.notyet(
                     ["bigquery"],
                     raises=GoogleBadRequest,
@@ -1366,10 +1368,6 @@ def test_date_quantile(alltypes, func):
                 ),
                 pytest.mark.broken(
                     ["pyspark"], raises=TypeError, reason="Column is not iterable"
-                ),
-                pytest.mark.broken(
-                    ["mysql"],
-                    raises=sa.exc.ProgrammingError,
                 ),
             ],
         ),
@@ -1680,7 +1678,7 @@ def test_grouped_case(backend, con):
 @pytest.mark.notyet(["druid"], raises=sa.exc.ProgrammingError)
 @pytest.mark.notyet(["snowflake"], raises=SnowflakeProgrammingError)
 @pytest.mark.notyet(["trino"], raises=TrinoUserError)
-@pytest.mark.notyet(["mysql"], raises=sa.exc.NotSupportedError)
+@pytest.mark.notyet(["mysql"], raises=MySQLNotSupportedError)
 @pytest.mark.notyet(["oracle"], raises=sa.exc.DatabaseError)
 @pytest.mark.notyet(["pyspark"], raises=PySparkAnalysisException)
 def test_group_concat_over_window(backend, con):

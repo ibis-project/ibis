@@ -257,11 +257,6 @@ def test_join_with_pandas_non_null_typed_columns(batting, awards_players):
             "outer",
             marks=[
                 pytest.mark.notyet(
-                    ["mysql"],
-                    raises=sa.exc.ProgrammingError,
-                    reason="MySQL doesn't support full outer joins natively",
-                ),
-                pytest.mark.notyet(
                     ["sqlite"],
                     condition=vparse(sqlite3.sqlite_version) < vparse("3.39"),
                     reason="sqlite didn't support full outer join until 3.39",
@@ -298,13 +293,9 @@ def test_join_with_trivial_predicate(awards_players, predicate, how, pandas_valu
     assert len(result) == len(expected)
 
 
-outer_join_nullability_failures = [
-    pytest.mark.notyet(
-        ["mysql"],
-        raises=sa.exc.ProgrammingError,
-        reason="mysql doesn't support full outer joins",
-    )
-] + [pytest.mark.notyet(["sqlite"])] * (vparse(sqlite3.sqlite_version) < vparse("3.39"))
+outer_join_nullability_failures = [pytest.mark.notyet(["sqlite"])] * (
+    vparse(sqlite3.sqlite_version) < vparse("3.39")
+)
 
 
 @pytest.mark.notimpl(
