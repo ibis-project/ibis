@@ -1119,7 +1119,7 @@ def test_repr_mimebundle(alltypes, interactive, expr_type, monkeypatch):
 
 
 @pytest.mark.never(
-    ["postgres", "mysql", "bigquery", "duckdb"],
+    ["postgres", "bigquery", "duckdb"],
     reason="These backends explicitly do support Geo operations",
 )
 @pytest.mark.parametrize("op", [ops.GeoDistance, ops.GeoAsText, ops.GeoUnaryUnion])
