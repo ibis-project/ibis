@@ -153,12 +153,6 @@ class PandasData(DataMapper):
         method_name = f"convert_{dtype.__class__.__name__}"
         convert_method = getattr(cls, method_name, cls.convert_default)
 
-        if convert_method is cls.convert_default:
-            # only take the fast path if it isn't overridden in a subclass
-            if obj.dtype == pandas_type and dtype.is_primitive():
-                return obj
-            convert_method = cls.convert_default
-
         result = convert_method(obj, dtype, pandas_type)
         assert not isinstance(result, np.ndarray), f"{convert_method} -> {type(result)}"
         return result
@@ -186,6 +180,8 @@ class PandasData(DataMapper):
 
     @classmethod
     def convert_default(cls, s, dtype, pandas_type):
+        if s.dtype == pandas_type and dtype.is_primitive():
+            return s
         try:
             return s.astype(pandas_type)
         except Exception:  # noqa: BLE001
