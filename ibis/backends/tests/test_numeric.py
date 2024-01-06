@@ -22,6 +22,7 @@ from ibis.backends.tests.errors import (
     ExaQueryError,
     GoogleBadRequest,
     ImpalaHiveServer2Error,
+    MySQLOperationalError,
     PsycoPg2DivisionByZero,
     Py4JError,
     SnowflakeProgrammingError,
@@ -267,7 +268,7 @@ def test_numeric_literal(con, backend, expr, expected_types):
                 "postgres": decimal.Decimal("1.1"),
                 "pandas": decimal.Decimal("1.1"),
                 "pyspark": decimal.Decimal("1.1"),
-                "mysql": 1.1,
+                "mysql": decimal.Decimal("1"),
                 "mssql": 1.1,
                 "druid": 1.1,
                 "datafusion": decimal.Decimal("1.1"),
@@ -320,7 +321,7 @@ def test_numeric_literal(con, backend, expr, expected_types):
                 "postgres": decimal.Decimal("1.1"),
                 "pandas": decimal.Decimal("1.1"),
                 "pyspark": decimal.Decimal("1.1"),
-                "mysql": 1.1,
+                "mysql": decimal.Decimal("1.1"),
                 "clickhouse": decimal.Decimal("1.1"),
                 "dask": decimal.Decimal("1.1"),
                 "mssql": 1.1,
@@ -369,7 +370,6 @@ def test_numeric_literal(con, backend, expr, expected_types):
                 "postgres": decimal.Decimal("1.1"),
                 "pandas": decimal.Decimal("1.1"),
                 "pyspark": decimal.Decimal("1.1"),
-                "mysql": 1.1,
                 "clickhouse": decimal.Decimal(
                     "1.10000000000000003193790845333396190208"
                 ),
@@ -388,6 +388,7 @@ def test_numeric_literal(con, backend, expr, expected_types):
             },
             marks=[
                 pytest.mark.notimpl(["exasol"], raises=ExaQueryError),
+                pytest.mark.notimpl(["mysql"], raises=MySQLOperationalError),
                 pytest.mark.notyet(["snowflake"], raises=SnowflakeProgrammingError),
                 pytest.mark.broken(
                     ["impala"],
@@ -456,12 +457,7 @@ def test_numeric_literal(con, backend, expr, expected_types):
                     "An error occurred while calling z:org.apache.spark.sql.functions.lit.",
                     raises=Py4JError,
                 ),
-                pytest.mark.broken(
-                    ["mysql"],
-                    "(pymysql.err.OperationalError) (1054, \"Unknown column 'Infinity' in 'field list'\")"
-                    "[SQL: SELECT %(param_1)s AS `Decimal('Infinity')`]",
-                    raises=sa.exc.OperationalError,
-                ),
+                pytest.mark.notyet(["mysql"], raises=com.UnsupportedOperationError),
                 pytest.mark.broken(
                     ["mssql"],
                     "(pymssql._pymssql.ProgrammingError) (207, b\"Invalid column name 'Infinity'."
@@ -542,12 +538,7 @@ def test_numeric_literal(con, backend, expr, expected_types):
                     "An error occurred while calling z:org.apache.spark.sql.functions.lit.",
                     raises=Py4JError,
                 ),
-                pytest.mark.broken(
-                    ["mysql"],
-                    "(pymysql.err.OperationalError) (1054, \"Unknown column 'Infinity' in 'field list'\")"
-                    "[SQL: SELECT %(param_1)s AS `Decimal('-Infinity')`]",
-                    raises=sa.exc.OperationalError,
-                ),
+                pytest.mark.notyet(["mysql"], raises=com.UnsupportedOperationError),
                 pytest.mark.broken(
                     ["mssql"],
                     "(pymssql._pymssql.ProgrammingError) (207, b\"Invalid column name 'Infinity'."
@@ -630,12 +621,7 @@ def test_numeric_literal(con, backend, expr, expected_types):
                     "An error occurred while calling z:org.apache.spark.sql.functions.lit.",
                     raises=Py4JError,
                 ),
-                pytest.mark.broken(
-                    ["mysql"],
-                    "(pymysql.err.OperationalError) (1054, \"Unknown column 'NaN' in 'field list'\")"
-                    "[SQL: SELECT %(param_1)s AS `Decimal('NaN')`]",
-                    raises=sa.exc.OperationalError,
-                ),
+                pytest.mark.notyet(["mysql"], raises=com.UnsupportedOperationError),
                 pytest.mark.broken(
                     ["mssql"],
                     "(pymssql._pymssql.ProgrammingError) (207, b\"Invalid column name 'NaN'."
@@ -744,25 +730,15 @@ def test_decimal_literal(con, backend, expr, expected_types, expected_result):
             id="float-literal",
             marks=[
                 pytest.mark.notimpl(
-                    ["exasol"],
-                    raises=com.OperationNotDefinedError,
-                ),
-                pytest.mark.notimpl(
-                    ["druid"],
-                    raises=com.OperationNotDefinedError,
-                ),
+                    ["exasol", "druid"], raises=com.OperationNotDefinedError
+                )
             ],
         ),
         param(
             lambda t: ibis.literal(np.nan),
             lambda t: np.nan,
             id="nan-literal",
-            marks=[
-                pytest.mark.notimpl(
-                    ["druid"],
-                    raises=com.OperationNotDefinedError,
-                )
-            ],
+            marks=[pytest.mark.notimpl(["druid"], raises=com.OperationNotDefinedError)],
         ),
         param(
             lambda t: ibis.literal(np.inf),
@@ -770,13 +746,8 @@ def test_decimal_literal(con, backend, expr, expected_types, expected_result):
             id="inf-literal",
             marks=[
                 pytest.mark.notimpl(
-                    ["exasol"],
-                    raises=com.OperationNotDefinedError,
-                ),
-                pytest.mark.notimpl(
-                    ["druid"],
-                    raises=com.OperationNotDefinedError,
-                ),
+                    ["exasol", "druid"], raises=com.OperationNotDefinedError
+                )
             ],
         ),
         param(
@@ -785,13 +756,8 @@ def test_decimal_literal(con, backend, expr, expected_types, expected_result):
             id="-inf-literal",
             marks=[
                 pytest.mark.notimpl(
-                    ["exasol"],
-                    raises=com.OperationNotDefinedError,
-                ),
-                pytest.mark.notimpl(
-                    ["druid"],
-                    raises=com.OperationNotDefinedError,
-                ),
+                    ["exasol", "druid"], raises=com.OperationNotDefinedError
+                )
             ],
         ),
     ],
@@ -821,9 +787,9 @@ def test_decimal_literal(con, backend, expr, expected_types, expected_result):
     ],
 )
 @pytest.mark.notimpl(
-    ["mysql", "sqlite", "mssql", "oracle", "flink"],
-    raises=com.OperationNotDefinedError,
+    ["sqlite", "mssql", "oracle", "flink"], raises=com.OperationNotDefinedError
 )
+@pytest.mark.notimpl(["mysql"], raises=(MySQLOperationalError, NotImplementedError))
 def test_isnan_isinf(
     backend,
     con,
@@ -1516,6 +1482,7 @@ def test_divide_by_zero(backend, alltypes, df, column, denominator):
         "snowflake",
         "trino",
         "postgres",
+        "mysql",
     ],
     reason="Not SQLAlchemy backends",
 )

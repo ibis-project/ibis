@@ -2,30 +2,100 @@
 
 from __future__ import annotations
 
+import atexit
+import contextlib
+import re
 import warnings
-from typing import TYPE_CHECKING, Literal
+from functools import cached_property, partial
+from itertools import repeat
+from operator import itemgetter
+from typing import TYPE_CHECKING, Any
+from urllib.parse import parse_qs, urlparse
 
 import pymysql
-import sqlalchemy as sa
-from sqlalchemy.dialects import mysql
+import sqlglot as sg
+import sqlglot.expressions as sge
 
+import ibis
+import ibis.common.exceptions as com
+import ibis.expr.operations as ops
 import ibis.expr.schema as sch
+import ibis.expr.types as ir
 from ibis import util
 from ibis.backends.base import CanCreateDatabase
-from ibis.backends.base.sql.alchemy import BaseAlchemyBackend
+from ibis.backends.base.sqlglot import SQLGlotBackend
+from ibis.backends.base.sqlglot.compiler import TRUE, C
 from ibis.backends.mysql.compiler import MySQLCompiler
-from ibis.backends.mysql.datatypes import MySQLDateTime, MySQLType
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable
+    from collections.abc import Iterable, Mapping
+
+    import pandas as pd
+    import pyarrow as pa
 
     import ibis.expr.datatypes as dt
 
 
-class Backend(BaseAlchemyBackend, CanCreateDatabase):
+class Backend(SQLGlotBackend, CanCreateDatabase):
     name = "mysql"
-    compiler = MySQLCompiler
+    compiler = MySQLCompiler()
     supports_create_or_replace = False
+
+    def _from_url(self, url: str, **kwargs):
+        """Connect to a backend using a URL `url`.
+
+        Parameters
+        ----------
+        url
+            URL with which to connect to a backend.
+        kwargs
+            Additional keyword arguments
+
+        Returns
+        -------
+        BaseBackend
+            A backend instance
+        """
+
+        url = urlparse(url)
+        database, *_ = url.path[1:].split("/", 1)
+        query_params = parse_qs(url.query)
+        connect_args = {
+            "user": url.username,
+            "password": url.password or "",
+            "host": url.hostname,
+            "database": database or "",
+        }
+
+        for name, value in query_params.items():
+            if len(value) > 1:
+                connect_args[name] = value
+            elif len(value) == 1:
+                connect_args[name] = value[0]
+            else:
+                raise com.IbisError(f"Invalid URL parameter: {name}")
+
+        kwargs.update(connect_args)
+        self._convert_kwargs(kwargs)
+
+        if "user" in kwargs and not kwargs["user"]:
+            del kwargs["user"]
+
+        if "host" in kwargs and not kwargs["host"]:
+            del kwargs["host"]
+
+        if "database" in kwargs and not kwargs["database"]:
+            del kwargs["database"]
+
+        if "password" in kwargs and kwargs["password"] is None:
+            del kwargs["password"]
+
+        return self.connect(**kwargs)
+
+    @cached_property
+    def version(self):
+        matched = re.search(r"(\d+)\.(\d+)\.(\d+)", self.con.server_version)
+        return ".".join(matched.groups())
 
     def do_connect(
         self,
@@ -34,8 +104,7 @@ class Backend(BaseAlchemyBackend, CanCreateDatabase):
         password: str | None = None,
         port: int = 3306,
         database: str | None = None,
-        url: str | None = None,
-        driver: Literal["pymysql"] = "pymysql",
+        autocommit: bool = True,
         **kwargs,
     ) -> None:
         """Create an Ibis client using the passed connection parameters.
@@ -52,15 +121,10 @@ class Backend(BaseAlchemyBackend, CanCreateDatabase):
             Port
         database
             Database to connect to
-        url
-            Complete SQLAlchemy connection string. If passed, the other
-            connection arguments are ignored.
-        driver
-            Python MySQL database driver
+        autocommit
+            Autocommit mode
         kwargs
-            Additional keyword arguments passed to `connect_args` in
-            `sqlalchemy.create_engine`. Use these to pass dialect specific
-            arguments.
+            Additional keyword arguments passed to `pymysql.connect`
 
         Examples
         --------
@@ -92,96 +156,362 @@ class Backend(BaseAlchemyBackend, CanCreateDatabase):
             year : int32
             month : int32
         """
-        if driver != "pymysql":
-            raise NotImplementedError("pymysql is currently the only supported driver")
-        alchemy_url = self._build_alchemy_url(
-            url=url,
+        con = pymysql.connect(
+            user=user,
             host=host,
             port=port,
-            user=user,
             password=password,
             database=database,
-            driver=f"mysql+{driver}",
+            autocommit=autocommit,
+            conv=pymysql.converters.conversions,
+            **kwargs,
         )
 
-        engine = sa.create_engine(
-            alchemy_url, poolclass=sa.pool.StaticPool, connect_args=kwargs
-        )
+        with contextlib.closing(con.cursor()) as cur:
+            try:
+                cur.execute("SET @@session.time_zone = 'UTC'")
+            except Exception as e:  # noqa: BLE001
+                warnings.warn(f"Unable to set session timezone to UTC: {e}")
 
-        @sa.event.listens_for(engine, "connect")
-        def connect(dbapi_connection, connection_record):
-            with dbapi_connection.cursor() as cur:
-                try:
-                    cur.execute("SET @@session.time_zone = 'UTC'")
-                except (sa.exc.OperationalError, pymysql.err.OperationalError):
-                    warnings.warn("Unable to set session timezone to UTC.")
-
-        super().do_connect(engine)
+        self.con = con
+        self._temp_views = set()
 
     @property
     def current_database(self) -> str:
-        return self._scalar_query(sa.select(sa.func.database()))
-
-    @staticmethod
-    def _new_sa_metadata():
-        meta = sa.MetaData()
-
-        @sa.event.listens_for(meta, "column_reflect")
-        def column_reflect(inspector, table, column_info):
-            if isinstance(column_info["type"], mysql.DATETIME):
-                column_info["type"] = MySQLDateTime()
-            if isinstance(column_info["type"], mysql.DOUBLE):
-                column_info["type"] = mysql.DOUBLE(asdecimal=False)
-            if isinstance(column_info["type"], mysql.FLOAT):
-                column_info["type"] = mysql.FLOAT(asdecimal=False)
-
-        return meta
+        with self._safe_raw_sql(sg.select(self.compiler.f.database())) as cur:
+            [(database,)] = cur.fetchall()
+        return database
 
     def list_databases(self, like: str | None = None) -> list[str]:
         # In MySQL, "database" and "schema" are synonymous
-        databases = self.inspector.get_schema_names()
+        with self._safe_raw_sql("SHOW DATABASES") as cur:
+            databases = list(map(itemgetter(0), cur.fetchall()))
         return self._filter_with_like(databases, like)
 
-    def _metadata(self, table: str) -> Iterable[tuple[str, dt.DataType]]:
-        with self.begin() as con:
-            result = con.exec_driver_sql(f"DESCRIBE {table}").mappings().all()
+    def _metadata(self, query: str) -> Iterable[tuple[str, dt.DataType]]:
+        table = util.gen_name("mysql_metadata")
 
-        for field in result:
-            name = field["Field"]
-            type_string = field["Type"]
-            is_nullable = field["Null"] == "YES"
-            yield name, MySQLType.from_string(type_string, nullable=is_nullable)
+        with self.begin() as cur:
+            cur.execute(f"CREATE TEMPORARY TABLE {table} AS {query}")
+            try:
+                cur.execute(f"DESCRIBE {table}")
+                result = cur.fetchall()
+            finally:
+                cur.execute(f"DROP TABLE {table}")
 
-    def _get_schema_using_query(self, query: str):
-        table = f"__ibis_mysql_metadata_{util.guid()}"
+        type_mapper = self.compiler.type_mapper
+        return (
+            (name, type_mapper.from_string(type_string, nullable=is_nullable == "YES"))
+            for name, type_string, is_nullable, *_ in result
+        )
 
-        with self.begin() as con:
-            con.exec_driver_sql(f"CREATE TEMPORARY TABLE {table} AS {query}")
-            result = con.exec_driver_sql(f"DESCRIBE {table}").mappings().all()
-            con.exec_driver_sql(f"DROP TABLE {table}")
+    def get_schema(
+        self, name: str, schema: str | None = None, database: str | None = None
+    ) -> sch.Schema:
+        table = sg.table(name, db=schema, catalog=database, quoted=True).sql(self.name)
 
-        fields = {}
-        for field in result:
-            name = field["Field"]
-            type_string = field["Type"]
-            is_nullable = field["Null"] == "YES"
-            fields[name] = MySQLType.from_string(type_string, nullable=is_nullable)
+        with self.begin() as cur:
+            cur.execute(f"DESCRIBE {table}")
+            result = cur.fetchall()
+
+        type_mapper = self.compiler.type_mapper
+        fields = {
+            name: type_mapper.from_string(type_string, nullable=is_nullable == "YES")
+            for name, type_string, is_nullable, *_ in result
+        }
 
         return sch.Schema(fields)
 
-    def _get_temp_view_definition(
-        self, name: str, definition: sa.sql.compiler.Compiled
-    ) -> str:
-        yield f"CREATE OR REPLACE VIEW {name} AS {definition}"
+    def _get_temp_view_definition(self, name: str, definition: str) -> str:
+        return sge.Create(
+            kind="VIEW",
+            replace=True,
+            this=sg.to_identifier(name, quoted=self.compiler.quoted),
+            expression=definition,
+        )
 
     def create_database(self, name: str, force: bool = False) -> None:
-        name = self._quote(name)
-        if_exists = "IF NOT EXISTS " * force
-        with self.begin() as con:
-            con.exec_driver_sql(f"CREATE DATABASE {if_exists}{name}")
+        sql = sge.Create(kind="DATABASE", exist=force, this=sg.to_identifier(name)).sql(
+            self.name
+        )
+        with self.begin() as cur:
+            cur.execute(sql)
 
     def drop_database(self, name: str, force: bool = False) -> None:
-        name = self._quote(name)
-        if_exists = "IF EXISTS " * force
-        with self.begin() as con:
-            con.exec_driver_sql(f"DROP DATABASE {if_exists}{name}")
+        sql = sge.Drop(kind="DATABASE", exist=force, this=sg.to_identifier(name)).sql(
+            self.name
+        )
+        with self.begin() as cur:
+            cur.execute(sql)
+
+    @contextlib.contextmanager
+    def begin(self):
+        con = self.con
+        cur = con.cursor()
+        try:
+            yield cur
+        except Exception:
+            con.rollback()
+            raise
+        else:
+            con.commit()
+        finally:
+            cur.close()
+
+    @contextlib.contextmanager
+    def _safe_raw_sql(self, *args, **kwargs):
+        with contextlib.closing(self.raw_sql(*args, **kwargs)) as result:
+            yield result
+
+    def raw_sql(self, query: str | sg.Expression, **kwargs: Any) -> Any:
+        with contextlib.suppress(AttributeError):
+            query = query.sql(dialect=self.name)
+
+        con = self.con
+        cursor = con.cursor()
+
+        try:
+            cursor.execute(query, **kwargs)
+        except Exception:
+            con.rollback()
+            cursor.close()
+            raise
+        else:
+            con.commit()
+            return cursor
+
+    def list_tables(
+        self, like: str | None = None, schema: str | None = None
+    ) -> list[str]:
+        """List the tables in the database.
+
+        Parameters
+        ----------
+        like
+            A pattern to use for listing tables.
+        schema
+            The schema to perform the list against.
+        """
+        conditions = [TRUE]
+
+        if schema is not None:
+            conditions = C.table_schema.eq(sge.convert(schema))
+
+        col = "table_name"
+        sql = (
+            sg.select(col)
+            .from_(sg.table("tables", db="information_schema"))
+            .distinct()
+            .where(*conditions)
+            .sql(self.name, pretty=True)
+        )
+
+        with self._safe_raw_sql(sql) as cur:
+            out = cur.fetchall()
+
+        return self._filter_with_like(map(itemgetter(0), out), like)
+
+    def execute(
+        self, expr: ir.Expr, limit: str | None = "default", **kwargs: Any
+    ) -> Any:
+        """Execute an expression."""
+
+        self._run_pre_execute_hooks(expr)
+        table = expr.as_table()
+        sql = self.compile(table, limit=limit, **kwargs)
+
+        schema = table.schema()
+
+        with self._safe_raw_sql(sql) as cur:
+            result = self._fetch_from_cursor(cur, schema)
+        return expr.__pandas_result__(result)
+
+    def create_table(
+        self,
+        name: str,
+        obj: pd.DataFrame | pa.Table | ir.Table | None = None,
+        *,
+        schema: ibis.Schema | None = None,
+        database: str | None = None,
+        temp: bool = False,
+        overwrite: bool = False,
+    ) -> ir.Table:
+        if obj is None and schema is None:
+            raise ValueError("Either `obj` or `schema` must be specified")
+
+        if database is not None and database != self.current_database:
+            raise com.UnsupportedOperationError(
+                "Creating tables in other databases is not supported by Postgres"
+            )
+        else:
+            database = None
+
+        properties = []
+
+        if temp:
+            properties.append(sge.TemporaryProperty())
+
+        if obj is not None:
+            if not isinstance(obj, ir.Expr):
+                table = ibis.memtable(obj)
+            else:
+                table = obj
+
+            self._run_pre_execute_hooks(table)
+
+            query = self._to_sqlglot(table)
+        else:
+            query = None
+
+        column_defs = [
+            sge.ColumnDef(
+                this=sg.to_identifier(colname, quoted=self.compiler.quoted),
+                kind=self.compiler.type_mapper.from_ibis(typ),
+                constraints=(
+                    None
+                    if typ.nullable
+                    else [sge.ColumnConstraint(kind=sge.NotNullColumnConstraint())]
+                ),
+            )
+            for colname, typ in (schema or table.schema()).items()
+        ]
+
+        if overwrite:
+            temp_name = util.gen_name(f"{self.name}_table")
+        else:
+            temp_name = name
+
+        table = sg.table(temp_name, catalog=database, quoted=self.compiler.quoted)
+        target = sge.Schema(this=table, expressions=column_defs)
+
+        create_stmt = sge.Create(
+            kind="TABLE",
+            this=target,
+            properties=sge.Properties(expressions=properties),
+        )
+
+        this = sg.table(name, catalog=database, quoted=self.compiler.quoted)
+        with self._safe_raw_sql(create_stmt) as cur:
+            if query is not None:
+                insert_stmt = sge.Insert(this=table, expression=query).sql(self.name)
+                cur.execute(insert_stmt)
+
+            if overwrite:
+                cur.execute(
+                    sge.Drop(kind="TABLE", this=this, exists=True).sql(self.name)
+                )
+                cur.execute(
+                    f"ALTER TABLE IF EXISTS {table.sql(self.name)} RENAME TO {this.sql(self.name)}"
+                )
+
+        if schema is None:
+            return self.table(name, schema=database)
+
+        # preserve the input schema if it was provided
+        return ops.DatabaseTable(
+            name, schema=schema, source=self, namespace=ops.Namespace(database=database)
+        ).to_expr()
+
+    def _register_in_memory_table(self, op: ops.InMemoryTable) -> None:
+        schema = op.schema
+        if null_columns := [col for col, dtype in schema.items() if dtype.is_null()]:
+            raise com.IbisTypeError(
+                "MySQL cannot yet reliably handle `null` typed columns; "
+                f"got null typed columns: {null_columns}"
+            )
+
+        # only register if we haven't already done so
+        if (name := op.name) not in self.list_tables():
+            quoted = self.compiler.quoted
+            column_defs = [
+                sg.exp.ColumnDef(
+                    this=sg.to_identifier(colname, quoted=quoted),
+                    kind=self.compiler.type_mapper.from_ibis(typ),
+                    constraints=(
+                        None
+                        if typ.nullable
+                        else [
+                            sg.exp.ColumnConstraint(
+                                kind=sg.exp.NotNullColumnConstraint()
+                            )
+                        ]
+                    ),
+                )
+                for colname, typ in schema.items()
+            ]
+
+            create_stmt = sg.exp.Create(
+                kind="TABLE",
+                this=sg.exp.Schema(
+                    this=sg.to_identifier(name, quoted=quoted), expressions=column_defs
+                ),
+                properties=sg.exp.Properties(expressions=[sge.TemporaryProperty()]),
+            )
+            create_stmt_sql = create_stmt.sql(self.name)
+
+            columns = schema.keys()
+            df = op.data.to_frame()
+            data = df.itertuples(index=False)
+            cols = ", ".join(
+                ident.sql(self.name)
+                for ident in map(partial(sg.to_identifier, quoted=quoted), columns)
+            )
+            specs = ", ".join(repeat("%s", len(columns)))
+            table = sg.table(name, quoted=quoted)
+            sql = f"INSERT INTO {table.sql(self.name)} ({cols}) VALUES ({specs})"
+            with self.begin() as cur:
+                cur.execute(create_stmt_sql)
+
+                if not df.empty:
+                    cur.executemany(sql, data)
+
+    @util.experimental
+    def to_pyarrow_batches(
+        self,
+        expr: ir.Expr,
+        *,
+        params: Mapping[ir.Scalar, Any] | None = None,
+        limit: int | str | None = None,
+        chunk_size: int = 1_000_000,
+        **_: Any,
+    ) -> pa.ipc.RecordBatchReader:
+        import pyarrow as pa
+
+        self._run_pre_execute_hooks(expr)
+
+        schema = expr.as_table().schema()
+        with self._safe_raw_sql(
+            self.compile(expr, limit=limit, params=params)
+        ) as cursor:
+            df = self._fetch_from_cursor(cursor, schema)
+        table = pa.Table.from_pandas(
+            df, schema=schema.to_pyarrow(), preserve_index=False
+        )
+        return table.to_reader(max_chunksize=chunk_size)
+
+    def _fetch_from_cursor(self, cursor, schema: sch.Schema) -> pd.DataFrame:
+        import pandas as pd
+
+        from ibis.backends.mysql.converter import MySQLPandasData
+
+        try:
+            df = pd.DataFrame.from_records(
+                cursor, columns=schema.names, coerce_float=True
+            )
+        except Exception:
+            # clean up the cursor if we fail to create the DataFrame
+            #
+            # in the sqlite case failing to close the cursor results in
+            # artificially locked tables
+            cursor.close()
+            raise
+        df = MySQLPandasData.convert_table(df, schema)
+        return df
+
+    def _register_temp_view_cleanup(self, name: str) -> None:
+        def drop(self, name: str, query: str):
+            self.raw_sql(query)
+            self._temp_views.discard(name)
+
+        query = sge.Drop(this=sg.table(name), kind="VIEW", exists=True)
+        atexit.register(drop, self, name=name, query=query)

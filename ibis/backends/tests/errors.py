@@ -91,3 +91,10 @@ except ImportError:
     PsycoPg2SyntaxError = (
         PsycoPg2IndeterminateDatatype
     ) = PsycoPg2InvalidTextRepresentation = PsycoPg2DivisionByZero = None
+
+try:
+    from pymysql.err import NotSupportedError as MySQLNotSupportedError
+    from pymysql.err import OperationalError as MySQLOperationalError
+    from pymysql.err import ProgrammingError as MySQLProgrammingError
+except ImportError:
+    MySQLNotSupportedError = MySQLProgrammingError = MySQLOperationalError = None
