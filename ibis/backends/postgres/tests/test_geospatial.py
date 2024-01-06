@@ -7,13 +7,13 @@ from numpy import testing
 from pytest import param
 
 import ibis
+import ibis.expr.datatypes as dt
 
 pytestmark = pytest.mark.geospatial
 
 
 # TODO find a way to just run for the backends that support geo, without
 # skipping if dependencies are missing
-pytest.importorskip("geoalchemy2")
 pytest.importorskip("geopandas")
 shapely = pytest.importorskip("shapely")
 
@@ -53,42 +53,39 @@ shp_multipolygon_0 = shapely.geometry.MultiPolygon([shp_polygon_0])
 
 
 @pytest.mark.parametrize(
-    ("expr", "expected"),
+    "expr",
     [
-        (point_0, "'POINT (0.0 0.0)'"),
-        (point_0_4326, "'SRID=4326;POINT (0.0 0.0)'"),
-        (point_geom_0, "'SRID=4326;POINT (0.0 0.0)'::geometry"),
-        (point_geom_1, "'SRID=4326;POINT (1.0 1.0)'::geometry"),
-        (point_geom_2, "'SRID=4326;POINT (2.0 2.0)'::geometry"),
-        (point_geog_0, "'SRID=4326;POINT (0.0 0.0)'::geography"),
-        (point_geog_1, "'SRID=4326;POINT (1.0 1.0)'::geography"),
-        (point_geog_2, "'SRID=4326;POINT (2.0 2.0)'::geography"),
+        point_0,
+        point_0_4326,
+        point_geom_0,
+        point_geom_1,
+        point_geom_2,
+        point_geog_0,
+        point_geog_1,
+        point_geog_2,
     ],
 )
-def test_literal_geospatial_explicit(con, expr, expected):
-    result = str(con.compile(expr))
-    assert result == f"SELECT {expected} AS p"
+def test_literal_geospatial_explicit(con, expr, snapshot):
+    result = con.compile(expr)
+    snapshot.assert_match(result, "out.sql")
 
 
 @pytest.mark.parametrize(
-    ("shp", "expected"),
+    "shp",
     [
-        (shp_point_0, "(0 0)"),
-        (shp_point_1, "(1 1)"),
-        (shp_point_2, "(2 2)"),
-        (shp_linestring_0, "(0 0, 1 1, 2 2)"),
-        (shp_linestring_1, "(2 2, 1 1, 0 0)"),
-        (shp_polygon_0, "((0 0, 1 1, 2 2, 0 0))"),
-        (shp_multipolygon_0, "(((0 0, 1 1, 2 2, 0 0)))"),
-        (shp_multilinestring_0, "((0 0, 1 1, 2 2), (2 2, 1 1, 0 0))"),
-        (shp_multipoint_0, "(0 0, 1 1, 2 2)"),
+        shp_point_0,
+        shp_point_1,
+        shp_point_2,
+        shp_linestring_0,
+        shp_linestring_1,
+        shp_polygon_0,
+        shp_multipolygon_0,
+        shp_multilinestring_0,
+        shp_multipoint_0,
     ],
 )
-def test_literal_geospatial_inferred(con, shp, expected):
-    result = str(con.compile(ibis.literal(shp).name("result")))
-    name = type(shp).__name__.upper()
-    pair = f"{name} {expected}"
-    assert result == f"SELECT {pair!r} AS result"
+def test_literal_geospatial_inferred(con, shp, snapshot):
+    snapshot.assert_match(con.compile(ibis.literal(shp)), "out.sql")
 
 
 @pytest.mark.parametrize(
@@ -238,12 +235,12 @@ def test_get_point(geotable, expr_fn, expected):
     testing.assert_almost_equal(result, expected, decimal=2)
 
 
-@pytest.mark.parametrize(("arg", "expected"), [(polygon_0, [1.98] * 5)])
-def test_area(geotable, arg, expected):
+def test_area(con, geotable):
     """Testing for geo spatial area operation."""
-    expr = geotable[geotable.id, arg.area().name("tmp")]
-    result = expr.execute()["tmp"]
-    testing.assert_almost_equal(result, expected, decimal=2)
+    expr = geotable.select("id", tmp=polygon_0.area())
+    result = expr.execute()["tmp"].values
+    expected = np.array([con.execute(polygon_0).area] * len(result))
+    assert pytest.approx(result) == expected
 
 
 @pytest.mark.parametrize(
@@ -364,58 +361,36 @@ def test_geo_dataframe(geotable):
 @pytest.mark.parametrize(
     "modifier",
     [
-        {},
-        {"srid": "4326"},
-        {"srid": "4326", "geo_type": "geometry"},
-        {"srid": "4326", "geo_type": "geography"},
+        param({}, id="none"),
+        param({"srid": 4326}, id="srid"),
+        param({"srid": 4326, "geotype": "geometry"}, id="geometry"),
+        param({"srid": 4326, "geotype": "geography"}, id="geography"),
     ],
 )
 @pytest.mark.parametrize(
-    ("shape", "value", "expected"),
+    ("shape", "value"),
     [
         # Geometry primitives (2D)
-        param("point", (30, 10), "(30.0 10.0)", id="point"),
-        param(
-            "linestring",
-            ((30, 10), (10, 30), (40, 40)),
-            "(30.0 10.0, 10.0 30.0, 40.0 40.0)",
-            id="linestring",
-        ),
+        param("point", (30, 10), id="point"),
+        param("linestring", ((30, 10), (10, 30), (40, 40)), id="linestring"),
         param(
             "polygon",
             (
                 ((35, 10), (45, 45), (15, 40), (10, 20), (35, 10)),
                 ((20, 30), (35, 35), (30, 20), (20, 30)),
             ),
-            (
-                "((35.0 10.0, 45.0 45.0, 15.0 40.0, 10.0 20.0, 35.0 10.0), "
-                "(20.0 30.0, 35.0 35.0, 30.0 20.0, 20.0 30.0))"
-            ),
             id="polygon",
         ),
         param(
             "polygon",
             (((30, 10), (40, 40), (20, 40), (10, 20), (30, 10)),),
-            "((30.0 10.0, 40.0 40.0, 20.0 40.0, 10.0 20.0, 30.0 10.0))",
             id="polygon_single",
         ),
         # Multipart geometries (2D)
-        param(
-            "multipoint",
-            ((10, 40), (40, 30), (20, 20), (30, 10)),
-            "((10.0 40.0), (40.0 30.0), (20.0 20.0), (30.0 10.0))",
-            id="multipoint",
-        ),
+        param("multipoint", ((10, 40), (40, 30), (20, 20), (30, 10)), id="multipoint"),
         param(
             "multilinestring",
-            (
-                ((10, 10), (20, 20), (10, 40)),
-                ((40, 40), (30, 30), (40, 20), (30, 10)),
-            ),
-            (
-                "((10.0 10.0, 20.0 20.0, 10.0 40.0), "
-                "(40.0 40.0, 30.0 30.0, 40.0 20.0, 30.0 10.0))"
-            ),
+            (((10, 10), (20, 20), (10, 40)), ((40, 40), (30, 30), (40, 20), (30, 10))),
             id="multilinestring",
         ),
         param(
@@ -423,38 +398,19 @@ def test_geo_dataframe(geotable):
             (
                 (((40, 40), (20, 45), (45, 30), (40, 40)),),
                 (
-                    (
-                        (20, 35),
-                        (10, 30),
-                        (10, 10),
-                        (30, 5),
-                        (45, 20),
-                        (20, 35),
-                    ),
+                    ((20, 35), (10, 30), (10, 10), (30, 5), (45, 20), (20, 35)),
                     ((30, 20), (20, 15), (20, 25), (30, 20)),
                 ),
-            ),
-            (
-                "(((40.0 40.0, 20.0 45.0, 45.0 30.0, 40.0 40.0)), "
-                "((20.0 35.0, 10.0 30.0, 10.0 10.0, 30.0 5.0, 45.0 20.0, 20.0 35.0), "
-                "(30.0 20.0, 20.0 15.0, 20.0 25.0, 30.0 20.0)))"
             ),
             id="multipolygon",
         ),
     ],
 )
-def test_geo_literals_smoke(con, shape, value, modifier, expected):
+def test_geo_literals_smoke(con, shape, value, modifier, snapshot):
     """Smoke tests for geo spatial literals."""
-    srid = f";{modifier['srid']}" if "srid" in modifier else ""
-    geo_type = f":{modifier['geo_type']}" if "geo_type" in modifier else ""
-    expr_type = f"{shape.upper()} {srid}{geo_type}"
-    expr = ibis.literal(value, type=expr_type).name("tmp")
-    prefix = f"SRID={modifier['srid']};" if "srid" in modifier else ""
-    suffix = f"::{modifier['geo_type']}" if "geo_type" in modifier else ""
+    expr = ibis.literal(value, type=getattr(dt, shape).copy(**modifier))
 
-    result = str(con.compile(expr))
-    expected = f"SELECT '{prefix}{shape.upper()} {expected}'{suffix} AS tmp"
-    assert result == expected
+    snapshot.assert_match(con.compile(expr), "out.sql")
 
 
 @pytest.mark.parametrize(
@@ -514,47 +470,34 @@ def test_geo_literals_smoke(con, shape, value, modifier, expected):
             id="multipolygon_n_rings",
             marks=pytest.mark.notimpl(["postgres"]),
         ),
-        # TODO: the mock tests don't support multipoint and multilinestring
-        #       yet, but once they do, add some more tests here.
     ],
 )
-def test_geo_ops_smoke(geotable, fn_expr):
+def test_geo_ops_smoke(geotable, fn_expr, snapshot):
     """Smoke tests for geo spatial operations."""
-    assert str(fn_expr(geotable).compile())
+    snapshot.assert_match(fn_expr(geotable).compile(), "out.sql")
 
 
-def test_geo_equals(geotable):
+def test_geo_equals(geotable, snapshot):
     # Fix https://github.com/ibis-project/ibis/pull/2956
     expr = geotable.mutate(
-        [
-            geotable.geo_point.y().name("Location_Latitude"),
-            geotable.geo_point.y().name("Latitude"),
-        ]
+        Location_Latitude=geotable.geo_point.y(), Latitude=geotable.geo_point.y()
     )
 
-    result = str(expr.compile().compile())
-
-    assert result == (
-        "SELECT t0.id, ST_AsEWKB(t0.geo_point) AS geo_point, "
-        "ST_AsEWKB(t0.geo_linestring) AS geo_linestring, "
-        "ST_AsEWKB(t0.geo_polygon) AS geo_polygon, "
-        "ST_AsEWKB(t0.geo_multipolygon) AS geo_multipolygon, "
-        'ST_Y(t0.geo_point) AS "Location_Latitude", '
-        'ST_Y(t0.geo_point) AS "Latitude" \n'
-        "FROM geo AS t0"
-    )
+    snapshot.assert_match(expr.compile(), "out1.sql")
 
     # simple test using ==
-    expected = "SELECT t0.geo_point = t0.geo_point AS tmp \nFROM geo AS t0"
     expr = geotable.geo_point == geotable.geo_point
-    assert str(expr.name("tmp").compile().compile()) == expected
-    assert expr.execute().all()
+    snapshot.assert_match(expr.compile(), "out2.sql")
+    result = expr.execute()
+    assert not result.empty
+    assert result.all()
 
     # using geo_equals
-    expected = "SELECT ST_Equals(t0.geo_point, t0.geo_point) AS tmp \nFROM geo AS t0"
     expr = geotable.geo_point.geo_equals(geotable.geo_point).name("tmp")
-    assert str(expr.compile().compile()) == expected
-    assert expr.execute().all()
+    snapshot.assert_match(expr.compile(), "out3.sql")
+    result = expr.execute()
+    assert not result.empty
+    assert result.all()
 
     # equals returns a boolean object
     assert geotable.geo_point.equals(geotable.geo_point)

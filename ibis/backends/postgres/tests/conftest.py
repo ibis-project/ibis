@@ -17,10 +17,8 @@ import os
 from typing import TYPE_CHECKING, Any
 
 import pytest
-import sqlalchemy as sa
 
 import ibis
-from ibis.backends.conftest import init_database
 from ibis.backends.tests.base import ServiceBackendTest
 
 if TYPE_CHECKING:
@@ -50,22 +48,13 @@ class TestConf(ServiceBackendTest):
     supports_structs = False
     rounding_method = "half_to_even"
     service_name = "postgres"
-    deps = "psycopg2", "sqlalchemy"
+    deps = ("psycopg2",)
 
     @property
     def test_files(self) -> Iterable[Path]:
         return self.data_dir.joinpath("csv").glob("*.csv")
 
-    def _load_data(
-        self,
-        *,
-        user: str = PG_USER,
-        password: str = PG_PASS,
-        host: str = PG_HOST,
-        port: int = PG_PORT,
-        database: str = IBIS_TEST_POSTGRES_DB,
-        **_: Any,
-    ) -> None:
+    def _load_data(self, **_: Any) -> None:
         """Load test data into a PostgreSQL backend instance.
 
         Parameters
@@ -75,21 +64,14 @@ class TestConf(ServiceBackendTest):
         script_dir
             Location of scripts defining schemas
         """
-        init_database(
-            url=sa.engine.make_url(
-                f"postgresql://{user}:{password}@{host}:{port:d}/{database}"
-            ),
-            database=database,
-            schema=self.ddl_script,
-            isolation_level="AUTOCOMMIT",
-            recreate=False,
-        )
+        with self.connection._safe_raw_sql(";".join(self.ddl_script)):
+            pass
 
     @staticmethod
-    def connect(*, tmpdir, worker_id, port: int | None = None, **kw):
+    def connect(*, tmpdir, worker_id, **kw):
         return ibis.postgres.connect(
             host=PG_HOST,
-            port=port or PG_PORT,
+            port=PG_PORT,
             user=PG_USER,
             password=PG_PASS,
             database=IBIS_TEST_POSTGRES_DB,
@@ -103,13 +85,8 @@ def con(tmp_path_factory, data_dir, worker_id):
 
 
 @pytest.fixture(scope="module")
-def db(con):
-    return con.database()
-
-
-@pytest.fixture(scope="module")
-def alltypes(db):
-    return db.functional_alltypes
+def alltypes(con):
+    return con.table("functional_alltypes")
 
 
 @pytest.fixture(scope="module")
@@ -125,12 +102,6 @@ def df(alltypes):
 @pytest.fixture(scope="module")
 def gdf(geotable):
     return geotable.execute()
-
-
-@pytest.fixture(scope="module")
-def alltypes_sqla(con, alltypes):
-    name = alltypes.op().name
-    return con._get_sqla_table(name)
 
 
 @pytest.fixture(scope="module")

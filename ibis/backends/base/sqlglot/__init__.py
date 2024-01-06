@@ -9,6 +9,7 @@ import sqlglot.expressions as sge
 import ibis
 import ibis.expr.operations as ops
 import ibis.expr.schema as sch
+from ibis import util
 from ibis.backends.base import BaseBackend
 from ibis.backends.base.sqlglot.compiler import STAR
 
@@ -258,6 +259,7 @@ class SQLGlotBackend(BaseBackend):
             while batch := cursor.fetchmany(chunk_size):
                 yield batch
 
+    @util.experimental
     def to_pyarrow_batches(
         self,
         expr: ir.Expr,

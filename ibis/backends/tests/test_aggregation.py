@@ -1097,7 +1097,7 @@ def test_quantile(
                     raises=com.OperationNotDefinedError,
                 ),
                 pytest.mark.notyet(
-                    ["duckdb", "snowflake"],
+                    ["postgres", "duckdb", "snowflake"],
                     raises=com.UnsupportedOperationError,
                     reason="backend only implements population correlation coefficient",
                 ),
@@ -1112,7 +1112,6 @@ def test_quantile(
                 ),
                 pytest.mark.notyet(
                     [
-                        "postgres",
                         "risingwave",
                         "snowflake",
                         "oracle",
