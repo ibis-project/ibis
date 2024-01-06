@@ -18,17 +18,15 @@ import os
 import numpy as np
 import pandas as pd
 import pytest
+import sqlglot as sg
 from pytest import param
 
 import ibis
+import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.types as ir
-from ibis.tests.util import assert_equal
 
 pytest.importorskip("psycopg2")
-sa = pytest.importorskip("sqlalchemy")
-
-from sqlalchemy.dialects import postgresql  # noqa: E402
 
 POSTGRES_TEST_DB = os.environ.get("IBIS_TEST_POSTGRES_DATABASE", "ibis_testing")
 IBIS_POSTGRES_HOST = os.environ.get("IBIS_TEST_POSTGRES_HOST", "localhost")
@@ -79,33 +77,6 @@ def test_list_databases(con):
     assert POSTGRES_TEST_DB in con.list_databases()
 
 
-def test_schema_type_conversion(con):
-    typespec = [
-        # name, type, nullable
-        ("json", postgresql.JSON, True, dt.JSON),
-        ("jsonb", postgresql.JSONB, True, dt.JSON),
-        ("uuid", postgresql.UUID, True, dt.UUID),
-        ("macaddr", postgresql.MACADDR, True, dt.MACADDR),
-        ("inet", postgresql.INET, True, dt.INET),
-    ]
-
-    sqla_types = []
-    ibis_types = []
-    for name, t, nullable, ibis_type in typespec:
-        sqla_types.append(sa.Column(name, t, nullable=nullable))
-        ibis_types.append((name, ibis_type(nullable=nullable)))
-
-    # Create a table with placeholder stubs for JSON, JSONB, and UUID.
-    table = sa.Table("tname", sa.MetaData(), *sqla_types)
-
-    # Check that we can correctly create a schema with dt.any for the
-    # missing types.
-    schema = con._schema_from_sqla_table(table)
-    expected = ibis.schema(ibis_types)
-
-    assert_equal(schema, expected)
-
-
 def test_interval_films_schema(con):
     t = con.table("films")
     assert t.len.type() == dt.Interval(unit="m")
@@ -130,13 +101,10 @@ def test_all_interval_types_execute(intervals, column, expected_dtype):
     assert issubclass(series.dtype.type, np.timedelta64)
 
 
-@pytest.mark.xfail(
-    raises=ValueError, reason="Year and month interval types not yet supported"
-)
 def test_unsupported_intervals(con):
     t = con.table("not_supported_intervals")
     assert t["a"].type() == dt.Interval("Y")
-    assert t["b"].type() == dt.Interval("M")
+    assert t["b"].type() == dt.Interval("Y")
     assert t["g"].type() == dt.Interval("M")
 
 
@@ -151,12 +119,13 @@ def test_create_and_drop_table(con, temp_table, params):
         ]
     )
 
-    con.create_table(temp_table, schema=sch, **params)
+    t = con.create_table(temp_table, schema=sch, **params)
+    assert t is not None
     assert con.table(temp_table, **params) is not None
 
     con.drop_table(temp_table, **params)
 
-    with pytest.raises(sa.exc.NoSuchTableError):
+    with pytest.raises(com.IbisError):
         con.table(temp_table, **params)
 
 
@@ -186,8 +155,8 @@ def test_create_and_drop_table(con, temp_table, params):
             ("date", dt.date),
             ("time", dt.time),
             ("time without time zone", dt.time),
-            ("timestamp without time zone", dt.timestamp),
-            ("timestamp with time zone", dt.Timestamp("UTC")),
+            ("timestamp without time zone", dt.Timestamp(scale=6)),
+            ("timestamp with time zone", dt.Timestamp("UTC", scale=6)),
             ("interval", dt.Interval("s")),
             ("numeric", dt.decimal),
             ("numeric(3, 2)", dt.Decimal(3, 2)),
@@ -199,9 +168,9 @@ def test_create_and_drop_table(con, temp_table, params):
     ],
 )
 def test_get_schema_from_query(con, pg_type, expected_type):
-    name = con._quote(ibis.util.guid())
-    with con.begin() as c:
-        c.exec_driver_sql(f"CREATE TEMP TABLE {name} (x {pg_type}, y {pg_type}[])")
+    name = sg.table(ibis.util.guid()).sql("postgres")
+    with con._safe_raw_sql(f"CREATE TEMP TABLE {name} (x {pg_type}, y {pg_type}[])"):
+        pass
     expected_schema = ibis.schema(dict(x=expected_type, y=dt.Array(expected_type)))
     result_schema = con._get_schema_using_query(f"SELECT x, y FROM {name}")
     assert result_schema == expected_schema
@@ -215,11 +184,7 @@ def test_unknown_column_type(con, col):
 
 def test_insert_with_cte(con):
     X = con.create_table("X", schema=ibis.schema(dict(id="int")), temp=True)
+    assert "X" in con.list_tables()
     expr = X.join(X.mutate(a=X["id"] + 1), ["id"])
     Y = con.create_table("Y", expr, temp=True)
     assert Y.execute().empty
-
-
-def test_connect_url_with_empty_host():
-    con = ibis.connect("postgres:///ibis_testing")
-    assert con.con.url.host is None

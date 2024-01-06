@@ -1,0 +1,6 @@
+SELECT
+  ST_ASEWKB("t0"."p") AS "p"
+FROM (
+  SELECT
+    ST_GEOMFROMTEXT('POINT (0 0)') AS "p"
+) AS "t0"
