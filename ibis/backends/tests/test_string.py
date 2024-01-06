@@ -13,7 +13,6 @@ import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 from ibis.backends.tests.errors import ClickHouseDatabaseError, PySparkPythonException
 from ibis.common.annotations import ValidationError
-from ibis.common.exceptions import OperationNotDefinedError
 
 
 @pytest.mark.parametrize(
@@ -870,7 +869,7 @@ def test_substr_with_null_values(backend, alltypes, df):
             marks=[
                 pytest.mark.notyet(
                     ["clickhouse", "snowflake", "trino"],
-                    raises=OperationNotDefinedError,
+                    raises=com.OperationNotDefinedError,
                     reason="doesn't support `USERINFO`",
                 )
             ],
@@ -883,7 +882,7 @@ def test_substr_with_null_values(backend, alltypes, df):
             marks=[
                 pytest.mark.notyet(
                     ["snowflake"],
-                    raises=OperationNotDefinedError,
+                    raises=com.OperationNotDefinedError,
                     reason="host is netloc",
                 ),
                 pytest.mark.broken(
@@ -947,12 +946,15 @@ def test_capitalize(con):
 
 @pytest.mark.notimpl(
     ["dask", "pandas", "polars", "druid", "oracle", "flink"],
-    raises=OperationNotDefinedError,
+    raises=com.OperationNotDefinedError,
 )
 @pytest.mark.notyet(
-    ["impala", "mssql", "mysql", "sqlite", "exasol"],
+    ["impala", "mssql", "sqlite", "exasol"],
     reason="no arrays",
-    raises=OperationNotDefinedError,
+    raises=com.OperationNotDefinedError,
+)
+@pytest.mark.never(
+    ["mysql"], raises=com.UnsupportedBackendType, reason="no array support"
 )
 def test_array_string_join(con):
     s = ibis.array(["a", "b", "c"])

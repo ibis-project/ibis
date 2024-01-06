@@ -1901,24 +1901,6 @@ six = "*"
 tqdm = "*"
 
 [[package]]
-name = "geoalchemy2"
-version = "0.14.3"
-description = "Using SQLAlchemy with Spatial Databases"
-optional = true
-python-versions = ">=3.7"
-files = [
-    {file = "GeoAlchemy2-0.14.3-py3-none-any.whl", hash = "sha256:a727198394fcc4760a27c4c5bff8b9f4f79324ec2dd98c4c1b8a7026b8918d81"},
-    {file = "GeoAlchemy2-0.14.3.tar.gz", hash = "sha256:79c432b10dd8c48422f794eaf9a1200929de14f41d2396923bfe92f4c6abaf89"},
-]
-
-[package.dependencies]
-packaging = "*"
-SQLAlchemy = ">=1.4"
-
-[package.extras]
-shapely = ["Shapely (>=1.7)"]
-
-[[package]]
 name = "geojson"
 version = "3.1.0"
 description = "Python bindings and utilities for GeoJSON"
@@ -7346,7 +7328,7 @@ cffi = {version = ">=1.11", markers = "platform_python_implementation == \"PyPy\
 cffi = ["cffi (>=1.11)"]
 
 [extras]
-all = ["black", "clickhouse-connect", "dask", "datafusion", "db-dtypes", "deltalake", "duckdb", "geoalchemy2", "geopandas", "google-cloud-bigquery", "google-cloud-bigquery-storage", "graphviz", "impyla", "oracledb", "packaging", "pins", "polars", "psycopg2", "pydata-google-auth", "pydruid", "pymysql", "pyodbc", "pyspark", "regex", "shapely", "snowflake-connector-python", "sqlalchemy", "sqlalchemy-exasol", "sqlalchemy-views", "trino"]
+all = ["black", "clickhouse-connect", "dask", "datafusion", "db-dtypes", "deltalake", "duckdb", "geopandas", "google-cloud-bigquery", "google-cloud-bigquery-storage", "graphviz", "impyla", "oracledb", "packaging", "pins", "polars", "psycopg2", "pydata-google-auth", "pydruid", "pymysql", "pyodbc", "pyspark", "regex", "shapely", "snowflake-connector-python", "sqlalchemy", "sqlalchemy-exasol", "sqlalchemy-views", "trino"]
 bigquery = ["db-dtypes", "google-cloud-bigquery", "google-cloud-bigquery-storage", "pydata-google-auth"]
 clickhouse = ["clickhouse-connect"]
 dask = ["dask", "regex"]
@@ -7358,10 +7340,10 @@ duckdb = ["duckdb"]
 examples = ["pins"]
 exasol = ["sqlalchemy", "sqlalchemy-exasol", "sqlalchemy-views"]
 flink = []
-geospatial = ["geoalchemy2", "geopandas", "shapely"]
+geospatial = ["geopandas", "shapely"]
 impala = ["impyla", "sqlalchemy"]
 mssql = ["pyodbc", "sqlalchemy", "sqlalchemy-views"]
-mysql = ["pymysql", "sqlalchemy", "sqlalchemy-views"]
+mysql = ["pymysql"]
 oracle = ["oracledb", "packaging", "sqlalchemy", "sqlalchemy-views"]
 pandas = ["regex"]
 polars = ["packaging", "polars"]
@@ -7375,4 +7357,4 @@ visualization = ["graphviz"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.9"
-content-hash = "19f28c10cf57b43986df07521c076f7d3942fd1b61aa73d5cc5e7350f3a6842e"
+content-hash = "f48fea54ccdbe62885012b0c4b7d4ea605d83ea59ea67405e28ecd51d066fe53"
