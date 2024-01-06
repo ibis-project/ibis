@@ -328,9 +328,12 @@ class DuckDBCompiler(SQLGlotCompiler):
         # matches the behavior of the equivalent geopandas functionality
         return self.f.st_transform(arg, source, target, True)
 
-    @visit_node.register(ops.RegexExtract)
-    def visit_RegexExtract(self, op, *, arg, pattern, index):
-        return self.f.regexp_extract(arg, pattern, index, dialect=self.dialect)
+    @visit_node.register(ops.Quantile)
+    @visit_node.register(ops.MultiQuantile)
+    def visit_Quantile(self, op, *, arg, quantile, where):
+        suffix = "cont" if op.arg.dtype.is_numeric() else "disc"
+        funcname = f"percentile_{suffix}"
+        return self.agg[funcname](arg, quantile, where=where)
 
 
 _SIMPLE_OPS = {

@@ -135,12 +135,12 @@ class MissingParameterAnnotationError(IbisError):
 
 
 class InvalidDecoratorError(IbisError):
-    def __init__(self, name: str, line: str):
-        super().__init__(name, line)
+    def __init__(self, name: str, lines: str):
+        super().__init__(name, lines)
 
     def __str__(self) -> str:
-        name, line = self.args
-        return f"Only the `@udf` decorator is allowed in user-defined function: `{name}`; found line {line}"
+        name, lines = self.args
+        return f"Only the `@udf` decorator is allowed in user-defined function: `{name}`; found lines {lines}"
 
 
 def mark_as_unsupported(f: Callable) -> Callable:

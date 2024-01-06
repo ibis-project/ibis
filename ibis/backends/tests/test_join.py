@@ -183,6 +183,11 @@ def test_semi_join_topk(batting, awards_players, func):
 
 
 @pytest.mark.notimpl(["dask", "druid", "exasol"])
+@pytest.mark.notimpl(
+    ["postgres"],
+    raises=com.IbisTypeError,
+    reason="postgres can't handle null types columns",
+)
 def test_join_with_pandas(batting, awards_players):
     batting_filt = batting[lambda t: t.yearID < 1900]
     awards_players_filt = awards_players[lambda t: t.yearID < 1900].execute()
