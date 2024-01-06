@@ -1,8 +1,6 @@
 from __future__ import annotations
 
 import pytest
-import sqlalchemy as sa
-from pytest import param
 
 import ibis
 import ibis.expr.datatypes as dt
@@ -27,13 +25,14 @@ DB_TYPES = [
     ("FLOAT", dt.float64),
     ("FLOAT(3)", dt.float32),
     ("FLOAT(25)", dt.float64),
+    ("FLOAT(37)", dt.float64),
     # Date and time
     ("DATE", dt.date),
     ("TIME", dt.time),
     ("DATETIME2", dt.timestamp(scale=7)),
     ("DATETIMEOFFSET", dt.timestamp(scale=7, timezone="UTC")),
-    ("SMALLDATETIME", dt.timestamp),
-    ("DATETIME", dt.timestamp),
+    ("SMALLDATETIME", dt.Timestamp(scale=0)),
+    ("DATETIME", dt.Timestamp(scale=3)),
     # Characters strings
     ("CHAR", dt.string),
     ("TEXT", dt.string),
@@ -49,38 +48,23 @@ DB_TYPES = [
     # Other data types
     ("UNIQUEIDENTIFIER", dt.uuid),
     ("TIMESTAMP", dt.binary(nullable=False)),
+    ("DATETIME2(4)", dt.timestamp(scale=4)),
+    ("DATETIMEOFFSET(5)", dt.timestamp(scale=5, timezone="UTC")),
+    ("GEOMETRY", dt.geometry),
+    ("GEOGRAPHY", dt.geography),
 ]
 
 
-broken_sqlalchemy_autoload = pytest.mark.xfail(
-    reason="scale not inferred by sqlalchemy autoload"
-)
-
-
-@pytest.mark.parametrize(
-    ("server_type", "expected_type"),
-    DB_TYPES
-    + [
-        param(
-            "DATETIME2(4)", dt.timestamp(scale=4), marks=[broken_sqlalchemy_autoload]
-        ),
-        param(
-            "DATETIMEOFFSET(5)",
-            dt.timestamp(scale=5, timezone="UTC"),
-            marks=[broken_sqlalchemy_autoload],
-        ),
-    ],
-    ids=str,
-)
-def test_get_schema_from_query(con, server_type, expected_type, temp_table):
-    expected_schema = ibis.schema(dict(x=expected_type))
+@pytest.mark.parametrize(("server_type", "expected_type"), DB_TYPES, ids=str)
+def test_get_schema(con, server_type, expected_type, temp_table):
     with con.begin() as c:
-        c.exec_driver_sql(f"CREATE TABLE [{temp_table}] (x {server_type})")
+        c.execute(f"CREATE TABLE [{temp_table}] (x {server_type})")
+
     expected_schema = ibis.schema(dict(x=expected_type))
-    result_schema = con._get_schema_using_query(f"SELECT * FROM [{temp_table}]")
-    assert result_schema == expected_schema
-    t = con.table(temp_table)
-    assert t.schema() == expected_schema
+
+    assert con.get_schema(temp_table) == expected_schema
+    assert con.table(temp_table).schema() == expected_schema
+    assert con.sql(f"SELECT * FROM [{temp_table}]").schema() == expected_schema
 
 
 def test_builtin_scalar_udf(con):
@@ -110,10 +94,6 @@ def test_builtin_agg_udf_filtered(con):
 
     ft = con.tables.functional_alltypes
     expr = count_big(ft.id)
-    with pytest.raises(
-        sa.exc.ProgrammingError, match="An expression of non-boolean type specified"
-    ):
-        assert expr.execute()
 
     expr = count_big(ft.id, where=ft.id == 1)
     assert expr.execute() == ft[ft.id == 1].count().execute()

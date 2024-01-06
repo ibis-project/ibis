@@ -297,7 +297,7 @@ class Backend(SQLGlotBackend, CanCreateDatabase):
         conditions = [TRUE]
 
         if schema is not None:
-            conditions = C.table_schema.eq(sge.convert(schema))
+            conditions.append(C.table_schema.eq(sge.convert(schema)))
 
         col = "table_name"
         sql = (
@@ -305,7 +305,7 @@ class Backend(SQLGlotBackend, CanCreateDatabase):
             .from_(sg.table("tables", db="information_schema"))
             .distinct()
             .where(*conditions)
-            .sql(self.name, pretty=True)
+            .sql(self.name)
         )
 
         with self._safe_raw_sql(sql) as cur:
