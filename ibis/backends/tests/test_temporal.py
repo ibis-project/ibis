@@ -10,6 +10,7 @@ import numpy as np
 import pandas as pd
 import pytest
 import sqlalchemy as sa
+import sqlglot as sg
 from pytest import param
 
 import ibis
@@ -24,6 +25,8 @@ from ibis.backends.tests.errors import (
     GoogleBadRequest,
     ImpalaHiveServer2Error,
     ImpalaOperationalError,
+    MySQLOperationalError,
+    MySQLProgrammingError,
     PolarsComputeError,
     PolarsPanicException,
     Py4JJavaError,
@@ -397,9 +400,9 @@ PANDAS_UNITS = {
         param(
             "W",
             marks=[
-                pytest.mark.notimpl(["mysql"], raises=com.UnsupportedOperationError),
                 pytest.mark.notimpl(["impala"], raises=AssertionError),
                 pytest.mark.broken(["sqlite"], raises=AssertionError),
+                pytest.mark.notimpl(["mysql"], raises=com.UnsupportedOperationError),
                 pytest.mark.broken(
                     ["polars"],
                     raises=AssertionError,
@@ -626,12 +629,8 @@ def test_timestamp_truncate(backend, alltypes, df, unit):
         param(
             "W",
             marks=[
-                pytest.mark.notimpl(
-                    ["mysql"],
-                    raises=com.UnsupportedOperationError,
-                    reason="Unsupported truncate unit W",
-                ),
                 pytest.mark.broken(["impala"], raises=AssertionError),
+                pytest.mark.notyet(["mysql"], raises=com.UnsupportedOperationError),
                 pytest.mark.never(
                     ["flink"],
                     raises=Py4JJavaError,
@@ -822,7 +821,7 @@ def test_date_truncate(backend, alltypes, df, unit):
             pd.Timedelta,
             marks=[
                 pytest.mark.notimpl(
-                    ["mysql", "clickhouse"], raises=com.UnsupportedOperationError
+                    ["clickhouse"], raises=com.UnsupportedOperationError
                 ),
                 pytest.mark.notimpl(
                     ["pyspark"],
@@ -1014,9 +1013,10 @@ timestamp_value = pd.Timestamp("2018-01-01 18:18:18")
             id="timestamp-add-interval-binop",
             marks=[
                 pytest.mark.notimpl(
-                    ["dask", "impala", "mysql", "snowflake", "sqlite", "bigquery"],
+                    ["dask", "impala", "snowflake", "sqlite", "bigquery"],
                     raises=com.OperationNotDefinedError,
                 ),
+                pytest.mark.notimpl(["mysql"], raises=sg.ParseError),
                 pytest.mark.notimpl(
                     ["druid"],
                     raises=ValidationError,
@@ -1032,9 +1032,10 @@ timestamp_value = pd.Timestamp("2018-01-01 18:18:18")
             id="timestamp-add-interval-binop-different-units",
             marks=[
                 pytest.mark.notimpl(
-                    ["sqlite", "polars", "mysql", "impala", "snowflake", "bigquery"],
+                    ["sqlite", "polars", "impala", "snowflake", "bigquery"],
                     raises=com.OperationNotDefinedError,
                 ),
+                pytest.mark.notimpl(["mysql"], raises=sg.ParseError),
                 pytest.mark.notimpl(
                     ["druid"],
                     raises=ValidationError,
@@ -1542,7 +1543,7 @@ def test_timestamp_comparison_filter_numpy(backend, con, alltypes, df, func_name
 
 
 @pytest.mark.notimpl(
-    ["sqlite", "snowflake", "mssql", "oracle"],
+    ["sqlite", "snowflake", "mssql", "oracle", "exasol"],
     raises=com.OperationNotDefinedError,
 )
 @pytest.mark.broken(
@@ -1555,7 +1556,6 @@ def test_timestamp_comparison_filter_numpy(backend, con, alltypes, df, func_name
     raises=Py4JJavaError,
     reason="ParseException: Encountered '+ INTERVAL CAST'",
 )
-@pytest.mark.notimpl(["exasol"], raises=com.OperationNotDefinedError)
 def test_interval_add_cast_scalar(backend, alltypes):
     timestamp_date = alltypes.timestamp_col.date()
     delta = ibis.literal(10).cast("interval('D')")
@@ -1569,7 +1569,7 @@ def test_interval_add_cast_scalar(backend, alltypes):
     ["pyspark"], reason="PySpark does not support casting columns to intervals"
 )
 @pytest.mark.notimpl(
-    ["sqlite", "snowflake", "mssql", "oracle"],
+    ["sqlite", "snowflake", "mssql", "oracle", "exasol"],
     raises=com.OperationNotDefinedError,
 )
 @pytest.mark.notimpl(
@@ -1577,7 +1577,6 @@ def test_interval_add_cast_scalar(backend, alltypes):
     raises=AttributeError,
     reason="'StringColumn' object has no attribute 'date'",
 )
-@pytest.mark.notimpl(["exasol"], raises=com.OperationNotDefinedError)
 def test_interval_add_cast_column(backend, alltypes, df):
     timestamp_date = alltypes.timestamp_col.date()
     delta = alltypes.bigint_col.cast("interval('D')")
@@ -1996,16 +1995,6 @@ DATE_BACKEND_TYPES = {
 @pytest.mark.notimpl(
     ["oracle"], raises=sa.exc.DatabaseError, reason="ORA-00936 missing expression"
 )
-@pytest.mark.broken(
-    ["mysql"],
-    raises=sa.exc.ProgrammingError,
-    reason=(
-        '(pymysql.err.ProgrammingError) (1064, "You have an error in your SQL syntax; '
-        "check the manual that corresponds to your MariaDB server version for "
-        "the right syntax to use near ' 2, 4) AS `DateFromYMD(2022, 2, 4)`' at line 1\")"
-        "[SQL: SELECT date(%(param_1)s, %(param_2)s, %(param_3)s) AS `DateFromYMD(2022, 2, 4)`]"
-    ),
-)
 @pytest.mark.notyet(["impala"], raises=com.OperationNotDefinedError)
 @pytest.mark.notimpl(["exasol"], raises=ExaQueryError)
 def test_date_literal(con, backend):
@@ -2031,7 +2020,9 @@ TIMESTAMP_BACKEND_TYPES = {
 }
 
 
-@pytest.mark.notimpl(["pandas", "dask", "pyspark"], raises=com.OperationNotDefinedError)
+@pytest.mark.notimpl(
+    ["pandas", "dask", "pyspark", "mysql"], raises=com.OperationNotDefinedError
+)
 @pytest.mark.notimpl(
     ["druid"],
     raises=sa.exc.ProgrammingError,
@@ -2041,11 +2032,6 @@ TIMESTAMP_BACKEND_TYPES = {
         "From line 1, column 8 to line 1, column 44: No match found for function signature "
         "make_timestamp(<NUMERIC>, <NUMERIC>, <NUMERIC>, <NUMERIC>, <NUMERIC>, <NUMERIC>)"
     ),
-)
-@pytest.mark.broken(
-    ["mysql"],
-    raises=sa.exc.OperationalError,
-    reason="(pymysql.err.OperationalError) (1305, 'FUNCTION ibis_testing.make_timestamp does not exist')",
 )
 @pytest.mark.notimpl(
     ["oracle"], raises=sa.exc.DatabaseError, reason="ORA-00904: MAKE TIMESTAMP invalid"
@@ -2066,11 +2052,6 @@ def test_timestamp_literal(con, backend):
 
 @pytest.mark.notimpl(
     ["pandas", "mysql", "dask", "pyspark"], raises=com.OperationNotDefinedError
-)
-@pytest.mark.notimpl(
-    ["mysql"],
-    raises=sa.exc.OperationalError,
-    reason="FUNCTION ibis_testing.make_timestamp does not exist",
 )
 @pytest.mark.notimpl(
     ["sqlite"],
@@ -2136,29 +2117,11 @@ TIME_BACKEND_TYPES = {
 
 
 @pytest.mark.notimpl(
-    [
-        "pandas",
-        "datafusion",
-        "dask",
-        "pyspark",
-        "polars",
-    ],
+    ["pandas", "datafusion", "dask", "pyspark", "polars", "mysql"],
     raises=com.OperationNotDefinedError,
 )
 @pytest.mark.notyet(["clickhouse", "impala"], raises=com.OperationNotDefinedError)
 @pytest.mark.notimpl(["oracle"], raises=sa.exc.DatabaseError)
-@pytest.mark.broken(
-    [
-        "mysql",
-    ],
-    raises=sa.exc.ProgrammingError,
-    reason=(
-        '(pymysql.err.ProgrammingError) (1064, "You have an error in your SQL syntax; check the manual that '
-        "corresponds to your MariaDB server version for the right syntax to use near ' 20, 0) AS "
-        "`TimeFromHMS(16, 20, 0)`' at line 1\")"
-        "[SQL: SELECT time(%(param_1)s, %(param_2)s, %(param_3)s) AS `TimeFromHMS(16, 20, 0)`]"
-    ),
-)
 @pytest.mark.broken(
     ["druid"], raises=sa.exc.ProgrammingError, reason="SQL parse failed"
 )
@@ -2272,7 +2235,7 @@ INTERVAL_BACKEND_TYPES = {
     "AttributeError: 'TextClause' object has no attribute 'label'"
     "If SQLAlchemy >=2 is installed, test fails with the following exception:"
     "NotImplementedError",
-    raises=(NotImplementedError, AttributeError),
+    raises=MySQLProgrammingError,
 )
 @pytest.mark.broken(
     ["bigquery", "duckdb"],
@@ -2309,15 +2272,6 @@ def test_interval_literal(con, backend):
 
 @pytest.mark.notimpl(["pandas", "dask", "pyspark"], raises=com.OperationNotDefinedError)
 @pytest.mark.broken(
-    ["mysql"],
-    raises=sa.exc.ProgrammingError,
-    reason=(
-        '(pymysql.err.ProgrammingError) (1064, "You have an error in your SQL syntax; check the manual '
-        "that corresponds to your MariaDB server version for the right syntax to use near "
-        "' CAST(EXTRACT(month FROM t0.timestamp_col) AS SIGNED INTEGER), CAST(EXTRACT(d...' at line 1\")"
-    ),
-)
-@pytest.mark.broken(
     ["druid"],
     raises=AttributeError,
     reason="'StringColumn' object has no attribute 'year'",
@@ -2337,16 +2291,13 @@ def test_date_column_from_ymd(backend, con, alltypes, df):
     backend.assert_series_equal(golden, result.timestamp_col)
 
 
-@pytest.mark.notimpl(["pandas", "dask", "pyspark"], raises=com.OperationNotDefinedError)
+@pytest.mark.notimpl(
+    ["pandas", "dask", "pyspark", "mysql"], raises=com.OperationNotDefinedError
+)
 @pytest.mark.broken(
     ["druid"],
     raises=AttributeError,
     reason="StringColumn' object has no attribute 'year'",
-)
-@pytest.mark.broken(
-    ["mysql"],
-    raises=sa.exc.OperationalError,
-    reason="(pymysql.err.OperationalError) (1305, 'FUNCTION ibis_testing.make_timestamp does not exist')",
 )
 @pytest.mark.notimpl(
     ["oracle"], raises=sa.exc.DatabaseError, reason="ORA-00904 make timestamp invalid"
@@ -2624,6 +2575,11 @@ def test_large_timestamp(con):
                     raises=sa.exc.ProgrammingError,
                 ),
                 pytest.mark.notyet(
+                    ["mysql"],
+                    reason="doesn't support nanoseconds",
+                    raises=MySQLOperationalError,
+                ),
+                pytest.mark.notyet(
                     ["bigquery"],
                     reason=(
                         "doesn't support nanoseconds. "
@@ -2640,7 +2596,6 @@ def test_large_timestamp(con):
         ),
     ],
 )
-@pytest.mark.notyet(["mysql"], raises=AssertionError)
 @pytest.mark.broken(
     ["druid"],
     raises=sa.exc.ProgrammingError,
