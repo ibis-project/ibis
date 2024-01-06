@@ -32,9 +32,16 @@ from ibis.backends.tests.errors import (
 
 pytestmark = [
     pytest.mark.never(
-        ["sqlite", "mssql", "exasol"],
+        ["sqlite", "mysql", "exasol"], reason="No array support", raises=Exception
+    ),
+    pytest.mark.never(
+        ["mssql"],
         reason="No array support",
-        raises=Exception,
+        raises=(
+            com.UnsupportedBackendType,
+            com.OperationNotDefinedError,
+            AssertionError,
+        ),
     ),
     pytest.mark.never(["mysql"], reason="No array support", raises=(com.UnsupportedBackendType, com.OperationNotDefinedError, MySQLOperationalError)),
     pytest.mark.notyet(
@@ -429,7 +436,6 @@ def test_array_slice(backend, start, stop):
     [
         "datafusion",
         "flink",
-        "mssql",
         "polars",
         "snowflake",
         "sqlite",
@@ -493,7 +499,6 @@ def test_array_map(con, input, output, func):
         "dask",
         "datafusion",
         "flink",
-        "mssql",
         "pandas",
         "polars",
         "snowflake",
@@ -546,7 +551,7 @@ def test_array_filter(con, input, output, predicate):
 
 
 @builtin_array
-@pytest.mark.notimpl(["mssql", "polars"], raises=com.OperationNotDefinedError)
+@pytest.mark.notimpl(["polars"], raises=com.OperationNotDefinedError)
 @pytest.mark.notimpl(["dask"], raises=com.OperationNotDefinedError)
 @pytest.mark.notimpl(
     ["risingwave"],
@@ -612,7 +617,7 @@ def test_array_position(backend, con, a, expected_array):
 
 
 @builtin_array
-@pytest.mark.notimpl(["dask", "mssql", "polars"], raises=com.OperationNotDefinedError)
+@pytest.mark.notimpl(["dask", "polars"], raises=com.OperationNotDefinedError)
 @pytest.mark.broken(
     ["risingwave"],
     raises=AssertionError,
@@ -647,7 +652,7 @@ def test_array_remove(con, a):
 
 @builtin_array
 @pytest.mark.notimpl(
-    ["dask", "datafusion", "mssql", "polars"], raises=com.OperationNotDefinedError
+    ["dask", "datafusion", "polars"], raises=com.OperationNotDefinedError
 )
 @pytest.mark.notimpl(
     ["sqlite"], raises=NotImplementedError, reason="Unsupported type: Array..."
@@ -700,7 +705,7 @@ def test_array_unique(con, input, expected):
 
 @builtin_array
 @pytest.mark.notimpl(
-    ["dask", "datafusion", "flink", "mssql", "polars"],
+    ["dask", "datafusion", "flink", "polars"],
     raises=com.OperationNotDefinedError,
 )
 @pytest.mark.broken(
@@ -721,7 +726,7 @@ def test_array_sort(con):
 
 @builtin_array
 @pytest.mark.notimpl(
-    ["dask", "datafusion", "mssql", "polars"], raises=com.OperationNotDefinedError
+    ["dask", "datafusion", "polars"], raises=com.OperationNotDefinedError
 )
 @pytest.mark.parametrize(
     ("a", "b", "expected_array"),
@@ -765,7 +770,7 @@ def test_array_union(con, a, b, expected_array):
 
 @builtin_array
 @pytest.mark.notimpl(
-    ["dask", "datafusion", "mssql", "pandas", "polars", "flink"],
+    ["dask", "datafusion", "pandas", "polars", "flink"],
     raises=com.OperationNotDefinedError,
 )
 @pytest.mark.notimpl(
@@ -832,9 +837,6 @@ def test_unnest_struct(con):
 
 
 @builtin_array
-@pytest.mark.never(
-    ["mssql"], raises=com.OperationNotDefinedError, reason="no array support"
-)
 @pytest.mark.notimpl(
     [
         "dask",
@@ -1087,7 +1089,6 @@ def test_unnest_empty_array(con):
     [
         "datafusion",
         "flink",
-        "mssql",
         "polars",
         "snowflake",
         "sqlite",
@@ -1112,7 +1113,6 @@ def test_array_map_with_conflicting_names(backend, con):
     [
         "datafusion",
         "flink",
-        "mssql",
         "polars",
         "snowflake",
         "sqlite",

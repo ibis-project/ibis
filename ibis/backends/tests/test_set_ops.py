@@ -5,6 +5,7 @@ import random
 import pandas as pd
 import pytest
 from pytest import param
+import sqlalchemy as sa
 
 import ibis
 import ibis.common.exceptions as com

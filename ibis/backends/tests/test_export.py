@@ -4,8 +4,8 @@ import pandas as pd
 import pyarrow as pa
 import pyarrow.csv as pcsv
 import pytest
-import sqlalchemy as sa
 from pytest import param
+import sqlalchemy as sa
 
 import ibis
 import ibis.expr.datatypes as dt
@@ -18,6 +18,7 @@ from ibis.backends.tests.errors import (
     OracleDatabaseError,
     PyDeltaTableError,
     PyDruidProgrammingError,
+    PyODBCProgrammingError,
     PySparkArithmeticException,
     PySparkParseException,
     SnowflakeProgrammingError,
@@ -356,7 +357,7 @@ def test_table_to_csv_writer_kwargs(delimiter, tmp_path, awards_players):
             marks=[
                 pytest.mark.notyet(["impala"], reason="precision not supported"),
                 pytest.mark.notyet(["duckdb"], reason="precision is out of range"),
-                pytest.mark.notyet(["mssql"], raises=sa.exc.ProgrammingError),
+                pytest.mark.notyet(["mssql"], raises=PyODBCProgrammingError),
                 pytest.mark.notyet(["snowflake"], raises=SnowflakeProgrammingError),
                 pytest.mark.notyet(["trino"], raises=TrinoUserError),
                 pytest.mark.notyet(["oracle"], raises=OracleDatabaseError),
@@ -427,9 +428,6 @@ def test_roundtrip_delta(backend, con, alltypes, tmp_path, monkeypatch):
     backend.assert_frame_equal(result, expected)
 
 
-@pytest.mark.xfail_version(
-    duckdb=["duckdb<0.8.1"], raises=AssertionError, reason="bug in duckdb"
-)
 @pytest.mark.notimpl(
     ["druid"], raises=AttributeError, reason="string type is used for timestamp_col"
 )
