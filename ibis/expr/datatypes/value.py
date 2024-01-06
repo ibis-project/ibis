@@ -8,6 +8,8 @@ import ipaddress
 import json
 import uuid
 from collections.abc import Mapping, Sequence
+from functools import partial
+from operator import attrgetter
 from typing import Any
 
 import toolz
@@ -232,18 +234,6 @@ def infer_shapely_multipolygon(value) -> dt.MultiPolygon:
 del infer.register
 
 
-@public
-class _WellKnownText:
-    def __init__(self, text: str):
-        self.text = text
-
-    def __str__(self):
-        return self.text
-
-    def __repr__(self):
-        return self.text
-
-
 # TODO(kszucs): should raise ValueError instead of TypeError
 def normalize(typ, value):
     """Ensure that the Python type underlying a literal resolves to a single type."""
@@ -307,18 +297,36 @@ def normalize(typ, value):
             )
         return frozendict({k: normalize(t, value[k]) for k, t in dtype.items()})
     elif dtype.is_geospatial():
+        import shapely as shp
+
         if isinstance(value, (tuple, list)):
             if dtype.is_point():
-                return tuple(normalize(dt.float64, item) for item in value)
-            elif dtype.is_linestring() or dtype.is_multipoint():
-                return tuple(normalize(dt.point, item) for item in value)
-            elif dtype.is_polygon() or dtype.is_multilinestring():
-                return tuple(normalize(dt.linestring, item) for item in value)
+                return shp.Point(value)
+            elif dtype.is_linestring():
+                return shp.LineString(value)
+            elif dtype.is_polygon():
+                return shp.Polygon(
+                    toolz.concat(
+                        map(
+                            attrgetter("coords"),
+                            map(partial(normalize, dt.linestring), value),
+                        )
+                    )
+                )
+            elif dtype.is_multipoint():
+                return shp.MultiPoint(tuple(map(partial(normalize, dt.point), value)))
+            elif dtype.is_multilinestring():
+                return shp.MultiLineString(
+                    tuple(map(partial(normalize, dt.linestring), value))
+                )
             elif dtype.is_multipolygon():
-                return tuple(normalize(dt.polygon, item) for item in value)
-        elif isinstance(value, _WellKnownText):
+                return shp.MultiPolygon(map(partial(normalize, dt.polygon), value))
+            else:
+                raise IbisTypeError(f"Unsupported geospatial type: {dtype}")
+        elif isinstance(value, shp.geometry.base.BaseGeometry):
             return value
-        return _WellKnownText(value.wkt)
+        else:
+            return shp.from_wkt(value)
     elif dtype.is_date():
         return normalize_datetime(value).date()
     elif dtype.is_time():

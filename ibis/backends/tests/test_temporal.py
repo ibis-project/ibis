@@ -1029,7 +1029,6 @@ timestamp_value = pd.Timestamp("2018-01-01 18:18:18")
                         "dask",
                         "impala",
                         "mysql",
-                        "postgres",
                         "risingwave",
                         "snowflake",
                         "sqlite",
@@ -1054,7 +1053,6 @@ timestamp_value = pd.Timestamp("2018-01-01 18:18:18")
                 pytest.mark.notimpl(
                     [
                         "sqlite",
-                        "postgres",
                         "risingwave",
                         "polars",
                         "mysql",
@@ -1653,7 +1651,6 @@ def test_interval_add_cast_column(backend, alltypes, df):
                 ),
                 pytest.mark.notimpl(
                     [
-                        "postgres",
                         "risingwave",
                     ],
                     raises=AttributeError,
@@ -1687,12 +1684,7 @@ def test_interval_add_cast_column(backend, alltypes, df):
     ],
 )
 @pytest.mark.notimpl(
-    [
-        "datafusion",
-        "mssql",
-        "oracle",
-    ],
-    raises=com.OperationNotDefinedError,
+    ["datafusion", "mssql", "oracle"], raises=com.OperationNotDefinedError
 )
 @pytest.mark.broken(
     ["druid"],
@@ -1857,7 +1849,6 @@ def test_integer_to_timestamp(backend, con, unit):
     [
         "dask",
         "pandas",
-        "postgres",
         "risingwave",
         "clickhouse",
         "sqlite",
@@ -2758,8 +2749,8 @@ def test_timestamp_precision_output(con, ts, scale, unit):
     raises=com.OperationNotDefinedError,
 )
 @pytest.mark.notyet(
-    ["postgres", "risingwave"],
-    reason="postgres doesn't have any easy way to accurately compute the delta in specific units",
+    ["risingwave"],
+    reason="risingwave doesn't have any easy way to accurately compute the delta in specific units",
     raises=com.OperationNotDefinedError,
 )
 @pytest.mark.parametrize(
@@ -2776,7 +2767,12 @@ def test_timestamp_precision_output(con, ts, scale, unit):
                     ["clickhouse"],
                     raises=com.OperationNotDefinedError,
                     reason="time types not yet implemented in ibis for the clickhouse backend",
-                )
+                ),
+                pytest.mark.notyet(
+                    ["postgres"],
+                    reason="postgres doesn't have any easy way to accurately compute the delta in specific units",
+                    raises=com.OperationNotDefinedError,
+                ),
             ],
         ),
         param(ibis.date("1992-09-30"), ibis.date("1992-10-01"), "day", 1, id="date"),
