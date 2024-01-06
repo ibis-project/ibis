@@ -96,15 +96,15 @@ jobs:
             extras:
               - polars
               - deltalake
-          # - name: mysql
-          #   title: MySQL
-          #   services:
-          #     - mysql
-          #   extras:
-          #     - mysql
-          #     - geospatial
-          #   sys-deps:
-          #     - libgeos-dev
+          - name: mysql
+            title: MySQL
+            services:
+              - mysql
+            extras:
+              - mysql
+              - geospatial
+            sys-deps:
+              - libgeos-dev
           - name: postgres
             title: PostgreSQL
             extras:
@@ -188,17 +188,17 @@ jobs:
           #   extras:
           #     - risingwave
         exclude:
-          # - os: windows-latest
-          #   backend:
-          #     name: mysql
-          #     title: MySQL
-          #     extras:
-          #       - mysql
-          #       - geospatial
-          #     services:
-          #       - mysql
-          #     sys-deps:
-          #       - libgeos-dev
+          - os: windows-latest
+            backend:
+              name: mysql
+              title: MySQL
+              extras:
+                - mysql
+                - geospatial
+              services:
+                - mysql
+              sys-deps:
+                - libgeos-dev
           - os: windows-latest
             backend:
               name: clickhouse
@@ -317,13 +317,13 @@ jobs:
           #     extras:
           #       - risingwave
     steps:
-      # - name: update and install system dependencies
-      #   if: matrix.os == 'ubuntu-latest' && matrix.backend.sys-deps != null
-      #   run: |
-      #     set -euo pipefail
-      #
-      #     sudo apt-get update -qq -y
-      #     sudo apt-get install -qq -y build-essential ${{ join(matrix.backend.sys-deps, ' ') }}
+      - name: update and install system dependencies
+        if: matrix.os == 'ubuntu-latest' && matrix.backend.sys-deps != null
+        run: |
+          set -euo pipefail
+
+          sudo apt-get update -qq -y
+          sudo apt-get install -qq -y build-essential ${{ join(matrix.backend.sys-deps, ' ') }}
 
       - name: install sqlite
         if: matrix.os == 'windows-latest' && matrix.backend.name == 'sqlite'
@@ -669,13 +669,6 @@ jobs:
   #             - freetds-dev
   #             - unixodbc-dev
   #             - tdsodbc
-  #         - name: mysql
-  #           title: MySQL
-  #           services:
-  #             - mysql
-  #           extras:
-  #             - geospatial
-  #             - mysql
   #         - name: sqlite
   #           title: SQLite
   #           extras:

@@ -13,6 +13,7 @@ from ibis import util
 from ibis.backends.tests.errors import (
     DuckDBNotImplementedException,
     DuckDBParserException,
+    MySQLOperationalError,
     PyDeltaTableError,
     PySparkAnalysisException,
     SnowflakeProgrammingError,
@@ -356,7 +357,7 @@ def test_table_to_csv_writer_kwargs(delimiter, tmp_path, awards_players):
                 pytest.mark.notyet(["snowflake"], raises=SnowflakeProgrammingError),
                 pytest.mark.notyet(["trino"], raises=TrinoUserError),
                 pytest.mark.notyet(["oracle"], raises=sa.exc.DatabaseError),
-                pytest.mark.notyet(["mysql"], raises=sa.exc.OperationalError),
+                pytest.mark.notyet(["mysql"], raises=MySQLOperationalError),
                 pytest.mark.notyet(
                     ["pyspark"],
                     raises=PySparkAnalysisException,
