@@ -105,26 +105,26 @@ jobs:
           #     - geospatial
           #   sys-deps:
           #     - libgeos-dev
-          # - name: postgres
-          #   title: PostgreSQL
-          #   extras:
-          #     - postgres
-          #     - geospatial
-          #   services:
-          #     - postgres
-          #   sys-deps:
-          #     - libgeos-dev
-          # - name: postgres
-          #   title: PostgreSQL + Torch
-          #   extras:
-          #     - postgres
-          #     - geospatial
-          #   additional_deps:
-          #     - torch
-          #   services:
-          #     - postgres
-          #   sys-deps:
-          #     - libgeos-dev
+          - name: postgres
+            title: PostgreSQL
+            extras:
+              - postgres
+              - geospatial
+            services:
+              - postgres
+            sys-deps:
+              - libgeos-dev
+          - name: postgres
+            title: PostgreSQL + Torch
+            extras:
+              - postgres
+              - geospatial
+            additional_deps:
+              - torch
+            services:
+              - postgres
+            sys-deps:
+              - libgeos-dev
           # - name: impala
           #   title: Impala
           #   extras:
@@ -208,30 +208,30 @@ jobs:
                 - examples
               services:
                 - clickhouse
-          # - os: windows-latest
-          #   backend:
-          #     name: postgres
-          #     title: PostgreSQL
-          #     extras:
-          #       - postgres
-          #       - geospatial
-          #     services:
-          #       - postgres
-          #     sys-deps:
-          #       - libgeos-dev
-          # - os: windows-latest
-          #   backend:
-          #     name: postgres
-          #     title: PostgreSQL + Torch
-          #     extras:
-          #       - postgres
-          #       - geospatial
-          #     additional_deps:
-          #       - torch
-          #     services:
-          #       - postgres
-          #     sys-deps:
-          #       - libgeos-dev
+          - os: windows-latest
+            backend:
+              name: postgres
+              title: PostgreSQL
+              extras:
+                - postgres
+                - geospatial
+              services:
+                - postgres
+              sys-deps:
+                - libgeos-dev
+          - os: windows-latest
+            backend:
+              name: postgres
+              title: PostgreSQL + Torch
+              extras:
+                - postgres
+                - geospatial
+              additional_deps:
+                - torch
+              services:
+                - postgres
+              sys-deps:
+                - libgeos-dev
           # - os: windows-latest
           #   backend:
           #     name: impala
@@ -410,134 +410,131 @@ jobs:
         if: matrix.backend.services != null && failure()
         run: docker compose logs
 
-  # test_backends_min_version:
-  #   name: ${{ matrix.backend.title }} Min Version ${{ matrix.os }} python-${{ matrix.python-version }}
-  #   runs-on: ${{ matrix.os }}
-  #   env:
-  #     SQLALCHEMY_WARN_20: "1"
-  #   strategy:
-  #     fail-fast: false
-  #     matrix:
-  #       os:
-  #         - ubuntu-latest
-  #         - windows-latest
-  #       python-version:
-  #         - "3.9"
-  #         - "3.11"
-  #       backend:
-  #         - name: dask
-  #           title: Dask
-  #           deps:
-  #             - "dask[array,dataframe]@2022.9.1"
-  #             - "pandas@1.5.3"
-  #           extras:
-  #             - dask
-  #         - name: postgres
-  #           title: PostgreSQL
-  #           deps:
-  #             - "psycopg2@2.8.4"
-  #             - "GeoAlchemy2@0.6.3"
-  #             - "geopandas@0.6"
-  #             - "Shapely@2"
-  #           services:
-  #             - postgres
-  #           extras:
-  #             - postgres
-  #             - geospatial
-  #       exclude:
-  #         - os: windows-latest
-  #           backend:
-  #             name: postgres
-  #             title: PostgreSQL
-  #             deps:
-  #               - "psycopg2@2.8.4"
-  #               - "GeoAlchemy2@0.6.3"
-  #               - "geopandas@0.6"
-  #               - "Shapely@2"
-  #             services:
-  #               - postgres
-  #             extras:
-  #               - postgres
-  #               - geospatial
-  #         - python-version: "3.11"
-  #           backend:
-  #             name: postgres
-  #             title: PostgreSQL
-  #             deps:
-  #               - "psycopg2@2.8.4"
-  #               - "GeoAlchemy2@0.6.3"
-  #               - "geopandas@0.6"
-  #               - "Shapely@2"
-  #             services:
-  #               - postgres
-  #             extras:
-  #               - postgres
-  #               - geospatial
-  #   steps:
-  #     - name: checkout
-  #       uses: actions/checkout@v4
-  #
-  #     - name: install libgeos for shapely
-  #       if: matrix.backend.name == 'postgres'
-  #       run: |
-  #         sudo apt-get update -y -qq
-  #         sudo apt-get install -qq -y build-essential libgeos-dev
-  #
-  #     - uses: extractions/setup-just@v1
-  #       env:
-  #         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-  #
-  #     - name: download backend data
-  #       run: just download-data
-  #
-  #     - name: start services
-  #       if: matrix.backend.services != null
-  #       run: docker compose up --wait ${{ join(matrix.backend.services, ' ') }}
-  #
-  #     - name: install python
-  #       uses: actions/setup-python@v5
-  #       id: install_python
-  #       with:
-  #         python-version: ${{ matrix.python-version }}
-  #
-  #     - name: install poetry
-  #       run: python -m pip install --upgrade pip 'poetry==1.7.1'
-  #
-  #     - name: remove lonboard
-  #       # it requires a version of pandas that min versions are not compatible with
-  #       run: poetry remove lonboard
-  #
-  #     - name: install minimum versions
-  #       run: poetry add --lock --optional ${{ join(matrix.backend.deps, ' ') }}
-  #
-  #     - name: checkout the lock file
-  #       run: git checkout poetry.lock
-  #
-  #     - name: lock with no updates
-  #       # poetry add is aggressive and will update other dependencies like
-  #       # numpy and pandas so we keep the pyproject.toml edits and then relock
-  #       # without updating anything except the requested versions
-  #       run: poetry lock --no-update
-  #
-  #     - name: install ibis
-  #       run: poetry install --without dev --without docs --extras "${{ join(matrix.backend.extras, ' ') }}"
-  #
-  #     - name: run tests
-  #       run: just ci-check -m ${{ matrix.backend.name }} --numprocesses auto --dist=loadgroup
-  #
-  #     - name: check that no untracked files were produced
-  #       shell: bash
-  #       run: git checkout poetry.lock pyproject.toml && ! git status --porcelain | tee /dev/stderr | grep .
-  #
-  #     - name: upload code coverage
-  #       if: success()
-  #       uses: codecov/codecov-action@v4
-  #       with:
-  #         flags: backend,${{ matrix.backend.name }},${{ runner.os }},python-${{ steps.install_python.outputs.python-version }}
-  #
-  #     - name: Show docker compose logs on fail
-  #       if: matrix.backend.services != null && failure()
-  #       run: docker compose logs
+  test_backends_min_version:
+    name: ${{ matrix.backend.title }} Min Version ${{ matrix.os }} python-${{ matrix.python-version }}
+    runs-on: ${{ matrix.os }}
+    env:
+      SQLALCHEMY_WARN_20: "1"
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - ubuntu-latest
+          - windows-latest
+        python-version:
+          - "3.9"
+          - "3.11"
+        backend:
+          #         - name: dask
+          #           title: Dask
+          #           deps:
+          #             - "dask[array,dataframe]@2022.9.1"
+          #             - "pandas@1.5.3"
+          #           extras:
+          #             - dask
+          - name: postgres
+            title: PostgreSQL
+            deps:
+              - "psycopg2@2.8.4"
+              - "geopandas@0.6"
+              - "Shapely@2"
+            services:
+              - postgres
+            extras:
+              - postgres
+              - geospatial
+        exclude:
+          - os: windows-latest
+            backend:
+              name: postgres
+              title: PostgreSQL
+              deps:
+                - "psycopg2@2.8.4"
+                - "geopandas@0.6"
+                - "Shapely@2"
+              services:
+                - postgres
+              extras:
+                - postgres
+                - geospatial
+          - python-version: "3.11"
+            backend:
+              name: postgres
+              title: PostgreSQL
+              deps:
+                - "psycopg2@2.8.4"
+                - "geopandas@0.6"
+                - "Shapely@2"
+              services:
+                - postgres
+              extras:
+                - postgres
+                - geospatial
+    steps:
+      - name: checkout
+        uses: actions/checkout@v4
+
+      - name: install libgeos for shapely
+        if: matrix.backend.name == 'postgres'
+        run: |
+          sudo apt-get update -y -qq
+          sudo apt-get install -qq -y build-essential libgeos-dev
+
+      - uses: extractions/setup-just@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: download backend data
+        run: just download-data
+
+      - name: start services
+        if: matrix.backend.services != null
+        run: docker compose up --wait ${{ join(matrix.backend.services, ' ') }}
+
+      - name: install python
+        uses: actions/setup-python@v5
+        id: install_python
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: install poetry
+        run: python -m pip install --upgrade pip 'poetry==1.7.1'
+
+      - name: remove lonboard
+        # it requires a version of pandas that min versions are not compatible with
+        run: poetry remove lonboard
+
+      - name: install minimum versions
+        run: poetry add --lock --optional ${{ join(matrix.backend.deps, ' ') }}
+
+      - name: checkout the lock file
+        run: git checkout poetry.lock
+
+      - name: lock with no updates
+        # poetry add is aggressive and will update other dependencies like
+        # numpy and pandas so we keep the pyproject.toml edits and then relock
+        # without updating anything except the requested versions
+        run: poetry lock --no-update
+
+      - name: install ibis
+        run: poetry install --without dev --without docs --extras "${{ join(matrix.backend.extras, ' ') }}"
+
+      - name: run tests
+        run: just ci-check -m ${{ matrix.backend.name }} --numprocesses auto --dist=loadgroup
+
+      - name: check that no untracked files were produced
+        shell: bash
+        run: git checkout poetry.lock pyproject.toml && ! git status --porcelain | tee /dev/stderr | grep .
+
+      - name: upload code coverage
+        if: success()
+        uses: codecov/codecov-action@v4
+        with:
+          flags: backend,${{ matrix.backend.name }},${{ runner.os }},python-${{ steps.install_python.outputs.python-version }}
+
+      - name: Show docker compose logs on fail
+        if: matrix.backend.services != null && failure()
+        run: docker compose logs
 
   # test_pyspark:
   #   name: PySpark ${{ matrix.os }} python-${{ matrix.python-version }}
@@ -679,15 +676,6 @@ jobs:
   #           extras:
   #             - geospatial
   #             - mysql
-  #         - name: postgres
-  #           title: PostgreSQL
-  #           services:
-  #             - postgres
-  #           extras:
-  #             - geospatial
-  #             - postgres
-  #           sys-deps:
-  #             - libgeos-dev
   #         - name: sqlite
   #           title: SQLite
   #           extras:

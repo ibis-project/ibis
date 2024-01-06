@@ -539,7 +539,6 @@ def ddl_con(ddl_backend):
             "mssql",
             "mysql",
             "oracle",
-            "postgres",
             "risingwave",
             "sqlite",
         )
