@@ -887,6 +887,7 @@ def test_count_distinct_star(alltypes, df, ibis_cond, pandas_cond):
                     ],
                     raises=com.OperationNotDefinedError,
                 ),
+                pytest.mark.notyet(["mysql"], raises=com.UnsupportedBackendType),
                 pytest.mark.notyet(
                     ["mysql", "impala"], raises=com.UnsupportedBackendType
                 ),

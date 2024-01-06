@@ -1302,6 +1302,7 @@ def test_try_cast(con, from_val, to_type, expected):
                 pytest.mark.notyet(["trino"], raises=TrinoUserError),
                 pytest.mark.broken(["polars"], reason="casts to 1672531200000000000"),
                 pytest.mark.broken(["datafusion"], reason="casts to 1672531200000000"),
+                pytest.mark.broken(["mysql"], reason="returns 20230101000000"),
             ],
         ),
     ],

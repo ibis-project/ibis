@@ -179,17 +179,17 @@ jobs:
           #   services:
           #     - flink
         exclude:
-          # - os: windows-latest
-          #   backend:
-          #     name: mysql
-          #     title: MySQL
-          #     extras:
-          #       - mysql
-          #       - geospatial
-          #     services:
-          #       - mysql
-          #     sys-deps:
-          #       - libgeos-dev
+          - os: windows-latest
+            backend:
+              name: mysql
+              title: MySQL
+              extras:
+                - mysql
+                - geospatial
+              services:
+                - mysql
+              sys-deps:
+                - libgeos-dev
           - os: windows-latest
             backend:
               name: clickhouse
