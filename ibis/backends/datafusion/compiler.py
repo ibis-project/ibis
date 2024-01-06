@@ -147,7 +147,7 @@ class DataFusionCompiler(SQLGlotCompiler):
     def visit_ScalarUDF(self, op, **kw):
         input_type = op.__input_type__
         if input_type in (InputType.PYARROW, InputType.BUILTIN):
-            return self.f[op.__full_name__](*kw.values())
+            return self.f[op.__func_name__](*kw.values())
         else:
             raise NotImplementedError(
                 f"DataFusion only supports PyArrow UDFs: got a {input_type.name.lower()} UDF"

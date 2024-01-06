@@ -22,6 +22,7 @@ from ibis.backends.tests.errors import (
     ExaQueryError,
     GoogleBadRequest,
     ImpalaHiveServer2Error,
+    PsycoPg2DivisionByZero,
     Py4JError,
     SnowflakeProgrammingError,
     TrinoUserError,
@@ -250,7 +251,7 @@ def test_numeric_literal(con, backend, expr, expected_types):
                 "trino": decimal.Decimal("1.1"),
                 "dask": decimal.Decimal("1.1"),
                 "duckdb": decimal.Decimal("1.1"),
-                "postgres": 1.1,
+                "postgres": decimal.Decimal("1.1"),
                 "pandas": decimal.Decimal("1.1"),
                 "pyspark": decimal.Decimal("1.1"),
                 "mysql": 1.1,
@@ -301,7 +302,7 @@ def test_numeric_literal(con, backend, expr, expected_types):
                 "sqlite": 1.1,
                 "trino": decimal.Decimal("1.1"),
                 "duckdb": decimal.Decimal("1.100000000"),
-                "postgres": 1.1,
+                "postgres": decimal.Decimal("1.1"),
                 "pandas": decimal.Decimal("1.1"),
                 "pyspark": decimal.Decimal("1.1"),
                 "mysql": 1.1,
@@ -348,7 +349,7 @@ def test_numeric_literal(con, backend, expr, expected_types):
                 "bigquery": decimal.Decimal("1.1"),
                 "sqlite": 1.1,
                 "dask": decimal.Decimal("1.1"),
-                "postgres": 1.1,
+                "postgres": decimal.Decimal("1.1"),
                 "pandas": decimal.Decimal("1.1"),
                 "pyspark": decimal.Decimal("1.1"),
                 "mysql": 1.1,
@@ -403,7 +404,7 @@ def test_numeric_literal(con, backend, expr, expected_types):
             {
                 "bigquery": float("inf"),
                 "sqlite": float("inf"),
-                "postgres": float("nan"),
+                "postgres": decimal.Decimal("Infinity"),
                 "pandas": decimal.Decimal("Infinity"),
                 "dask": decimal.Decimal("Infinity"),
                 "impala": float("inf"),
@@ -487,7 +488,7 @@ def test_numeric_literal(con, backend, expr, expected_types):
             {
                 "bigquery": float("-inf"),
                 "sqlite": float("-inf"),
-                "postgres": float("nan"),
+                "postgres": decimal.Decimal("-Infinity"),
                 "pandas": decimal.Decimal("-Infinity"),
                 "dask": decimal.Decimal("-Infinity"),
                 "impala": float("-inf"),
@@ -1410,8 +1411,8 @@ def test_floating_mod(backend, alltypes, df):
     reason="returns NULL when dividing by zero",
 )
 @pytest.mark.notyet(["mssql"], raises=(sa.exc.OperationalError, sa.exc.DataError))
-@pytest.mark.notyet(["postgres"], raises=sa.exc.DataError)
 @pytest.mark.notyet(["snowflake"], raises=SnowflakeProgrammingError)
+@pytest.mark.notyet(["postgres"], raises=PsycoPg2DivisionByZero)
 @pytest.mark.notimpl(["exasol"], raises=(sa.exc.DBAPIError, com.IbisTypeError))
 def test_divide_by_zero(backend, alltypes, df, column, denominator):
     expr = alltypes[column] / denominator
@@ -1462,6 +1463,7 @@ def test_divide_by_zero(backend, alltypes, df, column, denominator):
         "flink",
         "snowflake",
         "trino",
+        "postgres",
     ],
     reason="Not SQLAlchemy backends",
 )

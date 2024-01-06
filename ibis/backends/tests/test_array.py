@@ -21,6 +21,8 @@ from ibis.backends.tests.errors import (
     ClickHouseDatabaseError,
     GoogleBadRequest,
     PolarsComputeError,
+    PsycoPg2IndeterminateDatatype,
+    PsycoPg2SyntaxError,
     Py4JJavaError,
     PySparkAnalysisException,
     TrinoUserError,
@@ -112,11 +114,6 @@ def test_array_concat_variadic(con):
 
 # Issues #2370
 @pytest.mark.notimpl(["flink"], raises=com.OperationNotDefinedError)
-@pytest.mark.notyet(
-    ["postgres"],
-    raises=sa.exc.ProgrammingError,
-    reason="backend can't infer the type of an empty array",
-)
 @pytest.mark.notyet(["trino"], raises=TrinoUserError)
 def test_array_concat_some_empty(con):
     left = ibis.literal([])
@@ -460,9 +457,7 @@ def test_array_filter(con, input, output):
 
 
 @builtin_array
-@pytest.mark.notimpl(
-    ["mssql", "polars", "postgres"], raises=com.OperationNotDefinedError
-)
+@pytest.mark.notimpl(["mssql", "polars"], raises=com.OperationNotDefinedError)
 @pytest.mark.notimpl(["dask"], raises=com.OperationNotDefinedError)
 @pytest.mark.never(["impala"], reason="array_types table isn't defined")
 def test_array_contains(backend, con):
@@ -623,7 +618,7 @@ def test_array_intersect(con, data):
     raises=ClickHouseDatabaseError,
     reason="ClickHouse won't accept dicts for struct type values",
 )
-@pytest.mark.notimpl(["postgres"], raises=sa.exc.ProgrammingError)
+@pytest.mark.notimpl(["postgres"], raises=PsycoPg2SyntaxError)
 @pytest.mark.notimpl(["datafusion"], raises=com.OperationNotDefinedError)
 @pytest.mark.broken(
     ["trino"], reason="inserting maps into structs doesn't work", raises=TrinoUserError
@@ -671,7 +666,7 @@ def test_zip(backend):
     raises=ClickHouseDatabaseError,
     reason="https://github.com/ClickHouse/ClickHouse/issues/41112",
 )
-@pytest.mark.notimpl(["postgres"], raises=sa.exc.ProgrammingError)
+@pytest.mark.notimpl(["postgres"], raises=PsycoPg2SyntaxError)
 @pytest.mark.notimpl(["datafusion"], raises=com.OperationNotDefinedError)
 @pytest.mark.notimpl(
     ["polars"],
@@ -731,7 +726,7 @@ def flatten_data():
 @pytest.mark.notyet(
     ["postgres"],
     reason="Postgres doesn't truly support arrays of arrays",
-    raises=com.OperationNotDefinedError,
+    raises=(com.OperationNotDefinedError, PsycoPg2IndeterminateDatatype),
 )
 @pytest.mark.parametrize(
     ("column", "expected"),

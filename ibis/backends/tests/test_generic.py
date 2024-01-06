@@ -23,6 +23,7 @@ from ibis.backends.tests.errors import (
     ExaQueryError,
     GoogleBadRequest,
     ImpalaHiveServer2Error,
+    PsycoPg2InvalidTextRepresentation,
     SnowflakeProgrammingError,
     TrinoUserError,
 )
@@ -1264,7 +1265,6 @@ def test_hash_consistent(backend, alltypes):
         "mssql",
         "mysql",
         "oracle",
-        "postgres",
         "pyspark",
         "snowflake",
         "sqlite",
