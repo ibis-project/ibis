@@ -7,21 +7,13 @@ from operator import methodcaller
 import pandas as pd
 import pandas.testing as tm
 import pytest
-import sqlalchemy as sa
-from packaging.version import parse as vparse
+import sqlglot as sg
 from pytest import param
-from sqlalchemy.dialects import mysql
 
 import ibis
 import ibis.expr.datatypes as dt
 from ibis import udf
-from ibis.backends.base.sql.alchemy.geospatial import geospatial_supported
 from ibis.util import gen_name
-
-if geospatial_supported:
-    import geoalchemy2
-else:
-    geoalchemy2 = None
 
 MYSQL_TYPES = [
     param("tinyint", dt.int8, id="tinyint"),
@@ -69,30 +61,20 @@ MYSQL_TYPES = [
     param("set('a', 'b', 'c', 'd')", dt.Array(dt.string), id="set"),
     param("mediumblob", dt.binary, id="mediumblob"),
     param("blob", dt.binary, id="blob"),
-    param(
-        "uuid",
-        dt.uuid,
-        marks=[
-            pytest.mark.xfail(
-                condition=vparse(sa.__version__) < vparse("2"),
-                reason="geoalchemy2 0.14.x doesn't work",
-            )
-        ],
-        id="uuid",
-    ),
+    param("uuid", dt.uuid, id="uuid"),
 ]
 
 
 @pytest.mark.parametrize(("mysql_type", "expected_type"), MYSQL_TYPES)
 def test_get_schema_from_query(con, mysql_type, expected_type):
     raw_name = ibis.util.guid()
-    name = con._quote(raw_name)
+    name = sg.to_identifier(raw_name, quoted=True).sql("mysql")
     expected_schema = ibis.schema(dict(x=expected_type))
 
     # temporary tables get cleaned up by the db when the session ends, so we
     # don't need to explicitly drop the table
     with con.begin() as c:
-        c.exec_driver_sql(f"CREATE TEMPORARY TABLE {name} (x {mysql_type})")
+        c.execute(f"CREATE TEMPORARY TABLE {name} (x {mysql_type})")
 
     result_schema = con._get_schema_using_query(f"SELECT * FROM {name}")
     assert result_schema == expected_schema
@@ -105,29 +87,23 @@ def test_get_schema_from_query(con, mysql_type, expected_type):
 def test_blob_type(con, coltype):
     tmp = f"tmp_{ibis.util.guid()}"
     with con.begin() as c:
-        c.exec_driver_sql(f"CREATE TEMPORARY TABLE {tmp} (a {coltype})")
+        c.execute(f"CREATE TEMPORARY TABLE {tmp} (a {coltype})")
     t = con.table(tmp)
     assert t.schema() == ibis.schema({"a": dt.binary})
 
 
 @pytest.fixture(scope="session")
-def tmp_t(con_nodb):
-    with con_nodb.begin() as c:
-        c.exec_driver_sql("CREATE TABLE IF NOT EXISTS test_schema.t (x INET6)")
-    yield
-    with con_nodb.begin() as c:
-        c.exec_driver_sql("DROP TABLE IF EXISTS test_schema.t")
+def tmp_t(con):
+    with con.begin() as c:
+        c.execute("CREATE TABLE IF NOT EXISTS test_schema.t (x INET6)")
+    yield "t"
+    with con.begin() as c:
+        c.execute("DROP TABLE IF EXISTS test_schema.t")
 
 
-@pytest.mark.usefixtures("setup_privs", "tmp_t")
-@pytest.mark.xfail(
-    geospatial_supported and vparse(geoalchemy2.__version__) > vparse("0.13.3"),
-    reason="geoalchemy2 issues when using 0.14.x",
-    raises=sa.exc.OperationalError,
-)
-def test_get_schema_from_query_other_schema(con_nodb):
-    t = con_nodb.table("t", schema="test_schema")
-    assert t.schema() == ibis.schema({"x": dt.string})
+def test_get_schema_from_query_other_schema(con, tmp_t):
+    t = con.table(tmp_t, schema="test_schema")
+    assert t.schema() == ibis.schema({"x": dt.inet})
 
 
 def test_zero_timestamp_data(con):
@@ -137,11 +113,11 @@ def test_zero_timestamp_data(con):
         name      CHAR(10) NULL,
         tradedate DATETIME NOT NULL,
         date      DATETIME NULL
-    );
+    )
     """
     with con.begin() as c:
-        c.exec_driver_sql(sql)
-        c.exec_driver_sql(
+        c.execute(sql)
+        c.execute(
             """
             INSERT INTO ztmp_date_issue VALUES
                 ('C', '2018-10-22', 0),
@@ -166,12 +142,11 @@ def test_zero_timestamp_data(con):
 @pytest.fixture(scope="module")
 def enum_t(con):
     name = gen_name("mysql_enum_test")
-    t = sa.Table(
-        name, sa.MetaData(), sa.Column("sml", mysql.ENUM("small", "medium", "large"))
-    )
-    with con.begin() as bind:
-        t.create(bind=bind)
-        bind.execute(t.insert().values(sml="small"))
+    with con.begin() as cur:
+        cur.execute(
+            f"CREATE TEMPORARY TABLE {name} (sml ENUM('small', 'medium', 'large'))"
+        )
+        cur.execute(f"INSERT INTO {name} VALUES ('small')")
 
     yield con.table(name)
     con.drop_table(name, force=True)

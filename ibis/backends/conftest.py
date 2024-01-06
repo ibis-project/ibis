@@ -537,7 +537,6 @@ def ddl_con(ddl_backend):
         keep=(
             "exasol",
             "mssql",
-            "mysql",
             "oracle",
             "risingwave",
             "sqlite",
