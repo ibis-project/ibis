@@ -1412,9 +1412,7 @@ class Backend(SQLGlotBackend, CanCreateSchema):
 
         # only register if we haven't already done so
         if (name := op.name) not in self.list_tables():
-            table = op.data.to_pyarrow(schema)
-            table = getattr(table, "obj", table)
-            self.con.register(name, table)
+            self.con.register(name, op.data.to_pyarrow(schema))
 
     def _register_udfs(self, expr: ir.Expr) -> None:
         import ibis.expr.operations as ops

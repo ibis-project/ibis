@@ -24,6 +24,7 @@ from ibis.backends.tests.errors import (
     GoogleBadRequest,
     ImpalaHiveServer2Error,
     Py4JJavaError,
+    PsycoPg2InvalidTextRepresentation,
     SnowflakeProgrammingError,
     TrinoUserError,
 )
@@ -1381,7 +1382,6 @@ def test_hexdigest(backend, alltypes):
         "mssql",
         "mysql",
         "oracle",
-        "postgres",
         "risingwave",
         "pyspark",
         "snowflake",

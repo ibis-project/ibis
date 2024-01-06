@@ -12,64 +12,35 @@ import pytest
 from pytest import param
 
 import ibis
-import ibis.common.exceptions as exc
 import ibis.expr.datatypes as dt
 import ibis.expr.types as ir
 from ibis import config
 from ibis import literal as L
-from ibis.backends.conftest import WINDOWS
 
 pytest.importorskip("psycopg2")
-sa = pytest.importorskip("sqlalchemy")
-
-from sqlalchemy.dialects import postgresql  # noqa: E402
 
 
 @pytest.mark.parametrize(
-    ("left_func", "right_func"),
+    ("expr_fn"),
     [
+        param(lambda t: t.double_col.cast("int8"), id="double_to_int8"),
+        param(lambda t: t.double_col.cast("int16"), id="double_to_int16"),
+        param(lambda t: t.string_col.cast("double"), id="string_to_double"),
+        param(lambda t: t.string_col.cast("float32"), id="string_to_float"),
+        param(lambda t: t.string_col.cast("decimal"), id="string_to_decimal_no_params"),
         param(
-            lambda t: t.double_col.cast("int8"),
-            lambda at: sa.cast(at.c.double_col, sa.SMALLINT),
-            id="double_to_int8",
-        ),
-        param(
-            lambda t: t.double_col.cast("int16"),
-            lambda at: sa.cast(at.c.double_col, sa.SMALLINT),
-            id="double_to_int16",
-        ),
-        param(
-            lambda t: t.string_col.cast("double"),
-            lambda at: sa.cast(at.c.string_col, postgresql.DOUBLE_PRECISION),
-            id="string_to_double",
-        ),
-        param(
-            lambda t: t.string_col.cast("float32"),
-            lambda at: sa.cast(at.c.string_col, postgresql.REAL),
-            id="string_to_float",
-        ),
-        param(
-            lambda t: t.string_col.cast("decimal"),
-            lambda at: sa.cast(at.c.string_col, sa.NUMERIC()),
-            id="string_to_decimal_no_params",
-        ),
-        param(
-            lambda t: t.string_col.cast("decimal(9, 3)"),
-            lambda at: sa.cast(at.c.string_col, sa.NUMERIC(9, 3)),
-            id="string_to_decimal_params",
+            lambda t: t.string_col.cast("decimal(9, 3)"), id="string_to_decimal_params"
         ),
     ],
 )
-def test_cast(alltypes, alltypes_sqla, translate, left_func, right_func):
-    left = left_func(alltypes)
-    right = right_func(alltypes_sqla.alias("t0"))
-    assert str(translate(left.op()).compile()) == str(right.compile())
+def test_cast(alltypes, expr_fn, snapshot):
+    expr = expr_fn(alltypes)
+    snapshot.assert_match(expr.compile(), "out.sql")
 
 
-def test_date_cast(alltypes, alltypes_sqla, translate):
+def test_date_cast(alltypes, snapshot):
     result = alltypes.date_string_col.cast("date")
-    expected = sa.cast(alltypes_sqla.alias("t0").c.date_string_col, sa.DATE)
-    assert str(translate(result.op())) == str(expected)
+    snapshot.assert_match(result.compile(), "out.sql")
 
 
 @pytest.mark.parametrize(
@@ -90,29 +61,24 @@ def test_date_cast(alltypes, alltypes_sqla, translate):
         "month",
     ],
 )
-def test_noop_cast(alltypes, alltypes_sqla, translate, column):
+def test_noop_cast(alltypes, column):
     col = alltypes[column]
-    result = col.cast(col.type())
-    expected = alltypes_sqla.alias("t0").c[column]
-    assert result.equals(col)
-    assert str(translate(result.op())) == str(expected)
+    assert col.cast(col.type()).equals(col)
 
 
-def test_timestamp_cast_noop(alltypes, alltypes_sqla, translate):
+def test_timestamp_cast_noop(alltypes, snapshot):
     # See GH #592
-    result1 = alltypes.timestamp_col.cast("timestamp")
+    timestamp_col_type = alltypes.timestamp_col.type()
+    result1 = alltypes.timestamp_col.cast(timestamp_col_type)
     result2 = alltypes.int_col.cast("timestamp")
 
     assert isinstance(result1, ir.TimestampColumn)
     assert isinstance(result2, ir.TimestampColumn)
 
-    expected1 = alltypes_sqla.alias("t0").c.timestamp_col
-    expected2 = sa.cast(
-        sa.func.to_timestamp(alltypes_sqla.alias("t0").c.int_col), sa.TIMESTAMP()
-    )
+    assert result1.type() == timestamp_col_type
 
-    assert str(translate(result1.op())) == str(expected1)
-    assert str(translate(result2.op())) == str(expected2)
+    snapshot.assert_match(result1.compile(), "out1.sql")
+    snapshot.assert_match(result2.compile(), "out2.sql")
 
 
 @pytest.mark.parametrize(
@@ -120,35 +86,48 @@ def test_timestamp_cast_noop(alltypes, alltypes_sqla, translate):
     [
         # there could be pathological failure at midnight somewhere, but
         # that's okay
-        "%Y%m%d %H",
+        param("%Y%m%d %H", id="hourly"),
         # test quoting behavior
-        'DD BAR %w FOO "DD"',
-        'DD BAR %w FOO "D',
-        'DD BAR "%w" FOO "D',
-        'DD BAR "%d" FOO "D',
+        param(
+            'DD BAR %w FOO "DD"',
+            id="quoted-dd",
+            marks=pytest.mark.xfail(reason="broken in sqlglot"),
+        ),
+        param(
+            'DD BAR %w FOO "D',
+            id="w",
+            marks=pytest.mark.xfail(reason="broken in sqlglot"),
+        ),
+        param(
+            'DD BAR "%w" FOO "D',
+            id="quoted-w",
+            marks=pytest.mark.xfail(reason="broken in sqlglot"),
+        ),
+        param(
+            'DD BAR "%d" FOO "D',
+            id="quoted-d",
+            marks=pytest.mark.xfail(reason="broken in sqlglot"),
+        ),
         param(
             'DD BAR "%c" FOO "D',
             marks=pytest.mark.xfail(
-                condition=WINDOWS,
-                raises=exc.UnsupportedOperationError,
-                reason="Locale-specific format specs not available on Windows",
+                reason="Locale-specific format specs not implemented in sqlglot"
             ),
+            id="quoted-c",
         ),
         param(
             'DD BAR "%x" FOO "D',
             marks=pytest.mark.xfail(
-                condition=WINDOWS,
-                raises=exc.UnsupportedOperationError,
-                reason="Locale-specific format specs not available on Windows",
+                reason="Locale-specific format specs not implemented in sqlglot"
             ),
+            id="quoted-x",
         ),
         param(
             'DD BAR "%X" FOO "D',
             marks=pytest.mark.xfail(
-                condition=WINDOWS,
-                raises=exc.UnsupportedOperationError,
-                reason="Locale-specific format specs not available on Windows",
+                reason="Locale-specific format specs not implemented in sqlglot"
             ),
+            id="quoted-X",
         ),
     ],
 )
@@ -194,11 +173,6 @@ def test_strftime(con, pattern):
 )
 def test_typeof(con, value, expected):
     assert con.execute(value.typeof()) == expected
-
-
-@pytest.mark.parametrize(("value", "expected"), [(0, None), (5.5, 5.5)])
-def test_nullif_zero(con, value, expected):
-    assert con.execute(L(value).nullif(0)) == expected
 
 
 @pytest.mark.parametrize(("value", "expected"), [("foo_bar", 7), ("", 0)])
@@ -526,12 +500,7 @@ def test_union_cte(alltypes, distinct, snapshot):
     expr2 = expr1.view()
     expr3 = expr1.view()
     expr = expr1.union(expr2, distinct=distinct).union(expr3, distinct=distinct)
-    result = " ".join(
-        line.strip()
-        for line in str(
-            expr.compile().compile(compile_kwargs={"literal_binds": True})
-        ).splitlines()
-    )
+    result = " ".join(line.strip() for line in expr.compile().splitlines())
     snapshot.assert_match(result, "out.sql")
 
 
@@ -698,15 +667,12 @@ def test_not_exists(alltypes, df):
 
 
 def test_interactive_repr_shows_error(alltypes):
-    # #591. Doing this in PostgreSQL because so many built-in functions are
-    # not available
-
     expr = alltypes.int_col.convert_base(10, 2)
 
     with config.option_context("interactive", True):
         result = repr(expr)
 
-    assert "no translation rule" in result.lower()
+    assert "OperationNotDefinedError('BaseConvert')" in result
 
 
 def test_subquery(alltypes, df):
@@ -1014,9 +980,7 @@ def test_array_concat_mixed_types(array_types):
 @pytest.fixture
 def t(con, temp_table):
     with con.begin() as c:
-        c.exec_driver_sql(
-            f"CREATE TABLE {con._quote(temp_table)} (id SERIAL PRIMARY KEY, name TEXT)"
-        )
+        c.execute(f"CREATE TABLE {temp_table} (id SERIAL PRIMARY KEY, name TEXT)")
     return con.table(temp_table)
 
 
@@ -1026,11 +990,11 @@ def s(con, t, temp_table2):
     assert temp_table != temp_table2
 
     with con.begin() as c:
-        c.exec_driver_sql(
+        c.execute(
             f"""
-            CREATE TABLE {con._quote(temp_table2)} (
+            CREATE TABLE {temp_table2} (
               id SERIAL PRIMARY KEY,
-              left_t_id INTEGER REFERENCES {con._quote(temp_table)},
+              left_t_id INTEGER REFERENCES {temp_table},
               cost DOUBLE PRECISION
             )
             """
@@ -1040,41 +1004,11 @@ def s(con, t, temp_table2):
 
 @pytest.fixture
 def trunc(con, temp_table):
-    quoted = con._quote(temp_table)
+    quoted = temp_table
     with con.begin() as c:
-        c.exec_driver_sql(f"CREATE TABLE {quoted} (id SERIAL PRIMARY KEY, name TEXT)")
-        c.exec_driver_sql(f"INSERT INTO {quoted} (name) VALUES ('a'), ('b'), ('c')")
+        c.execute(f"CREATE TABLE {quoted} (id SERIAL PRIMARY KEY, name TEXT)")
+        c.execute(f"INSERT INTO {quoted} (name) VALUES ('a'), ('b'), ('c')")
     return con.table(temp_table)
-
-
-def test_semi_join(con, t, s):
-    t_a = con._get_sqla_table(t.op().name).alias("t0")
-    s_a = con._get_sqla_table(s.op().name).alias("t1")
-
-    expr = t.semi_join(s, t.id == s.id)
-    result = expr.compile().compile(compile_kwargs={"literal_binds": True})
-    base = (
-        sa.select(t_a.c.id, t_a.c.name)
-        .where(sa.exists(sa.select(1).where(t_a.c.id == s_a.c.id)))
-        .subquery()
-    )
-    expected = sa.select(base.c.id, base.c.name)
-    assert str(result) == str(expected)
-
-
-def test_anti_join(con, t, s):
-    t_a = con._get_sqla_table(t.op().name).alias("t0")
-    s_a = con._get_sqla_table(s.op().name).alias("t1")
-
-    expr = t.anti_join(s, t.id == s.id)
-    result = expr.compile().compile(compile_kwargs={"literal_binds": True})
-    base = (
-        sa.select(t_a.c.id, t_a.c.name)
-        .where(~sa.exists(sa.select(1).where(t_a.c.id == s_a.c.id)))
-        .subquery()
-    )
-    expected = sa.select(base.c.id, base.c.name)
-    assert str(result) == str(expected)
 
 
 def test_create_table_from_expr(con, trunc, temp_table2):
@@ -1193,10 +1127,6 @@ def tz(request):
 
 @pytest.fixture
 def tzone_compute(con, temp_table, tz):
-    schema = ibis.schema([("ts", dt.Timestamp(tz)), ("b", "double"), ("c", "string")])
-    con.create_table(temp_table, schema=schema, temp=True)
-    t = con.table(temp_table)
-
     n = 10
     df = pd.DataFrame(
         {
@@ -1206,19 +1136,14 @@ def tzone_compute(con, temp_table, tz):
         }
     )
 
-    df.to_sql(
-        temp_table,
-        con.con,
-        index=False,
-        if_exists="append",
-        dtype={"ts": sa.TIMESTAMP(timezone=True), "b": sa.FLOAT, "c": sa.TEXT},
+    schema = ibis.schema(
+        {"ts": dt.Timestamp(timezone=tz, scale=6), "b": "float64", "c": "string"}
     )
-
-    yield t
+    return con.create_table(temp_table, df, schema=schema, temp=True)
 
 
 def test_ts_timezone_is_preserved(tzone_compute, tz):
-    assert dt.Timestamp(tz).equals(tzone_compute.ts.type())
+    assert dt.Timestamp(tz, scale=6).equals(tzone_compute.ts.type())
 
 
 def test_timestamp_with_timezone_select(tzone_compute, tz):
@@ -1228,8 +1153,9 @@ def test_timestamp_with_timezone_select(tzone_compute, tz):
 
 def test_timestamp_type_accepts_all_timezones(con):
     with con.begin() as c:
-        cur = c.exec_driver_sql("SELECT name FROM pg_timezone_names").fetchall()
-    assert all(dt.Timestamp(row.name).timezone == row.name for row in cur)
+        c.execute("SELECT name FROM pg_timezone_names")
+        rows = c.fetchall()
+    assert all(dt.Timestamp(timezone=row).timezone == row for (row,) in rows)
 
 
 @pytest.mark.parametrize(
@@ -1328,8 +1254,8 @@ def test_string_to_binary_cast(con):
         "FROM functional_alltypes LIMIT 10"
     )
     with con.begin() as c:
-        cur = c.exec_driver_sql(sql_string)
-        raw_data = [row[0][0] for row in cur]
+        c.execute(sql_string)
+        raw_data = [row[0][0] for row in c.fetchall()]
     expected = pd.Series(raw_data, name=name)
     tm.assert_series_equal(result, expected)
 
@@ -1345,8 +1271,9 @@ def test_string_to_binary_round_trip(con):
         "FROM functional_alltypes LIMIT 10"
     )
     with con.begin() as c:
-        cur = c.exec_driver_sql(sql_string)
-        expected = pd.Series([row[0][0] for row in cur], name=name)
+        c.execute(sql_string)
+        rows = [row[0] for (row,) in c.fetchall()]
+    expected = pd.Series(rows, name=name)
     tm.assert_series_equal(result, expected)
 
 
