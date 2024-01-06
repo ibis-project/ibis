@@ -20,6 +20,7 @@ import ibis.expr.types as ir
 from ibis.backends.tests.errors import (
     ClickHouseDatabaseError,
     GoogleBadRequest,
+    MySQLOperationalError,
     PolarsComputeError,
     PsycoPg2IndeterminateDatatype,
     PsycoPg2SyntaxError,
@@ -171,7 +172,11 @@ builtin_array = toolz.compose(
     pytest.mark.never(
         ["mysql"],
         reason="array types are unsupported",
-        raises=com.OperationNotDefinedError,
+        raises=(
+            com.OperationNotDefinedError,
+            MySQLOperationalError,
+            com.UnsupportedBackendType,
+        ),
     ),
     pytest.mark.never(
         ["sqlite"], reason="array types are unsupported", raises=NotImplementedError
@@ -368,7 +373,7 @@ def test_array_slice(backend, start, stop):
 
 @builtin_array
 @pytest.mark.notimpl(
-    ["datafusion", "impala", "mssql", "polars", "snowflake", "sqlite", "mysql"],
+    ["datafusion", "impala", "mssql", "polars", "snowflake", "sqlite"],
     raises=com.OperationNotDefinedError,
 )
 @pytest.mark.notimpl(
@@ -377,9 +382,7 @@ def test_array_slice(backend, start, stop):
     reason="Operation 'ArrayMap' is not implemented for this backend",
 )
 @pytest.mark.notimpl(
-    ["sqlite"],
-    raises=NotImplementedError,
-    reason="Unsupported type: Array: ...",
+    ["sqlite"], raises=NotImplementedError, reason="Unsupported type: Array: ..."
 )
 @pytest.mark.parametrize(
     ("input", "output"),
@@ -414,7 +417,7 @@ def test_array_map(con, input, output):
 
 @builtin_array
 @pytest.mark.notimpl(
-    ["dask", "datafusion", "impala", "mssql", "pandas", "polars", "snowflake", "mysql"],
+    ["dask", "datafusion", "impala", "mssql", "pandas", "polars", "snowflake"],
     raises=com.OperationNotDefinedError,
 )
 @pytest.mark.notimpl(
@@ -497,7 +500,7 @@ def test_array_remove(con):
 
 @builtin_array
 @pytest.mark.notimpl(
-    ["dask", "datafusion", "impala", "mssql", "polars", "mysql"],
+    ["dask", "datafusion", "impala", "mssql", "polars"],
     raises=com.OperationNotDefinedError,
 )
 @pytest.mark.notimpl(
@@ -574,8 +577,9 @@ def test_array_union(con):
     assert frozenset(map(tuple, result.values)) == expected
 
 
+@builtin_array
 @pytest.mark.notimpl(
-    ["dask", "datafusion", "impala", "mssql", "pandas", "polars", "mysql", "flink"],
+    ["dask", "datafusion", "impala", "mssql", "pandas", "polars", "flink"],
     raises=com.OperationNotDefinedError,
 )
 @pytest.mark.notimpl(
@@ -873,7 +877,6 @@ def test_unnest_empty_array(con):
         "polars",
         "snowflake",
         "sqlite",
-        "mysql",
         "dask",
         "pandas",
     ],
@@ -899,7 +902,6 @@ def test_array_map_with_conflicting_names(backend, con):
         "polars",
         "snowflake",
         "sqlite",
-        "mysql",
         "dask",
         "pandas",
     ],
@@ -1051,8 +1053,10 @@ def test_timestamp_range_zero_step(con, start, stop, step, tzinfo):
 @pytest.mark.notimpl(["flink"], raises=Py4JJavaError)
 def test_repr_timestamp_array(con, monkeypatch):
     monkeypatch.setattr(ibis.options, "interactive", True)
-    monkeypatch.setattr(ibis.options, "default_backend", con)
     assert ibis.options.interactive is True
+
+    monkeypatch.setattr(ibis.options, "default_backend", con)
     assert ibis.options.default_backend is con
+
     expr = ibis.array(pd.date_range("2010-01-01", "2010-01-03", freq="D").tolist())
-    assert repr(expr)
+    assert "Translation to backend failed" not in repr(expr)

@@ -22,7 +22,6 @@ import ibis.expr.types as ir
 from ibis import util
 from ibis.backends.base import CanCreateSchema
 from ibis.backends.base.sql import BaseSQLBackend
-from ibis.backends.base.sql.alchemy.geospatial import geospatial_supported
 from ibis.backends.base.sql.alchemy.query_builder import AlchemyCompiler
 from ibis.backends.base.sql.alchemy.registry import (
     fixed_arity,
@@ -204,28 +203,6 @@ class BaseAlchemyBackend(BaseSQLBackend):
         with self.begin() as con:
             yield con.execute(*args, **kwargs)
 
-    # TODO(kszucs): move to ibis.formats.pandas
-    @staticmethod
-    def _to_geodataframe(df, schema):
-        """Convert `df` to a `GeoDataFrame`.
-
-        Required libraries for geospatial support must be installed and
-        a geospatial column is present in the dataframe.
-        """
-        import geopandas as gpd
-        from geoalchemy2 import shape
-
-        geom_col = None
-        for name, dtype in schema.items():
-            if dtype.is_geospatial():
-                if not geom_col:
-                    geom_col = name
-                df[name] = df[name].map(shape.to_shape, na_action="ignore")
-        if geom_col:
-            df[geom_col] = gpd.array.GeometryArray(df[geom_col].values)
-            df = gpd.GeoDataFrame(df, geometry=geom_col)
-        return df
-
     def fetch_from_cursor(self, cursor, schema: sch.Schema) -> pd.DataFrame:
         import pandas as pd
 
@@ -241,8 +218,6 @@ class BaseAlchemyBackend(BaseSQLBackend):
             cursor.close()
             raise
         df = PandasData.convert_table(df, schema)
-        if not df.empty and geospatial_supported:
-            return self._to_geodataframe(df, schema)
         return df
 
     @contextlib.contextmanager
