@@ -50,7 +50,9 @@ _from_sqlglot_types = {
     typecode.TEXT: dt.String,
     typecode.TIME: dt.Time,
     typecode.TIMETZ: dt.Time,
+    typecode.TINYBLOB: dt.Binary,
     typecode.TINYINT: dt.Int8,
+    typecode.TINYTEXT: dt.String,
     typecode.UBIGINT: dt.UInt64,
     typecode.UINT: dt.UInt32,
     typecode.USMALLINT: dt.UInt16,
@@ -400,6 +402,10 @@ class DataFusionType(PostgresType):
 
 class MySQLType(SqlglotType):
     dialect = "mysql"
+    # these are mysql's defaults, see
+    # https://dev.mysql.com/doc/refman/8.0/en/fixed-point-types.html
+    default_decimal_precision = 10
+    default_decimal_scale = 0
 
     unknown_type_strings = FrozenDict(
         {
@@ -427,6 +433,10 @@ class MySQLType(SqlglotType):
     @classmethod
     def _from_sqlglot_TIMESTAMP(cls) -> dt.Timestamp:
         return dt.Timestamp(timezone="UTC", nullable=cls.default_nullable)
+
+    @classmethod
+    def _from_ibis_String(cls, dtype: dt.String) -> sge.DataType:
+        return sge.DataType(this=typecode.TEXT)
 
 
 class DuckDBType(SqlglotType):

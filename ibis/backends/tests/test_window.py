@@ -16,6 +16,7 @@ from ibis.backends.tests.errors import (
     ClickHouseDatabaseError,
     GoogleBadRequest,
     ImpalaHiveServer2Error,
+    MySQLOperationalError,
     Py4JJavaError,
     PySparkAnalysisException,
     SnowflakeProgrammingError,
@@ -864,7 +865,6 @@ def test_simple_ungrouped_window_with_scalar_order_by(alltypes):
                     raises=com.UnsupportedOperationError,
                     reason="Flink engine does not support generic window clause with no order by",
                 ),
-                pytest.mark.broken(["mysql"], raises=sa.exc.OperationalError),
                 pytest.mark.broken(["mssql"], raises=sa.exc.ProgrammingError),
                 pytest.mark.notyet(
                     ["snowflake"],
@@ -917,7 +917,6 @@ def test_simple_ungrouped_window_with_scalar_order_by(alltypes):
                     raises=com.UnsupportedOperationError,
                     reason="Flink engine does not support generic window clause with no order by",
                 ),
-                pytest.mark.broken(["mysql"], raises=sa.exc.OperationalError),
                 pytest.mark.broken(["mssql"], raises=sa.exc.ProgrammingError),
                 pytest.mark.notyet(
                     ["snowflake"],
@@ -1047,6 +1046,11 @@ def test_ungrouped_unbounded_window(
     reason="Feature is not yet implemented: window frame in `RANGE` mode is not supported yet",
 )
 @pytest.mark.notyet(["mssql"], raises=sa.exc.ProgrammingError)
+@pytest.mark.broken(
+    ["mysql"],
+    raises=MySQLOperationalError,
+    reason="https://github.com/tobymao/sqlglot/issues/2779",
+)
 def test_grouped_bounded_range_window(backend, alltypes, df):
     # Explanation of the range window spec below:
     #
@@ -1225,7 +1229,7 @@ def test_first_last(backend):
     ["impala"], raises=ImpalaHiveServer2Error, reason="not supported by Impala"
 )
 @pytest.mark.notyet(
-    ["mysql"], raises=sa.exc.ProgrammingError, reason="not supported by MySQL"
+    ["mysql"], raises=MySQLOperationalError, reason="not supported by MySQL"
 )
 @pytest.mark.notyet(
     ["mssql", "oracle", "polars", "snowflake", "sqlite"],

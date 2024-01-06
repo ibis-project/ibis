@@ -152,9 +152,6 @@ class PandasData(DataMapper):
     def convert_column(cls, obj, dtype):
         pandas_type = PandasType.from_ibis(dtype)
 
-        if obj.dtype == pandas_type and dtype.is_primitive():
-            return obj
-
         method_name = f"convert_{dtype.__class__.__name__}"
         convert_method = getattr(cls, method_name, cls.convert_default)
 
@@ -185,6 +182,8 @@ class PandasData(DataMapper):
 
     @classmethod
     def convert_default(cls, s, dtype, pandas_type):
+        if s.dtype == pandas_type and dtype.is_primitive():
+            return s
         try:
             return s.astype(pandas_type)
         except Exception:  # noqa: BLE001
