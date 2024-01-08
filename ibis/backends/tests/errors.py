@@ -31,11 +31,12 @@ try:
     from pyspark.sql.utils import (
         IllegalArgumentException as PySparkIllegalArgumentException,
     )
+    from pyspark.sql.utils import ParseException as PySparkParseException
     from pyspark.sql.utils import PythonException as PySparkPythonException
 except ImportError:
     PySparkAnalysisException = (
         PySparkIllegalArgumentException
-    ) = PySparkPythonException = None
+    ) = PySparkParseException = PySparkPythonException = None
 
 try:
     from google.api_core.exceptions import BadRequest as GoogleBadRequest

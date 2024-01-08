@@ -820,6 +820,8 @@ class BaseBackend(abc.ABC, _FileIOHandler):
         parts.extend(f"{k}={v}" for k, v in self._con_kwargs.items())
         return "_".join(map(str, parts))
 
+    # TODO(kszucs): this should be a classmethod returning with a new backend
+    # instance which does instantiate the connection
     def connect(self, *args, **kwargs) -> BaseBackend:
         """Connect to the database.
 
@@ -857,6 +859,7 @@ class BaseBackend(abc.ABC, _FileIOHandler):
     def _convert_kwargs(kwargs: MutableMapping) -> None:
         """Manipulate keyword arguments to `.connect` method."""
 
+    # TODO(kszucs): should call self.connect(*self._con_args, **self._con_kwargs)
     def reconnect(self) -> None:
         """Reconnect to the database already configured with connect."""
         self.do_connect(*self._con_args, **self._con_kwargs)

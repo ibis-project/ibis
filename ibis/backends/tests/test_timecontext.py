@@ -27,6 +27,7 @@ pytestmark = pytest.mark.notimpl(
         "trino",
         "druid",
         "oracle",
+        "pyspark",
     ]
 )
 
@@ -117,7 +118,7 @@ def test_context_adjustment_filter_before_window(
     backend.assert_frame_equal(result, expected)
 
 
-@pytest.mark.notimpl(["duckdb", "pyspark"])
+@pytest.mark.notimpl(["duckdb"])
 @pytest.mark.notimpl(
     ["flink"],
     raises=com.UnsupportedOperationError,

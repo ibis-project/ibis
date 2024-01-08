@@ -362,7 +362,7 @@ class SQLGlotCompiler(abc.ABC):
             if math.isnan(value):
                 return self.NAN
             elif math.isinf(value):
-                return self.POS_INF if value < 0 else self.NEG_INF
+                return self.POS_INF if value > 0 else self.NEG_INF
             return sge.convert(value)
         elif dtype.is_decimal():
             return self.cast(str(value), dtype)
@@ -864,6 +864,7 @@ class SQLGlotCompiler(abc.ABC):
     def visit_RowID(self, op, *, table):
         return sg.column(op.name, table=table.alias_or_name, quoted=self.quoted)
 
+    # TODO(kszucs): this should be renamed to something UDF related
     def __sql_name__(self, op: ops.ScalarUDF | ops.AggUDF) -> str:
         # not actually a table, but easier to quote individual namespace
         # components this way

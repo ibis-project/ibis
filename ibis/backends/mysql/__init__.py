@@ -258,6 +258,8 @@ class Backend(SQLGlotBackend, CanCreateDatabase):
         finally:
             cur.close()
 
+    # TODO(kszucs): should make it an abstract method or remove the use of it
+    # from .execute()
     @contextlib.contextmanager
     def _safe_raw_sql(self, *args, **kwargs):
         with contextlib.closing(self.raw_sql(*args, **kwargs)) as result:

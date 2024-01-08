@@ -39,7 +39,7 @@ not_sql = pytest.mark.never(
     reason="Not a SQL backend",
 )
 no_sql_extraction = pytest.mark.notimpl(
-    ["pyspark", "polars"], reason="Not clear how to extract SQL from the backend"
+    ["polars"], reason="Not clear how to extract SQL from the backend"
 )
 
 
@@ -112,7 +112,7 @@ def test_isin_bug(con, snapshot):
 
 
 @pytest.mark.never(
-    ["pandas", "dask", "polars", "pyspark"],
+    ["pandas", "dask", "polars"],
     reason="not SQL",
     raises=NotImplementedError,
 )

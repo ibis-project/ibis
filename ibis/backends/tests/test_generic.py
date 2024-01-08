@@ -27,6 +27,7 @@ from ibis.backends.tests.errors import (
     MySQLProgrammingError,
     SnowflakeProgrammingError,
     TrinoUserError,
+    PsycoPg2InvalidTextRepresentation
 )
 from ibis.common.annotations import ValidationError
 
@@ -158,6 +159,7 @@ def test_isna(backend, alltypes, col, filt):
                         "druid",
                         "oracle",
                         "exasol",
+                        "pyspark",
                     ],
                     reason="NaN != NULL for these backends",
                 ),
@@ -199,7 +201,7 @@ def test_coalesce(con, expr, expected):
 
 
 # TODO(dask) - identicalTo - #2553
-@pytest.mark.notimpl(["clickhouse", "dask", "pyspark", "mssql", "druid", "exasol"])
+@pytest.mark.notimpl(["clickhouse", "dask", "mssql", "druid", "exasol"])
 def test_identical_to(backend, alltypes, sorted_df):
     sorted_alltypes = alltypes.order_by("id")
     df = sorted_df
@@ -316,6 +318,7 @@ def test_filter(backend, alltypes, sorted_df, predicate_fn, expected_fn):
         "oracle",
         "exasol",
         "pandas",
+        "pyspark",
     ]
 )
 @pytest.mark.never(
@@ -795,7 +798,6 @@ def test_interactive(alltypes, monkeypatch):
     repr(expr)
 
 
-@pytest.mark.notyet(["pyspark"], reason="no native support for correlated subqueries")
 def test_correlated_subquery(alltypes):
     expr = alltypes[_.double_col > _.view().double_col]
     assert expr.compile() is not None
@@ -838,7 +840,6 @@ def test_int_scalar(alltypes):
 @pytest.mark.notyet(
     ["clickhouse"], reason="https://github.com/ClickHouse/ClickHouse/issues/6697"
 )
-@pytest.mark.notyet(["pyspark"])
 @pytest.mark.parametrize("method_name", ["any", "notany"])
 def test_exists(batting, awards_players, method_name):
     years = [1980, 1981]
@@ -903,7 +904,7 @@ def test_isin_uncorrelated(
 
 
 @pytest.mark.broken(["polars"], reason="incorrect answer")
-@pytest.mark.notimpl(["pyspark", "druid", "exasol"])
+@pytest.mark.notimpl(["druid", "exasol"])
 @pytest.mark.notyet(["dask"], reason="not supported by the backend")
 def test_isin_uncorrelated_filter(
     backend, batting, awards_players, batting_df, awards_players_df
@@ -1241,11 +1242,6 @@ def test_distinct_on_keep(backend, on, keep):
     reason="backend doesn't implement ops.WindowFunction",
 )
 @pytest.mark.notimpl(
-    ["pyspark"],
-    raises=com.UnsupportedOperationError,
-    reason="backend doesn't support `having` filters",
-)
-@pytest.mark.notimpl(
     ["flink"],
     raises=com.OperationNotDefinedError,
     reason="backend doesn't implement deduplication",
@@ -1373,7 +1369,6 @@ def test_hexdigest(backend, alltypes):
         "mssql",
         "oracle",
         "risingwave",
-        "pyspark",
         "snowflake",
         "sqlite",
         "exasol",
@@ -1415,7 +1410,6 @@ def test_try_cast(con, from_val, to_type, expected):
         "impala",
         "mssql",
         "oracle",
-        "pyspark",
         "snowflake",
         "sqlite",
         "exasol",
@@ -1444,7 +1438,6 @@ def test_try_cast_returns_null(con):
         "oracle",
         "postgres",
         "risingwave",
-        "pyspark",
         "snowflake",
         "sqlite",
         "exasol",
@@ -1516,7 +1509,6 @@ def test_try_cast_table(backend, con):
         "oracle",
         "postgres",
         "risingwave",
-        "pyspark",
         "snowflake",
         "sqlite",
         "exasol",
@@ -1532,7 +1524,7 @@ def test_try_cast_table(backend, con):
             lambda x: x is None or np.isnan(x),
             marks=[
                 pytest.mark.notyet(
-                    ["clickhouse", "polars", "flink"],
+                    ["clickhouse", "polars", "flink", "pyspark"],
                     reason="casts this to to a number",
                 ),
                 pytest.mark.notyet(["trino"], raises=TrinoUserError),
@@ -1541,7 +1533,9 @@ def test_try_cast_table(backend, con):
     ],
 )
 def test_try_cast_func(con, from_val, to_type, func):
-    assert func(con.execute(ibis.literal(from_val).try_cast(to_type)))
+    expr = ibis.literal(from_val).try_cast(to_type)
+    result = con.execute(expr)
+    assert func(result)
 
 
 @pytest.mark.parametrize(
@@ -1623,11 +1617,6 @@ def test_try_cast_func(con, from_val, to_type, func):
                     raises=ImpalaHiveServer2Error,
                     reason="impala doesn't support OFFSET without ORDER BY",
                 ),
-                pytest.mark.notyet(
-                    ["pyspark"],
-                    raises=com.UnsupportedArgumentError,
-                    reason="pyspark doesn't support non-zero offset until version 3.4",
-                ),
                 pytest.mark.notimpl(
                     ["risingwave"],
                     raises=sa.exc.InternalError,
@@ -1655,11 +1644,6 @@ def test_try_cast_func(con, from_val, to_type, func):
                     ["impala"],
                     raises=ImpalaHiveServer2Error,
                     reason="impala doesn't support OFFSET without ORDER BY",
-                ),
-                pytest.mark.notyet(
-                    ["pyspark"],
-                    raises=com.UnsupportedArgumentError,
-                    reason="pyspark doesn't support non-zero offset until version 3.4",
                 ),
             ],
         ),
@@ -1895,6 +1879,7 @@ def test_sample_memtable(con, backend):
         "sqlite",
         "trino",
         "exasol",
+        "pyspark",
     ]
 )
 def test_sample_with_seed(backend):
@@ -1923,9 +1908,6 @@ def test_substitute(backend):
 
 @pytest.mark.notimpl(
     ["dask", "pandas", "polars"], raises=NotImplementedError, reason="not a SQL backend"
-)
-@pytest.mark.notimpl(
-    ["pyspark"], reason="pyspark doesn't generate SQL", raises=NotImplementedError
 )
 @pytest.mark.notimpl(["druid", "flink"], reason="no sqlglot dialect", raises=ValueError)
 @pytest.mark.notimpl(["exasol"], raises=ValueError, reason="unknown dialect")

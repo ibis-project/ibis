@@ -606,3 +606,9 @@ class SnowflakeType(SqlglotType):
 
 class SQLiteType(SqlglotType):
     dialect = "sqlite"
+
+
+class PySparkType(SqlglotType):
+    dialect = "spark"
+    default_decimal_precision = 38
+    default_decimal_scale = 18

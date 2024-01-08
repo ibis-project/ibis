@@ -100,6 +100,7 @@ class Backend(SQLGlotBackend, CanCreateSchema):
             [(schema,)] = cur.fetchall()
         return schema
 
+    # TODO(kszucs): should be moved to the base SQLGLot backend
     def raw_sql(self, query: str | sg.Expression, **kwargs: Any) -> Any:
         with contextlib.suppress(AttributeError):
             query = query.sql(dialect=self.name)
@@ -440,6 +441,7 @@ class Backend(SQLGlotBackend, CanCreateSchema):
                 cur.install_extension(extension, force_install=force_install)
                 cur.load_extension(extension)
 
+    # TODO(kszucs): should be a classmethod
     def _from_url(self, url: str, **kwargs) -> BaseBackend:
         """Connect to a backend using a URL `url`.
 

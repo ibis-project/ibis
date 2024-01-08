@@ -11,33 +11,28 @@ from ibis.expr import datatypes as dt
 
 pyspark = pytest.importorskip("pyspark")
 
-import pyspark.sql.functions as F  # noqa: E402
 
-from ibis.backends.pyspark.compiler import _can_be_replaced_by_column_name  # noqa: E402
+@pytest.fixture
+def t(con):
+    return con.table("basic_table")
 
 
-def test_basic(con):
-    table = con.table("basic_table")
-    result = table.compile().toPandas()
+@pytest.fixture
+def df(con):
+    return con._session.table("basic_table").toPandas()
+
+
+def test_basic(t):
+    result = t.execute()
     expected = pd.DataFrame({"id": range(10), "str_col": "value"})
-
     tm.assert_frame_equal(result, expected)
 
 
-def test_projection(con):
-    table = con.table("basic_table")
-    result1 = table.mutate(v=table["id"]).compile().toPandas()
-
+def test_projection(t):
+    result1 = t.mutate(v=t["id"]).execute()
     expected1 = pd.DataFrame({"id": range(10), "str_col": "value", "v": range(10)})
 
-    result2 = (
-        table.mutate(v=table["id"])
-        .mutate(v2=table["id"])
-        .mutate(id=table["id"] * 2)
-        .compile()
-        .toPandas()
-    )
-
+    result2 = t.mutate(v=t["id"]).mutate(v2=t["id"]).mutate(id=t["id"] * 2).execute()
     expected2 = pd.DataFrame(
         {
             "id": range(0, 20, 2),
@@ -51,83 +46,35 @@ def test_projection(con):
     tm.assert_frame_equal(result2, expected2)
 
 
-def test_aggregation_col(con):
-    table = con.table("basic_table")
-    result = table["id"].count().execute()
-    assert result == table.compile().count()
+def test_aggregation_col(t, df):
+    result = t["id"].count().execute()
+    assert result == len(df)
 
 
-def test_aggregation(con):
-    table = con.table("basic_table")
-    result = table.aggregate(max=table["id"].max()).compile()
-    expected = table.compile().agg(F.max("id").alias("max"))
-
-    tm.assert_frame_equal(result.toPandas(), expected.toPandas())
+def test_aggregation(t, df):
+    result = t.aggregate(max=t["id"].max()).execute()
+    expected = pd.DataFrame({"max": [df.id.max()]})
+    tm.assert_frame_equal(result, expected)
 
 
-def test_group_by(con):
-    table = con.table("basic_table")
-    result = table.group_by("id").aggregate(max=table["id"].max()).compile()
-    expected = table.compile().groupby("id").agg(F.max("id").alias("max"))
-
-    tm.assert_frame_equal(result.toPandas(), expected.toPandas())
+def test_group_by(t, df):
+    result = t.group_by("id").aggregate(max=t["id"].max()).execute()
+    expected = df[["id"]].assign(max=df.groupby("id").id.max())
+    tm.assert_frame_equal(result, expected)
 
 
-def test_window(con):
-    table = con.table("basic_table")
+def test_window(t, df):
     w = ibis.window()
-    result = table.mutate(
-        grouped_demeaned=table["id"] - table["id"].mean().over(w)
-    ).compile()
+    result = t.mutate(grouped_demeaned=t["id"] - t["id"].mean().over(w)).execute()
+    expected = df.assign(grouped_demeaned=df.id - df.id.mean())
 
-    spark_window = pyspark.sql.Window.partitionBy()
-    spark_table = table.compile()
-    expected = spark_table.withColumn(
-        "grouped_demeaned",
-        spark_table["id"] - F.mean(spark_table["id"]).over(spark_window),
-    )
-
-    tm.assert_frame_equal(result.toPandas(), expected.toPandas())
+    tm.assert_frame_equal(result, expected)
 
 
-def test_greatest(con):
-    table = con.table("basic_table")
-    result = table.mutate(greatest=ibis.greatest(table.id)).compile()
-    df = table.compile()
-    expected = table.compile().withColumn("greatest", df.id)
-
-    tm.assert_frame_equal(result.toPandas(), expected.toPandas())
-
-
-def test_selection(con):
-    table = con.table("basic_table")
-    table = table.mutate(id2=table["id"] * 2)
-
-    result1 = table[["id"]].compile()
-    result2 = table[["id", "id2"]].compile()
-    result3 = table[[table, (table.id + 1).name("plus1")]].compile()
-    result4 = table[[(table.id + 1).name("plus1"), table]].compile()
-
-    df = table.compile()
-    tm.assert_frame_equal(result1.toPandas(), df[["id"]].toPandas())
-    tm.assert_frame_equal(result2.toPandas(), df[["id", "id2"]].toPandas())
-    tm.assert_frame_equal(
-        result3.toPandas(),
-        df[[df.columns]].withColumn("plus1", df.id + 1).toPandas(),
-    )
-    tm.assert_frame_equal(
-        result4.toPandas(),
-        df.withColumn("plus1", df.id + 1)[["plus1", *df.columns]].toPandas(),
-    )
-
-
-def test_join(con):
-    table = con.table("basic_table")
-    result = table.join(table, ["id", "str_col"])[table.id, table.str_col].compile()
-    spark_table = table.compile()
-    expected = spark_table.join(spark_table, ["id", "str_col"])
-
-    tm.assert_frame_equal(result.toPandas(), expected.toPandas())
+def test_greatest(t, df):
+    result = t.mutate(greatest=ibis.greatest(t.id, t.id + 1)).execute()
+    expected = df.assign(greatest=df.id + 1)
+    tm.assert_frame_equal(result, expected)
 
 
 @pytest.mark.parametrize(
@@ -149,70 +96,24 @@ def test_join(con):
         ),
     ],
 )
-def test_filter(con, filter_fn, expected_fn):
-    table = con.table("basic_table")
-
-    result = filter_fn(table).compile()
-
-    df = table.compile()
-    expected = expected_fn(df)
-
-    tm.assert_frame_equal(result.toPandas(), expected.toPandas())
+def test_filter(t, df, filter_fn, expected_fn):
+    result = filter_fn(t).execute().reset_index(drop=True)
+    expected = expected_fn(df).reset_index(drop=True)
+    tm.assert_frame_equal(result, expected)
 
 
-def test_cast(con):
-    table = con.table("basic_table")
-
-    result = table.mutate(id_string=table.id.cast("string")).compile()
-
-    df = table.compile()
-    df = df.withColumn("id_string", df.id.cast("string"))
-
-    tm.assert_frame_equal(result.toPandas(), df.toPandas())
+def test_cast(t, df):
+    result = t.mutate(id_string=t.id.cast("string")).execute()
+    df = df.assign(id_string=df.id.astype(str))
+    tm.assert_frame_equal(result, df)
 
 
-def test_alias_after_select(con):
+def test_alias_after_select(t, df):
     # Regression test for issue 2136
-    table = con.table("basic_table")
-    table = table[["id"]]
+    table = t[["id"]]
     table = table.mutate(id2=table["id"])
-
-    result = table.compile().toPandas()
+    result = table.execute()
     tm.assert_series_equal(result["id"], result["id2"], check_names=False)
-
-
-@pytest.mark.parametrize(
-    ("selection_fn", "selection_idx", "expected"),
-    [
-        # selected column id is selections[0], OK to replace since
-        # id == t['id'] (straightforward column projection)
-        (lambda t: t[["id"]], 0, True),
-        # new column v is selections[1], cannot be replaced since it does
-        # not exist in the root table
-        (lambda t: t.mutate(v=t["id"]), 1, False),
-        # new column id is selections[0], cannot be replaced since
-        # new id != t['id']
-        (lambda t: t.mutate(id=t["str_col"]), 0, False),
-        # new column id is selections[0], OK to replace since
-        # new id == t['id'] (mutation is no-op)
-        (lambda t: t.mutate(id=t["id"]), 0, True),
-        # new column id is selections[0], cannot be replaced since
-        # new id != t['id']
-        (lambda t: t.mutate(id=t["id"] + 1), 0, False),
-        # new column id is selections[0], OK to replace since
-        # new id == t['id'] (rename is a no-op)
-        (lambda t: t.rename({"id": "id"}), 0, True),
-        # new column id2 is selections[0], cannot be replaced since
-        # id2 does not exist in the table
-        (lambda t: t.rename({"id2": "id"}), 0, False),
-    ],
-)
-def test_can_be_replaced_by_column_name(selection_fn, selection_idx, expected):
-    table = ibis.table([("id", "double"), ("str_col", "string")])
-    table = selection_fn(table)
-    selection_to_test = table.op().selections[selection_idx]
-    result = _can_be_replaced_by_column_name(selection_to_test, table.op().table)
-    assert result == expected
 
 
 def test_interval_columns(con):
@@ -241,3 +142,9 @@ def test_interval_columns_invalid(con):
     msg = r"DayTimeIntervalType\(0, 1\) couldn't be converted to Interval"
     with pytest.raises(IbisTypeError, match=msg):
         con.table("invalid_interval_table")
+
+
+def test_string_literal_backslash_escaping(con):
+    expr = ibis.literal("\\d\\e")
+    result = con.execute(expr)
+    assert result == "\\d\\e"
