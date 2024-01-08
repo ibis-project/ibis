@@ -37,7 +37,7 @@ def _format_struct_udf_return_type(func, result_formatter):
 
 # elementwise UDF
 def add_one(s):
-    assert isinstance(s, pd.Series)
+    assert isinstance(s, pd.Series), type(s)
     return s + 1
 
 
@@ -362,14 +362,15 @@ def test_valid_kwargs(udf_backend, udf_alltypes, udf_df):
         # UDF with kwargs
         return v + kwargs.get("amount", 1)
 
-    result = udf_alltypes.mutate(
+    expr = udf_alltypes.mutate(
         v1=foo1(udf_alltypes["double_col"]),
         v2=foo2(udf_alltypes["double_col"], amount=1),
         v3=foo2(udf_alltypes["double_col"], amount=2),
         v4=foo3(udf_alltypes["double_col"]),
         v5=foo3(udf_alltypes["double_col"], amount=2),
         v6=foo3(udf_alltypes["double_col"], amount=3),
-    ).execute()
+    )
+    result = expr.execute()
 
     expected = udf_df.assign(
         v1=udf_df["double_col"] + 1,

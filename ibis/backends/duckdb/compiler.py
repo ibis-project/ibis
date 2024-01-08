@@ -64,6 +64,7 @@ class DuckDBCompiler(SQLGlotCompiler):
         func = sge.Lambda(this=arg, expressions=[sg.to_identifier("_")])
         return self.f.flatten(self.f.list_apply(self.f.range(times), func))
 
+    # TODO(kszucs): this could be moved to the base SQLGlotCompiler
     @visit_node.register(ops.Sample)
     def visit_Sample(
         self, op, *, parent, fraction: float, method: str, seed: int | None, **_

@@ -7,7 +7,6 @@ from posixpath import join as pjoin
 import pytest
 
 import ibis
-import ibis.common.exceptions as com
 from ibis import util
 from ibis.tests.util import assert_equal
 
@@ -73,19 +72,9 @@ def test_truncate_table(con, alltypes, temp_table):
     expr = alltypes.limit(1)
 
     con.create_table(temp_table, obj=expr)
-
     con.truncate_table(temp_table)
 
     t = con.table(temp_table)
-    nrows = t.count().execute()
-    assert not nrows
-
-
-def test_truncate_table_expression(con, alltypes, temp_table):
-    expr = alltypes.limit(1)
-
-    t = con.create_table(temp_table, obj=expr)
-    t.truncate()
     nrows = t.count().execute()
     assert not nrows
 
@@ -120,26 +109,22 @@ def test_insert_table(con, alltypes, temp_table, test_data_db):
     db = test_data_db
 
     con.create_table(temp_table, expr.limit(0), database=db)
-
     con.insert(temp_table, expr.limit(10), database=db)
-
-    # check using SparkTable.insert
-    t = con.table(temp_table, database=db)
-    t.insert(expr.limit(10))
-
-    sz = t.count()
-    assert sz.execute() == 20
+    assert con.table(temp_table).count().execute() == 10
 
     # Overwrite and verify only 10 rows now
-    t.insert(expr.limit(10), overwrite=True)
-    assert sz.execute() == 10
+    con.insert(temp_table, expr.limit(10), overwrite=True)
+    assert con.table(temp_table).count().execute() == 10
+
+    con.insert(temp_table, expr.limit(10), database=db, overwrite=False)
+    assert con.table(temp_table).count().execute() == 20
 
 
 def test_insert_validate_types(con, alltypes, test_data_db, temp_table):
     db = test_data_db
 
     expr = alltypes
-    t = con.create_table(
+    con.create_table(
         temp_table,
         schema=expr["tinyint_col", "int_col", "string_col"].schema(),
         database=db,
@@ -148,27 +133,20 @@ def test_insert_validate_types(con, alltypes, test_data_db, temp_table):
     to_insert = expr[
         expr.tinyint_col, expr.smallint_col.name("int_col"), expr.string_col
     ]
-    t.insert(to_insert.limit(10))
+    con.insert(temp_table, to_insert.limit(10))
 
     to_insert = expr[
         expr.tinyint_col,
         expr.smallint_col.cast("int32").name("int_col"),
         expr.string_col,
     ]
-    t.insert(to_insert.limit(10))
-
-    to_insert = expr[expr.tinyint_col, expr.bigint_col.name("int_col"), expr.string_col]
-
-    limit_expr = to_insert.limit(10)
-    with pytest.raises(com.IbisError):
-        t.insert(limit_expr)
+    con.insert(temp_table, to_insert.limit(10))
 
 
 def test_compute_stats(con, alltypes, temp_table):
-    t = con.create_table(temp_table, alltypes)
-    t.compute_stats()
-    t.compute_stats(noscan=True)
+    con.create_table(temp_table, alltypes)
     con.compute_stats(temp_table)
+    con.compute_stats(temp_table, noscan=True)
 
 
 @pytest.fixture
@@ -192,19 +170,6 @@ def table(con, temp_database):
         table_name, database=temp_database, schema=schema, format="parquet"
     )
     con.drop_table(table_name, database=temp_database)
-
-
-def test_change_properties(con, table, temp_database):
-    props = {"foo": "1", "bar": "2"}
-
-    table.alter(tbl_properties=props)
-    tbl_props_rows = con.raw_sql(
-        f"show tblproperties {temp_database}.{table.name}"
-    ).fetchall()
-    for row in tbl_props_rows:
-        key = row.key
-        value = row.value
-        assert value == props[key]
 
 
 @pytest.fixture

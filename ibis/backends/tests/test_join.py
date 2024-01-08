@@ -320,7 +320,6 @@ outer_join_nullability_failures = [pytest.mark.notyet(["sqlite"])] * (
             lambda left: left.filter(lambda t: t.x == 1),
             "x",
             id="left-x",
-            marks=pytest.mark.notimpl(["pyspark"], reason="overlapping columns"),
         ),
         param(
             "right",
@@ -335,7 +334,6 @@ outer_join_nullability_failures = [pytest.mark.notyet(["sqlite"])] * (
             lambda left: left.filter(lambda t: t.x == 1),
             "x",
             id="right-x",
-            marks=pytest.mark.notimpl(["pyspark"], reason="overlapping columns"),
         ),
         param(
             "outer",
@@ -352,7 +350,6 @@ outer_join_nullability_failures = [pytest.mark.notyet(["sqlite"])] * (
             "x",
             id="outer-x",
             marks=[
-                pytest.mark.notimpl(["pyspark"], reason="overlapping columns"),
                 *outer_join_nullability_failures,
             ],
         ),

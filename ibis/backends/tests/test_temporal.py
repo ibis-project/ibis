@@ -30,7 +30,6 @@ from ibis.backends.tests.errors import (
     PolarsComputeError,
     PolarsPanicException,
     Py4JJavaError,
-    PySparkIllegalArgumentException,
     SnowflakeProgrammingError,
     TrinoUserError,
 )
@@ -199,11 +198,6 @@ def test_timestamp_extract(backend, alltypes, df, attr):
                 pytest.mark.notimpl(
                     ["druid", "oracle", "exasol"], raises=com.OperationNotDefinedError
                 ),
-                pytest.mark.notimpl(
-                    ["pyspark"],
-                    raises=com.UnsupportedOperationError,
-                    reason="PySpark backend does not support extracting milliseconds.",
-                ),
             ],
         ),
         param(
@@ -275,11 +269,6 @@ def test_timestamp_extract_microseconds(backend, alltypes, df):
     ["druid"],
     raises=AttributeError,
     reason="'StringColumn' object has no attribute 'millisecond'",
-)
-@pytest.mark.notyet(
-    ["pyspark"],
-    raises=com.UnsupportedOperationError,
-    reason="PySpark backend does not support extracting milliseconds.",
 )
 @pytest.mark.broken(["sqlite"], raises=AssertionError)
 @pytest.mark.notimpl(["exasol"], raises=com.OperationNotDefinedError)
@@ -482,7 +471,6 @@ PANDAS_UNITS = {
                         "clickhouse",
                         "impala",
                         "mysql",
-                        "pyspark",
                         "sqlite",
                         "datafusion",
                     ],
@@ -508,7 +496,6 @@ PANDAS_UNITS = {
                         "clickhouse",
                         "impala",
                         "mysql",
-                        "pyspark",
                         "sqlite",
                         "trino",
                         "datafusion",
@@ -695,11 +682,6 @@ def test_date_truncate(backend, alltypes, df, unit):
                     raises=ValueError,
                     reason="Metadata inference failed in `add`.",
                 ),
-                pytest.mark.notimpl(
-                    ["pyspark"],
-                    raises=com.UnsupportedOperationError,
-                    reason="Interval from integer column is unsupported for the PySpark backend.",
-                ),
                 pytest.mark.notyet(
                     ["trino"],
                     raises=com.UnsupportedOperationError,
@@ -728,11 +710,6 @@ def test_date_truncate(backend, alltypes, df, unit):
                     raises=TypeError,
                     reason="duration() got an unexpected keyword argument 'months'",
                 ),
-                pytest.mark.notimpl(
-                    ["pyspark"],
-                    raises=com.UnsupportedOperationError,
-                    reason="Interval from integer column is unsupported for the PySpark backend.",
-                ),
                 pytest.mark.notyet(
                     ["trino"],
                     raises=com.UnsupportedOperationError,
@@ -755,11 +732,6 @@ def test_date_truncate(backend, alltypes, df, unit):
                     raises=ValueError,
                     reason="Metadata inference failed in `add`.",
                 ),
-                pytest.mark.notimpl(
-                    ["pyspark"],
-                    raises=com.UnsupportedOperationError,
-                    reason="Interval from integer column is unsupported for the PySpark backend.",
-                ),
                 pytest.mark.notyet(
                     ["trino"],
                     raises=com.UnsupportedOperationError,
@@ -772,61 +744,16 @@ def test_date_truncate(backend, alltypes, df, unit):
                 ),
             ],
         ),
-        param(
-            "D",
-            pd.offsets.DateOffset,
-            marks=[
-                pytest.mark.notimpl(
-                    ["pyspark"],
-                    raises=com.UnsupportedOperationError,
-                    reason="Interval from integer column is unsupported for the PySpark backend.",
-                ),
-            ],
-        ),
-        param(
-            "h",
-            pd.Timedelta,
-            marks=[
-                pytest.mark.notimpl(
-                    ["pyspark"],
-                    raises=com.UnsupportedOperationError,
-                    reason="Interval from integer column is unsupported for the PySpark backend.",
-                ),
-            ],
-        ),
-        param(
-            "m",
-            pd.Timedelta,
-            marks=[
-                pytest.mark.notimpl(
-                    ["pyspark"],
-                    raises=com.UnsupportedOperationError,
-                    reason="Interval from integer column is unsupported for the PySpark backend.",
-                ),
-            ],
-        ),
-        param(
-            "s",
-            pd.Timedelta,
-            marks=[
-                pytest.mark.notimpl(
-                    ["pyspark"],
-                    raises=com.UnsupportedOperationError,
-                    reason="Interval from integer column is unsupported for the PySpark backend.",
-                ),
-            ],
-        ),
+        param("D", pd.offsets.DateOffset),
+        param("h", pd.Timedelta),
+        param("m", pd.Timedelta),
+        param("s", pd.Timedelta),
         param(
             "ms",
             pd.Timedelta,
             marks=[
                 pytest.mark.notimpl(
                     ["clickhouse"], raises=com.UnsupportedOperationError
-                ),
-                pytest.mark.notimpl(
-                    ["pyspark"],
-                    raises=com.UnsupportedArgumentError,
-                    reason="Interval unit \"ms\" is not allowed. Allowed units are: ['Y', 'W', 'M', 'D', 'h', 'm', 's']",
                 ),
                 pytest.mark.broken(
                     ["flink"],
@@ -841,11 +768,6 @@ def test_date_truncate(backend, alltypes, df, unit):
             marks=[
                 pytest.mark.notimpl(
                     ["clickhouse"], raises=com.UnsupportedOperationError
-                ),
-                pytest.mark.notimpl(
-                    ["pyspark"],
-                    raises=com.UnsupportedArgumentError,
-                    reason="Interval unit \"us\" is not allowed. Allowed units are: ['Y', 'W', 'M', 'D', 'h', 'm', 's']",
                 ),
                 pytest.mark.notimpl(
                     ["trino"],
@@ -927,13 +849,6 @@ def test_integer_to_interval_timestamp(
         "oracle",
     ],
     raises=com.OperationNotDefinedError,
-)
-@pytest.mark.notimpl(
-    [
-        "pyspark",
-    ],
-    raises=com.UnsupportedOperationError,
-    reason="Interval from integer column is unsupported for the PySpark backend.",
 )
 @pytest.mark.notimpl(
     [
@@ -1103,11 +1018,6 @@ timestamp_value = pd.Timestamp("2018-01-01 18:18:18")
                 pytest.mark.notimpl(
                     ["bigquery", "snowflake", "sqlite"],
                     raises=com.OperationNotDefinedError,
-                ),
-                pytest.mark.notimpl(
-                    ["pyspark"],
-                    raises=com.UnsupportedOperationError,
-                    reason="PySpark backend does not support TimestampDiff as there is no timedelta type.",
                 ),
                 pytest.mark.notimpl(
                     ["druid"],
@@ -1565,9 +1475,6 @@ def test_interval_add_cast_scalar(backend, alltypes):
     backend.assert_series_equal(result, expected.astype(result.dtype))
 
 
-@pytest.mark.never(
-    ["pyspark"], reason="PySpark does not support casting columns to intervals"
-)
 @pytest.mark.notimpl(
     ["sqlite", "snowflake", "mssql", "oracle", "exasol"],
     raises=com.OperationNotDefinedError,
@@ -1620,9 +1527,7 @@ def test_interval_add_cast_column(backend, alltypes, df):
                     raises=AttributeError,
                     reason="'StringConcat' object has no attribute 'value'",
                 ),
-                pytest.mark.notimpl(
-                    ["druid", "flink", "pyspark"], raises=AttributeError
-                ),
+                pytest.mark.notimpl(["druid", "flink"], raises=AttributeError),
             ],
             id="column_format_str",
         ),
@@ -1751,14 +1656,6 @@ def test_integer_to_timestamp(backend, con, unit):
             "%m/%d/%y",
             id="mysql_format",
             marks=[
-                pytest.mark.never(
-                    ["pyspark"],
-                    reason=(
-                        "datetime formatting style not supported. "
-                        "Test failed with message: NaTType does not support strftime"
-                    ),
-                    raises=ValueError,
-                ),
                 pytest.mark.never(
                     ["snowflake"],
                     reason=(
@@ -1988,7 +1885,7 @@ DATE_BACKEND_TYPES = {
 }
 
 
-@pytest.mark.notimpl(["pandas", "dask", "pyspark"], raises=com.OperationNotDefinedError)
+@pytest.mark.notimpl(["pandas", "dask"], raises=com.OperationNotDefinedError)
 @pytest.mark.notimpl(
     ["druid"], raises=sa.exc.ProgrammingError, reason="SQL parse failed"
 )
@@ -2139,7 +2036,7 @@ def test_time_literal(con, backend):
 
 
 @pytest.mark.notyet(
-    ["clickhouse", "impala", "pyspark"],
+    ["clickhouse", "impala"],
     raises=com.OperationNotDefinedError,
     reason="backend doesn't have a time datatype",
 )
@@ -2223,12 +2120,6 @@ INTERVAL_BACKEND_TYPES = {
     raises=ImpalaHiveServer2Error,
 )
 @pytest.mark.broken(
-    ["pyspark"],
-    "Invalid argument, not a string or column: 1000000000 of type <class 'int'>. For column literals, "
-    "use 'lit', 'array', 'struct' or 'create_map' function.",
-    raises=TypeError,
-)
-@pytest.mark.broken(
     ["mysql"],
     "The backend implementation is broken. "
     "If SQLAlchemy < 2 is installed, test fails with the following exception:"
@@ -2270,7 +2161,7 @@ def test_interval_literal(con, backend):
         assert con.execute(expr.typeof()) == INTERVAL_BACKEND_TYPES[backend_name]
 
 
-@pytest.mark.notimpl(["pandas", "dask", "pyspark"], raises=com.OperationNotDefinedError)
+@pytest.mark.notimpl(["pandas", "dask"], raises=com.OperationNotDefinedError)
 @pytest.mark.broken(
     ["druid"],
     raises=AttributeError,
@@ -2364,16 +2255,6 @@ def test_date_column_from_iso(backend, con, alltypes, df):
 
 
 @pytest.mark.notimpl(["druid", "oracle"], raises=com.OperationNotDefinedError)
-@pytest.mark.notyet(
-    ["pyspark"],
-    raises=com.UnsupportedOperationError,
-    reason=" PySpark backend does not support extracting milliseconds.",
-)
-@pytest.mark.notyet(
-    ["pyspark"],
-    raises=com.UnsupportedOperationError,
-    reason="PySpark backend does not support extracting milliseconds.",
-)
 @pytest.mark.notimpl(["exasol"], raises=com.OperationNotDefinedError)
 def test_timestamp_extract_milliseconds_with_big_value(con):
     timestamp = ibis.timestamp("2021-01-01 01:30:59.333456")
@@ -2628,7 +2509,6 @@ def test_timestamp_precision_output(con, ts, scale, unit):
         "oracle",
         "pandas",
         "polars",
-        "pyspark",
         "sqlite",
     ],
     raises=com.OperationNotDefinedError,
@@ -2663,11 +2543,16 @@ def test_timestamp_precision_output(con, ts, scale, unit):
             2,
             id="timestamp",
             marks=[
+                pytest.mark.broken(
+                    ["pyspark"],
+                    raises=AssertionError,
+                    reason="pyspark difference is timezone aware",
+                ),
                 pytest.mark.notimpl(
                     ["mysql"],
                     raises=com.OperationNotDefinedError,
                     reason="timestampdiff rounds after subtraction and mysql doesn't have a date_trunc function",
-                )
+                ),
             ],
         ),
     ],
@@ -2897,7 +2782,6 @@ def test_time_literal_sql(dialect, snapshot, micros):
                     reason="clickhouse doesn't support dates before the UNIX epoch",
                 ),
                 pytest.mark.notyet(["datafusion"], raises=Exception),
-                pytest.mark.notyet(["pyspark"], raises=PySparkIllegalArgumentException),
             ],
         ),
         param(

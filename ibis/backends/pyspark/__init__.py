@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import atexit
+import contextlib
 import os
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
@@ -7,8 +9,10 @@ from typing import TYPE_CHECKING, Any
 import pyspark
 import sqlalchemy as sa
 import sqlglot as sg
+import sqlglot.expressions as sge
 from pyspark import SparkConf
 from pyspark.sql import DataFrame, SparkSession
+from pyspark.sql.functions import PandasUDFType, pandas_udf
 
 import ibis.common.exceptions as com
 import ibis.config
@@ -17,22 +21,12 @@ import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis import util
 from ibis.backends.base import CanCreateDatabase
-from ibis.backends.base.df.scope import Scope
-from ibis.backends.base.df.timecontext import canonicalize_context, localize_context
-from ibis.backends.base.sql import BaseSQLBackend
-from ibis.backends.base.sql.compiler import Compiler, TableSetFormatter
-from ibis.backends.base.sql.ddl import (
-    CreateDatabase,
-    DropTable,
-    TruncateTable,
-    is_fully_qualified,
-)
-from ibis.backends.pyspark import ddl
-from ibis.backends.pyspark.client import PySparkTable
-from ibis.backends.pyspark.compiler import PySparkExprTranslator
-from ibis.backends.pyspark.datatypes import PySparkType
-from ibis.common.temporal import normalize_timezone
-from ibis.formats.pandas import PandasData
+from ibis.backends.base.sqlglot import SQLGlotBackend
+from ibis.backends.pyspark.compiler import PySparkCompiler
+from ibis.backends.pyspark.converter import PySparkPandasData
+from ibis.backends.pyspark.datatypes import PySparkSchema, PySparkType
+from ibis.expr.operations.udf import InputType
+from ibis.legacy.udf.vectorized import _coerce_to_series
 
 if TYPE_CHECKING:
     from collections.abc import Mapping, Sequence
@@ -92,35 +86,9 @@ class _PySparkCursor:
         """No-op for compatibility."""
 
 
-class PySparkTableSetFormatter(TableSetFormatter):
-    def _format_in_memory_table(self, op):
-        # we don't need to compile the table to a VALUES statement because the
-        # table has been registered already by createOrReplaceTempView.
-        #
-        # The only place where the SQL API is currently used is DDL operations
-        return op.name
-
-
-class PySparkCompiler(Compiler):
-    cheap_in_memory_tables = True
-    table_set_formatter_class = PySparkTableSetFormatter
-
-
-class PySparkPandasData(PandasData):
-    @classmethod
-    def convert_Timestamp_element(cls, dtype):
-        def converter(value, dtype=dtype):
-            if (tz := dtype.timezone) is not None:
-                return value.astimezone(normalize_timezone(tz))
-
-            return value.astimezone(normalize_timezone("UTC")).replace(tzinfo=None)
-
-        return converter
-
-
-class Backend(BaseSQLBackend, CanCreateDatabase):
-    compiler = PySparkCompiler
+class Backend(SQLGlotBackend, CanCreateDatabase):
     name = "pyspark"
+    compiler = PySparkCompiler()
     _sqlglot_dialect = "spark"
 
     class Options(ibis.config.Config):
@@ -179,6 +147,13 @@ class Backend(BaseSQLBackend, CanCreateDatabase):
         # local time to UTC with microsecond resolution.
         # https://spark.apache.org/docs/latest/sql-pyspark-pandas-with-arrow.html#timestamp-with-time-zone-semantics
         self._session.conf.set("spark.sql.session.timeZone", "UTC")
+        self._session.conf.set("spark.sql.mapKeyDedupPolicy", "LAST_WIN")
+        self._temp_views = set()
+
+    def _metadata(self, query: str):
+        cursor = self.raw_sql(query)
+        struct_dtype = PySparkType.to_ibis(cursor.query.schema)
+        return struct_dtype.items()
 
     @property
     def version(self):
@@ -187,6 +162,18 @@ class Backend(BaseSQLBackend, CanCreateDatabase):
     @property
     def current_database(self) -> str:
         return self._catalog.currentDatabase()
+
+    @contextlib.contextmanager
+    def _active_database(self, name: str | None) -> None:
+        if name is None:
+            yield
+            return
+        current = self.current_database
+        try:
+            self._catalog.setCurrentDatabase(name)
+            yield
+        finally:
+            self._catalog.setCurrentDatabase(current)
 
     def list_databases(self, like: str | None = None) -> list[str]:
         databases = [db.name for db in self._catalog.listDatabases()]
@@ -201,96 +188,64 @@ class Backend(BaseSQLBackend, CanCreateDatabase):
         ]
         return self._filter_with_like(tables, like)
 
-    def compile(self, expr, timecontext=None, params=None, *args, **kwargs):
-        """Compile an ibis expression to a PySpark DataFrame object."""
+    def _wrap_udf_to_return_pandas(self, func, output_dtype):
+        def wrapper(*args):
+            return _coerce_to_series(func(*args), output_dtype)
 
-        if timecontext is not None:
-            session_timezone = self._session.conf.get("spark.sql.session.timeZone")
-            # Since spark use session timezone for tz-naive timestamps
-            # we localize tz-naive context here to match that behavior
-            timecontext = localize_context(
-                canonicalize_context(timecontext), session_timezone
-            )
+        return wrapper
 
-        # Insert params in scope
-        scope = Scope(
-            {
-                param.op(): raw_value
-                for param, raw_value in ({} if params is None else params).items()
-            },
-            timecontext,
-        )
-        return PySparkExprTranslator().translate(
-            expr.op(),
-            scope=scope,
-            timecontext=timecontext,
-            session=getattr(self, "_session", None),
-        )
+    def _register_udfs(self, expr: ir.Expr) -> None:
+        node = expr.op()
+        for udf in node.find(ops.ScalarUDF):
+            udf_name = self.compiler.__sql_name__(udf)
+            udf_func = self._wrap_udf_to_return_pandas(udf.__func__, udf.dtype)
+            udf_return = PySparkType.from_ibis(udf.dtype)
+            if udf.__input_type__ != InputType.PANDAS:
+                raise NotImplementedError(
+                    "Only Pandas UDFs are support in the PySpark backend"
+                )
+            spark_udf = pandas_udf(udf_func, udf_return, PandasUDFType.SCALAR)
+            self._session.udf.register(udf_name, spark_udf)
 
-    def execute(self, expr: ir.Expr, **kwargs: Any) -> Any:
-        """Execute an expression."""
-        table_expr = expr.as_table()
-        df = self.compile(table_expr, **kwargs).toPandas()
+        for udf in node.find(ops.ElementWiseVectorizedUDF):
+            udf_name = self.compiler.__sql_name__(udf)
+            udf_func = self._wrap_udf_to_return_pandas(udf.func, udf.return_type)
+            udf_return = PySparkType.from_ibis(udf.return_type)
+            spark_udf = pandas_udf(udf_func, udf_return, PandasUDFType.SCALAR)
+            self._session.udf.register(udf_name, spark_udf)
 
-        return expr.__pandas_result__(df)
+        for udf in node.find(ops.ReductionVectorizedUDF):
+            udf_name = self.compiler.__sql_name__(udf)
+            udf_func = self._wrap_udf_to_return_pandas(udf.func, udf.return_type)
+            udf_func = udf.func
+            udf_return = PySparkType.from_ibis(udf.return_type)
+            spark_udf = pandas_udf(udf_func, udf_return, PandasUDFType.GROUPED_AGG)
+            self._session.udf.register(udf_name, spark_udf)
 
-    def _fully_qualified_name(self, name, database):
-        if is_fully_qualified(name):
-            return name
+    def _register_in_memory_table(self, op: ops.InMemoryTable) -> None:
+        schema = PySparkSchema.from_ibis(op.schema)
+        df = self._session.createDataFrame(data=op.data.to_frame(), schema=schema)
+        df.createOrReplaceTempView(op.name)
 
-        return sg.table(name, db=database, quoted=True).sql(dialect="spark")
+    def _register_temp_view_cleanup(self, name: str) -> None:
+        def drop(self, name: str):
+            self._session.catalog.dropTempView(name)
+            self._temp_views.discard(name)
 
-    def close(self):
-        """Close Spark connection and drop any temporary objects."""
-        self._context.stop()
+        atexit.register(drop, self, name=name)
 
-    def fetch_from_cursor(self, cursor, schema):
-        return cursor.query.toPandas()  # blocks until finished
+    def _fetch_from_cursor(self, cursor, schema):
+        df = cursor.query.toPandas()  # blocks until finished
+        return PySparkPandasData.convert_table(df, schema)
 
-    def raw_sql(self, query: str) -> _PySparkCursor:
+    def _safe_raw_sql(self, query: str) -> _PySparkCursor:
+        return self.raw_sql(query)
+
+    def raw_sql(self, query: str | sg.Expression, **kwargs: Any) -> _PySparkCursor:
+        with contextlib.suppress(AttributeError):
+            query = query.sql(dialect=self._sqlglot_dialect)
         query = self._session.sql(query)
         return _PySparkCursor(query)
-
-    def _get_schema_using_query(self, query):
-        cursor = self.raw_sql(f"SELECT * FROM ({query}) t0 LIMIT 0")
-        return sch.Schema(PySparkType.to_ibis(cursor.query.schema))
-
-    def _get_jtable(self, name, database=None):
-        get_table = self._catalog._jcatalog.getTable
-        try:
-            jtable = get_table(self._fully_qualified_name(name, database))
-        except pyspark.sql.utils.AnalysisException as e1:
-            try:
-                jtable = get_table(self._fully_qualified_name(name, database=None))
-            except pyspark.sql.utils.AnalysisException as e2:
-                raise com.IbisInputError(str(e2)) from e1
-        return jtable
-
-    def table(self, name: str, database: str | None = None) -> ir.Table:
-        """Return a table expression from a table or view in the database.
-
-        Parameters
-        ----------
-        name
-            Table name
-        database
-            Database in which the table resides
-
-        Returns
-        -------
-        Table
-            Table named `name` from `database`
-        """
-        jtable = self._get_jtable(name, database)
-        name, database = jtable.name(), jtable.database()
-
-        qualified_name = self._fully_qualified_name(name, database)
-
-        schema = self.get_schema(qualified_name)
-        node = ops.DatabaseTable(
-            name, schema, self, namespace=ops.Namespace(database=database)
-        )
-        return PySparkTable(node)
 
     def create_database(
         self,
@@ -309,8 +264,21 @@ class Backend(BaseSQLBackend, CanCreateDatabase):
         force
             Whether to append `IF NOT EXISTS` to the database creation SQL
         """
-        statement = CreateDatabase(name, path=path, can_exist=force)
-        return self.raw_sql(statement.compile())
+        if path is not None:
+            properties = sge.Properties(
+                expressions=[sge.LocationProperty(this=sge.convert(str(path)))]
+            )
+        else:
+            properties = None
+
+        sql = sge.Create(
+            kind="DATABASE",
+            exist=force,
+            this=sg.to_identifier(name),
+            properties=properties,
+        )
+        with self._safe_raw_sql(sql):
+            pass
 
     def drop_database(self, name: str, force: bool = False) -> Any:
         """Drop a Spark database.
@@ -323,12 +291,14 @@ class Backend(BaseSQLBackend, CanCreateDatabase):
             If False, Spark throws exception if database is not empty or
             database does not exist
         """
-        statement = ddl.DropDatabase(name, must_exist=not force, cascade=force)
-        return self.raw_sql(statement.compile())
+        sql = sge.Drop(kind="DATABASE", exist=force, this=sg.to_identifier(name))
+        with self._safe_raw_sql(sql):
+            pass
 
     def get_schema(
         self,
         table_name: str,
+        schema: str | None = None,
         database: str | None = None,
     ) -> sch.Schema:
         """Return a Schema object for the indicated table and database.
@@ -337,6 +307,9 @@ class Backend(BaseSQLBackend, CanCreateDatabase):
         ----------
         table_name
             Table name. May be fully qualified
+        schema
+            Spark does not have a schema argument for its table() method,
+            so this must be None
         database
             Spark does not have a database argument for its table() method,
             so this must be None
@@ -346,13 +319,15 @@ class Backend(BaseSQLBackend, CanCreateDatabase):
         Schema
             An ibis schema
         """
-        if database is not None:
+        if schema is not None:
             raise com.UnsupportedArgumentError(
-                "Spark does not support the `database` argument for `get_schema`"
+                "Spark does not support the `schema` argument for `get_schema`"
             )
 
-        df = self._session.table(table_name)
-        struct = PySparkType.to_ibis(df.schema)
+        with self._active_database(database):
+            df = self._session.table(table_name)
+            struct = PySparkType.to_ibis(df.schema)
+
         return sch.Schema(struct)
 
     def create_table(
@@ -394,51 +369,43 @@ class Backend(BaseSQLBackend, CanCreateDatabase):
         --------
         >>> con.create_table("new_table_name", table_expr)  # quartodoc: +SKIP # doctest: +SKIP
         """
-        import pandas as pd
-        import pyarrow as pa
-        import pyarrow_hotfix  # noqa: F401
-
-        if obj is None and schema is None:
-            raise com.IbisError("The schema or obj parameter is required")
         if temp is True:
             raise NotImplementedError(
                 "PySpark backend does not yet support temporary tables"
             )
+
         if obj is not None:
-            if isinstance(obj, pa.Table):
-                obj = obj.to_pandas()
-            if isinstance(obj, pd.DataFrame):
-                spark_df = self._session.createDataFrame(obj)
-                mode = "overwrite" if overwrite else "error"
-                spark_df.write.saveAsTable(name, format=format, mode=mode)
-                return None
-            else:
-                self._register_in_memory_tables(obj)
-
-            ast = self.compiler.to_ast(obj)
-            select = ast.queries[0]
-
-            statement = ddl.CTAS(
-                name,
-                select,
-                database=database,
-                can_exist=overwrite,
-                format=format,
-            )
+            table = obj if isinstance(obj, ir.Expr) else ibis.memtable(obj)
+            query = self.compile(table)
+            mode = "overwrite" if overwrite else "error"
+            with self._active_database(database):
+                self._run_pre_execute_hooks(table)
+                df = self._session.sql(query)
+                df.write.saveAsTable(name, format=format, mode=mode)
+        elif schema is not None:
+            schema = PySparkSchema.from_ibis(schema)
+            with self._active_database(database):
+                self._catalog.createTable(name, schema=schema, format=format)
         else:
-            statement = ddl.CreateTableWithSchema(
-                name,
-                schema,
-                database=database,
-                format=format,
-                can_exist=overwrite,
-            )
+            raise com.IbisError("The schema or obj parameter is required")
 
-        self.raw_sql(statement.compile())
         return self.table(name, database=database)
 
-    def _register_in_memory_table(self, op: ops.InMemoryTable) -> None:
-        self.compile(op.to_expr()).createOrReplaceTempView(op.name)
+    # TODO(kszucs): should have this implementation in the base sqlglot backend
+    def truncate_table(self, name: str, database: str | None = None) -> None:
+        """Delete all rows from an existing table.
+
+        Parameters
+        ----------
+        name
+            Table name
+        database
+            Database name
+        """
+        table = sg.table(name, db=database)
+        query = f"TRUNCATE TABLE {table}"
+        with self._safe_raw_sql(query):
+            pass
 
     def create_view(
         self,
@@ -446,9 +413,10 @@ class Backend(BaseSQLBackend, CanCreateDatabase):
         obj: ir.Table,
         *,
         database: str | None = None,
+        schema: str | None = None,
         overwrite: bool = False,
     ) -> ir.Table:
-        """Create a Spark view from a table expression.
+        """Create a temporary Spark view from a table expression.
 
         Parameters
         ----------
@@ -458,6 +426,8 @@ class Backend(BaseSQLBackend, CanCreateDatabase):
             Expression to use for the view
         database
             Database name
+        schema
+            Schema name
         overwrite
             Replace an existing view of the same name if it exists
 
@@ -466,60 +436,18 @@ class Backend(BaseSQLBackend, CanCreateDatabase):
         Table
             The created view
         """
-        ast = self.compiler.to_ast(obj)
-        select = ast.queries[0]
-        statement = ddl.CreateView(
-            name, select, database=database, can_exist=overwrite, temporary=True
+        src = sge.Create(
+            this=sg.table(
+                name, db=schema, catalog=database, quoted=self.compiler.quoted
+            ),
+            kind="TEMPORARY VIEW",
+            replace=overwrite,
+            expression=self.compile(obj),
         )
-        self.raw_sql(statement.compile())
+        self._register_in_memory_tables(obj)
+        with self._safe_raw_sql(src):
+            pass
         return self.table(name, database=database)
-
-    def drop_table(
-        self,
-        name: str,
-        *,
-        database: str | None = None,
-        force: bool = False,
-    ) -> None:
-        """Drop a table."""
-        self.drop_table_or_view(name, database=database, force=force)
-
-    def drop_view(
-        self,
-        name: str,
-        *,
-        database: str | None = None,
-        force: bool = False,
-    ):
-        """Drop a view."""
-        self.drop_table_or_view(name, database=database, force=force)
-
-    def drop_table_or_view(
-        self,
-        name: str,
-        *,
-        database: str | None = None,
-        force: bool = False,
-    ) -> None:
-        """Drop a Spark table or view.
-
-        Parameters
-        ----------
-        name
-            Table or view name
-        database
-            Database name
-        force
-            Database may throw exception if table does not exist
-
-        Examples
-        --------
-        >>> table = "my_table"
-        >>> db = "operations"
-        >>> con.drop_table_or_view(table, db, force=True)  # quartodoc: +SKIP # doctest: +SKIP
-        """
-        statement = DropTable(name, database=database, must_exist=not force)
-        self.raw_sql(statement.compile())
 
     def rename_table(self, old_name: str, new_name: str) -> None:
         """Rename an existing table.
@@ -531,21 +459,15 @@ class Backend(BaseSQLBackend, CanCreateDatabase):
         new_name
             The new name of the table.
         """
-        statement = ddl.RenameTable(old_name, new_name)
-        self.raw_sql(statement.compile())
-
-    def truncate_table(self, name: str, database: str | None = None) -> None:
-        """Delete all rows from an existing table.
-
-        Parameters
-        ----------
-        name
-            Table name
-        database
-            Database name
-        """
-        statement = TruncateTable(name, database=database)
-        self.raw_sql(statement.compile())
+        old = sg.table(old_name, quoted=True)
+        new = sg.table(new_name, quoted=True)
+        query = sge.AlterTable(
+            this=old,
+            exists=False,
+            actions=[sge.RenameTable(this=new, exists=True)],
+        )
+        with self._safe_raw_sql(query):
+            pass
 
     def insert(
         self,
@@ -553,8 +475,6 @@ class Backend(BaseSQLBackend, CanCreateDatabase):
         obj: ir.Table | pd.DataFrame | None = None,
         database: str | None = None,
         overwrite: bool = False,
-        values: Any | None = None,
-        validate: bool = True,
     ) -> Any:
         """Insert data into an existing table.
 
@@ -566,10 +486,15 @@ class Backend(BaseSQLBackend, CanCreateDatabase):
         # Completely overwrite contents
         >>> con.insert(table, table_expr, overwrite=True)  # quartodoc: +SKIP # doctest: +SKIP
         """
-        table = self.table(table_name, database=database)
-        return table.insert(
-            obj=obj, overwrite=overwrite, values=values, validate=validate
-        )
+
+        if isinstance(obj, ir.Expr):
+            df = self._session.sql(self.compile(obj))
+        else:
+            table = ibis.memtable(obj)
+            df = self._session.createDataFrame(table.op().data.to_frame())
+
+        with self._active_database(database):
+            df.write.insertInto(table_name, overwrite=overwrite)
 
     def compute_stats(
         self,
@@ -590,15 +515,14 @@ class Backend(BaseSQLBackend, CanCreateDatabase):
             rows, size in bytes).
         """
         maybe_noscan = " NOSCAN" * noscan
-        name = self._fully_qualified_name(name, database)
-        return self.raw_sql(f"ANALYZE TABLE {name} COMPUTE STATISTICS{maybe_noscan}")
-
-    @classmethod
-    def has_operation(cls, operation: type[ops.Value]) -> bool:
-        return operation in PySparkExprTranslator._registry
+        table = sg.table(name, db=database, quoted=self.compiler.quoted).sql(
+            dialect=self._sqlglot_dialect
+        )
+        return self.raw_sql(f"ANALYZE TABLE {table} COMPUTE STATISTICS{maybe_noscan}")
 
     def _load_into_cache(self, name, expr):
-        t = expr.compile().cache()
+        query = self.compile(expr)
+        t = self._session.sql(query).cache()
         assert t.is_cached
         t.createOrReplaceTempView(name)
         # store the underlying spark dataframe so we can release memory when
@@ -768,7 +692,6 @@ class Backend(BaseSQLBackend, CanCreateDatabase):
         ir.Table
             The just-registered table
         """
-
         if isinstance(source, (str, Path)):
             first = str(source)
         elif isinstance(source, (list, tuple)):
@@ -797,9 +720,6 @@ class Backend(BaseSQLBackend, CanCreateDatabase):
             f"Cannot infer appropriate read function for input, "
             f"please call one of {msg} directly"
         )
-
-    def _to_sql(self, expr: ir.Expr, **kwargs) -> str:
-        raise NotImplementedError(f"Backend '{self.name}' backend doesn't support SQL")
 
     @util.experimental
     def to_delta(

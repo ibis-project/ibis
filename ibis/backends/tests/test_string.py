@@ -11,7 +11,7 @@ from pytest import param
 import ibis
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
-from ibis.backends.tests.errors import ClickHouseDatabaseError, PySparkPythonException
+from ibis.backends.tests.errors import ClickHouseDatabaseError
 from ibis.common.annotations import ValidationError
 
 
@@ -169,7 +169,7 @@ def uses_java_re(t):
             id="ilike",
             marks=[
                 pytest.mark.notimpl(
-                    ["pyspark", "polars"],
+                    ["polars"],
                     raises=com.OperationNotDefinedError,
                 ),
                 pytest.mark.broken(
@@ -223,7 +223,6 @@ def uses_java_re(t):
                     ["mssql", "oracle", "exasol"],
                     raises=com.OperationNotDefinedError,
                 ),
-                pytest.mark.broken(["pyspark"], raises=PySparkPythonException),
                 pytest.mark.never(
                     ["druid"],
                     reason="No posix support; regex is interpreted literally",
@@ -528,7 +527,7 @@ def uses_java_re(t):
             # pyspark doesn't support `cases` yet
             marks=[
                 pytest.mark.notimpl(
-                    ["dask", "pyspark"],
+                    ["dask"],
                     raises=com.OperationNotDefinedError,
                 ),
                 pytest.mark.broken(["druid", "mssql"], raises=sa.exc.ProgrammingError),
@@ -543,7 +542,7 @@ def uses_java_re(t):
             # pyspark doesn't support `cases` yet
             marks=[
                 pytest.mark.notimpl(
-                    ["dask", "datafusion", "pyspark"],
+                    ["dask", "datafusion"],
                     raises=com.OperationNotDefinedError,
                 ),
                 pytest.mark.broken(["druid", "mssql"], raises=sa.exc.ProgrammingError),
@@ -603,10 +602,6 @@ def uses_java_re(t):
             lambda t: t.date_string_col.str[2:],
             id="substr-start-only",
             marks=[
-                pytest.mark.notimpl(
-                    ["pyspark"],
-                    raises=com.OperationNotDefinedError,
-                ),
                 pytest.mark.broken(
                     ["mssql"],
                     reason="substr requires 3 arguments",
@@ -636,7 +631,6 @@ def uses_java_re(t):
             marks=[
                 pytest.mark.broken(["druid"], raises=sa.exc.ProgrammingError),
                 pytest.mark.broken(["impala", "flink"], raises=AssertionError),
-                pytest.mark.notimpl(["pyspark"], raises=NotImplementedError),
             ],
         ),
         param(
@@ -645,13 +639,6 @@ def uses_java_re(t):
             id="expr_slice_begin",
             # TODO: substring #2553
             marks=[
-                pytest.mark.notimpl(
-                    ["pyspark"],
-                    raises=NotImplementedError,
-                    reason=(
-                        "Specifying `start` or `length` with column expressions is not supported."
-                    ),
-                ),
                 pytest.mark.notimpl(
                     ["polars"],
                     raises=com.UnsupportedArgumentError,
@@ -674,13 +661,6 @@ def uses_java_re(t):
             # TODO: substring #2553
             marks=[
                 pytest.mark.notimpl(
-                    ["pyspark"],
-                    raises=NotImplementedError,
-                    reason=(
-                        "Specifying `start` or `length` with column expressions is not supported."
-                    ),
-                ),
-                pytest.mark.notimpl(
                     ["polars"],
                     raises=com.UnsupportedArgumentError,
                     reason=(
@@ -701,13 +681,6 @@ def uses_java_re(t):
             id="expr_empty_slice",
             # TODO: substring #2553
             marks=[
-                pytest.mark.notimpl(
-                    ["pyspark"],
-                    raises=NotImplementedError,
-                    reason=(
-                        "Specifying `start` or `length` with column expressions is not supported."
-                    ),
-                ),
                 pytest.mark.notimpl(
                     ["polars"],
                     raises=com.UnsupportedArgumentError,
@@ -732,13 +705,6 @@ def uses_java_re(t):
             id="expr_slice_begin_end",
             # TODO: substring #2553
             marks=[
-                pytest.mark.notimpl(
-                    ["pyspark"],
-                    raises=NotImplementedError,
-                    reason=(
-                        "Specifying `start` or `length` with column expressions is not supported."
-                    ),
-                ),
                 pytest.mark.notimpl(
                     ["polars"],
                     raises=com.UnsupportedArgumentError,
@@ -1116,11 +1082,6 @@ def test_re_split_column(alltypes):
     ["datafusion"],
     raises=Exception,
     reason="pyarrow doesn't support splitting on a pattern per row",
-)
-@pytest.mark.notyet(
-    ["pyspark"],
-    raises=com.UnsupportedOperationError,
-    reason="pyspark only supports pattern constants",
 )
 def test_re_split_column_multiple_patterns(alltypes):
     expr = (
