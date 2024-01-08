@@ -1251,3 +1251,35 @@ def test_rank_followed_by_over_call_merge_frames(backend, alltypes, df):
     )
 
     backend.assert_series_equal(result, expected)
+
+
+@pytest.mark.notyet(
+    ["pandas", "dask"],
+    reason="multiple ordering keys in a window function not supported for ranking",
+    raises=ValueError,
+)
+@pytest.mark.notyet(
+    ["mssql"],
+    reason="IS NULL not valid syntax for mssql",
+    raises=sa.exc.ProgrammingError,
+)
+@pytest.mark.notimpl(["polars"], raises=com.OperationNotDefinedError)
+@pytest.mark.broken(
+    ["pyspark"], reason="pyspark requires CURRENT ROW", raises=PySparkAnalysisException
+)
+def test_ordering_order(con):
+    table = ibis.memtable({"bool_col": [True, False, False, None, True]})
+    window = ibis.window(
+        order_by=[
+            ibis.asc(table["bool_col"].isnull()),
+            ibis.asc(table["bool_col"]),
+        ],
+    )
+    expr = table.select(
+        rank=table["bool_col"].rank().over(window),
+        bool_col=table["bool_col"],
+    )
+
+    result = con.execute(expr)
+    value = result.bool_col.loc[result["rank"] == 4].item()
+    assert pd.isna(value)
