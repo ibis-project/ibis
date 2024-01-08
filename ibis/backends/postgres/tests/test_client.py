@@ -17,6 +17,7 @@ import os
 
 import numpy as np
 import pandas as pd
+import pandas.testing as tm
 import pytest
 from pytest import param
 
@@ -223,3 +224,51 @@ def test_insert_with_cte(con):
 def test_connect_url_with_empty_host():
     con = ibis.connect("postgres:///ibis_testing")
     assert con.con.url.host is None
+
+
+@pytest.fixture(scope="module")
+def contz(con):
+    with con.begin() as c:
+        tz = c.exec_driver_sql("SHOW TIMEZONE").scalar()
+        c.exec_driver_sql("SET TIMEZONE TO 'America/New_York'")
+
+    yield con
+
+    with con.begin() as c:
+        c.exec_driver_sql(f"SET TIMEZONE TO '{tz}'")
+
+
+def test_timezone_from_column(contz, snapshot):
+    with contz.begin() as c:
+        c.exec_driver_sql(
+            """
+            CREATE TEMPORARY TABLE x (
+                id BIGINT,
+                ts_tz TIMESTAMP WITH TIME ZONE NOT NULL,
+                ts_no_tz TIMESTAMP WITHOUT TIME ZONE NOT NULL
+            );
+
+            INSERT INTO x VALUES
+                (1, '2018-01-01 00:00:01+00', '2018-01-01 00:00:02');
+
+            CREATE TEMPORARY TABLE y AS SELECT 1::BIGINT AS id;
+            """
+        )
+
+    case = (
+        contz.table("x")
+        .rename(tz="ts_tz", no_tz="ts_no_tz")
+        .left_join(contz.table("y"), "id")
+    )
+
+    result = case.execute()
+    expected = pd.DataFrame(
+        {
+            "id": [1],
+            "tz": [pd.Timestamp("2018-01-01 00:00:01", tz="UTC")],
+            "no_tz": [pd.Timestamp("2018-01-01 00:00:02")],
+            "id_right": [1],
+        }
+    )
+    tm.assert_frame_equal(result, expected)
+    snapshot.assert_match(ibis.to_sql(case), "out.sql")

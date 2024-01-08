@@ -309,11 +309,6 @@ def _table_column(t, op):
     sa_table = get_sqla_table(ctx, table)
     out_expr = get_col(sa_table, op)
 
-    if op.dtype.is_timestamp():
-        timezone = op.dtype.timezone
-        if timezone is not None:
-            out_expr = out_expr.op("AT TIME ZONE")(timezone).label(op.name)
-
     # If the column does not originate from the table set in the current SELECT
     # context, we should format as a subquery
     if t.permit_subquery and ctx.is_foreign_expr(table):
