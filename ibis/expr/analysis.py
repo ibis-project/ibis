@@ -182,7 +182,14 @@ def merge_windows(_, default_frame):
     group_by = tuple(toolz.unique(_.frame.group_by + default_frame.group_by))
 
     order_by = {}
-    for sort_key in _.frame.order_by + default_frame.order_by:
+    # iterate in the order of the existing keys followed by the new keys
+    #
+    # this allows duplicates to be overridden with no effect on the original
+    # position
+    #
+    # see https://github.com/ibis-project/ibis/issues/7940 for how this
+    # originally manifested
+    for sort_key in default_frame.order_by + _.frame.order_by:
         order_by[sort_key.expr] = sort_key.ascending
     order_by = tuple(ops.SortKey(k, v) for k, v in order_by.items())
 

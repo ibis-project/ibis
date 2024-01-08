@@ -1264,6 +1264,7 @@ def test_rank_followed_by_over_call_merge_frames(backend, alltypes, df):
     raises=sa.exc.ProgrammingError,
 )
 @pytest.mark.notimpl(["polars"], raises=com.OperationNotDefinedError)
+@pytest.mark.notyet(["flink"], raises=com.UnsupportedOperationError)
 @pytest.mark.broken(
     ["pyspark"], reason="pyspark requires CURRENT ROW", raises=PySparkAnalysisException
 )
