@@ -487,3 +487,10 @@ class GeoAsText(GeoSpatialUnOp):
     """Return the Well-Known Text (WKT) representation of the input, without SRID metadata."""
 
     dtype = dt.string
+
+
+@public
+class GeoFlipCoordinates(GeoSpatialUnOp):
+    """Returns a new geometry with the coordinates of the input geometry "flipped" so that x = y and y = x."""
+
+    dtype = dt.geometry
