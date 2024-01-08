@@ -674,7 +674,8 @@ class GeoSpatialValue(NumericValue):
     def convert(
         self, source: ir.StringValue, target: ir.StringValue | ir.IntegerValue
     ) -> GeoSpatialValue:
-        """Transform a geometry into a new SRID (CRS).
+        """Transform a geometry into a new SRID (CRS). The coordinates are assumed
+        to always be XY (Longitude-Latitude).
 
         Parameters
         ----------
@@ -687,6 +688,11 @@ class GeoSpatialValue(NumericValue):
         -------
         GeoSpatialValue
             Transformed geometry
+
+        See Also
+        --------
+        [`flip_coordinates`](#ibis.expr.types.geospatial.GeoSpatialValue.flip_coordinates)
+
         """
         return ops.GeoConvert(self, source, target).to_expr()
 
@@ -747,6 +753,16 @@ class GeoSpatialValue(NumericValue):
             Merged linestrings
         """
         return ops.GeoLineMerge(self).to_expr()
+
+    def flip_coordinates(self) -> GeoSpatialValue:
+        """Flip coordinates of a geometry so that x = y  and y = x.
+
+        Returns
+        -------
+        GeoSpatialValue
+            New geometry with flipped coordinates
+        """
+        return ops.GeoFlipCoordinates(self).to_expr()
 
 
 @public

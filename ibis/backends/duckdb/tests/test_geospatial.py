@@ -214,6 +214,26 @@ def test_geospatial_convert(geotable, gdf):
     )
 
 
+def test_geospatial_flip_coordinates(geotable):
+    flipped = geotable.geom.flip_coordinates()
+
+    # flipped coords
+    point = shapely.geometry.Point(40, -100)
+    line_string = shapely.geometry.LineString([[0, 0], [1, 1], [1, 2], [2, 2]])
+    polygon = shapely.geometry.Polygon(((0, 0), (0, 1), (1, 1), (1, 0), (0, 0)))
+
+    d = {
+        "name": ["Point", "LineString", "Polygon"],
+        "geometry": [point, line_string, polygon],
+    }
+
+    flipped_gdf = gpd.GeoDataFrame(d)
+
+    gtm.assert_geoseries_equal(
+        flipped.to_pandas(), flipped_gdf.geometry, check_crs=False
+    )
+
+
 def test_create_table_geospatial_types(geotable, con):
     name = ibis.util.gen_name("geotable")
 
