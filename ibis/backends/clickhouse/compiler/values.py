@@ -138,10 +138,17 @@ def _array_slice_op(op, *, arg, start, stop, **_):
         return F.arraySlice(arg, start_correct)
 
 
+@translate_val.register(ops.Count)
+def _count(op, *, arg, where, **_):
+    if where is not None:
+        return sg.exp.Anonymous(this="countIf", expressions=[arg, where])
+    return sg.exp.Count(this=arg)
+
+
 @translate_val.register(ops.CountStar)
 def _count_star(op, *, where, **_):
     if where is not None:
-        return F.countIf(where)
+        return sg.exp.Anonymous(this="countIf", expressions=[where])
     return sg.exp.Count(this=STAR)
 
 
@@ -744,7 +751,6 @@ _simple_ops = {
     ops.ArgMin: "argMin",
     ops.ArgMax: "argMax",
     ops.ArrayCollect: "groupArray",
-    ops.Count: "count",
     ops.CountDistinct: "uniq",
     ops.First: "any",
     ops.Last: "anyLast",
