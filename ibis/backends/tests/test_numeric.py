@@ -25,6 +25,7 @@ from ibis.backends.tests.errors import (
     MySQLOperationalError,
     PsycoPg2DivisionByZero,
     Py4JError,
+    PySparkParseException,
     SnowflakeProgrammingError,
     TrinoUserError,
 )
@@ -406,6 +407,11 @@ def test_numeric_literal(con, backend, expr, expected_types):
                     raises=DuckDBParserException,
                 ),
                 pytest.mark.broken(
+                    ["pyspark"],
+                    reason="Unsupported precision.",
+                    raises=PySparkParseException,
+                ),
+                pytest.mark.broken(
                     ["trino"], reason="Unsupported precision.", raises=TrinoUserError
                 ),
                 pytest.mark.notyet(["datafusion"], raises=Exception),
@@ -427,6 +433,7 @@ def test_numeric_literal(con, backend, expr, expected_types):
                 "postgres": decimal.Decimal("Infinity"),
                 "pandas": decimal.Decimal("Infinity"),
                 "dask": decimal.Decimal("Infinity"),
+                "pyspark": decimal.Decimal("Infinity"),
                 "impala": float("inf"),
                 "exasol": float("inf"),
                 "duckdb": float("inf"),
@@ -451,11 +458,6 @@ def test_numeric_literal(con, backend, expr, expected_types):
                     "message=\"line 1:51: 'Infinity' is not a valid decimal literal\", "
                     "query_id=20230128_024107_01084_y8zm3)",
                     raises=sa.exc.ProgrammingError,
-                ),
-                pytest.mark.broken(
-                    ["pyspark"],
-                    "An error occurred while calling z:org.apache.spark.sql.functions.lit.",
-                    raises=Py4JError,
                 ),
                 pytest.mark.notyet(["mysql"], raises=com.UnsupportedOperationError),
                 pytest.mark.broken(
@@ -508,6 +510,7 @@ def test_numeric_literal(con, backend, expr, expected_types):
                 "postgres": decimal.Decimal("-Infinity"),
                 "pandas": decimal.Decimal("-Infinity"),
                 "dask": decimal.Decimal("-Infinity"),
+                "pyspark": decimal.Decimal("-Infinity"),
                 "impala": float("-inf"),
                 "exasol": float("-inf"),
                 "duckdb": float("-inf"),
@@ -532,11 +535,6 @@ def test_numeric_literal(con, backend, expr, expected_types):
                     "message=\"line 1:51: '-Infinity' is not a valid decimal literal\", "
                     "query_id=20230128_024107_01084_y8zm3)",
                     raises=sa.exc.ProgrammingError,
-                ),
-                pytest.mark.broken(
-                    ["pyspark"],
-                    "An error occurred while calling z:org.apache.spark.sql.functions.lit.",
-                    raises=Py4JError,
                 ),
                 pytest.mark.notyet(["mysql"], raises=com.UnsupportedOperationError),
                 pytest.mark.broken(
@@ -590,6 +588,7 @@ def test_numeric_literal(con, backend, expr, expected_types):
                 "risingwave": float("nan"),
                 "pandas": decimal.Decimal("NaN"),
                 "dask": decimal.Decimal("NaN"),
+                "pyspark": decimal.Decimal("NaN"),
                 "impala": float("nan"),
                 "exasol": float("nan"),
                 "duckdb": float("nan"),
@@ -615,11 +614,6 @@ def test_numeric_literal(con, backend, expr, expected_types):
                     "message=\"line 1:51: 'NaN' is not a valid decimal literal\", "
                     "query_id=20230128_024107_01084_y8zm3)",
                     raises=sa.exc.ProgrammingError,
-                ),
-                pytest.mark.broken(
-                    ["pyspark"],
-                    "An error occurred while calling z:org.apache.spark.sql.functions.lit.",
-                    raises=Py4JError,
                 ),
                 pytest.mark.notyet(["mysql"], raises=com.UnsupportedOperationError),
                 pytest.mark.broken(
@@ -1625,11 +1619,6 @@ def test_constants(con, const):
     assert pytest.approx(result) == getattr(math, const)
 
 
-pyspark_no_bitshift = pytest.mark.notyet(
-    ["pyspark"],
-    reason="pyspark doesn't implement bitshift operators",
-    raises=com.OperationNotDefinedError,
-)
 flink_no_bitwise = pytest.mark.notyet(
     ["flink"],
     reason="Flink doesn't implement bitwise operators",
@@ -1685,7 +1674,6 @@ def test_bitwise_columns(backend, con, alltypes, df, op, left_fn, right_fn):
 )
 @pytest.mark.notimpl(["oracle"], raises=sa.exc.DatabaseError)
 @pytest.mark.notimpl(["exasol"], raises=(sa.exc.DBAPIError, ExaQueryError))
-@pyspark_no_bitshift
 @flink_no_bitwise
 def test_bitwise_shift(backend, alltypes, df, op, left_fn, right_fn):
     expr = op(left_fn(alltypes), right_fn(alltypes)).name("tmp")
@@ -1703,13 +1691,7 @@ def test_bitwise_shift(backend, alltypes, df, op, left_fn, right_fn):
 
 @pytest.mark.parametrize(
     "op",
-    [
-        param(and_),
-        param(or_),
-        param(xor),
-        param(lshift, marks=pyspark_no_bitshift),
-        param(rshift, marks=pyspark_no_bitshift),
-    ],
+    [and_, or_, xor, lshift, rshift],
 )
 @pytest.mark.parametrize(
     ("left", "right"),
