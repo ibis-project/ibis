@@ -2,7 +2,8 @@ WITH t0 AS (
   SELECT
     t7.`field_of_study`,
     IF(pos = pos_2, `__pivoted__`, NULL) AS `__pivoted__`
-  FROM humanities AS t7, UNNEST(GENERATE_ARRAY(
+  FROM humanities AS t7
+  CROSS JOIN UNNEST(GENERATE_ARRAY(
     0,
     GREATEST(
       ARRAY_LENGTH(
@@ -64,7 +65,8 @@ FROM (
     SELECT
       t7.`field_of_study`,
       IF(pos = pos_2, `__pivoted__`, NULL) AS `__pivoted__`
-    FROM humanities AS t7, UNNEST(GENERATE_ARRAY(
+    FROM humanities AS t7
+    CROSS JOIN UNNEST(GENERATE_ARRAY(
       0,
       GREATEST(
         ARRAY_LENGTH(
