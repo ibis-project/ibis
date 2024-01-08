@@ -15,7 +15,7 @@ from ibis.backends.tests.errors import (
     DuckDBParserException,
     MySQLOperationalError,
     PyDeltaTableError,
-    PySparkAnalysisException,
+    PySparkParseException,
     SnowflakeProgrammingError,
     TrinoUserError,
 )
@@ -31,7 +31,7 @@ limit = [
                     # limit not implemented for flink and pandas backend execution
                     "dask",
                     "pandas",
-                    "pyspark",
+                    "flink",
                 ]
             ),
         ],
@@ -168,9 +168,6 @@ def test_column_pyarrow_batch_chunk_size(awards_players):
 
 
 @pytest.mark.notimpl(["pandas", "dask"])
-@pytest.mark.broken(
-    ["pyspark"], raises=AssertionError, reason="chunk_size isn't respected"
-)
 @pytest.mark.broken(
     ["sqlite"],
     raises=pa.ArrowException,
@@ -360,7 +357,7 @@ def test_table_to_csv_writer_kwargs(delimiter, tmp_path, awards_players):
                 pytest.mark.notyet(["mysql"], raises=MySQLOperationalError),
                 pytest.mark.notyet(
                     ["pyspark"],
-                    raises=PySparkAnalysisException,
+                    raises=PySparkParseException,
                     reason="precision is out of range",
                 ),
                 pytest.mark.notyet(["exasol"], raises=sa.exc.DBAPIError),
