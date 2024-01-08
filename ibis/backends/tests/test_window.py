@@ -18,7 +18,6 @@ from ibis.backends.tests.errors import (
     ImpalaHiveServer2Error,
     MySQLOperationalError,
     Py4JJavaError,
-    PySparkAnalysisException,
     SnowflakeProgrammingError,
 )
 from ibis.legacy.udf.vectorized import analytic, reduction
@@ -145,7 +144,6 @@ def calc_zscore(s):
             lambda t: t.id.rank(method="min") / t.id.transform(len),
             id="cume_dist",
             marks=[
-                pytest.mark.notimpl(["pyspark"], raises=com.UnsupportedOperationError),
                 pytest.mark.notyet(["clickhouse"], raises=com.OperationNotDefinedError),
                 pytest.mark.notimpl(["dask"], raises=NotImplementedError),
             ],
@@ -630,11 +628,6 @@ def test_simple_ungrouped_unbound_following_window(
     raises=NotImplementedError,
     reason="support scalar sorting keys are not yet implemented",
 )
-@pytest.mark.broken(
-    ["pyspark"],
-    raises=PySparkAnalysisException,
-    reason="pyspark tries to locate None column",
-)
 @pytest.mark.never(
     ["mssql"], raises=Exception, reason="order by constant is not supported"
 )
@@ -689,11 +682,6 @@ def test_simple_ungrouped_window_with_scalar_order_by(alltypes):
             marks=[
                 pytest.mark.notimpl(
                     ["pandas", "dask"], raises=com.OperationNotDefinedError
-                ),
-                pytest.mark.notyet(
-                    ["pyspark"],
-                    raises=PySparkAnalysisException,
-                    reason="pyspark requires CURRENT ROW",
                 ),
                 pytest.mark.notyet(
                     ["flink"],
@@ -783,11 +771,6 @@ def test_simple_ungrouped_window_with_scalar_order_by(alltypes):
                 ),
                 pytest.mark.broken(["oracle"], raises=AssertionError),
                 pytest.mark.notimpl(
-                    ["pyspark"],
-                    raises=PySparkAnalysisException,
-                    reason="pyspark requires ORDER BY",
-                ),
-                pytest.mark.notimpl(
                     ["flink"],
                     raises=com.UnsupportedOperationError,
                     reason="Flink engine does not support generic window clause with no order by",
@@ -822,11 +805,6 @@ def test_simple_ungrouped_window_with_scalar_order_by(alltypes):
                     strict=False,  # sometimes it passes
                 ),
                 pytest.mark.broken(["oracle"], raises=AssertionError),
-                pytest.mark.notimpl(
-                    ["pyspark"],
-                    raises=PySparkAnalysisException,
-                    reason="pyspark requires ORDER BY",
-                ),
                 pytest.mark.notimpl(
                     ["flink"],
                     raises=com.UnsupportedOperationError,
@@ -1003,7 +981,6 @@ def test_grouped_bounded_range_window(backend, alltypes, df):
 
 @pytest.mark.notimpl(["clickhouse", "polars"], raises=com.OperationNotDefinedError)
 @pytest.mark.notimpl(["dask"], raises=AttributeError)
-@pytest.mark.notimpl(["pyspark"], raises=PySparkAnalysisException)
 @pytest.mark.notyet(
     ["clickhouse"],
     reason="clickhouse doesn't implement percent_rank",
@@ -1173,9 +1150,6 @@ def test_range_expression_bounds(backend):
 @pytest.mark.broken(
     ["mssql"], reason="lack of support for booleans", raises=sa.exc.ProgrammingError
 )
-@pytest.mark.broken(
-    ["pyspark"], reason="pyspark requires CURRENT ROW", raises=PySparkAnalysisException
-)
 def test_rank_followed_by_over_call_merge_frames(backend, alltypes, df):
     # GH #7631
     t = alltypes
@@ -1206,9 +1180,6 @@ def test_rank_followed_by_over_call_merge_frames(backend, alltypes, df):
 )
 @pytest.mark.notimpl(["polars"], raises=com.OperationNotDefinedError)
 @pytest.mark.notyet(["flink"], raises=com.UnsupportedOperationError)
-@pytest.mark.broken(
-    ["pyspark"], reason="pyspark requires CURRENT ROW", raises=PySparkAnalysisException
-)
 @pytest.mark.broken(
     ["pandas"],
     raises=TypeError,

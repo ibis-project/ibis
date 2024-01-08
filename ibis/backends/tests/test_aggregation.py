@@ -387,14 +387,6 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
             lambda t, where: (t.int_col > 0)[where].sum(),
             id="bool_sum",
             marks=[
-                pytest.mark.notimpl(
-                    ["pyspark"],
-                    raises=PySparkAnalysisException,
-                    reason=(
-                        "pyspark.sql.utils.AnalysisException: "
-                        "function sum requires numeric or interval types, not boolean;"
-                    ),
-                ),
                 pytest.mark.broken(
                     ["oracle"],
                     raises=sa.exc.DatabaseError,
@@ -1024,11 +1016,6 @@ def test_quantile(
                     raises=(ValueError, AttributeError),
                     reason="ClickHouse only implements `sample` correlation coefficient",
                 ),
-                pytest.mark.notyet(
-                    ["pyspark"],
-                    raises=ValueError,
-                    reason="PySpark only implements sample correlation",
-                ),
             ],
         ),
         param(
@@ -1103,11 +1090,6 @@ def test_quantile(
                     raises=ValueError,
                     reason="ClickHouse only implements `sample` correlation coefficient",
                 ),
-                pytest.mark.notyet(
-                    ["pyspark"],
-                    raises=ValueError,
-                    reason="PySpark only implements sample correlation",
-                ),
             ],
         ),
     ],
@@ -1171,7 +1153,7 @@ def test_approx_median(alltypes):
     ["bigquery", "druid", "sqlite", "exasol"], raises=com.OperationNotDefinedError
 )
 @pytest.mark.notyet(
-    ["impala", "mysql", "mssql", "druid", "pyspark", "trino"],
+    ["impala", "mysql", "mssql", "druid", "trino"],
     raises=com.OperationNotDefinedError,
 )
 @pytest.mark.notyet(["dask"], raises=NotImplementedError)
@@ -1219,20 +1201,8 @@ def test_median(alltypes, df):
 @pytest.mark.parametrize(
     "func",
     [
-        param(
-            methodcaller("quantile", 0.5),
-            id="quantile",
-            marks=[
-                pytest.mark.notimpl(["oracle"], raises=com.OperationNotDefinedError)
-            ],
-        ),
-        param(
-            methodcaller("median"),
-            id="median",
-            marks=[
-                pytest.mark.notimpl(["pyspark"], raises=com.OperationNotDefinedError)
-            ],
-        ),
+        param(methodcaller("quantile", 0.5), id="quantile"),
+        param(methodcaller("median"), id="median"),
     ],
 )
 def test_string_quantile(alltypes, func):
@@ -1265,13 +1235,6 @@ def test_string_quantile(alltypes, func):
                 pytest.mark.notimpl(["oracle"], raises=com.OperationNotDefinedError)
             ],
         ),
-        param(
-            methodcaller("median"),
-            id="median",
-            marks=[
-                pytest.mark.notimpl(["pyspark"], raises=com.OperationNotDefinedError)
-            ],
-        ),
     ],
 )
 def test_date_quantile(alltypes, func):
@@ -1294,9 +1257,6 @@ def test_date_quantile(alltypes, func):
                     ["bigquery"],
                     raises=GoogleBadRequest,
                     reason="Argument 2 to STRING_AGG must be a literal or query parameter",
-                ),
-                pytest.mark.broken(
-                    ["pyspark"], raises=TypeError, reason="Column is not iterable"
                 ),
             ],
         ),
@@ -1531,7 +1491,6 @@ def test_aggregate_mixed_udf(backend, alltypes, df):
     backend.assert_frame_equal(result, expected, check_like=True)
 
 
-@pytest.mark.notimpl(["pyspark"], raises=com.OperationNotDefinedError)
 def test_binds_are_cast(alltypes):
     expr = alltypes.aggregate(
         high_line_count=(
