@@ -28,23 +28,6 @@ UUID_BACKEND_TYPE = {
     "clickhouse": "Nullable(UUID)",
 }
 
-UUID_EXPECTED_VALUES = {
-    "pandas": TEST_UUID,
-    "bigquery": TEST_UUID,
-    "duckdb": TEST_UUID,
-    "sqlite": TEST_UUID,
-    "snowflake": TEST_UUID,
-    "trino": TEST_UUID,
-    "postgres": TEST_UUID,
-    "mysql": TEST_UUID,
-    "mssql": TEST_UUID,
-    "dask": TEST_UUID,
-    "oracle": TEST_UUID,
-    "flink": TEST_UUID,
-    "exasol": TEST_UUID,
-    "clickhouse": TEST_UUID,
-}
-
 pytestmark = pytest.mark.notimpl(
     ["druid"],
     raises=sqlalchemy.exc.CompileError,
@@ -55,11 +38,6 @@ pytestmark = pytest.mark.notimpl(
 )
 
 
-@pytest.mark.broken(
-    ["pyspark"],
-    "'UUID' object has no attribute '_get_object_id'",
-    raises=AttributeError,
-)
 @pytest.mark.xfail_version(
     duckdb=["duckdb<0.7.0"],
     reason='(duckdb.NotImplementedException) Not implemented Error: Unsupported type: "UUID"',
@@ -79,7 +57,7 @@ def test_uuid_literal(con, backend):
     expr = ibis.literal(RAW_TEST_UUID, type=dt.uuid)
     result = con.execute(expr)
 
-    assert result == UUID_EXPECTED_VALUES[backend_name]
+    assert result == TEST_UUID
 
     with contextlib.suppress(com.OperationNotDefinedError):
         assert con.execute(expr.typeof()) == UUID_BACKEND_TYPE[backend_name]
