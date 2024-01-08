@@ -19,7 +19,7 @@ def test_aggregation_float_nulls(con, result_fn, expected_fn, monkeypatch):
     monkeypatch.setattr(ibis.options.pyspark, "treat_nan_as_null", True)
 
     table = con.table("null_table")
-    df = table.compile().toPandas()
+    df = table.execute()
 
     expr = result_fn(table)
     result = expr.execute()

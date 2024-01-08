@@ -11,6 +11,16 @@ import pyspark.sql.functions as F  # noqa: E402
 from pyspark.sql.window import Window  # noqa: E402
 
 
+@pytest.fixture
+def t(con):
+    return con.table("time_indexed_table")
+
+
+@pytest.fixture
+def spark_table(con):
+    return con._session.table("time_indexed_table")
+
+
 @pytest.mark.parametrize(
     ("ibis_windows", "spark_range"),
     [
@@ -23,11 +33,9 @@ from pyspark.sql.window import Window  # noqa: E402
     ],
     indirect=["ibis_windows"],
 )
-def test_time_indexed_window(con, ibis_windows, spark_range):
-    table = con.table("time_indexed_table")
-    result = table.mutate(mean=table["value"].mean().over(ibis_windows[0])).compile()
-    result_pd = result.toPandas()
-    spark_table = table.compile()
+def test_time_indexed_window(t, spark_table, ibis_windows, spark_range):
+    result = t.mutate(mean=t["value"].mean().over(ibis_windows[0])).execute()
+
     spark_window = (
         Window.partitionBy("key")
         .orderBy(F.col("time").cast("long"))
@@ -37,7 +45,8 @@ def test_time_indexed_window(con, ibis_windows, spark_range):
         "mean",
         F.mean(spark_table["value"]).over(spark_window),
     ).toPandas()
-    tm.assert_frame_equal(result_pd, expected)
+
+    tm.assert_frame_equal(result, expected)
 
 
 @pytest.mark.parametrize(
@@ -50,15 +59,12 @@ def test_time_indexed_window(con, ibis_windows, spark_range):
     ],
     indirect=["ibis_windows"],
 )
-def test_multiple_windows(con, ibis_windows, spark_range):
-    table = con.table("time_indexed_table")
-    result = table.mutate(
-        mean_1h=table["value"].mean().over(ibis_windows[0]),
-        mean_2h=table["value"].mean().over(ibis_windows[1]),
-    ).compile()
-    result_pd = result.toPandas()
+def test_multiple_windows(t, spark_table, ibis_windows, spark_range):
+    result = t.mutate(
+        mean_1h=t["value"].mean().over(ibis_windows[0]),
+        mean_2h=t["value"].mean().over(ibis_windows[1]),
+    ).execute()
 
-    spark_table = table.compile()
     spark_window = (
         Window.partitionBy("key")
         .orderBy(F.col("time").cast("long"))
@@ -80,4 +86,4 @@ def test_multiple_windows(con, ibis_windows, spark_range):
         )
         .toPandas()
     )
-    tm.assert_frame_equal(result_pd, expected)
+    tm.assert_frame_equal(result, expected)
