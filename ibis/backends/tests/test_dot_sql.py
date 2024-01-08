@@ -280,7 +280,7 @@ def test_con_dot_sql_transpile(backend, con, dialect, df):
 
 @dot_sql_notimpl
 @dot_sql_never
-@pytest.mark.notimpl(["druid", "flink", "impala", "polars", "pyspark"])
+@pytest.mark.notimpl(["druid", "flink", "impala", "polars"])
 @pytest.mark.notyet(
     ["risingwave"],
     raises=ValueError,

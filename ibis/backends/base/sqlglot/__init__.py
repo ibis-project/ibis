@@ -35,6 +35,7 @@ class SQLGlotBackend(BaseBackend):
         dispatcher = cls.compiler.visit_node.register.__self__.dispatcher
         return dispatcher.dispatch(operation) is not dispatcher.dispatch(object)
 
+    # TODO(kszucs): get_schema() is not registered as an abstract method
     def table(
         self, name: str, schema: str | None = None, database: str | None = None
     ) -> ir.Table:
@@ -90,7 +91,7 @@ class SQLGlotBackend(BaseBackend):
     ):
         """Compile an Ibis expression to a SQL string."""
         query = self._to_sqlglot(expr, limit=limit, params=params, **kwargs)
-        sql = query.sql(dialect=self.name, pretty=True)
+        sql = query.sql(dialect=self.compiler.dialect, pretty=True)
         self._log(sql)
         return sql
 
@@ -118,6 +119,7 @@ class SQLGlotBackend(BaseBackend):
             schema = self._get_schema_using_query(query)
         return ops.SQLQueryResult(query, ibis.schema(schema), self).to_expr()
 
+    # TODO(kszucs): should be removed in favor of _get_schema_using_query()
     @abc.abstractmethod
     def _metadata(self, query: str) -> Iterator[tuple[str, dt.DataType]]:
         """Return the metadata of a SQL query."""
@@ -223,6 +225,8 @@ class SQLGlotBackend(BaseBackend):
 
         schema = table.schema()
 
+        # TODO(kszucs): these methods should be abstractmethods or this default
+        # implementation should be removed
         with self._safe_raw_sql(sql) as cur:
             result = self._fetch_from_cursor(cur, schema)
         return expr.__pandas_result__(result)

@@ -8,9 +8,9 @@ import pandas as pd
 import pandas.testing as tm
 import pytest
 import pytz
-import sqlalchemy as sa
 import toolz
 from pytest import param
+import sqlalchemy as sa
 
 import ibis
 import ibis.common.exceptions as com
@@ -1216,7 +1216,7 @@ timestamp_range_tzinfos = pytest.mark.parametrize(
                 pytest.mark.notyet(["polars"], raises=com.UnsupportedOperationError),
                 pytest.mark.notyet(["bigquery"], raises=GoogleBadRequest),
                 pytest.mark.notyet(
-                    ["clickhouse", "pyspark", "snowflake"],
+                    ["clickhouse", "snowflake"],
                     raises=com.UnsupportedOperationError,
                 ),
                 pytest.mark.notimpl(
@@ -1267,7 +1267,7 @@ def test_timestamp_range(con, start, stop, step, freq, tzinfo):
                 pytest.mark.notyet(["polars"], raises=com.UnsupportedOperationError),
                 pytest.mark.notyet(["bigquery"], raises=GoogleBadRequest),
                 pytest.mark.notyet(
-                    ["clickhouse", "pyspark", "snowflake"],
+                    ["clickhouse", "snowflake"],
                     raises=com.UnsupportedOperationError,
                 ),
                 pytest.mark.notyet(

@@ -6,24 +6,12 @@ from packaging.version import parse as vparse
 
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
-from ibis.backends.base.sql.registry import sql_type_names
-from ibis.formats import TypeMapper
-
-_sql_type_names = dict(sql_type_names, date="date")
+import ibis.expr.schema as sch
+from ibis.formats import SchemaMapper, TypeMapper
 
 # DayTimeIntervalType introduced in Spark 3.2 (at least) but didn't show up in
 # PySpark until version 3.3
 PYSPARK_33 = vparse(pyspark.__version__) >= vparse("3.3")
-
-
-def type_to_sql_string(tval):
-    if tval.is_decimal():
-        return f"decimal({tval.precision}, {tval.scale})"
-    name = tval.name.lower()
-    try:
-        return _sql_type_names[name]
-    except KeyError:
-        raise com.UnsupportedBackendType(name)
 
 
 _from_pyspark_dtypes = {
@@ -43,6 +31,8 @@ _from_pyspark_dtypes = {
 
 _to_pyspark_dtypes = {v: k for k, v in _from_pyspark_dtypes.items()}
 _to_pyspark_dtypes[dt.JSON] = pt.StringType
+_to_pyspark_dtypes[dt.UUID] = pt.StringType
+
 
 if PYSPARK_33:
     _pyspark_interval_units = {
@@ -116,3 +106,17 @@ class PySparkType(TypeMapper):
                 raise com.IbisTypeError(
                     f"Unable to convert dtype {dtype!r} to pyspark type"
                 )
+
+
+class PySparkSchema(SchemaMapper):
+    @classmethod
+    def from_ibis(cls, schema):
+        fields = [
+            pt.StructField(name, PySparkType.from_ibis(dtype), dtype.nullable)
+            for name, dtype in schema.items()
+        ]
+        return pt.StructType(fields)
+
+    @classmethod
+    def to_ibis(cls, schema):
+        return sch.Schema({name: PySparkType.to_ibis(typ) for name, typ in schema})

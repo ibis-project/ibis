@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import operator
-from typing import Annotated, Union
+from typing import Annotated, Optional
 
 from public import public
 
@@ -55,7 +55,7 @@ class TimeTruncate(Value):
 class TimestampBucket(Value):
     arg: Value[dt.Timestamp]
     interval: Scalar[dt.Interval]
-    offset: Union[Scalar[dt.Interval], None] = None
+    offset: Optional[Scalar[dt.Interval]] = None
 
     shape = rlz.shape_like("arg")
     dtype = dt.timestamp
