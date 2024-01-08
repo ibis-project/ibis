@@ -61,6 +61,11 @@ def _centroid(t, op):
     return sa.func.st_centroid(arg, type_=Geometry_WKB)
 
 
+def _geo_flip_coordinates(t, op):
+    arg = t.translate(op.arg)
+    return sa.func.st_flipcoordinates(arg, type_=Geometry_WKB)
+
+
 def _geo_end_point(t, op):
     arg = t.translate(op.arg)
     return sa.func.st_endpoint(arg, type_=Geometry_WKB)
@@ -568,6 +573,7 @@ operation_registry.update(
         ops.GeoX: unary(sa.func.ST_X),
         ops.GeoY: unary(sa.func.ST_Y),
         ops.GeoConvert: _geo_convert,
+        ops.GeoFlipCoordinates: _geo_flip_coordinates,
         # other ops
         ops.TimestampRange: fixed_arity(sa.func.range, 3),
         ops.RegexSplit: fixed_arity(sa.func.str_split_regex, 2),
