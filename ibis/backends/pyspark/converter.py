@@ -2,11 +2,11 @@ from __future__ import annotations
 
 import datetime
 
+from ibis.common.temporal import normalize_timezone
 from ibis.formats.pandas import PandasData
 
 
-class MySQLPandasData(PandasData):
-    # TODO(kszucs): this could be reused at other backends, like pyspark
+class PySparkPandasData(PandasData):
     @classmethod
     def convert_Time(cls, s, dtype, pandas_type):
         def convert(timedelta):
@@ -21,7 +21,11 @@ class MySQLPandasData(PandasData):
         return s.map(convert, na_action="ignore")
 
     @classmethod
-    def convert_Timestamp(cls, s, dtype, pandas_type):
-        if s.dtype == "object":
-            s = s.replace("0000-00-00 00:00:00", None)
-        return super().convert_Timestamp(s, dtype, pandas_type)
+    def convert_Timestamp_element(cls, dtype):
+        def converter(value, dtype=dtype):
+            if (tz := dtype.timezone) is not None:
+                return value.astimezone(normalize_timezone(tz))
+
+            return value.astimezone(normalize_timezone("UTC")).replace(tzinfo=None)
+
+        return converter
