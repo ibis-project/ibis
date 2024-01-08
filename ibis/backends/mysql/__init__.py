@@ -5,6 +5,7 @@ from __future__ import annotations
 import warnings
 from typing import TYPE_CHECKING, Literal
 
+import pymysql
 import sqlalchemy as sa
 from sqlalchemy.dialects import mysql
 
@@ -112,7 +113,7 @@ class Backend(BaseAlchemyBackend, CanCreateDatabase):
             with dbapi_connection.cursor() as cur:
                 try:
                     cur.execute("SET @@session.time_zone = 'UTC'")
-                except sa.exc.OperationalError:
+                except (sa.exc.OperationalError, pymysql.err.OperationalError):
                     warnings.warn("Unable to set session timezone to UTC.")
 
         super().do_connect(engine)
