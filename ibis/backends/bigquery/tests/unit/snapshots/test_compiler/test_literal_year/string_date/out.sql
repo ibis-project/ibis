@@ -1,2 +1,2 @@
 SELECT
-  EXTRACT(year FROM CAST('2017-01-01' AS DATE)) AS `ExtractYear_datetime_date_2017_ 1_ 1`
+  EXTRACT(YEAR FROM DATE(2017, 1, 1)) AS `ExtractYear_datetime_date_2017_ 1_ 1`

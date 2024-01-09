@@ -719,7 +719,7 @@ def test_simple_ungrouped_window_with_scalar_order_by(alltypes):
                     reason="Window operations are unsupported in the dask backend",
                 ),
                 pytest.mark.broken(
-                    ["bigquery", "flink", "impala"],
+                    ["flink", "impala"],
                     reason="default window semantics are different",
                     raises=AssertionError,
                 ),
@@ -1306,17 +1306,12 @@ def test_rank_followed_by_over_call_merge_frames(backend, alltypes, df):
 )
 @pytest.mark.notimpl(["polars"], raises=com.OperationNotDefinedError)
 @pytest.mark.notyet(["flink"], raises=com.UnsupportedOperationError)
-@pytest.mark.broken(
-    ["pandas"],
-    raises=TypeError,
-    reason="pandas rank impl cannot handle compound sort keys with null",
-)
 @pytest.mark.notimpl(
     ["risingwave"],
     raises=sa.exc.InternalError,
     reason="Feature is not yet implemented: Window function with empty PARTITION BY is not supported yet",
 )
-def test_ordering_order(con):
+def test_windowed_order_by_sequence_is_preserved(con):
     table = ibis.memtable({"bool_col": [True, False, False, None, True]})
     window = ibis.window(
         order_by=[

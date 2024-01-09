@@ -1434,12 +1434,13 @@ class Backend(SQLGlotBackend, CanCreateSchema):
 
     def _compile_udf(self, udf_node: ops.ScalarUDF) -> None:
         func = udf_node.__func__
-        name = func.__name__
+        name = type(udf_node).__name__
+        type_mapper = self.compiler.type_mapper
         input_types = [
-            self.compiler.type_mapper.to_string(param.annotation.pattern.dtype)
+            type_mapper.to_string(param.annotation.pattern.dtype)
             for param in udf_node.__signature__.parameters.values()
         ]
-        output_type = self.compiler.type_mapper.to_string(udf_node.dtype)
+        output_type = type_mapper.to_string(udf_node.dtype)
 
         def register_udf(con):
             return con.create_function(
