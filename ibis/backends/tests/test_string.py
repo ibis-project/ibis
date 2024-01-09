@@ -49,7 +49,7 @@ from ibis.common.annotations import ValidationError
             id="string-quote1",
             marks=pytest.mark.broken(
                 ["oracle"],
-                raises=sa.exc.DatabaseError,
+                raises=OracleDatabaseError,
                 reason="ORA-01741: illegal zero length identifier",
             ),
         ),
@@ -69,7 +69,7 @@ from ibis.common.annotations import ValidationError
             id="string-quote2",
             marks=pytest.mark.broken(
                 ["oracle"],
-                raises=sa.exc.DatabaseError,
+                raises=OracleDatabaseError,
                 reason="ORA-25716",
             ),
         ),
@@ -217,7 +217,7 @@ def uses_java_re(t):
             id="re_search_posix",
             marks=[
                 pytest.mark.notimpl(
-                    ["mssql", "oracle", "exasol"],
+                    ["mssql", "exasol"],
                     raises=com.OperationNotDefinedError,
                 ),
                 pytest.mark.never(
@@ -358,7 +358,7 @@ def uses_java_re(t):
             id="repeat_method",
             marks=pytest.mark.notimpl(
                 ["oracle"],
-                raises=sa.exc.DatabaseError,
+                raises=OracleDatabaseError,
                 reason="ORA-00904: REPEAT invalid identifier",
             ),
         ),
@@ -368,7 +368,7 @@ def uses_java_re(t):
             id="repeat_left",
             marks=pytest.mark.notimpl(
                 ["oracle"],
-                raises=sa.exc.DatabaseError,
+                raises=OracleDatabaseError,
                 reason="ORA-00904: REPEAT invalid identifier",
             ),
         ),
@@ -378,7 +378,7 @@ def uses_java_re(t):
             id="repeat_right",
             marks=pytest.mark.notimpl(
                 ["oracle"],
-                raises=sa.exc.DatabaseError,
+                raises=OracleDatabaseError,
                 reason="ORA-00904: REPEAT invalid identifier",
             ),
         ),
@@ -388,7 +388,7 @@ def uses_java_re(t):
             id="translate",
             marks=[
                 pytest.mark.notimpl(
-                    ["mssql", "mysql", "polars", "druid", "oracle"],
+                    ["mssql", "mysql", "polars", "druid"],
                     raises=com.OperationNotDefinedError,
                 ),
                 pytest.mark.notyet(
@@ -781,7 +781,7 @@ def test_re_replace_global(con):
 @pytest.mark.notimpl(["druid"], raises=ValidationError)
 @pytest.mark.broken(
     ["oracle"],
-    raises=sa.exc.DatabaseError,
+    raises=OracleDatabaseError,
     reason="ORA-61801: only boolean column or attribute can be used as a predicate",
 )
 def test_substr_with_null_values(backend, alltypes, df):
@@ -964,15 +964,20 @@ def test_levenshtein(con, right):
     reason="doesn't allow boolean expressions in select statements",
     raises=sa.exc.ProgrammingError,
 )
-@pytest.mark.broken(
-    ["oracle"],
-    reason="sqlalchemy converts True to 1, which cannot be used in CASE WHEN statement",
-    raises=sa.exc.DatabaseError,
-)
 @pytest.mark.parametrize(
     "expr",
     [
-        param(ibis.case().when(True, "%").end(), id="case"),
+        param(
+            ibis.case().when(True, "%").end(),
+            id="case",
+            marks=[
+                pytest.mark.broken(
+                    ["oracle"],
+                    reason="missing left parenthesis in generated SQL",
+                    raises=OracleDatabaseError,
+                )
+            ],
+        ),
         param(ibis.ifelse(True, "%", ibis.NA), id="ifelse"),
     ],
 )
@@ -980,9 +985,7 @@ def test_no_conditional_percent_escape(con, expr):
     assert con.execute(expr) == "%"
 
 
-@pytest.mark.notimpl(
-    ["dask", "mssql", "oracle", "exasol"], raises=com.OperationNotDefinedError
-)
+@pytest.mark.notimpl(["dask", "mssql", "exasol"], raises=com.OperationNotDefinedError)
 def test_non_match_regex_search_is_false(con):
     expr = ibis.literal("foo").re_search("bar")
     result = con.execute(expr)
