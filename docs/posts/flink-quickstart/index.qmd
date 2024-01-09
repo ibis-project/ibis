@@ -1,7 +1,7 @@
 ---
 title: "Ibis goes real-time! Introducing the new Flink backend for Ibis"
 author: "Deepyaman Datta"
-date: "2024-01-15"
+date: "2024-01-10"
 categories:
     - blog
     - flink
@@ -32,21 +32,24 @@ pip install ibis-framework apache-flink kafka-python
 
 ## Using `conda`
 
-```bash
-conda install -c conda-forge ibis-flink kafka-python
-```
+::: {.callout-important}
+PyFlink is not available on conda-forge; please
+use `pip` to install the PyFlink backend instead.
+:::
 
 ## Using `mamba`
 
-```bash
-mamba install -c conda-forge ibis-flink kafka-python
-```
+::: {.callout-important}
+PyFlink is not available on conda-forge; please
+use `pip` to install the PyFlink backend instead.
+:::
 
 ## Using `pixi`
 
-```bash
-pixi add ibis-flink kafka-python
-```
+::: {.callout-important}
+PyFlink is not available on conda-forge; please
+use `pip` to install the PyFlink backend instead.
+:::
 
 :::
 
@@ -90,10 +93,12 @@ The `payment_msg` Kafka topic contains messages in the following format:
 In a separate terminal, we can explore what these messages look like:
 
 ```{python}
+from itertools import islice
+
 from kafka import KafkaConsumer
 
 consumer = KafkaConsumer("payment_msg")
-for _, msg in zip(range(3), consumer):
+for msg in islice(consumer, 3):
     print(msg)
 ```
 
@@ -246,7 +251,7 @@ Similar to how we viewed messages in the `payment_msg` topic, we can print resul
 
 ```{python}
 consumer = KafkaConsumer("sink")
-for _, msg in zip(range(10), consumer):
+for msg in islice(consumer, 10):
     print(msg)
 ```
 
