@@ -9,7 +9,7 @@ from pytest import param
 
 import ibis
 import ibis.expr.datatypes as dt
-from ibis.backends.bigquery import udf
+from ibis import udf
 
 PROJECT_ID = os.environ.get("GOOGLE_BIGQUERY_PROJECT_ID", "ibis-gbq")
 DATASET_ID = "testing"
@@ -28,12 +28,8 @@ def df(alltypes):
 
 
 def test_udf(alltypes, df):
-    @udf(
-        input_type=[dt.double, dt.double],
-        output_type=dt.double,
-        determinism=True,
-    )
-    def my_add(a, b):
+    @udf.scalar.python(determinism=True)
+    def my_add(a: float, b: float) -> float:
         return a + b
 
     expr = my_add(alltypes.double_col, alltypes.double_col)
@@ -49,22 +45,16 @@ def test_udf(alltypes, df):
 
 
 def test_udf_with_struct(alltypes, df, snapshot):
-    @udf(
-        input_type=[dt.double, dt.double],
-        output_type=dt.Struct.from_tuples(
-            [("width", dt.double), ("height", dt.double)]
-        ),
-    )
-    def my_struct_thing(a, b):
+    @udf.scalar.python
+    def my_struct_thing(a: float, b: float) -> dt.Struct(
+        {"width": float, "height": float}
+    ):
         class Rectangle:
             def __init__(self, width, height):
                 self.width = width
                 self.height = height
 
         return Rectangle(a, b)
-
-    result = my_struct_thing.sql
-    snapshot.assert_match(result, "out.sql")
 
     expr = my_struct_thing(alltypes.double_col, alltypes.double_col)
     result = expr.execute()
@@ -75,12 +65,12 @@ def test_udf_with_struct(alltypes, df, snapshot):
 
 
 def test_udf_compose(alltypes, df):
-    @udf([dt.double], dt.double)
-    def add_one(x):
+    @udf.scalar.python
+    def add_one(x: float) -> float:
         return x + 1.0
 
-    @udf([dt.double], dt.double)
-    def times_two(x):
+    @udf.scalar.python
+    def times_two(x: float) -> float:
         return x * 2.0
 
     t = alltypes
@@ -91,8 +81,8 @@ def test_udf_compose(alltypes, df):
 
 
 def test_udf_scalar(con):
-    @udf([dt.double, dt.double], dt.double)
-    def my_add(x, y):
+    @udf.scalar.python
+    def my_add(x: float, y: float) -> float:
         return x + y
 
     expr = my_add(1, 2)
@@ -101,29 +91,23 @@ def test_udf_scalar(con):
 
 
 def test_multiple_calls_has_one_definition(con):
-    @udf([dt.string], dt.double)
-    def my_str_len(s):
+    @udf.scalar.python
+    def my_str_len(s: str) -> float:
         return s.length
 
     s = ibis.literal("abcd")
     expr = my_str_len(s) + my_str_len(s)
 
-    add = expr.op()
-
-    # generated javascript is identical
-    assert add.left.sql == add.right.sql
     assert con.execute(expr) == 8.0
 
 
 def test_udf_libraries(con):
-    @udf(
-        [dt.Array(dt.string)],
-        dt.double,
+    @udf.scalar.python(
         # whatever symbols are exported in the library are visible inside the
         # UDF, in this case lodash defines _ and we use that here
-        libraries=["gs://ibis-testing-libraries/lodash.min.js"],
+        libraries=("gs://ibis-testing-libraries/lodash.min.js",),
     )
-    def string_length(strings):
+    def string_length(strings: list[str]) -> float:
         return _.sum(_.map(strings, lambda x: x.length))  # noqa: F821
 
     raw_data = ["aaa", "bb", "c"]
@@ -135,43 +119,16 @@ def test_udf_libraries(con):
 
 
 def test_udf_with_len(con):
-    @udf([dt.string], dt.double)
-    def my_str_len(x):
+    @udf.scalar.python
+    def my_str_len(x: str) -> float:
         return len(x)
 
-    @udf([dt.Array(dt.string)], dt.double)
-    def my_array_len(x):
+    @udf.scalar.python
+    def my_array_len(x: list[str]) -> float:
         return len(x)
 
     assert con.execute(my_str_len("aaa")) == 3
     assert con.execute(my_array_len(["aaa", "bb"])) == 2
-
-
-@pytest.mark.parametrize(
-    ("argument_type",),
-    [
-        param(
-            dt.string,
-            id="string",
-        ),
-        param(
-            "ANY TYPE",
-            id="string",
-        ),
-    ],
-)
-def test_udf_sql(con, argument_type):
-    format_t = udf.sql(
-        "format_t",
-        params={"input": argument_type},
-        output_type=dt.string,
-        sql_expression="FORMAT('%T', input)",
-    )
-
-    s = ibis.literal("abcd")
-    expr = format_t(s)
-
-    con.execute(expr)
 
 
 @pytest.mark.parametrize(

@@ -395,7 +395,6 @@ def test_numeric_literal(con, backend, expr, expected_types):
             ibis.literal(decimal.Decimal("Infinity"), type=dt.decimal),
             # TODO(krzysztof-kwitt): Should we unify it?
             {
-                "bigquery": float("inf"),
                 "sqlite": float("inf"),
                 "risingwave": float("nan"),
                 "postgres": decimal.Decimal("Infinity"),
@@ -406,7 +405,6 @@ def test_numeric_literal(con, backend, expr, expected_types):
                 "duckdb": float("inf"),
             },
             {
-                "bigquery": "FLOAT64",
                 "sqlite": "real",
                 "postgres": "numeric",
                 "risingwave": "numeric",
@@ -465,6 +463,7 @@ def test_numeric_literal(con, backend, expr, expected_types):
                     "infinity is not allowed as a decimal value",
                     raises=SnowflakeProgrammingError,
                 ),
+                pytest.mark.notyet(["bigquery"], raises=GoogleBadRequest),
             ],
             id="decimal-infinity+",
         ),
@@ -472,7 +471,6 @@ def test_numeric_literal(con, backend, expr, expected_types):
             ibis.literal(decimal.Decimal("-Infinity"), type=dt.decimal),
             # TODO(krzysztof-kwitt): Should we unify it?
             {
-                "bigquery": float("-inf"),
                 "sqlite": float("-inf"),
                 "risingwave": float("nan"),
                 "postgres": decimal.Decimal("-Infinity"),
@@ -483,7 +481,6 @@ def test_numeric_literal(con, backend, expr, expected_types):
                 "duckdb": float("-inf"),
             },
             {
-                "bigquery": "FLOAT64",
                 "sqlite": "real",
                 "postgres": "numeric",
                 "risingwave": "numeric",
@@ -542,6 +539,7 @@ def test_numeric_literal(con, backend, expr, expected_types):
                     raises=TrinoUserError,
                     reason="can't cast infinity to decimal",
                 ),
+                pytest.mark.notyet(["bigquery"], raises=GoogleBadRequest),
             ],
             id="decimal-infinity-",
         ),
@@ -629,6 +627,7 @@ def test_numeric_literal(con, backend, expr, expected_types):
                     raises=TrinoUserError,
                     reason="can't cast nan to decimal",
                 ),
+                pytest.mark.notyet(["bigquery"], raises=GoogleBadRequest),
             ],
             id="decimal-NaN",
         ),

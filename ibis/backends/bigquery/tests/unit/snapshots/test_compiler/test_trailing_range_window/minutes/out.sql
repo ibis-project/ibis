@@ -1,4 +1,16 @@
 SELECT
-  t0.*,
-  avg(t0.`float_col`) OVER (ORDER BY UNIX_MICROS(t0.`timestamp_col`) ASC RANGE BETWEEN 60000000 PRECEDING AND EXTRACT(MINUTE FROM INTERVAL '0' MINUTE) * 60000000 FOLLOWING) AS `win_avg`
+  t0.id,
+  t0.bool_col,
+  t0.tinyint_col,
+  t0.smallint_col,
+  t0.int_col,
+  t0.bigint_col,
+  t0.float_col,
+  t0.double_col,
+  t0.date_string_col,
+  t0.string_col,
+  t0.timestamp_col,
+  t0.year,
+  t0.month,
+  AVG(t0.float_col) OVER (ORDER BY t0.timestamp_col ASC RANGE BETWEEN INTERVAL '1' MINUTE preceding AND INTERVAL 0 MINUTE following) AS win_avg
 FROM functional_alltypes AS t0
