@@ -24,7 +24,7 @@ def schema_from_bigquery_table(table):
         partition_field = partition_info.field or NATIVE_PARTITION_COL
         # Only add a new column if it's not already a column in the schema
         if partition_field not in schema:
-            schema |= {partition_field: dt.timestamp}
+            schema |= {partition_field: dt.Timestamp(timezone="UTC")}
 
     return schema
 

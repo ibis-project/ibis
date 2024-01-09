@@ -3,11 +3,10 @@
 from __future__ import annotations
 
 import concurrent.futures
-import contextlib
 import glob
 import os
 import re
-from functools import partial
+from contextlib import contextmanager
 from typing import TYPE_CHECKING, Any, Callable, Optional
 from urllib.parse import parse_qs, urlparse
 
@@ -17,6 +16,7 @@ import google.cloud.bigquery_storage_v1 as bqstorage
 import pandas as pd
 import pydata_google_auth
 import sqlglot as sg
+import sqlglot.expressions as sge
 from pydata_google_auth import cache
 
 import ibis
@@ -25,7 +25,8 @@ import ibis.expr.operations as ops
 import ibis.expr.types as ir
 from ibis import util
 from ibis.backends.base import CanCreateSchema, Database
-from ibis.backends.base.sql import BaseSQLBackend
+from ibis.backends.base.sqlglot import SQLGlotBackend
+from ibis.backends.base.sqlglot.datatypes import BigQueryType
 from ibis.backends.bigquery.client import (
     BigQueryCursor,
     bigquery_param,
@@ -34,19 +35,17 @@ from ibis.backends.bigquery.client import (
     schema_from_bigquery_table,
 )
 from ibis.backends.bigquery.compiler import BigQueryCompiler
-from ibis.backends.bigquery.datatypes import BigQuerySchema, BigQueryType
-
-with contextlib.suppress(ImportError):
-    from ibis.backends.bigquery.udf import udf  # noqa: F401
+from ibis.backends.bigquery.datatypes import BigQuerySchema
+from ibis.backends.bigquery.udf.core import PythonToJavaScriptTranslator
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable, Mapping
+    from collections.abc import Iterable, Iterator, Mapping
     from pathlib import Path
 
     import pyarrow as pa
     from google.cloud.bigquery.table import RowIterator
 
-    import ibis.expr.schema as sch
+    import ibis.expr.types as dt
 
 SCOPES = ["https://www.googleapis.com/auth/bigquery"]
 EXTERNAL_DATA_SCOPES = [
@@ -82,36 +81,40 @@ def _create_client_info_gapic(application_name):
     return ClientInfo(user_agent=_create_user_agent(application_name))
 
 
-def _anonymous_unnest_to_explode(node: sg.exp.Expression):
-    """Convert `ANONYMOUS` `unnest` function calls to `EXPLODE` calls.
-
-    This allows us to generate DuckDB-like `UNNEST` calls and let sqlglot do
-    the work of transforming those into the correct BigQuery SQL.
-    """
-    if isinstance(node, sg.exp.Anonymous) and node.this.lower() == "unnest":
-        return sg.exp.Explode(this=node.expressions[0])
-    return node
-
-
 _MEMTABLE_PATTERN = re.compile(r"^_?ibis_(?:pandas|pyarrow)_memtable_[a-z0-9]{26}$")
 
 
 def _qualify_memtable(
-    node: sg.exp.Expression, *, dataset: str | None, project: str | None
-) -> sg.exp.Expression:
+    node: sge.Expression, *, dataset: str | None, project: str | None
+) -> sge.Expression:
     """Add a BigQuery dataset and project to memtable references."""
-    if (
-        isinstance(node, sg.exp.Table)
-        and _MEMTABLE_PATTERN.match(node.name) is not None
-    ):
+    if isinstance(node, sge.Table) and _MEMTABLE_PATTERN.match(node.name) is not None:
         node.args["db"] = dataset
         node.args["catalog"] = project
     return node
 
 
-class Backend(BaseSQLBackend, CanCreateSchema):
+def _remove_nulls_first_from_invalid_window_orderings(
+    node: sge.Expression,
+) -> sge.Expression:
+    if isinstance(node, sge.Window):
+        order = node.args.get("order")
+        if order is not None:
+            for key in order.args["expressions"]:
+                kargs = key.args
+                if kargs.get("desc") is True and kargs.get("nulls_first", False):
+                    kargs["nulls_first"] = False
+                elif kargs.get("desc") is False and not kargs.setdefault(
+                    "nulls_first", True
+                ):
+                    kargs["nulls_first"] = True
+
+    return node
+
+
+class Backend(SQLGlotBackend, CanCreateSchema):
     name = "bigquery"
-    compiler = BigQueryCompiler
+    compiler = BigQueryCompiler()
     supports_in_memory_tables = True
     supports_python_udfs = False
 
@@ -455,20 +458,20 @@ class Backend(BaseSQLBackend, CanCreateSchema):
         **options: Any,
     ) -> None:
         properties = [
-            sg.exp.Property(this=sg.to_identifier(name), value=sg.exp.convert(value))
+            sge.Property(this=sg.to_identifier(name), value=sge.convert(value))
             for name, value in (options or {}).items()
         ]
 
         if collate is not None:
             properties.append(
-                sg.exp.CollateProperty(this=sg.exp.convert(collate), default=True)
+                sge.CollateProperty(this=sge.convert(collate), default=True)
             )
 
-        stmt = sg.exp.Create(
+        stmt = sge.Create(
             kind="SCHEMA",
             this=sg.table(name, db=database),
             exists=force,
-            properties=sg.exp.Properties(expressions=properties),
+            properties=sge.Properties(expressions=properties),
         )
 
         self.raw_sql(stmt.sql(self.name))
@@ -481,7 +484,7 @@ class Backend(BaseSQLBackend, CanCreateSchema):
         cascade: bool = False,
     ) -> None:
         """Drop a BigQuery dataset."""
-        stmt = sg.exp.Drop(
+        stmt = sge.Drop(
             kind="SCHEMA",
             this=sg.table(name, db=database),
             exists=force,
@@ -499,7 +502,7 @@ class Backend(BaseSQLBackend, CanCreateSchema):
                 "`database` specifier. Include a `schema` argument."
             )
 
-        table = sg.parse_one(name, into=sg.exp.Table, read=self.name)
+        table = sg.parse_one(name, into=sge.Table, read=self.name)
 
         # table.catalog will be the empty string
         if table.catalog:
@@ -520,11 +523,11 @@ class Backend(BaseSQLBackend, CanCreateSchema):
                 schema = table.db
 
         if database is not None and schema is None:
-            database = sg.parse_one(database, into=sg.exp.Table, read=self.name)
+            database = sg.parse_one(database, into=sge.Table, read=self.name)
             database.args["quoted"] = False
             database = database.sql(dialect=self.name)
         elif database is None and schema is not None:
-            database = sg.parse_one(schema, into=sg.exp.Table, read=self.name)
+            database = sg.parse_one(schema, into=sge.Table, read=self.name)
             database.args["quoted"] = False
             database = database.sql(dialect=self.name)
         else:
@@ -567,7 +570,7 @@ class Backend(BaseSQLBackend, CanCreateSchema):
                 dataset_id=query.destination.dataset_id,
             )
 
-    def _get_schema_using_query(self, query: str) -> sch.Schema:
+    def _metadata(self, query: str) -> Iterator[tuple[name, dt.DataType]]:
         self._make_session()
 
         job = self.client.query(
@@ -575,9 +578,11 @@ class Backend(BaseSQLBackend, CanCreateSchema):
             job_config=bq.QueryJobConfig(dry_run=True, use_query_cache=False),
             project=self.billing_project,
         )
-        return BigQuerySchema.to_ibis(job.schema)
+        return (
+            (f.name, BigQuerySchema._dtype_from_bigquery_field(f)) for f in job.schema
+        )
 
-    def _execute(self, stmt, results=True, query_parameters=None):
+    def _execute(self, stmt, query_parameters=None):
         self._make_session()
 
         job_config = bq.job.QueryJobConfig(query_parameters=query_parameters or [])
@@ -587,12 +592,12 @@ class Backend(BaseSQLBackend, CanCreateSchema):
         query.result()  # blocks until finished
         return BigQueryCursor(query)
 
-    def compile(
+    def _to_sqlglot(
         self,
         expr: ir.Expr,
         limit: str | None = None,
         params: Mapping[ir.Expr, Any] | None = None,
-        **_,
+        **kwargs,
     ) -> Any:
         """Compile an Ibis expression.
 
@@ -605,6 +610,8 @@ class Backend(BaseSQLBackend, CanCreateSchema):
             of values/rows. Overrides any limit already set on the expression.
         params
             Named unbound parameters
+        kwargs
+            Keyword arguments passed to the compiler
 
         Returns
         -------
@@ -614,24 +621,15 @@ class Backend(BaseSQLBackend, CanCreateSchema):
         """
         self._make_session()
         self._define_udf_translation_rules(expr)
-        sql = self.compiler.to_ast_ensure_limit(expr, limit, params=params).compile()
+        sql = super()._to_sqlglot(expr, limit=limit, params=params, **kwargs)
 
-        return ";\n\n".join(
-            # convert unnest function calls to explode
-            query.transform(_anonymous_unnest_to_explode)
-            # add dataset and project to memtable references
-            .transform(
-                partial(
-                    _qualify_memtable,
-                    dataset=getattr(self._session_dataset, "dataset_id", None),
-                    project=getattr(self._session_dataset, "project", None),
-                )
-            )
-            .sql(dialect=self.name, pretty=True)
-            for query in sg.parse(sql, read=self.name)
-        )
+        return sql.transform(
+            _qualify_memtable,
+            dataset=getattr(self._session_dataset, "dataset_id", None),
+            project=getattr(self._session_dataset, "project", None),
+        ).transform(_remove_nulls_first_from_invalid_window_orderings)
 
-    def raw_sql(self, query: str, results=False, params=None):
+    def raw_sql(self, query: str, params=None):
         query_parameters = [
             bigquery_param(
                 param.type(),
@@ -644,7 +642,7 @@ class Backend(BaseSQLBackend, CanCreateSchema):
             )
             for param, value in (params or {}).items()
         ]
-        return self._execute(query, results=results, query_parameters=query_parameters)
+        return self._execute(query, query_parameters=query_parameters)
 
     @property
     def current_database(self) -> str:
@@ -662,6 +660,23 @@ class Backend(BaseSQLBackend, CanCreateSchema):
                 "to assign your client a dataset."
             )
         return Database(name or self.dataset, self)
+
+    def compile(
+        self, expr: ir.Expr, limit: str | None = None, params=None, **kwargs: Any
+    ):
+        """Compile an Ibis expression to a SQL string."""
+        query = self._to_sqlglot(expr, limit=limit, params=params, **kwargs)
+        udf_sources = []
+        for udf_node in expr.op().find(ops.ScalarUDF):
+            compile_func = getattr(
+                self, f"_compile_{udf_node.__input_type__.name.lower()}_udf"
+            )
+            if sql := compile_func(udf_node):
+                udf_sources.append(sql.sql(self.name, pretty=True))
+
+        sql = ";\n".join([*udf_sources, query.sql(dialect=self.name, pretty=True)])
+        self._log(sql)
+        return sql
 
     def execute(self, expr, params=None, limit="default", **kwargs):
         """Compile and execute the given Ibis expression.
@@ -700,11 +715,11 @@ class Backend(BaseSQLBackend, CanCreateSchema):
         return expr.__pandas_result__(result)
 
     def fetch_from_cursor(self, cursor, schema):
-        from ibis.formats.pandas import PandasData
+        from ibis.backends.bigquery.converter import BigQueryPandasData
 
         arrow_t = self._cursor_to_arrow(cursor)
         df = arrow_t.to_pandas(timestamp_as_object=True)
-        return PandasData.convert_table(df, schema)
+        return BigQueryPandasData.convert_table(df, schema)
 
     def _cursor_to_arrow(
         self,
@@ -830,7 +845,7 @@ class Backend(BaseSQLBackend, CanCreateSchema):
                 "Include a `schema` argument."
             )
         elif database is None and schema is not None:
-            database = sg.parse_one(schema, into=sg.exp.Table, read=self.name)
+            database = sg.parse_one(schema, into=sge.Table, read=self.name)
             database.args["quoted"] = False
             database = database.sql(dialect=self.name)
         else:
@@ -918,15 +933,13 @@ class Backend(BaseSQLBackend, CanCreateSchema):
 
         if default_collate is not None:
             properties.append(
-                sg.exp.CollateProperty(
-                    this=sg.exp.convert(default_collate), default=True
-                )
+                sge.CollateProperty(this=sge.convert(default_collate), default=True)
             )
 
         if partition_by is not None:
             properties.append(
-                sg.exp.PartitionedByProperty(
-                    this=sg.exp.Tuple(
+                sge.PartitionedByProperty(
+                    this=sge.Tuple(
                         expressions=list(map(sg.to_identifier, partition_by))
                     )
                 )
@@ -934,11 +947,11 @@ class Backend(BaseSQLBackend, CanCreateSchema):
 
         if cluster_by is not None:
             properties.append(
-                sg.exp.Cluster(expressions=list(map(sg.to_identifier, cluster_by)))
+                sge.Cluster(expressions=list(map(sg.to_identifier, cluster_by)))
             )
 
         properties.extend(
-            sg.exp.Property(this=sg.to_identifier(name), value=sg.exp.convert(value))
+            sge.Property(this=sg.to_identifier(name), value=sge.convert(value))
             for name, value in (options or {}).items()
         )
 
@@ -960,7 +973,7 @@ class Backend(BaseSQLBackend, CanCreateSchema):
             dataset = database or self.current_schema
 
         try:
-            table = sg.parse_one(name, into=sg.exp.Table, read="bigquery")
+            table = sg.parse_one(name, into=sge.Table, read="bigquery")
         except sg.ParseError:
             table = sg.table(name, db=dataset, catalog=project_id)
         else:
@@ -971,25 +984,23 @@ class Backend(BaseSQLBackend, CanCreateSchema):
                 table.args["catalog"] = project_id
 
         column_defs = [
-            sg.exp.ColumnDef(
+            sge.ColumnDef(
                 this=name,
                 kind=BigQueryType.from_ibis(typ),
                 constraints=(
                     None
                     if typ.nullable or typ.is_array()
-                    else [
-                        sg.exp.ColumnConstraint(kind=sg.exp.NotNullColumnConstraint())
-                    ]
+                    else [sge.ColumnConstraint(kind=sge.NotNullColumnConstraint())]
                 ),
             )
             for name, typ in (schema or {}).items()
         ]
 
-        stmt = sg.exp.Create(
+        stmt = sge.Create(
             kind="TABLE",
-            this=sg.exp.Schema(this=table, expressions=column_defs or None),
+            this=sge.Schema(this=table, expressions=column_defs or None),
             replace=overwrite,
-            properties=sg.exp.Properties(expressions=properties),
+            properties=sge.Properties(expressions=properties),
             expression=None if obj is None else self.compile(obj),
         )
 
@@ -1006,7 +1017,7 @@ class Backend(BaseSQLBackend, CanCreateSchema):
         database: str | None = None,
         force: bool = False,
     ) -> None:
-        stmt = sg.exp.Drop(
+        stmt = sge.Drop(
             kind="TABLE",
             this=sg.table(
                 name,
@@ -1026,7 +1037,7 @@ class Backend(BaseSQLBackend, CanCreateSchema):
         database: str | None = None,
         overwrite: bool = False,
     ) -> ir.Table:
-        stmt = sg.exp.Create(
+        stmt = sge.Create(
             kind="VIEW",
             this=sg.table(
                 name,
@@ -1048,7 +1059,7 @@ class Backend(BaseSQLBackend, CanCreateSchema):
         database: str | None = None,
         force: bool = False,
     ) -> None:
-        stmt = sg.exp.Drop(
+        stmt = sge.Drop(
             kind="VIEW",
             this=sg.table(
                 name,
@@ -1068,6 +1079,84 @@ class Backend(BaseSQLBackend, CanCreateSchema):
             schema=self._session_dataset.dataset_id,
             database=self._session_dataset.project,
         )
+
+    def _get_udf_source(self, udf_node: ops.ScalarUDF):
+        name = type(udf_node).__name__
+        type_mapper = self.compiler.udf_type_mapper
+
+        body = PythonToJavaScriptTranslator(udf_node.__func__).compile()
+        config = udf_node.__config__
+        libraries = config.get("libraries", [])
+
+        signature = [
+            sge.ColumnDef(
+                this=sg.to_identifier(name),
+                kind=type_mapper.from_ibis(param.annotation.pattern.dtype),
+            )
+            for name, param in udf_node.__signature__.parameters.items()
+        ]
+
+        lines = ['"""']
+
+        if config.get("strict", True):
+            lines.append('"use strict";')
+
+        lines += [
+            body,
+            "",
+            f"return {udf_node.__func_name__}({', '.join(udf_node.argnames)});",
+            '"""',
+        ]
+
+        func = sge.Create(
+            kind="FUNCTION",
+            this=sge.UserDefinedFunction(
+                this=sg.to_identifier(name), expressions=signature, wrapped=True
+            ),
+            # not exactly what I had in mind, but it works
+            #
+            # quoting is too simplistic to handle multiline strings
+            expression=sge.Var(this="\n".join(lines)),
+            exists=False,
+            properties=sge.Properties(
+                expressions=[
+                    sge.TemporaryProperty(),
+                    sge.ReturnsProperty(this=type_mapper.from_ibis(udf_node.dtype)),
+                    sge.StabilityProperty(
+                        this="IMMUTABLE" if config.get("determinism") else "VOLATILE"
+                    ),
+                    sge.LanguageProperty(this=sg.to_identifier("js")),
+                ]
+                + [
+                    sge.Property(
+                        this=sg.to_identifier("library"),
+                        value=self.compiler.f.array(*libraries),
+                    )
+                ]
+                * bool(libraries)
+            ),
+        )
+
+        return func
+
+    def _compile_builtin_udf(self, udf_node: ops.ScalarUDF) -> None:
+        """No op."""
+
+    def _compile_python_udf(self, udf_node: ops.ScalarUDF) -> None:
+        return self._get_udf_source(udf_node)
+
+    def _compile_pyarrow_udf(self, udf_node: ops.ScalarUDF) -> None:
+        raise NotImplementedError("PyArrow UDFs are not supported in BigQuery")
+
+    def _compile_pandas_udf(self, udf_node: ops.ScalarUDF) -> str:
+        raise NotImplementedError("Pandas UDFs are not supported in BigQuery")
+
+    def _register_udfs(self, expr: ir.Expr) -> None:
+        """No op because UDFs made with CREATE TEMPORARY FUNCTION must be followed by a query."""
+
+    @contextmanager
+    def _safe_raw_sql(self, *args, **kwargs):
+        yield self.raw_sql(*args, **kwargs)
 
 
 def compile(expr, params=None, **kwargs):

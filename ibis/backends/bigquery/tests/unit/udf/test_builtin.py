@@ -10,7 +10,7 @@ def farm_fingerprint(value: bytes) -> int:
     ...
 
 
-@ibis.udf.scalar.builtin(schema="bqutil.fn")
+@ibis.udf.scalar.builtin(schema="fn", database="bqutil")
 def from_hex(value: str) -> int:
     """Community function to convert from hex string to integer.
 
