@@ -8,6 +8,7 @@ from public import public
 
 from ibis.backends.base.sqlglot.compiler import NULL, STAR, SQLGlotCompiler
 from ibis.backends.base.sqlglot.datatypes import OracleType
+from ibis.backends.base.sqlglot.rewrites import replace_log2, replace_log10
 from ibis.expr.rewrites import rewrite_sample
 
 
@@ -17,7 +18,12 @@ class OracleCompiler(SQLGlotCompiler):
 
     dialect = "oracle"
     type_mapper = OracleType
-    rewrites = (rewrite_sample, *SQLGlotCompiler.rewrites)
+    rewrites = (
+        rewrite_sample,
+        replace_log2,
+        replace_log10,
+        *SQLGlotCompiler.rewrites,
+    )
 
     def _aggregate(self, funcname: str, *args, where):
         expr = self.f[funcname](*args)
