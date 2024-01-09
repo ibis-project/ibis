@@ -765,7 +765,6 @@ class Value(Expr):
                 )
             return expr
 
-        op = self.op()
         if isinstance(window, bl.WindowBuilder):
             if table := an.find_first_base_table(self.op()):
                 return bind(table)
