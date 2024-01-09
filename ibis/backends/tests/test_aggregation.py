@@ -1303,7 +1303,9 @@ def test_group_concat(
         .reset_index()
     )
 
-    backend.assert_frame_equal(result.fillna(pd.NA), expected.fillna(pd.NA))
+    backend.assert_frame_equal(
+        result.replace(np.nan, None), expected.replace(np.nan, None)
+    )
 
 
 @pytest.mark.broken(

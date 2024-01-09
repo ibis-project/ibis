@@ -1,55 +1,30 @@
-WITH t0 AS (
-  SELECT
-    t2.`string_col`,
-    sum(t2.`double_col`) AS `metric`
-  FROM functional_alltypes AS t2
-  GROUP BY
-    1
-)
 SELECT
-  t1.`string_col`,
-  t1.`metric`
+  t6.string_col,
+  t6.metric
 FROM (
-  WITH t0 AS (
+  SELECT
+    t4.string_col,
+    t4.metric
+  FROM (
     SELECT
-      t2.`string_col`,
-      sum(t2.`double_col`) AS `metric`
-    FROM functional_alltypes AS t2
+      t0.string_col,
+      SUM(t0.double_col) AS metric
+    FROM functional_alltypes AS t0
     GROUP BY
       1
-  ), t2 AS (
+    UNION DISTINCT
     SELECT
-      t3.`string_col`,
-      t3.`metric`
-    FROM (
-      WITH t0 AS (
-        SELECT
-          t2.`string_col`,
-          sum(t2.`double_col`) AS `metric`
-        FROM functional_alltypes AS t2
-        GROUP BY
-          1
-      )
-      SELECT
-        *
-      FROM t0
-      UNION DISTINCT
-      SELECT
-        t4.`string_col`,
-        sum(t4.`double_col`) AS `metric`
-      FROM functional_alltypes AS t4
-      GROUP BY
-        1
-    ) AS t3
-  )
-  SELECT
-    *
-  FROM t2
+      t0.string_col,
+      SUM(t0.double_col) AS metric
+    FROM functional_alltypes AS t0
+    GROUP BY
+      1
+  ) AS t4
   UNION ALL
   SELECT
-    t4.`string_col`,
-    sum(t4.`double_col`) AS `metric`
-  FROM functional_alltypes AS t4
+    t0.string_col,
+    SUM(t0.double_col) AS metric
+  FROM functional_alltypes AS t0
   GROUP BY
     1
-) AS t1
+) AS t6

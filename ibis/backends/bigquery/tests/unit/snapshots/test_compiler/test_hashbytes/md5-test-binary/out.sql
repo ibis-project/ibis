@@ -1,2 +1,2 @@
 SELECT
-  MD5(b'test') AS `tmp`
+  TO_HEX(MD5(CAST('74657374' AS BYTES FORMAT 'HEX'))) AS tmp

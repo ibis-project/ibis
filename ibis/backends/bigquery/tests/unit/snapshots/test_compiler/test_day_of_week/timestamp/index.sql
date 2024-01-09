@@ -1,2 +1,2 @@
 SELECT
-  MOD(EXTRACT(DAYOFWEEK FROM CAST('2017-01-01 04:55:59' AS DATETIME)) + 5, 7) AS `DayOfWeekIndex_datetime_datetime_2017_ 1_ 1_ 4_ 55_ 59`
+  mod(EXTRACT(dayofweek FROM datetime('2017-01-01T04:55:59')) + 5, 7) AS `DayOfWeekIndex_datetime_datetime_2017_ 1_ 1_ 4_ 55_ 59`

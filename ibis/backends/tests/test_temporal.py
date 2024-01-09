@@ -610,11 +610,6 @@ def test_date_truncate(backend, alltypes, df, unit):
             # TODO - DateOffset - #2553
             marks=[
                 pytest.mark.notimpl(
-                    ["bigquery"],
-                    raises=com.UnsupportedOperationError,
-                    reason="BigQuery does not allow binary operation TIMESTAMP_ADD with INTERVAL offset D",
-                ),
-                pytest.mark.notimpl(
                     ["polars"],
                     raises=TypeError,
                     reason="duration() got an unexpected keyword argument 'years'",
@@ -638,11 +633,6 @@ def test_date_truncate(backend, alltypes, df, unit):
             # TODO - DateOffset - #2553
             marks=[
                 pytest.mark.notimpl(
-                    ["bigquery"],
-                    raises=com.UnsupportedOperationError,
-                    reason="BigQuery does not allow binary operation TIMESTAMP_ADD with INTERVAL offset M",
-                ),
-                pytest.mark.notimpl(
                     ["dask"],
                     raises=ValueError,
                     reason="Metadata inference failed in `add`.",
@@ -664,11 +654,6 @@ def test_date_truncate(backend, alltypes, df, unit):
             pd.offsets.DateOffset,
             # TODO - DateOffset - #2553
             marks=[
-                pytest.mark.notimpl(
-                    ["bigquery"],
-                    raises=com.UnsupportedOperationError,
-                    reason="BigQuery does not allow extracting date part `IntervalUnit.WEEK` from intervals",
-                ),
                 pytest.mark.notimpl(
                     ["dask"],
                     raises=ValueError,

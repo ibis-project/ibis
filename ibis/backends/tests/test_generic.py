@@ -1229,7 +1229,6 @@ def test_hash_consistent(backend, alltypes):
     [
         "pandas",
         "dask",
-        "bigquery",
         "mssql",
         "oracle",
         "snowflake",
@@ -1250,6 +1249,7 @@ def test_hash_consistent(backend, alltypes):
             1672531200,
             marks=[
                 pytest.mark.notyet(["duckdb", "impala"], reason="casts to NULL"),
+                pytest.mark.notyet(["bigquery"], raises=GoogleBadRequest),
                 pytest.mark.notyet(["trino"], raises=TrinoUserError),
                 pytest.mark.broken(
                     ["druid"], reason="casts to 1672531200000 (millisecond)"
@@ -1274,7 +1274,6 @@ def test_try_cast(con, from_val, to_type, expected):
 
 @pytest.mark.notimpl(
     [
-        "bigquery",
         "dask",
         "datafusion",
         "druid",
@@ -1299,6 +1298,7 @@ def test_try_cast(con, from_val, to_type, expected):
                 pytest.mark.never(
                     ["clickhouse", "pyspark"], reason="casts to 1672531200"
                 ),
+                pytest.mark.notyet(["bigquery"], raises=GoogleBadRequest),
                 pytest.mark.notyet(["trino"], raises=TrinoUserError),
                 pytest.mark.broken(["polars"], reason="casts to 1672531200000000000"),
             ],
@@ -1314,7 +1314,6 @@ def test_try_cast_null(con, from_val, to_type):
     [
         "pandas",
         "dask",
-        "bigquery",
         "datafusion",
         "druid",
         "mssql",
@@ -1342,7 +1341,6 @@ def test_try_cast_table(backend, con):
     [
         "pandas",
         "dask",
-        "bigquery",
         "datafusion",
         "mssql",
         "mysql",
@@ -1367,6 +1365,7 @@ def test_try_cast_table(backend, con):
                     ["clickhouse", "polars", "flink", "pyspark"],
                     reason="casts this to to a number",
                 ),
+                pytest.mark.notyet(["bigquery"], raises=GoogleBadRequest),
                 pytest.mark.notyet(["trino"], raises=TrinoUserError),
             ],
             id="datetime-to-float",
@@ -1643,7 +1642,7 @@ def test_dynamic_table_slice_with_computed_offset(backend):
     backend.assert_frame_equal(result, expected)
 
 
-@pytest.mark.notimpl(["bigquery", "druid", "flink", "polars", "snowflake", "exasol"])
+@pytest.mark.notimpl(["druid", "flink", "polars", "snowflake", "exasol"])
 def test_sample(backend):
     t = backend.functional_alltypes.filter(_.int_col >= 2)
 
@@ -1659,7 +1658,7 @@ def test_sample(backend):
     backend.assert_frame_equal(empty, df.iloc[:0])
 
 
-@pytest.mark.notimpl(["bigquery", "druid", "flink", "polars", "snowflake", "exasol"])
+@pytest.mark.notimpl(["druid", "flink", "polars", "snowflake", "exasol"])
 def test_sample_memtable(con, backend):
     df = pd.DataFrame({"x": [1, 2, 3, 4]})
     res = con.execute(ibis.memtable(df).sample(0.5))
