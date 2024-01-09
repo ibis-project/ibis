@@ -1,2 +1,2 @@
 SELECT
-  TIMESTAMP_MILLIS(-123456789) AS `tmp`
+  timestamp_millis(-123456789) AS tmp

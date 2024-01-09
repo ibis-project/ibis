@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import datetime
-import re
 import time
 from operator import floordiv, methodcaller, truediv
 
@@ -10,6 +9,7 @@ import pytest
 from pytest import param
 
 import ibis
+import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 from ibis import _
@@ -233,7 +233,7 @@ def test_substring_neg_length():
     t = ibis.table([("value", "string")], name="t")
     expr = t["value"].substr(3, -1).name("tmp")
     with pytest.raises(
-        Exception, match=r"Length parameter must be a non-negative value\."
+        Exception, match=r"Length parameter must be a non-negative value; got -1"
     ):
         to_sql(expr)
 
@@ -387,10 +387,10 @@ def test_geospatial_simplify(snapshot):
 def test_geospatial_simplify_error():
     t = ibis.table([("geog", "geography")], name="t")
     expr = t.geog.simplify(5.2, preserve_collapsed=True).name("tmp")
-    with pytest.raises(Exception) as exception_info:
+    with pytest.raises(
+        Exception, match="simplify does not support preserving collapsed geometries"
+    ):
         to_sql(expr)
-    expected = "BigQuery simplify does not support preserving collapsed geometries, must pass preserve_collapsed=False"
-    assert str(exception_info.value) == expected
 
 
 def test_timestamp_accepts_date_literals(alltypes):
@@ -399,7 +399,7 @@ def test_timestamp_accepts_date_literals(alltypes):
     expr = alltypes.mutate(param=p)
     params = {p: date_string}
     result = to_sql(expr, params=params)
-    assert re.search(r"@param_\d+ AS `param`", result) is not None
+    assert "2009-03-01T00:00:00" in result
 
 
 @pytest.mark.parametrize("distinct", [True, False])
@@ -483,14 +483,18 @@ def test_range_window_function(alltypes, window, snapshot):
     "preceding",
     [
         param(5, id="five"),
-        param(ibis.interval(nanoseconds=1), id="nanos", marks=pytest.mark.xfail),
+        param(
+            ibis.interval(nanoseconds=1),
+            id="nanos",
+            marks=pytest.mark.xfail(raises=com.UnsupportedOperationError),
+        ),
         param(ibis.interval(microseconds=1), id="micros"),
         param(ibis.interval(seconds=1), id="seconds"),
         param(ibis.interval(minutes=1), id="minutes"),
         param(ibis.interval(hours=1), id="hours"),
         param(ibis.interval(days=1), id="days"),
         param(2 * ibis.interval(days=1), id="two_days"),
-        param(ibis.interval(weeks=1), id="week", marks=pytest.mark.xfail),
+        param(ibis.interval(weeks=1), id="week"),
     ],
 )
 def test_trailing_range_window(alltypes, preceding, snapshot):
@@ -584,7 +588,7 @@ def test_scalar_param_scope(alltypes):
     t = alltypes
     param = ibis.param("timestamp")
     result = to_sql(t.mutate(param=param), params={param: "2017-01-01"})
-    assert re.search(r"@param_\d+ AS `param`", result) is not None
+    assert "2017-01-01T00:00:00" in result
 
 
 def test_cast_float_to_int(alltypes, snapshot):

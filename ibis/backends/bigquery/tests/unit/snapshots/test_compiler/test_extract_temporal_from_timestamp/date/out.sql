@@ -1,3 +1,3 @@
 SELECT
-  DATE(t0.`ts`) AS `tmp`
+  DATE(t0.ts) AS tmp
 FROM t AS t0

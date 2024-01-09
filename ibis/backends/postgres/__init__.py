@@ -433,7 +433,7 @@ class Backend(SQLGlotBackend):
         type_mapper = self.compiler.type_mapper
         argnames = udf_node.argnames
         return dict(
-            name=udf_node.__func_name__,
+            name=type(udf_node).__name__,
             ident=self.compiler.__sql_name__(udf_node),
             signature=", ".join(
                 f"{argname} {type_mapper.to_string(arg.dtype)}"
