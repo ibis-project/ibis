@@ -4,6 +4,7 @@ from functools import singledispatchmethod
 
 import sqlglot as sg
 import sqlglot.expressions as sge
+import toolz
 from public import public
 
 import ibis
@@ -129,3 +130,94 @@ class OracleCompiler(SQLGlotCompiler):
     @visit_node.register(ops.Modulus)
     def visit_Modulus(self, op, *, left, right):
         return self.f.mod(left, right)
+
+    @visit_node.register(ops.Levenshtein)
+    def visit_Levenshtein(self, op, *, left, right):
+        # Not using FuncGen here because of dotted function call
+        return sg.func("utl_match.edit_distance", left, right)
+
+    @visit_node.register(ops.StartsWith)
+    def visit_StartsWith(self, op, *, arg, start):
+        return self.f.substr(arg, 0, self.f.length(start)).eq(start)
+
+    @visit_node.register(ops.EndsWith)
+    def visit_EndsWith(self, op, *, arg, end):
+        return self.f.substr(arg, -1 * self.f.length(end), self.f.length(end)).eq(end)
+
+    @visit_node.register(ops.StringFind)
+    def visit_StringFind(self, op, *, arg, substr, start, end):
+        if end is not None:
+            raise NotImplementedError("`end` is not implemented")
+
+        sub_string = substr
+
+        if start is not None:
+            arg = self.f.substr(arg, start + 1)
+            pos = self.f.instr(arg, sub_string)
+            # TODO(gil): why, oh why, does this need an extra +1 on the end?
+            return sg.case().when(pos > 0, pos - 1 + start).else_(-1) + 1
+
+        return self.f.instr(arg, sub_string)
+
+    @visit_node.register(ops.StrRight)
+    def visit_StrRight(self, op, *, arg, nchars):
+        return self.f.substr(arg, -nchars)
+
+    @visit_node.register(ops.RegexExtract)
+    def visit_RegexExtract(self, op, *, arg, pattern, index):
+        # TODO: this is frustratingly close to working but breaks on group extraction
+        return self.if_(
+            index.eq(0),
+            self.f.regexp_substr(arg, pattern),
+            self.f.regexp_substr(arg, pattern, 1, index, "cn"),
+        )
+
+    @visit_node.register(ops.StringContains)
+    def visit_StringContains(self, op, *, haystack, needle):
+        return self.f.instr(haystack, needle) > 0
+
+    @visit_node.register(ops.StringJoin)
+    def visit_StringJoin(self, op, *, arg, sep):
+        return self.f.concat(*toolz.interpose(sep, arg))
+
+    @visit_node.register(ops.ArrayCollect)
+    @visit_node.register(ops.ArrayColumn)
+    @visit_node.register(ops.ArrayFlatten)
+    @visit_node.register(ops.ArrayMap)
+    @visit_node.register(ops.ArrayStringJoin)
+    @visit_node.register(ops.RegexExtract)
+    @visit_node.register(ops.RegexSplit)
+    @visit_node.register(ops.RegexReplace)
+    @visit_node.register(ops.StringSplit)
+    def visit_Undefined(self, op, **_):
+        raise com.OperationNotDefinedError(type(op).__name__)
+
+
+_SIMPLE_OPS = {
+    ops.Hash: "hash",
+    ops.LPad: "lpad",
+    ops.Median: "median",
+    ops.Mode: "mode",
+    ops.RPad: "rpad",
+    ops.StringAscii: "ascii",
+    ops.Strip: "trim",
+}
+
+for _op, _name in _SIMPLE_OPS.items():
+    assert isinstance(type(_op), type), type(_op)
+    if issubclass(_op, ops.Reduction):
+
+        @OracleCompiler.visit_node.register(_op)
+        def _fmt(self, op, *, _name: str = _name, where, **kw):
+            return self.agg[_name](*kw.values(), where=where)
+
+    else:
+
+        @OracleCompiler.visit_node.register(_op)
+        def _fmt(self, op, *, _name: str = _name, **kw):
+            return self.f[_name](*kw.values())
+
+    setattr(OracleCompiler, f"visit_{_op.__name__}", _fmt)
+
+
+del _op, _name, _fmt
