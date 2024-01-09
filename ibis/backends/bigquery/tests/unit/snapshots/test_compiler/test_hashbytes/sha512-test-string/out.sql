@@ -1,2 +1,2 @@
 SELECT
-  SHA512('test') AS `tmp`
+  sha512('test') AS tmp

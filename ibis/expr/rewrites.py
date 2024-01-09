@@ -182,7 +182,7 @@ def window_merge_frames(_, frame):
     group_by = tuple(toolz.unique(_.frame.group_by + frame.group_by))
 
     order_by = {}
-    for sort_key in _.frame.order_by + frame.order_by:
+    for sort_key in frame.order_by + _.frame.order_by:
         order_by[sort_key.expr] = sort_key.ascending
     order_by = tuple(ops.SortKey(k, v) for k, v in order_by.items())
 

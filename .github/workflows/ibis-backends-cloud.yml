@@ -43,8 +43,8 @@ jobs:
           - "3.9"
           - "3.11"
         backend:
-          # - name: bigquery
-          #   title: BigQuery
+          - name: bigquery
+            title: BigQuery
           - name: snowflake
             title: Snowflake
     steps:

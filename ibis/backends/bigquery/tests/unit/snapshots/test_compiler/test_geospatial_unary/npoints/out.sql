@@ -1,3 +1,3 @@
 SELECT
-  ST_NUMPOINTS(t0.`geog`) AS `tmp`
+  st_numpoints(t0.geog) AS tmp
 FROM t AS t0

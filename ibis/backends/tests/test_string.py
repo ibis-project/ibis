@@ -999,7 +999,6 @@ def test_multiple_subs(con):
 
 @pytest.mark.notimpl(
     [
-        "bigquery",
         "clickhouse",
         "dask",
         "datafusion",

@@ -61,7 +61,7 @@ def test_literal(backend, expr):
     assert ibis.to_sql(expr, dialect=backend.name())
 
 
-@pytest.mark.never(["pandas", "dask", "polars", "pyspark"], reason="not SQL")
+@pytest.mark.never(["pandas", "dask", "polars"], reason="not SQL")
 @pytest.mark.xfail_version(
     mssql=["sqlalchemy>=2"], reason="sqlalchemy 2 prefixes literals with `N`"
 )
@@ -103,7 +103,7 @@ def test_cte_refs_in_topo_order(backend, snapshot):
     snapshot.assert_match(sql, "out.sql")
 
 
-@pytest.mark.never(["pandas", "dask", "polars", "pyspark"], reason="not SQL")
+@pytest.mark.never(["pandas", "dask", "polars"], reason="not SQL")
 def test_isin_bug(con, snapshot):
     t = ibis.table(dict(x="int"), name="t")
     good = t[t.x > 2].x

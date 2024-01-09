@@ -1,5 +1,5 @@
 SELECT
-  t0.`title`
-FROM `bigquery-public-data`.stackoverflow.posts_questions AS t0
-INNER JOIN `nyc-tlc`.yellow.trips AS t1
-  ON t0.`tags` = t1.`rate_code`
+  t2.title
+FROM `bigquery-public-data`.stackoverflow.posts_questions AS t2
+INNER JOIN `nyc-tlc`.yellow.trips AS t3
+  ON t2.tags = t3.rate_code
