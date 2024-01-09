@@ -1,3 +1,3 @@
 SELECT
-  ST_UNION_AGG(t0.`geog`) AS `tmp`
+  st_union_agg(t0.geog) AS tmp
 FROM t AS t0

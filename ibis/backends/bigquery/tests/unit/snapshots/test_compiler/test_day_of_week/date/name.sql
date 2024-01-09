@@ -1,2 +1,2 @@
 SELECT
-  INITCAP(CAST(CAST('2017-01-01' AS DATE) AS STRING FORMAT 'DAY')) AS `DayOfWeekName_datetime_date_2017_ 1_ 1`
+  INITCAP(CAST(DATE(2017, 1, 1) AS STRING FORMAT 'DAY')) AS `DayOfWeekName_datetime_date_2017_ 1_ 1`

@@ -20,6 +20,7 @@ import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 from ibis.backends.base.sqlglot.rewrites import Select, Window, sqlize
+from ibis.expr.operations.udf import InputType
 from ibis.expr.rewrites import (
     add_one_to_nth_value_input,
     add_order_by_to_empty_ranking_window_functions,
@@ -874,9 +875,20 @@ class SQLGlotCompiler(abc.ABC):
 
     # TODO(kszucs): this should be renamed to something UDF related
     def __sql_name__(self, op: ops.ScalarUDF | ops.AggUDF) -> str:
+        # for builtin functions use the exact function name, otherwise use the
+        # generated name to handle the case of redefinition
+        funcname = (
+            op.__func_name__
+            if op.__input_type__ == InputType.BUILTIN
+            else type(op).__name__
+        )
+
         # not actually a table, but easier to quote individual namespace
         # components this way
-        return sg.table(op.__func_name__, db=op.__udf_namespace__).sql(self.dialect)
+        namespace = op.__udf_namespace__
+        return sg.table(funcname, db=namespace.schema, catalog=namespace.database).sql(
+            self.dialect
+        )
 
     @visit_node.register(ops.ScalarUDF)
     def visit_ScalarUDF(self, op, **kw):
@@ -919,6 +931,23 @@ class SQLGlotCompiler(abc.ABC):
             else value.as_(key, quoted=self.quoted)
         )
 
+    @staticmethod
+    def _gen_valid_name(name: str) -> str:
+        """Generate a valid name for a value expression.
+
+        Override this method if the dialect has restrictions on valid
+        identifiers even when quoted.
+
+        See the BigQuery backend's implementation for an example.
+        """
+        return name
+
+    def _cleanup_names(self, exprs: Mapping[str, sge.Expression]):
+        """Compose `_gen_valid_name` and `_dedup_name` to clean up names in projections."""
+        return starmap(
+            self._dedup_name, toolz.keymap(self._gen_valid_name, exprs).items()
+        )
+
     @visit_node.register(Select)
     def visit_Select(self, op, *, parent, selections, predicates, sort_keys):
         # if we've constructed a useless projection return the parent relation
@@ -928,9 +957,7 @@ class SQLGlotCompiler(abc.ABC):
         result = parent
 
         if selections:
-            result = sg.select(*starmap(self._dedup_name, selections.items())).from_(
-                result
-            )
+            result = sg.select(*self._cleanup_names(selections)).from_(result)
 
         if predicates:
             result = result.where(*predicates)
@@ -942,7 +969,7 @@ class SQLGlotCompiler(abc.ABC):
 
     @visit_node.register(ops.DummyTable)
     def visit_DummyTable(self, op, *, values):
-        return sg.select(*starmap(self._dedup_name, values.items()))
+        return sg.select(*self._cleanup_names(values))
 
     @visit_node.register(ops.UnboundTable)
     def visit_UnboundTable(
@@ -978,7 +1005,7 @@ class SQLGlotCompiler(abc.ABC):
 
     @visit_node.register(ops.JoinChain)
     def visit_JoinChain(self, op, *, first, rest, values):
-        result = sg.select(*starmap(self._dedup_name, values.items())).from_(first)
+        result = sg.select(*self._cleanup_names(values)).from_(first)
 
         for link in rest:
             if isinstance(link, sge.Alias):
@@ -1019,15 +1046,9 @@ class SQLGlotCompiler(abc.ABC):
         on = sg.and_(*predicates) if predicates else None
         return sge.Join(this=table, side=sides[how], kind=kinds[how], on=on)
 
-    @staticmethod
-    def _gen_valid_name(name: str) -> str:
-        return name
-
     @visit_node.register(ops.Project)
     def visit_Project(self, op, *, parent, values):
-        # needs_alias should never be true here in explicitly, but it may get
-        # passed via a (recursive) call to translate_val
-        return sg.select(*starmap(self._dedup_name, values.items())).from_(parent)
+        return sg.select(*self._cleanup_names(values)).from_(parent)
 
     @staticmethod
     def _generate_groups(groups):
@@ -1036,12 +1057,7 @@ class SQLGlotCompiler(abc.ABC):
     @visit_node.register(ops.Aggregate)
     def visit_Aggregate(self, op, *, parent, groups, metrics):
         sel = sg.select(
-            *starmap(
-                self._dedup_name, toolz.keymap(self._gen_valid_name, groups).items()
-            ),
-            *starmap(
-                self._dedup_name, toolz.keymap(self._gen_valid_name, metrics).items()
-            ),
+            *self._cleanup_names(groups), *self._cleanup_names(metrics)
         ).from_(parent)
 
         if groups:
@@ -1190,21 +1206,15 @@ class SQLGlotCompiler(abc.ABC):
                 for name, dtype in op.schema.items()
                 if dtype.nullable
             }
-        exprs = [
-            (
-                sg.alias(
-                    sge.Coalesce(
-                        this=sg.column(col, quoted=self.quoted),
-                        expressions=[sge.convert(alt)],
-                    ),
-                    col,
-                )
+        exprs = {
+            col: (
+                self.f.coalesce(sg.column(col, quoted=self.quoted), sge.convert(alt))
                 if (alt := mapping.get(col)) is not None
                 else sg.column(col, quoted=self.quoted)
             )
             for col in op.schema.keys()
-        ]
-        return sg.select(*exprs).from_(parent)
+        }
+        return sg.select(*self._cleanup_names(exprs)).from_(parent)
 
     @visit_node.register(ops.View)
     def visit_View(self, op, *, child, name: str):

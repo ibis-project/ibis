@@ -190,13 +190,13 @@ def test_raw_sql(con):
 
 def test_parted_column_rename(parted_alltypes):
     assert "PARTITIONTIME" in parted_alltypes.columns
-    assert "_PARTITIONTIME" in parted_alltypes.op().table.schema.names
+    assert "_PARTITIONTIME" in parted_alltypes.op().parent.schema.names
 
 
 def test_scalar_param_partition_time(parted_alltypes):
     assert "PARTITIONTIME" in parted_alltypes.columns
     assert "PARTITIONTIME" in parted_alltypes.schema()
-    param = ibis.param("timestamp").name("time_param")
+    param = ibis.param("timestamp('UTC')")
     expr = parted_alltypes[param > parted_alltypes.PARTITIONTIME]
     df = expr.execute(params={param: "2017-01-01"})
     assert df.empty

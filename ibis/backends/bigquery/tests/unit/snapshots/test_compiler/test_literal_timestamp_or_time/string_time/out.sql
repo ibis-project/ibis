@@ -1,2 +1,2 @@
 SELECT
-  EXTRACT(hour FROM CAST('04:55:59' AS TIME)) AS `tmp`
+  EXTRACT(HOUR FROM time(4, 55, 59)) AS tmp

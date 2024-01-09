@@ -1,3 +1,3 @@
 SELECT
-  sum(t0.`foo`) AS `Sum_foo`
-FROM t0
+  SUM(t0.foo) AS Sum_foo
+FROM t0 AS t0
