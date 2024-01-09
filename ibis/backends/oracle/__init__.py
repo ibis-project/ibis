@@ -71,15 +71,16 @@ if TYPE_CHECKING:
 #     null_limit = None
 #     rewrites = AlchemyCompiler.rewrites | rewrite_sample
 
+# supports_create_or_replace = False
+# supports_temporary_tables = True
+# _temporary_prefix = "GLOBAL TEMPORARY"
+#
+
 
 class Backend(SQLGlotBackend):
     name = "oracle"
     compiler = OracleCompiler()
 
-    # supports_create_or_replace = False
-    # supports_temporary_tables = True
-    # _temporary_prefix = "GLOBAL TEMPORARY"
-    #
     @cached_property
     def version(self):
         matched = re.search(r"(\d+)\.(\d+)\.(\d+)", self.con.version)
@@ -232,6 +233,11 @@ class Backend(SQLGlotBackend):
     def get_schema(
         self, name: str, schema: str | None = None, database: str | None = None
     ) -> sch.Schema:
+        # TODO: sge.convert(f"{name}") works because it gets parsed as a string literal
+        # but using `sg.table` breaks with "invalid identifier"
+        # The first renders as "'functional_alltypes'"
+        # vs the second as '"functional_alltypes"'
+        # stupid quotation marks
         table = sg.table(name, db=schema, catalog=database, quoted=True)
 
         stmt = (
