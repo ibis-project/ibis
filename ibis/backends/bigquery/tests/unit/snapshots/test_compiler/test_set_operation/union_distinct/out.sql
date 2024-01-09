@@ -1,11 +1,11 @@
 SELECT
-  t0.`a`
+  t2.a
 FROM (
   SELECT
-    t1.*
-  FROM t0 AS t1
+    *
+  FROM t0 AS t0
   UNION DISTINCT
   SELECT
-    t1.*
-  FROM t1
-) AS t0
+    *
+  FROM t1 AS t1
+) AS t2

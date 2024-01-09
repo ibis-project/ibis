@@ -1,120 +1,74 @@
 from __future__ import annotations
 
+import re
+
 import pytest
-from pytest import param
 
 import ibis
+import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
-from ibis.backends.bigquery import udf
-from ibis.backends.bigquery.udf import _udf_name_cache
+from ibis import udf
 
 
-def test_multiple_calls_redefinition(snapshot):
-    _udf_name_cache.clear()
-
-    @udf.python([dt.string], dt.double)
-    def my_len(s):
+def test_multiple_calls_redefinition():
+    @udf.scalar.python
+    def my_len(s: str) -> float:
         return s.length
 
     s = ibis.literal("abcd")
     expr = my_len(s) + my_len(s)
 
-    @udf.python([dt.string], dt.double)
-    def my_len(s):
+    @udf.scalar.python
+    def my_len(s: str) -> float:
         return s.length + 1
 
     expr = expr + my_len(s)
 
     sql = ibis.bigquery.compile(expr)
-    snapshot.assert_match(sql, "out.sql")
+    assert len(set(re.findall(r"my_len_(\d+)", sql))) == 2
 
 
-@pytest.mark.parametrize(
-    ("determinism",),
-    [
-        param(True),
-        param(False),
-        param(None),
-    ],
-)
-def test_udf_determinism(snapshot, determinism):
-    _udf_name_cache.clear()
-
-    @udf.python([dt.string], dt.double, determinism=determinism)
-    def my_len(s):
+@pytest.mark.parametrize("determinism", [True, False, None])
+def test_udf_determinism(determinism):
+    @udf.scalar.python(determinism=determinism)
+    def my_len(s: str) -> float:
         return s.length
 
     s = ibis.literal("abcd")
     expr = my_len(s)
 
     sql = ibis.bigquery.compile(expr)
-    snapshot.assert_match(sql, "out.sql")
 
-
-def test_udf_sql(snapshot):
-    _udf_name_cache.clear()
-
-    format_t = udf.sql(
-        "format_t",
-        params={"input": dt.string},
-        output_type=dt.double,
-        sql_expression="FORMAT('%T', input)",
-    )
-
-    s = ibis.literal("abcd")
-    expr = format_t(s)
-
-    sql = ibis.bigquery.compile(expr)
-    snapshot.assert_match(sql, "out.sql")
+    if not determinism:
+        assert "NOT DETERMINISTIC" in sql
+    else:
+        assert "DETERMINISTIC" in sql and "NOT DETERMINISTIC" not in sql
 
 
 @pytest.mark.parametrize(
     ("argument_type", "return_type"),
     [
-        param(
-            dt.int64,
-            dt.float64,
-            marks=pytest.mark.xfail(raises=TypeError),
-            id="int_float",
-        ),
-        param(
-            dt.float64,
-            dt.int64,
-            marks=pytest.mark.xfail(raises=TypeError),
-            id="float_int",
-        ),
+        # invalid input type
+        (dt.int64, dt.float64),
+        # invalid return type
+        (dt.float64, dt.int64),
         # complex argument type, valid return type
-        param(
-            dt.Array(dt.int64),
-            dt.float64,
-            marks=pytest.mark.xfail(raises=TypeError),
-            id="array_int_float",
-        ),
+        (dt.Array(dt.int64), dt.float64),
         # valid argument type, complex invalid return type
-        param(
-            dt.float64,
-            dt.Array(dt.int64),
-            marks=pytest.mark.xfail(raises=TypeError),
-            id="float_array_int",
-        ),
+        (dt.float64, dt.Array(dt.int64)),
         # both invalid
-        param(
-            dt.Array(dt.Array(dt.int64)),
-            dt.int64,
-            marks=pytest.mark.xfail(raises=TypeError),
-            id="array_array_int_int",
-        ),
+        (dt.Array(dt.Array(dt.int64)), dt.int64),
         # struct type with nested integer, valid return type
-        param(
-            dt.Struct.from_tuples([("x", dt.Array(dt.int64))]),
-            dt.float64,
-            marks=pytest.mark.xfail(raises=TypeError),
-            id="struct",
-        ),
+        (dt.Struct({"x": dt.Array(dt.int64)}), dt.float64),
     ],
+    ids=str,
 )
 def test_udf_int64(argument_type, return_type):
     # invalid argument type, valid return type
-    @udf.python([argument_type], return_type)
-    def my_int64_add(x):
-        return 1.0
+    @udf.scalar.python(signature=((argument_type,), return_type))
+    def my_func(x):
+        return 1
+
+    expr = my_func(None)
+    with pytest.raises(com.UnsupportedBackendType):
+        ibis.bigquery.compile(expr)

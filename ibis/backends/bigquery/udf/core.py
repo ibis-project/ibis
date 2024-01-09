@@ -10,7 +10,6 @@ import textwrap
 from collections import ChainMap
 from typing import Callable
 
-import ibis.expr.datatypes as dt
 from ibis.backends.bigquery.udf.find import find_names
 from ibis.backends.bigquery.udf.rewrite import rewrite
 
@@ -514,14 +513,11 @@ class PythonToJavaScriptTranslator:
 
 
 if __name__ == "__main__":
-    from ibis.backends.bigquery.udf import udf
+    import ibis
+    from ibis import udf
 
-    @udf(
-        input_type=[dt.double, dt.double, dt.int64],
-        output_type=dt.Array(dt.double),
-        strict=False,
-    )
-    def my_func(a, b, n):
+    @udf.scalar.python(strict=False)
+    def my_func(a: float, b: float, n: float) -> list[float]:
         class Rectangle:
             def __init__(self, width, height):
                 self.width = width
@@ -598,4 +594,4 @@ if __name__ == "__main__":
         nnn = len(values)
         return [sum(values) - a + b * y**-x, z, foo.width, nnn]
 
-    print(my_func.sql)  # noqa: T201
+    print(ibis.bigquery.compile(my_func(42.7, 13.2, 1)))  # noqa: T201
