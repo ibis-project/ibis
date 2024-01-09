@@ -246,7 +246,6 @@ class Backend(SQLGlotBackend):
         with self._safe_raw_sql(stmt) as cur:
             result = cur.fetchall()
 
-        breakpoint()
         type_mapper = self.compiler.type_mapper
         fields = {
             name: type_mapper.from_string(type_string, nullable=nullable)
@@ -428,6 +427,25 @@ class Backend(SQLGlotBackend):
             else:
                 typ = OracleType.from_string(type_string, nullable=nullable)
             yield name, typ
+
+    def _fetch_from_cursor(self, cursor, schema: sch.Schema) -> pd.DataFrame:
+        import pandas as pd
+
+        from ibis.backends.oracle.converter import OraclePandasData
+
+        try:
+            df = pd.DataFrame.from_records(
+                cursor, columns=schema.names, coerce_float=True
+            )
+        except Exception:
+            # clean up the cursor if we fail to create the DataFrame
+            #
+            # in the sqlite case failing to close the cursor results in
+            # artificially locked tables
+            cursor.close()
+            raise
+        df = OraclePandasData.convert_table(df, schema)
+        return df
 
     def _table_from_schema(
         self,
