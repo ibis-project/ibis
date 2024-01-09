@@ -1,23 +1,23 @@
 SELECT
-  t0.`id`,
-  t0.`bool_col`,
-  t0.`tinyint_col`,
-  t0.`smallint_col`,
-  t0.`int_col`,
-  t0.`bigint_col`,
-  t0.`float_col`,
-  t0.`double_col`,
-  t0.`date_string_col`,
-  t0.`string_col`,
-  t0.`timestamp_col`,
-  t0.`year`,
-  t0.`month`
+  t1.id,
+  t1.bool_col,
+  t1.tinyint_col,
+  t1.smallint_col,
+  t1.int_col,
+  t1.bigint_col,
+  t1.float_col,
+  t1.double_col,
+  t1.date_string_col,
+  t1.string_col,
+  t1.timestamp_col,
+  t1.year,
+  t1.month
 FROM (
   SELECT
-    t1.*
-  FROM functional_alltypes AS t1
+    *
+  FROM functional_alltypes AS t0
   UNION ALL
   SELECT
-    t1.*
-  FROM functional_alltypes AS t1
-) AS t0
+    *
+  FROM functional_alltypes AS t0
+) AS t1

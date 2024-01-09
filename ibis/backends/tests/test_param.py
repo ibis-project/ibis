@@ -12,7 +12,7 @@ from pytest import param
 import ibis
 import ibis.expr.datatypes as dt
 from ibis import _
-from ibis.backends.tests.errors import GoogleBadRequest, Py4JJavaError
+from ibis.backends.tests.errors import Py4JJavaError
 
 
 @pytest.mark.parametrize(
@@ -144,42 +144,21 @@ def test_scalar_param_map(con):
             "timestamp",
             "timestamp_col",
             id="string_timestamp",
-            marks=[
-                pytest.mark.notimpl(["druid"]),
-                pytest.mark.broken(
-                    ["bigquery"],
-                    raises=GoogleBadRequest,
-                    reason="No matching for operator = for argument types: DATETIME, TIMESTAMP",
-                ),
-            ],
+            marks=[pytest.mark.notimpl(["druid"])],
         ),
         param(
             datetime.date(2009, 1, 20),
             "timestamp",
             "timestamp_col",
             id="date_timestamp",
-            marks=[
-                pytest.mark.notimpl(["druid"]),
-                pytest.mark.broken(
-                    ["bigquery"],
-                    raises=GoogleBadRequest,
-                    reason="No matching for operator = for argument types: DATETIME, TIMESTAMP",
-                ),
-            ],
+            marks=[pytest.mark.notimpl(["druid"])],
         ),
         param(
             datetime.datetime(2009, 1, 20, 1, 2, 3),
             "timestamp",
             "timestamp_col",
             id="datetime_timestamp",
-            marks=[
-                pytest.mark.notimpl(["druid"]),
-                pytest.mark.broken(
-                    ["bigquery"],
-                    raises=GoogleBadRequest,
-                    reason="No matching for operator = for argument types: DATETIME, TIMESTAMP",
-                ),
-            ],
+            marks=[pytest.mark.notimpl(["druid"])],
         ),
     ],
 )

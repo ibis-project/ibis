@@ -1347,7 +1347,6 @@ def test_hexdigest(backend, alltypes):
     [
         "pandas",
         "dask",
-        "bigquery",
         "mssql",
         "oracle",
         "risingwave",
@@ -1369,6 +1368,7 @@ def test_hexdigest(backend, alltypes):
             1672531200,
             marks=[
                 pytest.mark.notyet(["duckdb", "impala"], reason="casts to NULL"),
+                pytest.mark.notyet(["bigquery"], raises=GoogleBadRequest),
                 pytest.mark.notyet(["trino"], raises=TrinoUserError),
                 pytest.mark.broken(
                     ["druid"], reason="casts to 1672531200000 (millisecond)"
@@ -1393,7 +1393,6 @@ def test_try_cast(con, from_val, to_type, expected):
 
 @pytest.mark.notimpl(
     [
-        "bigquery",
         "dask",
         "datafusion",
         "druid",
@@ -1419,6 +1418,7 @@ def test_try_cast(con, from_val, to_type, expected):
                 pytest.mark.never(
                     ["clickhouse", "pyspark"], reason="casts to 1672531200"
                 ),
+                pytest.mark.notyet(["bigquery"], raises=GoogleBadRequest),
                 pytest.mark.notyet(["trino"], raises=TrinoUserError),
                 pytest.mark.broken(["polars"], reason="casts to 1672531200000000000"),
             ],
@@ -1434,7 +1434,6 @@ def test_try_cast_null(con, from_val, to_type):
     [
         "pandas",
         "dask",
-        "bigquery",
         "datafusion",
         "druid",
         "mssql",
@@ -1464,7 +1463,6 @@ def test_try_cast_table(backend, con):
     [
         "pandas",
         "dask",
-        "bigquery",
         "datafusion",
         "mssql",
         "mysql",
@@ -1490,6 +1488,7 @@ def test_try_cast_table(backend, con):
                     ["clickhouse", "polars", "flink", "pyspark"],
                     reason="casts this to to a number",
                 ),
+                pytest.mark.notyet(["bigquery"], raises=GoogleBadRequest),
                 pytest.mark.notyet(["trino"], raises=TrinoUserError),
             ],
             id="datetime-to-float",
@@ -1797,7 +1796,6 @@ def test_dynamic_table_slice_with_computed_offset(backend):
 
 @pytest.mark.notimpl(
     [
-        "bigquery",
         "druid",
         "flink",
         "polars",
@@ -1827,7 +1825,6 @@ def test_sample(backend):
 
 @pytest.mark.notimpl(
     [
-        "bigquery",
         "druid",
         "flink",
         "polars",

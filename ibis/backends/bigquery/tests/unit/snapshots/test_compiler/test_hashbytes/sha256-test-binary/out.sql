@@ -1,2 +1,2 @@
 SELECT
-  SHA256(b'test') AS `tmp`
+  sha256(CAST('74657374' AS BYTES FORMAT 'HEX')) AS tmp
