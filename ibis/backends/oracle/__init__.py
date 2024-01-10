@@ -23,9 +23,9 @@ import sqlglot.expressions as sge
 # 3. Also the version needs to be spoofed to be >= 7 or else the cx_Oracle
 #    dialect barfs
 import ibis
-import ibis.common.exceptions as exc  # noqa: E402
-import ibis.expr.datatypes as dt  # noqa: E402
-import ibis.expr.operations as ops  # noqa: E402
+import ibis.common.exceptions as exc
+import ibis.expr.datatypes as dt
+import ibis.expr.operations as ops
 import ibis.expr.schema as sch  # noqa: E402
 import ibis.expr.types as ir
 from ibis import util
@@ -442,13 +442,14 @@ class Backend(SQLGlotBackend):
         )
 
         with self.begin() as con:
-            con.exec_driver_sql(create_view)
+            con.execute(create_view)
             try:
-                results = con.exec_driver_sql(metadata_query).fetchall()
+                results = con.execute(metadata_query).fetchall()
             finally:
                 # drop the view no matter what
-                con.exec_driver_sql(drop_view)
+                con.execute(drop_view)
 
+        # TODO: hand all this off to the type mapper
         for name, type_string, precision, scale, nullable in results:
             # NUMBER(null, null) --> FLOAT
             # (null, null) --> from_string()
@@ -479,7 +480,9 @@ class Backend(SQLGlotBackend):
                 typ = dt.Decimal(precision=precision, scale=scale, nullable=nullable)
 
             else:
-                typ = OracleType.from_string(type_string, nullable=nullable)
+                typ = self.compiler.type_mapper.from_string(
+                    type_string, nullable=nullable
+                )
             yield name, typ
 
     def _fetch_from_cursor(self, cursor, schema: sch.Schema) -> pd.DataFrame:
