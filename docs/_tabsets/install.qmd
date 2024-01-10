@@ -14,6 +14,7 @@ backends = [
     {"name": "DataFusion", "module": "datafusion"},
     {"name": "Druid", "module": "druid"},
     {"name": "DuckDB", "module": "duckdb"},
+    {"name": "Exasol", "module": "exasol"},
     {"name": "Flink", "module": "flink"},
     {"name": "Impala", "module": "impala"},
     {"name": "MSSQL", "module": "mssql"},
