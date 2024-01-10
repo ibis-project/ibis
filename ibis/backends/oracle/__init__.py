@@ -412,6 +412,15 @@ class Backend(SQLGlotBackend):
         if isinstance(sg_expr, sg.exp.Table):
             sg_expr = sg.select(STAR).from_(sg_expr)
 
+        def transformer(node):
+            if isinstance(node, sg.exp.Table):
+                return sg.table(node.name, quoted=True)
+            elif isinstance(node, sg.exp.Column):
+                return sg.column(col=node.name, quoted=True)
+            return node
+
+        sg_expr = sg_expr.transform(transformer)
+
         this = sg.table(name, quoted=True)
         create_view = sg.exp.Create(kind="VIEW", this=this, expression=sg_expr).sql(
             dialect
