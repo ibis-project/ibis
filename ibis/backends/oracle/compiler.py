@@ -94,6 +94,10 @@ class OracleCompiler(SQLGlotCompiler):
     def visit_node(self, op, **kwargs):
         return super().visit_node(op, **kwargs)
 
+    @visit_node.register(ops.Date)
+    def visit_Date(self, op, *, arg):
+        return sg.cast(arg, to="date")
+
     @visit_node.register(ops.IsNan)
     def visit_IsNan(self, op, *, arg):
         return arg.eq(self.NAN)
@@ -194,14 +198,14 @@ class OracleCompiler(SQLGlotCompiler):
     def visit_Covariance(self, op, *, left, right, where, how):
         if how == "sample":
             return self.agg.covar_samp(left, right, where=where)
-        elif how == "pop":
-            return self.agg.covar_pop(left, right, where=where)
+        return self.agg.covar_pop(left, right, where=where)
 
     @visit_node.register(ops.ArrayCollect)
     @visit_node.register(ops.ArrayColumn)
     @visit_node.register(ops.ArrayFlatten)
     @visit_node.register(ops.ArrayMap)
     @visit_node.register(ops.ArrayStringJoin)
+    @visit_node.register(ops.Mode)
     @visit_node.register(ops.RegexExtract)
     @visit_node.register(ops.RegexSplit)
     @visit_node.register(ops.RegexReplace)
@@ -217,8 +221,6 @@ _SIMPLE_OPS = {
     ops.BitwiseAnd: "bitand",
     ops.Hash: "hash",
     ops.LPad: "lpad",
-    ops.Median: "median",
-    ops.Mode: "mode",
     ops.RPad: "rpad",
     ops.StringAscii: "ascii",
     ops.Strip: "trim",
