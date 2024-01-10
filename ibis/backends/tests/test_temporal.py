@@ -27,6 +27,7 @@ from ibis.backends.tests.errors import (
     ImpalaOperationalError,
     MySQLOperationalError,
     MySQLProgrammingError,
+    OracleDatabaseError,
     PolarsComputeError,
     PolarsPanicException,
     Py4JJavaError,
@@ -79,7 +80,7 @@ def test_date_extract(backend, alltypes, df, attr, expr_fn):
         param(
             "quarter",
             marks=[
-                pytest.mark.notyet(["oracle"], raises=sa.exc.DatabaseError),
+                pytest.mark.notyet(["oracle"], raises=OracleDatabaseError),
                 pytest.mark.notimpl(["exasol"], raises=sa.exc.DBAPIError),
             ],
         ),
@@ -1816,7 +1817,7 @@ DATE_BACKEND_TYPES = {
     ["druid"], raises=PyDruidProgrammingError, reason="SQL parse failed"
 )
 @pytest.mark.notimpl(
-    ["oracle"], raises=sa.exc.DatabaseError, reason="ORA-00936 missing expression"
+    ["oracle"], raises=OracleDatabaseError, reason="ORA-00936 missing expression"
 )
 @pytest.mark.notimpl(["exasol"], raises=ExaQueryError)
 def test_date_literal(con, backend):
@@ -1875,7 +1876,7 @@ def test_timestamp_literal(con, backend):
 )
 @pytest.mark.notyet(["impala"], raises=com.OperationNotDefinedError)
 @pytest.mark.notimpl(
-    ["oracle"], raises=sa.exc.DatabaseError, reason="ORA-00904: MAKE TIMESTAMP invalid"
+    ["oracle"], raises=OracleDatabaseError, reason="ORA-00904: MAKE TIMESTAMP invalid"
 )
 @pytest.mark.parametrize(
     ("timezone", "expected"),
@@ -2077,7 +2078,7 @@ def test_interval_literal(con, backend):
     reason="'StringColumn' object has no attribute 'year'",
 )
 @pytest.mark.broken(
-    ["oracle"], raises=sa.exc.DatabaseError, reason="ORA-00936: missing expression"
+    ["oracle"], raises=OracleDatabaseError, reason="ORA-00936: missing expression"
 )
 @pytest.mark.notimpl(["exasol"], raises=sa.exc.DBAPIError)
 def test_date_column_from_ymd(backend, con, alltypes, df):
@@ -2099,7 +2100,7 @@ def test_date_column_from_ymd(backend, con, alltypes, df):
     reason="StringColumn' object has no attribute 'year'",
 )
 @pytest.mark.notimpl(
-    ["oracle"], raises=sa.exc.DatabaseError, reason="ORA-00904 make timestamp invalid"
+    ["oracle"], raises=OracleDatabaseError, reason="ORA-00904 make timestamp invalid"
 )
 @pytest.mark.notyet(["impala"], raises=com.OperationNotDefinedError)
 @pytest.mark.notimpl(["exasol"], raises=sa.exc.DBAPIError)
@@ -2129,7 +2130,7 @@ def test_date_scalar_from_iso(con):
 @pytest.mark.notimpl(["mssql"], raises=com.OperationNotDefinedError)
 @pytest.mark.notyet(
     ["oracle"],
-    raises=sa.exc.DatabaseError,
+    raises=OracleDatabaseError,
     reason="ORA-22849 type CLOB is not supported",
 )
 @pytest.mark.notimpl(["exasol"], raises=AssertionError, strict=False)
@@ -2166,7 +2167,7 @@ def test_timestamp_extract_milliseconds_with_big_value(con):
 )
 @pytest.mark.notimpl(
     ["oracle"],
-    raises=sa.exc.DatabaseError,
+    raises=OracleDatabaseError,
     reason="ORA-00932",
 )
 @pytest.mark.notimpl(["exasol"], raises=sa.exc.DBAPIError)
@@ -2360,7 +2361,7 @@ def test_large_timestamp(con):
 )
 @pytest.mark.notimpl(
     ["oracle"],
-    raises=sa.exc.DatabaseError,
+    raises=OracleDatabaseError,
     reason="ORA-01843: invalid month was specified",
 )
 @pytest.mark.notimpl(["exasol"], raises=ExaQueryError)

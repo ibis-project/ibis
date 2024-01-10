@@ -1103,7 +1103,12 @@ def test_pivot_wider(backend):
 )
 @pytest.mark.notimpl(
     ["druid", "impala", "oracle"],
-    raises=(NotImplementedError, sa.exc.ProgrammingError, com.OperationNotDefinedError),
+    raises=(
+        NotImplementedError,
+        sa.exc.ProgrammingError,
+        OracleDatabaseError,
+        com.OperationNotDefinedError,
+    ),
     reason="arbitrary not implemented in the backend",
 )
 @pytest.mark.notimpl(

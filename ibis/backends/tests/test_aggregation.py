@@ -20,6 +20,7 @@ from ibis.backends.tests.errors import (
     GoogleBadRequest,
     ImpalaHiveServer2Error,
     MySQLNotSupportedError,
+    OracleDatabaseError,
     PolarsInvalidOperationError,
     Py4JError,
     PyDruidProgrammingError,
@@ -297,7 +298,7 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
                 ),
                 pytest.mark.broken(
                     ["oracle"],
-                    raises=sa.exc.DatabaseError,
+                    raises=OracleDatabaseError,
                     reason="ORA-02000: missing AS keyword",
                 ),
                 pytest.mark.notimpl(
@@ -317,7 +318,7 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
                 ),
                 pytest.mark.broken(
                     ["oracle"],
-                    raises=sa.exc.DatabaseError,
+                    raises=OracleDatabaseError,
                     reason="ORA-02000: missing AS keyword",
                 ),
                 pytest.mark.notimpl(
@@ -349,7 +350,7 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
                 ),
                 pytest.mark.broken(
                     ["oracle"],
-                    raises=sa.exc.DatabaseError,
+                    raises=OracleDatabaseError,
                     reason="ORA-02000: missing AS keyword",
                 ),
                 pytest.mark.notimpl(
@@ -369,7 +370,7 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
                 ),
                 pytest.mark.broken(
                     ["oracle"],
-                    raises=sa.exc.DatabaseError,
+                    raises=OracleDatabaseError,
                     reason="ORA-02000: missing AS keyword",
                 ),
                 pytest.mark.notimpl(
@@ -389,7 +390,7 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
             marks=[
                 pytest.mark.broken(
                     ["oracle"],
-                    raises=sa.exc.DatabaseError,
+                    raises=OracleDatabaseError,
                     reason="ORA-02000: missing AS keyword",
                 ),
             ],
@@ -641,10 +642,6 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
                     raises=AttributeError,
                     reason="'Series' object has no attribute 'bitand'",
                 ),
-                pytest.mark.notimpl(
-                    ["oracle"],
-                    raises=sa.exc.DatabaseError,
-                ),
             ],
         ),
         param(
@@ -664,11 +661,6 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
                     raises=AttributeError,
                     reason="'Series' object has no attribute 'bitor'",
                 ),
-                pytest.mark.notyet(
-                    ["oracle"],
-                    raises=sa.exc.DatabaseError,
-                    reason="ORA-00904: 'BIT_OR': invalid identifier",
-                ),
             ],
         ),
         param(
@@ -687,11 +679,6 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
                     ["dask"],
                     raises=AttributeError,
                     reason="'Series' object has no attribute 'bitxor'",
-                ),
-                pytest.mark.notyet(
-                    ["oracle"],
-                    raises=sa.exc.DatabaseError,
-                    reason="ORA-00904: 'BIT_XOR': invalid identifier",
                 ),
             ],
         ),
@@ -801,7 +788,7 @@ def test_reduction_ops(
     ["bigquery", "druid", "mssql", "oracle", "sqlite", "flink"],
     raises=(
         sa.exc.OperationalError,
-        sa.exc.DatabaseError,
+        OracleDatabaseError,
         com.UnsupportedOperationError,
         com.OperationNotDefinedError,
     ),
@@ -841,7 +828,6 @@ def test_count_distinct_star(alltypes, df, ibis_cond, pandas_cond):
                         "mysql",
                         "sqlite",
                         "druid",
-                        "oracle",
                         "exasol",
                     ],
                     raises=com.OperationNotDefinedError,
@@ -1159,9 +1145,6 @@ def test_median(alltypes, df):
     raises=ClickHouseDatabaseError,
     reason="doesn't support median of strings",
 )
-@pytest.mark.notyet(
-    ["oracle"], raises=sa.exc.DatabaseError, reason="doesn't support median of strings"
-)
 @pytest.mark.broken(
     ["pyspark"], raises=AssertionError, reason="pyspark returns null for string median"
 )
@@ -1269,7 +1252,7 @@ def test_date_quantile(alltypes, func):
 )
 @pytest.mark.notyet(
     ["oracle"],
-    raises=sa.exc.DatabaseError,
+    raises=OracleDatabaseError,
     reason="ORA-00904: 'GROUP_CONCAT': invalid identifier",
 )
 @pytest.mark.notimpl(["exasol"], raises=ExaQueryError)
@@ -1539,7 +1522,7 @@ def test_grouped_case(backend, con):
 @pytest.mark.notyet(["snowflake"], raises=SnowflakeProgrammingError)
 @pytest.mark.notyet(["trino"], raises=TrinoUserError)
 @pytest.mark.notyet(["mysql"], raises=MySQLNotSupportedError)
-@pytest.mark.notyet(["oracle"], raises=sa.exc.DatabaseError)
+@pytest.mark.notyet(["oracle"], raises=OracleDatabaseError)
 @pytest.mark.notyet(["pyspark"], raises=PySparkAnalysisException)
 def test_group_concat_over_window(backend, con):
     input_df = pd.DataFrame(

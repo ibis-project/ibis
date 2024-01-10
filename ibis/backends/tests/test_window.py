@@ -17,6 +17,7 @@ from ibis.backends.tests.errors import (
     GoogleBadRequest,
     ImpalaHiveServer2Error,
     MySQLOperationalError,
+    OracleDatabaseError,
     Py4JJavaError,
     PyDruidProgrammingError,
     SnowflakeProgrammingError,
@@ -255,7 +256,7 @@ def calc_zscore(s):
             id="cumany",
             marks=[
                 pytest.mark.notimpl(["dask"], raises=NotImplementedError),
-                pytest.mark.broken(["oracle"], raises=sa.exc.DatabaseError),
+                pytest.mark.broken(["oracle"], raises=OracleDatabaseError),
             ],
         ),
         param(
@@ -269,7 +270,7 @@ def calc_zscore(s):
             id="cumnotany",
             marks=[
                 pytest.mark.notimpl(["dask"], raises=NotImplementedError),
-                pytest.mark.broken(["oracle"], raises=sa.exc.DatabaseError),
+                pytest.mark.broken(["oracle"], raises=OracleDatabaseError),
             ],
         ),
         param(
@@ -283,7 +284,7 @@ def calc_zscore(s):
             id="cumall",
             marks=[
                 pytest.mark.notimpl(["dask"], raises=NotImplementedError),
-                pytest.mark.broken(["oracle"], raises=sa.exc.DatabaseError),
+                pytest.mark.broken(["oracle"], raises=OracleDatabaseError),
             ],
         ),
         param(
@@ -297,7 +298,7 @@ def calc_zscore(s):
             id="cumnotall",
             marks=[
                 pytest.mark.notimpl(["dask"], raises=NotImplementedError),
-                pytest.mark.broken(["oracle"], raises=sa.exc.DatabaseError),
+                pytest.mark.broken(["oracle"], raises=OracleDatabaseError),
             ],
         ),
         param(
