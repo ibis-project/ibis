@@ -85,10 +85,10 @@ class OracleCompiler(SQLGlotCompiler):
     """Backend's negative infinity literal."""
 
     def _aggregate(self, funcname: str, *args, where):
-        expr = self.f[funcname](*args)
+        func = self.f[funcname]
         if where is not None:
-            return sge.Filter(this=expr, expression=sge.Where(this=where))
-        return expr
+            args = tuple(self.if_(where, arg) for arg in args)
+        return func(*args)
 
     @singledispatchmethod
     def visit_node(self, op, **kwargs):
@@ -180,6 +180,23 @@ class OracleCompiler(SQLGlotCompiler):
     def visit_StringJoin(self, op, *, arg, sep):
         return self.f.concat(*toolz.interpose(sep, arg))
 
+    ## Aggregate stuff
+
+    @visit_node.register(ops.Correlation)
+    def visit_Correlation(self, op, *, left, right, where, how):
+        if how == "sample":
+            raise ValueError(
+                "Oracle only implements population correlation coefficient"
+            )
+        return self.agg.corr(left, right, where=where)
+
+    @visit_node.register(ops.Covariance)
+    def visit_Covariance(self, op, *, left, right, where, how):
+        if how == "sample":
+            return self.agg.covar_samp(left, right, where=where)
+        elif how == "pop":
+            return self.agg.covar_pop(left, right, where=where)
+
     @visit_node.register(ops.ArrayCollect)
     @visit_node.register(ops.ArrayColumn)
     @visit_node.register(ops.ArrayFlatten)
@@ -194,6 +211,10 @@ class OracleCompiler(SQLGlotCompiler):
 
 
 _SIMPLE_OPS = {
+    ops.BitAnd: "bit_and_agg",
+    ops.BitOr: "bit_or_agg",
+    ops.BitXor: "bit_xor_agg",
+    ops.BitwiseAnd: "bitand",
     ops.Hash: "hash",
     ops.LPad: "lpad",
     ops.Median: "median",
