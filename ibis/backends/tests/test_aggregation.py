@@ -582,7 +582,6 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
                         "dask",
                         "datafusion",
                         "druid",
-                        "oracle",
                         "impala",
                         "mssql",
                         "mysql",
@@ -595,7 +594,7 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
                     raises=com.OperationNotDefinedError,
                 ),
                 pytest.mark.notimpl(
-                    ["bigquery", "duckdb", "postgres", "pyspark", "trino"],
+                    ["bigquery", "duckdb", "postgres", "pyspark", "trino", "oracle"],
                     raises=com.UnsupportedOperationError,
                     reason="how='heavy' not supported in the backend",
                 ),
@@ -1192,9 +1191,6 @@ def test_string_quantile(alltypes, func):
         param(
             methodcaller("quantile", 0.5),
             id="quantile",
-            marks=[
-                pytest.mark.notimpl(["oracle"], raises=com.OperationNotDefinedError)
-            ],
         ),
     ],
 )
