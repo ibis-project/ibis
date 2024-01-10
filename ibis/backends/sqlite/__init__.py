@@ -1,74 +1,54 @@
-# Copyright 2015 Cloudera Inc.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-# http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-
 from __future__ import annotations
 
-import inspect
+import contextlib
+import functools
 import sqlite3
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
+from urllib.parse import urlparse
 
-import sqlalchemy as sa
-import toolz
-from sqlalchemy.dialects.sqlite import TIMESTAMP
+import sqlglot as sg
+import sqlglot.expressions as sge
 
+import ibis
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
+import ibis.expr.operations as ops
 import ibis.expr.schema as sch
+import ibis.expr.types as ir
 from ibis import util
-from ibis.backends.base import CanListDatabases
-from ibis.backends.base.sql.alchemy import BaseAlchemyBackend
-from ibis.backends.sqlite import udf
+from ibis.backends.base.sqlglot import SQLGlotBackend
+from ibis.backends.base.sqlglot.compiler import C, F
 from ibis.backends.sqlite.compiler import SQLiteCompiler
-from ibis.backends.sqlite.datatypes import ISODATETIME, SqliteType
+from ibis.backends.sqlite.udf import register_all
+from ibis.formats.pandas import PandasData
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
     from pathlib import Path
 
-    import ibis.expr.operations as ops
-    import ibis.expr.types as ir
+    import pandas as pd
+    import pyarrow as pa
 
 
-class Backend(BaseAlchemyBackend, CanListDatabases):
+@functools.cache
+def _init_sqlite3():
+    import pandas as pd
+
+    # TODO: can we remove this?
+    sqlite3.register_adapter(pd.Timestamp, lambda value: value.isoformat())
+
+
+class Backend(SQLGlotBackend):
     name = "sqlite"
-    compiler = SQLiteCompiler
-    supports_create_or_replace = False
-    supports_python_udfs = True
-
-    def __getstate__(self) -> dict:
-        r = super().__getstate__()
-        r.update(
-            dict(
-                compiler=self.compiler,
-                database_name=self.database_name,
-                _con=None,  # clear connection on copy()
-                _meta=None,
-            )
-        )
-        return r
+    compiler = SQLiteCompiler()
 
     @property
     def current_database(self) -> str:
-        # AFAICT there is no notion of a schema in SQLite
         return "main"
 
-    def list_databases(self, like: str | None = None) -> list[str]:
-        with self.begin() as con:
-            mappings = con.exec_driver_sql("PRAGMA database_list").mappings()
-            results = list(toolz.pluck("name", mappings))
-
-        return sorted(self._filter_with_like(results, like))
+    @property
+    def version(self) -> str:
+        return sqlite3.sqlite_version
 
     def do_connect(
         self,
@@ -95,42 +75,220 @@ class Backend(BaseAlchemyBackend, CanListDatabases):
         >>> import ibis
         >>> ibis.sqlite.connect("path/to/my/sqlite.db")
         """
-        import pandas as pd
-
-        self.database_name = "main"
-
-        engine = sa.create_engine(
-            f"sqlite:///{database if database is not None else ':memory:'}",
-            poolclass=sa.pool.StaticPool,
-        )
+        _init_sqlite3()
 
         if type_map:
-            # Patch out ischema_names for the instantiated dialect. This
-            # attribute is required for all SQLAlchemy dialects, but as no
-            # public way of modifying it for a given dialect. Patching seems
-            # easier than subclassing the builtin SQLite dialect, and achieves
-            # the same desired behavior.
-            def _to_ischema_val(t):
-                sa_type = SqliteType.from_ibis(dt.dtype(t))
-                if isinstance(sa_type, sa.types.TypeEngine):
-                    # SQLAlchemy expects a callable here, rather than an
-                    # instance. Use a lambda to work around this.
-                    return lambda: sa_type
-                return sa_type
+            self._type_map = {k.lower(): v for k, v in type_map.items()}
+        else:
+            self._type_map = {}
 
-            overrides = {k: _to_ischema_val(v) for k, v in type_map.items()}
-            engine.dialect.ischema_names = engine.dialect.ischema_names.copy()
-            engine.dialect.ischema_names.update(overrides)
+        self.con = sqlite3.connect(":memory:" if database is None else database)
 
-        sqlite3.register_adapter(pd.Timestamp, lambda value: value.isoformat())
+        register_all(self.con)
+        self.con.execute("PRAGMA case_sensitive_like=ON")
 
-        @sa.event.listens_for(engine, "connect")
-        def connect(dbapi_connection, connection_record):
-            """Register UDFs on connection."""
-            udf.register_all(dbapi_connection)
-            dbapi_connection.execute("PRAGMA case_sensitive_like=ON")
+    def _from_url(self, url: str, **kwargs):
+        """Connect to a backend using a URL `url`.
 
-        super().do_connect(engine)
+        Parameters
+        ----------
+        url
+            URL with which to connect to a backend.
+        kwargs
+            Additional keyword arguments
+
+        Returns
+        -------
+        BaseBackend
+            A backend instance
+        """
+        url = urlparse(url)
+        database = url.path[1:] or ":memory:"
+        return self.connect(database=database, **kwargs)
+
+    def raw_sql(self, query: str | sg.Expression, **kwargs: Any) -> Any:
+        if not isinstance(query, str):
+            query = query.sql(dialect=self.name)
+        return self.con.execute(query, **kwargs)
+
+    @contextlib.contextmanager
+    def _safe_raw_sql(self, *args, **kwargs):
+        with contextlib.closing(self.raw_sql(*args, **kwargs)) as result:
+            yield result
+
+    @contextlib.contextmanager
+    def begin(self):
+        cur = self.con.cursor()
+        try:
+            yield cur
+        except Exception:
+            self.con.rollback()
+            raise
+        else:
+            self.con.commit()
+        finally:
+            cur.close()
+
+    def list_databases(self, like: str | None = None) -> list[str]:
+        with self._safe_raw_sql("SELECT name FROM pragma_database_list()") as cur:
+            results = [r[0] for r in cur.fetchall()]
+
+        return sorted(self._filter_with_like(results, like))
+
+    def list_tables(
+        self,
+        like: str | None = None,
+        database: str | None = None,
+    ) -> list[str]:
+        if database is None:
+            database = "main"
+
+        sql = (
+            sg.select("name")
+            .from_(F.pragma_table_list())
+            .where(
+                C.schema.eq(database),
+                C.type.isin("table", "view"),
+                ~(
+                    C.name.isin(
+                        "sqlite_schema",
+                        "sqlite_master",
+                        "sqlite_temp_schema",
+                        "sqlite_temp_master",
+                    )
+                ),
+            )
+            .sql(self.name)
+        )
+        with self._safe_raw_sql(sql) as cur:
+            results = [r[0] for r in cur.fetchall()]
+
+        return sorted(self._filter_with_like(results, like))
+
+    def _parse_type(self, typ: str, nullable: bool) -> dt.DataType:
+        typ = typ.lower()
+        try:
+            out = self._type_map[typ]
+        except KeyError:
+            return self.compiler.type_mapper.from_string(typ, nullable=nullable)
+        else:
+            return out.copy(nullable=nullable)
+
+    def _inspect_schema(
+        self, cur: sqlite3.Cursor, table_name: str, database: str | None = None
+    ) -> Iterator[tuple[str, dt.DataType]]:
+        if database is None:
+            database = "main"
+
+        sql = f'SELECT name, type, "notnull" FROM "{database}".pragma_table_info("{table_name}")'
+        cur.execute(sql)
+        rows = cur.fetchall()
+        if not rows:
+            raise com.IbisError(f"Table not found: {table_name!r}")
+
+        table_info = {name: (typ, not notnull) for name, typ, notnull in rows}
+
+        # if no type info was returned for a column, fetch the type of the
+        # first row and assume that matches the rest of the rows
+        unknown = [name for name, (typ, _) in table_info.items() if not typ]
+        if unknown:
+            queries = ", ".join(f'typeof("{name}")' for name in unknown)
+            cur.execute(f'SELECT {queries} FROM "{database}"."{table_name}" LIMIT 1')
+            row = cur.fetchone()
+            if row is not None:
+                for name, (typ,) in zip(unknown, row):
+                    _, nullable = table_info[name]
+                    table_info[name] = (typ, nullable)
+            else:
+                raise com.IbisError(f"Failed to infer types for columns {unknown}")
+
+        for name, (typ, nullable) in table_info.items():
+            yield name, self._parse_type(typ, nullable)
+
+    def get_schema(
+        self, table_name: str, schema: str | None = None, database: str | None = None
+    ) -> sch.Schema:
+        """Compute the schema of a `table`.
+
+        Parameters
+        ----------
+        table_name
+            May **not** be fully qualified. Use `database` if you want to
+            qualify the identifier.
+        schema
+            Schema name. Unused for sqlite.
+        database
+            Database name
+
+        Returns
+        -------
+        sch.Schema
+            Ibis schema
+        """
+        if schema is not None:
+            raise TypeError("sqlite doesn't support `schema`, use `database` instead")
+        with self.begin() as cur:
+            return sch.Schema.from_tuples(
+                self._inspect_schema(cur, table_name, database)
+            )
+
+    def _metadata(self, query: str) -> Iterator[tuple[str, dt.DataType]]:
+        with self.begin() as cur:
+            # create a view that should only be visible in this transaction
+            view = f"__ibis_sqlite_metadata_{util.guid()}"
+            cur.execute(f"CREATE TEMPORARY VIEW {view} AS {query}")
+
+            yield from self._inspect_schema(cur, view)
+
+            # drop the view when we're done with it
+            cur.execute(f"DROP VIEW IF EXISTS {view}")
+
+    def _fetch_from_cursor(
+        self, cursor: sqlite3.Cursor, schema: sch.Schema
+    ) -> pd.DataFrame:
+        import pandas as pd
+
+        df = pd.DataFrame.from_records(cursor, columns=schema.names, coerce_float=True)
+        return PandasData.convert_table(df, schema)
+
+    def _generate_create_table(self, table: sge.Table, schema: sch.Schema):
+        column_defs = [
+            sge.ColumnDef(
+                this=sg.to_identifier(colname, quoted=self.compiler.quoted),
+                kind=self.compiler.type_mapper.from_ibis(typ),
+                constraints=(
+                    None
+                    if typ.nullable
+                    else [sge.ColumnConstraint(kind=sge.NotNullColumnConstraint())]
+                ),
+            )
+            for colname, typ in schema.items()
+        ]
+
+        target = sge.Schema(this=table, expressions=column_defs)
+
+        return sge.Create(kind="TABLE", this=target)
+
+    def _register_in_memory_table(self, op: ops.InMemoryTable) -> None:
+        # only register if we haven't already done so
+        if op.name not in self.list_tables():
+            table = sg.table(op.name, quoted=self.compiler.quoted, catalog="temp")
+            create_stmt = self._generate_create_table(table, op.schema).sql(self.name)
+            df = op.data.to_frame()
+
+            data = df.itertuples(index=False)
+            cols = ", ".join(
+                sg.to_identifier(col, quoted=self.compiler.quoted).sql(self.name)
+                for col in op.schema.keys()
+            )
+            specs = ", ".join(["?"] * len(op.schema))
+            insert_stmt = (
+                f"INSERT INTO {table.sql(self.name)} ({cols}) VALUES ({specs})"
+            )
+
+            with self.begin() as cur:
+                cur.execute(create_stmt)
+                cur.executemany(insert_stmt, data)
 
     def attach(self, name: str, path: str | Path) -> None:
         """Connect another SQLite database file to the current connection.
@@ -149,115 +307,116 @@ class Backend(BaseAlchemyBackend, CanListDatabases):
         >>> con1.attach("new", "new.db")
         >>> con1.list_tables(database="new")
         """
-        with self.begin() as con:
-            con.exec_driver_sql(f"ATTACH DATABASE {str(path)!r} AS {self._quote(name)}")
+        with self.begin() as cur:
+            cur.execute(f'ATTACH DATABASE {str(path)!r} AS "{name}"')
 
-    @staticmethod
-    def _new_sa_metadata():
-        meta = sa.MetaData()
+    def create_table(
+        self,
+        name: str,
+        obj: pd.DataFrame | pa.Table | ir.Table | None = None,
+        *,
+        schema: ibis.Schema | None = None,
+        database: str | None = None,
+        temp: bool = False,
+        overwrite: bool = False,
+    ):
+        """Create a table in SQLite.
 
-        @sa.event.listens_for(meta, "column_reflect")
-        def column_reflect(inspector, table, column_info):
-            if type(column_info["type"]) is TIMESTAMP:
-                column_info["type"] = ISODATETIME()
+        Parameters
+        ----------
+        name
+            Name of the table to create
+        obj
+            The data with which to populate the table; optional, but at least
+            one of `obj` or `schema` must be specified
+        schema
+            The schema of the table to create; optional, but at least one of
+            `obj` or `schema` must be specified
+        database
+            The name of the database in which to create the table; if not
+            passed, the current database is used.
+        temp
+            Create a temporary table
+        overwrite
+            If `True`, replace the table if it already exists, otherwise fail
+            if the table exists
+        """
+        if schema is None and obj is None:
+            raise ValueError("Either `obj` or `schema` must be specified")
 
-        return meta
+        if schema is not None:
+            schema = ibis.schema(schema)
 
-    def _table_from_schema(
-        self, name, schema, database: str | None = None, temp: bool = True
-    ) -> sa.Table:
-        prefixes = []
+        if obj is not None:
+            if not isinstance(obj, ir.Expr):
+                obj = ibis.memtable(obj)
+
+            self._run_pre_execute_hooks(obj)
+
+            insert_query = self._to_sqlglot(obj)
+        else:
+            insert_query = None
+
         if temp:
-            prefixes.append("TEMPORARY")
-        columns = self._columns_from_schema(name, schema)
-        return sa.Table(
-            name, sa.MetaData(), *columns, schema=database, prefixes=prefixes
-        )
+            if database not in (None, "temp"):
+                raise ValueError(
+                    "SQLite doesn't support creating temporary tables in an explicit database"
+                )
+            else:
+                database = "temp"
 
-    @property
-    def _current_schema(self) -> str | None:
-        return self.current_database
-
-    def _metadata(self, query: str) -> Iterator[tuple[str, dt.DataType]]:
-        view = f"__ibis_sqlite_metadata_{util.guid()}"
-
-        with self.begin() as con:
-            if query in self.list_tables():
-                query = f"SELECT * FROM {query}"
-            # create a view that should only be visible in this transaction
-            con.exec_driver_sql(f"CREATE TEMPORARY VIEW {view} AS {query}")
-
-            # extract table info from the view
-            table_info = con.exec_driver_sql(f"PRAGMA table_info({view})")
-
-            # get names and not nullables
-            names, notnulls, raw_types = zip(
-                *toolz.pluck(["name", "notnull", "type"], table_info.mappings())
+        if overwrite:
+            created_table = sg.table(
+                util.gen_name(f"{self.name}_table"),
+                catalog=database,
+                quoted=self.compiler.quoted,
+            )
+            table = sg.table(name, catalog=database, quoted=self.compiler.quoted)
+        else:
+            created_table = table = sg.table(
+                name, catalog=database, quoted=self.compiler.quoted
             )
 
-            # get the type of the first row if no affinity was returned in
-            # `raw_types`; assume that reflects the rest of the rows
-            type_queries = ", ".join(map("typeof({})".format, names))
-            single_row_types = con.exec_driver_sql(
-                f"SELECT {type_queries} FROM {view} LIMIT 1"
-            ).fetchone()
-            for name, notnull, raw_typ, typ in zip(
-                names, notnulls, raw_types, single_row_types
-            ):
-                ibis_type = SqliteType.from_string(raw_typ or typ)
-                yield name, ibis_type(nullable=not notnull)
+        create_stmt = self._generate_create_table(
+            created_table, schema=(schema or obj.schema())
+        ).sql(self.name)
 
-            # drop the view when we're done with it
-            con.exec_driver_sql(f"DROP VIEW IF EXISTS {view}")
+        with self.begin() as cur:
+            cur.execute(create_stmt)
 
-    def _get_schema_using_query(self, query: str) -> sch.Schema:
-        """Return an ibis Schema from a SQLite SQL string."""
-        return sch.Schema.from_tuples(self._metadata(query))
-
-    def _register_udfs(self, expr: ir.Expr) -> None:
-        import ibis.expr.operations as ops
-
-        with self.begin() as con:
-            for udf_node in expr.op().find(ops.ScalarUDF):
-                compile_func = getattr(
-                    self, f"_compile_{udf_node.__input_type__.name.lower()}_udf"
+            if insert_query is not None:
+                cur.execute(
+                    sge.Insert(this=created_table, expression=insert_query).sql(
+                        self.name
+                    )
                 )
 
-                registration_func = compile_func(udf_node)
-                if registration_func is not None:
-                    registration_func(con)
-
-    def _compile_python_udf(self, udf_node: ops.ScalarUDF) -> None:
-        func = udf_node.__func__
-        name = func.__name__
-
-        for argname, arg in zip(udf_node.argnames, udf_node.args):
-            dtype = arg.dtype
-            if not (
-                dtype.is_string()
-                or dtype.is_binary()
-                or dtype.is_numeric()
-                or dtype.is_boolean()
-            ):
-                raise com.IbisTypeError(
-                    "SQLite only supports strings, bytes, booleans and numbers as UDF input and output, "
-                    f"got argument `{argname}` with unsupported type {dtype}"
+            if overwrite:
+                cur.execute(
+                    sge.Drop(kind="TABLE", this=table, exists=True).sql(self.name)
+                )
+                cur.execute(
+                    f"ALTER TABLE {created_table.sql(self.name)} RENAME TO {table.sql(self.name)}"
                 )
 
-        def register_udf(con):
-            return con.connection.create_function(
-                name, len(inspect.signature(func).parameters), udf.ignore_nulls(func)
-            )
+        if schema is None:
+            return self.table(name, database=database)
 
-        return register_udf
+        # preserve the input schema if it was provided
+        return ops.DatabaseTable(
+            name, schema=schema, source=self, namespace=ops.Namespace(database=database)
+        ).to_expr()
 
-    def _get_temp_view_definition(
-        self, name: str, definition: sa.sql.compiler.Compiled
-    ) -> str:
-        yield f"DROP VIEW IF EXISTS {name}"
-        yield f"CREATE TEMPORARY VIEW {name} AS {definition}"
-
-    def _get_compiled_statement(self, view: sa.Table, definition: sa.sql.Selectable):
-        return super()._get_compiled_statement(
-            view, definition, compile_kwargs={"literal_binds": True}
+    def drop_table(
+        self,
+        name: str,
+        database: str | None = None,
+        force: bool = False,
+    ) -> None:
+        drop_stmt = sg.exp.Drop(
+            kind="TABLE",
+            this=sg.table(name, catalog=database, quoted=self.compiler.quoted),
+            exists=force,
         )
+        with self._safe_raw_sql(drop_stmt):
+            pass
