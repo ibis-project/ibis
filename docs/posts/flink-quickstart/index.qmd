@@ -75,7 +75,7 @@ ibis-flink-example-data-generator-1  | Connected to Kafka
 ibis-flink-example-data-generator-1  | Producing 20000 records to Kafka topic payment_msg
 ```
 
-The `payment_msg` Kafka topic contains messages in the following format:
+This example uses mock payments data. The `payment_msg` Kafka topic contains messages in the following format:
 
 ```json
 {
