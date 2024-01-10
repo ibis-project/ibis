@@ -64,8 +64,7 @@ for installer in installers:
                     dedent(
                         """\
                         ::: {.callout-important}
-                        PyFlink is not available on conda-forge; please
-                        use `pip` to install the PyFlink backend instead.
+                        ## PyFlink is not available on conda-forge; please use `pip` to install the PyFlink backend instead.
                         :::"""
                     )
                 )

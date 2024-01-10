@@ -33,22 +33,19 @@ pip install ibis-framework apache-flink kafka-python
 ## Using `conda`
 
 ::: {.callout-important}
-PyFlink is not available on conda-forge; please
-use `pip` to install the PyFlink backend instead.
+## PyFlink is not available on conda-forge; please use `pip` to install the PyFlink backend instead.
 :::
 
 ## Using `mamba`
 
 ::: {.callout-important}
-PyFlink is not available on conda-forge; please
-use `pip` to install the PyFlink backend instead.
+## PyFlink is not available on conda-forge; please use `pip` to install the PyFlink backend instead.
 :::
 
 ## Using `pixi`
 
 ::: {.callout-important}
-PyFlink is not available on conda-forge; please
-use `pip` to install the PyFlink backend instead.
+## PyFlink is not available on conda-forge; please use `pip` to install the PyFlink backend instead.
 :::
 
 :::
