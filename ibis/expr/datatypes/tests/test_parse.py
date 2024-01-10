@@ -189,7 +189,7 @@ def test_parse_timestamp_with_timezone_single_quote():
 
 
 def test_parse_timestamp_with_timezone_double_quote():
-    t = dt.dtype("timestamp('US/Eastern')")
+    t = dt.dtype('timestamp("US/Eastern")')
     assert isinstance(t, dt.Timestamp)
     assert t.timezone == "US/Eastern"
 
