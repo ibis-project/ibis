@@ -360,6 +360,45 @@ class Backend(SQLGlotBackend):
             name, schema=schema, source=self, namespace=ops.Namespace(database=database)
         ).to_expr()
 
+    def _register_in_memory_table(self, op: ops.InMemoryTable) -> None:
+        schema = op.schema
+
+        # only register if we haven't already done so
+        if (name := op.name) not in self.list_tables():
+            quoted = self.compiler.quoted
+            column_defs = [
+                sg.exp.ColumnDef(
+                    this=sg.to_identifier(colname, quoted=quoted),
+                    kind=self.compiler.type_mapper.from_ibis(typ),
+                    constraints=(
+                        None
+                        if typ.nullable
+                        else [
+                            sg.exp.ColumnConstraint(
+                                kind=sg.exp.NotNullColumnConstraint()
+                            )
+                        ]
+                    ),
+                )
+                for colname, typ in schema.items()
+            ]
+
+            create_stmt = sg.exp.Create(
+                kind="TABLE",
+                this=sg.exp.Schema(
+                    this=sg.to_identifier(name, quoted=quoted), expressions=column_defs
+                ),
+            ).sql(self.name, pretty=True)
+
+            data = op.data.to_frame().itertuples(index=False)
+            specs = ", ".join("?" * len(schema))
+            table = sg.table(name, quoted=quoted).sql(self.name)
+            insert_stmt = f"INSERT INTO {table} VALUES ({specs})"
+            with self.begin() as cur:
+                cur.execute(create_stmt)
+                for row in data:
+                    cur.execute(insert_stmt, row)
+
     def _metadata(self, query: str) -> Iterable[tuple[str, dt.DataType]]:
         name = util.gen_name("oracle_metadata")
         dialect = self.name
