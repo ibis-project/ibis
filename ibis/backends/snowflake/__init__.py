@@ -999,16 +999,17 @@ $$"""
         if not isinstance(obj, ir.Table):
             obj = ibis.memtable(obj)
 
+        table = sg.table(table_name, db=schema, catalog=database, quoted=True)
         self._run_pre_execute_hooks(obj)
         query = sg.exp.insert(
             expression=self.compile(obj),
-            into=sg.table(table_name, db=schema, catalog=database, quoted=True),
+            into=table,
             columns=[sg.column(col, quoted=True) for col in obj.columns],
             dialect=self.name,
         )
         with self.begin() as con:
             if overwrite:
-                con.exec_driver_sql(f"TRUNCATE TABLE {query.into.sql(self.name)}")
+                con.exec_driver_sql(f"TRUNCATE TABLE {table.sql(self.name)}")
 
             con.exec_driver_sql(query.sql(self.name))
 
