@@ -9,6 +9,7 @@ import sqlalchemy as sa
 from sqlalchemy.ext.compiler import compiles
 from sqlalchemy.sql.functions import GenericFunction
 
+import ibis.backends.base.sql.registry.geospatial as geo
 import ibis.expr.operations as ops
 from ibis.backends.base.sql import alchemy
 from ibis.backends.base.sql.alchemy import unary
@@ -198,6 +199,8 @@ def _literal(t, op):
 
     if dtype.is_interval():
         return getattr(sa.func, f"to_{dtype.unit.plural}")(value)
+    elif dtype.is_geospatial():
+        return sa.literal_column(geo.translate_literal(op, inline_metadata=True))
     elif dtype.is_array():
         values = value.tolist() if isinstance(value, np.ndarray) else value
         return sa.cast(sa.func.list_value(*values), sqla_type)
