@@ -144,6 +144,11 @@ class _AlchemyTableSetFormatter(TableSetFormatter):
         elif ctx.is_extracted(op):
             if isinstance(orig_op, ops.SelfReference):
                 result = ctx.get_ref(op)
+            elif isinstance(alias, str):
+                result = sa.table(
+                    alias,
+                    *translator._schema_to_sqlalchemy_columns(orig_op.schema),
+                )
             else:
                 result = alias
         else:
