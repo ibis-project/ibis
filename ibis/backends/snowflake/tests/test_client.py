@@ -252,3 +252,26 @@ def test_array_repr(con, monkeypatch):
     t = con.tables.ARRAY_TYPES
     expr = t.x
     assert repr(expr)
+
+
+def test_insert(con):
+    name = gen_name("test_insert")
+
+    t = con.create_table(
+        name, schema=ibis.schema({"a": "int", "b": "string", "c": "int"}), temp=True
+    )
+    assert t.count().execute() == 0
+
+    expected = pd.DataFrame({"a": [1, 2, 3], "b": ["x", "y", None], "c": [2, None, 3]})
+
+    con.insert(name, ibis.memtable(expected))
+
+    result = t.order_by("a").execute()
+
+    tm.assert_frame_equal(result, expected)
+
+    con.insert(name, expected)
+    assert t.count().execute() == 6
+
+    con.insert(name, expected, overwrite=True)
+    assert t.count().execute() == 3
