@@ -217,12 +217,32 @@ class OracleCompiler(SQLGlotCompiler):
             return self.agg.covar_samp(left, right, where=where)
         return self.agg.covar_pop(left, right, where=where)
 
+    @visit_node.register(ops.Quantile)
+    def visit_Quantile(self, op, *, arg, quantile, where):
+        suffix = "cont" if op.arg.dtype.is_numeric() else "disc"
+        funcname = f"percentile_{suffix}"
+
+        if where is not None:
+            arg = self.if_(where, arg)
+
+        expr = sge.WithinGroup(
+            this=self.f[funcname](quantile),
+            expression=sge.Order(expressions=[sge.Ordered(this=arg)]),
+        )
+        return expr
+
+    @visit_node.register(ops.Arbitrary)
+    @visit_node.register(ops.ArgMax)
+    @visit_node.register(ops.ArgMin)
     @visit_node.register(ops.ArrayCollect)
     @visit_node.register(ops.ArrayColumn)
     @visit_node.register(ops.ArrayFlatten)
     @visit_node.register(ops.ArrayMap)
     @visit_node.register(ops.ArrayStringJoin)
+    @visit_node.register(ops.First)
+    @visit_node.register(ops.Last)
     @visit_node.register(ops.Mode)
+    @visit_node.register(ops.MultiQuantile)
     @visit_node.register(ops.RegexExtract)
     @visit_node.register(ops.RegexSplit)
     @visit_node.register(ops.RegexReplace)
@@ -232,6 +252,7 @@ class OracleCompiler(SQLGlotCompiler):
 
 
 _SIMPLE_OPS = {
+    ops.ApproxCountDistinct: "approx_count_distinct",
     ops.BitAnd: "bit_and_agg",
     ops.BitOr: "bit_or_agg",
     ops.BitXor: "bit_xor_agg",
