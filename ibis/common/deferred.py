@@ -527,10 +527,6 @@ def resolver(obj):
             return Just(obj)
         else:
             return Sequence(obj)
-    elif isinstance(obj, type):
-        return Just(obj)
-    elif callable(obj):
-        return Factory(obj)
     else:
         # the object is used as a constant value
         return Just(obj)
