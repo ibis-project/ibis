@@ -217,6 +217,10 @@ class OracleCompiler(SQLGlotCompiler):
             return self.agg.covar_samp(left, right, where=where)
         return self.agg.covar_pop(left, right, where=where)
 
+    @visit_node.register(ops.ApproxMedian)
+    def visit_ApproxMedian(self, op, *, arg, where):
+        return self.visit_Quantile(op, arg=arg, quantile=0.5, where=where)
+
     @visit_node.register(ops.Quantile)
     def visit_Quantile(self, op, *, arg, quantile, where):
         suffix = "cont" if op.arg.dtype.is_numeric() else "disc"
