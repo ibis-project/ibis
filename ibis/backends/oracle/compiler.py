@@ -6,6 +6,8 @@ import sqlglot as sg
 import sqlglot.expressions as sge
 import toolz
 from public import public
+from sqlglot.dialects import Oracle
+from sqlglot.dialects.dialect import rename_func
 
 import ibis
 import ibis.common.exceptions as com
@@ -16,6 +18,17 @@ from ibis.backends.base.sqlglot.rewrites import replace_log2, replace_log10
 from ibis.common.patterns import replace
 from ibis.expr.analysis import p, x, y
 from ibis.expr.rewrites import rewrite_sample
+
+Oracle.Generator.TRANSFORMS |= {
+    sge.LogicalOr: rename_func("max"),
+    sge.LogicalAnd: rename_func("min"),
+    sge.VariancePop: rename_func("var_pop"),
+    sge.Variance: rename_func("var_samp"),
+    sge.Stddev: rename_func("stddev_pop"),
+    sge.StddevPop: rename_func("stddev_pop"),
+    sge.StddevSamp: rename_func("stddev_samp"),
+    sge.ApproxDistinct: rename_func("approx_count_distinct"),
+}
 
 
 @replace(p.WindowFunction(p.First(x, y)))
