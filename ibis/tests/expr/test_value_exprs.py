@@ -1691,3 +1691,12 @@ def test_sample():
     assert op.fraction == 0.5
     assert op.method == "block"
     assert op.seed == 1234
+
+
+def test_deferred_doesnt_convert_callables():
+    t = ibis.table([("a", "int64"), ("b", "string")])
+    expr = t.mutate(b=_.b.split(",").filter(lambda pp: ~pp.isin(("word1", "word2"))))
+    expected = t.mutate(
+        b=t.b.split(",").filter(lambda pp: ~pp.isin(("word1", "word2")))
+    )
+    assert expr.equals(expected)
