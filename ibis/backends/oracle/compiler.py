@@ -103,6 +103,10 @@ class OracleCompiler(SQLGlotCompiler):
             args = tuple(self.if_(where, arg) for arg in args)
         return func(*args)
 
+    @staticmethod
+    def _generate_groups(groups):
+        return groups
+
     @singledispatchmethod
     def visit_node(self, op, **kwargs):
         return super().visit_node(op, **kwargs)
