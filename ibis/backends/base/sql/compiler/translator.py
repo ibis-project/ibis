@@ -113,11 +113,11 @@ class QueryContext:
         """Return the alias used to refer to an expression."""
         assert isinstance(node, ops.Node), type(node)
 
-        if self.is_extracted(node):
-            return self.top_context.table_refs.get(node)
-
         if (ref := self.table_refs.get(node)) is not None:
             return ref
+
+        if self.is_extracted(node):
+            return self.top_context.table_refs.get(node)
 
         if search_parents and (parent := self.parent) is not None:
             return parent.get_ref(node, search_parents=search_parents)
