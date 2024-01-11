@@ -145,14 +145,14 @@ def test_builder():
     class MyClass:
         pass
 
-    def fn(x, ctx):
+    def fn(x):
         return x + 1
 
     assert resolver(1) == Just(1)
     assert resolver(Just(1)) == Just(1)
     assert resolver(Just(Just(1))) == Just(1)
     assert resolver(MyClass) == Just(MyClass)
-    assert resolver(fn) == Factory(fn)
+    assert resolver(fn) == Just(fn)
     assert resolver(()) == Sequence(())
     assert resolver((1, 2, _)) == Sequence((Just(1), Just(2), _))
     assert resolver({}) == Mapping({})

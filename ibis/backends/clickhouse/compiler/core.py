@@ -28,7 +28,8 @@ import ibis.expr.types as ir
 from ibis.backends.clickhouse.compiler.relations import translate_rel
 from ibis.backends.clickhouse.compiler.values import translate_val
 from ibis.common.deferred import _
-from ibis.expr.analysis import c, find_first_base_table, p, x, y
+from ibis.common.patterns import replace
+from ibis.expr.analysis import c, find_first_base_table, p, x
 from ibis.expr.rewrites import rewrite_dropna, rewrite_fillna, rewrite_sample
 
 if TYPE_CHECKING:
@@ -40,6 +41,14 @@ def _translate_node(node, **kwargs):
         return translate_val(node, **kwargs)
     assert isinstance(node, ops.TableNode)
     return translate_rel(node, **kwargs)
+
+
+@replace(ops.InColumn)
+def replace_in_column_with_table_array_view(_):
+    # replace the right side of InColumn into a scalar subquery for sql backends
+    base = find_first_base_table(_.options)
+    options = ops.TableArrayView(ops.Selection(table=base, selections=(_.options,)))
+    return _.copy(options=options)
 
 
 def translate(op: ops.TableNode, params: Mapping[ir.Value, Any]) -> sg.exp.Expression:
@@ -86,14 +95,6 @@ def translate(op: ops.TableNode, params: Mapping[ir.Value, Any]) -> sg.exp.Expre
     params = {param.op(): value for param, value in params.items()}
     replace_literals = p.ScalarParameter(dtype=x) >> (
         lambda _, x: ops.Literal(value=params[_], dtype=x)
-    )
-
-    # replace the right side of InColumn into a scalar subquery for sql
-    # backends
-    replace_in_column_with_table_array_view = p.InColumn(options=y) >> _.copy(
-        options=c.TableArrayView(
-            c.Selection(table=lambda _, y: find_first_base_table(y), selections=(y,))
-        ),
     )
 
     # replace any checks against an empty right side of the IN operation with

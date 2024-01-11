@@ -25,6 +25,7 @@ from ibis.common.bases import Hashable, Singleton
 from ibis.common.collections import FrozenDict, RewindableIterator, frozendict
 from ibis.common.deferred import (
     Deferred,
+    Factory,
     Resolver,
     Variable,
     _,  # noqa: F401
@@ -44,6 +45,13 @@ from ibis.common.typing import (
 from ibis.util import is_iterable, promote_tuple
 
 T_co = TypeVar("T_co", covariant=True)
+
+
+def as_resolver(obj):
+    if callable(obj) and not isinstance(obj, Deferred):
+        return Factory(obj)
+    else:
+        return resolver(obj)
 
 
 class NoMatch(metaclass=Sentinel):
@@ -331,7 +339,7 @@ class Capture(Slotted, Pattern):
 
     def __init__(self, key, pat=_any):
         if isinstance(key, (Deferred, Resolver)):
-            key = resolver(key)
+            key = as_resolver(key)
             if isinstance(key, Variable):
                 key = key.name
             else:
@@ -353,25 +361,25 @@ class Replace(Slotted, Pattern):
     ----------
     matcher
         The pattern to match against.
-    resolver
+    replacer
         The deferred to use as a replacement.
     """
 
-    __slots__ = ("pattern", "resolver")
-    pattern: Pattern
-    resolver: Resolver
+    __slots__ = ("matcher", "replacer")
+    matcher: Pattern
+    replacer: Resolver
 
     def __init__(self, matcher, replacer):
-        super().__init__(pattern=pattern(matcher), resolver=resolver(replacer))
+        super().__init__(matcher=pattern(matcher), replacer=as_resolver(replacer))
 
     def match(self, value, context):
-        value = self.pattern.match(value, context)
+        value = self.matcher.match(value, context)
         if value is NoMatch:
             return NoMatch
         # use the `_` reserved variable to record the value being replaced
         # in the context, so that it can be used in the replacer pattern
         context["_"] = value
-        return self.resolver.resolve(context)
+        return self.replacer.resolve(context)
 
 
 def replace(matcher):
@@ -424,7 +432,7 @@ class DeferredCheck(Slotted, Pattern):
     resolver: Resolver
 
     def __init__(self, obj):
-        super().__init__(resolver=resolver(obj))
+        super().__init__(resolver=as_resolver(obj))
 
     def describe(self, plural=False):
         if plural:
@@ -505,7 +513,7 @@ class DeferredEqualTo(Slotted, Pattern):
     resolver: Resolver
 
     def __init__(self, obj):
-        super().__init__(resolver=resolver(obj))
+        super().__init__(resolver=as_resolver(obj))
 
     def match(self, value, context):
         context["_"] = value
