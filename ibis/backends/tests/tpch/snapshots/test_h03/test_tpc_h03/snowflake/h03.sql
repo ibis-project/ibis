@@ -131,8 +131,8 @@ FROM (
     ) AS "t11"
     WHERE
       "t11"."c_mktsegment" = 'BUILDING'
-      AND "t11"."o_orderdate" < DATEFROMPARTS(1995, 3, 15)
-      AND "t11"."l_shipdate" > DATEFROMPARTS(1995, 3, 15)
+      AND "t11"."o_orderdate" < DATE_FROM_PARTS(1995, 3, 15)
+      AND "t11"."l_shipdate" > DATE_FROM_PARTS(1995, 3, 15)
   ) AS "t12"
   GROUP BY
     1,
