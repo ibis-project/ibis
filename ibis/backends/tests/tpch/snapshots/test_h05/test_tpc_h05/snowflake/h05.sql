@@ -185,8 +185,8 @@ FROM (
     ) AS "t23"
     WHERE
       "t23"."r_name" = 'ASIA'
-      AND "t23"."o_orderdate" >= DATEFROMPARTS(1994, 1, 1)
-      AND "t23"."o_orderdate" < DATEFROMPARTS(1995, 1, 1)
+      AND "t23"."o_orderdate" >= DATE_FROM_PARTS(1994, 1, 1)
+      AND "t23"."o_orderdate" < DATE_FROM_PARTS(1995, 1, 1)
   ) AS "t24"
   GROUP BY
     1
