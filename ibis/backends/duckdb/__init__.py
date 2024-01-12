@@ -1459,12 +1459,6 @@ class Backend(SQLGlotBackend, CanCreateSchema):
     def _compile_pandas_udf(self, _: ops.ScalarUDF) -> None:
         raise NotImplementedError("duckdb doesn't support pandas UDFs")
 
-    def _get_compiled_statement(self, view, definition):
-        # TODO: remove this once duckdb supports CTAS prepared statements
-        return super()._get_compiled_statement(
-            view, definition, compile_kwargs={"literal_binds": True}
-        )
-
     def insert(
         self,
         table_name: str,
