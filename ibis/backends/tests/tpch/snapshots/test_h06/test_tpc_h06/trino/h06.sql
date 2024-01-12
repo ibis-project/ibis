@@ -18,7 +18,7 @@ FROM (
     "t0"."l_shipinstruct",
     "t0"."l_shipmode",
     "t0"."l_comment"
-  FROM "lineitem" AS "t0"
+  FROM "hive"."ibis_sf1"."lineitem" AS "t0"
   WHERE
     "t0"."l_shipdate" >= FROM_ISO8601_DATE('1994-01-01')
     AND "t0"."l_shipdate" < FROM_ISO8601_DATE('1995-01-01')
