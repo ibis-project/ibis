@@ -397,8 +397,6 @@ _SIMPLE_OPS = {
     ops.BitXor: "bit_xor",
     ops.DayOfWeekName: "dayname",
     ops.Log10: "log10",
-    ops.LPad: "lpad",
-    ops.RPad: "rpad",
     ops.StringContains: "instr",
     ops.ExtractWeekOfYear: "weekofyear",
     ops.ExtractEpochSeconds: "unix_timestamp",
