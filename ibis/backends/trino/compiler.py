@@ -497,8 +497,6 @@ _SIMPLE_OPS = {
     ops.ExtractHost: "url_extract_host",
     ops.ExtractPath: "url_extract_path",
     ops.ExtractFragment: "url_extract_fragment",
-    ops.RPad: "rpad",
-    ops.LPad: "lpad",
     ops.ArrayPosition: "array_position",
 }
 
