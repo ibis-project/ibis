@@ -399,7 +399,6 @@ _SIMPLE_OPS = {
     ops.Log10: "log10",
     ops.LPad: "lpad",
     ops.RPad: "rpad",
-    ops.StringAscii: "ascii",
     ops.StringContains: "instr",
     ops.ExtractWeekOfYear: "weekofyear",
     ops.ExtractEpochSeconds: "unix_timestamp",
