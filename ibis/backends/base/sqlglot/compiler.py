@@ -1261,6 +1261,7 @@ _SIMPLE_OPS = {
     ops.Sqrt: "sqrt",
     ops.StartsWith: "starts_with",
     ops.StrRight: "right",
+    ops.StringAscii: "ascii",
     ops.StringContains: "contains",
     ops.StringLength: "length",
     ops.StringReplace: "replace",

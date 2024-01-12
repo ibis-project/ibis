@@ -595,7 +595,6 @@ _SIMPLE_OPS = {
     ops.MapValues: "avals",
     ops.RPad: "rpad",
     ops.RegexSearch: "regexp_like",
-    ops.StringAscii: "ascii",
     ops.TimeFromHMS: "make_time",
 }
 
