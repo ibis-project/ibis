@@ -76,7 +76,7 @@ FROM (
           "t0"."O_CLERK" AS "o_clerk",
           "t0"."O_SHIPPRIORITY" AS "o_shippriority",
           "t0"."O_COMMENT" AS "o_comment"
-        FROM "ORDERS" AS "t0"
+        FROM "SNOWFLAKE_SAMPLE_DATA"."TPCH_SF1"."ORDERS" AS "t0"
       ) AS "t4"
       INNER JOIN (
         SELECT
@@ -96,7 +96,7 @@ FROM (
           "t1"."L_SHIPINSTRUCT" AS "l_shipinstruct",
           "t1"."L_SHIPMODE" AS "l_shipmode",
           "t1"."L_COMMENT" AS "l_comment"
-        FROM "LINEITEM" AS "t1"
+        FROM "SNOWFLAKE_SAMPLE_DATA"."TPCH_SF1"."LINEITEM" AS "t1"
       ) AS "t5"
         ON "t4"."o_orderkey" = "t5"."l_orderkey"
     ) AS "t7"

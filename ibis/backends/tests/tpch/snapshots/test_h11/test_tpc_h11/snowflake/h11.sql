@@ -48,7 +48,7 @@ FROM (
           "t0"."PS_AVAILQTY" AS "ps_availqty",
           "t0"."PS_SUPPLYCOST" AS "ps_supplycost",
           "t0"."PS_COMMENT" AS "ps_comment"
-        FROM "PARTSUPP" AS "t0"
+        FROM "SNOWFLAKE_SAMPLE_DATA"."TPCH_SF1"."PARTSUPP" AS "t0"
       ) AS "t6"
       INNER JOIN (
         SELECT
@@ -59,7 +59,7 @@ FROM (
           "t1"."S_PHONE" AS "s_phone",
           "t1"."S_ACCTBAL" AS "s_acctbal",
           "t1"."S_COMMENT" AS "s_comment"
-        FROM "SUPPLIER" AS "t1"
+        FROM "SNOWFLAKE_SAMPLE_DATA"."TPCH_SF1"."SUPPLIER" AS "t1"
       ) AS "t7"
         ON "t6"."ps_suppkey" = "t7"."s_suppkey"
       INNER JOIN (
@@ -68,7 +68,7 @@ FROM (
           "t2"."N_NAME" AS "n_name",
           "t2"."N_REGIONKEY" AS "n_regionkey",
           "t2"."N_COMMENT" AS "n_comment"
-        FROM "NATION" AS "t2"
+        FROM "SNOWFLAKE_SAMPLE_DATA"."TPCH_SF1"."NATION" AS "t2"
       ) AS "t8"
         ON "t8"."n_nationkey" = "t7"."s_nationkey"
     ) AS "t11"
@@ -126,7 +126,7 @@ WHERE
               "t0"."PS_AVAILQTY" AS "ps_availqty",
               "t0"."PS_SUPPLYCOST" AS "ps_supplycost",
               "t0"."PS_COMMENT" AS "ps_comment"
-            FROM "PARTSUPP" AS "t0"
+            FROM "SNOWFLAKE_SAMPLE_DATA"."TPCH_SF1"."PARTSUPP" AS "t0"
           ) AS "t6"
           INNER JOIN (
             SELECT
@@ -137,7 +137,7 @@ WHERE
               "t1"."S_PHONE" AS "s_phone",
               "t1"."S_ACCTBAL" AS "s_acctbal",
               "t1"."S_COMMENT" AS "s_comment"
-            FROM "SUPPLIER" AS "t1"
+            FROM "SNOWFLAKE_SAMPLE_DATA"."TPCH_SF1"."SUPPLIER" AS "t1"
           ) AS "t7"
             ON "t6"."ps_suppkey" = "t7"."s_suppkey"
           INNER JOIN (
@@ -146,7 +146,7 @@ WHERE
               "t2"."N_NAME" AS "n_name",
               "t2"."N_REGIONKEY" AS "n_regionkey",
               "t2"."N_COMMENT" AS "n_comment"
-            FROM "NATION" AS "t2"
+            FROM "SNOWFLAKE_SAMPLE_DATA"."TPCH_SF1"."NATION" AS "t2"
           ) AS "t8"
             ON "t8"."n_nationkey" = "t7"."s_nationkey"
         ) AS "t11"

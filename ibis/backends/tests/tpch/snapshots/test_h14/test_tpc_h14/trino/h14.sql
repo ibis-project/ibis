@@ -80,7 +80,7 @@ FROM (
         "t0"."l_shipinstruct",
         "t0"."l_shipmode",
         "t0"."l_comment"
-      FROM "lineitem" AS "t0"
+      FROM "hive"."ibis_sf1"."lineitem" AS "t0"
     ) AS "t4"
     INNER JOIN (
       SELECT
@@ -93,7 +93,7 @@ FROM (
         "t1"."p_container",
         CAST("t1"."p_retailprice" AS DECIMAL(15, 2)) AS "p_retailprice",
         "t1"."p_comment"
-      FROM "part" AS "t1"
+      FROM "hive"."ibis_sf1"."part" AS "t1"
     ) AS "t5"
       ON "t4"."l_partkey" = "t5"."p_partkey"
   ) AS "t7"

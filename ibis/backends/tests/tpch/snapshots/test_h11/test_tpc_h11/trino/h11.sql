@@ -48,7 +48,7 @@ FROM (
           "t0"."ps_availqty",
           CAST("t0"."ps_supplycost" AS DECIMAL(15, 2)) AS "ps_supplycost",
           "t0"."ps_comment"
-        FROM "partsupp" AS "t0"
+        FROM "hive"."ibis_sf1"."partsupp" AS "t0"
       ) AS "t7"
       INNER JOIN (
         SELECT
@@ -59,7 +59,7 @@ FROM (
           "t1"."s_phone",
           CAST("t1"."s_acctbal" AS DECIMAL(15, 2)) AS "s_acctbal",
           "t1"."s_comment"
-        FROM "supplier" AS "t1"
+        FROM "hive"."ibis_sf1"."supplier" AS "t1"
       ) AS "t8"
         ON "t7"."ps_suppkey" = "t8"."s_suppkey"
       INNER JOIN (
@@ -68,7 +68,7 @@ FROM (
           "t2"."n_name",
           "t2"."n_regionkey",
           "t2"."n_comment"
-        FROM "nation" AS "t2"
+        FROM "hive"."ibis_sf1"."nation" AS "t2"
       ) AS "t6"
         ON "t6"."n_nationkey" = "t8"."s_nationkey"
     ) AS "t11"
@@ -126,7 +126,7 @@ WHERE
               "t0"."ps_availqty",
               CAST("t0"."ps_supplycost" AS DECIMAL(15, 2)) AS "ps_supplycost",
               "t0"."ps_comment"
-            FROM "partsupp" AS "t0"
+            FROM "hive"."ibis_sf1"."partsupp" AS "t0"
           ) AS "t7"
           INNER JOIN (
             SELECT
@@ -137,7 +137,7 @@ WHERE
               "t1"."s_phone",
               CAST("t1"."s_acctbal" AS DECIMAL(15, 2)) AS "s_acctbal",
               "t1"."s_comment"
-            FROM "supplier" AS "t1"
+            FROM "hive"."ibis_sf1"."supplier" AS "t1"
           ) AS "t8"
             ON "t7"."ps_suppkey" = "t8"."s_suppkey"
           INNER JOIN (
@@ -146,7 +146,7 @@ WHERE
               "t2"."n_name",
               "t2"."n_regionkey",
               "t2"."n_comment"
-            FROM "nation" AS "t2"
+            FROM "hive"."ibis_sf1"."nation" AS "t2"
           ) AS "t6"
             ON "t6"."n_nationkey" = "t8"."s_nationkey"
         ) AS "t11"

@@ -76,7 +76,7 @@ FROM (
           "t0"."o_clerk",
           "t0"."o_shippriority",
           "t0"."o_comment"
-        FROM "orders" AS "t0"
+        FROM "hive"."ibis_sf1"."orders" AS "t0"
       ) AS "t4"
       INNER JOIN (
         SELECT
@@ -96,7 +96,7 @@ FROM (
           "t1"."l_shipinstruct",
           "t1"."l_shipmode",
           "t1"."l_comment"
-        FROM "lineitem" AS "t1"
+        FROM "hive"."ibis_sf1"."lineitem" AS "t1"
       ) AS "t5"
         ON "t4"."o_orderkey" = "t5"."l_orderkey"
     ) AS "t7"

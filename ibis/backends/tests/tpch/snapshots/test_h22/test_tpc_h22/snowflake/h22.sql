@@ -27,7 +27,7 @@ FROM (
         "t0"."C_ACCTBAL" AS "c_acctbal",
         "t0"."C_MKTSEGMENT" AS "c_mktsegment",
         "t0"."C_COMMENT" AS "c_comment"
-      FROM "CUSTOMER" AS "t0"
+      FROM "SNOWFLAKE_SAMPLE_DATA"."TPCH_SF1"."CUSTOMER" AS "t0"
     ) AS "t2"
     WHERE
       IFF(
@@ -50,7 +50,7 @@ FROM (
             "t0"."C_ACCTBAL" AS "c_acctbal",
             "t0"."C_MKTSEGMENT" AS "c_mktsegment",
             "t0"."C_COMMENT" AS "c_comment"
-          FROM "CUSTOMER" AS "t0"
+          FROM "SNOWFLAKE_SAMPLE_DATA"."TPCH_SF1"."CUSTOMER" AS "t0"
           WHERE
             "t0"."C_ACCTBAL" > 0.0
             AND IFF(
@@ -66,7 +66,7 @@ FROM (
         EXISTS(
           SELECT
             1 AS "1"
-          FROM "ORDERS" AS "t1"
+          FROM "SNOWFLAKE_SAMPLE_DATA"."TPCH_SF1"."ORDERS" AS "t1"
           WHERE
             "t1"."O_CUSTKEY" = "t2"."c_custkey"
         )
