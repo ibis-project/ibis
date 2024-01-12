@@ -243,3 +243,54 @@ def test_create_table_geospatial_types(geotable, con):
 
     assert t.op().name in con.list_tables()
     assert any(map(methodcaller("is_geospatial"), t.schema().values()))
+
+
+# geo literals declaration
+point = ibis.literal((1, 0), type="point").name("p")
+point_geom = ibis.literal((1, 0), type="point:geometry").name("p")
+
+
+@pytest.mark.parametrize(
+    ("expr", "expected"),
+    [
+        (point, "'POINT (1.0 0.0)'"),
+        (point_geom, "'POINT (1.0 0.0)'::geometry"),
+    ],
+)
+def test_literal_geospatial_explicit(con, expr, expected):
+    result = str(con.compile(expr))
+    assert result == f"SELECT {expected} AS p"
+
+
+# test input data with shapely geometries
+shp_point_0 = shapely.Point(0, 0)
+shp_point_1 = shapely.Point(1, 1)
+shp_point_2 = shapely.Point(2, 2)
+
+shp_linestring_0 = shapely.LineString([shp_point_0, shp_point_1, shp_point_2])
+shp_linestring_1 = shapely.LineString([shp_point_2, shp_point_1, shp_point_0])
+shp_polygon_0 = shapely.Polygon(shp_linestring_0)
+shp_multilinestring_0 = shapely.MultiLineString([shp_linestring_0, shp_linestring_1])
+shp_multipoint_0 = shapely.MultiPoint([shp_point_0, shp_point_1, shp_point_2])
+shp_multipolygon_0 = shapely.MultiPolygon([shp_polygon_0])
+
+
+@pytest.mark.parametrize(
+    ("shp", "expected"),
+    [
+        (shp_point_0, "(0 0)"),
+        (shp_point_1, "(1 1)"),
+        (shp_point_2, "(2 2)"),
+        (shp_linestring_0, "(0 0, 1 1, 2 2)"),
+        (shp_linestring_1, "(2 2, 1 1, 0 0)"),
+        (shp_polygon_0, "((0 0, 1 1, 2 2, 0 0))"),
+        (shp_multipolygon_0, "(((0 0, 1 1, 2 2, 0 0)))"),
+        (shp_multilinestring_0, "((0 0, 1 1, 2 2), (2 2, 1 1, 0 0))"),
+        (shp_multipoint_0, "(0 0, 1 1, 2 2)"),
+    ],
+)
+def test_literal_geospatial_inferred(con, shp, expected):
+    result = str(con.compile(ibis.literal(shp).name("result")))
+    name = type(shp).__name__.upper()
+    pair = f"{name} {expected}"
+    assert result == f"SELECT {pair!r} AS result"
