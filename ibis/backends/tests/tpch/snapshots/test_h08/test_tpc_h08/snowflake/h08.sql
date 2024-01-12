@@ -126,7 +126,7 @@ FROM (
     ) AS "t30"
     WHERE
       "t30"."r_name" = 'AMERICA'
-      AND "t30"."o_orderdate" BETWEEN DATEFROMPARTS(1995, 1, 1) AND DATEFROMPARTS(1996, 12, 31)
+      AND "t30"."o_orderdate" BETWEEN DATE_FROM_PARTS(1995, 1, 1) AND DATE_FROM_PARTS(1996, 12, 31)
       AND "t30"."p_type" = 'ECONOMY ANODIZED STEEL'
   ) AS "t31"
   GROUP BY
