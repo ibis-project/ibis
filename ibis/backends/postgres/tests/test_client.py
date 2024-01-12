@@ -199,18 +199,19 @@ def test_connect_url_with_empty_host():
 @pytest.fixture(scope="module")
 def contz(con):
     with con.begin() as c:
-        tz = c.exec_driver_sql("SHOW TIMEZONE").scalar()
-        c.exec_driver_sql("SET TIMEZONE TO 'America/New_York'")
+        c.execute("SHOW TIMEZONE")
+        [(tz,)] = c.fetchall()
+        c.execute("SET TIMEZONE TO 'America/New_York'")
 
     yield con
 
     with con.begin() as c:
-        c.exec_driver_sql(f"SET TIMEZONE TO '{tz}'")
+        c.execute(f"SET TIMEZONE TO '{tz}'")
 
 
 def test_timezone_from_column(contz, snapshot):
     with contz.begin() as c:
-        c.exec_driver_sql(
+        c.execute(
             """
             CREATE TEMPORARY TABLE x (
                 id BIGINT,
