@@ -45,6 +45,28 @@ def _count_star(translator: ExprTranslator, op: ops.Node) -> str:
     return f"COUNT(*){condition}"
 
 
+def _string_concat(translator: ExprTranslator, op: ops.StringConcat) -> str:
+    joined_args = ", ".join(map(translator.translate, op.arg))
+    return f"CONCAT({joined_args})"
+
+
+def _strftime(translator: ExprTranslator, op: ops.Strftime) -> str:
+    import sqlglot as sg
+
+    import ibis.expr.datatypes as dt
+
+    hive_dialect = sg.dialects.hive.Hive
+    if (time_mapping := getattr(hive_dialect, "TIME_MAPPING", None)) is None:
+        time_mapping = hive_dialect.time_mapping
+    reverse_hive_mapping = {v: k for k, v in time_mapping.items()}
+
+    format_str = translator.translate(op.format_str)
+    transformed_format_str = sg.time.format_time(format_str, reverse_hive_mapping)
+    arg = translator.translate(ops.Cast(op.arg, to=dt.string))
+
+    return f"FROM_UNIXTIME(UNIX_TIMESTAMP({arg}), {transformed_format_str})"
+
+
 def _date(translator: ExprTranslator, op: ops.Node) -> str:
     (arg,) = op.args
     return f"CAST({translator.translate(arg)} AS DATE)"
@@ -66,9 +88,10 @@ def _cast(translator: ExprTranslator, op: ops.generic.Cast) -> str:
             arg_translated = f"FROM_UNIXTIME({arg_translated})"
 
         if to.timezone:
-            return f"TO_TIMESTAMP(CONVERT_TZ(CAST({arg_translated} AS STRING), 'UTC', {to.timezone!r}))"
+            return f"TO_TIMESTAMP(CONVERT_TZ(CAST({arg_translated} AS STRING), 'UTC+0', '{to.timezone}'))"
         else:
-            return f"TO_TIMESTAMP({arg_translated})"
+            return f"TO_TIMESTAMP({arg_translated}, 'yyyy-MM-dd HH:mm:ss.SSS')"
+
     elif to.is_date():
         return f"CAST({arg_translated} AS date)"
     elif to.is_json():
@@ -301,8 +324,26 @@ def _day_of_week_index(
     return f"MOD(DAYOFWEEK({arg}) + 5, 7)"
 
 
+def _day_of_week_name(
+    translator: ExprTranslator, op: ops.temporal.DayOfWeekName
+) -> str:
+    arg = translator.translate(op.arg)
+    map_str = "1=Sunday,2=Monday,3=Tuesday,4=Wednesday,5=Thursday,6=Friday,7=Saturday"
+    return f"STR_TO_MAP('{map_str}')[CAST(DAYOFWEEK(CAST({arg} AS DATE)) AS STRING)]"
+
+
 def _date_add(translator: ExprTranslator, op: ops.temporal.DateAdd) -> str:
     return _left_op_right(translator=translator, op_node=op, op_sign="+")
+
+
+def _date_delta(translator: ExprTranslator, op: ops.temporal.DateDelta) -> str:
+    left = translator.translate(op.left)
+    right = translator.translate(op.right)
+    unit = op.part.value.upper()
+
+    return (
+        f"TIMESTAMPDIFF({unit}, CAST({right} AS TIMESTAMP), CAST({left} AS TIMESTAMP))"
+    )
 
 
 def _date_diff(translator: ExprTranslator, op: ops.temporal.DateDiff) -> str:
@@ -338,10 +379,20 @@ def _string_to_timestamp(
 def _time(translator: ExprTranslator, op: ops.temporal.Time) -> str:
     if op.arg.dtype.is_timestamp():
         datetime = op.arg.value
-        return f"TIME '{datetime.hour}:{datetime.minute}:{datetime.second}'"
+        return f"TIME '{datetime.hour}:{datetime.minute}:{datetime.second}.{datetime.microsecond}'"
 
     else:
         raise com.UnsupportedOperationError(f"Does NOT support dtype= {op.arg.dtype}")
+
+
+def _time_delta(translator: ExprTranslator, op: ops.temporal.TimeDiff) -> str:
+    left = translator.translate(op.left)
+    right = translator.translate(op.right)
+    unit = op.part.value.upper()
+
+    return (
+        f"TIMESTAMPDIFF({unit}, CAST({right} AS TIMESTAMP), CAST({left} AS TIMESTAMP))"
+    )
 
 
 def _time_from_hms(translator: ExprTranslator, op: ops.temporal.TimeFromHMS) -> str:
@@ -357,6 +408,33 @@ def _timestamp_add(translator: ExprTranslator, op: ops.temporal.TimestampAdd) ->
     return _left_op_right(translator=translator, op_node=op, op_sign="+")
 
 
+def _timestamp_bucket(
+    translator: ExprTranslator, op: ops.temporal.TimestampBucket
+) -> str:
+    arg_translated = translator.translate(op.arg)
+
+    unit = op.interval.dtype.unit.name
+    unit_for_mod = "DAYOFMONTH" if unit == "DAY" else unit
+    bucket_width = op.interval.value
+    offset = op.offset.value if op.offset else 0
+
+    arg_offset = f"TIMESTAMPADD({unit}, -({offset}), {arg_translated})"
+    num = f"{unit_for_mod}({arg_offset})"
+    mod = f"{num} % {bucket_width}"
+
+    return f"TIMESTAMPADD({unit}, -({mod}) + {offset}, FLOOR({arg_offset} TO {unit}))"
+
+
+def _timestamp_delta(
+    translator: ExprTranslator, op: ops.temporal.TimestampDelta
+) -> str:
+    left = translator.translate(op.left)
+    right = translator.translate(op.right)
+    unit = op.part.value.upper()
+
+    return f"TIMESTAMPDIFF({unit}, {right}, {left})"
+
+
 def _timestamp_diff(translator: ExprTranslator, op: ops.temporal.TimestampDiff) -> str:
     return _left_op_right(translator=translator, op_node=op, op_sign="-")
 
@@ -370,10 +448,9 @@ def _timestamp_sub(translator: ExprTranslator, op: ops.temporal.TimestampSub) ->
     return f"{table_column_translated} - {interval_translated}"
 
 
-def _timestamp_from_unix(translator: ExprTranslator, op: ops.Node) -> str:
-    arg, unit = op.args
+def _timestamp_from_unix(translator: ExprTranslator, op: ops.TimestampFromUNIX) -> str:
+    arg, unit = op.arg, op.unit
 
-    numeric = helpers.quote_identifier(arg.name, force=True)
     if unit == TimestampUnit.MILLISECOND:
         precision = 3
     elif unit == TimestampUnit.SECOND:
@@ -381,7 +458,8 @@ def _timestamp_from_unix(translator: ExprTranslator, op: ops.Node) -> str:
     else:
         raise ValueError(f"{unit!r} unit is not supported!")
 
-    return f"TO_TIMESTAMP_LTZ({numeric}, {precision})"
+    arg = translator.translate(op.arg)
+    return f"CAST(TO_TIMESTAMP_LTZ({arg}, {precision}) AS TIMESTAMP)"
 
 
 def _timestamp_from_ymdhms(
@@ -412,9 +490,11 @@ operation_registry.update(
         ops.ApproxCountDistinct: aggregate.reduction("approx_count_distinct"),
         ops.CountStar: _count_star,
         # String operations
+        ops.RegexSearch: fixed_arity("regexp", 2),
+        ops.StringConcat: _string_concat,
+        ops.Strftime: _strftime,
         ops.StringLength: unary("char_length"),
         ops.StrRight: fixed_arity("right", 2),
-        ops.RegexSearch: fixed_arity("regexp", 2),
         # Timestamp operations
         ops.Date: _date,
         ops.ExtractEpochSeconds: _extract_epoch_seconds,
@@ -450,14 +530,19 @@ operation_registry.update(
         ops.MapGet: _map_get,
         # Temporal functions
         ops.DateAdd: _date_add,
+        ops.DateDelta: _date_delta,
         ops.DateDiff: _date_diff,
         ops.DateFromYMD: _date_from_ymd,
         ops.DateSub: _date_sub,
         ops.DayOfWeekIndex: _day_of_week_index,
+        ops.DayOfWeekName: _day_of_week_name,
         ops.StringToTimestamp: _string_to_timestamp,
         ops.Time: _time,
+        ops.TimeDelta: _time_delta,
         ops.TimeFromHMS: _time_from_hms,
         ops.TimestampAdd: _timestamp_add,
+        ops.TimestampBucket: _timestamp_bucket,
+        ops.TimestampDelta: _timestamp_delta,
         ops.TimestampDiff: _timestamp_diff,
         ops.TimestampFromUNIX: _timestamp_from_unix,
         ops.TimestampFromYMDHMS: _timestamp_from_ymdhms,
