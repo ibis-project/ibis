@@ -6398,13 +6398,13 @@ sqlalchemy = ">=1.0.0"
 
 [[package]]
 name = "sqlglot"
-version = "20.7.1"
+version = "20.8.0"
 description = "An easily customizable SQL parser and transpiler"
 optional = false
 python-versions = ">=3.7"
 files = [
-    {file = "sqlglot-20.7.1-py3-none-any.whl", hash = "sha256:e7a792578fc68ead866ab724fdd4ae39f3e6b0e1cdc2664eeb8527f9a013fcdb"},
-    {file = "sqlglot-20.7.1.tar.gz", hash = "sha256:657e37bba1ef0209bd558f545f38e29456b312a3a1d5211698ffb9ac6699c21f"},
+    {file = "sqlglot-20.8.0-py3-none-any.whl", hash = "sha256:cb73b81a26da462c34b12b98cf193d679d4b5693703d309db236d9784cef60bb"},
+    {file = "sqlglot-20.8.0.tar.gz", hash = "sha256:5636e97fab9efdb4a8690c0e32bbd2d657fe91eb650f10e913a56b4bd979faef"},
 ]
 
 [package.extras]

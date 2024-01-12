@@ -124,7 +124,7 @@ FROM (
           )
         )
       )
-      AND "t22"."l_shipdate" BETWEEN DATEFROMPARTS(1995, 1, 1) AND DATEFROMPARTS(1996, 12, 31)
+      AND "t22"."l_shipdate" BETWEEN DATE_FROM_PARTS(1995, 1, 1) AND DATE_FROM_PARTS(1996, 12, 31)
   ) AS "t23"
   GROUP BY
     1,
