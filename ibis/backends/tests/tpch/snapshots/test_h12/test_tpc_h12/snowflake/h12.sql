@@ -104,8 +104,8 @@ FROM (
       "t7"."l_shipmode" IN ('MAIL', 'SHIP')
       AND "t7"."l_commitdate" < "t7"."l_receiptdate"
       AND "t7"."l_shipdate" < "t7"."l_commitdate"
-      AND "t7"."l_receiptdate" >= DATEFROMPARTS(1994, 1, 1)
-      AND "t7"."l_receiptdate" < DATEFROMPARTS(1995, 1, 1)
+      AND "t7"."l_receiptdate" >= DATE_FROM_PARTS(1994, 1, 1)
+      AND "t7"."l_receiptdate" < DATE_FROM_PARTS(1995, 1, 1)
   ) AS "t8"
   GROUP BY
     1

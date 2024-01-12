@@ -52,8 +52,8 @@ FROM (
         "t1"."L_COMMENT" AS "l_comment"
       FROM "LINEITEM" AS "t1"
       WHERE
-        "t1"."L_SHIPDATE" >= DATEFROMPARTS(1996, 1, 1)
-        AND "t1"."L_SHIPDATE" < DATEFROMPARTS(1996, 4, 1)
+        "t1"."L_SHIPDATE" >= DATE_FROM_PARTS(1996, 1, 1)
+        AND "t1"."L_SHIPDATE" < DATE_FROM_PARTS(1996, 4, 1)
     ) AS "t4"
     GROUP BY
       1
@@ -112,8 +112,8 @@ WHERE
             "t1"."L_COMMENT" AS "l_comment"
           FROM "LINEITEM" AS "t1"
           WHERE
-            "t1"."L_SHIPDATE" >= DATEFROMPARTS(1996, 1, 1)
-            AND "t1"."L_SHIPDATE" < DATEFROMPARTS(1996, 4, 1)
+            "t1"."L_SHIPDATE" >= DATE_FROM_PARTS(1996, 1, 1)
+            AND "t1"."L_SHIPDATE" < DATE_FROM_PARTS(1996, 4, 1)
         ) AS "t4"
         GROUP BY
           1
