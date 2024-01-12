@@ -352,7 +352,6 @@ _SIMPLE_OPS = {
     ops.MapValues: "map_values",
     ops.Mode: "mode",
     ops.RPad: "rpad",
-    ops.StringAscii: "ascii",
     ops.TimeFromHMS: "make_time",
     ops.TypeOf: "typeof",
     ops.GeoPoint: "st_point",
