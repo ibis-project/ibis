@@ -198,29 +198,33 @@ def test_connect_url_with_empty_host():
 
 @pytest.fixture(scope="module")
 def contz(con):
-    (tz,) = con.raw_sql("SHOW TIMEZONE").fetchone()
-    con.raw_sql("SET TIMEZONE TO 'America/New_York'")
+    with con.begin() as c:
+        c.execute("SHOW TIMEZONE")
+        [(tz,)] = c.fetchall()
+        c.execute("SET TIMEZONE TO 'America/New_York'")
 
     yield con
 
-    con.raw_sql(f"SET TIMEZONE TO '{tz}'")
+    with con.begin() as c:
+        c.execute(f"SET TIMEZONE TO '{tz}'")
 
 
-def test_timezone_from_column(con, contz, snapshot):
-    con.raw_sql(
-        """
-        CREATE TEMPORARY TABLE x (
-            id BIGINT,
-            ts_tz TIMESTAMP WITH TIME ZONE NOT NULL,
-            ts_no_tz TIMESTAMP WITHOUT TIME ZONE NOT NULL
-        );
+def test_timezone_from_column(contz, snapshot):
+    with contz.begin() as c:
+        c.execute(
+            """
+            CREATE TEMPORARY TABLE x (
+                id BIGINT,
+                ts_tz TIMESTAMP WITH TIME ZONE NOT NULL,
+                ts_no_tz TIMESTAMP WITHOUT TIME ZONE NOT NULL
+            );
 
-        INSERT INTO x VALUES
-            (1, '2018-01-01 00:00:01+00', '2018-01-01 00:00:02');
+            INSERT INTO x VALUES
+                (1, '2018-01-01 00:00:01+00', '2018-01-01 00:00:02');
 
-        CREATE TEMPORARY TABLE y AS SELECT 1::BIGINT AS id;
-        """
-    )
+            CREATE TEMPORARY TABLE y AS SELECT 1::BIGINT AS id;
+            """
+        )
 
     case = (
         contz.table("x")
