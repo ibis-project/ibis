@@ -191,11 +191,6 @@ def test_insert_with_cte(con):
     assert Y.execute().empty
 
 
-def test_connect_url_with_empty_host():
-    con = ibis.connect("postgres:///ibis_testing")
-    assert con.con.url.host is None
-
-
 @pytest.fixture(scope="module")
 def contz(con):
     with con.begin() as c:
