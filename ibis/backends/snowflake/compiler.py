@@ -129,11 +129,9 @@ class SnowflakeCompiler(SQLGlotCompiler):
             if value.tzinfo is not None:
                 return self.f.timestamp_tz_from_parts(*args, dtype.timezone)
             else:
-                # workaround sqlglot not supporting more than 6 arguments
-                return sge.Anonymous(
-                    this=sg.to_identifier("timestamp_from_parts"),
-                    expressions=list(map(sge.convert, args)),
-                )
+                # workaround sqlglot not supporting more than 6 arguments by
+                # using an anonymous function
+                return self.f.anon.timestamp_from_parts(*args)
         elif dtype.is_time():
             nanos = value.microsecond * 1_000
             return self.f.time_from_parts(value.hour, value.minute, value.second, nanos)
