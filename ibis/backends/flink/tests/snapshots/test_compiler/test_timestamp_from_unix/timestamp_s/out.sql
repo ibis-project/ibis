@@ -1,2 +1,2 @@
-SELECT TO_TIMESTAMP_LTZ(`d`, 0) AS `TimestampFromUNIX(d)`
+SELECT CAST(TO_TIMESTAMP_LTZ(t0.`d`, 0) AS TIMESTAMP) AS `TimestampFromUNIX(d)`
 FROM table t0

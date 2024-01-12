@@ -44,6 +44,9 @@ class TestConf(BackendTest):
 
         env = StreamExecutionEnvironment(j_stream_execution_environment)
         stream_table_env = StreamTableEnvironment.create(env)
+        table_config = stream_table_env.get_config()
+        table_config.set("table.local-time-zone", "UTC")
+
         return ibis.flink.connect(stream_table_env, **kw)
 
     def _load_data(self, **_: Any) -> None:
@@ -70,6 +73,9 @@ class TestConfForStreaming(TestConf):
 
         env_settings = EnvironmentSettings.in_streaming_mode()
         table_env = TableEnvironment.create(env_settings)
+        table_config = table_env.get_config()
+        table_config.set("table.local-time-zone", "UTC")
+
         return ibis.flink.connect(table_env, **kw)
 
 
