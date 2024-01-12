@@ -23,7 +23,7 @@ FROM (
       "t0"."S_PHONE" AS "s_phone",
       "t0"."S_ACCTBAL" AS "s_acctbal",
       "t0"."S_COMMENT" AS "s_comment"
-    FROM "SUPPLIER" AS "t0"
+    FROM "SNOWFLAKE_SAMPLE_DATA"."TPCH_SF1"."SUPPLIER" AS "t0"
   ) AS "t8"
   INNER JOIN (
     SELECT
@@ -31,7 +31,7 @@ FROM (
       "t2"."N_NAME" AS "n_name",
       "t2"."N_REGIONKEY" AS "n_regionkey",
       "t2"."N_COMMENT" AS "n_comment"
-    FROM "NATION" AS "t2"
+    FROM "SNOWFLAKE_SAMPLE_DATA"."TPCH_SF1"."NATION" AS "t2"
   ) AS "t9"
     ON "t8"."s_nationkey" = "t9"."n_nationkey"
 ) AS "t13"
@@ -47,13 +47,13 @@ WHERE
         "t1"."PS_AVAILQTY" AS "ps_availqty",
         "t1"."PS_SUPPLYCOST" AS "ps_supplycost",
         "t1"."PS_COMMENT" AS "ps_comment"
-      FROM "PARTSUPP" AS "t1"
+      FROM "SNOWFLAKE_SAMPLE_DATA"."TPCH_SF1"."PARTSUPP" AS "t1"
     ) AS "t6"
     WHERE
       "t6"."ps_partkey" IN (
         SELECT
           "t3"."P_PARTKEY" AS "p_partkey"
-        FROM "PART" AS "t3"
+        FROM "SNOWFLAKE_SAMPLE_DATA"."TPCH_SF1"."PART" AS "t3"
         WHERE
           "t3"."P_NAME" LIKE 'forest%'
       )
@@ -79,7 +79,7 @@ WHERE
               "t4"."L_SHIPINSTRUCT" AS "l_shipinstruct",
               "t4"."L_SHIPMODE" AS "l_shipmode",
               "t4"."L_COMMENT" AS "l_comment"
-            FROM "LINEITEM" AS "t4"
+            FROM "SNOWFLAKE_SAMPLE_DATA"."TPCH_SF1"."LINEITEM" AS "t4"
             WHERE
               "t4"."L_PARTKEY" = "t6"."ps_partkey"
               AND "t4"."L_SUPPKEY" = "t6"."ps_suppkey"

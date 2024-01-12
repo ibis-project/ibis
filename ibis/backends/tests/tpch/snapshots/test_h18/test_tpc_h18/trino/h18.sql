@@ -93,7 +93,7 @@ FROM (
           CAST("t0"."c_acctbal" AS DECIMAL(15, 2)) AS "c_acctbal",
           "t0"."c_mktsegment",
           "t0"."c_comment"
-        FROM "customer" AS "t0"
+        FROM "hive"."ibis_sf1"."customer" AS "t0"
       ) AS "t6"
       INNER JOIN (
         SELECT
@@ -106,7 +106,7 @@ FROM (
           "t1"."o_clerk",
           "t1"."o_shippriority",
           "t1"."o_comment"
-        FROM "orders" AS "t1"
+        FROM "hive"."ibis_sf1"."orders" AS "t1"
       ) AS "t7"
         ON "t6"."c_custkey" = "t7"."o_custkey"
       INNER JOIN (
@@ -127,7 +127,7 @@ FROM (
           "t2"."l_shipinstruct",
           "t2"."l_shipmode",
           "t2"."l_comment"
-        FROM "lineitem" AS "t2"
+        FROM "hive"."ibis_sf1"."lineitem" AS "t2"
       ) AS "t8"
         ON "t7"."o_orderkey" = "t8"."l_orderkey"
     ) AS "t12"
@@ -157,7 +157,7 @@ FROM (
               "t2"."l_shipinstruct",
               "t2"."l_shipmode",
               "t2"."l_comment"
-            FROM "lineitem" AS "t2"
+            FROM "hive"."ibis_sf1"."lineitem" AS "t2"
           ) AS "t5"
           GROUP BY
             1
