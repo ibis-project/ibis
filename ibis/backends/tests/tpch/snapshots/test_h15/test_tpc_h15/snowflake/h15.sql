@@ -24,7 +24,7 @@ FROM (
       "t0"."S_PHONE" AS "s_phone",
       "t0"."S_ACCTBAL" AS "s_acctbal",
       "t0"."S_COMMENT" AS "s_comment"
-    FROM "SUPPLIER" AS "t0"
+    FROM "SNOWFLAKE_SAMPLE_DATA"."TPCH_SF1"."SUPPLIER" AS "t0"
   ) AS "t3"
   INNER JOIN (
     SELECT
@@ -50,7 +50,7 @@ FROM (
         "t1"."L_SHIPINSTRUCT" AS "l_shipinstruct",
         "t1"."L_SHIPMODE" AS "l_shipmode",
         "t1"."L_COMMENT" AS "l_comment"
-      FROM "LINEITEM" AS "t1"
+      FROM "SNOWFLAKE_SAMPLE_DATA"."TPCH_SF1"."LINEITEM" AS "t1"
       WHERE
         "t1"."L_SHIPDATE" >= DATE_FROM_PARTS(1996, 1, 1)
         AND "t1"."L_SHIPDATE" < DATE_FROM_PARTS(1996, 4, 1)
@@ -84,7 +84,7 @@ WHERE
           "t0"."S_PHONE" AS "s_phone",
           "t0"."S_ACCTBAL" AS "s_acctbal",
           "t0"."S_COMMENT" AS "s_comment"
-        FROM "SUPPLIER" AS "t0"
+        FROM "SNOWFLAKE_SAMPLE_DATA"."TPCH_SF1"."SUPPLIER" AS "t0"
       ) AS "t3"
       INNER JOIN (
         SELECT
@@ -110,7 +110,7 @@ WHERE
             "t1"."L_SHIPINSTRUCT" AS "l_shipinstruct",
             "t1"."L_SHIPMODE" AS "l_shipmode",
             "t1"."L_COMMENT" AS "l_comment"
-          FROM "LINEITEM" AS "t1"
+          FROM "SNOWFLAKE_SAMPLE_DATA"."TPCH_SF1"."LINEITEM" AS "t1"
           WHERE
             "t1"."L_SHIPDATE" >= DATE_FROM_PARTS(1996, 1, 1)
             AND "t1"."L_SHIPDATE" < DATE_FROM_PARTS(1996, 4, 1)

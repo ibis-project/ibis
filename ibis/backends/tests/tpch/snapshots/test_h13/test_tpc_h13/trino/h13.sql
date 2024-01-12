@@ -38,7 +38,7 @@ FROM (
           CAST("t0"."c_acctbal" AS DECIMAL(15, 2)) AS "c_acctbal",
           "t0"."c_mktsegment",
           "t0"."c_comment"
-        FROM "customer" AS "t0"
+        FROM "hive"."ibis_sf1"."customer" AS "t0"
       ) AS "t4"
       LEFT OUTER JOIN (
         SELECT
@@ -51,7 +51,7 @@ FROM (
           "t1"."o_clerk",
           "t1"."o_shippriority",
           "t1"."o_comment"
-        FROM "orders" AS "t1"
+        FROM "hive"."ibis_sf1"."orders" AS "t1"
       ) AS "t5"
         ON "t4"."c_custkey" = "t5"."o_custkey"
         AND NOT (

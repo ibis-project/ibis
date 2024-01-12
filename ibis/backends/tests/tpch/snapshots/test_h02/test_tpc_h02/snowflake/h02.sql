@@ -48,7 +48,7 @@ FROM (
       "t0"."P_CONTAINER" AS "p_container",
       "t0"."P_RETAILPRICE" AS "p_retailprice",
       "t0"."P_COMMENT" AS "p_comment"
-    FROM "PART" AS "t0"
+    FROM "SNOWFLAKE_SAMPLE_DATA"."TPCH_SF1"."PART" AS "t0"
   ) AS "t10"
   INNER JOIN (
     SELECT
@@ -57,7 +57,7 @@ FROM (
       "t1"."PS_AVAILQTY" AS "ps_availqty",
       "t1"."PS_SUPPLYCOST" AS "ps_supplycost",
       "t1"."PS_COMMENT" AS "ps_comment"
-    FROM "PARTSUPP" AS "t1"
+    FROM "SNOWFLAKE_SAMPLE_DATA"."TPCH_SF1"."PARTSUPP" AS "t1"
   ) AS "t11"
     ON "t10"."p_partkey" = "t11"."ps_partkey"
   INNER JOIN (
@@ -69,7 +69,7 @@ FROM (
       "t2"."S_PHONE" AS "s_phone",
       "t2"."S_ACCTBAL" AS "s_acctbal",
       "t2"."S_COMMENT" AS "s_comment"
-    FROM "SUPPLIER" AS "t2"
+    FROM "SNOWFLAKE_SAMPLE_DATA"."TPCH_SF1"."SUPPLIER" AS "t2"
   ) AS "t13"
     ON "t13"."s_suppkey" = "t11"."ps_suppkey"
   INNER JOIN (
@@ -78,7 +78,7 @@ FROM (
       "t3"."N_NAME" AS "n_name",
       "t3"."N_REGIONKEY" AS "n_regionkey",
       "t3"."N_COMMENT" AS "n_comment"
-    FROM "NATION" AS "t3"
+    FROM "SNOWFLAKE_SAMPLE_DATA"."TPCH_SF1"."NATION" AS "t3"
   ) AS "t15"
     ON "t13"."s_nationkey" = "t15"."n_nationkey"
   INNER JOIN (
@@ -86,7 +86,7 @@ FROM (
       "t4"."R_REGIONKEY" AS "r_regionkey",
       "t4"."R_NAME" AS "r_name",
       "t4"."R_COMMENT" AS "r_comment"
-    FROM "REGION" AS "t4"
+    FROM "SNOWFLAKE_SAMPLE_DATA"."TPCH_SF1"."REGION" AS "t4"
   ) AS "t17"
     ON "t15"."n_regionkey" = "t17"."r_regionkey"
 ) AS "t26"
@@ -146,7 +146,7 @@ WHERE
             "t1"."PS_AVAILQTY" AS "ps_availqty",
             "t1"."PS_SUPPLYCOST" AS "ps_supplycost",
             "t1"."PS_COMMENT" AS "ps_comment"
-          FROM "PARTSUPP" AS "t1"
+          FROM "SNOWFLAKE_SAMPLE_DATA"."TPCH_SF1"."PARTSUPP" AS "t1"
         ) AS "t12"
         INNER JOIN (
           SELECT
@@ -157,7 +157,7 @@ WHERE
             "t2"."S_PHONE" AS "s_phone",
             "t2"."S_ACCTBAL" AS "s_acctbal",
             "t2"."S_COMMENT" AS "s_comment"
-          FROM "SUPPLIER" AS "t2"
+          FROM "SNOWFLAKE_SAMPLE_DATA"."TPCH_SF1"."SUPPLIER" AS "t2"
         ) AS "t14"
           ON "t14"."s_suppkey" = "t12"."ps_suppkey"
         INNER JOIN (
@@ -166,7 +166,7 @@ WHERE
             "t3"."N_NAME" AS "n_name",
             "t3"."N_REGIONKEY" AS "n_regionkey",
             "t3"."N_COMMENT" AS "n_comment"
-          FROM "NATION" AS "t3"
+          FROM "SNOWFLAKE_SAMPLE_DATA"."TPCH_SF1"."NATION" AS "t3"
         ) AS "t16"
           ON "t14"."s_nationkey" = "t16"."n_nationkey"
         INNER JOIN (
@@ -174,7 +174,7 @@ WHERE
             "t4"."R_REGIONKEY" AS "r_regionkey",
             "t4"."R_NAME" AS "r_name",
             "t4"."R_COMMENT" AS "r_comment"
-          FROM "REGION" AS "t4"
+          FROM "SNOWFLAKE_SAMPLE_DATA"."TPCH_SF1"."REGION" AS "t4"
         ) AS "t18"
           ON "t16"."n_regionkey" = "t18"."r_regionkey"
       ) AS "t27"

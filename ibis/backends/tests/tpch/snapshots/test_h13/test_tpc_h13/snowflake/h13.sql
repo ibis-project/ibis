@@ -38,7 +38,7 @@ FROM (
           "t0"."C_ACCTBAL" AS "c_acctbal",
           "t0"."C_MKTSEGMENT" AS "c_mktsegment",
           "t0"."C_COMMENT" AS "c_comment"
-        FROM "CUSTOMER" AS "t0"
+        FROM "SNOWFLAKE_SAMPLE_DATA"."TPCH_SF1"."CUSTOMER" AS "t0"
       ) AS "t4"
       LEFT OUTER JOIN (
         SELECT
@@ -51,7 +51,7 @@ FROM (
           "t1"."O_CLERK" AS "o_clerk",
           "t1"."O_SHIPPRIORITY" AS "o_shippriority",
           "t1"."O_COMMENT" AS "o_comment"
-        FROM "ORDERS" AS "t1"
+        FROM "SNOWFLAKE_SAMPLE_DATA"."TPCH_SF1"."ORDERS" AS "t1"
       ) AS "t5"
         ON "t4"."c_custkey" = "t5"."o_custkey"
         AND NOT (

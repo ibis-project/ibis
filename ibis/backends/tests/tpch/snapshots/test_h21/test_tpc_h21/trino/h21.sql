@@ -32,7 +32,7 @@ FROM (
           "t0"."s_phone",
           CAST("t0"."s_acctbal" AS DECIMAL(15, 2)) AS "s_acctbal",
           "t0"."s_comment"
-        FROM "supplier" AS "t0"
+        FROM "hive"."ibis_sf1"."supplier" AS "t0"
       ) AS "t9"
       INNER JOIN (
         SELECT
@@ -52,7 +52,7 @@ FROM (
           "t1"."l_shipinstruct",
           "t1"."l_shipmode",
           "t1"."l_comment"
-        FROM "lineitem" AS "t1"
+        FROM "hive"."ibis_sf1"."lineitem" AS "t1"
       ) AS "t10"
         ON "t9"."s_suppkey" = "t10"."l_suppkey"
       INNER JOIN (
@@ -66,7 +66,7 @@ FROM (
           "t2"."o_clerk",
           "t2"."o_shippriority",
           "t2"."o_comment"
-        FROM "orders" AS "t2"
+        FROM "hive"."ibis_sf1"."orders" AS "t2"
       ) AS "t13"
         ON "t13"."o_orderkey" = "t10"."l_orderkey"
       INNER JOIN (
@@ -75,7 +75,7 @@ FROM (
           "t3"."n_name",
           "t3"."n_regionkey",
           "t3"."n_comment"
-        FROM "nation" AS "t3"
+        FROM "hive"."ibis_sf1"."nation" AS "t3"
       ) AS "t8"
         ON "t9"."s_nationkey" = "t8"."n_nationkey"
     ) AS "t17"
@@ -104,7 +104,7 @@ FROM (
             "t1"."l_shipinstruct",
             "t1"."l_shipmode",
             "t1"."l_comment"
-          FROM "lineitem" AS "t1"
+          FROM "hive"."ibis_sf1"."lineitem" AS "t1"
         ) AS "t11"
         WHERE
           (
@@ -136,7 +136,7 @@ FROM (
               "t1"."l_shipinstruct",
               "t1"."l_shipmode",
               "t1"."l_comment"
-            FROM "lineitem" AS "t1"
+            FROM "hive"."ibis_sf1"."lineitem" AS "t1"
           ) AS "t12"
           WHERE
             (

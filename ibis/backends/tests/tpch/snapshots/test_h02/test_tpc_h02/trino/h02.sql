@@ -48,7 +48,7 @@ FROM (
       "t0"."p_container",
       CAST("t0"."p_retailprice" AS DECIMAL(15, 2)) AS "p_retailprice",
       "t0"."p_comment"
-    FROM "part" AS "t0"
+    FROM "hive"."ibis_sf1"."part" AS "t0"
   ) AS "t14"
   INNER JOIN (
     SELECT
@@ -57,7 +57,7 @@ FROM (
       "t1"."ps_availqty",
       CAST("t1"."ps_supplycost" AS DECIMAL(15, 2)) AS "ps_supplycost",
       "t1"."ps_comment"
-    FROM "partsupp" AS "t1"
+    FROM "hive"."ibis_sf1"."partsupp" AS "t1"
   ) AS "t15"
     ON "t14"."p_partkey" = "t15"."ps_partkey"
   INNER JOIN (
@@ -69,7 +69,7 @@ FROM (
       "t2"."s_phone",
       CAST("t2"."s_acctbal" AS DECIMAL(15, 2)) AS "s_acctbal",
       "t2"."s_comment"
-    FROM "supplier" AS "t2"
+    FROM "hive"."ibis_sf1"."supplier" AS "t2"
   ) AS "t17"
     ON "t17"."s_suppkey" = "t15"."ps_suppkey"
   INNER JOIN (
@@ -78,7 +78,7 @@ FROM (
       "t3"."n_name",
       "t3"."n_regionkey",
       "t3"."n_comment"
-    FROM "nation" AS "t3"
+    FROM "hive"."ibis_sf1"."nation" AS "t3"
   ) AS "t10"
     ON "t17"."s_nationkey" = "t10"."n_nationkey"
   INNER JOIN (
@@ -86,7 +86,7 @@ FROM (
       "t4"."r_regionkey",
       "t4"."r_name",
       "t4"."r_comment"
-    FROM "region" AS "t4"
+    FROM "hive"."ibis_sf1"."region" AS "t4"
   ) AS "t12"
     ON "t10"."n_regionkey" = "t12"."r_regionkey"
 ) AS "t26"
@@ -146,7 +146,7 @@ WHERE
             "t1"."ps_availqty",
             CAST("t1"."ps_supplycost" AS DECIMAL(15, 2)) AS "ps_supplycost",
             "t1"."ps_comment"
-          FROM "partsupp" AS "t1"
+          FROM "hive"."ibis_sf1"."partsupp" AS "t1"
         ) AS "t16"
         INNER JOIN (
           SELECT
@@ -157,7 +157,7 @@ WHERE
             "t2"."s_phone",
             CAST("t2"."s_acctbal" AS DECIMAL(15, 2)) AS "s_acctbal",
             "t2"."s_comment"
-          FROM "supplier" AS "t2"
+          FROM "hive"."ibis_sf1"."supplier" AS "t2"
         ) AS "t18"
           ON "t18"."s_suppkey" = "t16"."ps_suppkey"
         INNER JOIN (
@@ -166,7 +166,7 @@ WHERE
             "t3"."n_name",
             "t3"."n_regionkey",
             "t3"."n_comment"
-          FROM "nation" AS "t3"
+          FROM "hive"."ibis_sf1"."nation" AS "t3"
         ) AS "t11"
           ON "t18"."s_nationkey" = "t11"."n_nationkey"
         INNER JOIN (
@@ -174,7 +174,7 @@ WHERE
             "t4"."r_regionkey",
             "t4"."r_name",
             "t4"."r_comment"
-          FROM "region" AS "t4"
+          FROM "hive"."ibis_sf1"."region" AS "t4"
         ) AS "t13"
           ON "t11"."n_regionkey" = "t13"."r_regionkey"
       ) AS "t27"
