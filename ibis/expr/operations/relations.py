@@ -372,14 +372,15 @@ class PhysicalTable(Relation):
 
 
 @public
-class UnboundTable(PhysicalTable):
-    schema: Schema
-
-
-@public
 class Namespace(Concrete):
     database: Optional[str] = None
     schema: Optional[str] = None
+
+
+@public
+class UnboundTable(PhysicalTable):
+    schema: Schema
+    namespace: Namespace = Namespace()
 
 
 @public
