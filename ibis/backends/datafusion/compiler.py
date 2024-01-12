@@ -531,7 +531,6 @@ _SIMPLE_OPS = {
     ops.Last: "last_value",
     ops.Median: "median",
     ops.RPad: "rpad",
-    ops.StringAscii: "ascii",
     ops.StringLength: "character_length",
     ops.RegexSplit: "regex_split",
 }
