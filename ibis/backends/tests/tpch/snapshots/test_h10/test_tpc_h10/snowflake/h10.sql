@@ -155,8 +155,8 @@ FROM (
         ON "t8"."c_nationkey" = "t11"."n_nationkey"
     ) AS "t15"
     WHERE
-      "t15"."o_orderdate" >= DATEFROMPARTS(1993, 10, 1)
-      AND "t15"."o_orderdate" < DATEFROMPARTS(1994, 1, 1)
+      "t15"."o_orderdate" >= DATE_FROM_PARTS(1993, 10, 1)
+      AND "t15"."o_orderdate" < DATE_FROM_PARTS(1994, 1, 1)
       AND "t15"."l_returnflag" = 'R'
   ) AS "t16"
   GROUP BY
