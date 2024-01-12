@@ -31,6 +31,8 @@ from ibis.expr.rewrites import (
 )
 
 if TYPE_CHECKING:
+    from collections.abc import Iterable
+
     import ibis.expr.schema as sch
     import ibis.expr.types as ir
     from ibis.backends.base.sqlglot.datatypes import SqlglotType
@@ -59,32 +61,55 @@ class VarGen:
         return sge.Var(this=key)
 
 
+class AnonymousFuncGen:
+    __slots__ = ()
+
+    def __getattr__(self, name: str) -> Callable[..., sge.Anonymous]:
+        return lambda *args: sge.Anonymous(
+            this=name, expressions=list(map(sge.convert, args))
+        )
+
+    def __getitem__(self, key: str) -> Callable[..., sge.Anonymous]:
+        return getattr(self, key)
+
+
 class FuncGen:
-    __slots__ = ("namespace",)
+    __slots__ = ("namespace", "anon")
 
     def __init__(self, namespace: str | None = None) -> None:
         self.namespace = namespace
+        self.anon = AnonymousFuncGen()
 
-    def __getattr__(self, name: str) -> partial:
+    def __getattr__(self, name: str) -> Callable[..., sge.Func]:
         name = ".".join(filter(None, (self.namespace, name)))
         return lambda *args, **kwargs: sg.func(name, *map(sge.convert, args), **kwargs)
 
-    def __getitem__(self, key: str) -> partial:
+    def __getitem__(self, key: str) -> Callable[..., sge.Func]:
         return getattr(self, key)
 
-    def array(self, *args):
-        return sge.Array.from_arg_list(list(map(sge.convert, args)))
+    def array(self, *args: Any) -> sge.Array:
+        if not args:
+            return sge.Array(expressions=[])
 
-    def tuple(self, *args):
-        return sg.func("tuple", *map(sge.convert, args))
+        first, *rest = args
 
-    def exists(self, query):
+        if isinstance(first, sge.Select):
+            assert (
+                not rest
+            ), "only one argument allowed when `first` is a select statement"
+
+        return sge.Array(expressions=list(map(sge.convert, (first, *rest))))
+
+    def tuple(self, *args: Any) -> sge.Anonymous:
+        return self.anon.tuple(*args)
+
+    def exists(self, query: sge.Expression) -> sge.Exists:
         return sge.Exists(this=query)
 
-    def concat(self, *args):
+    def concat(self, *args: Any) -> sge.Concat:
         return sge.Concat(expressions=list(map(sge.convert, args)))
 
-    def map(self, keys, values):
+    def map(self, keys: Iterable, values: Iterable) -> sge.Map:
         return sge.Map(keys=keys, values=values)
 
 
