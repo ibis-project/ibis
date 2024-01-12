@@ -83,8 +83,8 @@ WHERE
             WHERE
               "t4"."L_PARTKEY" = "t6"."ps_partkey"
               AND "t4"."L_SUPPKEY" = "t6"."ps_suppkey"
-              AND "t4"."L_SHIPDATE" >= DATEFROMPARTS(1994, 1, 1)
-              AND "t4"."L_SHIPDATE" < DATEFROMPARTS(1995, 1, 1)
+              AND "t4"."L_SHIPDATE" >= DATE_FROM_PARTS(1994, 1, 1)
+              AND "t4"."L_SHIPDATE" < DATE_FROM_PARTS(1995, 1, 1)
           ) AS "t11"
         ) * 0.5
       )

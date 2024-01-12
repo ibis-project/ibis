@@ -51,7 +51,7 @@ FROM (
       "t0"."L_COMMENT" AS "l_comment"
     FROM "LINEITEM" AS "t0"
     WHERE
-      "t0"."L_SHIPDATE" <= DATEFROMPARTS(1998, 9, 2)
+      "t0"."L_SHIPDATE" <= DATE_FROM_PARTS(1998, 9, 2)
   ) AS "t1"
   GROUP BY
     1,
