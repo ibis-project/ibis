@@ -49,7 +49,7 @@ FROM (
       "t0"."L_SHIPINSTRUCT" AS "l_shipinstruct",
       "t0"."L_SHIPMODE" AS "l_shipmode",
       "t0"."L_COMMENT" AS "l_comment"
-    FROM "LINEITEM" AS "t0"
+    FROM "SNOWFLAKE_SAMPLE_DATA"."TPCH_SF1"."LINEITEM" AS "t0"
     WHERE
       "t0"."L_SHIPDATE" <= DATE_FROM_PARTS(1998, 9, 2)
   ) AS "t1"

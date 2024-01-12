@@ -2018,3 +2018,17 @@ def test_invalid_distinct_empty_key():
     t = ibis.table(dict(a="int", b="string"), name="t")
     with pytest.raises(com.IbisInputError):
         t.distinct(on="c", keep="first")
+
+
+def test_unbind_with_namespace():
+    schema = ibis.schema({"a": "int"})
+    ns = ops.Namespace(database="db", schema="sch")
+
+    t_op = ops.DatabaseTable(name="t", schema=schema, source=None, namespace=ns)
+    t = t_op.to_expr()
+    s = t.unbind()
+
+    expected = ops.UnboundTable(name="t", schema=schema, namespace=ns).to_expr()
+
+    assert s.op() == expected.op()
+    assert s.equals(expected)
