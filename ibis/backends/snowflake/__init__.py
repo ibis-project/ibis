@@ -1062,8 +1062,12 @@ $$"""
             columns=[sg.column(col, quoted=True) for col in obj.columns],
             dialect=self.name,
         )
-        with self.begin() as cur:
-            if overwrite:
-                cur.execute(f"TRUNCATE TABLE {table.sql(self.name)}")
 
-            cur.execute(query.sql(self.name))
+        statements = []
+        if overwrite:
+            statements.append(f"TRUNCATE TABLE {table.sql(self.name)}")
+        statements.append(query.sql(self.name))
+
+        statement = ";".join(statements)
+        with self._safe_raw_sql(statement):
+            pass
