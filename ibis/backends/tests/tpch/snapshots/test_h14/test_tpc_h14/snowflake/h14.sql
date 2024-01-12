@@ -98,6 +98,6 @@ FROM (
       ON "t4"."l_partkey" = "t5"."p_partkey"
   ) AS "t7"
   WHERE
-    "t7"."l_shipdate" >= DATEFROMPARTS(1995, 9, 1)
-    AND "t7"."l_shipdate" < DATEFROMPARTS(1995, 10, 1)
+    "t7"."l_shipdate" >= DATE_FROM_PARTS(1995, 9, 1)
+    AND "t7"."l_shipdate" < DATE_FROM_PARTS(1995, 10, 1)
 ) AS "t8"
