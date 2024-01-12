@@ -48,7 +48,7 @@ FROM (
           "t0"."ps_availqty",
           CAST("t0"."ps_supplycost" AS DECIMAL(15, 2)) AS "ps_supplycost",
           "t0"."ps_comment"
-        FROM "partsupp" AS "t0"
+        FROM "hive"."ibis_sf1"."partsupp" AS "t0"
       ) AS "t6"
       INNER JOIN (
         SELECT
@@ -61,7 +61,7 @@ FROM (
           "t2"."p_container",
           CAST("t2"."p_retailprice" AS DECIMAL(15, 2)) AS "p_retailprice",
           "t2"."p_comment"
-        FROM "part" AS "t2"
+        FROM "hive"."ibis_sf1"."part" AS "t2"
       ) AS "t7"
         ON "t7"."p_partkey" = "t6"."ps_partkey"
     ) AS "t9"
@@ -75,7 +75,7 @@ FROM (
         "t9"."ps_suppkey" IN (
           SELECT
             "t1"."s_suppkey"
-          FROM "supplier" AS "t1"
+          FROM "hive"."ibis_sf1"."supplier" AS "t1"
           WHERE
             "t1"."s_comment" LIKE '%Customer%Complaints%'
         )

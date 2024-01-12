@@ -593,7 +593,9 @@ class Expr(Immutable, Coercible):
         from ibis.expr.analysis import p, c
         from ibis.common.deferred import _
 
-        rule = p.DatabaseTable >> c.UnboundTable(name=_.name, schema=_.schema)
+        rule = p.DatabaseTable >> c.UnboundTable(
+            name=_.name, schema=_.schema, namespace=_.namespace
+        )
         return self.op().replace(rule).to_expr()
 
     def as_table(self) -> ir.Table:

@@ -43,7 +43,7 @@ FROM (
           "t0"."L_SHIPINSTRUCT" AS "l_shipinstruct",
           "t0"."L_SHIPMODE" AS "l_shipmode",
           "t0"."L_COMMENT" AS "l_comment"
-        FROM "LINEITEM" AS "t0"
+        FROM "SNOWFLAKE_SAMPLE_DATA"."TPCH_SF1"."LINEITEM" AS "t0"
       ) AS "t12"
       INNER JOIN (
         SELECT
@@ -54,7 +54,7 @@ FROM (
           "t1"."S_PHONE" AS "s_phone",
           "t1"."S_ACCTBAL" AS "s_acctbal",
           "t1"."S_COMMENT" AS "s_comment"
-        FROM "SUPPLIER" AS "t1"
+        FROM "SNOWFLAKE_SAMPLE_DATA"."TPCH_SF1"."SUPPLIER" AS "t1"
       ) AS "t13"
         ON "t13"."s_suppkey" = "t12"."l_suppkey"
       INNER JOIN (
@@ -64,7 +64,7 @@ FROM (
           "t2"."PS_AVAILQTY" AS "ps_availqty",
           "t2"."PS_SUPPLYCOST" AS "ps_supplycost",
           "t2"."PS_COMMENT" AS "ps_comment"
-        FROM "PARTSUPP" AS "t2"
+        FROM "SNOWFLAKE_SAMPLE_DATA"."TPCH_SF1"."PARTSUPP" AS "t2"
       ) AS "t14"
         ON "t14"."ps_suppkey" = "t12"."l_suppkey" AND "t14"."ps_partkey" = "t12"."l_partkey"
       INNER JOIN (
@@ -78,7 +78,7 @@ FROM (
           "t3"."P_CONTAINER" AS "p_container",
           "t3"."P_RETAILPRICE" AS "p_retailprice",
           "t3"."P_COMMENT" AS "p_comment"
-        FROM "PART" AS "t3"
+        FROM "SNOWFLAKE_SAMPLE_DATA"."TPCH_SF1"."PART" AS "t3"
       ) AS "t15"
         ON "t15"."p_partkey" = "t12"."l_partkey"
       INNER JOIN (
@@ -92,7 +92,7 @@ FROM (
           "t4"."O_CLERK" AS "o_clerk",
           "t4"."O_SHIPPRIORITY" AS "o_shippriority",
           "t4"."O_COMMENT" AS "o_comment"
-        FROM "ORDERS" AS "t4"
+        FROM "SNOWFLAKE_SAMPLE_DATA"."TPCH_SF1"."ORDERS" AS "t4"
       ) AS "t16"
         ON "t16"."o_orderkey" = "t12"."l_orderkey"
       INNER JOIN (
@@ -101,7 +101,7 @@ FROM (
           "t5"."N_NAME" AS "n_name",
           "t5"."N_REGIONKEY" AS "n_regionkey",
           "t5"."N_COMMENT" AS "n_comment"
-        FROM "NATION" AS "t5"
+        FROM "SNOWFLAKE_SAMPLE_DATA"."TPCH_SF1"."NATION" AS "t5"
       ) AS "t17"
         ON "t13"."s_nationkey" = "t17"."n_nationkey"
     ) AS "t23"

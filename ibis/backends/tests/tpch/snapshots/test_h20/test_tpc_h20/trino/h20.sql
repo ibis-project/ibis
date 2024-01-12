@@ -23,7 +23,7 @@ FROM (
       "t0"."s_phone",
       CAST("t0"."s_acctbal" AS DECIMAL(15, 2)) AS "s_acctbal",
       "t0"."s_comment"
-    FROM "supplier" AS "t0"
+    FROM "hive"."ibis_sf1"."supplier" AS "t0"
   ) AS "t10"
   INNER JOIN (
     SELECT
@@ -31,7 +31,7 @@ FROM (
       "t2"."n_name",
       "t2"."n_regionkey",
       "t2"."n_comment"
-    FROM "nation" AS "t2"
+    FROM "hive"."ibis_sf1"."nation" AS "t2"
   ) AS "t8"
     ON "t10"."s_nationkey" = "t8"."n_nationkey"
 ) AS "t13"
@@ -47,13 +47,13 @@ WHERE
         "t1"."ps_availqty",
         CAST("t1"."ps_supplycost" AS DECIMAL(15, 2)) AS "ps_supplycost",
         "t1"."ps_comment"
-      FROM "partsupp" AS "t1"
+      FROM "hive"."ibis_sf1"."partsupp" AS "t1"
     ) AS "t7"
     WHERE
       "t7"."ps_partkey" IN (
         SELECT
           "t3"."p_partkey"
-        FROM "part" AS "t3"
+        FROM "hive"."ibis_sf1"."part" AS "t3"
         WHERE
           "t3"."p_name" LIKE 'forest%'
       )
@@ -79,7 +79,7 @@ WHERE
               "t4"."l_shipinstruct",
               "t4"."l_shipmode",
               "t4"."l_comment"
-            FROM "lineitem" AS "t4"
+            FROM "hive"."ibis_sf1"."lineitem" AS "t4"
             WHERE
               "t4"."l_partkey" = "t7"."ps_partkey"
               AND "t4"."l_suppkey" = "t7"."ps_suppkey"

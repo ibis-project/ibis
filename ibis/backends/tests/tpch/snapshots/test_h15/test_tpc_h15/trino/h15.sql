@@ -24,7 +24,7 @@ FROM (
       "t0"."s_phone",
       CAST("t0"."s_acctbal" AS DECIMAL(15, 2)) AS "s_acctbal",
       "t0"."s_comment"
-    FROM "supplier" AS "t0"
+    FROM "hive"."ibis_sf1"."supplier" AS "t0"
   ) AS "t4"
   INNER JOIN (
     SELECT
@@ -50,7 +50,7 @@ FROM (
         "t1"."l_shipinstruct",
         "t1"."l_shipmode",
         "t1"."l_comment"
-      FROM "lineitem" AS "t1"
+      FROM "hive"."ibis_sf1"."lineitem" AS "t1"
       WHERE
         "t1"."l_shipdate" >= FROM_ISO8601_DATE('1996-01-01')
         AND "t1"."l_shipdate" < FROM_ISO8601_DATE('1996-04-01')
@@ -84,7 +84,7 @@ WHERE
           "t0"."s_phone",
           CAST("t0"."s_acctbal" AS DECIMAL(15, 2)) AS "s_acctbal",
           "t0"."s_comment"
-        FROM "supplier" AS "t0"
+        FROM "hive"."ibis_sf1"."supplier" AS "t0"
       ) AS "t4"
       INNER JOIN (
         SELECT
@@ -110,7 +110,7 @@ WHERE
             "t1"."l_shipinstruct",
             "t1"."l_shipmode",
             "t1"."l_comment"
-          FROM "lineitem" AS "t1"
+          FROM "hive"."ibis_sf1"."lineitem" AS "t1"
           WHERE
             "t1"."l_shipdate" >= FROM_ISO8601_DATE('1996-01-01')
             AND "t1"."l_shipdate" < FROM_ISO8601_DATE('1996-04-01')
