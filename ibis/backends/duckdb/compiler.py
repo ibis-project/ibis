@@ -384,6 +384,7 @@ _SIMPLE_OPS = {
     ops.GeoEndPoint: "st_endpoint",
     ops.GeoEnvelope: "st_envelope",
     ops.GeoEquals: "st_equals",
+    ops.GeoFlipCoordinates: "st_flipcoordinates",
     ops.GeoGeometryType: "st_geometrytype",
     ops.GeoIntersection: "st_intersection",
     ops.GeoIntersects: "st_intersects",
