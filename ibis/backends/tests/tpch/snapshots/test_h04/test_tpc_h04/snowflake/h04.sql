@@ -42,8 +42,8 @@ FROM (
             "t1"."L_COMMITDATE" < "t1"."L_RECEIPTDATE"
           )
       )
-      AND "t2"."o_orderdate" >= DATEFROMPARTS(1993, 7, 1)
-      AND "t2"."o_orderdate" < DATEFROMPARTS(1993, 10, 1)
+      AND "t2"."o_orderdate" >= DATE_FROM_PARTS(1993, 7, 1)
+      AND "t2"."o_orderdate" < DATE_FROM_PARTS(1993, 10, 1)
   ) AS "t4"
   GROUP BY
     1
