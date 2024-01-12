@@ -27,13 +27,13 @@ FROM (
         "t0"."o_clerk",
         "t0"."o_shippriority",
         "t0"."o_comment"
-      FROM "orders" AS "t0"
+      FROM "hive"."ibis_sf1"."orders" AS "t0"
     ) AS "t2"
     WHERE
       EXISTS(
         SELECT
           1 AS "1"
-        FROM "lineitem" AS "t1"
+        FROM "hive"."ibis_sf1"."lineitem" AS "t1"
         WHERE
           (
             "t1"."l_orderkey" = "t2"."o_orderkey"

@@ -107,7 +107,7 @@ FROM (
           "t0"."C_ACCTBAL" AS "c_acctbal",
           "t0"."C_MKTSEGMENT" AS "c_mktsegment",
           "t0"."C_COMMENT" AS "c_comment"
-        FROM "CUSTOMER" AS "t0"
+        FROM "SNOWFLAKE_SAMPLE_DATA"."TPCH_SF1"."CUSTOMER" AS "t0"
       ) AS "t8"
       INNER JOIN (
         SELECT
@@ -120,7 +120,7 @@ FROM (
           "t1"."O_CLERK" AS "o_clerk",
           "t1"."O_SHIPPRIORITY" AS "o_shippriority",
           "t1"."O_COMMENT" AS "o_comment"
-        FROM "ORDERS" AS "t1"
+        FROM "SNOWFLAKE_SAMPLE_DATA"."TPCH_SF1"."ORDERS" AS "t1"
       ) AS "t9"
         ON "t8"."c_custkey" = "t9"."o_custkey"
       INNER JOIN (
@@ -141,7 +141,7 @@ FROM (
           "t2"."L_SHIPINSTRUCT" AS "l_shipinstruct",
           "t2"."L_SHIPMODE" AS "l_shipmode",
           "t2"."L_COMMENT" AS "l_comment"
-        FROM "LINEITEM" AS "t2"
+        FROM "SNOWFLAKE_SAMPLE_DATA"."TPCH_SF1"."LINEITEM" AS "t2"
       ) AS "t10"
         ON "t10"."l_orderkey" = "t9"."o_orderkey"
       INNER JOIN (
@@ -150,7 +150,7 @@ FROM (
           "t3"."N_NAME" AS "n_name",
           "t3"."N_REGIONKEY" AS "n_regionkey",
           "t3"."N_COMMENT" AS "n_comment"
-        FROM "NATION" AS "t3"
+        FROM "SNOWFLAKE_SAMPLE_DATA"."TPCH_SF1"."NATION" AS "t3"
       ) AS "t11"
         ON "t8"."c_nationkey" = "t11"."n_nationkey"
     ) AS "t15"

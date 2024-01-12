@@ -32,7 +32,7 @@ FROM (
           "t0"."S_PHONE" AS "s_phone",
           "t0"."S_ACCTBAL" AS "s_acctbal",
           "t0"."S_COMMENT" AS "s_comment"
-        FROM "SUPPLIER" AS "t0"
+        FROM "SNOWFLAKE_SAMPLE_DATA"."TPCH_SF1"."SUPPLIER" AS "t0"
       ) AS "t8"
       INNER JOIN (
         SELECT
@@ -52,7 +52,7 @@ FROM (
           "t1"."L_SHIPINSTRUCT" AS "l_shipinstruct",
           "t1"."L_SHIPMODE" AS "l_shipmode",
           "t1"."L_COMMENT" AS "l_comment"
-        FROM "LINEITEM" AS "t1"
+        FROM "SNOWFLAKE_SAMPLE_DATA"."TPCH_SF1"."LINEITEM" AS "t1"
       ) AS "t9"
         ON "t8"."s_suppkey" = "t9"."l_suppkey"
       INNER JOIN (
@@ -66,7 +66,7 @@ FROM (
           "t2"."O_CLERK" AS "o_clerk",
           "t2"."O_SHIPPRIORITY" AS "o_shippriority",
           "t2"."O_COMMENT" AS "o_comment"
-        FROM "ORDERS" AS "t2"
+        FROM "SNOWFLAKE_SAMPLE_DATA"."TPCH_SF1"."ORDERS" AS "t2"
       ) AS "t12"
         ON "t12"."o_orderkey" = "t9"."l_orderkey"
       INNER JOIN (
@@ -75,7 +75,7 @@ FROM (
           "t3"."N_NAME" AS "n_name",
           "t3"."N_REGIONKEY" AS "n_regionkey",
           "t3"."N_COMMENT" AS "n_comment"
-        FROM "NATION" AS "t3"
+        FROM "SNOWFLAKE_SAMPLE_DATA"."TPCH_SF1"."NATION" AS "t3"
       ) AS "t13"
         ON "t8"."s_nationkey" = "t13"."n_nationkey"
     ) AS "t17"
@@ -104,7 +104,7 @@ FROM (
             "t1"."L_SHIPINSTRUCT" AS "l_shipinstruct",
             "t1"."L_SHIPMODE" AS "l_shipmode",
             "t1"."L_COMMENT" AS "l_comment"
-          FROM "LINEITEM" AS "t1"
+          FROM "SNOWFLAKE_SAMPLE_DATA"."TPCH_SF1"."LINEITEM" AS "t1"
         ) AS "t10"
         WHERE
           (
@@ -136,7 +136,7 @@ FROM (
               "t1"."L_SHIPINSTRUCT" AS "l_shipinstruct",
               "t1"."L_SHIPMODE" AS "l_shipmode",
               "t1"."L_COMMENT" AS "l_comment"
-            FROM "LINEITEM" AS "t1"
+            FROM "SNOWFLAKE_SAMPLE_DATA"."TPCH_SF1"."LINEITEM" AS "t1"
           ) AS "t11"
           WHERE
             (
