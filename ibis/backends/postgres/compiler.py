@@ -589,11 +589,9 @@ _SIMPLE_OPS = {
     ops.GeoWithin: "st_within",
     ops.GeoX: "st_x",
     ops.GeoY: "st_y",
-    ops.LPad: "lpad",
     ops.MapContains: "exist",
     ops.MapKeys: "akeys",
     ops.MapValues: "avals",
-    ops.RPad: "rpad",
     ops.RegexSearch: "regexp_like",
     ops.TimeFromHMS: "make_time",
 }
