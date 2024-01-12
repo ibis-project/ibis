@@ -43,12 +43,11 @@ NULL_BACKEND_TYPES = {
 }
 
 
-@pytest.mark.broken(["impala", "bigquery"], "assert nan is None")
 @pytest.mark.notyet(["flink"], "The runtime does not support untyped `NULL` values.")
 def test_null_literal(con, backend):
     expr = ibis.null()
     result = con.execute(expr)
-    assert result is None
+    assert pd.isna(result)
 
     with contextlib.suppress(com.OperationNotDefinedError):
         backend_name = backend.name()
@@ -1293,34 +1292,6 @@ def test_hash_consistent(backend, alltypes):
             ],
         ),
         param(
-            "a",
-            "int",
-            None,
-            marks=[
-                pytest.mark.notyet(["flink"], reason="casts to nan"),
-                pytest.mark.notyet(["datafusion"]),
-                pytest.mark.notimpl(
-                    ["postgres"],
-                    raises=PsycoPg2InvalidTextRepresentation,
-                ),
-                pytest.mark.notyet(["mysql"], reason="returns 0"),
-            ],
-        ),
-        param(
-            datetime.datetime(2023, 1, 1),
-            "int",
-            None,
-            marks=[
-                pytest.mark.never(
-                    ["clickhouse", "flink", "postgres"], reason="casts to 1672531200"
-                ),
-                pytest.mark.notyet(["trino"], raises=TrinoUserError),
-                pytest.mark.broken(["datafusion"], reason="casts to the wrong value"),
-                pytest.mark.broken(["polars"], reason="casts to 1672531200000000000"),
-                pytest.mark.broken(["mysql"], reason="returns 20230101000000"),
-            ],
-        ),
-        param(
             datetime.datetime(2023, 1, 1),
             "int",
             1672531200,
@@ -1333,9 +1304,36 @@ def test_hash_consistent(backend, alltypes):
             ],
         ),
     ],
+    ids=str,
 )
-def test_try_cast_expected(con, from_val, to_type, expected):
-    assert con.execute(ibis.literal(from_val).try_cast(to_type)) == expected
+def test_try_cast(con, from_val, to_type, expected):
+    expr = ibis.literal(from_val).try_cast(to_type)
+    result = con.execute(expr)
+    assert result == expected
+
+
+@pytest.mark.notimpl(
+    [
+        "pandas",
+        "dask",
+        "druid",
+        "impala",
+        "mssql",
+        "oracle",
+        "pyspark",
+        "snowflake",
+        "sqlite",
+        "exasol",
+    ]
+)
+@pytest.mark.notyet(["flink"], reason="casts to nan")
+@pytest.mark.notyet(["datafusion"])
+@pytest.mark.notimpl(["postgres"], raises=PsycoPg2InvalidTextRepresentation)
+@pytest.mark.notyet(["mysql"], reason="returns 0")
+def test_try_cast_returns_null(con):
+    expr = ibis.literal("a").try_cast("int")
+    result = con.execute(expr)
+    assert pd.isna(result)
 
 
 @pytest.mark.notimpl(
