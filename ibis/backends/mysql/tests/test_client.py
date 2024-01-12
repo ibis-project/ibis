@@ -53,11 +53,7 @@ MYSQL_TYPES = [
     # mariadb doesn't have a distinct json type
     param("json", dt.string, id="json"),
     param("enum('small', 'medium', 'large')", dt.string, id="enum"),
-    # con.table(name) first parses the type correctly as ibis inet using sqlglot,
-    # then convert these types to sqlalchemy types then a sqlalchemy table to
-    # get the ibis schema again from the alchemy types, but alchemy doesn't
-    # support inet6 so it gets converted to string eventually
-    # ("inet6", dt.inet),
+    param("inet6", dt.inet, id="inet"),
     param("set('a', 'b', 'c', 'd')", dt.Array(dt.string), id="set"),
     param("mediumblob", dt.binary, id="mediumblob"),
     param("blob", dt.binary, id="blob"),
