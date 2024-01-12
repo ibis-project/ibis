@@ -1330,7 +1330,7 @@ def test_rank_followed_by_over_call_merge_frames(backend, alltypes, df):
 @pytest.mark.broken(
     ["pandas"],
     raises=TypeError,
-    reason="'<' not supported between instances of 'bool' and 'NoneType'",
+    reason="pandas rank impl cannot handle compound sort keys with null",
 )
 @pytest.mark.notimpl(
     ["risingwave"],
