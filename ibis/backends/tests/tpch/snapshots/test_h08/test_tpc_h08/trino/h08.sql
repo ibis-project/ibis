@@ -35,7 +35,7 @@ FROM (
           "t0"."p_container",
           CAST("t0"."p_retailprice" AS DECIMAL(15, 2)) AS "p_retailprice",
           "t0"."p_comment"
-        FROM "part" AS "t0"
+        FROM "hive"."ibis_sf1"."part" AS "t0"
       ) AS "t17"
       INNER JOIN (
         SELECT
@@ -55,7 +55,7 @@ FROM (
           "t1"."l_shipinstruct",
           "t1"."l_shipmode",
           "t1"."l_comment"
-        FROM "lineitem" AS "t1"
+        FROM "hive"."ibis_sf1"."lineitem" AS "t1"
       ) AS "t18"
         ON "t17"."p_partkey" = "t18"."l_partkey"
       INNER JOIN (
@@ -67,7 +67,7 @@ FROM (
           "t2"."s_phone",
           CAST("t2"."s_acctbal" AS DECIMAL(15, 2)) AS "s_acctbal",
           "t2"."s_comment"
-        FROM "supplier" AS "t2"
+        FROM "hive"."ibis_sf1"."supplier" AS "t2"
       ) AS "t19"
         ON "t19"."s_suppkey" = "t18"."l_suppkey"
       INNER JOIN (
@@ -81,7 +81,7 @@ FROM (
           "t3"."o_clerk",
           "t3"."o_shippriority",
           "t3"."o_comment"
-        FROM "orders" AS "t3"
+        FROM "hive"."ibis_sf1"."orders" AS "t3"
       ) AS "t20"
         ON "t18"."l_orderkey" = "t20"."o_orderkey"
       INNER JOIN (
@@ -94,7 +94,7 @@ FROM (
           CAST("t4"."c_acctbal" AS DECIMAL(15, 2)) AS "c_acctbal",
           "t4"."c_mktsegment",
           "t4"."c_comment"
-        FROM "customer" AS "t4"
+        FROM "hive"."ibis_sf1"."customer" AS "t4"
       ) AS "t21"
         ON "t20"."o_custkey" = "t21"."c_custkey"
       INNER JOIN (
@@ -103,7 +103,7 @@ FROM (
           "t5"."n_name",
           "t5"."n_regionkey",
           "t5"."n_comment"
-        FROM "nation" AS "t5"
+        FROM "hive"."ibis_sf1"."nation" AS "t5"
       ) AS "t14"
         ON "t21"."c_nationkey" = "t14"."n_nationkey"
       INNER JOIN (
@@ -111,7 +111,7 @@ FROM (
           "t6"."r_regionkey",
           "t6"."r_name",
           "t6"."r_comment"
-        FROM "region" AS "t6"
+        FROM "hive"."ibis_sf1"."region" AS "t6"
       ) AS "t16"
         ON "t14"."n_regionkey" = "t16"."r_regionkey"
       INNER JOIN (
@@ -120,7 +120,7 @@ FROM (
           "t5"."n_name",
           "t5"."n_regionkey",
           "t5"."n_comment"
-        FROM "nation" AS "t5"
+        FROM "hive"."ibis_sf1"."nation" AS "t5"
       ) AS "t22"
         ON "t19"."s_nationkey" = "t22"."n_nationkey"
     ) AS "t30"

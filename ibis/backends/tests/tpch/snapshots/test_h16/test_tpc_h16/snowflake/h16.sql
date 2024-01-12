@@ -48,7 +48,7 @@ FROM (
           "t0"."PS_AVAILQTY" AS "ps_availqty",
           "t0"."PS_SUPPLYCOST" AS "ps_supplycost",
           "t0"."PS_COMMENT" AS "ps_comment"
-        FROM "PARTSUPP" AS "t0"
+        FROM "SNOWFLAKE_SAMPLE_DATA"."TPCH_SF1"."PARTSUPP" AS "t0"
       ) AS "t5"
       INNER JOIN (
         SELECT
@@ -61,7 +61,7 @@ FROM (
           "t2"."P_CONTAINER" AS "p_container",
           "t2"."P_RETAILPRICE" AS "p_retailprice",
           "t2"."P_COMMENT" AS "p_comment"
-        FROM "PART" AS "t2"
+        FROM "SNOWFLAKE_SAMPLE_DATA"."TPCH_SF1"."PART" AS "t2"
       ) AS "t7"
         ON "t7"."p_partkey" = "t5"."ps_partkey"
     ) AS "t9"
@@ -75,7 +75,7 @@ FROM (
         "t9"."ps_suppkey" IN (
           SELECT
             "t1"."S_SUPPKEY" AS "s_suppkey"
-          FROM "SUPPLIER" AS "t1"
+          FROM "SNOWFLAKE_SAMPLE_DATA"."TPCH_SF1"."SUPPLIER" AS "t1"
           WHERE
             "t1"."S_COMMENT" LIKE '%Customer%Complaints%'
         )

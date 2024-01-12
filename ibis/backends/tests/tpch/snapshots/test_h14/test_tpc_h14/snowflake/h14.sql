@@ -80,7 +80,7 @@ FROM (
         "t0"."L_SHIPINSTRUCT" AS "l_shipinstruct",
         "t0"."L_SHIPMODE" AS "l_shipmode",
         "t0"."L_COMMENT" AS "l_comment"
-      FROM "LINEITEM" AS "t0"
+      FROM "SNOWFLAKE_SAMPLE_DATA"."TPCH_SF1"."LINEITEM" AS "t0"
     ) AS "t4"
     INNER JOIN (
       SELECT
@@ -93,7 +93,7 @@ FROM (
         "t1"."P_CONTAINER" AS "p_container",
         "t1"."P_RETAILPRICE" AS "p_retailprice",
         "t1"."P_COMMENT" AS "p_comment"
-      FROM "PART" AS "t1"
+      FROM "SNOWFLAKE_SAMPLE_DATA"."TPCH_SF1"."PART" AS "t1"
     ) AS "t5"
       ON "t4"."l_partkey" = "t5"."p_partkey"
   ) AS "t7"
