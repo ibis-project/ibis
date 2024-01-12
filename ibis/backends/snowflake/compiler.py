@@ -650,7 +650,6 @@ _SIMPLE_OPS = {
     ops.Median: "median",
     ops.Mode: "mode",
     ops.RPad: "rpad",
-    ops.StringAscii: "ascii",
     ops.StringToTimestamp: "to_timestamp_tz",
     ops.TimeFromHMS: "time_from_parts",
     ops.TimestampFromYMDHMS: "timestamp_from_parts",
