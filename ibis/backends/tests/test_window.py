@@ -1195,7 +1195,7 @@ def test_rank_followed_by_over_call_merge_frames(backend, alltypes, df):
 
 
 @pytest.mark.notyet(
-    ["pandas", "dask"],
+    ["dask"],
     reason="multiple ordering keys in a window function not supported for ranking",
     raises=ValueError,
 )
@@ -1208,6 +1208,11 @@ def test_rank_followed_by_over_call_merge_frames(backend, alltypes, df):
 @pytest.mark.notyet(["flink"], raises=com.UnsupportedOperationError)
 @pytest.mark.broken(
     ["pyspark"], reason="pyspark requires CURRENT ROW", raises=PySparkAnalysisException
+)
+@pytest.mark.broken(
+    ["pandas"],
+    raises=TypeError,
+    reason="pandas rank impl cannot handle compound sort keys with null",
 )
 def test_ordering_order(con):
     table = ibis.memtable({"bool_col": [True, False, False, None, True]})
