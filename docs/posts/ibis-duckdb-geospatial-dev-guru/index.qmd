@@ -18,29 +18,30 @@ decided to replicate it and share it with you.
 
 ## Data
 
-The citibike trip data can be downloaded as a `.csv` file from the original
-source https://s3.amazonaws.com/tripdata/index.html. We doubled checked and the
-data in the `202003-citibike-tripdata` entry matches the data used in Spatial
-Dev Guru's post.
+The parquet file used in the original tutorial is available at
+https://github.com/iamgeoknight/common_datasets/tree/main/parquet. The original
+data is also available from the citibike [source](https://s3.amazonaws.com/tripdata/index.html) but as a `.csv` file.
 
 ```{python}
 from pathlib import Path
-from zipfile import ZipFile
+import tarfile
 from urllib.request import urlretrieve
 
-# Download and unzip
-url = "https://s3.amazonaws.com/tripdata/202003-citibike-tripdata.csv.zip"
-zip_path = Path("202003-citibike-tripdata.csv.zip")
-csv_path = Path("202003-citibike-tripdata.csv")
+#Download data
+url = "https://github.com/iamgeoknight/common_datasets/raw/main/parquet/202003-citibike-tripdata.tar.xz"
+tar_path = Path("202003-citibike-tripdata.tar.xz")
+parquet_path = Path("202003-citibike-tripdata.parquet")
 
-if not zip_path.exists():
-    urlretrieve(url, zip_path)
+if not tar_path.exists():
+    urlretrieve(url, tar_path)
 
-if not csv_path.exists():
-    with ZipFile(zip_path) as zip_file:
-        zip_file.extract("202003-citibike-tripdata.csv")
+if not parquet_path.exists():
+    with tarfile.open(tar_path, 'r:xz') as t:
+        t.extract("202003-citibike-tripdata.parquet")
 ```
 
+Now that we have the data, we import Ibis and turn on the interactive mode, to
+easily explore the output of our queries.
 
 ```{python}
 import ibis
@@ -48,25 +49,31 @@ from ibis import _
 from ibis.interactive import *
 ```
 
-This dataset does not contain any geometries, but we have information about the
-latitude and longitude for start and end stations
+## Let's get started
+
+Because this dataset does not contain any geometries, we have to load the spatial extension. If the dataset included any geometry columns, Ibis is smart enough to load the extension for us upon reading the data.
 
 ```{python}
 con = ibis.duckdb.connect("biketrip.ddb")
 con.load_extension("spatial")
 
 #read data and rename columns to use snake case
-biketrip = con.read_csv("202003-citibike-tripdata.csv").rename("snake_case")
+biketrip = con.read_parquet("202003-citibike-tripdata.parquet").rename("snake_case")
 biketrip
 ```
+
+
+We have the information about the longitude and latitude for start and end stations,
+to create geometry points and put the spatial features to use.
 
 ## Create bike trip table
 
 In the original tutorial, Spatial Dev Guru creates a table with transformed
-Pickup and Dropoff Points. In DuckDB the `st_transform` function takes by default
+"Pickup" and "Dropoff" points. In DuckDB the `st_transform` function takes by default
 points as `YX` (latitude/longitude) while in Ibis,  we assume data in the form
 `XY` (longitude/latitude) to be consistent with PostGIS and Geopandas.
 
+In Ibis the function to tr
 ```{python}
 # Notice longitude/latitude order
 pickup = biketrip.start_station_longitude.point(biketrip.start_station_latitude).name("pickup")
@@ -76,10 +83,16 @@ dropoff = biketrip.end_station_longitude.point(biketrip.end_station_latitude).na
 biketrip = biketrip.mutate(pickup_point=pickup.convert('EPSG:4326', 'EPSG:3857'),
                            dropoff_point=dropoff.convert('EPSG:4326', 'EPSG:3857')
                         )
+
 biketrip[["pickup_point", "dropoff_point"]]
 ```
 
+Using `mutate` we add two new columns to our `biketrip` table with transformed
+spatial points for pickup and dropoff locations, that are in the Web Mercator projection ([EPSG:3857](https://epsg.io/3857)).
+
 ## Identify popular starts and end stations
+
+The following queries retrieve a list of bike start and end stations with their respective trip count in descending order.
 
 **Top 10 start stations by trip count**
 
@@ -95,6 +108,12 @@ biketrip.group_by(biketrip.end_station_name).agg(trips = ibis._.count()).order_b
 
 ## Explore trip patterns by user type
 
+We can also calculate the average trip duration and distance traveled for each
+user type. According to the [data dictionary](https://ride.citibikenyc.com/system-data), user type can be "customer" or "subscriber" where:
+
+- Customer = 24-hour pass or 3-day pass user
+- Subscriber = Annual Member
+
 ```{python}
 biketrip.group_by(_.usertype).aggregate(
     avg_duration=biketrip.tripduration.mean(),
@@ -104,12 +123,16 @@ biketrip.group_by(_.usertype).aggregate(
 
 ## Analyzing efficiency: Trip duration vs linear distance
 
+The original tutorial defines `efficiency_ratio` as the `trip_duration` / `linear_distance`, where a higher efficiency ratio could mean a more direct
+route or faster travel times.
+
 ```{python}
+# linear distance
 trip_distance = biketrip.pickup_point.distance(biketrip.dropoff_point).name("trip_distance")
 
-biketrip = biketrip.mutate(linear_distance = trip_distance, efficiency_radio = biketrip.tripduration / trip_distance)
+biketrip = biketrip.mutate(linear_distance = trip_distance, efficiency_ratio = biketrip.tripduration / trip_distance)
 
-biketrip[["pickup_point", "dropoff_point", "linear_distance", "efficiency_radio"]]
+biketrip[["pickup_point", "dropoff_point", "linear_distance", "efficiency_ratio"]]
 ```
 
 Let's take take a look at the table in descending order for the `linear_distance`, for trips that are longer than 0 meters.
@@ -117,3 +140,41 @@ Let's take take a look at the table in descending order for the `linear_distance
 ```{python}
 biketrip.filter(biketrip.linear_distance > 0).order_by(ibis.desc("linear_distance"))
 ```
+
+## Analyzing Bike Trips Within a 500 meters radius
+
+In the original tutorial, the author choses a point (first point on the table),
+and it creates a buffer of 500 m radius around it. In our table we already have
+the point in meters, since we converted them in a previous query.
+
+The following query shows all the bike trips whose pickup point falls within a
+500 meter radius of the first point of the table with `long=-74.00552427` and
+`lat=40.71146364`.
+
+```{python}
+# grab the first row of the data
+first_point = biketrip.limit(1)
+
+trips_within_500 = biketrip.filter(_.pickup_point.within(
+    first_point.select(_.pickup_point.buffer(500)).to_array()))
+
+trips_within_500
+```
+
+## Acknowledgements and resources
+
+Thank you to [Spatial Dev Guru](https://spatial-dev.guru/), for the amazing
+tutorial showcasing DuckDB spatial features. It was fun to replicate the tutorial
+using Ibis.
+
+If you are interested in learning more about Ibis-DuckDB geospatial support,
+here is another blog post [bis + DuckDB geospatial: a match made on Earth](https://ibis-project.org/posts/ibis-duckdb-geospatial/).
+
+Here are some resources to learn more about Ibis:
+
+- [Ibis Docs](https://ibis-project.org/)
+- [Ibis GitHub](https://github.com/ibis-project/ibis)
+
+Chat with us on Zulip:
+
+- [Ibis Zulip Chat](https://ibis-project.zulipchat.com/)
