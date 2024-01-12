@@ -12,7 +12,7 @@ from sqlglot.dialects.dialect import rename_func
 import ibis
 import ibis.common.exceptions as com
 import ibis.expr.operations as ops
-from ibis.backends.base.sqlglot.compiler import SQLGlotCompiler
+from ibis.backends.base.sqlglot.compiler import NULL, STAR, SQLGlotCompiler
 from ibis.backends.base.sqlglot.datatypes import OracleType
 from ibis.backends.base.sqlglot.rewrites import replace_log2, replace_log10
 from ibis.common.patterns import replace
@@ -234,6 +234,19 @@ class OracleCompiler(SQLGlotCompiler):
             expression=sge.Order(expressions=[sge.Ordered(this=arg)]),
         )
         return expr
+
+    @visit_node.register(ops.CountDistinct)
+    def visit_CountDistinct(self, op, *, arg, where):
+        if where is not None:
+            arg = self.if_(where, arg)
+
+        return sge.Count(this=sge.Distinct(expressions=[arg]))
+
+    @visit_node.register(ops.CountStar)
+    def visit_CountStar(self, op, *, arg, where):
+        if where is not None:
+            return self.f.count(self.if_(where, 1, NULL))
+        return self.f.count(STAR)
 
     @visit_node.register(ops.Arbitrary)
     @visit_node.register(ops.ArgMax)
