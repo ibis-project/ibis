@@ -451,7 +451,7 @@ class TrinoCompiler(SQLGlotCompiler):
     def visit_RegexpExtract(self, op, *, arg, pattern, index):
         # sqlglot doesn't support the third `group` argument for trino so work
         # around that limitation using an anonymous function
-        return sge.Anonymous(this="regexp_extract", expressions=[arg, pattern, index])
+        return self.f.anon.regexp_extract(arg, pattern, index)
 
     @visit_node.register(ops.Quantile)
     @visit_node.register(ops.MultiQuantile)

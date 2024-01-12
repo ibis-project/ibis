@@ -142,9 +142,6 @@ class PostgresCompiler(SQLGlotCompiler):
     def visit_ApproxCountDistinct(self, op, *, arg, where):
         return self.agg.count(sge.Distinct(expressions=[arg]), where=where)
 
-    def array_func(self, *args):
-        return sge.Anonymous(this=sg.to_identifier("array"), expressions=list(args))
-
     @visit_node.register(ops.IntegerRange)
     @visit_node.register(ops.TimestampRange)
     def visit_Range(self, op, *, start, stop, step):
@@ -176,7 +173,7 @@ class PostgresCompiler(SQLGlotCompiler):
                 _sign(step, step_dtype).eq(_sign(stop - start, step_dtype)),
             ),
             self.f.array_remove(
-                self.array_func(
+                self.f.array(
                     sg.select(STAR).from_(self.f.generate_series(start, stop, step))
                 ),
                 stop,
@@ -196,7 +193,7 @@ class PostgresCompiler(SQLGlotCompiler):
 
     @visit_node.register(ops.ArrayFilter)
     def visit_ArrayFilter(self, op, *, arg, body, param):
-        return self.array_func(
+        return self.f.array(
             sg.select(sg.column(param, quoted=self.quoted))
             .from_(sge.Unnest(expressions=[arg], alias=param))
             .where(body)
@@ -204,7 +201,7 @@ class PostgresCompiler(SQLGlotCompiler):
 
     @visit_node.register(ops.ArrayMap)
     def visit_ArrayMap(self, op, *, arg, body, param):
-        return self.array_func(
+        return self.f.array(
             sg.select(body).from_(sge.Unnest(expressions=[arg], alias=param))
         )
 
@@ -219,7 +216,7 @@ class PostgresCompiler(SQLGlotCompiler):
 
     @visit_node.register(ops.ArraySort)
     def visit_ArraySort(self, op, *, arg):
-        return self.array_func(
+        return self.f.array(
             sg.select("x").from_(sge.Unnest(expressions=[arg], alias="x")).order_by("x")
         )
 
@@ -227,7 +224,7 @@ class PostgresCompiler(SQLGlotCompiler):
     def visit_ArrayRepeat(self, op, *, arg, times):
         i = sg.to_identifier("i")
         length = self.f.cardinality(arg)
-        return self.array_func(
+        return self.f.array(
             sg.select(arg[i % length + 1]).from_(
                 self.f.generate_series(0, length * times - 1).as_(i.name)
             )
@@ -238,20 +235,18 @@ class PostgresCompiler(SQLGlotCompiler):
         return self.if_(
             arg.is_(NULL),
             NULL,
-            self.array_func(sg.select(sge.Explode(this=arg)).distinct()),
+            self.f.array(sg.select(sge.Explode(this=arg)).distinct()),
         )
 
     @visit_node.register(ops.ArrayUnion)
     def visit_ArrayUnion(self, op, *, left, right):
-        return self.array_func(
-            sg.union(
-                sg.select(sge.Explode(this=left)), sg.select(sge.Explode(this=right))
-            )
+        return self.f.anon.array(
+            sg.union(sg.select(self.f.explode(left)), sg.select(self.f.explode(right)))
         )
 
     @visit_node.register(ops.ArrayIntersect)
     def visit_ArrayIntersect(self, op, *, left, right):
-        return self.array_func(
+        return self.f.anon.array(
             sg.intersect(
                 sg.select(sge.Explode(this=left)), sg.select(sge.Explode(this=right))
             )
@@ -302,7 +297,7 @@ class PostgresCompiler(SQLGlotCompiler):
     def visit_ToJSONArray(self, op, *, arg):
         return self.if_(
             self.f.json_typeof(arg).eq(sge.convert("array")),
-            self.array_func(sg.select(STAR).from_(self.f.json_array_elements(arg))),
+            self.f.array(sg.select(STAR).from_(self.f.json_array_elements(arg))),
             NULL,
         )
 
