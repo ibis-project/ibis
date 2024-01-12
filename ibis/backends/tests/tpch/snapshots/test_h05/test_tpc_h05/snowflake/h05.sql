@@ -115,7 +115,7 @@ FROM (
           "t0"."C_ACCTBAL" AS "c_acctbal",
           "t0"."C_MKTSEGMENT" AS "c_mktsegment",
           "t0"."C_COMMENT" AS "c_comment"
-        FROM "CUSTOMER" AS "t0"
+        FROM "SNOWFLAKE_SAMPLE_DATA"."TPCH_SF1"."CUSTOMER" AS "t0"
       ) AS "t12"
       INNER JOIN (
         SELECT
@@ -128,7 +128,7 @@ FROM (
           "t1"."O_CLERK" AS "o_clerk",
           "t1"."O_SHIPPRIORITY" AS "o_shippriority",
           "t1"."O_COMMENT" AS "o_comment"
-        FROM "ORDERS" AS "t1"
+        FROM "SNOWFLAKE_SAMPLE_DATA"."TPCH_SF1"."ORDERS" AS "t1"
       ) AS "t13"
         ON "t12"."c_custkey" = "t13"."o_custkey"
       INNER JOIN (
@@ -149,7 +149,7 @@ FROM (
           "t2"."L_SHIPINSTRUCT" AS "l_shipinstruct",
           "t2"."L_SHIPMODE" AS "l_shipmode",
           "t2"."L_COMMENT" AS "l_comment"
-        FROM "LINEITEM" AS "t2"
+        FROM "SNOWFLAKE_SAMPLE_DATA"."TPCH_SF1"."LINEITEM" AS "t2"
       ) AS "t14"
         ON "t14"."l_orderkey" = "t13"."o_orderkey"
       INNER JOIN (
@@ -161,7 +161,7 @@ FROM (
           "t3"."S_PHONE" AS "s_phone",
           "t3"."S_ACCTBAL" AS "s_acctbal",
           "t3"."S_COMMENT" AS "s_comment"
-        FROM "SUPPLIER" AS "t3"
+        FROM "SNOWFLAKE_SAMPLE_DATA"."TPCH_SF1"."SUPPLIER" AS "t3"
       ) AS "t15"
         ON "t14"."l_suppkey" = "t15"."s_suppkey"
       INNER JOIN (
@@ -170,7 +170,7 @@ FROM (
           "t4"."N_NAME" AS "n_name",
           "t4"."N_REGIONKEY" AS "n_regionkey",
           "t4"."N_COMMENT" AS "n_comment"
-        FROM "NATION" AS "t4"
+        FROM "SNOWFLAKE_SAMPLE_DATA"."TPCH_SF1"."NATION" AS "t4"
       ) AS "t16"
         ON "t12"."c_nationkey" = "t15"."s_nationkey"
         AND "t15"."s_nationkey" = "t16"."n_nationkey"
@@ -179,7 +179,7 @@ FROM (
           "t5"."R_REGIONKEY" AS "r_regionkey",
           "t5"."R_NAME" AS "r_name",
           "t5"."R_COMMENT" AS "r_comment"
-        FROM "REGION" AS "t5"
+        FROM "SNOWFLAKE_SAMPLE_DATA"."TPCH_SF1"."REGION" AS "t5"
       ) AS "t17"
         ON "t16"."n_regionkey" = "t17"."r_regionkey"
     ) AS "t23"

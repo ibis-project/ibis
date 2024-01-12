@@ -2,13 +2,12 @@ from __future__ import annotations
 
 import abc
 import calendar
-import functools
 import itertools
 import math
 import operator
 import string
 from collections.abc import Iterator, Mapping
-from functools import partial, singledispatchmethod
+from functools import partial, reduce, singledispatchmethod
 from itertools import starmap
 from typing import TYPE_CHECKING, Any, Callable
 
@@ -244,8 +243,7 @@ class SQLGlotCompiler(abc.ABC):
         }
 
         op = op.replace(
-            replace_scalar_parameter(params)
-            | functools.reduce(operator.or_, self.rewrites)
+            replace_scalar_parameter(params) | reduce(operator.or_, self.rewrites)
         )
         op = sqlize(op)
         # apply translate rules in topological order
@@ -553,7 +551,7 @@ class SQLGlotCompiler(abc.ABC):
         # Saturday == 6
         return sge.Case(
             this=(self.f.dayofweek(arg) + 6) % 7,
-            ifs=list(starmap(self.if_, enumerate(calendar.day_name))),
+            ifs=list(itertools.starmap(self.if_, enumerate(calendar.day_name))),
         )
 
     @visit_node.register(ops.IntervalFromInteger)
@@ -874,10 +872,11 @@ class SQLGlotCompiler(abc.ABC):
     def _dedup_name(
         self, key: str, value: sge.Expression
     ) -> Iterator[sge.Alias | sge.Column]:
+        """Don't alias columns that are already named the same as their alias."""
         return (
-            value.as_(key, quoted=self.quoted)
-            if not isinstance(value, sge.Column) or key != value.name
-            else value
+            value
+            if isinstance(value, sge.Column) and key == value.name
+            else value.as_(key, quoted=self.quoted)
         )
 
     @visit_node.register(Select)
@@ -906,15 +905,29 @@ class SQLGlotCompiler(abc.ABC):
         return sg.select(*starmap(self._dedup_name, values.items()))
 
     @visit_node.register(ops.UnboundTable)
-    def visit_UnboundTable(self, op, *, name: str, schema: sch.Schema):
-        return sg.table(name, quoted=self.quoted)
+    def visit_UnboundTable(
+        self, op, *, name: str, schema: sch.Schema, namespace: ops.Namespace
+    ) -> sg.Table:
+        return sg.table(
+            name, db=namespace.schema, catalog=namespace.database, quoted=self.quoted
+        )
 
     @visit_node.register(ops.InMemoryTable)
-    def visit_InMemoryTable(self, op, *, name: str, schema: sch.Schema, data):
+    def visit_InMemoryTable(
+        self, op, *, name: str, schema: sch.Schema, data
+    ) -> sg.Table:
         return sg.table(name, quoted=self.quoted)
 
     @visit_node.register(ops.DatabaseTable)
-    def visit_DatabaseTable(self, op, *, name, namespace, schema, source):
+    def visit_DatabaseTable(
+        self,
+        op,
+        *,
+        name: str,
+        schema: sch.Schema,
+        source: Any,
+        namespace: ops.Namespace,
+    ) -> sg.Table:
         return sg.table(
             name, db=namespace.schema, catalog=namespace.database, quoted=self.quoted
         )
@@ -1108,7 +1121,7 @@ class SQLGlotCompiler(abc.ABC):
             ]
 
         if subset:
-            predicate = functools.reduce(
+            predicate = reduce(
                 sg.and_ if how == "any" else sg.or_,
                 (sg.not_(col.is_(NULL)) for col in subset),
             )

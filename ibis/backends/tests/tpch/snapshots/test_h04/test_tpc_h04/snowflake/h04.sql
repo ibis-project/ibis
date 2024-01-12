@@ -27,13 +27,13 @@ FROM (
         "t0"."O_CLERK" AS "o_clerk",
         "t0"."O_SHIPPRIORITY" AS "o_shippriority",
         "t0"."O_COMMENT" AS "o_comment"
-      FROM "ORDERS" AS "t0"
+      FROM "SNOWFLAKE_SAMPLE_DATA"."TPCH_SF1"."ORDERS" AS "t0"
     ) AS "t2"
     WHERE
       EXISTS(
         SELECT
           1 AS "1"
-        FROM "LINEITEM" AS "t1"
+        FROM "SNOWFLAKE_SAMPLE_DATA"."TPCH_SF1"."LINEITEM" AS "t1"
         WHERE
           (
             "t1"."L_ORDERKEY" = "t2"."o_orderkey"

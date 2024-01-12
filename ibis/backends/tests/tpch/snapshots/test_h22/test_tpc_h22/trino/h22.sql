@@ -27,7 +27,7 @@ FROM (
         CAST("t0"."c_acctbal" AS DECIMAL(15, 2)) AS "c_acctbal",
         "t0"."c_mktsegment",
         "t0"."c_comment"
-      FROM "customer" AS "t0"
+      FROM "hive"."ibis_sf1"."customer" AS "t0"
     ) AS "t2"
     WHERE
       IF(
@@ -50,7 +50,7 @@ FROM (
             CAST("t0"."c_acctbal" AS DECIMAL(15, 2)) AS "c_acctbal",
             "t0"."c_mktsegment",
             "t0"."c_comment"
-          FROM "customer" AS "t0"
+          FROM "hive"."ibis_sf1"."customer" AS "t0"
           WHERE
             CAST("t0"."c_acctbal" AS DECIMAL(15, 2)) > CAST(0.0 AS DOUBLE)
             AND IF(
@@ -66,7 +66,7 @@ FROM (
         EXISTS(
           SELECT
             1 AS "1"
-          FROM "orders" AS "t1"
+          FROM "hive"."ibis_sf1"."orders" AS "t1"
           WHERE
             "t1"."o_custkey" = "t2"."c_custkey"
         )
