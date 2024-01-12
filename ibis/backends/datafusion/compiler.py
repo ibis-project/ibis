@@ -527,10 +527,8 @@ _SIMPLE_OPS = {
     ops.Cot: "cot",
     ops.ExtractMicrosecond: "extract_microsecond",
     ops.First: "first_value",
-    ops.LPad: "lpad",
     ops.Last: "last_value",
     ops.Median: "median",
-    ops.RPad: "rpad",
     ops.StringLength: "character_length",
     ops.RegexSplit: "regex_split",
 }
