@@ -1213,10 +1213,6 @@ class SQLGlotCompiler(abc.ABC):
     def visit_SQLQueryResult(self, op, *, query, schema, source):
         return sg.parse_one(query, read=self.dialect).subquery()
 
-    @visit_node.register(ops.Unnest)
-    def visit_Unnest(self, op, *, arg):
-        return sge.Explode(this=arg)
-
     @visit_node.register(ops.JoinTable)
     def visit_JoinTable(self, op, *, parent, index):
         return parent
