@@ -1,9 +1,35 @@
 CREATE EXTENSION IF NOT EXISTS hstore;
 CREATE EXTENSION IF NOT EXISTS postgis;
 CREATE EXTENSION IF NOT EXISTS plpython3u;
-CREATE EXTENSION IF NOT EXISTS vector;
-CREATE EXTENSION IF NOT EXISTS first_last_agg;
 CREATE EXTENSION IF NOT EXISTS fuzzystrmatch;
+
+-- Create a function that always returns the first non-NULL value:
+CREATE OR REPLACE FUNCTION public.first_agg (anyelement, anyelement)
+    RETURNS anyelement
+    LANGUAGE sql IMMUTABLE STRICT PARALLEL SAFE
+AS 'SELECT $1';
+
+-- Then wrap an aggregate around it:
+DROP AGGREGATE IF EXISTS public.first (anyelement);
+CREATE AGGREGATE public.first (anyelement) (
+    SFUNC = public.first_agg,
+    STYPE = anyelement,
+    PARALLEL = safe
+);
+
+-- Create a function that always returns the last non-NULL value:
+CREATE OR REPLACE FUNCTION public.last_agg (anyelement, anyelement)
+  RETURNS anyelement
+  LANGUAGE sql IMMUTABLE STRICT PARALLEL SAFE AS
+'SELECT $2';
+
+-- Then wrap an aggregate around it:
+DROP AGGREGATE IF EXISTS public.last (anyelement);
+CREATE AGGREGATE public.last (anyelement) (
+    SFUNC = public.last_agg,
+    STYPE = anyelement,
+    PARALLEL = safe
+);
 
 DROP TABLE IF EXISTS diamonds CASCADE;
 
@@ -95,12 +121,19 @@ CREATE TABLE awards_players (
 
 COPY awards_players FROM '/data/awards_players.csv' WITH (FORMAT CSV, HEADER TRUE, DELIMITER ',');
 
+DROP TYPE IF EXISTS vector CASCADE;
+CREATE TYPE vector AS (
+  x FLOAT8,
+  y FLOAT8,
+  z FLOAT8
+);
+
 DROP VIEW IF EXISTS awards_players_special_types CASCADE;
 CREATE VIEW awards_players_special_types AS
 SELECT
     *,
     setweight(to_tsvector('simple', notes), 'A')::TSVECTOR AS search,
-    '[1,2,3]'::VECTOR AS simvec
+    NULL::vector AS simvec
 FROM awards_players;
 
 DROP TABLE IF EXISTS functional_alltypes CASCADE;
