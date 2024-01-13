@@ -495,7 +495,7 @@ class SnowflakeCompiler(SQLGlotCompiler):
         split = self.f.split(
             self.f.array_to_string(self.f.nullif(arg, self.f.array()), sep), sep
         )
-        expr = self.f.nullif(sge.Explode(this=split), "")
+        expr = self.f.nullif(self.f.explode(split), "")
         return self.cast(expr, op.dtype)
 
     @visit_node.register(ops.Quantile)
