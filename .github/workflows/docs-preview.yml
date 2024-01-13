@@ -23,7 +23,7 @@ jobs:
           github_token: ${{ steps.generate_token.outputs.token }}
 
       - name: install nix
-        uses: cachix/install-nix-action@v24
+        uses: cachix/install-nix-action@v25
         with:
           extra_nix_config: |
             access-tokens = github.com=${{ steps.generate_token.outputs.token }}
