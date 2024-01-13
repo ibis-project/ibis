@@ -9,7 +9,7 @@ import string
 from collections.abc import Iterator, Mapping
 from functools import partial, reduce, singledispatchmethod
 from itertools import starmap
-from typing import TYPE_CHECKING, Any, Callable
+from typing import TYPE_CHECKING, Any, Callable, ClassVar
 
 import sqlglot as sg
 import sqlglot.expressions as sge
@@ -165,13 +165,19 @@ class SQLGlotCompiler(abc.ABC):
     quoted: bool | None = None
     """Whether to always quote identifiers."""
 
-    NAN = sge.Literal.number("'NaN'::double")
+    NAN: ClassVar[sge.Expression] = sge.Cast(
+        this=sge.convert("NaN"), to=sge.DataType(this=sge.DataType.Type.DOUBLE)
+    )
     """Backend's NaN literal."""
 
-    POS_INF = sge.Literal.number("'Inf'::double")
+    POS_INF: ClassVar[sge.Expression] = sge.Cast(
+        this=sge.convert("Inf"), to=sge.DataType(this=sge.DataType.Type.DOUBLE)
+    )
     """Backend's positive infinity literal."""
 
-    NEG_INF = sge.Literal.number("'-Inf'::double")
+    NEG_INF: ClassVar[sge.Expression] = sge.Cast(
+        this=sge.convert("-Inf"), to=sge.DataType(this=sge.DataType.Type.DOUBLE)
+    )
     """Backend's negative infinity literal."""
 
     def __init__(self) -> None:
