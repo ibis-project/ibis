@@ -1,0 +1,614 @@
+---
+title: Backend agnostic arrays
+author: "Phillip Cloud"
+date: last-modified
+categories:
+    - arrays
+    - bigquery
+    - blog
+    - cloud
+    - duckdb
+    - portability
+---
+
+## Introduction
+
+This is a redux of a [previous post](../bigquery-arrays/index.qmd) showing
+Ibis's portability in action.
+
+Ibis is portable across complex operations and backends of very different
+scales and deployment models!
+
+::: {.callout-note}
+
+## Results differ slightly between BigQuery and DuckDB
+
+The datasets used in each backend are slightly different.
+
+I opted to avoid ETL for the BigQuery backend by reusing the Google-provided
+IMDB dataset.
+
+The tradeoff is the slight discrepancy in results.
+:::
+
+## Basics
+
+We'll start with `from ibis.interactive import *` for maximum convenience.
+
+```{python}
+from ibis.interactive import *  # <1>
+```
+
+1. `from ibis.interactive import *` imports Ibis APIs into the global namespace
+   and enables [interactive mode](../../how-to/configure/basics.qmd#interactive-mode).
+
+### Connect to your database
+
+::: {.panel-tabset}
+
+## DuckDB
+
+```{python}
+ddb = ibis.connect("duckdb://")
+ddb.create_table(  # <1>
+    "name_basics", ex.imdb_name_basics.fetch(backend=ddb).rename("snake_case")
+)  # <1>
+ddb.create_table(  # <2>
+    "title_basics", ex.imdb_title_basics.fetch(backend=ddb).rename("snake_case")
+)  # <2>
+```
+
+1. Create a table called `name_basics` in our DuckDB database using `ibis.examples` data
+2. Create a table called `title_basics` in our DuckDB database using `ibis.examples` data
+
+## BigQuery
+
+```{python}
+bq = ibis.connect("bigquery://ibis-gbq")
+bq.set_database("bigquery-public-data.imdb")  # <1>
+```
+
+1. Google provides a public BigQuery dataset for IMDB data.
+
+:::
+
+Let's pull out the `name_basics` table, which contains names and metadata about
+people listed on IMDB. We'll call this `ents` (short for `entities`), and remove some
+columns we won't need:
+
+::: {.panel-tabset}
+
+## DuckDB
+
+```{python}
+ddb_ents = ddb.tables.name_basics.drop("birth_year", "death_year")
+ddb_ents.order_by("nconst")
+```
+
+## BigQuery
+
+```{python}
+bq_ents = bq.tables.name_basics.drop("birth_year", "death_year")
+bq_ents.order_by("nconst")
+```
+
+:::
+
+### Splitting strings into arrays
+
+We can see that `known_for_titles` looks sort of like an array, so let's call
+the
+[`split`](../../reference/expression-strings.qmd#ibis.expr.types.strings.StringValue.split)
+method on that column and replace the existing column:
+
+::: {.panel-tabset}
+
+## DuckDB
+
+```{python}
+ddb_ents = ddb_ents.mutate(known_for_titles=_.known_for_titles.split(","))
+ddb_ents.order_by("nconst")
+```
+
+## BigQuery
+
+```{python}
+bq_ents = bq_ents.mutate(known_for_titles=_.known_for_titles.split(","))
+bq_ents.order_by("nconst")
+```
+
+:::
+
+Similarly for `primary_profession`, since people involved in show business often
+have more than one responsibility on a project:
+
+::: {.panel-tabset}
+
+## DuckDB
+
+```{python}
+ddb_ents = ddb_ents.mutate(primary_profession=_.primary_profession.split(","))
+```
+
+## BigQuery
+
+```{python}
+bq_ents = bq_ents.mutate(primary_profession=_.primary_profession.split(","))
+```
+
+:::
+
+### Array length
+
+Let's see how many titles each entity is known for, and then show the five
+people with the largest number of titles they're known for.
+
+This is computed using the
+[`length`](../../reference/expression-collections.qmd#ibis.expr.types.arrays.ArrayValue.length)
+API on array expressions:
+
+::: {.panel-tabset}
+
+## DuckDB
+
+```{python}
+(
+    ddb_ents.select("primary_name", num_titles=_.known_for_titles.length())
+    .order_by(_.num_titles.desc())
+    .limit(5)
+)
+```
+
+## BigQuery
+
+```{python}
+(
+    bq_ents.select("primary_name", num_titles=_.known_for_titles.length())
+    .order_by(_.num_titles.desc())
+    .limit(5)
+)
+```
+
+:::
+
+It seems like the length of the `known_for_titles` might be capped at some small number!
+
+### Index
+
+We can see the position of `"actor"` or `"actress"` in `primary_profession`s:
+
+::: {.panel-tabset}
+
+## DuckDB
+
+```{python}
+ddb_ents.primary_profession.index("actor")
+```
+
+```{python}
+ddb_ents.primary_profession.index("actress")
+```
+
+## BigQuery
+
+```{python}
+bq_ents.primary_profession.index("actor")
+```
+
+```{python}
+bq_ents.primary_profession.index("actress")
+```
+
+:::
+
+A return value of `-1` indicates that `"actor"` is not present in the value.
+
+Let's look for entities that are not primarily actors.
+
+We can do this using the
+[`index`](../../reference/expression-collections.qmd#ibis.expr.types.arrays.ArrayValue.index)
+method by checking whether the positions of the strings `"actor"` or
+`"actress"` are both greater than 0:
+
+::: {.panel-tabset}
+
+## DuckDB
+
+```{python}
+actor_index = ddb_ents.primary_profession.index("actor")
+actress_index = ddb_ents.primary_profession.index("actress")
+
+ddb_not_primarily_acting = (actor_index > 0) & (actress_index > 0)
+ddb_not_primarily_acting.mean()
+```
+
+## BigQuery
+
+```{python}
+actor_index = bq_ents.primary_profession.index("actor")
+actress_index = bq_ents.primary_profession.index("actress")
+
+bq_not_primarily_acting = (actor_index > 0) & (actress_index > 0)
+bq_not_primarily_acting.mean()
+```
+
+:::
+
+Who are they?
+
+::: {.panel-tabset}
+
+## DuckDB
+
+```{python}
+ddb_ents[ddb_not_primarily_acting].order_by("nconst")
+```
+
+## BigQuery
+
+```{python}
+bq_ents[bq_not_primarily_acting].order_by("nconst")
+```
+
+:::
+
+It's not 100% clear whether the order of elements in `primary_profession` matters here.
+
+### Containment
+
+We can get people who are listed as actors or actresses using `contains`:
+
+::: {.panel-tabset}
+
+## DuckDB
+
+```{python}
+ddb_non_actors = bq_ents[
+    ~_.primary_profession.contains("actor") & ~_.primary_profession.contains("actress")
+]
+ddb_non_actors.order_by("nconst")
+```
+
+## BigQuery
+
+```{python}
+bq_non_actors = bq_ents[
+    ~_.primary_profession.contains("actor") & ~_.primary_profession.contains("actress")
+]
+bq_non_actors.order_by("nconst")
+```
+
+:::
+
+### Element removal
+
+We can remove elements from arrays too.
+
+::: {.callout-note}
+## [`remove()`](../../reference/expression-collections.qmd#ibis.expr.types.arrays.ArrayValue.remove) does not mutate the underlying data
+:::
+
+Let's see who only has "actor" in the list of their primary professions:
+
+::: {.panel-tabset}
+
+## DuckDB
+
+```{python}
+ddb_ents.filter(
+    [
+        _.primary_profession.length() > 0,
+        _.primary_profession.remove("actor").length() == 0,
+        _.primary_profession.remove("actress").length() == 0,
+    ]
+).order_by("nconst")
+```
+
+## BigQuery
+
+```{python}
+bq_ents.filter(
+    [
+        _.primary_profession.length() > 0,
+        _.primary_profession.remove("actor").length() == 0,
+        _.primary_profession.remove("actress").length() == 0,
+    ]
+).order_by("nconst")
+```
+
+:::
+
+### Slicing with square-bracket syntax
+
+Let's remove everyone's first profession from the list, but only if they have
+more than one profession listed:
+
+::: {.panel-tabset}
+
+## DuckDB
+
+```{python}
+ddb_ents[_.primary_profession.length() > 1].mutate(
+    primary_profession=_.primary_profession[1:],
+).order_by("nconst")
+```
+
+## BigQuery
+
+```{python}
+bq_ents[_.primary_profession.length() > 1].mutate(
+    primary_profession=_.primary_profession[1:],
+).order_by("nconst")
+```
+
+:::
+
+## Set operations and sorting
+
+Treating arrays as sets is possible with the
+[`union`](../../reference/expression-collections.qmd#ibis.expr.types.arrays.ArrayValue.union)
+and
+[`intersect`](../../reference/expression-collections.qmd#ibis.expr.types.arrays.ArrayValue.intersect)
+APIs.
+
+Let's take a look at `intersect`.
+
+### Intersection
+
+Let's see if we can use array intersection to figure which actors share
+known-for titles and sort the result:
+
+::: {.panel-tabset}
+
+## DuckDB
+
+```{python}
+left = ddb_ents.filter(_.known_for_titles.length() > 0).limit(10_000)
+right = left.view()
+shared_titles = (
+    left
+    .join(right, left.nconst != right.nconst)
+    .select(
+        s.startswith("known_for_titles"),
+        left_name="primary_name",
+        right_name="primary_name_right",
+    )
+    .filter(_.known_for_titles.intersect(_.known_for_titles_right).length() > 0)
+    .group_by(name="left_name")
+    .agg(together_with=_.right_name.collect())
+    .mutate(together_with=_.together_with.unique().sort())
+)
+shared_titles
+```
+
+## BigQuery
+
+```{python}
+left = bq_ents.filter(_.known_for_titles.length() > 0).limit(10_000)
+right = left.view()
+shared_titles = (
+    left
+    .join(right, left.nconst != right.nconst)
+    .select(
+        s.startswith("known_for_titles"),
+        left_name="primary_name",
+        right_name="primary_name_right",
+    )
+    .filter(_.known_for_titles.intersect(_.known_for_titles_right).length() > 0)
+    .group_by(name="left_name")
+    .agg(together_with=_.right_name.collect())
+    .mutate(together_with=_.together_with.unique().sort())
+)
+shared_titles
+```
+
+:::
+
+## Advanced operations
+
+### Flatten arrays into rows
+
+Thanks to the [tireless
+efforts](https://github.com/tobymao/sqlglot/commit/06e0869e7aa5714d77e6ec763da38d6a422965fa)
+of the [folks](https://github.com/tobymao/sqlglot/graphs/contributors) working
+on [`sqlglot`](https://github.com/tobymao/sqlglot), as of version 7.0.0 Ibis
+supports
+[`unnest`](../../reference/expression-collections.qmd#ibis.expr.types.arrays.ArrayValue.unnest)
+for BigQuery!
+
+You can use it standalone on a column expression:
+
+::: {.panel-tabset}
+
+## DuckDB
+
+```{python}
+ddb_ents.primary_profession.unnest()
+```
+
+## BigQuery
+
+```{python}
+bq_ents.primary_profession.unnest()
+```
+
+:::
+
+You can also use it in `select`/`mutate` calls to expand the table accordingly:
+
+::: {.panel-tabset}
+
+## DuckDB
+
+```{python}
+ddb_ents.mutate(primary_profession=_.primary_profession.unnest()).order_by("nconst")
+```
+
+## BigQuery
+
+```{python}
+bq_ents.mutate(primary_profession=_.primary_profession.unnest()).order_by("nconst")
+```
+
+:::
+
+Unnesting can be useful when joining nested data.
+
+Here we use unnest to find people known for any of the godfather movies:
+
+::: {.panel-tabset}
+
+## DuckDB
+
+```{python}
+basics = ddb.tables.title_basics.filter(  # <1>
+    [
+        _.title_type == "movie",
+        _.original_title.lower().startswith("the godfather"),
+        _.genres.lower().contains("crime"),
+    ]
+)  # <1>
+
+ddb_known_for_the_godfather = (
+    ddb_ents.mutate(tconst=_.known_for_titles.unnest())  # <2>
+    .join(basics, "tconst")  # <3>
+    .select("primary_title", "primary_name")  # <4>
+    .distinct()
+    .order_by(["primary_title", "primary_name"]) # <4>
+)
+ddb_known_for_the_godfather
+```
+
+1. Filter the `title_basics` data set to only the Godfather movies
+2. Unnest the `known_for_titles` array column
+3. Join with `basics` to get movie titles
+4. Ensure that each entity is only listed once and sort the results
+
+## BigQuery
+
+```{python}
+basics = bq.tables.title_basics.filter(  # <1>
+    [
+        _.title_type == "movie",
+        _.original_title.lower().startswith("the godfather"),
+        _.genres.lower().contains("crime"),
+    ]
+)  # <1>
+
+bq_known_for_the_godfather = (
+    bq_ents.mutate(tconst=_.known_for_titles.unnest())  # <2>
+    .join(basics, "tconst")  # <3>
+    .select("primary_title", "primary_name")  # <4>
+    .distinct()
+    .order_by(["primary_title", "primary_name"]) # <4>
+)
+bq_known_for_the_godfather
+```
+
+1. Filter the `title_basics` data set to only the Godfather movies
+2. Unnest the `known_for_titles` array column
+3. Join with `basics` to get movie titles
+4. Ensure that each entity is only listed once and sort the results
+
+:::
+
+Let's summarize by showing how many people are known for each Godfather movie:
+
+::: {.panel-tabset}
+
+## DuckDB
+
+```{python}
+ddb_known_for_the_godfather.primary_title.value_counts()
+```
+
+## BigQuery
+
+```{python}
+bq_known_for_the_godfather.primary_title.value_counts()
+```
+
+:::
+
+### Filtering array elements
+
+Filtering array elements can be done with the
+[`filter`](../../reference/expression-collections.qmd#ibis.expr.types.arrays.ArrayValue.filter)
+method, which applies a predicate to each array element and returns an array of
+elements for which the predicate returns `True`.
+
+This method is similar to Python's
+[`filter`](https://docs.python.org/3.7/library/functions.html#filter) function.
+
+Let's show all people who are neither editors nor actors:
+
+::: {.panel-tabset}
+
+## DuckDB
+
+```{python}
+ddb_ents.mutate(
+    primary_profession=_.primary_profession.filter(  # <1>
+        lambda pp: ~pp.isin(("actor", "actress", "editor"))
+    )
+).filter(_.primary_profession.length() > 0).order_by("nconst")  # <2>
+```
+
+1. This `filter` call is applied to each array element
+2. This `filter` call is applied to the table
+
+## BigQuery
+
+```{python}
+bq_ents.mutate(
+    primary_profession=_.primary_profession.filter(  # <1>
+        lambda pp: ~pp.isin(("actor", "actress", "editor"))
+    )
+).filter(_.primary_profession.length() > 0).order_by("nconst")  # <2>
+```
+
+1. This `filter` call is applied to each array element
+2. This `filter` call is applied to the table
+
+:::
+
+### Applying a function to array elements
+
+You can apply a function to run an ibis expression on each element of an array
+using the
+[`map`](../../reference/expression-collections.qmd#ibis.expr.types.arrays.ArrayValue.map)
+method.
+
+Let's normalize the case of primary_profession to upper case:
+
+::: {.panel-tabset}
+
+## DuckDB
+
+```{python}
+ddb_ents.mutate(
+    primary_profession=_.primary_profession.map(lambda pp: pp.upper())
+).filter(_.primary_profession.length() > 0).order_by("nconst")
+```
+
+## BigQuery
+
+```{python}
+bq_ents.mutate(
+    primary_profession=_.primary_profession.map(lambda pp: pp.upper())
+).filter(_.primary_profession.length() > 0).order_by("nconst")
+```
+
+:::
+
+## Conclusion
+
+Ibis has a sizable collection of array APIs that work with many different
+backends and as of version 7.0.0, Ibis supports a much larger set of those APIs
+for BigQuery!
+
+Check out [the API
+documentation](../../reference/expression-collections.qmd#ibis.expr.types.arrays.ArrayValue)
+for the full set of available methods.
+
+Try it out, and let us know what you think.
