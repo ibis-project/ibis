@@ -233,9 +233,7 @@ class PostgresCompiler(SQLGlotCompiler):
     @visit_node.register(ops.ArrayDistinct)
     def visit_ArrayDistinct(self, op, *, arg):
         return self.if_(
-            arg.is_(NULL),
-            NULL,
-            self.f.array(sg.select(sge.Explode(this=arg)).distinct()),
+            arg.is_(NULL), NULL, self.f.array(sg.select(self.f.explode(arg)).distinct())
         )
 
     @visit_node.register(ops.ArrayUnion)
@@ -248,7 +246,7 @@ class PostgresCompiler(SQLGlotCompiler):
     def visit_ArrayIntersect(self, op, *, left, right):
         return self.f.anon.array(
             sg.intersect(
-                sg.select(sge.Explode(this=left)), sg.select(sge.Explode(this=right))
+                sg.select(self.f.explode(left)), sg.select(self.f.explode(right))
             )
         )
 
