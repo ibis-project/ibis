@@ -5,8 +5,8 @@ import pytest
 from pytest import param
 
 import ibis
+import ibis.common.exceptions as com
 from ibis import literal as L
-from ibis.backends.impala.compiler import ImpalaCompiler
 from ibis.backends.impala.tests.conftest import translate
 
 
@@ -33,33 +33,14 @@ def test_literals(value, snapshot):
     snapshot.assert_match(result, "out.sql")
 
 
-def test_column_ref_table_aliases(snapshot):
-    context = ImpalaCompiler.make_context()
-
+def test_column_ref_table_aliases():
     table1 = ibis.table([("key1", "string"), ("value1", "double")])
-
     table2 = ibis.table([("key2", "string"), ("value and2", "double")])
-
-    context.set_ref(table1.op(), "t0")
-    context.set_ref(table2.op(), "t1")
 
     expr = table1["value1"] - table2["value and2"]
 
-    result = translate(expr, context=context)
-    snapshot.assert_match(result, "out.sql")
-
-
-def test_column_ref_quoting():
-    schema = [("has a space", "double")]
-    table = ibis.table(schema)
-    translate(table["has a space"], named="`has a space`")
-
-
-def test_identifier_quoting():
-    schema = [("date", "double"), ("table", "string")]
-    table = ibis.table(schema)
-    translate(table["date"], named="`date`")
-    translate(table["table"], named="`table`")
+    with pytest.raises(com.RelationError, match="multiple base table references"):
+        translate(expr)
 
 
 @pytest.mark.parametrize(
@@ -73,7 +54,7 @@ def test_identifier_quoting():
 )
 def test_named_expressions(table, expr_fn, snapshot):
     expr = expr_fn(table)
-    result = translate(expr, named=True)
+    result = translate(expr)
     snapshot.assert_match(result, "out.sql")
 
 
@@ -200,7 +181,7 @@ def test_sql_extract(table, snapshot):
         table.i.day().name("day"),
     ]
 
-    result = ImpalaCompiler.to_sql(expr)
+    result = ibis.to_sql(expr, dialect="impala")
     snapshot.assert_match(result, "out.sql")
 
 
@@ -270,18 +251,12 @@ def test_correlated_predicate_subquery(table, snapshot):
     t0 = table
     t1 = t0.view()
 
-    expr = t0.g == t1.g
+    # both are valid constructions
+    expr1 = t0[t0.g == t1.g]
+    expr2 = t1[t0.g == t1.g]
 
-    ctx = ImpalaCompiler.make_context()
-    ctx.make_alias(t0.op())
-
-    # Grab alias from parent context
-    subctx = ctx.subcontext()
-    subctx.make_alias(t1.op())
-    subctx.make_alias(t0.op())
-
-    result = translate(expr, context=subctx)
-    snapshot.assert_match(result, "out.sql")
+    snapshot.assert_match(translate(expr1), "out1.sql")
+    snapshot.assert_match(translate(expr2), "out2.sql")
 
 
 @pytest.mark.parametrize(

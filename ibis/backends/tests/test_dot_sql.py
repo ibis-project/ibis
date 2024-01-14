@@ -219,7 +219,10 @@ def test_dot_sql_reuse_alias_with_different_types(backend, alltypes, df):
 
 _NO_SQLGLOT_DIALECT = {"pandas", "dask", "druid", "flink", "risingwave"}
 no_sqlglot_dialect = sorted(
-    param(backend, marks=pytest.mark.xfail) for backend in _NO_SQLGLOT_DIALECT
+    # TODO(cpcloud): remove the strict=False hack once backends are ported to
+    # sqlglot
+    param(backend, marks=pytest.mark.xfail(strict=False))
+    for backend in _NO_SQLGLOT_DIALECT
 )
 
 
@@ -283,7 +286,7 @@ def test_con_dot_sql_transpile(backend, con, dialect, df):
 
 @dot_sql_notimpl
 @dot_sql_never
-@pytest.mark.notimpl(["druid", "flink", "impala", "polars"])
+@pytest.mark.notimpl(["druid", "flink", "polars"])
 @pytest.mark.notyet(
     ["risingwave"],
     raises=ValueError,
@@ -307,5 +310,5 @@ def test_order_by_no_projection(backend):
 @dot_sql_never
 @pytest.mark.notyet(["polars"], raises=PolarsComputeError)
 def test_dot_sql_limit(con):
-    expr = con.sql("SELECT 'abc' ts").limit(1)
+    expr = con.sql("SELECT * FROM (SELECT 'abc' ts) _").limit(1)
     assert expr.execute().equals(pd.DataFrame({"ts": ["abc"]}))
