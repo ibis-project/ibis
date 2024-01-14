@@ -13,7 +13,6 @@ import ibis
 import ibis.expr.types as ir
 from ibis import options, util
 from ibis.backends.conftest import TEST_TABLES
-from ibis.backends.impala.compiler import ImpalaCompiler, ImpalaExprTranslator
 from ibis.backends.tests.base import BackendTest
 from ibis.tests.expr.mocks import MockBackend
 
@@ -74,27 +73,29 @@ class TestConf(BackendTest):
     def _load_data(self, **_: Any) -> None:
         """Load test data into a backend."""
         con = self.connection
-        con.raw_sql("CREATE DATABASE IF NOT EXISTS ibis_testing")
-        con.raw_sql("USE ibis_testing")
+        database = "ibis_testing"
+
+        con.create_database(database, force=True)
+        con.raw_sql(f"USE {database}")
 
         (parquet,) = self.test_files
 
         # container path to data
         prefix = "/user/hive/warehouse/impala/parquet"
         for dir in parquet.joinpath("parquet").glob("*"):
-            con.raw_sql(f"DROP TABLE IF EXISTS ibis_testing.{dir.name}")
+            con.drop_table(dir.name, database=database, force=True)
 
             location = f"{prefix}/{dir.name}"
             first_file = next(
                 itertools.chain(dir.rglob("*.parq"), dir.rglob("*.parquet"))
             )
 
-            create_query = f"""
-            CREATE EXTERNAL TABLE IF NOT EXISTS ibis_testing.{dir.name}
-            LIKE PARQUET '{location}/{first_file.name}'
-            LOCATION '{location}'
-            """
-            con.raw_sql(create_query)
+            con.parquet_file(
+                location,
+                name=dir.name,
+                database=database,
+                like_file=f"{location}/{first_file.name}",
+            )
 
         con.drop_table("win", database="ibis_testing", force=True)
         con.create_table(
@@ -123,12 +124,9 @@ class TestConf(BackendTest):
         env = IbisTestEnv()
         return ibis.impala.connect(host=env.impala_host, port=env.impala_port, **kw)
 
-    def _get_original_column_names(self, tablename: str) -> list[str]:
-        return list(TEST_TABLES[tablename].names)
-
     def _get_renamed_table(self, tablename: str) -> ir.Table:
         t = self.connection.table(tablename)
-        original_names = self._get_original_column_names(tablename)
+        original_names = TEST_TABLES[tablename].names
         return t.rename(dict(zip(original_names, t.columns)))
 
     @property
@@ -155,8 +153,9 @@ class IbisTestEnv:
 
     @property
     def tmp_dir(self):
+        leaf = util.gen_name("impala_test_tmp_dir")
         options.impala.temp_path = tmp_dir = os.environ.get(
-            "IBIS_TEST_TMP_DIR", f"/tmp/__ibis_test_{util.guid()}"
+            "IBIS_TEST_TMP_DIR", f"/tmp/{leaf}"
         )
         return tmp_dir
 
@@ -212,7 +211,7 @@ def alltypes_df(alltypes):
 
 @pytest.fixture
 def temp_parquet_table_schema():
-    return ibis.schema([("id", "int32"), ("name", "string"), ("files", "int32")])
+    return ibis.schema(dict(id="int32", name="string", files="int32"))
 
 
 @pytest.fixture
@@ -242,7 +241,7 @@ def kudu_table(con, test_data_db):
             f"""\
 CREATE TABLE {test_data_db}.{name} (
   a STRING,
-  PRIMARY KEY(a)
+  PRIMARY KEY (a)
 )
 PARTITION BY HASH PARTITIONS 2
 STORED AS KUDU
@@ -257,8 +256,5 @@ TBLPROPERTIES (
     con.drop_table(name, database=test_data_db)
 
 
-def translate(expr, context=None, named=False):
-    if context is None:
-        context = ImpalaCompiler.make_context()
-    translator = ImpalaExprTranslator(expr.op(), context=context, named=named)
-    return translator.get_result()
+def translate(expr):
+    return ibis.to_sql(expr, dialect="impala")

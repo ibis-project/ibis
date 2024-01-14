@@ -87,4 +87,4 @@ def test_bucket_assign_labels(table, snapshot):
     ).name("tier2")
     expr = size[labelled, size[1]]
 
-    snapshot.assert_match(ImpalaCompiler.to_sql(expr), "out.sql")
+    snapshot.assert_match(translate(expr), "out.sql")

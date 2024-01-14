@@ -193,7 +193,7 @@ class CTAS(CreateTable):
         yield self._storage()
         yield self._location()
         yield "AS"
-        yield self.select.compile()
+        yield self.select
 
     def _partitioned_by(self):
         if self.partition is not None:
@@ -212,7 +212,7 @@ class CreateView(CTAS):
     @property
     def _pieces(self):
         yield "AS"
-        yield self.select.compile()
+        yield self.select
 
     @property
     def _prefix(self):
@@ -352,7 +352,7 @@ class InsertSelect(_BaseDML):
         else:
             partition = ""
 
-        select_query = self.select.compile()
+        select_query = self.select
         scoped_name = self._get_scoped_name(self.table_name, self.database)
         return f"{cmd} {scoped_name}{partition}\n{select_query}"
 

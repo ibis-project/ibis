@@ -1,1 +1,3 @@
-CAST(from_unixtime(`c`, "yyyy-MM-dd HH:mm:ss") AS timestamp)
+SELECT
+  CAST(FROM_UNIXTIME(CAST(`t0`.`c` AS INT)) AS TIMESTAMP) AS `TimestampFromUNIX(c)`
+FROM `alltypes` AS `t0`

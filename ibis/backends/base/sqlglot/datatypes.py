@@ -608,7 +608,15 @@ class SQLiteType(SqlglotType):
     dialect = "sqlite"
 
 
+class ImpalaType(SqlglotType):
+    dialect = "impala"
+
+    default_decimal_precision = 9
+    default_decimal_scale = 0
+
+
 class PySparkType(SqlglotType):
     dialect = "spark"
+
     default_decimal_precision = 38
     default_decimal_scale = 18

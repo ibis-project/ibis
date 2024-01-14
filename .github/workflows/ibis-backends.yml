@@ -125,16 +125,16 @@ jobs:
               - postgres
             sys-deps:
               - libgeos-dev
-          # - name: impala
-          #   title: Impala
-          #   extras:
-          #     - impala
-          #   services:
-          #     - impala
-          #     - kudu
-          #   sys-deps:
-          #     - cmake
-          #     - ninja-build
+          - name: impala
+            title: Impala
+            extras:
+              - impala
+            services:
+              - impala
+              - kudu
+            sys-deps:
+              - cmake
+              - ninja-build
           # - name: mssql
           #   title: MS SQL Server
           #   extras:
@@ -232,18 +232,18 @@ jobs:
                 - postgres
               sys-deps:
                 - libgeos-dev
-          # - os: windows-latest
-          #   backend:
-          #     name: impala
-          #     title: Impala
-          #     extras:
-          #       - impala
-          #     services:
-          #       - impala
-          #       - kudu
-          #     sys-deps:
-          #       - cmake
-          #       - ninja-build
+          - os: windows-latest
+            backend:
+              name: impala
+              title: Impala
+              extras:
+                - impala
+              services:
+                - impala
+                - kudu
+              sys-deps:
+                - cmake
+                - ninja-build
           # - os: windows-latest
           #   backend:
           #     name: mssql

@@ -18,6 +18,7 @@ from ibis.backends.tests.errors import (
     ClickHouseDatabaseError,
     ExaQueryError,
     GoogleBadRequest,
+    ImpalaHiveServer2Error,
     MySQLNotSupportedError,
     PolarsInvalidOperationError,
     Py4JError,
@@ -844,7 +845,7 @@ def test_reduction_ops(
     reason="backend doesn't support count distinct with multiple columns",
 )
 @pytest.mark.notyet(
-    ["datafusion", "impala"],
+    ["datafusion"],
     raises=com.OperationNotDefinedError,
     reason="no one has attempted implementation yet",
 )
@@ -914,7 +915,6 @@ def test_count_distinct_star(alltypes, df, ibis_cond, pandas_cond):
                         "bigquery",
                         "dask",
                         "datafusion",
-                        "impala",
                         "mssql",
                         "polars",
                         "sqlite",
@@ -924,7 +924,9 @@ def test_count_distinct_star(alltypes, df, ibis_cond, pandas_cond):
                     ],
                     raises=com.OperationNotDefinedError,
                 ),
-                pytest.mark.notyet(["mysql"], raises=com.UnsupportedBackendType),
+                pytest.mark.notyet(
+                    ["mysql", "impala"], raises=com.UnsupportedBackendType
+                ),
                 pytest.mark.notyet(
                     ["snowflake"],
                     reason="backend doesn't implement array of quantiles as input",
@@ -1600,7 +1602,8 @@ def test_grouped_case(backend, con):
     reason="Dask does not windowize this operation correctly",
     raises=AssertionError,
 )
-@pytest.mark.notyet(["impala", "flink"], raises=com.UnsupportedOperationError)
+@pytest.mark.notyet(["flink"], raises=com.UnsupportedOperationError)
+@pytest.mark.notyet(["impala"], raises=ImpalaHiveServer2Error)
 @pytest.mark.notyet(["clickhouse"], raises=ClickHouseDatabaseError)
 @pytest.mark.notyet(["druid"], raises=PyDruidProgrammingError)
 @pytest.mark.notyet(["snowflake"], raises=SnowflakeProgrammingError)

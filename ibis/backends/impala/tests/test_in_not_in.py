@@ -3,7 +3,6 @@ from __future__ import annotations
 import pytest
 
 from ibis import literal as L
-from ibis.backends.impala.compiler import ImpalaCompiler
 from ibis.backends.impala.tests.conftest import translate
 
 
@@ -35,5 +34,5 @@ def test_isin_notin_in_select(table, method_name, snapshot):
     values = ["foo", "bar"]
     method = getattr(table.g, method_name)
     filtered = table[method(values)]
-    result = ImpalaCompiler.to_sql(filtered)
+    result = translate(filtered)
     snapshot.assert_match(result, "out.sql")

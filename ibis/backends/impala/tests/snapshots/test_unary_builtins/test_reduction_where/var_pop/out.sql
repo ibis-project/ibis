@@ -1,1 +1,3 @@
-var_pop(if(`bigint_col` < 70, `double_col`, NULL))
+SELECT
+  VARIANCE_POP(IF(`t0`.`bigint_col` < 70, `t0`.`double_col`, NULL)) AS `Variance(double_col, Less(bigint_col, 70))`
+FROM `functional_alltypes` AS `t0`

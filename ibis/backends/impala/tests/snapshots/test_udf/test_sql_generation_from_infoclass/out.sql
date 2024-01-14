@@ -1,1 +1,2 @@
-SELECT udf_testing.info_test('hello world') AS `tmp`
+SELECT
+  UDF_TESTING.INFO_TEST('hello world') AS `tmp`
