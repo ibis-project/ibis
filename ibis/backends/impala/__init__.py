@@ -3,23 +3,24 @@
 from __future__ import annotations
 
 import contextlib
-import io
 import operator
-import re
+import os
 from functools import cached_property
 from typing import TYPE_CHECKING, Any, Literal
+from urllib.parse import parse_qs, urlparse
 
+import impala.dbapi as impyla
 import pandas as pd
 import sqlglot as sg
+import sqlglot.expressions as sge
+from impala.error import Error as ImpylaError
 
 import ibis.common.exceptions as com
 import ibis.config
 import ibis.expr.datatypes as dt
-import ibis.expr.rules as rlz
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis import util
-from ibis.backends.base.sql import BaseSQLBackend
 from ibis.backends.base.sql.ddl import (
     CTAS,
     CreateDatabase,
@@ -30,12 +31,10 @@ from ibis.backends.base.sql.ddl import (
     DropView,
     RenameTable,
     TruncateTable,
-    fully_qualified_re,
-    is_fully_qualified,
 )
+from ibis.backends.base.sqlglot import SQLGlotBackend
 from ibis.backends.impala import ddl, udf
 from ibis.backends.impala.client import ImpalaTable
-from ibis.backends.impala.compat import ImpylaError, impyla
 from ibis.backends.impala.compiler import ImpalaCompiler
 from ibis.backends.impala.udf import (
     aggregate_function,
@@ -44,14 +43,14 @@ from ibis.backends.impala.udf import (
     wrap_udf,
 )
 from ibis.config import options
-from ibis.formats.pandas import PandasData
 
 if TYPE_CHECKING:
-    from collections.abc import Mapping
+    from collections.abc import Iterator, Mapping
     from pathlib import Path
 
     import pyarrow as pa
 
+    import ibis.expr.operations as ops
     from ibis.backends.base.sql.compiler import DDL, DML
 
 
@@ -64,48 +63,11 @@ __all__ = (
 )
 
 
-def _split_signature(x):
-    name, rest = x.split("(", 1)
-    return name, rest[:-1]
-
-
-_arg_type = re.compile(r"(.*)\.\.\.|([^\.]*)")
-
-
-class _type_parser:
-    NORMAL, IN_PAREN = 0, 1
-
-    def __init__(self, value):
-        self.value = value
-        self.state = self.NORMAL
-        self.buf = io.StringIO()
-        self.types = []
-        for c in value:
-            self._step(c)
-        self._push()
-
-    def _push(self):
-        val = self.buf.getvalue().strip()
-        if val:
-            self.types.append(val)
-        self.buf = io.StringIO()
-
-    def _step(self, c):
-        if self.state == self.NORMAL:
-            if c == "(":
-                self.state = self.IN_PAREN
-            elif c == ",":
-                self._push()
-                return
-        elif self.state == self.IN_PAREN:
-            if c == ")":
-                self.state = self.NORMAL
-        self.buf.write(c)
-
-
-class Backend(BaseSQLBackend):
+class Backend(SQLGlotBackend):
     name = "impala"
-    compiler = ImpalaCompiler
+    compiler = ImpalaCompiler()
+
+    supports_in_memory_tables = True
 
     _sqlglot_dialect = "hive"  # not 100% accurate, but very close
 
@@ -123,6 +85,50 @@ class Backend(BaseSQLBackend):
         temp_db: str = "__ibis_tmp"
         temp_path: str = "/tmp/__ibis"
 
+    def _from_url(self, url: str, **kwargs: Any) -> Backend:
+        """Connect to a backend using a URL `url`.
+
+        Parameters
+        ----------
+        url
+            URL with which to connect to a backend.
+        kwargs
+            Additional keyword arguments passed to the `connect` method.
+
+        Returns
+        -------
+        BaseBackend
+            A backend instance
+        """
+        url = urlparse(url)
+
+        for name in ("username", "hostname", "port", "password"):
+            if value := (
+                getattr(url, name, None)
+                or os.environ.get(f"{self.name.upper()}_{name.upper()}")
+            ):
+                kwargs[name] = value
+
+        with contextlib.suppress(KeyError):
+            kwargs["host"] = kwargs.pop("hostname")
+
+        (database,) = url.path[1:].split("/", 1)
+        if database:
+            kwargs["database"] = database
+
+        query_params = parse_qs(url.query)
+
+        for name, value in query_params.items():
+            if len(value) > 1:
+                kwargs[name] = value
+            elif len(value) == 1:
+                kwargs[name] = value[0]
+            else:
+                raise com.IbisError(f"Invalid URL parameter: {name}")
+
+        self._convert_kwargs(kwargs)
+        return self.connect(**kwargs)
+
     def do_connect(
         self,
         host: str = "localhost",
@@ -135,7 +141,6 @@ class Backend(BaseSQLBackend):
         password: str | None = None,
         auth_mechanism: Literal["NOSASL", "PLAIN", "GSSAPI", "LDAP"] = "NOSASL",
         kerberos_service_name: str = "impala",
-        pool_size: int = 8,
         **params: Any,
     ):
         """Create an Impala `Backend` for use with Ibis.
@@ -169,8 +174,6 @@ class Backend(BaseSQLBackend):
             | `'GSSAPI'` | Kerberos-secured clusters      |
         kerberos_service_name
             Specify a particular `impalad` service principal.
-        pool_size
-            Size of the connection pool. Typically this is not necessary to configure.
         params
             Any additional parameters necessary to open a connection to Impala.
             Please refer to impyla documentation for the full list of
@@ -226,16 +229,10 @@ class Backend(BaseSQLBackend):
         statement = "SHOW TABLES"
         if database is not None:
             statement += f" IN {database}"
-        if like:
-            if match := fully_qualified_re.match(like):
-                database, quoted, unquoted = match.groups()
-                like = quoted or unquoted
-                return self.list_tables(like=like, database=database)
-            statement += f" LIKE '{like}'"
 
         with self._safe_raw_sql(statement) as cursor:
             tables = fetchall(cursor)
-        return self._filter_with_like(tables.name.tolist())
+        return self._filter_with_like(tables.name.tolist(), like=like)
 
     def raw_sql(self, query: str):
         cursor = self.con.cursor()
@@ -259,16 +256,21 @@ class Backend(BaseSQLBackend):
 
         return cursor
 
-    def fetch_from_cursor(self, cursor, schema):
+    def _fetch_from_cursor(self, cursor, schema):
+        from ibis.formats.pandas import PandasData
+
         results = fetchall(cursor)
-        if schema:
-            return PandasData.convert_table(results, schema)
-        return results
+        return PandasData.convert_table(results, schema)
 
     @contextlib.contextmanager
     def _safe_raw_sql(self, query: str | DDL | DML):
         if not isinstance(query, str):
-            query = query.compile()
+            try:
+                query = query.sql(dialect=self.compiler.dialect)
+            except AttributeError:
+                query = query.compile()
+
+        assert isinstance(query, str), type(query)
         with contextlib.closing(self.raw_sql(query)) as cur:
             yield cur
 
@@ -277,18 +279,15 @@ class Backend(BaseSQLBackend):
             pass
 
     def _fully_qualified_name(self, name, database):
-        if is_fully_qualified(name):
-            return name
-
         database = database or self.current_database
-        return sg.table(name, db=database, quoted=True).sql(
-            dialect=getattr(self, "_sqlglot_dialect", self.name)
+        return sg.table(name, db=database, quoted=self.compiler.quoted).sql(
+            self.compiler.dialect
         )
 
     @property
     def current_database(self) -> str:
         with self._safe_raw_sql("SELECT CURRENT_DATABASE()") as cur:
-            (db,) = cur.fetchone()
+            [(db,)] = cur.fetchall()
         return db
 
     def create_database(self, name, path=None, force=False):
@@ -353,13 +352,17 @@ class Backend(BaseSQLBackend):
         statement = DropDatabase(name, must_exist=not force)
         self._safe_exec_sql(statement)
 
-    def get_schema(self, table_name: str, database: str | None = None) -> sch.Schema:
+    def get_schema(
+        self, table_name: str, schema: str | None = None, database: str | None = None
+    ) -> sch.Schema:
         """Return a Schema object for the indicated table and database.
 
         Parameters
         ----------
         table_name
             Table name
+        schema
+            Schema name. Unused in the impala backend.
         database
             Database name
 
@@ -368,13 +371,44 @@ class Backend(BaseSQLBackend):
         Schema
             Ibis schema
         """
-        qualified_name = self._fully_qualified_name(table_name, database)
-        query = f"DESCRIBE {qualified_name}"
+        query = sge.Describe(
+            this=sg.table(
+                table_name, db=schema, catalog=database, quoted=self.compiler.quoted
+            )
+        )
 
         with self._safe_raw_sql(query) as cur:
             meta = fetchall(cur)
-        ibis_types = meta.type.str.lower().map(udf.parse_type)
-        return sch.Schema(dict(zip(meta.name, ibis_types)))
+        return sch.Schema.from_tuples(
+            zip(meta["name"], meta["type"].map(self.compiler.type_mapper.from_string))
+        )
+
+    def _metadata(self, query: str) -> Iterator[tuple[str, dt.DataType]]:
+        """Return a Schema object for the indicated table and database.
+
+        Parameters
+        ----------
+        query
+            Query to execute against Impala
+
+        Returns
+        -------
+        Iterator[tuple[str, dt.DataType]]
+            Iterator of column name and Ibis type pairs
+        """
+        tmpview = util.gen_name("impala_tmpview")
+        query = f"CREATE VIEW IF NOT EXISTS {tmpview} AS {query}"
+
+        with self._safe_raw_sql(query) as cur:
+            try:
+                cur.execute(f"DESCRIBE {tmpview}")
+                meta = fetchall(cur)
+            finally:
+                cur.execute(f"DROP VIEW IF EXISTS {tmpview}")
+
+        return zip(
+            meta["name"], meta["type"].map(self.compiler.type_mapper.from_string)
+        )
 
     @property
     def client_options(self):
@@ -401,8 +435,7 @@ class Backend(BaseSQLBackend):
         database: str | None = None,
         overwrite: bool = False,
     ) -> ir.Table:
-        ast = self.compiler.to_ast(obj)
-        select = ast.queries[0]
+        select = self.compile(obj)
         statement = CreateView(name, select, database=database, can_exist=overwrite)
         self._safe_exec_sql(statement)
         return self.table(name, database=database)
@@ -475,8 +508,9 @@ class Backend(BaseSQLBackend):
             if isinstance(obj, pd.DataFrame):
                 raise NotImplementedError("Pandas DataFrames not yet supported")
 
-            ast = self.compiler.to_ast(obj)
-            select = ast.queries[0]
+            self._run_pre_execute_hooks(obj)
+
+            select = self.compile(obj)
 
             if overwrite:
                 self.drop_table(name, force=True)
@@ -485,7 +519,7 @@ class Backend(BaseSQLBackend):
                 CTAS(
                     name,
                     select,
-                    database=database,
+                    database=database or self.current_database,
                     format=format,
                     external=True if location is not None else external,
                     partition=partition,
@@ -499,14 +533,14 @@ class Backend(BaseSQLBackend):
                 CreateTableWithSchema(
                     name,
                     schema if schema is not None else obj.schema(),
-                    database=database,
+                    database=database or self.current_database,
                     format=format,
                     external=external,
                     path=location,
                     partition=partition,
                 )
             )
-        return self.table(name, database=database)
+        return self.table(name, database=database or self.current_database)
 
     def avro_file(
         self, directory, avro_schema, name=None, database=None, external=True
@@ -600,13 +634,13 @@ class Backend(BaseSQLBackend):
 
     def parquet_file(
         self,
-        directory,
-        schema=None,
-        name=None,
-        database=None,
-        external=True,
-        like_file=None,
-        like_table=None,
+        directory: str | Path,
+        schema: sch.Schema | None = None,
+        name: str | None = None,
+        database: str | None = None,
+        external: bool = True,
+        like_file: str | Path | None = None,
+        like_table: str | None = None,
     ):
         """Create an Ibis table from the passed directory of Parquet files.
 
@@ -633,8 +667,8 @@ class Backend(BaseSQLBackend):
             Database to create the (possibly temporary) table in
         external
             If a table is external, the referenced data will not be deleted
-            when the table is dropped in Impala. Otherwise (external=False)
-            Impala takes ownership of the Parquet file.
+            when the table is dropped in Impala. Otherwise Impala takes
+            ownership of the Parquet file.
 
         Returns
         -------
@@ -710,6 +744,8 @@ class Backend(BaseSQLBackend):
         Completely overwrite contents
         >>> con.insert(table, table_expr, overwrite=True)  # quartodoc: +SKIP # doctest: +SKIP
         """
+        if isinstance(obj, ir.Table):
+            self._run_pre_execute_hooks(obj)
         table = self.table(table_name, database=database)
         return table.insert(
             obj=obj,
@@ -799,12 +835,6 @@ class Backend(BaseSQLBackend):
         """
         statement = ddl.CacheTable(table_name, database=database, pool=pool)
         self._safe_exec_sql(statement)
-
-    def _get_schema_using_query(self, query):
-        with self._safe_raw_sql(f"SELECT * FROM ({query}) t0 LIMIT 0") as cur:
-            ibis_fields = self._adapt_types(cur.description)
-
-        return sch.Schema(ibis_fields)
 
     def create_function(self, func, name=None, database=None):
         """Create a function within Impala.
@@ -931,7 +961,7 @@ class Backend(BaseSQLBackend):
             database = self.current_database
         statement = ddl.ListFunction(database, like=like, aggregate=False)
         with self._safe_raw_sql(statement) as cur:
-            return self._get_udfs(cur, udf.ImpalaUDF)
+            return self._get_udfs(cur)
 
     def list_udas(self, database=None, like=None):
         """Lists all UDAFs associated with a given database."""
@@ -939,39 +969,28 @@ class Backend(BaseSQLBackend):
             database = self.current_database
         statement = ddl.ListFunction(database, like=like, aggregate=True)
         with self._safe_raw_sql(statement) as cur:
-            return self._get_udfs(cur, udf.ImpalaUDA)
+            return self._get_udfs(cur)
 
-    def _get_udfs(self, cur, klass):
-        def _to_type(x):
-            ibis_type = udf._impala_type_to_ibis(x.lower())
-            return dt.dtype(ibis_type)
-
+    def _get_udfs(self, cur):
         rows = fetchall(cur)
-        if not rows.empty:
-            result = []
-            for _, row in rows.iterrows():
-                out_type = row["return type"]
-                sig = row["signature"]
-                name, types = _split_signature(sig)
-                types = _type_parser(types).types
 
-                inputs = []
-                for arg in types:
-                    argm = _arg_type.match(arg)
-                    var, simple = argm.groups()
-                    if simple:
-                        t = _to_type(simple)
-                        inputs.append(t)
-                    else:
-                        t = _to_type(var)
-                        inputs = rlz.listof(t)
-                        break
-
-                output = udf._impala_type_to_ibis(out_type.lower())
-                result.append(klass(inputs, output, name=name))
-            return result
-        else:
+        if rows.empty:
             return []
+
+        current_database = self.current_database
+        type_mapper = self.compiler.type_mapper
+        result = []
+        for return_type, signature, *_ in rows.itertuples(index=False):
+            anon = sg.parse_one(signature)
+            name = anon.this
+            inputs = [
+                type_mapper.from_string(expr.this.this) for expr in anon.expressions
+            ]
+
+            output = type_mapper.from_string(return_type)
+
+            result.append((current_database, name, tuple(inputs), output))
+        return result
 
     def exists_udf(self, name: str, database: str | None = None) -> bool:
         """Checks if a given UDF exists within a specified database."""
@@ -1106,26 +1125,11 @@ class Backend(BaseSQLBackend):
 
     def _exec_statement(self, stmt):
         with self._safe_raw_sql(stmt) as cur:
-            return self.fetch_from_cursor(cur, schema=None)
+            return fetchall(cur)
 
     def _table_command(self, cmd, name, database=None):
         qualified_name = self._fully_qualified_name(name, database)
         return f"{cmd} {qualified_name}"
-
-    def _adapt_types(self, descr):
-        names = []
-        adapted_types = []
-        for col in descr:
-            names.append(col[0])
-            impala_typename = col[1]
-            typename = udf._impala_to_ibis_type[impala_typename.lower()]
-
-            if typename == "decimal":
-                precision, scale = col[4:6]
-                adapted_types.append(dt.Decimal(precision, scale))
-            else:
-                adapted_types.append(typename)
-        return dict(zip(names, adapted_types))
 
     def to_pyarrow(
         self,
@@ -1138,6 +1142,8 @@ class Backend(BaseSQLBackend):
         import pyarrow_hotfix  # noqa: F401
 
         from ibis.formats.pyarrow import PyArrowData
+
+        self._run_pre_execute_hooks(expr)
 
         table_expr = expr.as_table()
         output = pa.Table.from_pandas(
@@ -1157,6 +1163,8 @@ class Backend(BaseSQLBackend):
         **kwargs: Any,
     ) -> pa.ipc.RecordBatchReader:
         pa = self._import_pyarrow()
+        self._run_pre_execute_hooks(expr)
+
         pa_table = self.to_pyarrow(
             expr.as_table(), params=params, limit=limit, **kwargs
         )
@@ -1177,22 +1185,53 @@ class Backend(BaseSQLBackend):
         str
             Query plan
         """
-        if isinstance(expr, ir.Expr):
-            context = self.compiler.make_context(params=params)
-            query_ast = self.compiler.to_ast(expr, context)
-            if len(query_ast.queries) > 1:
-                raise Exception("Multi-query expression")
-
-            query = query_ast.queries[0].compile()
-        else:
-            query = expr
-
+        query = self.compile(expr, params=params)
         statement = f"EXPLAIN {query}"
 
         with self._safe_raw_sql(statement) as cur:
             results = fetchall(cur)
 
         return "\n".join(["Query:", util.indent(query, 2), "", *results.iloc[:, 0]])
+
+    def _register_in_memory_table(self, op: ops.InMemoryTable) -> None:
+        schema = op.schema
+        if null_columns := [col for col, dtype in schema.items() if dtype.is_null()]:
+            raise com.IbisTypeError(
+                "Impala cannot yet reliably handle `null` typed columns; "
+                f"got null typed columns: {null_columns}"
+            )
+
+        # only register if we haven't already done so
+        if (name := op.name) not in self.list_tables():
+            type_mapper = self.compiler.type_mapper
+            quoted = self.compiler.quoted
+            column_defs = [
+                sg.exp.ColumnDef(
+                    this=sg.to_identifier(colname, quoted=quoted),
+                    kind=type_mapper.from_ibis(typ),
+                    # we don't support `NOT NULL` constraints in trino because
+                    # because each trino connector differs in whether it
+                    # supports nullability constraints, and whether the
+                    # connector supports it isn't visible to ibis via a
+                    # metadata query
+                )
+                for colname, typ in schema.items()
+            ]
+
+            create_stmt = sg.exp.Create(
+                kind="TABLE",
+                this=sg.exp.Schema(
+                    this=sg.to_identifier(name, quoted=quoted), expressions=column_defs
+                ),
+            ).sql(self.name, pretty=True)
+
+            data = op.data.to_frame().itertuples(index=False)
+            specs = ", ".join("?" * len(schema))
+            table = sg.table(name, quoted=quoted).sql(self.name)
+            insert_stmt = f"INSERT INTO {table} VALUES ({specs})"
+            with self._safe_raw_sql(create_stmt) as cur:
+                for row in data:
+                    cur.execute(insert_stmt, row)
 
 
 def fetchall(cur):

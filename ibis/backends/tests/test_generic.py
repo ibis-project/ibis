@@ -1348,7 +1348,6 @@ def test_hexdigest(backend, alltypes):
         "pandas",
         "dask",
         "bigquery",
-        "impala",
         "mssql",
         "oracle",
         "risingwave",
@@ -1369,11 +1368,17 @@ def test_hexdigest(backend, alltypes):
             "int",
             1672531200,
             marks=[
-                pytest.mark.notyet(["duckdb"], reason="casts to None"),
-                pytest.mark.notyet(["druid"], reason="returns milliseconds"),
+                pytest.mark.notyet(["duckdb", "impala"], reason="casts to NULL"),
                 pytest.mark.notyet(["trino"], raises=TrinoUserError),
-                pytest.mark.broken(["polars"], reason="casts to 1672531200000000000"),
-                pytest.mark.broken(["datafusion"], reason="casts to 1672531200000000"),
+                pytest.mark.broken(
+                    ["druid"], reason="casts to 1672531200000 (millisecond)"
+                ),
+                pytest.mark.broken(
+                    ["polars"], reason="casts to 1672531200000000000 (nanoseconds)"
+                ),
+                pytest.mark.broken(
+                    ["datafusion"], reason="casts to 1672531200000000 (microseconds)"
+                ),
                 pytest.mark.broken(["mysql"], reason="returns 20230101000000"),
             ],
         ),
@@ -1393,7 +1398,6 @@ def test_try_cast(con, from_val, to_type, expected):
         "datafusion",
         "druid",
         "exasol",
-        "impala",
         "mssql",
         "mysql",
         "oracle",
@@ -1412,7 +1416,9 @@ def test_try_cast(con, from_val, to_type, expected):
             datetime.datetime(2023, 1, 1),
             "int",
             marks=[
-                pytest.mark.never(["clickhouse"], reason="casts to 1672531200"),
+                pytest.mark.never(
+                    ["clickhouse", "pyspark"], reason="casts to 1672531200"
+                ),
                 pytest.mark.notyet(["trino"], raises=TrinoUserError),
                 pytest.mark.broken(["polars"], reason="casts to 1672531200000000000"),
             ],
@@ -1431,7 +1437,6 @@ def test_try_cast_null(con, from_val, to_type):
         "bigquery",
         "datafusion",
         "druid",
-        "impala",
         "mssql",
         "mysql",
         "oracle",
@@ -1461,7 +1466,6 @@ def test_try_cast_table(backend, con):
         "dask",
         "bigquery",
         "datafusion",
-        "impala",
         "mssql",
         "mysql",
         "oracle",
@@ -1476,7 +1480,7 @@ def test_try_cast_table(backend, con):
 @pytest.mark.parametrize(
     ("from_val", "to_type", "func"),
     [
-        param("a", "float", pd.isna),
+        param("a", "float", pd.isna, id="string-to-float"),
         param(
             datetime.datetime(2023, 1, 1),
             "float",
@@ -1488,6 +1492,7 @@ def test_try_cast_table(backend, con):
                 ),
                 pytest.mark.notyet(["trino"], raises=TrinoUserError),
             ],
+            id="datetime-to-float",
         ),
     ],
 )
@@ -1551,7 +1556,18 @@ def test_try_cast_func(con, from_val, to_type, func):
         ##################
         ### POSITIVE start
         # no stop
-        param(slice(3, 0), lambda _: 0, id="[3:0]"),
+        param(
+            slice(3, 0),
+            lambda _: 0,
+            id="[3:0]",
+            marks=[
+                pytest.mark.never(
+                    ["impala"],
+                    raises=ImpalaHiveServer2Error,
+                    reason="impala doesn't support OFFSET without ORDER BY",
+                )
+            ],
+        ),
         param(
             slice(3, None),
             lambda t: t.count().to_pandas() - 3,
@@ -1584,7 +1600,18 @@ def test_try_cast_func(con, from_val, to_type, func):
             ],
         ),
         # positive stop
-        param(slice(3, 2), lambda _: 0, id="[3:2]"),
+        param(
+            slice(3, 2),
+            lambda _: 0,
+            id="[3:2]",
+            marks=[
+                pytest.mark.never(
+                    ["impala"],
+                    raises=ImpalaHiveServer2Error,
+                    reason="impala doesn't support OFFSET without ORDER BY",
+                )
+            ],
+        ),
         param(
             slice(3, 4),
             lambda _: 1,

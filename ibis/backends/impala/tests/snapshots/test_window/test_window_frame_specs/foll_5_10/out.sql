@@ -1,2 +1,3 @@
-SELECT sum(t0.`d`) OVER (ORDER BY t0.`f` ASC ROWS BETWEEN 5 FOLLOWING AND 10 FOLLOWING) AS `foo`
-FROM `alltypes` t0
+SELECT
+  SUM(`t0`.`d`) OVER (ORDER BY `t0`.`f` ASC NULLS LAST ROWS BETWEEN 5 following AND 10 following) AS `foo`
+FROM `alltypes` AS `t0`

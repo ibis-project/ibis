@@ -1,1 +1,3 @@
-date_add(cast(`i` as timestamp), INTERVAL 5 WEEK)
+SELECT
+  CAST(CAST(`t0`.`i` AS TIMESTAMP) + INTERVAL '5' WEEK AS TIMESTAMP) AS `TimestampAdd(i, 5W)`
+FROM `alltypes` AS `t0`

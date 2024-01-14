@@ -1,1 +1,3 @@
-date_add(cast(`i` as timestamp), INTERVAL 5 YEAR)
+SELECT
+  CAST(CAST(`t0`.`i` AS TIMESTAMP) + INTERVAL '5' YEAR AS TIMESTAMP) AS `TimestampAdd(i, 5Y)`
+FROM `alltypes` AS `t0`

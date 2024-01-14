@@ -13,7 +13,7 @@ from ibis.tests.util import assert_equal
 
 pytest.importorskip("impala")
 
-from ibis.backends.impala.compat import ImpylaError  # noqa: E402
+from impala.error import Error as ImpylaError  # noqa: E402
 
 
 @pytest.fixture

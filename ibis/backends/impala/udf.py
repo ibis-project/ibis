@@ -14,31 +14,22 @@
 from __future__ import annotations
 
 import abc
-import re
+import inspect
 
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
-import ibis.expr.rules as rlz
 from ibis import util
-from ibis.backends.base.sql.registry import fixed_arity, sql_type_names
-from ibis.backends.impala.compiler import ImpalaExprTranslator
-from ibis.legacy.udf.validate import validate_output_type
 
-__all__ = [
-    "add_operation",
-    "scalar_function",
-    "aggregate_function",
-    "wrap_udf",
-    "wrap_uda",
-]
+__all__ = ["scalar_function", "aggregate_function", "wrap_udf", "wrap_uda"]
 
 
-class Function(metaclass=abc.ABCMeta):
-    def __init__(self, inputs, output, name):
+class Function(abc.ABC):
+    def __init__(self, inputs, output, name, database):
         self.inputs = tuple(map(dt.dtype, inputs))
         self.output = dt.dtype(output)
         self.name = name or util.guid()
+        self.database = database
         self._klass = self._create_operation_class()
 
     @abc.abstractmethod
@@ -46,38 +37,50 @@ class Function(metaclass=abc.ABCMeta):
         pass
 
     def __repr__(self):
-        klass = type(self).__name__
-        return f"{klass}({self.name}, {self.inputs!r}, {self.output!r})"
+        ident = ".".join(filter(None, (self.database, self.name)))
+        return f"{ident}({self.inputs!r}, {self.output!r})"
 
     def __call__(self, *args):
-        return self._klass(*args).to_expr()
+        return self._klass(*args)
 
-    def register(self, name: str, database: str) -> None:
-        """Register the given operation.
+    def _make_fn(self):
+        def fn(*args, **kwargs):
+            ...
 
-        Parameters
-        ----------
-        name
-            Used in issuing statements to SQL engine
-        database
-            Database the relevant operator is registered to
-        """
-        add_operation(self._klass, name, database)
+        fn.__name__ = self.name
+        fn.__signature__ = inspect.Signature(
+            parameters=[
+                inspect.Parameter(
+                    f"input{i:d}",
+                    annotation=input,
+                    kind=inspect.Parameter.POSITIONAL_ONLY,
+                )
+                for i, input in enumerate(self.inputs)
+            ],
+            return_annotation=self.output,
+        )
+
+        return fn
 
 
 class ScalarFunction(Function):
     def _create_operation_class(self):
-        fields = {f"_{i}": rlz.ValueOf(dtype) for i, dtype in enumerate(self.inputs)}
-        fields["dtype"] = self.output
-        fields["shape"] = rlz.shape_like("args")
-        return type(f"UDF_{self.name}", (ops.Value,), fields)
+        return ops.scalar.builtin(
+            fn=self._make_fn(),
+            name=self.name,
+            signature=(self.inputs, self.output),
+            schema=self.database,
+        )
 
 
 class AggregateFunction(Function):
     def _create_operation_class(self):
-        fields = {f"_{i}": rlz.ValueOf(dtype) for i, dtype in enumerate(self.inputs)}
-        fields["dtype"] = self.output
-        return type(f"UDA_{self.name}", (ops.Reduction,), fields)
+        return ops.agg.builtin(
+            fn=self._make_fn(),
+            name=self.name,
+            signature=(self.inputs, self.output),
+            schema=self.database,
+        )
 
 
 class ImpalaFunction:
@@ -93,28 +96,19 @@ class ImpalaFunction:
         if suffix not in [".so", ".ll"]:
             raise ValueError("Invalid file type. Must be .so or .ll ")
 
-    def hash(self):
-        raise NotImplementedError
-
 
 class ImpalaUDF(ScalarFunction, ImpalaFunction):
     """Feel free to customize my __doc__ or wrap in a nicer user API."""
 
-    def __init__(self, inputs, output, so_symbol=None, lib_path=None, name=None):
+    def __init__(
+        self, inputs, output, so_symbol=None, lib_path=None, name=None, database=None
+    ):
+        from ibis.legacy.udf.validate import validate_output_type
+
         validate_output_type(output)
         self.so_symbol = so_symbol
         ImpalaFunction.__init__(self, name=name, lib_path=lib_path)
-        ScalarFunction.__init__(self, inputs, output, name=self.name)
-
-    def hash(self):
-        # TODO: revisit this later
-        # from hashlib import sha1
-        # val = self.so_symbol
-        # for in_type in self.inputs:
-        #     val += in_type.name()
-
-        # return sha1(val).hexdigest()
-        pass
+        ScalarFunction.__init__(self, inputs, output, name=self.name, database=database)
 
 
 class ImpalaUDA(AggregateFunction, ImpalaFunction):
@@ -129,6 +123,7 @@ class ImpalaUDA(AggregateFunction, ImpalaFunction):
         serialize_fn=None,
         lib_path=None,
         name=None,
+        database=None,
     ):
         self.init_fn = init_fn
         self.update_fn = update_fn
@@ -136,10 +131,14 @@ class ImpalaUDA(AggregateFunction, ImpalaFunction):
         self.finalize_fn = finalize_fn
         self.serialize_fn = serialize_fn
 
+        from ibis.legacy.udf.validate import validate_output_type
+
         validate_output_type(output)
 
         ImpalaFunction.__init__(self, name=name, lib_path=lib_path)
-        AggregateFunction.__init__(self, inputs, output, name=self.name)
+        AggregateFunction.__init__(
+            self, inputs, output, name=self.name, database=database
+        )
 
     def _check_library(self):
         suffix = self.lib_path[-3:]
@@ -159,6 +158,7 @@ def wrap_uda(
     finalize_fn: str | None = None,
     serialize_fn: str | None = None,
     name: str | None = None,
+    database: str | None = None,
 ):
     """Creates a callable aggregation function object.
 
@@ -185,10 +185,8 @@ def wrap_uda(
         UDAs.
     name
         Used internally to track function
-
-    Returns
-    -------
-    container : UDA object
+    database
+        Name of database
     """
     return ImpalaUDA(
         inputs,
@@ -200,10 +198,11 @@ def wrap_uda(
         serialize_fn=serialize_fn,
         name=name,
         lib_path=hdfs_file,
+        database=database,
     )
 
 
-def wrap_udf(hdfs_file, inputs, output, so_symbol, name=None):
+def wrap_udf(hdfs_file, inputs, output, so_symbol, name=None, database=None):
     """Creates a callable scalar function object.
 
     Must be created in Impala to be used.
@@ -220,13 +219,17 @@ def wrap_udf(hdfs_file, inputs, output, so_symbol, name=None):
         C++ function name for relevant UDF
     name
         Used internally to track function
+    database
+        Name of database
     """
-    func = ImpalaUDF(inputs, output, so_symbol, name=name, lib_path=hdfs_file)
+    func = ImpalaUDF(
+        inputs, output, so_symbol, name=name, lib_path=hdfs_file, database=database
+    )
     return func
 
 
-def scalar_function(inputs, output, name=None):
-    """Creates an operator class that can be passed to add_operation().
+def scalar_function(inputs, output, name=None, database=None):
+    """Create an operator class.
 
     Parameters
     ----------
@@ -236,96 +239,24 @@ def scalar_function(inputs, output, name=None):
         Ibis data type
     name
         Used internally to track function
+    database
+        Name of database
     """
-    return ScalarFunction(inputs, output, name=name)
+    return ScalarFunction(inputs, output, name=name, database=database)
 
 
-def aggregate_function(inputs, output, name=None):
-    """Creates an operator class that can be passed to add_operation().
+def aggregate_function(inputs, output, name=None, database=None):
+    """Create an operator class.
 
     Parameters
     ----------
-    inputs: list of strings
-      Ibis data type names
-    output: string
-      Ibis data type
-    name: string, optional
+    inputs
+        Ibis data type names
+    output
+        Ibis data type
+    name
         Used internally to track function
+    database
+        Name of database
     """
-    return AggregateFunction(inputs, output, name=name)
-
-
-def add_operation(op, func_name, db):
-    """Registers the given operation within the Ibis SQL translation toolchain.
-
-    Parameters
-    ----------
-    op
-        operator class
-    func_name
-        used in issuing statements to SQL engine
-    db
-        database the relevant operator is registered to
-    """
-    full_name = f"{db}.{func_name}"
-    arity = len(op.__signature__.parameters)
-    translator = fixed_arity(full_name, arity)
-
-    ImpalaExprTranslator._registry[op] = translator
-
-
-def parse_type(t):
-    t = t.lower()
-    if t in _impala_to_ibis_type:
-        return _impala_to_ibis_type[t]
-    elif "varchar" in t or "char" in t:
-        return "string"
-    elif "decimal" in t:
-        result = dt.dtype(t)
-        if result:
-            return t
-        else:
-            return ValueError(t)
-    else:
-        raise Exception(t)
-
-
-_VARCHAR_RE = re.compile(r"varchar\((\d+)\)")
-
-
-def _parse_varchar(t):
-    m = _VARCHAR_RE.match(t)
-    if m:
-        return "string"
-    return None
-
-
-def _impala_type_to_ibis(tval):
-    if tval in _impala_to_ibis_type:
-        return _impala_to_ibis_type[tval]
-    return tval
-
-
-def _ibis_string_to_impala(tval):
-    if tval in sql_type_names:
-        return sql_type_names[tval]
-    result = dt.validate_type(tval)
-    return repr(result) if result else None
-
-
-_impala_to_ibis_type = {
-    "boolean": "boolean",
-    "tinyint": "int8",
-    "smallint": "int16",
-    "int": "int32",
-    "bigint": "int64",
-    "float": "float32",
-    "double": "float64",
-    "string": "string",
-    "varchar": "string",
-    "char": "string",
-    "timestamp": "timestamp",
-    "decimal": "decimal",
-    "date": "date",
-    "void": "null",
-}
+    return AggregateFunction(inputs, output, name=name, database=database)
