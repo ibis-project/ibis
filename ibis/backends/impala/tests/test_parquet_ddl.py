@@ -9,7 +9,7 @@ from ibis.tests.util import assert_equal
 
 pytest.importorskip("impala")
 
-from ibis.backends.impala.compat import HS2Error  # noqa: E402
+from impala.error import HiveServer2Error  # noqa: E402
 
 
 def test_parquet_file_with_name(con, test_data_dir, temp_table):
@@ -91,5 +91,5 @@ def test_create_table_persist_fails_if_called_twice(con, temp_table, test_data_d
     hdfs_path = pjoin(test_data_dir, "impala/parquet/region")
     con.parquet_file(hdfs_path, like_table="region", name=temp_table)
 
-    with pytest.raises(HS2Error):
+    with pytest.raises(HiveServer2Error):
         con.parquet_file(hdfs_path, like_table="region", name=temp_table)

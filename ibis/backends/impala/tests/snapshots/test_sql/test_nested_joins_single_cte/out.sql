@@ -1,26 +1,37 @@
-WITH t0 AS (
-  SELECT t4.`uuid`, count(1) AS `CountStar(t)`
-  FROM `t` t4
-  GROUP BY 1
-),
-t1 AS (
-  SELECT t0.`uuid`, max(t0.`CountStar(t)`) AS `max_count`
-  FROM t0
-  GROUP BY 1
-),
-t2 AS (
-  SELECT t4.`uuid`, max(t4.`ts`) AS `last_visit`
-  FROM `t` t4
-  GROUP BY 1
-),
-t3 AS (
-  SELECT t0.*
-  FROM t1
-    LEFT OUTER JOIN t0
-      ON (t1.`uuid` = t0.`uuid`) AND
-         (t1.`max_count` = t0.`CountStar(t)`)
-)
-SELECT t3.*, t2.`last_visit`
-FROM t3
-  LEFT OUTER JOIN t2
-    ON t3.`uuid` = t2.`uuid`
+SELECT
+  `t6`.`uuid`,
+  `t2`.`CountStar()`,
+  `t4`.`last_visit`
+FROM (
+  SELECT
+    `t1`.`uuid`,
+    MAX(`t1`.`CountStar()`) AS `max_count`
+  FROM (
+    SELECT
+      `t0`.`uuid`,
+      COUNT(*) AS `CountStar()`
+    FROM `t` AS `t0`
+    GROUP BY
+      1
+  ) AS `t1`
+  GROUP BY
+    1
+) AS `t6`
+LEFT OUTER JOIN (
+  SELECT
+    `t0`.`uuid`,
+    COUNT(*) AS `CountStar()`
+  FROM `t` AS `t0`
+  GROUP BY
+    1
+) AS `t2`
+  ON `t6`.`uuid` = `t2`.`uuid` AND `t6`.`max_count` = `t2`.`CountStar()`
+LEFT OUTER JOIN (
+  SELECT
+    `t0`.`uuid`,
+    MAX(`t0`.`ts`) AS `last_visit`
+  FROM `t` AS `t0`
+  GROUP BY
+    1
+) AS `t4`
+  ON `t6`.`uuid` = `t4`.`uuid`

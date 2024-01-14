@@ -1,1 +1,2 @@
-'I can\'t'
+SELECT
+  'I can\'t' AS `"I can't"`

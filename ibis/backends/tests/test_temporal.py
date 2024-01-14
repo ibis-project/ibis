@@ -344,7 +344,6 @@ PANDAS_UNITS = {
         param(
             "W",
             marks=[
-                pytest.mark.notimpl(["impala"], raises=AssertionError),
                 pytest.mark.broken(["sqlite"], raises=AssertionError),
                 pytest.mark.notimpl(["mysql"], raises=com.UnsupportedOperationError),
                 pytest.mark.broken(
@@ -403,9 +402,7 @@ PANDAS_UNITS = {
         param(
             "s",
             marks=[
-                pytest.mark.notimpl(
-                    ["impala", "sqlite"], raises=com.UnsupportedOperationError
-                ),
+                pytest.mark.notimpl(["sqlite"], raises=com.UnsupportedOperationError),
                 pytest.mark.broken(
                     ["polars"],
                     raises=AssertionError,
@@ -422,13 +419,7 @@ PANDAS_UNITS = {
             "ms",
             marks=[
                 pytest.mark.notimpl(
-                    [
-                        "clickhouse",
-                        "impala",
-                        "mysql",
-                        "sqlite",
-                        "datafusion",
-                    ],
+                    ["clickhouse", "mysql", "sqlite", "datafusion"],
                     raises=com.UnsupportedOperationError,
                 ),
                 pytest.mark.broken(
@@ -447,14 +438,7 @@ PANDAS_UNITS = {
             "us",
             marks=[
                 pytest.mark.notimpl(
-                    [
-                        "clickhouse",
-                        "impala",
-                        "mysql",
-                        "sqlite",
-                        "trino",
-                        "datafusion",
-                    ],
+                    ["clickhouse", "mysql", "sqlite", "trino", "datafusion"],
                     raises=com.UnsupportedOperationError,
                 ),
                 pytest.mark.broken(
@@ -572,7 +556,6 @@ def test_timestamp_truncate(backend, alltypes, df, unit):
         param(
             "W",
             marks=[
-                pytest.mark.broken(["impala"], raises=AssertionError),
                 pytest.mark.notyet(["mysql"], raises=com.UnsupportedOperationError),
                 pytest.mark.never(
                     ["flink"],
@@ -900,7 +883,6 @@ timestamp_value = pd.Timestamp("2018-01-01 18:18:18")
                 pytest.mark.notimpl(
                     [
                         "dask",
-                        "impala",
                         "risingwave",
                         "snowflake",
                         "sqlite",
@@ -908,6 +890,7 @@ timestamp_value = pd.Timestamp("2018-01-01 18:18:18")
                     ],
                     raises=com.OperationNotDefinedError,
                 ),
+                pytest.mark.notimpl(["impala"], raises=com.UnsupportedOperationError),
                 pytest.mark.notimpl(["mysql"], raises=sg.ParseError),
                 pytest.mark.notimpl(
                     ["druid"],
@@ -928,12 +911,12 @@ timestamp_value = pd.Timestamp("2018-01-01 18:18:18")
                         "sqlite",
                         "risingwave",
                         "polars",
-                        "impala",
                         "snowflake",
                         "bigquery",
                     ],
                     raises=com.OperationNotDefinedError,
                 ),
+                pytest.mark.notimpl(["impala"], raises=com.UnsupportedOperationError),
                 pytest.mark.notimpl(["mysql"], raises=sg.ParseError),
                 pytest.mark.notimpl(
                     ["druid"],
@@ -1527,11 +1510,7 @@ def test_interval_add_cast_column(backend, alltypes, df):
                     reason="Polars does not support columnar argument StringConcat()",
                 ),
                 pytest.mark.notyet(["dask"], raises=com.OperationNotDefinedError),
-                pytest.mark.broken(
-                    ["impala"],
-                    raises=AttributeError,
-                    reason="'StringConcat' object has no attribute 'value'",
-                ),
+                pytest.mark.notyet(["impala"], raises=com.UnsupportedOperationError),
                 pytest.mark.notimpl(
                     ["druid"],
                     raises=AttributeError,
@@ -1710,7 +1689,6 @@ def test_integer_to_timestamp(backend, con, unit):
         "risingwave",
         "clickhouse",
         "sqlite",
-        "impala",
         "datafusion",
         "mssql",
         "druid",
@@ -1865,6 +1843,10 @@ def test_now_from_projection(alltypes):
 DATE_BACKEND_TYPES = {
     "bigquery": "DATE",
     "clickhouse": "Date",
+    "duckdb": "DATE",
+    "flink": "DATE NOT NULL",
+    "impala": "DATE",
+    "postgres": "date",
     "snowflake": "DATE",
     "sqlite": "text",
     "trino": "date",
@@ -1882,7 +1864,6 @@ DATE_BACKEND_TYPES = {
 @pytest.mark.notimpl(
     ["oracle"], raises=sa.exc.DatabaseError, reason="ORA-00936 missing expression"
 )
-@pytest.mark.notyet(["impala"], raises=com.OperationNotDefinedError)
 @pytest.mark.notimpl(["exasol"], raises=ExaQueryError)
 @pytest.mark.notimpl(
     ["risingwave"],
@@ -2167,7 +2148,6 @@ def test_interval_literal(con, backend):
 @pytest.mark.broken(
     ["oracle"], raises=sa.exc.DatabaseError, reason="ORA-00936: missing expression"
 )
-@pytest.mark.notyet(["impala"], raises=com.OperationNotDefinedError)
 @pytest.mark.notimpl(["exasol"], raises=sa.exc.DBAPIError)
 @pytest.mark.notimpl(
     ["risingwave"],
