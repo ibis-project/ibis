@@ -1,1 +1,2 @@
-'An "escape"'
+SELECT
+  'An "escape"' AS `'An "escape"'`

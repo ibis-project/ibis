@@ -30,13 +30,13 @@ def test_join_no_predicates_for_impala(con, join_type, snapshot):
     t2 = con.table("star2")
 
     joined = getattr(t1, join_type)(t2)[[t1]]
-    result = ImpalaCompiler.to_sql(joined)
+    result = ibis.to_sql(joined, dialect="impala")
     snapshot.assert_match(result, "out.sql")
 
 
 def test_limit_cte_extract(limit_cte_extract, snapshot):
     case = limit_cte_extract
-    result = ImpalaCompiler.to_sql(case)
+    result = ibis.to_sql(case, dialect="impala")
     snapshot.assert_match(result, "out.sql")
 
 
@@ -45,7 +45,7 @@ def test_nested_join_base(snapshot):
     counts = t.group_by("uuid").size()
     max_counts = counts.group_by("uuid").aggregate(max_count=lambda x: x[1].max())
     result = max_counts.left_join(counts, "uuid").select(counts)
-    compiled_result = ImpalaCompiler.to_sql(result)
+    compiled_result = ibis.to_sql(result, dialect="impala")
     snapshot.assert_match(compiled_result, "out.sql")
 
 
@@ -65,7 +65,7 @@ def test_nested_joins_single_cte(snapshot):
     result = main_kw.left_join(last_visit, "uuid").select(
         main_kw, last_visit.last_visit
     )
-    compiled_result = ImpalaCompiler.to_sql(result)
+    compiled_result = ibis.to_sql(result, dialect="impala")
     snapshot.assert_match(compiled_result, "out.sql")
 
 
@@ -87,7 +87,7 @@ def test_nested_join_multiple_ctes(snapshot):
     # that for now see issue #1295
     cond = joined3.movieid.isin(top_user_old_movie_ids.movieid)
     result = joined3[cond]
-    compiled_result = ImpalaCompiler.to_sql(result)
+    compiled_result = ibis.to_sql(result, dialect="impala")
     snapshot.assert_match(compiled_result, "out.sql")
 
 
@@ -101,7 +101,7 @@ def test_logically_negate_complex_boolean_expr(snapshot):
         return t.a.isin(["foo"]) & t.c.notnull()
 
     expr = (~f(t)).name("tmp")
-    result = ImpalaCompiler.to_sql(expr)
+    result = ibis.to_sql(expr, dialect="impala")
     snapshot.assert_match(result, "out.sql")
 
 
@@ -111,7 +111,7 @@ def test_join_with_nested_or_condition(snapshot):
 
     joined = t1.join(t2, [t1.a == t2.a, (t1.a != t2.b) | (t1.b != t2.a)])
     expr = joined[t1]
-    result = ImpalaCompiler.to_sql(expr)
+    result = ibis.to_sql(expr, dialect="impala")
     snapshot.assert_match(result, "out.sql")
 
 
@@ -121,7 +121,7 @@ def test_join_with_nested_xor_condition(snapshot):
 
     joined = t1.join(t2, [t1.a == t2.a, (t1.a != t2.b) ^ (t1.b != t2.a)])
     expr = joined[t1]
-    result = ImpalaCompiler.to_sql(expr)
+    result = ibis.to_sql(expr, dialect="impala")
     snapshot.assert_match(result, "out.sql")
 
 
@@ -131,7 +131,7 @@ def test_is_parens(method, snapshot):
     func = operator.methodcaller(method)
     expr = t[func(t.a) == func(t.b)]
 
-    result = ImpalaCompiler.to_sql(expr)
+    result = ibis.to_sql(expr, dialect="impala")
     snapshot.assert_match(result, "out.sql")
 
 
@@ -139,7 +139,7 @@ def test_is_parens_identical_to(snapshot):
     t = ibis.table([("a", "string"), ("b", "string")], "table")
     expr = t[t.a.identical_to(None) == t.b.identical_to(None)]
 
-    result = ImpalaCompiler.to_sql(expr)
+    result = ibis.to_sql(expr, dialect="impala")
     snapshot.assert_match(result, "out.sql")
 
 
@@ -162,7 +162,7 @@ def test_join_aliasing(snapshot):
         .view()
     )
     result = agg.join(test5, agg.d == test5.d)[agg, test5.total]
-    result = ImpalaCompiler.to_sql(result)
+    result = ibis.to_sql(result, dialect="impala")
     snapshot.assert_match(result, "out.sql")
 
 
@@ -170,7 +170,7 @@ def test_multiple_filters(snapshot):
     t = ibis.table([("a", "int64"), ("b", "string")], name="t0")
     filt = t[t.a < 100]
     expr = filt[filt.a == filt.a.max()]
-    result = ImpalaCompiler.to_sql(expr)
+    result = ibis.to_sql(expr, dialect="impala")
     snapshot.assert_match(result, "out.sql")
 
 
@@ -179,7 +179,7 @@ def test_multiple_filters2(snapshot):
     filt = t[t.a < 100]
     expr = filt[filt.a == filt.a.max()]
     expr = expr[expr.b == "a"]
-    result = ImpalaCompiler.to_sql(expr)
+    result = ibis.to_sql(expr, dialect="impala")
     snapshot.assert_match(result, "out.sql")
 
 
