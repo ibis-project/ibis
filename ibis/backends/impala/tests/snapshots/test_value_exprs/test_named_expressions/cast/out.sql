@@ -1,1 +1,3 @@
-CAST(`g` AS double) AS `g_dub`
+SELECT
+  CAST(`t0`.`g` AS DOUBLE) AS `g_dub`
+FROM `alltypes` AS `t0`

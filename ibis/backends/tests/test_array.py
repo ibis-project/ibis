@@ -19,6 +19,7 @@ import ibis.expr.types as ir
 from ibis.backends.tests.errors import (
     ClickHouseDatabaseError,
     GoogleBadRequest,
+    ImpalaHiveServer2Error,
     MySQLOperationalError,
     PolarsComputeError,
     PsycoPg2IndeterminateDatatype,
@@ -34,7 +35,15 @@ pytestmark = [
         reason="No array support",
         raises=Exception,
     ),
-    pytest.mark.notyet(["impala"], reason="No array support", raises=Exception),
+    pytest.mark.notyet(
+        ["impala"],
+        reason="No array support",
+        raises=(
+            com.UnsupportedBackendType,
+            com.OperationNotDefinedError,
+            ImpalaHiveServer2Error,
+        ),
+    ),
     pytest.mark.notimpl(["druid", "oracle"], raises=Exception),
 ]
 
@@ -372,7 +381,7 @@ def test_array_slice(backend, start, stop):
 
 @builtin_array
 @pytest.mark.notimpl(
-    ["datafusion", "impala", "mssql", "polars", "snowflake", "sqlite"],
+    ["datafusion", "mssql", "polars", "snowflake", "sqlite"],
     raises=com.OperationNotDefinedError,
 )
 @pytest.mark.notimpl(
@@ -416,7 +425,7 @@ def test_array_map(con, input, output):
 
 @builtin_array
 @pytest.mark.notimpl(
-    ["dask", "datafusion", "impala", "mssql", "pandas", "polars", "snowflake"],
+    ["dask", "datafusion", "mssql", "pandas", "polars", "snowflake"],
     raises=com.OperationNotDefinedError,
 )
 @pytest.mark.notimpl(
@@ -461,7 +470,6 @@ def test_array_filter(con, input, output):
 @builtin_array
 @pytest.mark.notimpl(["mssql", "polars"], raises=com.OperationNotDefinedError)
 @pytest.mark.notimpl(["dask"], raises=com.OperationNotDefinedError)
-@pytest.mark.never(["impala"], reason="array_types table isn't defined")
 def test_array_contains(backend, con):
     t = backend.array_types
     expr = t.x.contains(1)
@@ -471,9 +479,7 @@ def test_array_contains(backend, con):
 
 
 @builtin_array
-@pytest.mark.notimpl(
-    ["dask", "impala", "mssql", "polars"], raises=com.OperationNotDefinedError
-)
+@pytest.mark.notimpl(["dask", "mssql", "polars"], raises=com.OperationNotDefinedError)
 @pytest.mark.broken(
     ["datafusion"], reason="internal error as of 34.0.0", raises=Exception
 )
@@ -486,9 +492,7 @@ def test_array_position(backend, con):
 
 
 @builtin_array
-@pytest.mark.notimpl(
-    ["dask", "impala", "mssql", "polars"], raises=com.OperationNotDefinedError
-)
+@pytest.mark.notimpl(["dask", "mssql", "polars"], raises=com.OperationNotDefinedError)
 def test_array_remove(con):
     t = ibis.memtable({"a": [[3, 2], [], [42, 2], [2, 2], []]})
     expr = t.a.remove(2)
@@ -499,8 +503,7 @@ def test_array_remove(con):
 
 @builtin_array
 @pytest.mark.notimpl(
-    ["dask", "datafusion", "impala", "mssql", "polars"],
-    raises=com.OperationNotDefinedError,
+    ["dask", "datafusion", "mssql", "polars"], raises=com.OperationNotDefinedError
 )
 @pytest.mark.notimpl(
     ["sqlite"], raises=NotImplementedError, reason="Unsupported type: Array..."
@@ -545,8 +548,7 @@ def test_array_unique(con, input, expected):
 
 @builtin_array
 @pytest.mark.notimpl(
-    ["dask", "datafusion", "impala", "mssql", "polars"],
-    raises=com.OperationNotDefinedError,
+    ["dask", "datafusion", "mssql", "polars"], raises=com.OperationNotDefinedError
 )
 def test_array_sort(backend, con):
     t = ibis.memtable({"a": [[3, 2], [], [42, 42], []], "id": range(4)})
@@ -558,8 +560,7 @@ def test_array_sort(backend, con):
 
 @builtin_array
 @pytest.mark.notimpl(
-    ["dask", "datafusion", "impala", "mssql", "polars"],
-    raises=com.OperationNotDefinedError,
+    ["dask", "datafusion", "mssql", "polars"], raises=com.OperationNotDefinedError
 )
 @pytest.mark.notyet(
     ["bigquery"],
@@ -578,7 +579,7 @@ def test_array_union(con):
 
 @builtin_array
 @pytest.mark.notimpl(
-    ["dask", "datafusion", "impala", "mssql", "pandas", "polars", "flink"],
+    ["dask", "datafusion", "mssql", "pandas", "polars", "flink"],
     raises=com.OperationNotDefinedError,
 )
 @pytest.mark.notimpl(
@@ -639,7 +640,7 @@ def test_unnest_struct(con):
 
 @builtin_array
 @pytest.mark.never(
-    ["impala", "mssql"], raises=com.OperationNotDefinedError, reason="no array support"
+    ["mssql"], raises=com.OperationNotDefinedError, reason="no array support"
 )
 @pytest.mark.notimpl(
     ["dask", "datafusion", "druid", "oracle", "pandas", "polars", "postgres"],
@@ -869,16 +870,7 @@ def test_unnest_empty_array(con):
 
 @builtin_array
 @pytest.mark.notimpl(
-    [
-        "datafusion",
-        "impala",
-        "mssql",
-        "polars",
-        "snowflake",
-        "sqlite",
-        "dask",
-        "pandas",
-    ],
+    ["datafusion", "mssql", "polars", "snowflake", "sqlite", "dask", "pandas"],
     raises=com.OperationNotDefinedError,
 )
 @pytest.mark.notimpl(["sqlite"], raises=NotImplementedError)
@@ -894,16 +886,7 @@ def test_array_map_with_conflicting_names(backend, con):
 
 @builtin_array
 @pytest.mark.notimpl(
-    [
-        "datafusion",
-        "impala",
-        "mssql",
-        "polars",
-        "snowflake",
-        "sqlite",
-        "dask",
-        "pandas",
-    ],
+    ["datafusion", "mssql", "polars", "snowflake", "sqlite", "dask", "pandas"],
     raises=com.OperationNotDefinedError,
 )
 def test_complex_array_map(con):
@@ -1050,6 +1033,9 @@ def test_timestamp_range_zero_step(con, start, stop, step, tzinfo):
 
 
 @pytest.mark.notimpl(["flink"], raises=Py4JJavaError)
+@pytest.mark.notimpl(
+    ["impala"], raises=AssertionError, reason="backend doesn't support arrays"
+)
 def test_repr_timestamp_array(con, monkeypatch):
     monkeypatch.setattr(ibis.options, "interactive", True)
     assert ibis.options.interactive is True

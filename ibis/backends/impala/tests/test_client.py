@@ -234,4 +234,4 @@ def test_list_databases(con):
 
 def test_list_tables(con, test_data_db):
     assert con.list_tables(database=test_data_db)
-    assert con.list_tables(like="*nat*", database=test_data_db)
+    assert con.list_tables(like=".*nat.*", database=test_data_db)

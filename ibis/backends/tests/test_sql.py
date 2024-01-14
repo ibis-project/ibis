@@ -28,7 +28,12 @@ array_literal = param(
             reason="arrays not supported in the backend",
         ),
         pytest.mark.notyet(
-            ["impala", "sqlite"],
+            ["impala"],
+            raises=exc.UnsupportedBackendType,
+            reason="arrays not supported in the backend",
+        ),
+        pytest.mark.notyet(
+            ["sqlite"],
             raises=NotImplementedError,
             reason="backends hasn't implemented array literals",
         ),

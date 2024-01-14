@@ -1,5 +1,9 @@
-CASE
-  WHEN `f` > 0 THEN `d` * 2
-  WHEN `c` < 0 THEN `a` * 2
-  ELSE CAST(NULL AS bigint)
-END
+SELECT
+  CASE
+    WHEN `t0`.`f` > 0
+    THEN `t0`.`d` * 2
+    WHEN `t0`.`c` < 0
+    THEN `t0`.`a` * 2
+    ELSE CAST(NULL AS BIGINT)
+  END AS `SearchedCase(Cast(None, int64))`
+FROM `alltypes` AS `t0`

@@ -1,1 +1,2 @@
-CAST('9.9999999' AS decimal(38, 5))
+SELECT
+  CAST('9.9999999' AS DECIMAL(38, 5)) AS `Cast('9.9999999', decimal(38, 5))`

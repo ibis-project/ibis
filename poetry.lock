@@ -7341,7 +7341,7 @@ examples = ["pins"]
 exasol = ["sqlalchemy", "sqlalchemy-exasol", "sqlalchemy-views"]
 flink = []
 geospatial = ["geopandas", "shapely"]
-impala = ["impyla", "sqlalchemy"]
+impala = ["impyla"]
 mssql = ["pyodbc", "sqlalchemy", "sqlalchemy-views"]
 mysql = ["pymysql"]
 oracle = ["oracledb", "packaging", "sqlalchemy", "sqlalchemy-views"]
@@ -7357,4 +7357,4 @@ visualization = ["graphviz"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.9"
-content-hash = "a2edd5b6e62e78267c3e2339efde3600b637e86ae05c0deec081798be5d1d34e"
+content-hash = "1939863bb76e53c0c8a1575ffe8fd2e035e6768ac21682fe12a9e640ffe3ade1"

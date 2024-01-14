@@ -6,6 +6,7 @@ from functools import partial, singledispatchmethod
 from itertools import starmap
 
 import sqlglot as sg
+import sqlglot.expressions as sge
 from sqlglot import exp, transforms
 from sqlglot.dialects import Postgres
 from sqlglot.dialects.dialect import rename_func
@@ -102,6 +103,8 @@ class DataFusionCompiler(SQLGlotCompiler):
             return self.f.date_trunc("day", value.isoformat())
         elif dtype.is_binary():
             return sg.exp.HexString(this=value.hex())
+        elif dtype.is_uuid():
+            return sge.convert(str(value))
         else:
             return None
 
