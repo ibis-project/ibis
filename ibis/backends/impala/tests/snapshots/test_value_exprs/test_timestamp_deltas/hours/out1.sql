@@ -1,1 +1,3 @@
-date_add(cast(`i` as timestamp), INTERVAL 5 HOUR)
+SELECT
+  CAST(CAST(`t0`.`i` AS TIMESTAMP) + INTERVAL '5' HOUR AS TIMESTAMP) AS `TimestampAdd(i, 5h)`
+FROM `alltypes` AS `t0`

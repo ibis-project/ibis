@@ -1,2 +1,3 @@
-SELECT avg(t0.`f`) OVER (ORDER BY t0.`d` ASC ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS `foo`
-FROM `alltypes` t0
+SELECT
+  AVG(`t0`.`f`) OVER (ORDER BY `t0`.`d` ASC NULLS LAST) AS `foo`
+FROM `alltypes` AS `t0`

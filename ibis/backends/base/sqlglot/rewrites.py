@@ -168,10 +168,8 @@ def rewrite_last_to_last_value(_, x, y):
 
 
 @replace(p.WindowFunction(frame=y @ p.WindowFrame(order_by=())))
-def rewrite_empty_order_by_window(_, y):
-    import ibis
-
-    return _.copy(frame=y.copy(order_by=(ibis.NA,)))
+def rewrite_empty_order_by_window(_, y, **__):
+    return _.copy(frame=y.copy(order_by=(ops.NULL,)))
 
 
 @replace(p.WindowFunction(p.RowNumber | p.NTile, y))

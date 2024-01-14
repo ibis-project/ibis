@@ -428,6 +428,7 @@ class scalar(_UDF):
         )
 
 
+@public
 class agg(_UDF):
     __slots__ = ()
 

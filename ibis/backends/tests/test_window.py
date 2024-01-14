@@ -1169,10 +1169,10 @@ def test_mutate_window_filter(backend, alltypes):
 
 
 @pytest.mark.notimpl(["polars"], raises=com.OperationNotDefinedError)
-@pytest.mark.broken(
-    ["impala"],
-    reason="the database returns incorrect results",
-    raises=AssertionError,
+@pytest.mark.notimpl(
+    ["flink"],
+    raises=Exception,
+    reason="KeyError: Table with name win doesn't exist.",
 )
 @pytest.mark.notimpl(["dask"], raises=NotImplementedError)
 @pytest.mark.notimpl(

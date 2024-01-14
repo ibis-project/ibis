@@ -1,1 +1,3 @@
-find_in_set(`string_col`, 'a,b') - 1
+SELECT
+  FIND_IN_SET(`t0`.`string_col`, CONCAT_WS(',', 'a', 'b')) - 1 AS `FindInSet(string_col)`
+FROM `functional_alltypes` AS `t0`

@@ -1,1 +1,2 @@
-TRUE
+SELECT
+  TRUE AS `True`

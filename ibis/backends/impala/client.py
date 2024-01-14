@@ -28,34 +28,36 @@ class ImpalaTable(ir.Table):
 
     @property
     def _database(self) -> str:
-        return self.op().namespace
+        return self.op().namespace.database
 
     def compute_stats(self, incremental=False):
         """Invoke Impala COMPUTE STATS command on the table."""
-        return self._client.compute_stats(self._qualified_name, incremental=incremental)
+        return self._client.compute_stats(
+            self.op().name, database=self._database, incremental=incremental
+        )
 
     def invalidate_metadata(self):
-        self._client.invalidate_metadata(self._qualified_name)
+        self._client.invalidate_metadata(self.op().name, database=self._database)
 
     def refresh(self):
-        self._client.refresh(self._qualified_name)
+        self._client.refresh(self.op().name, database=self._database)
 
     def metadata(self):
         """Return results of `DESCRIBE FORMATTED` statement."""
-        return self._client.describe_formatted(self._qualified_name)
+        return self._client.describe_formatted(self.op().name, database=self._database)
 
     describe_formatted = metadata
 
     def files(self):
         """Return results of SHOW FILES statement."""
-        return self._client.show_files(self._qualified_name)
+        return self._client.show_files(self.op().name, database=self._database)
 
     def drop(self):
         """Drop the table from the database."""
-        self._client.drop_table_or_view(self._qualified_name)
+        self._client.drop_table_or_view(self.op().name, database=self._database)
 
     def truncate(self):
-        self._client.truncate_table(self._qualified_name)
+        self._client.truncate_table(self.op().name, database=self._database)
 
     def insert(
         self,
@@ -121,11 +123,9 @@ class ImpalaTable(ir.Table):
         else:
             partition_schema = None
 
-        ast = self._client.compiler.to_ast(expr)
-        select = ast.queries[0]
         statement = InsertSelect(
             self._qualified_name,
-            select,
+            self._client.compile(expr),
             partition=partition,
             partition_schema=partition_schema,
             overwrite=overwrite,

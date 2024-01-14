@@ -676,7 +676,7 @@ def uses_java_re(t):
             id="negative-index",
             marks=[
                 pytest.mark.broken(["druid"], raises=PyDruidProgrammingError),
-                pytest.mark.broken(["impala", "flink"], raises=AssertionError),
+                pytest.mark.broken(["flink"], raises=AssertionError),
             ],
         ),
         param(
@@ -962,12 +962,15 @@ def test_capitalize(con):
     ["dask", "pandas", "polars", "oracle", "flink"], raises=com.OperationNotDefinedError
 )
 @pytest.mark.notyet(
-    ["impala", "mssql", "sqlite", "exasol"],
+    ["mssql", "sqlite", "exasol"],
     reason="no arrays",
     raises=com.OperationNotDefinedError,
 )
 @pytest.mark.never(
     ["mysql"], raises=com.OperationNotDefinedError, reason="no array support"
+)
+@pytest.mark.notimpl(
+    ["impala"], raises=com.UnsupportedBackendType, reason="no array support"
 )
 def test_array_string_join(con):
     s = ibis.array(["a", "b", "c"])
