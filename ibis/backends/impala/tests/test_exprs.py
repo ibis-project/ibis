@@ -5,12 +5,12 @@ from decimal import Decimal
 import pandas as pd
 import pandas.testing as tm
 import pytest
+from impala.error import HiveServer2Error
 from pytest import param
 
 import ibis
 import ibis.expr.types as ir
 from ibis import literal as L
-from ibis.backends.impala.compiler import ImpalaCompiler
 from ibis.expr import api
 
 
@@ -141,7 +141,7 @@ def test_builtins(con, alltypes):
 
 
 def _check_impala_output_types_match(con, table):
-    query = ImpalaCompiler.to_sql(table)
+    query = ibis.to_sql(table, dialect="impala")
     t = con.sql(query)
 
     left_schema, right_schema = t.schema(), table.schema()
@@ -169,7 +169,7 @@ def _check_impala_output_types_match(con, table):
 )
 def test_int_builtins(con, expr, expected):
     result = con.execute(expr)
-    assert result == expected, ImpalaCompiler.to_sql(expr)
+    assert result == expected, ibis.to_sql(expr, dialect="impala")
 
 
 @pytest.mark.parametrize(
@@ -226,7 +226,7 @@ def test_column_types(alltypes_df, col, expected):
 )
 def test_timestamp_builtins(con, expr, expected):
     result = con.execute(expr)
-    assert result == expected, ImpalaCompiler.to_sql(expr)
+    assert result == expected, ibis.to_sql(expr, dialect="impala")
 
 
 @pytest.mark.parametrize(
@@ -245,7 +245,7 @@ def test_timestamp_builtins(con, expr, expected):
 )
 def test_decimal_builtins(con, expr, expected):
     result = con.execute(expr)
-    assert result == expected, ImpalaCompiler.to_sql(expr)
+    assert result == expected, ibis.to_sql(expr, dialect="impala")
 
 
 def approx_equal(a, b, eps):
@@ -586,7 +586,11 @@ def test_tpch_correlated_subquery_failure(con):
     amount_filter = tpch.amount > conditional_avg
 
     expr = tpch[amount_filter].limit(0)
-    con.explain(expr)
+
+    # impala can't plan this because its correlated subquery implementation is
+    # broken: it cannot detect the outer reference inside the inner query
+    with pytest.raises(HiveServer2Error, match="Could not resolve .+ reference"):
+        con.explain(expr)
 
 
 def test_non_equijoin(con):

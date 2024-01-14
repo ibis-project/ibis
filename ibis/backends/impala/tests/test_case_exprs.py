@@ -95,11 +95,11 @@ def test_decimal_fillna_cast_arg(tpch_lineitem, expr_fn, snapshot):
 def test_identical_to(mockcon, snapshot):
     t = mockcon.table("functional_alltypes")
     expr = t.tinyint_col.identical_to(t.double_col).name("tmp")
-    result = ImpalaCompiler.to_sql(expr)
+    result = ibis.to_sql(expr, dialect="impala")
     snapshot.assert_match(result, "out.sql")
 
 
 def test_identical_to_special_case(snapshot):
     expr = ibis.NA.cast("int64").identical_to(ibis.NA.cast("int64")).name("tmp")
-    result = ImpalaCompiler.to_sql(expr)
+    result = ibis.to_sql(expr, dialect="impala")
     snapshot.assert_match(result, "out.sql")

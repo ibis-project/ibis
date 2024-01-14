@@ -266,8 +266,8 @@ def test_numeric_literal(con, backend, expr, expected_types):
                 "trino": decimal.Decimal("1.1"),
                 "dask": decimal.Decimal("1.1"),
                 "duckdb": decimal.Decimal("1.1"),
-
                 "risingwave": 1.1,
+                "impala": decimal.Decimal("1"),
                 "postgres": decimal.Decimal("1.1"),
                 "pandas": decimal.Decimal("1.1"),
                 "pyspark": decimal.Decimal("1.1"),
@@ -282,6 +282,7 @@ def test_numeric_literal(con, backend, expr, expected_types):
                 "bigquery": "NUMERIC",
                 "snowflake": "DECIMAL",
                 "sqlite": "real",
+                "impala": "DECIMAL(9,0)",
                 "trino": "decimal(18,3)",
                 "duckdb": "DECIMAL(18,3)",
                 "postgres": "numeric",
@@ -289,24 +290,11 @@ def test_numeric_literal(con, backend, expr, expected_types):
                 "flink": "DECIMAL(38, 18) NOT NULL",
             },
             marks=[
-                pytest.mark.notimpl(
-                    ["exasol"],
-                    raises=ExaQueryError,
-                ),
+                pytest.mark.notimpl(["exasol"], raises=ExaQueryError),
                 pytest.mark.notimpl(
                     ["clickhouse"],
                     "Unsupported precision. Supported values: [1 : 76]. Current value: None",
                     raises=NotImplementedError,
-                ),
-                pytest.mark.broken(
-                    ["impala"],
-                    "impala.error.HiveServer2Error: AnalysisException: Syntax error in line 1:"
-                    "SELECT typeof(Decimal('1.1')) AS `TypeOf(Decimal('1.1'))"
-                    "Encountered: DECIMAL"
-                    "Expected: ALL, CASE, CAST, DEFAULT, DISTINCT, EXISTS, FALSE, IF, "
-                    "INTERVAL, LEFT, NOT, NULL, REPLACE, RIGHT, TRUNCATE, TRUE, IDENTIFIER"
-                    "CAUSED BY: Exception: Syntax error",
-                    raises=ImpalaHiveServer2Error,
                 ),
             ],
             id="default",
@@ -321,6 +309,7 @@ def test_numeric_literal(con, backend, expr, expected_types):
                 "trino": decimal.Decimal("1.1"),
                 "duckdb": decimal.Decimal("1.100000000"),
                 "risingwave": 1.1,
+                "impala": decimal.Decimal("1.1"),
                 "postgres": decimal.Decimal("1.1"),
                 "pandas": decimal.Decimal("1.1"),
                 "pyspark": decimal.Decimal("1.1"),
@@ -337,6 +326,7 @@ def test_numeric_literal(con, backend, expr, expected_types):
                 "bigquery": "NUMERIC",
                 "clickhouse": "Decimal(38, 9)",
                 "snowflake": "DECIMAL",
+                "impala": "DECIMAL(38,9)",
                 "sqlite": "real",
                 "trino": "decimal(38,9)",
                 "duckdb": "DECIMAL(38,9)",
@@ -344,22 +334,7 @@ def test_numeric_literal(con, backend, expr, expected_types):
                 "risingwave": "numeric",
                 "flink": "DECIMAL(38, 9) NOT NULL",
             },
-            marks=[
-                pytest.mark.notimpl(
-                    ["exasol"],
-                    raises=ExaQueryError,
-                ),
-                pytest.mark.broken(
-                    ["impala"],
-                    "impala.error.HiveServer2Error: AnalysisException: Syntax error in line 1:"
-                    "SELECT typeof(Decimal('1.1')) AS `TypeOf(Decimal('1.1'))"
-                    "Encountered: DECIMAL"
-                    "Expected: ALL, CASE, CAST, DEFAULT, DISTINCT, EXISTS, FALSE, IF, "
-                    "INTERVAL, LEFT, NOT, NULL, REPLACE, RIGHT, TRUNCATE, TRUE, IDENTIFIER"
-                    "CAUSED BY: Exception: Syntax error",
-                    raises=ImpalaHiveServer2Error,
-                ),
-            ],
+            marks=[pytest.mark.notimpl(["exasol"], raises=ExaQueryError)],
             id="decimal-small",
         ),
         param(
@@ -393,16 +368,7 @@ def test_numeric_literal(con, backend, expr, expected_types):
                 pytest.mark.notimpl(["exasol"], raises=ExaQueryError),
                 pytest.mark.notimpl(["mysql"], raises=MySQLOperationalError),
                 pytest.mark.notyet(["snowflake"], raises=SnowflakeProgrammingError),
-                pytest.mark.broken(
-                    ["impala"],
-                    "impala.error.HiveServer2Error: AnalysisException: Syntax error in line 1:"
-                    "SELECT typeof(Decimal('1.2')) AS `TypeOf(Decimal('1.2'))"
-                    "Encountered: DECIMAL"
-                    "Expected: ALL, CASE, CAST, DEFAULT, DISTINCT, EXISTS, FALSE, IF, "
-                    "INTERVAL, LEFT, NOT, NULL, REPLACE, RIGHT, TRUNCATE, TRUE, IDENTIFIER"
-                    "CAUSED BY: Exception: Syntax error",
-                    raises=ImpalaHiveServer2Error,
-                ),
+                pytest.mark.notyet(["impala"], raises=ImpalaHiveServer2Error),
                 pytest.mark.broken(
                     ["duckdb"],
                     reason="Unsupported precision.",
@@ -436,7 +402,6 @@ def test_numeric_literal(con, backend, expr, expected_types):
                 "pandas": decimal.Decimal("Infinity"),
                 "dask": decimal.Decimal("Infinity"),
                 "pyspark": decimal.Decimal("Infinity"),
-                "impala": float("inf"),
                 "exasol": float("inf"),
                 "duckdb": float("inf"),
             },
@@ -445,7 +410,6 @@ def test_numeric_literal(con, backend, expr, expected_types):
                 "sqlite": "real",
                 "postgres": "numeric",
                 "risingwave": "numeric",
-                "impala": "DOUBLE",
                 "duckdb": "FLOAT",
             },
             marks=[
@@ -461,7 +425,9 @@ def test_numeric_literal(con, backend, expr, expected_types):
                     "query_id=20230128_024107_01084_y8zm3)",
                     raises=sa.exc.ProgrammingError,
                 ),
-                pytest.mark.notyet(["mysql"], raises=com.UnsupportedOperationError),
+                pytest.mark.notyet(
+                    ["mysql", "impala"], raises=com.UnsupportedOperationError
+                ),
                 pytest.mark.broken(
                     ["mssql"],
                     "(pymssql._pymssql.ProgrammingError) (207, b\"Invalid column name 'Infinity'."
@@ -513,7 +479,6 @@ def test_numeric_literal(con, backend, expr, expected_types):
                 "pandas": decimal.Decimal("-Infinity"),
                 "dask": decimal.Decimal("-Infinity"),
                 "pyspark": decimal.Decimal("-Infinity"),
-                "impala": float("-inf"),
                 "exasol": float("-inf"),
                 "duckdb": float("-inf"),
             },
@@ -522,7 +487,6 @@ def test_numeric_literal(con, backend, expr, expected_types):
                 "sqlite": "real",
                 "postgres": "numeric",
                 "risingwave": "numeric",
-                "impala": "DOUBLE",
                 "duckdb": "FLOAT",
             },
             marks=[
@@ -538,7 +502,9 @@ def test_numeric_literal(con, backend, expr, expected_types):
                     "query_id=20230128_024107_01084_y8zm3)",
                     raises=sa.exc.ProgrammingError,
                 ),
-                pytest.mark.notyet(["mysql"], raises=com.UnsupportedOperationError),
+                pytest.mark.notyet(
+                    ["mysql", "impala"], raises=com.UnsupportedOperationError
+                ),
                 pytest.mark.broken(
                     ["mssql"],
                     "(pymssql._pymssql.ProgrammingError) (207, b\"Invalid column name 'Infinity'."
@@ -591,7 +557,6 @@ def test_numeric_literal(con, backend, expr, expected_types):
                 "pandas": decimal.Decimal("NaN"),
                 "dask": decimal.Decimal("NaN"),
                 "pyspark": decimal.Decimal("NaN"),
-                "impala": float("nan"),
                 "exasol": float("nan"),
                 "duckdb": float("nan"),
             },
@@ -601,7 +566,6 @@ def test_numeric_literal(con, backend, expr, expected_types):
                 "sqlite": "null",
                 "postgres": "numeric",
                 "risingwave": "numeric",
-                "impala": "DOUBLE",
                 "duckdb": "FLOAT",
             },
             marks=[
@@ -617,7 +581,9 @@ def test_numeric_literal(con, backend, expr, expected_types):
                     "query_id=20230128_024107_01084_y8zm3)",
                     raises=sa.exc.ProgrammingError,
                 ),
-                pytest.mark.notyet(["mysql"], raises=com.UnsupportedOperationError),
+                pytest.mark.notyet(
+                    ["mysql", "impala"], raises=com.UnsupportedOperationError
+                ),
                 pytest.mark.broken(
                     ["mssql"],
                     "(pymssql._pymssql.ProgrammingError) (207, b\"Invalid column name 'NaN'."

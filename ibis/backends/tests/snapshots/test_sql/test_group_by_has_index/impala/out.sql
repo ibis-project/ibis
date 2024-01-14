@@ -1,5 +1,5 @@
 SELECT
-  CASE t0.`continent`
+  CASE `t0`.`continent`
     WHEN 'NA'
     THEN 'North America'
     WHEN 'SA'
@@ -16,7 +16,7 @@ SELECT
     THEN 'Antarctica'
     ELSE 'Unknown continent'
   END AS `cont`,
-  SUM(t0.`population`) AS `total_pop`
-FROM `countries` AS t0
+  SUM(`t0`.`population`) AS `total_pop`
+FROM `countries` AS `t0`
 GROUP BY
   1

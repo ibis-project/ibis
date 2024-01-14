@@ -1,3 +1,6 @@
-SELECT t0.*
-FROM `table` t0
-WHERE (t0.`a` IS NOT NULL) = (t0.`b` IS NOT NULL)
+SELECT
+  `t0`.`a`,
+  `t0`.`b`
+FROM `table` AS `t0`
+WHERE
+  NOT `t0`.`a` IS NULL = NOT `t0`.`b` IS NULL

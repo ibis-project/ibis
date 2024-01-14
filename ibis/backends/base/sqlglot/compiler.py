@@ -822,6 +822,14 @@ class SQLGlotCompiler(abc.ABC):
         end_value = end.get("value", "UNBOUNDED")
         end_side = end.get("side", "FOLLOWING")
 
+        if getattr(start_value, "this", None) == "0":
+            start_value = "CURRENT ROW"
+            start_side = None
+
+        if getattr(end_value, "this", None) == "0":
+            end_value = "CURRENT ROW"
+            end_side = None
+
         spec = sge.WindowSpec(
             kind=how.upper(),
             start=start_value,
@@ -1004,10 +1012,12 @@ class SQLGlotCompiler(abc.ABC):
             "cross": "cross",
             "outer": "outer",
         }
-        assert predicates
-        return sge.Join(
-            this=table, side=sides[how], kind=kinds[how], on=sg.and_(*predicates)
-        )
+        assert (
+            predicates or how == "cross"
+        ), "expected non-empty predicates when not a cross join"
+
+        on = sg.and_(*predicates) if predicates else None
+        return sge.Join(this=table, side=sides[how], kind=kinds[how], on=on)
 
     @staticmethod
     def _gen_valid_name(name: str) -> str:

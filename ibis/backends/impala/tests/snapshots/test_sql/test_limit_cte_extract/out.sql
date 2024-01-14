@@ -1,8 +1,27 @@
-WITH t0 AS (
-  SELECT t2.*
-  FROM `functional_alltypes` t2
+SELECT
+  `t2`.`id`,
+  `t2`.`bool_col`,
+  `t2`.`tinyint_col`,
+  `t2`.`smallint_col`,
+  `t2`.`int_col`,
+  `t2`.`bigint_col`,
+  `t2`.`float_col`,
+  `t2`.`double_col`,
+  `t2`.`date_string_col`,
+  `t2`.`string_col`,
+  `t2`.`timestamp_col`,
+  `t2`.`year`,
+  `t2`.`month`
+FROM (
+  SELECT
+    *
+  FROM `functional_alltypes` AS `t0`
   LIMIT 100
-)
-SELECT t0.*
-FROM t0
-  CROSS JOIN t0 t1
+) AS `t2`
+INNER JOIN (
+  SELECT
+    *
+  FROM `functional_alltypes` AS `t0`
+  LIMIT 100
+) AS `t4`
+  ON TRUE

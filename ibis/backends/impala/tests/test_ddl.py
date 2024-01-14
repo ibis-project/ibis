@@ -14,7 +14,8 @@ from ibis import util
 from ibis.tests.util import assert_equal
 
 pytest.importorskip("impala")
-from ibis.backends.impala.compat import HS2Error  # noqa: E402
+
+from impala.error import HiveServer2Error  # noqa: E402
 
 
 @pytest.fixture
@@ -71,7 +72,7 @@ def test_create_table_with_location_execute(
 
 def test_drop_table_not_exist(con):
     non_existent_table = f"ibis_table_{util.guid()}"
-    with pytest.raises(HS2Error):
+    with pytest.raises(HiveServer2Error):
         con.drop_table(non_existent_table)
     con.drop_table(non_existent_table, force=True)
 
@@ -83,7 +84,7 @@ def test_truncate_table(con, alltypes, temp_table):
 
     try:
         con.truncate_table(temp_table)
-    except HS2Error as e:
+    except HiveServer2Error as e:
         if "AnalysisException" in e.args[0]:
             pytest.skip("TRUNCATE not available in this version of Impala")
 
