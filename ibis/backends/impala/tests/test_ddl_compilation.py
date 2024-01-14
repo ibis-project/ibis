@@ -10,7 +10,6 @@ from ibis.backends.base.sql.ddl import (
     InsertSelect,
 )
 from ibis.backends.impala import ddl
-from ibis.backends.impala.compiler import ImpalaCompiler
 
 
 @pytest.fixture
@@ -32,8 +31,8 @@ def test_select_basics(t, snapshot):
     name = "testing123456"
 
     expr = t.limit(10)
-    select, _ = _get_select(expr)
 
+    select = str(ibis.to_sql(expr, "impala"))
     stmt = InsertSelect(name, select, database="foo")
     result = stmt.compile()
     snapshot.assert_match(result, "out1.sql")
@@ -174,7 +173,7 @@ def expr(t):
 
 def test_create_external_table_as(mockcon, snapshot):
     path = "/path/to/table"
-    select, _ = _get_select(mockcon.table("test1"))
+    select = ibis.to_sql(mockcon.table("test1"), "impala")
     statement = CTAS(
         "another_table",
         select,
@@ -328,20 +327,7 @@ def test_avro_other_formats(t, snapshot):
 
 
 def _create_table(table_name, expr, database=None, can_exist=False, format="parquet"):
-    ast = ImpalaCompiler.to_ast(expr)
-    select = ast.queries[0]
-    statement = CTAS(
-        table_name,
-        select,
-        database=database,
-        format=format,
-        can_exist=can_exist,
+    select = str(ibis.to_sql(expr, dialect="impala"))
+    return CTAS(
+        table_name, select, database=database, format=format, can_exist=can_exist
     )
-    return statement
-
-
-def _get_select(expr, context=None):
-    ast = ImpalaCompiler.to_ast(expr, context)
-    select = ast.queries[0]
-    context = ast.context
-    return select, context

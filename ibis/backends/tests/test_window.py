@@ -1061,11 +1061,6 @@ def test_mutate_window_filter(backend, alltypes):
     raises=Exception,
     reason="KeyError: Table with name win doesn't exist.",
 )
-@pytest.mark.broken(
-    ["impala"],
-    reason="the database returns incorrect results",
-    raises=AssertionError,
-)
 @pytest.mark.notimpl(["dask"], raises=NotImplementedError)
 def test_first_last(backend):
     t = backend.win

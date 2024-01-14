@@ -1,1 +1,2 @@
-FALSE
+SELECT
+  FALSE AS `False`

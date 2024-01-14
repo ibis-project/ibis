@@ -18,7 +18,7 @@ def alltypes(mockcon):
 
 
 def assert_sql_equal(expr, snapshot, out="out.sql"):
-    result = ImpalaCompiler.to_sql(expr)
+    result = ibis.to_sql(expr, dialect="impala")
     snapshot.assert_match(result, out)
 
 
@@ -71,7 +71,7 @@ def test_window_rows_with_max_lookback(alltypes):
     w = ibis.trailing_window(mlb, order_by=t.i)
     expr = t.a.sum().over(w)
     with pytest.raises(NotImplementedError):
-        ImpalaCompiler.to_sql(expr)
+        ibis.to_sql(expr, dialect="impala")
 
 
 @pytest.mark.parametrize("name", ["sum", "min", "max", "mean"])
@@ -146,19 +146,6 @@ def test_row_number_properly_composes_with_arithmetic(alltypes, snapshot):
     w = ibis.window(order_by=t.f)
     expr = t.mutate(new=ibis.row_number().over(w) / 2)
     assert_sql_equal(expr, snapshot)
-
-
-@pytest.mark.parametrize(
-    ["column", "op"],
-    [("f", "approx_nunique"), ("f", "approx_median"), ("g", "group_concat")],
-)
-def test_unsupported_aggregate_functions(alltypes, column, op):
-    t = alltypes
-    w = ibis.window(order_by=t.d)
-    expr = getattr(t[column], op)()
-    proj = t.select(foo=expr.over(w))
-    with pytest.raises(com.TranslationError):
-        ImpalaCompiler.to_sql(proj)
 
 
 def test_propagate_nested_windows(alltypes, snapshot):

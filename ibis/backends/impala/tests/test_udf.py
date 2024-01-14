@@ -97,18 +97,24 @@ def all_cols(i8, i16, i32, i64, d, f, dec, s, b, t):
 
 
 def test_sql_generation(snapshot):
-    func = api.scalar_function(["string"], "string", name="Tester")
-    func.register("identity", "udf_testing")
-
+    func = api.scalar_function(
+        ["string"], "string", name="identity", database="udf_testing"
+    )
     result = func("hello world")
     snapshot.assert_match(ibis.impala.compile(result), "out.sql")
 
 
 def test_sql_generation_from_infoclass(snapshot):
-    func = api.wrap_udf("test.so", ["string"], "string", "info_test")
+    func = api.wrap_udf(
+        "test.so",
+        ["string"],
+        "string",
+        "info_test",
+        name="info_test",
+        database="udf_testing",
+    )
     repr(func)
 
-    func.register("info_test", "udf_testing")
     result = func("hello world").name("tmp")
     snapshot.assert_match(ibis.impala.compile(result), "out.sql")
 
@@ -242,14 +248,12 @@ def test_mult_args(i32, d, s, b, t):
 
 
 def _register_udf(inputs, output, name):
-    func = api.scalar_function(inputs, output, name=name)
-    func.register(name, "ibis_testing")
+    func = api.scalar_function(inputs, output, name=name, database="ibis_testing")
     return func
 
 
 def _register_uda(inputs, output, name):
-    func = api.aggregate_function(inputs, output, name=name)
-    func.register(name, "ibis_testing")
+    func = api.aggregate_function(inputs, output, name=name, database="ibis_testing")
     return func
 
 
@@ -438,8 +442,9 @@ def test_udf_varargs(con, alltypes, udf_ll, test_data_db):
     name = f"add_numbers_{util.guid()[:4]}"
 
     input_sig = rules.varargs(rules.double)
-    func = api.wrap_udf(udf_ll, input_sig, "double", "AddNumbers", name=name)
-    func.register(name, test_data_db)
+    func = api.wrap_udf(
+        udf_ll, input_sig, "double", "AddNumbers", name=name, database=test_data_db
+    )
     con.create_function(func, database=test_data_db)
 
     expr = func(t.double_col, t.double_col)
@@ -459,11 +464,9 @@ def test_drop_uda_not_exists(con):
 
 
 def udf_creation_to_op(udf_ll, con, test_data_db, name, symbol, inputs, output):
-    func = api.wrap_udf(udf_ll, inputs, output, symbol, name)
+    func = api.wrap_udf(udf_ll, inputs, output, symbol, name, database=test_data_db)
 
     con.create_function(func, database=test_data_db)
-
-    func.register(name, test_data_db)
 
     assert con.exists_udf(name, test_data_db)
     return func
@@ -492,18 +495,18 @@ def conforming_wrapper(where, inputs, output, prefix, serialize=True, name=None)
 
 
 @pytest.fixture
-def wrapped_count_uda(uda_so):
+def wrapped_count_uda(uda_so, test_data_db):
     name = f"user_count_{util.guid()}"
-    return api.wrap_uda(uda_so, ["int32"], "int64", "CountUpdate", name=name)
+    return api.wrap_uda(
+        uda_so, ["int32"], "int64", "CountUpdate", name=name, database=test_data_db
+    )
 
 
 def test_count_uda(con, alltypes, test_data_db, wrapped_count_uda):
-    func = wrapped_count_uda
-    func.register(func.name, test_data_db)
-    con.create_function(func, database=test_data_db)
+    con.create_function(wrapped_count_uda, database=test_data_db)
 
     # it works!
-    func(alltypes.int_col).execute()
+    wrapped_count_uda(alltypes.int_col).execute()
 
 
 def test_list_udas(con, wrapped_count_uda):
@@ -512,10 +515,12 @@ def test_list_udas(con, wrapped_count_uda):
 
     funcs = con.list_udas()
 
-    (f,) = (ff for ff in funcs if func.name == ff.name)
-    assert f.name == func.name
-    assert f.inputs == func.inputs
-    assert f.output == func.output
+    ((name, inputs, output),) = (
+        (name, inputs, output) for _, name, inputs, output in funcs if func.name == name
+    )
+    assert func.name == name
+    assert func.inputs == inputs
+    assert func.output == output
 
 
 @pytest.fixture
