@@ -1263,28 +1263,6 @@ def test_hash_consistent(backend, alltypes):
         param("0", "int", 0),
         param("0.0", "float", 0.0),
         param(
-            "a",
-            "int",
-            None,
-            marks=pytest.mark.notyet(["flink"], reason="casts to nan"),
-        ),
-        param(
-            datetime.datetime(2023, 1, 1),
-            "int",
-            None,
-            marks=[
-                pytest.mark.never(
-                    ["clickhouse", "flink"], reason="casts to 1672531200"
-                ),
-                pytest.mark.notyet(
-                    ["trino"],
-                    raises=sa.exc.ProgrammingError,
-                    reason="raises TrinoUserError",
-                ),
-                pytest.mark.broken(["polars"], reason="casts to 1672531200000000000"),
-            ],
-        ),
-        param(
             datetime.datetime(2023, 1, 1),
             "int",
             1672531200,
@@ -1303,6 +1281,46 @@ def test_hash_consistent(backend, alltypes):
 )
 def test_try_cast_expected(con, from_val, to_type, expected):
     assert con.execute(ibis.literal(from_val).try_cast(to_type)) == expected
+
+
+@pytest.mark.notimpl(
+    [
+        "pandas",
+        "dask",
+        "bigquery",
+        "datafusion",
+        "druid",
+        "impala",
+        "mssql",
+        "mysql",
+        "oracle",
+        "postgres",
+        "pyspark",
+        "snowflake",
+        "sqlite",
+        "exasol",
+    ]
+)
+@pytest.mark.parametrize(
+    ("from_val", "to_type"),
+    [
+        param("a", "int"),
+        param(
+            datetime.datetime(2023, 1, 1),
+            "int",
+            marks=[
+                pytest.mark.never(
+                    ["clickhouse", "flink"], reason="casts to 1672531200"
+                ),
+                pytest.mark.notyet(["trino"], raises=sa.exc.ProgrammingError),
+                pytest.mark.broken(["polars"], reason="casts to 1672531200000000000"),
+            ],
+        ),
+    ],
+    ids=str,
+)
+def test_try_cast_expected_null(con, from_val, to_type):
+    assert pd.isna(con.execute(ibis.literal(from_val).try_cast(to_type)))
 
 
 @pytest.mark.notimpl(
