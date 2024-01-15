@@ -22,10 +22,21 @@ class PySparkPandasData(PandasData):
 
     @classmethod
     def convert_Timestamp_element(cls, dtype):
-        def converter(value, dtype=dtype):
-            if (tz := dtype.timezone) is not None:
-                return value.astimezone(normalize_timezone(tz))
+        if dtype.timezone is None:
+            tz = normalize_timezone("UTC")
 
-            return value.astimezone(normalize_timezone("UTC")).replace(tzinfo=None)
+            def converter(value):
+                try:
+                    return value.astimezone(tz).replace(tzinfo=None)
+                except TypeError:
+                    return value.tz_localize(tz).replace(tzinfo=None)
+        else:
+            tz = normalize_timezone(dtype.timezone)
+
+            def converter(value):
+                try:
+                    return value.astimezone(tz)
+                except TypeError:
+                    return value.tz_localize(tz)
 
         return converter
