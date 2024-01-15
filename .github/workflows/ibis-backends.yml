@@ -537,15 +537,26 @@ jobs:
         run: docker compose logs
 
   test_pyspark:
-    name: PySpark ${{ matrix.os }} python-${{ matrix.python-version }}
-    runs-on: ${{ matrix.os }}
+    name: PySpark ${{ matrix.pyspark-version }} ubuntu-latest python-${{ matrix.python-version }}
+    runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        os:
-          - ubuntu-latest
-        python-version:
-          - "3.10"
+        include:
+          - name: pyspark-3.3
+            python-version: "3.9"
+            pyspark-version: 3.3
+            deps:
+              - "pyspark@3.3"
+              - "'pandas@<2'"
+              - "'numpy@<1.24'"
+          - name: pyspark-3.5
+            python-version: "3.11"
+            pyspark-version: 3.5
+            deps:
+              - "pyspark@3.5"
+              - "'pandas@>2'"
+              - "'numpy@>1.24'"
     steps:
       - name: checkout
         uses: actions/checkout@v4
@@ -575,8 +586,8 @@ jobs:
         # it requires a version of pandas that pyspark is not compatible with
         run: poetry remove lonboard
 
-      - name: install maximum versions of pandas and numpy
-        run: poetry add --lock 'pandas@<2' 'numpy<1.24'
+      - name: install exact versions of pyspark, pandas and numpy
+        run: poetry add --lock ${{ join(matrix.deps, ' ') }}
 
       - name: checkout the lock file
         run: git checkout poetry.lock

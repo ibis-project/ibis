@@ -79,7 +79,7 @@ pydata-google-auth = { version = ">=1.4.0,<2", optional = true }
 pydruid = { version = ">=0.6.5,<1", optional = true, extras = ["sqlalchemy"] }
 pymysql = { version = ">=1,<2", optional = true }
 pyodbc = { version = ">=4.0.39,<6", optional = true }
-pyspark = { version = ">=3,<3.4", optional = true } # pyspark is heavily broken by numpy >=1.24 and pandas >=2
+pyspark = { version = ">=3,<4", optional = true }
 # used to support posix regexen in the pandas, dask and sqlite backends
 regex = { version = ">=2021.7.6", optional = true }
 shapely = { version = ">=2,<3", optional = true }
@@ -263,6 +263,8 @@ norecursedirs = [
 filterwarnings = [
   # fail on any warnings that are not explicitly matched below
   "error",
+  # pyspark uses a deprecated pandas API
+  "ignore:is_datetime64tz_dtype is deprecated and will be removed in a future version:DeprecationWarning",
   # pyspark and impala leave sockets open
   "ignore:Exception ignored in:",
   # dask
