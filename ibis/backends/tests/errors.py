@@ -39,6 +39,14 @@ except ImportError:
     ) = PySparkParseException = PySparkPythonException = None
 
 try:
+    # PySpark 3.5.0
+    from pyspark.errors.exceptions.captured import (
+        ArithmeticException as PySparkArithmeticException,
+    )
+except ImportError:
+    PySparkArithmeticException = None
+
+try:
     from google.api_core.exceptions import BadRequest as GoogleBadRequest
 except ImportError:
     GoogleBadRequest = None
