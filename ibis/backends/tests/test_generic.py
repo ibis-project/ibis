@@ -18,6 +18,7 @@ import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.selectors as s
 from ibis import _
+from ibis.backends.conftest import is_older_than
 from ibis.backends.tests.errors import (
     ClickHouseDatabaseError,
     ExaQueryError,
@@ -877,7 +878,8 @@ def test_typeof(con):
 
 @pytest.mark.broken(["polars"], reason="incorrect answer")
 @pytest.mark.notyet(["impala"], reason="can't find table in subquery")
-@pytest.mark.notimpl(["datafusion", "pyspark", "druid"])
+@pytest.mark.notimpl(["datafusion", "druid"])
+@pytest.mark.notimpl(["pyspark"], condition=is_older_than("pyspark", "3.5.0"))
 @pytest.mark.notyet(["dask", "mssql"], reason="not supported by the backend")
 @pytest.mark.notimpl(["exasol"], raises=sa.exc.DBAPIError)
 @pytest.mark.broken(

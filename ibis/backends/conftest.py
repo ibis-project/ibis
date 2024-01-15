@@ -4,6 +4,7 @@ import contextlib
 import importlib
 import importlib.metadata
 import itertools
+import operator
 from functools import cache
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
@@ -24,8 +25,24 @@ from ibis.conftest import WINDOWS
 
 if TYPE_CHECKING:
     from collections.abc import Iterable
-
     from ibis.backends.tests.base import BackendTest
+
+
+def compare_versions(module_name, given_version, op):
+    try:
+        current_version = importlib.metadata.version(module_name)
+        return op(vparse(current_version), vparse(given_version))
+    except importlib.metadata.PackageNotFoundError:
+        return False
+
+
+def is_newer_than(module_name, given_version):
+    return compare_versions(module_name, given_version, operator.gt)
+
+
+def is_older_than(module_name, given_version):
+    return compare_versions(module_name, given_version, operator.lt)
+
 
 TEST_TABLES = {
     "functional_alltypes": ibis.schema(
@@ -333,10 +350,6 @@ def pytest_collection_modifyitems(session, config, items):
                     (
                         item,
                         [
-                            pytest.mark.xfail(
-                                vparse(pd.__version__) >= vparse("2"),
-                                reason="PySpark doesn't support pandas>=2",
-                            ),
                             pytest.mark.skipif(
                                 pyspark is not None
                                 and vparse(pyspark.__version__) < vparse("3.3.3")
