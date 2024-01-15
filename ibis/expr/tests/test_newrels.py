@@ -1314,3 +1314,45 @@ def test_join_method_docstrings():
         join_method = getattr(joined, method)
         table_method = getattr(t1, method)
         assert join_method.__doc__ == table_method.__doc__
+
+
+def test_join_with_compound_predicate():
+    t1 = ibis.table(name="t", schema={"a": "string", "b": "string"})
+    t2 = t1.view()
+
+    joined = t1.join(
+        t2,
+        [
+            t1.a == t2.a,
+            (t1.a != t2.b) | (t1.b != t2.a),
+            (t1.a != t2.b) ^ (t1.b != t2.a),
+            (t1.a != t2.b) & (t1.b != t2.a),
+            (t1.a + t1.a != t2.b) & (t1.b + t1.b != t2.a),
+        ],
+    )
+    expr = joined[t1]
+    with join_tables(t1, t2) as (r1, r2):
+        expected = ops.JoinChain(
+            first=r1,
+            rest=[
+                ops.JoinLink(
+                    "inner",
+                    r2,
+                    [
+                        r1.a == r2.a,
+                        (r1.a != r2.b) | (r1.b != r2.a),
+                        (r1.a != r2.b) ^ (r1.b != r2.a),
+                        # these are flattened
+                        r1.a != r2.b,
+                        r1.b != r2.a,
+                        r1.a + r1.a != r2.b,
+                        r1.b + r1.b != r2.a,
+                    ],
+                ),
+            ],
+            values={
+                "a": r1.a,
+                "b": r1.b,
+            },
+        )
+        assert expr.op() == expected
