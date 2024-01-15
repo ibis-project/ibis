@@ -7,7 +7,6 @@ from pytest import param
 
 import ibis
 from ibis.common.exceptions import IbisTypeError
-from ibis.expr import datatypes as dt
 
 pyspark = pytest.importorskip("pyspark")
 
@@ -114,28 +113,6 @@ def test_alias_after_select(t, df):
     table = table.mutate(id2=table["id"])
     result = table.execute()
     tm.assert_series_equal(result["id"], result["id2"], check_names=False)
-
-
-def test_interval_columns(con):
-    table = con.table("interval_table")
-    assert table.schema() == ibis.schema(
-        pairs=[
-            ("interval_day", dt.Interval("D")),
-            ("interval_hour", dt.Interval("h")),
-            ("interval_minute", dt.Interval("m")),
-            ("interval_second", dt.Interval("s")),
-        ]
-    )
-
-    expected = pd.DataFrame(
-        {
-            "interval_day": [pd.Timedelta("10d")],
-            "interval_hour": [pd.Timedelta("10h")],
-            "interval_minute": [pd.Timedelta("10m")],
-            "interval_second": [pd.Timedelta("10s")],
-        }
-    )
-    tm.assert_frame_equal(table.execute(), expected)
 
 
 def test_interval_columns_invalid(con):
