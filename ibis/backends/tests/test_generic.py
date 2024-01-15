@@ -1260,30 +1260,8 @@ def test_hash_consistent(backend, alltypes):
     [
         param(0, "float", 0.0),
         param(0.0, "int", 0),
-        param(
-            "0",
-            "int",
-            0,
-            marks=[
-                pytest.mark.broken(
-                    ["polars"],
-                    raises=AssertionError,
-                    reason="Polars returns None for this cast",
-                )
-            ],
-        ),
-        param(
-            "0.0",
-            "float",
-            0.0,
-            marks=[
-                pytest.mark.broken(
-                    ["polars"],
-                    raises=AssertionError,
-                    reason="Polars returns None for this cast",
-                )
-            ],
-        ),
+        param("0", "int", 0),
+        param("0.0", "float", 0.0),
         param(
             "a",
             "int",
