@@ -15,6 +15,7 @@ from ibis.backends.tests.errors import (
     DuckDBParserException,
     MySQLOperationalError,
     PyDeltaTableError,
+    PySparkArithmeticException,
     PySparkParseException,
     SnowflakeProgrammingError,
     TrinoUserError,
@@ -357,7 +358,7 @@ def test_table_to_csv_writer_kwargs(delimiter, tmp_path, awards_players):
                 pytest.mark.notyet(["mysql"], raises=MySQLOperationalError),
                 pytest.mark.notyet(
                     ["pyspark"],
-                    raises=PySparkParseException,
+                    raises=(PySparkParseException, PySparkArithmeticException),
                     reason="precision is out of range",
                 ),
                 pytest.mark.notyet(["exasol"], raises=sa.exc.DBAPIError),
