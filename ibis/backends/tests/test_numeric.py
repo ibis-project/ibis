@@ -25,6 +25,7 @@ from ibis.backends.tests.errors import (
     MySQLOperationalError,
     PsycoPg2DivisionByZero,
     Py4JError,
+    PySparkArithmeticException,
     PySparkParseException,
     SnowflakeProgrammingError,
     TrinoUserError,
@@ -409,7 +410,7 @@ def test_numeric_literal(con, backend, expr, expected_types):
                 pytest.mark.broken(
                     ["pyspark"],
                     reason="Unsupported precision.",
-                    raises=PySparkParseException,
+                    raises=(PySparkParseException, PySparkArithmeticException),
                 ),
                 pytest.mark.broken(
                     ["trino"], reason="Unsupported precision.", raises=TrinoUserError

@@ -12,6 +12,7 @@ from ibis.formats import SchemaMapper, TypeMapper
 # DayTimeIntervalType introduced in Spark 3.2 (at least) but didn't show up in
 # PySpark until version 3.3
 PYSPARK_33 = vparse(pyspark.__version__) >= vparse("3.3")
+PYSPARK_35 = vparse(pyspark.__version__) >= vparse("3.5")
 
 
 _from_pyspark_dtypes = {
@@ -70,6 +71,8 @@ class PySparkType(TypeMapper):
                 return dt.Interval(unit, nullable=nullable)
             else:
                 raise com.IbisTypeError(f"{typ!r} couldn't be converted to Interval")
+        elif PYSPARK_35 and isinstance(typ, pt.TimestampNTZType):
+            return dt.Timestamp(nullable=nullable)
         elif isinstance(typ, pt.UserDefinedType):
             return cls.to_ibis(typ.sqlType(), nullable=nullable)
         else:
