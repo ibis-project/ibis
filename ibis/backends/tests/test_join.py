@@ -382,9 +382,6 @@ outer_join_nullability_failures = [
             id="outer-x",
             marks=[
                 pytest.mark.notimpl(["pyspark"], reason="overlapping columns"),
-                pytest.mark.notyet(
-                    ["polars"], reason="upstream polars is broken for this case"
-                ),
                 *outer_join_nullability_failures,
             ],
         ),
