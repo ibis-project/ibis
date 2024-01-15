@@ -1299,6 +1299,7 @@ def test_hash_consistent(backend, alltypes):
             ],
         ),
     ],
+    ids=str,
 )
 def test_try_cast_expected(con, from_val, to_type, expected):
     assert con.execute(ibis.literal(from_val).try_cast(to_type)) == expected
