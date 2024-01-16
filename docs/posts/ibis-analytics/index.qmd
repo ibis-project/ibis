@@ -249,6 +249,10 @@ default:
 setup:
     @pip install --upgrade -r requirements.txt
 
+# eda
+eda:
+    @ipython -i eda.py
+
 # ingest
 ingest:
     @python {{module}}/ingest.py
@@ -1293,9 +1297,8 @@ if __name__ == "__main__":
     main()
 ```
 
-This also backs up the data as Delta Lake tables for good measure.
-
-After this, our data directory looks like:
+This also backs up the data as Delta Lake tables for good measure. After this,
+our data directory looks like:
 
 ```bash
 data/
@@ -1940,6 +1943,8 @@ the GUI) and you're done!
 
 ## Conclusion
 
+The future is now: it's open-source, modular, composable, and scalable.
+
 An end-to-end analytics pipeline this easy for a product manager to build was
 not possible just a few years ago. The increasingly modular, composable, and
 scalable Python data ecosystem has seen an abundance of new libraries that are
@@ -1960,8 +1965,6 @@ open-source Python projects. I hope you enjoyed!
 The source code can be found and stolen from [on the `ibis-analytics`
 repository](https://github.com/ibis-project/ibis-analytics) -- feel free to open
 an issue, PR, or comment below!
-
-The future is now: it's open-source, modular, composable, and scalable.
 
 ## Next steps
 
