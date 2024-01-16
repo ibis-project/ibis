@@ -549,10 +549,7 @@ def ddl_con(ddl_backend):
     return ddl_backend.connection
 
 
-@pytest.fixture(
-    params=_get_backends_to_test(keep=("mssql", "oracle", "sqlite")),
-    scope="session",
-)
+@pytest.fixture(params=_get_backends_to_test(keep=("mssql", "sqlite")), scope="session")
 def alchemy_backend(request, data_dir, tmp_path_factory, worker_id):
     """Set up the SQLAlchemy-based backends."""
     return _setup_backend(request, data_dir, tmp_path_factory, worker_id)
