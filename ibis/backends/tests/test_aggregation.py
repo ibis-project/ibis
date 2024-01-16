@@ -21,6 +21,7 @@ from ibis.backends.tests.errors import (
     MySQLNotSupportedError,
     PolarsInvalidOperationError,
     Py4JError,
+    PyDruidProgrammingError,
     PySparkAnalysisException,
     SnowflakeProgrammingError,
     TrinoUserError,
@@ -105,10 +106,8 @@ aggregate_test_params = [
         id="timestamp_max",
         marks=pytest.mark.broken(
             ["druid"],
-            raises=sa.exc.ProgrammingError,
-            reason=(
-                "Query not supported. Possible error: Max aggregation is not supported for 'STRING' type SQL"
-            ),
+            raises=PyDruidProgrammingError,
+            reason="Max aggregation is not supported for 'STRING' type SQL",
         ),
     ),
 ]
@@ -480,49 +479,25 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
             lambda t, where: t.double_col.std(how="sample", where=where),
             lambda t, where: t.double_col[where].std(ddof=1),
             id="std",
-            marks=[
-                pytest.mark.notimpl(
-                    ["druid"],
-                    raises=sa.exc.ProgrammingError,
-                    reason="No match found for function signature stddev_samp(<NUMERIC>)",
-                ),
-            ],
+            marks=[pytest.mark.notimpl(["druid"], raises=com.OperationNotDefinedError)],
         ),
         param(
             lambda t, where: t.double_col.var(how="sample", where=where),
             lambda t, where: t.double_col[where].var(ddof=1),
             id="var",
-            marks=[
-                pytest.mark.notimpl(
-                    ["druid"],
-                    raises=sa.exc.ProgrammingError,
-                    reason="No match found for function signature var_samp(<NUMERIC>)",
-                ),
-            ],
+            marks=[pytest.mark.notimpl(["druid"], raises=com.OperationNotDefinedError)],
         ),
         param(
             lambda t, where: t.double_col.std(how="pop", where=where),
             lambda t, where: t.double_col[where].std(ddof=0),
             id="std_pop",
-            marks=[
-                pytest.mark.notimpl(
-                    ["druid"],
-                    raises=sa.exc.ProgrammingError,
-                    reason="No match found for function signature stddev_pop(<NUMERIC>)",
-                ),
-            ],
+            marks=[pytest.mark.notimpl(["druid"], raises=com.OperationNotDefinedError)],
         ),
         param(
             lambda t, where: t.double_col.var(how="pop", where=where),
             lambda t, where: t.double_col[where].var(ddof=0),
             id="var_pop",
-            marks=[
-                pytest.mark.notimpl(
-                    ["druid"],
-                    raises=sa.exc.ProgrammingError,
-                    reason="No match found for function signature var_pop(<NUMERIC>)",
-                ),
-            ],
+            marks=[pytest.mark.notimpl(["druid"], raises=com.OperationNotDefinedError)],
         ),
         param(
             lambda t, where: t.string_col.approx_nunique(where=where),
@@ -1360,11 +1335,6 @@ def test_date_quantile(alltypes, func):
 @pytest.mark.notimpl(
     ["datafusion", "polars", "mssql"], raises=com.OperationNotDefinedError
 )
-@pytest.mark.notimpl(
-    ["druid"],
-    raises=sa.exc.ProgrammingError,
-    reason="No match found for function signature group_concat(<CHARACTER>, <CHARACTER>)",
-)
 @pytest.mark.notyet(
     ["oracle"],
     raises=sa.exc.DatabaseError,
@@ -1405,6 +1375,9 @@ def test_group_concat(
     backend.assert_frame_equal(result.fillna(pd.NA), expected.fillna(pd.NA))
 
 
+@pytest.mark.broken(
+    ["druid"], raises=PyDruidProgrammingError, reason="Java NullPointerException"
+)
 @pytest.mark.notimpl(
     ["dask"],
     raises=NotImplementedError,
@@ -1438,12 +1411,7 @@ def test_topk_op(alltypes, df):
     ],
 )
 @pytest.mark.broken(
-    ["druid"],
-    raises=sa.exc.ProgrammingError,
-    reason=(
-        "(pydruid.db.exceptions.ProgrammingError) Plan validation failed "
-        "(org.apache.calcite.tools.ValidationException): java.lang.NullPointerException"
-    ),
+    ["druid"], raises=PyDruidProgrammingError, reason="Java NullPointerException"
 )
 @pytest.mark.notimpl(
     ["dask"],
@@ -1634,7 +1602,7 @@ def test_grouped_case(backend, con):
 )
 @pytest.mark.notyet(["impala", "flink"], raises=com.UnsupportedOperationError)
 @pytest.mark.notyet(["clickhouse"], raises=ClickHouseDatabaseError)
-@pytest.mark.notyet(["druid"], raises=sa.exc.ProgrammingError)
+@pytest.mark.notyet(["druid"], raises=PyDruidProgrammingError)
 @pytest.mark.notyet(["snowflake"], raises=SnowflakeProgrammingError)
 @pytest.mark.notyet(["trino"], raises=TrinoUserError)
 @pytest.mark.notyet(["mysql"], raises=MySQLNotSupportedError)
@@ -1670,6 +1638,9 @@ def test_value_counts_on_expr(backend, alltypes, df):
     backend.assert_frame_equal(result, expected)
 
 
+@pytest.mark.broken(
+    ["druid"], raises=PyDruidProgrammingError, reason="NullPointerException"
+)
 def test_group_by_expr(backend, con):
     expr = (
         ibis.memtable(

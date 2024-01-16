@@ -27,7 +27,7 @@ import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 from ibis.backends.conftest import ALL_BACKENDS
-from ibis.backends.tests.errors import Py4JJavaError
+from ibis.backends.tests.errors import Py4JJavaError, PyDruidProgrammingError
 from ibis.util import gen_name, guid
 
 if TYPE_CHECKING:
@@ -454,11 +454,6 @@ def test_insert_no_overwrite_from_dataframe(
     )
 
 
-@pytest.mark.notyet(
-    ["trino"],
-    reason="Connector doesn't support deletion (required for overwrite=True)",
-    raises=sa.exc.ProgrammingError,
-)
 def test_insert_overwrite_from_dataframe(
     alchemy_backend,
     alchemy_con,
@@ -1455,7 +1450,7 @@ def gen_test_name(con: BaseBackend) -> str:
     reason="overwriting not implemented in ibis for this backend",
 )
 @mark.broken(
-    ["druid"], raises=sa.exc.ProgrammingError, reason="generated SQL fails to parse"
+    ["druid"], raises=PyDruidProgrammingError, reason="generated SQL fails to parse"
 )
 @mark.notimpl(["impala"], reason="impala doesn't support memtable")
 @mark.notimpl(["pyspark"])
