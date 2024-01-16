@@ -49,7 +49,7 @@ class TestConf(BackendTest):
     def _load_data(self, **_: Any) -> None:
         import pandas as pd
 
-        from ibis.backends.tests.data import json_types, struct_types
+        from ibis.backends.tests.data import json_types, struct_types, win
 
         for table_name in TEST_TABLES:
             path = self.data_dir / "parquet" / f"{table_name}.parquet"
@@ -57,6 +57,7 @@ class TestConf(BackendTest):
 
         self.connection.create_table("json_t", json_types, temp=True)
         self.connection.create_table("struct", struct_types, temp=True)
+        self.connection.create_table("win", win, temp=True)
 
 
 class TestConfForStreaming(TestConf):

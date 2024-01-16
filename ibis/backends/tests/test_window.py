@@ -93,7 +93,11 @@ def calc_zscore(s):
                     raises=Exception,
                     reason="Exception: Internal error: Expects default value to have Int64 type.",
                 ),
-                pytest.mark.notimpl(["flink"], raises=Py4JJavaError),
+                pytest.mark.notimpl(
+                    ["flink"],
+                    raises=Py4JJavaError,
+                    reason="CalciteContextException: ROW/RANGE not allowed with RANK, DENSE_RANK or ROW_NUMBER functions",
+                ),
             ],
         ),
         param(
@@ -112,7 +116,11 @@ def calc_zscore(s):
                     raises=BaseException,
                 ),
                 pytest.mark.notimpl(["dask"], raises=NotImplementedError),
-                pytest.mark.notimpl(["flink"], raises=Py4JJavaError),
+                pytest.mark.notimpl(
+                    ["flink"],
+                    raises=Py4JJavaError,
+                    reason="CalciteContextException: ROW/RANGE not allowed with RANK, DENSE_RANK or ROW_NUMBER functions",
+                ),
             ],
         ),
         param(
@@ -218,7 +226,11 @@ def calc_zscore(s):
                     ["impala", "mssql"], raises=com.OperationNotDefinedError
                 ),
                 pytest.mark.notimpl(["dask"], raises=NotImplementedError),
-                pytest.mark.notimpl(["flink"], raises=com.OperationNotDefinedError),
+                pytest.mark.notimpl(
+                    ["flink"],
+                    raises=com.OperationNotDefinedError,
+                    reason="No translation rule for <class 'ibis.expr.operations.analytic.NthValue'>",
+                ),
             ],
         ),
         param(
@@ -442,7 +454,11 @@ def test_ungrouped_bounded_expanding_window(
 @pytest.mark.notimpl(["polars"], raises=com.OperationNotDefinedError)
 @pytest.mark.notimpl(["dask"], raises=NotImplementedError)
 @pytest.mark.notimpl(["pandas"], raises=AssertionError)
-@pytest.mark.notimpl(["flink"], raises=com.UnsupportedOperationError)
+@pytest.mark.notimpl(
+    ["flink"],
+    raises=com.UnsupportedOperationError,
+    reason="OVER RANGE FOLLOWING windows are not supported in Flink yet",
+)
 def test_grouped_bounded_following_window(backend, alltypes, df, preceding, following):
     window = ibis.window(
         preceding=preceding,
@@ -621,7 +637,11 @@ def test_grouped_unbounded_window(
 @pytest.mark.broken(["snowflake"], raises=AssertionError)
 @pytest.mark.broken(["dask", "pandas", "mssql"], raises=AssertionError)
 @pytest.mark.notimpl(["polars"], raises=com.OperationNotDefinedError)
-@pytest.mark.notimpl(["flink"], raises=com.UnsupportedOperationError)
+@pytest.mark.notimpl(
+    ["flink"],
+    raises=com.UnsupportedOperationError,
+    reason="OVER RANGE FOLLOWING windows are not supported in Flink yet",
+)
 def test_simple_ungrouped_unbound_following_window(
     backend, alltypes, ibis_method, pandas_fn
 ):
@@ -694,6 +714,7 @@ def test_simple_ungrouped_window_with_scalar_order_by(alltypes):
                 pytest.mark.notimpl(
                     ["flink"],
                     raises=com.UnsupportedOperationError,
+                    reason="Flink engine does not support generic window clause with no order by",
                 ),
             ],
         ),
@@ -710,11 +731,6 @@ def test_simple_ungrouped_window_with_scalar_order_by(alltypes):
                     ["pyspark"],
                     raises=PySparkAnalysisException,
                     reason="pyspark requires CURRENT ROW",
-                ),
-                pytest.mark.notyet(
-                    ["flink"],
-                    raises=Py4JJavaError,
-                    reason="CalciteContextException: Argument to function 'NTILE' must be a literal",
                 ),
             ],
         ),
@@ -776,6 +792,7 @@ def test_simple_ungrouped_window_with_scalar_order_by(alltypes):
                 pytest.mark.notimpl(
                     ["flink"],
                     raises=com.UnsupportedOperationError,
+                    reason="Flink engine does not support generic window clause with no order by",
                 ),
             ],
         ),
@@ -945,6 +962,7 @@ def test_simple_ungrouped_window_with_scalar_order_by(alltypes):
                 pytest.mark.notimpl(
                     ["flink"],
                     raises=com.UnsupportedOperationError,
+                    reason="Flink engine does not support generic window clause with no order by",
                 ),
             ],
         ),
@@ -1129,17 +1147,17 @@ def test_mutate_window_filter(backend, alltypes):
 
 
 @pytest.mark.notimpl(["polars"], raises=com.OperationNotDefinedError)
-@pytest.mark.notimpl(
-    ["flink"],
-    raises=Exception,
-    reason="KeyError: Table with name win doesn't exist.",
-)
 @pytest.mark.broken(
     ["impala"],
     reason="the database returns incorrect results",
     raises=AssertionError,
 )
 @pytest.mark.notimpl(["dask"], raises=NotImplementedError)
+@pytest.mark.notimpl(
+    ["flink"],
+    raises=com.UnsupportedOperationError,
+    reason="Windows in Flink can only be ordered by a single time column",
+)
 def test_first_last(backend):
     t = backend.win
     w = ibis.window(group_by=t.g, order_by=[t.x, t.y], preceding=1, following=0)
