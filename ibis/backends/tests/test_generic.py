@@ -122,7 +122,7 @@ def test_scalar_fillna_nullif(con, expr, expected):
         ),
     ],
 )
-@pytest.mark.notimpl(["mssql", "oracle"])
+@pytest.mark.notimpl(["mssql", "druid"])
 @pytest.mark.notyet(["flink"], "NaN is not supported in Flink SQL", raises=ValueError)
 def test_isna(backend, alltypes, col, value, filt):
     table = alltypes.select(**{col: value})
@@ -364,7 +364,7 @@ def test_case_where(backend, alltypes, df):
 
 
 # TODO: some of these are notimpl (datafusion) others are probably never
-@pytest.mark.notimpl(["mysql", "sqlite", "mssql", "druid", "oracle", "exasol"])
+@pytest.mark.notimpl(["mysql", "sqlite", "mssql", "druid", "exasol"])
 @pytest.mark.notyet(["flink"], "NaN is not supported in Flink SQL", raises=ValueError)
 def test_select_filter_mutate(backend, alltypes, df):
     """Test that select, filter and mutate are executed in right order.
