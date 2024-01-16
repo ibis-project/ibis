@@ -7352,8 +7352,8 @@ oracle = ["oracledb", "packaging", "sqlalchemy", "sqlalchemy-views"]
 pandas = ["regex"]
 polars = ["packaging", "polars"]
 postgres = ["psycopg2"]
-pyspark = ["packaging", "pyspark", "sqlalchemy"]
-risingwave = ["psycopg2", "sqlalchemy", "sqlalchemy-risingwave", "sqlalchemy-views"]
+risingwave = ["psycopg2"]
+pyspark = ["packaging", "pyspark"]
 snowflake = ["packaging", "snowflake-connector-python"]
 sqlite = ["regex", "sqlalchemy", "sqlalchemy-views"]
 trino = ["trino"]
@@ -7362,4 +7362,4 @@ visualization = ["graphviz"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.9"
-content-hash = "09172b6afbe1dba300c2f24464e5955ee9bbd63c6f704384d30ac5f673f3ff93"
+content-hash = "659771c151e098f1a48db403393d3072ad1f11935ed023415ffa2260c2e7e914"

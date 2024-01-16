@@ -7,7 +7,6 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 import pyspark
-import sqlalchemy as sa
 import sqlglot as sg
 import sqlglot.expressions as sge
 from pyspark import SparkConf
@@ -104,15 +103,24 @@ class Backend(SQLGlotBackend, CanCreateDatabase):
 
     def _from_url(self, url: str, **kwargs) -> Backend:
         """Construct a PySpark backend from a URL `url`."""
-        url = sa.engine.make_url(url)
+        from urllib.parse import parse_qs, urlparse
 
-        conf = SparkConf().setAll(url.query.items())
+        url = urlparse(url)
+        query_params = parse_qs(url.query)
+        params = query_params.copy()
 
-        if database := url.database:
-            conf = conf.set(
-                "spark.sql.warehouse.dir",
-                str(Path(database).absolute()),
-            )
+        for name, value in query_params.items():
+            if len(value) > 1:
+                params[name] = value
+            elif len(value) == 1:
+                params[name] = value[0]
+            else:
+                raise com.IbisError(f"Invalid URL parameter: {name}")
+
+        conf = SparkConf().setAll(params.items())
+
+        if database := url.path[1:]:
+            conf = conf.set("spark.sql.warehouse.dir", str(Path(database).absolute()))
 
         builder = SparkSession.builder.config(conf=conf)
         session = builder.getOrCreate()
