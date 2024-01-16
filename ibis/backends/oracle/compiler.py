@@ -132,6 +132,13 @@ class OracleCompiler(SQLGlotCompiler):
     def visit_node(self, op, **kwargs):
         return super().visit_node(op, **kwargs)
 
+    @visit_node.register(ops.Literal)
+    def visit_Literal(self, op, *, value, dtype):
+        # avoid casting NULL -- oracle handling for these casts is... complicated
+        if value is None:
+            return NULL
+        return super().visit_Literal(op, value=value, dtype=dtype)
+
     @visit_node.register(ops.Date)
     def visit_Date(self, op, *, arg):
         return sg.cast(arg, to="date")
