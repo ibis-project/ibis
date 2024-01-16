@@ -1479,7 +1479,12 @@ experience in VSCode, which I prefer when plotting or just saving my work.
 
 The EDA makes it easy to iteratively define metrics and plot the data. Once I've
 settled on the code I want, I add it to `metrics.py` with sufficient comments to
-make it appear in the Streamlit dashboard.
+make it appear in the Streamlit dashboard. It's convenient to have the metrics
+defined as code right where the visualization code happens. I can comment it for
+explanation of metrics definitions and ensure a level of consistency.
+
+<details>
+<summary>Show the metrics code</summary>
 
 ```{.python}
 import toml
@@ -1871,12 +1876,11 @@ c2 = px.bar(
 st.plotly_chart(c2, use_container_width=True)
 ```
 
+</details>
+
 I can `just app` to view the dashboard locally in a web browser:
 
 ![Dashboard local](preview.png)
-
-I found thinking about my key metrics and how I want them to be displayed (and
-documented with code comments) in a single Python file refreshing.
 
 ![Dashboard metrics](thumbnail.png)
 
