@@ -76,7 +76,7 @@ pins = { version = ">=0.8.3,<1", extras = ["gcs"], optional = true }
 polars = { version = ">=0.19.3,<1", optional = true }
 psycopg2 = { version = ">=2.8.4,<3", optional = true }
 pydata-google-auth = { version = ">=1.4.0,<2", optional = true }
-pydruid = { version = ">=0.6.5,<1", optional = true, extras = ["sqlalchemy"] }
+pydruid = { version = ">=0.6.5,<1", optional = true }
 pymysql = { version = ">=1,<2", optional = true }
 pyodbc = { version = ">=4.0.39,<6", optional = true }
 pyspark = { version = ">=3,<4", optional = true }
@@ -183,7 +183,7 @@ bigquery = [
 clickhouse = ["clickhouse-connect"]
 dask = ["dask", "regex"]
 datafusion = ["datafusion"]
-druid = ["pydruid", "sqlalchemy"]
+druid = ["pydruid"]
 duckdb = ["duckdb"]
 exasol = ["sqlalchemy", "sqlalchemy-exasol", "sqlalchemy-views"]
 flink = []
