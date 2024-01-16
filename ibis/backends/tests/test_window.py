@@ -18,18 +18,24 @@ from ibis.backends.tests.errors import (
     ImpalaHiveServer2Error,
     MySQLOperationalError,
     Py4JJavaError,
+    PyDruidProgrammingError,
     SnowflakeProgrammingError,
 )
 from ibis.legacy.udf.vectorized import analytic, reduction
 
-pytestmark = pytest.mark.notimpl(
-    ["druid", "exasol"],
-    raises=(
-        sa.exc.ProgrammingError,
-        sa.exc.NoSuchTableError,
-        com.OperationNotDefinedError,
+pytestmark = [
+    pytest.mark.notimpl(
+        ["exasol"],
+        raises=(
+            sa.exc.ProgrammingError,
+            sa.exc.NoSuchTableError,
+            com.OperationNotDefinedError,
+        ),
     ),
-)
+    pytest.mark.notimpl(
+        ["druid"], raises=(com.OperationNotDefinedError, PyDruidProgrammingError)
+    ),
+]
 
 
 # adapted from https://gist.github.com/xmnlab/2c1f93df1a6c6bde4e32c8579117e9cc

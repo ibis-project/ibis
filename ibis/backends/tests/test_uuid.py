@@ -28,17 +28,8 @@ UUID_BACKEND_TYPE = {
     "clickhouse": "Nullable(UUID)",
 }
 
-pytestmark = pytest.mark.notimpl(
-    ["druid"],
-    raises=sqlalchemy.exc.CompileError,
-    reason=(
-        "No literal value renderer is available for literal value "
-        "\"UUID('08f48812-7948-4718-96c7-27fa6a398db6')\" with datatype NULL"
-    ),
-)
 
-
-@pytest.mark.notimpl(["impala", "datafusion", "polars"], raises=NotImplementedError)
+@pytest.mark.notimpl(["impala", "polars"], raises=NotImplementedError)
 @pytest.mark.notimpl(["datafusion"], raises=Exception)
 def test_uuid_literal(con, backend):
     backend_name = backend.name()

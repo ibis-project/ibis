@@ -30,6 +30,7 @@ from ibis.backends.tests.errors import (
     PolarsComputeError,
     PolarsPanicException,
     Py4JJavaError,
+    PyDruidProgrammingError,
     SnowflakeProgrammingError,
     TrinoUserError,
 )
@@ -116,79 +117,37 @@ def test_timestamp_extract(backend, alltypes, df, attr):
             methodcaller("year"),
             2015,
             id="year",
-            marks=[
-                pytest.mark.broken(
-                    ["druid"],
-                    raises=sa.exc.CompileError,
-                    reason='No literal value renderer is available for literal value "datetime.datetime(2015, 9, 1, 14, 48, 5, 359000)" with datatype DATETIME',
-                ),
-                pytest.mark.notimpl(["exasol"], raises=ExaQueryError),
-            ],
+            marks=[pytest.mark.notimpl(["exasol"], raises=ExaQueryError)],
         ),
         param(
             methodcaller("month"),
             9,
             id="month",
-            marks=[
-                pytest.mark.notimpl(
-                    ["druid"],
-                    raises=sa.exc.CompileError,
-                    reason='No literal value renderer is available for literal value "datetime.datetime(2015, 9, 1, 14, 48, 5, 359000)" with datatype DATETIME',
-                ),
-                pytest.mark.notimpl(["exasol"], raises=ExaQueryError),
-            ],
+            marks=[pytest.mark.notimpl(["exasol"], raises=ExaQueryError)],
         ),
         param(
             methodcaller("day"),
             1,
             id="day",
-            marks=[
-                pytest.mark.notimpl(
-                    ["druid"],
-                    raises=sa.exc.CompileError,
-                    reason='No literal value renderer is available for literal value "datetime.datetime(2015, 9, 1, 14, 48, 5, 359000)" with datatype DATETIME',
-                ),
-                pytest.mark.notimpl(["exasol"], raises=ExaQueryError),
-            ],
+            marks=[pytest.mark.notimpl(["exasol"], raises=ExaQueryError)],
         ),
         param(
             methodcaller("hour"),
             14,
             id="hour",
-            marks=[
-                pytest.mark.notimpl(
-                    ["druid"],
-                    raises=sa.exc.CompileError,
-                    reason='No literal value renderer is available for literal value "datetime.datetime(2015, 9, 1, 14, 48, 5, 359000)" with datatype DATETIME',
-                ),
-                pytest.mark.notimpl(["exasol"], raises=ExaQueryError),
-            ],
+            marks=[pytest.mark.notimpl(["exasol"], raises=ExaQueryError)],
         ),
         param(
             methodcaller("minute"),
             48,
             id="minute",
-            marks=[
-                pytest.mark.notimpl(
-                    ["druid"],
-                    raises=sa.exc.CompileError,
-                    reason='No literal value renderer is available for literal value "datetime.datetime(2015, 9, 1, 14, 48, 5, 359000)" with datatype DATETIME',
-                ),
-                pytest.mark.notimpl(["exasol"], raises=ExaQueryError),
-            ],
+            marks=[pytest.mark.notimpl(["exasol"], raises=ExaQueryError)],
         ),
         param(
             methodcaller("second"),
             5,
             id="second",
-            marks=[
-                pytest.mark.notimpl(
-                    ["druid"],
-                    raises=sa.exc.CompileError,
-                    reason='No literal value renderer is available for literal value "datetime.datetime(2015, 9, 1, 14, 48, 5, 359000)" with datatype DATETIME',
-                ),
-                pytest.mark.notimpl(["exasol"], raises=ExaQueryError),
-            ],
+            marks=[pytest.mark.notimpl(["exasol"], raises=ExaQueryError)],
         ),
         param(
             methodcaller("millisecond"),
@@ -1887,7 +1846,7 @@ DATE_BACKEND_TYPES = {
 
 @pytest.mark.notimpl(["pandas", "dask"], raises=com.OperationNotDefinedError)
 @pytest.mark.notimpl(
-    ["druid"], raises=sa.exc.ProgrammingError, reason="SQL parse failed"
+    ["druid"], raises=PyDruidProgrammingError, reason="SQL parse failed"
 )
 @pytest.mark.notimpl(
     ["oracle"], raises=sa.exc.DatabaseError, reason="ORA-00936 missing expression"
@@ -1919,16 +1878,6 @@ TIMESTAMP_BACKEND_TYPES = {
 
 @pytest.mark.notimpl(
     ["pandas", "dask", "pyspark", "mysql"], raises=com.OperationNotDefinedError
-)
-@pytest.mark.notimpl(
-    ["druid"],
-    raises=sa.exc.ProgrammingError,
-    reason=(
-        "(pydruid.db.exceptions.ProgrammingError) Plan validation failed "
-        "(org.apache.calcite.tools.ValidationException): org.apache.calcite.runtime.CalciteContextException: "
-        "From line 1, column 8 to line 1, column 44: No match found for function signature "
-        "make_timestamp(<NUMERIC>, <NUMERIC>, <NUMERIC>, <NUMERIC>, <NUMERIC>, <NUMERIC>)"
-    ),
 )
 @pytest.mark.notimpl(
     ["oracle"], raises=sa.exc.DatabaseError, reason="ORA-00904: MAKE TIMESTAMP invalid"
@@ -1987,7 +1936,7 @@ def test_timestamp_literal(con, backend):
 )
 @pytest.mark.notimpl(
     ["druid"],
-    raises=sa.exc.ProgrammingError,
+    raises=PyDruidProgrammingError,
     reason=(
         "No match found for function signature make_timestamp(<NUMERIC>, <NUMERIC>, "
         "<NUMERIC>, <NUMERIC>, <NUMERIC>, <NUMERIC>)"
@@ -2019,9 +1968,7 @@ TIME_BACKEND_TYPES = {
 )
 @pytest.mark.notyet(["clickhouse", "impala"], raises=com.OperationNotDefinedError)
 @pytest.mark.notimpl(["oracle"], raises=sa.exc.DatabaseError)
-@pytest.mark.broken(
-    ["druid"], raises=sa.exc.ProgrammingError, reason="SQL parse failed"
-)
+@pytest.mark.notimpl(["druid"], raises=com.OperationNotDefinedError)
 @pytest.mark.notimpl(["exasol"], raises=ExaQueryError)
 def test_time_literal(con, backend):
     expr = ibis.time(16, 20, 0)
@@ -2042,7 +1989,7 @@ def test_time_literal(con, backend):
 )
 @pytest.mark.notyet(
     ["druid"],
-    raises=sa.exc.CompileError,
+    raises=PyDruidProgrammingError,
     reason="druid sqlalchemy dialect fails to compile datetime types",
 )
 @pytest.mark.broken(
@@ -2108,11 +2055,7 @@ INTERVAL_BACKEND_TYPES = {
     "invalid type [CAST(INTERVAL_LITERAL('second', '1') AS VARIANT)] for parameter 'TO_VARIANT'",
     raises=SnowflakeProgrammingError,
 )
-@pytest.mark.broken(
-    ["druid"],
-    'No literal value renderer is available for literal value "1" with datatype DATETIME',
-    raises=sa.exc.CompileError,
-)
+@pytest.mark.notyet(["druid"], raises=PyDruidProgrammingError)
 @pytest.mark.broken(
     ["impala"],
     "AnalysisException: Syntax error in line 1: SELECT typeof(INTERVAL 1 SECOND) AS `TypeOf(1)` "
@@ -2208,15 +2151,6 @@ def test_timestamp_column_from_ymdhms(backend, con, alltypes, df):
 
 
 @pytest.mark.notimpl(
-    ["druid"],
-    raises=sa.exc.ProgrammingError,
-    reason=(
-        "(pydruid.db.exceptions.ProgrammingError) Plan validation failed "
-        "(org.apache.calcite.tools.ValidationException): "
-        "java.lang.UnsupportedOperationException: class org.apache.calcite.sql.SqlIdentifier: LONG"
-    ),
-)
-@pytest.mark.notimpl(
     ["oracle"], raises=sa.exc.DatabaseError, reason="ORA-01861 literal does not match"
 )
 def test_date_scalar_from_iso(con):
@@ -2227,12 +2161,7 @@ def test_date_scalar_from_iso(con):
     assert result.strftime("%Y-%m-%d") == "2022-02-24"
 
 
-@pytest.mark.notimpl(["mssql", "druid"], raises=com.OperationNotDefinedError)
-@pytest.mark.notimpl(
-    ["druid"],
-    raises=sa.exc.ProgrammingError,
-    reason="java.lang.UnsupportedOperationException: class org.apache.calcite.sql.SqlIdentifier: STRING",
-)
+@pytest.mark.notimpl(["mssql"], raises=com.OperationNotDefinedError)
 @pytest.mark.notyet(
     ["oracle"],
     raises=sa.exc.DatabaseError,
@@ -2275,11 +2204,6 @@ def test_timestamp_extract_milliseconds_with_big_value(con):
     raises=sa.exc.DatabaseError,
     reason="ORA-00932",
 )
-@pytest.mark.broken(
-    ["druid"],
-    raises=sa.exc.ProgrammingError,
-    reason="No match found for function signature to_timestamp(<NUMERIC>)",
-)
 @pytest.mark.notimpl(["exasol"], raises=sa.exc.DBAPIError)
 def test_integer_cast_to_timestamp_column(backend, alltypes, df):
     expr = alltypes.int_col.cast("timestamp")
@@ -2288,11 +2212,6 @@ def test_integer_cast_to_timestamp_column(backend, alltypes, df):
     backend.assert_series_equal(result, expected.astype(result.dtype))
 
 
-@pytest.mark.notimpl(
-    ["druid"],
-    raises=sa.exc.ProgrammingError,
-    reason="No match found for function signature to_timestamp(<NUMERIC>)",
-)
 @pytest.mark.notimpl(["oracle"], raises=sa.exc.DatabaseError)
 @pytest.mark.notimpl(["exasol"], raises=sa.exc.DBAPIError)
 def test_integer_cast_to_timestamp_scalar(alltypes, df):
@@ -2305,11 +2224,7 @@ def test_integer_cast_to_timestamp_scalar(alltypes, df):
 @pytest.mark.broken(
     ["clickhouse"], raises=AssertionError, reason="clickhouse truncates the result"
 )
-@pytest.mark.notimpl(
-    ["druid"],
-    reason='No literal value renderer is available for literal value "datetime.datetime(2419, 10, 11, 10, 10, 25)" with datatype DATETIME',
-    raises=sa.exc.CompileError,
-)
+@pytest.mark.broken(["druid"], reason="timezone doesn't match", raises=AssertionError)
 @pytest.mark.notyet(
     ["pyspark"],
     reason="PySpark doesn't handle big timestamps",
@@ -2344,11 +2259,7 @@ def build_date_col(t):
 
 
 @pytest.mark.notimpl(["mssql"], raises=com.OperationNotDefinedError)
-@pytest.mark.broken(
-    ["druid"],
-    raises=sa.exc.CompileError,
-    reason='No literal value renderer is available for literal value "datetime.date(2010, 11, 1)" with datatype DATE',
-)
+@pytest.mark.notimpl(["druid"], raises=PyDruidProgrammingError)
 @pytest.mark.notimpl(["oracle"], raises=sa.exc.DatabaseError)
 @pytest.mark.parametrize(
     ("left_fn", "right_fn"),
@@ -2384,11 +2295,6 @@ def test_timestamp_date_comparison(backend, alltypes, df, left_fn, right_fn):
     ["clickhouse"],
     reason="returns incorrect results",
     raises=AssertionError,
-)
-@pytest.mark.notimpl(
-    ["druid"],
-    raises=sa.exc.CompileError,
-    reason='No literal value renderer is available for literal value "datetime.datetime(4567, 1, 1, 0, 0)" with datatype DATETIME',
 )
 @pytest.mark.notimpl(["pyspark"], raises=pd.errors.OutOfBoundsDatetime)
 @pytest.mark.notimpl(
@@ -2432,6 +2338,11 @@ def test_large_timestamp(con):
                     reason="assert Timestamp('2023-01-07 13:20:05.561000') == Timestamp('2023-01-07 13:20:05.561021')",
                     raises=AssertionError,
                 ),
+                pytest.mark.notyet(
+                    ["druid"],
+                    reason="time_parse truncates to milliseconds",
+                    raises=AssertionError,
+                ),
             ],
         ),
         param(
@@ -2443,6 +2354,11 @@ def test_large_timestamp(con):
                 pytest.mark.broken(
                     ["duckdb", "impala", "pyspark", "trino"],
                     reason="drivers appear to truncate nanos",
+                    raises=AssertionError,
+                ),
+                pytest.mark.broken(
+                    ["druid"],
+                    reason="ibis normalization truncates nanos",
                     raises=AssertionError,
                 ),
                 pytest.mark.notyet(
@@ -2476,14 +2392,6 @@ def test_large_timestamp(con):
             ],
         ),
     ],
-)
-@pytest.mark.broken(
-    ["druid"],
-    raises=sa.exc.ProgrammingError,
-    reason=(
-        "java.lang.UnsupportedOperationException: class "
-        "org.apache.calcite.sql.SqlIdentifier: LONG"
-    ),
 )
 @pytest.mark.notimpl(
     ["oracle"],
@@ -2755,7 +2663,9 @@ def test_time_literal_sql(dialect, snapshot, micros):
     snapshot.assert_match(sql, "out.sql")
 
 
-@pytest.mark.notimpl(["druid"], raises=sa.exc.CompileError, reason="no date support")
+@pytest.mark.notimpl(
+    ["druid"], raises=PyDruidProgrammingError, reason="no date support"
+)
 @pytest.mark.parametrize(
     "value",
     [
