@@ -12,7 +12,7 @@ from sqlglot.dialects.dialect import create_with_partitions_sql, rename_func
 import ibis
 import ibis.common.exceptions as com
 import ibis.expr.operations as ops
-from ibis.backends.base.sqlglot.compiler import NULL, STAR, SQLGlotCompiler
+from ibis.backends.base.sqlglot.compiler import NULL, STAR, C, SQLGlotCompiler
 from ibis.backends.base.sqlglot.datatypes import OracleType
 from ibis.backends.base.sqlglot.rewrites import replace_log2, replace_log10
 from ibis.common.patterns import replace
@@ -138,6 +138,49 @@ class OracleCompiler(SQLGlotCompiler):
         if value is None:
             return NULL
         return super().visit_Literal(op, value=value, dtype=dtype)
+
+    @visit_node.register(ops.Limit)
+    def visit_Limit(self, op, *, parent, n, offset):
+        # push limit/offset into subqueries
+        if isinstance(parent, sge.Subquery) and parent.this.args.get("limit") is None:
+            result = parent.this
+            alias = parent.alias
+        else:
+            result = sg.select(STAR).from_(parent)
+            alias = None
+
+        if isinstance(n, int):
+            result = result.limit(n)
+        elif n is not None:
+            result = result.where(C.ROWNUM <= sg.select(n).from_(parent).subquery())
+        else:
+            assert n is None, n
+            if self.no_limit_value is not None:
+                result = result.limit(self.no_limit_value)
+
+        assert offset is not None, "offset is None"
+
+        if not isinstance(offset, int):
+            skip = offset
+            skip = sg.select(skip).from_(parent).subquery()
+        elif not offset:
+            if alias is not None:
+                return result.subquery(alias)
+            return result
+        else:
+            # add offset to where clause?
+            # but this assumes that there is a where clause
+            # assuming that gets handled, then
+            # next is to create a projection that sets ROWNUM as ora_rn, then
+            # add a predicate to that where ora_rn > offset
+            # result["where"] += offset
+            skip = offset
+
+        result = result.offset(skip)
+
+        if alias is not None:
+            return result.subquery(alias)
+        return result
 
     @visit_node.register(ops.Date)
     def visit_Date(self, op, *, arg):
