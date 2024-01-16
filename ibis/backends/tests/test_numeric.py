@@ -25,6 +25,7 @@ from ibis.backends.tests.errors import (
     MySQLOperationalError,
     PsycoPg2DivisionByZero,
     Py4JError,
+    PyDruidProgrammingError,
     PySparkArithmeticException,
     PySparkParseException,
     SnowflakeProgrammingError,
@@ -272,7 +273,7 @@ def test_numeric_literal(con, backend, expr, expected_types):
                 "pyspark": decimal.Decimal("1.1"),
                 "mysql": decimal.Decimal("1"),
                 "mssql": 1.1,
-                "druid": 1.1,
+                "druid": decimal.Decimal("1.1"),
                 "datafusion": decimal.Decimal("1.1"),
                 "oracle": 1.1,
                 "flink": decimal.Decimal("1.1"),
@@ -327,7 +328,7 @@ def test_numeric_literal(con, backend, expr, expected_types):
                 "clickhouse": decimal.Decimal("1.1"),
                 "dask": decimal.Decimal("1.1"),
                 "mssql": 1.1,
-                "druid": 1.1,
+                "druid": decimal.Decimal("1.1"),
                 "datafusion": decimal.Decimal("1.1"),
                 "oracle": 1.1,
                 "flink": decimal.Decimal("1.1"),
@@ -376,7 +377,7 @@ def test_numeric_literal(con, backend, expr, expected_types):
                     "1.10000000000000003193790845333396190208"
                 ),
                 "mssql": 1.1,
-                "druid": 1.1,
+                "druid": decimal.Decimal("1.1"),
                 "oracle": 1.1,
             },
             {
@@ -475,7 +476,7 @@ def test_numeric_literal(con, backend, expr, expected_types):
                     "(org.apache.calcite.tools.ValidationException): "
                     "org.apache.calcite.runtime.CalciteContextException: From line 1, column 8 to line 1, "
                     "column 15: Column 'Infinity' not found in any table",
-                    raises=sa.exc.ProgrammingError,
+                    raises=PyDruidProgrammingError,
                 ),
                 pytest.mark.broken(["datafusion"], raises=Exception),
                 pytest.mark.broken(
@@ -552,7 +553,7 @@ def test_numeric_literal(con, backend, expr, expected_types):
                     "(org.apache.calcite.tools.ValidationException): "
                     "org.apache.calcite.runtime.CalciteContextException: From line 1, column 9 to line 1, "
                     "column 16: Column 'Infinity' not found in any table",
-                    raises=sa.exc.ProgrammingError,
+                    raises=PyDruidProgrammingError,
                 ),
                 pytest.mark.broken(["datafusion"], raises=Exception),
                 pytest.mark.broken(
@@ -639,7 +640,7 @@ def test_numeric_literal(con, backend, expr, expected_types):
                     "(org.apache.calcite.tools.ValidationException): "
                     "org.apache.calcite.runtime.CalciteContextException: From line 1, column 8 to line 1, "
                     "column 10: Column 'NaN' not found in any table",
-                    raises=sa.exc.ProgrammingError,
+                    raises=PyDruidProgrammingError,
                 ),
                 pytest.mark.broken(["datafusion"], raises=Exception),
                 pytest.mark.broken(
@@ -692,15 +693,7 @@ def test_decimal_literal(con, backend, expr, expected_types, expected_result):
             lambda t: t.float_col,
             id="float-column",
             marks=[
-                pytest.mark.notimpl(
-                    ["exasol"],
-                    raises=com.OperationNotDefinedError,
-                ),
-                pytest.mark.notimpl(
-                    ["druid"],
-                    raises=AttributeError,
-                    reason="AttributeError: 'DecimalColumn' object has no attribute 'isinf'",
-                ),
+                pytest.mark.notimpl(["exasol"], raises=com.OperationNotDefinedError),
             ],
         ),
         param(
@@ -708,15 +701,7 @@ def test_decimal_literal(con, backend, expr, expected_types, expected_result):
             lambda t: t.double_col,
             id="double-column",
             marks=[
-                pytest.mark.notimpl(
-                    ["exasol"],
-                    raises=com.OperationNotDefinedError,
-                ),
-                pytest.mark.notimpl(
-                    ["druid"],
-                    raises=AttributeError,
-                    reason="AttributeError: 'DecimalColumn' object has no attribute 'isinf'",
-                ),
+                pytest.mark.notimpl(["exasol"], raises=com.OperationNotDefinedError),
             ],
         ),
         param(
@@ -724,25 +709,20 @@ def test_decimal_literal(con, backend, expr, expected_types, expected_result):
             lambda t: 1.3,
             id="float-literal",
             marks=[
-                pytest.mark.notimpl(
-                    ["exasol", "druid"], raises=com.OperationNotDefinedError
-                )
+                pytest.mark.notimpl(["exasol"], raises=com.OperationNotDefinedError)
             ],
         ),
         param(
             lambda t: ibis.literal(np.nan),
             lambda t: np.nan,
             id="nan-literal",
-            marks=[pytest.mark.notimpl(["druid"], raises=com.OperationNotDefinedError)],
         ),
         param(
             lambda t: ibis.literal(np.inf),
             lambda t: np.inf,
             id="inf-literal",
             marks=[
-                pytest.mark.notimpl(
-                    ["exasol", "druid"], raises=com.OperationNotDefinedError
-                )
+                pytest.mark.notimpl(["exasol"], raises=com.OperationNotDefinedError)
             ],
         ),
         param(
@@ -750,9 +730,7 @@ def test_decimal_literal(con, backend, expr, expected_types, expected_result):
             lambda t: -np.inf,
             id="-inf-literal",
             marks=[
-                pytest.mark.notimpl(
-                    ["exasol", "druid"], raises=com.OperationNotDefinedError
-                )
+                pytest.mark.notimpl(["exasol"], raises=com.OperationNotDefinedError)
             ],
         ),
     ],
@@ -763,26 +741,19 @@ def test_decimal_literal(con, backend, expr, expected_types, expected_result):
         param(
             operator.methodcaller("isnan"),
             np.isnan,
-            marks=[
-                pytest.mark.notimpl(
-                    ["exasol"],
-                    raises=com.OperationNotDefinedError,
-                ),
-            ],
+            marks=pytest.mark.notimpl(["exasol"], raises=com.OperationNotDefinedError),
             id="isnan",
         ),
         param(
             operator.methodcaller("isinf"),
             np.isinf,
             id="isinf",
-            marks=[
-                pytest.mark.notimpl(["exasol"], raises=com.OperationNotDefinedError)
-            ],
+            marks=pytest.mark.notimpl(["exasol"], raises=com.OperationNotDefinedError),
         ),
     ],
 )
 @pytest.mark.notimpl(
-    ["sqlite", "mssql", "oracle", "flink"], raises=com.OperationNotDefinedError
+    ["sqlite", "mssql", "oracle", "flink", "druid"], raises=com.OperationNotDefinedError
 )
 @pytest.mark.notimpl(["mysql"], raises=(MySQLOperationalError, NotImplementedError))
 def test_isnan_isinf(
@@ -878,12 +849,12 @@ def test_isnan_isinf(
                     ["exasol"],
                     raises=com.OperationNotDefinedError,
                 ),
-                pytest.mark.notimpl(["druid"], raises=com.OperationNotDefinedError),
                 pytest.mark.notimpl(
                     ["risingwave"],
                     raises=sa.exc.InternalError,
                     reason="function log10(numeric, numeric) does not exist",
                 ),
+                pytest.mark.notimpl(["druid"], raises=PyDruidProgrammingError),
             ],
         ),
         param(
@@ -900,12 +871,12 @@ def test_isnan_isinf(
                     ["exasol"],
                     raises=com.OperationNotDefinedError,
                 ),
-                pytest.mark.notimpl(["druid"], raises=com.OperationNotDefinedError),
                 pytest.mark.notimpl(
                     ["risingwave"],
                     raises=sa.exc.InternalError,
                     reason="function log10(numeric, numeric) does not exist",
                 ),
+                pytest.mark.notimpl(["druid"], raises=PyDruidProgrammingError),
             ],
         ),
         param(
@@ -1068,6 +1039,7 @@ def test_simple_math_functions_columns(
                     raises=sa.exc.InternalError,
                     reason="function log10(numeric, numeric) does not exist",
                 ),
+                pytest.mark.notimpl(["druid"], raises=PyDruidProgrammingError),
             ],
             id="log2",
         ),
@@ -1113,11 +1085,6 @@ def test_simple_math_functions_columns(
         ),
     ],
 )
-@pytest.mark.notimpl(
-    ["druid"],
-    raises=TypeError,
-    reason="loop of ufunc does not support argument 0 of type float which has no callable log2 method",
-)
 def test_complex_math_functions_columns(
     backend, con, alltypes, df, expr_fn, expected_fn
 ):
@@ -1136,10 +1103,10 @@ def test_complex_math_functions_columns(
             id="round",
             marks=[
                 pytest.mark.notimpl(["mssql"], raises=AssertionError),
-                pytest.mark.notimpl(
+                pytest.mark.broken(
                     ["druid"],
-                    raises=TypeError,
-                    reason="loop of ufunc does not support argument 0 of type float which has no callable rint method",
+                    raises=AssertionError,
+                    reason="rounding works but behavior differs from pandas",
                 ),
             ],
         ),
@@ -1147,13 +1114,6 @@ def test_complex_math_functions_columns(
             lambda be, t: t.double_col.add(0.05).round(3),
             lambda be, t: be.round(t.double_col + 0.05, 3),
             id="round-with-param",
-            marks=[
-                pytest.mark.notimpl(
-                    ["druid"],
-                    raises=TypeError,
-                    reason="loop of ufunc does not support argument 0 of type float which has no callable rint method",
-                ),
-            ],
         ),
         param(
             lambda be, t: ibis.least(t.bigint_col, t.int_col),
@@ -1335,16 +1295,8 @@ def test_floating_mod(backend, alltypes, df):
                 ),
             ],
         ),
-        param(
-            "float_col",
-            0,
-            marks=pytest.mark.notimpl(["druid"], raises=ZeroDivisionError),
-        ),
-        param(
-            "double_col",
-            0,
-            marks=pytest.mark.notimpl(["druid"], raises=ZeroDivisionError),
-        ),
+        param("float_col", 0),
+        param("double_col", 0),
         param(
             "tinyint_col",
             0.0,
@@ -1401,15 +1353,13 @@ def test_floating_mod(backend, alltypes, df):
             "float_col",
             0.0,
             marks=[
-                pytest.mark.notimpl(["druid"], raises=ZeroDivisionError),
-                pytest.mark.never(["impala"], reason="doesn't allow divide by zero"),
+                pytest.mark.never(["impala"], reason="doesn't allow divide by zero")
             ],
         ),
         param(
             "double_col",
             0.0,
             marks=[
-                pytest.mark.notimpl(["druid"], raises=ZeroDivisionError),
                 pytest.mark.never(["impala"], reason="doesn't allow divide by zero"),
             ],
         ),
@@ -1478,15 +1428,16 @@ def test_divide_by_zero(backend, alltypes, df, column, denominator):
         "trino",
         "postgres",
         "mysql",
+        "druid",
     ],
     reason="Not SQLAlchemy backends",
 )
-@pytest.mark.notimpl(["druid", "exasol"], raises=KeyError)
 @pytest.mark.notimpl(
     ["risingwave"],
     raises=sa.exc.InternalError,
     reason="Feature is not yet implemented: unsupported data type: NUMERIC(5)",
 )
+@pytest.mark.notimpl(["exasol"], raises=KeyError)
 def test_sa_default_numeric_precision_and_scale(
     con, backend, default_precisions, default_scales, temp_table
 ):
@@ -1521,13 +1472,12 @@ def test_sa_default_numeric_precision_and_scale(
 
 
 @pytest.mark.notimpl(
-    ["dask", "pandas", "polars", "druid"], raises=com.OperationNotDefinedError
-)
-@pytest.mark.notimpl(
     ["risingwave"],
     raises=sa.exc.InternalError,
     reason="function random() does not exist",
 )
+@pytest.mark.notimpl(["dask", "pandas", "polars"], raises=com.OperationNotDefinedError)
+@pytest.mark.notimpl(["druid"], raises=PyDruidProgrammingError)
 def test_random(con):
     expr = ibis.random()
     result = con.execute(expr)
@@ -1597,7 +1547,7 @@ def test_clip(backend, alltypes, df, ibis_func, pandas_func):
 @pytest.mark.notimpl(["polars", "exasol"], raises=com.OperationNotDefinedError)
 @pytest.mark.broken(
     ["druid"],
-    raises=sa.exc.ProgrammingError,
+    raises=PyDruidProgrammingError,
     reason="SQL query requires 'MIN' operator that is not supported.",
 )
 @pytest.mark.never(

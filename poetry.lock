@@ -4671,7 +4671,6 @@ files = [
 
 [package.dependencies]
 requests = "*"
-sqlalchemy = {version = "*", optional = true, markers = "extra == \"sqlalchemy\""}
 
 [package.extras]
 async = ["tornado"]
@@ -7340,7 +7339,7 @@ dask = ["dask", "regex"]
 datafusion = ["datafusion"]
 decompiler = ["black"]
 deltalake = ["deltalake"]
-druid = ["pydruid", "sqlalchemy"]
+druid = ["pydruid"]
 duckdb = ["duckdb"]
 examples = ["pins"]
 exasol = ["sqlalchemy", "sqlalchemy-exasol", "sqlalchemy-views"]
@@ -7363,4 +7362,4 @@ visualization = ["graphviz"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.9"
-content-hash = "659771c151e098f1a48db403393d3072ad1f11935ed023415ffa2260c2e7e914"
+content-hash = "a2edd5b6e62e78267c3e2339efde3600b637e86ae05c0deec081798be5d1d34e"

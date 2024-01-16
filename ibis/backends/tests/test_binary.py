@@ -22,7 +22,7 @@ BINARY_BACKEND_TYPES = {
 
 
 @pytest.mark.notimpl(
-    ["clickhouse", "impala"],
+    ["clickhouse", "impala", "druid"],
     "Unsupported type: Binary(nullable=True)",
     raises=NotImplementedError,
 )
