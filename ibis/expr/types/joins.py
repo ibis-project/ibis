@@ -81,7 +81,7 @@ def dereference_sides(left, right, deref_left, deref_right):
     return left, right
 
 
-def dereference_comparison_op(pred, deref_left, deref_right):
+def dereference_comparison(pred, deref_left, deref_right):
     left, right = dereference_sides(pred.left, pred.right, deref_left, deref_right)
     return pred.copy(left=left, right=right)
 
@@ -89,7 +89,7 @@ def dereference_comparison_op(pred, deref_left, deref_right):
 def dereference_value(pred, deref_left, deref_right):
     deref_both = {**deref_left, **deref_right}
     if isinstance(pred, ops.Comparison) and pred.left.relations == pred.right.relations:
-        return dereference_comparison_op(pred, deref_left, deref_right)
+        return dereference_comparison(pred, deref_left, deref_right)
     else:
         return pred.replace(deref_both, filter=ops.Value)
 
