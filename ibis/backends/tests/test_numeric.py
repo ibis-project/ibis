@@ -1403,7 +1403,14 @@ flink_no_bitwise = pytest.mark.notyet(
 )
 
 
-@pytest.mark.parametrize("op", [and_, or_, xor])
+@pytest.mark.parametrize(
+    "op",
+    [
+        and_,
+        param(or_, marks=[pytest.mark.notimpl(["oracle"], raises=OracleDatabaseError)]),
+        param(xor, marks=[pytest.mark.notimpl(["oracle"], raises=OracleDatabaseError)]),
+    ],
+)
 @pytest.mark.parametrize(
     ("left_fn", "right_fn"),
     [
@@ -1412,7 +1419,6 @@ flink_no_bitwise = pytest.mark.notyet(
         param(lambda t: t.int_col, lambda _: 3, id="col_scalar"),
     ],
 )
-@pytest.mark.notimpl(["oracle"], raises=OracleDatabaseError)
 @pytest.mark.notimpl(["exasol"], raises=(sa.exc.DBAPIError, ExaQueryError))
 @flink_no_bitwise
 def test_bitwise_columns(backend, con, alltypes, df, op, left_fn, right_fn):
@@ -1474,7 +1480,6 @@ def test_bitwise_shift(backend, alltypes, df, op, left_fn, right_fn):
     ("left", "right"),
     [param(4, L(2), id="int_col"), param(L(4), 2, id="col_int")],
 )
-@pytest.mark.notimpl(["oracle"], raises=OracleDatabaseError)
 @pytest.mark.notimpl(["exasol"], raises=ExaQueryError)
 @flink_no_bitwise
 def test_bitwise_scalars(con, op, left, right):
