@@ -1379,6 +1379,10 @@ def test_persist_expression_repeated_cache(alltypes):
     reason="mssql supports support temporary tables through naming conventions",
 )
 @mark.notimpl(["exasol"], reason="Exasol does not support temporary tables")
+@mark.broken(
+    ["oracle"],
+    reason="Among other reasons, oracles errors don't inherit from Exception",
+)
 def test_persist_expression_release(con, alltypes):
     non_cached_table = alltypes.mutate(
         test_column="calculation", other_column="big calc 3"
