@@ -300,6 +300,7 @@ _SIMPLE_OPS = {
     ops.RPad: "rpad",
     ops.StringAscii: "ascii",
     ops.Strip: "trim",
+    ops.Hash: "ora_hash",
 }
 
 for _op, _name in _SIMPLE_OPS.items():
