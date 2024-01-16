@@ -106,3 +106,8 @@ try:
     from pymysql.err import ProgrammingError as MySQLProgrammingError
 except ImportError:
     MySQLNotSupportedError = MySQLProgrammingError = MySQLOperationalError = None
+
+try:
+    from pydruid.db.exceptions import ProgrammingError as PyDruidProgrammingError
+except ImportError:
+    PyDruidProgrammingError = None

@@ -265,7 +265,9 @@ def test_table_dot_sql_transpile(backend, alltypes, dialect, df):
     ],
 )
 @pytest.mark.notyet(["polars"], raises=PolarsComputeError)
-@pytest.mark.notyet(["druid"], raises=ValueError)
+@pytest.mark.notyet(
+    ["druid"], raises=AttributeError, reason="druid doesn't respect column names"
+)
 @pytest.mark.notyet(["snowflake", "bigquery"])
 @pytest.mark.notyet(
     ["oracle"], strict=False, reason="only works with backends that quote everything"

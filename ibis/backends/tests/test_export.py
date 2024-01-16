@@ -15,6 +15,7 @@ from ibis.backends.tests.errors import (
     DuckDBParserException,
     MySQLOperationalError,
     PyDeltaTableError,
+    PyDruidProgrammingError,
     PySparkArithmeticException,
     PySparkParseException,
     SnowflakeProgrammingError,
@@ -341,7 +342,6 @@ def test_table_to_csv_writer_kwargs(delimiter, tmp_path, awards_players):
             pa.Decimal128Type,
             id="decimal128",
             marks=[
-                pytest.mark.notyet(["druid"], raises=sa.exc.ProgrammingError),
                 pytest.mark.notyet(["flink"], raises=NotImplementedError),
                 pytest.mark.notyet(["exasol"], raises=sa.exc.DBAPIError),
             ],
@@ -353,7 +353,7 @@ def test_table_to_csv_writer_kwargs(delimiter, tmp_path, awards_players):
             marks=[
                 pytest.mark.notyet(["impala"], reason="precision not supported"),
                 pytest.mark.notyet(["duckdb"], reason="precision is out of range"),
-                pytest.mark.notyet(["druid", "mssql"], raises=sa.exc.ProgrammingError),
+                pytest.mark.notyet(["mssql"], raises=sa.exc.ProgrammingError),
                 pytest.mark.notyet(["snowflake"], raises=SnowflakeProgrammingError),
                 pytest.mark.notyet(["trino"], raises=TrinoUserError),
                 pytest.mark.notyet(["oracle"], raises=sa.exc.DatabaseError),
@@ -393,17 +393,13 @@ def test_to_pyarrow_decimal(backend, dtype, pyarrow_dtype):
         "trino",
         "flink",
         "exasol",
+        "druid",
     ],
     raises=NotImplementedError,
     reason="read_delta not yet implemented",
 )
 @pytest.mark.notyet(["clickhouse"], raises=Exception)
 @pytest.mark.notyet(["mssql", "pandas"], raises=PyDeltaTableError)
-@pytest.mark.notyet(
-    ["druid"],
-    raises=pa.lib.ArrowTypeError,
-    reason="arrow type conversion fails in `to_delta` call",
-)
 def test_roundtrip_delta(backend, con, alltypes, tmp_path, monkeypatch):
     if con.name == "pyspark":
         pytest.importorskip("delta")
@@ -469,6 +465,11 @@ def test_to_torch(alltypes):
 
 
 @pytest.mark.notimpl(["flink"])
+@pytest.mark.notyet(
+    ["druid"],
+    raises=PyDruidProgrammingError,
+    reason="backend doesn't support an empty VALUES construct",
+)
 def test_empty_memtable(backend, con):
     expected = pd.DataFrame({"a": []})
     table = ibis.memtable(expected)
@@ -485,7 +486,7 @@ def test_to_pandas_batches_empty_table(backend, con):
     assert sum(map(len, t.to_pandas_batches())) == n
 
 
-@pytest.mark.notimpl(["druid", "flink"])
+@pytest.mark.notimpl(["flink"])
 @pytest.mark.parametrize(
     "n",
     [param(None, marks=pytest.mark.notimpl(["exasol"], raises=sa.exc.CompileError)), 1],

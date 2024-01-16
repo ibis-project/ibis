@@ -11,7 +11,7 @@ from pytest import param
 import ibis
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
-from ibis.backends.tests.errors import ClickHouseDatabaseError
+from ibis.backends.tests.errors import ClickHouseDatabaseError, PyDruidProgrammingError
 from ibis.common.annotations import ValidationError
 
 
@@ -185,8 +185,7 @@ def uses_java_re(t):
             id="rlike",
             marks=[
                 pytest.mark.notimpl(
-                    ["mssql", "oracle", "exasol"],
-                    raises=com.OperationNotDefinedError,
+                    ["mssql", "oracle", "exasol"], raises=com.OperationNotDefinedError
                 ),
             ],
         ),
@@ -196,8 +195,7 @@ def uses_java_re(t):
             id="re_search_substring",
             marks=[
                 pytest.mark.notimpl(
-                    ["mssql", "oracle", "exasol"],
-                    raises=com.OperationNotDefinedError,
+                    ["mssql", "oracle", "exasol"], raises=com.OperationNotDefinedError
                 ),
             ],
         ),
@@ -207,8 +205,7 @@ def uses_java_re(t):
             id="re_search",
             marks=[
                 pytest.mark.notimpl(
-                    ["mssql", "oracle", "exasol"],
-                    raises=com.OperationNotDefinedError,
+                    ["mssql", "oracle", "exasol"], raises=com.OperationNotDefinedError
                 ),
             ],
         ),
@@ -236,8 +233,7 @@ def uses_java_re(t):
             id="re_extract",
             marks=[
                 pytest.mark.notimpl(
-                    ["mssql", "druid", "oracle", "exasol"],
-                    raises=com.OperationNotDefinedError,
+                    ["mssql", "oracle", "exasol"], raises=com.OperationNotDefinedError
                 ),
             ],
         ),
@@ -247,8 +243,7 @@ def uses_java_re(t):
             id="re_extract_group",
             marks=[
                 pytest.mark.notimpl(
-                    ["mssql", "druid", "oracle", "exasol"],
-                    raises=com.OperationNotDefinedError,
+                    ["mssql", "oracle", "exasol"], raises=com.OperationNotDefinedError
                 ),
             ],
         ),
@@ -260,8 +255,10 @@ def uses_java_re(t):
             id="re_extract_posix",
             marks=[
                 pytest.mark.notimpl(
-                    ["mssql", "druid", "oracle", "exasol"],
-                    raises=com.OperationNotDefinedError,
+                    ["mssql", "oracle", "exasol"], raises=com.OperationNotDefinedError
+                ),
+                pytest.mark.notimpl(
+                    ["druid"], reason="No posix support", raises=AssertionError
                 ),
             ],
         ),
@@ -271,8 +268,7 @@ def uses_java_re(t):
             id="re_extract_whole_group",
             marks=[
                 pytest.mark.notimpl(
-                    ["mssql", "druid", "oracle", "exasol"],
-                    raises=com.OperationNotDefinedError,
+                    ["mssql", "oracle", "exasol"], raises=com.OperationNotDefinedError
                 ),
             ],
         ),
@@ -284,8 +280,7 @@ def uses_java_re(t):
             id="re_extract_group_1",
             marks=[
                 pytest.mark.notimpl(
-                    ["mssql", "druid", "oracle", "exasol"],
-                    raises=com.OperationNotDefinedError,
+                    ["mssql", "oracle", "exasol"], raises=com.OperationNotDefinedError
                 ),
             ],
         ),
@@ -297,8 +292,7 @@ def uses_java_re(t):
             id="re_extract_group_2",
             marks=[
                 pytest.mark.notimpl(
-                    ["mssql", "druid", "oracle", "exasol"],
-                    raises=com.OperationNotDefinedError,
+                    ["mssql", "oracle", "exasol"], raises=com.OperationNotDefinedError
                 ),
             ],
         ),
@@ -310,8 +304,7 @@ def uses_java_re(t):
             id="re_extract_group_3",
             marks=[
                 pytest.mark.notimpl(
-                    ["mssql", "druid", "oracle", "exasol"],
-                    raises=com.OperationNotDefinedError,
+                    ["mssql", "oracle", "exasol"], raises=com.OperationNotDefinedError
                 ),
             ],
         ),
@@ -321,8 +314,7 @@ def uses_java_re(t):
             id="re_extract_group_at_beginning",
             marks=[
                 pytest.mark.notimpl(
-                    ["mssql", "druid", "oracle", "exasol"],
-                    raises=com.OperationNotDefinedError,
+                    ["mssql", "oracle", "exasol"], raises=com.OperationNotDefinedError
                 ),
             ],
         ),
@@ -332,8 +324,7 @@ def uses_java_re(t):
             id="re_extract_group_at_end",
             marks=[
                 pytest.mark.notimpl(
-                    ["mssql", "druid", "oracle", "exasol"],
-                    raises=com.OperationNotDefinedError,
+                    ["mssql", "oracle", "exasol"], raises=com.OperationNotDefinedError
                 ),
             ],
         ),
@@ -526,11 +517,8 @@ def uses_java_re(t):
             id="startswith",
             # pyspark doesn't support `cases` yet
             marks=[
-                pytest.mark.notimpl(
-                    ["dask"],
-                    raises=com.OperationNotDefinedError,
-                ),
-                pytest.mark.broken(["druid", "mssql"], raises=sa.exc.ProgrammingError),
+                pytest.mark.notimpl(["dask"], raises=com.OperationNotDefinedError),
+                pytest.mark.broken(["mssql"], raises=sa.exc.ProgrammingError),
             ],
         ),
         param(
@@ -542,10 +530,9 @@ def uses_java_re(t):
             # pyspark doesn't support `cases` yet
             marks=[
                 pytest.mark.notimpl(
-                    ["dask", "datafusion"],
-                    raises=com.OperationNotDefinedError,
+                    ["dask", "datafusion"], raises=com.OperationNotDefinedError
                 ),
-                pytest.mark.broken(["druid", "mssql"], raises=sa.exc.ProgrammingError),
+                pytest.mark.broken(["mssql"], raises=sa.exc.ProgrammingError),
             ],
         ),
         param(
@@ -553,10 +540,7 @@ def uses_java_re(t):
             lambda t: t.date_string_col.str.startswith("2010-01"),
             id="startswith-simple",
             marks=[
-                pytest.mark.notimpl(
-                    ["dask"],
-                    raises=com.OperationNotDefinedError,
-                ),
+                pytest.mark.notimpl(["dask"], raises=com.OperationNotDefinedError),
                 pytest.mark.broken(["mssql"], raises=sa.exc.ProgrammingError),
             ],
         ),
@@ -629,7 +613,7 @@ def uses_java_re(t):
             lambda t: t.date_string_col.str[-2],
             id="negative-index",
             marks=[
-                pytest.mark.broken(["druid"], raises=sa.exc.ProgrammingError),
+                pytest.mark.broken(["druid"], raises=PyDruidProgrammingError),
                 pytest.mark.broken(["impala", "flink"], raises=AssertionError),
             ],
         ),
@@ -651,7 +635,7 @@ def uses_java_re(t):
                     reason="'Series' object has no attribute 'items'",
                     raises=AttributeError,
                 ),
-                pytest.mark.broken(["druid"], raises=sa.exc.ProgrammingError),
+                pytest.mark.broken(["druid"], raises=PyDruidProgrammingError),
             ],
         ),
         param(
@@ -672,7 +656,7 @@ def uses_java_re(t):
                     reason="'Series' object has no attribute 'items'",
                     raises=AttributeError,
                 ),
-                pytest.mark.broken(["druid"], raises=sa.exc.ProgrammingError),
+                pytest.mark.broken(["druid"], raises=PyDruidProgrammingError),
             ],
         ),
         param(
@@ -694,7 +678,7 @@ def uses_java_re(t):
                     reason="'Series' object has no attribute 'items'",
                     raises=AttributeError,
                 ),
-                pytest.mark.broken(["druid"], raises=sa.exc.ProgrammingError),
+                pytest.mark.broken(["druid"], raises=PyDruidProgrammingError),
             ],
         ),
         param(
@@ -717,7 +701,7 @@ def uses_java_re(t):
                     reason="'Series' object has no attribute 'items'",
                     raises=AttributeError,
                 ),
-                pytest.mark.broken(["druid"], raises=sa.exc.ProgrammingError),
+                pytest.mark.broken(["druid"], raises=PyDruidProgrammingError),
             ],
         ),
         param(
@@ -911,8 +895,7 @@ def test_capitalize(con):
 
 
 @pytest.mark.notimpl(
-    ["dask", "pandas", "polars", "druid", "oracle", "flink"],
-    raises=com.OperationNotDefinedError,
+    ["dask", "pandas", "polars", "oracle", "flink"], raises=com.OperationNotDefinedError
 )
 @pytest.mark.notyet(
     ["impala", "mssql", "sqlite", "exasol"],
