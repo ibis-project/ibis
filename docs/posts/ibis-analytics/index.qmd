@@ -813,7 +813,7 @@ It's fun to `just run` and watch my system usage spike as DuckDB goes brrrrr:
 This executes the entire Dagster DAG, processing over 10 million rows of data in
 under a minute on my laptop.
 
-### Directed acyclic graph (DAG) and input/ouput management
+### Directed acyclic graph (DAG) and input/output management
 
 We use Dagster to manage the ETL pipeline. I chose Dagster to try something new
 and I like its software-defined assets. Relationships between them in the DAG
@@ -1102,7 +1102,7 @@ def extract_downloads():
     return downloads
 ```
 
-While the GitHub (ommitted for brevity) and Zulip data is in JSON format:
+While the GitHub (omitted for brevity) and Zulip data is in JSON format:
 
 ```{.python}
 # imports
