@@ -7,7 +7,7 @@ import sqlglot.expressions as sge
 import toolz
 from public import public
 from sqlglot.dialects import Oracle
-from sqlglot.dialects.dialect import rename_func
+from sqlglot.dialects.dialect import create_with_partitions_sql, rename_func
 
 import ibis
 import ibis.common.exceptions as com
@@ -19,6 +19,26 @@ from ibis.common.patterns import replace
 from ibis.expr.analysis import p, x, y
 from ibis.expr.rewrites import rewrite_sample
 
+
+def _create_sql(self, expression: sge.Create) -> str:
+    # TODO: should we use CREATE PRIVATE instead?  That will set an implicit lower bound of Oracle 18c
+    properties = expression.args.get("properties")
+    temporary = any(
+        isinstance(prop, sge.TemporaryProperty)
+        for prop in (properties.expressions if properties else [])
+    )
+
+    kind = expression.args["kind"]
+    if (obj := kind.upper()) in ("TABLE", "VIEW") and temporary:
+        if expression.expression:
+            return f"CREATE GLOBAL TEMPORARY {obj} {self.sql(expression, 'this')} AS {self.sql(expression, 'expression')}"
+        else:
+            # TODO: why does autocommit not work here?  need to specify the ON COMMIT part...
+            return f"CREATE GLOBAL TEMPORARY {obj} {self.sql(expression, 'this')} ON COMMIT PRESERVE ROWS"
+
+    return create_with_partitions_sql(self, expression)
+
+
 Oracle.Generator.TRANSFORMS |= {
     sge.LogicalOr: rename_func("max"),
     sge.LogicalAnd: rename_func("min"),
@@ -28,6 +48,7 @@ Oracle.Generator.TRANSFORMS |= {
     sge.StddevPop: rename_func("stddev_pop"),
     sge.StddevSamp: rename_func("stddev_samp"),
     sge.ApproxDistinct: rename_func("approx_count_distinct"),
+    sge.Create: _create_sql,
 }
 
 

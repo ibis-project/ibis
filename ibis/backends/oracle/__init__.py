@@ -116,6 +116,11 @@ class Backend(SQLGlotBackend):
         # https://python-oracledb.readthedocs.io/en/latest/user_guide/appendix_b.html#statement-caching-in-thin-and-thick-modes
         self.con = oracledb.connect(dsn, user=user, password=password, stmtcachesize=0)
 
+        # turn on autocommit
+        # TODO: it would be great if this worked but it doesn't seem to do the trick
+        # I had to hack in the commit lines to the compiler
+        # self.con.autocommit = True
+
     def _from_url(self, url: str, **kwargs):
         return self.do_connect(user=url.username, password=url.password, dsn=url.host)
 
@@ -175,18 +180,23 @@ class Backend(SQLGlotBackend):
         """
         conditions = [TRUE]
 
-        if schema is not None:
-            conditions = C.table_schema.eq(sge.convert(schema))
+        if schema is None:
+            schema = self.con.username.upper()
+        conditions = C.owner.eq(sge.convert(schema.upper()))
 
-        # TODO: add support for other tables
-        col = "table_name"
-        sql = (
-            sg.select(col)
-            .from_(sg.table("user_tables"))
+        tables = (
+            sg.select("table_name", "owner")
+            .from_(sg.table("all_tables"))
             .distinct()
-            .where(*conditions)
-            .sql(self.name, pretty=True)
+            .where(conditions)
         )
+        views = (
+            sg.select("view_name", "owner")
+            .from_(sg.table("all_views"))
+            .distinct()
+            .where(conditions)
+        )
+        sql = tables.union(views).sql(self.name)
 
         with self._safe_raw_sql(sql) as cur:
             out = cur.fetchall()
@@ -305,7 +315,7 @@ class Backend(SQLGlotBackend):
         with self._safe_raw_sql(create_stmt) as cur:
             if query is not None:
                 insert_stmt = sge.Insert(this=table, expression=query).sql(self.name)
-                cur.execute(insert_stmt).fetchall()
+                cur.execute(insert_stmt)
 
             if overwrite:
                 cur.execute(
@@ -483,7 +493,6 @@ class Backend(SQLGlotBackend):
         return t
 
     def _clean_up_tmp_table(self, name: str) -> None:
-        tmptable = self._get_sqla_table(name, autoload=False)
         with self.begin() as bind:
             # global temporary tables cannot be dropped without first truncating them
             #
@@ -491,10 +500,10 @@ class Backend(SQLGlotBackend):
             #
             # ignore DatabaseError exceptions because the table may not exist
             # because it's already been deleted
-            with contextlib.suppress(sa.exc.DatabaseError):
-                bind.exec_driver_sql(f'TRUNCATE TABLE "{tmptable.name}"')
-            with contextlib.suppress(sa.exc.DatabaseError):
-                tmptable.drop(bind=bind)
+            with contextlib.suppress(oracledb.DatabaseError):
+                bind.execute(f'TRUNCATE TABLE "{name}"')
+            with contextlib.suppress(oracledb.DatabaseError):
+                bind.execute(f'DROP TABLE "{name}"')
 
     def _clean_up_cached_table(self, op):
         self._clean_up_tmp_table(op.name)
