@@ -586,6 +586,11 @@ class OracleType(SqlglotType):
         else:
             return super()._from_sqlglot_DECIMAL(precision, scale)
 
+    @classmethod
+    def _from_ibis_String(cls, dtype: dt.String) -> sge.DataType:
+        nullable = " NOT NULL" if not dtype.nullable else ""
+        return "VARCHAR2(4000)" + nullable
+
 
 class SnowflakeType(SqlglotType):
     dialect = "snowflake"
