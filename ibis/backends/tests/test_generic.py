@@ -26,6 +26,7 @@ from ibis.backends.tests.errors import (
     ImpalaHiveServer2Error,
     Py4JJavaError,
     MySQLProgrammingError,
+    PyDruidProgrammingError,
     SnowflakeProgrammingError,
     TrinoUserError,
     PsycoPg2InvalidTextRepresentation
@@ -423,13 +424,9 @@ def test_table_fillna_invalid(alltypes):
         param(
             {"double_col": -1, "string_col": "missing"},
             id="double-int-str",
-            marks=[pytest.mark.notimpl(["druid", "oracle"])],
+            marks=[pytest.mark.notimpl(["oracle"])],
         ),
-        param(
-            {"double_col": -1.5, "string_col": "missing"},
-            id="double-str",
-            marks=[pytest.mark.notimpl(["druid"])],
-        ),
+        param({"double_col": -1.5, "string_col": "missing"}, id="double-str"),
     ],
 )
 def test_table_fillna_mapping(backend, alltypes, replacements):
@@ -446,7 +443,7 @@ def test_table_fillna_mapping(backend, alltypes, replacements):
     backend.assert_frame_equal(result, expected, check_dtype=False)
 
 
-@pytest.mark.notimpl(["druid", "oracle"])
+@pytest.mark.notimpl(["oracle"])
 def test_table_fillna_scalar(backend, alltypes):
     table = alltypes.mutate(
         int_col=alltypes.int_col.nullif(1),
@@ -569,7 +566,7 @@ def test_order_by_random(alltypes):
 
 @pytest.mark.notyet(
     ["druid"],
-    raises=sa.exc.ProgrammingError,
+    raises=PyDruidProgrammingError,
     reason="Druid only supports trivial unions",
 )
 @pytest.mark.notyet(
@@ -682,14 +679,7 @@ def test_logical_negation_literal(con, expr, expected, op):
     assert con.execute(op(ibis.literal(expr)).name("tmp")) == expected
 
 
-@pytest.mark.parametrize(
-    "op",
-    [
-        toolz.identity,
-        invert,
-        neg,
-    ],
-)
+@pytest.mark.parametrize("op", [toolz.identity, invert, neg])
 def test_logical_negation_column(backend, alltypes, df, op):
     result = op(alltypes["bool_col"]).name("tmp").execute()
     expected = op(df["bool_col"])
@@ -959,14 +949,6 @@ def test_memtable_bool_column(backend, con):
     assert Counter(con.execute(t.a)) == Counter(data)
 
 
-@pytest.mark.broken(
-    ["druid"],
-    raises=(
-        TypeError,  # pandas >=2.1.0
-        AssertionError,  # pandas <2.1.0
-    ),
-    reason="result contains empty strings instead of None",
-)
 def test_memtable_construct(backend, con, monkeypatch):
     pa = pytest.importorskip("pyarrow")
     monkeypatch.setattr(ibis.options, "default_backend", con)
@@ -1366,7 +1348,6 @@ def test_hexdigest(backend, alltypes):
         "pandas",
         "dask",
         "bigquery",
-        "druid",
         "impala",
         "mssql",
         "oracle",
@@ -1389,6 +1370,7 @@ def test_hexdigest(backend, alltypes):
             1672531200,
             marks=[
                 pytest.mark.notyet(["duckdb"], reason="casts to None"),
+                pytest.mark.notyet(["druid"], reason="returns milliseconds"),
                 pytest.mark.notyet(["trino"], raises=TrinoUserError),
                 pytest.mark.broken(["polars"], reason="casts to 1672531200000000000"),
                 pytest.mark.broken(["datafusion"], reason="casts to 1672531200000000"),
@@ -1479,7 +1461,6 @@ def test_try_cast_table(backend, con):
         "dask",
         "bigquery",
         "datafusion",
-        "druid",
         "impala",
         "mssql",
         "mysql",
@@ -1491,14 +1472,15 @@ def test_try_cast_table(backend, con):
         "exasol",
     ]
 )
+@pytest.mark.notimpl(["druid"], strict=False)
 @pytest.mark.parametrize(
     ("from_val", "to_type", "func"),
     [
-        param("a", "float", lambda x: x is None or np.isnan(x)),
+        param("a", "float", pd.isna),
         param(
             datetime.datetime(2023, 1, 1),
             "float",
-            lambda x: x is None or np.isnan(x),
+            pd.isna,
             marks=[
                 pytest.mark.notyet(
                     ["clickhouse", "polars", "flink", "pyspark"],
@@ -1886,7 +1868,7 @@ def test_substitute(backend):
 @pytest.mark.notimpl(
     ["dask", "pandas", "polars"], raises=NotImplementedError, reason="not a SQL backend"
 )
-@pytest.mark.notimpl(["druid", "flink"], reason="no sqlglot dialect", raises=ValueError)
+@pytest.mark.notimpl(["flink"], reason="no sqlglot dialect", raises=ValueError)
 @pytest.mark.notimpl(["exasol"], raises=ValueError, reason="unknown dialect")
 @pytest.mark.notimpl(
     ["risingwave"],

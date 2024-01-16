@@ -234,6 +234,8 @@ class PandasData(DataMapper):
                 if isinstance(v, datetime.datetime):
                     return v.date()
                 elif isinstance(v, str):
+                    if v.endswith("Z"):
+                        return datetime.datetime.fromisoformat(v[:-1]).date()
                     return datetime.date.fromisoformat(v)
                 else:
                     return v

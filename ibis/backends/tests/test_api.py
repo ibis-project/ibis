@@ -5,6 +5,7 @@ from pytest import param
 
 import ibis.expr.types as ir
 from ibis.backends.conftest import TEST_TABLES
+from ibis.backends.tests.errors import PyDruidProgrammingError
 
 
 def test_backend_name(backend):
@@ -12,9 +13,7 @@ def test_backend_name(backend):
     assert backend.api.name == backend.name()
 
 
-@pytest.mark.notimpl(
-    ["druid"], raises=TypeError, reason="'NoneType' object is not iterable"
-)
+@pytest.mark.notyet(["druid"], raises=PyDruidProgrammingError)
 def test_version(backend):
     assert isinstance(backend.api.version, str)
 

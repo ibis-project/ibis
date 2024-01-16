@@ -31,7 +31,7 @@ druid_extensions_loadList=["postgresql-metadata-storage", "druid-multi-stage-que
 druid_zk_service_host=zookeeper
 
 druid_worker_capacity=6
-druid_generic_useDefaultValueForNull=true
+druid_generic_useDefaultValueForNull=false
 
 druid_metadata_storage_host=
 druid_metadata_storage_type=postgresql

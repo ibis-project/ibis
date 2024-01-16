@@ -81,7 +81,7 @@ def time_keyed_right(time_keyed_df2):
     ("direction", "op"), [("backward", operator.ge), ("forward", operator.le)]
 )
 @pytest.mark.notyet(
-    ["datafusion", "snowflake", "trino", "postgres", "mysql", "pyspark"]
+    ["datafusion", "snowflake", "trino", "postgres", "mysql", "pyspark", "druid"]
 )
 def test_asof_join(con, time_left, time_right, time_df1, time_df2, direction, op):
     on = op(time_left["time"], time_right["time"])
@@ -107,7 +107,7 @@ def test_asof_join(con, time_left, time_right, time_df1, time_df2, direction, op
     ["clickhouse"], raises=AssertionError, reason="`time` is truncated to seconds"
 )
 @pytest.mark.notyet(
-    ["datafusion", "snowflake", "trino", "postgres", "mysql", "pyspark"]
+    ["datafusion", "snowflake", "trino", "postgres", "mysql", "pyspark", "druid"]
 )
 def test_keyed_asof_join_with_tolerance(
     con,
