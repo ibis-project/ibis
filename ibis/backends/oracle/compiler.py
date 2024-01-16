@@ -279,6 +279,10 @@ class OracleCompiler(SQLGlotCompiler):
             .eq(0)
         )
 
+    @visit_node.register(ops.Xor)
+    def visit_Xor(self, op, *, left, right):
+        return (left.or_(right)).and_(sg.not_(left.and_(right)))
+
     @visit_node.register(ops.Arbitrary)
     @visit_node.register(ops.ArgMax)
     @visit_node.register(ops.ArgMin)
