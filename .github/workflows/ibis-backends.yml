@@ -151,12 +151,12 @@ jobs:
               - trino
             services:
               - trino
-          # - name: druid
-          #   title: Druid
-          #   extras:
-          #     - druid
-          #   services:
-          #     - druid
+          - name: druid
+            title: Druid
+            extras:
+              - druid
+            services:
+              - druid
           # - name: oracle
           #   title: Oracle
           #   serial: true
@@ -264,14 +264,14 @@ jobs:
                 - trino
               extras:
                 - trino
-          # - os: windows-latest
-          #   backend:
-          #     name: druid
-          #     title: Druid
-          #     extras:
-          #       - druid
-          #     services:
-          #       - druid
+          - os: windows-latest
+            backend:
+              name: druid
+              title: Druid
+              extras:
+                - druid
+              services:
+                - druid
           # - os: windows-latest
           #   backend:
           #     name: oracle
