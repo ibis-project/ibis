@@ -1,7 +1,7 @@
 ---
 title: "Geospatial analysis with Ibis and DuckDB (redux)"
 author: Naty Clementi and Gil Forsyth
-date: 2024-01-09
+date: 2024-01-16
 categories:
   - blog
   - duckdb
