@@ -9,7 +9,6 @@ pytestmark = pytest.mark.skipif(
 )
 
 
-@pytest.mark.notimpl(["druid"])
 def test_dataframe_interchange_no_execute(con, alltypes, mocker):
     t = alltypes.select("int_col", "double_col", "string_col")
     pa_df = t.to_pyarrow().__dataframe__()
@@ -70,7 +69,7 @@ def test_dataframe_interchange_dataframe_methods_execute(con, alltypes, mocker):
     assert to_pyarrow.call_count == 1
 
 
-@pytest.mark.notimpl(["druid", "flink"])
+@pytest.mark.notimpl(["flink"])
 def test_dataframe_interchange_column_methods_execute(con, alltypes, mocker):
     t = alltypes.select("int_col", "double_col", "string_col")
     pa_df = t.to_pyarrow().__dataframe__()

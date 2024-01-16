@@ -18,6 +18,8 @@ if TYPE_CHECKING:
     from collections.abc import Iterable
     from pathlib import Path
 
+    import ibis.expr.types as ir
+
 DRUID_URL = os.environ.get(
     "DRUID_URL", "druid://localhost:8082/druid/v2/sql?header=true"
 )
@@ -101,7 +103,16 @@ class TestConf(ServiceBackendTest):
     supports_json = False  # it does, but we haven't implemented it
     rounding_method = "half_to_even"
     service_name = "druid-middlemanager"
-    deps = ("pydruid.db.sqlalchemy",)
+    deps = ("pydruid.db",)
+
+    @property
+    def functional_alltypes(self) -> ir.Table:
+        t = self.connection.table(
+            self.default_identifier_case_fn("functional_alltypes")
+        )
+        # The parquet loading for booleans appears to be broken in Druid, so
+        # I'm using this as a workaround to make the data match what's on disk.
+        return t.mutate(bool_col=1 - t.id % 2)
 
     @property
     def test_files(self) -> Iterable[Path]:
