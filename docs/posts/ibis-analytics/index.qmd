@@ -39,7 +39,7 @@ they've built.
 
 In this blog, we'll look at how to build an end-to-end analytics project using
 Ibis as the frontend for data in Python. Ibis plays a large part, but is only
-one component in any real data project. 
+one component in any real data project.
 
 We'll combine a variety of open-source tools and freemium services including:
 
@@ -1382,7 +1382,7 @@ IPython 8.20.0 -- An enhanced Interactive Python. Type '?' for help.
 INFO:root:database: md:ibis_analytics
 
 [ins] In [1]: con.list_tables()
-Out[1]: 
+Out[1]:
 ['backends',
  'commits',
  'downloads',
@@ -1397,7 +1397,7 @@ Out[1]:
 [ins] In [2]: t = con.table("stars")
 
 [ins] In [3]: t.schema()
-Out[3]: 
+Out[3]:
 ibis.Schema {
   starred_at   timestamp
   id           string
@@ -1412,7 +1412,7 @@ ibis.Schema {
 [ins] In [4]: t = t.select("starred_at", "login", "company")
 
 [ins] In [5]: t.filter(t.company.lower().contains("voltron"))
-Out[5]: 
+Out[5]:
 ┏━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━┓
 ┃ starred_at          ┃ login               ┃ company      ┃
 ┡━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━┩
@@ -1441,7 +1441,7 @@ Out[5]:
 │ …                   │ …                   │ …            │
 └─────────────────────┴─────────────────────┴──────────────┘
 
-[ins] In [6]: 
+[ins] In [6]:
 ```
 
 Or I can add `from eda import *` in a `untitled.ipynb` for a classic notebook
