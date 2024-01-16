@@ -269,6 +269,16 @@ class OracleCompiler(SQLGlotCompiler):
             return self.f.count(self.if_(where, 1, NULL))
         return self.f.count(STAR)
 
+    @visit_node.register(ops.IdenticalTo)
+    def visit_IdenticalTo(self, op, *, left, right):
+        # sqlglot NullSafeEQ uses "is not distinct from" which isn't supported in oracle
+        return (
+            sg.case()
+            .when(left.eq(right).or_(left.is_(NULL).and_(right.is_(NULL))), 0)
+            .else_(1)
+            .eq(0)
+        )
+
     @visit_node.register(ops.Arbitrary)
     @visit_node.register(ops.ArgMax)
     @visit_node.register(ops.ArgMin)
