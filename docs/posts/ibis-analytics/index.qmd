@@ -15,9 +15,8 @@ categories:
 As a Python data user, I've wanted a more modular, composable, and scalable
 ecosystem. *I think it's here*. Wes McKinney released pandas c. 2009 to bring
 dataframes into Python and it became one of the most used software packages. It
-was built when small data was smaller and though still an excellent dataframe
-library today has some downsides [Wes wrote about in his "Apache Arrow and the
-'10 things I hate about pandas'" blog
+was built when small data was smaller and has some downsides [Wes wrote about in
+his "Apache Arrow and the '10 things I hate about pandas'" blog
 post](https://wesmckinney.com/blog/apache-arrow-pandas-internals). Wes created
 Ibis (and co-created Apache Arrow) to address these issues and more with a
 different approach than any other Python dataframe library by decoupling the
@@ -74,7 +73,7 @@ standard frontend for data in Python that scales to your backend. To understand
 the project's health, we want to track some key adoption metrics. There was
 already a dashboard internally at Voltron Data, but it was written in R and I
 don't know R. I do know Ibis and a few other OSS tools, and saw this as a cool
-opportunity to try out a few more and showcase Ibis in a real-world project.
+opportunity to try out a few more while showcasing Ibis in a real-world project.
 
 Let's get started!
 
@@ -135,7 +134,10 @@ Cloud server. The dashboard deployed there updates automatically when the data
 is updated. Finally, we can run some tests by executing the dashboard code.
 
 For the most part, you just need a Python environment with `pip` installs
-including:
+including Ibis and a few other packages.
+
+<details>
+<summary>Python `pip install` requirements</summary>
 
 ```txt
 # python
@@ -162,9 +164,11 @@ dagster
 dagster-webserver
 ```
 
-and various environment variables set to access the data sources and cloud
-services. These are stored in a `.env` file or set in the respective cloud
-services (GitHub Actions secrets and Streamlit Community Cloud secrets).
+</details>
+
+Various environment variables set to access the data sources and cloud
+services are stored in a `.env` file and set in the respective cloud services
+(GitHub Actions secrets and Streamlit Community Cloud secrets).
 
 ### Configuration
 
@@ -216,7 +220,10 @@ url = "https://ibis-project.zulipchat.com"
 ### Automation
 
 Anything run frequently is put in a `justfile`. This makes it easy to run the
-same code locally or in a GitHub Action. This currently includes:
+same code locally or in a GitHub Action.
+
+<details>
+<summary>Show the `justfile` of project commands</summary>
 
 ```makefile
 # justfile
@@ -305,6 +312,8 @@ open-dash:
 cicd:
     @gh workflow run cicd.yaml
 ```
+
+</details>
 
 Then our CI/CD workflow in `cicd.yaml` is just:
 
@@ -433,7 +442,10 @@ data/ingest/
 ```
 
 This runs a Python data ingestion script and takes a few minutes. It's not the
-best code, but it works:
+best code, but it works!
+
+<details>
+<summary>Show the data ingestion script</summary>
 
 ```{.python}
 import os
@@ -799,6 +811,8 @@ if __name__ == "__main__":
     main()
 ```
 
+</details>
+
 Python's `requests` module is used for web API calls to GitHub's REST and
 GraphQL APIs. The Zulip Python client is used for extracting data from there.
 Both of these sets of data are saved as JSON files, which we can read in with
@@ -862,8 +876,11 @@ dag/assets/
 ```
 
 Ibis makes data input/output management easy with file formats or tables in
-backends. I define the following table IO managers and use the `DuckDBIOManager`
-as the default for the project:
+backends. I define some table IO managers and use the `DuckDBIOManager` as the
+default for the project.
+
+<details>
+<summary>Show the input/output management code</summary>
 
 ```{.python}
 import os
@@ -959,8 +976,9 @@ class DuckDBIOManager(ConfigurableIOManager):
         return dirname, filename
 ```
 
-With this setup, we can swap file formats or backends for storage as desired.
+</details>
 
+With this setup, we can swap file formats or backends for storage as desired.
 After executing the DAG, the following data is written to our local filesystem:
 
 ```bash
@@ -1231,7 +1249,11 @@ def load_downloads(transform_downloads):
 ## Postprocess
 
 We run a postprocessing script to combine the separate data into a single DuckDB
-database:
+database. This step is not necessary, but it makes it easier to query the data
+locally from a single Ibis connection.
+
+<details>
+<summary>Show the postprocessing script</summary>
 
 ```{.python}
 import os
@@ -1291,8 +1313,10 @@ if __name__ == "__main__":
     main()
 ```
 
-This also backs up the data as Delta Lake tables for good measure. After this,
-our data directory looks like:
+</details>
+
+This script also backs up the data as Delta Lake tables for good measure. After
+this, our data directory looks like:
 
 ```bash
 data/
