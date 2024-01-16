@@ -427,7 +427,8 @@ data/ingest/
     └── messages.json
 ```
 
-This runs a Python data ingestion script and takes a few minutes. It's not the best code, but it works:
+This runs a Python data ingestion script and takes a few minutes. It's not the
+best code, but it works:
 
 ```{.python}
 # imports
@@ -1073,7 +1074,8 @@ def add_ingested_at(t, ingested_at=now()):
     return t
 ```
 
-These are imported as `from dag import functions as f` by convention in the project.
+These are imported as `from dag import functions as f` by convention in the
+project.
 
 ### Extract
 
@@ -1137,7 +1139,9 @@ use downstream in the DAG.
 
 ### Transform
 
-With the data extracted, we can now transform it into its desired shape for downstream analytics. The most interesting transformation code is the PyPI data, shown here:
+With the data extracted, we can now transform it into its desired shape for
+downstream analytics. The most interesting transformation code is the PyPI data,
+shown here:
 
 ```{.python}
 # imports
@@ -1203,7 +1207,10 @@ database files for use downstream in the DAG.
 
 ### Load
 
-Honestly this step isn't doing anything. It could use Ibis to directly upload the tables to MotherDuck, but as implemented these assets are just passing through the transformed data. This is a bit wasteful but allows for a three-stage DAG that conforms to the ETL paradigm.
+Honestly this step isn't doing anything. It could use Ibis to directly upload
+the tables to MotherDuck, but as implemented these assets are just passing
+through the transformed data. This is a bit wasteful but allows for a
+three-stage DAG that conforms to the ETL paradigm.
 
 ```{.python}
 # imports
@@ -1224,7 +1231,8 @@ def load_downloads(transform_downloads):
 
 ## Postprocess
 
-We run a postprocessing script to combine the separate data into a single DuckDB database:
+We run a postprocessing script to combine the separate data into a single DuckDB
+database:
 
 ```{.python}
 # imports
@@ -1449,7 +1457,9 @@ experience in VSCode, which I prefer when plotting or just saving my work.
 
 ## Defining metrics and dashboarding
 
-The EDA makes it easy to iteratively define metrics and plot the data. Once I've settled on the code I want, I add it to `metrics.py` with sufficient comments to make it appear in the Streamlit dashboard.
+The EDA makes it easy to iteratively define metrics and plot the data. Once I've
+settled on the code I want, I add it to `metrics.py` with sufficient comments to
+make it appear in the Streamlit dashboard.
 
 ```{.python}
 # imports
