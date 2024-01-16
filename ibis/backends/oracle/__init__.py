@@ -26,10 +26,10 @@ import ibis
 import ibis.common.exceptions as exc
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
-import ibis.expr.schema as sch  # noqa: E402
+import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis import util
-from ibis.backends.base.sqlglot import STAR, SQLGlotBackend  # noqa: E402
+from ibis.backends.base.sqlglot import STAR, SQLGlotBackend
 from ibis.backends.base.sqlglot.compiler import TRUE, C
 from ibis.backends.oracle.compiler import OracleCompiler
 
@@ -38,43 +38,6 @@ if TYPE_CHECKING:
 
     import pandas as pd
     import pyrrow as pa
-
-
-# class OracleExprTranslator(AlchemyExprTranslator):
-#     _registry = operation_registry.copy()
-#     _rewrites = AlchemyExprTranslator._rewrites.copy()
-#     _dialect_name = "oracle"
-#     _has_reduction_filter_syntax = False
-#     _require_order_by = (
-#         *AlchemyExprTranslator._require_order_by,
-#         ops.Reduction,
-#         ops.Lag,
-#         ops.Lead,
-#     )
-
-#     _forbids_frame_clause = (
-#         *AlchemyExprTranslator._forbids_frame_clause,
-#         ops.Lag,
-#         ops.Lead,
-#     )
-
-#     _quote_column_names = True
-#     _quote_table_names = True
-
-#     type_mapper = OracleType
-
-
-# class OracleCompiler(AlchemyCompiler):
-#     translator_class = OracleExprTranslator
-#     support_values_syntax_in_select = False
-#     supports_indexed_grouping_keys = False
-#     null_limit = None
-#     rewrites = AlchemyCompiler.rewrites | rewrite_sample
-
-# supports_create_or_replace = False
-# supports_temporary_tables = True
-# _temporary_prefix = "GLOBAL TEMPORARY"
-#
 
 
 class Backend(SQLGlotBackend):
@@ -391,7 +354,7 @@ class Backend(SQLGlotBackend):
             ).sql(self.name, pretty=True)
 
             data = op.data.to_frame().itertuples(index=False)
-            specs = ", ".join("?" * len(schema))
+            specs = ", ".join(f":{i}" for i, _ in enumerate(schema))
             table = sg.table(name, quoted=quoted).sql(self.name)
             insert_stmt = f"INSERT INTO {table} VALUES ({specs})"
             with self.begin() as cur:
