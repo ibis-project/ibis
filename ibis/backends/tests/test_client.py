@@ -1023,16 +1023,7 @@ def test_dunder_array_column(alltypes, dtype):
     np.testing.assert_array_equal(result, expected)
 
 
-@pytest.mark.parametrize(
-    "interactive",
-    [
-        param(
-            True,
-            marks=pytest.mark.notimpl(["flink"], raises=NotImplementedError),
-        ),
-        False,
-    ],
-)
+@pytest.mark.parametrize("interactive", [True, False])
 def test_repr(alltypes, interactive, monkeypatch):
     monkeypatch.setattr(ibis.options, "interactive", interactive)
 
@@ -1048,7 +1039,6 @@ def test_repr(alltypes, interactive, monkeypatch):
 
 
 @pytest.mark.parametrize("show_types", [True, False])
-@pytest.mark.notimpl(["flink"], raises=NotImplementedError)
 def test_interactive_repr_show_types(alltypes, show_types, monkeypatch):
     monkeypatch.setattr(ibis.options, "interactive", True)
     monkeypatch.setattr(ibis.options.repr.interactive, "show_types", show_types)
@@ -1062,7 +1052,6 @@ def test_interactive_repr_show_types(alltypes, show_types, monkeypatch):
 
 
 @pytest.mark.parametrize("is_jupyter", [True, False])
-@pytest.mark.notimpl(["flink"], raises=NotImplementedError)
 def test_interactive_repr_max_columns(alltypes, is_jupyter, monkeypatch):
     monkeypatch.setattr(ibis.options, "interactive", True)
 
@@ -1101,16 +1090,7 @@ def test_interactive_repr_max_columns(alltypes, is_jupyter, monkeypatch):
 
 
 @pytest.mark.parametrize("expr_type", ["table", "column"])
-@pytest.mark.parametrize(
-    "interactive",
-    [
-        param(
-            True,
-            marks=pytest.mark.notimpl(["flink"], raises=NotImplementedError),
-        ),
-        False,
-    ],
-)
+@pytest.mark.parametrize("interactive", [True, False])
 def test_repr_mimebundle(alltypes, interactive, expr_type, monkeypatch):
     monkeypatch.setattr(ibis.options, "interactive", interactive)
 

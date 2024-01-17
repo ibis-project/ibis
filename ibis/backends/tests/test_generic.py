@@ -22,6 +22,7 @@ from ibis.backends.tests.errors import (
     ExaQueryError,
     GoogleBadRequest,
     ImpalaHiveServer2Error,
+    Py4JJavaError,
 )
 from ibis.common.annotations import ValidationError
 
@@ -758,7 +759,11 @@ def test_between(backend, alltypes, df):
 
 
 @pytest.mark.notimpl(["druid"])
-@pytest.mark.notimpl(["flink"], raises=NotImplementedError)
+@pytest.mark.notimpl(
+    ["flink"],
+    raises=Py4JJavaError,
+    reason="Flink does not support now() - t.`timestamp_col`",
+)
 def test_interactive(alltypes, monkeypatch):
     monkeypatch.setattr(ibis.options, "interactive", True)
 

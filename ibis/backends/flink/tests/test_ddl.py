@@ -5,6 +5,7 @@ import tempfile
 from pathlib import Path
 
 import pandas as pd
+import pandas.testing as tm
 import pyarrow as pa
 import pytest
 
@@ -552,3 +553,48 @@ def test_read_json(con, data_dir, tmp_path, table_name):
 
     con.drop_table(table_name)
     assert table_name not in con.list_tables()
+
+
+@pytest.fixture(scope="module")
+def functional_alltypes(con):
+    return con.table("functional_alltypes")
+
+
+@pytest.mark.parametrize(
+    "table_name",
+    [
+        "astronauts",
+        "awards_players",
+        "diamonds",
+        "functional_alltypes",
+    ],
+)
+def test_to_csv(con, functional_alltypes, tmp_path, table_name):
+    table = con.table(table_name)
+    out_path = tmp_path / "out.csv"
+    con.to_csv(table, out_path)
+
+    source_df = table.to_pandas()
+    out_df = pd.read_csv(out_path)
+
+    assert source_df.shape == out_df.shape
+
+
+@pytest.mark.parametrize(
+    "table_name",
+    [
+        "astronauts",
+        "awards_players",
+        "diamonds",
+        "functional_alltypes",
+    ],
+)
+def test_to_parquet(con, tmp_path, table_name):
+    table = con.table(table_name)
+    out_path = tmp_path / "out.parquet"
+    con.to_parquet(table, out_path)
+
+    source_df = table.to_pandas()
+    out_df = pd.read_parquet(out_path)
+
+    tm.assert_frame_equal(source_df, out_df)

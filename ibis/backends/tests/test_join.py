@@ -330,7 +330,6 @@ outer_join_nullability_failures = [
     raises=sa.exc.NoSuchTableError,
     reason="`win` table isn't loaded",
 )
-@pytest.mark.notimpl(["flink"], reason="`win` table isn't loaded")
 @pytest.mark.parametrize(
     ("how", "nrows", "gen_right", "keys"),
     [

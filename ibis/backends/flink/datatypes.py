@@ -1,10 +1,15 @@
 from __future__ import annotations
 
-from pyflink.table.types import DataType, DataTypes, RowType
+from typing import TYPE_CHECKING
+
+from pyflink.table.types import DataType, DataTypes, RowType, _from_java_data_type
 
 import ibis.expr.datatypes as dt
 import ibis.expr.schema as sch
 from ibis.formats import SchemaMapper, TypeMapper
+
+if TYPE_CHECKING:
+    from pyflink.table import TableSchema
 
 
 class FlinkRowSchema(SchemaMapper):
@@ -48,7 +53,10 @@ class FlinkType(TypeMapper):
         elif typ == DataTypes.TIME():
             return dt.Time(nullable=nullable)
         elif typ == DataTypes.TIMESTAMP():
-            return dt.Timestamp(nullable=nullable)
+            return dt.Timestamp(
+                scale=typ.precision,
+                nullable=nullable,
+            )
         else:
             return super().to_ibis(typ, nullable=nullable)
 
@@ -88,10 +96,54 @@ class FlinkType(TypeMapper):
         elif dtype.is_time():
             return DataTypes.TIME(nullable=dtype.nullable)
         elif dtype.is_timestamp():
-            return DataTypes.TIMESTAMP(nullable=dtype.nullable)
+            # Note (mehmet): If `precision` is None, set it to 6.
+            # This is because `DataTypes.TIMESTAMP` throws TypeError
+            # if `precision` is None, and assumes `precision = 6`
+            # if it is not provided.
+            return DataTypes.TIMESTAMP(
+                precision=dtype.scale if dtype.scale else 6,
+                nullable=dtype.nullable,
+            )
         else:
             return super().from_ibis(dtype)
 
     @classmethod
     def to_string(cls, dtype: dt.DataType) -> str:
         return cls.from_ibis(dtype).type_name()
+
+
+def get_field_data_types(pyflink_schema: TableSchema) -> list[DataType]:
+    """Returns all field data types in `pyflink_schema` as a list.
+
+    This is a re-implementation of `get_field_data_types()` available for PyFlink
+    schemas. PyFlink's implementation currently supports only `precision = 3` for
+    `TimestampType` (for some reason that we could not figure out -- might be just
+    a bug). The lack of precision support led to an error due to unmatched schemas
+    for batches and the file to write in `to_csv()` and `to_parquet()`.
+
+    :return: A list of all field data types.
+    """
+    from pyflink.java_gateway import get_gateway
+    from pyflink.util.java_utils import is_instance_of
+
+    gateway = get_gateway()
+
+    data_type_list = []
+    for j_data_type in pyflink_schema._j_table_schema.getFieldDataTypes():
+        if not is_instance_of(j_data_type, gateway.jvm.AtomicDataType):
+            data_type = _from_java_data_type(j_data_type)
+
+        else:
+            logical_type = j_data_type.getLogicalType()
+            if is_instance_of(logical_type, gateway.jvm.TimestampType):
+                data_type = DataTypes.TIMESTAMP(
+                    precision=logical_type.getPrecision(),
+                    nullable=logical_type.isNullable(),
+                )
+
+            else:
+                data_type = _from_java_data_type(j_data_type)
+
+        data_type_list.append(data_type)
+
+    return data_type_list

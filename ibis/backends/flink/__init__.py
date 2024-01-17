@@ -3,6 +3,7 @@ from __future__ import annotations
 from functools import lru_cache
 from typing import TYPE_CHECKING, Any
 
+import pyarrow as pa
 import sqlglot as sg
 
 import ibis.common.exceptions as exc
@@ -22,6 +23,7 @@ from ibis.backends.flink.ddl import (
     InsertSelect,
     RenameTable,
 )
+from ibis.backends.tests.errors import Py4JJavaError
 from ibis.util import gen_name
 
 if TYPE_CHECKING:
@@ -29,8 +31,7 @@ if TYPE_CHECKING:
     from pathlib import Path
 
     import pandas as pd
-    import pyarrow as pa
-    from pyflink.table import TableEnvironment
+    from pyflink.table import Table, TableEnvironment
     from pyflink.table.table_result import TableResult
 
     from ibis.api import Watermark
@@ -272,11 +273,16 @@ class Backend(BaseBackend, CanCreateDatabase):
         """
         from pyflink.table.types import create_arrow_schema
 
+        from ibis.backends.flink.datatypes import get_field_data_types
+
         qualified_name = self._fully_qualified_name(table_name, catalog, database)
         table = self._table_env.from_path(qualified_name)
-        schema = table.get_schema()
+        pyflink_schema = table.get_schema()
+
         return sch.Schema.from_pyarrow(
-            create_arrow_schema(schema.get_field_names(), schema.get_field_data_types())
+            create_arrow_schema(
+                pyflink_schema.get_field_names(), get_field_data_types(pyflink_schema)
+            )
         )
 
     @property
@@ -852,4 +858,130 @@ class Backend(BaseBackend, CanCreateDatabase):
             "No operation is being performed. Either the obj parameter "
             "is not a pandas DataFrame or is not a ibis Table."
             f"The given obj is of type {type(obj).__name__} ."
+        )
+
+    def to_pyarrow(
+        self,
+        expr: ir.Expr,
+        *,
+        params: Mapping[ir.Scalar, Any] | None = None,
+        limit: int | str | None = None,
+        **kwargs: Any,
+    ) -> pa.Table:
+        pyarrow_batches = self.to_pyarrow_batches(
+            expr, params=params, limit=limit, **kwargs
+        )
+
+        try:
+            pa_table = pa.Table.from_batches(pyarrow_batches)
+
+        except ValueError as err:
+            if err.args[0] == "Must pass schema, or at least one RecordBatch":
+                ibis_table = expr.as_table()
+                ibis_schema = ibis_table.schema()
+                arrow_schema = ibis_schema.to_pyarrow()
+                pa_table = pa.Table.from_batches(pyarrow_batches, schema=arrow_schema)
+            else:
+                raise ValueError(
+                    "Could not convert PyArrow batches to PyArrow Table "
+                    "due to an unexpected error."
+                )
+
+        return expr.__pyarrow_result__(pa_table)
+
+    def to_pyarrow_batches(
+        self,
+        expr: ir.Table,
+        *,
+        params: Mapping[ir.Scalar, Any] | None = None,
+        chunk_size: int | None = None,
+        limit: int | str | None = None,
+        **kwargs: Any,
+    ):
+        ibis_table = expr.as_table()
+
+        if params is None and limit is None:
+            # Note (mehmet): `_from_pyflink_table_to_pyarrow_batches()` does not
+            # support args `params` and `limit`.
+            pyflink_table = self._from_ibis_table_to_pyflink_table(ibis_table)
+            if pyflink_table:
+                # Note (mehmet): `_from_pyflink_table_to_pyarrow_batches()` supports
+                # only expressions that are registered as tables in Flink.
+                return self._from_pyflink_table_to_pyarrow_batches(
+                    table=pyflink_table,
+                    chunk_size=chunk_size,
+                )
+
+        # Note (mehmet): In the following, the entire result is fetched
+        # into a dataframe before converting it to arrow batches.
+        df = self.execute(ibis_table, limit=limit, **kwargs)
+        # TODO (mehmet): `limit` is discarded in `execute()`. Is this intentional?
+        df = df.head(limit)
+
+        ibis_schema = ibis_table.schema()
+        arrow_schema = ibis_schema.to_pyarrow()
+        arrow_table = pa.Table.from_pandas(df, schema=arrow_schema)
+        return arrow_table.to_reader()
+
+    def _from_ibis_table_to_pyflink_table(self, table: ir.Table) -> Table | None:
+        try:
+            table_name = table.get_name()
+        except AttributeError:
+            # `table` is not a registered table in Flink.
+            return None
+
+        qualified_name = self._fully_qualified_name(table_name)
+        try:
+            return self._table_env.from_path(qualified_name)
+        except Py4JJavaError:
+            # `table` is not a registered table in Flink.
+            return None
+
+    def _from_pyflink_table_to_pyarrow_batches(
+        self,
+        table: Table,
+        *,
+        chunk_size: int | None = None,
+    ):
+        # Note (mehmet): Implementation of this is based on
+        # pyflink/table/table.py: to_pandas().
+
+        import pytz
+        from pyflink.java_gateway import get_gateway
+        from pyflink.table.serializers import ArrowSerializer
+        from pyflink.table.types import create_arrow_schema
+
+        from ibis.backends.flink.datatypes import get_field_data_types
+
+        pa = self._import_pyarrow()
+
+        gateway = get_gateway()
+        if chunk_size:
+            max_arrow_batch_size = chunk_size
+        else:
+            max_arrow_batch_size = (
+                table._j_table.getTableEnvironment()
+                .getConfig()
+                .get(
+                    gateway.jvm.org.apache.flink.python.PythonOptions.MAX_ARROW_BATCH_SIZE
+                )
+            )
+        batches_iterator = gateway.jvm.org.apache.flink.table.runtime.arrow.ArrowUtils.collectAsPandasDataFrame(
+            table._j_table, max_arrow_batch_size
+        )
+
+        pyflink_schema = table.get_schema()
+        arrow_schema = create_arrow_schema(
+            pyflink_schema.get_field_names(), get_field_data_types(pyflink_schema)
+        )
+
+        timezone = pytz.timezone(
+            table._j_table.getTableEnvironment().getConfig().getLocalTimeZone().getId()
+        )
+        serializer = ArrowSerializer(
+            arrow_schema, pyflink_schema.to_row_data_type(), timezone
+        )
+
+        return pa.RecordBatchReader.from_batches(
+            arrow_schema, serializer.load_from_iterator(batches_iterator)
         )
