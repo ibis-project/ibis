@@ -20,11 +20,10 @@ limit = [
         marks=[
             pytest.mark.notimpl(
                 [
-                    # limit not implemented for pandas backend execution
+                    # limit not implemented for flink and pandas backend execution
                     "dask",
                     "pandas",
                     "pyspark",
-                    "flink",
                 ]
             ),
         ],
@@ -35,7 +34,6 @@ no_limit = [
     param(
         None,
         id="nolimit",
-        marks=pytest.mark.notimpl(["flink"]),
     )
 ]
 
@@ -103,7 +101,7 @@ def test_scalar_to_pyarrow_scalar(limit, awards_players):
     assert isinstance(scalar, pa.Scalar)
 
 
-@pytest.mark.notimpl(["druid", "flink", "exasol"])
+@pytest.mark.notimpl(["druid", "exasol"])
 def test_table_to_pyarrow_table_schema(awards_players):
     table = awards_players.to_pyarrow()
     assert isinstance(table, pa.Table)
@@ -122,7 +120,6 @@ def test_table_to_pyarrow_table_schema(awards_players):
     assert table.schema == expected_schema
 
 
-@pytest.mark.notimpl(["flink"])
 def test_column_to_pyarrow_table_schema(awards_players):
     expr = awards_players.awardID
     array = expr.to_pyarrow()
@@ -162,7 +159,7 @@ def test_column_pyarrow_batch_chunk_size(awards_players):
         util.consume(batch_reader)
 
 
-@pytest.mark.notimpl(["pandas", "dask", "flink"])
+@pytest.mark.notimpl(["pandas", "dask"])
 @pytest.mark.broken(
     ["pyspark"], raises=AssertionError, reason="chunk_size isn't respected"
 )
@@ -182,7 +179,6 @@ def test_to_pyarrow_batches_borked_types(batting):
         util.consume(batch_reader)
 
 
-@pytest.mark.notimpl(["flink"])
 def test_to_pyarrow_memtable(con):
     expr = ibis.memtable({"x": [1, 2, 3]})
     table = con.to_pyarrow(expr)
@@ -190,7 +186,6 @@ def test_to_pyarrow_memtable(con):
     assert len(table) == 3
 
 
-@pytest.mark.notimpl(["flink"])
 def test_to_pyarrow_batches_memtable(con):
     expr = ibis.memtable({"x": [1, 2, 3]})
     n = 0
@@ -201,7 +196,6 @@ def test_to_pyarrow_batches_memtable(con):
     assert n == 3
 
 
-@pytest.mark.notimpl(["flink"])
 def test_table_to_parquet(tmp_path, backend, awards_players):
     outparquet = tmp_path / "out.parquet"
     awards_players.to_parquet(outparquet)
@@ -211,7 +205,6 @@ def test_table_to_parquet(tmp_path, backend, awards_players):
     backend.assert_frame_equal(awards_players.to_pandas(), df)
 
 
-@pytest.mark.notimpl(["flink"])
 @pytest.mark.notimpl(
     ["duckdb"],
     reason="cannot inline WriteOptions objects",
@@ -276,7 +269,6 @@ def test_roundtrip_partitioned_parquet(tmp_path, con, backend, awards_players):
     backend.assert_frame_equal(reingest.to_pandas(), awards_players.to_pandas())
 
 
-@pytest.mark.notimpl(["flink"], reason="No support for exporting files")
 @pytest.mark.parametrize("ftype", ["csv", "parquet"])
 def test_memtable_to_file(tmp_path, con, ftype, monkeypatch):
     """
@@ -297,7 +289,7 @@ def test_memtable_to_file(tmp_path, con, ftype, monkeypatch):
     assert outfile.is_file()
 
 
-@pytest.mark.notimpl(["flink", "exasol"])
+@pytest.mark.notimpl(["exasol"])
 def test_table_to_csv(tmp_path, backend, awards_players):
     outcsv = tmp_path / "out.csv"
 
@@ -311,7 +303,7 @@ def test_table_to_csv(tmp_path, backend, awards_players):
     backend.assert_frame_equal(awards_players.to_pandas(), df)
 
 
-@pytest.mark.notimpl(["flink", "exasol"])
+@pytest.mark.notimpl(["exasol"])
 @pytest.mark.notimpl(
     ["duckdb"],
     reason="cannot inline WriteOptions objects",
@@ -337,7 +329,6 @@ def test_table_to_csv_writer_kwargs(delimiter, tmp_path, awards_players):
             id="decimal128",
             marks=[
                 pytest.mark.notyet(["druid"], raises=sa.exc.ProgrammingError),
-                pytest.mark.notyet(["flink"], raises=NotImplementedError),
                 pytest.mark.notyet(["exasol"], raises=sa.exc.DBAPIError),
             ],
         ),
@@ -359,7 +350,6 @@ def test_table_to_csv_writer_kwargs(delimiter, tmp_path, awards_players):
                     raises=PySparkAnalysisException,
                     reason="precision is out of range",
                 ),
-                pytest.mark.notyet(["flink"], raises=NotImplementedError),
                 pytest.mark.notyet(["exasol"], raises=sa.exc.DBAPIError),
             ],
         ),
@@ -378,6 +368,7 @@ def test_to_pyarrow_decimal(backend, dtype, pyarrow_dtype):
 
 @pytest.mark.notyet(
     [
+        "flink",
         "impala",
         "mysql",
         "oracle",
@@ -387,7 +378,6 @@ def test_to_pyarrow_decimal(backend, dtype, pyarrow_dtype):
         "bigquery",
         "dask",
         "trino",
-        "flink",
         "exasol",
     ],
     raises=NotImplementedError,
@@ -424,7 +414,6 @@ def test_roundtrip_delta(backend, con, alltypes, tmp_path, monkeypatch):
 @pytest.mark.notimpl(
     ["druid"], raises=AttributeError, reason="string type is used for timestamp_col"
 )
-@pytest.mark.notimpl(["flink"], raises=NotImplementedError)
 def test_arrow_timestamp_with_time_zone(alltypes):
     t = alltypes.select(
         tz=alltypes.timestamp_col.cast(
@@ -472,7 +461,6 @@ def test_empty_memtable(backend, con):
     backend.assert_frame_equal(result, expected)
 
 
-@pytest.mark.notimpl(["flink"])
 def test_to_pandas_batches_empty_table(backend, con):
     t = backend.functional_alltypes.limit(0)
     n = t.count().execute()
@@ -481,7 +469,7 @@ def test_to_pandas_batches_empty_table(backend, con):
     assert sum(map(len, t.to_pandas_batches())) == n
 
 
-@pytest.mark.notimpl(["druid", "flink"])
+@pytest.mark.notimpl(["druid"])
 @pytest.mark.parametrize(
     "n",
     [param(None, marks=pytest.mark.notimpl(["exasol"], raises=sa.exc.CompileError)), 1],
@@ -494,7 +482,6 @@ def test_to_pandas_batches_nonempty_table(backend, con, n):
     assert sum(map(len, t.to_pandas_batches())) == n
 
 
-@pytest.mark.notimpl(["flink"])
 @pytest.mark.parametrize(
     "n",
     [
@@ -512,7 +499,7 @@ def test_to_pandas_batches_column(backend, con, n):
     assert sum(map(len, t.to_pandas_batches())) == n
 
 
-@pytest.mark.notimpl(["druid", "flink"])
+@pytest.mark.notimpl(["druid"])
 def test_to_pandas_batches_scalar(backend, con):
     t = backend.functional_alltypes.timestamp_col.max()
     expected = t.execute()
