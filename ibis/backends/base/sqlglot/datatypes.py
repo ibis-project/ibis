@@ -631,6 +631,10 @@ class SnowflakeType(SqlglotType):
 class SQLiteType(SqlglotType):
     dialect = "sqlite"
 
+    @classmethod
+    def _from_sqlglot_FLOAT(cls) -> dt.Float64:
+        return dt.Float64(nullable=cls.default_nullable)
+
 
 class ImpalaType(SqlglotType):
     dialect = "impala"

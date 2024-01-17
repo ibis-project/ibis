@@ -6,6 +6,7 @@ import sqlglot as sg
 import sqlglot.expressions as sge
 from public import public
 
+import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 from ibis.backends.base.sqlglot.compiler import SQLGlotCompiler
 from ibis.backends.base.sqlglot.datatypes import SQLiteType
@@ -17,6 +18,10 @@ class SQLiteCompiler(SQLGlotCompiler):
 
     dialect = "sqlite"
     type_mapper = SQLiteType
+
+    NAN = sge.NULL
+    POS_INF = sge.Literal.number("1e999")
+    NEG_INF = sge.Literal.number("-1e999")
 
     def _aggregate(self, funcname: str, *args, where):
         expr = self.f[funcname](*args)
@@ -32,6 +37,8 @@ class SQLiteCompiler(SQLGlotCompiler):
     @visit_node.register(ops.RegexSplit)
     @visit_node.register(ops.StringSplit)
     @visit_node.register(ops.ArrayStringJoin)
+    @visit_node.register(ops.IsNan)
+    @visit_node.register(ops.IsInf)
     def visit_Undefined(self, op, **kwargs):
         return super().visit_Undefined(op, **kwargs)
 
@@ -76,6 +83,39 @@ class SQLiteCompiler(SQLGlotCompiler):
             return self.f._ibis_extract_full_query(arg)
         return self.f._ibis_extract_query(arg, key)
 
+    @visit_node.register(ops.Greatest)
+    def visit_Greatest(self, op, *, arg):
+        return self.f.max(*arg)
+
+    @visit_node.register(ops.Least)
+    def visit_Least(self, op, *, arg):
+        return self.f.min(*arg)
+
+    @visit_node.register(ops.Clip)
+    def visit_Clip(self, op, *, arg, lower, upper):
+        if upper is not None:
+            arg = self.if_(arg.is_(sge.NULL), arg, self.f.min(upper, arg))
+
+        if lower is not None:
+            arg = self.if_(arg.is_(sge.NULL), arg, self.f.max(lower, arg))
+
+        return arg
+
+    @visit_node.register(ops.RandomScalar)
+    def visit_RandomScalar(self, op):
+        return self.f.random() / sge.Literal.number(float(-1 << 64))
+
+    @visit_node.register(ops.Cot)
+    def visit_Cot(self, op, *, arg):
+        return 1 / self.f.tan(arg)
+
+    def visit_NonNullLiteral(self, op, *, value, dtype):
+        if dtype.is_decimal():
+            return super().visit_NonNullLiteral(
+                op, value=float(value), dtype=dt.double(nullable=dtype.nullable)
+            )
+        return None
+
 
 _SIMPLE_OPS = {
     ops.RegexReplace: "_ibis_sqlite_regex_replace",
@@ -94,6 +134,10 @@ _SIMPLE_OPS = {
     ops.ExtractPath: "_ibis_extract_path",
     ops.ExtractProtocol: "_ibis_extract_protocol",
     ops.ExtractUserInfo: "_ibis_extract_user_info",
+    ops.BitwiseXor: "_ibis_sqlite_xor",
+    ops.BitwiseNot: "_ibis_sqlite_inv",
+    ops.Modulus: "mod",
+    ops.TypeOf: "typeof",
 }
 
 

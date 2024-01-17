@@ -238,7 +238,7 @@ def test_numeric_literal(con, backend, expr, expected_types):
             {
                 "bigquery": decimal.Decimal("1.1"),
                 "snowflake": decimal.Decimal("1.1"),
-                "sqlite": 1.1,
+                "sqlite": decimal.Decimal("1.1"),
                 "trino": decimal.Decimal("1.1"),
                 "dask": decimal.Decimal("1.1"),
                 "exasol": decimal.Decimal("1"),
@@ -280,7 +280,7 @@ def test_numeric_literal(con, backend, expr, expected_types):
             {
                 "bigquery": decimal.Decimal("1.1"),
                 "snowflake": decimal.Decimal("1.1"),
-                "sqlite": 1.1,
+                "sqlite": decimal.Decimal("1.1"),
                 "trino": decimal.Decimal("1.1"),
                 "duckdb": decimal.Decimal("1.100000000"),
                 "impala": decimal.Decimal("1.1"),
@@ -315,7 +315,7 @@ def test_numeric_literal(con, backend, expr, expected_types):
             # TODO(krzysztof-kwitt): Should we unify it?
             {
                 "bigquery": decimal.Decimal("1.1"),
-                "sqlite": 1.1,
+                "sqlite": decimal.Decimal("1.1"),
                 "dask": decimal.Decimal("1.1"),
                 "postgres": decimal.Decimal("1.1"),
                 "pandas": decimal.Decimal("1.1"),
@@ -367,7 +367,8 @@ def test_numeric_literal(con, backend, expr, expected_types):
             ibis.literal(decimal.Decimal("Infinity"), type=dt.decimal),
             # TODO(krzysztof-kwitt): Should we unify it?
             {
-                "sqlite": float("inf"),
+                "bigquery": float("inf"),
+                "sqlite": decimal.Decimal("Infinity"),
                 "postgres": decimal.Decimal("Infinity"),
                 "pandas": decimal.Decimal("Infinity"),
                 "dask": decimal.Decimal("Infinity"),
@@ -435,7 +436,8 @@ def test_numeric_literal(con, backend, expr, expected_types):
             ibis.literal(decimal.Decimal("-Infinity"), type=dt.decimal),
             # TODO(krzysztof-kwitt): Should we unify it?
             {
-                "sqlite": float("-inf"),
+                "bigquery": float("-inf"),
+                "sqlite": decimal.Decimal("-Infinity"),
                 "postgres": decimal.Decimal("-Infinity"),
                 "pandas": decimal.Decimal("-Infinity"),
                 "dask": decimal.Decimal("-Infinity"),
@@ -576,7 +578,6 @@ def test_numeric_literal(con, backend, expr, expected_types):
 @pytest.mark.notimpl(["polars"], raises=TypeError)
 def test_decimal_literal(con, backend, expr, expected_types, expected_result):
     backend_name = backend.name()
-
     result = con.execute(expr)
     current_expected_result = expected_result[backend_name]
     if type(current_expected_result) in (float, decimal.Decimal) and math.isnan(
@@ -1242,6 +1243,7 @@ def test_divide_by_zero(backend, alltypes, df, column, denominator):
         "pyspark",
         "polars",
         "flink",
+        "sqlite",
         "snowflake",
         "trino",
         "postgres",
