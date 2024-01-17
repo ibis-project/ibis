@@ -351,7 +351,10 @@ def asof_join(op, **kw):
 
     assert len(on) == 1
     joined = left.join_asof(right, on=on[0], by=by, strategy=direction)
-    joined = joined.drop(columns=on + by)
+    try:
+        joined = joined.drop(*(on + by))
+    except TypeError:
+        joined = joined.drop(columns=on + by)
     return joined
 
 
