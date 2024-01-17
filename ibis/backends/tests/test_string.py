@@ -779,11 +779,6 @@ def test_re_replace_global(con):
 
 @pytest.mark.broken(["mssql"], raises=sa.exc.ProgrammingError)
 @pytest.mark.notimpl(["druid"], raises=ValidationError)
-@pytest.mark.broken(
-    ["oracle"],
-    raises=OracleDatabaseError,
-    reason="ORA-61801: only boolean column or attribute can be used as a predicate",
-)
 def test_substr_with_null_values(backend, alltypes, df):
     table = alltypes.mutate(
         substr_col_null=ibis.case()
@@ -972,13 +967,7 @@ def test_levenshtein(con, right):
         param(
             ibis.case().when(True, "%").end(),
             id="case",
-            marks=[
-                pytest.mark.broken(
-                    ["oracle"],
-                    reason="missing left parenthesis in generated SQL",
-                    raises=OracleDatabaseError,
-                )
-            ],
+            marks=[],
         ),
         param(ibis.ifelse(True, "%", ibis.NA), id="ifelse"),
     ],
