@@ -22,9 +22,10 @@ python create_measurements.py 1_000_000_000
 
 ```{python}
 import ibis
+import polars as pl
 
 ibis.set_backend("polars")
-
+#ibis.set_backend("duckdb")
 ibis.options.interactive = True
 ```
 
@@ -42,11 +43,8 @@ elif ibis.get_backend().name == "polars":
         separator=";",
         has_header=False,
         new_columns=["station", "temperature"],
+        schema={"station": pl.datatypes.Utf8, "temperature": pl.datatypes.Float64},
     )
-t
-```
-
-```{python}
 t
 ```
 
