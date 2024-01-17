@@ -111,10 +111,12 @@ class SQLiteCompiler(SQLGlotCompiler):
 
     def visit_NonNullLiteral(self, op, *, value, dtype):
         if dtype.is_decimal():
-            return super().visit_NonNullLiteral(
-                op, value=float(value), dtype=dt.double(nullable=dtype.nullable)
-            )
-        return None
+            value = float(value)
+            dtype = dt.double(nullable=dtype.nullable)
+        elif dtype.is_uuid():
+            value = str(value)
+            dtype = dt.string(nullable=dtype.nullable)
+        return super().visit_NonNullLiteral(op, value=value, dtype=dtype)
 
 
 _SIMPLE_OPS = {
