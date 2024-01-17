@@ -9,6 +9,8 @@ categories:
 
 ## Overview
 
+This is a redux of [The One Billion Row Challenge](https://www.morling.dev/blog/one-billion-row-challenge/),
+
 https://github.com/gunnarmorling/1brc
 
 ```{.bash}
@@ -20,35 +22,73 @@ cd 1brc/src/main/python
 python create_measurements.py 1_000_000_000
 ```
 
-```{python}
+```{.python}
 import ibis
 import polars as pl
+import pyarrow as pa
 
-ibis.set_backend("polars")
+#ibis.set_backend("polars")
 #ibis.set_backend("duckdb")
+ibis.set_backend("datafusion")
 ibis.options.interactive = True
 ```
 
-```{python}
-if ibis.get_backend().name == "duckdb":
-    t = ibis.read_csv(
-        "1brc/data/measurements.txt",
-        delim=";",
-        header=False,
-        columns={"station": "VARCHAR", "temperature": "DOUBLE"},
-    )
-elif ibis.get_backend().name == "polars":
-    t = ibis.read_csv(
-        "1brc/data/measurements.txt",
-        separator=";",
-        has_header=False,
-        new_columns=["station", "temperature"],
-        schema={"station": pl.datatypes.Utf8, "temperature": pl.datatypes.Float64},
-    )
+```{.python}
+duckdb_kwargs = {
+    "delim": ";",
+    "header": False,
+    "columns": {"station": "VARCHAR", "temperature": "DOUBLE"},
+}
+
+polars_kwargs = {
+    "separator": ";",
+    "has_header": False,
+    "new_columns": ["station", "temperature"],
+    "schema": {"station": pl.Utf8, "temperature": pl.Float64},
+}
+
+datafusion_kwargs = {
+    "delimiter": ";",
+    "has_header": False,
+    "schema": pa.schema(
+        [
+            (
+                "station",
+                pa.string(),
+            ),
+            (
+                "temperature",
+                pa.float32(),
+            ),
+        ]
+    ),
+    "file_extension": ".txt",
+}
+
+clickhouse_kwargs = {
+    "format": "CSV",
+    "types": {"station": "String", "temperature": "Float64"},
+}
+
+# kwargs = duckdb_kwargs if ibis.get_backend().name == "duckdb" else polars_kwargs
+match ibis.get_backend().name:
+    case "duckdb":
+        kwargs = duckdb_kwargs
+    case "polars":
+        kwargs = polars_kwargs
+    case "datafusion":
+        kwargs = datafusion_kwargs
+
+
+kwargs
+```
+
+```{.python}
+t = ibis.read_csv("1brc/data/measurements.txt", **kwargs)
 t
 ```
 
-```{python}
+```{.python}
 f"{t.count().to_pandas():,}"
 ```
 
