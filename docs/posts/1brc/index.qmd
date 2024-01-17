@@ -1,0 +1,73 @@
+---
+title: "1 billion row challenge with Ibis and DuckDB"
+author: ""
+date: "2024-01-40"
+categories:
+    - blog
+    - duckdb
+---
+
+## Overview
+
+https://github.com/gunnarmorling/1brc
+
+```{.bash}
+gh repo clone gunnarmorling/1brc
+```
+
+```{.bash}
+cd 1brc/src/main/python
+python create_measurements.py 1_000_000_000
+```
+
+```{python}
+import ibis
+
+ibis.set_backend("polars")
+
+ibis.options.interactive = True
+```
+
+```{python}
+if ibis.get_backend().name == "duckdb":
+    t = ibis.read_csv(
+        "1brc/data/measurements.txt",
+        delim=";",
+        header=False,
+        columns={"station": "VARCHAR", "temperature": "DOUBLE"},
+    )
+elif ibis.get_backend().name == "polars":
+    t = ibis.read_csv(
+        "1brc/data/measurements.txt",
+        separator=";",
+        has_header=False,
+        new_columns=["station", "temperature"],
+    )
+t
+```
+
+```{python}
+t
+```
+
+```{python}
+f"{t.count().to_pandas():,}"
+```
+
+```{python}
+import time
+
+t1 = time.time()
+res = (
+    t.group_by(ibis._.station)
+    .agg(
+        min_temp=ibis._.temperature.min(),
+        mean_temp=ibis._.temperature.mean(),
+        max_temp=ibis._.temperature.max(),
+    )
+    .order_by(ibis._.station.desc())
+)
+print(res)
+t2 = time.time()
+t2 - t1
+```
