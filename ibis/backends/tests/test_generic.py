@@ -1406,43 +1406,20 @@ def test_try_cast(con, from_val, to_type, expected):
 
 @pytest.mark.notimpl(
     [
-        "pandas",
-        "dask",
-        "druid",
-        "impala",
-        "mssql",
-        "oracle",
-        "snowflake",
-        "sqlite",
-        "exasol",
-    ]
-)
-@pytest.mark.notyet(["flink"], reason="casts to nan")
-@pytest.mark.notyet(["datafusion"])
-@pytest.mark.notimpl(["postgres"], raises=PsycoPg2InvalidTextRepresentation)
-@pytest.mark.notyet(["mysql"], reason="returns 0")
-def test_try_cast_returns_null(con):
-    expr = ibis.literal("a").try_cast("int")
-    result = con.execute(expr)
-    assert pd.isna(result)
-
-
-@pytest.mark.notimpl(
-    [
-        "pandas",
-        "dask",
         "bigquery",
+        "dask",
         "datafusion",
         "druid",
+        "exasol",
         "impala",
         "mssql",
         "mysql",
         "oracle",
+        "pandas",
         "postgres",
         "risingwave",
         "snowflake",
         "sqlite",
-        "exasol",
     ]
 )
 @pytest.mark.parametrize(
@@ -1453,17 +1430,15 @@ def test_try_cast_returns_null(con):
             datetime.datetime(2023, 1, 1),
             "int",
             marks=[
-                pytest.mark.never(
-                    ["clickhouse", "flink"], reason="casts to 1672531200"
-                ),
-                pytest.mark.notyet(["trino"], raises=sa.exc.ProgrammingError),
+                pytest.mark.never(["clickhouse"], reason="casts to 1672531200"),
+                pytest.mark.notyet(["trino"], raises=TrinoUserError),
                 pytest.mark.broken(["polars"], reason="casts to 1672531200000000000"),
             ],
         ),
     ],
     ids=str,
 )
-def test_try_cast_expected_null(con, from_val, to_type):
+def test_try_cast_null(con, from_val, to_type):
     assert pd.isna(con.execute(ibis.literal(from_val).try_cast(to_type)))
 
 
