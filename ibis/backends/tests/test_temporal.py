@@ -1012,7 +1012,7 @@ timestamp_value = pd.Timestamp("2018-01-01 18:18:18")
         ),
     ],
 )
-@pytest.mark.notimpl(["mssql", "oracle"], raises=com.OperationNotDefinedError)
+@pytest.mark.notimpl(["mssql"], raises=com.OperationNotDefinedError)
 @pytest.mark.notimpl(["exasol"], raises=com.OperationNotDefinedError)
 def test_temporal_binop(backend, con, alltypes, df, expr_fn, expected_fn):
     expr = expr_fn(alltypes, backend).name("tmp")
@@ -1213,7 +1213,7 @@ minus = lambda t, td: t.timestamp_col - pd.Timedelta(td)
         ),
     ],
 )
-@pytest.mark.notimpl(["sqlite", "mssql", "oracle"], raises=com.OperationNotDefinedError)
+@pytest.mark.notimpl(["sqlite", "mssql"], raises=com.OperationNotDefinedError)
 @pytest.mark.notimpl(["exasol"], raises=com.OperationNotDefinedError)
 def test_temporal_binop_pandas_timedelta(
     backend, con, alltypes, df, timedelta, temporal_fn
@@ -1841,7 +1841,8 @@ TIMESTAMP_BACKEND_TYPES = {
 
 
 @pytest.mark.notimpl(
-    ["pandas", "dask", "pyspark", "mysql"], raises=com.OperationNotDefinedError
+    ["pandas", "dask", "pyspark", "mysql", "oracle"],
+    raises=com.OperationNotDefinedError,
 )
 @pytest.mark.notimpl(
     ["oracle"], raises=sa.exc.DatabaseError, reason="ORA-00904: MAKE TIMESTAMP invalid"
@@ -1871,10 +1872,7 @@ def test_timestamp_literal(con, backend):
         "Timestamp(timezone='***', scale=None, nullable=True)."
     ),
 )
-@pytest.mark.notyet(["impala"], raises=com.OperationNotDefinedError)
-@pytest.mark.notimpl(
-    ["oracle"], raises=OracleDatabaseError, reason="ORA-00904: MAKE TIMESTAMP invalid"
-)
+@pytest.mark.notyet(["impala", "oracle"], raises=com.OperationNotDefinedError)
 @pytest.mark.parametrize(
     ("timezone", "expected"),
     [
@@ -2096,10 +2094,7 @@ def test_date_column_from_ymd(backend, con, alltypes, df):
     raises=AttributeError,
     reason="StringColumn' object has no attribute 'year'",
 )
-@pytest.mark.notimpl(
-    ["oracle"], raises=OracleDatabaseError, reason="ORA-00904 make timestamp invalid"
-)
-@pytest.mark.notyet(["impala"], raises=com.OperationNotDefinedError)
+@pytest.mark.notyet(["impala", "oracle"], raises=com.OperationNotDefinedError)
 @pytest.mark.notimpl(["exasol"], raises=sa.exc.DBAPIError)
 def test_timestamp_column_from_ymdhms(backend, con, alltypes, df):
     c = alltypes.timestamp_col
