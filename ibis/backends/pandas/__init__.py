@@ -186,15 +186,10 @@ class BasePandasBackend(BaseBackend):
             raise com.IbisError("The schema or obj parameter is required")
 
         if obj is not None:
-            if not self._supports_conversion(obj):
-                raise com.BackendConversionError(
-                    f"Unable to convert {obj.__class__} object "
-                    f"to backend type: {self.__class__.backend_table_type}"
-                )
             df = self._convert_object(obj)
         else:
             dtypes = dict(PandasSchema.from_ibis(schema))
-            df = self._from_pandas(pd.DataFrame(columns=dtypes.keys()).astype(dtypes))
+            df = pd.DataFrame(columns=dtypes.keys()).astype(dtypes)
 
         if name in self.dictionary and not overwrite:
             raise com.IbisError(f"Cannot overwrite existing table `{name}`")
@@ -227,25 +222,25 @@ class BasePandasBackend(BaseBackend):
             )
         del self.dictionary[name]
 
-    @classmethod
-    def _supports_conversion(cls, obj: Any) -> bool:
-        if isinstance(obj, ir.Table):
-            return isinstance(obj.op(), ops.InMemoryTable)
-        return True
-
-    @staticmethod
-    def _from_pandas(df: pd.DataFrame) -> pd.DataFrame:
-        return df
-
-    @classmethod
-    def _convert_object(cls, obj: Any) -> Any:
-        if isinstance(obj, ir.Table):
-            # Support memtables
-            assert isinstance(obj.op(), ops.InMemoryTable)
-            return obj.op().data.to_frame()
+    def _convert_object(self, obj: Any) -> Any:
+        if isinstance(obj, pd.DataFrame):
+            return obj
+        elif isinstance(obj, ir.Table):
+            op = obj.op()
+            if isinstance(op, ops.InMemoryTable):
+                return op.data.to_frame()
+            else:
+                raise com.BackendConversionError(
+                    f"Unable to convert {obj.__class__} object "
+                    f"to backend type: {self.__class__.backend_table_type}"
+                )
         elif isinstance(obj, pa.Table):
             return obj.to_pandas()
-        return cls.backend_table_type(obj)
+        else:
+            raise com.BackendConversionError(
+                f"Unable to convert {obj.__class__} object "
+                f"to backend type: {self.__class__.backend_table_type}"
+            )
 
     @classmethod
     @lru_cache
@@ -304,7 +299,7 @@ class Backend(BasePandasBackend):
     name = "pandas"
 
     def execute(self, query, params=None, limit="default", **kwargs):
-        from ibis.backends.pandas.executor import Executor
+        from ibis.backends.pandas.executor import PandasExecutor
 
         if limit != "default" and limit is not None:
             raise ValueError(
@@ -322,7 +317,7 @@ class Backend(BasePandasBackend):
         params = params or {}
         params = {k.op() if isinstance(k, ir.Expr) else k: v for k, v in params.items()}
 
-        return Executor.execute(query.op(), backend=self, params=params)
+        return PandasExecutor.execute(query.op(), backend=self, params=params)
 
     def _load_into_cache(self, name, expr):
         self.create_table(name, expr.execute())

@@ -196,7 +196,7 @@ def test_semi_join_topk(con, batting, awards_players, func):
     assert not expr.limit(5).execute().empty
 
 
-@pytest.mark.notimpl(["dask", "druid", "exasol", "oracle"])
+@pytest.mark.notimpl(["druid", "exasol", "oracle"])
 @pytest.mark.notimpl(
     ["postgres", "mssql", "risingwave"],
     raises=com.IbisTypeError,
@@ -211,7 +211,6 @@ def test_join_with_pandas(batting, awards_players):
     assert df.yearID.nunique() == 7
 
 
-@pytest.mark.notimpl(["dask"])
 def test_join_with_pandas_non_null_typed_columns(batting, awards_players):
     batting_filt = batting[lambda t: t.yearID < 1900][["yearID"]]
     awards_players_filt = awards_players[lambda t: t.yearID < 1900][
@@ -269,11 +268,6 @@ def test_join_with_pandas_non_null_typed_columns(batting, awards_players):
         param("right", marks=[sqlite_right_or_full_mark]),
         param("outer", marks=[sqlite_right_or_full_mark]),
     ],
-)
-@pytest.mark.notimpl(
-    ["dask"],
-    raises=TypeError,
-    reason="dask doesn't support join predicates",
 )
 def test_join_with_trivial_predicate(awards_players, predicate, how, pandas_value):
     n = 5

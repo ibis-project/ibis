@@ -8,6 +8,7 @@ from pytest import param
 import ibis
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
+from ibis.backends.conftest import is_older_than
 from ibis.legacy.udf.vectorized import analytic, elementwise, reduction
 
 pytestmark = pytest.mark.notimpl(["druid", "oracle", "risingwave"])
@@ -320,6 +321,11 @@ def test_reduction_udf_array_return_type(udf_backend, udf_alltypes, udf_df):
     udf_backend.assert_frame_equal(result, expected)
 
 
+@pytest.mark.broken(
+    ["pandas"],
+    condition=is_older_than("pandas", "2.0.0"),
+    reason="FutureWarning: Not prepending group keys to the result index of transform-like apply",
+)
 def test_reduction_udf_on_empty_data(udf_backend, udf_alltypes):
     """Test that summarization can handle empty data."""
     # First filter down to zero rows
@@ -519,7 +525,6 @@ def test_elementwise_udf_overwrite_destruct_and_assign(udf_backend, udf_alltypes
 
 @pytest.mark.xfail_version(pyspark=["pyspark<3.1"])
 @pytest.mark.parametrize("method", ["destructure", "unpack"])
-@pytest.mark.skip("dask")
 def test_elementwise_udf_destructure_exact_once(udf_alltypes, method, tmp_path):
     @elementwise(
         input_type=[dt.double],
@@ -637,7 +642,6 @@ def test_analytic_udf_destruct_no_group_by(udf_backend, udf_alltypes):
 
 
 @pytest.mark.notimpl(["pyspark"])
-@pytest.mark.xfail_version(dask=["pandas>=2"])
 def test_analytic_udf_destruct_overwrite(udf_backend, udf_alltypes):
     w = ibis.window(preceding=None, following=None, group_by="year")
 
@@ -723,7 +727,7 @@ def test_reduction_udf_destruct_no_group_by_overwrite(udf_backend, udf_alltypes)
 
 
 # TODO - windowing - #2553
-@pytest.mark.notimpl(["dask", "pyspark"])
+@pytest.mark.notimpl(["pyspark"])
 def test_reduction_udf_destruct_window(udf_backend, udf_alltypes):
     win = ibis.window(
         preceding=ibis.interval(hours=2),
