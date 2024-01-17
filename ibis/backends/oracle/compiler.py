@@ -51,6 +51,10 @@ Oracle.Generator.TRANSFORMS |= {
     sge.Create: _create_sql,
 }
 
+Oracle.Generator.TYPE_MAPPING |= {
+    sge.DataType.Type.TIMESTAMPTZ: "TIMESTAMP WITH TIME ZONE",
+}
+
 
 @replace(p.WindowFunction(p.First(x, y)))
 def rewrite_first(_, x, y):
@@ -137,6 +141,20 @@ class OracleCompiler(SQLGlotCompiler):
         # avoid casting NULL -- oracle handling for these casts is... complicated
         if value is None:
             return NULL
+        elif dtype.is_timestamp() or dtype.is_time():
+            # TODO: handle variable microsecond precision
+            if getattr(dtype, "timezone", None) is not None:
+                return self.f.to_timestamp_tz(
+                    value.isoformat(), 'YYYY-MM-DD"T"HH24:MI:SS.FF6TZH:TZM'
+                )
+            else:
+                return self.f.to_timestamp(
+                    value.isoformat(), 'YYYY-MM-DD"T"HH24:MI:SS.FF6'
+                )
+        elif dtype.is_date():
+            return self.f.to_date(
+                f"{value.year:04d}-{value.month:02d}-{value.day:02d}", "FXYYYY-MM-DD"
+            )
         return super().visit_Literal(op, value=value, dtype=dtype)
 
     @visit_node.register(ops.Limit)
@@ -333,6 +351,31 @@ class OracleCompiler(SQLGlotCompiler):
     def visit_Xor(self, op, *, left, right):
         return (left.or_(right)).and_(sg.not_(left.and_(right)))
 
+    @visit_node.register(ops.TimestampTruncate)
+    @visit_node.register(ops.DateTruncate)
+    @visit_node.register(ops.TimeTruncate)
+    def visit_TimestampTruncate(self, op, *, arg, unit):
+        # FIXME: assertion errors
+        unit_mapping = {
+            "Y": "year",
+            "M": "month",
+            "W": "week",
+            "D": "day",
+            "h": "hour",
+            "m": "minute",
+            "s": "second",
+            "ms": "ms",
+            "us": "us",
+        }
+
+        if (unit := unit_mapping.get(unit.short)) in ("ms", "us", None):
+            raise com.UnsupportedOperationError(f"Unsupported truncate unit {unit}")
+
+        # The FuncGen for self.f.extract always resolves to sge.Extract
+        # and then complains about the missing expression argument
+        # so we construct it directly
+        return sge.Extract(this=unit, expression=arg)
+
     @visit_node.register(ops.Arbitrary)
     @visit_node.register(ops.ArgMax)
     @visit_node.register(ops.ArgMin)
@@ -349,6 +392,19 @@ class OracleCompiler(SQLGlotCompiler):
     @visit_node.register(ops.RegexSplit)
     @visit_node.register(ops.RegexReplace)
     @visit_node.register(ops.StringSplit)
+    @visit_node.register(ops.TimestampTruncate)
+    @visit_node.register(ops.DateTruncate)
+    @visit_node.register(ops.TimeTruncate)
+    @visit_node.register(ops.Bucket)
+    @visit_node.register(ops.TimestampBucket)
+    @visit_node.register(ops.TimeDelta)
+    @visit_node.register(ops.DateDelta)
+    @visit_node.register(ops.TimestampDelta)
+    @visit_node.register(ops.TimestampNow)
+    @visit_node.register(ops.IntervalFromInteger)
+    @visit_node.register(ops.DayOfWeekIndex)
+    @visit_node.register(ops.DayOfWeekName)
+    @visit_node.register(ops.ExtractEpochSeconds)
     def visit_Undefined(self, op, **_):
         raise com.OperationNotDefinedError(type(op).__name__)
 
