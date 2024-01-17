@@ -1427,9 +1427,7 @@ def test_interval_add_cast_column(backend, alltypes, df):
         ),
     ],
 )
-@pytest.mark.notimpl(
-    ["datafusion", "mssql", "oracle"], raises=com.OperationNotDefinedError
-)
+@pytest.mark.notimpl(["datafusion", "mssql"], raises=com.OperationNotDefinedError)
 @pytest.mark.broken(
     ["druid"],
     raises=AttributeError,
@@ -1610,7 +1608,6 @@ def test_integer_to_timestamp(backend, con, unit):
         "datafusion",
         "mssql",
         "druid",
-        "oracle",
     ],
     raises=com.OperationNotDefinedError,
 )

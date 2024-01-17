@@ -257,7 +257,6 @@ def calc_zscore(s):
             id="cumany",
             marks=[
                 pytest.mark.notimpl(["dask"], raises=NotImplementedError),
-                pytest.mark.broken(["oracle"], raises=OracleDatabaseError),
             ],
         ),
         param(
@@ -285,7 +284,6 @@ def calc_zscore(s):
             id="cumall",
             marks=[
                 pytest.mark.notimpl(["dask"], raises=NotImplementedError),
-                pytest.mark.broken(["oracle"], raises=OracleDatabaseError),
             ],
         ),
         param(
