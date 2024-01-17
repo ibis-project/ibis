@@ -313,7 +313,11 @@ def join(op, **kw):
         left, right = right, left
 
     joined = left.join(right, on=on, how=how)
-    joined = joined.drop(columns=on)
+
+    try:
+        joined = joined.drop(*on)
+    except TypeError:
+        joined = joined.drop(columns=on)
 
     return joined
 
