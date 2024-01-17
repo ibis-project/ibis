@@ -69,6 +69,21 @@ def _ibis_sqlite_capitalize(string):
 
 
 @udf
+def _ibis_sqlite_rpad(string, width, pad):
+    return string.ljust(width, pad)[:width]
+
+
+@udf
+def _ibis_sqlite_lpad(string, width, pad):
+    return string.rjust(width, pad)[:width]
+
+
+@udf
+def _ibis_sqlite_repeat(string, n):
+    return string * n
+
+
+@udf
 def _ibis_sqlite_translate(string, from_string, to_string):
     table = str.maketrans(from_string, to_string)
     return string.translate(table)
@@ -318,19 +333,15 @@ def _extract_url_field(data, field_name):
 
 
 @udf
-def _ibis_extract_query(url, param_name):
-    query = urlsplit(url).query
-    if param_name is not None:
-        value = parse_qs(query)[param_name]
-        return value if len(value) > 1 else value[0]
-    else:
-        return query
+def _ibis_extract_full_query(url):
+    return urlsplit(url).query
 
 
 @udf
-def _ibis_extract_query_no_param(url):
+def _ibis_extract_query(url, param_name):
     query = urlsplit(url).query
-    return query
+    value = parse_qs(query)[param_name]
+    return value if len(value) > 1 else value[0]
 
 
 @udf
