@@ -14,7 +14,7 @@ import ibis.common.exceptions as com
 import ibis.expr.operations as ops
 from ibis.backends.base.sqlglot.compiler import NULL, STAR, C, SQLGlotCompiler
 from ibis.backends.base.sqlglot.datatypes import OracleType
-from ibis.backends.base.sqlglot.rewrites import replace_log2, replace_log10
+from ibis.backends.base.sqlglot.rewrites import Window, replace_log2, replace_log10
 from ibis.common.patterns import replace
 from ibis.expr.analysis import p, x, y
 from ibis.expr.rewrites import rewrite_sample
@@ -155,7 +155,14 @@ class OracleCompiler(SQLGlotCompiler):
             return self.f.to_date(
                 f"{value.year:04d}-{value.month:02d}-{value.day:02d}", "FXYYYY-MM-DD"
             )
+
         return super().visit_Literal(op, value=value, dtype=dtype)
+
+    @visit_node.register(ops.Cast)
+    def visit_Cast(self, op, *, arg, to):
+        if to.is_interval():
+            return self.f.numtodsinterval(arg, to.unit.name)
+        return self.cast(arg, to)
 
     @visit_node.register(ops.Limit)
     def visit_Limit(self, op, *, parent, n, offset):
@@ -375,6 +382,88 @@ class OracleCompiler(SQLGlotCompiler):
         # and then complains about the missing expression argument
         # so we construct it directly
         return sge.Extract(this=unit, expression=arg)
+
+    @visit_node.register(Window)
+    def visit_Window(self, op, *, how, func, start, end, group_by, order_by):
+        # Oracle has two (more?) types of analytic functions you can use inside OVER.
+        #
+        # The first group accepts an "analytic clause" which is decomposed into the
+        # PARTITION BY, ORDER BY and the windowing clause (e.g. ROWS BETWEEN
+        # UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING).  These are the "full" window functions.
+        #
+        # The second group accepts an _optional_ PARTITION BY clause and a _required_ ORDER BY clause.
+        # If you try to pass, for instance, LEAD(col, 1) OVER() AS "val", this will error.
+        #
+        # The list of functions which accept the full analytic clause (and so
+        # accept a windowing clause) are those functions which are marked with
+        # an asterisk at the bottom of this page (yes, Oracle thinks this is
+        # a reasonable way to demarcate them):
+        # https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/Analytic-Functions.html
+        #
+        # (Side note: these unordered window function queries were not erroring
+        # in the SQLAlchemy Oracle backend but they were raising AssertionErrors.
+        # This is because the SQLAlchemy Oracle dialect automatically inserts an
+        # ORDER BY whether you ask it to or not.)
+        #
+        # If the windowing clause is omitted, the default is
+        # RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW
+        #
+        # I (@gforsyth) believe that this is the windowing range applied to the
+        # analytic functions (like LEAD, LAG, CUME_DIST) which don't allow
+        # specifying a windowing clause.
+        #
+        # This allowance for specifying a windowing clause is handled below by
+        # explicitly listing the ops which correspond to the analytic functions
+        # that accept it.
+
+        if type(op.func) in (
+            # TODO: figure out REGR_* functions and also manage this list better
+            # Allowed windowing clause functions
+            ops.Mean,  # "avg",
+            ops.Correlation,  # "corr",
+            ops.Count,  # "count",
+            ops.Covariance,  # "covar_pop", "covar_samp",
+            ops.FirstValue,  # "first_value",
+            ops.LastValue,  # "last_value",
+            ops.Max,  # "max",
+            ops.Min,  # "min",
+            ops.NthValue,  # "nth_value",
+            ops.StandardDev,  # "stddev","stddev_pop","stddev_samp",
+            ops.Sum,  # "sum",
+            ops.Variance,  # "var_pop","var_samp","variance",
+        ):
+            if start is None:
+                start = {}
+            if end is None:
+                end = {}
+
+            start_value = start.get("value", "UNBOUNDED")
+            start_side = start.get("side", "PRECEDING")
+            end_value = end.get("value", "UNBOUNDED")
+            end_side = end.get("side", "FOLLOWING")
+
+            spec = sge.WindowSpec(
+                kind=how.upper(),
+                start=start_value,
+                start_side=start_side,
+                end=end_value,
+                end_side=end_side,
+                over="OVER",
+            )
+        elif not order_by:
+            # For other analytic functions, ORDER BY is required
+            raise com.UnsupportedOperationError(
+                f"Function {op.func.name} cannot be used in Oracle without an order_by."
+            )
+        else:
+            # and no windowing clause is supported, so set the spec to None.
+            spec = None
+
+        order = sge.Order(expressions=order_by) if order_by else None
+
+        spec = self._minimize_spec(op.start, op.end, spec)
+
+        return sge.Window(this=func, partition_by=group_by, order=order, spec=spec)
 
     @visit_node.register(ops.Arbitrary)
     @visit_node.register(ops.ArgMax)

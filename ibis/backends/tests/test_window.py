@@ -777,7 +777,11 @@ def test_simple_ungrouped_window_with_scalar_order_by(alltypes):
                     raises=AssertionError,
                     strict=False,  # sometimes it passes
                 ),
-                pytest.mark.broken(["oracle"], raises=AssertionError),
+                pytest.mark.notyet(
+                    ["oracle"],
+                    raises=com.UnsupportedOperationError,
+                    reason="oracle doesn't allow unordered analytic functions without a windowing clause",
+                ),
                 pytest.mark.notimpl(
                     ["flink"],
                     raises=com.UnsupportedOperationError,
@@ -812,7 +816,11 @@ def test_simple_ungrouped_window_with_scalar_order_by(alltypes):
                     raises=AssertionError,
                     strict=False,  # sometimes it passes
                 ),
-                pytest.mark.broken(["oracle"], raises=AssertionError),
+                pytest.mark.notyet(
+                    ["oracle"],
+                    raises=com.UnsupportedOperationError,
+                    reason="oracle doesn't allow unordered analytic functions without a windowing clause",
+                ),
                 pytest.mark.notimpl(
                     ["flink"],
                     raises=com.UnsupportedOperationError,
@@ -1101,7 +1109,7 @@ def test_first_last(backend):
     ["mysql"], raises=MySQLOperationalError, reason="not supported by MySQL"
 )
 @pytest.mark.notyet(
-    ["mssql", "oracle", "polars", "snowflake", "sqlite"],
+    ["mssql", "polars", "snowflake", "sqlite"],
     raises=com.OperationNotDefinedError,
     reason="not support by the backend",
 )
