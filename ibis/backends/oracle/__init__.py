@@ -13,14 +13,6 @@ import oracledb
 import sqlglot as sg
 import sqlglot.expressions as sge
 
-# Wow, this is truly horrible
-# Get out your clippers, it's time to shave a yak.
-#
-# 1. oracledb is only supported in sqlalchemy 2.0
-# 2. Ergo, module hacking is required to avoid doing a silly amount of work
-#    to create multiple lockfiles or port snowflake away from sqlalchemy
-# 3. Also the version needs to be spoofed to be >= 7 or else the cx_Oracle
-#    dialect barfs
 import ibis
 import ibis.common.exceptions as exc
 import ibis.expr.datatypes as dt
@@ -486,21 +478,6 @@ class Backend(SQLGlotBackend):
             raise
         df = OraclePandasData.convert_table(df, schema)
         return df
-
-    # def _table_from_schema(
-    #     self,
-    #     name: str,
-    #     schema: sch.Schema,
-    #     temp: bool = False,
-    #     database: str | None = None,
-    #     **kwargs: Any,
-    # ) -> sa.Table:
-    #     if temp:
-    #         kwargs["oracle_on_commit"] = "PRESERVE ROWS"
-    #     t = super()._table_from_schema(name, schema, temp, database, **kwargs)
-    #     if temp:
-    #         atexit.register(self._clean_up_tmp_table, t)
-    #     return t
 
     def _clean_up_tmp_table(self, name: str) -> None:
         with self.begin() as bind:
