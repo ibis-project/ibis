@@ -142,7 +142,6 @@ class OracleCompiler(SQLGlotCompiler):
         if value is None:
             return NULL
         elif dtype.is_timestamp() or dtype.is_time():
-            # TODO: handle variable microsecond precision
             if getattr(dtype, "timezone", None) is not None:
                 return self.f.to_timestamp_tz(
                     value.isoformat(), 'YYYY-MM-DD"T"HH24:MI:SS.FF6TZH:TZM'
@@ -161,7 +160,17 @@ class OracleCompiler(SQLGlotCompiler):
     @visit_node.register(ops.Cast)
     def visit_Cast(self, op, *, arg, to):
         if to.is_interval():
-            return self.f.numtodsinterval(arg, to.unit.name)
+            # CASTing to an INTERVAL in Oracle requires specifying digits of
+            # precision that are a pain.  There are two helper functions that
+            # should be used instead.
+            if to.unit.short in ("D", "h", "m", "s"):
+                return self.f.numtodsinterval(arg, to.unit.name)
+            elif to.unit.short in ("Y", "M"):
+                return self.f.numtoyminterval(arg, to.unit.name)
+            else:
+                raise com.UnsupportedArgumentError(
+                    f"Interval {to.unit.name} not supported by Oracle"
+                )
         return self.cast(arg, to)
 
     @visit_node.register(ops.Limit)
