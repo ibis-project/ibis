@@ -182,7 +182,7 @@ reason, I'm also not providing execution times. Try it out yourself!
 
 ::: {.panel-tabset}
 
-## DuckDb
+## DuckDB
 
 First let's set the backend to DuckDB (redundantly since it's the default) and
 the `kwargs` dictionary:
