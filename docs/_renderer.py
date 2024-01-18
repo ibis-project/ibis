@@ -28,8 +28,6 @@ class Renderer(qd.MdRenderer):
             lambda line: quartodoc_skip_doctest in line or skip_doctest in line
         )
 
-        has_executed_chunks = False
-
         for chunk in toolz.partitionby(chunker, lines):
             first, *rest = chunk
 
@@ -39,11 +37,22 @@ class Renderer(qd.MdRenderer):
                 # check whether to skip execution and if so, render the code
                 # block as `python` (not `{python}`) if it's marked with
                 # skip_doctest, expect_failure or quartodoc_skip_doctest
-                if any(map(should_skip, chunk)):
+                if skipped := any(map(should_skip, chunk)):
                     start = end = ""
                 else:
-                    has_executed_chunks = True
                     start, end = "{}"
+                    result.append(
+                        dedent(
+                            """
+                            ```{python}
+                            #| echo: false
+
+                            import ibis
+                            ibis.options.interactive = True
+                            ```
+                            """
+                        )
+                    )
 
                 result.append(f"```{start}python{end}")
 
@@ -67,22 +76,16 @@ class Renderer(qd.MdRenderer):
                 result.extend(rest)
                 result.append("```\n")
 
-        examples = "\n".join(result)
+                if not skipped:
+                    result.append(
+                        dedent(
+                            """
+                            ```{python}
+                            #| echo: false
+                            ibis.options.interactive = False
+                            ```
+                            """
+                        )
+                    )
 
-        if has_executed_chunks:
-            # turn off interactive mode before rendering
-            return (
-                dedent(
-                    """
-                    ```{python}
-                    #| echo: false
-
-                    import ibis
-                    ibis.options.interactive = False
-                    ```
-                    """
-                )
-                + examples
-            )
-        else:
-            return examples
+        return "\n".join(result)

@@ -134,3 +134,4 @@ ibis/examples/descriptions
 
 # automatically generated odbc file for ci
 ci/odbc/odbc.ini
+*-citibike-tripdata.tar.xz
