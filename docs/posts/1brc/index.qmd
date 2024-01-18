@@ -59,7 +59,7 @@ the root of the repo. It is 15GB on disk:
 And consists of one billion rows with two columns separated by a semicolon:
 
 ```{.bash}
-(venv) cody@voda 1brc % head 1brc/data/measurements.txt 
+(venv) cody@voda 1brc % head 1brc/data/measurements.txt
 Kusugal;-67.2
 Ipil;-88.6
 Sohna;-31.2
