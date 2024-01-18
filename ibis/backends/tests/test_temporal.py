@@ -1383,7 +1383,7 @@ def test_timestamp_comparison_filter_numpy(backend, con, alltypes, df, func_name
 
 
 @pytest.mark.notimpl(
-    ["sqlite", "snowflake", "mssql", "oracle", "exasol"],
+    ["sqlite", "snowflake", "mssql", "exasol"],
     raises=com.OperationNotDefinedError,
 )
 @pytest.mark.broken(
@@ -1406,7 +1406,7 @@ def test_interval_add_cast_scalar(backend, alltypes):
 
 
 @pytest.mark.notimpl(
-    ["sqlite", "snowflake", "mssql", "oracle", "exasol"],
+    ["sqlite", "snowflake", "mssql", "exasol"],
     raises=com.OperationNotDefinedError,
 )
 @pytest.mark.notimpl(
