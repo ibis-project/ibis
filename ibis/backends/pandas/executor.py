@@ -545,7 +545,7 @@ class Executor(Dispatched):
         df, all_scalars = asframe(values)
         if all_scalars and len(parent) != len(df):
             df = pd.concat([df] * len(parent))
-        return df
+        return df.reset_index(drop=True)
 
     @classmethod
     def visit(cls, op: ops.Filter, parent, predicates):
