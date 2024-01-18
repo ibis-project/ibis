@@ -272,6 +272,10 @@ def _clip(translator: ExprTranslator, op: ops.Node) -> str:
     return f"CAST({arg} AS {FlinkType.from_ibis(op.dtype)!s})"
 
 
+def _ntile(translator: ExprTranslator, op: ops.NTile) -> str:
+    return f"NTILE({op.buckets.value})"
+
+
 def _floor_divide(translator: ExprTranslator, op: ops.Node) -> str:
     left = translator.translate(op.left)
     right = translator.translate(op.right)
@@ -315,6 +319,11 @@ def _map_get(translator: ExprTranslator, op: ops.maps.MapGet) -> str:
     map_ = translator.translate(op.arg)
     key = translator.translate(op.key)
     return f"{map_} [ {key} ]"
+
+
+def _struct_field(translator: ExprTranslator, op: ops.StructField) -> str:
+    arg = translator.translate(op.arg)
+    return f"{arg}.`{op.field}`"
 
 
 def _day_of_week_index(
@@ -519,6 +528,7 @@ operation_registry.update(
         ops.IfElse: _filter,
         ops.Window: _window,
         ops.Clip: _clip,
+        ops.NTile: _ntile,
         # Binary operations
         ops.Power: fixed_arity("power", 2),
         ops.FloorDivide: _floor_divide,
@@ -528,6 +538,7 @@ operation_registry.update(
         ops.JSONGetItem: _json_get_item,
         ops.Map: _map,
         ops.MapGet: _map_get,
+        ops.StructField: _struct_field,
         # Temporal functions
         ops.DateAdd: _date_add,
         ops.DateDelta: _date_delta,
