@@ -5,7 +5,6 @@ import operator
 import pytest
 
 import ibis
-from ibis.backends.impala.compiler import ImpalaCompiler
 from ibis.backends.impala.tests.mocks import MockImpalaConnection
 
 
