@@ -195,7 +195,7 @@ kwargs = duckdb_kwargs
 ```{python}
 # | code-fold: true
 # | echo: false
-ibis.get_backend().raw_sql("set enable_progress_bar = false")
+_ = ibis.get_backend().raw_sql("set enable_progress_bar = false")
 ```
 
 1. Redundant given DuckDB is the default
