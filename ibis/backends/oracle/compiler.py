@@ -508,6 +508,8 @@ class OracleCompiler(SQLGlotCompiler):
     @visit_node.register(ops.DayOfWeekName)
     @visit_node.register(ops.ExtractEpochSeconds)
     @visit_node.register(ops.RowID)
+    @visit_node.register(ops.ExtractWeekOfYear)
+    @visit_node.register(ops.ExtractDayOfYear)
     def visit_Undefined(self, op, **_):
         raise com.OperationNotDefinedError(type(op).__name__)
 
