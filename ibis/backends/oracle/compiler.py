@@ -50,6 +50,7 @@ Oracle.Generator.TRANSFORMS |= {
     sge.StddevSamp: rename_func("stddev_samp"),
     sge.ApproxDistinct: rename_func("approx_count_distinct"),
     sge.Create: _create_sql,
+    sge.Select: sg.transforms.preprocess([sg.transforms.eliminate_semi_and_anti_joins]),
 }
 
 Oracle.Generator.TYPE_MAPPING |= {
