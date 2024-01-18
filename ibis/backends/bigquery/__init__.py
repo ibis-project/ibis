@@ -94,9 +94,21 @@ def _qualify_memtable(
     return node
 
 
-def _remove_nulls_first_from_invalid_window_orderings(
+def _remove_null_ordering_from_unsupported_window(
     node: sge.Expression,
 ) -> sge.Expression:
+    """Remove null ordering in window frame clauses not supported by BigQuery.
+
+    BigQuery has only partial support for NULL FIRST/LAST in RANGE windows so
+    we remove it from any window frame clause that doesn't support it.
+
+    Here's the support matrix:
+
+    ✅ sum(x) over (order by y desc nulls last)
+    🚫 sum(x) over (order by y asc nulls last)
+    ✅ sum(x) over (order by y asc nulls first)
+    🚫 sum(x) over (order by y desc nulls first)
+    """
     if isinstance(node, sge.Window):
         order = node.args.get("order")
         if order is not None:
@@ -108,7 +120,6 @@ def _remove_nulls_first_from_invalid_window_orderings(
                     "nulls_first", True
                 ):
                     kargs["nulls_first"] = True
-
     return node
 
 
@@ -627,7 +638,7 @@ class Backend(SQLGlotBackend, CanCreateSchema):
             _qualify_memtable,
             dataset=getattr(self._session_dataset, "dataset_id", None),
             project=getattr(self._session_dataset, "project", None),
-        ).transform(_remove_nulls_first_from_invalid_window_orderings)
+        ).transform(_remove_null_ordering_from_unsupported_window)
 
     def raw_sql(self, query: str, params=None):
         query_parameters = [
