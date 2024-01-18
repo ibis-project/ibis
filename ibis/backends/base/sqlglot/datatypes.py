@@ -738,3 +738,16 @@ class BigQueryUDFType(BigQueryType):
         raise com.UnsupportedBackendType(
             "int64 is not a supported input or output type in BigQuery UDFs; use float64 instead"
         )
+
+
+class ExasolType(SqlglotType):
+    dialect = "exasol"
+
+    default_temporal_scale = 3
+
+    @classmethod
+    def _from_ibis_String(cls, dtype: dt.String) -> sge.DataType:
+        return sge.DataType(
+            this=sge.DataType.Type.VARCHAR,
+            expressions=[sge.DataTypeParam(this=sge.convert(2_000_000))],
+        )
