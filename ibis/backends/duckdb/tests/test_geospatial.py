@@ -13,6 +13,7 @@ import ibis
 gpd = pytest.importorskip("geopandas")
 gtm = pytest.importorskip("geopandas.testing")
 shapely = pytest.importorskip("shapely")
+pytest.importorskip("geoalchemy2")
 
 
 def test_geospatial_point(zones, zones_gdf):
