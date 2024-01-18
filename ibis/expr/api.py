@@ -326,8 +326,7 @@ def table(
     Create a table with no data backing it
 
     >>> import ibis
-    >>> ibis.options.interactive
-    False
+    >>> ibis.options.interactive = False
     >>> t = ibis.table(schema=dict(a="int", b="string"), name="t")
     >>> t
     UnboundTable: t

@@ -180,11 +180,8 @@ def numeric() -> Predicate:
     >>> import ibis
     >>> import ibis.selectors as s
     >>> t = ibis.table(dict(a="int", b="string", c="array<string>"), name="t")
-    >>> t
-    UnboundTable: t
-      a int64
-      b string
-      c array<string>
+    >>> t.columns
+    ['a', 'b', 'c']
     >>> expr = t.select(s.numeric())  # `a` has integer type, so it's numeric
     >>> expr.columns
     ['a']
