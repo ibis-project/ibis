@@ -4,7 +4,6 @@ import pytest
 
 import ibis
 import ibis.expr.types as ir
-from ibis.backends.impala.compiler import ImpalaCompiler
 from ibis.backends.impala.tests.conftest import translate
 
 
