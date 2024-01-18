@@ -1,7 +1,7 @@
 ---
 title: "Using one Python dataframe API to take the billion row challenge with DuckDB, Polars, and DataFusion"
 author: "Cody"
-date: "2024-01-40"
+date: "2024-01-22"
 categories:
     - blog
     - duckdb
@@ -106,7 +106,7 @@ DataFusion -- to complete the challenge.
 ### Setup
 
 Before we get started, we'll make some imports, turn on interactive mode, and
-define the `kwargs` dictionariy for the backends corresponding to their
+define the `kwargs` dictionary for the backends corresponding to their
 `read_csv` function:
 
 ```{python}
@@ -148,9 +148,36 @@ datafusion_kwargs = {
 }
 ```
 
+Let's define a function to run the same code with each backend to complete the challenge:
+
+```{python}
+def run_challenge(t):
+    res = (
+        t.group_by(ibis._.station)
+        .agg(
+            min_temp=ibis._.temperature.min(),
+            mean_temp=ibis._.temperature.mean(),
+            max_temp=ibis._.temperature.max(),
+        )
+        .order_by(ibis._.station.desc())
+    )
+    return res
+```
+
 ### Completing the challenge
 
 Let's complete the challenge with each backend.
+
+:::{.callout-note}
+The results are the same across backends but look suspicious. It is noted in the
+repository that the Python generation code is "unofficial", so may have some
+problems. Given this is a contrived example of generated data, I'm not going to
+worry about it.
+
+The point is that we can easily complete the challenge with the same code across
+many backends, letting them worry about the details of execution. For this
+reason, I'm also not providing execution times. Try it out yourself!
+:::
 
 ::: {.panel-tabset}
 
@@ -182,15 +209,7 @@ f"{t.count().to_pandas():,}"
 Finally, we'll compute the min, mean, and max temperature per weather station:
 
 ```{python}
-res = (
-    t.group_by(ibis._.station)
-    .agg(
-        min_temp=ibis._.temperature.min(),
-        mean_temp=ibis._.temperature.mean(),
-        max_temp=ibis._.temperature.max(),
-    )
-    .order_by(ibis._.station.desc())
-)
+res = run_challenge(t)
 res
 ```
 
@@ -221,15 +240,7 @@ f"{t.count().to_pandas():,}"
 Finally, we'll compute the min, mean, and max temperature per weather station:
 
 ```{python}
-res = (
-    t.group_by(ibis._.station)
-    .agg(
-        min_temp=ibis._.temperature.min(),
-        mean_temp=ibis._.temperature.mean(),
-        max_temp=ibis._.temperature.max(),
-    )
-    .order_by(ibis._.station.desc())
-)
+res = run_challenge(t)
 res
 ```
 
@@ -260,15 +271,7 @@ f"{t.count().to_pandas():,}"
 Finally, we'll compute the min, mean, and max temperature per weather station:
 
 ```{python}
-res = (
-    t.group_by(ibis._.station)
-    .agg(
-        min_temp=ibis._.temperature.min(),
-        mean_temp=ibis._.temperature.mean(),
-        max_temp=ibis._.temperature.max(),
-    )
-    .order_by(ibis._.station.desc())
-)
+res = run_challenge(t)
 res
 ```
 
@@ -296,7 +299,32 @@ t = con.sql(sql_str)
 con.create_table("billion", t, overwrite=True)
 ```
 
-Happy coding!
+Nowadays I'd convert that to an Ibis expression:
+
+:::{.callout-note}
+This is a slightly different result with a monotonic index column, but I prefer
+it anyway. You could drop that column or adjust the expression.
+:::
+
+```{.python}
+import ibis
+
+con = ibis.connect("duckdb://data.ddb")
+
+ROWS = 1_000_000_000
+
+t = (
+    ibis.range(ROWS)
+    .unnest()
+    .name("index")
+    .as_table()
+    .mutate(**{c: ibis.random() for c in list(map(chr, range(ord("a"), ord("z") + 1)))})
+)
+con.create_table("billion", t, overwrite=True)
+```
+
+But if you do need to construct a programmatic SQL string, it's cool that you
+can!
 
 ## Conclusion
 
@@ -304,3 +332,5 @@ While the one billion row challenge isn't a great benchmark, it's a fun way to
 demonstrate how Ibis provides a single Python dataframe API to take the billion
 row challenge with DuckDB, Polars, and DataFusion. Feel free to try it out with
 other backends!
+
+Happy coding!
