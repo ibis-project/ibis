@@ -173,7 +173,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: run doctests
-        run: just doctest --junitxml=junit.xml --cov=ibis --cov-report=xml:coverage.xml
+        run: just ci-doctest --junitxml=junit.xml --cov=ibis --cov-report=xml:coverage.xml
 
       - name: upload code coverage
         if: success()
