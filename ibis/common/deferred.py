@@ -97,6 +97,11 @@ class Deferred(Slotted, Immutable, Final):
     def __iter__(self):
         raise TypeError(f"{self.__class__.__name__!r} object is not iterable")
 
+    def __bool__(self):
+        raise TypeError(
+            f"The truth value of {self.__class__.__name__} objects is not defined"
+        )
+
     def __getitem__(self, name):
         return Deferred(Item(self, name))
 

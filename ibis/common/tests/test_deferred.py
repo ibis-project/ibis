@@ -501,6 +501,14 @@ def test_deferred_is_not_iterable(obj):
         next(obj)
 
 
+@pytest.mark.parametrize("obj", [_, _.a, _.a.b[0]])
+def test_deferred_is_not_truthy(obj):
+    with pytest.raises(
+        TypeError, match="The truth value of Deferred objects is not defined"
+    ):
+        bool(obj)
+
+
 def test_deferrable(table):
     @deferrable
     def f(a, b, c=3):
