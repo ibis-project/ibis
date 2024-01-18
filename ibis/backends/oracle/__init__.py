@@ -221,7 +221,7 @@ class Backend(SQLGlotBackend):
         self, name: str, schema: str | None = None, database: str | None = None
     ) -> sch.Schema:
         if schema is None:
-            schema = self.con.username
+            schema = self.con.username.upper()
         stmt = (
             sg.select(
                 "column_name",

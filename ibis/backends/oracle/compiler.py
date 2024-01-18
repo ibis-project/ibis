@@ -154,6 +154,8 @@ class OracleCompiler(SQLGlotCompiler):
             return self.f.to_date(
                 f"{value.year:04d}-{value.month:02d}-{value.day:02d}", "FXYYYY-MM-DD"
             )
+        elif dtype.is_uuid():
+            return sge.convert(str(value))
 
         return super().visit_Literal(op, value=value, dtype=dtype)
 
