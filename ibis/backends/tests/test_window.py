@@ -1112,9 +1112,6 @@ def test_percent_rank_whole_table_no_order_by(backend, alltypes, df):
 
 @pytest.mark.notimpl(["polars"], raises=com.OperationNotDefinedError)
 @pytest.mark.notimpl(["dask"], raises=NotImplementedError)
-@pytest.mark.broken(
-    ["pandas"], reason="pandas returns incorrect results", raises=AssertionError
-)
 def test_grouped_ordered_window_coalesce(backend, alltypes, df):
     t = alltypes
     expr = (
