@@ -38,7 +38,7 @@ def asframe(values: dict | tuple, concat=True):
 
     columns = [asseries(v, size) for v in values]
     if concat:
-        df = pd.concat(columns, axis=1, keys=names).reset_index(drop=True)
+        df = pd.concat(columns, axis=1, keys=names)
         return df, all_scalars
     else:
         return columns, all_scalars
@@ -49,31 +49,29 @@ def generic(func: Callable, operands):
 
 
 def rowwise(func: Callable, operands):
+    """Kernel applied to a row, where all the operands are scalars."""
     # dealing with a collection of series objects
-    df, all_scalars = asframe(operands)
-    result = df.apply(func, axis=1)  # , **kwargs)
-    return result.iat[0] if all_scalars else result
+    df, _ = asframe(operands)
+    return df.apply(func, axis=1)
 
 
 def columnwise(func: Callable, operands):
-    df, all_scalars = asframe(operands)
-    result = func(df)
-    return result.iat[0] if all_scalars else result
+    """Kernel where all the operands are series objects."""
+    df, _ = asframe(operands)
+    return func(df)
 
 
 def serieswise(func, operands):
+    """Kernel where the first operand is a series object."""
     (key, value), *rest = operands.items()
-    if isinstance(value, pd.Series):
-        # dealing with a single series object
-        return func(**operands)
-    else:
-        # dealing with a single scalar object
-        value = pd.Series([value])
-        operands = {key: value, **dict(rest)}
-        return func(**operands).iat[0]
+    # ensure that the first operand is a series object
+    value = asseries(value)
+    operands = {key: value, **dict(rest)}
+    return func(**operands)
 
 
 def elementwise(func, operands):
+    """Kernel applied to an element, where all the operands are scalars."""
     value = operands.pop(next(iter(operands)))
     if isinstance(value, pd.Series):
         # dealing with a single series object
