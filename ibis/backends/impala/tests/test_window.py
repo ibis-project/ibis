@@ -4,9 +4,7 @@ import pytest
 from pytest import param
 
 import ibis
-import ibis.common.exceptions as com
 from ibis import window
-from ibis.backends.impala.compiler import ImpalaCompiler
 from ibis.tests.util import assert_equal
 
 pytest.importorskip("impala")
