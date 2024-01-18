@@ -107,6 +107,8 @@ def promote_list(val: V | Sequence[V]) -> list[V]:
     """
     if isinstance(val, list):
         return val
+    elif isinstance(val, dict):
+        return [val]
     elif is_iterable(val):
         return list(val)
     elif val is None:
