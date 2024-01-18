@@ -80,6 +80,15 @@ def test_array_scalar(con, backend):
         assert con.execute(expr.typeof()) == ARRAY_BACKEND_TYPES[backend_name]
 
 
+@pytest.mark.xfail
+def test_array_scalar_mixed_python_ibis(con, backend):
+    # https://github.com/ibis-project/ibis/issues/8022
+    # once fixed, probably merge this into test_array_scalar()
+    # by adding an ibis.literal() in that test data.
+    expr = ibis.array([1.0, ibis.literal(2.0), 3.0])
+    assert isinstance(expr, ir.ArrayScalar)
+
+
 @pytest.mark.notimpl(["polars", "flink"], raises=com.OperationNotDefinedError)
 def test_array_repeat(con):
     expr = ibis.array([1.0, 2.0]) * 2
