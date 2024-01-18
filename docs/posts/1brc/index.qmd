@@ -1,39 +1,121 @@
 ---
-title: "1 billion row challenge with Ibis and DuckDB"
-author: ""
+title: "Using one Python dataframe API to take the billion row challenge with DuckDB, Polars, and DataFusion"
+author: "Cody"
 date: "2024-01-40"
 categories:
     - blog
     - duckdb
+    - polars
+    - datafusion
 ---
 
 ## Overview
 
-This is a redux of [The One Billion Row Challenge](https://www.morling.dev/blog/one-billion-row-challenge/),
+This is an implementation of the [The One Billion Row
+Challenge](https://www.morling.dev/blog/one-billion-row-challenge/):
 
-https://github.com/gunnarmorling/1brc
+> Let’s kick off 2024 true coder style—​I’m excited to announce the One Billion
+> Row Challenge (1BRC), running from Jan 1 until Jan 31.
+
+> Your mission, should you decide to accept it, is deceptively simple: write a
+> Java program for retrieving temperature measurement values from a text file and
+> calculating the min, mean, and max temperature per weather station. There’s just
+> one caveat: the file has 1,000,000,000 rows!
+
+I haven't written Java since dropping a computer science course my second year
+of college that forced us to do functional programming exclusively in Java.
+However, I'll gladly take the challenge in Python using Ibis! In fact, I did
+something like this (generating a billion rows with 26 columns of random numbers
+and doing basic aggregations) to test out DuckDB and Polars.
+
+In this blog, we'll demonstrate how Ibis provides a single Python dataframe API
+to take the billion row challenge with DuckDB, Polars, and DataFusion.
+
+## Setup
+
+We need to generate the data from the challenge. First, clone the repo:
 
 ```{.bash}
 gh repo clone gunnarmorling/1brc
 ```
+
+Then change into the Python directory and run the generation script with the
+number of rows you want to generate:
 
 ```{.bash}
 cd 1brc/src/main/python
 python create_measurements.py 1_000_000_000
 ```
 
-```{.python}
+This will generate a file called `measurements.txt` in the `data` directory at
+the root of the repo. It is 15GB on disk:
+
+```{.bash}
+(venv) cody@voda 1brc % du 1brc/data/*
+ 15G    1brc/data/measurements.txt
+808K    1brc/data/weather_stations.csv
+```
+
+And consists of one billion rows with two columns separated by a semicolon:
+
+```{.bash}
+(venv) cody@voda 1brc % head 1brc/data/measurements.txt 
+Kusugal;-67.2
+Ipil;-88.6
+Sohna;-31.2
+Lubuagan;-2.3
+Szentes;29.2
+Sylvan Lake;-70.7
+Ambato;-35.2
+Berkine;97.0
+Wernau;73.4
+Kennewick;-19.9
+```
+
+Also, you'll need to install Ibis with the three backends we'll use:
+
+```{.bash}
+pip install ibis-framework[duckdb,polars,datafusion]
+```
+
+## Understanding Ibis
+
+Ibis provides a standard dataframe API decoupled from the execution engine. It
+compiles Ibis expressions to a form of intermediary representation (often SQL)
+that can be executed by different backends.
+
+This allows us to write a single Ibis expression to complete the challenge with
+many different execution engine backends.
+
+:::{.callout-warning}
+While Ibis does its best to abstract away the differences between backends, this
+cannot be done in some areas like data input and output. For example, the
+`read_csv` function across various backends (in their SQL and Python forms) have
+different parameters. We'll handle that with different `kwargs` dictionaries for
+these backends in this post.
+
+In general, besides creating a connection and data input/output, the Ibis API is
+the same across backends.
+:::
+
+## Completing the challenge thrice
+
+We'll use three great options for local backends -- DuckDB, Polars, and
+DataFusion -- to complete the challenge.
+
+### Setup
+
+Before we get started, we'll make some imports, turn on interactive mode, and
+define the `kwargs` dictionariy for the backends corresponding to their
+`read_csv` function:
+
+```{python}
 import ibis
 import polars as pl
 import pyarrow as pa
 
-#ibis.set_backend("polars")
-#ibis.set_backend("duckdb")
-ibis.set_backend("datafusion")
 ibis.options.interactive = True
-```
 
-```{.python}
 duckdb_kwargs = {
     "delim": ";",
     "header": False,
@@ -58,44 +140,48 @@ datafusion_kwargs = {
             ),
             (
                 "temperature",
-                pa.float32(),
+                pa.float64(),
             ),
         ]
     ),
     "file_extension": ".txt",
 }
-
-clickhouse_kwargs = {
-    "format": "CSV",
-    "types": {"station": "String", "temperature": "Float64"},
-}
-
-# kwargs = duckdb_kwargs if ibis.get_backend().name == "duckdb" else polars_kwargs
-match ibis.get_backend().name:
-    case "duckdb":
-        kwargs = duckdb_kwargs
-    case "polars":
-        kwargs = polars_kwargs
-    case "datafusion":
-        kwargs = datafusion_kwargs
-
-
-kwargs
 ```
 
-```{.python}
+### Completing the challenge
+
+Let's complete the challenge with each backend.
+
+::: {.panel-tabset}
+
+## DuckDb
+
+First let's set the backend to DuckDB (redundantly since it's the default) and
+the `kwargs` dictionary:
+
+```{python}
+ibis.set_backend("duckdb") # <1>
+kwargs = duckdb_kwargs
+```
+
+1. Redundant given DuckDB is the default
+
+Next, we'll read in the data and take a look at the table:
+
+```{python}
 t = ibis.read_csv("1brc/data/measurements.txt", **kwargs)
-t
+t.limit(3)
 ```
 
-```{.python}
+Then let's confirm it's **a billion** rows:
+
+```{python}
 f"{t.count().to_pandas():,}"
 ```
 
-```{python}
-import time
+Finally, we'll compute the min, mean, and max temperature per weather station:
 
-t1 = time.time()
+```{python}
 res = (
     t.group_by(ibis._.station)
     .agg(
@@ -105,7 +191,116 @@ res = (
     )
     .order_by(ibis._.station.desc())
 )
-print(res)
-t2 = time.time()
-t2 - t1
+res
 ```
+
+## Polars
+
+First let's set the backend to Polars and the `kwargs` dictionary:
+
+```{python}
+ibis.set_backend("polars") # <1>
+kwargs = polars_kwargs
+```
+
+1. Set Polars as the default backend used
+
+Next, we'll read in the data and take a look at the table:
+
+```{python}
+t = ibis.read_csv("1brc/data/measurements.txt", **kwargs)
+t.limit(3)
+```
+
+Then let's confirm it's **a billion** rows:
+
+```{python}
+f"{t.count().to_pandas():,}"
+```
+
+Finally, we'll compute the min, mean, and max temperature per weather station:
+
+```{python}
+res = (
+    t.group_by(ibis._.station)
+    .agg(
+        min_temp=ibis._.temperature.min(),
+        mean_temp=ibis._.temperature.mean(),
+        max_temp=ibis._.temperature.max(),
+    )
+    .order_by(ibis._.station.desc())
+)
+res
+```
+
+## DataFusion
+
+First let's set the backend to DataFusion and the `kwargs` dictionary:
+
+```{python}
+ibis.set_backend("datafusion") # <1>
+kwargs = datafusion_kwargs
+```
+
+1. Set DataFusion as the default backend used
+
+Next, we'll read in the data and take a look at the table:
+
+```{python}
+t = ibis.read_csv("1brc/data/measurements.txt", **kwargs)
+t.limit(3)
+```
+
+Then let's confirm it's **a billion** rows:
+
+```{python}
+f"{t.count().to_pandas():,}"
+```
+
+Finally, we'll compute the min, mean, and max temperature per weather station:
+
+```{python}
+res = (
+    t.group_by(ibis._.station)
+    .agg(
+        min_temp=ibis._.temperature.min(),
+        mean_temp=ibis._.temperature.mean(),
+        max_temp=ibis._.temperature.max(),
+    )
+    .order_by(ibis._.station.desc())
+)
+res
+```
+
+:::
+
+## Bonus: more billion row data generation
+
+While we're here, I'll share the code I've used in the past to generate a
+billion rows of random data:
+
+```{.python}
+import ibis
+
+con = ibis.connect("duckdb://data.ddb")
+
+ROWS = 1_000_000_000
+
+sql_str = ""
+sql_str += "select\n"
+for c in list(map(chr, range(ord("a"), ord("z") + 1))):
+    sql_str += f"  random() as {c},\n"
+sql_str += f"from generate_series(1, {ROWS})"
+
+t = con.sql(sql_str)
+con.create_table("billion", t, overwrite=True)
+```
+
+Happy coding!
+
+## Conclusion
+
+While the one billion row challenge isn't a great benchmark, it's a fun way to
+demonstrate how Ibis provides a single Python dataframe API to take the billion
+row challenge with DuckDB, Polars, and DataFusion. Feel free to try it out with
+other backends!
