@@ -21,7 +21,8 @@ from ibis.expr.rewrites import rewrite_sample
 
 
 def _create_sql(self, expression: sge.Create) -> str:
-    # TODO: should we use CREATE PRIVATE instead?  That will set an implicit lower bound of Oracle 18c
+    # TODO: should we use CREATE PRIVATE instead?  That will set an implicit
+    # lower bound of Oracle 18c
     properties = expression.args.get("properties")
     temporary = any(
         isinstance(prop, sge.TemporaryProperty)
@@ -505,6 +506,7 @@ class OracleCompiler(SQLGlotCompiler):
     @visit_node.register(ops.DayOfWeekIndex)
     @visit_node.register(ops.DayOfWeekName)
     @visit_node.register(ops.ExtractEpochSeconds)
+    @visit_node.register(ops.RowID)
     def visit_Undefined(self, op, **_):
         raise com.OperationNotDefinedError(type(op).__name__)
 
