@@ -2007,7 +2007,7 @@ class Table(Expr, _FixedTextJupyterMixin):
                 new_exprs.extend(expr.expand(self))
             elif isinstance(expr, Mapping):
                 new_exprs.extend(
-                    _ensure_expr(self, value).name(name) for name, value in expr.items()
+                    self._ensure_expr(value).name(name) for name, value in expr.items()
                 )
             else:
                 new_exprs.extend(map(self._ensure_expr, util.promote_list(expr)))

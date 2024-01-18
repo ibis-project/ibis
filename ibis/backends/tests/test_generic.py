@@ -1741,3 +1741,16 @@ def test_simple_memtable_construct(con):
     # because memtables have a unique name per table per process, so smoke test
     # it
     assert str(ibis.to_sql(expr, dialect=con.name)).startswith("SELECT")
+
+
+def test_select_mutate_with_dict(backend):
+    t = backend.functional_alltypes
+    expr = t.mutate({"a": 1.0}).select("a").limit(1)
+
+    result = expr.execute()
+    expected = pd.DataFrame({"a": [1.0]})
+
+    backend.assert_frame_equal(result, expected)
+
+    expr = t.select({"a": ibis.literal(1.0)}).limit(1)
+    backend.assert_frame_equal(result, expected)

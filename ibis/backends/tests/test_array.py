@@ -1066,7 +1066,7 @@ def test_repr_timestamp_array(con, monkeypatch):
     raises=com.OperationNotDefinedError,
 )
 def test_unnest_range(con):
-    expr = ibis.range(2).unnest().name("x").as_table().mutate({"y": ibis.literal(1.0)})
+    expr = ibis.range(2).unnest().name("x").as_table().mutate({"y": 1.0})
     result = con.execute(expr)
     expected = pd.DataFrame({"x": np.array([0, 1], dtype="int8"), "y": [1.0, 1.0]})
     tm.assert_frame_equal(result, expected)
