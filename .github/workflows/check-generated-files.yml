@@ -26,20 +26,21 @@ jobs:
       - name: checkout
         uses: actions/checkout@v4
 
+      - name: install poetry
+        run: pipx install 'poetry==1.7.1'
+
       - name: install python
         uses: actions/setup-python@v5
         id: install_python
         with:
           python-version: "3.11"
+          cache: poetry
 
       - name: update apt-get
         run: sudo apt-get update -y -q
 
       - name: install system dependencies
         run: sudo apt-get install -y -q build-essential graphviz libgeos-dev freetds-dev unixodbc-dev
-
-      - name: install poetry
-        run: pip install 'poetry==1.7.1'
 
       - name: check consistency with pyproject.toml
         run: poetry check --lock
@@ -64,16 +65,6 @@ jobs:
 
       - name: check requirements-dev.txt
         run: git diff --exit-code requirements-dev.txt
-
-      - uses: syphar/restore-virtualenv@v1
-        with:
-          requirement_files: requirements-dev.txt
-          custom_cache_key_element: check-setuptools-install
-
-      - uses: syphar/restore-pip-download-cache@v1
-        with:
-          requirement_files: requirements-dev.txt
-          custom_cache_key_element: check-setuptools-install-${{ steps.install_python.outputs.python-version }}
 
       - name: install using requirements-dev.txt
         run: pip install -r requirements-dev.txt
