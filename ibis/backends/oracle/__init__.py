@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import atexit
 import contextlib
 import re
 import warnings
@@ -203,24 +202,35 @@ class Backend(SQLGlotBackend):
 
         return self._filter_with_like(map(itemgetter(0), out), like)
 
+    def list_schemas(
+        self, like: str | None = None, database: str | None = None
+    ) -> list[str]:
+        if database is not None:
+            raise exc.UnsupportedArgumentError(
+                "No cross-database schema access in Oracle"
+            )
+
+        query = sg.select("username").from_("all_users").order_by("username")
+
+        with self._safe_raw_sql(query) as con:
+            schemata = list(map(itemgetter(0), con))
+
+        return self._filter_with_like(schemata, like)
+
     def get_schema(
         self, name: str, schema: str | None = None, database: str | None = None
     ) -> sch.Schema:
-        # TODO: sge.convert(f"{name}") works because it gets parsed as a string literal
-        # but using `sg.table` breaks with "invalid identifier"
-        # The first renders as "'functional_alltypes'"
-        # vs the second as '"functional_alltypes"'
-        # stupid quotation marks
-        table = sg.table(name, db=schema, catalog=database, quoted=True)
-
+        if schema is None:
+            schema = self.con.username
         stmt = (
             sg.select(
                 "column_name",
                 "data_type",
                 sg.column("nullable").eq(sge.convert("Y")).as_("nullable"),
             )
-            .from_(sg.table("user_tab_columns"))
+            .from_(sg.table("all_tab_columns"))
             .where(sg.column("table_name").eq(sge.convert(name)))
+            .where(sg.column("owner").eq(sge.convert(schema)))
         )
         with self._safe_raw_sql(stmt) as cur:
             result = cur.fetchall()
@@ -477,20 +487,20 @@ class Backend(SQLGlotBackend):
         df = OraclePandasData.convert_table(df, schema)
         return df
 
-    def _table_from_schema(
-        self,
-        name: str,
-        schema: sch.Schema,
-        temp: bool = False,
-        database: str | None = None,
-        **kwargs: Any,
-    ) -> sa.Table:
-        if temp:
-            kwargs["oracle_on_commit"] = "PRESERVE ROWS"
-        t = super()._table_from_schema(name, schema, temp, database, **kwargs)
-        if temp:
-            atexit.register(self._clean_up_tmp_table, t)
-        return t
+    # def _table_from_schema(
+    #     self,
+    #     name: str,
+    #     schema: sch.Schema,
+    #     temp: bool = False,
+    #     database: str | None = None,
+    #     **kwargs: Any,
+    # ) -> sa.Table:
+    #     if temp:
+    #         kwargs["oracle_on_commit"] = "PRESERVE ROWS"
+    #     t = super()._table_from_schema(name, schema, temp, database, **kwargs)
+    #     if temp:
+    #         atexit.register(self._clean_up_tmp_table, t)
+    #     return t
 
     def _clean_up_tmp_table(self, name: str) -> None:
         with self.begin() as bind:
