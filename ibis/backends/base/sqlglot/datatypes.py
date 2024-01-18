@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from functools import partial
+from typing import NoReturn
 
 import sqlglot as sg
 import sqlglot.expressions as sge
@@ -641,15 +642,15 @@ class BigQueryType(SqlglotType):
         return dt.Decimal(76, 38, nullable=cls.default_nullable)
 
     @classmethod
-    def _from_sqlglot_DATETIME(cls) -> dt.Decimal:
+    def _from_sqlglot_DATETIME(cls) -> dt.Timestamp:
         return dt.Timestamp(timezone=None, nullable=cls.default_nullable)
 
     @classmethod
-    def _from_sqlglot_TIMESTAMP(cls) -> dt.Decimal:
+    def _from_sqlglot_TIMESTAMP(cls) -> dt.Timestamp:
         return dt.Timestamp(timezone="UTC", nullable=cls.default_nullable)
 
     @classmethod
-    def _from_sqlglot_GEOGRAPHY(cls) -> dt.Decimal:
+    def _from_sqlglot_GEOGRAPHY(cls) -> dt.GeoSpatial:
         return dt.GeoSpatial(
             geotype="geography", srid=4326, nullable=cls.default_nullable
         )
@@ -665,24 +666,22 @@ class BigQueryType(SqlglotType):
     ) = _from_sqlglot_INT = _from_sqlglot_SMALLINT = _from_sqlglot_TINYINT
 
     @classmethod
-    def _from_sqlglot_UBIGINT(cls) -> dt.Int64:
-        raise TypeError("Unsigned BIGINT isn't representable in BigQuery INT64")
+    def _from_sqlglot_UBIGINT(cls) -> NoReturn:
+        raise com.UnsupportedBackendType(
+            "Unsigned BIGINT isn't representable in BigQuery INT64"
+        )
 
     @classmethod
-    def _from_sqlglot_FLOAT(cls) -> dt.Double:
+    def _from_sqlglot_FLOAT(cls) -> dt.Float64:
         return dt.Float64(nullable=cls.default_nullable)
 
     @classmethod
-    def _from_sqlglot_MAP(cls) -> dt.Map:
-        raise NotImplementedError(
-            "Cannot convert sqlglot Map type to ibis type: maps are not supported in BigQuery"
-        )
+    def _from_sqlglot_MAP(cls) -> NoReturn:
+        raise com.UnsupportedBackendType("Maps are not supported in BigQuery")
 
     @classmethod
-    def _from_ibis_Map(cls, dtype: dt.Map) -> sge.DataType:
-        raise NotImplementedError(
-            "Cannot convert Ibis Map type to BigQuery type: maps are not supported in BigQuery"
-        )
+    def _from_ibis_Map(cls, dtype: dt.Map) -> NoReturn:
+        raise com.UnsupportedBackendType("Maps are not supported in BigQuery")
 
     @classmethod
     def _from_ibis_Timestamp(cls, dtype: dt.Timestamp) -> sge.DataType:
@@ -691,7 +690,7 @@ class BigQueryType(SqlglotType):
         elif dtype.timezone == "UTC":
             return sge.DataType(this=sge.DataType.Type.TIMESTAMPTZ)
         else:
-            raise TypeError(
+            raise com.UnsupportedBackendType(
                 "BigQuery does not support timestamps with timezones other than 'UTC'"
             )
 
@@ -704,15 +703,15 @@ class BigQueryType(SqlglotType):
         elif (precision, scale) in ((38, 9), (None, None)):
             return sge.DataType(this=sge.DataType.Type.DECIMAL)
         else:
-            raise TypeError(
+            raise com.UnsupportedBackendType(
                 "BigQuery only supports decimal types with precision of 38 and "
                 f"scale of 9 (NUMERIC) or precision of 76 and scale of 38 (BIGNUMERIC). "
                 f"Current precision: {dtype.precision}. Current scale: {dtype.scale}"
             )
 
     @classmethod
-    def _from_ibis_UInt64(cls, dtype: dt.UInt64) -> sge.DataType:
-        raise TypeError(
+    def _from_ibis_UInt64(cls, dtype: dt.UInt64) -> NoReturn:
+        raise com.UnsupportedBackendType(
             f"Conversion from {dtype} to BigQuery integer type (Int64) is lossy"
         )
 
@@ -727,7 +726,7 @@ class BigQueryType(SqlglotType):
         if (dtype.geotype, dtype.srid) == ("geography", 4326):
             return sge.DataType(this=sge.DataType.Type.GEOGRAPHY)
         else:
-            raise TypeError(
+            raise com.UnsupportedBackendType(
                 "BigQuery geography uses points on WGS84 reference ellipsoid."
                 f"Current geotype: {dtype.geotype}, Current srid: {dtype.srid}"
             )
@@ -735,7 +734,7 @@ class BigQueryType(SqlglotType):
 
 class BigQueryUDFType(BigQueryType):
     @classmethod
-    def _from_ibis_Int64(cls, dtype: dt.Int64) -> sge.DataType:
+    def _from_ibis_Int64(cls, dtype: dt.Int64) -> NoReturn:
         raise com.UnsupportedBackendType(
             "int64 is not a supported input or output type in BigQuery UDFs; use float64 instead"
         )
