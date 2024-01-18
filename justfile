@@ -54,12 +54,11 @@ test +backends:
 
     pytest "${pytest_args[@]}"
 
-# run doctests
-doctest *args:
+_doctest runner *args:
     #!/usr/bin/env bash
 
     # TODO(cpcloud): why doesn't pytest --ignore-glob=test_*.py work?
-    pytest --doctest-modules {{ args }} $(
+    {{ runner }} pytest --doctest-modules {{ args }} $(
       find \
         ibis \
         -wholename '*.py' \
@@ -69,6 +68,14 @@ doctest *args:
         -and -not -wholename '*ibis/expr/selectors.py' \
         -and -not -wholename '*ibis/backends/flink/*' # FIXME(deepyaman)
     )
+
+# run doctests
+doctest *args:
+    just _doctest "python -m" {{ args }}
+
+# run doctests using poetry
+ci-doctest *args:
+    just _doctest "poetry run" {{ args }}
 
 # download testing data
 download-data owner="ibis-project" repo="testing-data" rev="master":
