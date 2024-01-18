@@ -1020,25 +1020,27 @@ class ArrayColumn(Column, ArrayValue):
 def array(values: Iterable[V], type: str | dt.DataType | None = None) -> ArrayValue:
     """Create an array expression.
 
-    If the input expressions are all column expressions, then the output will
-    be an `ArrayColumn`. The input columns will be concatenated row-wise to
-    produce each array in the output array column. Each array will have length
-    _n_, where _n_ is the number of input columns. All input columns should be
-    of the same datatype.
+    All input values must be of the same datatype.
 
-    If the input expressions are Python literals, then the output will be a
-    single `ArrayScalar` of length _n_, where _n_ is the number of input
-    values. This is equivalent to
+    If all of the input values are Python literals,
+    then the output will be a single `ArrayScalar` of length _n_, where _n_ is
+    the number of input values. This is equivalent to
 
     ```python
     values = [1, 2, 3]
     ibis.literal(values)
     ```
 
+    If any of the input values are Ibis expressions, then the output will
+    be an `ArrayColumn`. The input columns will be concatenated row-wise to
+    produce each array in the output array column. Each array will have length
+    _n_, where _n_ is the number of input columns.
+
     Parameters
     ----------
     values
-        An iterable of Ibis expressions or a list of Python literals
+        An iterable of Ibis expressions or Python literals.
+        All values must be of the same datatype.
     type
         An instance of `ibis.expr.datatypes.DataType` or a string indicating
         the ibis type of `value`.
@@ -1046,44 +1048,35 @@ def array(values: Iterable[V], type: str | dt.DataType | None = None) -> ArrayVa
     Returns
     -------
     ArrayValue
-        An array column (if the inputs are column expressions), or an array
-        scalar (if the inputs are Python literals)
+        An `ArrayScalar` (if all inputs are Python literals),
+        or an `ArrayColumn` (otherwise)
 
     Examples
     --------
-    Create an array column from column expressions
+    Create an ArrayScalar from scalars
 
     >>> import ibis
     >>> ibis.options.interactive = True
+    >>> ibis.options.repr.interactive.max_length = 5
+    >>> ibis.array([1.0, 2.0, None])
+    [1.0, 2.0, None]
+
+    Mixing scalar and column expressions is allowed,
+    and gives an ArrayColumn:
+
     >>> t = ibis.memtable({"a": [1, 2, 3], "b": [4, 5, 6]})
-    >>> ibis.array([t.a, t.b])
+    >>> ibis.array([t.a, t.b, 42, ibis.literal(None)])
     ┏━━━━━━━━━━━━━━━━━━━━━━┓
     ┃ ArrayColumn()        ┃
     ┡━━━━━━━━━━━━━━━━━━━━━━┩
     │ array<int64>         │
     ├──────────────────────┤
-    │ [1, 4]               │
-    │ [2, 5]               │
-    │ [3, 6]               │
+    │ [1, 4, 42, None]     │
+    │ [2, 5, 42, None]     │
+    │ [3, 6, 42, None]     │
     └──────────────────────┘
 
-    Create an array scalar from Python literals
-
-    >>> ibis.array([1.0, 2.0, 3.0])
-    [1.0, 2.0, ... +1]
-
-    Mixing scalar and column expressions is allowed
-
-    >>> ibis.array([t.a, 42])
-    ┏━━━━━━━━━━━━━━━━━━━━━━┓
-    ┃ ArrayColumn()        ┃
-    ┡━━━━━━━━━━━━━━━━━━━━━━┩
-    │ array<int64>         │
-    ├──────────────────────┤
-    │ [1, 42]              │
-    │ [2, 42]              │
-    │ [3, 42]              │
-    └──────────────────────┘
+    >>> ibis.options.repr.interactive.max_length = 2 # quartodoc: +SKIP
     """
     if any(isinstance(value, Value) for value in values):
         return ops.ArrayColumn(values).to_expr()
