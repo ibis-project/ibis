@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import pytest
 
-from ibis.backends.impala.compiler import ImpalaCompiler
 from ibis.backends.impala.tests.conftest import translate
 
 
