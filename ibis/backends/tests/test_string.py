@@ -237,7 +237,7 @@ def uses_java_re(t):
             id="re_extract",
             marks=[
                 pytest.mark.notimpl(
-                    ["mssql", "oracle", "exasol"], raises=com.OperationNotDefinedError
+                    ["mssql", "exasol"], raises=com.OperationNotDefinedError
                 ),
             ],
         ),
@@ -247,7 +247,7 @@ def uses_java_re(t):
             id="re_extract_group",
             marks=[
                 pytest.mark.notimpl(
-                    ["mssql", "oracle", "exasol"], raises=com.OperationNotDefinedError
+                    ["mssql", "exasol"], raises=com.OperationNotDefinedError
                 ),
             ],
         ),
@@ -259,7 +259,7 @@ def uses_java_re(t):
             id="re_extract_posix",
             marks=[
                 pytest.mark.notimpl(
-                    ["mssql", "oracle", "exasol"], raises=com.OperationNotDefinedError
+                    ["mssql", "exasol"], raises=com.OperationNotDefinedError
                 ),
                 pytest.mark.notimpl(
                     ["druid"], reason="No posix support", raises=AssertionError
@@ -272,7 +272,7 @@ def uses_java_re(t):
             id="re_extract_whole_group",
             marks=[
                 pytest.mark.notimpl(
-                    ["mssql", "oracle", "exasol"], raises=com.OperationNotDefinedError
+                    ["mssql", "exasol"], raises=com.OperationNotDefinedError
                 ),
             ],
         ),
@@ -284,7 +284,7 @@ def uses_java_re(t):
             id="re_extract_group_1",
             marks=[
                 pytest.mark.notimpl(
-                    ["mssql", "oracle", "exasol"], raises=com.OperationNotDefinedError
+                    ["mssql", "exasol"], raises=com.OperationNotDefinedError
                 ),
             ],
         ),
@@ -296,7 +296,7 @@ def uses_java_re(t):
             id="re_extract_group_2",
             marks=[
                 pytest.mark.notimpl(
-                    ["mssql", "oracle", "exasol"], raises=com.OperationNotDefinedError
+                    ["mssql", "exasol"], raises=com.OperationNotDefinedError
                 ),
             ],
         ),
@@ -308,7 +308,7 @@ def uses_java_re(t):
             id="re_extract_group_3",
             marks=[
                 pytest.mark.notimpl(
-                    ["mssql", "oracle", "exasol"], raises=com.OperationNotDefinedError
+                    ["mssql", "exasol"], raises=com.OperationNotDefinedError
                 ),
             ],
         ),
@@ -318,7 +318,7 @@ def uses_java_re(t):
             id="re_extract_group_at_beginning",
             marks=[
                 pytest.mark.notimpl(
-                    ["mssql", "oracle", "exasol"], raises=com.OperationNotDefinedError
+                    ["mssql", "exasol"], raises=com.OperationNotDefinedError
                 ),
             ],
         ),
@@ -328,7 +328,7 @@ def uses_java_re(t):
             id="re_extract_group_at_end",
             marks=[
                 pytest.mark.notimpl(
-                    ["mssql", "oracle", "exasol"], raises=com.OperationNotDefinedError
+                    ["mssql", "exasol"], raises=com.OperationNotDefinedError
                 ),
             ],
         ),

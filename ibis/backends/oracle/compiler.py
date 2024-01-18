@@ -348,11 +348,10 @@ class OracleCompiler(SQLGlotCompiler):
 
     @visit_node.register(ops.RegexExtract)
     def visit_RegexExtract(self, op, *, arg, pattern, index):
-        # TODO: this is frustratingly close to working but breaks on group extraction
         return self.if_(
             index.eq(0),
             self.f.regexp_substr(arg, pattern),
-            self.f.regexp_substr(arg, pattern, 1, index, "cn"),
+            self.f.regexp_substr(arg, pattern, 1, 1, "cn", index),
         )
 
     @visit_node.register(ops.StringContains)
@@ -543,7 +542,6 @@ class OracleCompiler(SQLGlotCompiler):
     @visit_node.register(ops.Last)
     @visit_node.register(ops.Mode)
     @visit_node.register(ops.MultiQuantile)
-    @visit_node.register(ops.RegexExtract)
     @visit_node.register(ops.RegexSplit)
     @visit_node.register(ops.RegexReplace)
     @visit_node.register(ops.StringSplit)
