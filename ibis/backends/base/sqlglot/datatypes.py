@@ -568,11 +568,7 @@ class OracleType(SqlglotType):
 
     default_temporal_scale = 9
 
-    unknown_type_strings = FrozenDict(
-        {
-            "raw": dt.binary,
-        }
-    )
+    unknown_type_strings = FrozenDict({"raw": dt.binary})
 
     @classmethod
     def _from_sqlglot_FLOAT(cls) -> dt.Float64:

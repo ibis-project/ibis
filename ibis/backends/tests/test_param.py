@@ -11,7 +11,7 @@ from pytest import param
 import ibis
 import ibis.expr.datatypes as dt
 from ibis import _
-from ibis.backends.tests.errors import Py4JJavaError
+from ibis.backends.tests.errors import OracleDatabaseError, Py4JJavaError
 
 
 @pytest.mark.parametrize(

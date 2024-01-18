@@ -337,6 +337,7 @@ def test_numeric_literal(con, backend, expr, expected_types):
                 pytest.mark.notimpl(["exasol"], raises=ExaQueryError),
                 pytest.mark.notimpl(["mysql"], raises=MySQLOperationalError),
                 pytest.mark.notyet(["snowflake"], raises=SnowflakeProgrammingError),
+                pytest.mark.notyet(["oracle"], raises=OracleDatabaseError),
                 pytest.mark.notyet(["impala"], raises=ImpalaHiveServer2Error),
                 pytest.mark.broken(
                     ["duckdb"],
@@ -684,7 +685,7 @@ def test_decimal_literal(con, backend, expr, expected_types, expected_result):
     ],
 )
 @pytest.mark.notimpl(
-    ["sqlite", "mssql", "oracle", "flink", "druid"], raises=com.OperationNotDefinedError
+    ["sqlite", "mssql", "flink", "druid"], raises=com.OperationNotDefinedError
 )
 @pytest.mark.notimpl(["mysql"], raises=(MySQLOperationalError, NotImplementedError))
 def test_isnan_isinf(
@@ -1474,7 +1475,25 @@ def test_bitwise_shift(backend, alltypes, df, op, left_fn, right_fn):
 
 @pytest.mark.parametrize(
     "op",
-    [and_, or_, xor, lshift, rshift],
+    [
+        and_,
+        param(
+            or_,
+            marks=pytest.mark.notimpl(["oracle"], raises=OracleDatabaseError),
+        ),
+        param(
+            xor,
+            marks=pytest.mark.notimpl(["oracle"], raises=OracleDatabaseError),
+        ),
+        param(
+            lshift,
+            marks=[pytest.mark.notimpl(["oracle"], raises=OracleDatabaseError)],
+        ),
+        param(
+            rshift,
+            marks=[pytest.mark.notimpl(["oracle"], raises=OracleDatabaseError)],
+        ),
+    ],
 )
 @pytest.mark.parametrize(
     ("left", "right"),

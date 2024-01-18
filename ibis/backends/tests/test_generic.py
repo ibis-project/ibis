@@ -25,6 +25,7 @@ from ibis.backends.tests.errors import (
     GoogleBadRequest,
     ImpalaHiveServer2Error,
     MySQLProgrammingError,
+    OracleDatabaseError,
     PyDruidProgrammingError,
     SnowflakeProgrammingError,
     TrinoUserError,
@@ -416,11 +417,7 @@ def test_table_fillna_invalid(alltypes):
     "replacements",
     [
         param({"int_col": 20}, id="int"),
-        param(
-            {"double_col": -1, "string_col": "missing"},
-            id="double-int-str",
-            marks=[pytest.mark.notimpl(["oracle"])],
-        ),
+        param({"double_col": -1, "string_col": "missing"}, id="double-int-str"),
         param({"double_col": -1.5, "string_col": "missing"}, id="double-str"),
     ],
 )
@@ -438,7 +435,6 @@ def test_table_fillna_mapping(backend, alltypes, replacements):
     backend.assert_frame_equal(result, expected, check_dtype=False)
 
 
-@pytest.mark.notimpl(["oracle"])
 def test_table_fillna_scalar(backend, alltypes):
     table = alltypes.mutate(
         int_col=alltypes.int_col.nullif(1),

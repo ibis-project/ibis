@@ -158,6 +158,15 @@ class OracleCompiler(SQLGlotCompiler):
             )
         elif dtype.is_uuid():
             return sge.convert(str(value))
+        elif dtype.is_interval():
+            if dtype.unit.short in ("Y", "M"):
+                return self.f.numtoyminterval(value, dtype.unit.name)
+            elif dtype.unit.short in ("D", "h", "m", "s"):
+                return self.f.numtodsinterval(value, dtype.unit.name)
+            else:
+                raise com.UnsupportedOperationError(
+                    f"Intervals with precision {dtype.unit.name} not supported in Oracle."
+                )
 
         return super().visit_Literal(op, value=value, dtype=dtype)
 
@@ -223,6 +232,50 @@ class OracleCompiler(SQLGlotCompiler):
     @visit_node.register(ops.Date)
     def visit_Date(self, op, *, arg):
         return sg.cast(arg, to="date")
+
+    # @visit_node.register(ops.TimestampFromYMDHMS)
+    # def visit_TimestampFromYMDHMS(
+    #     self, op, *, year, month, day, hours, minutes, seconds
+    # ):
+    #     date_str = self.f.concat(
+    #         self.f.lpad(self.cast(year, dt.string), 4, "0"),
+    #         self.f.concat(
+    #             "-",
+    #             self.f.concat(
+    #                 self.f.lpad(self.cast(month, dt.string), 2, "0"),
+    #                 self.f.concat(
+    #                     "-",
+    #                     self.f.concat(
+    #                         self.f.lpad(self.cast(day, dt.string), 2, "0"),
+    #                         self.f.concat(
+    #                             "T",
+    #                             self.f.concat(
+    #                                 self.f.lpad(self.cast(hours, dt.string), 2, "0"),
+    #                                 self.f.concat(
+    #                                     ":",
+    #                                     self.f.concat(
+    #                                         self.f.lpad(
+    #                                             self.cast(minutes, dt.string), 2, "0"
+    #                                         ),
+    #                                         self.f.concat(
+    #                                             ":",
+    #                                             self.f.lpad(
+    #                                                 self.cast(seconds, dt.string),
+    #                                                 2,
+    #                                                 "0",
+    #                                             ),
+    #                                         ),
+    #                                     ),
+    #                                 ),
+    #                             ),
+    #                         ),
+    #                     ),
+    #                 ),
+    #             ),
+    #         ),
+    #     )
+    #     expr = self.f.to_timestamp(date_str, 'YYYY-MM-DD"T"HH24:MI:SS')
+    #     return expr
 
     @visit_node.register(ops.IsNan)
     def visit_IsNan(self, op, *, arg):
@@ -503,6 +556,8 @@ class OracleCompiler(SQLGlotCompiler):
     @visit_node.register(ops.DateDelta)
     @visit_node.register(ops.TimestampDelta)
     @visit_node.register(ops.TimestampNow)
+    @visit_node.register(ops.TimestampFromYMDHMS)
+    @visit_node.register(ops.TimeFromHMS)
     @visit_node.register(ops.IntervalFromInteger)
     @visit_node.register(ops.DayOfWeekIndex)
     @visit_node.register(ops.DayOfWeekName)

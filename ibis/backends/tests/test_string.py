@@ -11,7 +11,11 @@ from pytest import param
 import ibis
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
-from ibis.backends.tests.errors import ClickHouseDatabaseError, PyDruidProgrammingError
+from ibis.backends.tests.errors import (
+    ClickHouseDatabaseError,
+    OracleDatabaseError,
+    PyDruidProgrammingError,
+)
 from ibis.common.annotations import ValidationError
 
 
@@ -185,7 +189,7 @@ def uses_java_re(t):
             id="rlike",
             marks=[
                 pytest.mark.notimpl(
-                    ["mssql", "oracle", "exasol"], raises=com.OperationNotDefinedError
+                    ["mssql", "exasol"], raises=com.OperationNotDefinedError
                 ),
             ],
         ),
@@ -195,7 +199,7 @@ def uses_java_re(t):
             id="re_search_substring",
             marks=[
                 pytest.mark.notimpl(
-                    ["mssql", "oracle", "exasol"], raises=com.OperationNotDefinedError
+                    ["mssql", "exasol"], raises=com.OperationNotDefinedError
                 ),
             ],
         ),
@@ -205,7 +209,7 @@ def uses_java_re(t):
             id="re_search",
             marks=[
                 pytest.mark.notimpl(
-                    ["mssql", "oracle", "exasol"], raises=com.OperationNotDefinedError
+                    ["mssql", "exasol"], raises=com.OperationNotDefinedError
                 ),
             ],
         ),

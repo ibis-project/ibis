@@ -1018,11 +1018,6 @@ minus = lambda t, td: t.timestamp_col - pd.Timedelta(td)
                     raises=AssertionError,
                     reason="DateTime column overflows, should use DateTime64",
                 ),
-                pytest.mark.broken(
-                    ["clickhouse"],
-                    raises=AssertionError,
-                    reason="DateTime column overflows, should use DateTime64",
-                ),
                 pytest.mark.notimpl(
                     ["flink"],
                     # Note (mehmet): Following cannot be imported for backends other than Flink.
@@ -1101,11 +1096,6 @@ minus = lambda t, td: t.timestamp_col - pd.Timedelta(td)
                     ["druid"],
                     raises=TypeError,
                     reason="unsupported operand type(s) for -: 'StringColumn' and 'Timedelta'",
-                ),
-                pytest.mark.broken(
-                    ["clickhouse"],
-                    raises=AssertionError,
-                    reason="DateTime column overflows, should use DateTime64",
                 ),
                 pytest.mark.broken(
                     ["clickhouse"],
@@ -1888,13 +1878,12 @@ TIME_BACKEND_TYPES = {
 
 
 @pytest.mark.notimpl(
-    ["pandas", "datafusion", "dask", "pyspark", "polars", "mysql"],
+    ["pandas", "datafusion", "dask", "pyspark", "polars", "mysql", "oracle"],
     raises=com.OperationNotDefinedError,
 )
 @pytest.mark.notyet(
     ["clickhouse", "impala", "exasol"], raises=com.OperationNotDefinedError
 )
-@pytest.mark.notimpl(["oracle"], raises=sa.exc.DatabaseError)
 @pytest.mark.notimpl(["druid"], raises=com.OperationNotDefinedError)
 def test_time_literal(con, backend):
     expr = ibis.time(16, 20, 0)
@@ -1922,7 +1911,7 @@ def test_time_literal(con, backend):
     ["sqlite"], raises=AssertionError, reason="SQLite returns Timedelta from execution"
 )
 @pytest.mark.notimpl(["dask"], raises=com.OperationNotDefinedError)
-@pytest.mark.notyet(["oracle"], raises=sa.exc.DatabaseError)
+@pytest.mark.notyet(["oracle"], raises=OracleDatabaseError)
 @pytest.mark.parametrize(
     "microsecond",
     [
@@ -2072,7 +2061,7 @@ def test_timestamp_column_from_ymdhms(backend, con, alltypes, df):
 
 
 @pytest.mark.notimpl(
-    ["oracle"], raises=sa.exc.DatabaseError, reason="ORA-01861 literal does not match"
+    ["oracle"], raises=OracleDatabaseError, reason="ORA-01861 literal does not match"
 )
 def test_date_scalar_from_iso(con):
     expr = ibis.literal("2022-02-24")
@@ -2131,8 +2120,8 @@ def test_integer_cast_to_timestamp_column(backend, alltypes, df):
     backend.assert_series_equal(result, expected.astype(result.dtype))
 
 
-@pytest.mark.notimpl(["oracle"], raises=sa.exc.DatabaseError)
 @pytest.mark.notimpl(["exasol"], raises=ExaQueryError)
+@pytest.mark.notimpl(["oracle"], raises=OracleDatabaseError)
 def test_integer_cast_to_timestamp_scalar(alltypes, df):
     expr = alltypes.int_col.min().cast("timestamp")
     result = expr.execute()
@@ -2179,7 +2168,7 @@ def build_date_col(t):
 
 @pytest.mark.notimpl(["mssql"], raises=com.OperationNotDefinedError)
 @pytest.mark.notimpl(["druid"], raises=PyDruidProgrammingError)
-@pytest.mark.notimpl(["oracle"], raises=sa.exc.DatabaseError)
+@pytest.mark.notimpl(["oracle"], raises=OracleDatabaseError)
 @pytest.mark.parametrize(
     ("left_fn", "right_fn"),
     [
@@ -2397,7 +2386,6 @@ def test_delta(con, start, end, unit, expected):
         "flink",
         "impala",
         "mysql",
-        "oracle",
         "pandas",
         "pyspark",
         "sqlite",
@@ -2432,6 +2420,11 @@ def test_delta(con, start, end, unit, expected):
                     raises=com.UnsupportedOperationError,
                     reason="backend doesn't support sub-second interval precision",
                 ),
+                pytest.mark.notimpl(
+                    ["oracle"],
+                    raises=com.UnsupportedOperationError,
+                    reason="backend doesn't support sub-second interval precision",
+                ),
             ],
             id="milliseconds",
         ),
@@ -2439,7 +2432,10 @@ def test_delta(con, start, end, unit, expected):
             {"seconds": 2},
             "2s",
             marks=[
-                pytest.mark.notimpl(["datafusion"], raises=com.OperationNotDefinedError)
+                pytest.mark.notimpl(
+                    ["datafusion", "oracle"],
+                    raises=com.OperationNotDefinedError,
+                ),
             ],
             id="seconds",
         ),
@@ -2447,7 +2443,10 @@ def test_delta(con, start, end, unit, expected):
             {"minutes": 5},
             "300s",
             marks=[
-                pytest.mark.notimpl(["datafusion"], raises=com.OperationNotDefinedError)
+                pytest.mark.notimpl(
+                    ["datafusion", "oracle"],
+                    raises=com.OperationNotDefinedError,
+                ),
             ],
             id="minutes",
         ),
@@ -2455,7 +2454,10 @@ def test_delta(con, start, end, unit, expected):
             {"hours": 2},
             "2h",
             marks=[
-                pytest.mark.notimpl(["datafusion"], raises=com.OperationNotDefinedError)
+                pytest.mark.notimpl(
+                    ["datafusion", "oracle"],
+                    raises=com.OperationNotDefinedError,
+                ),
             ],
             id="hours",
         ),
@@ -2463,7 +2465,10 @@ def test_delta(con, start, end, unit, expected):
             {"days": 2},
             "2D",
             marks=[
-                pytest.mark.notimpl(["datafusion"], raises=com.OperationNotDefinedError)
+                pytest.mark.notimpl(
+                    ["datafusion", "oracle"],
+                    raises=com.OperationNotDefinedError,
+                ),
             ],
             id="days",
         ),

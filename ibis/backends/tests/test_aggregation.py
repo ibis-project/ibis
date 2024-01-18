@@ -1158,7 +1158,17 @@ def test_median(alltypes, df):
     "func",
     [
         param(methodcaller("quantile", 0.5), id="quantile"),
-        param(methodcaller("median"), id="median"),
+        param(
+            methodcaller("median"),
+            id="median",
+            marks=[
+                pytest.mark.notyet(
+                    ["oracle"],
+                    raises=OracleDatabaseError,
+                    reason="doesn't support median of strings",
+                )
+            ],
+        ),
     ],
 )
 def test_string_quantile(alltypes, func):
