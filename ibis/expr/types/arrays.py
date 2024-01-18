@@ -1031,38 +1031,36 @@ def array(values: Iterable[V]) -> ArrayValue:
 
     Examples
     --------
-    Create an array column from column expressions
+    Create an array from scalar values
 
     >>> import ibis
     >>> ibis.options.interactive = True
+    >>> ibis.array([1.0, None])
+    [1.0, None]
+
+    Create an array from column and scalar expressions
+
     >>> t = ibis.memtable({"a": [1, 2, 3], "b": [4, 5, 6]})
-    >>> ibis.array([t.a, t.b])
+    >>> ibis.array([t.a, 42, ibis.literal(None)])
     ┏━━━━━━━━━━━━━━━━━━━━━━┓
     ┃ Array()              ┃
     ┡━━━━━━━━━━━━━━━━━━━━━━┩
     │ array<int64>         │
     ├──────────────────────┤
-    │ [1, 4]               │
-    │ [2, 5]               │
-    │ [3, 6]               │
+    │ [1, 42, ... +1]      │
+    │ [2, 42, ... +1]      │
+    │ [3, 42, ... +1]      │
     └──────────────────────┘
 
-    Create an array scalar from Python literals
-
-    >>> ibis.array([1.0, 2.0, 3.0])
-    [1.0, 2.0, ... +1]
-
-    Mixing scalar and column expressions is allowed
-
-    >>> ibis.array([t.a, 42])
+    >>> ibis.array([t.a, 42 + ibis.literal(5)])
     ┏━━━━━━━━━━━━━━━━━━━━━━┓
     ┃ Array()              ┃
     ┡━━━━━━━━━━━━━━━━━━━━━━┩
     │ array<int64>         │
     ├──────────────────────┤
-    │ [1, 42]              │
-    │ [2, 42]              │
-    │ [3, 42]              │
+    │ [1, 47]              │
+    │ [2, 47]              │
+    │ [3, 47]              │
     └──────────────────────┘
     """
     return ops.Array(tuple(values)).to_expr()
