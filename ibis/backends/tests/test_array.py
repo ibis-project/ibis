@@ -1059,3 +1059,14 @@ def test_repr_timestamp_array(con, monkeypatch):
     assert ibis.options.default_backend is con
     expr = ibis.array(pd.date_range("2010-01-01", "2010-01-03", freq="D").tolist())
     assert repr(expr)
+
+
+@pytest.mark.notyet(
+    ["dask", "datafusion", "flink", "pandas", "polars"],
+    raises=com.OperationNotDefinedError,
+)
+def test_unnest_range(con):
+    expr = ibis.range(2).unnest().name("x").as_table().mutate({"y": 1.0})
+    result = con.execute(expr)
+    expected = pd.DataFrame({"x": np.array([0, 1], dtype="int8"), "y": [1.0, 1.0]})
+    tm.assert_frame_equal(result, expected)

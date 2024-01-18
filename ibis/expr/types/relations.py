@@ -1800,17 +1800,24 @@ class Table(Expr, _FixedTextJupyterMixin):
         import ibis.expr.analysis as an
 
         exprs = [] if exprs is None else util.promote_list(exprs)
-        exprs = itertools.chain(
-            itertools.chain.from_iterable(
-                util.promote_list(_ensure_expr(self, expr)) for expr in exprs
-            ),
-            (
-                e.name(name)
-                for name, expr in mutations.items()
-                for e in util.promote_list(_ensure_expr(self, expr))
-            ),
+
+        new_exprs = []
+
+        for expr in exprs:
+            if isinstance(expr, Mapping):
+                new_exprs.extend(
+                    _ensure_expr(self, val).name(name) for name, val in expr.items()
+                )
+            else:
+                new_exprs.extend(util.promote_list(_ensure_expr(self, expr)))
+
+        new_exprs.extend(
+            e.name(name)
+            for name, expr in mutations.items()
+            for e in util.promote_list(_ensure_expr(self, expr))
         )
-        mutation_exprs = an.get_mutation_exprs(list(exprs), self)
+
+        mutation_exprs = an.get_mutation_exprs(new_exprs, self)
         return self.select(mutation_exprs)
 
     def select(
@@ -1993,31 +2000,34 @@ class Table(Expr, _FixedTextJupyterMixin):
         import ibis.expr.analysis as an
         from ibis.selectors import Selector
 
-        exprs = [
-            e
-            for expr in exprs
-            for e in (
-                expr.expand(self)
-                if isinstance(expr, Selector)
-                else map(self._ensure_expr, util.promote_list(expr))
-            )
-        ]
-        exprs.extend(
+        new_exprs = []
+
+        for expr in exprs:
+            if isinstance(expr, Selector):
+                new_exprs.extend(expr.expand(self))
+            elif isinstance(expr, Mapping):
+                new_exprs.extend(
+                    self._ensure_expr(value).name(name) for name, value in expr.items()
+                )
+            else:
+                new_exprs.extend(map(self._ensure_expr, util.promote_list(expr)))
+
+        new_exprs.extend(
             self._ensure_expr(expr).name(name) for name, expr in named_exprs.items()
         )
 
-        if not exprs:
+        if not new_exprs:
             raise com.IbisTypeError(
                 "You must select at least one column for a valid projection"
             )
-        for ex in exprs:
+        for ex in new_exprs:
             if not isinstance(ex, Expr):
                 raise com.IbisTypeError(
                     "All arguments to `.select` must be coerceable to "
                     f"expressions - got {type(ex)!r}"
                 )
 
-        op = an.Projector(self, exprs).get_result()
+        op = an.Projector(self, new_exprs).get_result()
 
         return op.to_expr()
 
