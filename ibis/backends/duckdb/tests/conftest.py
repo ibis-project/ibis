@@ -97,33 +97,34 @@ def con(data_dir, tmp_path_factory, worker_id):
 
 
 @pytest.fixture(scope="session")
-def zones(con, data_dir):
-    zones = con.read_geo(data_dir / "geojson" / "zones.geojson")
-    return zones
+def gpd():
+    pytest.importorskip("shapely")
+    pytest.importorskip("geoalchemy2")
+    return pytest.importorskip("geopandas")
 
 
 @pytest.fixture(scope="session")
-def lines(con, data_dir):
-    lines = con.read_geo(data_dir / "geojson" / "lines.geojson")
-    return lines
+def zones(con, data_dir, gpd):
+    return con.read_geo(data_dir / "geojson" / "zones.geojson")
 
 
 @pytest.fixture(scope="session")
-def zones_gdf(data_dir):
-    gpd = pytest.importorskip("geopandas")
-    zones_gdf = gpd.read_file(data_dir / "geojson" / "zones.geojson")
-    return zones_gdf
+def lines(con, data_dir, gpd):
+    return con.read_geo(data_dir / "geojson" / "lines.geojson")
 
 
 @pytest.fixture(scope="session")
-def lines_gdf(data_dir):
-    gpd = pytest.importorskip("geopandas")
-    lines_gdf = gpd.read_file(data_dir / "geojson" / "lines.geojson")
-    return lines_gdf
+def zones_gdf(data_dir, gpd):
+    return gpd.read_file(data_dir / "geojson" / "zones.geojson")
 
 
 @pytest.fixture(scope="session")
-def geotable(con):
+def lines_gdf(data_dir, gpd):
+    return gpd.read_file(data_dir / "geojson" / "lines.geojson")
+
+
+@pytest.fixture(scope="session")
+def geotable(con, gpd):
     return con.table("geo")
 
 

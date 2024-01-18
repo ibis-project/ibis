@@ -91,8 +91,8 @@ WHERE installed AND loaded"""
     assert "spatial" in con.sql(query).name.to_pandas().values
 
 
+@pytest.mark.usefixtures("gpd")
 def test_read_geo_to_pyarrow(con, data_dir):
-    pytest.importorskip("geopandas")
     shapely = pytest.importorskip("shapely")
 
     t = con.read_geo(data_dir / "geojson" / "zones.geojson")
@@ -100,8 +100,7 @@ def test_read_geo_to_pyarrow(con, data_dir):
     assert len(shapely.from_wkb(raw_geometry))
 
 
-def test_read_geo_to_geopandas(con, data_dir):
-    gpd = pytest.importorskip("geopandas")
+def test_read_geo_to_geopandas(con, data_dir, gpd):
     t = con.read_geo(data_dir / "geojson" / "zones.geojson")
     gdf = t.head().to_pandas()
     assert isinstance(gdf, gpd.GeoDataFrame)
@@ -109,7 +108,7 @@ def test_read_geo_to_geopandas(con, data_dir):
 
 def test_read_geo_from_url(con, monkeypatch):
     loaded_exts = []
-    monkeypatch.setattr(con, "_load_extensions", lambda x, **kw: loaded_exts.extend(x))
+    monkeypatch.setattr(con, "_load_extensions", lambda x, **_: loaded_exts.extend(x))
 
     with pytest.raises((sa.exc.OperationalError, sa.exc.ProgrammingError)):
         # The read will fail, either because the URL is bogus (which it is) or
@@ -430,6 +429,7 @@ def test_csv_with_slash_n_null(con, tmp_path):
 )
 def test_register_filesystem_gcs(con):
     fsspec = pytest.importorskip("fsspec")
+    pytest.importorskip("gcsfs")
 
     gcs = fsspec.filesystem("gcs")
 
