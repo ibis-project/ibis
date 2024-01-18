@@ -340,7 +340,7 @@ def uses_java_re(t):
             id="re_replace_posix",
             marks=[
                 pytest.mark.notimpl(
-                    ["mysql", "mssql", "druid", "oracle", "exasol"],
+                    ["mysql", "mssql", "druid", "exasol"],
                     raises=com.OperationNotDefinedError,
                 ),
             ],
@@ -351,7 +351,7 @@ def uses_java_re(t):
             id="re_replace",
             marks=[
                 pytest.mark.notimpl(
-                    ["mysql", "mssql", "druid", "oracle", "exasol"],
+                    ["mysql", "mssql", "druid", "exasol"],
                     raises=com.OperationNotDefinedError,
                 ),
             ],
@@ -767,7 +767,7 @@ def test_string(backend, alltypes, df, result_func, expected_func):
 
 
 @pytest.mark.notimpl(
-    ["mysql", "mssql", "druid", "oracle", "exasol"],
+    ["mysql", "mssql", "druid", "exasol"],
     raises=com.OperationNotDefinedError,
 )
 @pytest.mark.broken(
@@ -916,7 +916,7 @@ def test_array_string_join(con):
 
 
 @pytest.mark.notimpl(
-    ["mssql", "mysql", "druid", "oracle", "exasol"], raises=com.OperationNotDefinedError
+    ["mssql", "mysql", "druid", "exasol"], raises=com.OperationNotDefinedError
 )
 def test_subs_with_re_replace(con):
     expr = ibis.literal("hi").re_replace("i", "a").substitute({"d": "b"}, else_="k")

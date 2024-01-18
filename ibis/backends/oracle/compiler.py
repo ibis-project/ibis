@@ -354,6 +354,10 @@ class OracleCompiler(SQLGlotCompiler):
             self.f.regexp_substr(arg, pattern, 1, 1, "cn", index),
         )
 
+    @visit_node.register(ops.RegexReplace)
+    def visit_RegexReplace(self, op, *, arg, pattern, replacement):
+        return sge.RegexpReplace(this=arg, expression=pattern, replacement=replacement)
+
     @visit_node.register(ops.StringContains)
     def visit_StringContains(self, op, *, haystack, needle):
         return self.f.instr(haystack, needle) > 0
@@ -543,7 +547,6 @@ class OracleCompiler(SQLGlotCompiler):
     @visit_node.register(ops.Mode)
     @visit_node.register(ops.MultiQuantile)
     @visit_node.register(ops.RegexSplit)
-    @visit_node.register(ops.RegexReplace)
     @visit_node.register(ops.StringSplit)
     @visit_node.register(ops.TimestampTruncate)
     @visit_node.register(ops.DateTruncate)
