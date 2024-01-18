@@ -3,7 +3,6 @@ from __future__ import annotations
 from functools import singledispatchmethod
 
 import sqlglot as sg
-import sqlglot.expressions as sge
 from sqlglot.dialects import Postgres
 
 import ibis.common.exceptions as com
@@ -38,23 +37,6 @@ class ExasolCompiler(SQLGlotCompiler):
     @singledispatchmethod
     def visit_node(self, op, **kw):
         return super().visit_node(op, **kw)
-
-    @visit_node.register(ops.InMemoryTable)
-    def visit_InMemoryTable(self, op, *, name, schema, data):
-        # the performance of this is rather terrible
-        tuples = data.to_frame().itertuples(index=False)
-        quoted = self.quoted
-        columns = [sg.column(col, quoted=quoted) for col in schema.names]
-        expr = sge.Values(
-            expressions=[
-                sge.Tuple(expressions=tuple(map(sge.convert, row))) for row in tuples
-            ],
-            alias=sge.TableAlias(
-                this=sg.to_identifier(name, quoted=quoted),
-                columns=columns,
-            ),
-        )
-        return sg.select(*columns).from_(expr)
 
     @visit_node.register(ops.ApproxMedian)
     @visit_node.register(ops.Arbitrary)

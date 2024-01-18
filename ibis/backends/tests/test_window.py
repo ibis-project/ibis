@@ -25,16 +25,8 @@ from ibis.legacy.udf.vectorized import analytic, reduction
 
 pytestmark = [
     pytest.mark.notimpl(
-        ["exasol"],
-        raises=(
-            sa.exc.ProgrammingError,
-            sa.exc.NoSuchTableError,
-            com.OperationNotDefinedError,
-        ),
-    ),
-    pytest.mark.notimpl(
         ["druid"], raises=(com.OperationNotDefinedError, PyDruidProgrammingError)
-    ),
+    )
 ]
 
 

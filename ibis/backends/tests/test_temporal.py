@@ -47,7 +47,6 @@ from ibis.common.annotations import ValidationError
     raises=AttributeError,
     reason="Can only use .dt accessor with datetimelike values",
 )
-@pytest.mark.notimpl(["exasol"], raises=sa.exc.DBAPIError)
 def test_date_extract(backend, alltypes, df, attr, expr_fn):
     expr = getattr(expr_fn(alltypes.timestamp_col), attr)()
     expected = getattr(df.timestamp_col.dt, attr).astype("int32")
@@ -60,13 +59,9 @@ def test_date_extract(backend, alltypes, df, attr, expr_fn):
 @pytest.mark.parametrize(
     "attr",
     [
-        param(
-            "year", marks=[pytest.mark.notimpl(["exasol"], raises=sa.exc.DBAPIError)]
-        ),
-        param(
-            "month", marks=[pytest.mark.notimpl(["exasol"], raises=sa.exc.DBAPIError)]
-        ),
-        param("day", marks=[pytest.mark.notimpl(["exasol"], raises=sa.exc.DBAPIError)]),
+        param("year"),
+        param("month"),
+        param("day"),
         param(
             "day_of_year",
             marks=[
@@ -83,15 +78,9 @@ def test_date_extract(backend, alltypes, df, attr, expr_fn):
                 pytest.mark.notimpl(["exasol"], raises=sa.exc.DBAPIError),
             ],
         ),
-        param(
-            "hour", marks=[pytest.mark.notimpl(["exasol"], raises=sa.exc.DBAPIError)]
-        ),
-        param(
-            "minute", marks=[pytest.mark.notimpl(["exasol"], raises=sa.exc.DBAPIError)]
-        ),
-        param(
-            "second", marks=[pytest.mark.notimpl(["exasol"], raises=sa.exc.DBAPIError)]
-        ),
+        param("hour"),
+        param("minute"),
+        param("second"),
     ],
 )
 @pytest.mark.notimpl(["druid"], raises=com.OperationNotDefinedError)
@@ -497,7 +486,6 @@ PANDAS_UNITS = {
     raises=AttributeError,
     reason="AttributeError: 'StringColumn' object has no attribute 'truncate'",
 )
-@pytest.mark.notimpl(["exasol"], raises=com.OperationNotDefinedError)
 def test_timestamp_truncate(backend, alltypes, df, unit):
     expr = alltypes.timestamp_col.truncate(unit).name("tmp")
 

@@ -68,7 +68,6 @@ BOOLEAN_BACKEND_TYPE = {
 }
 
 
-@pytest.mark.notimpl(["exasol"])
 def test_boolean_literal(con, backend):
     expr = ibis.literal(False, type=dt.boolean)
     result = con.execute(expr)
@@ -558,10 +557,6 @@ def test_order_by_random(alltypes):
     raises=PyDruidProgrammingError,
     reason="Druid only supports trivial unions",
 )
-@pytest.mark.notyet(
-    ["exasol"],
-    raises=AssertionError,
-)
 def test_table_info(alltypes):
     expr = alltypes.info()
     df = expr.execute()
@@ -581,18 +576,8 @@ def test_table_info(alltypes):
 @pytest.mark.parametrize(
     ("ibis_op", "pandas_op"),
     [
-        param(
-            _.string_col.isin([]),
-            lambda df: df.string_col.isin([]),
-            marks=pytest.mark.notimpl(["exasol"], raises=ExaQueryError),
-            id="isin",
-        ),
-        param(
-            _.string_col.notin([]),
-            lambda df: ~df.string_col.isin([]),
-            marks=pytest.mark.notimpl(["exasol"], raises=ExaQueryError),
-            id="notin",
-        ),
+        param(_.string_col.isin([]), lambda df: df.string_col.isin([]), id="isin"),
+        param(_.string_col.notin([]), lambda df: ~df.string_col.isin([]), id="notin"),
         param(
             (_.string_col.length() * 1).isin([1]),
             lambda df: (df.string_col.str.len() * 1).isin([1]),
@@ -663,7 +648,6 @@ def test_isin_notin_column_expr(backend, alltypes, df, ibis_op, pandas_op):
         param(False, True, neg, id="false_negate"),
     ],
 )
-@pytest.mark.notimpl(["exasol"])
 def test_logical_negation_literal(con, expr, expected, op):
     assert con.execute(op(ibis.literal(expr)).name("tmp")) == expected
 
@@ -917,8 +901,7 @@ def test_literal_na(con, dtype):
     assert pd.isna(result)
 
 
-@pytest.mark.notimpl(["exasol"])
-def test_memtable_bool_column(backend, con):
+def test_memtable_bool_column(con):
     data = [True, False, True]
     t = ibis.memtable({"a": data})
     assert Counter(con.execute(t.a)) == Counter(data)
@@ -1642,7 +1625,7 @@ def test_dynamic_table_slice_with_computed_offset(backend):
     backend.assert_frame_equal(result, expected)
 
 
-@pytest.mark.notimpl(["druid", "flink", "polars", "snowflake", "exasol"])
+@pytest.mark.notimpl(["druid", "flink", "polars", "snowflake"])
 def test_sample(backend):
     t = backend.functional_alltypes.filter(_.int_col >= 2)
 
@@ -1658,7 +1641,7 @@ def test_sample(backend):
     backend.assert_frame_equal(empty, df.iloc[:0])
 
 
-@pytest.mark.notimpl(["druid", "flink", "polars", "snowflake", "exasol"])
+@pytest.mark.notimpl(["druid", "flink", "polars", "snowflake"])
 def test_sample_memtable(con, backend):
     df = pd.DataFrame({"x": [1, 2, 3, 4]})
     res = con.execute(ibis.memtable(df).sample(0.5))
@@ -1714,7 +1697,6 @@ def test_substitute(backend):
     ["dask", "pandas", "polars"], raises=NotImplementedError, reason="not a SQL backend"
 )
 @pytest.mark.notimpl(["flink"], reason="no sqlglot dialect", raises=ValueError)
-@pytest.mark.notimpl(["exasol"], raises=ValueError, reason="unknown dialect")
 def test_simple_memtable_construct(con):
     t = ibis.memtable({"a": [1, 2]})
     expr = t.a

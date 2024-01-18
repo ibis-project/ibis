@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import atexit
 import contextlib
 import re
 from typing import TYPE_CHECKING, Any
@@ -7,27 +8,34 @@ from urllib.parse import parse_qs, urlparse
 
 import pyexasol
 import sqlglot as sg
+import sqlglot.expressions as sge
 
+import ibis
 import ibis.common.exceptions as com
+import ibis.expr.operations as ops
+import ibis.expr.schema as sch
+import ibis.expr.types as ir
 from ibis import util
 from ibis.backends.base.sqlglot import SQLGlotBackend
+from ibis.backends.base.sqlglot.compiler import STAR
 from ibis.backends.exasol.compiler import ExasolCompiler
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable
+    from collections.abc import Iterable, Mapping
 
     import pandas as pd
     import pyarrow as pa
 
     import ibis.expr.datatypes as dt
-    import ibis.expr.schema as sch
-    import ibis.expr.types as ir
     from ibis.backends.base import BaseBackend
+
+# strip trailing encodings e.g., UTF8
+_VARCHAR_REGEX = re.compile(r"^(VARCHAR(?:\(\d+\)))?(?:\s+.+)?$")
 
 
 class Backend(SQLGlotBackend):
     name = "exasol"
-    compiler = ExasolCompiler
+    compiler = ExasolCompiler()
     supports_temporary_tables = False
     supports_create_or_replace = False
     supports_in_memory_tables = False
@@ -57,14 +65,23 @@ class Backend(SQLGlotBackend):
             Password used for authentication.
         host
             Hostname to connect to (default: "localhost").
-            **kwargs
         port
             Port number to connect to (default: 8563)
         kwargs
             Additional keyword arguments passed to `pyexasol.connect`.
         """
+        if kwargs.pop("quote_ident", None) is not None:
+            raise com.UnsupportedArgumentError(
+                "Setting `quote_ident` to anything other than `True` is not supported. "
+                "Ibis requires all identifiers to be quoted to work correctly."
+            )
+
         self.con = pyexasol.connect(
-            dsn=f"{host}:{port}", user=user, password=password, **kwargs
+            dsn=f"{host}:{port}",
+            user=user,
+            password=password,
+            quote_ident=True,
+            **kwargs,
         )
         self._temp_views = set()
 
@@ -94,17 +111,15 @@ class Backend(SQLGlotBackend):
 
     @contextlib.contextmanager
     def begin(self):
+        # pyexasol doesn't have a cursor method
         con = self.con
-        cur = con.cursor()
         try:
-            yield cur
+            yield con
         except Exception:
             con.rollback()
             raise
         else:
             con.commit()
-        finally:
-            cur.close()
 
     @contextlib.contextmanager
     def _safe_raw_sql(self, query: str, *args, **kwargs):
@@ -112,37 +127,120 @@ class Backend(SQLGlotBackend):
             query = query.sql(dialect=self.compiler.dialect)
 
         with self.begin() as cur:
-            cur.execute(query, *args, **kwargs)
-            yield cur
+            yield cur.execute(query, *args, **kwargs)
 
     def list_tables(self, like=None, database=None):
-        return super().list_tables(like=like, database=database)
+        query = sg.select("table_name").from_(sg.table("EXA_ALL_TABLES", catalog="SYS"))
+        if database is not None:
+            query = query.where(sg.column("table_schema").eq(sge.convert(database)))
+        with self._safe_raw_sql(query) as con:
+            tables = con.fetchall()
+        return self._filter_with_like([table for (table,) in tables], like=like)
+
+    def get_schema(
+        self, table_name: str, schema: str | None = None, database: str | None = None
+    ) -> sch.Schema:
+        name_type_pairs = self._metadata(
+            sg.select(STAR)
+            .from_(
+                sg.table(
+                    table_name, db=schema, catalog=database, quoted=self.compiler.quoted
+                )
+            )
+            .sql(self.compiler.dialect)
+        )
+        return sch.Schema.from_tuples(name_type_pairs)
+
+    def execute(
+        self,
+        expr: ir.Expr,
+        params: Mapping | None = None,
+        limit: str | None = "default",
+        **kwargs: Any,
+    ) -> Any:
+        """Execute an expression."""
+        from ibis.backends.exasol.converter import ExasolPandasData
+
+        self._run_pre_execute_hooks(expr)
+        table = expr.as_table()
+        sql = self.compile(table, params=params, limit=limit, **kwargs)
+        result = ExasolPandasData.convert_table(
+            self.con.export_to_pandas(sql), table.schema()
+        )
+        return expr.__pandas_result__(result)
 
     def _metadata(self, query: str) -> Iterable[tuple[str, dt.DataType]]:
-        table = sg.table(util.gen_name("exasol_metadata"))
+        table = sg.table(util.gen_name("exasol_metadata"), quoted=self.compiler.quoted)
+        dialect = self.compiler.dialect
         create_view = sg.exp.Create(
             kind="VIEW",
             this=table,
-            expression=sg.parse_one(query, dialect=self.compiler.dialect),
+            expression=sg.parse_one(query, dialect=dialect),
         )
         drop_view = sg.exp.Drop(kind="VIEW", this=table)
         describe = sg.exp.Describe(this=table)
-        # strip trailing encodings e.g., UTF8
-        varchar_regex = re.compile(r"^(VARCHAR(?:\(\d+\)))?(?:\s+.+)?$")
-        with self._safe_raw_sql(create_view) as con:
+        with self._safe_raw_sql(create_view):
             try:
-                con.execute(describe.sql(dialect=self.compiler.dialect))
                 yield from (
                     (
                         name,
                         self.compiler.type_mapper.from_string(
-                            varchar_regex.sub(r"\1", typ)
+                            _VARCHAR_REGEX.sub(r"\1", typ)
                         ),
                     )
-                    for name, typ, *_ in con.fetchall()
+                    for name, typ, *_ in self.con.execute(
+                        describe.sql(dialect=dialect)
+                    ).fetchall()
                 )
             finally:
-                con.execute(drop_view.sql(dialect=self.compiler.dialect))
+                self.con.execute(drop_view.sql(dialect=dialect))
+
+    def _register_in_memory_table(self, op: ops.InMemoryTable) -> None:
+        schema = op.schema
+        if null_columns := [col for col, dtype in schema.items() if dtype.is_null()]:
+            raise com.IbisTypeError(
+                "Exasol cannot yet reliably handle `null` typed columns; "
+                f"got null typed columns: {null_columns}"
+            )
+
+        # only register if we haven't already done so
+        if (name := op.name) not in self.list_tables():
+            quoted = self.compiler.quoted
+            column_defs = [
+                sg.exp.ColumnDef(
+                    this=sg.to_identifier(colname, quoted=quoted),
+                    kind=self.compiler.type_mapper.from_ibis(typ),
+                    constraints=(
+                        None
+                        if typ.nullable
+                        else [
+                            sg.exp.ColumnConstraint(
+                                kind=sg.exp.NotNullColumnConstraint()
+                            )
+                        ]
+                    ),
+                )
+                for colname, typ in schema.items()
+            ]
+
+            ident = sg.to_identifier(name, quoted=quoted)
+            create_stmt = sg.exp.Create(
+                kind="TABLE",
+                this=sg.exp.Schema(this=ident, expressions=column_defs),
+            )
+            create_stmt_sql = create_stmt.sql(self.name)
+
+            df = op.data.to_frame()
+            with self._safe_raw_sql(create_stmt_sql):
+                self.con.import_from_pandas(df, name)
+
+        atexit.register(self._clean_up_tmp_table, ident)
+
+    def _clean_up_tmp_table(self, ident: sge.Identifier) -> None:
+        with self._safe_raw_sql(
+            sge.Drop(kind="TABLE", this=ident, force=True, cascade=True)
+        ):
+            pass
 
     def create_table(
         self,
@@ -151,10 +249,96 @@ class Backend(SQLGlotBackend):
         *,
         schema: sch.Schema | None = None,
         database: str | None = None,
-        temp: bool = False,
         overwrite: bool = False,
     ) -> ir.Table:
-        raise NotImplementedError()
+        """Create a table in Snowflake.
+
+        Parameters
+        ----------
+        name
+            Name of the table to create
+        obj
+            The data with which to populate the table; optional, but at least
+            one of `obj` or `schema` must be specified
+        schema
+            The schema of the table to create; optional, but at least one of
+            `obj` or `schema` must be specified
+        database
+            The database in which to create the table; optional
+        overwrite
+            If `True`, replace the table if it already exists, otherwise fail
+            if the table exists
+        """
+        if obj is None and schema is None:
+            raise ValueError("Either `obj` or `schema` must be specified")
+
+        if database is not None and database != self.current_database:
+            raise com.UnsupportedOperationError(
+                "Creating tables in other databases is not supported by Postgres"
+            )
+        else:
+            database = None
+
+        quoted = self.compiler.quoted
+
+        if obj is not None:
+            if not isinstance(obj, ir.Expr):
+                table = ibis.memtable(obj)
+            else:
+                table = obj
+
+            self._run_pre_execute_hooks(table)
+
+            query = self._to_sqlglot(table)
+        else:
+            query = None
+
+        type_mapper = self.compiler.type_mapper
+        column_defs = [
+            sge.ColumnDef(
+                this=sg.to_identifier(colname, quoted=quoted),
+                kind=type_mapper.from_ibis(typ),
+                constraints=(
+                    None
+                    if typ.nullable
+                    else [sge.ColumnConstraint(kind=sge.NotNullColumnConstraint())]
+                ),
+            )
+            for colname, typ in (schema or table.schema()).items()
+        ]
+
+        if overwrite:
+            temp_name = util.gen_name(f"{self.name}_table")
+        else:
+            temp_name = name
+
+        table = sg.table(temp_name, catalog=database, quoted=quoted)
+        target = sge.Schema(this=table, expressions=column_defs)
+
+        create_stmt = sge.Create(kind="TABLE", this=target)
+
+        this = sg.table(name, catalog=database, quoted=quoted)
+        with self._safe_raw_sql(create_stmt):
+            if query is not None:
+                self.con.execute(
+                    sge.Insert(this=table, expression=query).sql(self.name)
+                )
+
+            if overwrite:
+                self.con.execute(
+                    sge.Drop(kind="TABLE", this=this, exists=True).sql(self.name)
+                )
+                self.con.execute(
+                    f"RENAME TABLE {table.sql(self.name)} TO {this.sql(self.name)}"
+                )
+
+        if schema is None:
+            return self.table(name, database=database)
+
+        # preserve the input schema if it was provided
+        return ops.DatabaseTable(
+            name, schema=schema, source=self, namespace=ops.Namespace(database=database)
+        ).to_expr()
 
     @property
     def current_schema(self) -> str:

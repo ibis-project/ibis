@@ -1,7 +1,7 @@
 DROP SCHEMA IF EXISTS EXASOL CASCADE;
 CREATE SCHEMA EXASOL;
 
-CREATE OR REPLACE TABLE EXASOL.diamonds
+CREATE OR REPLACE TABLE EXASOL."diamonds"
 (
     "carat"   DOUBLE,
     "cut"     VARCHAR(256),
@@ -15,7 +15,7 @@ CREATE OR REPLACE TABLE EXASOL.diamonds
     "z"       DOUBLE
 );
 
-CREATE OR REPLACE TABLE EXASOL.batting
+CREATE OR REPLACE TABLE EXASOL."batting"
 (
     "playerID" VARCHAR(256),
     "yearID"   BIGINT,
@@ -41,7 +41,7 @@ CREATE OR REPLACE TABLE EXASOL.batting
     "GIDP"     BIGINT
 );
 
-CREATE OR REPLACE TABLE EXASOL.awards_players
+CREATE OR REPLACE TABLE EXASOL."awards_players"
 (
     "playerId" VARCHAR(256),
     "awardID"  VARCHAR(256),
@@ -51,7 +51,7 @@ CREATE OR REPLACE TABLE EXASOL.awards_players
     "notest"   VARCHAR(256)
 );
 
-CREATE OR REPLACE TABLE EXASOL.functional_alltypes
+CREATE OR REPLACE TABLE EXASOL."functional_alltypes"
 (
     "id"              INTEGER,
     "bool_col"        BOOLEAN,
@@ -69,7 +69,7 @@ CREATE OR REPLACE TABLE EXASOL.functional_alltypes
 );
 
 
-IMPORT INTO EXASOL.diamonds FROM LOCAL CSV FILE '/data/diamonds.csv' COLUMN SEPARATOR = ',' SKIP = 1;
-IMPORT INTO EXASOL.batting FROM LOCAL CSV FILE '/data/batting.csv' COLUMN SEPARATOR = ',' SKIP = 1;
-IMPORT INTO EXASOL.awards_players FROM LOCAL CSV FILE '/data/awards_players.csv' COLUMN SEPARATOR = ',' SKIP = 1;
-IMPORT INTO EXASOL.functional_alltypes FROM LOCAL CSV FILE '/data/functional_alltypes.csv' COLUMN SEPARATOR = ',' SKIP = 1;
+IMPORT INTO EXASOL."diamonds" FROM LOCAL CSV FILE '/data/diamonds.csv' COLUMN SEPARATOR = ',' SKIP = 1;
+IMPORT INTO EXASOL."batting" FROM LOCAL CSV FILE '/data/batting.csv' COLUMN SEPARATOR = ',' SKIP = 1;
+IMPORT INTO EXASOL."awards_players" FROM LOCAL CSV FILE '/data/awards_players.csv' COLUMN SEPARATOR = ',' SKIP = 1;
+IMPORT INTO EXASOL."functional_alltypes" FROM LOCAL CSV FILE '/data/functional_alltypes.csv' COLUMN SEPARATOR = ',' SKIP = 1;

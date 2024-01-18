@@ -11,7 +11,7 @@ from ibis.backends.conftest import _get_backends_to_test
 sa = pytest.importorskip("sqlalchemy")
 sg = pytest.importorskip("sqlglot")
 
-pytestmark = pytest.mark.notimpl(["flink", "exasol"])
+pytestmark = pytest.mark.notimpl(["flink"])
 
 simple_literal = param(ibis.literal(1), id="simple_literal")
 array_literal = param(
@@ -27,8 +27,13 @@ array_literal = param(
             raises=exc.UnsupportedBackendType,
             reason="arrays not supported in the backend",
         ),
-        pytest.mark.notyet(
+        pytest.mark.notimpl(
             ["impala"],
+            raises=exc.UnsupportedBackendType,
+            reason="arrays not supported in the backend",
+        ),
+        pytest.mark.notyet(
+            ["exasol"],
             raises=exc.UnsupportedBackendType,
             reason="arrays not supported in the backend",
         ),
@@ -41,7 +46,7 @@ array_literal = param(
     id="array_literal",
 )
 no_structs = pytest.mark.never(
-    ["impala", "mysql", "sqlite", "mssql"],
+    ["impala", "mysql", "sqlite", "mssql", "exasol"],
     raises=(NotImplementedError, sa.exc.CompileError, exc.UnsupportedBackendType),
     reason="structs not supported in the backend",
 )

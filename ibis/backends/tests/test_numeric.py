@@ -744,33 +744,13 @@ def test_isnan_isinf(
                 ["datafusion"], raises=com.OperationNotDefinedError
             ),
         ),
-        param(
-            L(5.5).round(),
-            6.0,
-            id="round",
-        ),
-        param(
-            L(5.556).round(2),
-            5.56,
-            id="round-digits",
-        ),
+        param(L(5.5).round(), 6.0, id="round"),
+        param(L(5.556).round(2), 5.56, id="round-digits"),
         param(L(5.556).ceil(), 6.0, id="ceil"),
         param(L(5.556).floor(), 5.0, id="floor"),
-        param(
-            L(5.556).exp(),
-            math.exp(5.556),
-            id="exp",
-        ),
-        param(
-            L(5.556).sign(),
-            1,
-            id="sign-pos",
-        ),
-        param(
-            L(-5.556).sign(),
-            -1,
-            id="sign-neg",
-        ),
+        param(L(5.556).exp(), math.exp(5.556), id="exp"),
+        param(L(5.556).sign(), 1, id="sign-pos"),
+        param(L(-5.556).sign(), -1, id="sign-neg"),
         param(
             L(0).sign(),
             0,
@@ -786,30 +766,14 @@ def test_isnan_isinf(
             L(5.556).log(2),
             math.log(5.556, 2),
             id="log-base",
-            marks=[
-                pytest.mark.notimpl(
-                    ["exasol"],
-                    raises=com.OperationNotDefinedError,
-                ),
-                pytest.mark.notimpl(["druid"], raises=PyDruidProgrammingError),
-            ],
+            marks=[pytest.mark.notimpl(["druid"], raises=PyDruidProgrammingError)],
         ),
-        param(
-            L(5.556).ln(),
-            math.log(5.556),
-            id="ln",
-        ),
+        param(L(5.556).ln(), math.log(5.556), id="ln"),
         param(
             L(5.556).log2(),
             math.log(5.556, 2),
             id="log2",
-            marks=[
-                pytest.mark.notimpl(
-                    ["exasol"],
-                    raises=com.OperationNotDefinedError,
-                ),
-                pytest.mark.notimpl(["druid"], raises=PyDruidProgrammingError),
-            ],
+            marks=[pytest.mark.notimpl(["druid"], raises=PyDruidProgrammingError)],
         ),
         param(
             L(5.556).log10(),
@@ -817,22 +781,9 @@ def test_isnan_isinf(
             marks=pytest.mark.notimpl(["exasol"], raises=com.OperationNotDefinedError),
             id="log10",
         ),
-        param(
-            L(5.556).radians(),
-            math.radians(5.556),
-            id="radians",
-        ),
-        param(
-            L(5.556).degrees(),
-            math.degrees(5.556),
-            id="degrees",
-        ),
-        param(
-            L(11) % 3,
-            11 % 3,
-            marks=pytest.mark.notimpl(["exasol"], raises=ExaQueryError),
-            id="mod",
-        ),
+        param(L(5.556).radians(), math.radians(5.556), id="radians"),
+        param(L(5.556).degrees(), math.degrees(5.556), id="degrees"),
+        param(L(11) % 3, 11 % 3, id="mod"),
     ],
 )
 def test_math_functions_literals(con, expr, expected):
@@ -993,7 +944,6 @@ def test_simple_math_functions_columns(
             ),
             id="log_base_bigint",
             marks=[
-                pytest.mark.notimpl(["exasol"], raises=com.OperationNotDefinedError),
                 pytest.mark.notimpl(
                     ["datafusion"], raises=com.OperationNotDefinedError
                 ),
@@ -1450,7 +1400,7 @@ def test_clip(backend, alltypes, df, ibis_func, pandas_func):
     backend.assert_series_equal(result, expected, check_names=False)
 
 
-@pytest.mark.notimpl(["polars", "exasol"], raises=com.OperationNotDefinedError)
+@pytest.mark.notimpl(["polars"], raises=com.OperationNotDefinedError)
 @pytest.mark.broken(
     ["druid"],
     raises=PyDruidProgrammingError,
