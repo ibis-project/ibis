@@ -180,6 +180,10 @@ format:
       dark: [darkly, theme-dark.scss]
     toc: true
     css: styles.css
+    include-in-header:
+      - text: |
+          <script data-goatcounter="https://ibis.goatcounter.com/count"
+          async src="//gc.zgo.at/count.js"></script>
 
 quartodoc:
   package: ibis
