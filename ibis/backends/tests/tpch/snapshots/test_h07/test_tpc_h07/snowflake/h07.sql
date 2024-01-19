@@ -1,27 +1,35 @@
+WITH "t9" AS (
+  SELECT
+    "t4"."N_NATIONKEY" AS "n_nationkey",
+    "t4"."N_NAME" AS "n_name",
+    "t4"."N_REGIONKEY" AS "n_regionkey",
+    "t4"."N_COMMENT" AS "n_comment"
+  FROM "SNOWFLAKE_SAMPLE_DATA"."TPCH_SF1"."NATION" AS "t4"
+)
 SELECT
-  "t24"."supp_nation",
-  "t24"."cust_nation",
-  "t24"."l_year",
-  "t24"."revenue"
+  "t25"."supp_nation",
+  "t25"."cust_nation",
+  "t25"."l_year",
+  "t25"."revenue"
 FROM (
   SELECT
-    "t23"."supp_nation",
-    "t23"."cust_nation",
-    "t23"."l_year",
-    SUM("t23"."volume") AS "revenue"
+    "t24"."supp_nation",
+    "t24"."cust_nation",
+    "t24"."l_year",
+    SUM("t24"."volume") AS "revenue"
   FROM (
     SELECT
-      "t22"."supp_nation",
-      "t22"."cust_nation",
-      "t22"."l_shipdate",
-      "t22"."l_extendedprice",
-      "t22"."l_discount",
-      "t22"."l_year",
-      "t22"."volume"
+      "t23"."supp_nation",
+      "t23"."cust_nation",
+      "t23"."l_shipdate",
+      "t23"."l_extendedprice",
+      "t23"."l_discount",
+      "t23"."l_year",
+      "t23"."volume"
     FROM (
       SELECT
-        "t14"."n_name" AS "supp_nation",
-        "t16"."n_name" AS "cust_nation",
+        "t15"."n_name" AS "supp_nation",
+        "t17"."n_name" AS "cust_nation",
         "t11"."l_shipdate",
         "t11"."l_extendedprice",
         "t11"."l_discount",
@@ -88,50 +96,36 @@ FROM (
         FROM "SNOWFLAKE_SAMPLE_DATA"."TPCH_SF1"."CUSTOMER" AS "t3"
       ) AS "t13"
         ON "t13"."c_custkey" = "t12"."o_custkey"
-      INNER JOIN (
-        SELECT
-          "t4"."N_NATIONKEY" AS "n_nationkey",
-          "t4"."N_NAME" AS "n_name",
-          "t4"."N_REGIONKEY" AS "n_regionkey",
-          "t4"."N_COMMENT" AS "n_comment"
-        FROM "SNOWFLAKE_SAMPLE_DATA"."TPCH_SF1"."NATION" AS "t4"
-      ) AS "t14"
-        ON "t10"."s_nationkey" = "t14"."n_nationkey"
-      INNER JOIN (
-        SELECT
-          "t4"."N_NATIONKEY" AS "n_nationkey",
-          "t4"."N_NAME" AS "n_name",
-          "t4"."N_REGIONKEY" AS "n_regionkey",
-          "t4"."N_COMMENT" AS "n_comment"
-        FROM "SNOWFLAKE_SAMPLE_DATA"."TPCH_SF1"."NATION" AS "t4"
-      ) AS "t16"
-        ON "t13"."c_nationkey" = "t16"."n_nationkey"
-    ) AS "t22"
+      INNER JOIN "t9" AS "t15"
+        ON "t10"."s_nationkey" = "t15"."n_nationkey"
+      INNER JOIN "t9" AS "t17"
+        ON "t13"."c_nationkey" = "t17"."n_nationkey"
+    ) AS "t23"
     WHERE
       (
         (
           (
-            "t22"."cust_nation" = 'FRANCE'
+            "t23"."cust_nation" = 'FRANCE'
           ) AND (
-            "t22"."supp_nation" = 'GERMANY'
+            "t23"."supp_nation" = 'GERMANY'
           )
         )
         OR (
           (
-            "t22"."cust_nation" = 'GERMANY'
+            "t23"."cust_nation" = 'GERMANY'
           ) AND (
-            "t22"."supp_nation" = 'FRANCE'
+            "t23"."supp_nation" = 'FRANCE'
           )
         )
       )
-      AND "t22"."l_shipdate" BETWEEN DATE_FROM_PARTS(1995, 1, 1) AND DATE_FROM_PARTS(1996, 12, 31)
-  ) AS "t23"
+      AND "t23"."l_shipdate" BETWEEN DATE_FROM_PARTS(1995, 1, 1) AND DATE_FROM_PARTS(1996, 12, 31)
+  ) AS "t24"
   GROUP BY
     1,
     2,
     3
-) AS "t24"
+) AS "t25"
 ORDER BY
-  "t24"."supp_nation" ASC,
-  "t24"."cust_nation" ASC,
-  "t24"."l_year" ASC
+  "t25"."supp_nation" ASC,
+  "t25"."cust_nation" ASC,
+  "t25"."l_year" ASC

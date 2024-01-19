@@ -1,27 +1,35 @@
+WITH "t13" AS (
+  SELECT
+    "t6"."N_NATIONKEY" AS "n_nationkey",
+    "t6"."N_NAME" AS "n_name",
+    "t6"."N_REGIONKEY" AS "n_regionkey",
+    "t6"."N_COMMENT" AS "n_comment"
+  FROM "SNOWFLAKE_SAMPLE_DATA"."TPCH_SF1"."NATION" AS "t6"
+)
 SELECT
-  "t32"."o_year",
-  "t32"."mkt_share"
+  "t33"."o_year",
+  "t33"."mkt_share"
 FROM (
   SELECT
-    "t31"."o_year",
-    SUM("t31"."nation_volume") / SUM("t31"."volume") AS "mkt_share"
+    "t32"."o_year",
+    SUM("t32"."nation_volume") / SUM("t32"."volume") AS "mkt_share"
   FROM (
     SELECT
-      "t30"."o_year",
-      "t30"."volume",
-      "t30"."nation",
-      "t30"."r_name",
-      "t30"."o_orderdate",
-      "t30"."p_type",
-      CASE WHEN "t30"."nation" = 'BRAZIL' THEN "t30"."volume" ELSE 0 END AS "nation_volume"
+      "t31"."o_year",
+      "t31"."volume",
+      "t31"."nation",
+      "t31"."r_name",
+      "t31"."o_orderdate",
+      "t31"."p_type",
+      CASE WHEN "t31"."nation" = 'BRAZIL' THEN "t31"."volume" ELSE 0 END AS "nation_volume"
     FROM (
       SELECT
         DATE_PART(year, "t17"."o_orderdate") AS "o_year",
         "t15"."l_extendedprice" * (
           1 - "t15"."l_discount"
         ) AS "volume",
-        "t22"."n_name" AS "nation",
-        "t21"."r_name",
+        "t23"."n_name" AS "nation",
+        "t19"."r_name",
         "t17"."o_orderdate",
         "t14"."p_type"
       FROM (
@@ -97,40 +105,26 @@ FROM (
         FROM "SNOWFLAKE_SAMPLE_DATA"."TPCH_SF1"."CUSTOMER" AS "t4"
       ) AS "t18"
         ON "t17"."o_custkey" = "t18"."c_custkey"
+      INNER JOIN "t13" AS "t21"
+        ON "t18"."c_nationkey" = "t21"."n_nationkey"
       INNER JOIN (
         SELECT
-          "t5"."N_NATIONKEY" AS "n_nationkey",
-          "t5"."N_NAME" AS "n_name",
-          "t5"."N_REGIONKEY" AS "n_regionkey",
-          "t5"."N_COMMENT" AS "n_comment"
-        FROM "SNOWFLAKE_SAMPLE_DATA"."TPCH_SF1"."NATION" AS "t5"
+          "t5"."R_REGIONKEY" AS "r_regionkey",
+          "t5"."R_NAME" AS "r_name",
+          "t5"."R_COMMENT" AS "r_comment"
+        FROM "SNOWFLAKE_SAMPLE_DATA"."TPCH_SF1"."REGION" AS "t5"
       ) AS "t19"
-        ON "t18"."c_nationkey" = "t19"."n_nationkey"
-      INNER JOIN (
-        SELECT
-          "t6"."R_REGIONKEY" AS "r_regionkey",
-          "t6"."R_NAME" AS "r_name",
-          "t6"."R_COMMENT" AS "r_comment"
-        FROM "SNOWFLAKE_SAMPLE_DATA"."TPCH_SF1"."REGION" AS "t6"
-      ) AS "t21"
-        ON "t19"."n_regionkey" = "t21"."r_regionkey"
-      INNER JOIN (
-        SELECT
-          "t5"."N_NATIONKEY" AS "n_nationkey",
-          "t5"."N_NAME" AS "n_name",
-          "t5"."N_REGIONKEY" AS "n_regionkey",
-          "t5"."N_COMMENT" AS "n_comment"
-        FROM "SNOWFLAKE_SAMPLE_DATA"."TPCH_SF1"."NATION" AS "t5"
-      ) AS "t22"
-        ON "t16"."s_nationkey" = "t22"."n_nationkey"
-    ) AS "t30"
+        ON "t21"."n_regionkey" = "t19"."r_regionkey"
+      INNER JOIN "t13" AS "t23"
+        ON "t16"."s_nationkey" = "t23"."n_nationkey"
+    ) AS "t31"
     WHERE
-      "t30"."r_name" = 'AMERICA'
-      AND "t30"."o_orderdate" BETWEEN DATE_FROM_PARTS(1995, 1, 1) AND DATE_FROM_PARTS(1996, 12, 31)
-      AND "t30"."p_type" = 'ECONOMY ANODIZED STEEL'
-  ) AS "t31"
+      "t31"."r_name" = 'AMERICA'
+      AND "t31"."o_orderdate" BETWEEN DATE_FROM_PARTS(1995, 1, 1) AND DATE_FROM_PARTS(1996, 12, 31)
+      AND "t31"."p_type" = 'ECONOMY ANODIZED STEEL'
+  ) AS "t32"
   GROUP BY
     1
-) AS "t32"
+) AS "t33"
 ORDER BY
-  "t32"."o_year" ASC
+  "t33"."o_year" ASC
