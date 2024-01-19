@@ -29,7 +29,6 @@ _NAMES = {
 
 
 @pytest.mark.notimpl(["flink"])
-@dot_sql_notyet
 @dot_sql_never
 @pytest.mark.parametrize(
     "schema",
