@@ -240,7 +240,7 @@ class Backend(SQLGlotBackend):
             with self._safe_raw_sql(create_stmt_sql):
                 self.con.import_from_pandas(df, name)
 
-        atexit.register(self._clean_up_tmp_table, ident)
+            atexit.register(self._clean_up_tmp_table, ident)
 
     def _clean_up_tmp_table(self, ident: sge.Identifier) -> None:
         with self._safe_raw_sql(
