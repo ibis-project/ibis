@@ -881,12 +881,11 @@ def test_count_distinct_star(alltypes, df, ibis_cond, pandas_cond):
                         "sqlite",
                         "druid",
                         "oracle",
-                        "exasol",
                     ],
                     raises=com.OperationNotDefinedError,
                 ),
                 pytest.mark.notyet(
-                    ["mysql", "impala"], raises=com.UnsupportedBackendType
+                    ["mysql", "impala", "exasol"], raises=com.UnsupportedBackendType
                 ),
                 pytest.mark.notyet(
                     ["snowflake"],
