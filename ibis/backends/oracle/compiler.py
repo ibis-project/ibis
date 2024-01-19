@@ -215,23 +215,10 @@ class OracleCompiler(SQLGlotCompiler):
 
         assert offset is not None, "offset is None"
 
-        if not isinstance(offset, int):
-            skip = offset
-            skip = sg.select(skip).from_(parent).subquery()
-        elif not offset:
-            if alias is not None:
-                return result.subquery(alias)
-            return result
-        else:
-            # add offset to where clause?
-            # but this assumes that there is a where clause
-            # assuming that gets handled, then
-            # next is to create a projection that sets ROWNUM as ora_rn, then
-            # add a predicate to that where ora_rn > offset
-            # result["where"] += offset
-            skip = offset
-
-        result = result.offset(skip)
+        if offset > 0:
+            raise com.UnsupportedArgumentError(
+                "No support for limit offsets in the Oracle backend."
+            )
 
         if alias is not None:
             return result.subquery(alias)
@@ -240,50 +227,6 @@ class OracleCompiler(SQLGlotCompiler):
     @visit_node.register(ops.Date)
     def visit_Date(self, op, *, arg):
         return sg.cast(arg, to="date")
-
-    # @visit_node.register(ops.TimestampFromYMDHMS)
-    # def visit_TimestampFromYMDHMS(
-    #     self, op, *, year, month, day, hours, minutes, seconds
-    # ):
-    #     date_str = self.f.concat(
-    #         self.f.lpad(self.cast(year, dt.string), 4, "0"),
-    #         self.f.concat(
-    #             "-",
-    #             self.f.concat(
-    #                 self.f.lpad(self.cast(month, dt.string), 2, "0"),
-    #                 self.f.concat(
-    #                     "-",
-    #                     self.f.concat(
-    #                         self.f.lpad(self.cast(day, dt.string), 2, "0"),
-    #                         self.f.concat(
-    #                             "T",
-    #                             self.f.concat(
-    #                                 self.f.lpad(self.cast(hours, dt.string), 2, "0"),
-    #                                 self.f.concat(
-    #                                     ":",
-    #                                     self.f.concat(
-    #                                         self.f.lpad(
-    #                                             self.cast(minutes, dt.string), 2, "0"
-    #                                         ),
-    #                                         self.f.concat(
-    #                                             ":",
-    #                                             self.f.lpad(
-    #                                                 self.cast(seconds, dt.string),
-    #                                                 2,
-    #                                                 "0",
-    #                                             ),
-    #                                         ),
-    #                                     ),
-    #                                 ),
-    #                             ),
-    #                         ),
-    #                     ),
-    #                 ),
-    #             ),
-    #         ),
-    #     )
-    #     expr = self.f.to_timestamp(date_str, 'YYYY-MM-DD"T"HH24:MI:SS')
-    #     return expr
 
     @visit_node.register(ops.IsNan)
     def visit_IsNan(self, op, *, arg):
@@ -576,9 +519,9 @@ class OracleCompiler(SQLGlotCompiler):
     @visit_node.register(ops.DayOfWeekIndex)
     @visit_node.register(ops.DayOfWeekName)
     @visit_node.register(ops.ExtractEpochSeconds)
-    @visit_node.register(ops.RowID)
     @visit_node.register(ops.ExtractWeekOfYear)
     @visit_node.register(ops.ExtractDayOfYear)
+    @visit_node.register(ops.RowID)
     def visit_Undefined(self, op, **_):
         raise com.OperationNotDefinedError(type(op).__name__)
 

@@ -1516,6 +1516,11 @@ def test_static_table_slice(backend, slc, expected_count_fn):
     reason="backend doesn't support dynamic limit/offset",
 )
 @pytest.mark.notyet(
+    ["oracle"],
+    raises=com.UnsupportedArgumentError,
+    reason="backend doesn't support dynamic limit/offset",
+)
+@pytest.mark.notyet(
     ["trino"],
     raises=TrinoUserError,
     reason="backend doesn't support dynamic limit/offset",

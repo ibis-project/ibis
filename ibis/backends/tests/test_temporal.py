@@ -977,8 +977,7 @@ timestamp_value = pd.Timestamp("2018-01-01 18:18:18")
         ),
     ],
 )
-@pytest.mark.notimpl(["mssql", "oracle"], raises=com.OperationNotDefinedError)
-@pytest.mark.notimpl(["exasol"], raises=com.OperationNotDefinedError)
+@pytest.mark.notimpl(["mssql"], raises=com.OperationNotDefinedError)
 def test_temporal_binop(backend, con, alltypes, df, expr_fn, expected_fn):
     expr = expr_fn(alltypes, backend).name("tmp")
     expected = expected_fn(df, backend)
@@ -1793,7 +1792,7 @@ TIMESTAMP_BACKEND_TYPES = {
 
 
 @pytest.mark.notimpl(
-    ["pandas", "dask", "pyspark", "mysql", "exasol"],
+    ["pandas", "dask", "pyspark", "mysql", "exasol", "oracle"],
     raises=com.OperationNotDefinedError,
 )
 @pytest.mark.notyet(["impala"], raises=com.OperationNotDefinedError)
