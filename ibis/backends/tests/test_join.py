@@ -5,7 +5,6 @@ import sqlite3
 import numpy as np
 import pandas as pd
 import pytest
-import sqlalchemy as sa
 from packaging.version import parse as vparse
 from pytest import param
 
@@ -43,7 +42,14 @@ def check_eq(left, right, how, **kwargs):
     [
         "inner",
         "left",
-        "right",
+        param(
+            "right",
+            marks=[
+                pytest.mark.broken(
+                    ["exasol"], raises=AssertionError, reasons="results don't match"
+                )
+            ],
+        ),
         param(
             "outer",
             # TODO: mysql will likely never support full outer join
@@ -55,12 +61,14 @@ def check_eq(left, right, how, **kwargs):
                     + ["sqlite"] * (vparse(sqlite3.sqlite_version) < vparse("3.39"))
                 ),
                 pytest.mark.xfail_version(datafusion=["datafusion<31"]),
+                pytest.mark.broken(
+                    ["exasol"], raises=AssertionError, reasons="results don't match"
+                ),
             ],
         ),
     ],
 )
 @pytest.mark.notimpl(["druid"])
-@pytest.mark.notimpl(["exasol"], raises=AttributeError)
 def test_mutating_join(backend, batting, awards_players, how):
     left = batting[batting.yearID == 2015]
     right = awards_players[awards_players.lgID == "NL"].drop("yearID", "lgID")
@@ -109,7 +117,7 @@ def test_mutating_join(backend, batting, awards_players, how):
 
 
 @pytest.mark.parametrize("how", ["semi", "anti"])
-@pytest.mark.notimpl(["dask", "druid", "exasol"])
+@pytest.mark.notimpl(["dask", "druid"])
 @pytest.mark.notyet(["flink"], reason="Flink doesn't support semi joins or anti joins")
 def test_filtering_join(backend, batting, awards_players, how):
     left = batting[batting.yearID == 2015]
@@ -139,7 +147,6 @@ def test_filtering_join(backend, batting, awards_players, how):
     backend.assert_frame_equal(result, expected, check_like=True)
 
 
-@pytest.mark.notimpl(["exasol"], raises=com.IbisTypeError)
 def test_join_then_filter_no_column_overlap(awards_players, batting):
     left = batting[batting.yearID == 2015]
     year = left.yearID.name("year")
@@ -152,7 +159,6 @@ def test_join_then_filter_no_column_overlap(awards_players, batting):
     assert not q.execute().empty
 
 
-@pytest.mark.notimpl(["exasol"], raises=com.IbisTypeError)
 def test_mutate_then_join_no_column_overlap(batting, awards_players):
     left = batting.mutate(year=batting.yearID).filter(lambda t: t.year == 2015)
     left = left["year", "RBI"]
@@ -175,7 +181,6 @@ def test_mutate_then_join_no_column_overlap(batting, awards_players):
         param(lambda left, right: left.join(right, "year", how="semi"), id="how_semi"),
     ],
 )
-@pytest.mark.notimpl(["exasol"], raises=com.IbisTypeError)
 def test_semi_join_topk(batting, awards_players, func):
     batting = batting.mutate(year=batting.yearID)
     left = func(batting, batting.year.topk(5)).select("year", "RBI")
@@ -198,7 +203,7 @@ def test_join_with_pandas(batting, awards_players):
     assert df.yearID.nunique() == 7
 
 
-@pytest.mark.notimpl(["dask", "exasol"])
+@pytest.mark.notimpl(["dask"])
 def test_join_with_pandas_non_null_typed_columns(batting, awards_players):
     batting_filt = batting[lambda t: t.yearID < 1900][["yearID"]]
     awards_players_filt = awards_players[lambda t: t.yearID < 1900][
@@ -271,10 +276,6 @@ def test_join_with_pandas_non_null_typed_columns(batting, awards_players):
     raises=TypeError,
     reason="dask doesn't support join predicates",
 )
-@pytest.mark.notimpl(
-    ["exasol"],
-    raises=com.IbisTypeError,
-)
 def test_join_with_trivial_predicate(awards_players, predicate, how, pandas_value):
     n = 5
 
@@ -299,9 +300,6 @@ outer_join_nullability_failures = [pytest.mark.notyet(["sqlite"])] * (
 )
 
 
-@pytest.mark.notimpl(
-    ["exasol"], raises=sa.exc.NoSuchTableError, reason="`win` table isn't loaded"
-)
 @pytest.mark.notimpl(["druid"], raises=PyDruidProgrammingError)
 @pytest.mark.notimpl(["flink"], reason="`win` table isn't loaded")
 @pytest.mark.parametrize(
