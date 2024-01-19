@@ -1,41 +1,31 @@
+WITH t1 AS (
+  SELECT
+    t0.g,
+    t0.a,
+    t0.b,
+    SUM(t0.f) AS total
+  FROM alltypes AS t0
+  GROUP BY
+    1,
+    2,
+    3
+)
 SELECT
-  t6.g,
-  MAX(t6.total - t6.total_right) AS metric
+  t7.g,
+  MAX(t7.total - t7.total_right) AS metric
 FROM (
   SELECT
-    t2.g,
-    t2.a,
-    t2.b,
-    t2.total,
-    t4.g AS g_right,
-    t4.a AS a_right,
-    t4.b AS b_right,
-    t4.total AS total_right
-  FROM (
-    SELECT
-      t0.g,
-      t0.a,
-      t0.b,
-      SUM(t0.f) AS total
-    FROM alltypes AS t0
-    GROUP BY
-      1,
-      2,
-      3
-  ) AS t2
-  INNER JOIN (
-    SELECT
-      t0.g,
-      t0.a,
-      t0.b,
-      SUM(t0.f) AS total
-    FROM alltypes AS t0
-    GROUP BY
-      1,
-      2,
-      3
-  ) AS t4
-    ON t2.a = t4.b
-) AS t6
+    t3.g,
+    t3.a,
+    t3.b,
+    t3.total,
+    t5.g AS g_right,
+    t5.a AS a_right,
+    t5.b AS b_right,
+    t5.total AS total_right
+  FROM t1 AS t3
+  INNER JOIN t1 AS t5
+    ON t3.a = t5.b
+) AS t7
 GROUP BY
   1
