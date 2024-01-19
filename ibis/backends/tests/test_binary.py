@@ -3,7 +3,6 @@ from __future__ import annotations
 import contextlib
 
 import pytest
-import sqlalchemy.exc
 
 import ibis
 import ibis.common.exceptions as com
@@ -29,7 +28,7 @@ BINARY_BACKEND_TYPES = {
 @pytest.mark.notimpl(
     ["exasol"],
     "Exasol does not have native support for a binary data type.",
-    raises=sqlalchemy.exc.StatementError,
+    raises=NotImplementedError,
 )
 def test_binary_literal(con, backend):
     expr = ibis.literal(b"A")
