@@ -11,22 +11,22 @@ from ibis.backends.conftest import _get_backends_to_test
 sa = pytest.importorskip("sqlalchemy")
 sg = pytest.importorskip("sqlglot")
 
-pytestmark = pytest.mark.notimpl(["flink", "exasol", "risingwave"])
+pytestmark = pytest.mark.notimpl(["flink", "risingwave"])
 
 simple_literal = param(ibis.literal(1), id="simple_literal")
 array_literal = param(
     ibis.array([1]),
     marks=[
         pytest.mark.never(
-            ["mysql", "mssql", "oracle", "impala", "sqlite"],
-            raises=exc.OperationNotDefinedError,
+            ["mysql", "mssql", "oracle", "impala", "sqlite", "exasol"],
+            raises=(exc.OperationNotDefinedError, exc.UnsupportedBackendType),
             reason="arrays not supported in the backend",
         ),
     ],
     id="array_literal",
 )
 no_structs = pytest.mark.never(
-    ["impala", "mysql", "sqlite", "mssql"],
+    ["impala", "mysql", "sqlite", "mssql", "exasol"],
     raises=(NotImplementedError, sa.exc.CompileError, exc.UnsupportedBackendType),
     reason="structs not supported in the backend",
 )
@@ -117,7 +117,9 @@ def test_isin_bug(con, snapshot):
     raises=NotImplementedError,
 )
 @pytest.mark.notyet(
-    ["datafusion"], reason="no unnest support", raises=exc.OperationNotDefinedError
+    ["datafusion", "exasol"],
+    reason="no unnest support",
+    raises=exc.OperationNotDefinedError,
 )
 @pytest.mark.notyet(
     ["sqlite", "mysql", "druid", "impala", "mssql"], reason="no unnest support upstream"
