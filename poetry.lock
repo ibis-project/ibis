@@ -4721,6 +4721,7 @@ files = [
 
 [package.dependencies]
 packaging = "*"
+pandas = {version = "*", optional = true, markers = "extra == \"pandas\""}
 pyopenssl = "*"
 rsa = "*"
 websocket-client = ">=1.0.1"
@@ -6363,26 +6364,6 @@ pymysql = ["pymysql", "pymysql (<1)"]
 sqlcipher = ["sqlcipher3_binary"]
 
 [[package]]
-name = "sqlalchemy-exasol"
-version = "4.6.3"
-description = "EXASOL dialect for SQLAlchemy"
-optional = true
-python-versions = ">=3.8,<4.0"
-files = [
-    {file = "sqlalchemy_exasol-4.6.3-py3-none-any.whl", hash = "sha256:d524d14bd84935087fb4e9fed273c1b5f6d23f0008ef3460a0278aa332e646ea"},
-    {file = "sqlalchemy_exasol-4.6.3.tar.gz", hash = "sha256:03a424886cc90480a2127ca0531779e8b0a415d4b113d85dd23025d6c0b52cd3"},
-]
-
-[package.dependencies]
-packaging = ">=21.3"
-pyexasol = ">=0.25.1,<0.26.0"
-pyodbc = ">=4.0.34,<6"
-sqlalchemy = ">=1.4,<2"
-
-[package.extras]
-turbodbc = ["turbodbc (==4.5.4)"]
-
-[[package]]
 name = "sqlalchemy-views"
 version = "0.3.2"
 description = "Adds CreateView and DropView constructs to SQLAlchemy"
@@ -7328,7 +7309,7 @@ cffi = {version = ">=1.11", markers = "platform_python_implementation == \"PyPy\
 cffi = ["cffi (>=1.11)"]
 
 [extras]
-all = ["black", "clickhouse-connect", "dask", "datafusion", "db-dtypes", "deltalake", "duckdb", "geopandas", "google-cloud-bigquery", "google-cloud-bigquery-storage", "graphviz", "impyla", "oracledb", "packaging", "pins", "polars", "psycopg2", "pydata-google-auth", "pydruid", "pymysql", "pyodbc", "pyspark", "regex", "shapely", "snowflake-connector-python", "sqlalchemy", "sqlalchemy-exasol", "sqlalchemy-views", "trino"]
+all = ["black", "clickhouse-connect", "dask", "datafusion", "db-dtypes", "deltalake", "duckdb", "geopandas", "google-cloud-bigquery", "google-cloud-bigquery-storage", "graphviz", "impyla", "oracledb", "packaging", "pins", "polars", "psycopg2", "pydata-google-auth", "pydruid", "pyexasol", "pymysql", "pyodbc", "pyspark", "regex", "shapely", "snowflake-connector-python", "sqlalchemy", "sqlalchemy-views", "trino"]
 bigquery = ["db-dtypes", "google-cloud-bigquery", "google-cloud-bigquery-storage", "pydata-google-auth"]
 clickhouse = ["clickhouse-connect"]
 dask = ["dask", "regex"]
@@ -7338,7 +7319,7 @@ deltalake = ["deltalake"]
 druid = ["pydruid"]
 duckdb = ["duckdb"]
 examples = ["pins"]
-exasol = ["sqlalchemy", "sqlalchemy-exasol", "sqlalchemy-views"]
+exasol = ["pyexasol"]
 flink = []
 geospatial = ["geopandas", "shapely"]
 impala = ["impyla"]
@@ -7357,4 +7338,4 @@ visualization = ["graphviz"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.9"
-content-hash = "1939863bb76e53c0c8a1575ffe8fd2e035e6768ac21682fe12a9e640ffe3ade1"
+content-hash = "3fcc813731a54acc626f4e5d124030eeeff9ce304dd2851b16dfdf89ab529d01"

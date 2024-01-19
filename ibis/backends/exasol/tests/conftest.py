@@ -4,6 +4,8 @@ import os
 import subprocess
 from typing import TYPE_CHECKING
 
+import sqlglot as sg
+
 import ibis
 from ibis.backends.tests.base import (
     ServiceBackendTest,
@@ -40,19 +42,24 @@ class TestConf(ServiceBackendTest):
     service_name = "exasol"
     supports_tpch = False
     force_sort = True
-    deps = "sqlalchemy", "sqlalchemy_exasol", "pyexasol"
+    deps = ("pyexasol",)
 
     @staticmethod
     def connect(*, tmpdir, worker_id, **kw: Any):
-        kwargs = {
-            "user": EXASOL_USER,
-            "password": EXASOL_PASS,
-            "host": EXASOL_HOST,
-            "port": EXASOL_PORT,
-            "schema": IBIS_TEST_EXASOL_DB,
-            "certificate_validation": False,
-        }
-        return ibis.exasol.connect(**kwargs)
+        return ibis.exasol.connect(
+            user=EXASOL_USER,
+            password=EXASOL_PASS,
+            host=EXASOL_HOST,
+            port=EXASOL_PORT,
+            **kw,
+        )
+
+    def postload(self, **kw: Any):
+        self.connection = self.connect(schema=IBIS_TEST_EXASOL_DB, **kw)
+
+    @staticmethod
+    def format_table(name: str) -> str:
+        return sg.to_identifier(name, quoted=True).sql("exasol")
 
     @property
     def test_files(self) -> Iterable[Path]:

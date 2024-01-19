@@ -182,10 +182,6 @@ from ibis.tests.util import assert_equal
                     "Expected np.float16 instance",
                     raises=ArrowNotImplementedError,
                 ),
-                pytest.mark.notimpl(
-                    ["exasol"],
-                    raises=ExaQueryError,
-                ),
             ],
             id="float16",
         ),
@@ -202,12 +198,6 @@ from ibis.tests.util import assert_equal
                 "postgres": "numeric",
                 "flink": "FLOAT NOT NULL",
             },
-            marks=[
-                pytest.mark.notimpl(
-                    ["exasol"],
-                    raises=ExaQueryError,
-                ),
-            ],
             id="float32",
         ),
         param(
@@ -223,12 +213,6 @@ from ibis.tests.util import assert_equal
                 "postgres": "numeric",
                 "flink": "DOUBLE NOT NULL",
             },
-            marks=[
-                pytest.mark.notimpl(
-                    ["exasol"],
-                    raises=ExaQueryError,
-                ),
-            ],
             id="float64",
         ),
     ],
@@ -254,6 +238,7 @@ def test_numeric_literal(con, backend, expr, expected_types):
                 "sqlite": 1.1,
                 "trino": decimal.Decimal("1.1"),
                 "dask": decimal.Decimal("1.1"),
+                "exasol": decimal.Decimal("1"),
                 "duckdb": decimal.Decimal("1.1"),
                 "impala": decimal.Decimal("1"),
                 "postgres": decimal.Decimal("1.1"),
@@ -269,6 +254,7 @@ def test_numeric_literal(con, backend, expr, expected_types):
             {
                 "bigquery": "NUMERIC",
                 "snowflake": "DECIMAL",
+                "exasol": "DECIMAL(18,0)",
                 "sqlite": "real",
                 "impala": "DECIMAL(9,0)",
                 "trino": "decimal(18,3)",
@@ -277,10 +263,9 @@ def test_numeric_literal(con, backend, expr, expected_types):
                 "flink": "DECIMAL(38, 18) NOT NULL",
             },
             marks=[
-                pytest.mark.notimpl(["exasol"], raises=ExaQueryError),
                 pytest.mark.notimpl(
                     ["clickhouse"],
-                    "Unsupported precision. Supported values: [1 : 76]. Current value: None",
+                    reason="precision must be specified; clickhouse doesn't have a default",
                     raises=NotImplementedError,
                 ),
             ],
@@ -445,6 +430,7 @@ def test_numeric_literal(con, backend, expr, expected_types):
                     raises=SnowflakeProgrammingError,
                 ),
                 pytest.mark.notyet(["bigquery"], raises=GoogleBadRequest),
+                pytest.mark.notyet(["exasol"], raises=ExaQueryError),
             ],
             id="decimal-infinity+",
         ),
@@ -519,6 +505,7 @@ def test_numeric_literal(con, backend, expr, expected_types):
                     reason="can't cast infinity to decimal",
                 ),
                 pytest.mark.notyet(["bigquery"], raises=GoogleBadRequest),
+                pytest.mark.notyet(["exasol"], raises=ExaQueryError),
             ],
             id="decimal-infinity-",
         ),
@@ -605,6 +592,7 @@ def test_numeric_literal(con, backend, expr, expected_types):
                     reason="can't cast nan to decimal",
                 ),
                 pytest.mark.notyet(["bigquery"], raises=GoogleBadRequest),
+                pytest.mark.notyet(["exasol"], raises=ExaQueryError),
             ],
             id="decimal-NaN",
         ),
@@ -744,33 +732,13 @@ def test_isnan_isinf(
                 ["datafusion"], raises=com.OperationNotDefinedError
             ),
         ),
-        param(
-            L(5.5).round(),
-            6.0,
-            id="round",
-        ),
-        param(
-            L(5.556).round(2),
-            5.56,
-            id="round-digits",
-        ),
+        param(L(5.5).round(), 6.0, id="round"),
+        param(L(5.556).round(2), 5.56, id="round-digits"),
         param(L(5.556).ceil(), 6.0, id="ceil"),
         param(L(5.556).floor(), 5.0, id="floor"),
-        param(
-            L(5.556).exp(),
-            math.exp(5.556),
-            id="exp",
-        ),
-        param(
-            L(5.556).sign(),
-            1,
-            id="sign-pos",
-        ),
-        param(
-            L(-5.556).sign(),
-            -1,
-            id="sign-neg",
-        ),
+        param(L(5.556).exp(), math.exp(5.556), id="exp"),
+        param(L(5.556).sign(), 1, id="sign-pos"),
+        param(L(-5.556).sign(), -1, id="sign-neg"),
         param(
             L(0).sign(),
             0,
@@ -786,53 +754,19 @@ def test_isnan_isinf(
             L(5.556).log(2),
             math.log(5.556, 2),
             id="log-base",
-            marks=[
-                pytest.mark.notimpl(
-                    ["exasol"],
-                    raises=com.OperationNotDefinedError,
-                ),
-                pytest.mark.notimpl(["druid"], raises=PyDruidProgrammingError),
-            ],
+            marks=[pytest.mark.notimpl(["druid"], raises=PyDruidProgrammingError)],
         ),
-        param(
-            L(5.556).ln(),
-            math.log(5.556),
-            id="ln",
-        ),
+        param(L(5.556).ln(), math.log(5.556), id="ln"),
         param(
             L(5.556).log2(),
             math.log(5.556, 2),
             id="log2",
-            marks=[
-                pytest.mark.notimpl(
-                    ["exasol"],
-                    raises=com.OperationNotDefinedError,
-                ),
-                pytest.mark.notimpl(["druid"], raises=PyDruidProgrammingError),
-            ],
+            marks=[pytest.mark.notimpl(["druid"], raises=PyDruidProgrammingError)],
         ),
-        param(
-            L(5.556).log10(),
-            math.log10(5.556),
-            marks=pytest.mark.notimpl(["exasol"], raises=com.OperationNotDefinedError),
-            id="log10",
-        ),
-        param(
-            L(5.556).radians(),
-            math.radians(5.556),
-            id="radians",
-        ),
-        param(
-            L(5.556).degrees(),
-            math.degrees(5.556),
-            id="degrees",
-        ),
-        param(
-            L(11) % 3,
-            11 % 3,
-            marks=pytest.mark.notimpl(["exasol"], raises=ExaQueryError),
-            id="mod",
-        ),
+        param(L(5.556).log10(), math.log10(5.556), id="log10"),
+        param(L(5.556).radians(), math.radians(5.556), id="radians"),
+        param(L(5.556).degrees(), math.degrees(5.556), id="degrees"),
+        param(L(11) % 3, 11 % 3, id="mod"),
     ],
 )
 def test_math_functions_literals(con, expr, expected):
@@ -964,10 +898,7 @@ def test_simple_math_functions_columns(
         param(
             lambda t: t.double_col.add(1).log(2),
             lambda t: np.log2(t.double_col + 1),
-            marks=[
-                pytest.mark.notimpl(["exasol"], raises=com.OperationNotDefinedError),
-                pytest.mark.notimpl(["druid"], raises=PyDruidProgrammingError),
-            ],
+            marks=[pytest.mark.notimpl(["druid"], raises=PyDruidProgrammingError)],
             id="log2",
         ),
         param(
@@ -978,7 +909,6 @@ def test_simple_math_functions_columns(
         param(
             lambda t: t.double_col.add(1).log10(),
             lambda t: np.log10(t.double_col + 1),
-            marks=pytest.mark.notimpl(["exasol"], raises=com.OperationNotDefinedError),
             id="log10",
         ),
         param(
@@ -993,7 +923,6 @@ def test_simple_math_functions_columns(
             ),
             id="log_base_bigint",
             marks=[
-                pytest.mark.notimpl(["exasol"], raises=com.OperationNotDefinedError),
                 pytest.mark.notimpl(
                     ["datafusion"], raises=com.OperationNotDefinedError
                 ),
@@ -1090,11 +1019,12 @@ def test_backend_specific_numerics(backend, con, df, alltypes, expr_fn, expected
         operator.mul,
         operator.truediv,
         operator.floordiv,
-        operator.pow,
+        param(
+            operator.pow, marks=[pytest.mark.notimpl(["exasol"], raises=ExaQueryError)]
+        ),
     ],
     ids=lambda op: op.__name__,
 )
-@pytest.mark.notimpl(["exasol"], raises=AttributeError)
 def test_binary_arithmetic_operations(backend, alltypes, df, op):
     smallint_col = alltypes.smallint_col + 1  # make it nonzero
     smallint_series = df.smallint_col + 1
@@ -1112,7 +1042,6 @@ def test_binary_arithmetic_operations(backend, alltypes, df, op):
     backend.assert_series_equal(result, expected, check_exact=False)
 
 
-@pytest.mark.notimpl(["exasol"], raises=AttributeError)
 def test_mod(backend, alltypes, df):
     expr = operator.mod(alltypes.smallint_col, alltypes.smallint_col + 1).name("tmp")
 
@@ -1139,7 +1068,6 @@ def test_mod(backend, alltypes, df):
     "Cannot apply '%' to arguments of type '<DOUBLE> % <SMALLINT>'. Supported form(s): '<EXACT_NUMERIC> % <EXACT_NUMERIC>",
     raises=Py4JError,
 )
-@pytest.mark.notimpl(["exasol"], raises=AttributeError)
 def test_floating_mod(backend, alltypes, df):
     expr = operator.mod(alltypes.double_col, alltypes.smallint_col + 1).name("tmp")
 
@@ -1292,7 +1220,7 @@ def test_floating_mod(backend, alltypes, df):
 @pytest.mark.notyet(["mssql"], raises=(sa.exc.OperationalError, sa.exc.DataError))
 @pytest.mark.notyet(["snowflake"], raises=SnowflakeProgrammingError)
 @pytest.mark.notyet(["postgres"], raises=PsycoPg2DivisionByZero)
-@pytest.mark.notimpl(["exasol"], raises=(sa.exc.DBAPIError, com.IbisTypeError))
+@pytest.mark.notimpl(["exasol"], raises=ExaQueryError)
 def test_divide_by_zero(backend, alltypes, df, column, denominator):
     expr = alltypes[column] / denominator
     result = expr.name("tmp").execute()
@@ -1396,13 +1324,7 @@ def test_random(con):
     [
         param(lambda x: x.clip(lower=0), lambda x: x.clip(lower=0), id="lower-int"),
         param(
-            lambda x: x.clip(lower=0.0),
-            lambda x: x.clip(lower=0.0),
-            marks=pytest.mark.notimpl(
-                "exasol",
-                raises=ExaQueryError,
-            ),
-            id="lower-float",
+            lambda x: x.clip(lower=0.0), lambda x: x.clip(lower=0.0), id="lower-float"
         ),
         param(lambda x: x.clip(upper=0), lambda x: x.clip(upper=0), id="upper-int"),
         param(
@@ -1423,10 +1345,6 @@ def test_random(con):
         param(
             lambda x: x.clip(lower=0, upper=1.0),
             lambda x: x.clip(lower=0, upper=1.0),
-            marks=pytest.mark.notimpl(
-                "exasol",
-                raises=ExaQueryError,
-            ),
             id="lower-upper-float",
         ),
         param(
@@ -1450,7 +1368,7 @@ def test_clip(backend, alltypes, df, ibis_func, pandas_func):
     backend.assert_series_equal(result, expected, check_names=False)
 
 
-@pytest.mark.notimpl(["polars", "exasol"], raises=com.OperationNotDefinedError)
+@pytest.mark.notimpl(["polars"], raises=com.OperationNotDefinedError)
 @pytest.mark.broken(
     ["druid"],
     raises=PyDruidProgrammingError,
@@ -1564,9 +1482,8 @@ def test_bitwise_scalars(con, op, left, right):
     assert result == expected
 
 
-@pytest.mark.notimpl(["datafusion"], raises=com.OperationNotDefinedError)
+@pytest.mark.notimpl(["datafusion", "exasol"], raises=com.OperationNotDefinedError)
 @pytest.mark.notimpl(["oracle"], raises=sa.exc.DatabaseError)
-@pytest.mark.notimpl(["exasol"], raises=ExaQueryError)
 @flink_no_bitwise
 def test_bitwise_not_scalar(con):
     expr = ~L(2)
@@ -1575,9 +1492,8 @@ def test_bitwise_not_scalar(con):
     assert result == expected
 
 
-@pytest.mark.notimpl(["datafusion"], raises=com.OperationNotDefinedError)
+@pytest.mark.notimpl(["datafusion", "exasol"], raises=com.OperationNotDefinedError)
 @pytest.mark.notimpl(["oracle"], raises=sa.exc.DatabaseError)
-@pytest.mark.notimpl(["exasol"], raises=sa.exc.DBAPIError)
 @flink_no_bitwise
 def test_bitwise_not_col(backend, alltypes, df):
     expr = (~alltypes.int_col).name("tmp")
