@@ -168,23 +168,14 @@ class Backend(SQLGlotBackend):
         )
         return sch.Schema.from_tuples(name_type_pairs)
 
-    def execute(
-        self,
-        expr: ir.Expr,
-        params: Mapping | None = None,
-        limit: str | None = "default",
-        **kwargs: Any,
-    ) -> Any:
-        """Execute an expression."""
+    def _fetch_from_cursor(self, cursor, schema: sch.Schema) -> pd.DataFrame:
+        import pandas as pd
+
         from ibis.backends.exasol.converter import ExasolPandasData
 
-        self._run_pre_execute_hooks(expr)
-        table = expr.as_table()
-        sql = self.compile(table, params=params, limit=limit, **kwargs)
-        result = ExasolPandasData.convert_table(
-            self.con.export_to_pandas(sql), table.schema()
-        )
-        return expr.__pandas_result__(result)
+        df = pd.DataFrame.from_records(cursor, columns=schema.names, coerce_float=True)
+        df = ExasolPandasData.convert_table(df, schema)
+        return df
 
     def _metadata(self, query: str) -> Iterable[tuple[str, dt.DataType]]:
         table = sg.table(util.gen_name("exasol_metadata"), quoted=self.compiler.quoted)

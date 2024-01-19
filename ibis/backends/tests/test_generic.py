@@ -101,17 +101,26 @@ def test_scalar_fillna_nullif(con, expr, expected):
 
 
 @pytest.mark.parametrize(
-    ("col", "filt"),
+    ("col", "value", "filt"),
     [
         param(
             "nan_col",
-            _.nan_col.isnan(),
-            marks=pytest.mark.notimpl(["mysql", "sqlite"]),
+            ibis.literal(np.nan),
+            methodcaller("isnan"),
+            marks=[
+                pytest.mark.notimpl(["mysql", "sqlite"]),
+                pytest.mark.notyet(
+                    ["exasol"],
+                    raises=ExaQueryError,
+                    reason="no way to test for nan-ness",
+                ),
+            ],
             id="nan_col",
         ),
         param(
             "none_col",
-            _.none_col.isnull(),
+            ibis.NA.cast("float64"),
+            methodcaller("isnull"),
             marks=[pytest.mark.notimpl(["mysql"])],
             id="none_col",
         ),
@@ -119,14 +128,11 @@ def test_scalar_fillna_nullif(con, expr, expected):
 )
 @pytest.mark.notimpl(["mssql", "druid", "oracle"])
 @pytest.mark.notyet(["flink"], "NaN is not supported in Flink SQL", raises=ValueError)
-@pytest.mark.notimpl(["exasol"], raises=com.OperationNotDefinedError, strict=False)
-def test_isna(backend, alltypes, col, filt):
-    table = alltypes.select(
-        nan_col=ibis.literal(np.nan), none_col=ibis.NA.cast("float64")
-    )
+def test_isna(backend, alltypes, col, value, filt):
+    table = alltypes.select(**{col: value})
     df = table.execute()
 
-    result = table[filt].execute().reset_index(drop=True)
+    result = table[filt(table[col])].execute().reset_index(drop=True)
     expected = df[df[col].isna()].reset_index(drop=True)
 
     backend.assert_frame_equal(result, expected)
@@ -791,7 +797,7 @@ def test_int_scalar(alltypes):
     assert result.dtype == np.int32
 
 
-@pytest.mark.notimpl(["dask", "datafusion", "pandas", "polars", "druid", "exasol"])
+@pytest.mark.notimpl(["dask", "datafusion", "pandas", "polars", "druid"])
 @pytest.mark.notyet(
     ["clickhouse"], reason="https://github.com/ClickHouse/ClickHouse/issues/6697"
 )
@@ -835,7 +841,7 @@ def test_typeof(con):
 @pytest.mark.notimpl(["datafusion", "druid"])
 @pytest.mark.notimpl(["pyspark"], condition=is_older_than("pyspark", "3.5.0"))
 @pytest.mark.notyet(["dask", "mssql"], reason="not supported by the backend")
-@pytest.mark.notimpl(["exasol"], raises=sa.exc.DBAPIError)
+@pytest.mark.notyet(["exasol"], raises=ExaQueryError, reason="not supported by exasol")
 def test_isin_uncorrelated(
     backend, batting, awards_players, batting_df, awards_players_df
 ):
@@ -855,7 +861,7 @@ def test_isin_uncorrelated(
 
 
 @pytest.mark.broken(["polars"], reason="incorrect answer")
-@pytest.mark.notimpl(["druid", "exasol"])
+@pytest.mark.notimpl(["druid"])
 @pytest.mark.notyet(["dask"], reason="not supported by the backend")
 def test_isin_uncorrelated_filter(
     backend, batting, awards_players, batting_df, awards_players_df
@@ -880,7 +886,14 @@ def test_isin_uncorrelated_filter(
     "dtype",
     [
         "bool",
-        "bytes",
+        param(
+            "bytes",
+            marks=[
+                pytest.mark.notyet(
+                    ["exasol"], raises=ExaQueryError, reason="no binary type"
+                )
+            ],
+        ),
         "str",
         "int",
         "float",
@@ -892,7 +905,14 @@ def test_isin_uncorrelated_filter(
         "float64",
         "timestamp",
         "date",
-        "time",
+        param(
+            "time",
+            marks=[
+                pytest.mark.notyet(
+                    ["exasol"], raises=ExaQueryError, reason="no time type"
+                )
+            ],
+        ),
     ],
 )
 def test_literal_na(con, dtype):
@@ -1208,17 +1228,7 @@ def test_hash_consistent(backend, alltypes):
     assert h1.dtype in ("i8", "uint64")  # polars likes returning uint64 for this
 
 
-@pytest.mark.notimpl(
-    [
-        "pandas",
-        "dask",
-        "mssql",
-        "oracle",
-        "snowflake",
-        "sqlite",
-        "exasol",
-    ]
-)
+@pytest.mark.notimpl(["pandas", "dask", "mssql", "oracle", "snowflake", "sqlite"])
 @pytest.mark.parametrize(
     ("from_val", "to_type", "expected"),
     [
@@ -1234,6 +1244,7 @@ def test_hash_consistent(backend, alltypes):
                 pytest.mark.notyet(["duckdb", "impala"], reason="casts to NULL"),
                 pytest.mark.notyet(["bigquery"], raises=GoogleBadRequest),
                 pytest.mark.notyet(["trino"], raises=TrinoUserError),
+                pytest.mark.notyet(["exasol"], raises=ExaQueryError),
                 pytest.mark.broken(
                     ["druid"], reason="casts to 1672531200000 (millisecond)"
                 ),
@@ -1368,25 +1379,9 @@ def test_try_cast_func(con, from_val, to_type, func):
         ### NONE/ZERO start
         # no stop
         param(slice(None, 0), lambda _: 0, id="[:0]"),
-        param(
-            slice(None, None),
-            lambda t: t.count().to_pandas(),
-            marks=pytest.mark.notyet(
-                ["exasol"],
-                raises=sa.exc.CompileError,
-            ),
-            id="[:]",
-        ),
+        param(slice(None, None), lambda t: t.count().to_pandas(), id="[:]"),
         param(slice(0, 0), lambda _: 0, id="[0:0]"),
-        param(
-            slice(0, None),
-            lambda t: t.count().to_pandas(),
-            marks=pytest.mark.notyet(
-                ["exasol"],
-                raises=sa.exc.CompileError,
-            ),
-            id="[0:]",
-        ),
+        param(slice(0, None), lambda t: t.count().to_pandas(), id="[0:]"),
         # positive stop
         param(slice(None, 2), lambda _: 2, id="[:2]"),
         param(slice(0, 2), lambda _: 2, id="[0:2]"),
@@ -1409,8 +1404,13 @@ def test_try_cast_func(con, from_val, to_type, func):
                 pytest.mark.never(
                     ["impala"],
                     raises=ImpalaHiveServer2Error,
-                    reason="impala doesn't support OFFSET without ORDER BY",
-                )
+                    reason="doesn't support OFFSET without ORDER BY",
+                ),
+                pytest.mark.notyet(
+                    ["exasol"],
+                    raises=ExaQueryError,
+                    reason="doesn't support OFFSET without ORDER BY",
+                ),
             ],
         ),
         param(
@@ -1428,10 +1428,7 @@ def test_try_cast_func(con, from_val, to_type, func):
                     raises=sa.exc.CompileError,
                     reason="mssql doesn't support OFFSET without LIMIT",
                 ),
-                pytest.mark.notyet(
-                    ["exasol"],
-                    raises=sa.exc.CompileError,
-                ),
+                pytest.mark.notyet(["exasol"], raises=ExaQueryError),
                 pytest.mark.never(
                     ["impala"],
                     raises=ImpalaHiveServer2Error,
@@ -1448,8 +1445,13 @@ def test_try_cast_func(con, from_val, to_type, func):
                 pytest.mark.never(
                     ["impala"],
                     raises=ImpalaHiveServer2Error,
-                    reason="impala doesn't support OFFSET without ORDER BY",
-                )
+                    reason="doesn't support OFFSET without ORDER BY",
+                ),
+                pytest.mark.notyet(
+                    ["exasol"],
+                    raises=ExaQueryError,
+                    reason="doesn't support OFFSET without ORDER BY",
+                ),
             ],
         ),
         param(
@@ -1462,10 +1464,7 @@ def test_try_cast_func(con, from_val, to_type, func):
                     raises=sa.exc.CompileError,
                     reason="mssql doesn't support OFFSET without LIMIT",
                 ),
-                pytest.mark.notyet(
-                    ["exasol"],
-                    raises=sa.exc.DBAPIError,
-                ),
+                pytest.mark.notyet(["exasol"], raises=ExaQueryError),
                 pytest.mark.notyet(
                     ["impala"],
                     raises=ImpalaHiveServer2Error,
@@ -1529,10 +1528,7 @@ def test_static_table_slice(backend, slc, expected_count_fn):
     raises=sa.exc.CompileError,
     reason="mssql doesn't support dynamic limit/offset without an ORDER BY",
 )
-@pytest.mark.notimpl(
-    ["exasol"],
-    raises=sa.exc.CompileError,
-)
+@pytest.mark.notimpl(["exasol"], raises=ExaQueryError)
 @pytest.mark.notyet(
     ["clickhouse"],
     raises=ClickHouseDatabaseError,
@@ -1582,7 +1578,7 @@ def test_dynamic_table_slice(backend, slc, expected_count_fn):
     raises=TrinoUserError,
     reason="backend doesn't support dynamic limit/offset",
 )
-@pytest.mark.notimpl(["exasol"], raises=sa.exc.CompileError)
+@pytest.mark.notimpl(["exasol"], raises=ExaQueryError)
 @pytest.mark.notyet(
     ["clickhouse"],
     raises=ClickHouseDatabaseError,

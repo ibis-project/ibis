@@ -2,13 +2,12 @@ from __future__ import annotations
 
 from functools import singledispatchmethod
 
-import sqlglot as sg
 import sqlglot.expressions as sge
 from sqlglot.dialects import Postgres
 
 import ibis.common.exceptions as com
 import ibis.expr.operations as ops
-from ibis.backends.base.sqlglot.compiler import SQLGlotCompiler
+from ibis.backends.base.sqlglot.compiler import NULL, SQLGlotCompiler
 from ibis.backends.base.sqlglot.datatypes import ExasolType
 from ibis.expr.rewrites import rewrite_sample
 
@@ -32,10 +31,15 @@ class ExasolCompiler(SQLGlotCompiler):
     rewrites = (rewrite_sample, *SQLGlotCompiler.rewrites)
 
     def _aggregate(self, funcname: str, *args, where):
-        expr = self.f[funcname](*args)
+        func = self.f[funcname]
         if where is not None:
-            return sg.exp.Filter(this=expr, expression=sg.exp.Where(this=where))
-        return expr
+            args = tuple(self.if_(where, arg, NULL) for arg in args)
+        return func(*args)
+
+    @staticmethod
+    def _gen_valid_name(name: str) -> str:
+        """Exasol does not allow dots in quoted column names."""
+        return name.replace(".", "_")
 
     @singledispatchmethod
     def visit_node(self, op, **kw):

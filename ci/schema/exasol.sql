@@ -45,7 +45,7 @@ CREATE OR REPLACE TABLE EXASOL."awards_players"
 (
     "playerId" VARCHAR(256),
     "awardID"  VARCHAR(256),
-    "yearID"   VARCHAR(256),
+    "yearID"   BIGINT,
     "logID"    VARCHAR(256),
     "tie"      VARCHAR(256),
     "notest"   VARCHAR(256)
