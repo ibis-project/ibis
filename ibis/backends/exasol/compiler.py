@@ -51,7 +51,6 @@ class ExasolCompiler(SQLGlotCompiler):
     @visit_node.register(ops.ArraySort)
     @visit_node.register(ops.ArrayUnion)
     @visit_node.register(ops.ArrayZip)
-    @visit_node.register(ops.CountDistinctStar)
     @visit_node.register(ops.Covariance)
     @visit_node.register(ops.DateDelta)
     @visit_node.register(ops.DayOfWeekIndex)
@@ -83,6 +82,10 @@ class ExasolCompiler(SQLGlotCompiler):
     @visit_node.register(ops.Variance)
     def visit_Undefined(self, op, **_):
         raise com.OperationNotDefinedError(type(op).__name__)
+
+    @visit_node.register(ops.CountDistinctStar)
+    def visit_Unsupported(self, op, **_):
+        raise com.UnsupportedOperationError(type(op).__name__)
 
 
 _SIMPLE_OPS = {

@@ -732,7 +732,7 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
             lambda _: slice(None),
             marks=pytest.mark.notimpl(
                 ["exasol"],
-                raises=(com.OperationNotDefinedError, ExaQueryError, sa.exc.DBAPIError),
+                raises=(com.OperationNotDefinedError, ExaQueryError),
                 strict=False,
             ),
             id="no_cond",
@@ -812,9 +812,7 @@ def test_reduction_ops(
     raises=com.OperationNotDefinedError,
     reason="no one has attempted implementation yet",
 )
-@pytest.mark.notimpl(
-    ["exasol"], raises=(sa.exc.DBAPIError, com.UnsupportedOperationError)
-)
+@pytest.mark.notimpl(["exasol"], raises=com.UnsupportedOperationError)
 def test_count_distinct_star(alltypes, df, ibis_cond, pandas_cond):
     table = alltypes[["int_col", "double_col", "string_col"]]
     expr = table.nunique(where=ibis_cond(table))
@@ -1082,8 +1080,7 @@ def test_quantile(
         ),
     ],
 )
-@pytest.mark.notimpl(["mssql"], raises=com.OperationNotDefinedError)
-@pytest.mark.notimpl(["exasol"], raises=AttributeError)
+@pytest.mark.notimpl(["mssql", "exasol"], raises=com.OperationNotDefinedError)
 def test_corr_cov(
     con,
     batting,
@@ -1524,8 +1521,9 @@ def test_grouped_case(backend, con):
 
 
 @pytest.mark.notimpl(
-    ["datafusion", "mssql", "polars", "exasol"], raises=com.OperationNotDefinedError
+    ["datafusion", "mssql", "polars"], raises=com.OperationNotDefinedError
 )
+@pytest.mark.notimpl(["exasol"], raises=ExaQueryError)
 @pytest.mark.broken(
     ["dask"],
     reason="Dask does not windowize this operation correctly",
