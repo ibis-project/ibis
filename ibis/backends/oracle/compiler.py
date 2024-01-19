@@ -427,30 +427,19 @@ class OracleCompiler(SQLGlotCompiler):
     def visit_Xor(self, op, *, left, right):
         return (left.or_(right)).and_(sg.not_(left.and_(right)))
 
-    @visit_node.register(ops.TimestampTruncate)
     @visit_node.register(ops.DateTruncate)
-    @visit_node.register(ops.TimeTruncate)
-    def visit_TimestampTruncate(self, op, *, arg, unit):
-        # FIXME: assertion errors
+    def visit_DateTruncate(self, op, *, arg, unit):
         unit_mapping = {
             "Y": "year",
-            "M": "month",
-            "W": "week",
-            "D": "day",
-            "h": "hour",
-            "m": "minute",
-            "s": "second",
-            "ms": "ms",
-            "us": "us",
+            "M": "MONTH",
+            "W": "IW",
+            "D": "DDD",
         }
 
-        if (unit := unit_mapping.get(unit.short)) in ("ms", "us", None):
+        if (unit := unit_mapping.get(unit.short)) is None:
             raise com.UnsupportedOperationError(f"Unsupported truncate unit {unit}")
 
-        # The FuncGen for self.f.extract always resolves to sge.Extract
-        # and then complains about the missing expression argument
-        # so we construct it directly
-        return sge.Extract(this=unit, expression=arg)
+        return self.f.trunc(arg, unit)
 
     @visit_node.register(Window)
     def visit_Window(self, op, *, how, func, start, end, group_by, order_by):
@@ -549,7 +538,6 @@ class OracleCompiler(SQLGlotCompiler):
     @visit_node.register(ops.RegexSplit)
     @visit_node.register(ops.StringSplit)
     @visit_node.register(ops.TimestampTruncate)
-    @visit_node.register(ops.DateTruncate)
     @visit_node.register(ops.TimeTruncate)
     @visit_node.register(ops.Bucket)
     @visit_node.register(ops.TimestampBucket)

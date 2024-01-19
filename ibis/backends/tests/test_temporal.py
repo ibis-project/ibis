@@ -546,10 +546,6 @@ def test_timestamp_truncate(backend, alltypes, df, unit):
 @pytest.mark.broken(
     ["polars", "druid"], reason="snaps to the UNIX epoch", raises=AssertionError
 )
-@pytest.mark.notimpl(
-    ["oracle"],
-    raises=com.OperationNotDefinedError,
-)
 @pytest.mark.broken(
     ["druid"],
     raises=AttributeError,
