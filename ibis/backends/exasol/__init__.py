@@ -17,7 +17,7 @@ import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis import util
 from ibis.backends.base.sqlglot import SQLGlotBackend
-from ibis.backends.base.sqlglot.compiler import STAR
+from ibis.backends.base.sqlglot.compiler import STAR, C
 from ibis.backends.exasol.compiler import ExasolCompiler
 
 if TYPE_CHECKING:
@@ -43,7 +43,13 @@ class Backend(SQLGlotBackend):
 
     @property
     def version(self) -> str:
-        with self._safe_raw_sql("SELECT version()") as result:
+        # https://stackoverflow.com/a/67500385
+        query = (
+            sg.select("param_value")
+            .from_(sg.table("EXA_METADATA", catalog="SYS"))
+            .where(C.param_name.eq("databaseProductVersion"))
+        )
+        with self._safe_raw_sql(query) as result:
             [(version,)] = result.fetchall()
         return version
 
