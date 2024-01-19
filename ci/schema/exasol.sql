@@ -56,7 +56,7 @@ CREATE OR REPLACE TABLE EXASOL."functional_alltypes"
     "id"              INTEGER,
     "bool_col"        BOOLEAN,
     "tinyint_col"     SHORTINT,
-    "small_int"       SMALLINT,
+    "smallint_col"    SMALLINT,
     "int_col"         INTEGER,
     "bigint_col"      BIGINT,
     "float_col"       FLOAT,
