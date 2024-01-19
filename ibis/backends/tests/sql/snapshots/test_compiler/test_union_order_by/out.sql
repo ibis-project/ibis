@@ -1,18 +1,20 @@
+WITH t1 AS (
+  SELECT
+    t0.a,
+    t0.b
+  FROM t AS t0
+  ORDER BY
+    t0.b ASC
+)
 SELECT
-  t2.a,
-  t2.b
+  t3.a,
+  t3.b
 FROM (
   SELECT
-    t0.a,
-    t0.b
-  FROM t AS t0
-  ORDER BY
-    t0.b ASC
+    *
+  FROM t1 AS t2
   UNION ALL
   SELECT
-    t0.a,
-    t0.b
-  FROM t AS t0
-  ORDER BY
-    t0.b ASC
-) AS t2
+    *
+  FROM t1 AS t2
+) AS t3
