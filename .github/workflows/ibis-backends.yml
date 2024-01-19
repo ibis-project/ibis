@@ -164,13 +164,13 @@ jobs:
           #     - oracle
           #   services:
           #     - oracle
-          # - name: exasol
-          #   title: Exasol
-          #   serial: true
-          #   extras:
-          #     - exasol
-          #   services:
-          #     - exasol
+          - name: exasol
+            title: Exasol
+            serial: true
+            extras:
+              - exasol
+            services:
+              - exasol
           # - name: flink
           #   title: Flink
           #   serial: true
@@ -301,21 +301,21 @@ jobs:
           #       - flink
           # - os: windows-latest
           #   backend:
-          #     name: exasol
-          #     title: Exasol
-          #     serial: true
-          #     extras:
-          #       - exasol
-          #     services:
-          #       - exasol
-          # - os: windows-latest
-          #   backend:
           #     name: risingwave
           #     title: Risingwave
           #     services:
           #       - risingwave
           #     extras:
           #       - risingwave
+          - os: windows-latest
+            backend:
+              name: exasol
+              title: Exasol
+              serial: true
+              extras:
+                - exasol
+              services:
+                - exasol
     steps:
       - name: update and install system dependencies
         if: matrix.os == 'ubuntu-latest' && matrix.backend.sys-deps != null
@@ -614,46 +614,6 @@ jobs:
         uses: codecov/codecov-action@v4
         with:
           flags: backend,pyspark,${{ runner.os }},python-${{ steps.install_python.outputs.python-version }}
-
-  # gen_lockfile_sqlalchemy2:
-  #   name: Generate Poetry Lockfile for SQLAlchemy 2
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - name: checkout
-  #       uses: actions/checkout@v4
-  #
-  #     - name: install python
-  #       uses: actions/setup-python@v5
-  #       with:
-  #         python-version: "3.11"
-  #
-  #     - run: python -m pip install --upgrade pip 'poetry==1.7.1'
-  #
-  #     - name: remove deps that are not compatible with sqlalchemy 2
-  #       run: poetry remove sqlalchemy-exasol
-  #
-  #     - name: add sqlalchemy 2
-  #       run: poetry add --lock --optional 'sqlalchemy>=2,<3'
-  #
-  #     - name: checkout the lock file
-  #       run: git checkout poetry.lock
-  #
-  #     - name: lock with no updates
-  #       # poetry add is aggressive and will update other dependencies like
-  #       # numpy and pandas so we keep the pyproject.toml edits and then relock
-  #       # without updating anything except the requested versions
-  #       run: poetry lock --no-update
-  #
-  #     - name: check the sqlalchemy version
-  #       run: poetry show sqlalchemy --no-ansi | grep version | cut -d ':' -f2- | sed 's/ //g' | grep -P '^2\.'
-  #
-  #     - name: upload deps file
-  #       uses: actions/upload-artifact@v3
-  #       with:
-  #         name: deps
-  #         path: |
-  #           pyproject.toml
-  #           poetry.lock
 
   # test_backends_sqlalchemy2:
   #   name: SQLAlchemy 2 ${{ matrix.backend.title }} ${{ matrix.os }} python-${{ matrix.python-version }}
