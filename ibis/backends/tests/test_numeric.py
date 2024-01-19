@@ -1019,11 +1019,12 @@ def test_backend_specific_numerics(backend, con, df, alltypes, expr_fn, expected
         operator.mul,
         operator.truediv,
         operator.floordiv,
-        operator.pow,
+        param(
+            operator.pow, marks=[pytest.mark.notimpl(["exasol"], raises=ExaQueryError)]
+        ),
     ],
     ids=lambda op: op.__name__,
 )
-@pytest.mark.notimpl(["exasol"], raises=AttributeError)
 def test_binary_arithmetic_operations(backend, alltypes, df, op):
     smallint_col = alltypes.smallint_col + 1  # make it nonzero
     smallint_series = df.smallint_col + 1
@@ -1041,7 +1042,6 @@ def test_binary_arithmetic_operations(backend, alltypes, df, op):
     backend.assert_series_equal(result, expected, check_exact=False)
 
 
-@pytest.mark.notimpl(["exasol"], raises=AttributeError)
 def test_mod(backend, alltypes, df):
     expr = operator.mod(alltypes.smallint_col, alltypes.smallint_col + 1).name("tmp")
 
@@ -1068,7 +1068,6 @@ def test_mod(backend, alltypes, df):
     "Cannot apply '%' to arguments of type '<DOUBLE> % <SMALLINT>'. Supported form(s): '<EXACT_NUMERIC> % <EXACT_NUMERIC>",
     raises=Py4JError,
 )
-@pytest.mark.notimpl(["exasol"], raises=AttributeError)
 def test_floating_mod(backend, alltypes, df):
     expr = operator.mod(alltypes.double_col, alltypes.smallint_col + 1).name("tmp")
 

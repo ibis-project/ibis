@@ -80,7 +80,16 @@ def test_date_extract(backend, alltypes, df, attr, expr_fn):
         ),
         "hour",
         "minute",
-        "second",
+        param(
+            "second",
+            marks=[
+                pytest.mark.broken(
+                    ["exasol"],
+                    raises=AssertionError,
+                    reason="seems like exasol might be rounding",
+                )
+            ],
+        ),
     ],
 )
 @pytest.mark.notimpl(
@@ -305,7 +314,7 @@ PANDAS_UNITS = {
         param(
             "W",
             marks=[
-                pytest.mark.broken(["sqlite"], raises=AssertionError),
+                pytest.mark.broken(["sqlite", "exasol"], raises=AssertionError),
                 pytest.mark.notimpl(["mysql"], raises=com.UnsupportedOperationError),
                 pytest.mark.broken(
                     ["polars"],
@@ -448,7 +457,7 @@ PANDAS_UNITS = {
         ),
     ],
 )
-@pytest.mark.notimpl(["oracle"], raises=com.OperationNotDefinedError)
+@pytest.mark.notimpl(["oracle", "exasol"], raises=com.OperationNotDefinedError)
 @pytest.mark.broken(
     ["druid"],
     raises=AttributeError,
@@ -523,6 +532,11 @@ def test_timestamp_truncate(backend, alltypes, df, unit):
                         "CalciteContextException: No match found for function signature trunc(<DATE>, <CHARACTER>)"
                         "Timestamp truncation is not supported in Flink"
                     ),
+                ),
+                pytest.mark.broken(
+                    ["exasol"],
+                    raises=AssertionError,
+                    reason="behavior is different than expected",
                 ),
             ],
         ),
@@ -1764,14 +1778,13 @@ DATE_BACKEND_TYPES = {
 }
 
 
-@pytest.mark.notimpl(["pandas", "dask"], raises=com.OperationNotDefinedError)
+@pytest.mark.notimpl(["pandas", "dask", "exasol"], raises=com.OperationNotDefinedError)
 @pytest.mark.notimpl(
     ["druid"], raises=PyDruidProgrammingError, reason="SQL parse failed"
 )
 @pytest.mark.notimpl(
     ["oracle"], raises=sa.exc.DatabaseError, reason="ORA-00936 missing expression"
 )
-@pytest.mark.notimpl(["exasol"], raises=ExaQueryError)
 def test_date_literal(con, backend):
     expr = ibis.date(2022, 2, 4)
     result = con.execute(expr)

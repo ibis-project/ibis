@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import contextlib
 from functools import singledispatchmethod
 
 import sqlglot.expressions as sge
@@ -19,11 +20,24 @@ from ibis.common.patterns import replace
 from ibis.expr.rewrites import p, rewrite_sample, y
 
 
+def _interval(self, e):
+    """Work around Exasol's inability to handle string literals in INTERVAL syntax."""
+    arg = e.args["this"].this
+    with contextlib.suppress(AttributeError):
+        arg = arg.sql(self.dialect)
+    res = f"INTERVAL '{arg}' {e.args['unit']}"
+    return res
+
+
 # Is postgres the best dialect to inherit from?
 class Exasol(Postgres):
     """The exasol dialect."""
 
     class Generator(Postgres.Generator):
+        TRANSFORMS = Postgres.Generator.TRANSFORMS.copy() | {
+            sge.Interval: _interval,
+        }
+
         TYPE_MAPPING = Postgres.Generator.TYPE_MAPPING.copy() | {
             sge.DataType.Type.TIMESTAMPTZ: "TIMESTAMP WITH LOCAL TIME ZONE",
         }
@@ -140,6 +154,7 @@ class ExasolCompiler(SQLGlotCompiler):
     @visit_node.register(ops.DateAdd)
     @visit_node.register(ops.DateDelta)
     @visit_node.register(ops.DateSub)
+    @visit_node.register(ops.DateFromYMD)
     @visit_node.register(ops.DayOfWeekIndex)
     @visit_node.register(ops.DayOfWeekName)
     @visit_node.register(ops.ElementWiseVectorizedUDF)
@@ -174,6 +189,7 @@ class ExasolCompiler(SQLGlotCompiler):
     @visit_node.register(ops.TimestampDiff)
     @visit_node.register(ops.TimestampNow)
     @visit_node.register(ops.TimestampSub)
+    @visit_node.register(ops.TimestampTruncate)
     @visit_node.register(ops.TypeOf)
     @visit_node.register(ops.Unnest)
     @visit_node.register(ops.Variance)

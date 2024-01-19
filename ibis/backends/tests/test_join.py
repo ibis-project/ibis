@@ -11,7 +11,7 @@ from pytest import param
 import ibis
 import ibis.common.exceptions as com
 import ibis.expr.schema as sch
-from ibis.backends.tests.errors import ExaQueryError, PyDruidProgrammingError
+from ibis.backends.tests.errors import PyDruidProgrammingError
 
 
 def _pandas_semi_join(left, right, on, **_):
@@ -300,9 +300,6 @@ outer_join_nullability_failures = [pytest.mark.notyet(["sqlite"])] * (
 )
 
 
-@pytest.mark.notimpl(
-    ["exasol"], raises=ExaQueryError, reason="`win` table isn't loaded"
-)
 @pytest.mark.notimpl(["druid"], raises=PyDruidProgrammingError)
 @pytest.mark.notimpl(["flink"], reason="`win` table isn't loaded")
 @pytest.mark.parametrize(
