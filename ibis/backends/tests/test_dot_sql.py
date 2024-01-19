@@ -48,7 +48,7 @@ _NAMES = {
 def test_con_dot_sql(backend, con, schema):
     alltypes = backend.functional_alltypes
     # pull out the quoted name
-    name = _NAMES.get(con.name, alltypes.op().name)
+    name = _NAMES.get(con.name, "functional_alltypes")
     quoted = getattr(getattr(con, "compiler", None), "quoted", True)
     dialect = _IBIS_TO_SQLGLOT_DIALECT.get(con.name, con.name)
     cols = [
