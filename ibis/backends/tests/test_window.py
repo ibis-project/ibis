@@ -14,6 +14,7 @@ import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 from ibis.backends.tests.errors import (
     ClickHouseDatabaseError,
+    ExaQueryError,
     GoogleBadRequest,
     ImpalaHiveServer2Error,
     MySQLOperationalError,
@@ -25,16 +26,8 @@ from ibis.legacy.udf.vectorized import analytic, reduction
 
 pytestmark = [
     pytest.mark.notimpl(
-        ["exasol"],
-        raises=(
-            sa.exc.ProgrammingError,
-            sa.exc.NoSuchTableError,
-            com.OperationNotDefinedError,
-        ),
-    ),
-    pytest.mark.notimpl(
         ["druid"], raises=(com.OperationNotDefinedError, PyDruidProgrammingError)
-    ),
+    )
 ]
 
 
@@ -163,7 +156,9 @@ def calc_zscore(s):
             lambda t: t.id.rank(method="min") / t.id.transform(len),
             id="cume_dist",
             marks=[
-                pytest.mark.notyet(["clickhouse"], raises=com.OperationNotDefinedError),
+                pytest.mark.notyet(
+                    ["clickhouse", "exasol"], raises=com.OperationNotDefinedError
+                ),
                 pytest.mark.notimpl(["dask"], raises=NotImplementedError),
                 pytest.mark.notimpl(["dask"], raises=NotImplementedError),
                 pytest.mark.notimpl(
@@ -208,13 +203,19 @@ def calc_zscore(s):
             lambda t, win: t.float_col.first().over(win),
             lambda t: t.float_col.transform("first"),
             id="first",
-            marks=pytest.mark.notimpl(["dask"], raises=NotImplementedError),
+            marks=[
+                pytest.mark.notimpl(["dask"], raises=NotImplementedError),
+                pytest.mark.notimpl(["exasol"], raises=com.OperationNotDefinedError),
+            ],
         ),
         param(
             lambda t, win: t.float_col.last().over(win),
             lambda t: t.float_col.transform("last"),
             id="last",
-            marks=pytest.mark.notimpl(["dask"], raises=NotImplementedError),
+            marks=[
+                pytest.mark.notimpl(["dask"], raises=NotImplementedError),
+                pytest.mark.notimpl(["exasol"], raises=com.OperationNotDefinedError),
+            ],
         ),
         param(
             lambda t, win: t.double_col.nth(3).over(win),
@@ -430,6 +431,7 @@ def test_grouped_bounded_expanding_window(
                         "snowflake",
                         "datafusion",
                         "trino",
+                        "exasol",
                     ],
                     raises=com.OperationNotDefinedError,
                 ),
@@ -589,6 +591,7 @@ def test_grouped_bounded_preceding_window(backend, alltypes, df, window_fn):
                         "snowflake",
                         "trino",
                         "datafusion",
+                        "exasol",
                     ],
                     raises=com.OperationNotDefinedError,
                 ),
@@ -786,6 +789,7 @@ def test_simple_ungrouped_window_with_scalar_order_by(alltypes):
                         "snowflake",
                         "trino",
                         "datafusion",
+                        "exasol",
                     ],
                     raises=com.OperationNotDefinedError,
                 ),
@@ -817,6 +821,7 @@ def test_simple_ungrouped_window_with_scalar_order_by(alltypes):
                         "snowflake",
                         "trino",
                         "datafusion",
+                        "exasol",
                     ],
                     raises=com.OperationNotDefinedError,
                 ),
@@ -942,6 +947,7 @@ def test_simple_ungrouped_window_with_scalar_order_by(alltypes):
                         "snowflake",
                         "trino",
                         "datafusion",
+                        "exasol",
                     ],
                     raises=com.OperationNotDefinedError,
                 ),
@@ -974,6 +980,7 @@ def test_simple_ungrouped_window_with_scalar_order_by(alltypes):
                         "snowflake",
                         "trino",
                         "datafusion",
+                        "exasol",
                     ],
                     raises=com.OperationNotDefinedError,
                 ),
@@ -1165,7 +1172,7 @@ def test_mutate_window_filter(backend, alltypes):
     backend.assert_frame_equal(res, sol, check_dtype=False)
 
 
-@pytest.mark.notimpl(["polars"], raises=com.OperationNotDefinedError)
+@pytest.mark.notimpl(["polars", "exasol"], raises=com.OperationNotDefinedError)
 @pytest.mark.notimpl(
     ["flink"],
     raises=Exception,
@@ -1226,6 +1233,11 @@ def test_first_last(backend):
     ["risingwave"],
     raises=sa.exc.InternalError,
     reason="sql parser error: Expected literal int, found: INTERVAL at line:1, column:99",
+)
+@pytest.mark.broken(
+    ["exasol"],
+    raises=ExaQueryError,
+    reason="database can't handle UTC timestamps in DataFrames",
 )
 def test_range_expression_bounds(backend):
     t = ibis.memtable(
