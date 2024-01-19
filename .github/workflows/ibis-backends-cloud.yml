@@ -43,10 +43,24 @@ jobs:
           - "3.9"
           - "3.11"
         backend:
-          - name: bigquery
-            title: BigQuery
           - name: snowflake
             title: Snowflake
+            extras:
+              - snowflake
+        include:
+          - python-version: "3.9"
+            backend:
+              name: bigquery
+              title: BigQuery
+              extras:
+                - bigquery
+          - python-version: "3.11"
+            backend:
+              name: bigquery
+              title: BigQuery
+              extras:
+                - bigquery
+                - geospatial
     steps:
       - name: checkout
         uses: actions/checkout@v4
@@ -62,7 +76,7 @@ jobs:
           cache: poetry
 
       - name: install ibis
-        run: poetry install --without dev --without docs --extras ${{ matrix.backend.name }}
+        run: poetry install --without dev --without docs --extras "${{ join(matrix.backend.extras, ' ') }}"
 
       - uses: extractions/setup-just@v1
         env:
