@@ -11,6 +11,7 @@ import zipfile
 from collections import Counter
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
+from urllib.request import urlretrieve
 
 import pins
 import requests
@@ -105,6 +106,20 @@ def add_movielens_example(
             ).with_suffix(".parquet")
             metadata[parquet_path.with_suffix("").name] = {}
             con.read_csv(csv_path).to_parquet(parquet_path, codec="zstd")
+
+
+def add_zones_geojson(data_path: Path) -> None:
+    file_name = "zones.geojson"
+    url = "https://raw.githubusercontent.com/ibis-project/testing-data/master/geojson/zones.geojson"
+
+    file_path = Path(file_name)
+
+    if not file_path.exists():
+        urlretrieve(url, data_path / file_path)
+
+    data_path.parent.joinpath("descriptions", "zones").write_text(
+        "Taxi zones in New York City"
+    )
 
 
 def add_imdb_example(data_path: Path) -> None:
@@ -228,6 +243,8 @@ def main(parser):
     add_imdb_example(data_path)
 
     add_wowah_example(data_path, client=storage.Client(), metadata=metadata)
+
+    add_zones_geojson(data_path)
 
     # generate data from R
     subprocess.check_call(["Rscript", str(EXAMPLES_DIRECTORY / "gen_examples.R")])

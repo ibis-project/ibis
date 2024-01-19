@@ -126,6 +126,33 @@ def __dir__() -> list[str]:
     return sorted(_get_metadata().keys())
 
 
+class Zones(Concrete):
+    name: str
+    help: Optional[str]
+
+    def fetch(
+        self,
+        *,
+        table_name: str | None = None,
+        backend: BaseBackend | None = None,
+    ) -> ir.Table:
+        if backend is None:
+            backend = ibis.get_backend()
+
+        name = self.name
+
+        if table_name is None:
+            table_name = name
+
+        board = _get_board()
+
+        (path,) = board.pin_download(name)
+        return backend.read_geo(path)
+
+
+zones = Zones("zones", help="Taxi zones in New York City")
+
+
 def __getattr__(name: str) -> Example:
     try:
         meta = _get_metadata()
