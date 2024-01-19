@@ -83,6 +83,7 @@ class Backend(SQLGlotBackend):
             self._type_map = {}
 
         self.con = sqlite3.connect(":memory:" if database is None else database)
+        self._temp_views = set()
 
         register_all(self.con)
         self.con.execute("PRAGMA case_sensitive_like=ON")
@@ -196,7 +197,7 @@ class Backend(SQLGlotBackend):
             cur.execute(f'SELECT {queries} FROM "{database}"."{table_name}" LIMIT 1')
             row = cur.fetchone()
             if row is not None:
-                for name, (typ,) in zip(unknown, row):
+                for name, typ in zip(unknown, row):
                     _, nullable = table_info[name]
                     table_info[name] = (typ, nullable)
             else:
@@ -238,7 +239,7 @@ class Backend(SQLGlotBackend):
             view = f"__ibis_sqlite_metadata_{util.guid()}"
             cur.execute(f"CREATE TEMPORARY VIEW {view} AS {query}")
 
-            yield from self._inspect_schema(cur, view)
+            yield from self._inspect_schema(cur, view, database="temp")
 
             # drop the view when we're done with it
             cur.execute(f"DROP VIEW IF EXISTS {view}")
@@ -420,3 +421,50 @@ class Backend(SQLGlotBackend):
         )
         with self._safe_raw_sql(drop_stmt):
             pass
+
+    def _create_temp_view(self, table_name, source):
+        if table_name not in self._temp_views and table_name in self.list_tables():
+            raise ValueError(
+                f"{table_name} already exists as a non-temporary table or view"
+            )
+
+        view = sg.table(table_name, catalog="temp", quoted=self.compiler.quoted)
+        drop = sge.Drop(kind="VIEW", exists=True, this=view).sql(self.name)
+        create = sge.Create(
+            kind="VIEW", this=view, expression=source, replace=False
+        ).sql(self.name)
+
+        with self.begin() as cur:
+            cur.execute(drop)
+            cur.execute(create)
+
+        self._temp_views.add(table_name)
+        self._register_temp_view_cleanup(table_name)
+
+    def create_view(
+        self,
+        name: str,
+        obj: ir.Table,
+        *,
+        database: str | None = None,
+        schema: str | None = None,
+        overwrite: bool = False,
+    ) -> ir.Table:
+        view = sg.table(name, catalog=database, quoted=self.compiler.quoted)
+
+        stmts = []
+        if overwrite:
+            stmts.append(sge.Drop(kind="VIEW", this=view, exists=True).sql(self.name))
+        stmts.append(
+            sge.Create(
+                this=view, kind="VIEW", replace=False, expression=self.compile(obj)
+            ).sql(self.name)
+        )
+
+        self._run_pre_execute_hooks(obj)
+
+        with self.begin() as cur:
+            for stmt in stmts:
+                cur.execute(stmt)
+
+        return self.table(name, database=database)
