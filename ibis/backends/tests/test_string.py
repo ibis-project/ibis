@@ -966,11 +966,7 @@ def test_levenshtein(con, right):
 @pytest.mark.parametrize(
     "expr",
     [
-        param(
-            ibis.case().when(True, "%").end(),
-            id="case",
-            marks=[],
-        ),
+        param(ibis.case().when(True, "%").end(), id="case"),
         param(ibis.ifelse(True, "%", ibis.NA), id="ifelse"),
     ],
 )
