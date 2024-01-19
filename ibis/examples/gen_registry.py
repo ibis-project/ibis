@@ -117,10 +117,6 @@ def add_zones_geojson(data_path: Path) -> None:
     if not file_path.exists():
         urlretrieve(url, data_path / file_path)
 
-    data_path.parent.joinpath("descriptions", "zones").write_text(
-        "Taxi zones in New York City"
-    )
-
 
 def add_imdb_example(data_path: Path) -> None:
     def convert_to_parquet(
