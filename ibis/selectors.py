@@ -675,7 +675,7 @@ def expand_overlap(
         return ((c.get_name(), c) for c in selector.expand(tab))
 
     right_map = dict(name_map(right))
-    return [(c, right_map[name]) for name, c in name_map(left) if c in right_map]
+    return [(c, right_map[name]) for name, c in name_map(left) if name in right_map]
 
 
 def _to_selector(
