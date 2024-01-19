@@ -668,6 +668,43 @@ def all() -> Predicate:
     return r[:]
 
 
+class JoinSelector(Concrete):
+    def expand(
+        self, left: ir.Table, right: ir.Table
+    ) -> Sequence[tuple[Optional[ir.Value], Optional[ir.Value]]]:
+        def name_map(tab: ir.Table):
+            return ((c.get_name(), c) for c in self.selector.expand(tab))
+
+        mode = getattr(self, "mode", "intersect")
+
+        if mode == "left":
+            right_map = dict(name_map(right))
+            return [(col, right_map.get(name)) for name, col in name_map(left)]
+        if mode == "right":
+            left_map = dict(name_map(left))
+            return [(left_map.get(name), col) for name, col in name_map(right)]
+        if mode == "intersect":
+            right_map = dict(name_map(right))
+            return [
+                (col, right_map[name])
+                for name, col in name_map(left)
+                if name in right_map
+            ]
+        if mode == "union":
+            left_map = dict(name_map(right))
+            right_map = dict(name_map(right))
+            return [(col, right_map.get(name)) for name, col in left_map.items()] + [
+                (None, col) for name, col in right_map.items() if name not in left_map
+            ]
+
+        raise ValueError('mode must be one of {"intersect", "union", "left", "right"')
+
+
+@public
+def join(selector: Selector, mode="intersect"):
+    return JoinSelector(selector=selector, mode=mode)
+
+
 def _to_selector(
     obj: str | Selector | ir.Column | Sequence[str | Selector | ir.Column],
 ) -> Selector:
