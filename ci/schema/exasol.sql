@@ -73,3 +73,17 @@ IMPORT INTO EXASOL."diamonds" FROM LOCAL CSV FILE '/data/diamonds.csv' COLUMN SE
 IMPORT INTO EXASOL."batting" FROM LOCAL CSV FILE '/data/batting.csv' COLUMN SEPARATOR = ',' SKIP = 1;
 IMPORT INTO EXASOL."awards_players" FROM LOCAL CSV FILE '/data/awards_players.csv' COLUMN SEPARATOR = ',' SKIP = 1;
 IMPORT INTO EXASOL."functional_alltypes" FROM LOCAL CSV FILE '/data/functional_alltypes.csv' COLUMN SEPARATOR = ',' SKIP = 1;
+
+CREATE OR REPLACE TABLE EXASOL."win"
+(
+    "g" VARCHAR(1),
+    "x" BIGINT,
+    "y" BIGINT
+);
+
+INSERT INTO "win" VALUES
+    ('a', 0, 3),
+    ('a', 1, 2),
+    ('a', 2, 0),
+    ('a', 3, 1),
+    ('a', 4, 1);
