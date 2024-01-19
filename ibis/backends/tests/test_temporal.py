@@ -973,6 +973,11 @@ timestamp_value = pd.Timestamp("2018-01-01 18:18:18")
                     raises=Exception,
                     reason="pyarrow.lib.ArrowNotImplementedError: Unsupported cast",
                 ),
+                pytest.mark.broken(
+                    ["oracle"],
+                    raises=com.OperationNotDefinedError,
+                    reason="Some wonkiness in sqlglot generation.",
+                ),
             ],
         ),
     ],

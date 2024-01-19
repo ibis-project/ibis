@@ -518,6 +518,7 @@ class OracleCompiler(SQLGlotCompiler):
     @visit_node.register(ops.IntervalFromInteger)
     @visit_node.register(ops.DayOfWeekIndex)
     @visit_node.register(ops.DayOfWeekName)
+    @visit_node.register(ops.DateDiff)
     @visit_node.register(ops.ExtractEpochSeconds)
     @visit_node.register(ops.ExtractWeekOfYear)
     @visit_node.register(ops.ExtractDayOfYear)
