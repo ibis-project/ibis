@@ -1,53 +1,73 @@
+WITH "t5" AS (
+  SELECT
+    "t2"."l_orderkey",
+    "t2"."l_partkey",
+    "t2"."l_suppkey",
+    "t2"."l_linenumber",
+    CAST("t2"."l_quantity" AS DECIMAL(15, 2)) AS "l_quantity",
+    CAST("t2"."l_extendedprice" AS DECIMAL(15, 2)) AS "l_extendedprice",
+    CAST("t2"."l_discount" AS DECIMAL(15, 2)) AS "l_discount",
+    CAST("t2"."l_tax" AS DECIMAL(15, 2)) AS "l_tax",
+    "t2"."l_returnflag",
+    "t2"."l_linestatus",
+    "t2"."l_shipdate",
+    "t2"."l_commitdate",
+    "t2"."l_receiptdate",
+    "t2"."l_shipinstruct",
+    "t2"."l_shipmode",
+    "t2"."l_comment"
+  FROM "hive"."ibis_sf1"."lineitem" AS "t2"
+)
 SELECT
-  "t15"."c_name",
-  "t15"."c_custkey",
-  "t15"."o_orderkey",
-  "t15"."o_orderdate",
-  "t15"."o_totalprice",
-  "t15"."sum_qty"
+  "t16"."c_name",
+  "t16"."c_custkey",
+  "t16"."o_orderkey",
+  "t16"."o_orderdate",
+  "t16"."o_totalprice",
+  "t16"."sum_qty"
 FROM (
   SELECT
-    "t14"."c_name",
-    "t14"."c_custkey",
-    "t14"."o_orderkey",
-    "t14"."o_orderdate",
-    "t14"."o_totalprice",
-    SUM("t14"."l_quantity") AS "sum_qty"
+    "t15"."c_name",
+    "t15"."c_custkey",
+    "t15"."o_orderkey",
+    "t15"."o_orderdate",
+    "t15"."o_totalprice",
+    SUM("t15"."l_quantity") AS "sum_qty"
   FROM (
     SELECT
-      "t12"."c_custkey",
-      "t12"."c_name",
-      "t12"."c_address",
-      "t12"."c_nationkey",
-      "t12"."c_phone",
-      "t12"."c_acctbal",
-      "t12"."c_mktsegment",
-      "t12"."c_comment",
-      "t12"."o_orderkey",
-      "t12"."o_custkey",
-      "t12"."o_orderstatus",
-      "t12"."o_totalprice",
-      "t12"."o_orderdate",
-      "t12"."o_orderpriority",
-      "t12"."o_clerk",
-      "t12"."o_shippriority",
-      "t12"."o_comment",
-      "t12"."l_orderkey",
-      "t12"."l_partkey",
-      "t12"."l_suppkey",
-      "t12"."l_linenumber",
-      "t12"."l_quantity",
-      "t12"."l_extendedprice",
-      "t12"."l_discount",
-      "t12"."l_tax",
-      "t12"."l_returnflag",
-      "t12"."l_linestatus",
-      "t12"."l_shipdate",
-      "t12"."l_commitdate",
-      "t12"."l_receiptdate",
-      "t12"."l_shipinstruct",
-      "t12"."l_shipmode",
-      "t12"."l_comment"
+      "t13"."c_custkey",
+      "t13"."c_name",
+      "t13"."c_address",
+      "t13"."c_nationkey",
+      "t13"."c_phone",
+      "t13"."c_acctbal",
+      "t13"."c_mktsegment",
+      "t13"."c_comment",
+      "t13"."o_orderkey",
+      "t13"."o_custkey",
+      "t13"."o_orderstatus",
+      "t13"."o_totalprice",
+      "t13"."o_orderdate",
+      "t13"."o_orderpriority",
+      "t13"."o_clerk",
+      "t13"."o_shippriority",
+      "t13"."o_comment",
+      "t13"."l_orderkey",
+      "t13"."l_partkey",
+      "t13"."l_suppkey",
+      "t13"."l_linenumber",
+      "t13"."l_quantity",
+      "t13"."l_extendedprice",
+      "t13"."l_discount",
+      "t13"."l_tax",
+      "t13"."l_returnflag",
+      "t13"."l_linestatus",
+      "t13"."l_shipdate",
+      "t13"."l_commitdate",
+      "t13"."l_receiptdate",
+      "t13"."l_shipinstruct",
+      "t13"."l_shipmode",
+      "t13"."l_comment"
     FROM (
       SELECT
         "t6"."c_custkey",
@@ -67,22 +87,22 @@ FROM (
         "t7"."o_clerk",
         "t7"."o_shippriority",
         "t7"."o_comment",
-        "t8"."l_orderkey",
-        "t8"."l_partkey",
-        "t8"."l_suppkey",
-        "t8"."l_linenumber",
-        "t8"."l_quantity",
-        "t8"."l_extendedprice",
-        "t8"."l_discount",
-        "t8"."l_tax",
-        "t8"."l_returnflag",
-        "t8"."l_linestatus",
-        "t8"."l_shipdate",
-        "t8"."l_commitdate",
-        "t8"."l_receiptdate",
-        "t8"."l_shipinstruct",
-        "t8"."l_shipmode",
-        "t8"."l_comment"
+        "t9"."l_orderkey",
+        "t9"."l_partkey",
+        "t9"."l_suppkey",
+        "t9"."l_linenumber",
+        "t9"."l_quantity",
+        "t9"."l_extendedprice",
+        "t9"."l_discount",
+        "t9"."l_tax",
+        "t9"."l_returnflag",
+        "t9"."l_linestatus",
+        "t9"."l_shipdate",
+        "t9"."l_commitdate",
+        "t9"."l_receiptdate",
+        "t9"."l_shipinstruct",
+        "t9"."l_shipmode",
+        "t9"."l_comment"
       FROM (
         SELECT
           "t0"."c_custkey",
@@ -109,71 +129,33 @@ FROM (
         FROM "hive"."ibis_sf1"."orders" AS "t1"
       ) AS "t7"
         ON "t6"."c_custkey" = "t7"."o_custkey"
-      INNER JOIN (
-        SELECT
-          "t2"."l_orderkey",
-          "t2"."l_partkey",
-          "t2"."l_suppkey",
-          "t2"."l_linenumber",
-          CAST("t2"."l_quantity" AS DECIMAL(15, 2)) AS "l_quantity",
-          CAST("t2"."l_extendedprice" AS DECIMAL(15, 2)) AS "l_extendedprice",
-          CAST("t2"."l_discount" AS DECIMAL(15, 2)) AS "l_discount",
-          CAST("t2"."l_tax" AS DECIMAL(15, 2)) AS "l_tax",
-          "t2"."l_returnflag",
-          "t2"."l_linestatus",
-          "t2"."l_shipdate",
-          "t2"."l_commitdate",
-          "t2"."l_receiptdate",
-          "t2"."l_shipinstruct",
-          "t2"."l_shipmode",
-          "t2"."l_comment"
-        FROM "hive"."ibis_sf1"."lineitem" AS "t2"
-      ) AS "t8"
-        ON "t7"."o_orderkey" = "t8"."l_orderkey"
-    ) AS "t12"
+      INNER JOIN "t5" AS "t9"
+        ON "t7"."o_orderkey" = "t9"."l_orderkey"
+    ) AS "t13"
     WHERE
-      "t12"."o_orderkey" IN (
+      "t13"."o_orderkey" IN (
         SELECT
-          "t9"."l_orderkey"
+          "t11"."l_orderkey"
         FROM (
           SELECT
-            "t5"."l_orderkey",
-            SUM("t5"."l_quantity") AS "qty_sum"
-          FROM (
-            SELECT
-              "t2"."l_orderkey",
-              "t2"."l_partkey",
-              "t2"."l_suppkey",
-              "t2"."l_linenumber",
-              CAST("t2"."l_quantity" AS DECIMAL(15, 2)) AS "l_quantity",
-              CAST("t2"."l_extendedprice" AS DECIMAL(15, 2)) AS "l_extendedprice",
-              CAST("t2"."l_discount" AS DECIMAL(15, 2)) AS "l_discount",
-              CAST("t2"."l_tax" AS DECIMAL(15, 2)) AS "l_tax",
-              "t2"."l_returnflag",
-              "t2"."l_linestatus",
-              "t2"."l_shipdate",
-              "t2"."l_commitdate",
-              "t2"."l_receiptdate",
-              "t2"."l_shipinstruct",
-              "t2"."l_shipmode",
-              "t2"."l_comment"
-            FROM "hive"."ibis_sf1"."lineitem" AS "t2"
-          ) AS "t5"
+            "t8"."l_orderkey",
+            SUM("t8"."l_quantity") AS "qty_sum"
+          FROM "t5" AS "t8"
           GROUP BY
             1
-        ) AS "t9"
+        ) AS "t11"
         WHERE
-          "t9"."qty_sum" > 300
+          "t11"."qty_sum" > 300
       )
-  ) AS "t14"
+  ) AS "t15"
   GROUP BY
     1,
     2,
     3,
     4,
     5
-) AS "t15"
+) AS "t16"
 ORDER BY
-  "t15"."o_totalprice" DESC,
-  "t15"."o_orderdate" ASC
+  "t16"."o_totalprice" DESC,
+  "t16"."o_orderdate" ASC
 LIMIT 100
