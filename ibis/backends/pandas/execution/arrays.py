@@ -19,8 +19,20 @@ if TYPE_CHECKING:
 
 @execute_node.register(ops.Array, tuple)
 def execute_array_column(op, cols, **kwargs):
-    cols = [execute(arg, **kwargs) for arg in cols]
-    df = pd.concat(cols, axis=1)
+    vals = [execute(arg, **kwargs) for arg in cols]
+    # At least one of the values will be a Series.
+    # Otherwise op would be an ArrayScalar, not an ArrayColumn.
+    length = next(len(v) for v in vals if isinstance(v, pd.Series))
+
+    def ensure_series(v):
+        if isinstance(v, pd.Series):
+            return v
+        else:
+            return pd.Series(v, index=range(length))
+
+    # pd.concat() can only handle array-likes.
+    # If we're given a scalar, we need to broadcast it as a Series.
+    df = pd.concat([ensure_series(v) for v in vals], axis=1)
     return df.apply(lambda row: np.array(row, dtype=object), axis=1)
 
 

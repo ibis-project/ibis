@@ -41,12 +41,14 @@ pytestmark = [
 
 @pytest.mark.notimpl(["flink"], raises=com.OperationNotDefinedError)
 def test_array_column(backend, alltypes, df):
-    expr = ibis.array([alltypes["double_col"], alltypes["double_col"]])
+    expr = ibis.array(
+        [alltypes["double_col"], alltypes["double_col"], 5.0, ibis.literal(6.0)]
+    )
     assert isinstance(expr, ir.ArrayColumn)
 
     result = expr.execute()
     expected = df.apply(
-        lambda row: [row["double_col"], row["double_col"]],
+        lambda row: [row["double_col"], row["double_col"], 5.0, 6.0],
         axis=1,
     )
     backend.assert_series_equal(result, expected, check_names=False)
