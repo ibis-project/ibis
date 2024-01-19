@@ -19,7 +19,7 @@ from public import public
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
-from ibis.backends.base.sqlglot.rewrites import Select, Window, sqlize
+from ibis.backends.base.sqlglot.rewrites import CTE, Select, Window, sqlize
 from ibis.expr.operations.udf import InputType
 from ibis.expr.rewrites import (
     add_one_to_nth_value_input,
@@ -243,25 +243,6 @@ class SQLGlotCompiler(abc.ABC):
         sqlglot.expressions.Expression
             A sqlglot expression
         """
-
-        gen_alias_index = itertools.count()
-        quoted = self.quoted
-
-        def fn(node, _, **kwargs):
-            result = self.visit_node(node, **kwargs)
-
-            # don't alias root nodes or value ops
-            if node is op or isinstance(node, ops.Value):
-                return result
-
-            alias_index = next(gen_alias_index)
-            alias = sg.to_identifier(f"t{alias_index:d}", quoted=quoted)
-
-            try:
-                return result.subquery(alias)
-            except AttributeError:
-                return result.as_(alias, quoted=quoted)
-
         # substitute parameters immediately to avoid having to define a
         # ScalarParameter translation rule
         #
@@ -277,11 +258,41 @@ class SQLGlotCompiler(abc.ABC):
         op = op.replace(
             replace_scalar_parameter(params) | reduce(operator.or_, self.rewrites)
         )
-        op = sqlize(op)
+        op, ctes = sqlize(op)
+
+        aliases = {}
+        alias_counter = itertools.count()
+
+        def fn(node, _, **kwargs):
+            result = self.visit_node(node, **kwargs)
+
+            if node is op:
+                return result
+            elif isinstance(node, ops.JoinLink):
+                # TODO(kszucs): this is a hack to preserve the generated table
+                # aliases, going to remove in a follow-up PR
+                next(alias_counter)
+                return result
+            elif isinstance(node, ops.Relation):
+                aliases[node] = alias = f"t{next(alias_counter)}"
+                alias = sg.to_identifier(alias, quoted=self.quoted)
+                try:
+                    return result.subquery(alias)
+                except AttributeError:
+                    return result.as_(alias, quoted=self.quoted)
+            else:
+                return result
+
         # apply translate rules in topological order
         results = op.map(fn)
-        node = results[op]
-        return node.this if isinstance(node, sge.Subquery) else node
+        out = results[op]
+        out = out.this if isinstance(out, sge.Subquery) else out
+
+        for cte in ctes:
+            alias = sg.to_identifier(aliases[cte], quoted=self.quoted)
+            out = out.with_(alias, as_=results[cte].this, dialect=self.dialect)
+
+        return out
 
     @singledispatchmethod
     def visit_node(self, op: ops.Node, **_):
@@ -1222,6 +1233,10 @@ class SQLGlotCompiler(abc.ABC):
         backend = op.child.to_expr()._find_backend()
         backend._create_temp_view(table_name=name, source=sg.select(STAR).from_(child))
         return sg.table(name, quoted=self.quoted)
+
+    @visit_node.register(CTE)
+    def visit_CTE(self, op, *, parent):
+        return sg.table(parent.alias_or_name, quoted=self.quoted)
 
     @visit_node.register(ops.SQLStringView)
     def visit_SQLStringView(self, op, *, query: str, name: str, child):
