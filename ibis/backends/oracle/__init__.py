@@ -387,6 +387,8 @@ class Backend(SQLGlotBackend):
         if isinstance(sg_expr, sg.exp.Table):
             sg_expr = sg.select(STAR).from_(sg_expr)
 
+        # TODO(gforsyth): followup -- this should probably be made a default
+        # transform for quoting backends
         def transformer(node):
             if isinstance(node, sg.exp.Table):
                 return sg.table(node.name, quoted=True)
@@ -461,6 +463,8 @@ class Backend(SQLGlotBackend):
             yield name, typ
 
     def _fetch_from_cursor(self, cursor, schema: sch.Schema) -> pd.DataFrame:
+        # TODO(gforsyth): this can probably be generalized a bit and put into
+        # the base backend (or a mixin)
         import pandas as pd
 
         from ibis.backends.oracle.converter import OraclePandasData
