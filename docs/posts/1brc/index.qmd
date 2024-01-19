@@ -285,6 +285,15 @@ res
 
 :::
 
+## Conclusion
+
+While the one billion row challenge isn't a great benchmark, it's a fun way to
+demonstrate how Ibis provides a single Python dataframe API to take the billion
+row challenge with DuckDB, Polars, and DataFusion. Feel free to try it out with
+other backends!
+
+Happy coding!
+
 ## Bonus: more billion row data generation
 
 While we're here, I'll share the code I've used in the past to generate a
@@ -333,12 +342,3 @@ con.create_table("billion", t, overwrite=True)
 
 But if you do need to construct a programmatic SQL string, it's cool that you
 can!
-
-## Conclusion
-
-While the one billion row challenge isn't a great benchmark, it's a fun way to
-demonstrate how Ibis provides a single Python dataframe API to take the billion
-row challenge with DuckDB, Polars, and DataFusion. Feel free to try it out with
-other backends!
-
-Happy coding!
