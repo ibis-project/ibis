@@ -12,7 +12,7 @@ from sqlglot.dialects.dialect import create_with_partitions_sql, rename_func
 import ibis
 import ibis.common.exceptions as com
 import ibis.expr.operations as ops
-from ibis.backends.base.sqlglot.compiler import NULL, STAR, C, SQLGlotCompiler
+from ibis.backends.base.sqlglot.compiler import NULL, STAR, SQLGlotCompiler
 from ibis.backends.base.sqlglot.datatypes import OracleType
 from ibis.backends.base.sqlglot.rewrites import Window, replace_log2, replace_log10
 from ibis.common.patterns import replace
@@ -207,7 +207,12 @@ class OracleCompiler(SQLGlotCompiler):
         if isinstance(n, int):
             result = result.limit(n)
         elif n is not None:
-            result = result.where(C.ROWNUM <= sg.select(n).from_(parent).subquery())
+            raise com.UnsupportedArgumentError(
+                "No support for dynamic limit in the Oracle backend."
+            )
+            # TODO: re-enable this for dynamic limits
+            # but it should be paired with offsets working
+            # result = result.where(C.ROWNUM <= sg.select(n).from_(parent).subquery())
         else:
             assert n is None, n
             if self.no_limit_value is not None:

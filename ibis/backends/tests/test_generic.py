@@ -1408,6 +1408,7 @@ def test_try_cast_func(con, from_val, to_type, func):
                     raises=ExaQueryError,
                     reason="doesn't support OFFSET without ORDER BY",
                 ),
+                pytest.mark.notyet(["oracle"], raises=com.UnsupportedArgumentError),
             ],
         ),
         param(
@@ -1431,6 +1432,7 @@ def test_try_cast_func(con, from_val, to_type, func):
                     raises=ImpalaHiveServer2Error,
                     reason="impala doesn't support OFFSET without ORDER BY",
                 ),
+                pytest.mark.notyet(["oracle"], raises=com.UnsupportedArgumentError),
             ],
         ),
         # positive stop
@@ -1449,6 +1451,7 @@ def test_try_cast_func(con, from_val, to_type, func):
                     raises=ExaQueryError,
                     reason="doesn't support OFFSET without ORDER BY",
                 ),
+                pytest.mark.notyet(["oracle"], raises=com.UnsupportedArgumentError),
             ],
         ),
         param(
@@ -1462,6 +1465,7 @@ def test_try_cast_func(con, from_val, to_type, func):
                     reason="mssql doesn't support OFFSET without LIMIT",
                 ),
                 pytest.mark.notyet(["exasol"], raises=ExaQueryError),
+                pytest.mark.notyet(["oracle"], raises=com.UnsupportedArgumentError),
                 pytest.mark.notyet(
                     ["impala"],
                     raises=ImpalaHiveServer2Error,
@@ -1518,7 +1522,7 @@ def test_static_table_slice(backend, slc, expected_count_fn):
 @pytest.mark.notyet(
     ["oracle"],
     raises=com.UnsupportedArgumentError,
-    reason="backend doesn't support dynamic limit/offset",
+    reason="Removed half-baked dynamic offset functionality for now",
 )
 @pytest.mark.notyet(
     ["trino"],
@@ -1574,6 +1578,11 @@ def test_dynamic_table_slice(backend, slc, expected_count_fn):
     ["snowflake"],
     raises=SnowflakeProgrammingError,
     reason="backend doesn't support dynamic limit/offset",
+)
+@pytest.mark.notyet(
+    ["oracle"],
+    raises=com.UnsupportedArgumentError,
+    reason="Removed half-baked dynamic offset functionality for now",
 )
 @pytest.mark.notimpl(
     ["trino"],
