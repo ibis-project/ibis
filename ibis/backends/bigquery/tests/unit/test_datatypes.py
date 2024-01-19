@@ -5,10 +5,7 @@ import sqlglot as sg
 from pytest import param
 
 import ibis.expr.datatypes as dt
-from ibis.backends.bigquery.datatypes import (
-    BigQueryType,
-    spread_type,
-)
+from ibis.backends.bigquery.datatypes import BigQueryType
 
 
 @pytest.mark.parametrize(
@@ -77,31 +74,6 @@ def test_simple(datatype, expected):
 def test_simple_failure_mode(datatype):
     with pytest.raises(TypeError):
         BigQueryType.to_string(datatype)
-
-
-@pytest.mark.parametrize(
-    ("type_", "expected"),
-    [
-        param(
-            dt.int64,
-            [dt.int64],
-        ),
-        param(
-            dt.Array(dt.int64),
-            [dt.int64, dt.Array(value_type=dt.int64)],
-        ),
-        param(
-            dt.Struct.from_tuples([("a", dt.Array(dt.int64))]),
-            [
-                dt.int64,
-                dt.Array(value_type=dt.int64),
-                dt.Struct.from_tuples([("a", dt.Array(value_type=dt.int64))]),
-            ],
-        ),
-    ],
-)
-def test_spread_type(type_, expected):
-    assert list(spread_type(type_)) == expected
 
 
 def test_struct_type():
