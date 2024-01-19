@@ -58,6 +58,7 @@ class ExasolCompiler(SQLGlotCompiler):
     @visit_node.register(ops.ArraySort)
     @visit_node.register(ops.ArrayUnion)
     @visit_node.register(ops.ArrayZip)
+    @visit_node.register(ops.BitwiseNot)
     @visit_node.register(ops.Covariance)
     @visit_node.register(ops.DateDelta)
     @visit_node.register(ops.DayOfWeekIndex)
@@ -96,6 +97,7 @@ class ExasolCompiler(SQLGlotCompiler):
 
 
 _SIMPLE_OPS = {
+    ops.Log10: "log10",
     ops.Modulus: "mod",
 }
 
