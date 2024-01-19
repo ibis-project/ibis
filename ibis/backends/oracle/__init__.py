@@ -227,10 +227,13 @@ class Backend(SQLGlotBackend):
         with self._safe_raw_sql(stmt) as cur:
             result = cur.fetchall()
 
+        if not result:
+            raise exc.IbisError(f"Table not found: {name!r}")
+
         type_mapper = self.compiler.type_mapper
         fields = {
             name: type_mapper.from_string(type_string, nullable=nullable)
-            for name, type_string, nullable, *_ in result
+            for name, type_string, nullable in result
         }
 
         return sch.Schema(fields)
