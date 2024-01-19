@@ -49,8 +49,8 @@ def test_con_dot_sql(backend, con, schema):
     alltypes = backend.functional_alltypes
     # pull out the quoted name
     name = _NAMES.get(con.name, alltypes.op().name)
-    quoted = con.compiler.quoted
-    dialect = con.name
+    quoted = getattr(getattr(con, "compiler", None), "quoted", True)
+    dialect = _IBIS_TO_SQLGLOT_DIALECT.get(con.name, con.name)
     cols = [
         sg.column("string_col", quoted=quoted).as_("s", quoted=quoted).sql(dialect),
         (sg.column("double_col", quoted=quoted) + 1.0)
