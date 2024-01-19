@@ -368,7 +368,7 @@ jobs:
         run: poetry run pip list
 
       - name: "run parallel tests: ${{ matrix.backend.name }}"
-        if: true # ${{ !matrix.backend.serial }}
+        if: ${{ !matrix.backend.serial }}
         run: just ci-check -m ${{ matrix.backend.name }} --numprocesses auto --dist=loadgroup
         env:
           IBIS_TEST_IMPALA_HOST: localhost
@@ -389,11 +389,11 @@ jobs:
       #     FLINK_REMOTE_CLUSTER_ADDR: localhost
       #     FLINK_REMOTE_CLUSTER_PORT: "8081"
       #
-      # - name: "run serial tests: ${{ matrix.backend.name }}"
-      #   if: matrix.backend.serial && matrix.backend.name != 'flink'
-      #   run: just ci-check -m ${{ matrix.backend.name }}
-      #   env:
-      #     IBIS_EXAMPLES_DATA: ${{ runner.temp }}/examples-${{ matrix.backend.name }}-${{ matrix.os }}-${{ steps.install_python.outputs.python-version }}
+      - name: "run serial tests: ${{ matrix.backend.name }}"
+        if: matrix.backend.serial # && matrix.backend.name != 'flink'
+        run: just ci-check -m ${{ matrix.backend.name }}
+        env:
+          IBIS_EXAMPLES_DATA: ${{ runner.temp }}/examples-${{ matrix.backend.name }}-${{ matrix.os }}-${{ steps.install_python.outputs.python-version }}
 
       - name: check that no untracked files were produced
         shell: bash
@@ -615,130 +615,12 @@ jobs:
         with:
           flags: backend,pyspark,${{ runner.os }},python-${{ steps.install_python.outputs.python-version }}
 
-  # test_backends_sqlalchemy2:
-  #   name: SQLAlchemy 2 ${{ matrix.backend.title }} ${{ matrix.os }} python-${{ matrix.python-version }}
-  #   runs-on: ${{ matrix.os }}
-  #   needs:
-  #     - gen_lockfile_sqlalchemy2
-  #   env:
-  #     ODBCSYSINI: "${{ github.workspace }}/.odbc"
-  #   strategy:
-  #     fail-fast: false
-  #     matrix:
-  #       os:
-  #         - ubuntu-latest
-  #       python-version:
-  #         - "3.11"
-  #       backend:
-  #         - name: mssql
-  #           title: MS SQL Server
-  #           services:
-  #             - mssql
-  #           extras:
-  #             - mssql
-  #           sys-deps:
-  #             - freetds-dev
-  #             - unixodbc-dev
-  #             - tdsodbc
-  #         - name: sqlite
-  #           title: SQLite
-  #           extras:
-  #             - sqlite
-  #         - name: oracle
-  #           title: Oracle
-  #           serial: true
-  #           extras:
-  #             - oracle
-  #           services:
-  #             - oracle
-  #   steps:
-  #     - name: checkout
-  #       uses: actions/checkout@v4
-  #
-  #     - name: update and install system dependencies
-  #       if: matrix.backend.sys-deps != null
-  #       run: |
-  #         set -euo pipefail
-  #
-  #         sudo apt-get update -qq -y
-  #         sudo apt-get install -qq -y build-essential ${{ join(matrix.backend.sys-deps, ' ') }}
-  #
-  #     - name: setup odbc for mssql
-  #       if: ${{ matrix.backend.name == 'mssql' }}
-  #       run: |
-  #         mkdir -p "$ODBCSYSINI"
-  #
-  #         {
-  #           echo '[FreeTDS]'
-  #           echo "Driver = libtdsodbc.so"
-  #         } > "$ODBCSYSINI/odbcinst.ini"
-  #
-  #     - uses: extractions/setup-just@v1
-  #       env:
-  #         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-  #
-  #     - name: download backend data
-  #       run: just download-data
-  #
-  #     - name: start services
-  #       if: matrix.backend.services != null
-  #       run: docker compose up --wait ${{ join(matrix.backend.services, ' ') }}
-  #
-  #     - name: install python
-  #       uses: actions/setup-python@v5
-  #       id: install_python
-  #       with:
-  #         python-version: ${{ matrix.python-version }}
-  #
-  #     - name: download poetry lockfile
-  #       uses: actions/download-artifact@v3
-  #       with:
-  #         name: deps
-  #         path: deps
-  #
-  #     - name: pull out lockfile
-  #       run: |
-  #         set -euo pipefail
-  #
-  #         mv -f deps/* .
-  #         rm -r deps
-  #
-  #     - uses: syphar/restore-virtualenv@v1
-  #       with:
-  #         requirement_files: poetry.lock
-  #         custom_cache_key_element: ${{ matrix.backend.name }}-${{ steps.install_python.outputs.python-version }}
-  #
-  #     - uses: syphar/restore-pip-download-cache@v1
-  #       with:
-  #         requirement_files: poetry.lock
-  #         custom_cache_key_element: ${{ steps.install_python.outputs.python-version }}
-  #
-  #     - name: install poetry
-  #       run: python -m pip install --upgrade pip 'poetry==1.7.1'
-  #
-  #     - name: install ibis
-  #       run: poetry install --without dev --without docs --extras "${{ join(matrix.backend.extras, ' ') }}"
-  #
-  #     - name: run tests
-  #       run: just ci-check -m ${{ matrix.backend.name }} --numprocesses auto --dist=loadgroup
-  #
-  #     - name: check that no untracked files were produced
-  #       shell: bash
-  #       run: git checkout poetry.lock pyproject.toml && ! git status --porcelain | tee /dev/stderr | grep .
-  #
-  #     - name: upload code coverage
-  #       if: success()
-  #       uses: codecov/codecov-action@v4
-  #       with:
-  #         flags: backend,${{ matrix.backend.name }},${{ runner.os }},python-${{ steps.install_python.outputs.python-version }}
-
   backends:
     # this job exists so that we can use a single job from this workflow to gate merging
     runs-on: ubuntu-latest
     needs:
       # - test_backends_min_version
       - test_backends
-      # - test_backends_sqlalchemy2
       - test_pyspark
     steps:
       - run: exit 0
