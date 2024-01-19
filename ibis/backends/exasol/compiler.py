@@ -61,6 +61,26 @@ class ExasolCompiler(SQLGlotCompiler):
     def visit_Date(self, op, *, arg):
         return self.cast(arg, dt.date)
 
+    @visit_node.register(ops.StartsWith)
+    def visit_StartsWith(self, op, *, arg, start):
+        return self.f.left(arg, self.f.length(start)).eq(start)
+
+    @visit_node.register(ops.EndsWith)
+    def visit_EndsWith(self, op, *, arg, end):
+        return self.f.right(arg, self.f.length(end)).eq(end)
+
+    @visit_node.register(ops.StringFind)
+    def visit_StringFind(self, op, *, arg, substr, start, end):
+        return self.f.locate(substr, arg, (start if start is not None else 0) + 1)
+
+    @visit_node.register(ops.StringSQLILike)
+    def visit_StringSQLILike(self, op, *, arg, pattern, escape):
+        return self.f.upper(arg).like(self.f.upper(pattern))
+
+    @visit_node.register(ops.StringContains)
+    def visit_StringContains(self, op, *, haystack, needle):
+        return self.f.locate(needle, haystack) > 0
+
     @visit_node.register(ops.ApproxMedian)
     @visit_node.register(ops.Arbitrary)
     @visit_node.register(ops.ArgMax)
@@ -72,6 +92,7 @@ class ExasolCompiler(SQLGlotCompiler):
     @visit_node.register(ops.ArrayIntersect)
     @visit_node.register(ops.ArrayMap)
     @visit_node.register(ops.ArraySort)
+    @visit_node.register(ops.ArrayStringJoin)
     @visit_node.register(ops.ArrayUnion)
     @visit_node.register(ops.ArrayZip)
     @visit_node.register(ops.BitwiseNot)
@@ -88,19 +109,20 @@ class ExasolCompiler(SQLGlotCompiler):
     @visit_node.register(ops.Median)
     @visit_node.register(ops.MultiQuantile)
     @visit_node.register(ops.Quantile)
+    @visit_node.register(ops.RegexExtract)
     @visit_node.register(ops.RegexReplace)
+    @visit_node.register(ops.RegexSearch)
     @visit_node.register(ops.RegexSplit)
     @visit_node.register(ops.RowID)
     @visit_node.register(ops.StandardDev)
     @visit_node.register(ops.Strftime)
-    @visit_node.register(ops.StringAscii)
+    @visit_node.register(ops.StringJoin)
     @visit_node.register(ops.StringSplit)
     @visit_node.register(ops.StringToTimestamp)
     @visit_node.register(ops.TimeDelta)
     @visit_node.register(ops.TimestampBucket)
     @visit_node.register(ops.TimestampDelta)
     @visit_node.register(ops.TimestampNow)
-    @visit_node.register(ops.Translate)
     @visit_node.register(ops.TypeOf)
     @visit_node.register(ops.Unnest)
     @visit_node.register(ops.Variance)
