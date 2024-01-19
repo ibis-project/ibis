@@ -799,6 +799,11 @@ class ExasolType(SqlglotType):
         raise com.UnsupportedBackendType("Structs not supported in Exasol")
 
     @classmethod
+    def _from_ibis_Timestamp(cls, dtype: dt.Timestamp) -> sge.DataType:
+        code = typecode.TIMESTAMP if dtype.timezone is None else typecode.TIMESTAMPTZ
+        return sge.DataType(this=code)
+
+    @classmethod
     def _from_sqlglot_ARRAY(cls, value_type: sge.DataType) -> NoReturn:
         raise com.UnsupportedBackendType("Arrays not supported in Exasol")
 

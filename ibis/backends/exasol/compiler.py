@@ -3,6 +3,7 @@ from __future__ import annotations
 from functools import singledispatchmethod
 
 import sqlglot as sg
+import sqlglot.expressions as sge
 from sqlglot.dialects import Postgres
 
 import ibis.common.exceptions as com
@@ -17,7 +18,9 @@ class Exasol(Postgres):
     """The exasol dialect."""
 
     class Generator(Postgres.Generator):
-        TRANSFORMS = Postgres.Generator.TRANSFORMS.copy() | {}
+        TYPE_MAPPING = Postgres.Generator.TYPE_MAPPING.copy() | {
+            sge.DataType.Type.TIMESTAMPTZ: "TIMESTAMP WITH LOCAL TIME ZONE",
+        }
 
 
 class ExasolCompiler(SQLGlotCompiler):
