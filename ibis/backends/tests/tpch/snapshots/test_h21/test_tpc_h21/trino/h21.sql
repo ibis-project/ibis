@@ -1,28 +1,48 @@
+WITH "t8" AS (
+  SELECT
+    "t3"."l_orderkey",
+    "t3"."l_partkey",
+    "t3"."l_suppkey",
+    "t3"."l_linenumber",
+    CAST("t3"."l_quantity" AS DECIMAL(15, 2)) AS "l_quantity",
+    CAST("t3"."l_extendedprice" AS DECIMAL(15, 2)) AS "l_extendedprice",
+    CAST("t3"."l_discount" AS DECIMAL(15, 2)) AS "l_discount",
+    CAST("t3"."l_tax" AS DECIMAL(15, 2)) AS "l_tax",
+    "t3"."l_returnflag",
+    "t3"."l_linestatus",
+    "t3"."l_shipdate",
+    "t3"."l_commitdate",
+    "t3"."l_receiptdate",
+    "t3"."l_shipinstruct",
+    "t3"."l_shipmode",
+    "t3"."l_comment"
+  FROM "hive"."ibis_sf1"."lineitem" AS "t3"
+)
 SELECT
-  "t21"."s_name",
-  "t21"."numwait"
+  "t22"."s_name",
+  "t22"."numwait"
 FROM (
   SELECT
-    "t20"."s_name",
+    "t21"."s_name",
     COUNT(*) AS "numwait"
   FROM (
     SELECT
-      "t17"."l1_orderkey",
-      "t17"."o_orderstatus",
-      "t17"."l_receiptdate",
-      "t17"."l_commitdate",
-      "t17"."l1_suppkey",
-      "t17"."s_name",
-      "t17"."n_name"
+      "t18"."l1_orderkey",
+      "t18"."o_orderstatus",
+      "t18"."l_receiptdate",
+      "t18"."l_commitdate",
+      "t18"."l1_suppkey",
+      "t18"."s_name",
+      "t18"."n_name"
     FROM (
       SELECT
-        "t10"."l_orderkey" AS "l1_orderkey",
-        "t13"."o_orderstatus",
-        "t10"."l_receiptdate",
-        "t10"."l_commitdate",
-        "t10"."l_suppkey" AS "l1_suppkey",
+        "t12"."l_orderkey" AS "l1_orderkey",
+        "t10"."o_orderstatus",
+        "t12"."l_receiptdate",
+        "t12"."l_commitdate",
+        "t12"."l_suppkey" AS "l1_suppkey",
         "t9"."s_name",
-        "t8"."n_name"
+        "t7"."n_name"
       FROM (
         SELECT
           "t0"."s_suppkey",
@@ -34,129 +54,72 @@ FROM (
           "t0"."s_comment"
         FROM "hive"."ibis_sf1"."supplier" AS "t0"
       ) AS "t9"
+      INNER JOIN "t8" AS "t12"
+        ON "t9"."s_suppkey" = "t12"."l_suppkey"
       INNER JOIN (
         SELECT
-          "t1"."l_orderkey",
-          "t1"."l_partkey",
-          "t1"."l_suppkey",
-          "t1"."l_linenumber",
-          CAST("t1"."l_quantity" AS DECIMAL(15, 2)) AS "l_quantity",
-          CAST("t1"."l_extendedprice" AS DECIMAL(15, 2)) AS "l_extendedprice",
-          CAST("t1"."l_discount" AS DECIMAL(15, 2)) AS "l_discount",
-          CAST("t1"."l_tax" AS DECIMAL(15, 2)) AS "l_tax",
-          "t1"."l_returnflag",
-          "t1"."l_linestatus",
-          "t1"."l_shipdate",
-          "t1"."l_commitdate",
-          "t1"."l_receiptdate",
-          "t1"."l_shipinstruct",
-          "t1"."l_shipmode",
-          "t1"."l_comment"
-        FROM "hive"."ibis_sf1"."lineitem" AS "t1"
+          "t1"."o_orderkey",
+          "t1"."o_custkey",
+          "t1"."o_orderstatus",
+          CAST("t1"."o_totalprice" AS DECIMAL(15, 2)) AS "o_totalprice",
+          "t1"."o_orderdate",
+          "t1"."o_orderpriority",
+          "t1"."o_clerk",
+          "t1"."o_shippriority",
+          "t1"."o_comment"
+        FROM "hive"."ibis_sf1"."orders" AS "t1"
       ) AS "t10"
-        ON "t9"."s_suppkey" = "t10"."l_suppkey"
+        ON "t10"."o_orderkey" = "t12"."l_orderkey"
       INNER JOIN (
         SELECT
-          "t2"."o_orderkey",
-          "t2"."o_custkey",
-          "t2"."o_orderstatus",
-          CAST("t2"."o_totalprice" AS DECIMAL(15, 2)) AS "o_totalprice",
-          "t2"."o_orderdate",
-          "t2"."o_orderpriority",
-          "t2"."o_clerk",
-          "t2"."o_shippriority",
-          "t2"."o_comment"
-        FROM "hive"."ibis_sf1"."orders" AS "t2"
-      ) AS "t13"
-        ON "t13"."o_orderkey" = "t10"."l_orderkey"
-      INNER JOIN (
-        SELECT
-          "t3"."n_nationkey",
-          "t3"."n_name",
-          "t3"."n_regionkey",
-          "t3"."n_comment"
-        FROM "hive"."ibis_sf1"."nation" AS "t3"
-      ) AS "t8"
-        ON "t9"."s_nationkey" = "t8"."n_nationkey"
-    ) AS "t17"
+          "t2"."n_nationkey",
+          "t2"."n_name",
+          "t2"."n_regionkey",
+          "t2"."n_comment"
+        FROM "hive"."ibis_sf1"."nation" AS "t2"
+      ) AS "t7"
+        ON "t9"."s_nationkey" = "t7"."n_nationkey"
+    ) AS "t18"
     WHERE
-      "t17"."o_orderstatus" = 'F'
-      AND "t17"."l_receiptdate" > "t17"."l_commitdate"
-      AND "t17"."n_name" = 'SAUDI ARABIA'
+      "t18"."o_orderstatus" = 'F'
+      AND "t18"."l_receiptdate" > "t18"."l_commitdate"
+      AND "t18"."n_name" = 'SAUDI ARABIA'
       AND EXISTS(
         SELECT
           1 AS "1"
-        FROM (
-          SELECT
-            "t1"."l_orderkey",
-            "t1"."l_partkey",
-            "t1"."l_suppkey",
-            "t1"."l_linenumber",
-            CAST("t1"."l_quantity" AS DECIMAL(15, 2)) AS "l_quantity",
-            CAST("t1"."l_extendedprice" AS DECIMAL(15, 2)) AS "l_extendedprice",
-            CAST("t1"."l_discount" AS DECIMAL(15, 2)) AS "l_discount",
-            CAST("t1"."l_tax" AS DECIMAL(15, 2)) AS "l_tax",
-            "t1"."l_returnflag",
-            "t1"."l_linestatus",
-            "t1"."l_shipdate",
-            "t1"."l_commitdate",
-            "t1"."l_receiptdate",
-            "t1"."l_shipinstruct",
-            "t1"."l_shipmode",
-            "t1"."l_comment"
-          FROM "hive"."ibis_sf1"."lineitem" AS "t1"
-        ) AS "t11"
+        FROM "t8" AS "t13"
         WHERE
           (
-            "t11"."l_orderkey" = "t17"."l1_orderkey"
+            "t13"."l_orderkey" = "t18"."l1_orderkey"
           )
           AND (
-            "t11"."l_suppkey" <> "t17"."l1_suppkey"
+            "t13"."l_suppkey" <> "t18"."l1_suppkey"
           )
       )
       AND NOT (
         EXISTS(
           SELECT
             1 AS "1"
-          FROM (
-            SELECT
-              "t1"."l_orderkey",
-              "t1"."l_partkey",
-              "t1"."l_suppkey",
-              "t1"."l_linenumber",
-              CAST("t1"."l_quantity" AS DECIMAL(15, 2)) AS "l_quantity",
-              CAST("t1"."l_extendedprice" AS DECIMAL(15, 2)) AS "l_extendedprice",
-              CAST("t1"."l_discount" AS DECIMAL(15, 2)) AS "l_discount",
-              CAST("t1"."l_tax" AS DECIMAL(15, 2)) AS "l_tax",
-              "t1"."l_returnflag",
-              "t1"."l_linestatus",
-              "t1"."l_shipdate",
-              "t1"."l_commitdate",
-              "t1"."l_receiptdate",
-              "t1"."l_shipinstruct",
-              "t1"."l_shipmode",
-              "t1"."l_comment"
-            FROM "hive"."ibis_sf1"."lineitem" AS "t1"
-          ) AS "t12"
+          FROM "t8" AS "t14"
           WHERE
             (
               (
-                "t12"."l_orderkey" = "t17"."l1_orderkey"
+                "t14"."l_orderkey" = "t18"."l1_orderkey"
               )
               AND (
-                "t12"."l_suppkey" <> "t17"."l1_suppkey"
+                "t14"."l_suppkey" <> "t18"."l1_suppkey"
               )
             )
             AND (
-              "t12"."l_receiptdate" > "t12"."l_commitdate"
+              "t14"."l_receiptdate" > "t14"."l_commitdate"
             )
         )
       )
-  ) AS "t20"
+  ) AS "t21"
   GROUP BY
     1
-) AS "t21"
+) AS "t22"
 ORDER BY
-  "t21"."numwait" DESC,
-  "t21"."s_name" ASC
+  "t22"."numwait" DESC,
+  "t22"."s_name" ASC
 LIMIT 100
