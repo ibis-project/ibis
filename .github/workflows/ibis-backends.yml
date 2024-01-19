@@ -161,13 +161,13 @@ jobs:
           #     - oracle
           #   services:
           #     - oracle
-          # - name: exasol
-          #   title: Exasol
-          #   serial: true
-          #   extras:
-          #     - exasol
-          #   services:
-          #     - exasol
+          - name: exasol
+            title: Exasol
+            serial: true
+            extras:
+              - exasol
+            services:
+              - exasol
           # - name: flink
           #   title: Flink
           #   serial: true
@@ -290,15 +290,15 @@ jobs:
           #       - flink
           #     services:
           #       - flink
-          # - os: windows-latest
-          #   backend:
-          #     name: exasol
-          #     title: Exasol
-          #     serial: true
-          #     extras:
-          #       - exasol
-          #     services:
-          #       - exasol
+          - os: windows-latest
+            backend:
+              name: exasol
+              title: Exasol
+              serial: true
+              extras:
+                - exasol
+              services:
+                - exasol
     steps:
       - name: update and install system dependencies
         if: matrix.os == 'ubuntu-latest' && matrix.backend.sys-deps != null
