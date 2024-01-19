@@ -24,6 +24,7 @@ pytestmark = [pytest.mark.xdist_group("dot_sql")]
 
 _NAMES = {
     "bigquery": "ibis_gbq_testing.functional_alltypes",
+    "exasol": '"functional_alltypes"',
 }
 
 
@@ -38,17 +39,20 @@ _NAMES = {
     ],
 )
 def test_con_dot_sql(backend, con, schema):
-    alltypes = con.table("functional_alltypes")
+    alltypes = backend.functional_alltypes
     # pull out the quoted name
-    name = _NAMES.get(con.name, alltypes.op().name)
+    name = _NAMES.get(con.name, "functional_alltypes")
+    quoted = getattr(getattr(con, "compiler", None), "quoted", True)
+    dialect = _IBIS_TO_SQLGLOT_DIALECT.get(con.name, con.name)
+    cols = [
+        sg.column("string_col", quoted=quoted).as_("s", quoted=quoted).sql(dialect),
+        (sg.column("double_col", quoted=quoted) + 1.0)
+        .as_("new_col", quoted=quoted)
+        .sql(dialect),
+    ]
     t = (
         con.sql(
-            f"""
-            SELECT
-              string_col as s,
-              double_col + 1.0 AS new_col
-            FROM {name}
-            """,
+            f"SELECT {', '.join(cols)} FROM {name}",
             schema=schema,
         )
         .group_by("s")  # group by a column from SQL

@@ -738,3 +738,79 @@ class BigQueryUDFType(BigQueryType):
         raise com.UnsupportedBackendType(
             "int64 is not a supported input or output type in BigQuery UDFs; use float64 instead"
         )
+
+
+class ExasolType(SqlglotType):
+    dialect = "exasol"
+
+    default_temporal_scale = 3
+
+    default_decimal_precision = 18
+    default_decimal_scale = 0
+
+    @classmethod
+    def _from_ibis_String(cls, dtype: dt.String) -> sge.DataType:
+        return sge.DataType(
+            this=sge.DataType.Type.VARCHAR,
+            expressions=[sge.DataTypeParam(this=sge.convert(2_000_000))],
+        )
+
+    @classmethod
+    def _from_sqlglot_DECIMAL(
+        cls,
+        precision: sge.DataTypeParam | None = None,
+        scale: sge.DataTypeParam | None = None,
+    ) -> dt.Decimal:
+        if precision is None:
+            precision = cls.default_decimal_precision
+        else:
+            precision = int(precision.this.this)
+
+        if scale is None:
+            scale = cls.default_decimal_scale
+        else:
+            scale = int(scale.this.this)
+
+        if not scale:
+            if 0 < precision <= 3:
+                return dt.Int8(nullable=cls.default_nullable)
+            elif 3 < precision <= 9:
+                return dt.Int16(nullable=cls.default_nullable)
+            elif 9 < precision <= 18:
+                return dt.Int32(nullable=cls.default_nullable)
+            elif 18 < precision <= 36:
+                return dt.Int64(nullable=cls.default_nullable)
+            else:
+                raise com.UnsupportedBackendType(
+                    "Decimal precision is too large; Exasol supports precision up to 36."
+                )
+        return dt.Decimal(precision, scale, nullable=cls.default_nullable)
+
+    @classmethod
+    def _from_ibis_Array(cls, dtype: dt.Array) -> NoReturn:
+        raise com.UnsupportedBackendType("Arrays not supported in Exasol")
+
+    @classmethod
+    def _from_ibis_Map(cls, dtype: dt.Map) -> NoReturn:
+        raise com.UnsupportedBackendType("Maps not supported in Exasol")
+
+    @classmethod
+    def _from_ibis_Struct(cls, dtype: dt.Struct) -> NoReturn:
+        raise com.UnsupportedBackendType("Structs not supported in Exasol")
+
+    @classmethod
+    def _from_ibis_Timestamp(cls, dtype: dt.Timestamp) -> sge.DataType:
+        code = typecode.TIMESTAMP if dtype.timezone is None else typecode.TIMESTAMPTZ
+        return sge.DataType(this=code)
+
+    @classmethod
+    def _from_sqlglot_ARRAY(cls, value_type: sge.DataType) -> NoReturn:
+        raise com.UnsupportedBackendType("Arrays not supported in Exasol")
+
+    @classmethod
+    def _from_sqlglot_MAP(cls, key: sge.DataType, value: sge.DataType) -> NoReturn:
+        raise com.UnsupportedBackendType("Maps not supported in Exasol")
+
+    @classmethod
+    def _from_sqlglot_STRUCT(cls, *cols: sge.ColumnDef) -> NoReturn:
+        raise com.UnsupportedBackendType("Structs not supported in Exasol")
