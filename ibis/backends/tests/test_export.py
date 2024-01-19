@@ -99,7 +99,6 @@ def test_empty_column_to_pyarrow(limit, awards_players):
 
 
 @pytest.mark.parametrize("limit", no_limit)
-@pytest.mark.notimpl(["exasol"], raises=AttributeError)
 def test_empty_scalar_to_pyarrow(limit, awards_players):
     expr = awards_players.filter(awards_players.awardID == "DEADBEEF").yearID.sum()
     array = expr.to_pyarrow(limit=limit)
@@ -107,7 +106,6 @@ def test_empty_scalar_to_pyarrow(limit, awards_players):
 
 
 @pytest.mark.parametrize("limit", no_limit)
-@pytest.mark.notimpl(["exasol"], raises=AttributeError)
 def test_scalar_to_pyarrow_scalar(limit, awards_players):
     scalar = awards_players.yearID.sum().to_pyarrow(limit=limit)
     assert isinstance(scalar, pa.Scalar)
@@ -308,7 +306,7 @@ def test_memtable_to_file(tmp_path, con, ftype, monkeypatch):
     assert outfile.is_file()
 
 
-@pytest.mark.notimpl(["flink", "exasol"])
+@pytest.mark.notimpl(["flink"])
 def test_table_to_csv(tmp_path, backend, awards_players):
     outcsv = tmp_path / "out.csv"
 
@@ -322,7 +320,7 @@ def test_table_to_csv(tmp_path, backend, awards_players):
     backend.assert_frame_equal(awards_players.to_pandas(), df)
 
 
-@pytest.mark.notimpl(["flink", "exasol"])
+@pytest.mark.notimpl(["flink"])
 @pytest.mark.notimpl(
     ["duckdb"],
     reason="cannot inline WriteOptions objects",
