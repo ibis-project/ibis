@@ -15,6 +15,7 @@ import ibis.expr.operations as ops
 from ibis.common.annotations import attribute
 from ibis.common.collections import FrozenDict  # noqa: TCH001
 from ibis.common.deferred import var
+from ibis.common.graph import Graph
 from ibis.common.patterns import Object, replace
 from ibis.common.typing import VarTuple  # noqa: TCH001
 from ibis.expr.rewrites import p
@@ -22,6 +23,21 @@ from ibis.expr.schema import Schema
 
 x = var("x")
 y = var("y")
+
+
+@public
+class CTE(ops.Relation):
+    """Common table expression."""
+
+    parent: ops.Relation
+
+    @attribute
+    def schema(self):
+        return self.parent.schema
+
+    @attribute
+    def values(self):
+        return self.parent.values
 
 
 @public
@@ -135,8 +151,22 @@ def merge_select_select(_):
     )
 
 
+def extract_ctes(node):
+    result = []
+    cte_types = (Select, ops.Aggregate, ops.JoinChain, ops.Set, ops.Limit, ops.Sample)
+
+    g = Graph.from_bfs(node, filter=(ops.Relation, ops.Subquery, ops.JoinLink))
+    for node, dependents in g.invert().items():
+        if len(dependents) > 1 and isinstance(node, cte_types):
+            result.append(node)
+
+    return result
+
+
 def sqlize(node):
     """Lower the ibis expression graph to a SQL-like relational algebra."""
+    assert isinstance(node, ops.Relation)
+
     step1 = node.replace(
         window_function_to_window
         | project_to_select
@@ -144,7 +174,12 @@ def sqlize(node):
         | sort_to_select
     )
     step2 = step1.replace(merge_select_select)
-    return step2
+
+    ctes = extract_ctes(step2)
+    subs = {cte: CTE(cte) for cte in ctes}
+    step3 = step2.replace(subs)
+
+    return step3, ctes
 
 
 @replace(p.WindowFunction(p.First(x, y)))
