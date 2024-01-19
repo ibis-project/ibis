@@ -396,7 +396,7 @@ class _ibis_sqlite_var_pop(_ibis_sqlite_var):
 
 
 @udaf
-class _ibis_sqlite_var_samp(_ibis_sqlite_var):
+class _ibis_sqlite_var_sample(_ibis_sqlite_var):
     def __init__(self):
         super().__init__(1)
 

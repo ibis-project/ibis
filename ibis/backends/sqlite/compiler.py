@@ -6,6 +6,7 @@ import sqlglot as sg
 import sqlglot.expressions as sge
 from public import public
 
+import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 from ibis.backends.base.sqlglot.compiler import SQLGlotCompiler
@@ -39,6 +40,19 @@ class SQLiteCompiler(SQLGlotCompiler):
     @visit_node.register(ops.ArrayStringJoin)
     @visit_node.register(ops.IsNan)
     @visit_node.register(ops.IsInf)
+    @visit_node.register(ops.Covariance)
+    @visit_node.register(ops.Correlation)
+    @visit_node.register(ops.Quantile)
+    @visit_node.register(ops.MultiQuantile)
+    @visit_node.register(ops.Median)
+    @visit_node.register(ops.ApproxMedian)
+    @visit_node.register(ops.ArrayCollect)
+    @visit_node.register(ops.ArrayContains)
+    @visit_node.register(ops.ArrayFlatten)
+    @visit_node.register(ops.ArrayLength)
+    @visit_node.register(ops.ArraySort)
+    @visit_node.register(ops.ArrayStringJoin)
+    @visit_node.register(ops.CountDistinctStar)
     def visit_Undefined(self, op, **kwargs):
         return super().visit_Undefined(op, **kwargs)
 
@@ -109,6 +123,49 @@ class SQLiteCompiler(SQLGlotCompiler):
     def visit_Cot(self, op, *, arg):
         return 1 / self.f.tan(arg)
 
+    @visit_node.register(ops.Arbitrary)
+    def visit_Arbitrary(self, op, *, arg, how, where):
+        if op.how == "heavy":
+            raise com.OperationNotDefinedError(
+                "how='heavy' not implemented for the SQLite backend"
+            )
+
+        return self._aggregate(f"_ibis_sqlite_arbitrary_{how}", arg, where=where)
+
+    @visit_node.register(ops.ArgMin)
+    def visit_ArgMin(self, *args, **kwargs):
+        return self._visit_arg_reduction("min", *args, **kwargs)
+
+    @visit_node.register(ops.ArgMax)
+    def visit_ArgMax(self, *args, **kwargs):
+        return self._visit_arg_reduction("max", *args, **kwargs)
+
+    def _visit_arg_reduction(self, func, op, *, arg, key, where):
+        cond = arg.is_(sg.not_(sge.NULL))
+
+        if op.where is not None:
+            cond = sg.and_(cond, where)
+
+        agg = self._aggregate(func, key, where=cond)
+        return self.f.anon.json_extract(self.f.json_array(arg, agg), "$[0]")
+
+    @visit_node.register(ops.Variance)
+    def visit_Variance(self, op, *, arg, how, where):
+        return self._aggregate(f"_ibis_sqlite_var_{op.how}", arg, where=where)
+
+    @visit_node.register(ops.StandardDev)
+    def visit_StandardDev(self, op, *, arg, how, where):
+        var = self._aggregate(f"_ibis_sqlite_var_{op.how}", arg, where=where)
+        return self.f.sqrt(var)
+
+    @visit_node.register(ops.ApproxCountDistinct)
+    def visit_ApproxCountDistinct(self, op, *, arg, where):
+        return self.agg.count(sge.Distinct(expressions=[arg]), where=where)
+
+    @visit_node.register(ops.CountDistinct)
+    def visit_CountDistinct(self, op, *, arg, where):
+        return self.agg.count(sge.Distinct(expressions=[arg]), where=where)
+
     def visit_NonNullLiteral(self, op, *, value, dtype):
         if dtype.is_decimal():
             value = float(value)
@@ -140,6 +197,12 @@ _SIMPLE_OPS = {
     ops.BitwiseNot: "_ibis_sqlite_inv",
     ops.Modulus: "mod",
     ops.TypeOf: "typeof",
+    ops.BitOr: "_ibis_sqlite_bit_or",
+    ops.BitAnd: "_ibis_sqlite_bit_and",
+    ops.BitXor: "_ibis_sqlite_bit_xor",
+    ops.First: "_ibis_sqlite_arbitrary_first",
+    ops.Last: "_ibis_sqlite_arbitrary_last",
+    ops.Mode: "_ibis_sqlite_mode",
 }
 
 
