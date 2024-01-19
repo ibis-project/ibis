@@ -668,6 +668,16 @@ def all() -> Predicate:
     return r[:]
 
 
+def expand_overlap(
+    selector: Selector, left: ir.Table, right: ir.Table
+) -> Sequence[tuple[ir.Value, ir.Value]]:
+    def name_map(tab: ir.Table):
+        return ((c.get_name(), c) for c in selector.expand(tab))
+
+    right_map = dict(name_map(right))
+    return [(c, right_map[name]) for name, c in name_map(left) if c in right_map]
+
+
 def _to_selector(
     obj: str | Selector | ir.Column | Sequence[str | Selector | ir.Column],
 ) -> Selector:
