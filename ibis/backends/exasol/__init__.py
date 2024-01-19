@@ -12,6 +12,7 @@ import sqlglot.expressions as sge
 
 import ibis
 import ibis.common.exceptions as com
+import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
@@ -26,7 +27,6 @@ if TYPE_CHECKING:
     import pandas as pd
     import pyarrow as pa
 
-    import ibis.expr.datatypes as dt
     from ibis.backends.base import BaseBackend
 
 # strip trailing encodings e.g., UTF8
@@ -136,11 +136,22 @@ class Backend(SQLGlotBackend):
             yield cur.execute(query, *args, **kwargs)
 
     def list_tables(self, like=None, database=None):
-        query = sg.select("table_name").from_(sg.table("EXA_ALL_TABLES", catalog="SYS"))
+        tables = sg.select("table_name").from_(
+            sg.table("EXA_ALL_TABLES", catalog="SYS")
+        )
+        views = sg.select(sg.column("view_name").as_("table_name")).from_(
+            sg.table("EXA_ALL_VIEWS", catalog="SYS")
+        )
+
         if database is not None:
-            query = query.where(sg.column("table_schema").eq(sge.convert(database)))
+            tables = tables.where(sg.column("table_schema").eq(sge.convert(database)))
+            views = views.where(sg.column("view_schema").eq(sge.convert(database)))
+
+        query = sg.union(tables, views)
+
         with self._safe_raw_sql(query) as con:
             tables = con.fetchall()
+
         return self._filter_with_like([table for (table,) in tables], like=like)
 
     def get_schema(
@@ -393,3 +404,20 @@ class Backend(SQLGlotBackend):
         with self._safe_raw_sql(query) as con:
             schemas = con.fetchall()
         return self._filter_with_like([schema for (schema,) in schemas], like=like)
+
+    def _cursor_batches(
+        self,
+        expr: ir.Expr,
+        params: Mapping[ir.Scalar, Any] | None = None,
+        limit: int | str | None = None,
+        chunk_size: int = 1 << 20,
+    ) -> Iterable[list]:
+        self._run_pre_execute_hooks(expr)
+
+        dtypes = expr.as_table().schema().values()
+
+        with self._safe_raw_sql(
+            self.compile(expr, limit=limit, params=params)
+        ) as cursor:
+            while batch := cursor.fetchmany(chunk_size):
+                yield (tuple(map(dt.normalize, dtypes, row)) for row in batch)
