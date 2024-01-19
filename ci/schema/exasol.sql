@@ -21,7 +21,7 @@ CREATE OR REPLACE TABLE EXASOL."batting"
     "yearID"   BIGINT,
     "stint"    BIGINT,
     "teamID"   VARCHAR(256),
-    "logID"    VARCHAR(256),
+    "lgID"     VARCHAR(256),
     "G"        BIGINT,
     "AB"       BIGINT,
     "R"        BIGINT,
@@ -43,10 +43,10 @@ CREATE OR REPLACE TABLE EXASOL."batting"
 
 CREATE OR REPLACE TABLE EXASOL."awards_players"
 (
-    "playerId" VARCHAR(256),
+    "playerID" VARCHAR(256),
     "awardID"  VARCHAR(256),
     "yearID"   BIGINT,
-    "logID"    VARCHAR(256),
+    "lgID"     VARCHAR(256),
     "tie"      VARCHAR(256),
     "notest"   VARCHAR(256)
 );
