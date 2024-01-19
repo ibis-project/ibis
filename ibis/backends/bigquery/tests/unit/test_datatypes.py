@@ -4,6 +4,7 @@ import pytest
 import sqlglot as sg
 from pytest import param
 
+import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 from ibis.backends.bigquery.datatypes import BigQueryType
 
@@ -41,7 +42,7 @@ from ibis.backends.bigquery.datatypes import BigQueryType
             dt.Timestamp(timezone="US/Eastern"),
             "TIMESTAMP",
             marks=pytest.mark.xfail(
-                raises=TypeError, reason="Not supported in BigQuery"
+                raises=com.UnsupportedBackendType, reason="Not supported in BigQuery"
             ),
             id="timestamp_with_other_tz",
         ),
@@ -59,10 +60,10 @@ from ibis.backends.bigquery.datatypes import BigQueryType
             dt.GeoSpatial(geotype="geography"),
             "GEOGRAPHY",
             marks=pytest.mark.xfail(
-                raises=TypeError,
+                raises=com.UnsupportedBackendType,
                 reason="Should use the WGS84 reference ellipsoid.",
             ),
-            id="geography",
+            id="geography-no-srid",
         ),
     ],
 )
@@ -72,7 +73,7 @@ def test_simple(datatype, expected):
 
 @pytest.mark.parametrize("datatype", [dt.uint64, dt.Decimal(8, 3)])
 def test_simple_failure_mode(datatype):
-    with pytest.raises(TypeError):
+    with pytest.raises(com.UnsupportedBackendType):
         BigQueryType.to_string(datatype)
 
 
