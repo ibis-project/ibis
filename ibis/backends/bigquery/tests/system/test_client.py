@@ -328,6 +328,8 @@ def test_create_table_bignumeric(con, temp_table):
 
 
 def test_geography_table(con, temp_table):
+    pytest.importorskip("geopandas")
+
     schema = ibis.schema({"col1": dt.GeoSpatial(geotype="geography", srid=4326)})
     temporary_table = con.create_table(temp_table, schema=schema)
     con.raw_sql(
