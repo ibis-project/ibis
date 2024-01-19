@@ -6,6 +6,7 @@ import sqlglot.expressions as sge
 from sqlglot.dialects import Postgres
 
 import ibis.common.exceptions as com
+import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 from ibis.backends.base.sqlglot.compiler import NULL, SQLGlotCompiler
 from ibis.backends.base.sqlglot.datatypes import ExasolType
@@ -44,6 +45,17 @@ class ExasolCompiler(SQLGlotCompiler):
     @singledispatchmethod
     def visit_node(self, op, **kw):
         return super().visit_node(op, **kw)
+
+    def visit_NonNullLiteral(self, op, *, value, dtype):
+        if dtype.is_date():
+            return self.cast(value.isoformat(), dtype)
+        elif dtype.is_timestamp():
+            return self.cast(value.isoformat(sep=" ", timespec="milliseconds"), dtype)
+        return super().visit_NonNullLiteral(op, value=value, dtype=dtype)
+
+    @visit_node.register(ops.Date)
+    def visit_Date(self, op, *, arg):
+        return self.cast(arg, dt.date)
 
     @visit_node.register(ops.ApproxMedian)
     @visit_node.register(ops.Arbitrary)
