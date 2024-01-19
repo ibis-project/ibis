@@ -1940,7 +1940,7 @@ def test_timestamp_literal(con, backend):
 @pytest.mark.notimpl(
     ["bigquery"],
     "BigQuery does not support timestamps with timezones other than 'UTC'",
-    raises=TypeError,
+    raises=com.UnsupportedBackendType,
 )
 @pytest.mark.notimpl(
     ["druid"],
