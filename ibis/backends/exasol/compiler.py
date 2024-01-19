@@ -55,6 +55,8 @@ class ExasolCompiler(SQLGlotCompiler):
             raise com.UnsupportedBackendType(
                 f"{type(dtype).__name__}s are not supported in Exasol"
             )
+        elif dtype.is_uuid():
+            return sge.convert(str(value))
         return super().visit_NonNullLiteral(op, value=value, dtype=dtype)
 
     @visit_node.register(ops.Date)
