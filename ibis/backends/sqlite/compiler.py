@@ -58,6 +58,14 @@ class SQLiteCompiler(SQLGlotCompiler):
     def visit_Undefined(self, op, **kwargs):
         return super().visit_Undefined(op, **kwargs)
 
+    @visit_node.register(ops.JoinLink)
+    def visit_JoinLink(self, op, **kwargs):
+        if op.how == "asof":
+            raise com.UnsupportedOperationError(
+                "ASOF joins are not supported by SQLite"
+            )
+        return super().visit_JoinLink(op, **kwargs)
+
     @visit_node.register(ops.StartsWith)
     def visit_StartsWith(self, op, *, arg, start):
         return arg.like(self.f.concat(start, "%"))
