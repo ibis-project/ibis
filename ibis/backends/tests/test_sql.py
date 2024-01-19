@@ -137,7 +137,9 @@ def test_isin_bug(con, snapshot):
     raises=NotImplementedError,
 )
 @pytest.mark.notyet(
-    ["datafusion"], reason="no unnest support", raises=exc.OperationNotDefinedError
+    ["datafusion", "exasol"],
+    reason="no unnest support",
+    raises=exc.OperationNotDefinedError,
 )
 @pytest.mark.notyet(
     ["sqlite", "mysql", "druid", "impala", "mssql"], reason="no unnest support upstream"

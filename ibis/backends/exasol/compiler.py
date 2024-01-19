@@ -51,6 +51,10 @@ class ExasolCompiler(SQLGlotCompiler):
             return self.cast(value.isoformat(), dtype)
         elif dtype.is_timestamp():
             return self.cast(value.isoformat(sep=" ", timespec="milliseconds"), dtype)
+        elif dtype.is_array() or dtype.is_struct() or dtype.is_map():
+            raise com.UnsupportedBackendType(
+                f"{type(dtype).__name__}s are not supported in Exasol"
+            )
         return super().visit_NonNullLiteral(op, value=value, dtype=dtype)
 
     @visit_node.register(ops.Date)
