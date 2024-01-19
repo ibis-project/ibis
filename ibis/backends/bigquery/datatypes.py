@@ -65,21 +65,3 @@ class BigQuerySchema(SchemaMapper):
     @classmethod
     def to_ibis(cls, fields: list[bq.SchemaField]) -> sch.Schema:
         return sch.Schema({f.name: cls._dtype_from_bigquery_field(f) for f in fields})
-
-
-# TODO(kszucs): we can eliminate this function by making dt.DataType traversible
-# using ibis.common.graph.Node, similarly to how we traverse ops.Node instances:
-# node.find(types)
-def spread_type(dt: dt.DataType):
-    """Returns a generator that contains all the types in the given type.
-
-    For complex types like set and array, it returns the types of the elements.
-    """
-    if dt.is_array():
-        yield from spread_type(dt.value_type)
-    elif dt.is_struct():
-        for type_ in dt.types:
-            yield from spread_type(type_)
-    elif dt.is_map():
-        raise NotImplementedError("Maps are not supported in BigQuery")
-    yield dt
