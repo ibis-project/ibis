@@ -108,7 +108,7 @@ def test_scalar_fillna_nullif(con, expr, expected):
             ibis.literal(np.nan),
             methodcaller("isnan"),
             marks=[
-                pytest.mark.notimpl(["mysql", "sqlite"]),
+                pytest.mark.notimpl(["mysql", "sqlite", "druid"]),
                 pytest.mark.notyet(
                     ["exasol"],
                     raises=ExaQueryError,
@@ -122,7 +122,7 @@ def test_scalar_fillna_nullif(con, expr, expected):
         ),
     ],
 )
-@pytest.mark.notimpl(["mssql", "druid", "oracle"])
+@pytest.mark.notimpl(["mssql", "oracle"])
 @pytest.mark.notyet(["flink"], "NaN is not supported in Flink SQL", raises=ValueError)
 def test_isna(backend, alltypes, col, value, filt):
     table = alltypes.select(**{col: value})
