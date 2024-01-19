@@ -169,6 +169,9 @@ class SQLiteCompiler(SQLGlotCompiler):
         return self.agg.count(sge.Distinct(expressions=[arg]), where=where)
 
     def visit_NonNullLiteral(self, op, *, value, dtype):
+        if dtype.is_binary():
+            return self.f.unhex(value.hex())
+
         if dtype.is_decimal():
             value = float(value)
             dtype = dt.double(nullable=dtype.nullable)
