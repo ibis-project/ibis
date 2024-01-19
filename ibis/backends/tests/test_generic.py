@@ -118,11 +118,7 @@ def test_scalar_fillna_nullif(con, expr, expected):
             id="nan_col",
         ),
         param(
-            "none_col",
-            ibis.NA.cast("float64"),
-            methodcaller("isnull"),
-            marks=[pytest.mark.notimpl(["mysql"])],
-            id="none_col",
+            "none_col", ibis.NA.cast("float64"), methodcaller("isnull"), id="none_col"
         ),
     ],
 )
