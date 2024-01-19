@@ -1,33 +1,41 @@
+WITH "t5" AS (
+  SELECT
+    "t4"."n_nationkey",
+    "t4"."n_name",
+    "t4"."n_regionkey",
+    "t4"."n_comment"
+  FROM "hive"."ibis_sf1"."nation" AS "t4"
+)
 SELECT
-  "t24"."supp_nation",
-  "t24"."cust_nation",
-  "t24"."l_year",
-  "t24"."revenue"
+  "t25"."supp_nation",
+  "t25"."cust_nation",
+  "t25"."l_year",
+  "t25"."revenue"
 FROM (
   SELECT
-    "t23"."supp_nation",
-    "t23"."cust_nation",
-    "t23"."l_year",
-    SUM("t23"."volume") AS "revenue"
+    "t24"."supp_nation",
+    "t24"."cust_nation",
+    "t24"."l_year",
+    SUM("t24"."volume") AS "revenue"
   FROM (
     SELECT
-      "t22"."supp_nation",
-      "t22"."cust_nation",
-      "t22"."l_shipdate",
-      "t22"."l_extendedprice",
-      "t22"."l_discount",
-      "t22"."l_year",
-      "t22"."volume"
+      "t23"."supp_nation",
+      "t23"."cust_nation",
+      "t23"."l_shipdate",
+      "t23"."l_extendedprice",
+      "t23"."l_discount",
+      "t23"."l_year",
+      "t23"."volume"
     FROM (
       SELECT
-        "t10"."n_name" AS "supp_nation",
-        "t16"."n_name" AS "cust_nation",
-        "t13"."l_shipdate",
-        "t13"."l_extendedprice",
-        "t13"."l_discount",
-        EXTRACT(year FROM "t13"."l_shipdate") AS "l_year",
-        "t13"."l_extendedprice" * (
-          1 - "t13"."l_discount"
+        "t15"."n_name" AS "supp_nation",
+        "t17"."n_name" AS "cust_nation",
+        "t12"."l_shipdate",
+        "t12"."l_extendedprice",
+        "t12"."l_discount",
+        EXTRACT(year FROM "t12"."l_shipdate") AS "l_year",
+        "t12"."l_extendedprice" * (
+          1 - "t12"."l_discount"
         ) AS "volume"
       FROM (
         SELECT
@@ -39,7 +47,7 @@ FROM (
           CAST("t0"."s_acctbal" AS DECIMAL(15, 2)) AS "s_acctbal",
           "t0"."s_comment"
         FROM "hive"."ibis_sf1"."supplier" AS "t0"
-      ) AS "t12"
+      ) AS "t11"
       INNER JOIN (
         SELECT
           "t1"."l_orderkey",
@@ -59,8 +67,8 @@ FROM (
           "t1"."l_shipmode",
           "t1"."l_comment"
         FROM "hive"."ibis_sf1"."lineitem" AS "t1"
-      ) AS "t13"
-        ON "t12"."s_suppkey" = "t13"."l_suppkey"
+      ) AS "t12"
+        ON "t11"."s_suppkey" = "t12"."l_suppkey"
       INNER JOIN (
         SELECT
           "t2"."o_orderkey",
@@ -73,8 +81,8 @@ FROM (
           "t2"."o_shippriority",
           "t2"."o_comment"
         FROM "hive"."ibis_sf1"."orders" AS "t2"
-      ) AS "t14"
-        ON "t14"."o_orderkey" = "t13"."l_orderkey"
+      ) AS "t13"
+        ON "t13"."o_orderkey" = "t12"."l_orderkey"
       INNER JOIN (
         SELECT
           "t3"."c_custkey",
@@ -86,52 +94,38 @@ FROM (
           "t3"."c_mktsegment",
           "t3"."c_comment"
         FROM "hive"."ibis_sf1"."customer" AS "t3"
-      ) AS "t15"
-        ON "t15"."c_custkey" = "t14"."o_custkey"
-      INNER JOIN (
-        SELECT
-          "t4"."n_nationkey",
-          "t4"."n_name",
-          "t4"."n_regionkey",
-          "t4"."n_comment"
-        FROM "hive"."ibis_sf1"."nation" AS "t4"
-      ) AS "t10"
-        ON "t12"."s_nationkey" = "t10"."n_nationkey"
-      INNER JOIN (
-        SELECT
-          "t4"."n_nationkey",
-          "t4"."n_name",
-          "t4"."n_regionkey",
-          "t4"."n_comment"
-        FROM "hive"."ibis_sf1"."nation" AS "t4"
-      ) AS "t16"
-        ON "t15"."c_nationkey" = "t16"."n_nationkey"
-    ) AS "t22"
+      ) AS "t14"
+        ON "t14"."c_custkey" = "t13"."o_custkey"
+      INNER JOIN "t5" AS "t15"
+        ON "t11"."s_nationkey" = "t15"."n_nationkey"
+      INNER JOIN "t5" AS "t17"
+        ON "t14"."c_nationkey" = "t17"."n_nationkey"
+    ) AS "t23"
     WHERE
       (
         (
           (
-            "t22"."cust_nation" = 'FRANCE'
+            "t23"."cust_nation" = 'FRANCE'
           ) AND (
-            "t22"."supp_nation" = 'GERMANY'
+            "t23"."supp_nation" = 'GERMANY'
           )
         )
         OR (
           (
-            "t22"."cust_nation" = 'GERMANY'
+            "t23"."cust_nation" = 'GERMANY'
           ) AND (
-            "t22"."supp_nation" = 'FRANCE'
+            "t23"."supp_nation" = 'FRANCE'
           )
         )
       )
-      AND "t22"."l_shipdate" BETWEEN FROM_ISO8601_DATE('1995-01-01') AND FROM_ISO8601_DATE('1996-12-31')
-  ) AS "t23"
+      AND "t23"."l_shipdate" BETWEEN FROM_ISO8601_DATE('1995-01-01') AND FROM_ISO8601_DATE('1996-12-31')
+  ) AS "t24"
   GROUP BY
     1,
     2,
     3
-) AS "t24"
+) AS "t25"
 ORDER BY
-  "t24"."supp_nation" ASC,
-  "t24"."cust_nation" ASC,
-  "t24"."l_year" ASC
+  "t25"."supp_nation" ASC,
+  "t25"."cust_nation" ASC,
+  "t25"."l_year" ASC
