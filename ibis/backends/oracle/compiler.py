@@ -40,6 +40,17 @@ def _create_sql(self, expression: sge.Create) -> str:
     return create_with_partitions_sql(self, expression)
 
 
+def _datatype_sql(self: Oracle.Generator, expression: sge.DataType) -> str:
+    # Use this to handle correctly formatting timestamp precision
+    # e.g. TIMESTAMP (scale) WITH TIME ZONE vs. TIMESTAMP WITH TIME ZONE(scale)
+    if expression.is_type("timestamptz"):
+        for exp in expression.expressions:
+            if isinstance(exp, sge.DataTypeParam):
+                return f"TIMESTAMP ({self.sql(exp, 'this')}) WITH TIME ZONE"
+        return "TIMESTAMP WITH TIME ZONE"
+    return self.datatype_sql(expression)
+
+
 Oracle.Generator.TRANSFORMS |= {
     sge.LogicalOr: rename_func("max"),
     sge.LogicalAnd: rename_func("min"),
@@ -51,10 +62,7 @@ Oracle.Generator.TRANSFORMS |= {
     sge.ApproxDistinct: rename_func("approx_count_distinct"),
     sge.Create: _create_sql,
     sge.Select: sg.transforms.preprocess([sg.transforms.eliminate_semi_and_anti_joins]),
-}
-
-Oracle.Generator.TYPE_MAPPING |= {
-    sge.DataType.Type.TIMESTAMPTZ: "TIMESTAMP WITH TIME ZONE",
+    sge.DataType: _datatype_sql,
 }
 
 
