@@ -272,7 +272,7 @@ class Backend(SQLGlotBackend):
 
     def _register_in_memory_table(self, op: ops.InMemoryTable) -> None:
         # only register if we haven't already done so
-        if op.name not in self.list_tables():
+        if op.name not in self.list_tables(database="temp"):
             table = sg.table(op.name, quoted=self.compiler.quoted, catalog="temp")
             create_stmt = self._generate_create_table(table, op.schema).sql(self.name)
             df = op.data.to_frame()
