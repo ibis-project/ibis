@@ -10,7 +10,13 @@ import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 from ibis.backends.base.sqlglot.compiler import NULL, SQLGlotCompiler
 from ibis.backends.base.sqlglot.datatypes import ExasolType
-from ibis.expr.rewrites import rewrite_sample
+from ibis.backends.base.sqlglot.rewrites import (
+    exclude_unsupported_window_frame_from_ops,
+    exclude_unsupported_window_frame_from_row_number,
+    rewrite_empty_order_by_window,
+)
+from ibis.common.patterns import replace
+from ibis.expr.rewrites import p, rewrite_sample, y
 
 
 # Is postgres the best dialect to inherit from?
@@ -23,13 +29,38 @@ class Exasol(Postgres):
         }
 
 
+@replace(p.WindowFunction(p.MinRank | p.DenseRank, y @ p.WindowFrame(start=None)))
+def exclude_unsupported_window_frame_from_rank(_, y):
+    return ops.Subtract(
+        _.copy(frame=y.copy(start=None, end=0, order_by=y.order_by or (ops.NULL,))), 1
+    )
+
+
 class ExasolCompiler(SQLGlotCompiler):
     __slots__ = ()
 
     dialect = "exasol"
     type_mapper = ExasolType
     quoted = True
-    rewrites = (rewrite_sample, *SQLGlotCompiler.rewrites)
+    rewrites = (
+        rewrite_sample,
+        exclude_unsupported_window_frame_from_ops,
+        exclude_unsupported_window_frame_from_rank,
+        exclude_unsupported_window_frame_from_row_number,
+        rewrite_empty_order_by_window,
+        *SQLGlotCompiler.rewrites,
+    )
+
+    @staticmethod
+    def _minimize_spec(start, end, spec):
+        if (
+            start is None
+            and isinstance(getattr(end, "value", None), ops.Literal)
+            and end.value.value == 0
+            and end.following
+        ):
+            return None
+        return spec
 
     def _aggregate(self, funcname: str, *args, where):
         func = self.f[funcname]
@@ -50,7 +81,8 @@ class ExasolCompiler(SQLGlotCompiler):
         if dtype.is_date():
             return self.cast(value.isoformat(), dtype)
         elif dtype.is_timestamp():
-            return self.cast(value.isoformat(sep=" ", timespec="milliseconds"), dtype)
+            val = value.replace(tzinfo=None).isoformat(sep=" ", timespec="milliseconds")
+            return self.cast(val, dtype)
         elif dtype.is_array() or dtype.is_struct() or dtype.is_map():
             raise com.UnsupportedBackendType(
                 f"{type(dtype).__name__}s are not supported in Exasol"
@@ -83,6 +115,11 @@ class ExasolCompiler(SQLGlotCompiler):
     def visit_StringContains(self, op, *, haystack, needle):
         return self.f.locate(needle, haystack) > 0
 
+    @visit_node.register(ops.ExtractSecond)
+    def visit_ExtractSecond(self, op, *, arg):
+        return self.f.floor(self.cast(self.f.extract(self.v.second, arg), op.dtype))
+
+    @visit_node.register(ops.AnalyticVectorizedUDF)
     @visit_node.register(ops.ApproxMedian)
     @visit_node.register(ops.Arbitrary)
     @visit_node.register(ops.ArgMax)
@@ -99,18 +136,27 @@ class ExasolCompiler(SQLGlotCompiler):
     @visit_node.register(ops.ArrayZip)
     @visit_node.register(ops.BitwiseNot)
     @visit_node.register(ops.Covariance)
+    @visit_node.register(ops.CumeDist)
+    @visit_node.register(ops.DateAdd)
     @visit_node.register(ops.DateDelta)
+    @visit_node.register(ops.DateSub)
     @visit_node.register(ops.DayOfWeekIndex)
     @visit_node.register(ops.DayOfWeekName)
+    @visit_node.register(ops.ElementWiseVectorizedUDF)
+    @visit_node.register(ops.ExtractDayOfYear)
+    @visit_node.register(ops.ExtractEpochSeconds)
+    @visit_node.register(ops.ExtractQuarter)
+    @visit_node.register(ops.ExtractWeekOfYear)
     @visit_node.register(ops.First)
     @visit_node.register(ops.IntervalFromInteger)
-    @visit_node.register(ops.IsNan)
     @visit_node.register(ops.IsInf)
+    @visit_node.register(ops.IsNan)
     @visit_node.register(ops.Last)
     @visit_node.register(ops.Levenshtein)
     @visit_node.register(ops.Median)
     @visit_node.register(ops.MultiQuantile)
     @visit_node.register(ops.Quantile)
+    @visit_node.register(ops.ReductionVectorizedUDF)
     @visit_node.register(ops.RegexExtract)
     @visit_node.register(ops.RegexReplace)
     @visit_node.register(ops.RegexSearch)
@@ -122,9 +168,12 @@ class ExasolCompiler(SQLGlotCompiler):
     @visit_node.register(ops.StringSplit)
     @visit_node.register(ops.StringToTimestamp)
     @visit_node.register(ops.TimeDelta)
+    @visit_node.register(ops.TimestampAdd)
     @visit_node.register(ops.TimestampBucket)
     @visit_node.register(ops.TimestampDelta)
+    @visit_node.register(ops.TimestampDiff)
     @visit_node.register(ops.TimestampNow)
+    @visit_node.register(ops.TimestampSub)
     @visit_node.register(ops.TypeOf)
     @visit_node.register(ops.Unnest)
     @visit_node.register(ops.Variance)
@@ -139,6 +188,8 @@ class ExasolCompiler(SQLGlotCompiler):
 _SIMPLE_OPS = {
     ops.Log10: "log10",
     ops.Modulus: "mod",
+    ops.All: "min",
+    ops.Any: "max",
 }
 
 for _op, _name in _SIMPLE_OPS.items():
