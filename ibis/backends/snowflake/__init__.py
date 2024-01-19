@@ -305,6 +305,7 @@ $$ {defn["source"]} $$"""
         return dict(
             source=source,
             name=name,
+            func_name=udf_node.__func_name__,
             preamble="\n".join(preamble_lines).format(
                 name=name,
                 signature=signature,
@@ -351,7 +352,7 @@ $$ {defn["source"]} $$"""
     def _compile_python_udf(self, udf_node: ops.ScalarUDF) -> str:
         return """\
 {preamble}
-HANDLER = '{name}'
+HANDLER = '{func_name}'
 AS $$
 from __future__ import annotations
 
@@ -376,7 +377,7 @@ import pandas as pd
 
 @_snowflake.vectorized(input=pd.DataFrame)
 def wrapper(df):
-    return {name}(*(col for _, col in df.items()))
+    return {func_name}(*(col for _, col in df.items()))
 $$"""
         return template.format(**self._get_udf_source(udf_node))
 
