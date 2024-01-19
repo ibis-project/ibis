@@ -427,19 +427,37 @@ class OracleCompiler(SQLGlotCompiler):
     def visit_Xor(self, op, *, left, right):
         return (left.or_(right)).and_(sg.not_(left.and_(right)))
 
+    @visit_node.register(ops.TimestampTruncate)
     @visit_node.register(ops.DateTruncate)
     def visit_DateTruncate(self, op, *, arg, unit):
-        unit_mapping = {
+        trunc_unit_mapping = {
             "Y": "year",
             "M": "MONTH",
             "W": "IW",
             "D": "DDD",
+            "h": "HH",
+            "m": "MI",
         }
 
-        if (unit := unit_mapping.get(unit.short)) is None:
+        timestamp_unit_mapping = {
+            "s": "SS",
+            "ms": "SS.FF3",
+            "us": "SS.FF6",
+            "ns": "SS.FF9",
+        }
+
+        if (unyt := timestamp_unit_mapping.get(unit.short)) is not None:
+            # Oracle only has trunc(DATE) and that can't do sub-minute precision, but we can
+            # handle those separately.
+            return self.f.to_timestamp(
+                self.f.to_char(arg, f"YYYY-MM-DD HH24:MI:{unyt}"),
+                f"YYYY-MM-DD HH24:MI:{unyt}",
+            )
+
+        if (unyt := trunc_unit_mapping.get(unit.short)) is None:
             raise com.UnsupportedOperationError(f"Unsupported truncate unit {unit}")
 
-        return self.f.trunc(arg, unit)
+        return self.f.trunc(arg, unyt)
 
     @visit_node.register(Window)
     def visit_Window(self, op, *, how, func, start, end, group_by, order_by):
@@ -537,7 +555,6 @@ class OracleCompiler(SQLGlotCompiler):
     @visit_node.register(ops.MultiQuantile)
     @visit_node.register(ops.RegexSplit)
     @visit_node.register(ops.StringSplit)
-    @visit_node.register(ops.TimestampTruncate)
     @visit_node.register(ops.TimeTruncate)
     @visit_node.register(ops.Bucket)
     @visit_node.register(ops.TimestampBucket)

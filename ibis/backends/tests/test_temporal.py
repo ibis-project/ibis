@@ -458,7 +458,6 @@ PANDAS_UNITS = {
         ),
     ],
 )
-@pytest.mark.notimpl(["oracle", "exasol"], raises=com.OperationNotDefinedError)
 @pytest.mark.broken(
     ["druid"],
     raises=AttributeError,
