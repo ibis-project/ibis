@@ -431,13 +431,13 @@ class Backend(SQLGlotBackend, CanListDatabases):
         else:
             target = table_ref
 
-        property_list = [
-            sge.Property(
-                this=sg.to_identifier(k),
-                value=self.compiler.translate(ibis.literal(v).op(), params={}),
-            )
-            for k, v in (properties or {}).items()
-        ]
+        property_list = []
+
+        for k, v in (properties or {}).items():
+            name = sg.to_identifier(k)
+            expr = ibis.literal(v)
+            value = self.compiler.visit_Literal(expr.op(), value=v, dtype=expr.type())
+            property_list.append(sge.Property(this=name, value=value))
 
         if comment:
             property_list.append(sge.SchemaCommentProperty(this=sge.convert(comment)))
