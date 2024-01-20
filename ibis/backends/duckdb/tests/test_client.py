@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import duckdb
+import pandas as pd
 import pyarrow as pa
 import pytest
 from pytest import param
@@ -162,11 +163,10 @@ def test_config_options_bad_option(con):
 
 
 def test_insert(con):
-    import pandas as pd
-
     name = ibis.util.guid()
 
-    t = con.create_table(name, schema=ibis.schema({"a": "int64"}))
+    t = con.create_table(name, schema=ibis.schema({"a": "int64"}), temp=True)
+
     con.insert(name, obj=pd.DataFrame({"a": [1, 2]}))
     assert t.count().execute() == 2
 
@@ -196,3 +196,18 @@ def test_to_other_sql(con, snapshot):
 
     sql = ibis.to_sql(t, dialect="snowflake")
     snapshot.assert_match(sql, "out.sql")
+
+
+def test_insert_preserves_column_case(con):
+    name1 = ibis.util.guid()
+    name2 = ibis.util.guid()
+
+    df1 = pd.DataFrame([[1], [2], [3], [4]], columns=["FTHG"])
+    df2 = pd.DataFrame([[5], [6], [7], [8]], columns=["FTHG"])
+
+    t1 = con.create_table(name1, df1, temp=True)
+    assert t1.count().execute() == 4
+
+    t2 = con.create_table(name2, df2, temp=True)
+    con.insert(name1, t2)
+    assert t1.count().execute() == 8
