@@ -150,7 +150,7 @@ class Zones(Concrete):
         return backend.read_geo(path)
 
 
-zones = Zones("zones", help="Taxi zones in New York City")
+zones = Zones("zones", help="Taxi zones in New York City (EPSG:2263)")
 
 
 def __getattr__(name: str) -> Example:
