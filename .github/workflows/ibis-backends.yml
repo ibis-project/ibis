@@ -124,6 +124,7 @@ jobs:
               - libgeos-dev
           - name: impala
             title: Impala
+            serial: true
             extras:
               - impala
             services:
@@ -227,6 +228,7 @@ jobs:
             backend:
               name: impala
               title: Impala
+              serial: true
               extras:
                 - impala
               services:
