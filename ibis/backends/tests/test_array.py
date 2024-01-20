@@ -328,7 +328,7 @@ def test_unnest_default_name(backend):
     array_types = backend.array_types
     df = array_types.execute()
     expr = (
-        array_types.x.cast("!array<int64>") + ibis.array([1], type="!array<int64>")
+        array_types.x.cast("!array<int64>") + ibis.array([1]).cast("!array<int64>")
     ).unnest()
     assert expr.get_name().startswith("ArrayConcat(")
 

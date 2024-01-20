@@ -382,7 +382,7 @@ def test_format_literal(literal, typ, output):
 
 
 def test_format_dummy_table(snapshot):
-    t = ops.DummyTable([ibis.array([1], type="array<int8>").name("foo")]).to_expr()
+    t = ops.DummyTable([ibis.array([1]).cast("array<int8>").name("foo")]).to_expr()
 
     result = fmt(t)
     assert "DummyTable" in result

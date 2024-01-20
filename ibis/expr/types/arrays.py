@@ -1017,22 +1017,17 @@ class ArrayColumn(Column, ArrayValue):
 
 @public
 @deferrable
-def array(values: Iterable[V], type: str | dt.DataType | None = None) -> ArrayValue:
+def array(values: Iterable[V]) -> ArrayValue:
     """Create an array expression.
 
     Parameters
     ----------
     values
         An iterable of Ibis expressions or a list of Python literals
-    type
-        An instance of `ibis.expr.datatypes.DataType` or a string indicating
-        the Ibis type of `value`.
 
     Returns
     -------
     ArrayValue
-        An array column (if the inputs are column expressions), or an array
-        scalar (if the inputs are Python literals)
 
     Examples
     --------
@@ -1070,6 +1065,4 @@ def array(values: Iterable[V], type: str | dt.DataType | None = None) -> ArrayVa
     │ [3, 42]              │
     └──────────────────────┘
     """
-    if type is None:
-        return ops.Array(tuple(values)).to_expr()
-    return literal(list(values), type=type)
+    return ops.Array(tuple(values)).to_expr()
