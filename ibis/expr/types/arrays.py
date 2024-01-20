@@ -1043,7 +1043,7 @@ def array(values: Iterable[V], type: str | dt.DataType | None = None) -> ArrayVa
     >>> t = ibis.memtable({"a": [1, 2, 3], "b": [4, 5, 6]})
     >>> ibis.array([t.a, t.b])
     ┏━━━━━━━━━━━━━━━━━━━━━━┓
-    ┃ ArrayColumn()        ┃
+    ┃ Array()              ┃
     ┡━━━━━━━━━━━━━━━━━━━━━━┩
     │ array<int64>         │
     ├──────────────────────┤
@@ -1061,7 +1061,7 @@ def array(values: Iterable[V], type: str | dt.DataType | None = None) -> ArrayVa
 
     >>> ibis.array([t.a, 42])
     ┏━━━━━━━━━━━━━━━━━━━━━━┓
-    ┃ ArrayColumn()        ┃
+    ┃ Array()              ┃
     ┡━━━━━━━━━━━━━━━━━━━━━━┩
     │ array<int64>         │
     ├──────────────────────┤
@@ -1070,14 +1070,6 @@ def array(values: Iterable[V], type: str | dt.DataType | None = None) -> ArrayVa
     │ [3, 42]              │
     └──────────────────────┘
     """
-    if any(isinstance(value, Value) for value in values):
-        return ops.Array(values).to_expr()
-    else:
-        try:
-            return literal(list(values), type=type)
-        except com.IbisTypeError as e:
-            raise com.IbisTypeError(
-                "Could not create an array scalar from the values provided "
-                "to `array`. Ensure that all input values have the same "
-                "Python type, or can be casted to a single Python type."
-            ) from e
+    if type is None:
+        return ops.Array(tuple(values)).to_expr()
+    return literal(list(values), type=type)

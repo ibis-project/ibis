@@ -43,7 +43,7 @@ class make_array(FunctionElement):
     pass
 
 
-@compiles(make_array, "trino")
+@compiles(make_array, "default")
 def compile_make_array(element, compiler, **kw):
     return f"ARRAY[{compiler.process(element.clauses, **kw)}]"
 
