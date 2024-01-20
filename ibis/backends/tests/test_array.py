@@ -1061,9 +1061,6 @@ def test_unnest_range(con):
 
 @pytest.mark.notyet(["flink"], raises=com.OperationNotDefinedError)
 @pytest.mark.broken(
-    ["pandas"], reason="expression input not supported", raises=TypeError
-)
-@pytest.mark.broken(
     ["dask"], reason="expression input not supported", raises=AttributeError
 )
 @pytest.mark.parametrize(

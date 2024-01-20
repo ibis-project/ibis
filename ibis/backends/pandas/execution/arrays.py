@@ -18,11 +18,9 @@ if TYPE_CHECKING:
 
 
 @execute_node.register(ops.Array, tuple)
-def execute_array_column(op, cols, **kwargs):
+def execute_array(op, cols, **kwargs):
     vals = [execute(arg, **kwargs) for arg in cols]
-    # At least one of the values will be a Series.
-    # Otherwise op would be an ArrayScalar, not an ArrayColumn.
-    length = next(len(v) for v in vals if isinstance(v, pd.Series))
+    length = next((len(v) for v in vals if isinstance(v, pd.Series)), None)
 
     def ensure_series(v):
         if isinstance(v, pd.Series):
@@ -30,6 +28,8 @@ def execute_array_column(op, cols, **kwargs):
         else:
             return pd.Series(v, index=range(length))
 
+    if length is None:
+        return vals
     # pd.concat() can only handle array-likes.
     # If we're given a scalar, we need to broadcast it as a Series.
     df = pd.concat([ensure_series(v) for v in vals], axis=1)
@@ -41,7 +41,7 @@ def execute_array_length(op, data, **kwargs):
     return data.apply(len)
 
 
-@execute_node.register(ops.ArrayLength, np.ndarray)
+@execute_node.register(ops.ArrayLength, (list, np.ndarray))
 def execute_array_length_scalar(op, data, **kwargs):
     return len(data)
 
@@ -51,7 +51,7 @@ def execute_array_slice(op, data, start, stop, **kwargs):
     return data.apply(operator.itemgetter(slice(start, stop)))
 
 
-@execute_node.register(ops.ArraySlice, np.ndarray, int, (int, type(None)))
+@execute_node.register(ops.ArraySlice, (list, np.ndarray), int, (int, type(None)))
 def execute_array_slice_scalar(op, data, start, stop, **kwargs):
     return data[start:stop]
 
@@ -65,7 +65,7 @@ def execute_array_index(op, data, index, **kwargs):
     )
 
 
-@execute_node.register(ops.ArrayIndex, np.ndarray, int)
+@execute_node.register(ops.ArrayIndex, (list, np.ndarray), int)
 def execute_array_index_scalar(op, data, index, **kwargs):
     try:
         return data[index]
@@ -73,7 +73,7 @@ def execute_array_index_scalar(op, data, index, **kwargs):
         return None
 
 
-@execute_node.register(ops.ArrayContains, np.ndarray, object)
+@execute_node.register(ops.ArrayContains, (list, np.ndarray), object)
 def execute_node_contains_value_array(op, haystack, needle, **kwargs):
     return needle in haystack
 
@@ -103,7 +103,7 @@ def execute_array_concat_series(op, first, second, *args, **kwargs):
 
 
 @execute_node.register(
-    ops.ArrayConcat, np.ndarray, pd.Series, [(pd.Series, np.ndarray)]
+    ops.ArrayConcat, (list, np.ndarray), pd.Series, [(pd.Series, list, np.ndarray)]
 )
 def execute_array_concat_mixed_left(op, left, right, *args, **kwargs):
     # ArrayConcat given a column (pd.Series) and a scalar (np.ndarray).
@@ -114,7 +114,7 @@ def execute_array_concat_mixed_left(op, left, right, *args, **kwargs):
 
 
 @execute_node.register(
-    ops.ArrayConcat, pd.Series, np.ndarray, [(pd.Series, np.ndarray)]
+    ops.ArrayConcat, pd.Series, (list, np.ndarray), [(pd.Series, list, np.ndarray)]
 )
 def execute_array_concat_mixed_right(op, left, right, *args, **kwargs):
     # Broadcast `right` to the length of `left`
@@ -122,7 +122,9 @@ def execute_array_concat_mixed_right(op, left, right, *args, **kwargs):
     return _concat_iterables_to_series(left, right)
 
 
-@execute_node.register(ops.ArrayConcat, np.ndarray, np.ndarray, [np.ndarray])
+@execute_node.register(
+    ops.ArrayConcat, (list, np.ndarray), (list, np.ndarray), [(list, np.ndarray)]
+)
 def execute_array_concat_scalar(op, left, right, *args, **kwargs):
     return np.concatenate([left, right, *args])
 
@@ -134,7 +136,7 @@ def execute_array_repeat(op, data, n, **kwargs):
     return pd.Series(np.tile(arr, n) for arr in data)
 
 
-@execute_node.register(ops.ArrayRepeat, np.ndarray, int)
+@execute_node.register(ops.ArrayRepeat, (list, np.ndarray), int)
 def execute_array_repeat_scalar(op, data, n, **kwargs):
     # Negative n will be treated as 0 (repeat will produce empty array)
     return np.tile(data, max(n, 0))
