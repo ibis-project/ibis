@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import atexit
 import contextlib
+import datetime
 import re
 from typing import TYPE_CHECKING, Any
 from urllib.parse import parse_qs, urlparse
@@ -239,8 +240,20 @@ class Backend(SQLGlotBackend):
             create_stmt_sql = create_stmt.sql(self.name)
 
             df = op.data.to_frame()
+            data = df.itertuples(index=False, name=None)
+
+            def process_item(item: Any):
+                """Handle inserting timestamps with timezones."""
+                if isinstance(item, datetime.datetime):
+                    if item.tzinfo is not None:
+                        item = item.tz_convert("UTC").tz_localize(None)
+                    return item.isoformat(sep=" ", timespec="milliseconds")
+                return item
+
+            rows = (tuple(map(process_item, row)) for row in data)
             with self._safe_raw_sql(create_stmt_sql):
-                self.con.import_from_pandas(df, name)
+                if not df.empty:
+                    self.con.ext.insert_multi(name, rows)
 
             atexit.register(self._clean_up_tmp_table, ident)
 
