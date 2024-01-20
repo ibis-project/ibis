@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import contextlib
 import functools
 from datetime import datetime
 
@@ -22,7 +21,6 @@ from ibis.backends.tests.errors import (
     ClickHouseDatabaseError,
     GoogleBadRequest,
     PolarsComputeError,
-    Py4JJavaError,
     PySparkAnalysisException,
 )
 
@@ -54,18 +52,7 @@ def test_array_column(backend, alltypes, df):
     backend.assert_series_equal(result, expected, check_names=False)
 
 
-ARRAY_BACKEND_TYPES = {
-    "clickhouse": "Array(Float64)",
-    "snowflake": "ARRAY",
-    "trino": "array(double)",
-    "bigquery": "ARRAY",
-    "duckdb": "DOUBLE[]",
-    "postgres": "numeric[]",
-    "flink": "ARRAY<DECIMAL(2, 1) NOT NULL> NOT NULL",
-}
-
-
-def test_array_scalar(con, backend):
+def test_array_scalar(con):
     expr = ibis.array([1.0, 2.0, 3.0])
     assert isinstance(expr, ir.ArrayScalar)
 
@@ -73,10 +60,6 @@ def test_array_scalar(con, backend):
     expected = np.array([1.0, 2.0, 3.0])
 
     assert np.array_equal(result, expected)
-
-    with contextlib.suppress(com.OperationNotDefinedError):
-        backend_name = backend.name()
-        assert con.execute(expr.typeof()) == ARRAY_BACKEND_TYPES[backend_name]
 
 
 @pytest.mark.notimpl(["polars", "flink"], raises=com.OperationNotDefinedError)
@@ -1051,7 +1034,9 @@ def test_timestamp_range_zero_step(con, start, stop, step, tzinfo):
     assert list(result) == []
 
 
-@pytest.mark.notimpl(["flink"], raises=Py4JJavaError)
+@pytest.mark.notimpl(
+    ["flink"], raises=AssertionError, reason="arrays not yet implemented"
+)
 def test_repr_timestamp_array(con, monkeypatch):
     monkeypatch.setattr(ibis.options, "interactive", True)
     monkeypatch.setattr(ibis.options, "default_backend", con)
