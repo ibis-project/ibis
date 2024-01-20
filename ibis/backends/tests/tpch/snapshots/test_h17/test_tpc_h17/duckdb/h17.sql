@@ -1,5 +1,5 @@
 SELECT
-  SUM(t0.l_extendedprice) / CAST(7.0 AS REAL(53)) AS avg_yearly
+  SUM(t0.l_extendedprice) / CAST(7.0 AS DOUBLE) AS avg_yearly
 FROM main.lineitem AS t0
 JOIN main.part AS t1
   ON t1.p_partkey = t0.l_partkey
@@ -12,4 +12,4 @@ WHERE
     FROM main.lineitem AS t0
     WHERE
       t0.l_partkey = t1.p_partkey
-  ) * CAST(0.2 AS REAL(53))
+  ) * CAST(0.2 AS DOUBLE)

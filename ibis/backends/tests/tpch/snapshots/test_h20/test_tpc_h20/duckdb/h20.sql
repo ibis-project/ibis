@@ -56,7 +56,7 @@ WITH t0 AS (
               AND t6.l_suppkey = t5.ps_suppkey
               AND t6.l_shipdate >= MAKE_DATE(1994, 1, 1)
               AND t6.l_shipdate < MAKE_DATE(1995, 1, 1)
-          ) * CAST(0.5 AS REAL(53))
+          ) * CAST(0.5 AS DOUBLE)
       ) AS t4
     )
 )

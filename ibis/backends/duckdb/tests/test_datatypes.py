@@ -1,11 +1,13 @@
 from __future__ import annotations
 
 import duckdb_engine
+import numpy as np
 import pytest
 import sqlalchemy as sa
 from packaging.version import parse as vparse
 from pytest import param
 
+import ibis
 import ibis.backends.base.sql.alchemy.datatypes as sat
 import ibis.common.exceptions as exc
 import ibis.expr.datatypes as dt
@@ -66,8 +68,6 @@ def test_parser(typ, expected):
 
 @pytest.mark.parametrize("uint_type", ["uint8", "uint16", "uint32", "uint64"])
 def test_cast_uints(uint_type, snapshot):
-    import ibis
-
     t = ibis.table(dict(a="int8"), name="t")
     snapshot.assert_match(
         str(ibis.to_sql(t.a.cast(uint_type), dialect="duckdb")), "out.sql"
@@ -75,8 +75,6 @@ def test_cast_uints(uint_type, snapshot):
 
 
 def test_null_dtype():
-    import ibis
-
     con = ibis.connect("duckdb://:memory:")
 
     t = ibis.memtable({"a": [None, None]})
@@ -110,10 +108,6 @@ def test_generate_quoted_struct():
     reason="mapping from UINTEGER query metadata fixed in 0.9.2",
 )
 def test_read_uint8_from_parquet(tmp_path):
-    import numpy as np
-
-    import ibis
-
     con = ibis.duckdb.connect()
 
     # There is an incorrect mapping in duckdb-engine from UInteger -> UInt8
@@ -129,3 +123,16 @@ def test_read_uint8_from_parquet(tmp_path):
     t2 = con.read_parquet(parqpath)
 
     assert t2.schema() == t.schema()
+
+
+@pytest.mark.parametrize("typ", ["float32", "float64"])
+def test_cast_to_floating_point_type(con, snapshot, typ):
+    expected = 1.0
+    value = ibis.literal(str(expected))
+    expr = value.cast(typ)
+
+    result = con.execute(expr)
+    assert result == expected
+
+    sql = str(ibis.to_sql(expr, dialect="duckdb"))
+    snapshot.assert_match(sql, "out.sql")

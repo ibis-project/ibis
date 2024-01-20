@@ -25,7 +25,7 @@ WITH t0 AS (
           AVG(t2.c_acctbal) AS avg_bal
         FROM main.customer AS t2
         WHERE
-          t2.c_acctbal > CAST(0.0 AS REAL(53))
+          t2.c_acctbal > CAST(0.0 AS DOUBLE)
           AND CASE
             WHEN (
               CAST(0 AS TINYINT) + 1 >= 1
