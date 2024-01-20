@@ -399,9 +399,9 @@ def _array_remove(t, op):
 
 operation_registry.update(
     {
-        ops.ArrayColumn: (
+        ops.Array: (
             lambda t, op: sa.cast(
-                sa.func.list_value(*map(t.translate, op.cols)),
+                sa.func.list_value(*map(t.translate, op.exprs)),
                 t.get_sqla_type(op.dtype),
             )
         ),

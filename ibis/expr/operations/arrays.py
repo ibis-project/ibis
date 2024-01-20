@@ -13,14 +13,16 @@ from ibis.expr.operations.core import Unary, Value
 
 
 @public
-class ArrayColumn(Value):
-    cols: VarTuple[Value]
+class Array(Value):
+    exprs: VarTuple[Value]
 
-    shape = ds.columnar
+    @attribute
+    def shape(self):
+        return rlz.highest_precedence_shape(self.exprs)
 
     @attribute
     def dtype(self):
-        return dt.Array(rlz.highest_precedence_dtype(self.cols))
+        return dt.Array(rlz.highest_precedence_dtype(self.exprs))
 
 
 @public

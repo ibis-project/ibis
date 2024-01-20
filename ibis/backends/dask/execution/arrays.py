@@ -34,7 +34,7 @@ collect_list = dd.Aggregation(
 )
 
 
-@execute_node.register(ops.ArrayColumn, tuple)
+@execute_node.register(ops.Array, tuple)
 def execute_array_column(op, cols, **kwargs):
     cols = [execute(arg, **kwargs) for arg in cols]
     df = dd.concat(cols, axis=1)

@@ -1020,28 +1020,13 @@ class ArrayColumn(Column, ArrayValue):
 def array(values: Iterable[V], type: str | dt.DataType | None = None) -> ArrayValue:
     """Create an array expression.
 
-    If the input expressions are all column expressions, then the output will
-    be an `ArrayColumn`. The input columns will be concatenated row-wise to
-    produce each array in the output array column. Each array will have length
-    _n_, where _n_ is the number of input columns. All input columns should be
-    of the same datatype.
-
-    If the input expressions are Python literals, then the output will be a
-    single `ArrayScalar` of length _n_, where _n_ is the number of input
-    values. This is equivalent to
-
-    ```python
-    values = [1, 2, 3]
-    ibis.literal(values)
-    ```
-
     Parameters
     ----------
     values
         An iterable of Ibis expressions or a list of Python literals
     type
         An instance of `ibis.expr.datatypes.DataType` or a string indicating
-        the ibis type of `value`.
+        the Ibis type of `value`.
 
     Returns
     -------
@@ -1086,7 +1071,7 @@ def array(values: Iterable[V], type: str | dt.DataType | None = None) -> ArrayVa
     └──────────────────────┘
     """
     if any(isinstance(value, Value) for value in values):
-        return ops.ArrayColumn(values).to_expr()
+        return ops.Array(values).to_expr()
     else:
         try:
             return literal(list(values), type=type)

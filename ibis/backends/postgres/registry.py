@@ -750,7 +750,7 @@ operation_registry.update(
         # array operations
         ops.ArrayLength: unary(sa.func.cardinality),
         ops.ArrayCollect: reduction(sa.func.array_agg),
-        ops.ArrayColumn: (lambda t, op: pg.array(list(map(t.translate, op.cols)))),
+        ops.Array: (lambda t, op: pg.array(list(map(t.translate, op.exprs)))),
         ops.ArraySlice: _array_slice(
             index_converter=_neg_idx_to_pos,
             array_length=sa.func.cardinality,

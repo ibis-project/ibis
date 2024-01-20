@@ -554,9 +554,9 @@ def _bit_agg(func: str):
     return _translate
 
 
-@translate_val.register(ops.ArrayColumn)
-def _array_column(op, *, cols, **_):
-    return F.array(*cols)
+@translate_val.register(ops.Array)
+def _array_column(op, *, exprs, **_):
+    return F.array(*exprs)
 
 
 @translate_val.register(ops.StructColumn)

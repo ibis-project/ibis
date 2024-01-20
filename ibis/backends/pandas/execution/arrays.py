@@ -17,7 +17,7 @@ if TYPE_CHECKING:
     from collections.abc import Collection
 
 
-@execute_node.register(ops.ArrayColumn, tuple)
+@execute_node.register(ops.Array, tuple)
 def execute_array_column(op, cols, **kwargs):
     cols = [execute(arg, **kwargs) for arg in cols]
     df = pd.concat(cols, axis=1)

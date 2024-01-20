@@ -457,9 +457,7 @@ operation_registry.update(
         ops.ArrayConcat: varargs(
             lambda *args: functools.reduce(sa.func.array_cat, args)
         ),
-        ops.ArrayColumn: lambda t, op: sa.func.array_construct(
-            *map(t.translate, op.cols)
-        ),
+        ops.Array: lambda t, op: sa.func.array_construct(*map(t.translate, op.exprs)),
         ops.ArraySlice: _array_slice,
         ops.ArrayCollect: reduction(
             lambda arg: sa.func.array_agg(

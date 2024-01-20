@@ -15,6 +15,7 @@ from pytest import param
 
 import ibis
 import ibis.common.exceptions as com
+import ibis.expr.datashape as ds
 import ibis.expr.datatypes as dt
 import ibis.expr.types as ir
 from ibis.backends.tests.errors import (
@@ -1070,3 +1071,40 @@ def test_unnest_range(con):
     result = con.execute(expr)
     expected = pd.DataFrame({"x": np.array([0, 1], dtype="int8"), "y": [1.0, 1.0]})
     tm.assert_frame_equal(result, expected)
+
+
+@pytest.mark.notyet(["flink"], raises=com.OperationNotDefinedError)
+@pytest.mark.broken(
+    ["pandas"], reason="expression input not supported", raises=TypeError
+)
+@pytest.mark.broken(
+    ["dask"], reason="expression input not supported", raises=AttributeError
+)
+@pytest.mark.parametrize(
+    ("input", "expected"),
+    [
+        param([1, ibis.literal(2)], [1, 2], id="int-int"),
+        param([1.0, ibis.literal(2)], [1.0, 2.0], id="float-int"),
+        param([1.0, ibis.literal(2.0)], [1.0, 2.0], id="float-float"),
+        param([1, ibis.literal(2.0)], [1.0, 2.0], id="int-float"),
+        param([ibis.literal(1), ibis.literal(2.0)], [1.0, 2.0], id="int-float-exprs"),
+        param(
+            [[1], ibis.literal([2])],
+            [[1], [2]],
+            id="array",
+            marks=[
+                pytest.mark.notyet(["bigquery"], raises=GoogleBadRequest),
+                pytest.mark.broken(
+                    ["polars"],
+                    reason="expression input not supported with nested arrays",
+                    raises=TypeError,
+                ),
+            ],
+        ),
+    ],
+)
+def test_array_literal_with_exprs(con, input, expected):
+    expr = ibis.array(input)
+    assert expr.op().shape == ds.scalar
+    result = list(con.execute(expr))
+    assert result == expected
