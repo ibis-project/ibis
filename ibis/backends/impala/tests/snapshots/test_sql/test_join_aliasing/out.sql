@@ -1,9 +1,26 @@
+WITH `t5` AS (
+  SELECT
+    `t2`.`d`,
+    CAST(`t2`.`d` / 15 AS BIGINT) AS `idx`,
+    `t2`.`c`,
+    COUNT(*) AS `row_count`
+  FROM (
+    SELECT
+      `t0`.`a` + 20 AS `d`,
+      `t0`.`c`
+    FROM `test_table` AS `t0`
+  ) AS `t2`
+  GROUP BY
+    1,
+    2,
+    3
+)
 SELECT
   `t6`.`d`,
   `t6`.`b`,
   `t6`.`count`,
   `t6`.`unique`,
-  `t13`.`total`
+  `t14`.`total`
 FROM (
   SELECT
     `t1`.`d`,
@@ -24,64 +41,32 @@ FROM (
 ) AS `t6`
 INNER JOIN (
   SELECT
-    `t11`.`d`,
-    `t11`.`idx`,
-    `t11`.`c`,
-    `t11`.`row_count`,
-    `t11`.`total`
+    `t12`.`d`,
+    `t12`.`idx`,
+    `t12`.`c`,
+    `t12`.`row_count`,
+    `t12`.`total`
   FROM (
     SELECT
-      `t7`.`d`,
-      `t7`.`idx`,
-      `t7`.`c`,
-      `t7`.`row_count`,
-      `t9`.`total`
-    FROM (
-      SELECT
-        `t2`.`d`,
-        CAST(`t2`.`d` / 15 AS BIGINT) AS `idx`,
-        `t2`.`c`,
-        COUNT(*) AS `row_count`
-      FROM (
-        SELECT
-          `t0`.`a` + 20 AS `d`,
-          `t0`.`c`
-        FROM `test_table` AS `t0`
-      ) AS `t2`
-      GROUP BY
-        1,
-        2,
-        3
-    ) AS `t7`
+      `t8`.`d`,
+      `t8`.`idx`,
+      `t8`.`c`,
+      `t8`.`row_count`,
+      `t10`.`total`
+    FROM `t5` AS `t8`
     INNER JOIN (
       SELECT
-        `t5`.`d`,
-        SUM(`t5`.`row_count`) AS `total`
-      FROM (
-        SELECT
-          `t2`.`d`,
-          CAST(`t2`.`d` / 15 AS BIGINT) AS `idx`,
-          `t2`.`c`,
-          COUNT(*) AS `row_count`
-        FROM (
-          SELECT
-            `t0`.`a` + 20 AS `d`,
-            `t0`.`c`
-          FROM `test_table` AS `t0`
-        ) AS `t2`
-        GROUP BY
-          1,
-          2,
-          3
-      ) AS `t5`
+        `t7`.`d`,
+        SUM(`t7`.`row_count`) AS `total`
+      FROM `t5` AS `t7`
       GROUP BY
         1
-    ) AS `t9`
-      ON `t7`.`d` = `t9`.`d`
-  ) AS `t11`
+    ) AS `t10`
+      ON `t8`.`d` = `t10`.`d`
+  ) AS `t12`
   WHERE
-    `t11`.`row_count` < (
-      `t11`.`total` / 2
+    `t12`.`row_count` < (
+      `t12`.`total` / 2
     )
-) AS `t13`
-  ON `t6`.`d` = `t13`.`d`
+) AS `t14`
+  ON `t6`.`d` = `t14`.`d`
