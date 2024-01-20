@@ -35,7 +35,7 @@ FROM (
         WHERE
           t4.n_name = 'GERMANY'
       ) AS anon_1
-    ) * CAST(0.0001 AS REAL(53))
+    ) * CAST(0.0001 AS DOUBLE)
 ) AS t1
 ORDER BY
   t1.value DESC

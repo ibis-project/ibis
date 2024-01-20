@@ -41,6 +41,19 @@ def compiles_array(element, compiler, **kw):
     return f"ARRAY({compiler.process(element.value_type, **kw)})"
 
 
+@compiles(sat.FLOAT, "duckdb")
+def compiles_float(element, compiler, **kw):
+    precision = element.precision
+    if precision is None or 1 <= precision <= 24:
+        return "FLOAT"
+    elif 24 < precision <= 53:
+        return "DOUBLE"
+    else:
+        raise ValueError(
+            "FLOAT precision must be between 1 and 53 inclusive, or `None`"
+        )
+
+
 class StructType(sat.UserDefinedType):
     cache_ok = True
 
