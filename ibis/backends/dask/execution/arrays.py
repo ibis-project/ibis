@@ -38,10 +38,8 @@ collect_list = dd.Aggregation(
 @execute_node.register(ops.Array, tuple)
 def execute_array_column(op, cols, **kwargs):
     vals = [execute(arg, **kwargs) for arg in cols]
-    # At least one of the values will be a Series.
-    # Otherwise op would be an ArrayScalar, not an ArrayColumn.
-    length = next(len(v) for v in vals if isinstance(v, dd.Series))
-    n_partitions = next(v.npartitions for v in vals if isinstance(v, dd.Series))
+    length = next((len(v) for v in vals if isinstance(v, dd.Series)), None)
+    n_partitions = next((v.npartitions for v in vals if isinstance(v, dd.Series)), None)
 
     def ensure_series(v):
         if isinstance(v, dd.Series):
@@ -49,6 +47,8 @@ def execute_array_column(op, cols, **kwargs):
         else:
             return dd.from_pandas(pd.Series([v] * length), npartitions=n_partitions)
 
+    if length is None:
+        return vals
     # dd.concat() can only handle array-likes.
     # If we're given a scalar, we need to broadcast it as a Series.
     df = dd.concat([ensure_series(v) for v in vals], axis=1)

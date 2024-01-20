@@ -54,6 +54,7 @@ def test_array_column(backend, alltypes, df):
     backend.assert_series_equal(result, expected, check_names=False)
 
 
+@pytest.mark.notimpl(["flink"], raises=com.OperationNotDefinedError)
 def test_array_scalar(con):
     expr = ibis.array([1.0, 2.0, 3.0])
     assert isinstance(expr, ir.ArrayScalar)
@@ -1060,9 +1061,6 @@ def test_unnest_range(con):
 
 
 @pytest.mark.notyet(["flink"], raises=com.OperationNotDefinedError)
-@pytest.mark.broken(
-    ["dask"], reason="expression input not supported", raises=AttributeError
-)
 @pytest.mark.parametrize(
     ("input", "expected"),
     [
