@@ -1,27 +1,21 @@
-SELECT
-  `t4`.`uuid`,
-  `t2`.`CountStar()`
-FROM (
-  SELECT
-    `t1`.`uuid`,
-    MAX(`t1`.`CountStar()`) AS `max_count`
-  FROM (
-    SELECT
-      `t0`.`uuid`,
-      COUNT(*) AS `CountStar()`
-    FROM `t` AS `t0`
-    GROUP BY
-      1
-  ) AS `t1`
-  GROUP BY
-    1
-) AS `t4`
-LEFT OUTER JOIN (
+WITH `t1` AS (
   SELECT
     `t0`.`uuid`,
     COUNT(*) AS `CountStar()`
   FROM `t` AS `t0`
   GROUP BY
     1
-) AS `t2`
-  ON `t4`.`uuid` = `t2`.`uuid`
+)
+SELECT
+  `t5`.`uuid`,
+  `t3`.`CountStar()`
+FROM (
+  SELECT
+    `t2`.`uuid`,
+    MAX(`t2`.`CountStar()`) AS `max_count`
+  FROM `t1` AS `t2`
+  GROUP BY
+    1
+) AS `t5`
+LEFT OUTER JOIN `t1` AS `t3`
+  ON `t5`.`uuid` = `t3`.`uuid`
