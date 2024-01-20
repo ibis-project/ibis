@@ -49,3 +49,39 @@ def test_load_examples(con, example, columns):
     t = getattr(ibis.examples, example).fetch(backend=con)
     assert t.columns == columns
     assert t.count().execute() > 0
+
+
+@pytest.mark.skipif(
+    (LINUX or MACOS) and SANDBOXED,
+    reason="nix on linux cannot download duckdb extensions or data due to sandboxing",
+)
+@pytest.mark.notimpl(
+    [
+        # everything except duckdb
+        "bigquery",
+        "clickhouse",
+        "dask",
+        "datafusion",
+        "druid",
+        "exasol",
+        "flink",
+        "impala",
+        "mssql",
+        "mysql",
+        "oracle",
+        "pandas",
+        "polars",
+        "postgres",
+        "pyspark",
+        "snowflake",
+        "sqlite",
+        "trino",
+    ]
+)
+def test_load_geo_example(con):
+    pytest.importorskip("geopandas")
+    pytest.importorskip("shapely")
+    pytest.importorskip("geoalchemy2")
+
+    t = ibis.examples.zones.fetch(backend=con)
+    assert t.geom.type().is_geospatial()
