@@ -1059,7 +1059,7 @@ def test_repr_timestamp_array(con, monkeypatch):
     assert ibis.options.interactive is True
     assert ibis.options.default_backend is con
     expr = ibis.array(pd.date_range("2010-01-01", "2010-01-03", freq="D").tolist())
-    assert repr(expr)
+    assert "No translation rule" not in repr(expr)
 
 
 @pytest.mark.notyet(
