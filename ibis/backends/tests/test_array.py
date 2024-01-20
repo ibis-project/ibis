@@ -1052,7 +1052,6 @@ def test_timestamp_range_zero_step(con, start, stop, step, tzinfo):
 
 
 @pytest.mark.notimpl(["flink"], raises=Py4JJavaError)
-@pytest.mark.notimpl(["datafusion"], raises=Exception)
 def test_repr_timestamp_array(con, monkeypatch):
     monkeypatch.setattr(ibis.options, "interactive", True)
     monkeypatch.setattr(ibis.options, "default_backend", con)
