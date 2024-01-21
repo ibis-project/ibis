@@ -22,14 +22,15 @@ def execute_array(op, cols, **kwargs):
     vals = [execute(arg, **kwargs) for arg in cols]
     length = next((len(v) for v in vals if isinstance(v, pd.Series)), None)
 
+    if length is None:
+        return vals
+
     def ensure_series(v):
         if isinstance(v, pd.Series):
             return v
         else:
             return pd.Series(v, index=range(length))
 
-    if length is None:
-        return vals
     # pd.concat() can only handle array-likes.
     # If we're given a scalar, we need to broadcast it as a Series.
     df = pd.concat([ensure_series(v) for v in vals], axis=1)
