@@ -395,8 +395,11 @@ def test_register_garbage(con, monkeypatch):
         ("functional_alltypes.parquet", "funk_all"),
     ],
 )
-@pytest.mark.notyet(
-    ["flink", "impala", "mssql", "mysql", "postgres", "sqlite", "trino"]
+@pytest.mark.notyet(["impala", "mssql", "mysql", "postgres", "sqlite", "trino"])
+@pytest.mark.notimpl(
+    ["flink"],
+    raises=ValueError,
+    reason="read_parquet() missing required argument: 'schema'",
 )
 def test_read_parquet(con, tmp_path, data_dir, fname, in_table_name):
     pq = pytest.importorskip("pyarrow.parquet")
@@ -427,7 +430,12 @@ def ft_data(data_dir):
 
 
 @pytest.mark.notyet(
-    ["flink", "impala", "mssql", "mysql", "pandas", "postgres", "sqlite", "trino"]
+    ["impala", "mssql", "mysql", "pandas", "postgres", "sqlite", "trino"]
+)
+@pytest.mark.notimpl(
+    ["flink"],
+    raises=ValueError,
+    reason="read_parquet() missing required argument: 'schema'",
 )
 def test_read_parquet_glob(con, tmp_path, ft_data):
     pq = pytest.importorskip("pyarrow.parquet")
@@ -446,7 +454,12 @@ def test_read_parquet_glob(con, tmp_path, ft_data):
 
 
 @pytest.mark.notyet(
-    ["flink", "impala", "mssql", "mysql", "pandas", "postgres", "sqlite", "trino"]
+    ["impala", "mssql", "mysql", "pandas", "postgres", "sqlite", "trino"]
+)
+@pytest.mark.notimpl(
+    ["flink"],
+    raises=ValueError,
+    reason="read_csv() missing required argument: 'schema'",
 )
 def test_read_csv_glob(con, tmp_path, ft_data):
     pc = pytest.importorskip("pyarrow.csv")
@@ -469,7 +482,6 @@ def test_read_csv_glob(con, tmp_path, ft_data):
         "clickhouse",
         "dask",
         "datafusion",
-        "flink",
         "impala",
         "mssql",
         "mysql",
@@ -478,6 +490,11 @@ def test_read_csv_glob(con, tmp_path, ft_data):
         "sqlite",
         "trino",
     ]
+)
+@pytest.mark.notimpl(
+    ["flink"],
+    raises=ValueError,
+    reason="read_json() missing required argument: 'schema'",
 )
 def test_read_json_glob(con, tmp_path, ft_data):
     nrows = len(ft_data)
@@ -522,8 +539,11 @@ DIAMONDS_COLUMN_TYPES = {
     "in_table_name",
     [param(None, id="default"), param("fancy_stones", id="file_name")],
 )
-@pytest.mark.notyet(
-    ["flink", "impala", "mssql", "mysql", "postgres", "sqlite", "trino"]
+@pytest.mark.notyet(["impala", "mssql", "mysql", "postgres", "sqlite", "trino"])
+@pytest.mark.notimpl(
+    ["flink"],
+    raises=ValueError,
+    reason="read_csv() missing required argument: 'schema'",
 )
 def test_read_csv(con, data_dir, in_table_name, num_diamonds):
     fname = "diamonds.csv"

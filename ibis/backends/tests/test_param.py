@@ -77,7 +77,6 @@ def test_scalar_param_array(con):
     [
         "datafusion",
         "impala",
-        "flink",
         "postgres",
         "pyspark",
         "druid",
@@ -244,7 +243,6 @@ def test_scalar_param_date(backend, alltypes, value):
         "exasol",
     ]
 )
-@pytest.mark.notimpl(["flink"], "WIP")
 def test_scalar_param_nested(con):
     param = ibis.param("struct<x: array<struct<y: array<double>>>>")
     value = OrderedDict([("x", [OrderedDict([("y", [1.0, 2.0, 3.0])])])])
