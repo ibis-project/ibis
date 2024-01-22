@@ -7,21 +7,21 @@ WITH "t8" AS (
   FROM "hive"."ibis_sf1"."nation" AS "t6"
 )
 SELECT
-  "t33"."o_year",
-  "t33"."mkt_share"
+  "t26"."o_year",
+  "t26"."mkt_share"
 FROM (
   SELECT
-    "t32"."o_year",
-    CAST(SUM("t32"."nation_volume") AS DOUBLE) / SUM("t32"."volume") AS "mkt_share"
+    "t25"."o_year",
+    CAST(SUM("t25"."nation_volume") AS DOUBLE) / SUM("t25"."volume") AS "mkt_share"
   FROM (
     SELECT
-      "t31"."o_year",
-      "t31"."volume",
-      "t31"."nation",
-      "t31"."r_name",
-      "t31"."o_orderdate",
-      "t31"."p_type",
-      CASE WHEN "t31"."nation" = 'BRAZIL' THEN "t31"."volume" ELSE 0 END AS "nation_volume"
+      "t24"."o_year",
+      "t24"."volume",
+      "t24"."nation",
+      "t24"."r_name",
+      "t24"."o_orderdate",
+      "t24"."p_type",
+      CASE WHEN "t24"."nation" = 'BRAZIL' THEN "t24"."volume" ELSE 0 END AS "nation_volume"
     FROM (
       SELECT
         EXTRACT(year FROM "t19"."o_orderdate") AS "o_year",
@@ -117,14 +117,14 @@ FROM (
         ON "t21"."n_regionkey" = "t14"."r_regionkey"
       INNER JOIN "t8" AS "t23"
         ON "t18"."s_nationkey" = "t23"."n_nationkey"
-    ) AS "t31"
+    ) AS "t24"
     WHERE
-      "t31"."r_name" = 'AMERICA'
-      AND "t31"."o_orderdate" BETWEEN FROM_ISO8601_DATE('1995-01-01') AND FROM_ISO8601_DATE('1996-12-31')
-      AND "t31"."p_type" = 'ECONOMY ANODIZED STEEL'
-  ) AS "t32"
+      "t24"."r_name" = 'AMERICA'
+      AND "t24"."o_orderdate" BETWEEN FROM_ISO8601_DATE('1995-01-01') AND FROM_ISO8601_DATE('1996-12-31')
+      AND "t24"."p_type" = 'ECONOMY ANODIZED STEEL'
+  ) AS "t25"
   GROUP BY
     1
-) AS "t33"
+) AS "t26"
 ORDER BY
-  "t33"."o_year" ASC
+  "t26"."o_year" ASC

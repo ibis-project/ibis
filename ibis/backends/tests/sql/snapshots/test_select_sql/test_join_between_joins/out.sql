@@ -3,8 +3,8 @@ SELECT
   t4.key2,
   t4.value1,
   t5.value2,
-  t11.value3,
-  t11.value4
+  t9.value3,
+  t9.value4
 FROM first AS t4
 INNER JOIN second AS t5
   ON t4.key1 = t5.key1
@@ -17,5 +17,5 @@ INNER JOIN (
   FROM third AS t6
   INNER JOIN fourth AS t7
     ON t6.key3 = t7.key3
-) AS t11
-  ON t4.key2 = t11.key2
+) AS t9
+  ON t4.key2 = t9.key2

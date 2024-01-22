@@ -10,4 +10,4 @@ FROM (
   FROM tpch_region AS t2
   INNER JOIN tpch_nation AS t3
     ON t2.r_regionkey = t3.n_regionkey
-) AS t5
+) AS t4

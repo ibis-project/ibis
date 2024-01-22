@@ -1,18 +1,18 @@
 SELECT
-  "t25"."nation",
-  "t25"."o_year",
-  "t25"."sum_profit"
+  "t20"."nation",
+  "t20"."o_year",
+  "t20"."sum_profit"
 FROM (
   SELECT
-    "t24"."nation",
-    "t24"."o_year",
-    SUM("t24"."amount") AS "sum_profit"
+    "t19"."nation",
+    "t19"."o_year",
+    SUM("t19"."amount") AS "sum_profit"
   FROM (
     SELECT
-      "t23"."amount",
-      "t23"."o_year",
-      "t23"."nation",
-      "t23"."p_name"
+      "t18"."amount",
+      "t18"."o_year",
+      "t18"."nation",
+      "t18"."p_name"
     FROM (
       SELECT
         (
@@ -104,14 +104,14 @@ FROM (
         FROM "SNOWFLAKE_SAMPLE_DATA"."TPCH_SF1"."NATION" AS "t5"
       ) AS "t17"
         ON "t13"."s_nationkey" = "t17"."n_nationkey"
-    ) AS "t23"
+    ) AS "t18"
     WHERE
-      "t23"."p_name" LIKE '%green%'
-  ) AS "t24"
+      "t18"."p_name" LIKE '%green%'
+  ) AS "t19"
   GROUP BY
     1,
     2
-) AS "t25"
+) AS "t20"
 ORDER BY
-  "t25"."nation" ASC,
-  "t25"."o_year" DESC NULLS LAST
+  "t20"."nation" ASC,
+  "t20"."o_year" DESC NULLS LAST

@@ -1,14 +1,14 @@
 SELECT
-  t7.c_count,
-  t7.custdist
+  t6.c_count,
+  t6.custdist
 FROM (
   SELECT
-    t6.c_count,
+    t5.c_count,
     COUNT(*) AS custdist
   FROM (
     SELECT
-      t5.c_custkey,
-      COUNT(t5.o_orderkey) AS c_count
+      t4.c_custkey,
+      COUNT(t4.o_orderkey) AS c_count
     FROM (
       SELECT
         t2.c_custkey,
@@ -33,13 +33,13 @@ FROM (
         ON t2.c_custkey = t3.o_custkey AND NOT (
           t3.o_comment LIKE '%special%requests%'
         )
-    ) AS t5
+    ) AS t4
     GROUP BY
       1
-  ) AS t6
+  ) AS t5
   GROUP BY
     1
-) AS t7
+) AS t6
 ORDER BY
-  t7.custdist DESC,
-  t7.c_count DESC
+  t6.custdist DESC,
+  t6.c_count DESC

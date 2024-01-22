@@ -1,30 +1,30 @@
 SELECT
-  "t11"."p_brand",
-  "t11"."p_type",
-  "t11"."p_size",
-  "t11"."supplier_cnt"
+  "t10"."p_brand",
+  "t10"."p_type",
+  "t10"."p_size",
+  "t10"."supplier_cnt"
 FROM (
   SELECT
-    "t10"."p_brand",
-    "t10"."p_type",
-    "t10"."p_size",
-    COUNT(DISTINCT "t10"."ps_suppkey") AS "supplier_cnt"
+    "t9"."p_brand",
+    "t9"."p_type",
+    "t9"."p_size",
+    COUNT(DISTINCT "t9"."ps_suppkey") AS "supplier_cnt"
   FROM (
     SELECT
-      "t9"."ps_partkey",
-      "t9"."ps_suppkey",
-      "t9"."ps_availqty",
-      "t9"."ps_supplycost",
-      "t9"."ps_comment",
-      "t9"."p_partkey",
-      "t9"."p_name",
-      "t9"."p_mfgr",
-      "t9"."p_brand",
-      "t9"."p_type",
-      "t9"."p_size",
-      "t9"."p_container",
-      "t9"."p_retailprice",
-      "t9"."p_comment"
+      "t8"."ps_partkey",
+      "t8"."ps_suppkey",
+      "t8"."ps_availqty",
+      "t8"."ps_supplycost",
+      "t8"."ps_comment",
+      "t8"."p_partkey",
+      "t8"."p_name",
+      "t8"."p_mfgr",
+      "t8"."p_brand",
+      "t8"."p_type",
+      "t8"."p_size",
+      "t8"."p_container",
+      "t8"."p_retailprice",
+      "t8"."p_comment"
     FROM (
       SELECT
         "t5"."ps_partkey",
@@ -64,15 +64,15 @@ FROM (
         FROM "SNOWFLAKE_SAMPLE_DATA"."TPCH_SF1"."PART" AS "t2"
       ) AS "t7"
         ON "t7"."p_partkey" = "t5"."ps_partkey"
-    ) AS "t9"
+    ) AS "t8"
     WHERE
-      "t9"."p_brand" <> 'Brand#45'
+      "t8"."p_brand" <> 'Brand#45'
       AND NOT (
-        "t9"."p_type" LIKE 'MEDIUM POLISHED%'
+        "t8"."p_type" LIKE 'MEDIUM POLISHED%'
       )
-      AND "t9"."p_size" IN (49, 14, 23, 45, 19, 3, 36, 9)
+      AND "t8"."p_size" IN (49, 14, 23, 45, 19, 3, 36, 9)
       AND NOT (
-        "t9"."ps_suppkey" IN (
+        "t8"."ps_suppkey" IN (
           SELECT
             "t1"."S_SUPPKEY" AS "s_suppkey"
           FROM "SNOWFLAKE_SAMPLE_DATA"."TPCH_SF1"."SUPPLIER" AS "t1"
@@ -80,14 +80,14 @@ FROM (
             "t1"."S_COMMENT" LIKE '%Customer%Complaints%'
         )
       )
-  ) AS "t10"
+  ) AS "t9"
   GROUP BY
     1,
     2,
     3
-) AS "t11"
+) AS "t10"
 ORDER BY
-  "t11"."supplier_cnt" DESC NULLS LAST,
-  "t11"."p_brand" ASC,
-  "t11"."p_type" ASC,
-  "t11"."p_size" ASC
+  "t10"."supplier_cnt" DESC NULLS LAST,
+  "t10"."p_brand" ASC,
+  "t10"."p_type" ASC,
+  "t10"."p_size" ASC
