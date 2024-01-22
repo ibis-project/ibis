@@ -1,19 +1,19 @@
 SELECT
-  t17.s_name,
-  t17.numwait
+  t14.s_name,
+  t14.numwait
 FROM (
   SELECT
-    t16.s_name,
+    t13.s_name,
     COUNT(*) AS numwait
   FROM (
     SELECT
-      t13.l1_orderkey,
-      t13.o_orderstatus,
-      t13.l_receiptdate,
-      t13.l_commitdate,
-      t13.l1_suppkey,
-      t13.s_name,
-      t13.n_name
+      t10.l1_orderkey,
+      t10.o_orderstatus,
+      t10.l_receiptdate,
+      t10.l_commitdate,
+      t10.l1_suppkey,
+      t10.s_name,
+      t10.n_name
     FROM (
       SELECT
         t5.l_orderkey AS l1_orderkey,
@@ -30,20 +30,20 @@ FROM (
         ON t8.o_orderkey = t5.l_orderkey
       INNER JOIN nation AS t9
         ON t4.s_nationkey = t9.n_nationkey
-    ) AS t13
+    ) AS t10
     WHERE
-      t13.o_orderstatus = 'F'
-      AND t13.l_receiptdate > t13.l_commitdate
-      AND t13.n_name = 'SAUDI ARABIA'
+      t10.o_orderstatus = 'F'
+      AND t10.l_receiptdate > t10.l_commitdate
+      AND t10.n_name = 'SAUDI ARABIA'
       AND EXISTS(
         SELECT
           CAST(1 AS TINYINT) AS "1"
         FROM lineitem AS t6
         WHERE
           (
-            t6.l_orderkey = t13.l1_orderkey
+            t6.l_orderkey = t10.l1_orderkey
           ) AND (
-            t6.l_suppkey <> t13.l1_suppkey
+            t6.l_suppkey <> t10.l1_suppkey
           )
       )
       AND NOT (
@@ -54,9 +54,9 @@ FROM (
           WHERE
             (
               (
-                t7.l_orderkey = t13.l1_orderkey
+                t7.l_orderkey = t10.l1_orderkey
               ) AND (
-                t7.l_suppkey <> t13.l1_suppkey
+                t7.l_suppkey <> t10.l1_suppkey
               )
             )
             AND (
@@ -64,11 +64,11 @@ FROM (
             )
         )
       )
-  ) AS t16
+  ) AS t13
   GROUP BY
     1
-) AS t17
+) AS t14
 ORDER BY
-  t17.numwait DESC,
-  t17.s_name ASC
+  t14.numwait DESC,
+  t14.s_name ASC
 LIMIT 100

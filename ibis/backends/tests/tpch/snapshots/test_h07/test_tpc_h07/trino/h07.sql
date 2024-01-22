@@ -7,25 +7,25 @@ WITH "t5" AS (
   FROM "hive"."ibis_sf1"."nation" AS "t4"
 )
 SELECT
-  "t25"."supp_nation",
-  "t25"."cust_nation",
-  "t25"."l_year",
-  "t25"."revenue"
+  "t20"."supp_nation",
+  "t20"."cust_nation",
+  "t20"."l_year",
+  "t20"."revenue"
 FROM (
   SELECT
-    "t24"."supp_nation",
-    "t24"."cust_nation",
-    "t24"."l_year",
-    SUM("t24"."volume") AS "revenue"
+    "t19"."supp_nation",
+    "t19"."cust_nation",
+    "t19"."l_year",
+    SUM("t19"."volume") AS "revenue"
   FROM (
     SELECT
-      "t23"."supp_nation",
-      "t23"."cust_nation",
-      "t23"."l_shipdate",
-      "t23"."l_extendedprice",
-      "t23"."l_discount",
-      "t23"."l_year",
-      "t23"."volume"
+      "t18"."supp_nation",
+      "t18"."cust_nation",
+      "t18"."l_shipdate",
+      "t18"."l_extendedprice",
+      "t18"."l_discount",
+      "t18"."l_year",
+      "t18"."volume"
     FROM (
       SELECT
         "t15"."n_name" AS "supp_nation",
@@ -100,32 +100,32 @@ FROM (
         ON "t11"."s_nationkey" = "t15"."n_nationkey"
       INNER JOIN "t5" AS "t17"
         ON "t14"."c_nationkey" = "t17"."n_nationkey"
-    ) AS "t23"
+    ) AS "t18"
     WHERE
       (
         (
           (
-            "t23"."cust_nation" = 'FRANCE'
+            "t18"."cust_nation" = 'FRANCE'
           ) AND (
-            "t23"."supp_nation" = 'GERMANY'
+            "t18"."supp_nation" = 'GERMANY'
           )
         )
         OR (
           (
-            "t23"."cust_nation" = 'GERMANY'
+            "t18"."cust_nation" = 'GERMANY'
           ) AND (
-            "t23"."supp_nation" = 'FRANCE'
+            "t18"."supp_nation" = 'FRANCE'
           )
         )
       )
-      AND "t23"."l_shipdate" BETWEEN FROM_ISO8601_DATE('1995-01-01') AND FROM_ISO8601_DATE('1996-12-31')
-  ) AS "t24"
+      AND "t18"."l_shipdate" BETWEEN FROM_ISO8601_DATE('1995-01-01') AND FROM_ISO8601_DATE('1996-12-31')
+  ) AS "t19"
   GROUP BY
     1,
     2,
     3
-) AS "t25"
+) AS "t20"
 ORDER BY
-  "t25"."supp_nation" ASC,
-  "t25"."cust_nation" ASC,
-  "t25"."l_year" ASC
+  "t20"."supp_nation" ASC,
+  "t20"."cust_nation" ASC,
+  "t20"."l_year" ASC

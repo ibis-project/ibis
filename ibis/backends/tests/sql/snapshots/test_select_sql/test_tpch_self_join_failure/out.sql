@@ -1,8 +1,8 @@
-WITH t12 AS (
+WITH t9 AS (
   SELECT
-    t11.region,
-    EXTRACT(year FROM t11.odate) AS year,
-    CAST(SUM(t11.amount) AS DOUBLE) AS total
+    t8.region,
+    EXTRACT(year FROM t8.odate) AS year,
+    CAST(SUM(t8.amount) AS DOUBLE) AS total
   FROM (
     SELECT
       t4.r_name AS region,
@@ -16,17 +16,17 @@ WITH t12 AS (
       ON t6.c_nationkey = t5.n_nationkey
     INNER JOIN tpch_orders AS t7
       ON t7.o_custkey = t6.c_custkey
-  ) AS t11
+  ) AS t8
   GROUP BY
     1,
     2
 )
 SELECT
-  t14.region,
-  t14.year,
-  t14.total - t16.total AS yoy_change
-FROM t12 AS t14
-INNER JOIN t12 AS t16
-  ON t14.year = (
-    t16.year - CAST(1 AS TINYINT)
+  t11.region,
+  t11.year,
+  t11.total - t13.total AS yoy_change
+FROM t9 AS t11
+INNER JOIN t9 AS t13
+  ON t11.year = (
+    t13.year - CAST(1 AS TINYINT)
   )

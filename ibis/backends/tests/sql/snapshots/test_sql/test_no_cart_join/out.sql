@@ -1,9 +1,9 @@
 SELECT
-  t7.ancestor_node_sort_order,
-  t7.n
+  t6.ancestor_node_sort_order,
+  t6.n
 FROM (
   SELECT
-    t6.ancestor_node_sort_order,
+    t5.ancestor_node_sort_order,
     CAST(1 AS TINYINT) AS n
   FROM (
     SELECT
@@ -29,9 +29,9 @@ FROM (
       FROM products AS t1
     ) AS t4
       ON t2.product_id = t4.descendant_node_natural_key
-  ) AS t6
+  ) AS t5
   GROUP BY
     1
-) AS t7
+) AS t6
 ORDER BY
-  t7.ancestor_node_sort_order ASC
+  t6.ancestor_node_sort_order ASC

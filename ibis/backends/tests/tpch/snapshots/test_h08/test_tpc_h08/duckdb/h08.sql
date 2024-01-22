@@ -1,19 +1,19 @@
 SELECT
-  t25.o_year,
-  t25.mkt_share
+  t18.o_year,
+  t18.mkt_share
 FROM (
   SELECT
-    t24.o_year,
-    SUM(t24.nation_volume) / SUM(t24.volume) AS mkt_share
+    t17.o_year,
+    SUM(t17.nation_volume) / SUM(t17.volume) AS mkt_share
   FROM (
     SELECT
-      t23.o_year,
-      t23.volume,
-      t23.nation,
-      t23.r_name,
-      t23.o_orderdate,
-      t23.p_type,
-      CASE WHEN t23.nation = 'BRAZIL' THEN t23.volume ELSE CAST(0 AS TINYINT) END AS nation_volume
+      t16.o_year,
+      t16.volume,
+      t16.nation,
+      t16.r_name,
+      t16.o_orderdate,
+      t16.p_type,
+      CASE WHEN t16.nation = 'BRAZIL' THEN t16.volume ELSE CAST(0 AS TINYINT) END AS nation_volume
     FROM (
       SELECT
         EXTRACT(year FROM t10.o_orderdate) AS o_year,
@@ -39,14 +39,14 @@ FROM (
         ON t12.n_regionkey = t14.r_regionkey
       INNER JOIN nation AS t15
         ON t9.s_nationkey = t15.n_nationkey
-    ) AS t23
+    ) AS t16
     WHERE
-      t23.r_name = 'AMERICA'
-      AND t23.o_orderdate BETWEEN MAKE_DATE(1995, 1, 1) AND MAKE_DATE(1996, 12, 31)
-      AND t23.p_type = 'ECONOMY ANODIZED STEEL'
-  ) AS t24
+      t16.r_name = 'AMERICA'
+      AND t16.o_orderdate BETWEEN MAKE_DATE(1995, 1, 1) AND MAKE_DATE(1996, 12, 31)
+      AND t16.p_type = 'ECONOMY ANODIZED STEEL'
+  ) AS t17
   GROUP BY
     1
-) AS t25
+) AS t18
 ORDER BY
-  t25.o_year ASC
+  t18.o_year ASC

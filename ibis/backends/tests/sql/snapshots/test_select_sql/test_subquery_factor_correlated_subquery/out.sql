@@ -1,15 +1,15 @@
 SELECT
-  t11.c_custkey,
-  t11.c_name,
-  t11.c_address,
-  t11.c_nationkey,
-  t11.c_phone,
-  t11.c_acctbal,
-  t11.c_mktsegment,
-  t11.c_comment,
-  t11.region,
-  t11.amount,
-  t11.odate
+  t8.c_custkey,
+  t8.c_name,
+  t8.c_address,
+  t8.c_nationkey,
+  t8.c_phone,
+  t8.c_acctbal,
+  t8.c_mktsegment,
+  t8.c_comment,
+  t8.region,
+  t8.amount,
+  t8.odate
 FROM (
   SELECT
     t6.c_custkey,
@@ -30,24 +30,24 @@ FROM (
     ON t6.c_nationkey = t5.n_nationkey
   INNER JOIN tpch_orders AS t7
     ON t7.o_custkey = t6.c_custkey
-) AS t11
+) AS t8
 WHERE
-  t11.amount > (
+  t8.amount > (
     SELECT
-      AVG(t13.amount) AS "Mean(amount)"
+      AVG(t10.amount) AS "Mean(amount)"
     FROM (
       SELECT
-        t12.c_custkey,
-        t12.c_name,
-        t12.c_address,
-        t12.c_nationkey,
-        t12.c_phone,
-        t12.c_acctbal,
-        t12.c_mktsegment,
-        t12.c_comment,
-        t12.region,
-        t12.amount,
-        t12.odate
+        t9.c_custkey,
+        t9.c_name,
+        t9.c_address,
+        t9.c_nationkey,
+        t9.c_phone,
+        t9.c_acctbal,
+        t9.c_mktsegment,
+        t9.c_comment,
+        t9.region,
+        t9.amount,
+        t9.odate
       FROM (
         SELECT
           t6.c_custkey,
@@ -68,9 +68,9 @@ WHERE
           ON t6.c_nationkey = t5.n_nationkey
         INNER JOIN tpch_orders AS t7
           ON t7.o_custkey = t6.c_custkey
-      ) AS t12
+      ) AS t9
       WHERE
-        t12.region = t11.region
-    ) AS t13
+        t9.region = t8.region
+    ) AS t10
   )
 LIMIT 10
