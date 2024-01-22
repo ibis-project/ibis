@@ -28,6 +28,9 @@ ORACLE_PORT = int(os.environ.get("IBIS_TEST_ORACLE_PORT", 1521))
 # ./createAppUser user pass ORACLE_DB
 # where ORACLE_DB is the same name you used in the Compose file.
 
+# Set to ensure decimals come back as decimals
+oracledb.defaults.fetch_decimals = True
+
 
 class TestConf(ServiceBackendTest):
     check_dtype = False

@@ -31,10 +31,6 @@ if TYPE_CHECKING:
     import pyrrow as pa
 
 
-# Set to ensure decimals come back as decimals
-oracledb.defaults.fetch_decimals = True
-
-
 class Backend(SQLGlotBackend):
     name = "oracle"
     compiler = OracleCompiler()
@@ -115,6 +111,9 @@ class Backend(SQLGlotBackend):
         # TODO: it would be great if this worked but it doesn't seem to do the trick
         # I had to hack in the commit lines to the compiler
         # self.con.autocommit = True
+
+        # Set to ensure decimals come back as decimals
+        oracledb.defaults.fetch_decimals = True
 
     def _from_url(self, url: str, **kwargs):
         return self.do_connect(user=url.username, password=url.password, dsn=url.host)

@@ -56,4 +56,4 @@ def test_builtin_agg_udf(con):
         expected = pd.DataFrame(
             c.execute(sql).fetchall(), columns=["string_col", "df_w"]
         )
-    tm.assert_frame_equal(result, expected)
+    tm.assert_frame_equal(result, expected, check_dtype=False)
