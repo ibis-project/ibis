@@ -31,6 +31,10 @@ if TYPE_CHECKING:
     import pyrrow as pa
 
 
+# Set to ensure decimals come back as decimals
+oracledb.defaults.fetch_decimals = True
+
+
 class Backend(SQLGlotBackend):
     name = "oracle"
     compiler = OracleCompiler()
