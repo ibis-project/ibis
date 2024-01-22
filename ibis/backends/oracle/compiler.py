@@ -146,6 +146,21 @@ class OracleCompiler(SQLGlotCompiler):
     def visit_node(self, op, **kwargs):
         return super().visit_node(op, **kwargs)
 
+    @visit_node.register(ops.Equals)
+    def visit_Equals(self, op, *, left, right):
+        # Oracle didn't have proper boolean types until recently and we handle them
+        # as integers so we end up with things like "t0"."bool_col" = 1 (for True)
+        # but then if we are testing that a boolean column IS True, it gets rendered as
+        # "t0"."bool_col" = 1 = 1
+        # so intercept that and change it to WHERE (bool_col = 1)
+        # TODO(gil): there must be a better way to do this
+        if op.dtype.is_boolean() and isinstance(right, sge.Boolean):
+            if right.this:
+                return left
+            else:
+                return sg.not_(left)
+        return super().visit_Equals(op, left=left, right=right)
+
     @visit_node.register(ops.Literal)
     def visit_Literal(self, op, *, value, dtype):
         # avoid casting NULL -- oracle handling for these casts is... complicated
