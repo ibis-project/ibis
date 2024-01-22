@@ -1100,7 +1100,6 @@ def test_pivot_wider(backend):
     ["druid", "impala", "oracle"],
     raises=(
         NotImplementedError,
-        sa.exc.ProgrammingError,
         OracleDatabaseError,
         com.OperationNotDefinedError,
     ),
