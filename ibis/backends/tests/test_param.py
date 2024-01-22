@@ -6,13 +6,13 @@ from collections import OrderedDict
 import numpy as np
 import pandas as pd
 import pytest
-import sqlalchemy as sa
 from pytest import param
+import sqlalchemy as sa
 
 import ibis
 import ibis.expr.datatypes as dt
 from ibis import _
-from ibis.backends.tests.errors import Py4JJavaError
+from ibis.backends.tests.errors import OracleDatabaseError, Py4JJavaError
 
 
 @pytest.mark.parametrize(
@@ -38,12 +38,12 @@ def test_floating_scalar_parameter(backend, alltypes, df, column, raw_value):
     [("2009-03-01", "2010-07-03"), ("2014-12-01", "2017-01-05")],
 )
 @pytest.mark.notimpl(["mssql", "trino", "druid"])
-@pytest.mark.broken(["oracle"], raises=sa.exc.DatabaseError)
 @pytest.mark.notimpl(
     ["risingwave"],
     raises=sa.exc.InternalError,
     reason="function make_date(integer, integer, integer) does not exist",
 )
+@pytest.mark.broken(["oracle"], raises=OracleDatabaseError)
 def test_date_scalar_parameter(backend, alltypes, start_string, end_string):
     start, end = ibis.param(dt.date), ibis.param(dt.date)
 

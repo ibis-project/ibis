@@ -22,6 +22,7 @@ import ibis.common.exceptions as com
 from ibis import util
 from ibis.backends.base import CanCreateDatabase, CanCreateSchema, _get_backend_names
 from ibis.conftest import WINDOWS
+from ibis.util import promote_tuple
 
 if TYPE_CHECKING:
     from collections.abc import Iterable
@@ -414,6 +415,13 @@ def pytest_runtest_call(item):
 
     backend = next(iter(backend))
 
+    def _filter_none_from_raises(kwargs):
+        # Filter out any None values from kwargs['raises']
+        # to cover any missing backend error types as defined in ibis/backends/tests/errors.py
+        if (raises := kwargs.get("raises")) is not None:
+            kwargs["raises"] = tuple(filter(None, promote_tuple(raises)))
+        return kwargs
+
     # Ibis hasn't exposed existing functionality
     # This xfails so that you know when it starts to pass
     for marker in item.iter_markers(name="notimpl"):
@@ -425,6 +433,7 @@ def pytest_runtest_call(item):
                 raise ValueError("notimpl requires a raises")
             kwargs = marker.kwargs.copy()
             kwargs.setdefault("reason", f"Feature not yet exposed in {backend}")
+            kwargs = _filter_none_from_raises(kwargs)
             item.add_marker(pytest.mark.xfail(**kwargs))
 
     # Functionality is unavailable upstream (but could be)
@@ -439,13 +448,16 @@ def pytest_runtest_call(item):
 
             kwargs = marker.kwargs.copy()
             kwargs.setdefault("reason", f"Feature not available upstream for {backend}")
+            kwargs = _filter_none_from_raises(kwargs)
             item.add_marker(pytest.mark.xfail(**kwargs))
 
     for marker in item.iter_markers(name="never"):
         if backend in marker.args[0]:
             if "reason" not in marker.kwargs.keys():
                 raise ValueError("never requires a reason")
-            item.add_marker(pytest.mark.xfail(**marker.kwargs))
+            kwargs = marker.kwargs.copy()
+            kwargs = _filter_none_from_raises(kwargs)
+            item.add_marker(pytest.mark.xfail(**kwargs))
 
     # Something has been exposed as broken by a new test and it shouldn't be
     # imperative for a contributor to fix it just because they happened to
@@ -460,10 +472,12 @@ def pytest_runtest_call(item):
 
             kwargs = marker.kwargs.copy()
             kwargs.setdefault("reason", f"Feature is failing on {backend}")
+            kwargs = _filter_none_from_raises(kwargs)
             item.add_marker(pytest.mark.xfail(**kwargs))
 
     for marker in item.iter_markers(name="xfail_version"):
         kwargs = marker.kwargs.copy()
+        kwargs = _filter_none_from_raises(kwargs)
         if backend not in kwargs:
             continue
 
@@ -549,7 +563,6 @@ def ddl_con(ddl_backend):
     params=_get_backends_to_test(
         keep=(
             "mssql",
-            "oracle",
             "risingwave",
             "sqlite",
         )
