@@ -123,7 +123,7 @@ def test_scalar_fillna_nullif(con, expr, expected):
         ),
     ],
 )
-@pytest.mark.notimpl(["mssql", "druid"])
+@pytest.mark.notimpl(["mssql"])
 @pytest.mark.notyet(["flink"], "NaN is not supported in Flink SQL", raises=ValueError)
 def test_isna(backend, alltypes, col, value, filt):
     table = alltypes.select(**{col: value})
