@@ -1,4 +1,4 @@
-WITH `t6` AS (
+WITH `t5` AS (
   SELECT
     `t4`.`userid`,
     `t4`.`movieid`,
@@ -17,29 +17,29 @@ WITH `t6` AS (
     ON `t4`.`movieid` = `t2`.`movieid`
 )
 SELECT
-  `t8`.`userid`,
-  `t8`.`movieid`,
-  `t8`.`rating`,
-  `t8`.`datetime`,
-  `t8`.`title`
+  `t7`.`userid`,
+  `t7`.`movieid`,
+  `t7`.`rating`,
+  `t7`.`datetime`,
+  `t7`.`title`
 FROM (
   SELECT
-    `t7`.`userid`,
-    `t7`.`movieid`,
-    `t7`.`rating`,
-    `t7`.`datetime`,
-    `t7`.`title`
-  FROM `t6` AS `t7`
+    `t6`.`userid`,
+    `t6`.`movieid`,
+    `t6`.`rating`,
+    `t6`.`datetime`,
+    `t6`.`title`
+  FROM `t5` AS `t6`
   WHERE
-    `t7`.`userid` = 118205 AND EXTRACT(year FROM `t7`.`datetime`) > 2001
-) AS `t8`
+    `t6`.`userid` = 118205 AND EXTRACT(year FROM `t6`.`datetime`) > 2001
+) AS `t7`
 WHERE
-  `t8`.`movieid` IN (
+  `t7`.`movieid` IN (
     SELECT
-      `t7`.`movieid`
-    FROM `t6` AS `t7`
+      `t6`.`movieid`
+    FROM `t5` AS `t6`
     WHERE
-      `t7`.`userid` = 118205
-      AND EXTRACT(year FROM `t7`.`datetime`) > 2001
-      AND EXTRACT(year FROM `t7`.`datetime`) < 2009
+      `t6`.`userid` = 118205
+      AND EXTRACT(year FROM `t6`.`datetime`) > 2001
+      AND EXTRACT(year FROM `t6`.`datetime`) < 2009
   )
