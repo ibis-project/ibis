@@ -1,6 +1,6 @@
-WITH `t12` AS (
+WITH `t9` AS (
   SELECT
-    EXTRACT(year FROM `t11`.`odate`) AS `year`,
+    EXTRACT(year FROM `t8`.`odate`) AS `year`,
     COUNT(*) AS `CountStar()`
   FROM (
     SELECT
@@ -22,14 +22,14 @@ WITH `t12` AS (
       ON `t6`.`c_nationkey` = `t5`.`n_nationkey`
     INNER JOIN `tpch_orders` AS `t7`
       ON `t7`.`o_custkey` = `t6`.`c_custkey`
-  ) AS `t11`
+  ) AS `t8`
   GROUP BY
     1
 )
 SELECT
-  `t14`.`year`,
-  `t14`.`CountStar()` AS `pre_count`,
-  `t16`.`CountStar()` AS `post_count`
-FROM `t12` AS `t14`
-INNER JOIN `t12` AS `t16`
-  ON `t14`.`year` = `t16`.`year`
+  `t11`.`year`,
+  `t11`.`CountStar()` AS `pre_count`,
+  `t13`.`CountStar()` AS `post_count`
+FROM `t9` AS `t11`
+INNER JOIN `t9` AS `t13`
+  ON `t11`.`year` = `t13`.`year`
