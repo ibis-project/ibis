@@ -139,10 +139,12 @@ def zscore(series):
 - The objects you receive as input arguments are either `pandas.Series` or
   Python/NumPy scalars.
 
-!!! warning "Keyword arguments must be given a default"
+::: {.callout-warning}
+## Keyword arguments must be given a default
 
-    Any keyword arguments must be given a default value or the function **will
-    not work**.
+Any keyword arguments must be given a default value or the function **will
+not work**.
+:::
 
 A common Python convention is to set the default value to `None` and
 handle setting it to something not `None` in the body of the function.
