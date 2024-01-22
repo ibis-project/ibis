@@ -1,53 +1,53 @@
 SELECT
-  t12.c_name,
-  t12.c_custkey,
-  t12.o_orderkey,
-  t12.o_orderdate,
-  t12.o_totalprice,
-  t12.sum_qty
+  t10.c_name,
+  t10.c_custkey,
+  t10.o_orderkey,
+  t10.o_orderdate,
+  t10.o_totalprice,
+  t10.sum_qty
 FROM (
   SELECT
-    t11.c_name,
-    t11.c_custkey,
-    t11.o_orderkey,
-    t11.o_orderdate,
-    t11.o_totalprice,
-    SUM(t11.l_quantity) AS sum_qty
+    t9.c_name,
+    t9.c_custkey,
+    t9.o_orderkey,
+    t9.o_orderdate,
+    t9.o_totalprice,
+    SUM(t9.l_quantity) AS sum_qty
   FROM (
     SELECT
-      t9.c_custkey,
-      t9.c_name,
-      t9.c_address,
-      t9.c_nationkey,
-      t9.c_phone,
-      t9.c_acctbal,
-      t9.c_mktsegment,
-      t9.c_comment,
-      t9.o_orderkey,
-      t9.o_custkey,
-      t9.o_orderstatus,
-      t9.o_totalprice,
-      t9.o_orderdate,
-      t9.o_orderpriority,
-      t9.o_clerk,
-      t9.o_shippriority,
-      t9.o_comment,
-      t9.l_orderkey,
-      t9.l_partkey,
-      t9.l_suppkey,
-      t9.l_linenumber,
-      t9.l_quantity,
-      t9.l_extendedprice,
-      t9.l_discount,
-      t9.l_tax,
-      t9.l_returnflag,
-      t9.l_linestatus,
-      t9.l_shipdate,
-      t9.l_commitdate,
-      t9.l_receiptdate,
-      t9.l_shipinstruct,
-      t9.l_shipmode,
-      t9.l_comment
+      t7.c_custkey,
+      t7.c_name,
+      t7.c_address,
+      t7.c_nationkey,
+      t7.c_phone,
+      t7.c_acctbal,
+      t7.c_mktsegment,
+      t7.c_comment,
+      t7.o_orderkey,
+      t7.o_custkey,
+      t7.o_orderstatus,
+      t7.o_totalprice,
+      t7.o_orderdate,
+      t7.o_orderpriority,
+      t7.o_clerk,
+      t7.o_shippriority,
+      t7.o_comment,
+      t7.l_orderkey,
+      t7.l_partkey,
+      t7.l_suppkey,
+      t7.l_linenumber,
+      t7.l_quantity,
+      t7.l_extendedprice,
+      t7.l_discount,
+      t7.l_tax,
+      t7.l_returnflag,
+      t7.l_linestatus,
+      t7.l_shipdate,
+      t7.l_commitdate,
+      t7.l_receiptdate,
+      t7.l_shipinstruct,
+      t7.l_shipmode,
+      t7.l_comment
     FROM (
       SELECT
         t3.c_custkey,
@@ -88,9 +88,9 @@ FROM (
         ON t3.c_custkey = t4.o_custkey
       INNER JOIN lineitem AS t5
         ON t4.o_orderkey = t5.l_orderkey
-    ) AS t9
+    ) AS t7
     WHERE
-      t9.o_orderkey IN (
+      t7.o_orderkey IN (
         SELECT
           t6.l_orderkey
         FROM (
@@ -104,15 +104,15 @@ FROM (
         WHERE
           t6.qty_sum > CAST(300 AS SMALLINT)
       )
-  ) AS t11
+  ) AS t9
   GROUP BY
     1,
     2,
     3,
     4,
     5
-) AS t12
+) AS t10
 ORDER BY
-  t12.o_totalprice DESC,
-  t12.o_orderdate ASC
+  t10.o_totalprice DESC,
+  t10.o_orderdate ASC
 LIMIT 100

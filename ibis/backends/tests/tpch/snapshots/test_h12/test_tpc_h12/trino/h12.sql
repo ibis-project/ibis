@@ -1,43 +1,43 @@
 SELECT
-  "t9"."l_shipmode",
-  "t9"."high_line_count",
-  "t9"."low_line_count"
+  "t8"."l_shipmode",
+  "t8"."high_line_count",
+  "t8"."low_line_count"
 FROM (
   SELECT
-    "t8"."l_shipmode",
+    "t7"."l_shipmode",
     SUM(
-      CASE "t8"."o_orderpriority" WHEN '1-URGENT' THEN 1 WHEN '2-HIGH' THEN 1 ELSE 0 END
+      CASE "t7"."o_orderpriority" WHEN '1-URGENT' THEN 1 WHEN '2-HIGH' THEN 1 ELSE 0 END
     ) AS "high_line_count",
     SUM(
-      CASE "t8"."o_orderpriority" WHEN '1-URGENT' THEN 0 WHEN '2-HIGH' THEN 0 ELSE 1 END
+      CASE "t7"."o_orderpriority" WHEN '1-URGENT' THEN 0 WHEN '2-HIGH' THEN 0 ELSE 1 END
     ) AS "low_line_count"
   FROM (
     SELECT
-      "t7"."o_orderkey",
-      "t7"."o_custkey",
-      "t7"."o_orderstatus",
-      "t7"."o_totalprice",
-      "t7"."o_orderdate",
-      "t7"."o_orderpriority",
-      "t7"."o_clerk",
-      "t7"."o_shippriority",
-      "t7"."o_comment",
-      "t7"."l_orderkey",
-      "t7"."l_partkey",
-      "t7"."l_suppkey",
-      "t7"."l_linenumber",
-      "t7"."l_quantity",
-      "t7"."l_extendedprice",
-      "t7"."l_discount",
-      "t7"."l_tax",
-      "t7"."l_returnflag",
-      "t7"."l_linestatus",
-      "t7"."l_shipdate",
-      "t7"."l_commitdate",
-      "t7"."l_receiptdate",
-      "t7"."l_shipinstruct",
-      "t7"."l_shipmode",
-      "t7"."l_comment"
+      "t6"."o_orderkey",
+      "t6"."o_custkey",
+      "t6"."o_orderstatus",
+      "t6"."o_totalprice",
+      "t6"."o_orderdate",
+      "t6"."o_orderpriority",
+      "t6"."o_clerk",
+      "t6"."o_shippriority",
+      "t6"."o_comment",
+      "t6"."l_orderkey",
+      "t6"."l_partkey",
+      "t6"."l_suppkey",
+      "t6"."l_linenumber",
+      "t6"."l_quantity",
+      "t6"."l_extendedprice",
+      "t6"."l_discount",
+      "t6"."l_tax",
+      "t6"."l_returnflag",
+      "t6"."l_linestatus",
+      "t6"."l_shipdate",
+      "t6"."l_commitdate",
+      "t6"."l_receiptdate",
+      "t6"."l_shipinstruct",
+      "t6"."l_shipmode",
+      "t6"."l_comment"
     FROM (
       SELECT
         "t4"."o_orderkey",
@@ -99,16 +99,16 @@ FROM (
         FROM "hive"."ibis_sf1"."lineitem" AS "t1"
       ) AS "t5"
         ON "t4"."o_orderkey" = "t5"."l_orderkey"
-    ) AS "t7"
+    ) AS "t6"
     WHERE
-      "t7"."l_shipmode" IN ('MAIL', 'SHIP')
-      AND "t7"."l_commitdate" < "t7"."l_receiptdate"
-      AND "t7"."l_shipdate" < "t7"."l_commitdate"
-      AND "t7"."l_receiptdate" >= FROM_ISO8601_DATE('1994-01-01')
-      AND "t7"."l_receiptdate" < FROM_ISO8601_DATE('1995-01-01')
-  ) AS "t8"
+      "t6"."l_shipmode" IN ('MAIL', 'SHIP')
+      AND "t6"."l_commitdate" < "t6"."l_receiptdate"
+      AND "t6"."l_shipdate" < "t6"."l_commitdate"
+      AND "t6"."l_receiptdate" >= FROM_ISO8601_DATE('1994-01-01')
+      AND "t6"."l_receiptdate" < FROM_ISO8601_DATE('1995-01-01')
+  ) AS "t7"
   GROUP BY
     1
-) AS "t9"
+) AS "t8"
 ORDER BY
-  "t9"."l_shipmode" ASC
+  "t8"."l_shipmode" ASC

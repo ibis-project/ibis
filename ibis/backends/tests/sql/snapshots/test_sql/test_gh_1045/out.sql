@@ -1,13 +1,13 @@
 SELECT
   t5.t1_id1,
   t5.t1_val1,
-  t10.id3,
-  t10.val2,
-  t10.dt,
-  t10.t3_val2,
-  t10.id2a,
-  t10.id2b,
-  t10.val2_right
+  t9.id3,
+  t9.val2,
+  t9.dt,
+  t9.t3_val2,
+  t9.id2a,
+  t9.id2b,
+  t9.val2_right
 FROM (
   SELECT
     t0.id1 AS t1_id1,
@@ -33,5 +33,5 @@ LEFT OUTER JOIN (
   ) AS t7
   INNER JOIN test2 AS t3
     ON t3.id2b = t7.id3
-) AS t10
-  ON t5.t1_id1 = t10.id2a
+) AS t9
+  ON t5.t1_id1 = t9.id2a

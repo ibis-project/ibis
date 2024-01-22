@@ -1,6 +1,6 @@
 SELECT
-  t10.s_name,
-  t10.s_address
+  t9.s_name,
+  t9.s_address
 FROM (
   SELECT
     t5.s_suppkey,
@@ -17,10 +17,10 @@ FROM (
   FROM supplier AS t5
   INNER JOIN nation AS t6
     ON t5.s_nationkey = t6.n_nationkey
-) AS t10
+) AS t9
 WHERE
-  t10.n_name = 'CANADA'
-  AND t10.s_suppkey IN (
+  t9.n_name = 'CANADA'
+  AND t9.s_suppkey IN (
     SELECT
       t1.ps_suppkey
     FROM partsupp AS t1
@@ -65,4 +65,4 @@ WHERE
       )
   )
 ORDER BY
-  t10.s_name ASC
+  t9.s_name ASC

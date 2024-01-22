@@ -1,9 +1,9 @@
 SELECT
-  t6.on,
-  t6.by,
-  t6.on_right,
-  t6.by_right,
-  t6.val
+  t5.on,
+  t5.by,
+  t5.on_right,
+  t5.by_right,
+  t5.val
 FROM (
   SELECT
     t2.on,
@@ -14,9 +14,9 @@ FROM (
   FROM left AS t2
   LEFT OUTER JOIN right AS t3
     ON t2.by = t3.by
-) AS t6
+) AS t5
 WHERE
-  t6.on_right = (
+  t5.on_right = (
     SELECT
       MAX(t4.on) AS "Max(on)"
     FROM (

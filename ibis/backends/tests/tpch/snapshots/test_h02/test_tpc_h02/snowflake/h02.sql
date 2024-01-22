@@ -1,12 +1,12 @@
 SELECT
-  "t26"."s_acctbal",
-  "t26"."s_name",
-  "t26"."n_name",
-  "t26"."p_partkey",
-  "t26"."p_mfgr",
-  "t26"."s_address",
-  "t26"."s_phone",
-  "t26"."s_comment"
+  "t19"."s_acctbal",
+  "t19"."s_name",
+  "t19"."n_name",
+  "t19"."p_partkey",
+  "t19"."p_mfgr",
+  "t19"."s_address",
+  "t19"."s_phone",
+  "t19"."s_comment"
 FROM (
   SELECT
     "t10"."p_partkey",
@@ -89,35 +89,35 @@ FROM (
     FROM "SNOWFLAKE_SAMPLE_DATA"."TPCH_SF1"."REGION" AS "t4"
   ) AS "t17"
     ON "t15"."n_regionkey" = "t17"."r_regionkey"
-) AS "t26"
+) AS "t19"
 WHERE
-  "t26"."p_size" = 15
-  AND "t26"."p_type" LIKE '%BRASS'
-  AND "t26"."r_name" = 'EUROPE'
-  AND "t26"."ps_supplycost" = (
+  "t19"."p_size" = 15
+  AND "t19"."p_type" LIKE '%BRASS'
+  AND "t19"."r_name" = 'EUROPE'
+  AND "t19"."ps_supplycost" = (
     SELECT
-      MIN("t28"."ps_supplycost") AS "Min(ps_supplycost)"
+      MIN("t21"."ps_supplycost") AS "Min(ps_supplycost)"
     FROM (
       SELECT
-        "t27"."ps_partkey",
-        "t27"."ps_suppkey",
-        "t27"."ps_availqty",
-        "t27"."ps_supplycost",
-        "t27"."ps_comment",
-        "t27"."s_suppkey",
-        "t27"."s_name",
-        "t27"."s_address",
-        "t27"."s_nationkey",
-        "t27"."s_phone",
-        "t27"."s_acctbal",
-        "t27"."s_comment",
-        "t27"."n_nationkey",
-        "t27"."n_name",
-        "t27"."n_regionkey",
-        "t27"."n_comment",
-        "t27"."r_regionkey",
-        "t27"."r_name",
-        "t27"."r_comment"
+        "t20"."ps_partkey",
+        "t20"."ps_suppkey",
+        "t20"."ps_availqty",
+        "t20"."ps_supplycost",
+        "t20"."ps_comment",
+        "t20"."s_suppkey",
+        "t20"."s_name",
+        "t20"."s_address",
+        "t20"."s_nationkey",
+        "t20"."s_phone",
+        "t20"."s_acctbal",
+        "t20"."s_comment",
+        "t20"."n_nationkey",
+        "t20"."n_name",
+        "t20"."n_regionkey",
+        "t20"."n_comment",
+        "t20"."r_regionkey",
+        "t20"."r_name",
+        "t20"."r_comment"
       FROM (
         SELECT
           "t12"."ps_partkey",
@@ -177,14 +177,14 @@ WHERE
           FROM "SNOWFLAKE_SAMPLE_DATA"."TPCH_SF1"."REGION" AS "t4"
         ) AS "t18"
           ON "t16"."n_regionkey" = "t18"."r_regionkey"
-      ) AS "t27"
+      ) AS "t20"
       WHERE
-        "t27"."r_name" = 'EUROPE' AND "t26"."p_partkey" = "t27"."ps_partkey"
-    ) AS "t28"
+        "t20"."r_name" = 'EUROPE' AND "t19"."p_partkey" = "t20"."ps_partkey"
+    ) AS "t21"
   )
 ORDER BY
-  "t26"."s_acctbal" DESC NULLS LAST,
-  "t26"."n_name" ASC,
-  "t26"."s_name" ASC,
-  "t26"."p_partkey" ASC
+  "t19"."s_acctbal" DESC NULLS LAST,
+  "t19"."n_name" ASC,
+  "t19"."s_name" ASC,
+  "t19"."p_partkey" ASC
 LIMIT 100
