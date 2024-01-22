@@ -112,3 +112,8 @@ try:
     from pydruid.db.exceptions import ProgrammingError as PyDruidProgrammingError
 except ImportError:
     PyDruidProgrammingError = None
+
+try:
+    from oracledb.exceptions import DatabaseError as OracleDatabaseError
+except ImportError:
+    OracleDatabaseError = None

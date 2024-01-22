@@ -11,7 +11,11 @@ from pytest import param
 import ibis
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
-from ibis.backends.tests.errors import ClickHouseDatabaseError, PyDruidProgrammingError
+from ibis.backends.tests.errors import (
+    ClickHouseDatabaseError,
+    OracleDatabaseError,
+    PyDruidProgrammingError,
+)
 from ibis.common.annotations import ValidationError
 
 
@@ -52,7 +56,7 @@ from ibis.common.annotations import ValidationError
             marks=[
                 pytest.mark.broken(
                     ["oracle"],
-                    raises=sa.exc.DatabaseError,
+                    raises=OracleDatabaseError,
                     reason="ORA-01741: illegal zero length identifier",
                 ),
                 pytest.mark.broken(
@@ -80,7 +84,7 @@ from ibis.common.annotations import ValidationError
             marks=[
                 pytest.mark.broken(
                     ["oracle"],
-                    raises=sa.exc.DatabaseError,
+                    raises=OracleDatabaseError,
                     reason="ORA-25716",
                 ),
                 pytest.mark.broken(
@@ -202,7 +206,7 @@ def uses_java_re(t):
             id="rlike",
             marks=[
                 pytest.mark.notimpl(
-                    ["mssql", "oracle", "exasol"], raises=com.OperationNotDefinedError
+                    ["mssql", "exasol"], raises=com.OperationNotDefinedError
                 ),
             ],
         ),
@@ -212,7 +216,7 @@ def uses_java_re(t):
             id="re_search_substring",
             marks=[
                 pytest.mark.notimpl(
-                    ["mssql", "oracle", "exasol"], raises=com.OperationNotDefinedError
+                    ["mssql", "exasol"], raises=com.OperationNotDefinedError
                 ),
             ],
         ),
@@ -222,7 +226,7 @@ def uses_java_re(t):
             id="re_search",
             marks=[
                 pytest.mark.notimpl(
-                    ["mssql", "oracle", "exasol"], raises=com.OperationNotDefinedError
+                    ["mssql", "exasol"], raises=com.OperationNotDefinedError
                 ),
             ],
         ),
@@ -234,7 +238,7 @@ def uses_java_re(t):
             id="re_search_posix",
             marks=[
                 pytest.mark.notimpl(
-                    ["mssql", "oracle", "exasol"],
+                    ["mssql", "exasol"],
                     raises=com.OperationNotDefinedError,
                 ),
                 pytest.mark.never(
@@ -250,7 +254,7 @@ def uses_java_re(t):
             id="re_extract",
             marks=[
                 pytest.mark.notimpl(
-                    ["mssql", "oracle", "exasol"], raises=com.OperationNotDefinedError
+                    ["mssql", "exasol"], raises=com.OperationNotDefinedError
                 ),
                 pytest.mark.notimpl(
                     ["risingwave"],
@@ -265,7 +269,7 @@ def uses_java_re(t):
             id="re_extract_group",
             marks=[
                 pytest.mark.notimpl(
-                    ["mssql", "oracle", "exasol"], raises=com.OperationNotDefinedError
+                    ["mssql", "exasol"], raises=com.OperationNotDefinedError
                 ),
                 pytest.mark.notimpl(
                     ["risingwave"],
@@ -282,7 +286,7 @@ def uses_java_re(t):
             id="re_extract_posix",
             marks=[
                 pytest.mark.notimpl(
-                    ["mssql", "oracle", "exasol"], raises=com.OperationNotDefinedError
+                    ["mssql", "exasol"], raises=com.OperationNotDefinedError
                 ),
                 pytest.mark.notimpl(
                     ["druid"], reason="No posix support", raises=AssertionError
@@ -300,7 +304,7 @@ def uses_java_re(t):
             id="re_extract_whole_group",
             marks=[
                 pytest.mark.notimpl(
-                    ["mssql", "oracle", "exasol"], raises=com.OperationNotDefinedError
+                    ["mssql", "exasol"], raises=com.OperationNotDefinedError
                 ),
                 pytest.mark.notimpl(
                     ["risingwave"],
@@ -317,7 +321,7 @@ def uses_java_re(t):
             id="re_extract_group_1",
             marks=[
                 pytest.mark.notimpl(
-                    ["mssql", "oracle", "exasol"], raises=com.OperationNotDefinedError
+                    ["mssql", "exasol"], raises=com.OperationNotDefinedError
                 ),
                 pytest.mark.notimpl(
                     ["risingwave"],
@@ -334,7 +338,7 @@ def uses_java_re(t):
             id="re_extract_group_2",
             marks=[
                 pytest.mark.notimpl(
-                    ["mssql", "oracle", "exasol"], raises=com.OperationNotDefinedError
+                    ["mssql", "exasol"], raises=com.OperationNotDefinedError
                 ),
                 pytest.mark.notimpl(
                     ["risingwave"],
@@ -351,7 +355,7 @@ def uses_java_re(t):
             id="re_extract_group_3",
             marks=[
                 pytest.mark.notimpl(
-                    ["mssql", "oracle", "exasol"], raises=com.OperationNotDefinedError
+                    ["mssql", "exasol"], raises=com.OperationNotDefinedError
                 ),
                 pytest.mark.notimpl(
                     ["risingwave"],
@@ -366,7 +370,7 @@ def uses_java_re(t):
             id="re_extract_group_at_beginning",
             marks=[
                 pytest.mark.notimpl(
-                    ["mssql", "oracle", "exasol"], raises=com.OperationNotDefinedError
+                    ["mssql", "exasol"], raises=com.OperationNotDefinedError
                 ),
                 pytest.mark.notimpl(
                     ["risingwave"],
@@ -381,7 +385,7 @@ def uses_java_re(t):
             id="re_extract_group_at_end",
             marks=[
                 pytest.mark.notimpl(
-                    ["mssql", "oracle", "exasol"], raises=com.OperationNotDefinedError
+                    ["mssql", "exasol"], raises=com.OperationNotDefinedError
                 ),
                 pytest.mark.notimpl(
                     ["risingwave"],
@@ -398,7 +402,7 @@ def uses_java_re(t):
             id="re_replace_posix",
             marks=[
                 pytest.mark.notimpl(
-                    ["mysql", "mssql", "druid", "oracle", "exasol"],
+                    ["mysql", "mssql", "druid", "exasol"],
                     raises=com.OperationNotDefinedError,
                 ),
             ],
@@ -409,7 +413,7 @@ def uses_java_re(t):
             id="re_replace",
             marks=[
                 pytest.mark.notimpl(
-                    ["mysql", "mssql", "druid", "oracle", "exasol"],
+                    ["mysql", "mssql", "druid", "exasol"],
                     raises=com.OperationNotDefinedError,
                 ),
             ],
@@ -420,7 +424,7 @@ def uses_java_re(t):
             id="repeat_method",
             marks=pytest.mark.notimpl(
                 ["oracle"],
-                raises=sa.exc.DatabaseError,
+                raises=OracleDatabaseError,
                 reason="ORA-00904: REPEAT invalid identifier",
             ),
         ),
@@ -430,7 +434,7 @@ def uses_java_re(t):
             id="repeat_left",
             marks=pytest.mark.notimpl(
                 ["oracle"],
-                raises=sa.exc.DatabaseError,
+                raises=OracleDatabaseError,
                 reason="ORA-00904: REPEAT invalid identifier",
             ),
         ),
@@ -440,7 +444,7 @@ def uses_java_re(t):
             id="repeat_right",
             marks=pytest.mark.notimpl(
                 ["oracle"],
-                raises=sa.exc.DatabaseError,
+                raises=OracleDatabaseError,
                 reason="ORA-00904: REPEAT invalid identifier",
             ),
         ),
@@ -450,7 +454,7 @@ def uses_java_re(t):
             id="translate",
             marks=[
                 pytest.mark.notimpl(
-                    ["mssql", "mysql", "polars", "druid", "oracle"],
+                    ["mssql", "mysql", "polars", "druid"],
                     raises=com.OperationNotDefinedError,
                 ),
                 pytest.mark.notyet(
@@ -826,7 +830,7 @@ def test_string(backend, alltypes, df, result_func, expected_func):
 
 
 @pytest.mark.notimpl(
-    ["mysql", "mssql", "druid", "oracle", "exasol"],
+    ["mysql", "mssql", "druid", "exasol"],
     raises=com.OperationNotDefinedError,
 )
 @pytest.mark.broken(
@@ -842,11 +846,6 @@ def test_re_replace_global(con):
 
 @pytest.mark.broken(["mssql"], raises=sa.exc.ProgrammingError)
 @pytest.mark.notimpl(["druid"], raises=ValidationError)
-@pytest.mark.broken(
-    ["oracle"],
-    raises=sa.exc.DatabaseError,
-    reason="ORA-61801: only boolean column or attribute can be used as a predicate",
-)
 def test_substr_with_null_values(backend, alltypes, df):
     table = alltypes.mutate(
         substr_col_null=ibis.case()
@@ -984,7 +983,7 @@ def test_array_string_join(con):
 
 
 @pytest.mark.notimpl(
-    ["mssql", "mysql", "druid", "oracle", "exasol"], raises=com.OperationNotDefinedError
+    ["mssql", "mysql", "druid", "exasol"], raises=com.OperationNotDefinedError
 )
 def test_subs_with_re_replace(con):
     expr = ibis.literal("hi").re_replace("i", "a").substitute({"d": "b"}, else_="k")
@@ -1036,11 +1035,6 @@ def test_levenshtein(con, right):
     reason="doesn't allow boolean expressions in select statements",
     raises=sa.exc.ProgrammingError,
 )
-@pytest.mark.broken(
-    ["oracle"],
-    reason="sqlalchemy converts True to 1, which cannot be used in CASE WHEN statement",
-    raises=sa.exc.DatabaseError,
-)
 @pytest.mark.parametrize(
     "expr",
     [
@@ -1052,9 +1046,7 @@ def test_no_conditional_percent_escape(con, expr):
     assert con.execute(expr) == "%"
 
 
-@pytest.mark.notimpl(
-    ["dask", "mssql", "oracle", "exasol"], raises=com.OperationNotDefinedError
-)
+@pytest.mark.notimpl(["dask", "mssql", "exasol"], raises=com.OperationNotDefinedError)
 def test_non_match_regex_search_is_false(con):
     expr = ibis.literal("foo").re_search("bar")
     result = con.execute(expr)
