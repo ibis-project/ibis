@@ -563,6 +563,29 @@ class DruidType(SqlglotType):
 class OracleType(SqlglotType):
     dialect = "oracle"
 
+    default_decimal_precision = 38
+    default_decimal_scale = 9
+
+    default_temporal_scale = 9
+
+    unknown_type_strings = FrozenDict({"raw": dt.binary})
+
+    @classmethod
+    def _from_sqlglot_FLOAT(cls) -> dt.Float64:
+        return dt.Float64(nullable=cls.default_nullable)
+
+    @classmethod
+    def _from_sqlglot_DECIMAL(cls, precision=None, scale=None) -> dt.Decimal:
+        if scale is None or int(scale.this.this) == 0:
+            return dt.Int64(nullable=cls.default_nullable)
+        else:
+            return super()._from_sqlglot_DECIMAL(precision, scale)
+
+    @classmethod
+    def _from_ibis_String(cls, dtype: dt.String) -> sge.DataType:
+        nullable = " NOT NULL" if not dtype.nullable else ""
+        return "VARCHAR2(4000)" + nullable
+
 
 class SnowflakeType(SqlglotType):
     dialect = "snowflake"
