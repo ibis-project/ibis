@@ -8,7 +8,7 @@ WITH t1 AS (
     t0.dest IN ('ORD', 'JFK', 'SFO')
 )
 SELECT
-  t9.origin,
+  t8.origin,
   COUNT(*) AS "CountStar()"
 FROM (
   SELECT
@@ -33,6 +33,6 @@ FROM (
     LIMIT 10
   ) AS t7
     ON t3.dest = t7.dest
-) AS t9
+) AS t8
 GROUP BY
   1

@@ -1,40 +1,40 @@
 SELECT
   CAST((
     SUM(
-      IF("t8"."p_type" LIKE 'PROMO%', "t8"."l_extendedprice" * (
-        1 - "t8"."l_discount"
+      IF("t7"."p_type" LIKE 'PROMO%', "t7"."l_extendedprice" * (
+        1 - "t7"."l_discount"
       ), 0)
     ) * 100
-  ) AS DOUBLE) / SUM("t8"."l_extendedprice" * (
-    1 - "t8"."l_discount"
+  ) AS DOUBLE) / SUM("t7"."l_extendedprice" * (
+    1 - "t7"."l_discount"
   )) AS "promo_revenue"
 FROM (
   SELECT
-    "t7"."l_orderkey",
-    "t7"."l_partkey",
-    "t7"."l_suppkey",
-    "t7"."l_linenumber",
-    "t7"."l_quantity",
-    "t7"."l_extendedprice",
-    "t7"."l_discount",
-    "t7"."l_tax",
-    "t7"."l_returnflag",
-    "t7"."l_linestatus",
-    "t7"."l_shipdate",
-    "t7"."l_commitdate",
-    "t7"."l_receiptdate",
-    "t7"."l_shipinstruct",
-    "t7"."l_shipmode",
-    "t7"."l_comment",
-    "t7"."p_partkey",
-    "t7"."p_name",
-    "t7"."p_mfgr",
-    "t7"."p_brand",
-    "t7"."p_type",
-    "t7"."p_size",
-    "t7"."p_container",
-    "t7"."p_retailprice",
-    "t7"."p_comment"
+    "t6"."l_orderkey",
+    "t6"."l_partkey",
+    "t6"."l_suppkey",
+    "t6"."l_linenumber",
+    "t6"."l_quantity",
+    "t6"."l_extendedprice",
+    "t6"."l_discount",
+    "t6"."l_tax",
+    "t6"."l_returnflag",
+    "t6"."l_linestatus",
+    "t6"."l_shipdate",
+    "t6"."l_commitdate",
+    "t6"."l_receiptdate",
+    "t6"."l_shipinstruct",
+    "t6"."l_shipmode",
+    "t6"."l_comment",
+    "t6"."p_partkey",
+    "t6"."p_name",
+    "t6"."p_mfgr",
+    "t6"."p_brand",
+    "t6"."p_type",
+    "t6"."p_size",
+    "t6"."p_container",
+    "t6"."p_retailprice",
+    "t6"."p_comment"
   FROM (
     SELECT
       "t4"."l_orderkey",
@@ -96,8 +96,8 @@ FROM (
       FROM "hive"."ibis_sf1"."part" AS "t1"
     ) AS "t5"
       ON "t4"."l_partkey" = "t5"."p_partkey"
-  ) AS "t7"
+  ) AS "t6"
   WHERE
-    "t7"."l_shipdate" >= FROM_ISO8601_DATE('1995-09-01')
-    AND "t7"."l_shipdate" < FROM_ISO8601_DATE('1995-10-01')
-) AS "t8"
+    "t6"."l_shipdate" >= FROM_ISO8601_DATE('1995-09-01')
+    AND "t6"."l_shipdate" < FROM_ISO8601_DATE('1995-10-01')
+) AS "t7"

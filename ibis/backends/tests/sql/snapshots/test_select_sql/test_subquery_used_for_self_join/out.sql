@@ -11,8 +11,8 @@ WITH t1 AS (
     3
 )
 SELECT
-  t7.g,
-  MAX(t7.total - t7.total_right) AS metric
+  t6.g,
+  MAX(t6.total - t6.total_right) AS metric
 FROM (
   SELECT
     t3.g,
@@ -26,6 +26,6 @@ FROM (
   FROM t1 AS t3
   INNER JOIN t1 AS t5
     ON t3.a = t5.b
-) AS t7
+) AS t6
 GROUP BY
   1

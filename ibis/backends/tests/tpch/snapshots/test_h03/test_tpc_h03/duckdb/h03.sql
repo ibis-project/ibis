@@ -1,51 +1,51 @@
 SELECT
-  t10.l_orderkey,
-  t10.revenue,
-  t10.o_orderdate,
-  t10.o_shippriority
+  t8.l_orderkey,
+  t8.revenue,
+  t8.o_orderdate,
+  t8.o_shippriority
 FROM (
   SELECT
-    t9.l_orderkey,
-    t9.o_orderdate,
-    t9.o_shippriority,
-    SUM(t9.l_extendedprice * (
-      CAST(1 AS TINYINT) - t9.l_discount
+    t7.l_orderkey,
+    t7.o_orderdate,
+    t7.o_shippriority,
+    SUM(t7.l_extendedprice * (
+      CAST(1 AS TINYINT) - t7.l_discount
     )) AS revenue
   FROM (
     SELECT
-      t8.c_custkey,
-      t8.c_name,
-      t8.c_address,
-      t8.c_nationkey,
-      t8.c_phone,
-      t8.c_acctbal,
-      t8.c_mktsegment,
-      t8.c_comment,
-      t8.o_orderkey,
-      t8.o_custkey,
-      t8.o_orderstatus,
-      t8.o_totalprice,
-      t8.o_orderdate,
-      t8.o_orderpriority,
-      t8.o_clerk,
-      t8.o_shippriority,
-      t8.o_comment,
-      t8.l_orderkey,
-      t8.l_partkey,
-      t8.l_suppkey,
-      t8.l_linenumber,
-      t8.l_quantity,
-      t8.l_extendedprice,
-      t8.l_discount,
-      t8.l_tax,
-      t8.l_returnflag,
-      t8.l_linestatus,
-      t8.l_shipdate,
-      t8.l_commitdate,
-      t8.l_receiptdate,
-      t8.l_shipinstruct,
-      t8.l_shipmode,
-      t8.l_comment
+      t6.c_custkey,
+      t6.c_name,
+      t6.c_address,
+      t6.c_nationkey,
+      t6.c_phone,
+      t6.c_acctbal,
+      t6.c_mktsegment,
+      t6.c_comment,
+      t6.o_orderkey,
+      t6.o_custkey,
+      t6.o_orderstatus,
+      t6.o_totalprice,
+      t6.o_orderdate,
+      t6.o_orderpriority,
+      t6.o_clerk,
+      t6.o_shippriority,
+      t6.o_comment,
+      t6.l_orderkey,
+      t6.l_partkey,
+      t6.l_suppkey,
+      t6.l_linenumber,
+      t6.l_quantity,
+      t6.l_extendedprice,
+      t6.l_discount,
+      t6.l_tax,
+      t6.l_returnflag,
+      t6.l_linestatus,
+      t6.l_shipdate,
+      t6.l_commitdate,
+      t6.l_receiptdate,
+      t6.l_shipinstruct,
+      t6.l_shipmode,
+      t6.l_comment
     FROM (
       SELECT
         t3.c_custkey,
@@ -86,18 +86,18 @@ FROM (
         ON t3.c_custkey = t4.o_custkey
       INNER JOIN lineitem AS t5
         ON t5.l_orderkey = t4.o_orderkey
-    ) AS t8
+    ) AS t6
     WHERE
-      t8.c_mktsegment = 'BUILDING'
-      AND t8.o_orderdate < MAKE_DATE(1995, 3, 15)
-      AND t8.l_shipdate > MAKE_DATE(1995, 3, 15)
-  ) AS t9
+      t6.c_mktsegment = 'BUILDING'
+      AND t6.o_orderdate < MAKE_DATE(1995, 3, 15)
+      AND t6.l_shipdate > MAKE_DATE(1995, 3, 15)
+  ) AS t7
   GROUP BY
     1,
     2,
     3
-) AS t10
+) AS t8
 ORDER BY
-  t10.revenue DESC,
-  t10.o_orderdate ASC
+  t8.revenue DESC,
+  t8.o_orderdate ASC
 LIMIT 10

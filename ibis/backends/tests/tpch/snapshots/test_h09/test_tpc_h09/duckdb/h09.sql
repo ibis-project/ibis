@@ -1,18 +1,18 @@
 SELECT
-  t19.nation,
-  t19.o_year,
-  t19.sum_profit
+  t14.nation,
+  t14.o_year,
+  t14.sum_profit
 FROM (
   SELECT
-    t18.nation,
-    t18.o_year,
-    SUM(t18.amount) AS sum_profit
+    t13.nation,
+    t13.o_year,
+    SUM(t13.amount) AS sum_profit
   FROM (
     SELECT
-      t17.amount,
-      t17.o_year,
-      t17.nation,
-      t17.p_name
+      t12.amount,
+      t12.o_year,
+      t12.nation,
+      t12.p_name
     FROM (
       SELECT
         (
@@ -36,14 +36,14 @@ FROM (
         ON t10.o_orderkey = t6.l_orderkey
       INNER JOIN nation AS t11
         ON t7.s_nationkey = t11.n_nationkey
-    ) AS t17
+    ) AS t12
     WHERE
-      t17.p_name LIKE '%green%'
-  ) AS t18
+      t12.p_name LIKE '%green%'
+  ) AS t13
   GROUP BY
     1,
     2
-) AS t19
+) AS t14
 ORDER BY
-  t19.nation ASC,
-  t19.o_year DESC
+  t14.nation ASC,
+  t14.o_year DESC

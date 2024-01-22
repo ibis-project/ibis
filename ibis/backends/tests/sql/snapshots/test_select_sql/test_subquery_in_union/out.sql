@@ -1,4 +1,4 @@
-WITH t6 AS (
+WITH t5 AS (
   SELECT
     t2.a,
     t2.g,
@@ -35,15 +35,15 @@ WITH t6 AS (
     2
 )
 SELECT
-  t9.a,
-  t9.g,
-  t9.metric
+  t8.a,
+  t8.g,
+  t8.metric
 FROM (
   SELECT
     *
-  FROM t6 AS t7
+  FROM t5 AS t6
   UNION ALL
   SELECT
     *
-  FROM t6 AS t8
-) AS t9
+  FROM t5 AS t7
+) AS t8

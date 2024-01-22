@@ -1,12 +1,12 @@
 SELECT
-  t7.l_shipmode,
-  t7.high_line_count,
-  t7.low_line_count
+  t6.l_shipmode,
+  t6.high_line_count,
+  t6.low_line_count
 FROM (
   SELECT
-    t6.l_shipmode,
+    t5.l_shipmode,
     SUM(
-      CASE t6.o_orderpriority
+      CASE t5.o_orderpriority
         WHEN '1-URGENT'
         THEN CAST(1 AS TINYINT)
         WHEN '2-HIGH'
@@ -15,7 +15,7 @@ FROM (
       END
     ) AS high_line_count,
     SUM(
-      CASE t6.o_orderpriority
+      CASE t5.o_orderpriority
         WHEN '1-URGENT'
         THEN CAST(0 AS TINYINT)
         WHEN '2-HIGH'
@@ -25,31 +25,31 @@ FROM (
     ) AS low_line_count
   FROM (
     SELECT
-      t5.o_orderkey,
-      t5.o_custkey,
-      t5.o_orderstatus,
-      t5.o_totalprice,
-      t5.o_orderdate,
-      t5.o_orderpriority,
-      t5.o_clerk,
-      t5.o_shippriority,
-      t5.o_comment,
-      t5.l_orderkey,
-      t5.l_partkey,
-      t5.l_suppkey,
-      t5.l_linenumber,
-      t5.l_quantity,
-      t5.l_extendedprice,
-      t5.l_discount,
-      t5.l_tax,
-      t5.l_returnflag,
-      t5.l_linestatus,
-      t5.l_shipdate,
-      t5.l_commitdate,
-      t5.l_receiptdate,
-      t5.l_shipinstruct,
-      t5.l_shipmode,
-      t5.l_comment
+      t4.o_orderkey,
+      t4.o_custkey,
+      t4.o_orderstatus,
+      t4.o_totalprice,
+      t4.o_orderdate,
+      t4.o_orderpriority,
+      t4.o_clerk,
+      t4.o_shippriority,
+      t4.o_comment,
+      t4.l_orderkey,
+      t4.l_partkey,
+      t4.l_suppkey,
+      t4.l_linenumber,
+      t4.l_quantity,
+      t4.l_extendedprice,
+      t4.l_discount,
+      t4.l_tax,
+      t4.l_returnflag,
+      t4.l_linestatus,
+      t4.l_shipdate,
+      t4.l_commitdate,
+      t4.l_receiptdate,
+      t4.l_shipinstruct,
+      t4.l_shipmode,
+      t4.l_comment
     FROM (
       SELECT
         t2.o_orderkey,
@@ -80,16 +80,16 @@ FROM (
       FROM orders AS t2
       INNER JOIN lineitem AS t3
         ON t2.o_orderkey = t3.l_orderkey
-    ) AS t5
+    ) AS t4
     WHERE
-      t5.l_shipmode IN ('MAIL', 'SHIP')
-      AND t5.l_commitdate < t5.l_receiptdate
-      AND t5.l_shipdate < t5.l_commitdate
-      AND t5.l_receiptdate >= MAKE_DATE(1994, 1, 1)
-      AND t5.l_receiptdate < MAKE_DATE(1995, 1, 1)
-  ) AS t6
+      t4.l_shipmode IN ('MAIL', 'SHIP')
+      AND t4.l_commitdate < t4.l_receiptdate
+      AND t4.l_shipdate < t4.l_commitdate
+      AND t4.l_receiptdate >= MAKE_DATE(1994, 1, 1)
+      AND t4.l_receiptdate < MAKE_DATE(1995, 1, 1)
+  ) AS t5
   GROUP BY
     1
-) AS t7
+) AS t6
 ORDER BY
-  t7.l_shipmode ASC
+  t6.l_shipmode ASC
