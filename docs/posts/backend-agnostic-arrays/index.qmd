@@ -1,7 +1,7 @@
 ---
 title: Backend agnostic arrays
 author: "Phillip Cloud"
-date: last-modified
+date: 2024-01-19
 categories:
     - arrays
     - bigquery
