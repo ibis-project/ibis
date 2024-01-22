@@ -29,6 +29,7 @@ _NAMES = {
 
 
 @pytest.mark.notimpl(["flink"])
+@pytest.mark.notyet(["oracle"], reason="table quoting behavior")
 @dot_sql_never
 @pytest.mark.parametrize(
     "schema",

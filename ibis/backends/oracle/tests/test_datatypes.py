@@ -14,7 +14,7 @@ def test_blob_raw(con):
     con.drop_table("blob_raw_blobs_blob_raw", force=True)
 
     with con.begin() as bind:
-        bind.exec_driver_sql(
+        bind.execute(
             """CREATE TABLE "blob_raw_blobs_blob_raw" ("blob" BLOB, "raw" RAW(255))"""
         )
 

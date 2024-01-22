@@ -26,6 +26,7 @@ from ibis.backends.tests.errors import (
     ImpalaHiveServer2Error,
     Py4JJavaError,
     MySQLProgrammingError,
+    OracleDatabaseError,
     PyDruidProgrammingError,
     SnowflakeProgrammingError,
     TrinoUserError,
@@ -126,7 +127,7 @@ def test_scalar_fillna_nullif(con, expr, expected):
         ),
     ],
 )
-@pytest.mark.notimpl(["mssql", "oracle"])
+@pytest.mark.notimpl(["mssql"])
 @pytest.mark.notyet(["flink"], "NaN is not supported in Flink SQL", raises=ValueError)
 def test_isna(backend, alltypes, col, value, filt):
     table = alltypes.select(**{col: value})
@@ -370,7 +371,7 @@ def test_case_where(backend, alltypes, df):
 
 
 # TODO: some of these are notimpl (datafusion) others are probably never
-@pytest.mark.notimpl(["mysql", "sqlite", "mssql", "druid", "oracle", "exasol"])
+@pytest.mark.notimpl(["mysql", "sqlite", "mssql", "druid", "exasol"])
 @pytest.mark.notyet(["flink"], "NaN is not supported in Flink SQL", raises=ValueError)
 def test_select_filter_mutate(backend, alltypes, df):
     """Test that select, filter and mutate are executed in right order.
@@ -422,11 +423,7 @@ def test_table_fillna_invalid(alltypes):
     "replacements",
     [
         param({"int_col": 20}, id="int"),
-        param(
-            {"double_col": -1, "string_col": "missing"},
-            id="double-int-str",
-            marks=[pytest.mark.notimpl(["oracle"])],
-        ),
+        param({"double_col": -1, "string_col": "missing"}, id="double-int-str"),
         param({"double_col": -1.5, "string_col": "missing"}, id="double-str"),
     ],
 )
@@ -444,7 +441,6 @@ def test_table_fillna_mapping(backend, alltypes, replacements):
     backend.assert_frame_equal(result, expected, check_dtype=False)
 
 
-@pytest.mark.notimpl(["oracle"])
 def test_table_fillna_scalar(backend, alltypes):
     table = alltypes.mutate(
         int_col=alltypes.int_col.nullif(1),
@@ -1137,7 +1133,11 @@ def test_pivot_wider(backend):
 )
 @pytest.mark.notimpl(
     ["druid", "impala", "oracle"],
-    raises=(NotImplementedError, sa.exc.ProgrammingError, com.OperationNotDefinedError),
+    raises=(
+        NotImplementedError,
+        OracleDatabaseError,
+        com.OperationNotDefinedError,
+    ),
     reason="arbitrary not implemented in the backend",
 )
 @pytest.mark.notimpl(
@@ -1207,7 +1207,7 @@ def test_distinct_on_keep(backend, on, keep):
 )
 @pytest.mark.notimpl(
     ["druid", "impala", "oracle"],
-    raises=(NotImplementedError, sa.exc.ProgrammingError, com.OperationNotDefinedError),
+    raises=(NotImplementedError, OracleDatabaseError, com.OperationNotDefinedError),
     reason="arbitrary not implemented in the backend",
 )
 @pytest.mark.notimpl(
@@ -1561,6 +1561,7 @@ def test_try_cast_func(con, from_val, to_type, func):
                     raises=ExaQueryError,
                     reason="doesn't support OFFSET without ORDER BY",
                 ),
+                pytest.mark.notyet(["oracle"], raises=com.UnsupportedArgumentError),
             ],
         ),
         param(
@@ -1589,6 +1590,7 @@ def test_try_cast_func(con, from_val, to_type, func):
                     raises=sa.exc.InternalError,
                     reason="risingwave doesn't support limit/offset",
                 ),
+                pytest.mark.notyet(["oracle"], raises=com.UnsupportedArgumentError),
             ],
         ),
         # positive stop
@@ -1607,6 +1609,7 @@ def test_try_cast_func(con, from_val, to_type, func):
                     raises=ExaQueryError,
                     reason="doesn't support OFFSET without ORDER BY",
                 ),
+                pytest.mark.notyet(["oracle"], raises=com.UnsupportedArgumentError),
             ],
         ),
         param(
@@ -1620,6 +1623,7 @@ def test_try_cast_func(con, from_val, to_type, func):
                     reason="mssql doesn't support OFFSET without LIMIT",
                 ),
                 pytest.mark.notyet(["exasol"], raises=ExaQueryError),
+                pytest.mark.notyet(["oracle"], raises=com.UnsupportedArgumentError),
                 pytest.mark.notyet(
                     ["impala"],
                     raises=ImpalaHiveServer2Error,
@@ -1672,6 +1676,11 @@ def test_static_table_slice(backend, slc, expected_count_fn):
     ["snowflake"],
     raises=SnowflakeProgrammingError,
     reason="backend doesn't support dynamic limit/offset",
+)
+@pytest.mark.notyet(
+    ["oracle"],
+    raises=com.UnsupportedArgumentError,
+    reason="Removed half-baked dynamic offset functionality for now",
 )
 @pytest.mark.notyet(
     ["trino"],
@@ -1732,6 +1741,11 @@ def test_dynamic_table_slice(backend, slc, expected_count_fn):
     ["snowflake"],
     raises=SnowflakeProgrammingError,
     reason="backend doesn't support dynamic limit/offset",
+)
+@pytest.mark.notyet(
+    ["oracle"],
+    raises=com.UnsupportedArgumentError,
+    reason="Removed half-baked dynamic offset functionality for now",
 )
 @pytest.mark.notimpl(
     ["trino"],

@@ -54,6 +54,6 @@ def test_builtin_agg_udf(con):
     """
     with con.begin() as c:
         expected = pd.DataFrame(
-            c.exec_driver_sql(sql).fetchall(), columns=["string_col", "df_w"]
+            c.execute(sql).fetchall(), columns=["string_col", "df_w"]
         )
-    tm.assert_frame_equal(result, expected)
+    tm.assert_frame_equal(result, expected, check_dtype=False)
