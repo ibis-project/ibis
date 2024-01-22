@@ -1,4 +1,4 @@
-WITH `t11` AS (
+WITH `t8` AS (
   SELECT
     `t6`.`c_custkey`,
     `t6`.`c_name`,
@@ -20,60 +20,60 @@ WITH `t11` AS (
     ON `t7`.`o_custkey` = `t6`.`c_custkey`
 )
 SELECT
-  `t15`.`year`,
-  `t15`.`CountStar()` AS `pre_count`,
-  `t20`.`CountStar()` AS `post_count`,
-  `t20`.`CountStar()` / CAST(`t15`.`CountStar()` AS DOUBLE) AS `fraction`
+  `t12`.`year`,
+  `t12`.`CountStar()` AS `pre_count`,
+  `t17`.`CountStar()` AS `post_count`,
+  `t17`.`CountStar()` / CAST(`t12`.`CountStar()` AS DOUBLE) AS `fraction`
 FROM (
   SELECT
-    EXTRACT(year FROM `t12`.`odate`) AS `year`,
+    EXTRACT(year FROM `t9`.`odate`) AS `year`,
     COUNT(*) AS `CountStar()`
-  FROM `t11` AS `t12`
+  FROM `t8` AS `t9`
   GROUP BY
     1
-) AS `t15`
+) AS `t12`
 INNER JOIN (
   SELECT
-    EXTRACT(year FROM `t18`.`odate`) AS `year`,
+    EXTRACT(year FROM `t15`.`odate`) AS `year`,
     COUNT(*) AS `CountStar()`
   FROM (
     SELECT
-      `t12`.`c_custkey`,
-      `t12`.`c_name`,
-      `t12`.`c_address`,
-      `t12`.`c_nationkey`,
-      `t12`.`c_phone`,
-      `t12`.`c_acctbal`,
-      `t12`.`c_mktsegment`,
-      `t12`.`c_comment`,
-      `t12`.`region`,
-      `t12`.`o_totalprice`,
-      `t12`.`odate`
-    FROM `t11` AS `t12`
+      `t9`.`c_custkey`,
+      `t9`.`c_name`,
+      `t9`.`c_address`,
+      `t9`.`c_nationkey`,
+      `t9`.`c_phone`,
+      `t9`.`c_acctbal`,
+      `t9`.`c_mktsegment`,
+      `t9`.`c_comment`,
+      `t9`.`region`,
+      `t9`.`o_totalprice`,
+      `t9`.`odate`
+    FROM `t8` AS `t9`
     WHERE
-      `t12`.`o_totalprice` > (
+      `t9`.`o_totalprice` > (
         SELECT
-          AVG(`t16`.`o_totalprice`) AS `Mean(o_totalprice)`
+          AVG(`t13`.`o_totalprice`) AS `Mean(o_totalprice)`
         FROM (
           SELECT
-            `t13`.`c_custkey`,
-            `t13`.`c_name`,
-            `t13`.`c_address`,
-            `t13`.`c_nationkey`,
-            `t13`.`c_phone`,
-            `t13`.`c_acctbal`,
-            `t13`.`c_mktsegment`,
-            `t13`.`c_comment`,
-            `t13`.`region`,
-            `t13`.`o_totalprice`,
-            `t13`.`odate`
-          FROM `t11` AS `t13`
+            `t10`.`c_custkey`,
+            `t10`.`c_name`,
+            `t10`.`c_address`,
+            `t10`.`c_nationkey`,
+            `t10`.`c_phone`,
+            `t10`.`c_acctbal`,
+            `t10`.`c_mktsegment`,
+            `t10`.`c_comment`,
+            `t10`.`region`,
+            `t10`.`o_totalprice`,
+            `t10`.`odate`
+          FROM `t8` AS `t10`
           WHERE
-            `t13`.`region` = `t12`.`region`
-        ) AS `t16`
+            `t10`.`region` = `t9`.`region`
+        ) AS `t13`
       )
-  ) AS `t18`
+  ) AS `t15`
   GROUP BY
     1
-) AS `t20`
-  ON `t15`.`year` = `t20`.`year`
+) AS `t17`
+  ON `t12`.`year` = `t17`.`year`
