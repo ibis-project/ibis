@@ -315,7 +315,6 @@ PANDAS_UNITS = {
         param(
             "W",
             marks=[
-                pytest.mark.broken(["sqlite", "exasol"], raises=AssertionError),
                 pytest.mark.notimpl(["mysql"], raises=com.UnsupportedOperationError),
                 pytest.mark.broken(
                     ["polars"],
@@ -450,7 +449,7 @@ PANDAS_UNITS = {
                     reason="attempt to calculate the remainder with a divisor of zero",
                 ),
                 pytest.mark.notimpl(
-                    ["flink", "exasol"],
+                    ["flink"],
                     raises=com.UnsupportedOperationError,
                     reason="<IntervalUnit.NANOSECOND: 'ns'> unit is not supported in timestamp truncate",
                 ),
@@ -463,6 +462,7 @@ PANDAS_UNITS = {
     raises=AttributeError,
     reason="AttributeError: 'StringColumn' object has no attribute 'truncate'",
 )
+@pytest.mark.notimpl(["exasol"], raises=com.OperationNotDefinedError)
 def test_timestamp_truncate(backend, alltypes, df, unit):
     expr = alltypes.timestamp_col.truncate(unit).name("tmp")
 
