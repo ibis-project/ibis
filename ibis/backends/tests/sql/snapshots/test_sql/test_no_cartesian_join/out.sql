@@ -1,28 +1,28 @@
 SELECT
-  t15.customer_id,
-  t15.first_name,
-  t15.last_name,
-  t15.first_order,
-  t15.most_recent_order,
-  t15.number_of_orders,
-  t13.total_amount AS customer_lifetime_value
+  t13.customer_id,
+  t13.first_name,
+  t13.last_name,
+  t13.first_order,
+  t13.most_recent_order,
+  t13.number_of_orders,
+  t11.total_amount AS customer_lifetime_value
 FROM (
   SELECT
-    t12.customer_id,
-    t12.first_name,
-    t12.last_name,
-    t12.first_order,
-    t12.most_recent_order,
-    t12.number_of_orders
+    t10.customer_id,
+    t10.first_name,
+    t10.last_name,
+    t10.first_order,
+    t10.most_recent_order,
+    t10.number_of_orders
   FROM (
     SELECT
       t3.customer_id,
       t3.first_name,
       t3.last_name,
-      t8.customer_id AS customer_id_right,
-      t8.first_order,
-      t8.most_recent_order,
-      t8.number_of_orders
+      t7.customer_id AS customer_id_right,
+      t7.first_order,
+      t7.most_recent_order,
+      t7.number_of_orders
     FROM customers AS t3
     LEFT OUTER JOIN (
       SELECT
@@ -33,14 +33,14 @@ FROM (
       FROM orders AS t2
       GROUP BY
         1
-    ) AS t8
-      ON t3.customer_id = t8.customer_id
-  ) AS t12
-) AS t15
+    ) AS t7
+      ON t3.customer_id = t7.customer_id
+  ) AS t10
+) AS t13
 LEFT OUTER JOIN (
   SELECT
-    t9.customer_id,
-    SUM(t9.amount) AS total_amount
+    t8.customer_id,
+    SUM(t8.amount) AS total_amount
   FROM (
     SELECT
       t4.payment_id,
@@ -54,8 +54,8 @@ LEFT OUTER JOIN (
     FROM payments AS t4
     LEFT OUTER JOIN orders AS t5
       ON t4.order_id = t5.order_id
-  ) AS t9
+  ) AS t8
   GROUP BY
     1
-) AS t13
-  ON t15.customer_id = t13.customer_id
+) AS t11
+  ON t13.customer_id = t11.customer_id

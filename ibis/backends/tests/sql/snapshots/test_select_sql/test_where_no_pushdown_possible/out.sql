@@ -1,9 +1,9 @@
 SELECT
-  t5.c,
-  t5.f,
-  t5.foo_id,
-  t5.bar_id,
-  t5.diff
+  t4.c,
+  t4.f,
+  t4.foo_id,
+  t4.bar_id,
+  t4.diff
 FROM (
   SELECT
     t2.c,
@@ -14,6 +14,6 @@ FROM (
   FROM star1 AS t2
   INNER JOIN star2 AS t3
     ON t2.foo_id = t3.foo_id
-) AS t5
+) AS t4
 WHERE
-  t5.diff > CAST(1 AS TINYINT)
+  t4.diff > CAST(1 AS TINYINT)

@@ -1,5 +1,5 @@
 SELECT
-  t6.a
+  t5.a
 FROM (
   SELECT
     t4.a
@@ -14,6 +14,6 @@ FROM (
   ) AS t4
   INNER JOIN s AS t2
     ON t4.b = t2.b
-) AS t6
+) AS t5
 WHERE
-  t6.a < CAST(1.0 AS DOUBLE)
+  t5.a < CAST(1.0 AS DOUBLE)

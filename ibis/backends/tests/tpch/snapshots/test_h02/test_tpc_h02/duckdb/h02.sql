@@ -1,12 +1,12 @@
 SELECT
-  t21.s_acctbal,
-  t21.s_name,
-  t21.n_name,
-  t21.p_partkey,
-  t21.p_mfgr,
-  t21.s_address,
-  t21.s_phone,
-  t21.s_comment
+  t14.s_acctbal,
+  t14.s_name,
+  t14.n_name,
+  t14.p_partkey,
+  t14.p_mfgr,
+  t14.s_address,
+  t14.s_phone,
+  t14.s_comment
 FROM (
   SELECT
     t5.p_partkey,
@@ -46,35 +46,35 @@ FROM (
     ON t8.s_nationkey = t10.n_nationkey
   INNER JOIN region AS t12
     ON t10.n_regionkey = t12.r_regionkey
-) AS t21
+) AS t14
 WHERE
-  t21.p_size = CAST(15 AS TINYINT)
-  AND t21.p_type LIKE '%BRASS'
-  AND t21.r_name = 'EUROPE'
-  AND t21.ps_supplycost = (
+  t14.p_size = CAST(15 AS TINYINT)
+  AND t14.p_type LIKE '%BRASS'
+  AND t14.r_name = 'EUROPE'
+  AND t14.ps_supplycost = (
     SELECT
-      MIN(t23.ps_supplycost) AS "Min(ps_supplycost)"
+      MIN(t16.ps_supplycost) AS "Min(ps_supplycost)"
     FROM (
       SELECT
-        t22.ps_partkey,
-        t22.ps_suppkey,
-        t22.ps_availqty,
-        t22.ps_supplycost,
-        t22.ps_comment,
-        t22.s_suppkey,
-        t22.s_name,
-        t22.s_address,
-        t22.s_nationkey,
-        t22.s_phone,
-        t22.s_acctbal,
-        t22.s_comment,
-        t22.n_nationkey,
-        t22.n_name,
-        t22.n_regionkey,
-        t22.n_comment,
-        t22.r_regionkey,
-        t22.r_name,
-        t22.r_comment
+        t15.ps_partkey,
+        t15.ps_suppkey,
+        t15.ps_availqty,
+        t15.ps_supplycost,
+        t15.ps_comment,
+        t15.s_suppkey,
+        t15.s_name,
+        t15.s_address,
+        t15.s_nationkey,
+        t15.s_phone,
+        t15.s_acctbal,
+        t15.s_comment,
+        t15.n_nationkey,
+        t15.n_name,
+        t15.n_regionkey,
+        t15.n_comment,
+        t15.r_regionkey,
+        t15.r_name,
+        t15.r_comment
       FROM (
         SELECT
           t7.ps_partkey,
@@ -103,14 +103,14 @@ WHERE
           ON t9.s_nationkey = t11.n_nationkey
         INNER JOIN region AS t13
           ON t11.n_regionkey = t13.r_regionkey
-      ) AS t22
+      ) AS t15
       WHERE
-        t22.r_name = 'EUROPE' AND t21.p_partkey = t22.ps_partkey
-    ) AS t23
+        t15.r_name = 'EUROPE' AND t14.p_partkey = t15.ps_partkey
+    ) AS t16
   )
 ORDER BY
-  t21.s_acctbal DESC,
-  t21.n_name ASC,
-  t21.s_name ASC,
-  t21.p_partkey ASC
+  t14.s_acctbal DESC,
+  t14.n_name ASC,
+  t14.s_name ASC,
+  t14.p_partkey ASC
 LIMIT 100

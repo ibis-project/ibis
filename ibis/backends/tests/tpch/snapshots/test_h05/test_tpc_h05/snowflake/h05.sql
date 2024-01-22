@@ -1,61 +1,61 @@
 SELECT
-  "t25"."n_name",
-  "t25"."revenue"
+  "t20"."n_name",
+  "t20"."revenue"
 FROM (
   SELECT
-    "t24"."n_name",
-    SUM("t24"."l_extendedprice" * (
-      1 - "t24"."l_discount"
+    "t19"."n_name",
+    SUM("t19"."l_extendedprice" * (
+      1 - "t19"."l_discount"
     )) AS "revenue"
   FROM (
     SELECT
-      "t23"."c_custkey",
-      "t23"."c_name",
-      "t23"."c_address",
-      "t23"."c_nationkey",
-      "t23"."c_phone",
-      "t23"."c_acctbal",
-      "t23"."c_mktsegment",
-      "t23"."c_comment",
-      "t23"."o_orderkey",
-      "t23"."o_custkey",
-      "t23"."o_orderstatus",
-      "t23"."o_totalprice",
-      "t23"."o_orderdate",
-      "t23"."o_orderpriority",
-      "t23"."o_clerk",
-      "t23"."o_shippriority",
-      "t23"."o_comment",
-      "t23"."l_orderkey",
-      "t23"."l_partkey",
-      "t23"."l_suppkey",
-      "t23"."l_linenumber",
-      "t23"."l_quantity",
-      "t23"."l_extendedprice",
-      "t23"."l_discount",
-      "t23"."l_tax",
-      "t23"."l_returnflag",
-      "t23"."l_linestatus",
-      "t23"."l_shipdate",
-      "t23"."l_commitdate",
-      "t23"."l_receiptdate",
-      "t23"."l_shipinstruct",
-      "t23"."l_shipmode",
-      "t23"."l_comment",
-      "t23"."s_suppkey",
-      "t23"."s_name",
-      "t23"."s_address",
-      "t23"."s_nationkey",
-      "t23"."s_phone",
-      "t23"."s_acctbal",
-      "t23"."s_comment",
-      "t23"."n_nationkey",
-      "t23"."n_name",
-      "t23"."n_regionkey",
-      "t23"."n_comment",
-      "t23"."r_regionkey",
-      "t23"."r_name",
-      "t23"."r_comment"
+      "t18"."c_custkey",
+      "t18"."c_name",
+      "t18"."c_address",
+      "t18"."c_nationkey",
+      "t18"."c_phone",
+      "t18"."c_acctbal",
+      "t18"."c_mktsegment",
+      "t18"."c_comment",
+      "t18"."o_orderkey",
+      "t18"."o_custkey",
+      "t18"."o_orderstatus",
+      "t18"."o_totalprice",
+      "t18"."o_orderdate",
+      "t18"."o_orderpriority",
+      "t18"."o_clerk",
+      "t18"."o_shippriority",
+      "t18"."o_comment",
+      "t18"."l_orderkey",
+      "t18"."l_partkey",
+      "t18"."l_suppkey",
+      "t18"."l_linenumber",
+      "t18"."l_quantity",
+      "t18"."l_extendedprice",
+      "t18"."l_discount",
+      "t18"."l_tax",
+      "t18"."l_returnflag",
+      "t18"."l_linestatus",
+      "t18"."l_shipdate",
+      "t18"."l_commitdate",
+      "t18"."l_receiptdate",
+      "t18"."l_shipinstruct",
+      "t18"."l_shipmode",
+      "t18"."l_comment",
+      "t18"."s_suppkey",
+      "t18"."s_name",
+      "t18"."s_address",
+      "t18"."s_nationkey",
+      "t18"."s_phone",
+      "t18"."s_acctbal",
+      "t18"."s_comment",
+      "t18"."n_nationkey",
+      "t18"."n_name",
+      "t18"."n_regionkey",
+      "t18"."n_comment",
+      "t18"."r_regionkey",
+      "t18"."r_name",
+      "t18"."r_comment"
     FROM (
       SELECT
         "t12"."c_custkey",
@@ -182,14 +182,14 @@ FROM (
         FROM "SNOWFLAKE_SAMPLE_DATA"."TPCH_SF1"."REGION" AS "t5"
       ) AS "t17"
         ON "t16"."n_regionkey" = "t17"."r_regionkey"
-    ) AS "t23"
+    ) AS "t18"
     WHERE
-      "t23"."r_name" = 'ASIA'
-      AND "t23"."o_orderdate" >= DATE_FROM_PARTS(1994, 1, 1)
-      AND "t23"."o_orderdate" < DATE_FROM_PARTS(1995, 1, 1)
-  ) AS "t24"
+      "t18"."r_name" = 'ASIA'
+      AND "t18"."o_orderdate" >= DATE_FROM_PARTS(1994, 1, 1)
+      AND "t18"."o_orderdate" < DATE_FROM_PARTS(1995, 1, 1)
+  ) AS "t19"
   GROUP BY
     1
-) AS "t25"
+) AS "t20"
 ORDER BY
-  "t25"."revenue" DESC NULLS LAST
+  "t20"."revenue" DESC NULLS LAST
