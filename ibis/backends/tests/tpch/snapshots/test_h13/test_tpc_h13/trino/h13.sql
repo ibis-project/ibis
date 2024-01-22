@@ -1,14 +1,14 @@
 SELECT
-  "t9"."c_count",
-  "t9"."custdist"
+  "t8"."c_count",
+  "t8"."custdist"
 FROM (
   SELECT
-    "t8"."c_count",
+    "t7"."c_count",
     COUNT(*) AS "custdist"
   FROM (
     SELECT
-      "t7"."c_custkey",
-      COUNT("t7"."o_orderkey") AS "c_count"
+      "t6"."c_custkey",
+      COUNT("t6"."o_orderkey") AS "c_count"
     FROM (
       SELECT
         "t4"."c_custkey",
@@ -57,13 +57,13 @@ FROM (
         AND NOT (
           "t5"."o_comment" LIKE '%special%requests%'
         )
-    ) AS "t7"
+    ) AS "t6"
     GROUP BY
       1
-  ) AS "t8"
+  ) AS "t7"
   GROUP BY
     1
-) AS "t9"
+) AS "t8"
 ORDER BY
-  "t9"."custdist" DESC,
-  "t9"."c_count" DESC
+  "t8"."custdist" DESC,
+  "t8"."c_count" DESC

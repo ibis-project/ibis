@@ -19,21 +19,21 @@ WITH "t7" AS (
   FROM "SNOWFLAKE_SAMPLE_DATA"."TPCH_SF1"."LINEITEM" AS "t3"
 )
 SELECT
-  "t22"."s_name",
-  "t22"."numwait"
+  "t19"."s_name",
+  "t19"."numwait"
 FROM (
   SELECT
-    "t21"."s_name",
+    "t18"."s_name",
     COUNT(*) AS "numwait"
   FROM (
     SELECT
-      "t18"."l1_orderkey",
-      "t18"."o_orderstatus",
-      "t18"."l_receiptdate",
-      "t18"."l_commitdate",
-      "t18"."l1_suppkey",
-      "t18"."s_name",
-      "t18"."n_name"
+      "t15"."l1_orderkey",
+      "t15"."o_orderstatus",
+      "t15"."l_receiptdate",
+      "t15"."l_commitdate",
+      "t15"."l1_suppkey",
+      "t15"."s_name",
+      "t15"."n_name"
     FROM (
       SELECT
         "t12"."l_orderkey" AS "l1_orderkey",
@@ -79,21 +79,21 @@ FROM (
         FROM "SNOWFLAKE_SAMPLE_DATA"."TPCH_SF1"."NATION" AS "t2"
       ) AS "t10"
         ON "t8"."s_nationkey" = "t10"."n_nationkey"
-    ) AS "t18"
+    ) AS "t15"
     WHERE
-      "t18"."o_orderstatus" = 'F'
-      AND "t18"."l_receiptdate" > "t18"."l_commitdate"
-      AND "t18"."n_name" = 'SAUDI ARABIA'
+      "t15"."o_orderstatus" = 'F'
+      AND "t15"."l_receiptdate" > "t15"."l_commitdate"
+      AND "t15"."n_name" = 'SAUDI ARABIA'
       AND EXISTS(
         SELECT
           1 AS "1"
         FROM "t7" AS "t13"
         WHERE
           (
-            "t13"."l_orderkey" = "t18"."l1_orderkey"
+            "t13"."l_orderkey" = "t15"."l1_orderkey"
           )
           AND (
-            "t13"."l_suppkey" <> "t18"."l1_suppkey"
+            "t13"."l_suppkey" <> "t15"."l1_suppkey"
           )
       )
       AND NOT (
@@ -104,10 +104,10 @@ FROM (
           WHERE
             (
               (
-                "t14"."l_orderkey" = "t18"."l1_orderkey"
+                "t14"."l_orderkey" = "t15"."l1_orderkey"
               )
               AND (
-                "t14"."l_suppkey" <> "t18"."l1_suppkey"
+                "t14"."l_suppkey" <> "t15"."l1_suppkey"
               )
             )
             AND (
@@ -115,11 +115,11 @@ FROM (
             )
         )
       )
-  ) AS "t21"
+  ) AS "t18"
   GROUP BY
     1
-) AS "t22"
+) AS "t19"
 ORDER BY
-  "t22"."numwait" DESC NULLS LAST,
-  "t22"."s_name" ASC
+  "t19"."numwait" DESC NULLS LAST,
+  "t19"."s_name" ASC
 LIMIT 100

@@ -1,63 +1,63 @@
 SELECT
-  "t17"."c_custkey",
-  "t17"."c_name",
-  "t17"."revenue",
-  "t17"."c_acctbal",
-  "t17"."n_name",
-  "t17"."c_address",
-  "t17"."c_phone",
-  "t17"."c_comment"
+  "t14"."c_custkey",
+  "t14"."c_name",
+  "t14"."revenue",
+  "t14"."c_acctbal",
+  "t14"."n_name",
+  "t14"."c_address",
+  "t14"."c_phone",
+  "t14"."c_comment"
 FROM (
   SELECT
-    "t16"."c_custkey",
-    "t16"."c_name",
-    "t16"."c_acctbal",
-    "t16"."n_name",
-    "t16"."c_address",
-    "t16"."c_phone",
-    "t16"."c_comment",
-    SUM("t16"."l_extendedprice" * (
-      1 - "t16"."l_discount"
+    "t13"."c_custkey",
+    "t13"."c_name",
+    "t13"."c_acctbal",
+    "t13"."n_name",
+    "t13"."c_address",
+    "t13"."c_phone",
+    "t13"."c_comment",
+    SUM("t13"."l_extendedprice" * (
+      1 - "t13"."l_discount"
     )) AS "revenue"
   FROM (
     SELECT
-      "t15"."c_custkey",
-      "t15"."c_name",
-      "t15"."c_address",
-      "t15"."c_nationkey",
-      "t15"."c_phone",
-      "t15"."c_acctbal",
-      "t15"."c_mktsegment",
-      "t15"."c_comment",
-      "t15"."o_orderkey",
-      "t15"."o_custkey",
-      "t15"."o_orderstatus",
-      "t15"."o_totalprice",
-      "t15"."o_orderdate",
-      "t15"."o_orderpriority",
-      "t15"."o_clerk",
-      "t15"."o_shippriority",
-      "t15"."o_comment",
-      "t15"."l_orderkey",
-      "t15"."l_partkey",
-      "t15"."l_suppkey",
-      "t15"."l_linenumber",
-      "t15"."l_quantity",
-      "t15"."l_extendedprice",
-      "t15"."l_discount",
-      "t15"."l_tax",
-      "t15"."l_returnflag",
-      "t15"."l_linestatus",
-      "t15"."l_shipdate",
-      "t15"."l_commitdate",
-      "t15"."l_receiptdate",
-      "t15"."l_shipinstruct",
-      "t15"."l_shipmode",
-      "t15"."l_comment",
-      "t15"."n_nationkey",
-      "t15"."n_name",
-      "t15"."n_regionkey",
-      "t15"."n_comment"
+      "t12"."c_custkey",
+      "t12"."c_name",
+      "t12"."c_address",
+      "t12"."c_nationkey",
+      "t12"."c_phone",
+      "t12"."c_acctbal",
+      "t12"."c_mktsegment",
+      "t12"."c_comment",
+      "t12"."o_orderkey",
+      "t12"."o_custkey",
+      "t12"."o_orderstatus",
+      "t12"."o_totalprice",
+      "t12"."o_orderdate",
+      "t12"."o_orderpriority",
+      "t12"."o_clerk",
+      "t12"."o_shippriority",
+      "t12"."o_comment",
+      "t12"."l_orderkey",
+      "t12"."l_partkey",
+      "t12"."l_suppkey",
+      "t12"."l_linenumber",
+      "t12"."l_quantity",
+      "t12"."l_extendedprice",
+      "t12"."l_discount",
+      "t12"."l_tax",
+      "t12"."l_returnflag",
+      "t12"."l_linestatus",
+      "t12"."l_shipdate",
+      "t12"."l_commitdate",
+      "t12"."l_receiptdate",
+      "t12"."l_shipinstruct",
+      "t12"."l_shipmode",
+      "t12"."l_comment",
+      "t12"."n_nationkey",
+      "t12"."n_name",
+      "t12"."n_regionkey",
+      "t12"."n_comment"
     FROM (
       SELECT
         "t9"."c_custkey",
@@ -153,12 +153,12 @@ FROM (
         FROM "hive"."ibis_sf1"."nation" AS "t3"
       ) AS "t8"
         ON "t9"."c_nationkey" = "t8"."n_nationkey"
-    ) AS "t15"
+    ) AS "t12"
     WHERE
-      "t15"."o_orderdate" >= FROM_ISO8601_DATE('1993-10-01')
-      AND "t15"."o_orderdate" < FROM_ISO8601_DATE('1994-01-01')
-      AND "t15"."l_returnflag" = 'R'
-  ) AS "t16"
+      "t12"."o_orderdate" >= FROM_ISO8601_DATE('1993-10-01')
+      AND "t12"."o_orderdate" < FROM_ISO8601_DATE('1994-01-01')
+      AND "t12"."l_returnflag" = 'R'
+  ) AS "t13"
   GROUP BY
     1,
     2,
@@ -167,7 +167,7 @@ FROM (
     5,
     6,
     7
-) AS "t17"
+) AS "t14"
 ORDER BY
-  "t17"."revenue" DESC
+  "t14"."revenue" DESC
 LIMIT 20
