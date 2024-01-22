@@ -1,23 +1,23 @@
 SELECT
-  t19.supp_nation,
-  t19.cust_nation,
-  t19.l_year,
-  t19.revenue
+  t14.supp_nation,
+  t14.cust_nation,
+  t14.l_year,
+  t14.revenue
 FROM (
   SELECT
-    t18.supp_nation,
-    t18.cust_nation,
-    t18.l_year,
-    SUM(t18.volume) AS revenue
+    t13.supp_nation,
+    t13.cust_nation,
+    t13.l_year,
+    SUM(t13.volume) AS revenue
   FROM (
     SELECT
-      t17.supp_nation,
-      t17.cust_nation,
-      t17.l_shipdate,
-      t17.l_extendedprice,
-      t17.l_discount,
-      t17.l_year,
-      t17.volume
+      t12.supp_nation,
+      t12.cust_nation,
+      t12.l_shipdate,
+      t12.l_extendedprice,
+      t12.l_discount,
+      t12.l_year,
+      t12.volume
     FROM (
       SELECT
         t9.n_name AS supp_nation,
@@ -40,32 +40,32 @@ FROM (
         ON t5.s_nationkey = t9.n_nationkey
       INNER JOIN nation AS t11
         ON t8.c_nationkey = t11.n_nationkey
-    ) AS t17
+    ) AS t12
     WHERE
       (
         (
           (
-            t17.cust_nation = 'FRANCE'
+            t12.cust_nation = 'FRANCE'
           ) AND (
-            t17.supp_nation = 'GERMANY'
+            t12.supp_nation = 'GERMANY'
           )
         )
         OR (
           (
-            t17.cust_nation = 'GERMANY'
+            t12.cust_nation = 'GERMANY'
           ) AND (
-            t17.supp_nation = 'FRANCE'
+            t12.supp_nation = 'FRANCE'
           )
         )
       )
-      AND t17.l_shipdate BETWEEN MAKE_DATE(1995, 1, 1) AND MAKE_DATE(1996, 12, 31)
-  ) AS t18
+      AND t12.l_shipdate BETWEEN MAKE_DATE(1995, 1, 1) AND MAKE_DATE(1996, 12, 31)
+  ) AS t13
   GROUP BY
     1,
     2,
     3
-) AS t19
+) AS t14
 ORDER BY
-  t19.supp_nation ASC,
-  t19.cust_nation ASC,
-  t19.l_year ASC
+  t14.supp_nation ASC,
+  t14.cust_nation ASC,
+  t14.l_year ASC

@@ -1,30 +1,30 @@
 SELECT
-  t9.p_brand,
-  t9.p_type,
-  t9.p_size,
-  t9.supplier_cnt
+  t8.p_brand,
+  t8.p_type,
+  t8.p_size,
+  t8.supplier_cnt
 FROM (
   SELECT
-    t8.p_brand,
-    t8.p_type,
-    t8.p_size,
-    COUNT(DISTINCT t8.ps_suppkey) AS supplier_cnt
+    t7.p_brand,
+    t7.p_type,
+    t7.p_size,
+    COUNT(DISTINCT t7.ps_suppkey) AS supplier_cnt
   FROM (
     SELECT
-      t7.ps_partkey,
-      t7.ps_suppkey,
-      t7.ps_availqty,
-      t7.ps_supplycost,
-      t7.ps_comment,
-      t7.p_partkey,
-      t7.p_name,
-      t7.p_mfgr,
-      t7.p_brand,
-      t7.p_type,
-      t7.p_size,
-      t7.p_container,
-      t7.p_retailprice,
-      t7.p_comment
+      t6.ps_partkey,
+      t6.ps_suppkey,
+      t6.ps_availqty,
+      t6.ps_supplycost,
+      t6.ps_comment,
+      t6.p_partkey,
+      t6.p_name,
+      t6.p_mfgr,
+      t6.p_brand,
+      t6.p_type,
+      t6.p_size,
+      t6.p_container,
+      t6.p_retailprice,
+      t6.p_comment
     FROM (
       SELECT
         t3.ps_partkey,
@@ -44,15 +44,15 @@ FROM (
       FROM partsupp AS t3
       INNER JOIN part AS t4
         ON t4.p_partkey = t3.ps_partkey
-    ) AS t7
+    ) AS t6
     WHERE
-      t7.p_brand <> 'Brand#45'
+      t6.p_brand <> 'Brand#45'
       AND NOT (
-        t7.p_type LIKE 'MEDIUM POLISHED%'
+        t6.p_type LIKE 'MEDIUM POLISHED%'
       )
-      AND t7.p_size IN (CAST(49 AS TINYINT), CAST(14 AS TINYINT), CAST(23 AS TINYINT), CAST(45 AS TINYINT), CAST(19 AS TINYINT), CAST(3 AS TINYINT), CAST(36 AS TINYINT), CAST(9 AS TINYINT))
+      AND t6.p_size IN (CAST(49 AS TINYINT), CAST(14 AS TINYINT), CAST(23 AS TINYINT), CAST(45 AS TINYINT), CAST(19 AS TINYINT), CAST(3 AS TINYINT), CAST(36 AS TINYINT), CAST(9 AS TINYINT))
       AND NOT (
-        t7.ps_suppkey IN (
+        t6.ps_suppkey IN (
           SELECT
             t2.s_suppkey
           FROM supplier AS t2
@@ -60,14 +60,14 @@ FROM (
             t2.s_comment LIKE '%Customer%Complaints%'
         )
       )
-  ) AS t8
+  ) AS t7
   GROUP BY
     1,
     2,
     3
-) AS t9
+) AS t8
 ORDER BY
-  t9.supplier_cnt DESC,
-  t9.p_brand ASC,
-  t9.p_type ASC,
-  t9.p_size ASC
+  t8.supplier_cnt DESC,
+  t8.p_brand ASC,
+  t8.p_type ASC,
+  t8.p_size ASC

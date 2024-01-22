@@ -1,6 +1,6 @@
 SELECT
-  "t13"."s_name",
-  "t13"."s_address"
+  "t12"."s_name",
+  "t12"."s_address"
 FROM (
   SELECT
     "t10"."s_suppkey",
@@ -34,10 +34,10 @@ FROM (
     FROM "hive"."ibis_sf1"."nation" AS "t2"
   ) AS "t8"
     ON "t10"."s_nationkey" = "t8"."n_nationkey"
-) AS "t13"
+) AS "t12"
 WHERE
-  "t13"."n_name" = 'CANADA'
-  AND "t13"."s_suppkey" IN (
+  "t12"."n_name" = 'CANADA'
+  AND "t12"."s_suppkey" IN (
     SELECT
       "t7"."ps_suppkey"
     FROM (
@@ -90,4 +90,4 @@ WHERE
       )
   )
 ORDER BY
-  "t13"."s_name" ASC
+  "t12"."s_name" ASC

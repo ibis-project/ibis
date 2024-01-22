@@ -1,7 +1,7 @@
 SELECT
-  t6.foo_id,
-  t6.total,
-  t6.value1
+  t5.foo_id,
+  t5.total,
+  t5.value1
 FROM (
   SELECT
     t4.foo_id,
@@ -17,8 +17,8 @@ FROM (
   ) AS t4
   INNER JOIN star2 AS t2
     ON t4.foo_id = t2.foo_id
-) AS t6
+) AS t5
 WHERE
-  t6.total > CAST(100 AS TINYINT)
+  t5.total > CAST(100 AS TINYINT)
 ORDER BY
-  t6.total DESC
+  t5.total DESC
