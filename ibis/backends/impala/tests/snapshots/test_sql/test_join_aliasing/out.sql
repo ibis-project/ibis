@@ -20,7 +20,7 @@ SELECT
   `t6`.`b`,
   `t6`.`count`,
   `t6`.`unique`,
-  `t14`.`total`
+  `t13`.`total`
 FROM (
   SELECT
     `t1`.`d`,
@@ -41,11 +41,11 @@ FROM (
 ) AS `t6`
 INNER JOIN (
   SELECT
-    `t12`.`d`,
-    `t12`.`idx`,
-    `t12`.`c`,
-    `t12`.`row_count`,
-    `t12`.`total`
+    `t11`.`d`,
+    `t11`.`idx`,
+    `t11`.`c`,
+    `t11`.`row_count`,
+    `t11`.`total`
   FROM (
     SELECT
       `t8`.`d`,
@@ -63,10 +63,10 @@ INNER JOIN (
         1
     ) AS `t10`
       ON `t8`.`d` = `t10`.`d`
-  ) AS `t12`
+  ) AS `t11`
   WHERE
-    `t12`.`row_count` < (
-      `t12`.`total` / 2
+    `t11`.`row_count` < (
+      `t11`.`total` / 2
     )
-) AS `t14`
-  ON `t6`.`d` = `t14`.`d`
+) AS `t13`
+  ON `t6`.`d` = `t13`.`d`
