@@ -188,7 +188,7 @@ def test_semi_join_topk(batting, awards_players, func):
     assert not expr.limit(5).execute().empty
 
 
-@pytest.mark.notimpl(["dask", "druid", "exasol"])
+@pytest.mark.notimpl(["dask", "druid", "exasol", "oracle"])
 @pytest.mark.notimpl(
     ["postgres"],
     raises=com.IbisTypeError,

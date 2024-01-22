@@ -15,6 +15,7 @@ from ibis.backends.tests.errors import (
     DuckDBParserException,
     ExaQueryError,
     MySQLOperationalError,
+    OracleDatabaseError,
     PyDeltaTableError,
     PyDruidProgrammingError,
     PySparkArithmeticException,
@@ -358,7 +359,7 @@ def test_table_to_csv_writer_kwargs(delimiter, tmp_path, awards_players):
                 pytest.mark.notyet(["mssql"], raises=sa.exc.ProgrammingError),
                 pytest.mark.notyet(["snowflake"], raises=SnowflakeProgrammingError),
                 pytest.mark.notyet(["trino"], raises=TrinoUserError),
-                pytest.mark.notyet(["oracle"], raises=sa.exc.DatabaseError),
+                pytest.mark.notyet(["oracle"], raises=OracleDatabaseError),
                 pytest.mark.notyet(["mysql"], raises=MySQLOperationalError),
                 pytest.mark.notyet(
                     ["pyspark"],

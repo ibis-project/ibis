@@ -7,8 +7,8 @@ import os
 import subprocess
 from typing import TYPE_CHECKING, Any
 
+import oracledb
 import pytest
-import sqlalchemy as sa
 
 import ibis
 from ibis.backends.tests.base import ServiceBackendTest
@@ -28,6 +28,9 @@ ORACLE_PORT = int(os.environ.get("IBIS_TEST_ORACLE_PORT", 1521))
 # ./createAppUser user pass ORACLE_DB
 # where ORACLE_DB is the same name you used in the Compose file.
 
+# Set to ensure decimals come back as decimals
+oracledb.defaults.fetch_decimals = True
+
 
 class TestConf(ServiceBackendTest):
     check_dtype = False
@@ -43,7 +46,7 @@ class TestConf(ServiceBackendTest):
     rounding_method = "half_to_even"
     data_volume = "/opt/oracle/data"
     service_name = "oracle"
-    deps = "oracledb", "sqlalchemy"
+    deps = ("oracledb",)
 
     @property
     def test_files(self) -> Iterable[Path]:
@@ -88,12 +91,11 @@ class TestConf(ServiceBackendTest):
             )
 
         init_oracle_database(
-            url=sa.engine.make_url(
-                f"oracle://{user}:{password}@{host}:{port:d}/{database}",
-            ),
+            dsn=oracledb.makedsn(host, port, service_name=database),
+            user=user,
+            password=password,
             database=database,
             schema=self.ddl_script,
-            connect_args=dict(service_name=database),
         )
 
         # then call sqlldr to ingest
@@ -138,42 +140,29 @@ def con(data_dir, tmp_path_factory, worker_id):
 
 
 def init_oracle_database(
-    url: sa.engine.url.URL,
+    user: str,
+    password: str,
+    dsn: str,
     database: str,
     schema: str | None = None,
     **kwargs: Any,
-) -> sa.engine.Engine:
+) -> None:
     """Initialise `database` at `url` with `schema`.
-
-    If `recreate`, drop the `database` at `url`, if it exists.
 
     Parameters
     ----------
-    url : url.sa.engine.url.URL
-        Connection url to the database
     database : str
         Name of the database to be dropped
     schema : TextIO
         File object containing schema to use
-
-    Returns
-    -------
-    sa.engine.Engine
-        SQLAlchemy engine object
     """
-    try:
-        url.database = database
-    except AttributeError:
-        url = url.set(database=database)
 
-    engine = sa.create_engine(url, **kwargs)
+    con = oracledb.connect(dsn, user=user, password=password, stmtcachesize=0)
 
     if schema:
-        with engine.begin() as conn:
+        with con.cursor() as cursor:
             for stmt in schema:
                 # XXX: maybe should just remove the comments in the sql file
                 # so we don't end up writing an entire parser here.
                 if not stmt.startswith("--"):
-                    conn.exec_driver_sql(stmt)
-
-    return engine
+                    cursor.execute(stmt)
