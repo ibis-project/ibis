@@ -161,6 +161,15 @@ class OracleCompiler(SQLGlotCompiler):
                 return sg.not_(left)
         return super().visit_Equals(op, left=left, right=right)
 
+    @visit_node.register(ops.IsNull)
+    def visit_IsNull(self, op, *, arg):
+        # TODO(gil): find a better way to handle this
+        # but CASE WHEN (bool_col = 1) IS NULL isn't valid and we can simply check if
+        # bool_col is null
+        if isinstance(arg, sge.EQ):
+            return arg.this.is_(NULL)
+        return arg.is_(NULL)
+
     @visit_node.register(ops.Literal)
     def visit_Literal(self, op, *, value, dtype):
         # avoid casting NULL -- oracle handling for these casts is... complicated
