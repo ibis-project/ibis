@@ -268,11 +268,6 @@ class SQLGlotCompiler(abc.ABC):
 
             if node is op:
                 return result
-            elif isinstance(node, ops.JoinLink):
-                # TODO(kszucs): this is a hack to preserve the generated table
-                # aliases, going to remove in a follow-up PR
-                next(alias_counter)
-                return result
             elif isinstance(node, ops.Relation):
                 aliases[node] = alias = f"t{next(alias_counter)}"
                 alias = sg.to_identifier(alias, quoted=self.quoted)

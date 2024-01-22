@@ -1,28 +1,28 @@
 SELECT
-  "t13"."ps_partkey",
-  "t13"."value"
+  "t11"."ps_partkey",
+  "t11"."value"
 FROM (
   SELECT
-    "t12"."ps_partkey",
-    SUM("t12"."ps_supplycost" * "t12"."ps_availqty") AS "value"
+    "t10"."ps_partkey",
+    SUM("t10"."ps_supplycost" * "t10"."ps_availqty") AS "value"
   FROM (
     SELECT
-      "t11"."ps_partkey",
-      "t11"."ps_suppkey",
-      "t11"."ps_availqty",
-      "t11"."ps_supplycost",
-      "t11"."ps_comment",
-      "t11"."s_suppkey",
-      "t11"."s_name",
-      "t11"."s_address",
-      "t11"."s_nationkey",
-      "t11"."s_phone",
-      "t11"."s_acctbal",
-      "t11"."s_comment",
-      "t11"."n_nationkey",
-      "t11"."n_name",
-      "t11"."n_regionkey",
-      "t11"."n_comment"
+      "t9"."ps_partkey",
+      "t9"."ps_suppkey",
+      "t9"."ps_availqty",
+      "t9"."ps_supplycost",
+      "t9"."ps_comment",
+      "t9"."s_suppkey",
+      "t9"."s_name",
+      "t9"."s_address",
+      "t9"."s_nationkey",
+      "t9"."s_phone",
+      "t9"."s_acctbal",
+      "t9"."s_comment",
+      "t9"."n_nationkey",
+      "t9"."n_name",
+      "t9"."n_regionkey",
+      "t9"."n_comment"
     FROM (
       SELECT
         "t7"."ps_partkey",
@@ -71,36 +71,36 @@ FROM (
         FROM "hive"."ibis_sf1"."nation" AS "t2"
       ) AS "t6"
         ON "t6"."n_nationkey" = "t8"."s_nationkey"
-    ) AS "t11"
+    ) AS "t9"
     WHERE
-      "t11"."n_name" = 'GERMANY'
-  ) AS "t12"
+      "t9"."n_name" = 'GERMANY'
+  ) AS "t10"
   GROUP BY
     1
-) AS "t13"
+) AS "t11"
 WHERE
-  "t13"."value" > (
+  "t11"."value" > (
     (
       SELECT
-        SUM("t12"."ps_supplycost" * "t12"."ps_availqty") AS "Sum(Multiply(ps_supplycost, ps_availqty))"
+        SUM("t10"."ps_supplycost" * "t10"."ps_availqty") AS "Sum(Multiply(ps_supplycost, ps_availqty))"
       FROM (
         SELECT
-          "t11"."ps_partkey",
-          "t11"."ps_suppkey",
-          "t11"."ps_availqty",
-          "t11"."ps_supplycost",
-          "t11"."ps_comment",
-          "t11"."s_suppkey",
-          "t11"."s_name",
-          "t11"."s_address",
-          "t11"."s_nationkey",
-          "t11"."s_phone",
-          "t11"."s_acctbal",
-          "t11"."s_comment",
-          "t11"."n_nationkey",
-          "t11"."n_name",
-          "t11"."n_regionkey",
-          "t11"."n_comment"
+          "t9"."ps_partkey",
+          "t9"."ps_suppkey",
+          "t9"."ps_availqty",
+          "t9"."ps_supplycost",
+          "t9"."ps_comment",
+          "t9"."s_suppkey",
+          "t9"."s_name",
+          "t9"."s_address",
+          "t9"."s_nationkey",
+          "t9"."s_phone",
+          "t9"."s_acctbal",
+          "t9"."s_comment",
+          "t9"."n_nationkey",
+          "t9"."n_name",
+          "t9"."n_regionkey",
+          "t9"."n_comment"
         FROM (
           SELECT
             "t7"."ps_partkey",
@@ -149,11 +149,11 @@ WHERE
             FROM "hive"."ibis_sf1"."nation" AS "t2"
           ) AS "t6"
             ON "t6"."n_nationkey" = "t8"."s_nationkey"
-        ) AS "t11"
+        ) AS "t9"
         WHERE
-          "t11"."n_name" = 'GERMANY'
-      ) AS "t12"
+          "t9"."n_name" = 'GERMANY'
+      ) AS "t10"
     ) * CAST(0.0001 AS DOUBLE)
   )
 ORDER BY
-  "t13"."value" DESC
+  "t11"."value" DESC

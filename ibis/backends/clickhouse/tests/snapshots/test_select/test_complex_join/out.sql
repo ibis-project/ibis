@@ -1,10 +1,10 @@
 SELECT
-  t5.a,
-  t5.b,
-  t5.c,
-  t5.d,
-  t5.c / (
-    t5.a - t5.b
+  t4.a,
+  t4.b,
+  t4.c,
+  t4.d,
+  t4.c / (
+    t4.a - t4.b
   ) AS e
 FROM (
   SELECT
@@ -15,4 +15,4 @@ FROM (
   FROM s AS t2
   INNER JOIN t AS t3
     ON t2.a = t3.c
-) AS t5
+) AS t4
