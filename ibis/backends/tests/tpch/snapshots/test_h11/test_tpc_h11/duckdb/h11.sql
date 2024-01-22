@@ -1,28 +1,28 @@
 SELECT
-  t10.ps_partkey,
-  t10.value
+  t8.ps_partkey,
+  t8.value
 FROM (
   SELECT
-    t9.ps_partkey,
-    SUM(t9.ps_supplycost * t9.ps_availqty) AS value
+    t7.ps_partkey,
+    SUM(t7.ps_supplycost * t7.ps_availqty) AS value
   FROM (
     SELECT
-      t8.ps_partkey,
-      t8.ps_suppkey,
-      t8.ps_availqty,
-      t8.ps_supplycost,
-      t8.ps_comment,
-      t8.s_suppkey,
-      t8.s_name,
-      t8.s_address,
-      t8.s_nationkey,
-      t8.s_phone,
-      t8.s_acctbal,
-      t8.s_comment,
-      t8.n_nationkey,
-      t8.n_name,
-      t8.n_regionkey,
-      t8.n_comment
+      t6.ps_partkey,
+      t6.ps_suppkey,
+      t6.ps_availqty,
+      t6.ps_supplycost,
+      t6.ps_comment,
+      t6.s_suppkey,
+      t6.s_name,
+      t6.s_address,
+      t6.s_nationkey,
+      t6.s_phone,
+      t6.s_acctbal,
+      t6.s_comment,
+      t6.n_nationkey,
+      t6.n_name,
+      t6.n_regionkey,
+      t6.n_comment
     FROM (
       SELECT
         t3.ps_partkey,
@@ -46,36 +46,36 @@ FROM (
         ON t3.ps_suppkey = t4.s_suppkey
       INNER JOIN nation AS t5
         ON t5.n_nationkey = t4.s_nationkey
-    ) AS t8
+    ) AS t6
     WHERE
-      t8.n_name = 'GERMANY'
-  ) AS t9
+      t6.n_name = 'GERMANY'
+  ) AS t7
   GROUP BY
     1
-) AS t10
+) AS t8
 WHERE
-  t10.value > (
+  t8.value > (
     (
       SELECT
-        SUM(t9.ps_supplycost * t9.ps_availqty) AS "Sum(Multiply(ps_supplycost, ps_availqty))"
+        SUM(t7.ps_supplycost * t7.ps_availqty) AS "Sum(Multiply(ps_supplycost, ps_availqty))"
       FROM (
         SELECT
-          t8.ps_partkey,
-          t8.ps_suppkey,
-          t8.ps_availqty,
-          t8.ps_supplycost,
-          t8.ps_comment,
-          t8.s_suppkey,
-          t8.s_name,
-          t8.s_address,
-          t8.s_nationkey,
-          t8.s_phone,
-          t8.s_acctbal,
-          t8.s_comment,
-          t8.n_nationkey,
-          t8.n_name,
-          t8.n_regionkey,
-          t8.n_comment
+          t6.ps_partkey,
+          t6.ps_suppkey,
+          t6.ps_availqty,
+          t6.ps_supplycost,
+          t6.ps_comment,
+          t6.s_suppkey,
+          t6.s_name,
+          t6.s_address,
+          t6.s_nationkey,
+          t6.s_phone,
+          t6.s_acctbal,
+          t6.s_comment,
+          t6.n_nationkey,
+          t6.n_name,
+          t6.n_regionkey,
+          t6.n_comment
         FROM (
           SELECT
             t3.ps_partkey,
@@ -99,11 +99,11 @@ WHERE
             ON t3.ps_suppkey = t4.s_suppkey
           INNER JOIN nation AS t5
             ON t5.n_nationkey = t4.s_nationkey
-        ) AS t8
+        ) AS t6
         WHERE
-          t8.n_name = 'GERMANY'
-      ) AS t9
+          t6.n_name = 'GERMANY'
+      ) AS t7
     ) * CAST(0.0001 AS DOUBLE)
   )
 ORDER BY
-  t10.value DESC
+  t8.value DESC

@@ -1,9 +1,9 @@
 SELECT
-  "t8"."s_suppkey",
-  "t8"."s_name",
-  "t8"."s_address",
-  "t8"."s_phone",
-  "t8"."total_revenue"
+  "t7"."s_suppkey",
+  "t7"."s_name",
+  "t7"."s_address",
+  "t7"."s_phone",
+  "t7"."total_revenue"
 FROM (
   SELECT
     "t3"."s_suppkey",
@@ -59,11 +59,11 @@ FROM (
       1
   ) AS "t6"
     ON "t3"."s_suppkey" = "t6"."l_suppkey"
-) AS "t8"
+) AS "t7"
 WHERE
-  "t8"."total_revenue" = (
+  "t7"."total_revenue" = (
     SELECT
-      MAX("t8"."total_revenue") AS "Max(total_revenue)"
+      MAX("t7"."total_revenue") AS "Max(total_revenue)"
     FROM (
       SELECT
         "t3"."s_suppkey",
@@ -119,7 +119,7 @@ WHERE
           1
       ) AS "t6"
         ON "t3"."s_suppkey" = "t6"."l_suppkey"
-    ) AS "t8"
+    ) AS "t7"
   )
 ORDER BY
-  "t8"."s_suppkey" ASC
+  "t7"."s_suppkey" ASC

@@ -1,34 +1,34 @@
 SELECT
-  SUM("t8"."l_extendedprice" * (
-    1 - "t8"."l_discount"
+  SUM("t7"."l_extendedprice" * (
+    1 - "t7"."l_discount"
   )) AS "revenue"
 FROM (
   SELECT
-    "t7"."l_orderkey",
-    "t7"."l_partkey",
-    "t7"."l_suppkey",
-    "t7"."l_linenumber",
-    "t7"."l_quantity",
-    "t7"."l_extendedprice",
-    "t7"."l_discount",
-    "t7"."l_tax",
-    "t7"."l_returnflag",
-    "t7"."l_linestatus",
-    "t7"."l_shipdate",
-    "t7"."l_commitdate",
-    "t7"."l_receiptdate",
-    "t7"."l_shipinstruct",
-    "t7"."l_shipmode",
-    "t7"."l_comment",
-    "t7"."p_partkey",
-    "t7"."p_name",
-    "t7"."p_mfgr",
-    "t7"."p_brand",
-    "t7"."p_type",
-    "t7"."p_size",
-    "t7"."p_container",
-    "t7"."p_retailprice",
-    "t7"."p_comment"
+    "t6"."l_orderkey",
+    "t6"."l_partkey",
+    "t6"."l_suppkey",
+    "t6"."l_linenumber",
+    "t6"."l_quantity",
+    "t6"."l_extendedprice",
+    "t6"."l_discount",
+    "t6"."l_tax",
+    "t6"."l_returnflag",
+    "t6"."l_linestatus",
+    "t6"."l_shipdate",
+    "t6"."l_commitdate",
+    "t6"."l_receiptdate",
+    "t6"."l_shipinstruct",
+    "t6"."l_shipmode",
+    "t6"."l_comment",
+    "t6"."p_partkey",
+    "t6"."p_name",
+    "t6"."p_mfgr",
+    "t6"."p_brand",
+    "t6"."p_type",
+    "t6"."p_size",
+    "t6"."p_container",
+    "t6"."p_retailprice",
+    "t6"."p_comment"
   FROM (
     SELECT
       "t4"."l_orderkey",
@@ -90,7 +90,7 @@ FROM (
       FROM "SNOWFLAKE_SAMPLE_DATA"."TPCH_SF1"."PART" AS "t1"
     ) AS "t5"
       ON "t5"."p_partkey" = "t4"."l_partkey"
-  ) AS "t7"
+  ) AS "t6"
   WHERE
     (
       (
@@ -100,24 +100,24 @@ FROM (
               (
                 (
                   (
-                    "t7"."p_brand" = 'Brand#12'
+                    "t6"."p_brand" = 'Brand#12'
                   )
-                  AND "t7"."p_container" IN ('SM CASE', 'SM BOX', 'SM PACK', 'SM PKG')
+                  AND "t6"."p_container" IN ('SM CASE', 'SM BOX', 'SM PACK', 'SM PKG')
                 )
                 AND (
-                  "t7"."l_quantity" >= 1
+                  "t6"."l_quantity" >= 1
                 )
               )
               AND (
-                "t7"."l_quantity" <= 11
+                "t6"."l_quantity" <= 11
               )
             )
-            AND "t7"."p_size" BETWEEN 1 AND 5
+            AND "t6"."p_size" BETWEEN 1 AND 5
           )
-          AND "t7"."l_shipmode" IN ('AIR', 'AIR REG')
+          AND "t6"."l_shipmode" IN ('AIR', 'AIR REG')
         )
         AND (
-          "t7"."l_shipinstruct" = 'DELIVER IN PERSON'
+          "t6"."l_shipinstruct" = 'DELIVER IN PERSON'
         )
       )
       OR (
@@ -127,24 +127,24 @@ FROM (
               (
                 (
                   (
-                    "t7"."p_brand" = 'Brand#23'
+                    "t6"."p_brand" = 'Brand#23'
                   )
-                  AND "t7"."p_container" IN ('MED BAG', 'MED BOX', 'MED PKG', 'MED PACK')
+                  AND "t6"."p_container" IN ('MED BAG', 'MED BOX', 'MED PKG', 'MED PACK')
                 )
                 AND (
-                  "t7"."l_quantity" >= 10
+                  "t6"."l_quantity" >= 10
                 )
               )
               AND (
-                "t7"."l_quantity" <= 20
+                "t6"."l_quantity" <= 20
               )
             )
-            AND "t7"."p_size" BETWEEN 1 AND 10
+            AND "t6"."p_size" BETWEEN 1 AND 10
           )
-          AND "t7"."l_shipmode" IN ('AIR', 'AIR REG')
+          AND "t6"."l_shipmode" IN ('AIR', 'AIR REG')
         )
         AND (
-          "t7"."l_shipinstruct" = 'DELIVER IN PERSON'
+          "t6"."l_shipinstruct" = 'DELIVER IN PERSON'
         )
       )
     )
@@ -155,24 +155,24 @@ FROM (
             (
               (
                 (
-                  "t7"."p_brand" = 'Brand#34'
+                  "t6"."p_brand" = 'Brand#34'
                 )
-                AND "t7"."p_container" IN ('LG CASE', 'LG BOX', 'LG PACK', 'LG PKG')
+                AND "t6"."p_container" IN ('LG CASE', 'LG BOX', 'LG PACK', 'LG PKG')
               )
               AND (
-                "t7"."l_quantity" >= 20
+                "t6"."l_quantity" >= 20
               )
             )
             AND (
-              "t7"."l_quantity" <= 30
+              "t6"."l_quantity" <= 30
             )
           )
-          AND "t7"."p_size" BETWEEN 1 AND 15
+          AND "t6"."p_size" BETWEEN 1 AND 15
         )
-        AND "t7"."l_shipmode" IN ('AIR', 'AIR REG')
+        AND "t6"."l_shipmode" IN ('AIR', 'AIR REG')
       )
       AND (
-        "t7"."l_shipinstruct" = 'DELIVER IN PERSON'
+        "t6"."l_shipinstruct" = 'DELIVER IN PERSON'
       )
     )
-) AS "t8"
+) AS "t7"
