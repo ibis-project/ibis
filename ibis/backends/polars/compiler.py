@@ -888,9 +888,9 @@ def array_concat(op, **kw):
     return result
 
 
-@translate.register(ops.ArrayColumn)
+@translate.register(ops.Array)
 def array_column(op, **kw):
-    cols = [translate(col, **kw) for col in op.cols]
+    cols = [translate(col, **kw) for col in op.exprs]
     return pl.concat_list(cols)
 
 

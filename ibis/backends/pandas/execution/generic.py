@@ -145,6 +145,28 @@ def execute_cast_series_array(op, data, type, **kwargs):
     return data.map(cast_to_array)
 
 
+@execute_node.register(ops.Cast, list, dt.Array)
+def execute_cast_list_array(op, data, type, **kwargs):
+    value_type = type.value_type
+    numpy_type = constants.IBIS_TYPE_TO_PANDAS_TYPE.get(value_type, None)
+    if numpy_type is None:
+        raise ValueError(
+            "Array value type must be a primitive type "
+            "(e.g., number, string, or timestamp)"
+        )
+
+    def cast_to_array(array, numpy_type=numpy_type):
+        elems = [
+            el if el is None else np.array(el, dtype=numpy_type).item() for el in array
+        ]
+        try:
+            return np.array(elems, dtype=numpy_type)
+        except TypeError:
+            return np.array(elems)
+
+    return cast_to_array(data)
+
+
 @execute_node.register(ops.Cast, pd.Series, dt.Timestamp)
 def execute_cast_series_timestamp(op, data, type, **kwargs):
     arg = op.arg

@@ -733,9 +733,9 @@ def _not_null(op, *, arg, **_):
     return sg.not_(arg.is_(NULL))
 
 
-@translate_val.register(ops.ArrayColumn)
-def array_column(op, *, cols, **_):
-    return F.make_array(*cols)
+@translate_val.register(ops.Array)
+def array_column(op, *, exprs, **_):
+    return F.make_array(*exprs)
 
 
 @translate_val.register(ops.ArrayRepeat)

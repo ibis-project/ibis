@@ -6,6 +6,7 @@ from functools import partial
 import dask.dataframe as dd
 import dask.dataframe.groupby as ddgb
 import numpy as np
+import pandas as pd
 
 import ibis.expr.operations as ops
 from ibis.backends.dask.core import execute
@@ -34,10 +35,25 @@ collect_list = dd.Aggregation(
 )
 
 
-@execute_node.register(ops.ArrayColumn, tuple)
+@execute_node.register(ops.Array, tuple)
 def execute_array_column(op, cols, **kwargs):
-    cols = [execute(arg, **kwargs) for arg in cols]
-    df = dd.concat(cols, axis=1)
+    vals = [execute(arg, **kwargs) for arg in cols]
+
+    length = next((len(v) for v in vals if isinstance(v, dd.Series)), None)
+    if length is None:
+        return vals
+
+    n_partitions = next((v.npartitions for v in vals if isinstance(v, dd.Series)), None)
+
+    def ensure_series(v):
+        if isinstance(v, dd.Series):
+            return v
+        else:
+            return dd.from_pandas(pd.Series([v] * length), npartitions=n_partitions)
+
+    # dd.concat() can only handle array-likes.
+    # If we're given a scalar, we need to broadcast it as a Series.
+    df = dd.concat([ensure_series(v) for v in vals], axis=1)
     return df.apply(
         lambda row: np.array(row, dtype=object), axis=1, meta=(None, "object")
     )

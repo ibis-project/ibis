@@ -43,7 +43,7 @@ class make_array(FunctionElement):
     pass
 
 
-@compiles(make_array, "trino")
+@compiles(make_array, "default")
 def compile_make_array(element, compiler, **kw):
     return f"ARRAY[{compiler.process(element.clauses, **kw)}]"
 
@@ -117,7 +117,7 @@ def _group_concat(t, op):
 def _array_column(t, op):
     args = ", ".join(
         str(t.translate(arg).compile(compile_kwargs={"literal_binds": True}))
-        for arg in op.cols
+        for arg in op.exprs
     )
     return sa.literal_column(f"ARRAY[{args}]", type_=t.get_sqla_type(op.dtype))
 
@@ -431,7 +431,7 @@ operation_registry.update(
         ops.ArrayIndex: fixed_arity(
             lambda arg, index: sa.func.element_at(arg, index + 1), 2
         ),
-        ops.ArrayColumn: _array_column,
+        ops.Array: _array_column,
         ops.ArrayRepeat: fixed_arity(
             lambda arg, times: sa.func.flatten(sa.func.repeat(arg, times)), 2
         ),

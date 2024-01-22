@@ -129,7 +129,7 @@ def _array_concat(translator, op):
 
 
 def _array_column(translator, op):
-    return "[{}]".format(", ".join(map(translator.translate, op.cols)))
+    return "[{}]".format(", ".join(map(translator.translate, op.exprs)))
 
 
 def _array_index(translator, op):
@@ -912,7 +912,7 @@ OPERATION_REGISTRY = {
     ops.StructColumn: _struct_column,
     ops.ArrayCollect: _array_agg,
     ops.ArrayConcat: _array_concat,
-    ops.ArrayColumn: _array_column,
+    ops.Array: _array_column,
     ops.ArrayIndex: _array_index,
     ops.ArrayLength: unary("ARRAY_LENGTH"),
     ops.ArrayRepeat: _array_repeat,

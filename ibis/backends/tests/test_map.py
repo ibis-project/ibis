@@ -236,7 +236,7 @@ def test_map_construct_dict(con, keys, values):
 @pytest.mark.notimpl(
     ["flink"],
     raises=exc.OperationNotDefinedError,
-    reason="No translation rule for <class 'ibis.expr.operations.arrays.ArrayColumn'>",
+    reason="No translation rule for <class 'ibis.expr.operations.arrays.Array'>",
 )
 def test_map_construct_array_column(con, alltypes, df):
     expr = ibis.map(ibis.array([alltypes.string_col]), ibis.array([alltypes.int_col]))

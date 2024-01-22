@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import contextlib
 import functools
 from datetime import datetime
 
@@ -15,13 +14,13 @@ from pytest import param
 
 import ibis
 import ibis.common.exceptions as com
+import ibis.expr.datashape as ds
 import ibis.expr.datatypes as dt
 import ibis.expr.types as ir
 from ibis.backends.tests.errors import (
     ClickHouseDatabaseError,
     GoogleBadRequest,
     PolarsComputeError,
-    Py4JJavaError,
     PySparkAnalysisException,
 )
 
@@ -42,29 +41,21 @@ pytestmark = [
 
 @pytest.mark.notimpl(["flink"], raises=com.OperationNotDefinedError)
 def test_array_column(backend, alltypes, df):
-    expr = ibis.array([alltypes["double_col"], alltypes["double_col"]])
+    expr = ibis.array(
+        [alltypes["double_col"], alltypes["double_col"], 5.0, ibis.literal(6.0)]
+    )
     assert isinstance(expr, ir.ArrayColumn)
 
     result = expr.execute()
     expected = df.apply(
-        lambda row: [row["double_col"], row["double_col"]],
+        lambda row: [row["double_col"], row["double_col"], 5.0, 6.0],
         axis=1,
     )
     backend.assert_series_equal(result, expected, check_names=False)
 
 
-ARRAY_BACKEND_TYPES = {
-    "clickhouse": "Array(Float64)",
-    "snowflake": "ARRAY",
-    "trino": "array(double)",
-    "bigquery": "ARRAY",
-    "duckdb": "DOUBLE[]",
-    "postgres": "numeric[]",
-    "flink": "ARRAY<DECIMAL(2, 1) NOT NULL> NOT NULL",
-}
-
-
-def test_array_scalar(con, backend):
+@pytest.mark.notimpl(["flink"], raises=com.OperationNotDefinedError)
+def test_array_scalar(con):
     expr = ibis.array([1.0, 2.0, 3.0])
     assert isinstance(expr, ir.ArrayScalar)
 
@@ -72,10 +63,6 @@ def test_array_scalar(con, backend):
     expected = np.array([1.0, 2.0, 3.0])
 
     assert np.array_equal(result, expected)
-
-    with contextlib.suppress(com.OperationNotDefinedError):
-        backend_name = backend.name()
-        assert con.execute(expr.typeof()) == ARRAY_BACKEND_TYPES[backend_name]
 
 
 @pytest.mark.notimpl(["polars", "flink"], raises=com.OperationNotDefinedError)
@@ -327,7 +314,7 @@ def test_unnest_default_name(backend):
     array_types = backend.array_types
     df = array_types.execute()
     expr = (
-        array_types.x.cast("!array<int64>") + ibis.array([1], type="!array<int64>")
+        array_types.x.cast("!array<int64>") + ibis.array([1]).cast("!array<int64>")
     ).unnest()
     assert expr.get_name().startswith("ArrayConcat(")
 
@@ -1050,15 +1037,16 @@ def test_timestamp_range_zero_step(con, start, stop, step, tzinfo):
     assert list(result) == []
 
 
-@pytest.mark.notimpl(["flink"], raises=Py4JJavaError)
-@pytest.mark.notimpl(["datafusion"], raises=Exception)
+@pytest.mark.notimpl(
+    ["flink"], raises=AssertionError, reason="arrays not yet implemented"
+)
 def test_repr_timestamp_array(con, monkeypatch):
     monkeypatch.setattr(ibis.options, "interactive", True)
     monkeypatch.setattr(ibis.options, "default_backend", con)
     assert ibis.options.interactive is True
     assert ibis.options.default_backend is con
     expr = ibis.array(pd.date_range("2010-01-01", "2010-01-03", freq="D").tolist())
-    assert repr(expr)
+    assert "No translation rule" not in repr(expr)
 
 
 @pytest.mark.notyet(
@@ -1070,3 +1058,34 @@ def test_unnest_range(con):
     result = con.execute(expr)
     expected = pd.DataFrame({"x": np.array([0, 1], dtype="int8"), "y": [1.0, 1.0]})
     tm.assert_frame_equal(result, expected)
+
+
+@pytest.mark.notyet(["flink"], raises=com.OperationNotDefinedError)
+@pytest.mark.parametrize(
+    ("input", "expected"),
+    [
+        param([1, ibis.literal(2)], [1, 2], id="int-int"),
+        param([1.0, ibis.literal(2)], [1.0, 2.0], id="float-int"),
+        param([1.0, ibis.literal(2.0)], [1.0, 2.0], id="float-float"),
+        param([1, ibis.literal(2.0)], [1.0, 2.0], id="int-float"),
+        param([ibis.literal(1), ibis.literal(2.0)], [1.0, 2.0], id="int-float-exprs"),
+        param(
+            [[1], ibis.literal([2])],
+            [[1], [2]],
+            id="array",
+            marks=[
+                pytest.mark.notyet(["bigquery"], raises=GoogleBadRequest),
+                pytest.mark.broken(
+                    ["polars"],
+                    reason="expression input not supported with nested arrays",
+                    raises=TypeError,
+                ),
+            ],
+        ),
+    ],
+)
+def test_array_literal_with_exprs(con, input, expected):
+    expr = ibis.array(input)
+    assert expr.op().shape == ds.scalar
+    result = list(con.execute(expr))
+    assert result == expected

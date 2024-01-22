@@ -1634,9 +1634,9 @@ def compile_interval_from_integer(t, op, **kwargs):
 # -------------------------- Array Operations ----------------------------
 
 
-@compiles(ops.ArrayColumn)
+@compiles(ops.Array)
 def compile_array_column(t, op, **kwargs):
-    cols = [t.translate(col, **kwargs) for col in op.cols]
+    cols = [t.translate(col, **kwargs) for col in op.exprs]
     return F.array(cols)
 
 
