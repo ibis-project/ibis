@@ -348,7 +348,9 @@ def test_table_to_csv_writer_kwargs(delimiter, tmp_path, awards_players):
             marks=[
                 pytest.mark.notyet(["flink"], raises=NotImplementedError),
                 pytest.mark.notyet(["exasol"], raises=ExaQueryError),
-                pytest.mark.notyet(["oracle"], raises=OracleDatabaseError),
+                pytest.mark.notimpl(
+                    ["oracle"], reason="PyArrow raises b/c it gets a float"
+                ),
             ],
         ),
         param(
