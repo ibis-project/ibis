@@ -1,7 +1,7 @@
 ---
 title: "Ibis goes real-time! Introducing the new Flink backend for Ibis"
 author: "Deepyaman Datta"
-date: "2024-01-10"
+date: "2024-01-29"
 categories:
     - blog
     - flink
