@@ -155,13 +155,6 @@ jobs:
               - druid
             services:
               - druid
-          # - name: oracle
-          #   title: Oracle
-          #   serial: true
-          #   extras:
-          #     - oracle
-          #   services:
-          #     - oracle
           - name: exasol
             title: Exasol
             serial: true
@@ -169,6 +162,13 @@ jobs:
               - exasol
             services:
               - exasol
+          - name: oracle
+            title: Oracle
+            serial: true
+            extras:
+              - oracle
+            services:
+              - oracle
           # - name: flink
           #   title: Flink
           #   serial: true
@@ -265,15 +265,15 @@ jobs:
                 - druid
               services:
                 - druid
-          # - os: windows-latest
-          #   backend:
-          #     name: oracle
-          #     title: Oracle
-          #     serial: true
-          #     extras:
-          #       - oracle
-          #     services:
-          #       - oracle
+          - os: windows-latest
+            backend:
+              name: oracle
+              title: Oracle
+              serial: true
+              extras:
+                - oracle
+              services:
+                - oracle
           # - os: windows-latest
           #   backend:
           #     name: flink

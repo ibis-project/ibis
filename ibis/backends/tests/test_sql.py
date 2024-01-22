@@ -18,7 +18,7 @@ array_literal = param(
     ibis.array([1]),
     marks=[
         pytest.mark.never(
-            ["mssql", "oracle"],
+            ["mssql"],
             raises=sa.exc.CompileError,
             reason="arrays not supported in the backend",
         ),
@@ -51,7 +51,7 @@ no_structs = pytest.mark.never(
     reason="structs not supported in the backend",
 )
 no_struct_literals = pytest.mark.notimpl(
-    ["mssql", "oracle"], reason="struct literals are not yet implemented"
+    ["mssql"], reason="struct literals are not yet implemented"
 )
 not_sql = pytest.mark.never(
     ["pandas", "dask"],

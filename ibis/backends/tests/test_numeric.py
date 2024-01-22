@@ -23,6 +23,7 @@ from ibis.backends.tests.errors import (
     GoogleBadRequest,
     ImpalaHiveServer2Error,
     MySQLOperationalError,
+    OracleDatabaseError,
     PsycoPg2DivisionByZero,
     Py4JError,
     PyDruidProgrammingError,
@@ -248,7 +249,7 @@ def test_numeric_literal(con, backend, expr, expected_types):
                 "mssql": 1.1,
                 "druid": decimal.Decimal("1.1"),
                 "datafusion": decimal.Decimal("1.1"),
-                "oracle": 1.1,
+                "oracle": decimal.Decimal("1.1"),
                 "flink": decimal.Decimal("1.1"),
             },
             {
@@ -290,7 +291,7 @@ def test_numeric_literal(con, backend, expr, expected_types):
                 "mssql": 1.1,
                 "druid": decimal.Decimal("1.1"),
                 "datafusion": decimal.Decimal("1.1"),
-                "oracle": 1.1,
+                "oracle": decimal.Decimal("1.1"),
                 "flink": decimal.Decimal("1.1"),
             },
             {
@@ -336,6 +337,7 @@ def test_numeric_literal(con, backend, expr, expected_types):
                 pytest.mark.notimpl(["exasol"], raises=ExaQueryError),
                 pytest.mark.notimpl(["mysql"], raises=MySQLOperationalError),
                 pytest.mark.notyet(["snowflake"], raises=SnowflakeProgrammingError),
+                pytest.mark.notyet(["oracle"], raises=OracleDatabaseError),
                 pytest.mark.notyet(["impala"], raises=ImpalaHiveServer2Error),
                 pytest.mark.broken(
                     ["duckdb"],
@@ -412,7 +414,7 @@ def test_numeric_literal(con, backend, expr, expected_types):
                 pytest.mark.broken(
                     ["oracle"],
                     "(oracledb.exceptions.DatabaseError) DPY-4004: invalid number",
-                    raises=sa.exc.DatabaseError,
+                    raises=OracleDatabaseError,
                 ),
                 pytest.mark.notyet(
                     ["trino"],
@@ -487,7 +489,7 @@ def test_numeric_literal(con, backend, expr, expected_types):
                 pytest.mark.broken(
                     ["oracle"],
                     "(oracledb.exceptions.DatabaseError) DPY-4004: invalid number",
-                    raises=sa.exc.DatabaseError,
+                    raises=OracleDatabaseError,
                 ),
                 pytest.mark.notyet(
                     ["flink"],
@@ -574,7 +576,7 @@ def test_numeric_literal(con, backend, expr, expected_types):
                 pytest.mark.broken(
                     ["oracle"],
                     "(oracledb.exceptions.DatabaseError) DPY-4004: invalid number",
-                    raises=sa.exc.DatabaseError,
+                    raises=OracleDatabaseError,
                 ),
                 pytest.mark.notyet(
                     ["flink"],
@@ -683,7 +685,7 @@ def test_decimal_literal(con, backend, expr, expected_types, expected_result):
     ],
 )
 @pytest.mark.notimpl(
-    ["sqlite", "mssql", "oracle", "flink", "druid"], raises=com.OperationNotDefinedError
+    ["sqlite", "mssql", "flink", "druid"], raises=com.OperationNotDefinedError
 )
 @pytest.mark.notimpl(["mysql"], raises=(MySQLOperationalError, NotImplementedError))
 def test_isnan_isinf(
@@ -1087,7 +1089,7 @@ def test_floating_mod(backend, alltypes, df):
             marks=[
                 pytest.mark.notyet(
                     "oracle",
-                    raises=(sa.exc.DatabaseError, sa.exc.ArgumentError),
+                    raises=OracleDatabaseError,
                     reason="Oracle doesn't do integer division by zero",
                 ),
                 pytest.mark.notyet(
@@ -1103,7 +1105,7 @@ def test_floating_mod(backend, alltypes, df):
             marks=[
                 pytest.mark.notyet(
                     "oracle",
-                    raises=(sa.exc.DatabaseError, sa.exc.ArgumentError),
+                    raises=OracleDatabaseError,
                     reason="Oracle doesn't do integer division by zero",
                 ),
                 pytest.mark.notyet(
@@ -1119,7 +1121,7 @@ def test_floating_mod(backend, alltypes, df):
             marks=[
                 pytest.mark.notyet(
                     "oracle",
-                    raises=(sa.exc.DatabaseError, sa.exc.ArgumentError),
+                    raises=OracleDatabaseError,
                     reason="Oracle doesn't do integer division by zero",
                 ),
                 pytest.mark.notyet(
@@ -1135,7 +1137,7 @@ def test_floating_mod(backend, alltypes, df):
             marks=[
                 pytest.mark.notyet(
                     "oracle",
-                    raises=(sa.exc.DatabaseError, sa.exc.ArgumentError),
+                    raises=OracleDatabaseError,
                     reason="Oracle doesn't do integer division by zero",
                 ),
                 pytest.mark.notyet(
@@ -1153,7 +1155,7 @@ def test_floating_mod(backend, alltypes, df):
             marks=[
                 pytest.mark.notyet(
                     "oracle",
-                    raises=(sa.exc.DatabaseError, sa.exc.ArgumentError),
+                    raises=OracleDatabaseError,
                     reason="Oracle doesn't do integer division by zero",
                 ),
                 pytest.mark.never(["impala"], reason="doesn't allow divide by zero"),
@@ -1165,7 +1167,7 @@ def test_floating_mod(backend, alltypes, df):
             marks=[
                 pytest.mark.notyet(
                     "oracle",
-                    raises=(sa.exc.DatabaseError, sa.exc.ArgumentError),
+                    raises=OracleDatabaseError,
                     reason="Oracle doesn't do integer division by zero",
                 ),
                 pytest.mark.never(["impala"], reason="doesn't allow divide by zero"),
@@ -1177,7 +1179,7 @@ def test_floating_mod(backend, alltypes, df):
             marks=[
                 pytest.mark.notyet(
                     "oracle",
-                    raises=(sa.exc.DatabaseError, sa.exc.ArgumentError),
+                    raises=OracleDatabaseError,
                     reason="Oracle doesn't do integer division by zero",
                 ),
                 pytest.mark.never(["impala"], reason="doesn't allow divide by zero"),
@@ -1189,7 +1191,7 @@ def test_floating_mod(backend, alltypes, df):
             marks=[
                 pytest.mark.notyet(
                     "oracle",
-                    raises=(sa.exc.DatabaseError, sa.exc.ArgumentError),
+                    raises=OracleDatabaseError,
                     reason="Oracle doesn't do integer division by zero",
                 ),
                 pytest.mark.never(["impala"], reason="doesn't allow divide by zero"),
@@ -1264,6 +1266,7 @@ def test_divide_by_zero(backend, alltypes, df, column, denominator):
         "datafusion",
         "duckdb",
         "impala",
+        "oracle",
         "pandas",
         "pyspark",
         "polars",
@@ -1401,7 +1404,14 @@ flink_no_bitwise = pytest.mark.notyet(
 )
 
 
-@pytest.mark.parametrize("op", [and_, or_, xor])
+@pytest.mark.parametrize(
+    "op",
+    [
+        and_,
+        param(or_, marks=[pytest.mark.notimpl(["oracle"], raises=OracleDatabaseError)]),
+        param(xor, marks=[pytest.mark.notimpl(["oracle"], raises=OracleDatabaseError)]),
+    ],
+)
 @pytest.mark.parametrize(
     ("left_fn", "right_fn"),
     [
@@ -1410,7 +1420,6 @@ flink_no_bitwise = pytest.mark.notyet(
         param(lambda t: t.int_col, lambda _: 3, id="col_scalar"),
     ],
 )
-@pytest.mark.notimpl(["oracle"], raises=sa.exc.DatabaseError)
 @pytest.mark.notimpl(["exasol"], raises=(sa.exc.DBAPIError, ExaQueryError))
 @flink_no_bitwise
 def test_bitwise_columns(backend, con, alltypes, df, op, left_fn, right_fn):
@@ -1447,7 +1456,7 @@ def test_bitwise_columns(backend, con, alltypes, df, op, left_fn, right_fn):
         param(rshift, lambda t: t.int_col, lambda _: 3, id="rshift_col_scalar"),
     ],
 )
-@pytest.mark.notimpl(["oracle"], raises=sa.exc.DatabaseError)
+@pytest.mark.notimpl(["oracle"], raises=OracleDatabaseError)
 @pytest.mark.notimpl(["exasol"], raises=(sa.exc.DBAPIError, ExaQueryError))
 @flink_no_bitwise
 def test_bitwise_shift(backend, alltypes, df, op, left_fn, right_fn):
@@ -1466,13 +1475,30 @@ def test_bitwise_shift(backend, alltypes, df, op, left_fn, right_fn):
 
 @pytest.mark.parametrize(
     "op",
-    [and_, or_, xor, lshift, rshift],
+    [
+        and_,
+        param(
+            or_,
+            marks=pytest.mark.notimpl(["oracle"], raises=OracleDatabaseError),
+        ),
+        param(
+            xor,
+            marks=pytest.mark.notimpl(["oracle"], raises=OracleDatabaseError),
+        ),
+        param(
+            lshift,
+            marks=[pytest.mark.notimpl(["oracle"], raises=OracleDatabaseError)],
+        ),
+        param(
+            rshift,
+            marks=[pytest.mark.notimpl(["oracle"], raises=OracleDatabaseError)],
+        ),
+    ],
 )
 @pytest.mark.parametrize(
     ("left", "right"),
     [param(4, L(2), id="int_col"), param(L(4), 2, id="col_int")],
 )
-@pytest.mark.notimpl(["oracle"], raises=sa.exc.DatabaseError)
 @pytest.mark.notimpl(["exasol"], raises=ExaQueryError)
 @flink_no_bitwise
 def test_bitwise_scalars(con, op, left, right):
@@ -1483,7 +1509,7 @@ def test_bitwise_scalars(con, op, left, right):
 
 
 @pytest.mark.notimpl(["datafusion", "exasol"], raises=com.OperationNotDefinedError)
-@pytest.mark.notimpl(["oracle"], raises=sa.exc.DatabaseError)
+@pytest.mark.notimpl(["oracle"], raises=OracleDatabaseError)
 @flink_no_bitwise
 def test_bitwise_not_scalar(con):
     expr = ~L(2)
@@ -1493,7 +1519,7 @@ def test_bitwise_not_scalar(con):
 
 
 @pytest.mark.notimpl(["datafusion", "exasol"], raises=com.OperationNotDefinedError)
-@pytest.mark.notimpl(["oracle"], raises=sa.exc.DatabaseError)
+@pytest.mark.notimpl(["oracle"], raises=OracleDatabaseError)
 @flink_no_bitwise
 def test_bitwise_not_col(backend, alltypes, df):
     expr = (~alltypes.int_col).name("tmp")
