@@ -1167,7 +1167,7 @@ def test_distinct_on_keep(backend, on, keep):
 )
 @pytest.mark.notimpl(
     ["druid", "impala", "oracle"],
-    raises=(NotImplementedError, sa.exc.ProgrammingError, com.OperationNotDefinedError),
+    raises=(NotImplementedError, OracleDatabaseError, com.OperationNotDefinedError),
     reason="arbitrary not implemented in the backend",
 )
 @pytest.mark.notimpl(
