@@ -77,7 +77,7 @@ Kennewick;-19.9
 Also, you'll need to install Ibis with the three backends we'll use:
 
 ```{.bash}
-pip install ibis-framework[duckdb,polars,datafusion]
+pip install 'ibis-framework[duckdb,polars,datafusion]'
 ```
 
 ## Understanding Ibis
