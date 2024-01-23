@@ -704,7 +704,7 @@ class Backend(SQLBackend, CanCreateDatabase, NoUrl):
         schema: sch.Schema | None = None,
         table_name: str | None = None,
     ) -> ir.Table:
-        """Register a file as a table in the current database.
+        """Register a file/directory as a table in the current database.
 
         Parameters
         ----------
@@ -769,8 +769,21 @@ class Backend(SQLBackend, CanCreateDatabase, NoUrl):
         -------
         ir.Table
             The just-registered table
-
         """
+        if schema is None:
+            import pyarrow as pa
+            import pyarrow_hotfix  # noqa: F401
+
+            # Note: To support reading from a directory, we discussed using
+            # pyarrow_schema = pyarrow.dataset.dataset(path, format="parquet").schema
+            # [https://github.com/ibis-project/ibis/pull/8070#discussion_r1467046023]
+            # We decided to drop this as it might lead to silent errors when
+            # pyarrow.dataset infers a different schema than what flink would infer
+            # due to partitioning.
+            pyarrow_schema = pa.parquet.read_metadata(path).schema.to_arrow_schema()
+
+            schema = sch.Schema.from_pyarrow(pyarrow_schema)
+
         return self._read_file(
             file_type="parquet", path=path, schema=schema, table_name=table_name
         )
@@ -781,7 +794,7 @@ class Backend(SQLBackend, CanCreateDatabase, NoUrl):
         schema: sch.Schema | None = None,
         table_name: str | None = None,
     ) -> ir.Table:
-        """Register a csv file as a table in the current database.
+        """Register a csv file/directory as a table in the current database.
 
         Parameters
         ----------
@@ -809,7 +822,7 @@ class Backend(SQLBackend, CanCreateDatabase, NoUrl):
         schema: sch.Schema | None = None,
         table_name: str | None = None,
     ) -> ir.Table:
-        """Register a json file as a table in the current database.
+        """Register a json file/directory as a table in the current database.
 
         Parameters
         ----------

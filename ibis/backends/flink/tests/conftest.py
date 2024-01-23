@@ -11,6 +11,45 @@ from ibis.backends.tests.base import BackendTest
 from ibis.backends.tests.data import array_types, json_types, struct_types, win
 
 
+def _download_jar_for_package(
+    package_name: str,
+    jar_name: str,
+    jar_url: str,
+):
+    import os
+    from importlib import metadata
+
+    import requests
+
+    # Find the path to package lib
+    try:
+        distribution = metadata.distribution(package_name)
+        lib_path = distribution.locate_file("")
+    except metadata.PackageNotFoundError:
+        lib_path = None
+
+    # Check if the JAR already exists
+    jar_path = os.path.join(lib_path, "pyflink/lib", f"{jar_name}.jar")
+    if os.path.exists(jar_path):
+        return jar_path
+
+    # Download the JAR
+    response = requests.get(jar_url, stream=True)
+    if response.status_code != 200:
+        raise SystemError(
+            f"Failed to download the JAR file \n"
+            f"\t jar_url= {jar_url} \n"
+            f"\t response.status_code= {response.status_code}"
+        )
+
+    # Save the JAR
+    with open(jar_path, "wb") as jar_file:
+        for chunk in response.iter_content(chunk_size=128):
+            jar_file.write(chunk)
+
+    return jar_path
+
+
 class TestConf(BackendTest):
     force_sort = True
     stateful = False
@@ -47,6 +86,22 @@ class TestConf(BackendTest):
         )
 
         env = StreamExecutionEnvironment(j_stream_execution_environment)
+
+        # Downloading next the two JAR's needed for parquet support in Flink.
+        # Note: It is not ideal to do "test ops" in code here.
+        flink_sql_parquet_jar_path = _download_jar_for_package(
+            package_name="apache-flink",
+            jar_name="flink-sql-parquet-1.18.1",
+            jar_url="https://repo1.maven.org/maven2/org/apache/flink/flink-sql-parquet/1.18.1/flink-sql-parquet-1.18.1.jar",
+        )
+        flink_shaded_hadoop_jar_path = _download_jar_for_package(
+            package_name="apache-flink",
+            jar_name="flink-shaded-hadoop-2-uber-2.8.3-10.0",
+            jar_url="https://repo1.maven.org/maven2/org/apache/flink/flink-shaded-hadoop-2-uber/2.8.3-10.0/flink-shaded-hadoop-2-uber-2.8.3-10.0.jar",
+        )
+        env.add_jars(f"file://{flink_sql_parquet_jar_path}")
+        env.add_jars(f"file://{flink_shaded_hadoop_jar_path}")
+
         stream_table_env = StreamTableEnvironment.create(env)
         table_config = stream_table_env.get_config()
         table_config.set("table.local-time-zone", "UTC")

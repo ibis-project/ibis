@@ -12,6 +12,7 @@ from pytest import param
 
 import ibis
 from ibis.backends.conftest import TEST_TABLES
+from ibis.backends.tests.errors import Py4JJavaError
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
@@ -403,13 +404,17 @@ def test_register_garbage(con, monkeypatch):
     ],
 )
 @pytest.mark.notyet(
-    ["flink", "impala", "mssql", "mysql", "postgres", "risingwave", "sqlite", "trino"]
+    ["impala", "mssql", "mysql", "postgres", "risingwave", "sqlite", "trino"]
+)
+@pytest.mark.notimpl(
+    ["flink"],
+    raises=Py4JJavaError,
+    reason="Flink TaskManager can not access the test files on the test instance",
 )
 def test_read_parquet(con, tmp_path, data_dir, fname, in_table_name):
     pq = pytest.importorskip("pyarrow.parquet")
 
-    fname = Path(fname)
-    fname = Path(data_dir) / "parquet" / fname.name
+    fname = Path(data_dir) / "parquet" / fname
     table = pq.read_table(fname)
 
     pq.write_table(table, tmp_path / fname.name)
@@ -434,17 +439,12 @@ def ft_data(data_dir):
 
 
 @pytest.mark.notyet(
-    [
-        "flink",
-        "impala",
-        "mssql",
-        "mysql",
-        "pandas",
-        "postgres",
-        "risingwave",
-        "sqlite",
-        "trino",
-    ]
+    ["impala", "mssql", "mysql", "pandas", "postgres", "risingwave", "sqlite", "trino"]
+)
+@pytest.mark.notimpl(
+    ["flink"],
+    raises=ValueError,
+    reason="read_parquet() does not support glob",
 )
 def test_read_parquet_glob(con, tmp_path, ft_data):
     pq = pytest.importorskip("pyarrow.parquet")
