@@ -7315,7 +7315,7 @@ geospatial = ["geopandas", "shapely"]
 impala = ["impyla"]
 mssql = ["pyodbc", "sqlalchemy", "sqlalchemy-views"]
 mysql = ["pymysql"]
-oracle = ["oracledb", "packaging", "sqlalchemy", "sqlalchemy-views"]
+oracle = ["oracledb", "packaging"]
 pandas = ["regex"]
 polars = ["packaging", "polars"]
 postgres = ["psycopg2"]
@@ -7329,4 +7329,4 @@ visualization = ["graphviz"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.9"
-content-hash = "3fcc813731a54acc626f4e5d124030eeeff9ce304dd2851b16dfdf89ab529d01"
+content-hash = "f7f31dc794bdbd0993a76f0d8cac3a6b2debb6f5668be01dcd783eeb64f1faa8"
