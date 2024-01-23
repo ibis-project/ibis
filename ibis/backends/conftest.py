@@ -419,7 +419,14 @@ def pytest_runtest_call(item):
         # Filter out any None values from kwargs['raises']
         # to cover any missing backend error types as defined in ibis/backends/tests/errors.py
         if (raises := kwargs.get("raises")) is not None:
-            kwargs["raises"] = tuple(filter(None, promote_tuple(raises)))
+            raises = tuple(filter(None, promote_tuple(raises)))
+            if raises:
+                kwargs["raises"] = raises
+            else:
+                # if filtering removes all of the values of raises pop the
+                # argument otherwise it gets passed as an empty tuple and this
+                # messes up xfail
+                kwargs.pop("raises")
         return kwargs
 
     # Ibis hasn't exposed existing functionality
