@@ -40,30 +40,23 @@ def _create_sql(self, expression: sge.Create) -> str:
     return create_with_partitions_sql(self, expression)
 
 
-def _datatype_sql(self: Oracle.Generator, expression: sge.DataType) -> str:
-    # Use this to handle correctly formatting timestamp precision
-    # e.g. TIMESTAMP (scale) WITH TIME ZONE vs. TIMESTAMP WITH TIME ZONE(scale)
-    if expression.is_type("timestamptz"):
-        for exp in expression.expressions:
-            if isinstance(exp, sge.DataTypeParam):
-                return f"TIMESTAMP ({self.sql(exp, 'this')}) WITH TIME ZONE"
-        return "TIMESTAMP WITH TIME ZONE"
-    return self.datatype_sql(expression)
-
-
 Oracle.Generator.TRANSFORMS |= {
     sge.LogicalOr: rename_func("max"),
     sge.LogicalAnd: rename_func("min"),
     sge.VariancePop: rename_func("var_pop"),
     sge.Variance: rename_func("var_samp"),
     sge.Stddev: rename_func("stddev_pop"),
-    sge.StddevPop: rename_func("stddev_pop"),
-    sge.StddevSamp: rename_func("stddev_samp"),
     sge.ApproxDistinct: rename_func("approx_count_distinct"),
     sge.Create: _create_sql,
     sge.Select: sg.transforms.preprocess([sg.transforms.eliminate_semi_and_anti_joins]),
-    sge.DataType: _datatype_sql,
 }
+
+# TODO: can delete this after bumping sqlglot version > 20.9.0
+Oracle.Generator.TYPE_MAPPING |= {
+    sge.DataType.Type.TIMETZ: "TIME",
+    sge.DataType.Type.TIMESTAMPTZ: "TIMESTAMP",
+}
+Oracle.Generator.TZ_TO_WITH_TIME_ZONE = True
 
 
 @replace(p.WindowFunction(p.First(x, y)))
