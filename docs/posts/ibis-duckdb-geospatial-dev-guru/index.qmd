@@ -16,6 +16,15 @@ that walks you through a step-by-step geospatial analysis of bike sharing data u
 Ibis has support for all the geospatial functions used on the tutorial, and we
 decided to replicate it and share it with you.
 
+## Installation
+
+Install Ibis with the dependencies needed to work with geospatial data using DuckDB:
+
+```bash
+$ pip install 'ibis-framework[duckdb,geospatial]'
+```
+
+
 ## Data
 
 The parquet file used in the original tutorial is available at

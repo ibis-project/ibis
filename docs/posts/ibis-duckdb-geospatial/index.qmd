@@ -23,6 +23,14 @@ You can check Dr. Qiusheng Wu's full Spatial Data Management course material on 
 [YouTube](https://www.youtube.com/watch?v=A4TOAdsXsEs&list=PLAxJ4-o7ZoPe9SkgnophygyLjTDBzIEbi).
 :::
 
+## Installation
+
+Install Ibis with the dependencies needed to work with geospatial data using DuckDB:
+
+```bash
+$ pip install 'ibis-framework[duckdb,geospatial]'
+```
+
 ## Data
 
 We are going to be working with data from New York City. The database contains multiple tables with information about
