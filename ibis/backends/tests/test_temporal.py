@@ -1941,11 +1941,7 @@ def test_time_literal(con, backend):
     raises=com.OperationNotDefinedError,
     reason="backend doesn't have a time datatype",
 )
-@pytest.mark.notyet(
-    ["druid"],
-    raises=PyDruidProgrammingError,
-    reason="druid sqlalchemy dialect fails to compile datetime types",
-)
+@pytest.mark.notyet(["druid"], raises=PyDruidProgrammingError)
 @pytest.mark.broken(
     ["sqlite"], raises=AssertionError, reason="SQLite returns Timedelta from execution"
 )
@@ -1962,11 +1958,7 @@ def test_time_literal(con, backend):
                     raises=AssertionError,
                     reason="doesn't have enough precision to capture microseconds",
                 ),
-                pytest.mark.notyet(
-                    ["trino"],
-                    raises=AssertionError,
-                    reason="has enough precision, but sqlalchemy dialect drops them",
-                ),
+                pytest.mark.notyet(["trino"], raises=AssertionError),
                 pytest.mark.notimpl(
                     ["flink"],
                     raises=AssertionError,
@@ -2017,13 +2009,7 @@ INTERVAL_BACKEND_TYPES = {
     raises=ImpalaHiveServer2Error,
 )
 @pytest.mark.broken(
-    ["mysql"],
-    "The backend implementation is broken. "
-    "If SQLAlchemy < 2 is installed, test fails with the following exception:"
-    "AttributeError: 'TextClause' object has no attribute 'label'"
-    "If SQLAlchemy >=2 is installed, test fails with the following exception:"
-    "NotImplementedError",
-    raises=MySQLProgrammingError,
+    ["mysql"], "The backend implementation is broken. ", raises=MySQLProgrammingError
 )
 @pytest.mark.broken(
     ["bigquery", "duckdb"],

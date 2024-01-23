@@ -85,6 +85,7 @@ result-*
 
 # tutorial data
 geography.db
+geography.duckdb
 
 # build artifacts
 ci/udf/.ninja_deps

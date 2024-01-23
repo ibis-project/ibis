@@ -9,10 +9,8 @@ import warnings
 from operator import itemgetter
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
-from urllib.parse import parse_qs, urlparse
 
 import duckdb
-import pandas as pd
 import pyarrow as pa
 import pyarrow_hotfix  # noqa: F401
 import sqlglot as sg
@@ -25,7 +23,7 @@ import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis import util
-from ibis.backends.base import CanCreateSchema
+from ibis.backends.base import CanCreateSchema, UrlFromPath
 from ibis.backends.base.sqlglot import SQLGlotBackend
 from ibis.backends.base.sqlglot.compiler import STAR, C, F
 from ibis.backends.duckdb.compiler import DuckDBCompiler
@@ -35,10 +33,9 @@ from ibis.expr.operations.udf import InputType
 if TYPE_CHECKING:
     from collections.abc import Iterable, Iterator, Mapping, MutableMapping, Sequence
 
+    import pandas as pd
     import torch
     from fsspec import AbstractFileSystem
-
-    from ibis.backends.base.sql import BaseBackend
 
 
 def normalize_filenames(source_list):
@@ -77,7 +74,7 @@ class _Settings:
         return repr(dict(zip(kv["key"], kv["value"])))
 
 
-class Backend(SQLGlotBackend, CanCreateSchema):
+class Backend(SQLGlotBackend, CanCreateSchema, UrlFromPath):
     name = "duckdb"
     compiler = DuckDBCompiler()
 
@@ -215,9 +212,7 @@ class Backend(SQLGlotBackend, CanCreateSchema):
         final_table = sg.table(name, catalog=database, quoted=self.compiler.quoted)
         with self._safe_raw_sql(create_stmt) as cur:
             if query is not None:
-                insert_stmt = sge.Insert(this=initial_table, expression=query).sql(
-                    self.name
-                )
+                insert_stmt = sge.insert(query, into=initial_table).sql(self.name)
                 cur.execute(insert_stmt).fetchall()
 
             if overwrite:
@@ -454,7 +449,6 @@ class Backend(SQLGlotBackend, CanCreateSchema):
             pass
 
         self._record_batch_readers_consumed = {}
-        self._temp_views: set[str] = set()
 
     def _load_extensions(
         self, extensions: list[str], force_install: bool = False
@@ -472,38 +466,6 @@ class Backend(SQLGlotBackend, CanCreateSchema):
             for extension in todo:
                 cur.install_extension(extension, force_install=force_install)
                 cur.load_extension(extension)
-
-    # TODO(kszucs): should be a classmethod
-    def _from_url(self, url: str, **kwargs) -> BaseBackend:
-        """Connect to a backend using a URL `url`.
-
-        Parameters
-        ----------
-        url
-            URL with which to connect to a backend.
-        kwargs
-            Additional keyword arguments
-
-        Returns
-        -------
-        BaseBackend
-            A backend instance
-
-        """
-        url = urlparse(url)
-        database = url.path or ":memory:"
-        query_params = parse_qs(url.query)
-
-        for name, value in query_params.items():
-            if len(value) > 1:
-                kwargs[name] = value
-            elif len(value) == 1:
-                kwargs[name] = value[0]
-            else:
-                raise exc.IbisError(f"Invalid URL parameter: {name}")
-
-        self._convert_kwargs(kwargs)
-        return self.connect(database=database, **kwargs)
 
     def load_extension(self, extension: str, force_install: bool = False) -> None:
         """Install and load a duckdb extension by name or path.
@@ -1513,52 +1475,6 @@ class Backend(SQLGlotBackend, CanCreateSchema):
 
     def _compile_pandas_udf(self, _: ops.ScalarUDF) -> None:
         raise NotImplementedError("duckdb doesn't support pandas UDFs")
-
-    def insert(
-        self,
-        table_name: str,
-        obj: pd.DataFrame | ir.Table | list | dict,
-        database: str | None = None,
-        overwrite: bool = False,
-    ) -> None:
-        """Insert data into a table.
-
-        Parameters
-        ----------
-        table_name
-            The name of the table to which data needs will be inserted
-        obj
-            The source data or expression to insert
-        database
-            Name of the attached database that the table is located in.
-        overwrite
-            If `True` then replace existing contents of table
-
-        Raises
-        ------
-        NotImplementedError
-            If inserting data from a different database
-        ValueError
-            If the type of `obj` isn't supported
-
-        """
-        table = sg.table(table_name, db=database)
-        if overwrite:
-            with self._safe_raw_sql(f"TRUNCATE TABLE {table.sql('duckdb')}"):
-                pass
-
-        if isinstance(obj, ir.Table):
-            self._run_pre_execute_hooks(obj)
-            query = sge.insert(
-                expression=self.compile(obj), into=table, dialect="duckdb"
-            )
-            with self._safe_raw_sql(query):
-                pass
-        else:
-            self.con.append(
-                table_name,
-                obj if isinstance(obj, pd.DataFrame) else pd.DataFrame(obj),
-            )
 
     def _get_temp_view_definition(self, name: str, definition: str) -> str:
         return sge.Create(

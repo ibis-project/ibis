@@ -270,7 +270,7 @@ def test_table_dot_sql_transpile(backend, alltypes, dialect, df):
 @pytest.mark.notyet(
     ["druid"], raises=AttributeError, reason="druid doesn't respect column names"
 )
-@pytest.mark.notyet(["snowflake", "bigquery"])
+@pytest.mark.notyet(["bigquery"])
 @dot_sql_notimpl
 @dot_sql_never
 def test_con_dot_sql_transpile(backend, con, dialect, df):

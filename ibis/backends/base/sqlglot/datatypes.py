@@ -892,7 +892,7 @@ class ExasolType(SqlglotType):
 
 
 class MSSQLType(SqlglotType):
-    dialect = "tsql"
+    dialect = "mssql"
 
     @classmethod
     def _from_sqlglot_BIT(cls):

@@ -14,7 +14,7 @@ from __future__ import annotations
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import os
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 import pytest
 
@@ -50,22 +50,11 @@ class TestConf(ServiceBackendTest):
     service_name = "postgres"
     deps = ("psycopg2",)
 
+    driver_supports_multiple_statements = True
+
     @property
     def test_files(self) -> Iterable[Path]:
         return self.data_dir.joinpath("csv").glob("*.csv")
-
-    def _load_data(self, **_: Any) -> None:
-        """Load test data into a PostgreSQL backend instance.
-
-        Parameters
-        ----------
-        data_dir
-            Location of test data
-        script_dir
-            Location of scripts defining schemas
-        """
-        with self.connection._safe_raw_sql(";".join(self.ddl_script)):
-            pass
 
     @staticmethod
     def connect(*, tmpdir, worker_id, **kw):

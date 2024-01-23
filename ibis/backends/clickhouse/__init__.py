@@ -389,23 +389,31 @@ class Backend(SQLGlotBackend, CanCreateDatabase):
     def insert(
         self,
         name: str,
-        obj: pd.DataFrame,
+        obj: pd.DataFrame | ir.Table,
         settings: Mapping[str, Any] | None = None,
+        overwrite: bool = False,
         **kwargs: Any,
     ):
         import pandas as pd
         import pyarrow as pa
 
-        if not isinstance(obj, pd.DataFrame):
-            raise com.IbisError(
-                f"Invalid input type {type(obj)}; only pandas DataFrames are accepted as input"
-            )
+        if overwrite:
+            self.truncate_table(name)
 
-        # TODO(cpcloud): add support for arrow tables
-        # TODO(cpcloud): insert_df doesn't work with pandas 2.1.0, move back to
-        # that (maybe?) when `clickhouse_connect` is fixed
-        t = pa.Table.from_pandas(obj)
-        return self.con.insert_arrow(name, t, settings=settings, **kwargs)
+        if isinstance(obj, pa.Table):
+            return self.con.insert_arrow(name, obj, settings=settings, **kwargs)
+        elif isinstance(obj, pd.DataFrame):
+            return self.con.insert_arrow(
+                name, pa.Table.from_pandas(obj), settings=settings, **kwargs
+            )
+        elif not isinstance(obj, ir.Table):
+            obj = ibis.memtable(obj)
+
+        query = sge.insert(self.compile(obj), into=name, dialect=self.name)
+
+        external_tables = self._collect_in_memory_tables(obj, {})
+        external_data = self._normalize_external_tables(external_tables)
+        return self.con.command(query.sql(self.name), external_data=external_data)
 
     def raw_sql(
         self,

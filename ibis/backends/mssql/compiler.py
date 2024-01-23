@@ -29,7 +29,13 @@ from ibis.common.deferred import var
 from ibis.common.patterns import replace
 from ibis.expr.rewrites import p, rewrite_sample
 
-TSQL.Generator.TRANSFORMS |= {
+
+class MSSQL(TSQL):
+    class Generator(TSQL.Generator):
+        pass
+
+
+MSSQL.Generator.TRANSFORMS |= {
     sge.ApproxDistinct: rename_func("approx_count_distinct"),
     sge.Stddev: rename_func("stdevp"),
     sge.StddevPop: rename_func("stdevp"),
@@ -73,7 +79,7 @@ def exclude_unsupported_window_frame_from_ops(_, y):
 class MSSQLCompiler(SQLGlotCompiler):
     __slots__ = ()
 
-    dialect = "tsql"
+    dialect = "mssql"
     type_mapper = MSSQLType
     rewrites = (
         rewrite_sample,

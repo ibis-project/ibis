@@ -17,8 +17,13 @@ try:
     from clickhouse_connect.driver.exceptions import (
         InternalError as ClickHouseInternalError,
     )
+    from clickhouse_connect.driver.exceptions import (
+        OperationalError as ClickHouseOperationalError,
+    )
 except ImportError:
-    ClickHouseDatabaseError = ClickHouseInternalError = None
+    ClickHouseDatabaseError = (
+        ClickHouseInternalError
+    ) = ClickHouseOperationalError = None
 
 
 try:
@@ -96,14 +101,22 @@ try:
     from psycopg2.errors import (
         InvalidTextRepresentation as PsycoPg2InvalidTextRepresentation,
     )
+    from psycopg2.errors import OperationalError as PsycoPg2OperationalError
     from psycopg2.errors import ProgrammingError as PsycoPg2ProgrammingError
     from psycopg2.errors import SyntaxError as PsycoPg2SyntaxError
+    from psycopg2.errors import UndefinedObject as PsycoPg2UndefinedObject
 except ImportError:
     PsycoPg2SyntaxError = (
         PsycoPg2IndeterminateDatatype
     ) = (
         PsycoPg2InvalidTextRepresentation
-    ) = PsycoPg2DivisionByZero = PsycoPg2InternalError = PsycoPg2ProgrammingError = None
+    ) = (
+        PsycoPg2DivisionByZero
+    ) = (
+        PsycoPg2InternalError
+    ) = (
+        PsycoPg2ProgrammingError
+    ) = PsycoPg2OperationalError = PsycoPg2UndefinedObject = None
 
 try:
     from pymysql.err import NotSupportedError as MySQLNotSupportedError

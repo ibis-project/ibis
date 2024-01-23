@@ -14,6 +14,7 @@ import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis import util
+from ibis.backends.base import NoUrl
 from ibis.backends.pandas import BasePandasBackend
 from ibis.formats.pandas import PandasData
 
@@ -22,7 +23,7 @@ if TYPE_CHECKING:
     from collections.abc import Mapping, MutableMapping
 
 
-class Backend(BasePandasBackend):
+class Backend(BasePandasBackend, NoUrl):
     name = "dask"
     backend_table_type = dd.DataFrame
     supports_in_memory_tables = False

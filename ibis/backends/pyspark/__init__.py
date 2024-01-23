@@ -397,23 +397,6 @@ class Backend(SQLGlotBackend, CanCreateDatabase):
 
         return self.table(name, database=database)
 
-    # TODO(kszucs): should have this implementation in the base sqlglot backend
-    def truncate_table(self, name: str, database: str | None = None) -> None:
-        """Delete all rows from an existing table.
-
-        Parameters
-        ----------
-        name
-            Table name
-        database
-            Database name
-
-        """
-        table = sg.table(name, db=database)
-        query = f"TRUNCATE TABLE {table}"
-        with self._safe_raw_sql(query):
-            pass
-
     def create_view(
         self,
         name: str,
@@ -477,34 +460,6 @@ class Backend(SQLGlotBackend, CanCreateDatabase):
         )
         with self._safe_raw_sql(query):
             pass
-
-    def insert(
-        self,
-        table_name: str,
-        obj: ir.Table | pd.DataFrame | None = None,
-        database: str | None = None,
-        overwrite: bool = False,
-    ) -> Any:
-        """Insert data into an existing table.
-
-        Examples
-        --------
-        >>> table = "my_table"
-        >>> con.insert(table, table_expr)  # quartodoc: +SKIP # doctest: +SKIP
-
-        # Completely overwrite contents
-        >>> con.insert(table, table_expr, overwrite=True)  # quartodoc: +SKIP # doctest: +SKIP
-
-        """
-
-        if isinstance(obj, ir.Expr):
-            df = self._session.sql(self.compile(obj))
-        else:
-            table = ibis.memtable(obj)
-            df = self._session.createDataFrame(table.op().data.to_frame())
-
-        with self._active_database(database):
-            df.write.insertInto(table_name, overwrite=overwrite)
 
     def compute_stats(
         self,

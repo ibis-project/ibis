@@ -13,7 +13,7 @@ import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis import util
-from ibis.backends.base import BaseBackend
+from ibis.backends.base import BaseBackend, NoUrl
 from ibis.formats.pandas import PandasData, PandasSchema
 from ibis.formats.pyarrow import PyArrowData
 
@@ -22,7 +22,7 @@ if TYPE_CHECKING:
     from collections.abc import Mapping, MutableMapping
 
 
-class BasePandasBackend(BaseBackend):
+class BasePandasBackend(BaseBackend, NoUrl):
     """Base class for backends based on pandas."""
 
     name = "pandas"
