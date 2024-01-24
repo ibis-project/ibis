@@ -108,6 +108,66 @@ def test_create_table(backend, con, temp_table, lamduh, sch):
 
 
 @pytest.mark.parametrize(
+    "temp, overwrite",
+    [
+        param(
+            True,
+            True,
+            id="temp overwrite",
+            marks=[
+                pytest.mark.notyet(["clickhouse"], reason="Can't specify both"),
+                pytest.mark.notyet(
+                    ["pyspark", "trino", "exasol"], reason="No support for temp tables"
+                ),
+                pytest.mark.never(["polars"], reason="Everything in-memory is temp"),
+                pytest.mark.broken(["mssql"], reason="Incorrect temp table syntax"),
+                pytest.mark.broken(
+                    ["bigquery"],
+                    reason="tables created with temp=True cause a 404 on retrieval",
+                ),
+            ],
+        ),
+        param(False, True, id="no temp, overwrite"),
+        param(
+            True,
+            False,
+            id="temp, no overwrite",
+            marks=[
+                pytest.mark.notyet(
+                    ["pyspark", "trino", "exasol"], reason="No support for temp tables"
+                ),
+                pytest.mark.never(["polars"], reason="Everything in-memory is temp"),
+                pytest.mark.broken(["mssql"], reason="Incorrect temp table syntax"),
+                pytest.mark.broken(
+                    ["bigquery"],
+                    reason="tables created with temp=True cause a 404 on retrieval",
+                ),
+            ],
+        ),
+    ],
+)
+@pytest.mark.notimpl(["druid", "impala"])
+def test_create_table_overwrite_temp(backend, con, temp_table, temp, overwrite):
+    df = pd.DataFrame(
+        {
+            "first_name": ["A", "B", "C"],
+            "last_name": ["D", "E", "F"],
+            "department_name": ["AA", "BB", "CC"],
+            "salary": [100.0, 200.0, 300.0],
+        }
+    )
+
+    con.create_table(temp_table, df, temp=temp, overwrite=overwrite)
+    if overwrite:
+        con.create_table(temp_table, df, temp=temp, overwrite=overwrite)
+    result = (
+        con.table(temp_table).execute().sort_values("first_name").reset_index(drop=True)
+    )
+
+    backend.assert_frame_equal(df, result)
+
+
+@pytest.mark.parametrize(
     "lamduh",
     [(lambda df: df), (lambda df: pa.Table.from_pandas(df))],
     ids=["dataframe", "pyarrow table"],
