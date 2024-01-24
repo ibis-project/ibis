@@ -1,7 +1,7 @@
 ---
 title: Modern, hybrid, open analytics
 author: "Cody"
-date: "2024-01-16"
+date: "2024-01-25"
 image: "thumbnail.png"
 categories:
     - blog
@@ -81,6 +81,13 @@ Let's get started!
 
 The final result is a MotherDuck database powering a dashboard deployed to
 Streamlit Community Cloud.
+
+::: {.callout-note}
+Since writing this blog, I've added documentation metrics. This is ongoing and
+that page may be broken.
+
+Look out for a follow up post on how new metrics are added to the dashboard!
+:::
 
 ::: {.callout-warning}
 While I consider this "production" it does go down occasionally, usually because
