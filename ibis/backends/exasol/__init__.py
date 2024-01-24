@@ -271,6 +271,7 @@ class Backend(SQLGlotBackend):
         schema: sch.Schema | None = None,
         database: str | None = None,
         overwrite: bool = False,
+        temp: bool = False,
     ) -> ir.Table:
         """Create a table in Snowflake.
 
@@ -289,13 +290,20 @@ class Backend(SQLGlotBackend):
         overwrite
             If `True`, replace the table if it already exists, otherwise fail
             if the table exists
+        temp
+            Create a temporary table (not supported)
         """
         if obj is None and schema is None:
             raise ValueError("Either `obj` or `schema` must be specified")
 
+        if temp:
+            raise com.UnsupportedOperationError(
+                "Creating temp tables is not supported by Exasol."
+            )
+
         if database is not None and database != self.current_database:
             raise com.UnsupportedOperationError(
-                "Creating tables in other databases is not supported by Postgres"
+                "Creating tables in other databases is not supported by Exasol"
             )
         else:
             database = None
