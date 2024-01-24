@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import atexit
 import contextlib
 import re
 import warnings
@@ -385,11 +386,12 @@ class Backend(SQLGlotBackend):
                 for colname, typ in schema.items()
             ]
 
-            create_stmt = sg.exp.Create(
+            create_stmt = sge.Create(
                 kind="TABLE",
                 this=sg.exp.Schema(
                     this=sg.to_identifier(name, quoted=quoted), expressions=column_defs
                 ),
+                properties=sge.Properties(expressions=[sge.TemporaryProperty()]),
             ).sql(self.name, pretty=True)
 
             data = op.data.to_frame().itertuples(index=False)
@@ -400,6 +402,8 @@ class Backend(SQLGlotBackend):
                 cur.execute(create_stmt)
                 for row in data:
                     cur.execute(insert_stmt, row)
+
+        atexit.register(self._clean_up_tmp_table, name)
 
     def _metadata(self, query: str) -> Iterable[tuple[str, dt.DataType]]:
         name = util.gen_name("oracle_metadata")
