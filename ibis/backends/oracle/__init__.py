@@ -311,8 +311,10 @@ class Backend(SQLGlotBackend):
         else:
             temp_name = name
 
-        table = sg.table(temp_name, catalog=database, quoted=self.compiler.quoted)
-        target = sge.Schema(this=table, expressions=column_defs)
+        initial_table = sg.table(
+            temp_name, catalog=database, quoted=self.compiler.quoted
+        )
+        target = sge.Schema(this=initial_table, expressions=column_defs)
 
         create_stmt = sge.Create(
             kind="TABLE",
@@ -320,18 +322,21 @@ class Backend(SQLGlotBackend):
             properties=sge.Properties(expressions=properties),
         )
 
-        this = sg.table(name, catalog=database, quoted=self.compiler.quoted)
+        # This is the same table as initial_table unless overwrite == True
+        final_table = sg.table(name, catalog=database, quoted=self.compiler.quoted)
         with self._safe_raw_sql(create_stmt) as cur:
             if query is not None:
-                insert_stmt = sge.Insert(this=table, expression=query).sql(self.name)
+                insert_stmt = sge.Insert(this=initial_table, expression=query).sql(
+                    self.name
+                )
                 cur.execute(insert_stmt)
 
             if overwrite:
-                cur.execute(
-                    sge.Drop(kind="TABLE", this=this, exists=True).sql(self.name)
+                self.drop_table(
+                    final_table.name, final_table.catalog, final_table.db, force=True
                 )
                 cur.execute(
-                    f"ALTER TABLE IF EXISTS {table.sql(self.name)} RENAME TO {this.sql(self.name)}"
+                    f"ALTER TABLE IF EXISTS {initial_table.sql(self.name)} RENAME TO {final_table.sql(self.name)}"
                 )
 
         if schema is None:
@@ -370,7 +375,7 @@ class Backend(SQLGlotBackend):
         if (name := op.name) not in self.list_tables():
             quoted = self.compiler.quoted
             column_defs = [
-                sg.exp.ColumnDef(
+                sge.ColumnDef(
                     this=sg.to_identifier(colname, quoted=quoted),
                     kind=self.compiler.type_mapper.from_ibis(typ),
                     constraints=(
