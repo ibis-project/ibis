@@ -199,8 +199,10 @@ class Backend(SQLGlotBackend, CanCreateSchema):
         else:
             temp_name = name
 
-        table = sg.table(temp_name, catalog=database, quoted=self.compiler.quoted)
-        target = sge.Schema(this=table, expressions=column_defs)
+        initial_table = sg.table(
+            temp_name, catalog=database, quoted=self.compiler.quoted
+        )
+        target = sge.Schema(this=initial_table, expressions=column_defs)
 
         create_stmt = sge.Create(
             kind="TABLE",
@@ -208,19 +210,45 @@ class Backend(SQLGlotBackend, CanCreateSchema):
             properties=sge.Properties(expressions=properties),
         )
 
-        this = sg.table(name, catalog=database, quoted=self.compiler.quoted)
+        # This is the same table as initial_table unless overwrite == True
+        final_table = sg.table(name, catalog=database, quoted=self.compiler.quoted)
         with self._safe_raw_sql(create_stmt) as cur:
             if query is not None:
-                insert_stmt = sge.Insert(this=table, expression=query).sql(self.name)
+                insert_stmt = sge.Insert(this=initial_table, expression=query).sql(
+                    self.name
+                )
                 cur.execute(insert_stmt).fetchall()
 
             if overwrite:
                 cur.execute(
-                    sge.Drop(kind="TABLE", this=this, exists=True).sql(self.name)
-                ).fetchall()
-                cur.execute(
-                    f"ALTER TABLE IF EXISTS {table.sql(self.name)} RENAME TO {this.sql(self.name)}"
-                ).fetchall()
+                    sge.Drop(kind="TABLE", this=final_table, exists=True).sql(self.name)
+                )
+                # TODO: This branching should be removed once DuckDB >=0.9.3 is
+                # our lower bound (there's an upstream bug in 0.9.2 that
+                # disallows renaming temp tables)
+                # We should (pending that release) be able to remove the if temp
+                # branch entirely.
+                if temp:
+                    cur.execute(
+                        sge.Create(
+                            kind="TABLE",
+                            this=final_table,
+                            expression=sg.select(STAR).from_(initial_table),
+                            properties=sge.Properties(expressions=properties),
+                        ).sql(self.name)
+                    )
+                    cur.execute(
+                        sge.Drop(kind="TABLE", this=initial_table, exists=True).sql(
+                            self.name
+                        )
+                    )
+                else:
+                    cur.execute(
+                        sge.AlterTable(
+                            this=initial_table,
+                            actions=[sge.RenameTable(this=final_table)],
+                        ).sql(self.name)
+                    )
 
         return self.table(name, schema=database)
 
