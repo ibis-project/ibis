@@ -340,7 +340,7 @@ class Backend(BaseBackend):
                 "effect: Polars cannot set a database."
             )
 
-        if temp is not None:
+        if temp:
             raise com.IbisError(
                 "Passing `temp=True` to the Polars backend create_table method has no "
                 "effect: all tables are in memory and temporary. "
