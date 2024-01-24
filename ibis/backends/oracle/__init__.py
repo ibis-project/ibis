@@ -341,6 +341,27 @@ class Backend(SQLGlotBackend):
             name, schema=schema, source=self, namespace=ops.Namespace(database=database)
         ).to_expr()
 
+    def drop_table(
+        self,
+        name: str,
+        database: str | None = None,
+        schema: str | None = None,
+        force: bool = False,
+    ) -> None:
+        table = sg.table(name, db=schema, catalog=database, quoted=self.compiler.quoted)
+
+        with self.begin() as bind:
+            # global temporary tables cannot be dropped without first truncating them
+            #
+            # https://stackoverflow.com/questions/32423397/force-oracle-drop-global-temp-table
+            #
+            # ignore DatabaseError exceptions because the table may not exist
+            # because it's already been deleted
+            with contextlib.suppress(oracledb.DatabaseError):
+                bind.execute(f"TRUNCATE TABLE {table.sql(self.name)}")
+
+        super().drop_table(name, database=database, schema=schema, force=force)
+
     def _register_in_memory_table(self, op: ops.InMemoryTable) -> None:
         schema = op.schema
 
