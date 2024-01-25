@@ -2,7 +2,12 @@
 
 ## Code style
 
-Ibis uses several code linters, like [`ruff`](https://github.com/charliermarsh/ruff), [`shellcheck`](https://github.com/koalaman/shellcheck), [`statix`](https://github.com/nerdypepper/statix), [`nixpkgs-fmt`](https://github.com/nix-community/nixpkgs-fmt) and others, that are enforced by CI. Developers should run them locally before submitting a PR.
+Ibis uses several code linters, like
+[`ruff`](https://github.com/charliermarsh/ruff),
+[`shellcheck`](https://github.com/koalaman/shellcheck),
+[`statix`](https://github.com/nerdypepper/statix),
+[`nixpkgs-fmt`](https://github.com/nix-community/nixpkgs-fmt) and others, that
+are enforced by CI. Developers should run them locally before submitting a PR.
 
 1. Install `pre-commit`
 
@@ -16,20 +21,26 @@ pip install pre-commit
 pre-commit run --all-files
 ```
 ::: {.callout-note}
-Some of the packages needed to run the `pre-commit` linting can not be installed automatically (e.g. `prettier`, `actionlint`, `shellcheck`), and they need to be installed through a system package manager.
+Some of the packages needed to run the `pre-commit` linting can not be installed
+automatically (e.g. `prettier`, `actionlint`, `shellcheck`), and they need to be
+installed through a system package manager.
 :::
 
-Optionally, you may want to setup the `pre-commit` hooks to run automatically when making a git commit. To do this, run the following from the root of the Ibis repository:
+Optionally, you may want to setup the `pre-commit` hooks to run automatically
+when making a git commit. To do this, run the following from the root of the
+Ibis repository:
 
 ```sh
 pre-commit install
 ```
 
-This will run the code linters automatically when you make a git commit. If you want to skip these checks, do `git commit --no-verify`
+This will run the code linters automatically when you make a git commit. If you
+want to skip these checks, do `git commit --no-verify`
 
 
 ::: {.callout-tip}
-If you use `nix-shell`, all of these are already setup for you and ready to use, and you don't need to do anything to install these tools.
+If you use `nix-shell`, all of these are already setup for you and ready to use,
+and you don't need to do anything to install these tools.
 :::
 
 ## Docstrings
@@ -57,8 +68,10 @@ you are free to use these tools to aid in your writing.
 Wrap long prose strings to fewer than 90 characters per line. It is very helpful
 to reviewers when looking at diffs of prose.
 
-- In Vim you can use `gq` and then a movement to wrap.  `gqG` to wrap an entire document.
-- In Neovim you can use `gw` and then a movement to wrap. `gwG` to wrap and entire document.
+- In Vim you can use `gq` and then a movement to wrap.  `gqG` to wrap an entire
+  document.
+- In Neovim you can use `gw` and then a movement to wrap. `gwG` to wrap and
+  entire document.
 - In Emacs you can use `fill-paragraph`.
 - VSCode has a plugin called Rewrap (and probably several others).
 
