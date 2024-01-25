@@ -1242,11 +1242,12 @@ class Table(Expr, _FixedTextJupyterMixin):
             correspond to "bernoulli" and "system" respectively in a
             TABLESAMPLE clause.
         seed
-            An optional random seed to use, for repeatable sampling. Backends
-            that never support specifying a seed for repeatable sampling will
-            error appropriately. Note that some backends (like DuckDB) do
-            support specifying a seed, but may still not have repeatable
-            results in all cases.
+            An optional random seed to use, for repeatable sampling. The range
+            of possible seed values is backend specific (most support at least
+            `[0, 2**31 - 1]`). Backends that never support specifying a seed
+            for repeatable sampling will error appropriately. Note that some
+            backends (like DuckDB) do support specifying a seed, but may still
+            not have repeatable results in all cases.
 
         Returns
         -------
