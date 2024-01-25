@@ -17,13 +17,14 @@ from ibis.common.grounds import Concrete
 from ibis.common.patterns import Between, InstanceOf
 from ibis.common.typing import Coercible, VarTuple
 from ibis.expr.operations.core import Alias, Column, Node, Scalar, Value
-from ibis.expr.operations.sortkeys import SortKey  # noqa: TCH001
+from ibis.expr.operations.sortkeys import SortKey
 from ibis.expr.schema import Schema
 from ibis.formats import TableProxy  # noqa: TCH001
 
 T = TypeVar("T")
 
 Unaliased = Annotated[T, ~InstanceOf(Alias)]
+NonSortKey = Annotated[T, ~InstanceOf(SortKey)]
 
 
 @public
@@ -171,7 +172,7 @@ def _check_integrity(values, allowed_parents):
 @public
 class Project(Relation):
     parent: Relation
-    values: FrozenDict[str, Unaliased[Value]]
+    values: FrozenDict[str, NonSortKey[Unaliased[Value]]]
 
     def __init__(self, parent, values):
         _check_integrity(values.values(), {parent})
