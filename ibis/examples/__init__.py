@@ -118,7 +118,9 @@ def _get_metadata():
 def _get_board():
     import pins
 
-    return pins.board_gcs(_BUCKET)
+    return pins.board(
+        "gcs", _BUCKET, storage_options={"cache_timeout": 0, "token": "anon"}
+    )
 
 
 @functools.cache
