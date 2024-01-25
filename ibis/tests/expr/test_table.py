@@ -183,6 +183,15 @@ def test_projection_duplicate_names(table):
         table.select([table.c, table.c])
 
 
+def test_projection_sort_keys_errors(table):
+    """Forbid using `asc`/`desc` in selections"""
+    with pytest.raises(ValidationError):
+        table.select([table.c.desc()])
+
+    with pytest.raises(ValidationError):
+        table.mutate(new=table.c.asc())
+
+
 def test_projection_invalid_root(table):
     schema1 = {"foo": "double", "bar": "int32"}
 
