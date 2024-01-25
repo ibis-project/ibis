@@ -98,7 +98,7 @@ services:
     environment:
       MINIO_ROOT_USER: accesskey
       MINIO_ROOT_PASSWORD: secretkey
-      MINIO_SKIP_CLIENT: yes
+      MINIO_SKIP_CLIENT: "yes"
     healthcheck:
       interval: 1s
       retries: 20
