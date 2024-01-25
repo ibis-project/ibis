@@ -146,26 +146,6 @@ files = [
 ]
 
 [[package]]
-name = "anywidget"
-version = "0.7.1"
-description = "custom jupyter widgets made easy"
-optional = false
-python-versions = ">=3.7"
-files = [
-    {file = "anywidget-0.7.1-py3-none-any.whl", hash = "sha256:17828c6e255a7066c960636cbda045d55b08c996a2fc4e886e4c8507db6e9407"},
-    {file = "anywidget-0.7.1.tar.gz", hash = "sha256:1c4cb51063f8ec5172b8c8efb1bfb79861d340c3491220d56b8c2a6aa8db3b3d"},
-]
-
-[package.dependencies]
-ipywidgets = ">=7.6.0"
-psygnal = ">=0.8.1"
-typing-extensions = ">=4.2.0"
-
-[package.extras]
-dev = ["comm (>=0.1.0)", "watchfiles (>=0.18.0)"]
-test = ["black[jupyter]", "ipython (<8.13)", "msgspec", "pydantic", "pytest", "pytest-cov", "ruff"]
-
-[[package]]
 name = "appdirs"
 version = "1.4.4"
 description = "A small Python module for determining appropriate platform-specific dirs, e.g. a \"user data dir\"."
@@ -803,7 +783,7 @@ colorama = {version = "*", markers = "platform_system == \"Windows\""}
 name = "click-plugins"
 version = "1.1.1"
 description = "An extension module for click to enable registering CLI commands via setuptools entry-points."
-optional = false
+optional = true
 python-versions = "*"
 files = [
     {file = "click-plugins-1.1.1.tar.gz", hash = "sha256:46ab999744a9d831159c3411bb0c79346d94a444df9a3a3742e9ed63645f264b"},
@@ -926,7 +906,7 @@ sqlalchemy = ["sqlalchemy (>1.3.21,<2.0)"]
 name = "cligj"
 version = "0.7.2"
 description = "Click params for commmand line interfaces to GeoJSON"
-optional = false
+optional = true
 python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, <4"
 files = [
     {file = "cligj-0.7.2-py3-none-any.whl", hash = "sha256:c1ca117dbce1fe20a5809dc96f01e1c2840f6dcc939b3ddbb1111bf330ba82df"},
@@ -1621,7 +1601,7 @@ typing = ["typing-extensions (>=4.8)"]
 name = "fiona"
 version = "1.9.5"
 description = "Fiona reads and writes spatial data files"
-optional = false
+optional = true
 python-versions = ">=3.7"
 files = [
     {file = "fiona-1.9.5-cp310-cp310-macosx_10_15_x86_64.whl", hash = "sha256:5f40a40529ecfca5294260316cf987a0420c77a2f0cf0849f529d1afbccd093e"},
@@ -1948,7 +1928,7 @@ files = [
 name = "geopandas"
 version = "0.14.2"
 description = "Geographic pandas extensions"
-optional = false
+optional = true
 python-versions = ">=3.9"
 files = [
     {file = "geopandas-0.14.2-py3-none-any.whl", hash = "sha256:0efa61235a68862c1c6be89fc3707cdeba67667d5676bb19e24f3c57a8c2f723"},
@@ -3089,26 +3069,6 @@ files = [
 ]
 
 [[package]]
-name = "lonboard"
-version = "0.5.0"
-description = "Python library for fast, interactive geospatial vector data visualization in Jupyter."
-optional = false
-python-versions = ">=3.8,<4.0"
-files = [
-    {file = "lonboard-0.5.0-py3-none-any.whl", hash = "sha256:f62590c5a2562cc21653253d0a167dcbd2e0f2d3a72a6344e112c0f959e7feee"},
-    {file = "lonboard-0.5.0.tar.gz", hash = "sha256:70d7d347a3175c53a257175f381072cc633e4cb058534aaff6a5725c22cd0095"},
-]
-
-[package.dependencies]
-anywidget = ">=0.7.1,<0.8.0"
-geopandas = ">=0.13"
-matplotlib = ">=3.7,<4.0"
-palettable = ">=3.3.3,<4.0.0"
-pandas = ">=2,<3"
-pyarrow = ">=14.0.1"
-shapely = ">=2,<3"
-
-[[package]]
 name = "lz4"
 version = "4.3.3"
 description = "LZ4 Bindings for Python"
@@ -3524,7 +3484,7 @@ files = [
 name = "mypy-extensions"
 version = "1.0.0"
 description = "Type system extensions for programs checked with the mypy type checker."
-optional = false
+optional = true
 python-versions = ">=3.5"
 files = [
     {file = "mypy_extensions-1.0.0-py3-none-any.whl", hash = "sha256:4392f6c0eb8a5668a69e23d168ffa70f0be9ccfd32b5cc2d26a34ae5b844552d"},
@@ -3712,17 +3672,6 @@ python-versions = ">=3.7"
 files = [
     {file = "packaging-23.2-py3-none-any.whl", hash = "sha256:8c491190033a9af7e1d931d0b5dacc2ef47509b34dd0de67ed209b5203fc88c7"},
     {file = "packaging-23.2.tar.gz", hash = "sha256:048fb0e9405036518eaaf48a55953c750c11e1a1b68e0dd1a9d62ed0c092cfc5"},
-]
-
-[[package]]
-name = "palettable"
-version = "3.3.3"
-description = "Color palettes for Python"
-optional = false
-python-versions = ">=3.7"
-files = [
-    {file = "palettable-3.3.3-py2.py3-none-any.whl", hash = "sha256:74e9e7d7fe5a9be065e02397558ed1777b2df0b793a6f4ce1a5ee74f74fb0caa"},
-    {file = "palettable-3.3.3.tar.gz", hash = "sha256:094dd7d9a5fc1cca4854773e5c1fc6a315b33bd5b3a8f47064928facaf0490a8"},
 ]
 
 [[package]]
@@ -4354,53 +4303,6 @@ files = [
 ]
 
 [[package]]
-name = "psygnal"
-version = "0.9.5"
-description = "Fast python callback/event system modeled after Qt Signals"
-optional = false
-python-versions = ">=3.7"
-files = [
-    {file = "psygnal-0.9.5-cp310-cp310-macosx_10_16_arm64.whl", hash = "sha256:54a55f5193c070f683542c373028084c0a1f8fa247f4500c66a01b17f96f4314"},
-    {file = "psygnal-0.9.5-cp310-cp310-macosx_10_16_x86_64.whl", hash = "sha256:b9f6b5cea9b11fd14ed1ac78eef33c4332aebc4862736883960e7e513404b7ba"},
-    {file = "psygnal-0.9.5-cp310-cp310-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:0a3ff86f5c20469419e67a00ad913d619afe10a488e2abbb9fff8683f11bbaef"},
-    {file = "psygnal-0.9.5-cp310-cp310-musllinux_1_1_x86_64.whl", hash = "sha256:39890829750905553776160746a9433ed6c7b9cdf4064b7d5e1d958b808b37d7"},
-    {file = "psygnal-0.9.5-cp310-cp310-win_amd64.whl", hash = "sha256:43160c91eef076d83f25fdf38460ad23c6f78a2740988eee335b50aeea566ac2"},
-    {file = "psygnal-0.9.5-cp311-cp311-macosx_10_16_arm64.whl", hash = "sha256:5412575ea2db2b0aa783463185cb10d1ccd227fbc29fd971aabacca1fa97113e"},
-    {file = "psygnal-0.9.5-cp311-cp311-macosx_10_16_x86_64.whl", hash = "sha256:6d41e16a19e98b79431c33183611e961ecc74610987249e52bae097774f3aa71"},
-    {file = "psygnal-0.9.5-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:05cc3b4b253ea6d8efda736de89a6174c1b958a359f78a7842b8049fdfe4ef74"},
-    {file = "psygnal-0.9.5-cp311-cp311-musllinux_1_1_x86_64.whl", hash = "sha256:d332a874263951e0a0158e3cef82601bce8e1cfe6f4c57a8d20d02f942e8bdb4"},
-    {file = "psygnal-0.9.5-cp311-cp311-win_amd64.whl", hash = "sha256:21132b6ae5a7cfc8b2078b24cc3d7dc59fd07d867f649e10ef092976c4b8e33f"},
-    {file = "psygnal-0.9.5-cp37-cp37m-macosx_10_16_x86_64.whl", hash = "sha256:a379aaf7b6e4caf107851c5d948694ddf3e1ce4ca83a16ccd0dceee870e2d5f0"},
-    {file = "psygnal-0.9.5-cp37-cp37m-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:2338ea6e3a952a93a1b524e674ae1176666c0cd887311d8e93716e19f05a9da7"},
-    {file = "psygnal-0.9.5-cp37-cp37m-musllinux_1_1_x86_64.whl", hash = "sha256:db88899c1da064e54fbac9fdb49fa34e73d762918fdb6c541c9f90fb6c232161"},
-    {file = "psygnal-0.9.5-cp37-cp37m-win_amd64.whl", hash = "sha256:b5b575dd9b8a8b221104ca51ebc44bc7b06f2425991401690c46633befec2721"},
-    {file = "psygnal-0.9.5-cp38-cp38-macosx_10_16_arm64.whl", hash = "sha256:06b79289705888199d63bfa0579be85b15df7df578c27d2bb54f0f51e7faec44"},
-    {file = "psygnal-0.9.5-cp38-cp38-macosx_10_16_x86_64.whl", hash = "sha256:bf0d0c9bea1f8c3d379ae6ac52d87c52b4fe62a651db2f06e92b964fb7bc2539"},
-    {file = "psygnal-0.9.5-cp38-cp38-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:c8fa4929a66ba776d98f119db8d87f144d102c86c4ee9893a427507bde46d704"},
-    {file = "psygnal-0.9.5-cp38-cp38-musllinux_1_1_x86_64.whl", hash = "sha256:9b6e1249240177ff1bfc7dd19df983bdaba0a59361613ff9138b8f0349787d9c"},
-    {file = "psygnal-0.9.5-cp38-cp38-win_amd64.whl", hash = "sha256:e2f0623a1cbb40791e6e6787f6859fad52e65241d34f516caaf9968663d5405b"},
-    {file = "psygnal-0.9.5-cp39-cp39-macosx_10_16_arm64.whl", hash = "sha256:ef576ba8dde2b2b5f786a37bdfce3b4608047c69c55653be071855c32f012f99"},
-    {file = "psygnal-0.9.5-cp39-cp39-macosx_10_16_x86_64.whl", hash = "sha256:407ee58cac4b683f58cf0ccae21ad8c0371aff4cb6b55f531ff61aca73fdcf0e"},
-    {file = "psygnal-0.9.5-cp39-cp39-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:42d6168e891050005c7b7474897c35188b7be7f62bb88efe93985d6c6a50a9c3"},
-    {file = "psygnal-0.9.5-cp39-cp39-musllinux_1_1_x86_64.whl", hash = "sha256:bb85ed3e8d22d97d98f86af714eec0a3458a659bf72296423036acc7acaa29ec"},
-    {file = "psygnal-0.9.5-cp39-cp39-win_amd64.whl", hash = "sha256:f511de71282598c30f4a0ce268300d384dc8d4dd536ceb0e4b47759558931282"},
-    {file = "psygnal-0.9.5-py3-none-any.whl", hash = "sha256:13b3db8cbf0eea620abd6b611912087ffb23621c8bad20d90b037cc57c3985d5"},
-    {file = "psygnal-0.9.5.tar.gz", hash = "sha256:4956ea6c36a75f7fc457558935b67dd8be2594661b4d08eeb3357d69c509c55f"},
-]
-
-[package.dependencies]
-mypy-extensions = "*"
-typing-extensions = ">=3.7.4.2"
-
-[package.extras]
-dev = ["black", "cruft", "dask", "ipython", "mypy", "numpy", "pre-commit", "pydantic", "pyqt5", "pytest", "pytest-cov", "pytest-mypy-plugins", "pytest-qt", "qtpy", "rich", "ruff", "wrapt"]
-docs = ["griffe (==0.25.5)", "mkdocs (==1.4.2)", "mkdocs-material (==8.5.10)", "mkdocs-minify-plugin", "mkdocs-spellcheck[all]", "mkdocstrings (==0.20.0)", "mkdocstrings-python (==0.8.3)"]
-proxy = ["wrapt"]
-pydantic = ["pydantic"]
-test = ["attrs", "dask", "msgspec", "numpy", "pydantic", "pyinstaller (>=4.0)", "pytest (>=6.0)", "pytest-codspeed", "pytest-cov", "toolz", "wrapt"]
-testqt = ["pytest-qt", "qtpy"]
-
-[[package]]
 name = "ptyprocess"
 version = "0.7.0"
 description = "Run a subprocess in a pseudo terminal"
@@ -4965,7 +4867,7 @@ diagrams = ["jinja2", "railroad-diagrams"]
 name = "pyproj"
 version = "3.6.1"
 description = "Python interface to PROJ (cartographic projections and coordinate transformations library)"
-optional = false
+optional = true
 python-versions = ">=3.9"
 files = [
     {file = "pyproj-3.6.1-cp310-cp310-macosx_10_9_x86_64.whl", hash = "sha256:ab7aa4d9ff3c3acf60d4b285ccec134167a948df02347585fdd934ebad8811b4"},
@@ -5385,7 +5287,6 @@ files = [
     {file = "PyYAML-6.0.1-cp311-cp311-win_amd64.whl", hash = "sha256:bf07ee2fef7014951eeb99f56f39c9bb4af143d8aa3c21b1677805985307da34"},
     {file = "PyYAML-6.0.1-cp312-cp312-macosx_10_9_x86_64.whl", hash = "sha256:855fb52b0dc35af121542a76b9a84f8d1cd886ea97c84703eaa6d88e37a2ad28"},
     {file = "PyYAML-6.0.1-cp312-cp312-macosx_11_0_arm64.whl", hash = "sha256:40df9b996c2b73138957fe23a16a4f0ba614f4c0efce1e9406a184b6d07fa3a9"},
-    {file = "PyYAML-6.0.1-cp312-cp312-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:a08c6f0fe150303c1c6b71ebcd7213c2858041a7e01975da3a99aed1e7a378ef"},
     {file = "PyYAML-6.0.1-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:6c22bec3fbe2524cde73d7ada88f6566758a8f7227bfbf93a408a9d86bcc12a0"},
     {file = "PyYAML-6.0.1-cp312-cp312-musllinux_1_1_x86_64.whl", hash = "sha256:8d4e9c88387b0f5c7d5f281e55304de64cf7f9c0021a3525bd3b1c542da3b0e4"},
     {file = "PyYAML-6.0.1-cp312-cp312-win32.whl", hash = "sha256:d483d2cdf104e7c9fa60c544d92981f12ad66a457afae824d146093b8c294c54"},
@@ -6150,7 +6051,7 @@ testing-integration = ["build[virtualenv] (>=1.0.3)", "filelock (>=3.4.0)", "jar
 name = "shapely"
 version = "2.0.2"
 description = "Manipulation and analysis of geometric objects"
-optional = false
+optional = true
 python-versions = ">=3.7"
 files = [
     {file = "shapely-2.0.2-cp310-cp310-macosx_10_9_universal2.whl", hash = "sha256:6ca8cffbe84ddde8f52b297b53f8e0687bd31141abb2c373fd8a9f032df415d6"},
@@ -7411,4 +7312,4 @@ visualization = ["graphviz"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.9"
-content-hash = "0c34e22ff82960890639be3761c59b50474dd8373cef5c3b5a0e57ef72a1dea5"
+content-hash = "ce1e46121eb0957e0f176b6f4f4fe6240512a4df397379a3531308c08bef5b16"
