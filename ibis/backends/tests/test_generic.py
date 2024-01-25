@@ -1237,6 +1237,37 @@ def test_hash_consistent(backend, alltypes):
     assert h1.dtype in ("i8", "uint64")  # polars likes returning uint64 for this
 
 
+@pytest.mark.notimpl(["trino", "oracle", "exasol", "snowflake"])
+@pytest.mark.notyet(
+    [
+        "clickhouse",
+        "dask",
+        "datafusion",
+        "druid",
+        "duckdb",
+        "impala",
+        "mysql",
+        "pandas",
+        "polars",
+        "postgres",
+        "pyspark",
+        "sqlite",
+    ]
+)
+def test_hashbytes(backend, alltypes):
+    h1 = alltypes.order_by("id").string_col.hashbytes().execute(limit=10)
+    df = alltypes.order_by("id").execute(limit=10)
+
+    import hashlib
+
+    def hash_256(col):
+        return hashlib.sha256(col.encode()).digest()
+
+    h2 = df["string_col"].apply(hash_256).rename("HashBytes(string_col)")
+
+    backend.assert_series_equal(h1, h2)
+
+
 @pytest.mark.notimpl(
     [
         "pandas",
