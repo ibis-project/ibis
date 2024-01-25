@@ -379,7 +379,7 @@ services:
       - exasol:/data
 
   flink-jobmanager:
-    image: flink:1.18.0
+    image: flink:1.18.1
     environment:
       FLINK_PROPERTIES: |
         jobmanager.rpc.address: flink-jobmanager
