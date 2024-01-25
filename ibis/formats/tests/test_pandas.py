@@ -103,6 +103,8 @@ def test_dtype_from_pandas_arrow_list_dtype():
             dt.Timestamp("US/Eastern"),
         ),
         (pd.CategoricalDtype(), dt.String()),
+        (pd.CategoricalDtype(["a", "b", "c"]), dt.String()),
+        (pd.CategoricalDtype(np.array([1, 2, 3], dtype="int64")), dt.int64),
         (pd.Series([], dtype="string").dtype, dt.String()),
     ],
     ids=str,

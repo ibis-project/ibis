@@ -33,7 +33,9 @@ class PandasType(NumpyType):
         elif pdt.is_datetime64_dtype(typ):
             return dt.Timestamp(nullable=nullable)
         elif isinstance(typ, pdt.CategoricalDtype):
-            return dt.String(nullable=nullable)
+            if typ.categories is None or pdt.is_string_dtype(typ.categories):
+                return dt.String(nullable=nullable)
+            return cls.to_ibis(typ.categories.dtype, nullable=nullable)
         elif pdt.is_extension_array_dtype(typ):
             if _has_arrow_dtype and isinstance(typ, pd.ArrowDtype):
                 return PyArrowType.to_ibis(typ.pyarrow_dtype, nullable=nullable)
