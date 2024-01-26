@@ -60,7 +60,7 @@ class Backend(BaseBackend, CanCreateDatabase):
         """
         self._table_env = table_env
 
-    def _exec_sql(self, query: str) -> TableResult:
+    def raw_sql(self, query: str) -> TableResult:
         return self._table_env.execute_sql(query)
 
     def list_databases(self, like: str | None = None) -> list[str]:
@@ -99,7 +99,7 @@ class Backend(BaseBackend, CanCreateDatabase):
         statement = CreateDatabase(
             name=name, db_properties=db_properties, catalog=catalog, can_exist=force
         )
-        self._exec_sql(statement.compile())
+        self.raw_sql(statement.compile())
 
     def drop_database(
         self, name: str, catalog: str | None = None, force: bool = False
@@ -116,7 +116,7 @@ class Backend(BaseBackend, CanCreateDatabase):
             If `False`, an exception is raised if the database does not exist.
         """
         statement = DropDatabase(name=name, catalog=catalog, must_exist=not force)
-        self._exec_sql(statement.compile())
+        self.raw_sql(statement.compile())
 
     def list_tables(
         self,
@@ -456,7 +456,7 @@ class Backend(BaseBackend, CanCreateDatabase):
                 catalog=catalog,
             )
             sql = statement.compile()
-            self._exec_sql(sql)
+            self.raw_sql(sql)
 
             return self.table(name, database=database, catalog=catalog)
 
@@ -491,7 +491,7 @@ class Backend(BaseBackend, CanCreateDatabase):
             must_exist=not force,
             temporary=temp,
         )
-        self._exec_sql(statement.compile())
+        self.raw_sql(statement.compile())
 
     def rename_table(
         self,
@@ -516,7 +516,7 @@ class Backend(BaseBackend, CanCreateDatabase):
             must_exist=not force,
         )
         sql = statement.compile()
-        self._exec_sql(sql)
+        self.raw_sql(sql)
 
     def create_view(
         self,
@@ -602,7 +602,7 @@ class Backend(BaseBackend, CanCreateDatabase):
                 temporary=temp,
             )
             sql = statement.compile()
-            self._exec_sql(sql)
+            self.raw_sql(sql)
 
         else:
             raise exc.IbisError(f"Unsupported `obj` type: {type(obj)}")
@@ -643,7 +643,7 @@ class Backend(BaseBackend, CanCreateDatabase):
             temporary=temp,
         )
         sql = statement.compile()
-        self._exec_sql(sql)
+        self.raw_sql(sql)
 
     def _read_file(
         self,
@@ -833,7 +833,7 @@ class Backend(BaseBackend, CanCreateDatabase):
                 catalog=catalog,
                 overwrite=overwrite,
             )
-            return self._exec_sql(statement.compile())
+            return self.raw_sql(statement.compile())
 
         if isinstance(obj, pa.Table):
             obj = obj.to_pandas()
