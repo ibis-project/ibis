@@ -51,7 +51,7 @@ rich = ">=12.4.4,<14"
 sqlglot = ">=18.12.0,<21"
 toolz = ">=0.11,<1"
 typing-extensions = ">=4.3.0,<5"
-black = { version = ">=22.1.0,<24", optional = true }
+black = { version = ">=22.1.0,<25", optional = true }
 clickhouse-connect = { version = ">=0.5.23,<1", optional = true, extras = [
   "arrow",
   "numpy",
