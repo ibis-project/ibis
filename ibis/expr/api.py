@@ -648,6 +648,35 @@ def random() -> ir.FloatingScalar:
 
     Similar to [](`random.random`) in the Python standard library.
 
+    ::: {.callout-note}
+    ## Repeated use of `random`
+
+    `ibis.random()` will generate a column of distinct random numbers even if
+    the same instance of `ibis.random()` is re-used.
+
+    When Ibis compiles an expression to SQL, each place where `random` is used
+    will render as a separate call to the given backend's random number
+    generator.
+
+    ```python
+    >>> from ibis.interactive import *
+    >>> t = ibis.memtable({"a": range(5)})
+    >>> r_a = ibis.random()
+    >>> t.mutate(random_1=r_a, random_2=r_a)  # doctest: +SKIP
+    ┏━━━━━━━┳━━━━━━━━━━┳━━━━━━━━━━┓
+    ┃ a     ┃ random_1 ┃ random_2 ┃
+    ┡━━━━━━━╇━━━━━━━━━━╇━━━━━━━━━━┩
+    │ int64 │ float64  │ float64  │
+    ├───────┼──────────┼──────────┤
+    │     0 │ 0.191130 │ 0.098715 │
+    │     1 │ 0.255262 │ 0.828454 │
+    │     2 │ 0.011804 │ 0.392275 │
+    │     3 │ 0.309941 │ 0.347300 │
+    │     4 │ 0.482783 │ 0.095562 │
+    └───────┴──────────┴──────────┘
+    ```
+    :::
+
     Returns
     -------
     FloatingScalar
