@@ -120,7 +120,7 @@ for msg in islice(consumer, 3):
 
 ## Running the tutorial
 
-This tutorial uses the Flink backend for Ibis to process the aforementioned
+This tutorial uses Ibis with the Flink backend to process the aforementioned
 payment messages. You can choose to either [run it locally](#local-execution) or
 [submit a job to an already-running Flink cluster](#remote-execution).
 
