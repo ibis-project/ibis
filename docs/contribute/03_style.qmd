@@ -2,7 +2,12 @@
 
 ## Code style
 
-Ibis uses several code linters, like [`ruff`](https://github.com/charliermarsh/ruff), [`shellcheck`](https://github.com/koalaman/shellcheck), [`statix`](https://github.com/nerdypepper/statix), [`nixpkgs-fmt`](https://github.com/nix-community/nixpkgs-fmt) and others, that are enforced by CI. Developers should run them locally before submitting a PR.
+Ibis uses several code linters, like
+[`ruff`](https://github.com/charliermarsh/ruff),
+[`shellcheck`](https://github.com/koalaman/shellcheck),
+[`statix`](https://github.com/nerdypepper/statix),
+[`nixpkgs-fmt`](https://github.com/nix-community/nixpkgs-fmt) and others, that
+are enforced by CI. Developers should run them locally before submitting a PR.
 
 1. Install `pre-commit`
 
@@ -16,22 +21,98 @@ pip install pre-commit
 pre-commit run --all-files
 ```
 ::: {.callout-note}
-Some of the packages needed to run the `pre-commit` linting can not be installed automatically (e.g. `prettier`, `actionlint`, `shellcheck`), and they need to be installed through a system package manager.
+Some of the packages needed to run the `pre-commit` linting can not be installed
+automatically (e.g. `prettier`, `actionlint`, `shellcheck`), and they need to be
+installed through a system package manager.
 :::
 
-Optionally, you may want to setup the `pre-commit` hooks to run automatically when making a git commit. To do this, run the following from the root of the Ibis repository:
+Optionally, you may want to setup the `pre-commit` hooks to run automatically
+when making a git commit. To do this, run the following from the root of the
+Ibis repository:
 
 ```sh
 pre-commit install
 ```
 
-This will run the code linters automatically when you make a git commit. If you want to skip these checks, do `git commit --no-verify`
+This will run the code linters automatically when you make a git commit. If you
+want to skip these checks, do `git commit --no-verify`
 
 
 ::: {.callout-tip}
-If you use `nix-shell`, all of these are already setup for you and ready to use, and you don't need to do anything to install these tools.
+If you use `nix-shell`, all of these are already setup for you and ready to use,
+and you don't need to do anything to install these tools.
 :::
 
 ## Docstrings
 We use [numpydoc](https://numpydoc.readthedocs.io/en/latest/format.html) as our
 standard format for docstrings.
+
+## Documentation, blog, and other prose style
+
+Always capitalize Ibis in prose.
+
+### General points on style and word usage
+
+Avoid the passive voice.  Either Ibis does something or the user does
+something or a particular backend does something.
+
+Try to avoid using words like "simply", "simple", "obviously", "just", when
+describing things that Ibis makes easier.  Either the simplicity is
+self-evident, or it isn't and you are inadvertently insulting the reader.
+
+Prose should be authored by you™. We discourage LLM-written docs and posts, but
+you are free to use these tools to aid in your writing.
+
+### Text formatting
+
+Wrap long prose strings to fewer than 90 characters per line. It is very helpful
+to reviewers when looking at diffs of prose.
+
+- In Vim you can use `gq` and then a movement to wrap.  `gqG` to wrap an entire
+  document.
+- In Neovim you can use `gw` and then a movement to wrap. `gwG` to wrap and
+  entire document.
+- In Emacs you can use `fill-paragraph`.
+- VSCode has a plugin called Rewrap (and probably several others).
+
+::: {.callout-note}
+Wrapping bulleted sentences requires a bit of extra attention.  Ensure that the
+wrapped line begins in-line with the start of the bulleted text, not the bullet.
+
+```
+* This is a long sentence that is a bulleted sentence and perhaps it shouldn't
+  have been a bullet but it got away from me and, well, here we are.
+```
+:::
+
+Do not commit Jupyter notebooks.  You are more than welcome to author docs in
+Jupyter but the `ipynb` file should be converted to `qmd`.  (We use notebooks
+for tutorials and interactive work, but for prose review, JSON is suboptimal).
+
+Use `# Sentence case for section headers`, not `# Title Case for Headers`
+
+### Quarto
+
+Any computations that can't or shouldn't be done again should use `freeze: auto`
+in the YAML front matter.  This is the default behavior for documents in the
+`docs/posts` directory.
+
+::: {.callout-note}
+**NEVER** use `freeze: true` as this results in silently stale pages.
+:::
+
+Format code blocks with `black` or `ruff` where possible.
+
+Prefer `language` over `{.language}` for non-executable code blocks:
+
+Prefer this:
+
+    ```python
+    code here
+    ```
+
+Over this:
+
+    ```{.python}
+    code here
+    ```
