@@ -97,7 +97,7 @@ def _regular_join_method(
 # nested inputs
 def bind(table: TableExpr, value: Any, prefer_column=True) -> Iterator[ir.Value]:
     """Bind a value to a table expression."""
-    if prefer_column and isinstance(value, (str, int)):
+    if prefer_column and type(value) in (str, int):
         yield table._get_column(value)
     elif isinstance(value, ValueExpr):
         yield value
