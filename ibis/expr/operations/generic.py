@@ -273,6 +273,20 @@ class HashBytes(Value):
     shape = rlz.shape_like("arg")
 
 
+@public
+class HexDigest(Value):
+    arg: Value[dt.String | dt.Binary]
+    how: LiteralType[
+        "md5",
+        "sha1",
+        "sha256",
+        "sha512",
+    ]
+
+    dtype = dt.str
+    shape = rlz.shape_like("arg")
+
+
 # TODO(kszucs): we should merge the case operations by making the
 # cases, results and default optional arguments like they are in
 # api.py

@@ -1244,6 +1244,7 @@ def test_hash_consistent(backend, alltypes):
         "datafusion",
         "druid",
         "duckdb",
+        "flink",
         "impala",
         "mysql",
         "pandas",
@@ -1263,6 +1264,45 @@ def test_hashbytes(backend, alltypes):
         return hashlib.sha256(col.encode()).digest()
 
     h2 = df["string_col"].apply(hash_256).rename("HashBytes(string_col)")
+
+    backend.assert_series_equal(h1, h2)
+
+
+@pytest.mark.notimpl(
+    [
+        "bigquery",
+        "clickhouse",
+        "dask",
+        "datafusion",
+        "exasol",
+        "flink",
+        "impala",
+        "mysql",
+        "oracle",
+        "pandas",
+        "polars",
+        "postgres",
+        "snowflake",
+        "trino",
+    ]
+)
+@pytest.mark.notyet(
+    [
+        "druid",
+        "polars",
+        "sqlite",
+    ]
+)
+def test_hexdigest(backend, alltypes):
+    h1 = alltypes.order_by("id").string_col.hexdigest().execute(limit=10)
+    df = alltypes.order_by("id").execute(limit=10)
+
+    import hashlib
+
+    def hash_256(col):
+        return hashlib.sha256(col.encode()).hexdigest()
+
+    h2 = df["string_col"].apply(hash_256).rename("HexDigest(string_col)")
 
     backend.assert_series_equal(h1, h2)
 
