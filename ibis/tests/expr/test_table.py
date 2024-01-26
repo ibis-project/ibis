@@ -730,6 +730,18 @@ def test_aggregate_keywords(table):
     assert_equal(expr2, expected)
 
 
+def test_filter_on_literal_boolean(table):
+    expr1 = table.filter(True)
+    expr2 = table.filter(ibis.literal(True))
+    assert expr1.equals(expr2)
+
+
+def test_filter_on_literal_string_is_column(table):
+    expr1 = table.filter("h")
+    expr2 = table.filter(table.h)
+    assert expr1.equals(expr2)
+
+
 def test_filter_on_literal_then_aggregate(table):
     # Mostly just a smoketest, this used to error on construction
     expr = table.filter(ibis.literal(True)).agg(lambda t: t.a.sum().name("total"))
