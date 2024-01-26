@@ -280,6 +280,8 @@ _SUPPORTED_ALGORITHMS = frozenset(
 
 @translate_val.register(ops.HashBytes)
 def _hash_bytes(op, *, arg, how, **_):
+    if how in ("md5", "sha1", "sha224", "sha256"):
+        how = how.upper()
     if how not in _SUPPORTED_ALGORITHMS:
         raise com.UnsupportedOperationError(f"Unsupported hash algorithm {how}")
 

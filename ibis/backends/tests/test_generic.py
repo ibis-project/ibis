@@ -1240,7 +1240,6 @@ def test_hash_consistent(backend, alltypes):
 @pytest.mark.notimpl(["trino", "oracle", "exasol", "snowflake"])
 @pytest.mark.notyet(
     [
-        "clickhouse",
         "dask",
         "datafusion",
         "druid",
