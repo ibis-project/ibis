@@ -52,7 +52,7 @@ pip install ibis-framework apache-flink kafka-python
 
 ## Spinning up the services using Docker Compose
 
-The [claypotai/ibis-flink-example GitHub repository](https://github.com/claypotai/ibis-flink-example) includes the relevant Docker Compose configuration for this tutorial. Clone the repository, and run `docker compose up` from the cloned directory to create Kafka topics, generate sample data, and launch a Flink cluster.
+The [claypotai/ibis-flink-example GitHub repository](https://github.com/claypotai/ibis-flink-example) includes the relevant Docker Compose configuration for this tutorial. Clone the repository, and run `docker compose up` from the cloned directory to create Kafka topics, generate sample data, and launch a Flink cluster:
 
 ```bash
 git clone https://github.com/claypotai/ibis-flink-example.git
@@ -109,7 +109,7 @@ The simpler option is to run the example using the Flink mini cluster.
 
 #### Create a table environment
 
-The [table environment](https://nightlies.apache.org/flink/flink-docs-release-1.18/docs/dev/python/table/table_environment/) serves as the main entry point for interacting with the Flink runtime. The `flink` backend does not create `TableEnvironment` objects; you must create a `TableEnvironment` and pass that to [`ibis.flink.connect`](../../backends/flink.qmd#ibis.flink.connect).
+The [table environment](https://nightlies.apache.org/flink/flink-docs-release-1.18/docs/dev/python/table/table_environment/) serves as the main entry point for interacting with the Flink runtime. The `flink` backend does not create `TableEnvironment` objects; you must create a `TableEnvironment` and pass that to [`ibis.flink.connect`](../../backends/flink.qmd#ibis.flink.connect):
 
 ```{python}
 import ibis
@@ -123,7 +123,7 @@ table_env.get_config().set("parallelism.default", "1")
 con = ibis.flink.connect(table_env)
 ```
 
-Flink’s streaming connectors aren't part of the binary distribution. Link the [Kafka connector](https://nightlies.apache.org/flink/flink-docs-release-1.18/docs/connectors/table/kafka/) for cluster execution by adding the JAR file from the cloned repository.
+Flink’s streaming connectors aren't part of the binary distribution. Link the [Kafka connector](https://nightlies.apache.org/flink/flink-docs-release-1.18/docs/connectors/table/kafka/) for cluster execution by adding the JAR file from the cloned repository. [Ibis exposes the `raw_sql` method for situations like this, where you need to run arbitrary SQL that cannot be modeled as a table expression](https://ibis-project.org/how-to/extending/sql#backend.raw_sql):
 
 ```{python}
 #| echo: false
@@ -140,7 +140,7 @@ urllib.request.urlretrieve(
 ```{python}
 #| output: false
 
-con._exec_sql("ADD JAR 'flink-sql-connector-kafka-3.0.2-1.18.jar'")
+con.raw_sql("ADD JAR 'flink-sql-connector-kafka-3.0.2-1.18.jar'")
 ```
 
 #### Create the source and sink tables
@@ -199,7 +199,7 @@ con.create_table(
 
 #### Perform calculations
 
-Compute the total pay amount per province in the past 10 seconds (as of each message, for the province in the incoming message).
+Compute the total pay amount per province in the past 10 seconds (as of each message, for the province in the incoming message):
 
 ```{python}
 agged = t.select(
@@ -212,7 +212,7 @@ agged = t.select(
 )
 ```
 
-Finally, emit the query result to the sink table.
+Finally, emit the query result to the sink table:
 
 ```{python}
 con.insert("total_amount_by_province_id", agged)
