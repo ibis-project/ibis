@@ -143,11 +143,11 @@ from pyflink.table import EnvironmentSettings, TableEnvironment
 
 env_settings = EnvironmentSettings.in_streaming_mode()
 table_env = TableEnvironment.create(env_settings)
-# write all the data to one file
-table_env.get_config().set("parallelism.default", "1")
+table_env.get_config().set("parallelism.default", "1")  # <1>
 
 con = ibis.flink.connect(table_env)
 ```
+1. write all the data to one file
 
 Flink’s streaming connectors aren't part of the binary distribution. Link the
 [Kafka
@@ -184,54 +184,54 @@ to register tables. Notice the new top-level `ibis.watermark` API for
 strategy](https://nightlies.apache.org/flink/flink-docs-release-1.18/docs/concepts/time/#event-time-and-watermarks).
 
 ```{python}
-# create source Table
-source_schema = ibis.schema(
-    {
-        "createTime": "timestamp(3)",
-        "orderId": "int64",
-        "payAmount": "float64",
-        "payPlatform": "int32",
-        "provinceId": "int32",
-    }
-)
+source_schema = ibis.schema(                                                        # <1>
+    {                                                                               # <1>
+        "createTime": "timestamp(3)",                                               # <1>
+        "orderId": "int64",                                                         # <1>
+        "payAmount": "float64",                                                     # <1>
+        "payPlatform": "int32",                                                     # <1>
+        "provinceId": "int32",                                                      # <1>
+    }                                                                               # <1>
+)                                                                                   # <1>
 
-source_configs = {
-    "connector": "kafka",
-    "topic": "payment_msg",
-    "properties.bootstrap.servers": "localhost:9092",
-    "properties.group.id": "test_3",
-    "scan.startup.mode": "earliest-offset",
-    "format": "json",
-}
+source_configs = {                                                                  # <1>
+    "connector": "kafka",                                                           # <1>
+    "topic": "payment_msg",                                                         # <1>
+    "properties.bootstrap.servers": "localhost:9092",                               # <1>
+    "properties.group.id": "test_3",                                                # <1>
+    "scan.startup.mode": "earliest-offset",                                         # <1>
+    "format": "json",                                                               # <1>
+}                                                                                   # <1>
 
-t = con.create_table(
-    "payment_msg",
-    schema=source_schema,
-    tbl_properties=source_configs,
-    watermark=ibis.watermark(
-        time_col="createTime", allowed_delay=ibis.interval(seconds=15)
-    ),
-)
+t = con.create_table(                                                               # <1>
+    "payment_msg",                                                                  # <1>
+    schema=source_schema,                                                           # <1>
+    tbl_properties=source_configs,                                                  # <1>
+    watermark=ibis.watermark(                                                       # <1>
+        time_col="createTime", allowed_delay=ibis.interval(seconds=15)              # <1>
+    ),                                                                              # <1>
+)                                                                                   # <1>
 
-# create sink Table
-sink_schema = ibis.schema(
-    {
-        "province_id": "int32",
-        "pay_amount": "float64",
-    }
-)
+sink_schema = ibis.schema(                                                          # <2>
+    {                                                                               # <2>
+        "province_id": "int32",                                                     # <2>
+        "pay_amount": "float64",                                                    # <2>
+    }                                                                               # <2>
+)                                                                                   # <2>
 
-sink_configs = {
-    "connector": "kafka",
-    "topic": "sink",
-    "properties.bootstrap.servers": "localhost:9092",
-    "format": "json",
-}
+sink_configs = {                                                                    # <2>
+    "connector": "kafka",                                                           # <3>
+    "topic": "sink",                                                                # <2>
+    "properties.bootstrap.servers": "localhost:9092",                               # <2>
+    "format": "json",                                                               # <2>
+}                                                                                   # <2>
 
-con.create_table(
-    "total_amount_by_province_id", schema=sink_schema, tbl_properties=sink_configs
-)
+con.create_table(                                                                   # <2>
+    "total_amount_by_province_id", schema=sink_schema, tbl_properties=sink_configs  # <2>
+)                                                                                   # <2>
 ```
+1. create source Table
+2. create sink Table
 
 #### Perform calculations
 
