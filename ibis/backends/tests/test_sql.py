@@ -180,3 +180,14 @@ def test_union_aliasing(backend_name, snapshot):
     result = top_ten.union(bottom_ten)
 
     snapshot.assert_match(str(ibis.to_sql(result, dialect=backend_name)), "out.sql")
+
+
+def test_union_generates_predictable_aliases(con):
+    t = ibis.memtable(
+        data=[{"island": "Torgerson", "body_mass_g": 3750, "sex": "male"}]
+    )
+    sub1 = t.inner_join(t.view(), "island").mutate(island_right=lambda t: t.island)
+    sub2 = t.inner_join(t.view(), "sex").mutate(sex_right=lambda t: t.sex)
+    expr = ibis.union(sub1, sub2)
+    df = con.execute(expr)
+    assert len(df) == 2
