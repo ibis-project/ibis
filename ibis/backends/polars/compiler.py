@@ -1219,7 +1219,7 @@ def execute_view(op, *, ctx: pl.SQLContext, **kw):
 
 @translate.register(ops.SelfReference)
 def execute_self_reference(op, **kw):
-    return translate(op.table, **kw)
+    return translate(op.parent, **kw)
 
 
 @translate.register(ops.JoinTable)
