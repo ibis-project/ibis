@@ -395,9 +395,7 @@ class Backend(BaseBackend):
         return translate(node, ctx=ctx)
 
     def _get_schema_using_query(self, query: str) -> sch.Schema:
-        return schema_from_polars(
-            self._context.execute(f"SELECT * FROM ({query}) LIMIT 0").schema
-        )
+        return schema_from_polars(self._context.execute(query).schema)
 
     def execute(
         self,

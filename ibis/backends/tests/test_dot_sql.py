@@ -33,14 +33,7 @@ _NAMES = {
 @pytest.mark.parametrize(
     "schema",
     [
-        param(
-            None,
-            id="implicit_schema",
-            marks=[
-                pytest.mark.notimpl(["druid"]),
-                pytest.mark.notyet(["polars"], raises=PolarsComputeError),
-            ],
-        ),
+        param(None, id="implicit_schema", marks=[pytest.mark.notimpl(["druid"])]),
         param({"s": "string", "new_col": "double"}, id="explicit_schema"),
     ],
 )
@@ -82,7 +75,6 @@ def test_con_dot_sql(backend, con, schema):
 @dot_sql_notimpl
 @dot_sql_notyet
 @dot_sql_never
-@pytest.mark.notyet(["polars"], raises=PolarsComputeError)
 def test_table_dot_sql(backend, con):
     alltypes = con.table("functional_alltypes")
     t = (
@@ -120,7 +112,6 @@ def test_table_dot_sql(backend, con):
 @dot_sql_notimpl
 @dot_sql_notyet
 @dot_sql_never
-@pytest.mark.notyet(["polars"], raises=PolarsComputeError)
 def test_table_dot_sql_with_join(backend, con):
     alltypes = con.table("functional_alltypes")
     t = (
@@ -168,7 +159,6 @@ def test_table_dot_sql_with_join(backend, con):
 @dot_sql_notimpl
 @dot_sql_notyet
 @dot_sql_never
-@pytest.mark.notyet(["polars"], raises=PolarsComputeError)
 def test_table_dot_sql_repr(con):
     alltypes = con.table("functional_alltypes")
     t = (
@@ -235,12 +225,8 @@ no_sqlglot_dialect = sorted(
 
 @pytest.mark.parametrize(
     "dialect",
-    [
-        *sorted(_get_backend_names() - _NO_SQLGLOT_DIALECT),
-        *no_sqlglot_dialect,
-    ],
+    [*sorted(_get_backend_names() - _NO_SQLGLOT_DIALECT), *no_sqlglot_dialect],
 )
-@pytest.mark.notyet(["polars"], raises=PolarsComputeError)
 @table_dot_sql_notimpl
 @dot_sql_notimpl
 @dot_sql_notyet
@@ -264,7 +250,6 @@ def test_table_dot_sql_transpile(backend, alltypes, dialect, df):
         *no_sqlglot_dialect,
     ],
 )
-@pytest.mark.notyet(["polars"], raises=PolarsComputeError)
 @pytest.mark.notyet(["druid"], raises=ValueError)
 @pytest.mark.notyet(["snowflake", "bigquery"])
 @pytest.mark.notyet(
