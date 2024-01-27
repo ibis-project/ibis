@@ -954,9 +954,6 @@ def test_agg_memory_table(con, monkeypatch):
     assert result == 3
 
 
-@pytest.mark.broken(
-    ["polars"], reason="join column renaming is currently incorrect on polars"
-)
 def test_self_join_memory_table(backend, con, monkeypatch):
     monkeypatch.setattr(ibis.options, "default_backend", con)
 
