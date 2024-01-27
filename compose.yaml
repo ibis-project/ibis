@@ -104,11 +104,10 @@ services:
       retries: 20
       test:
         - CMD-SHELL
-        - mc ping --count 1 trino
+        - mc ready data && mc mb --ignore-existing data/trino
     networks:
       - trino
     volumes:
-      - minio:/data
       - $PWD/docker/minio/config.json:/.mc/config.json:ro
 
   hive-metastore:
@@ -119,7 +118,7 @@ services:
       HIVE_METASTORE_JDBC_URL: jdbc:postgresql://hive-metastore-db:23456/metastore
       HIVE_METASTORE_USER: admin
       HIVE_METASTORE_PASSWORD: admin
-      HIVE_METASTORE_WAREHOUSE_DIR: s3://warehouse/
+      HIVE_METASTORE_WAREHOUSE_DIR: s3://trino/
       HIVE_METASTORE_USERS_IN_ADMIN_ROLE: "admin"
       S3_ENDPOINT: http://minio:9000
       S3_ACCESS_KEY: accesskey
@@ -569,6 +568,5 @@ volumes:
   mysql:
   oracle:
   postgres:
-  minio:
   exasol:
   impala:

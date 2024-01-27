@@ -1,7 +1,7 @@
 {
   "version": "10",
   "aliases": {
-    "trino": {
+    "data": {
       "url": "http://minio:9000",
       "accessKey": "accesskey",
       "secretKey": "secretkey",

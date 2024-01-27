@@ -37,6 +37,7 @@ class TestConf(ServiceBackendTest):
     # for numeric and decimal
 
     service_name = "minio"
+    data_volume = "/bitnami/minio/data"
     returned_timestamp_unit = "s"
     supports_structs = True
     supports_map = True
@@ -47,21 +48,6 @@ class TestConf(ServiceBackendTest):
     _tpch_query_schema = "hive.ibis_sf1"
 
     def preload(self):
-        # create buckets
-        subprocess.run(
-            [
-                "docker",
-                "compose",
-                "exec",
-                "minio",
-                "mc",
-                "mb",
-                "--ignore-existing",
-                "trino/warehouse",
-            ],
-            check=True,
-        )
-
         # copy files to the minio host
         super().preload()
 
@@ -74,11 +60,11 @@ class TestConf(ServiceBackendTest):
                     "docker",
                     "compose",
                     "exec",
-                    "minio",
+                    self.service_name,
                     "mc",
                     "cp",
                     f"{self.data_volume}/{path.name}",
-                    f"trino/warehouse/{dirname}/{path.name}",
+                    f"data/trino/{dirname}/{path.name}",
                 ],
                 check=True,
             )
