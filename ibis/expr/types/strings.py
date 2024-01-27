@@ -1082,7 +1082,7 @@ class StringValue(Value):
         why="Different backends support different regular expression syntax."
     )
     def re_split(self, pattern: str | StringValue) -> ir.ArrayValue:
-        """Split a string by a regular expression `pattern`.
+        r"""Split a string by a regular expression `pattern`.
 
         Parameters
         ----------
