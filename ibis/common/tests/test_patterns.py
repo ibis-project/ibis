@@ -580,6 +580,8 @@ def test_object_pattern_complex_type():
 
 def test_object_pattern_from_instance_of():
     class MyType:
+        __match_args__ = ("a", "b")
+
         def __init__(self, a, b):
             self.a = a
             self.b = b
@@ -593,6 +595,8 @@ def test_object_pattern_from_instance_of():
 
 def test_object_pattern_from_coerced_to():
     class MyCoercibleType(Coercible):
+        __match_args__ = ("a", "b")
+
         def __init__(self, a, b):
             self.a = a
             self.b = b
@@ -649,6 +653,25 @@ def test_object_pattern_matching_dictionary_field():
     pattern = Object(Bar, 1, d={"foo": 1})
     assert match(pattern, a) is NoMatch
     assert match(pattern, d) is d
+
+
+def test_object_pattern_requires_its_arguments_to_match():
+    class Empty:
+        __match_args__ = ()
+
+    msg = "The type to match has fewer `__match_args__`"
+    with pytest.raises(ValueError, match=msg):
+        Object(Empty, 1)
+
+    # if the type matcher (first argument of Object) receives a generic pattern
+    # instead of an explicit type, the validation above cannot occur, so test
+    # the the pattern still doesn't match when it requires more positional
+    # arguments than the object `__match_args__` has
+    pattern = Object(InstanceOf(Empty), var("a"))
+    assert match(pattern, Empty()) is NoMatch
+
+    pattern = Object(InstanceOf(Empty), a=var("a"))
+    assert match(pattern, Empty()) is NoMatch
 
 
 def test_callable_with():
