@@ -4,7 +4,6 @@ import abc
 import calendar
 import itertools
 import math
-import operator
 import string
 from collections.abc import Iterator, Mapping
 from functools import partial, reduce, singledispatchmethod
@@ -19,17 +18,18 @@ from public import public
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
-from ibis.backends.base.sqlglot.rewrites import CTE, Select, Window, sqlize
-from ibis.expr.operations.udf import InputType
-from ibis.expr.rewrites import (
+from ibis.backends.base.sqlglot.rewrites import (
+    CTE,
+    Select,
+    Window,
     add_one_to_nth_value_input,
     add_order_by_to_empty_ranking_window_functions,
     empty_in_values_right_side,
     one_to_zero_index,
-    replace_bucket,
-    replace_scalar_parameter,
-    unwrap_scalar_parameter,
+    sqlize,
 )
+from ibis.expr.operations.udf import InputType
+from ibis.expr.rewrites import replace_bucket
 
 if TYPE_CHECKING:
     from collections.abc import Iterable
@@ -222,6 +222,15 @@ class SQLGlotCompiler(abc.ABC):
     def cast(self, arg, to: dt.DataType) -> sge.Cast:
         return sg.cast(sge.convert(arg), to=self.type_mapper.from_ibis(to))
 
+    def _prepare_params(self, params):
+        result = {}
+        for param, value in params.items():
+            node = param.op()
+            if isinstance(node, ops.Alias):
+                node = node.arg
+            result[node] = value
+        return result
+
     def translate(self, op, *, params: Mapping[ir.Value, Any]) -> sge.Expression:
         """Translate an ibis operation to a sqlglot expression.
 
@@ -245,20 +254,8 @@ class SQLGlotCompiler(abc.ABC):
         """
         # substitute parameters immediately to avoid having to define a
         # ScalarParameter translation rule
-        #
-        # this lets us avoid threading `params` through every `translate_val`
-        # call only to be used in the one place it would be needed: the
-        # ScalarParameter `translate_val` rule
-        params = {
-            # remove aliases from scalar parameters
-            param.op().replace(unwrap_scalar_parameter): value
-            for param, value in (params or {}).items()
-        }
-
-        op = op.replace(
-            replace_scalar_parameter(params) | reduce(operator.or_, self.rewrites)
-        )
-        op, ctes = sqlize(op)
+        params = self._prepare_params(params)
+        op, ctes = sqlize(op, params=params, rewrites=self.rewrites)
 
         aliases = {}
         counter = itertools.count()
