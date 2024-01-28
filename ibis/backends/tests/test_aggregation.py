@@ -49,6 +49,7 @@ aggregate_test_params = [
                     "bigquery",
                     "datafusion",
                     "postgres",
+                    "risingwave",
                     "clickhouse",
                     "impala",
                     "duckdb",
@@ -205,6 +206,7 @@ def test_aggregate_grouped(backend, alltypes, df, result_fn, expected_fn):
         "impala",
         "mysql",
         "postgres",
+        "risingwave",
         "sqlite",
         "snowflake",
         "polars",
@@ -518,39 +520,51 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
             lambda t, where: t.double_col.arbitrary(where=where),
             lambda t, where: t.double_col[where].iloc[0],
             id="arbitrary_default",
-            marks=pytest.mark.notimpl(
-                [
-                    "impala",
-                    "mysql",
-                    "polars",
-                    "datafusion",
-                    "mssql",
-                    "druid",
-                    "oracle",
-                    "exasol",
-                    "flink",
-                ],
-                raises=com.OperationNotDefinedError,
-            ),
+            marks=[
+                pytest.mark.notimpl(
+                    [
+                        "impala",
+                        "mysql",
+                        "polars",
+                        "datafusion",
+                        "mssql",
+                        "druid",
+                        "oracle",
+                        "exasol",
+                        "flink",
+                    ],
+                    raises=com.OperationNotDefinedError,
+                ),
+                pytest.mark.notimpl(
+                    ["risingwave"],
+                    raises=sa.exc.InternalError,
+                ),
+            ],
         ),
         param(
             lambda t, where: t.double_col.arbitrary(how="first", where=where),
             lambda t, where: t.double_col[where].iloc[0],
             id="arbitrary_first",
-            marks=pytest.mark.notimpl(
-                [
-                    "impala",
-                    "mysql",
-                    "polars",
-                    "datafusion",
-                    "mssql",
-                    "druid",
-                    "oracle",
-                    "exasol",
-                    "flink",
-                ],
-                raises=com.OperationNotDefinedError,
-            ),
+            marks=[
+                pytest.mark.notimpl(
+                    [
+                        "impala",
+                        "mysql",
+                        "polars",
+                        "datafusion",
+                        "mssql",
+                        "druid",
+                        "oracle",
+                        "exasol",
+                        "flink",
+                    ],
+                    raises=com.OperationNotDefinedError,
+                ),
+                pytest.mark.notimpl(
+                    ["risingwave"],
+                    raises=sa.exc.InternalError,
+                ),
+            ],
         ),
         param(
             lambda t, where: t.double_col.arbitrary(how="last", where=where),
@@ -575,6 +589,10 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
                     ["bigquery", "trino"],
                     raises=com.UnsupportedOperationError,
                     reason="backend only supports the `first` option for `.arbitrary()",
+                ),
+                pytest.mark.notimpl(
+                    ["risingwave"],
+                    raises=sa.exc.InternalError,
                 ),
             ],
         ),
@@ -602,7 +620,14 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
                     raises=com.OperationNotDefinedError,
                 ),
                 pytest.mark.notimpl(
-                    ["bigquery", "duckdb", "postgres", "pyspark", "trino"],
+                    [
+                        "bigquery",
+                        "duckdb",
+                        "postgres",
+                        "risingwave",
+                        "pyspark",
+                        "trino",
+                    ],
                     raises=com.UnsupportedOperationError,
                     reason="how='heavy' not supported in the backend",
                 ),
@@ -617,19 +642,31 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
             lambda t, where: t.double_col.first(where=where),
             lambda t, where: t.double_col[where].iloc[0],
             id="first",
-            marks=pytest.mark.notimpl(
-                ["dask", "druid", "impala", "mssql", "mysql", "oracle", "flink"],
-                raises=com.OperationNotDefinedError,
-            ),
+            marks=[
+                pytest.mark.notimpl(
+                    ["dask", "druid", "impala", "mssql", "mysql", "oracle", "flink"],
+                    raises=com.OperationNotDefinedError,
+                ),
+                pytest.mark.notimpl(
+                    ["risingwave"],
+                    raises=sa.exc.InternalError,
+                ),
+            ],
         ),
         param(
             lambda t, where: t.double_col.last(where=where),
             lambda t, where: t.double_col[where].iloc[-1],
             id="last",
-            marks=pytest.mark.notimpl(
-                ["dask", "druid", "impala", "mssql", "mysql", "oracle", "flink"],
-                raises=com.OperationNotDefinedError,
-            ),
+            marks=[
+                pytest.mark.notimpl(
+                    ["dask", "druid", "impala", "mssql", "mysql", "oracle", "flink"],
+                    raises=com.OperationNotDefinedError,
+                ),
+                pytest.mark.notimpl(
+                    ["risingwave"],
+                    raises=sa.exc.InternalError,
+                ),
+            ],
         ),
         param(
             lambda t, where: t.bigint_col.bit_and(where=where),
@@ -899,6 +936,11 @@ def test_count_distinct_star(alltypes, df, ibis_cond, pandas_cond):
                     reason="backend doesn't implement approximate quantiles yet",
                     raises=com.OperationNotDefinedError,
                 ),
+                pytest.mark.broken(
+                    ["risingwave"],
+                    reason="Invalid input syntax: direct arg in `percentile_cont` must be castable to float64",
+                    raises=sa.exc.InternalError,
+                ),
             ],
         ),
     ],
@@ -947,6 +989,11 @@ def test_quantile(
                     ["mysql", "impala", "sqlite", "flink"],
                     raises=com.OperationNotDefinedError,
                 ),
+                pytest.mark.notimpl(
+                    ["risingwave"],
+                    raises=sa.exc.InternalError,
+                    reason="function covar_pop(integer, integer) does not exist",
+                ),
             ],
         ),
         param(
@@ -961,6 +1008,11 @@ def test_quantile(
                 pytest.mark.notyet(
                     ["mysql", "impala", "sqlite", "flink"],
                     raises=com.OperationNotDefinedError,
+                ),
+                pytest.mark.notimpl(
+                    ["risingwave"],
+                    raises=sa.exc.InternalError,
+                    reason="function covar_pop(integer, integer) does not exist",
                 ),
             ],
         ),
@@ -981,6 +1033,16 @@ def test_quantile(
                     ["clickhouse"],
                     raises=(ValueError, AttributeError),
                     reason="ClickHouse only implements `sample` correlation coefficient",
+                ),
+                pytest.mark.notyet(
+                    ["pyspark"],
+                    raises=ValueError,
+                    reason="PySpark only implements sample correlation",
+                ),
+                pytest.mark.notimpl(
+                    ["risingwave"],
+                    raises=sa.exc.InternalError,
+                    reason="function covar_pop(integer, integer) does not exist",
                 ),
             ],
         ),
@@ -1008,7 +1070,7 @@ def test_quantile(
                     reason="Correlation with how='sample' is not supported.",
                 ),
                 pytest.mark.notyet(
-                    ["oracle"],
+                    ["oracle", "risingwave"],
                     raises=ValueError,
                     reason="XXXXSQLExprTranslator only implements population correlation coefficient",
                 ),
@@ -1031,6 +1093,11 @@ def test_quantile(
                 pytest.mark.notyet(
                     ["mysql", "impala", "sqlite", "flink"],
                     raises=com.OperationNotDefinedError,
+                ),
+                pytest.mark.notimpl(
+                    ["risingwave"],
+                    raises=sa.exc.InternalError,
+                    reason="function covar_pop(integer, integer) does not exist",
                 ),
             ],
         ),
@@ -1055,6 +1122,16 @@ def test_quantile(
                     ["clickhouse"],
                     raises=ValueError,
                     reason="ClickHouse only implements `sample` correlation coefficient",
+                ),
+                pytest.mark.notyet(
+                    ["pyspark"],
+                    raises=ValueError,
+                    reason="PySpark only implements sample correlation",
+                ),
+                pytest.mark.notimpl(
+                    ["risingwave"],
+                    raises=sa.exc.InternalError,
+                    reason="function covar_pop(integer, integer) does not exist",
                 ),
             ],
         ),
@@ -1374,6 +1451,7 @@ def test_topk_filter_op(con, alltypes, df, result_fn, expected_fn):
         "impala",
         "mysql",
         "postgres",
+        "risingwave",
         "sqlite",
         "snowflake",
         "polars",
@@ -1414,6 +1492,7 @@ def test_aggregate_list_like(backend, alltypes, df, agg_fn):
         "impala",
         "mysql",
         "postgres",
+        "risingwave",
         "sqlite",
         "snowflake",
         "polars",

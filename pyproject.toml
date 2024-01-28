@@ -90,6 +90,7 @@ snowflake-connector-python = { version = ">=3.0.2,<4,!=3.3.0b1", optional = true
 sqlalchemy = { version = ">=1.4,<3", optional = true }
 sqlalchemy-views = { version = ">=0.3.1,<1", optional = true }
 trino = { version = ">=0.321,<1", optional = true }
+sqlalchemy-risingwave = { version = ">=1.0.0,<2", optional = true }
 
 [tool.poetry.group.dev.dependencies]
 codespell = { version = ">=2.2.6,<3", extras = [
@@ -193,6 +194,7 @@ postgres = ["psycopg2"]
 pyspark = ["pyspark", "packaging"]
 snowflake = ["snowflake-connector-python", "packaging"]
 sqlite = ["regex"]
+risingwave = ["psycopg2"]
 trino = ["trino"]
 # non-backend extras
 visualization = ["graphviz"]
@@ -216,6 +218,7 @@ oracle = "ibis.backends.oracle"
 pandas = "ibis.backends.pandas"
 polars = "ibis.backends.polars"
 postgres = "ibis.backends.postgres"
+risingwave = "ibis.backends.risingwave"
 pyspark = "ibis.backends.pyspark"
 snowflake = "ibis.backends.snowflake"
 sqlite = "ibis.backends.sqlite"
@@ -352,6 +355,7 @@ markers = [
   "pandas: Pandas tests",
   "polars: Polars tests",
   "postgres: PostgreSQL tests",
+  "risingwave: Risingwave tests",
   "pyspark: PySpark tests",
   "snowflake: Snowflake tests",
   "sqlite: SQLite tests",

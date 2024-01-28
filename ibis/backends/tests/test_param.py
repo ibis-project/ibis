@@ -6,6 +6,7 @@ from collections import OrderedDict
 import numpy as np
 import pandas as pd
 import pytest
+import sqlalchemy as sa
 from pytest import param
 
 import ibis
@@ -38,6 +39,11 @@ def test_floating_scalar_parameter(backend, alltypes, df, column, raw_value):
 )
 @pytest.mark.notimpl(["trino", "druid"])
 @pytest.mark.broken(["oracle"], raises=OracleDatabaseError)
+@pytest.mark.notimpl(
+    ["risingwave"],
+    raises=sa.exc.InternalError,
+    reason="function make_date(integer, integer, integer) does not exist",
+)
 def test_date_scalar_parameter(backend, alltypes, start_string, end_string):
     start, end = ibis.param(dt.date), ibis.param(dt.date)
 
@@ -76,6 +82,7 @@ def test_scalar_param_array(con):
         "impala",
         "flink",
         "postgres",
+        "risingwave",
         "druid",
         "oracle",
         "exasol",
@@ -107,6 +114,11 @@ def test_scalar_param_struct(con):
         "SqlParseException: Expecting alias, found character literal"
         "sql= SELECT MAP_FROM_ARRAYS(ARRAY['a', 'b', 'c'], ARRAY['ghi', 'def', 'abc']) '[' 'b' ']' AS `MapGet(param_0, 'b', None)`"
     ),
+)
+@pytest.mark.notimpl(
+    ["risingwave"],
+    raises=sa.exc.InternalError,
+    reason="function make_date(integer, integer, integer) does not exist",
 )
 def test_scalar_param_map(con):
     value = {"a": "ghi", "b": "def", "c": "abc"}
@@ -168,6 +180,11 @@ def test_scalar_param(backend, alltypes, df, value, dtype, col):
     ids=["string", "date", "datetime"],
 )
 @pytest.mark.notimpl(["druid", "oracle"])
+@pytest.mark.notimpl(
+    ["risingwave"],
+    raises=sa.exc.InternalError,
+    reason="function make_date(integer, integer, integer) does not exist",
+)
 def test_scalar_param_date(backend, alltypes, value):
     param = ibis.param("date")
     ds_col = alltypes.date_string_col
@@ -203,6 +220,7 @@ def test_scalar_param_date(backend, alltypes, value):
 @pytest.mark.notimpl(
     [
         "postgres",
+        "risingwave",
         "datafusion",
         "clickhouse",
         "polars",

@@ -4,6 +4,7 @@ import pandas as pd
 import pyarrow as pa
 import pyarrow.csv as pcsv
 import pytest
+import sqlalchemy as sa
 from pytest import param
 
 import ibis
@@ -254,6 +255,7 @@ def test_table_to_parquet_writer_kwargs(version, tmp_path, backend, awards_playe
         "pandas",
         "polars",
         "postgres",
+        "risingwave",
         "pyspark",
         "snowflake",
         "sqlite",
@@ -348,6 +350,11 @@ def test_table_to_csv_writer_kwargs(delimiter, tmp_path, awards_players):
             marks=[
                 pytest.mark.notyet(["flink"], raises=NotImplementedError),
                 pytest.mark.notyet(["exasol"], raises=ExaQueryError),
+                pytest.mark.notyet(
+                    ["risingwave"],
+                    raises=sa.exc.DBAPIError,
+                    reason="Feature is not yet implemented: unsupported data type: NUMERIC(38,9)",
+                ),
             ],
         ),
         param(
@@ -369,6 +376,11 @@ def test_table_to_csv_writer_kwargs(delimiter, tmp_path, awards_players):
                 ),
                 pytest.mark.notyet(["flink"], raises=NotImplementedError),
                 pytest.mark.notyet(["exasol"], raises=ExaQueryError),
+                pytest.mark.notyet(
+                    ["risingwave"],
+                    raises=sa.exc.DBAPIError,
+                    reason="Feature is not yet implemented: unsupported data type: NUMERIC(76,38)",
+                ),
             ],
         ),
     ],
@@ -390,6 +402,7 @@ def test_to_pyarrow_decimal(backend, dtype, pyarrow_dtype):
         "mysql",
         "oracle",
         "postgres",
+        "risingwave",
         "snowflake",
         "sqlite",
         "bigquery",
@@ -488,7 +501,22 @@ def test_to_pandas_batches_empty_table(backend, con):
 
 
 @pytest.mark.notimpl(["flink"])
-@pytest.mark.parametrize("n", [None, 1])
+@pytest.mark.parametrize(
+    "n",
+    [
+        param(
+            None,
+            marks=[
+                pytest.mark.notimpl(
+                    ["risingwave"],
+                    raises=sa.exc.InternalError,
+                    reason="risingwave doesn't support limit null",
+                ),
+            ],
+        ),
+        1,
+    ],
+)
 def test_to_pandas_batches_nonempty_table(backend, con, n):
     t = backend.functional_alltypes.limit(n)
     n = t.count().execute()
@@ -498,7 +526,24 @@ def test_to_pandas_batches_nonempty_table(backend, con, n):
 
 
 @pytest.mark.notimpl(["flink"])
-@pytest.mark.parametrize("n", [None, 0, 1, 2])
+@pytest.mark.parametrize(
+    "n",
+    [
+        param(
+            None,
+            marks=[
+                pytest.mark.notimpl(
+                    ["risingwave"],
+                    raises=sa.exc.InternalError,
+                    reason="risingwave doesn't support limit null",
+                ),
+            ],
+        ),
+        0,
+        1,
+        2,
+    ],
+)
 def test_to_pandas_batches_column(backend, con, n):
     t = backend.functional_alltypes.limit(n).timestamp_col
     n = t.count().execute()

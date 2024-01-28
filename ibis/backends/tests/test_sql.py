@@ -11,7 +11,7 @@ from ibis.backends.conftest import _get_backends_to_test
 sa = pytest.importorskip("sqlalchemy")
 sg = pytest.importorskip("sqlglot")
 
-pytestmark = pytest.mark.notimpl(["flink"])
+pytestmark = pytest.mark.notimpl(["flink", "risingwave"])
 
 simple_literal = param(ibis.literal(1), id="simple_literal")
 array_literal = param(

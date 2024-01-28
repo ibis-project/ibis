@@ -52,6 +52,7 @@ from ibis.tests.util import assert_equal
                 "trino": "integer",
                 "duckdb": "TINYINT",
                 "postgres": "integer",
+                "risingwave": "integer",
                 "flink": "TINYINT NOT NULL",
             },
             id="int8",
@@ -67,6 +68,7 @@ from ibis.tests.util import assert_equal
                 "trino": "integer",
                 "duckdb": "SMALLINT",
                 "postgres": "integer",
+                "risingwave": "integer",
                 "flink": "SMALLINT NOT NULL",
             },
             id="int16",
@@ -82,6 +84,7 @@ from ibis.tests.util import assert_equal
                 "trino": "integer",
                 "duckdb": "INTEGER",
                 "postgres": "integer",
+                "risingwave": "integer",
                 "flink": "INT NOT NULL",
             },
             id="int32",
@@ -97,6 +100,7 @@ from ibis.tests.util import assert_equal
                 "trino": "integer",
                 "duckdb": "BIGINT",
                 "postgres": "integer",
+                "risingwave": "integer",
                 "flink": "BIGINT NOT NULL",
             },
             id="int64",
@@ -112,6 +116,7 @@ from ibis.tests.util import assert_equal
                 "trino": "integer",
                 "duckdb": "UTINYINT",
                 "postgres": "integer",
+                "risingwave": "integer",
                 "flink": "TINYINT NOT NULL",
             },
             id="uint8",
@@ -127,6 +132,7 @@ from ibis.tests.util import assert_equal
                 "trino": "integer",
                 "duckdb": "USMALLINT",
                 "postgres": "integer",
+                "risingwave": "integer",
                 "flink": "SMALLINT NOT NULL",
             },
             id="uint16",
@@ -142,6 +148,7 @@ from ibis.tests.util import assert_equal
                 "trino": "integer",
                 "duckdb": "UINTEGER",
                 "postgres": "integer",
+                "risingwave": "integer",
                 "flink": "INT NOT NULL",
             },
             id="uint32",
@@ -157,6 +164,7 @@ from ibis.tests.util import assert_equal
                 "trino": "integer",
                 "duckdb": "UBIGINT",
                 "postgres": "integer",
+                "risingwave": "integer",
                 "flink": "BIGINT NOT NULL",
             },
             id="uint64",
@@ -172,6 +180,7 @@ from ibis.tests.util import assert_equal
                 "trino": "real",
                 "duckdb": "FLOAT",
                 "postgres": "numeric",
+                "risingwave": "numeric",
                 "flink": "FLOAT NOT NULL",
             },
             marks=[
@@ -199,6 +208,7 @@ from ibis.tests.util import assert_equal
                 "trino": "real",
                 "duckdb": "FLOAT",
                 "postgres": "numeric",
+                "risingwave": "numeric",
                 "flink": "FLOAT NOT NULL",
             },
             id="float32",
@@ -214,6 +224,7 @@ from ibis.tests.util import assert_equal
                 "trino": "double",
                 "duckdb": "DOUBLE",
                 "postgres": "numeric",
+                "risingwave": "numeric",
                 "flink": "DOUBLE NOT NULL",
             },
             id="float64",
@@ -245,6 +256,7 @@ def test_numeric_literal(con, backend, expr, expected_types):
                 "duckdb": decimal.Decimal("1.1"),
                 "impala": decimal.Decimal("1"),
                 "postgres": decimal.Decimal("1.1"),
+                "risingwave": 1.1,
                 "pandas": decimal.Decimal("1.1"),
                 "pyspark": decimal.Decimal("1.1"),
                 "mysql": decimal.Decimal("1"),
@@ -263,6 +275,7 @@ def test_numeric_literal(con, backend, expr, expected_types):
                 "trino": "decimal(18,3)",
                 "duckdb": "DECIMAL(18,3)",
                 "postgres": "numeric",
+                "risingwave": "numeric",
                 "flink": "DECIMAL(38, 18) NOT NULL",
             },
             marks=[
@@ -285,6 +298,7 @@ def test_numeric_literal(con, backend, expr, expected_types):
                 "duckdb": decimal.Decimal("1.100000000"),
                 "impala": decimal.Decimal("1.1"),
                 "postgres": decimal.Decimal("1.1"),
+                "risingwave": 1.1,
                 "pandas": decimal.Decimal("1.1"),
                 "pyspark": decimal.Decimal("1.1"),
                 "mysql": decimal.Decimal("1.1"),
@@ -305,6 +319,7 @@ def test_numeric_literal(con, backend, expr, expected_types):
                 "trino": "decimal(38,9)",
                 "duckdb": "DECIMAL(38,9)",
                 "postgres": "numeric",
+                "risingwave": "numeric",
                 "flink": "DECIMAL(38, 9) NOT NULL",
             },
             marks=[pytest.mark.notimpl(["exasol"], raises=ExaQueryError)],
@@ -318,6 +333,7 @@ def test_numeric_literal(con, backend, expr, expected_types):
                 "sqlite": decimal.Decimal("1.1"),
                 "dask": decimal.Decimal("1.1"),
                 "postgres": decimal.Decimal("1.1"),
+                "risingwave": 1.1,
                 "pandas": decimal.Decimal("1.1"),
                 "pyspark": decimal.Decimal("1.1"),
                 "clickhouse": decimal.Decimal(
@@ -333,6 +349,7 @@ def test_numeric_literal(con, backend, expr, expected_types):
                 "trino": "decimal(2,1)",
                 "duckdb": "DECIMAL(18,3)",
                 "postgres": "numeric",
+                "risingwave": "numeric",
             },
             marks=[
                 pytest.mark.notimpl(["exasol"], raises=ExaQueryError),
@@ -370,6 +387,7 @@ def test_numeric_literal(con, backend, expr, expected_types):
                 "bigquery": float("inf"),
                 "sqlite": decimal.Decimal("Infinity"),
                 "postgres": decimal.Decimal("Infinity"),
+                "risingwave": float("nan"),
                 "pandas": decimal.Decimal("Infinity"),
                 "dask": decimal.Decimal("Infinity"),
                 "pyspark": decimal.Decimal("Infinity"),
@@ -380,6 +398,7 @@ def test_numeric_literal(con, backend, expr, expected_types):
                 "sqlite": "real",
                 "postgres": "numeric",
                 "duckdb": "FLOAT",
+                "risingwave": "numeric",
             },
             marks=[
                 pytest.mark.broken(
@@ -439,6 +458,7 @@ def test_numeric_literal(con, backend, expr, expected_types):
                 "bigquery": float("-inf"),
                 "sqlite": decimal.Decimal("-Infinity"),
                 "postgres": decimal.Decimal("-Infinity"),
+                "risingwave": float("nan"),
                 "pandas": decimal.Decimal("-Infinity"),
                 "dask": decimal.Decimal("-Infinity"),
                 "pyspark": decimal.Decimal("-Infinity"),
@@ -449,6 +469,7 @@ def test_numeric_literal(con, backend, expr, expected_types):
                 "sqlite": "real",
                 "postgres": "numeric",
                 "duckdb": "FLOAT",
+                "risingwave": "numeric",
             },
             marks=[
                 pytest.mark.broken(
@@ -509,6 +530,7 @@ def test_numeric_literal(con, backend, expr, expected_types):
                 "snowflake": float("nan"),
                 "sqlite": None,
                 "postgres": float("nan"),
+                "risingwave": float("nan"),
                 "pandas": decimal.Decimal("NaN"),
                 "dask": decimal.Decimal("NaN"),
                 "pyspark": decimal.Decimal("NaN"),
@@ -521,6 +543,7 @@ def test_numeric_literal(con, backend, expr, expected_types):
                 "sqlite": "null",
                 "postgres": "numeric",
                 "duckdb": "FLOAT",
+                "risingwave": "numeric",
             },
             marks=[
                 pytest.mark.broken(
@@ -730,14 +753,55 @@ def test_isnan_isinf(
             L(5.556).log(2),
             math.log(5.556, 2),
             id="log-base",
-            marks=[pytest.mark.notimpl(["druid"], raises=PyDruidProgrammingError)],
+            marks=[
+                pytest.mark.notimpl(["druid"], raises=PyDruidProgrammingError),
+                pytest.mark.notimpl(
+                    ["risingwave"],
+                    raises=sa.exc.InternalError,
+                    reason="function log10(numeric, numeric) does not exist",
+                ),
+            ],
+        ),
+        param(
+            L(5.556).ln(),
+            math.log(5.556),
+            id="ln",
         ),
         param(L(5.556).ln(), math.log(5.556), id="ln"),
         param(
             L(5.556).log2(),
             math.log(5.556, 2),
             id="log2",
-            marks=[pytest.mark.notimpl(["druid"], raises=PyDruidProgrammingError)],
+            marks=[
+                pytest.mark.notimpl(["druid"], raises=PyDruidProgrammingError),
+                pytest.mark.notimpl(
+                    ["risingwave"],
+                    raises=sa.exc.InternalError,
+                    reason="function log10(numeric, numeric) does not exist",
+                ),
+            ],
+        ),
+        param(
+            L(5.556).log10(),
+            math.log10(5.556),
+            marks=pytest.mark.notimpl(["exasol"], raises=com.OperationNotDefinedError),
+            id="log10",
+        ),
+        param(
+            L(5.556).radians(),
+            math.radians(5.556),
+            id="radians",
+        ),
+        param(
+            L(5.556).degrees(),
+            math.degrees(5.556),
+            id="degrees",
+        ),
+        param(
+            L(11) % 3,
+            11 % 3,
+            marks=pytest.mark.notimpl(["exasol"], raises=ExaQueryError),
+            id="mod",
         ),
         param(L(5.556).log10(), math.log10(5.556), id="log10"),
         param(L(5.556).radians(), math.radians(5.556), id="radians"),
@@ -874,7 +938,14 @@ def test_simple_math_functions_columns(
         param(
             lambda t: t.double_col.add(1).log(2),
             lambda t: np.log2(t.double_col + 1),
-            marks=[pytest.mark.notimpl(["druid"], raises=PyDruidProgrammingError)],
+            marks=[
+                pytest.mark.notimpl(["druid"], raises=PyDruidProgrammingError),
+                pytest.mark.notimpl(
+                    ["risingwave"],
+                    raises=sa.exc.InternalError,
+                    reason="function log10(numeric, numeric) does not exist",
+                ),
+            ],
             id="log2",
         ),
         param(
@@ -908,6 +979,11 @@ def test_simple_math_functions_columns(
                     reason="Base greatest(9000, t0.bigint_col) for logarithm not supported!",
                 ),
                 pytest.mark.notimpl(["polars"], raises=com.UnsupportedArgumentError),
+                pytest.mark.notimpl(
+                    ["risingwave"],
+                    raises=sa.exc.InternalError,
+                    reason="function log10(numeric, numeric) does not exist",
+                ),
             ],
         ),
     ],
@@ -1131,6 +1207,7 @@ def test_floating_mod(backend, alltypes, df):
                     reason="Oracle doesn't do integer division by zero",
                 ),
                 pytest.mark.never(["impala"], reason="doesn't allow divide by zero"),
+                pytest.mark.notyet(["risingwave"], raises=sa.exc.InternalError),
             ],
         ),
         param(
@@ -1143,6 +1220,7 @@ def test_floating_mod(backend, alltypes, df):
                     reason="Oracle doesn't do integer division by zero",
                 ),
                 pytest.mark.never(["impala"], reason="doesn't allow divide by zero"),
+                pytest.mark.notyet(["risingwave"], raises=sa.exc.InternalError),
             ],
         ),
         param(
@@ -1155,6 +1233,7 @@ def test_floating_mod(backend, alltypes, df):
                     reason="Oracle doesn't do integer division by zero",
                 ),
                 pytest.mark.never(["impala"], reason="doesn't allow divide by zero"),
+                pytest.mark.notyet(["risingwave"], raises=sa.exc.InternalError),
             ],
         ),
         param(
@@ -1167,6 +1246,7 @@ def test_floating_mod(backend, alltypes, df):
                     reason="Oracle doesn't do integer division by zero",
                 ),
                 pytest.mark.never(["impala"], reason="doesn't allow divide by zero"),
+                pytest.mark.notyet(["risingwave"], raises=sa.exc.InternalError),
             ],
         ),
         param(
@@ -1211,6 +1291,7 @@ def test_divide_by_zero(backend, alltypes, df, column, denominator):
         (
             {
                 "postgres": None,
+                "risingwave": None,
                 "mysql": 10,
                 "snowflake": 38,
                 "trino": 18,
@@ -1220,6 +1301,7 @@ def test_divide_by_zero(backend, alltypes, df, column, denominator):
             },
             {
                 "postgres": None,
+                "risingwave": None,
                 "mysql": 0,
                 "snowflake": 0,
                 "trino": 3,
@@ -1253,6 +1335,11 @@ def test_divide_by_zero(backend, alltypes, df, column, denominator):
         "exasol",
     ],
     reason="Not SQLAlchemy backends",
+)
+@pytest.mark.notimpl(
+    ["risingwave"],
+    raises=sa.exc.InternalError,
+    reason="Feature is not yet implemented: unsupported data type: NUMERIC(5)",
 )
 def test_sa_default_numeric_precision_and_scale(
     con, backend, default_precisions, default_scales, temp_table
@@ -1289,6 +1376,11 @@ def test_sa_default_numeric_precision_and_scale(
 
 @pytest.mark.notimpl(["dask", "pandas", "polars"], raises=com.OperationNotDefinedError)
 @pytest.mark.notimpl(["druid"], raises=PyDruidProgrammingError)
+@pytest.mark.notimpl(
+    ["risingwave"],
+    raises=sa.exc.InternalError,
+    reason="function random() does not exist",
+)
 def test_random(con):
     expr = ibis.random()
     result = con.execute(expr)

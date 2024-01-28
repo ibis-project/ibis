@@ -9,6 +9,7 @@ from operator import invert, methodcaller, neg
 import numpy as np
 import pandas as pd
 import pytest
+import sqlalchemy as sa
 import toolz
 from pytest import param
 
@@ -43,6 +44,7 @@ NULL_BACKEND_TYPES = {
     "sqlite": "null",
     "trino": "unknown",
     "postgres": "null",
+    "risingwave": "null",
 }
 
 
@@ -66,6 +68,7 @@ BOOLEAN_BACKEND_TYPE = {
     "trino": "boolean",
     "duckdb": "BOOLEAN",
     "postgres": "boolean",
+    "risingwave": "boolean",
     "flink": "BOOLEAN NOT NULL",
 }
 
@@ -150,6 +153,7 @@ def test_isna(backend, alltypes, col, value, filt):
                         "duckdb",
                         "impala",
                         "postgres",
+                        "risingwave",
                         "mysql",
                         "snowflake",
                         "polars",
@@ -307,6 +311,7 @@ def test_filter(backend, alltypes, sorted_df, predicate_fn, expected_fn):
         "impala",
         "mysql",
         "postgres",
+        "risingwave",
         "sqlite",
         "snowflake",
         "polars",
@@ -540,6 +545,11 @@ def test_order_by(backend, alltypes, df, key, df_kwargs):
 
 
 @pytest.mark.notimpl(["dask", "pandas", "polars", "mssql", "druid"])
+@pytest.mark.notimpl(
+    ["risingwave"],
+    raises=sa.exc.InternalError,
+    reason="function random() does not exist",
+)
 def test_order_by_random(alltypes):
     expr = alltypes.filter(_.id < 100).order_by(ibis.random()).limit(5)
     r1 = expr.execute()
@@ -761,6 +771,11 @@ def test_correlated_subquery(alltypes):
 
 
 @pytest.mark.notimpl(["polars", "pyspark"])
+@pytest.mark.broken(
+    ["risingwave"],
+    raises=AssertionError,
+    reason='DataFrame.iloc[:, 0] (column name="playerID") are different',
+)
 def test_uncorrelated_subquery(backend, batting, batting_df):
     subset_batting = batting[batting.yearID <= 2000]
     expr = batting[_.yearID == subset_batting.yearID.max()]["playerID", "yearID"]
@@ -833,6 +848,11 @@ def test_typeof(con):
 @pytest.mark.notimpl(["pyspark"], condition=is_older_than("pyspark", "3.5.0"))
 @pytest.mark.notyet(["dask"], reason="not supported by the backend")
 @pytest.mark.notyet(["exasol"], raises=ExaQueryError, reason="not supported by exasol")
+@pytest.mark.broken(
+    ["risingwave"],
+    raises=sa.exc.InternalError,
+    reason="https://github.com/risingwavelabs/risingwave/issues/1343",
+)
 def test_isin_uncorrelated(
     backend, batting, awards_players, batting_df, awards_players_df
 ):
@@ -985,6 +1005,11 @@ def test_memtable_column_naming_mismatch(backend, con, monkeypatch, df, columns)
 )
 @pytest.mark.notimpl(["druid", "flink"], reason="no sqlglot dialect", raises=ValueError)
 @pytest.mark.notimpl(["exasol"], raises=com.OperationNotDefinedError)
+@pytest.mark.notimpl(
+    ["risingwave"],
+    raises=ValueError,
+    reason="risingwave doesn't support sqlglot.dialects.dialect.Dialect",
+)
 def test_many_subqueries(con, snapshot):
     def query(t, group_cols):
         t2 = t.mutate(key=ibis.row_number().over(ibis.window(order_by=group_cols)))
@@ -1011,6 +1036,11 @@ def test_many_subqueries(con, snapshot):
     ["trino"],
     reason="invalid code generated for unnesting a struct",
     raises=TrinoUserError,
+)
+@pytest.mark.notimpl(
+    ["risingwave"],
+    raises=sa.exc.InternalError,
+    reason='sql parser error: Expected ), found: TEXT at line:3, column:219 Near "))]) AS anon_1(f1"',
 )
 def test_pivot_longer(backend):
     diamonds = backend.diamonds
@@ -1126,6 +1156,11 @@ def test_pivot_wider(backend):
     ["exasol"],
     raises=com.OperationNotDefinedError,
 )
+@pytest.mark.notimpl(
+    ["risingwave"],
+    raises=sa.exc.InternalError,
+    reason="function last(double precision) does not exist, do you mean left or least",
+)
 def test_distinct_on_keep(backend, on, keep):
     from ibis import _
 
@@ -1191,6 +1226,11 @@ def test_distinct_on_keep(backend, on, keep):
     raises=com.OperationNotDefinedError,
     reason="backend doesn't implement deduplication",
 )
+@pytest.mark.notimpl(
+    ["risingwave"],
+    raises=sa.exc.InternalError,
+    reason="function first(double precision) does not exist",
+)
 def test_distinct_on_keep_is_none(backend, on):
     from ibis import _
 
@@ -1209,7 +1249,7 @@ def test_distinct_on_keep_is_none(backend, on):
     assert len(result) == len(expected)
 
 
-@pytest.mark.notimpl(["dask", "pandas", "postgres", "flink", "exasol"])
+@pytest.mark.notimpl(["dask", "pandas", "postgres", "risingwave", "flink", "exasol"])
 @pytest.mark.notyet(
     [
         "sqlite",
@@ -1226,7 +1266,7 @@ def test_hash_consistent(backend, alltypes):
     assert h1.dtype in ("i8", "uint64")  # polars likes returning uint64 for this
 
 
-@pytest.mark.notimpl(["pandas", "dask", "oracle", "snowflake", "sqlite"])
+@pytest.mark.notimpl(["pandas", "dask", "oracle", "risingwave", "snowflake", "sqlite"])
 @pytest.mark.parametrize(
     ("from_val", "to_type", "expected"),
     [
@@ -1275,6 +1315,7 @@ def test_try_cast(con, from_val, to_type, expected):
         "oracle",
         "pandas",
         "postgres",
+        "risingwave",
         "snowflake",
         "sqlite",
     ]
@@ -1312,6 +1353,7 @@ def test_try_cast_null(con, from_val, to_type):
         "mysql",
         "oracle",
         "postgres",
+        "risingwave",
         "snowflake",
         "sqlite",
         "exasol",
@@ -1337,6 +1379,7 @@ def test_try_cast_table(backend, con):
         "mysql",
         "oracle",
         "postgres",
+        "risingwave",
         "snowflake",
         "sqlite",
         "exasol",
@@ -1377,9 +1420,31 @@ def test_try_cast_func(con, from_val, to_type, func):
         ### NONE/ZERO start
         # no stop
         param(slice(None, 0), lambda _: 0, id="[:0]"),
-        param(slice(None, None), lambda t: t.count().to_pandas(), id="[:]"),
+        param(
+            slice(None, None),
+            lambda t: t.count().to_pandas(),
+            marks=[
+                pytest.mark.notimpl(
+                    ["risingwave"],
+                    raises=sa.exc.InternalError,
+                    reason="risingwave doesn't support limit/offset",
+                ),
+            ],
+            id="[:]",
+        ),
         param(slice(0, 0), lambda _: 0, id="[0:0]"),
-        param(slice(0, None), lambda t: t.count().to_pandas(), id="[0:]"),
+        param(
+            slice(0, None),
+            lambda t: t.count().to_pandas(),
+            marks=[
+                pytest.mark.notimpl(
+                    ["risingwave"],
+                    raises=sa.exc.InternalError,
+                    reason="risingwave doesn't support limit/offset",
+                ),
+            ],
+            id="[0:]",
+        ),
         # positive stop
         param(slice(None, 2), lambda _: 2, id="[:2]"),
         param(slice(0, 2), lambda _: 2, id="[0:2]"),
@@ -1434,6 +1499,11 @@ def test_try_cast_func(con, from_val, to_type, func):
                     reason="impala doesn't support OFFSET without ORDER BY",
                 ),
                 pytest.mark.notyet(["oracle"], raises=com.UnsupportedArgumentError),
+                pytest.mark.notimpl(
+                    ["risingwave"],
+                    raises=sa.exc.InternalError,
+                    reason="risingwave doesn't support limit/offset",
+                ),
             ],
         ),
         # positive stop
@@ -1519,6 +1589,11 @@ def test_static_table_slice(backend, slc, expected_count_fn):
     ["oracle"],
     raises=com.UnsupportedArgumentError,
     reason="Removed half-baked dynamic offset functionality for now",
+)
+@pytest.mark.notimpl(
+    ["risingwave"],
+    raises=sa.exc.InternalError,
+    reason="risingwave doesn't support limit/offset",
 )
 @pytest.mark.notyet(
     ["trino"],
@@ -1610,6 +1685,11 @@ def test_dynamic_table_slice(backend, slc, expected_count_fn):
     reason="doesn't support dynamic limit/offset; compiles incorrectly in sqlglot",
     raises=AssertionError,
 )
+@pytest.mark.notimpl(
+    ["risingwave"],
+    raises=sa.exc.InternalError,
+    reason="risingwave doesn't support limit/offset",
+)
 def test_dynamic_table_slice_with_computed_offset(backend):
     t = backend.functional_alltypes
 
@@ -1629,6 +1709,11 @@ def test_dynamic_table_slice_with_computed_offset(backend):
 
 
 @pytest.mark.notimpl(["druid", "flink", "polars", "snowflake"])
+@pytest.mark.notimpl(
+    ["risingwave"],
+    raises=sa.exc.InternalError,
+    reason="function random() does not exist",
+)
 def test_sample(backend):
     t = backend.functional_alltypes.filter(_.int_col >= 2)
 
@@ -1645,6 +1730,11 @@ def test_sample(backend):
 
 
 @pytest.mark.notimpl(["druid", "flink", "polars", "snowflake"])
+@pytest.mark.notimpl(
+    ["risingwave"],
+    raises=sa.exc.InternalError,
+    reason="function random() does not exist",
+)
 def test_sample_memtable(con, backend):
     df = pd.DataFrame({"x": [1, 2, 3, 4]})
     res = con.execute(ibis.memtable(df).sample(0.5))
@@ -1665,6 +1755,7 @@ def test_sample_memtable(con, backend):
         "oracle",
         "polars",
         "postgres",
+        "risingwave",
         "snowflake",
         "sqlite",
         "trino",
@@ -1700,6 +1791,11 @@ def test_substitute(backend):
     ["dask", "pandas", "polars"], raises=NotImplementedError, reason="not a SQL backend"
 )
 @pytest.mark.notimpl(["flink"], reason="no sqlglot dialect", raises=ValueError)
+@pytest.mark.notimpl(
+    ["risingwave"],
+    raises=ValueError,
+    reason="risingwave doesn't support sqlglot.dialects.dialect.Dialect",
+)
 def test_simple_memtable_construct(con):
     t = ibis.memtable({"a": [1, 2]})
     expr = t.a

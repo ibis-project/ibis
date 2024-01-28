@@ -538,6 +538,88 @@ services:
     networks:
       - impala
 
+  risingwave-minio:
+    image: "quay.io/minio/minio:latest"
+    command:
+      - server
+      - "--address"
+      - "0.0.0.0:9301"
+      - "--console-address"
+      - "0.0.0.0:9400"
+      - /data
+    expose:
+      - "9301"
+      - "9400"
+    ports:
+      - "9301:9301"
+      - "9400:9400"
+    depends_on: []
+    volumes:
+      - "risingwave-minio:/data"
+    entrypoint: /bin/sh -c "set -e; mkdir -p \"/data/hummock001\"; /usr/bin/docker-entrypoint.sh \"$$0\" \"$$@\" "
+    environment:
+      MINIO_CI_CD: "1"
+      MINIO_ROOT_PASSWORD: hummockadmin
+      MINIO_ROOT_USER: hummockadmin
+      MINIO_DOMAIN: "risingwave-minio"
+    container_name: risingwave-minio
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - bash -c 'printf \"GET / HTTP/1.1\n\n\" > /dev/tcp/127.0.0.1/9301; exit $$?;'
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    restart: always
+    networks:
+      - risingwave
+
+  risingwave:
+    image: ghcr.io/risingwavelabs/risingwave:nightly-20240122
+    command: "standalone --meta-opts=\" \
+      --advertise-addr 0.0.0.0:5690 \
+      --backend mem \
+      --state-store hummock+minio://hummockadmin:hummockadmin@risingwave-minio:9301/hummock001 \
+      --data-directory hummock_001 \
+      --config-path /risingwave.toml\" \
+      --compute-opts=\" \
+      --config-path /risingwave.toml \
+      --advertise-addr 0.0.0.0:5688 \
+      --role both \" \
+      --frontend-opts=\" \
+      --config-path /risingwave.toml \
+      --listen-addr 0.0.0.0:4566 \
+      --advertise-addr 0.0.0.0:4566 \" \
+      --compactor-opts=\" \
+      --advertise-addr 0.0.0.0:6660 \""
+    expose:
+      - "4566"
+    ports:
+      - "4566:4566"
+    depends_on:
+      - risingwave-minio
+    volumes:
+      - "./docker/risingwave/risingwave.toml:/risingwave.toml"
+      - risingwave:/data
+    environment:
+      RUST_BACKTRACE: "1"
+      # If ENABLE_TELEMETRY is not set, telemetry will start by default
+      ENABLE_TELEMETRY: ${ENABLE_TELEMETRY:-true}
+    container_name: risingwave
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - bash -c 'printf \"GET / HTTP/1.1\n\n\" > /dev/tcp/127.0.0.1/6660; exit $$?;'
+        - bash -c 'printf \"GET / HTTP/1.1\n\n\" > /dev/tcp/127.0.0.1/5688; exit $$?;'
+        - bash -c 'printf \"GET / HTTP/1.1\n\n\" > /dev/tcp/127.0.0.1/4566; exit $$?;'
+        - bash -c 'printf \"GET / HTTP/1.1\n\n\" > /dev/tcp/127.0.0.1/5690; exit $$?;'
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    restart: always
+    networks:
+      - risingwave
+
 networks:
   impala:
     # docker defaults to naming networks "$PROJECT_$NETWORK" but the Java Hive
@@ -554,6 +636,7 @@ networks:
   oracle:
   exasol:
   flink:
+  risingwave:
 
 volumes:
   broker_var:
@@ -572,3 +655,5 @@ volumes:
   minio:
   exasol:
   impala:
+  risingwave-minio:
+  risingwave:

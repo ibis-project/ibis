@@ -19,6 +19,7 @@ import ibis.common.exceptions as com
         "pandas",
         "polars",
         "postgres",
+        "risingwave",
         "pyspark",
         "snowflake",
         "trino",
