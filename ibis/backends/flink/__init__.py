@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import itertools
 from functools import lru_cache
 from typing import TYPE_CHECKING, Any
 
@@ -868,25 +869,18 @@ class Backend(BaseBackend, CanCreateDatabase):
         limit: int | str | None = None,
         **kwargs: Any,
     ) -> pa.Table:
-        pyarrow_batches = self.to_pyarrow_batches(
-            expr, params=params, limit=limit, **kwargs
+        pyarrow_batches = iter(
+            self.to_pyarrow_batches(expr, params=params, limit=limit, **kwargs)
         )
 
-        try:
-            pa_table = pa.Table.from_batches(pyarrow_batches)
+        first_batch = next(pyarrow_batches, None)
 
-        except ValueError as err:
-            if err.args[0] == "Must pass schema, or at least one RecordBatch":
-                ibis_table = expr.as_table()
-                ibis_schema = ibis_table.schema()
-                arrow_schema = ibis_schema.to_pyarrow()
-                pa_table = pa.Table.from_batches(pyarrow_batches, schema=arrow_schema)
-            else:
-                raise ValueError(
-                    "Could not convert PyArrow batches to PyArrow Table "
-                    "due to an unexpected error."
-                )
-
+        if first_batch is None:
+            pa_table = expr.as_table().schema().to_pyarrow().empty_table()
+        else:
+            pa_table = pa.Table.from_batches(
+                itertools.chain((first_batch,), pyarrow_batches)
+            )
         return expr.__pyarrow_result__(pa_table)
 
     def to_pyarrow_batches(
