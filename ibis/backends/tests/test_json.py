@@ -12,9 +12,7 @@ from pytest import param
 pytestmark = [
     pytest.mark.never(["impala"], reason="doesn't support JSON and never will"),
     pytest.mark.notyet(["clickhouse"], reason="upstream is broken"),
-    pytest.mark.notimpl(
-        ["datafusion", "exasol", "mssql", "druid", "oracle", "risingwave"]
-    ),
+    pytest.mark.notimpl(["datafusion", "exasol", "mssql", "druid", "oracle"]),
 ]
 
 
@@ -42,13 +40,17 @@ pytestmark = [
     ["flink"],
     reason="https://github.com/ibis-project/ibis/pull/6920#discussion_r1373212503",
 )
+@pytest.mark.broken(
+    ["risingwave"],
+    reason="TODO(Kexiang): order mismatch in array",
+)
 def test_json_getitem(json_t, expr_fn, expected):
     expr = expr_fn(json_t)
     result = expr.execute()
     tm.assert_series_equal(result.fillna(pd.NA), expected.fillna(pd.NA))
 
 
-@pytest.mark.notimpl(["dask", "mysql", "pandas"])
+@pytest.mark.notimpl(["dask", "mysql", "pandas", "risingwave"])
 @pytest.mark.notyet(["bigquery", "sqlite"], reason="doesn't support maps")
 @pytest.mark.notyet(["postgres"], reason="only supports map<string, string>")
 @pytest.mark.notyet(
@@ -72,7 +74,7 @@ def test_json_map(backend, json_t):
     backend.assert_series_equal(result, expected)
 
 
-@pytest.mark.notimpl(["dask", "mysql", "pandas"])
+@pytest.mark.notimpl(["dask", "mysql", "pandas", "risingwave"])
 @pytest.mark.notyet(["sqlite"], reason="doesn't support arrays")
 @pytest.mark.notyet(
     ["pyspark", "trino", "flink"], reason="should work but doesn't deserialize JSON"
