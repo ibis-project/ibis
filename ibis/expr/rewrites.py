@@ -28,20 +28,10 @@ def peel_join_field(_):
     return _.rel.values[_.name]
 
 
-@replace(p.Alias(p.ScalarParameter))
-def unwrap_scalar_parameter(_):
-    """Replace aliased scalar parameters with the parameter itself."""
-    return _.arg
-
-
-def replace_scalar_parameter(params):
+@replace(p.ScalarParameter)
+def replace_parameter(_, params, **kwargs):
     """Replace scalar parameters with their values."""
-
-    @replace(p.ScalarParameter)
-    def repl(_):
-        return ops.Literal(value=params[_], dtype=_.dtype)
-
-    return repl
+    return ops.Literal(value=params[_], dtype=_.dtype)
 
 
 @replace(p.FillNa)
@@ -98,22 +88,21 @@ def rewrite_sample(_):
 
     Errors as unsupported if a `seed` is specified.
     """
-
     if _.seed is not None:
         raise com.UnsupportedOperationError(
             "`Table.sample` with a random seed is unsupported"
         )
+    pred = ops.LessEqual(ops.RandomScalar(), _.fraction)
+    return ops.Filter(_.parent, (pred,))
 
-    return ops.Filter(_.parent, (ops.LessEqual(ops.RandomScalar(), _.fraction),))
 
-
-@replace(ops.Analytic)
+@replace(p.Analytic)
 def project_wrap_analytic(_, rel):
     # Wrap analytic functions in a window function
     return ops.WindowFunction(_, ops.RowsWindowFrame(rel))
 
 
-@replace(ops.Reduction)
+@replace(p.Reduction)
 def project_wrap_reduction(_, rel):
     # Query all the tables that the reduction depends on
     if _.relations == {rel}:
@@ -203,44 +192,7 @@ def rewrite_window_input(value, frame):
     return node.replace(window_merge_frames, filter=p.Value, context=context)
 
 
-@replace(p.InValues(..., ()))
-def empty_in_values_right_side(_):
-    """Replace checks against an empty right side with `False`."""
-    return ops.Literal(False, dtype=dt.bool)
-
-
-@replace(
-    p.WindowFunction(
-        p.PercentRank(y) | p.RankBase(y) | p.CumeDist(y) | p.NTile(y),
-        p.WindowFrame(..., order_by=()) >> _.copy(order_by=(y,)),
-    )
-)
-def add_order_by_to_empty_ranking_window_functions(_):
-    """Add an ORDER BY clause to rank window functions that don't have one."""
-    return _
-
-
-@replace(
-    p.WindowFunction(p.RankBase | p.NTile)
-    | p.StringFind
-    | p.FindInSet
-    | p.ArrayPosition
-)
-def one_to_zero_index(_, **__):
-    """Subtract one from one-index functions."""
-    return ops.Subtract(_, 1)
-
-
-@replace(ops.NthValue)
-def add_one_to_nth_value_input(_, **__):
-    if isinstance(_.nth, ops.Literal):
-        nth = ops.Literal(_.nth.value + 1, dtype=_.nth.dtype)
-    else:
-        nth = ops.Add(_.nth, 1)
-    return _.copy(nth=nth)
-
-
-@replace(ops.Bucket)
+@replace(p.Bucket)
 def replace_bucket(_):
     cases = []
     results = []
