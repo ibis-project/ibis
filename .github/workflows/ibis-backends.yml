@@ -38,6 +38,7 @@ env:
   FORCE_COLOR: "1"
   ODBCSYSINI: "${{ github.workspace }}/ci/odbc"
   SQLALCHEMY_WARN_20: "1"
+  HYPOTHESIS_PROFILE: "ci"
 
 jobs:
   test_backends:

@@ -160,7 +160,7 @@ jobs:
       - name: run doctest
         # keep HOME because duckdb (which we use for doctests) wants to use
         # that for extensions
-        run: nix develop --ignore-environment --keep HOME -c just doctest
+        run: nix develop --ignore-environment --keep HOME --keep HYPOTHESIS_PROFILE -c just doctest
 
       - name: generate api docs
         run: nix develop --ignore-environment -c just docs-apigen --verbose
@@ -198,7 +198,7 @@ jobs:
       - name: run doctests
         # keep HOME because duckdb (which we use for doctests) wants to use
         # that for extensions
-        run: nix develop --ignore-environment --keep HOME -c just doctest
+        run: nix develop --ignore-environment --keep HOME --keep HYPOTHESIS_PROFILE -c just doctest
 
       - name: build api docs
         run: nix develop --ignore-environment -c just docs-apigen --verbose

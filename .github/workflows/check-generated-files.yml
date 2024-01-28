@@ -19,6 +19,11 @@ concurrency:
   group: ${{ github.repository }}-${{ github.head_ref || github.sha }}-${{ github.workflow }}
   cancel-in-progress: true
 
+env:
+  FORCE_COLOR: "1"
+  SQLALCHEMY_WARN_20: "1"
+  HYPOTHESIS_PROFILE: "ci"
+
 jobs:
   check_setuptools_install:
     runs-on: ubuntu-latest
