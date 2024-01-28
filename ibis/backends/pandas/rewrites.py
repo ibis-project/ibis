@@ -10,6 +10,7 @@ from ibis.common.annotations import attribute
 from ibis.common.collections import FrozenDict
 from ibis.common.patterns import replace
 from ibis.common.typing import VarTuple  # noqa: TCH001
+from ibis.expr.rewrites import replace_parameter
 from ibis.expr.schema import Schema
 from ibis.util import gen_name
 
@@ -296,11 +297,6 @@ def rewrite_limit(_, **kwargs):
 @replace(ops.ScalarSubquery)
 def rewrite_scalar_subquery(_, **kwargs):
     return PandasScalarSubquery(_.rel)
-
-
-@replace(ops.ScalarParameter)
-def replace_parameter(_, params, **kwargs):
-    return ops.Literal(value=params[_], dtype=_.dtype)
 
 
 @replace(ops.UnboundTable)
