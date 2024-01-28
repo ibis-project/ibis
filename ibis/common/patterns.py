@@ -1264,17 +1264,26 @@ class Object(Slotted, Pattern):
             return InstanceOf(type)
         return super().__create__(type, *args, **kwargs)
 
-    def __init__(self, type, *args, **kwargs):
-        type = pattern(type)
+    def __init__(self, typ, *args, **kwargs):
+        if isinstance(typ, type) and len(typ.__match_args__) < len(args):
+            raise ValueError(
+                "The type to match has fewer `__match_args__` than the number "
+                "of positional arguments in the pattern"
+            )
+        typ = pattern(typ)
         args = tuple(map(pattern, args))
         kwargs = frozendict(toolz.valmap(pattern, kwargs))
-        super().__init__(type=type, args=args, kwargs=kwargs)
+        super().__init__(type=typ, args=args, kwargs=kwargs)
 
     def match(self, value, context):
         if self.type.match(value, context) is NoMatch:
             return NoMatch
 
-        patterns = {**dict(zip(value.__match_args__, self.args)), **self.kwargs}
+        # the pattern requirest more positional arguments than the object has
+        if len(value.__match_args__) < len(self.args):
+            return NoMatch
+        patterns = dict(zip(value.__match_args__, self.args))
+        patterns.update(self.kwargs)
 
         fields = {}
         changed = False
