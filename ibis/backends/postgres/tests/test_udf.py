@@ -72,8 +72,7 @@ $$"""
 
 
 @pytest.fixture(scope="session")
-@pytest.mark.usefixtures("test_schema")
-def con_for_udf(con, sql_table_setup, sql_define_udf, sql_define_py_udf):
+def con_for_udf(con, sql_table_setup, sql_define_udf, sql_define_py_udf, test_schema):
     with con.begin() as c:
         c.exec_driver_sql(sql_table_setup)
         c.exec_driver_sql(sql_define_udf)
