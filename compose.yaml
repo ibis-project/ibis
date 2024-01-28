@@ -203,7 +203,7 @@ services:
     container_name: coordinator
     volumes:
       - druid:/opt/shared
-      - coordinator_var:/opt/druid/var
+      - druid:/opt/druid/var
     depends_on:
       druid-zookeeper:
         condition: service_healthy
@@ -227,7 +227,7 @@ services:
     hostname: broker
     container_name: broker
     volumes:
-      - broker_var:/opt/druid/var
+      - druid:/opt/druid/var
     depends_on:
       druid-zookeeper:
         condition: service_healthy
@@ -256,7 +256,7 @@ services:
     container_name: historical
     volumes:
       - druid:/opt/shared
-      - historical_var:/opt/druid/var
+      - druid:/opt/druid/var
     depends_on:
       druid-zookeeper:
         condition: service_healthy
@@ -282,9 +282,9 @@ services:
     hostname: middlemanager
     container_name: middlemanager
     volumes:
+      - druid:/data
       - druid:/opt/shared
-      - middle_var:/opt/druid/var
-      - druid-data:/data
+      - druid:/opt/druid/var
     depends_on:
       druid-zookeeper:
         condition: service_healthy
@@ -310,7 +310,7 @@ services:
     hostname: router
     container_name: router
     volumes:
-      - router_var:/opt/druid/var
+      - druid:/opt/druid/var
     depends_on:
       druid-zookeeper:
         condition: service_healthy
@@ -555,15 +555,8 @@ networks:
   flink:
 
 volumes:
-  broker_var:
-  coordinator_var:
-  druid:
-  historical_var:
-  middle_var:
-  router_var:
-  # test data volumes
   clickhouse:
-  druid-data:
+  druid:
   mssql:
   mysql:
   oracle:
