@@ -719,7 +719,6 @@ def test_join_predicate_dereferencing():
                 "foo_id_right": r2.foo_id,
                 "value1": r2.value1,
                 "value3": r2.value3,
-                "bar_id_right": r3.bar_id,
                 "value2": r3.value2,
             },
         )
@@ -941,7 +940,7 @@ def test_self_join():
             rest=[
                 ops.JoinLink("inner", r2, [r1.key == r2.key]),
             ],
-            values={"key": r1.key, "key_right": r2.key},
+            values={"key": r1.key},
         )
         assert t3.op() == expected
 
@@ -951,11 +950,7 @@ def test_self_join():
                 ops.JoinLink("inner", r2, [r1.key == r2.key]),
                 ops.JoinLink("inner", r3, [r1.key == r3.key]),
             ],
-            values={
-                "key": r1.key,
-                "key_right": r2.key,
-                "key_right_right": r3.key_right,
-            },
+            values={"key": r1.key},
         )
         assert t4.op() == expected
 
@@ -1061,7 +1056,6 @@ def test_self_join_extensive():
             values={
                 "a": r1.a,
                 "b": r1.b,
-                "a_right": r2.a,
                 "b_right": r2.b,
             },
         )
@@ -1083,7 +1077,6 @@ def test_self_join_extensive():
             values={
                 "a": r1.a,
                 "b": r1.b,
-                "a_right": r2.a,
                 "b_right": r2.b,
             },
         )
@@ -1106,7 +1099,6 @@ def test_self_join_with_intermediate_selection():
             values={
                 "b": r1.b,
                 "a": r1.a,
-                "a_right": r2.a,
                 "b_right": r2.b,
             },
         )
@@ -1124,7 +1116,6 @@ def test_self_join_with_intermediate_selection():
             values={
                 "a": r1.a,
                 "b_right": r2.b,
-                "a_right": r3.a,
                 "b": r3.b,
             },
         )
@@ -1133,7 +1124,7 @@ def test_self_join_with_intermediate_selection():
     # TODO(kszucs): this use case could be supported if `_get_column` gets
     # overridden to return underlying column reference, but that would mean
     # that `aa.a` returns with `a.a` instead of `aa.a` which breaks other
-    # things
+    # things; the other possible solution is to use 2way dereferencing
     # aa = a.join(a, [a.a == a.a])
     # aaa = aa["a", "b_right"].join(a, [aa.a == a.a])
     # a0 = a
@@ -1356,3 +1347,126 @@ def test_join_with_compound_predicate():
             },
         )
         assert expr.op() == expected
+
+
+def test_inner_join_convenience():
+    t1 = ibis.table(name="t1", schema={"a": "int64", "b": "string"})
+    t2 = ibis.table(name="t2", schema={"a": "int64", "c": "string"})
+    t3 = ibis.table(name="t3", schema={"a": "int64", "d": "string"})
+    t4 = ibis.table(name="t4", schema={"a": "int64", "e": "string"})
+    t5 = ibis.table(name="t5", schema={"a": "int64", "f": "string"})
+
+    first_join = t1.inner_join(t2, [t1.a == t2.a])
+    with join_tables(t1, t2) as (r1, r2):
+        expected = ops.JoinChain(
+            first=r1,
+            rest=[
+                ops.JoinLink("inner", r2, [r1.a == r2.a]),
+            ],
+            values={
+                "a": r1.a,
+                "b": r1.b,
+                "c": r2.c,
+            },
+        )
+        # finish to evaluate the collisions
+        result = first_join._finish().op()
+        assert result == expected
+
+    # note that we are joining on r2.a which isn't among the values
+    second_join = first_join.inner_join(t3, [r2.a == t3.a])
+    with join_tables(t1, t2, t3) as (r1, r2, r3):
+        expected = ops.JoinChain(
+            first=r1,
+            rest=[
+                ops.JoinLink("inner", r2, [r1.a == r2.a]),
+                ops.JoinLink("inner", r3, [r2.a == r3.a]),
+            ],
+            values={
+                "a": r1.a,
+                "b": r1.b,
+                "c": r2.c,
+                "d": r3.d,
+            },
+        )
+        # finish to evaluate the collisions
+        result = second_join._finish().op()
+        assert result == expected
+
+    third_join = second_join.left_join(t4, [r3.a == t4.a])
+    with join_tables(t1, t2, t3, t4) as (r1, r2, r3, r4):
+        expected = ops.JoinChain(
+            first=r1,
+            rest=[
+                ops.JoinLink("inner", r2, [r1.a == r2.a]),
+                ops.JoinLink("inner", r3, [r2.a == r3.a]),
+                ops.JoinLink("left", r4, [r3.a == r4.a]),
+            ],
+            values={
+                "a": r1.a,
+                "b": r1.b,
+                "c": r2.c,
+                "d": r3.d,
+                "a_right": r4.a,
+                "e": r4.e,
+            },
+        )
+        # finish to evaluate the collisions
+        result = third_join._finish().op()
+        assert result == expected
+
+    fourth_join = third_join.inner_join(t5, [r3.a == t5.a], rname="{name}_")
+    with join_tables(t1, t2, t3, t4, t5) as (r1, r2, r3, r4, r5):
+        # equality groups are being reset
+        expected = ops.JoinChain(
+            first=r1,
+            rest=[
+                ops.JoinLink("inner", r2, [r1.a == r2.a]),
+                ops.JoinLink("inner", r3, [r2.a == r3.a]),
+                ops.JoinLink("left", r4, [r3.a == r4.a]),
+                ops.JoinLink("inner", r5, [r3.a == r5.a]),
+            ],
+            values={
+                "a": r1.a,
+                "b": r1.b,
+                "c": r2.c,
+                "d": r3.d,
+                "a_right": r4.a,
+                "e": r4.e,
+                "f": r5.f,
+            },
+        )
+        # finish to evaluate the collisions
+        result = fourth_join._finish().op()
+        assert result == expected
+
+    with pytest.raises(IntegrityError):
+        # equality groups are being reset, t5.a would be renamed to 'a_right'
+        # which already exists
+        third_join.inner_join(t5, [r4.a == t5.a])._finish()
+
+    fifth_join = third_join.inner_join(t5, [r4.a == t5.a], rname="{name}_")
+    with join_tables(t1, t2, t3, t4, t5) as (r1, r2, r3, r4, r5):
+        # equality groups are being reset
+        expected = ops.JoinChain(
+            first=r1,
+            rest=[
+                ops.JoinLink("inner", r2, [r1.a == r2.a]),
+                ops.JoinLink("inner", r3, [r2.a == r3.a]),
+                ops.JoinLink("left", r4, [r3.a == r4.a]),
+                ops.JoinLink("inner", r5, [r4.a == r5.a]),
+            ],
+            values={
+                "a": r1.a,
+                "b": r1.b,
+                "c": r2.c,
+                "d": r3.d,
+                "a_right": r4.a,
+                "e": r4.e,
+                "a_": r5.a,
+                "f": r5.f,
+            },
+        )
+        # finish to evaluate the collisions
+        result = fifth_join._finish().op()
+        assert result == expected
