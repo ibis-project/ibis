@@ -6436,6 +6436,20 @@ sqlalchemy = ">=1.4,<2"
 turbodbc = ["turbodbc (==4.5.4)"]
 
 [[package]]
+name = "sqlalchemy-risingwave"
+version = "1.0.0"
+description = "RisingWave dialect for SQLAlchemy"
+optional = true
+python-versions = "*"
+files = [
+    {file = "sqlalchemy-risingwave-1.0.0.tar.gz", hash = "sha256:856a3c44b98cba34d399c3cc9785a74896caca152b3685d87553e4210e3e07a4"},
+    {file = "sqlalchemy_risingwave-1.0.0-py3-none-any.whl", hash = "sha256:c733365abc38e88f4d23d83713cfc3f21c0b0d3c81210cbc2f569b49a912ba08"},
+]
+
+[package.dependencies]
+SQLAlchemy = ">=1.4,<2"
+
+[[package]]
 name = "sqlalchemy-views"
 version = "0.3.2"
 description = "Adds CreateView and DropView constructs to SQLAlchemy"
@@ -7382,7 +7396,7 @@ cffi = {version = ">=1.11", markers = "platform_python_implementation == \"PyPy\
 cffi = ["cffi (>=1.11)"]
 
 [extras]
-all = ["black", "clickhouse-connect", "dask", "datafusion", "db-dtypes", "deltalake", "duckdb", "duckdb-engine", "geoalchemy2", "geopandas", "google-cloud-bigquery", "google-cloud-bigquery-storage", "graphviz", "impyla", "oracledb", "packaging", "pins", "polars", "psycopg2", "pydata-google-auth", "pydruid", "pymysql", "pyodbc", "pyspark", "regex", "shapely", "snowflake-connector-python", "snowflake-sqlalchemy", "sqlalchemy", "sqlalchemy-exasol", "sqlalchemy-views", "trino"]
+all = ["black", "clickhouse-connect", "dask", "datafusion", "db-dtypes", "deltalake", "duckdb", "duckdb-engine", "geoalchemy2", "geopandas", "google-cloud-bigquery", "google-cloud-bigquery-storage", "graphviz", "impyla", "oracledb", "packaging", "pins", "polars", "psycopg2", "pydata-google-auth", "pydruid", "pymysql", "pyodbc", "pyspark", "regex", "shapely", "snowflake-connector-python", "snowflake-sqlalchemy", "sqlalchemy", "sqlalchemy-exasol", "sqlalchemy-risingwave", "sqlalchemy-views", "trino"]
 bigquery = ["db-dtypes", "google-cloud-bigquery", "google-cloud-bigquery-storage", "pydata-google-auth"]
 clickhouse = ["clickhouse-connect", "sqlalchemy"]
 dask = ["dask", "regex"]
@@ -7403,6 +7417,7 @@ pandas = ["regex"]
 polars = ["packaging", "polars"]
 postgres = ["psycopg2", "sqlalchemy", "sqlalchemy-views"]
 pyspark = ["packaging", "pyspark", "sqlalchemy"]
+risingwave = ["psycopg2", "sqlalchemy", "sqlalchemy-risingwave", "sqlalchemy-views"]
 snowflake = ["packaging", "snowflake-connector-python", "snowflake-sqlalchemy", "sqlalchemy-views"]
 sqlite = ["regex", "sqlalchemy", "sqlalchemy-views"]
 trino = ["sqlalchemy", "sqlalchemy-views", "trino"]
@@ -7411,4 +7426,4 @@ visualization = ["graphviz"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.9"
-content-hash = "1fad7113a8c6bcf6e661bd27894fd64c370f15b0fd13ac53b21001025e4658e5"
+content-hash = "3c1dfc652d2d025e6ea434033966154b44ba3a4452cbe3c7439ea4754c6ec420"

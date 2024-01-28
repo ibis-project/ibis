@@ -91,6 +91,7 @@ def gzip_csv(data_dir, tmp_path):
         "mysql",
         "pandas",
         "postgres",
+        "risingwave",
         "snowflake",
         "sqlite",
         "trino",
@@ -117,6 +118,7 @@ def test_register_csv(con, data_dir, fname, in_table_name, out_table_name):
         "mysql",
         "pandas",
         "postgres",
+        "risingwave",
         "snowflake",
         "sqlite",
         "trino",
@@ -140,6 +142,7 @@ def test_register_csv_gz(con, data_dir, gzip_csv):
         "mysql",
         "pandas",
         "postgres",
+        "risingwave",
         "snowflake",
         "sqlite",
         "trino",
@@ -196,6 +199,7 @@ def read_table(path: Path) -> Iterator[tuple[str, pa.Table]]:
         "mysql",
         "pandas",
         "postgres",
+        "risingwave",
         "snowflake",
         "sqlite",
         "trino",
@@ -232,6 +236,7 @@ def test_register_parquet(
         "mysql",
         "pandas",
         "postgres",
+        "risingwave",
         "pyspark",
         "snowflake",
         "sqlite",
@@ -271,6 +276,7 @@ def test_register_iterator_parquet(
         "mysql",
         "pandas",
         "postgres",
+        "risingwave",
         "pyspark",
         "snowflake",
         "sqlite",
@@ -301,6 +307,7 @@ def test_register_pandas(con):
         "mysql",
         "pandas",
         "postgres",
+        "risingwave",
         "pyspark",
         "snowflake",
         "sqlite",
@@ -326,6 +333,7 @@ def test_register_pyarrow_tables(con):
         "mysql",
         "pandas",
         "postgres",
+        "risingwave",
         "snowflake",
         "sqlite",
         "trino",
@@ -368,6 +376,7 @@ def test_csv_reregister_schema(con, tmp_path):
         "pandas",
         "polars",
         "postgres",
+        "risingwave",
         "pyspark",
         "snowflake",
         "sqlite",
@@ -395,7 +404,9 @@ def test_register_garbage(con, monkeypatch):
         ("functional_alltypes.parquet", "funk_all"),
     ],
 )
-@pytest.mark.notyet(["impala", "mssql", "mysql", "postgres", "sqlite", "trino"])
+@pytest.mark.notyet(
+    ["impala", "mssql", "mysql", "postgres", "risingwave", "sqlite", "trino"]
+)
 @pytest.mark.notimpl(
     ["flink"],
     raises=ValueError,
@@ -430,7 +441,7 @@ def ft_data(data_dir):
 
 
 @pytest.mark.notyet(
-    ["impala", "mssql", "mysql", "pandas", "postgres", "sqlite", "trino"]
+    ["impala", "mssql", "mysql", "pandas", "postgres", "risingwave", "sqlite", "trino"]
 )
 @pytest.mark.notimpl(
     ["flink"],
@@ -454,7 +465,7 @@ def test_read_parquet_glob(con, tmp_path, ft_data):
 
 
 @pytest.mark.notyet(
-    ["impala", "mssql", "mysql", "pandas", "postgres", "sqlite", "trino"]
+    ["impala", "mssql", "mysql", "pandas", "postgres", "risingwave", "sqlite", "trino"]
 )
 @pytest.mark.notimpl(
     ["flink"],
@@ -487,6 +498,7 @@ def test_read_csv_glob(con, tmp_path, ft_data):
         "mysql",
         "pandas",
         "postgres",
+        "risingwave",
         "sqlite",
         "trino",
     ]
@@ -539,7 +551,9 @@ DIAMONDS_COLUMN_TYPES = {
     "in_table_name",
     [param(None, id="default"), param("fancy_stones", id="file_name")],
 )
-@pytest.mark.notyet(["impala", "mssql", "mysql", "postgres", "sqlite", "trino"])
+@pytest.mark.notyet(
+    ["impala", "mssql", "mysql", "postgres", "risingwave", "sqlite", "trino"]
+)
 @pytest.mark.notimpl(
     ["flink"],
     raises=ValueError,

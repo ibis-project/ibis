@@ -217,7 +217,7 @@ def test_dot_sql_reuse_alias_with_different_types(backend, alltypes, df):
     backend.assert_series_equal(foo2.x.execute(), expected2)
 
 
-_NO_SQLGLOT_DIALECT = {"pandas", "dask", "druid", "flink"}
+_NO_SQLGLOT_DIALECT = {"pandas", "dask", "druid", "flink", "risingwave"}
 no_sqlglot_dialect = sorted(
     param(backend, marks=pytest.mark.xfail) for backend in _NO_SQLGLOT_DIALECT
 )
@@ -226,6 +226,11 @@ no_sqlglot_dialect = sorted(
 @pytest.mark.parametrize(
     "dialect",
     [*sorted(_get_backend_names() - _NO_SQLGLOT_DIALECT), *no_sqlglot_dialect],
+)
+@pytest.mark.notyet(
+    ["risingwave"],
+    raises=ValueError,
+    reason="risingwave doesn't support sqlglot.dialects.dialect.Dialect",
 )
 @table_dot_sql_notimpl
 @dot_sql_notimpl
@@ -255,6 +260,11 @@ def test_table_dot_sql_transpile(backend, alltypes, dialect, df):
 @pytest.mark.notyet(
     ["oracle"], strict=False, reason="only works with backends that quote everything"
 )
+@pytest.mark.notyet(
+    ["risingwave"],
+    raises=ValueError,
+    reason="risingwave doesn't support sqlglot.dialects.dialect.Dialect",
+)
 @dot_sql_notimpl
 @dot_sql_never
 def test_con_dot_sql_transpile(backend, con, dialect, df):
@@ -272,6 +282,11 @@ def test_con_dot_sql_transpile(backend, con, dialect, df):
 @dot_sql_never
 @pytest.mark.notimpl(["druid", "flink", "impala", "polars", "pyspark"])
 @pytest.mark.notyet(["snowflake"], reason="snowflake column names are case insensitive")
+@pytest.mark.notyet(
+    ["risingwave"],
+    raises=ValueError,
+    reason="risingwave doesn't support sqlglot.dialects.dialect.Dialect",
+)
 def test_order_by_no_projection(backend):
     con = backend.connection
     astronauts = con.table("astronauts")

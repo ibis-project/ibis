@@ -20,6 +20,7 @@ no_python_udfs = mark.notimpl(
         "oracle",
         "pandas",
         "trino",
+        "risingwave",
     ]
 )
 

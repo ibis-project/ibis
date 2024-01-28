@@ -67,19 +67,26 @@ def test_union_mixed_distinct(backend, union_subsets):
     [
         param(
             False,
-            marks=pytest.mark.notyet(
-                [
-                    "impala",
-                    "bigquery",
-                    "dask",
-                    "pandas",
-                    "sqlite",
-                    "snowflake",
-                    "mssql",
-                    "exasol",
-                ],
-                reason="backend doesn't support INTERSECT ALL",
-            ),
+            marks=[
+                pytest.mark.notyet(
+                    [
+                        "impala",
+                        "bigquery",
+                        "dask",
+                        "pandas",
+                        "sqlite",
+                        "snowflake",
+                        "mssql",
+                        "exasol",
+                    ],
+                    reason="backend doesn't support INTERSECT ALL",
+                ),
+                pytest.mark.notimpl(
+                    ["risingwave"],
+                    raises=sa.exc.InternalError,
+                    reason="Feature is not yet implemented: INTERSECT all",
+                ),
+            ],
             id="all",
         ),
         param(True, id="distinct"),
@@ -114,19 +121,26 @@ def test_intersect(backend, alltypes, df, distinct):
     [
         param(
             False,
-            marks=pytest.mark.notyet(
-                [
-                    "impala",
-                    "bigquery",
-                    "dask",
-                    "pandas",
-                    "sqlite",
-                    "snowflake",
-                    "mssql",
-                    "exasol",
-                ],
-                reason="backend doesn't support EXCEPT ALL",
-            ),
+            marks=[
+                pytest.mark.notyet(
+                    [
+                        "impala",
+                        "bigquery",
+                        "dask",
+                        "pandas",
+                        "sqlite",
+                        "snowflake",
+                        "mssql",
+                        "exasol",
+                    ],
+                    reason="backend doesn't support EXCEPT ALL",
+                ),
+                pytest.mark.notimpl(
+                    ["risingwave"],
+                    raises=sa.exc.InternalError,
+                    reason="Feature is not yet implemented: EXCEPT all",
+                ),
+            ],
             id="all",
         ),
         param(True, id="distinct"),
@@ -193,18 +207,25 @@ def test_top_level_union(backend, con, alltypes, distinct):
         True,
         param(
             False,
-            marks=pytest.mark.notimpl(
-                [
-                    "impala",
-                    "bigquery",
-                    "dask",
-                    "mssql",
-                    "pandas",
-                    "snowflake",
-                    "sqlite",
-                    "exasol",
-                ]
-            ),
+            marks=[
+                pytest.mark.notimpl(
+                    [
+                        "impala",
+                        "bigquery",
+                        "dask",
+                        "mssql",
+                        "pandas",
+                        "snowflake",
+                        "sqlite",
+                        "exasol",
+                    ]
+                ),
+                pytest.mark.notimpl(
+                    ["risingwave"],
+                    raises=sa.exc.InternalError,
+                    reason="Feature is not yet implemented: INTERSECT all",
+                ),
+            ],
         ),
     ],
 )
