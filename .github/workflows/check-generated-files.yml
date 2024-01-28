@@ -39,7 +39,8 @@ jobs:
         id: install_python
         with:
           python-version: "3.11"
-          cache: poetry
+          cache: pip
+          cache-dependency-path: requirements-dev.txt
 
       - name: update apt-get
         run: sudo apt-get update -y -q
