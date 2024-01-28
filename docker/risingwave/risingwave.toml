@@ -1,2 +1,0 @@
-# RisingWave config file to be mounted into the Docker containers.
-# See https://github.com/risingwavelabs/risingwave/blob/main/src/config/example.toml for example

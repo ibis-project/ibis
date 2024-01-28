@@ -104,9 +104,10 @@ services:
       retries: 20
       test:
         - CMD-SHELL
-        - mc ready data && mc mb --ignore-existing data/trino
+        - mc ready data && mc mb --ignore-existing data/trino data/risingwave
     networks:
       - trino
+      - risingwave
     volumes:
       - $PWD/docker/minio/config.json:/.mc/config.json:ro
 
@@ -537,74 +538,26 @@ services:
     networks:
       - impala
 
-  risingwave-minio:
-    image: "quay.io/minio/minio:latest"
-    command:
-      - server
-      - "--address"
-      - "0.0.0.0:9301"
-      - "--console-address"
-      - "0.0.0.0:9400"
-      - /data
-    expose:
-      - "9301"
-      - "9400"
-    ports:
-      - "9301:9301"
-      - "9400:9400"
-    depends_on: []
-    volumes:
-      - "risingwave-minio:/data"
-    entrypoint: /bin/sh -c "set -e; mkdir -p \"/data/hummock001\"; /usr/bin/docker-entrypoint.sh \"$$0\" \"$$@\" "
-    environment:
-      MINIO_CI_CD: "1"
-      MINIO_ROOT_PASSWORD: hummockadmin
-      MINIO_ROOT_USER: hummockadmin
-      MINIO_DOMAIN: "risingwave-minio"
-    container_name: risingwave-minio
-    healthcheck:
-      test:
-        - CMD-SHELL
-        - bash -c 'printf \"GET / HTTP/1.1\n\n\" > /dev/tcp/127.0.0.1/9301; exit $$?;'
-      interval: 5s
-      timeout: 5s
-      retries: 20
-    restart: always
-    networks:
-      - risingwave
-
   risingwave:
     image: ghcr.io/risingwavelabs/risingwave:nightly-20240122
     command: "standalone --meta-opts=\" \
       --advertise-addr 0.0.0.0:5690 \
       --backend mem \
-      --state-store hummock+minio://hummockadmin:hummockadmin@risingwave-minio:9301/hummock001 \
-      --data-directory hummock_001 \
-      --config-path /risingwave.toml\" \
-      --compute-opts=\" \
-      --config-path /risingwave.toml \
-      --advertise-addr 0.0.0.0:5688 \
-      --role both \" \
-      --frontend-opts=\" \
-      --config-path /risingwave.toml \
-      --listen-addr 0.0.0.0:4566 \
-      --advertise-addr 0.0.0.0:4566 \" \
-      --compactor-opts=\" \
-      --advertise-addr 0.0.0.0:6660 \""
-    expose:
-      - "4566"
+      --state-store hummock+minio://accesskey:secretkey@minio:9000/risingwave \
+      --data-directory hummock_001\" \
+      --compute-opts=\"--advertise-addr 0.0.0.0:5688 --role both\" \
+      --frontend-opts=\"--listen-addr 0.0.0.0:4566 --advertise-addr 0.0.0.0:4566\" \
+      --compactor-opts=\"--advertise-addr 0.0.0.0:6660\""
     ports:
-      - "4566:4566"
+      - 4566:4566
     depends_on:
-      - risingwave-minio
+      minio:
+        condition: service_healthy
     volumes:
-      - "./docker/risingwave/risingwave.toml:/risingwave.toml"
       - risingwave:/data
     environment:
       RUST_BACKTRACE: "1"
-      # If ENABLE_TELEMETRY is not set, telemetry will start by default
-      ENABLE_TELEMETRY: ${ENABLE_TELEMETRY:-true}
-    container_name: risingwave
+      ENABLE_TELEMETRY: "false"
     healthcheck:
       test:
         - CMD-SHELL
@@ -612,10 +565,9 @@ services:
         - bash -c 'printf \"GET / HTTP/1.1\n\n\" > /dev/tcp/127.0.0.1/5688; exit $$?;'
         - bash -c 'printf \"GET / HTTP/1.1\n\n\" > /dev/tcp/127.0.0.1/4566; exit $$?;'
         - bash -c 'printf \"GET / HTTP/1.1\n\n\" > /dev/tcp/127.0.0.1/5690; exit $$?;'
-      interval: 5s
-      timeout: 5s
+      interval: 1s
       retries: 20
-    restart: always
+    restart: on-failure
     networks:
       - risingwave
 
@@ -646,5 +598,4 @@ volumes:
   postgres:
   exasol:
   impala:
-  risingwave-minio:
   risingwave:
