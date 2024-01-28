@@ -78,7 +78,7 @@ jobs:
         run: pip install -e .
 
       - name: run tests
-        run: pytest -m core --cov-report=xml:coverage.xml --cov=ibis
+        run: pytest -m core -n auto --cov-report=xml:coverage.xml --cov=ibis
 
       - name: upload code coverage
         if: success()
