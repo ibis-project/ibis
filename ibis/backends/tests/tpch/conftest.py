@@ -16,6 +16,23 @@ if TYPE_CHECKING:
     import ibis.expr.types as ir
 
 
+def pytest_pyfunc_call(pyfuncitem):
+    """Inject `backend` and `snapshot` fixtures to all TPC-H test functions.
+
+    Defining this hook here limits its scope to the TPC-H tests.
+    """
+    testfunction = pyfuncitem.obj
+    funcargs = pyfuncitem.funcargs
+    testargs = {arg: funcargs[arg] for arg in pyfuncitem._fixtureinfo.argnames}
+    result = testfunction(
+        **testargs, backend=funcargs["backend"], snapshot=funcargs["snapshot"]
+    )
+    assert (
+        result is None
+    ), "test function should not return anything, did you mean to use assert?"
+    return True
+
+
 def tpch_test(test: Callable[..., ir.Table]):
     """Decorator for TPCH tests.
 
