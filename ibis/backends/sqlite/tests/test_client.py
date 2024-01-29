@@ -1,15 +1,19 @@
 from __future__ import annotations
 
+import os
+import sqlite3
 import uuid
 from pathlib import Path
 
 import numpy as np
 import pandas.testing as tm
 import pytest
+from pytest import param
 
 import ibis
 import ibis.expr.types as ir
 from ibis import config, udf
+from ibis.conftest import not_windows
 
 pytest.importorskip("sqlalchemy")
 
@@ -132,3 +136,31 @@ def test_builtin_agg_udf(con):
     expr = total(con.tables.functional_alltypes.limit(2).select(n=ibis.NA).n)
     result = con.execute(expr)
     assert result == 0.0
+
+
+@pytest.mark.sqlite
+@pytest.mark.parametrize(
+    "url, ext",
+    [
+        param(lambda p: p, "sqlite", id="no-scheme-sqlite-ext"),
+        param(lambda p: p, "db", id="no-scheme-db-ext"),
+        param(lambda p: f"sqlite://{p}", "db", id="absolute-path"),
+        param(
+            lambda p: f"sqlite://{os.path.relpath(p)}",
+            "db",
+            marks=[
+                not_windows
+            ],  # hard to test in CI since tmpdir & cwd are on different drives
+            id="relative-path",
+        ),
+        param(lambda _: "sqlite://", "db", id="in-memory-empty"),
+        param(lambda _: "sqlite://:memory:", "db", id="in-memory-explicit"),
+    ],
+)
+def test_connect_sqlite(url, ext, tmp_path):
+    path = os.path.abspath(tmp_path / f"test.{ext}")
+    with sqlite3.connect(path):
+        pass
+    con = ibis.connect(url(path))
+    one = ibis.literal(1)
+    assert con.execute(one) == 1
