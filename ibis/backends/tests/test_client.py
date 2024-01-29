@@ -4,8 +4,6 @@ import builtins
 import contextlib
 import importlib
 import inspect
-import os
-import platform
 import re
 import string
 import subprocess
@@ -773,116 +771,6 @@ def test_connect_url(url):
     assert con.execute(one) == 1
 
 
-not_windows = pytest.mark.skipif(
-    condition=platform.system() == "Windows",
-    reason=(
-        "windows prevents two connections to the same duckdb file even in "
-        "the same process"
-    ),
-)
-
-
-@pytest.fixture(params=["duckdb", "sqlite"])
-def tmp_db(request, tmp_path):
-    api = request.param
-    mod = pytest.importorskip(api)
-    db = tmp_path / "test.db"
-    mod.connect(str(db)).execute("CREATE TABLE tmp_t AS SELECT 1 AS a").fetchall()
-    return db
-
-
-@pytest.mark.duckdb
-@pytest.mark.parametrize(
-    "url",
-    [
-        param(lambda p: p, id="no-scheme-duckdb-ext"),
-        param(lambda p: f"duckdb://{p}", id="absolute-path"),
-        param(
-            lambda p: f"duckdb://{os.path.relpath(p)}",
-            marks=[
-                not_windows
-            ],  # hard to test in CI since tmpdir & cwd are on different drives
-            id="relative-path",
-        ),
-        param(lambda _: "duckdb://", id="in-memory-empty"),
-        param(lambda _: "duckdb://:memory:", id="in-memory-explicit"),
-        param(
-            lambda p: f"duckdb://{p}?read_only=1",
-            id="duckdb_read_write_int",
-        ),
-        param(
-            lambda p: f"duckdb://{p}?read_only=False",
-            id="duckdb_read_write_upper",
-        ),
-        param(
-            lambda p: f"duckdb://{p}?read_only=false",
-            id="duckdb_read_write_lower",
-        ),
-    ],
-)
-def test_connect_duckdb(url, tmp_path):
-    duckdb = pytest.importorskip("duckdb")
-    path = os.path.abspath(tmp_path / "test.duckdb")
-    with duckdb.connect(path):
-        pass
-    con = ibis.connect(url(path))
-    one = ibis.literal(1)
-    assert con.execute(one) == 1
-
-
-@pytest.mark.sqlite
-@pytest.mark.parametrize(
-    "url, ext",
-    [
-        param(lambda p: p, "sqlite", id="no-scheme-sqlite-ext"),
-        param(lambda p: p, "db", id="no-scheme-db-ext"),
-        param(lambda p: f"sqlite://{p}", "db", id="absolute-path"),
-        param(
-            lambda p: f"sqlite://{os.path.relpath(p)}",
-            "db",
-            marks=[
-                not_windows
-            ],  # hard to test in CI since tmpdir & cwd are on different drives
-            id="relative-path",
-        ),
-        param(lambda _: "sqlite://", "db", id="in-memory-empty"),
-        param(lambda _: "sqlite://:memory:", "db", id="in-memory-explicit"),
-    ],
-)
-def test_connect_sqlite(url, ext, tmp_path):
-    import sqlite3
-
-    path = os.path.abspath(tmp_path / f"test.{ext}")
-    with sqlite3.connect(path):
-        pass
-    con = ibis.connect(url(path))
-    one = ibis.literal(1)
-    assert con.execute(one) == 1
-
-
-@pytest.mark.duckdb
-@pytest.mark.parametrize(
-    "out_method, extension",
-    [
-        ("to_csv", "csv"),
-        ("to_parquet", "parquet"),
-    ],
-)
-def test_connect_local_file(out_method, extension, test_employee_data_1, tmp_path):
-    getattr(test_employee_data_1, out_method)(tmp_path / f"out.{extension}")
-    con = ibis.connect(tmp_path / f"out.{extension}")
-    t = next(iter(con.tables.values()))
-    assert not t.head().execute().empty
-
-
-@not_windows
-def test_invalid_connect(tmp_path):
-    pytest.importorskip("duckdb")
-    url = f"duckdb://{tmp_path}?read_only=invalid_value"
-    with pytest.raises(ValueError):
-        ibis.connect(url)
-
-
 @pytest.mark.parametrize(
     ("arg", "lambda_", "expected"),
     [
@@ -988,7 +876,6 @@ def test_create_from_in_memory_table(con, temp_table, arg, func, monkeypatch):
     assert temp_table in con.list_tables()
 
 
-@pytest.mark.usefixtures("backend")
 def test_default_backend_option(con, monkeypatch):
     # verify that there's nothing already set
     assert ibis.options.default_backend is None
@@ -1043,26 +930,6 @@ ibis.read_parquet("foo.parquet")"""
         )
         is not None
     )
-
-
-@pytest.mark.duckdb
-def test_default_backend():
-    pytest.importorskip("duckdb")
-
-    df = pd.DataFrame({"a": [1, 2, 3]})
-    t = ibis.memtable(df)
-    expr = t.a.sum()
-    # run this twice to ensure that we hit the optimizations in
-    # `_default_backend`
-    for _ in range(2):
-        assert expr.execute() == df.a.sum()
-
-    sql = ibis.to_sql(expr)
-    rx = """\
-SELECT
-  SUM\\((t\\d+)\\.a\\) AS ".+"
-FROM \\w+ AS \\1"""
-    assert re.match(rx, sql) is not None
 
 
 @pytest.mark.parametrize("dtype", [None, "f8"])
