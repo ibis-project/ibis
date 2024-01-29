@@ -362,3 +362,23 @@ def test_complex_join_agg(snapshot):
     expr = t1.left_join(t2, "key1").group_by(t1.key1).aggregate(avg_diff=avg_diff)
 
     snapshot.assert_match(str(ibis.to_sql(expr, dialect="duckdb")), "out.sql")
+
+
+def test_join_conflicting_columns(backend, con):
+    # GH #7345
+    t1 = ibis.memtable({"x": [1, 2, 3], "y": [4, 5, 6], "z": ["a", "b", "c"]})
+    t2 = ibis.memtable({"x": [3, 2, 1], "y": [7, 8, 9], "z": ["d", "e", "f"]})
+
+    expr = t1.join(t2, "x")
+    result = con.execute(expr).sort_values("x")
+
+    expected = pd.DataFrame(
+        {
+            "x": [1, 2, 3],
+            "y": [4, 5, 6],
+            "z": ["a", "b", "c"],
+            "y_right": [9, 8, 7],
+            "z_right": ["f", "e", "d"],
+        }
+    )
+    backend.assert_frame_equal(result, expected)
