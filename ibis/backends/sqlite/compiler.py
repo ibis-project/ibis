@@ -11,6 +11,7 @@ import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 from ibis.backends.base.sqlglot.compiler import SQLGlotCompiler
 from ibis.backends.base.sqlglot.datatypes import SQLiteType
+from ibis.common.temporal import DateUnit, IntervalUnit
 
 
 @public
@@ -55,8 +56,39 @@ class SQLiteCompiler(SQLGlotCompiler):
     @visit_node.register(ops.ArraySort)
     @visit_node.register(ops.ArrayStringJoin)
     @visit_node.register(ops.CountDistinctStar)
+    @visit_node.register(ops.IntervalBinary)
+    @visit_node.register(ops.IntervalAdd)
+    @visit_node.register(ops.IntervalSubtract)
+    @visit_node.register(ops.IntervalMultiply)
+    @visit_node.register(ops.IntervalFloorDivide)
+    @visit_node.register(ops.IntervalFromInteger)
+    @visit_node.register(ops.TimestampBucket)
+    @visit_node.register(ops.TimestampAdd)
+    @visit_node.register(ops.TimestampSub)
+    @visit_node.register(ops.TimestampDiff)
+    @visit_node.register(ops.StringToTimestamp)
+    @visit_node.register(ops.TimeDelta)
+    @visit_node.register(ops.DateDelta)
+    @visit_node.register(ops.TimestampDelta)
     def visit_Undefined(self, op, **kwargs):
         return super().visit_Undefined(op, **kwargs)
+
+    @visit_node.register(ops.Cast)
+    def visit_Cast(self, op, *, arg, to) -> sge.Cast:
+        # Handle unsupported type errors uniformly in the type_mapper
+        to_type = self.type_mapper.from_ibis(to)
+
+        if to.is_timestamp():
+            if op.arg.dtype.is_numeric():
+                return self.f.datetime(arg, "unixepoch")
+            else:
+                return self.f.strftime("%Y-%m-%d %H:%M:%f", arg)
+        elif to.is_date():
+            return self.f.date(arg)
+        elif to.is_time():
+            return self.f.time(arg)
+        else:
+            return sg.cast(arg, to=to_type)
 
     @visit_node.register(ops.JoinLink)
     def visit_JoinLink(self, op, **kwargs):
@@ -176,6 +208,188 @@ class SQLiteCompiler(SQLGlotCompiler):
     def visit_CountDistinct(self, op, *, arg, where):
         return self.agg.count(sge.Distinct(expressions=[arg]), where=where)
 
+    @visit_node.register(ops.Strftime)
+    def visit_Strftime(self, op, *, arg, format_str):
+        return self.f.strftime(format_str, arg)
+
+    @visit_node.register(ops.DateFromYMD)
+    def visit_DateFromYMD(self, op, *, year, month, day):
+        return self.f.date(self.f.printf("%04d-%02d-%02d", year, month, day))
+
+    @visit_node.register(ops.TimeFromHMS)
+    def visit_TimeFromHMS(self, op, *, hours, minutes, seconds):
+        return self.f.time(self.f.printf("%02d:%02d:%02d", hours, minutes, seconds))
+
+    @visit_node.register(ops.TimestampFromYMDHMS)
+    def visit_TimestampFromYMDHMS(
+        self, op, *, year, month, day, hours, minutes, seconds
+    ):
+        return self.f.datetime(
+            self.f.printf(
+                "%04d-%02d-%02d %02d:%02d:%02d%s",
+                year,
+                month,
+                day,
+                hours,
+                minutes,
+                seconds,
+            )
+        )
+
+    def _temporal_truncate(self, func, arg, unit):
+        modifiers = {
+            DateUnit.DAY: ("start of day",),
+            DateUnit.WEEK: ("weekday 0", "-6 days"),
+            DateUnit.MONTH: ("start of month",),
+            DateUnit.YEAR: ("start of year",),
+            IntervalUnit.DAY: ("start of day",),
+            IntervalUnit.WEEK: ("weekday 0", "-6 days", "start of day"),
+            IntervalUnit.MONTH: ("start of month",),
+            IntervalUnit.YEAR: ("start of year",),
+        }
+
+        params = modifiers.get(unit)
+        if params is None:
+            raise com.UnsupportedOperationError(f"Unsupported truncate unit {unit}")
+        return func(arg, *params)
+
+    @visit_node.register(ops.DateTruncate)
+    def visit_DateTruncate(self, op, *, arg, unit):
+        return self._temporal_truncate(self.f.date, arg, unit)
+
+    @visit_node.register(ops.TimestampTruncate)
+    def visit_TimestampTruncate(self, op, *, arg, unit):
+        return self._temporal_truncate(self.f.datetime, arg, unit)
+
+    @visit_node.register(ops.DateAdd)
+    @visit_node.register(ops.DateSub)
+    def visit_DateArithmetic(self, op, *, left, right):
+        unit = op.right.dtype.unit
+        sign = "+" if isinstance(op, ops.DateAdd) else "-"
+        if unit not in (IntervalUnit.YEAR, IntervalUnit.MONTH, IntervalUnit.DAY):
+            raise com.UnsupportedOperationError(
+                "SQLite does not allow binary op {sign!r} with INTERVAL offset {unit}"
+            )
+        if isinstance(op.right, ops.Literal):
+            return self.f.date(left, f"{sign}{op.right.value} {unit.plural}")
+        else:
+            return self.f.date(left, self.f.concat(sign, right, f" {unit.plural}"))
+
+    @visit_node.register(ops.DateDiff)
+    def visit_DateDiff(self, op, *, left, right):
+        return self.f.julianday(left) - self.f.julianday(right)
+
+    @visit_node.register(ops.ExtractYear)
+    def visit_ExtractYear(self, op, *, arg):
+        return self.cast(self.f.strftime("%Y", arg), dt.int64)
+
+    @visit_node.register(ops.ExtractQuarter)
+    def visit_ExtractQuarter(self, op, *, arg):
+        return (self.f.strftime("%m", arg) + 2) / 3
+
+    @visit_node.register(ops.ExtractMonth)
+    def visit_ExtractMonth(self, op, *, arg):
+        return self.cast(self.f.strftime("%m", arg), dt.int64)
+
+    @visit_node.register(ops.ExtractDay)
+    def visit_ExtractDay(self, op, *, arg):
+        return self.cast(self.f.strftime("%d", arg), dt.int64)
+
+    @visit_node.register(ops.ExtractDayOfYear)
+    def visit_ExtractDayOfYear(self, op, *, arg):
+        return self.cast(self.f.strftime("%j", arg), dt.int64)
+
+    @visit_node.register(ops.ExtractHour)
+    def visit_ExtractHour(self, op, *, arg):
+        return self.cast(self.f.strftime("%H", arg), dt.int64)
+
+    @visit_node.register(ops.ExtractMinute)
+    def visit_ExtractMinute(self, op, *, arg):
+        return self.cast(self.f.strftime("%M", arg), dt.int64)
+
+    @visit_node.register(ops.ExtractSecond)
+    def visit_ExtractSecond(self, op, *, arg):
+        return self.cast(self.f.strftime("%S", arg), dt.int64)
+
+    @visit_node.register(ops.ExtractMillisecond)
+    def visit_Millisecond(self, op, *, arg):
+        return self.cast(self.f.mod(self.f.strftime("%f", arg) * 1000, 1000), dt.int64)
+
+    @visit_node.register(ops.ExtractMicrosecond)
+    def visit_Microsecond(self, op, *, arg):
+        return self.cast(self.f.mod(self.f.strftime("%f", arg), 1000), dt.int64)
+
+    @visit_node.register(ops.ExtractWeekOfYear)
+    def visit_ExtractWeekOfYear(self, op, *, arg):
+        """ISO week of year.
+
+        This solution is based on https://stackoverflow.com/a/15511864 and handle
+        the edge cases when computing ISO week from non-ISO week.
+
+        The implementation gives the same results as `datetime.isocalendar()`.
+
+        The year's week that "wins" the day is the year with more allotted days.
+
+        For example:
+
+        ```
+        $ cal '2011-01-01'
+            January 2011
+        Su Mo Tu We Th Fr Sa
+                        |1|
+        2  3  4  5  6  7  8
+        9 10 11 12 13 14 15
+        16 17 18 19 20 21 22
+        23 24 25 26 27 28 29
+        30 31
+        ```
+
+        Here the ISO week number is `52` since the day occurs in a week with more
+        days in the week occurring in the _previous_ week's year.
+
+        ```
+        $ cal '2012-12-31'
+            December 2012
+        Su Mo Tu We Th Fr Sa
+                        1
+        2  3  4  5  6  7  8
+        9 10 11 12 13 14 15
+        16 17 18 19 20 21 22
+        23 24 25 26 27 28 29
+        30 |31|
+        ```
+
+        Here the ISO week of year is `1` since the day occurs in a week with more
+        days in the week occurring in the _next_ week's year.
+        """
+        date = self.f.date(arg, "-3 days", "weekday 4")
+        return (self.f.strftime("%j", date) - 1) / 7 + 1
+
+    @visit_node.register(ops.ExtractEpochSeconds)
+    def visit_ExtractEpochSeconds(self, op, *, arg):
+        return self.cast((self.f.julianday(arg) - 2440587.5) * 86400.0, dt.int64)
+
+    @visit_node.register(ops.DayOfWeekIndex)
+    def visit_DayOfWeekIndex(self, op, *, arg):
+        return self.cast(
+            self.f.mod(self.cast(self.f.strftime("%w", arg) + 6, dt.int64), 7), dt.int64
+        )
+
+    @visit_node.register(ops.DayOfWeekName)
+    def visit_DayOfWeekName(self, op, *, arg):
+        return sge.Case(
+            this=self.f.strftime("%w", arg),
+            ifs=[
+                self.if_("0", "Sunday"),
+                self.if_("1", "Monday"),
+                self.if_("2", "Tuesday"),
+                self.if_("3", "Wednesday"),
+                self.if_("4", "Thursday"),
+                self.if_("5", "Friday"),
+                self.if_("6", "Saturday"),
+            ],
+        )
+
     def visit_NonNullLiteral(self, op, *, value, dtype):
         if dtype.is_binary():
             return self.f.unhex(value.hex())
@@ -185,6 +399,22 @@ class SQLiteCompiler(SQLGlotCompiler):
             dtype = dt.double(nullable=dtype.nullable)
         elif dtype.is_uuid():
             value = str(value)
+            dtype = dt.string(nullable=dtype.nullable)
+        elif dtype.is_interval():
+            value = int(value)
+            dtype = dt.int64(nullable=dtype.nullable)
+        elif dtype.is_date() or dtype.is_timestamp() or dtype.is_time():
+            # To ensure comparisons apply uniformly between temporal values
+            # (which are always represented as strings), we need to enforce
+            # that temporal literals are formatted the same way that SQLite
+            # formats them. This means " " instead of "T" and no offset suffix
+            # for UTC.
+            value = (
+                value.isoformat()
+                .replace("T", " ")
+                .replace("Z", "")
+                .replace("+00:00", "")
+            )
             dtype = dt.string(nullable=dtype.nullable)
         return super().visit_NonNullLiteral(op, value=value, dtype=dtype)
 
@@ -216,6 +446,8 @@ _SIMPLE_OPS = {
     ops.First: "_ibis_sqlite_arbitrary_first",
     ops.Last: "_ibis_sqlite_arbitrary_last",
     ops.Mode: "_ibis_sqlite_mode",
+    ops.Time: "time",
+    ops.Date: "date",
 }
 
 

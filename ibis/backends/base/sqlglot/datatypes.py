@@ -647,6 +647,15 @@ class SQLiteType(SqlglotType):
     def _from_ibis_Struct(cls, dtype: dt.Struct) -> sge.DataType:
         raise com.UnsupportedBackendType("Struct types aren't supported in SQLite")
 
+    @classmethod
+    def _from_ibis_Timestamp(cls, dtype: dt.Timestamp) -> sge.DataType:
+        if dtype.timezone in (None, "UTC"):
+            return sge.DataType(this=sge.DataType.Type.VARCHAR)
+        else:
+            raise com.UnsupportedBackendType(
+                "SQLite does not support timestamps with timezones other than 'UTC'"
+            )
+
 
 class ImpalaType(SqlglotType):
     dialect = "impala"
