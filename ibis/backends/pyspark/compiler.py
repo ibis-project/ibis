@@ -2065,6 +2065,21 @@ def compile_hash_column(t, op, **kwargs):
     return F.hash(t.translate(op.arg, **kwargs))
 
 
+@compiles(ops.HexDigest)
+def compile_hexdigest_column(t, op, **kwargs):
+    how = op.how
+    arg = t.translate(op.arg, **kwargs)
+
+    if how == "md5":
+        return F.md5(arg)
+    elif how == "sha1":
+        return F.sha1(arg)
+    elif how in ("sha256", "sha512"):
+        return F.sha2(arg, int(how[-3:]))
+    else:
+        raise NotImplementedError(how)
+
+
 @compiles(ops.ArrayZip)
 def compile_zip(t, op, **kwargs):
     return F.arrays_zip(*map(partial(t.translate, **kwargs), op.arg))

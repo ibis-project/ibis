@@ -397,6 +397,16 @@ def _array_remove(t, op):
     )
 
 
+def _hexdigest(translator, op):
+    how = op.how
+
+    arg_formatted = translator.translate(op.arg)
+    if how in ("md5", "sha256"):
+        return getattr(sa.func, how)(arg_formatted)
+    else:
+        raise NotImplementedError(how)
+
+
 operation_registry.update(
     {
         ops.Array: (
@@ -533,6 +543,7 @@ operation_registry.update(
         ops.MapValues: unary(sa.func.map_values),
         ops.MapMerge: fixed_arity(sa.func.map_concat, 2),
         ops.Hash: unary(sa.func.hash),
+        ops.HexDigest: _hexdigest,
         ops.Median: reduction(sa.func.median),
         ops.First: reduction(sa.func.first),
         ops.Last: reduction(sa.func.last),

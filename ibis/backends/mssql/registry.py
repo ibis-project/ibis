@@ -226,6 +226,47 @@ def _literal(_, op):
     return sa.literal(value)
 
 
+def _hashbytes(translator, op):
+    how = op.how
+
+    arg_formatted = translator.translate(op.arg)
+
+    if how in ("md5", "sha1"):
+        return sa.func.hashbytes(how, arg_formatted)
+    elif how == "sha256":
+        return sa.func.hashbytes("sha2_256", arg_formatted)
+    elif how == "sha512":
+        return sa.func.hashbytes("sha2_512", arg_formatted)
+    else:
+        raise NotImplementedError(how)
+
+
+def _hexdigest(translator, op):
+    # SO post on getting convert to play nice with VARCHAR in Sqlalchemy
+    # https://stackoverflow.com/questions/20291962/how-to-use-convert-function-in-sqlalchemy
+    how = op.how
+
+    arg_formatted = translator.translate(op.arg)
+    if how in ("md5", "sha1"):
+        hashbinary = sa.func.hashbytes(how, arg_formatted)
+    elif how == "sha256":
+        hashbinary = sa.func.hashbytes("sha2_256", arg_formatted)
+    elif how == "sha512":
+        hashbinary = sa.func.hashbytes("sha2_512", arg_formatted)
+    else:
+        raise NotImplementedError(how)
+
+    # mssql uppercases the hexdigest which is inconsistent with several other
+    # implementations and inconsistent with Python, so lowercase it.
+    return sa.func.lower(
+        sa.func.convert(
+            sa.literal_column("VARCHAR(MAX)"),
+            hashbinary,
+            2,  # 2 means strip off leading '0x'
+        )
+    )
+
+
 operation_registry = sqlalchemy_operation_registry.copy()
 operation_registry.update(sqlalchemy_window_functions_registry)
 
@@ -316,6 +357,8 @@ operation_registry.update(
         ops.DateTruncate: _timestamp_truncate,
         ops.TimestampBucket: _timestamp_bucket,
         ops.Hash: unary(sa.func.checksum),
+        ops.HashBytes: _hashbytes,
+        ops.HexDigest: _hexdigest,
         ops.ExtractMicrosecond: fixed_arity(
             lambda arg: sa.func.datepart(sa.literal_column("microsecond"), arg), 1
         ),
