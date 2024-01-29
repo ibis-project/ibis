@@ -1207,8 +1207,6 @@ def test_filter_join():
     repr(filtered)
 
 
-# TODO(kszucs): the inner join convenience to don't duplicate the equivalent
-# columns from the right table is not implemented yet
 def test_inner_join_overlapping_column_names():
     t1 = ibis.table([("foo", "string"), ("bar", "string"), ("value1", "double")])
     t2 = ibis.table([("foo", "string"), ("bar", "string"), ("value2", "double")])
