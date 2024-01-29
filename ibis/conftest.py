@@ -34,3 +34,9 @@ def add_ibis(monkeypatch, doctest_namespace):
     # the clash doesn't really pop up in practice, but we can rename it to
     # `all_` in 6.0 if desired
     doctest_namespace["all"] = builtins.all
+
+
+not_windows = pytest.mark.skipif(
+    condition=WINDOWS,
+    reason="windows prevents two connections to the same file even in the same process",
+)

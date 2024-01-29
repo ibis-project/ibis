@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import os
+
 import duckdb
 import pandas as pd
 import pyarrow as pa
@@ -8,7 +10,7 @@ from pytest import param
 
 import ibis
 import ibis.expr.datatypes as dt
-from ibis.conftest import LINUX, SANDBOXED
+from ibis.conftest import LINUX, SANDBOXED, not_windows
 from ibis.util import gen_name
 
 
@@ -62,8 +64,6 @@ def test_load_extension(ext_directory):
 
 
 def test_cross_db(tmpdir):
-    import duckdb
-
     path1 = str(tmpdir.join("test1.ddb"))
     with duckdb.connect(path1) as con1:
         con1.execute("CREATE SCHEMA foo")
@@ -86,8 +86,6 @@ def test_cross_db(tmpdir):
 
 
 def test_attach_detach(tmpdir):
-    import duckdb
-
     path1 = str(tmpdir.join("test1.ddb"))
     with duckdb.connect(path1):
         pass
@@ -211,3 +209,62 @@ def test_insert_preserves_column_case(con):
     t2 = con.create_table(name2, df2, temp=True)
     con.insert(name1, t2)
     assert t1.count().execute() == 8
+
+
+def test_default_backend(snapshot):
+    df = pd.DataFrame({"a": [1, 2, 3]})
+    t = ibis.memtable(df)
+    expr = t.a.sum()
+
+    # run this twice to ensure that we hit the optimizations in
+    # `_default_backend`
+    for _ in range(2):
+        assert expr.execute() == df.a.sum()
+
+    sql = ibis.to_sql(expr)
+    snapshot.assert_match(sql, "out.sql")
+
+
+@pytest.mark.parametrize(
+    "url",
+    [
+        param(lambda p: p, id="no-scheme-duckdb-ext"),
+        param(lambda p: f"duckdb://{p}", id="absolute-path"),
+        param(
+            lambda p: f"duckdb://{os.path.relpath(p)}",
+            marks=[
+                not_windows
+            ],  # hard to test in CI since tmpdir & cwd are on different drives
+            id="relative-path",
+        ),
+        param(lambda _: "duckdb://", id="in-memory-empty"),
+        param(lambda _: "duckdb://:memory:", id="in-memory-explicit"),
+        param(lambda p: f"duckdb://{p}?read_only=1", id="duckdb_read_write_int"),
+        param(lambda p: f"duckdb://{p}?read_only=False", id="duckdb_read_write_upper"),
+        param(lambda p: f"duckdb://{p}?read_only=false", id="duckdb_read_write_lower"),
+    ],
+)
+def test_connect_duckdb(url, tmp_path):
+    path = os.path.abspath(tmp_path / "test.duckdb")
+    with duckdb.connect(path):
+        pass
+    con = ibis.connect(url(path))
+    one = ibis.literal(1)
+    assert con.execute(one) == 1
+
+
+@pytest.mark.parametrize(
+    "out_method, extension", [("to_csv", "csv"), ("to_parquet", "parquet")]
+)
+def test_connect_local_file(out_method, extension, test_employee_data_1, tmp_path):
+    getattr(test_employee_data_1, out_method)(tmp_path / f"out.{extension}")
+    con = ibis.connect(tmp_path / f"out.{extension}")
+    t = next(iter(con.tables.values()))
+    assert not t.head().execute().empty
+
+
+@not_windows
+def test_invalid_connect(tmp_path):
+    url = f"duckdb://{tmp_path}?read_only=invalid_value"
+    with pytest.raises(ValueError):
+        ibis.connect(url)
