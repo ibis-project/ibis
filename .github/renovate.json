@@ -1,6 +1,6 @@
 {
   "rangeStrategy": "widen",
-  "extends": ["config:base", ":enablePreCommit"],
+  "extends": ["config:base", ":enablePreCommit", ":disableDependencyDashboard"],
   "schedule": ["after 10pm and before 5am every weekday", "every weekend"],
   "semanticCommits": "enabled",
   "lockFileMaintenance": { "enabled": true },
