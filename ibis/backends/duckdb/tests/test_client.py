@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import os
+import subprocess
+import sys
 
 import duckdb
 import pandas as pd
@@ -211,18 +213,27 @@ def test_insert_preserves_column_case(con):
     assert t1.count().execute() == 8
 
 
-def test_default_backend(snapshot):
-    df = pd.DataFrame({"a": [1, 2, 3]})
-    t = ibis.memtable(df)
-    expr = t.a.sum()
+def test_default_backend():
+    # use subprocess to avoid mutating state across tests
+    script = """\
+import pandas as pd
 
-    # run this twice to ensure that we hit the optimizations in
-    # `_default_backend`
-    for _ in range(2):
-        assert expr.execute() == df.a.sum()
+import ibis
 
-    sql = ibis.to_sql(expr)
-    snapshot.assert_match(sql, "out.sql")
+df = pd.DataFrame({"a": [1, 2, 3]})
+
+t = ibis.memtable(df)
+
+expr = t.a.sum()
+
+# run twice to ensure that we hit the optimizations in
+# `_default_backend`
+for _ in range(2):
+    assert expr.execute() == df.a.sum()"""
+
+    assert ibis.options.default_backend is None
+    subprocess.run([sys.executable, "-c", script], check=True)
+    assert ibis.options.default_backend is None
 
 
 @pytest.mark.parametrize(
