@@ -1295,6 +1295,7 @@ def test_hash_consistent(backend, alltypes):
         "polars",
         "postgres",
         "pyspark",
+        "risingwave",
         "sqlite",
     ]
 )
@@ -1326,6 +1327,7 @@ def test_hashbytes(backend, alltypes):
         "pandas",
         "polars",
         "postgres",
+        "risingwave",
         "snowflake",
         "trino",
     ]
