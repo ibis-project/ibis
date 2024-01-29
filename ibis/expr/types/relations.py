@@ -365,7 +365,25 @@ class Table(Expr, _FixedTextJupyterMixin):
         else:
             width = options.max_width
 
-        table = to_rich_table(self, width)
+        try:
+            table = to_rich_table(self, width)
+        except Exception as e:
+            # In IPython exceptions inside of _repr_mimebundle_ are swallowed to
+            # allow calling several display functions and choosing to display
+            # the "best" result based on some priority.
+            # This behavior, though, means that exceptions that bubble up inside of the interactive repr
+            # are silently caught.
+            #
+            # We can't stop the exception from being swallowed, but we can force
+            # the display of that exception as we do here.
+            #
+            # A _very_ annoying caveat is that this exception is _not_ being
+            # ` raise`d, it is only being printed to the console.  This means
+            # that you cannot "catch" it.
+            #
+            # This restriction is only present in IPython, not in other REPLs.
+            console.print_exception()
+            raise e
         return console.render(table, options=options)
 
     def __getitem__(self, what):
