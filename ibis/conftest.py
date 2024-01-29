@@ -35,3 +35,9 @@ def add_ibis(monkeypatch, doctest_namespace):
     # people to write `from $MODULE_BEING_TESTED import *`
     doctest_namespace["all"] = builtins.all
     doctest_namespace["range"] = builtins.range
+
+
+not_windows = pytest.mark.skipif(
+    condition=WINDOWS,
+    reason="windows prevents two connections to the same file even in the same process",
+)
