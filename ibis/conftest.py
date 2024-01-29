@@ -29,8 +29,9 @@ def add_ibis(monkeypatch, doctest_namespace):
     # expressions
     ibis.options.interactive = False
     # workaround the fact that doctests include everything in the tested module
-    # for selectors we have an `all` function
+    # for selectors we have an `all` function as well as `ibis.range`
     #
-    # the clash doesn't really pop up in practice, but we can rename it to
-    # `all_` in 6.0 if desired
+    # the clashes don't really pop up in practice because it's unlikely for
+    # people to write `from $MODULE_BEING_TESTED import *`
     doctest_namespace["all"] = builtins.all
+    doctest_namespace["range"] = builtins.range
