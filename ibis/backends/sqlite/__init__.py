@@ -19,8 +19,8 @@ from ibis import util
 from ibis.backends.base.sqlglot import SQLGlotBackend
 from ibis.backends.base.sqlglot.compiler import C, F
 from ibis.backends.sqlite.compiler import SQLiteCompiler
+from ibis.backends.sqlite.converter import SQLitePandasData
 from ibis.backends.sqlite.udf import ignore_nulls, register_all
-from ibis.formats.pandas import PandasData
 
 if TYPE_CHECKING:
     from collections.abc import Iterator, Mapping
@@ -79,7 +79,7 @@ class Backend(SQLGlotBackend):
         _init_sqlite3()
 
         if type_map:
-            self._type_map = {k.lower(): v for k, v in type_map.items()}
+            self._type_map = {k.lower(): ibis.dtype(v) for k, v in type_map.items()}
         else:
             self._type_map = {}
 
@@ -251,7 +251,7 @@ class Backend(SQLGlotBackend):
         import pandas as pd
 
         df = pd.DataFrame.from_records(cursor, columns=schema.names, coerce_float=True)
-        return PandasData.convert_table(df, schema)
+        return SQLitePandasData.convert_table(df, schema)
 
     @util.experimental
     def to_pyarrow_batches(

@@ -632,6 +632,10 @@ class SQLiteType(SqlglotType):
     dialect = "sqlite"
 
     @classmethod
+    def _from_sqlglot_INT(cls) -> dt.Int64:
+        return dt.Int64(nullable=cls.default_nullable)
+
+    @classmethod
     def _from_sqlglot_FLOAT(cls) -> dt.Float64:
         return dt.Float64(nullable=cls.default_nullable)
 

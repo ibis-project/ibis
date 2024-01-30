@@ -5,6 +5,7 @@ from functools import singledispatchmethod
 import sqlglot as sg
 import sqlglot.expressions as sge
 from public import public
+from sqlglot.dialects.sqlite import SQLite
 
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
@@ -17,6 +18,10 @@ from ibis.backends.base.sqlglot.rewrites import (
 )
 from ibis.common.temporal import DateUnit, IntervalUnit
 from ibis.expr.rewrites import rewrite_sample
+
+SQLite.Generator.TYPE_MAPPING |= {
+    sge.DataType.Type.BOOLEAN: "BOOLEAN",
+}
 
 
 @public
