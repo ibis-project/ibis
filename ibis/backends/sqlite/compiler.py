@@ -11,6 +11,10 @@ import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 from ibis.backends.base.sqlglot.compiler import SQLGlotCompiler
 from ibis.backends.base.sqlglot.datatypes import SQLiteType
+from ibis.backends.base.sqlglot.rewrites import (
+    rewrite_first_to_first_value,
+    rewrite_last_to_last_value,
+)
 from ibis.common.temporal import DateUnit, IntervalUnit
 from ibis.expr.rewrites import rewrite_sample
 
@@ -22,7 +26,11 @@ class SQLiteCompiler(SQLGlotCompiler):
     dialect = "sqlite"
     quoted = True
     type_mapper = SQLiteType
-    rewrites = SQLGlotCompiler.rewrites + (rewrite_sample,)
+    rewrites = SQLGlotCompiler.rewrites + (
+        rewrite_sample,
+        rewrite_first_to_first_value,
+        rewrite_last_to_last_value,
+    )
 
     NAN = sge.NULL
     POS_INF = sge.Literal.number("1e999")
@@ -101,6 +109,14 @@ class SQLiteCompiler(SQLGlotCompiler):
         return super().visit_Limit(
             op, parent=parent, n=(-1 if n is None else n), offset=offset
         )
+
+    @visit_node.register(ops.WindowBoundary)
+    def visit_WindowBoundary(self, op, *, value, preceding):
+        if op.value.dtype.is_interval():
+            raise com.OperationNotDefinedError(
+                "Interval window bounds not supported by SQLite"
+            )
+        return super().visit_WindowBoundary(op, value=value, preceding=preceding)
 
     @visit_node.register(ops.JoinLink)
     def visit_JoinLink(self, op, **kwargs):
