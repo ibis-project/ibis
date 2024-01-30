@@ -266,17 +266,30 @@ class SQLGlotCompiler(abc.ABC):
         def fn(node, _, **kwargs):
             result = self.visit_node(node, **kwargs)
 
+            # if it's not a relation then we don't need to do anything special
+            if not isinstance(node, ops.Relation):
+                return result
+
+            if isinstance(node, ops.View):
+                # alias ops.Views to their explicitly assigned name
+                alias = node.name
+            else:
+                # all other relations are given a generated alias
+                alias = f"t{next(alias_counter)}"
+
+            aliases[node] = alias
+
+            # alias assignment must happen *before* checking whether we're at
+            # the root node in case we have a root node CTE (only ops.View right now)
             if node is op:
                 return result
-            elif isinstance(node, ops.Relation):
-                aliases[node] = alias = f"t{next(alias_counter)}"
-                alias = sg.to_identifier(alias, quoted=self.quoted)
-                try:
-                    return result.subquery(alias)
-                except AttributeError:
-                    return result.as_(alias, quoted=self.quoted)
-            else:
-                return result
+
+            alias = sg.to_identifier(alias, quoted=self.quoted)
+
+            try:
+                return result.subquery(alias)
+            except AttributeError:
+                return result.as_(alias, quoted=self.quoted)
 
         # apply translate rules in topological order
         results = op.map(fn)
@@ -284,10 +297,7 @@ class SQLGlotCompiler(abc.ABC):
         out = out.this if isinstance(out, sge.Subquery) else out
 
         for cte in ctes:
-            alias = sg.to_identifier(
-                cte.name if isinstance(cte, ops.View) else aliases[cte],
-                quoted=self.quoted,
-            )
+            alias = sg.to_identifier(aliases[cte], quoted=self.quoted)
             out = out.with_(alias, as_=results[cte].this, dialect=self.dialect)
 
         return out
