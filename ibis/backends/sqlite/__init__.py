@@ -38,6 +38,10 @@ def _init_sqlite3():
     sqlite3.register_adapter(pd.Timestamp, lambda value: value.isoformat())
 
 
+def _quote(name: str) -> str:
+    return sg.to_identifier(name, quoted=True).sql("sqlite")
+
+
 class Backend(SQLGlotBackend):
     name = "sqlite"
     compiler = SQLiteCompiler()
@@ -182,7 +186,10 @@ class Backend(SQLGlotBackend):
         if database is None:
             database = "main"
 
-        sql = f'SELECT name, type, "notnull" FROM "{database}".pragma_table_info("{table_name}")'
+        quoted_db = _quote(database)
+        quoted_table = _quote(table_name)
+
+        sql = f'SELECT name, type, "notnull" FROM {quoted_db}.pragma_table_info({quoted_table})'
         cur.execute(sql)
         rows = cur.fetchall()
         if not rows:
@@ -194,8 +201,8 @@ class Backend(SQLGlotBackend):
         # first row and assume that matches the rest of the rows
         unknown = [name for name, (typ, _) in table_info.items() if not typ]
         if unknown:
-            queries = ", ".join(f'typeof("{name}")' for name in unknown)
-            cur.execute(f'SELECT {queries} FROM "{database}"."{table_name}" LIMIT 1')
+            queries = ", ".join(f"typeof({_quote(name)})" for name in unknown)
+            cur.execute(f"SELECT {queries} FROM {quoted_db}.{quoted_table} LIMIT 1")
             row = cur.fetchone()
             if row is not None:
                 for name, typ in zip(unknown, row):
@@ -237,7 +244,7 @@ class Backend(SQLGlotBackend):
     def _metadata(self, query: str) -> Iterator[tuple[str, dt.DataType]]:
         with self.begin() as cur:
             # create a view that should only be visible in this transaction
-            view = f"__ibis_sqlite_metadata_{util.guid()}"
+            view = util.gen_name("ibis_sqlite_metadata")
             cur.execute(f"CREATE TEMPORARY VIEW {view} AS {query}")
 
             yield from self._inspect_schema(cur, view, database="temp")
@@ -303,10 +310,7 @@ class Backend(SQLGlotBackend):
             df = op.data.to_frame()
 
             data = df.itertuples(index=False)
-            cols = ", ".join(
-                sg.to_identifier(col, quoted=self.compiler.quoted).sql(self.name)
-                for col in op.schema.keys()
-            )
+            cols = ", ".join(_quote(col) for col in op.schema.keys())
             specs = ", ".join(["?"] * len(op.schema))
             insert_stmt = (
                 f"INSERT INTO {table.sql(self.name)} ({cols}) VALUES ({specs})"
@@ -386,7 +390,7 @@ class Backend(SQLGlotBackend):
         >>> con1.list_tables(database="new")
         """
         with self.begin() as cur:
-            cur.execute(f'ATTACH DATABASE {str(path)!r} AS "{name}"')
+            cur.execute(f"ATTACH DATABASE {str(path)!r} AS {_quote(name)}")
 
     def create_table(
         self,
@@ -477,9 +481,7 @@ class Backend(SQLGlotBackend):
                 # fully-qualified table reference after RENAME TO. Since we
                 # never rename between databases, we only need the table name
                 # here.
-                quoted_name = sg.to_identifier(name, quoted=self.compiler.quoted).sql(
-                    self.name
-                )
+                quoted_name = _quote(name)
                 cur.execute(
                     f"ALTER TABLE {created_table.sql(self.name)} RENAME TO {quoted_name}"
                 )

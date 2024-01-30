@@ -73,10 +73,7 @@ def con(data_dir, tmp_path_factory, worker_id):
 
 @pytest.fixture(scope="session")
 def translate(dialect):
-    from ibis.backends.sqlite import Backend
-
-    context = Backend.compiler.make_context()
-    return lambda expr: Backend.compiler.translator_class(expr, context).get_result()
+    return lambda expr: ibis.to_sql(expr, dialect="sqlite")
 
 
 @pytest.fixture(scope="session")
