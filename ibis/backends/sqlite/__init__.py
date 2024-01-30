@@ -468,3 +468,42 @@ class Backend(SQLGlotBackend):
                 cur.execute(stmt)
 
         return self.table(name, database=database)
+
+    def insert(
+        self,
+        table_name: str,
+        obj: pd.DataFrame | ir.Table | list | dict,
+        database: str | None = None,
+        overwrite: bool = False,
+    ) -> None:
+        """Insert data into a table.
+
+        Parameters
+        ----------
+        table_name
+            The name of the table to which data needs will be inserted
+        obj
+            The source data or expression to insert
+        database
+            Name of the attached database that the table is located in.
+        overwrite
+            If `True` then replace existing contents of table
+
+        Raises
+        ------
+        NotImplementedError
+            If inserting data from a different database
+        ValueError
+            If the type of `obj` isn't supported
+        """
+        table = sg.table(table_name, catalog=database, quoted=self.compiler.quoted)
+        if not isinstance(obj, ir.Expr):
+            obj = ibis.memtable(obj)
+
+        self._run_pre_execute_hooks(obj)
+        expr = self._to_sqlglot(obj)
+        insert_stmt = sge.Insert(this=table, expression=expr).sql(self.name)
+        with self.begin() as cur:
+            if overwrite:
+                cur.execute(f"DELETE FROM {table.sql(self.name)}")
+            cur.execute(insert_stmt)
