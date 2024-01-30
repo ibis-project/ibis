@@ -180,6 +180,10 @@ class SQLiteCompiler(SQLGlotCompiler):
     def visit_Least(self, op, *, arg):
         return self.f.min(*arg)
 
+    @visit_node.register(ops.IdenticalTo)
+    def visit_IdenticalTo(self, op, *, left, right):
+        return sge.Is(this=left, expression=right)
+
     @visit_node.register(ops.Clip)
     def visit_Clip(self, op, *, arg, lower, upper):
         if upper is not None:
