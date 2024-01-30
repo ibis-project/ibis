@@ -396,8 +396,15 @@ class Backend(SQLGlotBackend):
                 cur.execute(
                     sge.Drop(kind="TABLE", this=table, exists=True).sql(self.name)
                 )
+                # SQLite's ALTER TABLE statement doesn't support using a
+                # fully-qualified table reference after RENAME TO. Since we
+                # never rename between databases, we only need the table name
+                # here.
+                quoted_name = sg.to_identifier(name, quoted=self.compiler.quoted).sql(
+                    self.name
+                )
                 cur.execute(
-                    f"ALTER TABLE {created_table.sql(self.name)} RENAME TO {table.sql(self.name)}"
+                    f"ALTER TABLE {created_table.sql(self.name)} RENAME TO {quoted_name}"
                 )
 
         if schema is None:
