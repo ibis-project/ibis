@@ -84,6 +84,11 @@ def _ibis_sqlite_repeat(string, n):
 
 
 @udf
+def _ibis_sqlite_unhex(string):
+    return bytes.fromhex(string)
+
+
+@udf
 def _ibis_sqlite_translate(string, from_string, to_string):
     table = str.maketrans(from_string, to_string)
     return string.translate(table)

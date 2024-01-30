@@ -433,7 +433,7 @@ class SQLiteCompiler(SQLGlotCompiler):
 
     def visit_NonNullLiteral(self, op, *, value, dtype):
         if dtype.is_binary():
-            return self.f.unhex(value.hex())
+            return self.f._ibis_sqlite_unhex(value.hex())
 
         if dtype.is_decimal():
             value = float(value)
