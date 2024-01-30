@@ -354,7 +354,9 @@ class SQLiteCompiler(SQLGlotCompiler):
 
     @visit_node.register(ops.ExtractMicrosecond)
     def visit_Microsecond(self, op, *, arg):
-        return self.cast(self.f.mod(self.f.strftime("%f", arg), 1000), dt.int64)
+        return self.cast(
+            self.f.mod(self.cast(self.f.strftime("%f", arg), dt.int64), 1000), dt.int64
+        )
 
     @visit_node.register(ops.ExtractWeekOfYear)
     def visit_ExtractWeekOfYear(self, op, *, arg):
