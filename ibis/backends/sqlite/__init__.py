@@ -3,7 +3,7 @@ from __future__ import annotations
 import contextlib
 import functools
 import sqlite3
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, NoReturn
 from urllib.parse import urlparse
 
 import sqlglot as sg
@@ -19,7 +19,7 @@ from ibis import util
 from ibis.backends.base.sqlglot import SQLGlotBackend
 from ibis.backends.base.sqlglot.compiler import C, F
 from ibis.backends.sqlite.compiler import SQLiteCompiler
-from ibis.backends.sqlite.udf import register_all
+from ibis.backends.sqlite.udf import ignore_nulls, register_all
 from ibis.formats.pandas import PandasData
 
 if TYPE_CHECKING:
@@ -41,6 +41,7 @@ def _init_sqlite3():
 class Backend(SQLGlotBackend):
     name = "sqlite"
     compiler = SQLiteCompiler()
+    supports_python_udfs = True
 
     @property
     def current_database(self) -> str:
@@ -314,6 +315,58 @@ class Backend(SQLGlotBackend):
             with self.begin() as cur:
                 cur.execute(create_stmt)
                 cur.executemany(insert_stmt, data)
+
+    def _define_udf_translation_rules(self, expr):
+        """No-op, these are defined in the compiler."""
+
+    def _register_udfs(self, expr: ir.Expr) -> None:
+        import ibis.expr.operations as ops
+
+        con = self.con
+
+        for udf_node in expr.op().find(ops.ScalarUDF):
+            compile_func = getattr(
+                self, f"_compile_{udf_node.__input_type__.name.lower()}_udf"
+            )
+            registration_func = compile_func(udf_node)
+            if registration_func is not None:
+                registration_func(con)
+
+    def _compile_builtin_udf(self, udf_node: ops.ScalarUDF) -> None:
+        pass
+
+    def _compile_python_udf(self, udf_node: ops.ScalarUDF) -> None:
+        name = type(udf_node).__name__
+        nargs = len(udf_node.__signature__.parameters)
+        func = udf_node.__func__
+
+        def check_dtype(dtype, name=None):
+            if not (
+                dtype.is_string()
+                or dtype.is_binary()
+                or dtype.is_numeric()
+                or dtype.is_boolean()
+            ):
+                label = "return value" if name is None else f"argument `{name}`"
+                raise com.IbisTypeError(
+                    "SQLite only supports strings, bytes, booleans and numbers as UDF input and output, "
+                    f"{label} has unsupported type {dtype}"
+                )
+
+        for argname, arg in zip(udf_node.argnames, udf_node.args):
+            check_dtype(arg.dtype, argname)
+        check_dtype(udf_node.dtype)
+
+        def register_udf(con):
+            return con.create_function(name, nargs, ignore_nulls(func))
+
+        return register_udf
+
+    def _compile_pyarrow_udf(self, udf_node: ops.ScalarUDF) -> NoReturn:
+        raise NotImplementedError("pyarrow UDFs are not supported in SQLite")
+
+    def _compile_pandas_udf(self, udf_node: ops.ScalarUDF) -> NoReturn:
+        raise NotImplementedError("pandas UDFs are not supported in SQLite")
 
     def attach(self, name: str, path: str | Path) -> None:
         """Connect another SQLite database file to the current connection.
