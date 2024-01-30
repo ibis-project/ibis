@@ -869,9 +869,8 @@ def test_capitalize(con):
 @pytest.mark.notimpl(
     ["dask", "pandas", "polars", "oracle", "flink"], raises=com.OperationNotDefinedError
 )
-@pytest.mark.notyet(["sqlite"], reason="no arrays", raises=com.OperationNotDefinedError)
 @pytest.mark.never(
-    ["mysql", "mssql", "exasol", "impala"],
+    ["mysql", "mssql", "exasol", "impala", "sqlite"],
     raises=com.UnsupportedBackendType,
     reason="no array support",
 )
