@@ -487,6 +487,7 @@ _SIMPLE_OPS = {
     ops.BitwiseXor: "_ibis_xor",
     ops.BitwiseNot: "_ibis_inv",
     ops.Modulus: "mod",
+    ops.Log10: "log10",
     ops.TypeOf: "typeof",
     ops.BitOr: "_ibis_bit_or",
     ops.BitAnd: "_ibis_bit_and",

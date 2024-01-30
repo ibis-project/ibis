@@ -116,13 +116,6 @@ def exp(arg):
 
 
 @udf(skip_if_exists=True)
-def log(arg, base):
-    if arg < 0 or base < 0:
-        return None
-    return math.log(arg, base)
-
-
-@udf(skip_if_exists=True)
 def ln(arg):
     if arg < 0:
         return None
@@ -162,7 +155,7 @@ def sign(arg):
 
 @udf(skip_if_exists=True)
 def mod(left, right):
-    return left % right
+    return None if right == 0 else (left % right)
 
 
 @udf(skip_if_exists=True)
