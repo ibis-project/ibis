@@ -12,6 +12,7 @@ import ibis.expr.operations as ops
 from ibis.backends.base.sqlglot.compiler import SQLGlotCompiler
 from ibis.backends.base.sqlglot.datatypes import SQLiteType
 from ibis.common.temporal import DateUnit, IntervalUnit
+from ibis.expr.rewrites import rewrite_sample
 
 
 @public
@@ -19,7 +20,9 @@ class SQLiteCompiler(SQLGlotCompiler):
     __slots__ = ()
 
     dialect = "sqlite"
+    quoted = True
     type_mapper = SQLiteType
+    rewrites = (rewrite_sample,)
 
     NAN = sge.NULL
     POS_INF = sge.Literal.number("1e999")
@@ -70,6 +73,7 @@ class SQLiteCompiler(SQLGlotCompiler):
     @visit_node.register(ops.TimeDelta)
     @visit_node.register(ops.DateDelta)
     @visit_node.register(ops.TimestampDelta)
+    @visit_node.register(ops.TryCast)
     def visit_Undefined(self, op, **kwargs):
         return super().visit_Undefined(op, **kwargs)
 
@@ -89,6 +93,14 @@ class SQLiteCompiler(SQLGlotCompiler):
         elif to.is_time():
             return self.f.time(arg)
         return super().visit_Cast(op, arg=arg, to=to)
+
+    @visit_node.register(ops.Limit)
+    def visit_Limit(self, op, *, parent, n, offset):
+        # SQLite doesn't support compiling an OFFSET without a LIMIT, but
+        # treats LIMIT -1 as no limit
+        return super().visit_Limit(
+            op, parent=parent, n=(-1 if n is None else n), offset=offset
+        )
 
     @visit_node.register(ops.JoinLink)
     def visit_JoinLink(self, op, **kwargs):
@@ -389,6 +401,10 @@ class SQLiteCompiler(SQLGlotCompiler):
                 self.if_("6", "Saturday"),
             ],
         )
+
+    @visit_node.register(ops.Xor)
+    def visit_Xor(self, op, *, left, right):
+        return (left.or_(right)).and_(sg.not_(left.and_(right)))
 
     def visit_NonNullLiteral(self, op, *, value, dtype):
         if dtype.is_binary():
