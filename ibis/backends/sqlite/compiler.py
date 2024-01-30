@@ -75,10 +75,11 @@ class SQLiteCompiler(SQLGlotCompiler):
 
     @visit_node.register(ops.Cast)
     def visit_Cast(self, op, *, arg, to) -> sge.Cast:
-        # Handle unsupported type errors uniformly in the type_mapper
-        to_type = self.type_mapper.from_ibis(to)
-
         if to.is_timestamp():
+            if to.timezone not in (None, "UTC"):
+                raise com.UnsupportedOperationError(
+                    "SQLite does not support casting to timezones other than 'UTC'"
+                )
             if op.arg.dtype.is_numeric():
                 return self.f.datetime(arg, "unixepoch")
             else:
@@ -87,8 +88,7 @@ class SQLiteCompiler(SQLGlotCompiler):
             return self.f.date(arg)
         elif to.is_time():
             return self.f.time(arg)
-        else:
-            return sg.cast(arg, to=to_type)
+        return super().visit_Cast(op, arg=arg, to=to)
 
     @visit_node.register(ops.JoinLink)
     def visit_JoinLink(self, op, **kwargs):

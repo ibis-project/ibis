@@ -1833,9 +1833,14 @@ def test_timestamp_literal(con, backend):
     ],
 )
 @pytest.mark.notimpl(
-    ["bigquery", "sqlite"],
+    ["bigquery"],
     reason="timestamps with timezones other than 'UTC' not supported",
     raises=com.UnsupportedBackendType,
+)
+@pytest.mark.notimpl(
+    ["sqlite"],
+    reason="timestamps with timezones other than 'UTC' not supported",
+    raises=com.UnsupportedOperationError,
 )
 @pytest.mark.notimpl(
     ["druid"],
