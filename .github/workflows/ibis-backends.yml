@@ -80,10 +80,10 @@ jobs:
             title: Pandas
             extras:
               - pandas
-          # - name: sqlite
-          #   title: SQLite
-          #   extras:
-          #     - sqlite
+          - name: sqlite
+            title: SQLite
+            extras:
+              - sqlite
           - name: datafusion
             title: Datafusion
             extras:
