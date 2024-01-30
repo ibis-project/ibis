@@ -870,14 +870,13 @@ def test_count_distinct_star(alltypes, df, ibis_cond, pandas_cond):
                         "dask",
                         "datafusion",
                         "polars",
-                        "sqlite",
                         "druid",
                         "oracle",
                     ],
                     raises=com.OperationNotDefinedError,
                 ),
                 pytest.mark.notyet(
-                    ["mysql", "mssql", "impala", "exasol"],
+                    ["mysql", "mssql", "impala", "exasol", "sqlite"],
                     raises=com.UnsupportedBackendType,
                 ),
                 pytest.mark.notyet(

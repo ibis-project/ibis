@@ -875,7 +875,7 @@ def test_unnest_empty_array(con):
 
 @builtin_array
 @pytest.mark.notimpl(
-    ["datafusion", "polars", "snowflake", "sqlite", "dask", "pandas"],
+    ["datafusion", "polars", "snowflake", "dask", "pandas"],
     raises=com.OperationNotDefinedError,
 )
 @pytest.mark.notimpl(["sqlite"], raises=com.UnsupportedBackendType)
@@ -894,6 +894,7 @@ def test_array_map_with_conflicting_names(backend, con):
     ["datafusion", "polars", "snowflake", "sqlite", "dask", "pandas"],
     raises=com.OperationNotDefinedError,
 )
+@pytest.mark.notimpl(["sqlite"], raises=com.UnsupportedBackendType)
 def test_complex_array_map(con):
     def upper(token):
         return token.upper()

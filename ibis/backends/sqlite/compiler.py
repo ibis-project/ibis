@@ -22,7 +22,7 @@ class SQLiteCompiler(SQLGlotCompiler):
     dialect = "sqlite"
     quoted = True
     type_mapper = SQLiteType
-    rewrites = (rewrite_sample,)
+    rewrites = SQLGlotCompiler.rewrites + (rewrite_sample,)
 
     NAN = sge.NULL
     POS_INF = sge.Literal.number("1e999")
@@ -171,7 +171,7 @@ class SQLiteCompiler(SQLGlotCompiler):
 
     @visit_node.register(ops.RandomScalar)
     def visit_RandomScalar(self, op):
-        return self.f.random() / sge.Literal.number(float(-1 << 64))
+        return 0.5 + self.f.random() / sge.Literal.number(float(-1 << 64))
 
     @visit_node.register(ops.Cot)
     def visit_Cot(self, op, *, arg):
@@ -432,6 +432,13 @@ class SQLiteCompiler(SQLGlotCompiler):
                 .replace("+00:00", "")
             )
             dtype = dt.string(nullable=dtype.nullable)
+        elif (
+            dtype.is_map()
+            or dtype.is_struct()
+            or dtype.is_array()
+            or dtype.is_geospatial()
+        ):
+            raise com.UnsupportedBackendType(f"Unsupported type: {dtype!r}")
         return super().visit_NonNullLiteral(op, value=value, dtype=dtype)
 
 
