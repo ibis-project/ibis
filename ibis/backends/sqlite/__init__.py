@@ -23,7 +23,7 @@ from ibis.backends.sqlite.udf import register_all
 from ibis.formats.pandas import PandasData
 
 if TYPE_CHECKING:
-    from collections.abc import Iterator
+    from collections.abc import Iterator, Mapping
     from pathlib import Path
 
     import pandas as pd
@@ -251,6 +251,30 @@ class Backend(SQLGlotBackend):
 
         df = pd.DataFrame.from_records(cursor, columns=schema.names, coerce_float=True)
         return PandasData.convert_table(df, schema)
+
+    @util.experimental
+    def to_pyarrow_batches(
+        self,
+        expr: ir.Expr,
+        *,
+        params: Mapping[ir.Scalar, Any] | None = None,
+        limit: int | str | None = None,
+        chunk_size: int = 1_000_000,
+        **_: Any,
+    ) -> pa.ipc.RecordBatchReader:
+        import pyarrow as pa
+
+        self._run_pre_execute_hooks(expr)
+
+        schema = expr.as_table().schema()
+        with self._safe_raw_sql(
+            self.compile(expr, limit=limit, params=params)
+        ) as cursor:
+            df = self._fetch_from_cursor(cursor, schema)
+        table = pa.Table.from_pandas(
+            df, schema=schema.to_pyarrow(), preserve_index=False
+        )
+        return table.to_reader(max_chunksize=chunk_size)
 
     def _generate_create_table(self, table: sge.Table, schema: sch.Schema):
         column_defs = [
