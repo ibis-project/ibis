@@ -27,7 +27,6 @@ import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 from ibis import util
-from ibis.common.annotations import annotated
 
 from ibis.common.deferred import Deferred
 from ibis.expr.types.core import Expr, _FixedTextJupyterMixin
@@ -48,8 +47,6 @@ if TYPE_CHECKING:
     from ibis.expr.types.tvf import WindowedTable
     from ibis.selectors import IfAnyAll, Selector
     from ibis.formats.pyarrow import PyArrowData
-
-_ALIASES = (f"_ibis_view_{n:d}" for n in itertools.count())
 
 
 def _regular_join_method(
@@ -3166,11 +3163,6 @@ class Table(Expr, _FixedTextJupyterMixin):
         └─────────┴───────────┴────────────────┴───────────────┴───────────────────┴───┘
         """
         expr = ops.View(child=self, name=alias).to_expr()
-
-        # NB: calling compile is necessary so that any temporary views are
-        # created so that we can infer the schema without executing the entire
-        # query
-        expr.compile()
         return expr
 
     def sql(self, query: str, dialect: str | None = None) -> ir.Table:
@@ -3263,7 +3255,13 @@ class Table(Expr, _FixedTextJupyterMixin):
         if dialect is not None:
             backend = self._find_backend()
             query = backend._transpile_sql(query, dialect=dialect)
-        op = ops.SQLStringView(child=self, name=next(_ALIASES), query=query)
+
+        child = (
+            self
+            if isinstance(self.op(), ops.View)
+            else self.alias(util.gen_name("sql_string_view"))
+        )
+        op = ops.SQLStringView(child=child, query=query)
         return op.to_expr()
 
     def to_pandas(self, **kwargs) -> pd.DataFrame:

@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import atexit
 import contextlib
 import os
 from pathlib import Path
@@ -156,7 +155,6 @@ class Backend(SQLGlotBackend, CanCreateDatabase):
         # https://spark.apache.org/docs/latest/sql-pyspark-pandas-with-arrow.html#timestamp-with-time-zone-semantics
         self._session.conf.set("spark.sql.session.timeZone", "UTC")
         self._session.conf.set("spark.sql.mapKeyDedupPolicy", "LAST_WIN")
-        self._temp_views = set()
 
     def _metadata(self, query: str):
         cursor = self.raw_sql(query)
@@ -234,13 +232,6 @@ class Backend(SQLGlotBackend, CanCreateDatabase):
         schema = PySparkSchema.from_ibis(op.schema)
         df = self._session.createDataFrame(data=op.data.to_frame(), schema=schema)
         df.createOrReplaceTempView(op.name)
-
-    def _register_temp_view_cleanup(self, name: str) -> None:
-        def drop(self, name: str):
-            self._session.catalog.dropTempView(name)
-            self._temp_views.discard(name)
-
-        atexit.register(drop, self, name=name)
 
     def _fetch_from_cursor(self, cursor, schema):
         df = cursor.query.toPandas()  # blocks until finished

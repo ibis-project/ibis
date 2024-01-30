@@ -284,7 +284,10 @@ class SQLGlotCompiler(abc.ABC):
         out = out.this if isinstance(out, sge.Subquery) else out
 
         for cte in ctes:
-            alias = sg.to_identifier(aliases[cte], quoted=self.quoted)
+            alias = sg.to_identifier(
+                cte.name if isinstance(cte, ops.View) else aliases[cte],
+                quoted=self.quoted,
+            )
             out = out.with_(alias, as_=results[cte].this, dialect=self.dialect)
 
         return out
@@ -1222,27 +1225,27 @@ class SQLGlotCompiler(abc.ABC):
         }
         return sg.select(*self._cleanup_names(exprs)).from_(parent)
 
-    @visit_node.register(ops.View)
-    def visit_View(self, op, *, child, name: str):
-        # TODO: find a way to do this without creating a temporary view
-        backend = op.child.to_expr()._find_backend()
-        backend._create_temp_view(table_name=name, source=sg.select(STAR).from_(child))
-        return sg.table(name, quoted=self.quoted)
-
     @visit_node.register(CTE)
     def visit_CTE(self, op, *, parent):
         return sg.table(parent.alias_or_name, quoted=self.quoted)
 
+    @visit_node.register(ops.View)
+    def visit_View(self, op, *, child, name: str):
+        if isinstance(child, sge.Table):
+            child = sg.select(STAR).from_(child)
+
+        try:
+            return child.subquery(name)
+        except AttributeError:
+            return child.as_(name)
+
     @visit_node.register(ops.SQLStringView)
-    def visit_SQLStringView(self, op, *, query: str, name: str, child):
-        table = sg.table(name, quoted=self.quoted)
-        return (
-            sg.select(STAR).from_(table).with_(table, as_=query, dialect=self.dialect)
-        )
+    def visit_SQLStringView(self, op, *, query: str, child):
+        return sg.parse_one(query, read=self.dialect)
 
     @visit_node.register(ops.SQLQueryResult)
     def visit_SQLQueryResult(self, op, *, query, schema, source):
-        return sg.parse_one(query, read=self.dialect).subquery()
+        return sg.parse_one(query, dialect=self.dialect).subquery()
 
     @visit_node.register(ops.JoinTable)
     def visit_JoinTable(self, op, *, parent, index):

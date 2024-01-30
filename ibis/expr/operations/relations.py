@@ -408,29 +408,30 @@ class SQLQueryResult(Relation):
 
 
 @public
-class SQLStringView(PhysicalTable):
-    """A view created from a SQL string."""
-
-    child: Relation
-    query: str
-
-    @attribute
-    def schema(self):
-        # TODO(kszucs): avoid converting to expression
-        backend = self.child.to_expr()._find_backend()
-        return backend._get_schema_using_query(self.query)
-
-
-@public
 class View(PhysicalTable):
     """A view created from an expression."""
 
     child: Relation
-    name: str
 
     @attribute
     def schema(self):
         return self.child.schema
+
+
+@public
+class SQLStringView(Relation):
+    """A view created from a SQL string."""
+
+    child: View
+    query: str
+
+    values = FrozenDict()
+
+    @attribute
+    def schema(self):
+        op = self.child
+        child = op.to_expr()
+        return child._find_backend()._get_sql_string_view_schema(child, self.query)
 
 
 @public

@@ -157,7 +157,9 @@ def extract_ctes(node):
 
     g = Graph.from_bfs(node, filter=(ops.Relation, ops.Subquery, ops.JoinLink))
     for node, dependents in g.invert().items():
-        if len(dependents) > 1 and isinstance(node, cte_types):
+        if isinstance(node, ops.View) or (
+            len(dependents) > 1 and isinstance(node, cte_types)
+        ):
             result.append(node)
 
     return result
@@ -176,7 +178,7 @@ def sqlize(node):
     step2 = step1.replace(merge_select_select)
 
     ctes = extract_ctes(step2)
-    subs = {cte: CTE(cte) for cte in ctes}
+    subs = {cte: CTE(cte) for cte in ctes if not isinstance(cte, ops.View)}
     step3 = step2.replace(subs)
 
     return step3, ctes

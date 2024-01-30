@@ -151,6 +151,17 @@ class SQLGlotBackend(BaseBackend):
         """Return an ibis Schema from a backend-specific SQL string."""
         return sch.Schema.from_tuples(self._metadata(query))
 
+    def _get_sql_string_view_schema(self, child: ir.Table, query: str) -> sch.Schema:
+        # abort if somehow this was called with a non-view
+        assert isinstance(child.op(), ops.View), type(child.op())
+
+        obj = self._to_sqlglot(child)
+        dialect = self.compiler.dialect
+        parsed = sg.parse_one(query, read=dialect)
+        parsed.args["with"] = obj.args["with"]
+        sql = parsed.sql(dialect)
+        return self._get_schema_using_query(sql)
+
     def create_view(
         self,
         name: str,
@@ -194,27 +205,6 @@ class SQLGlotBackend(BaseBackend):
         )
         with self._safe_raw_sql(src):
             pass
-
-    def _get_temp_view_definition(self, name: str, definition: str) -> str:
-        return sge.Create(
-            this=sg.to_identifier(name, quoted=self.compiler.quoted),
-            kind="VIEW",
-            expression=definition,
-            replace=True,
-            properties=sge.Properties(expressions=[sge.TemporaryProperty()]),
-        )
-
-    def _create_temp_view(self, table_name, source):
-        if table_name not in self._temp_views and table_name in self.list_tables():
-            raise ValueError(
-                f"{table_name} already exists as a non-temporary table or view"
-            )
-
-        with self._safe_raw_sql(self._get_temp_view_definition(table_name, source)):
-            pass
-
-        self._temp_views.add(table_name)
-        self._register_temp_view_cleanup(table_name)
 
     def _register_temp_view_cleanup(self, name: str) -> None:
         """Register a clean up function for a temporary view.
