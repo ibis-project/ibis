@@ -209,7 +209,7 @@ class SQLiteCompiler(SQLGlotCompiler):
                 "how='heavy' not implemented for the SQLite backend"
             )
 
-        return self._aggregate(f"_ibis_sqlite_arbitrary_{how}", arg, where=where)
+        return self._aggregate(f"_ibis_arbitrary_{how}", arg, where=where)
 
     @visit_node.register(ops.ArgMin)
     def visit_ArgMin(self, *args, **kwargs):
@@ -230,11 +230,11 @@ class SQLiteCompiler(SQLGlotCompiler):
 
     @visit_node.register(ops.Variance)
     def visit_Variance(self, op, *, arg, how, where):
-        return self._aggregate(f"_ibis_sqlite_var_{op.how}", arg, where=where)
+        return self._aggregate(f"_ibis_var_{op.how}", arg, where=where)
 
     @visit_node.register(ops.StandardDev)
     def visit_StandardDev(self, op, *, arg, how, where):
-        var = self._aggregate(f"_ibis_sqlite_var_{op.how}", arg, where=where)
+        var = self._aggregate(f"_ibis_var_{op.how}", arg, where=where)
         return self.f.sqrt(var)
 
     @visit_node.register(ops.ApproxCountDistinct)
@@ -433,7 +433,7 @@ class SQLiteCompiler(SQLGlotCompiler):
 
     def visit_NonNullLiteral(self, op, *, value, dtype):
         if dtype.is_binary():
-            return self.f._ibis_sqlite_unhex(value.hex())
+            return self.f.unhex(value.hex())
 
         if dtype.is_decimal():
             value = float(value)
@@ -468,32 +468,32 @@ class SQLiteCompiler(SQLGlotCompiler):
 
 
 _SIMPLE_OPS = {
-    ops.RegexReplace: "_ibis_sqlite_regex_replace",
-    ops.RegexExtract: "_ibis_sqlite_regex_extract",
-    ops.RegexSearch: "_ibis_sqlite_regex_search",
-    ops.Translate: "_ibis_sqlite_translate",
-    ops.Capitalize: "_ibis_sqlite_capitalize",
-    ops.Reverse: "_ibis_sqlite_reverse",
-    ops.RPad: "_ibis_sqlite_rpad",
-    ops.LPad: "_ibis_sqlite_lpad",
-    ops.Repeat: "_ibis_sqlite_repeat",
-    ops.StringAscii: "_ibis_sqlite_string_ascii",
+    ops.RegexReplace: "_ibis_regex_replace",
+    ops.RegexExtract: "_ibis_regex_extract",
+    ops.RegexSearch: "_ibis_regex_search",
+    ops.Translate: "_ibis_translate",
+    ops.Capitalize: "_ibis_capitalize",
+    ops.Reverse: "_ibis_reverse",
+    ops.RPad: "_ibis_rpad",
+    ops.LPad: "_ibis_lpad",
+    ops.Repeat: "_ibis_repeat",
+    ops.StringAscii: "_ibis_string_ascii",
     ops.ExtractAuthority: "_ibis_extract_authority",
     ops.ExtractFragment: "_ibis_extract_fragment",
     ops.ExtractHost: "_ibis_extract_host",
     ops.ExtractPath: "_ibis_extract_path",
     ops.ExtractProtocol: "_ibis_extract_protocol",
     ops.ExtractUserInfo: "_ibis_extract_user_info",
-    ops.BitwiseXor: "_ibis_sqlite_xor",
-    ops.BitwiseNot: "_ibis_sqlite_inv",
+    ops.BitwiseXor: "_ibis_xor",
+    ops.BitwiseNot: "_ibis_inv",
     ops.Modulus: "mod",
     ops.TypeOf: "typeof",
-    ops.BitOr: "_ibis_sqlite_bit_or",
-    ops.BitAnd: "_ibis_sqlite_bit_and",
-    ops.BitXor: "_ibis_sqlite_bit_xor",
-    ops.First: "_ibis_sqlite_arbitrary_first",
-    ops.Last: "_ibis_sqlite_arbitrary_last",
-    ops.Mode: "_ibis_sqlite_mode",
+    ops.BitOr: "_ibis_bit_or",
+    ops.BitAnd: "_ibis_bit_and",
+    ops.BitXor: "_ibis_bit_xor",
+    ops.First: "_ibis_arbitrary_first",
+    ops.Last: "_ibis_arbitrary_last",
+    ops.Mode: "_ibis_mode",
     ops.Time: "time",
     ops.Date: "date",
 }
