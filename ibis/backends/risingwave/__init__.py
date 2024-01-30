@@ -25,6 +25,24 @@ if TYPE_CHECKING:
     import pyarrow as pa
 
 
+def data_and_encode_format(data_format, encode_format, encode_properties):
+    res = ""
+    if data_format is not None:
+        res = res + " FORMAT " + data_format.upper()
+    if encode_format is not None:
+        res = res + " ENCODE " + encode_format.upper()
+        if encode_properties is not None:
+            res = res + " " + format_properties(encode_properties)
+    return res
+
+
+def format_properties(props):
+    tokens = []
+    for k, v in props.items():
+        tokens.append(f"{k}='{v}'")
+    return "( {} ) ".format(", ".join(tokens))
+
+
 class Backend(PostgresBackend):
     name = "risingwave"
     compiler = RisingwaveCompiler()
@@ -110,6 +128,11 @@ class Backend(PostgresBackend):
         database: str | None = None,
         temp: bool = False,
         overwrite: bool = False,
+        # TODO(Kexiang): add `append only`
+        connector_properties: dict | None = None,
+        data_format: str | None = None,
+        encode_format: str | None = None,
+        encode_properties: dict | None = None,
     ):
         """Create a table in Risingwave.
 
@@ -131,7 +154,20 @@ class Backend(PostgresBackend):
         overwrite
             If `True`, replace the table if it already exists, otherwise fail
             if the table exists
+        connector_properties
+            The properties of the sink connector, providing the connector settings to push to the downstream data sink.
+            Refer https://docs.risingwave.com/docs/current/data-delivery/ for the required properties of different data sink.
+        data_format
+            The data format for the new source, e.g., "PLAIN". data_format and encode_format must be specified at the same time.
+        encode_format
+            The encode format for the new source, e.g., "JSON". data_format and encode_format must be specified at the same time.
+        encode_properties
+            The properties of encode format, providing information like schema registry url. Refer https://docs.risingwave.com/docs/current/sql-create-source/ for more details.
 
+        Returns
+        -------
+        Table
+            Table expression
         """
         if obj is None and schema is None:
             raise ValueError("Either `obj` or `schema` must be specified")
@@ -143,10 +179,19 @@ class Backend(PostgresBackend):
         else:
             database = None
 
+        if connector_properties is not None and (
+            encode_format is None or data_format is None
+        ):
+            raise com.RelationError(
+                "When creating tables with connector, both encode_format and data_format are required"
+            )
+
         properties = []
 
         if temp:
-            properties.append(sge.TemporaryProperty())
+            raise com.UnsupportedOperationError(
+                f"Creating temp tables is not supported by {self.name}"
+            )
 
         if obj is not None:
             if not isinstance(obj, ir.Expr):
@@ -181,11 +226,23 @@ class Backend(PostgresBackend):
         table = sg.table(temp_name, catalog=database, quoted=self.compiler.quoted)
         target = sge.Schema(this=table, expressions=column_defs)
 
-        create_stmt = sge.Create(
-            kind="TABLE",
-            this=target,
-            properties=sge.Properties(expressions=properties),
-        )
+        if connector_properties is None:
+            create_stmt = sge.Create(
+                kind="TABLE",
+                this=target,
+                properties=sge.Properties(expressions=properties),
+            )
+        else:
+            create_stmt = sge.Create(
+                kind="TABLE",
+                this=target,
+                properties=sge.Properties(
+                    expressions=sge.Properties.from_dict(connector_properties)
+                ),
+            )
+            create_stmt = create_stmt.sql(self.dialect) + data_and_encode_format(
+                data_format, encode_format, encode_properties
+            )
 
         this = sg.table(name, catalog=database, quoted=self.compiler.quoted)
         with self._safe_raw_sql(create_stmt) as cur:
@@ -194,9 +251,7 @@ class Backend(PostgresBackend):
                 cur.execute(insert_stmt)
 
             if overwrite:
-                cur.execute(
-                    sge.Drop(kind="TABLE", this=this, exists=True).sql(self.dialect)
-                )
+                self.drop_table(name, database=database, schema=schema, force=True)
                 cur.execute(
                     f"ALTER TABLE {table.sql(self.dialect)} RENAME TO {this.sql(self.dialect)}"
                 )
@@ -268,3 +323,305 @@ class Backend(PostgresBackend):
             databases = list(map(itemgetter(0), cur))
 
         return self._filter_with_like(databases, like)
+
+    def create_materialized_view(
+        self,
+        name: str,
+        obj: ir.Table,
+        *,
+        database: str | None = None,
+        schema: str | None = None,
+        overwrite: bool = False,
+    ) -> ir.Table:
+        """Creating a materialized view. The created materialized view can be accessed like a normal table.
+
+        Parameters
+        ----------
+        name
+            Materialized view name to Create.
+        obj
+            The select statement to materialize.
+        database
+            Name of the database where the view exists, if not the default.
+        schema
+            Name of the schema where the view exists, if not the default
+        overwrite
+            Whether to overwrite the existing materialized view with the same name
+
+        Returns
+        -------
+        Table
+            Table expression
+        """
+        if database is not None and database != self.current_database:
+            raise com.UnsupportedOperationError(
+                f"Creating materialized views in other databases is not supported by {self.name}"
+            )
+        else:
+            database = None
+
+        if overwrite:
+            temp_name = util.gen_name(f"{self.name}_table")
+        else:
+            temp_name = name
+
+        table = sg.table(
+            temp_name, db=schema, catalog=database, quoted=self.compiler.quoted
+        )
+
+        create_stmt = sge.Create(
+            this=table,
+            kind="MATERIALIZED VIEW",
+            expression=self.compile(obj),
+        )
+        self._register_in_memory_tables(obj)
+
+        this = sg.table(name, catalog=database, quoted=self.compiler.quoted)
+        with self._safe_raw_sql(create_stmt) as cur:
+            if overwrite:
+                self.drop_materialized_view(
+                    name, database=database, schema=schema, force=True
+                )
+                cur.execute(
+                    f"ALTER MATERIALIZED VIEW {table.sql(self.dialect)} RENAME TO {this.sql(self.dialect)}"
+                )
+
+        return self.table(name, database=database)
+
+    def drop_materialized_view(
+        self,
+        name: str,
+        *,
+        database: str | None = None,
+        schema: str | None = None,
+        force: bool = False,
+    ) -> None:
+        """Drop a materialized view.
+
+        Parameters
+        ----------
+        name
+            Materialized view name to drop.
+        database
+            Name of the database where the view exists, if not the default.
+        schema
+            Name of the schema where the view exists, if not the default.
+        force
+            If `False`, an exception is raised if the view does not exist.
+        """
+        src = sge.Drop(
+            this=sg.table(
+                name, db=schema, catalog=database, quoted=self.compiler.quoted
+            ),
+            kind="MATERIALIZED VIEW",
+            exists=force,
+        )
+        with self._safe_raw_sql(src):
+            pass
+
+    def create_source(
+        self,
+        name: str,
+        schema: ibis.Schema,
+        *,
+        database: str | None = None,
+        connector_properties: dict,
+        data_format: str,
+        encode_format: str,
+        encode_properties: dict | None = None,
+    ) -> ir.Table:
+        """Creating a source.
+
+        Parameters
+        ----------
+        name
+            Source name to Create.
+        schema
+            The schema for the new Source.
+        database
+            Name of the database where the source exists, if not the default.
+        connector_properties
+            The properties of the source connector, providing the connector settings to access the upstream data source.
+            Refer https://docs.risingwave.com/docs/current/data-ingestion/ for the required properties of different data source.
+        data_format
+            The data format for the new source, e.g., "PLAIN". data_format and encode_format must be specified at the same time.
+        encode_format
+            The encode format for the new source, e.g., "JSON". data_format and encode_format must be specified at the same time.
+        encode_properties
+            The properties of encode format, providing information like schema registry url. Refer https://docs.risingwave.com/docs/current/sql-create-source/ for more details.
+
+        Returns
+        -------
+        Table
+            Table expression
+        """
+        if database is not None and database != self.current_database:
+            raise com.UnsupportedOperationError(
+                f"Creating sources in other databases is not supported by {self.name}"
+            )
+        else:
+            database = None
+
+        column_defs = [
+            sge.ColumnDef(
+                this=sg.to_identifier(colname, quoted=self.compiler.quoted),
+                kind=self.compiler.type_mapper.from_ibis(typ),
+                constraints=(
+                    None
+                    if typ.nullable
+                    else [sge.ColumnConstraint(kind=sge.NotNullColumnConstraint())]
+                ),
+            )
+            for colname, typ in schema.items()
+        ]
+
+        table = sg.table(name, catalog=database, quoted=self.compiler.quoted)
+        target = sge.Schema(this=table, expressions=column_defs)
+
+        create_stmt = sge.Create(
+            kind="SOURCE",
+            this=target,
+            properties=sge.Properties(
+                expressions=sge.Properties.from_dict(connector_properties)
+            ),
+        )
+
+        create_stmt = create_stmt.sql(self.dialect) + data_and_encode_format(
+            data_format, encode_format, encode_properties
+        )
+
+        with self._safe_raw_sql(create_stmt):
+            pass
+
+        return self.table(name, database=database)
+
+    def drop_source(
+        self,
+        name: str,
+        *,
+        database: str | None = None,
+        schema: str | None = None,
+        force: bool = False,
+    ) -> None:
+        """Drop a Source.
+
+        Parameters
+        ----------
+        name
+            Source name to drop.
+        database
+            Name of the database where the view exists, if not the default.
+        schema
+            Name of the schema where the view exists, if not the default.
+        force
+            If `False`, an exception is raised if the source does not exist.
+        """
+        src = sge.Drop(
+            this=sg.table(
+                name, db=schema, catalog=database, quoted=self.compiler.quoted
+            ),
+            kind="SOURCE",
+            exists=force,
+        )
+        with self._safe_raw_sql(src):
+            pass
+
+    def create_sink(
+        self,
+        name: str,
+        sink_from: str | None = None,
+        connector_properties: dict | None = None,
+        *,
+        obj: ir.Table | None = None,
+        database: str | None = None,
+        schema: str | None = None,
+        data_format: str | None = None,
+        encode_format: str | None = None,
+        encode_properties: dict | None = None,
+    ) -> None:
+        """Creating a sink.
+
+        Parameters
+        ----------
+        name
+            Sink name to Create.
+        sink_from
+            The table or materialized view name to sink from. Only one of `sink_from` or `obj` can be
+            provided.
+        connector_properties
+            The properties of the sink connector, providing the connector settings to push to the downstream data sink.
+            Refer https://docs.risingwave.com/docs/current/data-delivery/ for the required properties of different data sink.
+        obj
+            An Ibis table expression or pandas table that will be used to extract the schema and the data of the new table. Only one of `sink_from` or `obj` can be provided.
+        database
+            Name of the database where the source exists, if not the default.
+        schema
+            Name of the schema where the view exists, if not the default.
+        data_format
+            The data format for the new source, e.g., "PLAIN". data_format and encode_format must be specified at the same time.
+        encode_format
+            The encode format for the new source, e.g., "JSON". data_format and encode_format must be specified at the same time.
+        encode_properties
+            The properties of encode format, providing information like schema registry url. Refer https://docs.risingwave.com/docs/current/sql-create-source/ for more details.
+        """
+        if database is not None and database != self.current_database:
+            raise com.UnsupportedOperationError(
+                f"Creating sinks in other databases is not supported by {self.name}"
+            )
+        else:
+            database = None
+
+        table = sg.table(name, db=schema, catalog=database, quoted=self.compiler.quoted)
+
+        if encode_format is None != data_format is None:
+            raise com.RelationError(
+                "When creating sinks, both encode_format and data_format must be provided, or neither should be"
+            )
+
+        if sink_from is not None:
+            create_stmt = f"CREATE SINK {table.sql(self.dialect)} FROM {sink_from}"
+        else:
+            create_stmt = sge.Create(
+                this=table,
+                kind="SINK",
+                expression=self.compile(obj),
+            ).sql(self.dialect)
+        create_stmt = (
+            create_stmt
+            + " WITH "
+            + format_properties(connector_properties)
+            + data_and_encode_format(data_format, encode_format, encode_properties)
+        )
+        with self._safe_raw_sql(create_stmt):
+            pass
+
+    def drop_sink(
+        self,
+        name: str,
+        *,
+        database: str | None = None,
+        schema: str | None = None,
+        force: bool = False,
+    ) -> None:
+        """Drop a Sink.
+
+        Parameters
+        ----------
+        name
+            Sink name to drop.
+        database
+            Name of the database where the view exists, if not the default.
+        schema
+            Name of the schema where the view exists, if not the default.
+        force
+            If `False`, an exception is raised if the source does not exist.
+        """
+        src = sge.Drop(
+            this=sg.table(
+                name, db=schema, catalog=database, quoted=self.compiler.quoted
+            ),
+            kind="SINK",
+            exists=force,
+        )
+        with self._safe_raw_sql(src):
+            pass
