@@ -82,9 +82,9 @@ def interval(value, *, unit):
 
 C = ColGen()
 F = FuncGen()
-NULL = sg.exp.NULL
-FALSE = sg.exp.FALSE
-TRUE = sg.exp.TRUE
+NULL = sg.exp.Null()
+FALSE = sg.exp.false()
+TRUE = sg.exp.true()
 STAR = sg.exp.Star()
 
 
