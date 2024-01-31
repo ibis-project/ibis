@@ -1,0 +1,27 @@
+---
+title: "Building scalable data pipelines with Kedro"
+author: "Cody"
+date: "2024-01-31"
+categories:
+    - blog
+    - kedro
+    - data engineering
+---
+
+# Overview
+
+[Kedro](https://kedro.org) is a toolbox for production-ready data science. It is
+an open-source Python framework like Ibis, and together you can bring the
+portability and scale of Ibis to the production-ready pipelines of Kedro.
+
+> In your ~~Kedro~~ data journey, have you ever...
+>
+> ...slurped up large amounts of data into memory, instead of pushing execution down to the source database/engine?
+>
+> ...prototyped a node in pandas, and then rewritten it in PySpark/Snowpark/some other native dataframe API?
+>
+> ...implemented a proof-of-concept solution in 3-4 months on data extracts, and then struggled massively when you needed to move to running against the production databases and scale out?
+> ...
+
+If so, [read the full article on the Kedro
+blog](https://kedro.org/blog/building-scalable-data-pipelines-with-kedro-and-ibis)!
