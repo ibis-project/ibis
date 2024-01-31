@@ -282,7 +282,11 @@ def _floor_divide(translator: ExprTranslator, op: ops.Node) -> str:
     return f"FLOOR(({left}) / ({right}))"
 
 
-def _array_index(translator: ExprTranslator, op: ops.arrays.ArrayIndex):
+def _array(translator: ExprTranslator, op: ops.Array) -> str:
+    return f"ARRAY[{', '.join(map(translator.translate, op.exprs))}]"
+
+
+def _array_index(translator: ExprTranslator, op: ops.ArrayIndex):
     table_column = op.arg
     index = op.index
 
@@ -292,8 +296,33 @@ def _array_index(translator: ExprTranslator, op: ops.arrays.ArrayIndex):
     return f"{table_column_translated} [ {index_translated} + 1 ]"
 
 
-def _array_length(translator: ExprTranslator, op: ops.arrays.ArrayLength) -> str:
+def _array_length(translator: ExprTranslator, op: ops.ArrayLength) -> str:
     return f"CARDINALITY({translator.translate(op.arg)})"
+
+
+def _array_position(translator: ExprTranslator, op: ops.ArrayPosition) -> str:
+    arg = translator.translate(op.arg)
+    other = translator.translate(op.other)
+    return f"ARRAY_POSITION({arg}, {other}) - 1"
+
+
+def _array_slice(translator: ExprTranslator, op: ops.ArraySlice) -> str:
+    array = translator.translate(op.arg)
+    start = op.start.value
+    # The offsets are 1-based for ARRAY_SLICE.
+    # Ref: https://nightlies.apache.org/flink/flink-docs-master/docs/dev/table/functions/systemfunctions
+    if start >= 0:
+        start += 1
+
+    if op.stop is None:
+        return f"ARRAY_SLICE({array}, {start})"
+
+    stop = op.stop.value
+    if stop >= 0:
+        return f"ARRAY_SLICE({array}, {start}, {stop})"
+    else:
+        # To imitate the behavior of pandas array slicing.
+        return f"ARRAY_SLICE({array}, {start}, CARDINALITY({array}) - {abs(stop)})"
 
 
 def _json_get_item(translator: ExprTranslator, op: ops.json.JSONGetItem) -> str:
@@ -532,9 +561,16 @@ operation_registry.update(
         # Binary operations
         ops.Power: fixed_arity("power", 2),
         ops.FloorDivide: _floor_divide,
-        # Collection functions
+        # Collection operations
+        ops.Array: _array,
+        ops.ArrayContains: fixed_arity("ARRAY_CONTAINS", 2),
+        ops.ArrayDistinct: fixed_arity("ARRAY_DISTINCT", 1),
         ops.ArrayIndex: _array_index,
         ops.ArrayLength: _array_length,
+        ops.ArrayPosition: _array_position,
+        ops.ArrayRemove: fixed_arity("ARRAY_REMOVE", 2),
+        ops.ArraySlice: _array_slice,
+        ops.ArrayUnion: fixed_arity("ARRAY_UNION", 2),
         ops.JSONGetItem: _json_get_item,
         ops.Map: _map,
         ops.MapGet: _map_get,
