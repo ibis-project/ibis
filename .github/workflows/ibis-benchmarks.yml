@@ -1,0 +1,85 @@
+name: Benchmarks
+
+on:
+  push:
+    branches:
+      - main
+      - "*.x.x"
+  merge_group:
+
+# since we're writing to cloud storage, we don't want to have multiple
+# instances of this job running at one time
+concurrency: benchmarks-${{ github.repository }}
+
+permissions:
+  # increase the rate limit for github operations, but limit token permissions
+  # to read-only
+  contents: read
+
+jobs:
+  benchmarks:
+    runs-on: ubuntu-latest
+    steps:
+      - name: checkout
+        uses: actions/checkout@v4
+
+      - name: install poetry
+        run: pipx install 'poetry==1.7.1'
+
+      - name: install python
+        uses: actions/setup-python@v5
+        id: install_python
+        with:
+          python-version: "3.11"
+          cache: poetry
+
+      - name: install system dependencies
+        run: sudo apt-get install -qq -y build-essential libgeos-dev freetds-dev unixodbc-dev
+
+      - name: install ibis
+        run: poetry install --without dev --without docs --all-extras
+
+      - name: make benchmark output dir
+        run: mkdir .benchmarks
+
+      - name: benchmark
+        run: poetry run pytest --benchmark-enable --benchmark-json .benchmarks/output.json ibis/tests/benchmarks
+
+      - uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_CREDENTIALS }}
+
+      - uses: google-github-actions/setup-gcloud@v2
+
+      - name: show gcloud info
+        run: gcloud info
+
+      - name: download the latest duckdb release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+
+          gh release download -R duckdb/duckdb --pattern 'duckdb_cli-linux-amd64.zip'
+          unzip duckdb_cli-linux-amd64.zip
+
+      - name: convert json data to parquet
+        run: |
+          set -euo pipefail
+
+          # sort json keys
+          jq --sort-keys -rcM < "$PWD/.benchmarks/output.json" > output.json
+
+          # connect to a file to allow spilling to disk
+          ./duckdb json2parquet.ddb <<EOF
+            COPY (
+              SELECT * FROM read_ndjson_auto('output.json', maximum_object_size=2**27)
+            ) TO 'output.parquet' (FORMAT PARQUET, COMPRESSION ZSTD)
+          EOF
+
+      - name: copy data to gcs
+        run: |
+          set -euo pipefail
+
+          timestamp="$(date --iso-8601=ns --utc | tr ','  '.')"
+          gsutil cp output.parquet "gs://ibis-benchmark-data/ci/${timestamp}.parquet"

@@ -610,7 +610,7 @@ def slice_to_limit_offset(
       a int64
       b string
     <BLANKLINE>
-    Add(CountStar(t), -10): CountStar(r0) + -10
+    Add(CountStar(), -10): CountStar(r0) + -10
 
     From 5th row to 10th row
     >>> what = slice(5, 10)

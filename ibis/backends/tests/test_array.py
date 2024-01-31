@@ -251,12 +251,6 @@ def test_array_discovery(backend):
     raises=GoogleBadRequest,
 )
 @pytest.mark.notimpl(["datafusion"], raises=com.OperationNotDefinedError)
-@pytest.mark.notimpl(
-    ["risingwave"],
-    # TODO: valueerror -> assertion error
-    raises=AssertionError,
-    reason="Do not nest ARRAY types; ARRAY(basetype) handles multi-dimensional arrays of basetype",
-)
 def test_unnest_simple(backend):
     array_types = backend.array_types
     expected = (
