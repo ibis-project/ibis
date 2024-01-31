@@ -1,0 +1,105 @@
+name: Lint
+
+on:
+  push:
+    branches:
+      - main
+      - "*.x.x"
+      - the-epic-split
+  pull_request:
+    branches:
+      - main
+      - "*.x.x"
+      - the-epic-split
+  merge_group:
+
+concurrency:
+  group: ${{ github.repository }}-${{ github.head_ref || github.sha }}-${{ github.workflow }}
+  cancel-in-progress: true
+
+permissions:
+  # increase the rate limit for github operations, but limit token permissions
+  # to read-only
+  contents: read
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: checkout
+        uses: actions/checkout@v4
+
+      - name: install nix
+        uses: cachix/install-nix-action@v25
+        with:
+          extra_nix_config: |
+            access-tokens = github.com=${{ secrets.GITHUB_TOKEN }}
+
+      - name: setup cachix
+        uses: cachix/cachix-action@v14
+        with:
+          name: ibis
+          authToken: ${{ secrets.CACHIX_AUTH_TOKEN }}
+          extraPullNames: nix-community,poetry2nix
+
+      # run against the full shell.nix on push so it gets pushed to cachix
+      - name: pre-commit checks
+        run: nix develop '.#preCommit' --ignore-environment --keep-going -c pre-commit run --all-files --show-diff-on-failure --color=always
+
+  release_notes_spellcheck:
+    runs-on: ubuntu-latest
+    steps:
+      - name: checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: install nix
+        uses: cachix/install-nix-action@v25
+        with:
+          extra_nix_config: |
+            access-tokens = github.com=${{ secrets.GITHUB_TOKEN }}
+
+      - name: setup cachix
+        uses: cachix/cachix-action@v14
+        with:
+          name: ibis
+          authToken: ${{ secrets.CACHIX_AUTH_TOKEN }}
+          extraPullNames: nix-community,poetry2nix
+
+      - name: check generated release notes spelling
+        run: nix run '.#check-release-notes-spelling'
+
+  simulate_release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: cachix/install-nix-action@v25
+        with:
+          extra_nix_config: |
+            access-tokens = github.com=${{ secrets.GITHUB_TOKEN }}
+
+      - uses: cachix/cachix-action@v14
+        with:
+          name: ibis
+          authToken: ${{ secrets.CACHIX_AUTH_TOKEN }}
+          extraPullNames: nix-community,poetry2nix
+
+      - name: Configure git info
+        run: |
+          set -euo pipefail
+
+          # not incredibly important what user we use here
+          #
+          # we're making a commit in a temporary worktree that is thrown away
+          # if the process exits successfully
+          #
+          # git requires user information to make commits
+          git config user.name 'ibis-squawk-bot[bot]'
+          git config user.email 'ibis-squawk-bot[bot]@users.noreply.github.com'
+
+      - name: run semantic-release
+        run: ./ci/release/dry_run.sh

@@ -174,15 +174,3 @@ with closing(con.raw_sql("CREATE TEMP TABLE my_table AS SELECT * FROM RANGE(10)"
     ...  # do something with c if necessary
 ```
 :::
-
-Here's an example:
-
-```{python}
-cur = con.raw_sql("CREATE TEMP TABLE t AS SELECT * FROM RANGE(10)")
-cur.close()  # <1>
-```
-
-1. Only needed if you're not using a context manager **and** the query returns
-   rows. In this case `CREATE` doesn't return any rows, so the `close()` isn't
-   strictly necessary. However, it's good practice to always close cursors,
-   even if those `close()` call isn't strictly required.
