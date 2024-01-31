@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import sqlalchemy as sa
 from pytest import mark, param
 
 import ibis.common.exceptions as com
@@ -59,7 +58,7 @@ def test_udf(batting):
 @mark.notyet(["datafusion"], raises=NotImplementedError)
 @mark.notyet(
     ["sqlite"],
-    raises=sa.exc.OperationalError,
+    raises=com.IbisTypeError,
     reason="sqlite doesn't support map types",
 )
 def test_map_udf(batting):
