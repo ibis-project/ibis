@@ -213,7 +213,7 @@ def test_array_discovery(backend):
     raises=GoogleBadRequest,
 )
 @pytest.mark.notimpl(["dask"], raises=ValueError)
-@pytest.mark.notimpl(["datafusion"], raises=com.OperationNotDefinedError)
+@pytest.mark.notimpl(["datafusion", "flink"], raises=com.OperationNotDefinedError)
 @pytest.mark.notimpl(
     ["risingwave"],
     raises=ValueError,
