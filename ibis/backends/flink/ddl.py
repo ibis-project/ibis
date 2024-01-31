@@ -42,7 +42,7 @@ def _format_schema_element(name, t):
 
 def type_to_flink_sql_string(tval):
     if tval.is_timestamp():
-        return f"TIMESTAMP({tval.scale})"
+        return f"timestamp({tval.scale})" if tval.scale is not None else "timestamp"
     else:
         sql_string = type_to_sql_string(tval)
         if not tval.nullable:

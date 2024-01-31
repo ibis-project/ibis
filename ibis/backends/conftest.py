@@ -25,6 +25,8 @@ from ibis.conftest import WINDOWS
 if TYPE_CHECKING:
     from collections.abc import Iterable
 
+    from ibis.backends.tests.base import BackendTest
+
 TEST_TABLES = {
     "functional_alltypes": ibis.schema(
         {
@@ -467,7 +469,7 @@ def pytest_runtest_call(item):
 
 
 @pytest.fixture(params=_get_backends_to_test(), scope="session")
-def backend(request, data_dir, tmp_path_factory, worker_id):
+def backend(request, data_dir, tmp_path_factory, worker_id) -> BackendTest:
     """Return an instance of BackendTest, loaded with data."""
 
     cls = _get_backend_conf(request.param)
