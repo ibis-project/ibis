@@ -25,7 +25,11 @@ import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 from ibis.backends.conftest import ALL_BACKENDS
-from ibis.backends.tests.errors import Py4JJavaError, PyDruidProgrammingError
+from ibis.backends.tests.errors import (
+    PsycoPg2InternalError,
+    Py4JJavaError,
+    PyDruidProgrammingError,
+)
 from ibis.util import gen_name, guid
 
 if TYPE_CHECKING:
@@ -115,7 +119,8 @@ def test_create_table(backend, con, temp_table, lamduh, sch):
             marks=[
                 pytest.mark.notyet(["clickhouse"], reason="Can't specify both"),
                 pytest.mark.notyet(
-                    ["pyspark", "trino", "exasol"], reason="No support for temp tables"
+                    ["pyspark", "trino", "exasol", "risingwave"],
+                    reason="No support for temp tables",
                 ),
                 pytest.mark.never(["polars"], reason="Everything in-memory is temp"),
                 pytest.mark.broken(["mssql"], reason="Incorrect temp table syntax"),
@@ -132,7 +137,8 @@ def test_create_table(backend, con, temp_table, lamduh, sch):
             id="temp, no overwrite",
             marks=[
                 pytest.mark.notyet(
-                    ["pyspark", "trino", "exasol"], reason="No support for temp tables"
+                    ["pyspark", "trino", "exasol", "risingwave"],
+                    reason="No support for temp tables",
                 ),
                 pytest.mark.never(["polars"], reason="Everything in-memory is temp"),
                 pytest.mark.broken(["mssql"], reason="Incorrect temp table syntax"),
@@ -308,7 +314,7 @@ def tmpcon(alchemy_con):
 @mark.notimpl(["exasol"], reason="Exasol does not support temporary tables")
 @pytest.mark.never(
     ["risingwave"],
-    raises=sa.exc.InternalError,
+    raises=PsycoPg2InternalError,
     reason="Feature is not yet implemented: CREATE TEMPORARY TABLE",
 )
 def test_create_temporary_table_from_schema(tmpcon, new_schema):
@@ -375,7 +381,7 @@ def test_rename_table(con, temp_table, temp_table_orig):
 )
 @pytest.mark.never(
     ["risingwave"],
-    raises=sa.exc.InternalError,
+    raises=PsycoPg2InternalError,
     reason='Feature is not yet implemented: column constraints "NOT NULL"',
 )
 def test_nullable_input_output(con, temp_table):
@@ -718,11 +724,6 @@ def test_unsigned_integer_type(alchemy_con, alchemy_temp_table):
             "postgresql://postgres:postgres@localhost:5432/postgres",
             marks=mark.postgres,
             id="postgresql",
-        ),
-        param(
-            "postgresql://root:@localhost:4566/dev",
-            marks=mark.risingwave,
-            id="risingwave",
         ),
         param(
             "pyspark://?spark.app.name=test-pyspark",
@@ -1140,11 +1141,6 @@ def test_set_backend_name(name, monkeypatch):
             marks=mark.postgres,
             id="postgres",
         ),
-        param(
-            "postgres://root:@localhost:4566/dev",
-            marks=mark.risingwave,
-            id="risingwave",
-        ),
     ],
 )
 def test_set_backend_url(url, monkeypatch):
@@ -1208,7 +1204,7 @@ def test_create_table_timestamp(con, temp_table):
 @mark.notimpl(["exasol"], reason="Exasol does not support temporary tables")
 @pytest.mark.never(
     ["risingwave"],
-    raises=sa.exc.InternalError,
+    raises=PsycoPg2InternalError,
     reason="Feature is not yet implemented: CREATE TEMPORARY TABLE",
 )
 def test_persist_expression_ref_count(backend, con, alltypes):
@@ -1233,7 +1229,7 @@ def test_persist_expression_ref_count(backend, con, alltypes):
 @mark.notimpl(["exasol"], reason="Exasol does not support temporary tables")
 @pytest.mark.never(
     ["risingwave"],
-    raises=sa.exc.InternalError,
+    raises=PsycoPg2InternalError,
     reason="Feature is not yet implemented: CREATE TEMPORARY TABLE",
 )
 def test_persist_expression(backend, alltypes):
@@ -1252,7 +1248,7 @@ def test_persist_expression(backend, alltypes):
 @mark.notimpl(["exasol"], reason="Exasol does not support temporary tables")
 @pytest.mark.never(
     ["risingwave"],
-    raises=sa.exc.InternalError,
+    raises=PsycoPg2InternalError,
     reason="Feature is not yet implemented: CREATE TEMPORARY TABLE",
 )
 def test_persist_expression_contextmanager(backend, alltypes):
@@ -1273,7 +1269,7 @@ def test_persist_expression_contextmanager(backend, alltypes):
 @mark.notimpl(["exasol"], reason="Exasol does not support temporary tables")
 @pytest.mark.never(
     ["risingwave"],
-    raises=sa.exc.InternalError,
+    raises=PsycoPg2InternalError,
     reason="Feature is not yet implemented: CREATE TEMPORARY TABLE",
 )
 def test_persist_expression_contextmanager_ref_count(backend, con, alltypes):
@@ -1296,7 +1292,7 @@ def test_persist_expression_contextmanager_ref_count(backend, con, alltypes):
 )
 @pytest.mark.never(
     ["risingwave"],
-    raises=sa.exc.InternalError,
+    raises=PsycoPg2InternalError,
     reason="Feature is not yet implemented: CREATE TEMPORARY TABLE",
 )
 @mark.notimpl(["exasol"], reason="Exasol does not support temporary tables")
@@ -1338,7 +1334,7 @@ def test_persist_expression_multiple_refs(backend, con, alltypes):
 @mark.notimpl(["exasol"], reason="Exasol does not support temporary tables")
 @pytest.mark.never(
     ["risingwave"],
-    raises=sa.exc.InternalError,
+    raises=PsycoPg2InternalError,
     reason="Feature is not yet implemented: CREATE TEMPORARY TABLE",
 )
 def test_persist_expression_repeated_cache(alltypes):
@@ -1362,7 +1358,7 @@ def test_persist_expression_repeated_cache(alltypes):
 )
 @pytest.mark.never(
     ["risingwave"],
-    raises=sa.exc.InternalError,
+    raises=PsycoPg2InternalError,
     reason="Feature is not yet implemented: CREATE TEMPORARY TABLE",
 )
 def test_persist_expression_release(con, alltypes):
@@ -1451,7 +1447,7 @@ def test_create_schema(con_create_schema):
 
 @pytest.mark.notimpl(
     ["risingwave"],
-    raises=sa.exc.InternalError,
+    raises=PsycoPg2InternalError,
     reason="Feature is not yet implemented: information_schema.schemata is not supported,",
 )
 def test_list_schemas(con_create_schema):
