@@ -842,7 +842,7 @@ class StringValue(Value):
         └──────────────────────┘
         >>> ibis.literal("|").join(t.arr)
         ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-        ┃ ArrayStringJoin('|', arr) ┃
+        ┃ ArrayStringJoin(arr, '|') ┃
         ┡━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
         │ string                    │
         ├───────────────────────────┤
