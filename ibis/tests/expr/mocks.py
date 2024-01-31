@@ -89,7 +89,7 @@ class MockBackend(BaseBackend):
     def _get_schema_using_query(self, query):
         return self.sql_query_schemas[query]
 
-    def _get_sql_string_view_schema(self, child, query):
+    def _get_sql_string_view_schema(self, name, table, query):
         return self.sql_query_schemas[query]
 
     @contextlib.contextmanager

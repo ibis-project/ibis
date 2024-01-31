@@ -151,14 +151,14 @@ class SQLGlotBackend(BaseBackend):
         """Return an ibis Schema from a backend-specific SQL string."""
         return sch.Schema.from_tuples(self._metadata(query))
 
-    def _get_sql_string_view_schema(self, child: ir.Table, query: str) -> sch.Schema:
-        # abort if somehow this was called with a non-view
-        assert isinstance(child.op(), ops.View), type(child.op())
-
-        obj = self._to_sqlglot(child)
+    def _get_sql_string_view_schema(self, name, table, query) -> sch.Schema:
         dialect = self.compiler.dialect
+
+        cte = self._to_sqlglot(table)
         parsed = sg.parse_one(query, read=dialect)
-        parsed.args["with"] = obj.args["with"]
+        parsed.args["with"] = cte.args.pop("with", [])
+        parsed = parsed.with_(name, as_=cte, dialect=dialect)
+
         sql = parsed.sql(dialect)
         return self._get_schema_using_query(sql)
 

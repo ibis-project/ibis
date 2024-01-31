@@ -3250,19 +3250,23 @@ class Table(Expr, _FixedTextJupyterMixin):
         --------
         [`Table.alias`](#ibis.expr.types.relations.Table.alias)
         '''
+        op = self.op()
+        backend = self._find_backend()
 
-        # only transpile if dialect was passed
         if dialect is not None:
-            backend = self._find_backend()
+            # only transpile if dialect was passed
             query = backend._transpile_sql(query, dialect=dialect)
 
-        child = (
-            self
-            if isinstance(self.op(), ops.View)
-            else self.alias(util.gen_name("sql_string_view"))
-        )
-        op = ops.SQLStringView(child=child, query=query)
-        return op.to_expr()
+        if isinstance(op, ops.View):
+            name = op.name
+            expr = op.child.to_expr()
+        else:
+            name = util.gen_name("sql_query")
+            expr = self
+
+        schema = backend._get_sql_string_view_schema(name, expr, query)
+        node = ops.SQLStringView(child=self.op(), query=query, schema=schema)
+        return node.to_expr()
 
     def to_pandas(self, **kwargs) -> pd.DataFrame:
         """Convert a table expression to a pandas DataFrame.

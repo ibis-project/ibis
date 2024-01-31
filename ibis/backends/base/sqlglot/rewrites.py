@@ -178,7 +178,7 @@ def sqlize(node):
     step2 = step1.replace(merge_select_select)
 
     ctes = extract_ctes(step2)
-    subs = {cte: CTE(cte) for cte in ctes if not isinstance(cte, ops.View)}
+    subs = {cte: CTE(cte) for cte in ctes}
     step3 = step2.replace(subs)
 
     return step3, ctes

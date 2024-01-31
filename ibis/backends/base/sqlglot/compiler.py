@@ -261,31 +261,20 @@ class SQLGlotCompiler(abc.ABC):
         op, ctes = sqlize(op)
 
         aliases = {}
-        alias_counter = itertools.count()
+        counter = itertools.count()
 
         def fn(node, _, **kwargs):
             result = self.visit_node(node, **kwargs)
 
             # if it's not a relation then we don't need to do anything special
-            if not isinstance(node, ops.Relation):
+            if node is op or not isinstance(node, ops.Relation):
                 return result
 
-            if isinstance(node, ops.View):
-                # alias ops.Views to their explicitly assigned name
-                alias = node.name
-            else:
-                # all other relations are given a generated alias
-                alias = f"t{next(alias_counter)}"
-
+            # alias ops.Views to their explicitly assigned name otherwise generate
+            alias = node.name if isinstance(node, ops.View) else f"t{next(counter)}"
             aliases[node] = alias
 
-            # alias assignment must happen *before* checking whether we're at
-            # the root node in case we have a root node CTE (only ops.View right now)
-            if node is op:
-                return result
-
             alias = sg.to_identifier(alias, quoted=self.quoted)
-
             try:
                 return result.subquery(alias)
             except AttributeError:
@@ -293,9 +282,15 @@ class SQLGlotCompiler(abc.ABC):
 
         # apply translate rules in topological order
         results = op.map(fn)
-        out = results[op]
-        out = out.this if isinstance(out, sge.Subquery) else out
 
+        # get the root node as a sqlglot select statement
+        out = results[op]
+        if isinstance(out, sge.Table):
+            out = sg.select(STAR).from_(out)
+        elif isinstance(out, sge.Subquery):
+            out = out.this
+
+        # add cte definitions to the select statement
         for cte in ctes:
             alias = sg.to_identifier(aliases[cte], quoted=self.quoted)
             out = out.with_(alias, as_=results[cte].this, dialect=self.dialect)
@@ -1250,7 +1245,7 @@ class SQLGlotCompiler(abc.ABC):
             return child.as_(name)
 
     @visit_node.register(ops.SQLStringView)
-    def visit_SQLStringView(self, op, *, query: str, child):
+    def visit_SQLStringView(self, op, *, query: str, child, schema):
         return sg.parse_one(query, read=self.dialect)
 
     @visit_node.register(ops.SQLQueryResult)
