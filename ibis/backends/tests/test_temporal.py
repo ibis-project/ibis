@@ -2639,11 +2639,6 @@ no_time_type = pytest.mark.xfail(
             - {"pyspark", "impala", "clickhouse", "oracle", *_NO_SQLGLOT_DIALECT}
         ),
         *no_sqlglot_dialect,
-        *[
-            param("impala", marks=no_time_type),
-            param("clickhouse", marks=no_time_type),
-            param("oracle", marks=no_time_type),
-        ],
     ],
 )
 @pytest.mark.parametrize("micros", [0, 234567])
