@@ -63,6 +63,9 @@ self-evident, or it isn't and you are inadvertently insulting the reader.
 Prose should be authored by you™. We discourage LLM-written docs and posts, but
 you are free to use these tools to aid in your writing.
 
+Use American English spelling and grammar. For example, use "color" not "colour",
+"realize" not "realise", and "behavior" not "behaviour".
+
 ### Text formatting
 
 Wrap long prose strings to fewer than 90 characters per line. It is very helpful
