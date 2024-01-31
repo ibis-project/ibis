@@ -7,17 +7,6 @@ from sqlglot.dialects import Postgres
 # from sqlglot.dialects.dialect import rename_func
 
 
-def _datatype_sql(self: generator.Generator, expression: sge.DataType) -> str:
-    if expression.is_type("timestamptz"):
-        # Use this to strip off timestamp precision
-        return "TIMESTAMPTZ"
-    if expression.is_type("decimal"):
-        # Risingwave doesn't allow specifying precision
-        # Also max precision (or default precision) is 24
-        return "NUMERIC"
-    return self.datatype_sql(expression)
-
-
 class RisingWave(Postgres):
     # Need to disable timestamp precision
     # No "or replace" allowed in create statements
@@ -47,5 +36,4 @@ class RisingWave(Postgres):
 
         TRANSFORMS = {
             **Postgres.Generator.TRANSFORMS,
-            sge.DataType: _datatype_sql,
         }
