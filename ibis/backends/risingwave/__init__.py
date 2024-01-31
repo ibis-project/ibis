@@ -7,7 +7,6 @@ from itertools import repeat
 from typing import TYPE_CHECKING
 
 import sqlglot as sg
-import sqlglot.expressions as sge
 from psycopg2 import extras
 
 import ibis.common.exceptions as exc
@@ -17,7 +16,11 @@ from ibis.backends.risingwave.compiler import RisingwaveCompiler
 from ibis.common.exceptions import InvalidDecoratorError
 
 if TYPE_CHECKING:
-    ...
+    import pandas as pd
+    import pyarrow as pa
+
+    import ibis
+    import ibis.expr.types as ir
 
 
 def _verify_source_line(func_name: str, line: str):
@@ -27,7 +30,7 @@ def _verify_source_line(func_name: str, line: str):
 
 
 class Backend(PostgresBackend):
-    name = "Risingwave"
+    name = "risingwave"
     dialect = "postgres"
     compiler = RisingwaveCompiler()
     supports_python_udfs = False
