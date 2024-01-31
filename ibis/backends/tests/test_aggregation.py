@@ -1629,6 +1629,7 @@ def test_grouped_case(backend, con):
 @pytest.mark.notyet(["pyspark"], raises=PySparkAnalysisException)
 @pytest.mark.notyet(["mssql"], raises=PyODBCProgrammingError)
 def test_group_concat_over_window(backend, con):
+    # TODO: this test is flaky on risingwave and I DO NOT LIKE IT
     input_df = pd.DataFrame(
         {
             "s": ["a|b|c", "b|a|c", "b|b|b|c|a"],

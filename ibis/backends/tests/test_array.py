@@ -508,11 +508,6 @@ def test_array_filter(con, input, output):
 @builtin_array
 @pytest.mark.notimpl(["polars"], raises=com.OperationNotDefinedError)
 @pytest.mark.notimpl(["dask"], raises=com.OperationNotDefinedError)
-@pytest.mark.notimpl(
-    ["risingwave"],
-    raises=AssertionError,
-    reason="ValueError: Do not nest ARRAY types; ARRAY(basetype) handles multi-dimensional arrays of basetype",
-)
 def test_array_contains(backend, con):
     t = backend.array_types
     expr = t.x.contains(1)
