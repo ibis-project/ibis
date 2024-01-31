@@ -76,3 +76,25 @@ class RisingwaveCompiler(PostgresCompiler):
     @visit_node.register(ops.DateFromYMD)
     def visit_Undefined(self, op, **_):
         raise com.OperationNotDefinedError(type(op).__name__)
+
+
+_SIMPLE_OPS = {
+    ops.First: "first_value",
+    ops.Last: "last_value",
+}
+
+for _op, _name in _SIMPLE_OPS.items():
+    assert isinstance(type(_op), type), type(_op)
+    if issubclass(_op, ops.Reduction):
+
+        @RisingwaveCompiler.visit_node.register(_op)
+        def _fmt(self, op, *, _name: str = _name, where, **kw):
+            return self.agg[_name](*kw.values(), where=where)
+
+    else:
+
+        @RisingwaveCompiler.visit_node.register(_op)
+        def _fmt(self, op, *, _name: str = _name, **kw):
+            return self.f[_name](*kw.values())
+
+    setattr(RisingwaveCompiler, f"visit_{_op.__name__}", _fmt)
