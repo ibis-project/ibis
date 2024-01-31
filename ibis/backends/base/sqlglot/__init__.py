@@ -152,12 +152,15 @@ class SQLGlotBackend(BaseBackend):
         return sch.Schema.from_tuples(self._metadata(query))
 
     def _get_sql_string_view_schema(self, name, table, query) -> sch.Schema:
-        dialect = self.compiler.dialect
+        compiler = self.compiler
+        dialect = compiler.dialect
 
         cte = self._to_sqlglot(table)
         parsed = sg.parse_one(query, read=dialect)
         parsed.args["with"] = cte.args.pop("with", [])
-        parsed = parsed.with_(name, as_=cte, dialect=dialect)
+        parsed = parsed.with_(
+            sg.to_identifier(name, quoted=compiler.quoted), as_=cte, dialect=dialect
+        )
 
         sql = parsed.sql(dialect)
         return self._get_schema_using_query(sql)
