@@ -6,7 +6,7 @@ import inspect
 import math
 import operator
 from collections import defaultdict
-from typing import Callable
+from typing import Any, Callable, NamedTuple
 from urllib.parse import parse_qs, urlsplit
 
 try:
@@ -14,8 +14,19 @@ try:
 except ImportError:
     import re
 
-_SQLITE_UDF_REGISTRY = set()
-_SQLITE_UDAF_REGISTRY = set()
+
+class _UDF(NamedTuple):
+    """An internal record holding info about a registered UDF."""
+
+    name: str
+    impl: Any
+    nargs: int
+    skip_if_exists: bool = False
+    deterministic: bool = True
+
+
+_SQLITE_UDF_REGISTRY = {}
+_SQLITE_UDAF_REGISTRY = {}
 
 
 def ignore_nulls(f):
@@ -28,13 +39,36 @@ def ignore_nulls(f):
     return wrapper
 
 
-def udf(f):
-    """Create a SQLite scalar UDF from `f`.
+def _number_of_arguments(callable):
+    signature = inspect.signature(callable)
+    parameters = signature.parameters.values()
+    kinds = [param.kind for param in parameters]
+    valid_kinds = (
+        inspect.Parameter.POSITIONAL_OR_KEYWORD,
+        inspect.Parameter.POSITIONAL_ONLY,
+    )
+    if any(kind not in valid_kinds for kind in kinds) or any(
+        param.default is not inspect.Parameter.empty for param in parameters
+    ):
+        raise TypeError(
+            "Only positional arguments without defaults are supported in Ibis "
+            "SQLite function registration"
+        )
+    return len(parameters)
+
+
+def udf(func=None, *, skip_if_exists=False, deterministic=True):
+    """Create a SQLite scalar UDF from `func`.
 
     Parameters
     ----------
-    f
+    func
         A callable object
+    skip_if_exists
+        If true, the UDF will only be registered if an existing function
+        with that name doesn't already exist.
+    deterministic
+        Whether the UDF is deterministic, defaults to True.
 
     Returns
     -------
@@ -42,52 +76,204 @@ def udf(f):
         A callable object that returns ``None`` if any of its inputs are
         ``None``.
     """
-    wrapper = ignore_nulls(f)
-    _SQLITE_UDF_REGISTRY.add(wrapper)
+    if func is None:
+        return lambda func: udf(
+            func, skip_if_exists=skip_if_exists, deterministic=deterministic
+        )
+
+    name = func.__name__
+    nargs = _number_of_arguments(func)
+    wrapper = ignore_nulls(func)
+
+    _SQLITE_UDF_REGISTRY[name] = _UDF(
+        name, wrapper, nargs, skip_if_exists, deterministic
+    )
     return wrapper
 
 
 def udaf(cls):
     """Register a UDAF class with any SQLite connection."""
-    _SQLITE_UDAF_REGISTRY.add(cls)
+    name = cls.__name__
+    nargs = _number_of_arguments(cls.step) - 1
+    _SQLITE_UDAF_REGISTRY[name] = _UDF(name, cls, nargs)
     return cls
 
 
+# Optional builtin functions
+#
+# These functions may exist as builtins depending on the SQLite versions.
+# They're only registered if they don't exist already in the connection.
+
+
+@udf(skip_if_exists=True)
+def unhex(string):
+    return bytes.fromhex(string)
+
+
+@udf(skip_if_exists=True)
+def exp(arg):
+    return math.exp(arg)
+
+
+@udf(skip_if_exists=True)
+def ln(arg):
+    if arg < 0:
+        return None
+    return math.log(arg)
+
+
+@udf(skip_if_exists=True)
+def log2(arg):
+    if arg < 0:
+        return None
+    return math.log(arg, 2)
+
+
+@udf(skip_if_exists=True)
+def log10(arg):
+    if arg < 0:
+        return None
+    return math.log(arg, 10)
+
+
+@udf(skip_if_exists=True)
+def floor(arg):
+    return math.floor(arg)
+
+
+@udf(skip_if_exists=True)
+def ceil(arg):
+    return math.ceil(arg)
+
+
+@udf(skip_if_exists=True)
+def sign(arg):
+    if not arg:
+        return 0
+    return math.copysign(1, arg)
+
+
+@udf(skip_if_exists=True)
+def mod(left, right):
+    return None if right == 0 else (left % right)
+
+
+@udf(skip_if_exists=True)
+def power(arg, power):
+    # mirroring sqlite - return NULL if negative or non-integral
+    if arg < 0.0 and not power.is_integer():
+        return None
+    return arg**power
+
+
+@udf(skip_if_exists=True)
+def sqrt(arg):
+    return None if arg < 0.0 else math.sqrt(arg)
+
+
+@udf(skip_if_exists=True)
+def sin(arg):
+    return math.sin(arg)
+
+
+@udf(skip_if_exists=True)
+def cos(arg):
+    return math.cos(arg)
+
+
+@udf(skip_if_exists=True)
+def tan(arg):
+    return math.tan(arg)
+
+
+@udf(skip_if_exists=True)
+def asin(arg):
+    return math.asin(arg)
+
+
+@udf(skip_if_exists=True)
+def acos(arg):
+    return math.acos(arg)
+
+
+@udf(skip_if_exists=True)
+def atan(arg):
+    return math.atan(arg)
+
+
+@udf(skip_if_exists=True)
+def atan2(y, x):
+    return math.atan2(y, x)
+
+
+@udf(skip_if_exists=True)
+def degrees(x):
+    return math.degrees(x)
+
+
+@udf(skip_if_exists=True)
+def radians(x):
+    return math.radians(x)
+
+
+@udf(skip_if_exists=True)
+def pi():
+    return math.pi
+
+
+# Additional UDFS
+
+
 @udf
-def _ibis_sqlite_reverse(string):
+def _ibis_reverse(string):
     return string[::-1]
 
 
 @udf
-def _ibis_sqlite_string_ascii(string):
+def _ibis_string_ascii(string):
     return ord(string[0])
 
 
 @udf
-def _ibis_sqlite_capitalize(string):
+def _ibis_capitalize(string):
     return string.capitalize()
 
 
 @udf
-def _ibis_sqlite_translate(string, from_string, to_string):
+def _ibis_rpad(string, width, pad):
+    return string.ljust(width, pad)[:width]
+
+
+@udf
+def _ibis_lpad(string, width, pad):
+    return string.rjust(width, pad)[:width]
+
+
+@udf
+def _ibis_repeat(string, n):
+    return string * n
+
+
+@udf
+def _ibis_translate(string, from_string, to_string):
     table = str.maketrans(from_string, to_string)
     return string.translate(table)
 
 
 @udf
-def _ibis_sqlite_regex_search(string, regex):
+def _ibis_regex_search(string, regex):
     """Return whether `regex` exists in `string`."""
     return re.search(regex, string) is not None
 
 
 @udf
-def _ibis_sqlite_regex_replace(string, pattern, replacement):
+def _ibis_regex_replace(string, pattern, replacement):
     """Replace occurrences of `pattern` in `string` with `replacement`."""
     return re.sub(pattern, replacement, string)
 
 
 @udf
-def _ibis_sqlite_regex_extract(string, pattern, index):
+def _ibis_regex_extract(string, pattern, index):
     """Extract match of regular expression `pattern` from `string` at `index`."""
     result = re.search(pattern, string)
     if result is not None and 0 <= index <= (result.lastindex or -1):
@@ -96,196 +282,13 @@ def _ibis_sqlite_regex_extract(string, pattern, index):
 
 
 @udf
-def _ibis_sqlite_exp(arg):
-    """Exponentiate `arg`.
-
-    Parameters
-    ----------
-    arg : number
-        Number to raise to `e`.
-
-    Returns
-    -------
-    result : Optional[number]
-        None If the input is None
-    """
-    return math.exp(arg)
+def _ibis_xor(x, y):
+    return x ^ y
 
 
 @udf
-def _ibis_sqlite_log(arg, base):
-    if arg < 0 or base < 0:
-        return None
-    return math.log(arg, base)
-
-
-@udf
-def _ibis_sqlite_ln(arg):
-    if arg < 0:
-        return None
-    return math.log(arg)
-
-
-@udf
-def _ibis_sqlite_log2(arg):
-    return _ibis_sqlite_log(arg, 2)
-
-
-@udf
-def _ibis_sqlite_log10(arg):
-    return _ibis_sqlite_log(arg, 10)
-
-
-@udf
-def _ibis_sqlite_floor(arg):
-    return math.floor(arg)
-
-
-@udf
-def _ibis_sqlite_ceil(arg):
-    return math.ceil(arg)
-
-
-@udf
-def _ibis_sqlite_sign(arg):
-    if not arg:
-        return 0
-    return math.copysign(1, arg)
-
-
-@udf
-def _ibis_sqlite_floordiv(left, right):
-    return left // right
-
-
-@udf
-def _ibis_sqlite_mod(left, right):
-    return left % right
-
-
-@udf
-def _ibis_sqlite_power(arg, power):
-    """Raise `arg` to the `power` power.
-
-    Parameters
-    ----------
-    arg : number
-        Number to raise to `power`.
-    power : number
-        Number to raise `arg` to.
-
-    Returns
-    -------
-    result : Optional[number]
-        None If either argument is None or we're trying to take a fractional
-        power or a negative number
-    """
-    if arg < 0.0 and not power.is_integer():
-        return None
-    return arg**power
-
-
-@udf
-def _ibis_sqlite_sqrt(arg):
-    """Square root of `arg`.
-
-    Parameters
-    ----------
-    arg : Optional[number]
-        Number to take the square root of
-
-    Returns
-    -------
-    result : Optional[number]
-        None if `arg` is None or less than 0 otherwise the square root
-    """
-    return None if arg is None or arg < 0.0 else math.sqrt(arg)
-
-
-def _trig_func_unary(func, arg):
-    if arg is None:
-        return None
-
-    return func(float(arg))
-
-
-def _trig_func_binary(func, arg1, arg2):
-    if arg1 is None or arg2 is None:
-        return None
-
-    return func(float(arg1), float(arg2))
-
-
-@udf
-def _ibis_sqlite_cot(arg):
-    return _trig_func_unary(
-        lambda arg: float("inf") if not arg else 1.0 / math.tan(arg), arg
-    )
-
-
-@udf
-def _ibis_sqlite_sin(arg):
-    return _trig_func_unary(math.sin, arg)
-
-
-@udf
-def _ibis_sqlite_cos(arg):
-    return _trig_func_unary(math.cos, arg)
-
-
-@udf
-def _ibis_sqlite_tan(arg):
-    return _trig_func_unary(math.tan, arg)
-
-
-@udf
-def _ibis_sqlite_asin(arg):
-    return _trig_func_unary(math.asin, arg)
-
-
-@udf
-def _ibis_sqlite_acos(arg):
-    return _trig_func_unary(math.acos, arg)
-
-
-@udf
-def _ibis_sqlite_atan(arg):
-    return _trig_func_unary(math.atan, arg)
-
-
-@udf
-def _ibis_sqlite_atan2(y, x):
-    return _trig_func_binary(math.atan2, y, x)
-
-
-@udf
-def _ibis_sqlite_degrees(x):
-    return None if x is None else math.degrees(x)
-
-
-@udf
-def _ibis_sqlite_radians(x):
-    return None if x is None else math.radians(x)
-
-
-@udf
-def _ibis_sqlite_xor(x, y):
-    return None if x is None or y is None else x ^ y
-
-
-@udf
-def _ibis_sqlite_inv(x):
-    return None if x is None else ~x
-
-
-@udf
-def _ibis_sqlite_pi():
-    return math.pi
-
-
-@udf
-def _ibis_sqlite_e():
-    return math.e
+def _ibis_inv(x):
+    return ~x
 
 
 @udf
@@ -318,19 +321,15 @@ def _extract_url_field(data, field_name):
 
 
 @udf
-def _ibis_extract_query(url, param_name):
-    query = urlsplit(url).query
-    if param_name is not None:
-        value = parse_qs(query)[param_name]
-        return value if len(value) > 1 else value[0]
-    else:
-        return query
+def _ibis_extract_full_query(url):
+    return urlsplit(url).query
 
 
 @udf
-def _ibis_extract_query_no_param(url):
+def _ibis_extract_query(url, param_name):
     query = urlsplit(url).query
-    return query
+    value = parse_qs(query)[param_name]
+    return value if len(value) > 1 else value[0]
 
 
 @udf
@@ -342,7 +341,7 @@ def _ibis_extract_user_info(url):
     return f"{username}:{password}"
 
 
-class _ibis_sqlite_var:
+class _ibis_var:
     def __init__(self, offset):
         self.mean = 0.0
         self.sum_of_squares_of_differences = 0.0
@@ -364,7 +363,7 @@ class _ibis_sqlite_var:
 
 
 @udaf
-class _ibis_sqlite_mode:
+class _ibis_mode:
     def __init__(self):
         self.counter = defaultdict(int)
 
@@ -379,18 +378,18 @@ class _ibis_sqlite_mode:
 
 
 @udaf
-class _ibis_sqlite_var_pop(_ibis_sqlite_var):
+class _ibis_var_pop(_ibis_var):
     def __init__(self):
         super().__init__(0)
 
 
 @udaf
-class _ibis_sqlite_var_samp(_ibis_sqlite_var):
+class _ibis_var_sample(_ibis_var):
     def __init__(self):
         super().__init__(1)
 
 
-class _ibis_sqlite_bit_agg:
+class _ibis_bit_agg:
     def __init__(self, op):
         self.value: int | None = None
         self.count: int = 0
@@ -409,24 +408,24 @@ class _ibis_sqlite_bit_agg:
 
 
 @udaf
-class _ibis_sqlite_bit_or(_ibis_sqlite_bit_agg):
+class _ibis_bit_or(_ibis_bit_agg):
     def __init__(self):
         super().__init__(operator.or_)
 
 
 @udaf
-class _ibis_sqlite_bit_and(_ibis_sqlite_bit_agg):
+class _ibis_bit_and(_ibis_bit_agg):
     def __init__(self):
         super().__init__(operator.and_)
 
 
 @udaf
-class _ibis_sqlite_bit_xor(_ibis_sqlite_bit_agg):
+class _ibis_bit_xor(_ibis_bit_agg):
     def __init__(self):
         super().__init__(operator.xor)
 
 
-class _ibis_sqlite_arbitrary(abc.ABC):
+class _ibis_arbitrary(abc.ABC):
     def __init__(self) -> None:
         self.value = None
 
@@ -439,57 +438,35 @@ class _ibis_sqlite_arbitrary(abc.ABC):
 
 
 @udaf
-class _ibis_sqlite_arbitrary_first(_ibis_sqlite_arbitrary):
+class _ibis_arbitrary_first(_ibis_arbitrary):
     def step(self, value):
         if self.value is None:
             self.value = value
 
 
 @udaf
-class _ibis_sqlite_arbitrary_last(_ibis_sqlite_arbitrary):
+class _ibis_arbitrary_last(_ibis_arbitrary):
     def step(self, value):
         if value is not None:
             self.value = value
 
 
-def _number_of_arguments(callable):
-    signature = inspect.signature(callable)
-    parameters = signature.parameters.values()
-    kinds = [param.kind for param in parameters]
-    valid_kinds = (
-        inspect.Parameter.POSITIONAL_OR_KEYWORD,
-        inspect.Parameter.POSITIONAL_ONLY,
-    )
-    if any(kind not in valid_kinds for kind in kinds) or any(
-        param.default is not inspect.Parameter.empty for param in parameters
-    ):
-        raise TypeError(
-            "Only positional arguments without defaults are supported in Ibis "
-            "SQLite function registration"
-        )
-    return len(parameters)
-
-
-def register_all(dbapi_connection):
+def register_all(con):
     """Register all udf and udaf with the connection.
 
     All udf and udaf are defined in this file with the `udf` and `udaf`
     decorators.
-
-    Parameters
-    ----------
-    dbapi_connection
-        sqlalchemy.Connection object
     """
-    for func in _SQLITE_UDF_REGISTRY:
-        dbapi_connection.create_function(
-            func.__name__, _number_of_arguments(func), func
+    existing = {
+        name for (name,) in con.execute("SELECT name FROM pragma_function_list()")
+    }
+
+    for udf in _SQLITE_UDF_REGISTRY.values():
+        if udf.skip_if_exists and udf.name in existing:
+            continue
+        con.create_function(
+            udf.name, udf.nargs, udf.impl, deterministic=udf.deterministic
         )
 
-    for agg in _SQLITE_UDAF_REGISTRY:
-        dbapi_connection.create_aggregate(
-            agg.__name__,
-            # subtract one to ignore the `self` argument of the step method
-            _number_of_arguments(agg.step) - 1,
-            agg,
-        )
+    for udf in _SQLITE_UDAF_REGISTRY.values():
+        con.create_aggregate(udf.name, udf.nargs, udf.impl)
