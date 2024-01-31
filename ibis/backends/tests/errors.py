@@ -95,13 +95,14 @@ try:
     from psycopg2.errors import (
         InvalidTextRepresentation as PsycoPg2InvalidTextRepresentation,
     )
+    from psycopg2.errors import ProgrammingError as PsycoPg2ProgrammingError
     from psycopg2.errors import SyntaxError as PsycoPg2SyntaxError
 except ImportError:
     PsycoPg2SyntaxError = (
         PsycoPg2IndeterminateDatatype
     ) = (
         PsycoPg2InvalidTextRepresentation
-    ) = PsycoPg2DivisionByZero = PsycoPg2InternalError = None
+    ) = PsycoPg2DivisionByZero = PsycoPg2InternalError = PsycoPg2ProgrammingError = None
 
 try:
     from pymysql.err import NotSupportedError as MySQLNotSupportedError
