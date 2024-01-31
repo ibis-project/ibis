@@ -167,8 +167,6 @@ all = [
   "regex",
   "shapely",
   "snowflake-connector-python",
-  "sqlalchemy",
-  "sqlalchemy-views",
   "trino",
 ]
 bigquery = [
