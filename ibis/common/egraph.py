@@ -127,6 +127,7 @@ class DisjointSet(Mapping[K, set[K]]):
         -------
         copy:
             A copy of the disjoint set.
+
         """
         ds = DisjointSet()
         ds._parents = self._parents.copy()

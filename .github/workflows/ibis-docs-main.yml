@@ -1,0 +1,58 @@
+name: Docs main
+
+on:
+  push:
+    branches:
+      - main
+      - "*.x.x"
+  merge_group:
+
+# only a single docs job that pushes to `main` can run at any given time
+concurrency: docs-${{ github.repository }}
+
+permissions:
+  # increase the rate limit for github operations, but limit token permissions
+  # to read-only
+  contents: read
+
+jobs:
+  docs:
+    runs-on: ubuntu-latest
+    steps:
+      - name: install nix
+        uses: cachix/install-nix-action@v25
+        with:
+          extra_nix_config: |
+            access-tokens = github.com=${{ secrets.GITHUB_TOKEN }}
+
+      - name: setup cachix
+        uses: cachix/cachix-action@v14
+        with:
+          name: ibis
+          authToken: ${{ secrets.CACHIX_AUTH_TOKEN }}
+          extraPullNames: nix-community,poetry2nix
+
+      - name: checkout
+        uses: actions/checkout@v4
+
+      - name: run doctests
+        # keep HOME because duckdb (which we use for doctests) wants to use
+        # that for extensions
+        run: nix develop --ignore-environment --keep HOME --keep HYPOTHESIS_PROFILE -c just doctest
+
+      - name: build api docs
+        run: nix develop --ignore-environment -c just docs-apigen --verbose
+
+      - name: build docs
+        run: nix develop --ignore-environment --keep HOME -c just docs-render
+
+      - name: check that all frozen computations were done before push
+        run: git diff --exit-code --stat
+
+      - name: verify internal links
+        run: nix develop --ignore-environment '.#links' -c just checklinks --offline --no-progress
+
+      - name: build and push quarto docs
+        run: nix develop --ignore-environment --keep NETLIFY_AUTH_TOKEN -c just docs-deploy
+        env:
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}

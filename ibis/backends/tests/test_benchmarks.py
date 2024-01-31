@@ -17,10 +17,9 @@ import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
 from ibis.backends.base import _get_backend_names
+from ibis.backends.pandas.udf import udf
 
-# ruff: noqa: F821
-
-pytestmark = pytest.mark.skip(reason="the backends must be rewritten first")
+pytestmark = pytest.mark.benchmark
 
 
 def make_t():
@@ -280,9 +279,9 @@ def high_card_grouped_rolling(t):
     return t.value.mean().over(high_card_rolling_window(t))
 
 
-# @udf.reduction(["double"], "double")
-# def my_mean(series):
-#     return series.mean()
+@udf.reduction(["double"], "double")
+def my_mean(series):
+    return series.mean()
 
 
 def low_card_grouped_rolling_udf_mean(t):
@@ -293,9 +292,9 @@ def high_card_grouped_rolling_udf_mean(t):
     return my_mean(t.value).over(high_card_rolling_window(t))
 
 
-# @udf.analytic(["double"], "double")
-# def my_zscore(series):
-#     return (series - series.mean()) / series.std()
+@udf.analytic(["double"], "double")
+def my_zscore(series):
+    return (series - series.mean()) / series.std()
 
 
 def low_card_window(t):
@@ -314,9 +313,9 @@ def high_card_window_analytics_udf(t):
     return my_zscore(t.value).over(high_card_window(t))
 
 
-# @udf.reduction(["double", "double"], "double")
-# def my_wm(v, w):
-#     return np.average(v, weights=w)
+@udf.reduction(["double", "double"], "double")
+def my_wm(v, w):
+    return np.average(v, weights=w)
 
 
 def low_card_grouped_rolling_udf_wm(t):

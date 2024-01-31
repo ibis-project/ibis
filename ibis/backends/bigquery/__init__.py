@@ -755,6 +755,7 @@ class Backend(SQLGlotBackend, CanCreateSchema):
             Name of the attached database that the table is located in.
         overwrite
             If `True` then replace existing contents of table
+
         """
         return super().insert(
             table_name,
