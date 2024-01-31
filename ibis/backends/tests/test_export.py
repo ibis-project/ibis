@@ -16,6 +16,7 @@ from ibis.backends.tests.errors import (
     ExaQueryError,
     MySQLOperationalError,
     OracleDatabaseError,
+    PsycoPg2InternalError,
     PyDeltaTableError,
     PyDruidProgrammingError,
     PyODBCProgrammingError,
@@ -352,7 +353,7 @@ def test_table_to_csv_writer_kwargs(delimiter, tmp_path, awards_players):
                 pytest.mark.notyet(["exasol"], raises=ExaQueryError),
                 pytest.mark.notyet(
                     ["risingwave"],
-                    raises=sa.exc.DBAPIError,
+                    raises=PsycoPg2InternalError,
                     reason="Feature is not yet implemented: unsupported data type: NUMERIC(38,9)",
                 ),
             ],
@@ -378,7 +379,7 @@ def test_table_to_csv_writer_kwargs(delimiter, tmp_path, awards_players):
                 pytest.mark.notyet(["exasol"], raises=ExaQueryError),
                 pytest.mark.notyet(
                     ["risingwave"],
-                    raises=sa.exc.DBAPIError,
+                    raises=PsycoPg2InternalError,
                     reason="Feature is not yet implemented: unsupported data type: NUMERIC(76,38)",
                 ),
             ],
@@ -504,16 +505,7 @@ def test_to_pandas_batches_empty_table(backend, con):
 @pytest.mark.parametrize(
     "n",
     [
-        param(
-            None,
-            marks=[
-                pytest.mark.notimpl(
-                    ["risingwave"],
-                    raises=sa.exc.InternalError,
-                    reason="risingwave doesn't support limit null",
-                ),
-            ],
-        ),
+        None,
         1,
     ],
 )
@@ -529,16 +521,7 @@ def test_to_pandas_batches_nonempty_table(backend, con, n):
 @pytest.mark.parametrize(
     "n",
     [
-        param(
-            None,
-            marks=[
-                pytest.mark.notimpl(
-                    ["risingwave"],
-                    raises=sa.exc.InternalError,
-                    reason="risingwave doesn't support limit null",
-                ),
-            ],
-        ),
+        None,
         0,
         1,
         2,

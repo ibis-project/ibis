@@ -7,13 +7,14 @@ from public import public
 import ibis.common.exceptions as com
 import ibis.expr.operations as ops
 from ibis.backends.postgres.compiler import PostgresCompiler
+from ibis.backends.risingwave.dialect import RisingWave
 
 
 @public
 class RisingwaveCompiler(PostgresCompiler):
     __slots__ = ()
 
-    dialect = "postgres"
+    dialect = RisingWave
     name = "risingwave"
 
     def _aggregate(self, funcname: str, *args, where):
