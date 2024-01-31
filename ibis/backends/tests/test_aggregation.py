@@ -22,6 +22,7 @@ from ibis.backends.tests.errors import (
     MySQLNotSupportedError,
     OracleDatabaseError,
     PolarsInvalidOperationError,
+    PsycoPg2InternalError,
     Py4JError,
     PyDruidProgrammingError,
     PyODBCProgrammingError,
@@ -537,7 +538,7 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
                 ),
                 pytest.mark.notimpl(
                     ["risingwave"],
-                    raises=sa.exc.InternalError,
+                    raises=PsycoPg2InternalError,
                 ),
             ],
         ),
@@ -562,7 +563,7 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
                 ),
                 pytest.mark.notimpl(
                     ["risingwave"],
-                    raises=sa.exc.InternalError,
+                    raises=PsycoPg2InternalError,
                 ),
             ],
         ),
@@ -592,7 +593,7 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
                 ),
                 pytest.mark.notimpl(
                     ["risingwave"],
-                    raises=sa.exc.InternalError,
+                    raises=PsycoPg2InternalError,
                 ),
             ],
         ),
@@ -649,7 +650,7 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
                 ),
                 pytest.mark.notimpl(
                     ["risingwave"],
-                    raises=sa.exc.InternalError,
+                    raises=PsycoPg2InternalError,
                 ),
             ],
         ),
@@ -664,7 +665,7 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
                 ),
                 pytest.mark.notimpl(
                     ["risingwave"],
-                    raises=sa.exc.InternalError,
+                    raises=PsycoPg2InternalError,
                 ),
             ],
         ),
@@ -939,7 +940,7 @@ def test_count_distinct_star(alltypes, df, ibis_cond, pandas_cond):
                 pytest.mark.broken(
                     ["risingwave"],
                     reason="Invalid input syntax: direct arg in `percentile_cont` must be castable to float64",
-                    raises=sa.exc.InternalError,
+                    raises=PsycoPg2InternalError,
                 ),
             ],
         ),
@@ -991,7 +992,7 @@ def test_quantile(
                 ),
                 pytest.mark.notimpl(
                     ["risingwave"],
-                    raises=sa.exc.InternalError,
+                    raises=PsycoPg2InternalError,
                     reason="function covar_pop(integer, integer) does not exist",
                 ),
             ],
@@ -1011,7 +1012,7 @@ def test_quantile(
                 ),
                 pytest.mark.notimpl(
                     ["risingwave"],
-                    raises=sa.exc.InternalError,
+                    raises=PsycoPg2InternalError,
                     reason="function covar_pop(integer, integer) does not exist",
                 ),
             ],
@@ -1041,7 +1042,7 @@ def test_quantile(
                 ),
                 pytest.mark.notimpl(
                     ["risingwave"],
-                    raises=sa.exc.InternalError,
+                    raises=PsycoPg2InternalError,
                     reason="function covar_pop(integer, integer) does not exist",
                 ),
             ],
@@ -1056,7 +1057,7 @@ def test_quantile(
                     raises=com.OperationNotDefinedError,
                 ),
                 pytest.mark.notyet(
-                    ["postgres", "duckdb", "snowflake"],
+                    ["postgres", "duckdb", "snowflake", "risingwave"],
                     raises=com.UnsupportedOperationError,
                     reason="backend only implements population correlation coefficient",
                 ),
@@ -1070,7 +1071,7 @@ def test_quantile(
                     reason="Correlation with how='sample' is not supported.",
                 ),
                 pytest.mark.notyet(
-                    ["oracle", "risingwave"],
+                    ["oracle"],
                     raises=ValueError,
                     reason="XXXXSQLExprTranslator only implements population correlation coefficient",
                 ),
@@ -1096,7 +1097,7 @@ def test_quantile(
                 ),
                 pytest.mark.notimpl(
                     ["risingwave"],
-                    raises=sa.exc.InternalError,
+                    raises=PsycoPg2InternalError,
                     reason="function covar_pop(integer, integer) does not exist",
                 ),
             ],
@@ -1130,7 +1131,7 @@ def test_quantile(
                 ),
                 pytest.mark.notimpl(
                     ["risingwave"],
-                    raises=sa.exc.InternalError,
+                    raises=PsycoPg2InternalError,
                     reason="function covar_pop(integer, integer) does not exist",
                 ),
             ],
