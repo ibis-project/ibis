@@ -35,7 +35,7 @@ def flatten_predicates(node):
     >>> import ibis
     >>> t = ibis.table([("a", "int64"), ("b", "string")], name="t")
     >>> filt = (t.a == 1) & (t.b == "foo")
-    >>> predicates = flatten_predicate(filt.op())
+    >>> predicates = flatten_predicates(filt.op())
     >>> len(predicates)
     2
     >>> predicates[0].to_expr().name("left")

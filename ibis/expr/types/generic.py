@@ -543,29 +543,29 @@ class Value(Expr):
         Check against a derived expression
 
         >>> t.a.isin(t.b + 1)
-        ┏━━━━━━━━━━━━━━━━━━━━━━━━┓
-        ┃ InColumn(a, Add(b, 1)) ┃
-        ┡━━━━━━━━━━━━━━━━━━━━━━━━┩
-        │ boolean                │
-        ├────────────────────────┤
-        │ False                  │
-        │ False                  │
-        │ True                   │
-        └────────────────────────┘
+        ┏━━━━━━━━━━━━━━━┓
+        ┃ InSubquery(a) ┃
+        ┡━━━━━━━━━━━━━━━┩
+        │ boolean       │
+        ├───────────────┤
+        │ False         │
+        │ False         │
+        │ True          │
+        └───────────────┘
 
         Check against a column from a different table
 
         >>> t2 = ibis.memtable({"x": [99, 2, 99]})
         >>> t.a.isin(t2.x)
-        ┏━━━━━━━━━━━━━━━━┓
-        ┃ InColumn(a, x) ┃
-        ┡━━━━━━━━━━━━━━━━┩
-        │ boolean        │
-        ├────────────────┤
-        │ False          │
-        │ True           │
-        │ False          │
-        └────────────────┘
+        ┏━━━━━━━━━━━━━━━┓
+        ┃ InSubquery(a) ┃
+        ┡━━━━━━━━━━━━━━━┩
+        │ boolean       │
+        ├───────────────┤
+        │ False         │
+        │ True          │
+        │ False         │
+        └───────────────┘
         """
         from ibis.expr.types import ArrayValue
 

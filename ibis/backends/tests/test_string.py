@@ -733,13 +733,7 @@ def test_string(backend, alltypes, df, result_func, expected_func):
 
 
 @pytest.mark.notimpl(
-    ["mysql", "mssql", "druid", "exasol"],
-    raises=com.OperationNotDefinedError,
-)
-@pytest.mark.broken(
-    ["duckdb"],
-    reason="no idea, generated SQL looks very correct but this fails",
-    raises=AssertionError,
+    ["mysql", "mssql", "druid", "exasol"], raises=com.OperationNotDefinedError
 )
 def test_re_replace_global(con):
     expr = ibis.literal("aba").re_replace("a", "c")
