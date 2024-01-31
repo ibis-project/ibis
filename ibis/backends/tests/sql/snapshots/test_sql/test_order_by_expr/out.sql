@@ -1,8 +1,8 @@
 SELECT
-  t0.a,
-  t0.b
-FROM t AS t0
+  "t0"."a",
+  "t0"."b"
+FROM "t" AS "t0"
 WHERE
-  t0.a = CAST(1 AS TINYINT)
+  "t0"."a" = CAST(1 AS TINYINT)
 ORDER BY
-  CONCAT(t0.b, 'a') ASC
+  CONCAT("t0"."b", 'a') ASC

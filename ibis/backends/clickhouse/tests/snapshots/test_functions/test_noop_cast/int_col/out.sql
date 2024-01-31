@@ -1,3 +1,3 @@
 SELECT
-  t0.int_col
-FROM functional_alltypes AS t0
+  "t0"."int_col"
+FROM "functional_alltypes" AS "t0"
