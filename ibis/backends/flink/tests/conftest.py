@@ -121,6 +121,51 @@ def alltypes(con):
 
 
 @pytest.fixture
+def awards_players_schema():
+    return TEST_TABLES["awards_players"]
+
+
+@pytest.fixture
+def functional_alltypes_schema():
+    return ibis.schema(
+        {
+            "id": "int32",
+            "bool_col": "boolean",
+            "tinyint_col": "int8",
+            "smallint_col": "int16",
+            "int_col": "int32",
+            "bigint_col": "int64",
+            "float_col": "float32",
+            "double_col": "float64",
+            "date_string_col": "string",
+            "string_col": "string",
+            "timestamp_col": "timestamp(3)",  # overriding the higher level fixture with precision because Flink's
+            # watermark must use a field of type TIMESTAMP(p) or TIMESTAMP_LTZ(p), where 'p' is from 0 to 3
+            "year": "int32",
+            "month": "int32",
+        }
+    )
+
+
+@pytest.fixture
+def batting_schema():
+    return TEST_TABLES["batting"]
+
+
+@pytest.fixture
+def csv_source_configs():
+    def generate_csv_configs(csv_file):
+        return {
+            "connector": "filesystem",
+            "path": f"ci/ibis-testing-data/csv/{csv_file}.csv",
+            "format": "csv",
+            "csv.ignore-parse-errors": "true",
+        }
+
+    return generate_csv_configs
+
+
+@pytest.fixture
 def temp_view(con) -> str:
     """Return a temporary view name.
 
@@ -143,3 +188,14 @@ def temp_view(con) -> str:
     yield name
 
     con.drop_view(name, force=True)
+
+
+@pytest.fixture(autouse=True)
+def reset_con(con):
+    yield
+    tables_to_drop = list(set(con.list_tables()) - set(TEST_TABLES.keys()))
+    for table in tables_to_drop:
+        con.drop_table(table, force=True)
+    views_to_drop = list(set(con.list_views()) - set(TEST_TABLES.keys()))
+    for view in views_to_drop:
+        con.drop_view(view, temp=True, force=True)

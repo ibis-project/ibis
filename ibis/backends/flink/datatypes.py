@@ -101,7 +101,7 @@ class FlinkType(TypeMapper):
             # if `precision` is None, and assumes `precision = 6`
             # if it is not provided.
             return DataTypes.TIMESTAMP(
-                precision=dtype.scale if dtype.scale else 6,
+                precision=dtype.scale if dtype.scale is not None else 6,
                 nullable=dtype.nullable,
             )
         else:
