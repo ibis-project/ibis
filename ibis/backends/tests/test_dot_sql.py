@@ -330,7 +330,7 @@ def test_dot_sql_limit(con):
 def mem_t(con):
     if con.name == "druid":
         pytest.xfail("druid does not support create_table")
-    name = f"{con.name}_temp_mem_t_for_cte"
+    name = f"test_{con.name}_temp_mem_t_for_cte"
     t = con.create_table(name, ibis.memtable({"a": list("def")}))
     yield t
     with contextlib.suppress(NotImplementedError):
