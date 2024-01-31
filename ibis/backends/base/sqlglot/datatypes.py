@@ -631,6 +631,26 @@ class SnowflakeType(SqlglotType):
 class SQLiteType(SqlglotType):
     dialect = "sqlite"
 
+    @classmethod
+    def _from_sqlglot_INT(cls) -> dt.Int64:
+        return dt.Int64(nullable=cls.default_nullable)
+
+    @classmethod
+    def _from_sqlglot_FLOAT(cls) -> dt.Float64:
+        return dt.Float64(nullable=cls.default_nullable)
+
+    @classmethod
+    def _from_ibis_Array(cls, dtype: dt.Array) -> NoReturn:
+        raise com.UnsupportedBackendType("Array types aren't supported in SQLite")
+
+    @classmethod
+    def _from_ibis_Map(cls, dtype: dt.Map) -> NoReturn:
+        raise com.UnsupportedBackendType("Map types aren't supported in SQLite")
+
+    @classmethod
+    def _from_ibis_Struct(cls, dtype: dt.Struct) -> sge.DataType:
+        raise com.UnsupportedBackendType("Struct types aren't supported in SQLite")
+
 
 class ImpalaType(SqlglotType):
     dialect = "impala"
