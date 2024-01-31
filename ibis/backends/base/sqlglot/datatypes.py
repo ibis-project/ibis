@@ -407,6 +407,10 @@ class RisingWaveType(PostgresType):
     def _from_ibis_Decimal(cls, dtype: dt.Decimal) -> sge.DataType:
         return sge.DataType(this=typecode.DECIMAL)
 
+    @classmethod
+    def _from_ibis_UUID(cls, dtype: dt.UUID) -> sge.DataType:
+        return sge.DataType(this=typecode.VARCHAR)
+
 
 class DataFusionType(PostgresType):
     unknown_type_strings = {
