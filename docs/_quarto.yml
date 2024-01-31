@@ -425,6 +425,8 @@ quartodoc:
           contents:
             - GeoSpatialValue
             - GeoSpatialColumn
+            - name: NumericValue.point
+              package: ibis.expr.types.numeric
 
         - kind: page
           summary:
