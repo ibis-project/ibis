@@ -8,9 +8,13 @@ from sqlglot.dialects import Postgres
 
 
 def _datatype_sql(self: generator.Generator, expression: sge.DataType) -> str:
-    # Use this to strip off timestamp precision
     if expression.is_type("timestamptz"):
+        # Use this to strip off timestamp precision
         return "TIMESTAMPTZ"
+    if expression.is_type("decimal"):
+        # Risingwave doesn't allow specifying precision
+        # Also max precision (or default precision) is 24
+        return "NUMERIC"
     return self.datatype_sql(expression)
 
 

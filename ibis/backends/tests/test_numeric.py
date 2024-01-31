@@ -25,6 +25,7 @@ from ibis.backends.tests.errors import (
     MySQLOperationalError,
     OracleDatabaseError,
     PsycoPg2DivisionByZero,
+    PsycoPg2InternalError,
     Py4JError,
     PyDruidProgrammingError,
     PyODBCDataError,
@@ -256,7 +257,7 @@ def test_numeric_literal(con, backend, expr, expected_types):
                 "duckdb": decimal.Decimal("1.1"),
                 "impala": decimal.Decimal("1"),
                 "postgres": decimal.Decimal("1.1"),
-                "risingwave": 1.1,
+                "risingwave": decimal.Decimal("1.1"),
                 "pandas": decimal.Decimal("1.1"),
                 "pyspark": decimal.Decimal("1.1"),
                 "mysql": decimal.Decimal("1"),
@@ -298,7 +299,7 @@ def test_numeric_literal(con, backend, expr, expected_types):
                 "duckdb": decimal.Decimal("1.100000000"),
                 "impala": decimal.Decimal("1.1"),
                 "postgres": decimal.Decimal("1.1"),
-                "risingwave": 1.1,
+                "risingwave": decimal.Decimal("1.1"),
                 "pandas": decimal.Decimal("1.1"),
                 "pyspark": decimal.Decimal("1.1"),
                 "mysql": decimal.Decimal("1.1"),
@@ -333,7 +334,7 @@ def test_numeric_literal(con, backend, expr, expected_types):
                 "sqlite": decimal.Decimal("1.1"),
                 "dask": decimal.Decimal("1.1"),
                 "postgres": decimal.Decimal("1.1"),
-                "risingwave": 1.1,
+                "risingwave": decimal.Decimal("1.1"),
                 "pandas": decimal.Decimal("1.1"),
                 "pyspark": decimal.Decimal("1.1"),
                 "clickhouse": decimal.Decimal(
@@ -387,7 +388,7 @@ def test_numeric_literal(con, backend, expr, expected_types):
                 "bigquery": float("inf"),
                 "sqlite": decimal.Decimal("Infinity"),
                 "postgres": decimal.Decimal("Infinity"),
-                "risingwave": float("nan"),
+                "risingwave": decimal.Decimal("Infinity"),
                 "pandas": decimal.Decimal("Infinity"),
                 "dask": decimal.Decimal("Infinity"),
                 "pyspark": decimal.Decimal("Infinity"),
@@ -458,7 +459,7 @@ def test_numeric_literal(con, backend, expr, expected_types):
                 "bigquery": float("-inf"),
                 "sqlite": decimal.Decimal("-Infinity"),
                 "postgres": decimal.Decimal("-Infinity"),
-                "risingwave": float("nan"),
+                "risingwave": decimal.Decimal("-Infinity"),
                 "pandas": decimal.Decimal("-Infinity"),
                 "dask": decimal.Decimal("-Infinity"),
                 "pyspark": decimal.Decimal("-Infinity"),
@@ -757,7 +758,7 @@ def test_isnan_isinf(
                 pytest.mark.notimpl(["druid"], raises=PyDruidProgrammingError),
                 pytest.mark.notimpl(
                     ["risingwave"],
-                    raises=sa.exc.InternalError,
+                    raises=PsycoPg2InternalError,
                     reason="function log10(numeric, numeric) does not exist",
                 ),
             ],
@@ -776,7 +777,7 @@ def test_isnan_isinf(
                 pytest.mark.notimpl(["druid"], raises=PyDruidProgrammingError),
                 pytest.mark.notimpl(
                     ["risingwave"],
-                    raises=sa.exc.InternalError,
+                    raises=PsycoPg2InternalError,
                     reason="function log10(numeric, numeric) does not exist",
                 ),
             ],
@@ -942,7 +943,7 @@ def test_simple_math_functions_columns(
                 pytest.mark.notimpl(["druid"], raises=PyDruidProgrammingError),
                 pytest.mark.notimpl(
                     ["risingwave"],
-                    raises=sa.exc.InternalError,
+                    raises=PsycoPg2InternalError,
                     reason="function log10(numeric, numeric) does not exist",
                 ),
             ],
@@ -981,7 +982,7 @@ def test_simple_math_functions_columns(
                 pytest.mark.notimpl(["polars"], raises=com.UnsupportedArgumentError),
                 pytest.mark.notimpl(
                     ["risingwave"],
-                    raises=sa.exc.InternalError,
+                    raises=PsycoPg2InternalError,
                     reason="function log10(numeric, numeric) does not exist",
                 ),
             ],
@@ -1207,7 +1208,6 @@ def test_floating_mod(backend, alltypes, df):
                     reason="Oracle doesn't do integer division by zero",
                 ),
                 pytest.mark.never(["impala"], reason="doesn't allow divide by zero"),
-                pytest.mark.notyet(["risingwave"], raises=sa.exc.InternalError),
             ],
         ),
         param(
@@ -1220,7 +1220,6 @@ def test_floating_mod(backend, alltypes, df):
                     reason="Oracle doesn't do integer division by zero",
                 ),
                 pytest.mark.never(["impala"], reason="doesn't allow divide by zero"),
-                pytest.mark.notyet(["risingwave"], raises=sa.exc.InternalError),
             ],
         ),
         param(
@@ -1233,7 +1232,6 @@ def test_floating_mod(backend, alltypes, df):
                     reason="Oracle doesn't do integer division by zero",
                 ),
                 pytest.mark.never(["impala"], reason="doesn't allow divide by zero"),
-                pytest.mark.notyet(["risingwave"], raises=sa.exc.InternalError),
             ],
         ),
         param(
@@ -1246,7 +1244,6 @@ def test_floating_mod(backend, alltypes, df):
                     reason="Oracle doesn't do integer division by zero",
                 ),
                 pytest.mark.never(["impala"], reason="doesn't allow divide by zero"),
-                pytest.mark.notyet(["risingwave"], raises=sa.exc.InternalError),
             ],
         ),
         param(
@@ -1329,17 +1326,13 @@ def test_divide_by_zero(backend, alltypes, df, column, denominator):
         "snowflake",
         "trino",
         "postgres",
+        "risingwave",
         "mysql",
         "druid",
         "mssql",
         "exasol",
     ],
     reason="Not SQLAlchemy backends",
-)
-@pytest.mark.notimpl(
-    ["risingwave"],
-    raises=sa.exc.InternalError,
-    reason="Feature is not yet implemented: unsupported data type: NUMERIC(5)",
 )
 def test_sa_default_numeric_precision_and_scale(
     con, backend, default_precisions, default_scales, temp_table
@@ -1378,7 +1371,7 @@ def test_sa_default_numeric_precision_and_scale(
 @pytest.mark.notimpl(["druid"], raises=PyDruidProgrammingError)
 @pytest.mark.notimpl(
     ["risingwave"],
-    raises=sa.exc.InternalError,
+    raises=PsycoPg2InternalError,
     reason="function random() does not exist",
 )
 def test_random(con):
