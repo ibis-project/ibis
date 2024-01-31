@@ -29,14 +29,45 @@ r0 := DatabaseTable: airlines
   security_delay      int32
   late_aircraft_delay int32
 
-r1 := SQLStringView[r0]: foo
+r1 := View: foo
+  year                int32
+  month               int32
+  day                 int32
+  dayofweek           int32
+  dep_time            int32
+  crs_dep_time        int32
+  arr_time            int32
+  crs_arr_time        int32
+  carrier             string
+  flight_num          int32
+  tail_num            int32
+  actual_elapsed_time int32
+  crs_elapsed_time    int32
+  airtime             int32
+  arrdelay            int32
+  depdelay            int32
+  origin              string
+  dest                string
+  distance            int32
+  taxi_in             int32
+  taxi_out            int32
+  cancelled           int32
+  cancellation_code   string
+  diverted            int32
+  carrier_delay       int32
+  weather_delay       int32
+  nas_delay           int32
+  security_delay      int32
+  late_aircraft_delay int32
+
+r2 := SQLStringView[r1]
   query:
     SELECT carrier, mean(arrdelay) AS avg_arrdelay FROM airlines GROUP BY 1 ORDER …
   schema:
     carrier      string
     avg_arrdelay float64
 
-Project[r1]
-  carrier:      r1.carrier
-  avg_arrdelay: Round(r1.avg_arrdelay, digits=1)
-  island:       Lowercase(r1.carrier)
+Project[r2]
+  carrier:      r2.carrier
+  avg_arrdelay: Round(r2.avg_arrdelay, digits=1)
+  island:       Lowercase(r2.carrier)

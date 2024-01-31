@@ -16,10 +16,7 @@ def test_format_sql_query_result(con, snapshot):
     schema = ibis.schema({"carrier": "string", "avg_arrdelay": "double"})
 
     with con.set_query_schema(query, schema):
-        expr = t.sql(query)
-        # name is autoincremented so we need to set it manually to make the
-        # snapshot stable
-        expr = expr.op().copy(name="foo").to_expr()
+        expr = t.alias("foo").sql(query)
 
     expr = expr.mutate(
         island=_.carrier.lower(),
