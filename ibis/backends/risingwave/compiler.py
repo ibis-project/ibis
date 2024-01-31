@@ -1,34 +1,35 @@
 from __future__ import annotations
 
+from functools import singledispatchmethod
+
+from public import public
+
+import ibis.common.exceptions as com
 import ibis.expr.operations as ops
-from ibis.backends.base.sql.alchemy import AlchemyCompiler, AlchemyExprTranslator
-from ibis.backends.risingwave.datatypes import RisingwaveType
-from ibis.backends.risingwave.registry import operation_registry
-from ibis.expr.rewrites import rewrite_sample
+from ibis.backends.postgres.compiler import PostgresCompiler
 
 
-class RisingwaveExprTranslator(AlchemyExprTranslator):
-    _registry = operation_registry.copy()
-    _rewrites = AlchemyExprTranslator._rewrites.copy()
-    _has_reduction_filter_syntax = True
-    _supports_tuple_syntax = True
-    _dialect_name = "risingwave"
+@public
+class RisingwaveCompiler(PostgresCompiler):
+    __slots__ = ()
 
-    # it does support it, but we can't use it because of support for pivot
-    supports_unnest_in_select = False
+    dialect = "postgres"
+    name = "risingwave"
 
-    type_mapper = RisingwaveType
+    def _aggregate(self, funcname: str, *args, where):
+        func = self.f[funcname]
+        if where is not None:
+            args = tuple(self.if_(where, arg) for arg in args)
+        return func(*args)
 
+    @singledispatchmethod
+    def visit_node(self, op, **kwargs):
+        return super().visit_node(op, **kwargs)
 
-rewrites = RisingwaveExprTranslator.rewrites
-
-
-@rewrites(ops.Any)
-@rewrites(ops.All)
-def _any_all_no_op(expr):
-    return expr
-
-
-class RisingwaveCompiler(AlchemyCompiler):
-    translator_class = RisingwaveExprTranslator
-    rewrites = AlchemyCompiler.rewrites | rewrite_sample
+    @visit_node.register(ops.Correlation)
+    def visit_Correlation(self, op, *, left, right, how, where):
+        if how == "sample":
+            raise com.UnsupportedOperationError(
+                f"{self.name} only implements `pop` correlation coefficient"
+            )
+        super().visit_Correlation(op, left=left, right=right, how=how, where=where)
