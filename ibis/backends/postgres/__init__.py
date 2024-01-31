@@ -272,10 +272,7 @@ class Backend(SQLGlotBackend):
             cur.execute("SET TIMEZONE = UTC")
 
     def list_tables(
-        self,
-        like: str | None = None,
-        database: str | None = None,
-        schema: str | None = None,
+        self, like: str | None = None, schema: str | None = None
     ) -> list[str]:
         """List the tables in the database.
 
@@ -283,8 +280,6 @@ class Backend(SQLGlotBackend):
         ----------
         like
             A pattern to use for listing tables.
-        database
-            (deprecated) The database to perform the list against.
         schema
             The schema to perform the list against.
 
@@ -296,18 +291,7 @@ class Backend(SQLGlotBackend):
             :::
 
         """
-        if database is not None:
-            util.warn_deprecated(
-                "database",
-                instead="Use the `schema` keyword argument instead",
-                as_of="7.1",
-                removed_in="8.0",
-            )
-
         conditions = [TRUE]
-
-        if database is not None:
-            conditions = C.table_catalog.eq(sge.convert(database))
 
         if schema is not None:
             conditions = C.table_schema.eq(sge.convert(schema))
