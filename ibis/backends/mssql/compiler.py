@@ -291,10 +291,6 @@ class MSSQLCompiler(SQLGlotCompiler):
             return self.f.dateadd(self.v.s, arg / 1_000, "1970-01-01 00:00:00")
         raise com.UnsupportedOperationError(f"{unit!r} unit is not supported!")
 
-    @visit_node.register(ops.SQLStringView)
-    def visit_SQLStringView(self, op, *, query: str, name: str, child):
-        return sg.parse_one(query, read=self.dialect).subquery(name)
-
     def visit_NonNullLiteral(self, op, *, value, dtype):
         if dtype.is_decimal():
             return self.cast(str(value.normalize()), dtype)

@@ -261,28 +261,36 @@ class SQLGlotCompiler(abc.ABC):
         op, ctes = sqlize(op)
 
         aliases = {}
-        alias_counter = itertools.count()
+        counter = itertools.count()
 
         def fn(node, _, **kwargs):
             result = self.visit_node(node, **kwargs)
 
-            if node is op:
+            # if it's not a relation then we don't need to do anything special
+            if node is op or not isinstance(node, ops.Relation):
                 return result
-            elif isinstance(node, ops.Relation):
-                aliases[node] = alias = f"t{next(alias_counter)}"
-                alias = sg.to_identifier(alias, quoted=self.quoted)
-                try:
-                    return result.subquery(alias)
-                except AttributeError:
-                    return result.as_(alias, quoted=self.quoted)
-            else:
-                return result
+
+            # alias ops.Views to their explicitly assigned name otherwise generate
+            alias = node.name if isinstance(node, ops.View) else f"t{next(counter)}"
+            aliases[node] = alias
+
+            alias = sg.to_identifier(alias, quoted=self.quoted)
+            try:
+                return result.subquery(alias)
+            except AttributeError:
+                return result.as_(alias, quoted=self.quoted)
 
         # apply translate rules in topological order
         results = op.map(fn)
-        out = results[op]
-        out = out.this if isinstance(out, sge.Subquery) else out
 
+        # get the root node as a sqlglot select statement
+        out = results[op]
+        if isinstance(out, sge.Table):
+            out = sg.select(STAR).from_(out)
+        elif isinstance(out, sge.Subquery):
+            out = out.this
+
+        # add cte definitions to the select statement
         for cte in ctes:
             alias = sg.to_identifier(aliases[cte], quoted=self.quoted)
             out = out.with_(alias, as_=results[cte].this, dialect=self.dialect)
@@ -1222,27 +1230,27 @@ class SQLGlotCompiler(abc.ABC):
         }
         return sg.select(*self._cleanup_names(exprs)).from_(parent)
 
-    @visit_node.register(ops.View)
-    def visit_View(self, op, *, child, name: str):
-        # TODO: find a way to do this without creating a temporary view
-        backend = op.child.to_expr()._find_backend()
-        backend._create_temp_view(table_name=name, source=sg.select(STAR).from_(child))
-        return sg.table(name, quoted=self.quoted)
-
     @visit_node.register(CTE)
     def visit_CTE(self, op, *, parent):
         return sg.table(parent.alias_or_name, quoted=self.quoted)
 
+    @visit_node.register(ops.View)
+    def visit_View(self, op, *, child, name: str):
+        if isinstance(child, sge.Table):
+            child = sg.select(STAR).from_(child)
+
+        try:
+            return child.subquery(name)
+        except AttributeError:
+            return child.as_(name)
+
     @visit_node.register(ops.SQLStringView)
-    def visit_SQLStringView(self, op, *, query: str, name: str, child):
-        table = sg.table(name, quoted=self.quoted)
-        return (
-            sg.select(STAR).from_(table).with_(table, as_=query, dialect=self.dialect)
-        )
+    def visit_SQLStringView(self, op, *, query: str, child, schema):
+        return sg.parse_one(query, read=self.dialect)
 
     @visit_node.register(ops.SQLQueryResult)
     def visit_SQLQueryResult(self, op, *, query, schema, source):
-        return sg.parse_one(query, read=self.dialect).subquery()
+        return sg.parse_one(query, dialect=self.dialect).subquery()
 
     @visit_node.register(ops.JoinTable)
     def visit_JoinTable(self, op, *, parent, index):

@@ -195,6 +195,7 @@ class Simple(Relation):
         return self.parent.schema
 
 
+# TODO(kszucs): remove in favor of View
 @public
 class SelfReference(Simple):
     _uid_counter = itertools.count()
@@ -408,29 +409,25 @@ class SQLQueryResult(Relation):
 
 
 @public
-class SQLStringView(PhysicalTable):
-    """A view created from a SQL string."""
-
-    child: Relation
-    query: str
-
-    @attribute
-    def schema(self):
-        # TODO(kszucs): avoid converting to expression
-        backend = self.child.to_expr()._find_backend()
-        return backend._get_schema_using_query(self.query)
-
-
-@public
 class View(PhysicalTable):
     """A view created from an expression."""
 
+    # TODO(kszucs): rename it to parent
     child: Relation
-    name: str
 
     @attribute
     def schema(self):
         return self.child.schema
+
+
+@public
+class SQLStringView(Relation):
+    """A view created from a SQL string."""
+
+    child: Relation
+    query: str
+    schema: Schema
+    values = FrozenDict()
 
 
 @public
