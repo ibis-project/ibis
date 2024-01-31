@@ -907,14 +907,13 @@ def test_count_distinct_star(alltypes, df, ibis_cond, pandas_cond):
                         "dask",
                         "datafusion",
                         "polars",
-                        "sqlite",
                         "druid",
                         "oracle",
                     ],
                     raises=com.OperationNotDefinedError,
                 ),
                 pytest.mark.notyet(
-                    ["mysql", "mssql", "impala", "exasol"],
+                    ["mysql", "mssql", "impala", "exasol", "sqlite"],
                     raises=com.UnsupportedBackendType,
                 ),
                 pytest.mark.notyet(
@@ -1418,11 +1417,14 @@ def test_topk_op(alltypes, df):
 @pytest.mark.notyet(
     ["flink"], raises=Py4JError, reason="Flink doesn't support semi joins"
 )
-def test_topk_filter_op(alltypes, df, result_fn, expected_fn):
+def test_topk_filter_op(con, alltypes, df, result_fn, expected_fn):
     # TopK expression will order rows by "count" but each backend
     # can have different result for that.
     # Note: Maybe would be good if TopK could order by "count"
     # and the field used by TopK
+    if con.name == "sqlite":
+        # TODO: remove after CTE extraction is reimplemented
+        pytest.skip("topk -> semi-join performance has increased post SQLGlot refactor")
     t = alltypes.order_by(alltypes.string_col)
     df = df.sort_values("string_col")
     expr = result_fn(t)

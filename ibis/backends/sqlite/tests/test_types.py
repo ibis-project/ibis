@@ -38,9 +38,9 @@ def db(tmp_path_factory):
     path = str(tmp_path_factory.mktemp("databases") / "formats.db")
     con = sqlite3.connect(path)
     con.execute("CREATE TABLE timestamps (ts TIMESTAMP)")
-    con.execute("CREATE TABLE timestamps_tz (ts TIMESTAMP)")
+    con.execute("CREATE TABLE timestamps_tz (ts TIMESTAMPTZ)")
     con.execute("CREATE TABLE weird (str_col STRING, date_col ITSADATE)")
-    con.execute("CREATE TABLE blobs (data BLOB)")
+    con.execute("CREATE TABLE basic (a INTEGER, b REAL, c BOOLEAN, d BLOB)")
     with con:
         con.executemany("INSERT INTO timestamps VALUES (?)", [(t,) for t in TIMESTAMPS])
         con.executemany(
@@ -56,7 +56,6 @@ def db(tmp_path_factory):
                 ("d", "2022-01-04"),
             ],
         )
-        con.execute("INSERT INTO blobs (data) VALUES (?)", (b"\x00\x01\x02\x03",))
     con.close()
     return path
 
@@ -68,21 +67,22 @@ def db(tmp_path_factory):
 def test_timestamps(db, table, data):
     con = ibis.sqlite.connect(db)
     t = con.table(table)
-    assert t.ts.type() == dt.timestamp
+    assert t.ts.type().is_timestamp()
     res = t.ts.execute()
     # the "mixed" format was added in pandas 2.0.0
     format = "mixed" if vparse(pd.__version__) >= vparse("2.0.0") else None
     stamps = pd.to_datetime(data, format=format, utc=True)
-    # we're casting to timestamp without a timezone, so remove it in the
-    # expected output
-    localized = stamps.tz_localize(None)
-    sol = pd.Series(localized)
+    if t.ts.type().timezone is None:
+        # we're casting to timestamp without a timezone, so remove it in the
+        # expected output
+        stamps = stamps.tz_localize(None)
+    sol = pd.Series(stamps)
     assert res.equals(sol)
 
 
 def test_type_map(db):
     con = ibis.sqlite.connect(db, type_map={"STRING": dt.string, "ITSADATE": "date"})
-    t = con.tables.weird
+    t = con.table("weird")
     expected_schema = ibis.schema({"str_col": "string", "date_col": "date"})
     assert t.schema() == expected_schema
     res = t.filter(t.str_col == "a").execute()
@@ -92,7 +92,9 @@ def test_type_map(db):
     assert res.equals(sol)
 
 
-def test_read_blob(db):
+def test_read_basic_types(db):
     con = ibis.sqlite.connect(db)
-    t = con.table("blobs")
-    assert t["data"].type() == dt.binary
+    t = con.table("basic")
+    assert t.schema() == ibis.schema(
+        {"a": "int64", "b": "float64", "c": "bool", "d": "binary"}
+    )

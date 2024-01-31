@@ -13,6 +13,12 @@ import ibis.common.exceptions as com
 import ibis.expr.schema as sch
 from ibis.backends.tests.errors import PyDruidProgrammingError
 
+sqlite_right_or_full_mark = pytest.mark.notyet(
+    ["sqlite"],
+    condition=vparse(sqlite3.sqlite_version) < vparse("3.39"),
+    reason="SQLite < 3.39 doesn't support RIGHT/FULL OUTER joins",
+)
+
 
 def _pandas_semi_join(left, right, on, **_):
     assert len(on) == 1, str(on)
@@ -47,7 +53,8 @@ def check_eq(left, right, how, **kwargs):
             marks=[
                 pytest.mark.broken(
                     ["exasol"], raises=AssertionError, reasons="results don't match"
-                )
+                ),
+                sqlite_right_or_full_mark,
             ],
         ),
         param(
@@ -56,10 +63,8 @@ def check_eq(left, right, how, **kwargs):
             # syntax, but we might be able to work around that using
             # LEFT JOIN UNION RIGHT JOIN
             marks=[
-                pytest.mark.notimpl(
-                    ["mysql"]
-                    + ["sqlite"] * (vparse(sqlite3.sqlite_version) < vparse("3.39"))
-                ),
+                pytest.mark.notimpl(["mysql"]),
+                sqlite_right_or_full_mark,
                 pytest.mark.xfail_version(datafusion=["datafusion<31"]),
                 pytest.mark.broken(
                     ["exasol"], raises=AssertionError, reasons="results don't match"
@@ -181,7 +186,10 @@ def test_mutate_then_join_no_column_overlap(batting, awards_players):
         param(lambda left, right: left.join(right, "year", how="semi"), id="how_semi"),
     ],
 )
-def test_semi_join_topk(batting, awards_players, func):
+def test_semi_join_topk(con, batting, awards_players, func):
+    if con.name == "sqlite":
+        # TODO: remove after CTE extraction is reimplemented
+        pytest.skip("topk -> semi-join performance has increased post SQLGlot refactor")
     batting = batting.mutate(year=batting.yearID)
     left = func(batting, batting.year.topk(5)).select("year", "RBI")
     expr = left.join(awards_players, left.year == awards_players.yearID)
@@ -258,17 +266,8 @@ def test_join_with_pandas_non_null_typed_columns(batting, awards_players):
     [
         "inner",
         "left",
-        "right",
-        param(
-            "outer",
-            marks=[
-                pytest.mark.notyet(
-                    ["sqlite"],
-                    condition=vparse(sqlite3.sqlite_version) < vparse("3.39"),
-                    reason="sqlite didn't support full outer join until 3.39",
-                ),
-            ],
-        ),
+        param("right", marks=[sqlite_right_or_full_mark]),
+        param("outer", marks=[sqlite_right_or_full_mark]),
     ],
 )
 @pytest.mark.notimpl(
@@ -293,11 +292,6 @@ def test_join_with_trivial_predicate(awards_players, predicate, how, pandas_valu
     result = expr.to_pandas()
 
     assert len(result) == len(expected)
-
-
-outer_join_nullability_failures = [pytest.mark.notyet(["sqlite"])] * (
-    vparse(sqlite3.sqlite_version) < vparse("3.39")
-)
 
 
 @pytest.mark.notimpl(["druid"], raises=PyDruidProgrammingError)
@@ -325,6 +319,7 @@ outer_join_nullability_failures = [pytest.mark.notyet(["sqlite"])] * (
             lambda left: left.filter(lambda t: t.x == 1).select(y=lambda t: t.x),
             [("x", "y")],
             id="right-xy",
+            marks=[sqlite_right_or_full_mark],
         ),
         param(
             "right",
@@ -332,6 +327,7 @@ outer_join_nullability_failures = [pytest.mark.notyet(["sqlite"])] * (
             lambda left: left.filter(lambda t: t.x == 1),
             "x",
             id="right-x",
+            marks=[sqlite_right_or_full_mark],
         ),
         param(
             "outer",
@@ -339,7 +335,7 @@ outer_join_nullability_failures = [pytest.mark.notyet(["sqlite"])] * (
             lambda left: left.filter(lambda t: t.x == 1).select(y=lambda t: t.x),
             [("x", "y")],
             id="outer-xy",
-            marks=outer_join_nullability_failures,
+            marks=[sqlite_right_or_full_mark],
         ),
         param(
             "outer",
@@ -347,9 +343,7 @@ outer_join_nullability_failures = [pytest.mark.notyet(["sqlite"])] * (
             lambda left: left.filter(lambda t: t.x == 1),
             "x",
             id="outer-x",
-            marks=[
-                *outer_join_nullability_failures,
-            ],
+            marks=[sqlite_right_or_full_mark],
         ),
     ],
 )

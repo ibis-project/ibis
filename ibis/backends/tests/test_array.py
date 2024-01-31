@@ -187,7 +187,9 @@ builtin_array = toolz.compose(
         ),
     ),
     pytest.mark.never(
-        ["sqlite"], reason="array types are unsupported", raises=NotImplementedError
+        ["sqlite"],
+        reason="array types are unsupported",
+        raises=(com.UnsupportedBackendType,),
     ),
 )
 
@@ -448,7 +450,7 @@ def test_array_slice(backend, start, stop):
     reason="Operation 'ArrayMap' is not implemented for this backend",
 )
 @pytest.mark.notimpl(
-    ["sqlite"], raises=NotImplementedError, reason="Unsupported type: Array: ..."
+    ["sqlite"], raises=com.UnsupportedBackendType, reason="Unsupported type: Array: ..."
 )
 @pytest.mark.parametrize(
     ("input", "output"),
@@ -509,7 +511,7 @@ def test_array_map(con, input, output):
     reason="Operation 'ArrayMap' is not implemented for this backend",
 )
 @pytest.mark.notimpl(
-    ["sqlite"], raises=NotImplementedError, reason="Unsupported type: Array..."
+    ["sqlite"], raises=com.UnsupportedBackendType, reason="Unsupported type: Array..."
 )
 @pytest.mark.parametrize(
     ("input", "output"),
@@ -651,7 +653,7 @@ def test_array_remove(con, a):
     ["dask", "datafusion", "polars"], raises=com.OperationNotDefinedError
 )
 @pytest.mark.notimpl(
-    ["sqlite"], raises=NotImplementedError, reason="Unsupported type: Array..."
+    ["sqlite"], raises=com.UnsupportedBackendType, reason="Unsupported type: Array..."
 )
 @pytest.mark.notyet(
     ["bigquery"],
@@ -770,7 +772,7 @@ def test_array_union(con, a, b, expected_array):
     raises=com.OperationNotDefinedError,
 )
 @pytest.mark.notimpl(
-    ["sqlite"], raises=NotImplementedError, reason="Unsupported type: Array..."
+    ["sqlite"], raises=com.UnsupportedBackendType, reason="Unsupported type: Array..."
 )
 @pytest.mark.broken(
     ["risingwave"],
@@ -1087,13 +1089,12 @@ def test_unnest_empty_array(con):
         "flink",
         "polars",
         "snowflake",
-        "sqlite",
         "dask",
         "pandas",
     ],
     raises=com.OperationNotDefinedError,
 )
-@pytest.mark.notimpl(["sqlite"], raises=NotImplementedError)
+@pytest.mark.notimpl(["sqlite"], raises=com.UnsupportedBackendType)
 def test_array_map_with_conflicting_names(backend, con):
     t = ibis.memtable({"x": [[1, 2]]}, schema=ibis.schema(dict(x="!array<int8>")))
     expr = t.select(a=t.x.map(lambda x: x + 1)).select(
@@ -1117,6 +1118,7 @@ def test_array_map_with_conflicting_names(backend, con):
     ],
     raises=com.OperationNotDefinedError,
 )
+@pytest.mark.notimpl(["sqlite"], raises=com.UnsupportedBackendType)
 def test_complex_array_map(con):
     def upper(token):
         return token.upper()

@@ -1372,7 +1372,7 @@ def test_timestamp_comparison_filter_numpy(backend, con, alltypes, df, func_name
 
 
 @pytest.mark.notimpl(
-    ["sqlite", "snowflake", "mssql", "exasol"],
+    ["snowflake", "mssql", "exasol"],
     raises=com.OperationNotDefinedError,
 )
 @pytest.mark.broken(
@@ -1395,7 +1395,7 @@ def test_interval_add_cast_scalar(backend, alltypes):
 
 
 @pytest.mark.notimpl(
-    ["sqlite", "snowflake", "mssql", "exasol"],
+    ["snowflake", "mssql", "exasol"],
     raises=com.OperationNotDefinedError,
 )
 @pytest.mark.notimpl(
@@ -1873,14 +1873,6 @@ def test_timestamp_literal(con, backend):
     ["pandas", "mysql", "dask", "pyspark", "exasol"],
     raises=com.OperationNotDefinedError,
 )
-@pytest.mark.notimpl(
-    ["sqlite"],
-    raises=com.UnsupportedOperationError,
-    reason=(
-        "Unable to cast from Timestamp(timezone=None, scale=None, nullable=True) to "
-        "Timestamp(timezone='***', scale=None, nullable=True)."
-    ),
-)
 @pytest.mark.notyet(["impala", "oracle"], raises=com.OperationNotDefinedError)
 @pytest.mark.parametrize(
     ("timezone", "expected"),
@@ -1902,8 +1894,13 @@ def test_timestamp_literal(con, backend):
 )
 @pytest.mark.notimpl(
     ["bigquery"],
-    "BigQuery does not support timestamps with timezones other than 'UTC'",
+    reason="timestamps with timezones other than 'UTC' not supported",
     raises=com.UnsupportedBackendType,
+)
+@pytest.mark.notimpl(
+    ["sqlite"],
+    reason="timestamps with timezones other than 'UTC' not supported",
+    raises=com.UnsupportedOperationError,
 )
 @pytest.mark.notimpl(
     ["druid"],
@@ -2412,7 +2409,6 @@ def test_timestamp_precision_output(con, ts, scale, unit):
         "oracle",
         "pandas",
         "polars",
-        "sqlite",
     ],
     raises=com.OperationNotDefinedError,
 )
@@ -2474,7 +2470,7 @@ def test_timestamp_precision_output(con, ts, scale, unit):
         ),
     ],
 )
-@pytest.mark.notimpl(["exasol"], raises=com.OperationNotDefinedError)
+@pytest.mark.notimpl(["sqlite", "exasol"], raises=com.OperationNotDefinedError)
 def test_delta(con, start, end, unit, expected):
     expr = end.delta(start, unit)
     assert con.execute(expr) == expected
