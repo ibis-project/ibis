@@ -170,8 +170,6 @@ all = [
   "shapely",
   "snowflake-connector-python",
   "sqlalchemy",
-  "sqlalchemy-views",
-  "sqlalchemy-risingwave",
   "trino",
 ]
 bigquery = [
@@ -198,7 +196,7 @@ risingwave = ["psycopg2"]
 postgres = ["psycopg2"]
 pyspark = ["pyspark", "packaging"]
 snowflake = ["snowflake-connector-python", "packaging"]
-sqlite = ["regex", "sqlalchemy", "sqlalchemy-views"]
+sqlite = ["regex"]
 trino = ["trino"]
 # non-backend extras
 visualization = ["graphviz"]
