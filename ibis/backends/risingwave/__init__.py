@@ -2,10 +2,12 @@
 
 from __future__ import annotations
 
+import atexit
 from functools import partial
 from itertools import repeat
 from typing import TYPE_CHECKING
 
+import psycopg2
 import sqlglot as sg
 import sqlglot.expressions as sge
 from psycopg2 import extras
@@ -35,6 +37,78 @@ class Backend(PostgresBackend):
     dialect = RisingWaveDialect
     compiler = RisingwaveCompiler()
     supports_python_udfs = False
+
+    def do_connect(
+        self,
+        host: str | None = None,
+        user: str | None = None,
+        password: str | None = None,
+        port: int = 5432,
+        database: str | None = None,
+        schema: str | None = None,
+    ) -> None:
+        """Create an Ibis client connected to RisingWave database.
+
+        Parameters
+        ----------
+        host
+            Hostname
+        user
+            Username
+        password
+            Password
+        port
+            Port number
+        database
+            Database to connect to
+        schema
+            RisingWave schema to use. If `None`, use the default `search_path`.
+
+        Examples
+        --------
+        >>> import os
+        >>> import getpass
+        >>> import ibis
+        >>> host = os.environ.get("IBIS_TEST_POSTGRES_HOST", "localhost")
+        >>> user = os.environ.get("IBIS_TEST_POSTGRES_USER", getpass.getuser())
+        >>> password = os.environ.get("IBIS_TEST_POSTGRES_PASSWORD")
+        >>> database = os.environ.get("IBIS_TEST_POSTGRES_DATABASE", "ibis_testing")
+        >>> con = connect(database=database, host=host, user=user, password=password)
+        >>> con.list_tables()  # doctest: +ELLIPSIS
+        [...]
+        >>> t = con.table("functional_alltypes")
+        >>> t
+        PostgreSQLTable[table]
+          name: functional_alltypes
+          schema:
+            id : int32
+            bool_col : boolean
+            tinyint_col : int16
+            smallint_col : int16
+            int_col : int32
+            bigint_col : int64
+            float_col : float32
+            double_col : float64
+            date_string_col : string
+            string_col : string
+            timestamp_col : timestamp
+            year : int32
+            month : int32
+        """
+
+        self.con = psycopg2.connect(
+            host=host,
+            port=port,
+            user=user,
+            password=password,
+            database=database,
+            options=(f"-csearch_path={schema}" * (schema is not None)) or None,
+        )
+
+        with self.begin() as cur:
+            cur.execute("SET TIMEZONE = UTC")
+
+        self._temp_views = set()
 
     def create_table(
         self,
@@ -142,6 +216,28 @@ class Backend(PostgresBackend):
         return ops.DatabaseTable(
             name, schema=schema, source=self, namespace=ops.Namespace(database=database)
         ).to_expr()
+
+    def _get_temp_view_definition(self, name: str, definition):
+        drop = sge.Drop(
+            kind="VIEW", exists=True, this=sg.table(name), cascade=True
+        ).sql(self.dialect)
+
+        create = sge.Create(
+            this=sg.to_identifier(name, quoted=self.compiler.quoted),
+            kind="VIEW",
+            expression=definition,
+            replace=False,
+        ).sql(self.dialect)
+
+        atexit.register(self._clean_up_tmp_view, name)
+        return f"{drop}; {create}"
+
+    def _clean_up_tmp_view(self, name: str) -> None:
+        drop = sge.Drop(
+            kind="VIEW", exists=True, this=sg.table(name), cascade=True
+        ).sql(self.dialect)
+        with self.begin() as bind:
+            bind.execute(drop)
 
     def _register_in_memory_table(self, op: ops.InMemoryTable) -> None:
         schema = op.schema
