@@ -268,8 +268,6 @@ class Backend(SQLGlotBackend):
         with self.begin() as cur:
             cur.execute("SET TIMEZONE = UTC")
 
-        self._temp_views = set()
-
     def list_tables(
         self,
         like: str | None = None,
@@ -551,13 +549,6 @@ $$""".format(**self._get_udf_source(udf_node))
         finally:
             with self._safe_raw_sql(drop_stmt):
                 pass
-
-    def _get_temp_view_definition(self, name: str, definition):
-        drop = sge.Drop(
-            kind="VIEW", exists=True, this=sg.table(name), cascade=True
-        ).sql(self.name)
-        create = super()._get_temp_view_definition(name, definition)
-        return f"{drop}; {create}"
 
     def create_schema(
         self, name: str, database: str | None = None, force: bool = False

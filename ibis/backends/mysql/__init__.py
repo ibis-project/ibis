@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import atexit
 import contextlib
 import re
 import warnings
@@ -174,7 +173,6 @@ class Backend(SQLGlotBackend, CanCreateDatabase):
                 warnings.warn(f"Unable to set session timezone to UTC: {e}")
 
         self.con = con
-        self._temp_views = set()
 
     @property
     def current_database(self) -> str:
@@ -221,14 +219,6 @@ class Backend(SQLGlotBackend, CanCreateDatabase):
         }
 
         return sch.Schema(fields)
-
-    def _get_temp_view_definition(self, name: str, definition: str) -> str:
-        return sge.Create(
-            kind="VIEW",
-            replace=True,
-            this=sg.to_identifier(name, quoted=self.compiler.quoted),
-            expression=definition,
-        )
 
     def create_database(self, name: str, force: bool = False) -> None:
         sql = sge.Create(kind="DATABASE", exist=force, this=sg.to_identifier(name)).sql(
@@ -509,11 +499,3 @@ class Backend(SQLGlotBackend, CanCreateDatabase):
             raise
         df = MySQLPandasData.convert_table(df, schema)
         return df
-
-    def _register_temp_view_cleanup(self, name: str) -> None:
-        def drop(self, name: str, query: str):
-            self.raw_sql(query)
-            self._temp_views.discard(name)
-
-        query = sge.Drop(this=sg.table(name), kind="VIEW", exists=True)
-        atexit.register(drop, self, name=name, query=query)

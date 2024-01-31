@@ -157,7 +157,9 @@ def extract_ctes(node):
 
     g = Graph.from_bfs(node, filter=(ops.Relation, ops.Subquery, ops.JoinLink))
     for node, dependents in g.invert().items():
-        if len(dependents) > 1 and isinstance(node, cte_types):
+        if isinstance(node, ops.View) or (
+            len(dependents) > 1 and isinstance(node, cte_types)
+        ):
             result.append(node)
 
     return result
