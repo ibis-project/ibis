@@ -92,8 +92,6 @@ class Backend(SQLGlotBackend, CanCreateDatabase, CanCreateSchema):
         for name, path in config.items():
             self.register(path, table_name=name)
 
-        self._temp_views = set()
-
     @contextlib.contextmanager
     def _safe_raw_sql(self, sql: sge.Statement) -> Any:
         yield self.raw_sql(sql)

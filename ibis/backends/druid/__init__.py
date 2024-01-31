@@ -86,7 +86,6 @@ class Backend(SQLGlotBackend):
         """Create an Ibis client using the passed connection parameters."""
         header = kwargs.pop("header", True)
         self.con = pydruid.db.connect(**kwargs, header=header)
-        self._temp_views = set()
 
     @contextlib.contextmanager
     def _safe_raw_sql(self, query, *args, **kwargs):

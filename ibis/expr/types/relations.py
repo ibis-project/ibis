@@ -40,8 +40,6 @@ if TYPE_CHECKING:
     from ibis.formats.pyarrow import PyArrowData
     from ibis.selectors import IfAnyAll
 
-_ALIASES = (f"_ibis_view_{n:d}" for n in itertools.count())
-
 
 def _regular_join_method(
     name: str,
@@ -149,7 +147,7 @@ def dereference_mapping(parents):
 
     for parent in parents:
         # do not defereference fields referencing the requested parents
-        for k, v in parent.fields.items():
+        for _, v in parent.fields.items():
             mapping[v] = v
 
     for parent in parents:
@@ -3015,6 +3013,8 @@ class Table(Expr, _FixedTextJupyterMixin):
             Closest match inequality condition
         predicates
             Additional join predicates
+        by
+            Additional equality join predicates
         tolerance
             Amount of time to look behind when joining
         lname
@@ -3168,11 +3168,6 @@ class Table(Expr, _FixedTextJupyterMixin):
         └─────────┴───────────┴────────────────┴───────────────┴───────────────────┴───┘
         """
         expr = ops.View(child=self, name=alias).to_expr()
-
-        # NB: calling compile is necessary so that any temporary views are
-        # created so that we can infer the schema without executing the entire
-        # query
-        expr.compile()
         return expr
 
     def sql(self, query: str, dialect: str | None = None) -> ir.Table:
@@ -3260,13 +3255,23 @@ class Table(Expr, _FixedTextJupyterMixin):
         --------
         [`Table.alias`](#ibis.expr.types.relations.Table.alias)
         '''
+        op = self.op()
+        backend = self._find_backend()
 
-        # only transpile if dialect was passed
         if dialect is not None:
-            backend = self._find_backend()
+            # only transpile if dialect was passed
             query = backend._transpile_sql(query, dialect=dialect)
-        op = ops.SQLStringView(child=self, name=next(_ALIASES), query=query)
-        return op.to_expr()
+
+        if isinstance(op, ops.View):
+            name = op.name
+            expr = op.child.to_expr()
+        else:
+            name = util.gen_name("sql_query")
+            expr = self
+
+        schema = backend._get_sql_string_view_schema(name, expr, query)
+        node = ops.SQLStringView(child=self.op(), query=query, schema=schema)
+        return node.to_expr()
 
     def to_pandas(self, **kwargs) -> pd.DataFrame:
         """Convert a table expression to a pandas DataFrame.
