@@ -798,6 +798,8 @@ class GeoSpatialValue(NumericValue):
         --------
         >>> import ibis
         >>> ibis.options.interactive = True
+        >>> con = ibis.get_backend()
+        >>> con.load_extension("spatial")
         >>> import shapely
         >>> line = shapely.LineString([[0, 0], [1, 0], [1, 1]])
         >>> line_lit = ibis.literal(line, type="geometry")
@@ -1027,6 +1029,8 @@ class GeoSpatialValue(NumericValue):
         --------
         >>> import ibis
         >>> ibis.options.interactive = True
+        >>> con = ibis.get_backend()
+        >>> con.load_extension("spatial")
         >>> import shapely
         >>> line = shapely.LineString([[0, 0], [1, 0], [1, 1]])
         >>> line_lit = ibis.literal(line, type="geometry")
@@ -1049,6 +1053,8 @@ class GeoSpatialValue(NumericValue):
         --------
         >>> import ibis
         >>> ibis.options.interactive = True
+        >>> con = ibis.get_backend()
+        >>> con.load_extension("spatial")
         >>> import shapely
         >>> line = shapely.LineString([[0, 0], [1, 0], [1, 1]])
         >>> line_lit = ibis.literal(line, type="geometry")
