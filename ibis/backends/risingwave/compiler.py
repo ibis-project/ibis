@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from functools import singledispatchmethod
 
-import sqlglot as sg
 import sqlglot.expressions as sge
 from public import public
 
@@ -70,7 +69,13 @@ class RisingwaveCompiler(PostgresCompiler):
         elif op.arg.shape == ds.columnar:
             return arg * sge.Interval(this=sge.convert(1), unit=self.v[unit.name])
 
+    def visit_NonNullLiteral(self, op, *, value, dtype):
+        if dtype.is_date():
+            return self.cast(value.isoformat(), dtype)
+        return None
+
     @visit_node.register(ops.IntegerRange)
     @visit_node.register(ops.TimestampRange)
+    @visit_node.register(ops.DateFromYMD)
     def visit_Undefined(self, op, **_):
         raise com.OperationNotDefinedError(type(op).__name__)

@@ -399,6 +399,8 @@ class RisingWaveType(PostgresType):
 
     @classmethod
     def _from_ibis_Timestamp(cls, dtype: dt.Timestamp) -> sge.DataType:
+        if dtype.timezone is not None:
+            return sge.DataType(this=typecode.TIMESTAMPTZ)
         return sge.DataType(this=typecode.TIMESTAMP)
 
     @classmethod
