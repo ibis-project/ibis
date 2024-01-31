@@ -6,13 +6,16 @@ from collections import OrderedDict
 import numpy as np
 import pandas as pd
 import pytest
-import sqlalchemy as sa
 from pytest import param
 
 import ibis
 import ibis.expr.datatypes as dt
 from ibis import _
-from ibis.backends.tests.errors import OracleDatabaseError, Py4JJavaError
+from ibis.backends.tests.errors import (
+    OracleDatabaseError,
+    PsycoPg2InternalError,
+    Py4JJavaError,
+)
 
 
 @pytest.mark.parametrize(
@@ -41,7 +44,7 @@ def test_floating_scalar_parameter(backend, alltypes, df, column, raw_value):
 @pytest.mark.broken(["oracle"], raises=OracleDatabaseError)
 @pytest.mark.notimpl(
     ["risingwave"],
-    raises=sa.exc.InternalError,
+    raises=PsycoPg2InternalError,
     reason="function make_date(integer, integer, integer) does not exist",
 )
 def test_date_scalar_parameter(backend, alltypes, start_string, end_string):
@@ -117,7 +120,7 @@ def test_scalar_param_struct(con):
 )
 @pytest.mark.notimpl(
     ["risingwave"],
-    raises=sa.exc.InternalError,
+    raises=PsycoPg2InternalError,
     reason="function make_date(integer, integer, integer) does not exist",
 )
 def test_scalar_param_map(con):
@@ -182,7 +185,7 @@ def test_scalar_param(backend, alltypes, df, value, dtype, col):
 @pytest.mark.notimpl(["druid", "oracle"])
 @pytest.mark.notimpl(
     ["risingwave"],
-    raises=sa.exc.InternalError,
+    raises=PsycoPg2InternalError,
     reason="function make_date(integer, integer, integer) does not exist",
 )
 def test_scalar_param_date(backend, alltypes, value):
