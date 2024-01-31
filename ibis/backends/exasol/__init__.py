@@ -31,7 +31,7 @@ if TYPE_CHECKING:
     from ibis.backends.base import BaseBackend
 
 # strip trailing encodings e.g., UTF8
-_VARCHAR_REGEX = re.compile(r"^(VARCHAR(?:\(\d+\)))?(?:\s+.+)?$")
+_VARCHAR_REGEX = re.compile(r"^((VAR)?CHAR(?:\(\d+\)))?(?:\s+.+)?$")
 
 
 class Backend(SQLGlotBackend):
@@ -90,7 +90,6 @@ class Backend(SQLGlotBackend):
             quote_ident=True,
             **kwargs,
         )
-        self._temp_views = set()
 
     def _from_url(self, url: str, **kwargs) -> BaseBackend:
         """Construct an ibis backend from a SQLAlchemy-conforming URL."""
