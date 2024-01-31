@@ -3,12 +3,12 @@ from __future__ import annotations
 import numpy as np
 import pandas as pd
 import pytest
-import sqlalchemy as sa
 from pytest import param
 
 import ibis
 import ibis.common.exceptions as exc
 import ibis.expr.datatypes as dt
+from ibis.backends.tests.errors import PsycoPg2InternalError
 
 pytestmark = [
     pytest.mark.never(
@@ -37,7 +37,7 @@ def test_map_table(backend):
 )
 @pytest.mark.notimpl(
     ["risingwave"],
-    raises=sa.exc.InternalError,
+    raises=PsycoPg2InternalError,
     reason="function hstore(character varying[], character varying[]) does not exist",
 )
 def test_column_map_values(backend):
@@ -72,7 +72,7 @@ def test_column_map_merge(backend):
 )
 @pytest.mark.notimpl(
     ["risingwave"],
-    raises=sa.exc.InternalError,
+    raises=PsycoPg2InternalError,
     reason="function hstore(character varying[], character varying[]) does not exist",
 )
 def test_literal_map_keys(con):
@@ -92,7 +92,7 @@ def test_literal_map_keys(con):
 )
 @pytest.mark.notimpl(
     ["risingwave"],
-    raises=sa.exc.InternalError,
+    raises=PsycoPg2InternalError,
     reason="function hstore(character varying[], character varying[]) does not exist",
 )
 def test_literal_map_values(con):
@@ -144,7 +144,7 @@ def test_map_scalar_contains_key_scalar(con):
 )
 @pytest.mark.notimpl(
     ["risingwave"],
-    raises=sa.exc.InternalError,
+    raises=PsycoPg2InternalError,
     reason="function hstore(character varying[], character varying[]) does not exist",
 )
 def test_map_scalar_contains_key_column(backend, alltypes, df):
@@ -214,7 +214,7 @@ def test_literal_map_merge(con):
 )
 @pytest.mark.notimpl(
     ["risingwave"],
-    raises=sa.exc.InternalError,
+    raises=PsycoPg2InternalError,
     reason="function hstore(character varying[], character varying[]) does not exist",
 )
 def test_literal_map_getitem_broadcast(backend, alltypes, df):
@@ -236,7 +236,7 @@ def test_literal_map_getitem_broadcast(backend, alltypes, df):
 )
 @pytest.mark.notimpl(
     ["risingwave"],
-    raises=sa.exc.InternalError,
+    raises=PsycoPg2InternalError,
     reason="function hstore(character varying[], character varying[]) does not exist",
 )
 def test_literal_map_get_broadcast(backend, alltypes, df):
@@ -268,7 +268,7 @@ def test_literal_map_get_broadcast(backend, alltypes, df):
 )
 @pytest.mark.notimpl(
     ["risingwave"],
-    raises=sa.exc.InternalError,
+    raises=PsycoPg2InternalError,
     reason="function hstore(character varying[], character varying[]) does not exist",
 )
 def test_map_construct_dict(con, keys, values):
@@ -360,7 +360,7 @@ def test_map_get_with_null_on_not_nullable(con, null_value):
 )
 @pytest.mark.notimpl(
     ["risingwave"],
-    raises=sa.exc.InternalError,
+    raises=PsycoPg2InternalError,
     reason="function hstore(character varying[], character varying[]) does not exist",
 )
 def test_map_get_with_null_on_null_type_with_null(con, null_value):
@@ -391,7 +391,7 @@ def test_map_get_with_null_on_null_type_with_non_null(con):
 )
 @pytest.mark.notimpl(
     ["risingwave"],
-    raises=sa.exc.InternalError,
+    raises=PsycoPg2InternalError,
     reason="function hstore(character varying[], character varying[]) does not exist",
 )
 def test_map_create_table(con, temp_table):
@@ -409,7 +409,7 @@ def test_map_create_table(con, temp_table):
 )
 @pytest.mark.notimpl(
     ["risingwave"],
-    raises=sa.exc.InternalError,
+    raises=PsycoPg2InternalError,
     reason="function hstore(character varying[], character varying[]) does not exist",
 )
 def test_map_length(con):
