@@ -22,12 +22,6 @@ class RisingwaveCompiler(PostgresCompiler):
     name = "risingwave"
     type_mapper = RisingWaveType
 
-    def _aggregate(self, funcname: str, *args, where):
-        func = self.f[funcname]
-        if where is not None:
-            args = tuple(self.if_(where, arg) for arg in args)
-        return func(*args)
-
     @singledispatchmethod
     def visit_node(self, op, **kwargs):
         return super().visit_node(op, **kwargs)
@@ -38,7 +32,9 @@ class RisingwaveCompiler(PostgresCompiler):
             raise com.UnsupportedOperationError(
                 f"{self.name} only implements `pop` correlation coefficient"
             )
-        super().visit_Correlation(op, left=left, right=right, how=how, where=where)
+        return super().visit_Correlation(
+            op, left=left, right=right, how=how, where=where
+        )
 
     @visit_node.register(ops.TimestampTruncate)
     @visit_node.register(ops.DateTruncate)

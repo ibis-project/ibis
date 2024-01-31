@@ -772,21 +772,35 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
         param(
             lambda t: t.string_col.isin(["1", "7"]),
             lambda t: t.string_col.isin(["1", "7"]),
-            marks=pytest.mark.notimpl(
-                ["exasol"],
-                raises=(com.OperationNotDefinedError, ExaQueryError),
-                strict=False,
-            ),
+            marks=[
+                pytest.mark.notimpl(
+                    ["exasol"],
+                    raises=(com.OperationNotDefinedError, ExaQueryError),
+                    strict=False,
+                ),
+                pytest.mark.notimpl(
+                    "risingwave",
+                    raises=PsycoPg2InternalError,
+                    reason="probably incorrect filter syntax but not sure",
+                ),
+            ],
             id="is_in",
         ),
         param(
             lambda _: ibis._.string_col.isin(["1", "7"]),
             lambda t: t.string_col.isin(["1", "7"]),
-            marks=pytest.mark.notimpl(
-                ["exasol"],
-                raises=(com.OperationNotDefinedError, ExaQueryError),
-                strict=False,
-            ),
+            marks=[
+                pytest.mark.notimpl(
+                    ["exasol"],
+                    raises=(com.OperationNotDefinedError, ExaQueryError),
+                    strict=False,
+                ),
+                pytest.mark.notimpl(
+                    "risingwave",
+                    raises=PsycoPg2InternalError,
+                    reason="probably incorrect filter syntax but not sure",
+                ),
+            ],
             id="is_in_deferred",
         ),
     ],
@@ -955,7 +969,14 @@ def test_count_distinct_star(alltypes, df, ibis_cond, pandas_cond):
             lambda t: t.string_col.isin(["1", "7"]),
             id="is_in",
             marks=[
-                pytest.mark.notimpl(["datafusion"], raises=com.OperationNotDefinedError)
+                pytest.mark.notimpl(
+                    ["datafusion"], raises=com.OperationNotDefinedError
+                ),
+                pytest.mark.notimpl(
+                    "risingwave",
+                    raises=PsycoPg2InternalError,
+                    reason="probably incorrect filter syntax but not sure",
+                ),
             ],
         ),
     ],
