@@ -74,6 +74,7 @@ class RisingwaveCompiler(PostgresCompiler):
     @visit_node.register(ops.IntegerRange)
     @visit_node.register(ops.TimestampRange)
     @visit_node.register(ops.DateFromYMD)
+    @visit_node.register(ops.Mode)
     def visit_Undefined(self, op, **_):
         raise com.OperationNotDefinedError(type(op).__name__)
 

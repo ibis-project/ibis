@@ -34,7 +34,6 @@ class TestConf(ServiceBackendTest):
     rounding_method = "half_to_even"
     service_name = "risingwave"
     deps = ("psycopg2",)
-    force_sort = True
 
     @property
     def test_files(self) -> Iterable[Path]:
