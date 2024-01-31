@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import atexit
 import contextlib
 from functools import cached_property
 from operator import itemgetter
@@ -295,7 +294,6 @@ class Backend(SQLGlotBackend, CanListDatabases):
             timezone=timezone,
             **connect_args,
         )
-        self._temp_views = set()
 
     @contextlib.contextmanager
     def _prepare_metadata(self, query: str) -> Iterator[dict[str, str]]:
@@ -495,22 +493,6 @@ class Backend(SQLGlotBackend, CanListDatabases):
                 )
 
         return self.table(orig_table_ref.name)
-
-    def _get_temp_view_definition(self, name: str, definition: str) -> str:
-        return sge.Create(
-            this=sg.to_identifier(name, quoted=self.compiler.quoted),
-            kind="VIEW",
-            expression=definition,
-            replace=True,
-        )
-
-    def _register_temp_view_cleanup(self, name: str) -> None:
-        def drop(self, name: str, query: str):
-            self.raw_sql(query)
-            self._temp_views.discard(name)
-
-        query = sge.Drop(this=sg.table(name), kind="VIEW", exists=True)
-        atexit.register(drop, self, name=name, query=query)
 
     def _fetch_from_cursor(self, cursor, schema: sch.Schema) -> pd.DataFrame:
         import pandas as pd
