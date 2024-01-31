@@ -9,7 +9,6 @@ from operator import methodcaller
 import numpy as np
 import pandas as pd
 import pytest
-import sqlalchemy as sa
 import sqlglot as sg
 from pytest import param
 

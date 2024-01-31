@@ -7,11 +7,10 @@ from public import public
 
 import ibis.common.exceptions as com
 import ibis.expr.datashape as ds
-import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 from ibis.backends.base.sqlglot.datatypes import RisingWaveType
 from ibis.backends.postgres.compiler import PostgresCompiler
-from ibis.backends.risingwave.dialect import RisingWave
+from ibis.backends.risingwave.dialect import RisingWave  # noqa: F401
 
 
 @public
@@ -64,6 +63,8 @@ class RisingwaveCompiler(PostgresCompiler):
             return sge.Interval(this=arg, unit=self.v[unit.name])
         elif op.arg.shape == ds.columnar:
             return arg * sge.Interval(this=sge.convert(1), unit=self.v[unit.name])
+        else:
+            raise ValueError("Invalid shape for converting to interval")
 
     def visit_NonNullLiteral(self, op, *, value, dtype):
         if dtype.is_date():
