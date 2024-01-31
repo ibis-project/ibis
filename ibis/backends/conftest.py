@@ -570,16 +570,16 @@ def ddl_con(ddl_backend):
     return ddl_backend.connection
 
 
-@pytest.fixture(params=_get_backends_to_test(keep=("sqlite",)), scope="session")
+@pytest.fixture(params=_get_backends_to_test(keep=()), scope="session")
 def alchemy_backend(request, data_dir, tmp_path_factory, worker_id):
     """Set up the SQLAlchemy-based backends."""
-    return _setup_backend(request, data_dir, tmp_path_factory, worker_id)
+    pytest.skip("No SQLAlchemy backends remaining")
 
 
 @pytest.fixture(scope="session")
 def alchemy_con(alchemy_backend):
     """Instance of Client, already connected to the db (if applies)."""
-    return alchemy_backend.connection
+    pytest.skip("No SQLAlchemy backends remaining")
 
 
 @pytest.fixture(

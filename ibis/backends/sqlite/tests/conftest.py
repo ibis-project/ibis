@@ -22,7 +22,7 @@ class TestConf(BackendTest):
     returned_timestamp_unit = "s"
     supports_structs = False
     stateful = False
-    deps = ("sqlalchemy",)
+    deps = ("regex",)
 
     @staticmethod
     def connect(*, tmpdir, worker_id, **kw):
@@ -30,7 +30,9 @@ class TestConf(BackendTest):
 
     def _load_data(self, **kw: Any) -> None:
         """Load test data into a SQLite backend instance."""
-        super()._load_data(**kw)
+        with self.connection.begin() as con:
+            for stmt in self.ddl_script:
+                con.execute(stmt)
 
         with self.connection.begin() as con:
             for table in TEST_TABLES:
@@ -70,40 +72,13 @@ def con(data_dir, tmp_path_factory, worker_id):
 
 
 @pytest.fixture(scope="session")
-def dialect():
-    import sqlalchemy as sa
-
-    return sa.dialects.sqlite.dialect()
-
-
-@pytest.fixture(scope="session")
 def translate(dialect):
-    from ibis.backends.sqlite import Backend
-
-    context = Backend.compiler.make_context()
-    return lambda expr: str(
-        Backend.compiler.translator_class(expr, context)
-        .get_result()
-        .compile(dialect=dialect, compile_kwargs={"literal_binds": True})
-    )
-
-
-@pytest.fixture(scope="session")
-def sqla_compile(dialect):
-    return lambda expr: str(
-        expr.compile(dialect=dialect, compile_kwargs={"literal_binds": True})
-    )
+    return lambda expr: ibis.to_sql(expr, dialect="sqlite")
 
 
 @pytest.fixture(scope="session")
 def alltypes(con):
     return con.table("functional_alltypes")
-
-
-@pytest.fixture(scope="session")
-def alltypes_sqla(con, alltypes):
-    name = alltypes.op().name
-    return con._get_sqla_table(name)
 
 
 @pytest.fixture(scope="session")

@@ -18,7 +18,7 @@ array_literal = param(
     ibis.array([1]),
     marks=[
         pytest.mark.never(
-            ["mysql", "mssql"],
+            ["mysql", "mssql", "sqlite"],
             raises=exc.UnsupportedBackendType,
             reason="arrays not supported in the backend",
         ),
@@ -31,11 +31,6 @@ array_literal = param(
             ["exasol"],
             raises=exc.UnsupportedBackendType,
             reason="arrays not supported in the backend",
-        ),
-        pytest.mark.notyet(
-            ["sqlite"],
-            raises=NotImplementedError,
-            reason="backends hasn't implemented array literals",
         ),
     ],
     id="array_literal",
