@@ -35,7 +35,6 @@ from ibis.backends.tests.errors import (
     TrinoUserError,
 )
 from ibis.expr import datatypes as dt
-from ibis.tests.util import assert_equal
 
 
 @pytest.mark.parametrize(

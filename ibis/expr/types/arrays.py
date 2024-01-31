@@ -342,7 +342,7 @@ class ArrayValue(Value):
         └──────────────────────┘
         >>> t.arr.join("|")
         ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-        ┃ ArrayStringJoin('|', arr) ┃
+        ┃ ArrayStringJoin(arr, '|') ┃
         ┡━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
         │ string                    │
         ├───────────────────────────┤
