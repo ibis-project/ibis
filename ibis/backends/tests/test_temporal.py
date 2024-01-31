@@ -1816,7 +1816,7 @@ DATE_BACKEND_TYPES = {
 )
 @pytest.mark.notimpl(
     ["risingwave"],
-    raises=PsycoPg2InternalError,
+    raises=com.OperationNotDefinedError,
     reason="function make_date(integer, integer, integer) does not exist",
 )
 def test_date_literal(con, backend):
@@ -2091,7 +2091,7 @@ def test_interval_literal(con, backend):
 )
 @pytest.mark.notimpl(
     ["risingwave"],
-    raises=PsycoPg2InternalError,
+    raises=com.OperationNotDefinedError,
     reason="function make_date(integer, integer, integer) does not exist",
 )
 def test_date_column_from_ymd(backend, con, alltypes, df):

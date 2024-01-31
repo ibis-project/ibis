@@ -42,11 +42,6 @@ def test_floating_scalar_parameter(backend, alltypes, df, column, raw_value):
 )
 @pytest.mark.notimpl(["trino", "druid"])
 @pytest.mark.broken(["oracle"], raises=OracleDatabaseError)
-@pytest.mark.notimpl(
-    ["risingwave"],
-    raises=PsycoPg2InternalError,
-    reason="function make_date(integer, integer, integer) does not exist",
-)
 def test_date_scalar_parameter(backend, alltypes, start_string, end_string):
     start, end = ibis.param(dt.date), ibis.param(dt.date)
 
@@ -183,11 +178,6 @@ def test_scalar_param(backend, alltypes, df, value, dtype, col):
     ids=["string", "date", "datetime"],
 )
 @pytest.mark.notimpl(["druid", "oracle"])
-@pytest.mark.notimpl(
-    ["risingwave"],
-    raises=PsycoPg2InternalError,
-    reason="function make_date(integer, integer, integer) does not exist",
-)
 def test_scalar_param_date(backend, alltypes, value):
     param = ibis.param("date")
     ds_col = alltypes.date_string_col

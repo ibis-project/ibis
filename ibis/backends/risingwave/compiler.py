@@ -7,6 +7,7 @@ from public import public
 
 import ibis.common.exceptions as com
 import ibis.expr.datashape as ds
+import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 from ibis.backends.base.sqlglot.datatypes import RisingWaveType
 from ibis.backends.postgres.compiler import PostgresCompiler
@@ -67,12 +68,12 @@ class RisingwaveCompiler(PostgresCompiler):
             raise ValueError("Invalid shape for converting to interval")
 
     def visit_NonNullLiteral(self, op, *, value, dtype):
-        if dtype.is_date():
+        if dtype.is_binary():
+            return self.cast("".join(map(r"\x{:0>2x}".format, value)), dt.binary)
+        elif dtype.is_date():
             return self.cast(value.isoformat(), dtype)
         return None
 
-    @visit_node.register(ops.IntegerRange)
-    @visit_node.register(ops.TimestampRange)
     @visit_node.register(ops.DateFromYMD)
     @visit_node.register(ops.Mode)
     def visit_Undefined(self, op, **_):
