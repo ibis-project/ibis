@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import atexit
 import contextlib
 import datetime
 import struct
@@ -92,7 +91,6 @@ class Backend(SQLGlotBackend, CanCreateDatabase, CanCreateSchema):
             cur.execute("SET DATEFIRST 1")
 
         self.con = con
-        self._temp_views = set()
 
     def get_schema(
         self, name: str, schema: str | None = None, database: str | None = None
@@ -243,13 +241,6 @@ class Backend(SQLGlotBackend, CanCreateDatabase, CanCreateSchema):
         else:
             con.commit()
             return cursor
-
-    def _get_temp_view_definition(self, name: str, definition) -> str:
-        return sge.Create(
-            kind="OR ALTER VIEW",
-            this=sg.to_identifier(name, quoted=self.compiler.quoted),
-            expression=definition,
-        )
 
     def create_database(self, name: str, force: bool = False) -> None:
         name = self._quote(name)
@@ -461,14 +452,6 @@ GO"""
         return ops.DatabaseTable(
             name, schema=schema, source=self, namespace=ops.Namespace(database=database)
         ).to_expr()
-
-    def _register_temp_view_cleanup(self, name: str) -> None:
-        def drop(self, name: str, query: str):
-            self.raw_sql(query)
-            self._temp_views.discard(name)
-
-        query = sge.Drop(this=sg.table(name), kind="VIEW", exists=True)
-        atexit.register(drop, self, name=name, query=query)
 
     def _register_in_memory_table(self, op: ops.InMemoryTable) -> None:
         schema = op.schema
