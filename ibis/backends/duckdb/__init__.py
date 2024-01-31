@@ -1534,3 +1534,16 @@ class Backend(SQLGlotBackend, CanCreateSchema):
                 table_name,
                 obj if isinstance(obj, pd.DataFrame) else pd.DataFrame(obj),
             )
+
+    def _get_temp_view_definition(self, name: str, definition: str) -> str:
+        return sge.Create(
+            this=sg.to_identifier(name, quoted=self.compiler.quoted),
+            kind="VIEW",
+            expression=definition,
+            replace=True,
+            properties=sge.Properties(expressions=[sge.TemporaryProperty()]),
+        )
+
+    def _create_temp_view(self, table_name, source):
+        with self._safe_raw_sql(self._get_temp_view_definition(table_name, source)):
+            pass
