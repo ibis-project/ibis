@@ -1321,6 +1321,11 @@ def test_repr_timestamp_array(con, monkeypatch):
     raises=sa.exc.OperationalError,
     reason="Refer to https://github.com/risingwavelabs/risingwave/issues/14734",
 )
+@pytest.mark.broken(
+    ["pandas"],
+    raises=ValueError,
+    reason="cannot reindex on an axis with duplicate labels",
+)
 def test_unnest_range(con):
     expr = ibis.range(2).unnest().name("x").as_table().mutate({"y": 1.0})
     result = con.execute(expr)
