@@ -567,11 +567,7 @@ def ddl_con(ddl_backend):
 
 
 @pytest.fixture(
-    params=_get_backends_to_test(
-        keep=(
-            "risingwave",
-        )
-    ),
+    params=_get_backends_to_test(keep=("risingwave",)),
     scope="session",
 )
 def alchemy_backend(request, data_dir, tmp_path_factory, worker_id):

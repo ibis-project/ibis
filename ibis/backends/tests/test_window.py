@@ -6,8 +6,8 @@ from operator import methodcaller
 import numpy as np
 import pandas as pd
 import pytest
-from pytest import param
 import sqlalchemy as sa
+from pytest import param
 
 import ibis
 import ibis.common.exceptions as com
