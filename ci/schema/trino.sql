@@ -11,7 +11,7 @@ CREATE TABLE hive.default.diamonds (
     "y" DOUBLE,
     "z" DOUBLE
 ) WITH (
-    external_location = 's3a://warehouse/diamonds',
+    external_location = 's3a://trino/diamonds',
     format = 'PARQUET'
 );
 
@@ -45,7 +45,7 @@ CREATE TABLE hive.default.astronauts (
     "eva_hrs_mission" REAL,
     "total_eva_hrs" REAL
 ) WITH (
-    external_location = 's3a://warehouse/astronauts',
+    external_location = 's3a://trino/astronauts',
     format = 'PARQUET'
 );
 
@@ -77,7 +77,7 @@ CREATE TABLE hive.default.batting (
     "SF" BIGINT,
     "GIDP" BIGINT
 ) WITH (
-    external_location = 's3a://warehouse/batting',
+    external_location = 's3a://trino/batting',
     format = 'PARQUET'
 );
 
@@ -93,7 +93,7 @@ CREATE TABLE hive.default.awards_players (
     "tie" VARCHAR,
     "notes" VARCHAR
 ) WITH (
-    external_location = 's3a://warehouse/awards-players',
+    external_location = 's3a://trino/awards-players',
     format = 'PARQUET'
 );
 
@@ -116,7 +116,7 @@ CREATE TABLE hive.default.functional_alltypes (
     "year" INTEGER,
     "month" INTEGER
 ) WITH (
-    external_location = 's3a://warehouse/functional-alltypes',
+    external_location = 's3a://trino/functional-alltypes',
     format = 'PARQUET'
 );
 CREATE OR REPLACE VIEW memory.default.functional_alltypes AS

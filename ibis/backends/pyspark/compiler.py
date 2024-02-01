@@ -457,6 +457,17 @@ class PySparkCompiler(SQLGlotCompiler):
     def visit_Undefined(self, op, **_):
         raise com.OperationNotDefinedError(type(op).__name__)
 
+    @visit_node.register(ops.HexDigest)
+    def visit_HexDigest(self, op, *, arg, how):
+        if how == "md5":
+            return self.f.md5(arg)
+        elif how == "sha1":
+            return self.f.sha1(arg)
+        elif how in ("sha256", "sha512"):
+            return self.f.sha2(arg, int(how[-3:]))
+        else:
+            raise NotImplementedError(f"No available hashing function for {how}")
+
 
 _SIMPLE_OPS = {
     ops.ArrayDistinct: "array_distinct",

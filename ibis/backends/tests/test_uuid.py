@@ -20,6 +20,7 @@ UUID_BACKEND_TYPE = {
     "flink": "CHAR(36) NOT NULL",
     "impala": "STRING",
     "postgres": "uuid",
+    "risingwave": "character varying",
     "snowflake": "VARCHAR",
     "sqlite": "text",
     "trino": "uuid",

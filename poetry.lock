@@ -7331,6 +7331,7 @@ pandas = ["regex"]
 polars = ["packaging", "polars"]
 postgres = ["psycopg2"]
 pyspark = ["packaging", "pyspark"]
+risingwave = ["psycopg2"]
 snowflake = ["packaging", "snowflake-connector-python"]
 sqlite = ["regex"]
 trino = ["trino"]
@@ -7339,4 +7340,4 @@ visualization = ["graphviz"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.9"
-content-hash = "46f6575d9e668129872ccb5c2fd5de6c3e2fc808b8620e1c0082b18239b36639"
+content-hash = "09804aaeee25b130ab30ec88414c0c7cd3e5914ca320bb417346665dfc489f20"

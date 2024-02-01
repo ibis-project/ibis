@@ -11,7 +11,11 @@ from pytest import param
 import ibis
 import ibis.expr.datatypes as dt
 from ibis import _
-from ibis.backends.tests.errors import OracleDatabaseError, Py4JJavaError
+from ibis.backends.tests.errors import (
+    OracleDatabaseError,
+    PsycoPg2InternalError,
+    Py4JJavaError,
+)
 
 
 @pytest.mark.parametrize(
@@ -76,6 +80,7 @@ def test_scalar_param_array(con):
         "impala",
         "flink",
         "postgres",
+        "risingwave",
         "druid",
         "oracle",
         "exasol",
@@ -107,6 +112,11 @@ def test_scalar_param_struct(con):
         "SqlParseException: Expecting alias, found character literal"
         "sql= SELECT MAP_FROM_ARRAYS(ARRAY['a', 'b', 'c'], ARRAY['ghi', 'def', 'abc']) '[' 'b' ']' AS `MapGet(param_0, 'b', None)`"
     ),
+)
+@pytest.mark.notimpl(
+    ["risingwave"],
+    raises=PsycoPg2InternalError,
+    reason="function make_date(integer, integer, integer) does not exist",
 )
 def test_scalar_param_map(con):
     value = {"a": "ghi", "b": "def", "c": "abc"}
@@ -203,6 +213,7 @@ def test_scalar_param_date(backend, alltypes, value):
 @pytest.mark.notimpl(
     [
         "postgres",
+        "risingwave",
         "datafusion",
         "clickhouse",
         "polars",

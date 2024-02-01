@@ -65,7 +65,7 @@ _STRUCT_LITERAL = ibis.struct(
 _NULL_STRUCT_LITERAL = ibis.NA.cast("struct<a: int64, b: string, c: float64>")
 
 
-@pytest.mark.notimpl(["postgres"])
+@pytest.mark.notimpl(["postgres", "risingwave"])
 @pytest.mark.parametrize("field", ["a", "b", "c"])
 @pytest.mark.notyet(
     ["flink"], reason="flink doesn't support creating struct columns from literals"
@@ -95,7 +95,7 @@ def test_null_literal(backend, con, field):
     backend.assert_series_equal(result, expected)
 
 
-@pytest.mark.notimpl(["dask", "pandas", "postgres"])
+@pytest.mark.notimpl(["dask", "pandas", "postgres", "risingwave"])
 @pytest.mark.notyet(
     ["flink"], reason="flink doesn't support creating struct columns from literals"
 )
@@ -111,7 +111,7 @@ def test_struct_column(backend, alltypes, df):
     tm.assert_series_equal(result, expected)
 
 
-@pytest.mark.notimpl(["dask", "pandas", "postgres", "polars"])
+@pytest.mark.notimpl(["dask", "pandas", "postgres", "risingwave", "polars"])
 @pytest.mark.notyet(
     ["flink"], reason="flink doesn't support creating struct columns from collect"
 )

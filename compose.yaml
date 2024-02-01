@@ -94,21 +94,21 @@ services:
       - trino
 
   minio:
-    image: bitnami/minio:2024.1.16
+    image: bitnami/minio:2024.1.18
     environment:
       MINIO_ROOT_USER: accesskey
       MINIO_ROOT_PASSWORD: secretkey
-      MINIO_SKIP_CLIENT: yes
+      MINIO_SKIP_CLIENT: "yes"
     healthcheck:
       interval: 1s
       retries: 20
       test:
         - CMD-SHELL
-        - mc ping --count 1 trino
+        - mc ready data && mc mb --ignore-existing data/trino data/risingwave
     networks:
       - trino
+      - risingwave
     volumes:
-      - minio:/data
       - $PWD/docker/minio/config.json:/.mc/config.json:ro
 
   hive-metastore:
@@ -119,7 +119,7 @@ services:
       HIVE_METASTORE_JDBC_URL: jdbc:postgresql://hive-metastore-db:23456/metastore
       HIVE_METASTORE_USER: admin
       HIVE_METASTORE_PASSWORD: admin
-      HIVE_METASTORE_WAREHOUSE_DIR: s3://warehouse/
+      HIVE_METASTORE_WAREHOUSE_DIR: s3://trino/
       HIVE_METASTORE_USERS_IN_ADMIN_ROLE: "admin"
       S3_ENDPOINT: http://minio:9000
       S3_ACCESS_KEY: accesskey
@@ -538,6 +538,39 @@ services:
     networks:
       - impala
 
+  risingwave:
+    image: ghcr.io/risingwavelabs/risingwave:nightly-20240122
+    command: "standalone --meta-opts=\" \
+      --advertise-addr 0.0.0.0:5690 \
+      --backend mem \
+      --state-store hummock+minio://accesskey:secretkey@minio:9000/risingwave \
+      --data-directory hummock_001\" \
+      --compute-opts=\"--advertise-addr 0.0.0.0:5688 --role both\" \
+      --frontend-opts=\"--listen-addr 0.0.0.0:4566 --advertise-addr 0.0.0.0:4566\" \
+      --compactor-opts=\"--advertise-addr 0.0.0.0:6660\""
+    ports:
+      - 4566:4566
+    depends_on:
+      minio:
+        condition: service_healthy
+    volumes:
+      - risingwave:/data
+    environment:
+      RUST_BACKTRACE: "1"
+      ENABLE_TELEMETRY: "false"
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - bash -c 'printf \"GET / HTTP/1.1\n\n\" > /dev/tcp/127.0.0.1/6660; exit $$?;'
+        - bash -c 'printf \"GET / HTTP/1.1\n\n\" > /dev/tcp/127.0.0.1/5688; exit $$?;'
+        - bash -c 'printf \"GET / HTTP/1.1\n\n\" > /dev/tcp/127.0.0.1/4566; exit $$?;'
+        - bash -c 'printf \"GET / HTTP/1.1\n\n\" > /dev/tcp/127.0.0.1/5690; exit $$?;'
+      interval: 1s
+      retries: 20
+    restart: on-failure
+    networks:
+      - risingwave
+
 networks:
   impala:
     # docker defaults to naming networks "$PROJECT_$NETWORK" but the Java Hive
@@ -554,6 +587,7 @@ networks:
   oracle:
   exasol:
   flink:
+  risingwave:
 
 volumes:
   broker_var:
@@ -569,6 +603,6 @@ volumes:
   mysql:
   oracle:
   postgres:
-  minio:
   exasol:
   impala:
+  risingwave:

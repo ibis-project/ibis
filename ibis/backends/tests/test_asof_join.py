@@ -95,6 +95,7 @@ def time_keyed_right(time_keyed_df2):
         "oracle",
         "mssql",
         "sqlite",
+        "risingwave",
     ]
 )
 def test_asof_join(con, time_left, time_right, time_df1, time_df2, direction, op):
@@ -135,6 +136,7 @@ def test_asof_join(con, time_left, time_right, time_df1, time_df2, direction, op
         "oracle",
         "mssql",
         "sqlite",
+        "risingwave",
     ]
 )
 def test_keyed_asof_join_with_tolerance(

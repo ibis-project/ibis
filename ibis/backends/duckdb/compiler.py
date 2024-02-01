@@ -336,6 +336,13 @@ class DuckDBCompiler(SQLGlotCompiler):
         funcname = f"percentile_{suffix}"
         return self.agg[funcname](arg, quantile, where=where)
 
+    @visit_node.register(ops.HexDigest)
+    def visit_HexDigest(self, op, *, arg, how):
+        if how in ("md5", "sha256"):
+            return getattr(self.f, how)(arg)
+        else:
+            raise NotImplementedError(f"No available hashing function for {how}")
+
 
 _SIMPLE_OPS = {
     ops.ArrayPosition: "list_indexof",

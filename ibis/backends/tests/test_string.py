@@ -13,6 +13,7 @@ import ibis.expr.datatypes as dt
 from ibis.backends.tests.errors import (
     ClickHouseDatabaseError,
     OracleDatabaseError,
+    PsycoPg2InternalError,
     PyDruidProgrammingError,
     PyODBCProgrammingError,
 )
@@ -33,6 +34,7 @@ from ibis.common.annotations import ValidationError
                 "duckdb": "VARCHAR",
                 "impala": "STRING",
                 "postgres": "text",
+                "risingwave": "text",
                 "flink": "CHAR(6) NOT NULL",
             },
             id="string",
@@ -48,14 +50,22 @@ from ibis.common.annotations import ValidationError
                 "duckdb": "VARCHAR",
                 "impala": "STRING",
                 "postgres": "text",
+                "risingwave": "text",
                 "flink": "CHAR(7) NOT NULL",
             },
             id="string-quote1",
-            marks=pytest.mark.broken(
-                ["oracle"],
-                raises=OracleDatabaseError,
-                reason="ORA-01741: illegal zero length identifier",
-            ),
+            marks=[
+                pytest.mark.broken(
+                    ["oracle"],
+                    raises=OracleDatabaseError,
+                    reason="ORA-01741: illegal zero length identifier",
+                ),
+                pytest.mark.broken(
+                    ["risingwave"],
+                    raises=PsycoPg2InternalError,
+                    reason='sql parser error: Expected end of statement, found: "NG\'" at line:1, column:31 Near "SELECT \'STRI"NG\' AS "\'STRI""',
+                ),
+            ],
         ),
         param(
             'STRI"NG',
@@ -68,14 +78,22 @@ from ibis.common.annotations import ValidationError
                 "duckdb": "VARCHAR",
                 "impala": "STRING",
                 "postgres": "text",
+                "risingwave": "text",
                 "flink": "CHAR(7) NOT NULL",
             },
             id="string-quote2",
-            marks=pytest.mark.broken(
-                ["oracle"],
-                raises=OracleDatabaseError,
-                reason="ORA-25716",
-            ),
+            marks=[
+                pytest.mark.broken(
+                    ["oracle"],
+                    raises=OracleDatabaseError,
+                    reason="ORA-25716",
+                ),
+                pytest.mark.broken(
+                    ["risingwave"],
+                    raises=PsycoPg2InternalError,
+                    reason='sql parser error: Expected end of statement, found: "NG\'" at line:1, column:31 Near "SELECT \'STRI"NG\' AS "\'STRI""',
+                ),
+            ],
         ),
     ],
 )
@@ -846,6 +864,7 @@ def test_substr_with_null_values(backend, alltypes, df):
         "mysql",
         "polars",
         "postgres",
+        "risingwave",
         "pyspark",
         "druid",
         "oracle",
@@ -916,6 +935,11 @@ def test_multiple_subs(con):
         "exasol",
     ],
     raises=com.OperationNotDefinedError,
+)
+@pytest.mark.notimpl(
+    ["risingwave"],
+    raises=PsycoPg2InternalError,
+    reason="function levenshtein(character varying, character varying) does not exist",
 )
 @pytest.mark.parametrize(
     "right", ["sitting", ibis.literal("sitting")], ids=["python", "ibis"]

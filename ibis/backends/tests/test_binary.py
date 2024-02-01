@@ -15,6 +15,7 @@ BINARY_BACKEND_TYPES = {
     "sqlite": "blob",
     "trino": "varbinary",
     "postgres": "bytea",
+    "risingwave": "bytea",
     "flink": "BINARY(1) NOT NULL",
 }
 

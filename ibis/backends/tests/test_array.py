@@ -23,6 +23,8 @@ from ibis.backends.tests.errors import (
     MySQLOperationalError,
     PolarsComputeError,
     PsycoPg2IndeterminateDatatype,
+    PsycoPg2InternalError,
+    PsycoPg2ProgrammingError,
     PsycoPg2SyntaxError,
     Py4JJavaError,
     PySparkAnalysisException,
@@ -79,6 +81,7 @@ ARRAY_BACKEND_TYPES = {
     "bigquery": "ARRAY",
     "duckdb": "DOUBLE[]",
     "postgres": "numeric[]",
+    "risingwave": "numeric[]",
     "flink": "ARRAY<DECIMAL(2, 1) NOT NULL> NOT NULL",
 }
 
@@ -209,6 +212,11 @@ builtin_array = toolz.compose(
     reason="backend does not support nullable nested types",
     raises=AssertionError,
 )
+@pytest.mark.notimpl(
+    ["risingwave"],
+    raises=AssertionError,
+    reason="Do not nest ARRAY types; ARRAY(basetype) handles multi-dimensional arrays of basetype",
+)
 @pytest.mark.never(
     ["bigquery"], reason="doesn't support arrays of arrays", raises=AssertionError
 )
@@ -240,6 +248,12 @@ def test_array_discovery(backend):
 )
 @pytest.mark.notimpl(["dask"], raises=ValueError)
 @pytest.mark.notimpl(["datafusion"], raises=com.OperationNotDefinedError)
+@pytest.mark.notimpl(
+    ["risingwave"],
+    # TODO: valueerror -> assertion error
+    raises=AssertionError,
+    reason="Do not nest ARRAY types; ARRAY(basetype) handles multi-dimensional arrays of basetype",
+)
 def test_unnest_simple(backend):
     array_types = backend.array_types
     expected = (
@@ -343,6 +357,7 @@ def test_unnest_no_nulls(backend):
 @builtin_array
 @pytest.mark.notimpl("dask", raises=ValueError)
 @pytest.mark.notimpl(["datafusion"], raises=com.OperationNotDefinedError)
+@pytest.mark.broken(["risingwave"], raises=AssertionError)
 def test_unnest_default_name(backend):
     array_types = backend.array_types
     df = array_types.execute()
@@ -378,6 +393,12 @@ def test_unnest_default_name(backend):
     ["datafusion", "flink"], raises=Exception, reason="array_types table isn't defined"
 )
 @pytest.mark.notimpl(["dask"], raises=com.OperationNotDefinedError)
+@pytest.mark.broken(
+    ["risingwave"],
+    raises=AssertionError,
+    reason="not broken; row ordering is not guaranteed and sometimes this test will pass",
+    strict=False,
+)
 def test_array_slice(backend, start, stop):
     array_types = backend.array_types
     expr = array_types.select(sliced=array_types.y[start:stop])
@@ -391,6 +412,11 @@ def test_array_slice(backend, start, stop):
 @builtin_array
 @pytest.mark.notimpl(
     ["datafusion", "polars", "snowflake", "sqlite"], raises=com.OperationNotDefinedError
+)
+@pytest.mark.broken(
+    ["risingwave"],
+    raises=PsycoPg2InternalError,
+    reason="TODO(Kexiang): seems a bug",
 )
 @pytest.mark.notimpl(
     ["dask", "pandas"],
@@ -419,6 +445,7 @@ def test_array_slice(backend, start, stop):
     ],
 )
 def test_array_map(con, input, output):
+    t = ibis.memtable(input, schema=ibis.schema(dict(a="!array<int8>")))
     t = ibis.memtable(input, schema=ibis.schema(dict(a="!array<int8>")))
     expected = pd.DataFrame(output)
 
@@ -462,6 +489,11 @@ def test_array_map(con, input, output):
         param({"a": [[1, 2], [4]]}, {"a": [[2], [4]]}, id="no_nulls"),
     ],
 )
+@pytest.mark.notyet(
+    "risingwave",
+    raises=PsycoPg2InternalError,
+    reason="no support for not null column constraint",
+)
 def test_array_filter(con, input, output):
     t = ibis.memtable(input, schema=ibis.schema(dict(a="!array<int8>")))
     expected = pd.DataFrame(output)
@@ -478,6 +510,12 @@ def test_array_filter(con, input, output):
 @builtin_array
 @pytest.mark.notimpl(["polars"], raises=com.OperationNotDefinedError)
 @pytest.mark.notimpl(["dask"], raises=com.OperationNotDefinedError)
+@pytest.mark.broken(
+    ["risingwave"],
+    raises=AssertionError,
+    reason="not broken; row ordering is not guaranteed and sometimes this test will pass",
+    strict=False,
+)
 def test_array_contains(backend, con):
     t = backend.array_types
     expr = t.x.contains(1)
@@ -531,6 +569,11 @@ def test_array_remove(con):
     raises=(AssertionError, GoogleBadRequest),
     reason="bigquery doesn't support null elements in arrays",
 )
+@pytest.mark.broken(
+    ["risingwave"],
+    raises=AssertionError,
+    reason="TODO(Kexiang): seems a bug",
+)
 @pytest.mark.parametrize(
     ("input", "expected"),
     [
@@ -557,6 +600,11 @@ def test_array_unique(con, input, expected):
 @builtin_array
 @pytest.mark.notimpl(
     ["dask", "datafusion", "polars"], raises=com.OperationNotDefinedError
+)
+@pytest.mark.broken(
+    ["risingwave"],
+    raises=AssertionError,
+    reason="Refer to https://github.com/risingwavelabs/risingwave/issues/14735",
 )
 def test_array_sort(backend, con):
     t = ibis.memtable({"a": [[3, 2], [], [42, 42], []], "id": range(4)})
@@ -592,6 +640,11 @@ def test_array_union(con):
 )
 @pytest.mark.notimpl(
     ["sqlite"], raises=com.UnsupportedBackendType, reason="Unsupported type: Array..."
+)
+@pytest.mark.broken(
+    ["risingwave"],
+    raises=AssertionError,
+    reason="TODO(Kexiang): seems a bug",
 )
 @pytest.mark.parametrize(
     "data",
@@ -631,6 +684,7 @@ def test_array_intersect(con, data):
     reason="ClickHouse won't accept dicts for struct type values",
 )
 @pytest.mark.notimpl(["postgres"], raises=PsycoPg2SyntaxError)
+@pytest.mark.notimpl(["risingwave"], raises=PsycoPg2InternalError)
 @pytest.mark.notimpl(["datafusion"], raises=com.OperationNotDefinedError)
 @pytest.mark.broken(
     ["trino"], reason="inserting maps into structs doesn't work", raises=TrinoUserError
@@ -648,7 +702,16 @@ def test_unnest_struct(con):
 
 @builtin_array
 @pytest.mark.notimpl(
-    ["dask", "datafusion", "druid", "oracle", "pandas", "polars", "postgres"],
+    [
+        "dask",
+        "datafusion",
+        "druid",
+        "oracle",
+        "pandas",
+        "polars",
+        "postgres",
+        "risingwave",
+    ],
     raises=com.OperationNotDefinedError,
 )
 def test_zip(backend):
@@ -676,6 +739,7 @@ def test_zip(backend):
     reason="https://github.com/ClickHouse/ClickHouse/issues/41112",
 )
 @pytest.mark.notimpl(["postgres"], raises=PsycoPg2SyntaxError)
+@pytest.mark.notimpl(["risingwave"], raises=PsycoPg2ProgrammingError)
 @pytest.mark.notimpl(["datafusion"], raises=com.OperationNotDefinedError)
 @pytest.mark.notimpl(
     ["polars"],
@@ -733,9 +797,13 @@ def flatten_data():
     ["bigquery"], reason="BigQuery doesn't support arrays of arrays", raises=TypeError
 )
 @pytest.mark.notyet(
-    ["postgres"],
+    ["postgres", "risingwave"],
     reason="Postgres doesn't truly support arrays of arrays",
-    raises=(com.OperationNotDefinedError, PsycoPg2IndeterminateDatatype),
+    raises=(
+        com.OperationNotDefinedError,
+        PsycoPg2IndeterminateDatatype,
+        PsycoPg2InternalError,
+    ),
 )
 @pytest.mark.parametrize(
     ("column", "expected"),
@@ -804,6 +872,7 @@ def test_range_single_argument(con, n):
 )
 @pytest.mark.parametrize("n", [-2, 0, 2])
 @pytest.mark.notimpl(["polars", "flink", "dask"], raises=com.OperationNotDefinedError)
+@pytest.mark.skip("risingwave")
 def test_range_single_argument_unnest(backend, con, n):
     expr = ibis.range(n).unnest()
     result = con.execute(expr)
@@ -850,6 +919,11 @@ def test_range_start_stop_step(con, start, stop, step):
     ["datafusion"], raises=com.OperationNotDefinedError, reason="not supported upstream"
 )
 @pytest.mark.notimpl(["flink", "dask"], raises=com.OperationNotDefinedError)
+@pytest.mark.never(
+    ["risingwave"],
+    raises=PsycoPg2InternalError,
+    reason="Invalid parameter step: step size cannot equal zero",
+)
 def test_range_start_stop_step_zero(con, start, stop):
     expr = ibis.range(start, stop, 0)
     result = con.execute(expr)
@@ -879,6 +953,11 @@ def test_unnest_empty_array(con):
     raises=com.OperationNotDefinedError,
 )
 @pytest.mark.notimpl(["sqlite"], raises=com.UnsupportedBackendType)
+@pytest.mark.notyet(
+    "risingwave",
+    raises=PsycoPg2InternalError,
+    reason="no support for not null column constraint",
+)
 def test_array_map_with_conflicting_names(backend, con):
     t = ibis.memtable({"x": [[1, 2]]}, schema=ibis.schema(dict(x="!array<int8>")))
     expr = t.select(a=t.x.map(lambda x: x + 1)).select(
@@ -957,6 +1036,11 @@ timestamp_range_tzinfos = pytest.mark.parametrize(
             ibis.interval(hours=1),
             "1H",
             id="pos",
+            marks=pytest.mark.notimpl(
+                ["risingwave"],
+                raises=PsycoPg2InternalError,
+                reason="function make_interval() does not exist",
+            ),
         ),
         param(
             datetime(2017, 1, 2),
@@ -967,7 +1051,12 @@ timestamp_range_tzinfos = pytest.mark.parametrize(
             marks=[
                 pytest.mark.broken(
                     ["polars"], raises=AssertionError, reason="returns an empty array"
-                )
+                ),
+                pytest.mark.notimpl(
+                    ["risingwave"],
+                    raises=PsycoPg2InternalError,
+                    reason="function neg(interval) does not exist",
+                ),
             ],
         ),
         param(
@@ -982,6 +1071,11 @@ timestamp_range_tzinfos = pytest.mark.parametrize(
                 pytest.mark.notyet(
                     ["clickhouse", "snowflake"],
                     raises=com.UnsupportedOperationError,
+                ),
+                pytest.mark.notimpl(
+                    ["risingwave"],
+                    raises=PsycoPg2InternalError,
+                    reason="function neg(interval) does not exist",
                 ),
             ],
         ),
@@ -1008,7 +1102,14 @@ def test_timestamp_range(con, start, stop, step, freq, tzinfo):
             datetime(2017, 1, 2, tzinfo=pytz.UTC),
             ibis.interval(hours=0),
             id="pos",
-            marks=[pytest.mark.notyet(["polars"], raises=PolarsComputeError)],
+            marks=[
+                pytest.mark.notyet(["polars"], raises=PolarsComputeError),
+                pytest.mark.notyet(
+                    ["risingwave"],
+                    raises=PsycoPg2InternalError,
+                    reason="function make_interval() does not exist",
+                ),
+            ],
         ),
         param(
             datetime(2017, 1, 1, tzinfo=pytz.UTC),
@@ -1021,6 +1122,11 @@ def test_timestamp_range(con, start, stop, step, freq, tzinfo):
                 pytest.mark.notyet(
                     ["clickhouse", "snowflake"],
                     raises=com.UnsupportedOperationError,
+                ),
+                pytest.mark.notyet(
+                    ["risingwave"],
+                    raises=PsycoPg2InternalError,
+                    reason="function neg(interval) does not exist",
                 ),
             ],
         ),
@@ -1051,3 +1157,15 @@ def test_repr_timestamp_array(con, monkeypatch):
 
     expr = ibis.array(pd.date_range("2010-01-01", "2010-01-03", freq="D").tolist())
     assert "Translation to backend failed" not in repr(expr)
+
+
+@pytest.mark.notyet(
+    ["dask", "datafusion", "flink", "polars"],
+    raises=com.OperationNotDefinedError,
+)
+@pytest.mark.broken(["pandas"], raises=ValueError, reason="reindex on duplicate values")
+def test_unnest_range(con):
+    expr = ibis.range(2).unnest().name("x").as_table().mutate({"y": 1.0})
+    result = con.execute(expr)
+    expected = pd.DataFrame({"x": np.array([0, 1], dtype="int8"), "y": [1.0, 1.0]})
+    tm.assert_frame_equal(result, expected)
