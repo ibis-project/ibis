@@ -781,12 +781,7 @@ def test_isnan_isinf(
                 pytest.mark.notimpl(["druid"], raises=PyDruidProgrammingError),
             ],
         ),
-        param(
-            L(5.556).log10(),
-            math.log10(5.556),
-            marks=pytest.mark.notimpl(["exasol"], raises=com.OperationNotDefinedError),
-            id="log10",
-        ),
+        param(L(5.556).log10(), math.log10(5.556), id="log10"),
         param(
             L(5.556).radians(),
             math.radians(5.556),
@@ -797,12 +792,7 @@ def test_isnan_isinf(
             math.degrees(5.556),
             id="degrees",
         ),
-        param(
-            L(11) % 3,
-            11 % 3,
-            marks=pytest.mark.notimpl(["exasol"], raises=ExaQueryError),
-            id="mod",
-        ),
+        param(L(11) % 3, 11 % 3, id="mod"),
         param(L(5.556).log10(), math.log10(5.556), id="log10"),
         param(L(5.556).radians(), math.radians(5.556), id="radians"),
         param(L(5.556).degrees(), math.degrees(5.556), id="degrees"),
