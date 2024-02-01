@@ -66,7 +66,7 @@ Codex by Voltron Data](https://voltrondata.com/codex).
 
 Voltron Data is a for-profit company building
 [Theseus](https://voltrondata.com/theseus), an accelerator-native query engine
-for the composable data ecosystem. On its own, Theseus is fairly useless -- it
+for the composable data ecosystem. On its own, Theseus is fairly bare bones -- it
 needs storage below it, a frontend above it, and a bunch of other components to
 connect things together. Voltron Data's founders and engineers are very
 experienced with open-source software and pioneers of the composable data
