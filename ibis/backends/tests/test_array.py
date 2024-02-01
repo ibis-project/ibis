@@ -410,7 +410,7 @@ def test_array_slice(backend, start, stop):
     expected = pd.DataFrame(
         {"sliced": array_types.y.execute().map(lambda x: x[start:stop])}
     )
-    backend.assert_frame_equal(result, expected)
+    tm.assert_frame_equal(result, expected)
 
 
 @builtin_array
