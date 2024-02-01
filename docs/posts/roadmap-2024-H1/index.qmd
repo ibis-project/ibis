@@ -20,7 +20,7 @@ a range of data companies and institutions.
 
 This is the first public roadmap for the Ibis project. Thus, there's a bit of
 backstory to explain how we got here and setup the context for where we're
-going. Feel free to [skip ahead to the roadmap](#2024-roadmap) if you're already
+going. Feel free to [skip ahead to the roadmap](#roadmap) if you're already
 familiar with Ibis.
 
 ## Background
