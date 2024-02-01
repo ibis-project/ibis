@@ -26,6 +26,7 @@ from ibis.util import promote_tuple
 
 if TYPE_CHECKING:
     from collections.abc import Iterable
+
     from ibis.backends.tests.base import BackendTest
 
 

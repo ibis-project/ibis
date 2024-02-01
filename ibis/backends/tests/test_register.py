@@ -409,12 +409,7 @@ def test_register_garbage(con, monkeypatch):
     ],
 )
 @pytest.mark.notyet(
-    ["impala", "mssql", "mysql", "postgres", "risingwave", "sqlite", "trino"]
-)
-@pytest.mark.notimpl(
-    ["flink"],
-    raises=ValueError,
-    reason="read_parquet() missing required argument: 'schema'",
+    ["flink", "impala", "mssql", "mysql", "postgres", "risingwave", "sqlite", "trino"]
 )
 def test_read_parquet(con, tmp_path, data_dir, fname, in_table_name):
     pq = pytest.importorskip("pyarrow.parquet")
@@ -445,12 +440,17 @@ def ft_data(data_dir):
 
 
 @pytest.mark.notyet(
-    ["impala", "mssql", "mysql", "pandas", "postgres", "risingwave", "sqlite", "trino"]
-)
-@pytest.mark.notimpl(
-    ["flink"],
-    raises=ValueError,
-    reason="read_parquet() missing required argument: 'schema'",
+    [
+        "flink",
+        "impala",
+        "mssql",
+        "mysql",
+        "pandas",
+        "postgres",
+        "risingwave",
+        "sqlite",
+        "trino",
+    ]
 )
 def test_read_parquet_glob(con, tmp_path, ft_data):
     pq = pytest.importorskip("pyarrow.parquet")
@@ -469,12 +469,17 @@ def test_read_parquet_glob(con, tmp_path, ft_data):
 
 
 @pytest.mark.notyet(
-    ["impala", "mssql", "mysql", "pandas", "postgres", "risingwave", "sqlite", "trino"]
-)
-@pytest.mark.notimpl(
-    ["flink"],
-    raises=ValueError,
-    reason="read_csv() missing required argument: 'schema'",
+    [
+        "flink",
+        "impala",
+        "mssql",
+        "mysql",
+        "pandas",
+        "postgres",
+        "risingwave",
+        "sqlite",
+        "trino",
+    ]
 )
 def test_read_csv_glob(con, tmp_path, ft_data):
     pc = pytest.importorskip("pyarrow.csv")
@@ -556,12 +561,7 @@ DIAMONDS_COLUMN_TYPES = {
     [param(None, id="default"), param("fancy_stones", id="file_name")],
 )
 @pytest.mark.notyet(
-    ["impala", "mssql", "mysql", "postgres", "risingwave", "sqlite", "trino"]
-)
-@pytest.mark.notimpl(
-    ["flink"],
-    raises=ValueError,
-    reason="read_csv() missing required argument: 'schema'",
+    ["flink", "impala", "mssql", "mysql", "postgres", "risingwave", "sqlite", "trino"]
 )
 def test_read_csv(con, data_dir, in_table_name, num_diamonds):
     fname = "diamonds.csv"

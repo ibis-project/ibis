@@ -79,7 +79,7 @@ def test_literal(backend, con, field):
     backend.assert_series_equal(result, expected.astype(dtype))
 
 
-@pytest.mark.notimpl(["postgres", "risingwave"])
+@pytest.mark.notimpl(["postgres"])
 @pytest.mark.parametrize("field", ["a", "b", "c"])
 @pytest.mark.notyet(
     ["clickhouse"], reason="clickhouse doesn't support nullable nested types"

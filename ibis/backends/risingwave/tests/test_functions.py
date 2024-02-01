@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import operator
-import string
 import warnings
 from datetime import datetime
 
@@ -13,104 +12,9 @@ from pytest import param
 
 import ibis
 import ibis.expr.datatypes as dt
-import ibis.expr.types as ir
-from ibis import config
 from ibis import literal as L
 
 pytest.importorskip("psycopg2")
-sa = pytest.importorskip("sqlalchemy")
-
-from sqlalchemy.dialects import postgresql  # noqa: E402
-
-
-@pytest.mark.parametrize(
-    ("left_func", "right_func"),
-    [
-        param(
-            lambda t: t.double_col.cast("int8"),
-            lambda at: sa.cast(at.c.double_col, sa.SMALLINT),
-            id="double_to_int8",
-        ),
-        param(
-            lambda t: t.double_col.cast("int16"),
-            lambda at: sa.cast(at.c.double_col, sa.SMALLINT),
-            id="double_to_int16",
-        ),
-        param(
-            lambda t: t.string_col.cast("double"),
-            lambda at: sa.cast(at.c.string_col, postgresql.DOUBLE_PRECISION),
-            id="string_to_double",
-        ),
-        param(
-            lambda t: t.string_col.cast("float32"),
-            lambda at: sa.cast(at.c.string_col, postgresql.REAL),
-            id="string_to_float",
-        ),
-        param(
-            lambda t: t.string_col.cast("decimal"),
-            lambda at: sa.cast(at.c.string_col, sa.NUMERIC()),
-            id="string_to_decimal_no_params",
-        ),
-        param(
-            lambda t: t.string_col.cast("decimal(9, 3)"),
-            lambda at: sa.cast(at.c.string_col, sa.NUMERIC(9, 3)),
-            id="string_to_decimal_params",
-        ),
-    ],
-)
-def test_cast(alltypes, alltypes_sqla, translate, left_func, right_func):
-    left = left_func(alltypes)
-    right = right_func(alltypes_sqla.alias("t0"))
-    assert str(translate(left.op()).compile()) == str(right.compile())
-
-
-def test_date_cast(alltypes, alltypes_sqla, translate):
-    result = alltypes.date_string_col.cast("date")
-    expected = sa.cast(alltypes_sqla.alias("t0").c.date_string_col, sa.DATE)
-    assert str(translate(result.op())) == str(expected)
-
-
-@pytest.mark.parametrize(
-    "column",
-    [
-        "id",
-        "bool_col",
-        "tinyint_col",
-        "smallint_col",
-        "int_col",
-        "bigint_col",
-        "float_col",
-        "double_col",
-        "date_string_col",
-        "string_col",
-        "timestamp_col",
-        "year",
-        "month",
-    ],
-)
-def test_noop_cast(alltypes, alltypes_sqla, translate, column):
-    col = alltypes[column]
-    result = col.cast(col.type())
-    expected = alltypes_sqla.alias("t0").c[column]
-    assert result.equals(col)
-    assert str(translate(result.op())) == str(expected)
-
-
-def test_timestamp_cast_noop(alltypes, alltypes_sqla, translate):
-    # See GH #592
-    result1 = alltypes.timestamp_col.cast("timestamp")
-    result2 = alltypes.int_col.cast("timestamp")
-
-    assert isinstance(result1, ir.TimestampColumn)
-    assert isinstance(result2, ir.TimestampColumn)
-
-    expected1 = alltypes_sqla.alias("t0").c.timestamp_col
-    expected2 = sa.cast(
-        sa.func.to_timestamp(alltypes_sqla.alias("t0").c.int_col), sa.TIMESTAMP()
-    )
-
-    assert str(translate(result1.op())) == str(expected1)
-    assert str(translate(result2.op())) == str(expected2)
 
 
 @pytest.mark.parametrize(("value", "expected"), [(0, None), (5.5, 5.5)])
@@ -427,12 +331,7 @@ def test_union_cte(alltypes, distinct, snapshot):
     expr2 = expr1.view()
     expr3 = expr1.view()
     expr = expr1.union(expr2, distinct=distinct).union(expr3, distinct=distinct)
-    result = " ".join(
-        line.strip()
-        for line in str(
-            expr.compile().compile(compile_kwargs={"literal_binds": True})
-        ).splitlines()
-    )
+    result = " ".join(line.strip() for line in expr.compile().splitlines())
     snapshot.assert_match(result, "out.sql")
 
 
@@ -566,18 +465,6 @@ def test_not_exists(alltypes, df):
     expected = left[left.string_col != right.string_col]
 
     tm.assert_frame_equal(result, expected, check_index_type=False, check_dtype=False)
-
-
-def test_interactive_repr_shows_error(alltypes):
-    # #591. Doing this in Postgres because so many built-in functions are
-    # not available
-
-    expr = alltypes.int_col.convert_base(10, 2)
-
-    with config.option_context("interactive", True):
-        result = repr(expr)
-
-    assert "no translation rule" in result.lower()
 
 
 def test_subquery(alltypes, df):
@@ -758,9 +645,6 @@ def array_types(con):
     return con.table("array_types")
 
 
-@pytest.mark.xfail(
-    reason="Do not nest ARRAY types; ARRAY(basetype) handles multi-dimensional arrays of basetype"
-)
 def test_array_length(array_types):
     expr = array_types.select(
         array_types.x.length().name("x_length"),
@@ -861,60 +745,6 @@ def test_timestamp_with_timezone(con):
     assert str(result.dtype.tz)
 
 
-@pytest.fixture(
-    params=[
-        None,
-        "UTC",
-        "America/New_York",
-        "America/Los_Angeles",
-        "Europe/Paris",
-        "Chile/Continental",
-        "Asia/Tel_Aviv",
-        "Asia/Tokyo",
-        "Africa/Nairobi",
-        "Australia/Sydney",
-    ]
-)
-def tz(request):
-    return request.param
-
-
-@pytest.fixture
-def tzone_compute(con, temp_table, tz):
-    schema = ibis.schema([("ts", dt.Timestamp(tz)), ("b", "double"), ("c", "string")])
-    con.create_table(temp_table, schema=schema, temp=False)
-    t = con.table(temp_table)
-
-    n = 10
-    df = pd.DataFrame(
-        {
-            "ts": pd.date_range("2017-04-01", periods=n, tz=tz).values,
-            "b": np.arange(n).astype("float64"),
-            "c": list(string.ascii_lowercase[:n]),
-        }
-    )
-
-    df.to_sql(
-        temp_table,
-        con.con,
-        index=False,
-        if_exists="append",
-        dtype={"ts": sa.TIMESTAMP(timezone=True), "b": sa.FLOAT, "c": sa.TEXT},
-    )
-
-    yield t
-    con.drop_table(temp_table)
-
-
-def test_ts_timezone_is_preserved(tzone_compute, tz):
-    assert dt.Timestamp(tz).equals(tzone_compute.ts.type())
-
-
-def test_timestamp_with_timezone_select(tzone_compute, tz):
-    ts = tzone_compute.ts.execute()
-    assert str(getattr(ts.dtype, "tz", None)) == str(tz)
-
-
 @pytest.mark.parametrize(
     ("left", "right", "type"),
     [
@@ -1010,8 +840,8 @@ def test_string_to_binary_cast(con):
         "FROM functional_alltypes LIMIT 10"
     )
     with con.begin() as c:
-        cur = c.exec_driver_sql(sql_string)
-        raw_data = [row[0][0] for row in cur]
+        c.execute(sql_string)
+        raw_data = [row[0][0] for row in c.fetchall()]
     expected = pd.Series(raw_data, name=name)
     tm.assert_series_equal(result, expected)
 
@@ -1027,6 +857,6 @@ def test_string_to_binary_round_trip(con):
         "FROM functional_alltypes LIMIT 10"
     )
     with con.begin() as c:
-        cur = c.exec_driver_sql(sql_string)
-        expected = pd.Series([row[0][0] for row in cur], name=name)
+        c.execute(sql_string)
+        expected = pd.Series([row[0][0] for row in c.fetchall()], name=name)
     tm.assert_series_equal(result, expected)

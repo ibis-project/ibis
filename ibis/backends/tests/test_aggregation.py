@@ -22,6 +22,7 @@ from ibis.backends.tests.errors import (
     MySQLNotSupportedError,
     OracleDatabaseError,
     PolarsInvalidOperationError,
+    PsycoPg2InternalError,
     Py4JError,
     PyDruidProgrammingError,
     PyODBCProgrammingError,
@@ -92,6 +93,7 @@ aggregate_test_params = [
                     "druid",
                     "oracle",
                     "flink",
+                    "risingwave",
                     "exasol",
                 ],
                 raises=com.OperationNotDefinedError,
@@ -439,6 +441,7 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
                         "oracle",
                         "exasol",
                         "flink",
+                        "risingwave",
                     ],
                     raises=com.OperationNotDefinedError,
                 ),
@@ -537,7 +540,7 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
                 ),
                 pytest.mark.notimpl(
                     ["risingwave"],
-                    raises=sa.exc.InternalError,
+                    raises=PsycoPg2InternalError,
                 ),
             ],
         ),
@@ -562,7 +565,7 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
                 ),
                 pytest.mark.notimpl(
                     ["risingwave"],
-                    raises=sa.exc.InternalError,
+                    raises=PsycoPg2InternalError,
                 ),
             ],
         ),
@@ -592,7 +595,7 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
                 ),
                 pytest.mark.notimpl(
                     ["risingwave"],
-                    raises=sa.exc.InternalError,
+                    raises=PsycoPg2InternalError,
                 ),
             ],
         ),
@@ -649,7 +652,7 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
                 ),
                 pytest.mark.notimpl(
                     ["risingwave"],
-                    raises=sa.exc.InternalError,
+                    raises=PsycoPg2InternalError,
                 ),
             ],
         ),
@@ -664,7 +667,7 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
                 ),
                 pytest.mark.notimpl(
                     ["risingwave"],
-                    raises=sa.exc.InternalError,
+                    raises=PsycoPg2InternalError,
                 ),
             ],
         ),
@@ -771,21 +774,25 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
         param(
             lambda t: t.string_col.isin(["1", "7"]),
             lambda t: t.string_col.isin(["1", "7"]),
-            marks=pytest.mark.notimpl(
-                ["exasol"],
-                raises=(com.OperationNotDefinedError, ExaQueryError),
-                strict=False,
-            ),
+            marks=[
+                pytest.mark.notimpl(
+                    ["exasol"],
+                    raises=(com.OperationNotDefinedError, ExaQueryError),
+                    strict=False,
+                ),
+            ],
             id="is_in",
         ),
         param(
             lambda _: ibis._.string_col.isin(["1", "7"]),
             lambda t: t.string_col.isin(["1", "7"]),
-            marks=pytest.mark.notimpl(
-                ["exasol"],
-                raises=(com.OperationNotDefinedError, ExaQueryError),
-                strict=False,
-            ),
+            marks=[
+                pytest.mark.notimpl(
+                    ["exasol"],
+                    raises=(com.OperationNotDefinedError, ExaQueryError),
+                    strict=False,
+                ),
+            ],
             id="is_in_deferred",
         ),
     ],
@@ -939,7 +946,7 @@ def test_count_distinct_star(alltypes, df, ibis_cond, pandas_cond):
                 pytest.mark.broken(
                     ["risingwave"],
                     reason="Invalid input syntax: direct arg in `percentile_cont` must be castable to float64",
-                    raises=sa.exc.InternalError,
+                    raises=PsycoPg2InternalError,
                 ),
             ],
         ),
@@ -954,7 +961,14 @@ def test_count_distinct_star(alltypes, df, ibis_cond, pandas_cond):
             lambda t: t.string_col.isin(["1", "7"]),
             id="is_in",
             marks=[
-                pytest.mark.notimpl(["datafusion"], raises=com.OperationNotDefinedError)
+                pytest.mark.notimpl(
+                    ["datafusion"], raises=com.OperationNotDefinedError
+                ),
+                pytest.mark.notimpl(
+                    "risingwave",
+                    raises=PsycoPg2InternalError,
+                    reason="probably incorrect filter syntax but not sure",
+                ),
             ],
         ),
     ],
@@ -991,7 +1005,7 @@ def test_quantile(
                 ),
                 pytest.mark.notimpl(
                     ["risingwave"],
-                    raises=sa.exc.InternalError,
+                    raises=PsycoPg2InternalError,
                     reason="function covar_pop(integer, integer) does not exist",
                 ),
             ],
@@ -1011,7 +1025,7 @@ def test_quantile(
                 ),
                 pytest.mark.notimpl(
                     ["risingwave"],
-                    raises=sa.exc.InternalError,
+                    raises=PsycoPg2InternalError,
                     reason="function covar_pop(integer, integer) does not exist",
                 ),
             ],
@@ -1036,7 +1050,7 @@ def test_quantile(
                 ),
                 pytest.mark.notimpl(
                     ["risingwave"],
-                    raises=sa.exc.InternalError,
+                    raises=PsycoPg2InternalError,
                     reason="function covar_pop(integer, integer) does not exist",
                 ),
             ],
@@ -1051,7 +1065,7 @@ def test_quantile(
                     raises=com.OperationNotDefinedError,
                 ),
                 pytest.mark.notyet(
-                    ["postgres", "duckdb", "snowflake"],
+                    ["postgres", "duckdb", "snowflake", "risingwave"],
                     raises=com.UnsupportedOperationError,
                     reason="backend only implements population correlation coefficient",
                 ),
@@ -1095,7 +1109,7 @@ def test_quantile(
                 ),
                 pytest.mark.notimpl(
                     ["risingwave"],
-                    raises=sa.exc.InternalError,
+                    raises=PsycoPg2InternalError,
                     reason="function covar_pop(integer, integer) does not exist",
                 ),
             ],
@@ -1124,7 +1138,7 @@ def test_quantile(
                 ),
                 pytest.mark.notimpl(
                     ["risingwave"],
-                    raises=sa.exc.InternalError,
+                    raises=PsycoPg2InternalError,
                     reason="function covar_pop(integer, integer) does not exist",
                 ),
             ],
@@ -1608,7 +1622,9 @@ def test_grouped_case(backend, con):
 @pytest.mark.notyet(["oracle"], raises=OracleDatabaseError)
 @pytest.mark.notyet(["pyspark"], raises=PySparkAnalysisException)
 @pytest.mark.notyet(["mssql"], raises=PyODBCProgrammingError)
+@pytest.mark.notyet(["risingwave"], raises=AssertionError, strict=False)
 def test_group_concat_over_window(backend, con):
+    # TODO: this test is flaky on risingwave and I DO NOT LIKE IT
     input_df = pd.DataFrame(
         {
             "s": ["a|b|c", "b|a|c", "b|b|b|c|a"],

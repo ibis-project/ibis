@@ -4,17 +4,15 @@ import os
 
 import pandas as pd
 import pytest
+import sqlglot as sg
 from pytest import param
 
 import ibis
 import ibis.expr.datatypes as dt
 import ibis.expr.types as ir
-from ibis.tests.util import assert_equal
+from ibis.util import gen_name
 
 pytest.importorskip("psycopg2")
-sa = pytest.importorskip("sqlalchemy")
-
-from sqlalchemy.dialects import postgresql  # noqa: E402
 
 RISINGWAVE_TEST_DB = os.environ.get("IBIS_TEST_RISINGWAVE_DATABASE", "dev")
 IBIS_RISINGWAVE_HOST = os.environ.get("IBIS_TEST_RISINGWAVE_HOST", "localhost")
@@ -64,47 +62,15 @@ def test_list_databases(con):
     assert RISINGWAVE_TEST_DB in con.list_databases()
 
 
-def test_schema_type_conversion(con):
-    typespec = [
-        # name, type, nullable
-        ("jsonb", postgresql.JSONB, True, dt.JSON),
-    ]
+def test_create_and_drop_table(con, temp_table):
+    sch = ibis.schema([("first_name", "string")])
 
-    sqla_types = []
-    ibis_types = []
-    for name, t, nullable, ibis_type in typespec:
-        sqla_types.append(sa.Column(name, t, nullable=nullable))
-        ibis_types.append((name, ibis_type(nullable=nullable)))
+    con.create_table(temp_table, schema=sch)
+    assert con.table(temp_table) is not None
 
-    # Create a table with placeholder stubs for JSON, JSONB, and UUID.
-    table = sa.Table("tname", sa.MetaData(), *sqla_types)
+    con.drop_table(temp_table)
 
-    # Check that we can correctly create a schema with dt.any for the
-    # missing types.
-    schema = con._schema_from_sqla_table(table)
-    expected = ibis.schema(ibis_types)
-
-    assert_equal(schema, expected)
-
-
-@pytest.mark.parametrize("params", [{}, {"database": RISINGWAVE_TEST_DB}])
-def test_create_and_drop_table(con, temp_table, params):
-    sch = ibis.schema(
-        [
-            ("first_name", "string"),
-            ("last_name", "string"),
-            ("department_name", "string"),
-            ("salary", "float64"),
-        ]
-    )
-
-    con.create_table(temp_table, schema=sch, **params)
-    assert con.table(temp_table, **params) is not None
-
-    con.drop_table(temp_table, **params)
-
-    with pytest.raises(sa.exc.NoSuchTableError):
-        con.table(temp_table, **params)
+    assert temp_table not in con.list_tables()
 
 
 @pytest.mark.parametrize(
@@ -124,8 +90,8 @@ def test_create_and_drop_table(con, temp_table, params):
             ("date", dt.date),
             ("time", dt.time),
             ("time without time zone", dt.time),
-            ("timestamp without time zone", dt.timestamp),
-            ("timestamp with time zone", dt.Timestamp("UTC")),
+            ("timestamp without time zone", dt.Timestamp(scale=6)),
+            ("timestamp with time zone", dt.Timestamp("UTC", scale=6)),
             ("interval", dt.Interval("s")),
             ("numeric", dt.decimal),
             ("jsonb", dt.json),
@@ -133,17 +99,16 @@ def test_create_and_drop_table(con, temp_table, params):
     ],
 )
 def test_get_schema_from_query(con, pg_type, expected_type):
-    name = con._quote(ibis.util.guid())
+    name = sg.table(gen_name("risingwave_temp_table"), quoted=True)
     with con.begin() as c:
-        c.exec_driver_sql(f"CREATE TABLE {name} (x {pg_type}, y {pg_type}[])")
+        c.execute(f"CREATE TABLE {name} (x {pg_type}, y {pg_type}[])")
     expected_schema = ibis.schema(dict(x=expected_type, y=dt.Array(expected_type)))
     result_schema = con._get_schema_using_query(f"SELECT x, y FROM {name}")
     assert result_schema == expected_schema
     with con.begin() as c:
-        c.exec_driver_sql(f"DROP TABLE {name}")
+        c.execute(f"DROP TABLE {name}")
 
 
-@pytest.mark.xfail(reason="unsupported insert with CTEs")
 def test_insert_with_cte(con):
     X = con.create_table("X", schema=ibis.schema(dict(id="int")), temp=False)
     expr = X.join(X.mutate(a=X["id"] + 1), ["id"])
@@ -151,8 +116,3 @@ def test_insert_with_cte(con):
     assert Y.execute().empty
     con.drop_table("Y")
     con.drop_table("X")
-
-
-def test_connect_url_with_empty_host():
-    con = ibis.connect("risingwave:///dev")
-    assert con.con.url.host is None

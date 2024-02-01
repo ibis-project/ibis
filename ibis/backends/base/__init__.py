@@ -41,6 +41,7 @@ _IBIS_TO_SQLGLOT_DIALECT = {
     "datafusion": "postgres",
     # closest match see https://github.com/ibis-project/ibis/pull/7303#discussion_r1350223901
     "exasol": "oracle",
+    "risingwave": "postgres",
 }
 
 _SQLALCHEMY_TO_SQLGLOT_DIALECT = {
@@ -75,6 +76,7 @@ class Database:
         -------
         list[str]
             A list of the attributes and tables available in the database.
+
         """
         attrs = dir(type(self))
         unqualified_tables = [self._unqualify(x) for x in self.tables]
@@ -92,6 +94,7 @@ class Database:
         -------
         bool
             True if the given table is available in the current database.
+
         """
         return table in self.tables
 
@@ -103,6 +106,7 @@ class Database:
         -------
         list[str]
             The list of tables in the database
+
         """
         return self.list_tables()
 
@@ -118,6 +122,7 @@ class Database:
         -------
         Table
             Table expression
+
         """
         return self.table(table)
 
@@ -133,6 +138,7 @@ class Database:
         -------
         Table
             Table expression
+
         """
         return self.table(table)
 
@@ -150,6 +156,7 @@ class Database:
         force
             If `True`, drop any objects that exist, and do not fail if the
             database does not exist.
+
         """
         self.client.drop_database(self.name, force=force)
 
@@ -165,6 +172,7 @@ class Database:
         -------
         Table
             Table expression
+
         """
         qualified_name = self._qualify(name)
         return self.client.table(qualified_name, self.name)
@@ -178,6 +186,7 @@ class Database:
             A pattern to use for listing tables.
         database
             The database to perform the list against
+
         """
         return self.client.list_tables(like, database=database or self.name)
 
@@ -192,6 +201,7 @@ class TablesAccessor(collections.abc.Mapping):
     >>> con = ibis.sqlite.connect("example.db")
     >>> people = con.tables["people"]  # access via index
     >>> people = con.tables.people  # access via attribute
+
     """
 
     def __init__(self, backend: BaseBackend):
@@ -276,6 +286,7 @@ class _FileIOHandler:
             "no limit". The default is in `ibis/config.py`.
         kwargs
             Keyword arguments
+
         """
         return self.execute(expr, params=params, limit=limit, **kwargs)
 
@@ -309,6 +320,7 @@ class _FileIOHandler:
         -------
         Iterator[pd.DataFrame]
             An iterator of pandas `DataFrame`s.
+
         """
         from ibis.formats.pandas import PandasData
 
@@ -354,6 +366,7 @@ class _FileIOHandler:
         -------
         Table
             A pyarrow table holding the results of the executed expression.
+
         """
         pa = self._import_pyarrow()
         self._run_pre_execute_hooks(expr)
@@ -403,6 +416,7 @@ class _FileIOHandler:
         -------
         results
             RecordBatchReader
+
         """
         raise NotImplementedError
 
@@ -432,6 +446,7 @@ class _FileIOHandler:
         -------
         dict[str, torch.Tensor]
             A dictionary of torch tensors, keyed by column name.
+
         """
         import torch
 
@@ -463,6 +478,7 @@ class _FileIOHandler:
         -------
         ir.Table
             The just-registered table
+
         """
         raise NotImplementedError(
             f"{self.name} does not support direct registration of parquet data."
@@ -487,6 +503,7 @@ class _FileIOHandler:
         -------
         ir.Table
             The just-registered table
+
         """
         raise NotImplementedError(
             f"{self.name} does not support direct registration of CSV data."
@@ -511,6 +528,7 @@ class _FileIOHandler:
         -------
         ir.Table
             The just-registered table
+
         """
         raise NotImplementedError(
             f"{self.name} does not support direct registration of JSON data."
@@ -536,6 +554,7 @@ class _FileIOHandler:
         -------
         ir.Table
             The just-registered table.
+
         """
         raise NotImplementedError(
             f"{self.name} does not support direct registration of DeltaLake tables."
@@ -567,6 +586,7 @@ class _FileIOHandler:
             Additional keyword arguments passed to pyarrow.parquet.ParquetWriter
 
         https://arrow.apache.org/docs/python/generated/pyarrow.parquet.ParquetWriter.html
+
         """
         self._import_pyarrow()
         import pyarrow.parquet as pq
@@ -602,6 +622,7 @@ class _FileIOHandler:
             Additional keyword arguments passed to pyarrow.csv.CSVWriter
 
         https://arrow.apache.org/docs/python/generated/pyarrow.csv.CSVWriter.html
+
         """
         self._import_pyarrow()
         import pyarrow.csv as pcsv
@@ -666,6 +687,7 @@ class CanListDatabases(abc.ABC):
         list[str]
             The database names that exist in the current connection, that match
             the `like` pattern if provided.
+
         """
 
     @property
@@ -685,6 +707,7 @@ class CanCreateDatabase(CanListDatabases):
             Name of the new database.
         force
             If `False`, an exception is raised if the database already exists.
+
         """
 
     @abc.abstractmethod
@@ -697,6 +720,7 @@ class CanCreateDatabase(CanListDatabases):
             Database to drop.
         force
             If `False`, an exception is raised if the database does not exist.
+
         """
 
 
@@ -716,6 +740,7 @@ class CanCreateSchema(abc.ABC):
             current database is used.
         force
             If `False`, an exception is raised if the schema exists.
+
         """
 
     @abc.abstractmethod
@@ -733,6 +758,7 @@ class CanCreateSchema(abc.ABC):
             current database is used.
         force
             If `False`, an exception is raised if the schema does not exist.
+
         """
 
     @abc.abstractmethod
@@ -755,6 +781,7 @@ class CanCreateSchema(abc.ABC):
         list[str]
             The schema names that exist in the current connection, that match
             the `like` pattern if provided.
+
         """
 
     @property
@@ -814,6 +841,7 @@ class BaseBackend(abc.ABC, _FileIOHandler):
         -------
         Hashable
             Database identity
+
         """
         parts = [self.__class__]
         parts.extend(self._con_args)
@@ -844,6 +872,7 @@ class BaseBackend(abc.ABC, _FileIOHandler):
         -------
         BaseBackend
             An instance of the backend
+
         """
         new_backend = self.__class__(*args, **kwargs)
         new_backend.reconnect()
@@ -880,6 +909,7 @@ class BaseBackend(abc.ABC, _FileIOHandler):
         -------
         Database
             A database object for the specified database.
+
         """
         return Database(name=name or self.current_database, client=self)
 
@@ -905,6 +935,7 @@ class BaseBackend(abc.ABC, _FileIOHandler):
         -------
         list[str]
             Names filtered by the `like` pattern.
+
         """
         if like is None:
             return sorted(values)
@@ -933,6 +964,7 @@ class BaseBackend(abc.ABC, _FileIOHandler):
         -------
         list[str]
             The list of the table names that match the pattern `like`.
+
         """
 
     @abc.abstractmethod
@@ -950,6 +982,7 @@ class BaseBackend(abc.ABC, _FileIOHandler):
         -------
         Table
             Table expression
+
         """
 
     @functools.cached_property
@@ -963,6 +996,7 @@ class BaseBackend(abc.ABC, _FileIOHandler):
         >>> con = ibis.sqlite.connect("example.db")
         >>> people = con.tables["people"]  # access via index
         >>> people = con.tables.people  # access via attribute
+
         """
         return TablesAccessor(self)
 
@@ -980,6 +1014,7 @@ class BaseBackend(abc.ABC, _FileIOHandler):
         -------
         str
             The backend version
+
         """
 
     @classmethod
@@ -1088,6 +1123,7 @@ class BaseBackend(abc.ABC, _FileIOHandler):
         -------
         Table
             The table that was created.
+
         """
 
     @abc.abstractmethod
@@ -1108,6 +1144,7 @@ class BaseBackend(abc.ABC, _FileIOHandler):
             Name of the database where the table exists, if not the default.
         force
             If `False`, an exception is raised if the table does not exist.
+
         """
         raise NotImplementedError(
             f'Backend "{self.name}" does not implement "drop_table"'
@@ -1122,6 +1159,7 @@ class BaseBackend(abc.ABC, _FileIOHandler):
             The old name of the table.
         new_name
             The new name of the table.
+
         """
         raise NotImplementedError(
             f'Backend "{self.name}" does not implement "rename_table"'
@@ -1154,6 +1192,7 @@ class BaseBackend(abc.ABC, _FileIOHandler):
         -------
         Table
             The view that was created.
+
         """
 
     @abc.abstractmethod
@@ -1170,6 +1209,7 @@ class BaseBackend(abc.ABC, _FileIOHandler):
             Name of the database where the view exists, if not the default.
         force
             If `False`, an exception is raised if the view does not exist.
+
         """
 
     @classmethod
@@ -1194,6 +1234,7 @@ class BaseBackend(abc.ABC, _FileIOHandler):
         False
         >>> ibis.postgres.has_operation(ops.ArrayIndex)
         True
+
         """
         raise NotImplementedError(
             f"{cls.name} backend has not implemented `has_operation` API"
@@ -1228,6 +1269,7 @@ class BaseBackend(abc.ABC, _FileIOHandler):
         ----------
         expr
             Cached expression to release
+
         """
         del self._query_cache[expr.op()]
 
@@ -1268,6 +1310,7 @@ def _get_backend_names() -> frozenset[str]:
 
     If a `set` is used, then any in-place modifications to the set
     are visible to every caller of this function.
+
     """
 
     if sys.version_info < (3, 10):
@@ -1325,6 +1368,7 @@ def connect(resource: Path | str, **kwargs: Any) -> BaseBackend:
     >>> con = ibis.connect(
     ...     "bigquery://my-project/my-dataset"
     ... )  # quartodoc: +SKIP # doctest: +SKIP
+
     """
     url = resource = str(resource)
 

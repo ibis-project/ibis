@@ -9,7 +9,6 @@ from operator import invert, methodcaller, neg
 import numpy as np
 import pandas as pd
 import pytest
-import sqlalchemy as sa
 import toolz
 from pytest import param
 
@@ -26,6 +25,7 @@ from ibis.backends.tests.errors import (
     ImpalaHiveServer2Error,
     MySQLProgrammingError,
     OracleDatabaseError,
+    PsycoPg2InternalError,
     Py4JJavaError,
     PyDruidProgrammingError,
     PyODBCDataError,
@@ -548,7 +548,7 @@ def test_order_by(backend, alltypes, df, key, df_kwargs):
 @pytest.mark.notimpl(["dask", "pandas", "polars", "mssql", "druid"])
 @pytest.mark.notimpl(
     ["risingwave"],
-    raises=sa.exc.InternalError,
+    raises=PsycoPg2InternalError,
     reason="function random() does not exist",
 )
 def test_order_by_random(alltypes):
@@ -852,12 +852,12 @@ def test_typeof(con):
 @pytest.mark.notimpl(["datafusion", "druid"])
 @pytest.mark.notimpl(["pyspark"], condition=is_older_than("pyspark", "3.5.0"))
 @pytest.mark.notyet(["dask"], reason="not supported by the backend")
+@pytest.mark.notyet(["exasol"], raises=ExaQueryError, reason="not supported by exasol")
 @pytest.mark.broken(
     ["risingwave"],
-    raises=sa.exc.InternalError,
+    raises=PsycoPg2InternalError,
     reason="https://github.com/risingwavelabs/risingwave/issues/1343",
 )
-@pytest.mark.notyet(["exasol"], raises=ExaQueryError, reason="not supported by exasol")
 def test_isin_uncorrelated(
     backend, batting, awards_players, batting_df, awards_players_df
 ):
@@ -1037,11 +1037,6 @@ def test_many_subqueries(con, snapshot):
     reason="backend doesn't support arrays and we don't implement pivot_longer with unions yet",
     raises=com.OperationNotDefinedError,
 )
-@pytest.mark.notimpl(
-    ["risingwave"],
-    raises=sa.exc.InternalError,
-    reason='sql parser error: Expected ), found: TEXT at line:3, column:219 Near "))]) AS anon_1(f1"',
-)
 @pytest.mark.broken(
     ["trino"],
     reason="invalid code generated for unnesting a struct",
@@ -1163,7 +1158,7 @@ def test_pivot_wider(backend):
 )
 @pytest.mark.notimpl(
     ["risingwave"],
-    raises=sa.exc.InternalError,
+    raises=PsycoPg2InternalError,
     reason="function last(double precision) does not exist, do you mean left or least",
 )
 def test_distinct_on_keep(backend, on, keep):
@@ -1233,7 +1228,7 @@ def test_distinct_on_keep(backend, on, keep):
 )
 @pytest.mark.notimpl(
     ["risingwave"],
-    raises=sa.exc.InternalError,
+    raises=PsycoPg2InternalError,
     reason="function first(double precision) does not exist",
 )
 def test_distinct_on_keep_is_none(backend, on):
@@ -1287,8 +1282,6 @@ def test_hash_consistent(backend, alltypes):
         "pyspark",
         "risingwave",
         "sqlite",
-        "clickhouse",
-        "mssql",
     ]
 )
 def test_hashbytes(backend, alltypes):
@@ -1322,8 +1315,6 @@ def test_hashbytes(backend, alltypes):
         "risingwave",
         "snowflake",
         "trino",
-        "pyspark",
-        "mssql",
     ]
 )
 @pytest.mark.notyet(
@@ -1352,7 +1343,6 @@ def test_hexdigest(backend, alltypes):
         "pandas",
         "dask",
         "oracle",
-        "risingwave",
         "snowflake",
         "sqlite",
     ]
@@ -1513,26 +1503,12 @@ def test_try_cast_func(con, from_val, to_type, func):
         param(
             slice(None, None),
             lambda t: t.count().to_pandas(),
-            marks=[
-                pytest.mark.notimpl(
-                    ["risingwave"],
-                    raises=sa.exc.InternalError,
-                    reason="risingwave doesn't support limit/offset",
-                ),
-            ],
             id="[:]",
         ),
         param(slice(0, 0), lambda _: 0, id="[0:0]"),
         param(
             slice(0, None),
             lambda t: t.count().to_pandas(),
-            marks=[
-                pytest.mark.notimpl(
-                    ["risingwave"],
-                    raises=sa.exc.InternalError,
-                    reason="risingwave doesn't support limit/offset",
-                ),
-            ],
             id="[0:]",
         ),
         # positive stop
@@ -1587,11 +1563,6 @@ def test_try_cast_func(con, from_val, to_type, func):
                     ["impala"],
                     raises=ImpalaHiveServer2Error,
                     reason="impala doesn't support OFFSET without ORDER BY",
-                ),
-                pytest.mark.notimpl(
-                    ["risingwave"],
-                    raises=sa.exc.InternalError,
-                    reason="risingwave doesn't support limit/offset",
                 ),
                 pytest.mark.notyet(["oracle"], raises=com.UnsupportedArgumentError),
             ],
@@ -1680,15 +1651,15 @@ def test_static_table_slice(backend, slc, expected_count_fn):
     raises=com.UnsupportedArgumentError,
     reason="Removed half-baked dynamic offset functionality for now",
 )
+@pytest.mark.notimpl(
+    ["risingwave"],
+    raises=PsycoPg2InternalError,
+    reason="risingwave doesn't support limit/offset",
+)
 @pytest.mark.notyet(
     ["trino"],
     raises=TrinoUserError,
     reason="backend doesn't support dynamic limit/offset",
-)
-@pytest.mark.notimpl(
-    ["risingwave"],
-    raises=sa.exc.InternalError,
-    reason="risingwave doesn't support limit/offset",
 )
 @pytest.mark.notimpl(["exasol"], raises=ExaQueryError)
 @pytest.mark.notyet(
@@ -1770,15 +1741,15 @@ def test_dynamic_table_slice(backend, slc, expected_count_fn):
 )
 @pytest.mark.notyet(["pyspark"], reason="pyspark doesn't support dynamic limit/offset")
 @pytest.mark.notyet(["flink"], reason="flink doesn't support dynamic limit/offset")
-@pytest.mark.notimpl(
-    ["risingwave"],
-    raises=sa.exc.InternalError,
-    reason="risingwave doesn't support limit/offset",
-)
 @pytest.mark.notyet(
     ["mssql"],
     reason="doesn't support dynamic limit/offset; compiles incorrectly in sqlglot",
     raises=AssertionError,
+)
+@pytest.mark.notimpl(
+    ["risingwave"],
+    raises=PsycoPg2InternalError,
+    reason="risingwave doesn't support limit/offset",
 )
 def test_dynamic_table_slice_with_computed_offset(backend):
     t = backend.functional_alltypes
@@ -1798,17 +1769,10 @@ def test_dynamic_table_slice_with_computed_offset(backend):
     backend.assert_frame_equal(result, expected)
 
 
-@pytest.mark.notimpl(
-    [
-        "druid",
-        "flink",
-        "polars",
-        "snowflake",
-    ]
-)
+@pytest.mark.notimpl(["druid", "flink", "polars", "snowflake"])
 @pytest.mark.notimpl(
     ["risingwave"],
-    raises=sa.exc.InternalError,
+    raises=PsycoPg2InternalError,
     reason="function random() does not exist",
 )
 def test_sample(backend):
@@ -1826,17 +1790,10 @@ def test_sample(backend):
     backend.assert_frame_equal(empty, df.iloc[:0])
 
 
-@pytest.mark.notimpl(
-    [
-        "druid",
-        "flink",
-        "polars",
-        "snowflake",
-    ]
-)
+@pytest.mark.notimpl(["druid", "flink", "polars", "snowflake"])
 @pytest.mark.notimpl(
     ["risingwave"],
-    raises=sa.exc.InternalError,
+    raises=PsycoPg2InternalError,
     reason="function random() does not exist",
 )
 def test_sample_memtable(con, backend):
@@ -1895,11 +1852,6 @@ def test_substitute(backend):
     ["dask", "pandas", "polars"], raises=NotImplementedError, reason="not a SQL backend"
 )
 @pytest.mark.notimpl(["flink"], reason="no sqlglot dialect", raises=ValueError)
-@pytest.mark.notimpl(
-    ["risingwave"],
-    raises=ValueError,
-    reason="risingwave doesn't support sqlglot.dialects.dialect.Dialect",
-)
 def test_simple_memtable_construct(con):
     t = ibis.memtable({"a": [1, 2]})
     expr = t.a

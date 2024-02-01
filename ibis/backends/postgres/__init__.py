@@ -44,6 +44,7 @@ def _verify_source_line(func_name: str, line: str):
 
 class Backend(SQLGlotBackend):
     name = "postgres"
+    dialect = "postgres"
     compiler = PostgresCompiler()
     supports_python_udfs = True
 
@@ -61,6 +62,7 @@ class Backend(SQLGlotBackend):
         -------
         BaseBackend
             A backend instance
+
         """
 
         url = urlparse(url)
@@ -106,7 +108,7 @@ class Backend(SQLGlotBackend):
         schema = op.schema
         if null_columns := [col for col, dtype in schema.items() if dtype.is_null()]:
             raise exc.IbisTypeError(
-                "Postgres cannot yet reliably handle `null` typed columns; "
+                f"{self.name} cannot yet reliably handle `null` typed columns; "
                 f"got null typed columns: {null_columns}"
             )
 
@@ -137,18 +139,18 @@ class Backend(SQLGlotBackend):
                 ),
                 properties=sg.exp.Properties(expressions=[sge.TemporaryProperty()]),
             )
-            create_stmt_sql = create_stmt.sql(self.name)
+            create_stmt_sql = create_stmt.sql(self.dialect)
 
             columns = schema.keys()
             df = op.data.to_frame()
             data = df.itertuples(index=False)
             cols = ", ".join(
-                ident.sql(self.name)
+                ident.sql(self.dialect)
                 for ident in map(partial(sg.to_identifier, quoted=quoted), columns)
             )
             specs = ", ".join(repeat("%s", len(columns)))
             table = sg.table(name, quoted=quoted)
-            sql = f"INSERT INTO {table.sql(self.name)} ({cols}) VALUES ({specs})"
+            sql = f"INSERT INTO {table.sql(self.dialect)} ({cols}) VALUES ({specs})"
             with self.begin() as cur:
                 cur.execute(create_stmt_sql)
                 extras.execute_batch(cur, sql, data, 128)
@@ -254,6 +256,7 @@ class Backend(SQLGlotBackend):
             timestamp_col : timestamp
             year : int32
             month : int32
+
         """
 
         self.con = psycopg2.connect(
@@ -291,6 +294,7 @@ class Backend(SQLGlotBackend):
             The `schema` parameter does **not** refer to the column names and
             types of `table`.
             :::
+
         """
         if database is not None:
             util.warn_deprecated(
@@ -314,7 +318,7 @@ class Backend(SQLGlotBackend):
             .from_(sg.table("tables", db="information_schema"))
             .distinct()
             .where(*conditions)
-            .sql(self.name)
+            .sql(self.dialect)
         )
 
         with self._safe_raw_sql(sql) as cur:
@@ -447,10 +451,10 @@ class Backend(SQLGlotBackend):
         """No op."""
 
     def _compile_pyarrow_udf(self, udf_node: ops.ScalarUDF) -> None:
-        raise NotImplementedError("pyarrow UDFs are not supported in Postgres")
+        raise NotImplementedError(f"pyarrow UDFs are not supported in {self.name}")
 
     def _compile_pandas_udf(self, udf_node: ops.ScalarUDF) -> str:
-        raise NotImplementedError("pandas UDFs are not supported in Postgres")
+        raise NotImplementedError(f"pandas UDFs are not supported in {self.name}")
 
     def _define_udf_translation_rules(self, expr: ir.Expr) -> None:
         """No-op, these are defined in the compiler."""
@@ -535,11 +539,11 @@ $$""".format(**self._get_udf_source(udf_node))
         create_stmt = sge.Create(
             kind="VIEW",
             this=sg.table(name),
-            expression=sg.parse_one(query, read=self.name),
+            expression=sg.parse_one(query, read=self.dialect),
             properties=sge.Properties(expressions=[sge.TemporaryProperty()]),
         )
         drop_stmt = sge.Drop(kind="VIEW", this=sg.table(name), exists=True).sql(
-            self.name
+            self.dialect
         )
 
         with self._safe_raw_sql(create_stmt):
@@ -555,7 +559,7 @@ $$""".format(**self._get_udf_source(udf_node))
     ) -> None:
         if database is not None and database != self.current_database:
             raise exc.UnsupportedOperationError(
-                "Postgres does not support creating a schema in a different database"
+                f"{self.name} does not support creating a schema in a different database"
             )
         sql = sge.Create(
             kind="SCHEMA", this=sg.table(name, catalog=database), exists=force
@@ -572,7 +576,7 @@ $$""".format(**self._get_udf_source(udf_node))
     ) -> None:
         if database is not None and database != self.current_database:
             raise exc.UnsupportedOperationError(
-                "Postgres does not support dropping a schema in a different database"
+                f"{self.name} does not support dropping a schema in a different database"
             )
 
         sql = sge.Drop(
@@ -614,13 +618,14 @@ $$""".format(**self._get_udf_source(udf_node))
         overwrite
             If `True`, replace the table if it already exists, otherwise fail
             if the table exists
+
         """
         if obj is None and schema is None:
             raise ValueError("Either `obj` or `schema` must be specified")
 
         if database is not None and database != self.current_database:
             raise com.UnsupportedOperationError(
-                "Creating tables in other databases is not supported by Postgres"
+                f"Creating tables in other databases is not supported by {self.name}"
             )
         else:
             database = None
@@ -672,15 +677,15 @@ $$""".format(**self._get_udf_source(udf_node))
         this = sg.table(name, catalog=database, quoted=self.compiler.quoted)
         with self._safe_raw_sql(create_stmt) as cur:
             if query is not None:
-                insert_stmt = sge.Insert(this=table, expression=query).sql(self.name)
+                insert_stmt = sge.Insert(this=table, expression=query).sql(self.dialect)
                 cur.execute(insert_stmt)
 
             if overwrite:
                 cur.execute(
-                    sge.Drop(kind="TABLE", this=this, exists=True).sql(self.name)
+                    sge.Drop(kind="TABLE", this=this, exists=True).sql(self.dialect)
                 )
                 cur.execute(
-                    f"ALTER TABLE IF EXISTS {table.sql(self.name)} RENAME TO {this.sql(self.name)}"
+                    f"ALTER TABLE IF EXISTS {table.sql(self.dialect)} RENAME TO {this.sql(self.dialect)}"
                 )
 
         if schema is None:
@@ -700,7 +705,7 @@ $$""".format(**self._get_udf_source(udf_node))
     ) -> None:
         if database is not None and database != self.current_database:
             raise com.UnsupportedOperationError(
-                "Droppping tables in other databases is not supported by Postgres"
+                f"Droppping tables in other databases is not supported by {self.name}"
             )
         else:
             database = None
@@ -721,7 +726,7 @@ $$""".format(**self._get_udf_source(udf_node))
 
     def raw_sql(self, query: str | sg.Expression, **kwargs: Any) -> Any:
         with contextlib.suppress(AttributeError):
-            query = query.sql(dialect=self.name)
+            query = query.sql(dialect=self.dialect)
 
         con = self.con
         cursor = con.cursor()
@@ -771,7 +776,8 @@ $$""".format(**self._get_udf_source(udf_node))
             Table name
         database
             Schema name
+
         """
-        ident = sg.table(name, db=database).sql(self.name)
+        ident = sg.table(name, db=database).sql(self.dialect)
         with self._safe_raw_sql(f"TRUNCATE TABLE {ident}"):
             pass

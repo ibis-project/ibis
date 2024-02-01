@@ -376,6 +376,36 @@ class MSSQLCompiler(SQLGlotCompiler):
             return sge.FALSE if arg == sge.TRUE else sge.TRUE
         return self.if_(arg, 1, 0).eq(0)
 
+    @visit_node.register(ops.HashBytes)
+    def visit_HashBytes(self, op, *, arg, how):
+        if how in ("md5", "sha1"):
+            return self.f.hashbytes(how, arg)
+        elif how == "sha256":
+            return self.f.hashbytes("sha2_256", arg)
+        elif how == "sha512":
+            return self.f.hashbytes("sha2_512", arg)
+        else:
+            raise NotImplementedError(how)
+
+    @visit_node.register(ops.HexDigest)
+    def visit_HexDigest(self, op, *, arg, how):
+        if how in ("md5", "sha1"):
+            hashbinary = self.f.hashbytes(how, arg)
+        elif how == "sha256":
+            hashbinary = self.f.hashbytes("sha2_256", arg)
+        elif how == "sha512":
+            hashbinary = self.f.hashbytes("sha2_512", arg)
+        else:
+            raise NotImplementedError(how)
+
+        # mssql uppercases the hexdigest which is inconsistent with several other
+        # implementations and inconsistent with Python, so lowercase it.
+        return self.f.lower(
+            self.f.convert(
+                sge.Literal(this="VARCHAR(MAX)", is_string=False), hashbinary, 2
+            )
+        )
+
     @visit_node.register(ops.Any)
     @visit_node.register(ops.All)
     @visit_node.register(ops.ApproxMedian)

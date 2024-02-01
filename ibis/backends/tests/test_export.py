@@ -4,7 +4,6 @@ import pandas as pd
 import pyarrow as pa
 import pyarrow.csv as pcsv
 import pytest
-import sqlalchemy as sa
 from pytest import param
 
 import ibis
@@ -342,11 +341,6 @@ def test_table_to_csv_writer_kwargs(delimiter, tmp_path, awards_players):
             id="decimal128",
             marks=[
                 pytest.mark.notyet(["flink"], raises=NotImplementedError),
-                pytest.mark.notyet(
-                    ["risingwave"],
-                    raises=sa.exc.DBAPIError,
-                    reason="Feature is not yet implemented: unsupported data type: NUMERIC(38,9)",
-                ),
                 pytest.mark.notyet(["exasol"], raises=ExaQueryError),
             ],
         ),
@@ -366,11 +360,6 @@ def test_table_to_csv_writer_kwargs(delimiter, tmp_path, awards_players):
                     ["pyspark"],
                     raises=(PySparkParseException, PySparkArithmeticException),
                     reason="precision is out of range",
-                ),
-                pytest.mark.notyet(
-                    ["risingwave"],
-                    raises=sa.exc.DBAPIError,
-                    reason="Feature is not yet implemented: unsupported data type: NUMERIC(76,38)",
                 ),
                 pytest.mark.notyet(["flink"], raises=NotImplementedError),
                 pytest.mark.notyet(["exasol"], raises=ExaQueryError),
@@ -495,16 +484,7 @@ def test_to_pandas_batches_empty_table(backend, con):
 @pytest.mark.parametrize(
     "n",
     [
-        param(
-            None,
-            marks=[
-                pytest.mark.notimpl(
-                    ["risingwave"],
-                    raises=sa.exc.InternalError,
-                    reason="risingwave doesn't support limit null",
-                ),
-            ],
-        ),
+        None,
         1,
     ],
 )
@@ -516,19 +496,11 @@ def test_to_pandas_batches_nonempty_table(backend, con, n):
     assert sum(map(len, t.to_pandas_batches())) == n
 
 
+@pytest.mark.notimpl(["flink"])
 @pytest.mark.parametrize(
     "n",
     [
-        param(
-            None,
-            marks=[
-                pytest.mark.notimpl(
-                    ["risingwave"],
-                    raises=sa.exc.InternalError,
-                    reason="risingwave doesn't support limit null",
-                ),
-            ],
-        ),
+        None,
         0,
         1,
         2,
