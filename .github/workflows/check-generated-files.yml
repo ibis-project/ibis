@@ -83,6 +83,6 @@ jobs:
 
       - name: upload code coverage
         if: success()
-        uses: codecov/codecov-action@v3
+        uses: codecov/codecov-action@v4
         with:
           flags: core,${{ runner.os }},python-${{ steps.install_python.outputs.python-version }}

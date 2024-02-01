@@ -397,7 +397,7 @@ jobs:
 
       - name: upload code coverage
         if: success()
-        uses: codecov/codecov-action@v3
+        uses: codecov/codecov-action@v4
         with:
           flags: backend,${{ matrix.backend.name }},${{ runner.os }},python-${{ steps.install_python.outputs.python-version }}
 
@@ -524,7 +524,7 @@ jobs:
 
       - name: upload code coverage
         if: success()
-        uses: codecov/codecov-action@v3
+        uses: codecov/codecov-action@v4
         with:
           flags: backend,${{ matrix.backend.name }},${{ runner.os }},python-${{ steps.install_python.outputs.python-version }}
 
@@ -596,7 +596,7 @@ jobs:
       - name: upload code coverage
         # only upload coverage for jobs that aren't mostly xfails
         if: success() && matrix.python-version != '3.11'
-        uses: codecov/codecov-action@v3
+        uses: codecov/codecov-action@v4
         with:
           flags: backend,pyspark,${{ runner.os }},python-${{ steps.install_python.outputs.python-version }}
 
@@ -711,7 +711,7 @@ jobs:
 
       - name: upload code coverage
         if: success()
-        uses: codecov/codecov-action@v3
+        uses: codecov/codecov-action@v4
         with:
           flags: backend,${{ matrix.backend.name }},${{ runner.os }},python-${{ steps.install_python.outputs.python-version }}
 
