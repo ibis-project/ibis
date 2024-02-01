@@ -658,6 +658,18 @@ class ImpalaType(SqlglotType):
     default_decimal_precision = 9
     default_decimal_scale = 0
 
+    @classmethod
+    def _from_ibis_Array(cls, dtype: dt.Array) -> NoReturn:
+        raise com.UnsupportedBackendType("Array types aren't supported in Impala")
+
+    @classmethod
+    def _from_ibis_Map(cls, dtype: dt.Map) -> NoReturn:
+        raise com.UnsupportedBackendType("Map types aren't supported in Impala")
+
+    @classmethod
+    def _from_ibis_Struct(cls, dtype: dt.Struct) -> sge.DataType:
+        raise com.UnsupportedBackendType("Struct types aren't supported in Impala")
+
 
 class PySparkType(SqlglotType):
     dialect = "spark"
