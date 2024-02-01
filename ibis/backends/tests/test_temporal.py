@@ -9,9 +9,9 @@ from operator import methodcaller
 import numpy as np
 import pandas as pd
 import pytest
+import sqlalchemy as sa
 import sqlglot as sg
 from pytest import param
-import sqlalchemy as sa
 
 import ibis
 import ibis.common.exceptions as com
@@ -831,14 +831,7 @@ timestamp_value = pd.Timestamp("2018-01-01 18:18:18")
             id="timestamp-add-interval-binop",
             marks=[
                 pytest.mark.notimpl(
-                    [
-                        "dask",
-                        "risingwave",
-                        "snowflake",
-                        "sqlite",
-                        "bigquery",
-                        "exasol"
-                    ],
+                    ["dask", "risingwave", "snowflake", "sqlite", "bigquery", "exasol"],
                     raises=com.OperationNotDefinedError,
                 ),
                 pytest.mark.notimpl(["impala"], raises=com.UnsupportedOperationError),
@@ -864,7 +857,7 @@ timestamp_value = pd.Timestamp("2018-01-01 18:18:18")
                         "polars",
                         "snowflake",
                         "bigquery",
-                        "exasol"
+                        "exasol",
                     ],
                     raises=com.OperationNotDefinedError,
                 ),
@@ -1437,13 +1430,6 @@ def test_interval_add_cast_column(backend, alltypes, df):
             marks=[
                 pytest.mark.notimpl(
                     [
-                        "pyspark",
-                    ],
-                    raises=AttributeError,
-                    reason="'StringConcat' object has no attribute 'value'",
-                ),
-                pytest.mark.notimpl(
-                    [
                         "risingwave",
                     ],
                     raises=AttributeError,
@@ -1804,10 +1790,7 @@ DATE_BACKEND_TYPES = {
     "snowflake": "DATE",
     "sqlite": "text",
     "trino": "date",
-    "duckdb": "DATE",
-    "postgres": "date",
     "risingwave": "date",
-    "flink": "DATE NOT NULL",
 }
 
 

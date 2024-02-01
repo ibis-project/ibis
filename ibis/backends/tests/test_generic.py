@@ -9,9 +9,9 @@ from operator import invert, methodcaller, neg
 import numpy as np
 import pandas as pd
 import pytest
+import sqlalchemy as sa
 import toolz
 from pytest import param
-import sqlalchemy as sa
 
 import ibis
 import ibis.common.exceptions as com
@@ -24,15 +24,14 @@ from ibis.backends.tests.errors import (
     ExaQueryError,
     GoogleBadRequest,
     ImpalaHiveServer2Error,
-    Py4JJavaError,
     MySQLProgrammingError,
     OracleDatabaseError,
+    Py4JJavaError,
     PyDruidProgrammingError,
     PyODBCDataError,
     PyODBCProgrammingError,
     SnowflakeProgrammingError,
     TrinoUserError,
-    PsycoPg2InvalidTextRepresentation
 )
 from ibis.common.annotations import ValidationError
 
@@ -1322,6 +1321,7 @@ def test_hashbytes(backend, alltypes):
         "risingwave",
         "snowflake",
         "trino",
+        "pyspark",
     ]
 )
 @pytest.mark.notyet(
@@ -1442,7 +1442,6 @@ def test_try_cast_null(con, from_val, to_type):
         "oracle",
         "postgres",
         "risingwave",
-        "pyspark",
         "snowflake",
         "sqlite",
         "exasol",
