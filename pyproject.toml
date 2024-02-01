@@ -41,7 +41,7 @@ atpublic = ">=2.3,<5"
 bidict = ">=0.22.1,<1"
 multipledispatch = ">=0.6,<2"
 numpy = ">=1,<2"
-pandas = ">=1.2.5,<3"
+pandas = ">=1.2.5,<2.1"
 parsy = ">=2,<3"
 pyarrow = ">=2,<16"
 pyarrow-hotfix = ">=0.4,<1"
@@ -192,11 +192,11 @@ mysql = ["pymysql"]
 oracle = ["oracledb", "packaging"]
 pandas = ["regex"]
 polars = ["polars", "packaging"]
-risingwave = ["psycopg2"]
 postgres = ["psycopg2"]
 pyspark = ["pyspark", "packaging"]
 snowflake = ["snowflake-connector-python", "packaging"]
 sqlite = ["regex"]
+risingwave = ["psycopg2"]
 trino = ["trino"]
 # non-backend extras
 visualization = ["graphviz"]

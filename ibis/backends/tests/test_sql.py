@@ -8,10 +8,9 @@ import ibis.common.exceptions as exc
 from ibis import _
 from ibis.backends.conftest import _get_backends_to_test
 
-sa = pytest.importorskip("sqlalchemy")
 sg = pytest.importorskip("sqlglot")
 
-pytestmark = pytest.mark.notimpl(["flink", "risingwave"])
+pytestmark = pytest.mark.notimpl(["flink"])
 
 simple_literal = param(ibis.literal(1), id="simple_literal")
 array_literal = param(
@@ -27,7 +26,7 @@ array_literal = param(
 )
 no_structs = pytest.mark.never(
     ["impala", "mysql", "sqlite", "mssql", "exasol"],
-    raises=(NotImplementedError, sa.exc.CompileError, exc.UnsupportedBackendType),
+    raises=(NotImplementedError, exc.UnsupportedBackendType),
     reason="structs not supported in the backend",
 )
 no_struct_literals = pytest.mark.notimpl(
@@ -62,9 +61,6 @@ def test_literal(backend, expr):
 
 
 @pytest.mark.never(["pandas", "dask", "polars"], reason="not SQL")
-@pytest.mark.xfail_version(
-    mssql=["sqlalchemy>=2"], reason="sqlalchemy 2 prefixes literals with `N`"
-)
 def test_group_by_has_index(backend, snapshot):
     countries = ibis.table(
         dict(continent="string", population="int64"), name="countries"
