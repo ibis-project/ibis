@@ -5,7 +5,6 @@ import contextlib
 import numpy as np
 import pandas as pd
 import pytest
-import sqlalchemy as sa
 from pytest import param
 
 import ibis
@@ -14,6 +13,7 @@ import ibis.expr.datatypes as dt
 from ibis.backends.tests.errors import (
     ClickHouseDatabaseError,
     OracleDatabaseError,
+    PsycoPg2InternalError,
     PyDruidProgrammingError,
     PyODBCProgrammingError,
 )
@@ -62,7 +62,7 @@ from ibis.common.annotations import ValidationError
                 ),
                 pytest.mark.broken(
                     ["risingwave"],
-                    raises=sa.exc.InternalError,
+                    raises=PsycoPg2InternalError,
                     reason='sql parser error: Expected end of statement, found: "NG\'" at line:1, column:31 Near "SELECT \'STRI"NG\' AS "\'STRI""',
                 ),
             ],
@@ -90,7 +90,7 @@ from ibis.common.annotations import ValidationError
                 ),
                 pytest.mark.broken(
                     ["risingwave"],
-                    raises=sa.exc.InternalError,
+                    raises=PsycoPg2InternalError,
                     reason='sql parser error: Expected end of statement, found: "NG\'" at line:1, column:31 Near "SELECT \'STRI"NG\' AS "\'STRI""',
                 ),
             ],
@@ -233,11 +233,6 @@ def uses_java_re(t):
                 pytest.mark.notimpl(
                     ["mssql", "exasol"], raises=com.OperationNotDefinedError
                 ),
-                pytest.mark.notimpl(
-                    ["risingwave"],
-                    raises=sa.exc.InternalError,
-                    reason="function textregexeq(character varying, character varying) does not exist",
-                ),
             ],
         ),
         param(
@@ -247,11 +242,6 @@ def uses_java_re(t):
             marks=[
                 pytest.mark.notimpl(
                     ["mssql", "exasol"], raises=com.OperationNotDefinedError
-                ),
-                pytest.mark.notimpl(
-                    ["risingwave"],
-                    raises=sa.exc.InternalError,
-                    reason="function textregexeq(character varying, character varying) does not exist",
                 ),
             ],
         ),
@@ -268,11 +258,6 @@ def uses_java_re(t):
                 pytest.mark.notimpl(
                     ["druid"], reason="No posix support", raises=AssertionError
                 ),
-                pytest.mark.notimpl(
-                    ["risingwave"],
-                    raises=sa.exc.InternalError,
-                    reason="function textregexeq(character varying, character varying) does not exist",
-                ),
             ],
         ),
         param(
@@ -282,11 +267,6 @@ def uses_java_re(t):
             marks=[
                 pytest.mark.notimpl(
                     ["mssql", "exasol"], raises=com.OperationNotDefinedError
-                ),
-                pytest.mark.notimpl(
-                    ["risingwave"],
-                    raises=sa.exc.InternalError,
-                    reason="function textregexeq(character varying, character varying) does not exist",
                 ),
             ],
         ),
@@ -300,11 +280,6 @@ def uses_java_re(t):
                 pytest.mark.notimpl(
                     ["mssql", "exasol"], raises=com.OperationNotDefinedError
                 ),
-                pytest.mark.notimpl(
-                    ["risingwave"],
-                    raises=sa.exc.InternalError,
-                    reason="function textregexeq(character varying, character varying) does not exist",
-                ),
             ],
         ),
         param(
@@ -316,11 +291,6 @@ def uses_java_re(t):
             marks=[
                 pytest.mark.notimpl(
                     ["mssql", "exasol"], raises=com.OperationNotDefinedError
-                ),
-                pytest.mark.notimpl(
-                    ["risingwave"],
-                    raises=sa.exc.InternalError,
-                    reason="function textregexeq(character varying, character varying) does not exist",
                 ),
             ],
         ),
@@ -334,11 +304,6 @@ def uses_java_re(t):
                 pytest.mark.notimpl(
                     ["mssql", "exasol"], raises=com.OperationNotDefinedError
                 ),
-                pytest.mark.notimpl(
-                    ["risingwave"],
-                    raises=sa.exc.InternalError,
-                    reason="function textregexeq(character varying, character varying) does not exist",
-                ),
             ],
         ),
         param(
@@ -349,11 +314,6 @@ def uses_java_re(t):
                 pytest.mark.notimpl(
                     ["mssql", "exasol"], raises=com.OperationNotDefinedError
                 ),
-                pytest.mark.notimpl(
-                    ["risingwave"],
-                    raises=sa.exc.InternalError,
-                    reason="function textregexeq(character varying, character varying) does not exist",
-                ),
             ],
         ),
         param(
@@ -363,11 +323,6 @@ def uses_java_re(t):
             marks=[
                 pytest.mark.notimpl(
                     ["mssql", "exasol"], raises=com.OperationNotDefinedError
-                ),
-                pytest.mark.notimpl(
-                    ["risingwave"],
-                    raises=sa.exc.InternalError,
-                    reason="function textregexeq(character varying, character varying) does not exist",
                 ),
             ],
         ),
@@ -991,7 +946,7 @@ def test_multiple_subs(con):
 )
 @pytest.mark.notimpl(
     ["risingwave"],
-    raises=sa.exc.InternalError,
+    raises=PsycoPg2InternalError,
     reason="function levenshtein(character varying, character varying) does not exist",
 )
 @pytest.mark.parametrize(

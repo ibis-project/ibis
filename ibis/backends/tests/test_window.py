@@ -6,7 +6,6 @@ from operator import methodcaller
 import numpy as np
 import pandas as pd
 import pytest
-import sqlalchemy as sa
 from pytest import param
 
 import ibis
@@ -19,6 +18,7 @@ from ibis.backends.tests.errors import (
     ImpalaHiveServer2Error,
     MySQLOperationalError,
     OracleDatabaseError,
+    PsycoPg2InternalError,
     Py4JJavaError,
     PyDruidProgrammingError,
     PyODBCProgrammingError,
@@ -148,7 +148,7 @@ def calc_zscore(s):
                 pytest.mark.notimpl(["dask"], raises=NotImplementedError),
                 pytest.mark.notimpl(
                     ["risingwave"],
-                    raises=sa.exc.InternalError,
+                    raises=PsycoPg2InternalError,
                     reason="Feature is not yet implemented: Unrecognized window function: percent_rank",
                 ),
             ],
@@ -165,7 +165,7 @@ def calc_zscore(s):
                 pytest.mark.notimpl(["dask"], raises=NotImplementedError),
                 pytest.mark.notimpl(
                     ["risingwave"],
-                    raises=sa.exc.InternalError,
+                    raises=PsycoPg2InternalError,
                     reason="Feature is not yet implemented: Unrecognized window function: cume_dist",
                 ),
             ],
@@ -196,7 +196,7 @@ def calc_zscore(s):
                 ),
                 pytest.mark.notimpl(
                     ["risingwave"],
-                    raises=sa.exc.InternalError,
+                    raises=PsycoPg2InternalError,
                     reason="Feature is not yet implemented: Unrecognized window function: ntile",
                 ),
             ],
@@ -236,12 +236,8 @@ def calc_zscore(s):
                     ["impala", "mssql"], raises=com.OperationNotDefinedError
                 ),
                 pytest.mark.notimpl(["dask"], raises=NotImplementedError),
-                pytest.mark.notimpl(
-                    ["flink"],
-                    raises=com.OperationNotDefinedError,
-                    reason="No translation rule for <class 'ibis.expr.operations.analytic.NthValue'>",
-                ),
-                pytest.mark.notimpl(["risingwave"], raises=sa.exc.InternalError),
+                pytest.mark.notimpl(["flink"], raises=com.OperationNotDefinedError),
+                pytest.mark.notimpl(["risingwave"], raises=PsycoPg2InternalError),
             ],
         ),
         param(
@@ -407,7 +403,7 @@ def test_grouped_bounded_expanding_window(
                 pytest.mark.notimpl(["dask"], raises=NotImplementedError),
                 pytest.mark.notimpl(
                     ["risingwave"],
-                    raises=sa.exc.InternalError,
+                    raises=PsycoPg2InternalError,
                     reason="Feature is not yet implemented: Window function with empty PARTITION BY is not supported yet",
                 ),
             ],
@@ -667,14 +663,10 @@ def test_grouped_unbounded_window(
 @pytest.mark.broken(["dask"], raises=AssertionError)
 @pytest.mark.notyet(["mssql"], raises=PyODBCProgrammingError)
 @pytest.mark.notimpl(["polars"], raises=com.OperationNotDefinedError)
-@pytest.mark.notimpl(
-    ["flink"],
-    raises=com.UnsupportedOperationError,
-    reason="OVER RANGE FOLLOWING windows are not supported in Flink yet",
-)
+@pytest.mark.notimpl(["flink"], raises=com.UnsupportedOperationError)
 @pytest.mark.notimpl(
     ["risingwave"],
-    raises=sa.exc.InternalError,
+    raises=PsycoPg2InternalError,
     reason="Feature is not yet implemented: Window function with empty PARTITION BY is not supported yet",
 )
 def test_simple_ungrouped_unbound_following_window(
@@ -706,7 +698,7 @@ def test_simple_ungrouped_unbound_following_window(
 @pytest.mark.notimpl(["polars"], raises=com.OperationNotDefinedError)
 @pytest.mark.notimpl(
     ["risingwave"],
-    raises=sa.exc.InternalError,
+    raises=PsycoPg2InternalError,
     reason="Feature is not yet implemented: Window function with empty PARTITION BY is not supported yet",
 )
 @pytest.mark.xfail_version(datafusion=["datafusion==35"])
@@ -740,7 +732,7 @@ def test_simple_ungrouped_window_with_scalar_order_by(alltypes):
                 ),
                 pytest.mark.notimpl(
                     ["risingwave"],
-                    raises=sa.exc.InternalError,
+                    raises=PsycoPg2InternalError,
                     reason="Feature is not yet implemented: Window function with empty PARTITION BY is not supported yet",
                 ),
             ],
@@ -773,14 +765,14 @@ def test_simple_ungrouped_window_with_scalar_order_by(alltypes):
                     ["pandas", "dask"], raises=com.OperationNotDefinedError
                 ),
                 pytest.mark.notimpl(
-                    ["risingwave"],
-                    raises=sa.exc.InternalError,
-                    reason="Feature is not yet implemented: Unrecognized window function: ntile",
-                ),
-                pytest.mark.notimpl(
                     ["flink"],
                     raises=Py4JJavaError,
                     reason="CalciteContextException: Argument to function 'NTILE' must be a literal",
+                ),
+                pytest.mark.notimpl(
+                    ["risingwave"],
+                    raises=PsycoPg2InternalError,
+                    reason="Feature is not yet implemented: Unrecognized window function: ntile",
                 ),
             ],
         ),
@@ -858,7 +850,7 @@ def test_simple_ungrouped_window_with_scalar_order_by(alltypes):
             marks=[
                 pytest.mark.notimpl(
                     ["risingwave"],
-                    raises=sa.exc.InternalError,
+                    raises=PsycoPg2InternalError,
                     reason="Feature is not yet implemented: Window function with empty PARTITION BY is not supported yet",
                 ),
             ],
@@ -893,7 +885,7 @@ def test_simple_ungrouped_window_with_scalar_order_by(alltypes):
                 ),
                 pytest.mark.notimpl(
                     ["risingwave"],
-                    raises=sa.exc.InternalError,
+                    raises=PsycoPg2InternalError,
                     reason="Feature is not yet implemented: Window function with empty PARTITION BY is not supported yet",
                 ),
             ],
@@ -906,7 +898,7 @@ def test_simple_ungrouped_window_with_scalar_order_by(alltypes):
             marks=[
                 pytest.mark.notimpl(
                     ["risingwave"],
-                    raises=sa.exc.InternalError,
+                    raises=PsycoPg2InternalError,
                     reason="Feature is not yet implemented: Window function with empty PARTITION BY is not supported yet",
                 ),
             ],
@@ -944,7 +936,7 @@ def test_simple_ungrouped_window_with_scalar_order_by(alltypes):
                 ),
                 pytest.mark.notimpl(
                     ["risingwave"],
-                    raises=sa.exc.InternalError,
+                    raises=PsycoPg2InternalError,
                     reason="Feature is not yet implemented: Window function with empty PARTITION BY is not supported yet",
                 ),
             ],
@@ -1061,16 +1053,16 @@ def test_ungrouped_unbounded_window(
     reason="RANGE OFFSET frame for 'DB::ColumnNullable' ORDER BY column is not implemented",
     raises=ClickHouseDatabaseError,
 )
-@pytest.mark.notimpl(
-    ["risingwave"],
-    raises=sa.exc.InternalError,
-    reason="Feature is not yet implemented: window frame in `RANGE` mode is not supported yet",
-)
 @pytest.mark.notyet(["mssql"], raises=PyODBCProgrammingError)
 @pytest.mark.broken(
     ["mysql"],
     raises=MySQLOperationalError,
     reason="https://github.com/tobymao/sqlglot/issues/2779",
+)
+@pytest.mark.notimpl(
+    ["risingwave"],
+    raises=PsycoPg2InternalError,
+    reason="Feature is not yet implemented: window frame in `RANGE` mode is not supported yet",
 )
 def test_grouped_bounded_range_window(backend, alltypes, df):
     # Explanation of the range window spec below:
@@ -1129,7 +1121,7 @@ def test_grouped_bounded_range_window(backend, alltypes, df):
 )
 @pytest.mark.notimpl(
     ["risingwave"],
-    raises=sa.exc.InternalError,
+    raises=PsycoPg2InternalError,
     reason="Feature is not yet implemented: Unrecognized window function: percent_rank",
 )
 def test_percent_rank_whole_table_no_order_by(backend, alltypes, df):
@@ -1180,7 +1172,7 @@ def test_grouped_ordered_window_coalesce(backend, alltypes, df):
 @pytest.mark.notimpl(["polars"], raises=com.OperationNotDefinedError)
 @pytest.mark.notimpl(
     ["risingwave"],
-    raises=sa.exc.InternalError,
+    raises=PsycoPg2InternalError,
     reason="Feature is not yet implemented: Window function with empty PARTITION BY is not supported yet",
 )
 def test_mutate_window_filter(backend, alltypes):
@@ -1258,14 +1250,14 @@ def test_first_last(backend):
 )
 @pytest.mark.broken(["flink"], raises=Py4JJavaError, reason="bug in Flink")
 @pytest.mark.broken(
-    ["risingwave"],
-    raises=sa.exc.InternalError,
-    reason="sql parser error: Expected literal int, found: INTERVAL at line:1, column:99",
-)
-@pytest.mark.broken(
     ["exasol"],
     raises=ExaQueryError,
     reason="database can't handle UTC timestamps in DataFrames",
+)
+@pytest.mark.broken(
+    ["risingwave"],
+    raises=PsycoPg2InternalError,
+    reason="sql parser error: Expected literal int, found: INTERVAL at line:1, column:99",
 )
 def test_range_expression_bounds(backend):
     t = ibis.memtable(
@@ -1313,7 +1305,7 @@ def test_range_expression_bounds(backend):
 )
 @pytest.mark.broken(
     ["risingwave"],
-    raises=sa.exc.InternalError,
+    raises=PsycoPg2InternalError,
     reason="Feature is not yet implemented: Unrecognized window function: percent_rank",
 )
 def test_rank_followed_by_over_call_merge_frames(backend, alltypes, df):
@@ -1348,7 +1340,7 @@ def test_rank_followed_by_over_call_merge_frames(backend, alltypes, df):
 @pytest.mark.notyet(["flink"], raises=com.UnsupportedOperationError)
 @pytest.mark.notimpl(
     ["risingwave"],
-    raises=sa.exc.InternalError,
+    raises=PsycoPg2InternalError,
     reason="Feature is not yet implemented: Window function with empty PARTITION BY is not supported yet",
 )
 def test_windowed_order_by_sequence_is_preserved(con):

@@ -394,6 +394,24 @@ class PostgresType(SqlglotType):
         return sge.DataType(this=typecode.HSTORE)
 
 
+class RisingWaveType(PostgresType):
+    dialect = "risingwave"
+
+    @classmethod
+    def _from_ibis_Timestamp(cls, dtype: dt.Timestamp) -> sge.DataType:
+        if dtype.timezone is not None:
+            return sge.DataType(this=typecode.TIMESTAMPTZ)
+        return sge.DataType(this=typecode.TIMESTAMP)
+
+    @classmethod
+    def _from_ibis_Decimal(cls, dtype: dt.Decimal) -> sge.DataType:
+        return sge.DataType(this=typecode.DECIMAL)
+
+    @classmethod
+    def _from_ibis_UUID(cls, dtype: dt.UUID) -> sge.DataType:
+        return sge.DataType(this=typecode.VARCHAR)
+
+
 class DataFusionType(PostgresType):
     unknown_type_strings = {
         "utf8": dt.string,
