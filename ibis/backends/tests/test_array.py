@@ -581,6 +581,7 @@ def test_array_contains(backend, con):
     assert frozenset(result.values) == frozenset(expected.values)
 
 
+@builtin_array
 @pytest.mark.parametrize(
     ("a", "expected_array"),
     [
@@ -613,10 +614,7 @@ def test_array_contains(backend, con):
         ),
     ],
 )
-@builtin_array
-@pytest.mark.notimpl(
-    ["dask", "impala", "mssql", "polars"], raises=com.OperationNotDefinedError
-)
+@pytest.mark.notimpl(["dask", "impala", "polars"], raises=com.OperationNotDefinedError)
 def test_array_position(backend, con, a, expected_array):
     t = ibis.memtable({"a": a})
     expr = t.a.index(42)
