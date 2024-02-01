@@ -141,9 +141,9 @@ def parenthesize(op, arg):
 
 C = ColGen()
 F = FuncGen()
-NULL = sge.NULL
-FALSE = sge.FALSE
-TRUE = sge.TRUE
+NULL = sge.Null()
+FALSE = sge.false()
+TRUE = sge.true()
 STAR = sge.Star()
 
 
@@ -251,6 +251,7 @@ class SQLGlotCompiler(abc.ABC):
         -------
         sqlglot.expressions.Expression
             A sqlglot expression
+
         """
         # substitute parameters immediately to avoid having to define a
         # ScalarParameter translation rule

@@ -9,7 +9,6 @@ from operator import methodcaller
 import numpy as np
 import pandas as pd
 import pytest
-import sqlalchemy as sa
 import sqlglot as sg
 from pytest import param
 
@@ -30,6 +29,7 @@ from ibis.backends.tests.errors import (
     OracleDatabaseError,
     PolarsComputeError,
     PolarsPanicException,
+    PsycoPg2InternalError,
     Py4JJavaError,
     PyDruidProgrammingError,
     PyODBCProgrammingError,
@@ -146,6 +146,11 @@ def test_timestamp_extract(backend, alltypes, df, attr):
                 pytest.mark.notimpl(
                     ["druid", "oracle", "exasol"],
                     raises=com.OperationNotDefinedError,
+                ),
+                pytest.mark.broken(
+                    ["risingwave"],
+                    raises=AssertionError,
+                    reason="Refer to https://github.com/risingwavelabs/risingwave/issues/14670",
                 ),
                 pytest.mark.broken(
                     ["risingwave"],
@@ -634,7 +639,7 @@ def test_date_truncate(backend, alltypes, df, unit):
                 ),
                 pytest.mark.notimpl(
                     ["risingwave"],
-                    raises=sa.exc.InternalError,
+                    raises=PsycoPg2InternalError,
                     reason="Bind error: Invalid unit: week",
                 ),
             ],
@@ -657,7 +662,7 @@ def test_date_truncate(backend, alltypes, df, unit):
                 ),
                 pytest.mark.notimpl(
                     ["risingwave"],
-                    raises=sa.exc.InternalError,
+                    raises=PsycoPg2InternalError,
                     reason="Bind error: Invalid unit: millisecond",
                 ),
             ],
@@ -681,7 +686,7 @@ def test_date_truncate(backend, alltypes, df, unit):
                 ),
                 pytest.mark.notimpl(
                     ["risingwave"],
-                    raises=sa.exc.InternalError,
+                    raises=PsycoPg2InternalError,
                     reason="Bind error: Invalid unit: microsecond",
                 ),
             ],
@@ -738,7 +743,7 @@ def test_integer_to_interval_timestamp(
                 pytest.mark.notyet(["trino"], raises=com.UnsupportedOperationError),
                 pytest.mark.notimpl(
                     ["risingwave"],
-                    raises=sa.exc.InternalError,
+                    raises=PsycoPg2InternalError,
                     reason="Bind error: Invalid unit: week",
                 ),
             ],
@@ -831,7 +836,7 @@ timestamp_value = pd.Timestamp("2018-01-01 18:18:18")
             id="timestamp-add-interval-binop",
             marks=[
                 pytest.mark.notimpl(
-                    ["dask", "risingwave", "snowflake", "sqlite", "bigquery", "exasol"],
+                    ["dask", "snowflake", "sqlite", "bigquery", "exasol"],
                     raises=com.OperationNotDefinedError,
                 ),
                 pytest.mark.notimpl(["impala"], raises=com.UnsupportedOperationError),
@@ -851,14 +856,7 @@ timestamp_value = pd.Timestamp("2018-01-01 18:18:18")
             id="timestamp-add-interval-binop-different-units",
             marks=[
                 pytest.mark.notimpl(
-                    [
-                        "sqlite",
-                        "risingwave",
-                        "polars",
-                        "snowflake",
-                        "bigquery",
-                        "exasol",
-                    ],
+                    ["sqlite", "polars", "snowflake", "bigquery", "exasol"],
                     raises=com.OperationNotDefinedError,
                 ),
                 pytest.mark.notimpl(["impala"], raises=com.UnsupportedOperationError),
@@ -981,11 +979,6 @@ timestamp_value = pd.Timestamp("2018-01-01 18:18:18")
                     ["druid"],
                     raises=AttributeError,
                     reason="'StringColumn' object has no attribute 'date'",
-                ),
-                pytest.mark.notimpl(
-                    ["risingwave"],
-                    raises=sa.exc.InternalError,
-                    reason="function make_date(integer, integer, integer) does not exist",
                 ),
                 pytest.mark.broken(
                     ["flink"],
@@ -1430,13 +1423,6 @@ def test_interval_add_cast_column(backend, alltypes, df):
             marks=[
                 pytest.mark.notimpl(
                     [
-                        "risingwave",
-                    ],
-                    raises=AttributeError,
-                    reason="Neither 'concat' object nor 'Comparator' object has an attribute 'value'",
-                ),
-                pytest.mark.notimpl(
-                    [
                         "polars",
                     ],
                     raises=com.UnsupportedArgumentError,
@@ -1617,7 +1603,6 @@ def test_integer_to_timestamp(backend, con, unit):
     [
         "dask",
         "pandas",
-        "risingwave",
         "clickhouse",
         "sqlite",
         "datafusion",
@@ -1723,6 +1708,11 @@ def test_day_of_week_column(backend, alltypes, df):
                         "Ref: https://nightlies.apache.org/flink/flink-docs-release-1.13/docs/dev/table/functions/systemfunctions/#temporal-functions"
                     ),
                 ),
+                pytest.mark.broken(
+                    ["risingwave"],
+                    raises=AssertionError,
+                    reason="Refer to https://github.com/risingwavelabs/risingwave/issues/14670",
+                ),
             ],
         ),
     ],
@@ -1803,7 +1793,7 @@ DATE_BACKEND_TYPES = {
 )
 @pytest.mark.notimpl(
     ["risingwave"],
-    raises=sa.exc.InternalError,
+    raises=com.OperationNotDefinedError,
     reason="function make_date(integer, integer, integer) does not exist",
 )
 def test_date_literal(con, backend):
@@ -1837,7 +1827,7 @@ TIMESTAMP_BACKEND_TYPES = {
 @pytest.mark.notyet(["impala"], raises=com.OperationNotDefinedError)
 @pytest.mark.notimpl(
     ["risingwave"],
-    raises=sa.exc.InternalError,
+    raises=PsycoPg2InternalError,
     reason="function make_timestamp(integer, integer, integer, integer, integer, integer) does not exist",
 )
 def test_timestamp_literal(con, backend):
@@ -1895,7 +1885,7 @@ def test_timestamp_literal(con, backend):
 )
 @pytest.mark.notimpl(
     ["risingwave"],
-    raises=sa.exc.InternalError,
+    raises=PsycoPg2InternalError,
     reason="function make_timestamp(integer, integer, integer, integer, integer, integer) does not exist",
 )
 def test_timestamp_with_timezone_literal(con, timezone, expected):
@@ -1928,7 +1918,7 @@ TIME_BACKEND_TYPES = {
 @pytest.mark.notimpl(["druid"], raises=com.OperationNotDefinedError)
 @pytest.mark.notimpl(
     ["risingwave"],
-    raises=sa.exc.InternalError,
+    raises=PsycoPg2InternalError,
     reason="function make_time(integer, integer, integer) does not exist",
 )
 def test_time_literal(con, backend):
@@ -2078,7 +2068,7 @@ def test_interval_literal(con, backend):
 )
 @pytest.mark.notimpl(
     ["risingwave"],
-    raises=sa.exc.InternalError,
+    raises=com.OperationNotDefinedError,
     reason="function make_date(integer, integer, integer) does not exist",
 )
 def test_date_column_from_ymd(backend, con, alltypes, df):
@@ -2100,12 +2090,12 @@ def test_date_column_from_ymd(backend, con, alltypes, df):
     raises=AttributeError,
     reason="StringColumn' object has no attribute 'year'",
 )
+@pytest.mark.notyet(["impala", "oracle"], raises=com.OperationNotDefinedError)
 @pytest.mark.notimpl(
     ["risingwave"],
-    raises=sa.exc.InternalError,
+    raises=PsycoPg2InternalError,
     reason="function make_timestamp(smallint, smallint, smallint, smallint, smallint, smallint) does not exist",
 )
-@pytest.mark.notyet(["impala", "oracle"], raises=com.OperationNotDefinedError)
 def test_timestamp_column_from_ymdhms(backend, con, alltypes, df):
     c = alltypes.timestamp_col
     expr = ibis.timestamp(
@@ -2234,11 +2224,6 @@ def build_date_col(t):
         param(lambda _: DATE, build_date_col, id="date_column"),
     ],
 )
-@pytest.mark.notimpl(
-    ["risingwave"],
-    raises=sa.exc.InternalError,
-    reason="function make_date(integer, integer, integer) does not exist",
-)
 def test_timestamp_date_comparison(backend, alltypes, df, left_fn, right_fn):
     left = left_fn(alltypes)
     right = right_fn(alltypes)
@@ -2360,12 +2345,12 @@ def test_large_timestamp(con):
                     reason="assert Timestamp('2023-01-07 13:20:05.561000') == Timestamp('2023-01-07 13:20:05.561000231')",
                     raises=AssertionError,
                 ),
+                pytest.mark.notimpl(["exasol"], raises=AssertionError),
                 pytest.mark.notyet(
                     ["risingwave"],
-                    raises=sa.exc.InternalError,
+                    raises=PsycoPg2InternalError,
                     reason="Parse error: timestamp without time zone Can't cast string to timestamp (expected format is YYYY-MM-DD HH:MM:SS[.D+{up to 6 digits}] or YYYY-MM-DD HH:MM or YYYY-MM-DD or ISO 8601 format)",
                 ),
-                pytest.mark.notimpl(["exasol"], raises=AssertionError),
             ],
         ),
     ],
@@ -2395,11 +2380,6 @@ def test_timestamp_precision_output(con, ts, scale, unit):
     ],
     raises=com.OperationNotDefinedError,
 )
-@pytest.mark.notyet(
-    ["risingwave"],
-    reason="risingwave doesn't have any easy way to accurately compute the delta in specific units",
-    raises=com.OperationNotDefinedError,
-)
 @pytest.mark.parametrize(
     ("start", "end", "unit", "expected"),
     [
@@ -2416,7 +2396,7 @@ def test_timestamp_precision_output(con, ts, scale, unit):
                     reason="time types not yet implemented in ibis for the clickhouse backend",
                 ),
                 pytest.mark.notyet(
-                    ["postgres"],
+                    ["postgres", "risingwave"],
                     reason="postgres doesn't have any easy way to accurately compute the delta in specific units",
                     raises=com.OperationNotDefinedError,
                 ),
@@ -2565,7 +2545,7 @@ def test_delta(con, start, end, unit, expected):
 @pytest.mark.notimpl(["exasol"], raises=com.OperationNotDefinedError)
 @pytest.mark.notimpl(
     ["risingwave"],
-    raises=sa.exc.InternalError,
+    raises=PsycoPg2InternalError,
     reason="function date_bin(interval, timestamp without time zone, timestamp without time zone) does not exist",
 )
 def test_timestamp_bucket(backend, kws, pd_freq):
@@ -2604,7 +2584,7 @@ def test_timestamp_bucket(backend, kws, pd_freq):
 @pytest.mark.notimpl(["exasol"], raises=com.OperationNotDefinedError)
 @pytest.mark.notimpl(
     ["risingwave"],
-    raises=sa.exc.InternalError,
+    raises=PsycoPg2InternalError,
     reason="function date_bin(interval, timestamp without time zone, timestamp without time zone) does not exist",
 )
 def test_timestamp_bucket_offset(backend, offset_mins):
@@ -2716,11 +2696,6 @@ def test_time_literal_sql(dialect, snapshot, micros):
         param(lambda x: x, id="identity"),
         param(datetime.date.fromisoformat, id="fromstring"),
     ],
-)
-@pytest.mark.notimpl(
-    ["risingwave"],
-    raises=sa.exc.InternalError,
-    reason="function make_date(integer, integer, integer) does not exist",
 )
 def test_date_scalar(con, value, func):
     expr = ibis.date(func(value)).name("tmp")

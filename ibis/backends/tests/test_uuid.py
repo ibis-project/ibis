@@ -4,7 +4,6 @@ import contextlib
 import uuid
 
 import pytest
-import sqlalchemy.exc
 
 import ibis
 import ibis.common.exceptions as com
@@ -21,6 +20,7 @@ UUID_BACKEND_TYPE = {
     "flink": "CHAR(36) NOT NULL",
     "impala": "STRING",
     "postgres": "uuid",
+    "risingwave": "character varying",
     "snowflake": "VARCHAR",
     "sqlite": "text",
     "trino": "uuid",
@@ -28,11 +28,6 @@ UUID_BACKEND_TYPE = {
 
 
 @pytest.mark.notimpl(["datafusion", "polars"], raises=NotImplementedError)
-@pytest.mark.notimpl(
-    ["risingwave"],
-    raises=sqlalchemy.exc.InternalError,
-    reason="Feature is not yet implemented: unsupported data type: UUID",
-)
 @pytest.mark.notimpl(["polars"], raises=NotImplementedError)
 @pytest.mark.notimpl(["datafusion"], raises=Exception)
 def test_uuid_literal(con, backend):
