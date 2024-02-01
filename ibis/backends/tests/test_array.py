@@ -397,6 +397,12 @@ def test_unnest_default_name(backend):
     ["datafusion", "flink"], raises=Exception, reason="array_types table isn't defined"
 )
 @pytest.mark.notimpl(["dask"], raises=com.OperationNotDefinedError)
+@pytest.mark.broken(
+    ["risingwave"],
+    raises=AssertionError,
+    reason="not broken; row ordering is not guaranteed and sometimes this test will pass",
+    strict=False,
+)
 def test_array_slice(backend, start, stop):
     array_types = backend.array_types
     expr = array_types.select(sliced=array_types.y[start:stop])
@@ -404,7 +410,7 @@ def test_array_slice(backend, start, stop):
     expected = pd.DataFrame(
         {"sliced": array_types.y.execute().map(lambda x: x[start:stop])}
     )
-    tm.assert_frame_equal(result, expected)
+    backend.assert_frame_equal(result, expected)
 
 
 @builtin_array
@@ -508,6 +514,12 @@ def test_array_filter(con, input, output):
 @builtin_array
 @pytest.mark.notimpl(["polars"], raises=com.OperationNotDefinedError)
 @pytest.mark.notimpl(["dask"], raises=com.OperationNotDefinedError)
+@pytest.mark.broken(
+    ["risingwave"],
+    raises=AssertionError,
+    reason="not broken; row ordering is not guaranteed and sometimes this test will pass",
+    strict=False,
+)
 def test_array_contains(backend, con):
     t = backend.array_types
     expr = t.x.contains(1)

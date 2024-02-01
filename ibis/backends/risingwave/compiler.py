@@ -72,6 +72,8 @@ class RisingwaveCompiler(PostgresCompiler):
             return self.cast("".join(map(r"\x{:0>2x}".format, value)), dt.binary)
         elif dtype.is_date():
             return self.cast(value.isoformat(), dtype)
+        elif dtype.is_json():
+            return sge.convert(str(value))
         return None
 
     @visit_node.register(ops.DateFromYMD)
