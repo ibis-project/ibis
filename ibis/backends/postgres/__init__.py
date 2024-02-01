@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import inspect
 import textwrap
-from typing import TYPE_CHECKING, Callable, Literal
+from typing import TYPE_CHECKING, Any, Callable, Literal
 
 import sqlalchemy as sa
 
@@ -44,6 +44,7 @@ class Backend(BaseAlchemyBackend, AlchemyCanCreateSchema):
         schema: str | None = None,
         url: str | None = None,
         driver: Literal["psycopg2"] = "psycopg2",
+        **kwargs: Any,
     ) -> None:
         """Create an Ibis client connected to PostgreSQL database.
 
@@ -67,6 +68,8 @@ class Backend(BaseAlchemyBackend, AlchemyCanCreateSchema):
             If passed, the other connection arguments are ignored.
         driver
             Database driver
+        kwargs
+            Additional kwargs to pass to the backend client connection.
 
         Examples
         --------
@@ -110,6 +113,7 @@ class Backend(BaseAlchemyBackend, AlchemyCanCreateSchema):
             password=password,
             database=database,
             driver=f"postgresql+{driver}",
+            **kwargs,
         )
 
         connect_args = {}

@@ -272,3 +272,10 @@ def test_timezone_from_column(contz, snapshot):
     )
     tm.assert_frame_equal(result, expected)
     snapshot.assert_match(ibis.to_sql(case), "out.sql")
+
+
+def test_kwargs_passthrough_in_connect():
+    con = ibis.connect(
+        "postgresql://postgres:postgres@localhost/ibis_testing?sslmode=require"
+    )
+    assert con.current_database == "ibis_testing"
