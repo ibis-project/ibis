@@ -189,13 +189,33 @@ def test_normalize_timezone(value, expected):
         (1000, datetime(1970, 1, 1, 0, 16, 40)),
         # floating point
         (1000.123, datetime(1970, 1, 1, 0, 16, 40, 123000)),
-        # time object
-        (time(0, 0, 0, 1), datetime.combine(date.today(), time(0, 0, 0, 1))),
     ],
 )
 def test_normalize_datetime(value, expected):
     result = normalize_datetime(value)
     assert result == expected
+
+
+def test_normalize_datetime_with_time(mocker):
+    import datetime
+
+    class MockDate:
+        @classmethod
+        def today(cls) -> date:
+            # this CANNOT be datetime.date, that will invoke the mock
+            # constructor
+            return date(2024, 7, 6)
+
+    mocker.patch("datetime.date", new=MockDate)
+
+    # it's necessary to use the `datetime` *module* here otherwise the patch
+    # will not be used because `date` is imported before the patch is applied
+    today = datetime.date.today()
+
+    value = time(0, 0, 0, 1)
+    expected = datetime.datetime.combine(today, value)
+
+    assert normalize_datetime(value) == expected
 
 
 @pytest.mark.parametrize(
