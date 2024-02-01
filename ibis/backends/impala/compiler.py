@@ -365,6 +365,7 @@ class ImpalaCompiler(SQLGlotCompiler):
     @visit_node.register(ops.ArgMax)
     @visit_node.register(ops.ArgMin)
     @visit_node.register(ops.ArrayCollect)
+    @visit_node.register(ops.ArrayPosition)
     @visit_node.register(ops.Array)
     @visit_node.register(ops.Covariance)
     @visit_node.register(ops.DateDelta)
