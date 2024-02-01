@@ -306,7 +306,7 @@ backends. We can now add batch and streaming backend with ease!
 
 Ibis supports [50+ geospatial
 expressions](https://ibis-project.org/reference/expression-geospatial) in the
-API, but most backends do not implement them. 
+API, but most backends do not implement them.
 
 ::: {.callout-note}
 This is a great opportunity for new contributors to get involved with Ibis! Let
