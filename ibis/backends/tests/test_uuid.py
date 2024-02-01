@@ -10,7 +10,6 @@ import ibis
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 
-
 RAW_TEST_UUID = "08f48812-7948-4718-96c7-27fa6a398db6"
 TEST_UUID = uuid.UUID(RAW_TEST_UUID)
 
@@ -28,9 +27,7 @@ UUID_BACKEND_TYPE = {
 }
 
 
-@pytest.mark.notimpl(
-    ["datafusion", "polars"], raises=NotImplementedError
-)
+@pytest.mark.notimpl(["datafusion", "polars"], raises=NotImplementedError)
 @pytest.mark.notimpl(
     ["risingwave"],
     raises=sqlalchemy.exc.InternalError,
