@@ -4,8 +4,8 @@ import pandas as pd
 import pyarrow as pa
 import pyarrow.csv as pcsv
 import pytest
-from pytest import param
 import sqlalchemy as sa
+from pytest import param
 
 import ibis
 import ibis.expr.datatypes as dt
