@@ -1,9 +1,7 @@
 from __future__ import annotations
 
-import duckdb_engine
 import numpy as np
 import pytest
-from packaging.version import parse as vparse
 from pytest import param
 
 import ibis
@@ -91,11 +89,6 @@ def test_parse_quoted_struct_field():
     )
 
 
-@pytest.mark.xfail(
-    condition=vparse(duckdb_engine.__version__) < vparse("0.9.2"),
-    raises=AssertionError,
-    reason="mapping from UINTEGER query metadata fixed in 0.9.2",
-)
 def test_read_uint8_from_parquet(tmp_path):
     con = ibis.duckdb.connect()
 
