@@ -1337,11 +1337,9 @@ def test_hexdigest(backend, alltypes):
     [
         "pandas",
         "dask",
-        "bigquery",
         "oracle",
         "snowflake",
         "sqlite",
-        "exasol",
     ]
 )
 @pytest.mark.parametrize(
