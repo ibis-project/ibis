@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import itertools
+import math
 from typing import Callable
 
 import numpy as np
@@ -9,94 +10,113 @@ import pandas as pd
 from ibis.util import gen_name
 
 
-def asseries(value, size=1):
-    """Ensure that value is a pandas Series object, broadcast if necessary."""
-    if isinstance(value, pd.Series):
-        return value
-    elif isinstance(value, (list, np.ndarray)):
-        return pd.Series(itertools.repeat(np.array(value), size))
-    else:
-        return pd.Series(np.repeat(value, size))
+def isnull(obj):
+    return obj is None or obj is pd.NA or (isinstance(obj, float) and math.isnan(obj))
 
 
-def asframe(values: dict | tuple, concat=True):
-    """Construct a DataFrame from a dict or tuple of Series objects."""
-    if isinstance(values, dict):
-        names, values = zip(*values.items())
-    elif isinstance(values, tuple):
-        names = [f"_{i}" for i in range(len(values))]
-    else:
-        raise TypeError(f"values must be a dict, or tuple; got {type(values)}")
+class PandasUtils:
+    @classmethod
+    def merge(cls, *args, **kwargs):
+        return pd.merge(*args, **kwargs)
 
-    size = 1
-    all_scalars = True
-    for v in values:
-        if isinstance(v, pd.Series):
-            size = len(v)
-            all_scalars = False
-            break
+    @classmethod
+    def merge_asof(cls, *args, **kwargs):
+        return pd.merge_asof(*args, **kwargs)
 
-    columns = [asseries(v, size) for v in values]
-    if concat:
-        df = pd.concat(columns, axis=1, keys=names)
-        return df, all_scalars
-    else:
-        return columns, all_scalars
+    @classmethod
+    def concat(cls, dfs, **kwargs):
+        return pd.concat(dfs, **kwargs)
 
-
-def generic(func: Callable, operands):
-    return func(*operands.values())
-
-
-def rowwise(func: Callable, operands):
-    """Kernel applied to a row, where all the operands are scalars."""
-    # dealing with a collection of series objects
-    df, _ = asframe(operands)
-    return df.apply(func, axis=1)
-
-
-def columnwise(func: Callable, operands):
-    """Kernel where all the operands are series objects."""
-    df, _ = asframe(operands)
-    return func(df)
-
-
-def serieswise(func, operands):
-    """Kernel where the first operand is a series object."""
-    (key, value), *rest = operands.items()
-    # ensure that the first operand is a series object
-    value = asseries(value)
-    operands = {key: value, **dict(rest)}
-    return func(**operands)
-
-
-def elementwise(func, operands):
-    """Kernel applied to an element, where all the operands are scalars."""
-    value = operands.pop(next(iter(operands)))
-    if isinstance(value, pd.Series):
-        # dealing with a single series object
-        if operands:
-            return value.apply(func, **operands)
+    @classmethod
+    def asseries(cls, value, like=None):
+        """Ensure that value is a pandas Series object, broadcast if necessary."""
+        size = len(like) if like is not None else 1
+        if isinstance(value, pd.Series):
+            return value
+        elif isinstance(value, (list, np.ndarray)):
+            return pd.Series(itertools.repeat(np.array(value), size))
         else:
-            return value.map(func, na_action="ignore")
-    else:
-        # dealing with a single scalar object
-        return func(value, **operands)
+            return pd.Series(np.repeat(value, size))
 
+    @classmethod
+    def asframe(cls, values: dict | tuple, concat=True):
+        """Construct a DataFrame from a dict or tuple of Series objects."""
+        if isinstance(values, dict):
+            names, values = zip(*values.items())
+        elif isinstance(values, tuple):
+            names = [f"_{i}" for i in range(len(values))]
+        else:
+            raise TypeError(f"values must be a dict, or tuple; got {type(values)}")
 
-def agg(func, arg_column, where_column):
-    if where_column is None:
+        all_scalars = True
+        representative = None
+        for v in values:
+            if isinstance(v, pd.Series):
+                representative = v
+                all_scalars = False
+                break
 
-        def applier(df):
-            return func(df[arg_column.name])
-    else:
+        columns = [cls.asseries(v, like=representative) for v in values]
+        if concat:
+            df = pd.concat(columns, axis=1, keys=names)
+            return df, all_scalars
+        else:
+            return columns, all_scalars
 
-        def applier(df):
-            mask = df[where_column.name]
-            col = df[arg_column.name][mask]
-            return func(col)
+    @classmethod
+    def agg(cls, func, arg_column, where_column):
+        if where_column is None:
 
-    return applier
+            def applier(df):
+                return func(df[arg_column.name])
+        else:
+
+            def applier(df):
+                mask = df[where_column.name]
+                col = df[arg_column.name][mask]
+                return func(col)
+
+        return applier
+
+    @classmethod
+    def generic(cls, func: Callable, operands, **kwargs):
+        return func(*operands.values())
+
+    @classmethod
+    def rowwise(cls, func: Callable, operands, **kwargs):
+        """Kernel applied to a row, where all the operands are scalars."""
+        # dealing with a collection of series objects
+        df, _ = cls.asframe(operands)
+        return df.apply(func, axis=1)
+
+    @classmethod
+    def columnwise(cls, func: Callable, operands, **kwargs):
+        """Kernel where all the operands are series objects."""
+        df, _ = cls.asframe(operands)
+        return func(df)
+
+    @classmethod
+    def serieswise(cls, func, operands, **kwargs):
+        """Kernel where the first operand is a series object."""
+        (key, value), *rest = operands.items()
+        # ensure that the first operand is a series object
+        value = cls.asseries(value)
+        operands = {key: value, **dict(rest)}
+        return func(**operands)
+
+    @classmethod
+    def elementwise(cls, func, operands, **kwargs):
+        """Kernel applied to an element, where all the operands are scalars."""
+        value = operands.pop(next(iter(operands)))
+        if isinstance(value, pd.Series):
+            # dealing with a single series object
+            if operands:
+                return value.apply(func, **operands)
+            else:
+                return value.map(func, na_action="ignore")
+        else:
+            # dealing with a single scalar object
+            return func(value, **operands)
 
 
 class UngroupedFrame:

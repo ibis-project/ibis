@@ -86,7 +86,7 @@ def _create_temp_table_with_schema(backend, con, temp_table_name, schema, data=N
         ),
     ],
 )
-@pytest.mark.notimpl(["dask", "druid", "impala"])
+@pytest.mark.notimpl(["druid", "impala"])
 @pytest.mark.notimpl(
     ["flink"],
     reason="Flink backend supports creating only TEMPORARY VIEW for in-memory data.",
@@ -864,7 +864,7 @@ def test_self_join_memory_table(backend, con, monkeypatch):
     ],
     ids=["python", "pandas"],
 )
-@pytest.mark.notimpl(["dask", "druid"])
+@pytest.mark.notimpl(["druid"])
 @pytest.mark.notimpl(
     ["flink"],
     reason="Flink backend supports creating only TEMPORARY VIEW for in-memory data.",

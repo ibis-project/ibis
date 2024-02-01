@@ -28,6 +28,7 @@ pytestmark = pytest.mark.notimpl(
         "druid",
         "oracle",
         "pyspark",
+        "dask",
     ]
 )
 

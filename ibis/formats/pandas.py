@@ -397,18 +397,6 @@ class PandasData(DataMapper):
         return convert
 
 
-class DaskData(PandasData):
-    @staticmethod
-    def concat(*args, **kwargs):
-        import dask.dataframe as dd
-
-        return dd.concat(*args, **kwargs)
-
-    @classmethod
-    def infer_column(cls, s):
-        return PyArrowData.infer_column(s.compute())
-
-
 class PandasDataFrameProxy(TableProxy[pd.DataFrame]):
     def to_frame(self) -> pd.DataFrame:
         return self.obj

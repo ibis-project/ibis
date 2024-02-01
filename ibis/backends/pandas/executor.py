@@ -6,62 +6,38 @@ from functools import reduce
 import numpy as np
 import pandas as pd
 
+import ibis.backends.pandas.kernels as pandas_kernels
 import ibis.expr.operations as ops
 from ibis.backends.pandas.convert import PandasConverter
 from ibis.backends.pandas.helpers import (
     GroupedFrame,
+    PandasUtils,
     RangeFrame,
     RowsFrame,
     UngroupedFrame,
-    agg,
-    asframe,
-    asseries,
-    columnwise,
-    elementwise,
-    rowwise,
-    serieswise,
 )
-from ibis.backends.pandas.kernels import pick_kernel
 from ibis.backends.pandas.rewrites import (
     PandasAggregate,
     PandasAsofJoin,
     PandasJoin,
     PandasLimit,
     PandasRename,
+    PandasResetIndex,
     PandasScalarSubquery,
     plan,
 )
 from ibis.common.dispatch import Dispatched
 from ibis.common.exceptions import OperationNotDefinedError, UnboundExpressionError
-from ibis.formats.pandas import PandasData
-from ibis.util import gen_name
+from ibis.formats.pandas import PandasData, PandasType
+from ibis.util import any_of, gen_name
 
 # ruff: noqa: F811
 
 
-_reduction_operations = {
-    ops.Min: lambda x: x.min(),
-    ops.Max: lambda x: x.max(),
-    ops.Sum: lambda x: x.sum(),
-    ops.Mean: lambda x: x.mean(),
-    ops.Count: lambda x: x.count(),
-    ops.Mode: lambda x: x.mode().iat[0],
-    ops.Any: lambda x: x.any(),
-    ops.All: lambda x: x.all(),
-    ops.Median: lambda x: x.median(),
-    ops.ApproxMedian: lambda x: x.median(),
-    ops.BitAnd: lambda x: np.bitwise_and.reduce(x.values),
-    ops.BitOr: lambda x: np.bitwise_or.reduce(x.values),
-    ops.BitXor: lambda x: np.bitwise_xor.reduce(x.values),
-    ops.Last: lambda x: x.iat[-1],
-    ops.First: lambda x: x.iat[0],
-    ops.CountDistinct: lambda x: x.nunique(),
-    ops.ApproxCountDistinct: lambda x: x.nunique(),
-    ops.ArrayCollect: lambda x: x.tolist(),
-}
+class PandasExecutor(Dispatched, PandasUtils):
+    name = "pandas"
+    kernels = pandas_kernels
 
-
-class Executor(Dispatched):
     @classmethod
     def visit(cls, op: ops.Node, **kwargs):
         raise OperationNotDefinedError(
@@ -95,7 +71,9 @@ class Executor(Dispatched):
 
     @classmethod
     def visit(cls, op: ops.Cast, arg, to):
-        if isinstance(arg, pd.Series):
+        if arg is None:
+            return None
+        elif isinstance(arg, pd.Series):
             return PandasConverter.convert_column(arg, to)
         else:
             return PandasConverter.convert_scalar(arg, to)
@@ -110,19 +88,71 @@ class Executor(Dispatched):
 
     @classmethod
     def visit(cls, op: ops.Greatest, arg):
-        return columnwise(lambda df: df.max(axis=1), arg)
+        return cls.columnwise(lambda df: df.max(axis=1), arg)
 
     @classmethod
     def visit(cls, op: ops.Least, arg):
-        return columnwise(lambda df: df.min(axis=1), arg)
+        return cls.columnwise(lambda df: df.min(axis=1), arg)
 
     @classmethod
     def visit(cls, op: ops.Coalesce, arg):
-        return columnwise(lambda df: df.bfill(axis=1).iloc[:, 0], arg)
+        return cls.columnwise(lambda df: df.bfill(axis=1).iloc[:, 0], arg)
 
     @classmethod
     def visit(cls, op: ops.Value, **operands):
-        return pick_kernel(op, operands)
+        # automatically pick the correct kernel based on the operand types
+        typ = type(op)
+        name = op.name
+        dtype = PandasType.from_ibis(op.dtype)
+        kwargs = {"operands": operands, "name": name, "dtype": dtype}
+
+        # decimal operations have special implementations
+        if op.dtype.is_decimal():
+            func = cls.kernels.elementwise_decimal[typ]
+            return cls.elementwise(func, **kwargs)
+
+        # prefer generic implementations if available
+        if func := cls.kernels.generic.get(typ):
+            return cls.generic(func, **kwargs)
+
+        _, *rest = operands.values()
+        is_multi_arg = bool(rest)
+        is_multi_column = any_of(rest, pd.Series)
+
+        if is_multi_column:
+            if func := cls.kernels.columnwise.get(typ):
+                return cls.columnwise(func, **kwargs)
+            elif func := cls.kernels.rowwise.get(typ):
+                return cls.rowwise(func, **kwargs)
+            else:
+                raise OperationNotDefinedError(
+                    "No columnwise or rowwise implementation found for "
+                    f"multi-column operation {typ}"
+                )
+        elif is_multi_arg:
+            if func := cls.kernels.columnwise.get(typ):
+                return cls.columnwise(func, **kwargs)
+            elif func := cls.kernels.serieswise.get(typ):
+                return cls.serieswise(func, **kwargs)
+            elif func := cls.kernels.rowwise.get(typ):
+                return cls.rowwise(func, **kwargs)
+            elif func := cls.kernels.elementwise.get(typ):
+                return cls.elementwise(func, **kwargs)
+            else:
+                raise OperationNotDefinedError(
+                    "No columnwise, serieswise, rowwise or elementwise "
+                    f"implementation found for multi-argument operation {typ}"
+                )
+        else:  # noqa: PLR5501
+            if func := cls.kernels.serieswise.get(typ):
+                return cls.serieswise(func, **kwargs)
+            elif func := cls.kernels.elementwise.get(typ):
+                return cls.elementwise(func, **kwargs)
+            else:
+                raise OperationNotDefinedError(
+                    "No serieswise or elementwise implementation found for "
+                    f"single-argument operation {typ}"
+                )
 
     @classmethod
     def visit(cls, op: ops.IsNan, arg):
@@ -135,21 +165,13 @@ class Executor(Dispatched):
             return arg != arg
 
     @classmethod
-    def visit(cls, op: ops.SearchedCase, cases, results, default):
-        cases, _ = asframe(cases, concat=False)
-        results, _ = asframe(results, concat=False)
-        out = np.select(cases, results, default)
-        return pd.Series(out)
-
-    @classmethod
-    def visit(cls, op: ops.SimpleCase, base, cases, results, default):
-        if isinstance(default, pd.Series):
-            raise NotImplementedError(
-                "SimpleCase with a columnar shaped default value is not implemented"
-            )
-        cases = tuple(base == case for case in cases)
-        cases, _ = asframe(cases, concat=False)
-        results, _ = asframe(results, concat=False)
+    def visit(
+        cls, op: ops.SearchedCase | ops.SimpleCase, cases, results, default, base=None
+    ):
+        if base is not None:
+            cases = tuple(base == case for case in cases)
+        cases, _ = cls.asframe(cases, concat=False)
+        results, _ = cls.asframe(results, concat=False)
         out = np.select(cases, results, default)
         return pd.Series(out)
 
@@ -165,9 +187,9 @@ class Executor(Dispatched):
     @classmethod
     def visit(cls, op: ops.IntervalFromInteger, unit, **kwargs):
         if unit.short in {"Y", "Q", "M", "W"}:
-            return elementwise(lambda v: pd.DateOffset(**{unit.plural: v}), kwargs)
+            return cls.elementwise(lambda v: pd.DateOffset(**{unit.plural: v}), kwargs)
         else:
-            return serieswise(
+            return cls.serieswise(
                 lambda arg: arg.astype(f"timedelta64[{unit.short}]"), kwargs
             )
 
@@ -183,7 +205,7 @@ class Executor(Dispatched):
 
     @classmethod
     def visit(cls, op: ops.FindInSet, needle, values):
-        (needle, *haystack), _ = asframe((needle, *values), concat=False)
+        (needle, *haystack), _ = cls.asframe((needle, *values), concat=False)
         condlist = [needle == col for col in haystack]
         choicelist = [i for i, _ in enumerate(haystack)]
         result = np.select(condlist, choicelist, default=-1)
@@ -191,15 +213,15 @@ class Executor(Dispatched):
 
     @classmethod
     def visit(cls, op: ops.Array, exprs):
-        return rowwise(lambda row: np.array(row, dtype=object), exprs)
+        return cls.rowwise(lambda row: np.array(row, dtype=object), exprs)
 
     @classmethod
     def visit(cls, op: ops.ArrayConcat, arg):
-        return rowwise(lambda row: np.concatenate(row.values), arg)
+        return cls.rowwise(lambda row: np.concatenate(row.values), arg)
 
     @classmethod
     def visit(cls, op: ops.Unnest, arg):
-        arg = asseries(arg)
+        arg = cls.asseries(arg)
         mask = arg.map(lambda v: bool(len(v)), na_action="ignore")
         return arg[mask].explode()
 
@@ -220,8 +242,8 @@ class Executor(Dispatched):
 
     @classmethod
     def visit(cls, op: ops.Reduction, arg, where):
-        func = _reduction_operations[type(op)]
-        return agg(func, arg, where)
+        func = cls.kernels.reductions[type(op)]
+        return cls.agg(func, arg, where)
 
     @classmethod
     def visit(cls, op: ops.CountStar, arg, where):
@@ -246,9 +268,9 @@ class Executor(Dispatched):
     @classmethod
     def visit(cls, op: ops.Arbitrary, arg, where, how):
         if how == "first":
-            return agg(lambda x: x.iat[0], arg, where)
+            return cls.agg(cls.kernels.reductions[ops.First], arg, where)
         elif how == "last":
-            return agg(lambda x: x.iat[-1], arg, where)
+            return cls.agg(cls.kernels.reductions[ops.Last], arg, where)
         else:
             raise OperationNotDefinedError(f"Arbitrary {how!r} is not supported")
 
@@ -274,12 +296,12 @@ class Executor(Dispatched):
     @classmethod
     def visit(cls, op: ops.Variance, arg, where, how):
         ddof = {"pop": 0, "sample": 1}[how]
-        return agg(lambda x: x.var(ddof=ddof), arg, where)
+        return cls.agg(lambda x: x.var(ddof=ddof), arg, where)
 
     @classmethod
     def visit(cls, op: ops.StandardDev, arg, where, how):
         ddof = {"pop": 0, "sample": 1}[how]
-        return agg(lambda x: x.std(ddof=ddof), arg, where)
+        return cls.agg(lambda x: x.std(ddof=ddof), arg, where)
 
     @classmethod
     def visit(cls, op: ops.Correlation, left, right, where, how):
@@ -333,11 +355,11 @@ class Executor(Dispatched):
 
     @classmethod
     def visit(cls, op: ops.Quantile, arg, quantile, where):
-        return agg(lambda x: x.quantile(quantile), arg, where)
+        return cls.agg(lambda x: x.quantile(quantile), arg, where)
 
     @classmethod
     def visit(cls, op: ops.MultiQuantile, arg, quantile, where):
-        return agg(lambda x: list(x.quantile(quantile)), arg, where)
+        return cls.agg(lambda x: list(x.quantile(quantile)), arg, where)
 
     @classmethod
     def visit(
@@ -361,21 +383,28 @@ class Executor(Dispatched):
     @classmethod
     def visit(cls, op: ops.Lag | ops.Lead, arg, offset, default):
         if isinstance(op, ops.Lag):
-            sign = lambda x: x
+            sign = operator.pos
         else:
-            sign = lambda x: -x
+            sign = operator.neg
 
         if op.offset is not None and op.offset.dtype.is_interval():
 
             def agg(df, order_keys):
                 df = df.set_index(order_keys)
                 col = df[arg.name].shift(freq=sign(offset))
-                return col.reindex(df.index, fill_value=default)
+                res = col.reindex(df.index)
+                if not pd.isnull(default):
+                    res = res.fillna(default)
+                return res.reset_index(drop=True)
+
         else:
             offset = 1 if offset is None else offset
 
             def agg(df, order_keys):
-                return df[arg.name].shift(sign(offset), fill_value=default)
+                res = df[arg.name].shift(sign(offset))
+                if not pd.isnull(default):
+                    res = res.fillna(default)
+                return res
 
         return agg
 
@@ -438,7 +467,11 @@ class Executor(Dispatched):
     ):
         def agg(df, order_keys):
             args = [df[col.name] for col in func_args]
-            return func(*args)
+            res = func(*args)
+            if isinstance(res, pd.DataFrame):
+                # it is important otherwise it is going to fill up the memory
+                res = res.apply(lambda row: row.to_dict(), axis=1)
+            return res
 
         return agg
 
@@ -452,14 +485,10 @@ class Executor(Dispatched):
     def visit(
         cls, op: ops.WindowFrame, table, start, end, group_by, order_by, **kwargs
     ):
-        if start is not None:
-            start = asseries(start, len(table))
-            if op.start.preceding:
-                start = -start
-        if end is not None:
-            end = asseries(end, len(table))
-            if op.end.preceding:
-                end = -end
+        if start is not None and op.start.preceding:
+            start = -start
+        if end is not None and op.end.preceding:
+            end = -end
 
         table = table.assign(__start__=start, __end__=end)
 
@@ -516,7 +545,7 @@ class Executor(Dispatched):
 
     @classmethod
     def visit(cls, op: ops.DummyTable, values):
-        df, _ = asframe(values)
+        df, _ = cls.asframe(values)
         return df
 
     @classmethod
@@ -537,15 +566,19 @@ class Executor(Dispatched):
             return parent.iloc[offset : offset + n]
 
     @classmethod
+    def visit(cls, op: PandasResetIndex, parent):
+        return parent.reset_index(drop=True)
+
+    @classmethod
     def visit(cls, op: ops.Sample, parent, fraction, method, seed):
         return parent.sample(frac=fraction, random_state=seed)
 
     @classmethod
     def visit(cls, op: ops.Project, parent, values):
-        df, all_scalars = asframe(values)
+        df, all_scalars = cls.asframe(values)
         if all_scalars and len(parent) != len(df):
-            df = pd.concat([df] * len(parent))
-        return df.reset_index(drop=True)
+            df = cls.concat([df] * len(parent))
+        return df
 
     @classmethod
     def visit(cls, op: ops.Filter, parent, predicates):
@@ -575,27 +608,25 @@ class Executor(Dispatched):
         if groups:
             parent = parent.groupby([col.name for col in groups.values()])
             metrics = {k: parent.apply(v) for k, v in metrics.items()}
-            result = pd.concat(metrics, axis=1).reset_index()
+            result = cls.concat(metrics, axis=1).reset_index()
             renames = {v.name: k for k, v in op.groups.items()}
             return result.rename(columns=renames)
         else:
             results = {k: v(parent) for k, v in metrics.items()}
-            combined, _ = asframe(results)
+            combined, _ = cls.asframe(results)
             return combined
 
     @classmethod
     def visit(cls, op: PandasJoin, how, left, right, left_on, right_on):
         # broadcast predicates if they are scalar values
-        left_size = len(left)
-        left_on = [asseries(v, left_size) for v in left_on]
-        right_size = len(right)
-        right_on = [asseries(v, right_size) for v in right_on]
+        left_on = [cls.asseries(v, like=left) for v in left_on]
+        right_on = [cls.asseries(v, like=right) for v in right_on]
 
         if how == "cross":
             assert not left_on and not right_on
-            return pd.merge(left, right, how="cross")
+            return cls.merge(left, right, how="cross")
         elif how == "anti":
-            df = pd.merge(
+            df = cls.merge(
                 left,
                 right,
                 how="outer",
@@ -606,13 +637,19 @@ class Executor(Dispatched):
             df = df[df["_merge"] == "left_only"]
             return df.drop(columns=["_merge"])
         elif how == "semi":
-            mask = asseries(True, left_size)
+            mask = cls.asseries(True, like=left)
             for left_pred, right_pred in zip(left_on, right_on):
                 mask = mask & left_pred.isin(right_pred)
             return left[mask]
         else:
-            df = left.merge(right, how=how, left_on=left_on, right_on=right_on)
-            return df.drop(columns=[f"key_{i}" for i in range(len(left_on))])
+            left_columns = {gen_name("left"): s for s in left_on}
+            right_columns = {gen_name("right"): s for s in right_on}
+            left_keys = list(left_columns.keys())
+            right_keys = list(right_columns.keys())
+            left = left.assign(**left_columns)
+            right = right.assign(**right_columns)
+            df = left.merge(right, how=how, left_on=left_keys, right_on=right_keys)
+            return df
 
     @classmethod
     def visit(
@@ -628,12 +665,10 @@ class Executor(Dispatched):
         operator,
     ):
         # broadcast predicates if they are scalar values
-        left_size = len(left)
-        right_size = len(right)
-        left_on = [asseries(v, left_size) for v in left_on]
-        left_by = [asseries(v, left_size) for v in left_by]
-        right_on = [asseries(v, right_size) for v in right_on]
-        right_by = [asseries(v, right_size) for v in right_by]
+        left_on = [cls.asseries(v, like=left) for v in left_on]
+        left_by = [cls.asseries(v, like=left) for v in left_by]
+        right_on = [cls.asseries(v, like=right) for v in right_on]
+        right_by = [cls.asseries(v, like=right) for v in right_by]
 
         # merge_asof only works with column names not with series
         left_on = {gen_name("left"): s for s in left_on}
@@ -667,7 +702,7 @@ class Executor(Dispatched):
 
         # merge_asof requires the left side to be sorted by the join keys
         left = left.sort_values(by=list(left_on.keys()))
-        df = pd.merge_asof(
+        df = cls.merge_asof(
             left,
             right,
             left_on=list(left_on.keys()),
@@ -681,7 +716,7 @@ class Executor(Dispatched):
 
     @classmethod
     def visit(cls, op: ops.Union, left, right, distinct):
-        result = pd.concat([left, right], axis=0)
+        result = cls.concat([left, right], axis=0)
         return result.drop_duplicates() if distinct else result
 
     @classmethod

@@ -24,19 +24,16 @@ from dask.dataframe.utils import tm  # noqa: E402
             lambda s: s[s.length() - 1 :],
             lambda s: s.str[-1:],
             id="expr_slice_begin",
-            marks=pytest.mark.xfail,
         ),
         param(
             lambda s: s[: s.length()],
             lambda s: s,
             id="expr_slice_end",
-            marks=pytest.mark.xfail,
         ),
         param(
             lambda s: s[s.length() - 2 : s.length() - 1],
             lambda s: s.str[-2:-1],
             id="expr_slice_begin_end",
-            marks=pytest.mark.xfail,
         ),
         param(lambda s: s.strip(), lambda s: s.str.strip(), id="strip"),
         param(lambda s: s.lstrip(), lambda s: s.str.lstrip(), id="lstrip"),
@@ -96,7 +93,6 @@ from dask.dataframe.utils import tm  # noqa: E402
             lambda s: s.split(" "),
             lambda s: s.str.split(" "),
             id="split_spaces",
-            marks=pytest.mark.notimpl(["dask"], reason="arrays - #2553"),
         ),
     ],
 )
@@ -104,9 +100,9 @@ def test_string_ops(t, df, case_func, expected_func):
     # ignore matching UserWarnings
     with catch_warnings(record=True):
         expr = case_func(t.strings_with_space)
-        result = expr.compile()
-        series = expected_func(df.strings_with_space)
-        tm.assert_series_equal(result.compute(), series.compute(), check_index=False)
+        result = expr.name("result").execute()
+        series = expected_func(df.strings_with_space).rename("result").compute()
+        tm.assert_series_equal(result, series, check_index=False)
 
 
 def test_grouped_string_re_search(t, df):

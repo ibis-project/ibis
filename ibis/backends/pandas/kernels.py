@@ -17,20 +17,16 @@ import pandas as pd
 import toolz
 
 import ibis.expr.operations as ops
-from ibis.backends.pandas.helpers import (
-    columnwise,
-    elementwise,
-    generic,
-    rowwise,
-    serieswise,
-)
-from ibis.common.exceptions import OperationNotDefinedError
-from ibis.util import any_of
+from ibis.backends.pandas.helpers import isnull
 
 
 def substring_rowwise(row):
     arg, start, length = row["arg"], row["start"], row["length"]
-    if length is None:
+    if isnull(arg):
+        return None
+    elif isnull(start):
+        return None
+    elif isnull(length):
         return arg[start:]
     else:
         return arg[start : start + length]
@@ -146,6 +142,18 @@ def array_position_rowwise(row):
         return -1
 
 
+def array_slice_rowwise(row):
+    arg, start, stop = row["arg"], row["start"], row["stop"]
+    if isnull(start) and isnull(stop):
+        return arg
+    elif isnull(start):
+        return arg[:stop]
+    elif isnull(stop):
+        return arg[start:]
+    else:
+        return arg[start:stop]
+
+
 def integer_range_rowwise(row):
     if not row["step"]:
         return []
@@ -161,7 +169,7 @@ def timestamp_range_rowwise(row):
 
 
 def _safe_method(mapping, method, *args, **kwargs):
-    if mapping is None or mapping is pd.NA:
+    if isnull(mapping):
         return None
     try:
         method = getattr(mapping, method)
@@ -169,7 +177,7 @@ def _safe_method(mapping, method, *args, **kwargs):
         return None
     else:
         result = method(*args, **kwargs)
-        return None if result is pd.NA else result
+        return None if isnull(result) else result
 
 
 def safe_len(mapping):
@@ -201,9 +209,7 @@ def safe_values(mapping):
 
 
 def safe_merge(left, right):
-    if left is None or left is pd.NA:
-        return None
-    elif right is None or right is pd.NA:
+    if isnull(left) or isnull(right):
         return None
     else:
         return {**left, **right}
@@ -246,7 +252,28 @@ def round_serieswise(arg, digits):
         return np.round(arg, digits).astype("float64")
 
 
-_generic_impls = {
+reductions = {
+    ops.Min: lambda x: x.min(),
+    ops.Max: lambda x: x.max(),
+    ops.Sum: lambda x: x.sum(),
+    ops.Mean: lambda x: x.mean(),
+    ops.Count: lambda x: x.count(),
+    ops.Mode: lambda x: x.mode().iat[0],
+    ops.Any: lambda x: x.any(),
+    ops.All: lambda x: x.all(),
+    ops.Median: lambda x: x.median(),
+    ops.ApproxMedian: lambda x: x.median(),
+    ops.BitAnd: lambda x: np.bitwise_and.reduce(x.values),
+    ops.BitOr: lambda x: np.bitwise_or.reduce(x.values),
+    ops.BitXor: lambda x: np.bitwise_xor.reduce(x.values),
+    ops.Last: lambda x: x.iat[-1],
+    ops.First: lambda x: x.iat[0],
+    ops.CountDistinct: lambda x: x.nunique(),
+    ops.ApproxCountDistinct: lambda x: x.nunique(),
+    ops.ArrayCollect: lambda x: x.tolist(),
+}
+
+generic = {
     ops.Abs: abs,
     ops.Acos: np.arccos,
     ops.Add: operator.add,
@@ -312,7 +339,7 @@ _generic_impls = {
     ops.Log: lambda x, base: np.log(x) if base is None else np.log(x) / np.log(base),
 }
 
-_columnwise_impls = {
+columnwise = {
     ops.Clip: lambda df: df["arg"].clip(lower=df["lower"], upper=df["upper"]),
     ops.IfElse: lambda df: df["true_expr"].where(
         df["bool_expr"], other=df["false_null_expr"]
@@ -321,13 +348,13 @@ _columnwise_impls = {
     ops.Repeat: lambda df: df["arg"] * df["times"],
 }
 
-_rowwise_impls = {
+rowwise = {
     ops.ArrayContains: lambda row: row["other"] in row["arg"],
     ops.ArrayIndex: array_index_rowwise,
     ops.ArrayPosition: array_position_rowwise,
     ops.ArrayRemove: lambda row: [x for x in row["arg"] if x != row["other"]],
     ops.ArrayRepeat: lambda row: np.tile(row["arg"], max(0, row["times"])),
-    ops.ArraySlice: lambda row: row["arg"][row["start"] : row["stop"]],
+    ops.ArraySlice: array_slice_rowwise,
     ops.ArrayUnion: lambda row: toolz.unique(row["left"] + row["right"]),
     ops.EndsWith: lambda row: row["arg"].endswith(row["end"]),
     ops.IntegerRange: integer_range_rowwise,
@@ -364,7 +391,7 @@ _rowwise_impls = {
     ops.Strftime: lambda row: row["arg"].strftime(row["format_str"]),
 }
 
-_serieswise_impls = {
+serieswise = {
     ops.Between: lambda arg, lower_bound, upper_bound: arg.between(
         lower_bound, upper_bound
     ),
@@ -387,6 +414,8 @@ _serieswise_impls = {
     ops.ExtractSecond: lambda arg: arg.dt.second,
     ops.ExtractWeekOfYear: lambda arg: arg.dt.isocalendar().week.astype("int32"),
     ops.ExtractYear: lambda arg: arg.dt.year,
+    ops.IsNull: lambda arg: arg.isnull(),
+    ops.NotNull: lambda arg: arg.notnull(),
     ops.Lowercase: lambda arg: arg.str.lower(),
     ops.LPad: lambda arg, length, pad: arg.str.rjust(length, fillchar=pad),
     ops.LStrip: lambda arg: arg.str.lstrip(),
@@ -420,7 +449,7 @@ _serieswise_impls = {
     ops.Uppercase: lambda arg: arg.str.upper(),
 }
 
-_elementwise_impls = {
+elementwise = {
     ops.ExtractProtocol: lambda x: getattr(urlsplit(x), "scheme", ""),
     ops.ExtractAuthority: lambda x: getattr(urlsplit(x), "netloc", ""),
     ops.ExtractPath: lambda x: getattr(urlsplit(x), "path", ""),
@@ -435,10 +464,11 @@ _elementwise_impls = {
     ops.MapLength: safe_len,
     ops.MapKeys: safe_keys,
     ops.MapValues: safe_values,
+    ops.Round: lambda x, digits=0: round(x, digits),
 }
 
 
-_elementwise_decimal_impls = {
+elementwise_decimal = {
     ops.Round: lambda x, digits=0: round(x, digits),
     ops.Log10: safe_decimal(lambda x: x.log10()),
     ops.Ln: safe_decimal(lambda x: x.ln()),
@@ -452,62 +482,10 @@ _elementwise_decimal_impls = {
 }
 
 
-def pick_kernel(op, operands):
-    typ = type(op)
-
-    # decimal operations have special implementations
-    if op.dtype.is_decimal():
-        func = _elementwise_decimal_impls[typ]
-        return elementwise(func, operands)
-
-    # prefer generic implementations if available
-    if func := _generic_impls.get(typ):
-        return generic(func, operands)
-
-    first, *rest = operands.values()
-    is_multi_arg = bool(rest)
-    is_multi_column = any_of(rest, pd.Series)
-
-    if is_multi_column:
-        if func := _columnwise_impls.get(typ):
-            return columnwise(func, operands)
-        elif func := _rowwise_impls.get(typ):
-            return rowwise(func, operands)
-        else:
-            raise OperationNotDefinedError(
-                "No columnwise or rowwise implementation found for "
-                f"multi-column operation {typ}"
-            )
-    elif is_multi_arg:
-        if func := _columnwise_impls.get(typ):
-            return columnwise(func, operands)
-        elif func := _serieswise_impls.get(typ):
-            return serieswise(func, operands)
-        elif func := _rowwise_impls.get(typ):
-            return rowwise(func, operands)
-        elif func := _elementwise_impls.get(typ):
-            return elementwise(func, operands)
-        else:
-            raise OperationNotDefinedError(
-                "No columnwise, serieswise, rowwise or elementwise "
-                f"implementation found for multi-argument operation {typ}"
-            )
-    else:  # noqa: PLR5501
-        if func := _serieswise_impls.get(typ):
-            return serieswise(func, operands)
-        elif func := _elementwise_impls.get(typ):
-            return elementwise(func, operands)
-        else:
-            raise OperationNotDefinedError(
-                "No serieswise or elementwise implementation found for "
-                f"single-argument operation {typ}"
-            )
-
-
 supported_operations = (
-    _generic_impls.keys()
-    | _columnwise_impls.keys()
-    | _rowwise_impls.keys()
-    | _serieswise_impls.keys()
-    | _elementwise_impls.keys()
+    generic.keys()
+    | columnwise.keys()
+    | rowwise.keys()
+    | serieswise.keys()
+    | elementwise.keys()
 )
