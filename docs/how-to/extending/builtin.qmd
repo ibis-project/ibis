@@ -133,26 +133,23 @@ And let's take a look at the SQL
 ibis.to_sql(expr, dialect="snowflake")
 ```
 
-### Input types
+### Defining Signatures
 
-Sometimes the input types of builtin functions are difficult to spell.
+Sometimes the signatures of builtin functions are difficult to spell.
 
 Consider a function that computes the length of any array: the elements in the
 array can be floats, integers, strings and even other arrays. Spelling that
 type is difficult.
 
-Fortunately the `udf.scalar.builtin` decorator doesn't require you to specify
-input types in these cases:
+Fortunately, the `udf.scalar.builtin` decorator **only** requires you to
+specify the type of the **return value**. The type of the function **parameters**
+are **not** required. Thus, this is adequate:
 
 ```{python}
 @udf.scalar.builtin(name="array_size")
 def cardinality(arr) -> int:
    ...
 ```
-
-::: {.callout-caution}
-## The return type annotation **is always required**.
-:::
 
 We can pass arrays with different element types to our `cardinality` function:
 
@@ -164,7 +161,9 @@ con.execute(cardinality([1, 2, 3]))
 con.execute(cardinality(["a", "b"]))
 ```
 
-When you bypass input types the errors you get back are backend dependent:
+When you skip giving input types, Ibis isn't able to catch your typing errors
+early, and they are only caught during execution.
+The errors you get back are backend dependent:
 
 ```{python}
 #| error: true
