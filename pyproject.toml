@@ -266,6 +266,8 @@ filterwarnings = [
   # pyspark and impala leave sockets open
   "ignore:Exception ignored in:",
   # dask
+  "ignore:Using the ``in`` operator to test for membership in Series is deprecated:FutureWarning",
+  "ignore:In a future version of pandas, a length 1 tuple will be returned when iterating over a groupby:FutureWarning",
   "ignore:index is deprecated and will be removed in a future release:FutureWarning",
   "ignore:`meta` is not specified:UserWarning",
   "ignore:Concatenating dataframes with unknown divisions:UserWarning",
