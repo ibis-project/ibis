@@ -33,7 +33,7 @@ UUID_BACKEND_TYPE = {
     raises=sqlalchemy.exc.InternalError,
     reason="Feature is not yet implemented: unsupported data type: UUID",
 )
-@pytest.mark.notimpl(["impala", "polars"], raises=NotImplementedError)
+@pytest.mark.notimpl(["polars"], raises=NotImplementedError)
 @pytest.mark.notimpl(["datafusion"], raises=Exception)
 def test_uuid_literal(con, backend):
     backend_name = backend.name()

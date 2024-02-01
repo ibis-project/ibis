@@ -942,13 +942,9 @@ def test_capitalize(con):
         "mssql",
         "mysql",
         "exasol",
+        "impala",
     ],
     raises=com.OperationNotDefinedError,
-)
-@pytest.mark.notimpl(
-    ["impala"],
-    raises=com.UnsupportedBackendType,
-    reason="no array support",
 )
 def test_array_string_join(con):
     s = ibis.array(["a", "b", "c"])
