@@ -1288,6 +1288,7 @@ def test_hash_consistent(backend, alltypes):
         "risingwave",
         "sqlite",
         "clickhouse",
+        "mssql",
     ]
 )
 def test_hashbytes(backend, alltypes):
@@ -1322,6 +1323,7 @@ def test_hashbytes(backend, alltypes):
         "snowflake",
         "trino",
         "pyspark",
+        "mssql",
     ]
 )
 @pytest.mark.notyet(
