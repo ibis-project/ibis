@@ -71,7 +71,7 @@ needs storage below it, a frontend above it, and a bunch of other components to
 connect things together. Voltron Data's founders and engineers are very
 experienced with open-source software and pioneers of the composable data
 ecosystem. Thus, Voltron Data supports Ibis because it is the Python frontend
-for Theseus and can act as a standard Python dataframe API for **any** backend,
+for Theseus and acts as a standard Python dataframe API for **any** backend,
 whether you're querying a CSV file on your laptop, running thousand-node Spark
 jobs on a cluster in the cloud, or doing cutting-edge work on-premise with GPU
 clusters. With Ibis, you can write your experimentation code for your laptop and
