@@ -251,16 +251,10 @@ point = ibis.literal((1, 0), type="point").name("p")
 point_geom = ibis.literal((1, 0), type="point:geometry").name("p")
 
 
-@pytest.mark.parametrize(
-    ("expr", "expected"),
-    [
-        (point, "'POINT (1.0 0.0)'"),
-        (point_geom, "'POINT (1.0 0.0)'::geometry"),
-    ],
-)
-def test_literal_geospatial_explicit(con, expr, expected):
+@pytest.mark.parametrize("expr", [point, point_geom])
+def test_literal_geospatial_explicit(con, expr, snapshot):
     result = str(con.compile(expr))
-    assert result == f"SELECT {expected} AS p"
+    snapshot.assert_match(result, "out.sql")
 
 
 # test input data with shapely geometries
