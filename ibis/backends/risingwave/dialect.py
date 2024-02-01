@@ -4,15 +4,11 @@ import sqlglot.expressions as sge
 from sqlglot import generator
 from sqlglot.dialects import Postgres
 
-# from sqlglot.dialects.dialect import rename_func
-
 
 class RisingWave(Postgres):
     # Need to disable timestamp precision
     # No "or replace" allowed in create statements
     # no "not null" clause for column constraints
-    #
-    #
 
     class Generator(generator.Generator):
         SINGLE_STRING_INTERVAL = True
