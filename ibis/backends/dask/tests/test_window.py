@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import io
 from datetime import date
 from operator import methodcaller
 
@@ -11,10 +10,8 @@ import pytest
 from dask.dataframe.utils import tm
 
 import ibis
-import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 from ibis.backends.dask import Backend
-from ibis.backends.dask.execution import execute
 from ibis.legacy.udf.vectorized import reduction
 
 
@@ -47,59 +44,62 @@ def range_window():
 
 @default
 @row_offset
-def test_lead(t, df, row_offset, default, row_window):
+def test_lead(con, t, df, row_offset, default, row_window):
     expr = t.dup_strings.lead(row_offset, default=default).over(row_window)
     result = expr.execute()
-    expected = df.dup_strings.shift(execute((-row_offset).op())).compute()
+    expected = df.dup_strings.shift(con.execute(-row_offset)).compute()
     if default is not ibis.NA:
-        expected = expected.fillna(execute(default.op()))
+        expected = expected.fillna(con.execute(default))
     tm.assert_series_equal(result, expected, check_names=False)
 
 
 @default
 @row_offset
-def test_lag(t, df, row_offset, default, row_window):
+def test_lag(con, t, df, row_offset, default, row_window):
     expr = t.dup_strings.lag(row_offset, default=default).over(row_window)
     result = expr.execute()
-    expected = df.dup_strings.shift(execute(row_offset.op())).compute()
+    expected = df.dup_strings.shift(con.execute(row_offset)).compute()
     if default is not ibis.NA:
-        expected = expected.fillna(execute(default.op()))
+        expected = expected.fillna(con.execute(default))
     tm.assert_series_equal(result, expected, check_names=False)
 
 
 @default
 @range_offset
-def test_lead_delta(t, df, range_offset, default, range_window):
+def test_lead_delta(con, t, pandas_df, range_offset, default, range_window):
     expr = t.dup_strings.lead(range_offset, default=default).over(range_window)
     result = expr.execute()
+
     expected = (
-        df[["plain_datetimes_naive", "dup_strings"]]
+        pandas_df[["plain_datetimes_naive", "dup_strings"]]
         .set_index("plain_datetimes_naive")
         .squeeze()
-        .shift(freq=execute((-range_offset).op()))
-        .compute()
+        .shift(freq=con.execute(-range_offset))
+        .reindex(pandas_df.plain_datetimes_naive)
         .reset_index(drop=True)
     )
     if default is not ibis.NA:
-        expected = expected.fillna(execute(default.op()))
+        expected = expected.fillna(con.execute(default))
     tm.assert_series_equal(result, expected, check_names=False)
 
 
 @default
 @range_offset
-def test_lag_delta(t, df, range_offset, default, range_window):
+@pytest.mark.filterwarnings("ignore:Non-vectorized")
+def test_lag_delta(t, con, pandas_df, range_offset, default, range_window):
     expr = t.dup_strings.lag(range_offset, default=default).over(range_window)
     result = expr.execute()
+
     expected = (
-        df[["plain_datetimes_naive", "dup_strings"]]
+        pandas_df[["plain_datetimes_naive", "dup_strings"]]
         .set_index("plain_datetimes_naive")
         .squeeze()
-        .shift(freq=execute(range_offset.op()))
-        .compute()
+        .shift(freq=con.execute(range_offset))
+        .reindex(pandas_df.plain_datetimes_naive)
         .reset_index(drop=True)
     )
     if default is not ibis.NA:
-        expected = expected.fillna(execute(default.op()))
+        expected = expected.fillna(con.execute(default))
     tm.assert_series_equal(result, expected, check_names=False)
 
 
@@ -199,51 +199,22 @@ def test_batting_avg_change_in_games_per_year(players, players_df):
     tm.assert_frame_equal(result, expected)
 
 
-@pytest.mark.xfail(
-    raises=AttributeError, reason="'Series' object has no attribute 'rank'"
-)
-def test_batting_most_hits(players, players_df):
-    expr = players.mutate(
-        hits_rank=lambda t: t.H.rank().over(
-            ibis.cumulative_window(order_by=ibis.desc(t.H))
-        )
-    )
-    result = expr.execute()
-    hits_rank = players_df.groupby("playerID").H.rank(method="min", ascending=False)
-    expected = players_df.assign(hits_rank=hits_rank)
-    tm.assert_frame_equal(result[expected.columns], expected)
-
-
-@pytest.mark.xfail(
-    raises=NotImplementedError,
-    reason="Quantile not implemented for Dask SeriesGroupBy, Dask #9824",
-)
-def test_batting_quantile(players, players_df):
-    expr = players.mutate(hits_quantile=lambda t: t.H.quantile(0.25))
-    hits_quantile = players_df.groupby("playerID").H.transform("quantile", 0.25)
-    expected = players_df.assign(hits_quantile=hits_quantile)
-    cols = expected.columns.tolist()
-    result = expr.execute()[cols].sort_values(cols).reset_index(drop=True)
-    tm.assert_frame_equal(result, expected)
-
-
-@pytest.mark.parametrize("op", ["sum", "min", "max", "mean"])
-def test_batting_specific_cumulative(batting, batting_df, op, sort_kind):
+@pytest.mark.parametrize("op", ["sum", "mean", "min", "max"])
+def test_batting_specific_cumulative(batting, batting_pandas_df, op, sort_kind):
     ibis_method = methodcaller(f"cum{op}", order_by=batting.yearID)
-    expr = ibis_method(batting.G)
+    expr = ibis_method(batting.G).name("tmp")
     result = expr.execute().astype("float64")
 
     pandas_method = methodcaller(op)
     expected = pandas_method(
-        batting_df[["G", "yearID"]]
-        .sort_values("yearID")
-        .G.rolling(len(batting_df), min_periods=1)
-    )
-    expected = expected.compute().sort_index().reset_index(drop=True)
-    tm.assert_series_equal(result, expected.rename(f"{op.capitalize()}(G)"))
+        batting_pandas_df[["G", "yearID"]]
+        .sort_values("yearID", kind=sort_kind)
+        .G.expanding()
+    ).reset_index(drop=True)
+    tm.assert_series_equal(result, expected.rename("tmp"))
 
 
-def test_batting_cumulative(batting, batting_df, sort_kind):
+def test_batting_cumulative(batting, batting_pandas_df, sort_kind):
     expr = batting.mutate(
         more_values=lambda t: t.G.sum().over(ibis.cumulative_window(order_by=t.yearID))
     )
@@ -251,32 +222,28 @@ def test_batting_cumulative(batting, batting_df, sort_kind):
 
     columns = ["G", "yearID"]
     more_values = (
-        batting_df[columns]
-        .sort_values("yearID")
-        .G.rolling(len(batting_df), min_periods=1)
+        batting_pandas_df[columns]
+        .sort_values("yearID", kind=sort_kind)
+        .G.expanding()
         .sum()
         .astype("int64")
     )
-    expected = batting_df.assign(more_values=more_values).compute()
+    expected = batting_pandas_df.assign(more_values=more_values)
     tm.assert_frame_equal(result[expected.columns], expected)
 
 
-@pytest.mark.xfail(
-    raises=NotImplementedError,
-    reason="Grouped and order windows not supported yet.",
-)
-def test_batting_cumulative_partitioned(batting, batting_df, sort_kind):
+def test_batting_cumulative_partitioned(batting, batting_pandas_df, sort_kind):
     group_by = "playerID"
     order_by = "yearID"
 
     t = batting
-    expr = t.G.cumsum(order_by=order_by, group_by=group_by)
+    expr = t.G.sum().over(ibis.cumulative_window(order_by=order_by, group_by=group_by))
     expr = t.mutate(cumulative=expr)
     result = expr.execute()
 
     columns = [group_by, order_by, "G"]
     expected = (
-        batting_df[columns]
+        batting_pandas_df[columns]
         .set_index(order_by)
         .groupby(group_by)
         .G.expanding()
@@ -290,7 +257,7 @@ def test_batting_cumulative_partitioned(batting, batting_df, sort_kind):
     )
 
 
-def test_batting_rolling(batting, batting_df, sort_kind):
+def test_batting_rolling(batting, batting_pandas_df, sort_kind):
     expr = batting.mutate(
         more_values=lambda t: t.G.sum().over(ibis.trailing_window(5, order_by=t.yearID))
     )
@@ -298,21 +265,17 @@ def test_batting_rolling(batting, batting_df, sort_kind):
 
     columns = ["G", "yearID"]
     more_values = (
-        batting_df[columns]
-        .sort_values("yearID")
+        batting_pandas_df[columns]
+        .sort_values("yearID", kind=sort_kind)
         .G.rolling(6, min_periods=1)
         .sum()
         .astype("int64")
     )
-    expected = batting_df.assign(more_values=more_values).compute()
+    expected = batting_pandas_df.assign(more_values=more_values)
     tm.assert_frame_equal(result[expected.columns], expected)
 
 
-@pytest.mark.xfail(
-    raises=NotImplementedError,
-    reason="Grouped and order windows not supported yet",
-)
-def test_batting_rolling_partitioned(batting, batting_df, sort_kind):
+def test_batting_rolling_partitioned(batting, batting_pandas_df, sort_kind):
     t = batting
     group_by = "playerID"
     order_by = "yearID"
@@ -324,13 +287,13 @@ def test_batting_rolling_partitioned(batting, batting_df, sort_kind):
 
     columns = [group_by, order_by, "G"]
     expected = (
-        batting_df[columns]
+        batting_pandas_df[columns]
         .set_index(order_by)
         .groupby(group_by)
         .G.rolling(4, min_periods=1)
         .sum()
         .rename("rolled")
-    ).compute()
+    )
 
     tm.assert_series_equal(
         result.set_index([group_by, order_by]).sort_index().rolled,
@@ -367,51 +330,39 @@ def test_scalar_broadcasting(batting, batting_df):
     tm.assert_frame_equal(result, expected)
 
 
-def test_mutate_with_window_after_join(sort_kind, npartitions):
-    left_df = dd.from_pandas(
-        pd.DataFrame(
-            {
-                "ints": [0, 1, 2],
-                "strings": ["a", "b", "c"],
-                "dates": pd.date_range("20170101", periods=3),
-            }
-        ),
-        npartitions=npartitions,
+def test_mutate_with_window_after_join(con, sort_kind):
+    left_df = pd.DataFrame(
+        {
+            "ints": [0, 1, 2],
+            "strings": ["a", "b", "c"],
+            "dates": pd.date_range("20170101", periods=3),
+        }
     )
-    right_df = dd.from_pandas(
-        pd.DataFrame(
-            {
-                "group": [0, 1, 2] * 3,
-                "value": [0, 1, np.nan, 3, 4, np.nan, 6, 7, 8],
-            }
-        ),
-        npartitions=npartitions,
+    right_df = pd.DataFrame(
+        {
+            "group": [0, 1, 2] * 3,
+            "value": [0, 1, np.nan, 3, 4, np.nan, 6, 7, 8],
+        }
     )
-    con = Backend().connect({"left": left_df, "right": right_df})
-    left, right = map(con.table, ("left", "right"))
+
+    left = ibis.memtable(left_df)
+    right = ibis.memtable(right_df)
 
     joined = left.outer_join(right, left.ints == right.group)
     proj = joined[left, right.value]
     expr = proj.group_by("ints").mutate(sum=proj.value.sum())
-    result = expr.execute()
-    result = result.sort_values(["dates", "ints", "value"]).reset_index(drop=True)
-    expected = (
-        pd.DataFrame(
-            {
-                "dates": dd.concat([left_df.dates] * 3)
-                .compute()
-                .sort_values()
-                .reset_index(drop=True),
-                "ints": [0] * 3 + [1] * 3 + [2] * 3,
-                "strings": ["a"] * 3 + ["b"] * 3 + ["c"] * 3,
-                "value": [0.0, 3.0, 6.0, 1.0, 4.0, 7.0, np.nan, np.nan, 8.0],
-                "sum": [9.0] * 3 + [12.0] * 3 + [8.0] * 3,
-            }
-        )
-        .sort_values(["dates", "ints", "value"])
-        .reset_index(drop=True)
+    result = con.execute(expr)
+    expected = pd.DataFrame(
+        {
+            "dates": pd.concat([left_df.dates] * 3)
+            .sort_values(kind=sort_kind)
+            .reset_index(drop=True),
+            "ints": [0] * 3 + [1] * 3 + [2] * 3,
+            "strings": ["a"] * 3 + ["b"] * 3 + ["c"] * 3,
+            "value": [0.0, 3.0, 6.0, 1.0, 4.0, 7.0, np.nan, np.nan, 8.0],
+            "sum": [9.0] * 3 + [12.0] * 3 + [8.0] * 3,
+        }
     )
-
     tm.assert_frame_equal(result[expected.columns], expected)
 
 
@@ -467,7 +418,7 @@ def test_project_scalar_after_join(npartitions):
     joined = left.outer_join(right, left.ints == right.group)
     proj = joined[left, right.value]
     expr = proj[proj.value.sum().name("sum"), ibis.literal(1).name("const")]
-    result = expr.execute()
+    result = expr.execute().reset_index(drop=True)
     expected = pd.DataFrame(
         {
             "sum": [29.0] * 9,
@@ -477,10 +428,6 @@ def test_project_scalar_after_join(npartitions):
     tm.assert_frame_equal(result[expected.columns], expected)
 
 
-@pytest.mark.xfail(
-    raises=ibis.common.exceptions.OperationNotDefinedError,
-    reason="MultiQuantile not implemented",
-)
 def test_project_list_scalar(npartitions):
     df = dd.from_pandas(pd.DataFrame({"ints": range(3)}), npartitions=npartitions)
     con = ibis.dask.connect({"df": df})
@@ -490,47 +437,6 @@ def test_project_list_scalar(npartitions):
 
     expected = pd.Series([[1.0, 1.9] for _ in range(3)], name="res")
     tm.assert_series_equal(result.res, expected)
-
-
-@pytest.mark.xfail(
-    raises=NotImplementedError, reason="Group and order by not implemented"
-)
-def test_window_with_mlb(npartitions):
-    index = pd.date_range("20170501", "20170507")
-    data = np.random.randn(len(index), 3)
-    df = (
-        pd.DataFrame(data, columns=list("abc"), index=index)
-        .rename_axis("time")
-        .reset_index(drop=False)
-    )
-    df = dd.from_pandas(df, npartitions=npartitions)
-    client = ibis.dask.connect({"df": df})
-    t = client.table("df")
-    rows_with_mlb = ibis.rows_with_max_lookback(5, ibis.interval(days=10))
-    expr = t.mutate(
-        sum=lambda df: df.a.sum().over(
-            ibis.trailing_window(rows_with_mlb, order_by="time", group_by="b")
-        )
-    )
-    result = expr.execute()
-    expected = df.set_index("time")
-    gb_df = (
-        expected.groupby(["b"])["a"]
-        .rolling("10d", closed="both")
-        .apply(lambda s: s.iloc[-5:].sum(), raw=False)
-        .sort_index(level=["time"])
-        .reset_index(drop=True)
-    )
-    expected = expected.reset_index(drop=False).assign(sum=gb_df)
-    tm.assert_frame_equal(result, expected)
-
-    rows_with_mlb = ibis.rows_with_max_lookback(5, 10)
-    with pytest.raises(com.IbisInputError):
-        t.mutate(
-            sum=lambda df: df.a.sum().over(
-                ibis.trailing_window(rows_with_mlb, order_by="time")
-            )
-        )
 
 
 def test_window_grouping_key_has_scope(t, df):
@@ -545,10 +451,6 @@ def test_window_grouping_key_has_scope(t, df):
     )
 
 
-@pytest.mark.xfail(
-    raises=NotImplementedError,
-    reason="Grouped and order windows not supported yet",
-)
 def test_window_on_and_by_key_as_window_input(t, df):
     order_by = "plain_int64"
     group_by = "dup_ints"
@@ -621,45 +523,3 @@ def events(npartitions) -> dd.DataFrame:
     df.at[5, "measurement"] = 42.0
     df.at[7, "measurement"] = 11.0
     return dd.from_pandas(df, npartitions=npartitions)
-
-
-@pytest.mark.xfail(
-    raises=NotImplementedError, reason="Group and order by not implemented"
-)
-def test_bfill(events):
-    con = ibis.dask.connect({"t": events})
-    t = con.table("t")
-
-    win = ibis.window(
-        group_by=t.event_id, order_by=ibis.desc(t.measured_on), following=0
-    )
-    grouped = t.mutate(grouper=t.measurement.count().over(win))
-
-    expr = (
-        grouped.group_by([grouped.event_id, grouped.grouper])
-        .mutate(bfill=grouped.measurement.max())
-        .order_by("measured_on")
-    )
-    result = expr.execute().reset_index(drop=True)
-
-    expected_raw = """\
-event_id measured_on  measurement  grouper  bfill
-       2  2021-05-05         42.0        3   42.0
-       2  2021-05-06         42.0        2   42.0
-       2  2021-05-07          NaN        1   11.0
-       2  2021-05-08         11.0        1   11.0
-       2  2021-05-09          NaN        0    NaN
-       2  2021-05-10          NaN        0    NaN
-       1  2021-06-01          NaN        1    5.0
-       1  2021-06-02          5.0        1    5.0
-       1  2021-06-03          NaN        0    NaN
-       1  2021-06-04          NaN        0    NaN
-       3  2021-07-11          NaN        0    NaN
-       3  2021-07-12          NaN        0    NaN"""
-    expected = pd.read_csv(
-        io.StringIO(expected_raw),
-        sep=r"\s+",
-        header=0,
-        parse_dates=["measured_on"],
-    )
-    tm.assert_frame_equal(result, expected)
