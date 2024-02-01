@@ -123,6 +123,12 @@ jobs:
               - postgres
             sys-deps:
               - libgeos-dev
+          - name: risingwave
+            title: Risingwave
+            services:
+              - risingwave
+            extras:
+              - risingwave
           - name: impala
             title: Impala
             serial: true
@@ -218,6 +224,14 @@ jobs:
                 - postgres
               sys-deps:
                 - libgeos-dev
+          - os: windows-latest
+            backend:
+              name: risingwave
+              title: Risingwave
+              services:
+                - risingwave
+              extras:
+                - risingwave
           - os: windows-latest
             backend:
               name: postgres

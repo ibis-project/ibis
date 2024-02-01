@@ -209,24 +209,26 @@ class ClickHouseCompiler(SQLGlotCompiler):
 
     @visit_node.register(ops.HashBytes)
     def visit_HashBytes(self, op, *, arg, how):
-        supported_algorithms = frozenset(
-            (
-                "MD5",
-                "halfMD5",
-                "SHA1",
-                "SHA224",
-                "SHA256",
-                "intHash32",
-                "intHash64",
-                "cityHash64",
-                "sipHash64",
-                "sipHash128",
-            )
-        )
-        if how not in supported_algorithms:
+        supported_algorithms = {
+            "md5": "MD5",
+            "MD5": "MD5",
+            "halfMD5": "halfMD5",
+            "SHA1": "SHA1",
+            "sha1": "SHA1",
+            "SHA224": "SHA224",
+            "sha224": "SHA224",
+            "SHA256": "SHA256",
+            "sha256": "SHA256",
+            "intHash32": "intHash32",
+            "intHash64": "intHash64",
+            "cityHash64": "cityHash64",
+            "sipHash64": "sipHash64",
+            "sipHash128": "sipHash128",
+        }
+        if (funcname := supported_algorithms.get(how)) is None:
             raise com.UnsupportedOperationError(f"Unsupported hash algorithm {how}")
 
-        return self.f[how](arg)
+        return self.f[funcname](arg)
 
     @visit_node.register(ops.IntervalFromInteger)
     def visit_IntervalFromInteger(self, op, *, arg, unit):
