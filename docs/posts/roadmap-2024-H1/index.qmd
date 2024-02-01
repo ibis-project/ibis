@@ -26,7 +26,7 @@ familiar with Ibis.
 ## Background
 
 The Ibis project was started in 2015 by [Wes McKinney](https://wesmckinney.com),
-the creator of pandas, as a pandas-like interface to Apache Impala. It receieved
+the creator of pandas, as a pandas-like interface to Apache Impala. It received
 improvements and support over the years, but really took off under the
 stewardship of [Phillip Cloud](https://github.com/cpcloud) and the [current Ibis
 team at Voltron Data](#who-are-the-core-contributors). It now supports 20+
