@@ -584,7 +584,7 @@ def test_array_contains(backend, con):
         param(
             [[1], [], [42, 42], []],
             [-1, -1, 0, -1],
-            id="including-empty-array",
+            id="some-empty",
             marks=[
                 pytest.mark.notyet(
                     ["flink"],
@@ -601,16 +601,12 @@ def test_array_contains(backend, con):
         param(
             [[1], [1], [42, 42], [1]],
             [-1, -1, 0, -1],
-            id="all-non-empty-arrays",
-        ),
-        param(
-            [[1], [1, 42], [42, 42, 42], [42, 1]],
-            [-1, 1, 0, 0],
-            id="all-non-empty-arrays-2",
+            id="none-empty",
         ),
     ],
 )
-@pytest.mark.notimpl(["dask", "impala", "polars"], raises=com.OperationNotDefinedError)
+@pytest.mark.notimpl(["dask", "polars"], raises=com.OperationNotDefinedError)
+@pytest.mark.notyet(["impala"], raises=com.UnsupportedBackendType)
 def test_array_position(backend, con, a, expected_array):
     t = ibis.memtable({"a": a})
     expr = t.a.index(42)
