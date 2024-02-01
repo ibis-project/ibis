@@ -70,8 +70,8 @@ for the composable data ecosystem. On its own, Theseus is fairly bare bones -- i
 needs storage below it, a frontend above it, and a bunch of other components to
 connect things together. Voltron Data's founders and engineers are very
 experienced with open-source software and pioneers of the composable data
-ecosystem. Thus, Voltron Data supports Ibis because it is the Python frontend
-for Theseus and acts as a standard Python dataframe API for **any** backend,
+ecosystem. Voltron Data supports Ibis because it is the Python frontend for
+Theseus and can act as a standard Python dataframe API for **any** backend,
 whether you're querying a CSV file on your laptop, running thousand-node Spark
 jobs on a cluster in the cloud, or doing cutting-edge work on-premise with GPU
 clusters. With Ibis, you can write your experimentation code for your laptop and
@@ -111,7 +111,7 @@ their own Python dataframe interface. It is the only portable Python dataframe
 that can serve as a standard across the data ecosystem.
 :::
 
-So, Voltron Data supports Ibis for the same reason it supports Apache Arrow.
+Voltron Data supports Ibis for the same reason it supports Apache Arrow.
 Open-source standards make it easier to build the composable data ecosystem and
 reduce friction for data teams looking to swap out components as their needs
 change. If you're already using Ibis as your frontend, Apache Arrow for data
@@ -254,9 +254,8 @@ control over the SQL that is generated, reduces dependency overhead, and
 simplifies the codebase further.
 
 ::: {.callout-note}
-By the time this is published, the refactor will likely be complete and on the
-`main` branch. We are targeting release in v9 of Ibis. Look at for a blog post
-dedicated to the refactor soon!
+We are targeting release in v9 of Ibis. Look at for a blog post dedicated to the
+refactor soon!
 :::
 
 ### Ibis for ML preprocessing
@@ -349,7 +348,6 @@ GitHub](https://github.com/ibis-project/ibis/issues/new/choose).
 
 We will likely engage an external design firm to help us redesign the logo
 (initially created by Tim Swast, thanks Tim! It has served us well!) and website
-theme. We aim to keep the website simple and focused on documentation that helps
 users, but want to deviate from the default themes in Quarto to make Ibis stand
 out.
 
@@ -370,10 +368,9 @@ Improving the documentation is a great way to get involved with Ibis!
 
 This writeup of our roadmap is heavily biased toward Q1 of 2024. Looking out,
 our priorities remain much the same. After the big refactor is done, we will
-ensure common DDL support across backends (create table, insert, upsert) for
-larger data sizes with PyArrow. We will work to stabilize the backend interface
-to make it easier than ever to create and maintain new backends. We'll continue
-improving ML, streaming, and geospatial support.
+continue improving our library internals, backend interface, and ensuring the
+longevity of Ibis. We'll continue improving ML, streaming, and geospatial
+support.
 
 Expect an updated roadmap blog in the second half of the year for more details!
 
