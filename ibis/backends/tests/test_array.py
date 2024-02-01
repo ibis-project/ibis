@@ -357,6 +357,7 @@ def test_unnest_no_nulls(backend):
 @builtin_array
 @pytest.mark.notimpl("dask", raises=ValueError)
 @pytest.mark.notimpl(["datafusion"], raises=com.OperationNotDefinedError)
+@pytest.mark.broken(["risingwave"], raises=AssertionError)
 def test_unnest_default_name(backend):
     array_types = backend.array_types
     df = array_types.execute()
