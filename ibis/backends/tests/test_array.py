@@ -1159,9 +1159,10 @@ def test_repr_timestamp_array(con, monkeypatch):
 
 
 @pytest.mark.notyet(
-    ["dask", "datafusion", "flink", "pandas", "polars"],
+    ["dask", "datafusion", "flink", "polars"],
     raises=com.OperationNotDefinedError,
 )
+@pytest.mark.broken(["pandas"], raises=ValueError, reason="reindex on duplicate values")
 def test_unnest_range(con):
     expr = ibis.range(2).unnest().name("x").as_table().mutate({"y": 1.0})
     result = con.execute(expr)
