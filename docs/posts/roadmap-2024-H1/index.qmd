@@ -135,7 +135,7 @@ that Voltron Data employees have been instrumental in building.
 ### Who are the core contributors?
 
 The core contributors working full-time on Ibis are employed at Voltron Data,
-with deep experience on succcessful open-source projects including pandas,
+with deep experience on successful open-source projects including pandas,
 Apache Arrow, Dask, and more. Everything in the Ibis project is made possible by
 their hard work! They are:
 
@@ -276,7 +276,7 @@ production-ready state, bringing the power of Ibis to ML feature engineering.
 We're [excited to welcome the (former) Claypot AI team to
 VoDa](https://voltrondata.com/resources/voltron-data-acquires-claypot-ai) to
 help drive this work forward! Expect a release announcement for IbisML soon
-coverting the majority of feature engineering operations and handoff to popular
+covering the majority of feature engineering operations and handoff to popular
 ML training frameworks.
 
 ::: {.callout-note collapse="true" title="LLMs: the Ibis Birdbrain project"}
@@ -359,7 +359,7 @@ out.
 > documentation is the product." - old tech adage, origin unknown
 
 A few months ago, we moved our documentation to [Quarto](https://quarto.org) and
-revamped most of the webiste along the way. We will continue improving the
+revamped most of the website along the way. We will continue improving the
 documentation with backend-specific getting started tutorials, how-to guides for
 common tasks, improved API references, improving the website search
 functionality, and more!
