@@ -703,11 +703,6 @@ def test_array_sort(backend, con):
     ["dask", "datafusion", "impala", "mssql", "pandas", "polars"],
     raises=com.OperationNotDefinedError,
 )
-@pytest.mark.notyet(
-    ["bigquery"],
-    raises=GoogleBadRequest,
-    reason="BigQuery doesn't support arrays with null elements",
-)
 @pytest.mark.parametrize(
     ("a", "b", "expected_array"),
     [
@@ -721,7 +716,12 @@ def test_array_sort(backend, con):
                     ["flink"],
                     raises=Py4JJavaError,
                     reason="SQL validation failed; Flink does not support ARRAY[]",
-                )
+                ),
+                pytest.mark.notyet(
+                    ["bigquery"],
+                    raises=GoogleBadRequest,
+                    reason="BigQuery doesn't support arrays with null elements",
+                ),
             ],
         ),
         param(
