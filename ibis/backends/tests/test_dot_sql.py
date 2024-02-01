@@ -272,7 +272,6 @@ def test_table_dot_sql_transpile(backend, alltypes, dialect, df):
         *no_sqlglot_dialect,
     ],
 )
-@pytest.mark.notyet(["polars"], raises=PolarsComputeError)
 @pytest.mark.notyet(
     ["druid"], raises=AttributeError, reason="druid doesn't respect column names"
 )
