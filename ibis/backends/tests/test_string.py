@@ -5,8 +5,8 @@ import contextlib
 import numpy as np
 import pandas as pd
 import pytest
-from pytest import param
 import sqlalchemy as sa
+from pytest import param
 
 import ibis
 import ibis.common.exceptions as com
@@ -932,13 +932,14 @@ def test_capitalize(con):
 
 
 @pytest.mark.notimpl(
-    ["dask", "pandas", "polars", "oracle", "flink"], raises=com.OperationNotDefinedError
+    ["dask", "pandas", "polars", "oracle", "flink", "sqlite"],
+    raises=com.OperationNotDefinedError,
 )
 @pytest.mark.never(
     ["mysql"], raises=com.OperationNotDefinedError, reason="no array support"
 )
 @pytest.mark.notimpl(
-    ["mssql", "exasol", "impala", "sqlite"],
+    ["mssql", "exasol", "impala"],
     raises=com.UnsupportedBackendType,
     reason="no array support",
 )
