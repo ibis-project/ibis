@@ -785,7 +785,6 @@ def test_isnan_isinf(
         param(
             L(5.556).log10(),
             math.log10(5.556),
-            marks=pytest.mark.notimpl(["exasol"], raises=com.OperationNotDefinedError),
             id="log10",
         ),
         param(
@@ -801,7 +800,6 @@ def test_isnan_isinf(
         param(
             L(11) % 3,
             11 % 3,
-            marks=pytest.mark.notimpl(["exasol"], raises=ExaQueryError),
             id="mod",
         ),
         param(L(5.556).log10(), math.log10(5.556), id="log10"),
