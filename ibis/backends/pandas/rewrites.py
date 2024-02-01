@@ -47,6 +47,19 @@ class PandasRename(PandasRelation):
 
 
 @public
+class PandasResetIndex(PandasRelation):
+    parent: ops.Relation
+
+    @attribute
+    def values(self):
+        return self.parent.values
+
+    @attribute
+    def schema(self):
+        return self.parent.schema
+
+
+@public
 class PandasJoin(PandasRelation):
     left: ops.Relation
     right: ops.Relation
@@ -118,12 +131,14 @@ def is_columnar(node):
 
 @replace(ops.Project)
 def rewrite_project(_, **kwargs):
+    unnests = []
     winfuncs = []
     for v in _.values.values():
-        winfuncs.extend(v.find(ops.WindowFunction, ops.Value))
+        unnests.extend(v.find(ops.Unnest, filter=ops.Value))
+        winfuncs.extend(v.find(ops.WindowFunction, filter=ops.Value))
 
     if not winfuncs:
-        return _
+        return PandasResetIndex(_) if unnests else _
 
     selects = {ops.Field(_.parent, k): k for k in _.parent.schema}
     for node in winfuncs:
@@ -161,7 +176,9 @@ def rewrite_project(_, **kwargs):
     # STEP 3: reconstruct the current projection with the window functions
     subs.update(metrics)
     values = {k: v.replace(subs, filter=ops.Value) for k, v in _.values.items()}
-    return ops.Project(proj, values)
+    result = ops.Project(proj, values)
+
+    return PandasResetIndex(result)
 
 
 @replace(ops.Aggregate)
