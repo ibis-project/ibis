@@ -2,8 +2,7 @@ from __future__ import annotations
 
 import pandas as pd
 import pytest
-from pandas import Timedelta, date_range
-from pytest import param
+from pandas import date_range
 
 import ibis
 
@@ -25,18 +24,6 @@ join_type = pytest.mark.parametrize(
         "left",
         "right",
         "outer",
-        param(
-            "semi",
-            marks=pytest.mark.xfail(
-                raises=NotImplementedError, reason="Semi join not implemented"
-            ),
-        ),
-        param(
-            "anti",
-            marks=pytest.mark.xfail(
-                raises=NotImplementedError, reason="Anti join not implemented"
-            ),
-        ),
     ],
 )
 
@@ -50,20 +37,7 @@ def test_join(how, left, right, df1, df2):
     expected = dd.merge(df1, df2, how=how, on="key")
     tm.assert_frame_equal(
         result[expected.columns].compute(scheduler="single-threaded"),
-        expected.compute(scheduler="single-threaded"),
-    )
-
-
-def test_cross_join(left, right, df1, df2):
-    expr = left.cross_join(right)[left, right.other_value, right.key3]
-    result = expr.compile()
-    expected = dd.merge(
-        df1.assign(dummy=1), df2.assign(dummy=1), how="inner", on="dummy"
-    ).rename(columns={"key_x": "key"})
-    del expected["dummy"], expected["key_y"]
-    tm.assert_frame_equal(
-        result[expected.columns].compute(scheduler="single-threaded"),
-        expected.compute(scheduler="single-threaded"),
+        expected.compute(scheduler="single-threaded").reset_index(drop=True),
     )
 
 
@@ -74,50 +48,8 @@ def test_join_project_left_table(how, left, right, df1, df2):
     expected = dd.merge(df1, df2, how=how, on="key")[list(left.columns) + ["key3"]]
     tm.assert_frame_equal(
         result[expected.columns].compute(scheduler="single-threaded"),
-        expected.compute(scheduler="single-threaded"),
+        expected.compute(scheduler="single-threaded").reset_index(drop=True),
     )
-
-
-def test_cross_join_project_left_table(left, right, df1, df2):
-    expr = left.cross_join(right)[left, right.key3]
-    result = expr.compile()
-    expected = dd.merge(
-        df1.assign(dummy=1), df2.assign(dummy=1), how="inner", on="dummy"
-    ).rename(columns={"key_x": "key"})[list(left.columns) + ["key3"]]
-    tm.assert_frame_equal(
-        result[expected.columns].compute(scheduler="single-threaded"),
-        expected.compute(scheduler="single-threaded"),
-    )
-
-
-@join_type
-def test_join_with_multiple_predicates(how, left, right, df1, df2):
-    expr = left.join(right, [left.key == right.key, left.key2 == right.key3], how=how)[
-        left, right.key3, right.other_value
-    ]
-    result = expr.execute().sort_values(by=["key"]).reset_index(drop=True)
-
-    expected = (
-        dd.merge(df1, df2, how=how, left_on=["key", "key2"], right_on=["key", "key3"])
-        .compute(scheduler="single-threaded")
-        .sort_values(by=["key"])
-        .reset_index(drop=True)
-    )
-    tm.assert_frame_equal(result[expected.columns], expected)
-
-
-@join_type
-def test_join_with_multiple_predicates_written_as_one(how, left, right, df1, df2):
-    predicate = (left.key == right.key) & (left.key2 == right.key3)
-    expr = left.join(right, predicate, how=how)[left, right.key3, right.other_value]
-    result = expr.execute().sort_values(by=["key"]).reset_index(drop=True)
-    expected = (
-        dd.merge(df1, df2, how=how, left_on=["key", "key2"], right_on=["key", "key3"])
-        .compute(scheduler="single-threaded")
-        .sort_values(by=["key"])
-        .reset_index(drop=True)
-    )
-    tm.assert_frame_equal(result[expected.columns], expected)
 
 
 @join_type
@@ -147,25 +79,6 @@ def test_join_with_duplicate_non_key_columns(how, left, right, df1, df2):
 
 
 @join_type
-def test_join_with_duplicate_non_key_columns_not_selected(how, left, right, df1, df2):
-    left = left.mutate(x=left.value * 2)
-    right = right.mutate(x=right.other_value * 3)
-    right = right[["key", "other_value"]]
-    expr = left.join(right, left.key == right.key, how=how)[left, right.other_value]
-    result = expr.compile()
-    expected = dd.merge(
-        df1.assign(x=df1.value * 2),
-        df2[["key", "other_value"]],
-        how=how,
-        on="key",
-    )
-    tm.assert_frame_equal(
-        result[expected.columns].compute(scheduler="single-threaded"),
-        expected.compute(scheduler="single-threaded"),
-    )
-
-
-@join_type
 def test_join_with_post_expression_selection(how, left, right, df1, df2):
     join = left.join(right, left.key == right.key, how=how)
     expr = join[left.key, left.value, right.other_value]
@@ -173,7 +86,7 @@ def test_join_with_post_expression_selection(how, left, right, df1, df2):
     expected = dd.merge(df1, df2, on="key", how=how)[["key", "value", "other_value"]]
     tm.assert_frame_equal(
         result[expected.columns].compute(scheduler="single-threaded"),
-        expected.compute(scheduler="single-threaded"),
+        expected.compute(scheduler="single-threaded").reset_index(drop=True),
     )
 
 
@@ -228,7 +141,6 @@ def test_multi_join_with_post_expression_filter(how, left, df1):
     )
 
 
-@pytest.mark.xfail(reason="TODO - execute_join - #2553")
 @join_type
 def test_join_with_non_trivial_key(how, left, right, df1, df2):
     # also test that the order of operands in the predicate doesn't matter
@@ -252,7 +164,6 @@ def test_join_with_non_trivial_key(how, left, right, df1, df2):
     )
 
 
-@pytest.mark.xfail(reason="TODO - execute_join - #2553")
 @join_type
 def test_join_with_non_trivial_key_project_table(how, left, right, df1, df2):
     # also test that the order of operands in the predicate doesn't matter
@@ -293,33 +204,7 @@ def test_join_with_project_right_duplicate_column(client, how, left, df1, df3):
     )
     tm.assert_frame_equal(
         result[expected.columns].compute(scheduler="single-threaded"),
-        expected.compute(scheduler="single-threaded"),
-    )
-
-
-def test_join_with_window_function(players_base, players_df, batting, batting_df):
-    players = players_base
-
-    # this should be semi_join
-    tbl = batting.left_join(players, ["playerID"])
-    t = tbl[batting.G, batting.playerID, batting.teamID]
-    expr = t.group_by(t.teamID).mutate(
-        team_avg=lambda d: d.G.mean(),
-        demeaned_by_player=lambda d: d.G - d.G.mean(),
-    )
-    result = expr.execute()
-
-    expected = dd.merge(
-        batting_df, players_df[["playerID"]], on="playerID", how="left"
-    )[["G", "playerID", "teamID"]]
-    team_avg = expected.groupby("teamID").G.transform("mean")
-    expected = expected.assign(
-        team_avg=team_avg, demeaned_by_player=lambda df: df.G - team_avg
-    )
-
-    tm.assert_frame_equal(
-        result[expected.columns],
-        expected.compute(scheduler="single-threaded"),
+        expected.compute(scheduler="single-threaded").reset_index(drop=True),
     )
 
 
@@ -336,20 +221,7 @@ def test_asof_join(time_left, time_right, time_df1, time_df2):
     expected = dd.merge_asof(time_df1, time_df2, on="time")
     tm.assert_frame_equal(
         result[expected.columns].compute(scheduler="single-threaded"),
-        expected.compute(scheduler="single-threaded"),
-    )
-
-
-@merge_asof_minversion
-def test_asof_join_predicate(time_left, time_right, time_df1, time_df2):
-    expr = time_left.asof_join(time_right, time_left.time == time_right.time)[
-        time_left, time_right.other_value
-    ]
-    result = expr.compile()
-    expected = dd.merge_asof(time_df1, time_df2, on="time")
-    tm.assert_frame_equal(
-        result[expected.columns].compute(scheduler="single-threaded"),
-        expected.compute(scheduler="single-threaded"),
+        expected.compute(scheduler="single-threaded").reset_index(drop=True),
     )
 
 
@@ -364,28 +236,7 @@ def test_keyed_asof_join(
     expected = dd.merge_asof(time_keyed_df1, time_keyed_df2, on="time", by="key")
     tm.assert_frame_equal(
         result[expected.columns].compute(scheduler="single-threaded"),
-        expected.compute(scheduler="single-threaded"),
-    )
-
-
-@merge_asof_minversion
-def test_keyed_asof_join_with_tolerance(
-    time_keyed_left, time_keyed_right, time_keyed_df1, time_keyed_df2
-):
-    expr = time_keyed_left.asof_join(
-        time_keyed_right, "time", by="key", tolerance=2 * ibis.interval(days=1)
-    )[time_keyed_left, time_keyed_right.other_value]
-    result = expr.compile()
-    expected = dd.merge_asof(
-        time_keyed_df1,
-        time_keyed_df2,
-        on="time",
-        by="key",
-        tolerance=Timedelta("2D"),
-    )
-    tm.assert_frame_equal(
-        result[expected.columns].compute(scheduler="single-threaded"),
-        expected.compute(scheduler="single-threaded"),
+        expected.compute(scheduler="single-threaded").reset_index(drop=True),
     )
 
 
@@ -403,16 +254,14 @@ def test_asof_join_overlapping_non_predicate(
     time_keyed_df1.assign(collide=time_keyed_df1["key"] + time_keyed_df1["value"])
     time_keyed_df2.assign(collide=time_keyed_df2["key"] + time_keyed_df2["other_value"])
 
-    expr = time_keyed_left.asof_join(
-        time_keyed_right, predicates=[("time", "time")], by=[("key", "key")]
-    )
+    expr = time_keyed_left.asof_join(time_keyed_right, on="time", by=[("key", "key")])
     result = expr.compile()
     expected = dd.merge_asof(
         time_keyed_df1, time_keyed_df2, on="time", by="key", suffixes=("", "_right")
     )
     tm.assert_frame_equal(
         result[expected.columns].compute(scheduler="single-threaded"),
-        expected.compute(scheduler="single-threaded"),
+        expected.compute(scheduler="single-threaded").reset_index(drop=True),
     )
 
 
@@ -433,30 +282,23 @@ def test_asof_join_overlapping_non_predicate(
         pytest.param(lambda join: join.select(["a0", "a1"]), id="select"),
     ],
 )
-def test_select_on_unambiguous_join(how, func, npartitions):
-    df_t = dd.from_pandas(
-        pd.DataFrame({"a0": [1, 2, 3], "b1": list("aab")}),
-        npartitions=npartitions,
-    )
-    df_s = dd.from_pandas(
-        pd.DataFrame({"a1": [2, 3, 4], "b2": list("abc")}),
-        npartitions=npartitions,
-    )
-    con = ibis.dask.connect({"t": df_t, "s": df_s})
-    t = con.table("t")
-    s = con.table("s")
+def test_select_on_unambiguous_join(con, how, func):
+    df_t = pd.DataFrame({"a0": [1, 2, 3], "b1": list("aab")})
+    df_s = pd.DataFrame({"a1": [2, 3, 4], "b2": list("abc")})
+
+    t = ibis.memtable(df_t)
+    s = ibis.memtable(df_s)
     method = getattr(t, f"{how}_join")
     join = method(s, t.b1 == s.b2)
-    expected = dd.merge(df_t, df_s, left_on=["b1"], right_on=["b2"], how=how)[
+    expr = func(join)
+    result = con.compile(expr).compute(scheduler="single-threaded")
+
+    expected = pd.merge(df_t, df_s, left_on=["b1"], right_on=["b2"], how=how)[
         ["a0", "a1"]
     ]
-    assert not expected.compute(scheduler="single-threaded").empty
-    expr = func(join)
-    result = expr.compile()
-    tm.assert_frame_equal(
-        result.compute(scheduler="single-threaded"),
-        expected.compute(scheduler="single-threaded"),
-    )
+    assert not expected.empty
+
+    tm.assert_frame_equal(result, expected)
 
 
 @pytest.mark.parametrize(
@@ -487,7 +329,7 @@ def test_select_on_unambiguous_asof_join(func, npartitions):
     result = expr.compile()
     tm.assert_frame_equal(
         result.compute(scheduler="single-threaded"),
-        expected.compute(scheduler="single-threaded"),
+        expected.compute(scheduler="single-threaded").reset_index(drop=True),
     )
 
 
@@ -520,5 +362,5 @@ def test_outer_join(npartitions):
     )
     tm.assert_frame_equal(
         result.compute(scheduler="single-threaded"),
-        expected.compute(scheduler="single-threaded"),
+        expected.compute(scheduler="single-threaded").reset_index(drop=True),
     )

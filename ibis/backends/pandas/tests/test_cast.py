@@ -8,6 +8,7 @@ import pytest
 
 import ibis
 import ibis.expr.datatypes as dt
+from ibis.backends.conftest import is_older_than
 from ibis.backends.pandas.tests.conftest import TestConf as tm
 
 TIMESTAMP = "2022-03-13 06:59:10.467417"
@@ -67,7 +68,13 @@ def test_cast_array(t, from_, to, expected):
 @pytest.mark.parametrize(
     ("to", "expected"),
     [
-        ("string", "object"),
+        pytest.param(
+            "string",
+            "object",
+            marks=pytest.mark.skipif(
+                is_older_than("pandas", "2.0.0"), reason="raises a NotImplementError"
+            ),
+        ),
         ("int64", "int64"),
         ("double", "float64"),
         (
@@ -93,7 +100,13 @@ def test_cast_timestamp_column(t, df, column, to, expected):
 @pytest.mark.parametrize(
     ("to", "expected"),
     [
-        ("string", str),
+        pytest.param(
+            "string",
+            str,
+            marks=pytest.mark.skipif(
+                is_older_than("pandas", "2.0.0"), reason="raises a NotImplementError"
+            ),
+        ),
         ("int64", lambda x: pd.Timestamp(x).value // int(1e9)),
         ("double", lambda x: float(pd.Timestamp(x).value // int(1e9))),
         (
@@ -113,7 +126,13 @@ def test_cast_timestamp_scalar_naive(client, to, expected):
 @pytest.mark.parametrize(
     ("to", "expected"),
     [
-        ("string", str),
+        pytest.param(
+            "string",
+            str,
+            marks=pytest.mark.skipif(
+                is_older_than("pandas", "2.0.0"), reason="raises a NotImplementError"
+            ),
+        ),
         ("int64", lambda x: pd.Timestamp(x).value // int(1e9)),
         ("double", lambda x: float(pd.Timestamp(x).value // int(1e9))),
         (

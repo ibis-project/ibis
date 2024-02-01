@@ -6,6 +6,7 @@ import pandas.testing as tm
 import pytest
 
 import ibis
+from ibis.backends.conftest import is_older_than
 
 # SEMI and ANTI are checked in backend tests
 mutating_join_type = pytest.mark.parametrize(
@@ -51,7 +52,20 @@ def test_cross_join_project_left_table(left, right, df1, df2):
     tm.assert_frame_equal(result[expected.columns], expected)
 
 
-@mutating_join_type
+@pytest.mark.parametrize(
+    "how",
+    [
+        pytest.param(
+            "inner",
+            marks=pytest.mark.xfail(
+                condition=is_older_than("pandas", "2.0.0"), reason="different indices"
+            ),
+        ),
+        "left",
+        "right",
+        "outer",
+    ],
+)
 def test_join_with_multiple_predicates(how, left, right, df1, df2):
     expr = left.join(right, [left.key == right.key, left.key2 == right.key3], how=how)[
         left, right.key3, right.other_value
@@ -80,7 +94,20 @@ def test_join_with_multiple_predicates(how, left, right, df1, df2):
     tm.assert_frame_equal(result, expected)
 
 
-@mutating_join_type
+@pytest.mark.parametrize(
+    "how",
+    [
+        pytest.param(
+            "inner",
+            marks=pytest.mark.xfail(
+                condition=is_older_than("pandas", "2.0.0"), reason="different indices"
+            ),
+        ),
+        "left",
+        "right",
+        "outer",
+    ],
+)
 def test_join_with_multiple_predicates_written_as_one(how, left, right, df1, df2):
     predicate = (left.key == right.key) & (left.key2 == right.key3)
     expr = left.join(right, predicate, how=how)[left, right.key3, right.other_value]
