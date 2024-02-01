@@ -1048,11 +1048,6 @@ def test_quantile(
                     raises=(ValueError, AttributeError),
                     reason="ClickHouse only implements `sample` correlation coefficient",
                 ),
-                pytest.mark.notyet(
-                    ["pyspark"],
-                    raises=ValueError,
-                    reason="PySpark only implements sample correlation",
-                ),
                 pytest.mark.notimpl(
                     ["risingwave"],
                     raises=PsycoPg2InternalError,
@@ -1136,11 +1131,6 @@ def test_quantile(
                     ["clickhouse"],
                     raises=ValueError,
                     reason="ClickHouse only implements `sample` correlation coefficient",
-                ),
-                pytest.mark.notyet(
-                    ["pyspark"],
-                    raises=ValueError,
-                    reason="PySpark only implements sample correlation",
                 ),
                 pytest.mark.notimpl(
                     ["risingwave"],
