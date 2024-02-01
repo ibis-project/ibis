@@ -348,7 +348,7 @@ GitHub](https://github.com/ibis-project/ibis/issues/new/choose).
 ### Logo and website design
 
 We will likely engage an external design firm to help us redesign the logo
-(initially created by Tim Swast, thanks Tim! it has served us well!) and website
+(initially created by Tim Swast, thanks Tim! It has served us well!) and website
 theme. We aim to keep the website simple and focused on documentation that helps
 users, but want to deviate from the default themes in Quarto to make Ibis stand
 out.
