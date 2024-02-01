@@ -30,7 +30,7 @@ the creator of pandas, as a pandas-like interface to Apache Impala. It received
 improvements and support over the years, but really took off under the
 stewardship of [Phillip Cloud](https://github.com/cpcloud) and the [current Ibis
 team at Voltron Data](#who-are-the-core-contributors). It now supports 20+
-backends (including Apache Impala!) and is improving rapidly. It's never been a
+backends and is improving rapidly. It's never been a
 better time to get involved with Ibis.
 
 You can see the inflection point in the number of commits to the repository in
