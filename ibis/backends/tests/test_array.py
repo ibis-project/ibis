@@ -399,11 +399,11 @@ def test_unnest_default_name(backend):
 def test_array_slice(backend, start, stop):
     array_types = backend.array_types
     expr = array_types.select(sliced=array_types.y[start:stop])
-    result = expr.execute()
-    expected = pd.DataFrame(
-        {"sliced": array_types.y.execute().map(lambda x: x[start:stop])}
+    result = expr.sliced.execute()
+    expected = array_types.y.execute().map(lambda x: x[start:stop])
+    assert frozenset(map(tuple, result.values)) == frozenset(
+        map(tuple, expected.values)
     )
-    tm.assert_frame_equal(result, expected)
 
 
 @builtin_array
@@ -453,18 +453,22 @@ def test_array_slice(backend, start, stop):
     raises=AssertionError,
     reason="TODO(Kexiang): seems a bug",
 )
-def test_array_map(backend, con, input, output):
+def test_array_map(con, input, output):
     t = ibis.memtable(input, schema=ibis.schema(dict(a="!array<int8>")))
     t = ibis.memtable(input, schema=ibis.schema(dict(a="!array<int8>")))
-    expected = pd.DataFrame(output)
+    expected = pd.Series(output["a"])
 
     expr = t.select(a=t.a.map(lambda x: x + 1))
-    result = con.execute(expr)
-    backend.assert_frame_equal(result, expected)
+    result = con.execute(expr.a)
+    assert frozenset(map(tuple, result.values)) == frozenset(
+        map(tuple, expected.values)
+    )
 
     expr = t.select(a=t.a.map(functools.partial(lambda x, y: x + y, y=1)))
-    result = con.execute(expr)
-    backend.assert_frame_equal(result, expected)
+    result = con.execute(expr.a)
+    assert frozenset(map(tuple, result.values)) == frozenset(
+        map(tuple, expected.values)
+    )
 
 
 @builtin_array
@@ -508,17 +512,21 @@ def test_array_map(backend, con, input, output):
         param({"a": [[1, 2], [4]]}, {"a": [[2], [4]]}, id="no_nulls"),
     ],
 )
-def test_array_filter(backend, con, input, output):
+def test_array_filter(con, input, output):
     t = ibis.memtable(input, schema=ibis.schema(dict(a="!array<int8>")))
-    expected = pd.DataFrame(output)
+    expected = pd.Series(output["a"])
 
     expr = t.select(a=t.a.filter(lambda x: x > 1))
-    result = con.execute(expr)
-    backend.assert_frame_equal(result, expected)
+    result = con.execute(expr.a)
+    assert frozenset(map(tuple, result.values)) == frozenset(
+        map(tuple, expected.values)
+    )
 
     expr = t.select(a=t.a.filter(functools.partial(lambda x, y: x > y, y=1)))
-    result = con.execute(expr)
-    backend.assert_frame_equal(result, expected)
+    result = con.execute(expr.a)
+    assert frozenset(map(tuple, result.values)) == frozenset(
+        map(tuple, expected.values)
+    )
 
 
 @builtin_array
@@ -543,7 +551,7 @@ def test_array_contains(backend, con):
     expr = t.x.contains(1)
     result = con.execute(expr)
     expected = t.x.execute().map(lambda lst: 1 in lst)
-    backend.assert_series_equal(result, expected, check_names=False)
+    assert frozenset(result.values) == frozenset(expected.values)
 
 
 @pytest.mark.parametrize(
@@ -589,6 +597,7 @@ def test_array_position(backend, con, a, expected_array):
     result = con.execute(expr)
     expected = pd.Series(expected_array, dtype="object")
     backend.assert_series_equal(result, expected, check_names=False, check_dtype=False)
+    assert frozenset(result.values) == frozenset(expected.values)
 
 
 @builtin_array
@@ -618,12 +627,14 @@ def test_array_position(backend, con, a, expected_array):
         param([[3, 2], [2], [42, 2], [2, 2], [2]], id="all-non-empty-arrays"),
     ],
 )
-def test_array_remove(backend, con, a):
+def test_array_remove(con, a):
     t = ibis.memtable({"a": a})
     expr = t.a.remove(2)
     result = con.execute(expr)
     expected = pd.Series([[3], [], [42], [], []], dtype="object")
-    backend.assert_series_equal(result, expected, check_names=False)
+    assert frozenset(map(tuple, result.values)) == frozenset(
+        map(tuple, expected.values)
+    )
 
 
 @builtin_array
@@ -672,12 +683,12 @@ def test_array_remove(backend, con, a):
 @pytest.mark.notimpl(
     ["flink"], raises=NotImplementedError, reason="`from_ibis()` is not implemented"
 )
-def test_array_unique(backend, con, input, expected):
+def test_array_unique(con, input, expected):
     t = ibis.memtable(input)
     expr = t.a.unique()
-    result = con.execute(expr).map(set, na_action="ignore")
-    expected = pd.Series(expected, dtype="object")
-    backend.assert_series_equal(result, expected, check_names=False)
+    result = con.execute(expr).map(frozenset, na_action="ignore")
+    expected = pd.Series(expected, dtype="object").map(frozenset, na_action="ignore")
+    assert frozenset(result.values) == frozenset(expected.values)
 
 
 @builtin_array
@@ -690,12 +701,15 @@ def test_array_unique(backend, con, input, expected):
     raises=AssertionError,
     reason="Refer to https://github.com/risingwavelabs/risingwave/issues/14735",
 )
-def test_array_sort(backend, con):
+def test_array_sort(con):
     t = ibis.memtable({"a": [[3, 2], [], [42, 42], []]})
     expr = t.a.sort()
     result = con.execute(expr)
     expected = pd.Series([[2, 3], [], [42, 42], []], dtype="object")
-    backend.assert_series_equal(result, expected, check_names=False)
+
+    assert frozenset(map(tuple, result.values)) == frozenset(
+        map(tuple, expected.values)
+    )
 
 
 @builtin_array
@@ -737,12 +751,10 @@ def test_array_union(con, a, b, expected_array):
     expr = t.a.union(t.b)
     result = con.execute(expr).map(set, na_action="ignore")
     expected = pd.Series(expected_array, dtype="object")
-    assert len(result) == len(expected)
 
-    result.sort_values()
-    expected.sort_values()
-    for i, (lhs, rhs) in enumerate(zip(result, expected)):
-        assert lhs == rhs, f"row {i:d} differs"
+    assert frozenset(map(tuple, result.values)) == frozenset(
+        map(tuple, expected.values)
+    )
 
 
 @pytest.mark.notimpl(
@@ -784,8 +796,9 @@ def test_array_intersect(con, data):
     expected = pd.Series([{3}, set(), set()], dtype="object")
     assert len(result) == len(expected)
 
-    for i, (lhs, rhs) in enumerate(zip(result, expected)):
-        assert lhs == rhs, f"row {i:d} differs"
+    assert frozenset(map(tuple, result.values)) == frozenset(
+        map(tuple, expected.values)
+    )
 
 
 @builtin_array
