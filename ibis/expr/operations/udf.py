@@ -177,11 +177,14 @@ class scalar(_UDF):
         schema
             The schema in which the builtin function resides.
         signature
-            An optional signature to use for the UDF. If present, should be a
-            tuple containing a tuple of argument types and a return type. For
-            example, a function taking an int and a float and returning a
-            string would be `((int, float), str)`. If not present, the argument
-            types will be derived from the wrapped function.
+            If present, a tuple of the form `((arg0type, arg1type, ...), returntype)`.
+            For example, a function taking an int and a float and returning a
+            string would be `((int, float), str)`. If not present, the signature
+            will be derived from the type annotations of the wrapped function.
+
+            For **builtin** UDFs, only the **return type** annotation is required.
+            See [the user guide](../how-to/extending/builtin.qmd#input-types) for
+            more information.
         kwargs
             Additional backend-specific configuration arguments for the UDF.
 
@@ -250,11 +253,10 @@ class scalar(_UDF):
         schema
             The schema in which to create the UDF.
         signature
-            An optional signature to use for the UDF. If present, should be a
-            tuple containing a tuple of argument types and a return type. For
-            example, a function taking an int and a float and returning a
-            string would be `((int, float), str)`. If not present, the argument
-            types will be derived from the wrapped function.
+            If present, a tuple of the form `((arg0type, arg1type, ...), returntype)`.
+            For example, a function taking an int and a float and returning a
+            string would be `((int, float), str)`. If not present, the signature
+            will be derived from the type annotations of the wrapped function.
         kwargs
             Additional backend-specific configuration arguments for the UDF.
 
@@ -315,11 +317,10 @@ class scalar(_UDF):
         schema
             The schema in which to create the UDF.
         signature
-            An optional signature to use for the UDF. If present, should be a
-            tuple containing a tuple of argument types and a return type. For
-            example, a function taking an int and a float and returning a
-            string would be `((int, float), str)`. If not present, the argument
-            types will be derived from the wrapped function.
+            If present, a tuple of the form `((arg0type, arg1type, ...), returntype)`.
+            For example, a function taking an int and a float and returning a
+            string would be `((int, float), str)`. If not present, the signature
+            will be derived from the type annotations of the wrapped function.
         kwargs
             Additional backend-specific configuration arguments for the UDF.
 
@@ -382,11 +383,10 @@ class scalar(_UDF):
         schema
             The schema in which to create the UDF.
         signature
-            An optional signature to use for the UDF. If present, should be a
-            tuple containing a tuple of argument types and a return type. For
-            example, a function taking an int and a float and returning a
-            string would be `((int, float), str)`. If not present, the argument
-            types will be derived from the wrapped function.
+            If present, a tuple of the form `((arg0type, arg1type, ...), returntype)`.
+            For example, a function taking an int and a float and returning a
+            string would be `((int, float), str)`. If not present, the signature
+            will be derived from the type annotations of the wrapped function.
         kwargs
             Additional backend-specific configuration arguments for the UDF.
 
@@ -454,11 +454,10 @@ class agg(_UDF):
         schema
             The schema in which the builtin function resides.
         signature
-            An optional signature to use for the UDF. If present, should be a
-            tuple containing a tuple of argument types and a return type. For
-            example, a function taking an int and a float and returning a
-            string would be `((int, float), str)`. If not present, the argument
-            types will be derived from the wrapped function.
+            If present, a tuple of the form `((arg0type, arg1type, ...), returntype)`.
+            For example, a function taking an int and a float and returning a
+            string would be `((int, float), str)`. If not present, the signature
+            will be derived from the type annotations of the wrapped function.
         kwargs
             Additional backend-specific configuration arguments for the UDF.
 
