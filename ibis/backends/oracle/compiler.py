@@ -518,7 +518,7 @@ class OracleCompiler(SQLGlotCompiler):
     @visit_node.register(ops.ArgMax)
     @visit_node.register(ops.ArgMin)
     @visit_node.register(ops.ArrayCollect)
-    @visit_node.register(ops.ArrayColumn)
+    @visit_node.register(ops.Array)
     @visit_node.register(ops.ArrayFlatten)
     @visit_node.register(ops.ArrayMap)
     @visit_node.register(ops.ArrayStringJoin)
