@@ -38,7 +38,7 @@ class TestConf(ServiceBackendTest):
     # for numeric and decimal
 
     service_name = "minio"
-    data_volumne = "/bitnami/minio/data"
+    data_volume = "/bitnami/minio/data"
     returned_timestamp_unit = "s"
     supports_structs = True
     supports_map = True
