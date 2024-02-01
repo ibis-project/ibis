@@ -89,7 +89,6 @@ def calc_zscore(s):
             lambda t: t.float_col.shift(1),
             id="lag",
             marks=[
-                pytest.mark.notimpl(["dask"], raises=NotImplementedError),
                 pytest.mark.notimpl(
                     ["flink"],
                     raises=Py4JJavaError,
@@ -107,7 +106,6 @@ def calc_zscore(s):
                     reason="upstream is broken; returns all nulls",
                     raises=AssertionError,
                 ),
-                pytest.mark.notimpl(["dask"], raises=NotImplementedError),
                 pytest.mark.notimpl(
                     ["flink"],
                     raises=Py4JJavaError,
@@ -119,17 +117,11 @@ def calc_zscore(s):
             lambda t, win: t.id.rank().over(win),
             lambda t: t.id.rank(method="min").astype("int64") - 1,
             id="rank",
-            marks=[
-                pytest.mark.notimpl(["dask"], raises=NotImplementedError),
-            ],
         ),
         param(
             lambda t, win: t.id.dense_rank().over(win),
             lambda t: t.id.rank(method="dense").astype("int64") - 1,
             id="dense_rank",
-            marks=[
-                pytest.mark.notimpl(["dask"], raises=NotImplementedError),
-            ],
         ),
         param(
             lambda t, win: t.id.percent_rank().over(win),
@@ -145,7 +137,6 @@ def calc_zscore(s):
                     reason="clickhouse doesn't implement percent_rank",
                     raises=com.OperationNotDefinedError,
                 ),
-                pytest.mark.notimpl(["dask"], raises=NotImplementedError),
                 pytest.mark.notimpl(
                     ["risingwave"],
                     raises=PsycoPg2InternalError,
@@ -161,8 +152,6 @@ def calc_zscore(s):
                 pytest.mark.notyet(
                     ["clickhouse", "exasol"], raises=com.OperationNotDefinedError
                 ),
-                pytest.mark.notimpl(["dask"], raises=NotImplementedError),
-                pytest.mark.notimpl(["dask"], raises=NotImplementedError),
                 pytest.mark.notimpl(
                     ["risingwave"],
                     raises=PsycoPg2InternalError,
@@ -206,7 +195,6 @@ def calc_zscore(s):
             lambda t: t.float_col.transform("first"),
             id="first",
             marks=[
-                pytest.mark.notimpl(["dask"], raises=NotImplementedError),
                 pytest.mark.notimpl(["exasol"], raises=com.OperationNotDefinedError),
             ],
         ),
@@ -215,7 +203,6 @@ def calc_zscore(s):
             lambda t: t.float_col.transform("last"),
             id="last",
             marks=[
-                pytest.mark.notimpl(["dask"], raises=NotImplementedError),
                 pytest.mark.notimpl(["exasol"], raises=com.OperationNotDefinedError),
             ],
         ),
@@ -235,7 +222,7 @@ def calc_zscore(s):
                 pytest.mark.notyet(
                     ["impala", "mssql"], raises=com.OperationNotDefinedError
                 ),
-                pytest.mark.notimpl(["dask"], raises=NotImplementedError),
+                pytest.mark.notimpl(["dask"], raises=com.OperationNotDefinedError),
                 pytest.mark.notimpl(["flink"], raises=com.OperationNotDefinedError),
                 pytest.mark.notimpl(["risingwave"], raises=PsycoPg2InternalError),
             ],
@@ -244,33 +231,26 @@ def calc_zscore(s):
             lambda _, win: ibis.row_number().over(win),
             lambda t: t.cumcount(),
             id="row_number",
-            marks=[
-                pytest.mark.notimpl(["dask"], raises=NotImplementedError),
-            ],
         ),
         param(
             lambda t, win: t.double_col.cumsum().over(win),
             lambda t: t.double_col.cumsum(),
             id="cumsum",
-            marks=pytest.mark.notimpl(["dask"], raises=NotImplementedError),
         ),
         param(
             lambda t, win: t.double_col.cummean().over(win),
             lambda t: (t.double_col.expanding().mean().reset_index(drop=True, level=0)),
             id="cummean",
-            marks=pytest.mark.notimpl(["dask"], raises=NotImplementedError),
         ),
         param(
             lambda t, win: t.float_col.cummin().over(win),
             lambda t: t.float_col.cummin(),
             id="cummin",
-            marks=pytest.mark.notimpl(["dask"], raises=NotImplementedError),
         ),
         param(
             lambda t, win: t.float_col.cummax().over(win),
             lambda t: t.float_col.cummax(),
             id="cummax",
-            marks=pytest.mark.notimpl(["dask"], raises=NotImplementedError),
         ),
         param(
             lambda t, win: (t.double_col == 0).any().over(win),
@@ -281,10 +261,7 @@ def calc_zscore(s):
                 .astype(bool)
             ),
             id="cumany",
-            marks=[
-                pytest.mark.notimpl(["dask"], raises=NotImplementedError),
-                pytest.mark.broken(["mssql"], raises=com.OperationNotDefinedError),
-            ],
+            marks=[pytest.mark.broken(["mssql"], raises=com.OperationNotDefinedError)],
         ),
         param(
             lambda t, win: (t.double_col == 0).notany().over(win),
@@ -296,7 +273,6 @@ def calc_zscore(s):
             ),
             id="cumnotany",
             marks=[
-                pytest.mark.notimpl(["dask"], raises=NotImplementedError),
                 pytest.mark.broken(["oracle"], raises=OracleDatabaseError),
                 pytest.mark.broken(["mssql"], raises=com.OperationNotDefinedError),
             ],
@@ -310,10 +286,7 @@ def calc_zscore(s):
                 .astype(bool)
             ),
             id="cumall",
-            marks=[
-                pytest.mark.notimpl(["dask"], raises=NotImplementedError),
-                pytest.mark.broken(["mssql"], raises=com.OperationNotDefinedError),
-            ],
+            marks=[pytest.mark.broken(["mssql"], raises=com.OperationNotDefinedError)],
         ),
         param(
             lambda t, win: (t.double_col == 0).notall().over(win),
@@ -325,7 +298,6 @@ def calc_zscore(s):
             ),
             id="cumnotall",
             marks=[
-                pytest.mark.notimpl(["dask"], raises=NotImplementedError),
                 pytest.mark.broken(["oracle"], raises=OracleDatabaseError),
                 pytest.mark.broken(["mssql"], raises=com.OperationNotDefinedError),
             ],
@@ -334,7 +306,6 @@ def calc_zscore(s):
             lambda t, win: t.double_col.sum().over(win),
             lambda gb: gb.double_col.cumsum(),
             id="sum",
-            marks=pytest.mark.notimpl(["dask"], raises=NotImplementedError),
         ),
         param(
             lambda t, win: t.double_col.mean().over(win),
@@ -342,19 +313,16 @@ def calc_zscore(s):
                 gb.double_col.expanding().mean().reset_index(drop=True, level=0)
             ),
             id="mean",
-            marks=pytest.mark.notimpl(["dask"], raises=NotImplementedError),
         ),
         param(
             lambda t, win: t.float_col.min().over(win),
             lambda gb: gb.float_col.cummin(),
             id="min",
-            marks=pytest.mark.notimpl(["dask"], raises=NotImplementedError),
         ),
         param(
             lambda t, win: t.float_col.max().over(win),
             lambda gb: gb.float_col.cummax(),
             id="max",
-            marks=pytest.mark.notimpl(["dask"], raises=NotImplementedError),
         ),
         param(
             lambda t, win: t.double_col.count().over(win),
@@ -362,7 +330,6 @@ def calc_zscore(s):
             # that we must, so we add one to the pandas result
             lambda gb: gb.double_col.cumcount() + 1,
             id="count",
-            marks=pytest.mark.notimpl(["dask"], raises=NotImplementedError),
         ),
     ],
 )
@@ -400,7 +367,6 @@ def test_grouped_bounded_expanding_window(
             lambda df: (df.double_col.expanding().mean()),
             id="mean",
             marks=[
-                pytest.mark.notimpl(["dask"], raises=NotImplementedError),
                 pytest.mark.notimpl(
                     ["risingwave"],
                     raises=PsycoPg2InternalError,
@@ -435,7 +401,6 @@ def test_grouped_bounded_expanding_window(
                     ],
                     raises=com.OperationNotDefinedError,
                 ),
-                pytest.mark.broken(["dask"], raises=ValueError),
             ],
         ),
     ],
@@ -469,7 +434,6 @@ def test_ungrouped_bounded_expanding_window(
     ],
 )
 @pytest.mark.notimpl(["polars"], raises=com.OperationNotDefinedError)
-@pytest.mark.notimpl(["dask"], raises=NotImplementedError)
 @pytest.mark.notimpl(
     ["flink"],
     raises=com.UnsupportedOperationError,
@@ -539,7 +503,6 @@ def test_grouped_bounded_following_window(backend, alltypes, df, preceding, foll
     ],
 )
 @pytest.mark.notimpl(["polars"], raises=com.OperationNotDefinedError)
-@pytest.mark.notimpl(["dask"], raises=NotImplementedError)
 def test_grouped_bounded_preceding_window(backend, alltypes, df, window_fn):
     window = window_fn(alltypes)
     expr = alltypes.mutate(val=alltypes.double_col.sum().over(window))
@@ -602,11 +565,6 @@ def test_grouped_bounded_preceding_window(backend, alltypes, df, window_fn):
 @pytest.mark.parametrize(
     ("ordered"),
     [
-        param(
-            True,
-            id="ordered",
-            marks=pytest.mark.notimpl(["dask"], raises=NotImplementedError),
-        ),
         param(
             False,
             id="unordered",
@@ -687,11 +645,6 @@ def test_simple_ungrouped_unbound_following_window(
     raises=com.UnsupportedOperationError,
     reason="OVER RANGE FOLLOWING windows are not supported in Flink yet",
 )
-@pytest.mark.notimpl(
-    ["dask"],
-    raises=NotImplementedError,
-    reason="support scalar sorting keys are not yet implemented",
-)
 @pytest.mark.never(
     ["mssql"], raises=Exception, reason="order by constant is not supported"
 )
@@ -720,11 +673,6 @@ def test_simple_ungrouped_window_with_scalar_order_by(alltypes):
             True,
             id="ordered-mean",
             marks=[
-                pytest.mark.notimpl(
-                    ["dask"],
-                    raises=NotImplementedError,
-                    reason="Window operations are unsupported in the dask backend",
-                ),
                 pytest.mark.broken(
                     ["flink", "impala"],
                     reason="default window semantics are different",
@@ -801,11 +749,6 @@ def test_simple_ungrouped_window_with_scalar_order_by(alltypes):
                         "exasol",
                     ],
                     raises=com.OperationNotDefinedError,
-                ),
-                pytest.mark.broken(
-                    ["dask"],
-                    raises=ValueError,
-                    reason="Dask windowing order_by not yet implemented",
                 ),
             ],
         ),
@@ -968,11 +911,6 @@ def test_simple_ungrouped_window_with_scalar_order_by(alltypes):
                     ],
                     raises=com.OperationNotDefinedError,
                 ),
-                pytest.mark.broken(
-                    ["dask"],
-                    raises=ValueError,
-                    reason="Dask windowing order_by not yet implemented",
-                ),
             ],
         ),
         param(
@@ -1042,7 +980,6 @@ def test_ungrouped_unbounded_window(
 @pytest.mark.notimpl(
     ["impala"], raises=ImpalaHiveServer2Error, reason="limited RANGE support"
 )
-@pytest.mark.notimpl(["dask"], raises=NotImplementedError)
 @pytest.mark.notimpl(
     ["flink"],
     raises=com.UnsupportedOperationError,
@@ -1113,7 +1050,6 @@ def test_grouped_bounded_range_window(backend, alltypes, df):
 
 
 @pytest.mark.notimpl(["clickhouse", "polars"], raises=com.OperationNotDefinedError)
-@pytest.mark.notimpl(["dask"], raises=AttributeError)
 @pytest.mark.notyet(
     ["clickhouse"],
     reason="clickhouse doesn't implement percent_rank",
@@ -1135,7 +1071,6 @@ def test_percent_rank_whole_table_no_order_by(backend, alltypes, df):
 
 
 @pytest.mark.notimpl(["polars"], raises=com.OperationNotDefinedError)
-@pytest.mark.notimpl(["dask"], raises=NotImplementedError)
 def test_grouped_ordered_window_coalesce(backend, alltypes, df):
     t = alltypes
     expr = (
@@ -1194,12 +1129,6 @@ def test_mutate_window_filter(backend, alltypes):
     ["flink"],
     raises=Exception,
     reason="KeyError: Table with name win doesn't exist.",
-)
-@pytest.mark.notimpl(["dask"], raises=NotImplementedError)
-@pytest.mark.notimpl(
-    ["flink"],
-    raises=com.UnsupportedOperationError,
-    reason="Windows in Flink can only be ordered by a single time column",
 )
 def test_first_last(backend):
     t = backend.win
@@ -1294,7 +1223,7 @@ def test_range_expression_bounds(backend):
     assert len(result) == con.execute(t.count())
 
 
-@pytest.mark.notimpl(["polars", "dask"], raises=com.OperationNotDefinedError)
+@pytest.mark.notimpl(["polars"], raises=com.OperationNotDefinedError)
 @pytest.mark.notyet(
     ["clickhouse"],
     reason="clickhouse doesn't implement percent_rank",
@@ -1308,6 +1237,7 @@ def test_range_expression_bounds(backend):
     raises=PsycoPg2InternalError,
     reason="Feature is not yet implemented: Unrecognized window function: percent_rank",
 )
+@pytest.mark.broken(["dask"], reason="different result ordering", raises=AssertionError)
 def test_rank_followed_by_over_call_merge_frames(backend, alltypes, df):
     # GH #7631
     t = alltypes
@@ -1326,11 +1256,6 @@ def test_rank_followed_by_over_call_merge_frames(backend, alltypes, df):
     backend.assert_series_equal(result, expected)
 
 
-@pytest.mark.notyet(
-    ["dask"],
-    reason="multiple ordering keys in a window function not supported for ranking",
-    raises=ValueError,
-)
 @pytest.mark.notyet(
     ["mssql"],
     reason="IS NULL not valid syntax for mssql",

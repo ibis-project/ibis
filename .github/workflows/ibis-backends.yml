@@ -75,10 +75,10 @@ jobs:
             extras:
               - clickhouse
               - examples
-          # - name: dask
-          #   title: Dask
-          #   extras:
-          #     - dask
+          - name: dask
+            title: Dask
+            extras:
+              - dask
           - name: pandas
             title: Pandas
             extras:
@@ -441,13 +441,13 @@ jobs:
           - "3.9"
           - "3.11"
         backend:
-          #         - name: dask
-          #           title: Dask
-          #           deps:
-          #             - "dask[array,dataframe]@2022.9.1"
-          #             - "pandas@1.5.3"
-          #           extras:
-          #             - dask
+          - name: dask
+            title: Dask
+            deps:
+              - "dask[array,dataframe]@2022.9.1"
+              - "pandas@1.5.3"
+            extras:
+              - dask
           - name: postgres
             title: PostgreSQL
             deps:

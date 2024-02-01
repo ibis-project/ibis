@@ -323,6 +323,7 @@ def test_filter(backend, alltypes, sorted_df, predicate_fn, expected_fn):
         "exasol",
         "pandas",
         "pyspark",
+        "dask",
     ]
 )
 @pytest.mark.never(
@@ -524,7 +525,6 @@ def test_select_sort_sort(alltypes):
         param(
             ibis.desc("id"),
             {"by": "id", "ascending": False},
-            marks=pytest.mark.notimpl(["dask"]),
         ),
         param(
             ["id", "int_col"],
@@ -606,11 +606,6 @@ def test_isin_notin(backend, alltypes, df, ibis_op, pandas_op):
     backend.assert_frame_equal(result, expected)
 
 
-@pytest.mark.notyet(
-    ["dask"],
-    reason="dask doesn't support Series as isin/notin argument",
-    raises=NotImplementedError,
-)
 @pytest.mark.notimpl(["druid"])
 @pytest.mark.parametrize(
     ("ibis_op", "pandas_op"),
@@ -1138,7 +1133,7 @@ def test_pivot_wider(backend):
     reason="arbitrary not implemented in the backend",
 )
 @pytest.mark.notimpl(
-    ["dask", "datafusion"],
+    ["datafusion"],
     raises=com.OperationNotDefinedError,
     reason="backend doesn't implement window functions",
 )
@@ -1212,7 +1207,7 @@ def test_distinct_on_keep(backend, on, keep):
     raises=com.OperationNotDefinedError,
 )
 @pytest.mark.notimpl(
-    ["dask", "datafusion"],
+    ["datafusion"],
     raises=com.OperationNotDefinedError,
     reason="backend doesn't implement window functions",
 )
@@ -1832,9 +1827,6 @@ def test_sample_with_seed(backend):
     backend.assert_frame_equal(df1, df2)
 
 
-@pytest.mark.broken(
-    ["dask"], reason="implementation somehow differs from pandas", raises=ValueError
-)
 def test_substitute(backend):
     val = "400"
     t = backend.functional_alltypes

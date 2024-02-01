@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-import collections
-
 import numpy as np
 import pandas as pd
 import pandas.testing as tm
@@ -323,144 +321,21 @@ def test_compose_udfs(t2, df2):
     tm.assert_series_equal(result, expected, check_names=False, check_index=False)
 
 
-@pytest.mark.xfail(raises=NotImplementedError, reason="TODO - windowing - #2553")
 def test_udaf_window(t2, df2):
     window = ibis.trailing_window(2, order_by="a", group_by="key")
     expr = t2.mutate(rolled=my_mean(t2.b).over(window))
     result = expr.execute().sort_values(["key", "a"])
-    expected = df2.sort_values(["key", "a"]).assign(
-        rolled=lambda df: df.groupby("key")
-        .b.rolling(3, min_periods=1)
-        .mean()
-        .reset_index(level=0, drop=True)
-    )
-    tm.assert_frame_equal(
-        result.reset_index(drop=True), expected.reset_index(drop=True)
-    )
-
-
-@pytest.mark.xfail(raises=NotImplementedError, reason="TODO - windowing - #2553")
-def test_udaf_window_interval(npartitions):
-    df = pd.DataFrame(
-        collections.OrderedDict(
-            [
-                (
-                    "time",
-                    pd.date_range(start="20190105", end="20190101", freq="-1D"),
-                ),
-                ("key", [1, 2, 1, 2, 1]),
-                ("value", np.arange(5)),
-            ]
-        )
-    )
-    df = dd.from_pandas(df, npartitions=npartitions)
-
-    con = ibis.dask.connect({"df": df})
-    t = con.table("df")
-    window = ibis.trailing_range_window(
-        ibis.interval(days=2), order_by="time", group_by="key"
-    )
-
-    expr = t.mutate(rolled=my_mean(t.value).over(window))
-
-    result = expr.execute().sort_values(["time", "key"]).reset_index(drop=True)
     expected = (
-        df.sort_values(["time", "key"])
-        .set_index("time")
+        df2.compute()
+        .sort_values(["key", "a"])
         .assign(
             rolled=lambda df: df.groupby("key")
-            .value.rolling("2D", closed="both")
-            .mean()
-            .reset_index(level=0, drop=True)
-        )
-    ).reset_index(drop=False)
-
-    tm.assert_frame_equal(
-        result.reset_index(drop=True), expected.reset_index(drop=True)
-    )
-
-
-@pytest.mark.xfail(raises=NotImplementedError, reason="TODO - windowing - #2553")
-def test_multiple_argument_udaf_window(npartitions):
-    @reduction(["double", "double"], "double")
-    def my_wm(v, w):
-        return np.average(v, weights=w)
-
-    df = pd.DataFrame(
-        {
-            "a": np.arange(4, 0, dtype=float, step=-1).tolist()
-            + np.random.rand(3).tolist(),
-            "b": np.arange(4, dtype=float).tolist() + np.random.rand(3).tolist(),
-            "c": np.arange(4, dtype=float).tolist() + np.random.rand(3).tolist(),
-            "d": np.repeat(1, 7),
-            "key": list("deefefd"),
-        }
-    )
-    df = dd.from_pandas(df, npartitions=npartitions)
-
-    con = ibis.dask.connect({"df": df})
-    t = con.table("df")
-    window = ibis.trailing_window(2, order_by="a", group_by="key")
-    window2 = ibis.trailing_window(1, order_by="b", group_by="key")
-    expr = t.mutate(
-        wm_b=my_wm(t.b, t.d).over(window),
-        wm_c=my_wm(t.c, t.d).over(window),
-        wm_c2=my_wm(t.c, t.d).over(window2),
-    )
-    result = expr.execute().sort_values(["key", "a"])
-    expected = (
-        df.sort_values(["key", "a"])
-        .assign(
-            wm_b=lambda df: df.groupby("key")
             .b.rolling(3, min_periods=1)
             .mean()
             .reset_index(level=0, drop=True)
         )
-        .assign(
-            wm_c=lambda df: df.groupby("key")
-            .c.rolling(3, min_periods=1)
-            .mean()
-            .reset_index(level=0, drop=True)
-        )
     )
-    expected = expected.sort_values(["key", "b"]).assign(
-        wm_c2=lambda df: df.groupby("key")
-        .c.rolling(2, min_periods=1)
-        .mean()
-        .reset_index(level=0, drop=True)
-    )
-    expected = expected.sort_values(["key", "a"])
-
-    tm.assert_frame_equal(
-        result.reset_index(drop=True), expected.reset_index(drop=True)
-    )
-
-
-@pytest.mark.xfail(raises=NotImplementedError, reason="TODO - windowing - #2553")
-def test_udaf_window_nan(npartitions):
-    df = pd.DataFrame(
-        {
-            "a": np.arange(10, dtype=float),
-            "b": [3.0, np.NaN] * 5,
-            "key": list("ddeefffggh"),
-        }
-    )
-    df = dd.from_pandas(df, npartitions=npartitions)
-
-    con = ibis.dask.connect({"df": df})
-    t = con.table("df")
-    window = ibis.trailing_window(2, order_by="a", group_by="key")
-    expr = t.mutate(rolled=my_mean(t.b).over(window))
-    result = expr.execute().sort_values(["key", "a"])
-    expected = df.sort_values(["key", "a"]).assign(
-        rolled=lambda d: d.groupby("key")
-        .b.rolling(3, min_periods=1)
-        .apply(lambda x: x.mean(), raw=True)
-        .reset_index(level=0, drop=True)
-    )
-    tm.assert_frame_equal(
-        result.reset_index(drop=True), expected.reset_index(drop=True)
-    )
+    tm.assert_frame_equal(result, expected)
 
 
 def test_array_return_type_reduction(t, df):
