@@ -1338,7 +1338,6 @@ def test_hexdigest(backend, alltypes):
         "pandas",
         "dask",
         "bigquery",
-        "mssql",
         "oracle",
         "pyspark",
         "snowflake",
