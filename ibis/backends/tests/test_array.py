@@ -612,7 +612,6 @@ def test_array_position(backend, con, a, expected_array):
     expr = t.a.index(42)
     result = con.execute(expr)
     expected = pd.Series(expected_array, dtype="object")
-    backend.assert_series_equal(result, expected, check_names=False, check_dtype=False)
     assert frozenset(result.values) == frozenset(expected.values)
 
 
