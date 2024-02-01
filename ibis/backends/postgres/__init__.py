@@ -43,7 +43,7 @@ def _verify_source_line(func_name: str, line: str):
 
 
 class Backend(SQLGlotBackend):
-    name = "Postgres"
+    name = "postgres"
     dialect = "postgres"
     compiler = PostgresCompiler()
     supports_python_udfs = True
