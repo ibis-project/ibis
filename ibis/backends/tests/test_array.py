@@ -357,11 +357,6 @@ def test_unnest_no_nulls(backend):
 @builtin_array
 @pytest.mark.notimpl("dask", raises=ValueError)
 @pytest.mark.notimpl(["datafusion"], raises=com.OperationNotDefinedError)
-@pytest.mark.notimpl(
-    ["risingwave"],
-    raises=AssertionError,
-    reason="ValueError: Do not nest ARRAY types; ARRAY(basetype) handles multi-dimensional arrays of basetype",
-)
 def test_unnest_default_name(backend):
     array_types = backend.array_types
     df = array_types.execute()
