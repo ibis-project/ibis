@@ -77,7 +77,7 @@ jobs:
           name: conda-lock-files-${{ github.run_attempt }}
           path: ci/conda-lock
 
-      - uses: peter-evans/create-pull-request@v5
+      - uses: peter-evans/create-pull-request@v6
         id: create_pr
         with:
           token: ${{ steps.generate_pr_token.outputs.token }}
