@@ -8,9 +8,9 @@ import pandas as pd
 import pandas.testing as tm
 import pytest
 import pytz
+import sqlalchemy as sa
 import toolz
 from pytest import param
-import sqlalchemy as sa
 
 import ibis
 import ibis.common.exceptions as com
@@ -43,7 +43,15 @@ pytestmark = [
             AssertionError,
         ),
     ),
-    pytest.mark.never(["mysql"], reason="No array support", raises=(com.UnsupportedBackendType, com.OperationNotDefinedError, MySQLOperationalError)),
+    pytest.mark.never(
+        ["mysql"],
+        reason="No array support",
+        raises=(
+            com.UnsupportedBackendType,
+            com.OperationNotDefinedError,
+            MySQLOperationalError,
+        ),
+    ),
     pytest.mark.notyet(
         ["impala"],
         reason="No array support",
@@ -1115,10 +1123,10 @@ def test_array_map_with_conflicting_names(backend, con):
         "sqlite",
         "dask",
         "pandas",
+        "sqlite",
     ],
     raises=com.OperationNotDefinedError,
 )
-@pytest.mark.notimpl(["sqlite"], raises=com.UnsupportedBackendType)
 def test_complex_array_map(con):
     def upper(token):
         return token.upper()
@@ -1301,6 +1309,7 @@ def test_repr_timestamp_array(con, monkeypatch):
 
     expr = ibis.array(pd.date_range("2010-01-01", "2010-01-03", freq="D").tolist())
     assert "No translation rule" not in repr(expr)
+    assert "OperationNotDefinedError" not in repr(expr)
 
 
 @pytest.mark.notyet(
