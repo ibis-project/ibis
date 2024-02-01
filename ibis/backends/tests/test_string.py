@@ -512,11 +512,8 @@ def uses_java_re(t):
             ),
             lambda t: t.int_col == 1,
             id="startswith",
-            # pyspark doesn't support `cases` yet
             marks=[
-                pytest.mark.notimpl(
-                    ["dask", "mssql"], raises=com.OperationNotDefinedError
-                ),
+                pytest.mark.notimpl(["mssql"], raises=com.OperationNotDefinedError),
             ],
         ),
         param(
@@ -525,10 +522,9 @@ def uses_java_re(t):
             ),
             lambda t: t.int_col == 1,
             id="endswith",
-            # pyspark doesn't support `cases` yet
             marks=[
                 pytest.mark.notimpl(
-                    ["dask", "datafusion", "mssql"], raises=com.OperationNotDefinedError
+                    ["datafusion", "mssql"], raises=com.OperationNotDefinedError
                 ),
             ],
         ),
@@ -537,9 +533,7 @@ def uses_java_re(t):
             lambda t: t.date_string_col.str.startswith("2010-01"),
             id="startswith-simple",
             marks=[
-                pytest.mark.notimpl(
-                    ["dask", "mssql"], raises=com.OperationNotDefinedError
-                ),
+                pytest.mark.notimpl(["mssql"], raises=com.OperationNotDefinedError),
             ],
         ),
         param(
@@ -548,7 +542,7 @@ def uses_java_re(t):
             id="endswith-simple",
             marks=[
                 pytest.mark.notimpl(
-                    ["dask", "datafusion", "mssql"], raises=com.OperationNotDefinedError
+                    ["datafusion", "mssql"], raises=com.OperationNotDefinedError
                 ),
             ],
         ),
@@ -626,11 +620,6 @@ def uses_java_re(t):
                         "Polars does not support columnar argument Subtract(StringLength(date_string_col), 1)"
                     ),
                 ),
-                pytest.mark.broken(
-                    ["dask"],
-                    reason="'Series' object has no attribute 'items'",
-                    raises=AttributeError,
-                ),
                 pytest.mark.broken(["druid"], raises=PyDruidProgrammingError),
                 pytest.mark.xfail_version(datafusion=["datafusion==35"]),
             ],
@@ -648,11 +637,6 @@ def uses_java_re(t):
                         "Polars does not support columnar argument Subtract(StringLength(date_string_col), 1)"
                     ),
                 ),
-                pytest.mark.broken(
-                    ["dask"],
-                    reason="'Series' object has no attribute 'items'",
-                    raises=AttributeError,
-                ),
                 pytest.mark.broken(["druid"], raises=PyDruidProgrammingError),
             ],
         ),
@@ -669,11 +653,6 @@ def uses_java_re(t):
                         "Polars does not support columnar argument "
                         "Subtract(StringLength(date_string_col), 0)"
                     ),
-                ),
-                pytest.mark.broken(
-                    ["dask"],
-                    reason="'Series' object has no attribute 'items'",
-                    raises=AttributeError,
                 ),
                 pytest.mark.broken(["druid"], raises=PyDruidProgrammingError),
             ],
@@ -693,11 +672,6 @@ def uses_java_re(t):
                         "Polars does not support columnar argument Subtract(StringLength(date_string_col), 1)"
                     ),
                 ),
-                pytest.mark.broken(
-                    ["dask"],
-                    reason="'Series' object has no attribute 'items'",
-                    raises=AttributeError,
-                ),
                 pytest.mark.broken(["druid"], raises=PyDruidProgrammingError),
             ],
         ),
@@ -707,7 +681,6 @@ def uses_java_re(t):
             id="split",
             marks=pytest.mark.notimpl(
                 [
-                    "dask",
                     "impala",
                     "mysql",
                     "sqlite",
@@ -970,7 +943,7 @@ def test_no_conditional_percent_escape(con, expr):
     assert con.execute(expr) == "%"
 
 
-@pytest.mark.notimpl(["dask", "mssql", "exasol"], raises=com.OperationNotDefinedError)
+@pytest.mark.notimpl(["mssql", "exasol"], raises=com.OperationNotDefinedError)
 def test_non_match_regex_search_is_false(con):
     expr = ibis.literal("foo").re_search("bar")
     result = con.execute(expr)

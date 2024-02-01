@@ -5,7 +5,6 @@ import operator
 import numpy as np
 import pandas as pd
 import pytest
-from pytest import param
 
 import ibis
 
@@ -19,21 +18,17 @@ def test_array_length(t):
         t.array_of_int64.length().name("array_of_int64_length"),
         t.array_of_strings.length().name("array_of_strings_length"),
     )
-    result = expr.compile()
-    expected = dd.from_pandas(
-        pd.DataFrame(
-            {
-                "array_of_float64_length": [2, 1, 0],
-                "array_of_int64_length": [2, 0, 1],
-                "array_of_strings_length": [2, 0, 1],
-            }
-        ),
-        npartitions=1,
+    result = expr.execute()
+    expected = pd.DataFrame(
+        {
+            "array_of_float64_length": [2, 1, 0],
+            "array_of_int64_length": [2, 0, 1],
+            "array_of_strings_length": [2, 0, 1],
+        }
     )
 
     tm.assert_frame_equal(
-        result.compute().reset_index(drop=True),
-        expected.compute().reset_index(drop=True),
+        result.reset_index(drop=True), expected.reset_index(drop=True)
     )
 
 
@@ -61,7 +56,6 @@ def test_array_collect(t, df):
     )
 
 
-@pytest.mark.notimpl(["dask"], reason="windowing - #2553")
 def test_array_collect_rolling_partitioned(t, df):
     window = ibis.trailing_window(1, order_by=t.plain_int64)
     colexpr = t.plain_float64.collect().over(window)
@@ -137,25 +131,22 @@ def test_array_slice_scalar(client, start, stop):
 
 @pytest.mark.parametrize(
     "index",
-    [param(1, marks=pytest.mark.xfail_version(dask=["pandas>=2"])), 3, 4, 11, -11],
+    [1, 3, 4, 11, -11],
 )
 def test_array_index(t, df, index):
     expr = t[t.array_of_float64[index].name("indexed")]
-    result = expr.compile()
-    expected = dd.from_pandas(
-        pd.DataFrame(
-            {
-                "indexed": df.array_of_float64.apply(
-                    lambda x: x[index] if -len(x) <= index < len(x) else None,
-                    meta=("array_of_float64", "object"),
-                )
-            }
-        ),
-        npartitions=1,
+    result = expr.execute()
+    expected = pd.DataFrame(
+        {
+            "indexed": df.array_of_float64.apply(
+                lambda x: x[index] if -len(x) <= index < len(x) else np.nan,
+                meta=("array_of_float64", "object"),
+            )
+        }
     )
+
     tm.assert_frame_equal(
-        result.compute().reset_index(drop=True),
-        expected.compute().reset_index(drop=True),
+        result.reset_index(drop=True), expected.reset_index(drop=True)
     )
 
 
@@ -169,7 +160,6 @@ def test_array_index_scalar(client, index):
     assert result == expected
 
 
-@pytest.mark.notimpl(["dask"], reason="arrays - #2553")
 @pytest.mark.parametrize("n", [1, 3, 4, 7, -2])  # negative returns empty list
 @pytest.mark.parametrize("mul", [lambda x, n: x * n, lambda x, n: n * x])
 def test_array_repeat(t, df, n, mul):
