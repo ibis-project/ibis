@@ -1,7 +1,7 @@
 ---
 title: "Ibis project 2024 roadmap"
 author: "Cody"
-date: "2024-02-05"
+date: "2024-02-10"
 image: commits.png
 categories:
     - blog
