@@ -16,7 +16,6 @@ from __future__ import annotations
 import pytest
 
 import ibis
-import ibis.common.exceptions as com
 from ibis.tests.expr.mocks import MockBackend
 
 
@@ -80,24 +79,3 @@ def functional_alltypes(con):
 @pytest.fixture
 def lineitem(con):
     return con.table("tpch_lineitem")
-
-
-@pytest.hookimpl(hookwrapper=True)
-def pytest_pyfunc_call(pyfuncitem):
-    """Dynamically add an xfail marker for specific backends."""
-    outcome = yield
-    try:
-        outcome.get_result()
-    except (
-        com.OperationNotDefinedError,
-        com.UnsupportedOperationError,
-        com.UnsupportedBackendType,
-        NotImplementedError,
-    ) as e:
-        markers = list(pyfuncitem.iter_markers(name="xfail_unsupported"))
-        if not markers:
-            raise
-        assert (
-            len(markers) == 1
-        ), f"More than one xfail_unsupported marker found on test {pyfuncitem}"
-        pytest.xfail(reason=repr(e))
