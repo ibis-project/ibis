@@ -44,7 +44,7 @@ def main():
     with Path(ibis.__file__).parents[1].joinpath(
         "docs", "backends", "raw_support_matrix.csv"
     ).open(mode="w") as f:
-        df.to_csv(f, index_label="FullOperation")
+        df.to_csv(f, index_label="Operation")
 
 
 if __name__ == "__main__":

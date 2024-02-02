@@ -1,18 +1,46 @@
 ---
+title: "Operation support matrix"
+format: dashboard
 hide:
   - toc
 ---
 
-# Operation support matrix
+```{python}
+#| echo: false
+!python ../gen_matrix.py
+```
 
-We provide Ibis's operation support matrix as
-a [Streamlit](https://streamlit.io/) app that shows supported operations for
-each backend. Ibis defines a common API for analytics and data transformation
-code that is transpiled to native code for each backend. Due to differences in
-SQL dialects and upstream support for different operations in different
-backends, support for the full breadth of the Ibis API varies.
+```{python}
+#| echo: false
+import pandas as pd
 
-You can use this page to see which operations are supported on each backend.
+support_matrix = pd.read_csv("./backends/raw_support_matrix.csv")
+support_matrix = support_matrix.assign(
+    Category=support_matrix.Operation.map(lambda op: op.rsplit(".", 1)[0].rsplit(".", 1)[-1]),
+    Operation=support_matrix.Operation.map(lambda op: op.rsplit(".", 1)[-1]),
+).set_index(["Category", "Operation"])
+all_visible_ops_count = len(support_matrix)
+coverage = pd.Index(
+    support_matrix.sum()
+    .map(lambda n: f"{n} ({round(100 * n / all_visible_ops_count)}%)")
+    .T
+)
+support_matrix.columns = pd.MultiIndex.from_tuples(
+    list(zip(support_matrix.columns, coverage)), names=("Backend", "API coverage")
+)
+support_matrix = support_matrix.replace({True: "✔", False: "🚫"})
+```
+
+## {height=25%}
+
+::: {.card title="Welcome to the operation support matrix!"}
+
+This is a [Quarto dashboard](https://quarto.org/docs/dashboards/) that shows
+the operations each backend supports.
+
+Due to differences in SQL dialects and upstream support for different
+operations in different backends, support for the full breadth of the Ibis API
+varies.
 
 ::: {.callout-tip}
 Backends with low coverage are good places to start contributing!
@@ -20,38 +48,44 @@ Backends with low coverage are good places to start contributing!
 Each backend implements operations differently, but this is usually very similar to other backends. If you want to start contributing to ibis, it's a good idea to start by adding missing operations to backends that have low operation coverage.
 :::
 
-<div class="streamlit-app">
-  <iframe class="streamlit-app-inner" width=760 height=600 src="https://ibis-project.streamlit.app/?embedded=true"></iframe>
-</div>
-
-::: {.callout-note}
-This app is built using [`streamlit`](https://streamlit.io/).
-
-You can develop the app locally by editing `docs/backends/app/backend_info_app.py` and opening a PR with your changes.
-
-Test your changes locally by running
-
-```sh
-$ streamlit run docs/backends/app/backend_info_app.py
-```
-
-The changes will show up in the dev docs when your PR is merged!
 :::
 
-## Raw Data
+### {width=25%}
 
 ```{python}
-#| echo: false
-!python ../gen_matrix.py
+#| content: valuebox
+#| title: "Number of backends"
+import ibis
+
+dict(
+    value=len(ibis.util.backend_entry_points()),
+    color="info",
+    icon="signpost-split-fill",
+)
 ```
 
-You can also download data from the above tables in [CSV format](./backends/raw_support_matrix.csv).
-
-The code used to generate the linked CSV file is below.
+### {width=25%}
 
 ```{python}
-#| echo: false
-#| output: asis
-with open("../gen_matrix.py", mode="r") as f:
-    print(f"```python\n{f.read()}\n```")
+#| content: valuebox
+#| title: "Number of SQL backends"
+import importlib
+from ibis.backends.base.sql import BaseSQLBackend
+
+sql_backends = sum(
+    issubclass(
+        importlib.import_module(f"ibis.backends.{entry_point.name}").Backend,
+        BaseSQLBackend
+    )
+    for entry_point in ibis.util.backend_entry_points()
+)
+dict(value=sql_backends, color="green", icon="database")
+```
+
+## {height=70%}
+
+```{python}
+from itables import show
+
+show(support_matrix, ordering=False, paging=False, buttons=["copy", "excel", "csv"])
 ```
