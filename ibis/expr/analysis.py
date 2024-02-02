@@ -48,6 +48,7 @@ def flatten_predicates(node):
       a int64
       b string
     right: r0.b == 'foo'
+
     """
 
     def predicate(node):

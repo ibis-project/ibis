@@ -77,6 +77,7 @@ class Backend(SQLGlotBackend):
         dsn
             An Oracle Data Source Name.  If provided, overrides all other
             connection arguments except username and password.
+
         """
         # SID: unique name of an INSTANCE running an oracle process (a single, identifiable machine)
         # service name: an ALIAS to one (or many) individual instances that can
@@ -172,6 +173,7 @@ class Backend(SQLGlotBackend):
             A pattern to use for listing tables.
         schema
             The schema to perform the list against.
+
         """
         conditions = [TRUE]
 
@@ -272,6 +274,7 @@ class Backend(SQLGlotBackend):
         overwrite
             If `True`, replace the table if it already exists, otherwise fail
             if the table exists
+
         """
         if obj is None and schema is None:
             raise ValueError("Either `obj` or `schema` must be specified")

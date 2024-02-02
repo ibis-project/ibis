@@ -77,6 +77,7 @@ class SQLGlotBackend(BaseBackend):
         -------
         Table
             Table expression
+
         """
         table_schema = self.get_schema(name, schema=schema, database=database)
         return ops.DatabaseTable(
@@ -218,6 +219,7 @@ class SQLGlotBackend(BaseBackend):
         ----------
         name
             The temporary view to register for clean up.
+
         """
 
     def _load_into_cache(self, name, expr):
@@ -310,6 +312,7 @@ class SQLGlotBackend(BaseBackend):
         -------
         RecordBatchReader
             Collection of pyarrow `RecordBatch`s.
+
         """
         pa = self._import_pyarrow()
 

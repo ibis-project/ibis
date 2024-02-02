@@ -192,6 +192,7 @@ def parse_project_and_dataset(project: str, dataset: str = "") -> tuple[str, str
     >>> data_project, billing_project, _dataset = parse_project_and_dataset("ibis-gbq")
     >>> data_project
     'ibis-gbq'
+
     """
     if dataset.count(".") > 1:
         raise ValueError(
