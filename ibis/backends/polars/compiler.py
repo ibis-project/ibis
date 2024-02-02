@@ -803,7 +803,7 @@ def count_star(op, **kw):
         condition = translate(where, **kw)
         result = condition.sum()
     else:
-        result = pl.count()
+        result = pl.len()
     return result.cast(dtype_to_polars(op.dtype))
 
 
@@ -904,7 +904,7 @@ def timestamp_from_unix(op, **kw):
     if unit == "s":
         arg = arg.cast(pl.Int64) * 1_000
         unit = "ms"
-    return arg.cast(pl.Datetime).dt.with_time_unit(unit)
+    return arg.cast(pl.Int64).cast(pl.Datetime(time_unit=unit))
 
 
 @translate.register(ops.IntervalFromInteger)
