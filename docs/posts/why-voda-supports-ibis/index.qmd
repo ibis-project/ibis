@@ -63,7 +63,7 @@ systems for data analytics. Voltron Data advances open standards (like [Apache
 Arrow](https://arrow.apache.org) and [Substrait](https://substrait.io)) and
 builds software components that embrace these standards for maximum
 interoperability and performance. This includes free and open source software
-like Ibis. 
+like Ibis.
 
 ![Standards](standards.png)
 
