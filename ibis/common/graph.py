@@ -58,6 +58,7 @@ def _flatten_collections(node: Any) -> Iterator[N]:
     >>> assert list(_flatten_collections(a)) == [a]
     >>> assert list(_flatten_collections((c,))) == [c]
     >>> assert list(_flatten_collections([a, b, (c, a)])) == [a, b, c, a]
+
     """
     if isinstance(node, Node):
         yield node
@@ -110,6 +111,7 @@ def _recursive_lookup(obj: Any, dct: dict) -> Any:
     {1: 'A', 2: 'B'}
     >>> _recursive_lookup((a, frozendict({1: c})), dct)
     ('A', {1: MyNode(number=2, ...)})
+
     """
     if isinstance(obj, Node):
         return dct.get(obj, obj)
@@ -134,6 +136,7 @@ def _coerce_finder(obj: FinderLike, context: Optional[dict] = None) -> Finder:
     Returns
     -------
     A callable finder function which can be used to match nodes.
+
     """
     if isinstance(obj, Pattern):
         ctx = context or {}
@@ -166,6 +169,7 @@ def _coerce_replacer(obj: ReplacerLike, context: Optional[dict] = None) -> Repla
     Returns
     -------
     A callable replacer function which can be used to replace nodes.
+
     """
     if isinstance(obj, Pattern):
         ctx = context or {}
@@ -243,6 +247,7 @@ class Node(Hashable):
         Returns
         -------
         A mapping of nodes to their results.
+
         """
         results: dict[Node, Any] = {}
 
@@ -284,6 +289,7 @@ class Node(Hashable):
         -------
         In contrast to `map`, this method returns the result of the root node only since
         the rest of the results are already discarded.
+
         """
         results: dict[Node, Any] = {}
 
@@ -334,6 +340,7 @@ class Node(Hashable):
         -------
         The list of nodes matching the given pattern. The order of the nodes is
         determined by a breadth-first search.
+
         """
         nodes = Graph.from_bfs(self, filter=filter, context=context).nodes()
         finder = _coerce_finder(finder, context)
@@ -358,6 +365,7 @@ class Node(Hashable):
         Returns
         -------
         The list of topmost nodes matching the given pattern.
+
         """
         seen = set()
         queue = deque([self])
@@ -400,6 +408,7 @@ class Node(Hashable):
         Returns
         -------
         The root node of the graph with the replaced nodes.
+
         """
         replacer = _coerce_replacer(replacer, context)
         results = self.map(replacer, filter=filter)
@@ -417,6 +426,7 @@ class Graph(dict[Node, Sequence[Node]]):
     ----------
     mapping : Node or Mapping[Node, Sequence[Node]], default ()
         Either a root node or a mapping of nodes to their children.
+
     """
 
     def __init__(self, mapping=(), /, **kwargs):
@@ -449,6 +459,7 @@ class Graph(dict[Node, Sequence[Node]]):
         Returns
         -------
         A graph constructed from the root node.
+
         """
         if filter is None:
             return bfs(root)
@@ -481,6 +492,7 @@ class Graph(dict[Node, Sequence[Node]]):
         Returns
         -------
         A graph constructed from the root node.
+
         """
         if filter is None:
             return dfs(root)
@@ -504,6 +516,7 @@ class Graph(dict[Node, Sequence[Node]]):
         Returns
         -------
         The inverted graph.
+
         """
         result: dict[Node, list[Node]] = {node: [] for node in self}
         for node, dependencies in self.items():
@@ -522,6 +535,7 @@ class Graph(dict[Node, Sequence[Node]]):
         Returns
         -------
         The topologically sorted graph.
+
         """
         dependents = self.invert()
         in_degree = {k: len(v) for k, v in self.items()}
@@ -561,6 +575,7 @@ def traverse(
         the traversal, and the second is the result if its not `None`.
     node
         The Node expression or a list of expressions.
+
     """
 
     args = reversed(node) if isinstance(node, Sequence) else [node]
@@ -603,6 +618,7 @@ def bfs(root: Node) -> Graph:
     Returns
     -------
     A graph constructed from the root node.
+
     """
     # fast path for the default no filter case, according to benchmarks
     # this is gives a 10% speedup compared to the filtered version
@@ -635,6 +651,7 @@ def bfs_while(root: Node, filter: Finder) -> Graph:
     Returns
     -------
     A graph constructed from the root node.
+
     """
     if not isinstance(root, Node):
         raise TypeError("node must be an instance of ibis.common.graph.Node")
@@ -665,6 +682,7 @@ def dfs(root: Node) -> Graph:
     Returns
     -------
     A graph constructed from the root node.
+
     """
     # fast path for the default no filter case, according to benchmarks
     # this is gives a 10% speedup compared to the filtered version
@@ -697,6 +715,7 @@ def dfs_while(root: Node, filter: Finder) -> Graph:
     Returns
     -------
     A graph constructed from the root node.
+
     """
     if not isinstance(root, Node):
         raise TypeError("node must be an instance of ibis.common.graph.Node")

@@ -51,6 +51,7 @@ class QueryContext:
         -------
         query
             A single query string
+
         """
         return "\n\n".join(queries)
 

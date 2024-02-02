@@ -294,6 +294,7 @@ def parse_sql(sqlstring, catalog, dialect=None):
     Returns
     -------
     expr : ir.Expr
+
     """
     catalog = Catalog(
         {name: ibis.table(schema, name=name) for name, schema in catalog.items()}
@@ -355,6 +356,7 @@ def to_sql(expr: ir.Expr, dialect: str | None = None, **kwargs) -> SQLString:
     -------
     str
         Formatted SQL string
+
     """
     # try to infer from a non-str expression or if not possible fallback to
     # the default pretty dialect for expressions

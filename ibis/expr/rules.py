@@ -37,6 +37,7 @@ def highest_precedence_dtype(nodes):
     -------
     dtype: DataType
       The highest precedence datatype
+
     """
     return dt.highest_precedence(node.dtype for node in nodes)
 
@@ -187,6 +188,7 @@ class ValueOf(Concrete, Pattern):
     ----------
     dtype : DataType | None
         The datatype the constructed Value instance should conform to.
+
     """
 
     dtype: Optional[dt.DataType] = None

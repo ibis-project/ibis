@@ -69,6 +69,7 @@ class AbstractMeta(type):
         Returns
         -------
         The newly created instance of the class. No extra initialization
+
         """
         return cls.__create__(*args, **kwargs)
 

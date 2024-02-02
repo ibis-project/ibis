@@ -214,6 +214,7 @@ class scalar(_UDF):
         >>> con = ibis.connect("duckdb://")
         >>> con.execute(expr)
         1
+
         """
         return _wrap(
             cls._make_wrapper,
@@ -298,6 +299,7 @@ class scalar(_UDF):
         --------
         - [`pandas`](./scalar-udfs.qmd#ibis.expr.operations.udf.scalar.pandas)
         - [`pyarrow`](./scalar-udfs.qmd#ibis.expr.operations.udf.scalar.pyarrow)
+
         """
         return _wrap(
             cls._make_wrapper,
@@ -371,6 +373,7 @@ class scalar(_UDF):
         --------
         - [`python`](./scalar-udfs.qmd#ibis.expr.operations.udf.scalar.python)
         - [`pyarrow`](./scalar-udfs.qmd#ibis.expr.operations.udf.scalar.pyarrow)
+
         """
         return _wrap(
             cls._make_wrapper,
@@ -443,6 +446,7 @@ class scalar(_UDF):
         --------
         - [`python`](./scalar-udfs.qmd#ibis.expr.operations.udf.scalar.python)
         - [`pandas`](./scalar-udfs.qmd#ibis.expr.operations.udf.scalar.pandas)
+
         """
         return _wrap(
             cls._make_wrapper,
@@ -517,6 +521,7 @@ class agg(_UDF):
         >>> expr = favg(t.bill_length_mm)
         >>> expr
         43.9219298245614
+
         """
         return _wrap(
             cls._make_wrapper,

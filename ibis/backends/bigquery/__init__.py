@@ -233,6 +233,7 @@ class Backend(SQLGlotBackend, CanCreateSchema):
         -------
         Table
             An Ibis table expression
+
         """
         return self._read_file(
             path,
@@ -261,6 +262,7 @@ class Backend(SQLGlotBackend, CanCreateSchema):
         -------
         Table
             An Ibis table expression
+
         """
         job_config = bq.LoadJobConfig(
             source_format=bq.SourceFormat.CSV,
@@ -290,6 +292,7 @@ class Backend(SQLGlotBackend, CanCreateSchema):
         -------
         Table
             An Ibis table expression
+
         """
         job_config = bq.LoadJobConfig(
             source_format=bq.SourceFormat.NEWLINE_DELIMITED_JSON,
@@ -377,6 +380,7 @@ class Backend(SQLGlotBackend, CanCreateSchema):
         -------
         Backend
             An instance of the BigQuery backend.
+
         """
         default_project_id = client.project if client is not None else project_id
 
@@ -629,6 +633,7 @@ class Backend(SQLGlotBackend, CanCreateSchema):
         Any
             The output of compilation. The type of this value depends on the
             backend.
+
         """
         self._make_session()
         self._define_udf_translation_rules(expr)
@@ -711,6 +716,7 @@ class Backend(SQLGlotBackend, CanCreateSchema):
         -------
         pd.DataFrame | pd.Series | scalar
             Output from execution
+
         """
         self._run_pre_execute_hooks(expr)
 
@@ -849,6 +855,7 @@ class Backend(SQLGlotBackend, CanCreateSchema):
             The `schema` parameter does **not** refer to the column names and
             types of `table`.
             :::
+
         """
         if database is not None and schema is None:
             raise com.com.IbisInputError(
@@ -927,6 +934,7 @@ class Backend(SQLGlotBackend, CanCreateSchema):
         -------
         Table
             The table that was just created
+
         """
         if obj is None and schema is None:
             raise com.IbisError("One of the `schema` or `obj` parameter is required")
@@ -1233,6 +1241,7 @@ def connect(
     -------
     Backend
         An instance of the BigQuery backend
+
     """
     backend = Backend()
     return backend.connect(

@@ -47,6 +47,7 @@ class BasePandasBackend(BaseBackend):
         >>> import ibis
         >>> ibis.pandas.connect({"t": pd.DataFrame({"a": [1, 2, 3]})})
         <ibis.backends.pandas.Backend at 0x...>
+
         """
         self.dictionary = dictionary or {}
         self.schemas: MutableMapping[str, sch.Schema] = {}
@@ -73,6 +74,7 @@ class BasePandasBackend(BaseBackend):
         -------
         Table
             A table expression
+
         """
         if client is None:
             return self.connect({name: df}).table(name)
@@ -101,6 +103,7 @@ class BasePandasBackend(BaseBackend):
         -------
         ir.Table
             The just-registered table
+
         """
         table_name = table_name or util.gen_name("read_csv")
         df = pd.read_csv(source, **kwargs)
@@ -129,6 +132,7 @@ class BasePandasBackend(BaseBackend):
         -------
         ir.Table
             The just-registered table
+
         """
         table_name = table_name or util.gen_name("read_parquet")
         df = pd.read_parquet(source, **kwargs)

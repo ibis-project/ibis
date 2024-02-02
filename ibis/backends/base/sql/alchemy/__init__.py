@@ -264,6 +264,7 @@ class BaseAlchemyBackend(BaseSQLBackend):
         -------
         Table
             The table that was created.
+
         """
         if obj is None and schema is None:
             raise com.IbisError("The schema or obj parameter is required")
@@ -422,6 +423,7 @@ class BaseAlchemyBackend(BaseSQLBackend):
             Database to drop table from
         force
             Check for existence before dropping
+
         """
         if database == self.current_database:
             # avoid fully qualified name
@@ -461,6 +463,7 @@ class BaseAlchemyBackend(BaseSQLBackend):
         -------
         Schema
             The ibis schema of `name`
+
         """
         return self.database().schema(name)
 
@@ -529,6 +532,7 @@ class BaseAlchemyBackend(BaseSQLBackend):
         -------
         schema
             An ibis schema corresponding to the types of the columns in `table`.
+
         """
         schema = schema if schema is not None else {}
         pairs = []
@@ -624,6 +628,7 @@ class BaseAlchemyBackend(BaseSQLBackend):
         [(1,)]
         >>> cursor.closed
         True
+
         """
         return self.con.connect().execute(
             sa.text(query) if isinstance(query, str) else query
@@ -657,6 +662,7 @@ class BaseAlchemyBackend(BaseSQLBackend):
         -------
         Table
             Table expression
+
         """
         namespace = ops.Namespace(schema=schema, database=database)
 
@@ -707,6 +713,7 @@ class BaseAlchemyBackend(BaseSQLBackend):
             If inserting data from a different database
         ValueError
             If the type of `obj` isn't supported
+
         """
 
         import pandas as pd

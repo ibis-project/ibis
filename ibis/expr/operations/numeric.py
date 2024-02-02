@@ -102,6 +102,7 @@ class Ceil(Unary):
     DecimalValue | IntegerValue
         Decimal values: yield decimal
         Other numeric values: yield integer (int32)
+
     """
 
     arg: SoftNumeric
@@ -123,6 +124,7 @@ class Floor(Unary):
     DecimalValue | IntegerValue
         Decimal values: yield decimal
         Other numeric values: yield integer (int32)
+
     """
 
     arg: SoftNumeric

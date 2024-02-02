@@ -54,6 +54,7 @@ class Backend(SQLGlotBackend, CanCreateDatabase):
         -------
         BaseBackend
             A backend instance
+
         """
 
         url = urlparse(url)
@@ -154,6 +155,7 @@ class Backend(SQLGlotBackend, CanCreateDatabase):
             timestamp_col : timestamp
             year : int32
             month : int32
+
         """
         con = pymysql.connect(
             user=user,
@@ -283,6 +285,7 @@ class Backend(SQLGlotBackend, CanCreateDatabase):
             A pattern to use for listing tables.
         schema
             The schema to perform the list against.
+
         """
         conditions = [TRUE]
 

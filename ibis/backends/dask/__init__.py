@@ -47,6 +47,7 @@ class Backend(BasePandasBackend):
         ...     "s": dd.read_csv("path/to/file.csv"),
         ... }
         >>> ibis.dask.connect(data)
+
         """
         if dictionary is None:
             dictionary = {}
@@ -133,6 +134,7 @@ class Backend(BasePandasBackend):
         -------
         ir.Table
             The just-registered table
+
         """
         table_name = table_name or util.gen_name("read_csv")
         df = dd.read_csv(source, **kwargs)
@@ -161,6 +163,7 @@ class Backend(BasePandasBackend):
         -------
         ir.Table
             The just-registered table
+
         """
         table_name = table_name or util.gen_name("read_parquet")
         df = dd.read_parquet(source, **kwargs)

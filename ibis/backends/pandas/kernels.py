@@ -72,6 +72,7 @@ def _sql_like_to_regex(pattern, escape):
     '^.*abc$'
     >>> sql_like_to_regex("abc%")  # any string starting with "abc"
     '^abc.*$'
+
     """
     cur_i = 0
     pattern_length = len(pattern)

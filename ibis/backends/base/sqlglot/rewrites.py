@@ -179,6 +179,7 @@ def sqlize(
     Returns
     -------
     Tuple of the rewritten expression graph and a list of CTEs.
+
     """
     assert isinstance(node, ops.Relation)
 

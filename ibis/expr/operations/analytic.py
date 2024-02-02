@@ -71,6 +71,7 @@ class RowNumber(RankBase):
     -------
     IntegerColumn
         Row number
+
     """
 
 

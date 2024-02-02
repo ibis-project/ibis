@@ -28,6 +28,7 @@ def normalize(r: str | re.Pattern):
     -------
     Pattern
         The compiled regex.
+
     """
     r = getattr(r, "pattern", r)
     return re.compile("^" + r.lstrip("^").rstrip("$") + "$")

@@ -54,6 +54,7 @@ def dtype(value: Any, nullable: bool = True) -> DataType:
     >>> import pyarrow as pa
     >>> ibis.dtype(pa.int32())
     Int32(nullable=True)
+
     """
     if isinstance(value, DataType):
         return value
@@ -521,6 +522,7 @@ class String(Variadic, Singleton):
     -----
     Because of differences in the way different backends handle strings, we
     cannot assume that strings are UTF-8 encoded.
+
     """
 
     scalar = "StringScalar"
@@ -538,6 +540,7 @@ class Binary(Variadic, Singleton):
     For example, Impala doesn't make a distinction between string and binary
     types but PostgreSQL has a `TEXT` type and a `BYTEA` type which are
     distinct types that have different behavior.
+
     """
 
     scalar = "BinaryScalar"
@@ -835,6 +838,7 @@ class Struct(Parametric, MapSet):
         -------
         Struct
             Struct data type instance
+
         """
         return cls(dict(pairs), nullable=nullable)
 

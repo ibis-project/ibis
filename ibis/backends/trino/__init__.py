@@ -89,6 +89,7 @@ class Backend(SQLGlotBackend, CanListDatabases):
         ------
         trino.dbapi.Cursor
             The cursor of the executed query.
+
         """
         cur = self.raw_sql(query)
         try:
@@ -116,6 +117,7 @@ class Backend(SQLGlotBackend, CanListDatabases):
         -------
         sch.Schema
             Ibis schema
+
         """
         conditions = [sg.column("table_name").eq(sge.convert(table_name))]
 
@@ -209,6 +211,7 @@ class Backend(SQLGlotBackend, CanListDatabases):
             The `schema` parameter does **not** refer to the column names and
             types of `table`.
             :::
+
         """
         query = "SHOW TABLES"
 
@@ -282,6 +285,7 @@ class Backend(SQLGlotBackend, CanListDatabases):
 
         >>> con = ibis.trino.connect(database=catalog, schema=schema)
         >>> con = ibis.trino.connect(database=catalog, schema=schema, source="my-app")
+
         """
         self.con = trino.dbapi.connect(
             user=user,
@@ -396,6 +400,7 @@ class Backend(SQLGlotBackend, CanListDatabases):
             Add a comment to the table
         properties
             Table properties to set on creation
+
         """
         if obj is None and schema is None:
             raise com.IbisError("One of the `schema` or `obj` parameter is required")

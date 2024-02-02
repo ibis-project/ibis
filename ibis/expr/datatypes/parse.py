@@ -83,6 +83,7 @@ def parse(
     >>> ty = dt.parse("array<int64>")
     >>> ty == dt.Array(dt.int64)
     True
+
     """
     geotype = spaceless_string("geography", "geometry")
 

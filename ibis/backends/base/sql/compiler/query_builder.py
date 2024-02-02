@@ -475,6 +475,7 @@ def flatten_set_op(op) -> Iterable[ops.Table | bool]:
     -------
     Iterable[Table | bool]
         Iterable of tables and `bool`s indicating `distinct`.
+
     """
 
     if isinstance(op, ops.SetOp):
@@ -501,6 +502,7 @@ def flatten(op: ops.TableNode):
     -------
     Iterable[Table | bool]
         Iterable of tables and `bool`s indicating `distinct`.
+
     """
     return list(toolz.concatv(flatten_set_op(op.left), flatten_set_op(op.right)))
 

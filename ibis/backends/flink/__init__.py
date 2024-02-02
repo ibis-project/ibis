@@ -59,6 +59,7 @@ class Backend(BaseBackend, CanCreateDatabase):
         >>> table_env = TableEnvironment.create(EnvironmentSettings.in_streaming_mode())
         >>> ibis.flink.connect(table_env)
         <ibis.backends.flink.Backend at 0x...>
+
         """
         self._table_env = table_env
 
@@ -97,6 +98,7 @@ class Backend(BaseBackend, CanCreateDatabase):
             Name of the catalog in which the new database will be created.
         force : bool, optional
             If `False`, an exception is raised if the database already exists.
+
         """
         statement = CreateDatabase(
             name=name, db_properties=db_properties, catalog=catalog, can_exist=force
@@ -116,6 +118,7 @@ class Backend(BaseBackend, CanCreateDatabase):
             Name of the catalog from which the database will be dropped.
         force : bool, optional
             If `False`, an exception is raised if the database does not exist.
+
         """
         statement = DropDatabase(name=name, catalog=catalog, must_exist=not force)
         self.raw_sql(statement.compile())
@@ -150,6 +153,7 @@ class Backend(BaseBackend, CanCreateDatabase):
         -------
         list[str]
             The list of the table/view names that match the pattern `like`.
+
         """
         catalog = catalog or self.current_catalog
         database = database or self.current_database
@@ -188,6 +192,7 @@ class Backend(BaseBackend, CanCreateDatabase):
         -------
         list[str]
             The list of the view names that match the pattern `like`.
+
         """
 
         if temp:
@@ -233,6 +238,7 @@ class Backend(BaseBackend, CanCreateDatabase):
         -------
         Table
             Table named `name` from `database`
+
         """
         if database is not None and not isinstance(database, str):
             raise exc.IbisTypeError(
@@ -271,6 +277,7 @@ class Backend(BaseBackend, CanCreateDatabase):
         -------
         sch.Schema
             Ibis schema
+
         """
         from pyflink.table.types import create_arrow_schema
 
@@ -374,6 +381,7 @@ class Backend(BaseBackend, CanCreateDatabase):
         -------
         Table
             The table that was created.
+
         """
         import pandas as pd
         import pyarrow as pa
@@ -490,6 +498,7 @@ class Backend(BaseBackend, CanCreateDatabase):
             Whether the table is temporary or not.
         force
             If `False`, an exception is raised if the table does not exist.
+
         """
         statement = DropTable(
             table_name=name,
@@ -516,6 +525,7 @@ class Backend(BaseBackend, CanCreateDatabase):
             The new name of the table.
         force
             If `False`, an exception is raised if the table does not exist.
+
         """
         statement = RenameTable(
             old_name=old_name,
@@ -567,6 +577,7 @@ class Backend(BaseBackend, CanCreateDatabase):
         -------
         Table
             The view that was created.
+
         """
         import pandas as pd
 
@@ -639,6 +650,7 @@ class Backend(BaseBackend, CanCreateDatabase):
             Whether the view is temporary or not.
         force
             If `False`, an exception is raised if the view does not exist.
+
         """
         # TODO(deepyaman): Support (and differentiate) permanent views.
 
@@ -682,6 +694,7 @@ class Backend(BaseBackend, CanCreateDatabase):
         ------
         ValueError
             If `schema` is None.
+
         """
         if schema is None:
             raise ValueError(
@@ -723,6 +736,7 @@ class Backend(BaseBackend, CanCreateDatabase):
         -------
         ir.Table
             The just-registered table
+
         """
         return self._read_file(
             file_type="parquet", path=path, schema=schema, table_name=table_name
@@ -750,6 +764,7 @@ class Backend(BaseBackend, CanCreateDatabase):
         -------
         ir.Table
             The just-registered table
+
         """
         return self._read_file(
             file_type="csv", path=path, schema=schema, table_name=table_name
@@ -777,6 +792,7 @@ class Backend(BaseBackend, CanCreateDatabase):
         -------
         ir.Table
             The just-registered table
+
         """
         return self._read_file(
             file_type="json", path=path, schema=schema, table_name=table_name
@@ -824,6 +840,7 @@ class Backend(BaseBackend, CanCreateDatabase):
         ------
         ValueError
             If the type of `obj` isn't supported
+
         """
         import pandas as pd
         import pyarrow as pa

@@ -46,6 +46,7 @@ class DisjointSet(Mapping[K, set[K]]):
     1
     >>> ds.union(1, 3)
     False
+
     """
 
     __slots__ = ("_parents", "_classes")
@@ -71,6 +72,7 @@ class DisjointSet(Mapping[K, set[K]]):
         -------
         ined:
             True if the id is in the disjoint set, False otherwise.
+
         """
         return id in self._parents
 
@@ -87,6 +89,7 @@ class DisjointSet(Mapping[K, set[K]]):
         class:
             The set of ids that are in the same class as the given id, including
             the given id.
+
         """
         id = self._parents[id]
         return self._classes[id]
@@ -111,6 +114,7 @@ class DisjointSet(Mapping[K, set[K]]):
         -------
         equal:
             True if the disjoint sets are equal, False otherwise.
+
         """
         if not isinstance(other, DisjointSet):
             return NotImplemented
@@ -131,6 +135,7 @@ class DisjointSet(Mapping[K, set[K]]):
         -------
         id:
             The id that was added to the disjoint set.
+
         """
         if id in self._parents:
             return self._parents[id]
@@ -152,6 +157,7 @@ class DisjointSet(Mapping[K, set[K]]):
         -------
         id:
             The canonicalized id for the given id.
+
         """
         return self._parents[id]
 
@@ -172,6 +178,7 @@ class DisjointSet(Mapping[K, set[K]]):
         -------
         merged:
             True if the classes were merged, False otherwise.
+
         """
         # Find the root of each class
         id1 = self._parents[id1]
@@ -213,6 +220,7 @@ class DisjointSet(Mapping[K, set[K]]):
         -------
         connected:
             True if the ids are connected, False otherwise.
+
         """
         return self._parents[id1] == self._parents[id2]
 
@@ -227,6 +235,7 @@ class DisjointSet(Mapping[K, set[K]]):
         -------
         verified:
             True if the disjoint set is not corrupted, False otherwise.
+
         """
         for id in self._parents:
             if id not in self._classes[self._parents[id]]:
@@ -274,6 +283,7 @@ class Variable(Slotted):
     ----------
     name : str
         The name of the variable.
+
     """
 
     __slots__ = ("name",)
@@ -303,6 +313,7 @@ class Variable(Slotted):
         -------
         value : Any
             The substituted value.
+
         """
         return subst[self.name]
 
@@ -323,6 +334,7 @@ class Pattern(Slotted):
         variables or leaf values.
     name : str, optional
         The name of the pattern which is used to refer to it in a rewrite rule.
+
     """
 
     __slots__ = ("head", "args", "name")
@@ -389,6 +401,7 @@ class Pattern(Slotted):
         (var, pattern) : tuple[Variable, Pattern]
             The variable and the flattened pattern where the flattened pattern
             cannot contain any patterns just variables.
+
         """
         # TODO(kszucs): convert a pattern to a query object instead by flattening it
         counter = counter or itertools.count()
@@ -429,6 +442,7 @@ class Pattern(Slotted):
         -------
         enode : ENode
             The substituted pattern which is a ground term aka. an ENode.
+
         """
         args = []
         for arg in self.args:
@@ -481,6 +495,7 @@ class ENode(Slotted, Node):
         The type of the Node the ENode represents.
     args : tuple
         The arguments of the ENode which are either ENodes or leaf values.
+
     """
 
     __slots__ = ("head", "args")
@@ -576,6 +591,7 @@ class EGraph:
         -------
         enode :
             The canonical enode.
+
         """
         enode = self._as_enode(node)
         if enode in self._eclasses:
@@ -611,6 +627,7 @@ class EGraph:
         -------
         enode :
             The canonical enode.
+
         """
         enode1 = self._as_enode(node1)
         enode2 = self._as_enode(node2)
@@ -638,6 +655,7 @@ class EGraph:
         -------
         dict[str, Any] :
             The mapping of variable names to enodes or leaf values.
+
         """
         subst = {}
         for arg, patarg in zip(args, patargs):
@@ -672,6 +690,7 @@ class EGraph:
         -------
         matches :
             A dictionary mapping the matched enodes to their substitutions.
+
         """
         # patterns could be reordered to match on the most selective one first
         patterns = dict(reversed(list(pattern.flatten())))
@@ -718,6 +737,7 @@ class EGraph:
         -------
         n_changes
             The number of changes made to the egraph.
+
         """
         n_changes = 0
         for rewrite in promote_list(rewrites):
@@ -741,6 +761,7 @@ class EGraph:
         -------
         saturated :
             True if the egraph is saturated, False otherwise.
+
         """
         return any(not self.apply(rewrites) for _i in range(n))
 
@@ -762,6 +783,7 @@ class EGraph:
         -------
         node :
             The extracted node.
+
         """
         enode = self._as_enode(node)
         enode = self._eclasses.find(enode)
@@ -811,6 +833,7 @@ class EGraph:
         -------
         equivalent :
             True if the nodes are equivalent, False otherwise.
+
         """
         enode1 = self._as_enode(node1)
         enode2 = self._as_enode(node2)

@@ -166,6 +166,7 @@ def normalize_timedelta(
     3000
     >>> normalize_timedelta(timedelta(seconds=3), IntervalUnit.MICROSECOND)
     3000000
+
     """
     if isinstance(value, datetime.timedelta):
         # datetime.timedelta only stores days, seconds, and microseconds internally

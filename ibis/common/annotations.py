@@ -119,6 +119,7 @@ class Annotation(Slotted, Immutable):
         Returns
         -------
         The validated value for the field.
+
         """
         result = self.pattern.match(value, this)
         if result is NoMatch:
@@ -142,6 +143,7 @@ class Attribute(Annotation):
         Pattern to validate the field.
     default : Callable, default EMPTY
         Callable to compute the default value of the field.
+
     """
 
     def __init__(self, pattern: Pattern = _any, default: AnyType = EMPTY):
@@ -153,6 +155,7 @@ class Attribute(Annotation):
         Returns
         -------
         bool
+
         """
         return self.default is not EMPTY
 
@@ -169,6 +172,7 @@ class Attribute(Annotation):
         Returns
         -------
         The default value for the field.
+
         """
         if callable(self.default):
             value = self.default(this)
@@ -195,6 +199,7 @@ class Argument(Annotation):
     kind
         Kind of the argument, one of `inspect.Parameter` constants.
         Defaults to positional or keyword.
+
     """
 
     __slots__ = ("typehint", "kind")
@@ -311,6 +316,7 @@ class Signature(inspect.Signature):
         Returns
         -------
         Signature
+
         """
         params = {}
         for sig in signatures:
@@ -366,6 +372,7 @@ class Signature(inspect.Signature):
         Returns
         -------
         Signature
+
         """
         sig = super().from_callable(fn)
         typehints = get_type_hints(fn)
@@ -424,6 +431,7 @@ class Signature(inspect.Signature):
         -------
         args : (args, kwargs)
             Tuple of positional and keyword arguments.
+
         """
         # does the reverse of bind, but doesn't apply defaults
         args: list = []
@@ -460,6 +468,7 @@ class Signature(inspect.Signature):
         -------
         validated : dict
             Dictionary of validated arguments.
+
         """
         try:
             bound = self.bind(*args, **kwargs)
@@ -537,6 +546,7 @@ class Signature(inspect.Signature):
         -------
         validated : Any
             Validated return value.
+
         """
         if self.return_annotation is EMPTY:
             return value
@@ -602,6 +612,7 @@ def annotated(_1=None, _2=None, _3=None, **kwargs):
     Returns
     -------
     Callable
+
     """
     if _1 is None:
         return functools.partial(annotated, **kwargs)

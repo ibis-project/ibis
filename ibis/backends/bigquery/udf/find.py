@@ -52,6 +52,7 @@ def find_names(node: ast.AST) -> list[ast.Name]:
     'a'
     >>> names[1].id
     'b'
+
     """
     return list(
         toolz.unique(

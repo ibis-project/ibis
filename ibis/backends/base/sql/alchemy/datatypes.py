@@ -152,6 +152,7 @@ class AlchemyType(TypeMapper):
         Returns
         -------
         SQLAlchemy type.
+
         """
         if dtype.is_decimal():
             return sat.NUMERIC(dtype.precision, dtype.scale)
@@ -174,6 +175,7 @@ class AlchemyType(TypeMapper):
         Returns
         -------
         Ibis type.
+
         """
         if dtype := _from_sqlalchemy_types.get(type(typ)):
             return dtype(nullable=nullable)

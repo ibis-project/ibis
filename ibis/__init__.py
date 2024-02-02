@@ -49,6 +49,7 @@ def __getattr__(name: str) -> BaseBackend:
     is called, and a backend with the `sqlite` name is tried to load from
     the `ibis.backends` entrypoints. If successful, the `ibis.sqlite`
     attribute is "cached", so this function is only called the first time.
+
     """
     entry_points = {ep for ep in util.backend_entry_points() if ep.name == name}
 

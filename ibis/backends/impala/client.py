@@ -96,6 +96,7 @@ class ImpalaTable(ir.Table):
         Completely overwrite contents
 
         >>> t.insert(table_expr, overwrite=True)  # quartodoc: +SKIP # doctest: +SKIP
+
         """
         if values is not None:
             raise NotImplementedError
@@ -145,6 +146,7 @@ class ImpalaTable(ir.Table):
             partition
         partition
             If specified, the partition must already exist
+
         """
         if partition is not None:
             partition_schema = self.partition_schema()
@@ -216,6 +218,7 @@ class ImpalaTable(ir.Table):
             Table properties
         serde_properties
             Serialization/deserialization properties
+
         """
 
         def _run_ddl(**kwds):
@@ -257,6 +260,7 @@ class ImpalaTable(ir.Table):
             Table properties
         serde_properties
             Serialization/deserialization properties
+
         """
         part_schema = self.partition_schema()
 
@@ -305,6 +309,7 @@ class ImpalaTable(ir.Table):
         -------
         DataFrame
             Table statistics
+
         """
         return self._client.table_stats(self._qualified_name)
 
@@ -315,6 +320,7 @@ class ImpalaTable(ir.Table):
         -------
         DataFrame
             Column statistics
+
         """
         return self._client.column_stats(self._qualified_name)
 

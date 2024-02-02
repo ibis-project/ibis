@@ -434,6 +434,7 @@ def decompile(
     -------
     str
         Equivalent Python source code for `node`.
+
     """
     if not isinstance(expr, ir.Expr):
         raise TypeError(f"Expected ibis expression, got {type(expr).__name__}")

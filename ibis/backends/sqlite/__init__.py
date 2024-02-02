@@ -79,6 +79,7 @@ class Backend(SQLGlotBackend):
         --------
         >>> import ibis
         >>> ibis.sqlite.connect("path/to/my/sqlite.db")
+
         """
         _init_sqlite3()
 
@@ -107,6 +108,7 @@ class Backend(SQLGlotBackend):
         -------
         BaseBackend
             A backend instance
+
         """
         url = urlparse(url)
         database = url.path[1:] or ":memory:"
@@ -233,6 +235,7 @@ class Backend(SQLGlotBackend):
         -------
         sch.Schema
             Ibis schema
+
         """
         if schema is not None:
             raise TypeError("sqlite doesn't support `schema`, use `database` instead")
@@ -388,6 +391,7 @@ class Backend(SQLGlotBackend):
         >>> con2 = ibis.sqlite.connect("new.db")
         >>> con1.attach("new", "new.db")
         >>> con1.list_tables(database="new")
+
         """
         with self.begin() as cur:
             cur.execute(f"ATTACH DATABASE {str(path)!r} AS {_quote(name)}")
@@ -422,6 +426,7 @@ class Backend(SQLGlotBackend):
         overwrite
             If `True`, replace the table if it already exists, otherwise fail
             if the table exists
+
         """
         if schema is None and obj is None:
             raise ValueError("Either `obj` or `schema` must be specified")
@@ -581,6 +586,7 @@ class Backend(SQLGlotBackend):
             If inserting data from a different database
         ValueError
             If the type of `obj` isn't supported
+
         """
         table = sg.table(table_name, catalog=database, quoted=self.compiler.quoted)
         if not isinstance(obj, ir.Expr):
