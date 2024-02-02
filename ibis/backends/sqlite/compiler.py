@@ -10,7 +10,7 @@ from sqlglot.dialects.sqlite import SQLite
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
-from ibis.backends.base.sqlglot.compiler import SQLGlotCompiler
+from ibis.backends.base.sqlglot.compiler import NULL, SQLGlotCompiler
 from ibis.backends.base.sqlglot.datatypes import SQLiteType
 from ibis.backends.base.sqlglot.rewrites import (
     rewrite_first_to_first_value,
@@ -37,7 +37,7 @@ class SQLiteCompiler(SQLGlotCompiler):
         rewrite_last_to_last_value,
     )
 
-    NAN = sge.NULL
+    NAN = NULL
     POS_INF = sge.Literal.number("1e999")
     NEG_INF = sge.Literal.number("-1e999")
 
@@ -187,10 +187,10 @@ class SQLiteCompiler(SQLGlotCompiler):
     @visit_node.register(ops.Clip)
     def visit_Clip(self, op, *, arg, lower, upper):
         if upper is not None:
-            arg = self.if_(arg.is_(sge.NULL), arg, self.f.min(upper, arg))
+            arg = self.if_(arg.is_(NULL), arg, self.f.min(upper, arg))
 
         if lower is not None:
-            arg = self.if_(arg.is_(sge.NULL), arg, self.f.max(lower, arg))
+            arg = self.if_(arg.is_(NULL), arg, self.f.max(lower, arg))
 
         return arg
 
@@ -220,7 +220,7 @@ class SQLiteCompiler(SQLGlotCompiler):
         return self._visit_arg_reduction("max", *args, **kwargs)
 
     def _visit_arg_reduction(self, func, op, *, arg, key, where):
-        cond = arg.is_(sg.not_(sge.NULL))
+        cond = arg.is_(sg.not_(NULL))
 
         if op.where is not None:
             cond = sg.and_(cond, where)
