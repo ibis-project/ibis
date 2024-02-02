@@ -1,5 +1,5 @@
 SELECT
   -(
-    t0.int_col
+    "t0"."int_col"
   ) AS "Negate(int_col)"
-FROM functional_alltypes AS t0
+FROM "functional_alltypes" AS "t0"

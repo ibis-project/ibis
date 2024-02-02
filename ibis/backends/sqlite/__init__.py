@@ -111,7 +111,7 @@ class Backend(SQLGlotBackend):
 
         """
         url = urlparse(url)
-        database = url.path[1:] or ":memory:"
+        database = url.path or ":memory:"
         return self.connect(database=database, **kwargs)
 
     def raw_sql(self, query: str | sg.Expression, **kwargs: Any) -> Any:
