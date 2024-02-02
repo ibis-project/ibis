@@ -1,55 +1,42 @@
-SELECT
-  t5.street AS street,
-  t5.key AS key,
-  t5.key_right AS key_right
-FROM (
+WITH t6 AS (
   SELECT
-    t1.street AS street,
-    ROW_NUMBER() OVER (ORDER BY t1.street ASC ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) - 1 AS key,
-    t3.key AS key_right
+    t5.street,
+    ROW_NUMBER() OVER (ORDER BY t5.street ASC ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) - 1 AS key
   FROM (
     SELECT
-      t0.street AS street,
-      ROW_NUMBER() OVER (ORDER BY t0.street ASC ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) - 1 AS key
-    FROM data AS t0
-  ) AS t1
-  INNER JOIN (
-    SELECT
-      t1.key AS key
+      t2.street,
+      t2.key
     FROM (
       SELECT
-        t0.street AS street,
+        t0.street,
         ROW_NUMBER() OVER (ORDER BY t0.street ASC ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) - 1 AS key
       FROM data AS t0
-    ) AS t1
-  ) AS t3
-    ON t1.key = t3.key
-) AS t5
-INNER JOIN (
-  SELECT
-    t5.key AS key
-  FROM (
-    SELECT
-      t1.street AS street,
-      ROW_NUMBER() OVER (ORDER BY t1.street ASC ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) - 1 AS key,
-      t3.key AS key_right
-    FROM (
-      SELECT
-        t0.street AS street,
-        ROW_NUMBER() OVER (ORDER BY t0.street ASC ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) - 1 AS key
-      FROM data AS t0
-    ) AS t1
+    ) AS t2
     INNER JOIN (
       SELECT
-        t1.key AS key
+        t1.key
       FROM (
         SELECT
-          t0.street AS street,
+          t0.street,
           ROW_NUMBER() OVER (ORDER BY t0.street ASC ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) - 1 AS key
         FROM data AS t0
       ) AS t1
-    ) AS t3
-      ON t1.key = t3.key
+    ) AS t4
+      ON t2.key = t4.key
   ) AS t5
-) AS t7
-  ON t5.key = t7.key
+), t1 AS (
+  SELECT
+    t0.street,
+    ROW_NUMBER() OVER (ORDER BY t0.street ASC ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) - 1 AS key
+  FROM data AS t0
+)
+SELECT
+  t8.street,
+  t8.key
+FROM t6 AS t8
+INNER JOIN (
+  SELECT
+    t7.key
+  FROM t6 AS t7
+) AS t10
+  ON t8.key = t10.key
