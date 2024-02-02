@@ -1,6 +1,6 @@
 ---
 title: "Why Voltron Data supports Ibis"
-author: "Cody"
+author: "Cody + Ian Cook"
 date: "2024-02-09"
 image: standards.png
 categories:
