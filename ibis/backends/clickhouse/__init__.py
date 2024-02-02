@@ -54,6 +54,7 @@ class Backend(SQLGlotBackend, CanCreateDatabase):
         ----------
         bool_type : str
             Type to use for boolean columns
+
         """
 
         bool_type: Literal["Bool", "UInt8", "Int8"] = "Bool"
@@ -72,6 +73,7 @@ class Backend(SQLGlotBackend, CanCreateDatabase):
         -------
         BaseBackend
             A backend instance
+
         """
         url = urlparse(url)
         database = url.path[1:]
@@ -148,6 +150,7 @@ class Backend(SQLGlotBackend, CanCreateDatabase):
         >>> client = ibis.clickhouse.connect()
         >>> client
         <ibis.clickhouse.client.ClickhouseClient object at 0x...>
+
         """
         if settings is None:
             settings = {}
@@ -325,6 +328,7 @@ class Backend(SQLGlotBackend, CanCreateDatabase):
            This is not implemented because it adds an unnecessary pandas step in
            between Python object -> arrow. We can go directly to record batches
            without pandas in the middle.
+
         """
         table = expr.as_table()
         sql = self.compile(table, limit=limit, params=params)
@@ -425,6 +429,7 @@ class Backend(SQLGlotBackend, CanCreateDatabase):
         -------
         Cursor
             Clickhouse cursor
+
         """
         external_tables = toolz.valmap(_to_memtable, external_tables or {})
         external_data = self._normalize_external_tables(external_tables)
@@ -456,6 +461,7 @@ class Backend(SQLGlotBackend, CanCreateDatabase):
         -------
         sch.Schema
             Ibis schema
+
         """
         if schema is not None:
             raise com.UnsupportedBackendFeatureError(
@@ -603,6 +609,7 @@ class Backend(SQLGlotBackend, CanCreateDatabase):
         -------
         Table
             The new table
+
         """
         if temp and overwrite:
             raise com.IbisInputError(

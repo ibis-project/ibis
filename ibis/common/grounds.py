@@ -176,6 +176,7 @@ class Annotable(Abstract, metaclass=AnnotableMeta):
         -------
         Annotable
             New instance of the copied object
+
         """
         this = copy(self)
         for name, value in overrides.items():

@@ -80,6 +80,7 @@ class Backend(SQLGlotBackend):
             Database to use for temporary objects.
         temp_path : str, default "/tmp/ibis"
             Path for storage of temporary data.
+
         """
 
         temp_db: str = "__ibis_tmp"
@@ -99,6 +100,7 @@ class Backend(SQLGlotBackend):
         -------
         BaseBackend
             A backend instance
+
         """
         url = urlparse(url)
 
@@ -188,6 +190,7 @@ class Backend(SQLGlotBackend):
         >>> client = ibis.impala.connect(host=impala_host, port=impala_port)
         >>> client  # doctest: +ELLIPSIS
         <ibis.backends.impala.Backend object at 0x...>
+
         """
         if ca_cert is not None:
             params["ca_cert"] = str(ca_cert)
@@ -301,6 +304,7 @@ class Backend(SQLGlotBackend):
             Path where to store the database data; otherwise uses the Impala default
         force
             Forcibly create the database
+
         """
         statement = CreateDatabase(name, path=path, can_exist=force)
         self._safe_exec_sql(statement)
@@ -315,6 +319,7 @@ class Backend(SQLGlotBackend):
         force
             If False and there are any tables in this database, raises an
             IntegrityError
+
         """
         if not force or name in self.list_databases():
             tables = self.list_tables(database=name)
@@ -370,6 +375,7 @@ class Backend(SQLGlotBackend):
         -------
         Schema
             Ibis schema
+
         """
         query = sge.Describe(
             this=sg.table(
@@ -395,6 +401,7 @@ class Backend(SQLGlotBackend):
         -------
         Iterator[tuple[str, dt.DataType]]
             Iterator of column name and Ibis type pairs
+
         """
         tmpview = util.gen_name("impala_tmpview")
         query = f"CREATE VIEW IF NOT EXISTS {tmpview} AS {query}"
@@ -493,6 +500,7 @@ class Backend(SQLGlotBackend):
             expression.
         like_parquet
             Can specify instead of a schema
+
         """
         if obj is None and schema is None:
             raise com.IbisError("The schema or obj parameter is required")
@@ -564,6 +572,7 @@ class Backend(SQLGlotBackend):
         -------
         ImpalaTable
             Impala table expression
+
         """
         name, database = self._get_concrete_table_path(name, database)
 
@@ -615,6 +624,7 @@ class Backend(SQLGlotBackend):
         -------
         ImpalaTable
             Impala table expression
+
         """
         name, database = self._get_concrete_table_path(name, database)
 
@@ -674,6 +684,7 @@ class Backend(SQLGlotBackend):
         -------
         ImpalaTable
             Impala table expression
+
         """
         name, database = self._get_concrete_table_path(name, database)
 
@@ -743,6 +754,7 @@ class Backend(SQLGlotBackend):
 
         Completely overwrite contents
         >>> con.insert(table, table_expr, overwrite=True)  # quartodoc: +SKIP # doctest: +SKIP
+
         """
         if isinstance(obj, ir.Table):
             self._run_pre_execute_hooks(obj)
@@ -774,6 +786,7 @@ class Backend(SQLGlotBackend):
         >>> table = "my_table"
         >>> db = "operations"
         >>> con.drop_table(table, database=db, force=True)  # quartodoc: +SKIP # doctest: +SKIP
+
         """
         statement = DropTable(name, database=database, must_exist=not force)
         self._safe_exec_sql(statement)
@@ -787,6 +800,7 @@ class Backend(SQLGlotBackend):
             Table name
         database
             Database name
+
         """
         statement = TruncateTable(name, database=database)
         self._safe_exec_sql(statement)
@@ -800,6 +814,7 @@ class Backend(SQLGlotBackend):
             The old name of the table.
         new_name
             The new name of the table.
+
         """
         statement = RenameTable(old_name, new_name)
         self._safe_exec_sql(statement)
@@ -832,6 +847,7 @@ class Backend(SQLGlotBackend):
         >>> db = "operations"
         >>> pool = "op_4GB_pool"
         >>> con.cache_table("my_table", database=db, pool=pool)  # quartodoc: +SKIP # doctest: +SKIP
+
         """
         statement = ddl.CacheTable(table_name, database=database, pool=pool)
         self._safe_exec_sql(statement)
@@ -847,6 +863,7 @@ class Backend(SQLGlotBackend):
             Function name
         database
             Database name
+
         """
         if name is None:
             name = func.name
@@ -885,6 +902,7 @@ class Backend(SQLGlotBackend):
             Database name
         aggregate
             Whether the function is an aggregate
+
         """
         if not input_types:
             if not database:
@@ -1016,6 +1034,7 @@ class Backend(SQLGlotBackend):
             Database name
         incremental
             If True, issue COMPUTE INCREMENTAL STATS
+
         """
         maybe_inc = "INCREMENTAL " if incremental else ""
         cmd = f"COMPUTE {maybe_inc}STATS"
@@ -1038,6 +1057,7 @@ class Backend(SQLGlotBackend):
             Table name. Can be fully qualified (with database)
         database
             Database name
+
         """
         stmt = "INVALIDATE METADATA"
         if name is not None:
@@ -1058,6 +1078,7 @@ class Backend(SQLGlotBackend):
             Table name. Can be fully qualified (with database)
         database
             Database name
+
         """
         # TODO(wesm): can this statement be cancelled?
         stmt = self._table_command("REFRESH", name, database=database)
@@ -1078,6 +1099,7 @@ class Backend(SQLGlotBackend):
             Table name. Can be fully qualified (with database)
         database
             Database name
+
         """
         from ibis.backends.impala.metadata import parse_metadata
 
@@ -1105,6 +1127,7 @@ class Backend(SQLGlotBackend):
             Table name. Can be fully qualified (with database)
         database
             Database name
+
         """
         stmt = self._table_command("SHOW FILES IN", name, database=database)
         return self._exec_statement(stmt)
@@ -1184,6 +1207,7 @@ class Backend(SQLGlotBackend):
         -------
         str
             Query plan
+
         """
         query = self.compile(expr, params=params)
         statement = f"EXPLAIN {query}"

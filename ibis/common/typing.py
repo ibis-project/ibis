@@ -66,6 +66,7 @@ def get_type_hints(
     Returns
     -------
     Mapping of parameter or attribute name to type hint.
+
     """
     try:
         hints = _get_type_hints(obj, include_extras=include_extras)
@@ -111,6 +112,7 @@ def get_type_params(obj: Any) -> dict[str, type]:
     >>>
     >>> get_type_params(MyDict[int, str])
     {'T': <class 'int'>, 'U': <class 'str'>}
+
     """
     args = get_args(obj)
     origin = get_origin(obj) or obj
@@ -156,6 +158,7 @@ def get_bound_typevars(obj: Any) -> dict[TypeVar, tuple[str, type]]:
     ...         ...
     >>> get_bound_typevars(MyStruct[float, bytes])
     {~T: ('a', <class 'float'>), ~U: ('myprop', <class 'bytes'>)}
+
     """
     origin = get_origin(obj) or obj
     hints = get_type_hints(origin, include_properties=True)
@@ -198,6 +201,7 @@ def evaluate_annotations(
     >>> annots = {"a": "dict[str, float]", "b": "int"}
     >>> evaluate_annotations(annots, __name__)
     {'a': dict[str, float], 'b': <class 'int'>}
+
     """
     module = sys.modules.get(module_name, None)
     globalns = getattr(module, "__dict__", None)
