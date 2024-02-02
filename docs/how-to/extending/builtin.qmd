@@ -101,7 +101,7 @@ specify the type of the **return value**. The type of the function **parameters*
 are **not** required. Thus, this is adequate:
 
 ```{python}
-@ibis.udf.scalar.builtin(name="array_size")
+@ibis.udf.scalar.builtin(name="array_length")
 def cardinality(arr) -> int:
    ...
 ```
@@ -125,7 +125,7 @@ The errors you get back are backend dependent:
 con.execute(cardinality("foo"))
 ```
 
-Here, Snowflake is informing us that the `ARRAY_SIZE` function does not accept
+Here, Duckdb is informing us that the `ARRAY_LENGTH` function does not accept
 strings as input.
 
 
