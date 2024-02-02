@@ -83,10 +83,7 @@ def test_group_by_has_index(backend, snapshot):
     snapshot.assert_match(sql, "out.sql")
 
 
-@pytest.mark.xfail(
-    raises=exc.IntegrityError, reason="inner join convenience not implemented"
-)
-@pytest.mark.never(["pandas", "dask", "polars", "pyspark"], reason="not SQL")
+@pytest.mark.never(["pandas", "dask", "polars"], reason="not SQL")
 def test_cte_refs_in_topo_order(backend, snapshot):
     mr0 = ibis.table(schema=ibis.schema(dict(key="int")), name="leaf")
 

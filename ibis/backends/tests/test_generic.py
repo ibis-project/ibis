@@ -992,24 +992,12 @@ def test_memtable_column_naming_mismatch(backend, con, monkeypatch, df, columns)
         ibis.memtable(df, columns=columns)
 
 
-@pytest.mark.xfail(
-    raises=com.IntegrityError, reason="inner join convenience not implemented"
-)
 @pytest.mark.notimpl(
-    ["dask", "datafusion", "pandas", "polars"],
+    ["dask", "pandas", "polars"],
     raises=NotImplementedError,
     reason="not a SQL backend",
 )
-@pytest.mark.notimpl(
-    ["pyspark"], reason="pyspark doesn't generate SQL", raises=NotImplementedError
-)
-@pytest.mark.notimpl(["druid", "flink"], reason="no sqlglot dialect", raises=ValueError)
-@pytest.mark.notimpl(["exasol"], raises=com.OperationNotDefinedError)
-@pytest.mark.notimpl(
-    ["risingwave"],
-    raises=ValueError,
-    reason="risingwave doesn't support sqlglot.dialects.dialect.Dialect",
-)
+@pytest.mark.notimpl(["flink"], reason="no sqlglot dialect", raises=ValueError)
 def test_many_subqueries(con, snapshot):
     def query(t, group_cols):
         t2 = t.mutate(key=ibis.row_number().over(ibis.window(order_by=group_cols)))

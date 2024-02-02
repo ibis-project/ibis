@@ -1,40 +1,20 @@
+WITH t1 AS (
+  SELECT
+    t0.key
+  FROM leaf AS t0
+  WHERE
+    TRUE
+)
 SELECT
-  t2.key AS key,
-  t3.key AS key_right,
-  t6.key_right AS key_right_right
-FROM (
-  SELECT
-    t0.key AS key
-  FROM leaf AS t0
-  WHERE
-    TRUE
-) AS t2
+  t3.key
+FROM t1 AS t3
+INNER JOIN t1 AS t4
+  ON t3.key = t4.key
 INNER JOIN (
   SELECT
-    t0.key AS key
-  FROM leaf AS t0
-  WHERE
-    TRUE
-) AS t3
-  ON t2.key = t3.key
-INNER JOIN (
-  SELECT
-    t2.key AS key,
-    t3.key AS key_right
-  FROM (
-    SELECT
-      t0.key AS key
-    FROM leaf AS t0
-    WHERE
-      TRUE
-  ) AS t2
-  INNER JOIN (
-    SELECT
-      t0.key AS key
-    FROM leaf AS t0
-    WHERE
-      TRUE
-  ) AS t3
-    ON t2.key = t3.key
+    t3.key
+  FROM t1 AS t3
+  INNER JOIN t1 AS t4
+    ON t3.key = t4.key
 ) AS t6
-  ON t6.key = t6.key
+  ON t3.key = t6.key
