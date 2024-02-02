@@ -289,7 +289,6 @@ def test_con_dot_sql_transpile(backend, con, dialect, df):
 @dot_sql_notimpl
 @dot_sql_never
 @pytest.mark.notimpl(["druid", "flink", "polars", "exasol"])
-@pytest.mark.notyet(["snowflake"], reason="snowflake column names are case insensitive")
 def test_order_by_no_projection(backend):
     con = backend.connection
     expr = (
