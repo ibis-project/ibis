@@ -161,7 +161,7 @@ con.execute(cardinality([1, 2, 3]))
 con.execute(cardinality(["a", "b"]))
 ```
 
-When you skip giving input types, Ibis isn't able to catch your typing errors
+When you do not specify input types, Ibis isn't able to catch typing errors
 early, and they are only caught during execution.
 The errors you get back are backend dependent:
 
