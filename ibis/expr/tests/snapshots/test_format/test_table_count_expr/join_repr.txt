@@ -12,7 +12,6 @@ r2 := JoinChain[r0]
   values:
     a:       r0.a
     b:       r0.b
-    a_right: r1.a
     b_right: r1.b
 
 CountStar(): CountStar(r2)

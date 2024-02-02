@@ -1,36 +1,42 @@
-WITH t0 AS (
+WITH t6 AS (
   SELECT
-    t5.*,
-    (
-      row_number() OVER (ORDER BY t5.`street` ASC) - 1
-    ) AS `key`
-  FROM data AS t5
+    t5.street,
+    ROW_NUMBER() OVER (ORDER BY t5.street ASC) - 1 AS key
+  FROM (
+    SELECT
+      t2.street,
+      t2.key
+    FROM (
+      SELECT
+        t0.street,
+        ROW_NUMBER() OVER (ORDER BY t0.street ASC) - 1 AS key
+      FROM data AS t0
+    ) AS t2
+    INNER JOIN (
+      SELECT
+        t1.key
+      FROM (
+        SELECT
+          t0.street,
+          ROW_NUMBER() OVER (ORDER BY t0.street ASC) - 1 AS key
+        FROM data AS t0
+      ) AS t1
+    ) AS t4
+      ON t2.key = t4.key
+  ) AS t5
 ), t1 AS (
   SELECT
-    t0.`key`
-  FROM t0
-), t2 AS (
-  SELECT
-    t0.`street`,
-    t0.`key`
-  FROM t0
-  INNER JOIN t1
-    ON t0.`key` = t1.`key`
-), t3 AS (
-  SELECT
-    t2.`street`,
-    (
-      row_number() OVER (ORDER BY t2.`street` ASC) - 1
-    ) AS `key`
-  FROM t2
-), t4 AS (
-  SELECT
-    t3.`key`
-  FROM t3
+    t0.street,
+    ROW_NUMBER() OVER (ORDER BY t0.street ASC) - 1 AS key
+  FROM data AS t0
 )
 SELECT
-  t3.`street`,
-  t3.`key`
-FROM t3
-INNER JOIN t4
-  ON t3.`key` = t4.`key`
+  t8.street,
+  t8.key
+FROM t6 AS t8
+INNER JOIN (
+  SELECT
+    t7.key
+  FROM t6 AS t7
+) AS t10
+  ON t8.key = t10.key

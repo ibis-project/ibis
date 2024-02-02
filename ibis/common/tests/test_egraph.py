@@ -83,6 +83,13 @@ def test_disjoint_set():
         ds._classes[1] = {1}
         ds.verify()
 
+    # test copying the disjoint set
+    ds2 = ds.copy()
+    assert ds == ds2
+    assert ds is not ds2
+    ds2.add(5)
+    assert ds != ds2
+
 
 class PatternNamespace:
     def __init__(self, module):
