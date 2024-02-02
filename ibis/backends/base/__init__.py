@@ -1420,10 +1420,6 @@ def connect(resource: Path | str, **kwargs: Any) -> BaseBackend:
         # SQLAlchemy requires a `://`, while urllib may roundtrip
         # `duckdb://` to `duckdb:`. Here we re-add the missing `//`.
         url = url.replace(":", "://", 1)
-    if scheme in ("duckdb", "sqlite", "pyspark"):
-        # SQLAlchemy wants an extra slash for URLs where the path
-        # maps to a relative/absolute location on the filesystem
-        url = url.replace(":", ":/", 1)
 
     try:
         backend = getattr(ibis, scheme)

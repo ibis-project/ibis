@@ -491,7 +491,7 @@ class Backend(SQLGlotBackend, CanCreateSchema):
 
         """
         url = urlparse(url)
-        database = url.path[1:] or ":memory:"
+        database = url.path or ":memory:"
         query_params = parse_qs(url.query)
 
         for name, value in query_params.items():
