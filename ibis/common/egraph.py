@@ -120,6 +120,19 @@ class DisjointSet(Mapping[K, set[K]]):
             return NotImplemented
         return self._parents == other._parents
 
+    def copy(self) -> DisjointSet:
+        """Make a copy of the disjoint set.
+
+        Returns
+        -------
+        copy:
+            A copy of the disjoint set.
+        """
+        ds = DisjointSet()
+        ds._parents = self._parents.copy()
+        ds._classes = self._classes.copy()
+        return ds
+
     def add(self, id: K) -> K:
         """Add a new id to the disjoint set.
 
