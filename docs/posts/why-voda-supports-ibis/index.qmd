@@ -31,7 +31,9 @@ early 2022:
 
 ![Ibis commits over time](commits.png)
 
-### Who am I?
+### Who are we?
+
+#### Cody
 
 My name is Cody and I'm employed by Voltron Data to work on Ibis full-time as a
 Technical Product Manager. I am an Ibis committer and have contributed Delta
@@ -44,6 +46,19 @@ My job is to help the Ibis community grow and thrive. I have a background in ML
 the data space and I'm excited to help increase its adoption as a standard
 Python frontend for dozens of data backends to reduce friction in the data
 ecosystem.
+
+#### Ian
+
+I'm Ian, Director of Product Management at Voltron Data. I'm an Apache Arrow
+committer and I have a decade of experience working with SQL, dataframe APIs,
+open standards, and distributed systems.
+
+My job is to align our open source engineering work at Voltron Data with the
+needs and priorities of our stakeholders, including all the projects and
+organizations that depend on Arrow and Ibis. I also launched [Voltron Data's
+enterprise support product](https://voltrondata.com/enterprise-support) to help
+make projects like Arrow and Ibis into safe, smart choices for companies to
+build into business-critical applications.
 
 ### Why does Voltron Data (VoDa) support Ibis?
 

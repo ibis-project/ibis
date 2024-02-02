@@ -117,7 +117,7 @@ covering the majority of feature engineering operations and handoff to popular
 ML training frameworks.
 
 ::: {.callout-note collapse="true" title="LLMs: the Ibis Birdbrain project"}
-I've been working on a new LLM integration for Ibis called `ibis-birdbrain`.
+Cody has been working on a new LLM integration for Ibis called `ibis-birdbrain`.
 **It's highly experimental and still a work in progress**, but keep an eye out
 for more details soon!
 :::
