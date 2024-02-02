@@ -15,13 +15,14 @@ with [Apache Flink](https://flink.apache.org/) and
 [RisingWave](https://risingwave.com) backends in this release.
 
 We've also added a new batch backend with [Exasol](https://exasol.com), bringing
-the total number of backends Ibis supports to 20+.
+the total number of backends Ibis supports to 20.
 
 ### What is data streaming?
 
 Data streaming is a method of processing data continuously as it arrives rather
 than in batches at points in time. This is useful for applications that require
-low latency and increasingly common in modern data applications.
+low latency and is increasingly common in modern data
+applications.
 
 Apache Flink is the most popular open-source stream processing framework, with
 numerous cloud options. RisingWave is an open-source Postgres-compatible
@@ -33,10 +34,10 @@ unify the Python user experience across batch and streaming systems.
 
 ### Unifying batch and streaming UX in Python
 
-Regardless of whether you're using a batch or streaming data platform -- and the
-lines are continunally blurring between them -- you'll need a frontend to
-interact with as a data engineer, analyst, or scientist. If you're using Python,
-that frontend is likely a dataframe API.
+Whether you're using a batch or streaming data platform -- and the lines are
+continually blurring between them -- you'll need a frontend to interact with as
+a data engineer, analyst, or scientist. If you're using Python, that frontend is
+likely a dataframe API.
 
 Standards benefit individual users by reducing the cognitive load of learning
 and understanding new data systems. Organizations benefit from this in the form
@@ -48,7 +49,7 @@ arguments can differ greatly between APIs](../1brc/index.qmd#setup-1). This is
 compounded by tightly coupling a dataframe API to every query engine, whether
 batch or streaming.
 
-Ibis aims to solve this dillemma by providing a standard dataframe API that can
+Ibis aims to solve this dilemma by providing a standard dataframe API that can
 work across data systems, whether batch or streaming. This is a long-term vision
 and we're excited to take the first steps toward it in Ibis v8 with the launch
 of **two** streaming backends (and one more batch backend).
@@ -159,7 +160,7 @@ for df in batches:
 
 ### range
 
-The range function can be used to create a monotonic sequence of integers:
+The `range()` function can be used to create a monotonic sequence of integers:
 
 ```{python}
 s = ibis.range(10)
