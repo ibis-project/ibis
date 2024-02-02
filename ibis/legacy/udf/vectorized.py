@@ -81,6 +81,7 @@ def _coerce_to_series(
     -------
     pd.Series
         Output Series
+
     """
     import pandas as pd
 
@@ -156,6 +157,7 @@ def _coerce_to_dataframe(
     >>> _coerce_to_dataframe([1, 2, 3], dt.Struct(dict.fromkeys("abc", "int32")))  # noqa: E501
        a  b  c
     0  1  2  3
+
     """
     import pandas as pd
 
@@ -298,6 +300,7 @@ def analytic(input_type, output_type):
     >>> table = table.mutate(  # quartodoc: +SKIP # doctest: +SKIP
     ...     demean_and_zscore(table["v"]).over(win).destructure()
     ... )
+
     """
     return _udf_decorator(AnalyticVectorizedUDF, input_type, output_type)
 
@@ -342,6 +345,7 @@ def elementwise(input_type, output_type):
     >>> table = table.mutate(
     ...     year_monthday(table["date"]).destructure()
     ... )  # quartodoc: +SKIP # doctest: +SKIP
+
     """
     return _udf_decorator(ElementWiseVectorizedUDF, input_type, output_type)
 
@@ -380,5 +384,6 @@ def reduction(input_type, output_type):
     >>> table = table.group_by("key").aggregate(  # quartodoc: +SKIP # doctest: +SKIP
     ...     mean_and_std(table["v"]).destructure()
     ... )
+
     """
     return _udf_decorator(ReductionVectorizedUDF, input_type, output_type)

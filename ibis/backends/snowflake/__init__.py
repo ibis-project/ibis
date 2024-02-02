@@ -113,6 +113,7 @@ class Backend(SQLGlotBackend, CanCreateDatabase, CanCreateSchema):
         -------
         BaseBackend
             A backend instance
+
         """
 
         url = urlparse(url)
@@ -219,6 +220,7 @@ $$ {defn["source"]} $$"""
             Additional arguments passed to the DBAPI connection call.
         kwargs
             Additional arguments passed to the URL constructor.
+
         """
         connect_args = kwargs.copy()
         session_parameters = connect_args.pop("session_parameters", {})
@@ -534,6 +536,7 @@ $$"""
             The `schema` parameter does **not** refer to the column names and
             types of `table`.
             :::
+
         """
 
         if database is not None and schema is None:
@@ -712,6 +715,7 @@ $$"""
             if the table exists
         comment
             Add a comment to the table
+
         """
         if obj is None and schema is None:
             raise ValueError("Either `obj` or `schema` must be specified")
@@ -795,6 +799,7 @@ $$"""
         -------
         Table
             The table that was read from the CSV file
+
         """
         stage = ibis.util.gen_name("stage")
         file_format = ibis.util.gen_name("format")
@@ -903,6 +908,7 @@ $$"""
         -------
         Table
             An ibis table expression
+
         """
         stage = util.gen_name("read_json_stage")
         file_format = util.gen_name("read_json_format")
@@ -974,6 +980,7 @@ $$"""
         -------
         Table
             An ibis table expression
+
         """
         import pyarrow.dataset as ds
 
@@ -1051,6 +1058,7 @@ $$"""
             Name of the attached database that the table is located in.
         overwrite
             If `True` then replace existing contents of table
+
         """
         if not isinstance(obj, ir.Table):
             obj = ibis.memtable(obj)

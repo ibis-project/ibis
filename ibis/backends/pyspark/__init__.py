@@ -54,6 +54,7 @@ class _PySparkCursor:
         ----------
         query
             PySpark query
+
         """
         self.query = query
 
@@ -96,6 +97,7 @@ class Backend(SQLGlotBackend, CanCreateDatabase):
         ----------
         treat_nan_as_null : bool
             Treat NaNs in floating point expressions as NULL.
+
         """
 
         treat_nan_as_null: bool = False
@@ -144,6 +146,7 @@ class Backend(SQLGlotBackend, CanCreateDatabase):
         >>> session = SparkSession.builder.getOrCreate()
         >>> ibis.pyspark.connect(session)
         <ibis.backends.pyspark.Backend at 0x...>
+
         """
         self._context = session.sparkContext
         self._session = session
@@ -262,6 +265,7 @@ class Backend(SQLGlotBackend, CanCreateDatabase):
             Path where to store the database data; otherwise uses Spark default
         force
             Whether to append `IF NOT EXISTS` to the database creation SQL
+
         """
         if path is not None:
             properties = sge.Properties(
@@ -289,6 +293,7 @@ class Backend(SQLGlotBackend, CanCreateDatabase):
         force
             If False, Spark throws exception if database is not empty or
             database does not exist
+
         """
         sql = sge.Drop(kind="DATABASE", exist=force, this=sg.to_identifier(name))
         with self._safe_raw_sql(sql):
@@ -317,6 +322,7 @@ class Backend(SQLGlotBackend, CanCreateDatabase):
         -------
         Schema
             An ibis schema
+
         """
         if schema is not None:
             raise com.UnsupportedArgumentError(
@@ -367,6 +373,7 @@ class Backend(SQLGlotBackend, CanCreateDatabase):
         Examples
         --------
         >>> con.create_table("new_table_name", table_expr)  # quartodoc: +SKIP # doctest: +SKIP
+
         """
         if temp is True:
             raise NotImplementedError(
@@ -400,6 +407,7 @@ class Backend(SQLGlotBackend, CanCreateDatabase):
             Table name
         database
             Database name
+
         """
         table = sg.table(name, db=database)
         query = f"TRUNCATE TABLE {table}"
@@ -434,6 +442,7 @@ class Backend(SQLGlotBackend, CanCreateDatabase):
         -------
         Table
             The created view
+
         """
         src = sge.Create(
             this=sg.table(
@@ -457,6 +466,7 @@ class Backend(SQLGlotBackend, CanCreateDatabase):
             The old name of the table.
         new_name
             The new name of the table.
+
         """
         old = sg.table(old_name, quoted=True)
         new = sg.table(new_name, quoted=True)
@@ -484,6 +494,7 @@ class Backend(SQLGlotBackend, CanCreateDatabase):
 
         # Completely overwrite contents
         >>> con.insert(table, table_expr, overwrite=True)  # quartodoc: +SKIP # doctest: +SKIP
+
         """
 
         if isinstance(obj, ir.Expr):
@@ -512,6 +523,7 @@ class Backend(SQLGlotBackend, CanCreateDatabase):
         noscan
             If `True`, collect only basic statistics for the table (number of
             rows, size in bytes).
+
         """
         maybe_noscan = " NOSCAN" * noscan
         table = sg.table(name, db=database, quoted=self.compiler.quoted).sql(
@@ -559,6 +571,7 @@ class Backend(SQLGlotBackend, CanCreateDatabase):
         -------
         ir.Table
             The just-registered table
+
         """
         source = util.normalize_filename(source)
         spark_df = self._session.read.format("delta").load(source, **kwargs)
@@ -590,6 +603,7 @@ class Backend(SQLGlotBackend, CanCreateDatabase):
         -------
         ir.Table
             The just-registered table
+
         """
         source = util.normalize_filename(source)
         spark_df = self._session.read.parquet(source, **kwargs)
@@ -622,6 +636,7 @@ class Backend(SQLGlotBackend, CanCreateDatabase):
         -------
         ir.Table
             The just-registered table
+
         """
         inferSchema = kwargs.pop("inferSchema", True)
         header = kwargs.pop("header", True)
@@ -658,6 +673,7 @@ class Backend(SQLGlotBackend, CanCreateDatabase):
         -------
         ir.Table
             The just-registered table
+
         """
         source_list = normalize_filenames(source_list)
         spark_df = self._session.read.json(source_list, **kwargs)
@@ -690,6 +706,7 @@ class Backend(SQLGlotBackend, CanCreateDatabase):
         -------
         ir.Table
             The just-registered table
+
         """
         if isinstance(source, (str, Path)):
             first = str(source)
@@ -741,6 +758,7 @@ class Backend(SQLGlotBackend, CanCreateDatabase):
 
         **kwargs
             PySpark Delta Lake table write arguments. https://spark.apache.org/docs/3.1.1/api/python/reference/api/pyspark.sql.DataFrameWriter.save.html
+
         """
         expr.compile().write.format("delta").save(os.fspath(path), **kwargs)
 

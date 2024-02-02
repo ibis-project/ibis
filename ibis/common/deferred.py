@@ -38,6 +38,7 @@ class Resolver(Coercible, Hashable):
         Returns
         -------
         The constructed object.
+
         """
 
     @abstractmethod
@@ -76,6 +77,7 @@ class Deferred(Slotted, Immutable, Final):
         instead of the default. This is useful for complex deferred expressions
         where the arguments don't necessarily make sense to be user facing in
         the repr.
+
     """
 
     __slots__ = ("_resolver", "_repr")
@@ -212,6 +214,7 @@ class Variable(FrozenSlotted, Resolver):
     ----------
     name
         The key to retrieve from the state.
+
     """
 
     __slots__ = ("name",)
@@ -234,6 +237,7 @@ class Just(FrozenSlotted, Resolver):
     ----------
     value
         The value to return when the deferred is called.
+
     """
 
     __slots__ = ("value",)
@@ -273,6 +277,7 @@ class JustUnhashable(FrozenSlotted, Resolver):
     ----------
     value
         The value to return when the deferred is called.
+
     """
 
     __slots__ = ("value",)
@@ -307,6 +312,7 @@ class Factory(FrozenSlotted, Resolver):
     ----------
     func
         The function to apply.
+
     """
 
     __slots__ = ("func",)
@@ -373,6 +379,7 @@ class Call(FrozenSlotted, Resolver):
         The positional argument patterns.
     kwargs
         The keyword argument patterns.
+
     """
 
     __slots__ = ("func", "args", "kwargs")
@@ -589,6 +596,7 @@ def deferrable(func=None, *, repr=None):
         instead of the usual. This is useful for complex deferred expressions
         where the arguments don't necessarily make sense to be user facing
         in the repr.
+
     """
 
     def wrapper(func):
