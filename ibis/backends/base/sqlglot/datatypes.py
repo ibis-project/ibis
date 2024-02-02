@@ -253,6 +253,8 @@ class SqlglotType(TypeMapper):
             else:
                 unit = precision_or_span.this.this
             return dt.Interval(unit=unit, nullable=nullable)
+        elif isinstance(precision_or_span, sge.Var):
+            return dt.Interval(unit=precision_or_span.this, nullable=nullable)
         elif precision_or_span is None:
             raise com.IbisTypeError("Interval precision is None")
         else:
