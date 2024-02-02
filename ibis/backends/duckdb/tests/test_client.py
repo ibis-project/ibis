@@ -250,16 +250,33 @@ for _ in range(2):
         ),
         param(lambda _: "duckdb://", id="in-memory-empty"),
         param(lambda _: "duckdb://:memory:", id="in-memory-explicit"),
-        param(lambda p: f"duckdb://{p}?read_only=1", id="duckdb_read_write_int"),
-        param(lambda p: f"duckdb://{p}?read_only=False", id="duckdb_read_write_upper"),
+        param(lambda p: f"duckdb://{p}?read_only=0", id="duckdb_read_write_upper"),
+        param(lambda p: f"duckdb://{p}?read_only=False", id="duckdb_read_write_python"),
+        param(lambda p: f"duckdb://{p}?read_only=FALSE", id="duckdb_read_write_upper"),
         param(lambda p: f"duckdb://{p}?read_only=false", id="duckdb_read_write_lower"),
     ],
 )
 def test_connect_duckdb(url, tmp_path):
-    path = os.path.abspath(tmp_path / "test.duckdb")
-    with duckdb.connect(path):
+    raw_path = tmp_path.joinpath("test.duckdb").absolute()
+    uri = raw_path.as_uri()
+    posix = uri[len("file://") :]
+    con = ibis.connect(f"duckdb://{posix}")
+    one = ibis.literal(1)
+    assert con.execute(one) == 1
+
+
+@pytest.mark.parametrize(
+    "read_only", ["1", "TRUE", "true", "True"], ids=["int", "upper", "lower", "python"]
+)
+def test_connect_duckdb_read_only(tmp_path, read_only):
+    raw_path = tmp_path.joinpath("test.duckdb").absolute()
+    with duckdb.connect(raw_path):
         pass
-    con = ibis.connect(url(path))
+
+    uri = raw_path.as_uri()
+    posix = uri[len("file://") :]
+    pathstr = f"duckdb://{posix}?read_only={read_only}"
+    con = ibis.connect(pathstr)
     one = ibis.literal(1)
     assert con.execute(one) == 1
 
