@@ -1101,7 +1101,7 @@ def test_self_join_no_view_convenience(table):
     expected_cols = list(table.columns)
     # TODO(kszucs): the inner join convenience to don't duplicate the
     # equivalent columns from the right table is not implemented yet
-    expected_cols.extend(f"{c}_right" for c in table.columns)  # if c != "g")
+    expected_cols.extend(f"{c}_right" for c in table.columns if c != "g")
     assert result.columns == expected_cols
 
 
@@ -1207,43 +1207,41 @@ def test_filter_join():
     repr(filtered)
 
 
-# TODO(kszucs): the inner join convenience to don't duplicate the equivalent
-# columns from the right table is not implemented yet
-# def test_inner_join_overlapping_column_names():
-#     t1 = ibis.table([("foo", "string"), ("bar", "string"), ("value1", "double")])
-#     t2 = ibis.table([("foo", "string"), ("bar", "string"), ("value2", "double")])
+def test_inner_join_overlapping_column_names():
+    t1 = ibis.table([("foo", "string"), ("bar", "string"), ("value1", "double")])
+    t2 = ibis.table([("foo", "string"), ("bar", "string"), ("value2", "double")])
 
-#     joined = t1.join(t2, "foo")
-#     expected = t1.join(t2, t1.foo == t2.foo)
-#     assert_equal(joined, expected)
-#     assert joined.columns == ["foo", "bar", "value1", "bar_right", "value2"]
+    joined = t1.join(t2, "foo")
+    expected = t1.join(t2, t1.foo == t2.foo)
+    assert_equal(joined, expected)
+    assert joined.columns == ["foo", "bar", "value1", "bar_right", "value2"]
 
-#     joined = t1.join(t2, ["foo", "bar"])
-#     expected = t1.join(t2, [t1.foo == t2.foo, t1.bar == t2.bar])
-#     assert_equal(joined, expected)
-#     assert joined.columns == ["foo", "bar", "value1", "value2"]
+    joined = t1.join(t2, ["foo", "bar"])
+    expected = t1.join(t2, [t1.foo == t2.foo, t1.bar == t2.bar])
+    assert_equal(joined, expected)
+    assert joined.columns == ["foo", "bar", "value1", "value2"]
 
-#     # Equality predicates don't have same name, need to rename
-#     joined = t1.join(t2, t1.foo == t2.bar)
-#     assert joined.columns == [
-#         "foo",
-#         "bar",
-#         "value1",
-#         "foo_right",
-#         "bar_right",
-#         "value2",
-#     ]
+    # Equality predicates don't have same name, need to rename
+    joined = t1.join(t2, t1.foo == t2.bar)
+    assert joined.columns == [
+        "foo",
+        "bar",
+        "value1",
+        "foo_right",
+        "bar_right",
+        "value2",
+    ]
 
-#     # Not all predicates are equality, still need to rename
-#     joined = t1.join(t2, ["foo", t1.value1 < t2.value2])
-#     assert joined.columns == [
-#         "foo",
-#         "bar",
-#         "value1",
-#         "foo_right",
-#         "bar_right",
-#         "value2",
-#     ]
+    # Not all predicates are equality, still need to rename
+    joined = t1.join(t2, ["foo", t1.value1 < t2.value2])
+    assert joined.columns == [
+        "foo",
+        "bar",
+        "value1",
+        "foo_right",
+        "bar_right",
+        "value2",
+    ]
 
 
 @pytest.mark.parametrize(
@@ -1275,7 +1273,6 @@ def test_join_key_alternatives(con, key_maker):
                 "f": r1.f,
                 "foo_id": r1.foo_id,
                 "bar_id": r1.bar_id,
-                "foo_id_right": r2.foo_id,
                 "value1": r2.value1,
                 "value3": r2.value3,
             },
@@ -1364,9 +1361,6 @@ def test_unravel_compound_equijoin(table):
                 "key2": r1.key2,
                 "key3": r1.key3,
                 "value1": r1.value1,
-                "key1_right": r2.key1,
-                "key2_right": r2.key2,
-                "key3_right": r2.key3,
                 "value2": r2.value2,
             },
         )

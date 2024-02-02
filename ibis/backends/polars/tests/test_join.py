@@ -17,7 +17,6 @@ def test_memtable_join(con):
             "x": [1, 2, 3],
             "y": [4, 5, 6],
             "z": ["a", "b", "c"],
-            "x_right": [1, 2, 3],
             "y_right": [9, 8, 7],
             "z_right": ["f", "e", "d"],
         }

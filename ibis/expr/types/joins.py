@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import functools
 from public import public
-from typing import Any, Optional
+from typing import Any, Optional, TYPE_CHECKING
 from collections.abc import Iterator, Mapping
 
 import ibis
@@ -21,34 +21,92 @@ from ibis.expr.types.relations import (
 )
 from ibis.expr.operations.relations import JoinKind
 from ibis.expr.rewrites import peel_join_field
+from ibis.common.egraph import DisjointSet
+
+if TYPE_CHECKING:
+    from collections.abc import Sequence
 
 
-def disambiguate_fields(how, left_fields, right_fields, lname, rname):
+def disambiguate_fields(
+    how,
+    predicates,
+    equalities,
+    left_fields,
+    right_fields,
+    left_template,
+    right_template,
+):
+    """
+    Resolve name collisions between the left and right tables.
+    """
     collisions = set()
+    left_template = left_template or "{name}"
+    right_template = right_template or "{name}"
+
+    if how == "inner" and util.all_of(predicates, ops.Equals):
+        # for inner joins composed exclusively of equality predicates, we can
+        # avoid renaming columns with colliding names if their values are
+        # guaranteed to be equal due to the predicate
+        equalities = equalities.copy()
+        for pred in predicates:
+            if isinstance(pred.left, ops.Field) and isinstance(pred.right, ops.Field):
+                # disjoint sets are used to track the equality groups
+                equalities.add(pred.left)
+                equalities.add(pred.right)
+                equalities.union(pred.left, pred.right)
 
     if how in ("semi", "anti"):
         # discard the right fields per left semi and left anty join semantics
-        return left_fields, collisions
-
-    lname = lname or "{name}"
-    rname = rname or "{name}"
-    overlap = left_fields.keys() & right_fields.keys()
+        return left_fields, collisions, equalities
 
     fields = {}
     for name, field in left_fields.items():
-        if name in overlap:
-            name = lname.format(name=name)
+        if name in right_fields:
+            # there is an overlap between this field and a field from the right
+            try:
+                # check if the fields are equal due to equality predicates
+                are_equal = equalities.connected(field, right_fields[name])
+            except KeyError:
+                are_equal = False
+            if not are_equal:
+                # there is a name collision and the fields are not equal, so
+                # rename the field from the left according to the provided
+                # template (which is the name itself by default)
+                name = left_template.format(name=name)
+
         fields[name] = field
+
     for name, field in right_fields.items():
-        if name in overlap:
-            name = rname.format(name=name)
-        # only add if there is no collision
+        if name in left_fields:
+            # there is an overlap between this field and a field from the left
+            try:
+                # check if the fields are equal due to equality predicates
+                are_equal = equalities.connected(field, left_fields[name])
+            except KeyError:
+                are_equal = False
+
+            if are_equal:
+                # even though there is a name collision, the fields are equal
+                # due to equality predicates, so we can safely discard the
+                # field from the right
+                continue
+            else:
+                # there is a name collision and the fields are not equal, so
+                # rename the field from the right according to the provided
+                # template
+                name = right_template.format(name=name)
+
         if name in fields:
+            # we can still have collisions after multiple joins, or a wrongly
+            # chosen template, so we need to track the collisions
             collisions.add(name)
         else:
+            # the field name does not collide with any field from the left
+            # and not occupied by any field from the right, so add it to the
+            # fields mapping
             fields[name] = field
 
-    return fields, collisions
+    return fields, collisions, equalities
 
 
 def dereference_mapping_left(chain):
@@ -81,23 +139,60 @@ def dereference_sides(left, right, deref_left, deref_right):
     return left, right
 
 
-def dereference_comparison(pred, deref_left, deref_right):
-    left, right = dereference_sides(pred.left, pred.right, deref_left, deref_right)
-    return pred.copy(left=left, right=right)
-
-
 def dereference_value(pred, deref_left, deref_right):
     deref_both = {**deref_left, **deref_right}
     if isinstance(pred, ops.Comparison) and pred.left.relations == pred.right.relations:
-        return dereference_comparison(pred, deref_left, deref_right)
+        left, right = dereference_sides(pred.left, pred.right, deref_left, deref_right)
+        return pred.copy(left=left, right=right)
     else:
         return pred.replace(deref_both, filter=ops.Value)
 
 
 def prepare_predicates(
-    left, right, predicates, deref_left, deref_right, comparison=ops.Equals
+    left: ops.JoinChain,
+    right: ops.Relation,
+    predicates: Sequence[Any],
+    comparison: type[ops.Comparison] = ops.Equals,
 ):
-    """Bind and dereference predicates to the left and right tables."""
+    """Bind and dereference predicates to the left and right tables.
+
+    The responsibility of this function is twofold:
+    1. Convert the various input values to valid predicates, including binding.
+    2. Dereference the predicates one of the ops.JoinTable(s) in the join chain
+       or the new JoinTable wrapping the right table. JoinTable(s) are used to
+       ensure that all join participants are unique, even if the same table is
+       joined multiple times.
+
+    Since join predicates can be ambiguous sometimes, we do the two steps above
+    in the same time so that we have more contextual information to resolve
+    ambiguities.
+
+    Possible inputs for the predicates:
+    1. A python boolean literal, which is converted to a literal expression
+    2. A boolean `Value` expression, which gets flattened and dereferenced.
+       If there are comparison expressions where both sides depend on the same
+       relation, then the left side is dereferenced to one of the join tables
+       already part of the join chain, while the right side is dereferenced to
+       the new join table wrapping the right table.
+    3. A `Deferred` expression, which gets resolved on the left table and then
+       the same path is followed as for `Value` expressions.
+    4. A pair of expression-like objects, which are getting bound to the left
+       and right tables respectively using the robust `bind` function handling
+       several cases, including `Deferred` expressions, `Selector`s, literals,
+       etc. Then the left are dereferenced to the join chain whereas the right
+       to the new join table wrapping the right table.
+
+    Parameters
+    ----------
+    left
+        The left table
+    right
+        The right table
+    predicates
+        Predicates to bind and dereference, see the possible values above
+    """
+    deref_left = dereference_mapping_left(left)
+    deref_right = dereference_mapping_right(right)
 
     left, right = left.to_expr(), right.to_expr()
     for pred in util.promote_list(predicates):
@@ -142,9 +237,9 @@ def finished(method):
 
 @public
 class Join(Table):
-    __slots__ = ("_collisions",)
+    __slots__ = ("_collisions", "_equalities")
 
-    def __init__(self, arg, collisions=None):
+    def __init__(self, arg, collisions=(), equalities=()):
         assert isinstance(arg, ops.Node)
         if not isinstance(arg, ops.JoinChain):
             # coerce the input node to a join chain operation by first wrapping
@@ -154,7 +249,15 @@ class Join(Table):
             arg = ops.JoinTable(arg, index=0)
             arg = ops.JoinChain(arg, rest=(), values=arg.fields)
         super().__init__(arg)
+        # the collisions and equalities are used to track the name collisions
+        # and the equality groups join fields based on equality predicates;
+        # these must be tracked in the join expression because the join chain
+        # operation doesn't hold any information about `lname` and `rname`
+        # parameters passed to the join methods and used to disambiguate field
+        # names; the collisions are used to raise an error if there are any
+        # name collisions after the join chain is finished
         object.__setattr__(self, "_collisions", collisions or set())
+        object.__setattr__(self, "_equalities", equalities or DisjointSet())
 
     def _finish(self) -> Table:
         """Construct a valid table expression from this join expression."""
@@ -190,19 +293,9 @@ class Join(Table):
 
         left = self.op()
         right = ops.JoinTable(right, index=left.length)
-        subs_left = dereference_mapping_left(left)
-        subs_right = dereference_mapping_right(right)
 
         # bind and dereference the predicates
-        preds = list(
-            prepare_predicates(
-                left,
-                right,
-                predicates,
-                deref_left=subs_left,
-                deref_right=subs_right,
-            )
-        )
+        preds = list(prepare_predicates(left, right, predicates))
         if not preds and how != "cross":
             # if there are no predicates, default to every row matching unless
             # the join is a cross join, because a cross join already has this
@@ -213,8 +306,14 @@ class Join(Table):
         # effort to avoid collisions, but does not raise if there are any
         # if no disambiaution happens using a final .select() call, then
         # the finish() method will raise due to the name collisions
-        values, collisions = disambiguate_fields(
-            how, left.values, right.fields, lname, rname
+        values, collisions, equalities = disambiguate_fields(
+            how=how,
+            predicates=preds,
+            equalities=self._equalities,
+            left_fields=left.values,
+            right_fields=right.fields,
+            left_template=lname,
+            right_template=rname,
         )
 
         # construct a new join link and add it to the join chain
@@ -222,7 +321,7 @@ class Join(Table):
         left = left.copy(rest=left.rest + (link,), values=values)
 
         # return with a new JoinExpr wrapping the new join chain
-        return self.__class__(left, collisions=collisions)
+        return self.__class__(left, collisions=collisions, equalities=equalities)
 
     @functools.wraps(Table.asof_join)
     def asof_join(  # noqa: D102
@@ -280,30 +379,20 @@ class Join(Table):
 
         left = self.op()
         right = ops.JoinTable(right, index=left.length)
-        subs_left = dereference_mapping_left(left)
-        subs_right = dereference_mapping_right(right)
 
         # TODO(kszucs): add extra validation for `on` with clear error messages
-        (on,) = prepare_predicates(
-            left,
-            right,
-            [on],
-            deref_left=subs_left,
-            deref_right=subs_right,
-            comparison=ops.GreaterEqual,
-        )
-        predicates = prepare_predicates(
-            left,
-            right,
-            predicates,
-            deref_left=subs_left,
-            deref_right=subs_right,
-            comparison=ops.Equals,
-        )
-        preds = [on, *predicates]
+        (on,) = prepare_predicates(left, right, [on], comparison=ops.GreaterEqual)
+        preds = prepare_predicates(left, right, predicates, comparison=ops.Equals)
+        preds = [on, *preds]
 
-        values, collisions = disambiguate_fields(
-            "asof", left.values, right.fields, lname, rname
+        values, collisions, equalities = disambiguate_fields(
+            how="asof",
+            predicates=preds,
+            equalities=self._equalities,
+            left_fields=left.values,
+            right_fields=right.fields,
+            left_template=lname,
+            right_template=rname,
         )
 
         # construct a new join link and add it to the join chain
@@ -311,7 +400,7 @@ class Join(Table):
         left = left.copy(rest=left.rest + (link,), values=values)
 
         # return with a new JoinExpr wrapping the new join chain
-        return self.__class__(left, collisions=collisions)
+        return self.__class__(left, collisions=collisions, equalities=equalities)
 
     @functools.wraps(Table.cross_join)
     def cross_join(  # noqa: D102
