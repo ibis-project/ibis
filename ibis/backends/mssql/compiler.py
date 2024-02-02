@@ -12,7 +12,14 @@ from sqlglot.dialects.dialect import rename_func
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
-from ibis.backends.base.sqlglot.compiler import NULL, STAR, SQLGlotCompiler, paren
+from ibis.backends.base.sqlglot.compiler import (
+    FALSE,
+    NULL,
+    STAR,
+    TRUE,
+    SQLGlotCompiler,
+    paren,
+)
 from ibis.backends.base.sqlglot.datatypes import MSSQLType
 from ibis.backends.base.sqlglot.rewrites import (
     rewrite_first_to_first_value,
@@ -373,7 +380,7 @@ class MSSQLCompiler(SQLGlotCompiler):
     @visit_node.register(ops.Not)
     def visit_Not(self, op, *, arg):
         if isinstance(arg, sge.Boolean):
-            return sge.FALSE if arg == sge.TRUE else sge.TRUE
+            return FALSE if arg == TRUE else TRUE
         return self.if_(arg, 1, 0).eq(0)
 
     @visit_node.register(ops.HashBytes)
