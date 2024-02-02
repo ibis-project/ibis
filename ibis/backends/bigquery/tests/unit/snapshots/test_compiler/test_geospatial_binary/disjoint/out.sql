@@ -1,3 +1,3 @@
 SELECT
-  st_disjoint(t0.geog0, t0.geog1) AS tmp
-FROM t AS t0
+  st_disjoint(`t0`.`geog0`, `t0`.`geog1`) AS `tmp`
+FROM `t` AS `t0`
