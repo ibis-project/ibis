@@ -12,10 +12,13 @@ categories:
 Ibis v8 marks the first release of data streaming backends in Ibis! We're
 excited to begin bridging the gap between batch and streaming systems, starting
 with [Apache Flink](https://flink.apache.org/) and
-[RisingWave](https://risingwave.com) backends in this release.
+[RisingWave](https://risingwave.com) backends in this release. We've also added
+a new batch backend with [Exasol](https://exasol.com), bringing the total number
+of backends Ibis supports to 20.
 
-We've also added a new batch backend with [Exasol](https://exasol.com), bringing
-the total number of backends Ibis supports to 20.
+[Most geospatial operations are now supported in the DuckDB
+backend](#geospatial-operations-in-duckdb), making Ibis a great local option for
+geospatial analytics.
 
 ### What is data streaming?
 
@@ -222,6 +225,33 @@ t[-3:]
 
 ```{python}
 t[-6:-3]
+```
+
+### geospatial operations in DuckDB
+
+Ibis supports over 50 geospatial operations, with many being recently added to
+DuckDB backend. While backend-specific, this is worth calling out because it
+brings a great local option for geospatial analytics to Ibis. [Read the first
+geospatial blog](../ibis-duckdb-geospatial/index.qmd) or [the second geospatial
+blog](../ibis-duckdb-geospatial-dev-guru/index.qmd) to learn more.
+
+A new `zones` example dataset with a geometric datatype has been added for a
+quick demonstration:
+
+```{python}
+z = ibis.examples.zones.fetch()
+z = z.relocate("geom")
+z
+```
+
+We can use geospatial operations on that column:
+
+```{python}
+z = z.mutate(
+    area=z.geom.area(),
+    centroid=z.geom.centroid(),
+).relocate("area", "centroid")
+z
 ```
 
 ## Wrapping up
