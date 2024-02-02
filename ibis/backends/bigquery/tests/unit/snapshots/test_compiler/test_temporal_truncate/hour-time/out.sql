@@ -1,3 +1,3 @@
 SELECT
-  TIME_TRUNC(t0.a, HOUR) AS tmp
-FROM t AS t0
+  TIME_TRUNC(`t0`.`a`, HOUR) AS `tmp`
+FROM `t` AS `t0`

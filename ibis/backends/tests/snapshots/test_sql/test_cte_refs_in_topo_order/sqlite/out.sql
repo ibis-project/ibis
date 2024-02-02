@@ -1,22 +1,20 @@
-WITH t0 AS (
+WITH "t1" AS (
   SELECT
-    t4."key" AS "key"
-  FROM leaf AS t4
+    "t0"."key"
+  FROM "leaf" AS "t0"
   WHERE
-    1 = 1
-), t1 AS (
-  SELECT
-    t0."key" AS "key"
-  FROM t0
-), t2 AS (
-  SELECT
-    t0."key" AS "key"
-  FROM t0
-  JOIN t1
-    ON t0."key" = t1."key"
+    TRUE
 )
 SELECT
-  t2."key"
-FROM t2
-JOIN t2 AS t3
-  ON t2."key" = t3."key"
+  "t3"."key"
+FROM "t1" AS "t3"
+INNER JOIN "t1" AS "t4"
+  ON "t3"."key" = "t4"."key"
+INNER JOIN (
+  SELECT
+    "t3"."key"
+  FROM "t1" AS "t3"
+  INNER JOIN "t1" AS "t4"
+    ON "t3"."key" = "t4"."key"
+) AS "t6"
+  ON "t3"."key" = "t6"."key"
