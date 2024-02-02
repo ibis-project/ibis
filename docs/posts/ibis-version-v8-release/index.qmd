@@ -50,7 +50,7 @@ batch or streaming.
 
 Ibis aims to solve this dillemma by providing a standard dataframe API that can
 work across data systems, whether batch or streaming. This is a long-term vision
-and we're exicted to take the first steps toward it in Ibis v8 with the launch
+and we're excited to take the first steps toward it in Ibis v8 with the launch
 of **two** streaming backends (and one more batch backend).
 
 This allows a user to leverage DuckDB or Polars or DataFusion locally, then
@@ -226,7 +226,7 @@ t[-6:-3]
 ## Wrapping up
 
 Ibis v8 brings exciting new features and the first streaming backends into Ibis!
-We hope you're exicted as we are about breaking down barriers between batch and
+We hope you're excited as we are about breaking down barriers between batch and
 streaming systems with a standard Python dataframe API.
 
 As always, try Ibis by [installing](../../install.qmd) and [getting
