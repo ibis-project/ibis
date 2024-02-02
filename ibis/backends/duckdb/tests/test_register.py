@@ -110,7 +110,7 @@ def test_read_geo_from_url(con, monkeypatch):
     loaded_exts = []
     monkeypatch.setattr(con, "_load_extensions", lambda x, **_: loaded_exts.extend(x))
 
-    with pytest.raises(duckdb.IOException):
+    with pytest.raises((duckdb.IOException, duckdb.CatalogException)):
         # The read will fail, either because the URL is bogus (which it is) or
         # because the current connection doesn't have the spatial extension
         # installed and so the call to `st_read` will raise a catalog error.
@@ -355,7 +355,7 @@ def test_set_temp_dir(tmp_path):
         "nix on linux cannot download duckdb extensions or data due to sandboxing; "
         "duckdb will try to automatically install and load read_parquet"
     ),
-    raises=duckdb.IOException,
+    raises=(duckdb.Error, duckdb.IOException),
 )
 def test_s3_403_fallback(con, httpserver, monkeypatch):
     # monkeypatch to avoid downloading extensions in tests
