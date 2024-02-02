@@ -82,6 +82,7 @@ class Schema(Concrete, Coercible, MapSet):
         >>> assert first.equals(second)
         >>> third = ibis.schema({"a": "array<int>"})
         >>> assert not first.equals(third)
+
         """
         if not isinstance(other, Schema):
             raise TypeError(
@@ -114,6 +115,7 @@ class Schema(Concrete, Coercible, MapSet):
           a  int64
           b  string
         }
+
         """
         pairs = list(values)
         if len(pairs) == 0:
@@ -204,6 +206,7 @@ class Schema(Concrete, Coercible, MapSet):
         'a'
         >>> sch.name_at_position(1)
         'b'
+
         """
         return self.names[i]
 

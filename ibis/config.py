@@ -50,6 +50,7 @@ class ContextAdjustment(Config):
     time_col : str
         Name of the timestamp column for execution with a `timecontext`. See
         `ibis/expr/timecontext.py` for details.
+
     """
 
     time_col: str = "time"
@@ -65,6 +66,7 @@ class SQL(Config):
         explicit limit. [](`None`) means no limit.
     default_dialect : str
         Dialect to use for printing SQL when the backend cannot be determined.
+
     """
 
     default_limit: Optional[PosInt] = None
@@ -90,6 +92,7 @@ class Interactive(Config):
         Maximum depth for nested data types.
     show_types : bool
         Show the inferred type of value expressions in the interactive repr.
+
     """
 
     max_rows: int = 10
@@ -118,6 +121,7 @@ class Repr(Config):
         Show the inferred type of value expressions in the repr.
     interactive : bool
         Options controlling the interactive repr.
+
     """
 
     depth: Optional[PosInt] = None
@@ -160,6 +164,7 @@ class Options(Config):
         Pandas specific options.
     pyspark : Config | None
         PySpark specific options.
+
     """
 
     interactive: bool = False

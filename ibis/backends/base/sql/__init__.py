@@ -49,6 +49,7 @@ class BaseSQLBackend(BaseBackend):
         -------
         BaseBackend
             A backend instance
+
         """
         import sqlalchemy as sa
 
@@ -84,6 +85,7 @@ class BaseSQLBackend(BaseBackend):
         -------
         Table
             Table expression
+
         """
         if database is not None and not isinstance(database, str):
             raise exc.IbisTypeError(
@@ -120,6 +122,7 @@ class BaseSQLBackend(BaseBackend):
         -------
         Table
             Table expression
+
         """
         query = self._transpile_sql(query, dialect=dialect)
         if schema is None:
@@ -182,6 +185,7 @@ class BaseSQLBackend(BaseBackend):
         [(1,)]
         >>> cursor.closed
         True
+
         """
         return self.con.execute(query)
 
@@ -235,6 +239,7 @@ class BaseSQLBackend(BaseBackend):
         -------
         RecordBatchReader
             Collection of pyarrow `RecordBatch`s.
+
         """
         pa = self._import_pyarrow()
 
@@ -326,6 +331,7 @@ class BaseSQLBackend(BaseBackend):
             * `Table`: pandas.DataFrame
             * `Column`: pandas.Series
             * `Scalar`: Python scalar value
+
         """
         # TODO Reconsider having `kwargs` here. It's needed to support
         # `external_tables` in clickhouse, but better to deprecate that
@@ -391,6 +397,7 @@ class BaseSQLBackend(BaseBackend):
         Any
             The output of compilation. The type of this value depends on the
             backend.
+
         """
         self._define_udf_translation_rules(expr)
         return self.compiler.to_ast_ensure_limit(expr, limit, params=params).compile()

@@ -260,6 +260,7 @@ def param(type: dt.DataType) -> ir.Scalar:
     5.0
     >>> expr.execute(params={start: date(2013, 1, 3)})
     3.0
+
     """
     return ops.ScalarParameter(type).to_expr()
 
@@ -293,6 +294,7 @@ def schema(
     >>> sc = schema(names=["foo", "bar", "baz"], types=["string", "int64", "boolean"])
     >>> sc = schema(dict(foo="string"))
     >>> sc = schema(Schema(dict(foo="string")))  # no-op
+
     """
     if pairs is not None:
         return sch.schema(pairs)
@@ -336,6 +338,7 @@ def table(
     UnboundTable: t
       a int64
       b string
+
     """
     if name is None:
         if isinstance(schema, type):
@@ -423,6 +426,7 @@ def memtable(
              col0 col1
           0     1  foo
           1     2  baz
+
     """
     if columns is not None and schema is not None:
         raise NotImplementedError(
@@ -551,6 +555,7 @@ def desc(expr: ir.Column | str) -> ir.Value:
     -------
     ir.ValueExpr
         An expression
+
     """
     return _deferred_method_call(expr, "desc")
 
@@ -589,6 +594,7 @@ def asc(expr: ir.Column | str) -> ir.Value:
     -------
     ir.ValueExpr
         An expression
+
     """
     return _deferred_method_call(expr, "asc")
 
@@ -614,6 +620,7 @@ def and_(*predicates: ir.BooleanValue) -> ir.BooleanValue:
     BooleanValue
         A new predicate that evaluates to True if all composing predicates are
         True. If no predicates were provided, returns True.
+
     """
     if not predicates:
         return literal(True)
@@ -633,6 +640,7 @@ def or_(*predicates: ir.BooleanValue) -> ir.BooleanValue:
     BooleanValue
         A new predicate that evaluates to True if any composing predicates are
         True. If no predicates were provided, returns False.
+
     """
     if not predicates:
         return literal(False)
@@ -677,6 +685,7 @@ def random() -> ir.FloatingScalar:
     -------
     FloatingScalar
         Random float value expression
+
     """
     return ops.RandomScalar().to_expr()
 
@@ -763,6 +772,7 @@ def timestamp(
     │ 2001-01-02 03:00:00 │
     │ 2002-04-05 06:00:00 │
     └─────────────────────┘
+
     """
     args = (value_or_year, month, day, hour, minute, second)
     is_ymdhms = any(a is not None for a in args[1:])
@@ -845,6 +855,7 @@ def date(value_or_year, month=None, day=None, /):
     │ 2001-01-02 │
     │ 2002-03-04 │
     └────────────┘
+
     """
     if month is not None or day is not None:
         return ops.DateFromYMD(value_or_year, month, day).to_expr()
@@ -915,6 +926,7 @@ def time(value_or_hour, minute=None, second=None, /):
     │ 01:02:03 │
     │ 04:05:06 │
     └──────────┘
+
     """
     if minute is not None or second is not None:
         return ops.TimeFromHMS(value_or_hour, minute, second).to_expr()
@@ -975,6 +987,7 @@ def interval(
     -------
     IntervalScalar
         An interval expression
+
     """
     keyword_value_unit = [
         ("nanoseconds", nanoseconds, "ns"),
@@ -1062,6 +1075,7 @@ def case() -> bl.SearchedCaseBuilder:
     │     3 │ *      │     7 │    21.0 │
     │     4 │ /      │     8 │     0.5 │
     └───────┴────────┴───────┴─────────┘
+
     """
     return bl.SearchedCaseBuilder()
 
@@ -1073,6 +1087,7 @@ def now() -> ir.TimestampScalar:
     -------
     TimestampScalar
         An expression representing the current timestamp.
+
     """
     return ops.TimestampNow().to_expr()
 
@@ -1105,6 +1120,7 @@ def rank() -> ir.IntegerColumn:
     │      2 │     2 │
     │      3 │     5 │
     └────────┴───────┘
+
     """
     return ops.MinRank().to_expr()
 
@@ -1139,6 +1155,7 @@ def dense_rank() -> ir.IntegerColumn:
     │      2 │     1 │
     │      3 │     2 │
     └────────┴───────┘
+
     """
     return ops.DenseRank().to_expr()
 
@@ -1169,6 +1186,7 @@ def percent_rank() -> ir.FloatingColumn:
     │      2 │      0.4 │
     │      3 │      1.0 │
     └────────┴──────────┘
+
     """
     return ops.PercentRank().to_expr()
 
@@ -1199,6 +1217,7 @@ def cume_dist() -> ir.FloatingColumn:
     │      2 │ 0.833333 │
     │      3 │ 1.000000 │
     └────────┴──────────┘
+
     """
     return ops.CumeDist().to_expr()
 
@@ -1229,6 +1248,7 @@ def ntile(buckets: int | ir.IntegerValue) -> ir.IntegerColumn:
     │      2 │     1 │
     │      3 │     1 │
     └────────┴───────┘
+
     """
     return ops.NTile(buckets).to_expr()
 
@@ -1263,6 +1283,7 @@ def row_number() -> ir.IntegerColumn:
     │      3 │      4 │
     │      2 │      5 │
     └────────┴────────┘
+
     """
     return ops.RowNumber().to_expr()
 
@@ -1316,6 +1337,7 @@ def read_csv(
     │     2 │ NULL   │
     │  NULL │ f      │
     └───────┴────────┘
+
     """
     from ibis.config import _default_backend
 
@@ -1371,6 +1393,7 @@ def read_json(
     │     2 │ NULL   │
     │  NULL │ f      │
     └───────┴────────┘
+
     """
     from ibis.config import _default_backend
 
@@ -1428,6 +1451,7 @@ def read_parquet(
     │     2 │ h      │
     │     3 │ i      │
     └───────┴────────┘
+
     """
     from ibis.config import _default_backend
 
@@ -1478,6 +1502,7 @@ def read_delta(
     │     2 │ h      │
     │     3 │ i      │
     └───────┴────────┘
+
     """
     from ibis.config import _default_backend
 
@@ -1509,6 +1534,7 @@ def set_backend(backend: str | BaseBackend) -> None:
     Or as an existing backend instance
 
     >>> ibis.set_backend(ibis.duckdb.connect())
+
     """
     import ibis
 
@@ -1536,6 +1562,7 @@ def get_backend(expr: Expr | None = None) -> BaseBackend:
     -------
     BaseBackend
         The Ibis backend.
+
     """
     if expr is None:
         from ibis.config import _default_backend
@@ -1565,6 +1592,7 @@ def rows_with_max_lookback(
     -------
     RowsWithMaxLookback
         A named tuple of rows and maximum look-back in time.
+
     """
     return RowsWithMaxLookback(rows, max_lookback)
 
@@ -1608,6 +1636,7 @@ def window(
     -------
     Window
         A window frame
+
     """
     if isinstance(preceding, RowsWithMaxLookback):
         max_lookback = preceding.max_lookback
@@ -1665,6 +1694,7 @@ def rows_window(preceding=None, following=None, group_by=None, order_by=None):
     -------
     Window
         A window frame
+
     """
     if isinstance(preceding, RowsWithMaxLookback):
         max_lookback = preceding.max_lookback
@@ -1704,6 +1734,7 @@ def range_window(preceding=None, following=None, group_by=None, order_by=None):
     -------
     Window
         A window frame
+
     """
     return (
         bl.LegacyWindowBuilder()
@@ -1729,6 +1760,7 @@ def cumulative_window(group_by=None, order_by=None):
     -------
     Window
         A window frame
+
     """
     return window(rows=(None, 0), group_by=group_by, order_by=order_by)
 
@@ -1749,6 +1781,7 @@ def trailing_window(preceding, group_by=None, order_by=None):
     -------
     Window
         A window frame
+
     """
     return window(
         preceding=preceding, following=0, group_by=group_by, order_by=order_by
@@ -1771,6 +1804,7 @@ def trailing_rows_window(preceding, group_by=None, order_by=None):
     -------
     Window
         A window frame
+
     """
     return rows_window(
         preceding=preceding, following=0, group_by=group_by, order_by=order_by
@@ -1793,6 +1827,7 @@ def trailing_range_window(preceding, order_by, group_by=None):
     -------
     Window
         A window frame
+
     """
     return range_window(
         preceding=preceding, following=0, group_by=group_by, order_by=order_by
@@ -1863,6 +1898,7 @@ def union(table: ir.Table, *rest: ir.Table, distinct: bool = False) -> ir.Table:
     │     2 │
     │     3 │
     └───────┘
+
     """
     return table.union(*rest, distinct=distinct) if rest else table
 
@@ -1918,6 +1954,7 @@ def intersect(table: ir.Table, *rest: ir.Table, distinct: bool = True) -> ir.Tab
     ├───────┤
     │     2 │
     └───────┘
+
     """
     return table.intersect(*rest, distinct=distinct) if rest else table
 
@@ -1973,6 +2010,7 @@ def difference(table: ir.Table, *rest: ir.Table, distinct: bool = True) -> ir.Ta
     ├───────┤
     │     1 │
     └───────┘
+
     """
     return table.difference(*rest, distinct=distinct) if rest else table
 
@@ -1996,6 +2034,7 @@ def watermark(time_col: str, allowed_delay: ir.IntervalScalar) -> Watermark:
     -------
     Watermark
         A watermark object.
+
     """
     return Watermark(time_col=time_col, allowed_delay=allowed_delay)
 
@@ -2107,6 +2146,7 @@ def range(start, stop, step) -> ir.ArrayValue:
     │ 2002-01-19 00:00:00 │
     │ …                   │
     └─────────────────────┘
+
     """
     raise NotImplementedError()
 
@@ -2251,6 +2291,7 @@ def ifelse(condition: Any, true_expr: Any, false_expr: Any) -> ir.Value:
     │ yes                            │
     │ no                             │
     └────────────────────────────────┘
+
     """
     if not isinstance(condition, ir.Value):
         condition = literal(condition, type="bool")
@@ -2276,6 +2317,7 @@ def where(cond, true_expr, false_expr) -> ir.Value:
     -------
     Value : ir.Value
         The value of `true_expr` if `arg` is `True` else `false_expr`
+
     """
     return ifelse(cond, true_expr, false_expr)
 
@@ -2305,6 +2347,7 @@ def coalesce(*args: Any) -> ir.Value:
     >>> ibis.options.interactive = True
     >>> ibis.coalesce(None, 4, 5)
     4
+
     """
     return ops.Coalesce(args).to_expr()
 
@@ -2329,6 +2372,7 @@ def greatest(*args: Any) -> ir.Value:
     >>> ibis.options.interactive = True
     >>> ibis.greatest(None, 4, 5)
     5
+
     """
     return ops.Greatest(args).to_expr()
 
@@ -2353,5 +2397,6 @@ def least(*args: Any) -> ir.Value:
     >>> ibis.options.interactive = True
     >>> ibis.least(None, 4, 5)
     4
+
     """
     return ops.Least(args).to_expr()

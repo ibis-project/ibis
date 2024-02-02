@@ -22,6 +22,7 @@ class SymbolTable(ChainMap):
     JavaScript requires declarations in strict mode, so to implement this we
     shove a "let" at the beginning of every variable name if it doesn't already
     exist in the current scope.
+
     """
 
     def __getitem__(self, key):
@@ -44,6 +45,7 @@ def indent(lines, spaces=4):
     Returns
     -------
     indented_lines : str
+
     """
     if isinstance(lines, str):
         text = [lines]

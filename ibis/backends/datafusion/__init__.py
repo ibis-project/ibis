@@ -72,6 +72,7 @@ class Backend(SQLGlotBackend, CanCreateDatabase, CanCreateSchema):
         >>> import ibis
         >>> config = {"t": "path/to/file.parquet", "s": "path/to/file.csv"}
         >>> ibis.datafusion.connect(config)
+
         """
         if isinstance(config, SessionContext):
             (self.con, config) = (config, None)
@@ -191,6 +192,7 @@ class Backend(SQLGlotBackend, CanCreateDatabase, CanCreateSchema):
             Raw SQL string
         kwargs
             Backend specific query arguments
+
         """
         with contextlib.suppress(AttributeError):
             query = query.sql(dialect=self.dialect, pretty=True)
@@ -312,6 +314,7 @@ class Backend(SQLGlotBackend, CanCreateDatabase, CanCreateSchema):
         >>> dataset = ds.dataset("path/to/table")
         >>> conn.register(dataset, "my_table")
         >>> conn.table("my_table")
+
         """
         import pandas as pd
 
@@ -392,6 +395,7 @@ class Backend(SQLGlotBackend, CanCreateDatabase, CanCreateSchema):
         -------
         ir.Table
             The just-registered table
+
         """
         path = normalize_filename(path)
         table_name = table_name or gen_name("read_csv")
@@ -419,6 +423,7 @@ class Backend(SQLGlotBackend, CanCreateDatabase, CanCreateSchema):
         -------
         ir.Table
             The just-registered table
+
         """
         path = normalize_filename(path)
         table_name = table_name or gen_name("read_parquet")
@@ -447,6 +452,7 @@ class Backend(SQLGlotBackend, CanCreateDatabase, CanCreateSchema):
         -------
         ir.Table
             The just-registered table
+
         """
         source_table = normalize_filename(source_table)
 
@@ -547,6 +553,7 @@ class Backend(SQLGlotBackend, CanCreateDatabase, CanCreateSchema):
         overwrite
             If `True`, replace the table if it already exists, otherwise fail
             if the table exists
+
         """
         if obj is None and schema is None:
             raise ValueError("Either `obj` or `schema` must be specified")
