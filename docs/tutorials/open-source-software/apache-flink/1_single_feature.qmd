@@ -1,0 +1,347 @@
+# A real-life use case: fraud detection
+
+Imagine you’re a data scientist who works at a large bank. You have been tasked
+with one of the most challenging problems in banking today: identifying
+fraudulent transactions. The bank receives transaction details from its credit
+card customers in a Kafka topic, which include information about the transaction
+date and time, transaction amount, transaction location, merchant, category of
+purchase, and so on. Given the nature of the data, you want to use Apache Flink
+for its stream processing capabilities and to develop machine learning features
+that can be used to identify fraud.
+
+
+### Prerequisites
+
+* Docker Compose: This tutorial uses Docker Compose to manage an Apache Kafka
+environment (including sample data generation) and a Flink cluster (for remote
+execution). You can [download and install Docker Compose from the official
+website](https://docs.docker.com/compose/install/).
+* JDK 11 release: Flink requires Java 11.
+* Python 3.9 or 3.10.
+* Follow [the setup tutorial](0_setup.qmd) to install the Flink backend for Ibis.
+* Clone the [example repository](https://github.com/ibis-project/ibis-flink-tutorial).
+
+
+### Spinning up the services using Docker Compose
+
+From your project directory, run `docker compose up -d` to create Kafka topics,
+generate sample data, and launch a Flink cluster in the background.
+
+```{python}
+# | code-fold: true
+# | include: false
+!pip install apache-flink
+!git clone https://github.com/ibis-project/ibis-flink-tutorial
+!cd ibis-flink-tutorial && docker compose up -d && sleep 10 && cd ..
+
+from kafka import KafkaConsumer
+
+consumer = KafkaConsumer("transaction", auto_offset_reset="earliest")
+for _, msg in zip(range(10), consumer):
+    # this ensures that messages exist in the `transaction` topic before
+    # proceeding
+    print(msg)
+```
+
+::: {.callout-tip}
+Running `docker compose up` with the `-d` flag runs it in
+detached mode, where containers are run in the background. While this frees up
+the terminal for you to run other commands, it also hides error messages.
+
+Depending on whether the container images are already available locally, setting
+up the containers may take anywhere from 10 seconds to a minute. If it's your
+first time running this command, it's best to run it in the foreground so that
+you can monitor the progress of setup.
+:::
+
+This should set up a `transaction` topic in the Kafka cluster that contains
+messages that look like the following:
+
+```
+{ "trans_date_trans_time": "2012-02-23 00:10:01", "cc_num":
+4428780000000000000, "merchant": "fraud_Olson, Becker and Koch", "category":
+"gas_transport", "amt": 82.55, "first": "Richard", "last": "Waters", "zipcode":
+"53186", "dob": "1/2/46", "trans_num": "dbf31d83eebdfe96d2fa213df2043586",
+"is_fraud": 0, "user_id": 7109464218691269943 }
+```
+
+::: {.callout-warning}
+Do not proceed to the next section until messages are
+flowing into the `transaction` topic!
+:::
+
+
+### Connect to a Flink environment session
+
+We can connect to a Flink environment session by creating a
+`pyflink.table.TableEnvironment` and passing this to Flink backend’s `connect`
+method. For this tutorial, we are going to use Flink in streaming mode.
+
+```{python}
+from pyflink.table import EnvironmentSettings, TableEnvironment
+
+import ibis
+
+env_settings = EnvironmentSettings.in_streaming_mode()
+table_env = TableEnvironment.create(env_settings)
+table_env.get_config().set("parallelism.default", "1")
+connection = ibis.flink.connect(table_env)
+```
+
+The Kafka connector isn’t part of the binary distribution. In order to connect
+to a Kafka source/sink, we need to [download the JAR
+file](https://repo.maven.apache.org/maven2/org/apache/flink/flink-sql-connector-kafka/3.0.2-1.18/flink-sql-connector-kafka-3.0.2-1.18.jar)
+and manually add it into the classpath:
+
+```{python}
+# | code-fold: true
+# | include: false
+!wget -N https://repo.maven.apache.org/maven2/org/apache/flink/flink-sql-connector-kafka/3.0.2-1.18/flink-sql-connector-kafka-3.0.2-1.18.jar
+connection.raw_sql("ADD JAR './flink-sql-connector-kafka-3.0.2-1.18.jar'")
+```
+
+Now that we’ve set up the Flink table environment, we’re ready to connect to
+data!
+
+
+### Connect to a data source
+
+In order to experiment with the data in the Kafka topic and create
+transformations on top of it, we need to first define and connect to the data
+source.
+
+While we’re dealing with a continuous stream of data here, Flink and Ibis
+abstract differences in the underlying implementation between tables and
+streams, so that, conceptually, we can simply treat our Kafka topic as a table.
+
+To connect to our `transaction` Kafka topic, we need to provide a table name,
+schema of the data, and [connector
+configurations](https://nightlies.apache.org/flink/flink-docs-release-1.18/docs/connectors/table/kafka/#connector-options).
+The schema of the data must contain a subset of the fields in the actual Kafka
+topic. Because this is a streaming job, we also want to define a watermark
+strategy for the data source by specifying the timestamp column (`time_col`) and
+a time duration during which late events are accepted (`allowed_delay`). (If you
+are not already familiar with these concepts, you can check out [Flink’s
+documentation](https://nightlies.apache.org/flink/flink-docs-release-1.18/docs/dev/datastream/operators/windows/)
+for more details.) Note that [Flink requires the timestamp column to be of data
+type
+TIMESTAMP(3)](https://nightlies.apache.org/flink/flink-docs-master/docs/dev/table/sql/create/#watermark).
+
+```{python}
+import ibis
+import ibis.expr.datatypes as dt
+import ibis.expr.schema as sch
+
+source_schema = sch.Schema(
+    {
+        "user_id": dt.int64,
+        "trans_date_trans_time": dt.timestamp(scale=3),
+        "cc_num": dt.int64,
+        "amt": dt.float64,
+        "trans_num": dt.str,
+        "merchant": dt.str,
+        "category": dt.str,
+        "is_fraud": dt.int32,
+        "first": dt.str,
+        "last": dt.str,
+        "dob": dt.str,
+        "zipcode": dt.str,
+    }
+)
+
+# Configure the source table with Kafka connector properties.
+source_configs = {
+    "connector": "kafka",
+    "topic": "transaction",
+    "properties.bootstrap.servers": "localhost:9092",
+    "properties.group.id": "consumer_group_0",
+    "scan.startup.mode": "earliest-offset",
+    "format": "json",
+}
+
+# Create the source table using the defined schema, Kafka connector properties,
+# and set watermarking for real-time processing with a 15-second allowed
+# lateness.
+source_table = connection.create_table(
+    "transaction",
+    schema=source_schema,
+    tbl_properties=source_configs,
+    watermark=ibis.watermark(
+        time_col="trans_date_trans_time", allowed_delay=ibis.interval(seconds=15)
+    ),
+)
+```
+
+We’re ready to write some transformations!
+
+
+### Create transformations
+
+Which signs could be indicative of suspected fraud in a credit card? Oftentimes,
+we’re looking for abnormalities in user behaviors, for example, an excessively
+large transaction amount, unusually frequent transactions during a short period
+of time, etc. Based on this, the average transaction amount and the total
+transaction count over the past five hours may be useful features. Let’s write
+out each of these using Ibis API:
+
+```{python}
+user_trans_amt_last_360m_agg = source_table[
+    source_table.user_id,
+    # Calculate the average transaction amount over the past six hours
+    source_table.amt.mean()
+    .over(
+        ibis.window(
+            group_by=source_table.user_id,
+            order_by=source_table.trans_date_trans_time,
+            range=(-ibis.interval(minutes=360), 0),
+        )
+    )
+    .name("user_mean_trans_amt_last_360min"),
+    # Calculate the total transaction count over the past six hours
+    source_table.amt.count()
+    .over(
+        ibis.window(
+            group_by=source_table.user_id,
+            order_by=source_table.trans_date_trans_time,
+            range=(-ibis.interval(minutes=360), 0),
+        )
+    )
+    .name("user_trans_count_last_360min"),
+    source_table.trans_date_trans_time,
+]
+```
+
+`over()` creates an [over
+aggregation](https://nightlies.apache.org/flink/flink-docs-release-1.18/docs/dev/table/sql/queries/over-agg/)
+in Flink, which computes an aggregated value for every input row. More
+specifically, this means that an aggregation result is computed and emitted for
+every new record flowing into the upstream Kafka topic.
+
+The issue with over aggregation is that, if there is no new transaction for a
+specific user during a time window, there would be no aggregation result written
+to the sink. In other words, the user would never show up in the result table if
+they never made a transaction.
+
+Alternatively, we can compute aggregations using [Flink’s windowing table-valued
+functions](https://nightlies.apache.org/flink/flink-docs-release-1.18/docs/dev/table/sql/queries/window-tvf/).
+This allows more flexibility in defining windows and when results are computed
+and emitted into the sink. There are three types of windowing TVFs available in
+Flink: tumble, hop, and cumulate. Let’s define the same features with tumble
+windows:
+
+```{python}
+windowed_stream = source_table.window_by(
+    time_col=source_table.trans_date_trans_time,
+).tumble(window_size=ibis.interval(minutes=360))
+
+user_trans_amt_last_360m_agg_windowed_stream = windowed_stream.group_by(
+    ["window_start", "window_end", "user_id"]
+).agg(
+    user_mean_trans_amt_last_360min=windowed_stream.amt.mean(),
+    user_trans_count_last_360min=windowed_stream.amt.count(),
+)
+```
+### Connect to a data sink
+
+We’re creating streaming jobs to continuously process upstream data, which could
+be infinite. Therefore, we want to have the job continuously running and write
+results into a data sink. Here, we’re simply going to write results into a
+separate Kafka topic named `user_trans_amt_last_360min` for convenient
+downstream processing.
+
+We can define a data sink in virtually the same exact way in which we defined
+our data source:
+
+```{python}
+sink_schema = sch.Schema(
+    {
+        "user_id": dt.int64,
+        "user_mean_trans_amt_last_360min": dt.float64,
+        "user_trans_count_last_360min": dt.int64,
+        "trans_date_trans_time": dt.timestamp(scale=3),
+    }
+)
+
+# Configure the sink table with Kafka connector properties for writing results.
+sink_configs = {
+    "connector": "kafka",
+    "topic": "user_trans_amt_last_360min",
+    "properties.bootstrap.servers": "localhost:9092",
+    "format": "json",
+}
+
+sink_table = connection.create_table(
+    "user_trans_amt_last_360min",
+    schema=sink_schema,
+    tbl_properties=sink_configs,
+)
+```
+
+The last step is to connect the pieces and actually write our query results into
+the sink table that we had just created:
+
+```{python}
+connection.insert("user_trans_amt_last_360min",
+user_trans_amt_last_360m_agg)
+```
+
+This step is exactly the same for windowing TVFs:
+
+```{python}
+sink_schema = sch.Schema(
+    {
+        "window_start": dt.timestamp(scale=3),
+        "window_end": dt.timestamp(scale=3),
+        "user_id": dt.int64,
+        "user_mean_trans_amt_last_360min": dt.float64,
+        "user_trans_count_last_360min": dt.int64,
+    }
+)
+
+# Configure the sink table with Kafka connector properties for writing results.
+sink_configs = {
+    "connector": "kafka",
+    "topic": "user_trans_amt_last_360min_windowed",
+    "properties.bootstrap.servers": "localhost:9092",
+    "format": "json",
+}
+
+sink_table = connection.create_table(
+    "user_trans_amt_last_360min_windowed",
+    schema=sink_schema,
+    tbl_properties=sink_configs,
+)
+
+connection.insert(
+    "user_trans_amt_last_360min_windowed", user_trans_amt_last_360m_agg_windowed_stream
+)
+```
+
+### Expected output
+
+Now, if everything is working correctly, you should expect to see results being
+streamed into the Kafka topic!
+
+::: {.callout-tip}
+You can inspect the Kafka topic using the Python Kafka client
+if you have it installed or via console Kafka consumer:
+
+```{python}
+from kafka import KafkaConsumer
+
+consumer = KafkaConsumer(
+    "user_trans_amt_last_360min"
+)  # or "user_trans_amt_last_360min_windowed"
+for _, msg in zip(range(10), consumer):
+    print(msg)
+```
+
+:::
+
+## Next steps
+
+Woohoo, great job! Now that you've connected to Flink and learned the basics, you
+can query your own data. See the rest of the Ibis documentation or [Flink
+documentation](https://nightlies.apache.org/flink/flink-docs-stable/). You can
+[open an issue](https://github.com/ibis-project/ibis/issues/new/choose) if you run
+into one!

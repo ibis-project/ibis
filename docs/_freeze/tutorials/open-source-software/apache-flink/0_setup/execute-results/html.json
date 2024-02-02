@@ -1,0 +1,12 @@
+{
+  "hash": "420a8aefeb33718c279c33a74008fed9",
+  "result": {
+    "engine": "jupyter",
+    "markdown": "---\ntitle: Getting started\n---\n\n\n\nIn this tutorial, you will learn how to set up and use Flink with Ibis. After\nsetting up the Flink backend for Ibis in this tutorial, we'll see a real-life\nexample in [A real-life use case: fraud detection](1_single_feature.qmd).\n\n## Set up and connect to Flink\n\nInstall the Flink backend for Ibis with `pip`:\n\n\n\n::: {.callout-warning}\nYou need to install the Flink backend for Ibis alongside\nthe `apache-flink` package. PyFlink is not available on conda-forge, so you\ncannot install the Flink backend for Ibis with `conda`, `mamba`, or `pixi`.\n:::\n\n\nTo connect to a Flink session, simply create a `pyflink.table.TableEnvironment`\nand pass that to `ibis.flink.connect()`:\n\n::: {#9d9226b6 .cell execution_count=2}\n``` {.python .cell-code}\nfrom pyflink.table import EnvironmentSettings, TableEnvironment\n\nimport ibis\n\nenv_settings = EnvironmentSettings.in_streaming_mode()\ntable_env = TableEnvironment.create(env_settings)\nconnection = ibis.flink.connect(table_env)\n```\n:::\n\n\n::: {.callout-tip}\nIf you’re working on a batch data pipeline, simply change the\nTableEnvironment settings to batch mode before connecting to it:\n\n::: {#85c395a7 .cell execution_count=3}\n``` {.python .cell-code}\nenv_settings = EnvironmentSettings.in_batch_mode()\n```\n:::\n\n\n:::\n\nNow you can connect to data sources, create transformations, and write the\nresults into sinks!\n\n## Next steps\n\nNow that you're connected to Flink, you can [continue this tutorial to learn the\nbasics of Ibis](1_single_feature.qmd) or query your own data. See the rest of\nthe Ibis documentation or\n[Flink documentation](https://nightlies.apache.org/flink/flink-docs-stable/). You\ncan [open an issue](https://github.com/ibis-project/ibis/issues/new/choose) if you\nrun into one!\n\n",
+    "supporting": [
+      "0_setup_files"
+    ],
+    "filters": [],
+    "includes": {}
+  }
+}

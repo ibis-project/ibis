@@ -100,7 +100,8 @@ website:
       contents:
         - install.qmd
         - auto: tutorials/*.qmd
-        - auto: tutorials/data-platforms
+        - auto: tutorials/cloud-data-platforms
+        - auto: tutorials/open-source-software
     - id: concepts
       title: "Concepts"
       style: "docked"
