@@ -2730,6 +2730,25 @@ widgetsnbextension = ">=4.0.9,<4.1.0"
 test = ["ipykernel", "jsonschema", "pytest (>=3.6.0)", "pytest-cov", "pytz"]
 
 [[package]]
+name = "itables"
+version = "1.6.3"
+description = "Interactive Tables in Jupyter"
+optional = false
+python-versions = "*"
+files = [
+    {file = "itables-1.6.3-py3-none-any.whl", hash = "sha256:95cc6c9cdeaa418d7e5f08f7d716a04e57a71dbc7316cf6cdcc8bb2774c0f1d4"},
+    {file = "itables-1.6.3.tar.gz", hash = "sha256:ce1c4a856ed2c40f17da870aaf57808f87bdc8b1c411ddbc154fa0f59be361f4"},
+]
+
+[package.dependencies]
+IPython = "*"
+numpy = "*"
+pandas = "*"
+
+[package.extras]
+polars = ["polars", "pyarrow"]
+
+[[package]]
 name = "jaraco-classes"
 version = "3.3.0"
 description = "Utility functions for Python class constructs"
@@ -7423,4 +7442,4 @@ visualization = ["graphviz"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.9"
-content-hash = "5f1fef3d88db69208e76b76e6453fbb33dfe2c2ced1eb671db000ea0c5217a8c"
+content-hash = "2e7df88bb8c9f768d1e9122c920dc43230eac690db413b121171e7ad0508bf37"
