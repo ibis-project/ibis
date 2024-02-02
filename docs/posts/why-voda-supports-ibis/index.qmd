@@ -1,0 +1,200 @@
+---
+title: "Why Voltron Data supports Ibis"
+author: "Cody"
+date: "2024-02-05"
+image: standards.png
+categories:
+    - blog
+---
+
+## Overview
+
+The Ibis project is an [independently governed open-source
+community](https://github.com/ibis-project/governance) that builds the portable
+Python dataframe library. It is primarily backed by [Voltron
+Data](https://voltrondata.com) but has
+[contributors](https://github.com/ibis-project/ibis/graphs/contributors) across
+a range of data companies and institutions.
+
+## Background
+
+The Ibis project was started in 2015 by [Wes McKinney](https://wesmckinney.com),
+the creator of pandas and a cofounder of Voltron Data, as a pandas-like
+interface to Apache Impala. It received improvements and support over the years,
+but really took off under the stewardship of [Phillip
+Cloud](https://github.com/cpcloud) and the [current Ibis team at Voltron
+Data](#who-are-the-core-contributors). It now supports 20+ backends and is
+improving rapidly. It's never been a better time to get involved with Ibis.
+
+You can see the inflection point in the number of commits to the repository in
+early 2022:
+
+![Ibis commits over time](commits.png)
+
+### Who am I?
+
+My name is Cody and I'm employed by Voltron Data to work on Ibis full-time as a
+Technical Product Manager. I am an Ibis committer and have contributed Delta
+Lake table input/output methods, helped moved the documentation over to
+[Quarto](https://quarto.org), and created the [Zulip
+chat](https://ibis-project.zulipchat.com) for the community.
+
+My job is to help the Ibis community grow and thrive. I have a background in ML
+(especially MLOps) and data products. Ibis solves many challenges I've seen in
+the data space and I'm excited to help increase its adoption as a standard
+Python frontend for dozens of data backends to reduce friction in the data
+ecosystem.
+
+### Why does Voltron Data (VoDa) support Ibis?
+
+Why does Voltron Data employ a Technical Product Manager to work on Ibis
+full-time? Why does Voltron Data employ five software engineers to work on Ibis
+full-time? Great questions!
+
+::: {.callout-note}
+To understand Voltron Data -- or if you're generally interested in learning
+about the composable data ecosystem -- check out the [The Composable
+Codex by Voltron Data](https://voltrondata.com/codex).
+:::
+
+Voltron Data is a startup company founded in 2021 with the goal of making it
+possible for organizations to build modular, composable, high-performance
+systems for data analytics. Voltron Data advances open standards (like [Apache
+Arrow](https://arrow.apache.org) and [Substrait](https://substrait.io)) and
+builds software components that embrace these standards for maximum
+interoperability and performance. This includes free and open source software
+like Ibis. 
+
+![Standards](standards.png)
+
+This also includes a commercially licensed product:
+[Theseus](https://voltrondata.com/theseus), Voltron Data’s accelerator-native
+data processing engine, which can be embedded in existing platforms to increase
+speed, scale, and efficiency without a migration. What is unusual about Voltron
+Data is that the company is not building a proprietary platform around Theseus.
+Instead, it is partnering with other companies and organizations to embed
+Theseus in their products and platforms. Because of this, nothing that Voltron
+Data builds is tightly coupled only to Theseus. Everything that Voltron Data
+builds needs to work with as many other components as possible. Voltron Data
+sees data platform companies and data processing engines as complements to
+Theseus, not competitors.
+
+Theseus is best for large workloads with extreme throughput demands, where
+CPU-based solutions struggle to scale. But for smaller workloads, engines like
+DuckDB are usually a better solution than Theseus, so Voltron Data is a [Gold
+Sponsor of the DuckDB Foundation](https://duckdb.org/foundation/). And for many
+data warehouse/lakehouse jobs, engines like Trino and platforms like Snowflake
+are better choices, so Voltron Data [partners with
+Starburst](https://www.starburst.io/blog/introducing-python-dataframes/) and
+[works](https://medium.com/snowflake/arrow-database-connectivity-adbc-support-for-snowflake-7bfb3a2d9074)
+[with](https://medium.com/snowflake/supercharging-the-snowflake-python-connector-with-nanoarrow-8388cb57eeba)
+[Snowflake](https://medium.com/snowflake/announcing-the-ga-release-of-snowflake-python-connector-with-nanoarrow-1d70fd8ba3b1).
+
+::: {.callout-note collapse="true" title="Why not the pandas API?"}
+This is a great, and natural, question -- if Voltron Data wants a standard
+Python dataframe API, why not just use pandas? The reason is relatively simple:
+the pandas API inherently does not scale. This is largely due to the expectation
+of ordered results and the index. pandas is implemented for single-threaded
+execution and has a lot of baggage when it comes to distributed execution. While
+projects like Modin and pandas on Spark (formerly Koalas) attempt to scale the
+pandas API, any project that attempts the feat is doomed to a dubious support
+matrix of operations.
+
+Instead, Wes McKinney envisioned Ibis as a portable Python dataframe where the
+API is decoupled from the execution engine. Ibis code scales to the backend it
+is connected to. Any other Python dataframe library locks you into its execution
+engine. While they may claim to be easy to migrate to, this is rarely the case.
+The founders of Voltron Data experienced these pains with the pandas API
+themselves in previous efforts, including cuDF. For Theseus and as an
+open-source standard, we believe Ibis is the right approach.
+
+Instead of using Snowpark Python for Snowflake, you can use Ibis on Snowflake.
+Instead of using PySpark or pandas on Spark, you can use Ibis on Spark. Instead
+of using the pandas API on BigQuery (built on top of Ibis), you can use Ibis on
+BigQuery. Instead of using PyStarburst on Starburst Galaxy, you can use Ibis on
+Starburst Galaxy. Instead of using the Polars Python on the Polars execution
+engine, you can use Ibis on Polars. Instead of using DataFusion Python on
+DataFusion execution engine, you can use Ibis on DataFusion. Instead of
+executing SQL strings on DuckDB through the Python client, you can use Ibis on
+DuckDB. And so on...
+
+Ibis brings a Python dataframe interface to data platforms that only have SQL,
+and brings a standard Python dataframe interface to data platforms that have
+their own Python dataframe interface. It is the only portable Python dataframe
+that can serve as a standard across the data ecosystem.
+:::
+
+Voltron Data supports Ibis because it can serve as a universal Python
+dataframe API for **any** backend engine, whether you need to query a CSV file
+on your laptop, run a big ETL job in the cloud with Snowflake or Starburst, or
+process hundreds of terabytes in minutes on an NVIDIA GPU cluster with Theseus.
+With Ibis, you have the choice of 20+ backends, and the code you write is the
+same regardless of which backend you choose to use.
+
+::: {.callout-important}
+[Ibis is independently governed](https://github.com/ibis-project/governance) and
+not owned by Voltron Data. Currently, four out of five members of the
+steering committee are employed by Voltron Data (the fifth being at Alphabet
+working on Google BigQuery). We are working toward a more diverse
+representation of companies and organizations as the project continues to grow.
+
+Voltron Data also welcomes this dilution of power and influence! A healthy
+open-source project is one that is not controlled by a single entity. This is
+true of [Apache Arrow](https://arrow.apache.org) and other open-source projects
+that Voltron Data employees have been instrumental in building.
+:::
+
+### Who are the core contributors?
+
+The core contributors working full-time on Ibis are employed at Voltron Data,
+with deep experience on successful open-source projects including pandas,
+Apache Arrow, Dask, and more. Everything in the Ibis project is made possible by
+their hard work! They are:
+
+- [**Gil Forsyth**](https://github.com/gforsyth): long-time Ibis contributor and
+ primary maintainer of the `ibis-substrait` package
+- [**Jim Crist-Harif**](https://github.com/jcrist): the engineering manager for
+ the Ibis team at VoDa
+- [**Krisztián Szűcs**](https://github.com/kszucs): long-time Ibis contributor
+ and primary author of the precursor to [the big refactor](#the-big-refactor)
+- [**Naty Clementi**](https://github.com/ncclementi): newest member of the Ibis
+ team at VoDa recently focusing on [geospatial support in
+ DuckDB](#geospatial-improvements)
+- [**Phillip Cloud**](https://github.com/cpcloud): the tech lead for the Ibis
+ team at VoDa
+
+If you're interacting with us on GitHub or Zulip, you'll definitely run into at
+least one of them! They make the Ibis project the delightful software it is
+today and are always happy to help.
+
+### Who else supports Ibis?
+
+Anybody who contributes to Ibis is a supporter of Ibis! You can contribute by
+[opening an issue](https://github.com/ibis-project/ibis/issues), [submitting a
+pull request](https://github.com/ibis-project/ibis/pulls), [using Ibis in your
+project](https://github.com/ibis-project/ibis/network/dependents), or [joining
+the Zulip chat](https://ibis-project.zulipchat.com) to discuss problems or
+ideas.
+
+Notable organizations that support Ibis include:
+
+- [**Claypot AI**](https://www.claypot.ai/): contributing the Apache Flink
+ backend
+- [**Exasol**](https://www.exasol.com/): contributing the Exasol backend
+- [**Google's BigQuery
+ DataFrames**](https://github.com/googleapis/python-bigquery-dataframes): a
+ pandas API for BigQuery built on top of Ibis
+- [**RisingWave**](https://risingwave.com/): contributing the RisingWave backend
+- [**SingleStore**](https://github.com/singlestore-labs/ibis-singlestoredb):
+ creating a SingleStore backend
+- [**Starburst
+ Galaxy**](https://www.starburst.io/blog/introducing-python-dataframes/):
+ supporting Ibis alongside their native PyStarburst dataframes
+- [**SuperDuperDB**](https://github.com/SuperDuperDB/superduperdb): bringing AI
+ to any database Ibis supports
+
+## Next steps
+
+If you're interested in partnering with the Ibis project and Voltron Data, get
+in touch! It's never been a better time to get involved with Ibis. [Join us on
+Zulip and introduce yourself!](https://ibis-project.zulipchat.com/)
