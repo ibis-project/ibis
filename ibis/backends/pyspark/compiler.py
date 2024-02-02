@@ -13,7 +13,7 @@ import ibis
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
-from ibis.backends.base.sqlglot.compiler import NULL, STAR, SQLGlotCompiler
+from ibis.backends.base.sqlglot.compiler import FALSE, NULL, STAR, TRUE, SQLGlotCompiler
 from ibis.backends.base.sqlglot.datatypes import PySparkType
 from ibis.backends.base.sqlglot.rewrites import Window, p
 from ibis.common.patterns import replace
@@ -67,7 +67,7 @@ class PySparkCompiler(SQLGlotCompiler):
         if dtype.is_floating():
             result = super().visit_NonNullLiteral(op, value=value, dtype=dtype)
             if options.pyspark.treat_nan_as_null:
-                return self.f.nanvl(result, sge.NULL)
+                return self.f.nanvl(result, NULL)
             else:
                 return result
         elif dtype.is_string():
@@ -89,7 +89,7 @@ class PySparkCompiler(SQLGlotCompiler):
     def visit_Field(self, op, *, rel, name):
         result = super().visit_Field(op, rel=rel, name=name)
         if op.dtype.is_floating() and options.pyspark.treat_nan_as_null:
-            return self.f.nanvl(result, sge.NULL)
+            return self.f.nanvl(result, NULL)
         else:
             return result
 
@@ -105,7 +105,7 @@ class PySparkCompiler(SQLGlotCompiler):
 
     @visit_node.register(ops.IsNull)
     def visit_IsNull(self, op, *, arg):
-        is_null = arg.is_(sge.NULL)
+        is_null = arg.is_(NULL)
         is_nan = self.f.isnan(arg)
         if op.arg.dtype.is_floating():
             return sg.or_(is_null, is_nan)
@@ -114,7 +114,7 @@ class PySparkCompiler(SQLGlotCompiler):
 
     @visit_node.register(ops.NotNull)
     def visit_NotNull(self, op, *, arg):
-        is_not_null = arg.is_(sg.not_(sge.NULL))
+        is_not_null = arg.is_(sg.not_(NULL))
         is_not_nan = sg.not_(self.f.isnan(arg))
         if op.arg.dtype.is_floating():
             return sg.and_(is_not_null, is_not_nan)
@@ -125,7 +125,7 @@ class PySparkCompiler(SQLGlotCompiler):
     def visit_IsInf(self, op, *, arg):
         if op.arg.dtype.is_floating():
             return sg.or_(arg == self.POS_INF, arg == self.NEG_INF)
-        return sge.FALSE
+        return FALSE
 
     @visit_node.register(ops.Xor)
     def visit_Xor(self, op, left, right):
@@ -214,7 +214,7 @@ class PySparkCompiler(SQLGlotCompiler):
             self.if_(
                 where,
                 sg.column(name, table=arg.alias_or_name, quoted=self.quoted),
-                sge.NULL,
+                NULL,
             )
             for name in op.arg.schema
         ]
@@ -224,22 +224,22 @@ class PySparkCompiler(SQLGlotCompiler):
     def visit_First(self, op, *, arg, where):
         if where is not None:
             arg = self.if_(where, arg, NULL)
-        return self.f.first(arg, sge.TRUE)
+        return self.f.first(arg, TRUE)
 
     @visit_node.register(ops.Last)
     def visit_Last(self, op, *, arg, where):
         if where is not None:
             arg = self.if_(where, arg, NULL)
-        return self.f.last(arg, sge.TRUE)
+        return self.f.last(arg, TRUE)
 
     @visit_node.register(ops.Arbitrary)
     def visit_Arbitrary(self, op, *, arg, how, where):
         if where is not None:
             arg = self.if_(where, arg, NULL)
         if how == "first":
-            return self.f.first(arg, sge.TRUE)
+            return self.f.first(arg, TRUE)
         elif how == "last":
-            return self.f.last(arg, sge.TRUE)
+            return self.f.last(arg, TRUE)
         else:
             raise com.UnsupportedOperationError(
                 f"PySpark backend does not support arbitrary with how={how}. "
@@ -253,9 +253,9 @@ class PySparkCompiler(SQLGlotCompiler):
     @visit_node.register(ops.GroupConcat)
     def visit_GroupConcat(self, op, *, arg, sep, where):
         if where is not None:
-            arg = self.if_(where, arg, sge.NULL)
+            arg = self.if_(where, arg, NULL)
         collected = self.f.collect_list(arg)
-        collected = self.if_(self.f.size(collected).eq(0), sge.NULL, collected)
+        collected = self.if_(self.f.size(collected).eq(0), NULL, collected)
         return self.f.array_join(collected, sep)
 
     @visit_node.register(ops.Correlation)
@@ -358,7 +358,7 @@ class PySparkCompiler(SQLGlotCompiler):
     @visit_node.register(ops.ArrayFilter)
     def visit_ArrayFilter(self, op, *, arg, body, param):
         param = sge.Identifier(this=param)
-        func = sge.Lambda(this=self.if_(body, param, sge.NULL), expressions=[param])
+        func = sge.Lambda(this=self.if_(body, param, NULL), expressions=[param])
         transform = self.f.transform(arg, func)
         func = sge.Lambda(this=param.is_(sg.not_(NULL)), expressions=[param])
         return self.f.filter(transform, func)
@@ -391,8 +391,8 @@ class PySparkCompiler(SQLGlotCompiler):
     def visit_ArrayContains(self, op, *, arg, other):
         return self.if_(
             arg.is_(NULL),
-            sge.NULL,
-            self.f.coalesce(self.f.array_contains(arg, other), sge.FALSE),
+            NULL,
+            self.f.coalesce(self.f.array_contains(arg, other), FALSE),
         )
 
     @visit_node.register(ops.ArrayStringJoin)
@@ -434,7 +434,7 @@ class PySparkCompiler(SQLGlotCompiler):
                 order = sge.Order(expressions=order_by)
             else:
                 # pyspark requires an order by clause for lag/lead
-                order = sge.Order(expressions=[sge.NULL])
+                order = sge.Order(expressions=[NULL])
             return sge.Window(this=func, partition_by=group_by, order=order)
         else:
             return super().visit_node(
