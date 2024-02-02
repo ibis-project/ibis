@@ -160,6 +160,7 @@ class Backend(SQLGlotBackend, CanCreateSchema):
         overwrite
             If `True`, replace the table if it already exists, otherwise fail
             if the table exists
+
         """
         if obj is None and schema is None:
             raise ValueError("Either `obj` or `schema` must be specified")
@@ -276,6 +277,7 @@ class Backend(SQLGlotBackend, CanCreateSchema):
         -------
         Table
             Table expression
+
         """
         table_schema = self.get_schema(name, schema=schema, database=database)
         # load geospatial only if geo columns
@@ -307,6 +309,7 @@ class Backend(SQLGlotBackend, CanCreateSchema):
         -------
         sch.Schema
             Ibis schema
+
         """
         conditions = [sg.column("table_name").eq(sge.convert(table_name))]
 
@@ -421,6 +424,7 @@ class Backend(SQLGlotBackend, CanCreateSchema):
         >>> import ibis
         >>> ibis.duckdb.connect("database.ddb", threads=4, memory_limit="1GB")
         <ibis.backends.duckdb.Backend object at ...>
+
         """
         if (
             not isinstance(database, Path)
@@ -484,6 +488,7 @@ class Backend(SQLGlotBackend, CanCreateSchema):
         -------
         BaseBackend
             A backend instance
+
         """
         url = urlparse(url)
         database = url.path[1:] or ":memory:"
@@ -509,6 +514,7 @@ class Backend(SQLGlotBackend, CanCreateSchema):
             The extension name or path.
         force_install
             Force reinstallation of the extension.
+
         """
         self._load_extensions([extension], force_install=force_install)
 
@@ -562,6 +568,7 @@ class Backend(SQLGlotBackend, CanCreateSchema):
         -------
         ir.Table
             The just-registered table
+
         """
 
         if isinstance(source, (str, Path)):
@@ -628,6 +635,7 @@ class Backend(SQLGlotBackend, CanCreateSchema):
         -------
         Table
             An ibis table expression
+
         """
         if not table_name:
             table_name = util.gen_name("read_json")
@@ -671,6 +679,7 @@ class Backend(SQLGlotBackend, CanCreateSchema):
         -------
         ir.Table
             The just-registered table
+
         """
         source_list = normalize_filenames(source_list)
 
@@ -741,6 +750,7 @@ class Backend(SQLGlotBackend, CanCreateSchema):
         -------
         ir.Table
             The just-registered table
+
         """
 
         if not table_name:
@@ -794,6 +804,7 @@ class Backend(SQLGlotBackend, CanCreateSchema):
         -------
         ir.Table
             The just-registered table
+
         """
         source_list = normalize_filenames(source_list)
 
@@ -861,6 +872,7 @@ class Backend(SQLGlotBackend, CanCreateSchema):
         -------
         ir.Table
             The just-registered table
+
         """
         table_name = table_name or util.gen_name("read_in_memory")
         self.con.register(table_name, source)
@@ -895,6 +907,7 @@ class Backend(SQLGlotBackend, CanCreateSchema):
         -------
         ir.Table
             The just-registered table.
+
         """
         source_table = normalize_filenames(source_table)[0]
 
@@ -956,6 +969,7 @@ class Backend(SQLGlotBackend, CanCreateSchema):
         <...>
         >>> con.list_tables(schema="my_schema")
         ['baz']
+
         """
         database = F.current_database() if database is None else sge.convert(database)
         schema = F.current_schema() if schema is None else sge.convert(schema)
@@ -996,6 +1010,7 @@ class Backend(SQLGlotBackend, CanCreateSchema):
         -------
         ir.Table
             The just-registered table.
+
         """
         if table_name is None:
             raise ValueError(
@@ -1051,6 +1066,7 @@ class Backend(SQLGlotBackend, CanCreateSchema):
         │     2 │ b      │
         │     3 │ c      │
         └───────┴────────┘
+
         """
 
         if table_name is None:
@@ -1081,6 +1097,7 @@ class Backend(SQLGlotBackend, CanCreateSchema):
             Name to attach the database as. Defaults to the basename of `path`.
         read_only
             Whether to attach the database as read-only.
+
         """
         code = f"ATTACH '{path}'"
 
@@ -1100,6 +1117,7 @@ class Backend(SQLGlotBackend, CanCreateSchema):
         ----------
         name
             The name of the database to detach.
+
         """
         name = sg.to_identifier(name).sql(self.name)
         self.con.execute(f"DETACH {name}").fetchall()
@@ -1136,6 +1154,7 @@ class Backend(SQLGlotBackend, CanCreateSchema):
         >>> con.attach_sqlite("/tmp/attach_sqlite.db")
         >>> con.list_tables()
         ['t']
+
         """
         self.load_extension("sqlite")
         with self._safe_raw_sql(f"SET GLOBAL sqlite_all_varchar={all_varchar}") as cur:
@@ -1177,6 +1196,7 @@ class Backend(SQLGlotBackend, CanCreateSchema):
         DatabaseTable: band_members
           name string
           band string
+
         """
         self.con.register_filesystem(filesystem)
 
@@ -1226,6 +1246,7 @@ class Backend(SQLGlotBackend, CanCreateSchema):
             ::: {.callout-warning}
             ## DuckDB returns 1024 size batches regardless of what argument is passed.
             :::
+
         """
         self._run_pre_execute_hooks(expr)
         table = expr.as_table()
@@ -1287,6 +1308,7 @@ class Backend(SQLGlotBackend, CanCreateSchema):
         -------
         dict[str, torch.Tensor]
             A dictionary of torch tensors, keyed by column name.
+
         """
         compiled = self.compile(expr, limit=limit, params=params, **kwargs)
         with self._safe_raw_sql(compiled) as cur:
@@ -1341,6 +1363,7 @@ class Backend(SQLGlotBackend, CanCreateSchema):
         Partition on multiple columns.
 
         >>> con.to_parquet(penguins, tempfile.mkdtemp(), partition_by=("year", "island"))
+
         """
         self._run_pre_execute_hooks(expr)
         query = self._to_sql(expr, params=params)
@@ -1376,6 +1399,7 @@ class Backend(SQLGlotBackend, CanCreateSchema):
             Whether to write the column names as the first line of the CSV file.
         **kwargs
             DuckDB CSV writer arguments. https://duckdb.org/docs/data/csv.html#parameters
+
         """
         self._run_pre_execute_hooks(expr)
         query = self._to_sql(expr, params=params)
@@ -1516,6 +1540,7 @@ class Backend(SQLGlotBackend, CanCreateSchema):
             If inserting data from a different database
         ValueError
             If the type of `obj` isn't supported
+
         """
         table = sg.table(table_name, db=database)
         if overwrite:

@@ -718,9 +718,7 @@ def test_array_sort(backend, con):
 
 
 @builtin_array
-@pytest.mark.notimpl(
-    ["datafusion", "polars"], raises=com.OperationNotDefinedError
-)
+@pytest.mark.notimpl(["datafusion", "polars"], raises=com.OperationNotDefinedError)
 @pytest.mark.parametrize(
     ("a", "b", "expected_array"),
     [

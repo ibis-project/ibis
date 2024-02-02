@@ -54,6 +54,7 @@ class Named(Abstract):
         Returns
         -------
         str
+
         """
 
 
@@ -113,6 +114,7 @@ class Value(Node, Named, Coercible, DefaultTypeVars, Generic[T, S]):
         Returns
         -------
         dt.DataType
+
         """
 
     @property
@@ -125,6 +127,7 @@ class Value(Node, Named, Coercible, DefaultTypeVars, Generic[T, S]):
         Returns
         -------
         ds.Shape
+
         """
 
     @attribute

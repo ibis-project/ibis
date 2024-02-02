@@ -187,6 +187,7 @@ def wrap_uda(
         Used internally to track function
     database
         Name of database
+
     """
     return ImpalaUDA(
         inputs,
@@ -221,6 +222,7 @@ def wrap_udf(hdfs_file, inputs, output, so_symbol, name=None, database=None):
         Used internally to track function
     database
         Name of database
+
     """
     func = ImpalaUDF(
         inputs, output, so_symbol, name=name, lib_path=hdfs_file, database=database
@@ -241,6 +243,7 @@ def scalar_function(inputs, output, name=None, database=None):
         Used internally to track function
     database
         Name of database
+
     """
     return ScalarFunction(inputs, output, name=name, database=database)
 
@@ -258,5 +261,6 @@ def aggregate_function(inputs, output, name=None, database=None):
         Used internally to track function
     database
         Name of database
+
     """
     return AggregateFunction(inputs, output, name=name, database=database)

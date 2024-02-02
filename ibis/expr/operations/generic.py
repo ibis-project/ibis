@@ -79,6 +79,7 @@ class IsNull(Unary):
     -------
     ir.BooleanValue
         Value expression indicating whether values are null
+
     """
 
     dtype = dt.boolean
@@ -92,6 +93,7 @@ class NotNull(Unary):
     -------
     ir.BooleanValue
         Value expression indicating whether values are not null
+
     """
 
     dtype = dt.boolean

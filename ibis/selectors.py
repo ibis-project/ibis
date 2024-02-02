@@ -85,6 +85,7 @@ class Selector(Concrete):
         -------
         Sequence[Value]
             A sequence of value expressions that match the selector
+
         """
 
     def positions(self, table: ir.Table) -> Sequence[int]:
@@ -99,6 +100,7 @@ class Selector(Concrete):
         -------
         Sequence[int]
             A sequence of column indices where the selector matches
+
         """
         raise NotImplementedError(
             f"`positions` doesn't make sense for {self.__class__.__name__} selector"
@@ -115,6 +117,7 @@ class Predicate(Selector):
         ----------
         table
             An ibis table expression
+
         """
         return [col for column in table.columns if self.predicate(col := table[column])]
 
@@ -130,6 +133,7 @@ class Predicate(Selector):
         ----------
         other
             Another selector
+
         """
         return self.__class__(lambda col: self.predicate(col) and other.predicate(col))
 
@@ -140,6 +144,7 @@ class Predicate(Selector):
         ----------
         other
             Another selector
+
         """
         return self.__class__(lambda col: self.predicate(col) or other.predicate(col))
 
@@ -167,6 +172,7 @@ def where(predicate: Callable[[ir.Value], bool]) -> Predicate:
     >>> expr = t.select(s.where(lambda col: col.get_name() == "a"))
     >>> expr.columns
     ['a']
+
     """
     return Predicate(predicate=predicate)
 
@@ -189,6 +195,7 @@ def numeric() -> Predicate:
     See Also
     --------
     [`of_type`](#ibis.selectors.of_type)
+
     """
     return of_type(dt.Numeric)
 
@@ -234,6 +241,7 @@ def of_type(dtype: dt.DataType | str | type[dt.DataType]) -> Predicate:
     See Also
     --------
     [`numeric`](#ibis.selectors.numeric)
+
     """
     if isinstance(dtype, str):
         # A mapping of abstract or parametric types, to allow selecting all
@@ -284,6 +292,7 @@ def startswith(prefixes: str | tuple[str, ...]) -> Predicate:
     See Also
     --------
     [`endswith`](#ibis.selectors.endswith)
+
     """
     return where(lambda col: col.get_name().startswith(prefixes))
 
@@ -300,6 +309,7 @@ def endswith(suffixes: str | tuple[str, ...]) -> Predicate:
     See Also
     --------
     [`startswith`](#ibis.selectors.startswith)
+
     """
     return where(lambda col: col.get_name().endswith(suffixes))
 
@@ -340,6 +350,7 @@ def contains(
     See Also
     --------
     [`matches`](#ibis.selectors.matches)
+
     """
 
     def predicate(col: ir.Value) -> bool:
@@ -370,6 +381,7 @@ def matches(regex: str | re.Pattern) -> Selector:
     See Also
     --------
     [`contains`](#ibis.selectors.contains)
+
     """
     pattern = re.compile(regex)
     return where(lambda col: pattern.search(col.get_name()) is not None)
@@ -487,6 +499,7 @@ def across(
     │           42.0 │          20.2 │                -1.92193 │ … │
     │              … │             … │                       … │ … │
     └────────────────┴───────────────┴─────────────────────────┴───┘
+
     """
     if names is None:
         names = lambda col, fn: "_".join(filter(None, (col, fn)))
@@ -556,6 +569,7 @@ def if_any(selector: Selector, predicate: Deferred | Callable) -> IfAnyAll:
     │ Adelie  │ Dream  │      -2.165354 │     -0.836123 │         -0.918466 │ … │
     │ …       │ …      │              … │             … │                 … │ … │
     └─────────┴────────┴────────────────┴───────────────┴───────────────────┴───┘
+
     """
     return IfAnyAll(selector=selector, predicate=predicate, summarizer=operator.or_)
 
@@ -601,6 +615,7 @@ def if_all(selector: Selector, predicate: Deferred | Callable) -> IfAnyAll:
     │ Gentoo  │ Biscoe    │       1.241499 │     -1.089314 │          1.570562 │ … │
     │ Gentoo  │ Biscoe    │       1.351398 │     -1.494420 │          1.214987 │ … │
     └─────────┴───────────┴────────────────┴───────────────┴───────────────────┴───┘
+
     """
     return IfAnyAll(selector=selector, predicate=predicate, summarizer=operator.and_)
 

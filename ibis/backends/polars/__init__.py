@@ -48,6 +48,7 @@ class Backend(BaseBackend):
         ----------
         tables
             An optional mapping of string table names to polars LazyFrames.
+
         """
         for name, table in (tables or {}).items():
             self._add_table(name, table)
@@ -90,6 +91,7 @@ class Backend(BaseBackend):
         -------
         ir.Table
             The just-registered table
+
         """
 
         if isinstance(source, (str, Path)):
@@ -166,6 +168,7 @@ class Backend(BaseBackend):
         -------
         ir.Table
             The just-registered table
+
         """
         path = normalize_filename(path)
         table_name = table_name or gen_name("read_csv")
@@ -197,6 +200,7 @@ class Backend(BaseBackend):
         -------
         ir.Table
             The just-registered table
+
         """
         path = normalize_filename(path)
         table_name = table_name or gen_name("read_json")
@@ -228,6 +232,7 @@ class Backend(BaseBackend):
         -------
         ir.Table
             The just-registered table
+
         """
         try:
             import deltalake  # noqa: F401
@@ -263,6 +268,7 @@ class Backend(BaseBackend):
         -------
         ir.Table
             The just-registered table
+
         """
         table_name = table_name or gen_name("read_in_memory")
         self._add_table(table_name, pl.from_pandas(source, **kwargs).lazy())
@@ -294,6 +300,7 @@ class Backend(BaseBackend):
         -------
         ir.Table
             The just-registered table
+
         """
         table_name = table_name or gen_name("read_parquet")
         if not isinstance(path, (str, Path)) and len(path) == 1:

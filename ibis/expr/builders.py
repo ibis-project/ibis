@@ -49,6 +49,7 @@ class SearchedCaseBuilder(Builder):
             Predicate expression to use for this case.
         result_expr
             Value when the case predicate evaluates to true.
+
         """
         return self.copy(
             cases=self.cases + (case_expr,), results=self.results + (result_expr,)
@@ -61,6 +62,7 @@ class SearchedCaseBuilder(Builder):
         ----------
         result_expr
             Value to use when all case predicates evaluate to false.
+
         """
         return self.copy(default=result_expr)
 
@@ -87,6 +89,7 @@ class SimpleCaseBuilder(Builder):
             comparable with the base.
         result_expr
             Value when the case predicate evaluates to true.
+
         """
         if not isinstance(case_expr, ir.Value):
             case_expr = ibis.literal(case_expr)
@@ -109,6 +112,7 @@ class SimpleCaseBuilder(Builder):
         ----------
         result_expr
             Value to use when all case predicates evaluate to false.
+
         """
         return self.copy(default=result_expr)
 
@@ -135,6 +139,7 @@ class WindowBuilder(Builder):
     Using `None` for `preceding` or `following` indicates an unbounded frame.
 
     Use 0 for `CURRENT ROW`.
+
     """
 
     how: Literal["rows", "range"] = "rows"
