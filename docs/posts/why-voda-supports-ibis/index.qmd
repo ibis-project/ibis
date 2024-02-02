@@ -9,7 +9,7 @@ categories:
 
 ## Overview
 
-The Ibis project is an [independently governed open-source
+The Ibis project is an [independently governed open source
 community](https://github.com/ibis-project/governance) that builds the portable
 Python dataframe library. It is primarily backed by [Voltron
 Data](https://voltrondata.com) but has
@@ -106,7 +106,7 @@ is connected to. Any other Python dataframe library locks you into its execution
 engine. While they may claim to be easy to migrate to, this is rarely the case.
 The founders of Voltron Data experienced these pains with the pandas API
 themselves in previous efforts, including cuDF. For Theseus and as an
-open-source standard, we believe Ibis is the right approach.
+open source standard, we believe Ibis is the right approach.
 
 Instead of using Snowpark Python for Snowflake, you can use Ibis on Snowflake.
 Instead of using PySpark or pandas on Spark, you can use Ibis on Spark. Instead
@@ -139,15 +139,15 @@ working on Google BigQuery). We are working toward a more diverse
 representation of companies and organizations as the project continues to grow.
 
 Voltron Data also welcomes this dilution of power and influence! A healthy
-open-source project is one that is not controlled by a single entity. This is
-true of [Apache Arrow](https://arrow.apache.org) and other open-source projects
+open source project is one that is not controlled by a single entity. This is
+true of [Apache Arrow](https://arrow.apache.org) and other open source projects
 that Voltron Data employees have been instrumental in building.
 :::
 
 ### Who are the core contributors?
 
 The core contributors working full-time on Ibis are employed at Voltron Data,
-with deep experience on successful open-source projects including pandas,
+with deep experience on successful open source projects including pandas,
 Apache Arrow, Dask, and more. Everything in the Ibis project is made possible by
 their hard work! They are:
 

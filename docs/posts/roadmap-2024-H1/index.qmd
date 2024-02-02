@@ -67,7 +67,7 @@ most backends do not implement them. We will continue to improve Ibis for
 geospatial use cases and bridge the gap between geospatial data and other data
 types.
 
-5. **Ibis community**: Ibis is an open-source project and we want to make it as
+5. **Ibis community**: Ibis is an open source project and we want to make it as
 easy as possible for new contributors to get involved. We will continue to
 improve the Ibis community and make it easier than ever to contribute to Ibis.
 
@@ -192,7 +192,7 @@ out.
 
 ### Documentation
 
-> "When you're ~~selling~~ distributing free and open-source software, the
+> "When you're ~~selling~~ distributing free and open source software, the
 > documentation is the product." - old tech adage, origin unknown
 
 A few months ago, we moved our documentation to [Quarto](https://quarto.org) and
