@@ -56,7 +56,7 @@ def test_cast_string(t, df, from_, to, expected):
             "string",
             "object",
             marks=pytest.mark.skipif(
-                is_older_than("pandas", "2.0.0"), reason="raises a NotImplementError"
+                is_older_than("pandas", "2.1.0"), reason="raises a NotImplementedError"
             ),
         ),
         ("int64", "int64"),
@@ -87,7 +87,7 @@ def test_cast_timestamp_column(t, df, column, to, expected):
             "string",
             str,
             marks=pytest.mark.skipif(
-                is_older_than("pandas", "2.0.0"), reason="raises a NotImplementError"
+                is_older_than("pandas", "2.1.0"), reason="raises a NotImplementedError"
             ),
         ),
         ("int64", lambda x: pd.Timestamp(x).value // int(1e9)),
@@ -113,7 +113,7 @@ def test_cast_timestamp_scalar_naive(con, to, expected):
             "string",
             str,
             marks=pytest.mark.skipif(
-                is_older_than("pandas", "2.0.0"), reason="raises a NotImplementError"
+                is_older_than("pandas", "2.1.0"), reason="raises a NotImplementedError"
             ),
         ),
         ("int64", lambda x: pd.Timestamp(x).value // int(1e9)),
