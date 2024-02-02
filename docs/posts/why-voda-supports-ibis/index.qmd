@@ -69,26 +69,44 @@ like Ibis.
 
 This also includes a commercially licensed product:
 [Theseus](https://voltrondata.com/theseus), Voltron Data’s accelerator-native
-data processing engine, which can be embedded in existing platforms to increase
-speed, scale, and efficiency without a migration. What is unusual about Voltron
-Data is that the company is not building a proprietary platform around Theseus.
-Instead, it is partnering with other companies and organizations to embed
-Theseus in their products and platforms. Because of this, nothing that Voltron
-Data builds is tightly coupled only to Theseus. Everything that Voltron Data
-builds needs to work with as many other components as possible. Voltron Data
-sees data platform companies and data processing engines as complements to
-Theseus, not competitors.
+data processing engine. Theseus is a separate project built by a different team
+at Voltron Data. Most Ibis contributors do not need to know about Theseus. Most
+Ibis users will probably never use Theseus. But the two projects are related
+parts of Voltron Data’s strategy.
 
-Theseus is best for large workloads with extreme throughput demands, where
-CPU-based solutions struggle to scale. But for smaller workloads, engines like
-DuckDB are usually a better solution than Theseus, so Voltron Data is a [Gold
-Sponsor of the DuckDB Foundation](https://duckdb.org/foundation/). And for many
-data warehouse/lakehouse jobs, engines like Trino and platforms like Snowflake
-are better choices, so Voltron Data [partners with
-Starburst](https://www.starburst.io/blog/introducing-python-dataframes/) and
-[works](https://medium.com/snowflake/arrow-database-connectivity-adbc-support-for-snowflake-7bfb3a2d9074)
-[with](https://medium.com/snowflake/supercharging-the-snowflake-python-connector-with-nanoarrow-8388cb57eeba)
-[Snowflake](https://medium.com/snowflake/announcing-the-ga-release-of-snowflake-python-connector-with-nanoarrow-1d70fd8ba3b1).
+The strategy goes like this:
+- Big changes are afoot in the world of computing hardware. [Moore’s Law]
+  (https://en.wikipedia.org/wiki/Moore%27s_law) is coming to an end.
+  Accelerated hardware such as NVIDIA GPUs are becoming more important for
+  performance and efficiency—not just for AI and ML, but data analytics too.
+- Big changes in hardware require big changes in software. But software has
+  lagged behind in some areas. Distributed big data analytics is one area where
+  the performance of existing software has lagged way behind hardware.
+- Organizations choose data platforms based on many factors. No one chooses a
+  data platform _only_ because it can very fast run on accelerated hardware.
+- Wouldn’t it be nice if there was a composable data processing engine that
+  could be embedded into _any_ data platform, to enable that platform to run
+  jobs on accelerated hardware? Then the platform builders wouldn’t need to
+  duplicate efforts. And organizations wouldn’t need to migrate to different
+  platforms to accelerate their workloads.
+- Voltron Data built Theseus to be that composable engine.
+- Voltron Data is _not_ building a platform around Theseus. Instead, it is
+  partnering with other companies and organizations to embed Theseus in their
+  platforms.
+- Theseus is great for very large-scale ETL workloads with very high throughput
+  needs. For other types of workloads, other engines are better. Voltron Data
+  wants to make it easy to choose the best engine for your workload. Your
+  choice of engine or platform should not limit your choice of other tools.
+- For example (this is where Ibis comes in!), your choice of engine or platform
+  should not limit your choice of Python dataframe API. So Ibis works with 20+
+  engines, including Theseus.
+
+Ultimately, Voltron Data will be more successful if Ibis is successful. And the
+same is true of any other company with an engine or platform that is the best
+choice for some type of workload. Ibis makes it easy to switch which engine
+you’re using. So the only reason to fear Ibis is if you have an uncompetitive
+engine and your strategy for retaining customers is to lock them into using a
+proprietary API that prevents them from switching.
 
 ::: {.callout-note collapse="true" title="Why not the pandas API?"}
 This is a great, and natural, question -- if Voltron Data wants a standard
@@ -124,12 +142,13 @@ their own Python dataframe interface. It is the only portable Python dataframe
 that can serve as a standard across the data ecosystem.
 :::
 
-Voltron Data supports Ibis because it can serve as a universal Python
-dataframe API for **any** backend engine, whether you need to query a CSV file
-on your laptop, run a big ETL job in the cloud with Snowflake or Starburst, or
-process hundreds of terabytes in minutes on an NVIDIA GPU cluster with Theseus.
-With Ibis, you have the choice of 20+ backends, and the code you write is the
-same regardless of which backend you choose to use.
+Voltron Data supports Ibis because it can serve as a universal Python dataframe
+API for **any** backend engine. Ibis works great whether you need to query a
+CSV file on your laptop with DuckDB, run a big ETL job in the cloud with
+Snowflake or Starburst Galaxy, or process hundreds of terabytes in minutes on
+a platform running Theseus on NVIDIA GPUs. With Ibis, you have the choice of
+20+ backends, and the code you write is the same regardless of which backend
+you choose to use.
 
 ::: {.callout-important}
 [Ibis is independently governed](https://github.com/ibis-project/governance) and
