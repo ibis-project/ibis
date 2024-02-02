@@ -1,3 +1,3 @@
 SELECT
   *
-FROM alltypes
+FROM "alltypes"

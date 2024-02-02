@@ -1355,7 +1355,9 @@ def connect(resource: Path | str, **kwargs: Any) -> BaseBackend:
     Connect to an on-disk SQLite database:
 
     >>> con = ibis.connect("sqlite://relative.db")
-    >>> con = ibis.connect("sqlite:///absolute/path/to/data.db")
+    >>> con = ibis.connect(
+    ...     "sqlite:///absolute/path/to/data.db"
+    ... )  # quartodoc: +SKIP # doctest: +SKIP
 
     Connect to a PostgreSQL server:
 
@@ -1418,10 +1420,6 @@ def connect(resource: Path | str, **kwargs: Any) -> BaseBackend:
         # SQLAlchemy requires a `://`, while urllib may roundtrip
         # `duckdb://` to `duckdb:`. Here we re-add the missing `//`.
         url = url.replace(":", "://", 1)
-    if scheme in ("duckdb", "sqlite", "pyspark"):
-        # SQLAlchemy wants an extra slash for URLs where the path
-        # maps to a relative/absolute location on the filesystem
-        url = url.replace(":", ":/", 1)
 
     try:
         backend = getattr(ibis, scheme)

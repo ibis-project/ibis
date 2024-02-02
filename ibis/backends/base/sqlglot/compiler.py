@@ -163,7 +163,7 @@ class SQLGlotCompiler(abc.ABC):
     no_limit_value: sge.Null | None = None
     """The value to use to indicate no limit."""
 
-    quoted: bool | None = None
+    quoted: bool = True
     """Whether to always quote identifiers."""
 
     NAN: ClassVar[sge.Expression] = sge.Cast(
