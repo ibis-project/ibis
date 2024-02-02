@@ -1,3 +1,3 @@
 SELECT
-  st_startpoint(t0.geog) AS tmp
-FROM t AS t0
+  st_startpoint(`t0`.`geog`) AS `tmp`
+FROM `t` AS `t0`

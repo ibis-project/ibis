@@ -1,14 +1,14 @@
 SELECT
-  t1.string_col,
-  t1."CountStar()"
+  "t1"."string_col",
+  "t1"."CountStar()"
 FROM (
   SELECT
-    t0.string_col,
+    "t0"."string_col",
     COUNT(*) AS "CountStar()",
-    MAX(t0.double_col) AS "Max(double_col)"
-  FROM functional_alltypes AS t0
+    MAX("t0"."double_col") AS "Max(double_col)"
+  FROM "functional_alltypes" AS "t0"
   GROUP BY
     1
-) AS t1
+) AS "t1"
 WHERE
-  t1."Max(double_col)" = CAST(1 AS TINYINT)
+  "t1"."Max(double_col)" = CAST(1 AS TINYINT)
