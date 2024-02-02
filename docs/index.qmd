@@ -308,12 +308,13 @@ X = f.select(s.contains("zscore"))  # <2>
 n_components = 3  # <3>
 pca = PCA(n_components=n_components).fit(X)  # <3>
 
-t_pca = ibis.memtable(pca.transform(X)).relabel(  # <4>
-    {"col0": "pc1", "col1": "pc2", "col2": "pc3"}  # <4>
+t_pca = ibis.memtable(pca.transform(X)).rename(  # <4>
+    {"pc1": "col0", "pc2": "col1", "pc3": "col2"}  # <4>
 )  # <4>
 
 f = f.mutate(row_number=ibis.row_number().over()).join(  # <5>
-    t_pca.mutate(row_number=ibis.row_number().over()), "row_number"  # <5>
+    t_pca.mutate(row_number=ibis.row_number().over()),  # <5>
+    "row_number",  # <5>
 )  # <5>
 
 px.scatter_3d(  # <6>
