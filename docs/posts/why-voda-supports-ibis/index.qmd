@@ -75,31 +75,32 @@ Ibis users will probably never use Theseus. But the two projects are related
 parts of Voltron Data’s strategy.
 
 The strategy goes like this:
-- Big changes are afoot in the world of computing hardware. [Moore’s Law]
-  (https://en.wikipedia.org/wiki/Moore%27s_law) is coming to an end.
-  Accelerated hardware such as NVIDIA GPUs are becoming more important for
-  performance and efficiency—not just for AI and ML, but data analytics too.
+
+- Big changes are afoot in the world of computing hardware. [Moore’s
+ Law](https://en.wikipedia.org/wiki/Moore%27s_law) is coming to an end.
+ Accelerated hardware such as NVIDIA GPUs are becoming more important for
+ performance and efficiency—not just for AI and ML, but data analytics too.
 - Big changes in hardware require big changes in software. But software has
-  lagged behind in some areas. Distributed big data analytics is one area where
-  the performance of existing software has lagged way behind hardware.
+ lagged behind in some areas. Distributed big data analytics is one area where
+ the performance of existing software has lagged way behind hardware.
 - Organizations choose data platforms based on many factors. No one chooses a
-  data platform _only_ because it can very fast run on accelerated hardware.
+ data platform _only_ because it can very fast run on accelerated hardware.
 - Wouldn’t it be nice if there was a composable data processing engine that
-  could be embedded into _any_ data platform, to enable that platform to run
-  jobs on accelerated hardware? Then the platform builders wouldn’t need to
-  duplicate efforts. And organizations wouldn’t need to migrate to different
-  platforms to accelerate their workloads.
+ could be embedded into _any_ data platform, to enable that platform to run jobs
+ on accelerated hardware? Then the platform builders wouldn’t need to duplicate
+ efforts. And organizations wouldn’t need to migrate to different platforms to
+ accelerate their workloads.
 - Voltron Data built Theseus to be that composable engine.
 - Voltron Data is _not_ building a platform around Theseus. Instead, it is
-  partnering with other companies and organizations to embed Theseus in their
-  platforms.
+ partnering with other companies and organizations to embed Theseus in their
+ platforms.
 - Theseus is great for very large-scale ETL workloads with very high throughput
-  needs. For other types of workloads, other engines are better. Voltron Data
-  wants to make it easy to choose the best engine for your workload. Your
-  choice of engine or platform should not limit your choice of other tools.
+ needs. For other types of workloads, other engines are better. Voltron Data
+ wants to make it easy to choose the best engine for your workload. Your choice
+ of engine or platform should not limit your choice of other tools.
 - For example (this is where Ibis comes in!), your choice of engine or platform
-  should not limit your choice of Python dataframe API. So Ibis works with 20+
-  engines, including Theseus.
+ should not limit your choice of Python dataframe API. So Ibis works with 20+
+ engines, including Theseus.
 
 Ultimately, Voltron Data will be more successful if Ibis is successful. And the
 same is true of any other company with an engine or platform that is the best
