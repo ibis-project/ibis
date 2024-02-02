@@ -993,9 +993,7 @@ def test_memtable_column_naming_mismatch(backend, con, monkeypatch, df, columns)
 
 
 @pytest.mark.notimpl(
-    ["dask", "pandas", "polars"],
-    raises=NotImplementedError,
-    reason="not a SQL backend",
+    ["dask", "pandas", "polars"], raises=NotImplementedError, reason="not a SQL backend"
 )
 @pytest.mark.notimpl(["flink"], reason="no sqlglot dialect", raises=ValueError)
 def test_many_subqueries(con, snapshot):
