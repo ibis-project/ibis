@@ -167,6 +167,7 @@ def add_globally_consecutive_column(
     -------
     dd.DataFrame
         New dask dataframe with sorted partitioned index
+
     """
     if isinstance(df, dd.Series):
         df = df.to_frame()

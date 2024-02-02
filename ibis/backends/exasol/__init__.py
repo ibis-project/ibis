@@ -76,6 +76,7 @@ class Backend(SQLGlotBackend):
             Port number to connect to (default: 8563)
         kwargs
             Additional keyword arguments passed to `pyexasol.connect`.
+
         """
         if kwargs.pop("quote_ident", None) is not None:
             raise com.UnsupportedArgumentError(
@@ -291,6 +292,7 @@ class Backend(SQLGlotBackend):
             if the table exists
         temp
             Create a temporary table (not supported)
+
         """
         if obj is None and schema is None:
             raise ValueError("Either `obj` or `schema` must be specified")

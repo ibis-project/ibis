@@ -202,6 +202,7 @@ class MapSet(Mapping[K, V]):
     MyMap({'a': 1, 'b': 2})
     >>> m | n
     MyMap({'a': 1, 'b': 2, 'c': 3})
+
     """
 
     def _check_conflict(self, other: collections.abc.Mapping) -> set[K]:
@@ -342,6 +343,7 @@ class RewindableIterator(Iterator[V]):
     3
     >>> next(it)
     4
+
     """
 
     __slots__ = ("_iterator", "_checkpoint")

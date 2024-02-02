@@ -53,6 +53,7 @@ class Backend(SQLGlotBackend):
         -------
         BaseBackend
             A backend instance
+
         """
 
         url = urlparse(url)

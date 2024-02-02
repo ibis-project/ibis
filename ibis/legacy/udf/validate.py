@@ -26,6 +26,7 @@ def _parameter_count(funcsig: Signature) -> int:
     -------
     int
         The number of parameters
+
     """
     kinds = (Parameter.POSITIONAL_OR_KEYWORD, Parameter.POSITIONAL_ONLY)
     return sum(

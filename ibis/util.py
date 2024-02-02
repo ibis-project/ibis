@@ -67,6 +67,7 @@ def indent(text: str, spaces: int) -> str:
     -------
     str
         Indented text
+
     """
     prefix = " " * spaces
     return textwrap.indent(text, prefix=prefix)
@@ -85,6 +86,7 @@ def is_one_of(values: Sequence[T], t: type[U]) -> Iterator[bool]:
     Returns
     -------
     tuple
+
     """
     return (isinstance(x, t) for x in values)
 
@@ -104,6 +106,7 @@ def promote_list(val: V | Sequence[V]) -> list[V]:
     Returns
     -------
     list
+
     """
     if isinstance(val, list):
         return val
@@ -128,6 +131,7 @@ def promote_tuple(val: V | Sequence[V]) -> tuple[V]:
     Returns
     -------
     tuple
+
     """
     if isinstance(val, tuple):
         return val
@@ -146,6 +150,7 @@ def is_function(v: Any) -> bool:
     -------
     bool
         Whether `v` is a function
+
     """
     return isinstance(v, (types.FunctionType, types.LambdaType))
 
@@ -164,6 +169,7 @@ def approx_equal(a: Real, b: Real, eps: Real):
     Raises
     ------
     AssertionError
+
     """
     assert abs(a - b) < eps
 
@@ -191,6 +197,7 @@ def safe_index(elements: Sequence[int], value: int) -> int:
     1
     >>> safe_index(sequence, 4)
     -1
+
     """
     try:
         return elements.index(value)
@@ -224,6 +231,7 @@ def is_iterable(o: Any) -> bool:
     False
     >>> is_iterable([])
     True
+
     """
     if isinstance(o, (str, bytes)):
         return False
@@ -275,6 +283,7 @@ def convert_unit(value, unit, to, floor: bool = True):
     Traceback (most recent call last):
         ...
     ValueError: Cannot convert to or from unit ... to unit ...
+
     """
     # Don't do anything if from and to units are equivalent
     if unit == to:
@@ -333,6 +342,7 @@ def get_logger(
     Returns
     -------
     logging.Logger
+
     """
     logging.basicConfig()
     handler = logging.StreamHandler()
@@ -518,6 +528,7 @@ def import_object(qualname: str) -> Any:
     Is the same as
 
     >>> from ibis import examples as ex
+
     """
     mod_name, name = qualname.rsplit(".", 1)
     mod = importlib.import_module(mod_name)
@@ -606,6 +617,7 @@ def slice_to_limit_offset(
     >>> limit, offset = slice_to_limit_offset(what, count)
     >>> limit, offset
     (5, 5)
+
     """
     if (step := what.step) is not None and step != 1:
         raise ValueError("Slice step can only be 1")
@@ -654,6 +666,7 @@ class Namespace:
         The pattern to construct with the looked up types.
     module
         The module object or name to look up the types.
+
     """
 
     __slots__ = ("_factory", "_module")
