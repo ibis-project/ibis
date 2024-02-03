@@ -243,9 +243,8 @@ for _ in range(2):
         param(lambda p: f"duckdb://{p}", id="absolute-path"),
         param(
             lambda p: f"duckdb://{os.path.relpath(p)}",
-            marks=[
-                not_windows
-            ],  # hard to test in CI since tmpdir & cwd are on different drives
+            # hard to test in CI since tmpdir & cwd are on different drives
+            marks=[not_windows],
             id="relative-path",
         ),
         param(lambda _: "duckdb://", id="in-memory-empty"),

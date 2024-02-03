@@ -1270,91 +1270,6 @@ def test_divide_by_zero(backend, alltypes, df, column, denominator):
     backend.assert_series_equal(result.astype("float64"), expected)
 
 
-@pytest.mark.parametrize(
-    ("default_precisions", "default_scales"),
-    [
-        (
-            {
-                "postgres": None,
-                "risingwave": None,
-                "mysql": 10,
-                "snowflake": 38,
-                "trino": 18,
-                "sqlite": None,
-                "mssql": None,
-                "oracle": 38,
-            },
-            {
-                "postgres": None,
-                "risingwave": None,
-                "mysql": 0,
-                "snowflake": 0,
-                "trino": 3,
-                "sqlite": None,
-                "mssql": None,
-                "oracle": 0,
-            },
-        )
-    ],
-)
-@pytest.mark.never(
-    [
-        "bigquery",
-        "clickhouse",
-        "dask",
-        "datafusion",
-        "duckdb",
-        "impala",
-        "oracle",
-        "pandas",
-        "pyspark",
-        "polars",
-        "flink",
-        "sqlite",
-        "snowflake",
-        "trino",
-        "postgres",
-        "risingwave",
-        "mysql",
-        "druid",
-        "mssql",
-        "exasol",
-    ],
-    reason="Not SQLAlchemy backends",
-)
-def test_sa_default_numeric_precision_and_scale(
-    con, backend, default_precisions, default_scales, temp_table
-):
-    sa = pytest.importorskip("sqlalchemy")
-
-    default_precision = default_precisions[backend.name()]
-    default_scale = default_scales[backend.name()]
-
-    typespec = [
-        # name, sqlalchemy type, ibis type
-        ("n1", sa.NUMERIC, dt.Decimal(default_precision, default_scale)),
-        ("n2", sa.NUMERIC(5), dt.Decimal(5, default_scale)),
-        ("n3", sa.NUMERIC(None, 4), dt.Decimal(default_precision, 4)),
-        ("n4", sa.NUMERIC(10, 2), dt.Decimal(10, 2)),
-    ]
-
-    sqla_types = []
-    ibis_types = []
-    for name, t, ibis_type in typespec:
-        sqla_types.append(sa.Column(name, t, nullable=True))
-        ibis_types.append((name, ibis_type(nullable=True)))
-
-    table = sa.Table(temp_table, sa.MetaData(), *sqla_types, quote=True)
-    with con.begin() as bind:
-        table.create(bind=bind, checkfirst=True)
-
-    # Check that we can correctly recover the default precision and scale.
-    schema = con._schema_from_sqla_table(table)
-    expected = ibis.schema(ibis_types)
-
-    assert_equal(schema, expected)
-
-
 @pytest.mark.notimpl(["dask", "pandas", "polars"], raises=com.OperationNotDefinedError)
 @pytest.mark.notimpl(["druid"], raises=PyDruidProgrammingError)
 @pytest.mark.notimpl(
@@ -1472,7 +1387,7 @@ flink_no_bitwise = pytest.mark.notyet(
         param(lambda t: t.int_col, lambda _: 3, id="col_scalar"),
     ],
 )
-@pytest.mark.notimpl(["exasol"], raises=(ExaQueryError))
+@pytest.mark.notimpl(["exasol"], raises=ExaQueryError)
 @flink_no_bitwise
 def test_bitwise_columns(backend, con, alltypes, df, op, left_fn, right_fn):
     expr = op(left_fn(alltypes), right_fn(alltypes)).name("tmp")
@@ -1509,7 +1424,7 @@ def test_bitwise_columns(backend, con, alltypes, df, op, left_fn, right_fn):
     ],
 )
 @pytest.mark.notimpl(["oracle"], raises=OracleDatabaseError)
-@pytest.mark.notimpl(["exasol"], raises=(ExaQueryError))
+@pytest.mark.notimpl(["exasol"], raises=ExaQueryError)
 @flink_no_bitwise
 def test_bitwise_shift(backend, alltypes, df, op, left_fn, right_fn):
     expr = op(left_fn(alltypes), right_fn(alltypes)).name("tmp")

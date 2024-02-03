@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import os
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 import pytest
 
@@ -35,20 +35,6 @@ class TestConf(ServiceBackendTest):
     @property
     def test_files(self) -> Iterable[Path]:
         return self.data_dir.joinpath("csv").glob("*.csv")
-
-    def _load_data(self, **_: Any) -> None:
-        """Load test data into a MSSQL backend instance.
-
-        Parameters
-        ----------
-        data_dir
-            Location of testdata
-        script_dir
-            Location of scripts defining schemas
-        """
-        with self.connection.begin() as cur:
-            for stmt in self.ddl_script:
-                cur.execute(stmt)
 
     @staticmethod
     def connect(*, tmpdir, worker_id, **kw):

@@ -1,4 +1,4 @@
-CREATE OR REPLACE TABLE diamonds (
+CREATE OR REPLACE TABLE "diamonds" (
     "carat" FLOAT,
     "cut" TEXT,
     "color" TEXT,
@@ -11,7 +11,7 @@ CREATE OR REPLACE TABLE diamonds (
     "z" FLOAT
 );
 
-CREATE OR REPLACE TABLE astronauts (
+CREATE OR REPLACE TABLE "astronauts" (
     "id" BIGINT,
     "number" BIGINT,
     "nationwide_number" BIGINT,
@@ -38,7 +38,7 @@ CREATE OR REPLACE TABLE astronauts (
     "total_eva_hrs" FLOAT
 );
 
-CREATE OR REPLACE TABLE batting (
+CREATE OR REPLACE TABLE "batting" (
     "playerID" TEXT,
     "yearID" BIGINT,
     "stint" BIGINT,
@@ -63,7 +63,7 @@ CREATE OR REPLACE TABLE batting (
     "GIDP" BIGINT
 );
 
-CREATE OR REPLACE TABLE awards_players (
+CREATE OR REPLACE TABLE "awards_players" (
     "playerID" TEXT,
     "awardID" TEXT,
     "yearID" BIGINT,
@@ -72,7 +72,7 @@ CREATE OR REPLACE TABLE awards_players (
     "notes" TEXT
 );
 
-CREATE OR REPLACE TABLE functional_alltypes (
+CREATE OR REPLACE TABLE "functional_alltypes" (
     "id" INTEGER,
     "bool_col" BOOLEAN,
     "tinyint_col" SMALLINT,
@@ -88,7 +88,7 @@ CREATE OR REPLACE TABLE functional_alltypes (
     "month" INTEGER
 );
 
-CREATE OR REPLACE TABLE array_types (
+CREATE OR REPLACE TABLE "array_types" (
     "x" ARRAY,
     "y" ARRAY,
     "z" ARRAY,
@@ -97,7 +97,7 @@ CREATE OR REPLACE TABLE array_types (
     "multi_dim" ARRAY
 );
 
-INSERT INTO array_types ("x", "y", "z", "grouper", "scalar_column", "multi_dim")
+INSERT INTO "array_types" ("x", "y", "z", "grouper", "scalar_column", "multi_dim")
     SELECT [1, 2, 3], ['a', 'b', 'c'], [1.0, 2.0, 3.0], 'a', 1.0, [[], [1, 2, 3], NULL] UNION
     SELECT [4, 5], ['d', 'e'], [4.0, 5.0], 'a', 2.0, [] UNION
     SELECT [6, NULL], ['f', NULL], [6.0, NULL], 'a', 3.0, [NULL, [], NULL] UNION
@@ -105,16 +105,16 @@ INSERT INTO array_types ("x", "y", "z", "grouper", "scalar_column", "multi_dim")
     SELECT [2, NULL, 3], ['b', NULL, 'c'], NULL, 'b', 5.0, NULL UNION
     SELECT [4, NULL, NULL, 5], ['d', NULL, NULL, 'e'], [4.0, NULL, NULL, 5.0], 'c', 6.0, [[1, 2, 3]];
 
-CREATE OR REPLACE TABLE map ("idx" BIGINT, "kv" OBJECT);
+CREATE OR REPLACE TABLE "map" ("idx" BIGINT, "kv" OBJECT);
 
-INSERT INTO map ("idx", "kv")
+INSERT INTO "map" ("idx", "kv")
     SELECT 1, object_construct('a', 1, 'b', 2, 'c', 3) UNION
     SELECT 2, object_construct('d', 4, 'e', 5, 'f', 6);
 
 
-CREATE OR REPLACE TABLE struct ("abc" OBJECT);
+CREATE OR REPLACE TABLE "struct" ("abc" OBJECT);
 
-INSERT INTO struct ("abc")
+INSERT INTO "struct" ("abc")
     SELECT {'a': 1.0, 'b': 'banana', 'c': 2} UNION
     SELECT {'a': 2.0, 'b': 'apple', 'c': 3} UNION
     SELECT {'a': 3.0, 'b': 'orange', 'c': 4} UNION
@@ -123,9 +123,9 @@ INSERT INTO struct ("abc")
     SELECT NULL UNION
     SELECT {'a': 3.0, 'b': 'orange', 'c': NULL};
 
-CREATE OR REPLACE TABLE json_t ("js" VARIANT);
+CREATE OR REPLACE TABLE "json_t" ("js" VARIANT);
 
-INSERT INTO json_t ("js")
+INSERT INTO "json_t" ("js")
     SELECT parse_json('{"a": [1,2,3,4], "b": 1}') UNION
     SELECT parse_json('{"a":null,"b":2}') UNION
     SELECT parse_json('{"a":"foo", "c":null}') UNION
@@ -133,8 +133,8 @@ INSERT INTO json_t ("js")
     SELECT parse_json('[42,47,55]') UNION
     SELECT parse_json('[]');
 
-CREATE OR REPLACE TABLE win ("g" TEXT, "x" BIGINT NOT NULL, "y" BIGINT);
-INSERT INTO win VALUES
+CREATE OR REPLACE TABLE "win" ("g" TEXT, "x" BIGINT NOT NULL, "y" BIGINT);
+INSERT INTO "win" VALUES
     ('a', 0, 3),
     ('a', 1, 2),
     ('a', 2, 0),
