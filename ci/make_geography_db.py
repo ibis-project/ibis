@@ -16,72 +16,56 @@
 from __future__ import annotations
 
 import argparse
-import datetime
+import json
 import tempfile
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 import requests
-import sqlalchemy as sa
-import toolz
+
+import ibis
 
 if TYPE_CHECKING:
     from collections.abc import Mapping
 
 SCHEMAS = {
-    "countries": [
-        ("iso_alpha2", sa.TEXT),
-        ("iso_alpha3", sa.TEXT),
-        ("iso_numeric", sa.INT),
-        ("fips", sa.TEXT),
-        ("name", sa.TEXT),
-        ("capital", sa.TEXT),
-        ("area_km2", sa.REAL),
-        ("population", sa.INT),
-        ("continent", sa.TEXT),
-    ],
-    "gdp": [
-        ("country_code", sa.TEXT),
-        ("year", sa.INT),
-        ("value", sa.REAL),
-    ],
-    "independence": [
-        ("country_code", sa.TEXT),
-        ("independence_date", sa.DATE),
-        ("independence_from", sa.TEXT),
-    ],
-}
-
-POST_PARSE_FUNCTIONS = {
-    "independence": lambda row: toolz.assoc(
-        row,
-        "independence_date",
-        datetime.datetime.fromisoformat(row["independence_date"]).date(),
-    )
+    "countries": {
+        "iso_alpha2": "string",
+        "iso_alpha3": "string",
+        "iso_numeric": "int",
+        "fips": "string",
+        "name": "string",
+        "capital": "string",
+        "area_km2": "float",
+        "population": "int",
+        "continent": "string",
+    },
+    "gdp": {
+        "country_code": "string",
+        "year": "int",
+        "value": "float",
+    },
+    "independence": {
+        "country_code": "string",
+        "independence_date": "date",
+        "independence_from": "string",
+    },
 }
 
 
 def make_geography_db(
-    data: Mapping[str, Any],
-    con: sa.engine.Engine,
+    data: Mapping[str, Any], con: ibis.backends.duckdb.Backend
 ) -> None:
-    metadata = sa.MetaData(bind=con)
-
-    with con.begin() as bind:
+    with tempfile.TemporaryDirectory() as d:
         for table_name, schema in SCHEMAS.items():
-            table = sa.Table(
-                table_name,
-                metadata,
-                *(sa.Column(col_name, col_type) for col_name, col_type in schema),
+            ibis_schema = ibis.schema(schema)
+            cols = ibis_schema.names
+            path = Path(d, f"{table_name}.jsonl")
+            path.write_text(
+                "\n".join(json.dumps(dict(zip(cols, row))) for row in data[table_name])
             )
-            table_columns = table.c.keys()
-            post_parse = POST_PARSE_FUNCTIONS.get(table_name, toolz.identity)
-
-            table.drop(bind=bind, checkfirst=True)
-            table.create(bind=bind)
-            bind.execute(
-                table.insert().values(),
-                [post_parse(dict(zip(table_columns, row))) for row in data[table_name]],
+            con.create_table(
+                table_name, obj=con.read_json(path), schema=ibis_schema, overwrite=True
             )
 
 
@@ -109,9 +93,8 @@ def main() -> None:
     response = requests.get(args.input_data_url)
     response.raise_for_status()
     input_data = response.json()
-    db_path = Path(args.output_directory).joinpath("geography.db")
-    con = sa.create_engine(f"sqlite:///{db_path}")
-    make_geography_db(input_data, con)
+    db_path = Path(args.output_directory).joinpath("geography.duckdb")
+    make_geography_db(input_data, ibis.duckdb.connect(db_path))
     print(db_path)  # noqa: T201
 
 

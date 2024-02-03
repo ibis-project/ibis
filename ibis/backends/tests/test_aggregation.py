@@ -6,7 +6,6 @@ from operator import methodcaller
 import numpy as np
 import pandas as pd
 import pytest
-import sqlalchemy as sa
 from pytest import param
 
 import ibis
@@ -306,9 +305,7 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
                     raises=OracleDatabaseError,
                     reason="ORA-02000: missing AS keyword",
                 ),
-                pytest.mark.notimpl(
-                    ["exasol"], raises=(sa.exc.DBAPIError, ExaQueryError)
-                ),
+                pytest.mark.notimpl(["exasol"], raises=ExaQueryError),
                 pytest.mark.notimpl(["mssql"], raises=com.OperationNotDefinedError),
             ],
         ),
@@ -327,9 +324,7 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
                     raises=OracleDatabaseError,
                     reason="ORA-02000: missing AS keyword",
                 ),
-                pytest.mark.notimpl(
-                    ["exasol"], raises=(sa.exc.DBAPIError, ExaQueryError)
-                ),
+                pytest.mark.notimpl(["exasol"], raises=ExaQueryError),
                 pytest.mark.notimpl(["mssql"], raises=com.OperationNotDefinedError),
             ],
         ),
@@ -361,9 +356,7 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
                     raises=OracleDatabaseError,
                     reason="ORA-02000: missing AS keyword",
                 ),
-                pytest.mark.notimpl(
-                    ["exasol"], raises=(sa.exc.DBAPIError, ExaQueryError)
-                ),
+                pytest.mark.notimpl(["exasol"], raises=ExaQueryError),
                 pytest.mark.notimpl(["mssql"], raises=com.OperationNotDefinedError),
             ],
         ),
@@ -382,9 +375,7 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
                     raises=OracleDatabaseError,
                     reason="ORA-02000: missing AS keyword",
                 ),
-                pytest.mark.notimpl(
-                    ["exasol"], raises=(sa.exc.DBAPIError, ExaQueryError)
-                ),
+                pytest.mark.notimpl(["exasol"], raises=ExaQueryError),
                 pytest.mark.notimpl(["mssql"], raises=com.OperationNotDefinedError),
             ],
         ),
@@ -822,7 +813,6 @@ def test_reduction_ops(
 @pytest.mark.notyet(
     ["bigquery", "druid", "mssql", "oracle", "sqlite", "flink"],
     raises=(
-        sa.exc.OperationalError,
         OracleDatabaseError,
         com.UnsupportedOperationError,
         com.OperationNotDefinedError,

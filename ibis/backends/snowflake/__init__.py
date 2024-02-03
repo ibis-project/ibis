@@ -274,7 +274,6 @@ $$ {defn["source"]} $$"""
                         f"Unable to create Ibis UDFs, some functionality will not work: {e}"
                     )
         self.con = con
-        self._temp_views: set[str] = set()
 
     def _get_udf_source(self, udf_node: ops.ScalarUDF):
         name = type(udf_node).__name__
@@ -1035,48 +1034,3 @@ $$"""
             cur.execute(f"COPY INTO {qtable} FROM (SELECT {cols} FROM @{stage})")
 
         return self.table(table)
-
-    def insert(
-        self,
-        table_name: str,
-        obj: pd.DataFrame | ir.Table | list | dict,
-        schema: str | None = None,
-        database: str | None = None,
-        overwrite: bool = False,
-    ) -> None:
-        """Insert data into a table.
-
-        Parameters
-        ----------
-        table_name
-            The name of the table to which data needs will be inserted
-        obj
-            The source data or expression to insert
-        schema
-            The name of the schema that the table is located in
-        database
-            Name of the attached database that the table is located in.
-        overwrite
-            If `True` then replace existing contents of table
-
-        """
-        if not isinstance(obj, ir.Table):
-            obj = ibis.memtable(obj)
-
-        table = sg.table(table_name, db=schema, catalog=database, quoted=True)
-        self._run_pre_execute_hooks(obj)
-        query = sg.exp.insert(
-            expression=self.compile(obj),
-            into=table,
-            columns=[sg.column(col, quoted=True) for col in obj.columns],
-            dialect=self.name,
-        )
-
-        statements = []
-        if overwrite:
-            statements.append(f"TRUNCATE TABLE {table.sql(self.name)}")
-        statements.append(query.sql(self.name))
-
-        statement = ";".join(statements)
-        with self._safe_raw_sql(statement):
-            pass

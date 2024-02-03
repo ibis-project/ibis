@@ -18,8 +18,7 @@ S = TypeVar("S")
 
 
 class TypeMapper(Generic[T]):
-    # `T` is the format-specific type object, e.g. pyarrow.DataType or
-    # sqlalchemy.types.TypeEngine
+    # `T` is the format-specific type object, e.g. pyarrow.DataType
 
     @classmethod
     def from_ibis(cls, dtype: DataType) -> T:

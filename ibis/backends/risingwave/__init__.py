@@ -109,8 +109,6 @@ class Backend(PostgresBackend):
         with self.begin() as cur:
             cur.execute("SET TIMEZONE = UTC")
 
-        self._temp_views = set()
-
     def create_table(
         self,
         name: str,

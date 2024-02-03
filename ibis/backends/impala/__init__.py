@@ -10,7 +10,6 @@ from typing import TYPE_CHECKING, Any, Literal
 from urllib.parse import parse_qs, urlparse
 
 import impala.dbapi as impyla
-import pandas as pd
 import sqlglot as sg
 import sqlglot.expressions as sge
 from impala.error import Error as ImpylaError
@@ -48,6 +47,7 @@ if TYPE_CHECKING:
     from collections.abc import Iterator, Mapping
     from pathlib import Path
 
+    import pandas as pd
     import pyarrow as pa
 
     import ibis.expr.operations as ops
@@ -513,8 +513,8 @@ class Backend(SQLGlotBackend):
             raise NotImplementedError
 
         if obj is not None:
-            if isinstance(obj, pd.DataFrame):
-                raise NotImplementedError("Pandas DataFrames not yet supported")
+            if not isinstance(obj, ir.Table):
+                obj = ibis.memtable(obj)
 
             self._run_pre_execute_hooks(obj)
 
