@@ -120,7 +120,7 @@ The errors you get back are backend dependent:
 con.execute(cardinality("foo"))
 ```
 
-Here, Duckdb is informing us that the `ARRAY_LENGTH` function does not accept
+Here, DuckDB is informing us that the `ARRAY_LENGTH` function does not accept
 strings as input.
 
 
