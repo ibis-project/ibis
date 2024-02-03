@@ -1,8 +1,3 @@
----
-execute:
-  freeze: auto
----
-
 # Reference built-in functions
 
 
