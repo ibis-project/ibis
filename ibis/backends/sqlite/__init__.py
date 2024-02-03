@@ -4,7 +4,6 @@ import contextlib
 import functools
 import sqlite3
 from typing import TYPE_CHECKING, Any, NoReturn
-from urllib.parse import urlparse
 
 import sqlglot as sg
 import sqlglot.expressions as sge
@@ -16,6 +15,7 @@ import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis import util
+from ibis.backends.base import UrlFromPath
 from ibis.backends.base.sqlglot import SQLGlotBackend
 from ibis.backends.base.sqlglot.compiler import C, F
 from ibis.backends.sqlite.compiler import SQLiteCompiler
@@ -34,15 +34,15 @@ if TYPE_CHECKING:
 def _init_sqlite3():
     import pandas as pd
 
-    # TODO: can we remove this?
-    sqlite3.register_adapter(pd.Timestamp, lambda value: value.isoformat())
+    # required to support pandas Timestamp's from user input
+    sqlite3.register_adapter(pd.Timestamp, pd.Timestamp.isoformat)
 
 
 def _quote(name: str) -> str:
     return sg.to_identifier(name, quoted=True).sql("sqlite")
 
 
-class Backend(SQLGlotBackend):
+class Backend(SQLGlotBackend, UrlFromPath):
     name = "sqlite"
     compiler = SQLiteCompiler()
     supports_python_udfs = True
@@ -89,30 +89,9 @@ class Backend(SQLGlotBackend):
             self._type_map = {}
 
         self.con = sqlite3.connect(":memory:" if database is None else database)
-        self._temp_views = set()
 
         register_all(self.con)
         self.con.execute("PRAGMA case_sensitive_like=ON")
-
-    def _from_url(self, url: str, **kwargs):
-        """Connect to a backend using a URL `url`.
-
-        Parameters
-        ----------
-        url
-            URL with which to connect to a backend.
-        kwargs
-            Additional keyword arguments
-
-        Returns
-        -------
-        BaseBackend
-            A backend instance
-
-        """
-        url = urlparse(url)
-        database = url.path or ":memory:"
-        return self.connect(database=database, **kwargs)
 
     def raw_sql(self, query: str | sg.Expression, **kwargs: Any) -> Any:
         if not isinstance(query, str):
@@ -512,25 +491,6 @@ class Backend(SQLGlotBackend):
         )
         with self._safe_raw_sql(drop_stmt):
             pass
-
-    def _create_temp_view(self, table_name, source):
-        if table_name not in self._temp_views and table_name in self.list_tables():
-            raise ValueError(
-                f"{table_name} already exists as a non-temporary table or view"
-            )
-
-        view = sg.table(table_name, catalog="temp", quoted=self.compiler.quoted)
-        drop = sge.Drop(kind="VIEW", exists=True, this=view).sql(self.name)
-        create = sge.Create(
-            kind="VIEW", this=view, expression=source, replace=False
-        ).sql(self.name)
-
-        with self.begin() as cur:
-            cur.execute(drop)
-            cur.execute(create)
-
-        self._temp_views.add(table_name)
-        self._register_temp_view_cleanup(table_name)
 
     def create_view(
         self,

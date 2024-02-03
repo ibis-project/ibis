@@ -398,10 +398,15 @@ class DaskExecutor(PandasExecutor, DaskUtils):
     def execute(cls, node, backend, params):
         original = node
         node = node.to_expr().as_table().op()
-        df = cls.compile(node, backend=backend, params=params)
-        assert isinstance(df, dd.DataFrame)
+        result = cls.compile(node, backend=backend, params=params)
 
-        result = df.compute()
+        # should happen when the result is empty
+        if isinstance(result, pd.DataFrame):
+            assert result.empty
+        else:
+            assert isinstance(result, dd.DataFrame)
+            result = result.compute()
+
         result = PandasData.convert_table(result, node.schema)
         if isinstance(original, ops.Value):
             if original.shape.is_scalar():

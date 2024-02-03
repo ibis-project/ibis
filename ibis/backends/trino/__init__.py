@@ -17,7 +17,7 @@ import ibis.expr.datatypes as dt
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis import util
-from ibis.backends.base import CanListDatabases
+from ibis.backends.base import CanListDatabases, NoUrl
 from ibis.backends.base.sqlglot import SQLGlotBackend
 from ibis.backends.base.sqlglot.compiler import C
 from ibis.backends.trino.compiler import TrinoCompiler
@@ -31,7 +31,7 @@ if TYPE_CHECKING:
     import ibis.expr.operations as ops
 
 
-class Backend(SQLGlotBackend, CanListDatabases):
+class Backend(SQLGlotBackend, CanListDatabases, NoUrl):
     name = "trino"
     compiler = TrinoCompiler()
     supports_create_or_replace = False
@@ -242,7 +242,7 @@ class Backend(SQLGlotBackend, CanListDatabases):
         schema: str | None = None,
         source: str | None = None,
         timezone: str = "UTC",
-        **connect_args,
+        **kwargs,
     ) -> None:
         """Connect to Trino.
 
@@ -264,9 +264,9 @@ class Backend(SQLGlotBackend, CanListDatabases):
             Application name passed to Trino
         timezone
             Timezone to use for the connection
-        connect_args
-            Additional keyword arguments passed directly to SQLAlchemy's
-            `create_engine`
+        kwargs
+            Additional keyword arguments passed directly to the
+            `trino.dbapi.connect` API.
 
         Examples
         --------
@@ -296,7 +296,7 @@ class Backend(SQLGlotBackend, CanListDatabases):
             schema=schema,
             source=source or "ibis",
             timezone=timezone,
-            **connect_args,
+            **kwargs,
         )
 
     @contextlib.contextmanager

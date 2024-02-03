@@ -505,7 +505,7 @@ class DataFusionCompiler(SQLGlotCompiler):
             # datafusion lower cases all column names internally unless quoted so
             # quoted=True is required here for correctness
             by_names_quoted = tuple(
-                sg.column(key, table=getattr(value, "table", None), quoted=True)
+                sg.column(key, table=getattr(value, "table", None), quoted=quoted)
                 for key, value in groups.items()
             )
             selections = by_names_quoted + metrics

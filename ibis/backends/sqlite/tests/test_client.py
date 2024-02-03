@@ -51,7 +51,6 @@ def test_builtin_agg_udf(con):
     assert result == 0.0
 
 
-@pytest.mark.sqlite
 @pytest.mark.parametrize(
     "url, ext",
     [
@@ -61,16 +60,15 @@ def test_builtin_agg_udf(con):
         param(
             lambda p: f"sqlite://{os.path.relpath(p)}",
             "db",
-            marks=[
-                not_windows
-            ],  # hard to test in CI since tmpdir & cwd are on different drives
+            # hard to test in CI since tmpdir & cwd are on different drives
+            marks=[not_windows],
             id="relative-path",
         ),
         param(lambda _: "sqlite://", "db", id="in-memory-empty"),
         param(lambda _: "sqlite://:memory:", "db", id="in-memory-explicit"),
     ],
 )
-def test_connect_sqlite(url, ext, tmp_path):
+def test_connect(url, ext, tmp_path):
     path = os.path.abspath(tmp_path / f"test.{ext}")
     with sqlite3.connect(path):
         pass

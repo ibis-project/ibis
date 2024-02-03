@@ -6,9 +6,7 @@ from ibis.backends.flink.registry import operation_registry
 
 
 class FlinkExprTranslator(ExprTranslator):
-    _dialect_name = (
-        "hive"  # TODO: neither sqlglot nor sqlalchemy supports flink dialect
-    )
+    _dialect_name = "hive"  # TODO: make a custom sqlglot dialect for Flink
     _registry = operation_registry
     _bool_aggs_need_cast_to_int32 = True
 

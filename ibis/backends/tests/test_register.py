@@ -354,8 +354,6 @@ def test_csv_reregister_schema(con, tmp_path):
         )
 
     # For a full file scan, expect correct schema based on final row
-    # We also use the same `table_name` for both tests to ensure that
-    # the table is re-reflected in sqlalchemy
     foo_table = con.register(foo, table_name="same")
     result_schema = foo_table.schema()
 
@@ -389,11 +387,9 @@ def test_register_garbage(con, monkeypatch):
     # monkeypatch to avoid downloading extensions in tests
     monkeypatch.setattr(con, "_load_extensions", lambda x: True)
 
-    sa = pytest.importorskip("sqlalchemy")
     duckdb = pytest.importorskip("duckdb")
     with pytest.raises(
-        (sa.exc.OperationalError, duckdb.IOException),
-        match="No files found that match the pattern",
+        duckdb.IOException, match="No files found that match the pattern"
     ):
         con.read_csv("garbage_notafile")
 

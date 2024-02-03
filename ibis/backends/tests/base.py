@@ -11,7 +11,6 @@ import numpy as np
 import pandas as pd
 import pandas.testing as tm
 import pytest
-import toolz
 from filelock import FileLock
 
 if TYPE_CHECKING:
@@ -53,8 +52,6 @@ class BackendTest(abc.ABC):
     "Whether backend supports mappings (currently DuckDB, Snowflake, and Trino)"
     reduction_tolerance = 1e-7
     "Used for a single test in `test_aggregation.py`. You should not need to touch this."
-    default_identifier_case_fn = staticmethod(toolz.identity)
-    "Function applied to all identifier names to change case as necessary (e.g. Snowflake ALL_CAPS)"
     stateful = True
     "Whether special handling is needed for running a multi-process pytest run."
     supports_tpch: bool = False
@@ -63,6 +60,8 @@ class BackendTest(abc.ABC):
     "Sort results before comparing against reference computation."
     rounding_method: Literal["away_from_zero", "half_to_even"] = "away_from_zero"
     "Name of round method to use for rounding test comparisons."
+    driver_supports_multiple_statements: bool = False
+    "Whether the driver supports executing multiple statements in a single call."
 
     @property
     @abc.abstractmethod
@@ -120,9 +119,13 @@ class BackendTest(abc.ABC):
 
     def _load_data(self, **_: Any) -> None:
         """Load test data into a backend."""
-        with self.connection.begin() as con:
-            for stmt in self.ddl_script:
-                con.exec_driver_sql(stmt)
+        if self.driver_supports_multiple_statements:
+            with self.connection._safe_raw_sql(";".join(self.ddl_script)):
+                pass
+        else:
+            with self.connection.begin() as con:
+                for stmt in self.ddl_script:
+                    con.execute(stmt)
 
     def stateless_load(self, **kw):
         self.preload()
@@ -228,32 +231,30 @@ class BackendTest(abc.ABC):
 
     @property
     def functional_alltypes(self) -> ir.Table:
-        t = self.connection.table(
-            self.default_identifier_case_fn("functional_alltypes")
-        )
+        t = self.connection.table("functional_alltypes")
         if not self.native_bool:
             return t.mutate(bool_col=t.bool_col == 1)
         return t
 
     @property
     def batting(self) -> ir.Table:
-        return self.connection.table(self.default_identifier_case_fn("batting"))
+        return self.connection.table("batting")
 
     @property
     def awards_players(self) -> ir.Table:
-        return self.connection.table(self.default_identifier_case_fn("awards_players"))
+        return self.connection.table("awards_players")
 
     @property
     def diamonds(self) -> ir.Table:
-        return self.connection.table(self.default_identifier_case_fn("diamonds"))
+        return self.connection.table("diamonds")
 
     @property
     def astronauts(self) -> ir.Table:
-        return self.connection.table(self.default_identifier_case_fn("astronauts"))
+        return self.connection.table("astronauts")
 
     @property
     def geo(self) -> ir.Table | None:
-        name = self.default_identifier_case_fn("geo")
+        name = "geo"
         if name in self.connection.list_tables():
             return self.connection.table(name)
         return None
@@ -261,14 +262,14 @@ class BackendTest(abc.ABC):
     @property
     def struct(self) -> ir.Table | None:
         if self.supports_structs:
-            return self.connection.table(self.default_identifier_case_fn("struct"))
+            return self.connection.table("struct")
         else:
             pytest.xfail(f"{self.name()} backend does not support struct types")
 
     @property
     def array_types(self) -> ir.Table | None:
         if self.supports_arrays:
-            return self.connection.table(self.default_identifier_case_fn("array_types"))
+            return self.connection.table("array_types")
         else:
             pytest.xfail(f"{self.name()} backend does not support array types")
 
@@ -277,22 +278,20 @@ class BackendTest(abc.ABC):
         from ibis import _
 
         if self.supports_json:
-            return self.connection.table(
-                self.default_identifier_case_fn("json_t")
-            ).mutate(js=_.js.cast("json"))
+            return self.connection.table("json_t").mutate(js=_.js.cast("json"))
         else:
             pytest.xfail(f"{self.name()} backend does not support json types")
 
     @property
     def map(self) -> ir.Table | None:
         if self.supports_map:
-            return self.connection.table(self.default_identifier_case_fn("map"))
+            return self.connection.table("map")
         else:
             pytest.xfail(f"{self.name()} backend does not support map types")
 
     @property
     def win(self) -> ir.Table | None:
-        return self.connection.table(self.default_identifier_case_fn("win"))
+        return self.connection.table("win")
 
     @property
     def api(self):
@@ -336,7 +335,7 @@ class BackendTest(abc.ABC):
     def _tpch_table(self, name: str):
         if not self.supports_tpch:
             pytest.skip(f"{self.name()} backend does not support testing TPC-H")
-        return self.connection.table(self.default_identifier_case_fn(name))
+        return self.connection.table(name)
 
 
 class ServiceBackendTest(BackendTest):

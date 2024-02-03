@@ -36,16 +36,7 @@ class TestConf(ServiceBackendTest):
     def test_files(self) -> Iterable[Path]:
         return self.data_dir.joinpath("csv").glob("*.csv")
 
-    def _load_data(
-        self,
-        *,
-        user: str = MYSQL_USER,
-        password: str = MYSQL_PASS,
-        host: str = MYSQL_HOST,
-        port: int = MYSQL_PORT,
-        database: str = IBIS_TEST_MYSQL_DB,
-        **_: Any,
-    ) -> None:
+    def _load_data(self, **kwargs: Any) -> None:
         """Load test data into a MySql backend instance.
 
         Parameters
@@ -55,10 +46,9 @@ class TestConf(ServiceBackendTest):
         script_dir
             Location of scripts defining schemas
         """
-        with self.connection.begin() as cur:
-            for stmt in self.ddl_script:
-                cur.execute(stmt)
+        super()._load_data(**kwargs)
 
+        with self.connection.begin() as cur:
             for table in TEST_TABLES:
                 csv_path = self.data_dir / "csv" / f"{table}.csv"
                 lines = [
