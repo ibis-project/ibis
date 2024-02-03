@@ -1,17 +1,11 @@
 from __future__ import annotations
 
-import pytest
-
 import ibis
 
 from .conftest import add_date, tpch_test
 
 
 @tpch_test
-@pytest.mark.xfail_version(
-    trino=["sqlalchemy>=2"],
-    reason="slightly different code is generated for sqlalchemy 2 for aggregations",
-)
 def test_tpc_h08(part, supplier, region, lineitem, orders, customer, nation):
     """National Market Share Query (Q8)"""
     NATION = "BRAZIL"

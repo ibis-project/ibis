@@ -8,12 +8,14 @@ import keyword
 import re
 import sys
 import urllib.parse
+from pathlib import Path
 from typing import (
     TYPE_CHECKING,
     Any,
     Callable,
     ClassVar,
 )
+from urllib.parse import parse_qs, urlparse
 
 import ibis
 import ibis.common.exceptions as exc
@@ -25,7 +27,6 @@ from ibis.common.caching import RefCountedCache
 
 if TYPE_CHECKING:
     from collections.abc import Iterable, Iterator, Mapping, MutableMapping
-    from pathlib import Path
 
     import pandas as pd
     import pyarrow as pa
@@ -33,6 +34,8 @@ if TYPE_CHECKING:
 
 __all__ = ("BaseBackend", "Database", "connect")
 
+# TODO(cpcloud): move these to a place that doesn't require importing
+# backend-specific dependencies
 _IBIS_TO_SQLGLOT_DIALECT = {
     "mssql": "tsql",
     "impala": "hive",
@@ -42,19 +45,6 @@ _IBIS_TO_SQLGLOT_DIALECT = {
     # closest match see https://github.com/ibis-project/ibis/pull/7303#discussion_r1350223901
     "exasol": "oracle",
     "risingwave": "postgres",
-}
-
-_SQLALCHEMY_TO_SQLGLOT_DIALECT = {
-    # sqlalchemy dialects of backends not listed here match the sqlglot dialect
-    # name
-    "mssql": "tsql",
-    "postgresql": "postgres",
-    "default": "duckdb",
-    # druid allows double quotes for identifiers, like postgres:
-    # https://druid.apache.org/docs/latest/querying/sql#identifiers-and-literals
-    "druid": "postgres",
-    # closest match see https://github.com/ibis-project/ibis/pull/7303#discussion_r1350223901
-    "exa.websocket": "oracle",
 }
 
 
@@ -878,12 +868,6 @@ class BaseBackend(abc.ABC, _FileIOHandler):
         new_backend.reconnect()
         return new_backend
 
-    def _from_url(self, url: str, **kwargs) -> BaseBackend:
-        """Construct an ibis backend from a SQLAlchemy-conforming URL."""
-        raise NotImplementedError(
-            f"`_from_url` not implemented for the {self.name} backend"
-        )
-
     @staticmethod
     def _convert_kwargs(kwargs: MutableMapping) -> None:
         """Manipulate keyword arguments to `.connect` method."""
@@ -1408,17 +1392,14 @@ def connect(resource: Path | str, **kwargs: Any) -> BaseBackend:
         parsed = parsed._replace(query=query)
 
     if scheme in ("postgres", "postgresql"):
-        # Treat `postgres://` and `postgresql://` the same, just as postgres
-        # does. We normalize to `postgresql` since that's what SQLAlchemy
-        # accepts.
+        # Treat `postgres://` and `postgresql://` the same
         scheme = "postgres"
-        parsed = parsed._replace(scheme="postgresql")
 
     # Convert all arguments back to a single URL string
     url = parsed.geturl()
     if "://" not in url:
-        # SQLAlchemy requires a `://`, while urllib may roundtrip
-        # `duckdb://` to `duckdb:`. Here we re-add the missing `//`.
+        # urllib may roundtrip `duckdb://` to `duckdb:`. Here we re-add the
+        # missing `//`.
         url = url.replace(":", "://", 1)
 
     try:
@@ -1427,3 +1408,51 @@ def connect(resource: Path | str, **kwargs: Any) -> BaseBackend:
         raise ValueError(f"Don't know how to connect to {resource!r}") from None
 
     return backend._from_url(url, **orig_kwargs)
+
+
+class UrlFromPath:
+    __slots__ = ()
+
+    def _from_url(self, url: str, **kwargs) -> BaseBackend:
+        """Connect to a backend using a URL `url`.
+
+        Parameters
+        ----------
+        url
+            URL with which to connect to a backend.
+        kwargs
+            Additional keyword arguments
+
+        Returns
+        -------
+        BaseBackend
+            A backend instance
+
+        """
+        url = urlparse(url)
+        netloc = url.netloc
+        parts = list(filter(None, (netloc, url.path[bool(netloc) :])))
+        database = (
+            Path(*parts).absolute() if parts and parts != [":memory:"] else ":memory:"
+        )
+        query_params = parse_qs(url.query)
+
+        for name, value in query_params.items():
+            if len(value) > 1:
+                kwargs[name] = value
+            elif len(value) == 1:
+                kwargs[name] = value[0]
+            else:
+                raise exc.IbisError(f"Invalid URL parameter: {name}")
+
+        self._convert_kwargs(kwargs)
+        return self.connect(database=database, **kwargs)
+
+
+class NoUrl:
+    __slots__ = ()
+
+    name: str
+
+    def _from_url(self, url: str, **_) -> ir.Table:
+        raise NotImplementedError(self.name)

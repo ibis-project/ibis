@@ -11,7 +11,6 @@ from ibis.conftest import SANDBOXED, WINDOWS
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
-    from typing import Any
 
     from ibis.backends.base import BaseBackend
 
@@ -40,6 +39,7 @@ class TestConf(BackendTest):
     deps = ("duckdb",)
     stateful = False
     supports_tpch = True
+    driver_supports_multiple_statements = True
 
     def preload(self):
         if not SANDBOXED:
@@ -93,11 +93,6 @@ class TestConf(BackendTest):
     def load_tpch(self) -> None:
         """Load the TPC-H dataset."""
         with self.connection._safe_raw_sql("CALL dbgen(sf=0.17)"):
-            pass
-
-    def _load_data(self, **_: Any) -> None:
-        """Load test data into a backend."""
-        with self.connection._safe_raw_sql(";\n".join(self.ddl_script)):
             pass
 
 

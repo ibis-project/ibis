@@ -76,7 +76,9 @@ pins = { version = ">=0.8.3,<1", extras = ["gcs"], optional = true }
 polars = { version = ">=0.19.3,<1", optional = true }
 psycopg2 = { version = ">=2.8.4,<3", optional = true }
 pydata-google-auth = { version = ">=1.4.0,<2", optional = true }
-pydruid = { version = ">=0.6.5,<1", optional = true }
+# we don't use sqlalchemy, but pydruid inadvertently requires it,
+# see https://github.com/druid-io/pydruid/issues/313
+pydruid = { version = ">=0.6.5,<1", optional = true, extras = ["sqlalchemy"] }
 pyexasol = { version = ">=0.25.2,<1", optional = true, extras = ["pandas"] }
 pymysql = { version = ">=1,<2", optional = true }
 pyodbc = { version = ">=4.0.39,<6", optional = true }
@@ -87,7 +89,6 @@ shapely = { version = ">=2,<3", optional = true }
 # we don't support arbitrarily old versions of this library due to security
 # issues with versions <3.0.2
 snowflake-connector-python = { version = ">=3.0.2,<4,!=3.3.0b1", optional = true }
-sqlalchemy = { version = ">=1.4,<3", optional = true }
 trino = { version = ">=0.321,<1", optional = true }
 
 [tool.poetry.group.dev.dependencies]
@@ -120,7 +121,6 @@ pytest-repeat = ">=0.9.1,<0.10"
 pytest-snapshot = ">=0.9.0,<1"
 pytest-xdist = ">=2.3.0,<4"
 requests = ">=2,<3"
-sqlalchemy = ">=1.4,<3"
 
 [tool.poetry.group.docs.dependencies]
 altair = { version = ">=5.0.1,<6", python = ">=3.10,<3.13" }
@@ -146,8 +146,8 @@ all = [
   "dask",
   "datafusion",
   "db-dtypes",
-  "duckdb",
   "deltalake",
+  "duckdb",
   "geopandas",
   "google-cloud-bigquery",
   "google-cloud-bigquery-storage",
@@ -167,7 +167,6 @@ all = [
   "regex",
   "shapely",
   "snowflake-connector-python",
-  "sqlalchemy",
   "trino",
 ]
 bigquery = [
@@ -299,9 +298,6 @@ filterwarnings = [
   "ignore:`np.object` is a deprecated alias for the builtin `object`:DeprecationWarning",
   # windows
   "ignore:getargs.* The 'u' format is deprecated:DeprecationWarning",
-  # sqlalchemy
-  "ignore:Class ST_.+ will not make use of SQL compilation caching:",
-  "ignore:UserDefinedType Geometry:",
   # google
   "ignore:Deprecated call to `pkg_resources\\.declare_namespace\\('.*'\\):DeprecationWarning",
   # pyspark on python 3.11
@@ -310,10 +306,6 @@ filterwarnings = [
   "ignore:'cgi' is deprecated and slated for removal in Python 3\\.13:DeprecationWarning",
   # warnings from google's use of pkg_resources
   "ignore:pkg_resources is deprecated as an API:DeprecationWarning",
-  # sqlalchemy warns about mysql's inability to cast to bool;
-  # this has no effect on ibis's output because we convert types after
-  # execution
-  "ignore:Datatype BOOL does not support CAST on MySQL/MariaDB; the cast will be skipped:sqlalchemy.exc.SAWarning",
   # snowflake vendors an older version requests
   "ignore:'urllib3\\.contrib\\.pyopenssl' module is deprecated and will be removed in a future release of urllib3:DeprecationWarning",
   # apache-beam
@@ -341,7 +333,6 @@ markers = [
   "notyet: for functionality that isn't implemented in a backend",
   "never: tests for functionality that a backend is likely to never implement",
   "broken: test has exposed existing broken functionality",
-  "sqlalchemy_only: tests for SQLAlchemy based backends",
   "bigquery: BigQuery tests",
   "clickhouse: ClickHouse tests",
   "dask: Dask tests",

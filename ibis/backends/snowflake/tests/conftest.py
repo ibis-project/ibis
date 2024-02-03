@@ -59,7 +59,7 @@ def copy_into(con, data_dir: Path, table: str) -> None:
     con.execute(f"PUT {file.as_uri()} @{stage}/{file.name}")
     con.execute(
         f"""
-        COPY INTO {table}
+        COPY INTO "{table}"
         FROM (SELECT {columns} FROM @{stage}/{file.name})
         FILE_FORMAT = (TYPE = PARQUET)
         """
@@ -68,7 +68,6 @@ def copy_into(con, data_dir: Path, table: str) -> None:
 
 class TestConf(BackendTest):
     supports_map = True
-    default_identifier_case_fn = staticmethod(str.upper)
     deps = ("snowflake.connector",)
     supports_tpch = True
 
@@ -76,10 +75,9 @@ class TestConf(BackendTest):
         """No-op, snowflake already defines these in `SNOWFLAKE_SAMPLE_DATA`."""
 
     def _tpch_table(self, name: str):
+        name = name.upper()
         t = self.connection.table(
-            self.default_identifier_case_fn(name),
-            database="SNOWFLAKE_SAMPLE_DATA",
-            schema="TPCH_SF1",
+            name, database="SNOWFLAKE_SAMPLE_DATA", schema="TPCH_SF1"
         )
         return t.rename("snake_case")
 

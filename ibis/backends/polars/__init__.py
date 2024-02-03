@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections.abc import Mapping
 from functools import lru_cache
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
@@ -11,7 +12,7 @@ import ibis.common.exceptions as com
 import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
-from ibis.backends.base import BaseBackend, Database
+from ibis.backends.base import BaseBackend, Database, NoUrl
 from ibis.backends.pandas.rewrites import (
     bind_unbound_table,
     replace_parameter,
@@ -22,13 +23,13 @@ from ibis.backends.polars.datatypes import dtype_to_polars, schema_from_polars
 from ibis.util import gen_name, normalize_filename
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable, Mapping, MutableMapping
+    from collections.abc import Iterable
 
     import pandas as pd
     import pyarrow as pa
 
 
-class Backend(BaseBackend):
+class Backend(BaseBackend, NoUrl):
     name = "polars"
     builder = None
 
@@ -40,7 +41,7 @@ class Backend(BaseBackend):
         self._context = pl.SQLContext()
 
     def do_connect(
-        self, tables: MutableMapping[str, pl.LazyFrame | pl.DataFrame] | None = None
+        self, tables: Mapping[str, pl.LazyFrame | pl.DataFrame] | None = None
     ) -> None:
         """Construct a client from a dictionary of polars `LazyFrame`s and/or `DataFrame`s.
 
@@ -50,6 +51,12 @@ class Backend(BaseBackend):
             An optional mapping of string table names to polars LazyFrames.
 
         """
+        if tables is not None and not isinstance(tables, Mapping):
+            raise TypeError("Input to ibis.polars.connect must be a mapping")
+
+        # tables are emphemeral
+        self._tables.clear()
+
         for name, table in (tables or {}).items():
             self._add_table(name, table)
 
@@ -347,10 +354,10 @@ class Backend(BaseBackend):
                 "effect: Polars cannot set a database."
             )
 
-        if temp:
+        if temp is False:
             raise com.IbisError(
-                "Passing `temp=True` to the Polars backend create_table method has no "
-                "effect: all tables are in memory and temporary. "
+                "Passing `temp=False` to the Polars backend create_table method is not "
+                "supported: all tables are in memory and temporary."
             )
 
         if not overwrite and name in self._tables:
