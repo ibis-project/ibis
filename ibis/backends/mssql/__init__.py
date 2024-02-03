@@ -22,7 +22,7 @@ import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis import util
-from ibis.backends.base import CanCreateDatabase, CanCreateSchema
+from ibis.backends.base import CanCreateDatabase, CanCreateSchema, NoUrl
 from ibis.backends.base.sqlglot import SQLGlotBackend
 from ibis.backends.base.sqlglot.compiler import C
 from ibis.backends.mssql.compiler import MSSQLCompiler
@@ -55,7 +55,7 @@ def datetimeoffset_to_datetime(value):
     )
 
 
-class Backend(SQLGlotBackend, CanCreateDatabase, CanCreateSchema):
+class Backend(SQLGlotBackend, CanCreateDatabase, CanCreateSchema, NoUrl):
     name = "mssql"
     compiler = MSSQLCompiler()
     supports_create_or_replace = False
@@ -85,6 +85,8 @@ class Backend(SQLGlotBackend, CanCreateDatabase, CanCreateSchema):
             driver=driver,
             **kwargs,
         )
+
+        # -155 is the code for datetimeoffset
         con.add_output_converter(-155, datetimeoffset_to_datetime)
 
         with closing(con.cursor()) as cur:

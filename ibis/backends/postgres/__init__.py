@@ -766,18 +766,3 @@ $$""".format(**self._get_udf_source(udf_node))
         if conversions:
             table_expr = table_expr.mutate(**conversions)
         return super()._to_sqlglot(table_expr, limit=limit, params=params)
-
-    def truncate_table(self, name: str, database: str | None = None) -> None:
-        """Delete all rows from a table.
-
-        Parameters
-        ----------
-        name
-            Table name
-        database
-            Schema name
-
-        """
-        ident = sg.table(name, db=database).sql(self.dialect)
-        with self._safe_raw_sql(f"TRUNCATE TABLE {ident}"):
-            pass

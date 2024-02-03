@@ -9,6 +9,7 @@ import sqlglot.expressions as sge
 import ibis
 import ibis.expr.operations as ops
 import ibis.expr.schema as sch
+import ibis.expr.types as ir
 from ibis import util
 from ibis.backends.base import BaseBackend
 from ibis.backends.base.sqlglot.compiler import STAR
@@ -20,7 +21,6 @@ if TYPE_CHECKING:
     import pyarrow as pa
 
     import ibis.expr.datatypes as dt
-    import ibis.expr.types as ir
     from ibis.backends.base.sqlglot.compiler import SQLGlotCompiler
     from ibis.common.typing import SupportsSchema
 
@@ -327,3 +327,71 @@ class SQLGlotBackend(BaseBackend):
         batches = map(pa.RecordBatch.from_struct_array, arrays)
 
         return pa.ipc.RecordBatchReader.from_batches(schema.to_pyarrow(), batches)
+
+    def insert(
+        self,
+        table_name: str,
+        obj: pd.DataFrame | ir.Table | list | dict,
+        schema: str | None = None,
+        database: str | None = None,
+        overwrite: bool = False,
+    ) -> None:
+        """Insert data into a table.
+
+        Parameters
+        ----------
+        table_name
+            The name of the table to which data needs will be inserted
+        obj
+            The source data or expression to insert
+        schema
+            The name of the schema that the table is located in
+        database
+            Name of the attached database that the table is located in.
+        overwrite
+            If `True` then replace existing contents of table
+
+        """
+        if overwrite:
+            self.truncate_table(table_name, schema=schema, database=database)
+
+        if not isinstance(obj, ir.Table):
+            obj = ibis.memtable(obj)
+
+        self._run_pre_execute_hooks(obj)
+
+        compiler = self.compiler
+        quoted = compiler.quoted
+        query = sge.insert(
+            expression=self.compile(obj),
+            into=sg.table(table_name, db=schema, catalog=database, quoted=quoted),
+            columns=[
+                sg.to_identifier(col, quoted=quoted)
+                for col in self.get_schema(table_name).names
+            ],
+            dialect=compiler.dialect,
+        )
+
+        with self._safe_raw_sql(query):
+            pass
+
+    def truncate_table(
+        self, name: str, database: str | None = None, schema: str | None = None
+    ) -> None:
+        """Delete all rows from a table.
+
+        Parameters
+        ----------
+        name
+            Table name
+        database
+            Database name
+        schema
+            Schema name
+
+        """
+        ident = sg.table(
+            name, db=schema, catalog=database, quoted=self.compiler.quoted
+        ).sql(self.compiler.dialect)
+        with self._safe_raw_sql(f"TRUNCATE TABLE {ident}"):
+            pass

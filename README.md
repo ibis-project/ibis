@@ -121,7 +121,7 @@ Download the SQLite database from the `ibis-tutorial-data` GCS (Google Cloud
 Storage) bucket, then connect to it using ibis.
 
 ```bash
-curl -LsS -o geography.db 'https://storage.googleapis.com/ibis-tutorial-data/geography.db'
+curl -LsSO 'https://storage.googleapis.com/ibis-tutorial-data/geography.duckdb'
 ```
 
 Connect to the database and show the available tables
@@ -130,7 +130,7 @@ Connect to the database and show the available tables
 >>> import ibis
 >>> from ibis import _
 >>> ibis.options.interactive = True
->>> con = ibis.sqlite.connect("geography.db")
+>>> con = ibis.duckdb.connect("geography.duckdb")
 >>> con.tables
 Tables
 ------
@@ -147,7 +147,7 @@ Choose the `countries` table and preview its first few rows
 ┏━━━━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━━━━━┳━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━━━┓
 ┃ iso_alpha2 ┃ iso_alpha3 ┃ iso_numeric ┃ fips   ┃ name                 ┃ capital          ┃ area_km2 ┃ population ┃ continent ┃
 ┡━━━━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━━━━━━╇━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━━━━┩
-│ string     │ string     │ int32       │ string │ string               │ string           │ float64  │ int32      │ string    │
+│ string     │ string     │ int64       │ string │ string               │ string           │ float64  │ int64      │ string    │
 ├────────────┼────────────┼─────────────┼────────┼──────────────────────┼──────────────────┼──────────┼────────────┼───────────┤
 │ AD         │ AND        │          20 │ AN     │ Andorra              │ Andorra la Vella │    468.0 │      84000 │ EU        │
 │ AE         │ ARE        │         784 │ AE     │ United Arab Emirates │ Abu Dhabi        │  82880.0 │    4975593 │ AS        │
@@ -170,7 +170,7 @@ Show the 5 least populous countries in Asia
 ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━┓
 ┃ name                           ┃ population ┃
 ┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━┩
-│ string                         │ int32      │
+│ string                         │ int64      │
 ├────────────────────────────────┼────────────┤
 │ Cocos [Keeling] Islands        │        628 │
 │ British Indian Ocean Territory │       4000 │

@@ -13,7 +13,6 @@ import _pytest
 import numpy as np
 import pandas as pd
 import pytest
-import sqlalchemy as sa
 from packaging.requirements import Requirement
 from packaging.version import parse as vparse
 
@@ -25,8 +24,6 @@ from ibis.conftest import WINDOWS
 from ibis.util import promote_tuple
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable
-
     from ibis.backends.tests.base import BackendTest
 
 
@@ -181,80 +178,6 @@ def data_dir() -> Path:
     return root / "ci" / "ibis-testing-data"
 
 
-def recreate_database(
-    url: sa.engine.url.URL,
-    database: str,
-    **kwargs: Any,
-) -> None:
-    """Drop the `database` at `url`, if it exists.
-
-    Create a new, blank database with the same name.
-
-    Parameters
-    ----------
-    url : url.sa.engine.url.URL
-        Connection url to the database
-    database : str
-        Name of the database to be dropped.
-    """
-    engine = sa.create_engine(url.set(database=""), **kwargs)
-
-    if url.database is not None:
-        with engine.begin() as con:
-            con.exec_driver_sql(f"DROP DATABASE IF EXISTS {database}")
-            con.exec_driver_sql(f"CREATE DATABASE {database}")
-
-
-def init_database(
-    url: sa.engine.url.URL,
-    database: str,
-    schema: Iterable[str] | None = None,
-    recreate: bool = True,
-    isolation_level: str | None = "AUTOCOMMIT",
-    **kwargs: Any,
-) -> sa.engine.Engine:
-    """Initialise `database` at `url` with `schema`.
-
-    If `recreate`, drop the `database` at `url`, if it exists.
-
-    Parameters
-    ----------
-    url : url.sa.engine.url.URL
-        Connection url to the database
-    database : str
-        Name of the database to be dropped
-    schema : TextIO
-        File object containing schema to use
-    recreate : bool
-        If true, drop the database if it exists
-    isolation_level : str
-        Transaction isolation_level
-
-    Returns
-    -------
-    sa.engine.Engine
-        SQLAlchemy engine object
-    """
-    if isolation_level is not None:
-        kwargs["isolation_level"] = isolation_level
-
-    if recreate:
-        recreate_database(url, database, **kwargs)
-
-    try:
-        url.database = database
-    except AttributeError:
-        url = url.set(database=database)
-
-    engine = sa.create_engine(url, **kwargs)
-
-    if schema:
-        with engine.begin() as conn:
-            util.consume(map(conn.exec_driver_sql, schema))
-
-    return engine
-
-
 def _get_backend_conf(backend_str: str):
     """Convert a backend string to the test class for the backend."""
     conftest = importlib.import_module(f"ibis.backends.{backend_str}.tests.conftest")
@@ -302,7 +225,7 @@ def pytest_ignore_collect(path, config):
         return False
     expr = _pytest.mark.expression.Expression.compile(mark_expr)
     # we check the "backend" marker as well since if that's passed
-    # any file matching a backed should be skipped
+    # any file matching a backend should be skipped
     keep = expr.evaluate(lambda s: s in (backend, "backend"))
     return not keep
 
@@ -399,7 +322,7 @@ def pytest_runtest_call(item):
     backend = [
         getattr(backend, "name", lambda backend=backend: backend)()
         for key, backend in item.funcargs.items()
-        if key.endswith(("backend", "backend_name"))
+        if key.endswith(("backend", "backend_name", "backend_no_data"))
     ]
     if len(backend) > 1:
         raise ValueError(
@@ -517,6 +440,19 @@ def con(backend):
     return backend.connection
 
 
+@pytest.fixture(params=_get_backends_to_test(), scope="session")
+def backend_no_data(request, data_dir, tmp_path_factory, worker_id):
+    """Return an instance of BackendTest, with no data loaded."""
+    cls = _get_backend_conf(request.param)
+    return cls(data_dir=data_dir, tmpdir=tmp_path_factory, worker_id=worker_id)
+
+
+@pytest.fixture(scope="session")
+def con_no_data(backend_no_data):
+    """Return an Ibis backend instance, with no data loaded."""
+    return backend_no_data.connection
+
+
 @pytest.fixture(scope="session")
 def con_create_database(con):
     if isinstance(con, CanCreateDatabase):
@@ -565,21 +501,6 @@ def ddl_backend(request, data_dir, tmp_path_factory, worker_id):
 def ddl_con(ddl_backend):
     """Instance of Client, already connected to the db (if applies)."""
     return ddl_backend.connection
-
-
-@pytest.fixture(
-    params=_get_backends_to_test(keep=("risingwave",)),
-    scope="session",
-)
-def alchemy_backend(request, data_dir, tmp_path_factory, worker_id):
-    """Set up the SQLAlchemy-based backends."""
-    pytest.skip("No SQLAlchemy backends remaining")
-
-
-@pytest.fixture(scope="session")
-def alchemy_con(alchemy_backend):
-    """Instance of Client, already connected to the db (if applies)."""
-    pytest.skip("No SQLAlchemy backends remaining")
 
 
 @pytest.fixture(
@@ -673,25 +594,6 @@ def geo_df(geo):
     if geo is not None:
         return geo.execute(limit=None)
     return None
-
-
-@pytest.fixture
-def alchemy_temp_table(alchemy_con) -> str:
-    """Return a temporary table name.
-
-    Parameters
-    ----------
-    alchemy_con : ibis.backends.base.Client
-
-    Yields
-    ------
-    name : string
-        Random table name for a temporary usage.
-    """
-    name = util.gen_name("alchemy_table")
-    yield name
-    with contextlib.suppress(NotImplementedError):
-        alchemy_con.drop_table(name, force=True)
 
 
 @pytest.fixture

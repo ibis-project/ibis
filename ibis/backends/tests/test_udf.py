@@ -57,9 +57,7 @@ def test_udf(batting):
 @mark.notimpl(["polars"])
 @mark.notyet(["datafusion"], raises=NotImplementedError)
 @mark.notyet(
-    ["sqlite"],
-    raises=com.IbisTypeError,
-    reason="sqlite doesn't support map types",
+    ["sqlite"], raises=com.IbisTypeError, reason="sqlite doesn't support map types"
 )
 def test_map_udf(batting):
     @udf.scalar.python

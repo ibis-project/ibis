@@ -3,6 +3,7 @@ from __future__ import annotations
 import contextlib
 import inspect
 import typing
+from collections.abc import Mapping
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
@@ -19,7 +20,7 @@ import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
-from ibis.backends.base import CanCreateDatabase, CanCreateSchema
+from ibis.backends.base import CanCreateDatabase, CanCreateSchema, NoUrl
 from ibis.backends.base.sqlglot import SQLGlotBackend
 from ibis.backends.base.sqlglot.compiler import C
 from ibis.backends.datafusion.compiler import DataFusionCompiler
@@ -38,12 +39,12 @@ except ImportError:
     SessionConfig = None
 
 if TYPE_CHECKING:
-    from collections.abc import Iterator, Mapping
+    from collections.abc import Iterator
 
     import pandas as pd
 
 
-class Backend(SQLGlotBackend, CanCreateDatabase, CanCreateSchema):
+class Backend(SQLGlotBackend, CanCreateDatabase, CanCreateSchema, NoUrl):
     name = "datafusion"
     dialect = "datafusion"
     builder = None
@@ -77,6 +78,8 @@ class Backend(SQLGlotBackend, CanCreateDatabase, CanCreateSchema):
         if isinstance(config, SessionContext):
             (self.con, config) = (config, None)
         else:
+            if config is not None and not isinstance(config, Mapping):
+                raise TypeError("Input to ibis.datafusion.connect must be a mapping")
             if SessionConfig is not None:
                 df_config = SessionConfig(
                     {"datafusion.sql_parser.dialect": "PostgreSQL"}
@@ -95,7 +98,7 @@ class Backend(SQLGlotBackend, CanCreateDatabase, CanCreateSchema):
 
     @contextlib.contextmanager
     def _safe_raw_sql(self, sql: sge.Statement) -> Any:
-        yield self.raw_sql(sql)
+        yield self.raw_sql(sql).collect()
 
     def _metadata(self, query: str) -> Iterator[tuple[str, dt.DataType]]:
         name = gen_name("datafusion_metadata_view")
@@ -106,7 +109,9 @@ class Backend(SQLGlotBackend, CanCreateDatabase, CanCreateSchema):
             expression=sg.parse_one(query, read="datafusion"),
             properties=sge.Properties(expressions=[sge.TemporaryProperty()]),
         )
-        self.raw_sql(src)
+
+        with self._safe_raw_sql(src):
+            pass
 
         try:
             result = (
@@ -183,7 +188,7 @@ class Backend(SQLGlotBackend, CanCreateDatabase, CanCreateSchema):
             name=udf_node.func.__name__,
         )
 
-    def raw_sql(self, query: str | sg.exp.Expression) -> Any:
+    def raw_sql(self, query: str | sge.Expression) -> Any:
         """Execute a SQL string `query` against the database.
 
         Parameters
@@ -217,9 +222,10 @@ class Backend(SQLGlotBackend, CanCreateDatabase, CanCreateSchema):
         return self._filter_with_like(result["table_catalog"], like)
 
     def create_database(self, name: str, force: bool = False) -> None:
-        self.raw_sql(
-            sg.exp.Create(kind="DATABASE", this=sg.to_identifier(name), exists=force)
-        )
+        with self._safe_raw_sql(
+            sge.Create(kind="DATABASE", this=sg.to_identifier(name), exists=force)
+        ):
+            pass
 
     def drop_database(self, name: str, force: bool = False) -> None:
         raise com.UnsupportedOperationError(
@@ -241,13 +247,19 @@ class Backend(SQLGlotBackend, CanCreateDatabase, CanCreateSchema):
     ) -> None:
         # not actually a table, but this is how sqlglot represents schema names
         schema_name = sg.table(name, db=database)
-        self.raw_sql(sg.exp.Create(kind="SCHEMA", this=schema_name, exists=force))
+        with self._safe_raw_sql(
+            sge.Create(kind="SCHEMA", this=schema_name, exists=force)
+        ):
+            pass
 
     def drop_schema(
         self, name: str, database: str | None = None, force: bool = False
     ) -> None:
         schema_name = sg.table(name, db=database)
-        self.raw_sql(sg.exp.Drop(kind="SCHEMA", this=schema_name, exists=force))
+        with self._safe_raw_sql(
+            sge.Drop(kind="SCHEMA", this=schema_name, exists=force)
+        ):
+            pass
 
     def list_tables(
         self,
@@ -532,8 +544,8 @@ class Backend(SQLGlotBackend, CanCreateDatabase, CanCreateSchema):
         database: str | None = None,
         temp: bool = False,
         overwrite: bool = False,
-    ) -> ir.Table:
-        """Create a table in DataFusion.
+    ):
+        """Create a table in Datafusion.
 
         Parameters
         ----------
@@ -558,30 +570,12 @@ class Backend(SQLGlotBackend, CanCreateDatabase, CanCreateSchema):
         if obj is None and schema is None:
             raise ValueError("Either `obj` or `schema` must be specified")
 
-        column_defs = [
-            sg.exp.ColumnDef(
-                this=sg.to_identifier(name, quoted=self.compiler.quoted),
-                kind=self.compiler.type_mapper.from_ibis(typ),
-                constraints=(
-                    None
-                    if typ.nullable
-                    else [
-                        sg.exp.ColumnConstraint(kind=sg.exp.NotNullColumnConstraint())
-                    ]
-                ),
-            )
-            for name, typ in (schema or {}).items()
-        ]
-
-        target = sg.table(name, db=database, quoted=self.compiler.quoted)
-
-        if column_defs:
-            target = sg.exp.Schema(this=target, expressions=column_defs)
-
         properties = []
 
         if temp:
-            properties.append(sg.exp.TemporaryProperty())
+            properties.append(sge.TemporaryProperty())
+
+        quoted = self.compiler.quoted
 
         if obj is not None:
             if not isinstance(obj, ir.Expr):
@@ -591,19 +585,73 @@ class Backend(SQLGlotBackend, CanCreateDatabase, CanCreateSchema):
 
             self._run_pre_execute_hooks(table)
 
-            query = self._to_sqlglot(table)
+            relname = "_"
+            query = sg.select(
+                *(
+                    self.compiler.cast(
+                        sg.column(col, table=relname, quoted=quoted), dtype
+                    ).as_(col, quoted=quoted)
+                    for col, dtype in table.schema().items()
+                )
+            ).from_(
+                self._to_sqlglot(table).subquery(
+                    sg.to_identifier(relname, quoted=quoted)
+                )
+            )
         else:
             query = None
 
-        create_stmt = sg.exp.Create(
+        table_ident = sg.to_identifier(name, quoted=quoted)
+
+        if query is None:
+            column_defs = [
+                sge.ColumnDef(
+                    this=sg.to_identifier(colname, quoted=quoted),
+                    kind=self.compiler.type_mapper.from_ibis(typ),
+                    constraints=(
+                        None
+                        if typ.nullable
+                        else [sge.ColumnConstraint(kind=sge.NotNullColumnConstraint())]
+                    ),
+                )
+                for colname, typ in (schema or table.schema()).items()
+            ]
+
+            target = sge.Schema(this=table_ident, expressions=column_defs)
+        else:
+            target = table_ident
+
+        create_stmt = sge.Create(
             kind="TABLE",
             this=target,
-            replace=overwrite,
-            properties=sg.exp.Properties(expressions=properties),
+            properties=sge.Properties(expressions=properties),
             expression=query,
+            replace=overwrite,
         )
 
         with self._safe_raw_sql(create_stmt):
             pass
 
         return self.table(name, schema=database)
+
+    def truncate_table(
+        self, name: str, database: str | None = None, schema: str | None = None
+    ) -> None:
+        """Delete all rows from a table.
+
+        Parameters
+        ----------
+        name
+            Table name
+        database
+            Database name
+        schema
+            Schema name
+
+        """
+        # datafusion doesn't support `TRUNCATE TABLE` so we use `DELETE FROM`
+        #
+        # however datafusion as of 34.0.0 doesn't implement DELETE DML yet
+        ident = sg.table(name, db=schema, catalog=database).sql(self.name)
+        with self._safe_raw_sql(sge.delete(ident)):
+            pass

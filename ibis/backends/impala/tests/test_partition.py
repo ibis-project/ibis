@@ -104,7 +104,6 @@ def test_unpartitioned_table_get_schema(con):
         con.table(tname).partition_schema()
 
 
-@pytest.mark.xfail(raises=NotImplementedError)
 def test_insert_select_partitioned_table(con, df, temp_table, unpart_t):
     part_keys = ["year", "month"]
 
@@ -202,7 +201,9 @@ def test_add_drop_partition_hive_bug(con, temp_table):
     assert len(table.partitions()) == 1
 
 
-@pytest.mark.xfail(raises=NotImplementedError)
+@pytest.mark.xfail(
+    raises=AttributeError, reason="test is bogus and needs to be rewritten"
+)
 def test_load_data_partition(con, tmp_dir, unpart_t, df, temp_table):
     part_keys = ["year", "month"]
 

@@ -364,8 +364,8 @@ def to_sql(expr: ir.Expr, dialect: str | None = None, **kwargs) -> SQLString:
         try:
             backend = expr._find_backend()
         except com.IbisError:
-            # default to duckdb for sqlalchemy compilation because it supports
-            # the widest array of ibis features for SQL backends
+            # default to duckdb for SQL compilation because it supports the
+            # widest array of ibis features for SQL backends
             backend = ibis.duckdb
             read = "duckdb"
             write = ibis.options.sql.default_dialect
