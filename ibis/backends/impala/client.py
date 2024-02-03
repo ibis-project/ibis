@@ -1,13 +1,18 @@
 from __future__ import annotations
 
-import pandas as pd
+from typing import TYPE_CHECKING
+
 import sqlglot as sg
 
+import ibis
 import ibis.common.exceptions as com
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis.backends.base.sql.ddl import AlterTable, InsertSelect
 from ibis.backends.impala import ddl
+
+if TYPE_CHECKING:
+    import pandas as pd
 
 
 class ImpalaTable(ir.Table):
@@ -101,8 +106,10 @@ class ImpalaTable(ir.Table):
         if values is not None:
             raise NotImplementedError
 
-        if isinstance(obj, pd.DataFrame):
-            raise NotImplementedError("Pandas DataFrames not yet supported")
+        if not isinstance(obj, ir.Table):
+            obj = ibis.memtable(obj)
+
+        self._client._run_pre_execute_hooks(obj)
 
         expr = obj
         if validate:

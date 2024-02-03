@@ -148,6 +148,9 @@ class Backend(SQLGlotBackend):
     ) -> ir.Table:
         raise NotImplementedError()
 
+    def drop_table(self, *args, **kwargs):
+        raise NotImplementedError()
+
     def list_tables(
         self, like: str | None = None, database: str | None = None
     ) -> list[str]:

@@ -3,10 +3,10 @@
 from __future__ import annotations
 
 import concurrent.futures
+import contextlib
 import glob
 import os
 import re
-from contextlib import contextmanager
 from typing import TYPE_CHECKING, Any, Callable, Optional
 from urllib.parse import parse_qs, urlparse
 
@@ -639,11 +639,12 @@ class Backend(SQLGlotBackend, CanCreateSchema):
         self._define_udf_translation_rules(expr)
         sql = super()._to_sqlglot(expr, limit=limit, params=params, **kwargs)
 
-        return sql.transform(
+        query = sql.transform(
             _qualify_memtable,
             dataset=getattr(self._session_dataset, "dataset_id", None),
             project=getattr(self._session_dataset, "project", None),
         ).transform(_remove_null_ordering_from_unsupported_window)
+        return query
 
     def raw_sql(self, query: str, params=None):
         query_parameters = [
@@ -658,6 +659,8 @@ class Backend(SQLGlotBackend, CanCreateSchema):
             )
             for param, value in (params or {}).items()
         ]
+        with contextlib.suppress(AttributeError):
+            query = query.sql(self.compiler.dialect)
         return self._execute(query, query_parameters=query_parameters)
 
     @property
@@ -722,7 +725,6 @@ class Backend(SQLGlotBackend, CanCreateSchema):
 
         # TODO: upstream needs to pass params to raw_sql, I think.
         kwargs.pop("timecontext", None)
-        self._register_in_memory_tables(expr)
         sql = self.compile(expr, limit=limit, params=params, **kwargs)
         self._log(sql)
         cursor = self.raw_sql(sql, params=params, **kwargs)
@@ -730,6 +732,37 @@ class Backend(SQLGlotBackend, CanCreateSchema):
         result = self.fetch_from_cursor(cursor, expr.as_table().schema())
 
         return expr.__pandas_result__(result)
+
+    def insert(
+        self,
+        table_name: str,
+        obj: pd.DataFrame | ir.Table | list | dict,
+        schema: str | None = None,
+        database: str | None = None,
+        overwrite: bool = False,
+    ):
+        """Insert data into a table.
+
+        Parameters
+        ----------
+        table_name
+            The name of the table to which data needs will be inserted
+        obj
+            The source data or expression to insert
+        schema
+            The name of the schema that the table is located in
+        database
+            Name of the attached database that the table is located in.
+        overwrite
+            If `True` then replace existing contents of table
+        """
+        return super().insert(
+            table_name,
+            obj,
+            schema=schema if schema is not None else self.current_schema,
+            database=database if database is not None else self.current_database,
+            overwrite=overwrite,
+        )
 
     def fetch_from_cursor(self, cursor, schema):
         from ibis.backends.bigquery.converter import BigQueryPandasData
@@ -1173,7 +1206,7 @@ class Backend(SQLGlotBackend, CanCreateSchema):
     def _register_udfs(self, expr: ir.Expr) -> None:
         """No op because UDFs made with CREATE TEMPORARY FUNCTION must be followed by a query."""
 
-    @contextmanager
+    @contextlib.contextmanager
     def _safe_raw_sql(self, *args, **kwargs):
         yield self.raw_sql(*args, **kwargs)
 

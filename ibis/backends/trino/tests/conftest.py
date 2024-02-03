@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import os
 import subprocess
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 import pytest
 import sqlglot as sg
@@ -125,18 +125,10 @@ class TestConf(ServiceBackendTest):
 
                 c.execute(sql)
 
-    def _load_data(self, **_: Any) -> None:
-        """Load test data into a backend."""
-        with self.connection.begin() as cur:
-            for stmt in self.ddl_script:
-                cur.execute(stmt)
-
     def _tpch_table(self, name: str):
         from ibis import _
 
-        table = self.connection.table(
-            self.default_identifier_case_fn(name), schema="ibis_sf1", database="hive"
-        )
+        table = self.connection.table(name, schema="ibis_sf1", database="hive")
         table = table.mutate(s.across(s.of_type("double"), _.cast("decimal(15, 2)")))
         return table
 

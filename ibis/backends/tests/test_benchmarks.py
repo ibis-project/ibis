@@ -10,7 +10,6 @@ import string
 import numpy as np
 import pandas as pd
 import pytest
-import sqlalchemy as sa
 from packaging.version import parse as vparse
 
 import ibis
@@ -194,7 +193,7 @@ def test_compile(benchmark, module, expr_fn, t, base, large_expr):
         expr = expr_fn(t, base, large_expr)
         try:
             benchmark(mod.compile, expr)
-        except (sa.exc.NoSuchModuleError, ImportError) as e:  # delayed imports
+        except ImportError as e:  # delayed imports
             pytest.skip(str(e))
 
 
@@ -696,10 +695,7 @@ def test_compile_with_drops(
     except (AttributeError, ImportError) as e:
         pytest.skip(str(e))
     else:
-        try:
-            benchmark(mod.compile, expr)
-        except sa.exc.NoSuchModuleError as e:
-            pytest.skip(str(e))
+        benchmark(mod.compile, expr)
 
 
 def test_repr_join(benchmark, customers, orders, orders_items, products):

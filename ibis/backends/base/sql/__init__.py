@@ -2,11 +2,9 @@ from __future__ import annotations
 
 import abc
 import contextlib
-import os
 from functools import lru_cache
 from typing import TYPE_CHECKING, Any, Optional
-
-import toolz
+from urllib.parse import parse_qs, urlparse
 
 import ibis.common.exceptions as exc
 import ibis.expr.operations as ops
@@ -35,7 +33,7 @@ class BaseSQLBackend(BaseBackend):
     def _sqlglot_dialect(self) -> str:
         return self.name
 
-    def _from_url(self, url: str, **kwargs: Any) -> BaseBackend:
+    def _from_url(self, url: str, **kwargs):
         """Connect to a backend using a URL `url`.
 
         Parameters
@@ -43,7 +41,7 @@ class BaseSQLBackend(BaseBackend):
         url
             URL with which to connect to a backend.
         kwargs
-            Additional keyword arguments passed to the `connect` method.
+            Additional keyword arguments
 
         Returns
         -------
@@ -51,25 +49,25 @@ class BaseSQLBackend(BaseBackend):
             A backend instance
 
         """
-        import sqlalchemy as sa
+        url = urlparse(url)
+        database = url.path[1:]
+        query_params = parse_qs(url.query)
+        kwargs = {
+            "user": url.username,
+            "password": url.password or "",
+            "host": url.hostname,
+            "database": database or "",
+        } | kwargs
 
-        url = sa.engine.make_url(url)
-        new_kwargs = kwargs.copy()
-        kwargs = {}
-
-        for name in ("host", "port", "database", "password"):
-            if value := (
-                getattr(url, name, None)
-                or os.environ.get(f"{self.name.upper()}_{name.upper()}")
-            ):
+        for name, value in query_params.items():
+            if len(value) > 1:
                 kwargs[name] = value
-        if username := url.username:
-            kwargs["user"] = username
+            elif len(value) == 1:
+                kwargs[name] = value[0]
+            else:
+                raise exc.IbisError(f"Invalid URL parameter: {name}")
 
-        kwargs.update(url.query)
-        new_kwargs = toolz.merge(kwargs, new_kwargs)
-        self._convert_kwargs(new_kwargs)
-        return self.connect(**new_kwargs)
+        return self.connect(**kwargs)
 
     def table(self, name: str, database: str | None = None) -> ir.Table:
         """Construct a table expression.

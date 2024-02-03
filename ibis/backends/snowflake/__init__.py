@@ -274,7 +274,6 @@ $$ {defn["source"]} $$"""
                         f"Unable to create Ibis UDFs, some functionality will not work: {e}"
                     )
         self.con = con
-        self._temp_views: set[str] = set()
 
     def _get_udf_source(self, udf_node: ops.ScalarUDF):
         name = type(udf_node).__name__

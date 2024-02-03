@@ -41,7 +41,6 @@ concurrency:
 env:
   FORCE_COLOR: "1"
   ODBCSYSINI: "${{ github.workspace }}/ci/odbc"
-  SQLALCHEMY_WARN_20: "1"
   HYPOTHESIS_PROFILE: "ci"
 
 jobs:
@@ -429,8 +428,6 @@ jobs:
   test_backends_min_version:
     name: ${{ matrix.backend.title }} Min Version ${{ matrix.os }} python-${{ matrix.python-version }}
     runs-on: ${{ matrix.os }}
-    env:
-      SQLALCHEMY_WARN_20: "1"
     strategy:
       fail-fast: false
       matrix:

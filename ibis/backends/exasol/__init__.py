@@ -93,7 +93,7 @@ class Backend(SQLGlotBackend):
         )
 
     def _from_url(self, url: str, **kwargs) -> BaseBackend:
-        """Construct an ibis backend from a SQLAlchemy-conforming URL."""
+        """Construct an ibis backend from a URL."""
         url = urlparse(url)
         query_params = parse_qs(url.query)
         kwargs = {

@@ -107,9 +107,7 @@ class TestConf(ServiceBackendTest):
 
     @property
     def functional_alltypes(self) -> ir.Table:
-        t = self.connection.table(
-            self.default_identifier_case_fn("functional_alltypes")
-        )
+        t = self.connection.table("functional_alltypes")
         # The parquet loading for booleans appears to be broken in Druid, so
         # I'm using this as a workaround to make the data match what's on disk.
         return t.mutate(bool_col=1 - t.id % 2)
