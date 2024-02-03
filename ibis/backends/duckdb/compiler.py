@@ -338,6 +338,12 @@ class DuckDBCompiler(SQLGlotCompiler):
     def visit_RegexExtract(self, op, *, arg, pattern, index):
         return self.f.regexp_extract(arg, pattern, index, dialect=self.dialect)
 
+    @visit_node.register(ops.RegexReplace)
+    def visit_RegexReplace(self, op, *, arg, pattern, replacement):
+        return self.f.regexp_replace(
+            arg, pattern, replacement, "g", dialect=self.dialect
+        )
+
     @visit_node.register(ops.Quantile)
     @visit_node.register(ops.MultiQuantile)
     def visit_Quantile(self, op, *, arg, quantile, where):
