@@ -1,8 +1,3 @@
----
-execute:
-  freeze: auto
----
-
 # Reference built-in functions
 
 
@@ -27,9 +22,10 @@ functions](https://duckdb.org/docs/sql/functions/char.html#text-similarity-funct
 Let's expose the `mismatches` API.
 
 ```{python}
-from ibis import udf
+import ibis
+ibis.options.interactive = True
 
-@udf.scalar.builtin
+@ibis.udf.scalar.builtin
 def mismatches(left: str, right: str) -> int:
     ...
 ```
@@ -47,8 +43,6 @@ write in the function body **will be ignored**.
 We can now call this function on any ibis expression:
 
 ```{python}
-import ibis
-
 con = ibis.duckdb.connect()  # <1>
 ```
 
@@ -62,97 +56,50 @@ con.execute(expr)
 Like any other ibis expression you can inspect the SQL:
 
 ```{python}
-import ibis
-
 ibis.to_sql(expr, dialect="duckdb")  # <1>
 ```
 
 1. The `dialect` keyword argument must be passed, because we constructed
    a literal expression which has no backend attached.
 
+Similarly we can expose Duckdb's
+[`jaro_winkler_similarity`](https://duckdb.org/docs/sql/functions/char.html#text-similarity-functions)
+function. Let's alias it to `jw_sim` to illustrate some more of the Ibis `udf` API:
+
+```{python}
+@ibis.udf.scalar.builtin(name="jaro_winkler_similarity")
+def jw_sim(a: str, b: str) -> float:
+   ...
+```
+
 Because built-in UDFs are ultimately Ibis expressions, they compose with the
 rest of the library:
 
 ```{python}
-ibis.options.interactive = True
-
-@udf.scalar.builtin
-def jaro_winkler_similarity(a: str, b: str) -> float:
-   ...
-
 pkgs = ibis.read_parquet(
    "https://storage.googleapis.com/ibis-tutorial-data/pypi/packages.parquet"
 )
-pandas_ish = pkgs[jaro_winkler_similarity(pkgs.name, "pandas") >= 0.9]
+pandas_ish = pkgs[jw_sim(pkgs.name, "pandas") >= 0.9]
 pandas_ish
 ```
 
-Let's count the results:
+### Defining Signatures
 
-```{python}
-pandas_ish.count()
-```
-
-There are a good number of packages that look similar to `pandas`!
-
-### Snowflake
-
-Similarly we can expose Snowflake's
-[`jarowinkler_similarity`](https://docs.snowflake.com/en/sql-reference/functions/jarowinkler_similarity)
-function.
-
-Let's alias it to `jw_sim` to illustrate some more of the Ibis `udf` API:
-
-```{python}
-@udf.scalar.builtin(name="jarowinkler_similarity")  # <1>
-def jw_sim(left: str, right: str) -> float:
-    ...
-```
-
-1. `target` is the name of the function in the backend. This argument is
-   required in this because the function name is different than the name of the
-   function in ibis.
-
-
-Now let's connect to Snowflake and call our `jw_sim` function:
-
-```{python}
-import os
-
-con = ibis.connect(os.environ["SNOWFLAKE_URL"])
-```
-
-```{python}
-expr = jw_sim("snow", "shoe")
-con.execute(expr)
-```
-
-And let's take a look at the SQL
-
-```{python}
-ibis.to_sql(expr, dialect="snowflake")
-```
-
-### Input types
-
-Sometimes the input types of builtin functions are difficult to spell.
+Sometimes the signatures of builtin functions are difficult to spell.
 
 Consider a function that computes the length of any array: the elements in the
 array can be floats, integers, strings and even other arrays. Spelling that
 type is difficult.
 
-Fortunately the `udf.scalar.builtin` decorator doesn't require you to specify
-input types in these cases:
+Fortunately, the `udf.scalar.builtin` decorator **only** requires you to
+specify the type of the **return value**. The type of the function **parameters**
+are **not** required. Thus, this is adequate:
 
 ```{python}
-@udf.scalar.builtin(name="array_size")
+@ibis.udf.scalar.builtin(name="array_length")
 def cardinality(arr) -> int:
    ...
 ```
-
-::: {.callout-caution}
-## The return type annotation **is always required**.
-:::
 
 We can pass arrays with different element types to our `cardinality` function:
 
@@ -164,14 +111,16 @@ con.execute(cardinality([1, 2, 3]))
 con.execute(cardinality(["a", "b"]))
 ```
 
-When you bypass input types the errors you get back are backend dependent:
+When you do not specify input types, Ibis isn't able to catch typing errors
+early, and they are only caught during execution.
+The errors you get back are backend dependent:
 
 ```{python}
 #| error: true
 con.execute(cardinality("foo"))
 ```
 
-Here, Snowflake is informing us that the `ARRAY_SIZE` function does not accept
+Here, DuckDB is informing us that the `ARRAY_LENGTH` function does not accept
 strings as input.
 
 
@@ -198,7 +147,7 @@ function that isn't exposed in ibis:
 First, define the builtin aggregate function:
 
 ```{python}
-@udf.agg.builtin
+@ibis.udf.agg.builtin
 def kurtosis(x: float) -> float:  # <1>
    ...
 ```
