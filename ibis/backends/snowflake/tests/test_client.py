@@ -268,3 +268,21 @@ def test_insert(con):
 
     con.insert(name, expected, overwrite=True)
     assert t.count().execute() == 3
+
+
+def test_compile_does_not_make_requests(con, mocker):
+    astronauts = con.table("astronauts")
+    expr = astronauts.year_of_selection.value_counts()
+    spy = mocker.spy(con.con, "cursor")
+    assert expr.compile() is not None
+    assert spy.call_count == 0
+
+    t = ibis.memtable({"a": [1, 2, 3]})
+    assert con.compile(t) is not None
+    assert spy.call_count == 0
+
+    assert ibis.to_sql(t, dialect="snowflake") is not None
+    assert spy.call_count == 0
+
+    assert ibis.to_sql(expr) is not None
+    assert spy.call_count == 0
