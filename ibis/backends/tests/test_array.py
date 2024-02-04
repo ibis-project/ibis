@@ -251,6 +251,9 @@ def test_array_discovery(backend):
     raises=GoogleBadRequest,
 )
 @pytest.mark.notimpl(["datafusion"], raises=com.OperationNotDefinedError)
+@pytest.mark.broken(
+    ["risingwave"], raises=AssertionError, reason="ordering is different", strict=False
+)
 def test_unnest_simple(backend):
     array_types = backend.array_types
     expected = (
