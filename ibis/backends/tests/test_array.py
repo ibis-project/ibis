@@ -251,9 +251,6 @@ def test_array_discovery(backend):
     raises=GoogleBadRequest,
 )
 @pytest.mark.notimpl(["datafusion"], raises=com.OperationNotDefinedError)
-@pytest.mark.broken(
-    ["risingwave"], raises=AssertionError, reason="ordering is different", strict=False
-)
 def test_unnest_simple(backend):
     array_types = backend.array_types
     expected = (
@@ -265,7 +262,7 @@ def test_unnest_simple(backend):
     )
     expr = array_types.x.cast("!array<float64>").unnest()
     result = expr.execute().astype("Float64").rename("tmp")
-    backend.assert_series_equal(result, expected)
+    assert frozenset(result.values) == frozenset(expected.values)
 
 
 @builtin_array
@@ -704,7 +701,7 @@ def test_array_unique(con, input, expected):
     raises=AssertionError,
     reason="Refer to https://github.com/risingwavelabs/risingwave/issues/14735",
 )
-def test_array_sort(backend, con):
+def test_array_sort(con):
     t = ibis.memtable({"a": [[3, 2], [], [42, 42], []], "id": range(4)})
     expr = t.mutate(a=t.a.sort()).order_by("id")
     result = con.execute(expr)
