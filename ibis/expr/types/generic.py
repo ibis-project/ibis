@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-import contextlib
-from typing import TYPE_CHECKING, Any, Iterable, Literal, Sequence
+from collections.abc import Iterable, Sequence
+from typing import TYPE_CHECKING, Any, Literal
 
 from public import public
 
@@ -212,6 +212,7 @@ class Value(Expr):
 
     def try_cast(self, target_type: Any) -> Value:
         """Try cast expression to indicated data type.
+
         If the cast fails for a row, the value is returned
         as null or NaN depending on target_type and backend behavior.
 
@@ -235,9 +236,7 @@ class Value(Expr):
         >>> import ibis
         >>> from ibis import _
         >>> ibis.options.interactive = True
-        >>> t = ibis.memtable(
-        ...     {"numbers": [1, 2, 3, 4], "strings": ["1.0", "2", "hello", "world"]}
-        ... )
+        >>> t = ibis.memtable({"numbers": [1, 2, 3, 4], "strings": ["1.0", "2", "hello", "world"]})
         >>> t
         ┏━━━━━━━━━┳━━━━━━━━━┓
         ┃ numbers ┃ strings ┃
@@ -274,7 +273,6 @@ class Value(Expr):
     def coalesce(self, *args: Value) -> Value:
         """Return the first non-null value from `args`.
 
-
         Parameters
         ----------
         args
@@ -299,11 +297,11 @@ class Value(Expr):
         return ops.Coalesce((self, *args)).to_expr()
 
     @deprecated(as_of="8.0.0", instead="use ibis.greatest(self, rest...) instead")
-    def greatest(self, *args: ir.Value) -> ir.Value:  # noqa: D102
+    def greatest(self, *args: ir.Value) -> ir.Value:
         return ops.Greatest((self, *args)).to_expr()
 
     @deprecated(as_of="8.0.0", instead="use ibis.least(self, rest...) instead")
-    def least(self, *args: ir.Value) -> ir.Value:  # noqa: D102
+    def least(self, *args: ir.Value) -> ir.Value:
         return ops.Least((self, *args)).to_expr()
 
     def typeof(self) -> ir.StringValue:
@@ -721,11 +719,12 @@ class Value(Expr):
         -------
         Value
             A window function expression
+
         """
         import ibis.expr.analysis as an
         import ibis.expr.builders as bl
-        from ibis.common.deferred import Call
         from ibis import _
+        from ibis.common.deferred import Call
 
         if window is None:
             window = ibis.window(
@@ -1021,9 +1020,7 @@ class Value(Expr):
 
         Collect elements per group using a filter
 
-        >>> t.group_by("key").agg(
-        ...     v=lambda t: t.value.collect(where=t.value > 1)
-        ... ).order_by("key")
+        >>> t.group_by("key").agg(v=lambda t: t.value.collect(where=t.value > 1)).order_by("key")
         ┏━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━┓
         ┃ key    ┃ v                    ┃
         ┡━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━┩
@@ -1499,8 +1496,10 @@ class Column(Value, _FixedTextJupyterMixin):
 
         Parameters
         ----------
+        key
+            Key to use for `max` computation.
         where
-            Filter in values when `where` is `True`
+            Keep values when `where` is `True`
 
         Returns
         -------
@@ -1526,8 +1525,10 @@ class Column(Value, _FixedTextJupyterMixin):
 
         Parameters
         ----------
+        key
+            Key to use for `min` computation.
         where
-            Filter in values when `where` is `True`
+            Keep values when `where` is `True`
 
         Returns
         -------
@@ -1573,9 +1574,9 @@ class Column(Value, _FixedTextJupyterMixin):
 
         >>> t.bill_depth_mm.median()
         17.3
-        >>> t.group_by(t.species).agg(
-        ...     median_bill_depth=t.bill_depth_mm.median()
-        ... ).order_by(ibis.desc("median_bill_depth"))
+        >>> t.group_by(t.species).agg(median_bill_depth=t.bill_depth_mm.median()).order_by(
+        ...     ibis.desc("median_bill_depth")
+        ... )
         ┏━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━┓
         ┃ species   ┃ median_bill_depth ┃
         ┡━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━┩
@@ -1589,9 +1590,9 @@ class Column(Value, _FixedTextJupyterMixin):
         In addition to numeric types, any orderable non-numeric types such as
         strings and dates work with `median`.
 
-        >>> t.group_by(t.island).agg(
-        ...     median_species=t.species.median()
-        ... ).order_by(ibis.desc("median_species"))
+        >>> t.group_by(t.island).agg(median_species=t.species.median()).order_by(
+        ...     ibis.desc("median_species")
+        ... )
         ┏━━━━━━━━━━━┳━━━━━━━━━━━━━━━━┓
         ┃ island    ┃ median_species ┃
         ┡━━━━━━━━━━━╇━━━━━━━━━━━━━━━━┩
@@ -1637,9 +1638,9 @@ class Column(Value, _FixedTextJupyterMixin):
 
         >>> t.bill_depth_mm.quantile(0.99)
         21.1
-        >>> t.group_by(t.species).agg(
-        ...     p99_bill_depth=t.bill_depth_mm.quantile(0.99)
-        ... ).order_by(ibis.desc("p99_bill_depth"))
+        >>> t.group_by(t.species).agg(p99_bill_depth=t.bill_depth_mm.quantile(0.99)).order_by(
+        ...     ibis.desc("p99_bill_depth")
+        ... )
         ┏━━━━━━━━━━━┳━━━━━━━━━━━━━━━━┓
         ┃ species   ┃ p99_bill_depth ┃
         ┡━━━━━━━━━━━╇━━━━━━━━━━━━━━━━┩
@@ -1655,9 +1656,9 @@ class Column(Value, _FixedTextJupyterMixin):
 
         Let's compute the 99th percentile of the `species` column
 
-        >>> t.group_by(t.island).agg(
-        ...     p99_species=t.species.quantile(0.99)
-        ... ).order_by(ibis.desc("p99_species"))
+        >>> t.group_by(t.island).agg(p99_species=t.species.quantile(0.99)).order_by(
+        ...     ibis.desc("p99_species")
+        ... )
         ┏━━━━━━━━━━━┳━━━━━━━━━━━━━┓
         ┃ island    ┃ p99_species ┃
         ┡━━━━━━━━━━━╇━━━━━━━━━━━━━┩
@@ -1688,7 +1689,7 @@ class Column(Value, _FixedTextJupyterMixin):
             Number of distinct elements in an expression
 
         Examples
-        -------
+        --------
         >>> import ibis
         >>> ibis.options.interactive = True
         >>> t = ibis.examples.penguins.fetch()
@@ -1902,6 +1903,7 @@ class Column(Value, _FixedTextJupyterMixin):
         -------
         Int64Column
             The min rank
+
         Examples
         --------
         >>> import ibis

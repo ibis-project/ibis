@@ -130,7 +130,7 @@ class GeoSpatialValue(NumericValue):
         >>> ibis.options.interactive = True
         >>> import shapely
         >>> t = ibis.examples.zones.fetch()
-        >>> p = shapely.Point(935996.821, 191376.75) # centroid for zone 1
+        >>> p = shapely.Point(935996.821, 191376.75)  # centroid for zone 1
         >>> plit = ibis.literal(p, "geometry")
         >>> t.geom.contains(plit).name("contains")
         ┏━━━━━━━━━━┓
@@ -237,7 +237,7 @@ class GeoSpatialValue(NumericValue):
 
         Polygon area center in zone 1
 
-        >>> pol_big = shapely.Point(935996.821,191376.75).buffer(10000)
+        >>> pol_big = shapely.Point(935996.821, 191376.75).buffer(10000)
         >>> pol_big_lit = ibis.literal(pol_big, "geometry")
         >>> t.geom.covered_by(pol_big_lit).name("covered_by")
         ┏━━━━━━━━━━━━┓
@@ -257,7 +257,7 @@ class GeoSpatialValue(NumericValue):
         │ False      │
         │ …          │
         └────────────┘
-        >>> pol_small = shapely.Point(935996.821,191376.75).buffer(100)
+        >>> pol_small = shapely.Point(935996.821, 191376.75).buffer(100)
         >>> pol_small_lit = ibis.literal(pol_small, "geometry")
         >>> t.geom.covered_by(pol_small_lit).name("covered_by")
         ┏━━━━━━━━━━━━┓
@@ -281,8 +281,7 @@ class GeoSpatialValue(NumericValue):
         return ops.GeoCoveredBy(self, right).to_expr()
 
     def crosses(self, right: GeoSpatialValue) -> ir.BooleanValue:
-        """Check if the geometries have at least one, but not all, interior
-        points in common.
+        """Check if the geometries have at least one, but not all, interior points in common.
 
         Parameters
         ----------
@@ -383,7 +382,7 @@ class GeoSpatialValue(NumericValue):
         >>> ibis.options.interactive = True
         >>> import shapely
         >>> t = ibis.examples.zones.fetch()
-        >>> p = shapely.Point(935996.821, 191376.75) # zone 1 centroid
+        >>> p = shapely.Point(935996.821, 191376.75)  # zone 1 centroid
         >>> plit = ibis.literal(p, "geometry")
         >>> t.geom.disjoint(plit).name("disjoint")
         ┏━━━━━━━━━━┓
@@ -431,7 +430,7 @@ class GeoSpatialValue(NumericValue):
         >>> ibis.options.interactive = True
         >>> import shapely
         >>> t = ibis.examples.zones.fetch()
-        >>> penn_station = shapely.Point(986345.399 , 211974.446)
+        >>> penn_station = shapely.Point(986345.399, 211974.446)
         >>> penn_lit = ibis.literal(penn_station, "geometry")
 
         Check zones within 1000ft of Penn Station centroid
@@ -574,7 +573,7 @@ class GeoSpatialValue(NumericValue):
         >>> ibis.options.interactive = True
         >>> import shapely
         >>> t = ibis.examples.zones.fetch()
-        >>> p = shapely.Point(935996.821, 191376.75) # zone 1 centroid
+        >>> p = shapely.Point(935996.821, 191376.75)  # zone 1 centroid
         >>> plit = ibis.literal(p, "geometry")
         >>> t.geom.intersects(plit).name("intersects")
         ┏━━━━━━━━━━━━┓
@@ -1463,8 +1462,9 @@ class GeoSpatialValue(NumericValue):
     def convert(
         self, source: ir.StringValue, target: ir.StringValue | ir.IntegerValue
     ) -> GeoSpatialValue:
-        """Transform a geometry into a new SRID (CRS). The coordinates are assumed
-        to always be XY (Longitude-Latitude).
+        """Transform a geometry into a new SRID (CRS).
+
+        Coordinates are assumed to always be XY (Longitude-Latitude).
 
         Parameters
         ----------

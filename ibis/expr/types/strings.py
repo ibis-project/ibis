@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import functools
 import operator
-from typing import TYPE_CHECKING, Any, Iterable, Literal, Sequence
+from typing import TYPE_CHECKING, Any, Literal
 
 from public import public
 
@@ -12,6 +12,8 @@ from ibis.expr.types.core import _binop
 from ibis.expr.types.generic import Column, Scalar, Value
 
 if TYPE_CHECKING:
+    from collections.abc import Iterable, Sequence
+
     import ibis.expr.types as ir
 
 
@@ -1184,9 +1186,7 @@ class StringValue(Value):
         --------
         >>> import ibis
         >>> ibis.options.interactive = True
-        >>> t = ibis.memtable(
-        ...     {"s": ["abc", "bac", "bca", "this has  multi \t whitespace"]}
-        ... )
+        >>> t = ibis.memtable({"s": ["abc", "bac", "bca", "this has  multi \t whitespace"]})
         >>> s = t.s
 
         Replace all "a"s that are at the beginning of the string with "b":

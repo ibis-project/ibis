@@ -6,8 +6,9 @@ import functools
 import itertools
 import operator
 import re
+from collections.abc import Iterable, Mapping, Sequence
 from keyword import iskeyword
-from typing import TYPE_CHECKING, Callable, Iterable, Literal, Mapping, Sequence
+from typing import TYPE_CHECKING, Callable, Literal
 
 import toolz
 from public import public
@@ -31,8 +32,8 @@ if TYPE_CHECKING:
     from ibis.common.typing import SupportsSchema
     from ibis.expr.types.groupby import GroupedTable
     from ibis.expr.types.tvf import WindowedTable
-    from ibis.selectors import IfAnyAll, Selector
     from ibis.formats.pyarrow import PyArrowData
+    from ibis.selectors import IfAnyAll, Selector
 
 _ALIASES = (f"_ibis_view_{n:d}" for n in itertools.count())
 
@@ -837,9 +838,9 @@ class Table(Expr, _FixedTextJupyterMixin):
         │ banana │    0.25 │
         │ orange │    0.33 │
         └────────┴─────────┘
-        >>> t.group_by("fruit").agg(
-        ...     total_cost=_.price.sum(), avg_cost=_.price.mean()
-        ... ).order_by("fruit")
+        >>> t.group_by("fruit").agg(total_cost=_.price.sum(), avg_cost=_.price.mean()).order_by(
+        ...     "fruit"
+        ... )
         ┏━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━━┓
         ┃ fruit  ┃ total_cost ┃ avg_cost ┃
         ┡━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━━━┩
@@ -1150,9 +1151,7 @@ class Table(Expr, _FixedTextJupyterMixin):
 
         Drop all duplicated rows
 
-        >>> expr = t.distinct(
-        ...     on=["species", "island", "year", "bill_length_mm"], keep=None
-        ... )
+        >>> expr = t.distinct(on=["species", "island", "year", "bill_length_mm"], keep=None)
         >>> expr.count()
         273
         >>> t.count()
@@ -1202,7 +1201,7 @@ class Table(Expr, _FixedTextJupyterMixin):
         if keep is None:
             having = lambda t: t.count() == 1
             how = "first"
-        elif keep == "first" or keep == "last":
+        elif keep in ("first", "last"):
             having = None
             how = keep
         else:
@@ -1747,9 +1746,7 @@ class Table(Expr, _FixedTextJupyterMixin):
         >>> import ibis.selectors as s
         >>> from ibis import _
         >>> ibis.options.interactive = True
-        >>> t = ibis.examples.penguins.fetch().select(
-        ...     "species", "year", "bill_length_mm"
-        ... )
+        >>> t = ibis.examples.penguins.fetch().select("species", "year", "bill_length_mm")
         >>> t
         ┏━━━━━━━━━┳━━━━━━━┳━━━━━━━━━━━━━━━━┓
         ┃ species ┃ year  ┃ bill_length_mm ┃
@@ -1786,9 +1783,7 @@ class Table(Expr, _FixedTextJupyterMixin):
 
         Add a new column based on an aggregation. Note the automatic broadcasting.
 
-        >>> t.select(
-        ...     "species", bill_demean=_.bill_length_mm - _.bill_length_mm.mean()
-        ... ).head()
+        >>> t.select("species", bill_demean=_.bill_length_mm - _.bill_length_mm.mean()).head()
         ┏━━━━━━━━━┳━━━━━━━━━━━━━┓
         ┃ species ┃ bill_demean ┃
         ┡━━━━━━━━━╇━━━━━━━━━━━━━┩
@@ -2066,7 +2061,7 @@ class Table(Expr, _FixedTextJupyterMixin):
         | str
         | Literal["snake_case", "ALL_CAPS"],
     ) -> Table:
-        """Deprecated in favor of `Table.rename`"""
+        """Deprecated in favor of `Table.rename`."""
         if isinstance(substitutions, Mapping):
             substitutions = {new: old for old, new in substitutions.items()}
         return self.rename(substitutions)
@@ -2196,7 +2191,6 @@ class Table(Expr, _FixedTextJupyterMixin):
         renamed = {}
 
         if substitutions:
-            schema = self.schema()
             for new_name, old_name in substitutions.items():
                 col = self[old_name]
                 if old_name not in renamed:
@@ -2229,6 +2223,8 @@ class Table(Expr, _FixedTextJupyterMixin):
                     return c.lower()
                 elif method == "ALL_CAPS":
                     return c.upper()
+                else:
+                    return None
 
         elif isinstance(method, str):
 
@@ -2396,9 +2392,9 @@ class Table(Expr, _FixedTextJupyterMixin):
         │ Adelie  │ Torgersen │           42.0 │          20.2 │               190 │ … │
         │ …       │ …         │              … │             … │                 … │ … │
         └─────────┴───────────┴────────────────┴───────────────┴───────────────────┴───┘
-        >>> t.filter(
-        ...     [t.species == "Adelie", t.body_mass_g > 3500]
-        ... ).sex.value_counts().dropna("sex").order_by("sex")
+        >>> t.filter([t.species == "Adelie", t.body_mass_g > 3500]).sex.value_counts().dropna(
+        ...     "sex"
+        ... ).order_by("sex")
         ┏━━━━━━━━┳━━━━━━━━━━━┓
         ┃ sex    ┃ sex_count ┃
         ┡━━━━━━━━╇━━━━━━━━━━━┩
@@ -2670,7 +2666,6 @@ class Table(Expr, _FixedTextJupyterMixin):
         ... '''
         >>> with open("/tmp/lines.json", "w") as f:
         ...     nbytes = f.write(lines)  # nbytes is unused
-        ...
         >>> t = ibis.read_json("/tmp/lines.json")
         >>> t
         ┏━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
@@ -3312,7 +3307,6 @@ class Table(Expr, _FixedTextJupyterMixin):
 
         >>> with t.mutate(computation="Heavy Computation").cache() as cached_penguins:
         ...     cached_penguins
-        ...
         ┏━━━━━━━━━┳━━━━━━━━━━━┳━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━┳━━━┓
         ┃ species ┃ island    ┃ bill_length_mm ┃ bill_depth_mm ┃ flipper_length_mm ┃ … ┃
         ┡━━━━━━━━━╇━━━━━━━━━━━╇━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━╇━━━┩
@@ -3346,7 +3340,7 @@ class Table(Expr, _FixedTextJupyterMixin):
         values_to: str = "value",
         values_transform: Callable[[ir.Value], ir.Value] | Deferred | None = None,
     ) -> Table:
-        """Transform a table from wider to longer.
+        r"""Transform a table from wider to longer.
 
         Parameters
         ----------
@@ -3403,9 +3397,7 @@ class Table(Expr, _FixedTextJupyterMixin):
         Here we convert column names not matching the selector for the `religion` column
         and convert those names into values
 
-        >>> relig_income.pivot_longer(
-        ...     ~s.c("religion"), names_to="income", values_to="count"
-        ... )
+        >>> relig_income.pivot_longer(~s.c("religion"), names_to="income", values_to="count")
         ┏━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━┳━━━━━━━┓
         ┃ religion ┃ income             ┃ count ┃
         ┡━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━╇━━━━━━━┩
@@ -3440,7 +3432,7 @@ class Table(Expr, _FixedTextJupyterMixin):
         │ ABW     │ SP.POP.GROW │ 2.539234e+00 │ 1.768757e+00 │ 1.194718e+00 │ … │
         │ AFE     │ SP.URB.TOTL │ 1.155517e+08 │ 1.197755e+08 │ 1.242275e+08 │ … │
         └─────────┴─────────────┴──────────────┴──────────────┴──────────────┴───┘
-        >>> world_bank_pop.pivot_longer(s.matches(r"\\d{4}"), names_to="year").head()
+        >>> world_bank_pop.pivot_longer(s.matches(r"\d{4}"), names_to="year").head()
         ┏━━━━━━━━━┳━━━━━━━━━━━━━┳━━━━━━━━┳━━━━━━━━━┓
         ┃ country ┃ indicator   ┃ year   ┃ value   ┃
         ┡━━━━━━━━━╇━━━━━━━━━━━━━╇━━━━━━━━╇━━━━━━━━━┩
@@ -3608,7 +3600,7 @@ class Table(Expr, _FixedTextJupyterMixin):
         Traceback (most recent call last):
           ...
         ibis.common.exceptions.IbisTypeError: ... Got <class 'str'>
-        """
+        """  # noqa: RUF002
         import ibis.selectors as s
 
         pivot_sel = s._to_selector(col)
@@ -3749,9 +3741,7 @@ class Table(Expr, _FixedTextJupyterMixin):
         │  4842 │ MAE     │     1 │
         │     … │ …       │     … │
         └───────┴─────────┴───────┘
-        >>> fish_encounters.pivot_wider(
-        ...     names_from="station", values_from="seen"
-        ... )  # doctest: +SKIP
+        >>> fish_encounters.pivot_wider(names_from="station", values_from="seen")  # doctest: +SKIP
         ┏━━━━━━━┳━━━━━━━━━┳━━━━━━━┳━━━━━━━━┳━━━━━━━┳━━━━━━━━━┳━━━━━━━┳━━━━━━━┳━━━┓
         ┃ fish  ┃ Release ┃ I80_1 ┃ Lisbon ┃ Rstr  ┃ Base_TD ┃ BCE   ┃ BCW   ┃ … ┃
         ┡━━━━━━━╇━━━━━━━━━╇━━━━━━━╇━━━━━━━━╇━━━━━━━╇━━━━━━━━━╇━━━━━━━╇━━━━━━━╇━━━┩
@@ -3862,9 +3852,7 @@ class Table(Expr, _FixedTextJupyterMixin):
 
         Supply an alternative function to summarize values
 
-        >>> warpbreaks = ibis.examples.warpbreaks.fetch().select(
-        ...     "wool", "tension", "breaks"
-        ... )
+        >>> warpbreaks = ibis.examples.warpbreaks.fetch().select("wool", "tension", "breaks")
         >>> warpbreaks
         ┏━━━━━━━━┳━━━━━━━━━┳━━━━━━━━┓
         ┃ wool   ┃ tension ┃ breaks ┃
@@ -3883,9 +3871,7 @@ class Table(Expr, _FixedTextJupyterMixin):
         │ A      │ M       │     18 │
         │ …      │ …       │      … │
         └────────┴─────────┴────────┘
-        >>> warpbreaks.pivot_wider(
-        ...     names_from="wool", values_from="breaks", values_agg="mean"
-        ... )
+        >>> warpbreaks.pivot_wider(names_from="wool", values_from="breaks", values_agg="mean")
         ┏━━━━━━━━━┳━━━━━━━━━━━┳━━━━━━━━━━━┓
         ┃ tension ┃ A         ┃ B         ┃
         ┡━━━━━━━━━╇━━━━━━━━━━━╇━━━━━━━━━━━┩
@@ -3946,9 +3932,7 @@ class Table(Expr, _FixedTextJupyterMixin):
         ...         for year in range(2000, 2015)
         ...     ]
         ... )
-        >>> production = raw.filter(
-        ...     ((_.product == "A") & (_.country == "AI")) | (_.product == "B")
-        ... )
+        >>> production = raw.filter(((_.product == "A") & (_.country == "AI")) | (_.product == "B"))
         >>> production
         ┏━━━━━━━━━┳━━━━━━━━━┳━━━━━━━┳━━━━━━━━━━━━┓
         ┃ product ┃ country ┃ year  ┃ production ┃
@@ -4045,7 +4029,6 @@ class Table(Expr, _FixedTextJupyterMixin):
         """
         import pandas as pd
 
-        import ibis.expr.analysis as an
         import ibis.selectors as s
         from ibis import _
         from ibis.expr.analysis import p, x
@@ -4367,7 +4350,6 @@ def _resolve_predicates(
     table: Table, predicates
 ) -> tuple[list[ir.BooleanValue], list[tuple[ir.BooleanValue, ir.Table]]]:
     import ibis.expr.types as ir
-    from ibis.common.deferred import _
     from ibis.expr.analysis import flatten_predicate, p
 
     # TODO(kszucs): clean this up, too much flattening and resolving happens here

@@ -18,18 +18,23 @@ from __future__ import annotations
 
 import itertools
 import types
-from typing import Iterable, Sequence
+from typing import TYPE_CHECKING
+
+from public import public
 
 import ibis
+import ibis.common.exceptions as com
 import ibis.expr.analysis as an
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
 from ibis import util
 from ibis.common.deferred import Deferred
-from ibis.selectors import Selector
 from ibis.expr.types.relations import bind_expr
-import ibis.common.exceptions as com
-from public import public
+from ibis.selectors import Selector
+
+if TYPE_CHECKING:
+    from collections.abc import Iterable, Sequence
+
 
 _function_types = tuple(
     filter(
@@ -198,10 +203,7 @@ class GroupedTable:
         >>> (
         ...     t.select("species", "bill_length_mm")
         ...     .group_by("species")
-        ...     .mutate(
-        ...         centered_bill_len=ibis._.bill_length_mm
-        ...         - ibis._.bill_length_mm.mean()
-        ...     )
+        ...     .mutate(centered_bill_len=ibis._.bill_length_mm - ibis._.bill_length_mm.mean())
         ...     .order_by(s.all())
         ... )
         ┏━━━━━━━━━┳━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━┓
