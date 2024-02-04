@@ -2,18 +2,20 @@ from __future__ import annotations
 
 import collections
 from keyword import iskeyword
-from typing import TYPE_CHECKING, Iterable, Mapping, Sequence
+from typing import TYPE_CHECKING
 
 from public import public
 
 import ibis.expr.operations as ops
-from ibis.expr.types.generic import Column, Scalar, Value, literal
-from ibis.expr.types.typing import V
 from ibis.common.deferred import deferrable
+from ibis.expr.types.generic import Column, Scalar, Value, literal
 
 if TYPE_CHECKING:
+    from collections.abc import Iterable, Mapping, Sequence
+
     import ibis.expr.datatypes as dt
     import ibis.expr.types as ir
+    from ibis.expr.types.typing import V
 
 
 @public

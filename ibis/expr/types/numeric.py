@@ -1,19 +1,19 @@
 from __future__ import annotations
 
-import collections
 import functools
-from typing import TYPE_CHECKING, Iterable, Literal, Sequence
+from typing import TYPE_CHECKING, Literal
 
 from public import public
 
 import ibis
 import ibis.expr.operations as ops
-from ibis import util
 from ibis.common.exceptions import IbisTypeError
 from ibis.expr.types.core import _binop
 from ibis.expr.types.generic import Column, Scalar, Value
 
 if TYPE_CHECKING:
+    from collections.abc import Iterable, Sequence
+
     import ibis.expr.types as ir
 
 

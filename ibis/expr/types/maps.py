@@ -1,16 +1,18 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Iterable, Mapping
+from typing import TYPE_CHECKING, Any
 
 from public import public
 
 import ibis.expr.operations as ops
-from ibis.expr.types.arrays import ArrayColumn
-from ibis.expr.types.generic import Column, Scalar, Value
 from ibis.common.deferred import deferrable
+from ibis.expr.types.generic import Column, Scalar, Value
 
 if TYPE_CHECKING:
+    from collections.abc import Iterable, Mapping
+
     import ibis.expr.types as ir
+    from ibis.expr.types.arrays import ArrayColumn
 
 
 @public

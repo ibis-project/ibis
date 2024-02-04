@@ -448,6 +448,7 @@ ignore = [
   "D213",    # Multi-line docstring summary should start at the second line
   "D401",    # Imperative mood
   "D402",    # First line should not be the function's signature
+  "D413",    # Blank line required after last section
   "E501",    # line-too-long, this is automatically enforced by ruff format
   "E731",    # lambda-assignment
   "ISC001",  # single line implicit string concat, handled by ruff format
