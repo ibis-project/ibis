@@ -481,7 +481,7 @@ and slow.
 
 Smaller open source language models can reduce this cost to practically zero,
 but at the expensive of quality. And generating synthetic data is likely even
-slower. 
+slower.
 
 ## Looking forward
 
