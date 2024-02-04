@@ -96,7 +96,7 @@ ARRAY_BACKEND_TYPES = {
 }
 
 
-def test_array_scalar(con, backend):
+def test_array_scalar(con):
     expr = ibis.array([1.0, 2.0, 3.0])
     assert isinstance(expr, ir.ArrayScalar)
 
@@ -362,12 +362,6 @@ def test_unnest_no_nulls(backend):
     reason="all the input arrays must have same number of dimensions",
 )
 @pytest.mark.notimpl(["datafusion"], raises=com.OperationNotDefinedError)
-@pytest.mark.broken(
-    ["risingwave"],
-    raises=AssertionError,
-    strict=False,
-    reason="row ordering is not guaranteed",
-)
 def test_unnest_default_name(backend):
     array_types = backend.array_types
     df = array_types.execute()
@@ -378,8 +372,8 @@ def test_unnest_default_name(backend):
 
     result = expr.name("x").execute()
     expected = df.x.map(lambda x: x + [1]).explode("x")
-    backend.assert_series_equal(
-        result.astype(object).fillna(pd.NA), expected.fillna(pd.NA), check_dtype=False
+    assert frozenset(result.astype(object).fillna(pd.NA).values) == frozenset(
+        expected.fillna(pd.NA).values
     )
 
 
@@ -415,12 +409,6 @@ def test_unnest_default_name(backend):
 @pytest.mark.notimpl(["polars"], raises=com.OperationNotDefinedError)
 @pytest.mark.notimpl(
     ["datafusion"], raises=Exception, reason="array_types table isn't defined"
-)
-@pytest.mark.broken(
-    ["risingwave"],
-    raises=AssertionError,
-    reason="not broken; row ordering is not guaranteed and sometimes this test will pass",
-    strict=False,
 )
 def test_array_slice(backend, start, stop):
     array_types = backend.array_types
@@ -559,12 +547,6 @@ def test_array_filter(con, input, output):
 
 @builtin_array
 @pytest.mark.notimpl(["polars"], raises=com.OperationNotDefinedError)
-@pytest.mark.broken(
-    ["risingwave"],
-    raises=AssertionError,
-    reason="not broken; row ordering is not guaranteed and sometimes this test will pass",
-    strict=False,
-)
 def test_array_contains(backend, con):
     t = backend.array_types
     expr = t.x.contains(1)
@@ -603,7 +585,7 @@ def test_array_contains(backend, con):
 )
 @pytest.mark.notimpl(["polars"], raises=com.OperationNotDefinedError)
 @pytest.mark.notyet(["impala"], raises=com.UnsupportedBackendType)
-def test_array_position(backend, con, a, expected_array):
+def test_array_position(con, a, expected_array):
     t = ibis.memtable({"a": a})
     expr = t.a.index(42)
     result = con.execute(expr)
@@ -836,11 +818,6 @@ def test_unnest_struct(con):
     ],
     raises=com.OperationNotDefinedError,
 )
-@pytest.mark.notimpl(
-    ["risingwave"],
-    raises=com.OperationNotDefinedError,
-    reason="Do not nest ARRAY types; ARRAY(basetype) handles multi-dimensional arrays of basetype",
-)
 def test_zip(backend):
     t = backend.array_types
 
@@ -998,15 +975,10 @@ def test_range_single_argument(con, n):
 )
 @pytest.mark.parametrize("n", [-2, 0, 2])
 @pytest.mark.notimpl(["polars", "flink"], raises=com.OperationNotDefinedError)
-@pytest.mark.skip("risingwave")
-def test_range_single_argument_unnest(backend, con, n):
+def test_range_single_argument_unnest(con, n):
     expr = ibis.range(n).unnest()
     result = con.execute(expr)
-    backend.assert_series_equal(
-        result,
-        pd.Series(list(range(n)), dtype=result.dtype, name=expr.get_name()),
-        check_index=False,
-    )
+    assert frozenset(result.values) == frozenset(range(n))
 
 
 @pytest.mark.parametrize("step", [-2, -1, 1, 2])
