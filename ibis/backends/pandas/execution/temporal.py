@@ -130,7 +130,7 @@ OFFSET_CLASS = {
 def execute_interval_from_integer_series(op, data, **kwargs):
     unit = op.unit.short
     resolution = op.unit.plural
-    cls = OFFSET_CLASS.get(unit, None)
+    cls = OFFSET_CLASS.get(unit)
 
     # fast path for timedelta conversion
     if cls is None:
@@ -142,7 +142,7 @@ def execute_interval_from_integer_series(op, data, **kwargs):
 def execute_interval_from_integer_integer_types(op, data, **kwargs):
     unit = op.unit.short
     resolution = op.unit.plural
-    cls = OFFSET_CLASS.get(unit, None)
+    cls = OFFSET_CLASS.get(unit)
 
     if cls is None:
         return pd.Timedelta(data, unit=unit)
@@ -154,7 +154,7 @@ def execute_cast_integer_to_interval_series(op, data, type, **kwargs):
     to = op.to
     unit = to.unit.short
     resolution = to.unit.plural
-    cls = OFFSET_CLASS.get(unit, None)
+    cls = OFFSET_CLASS.get(unit)
 
     if cls is None:
         return data.astype(f"timedelta64[{unit}]")
@@ -166,7 +166,7 @@ def execute_cast_integer_to_interval_integer_types(op, data, type, **kwargs):
     to = op.to
     unit = to.unit.short
     resolution = to.unit.plural
-    cls = OFFSET_CLASS.get(unit, None)
+    cls = OFFSET_CLASS.get(unit)
 
     if cls is None:
         return pd.Timedelta(data, unit=unit)
