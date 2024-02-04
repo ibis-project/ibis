@@ -7,10 +7,7 @@ Ibis maintainers are expected to handle the following tasks as they arise:
 
 ## Dependencies
 
-A number of tasks that are typically associated with maintenance are partially or fully automated.
-
-- [WhiteSource Renovate](https://www.whitesourcesoftware.com/free-developer-tools/renovate/) (Python library dependencies and GitHub Actions)
-- [Custom GitHub Action](https://github.com/ibis-project/ibis/actions/workflows/update-deps.yml) (Nix dependencies)
+Dependency updates are automated using [Mend Renovate](https://www.mend.io/renovate/).
 
 ### poetry
 
@@ -18,7 +15,10 @@ Occasionally you may need to lock [`poetry`](https://python-poetry.org) dependen
 
 ```sh
 poetry lock --no-update
+poetry export --extras all --with dev --with test --with docs --without-hashes --no-ansi > requirements-dev.txt
 ```
+
+The second step updates `requirements-dev.txt` for developers using `pip`.
 
 ## Adding examples
 
