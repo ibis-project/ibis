@@ -754,13 +754,13 @@ class Table(Expr, _FixedTextJupyterMixin):
             # Projection case
             return self.select(what)
 
-        (what,) = bind(self, what)
-        if isinstance(what, BooleanValue):
+        items = tuple(bind(self, what))
+        if util.all_of(items, BooleanValue):
             # TODO(kszucs): this branch should be removed, .filter should be
             # used instead
-            return self.filter([what])
+            return self.filter(items)
         else:
-            return self.select(what)
+            return self.select(items)
 
     def __len__(self):
         raise com.ExpressionError("Use .count() instead")

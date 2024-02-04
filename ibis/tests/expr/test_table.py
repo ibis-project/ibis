@@ -99,6 +99,19 @@ def test_getitem_column_select(table):
         assert isinstance(col, Column)
 
 
+def test_select_using_selector(table):
+    expr = table[s.numeric()]
+    expected = table.select(
+        table.a,
+        table.b,
+        table.c,
+        table.d,
+        table.e,
+        table.f,
+    )
+    assert expr.equals(expected)
+
+
 def test_table_tab_completion():
     table = ibis.table({"a": "int", "b": "int", "for": "int", "with spaces": "int"})
     # Only valid python identifiers in getattr tab completion
