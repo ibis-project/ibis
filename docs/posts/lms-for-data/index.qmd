@@ -1,7 +1,7 @@
 ---
 title: "Language models for data"
 author: "Cody Peterson"
-date: "2024-02-15"
+date: "2024-02-05"
 categories:
     - blog
     - llms
@@ -13,7 +13,7 @@ categories:
 This post will give an overview of how (large) language models (LMs) fit into
 data engineering, analyst, and science workflows.
 
-## Use cases for LMs in data
+## Use cases
 
 There are three main use cases for language models for data practitioners:
 
@@ -21,49 +21,9 @@ There are three main use cases for language models for data practitioners:
 2. Natural language processing
 3. Writing code
 
-We'll describe each in this section and see them in action in the following
-sections.
+We'll describe each and then demonstrate them with code.
 
-### Synthetic data generation
-
-Language models can be used to generate synthetic data. This is useful for
-testing, training, and other purposes. For example, you can use a language model
-to generate synthetic data for a machine learning model.
-
-:::{.callout-tip}
-This post was re-inspired by the [1 billion row challenge we recently solved
-with Ibis on three local backends](../1brc/index.qmd), in which synthetic data
-generated from a seed file was used to generate a billion rows.
-
-With language models, we can reproduce this synthetic data and customize the
-data produced with natural language! We'll demonstrate this in a section below.
-:::
-
-### Natural language processing
-
-This includes tasks like:
-
-- sentiment analysis
-- named entity recognition
-- part of speech tagging
-- summarization
-- translation
-- question answering
-
-Each of these tasks can be, to some extent, solved by traditional natural
-language processing (NLP) techniques. However, modern-day LMs can solve these
-tasks with a single model, and often with state-of-the-art performance. This
-drastically simplifies what a single engineer, who doesn't need a deep
-understanding of NLP or ML in general, can accomplish.
-
-### Writing code
-
-Finally, language models can be used to write code. This is more useful with
-systems around them to execute code, feed back error messages, make adjustments,
-and so on. There are numerous pitfalls with language models writing code, but
-they're fairly good at SQL.
-
-## Demonstrating LMs with data
+## Setup
 
 We'll use [Marvin](https://askmarvin.ai), the AI engineering toolkit, alongside
 [Ibis](https://ibis-project.org), the data engineering toolkit, to demonstrate
@@ -75,9 +35,16 @@ In a follow-up post, we'll explore using local "open source" language models to
 achieve the same results.
 :::
 
-With Marvin and Ibis, you can replicate the workflows below using other AI service providers, local language models, and over 20+ data backends!
+With Marvin and Ibis, you can replicate the workflows below using other AI
+service providers, local language models, and over 20+ data backends!
 
-Let's start by importing and setting up our code:
+You'll need to install Marvin and Ibis to follow along:
+
+```{.bash}
+pip install 'ibis-framework[duckdb,examples]' marvin
+```
+
+Then import them and turn on Ibis interactive mode:
 
 ```{python}
 import ibis  # <1>
@@ -95,30 +62,47 @@ ibis.options.interactive = True  # <4>
 
 ## Synthetic data generation
 
+Language models can be used to generate synthetic data. This is useful for
+testing, training, and other purposes. For example, you can use a language model
+to generate synthetic data for training a machine learning model (including a
+language model).
+
+:::{.callout-tip}
+This post was re-inspired by the [1 billion row challenge we recently solved
+with Ibis on three local backends](../1brc/index.qmd) in which synthetic data
+generated from a seed file was used to generate a billion rows.
+
+With language models, we can reproduce this synthetic data and customize the
+data produced with natural language!
+:::
+
 We'll start by replicating the data in the one billion row challenge, then move
 over to our favorite penguins demo dataset to augment existing data with
 synthetic data.
 
 ### Weather stations
 
-We can generate synthetic weather stations:
+We can generate synthetic weather stations in a few lines of code:
 
 ```{python}
-class WeatherStation(BaseModel):
-    station: str = Field(
-        ..., description="The weather station name", example="Sandy Silicon"
-    )
-    temperature: float = Field(
-        ..., description="The average temperature in Fahrenheit", example=72.5
-    )
+class WeatherStation(BaseModel): # <1>
+    station: str = Field( # <1>
+        ..., description="The weather station name", example="Sandy Silicon" # <1>
+    ) # <1>
+    temperature: float = Field( # <1>
+        ..., description="The average temperature in Fahrenheit", example=72.5 # <1>
+    ) # <1>
 
-stations = marvin.generate(
-    target=WeatherStation,
-    instructions="Generate fictitious but plausible-sounding weather stations with names that excite data nerds",
-    n=3,
-)
+stations = marvin.generate( # <2>
+    target=WeatherStation, # <2>
+    instructions="Generate fictitious but plausible-sounding weather stations with names that excite data nerds", # <2>
+    n=3, # <2>
+) # <2>
 stations
 ```
+
+1. Define a data model for the weather stations
+2. Use Marvin to generate three weather stations
 
 And then load that data into an Ibis table:
 
@@ -128,38 +112,59 @@ in a table. We'll demonstrate UDFs throughout this post.
 :::
 
 ```{python}
-s = ibis.memtable([station.model_dump() for station in stations])
+s = ibis.memtable([station.model_dump() for station in stations]) # <1>
 s
 ```
 
+1. Convert the generated data to an Ibis table
+
+While we've only generated three weather stations, you can repeat this process
+until you get as many as you'd like! You can then use Ibis to generate a billion
+rows of weather data for these stations as in the one billion row challenge.
+
+:::{.callout-warning}
+Running this with GPT-4-turbo to generate 1000 weather stations costs about
+$4 USD. This is rather expensive for synthetic data! You can mitigate this by
+using a cheaper model (e.g. GPT-3.5-turbo) but may get worse results.
+
+Alternatively, you can generate the data for free on your laptop with a small
+open source language model! Look out for a future post exploring this option.
+:::
+
 ### Penguin poems
 
-We can augment existing data with synthetic data. First, let's load the penguins dataset:
+We can augment existing data with synthetic data. First, let's load the penguins
+dataset:
 
 ```{python}
-penguins = ibis.examples.penguins.fetch()
+penguins = ibis.examples.penguins.fetch() # <1>
 penguins
 ```
+
+1. Load the penguins dataset from Ibis examples
 
 And take a sample of five rows to reduce our AI service costs:
 
 ```{python}
-t = penguins.sample(fraction=0.03).limit(5)
+t = penguins.sample(fraction=0.025).limit(5) # <1>
 t
 ```
+
+1. Sample a fraction of the data, then take the first five rows
 
 Now we define a UDF to generate a poem to describe each penguin:
 
 ```{python}
-@ibis.udf.scalar.python
-def penguin_poem(
-    species: str,
-    island: str,
-    bill_length_mm: float,
-    bill_depth_mm: float,
-    flipper_length_mm: float,
-    body_mass_g: float,
-) -> str:
+@ibis.udf.scalar.python # <1>
+def penguin_poem( # <1>
+    species: str, # <1>
+    island: str, # <1>
+    bill_length_mm: float, # <1>
+    bill_depth_mm: float, # <1>
+    flipper_length_mm: float, # <1>
+    body_mass_g: float, # <1>
+) -> str: # <1>
+    # <2>
     instructions = f"""Provide a whimsical poem that rhymes for a penguin.
 
     You have the following information about the penguins:
@@ -171,127 +176,200 @@ def penguin_poem(
         body mass of {body_mass_g} g.
 
     You must reference the penguin's size in addition to its species and island.
-    """
+    """ # <2>
 
-    poem = marvin.generate(
-        n=1,
-        instructions=instructions,
-    )
+    poem = marvin.generate( # <3>
+        n=1, # <3>
+        instructions=instructions, # <3>
+    ) # <3>
 
-    return poem[0]
+    return poem[0] # <4>
 ```
+
+1. Define a scalar Python UDF to generate a poem from penguin data
+2. Augment the LM's prompt with the penguin data
+3. Use Marvin to generate a poem for the penguin data
+4. Return the generated poem
 
 And apply that UDF to our penguins table:
 
 ```{python}
 t = (
-    t.mutate(
-        poem=penguin_poem(
-            t.species,
-            t.island,
-            t.bill_length_mm,
-            t.bill_depth_mm,
-            t.flipper_length_mm,
-            t.body_mass_g,
-        )
+    t.mutate( # <1>
+        poem=penguin_poem( # <1>
+            t.species, # <1>
+            t.island, # <1>
+            t.bill_length_mm, # <1>
+            t.bill_depth_mm, # <1>
+            t.flipper_length_mm, # <1>
+            t.body_mass_g, # <1>
+        ) # <1>
     )
-    .relocate("species", "island", "poem")
-    .cache()
+    .relocate("species", "island", "poem") # <2>
+    .cache() # <3>
 )
 t
 ```
+
+1. Apply the UDF by mutating the table with the function, using other columns as
+ input
+2. Rearrange the columns we care about to the front
+3. Cache the table to avoid re-running the UDF
+
+:::{.callout-note title="Is this RAG?" collapse="true"}
+Retrieval augmented generation (RAG) is a technique for retrieving information,
+augmented the prompt input to a model with that information, and using it to
+generate a response that incorporates the retrieved information for improved
+accuracy.
+
+In the example above, we've retrieved information from a table (that could be in
+a remote database) and used it to augment the prompt input to a language model.
+The model then generated a response that incorporates the retrieved information.
+
+> I would like to abolish the term RAG and instead just agree that we should
+> always try to provide models with the appropriate context to provide high
+> quality answers. - [Hamel
+> Husain](https://twitter.com/HamelHusain/status/1709740984643596768)
+
+I would consider this RAG, but I also consider RAG to be a silly term.
+:::
 
 Nice! While not particularly useful in this case, the same process can be used
 for generating product descriptions or other practical applications.
 
 ## Natural language processing
 
+This includes tasks like:
+
+- sentiment analysis
+- named entity recognition
+- part of speech tagging
+- summarization
+- translation
+- question answering
+
+Each of these tasks can be, to some extent, solved by traditional natural
+language processing (NLP) techniques. However, modern-day LMs can solve these
+tasks with a single model, and often with state-of-the-art performance. This
+drastically simplifies what a single engineer, who doesn't need a deep
+understanding of NLP or ML in general, can accomplish.
+
 ### Sentiment analysis
 
 We can use a language model to perform sentiment analysis on the penguin poems:
 
 ```{python}
-@marvin.fn
-def _sentiment_analysis(text: str) -> float:
+@marvin.fn # <1>
+def _sentiment_analysis(text: str) -> float: # <1>
     """Returns a sentiment score for `text`
     between -1 (negative) and 1 (positive)."""
+# <1>
 
-
-@ibis.udf.scalar.python
-def sentiment_analysis(text: str) -> float:
-    return _sentiment_analysis(text)
+@ibis.udf.scalar.python # <2>
+def sentiment_analysis(text: str) -> float: # <2>
+    return _sentiment_analysis(text) # <3>
 ```
+
+1. Define a Marvin function to perform sentiment analysis
+2. Define a scalar Python UDF to apply the Marvin function to a column
+3. Apply the Marvin function within the UDF
 
 And apply that UDF to our penguins table:
 
 ```{python}
 t = (
-    t.mutate(sentiment=sentiment_analysis(t.poem))
-    .relocate(t.columns[:3], "sentiment")
-    .cache()
+    t.mutate(sentiment=sentiment_analysis(t.poem)) # <1>
+    .relocate(t.columns[:3], "sentiment") # <2>
+    .cache() # <3>
 )
 t
 ```
+
+1. Apply the UDF by mutating the table with the function
+2. Rearrange the columns we care about to the front
+3. Cache the table to avoid re-running the UDF
 
 ### Entity extraction
 
-While not exactly named entity recognition, we can extract arbitrary entities from text. In this case, we'll extract a list of words that rhyme from the poem:
+While not exactly named entity recognition, we can extract arbitrary entities
+from text. In this case, we'll extract a list of words that rhyme from the poem:
 
 ```{python}
-@ibis.udf.scalar.python
-def extract_rhyming_words(text: str) -> list[str]:
-    words = marvin.extract(
-        text,
-        instructions="Extract the primary rhyming words from the text",
-    )
+@ibis.udf.scalar.python # <1>
+def extract_rhyming_words(text: str) -> list[str]: # <1>
+    words = marvin.extract( # <2>
+        text, # <2>
+        instructions="Extract the primary rhyming words from the text", # <2>
+    ) # <2>
 
-    return words
+    return words # <3>
 ```
+
+1. Define a scalar Python UDF to extract rhyming words from a poem
+2. Use Marvin to extract the rhyming words from the poem
+3. Return the list of extracted words
 
 And apply that UDF to our penguins table:
 
 ```{python}
 t = (
-    t.mutate(rhyming_words=extract_rhyming_words(t.poem))
-    .relocate(t.columns[:4], "rhyming_words")
-    .cache()
+    t.mutate(rhyming_words=extract_rhyming_words(t.poem)) # <1>
+    .relocate(t.columns[:4], "rhyming_words") # <2>
+    .cache() # <3>
 )
 t
 ```
+
+1. Apply the UDF by mutating the table with the function
+2. Rearrange the columns we care about to the front
+3. Cache the table to avoid re-running the UDF
 
 ### Translation
 
-We can translate the penguin poems:
+We can translate the penguin poems into Spanish or any language the language
+model sufficiently knows:
 
 ```{python}
-@marvin.fn
-def _translate_text(text: str, target_language: str = "spanish") -> str:
+@marvin.fn # <1>
+def _translate_text(text: str, target_language: str = "spanish") -> str: # <1>
     """Translate `text` to `target_language`."""
+# <1>
 
-
-@ibis.udf.scalar.python
-def translate_text(text: str, target_language: str = "spanish") -> str:
-    return _translate_text(text, target_language)
+@ibis.udf.scalar.python # <2>
+def translate_text(text: str, target_language: str = "spanish") -> str: # <2>
+    return _translate_text(text, target_language) # <3>
 ```
+
+1. Define a Marvin function to translate text
+2. Define a scalar Python UDF to apply the Marvin function to a column
+3. Apply the Marvin function within the UDF
 
 And apply that UDF to our penguins table:
 
 ```{python}
 t = (
-    t.mutate(translated_poem=translate_text(t.poem))
-    .relocate(t.columns[:5], "translated_poem")
-    .cache()
+    t.mutate(translated_poem=translate_text(t.poem)) # <1>
+    .relocate(t.columns[:5], "translated_poem") # <2>
+    .cache() # <3>
 )
 t
 ```
 
+1. Apply the UDF by mutating the table with the function
+2. Rearrange the columns we care about to the front
+3. Cache the table to avoid re-running the UDF
+
 ## Writing code
 
-Finally, we can use a language model to write code. Let's define a function that
-outputs SQL:
+Finally, language models can be used to write code. This is more useful with
+systems around them to execute code, feed back error messages, make adjustments,
+and so on. There are numerous pitfalls with language models writing code, but
+they're fairly good at SQL.
+
+Let's define a function that outputs SQL:
 
 ```{python}
-@marvin.fn
+@marvin.fn # <1>
 def _text_to_sql(
     text: str,
     table_names: list[str],
@@ -299,70 +377,129 @@ def _text_to_sql(
     table_previews: list[str],
 ) -> str:
     """Writes a SQL SELECT statement for the `text` given the provided `table_names`, `table_schemas`, and `table_previews`."""
+# <1>
 
-
-def text_to_sql(
-    text: str,
-    table_names: list[str],
-    table_schemas: list[str],
-    table_previews: list[str],
-) -> str:
-    return _text_to_sql(text, table_names, table_schemas, table_previews).strip(";")
+def text_to_sql( # <2>
+    text: str, # <2>
+    table_names: list[str], # <2>
+    table_schemas: list[str], # <2>
+    table_previews: list[str], # <2>
+) -> str: # <2>
+    sql = _text_to_sql(text, table_names, table_schemas, table_previews) # <3>
+    return sql.strip(";") # <4>
 ```
+
+1. Define a Marvin function to write SQL from text
+2. Define a Python function to apply the Marvin function to a string
+3. Generate the SQL string
+4. Strip the trailing semicolon that is sometimes generated, as it causes issues
+ with Ibis
 
 We can try that out on our penguins table:
 
 ```{python}
-text = "the count of penguins by species, from highest to lowest, per each island"
+text = "the count of penguins by species, from highest to lowest, per each island" # <1>
 
-table_names = ["penguins"]
-table_schemas = [str(penguins.schema())]
-table_previews = [str(penguins.limit(5))]
+table_names = ["penguins"] # <2>
+table_schemas = [str(penguins.schema())] # <2>
+table_previews = [str(penguins.limit(5))] # <2>
 
-sql = text_to_sql(text, table_names, table_schemas, table_previews)
+sql = text_to_sql(text, table_names, table_schemas, table_previews) # <3>
 print(sql)
 ```
+
+1. Create a natural language query
+2. Provide the table names, schemas, and previews
+3. Generate the SQL string
 
 And execute the SQL:
 
 ```{python}
-r = penguins.sql(sql)
+r = penguins.sql(sql) # <1>
 r
 ```
 
+1. Execute the SQL string on the table
+
+:::{.callout-note title="This is definitely RAG"}
+In this case, we've retrieved a table's name, schema, and a preview of its data
+to generate a high-quality SQL query. We're definitely doing RAG now.
+
+While most RAG implementations use a similarity metric between text converted to
+numberes (tokens/word embeddings), I find simple text retrieval in a
+well-organized knowledge base to be more effective. We'll follow up on this in
+future posts.
+:::
+
 ### A more complex example
 
-Let's see how this works on a query that requires joining two tables. We'll load in some IMDB data:
+Let's see how this works on a query that requires joining two tables. We'll load
+in some IMDB data:
 
 ```{python}
-imdb_title_basics = ibis.examples.imdb_title_basics.fetch()
+imdb_title_basics = ibis.examples.imdb_title_basics.fetch() # <1>
 imdb_title_basics
 ```
 
+1. Load the IMDB title basics dataset from Ibis examples
+
 ```{python}
-imdb_title_ratings = ibis.examples.imdb_title_ratings.fetch()
+imdb_title_ratings = ibis.examples.imdb_title_ratings.fetch() # <1>
 imdb_title_ratings
 ```
 
+1. Load the IMDB title ratings dataset from Ibis examples
+
 ```{python}
-text = "the highest rated movies w/ over 100k ratings -- movies only"
+text = "the highest rated movies w/ over 100k ratings -- movies only" # <1>
 
-table_names = ["imdb_title_basics", "imdb_title_ratings"]
-table_schemas = [str(imdb_title_basics.schema()), str(imdb_title_ratings.schema())]
-table_previews = [str(imdb_title_basics.limit(5)), str(imdb_title_ratings.limit(5))]
+table_names = ["imdb_title_basics", "imdb_title_ratings"] # <2>
+table_schemas = [str(imdb_title_basics.schema()), str(imdb_title_ratings.schema())] # <2>
+table_previews = [str(imdb_title_basics.limit(5)), str(imdb_title_ratings.limit(5))] # <2>
 
-sql = text_to_sql(text, table_names, table_schemas, table_previews)
+sql = text_to_sql(text, table_names, table_schemas, table_previews) # <3>
 print(sql)
 ```
 
+1. Create a natural language query
+2. Provide the table names, schemas, and previews
+3. Generate the SQL string
+
 ```{python}
-imdb_title_basics.sql(sql)
+r = imdb_title_basics.sql(sql) # <1>
+r
 ```
 
-## Issues with LMs today
+1. Execute the SQL string on the table
+
+## Issues with language models today
+
+The biggest model with language models today is the cost. Similarly, the time
+for inferencing these models is the second biggest concern. Generating millions
+of synthetic data points with state-of-the-art LLMs is prohibitively expensive
+and slow.
+
+Smaller open source language models can reduce this cost to practically zero,
+but at the expensive of quality. And generating synthetic data is likely even
+slower. 
 
 ## Looking forward
 
+In a future post, we'll explore using open source language models on a laptop to
+achieve similar results. In general, I expect language models with data to
+become increasingly commonplace. Some predictions:
+
+- small, specialized language models will become common
+- large language models that require expensive GPU clusters will still be the
+ best for general-purpose tasks
+- data assistants will be gimmicky for a while, but will eventually become
+ useful
+
+Keep an eye out for our own gimmicky data assistant soon...
+
 ## Next steps
 
-In a future post...
+Try this out yourself! All you need is an OpenAI account and the code above.
+
+It's never been a better time to get involved with Ibis. [Join us on
+Zulip and introduce yourself!](https://ibis-project.zulipchat.com/)
