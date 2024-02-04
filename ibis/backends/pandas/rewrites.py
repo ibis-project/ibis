@@ -10,13 +10,10 @@ from ibis.common.annotations import attribute
 from ibis.common.collections import FrozenDict
 from ibis.common.patterns import replace
 from ibis.common.typing import VarTuple  # noqa: TCH001
+from ibis.expr.operations.relations import Simple
 from ibis.expr.rewrites import replace_parameter
 from ibis.expr.schema import Schema
 from ibis.util import gen_name
-
-
-class PandasRelation(ops.Relation):
-    pass
 
 
 class PandasValue(ops.Value):
@@ -24,7 +21,7 @@ class PandasValue(ops.Value):
 
 
 @public
-class PandasRename(PandasRelation):
+class PandasRename(ops.Relation):
     parent: ops.Relation
     mapping: FrozenDict[str, str]
 
@@ -45,22 +42,18 @@ class PandasRename(PandasRelation):
             {self.mapping[name]: dtype for name, dtype in self.parent.schema.items()}
         )
 
+    @attribute
+    def singlerow(self):
+        return self.parent.singlerow
+
 
 @public
-class PandasResetIndex(PandasRelation):
+class PandasResetIndex(Simple):
     parent: ops.Relation
 
-    @attribute
-    def values(self):
-        return self.parent.values
-
-    @attribute
-    def schema(self):
-        return self.parent.schema
-
 
 @public
-class PandasJoin(PandasRelation):
+class PandasJoin(ops.Relation):
     left: ops.Relation
     right: ops.Relation
     left_on: VarTuple[ops.Value]
@@ -84,7 +77,7 @@ class PandasAsofJoin(PandasJoin):
 
 
 @public
-class PandasAggregate(PandasRelation):
+class PandasAggregate(ops.Relation):
     parent: ops.Relation
     groups: FrozenDict[str, ops.Field]
     metrics: FrozenDict[str, ops.Reduction]
@@ -97,20 +90,16 @@ class PandasAggregate(PandasRelation):
     def schema(self):
         return Schema({k: v.dtype for k, v in self.values.items()})
 
+    @attribute
+    def singlerow(self):
+        return not self.groups
+
 
 @public
-class PandasLimit(PandasRelation):
+class PandasLimit(Simple):
     parent: ops.Relation
     n: ops.Relation
     offset: ops.Relation
-
-    @attribute
-    def values(self):
-        return self.parent.values
-
-    @attribute
-    def schema(self):
-        return self.parent.schema
 
 
 @public

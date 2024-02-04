@@ -83,7 +83,7 @@ Notice that the last column has a `geometry` type, and in this case it contains 
 each subway station. Let's grab the entry for the Broad St subway station.
 
 ```{python}
-broad_station = subway_stations.filter(subway_stations.NAME == "Broad St")
+broad_station = subway_stations.filter(subway_stations.NAME == "Broad St").limit(1)
 broad_station
 ```
 

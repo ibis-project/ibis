@@ -10,7 +10,7 @@ import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 from ibis.common.deferred import Item, _, deferred, var
-from ibis.common.exceptions import ExpressionError
+from ibis.common.exceptions import ExpressionError, RelationError
 from ibis.common.patterns import Check, pattern, replace
 from ibis.util import Namespace
 
@@ -98,8 +98,12 @@ def rewrite_sample(_):
 
 @replace(p.Analytic)
 def project_wrap_analytic(_, rel):
-    # Wrap analytic functions in a window function
-    return ops.WindowFunction(_, ops.RowsWindowFrame(rel))
+    if _.relations == {rel}:
+        # Wrap analytic functions in a window function
+        return ops.WindowFunction(_, ops.RowsWindowFrame(rel))
+    else:
+        # TODO(kszucs): cover this with tests
+        raise RelationError("Analytic function depends on multiple tables")
 
 
 @replace(p.Reduction)
@@ -110,12 +114,21 @@ def project_wrap_reduction(_, rel):
         # it into a window function of `rel`
         return ops.WindowFunction(_, ops.RowsWindowFrame(rel))
     else:
-        # 1. The reduction doesn't depend on any table, constructed from
-        #    scalar values, so turn it into a scalar subquery.
+        # 1. The reduction doesn't depend only on `rel` but either constructed
+        #    from scalar values or depends on other relations, so turn it into
+        #    a scalar subquery.
         # 2. The reduction is originating from `rel` and other tables,
         #    so this is a correlated scalar subquery.
         # 3. The reduction is originating entirely from other tables,
         #    so this is an uncorrelated scalar subquery.
+        return ops.ScalarSubquery(_.to_expr().as_table())
+
+
+@replace(p.Field(p.Relation(singlerow=True)))
+def project_wrap_scalar_field(_, rel):
+    if _.relations == {rel}:
+        return _
+    else:
         return ops.ScalarSubquery(_.to_expr().as_table())
 
 
@@ -124,16 +137,17 @@ def rewrite_project_input(value, relation):
     # or scalar subqueries depending on whether they are originating from the
     # relation
     return value.replace(
-        project_wrap_analytic | project_wrap_reduction,
+        project_wrap_analytic | project_wrap_reduction | project_wrap_scalar_field,
         filter=p.Value & ~p.WindowFunction,
         context={"rel": relation},
     )
 
 
-ReductionLike = p.Reduction | p.Field(p.Aggregate(groups={}))
+ScalarLike = p.Reduction | p.Field(p.Relation(singlerow=True))
+# ReductionLike = p.Reduction | p.Field(p.Aggregate(groups={}))
 
 
-@replace(ReductionLike)
+@replace(ScalarLike)
 def filter_wrap_reduction(_):
     # Wrap reductions or fields referencing an aggregation without a group by -
     # which are scalar fields - in a scalar subquery. In the latter case we

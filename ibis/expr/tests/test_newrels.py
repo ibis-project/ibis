@@ -147,10 +147,25 @@ def test_subquery_integrity_check():
     with pytest.raises(IntegrityError, match=msg):
         ops.ScalarSubquery(t)
 
-    agg = t.agg(t.a.sum() + 1)
-    msg = "is not a reduction"
+    col = t.select(t.a)
+    msg = "Scalar subquery must have a single row"
     with pytest.raises(IntegrityError, match=msg):
-        ops.ScalarSubquery(agg)
+        ops.ScalarSubquery(col)
+
+    agg = t.agg(t.a.sum() + 1)
+    sub = ops.ScalarSubquery(agg)
+    assert isinstance(sub, ops.ScalarSubquery)
+    assert sub.shape.is_scalar()
+    assert sub.dtype.is_int64()
+
+
+# TODO(kszucs): raise a warning about deprecating the use of `to_array`
+def test_value_to_array_creates_subquery():
+    expr = t.int_col.sum().as_table().to_array()
+    op = expr.op()
+    assert op.shape.is_scalar()
+    assert op.dtype.is_int64()
+    assert isinstance(op, ops.ScalarSubquery)
 
 
 def test_select_turns_scalar_reduction_into_subquery():
@@ -162,7 +177,7 @@ def test_select_turns_scalar_reduction_into_subquery():
     assert t1.op() == expected
 
 
-def test_select_scalar_foreign_scalar_reduction_into_subquery():
+def test_select_turns_foreign_field_reduction_into_subquery():
     t1 = t.filter(t.bool_col)
     t2 = t.select(summary=t1.int_col.sum())
     subquery = ops.ScalarSubquery(t1.int_col.sum().as_table())
@@ -178,6 +193,32 @@ def test_select_turns_value_with_multiple_parents_into_subquery():
     subquery = ops.ScalarSubquery(v_filt.a.max().as_table())
     expected = Project(parent=t, values={"int_col": t.int_col, "max": subquery})
     assert t1.op() == expected
+
+
+def test_select_turns_singlerow_relation_field_into_scalar_subquery():
+    v = ibis.table(name="v", schema={"a": "int64", "b": "string"})
+
+    # other is from the same relation
+    expr = t.select(t.int_col, other=v.limit(1).a)
+    expected = Project(
+        parent=t,
+        values={
+            "int_col": t.int_col,
+            "other": ops.ScalarSubquery(v.limit(1).a.as_table()),
+        },
+    )
+    assert expr.op() == expected
+
+    # other is from a different relation
+    expr = t.select(t.int_col, other=t.limit(1).int_col)
+    expected = Project(
+        parent=t,
+        values={
+            "int_col": t.int_col,
+            "other": ops.ScalarSubquery(t.limit(1).int_col.as_table()),
+        },
+    )
+    assert expr.op() == expected
 
 
 def test_mutate():

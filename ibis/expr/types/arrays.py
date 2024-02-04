@@ -6,7 +6,6 @@ from public import public
 
 import ibis.expr.operations as ops
 from ibis.expr.types.generic import Column, Scalar, Value, literal
-from ibis.expr.types.typing import V
 from ibis.common.deferred import deferrable
 
 if TYPE_CHECKING:

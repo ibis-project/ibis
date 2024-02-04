@@ -20,6 +20,7 @@ from ibis.common.deferred import var
 from ibis.common.graph import Graph
 from ibis.common.patterns import Object, Pattern, _, replace
 from ibis.common.typing import VarTuple  # noqa: TCH001
+from ibis.expr.operations.relations import Simple
 from ibis.expr.rewrites import d, p, replace_parameter
 from ibis.expr.schema import Schema
 
@@ -31,18 +32,8 @@ y = var("y")
 
 
 @public
-class CTE(ops.Relation):
+class CTE(Simple):
     """Common table expression."""
-
-    parent: ops.Relation
-
-    @attribute
-    def schema(self):
-        return self.parent.schema
-
-    @attribute
-    def values(self):
-        return self.parent.values
 
 
 @public
@@ -61,6 +52,10 @@ class Select(ops.Relation):
     @attribute
     def schema(self):
         return Schema({k: v.dtype for k, v in self.selections.items()})
+
+    @attribute
+    def singlerow(self):
+        return self.parent.singlerow
 
 
 @public

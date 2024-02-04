@@ -29,6 +29,10 @@ NonSortKey = Annotated[T, ~InstanceOf(SortKey)]
 
 @public
 class Relation(Node, Coercible):
+    """Whether the relation is guaranteed to have a single row."""
+
+    singlerow = False
+
     @classmethod
     def __coerce__(cls, value):
         from ibis.expr.types import TableExpr
@@ -127,14 +131,15 @@ class Subquery(Value):
 
 @public
 class ScalarSubquery(Subquery):
-    def __init__(self, rel):
-        from ibis.expr.operations import Reduction
+    shape = ds.scalar
+    singlerow = True
 
+    def __init__(self, rel):
         super().__init__(rel=rel)
-        if not isinstance(self.value, Reduction):
+        if not rel.singlerow:
             raise IntegrityError(
-                f"Subquery {self.value!r} is not a reduction, only "
-                "reductions can be used as scalar subqueries"
+                "Scalar subquery must have a single row. Either use a reduction "
+                "or limit the number of rows in the subquery using `.limit(1)`"
             )
 
 
@@ -182,6 +187,11 @@ class Project(Relation):
     def schema(self):
         return Schema({k: v.dtype for k, v in self.values.items()})
 
+    @attribute
+    def singlerow(self):
+        # TODO(kszucs): also check that values doesn't contain Unnest
+        return self.parent.singlerow
+
 
 class Simple(Relation):
     parent: Relation
@@ -193,6 +203,10 @@ class Simple(Relation):
     @attribute
     def schema(self):
         return self.parent.schema
+
+    @attribute
+    def singlerow(self):
+        return self.parent.singlerow
 
 
 # TODO(kszucs): remove in favor of View
@@ -282,10 +296,10 @@ class Filter(Simple):
     predicates: VarTuple[Value[dt.Boolean]]
 
     def __init__(self, parent, predicates):
-        from ibis.expr.rewrites import ReductionLike
+        from ibis.expr.rewrites import ScalarLike
 
         for pred in predicates:
-            if pred.find(ReductionLike, filter=Value):
+            if pred.find(ScalarLike, filter=Value):
                 raise IntegrityError(
                     f"Cannot add {pred!r} to filter, it is a reduction which "
                     "must be converted to a scalar subquery first"
@@ -303,6 +317,10 @@ class Limit(Simple):
     # plain scalar values
     n: typing.Union[int, Scalar[dt.Integer], None] = None
     offset: typing.Union[int, Scalar[dt.Integer]] = 0
+
+    @attribute
+    def singlerow(self):
+        return self.n == 1
 
 
 @public
@@ -327,6 +345,10 @@ class Aggregate(Relation):
     @attribute
     def schema(self):
         return Schema({k: v.dtype for k, v in self.values.items()})
+
+    @attribute
+    def singlerow(self):
+        return not self.groups
 
 
 @public
@@ -437,6 +459,10 @@ class DummyTable(Relation):
     @attribute
     def schema(self):
         return Schema({k: v.dtype for k, v in self.values.items()})
+
+    @attribute
+    def singlerow(self):
+        return all(value.shape.is_scalar() for value in self.values.values())
 
 
 @public
