@@ -168,7 +168,7 @@ def test_schema_to_pandas(schema):
 
 @h.given(its.memtable(its.schema(its.integer_dtypes(), max_size=5)))
 def test_memtable(memtable):
-    assert isinstance(memtable, ir.TableExpr)
+    assert isinstance(memtable, ir.Table)
     assert isinstance(memtable.schema(), sch.Schema)
 
 

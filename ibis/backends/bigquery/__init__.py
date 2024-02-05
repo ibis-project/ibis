@@ -510,7 +510,7 @@ class Backend(SQLGlotBackend, CanCreateSchema):
 
     def table(
         self, name: str, database: str | None = None, schema: str | None = None
-    ) -> ir.TableExpr:
+    ) -> ir.Table:
         if database is not None and schema is None:
             raise com.IbisInputError(
                 f"The {self.name} backend cannot return a table expression using only a "
