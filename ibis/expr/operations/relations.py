@@ -31,11 +31,11 @@ NonSortKey = Annotated[T, ~InstanceOf(SortKey)]
 class Relation(Node, Coercible):
     @classmethod
     def __coerce__(cls, value):
-        from ibis.expr.types import TableExpr
+        from ibis.expr.types import Table
 
         if isinstance(value, Relation):
             return value
-        elif isinstance(value, TableExpr):
+        elif isinstance(value, Table):
             return value.op()
         else:
             raise TypeError(f"Cannot coerce {value!r} to a Relation")
@@ -69,9 +69,9 @@ class Relation(Node, Coercible):
         return FrozenDict({k: Field(self, k) for k in self.schema})
 
     def to_expr(self):
-        from ibis.expr.types import TableExpr
+        from ibis.expr.types import Table
 
-        return TableExpr(self)
+        return Table(self)
 
 
 @public
@@ -468,4 +468,4 @@ class Distinct(Simple):
     """Distinct is a table-level unique-ing operation."""
 
 
-# TODO(kszucs): support t.select(*t) syntax by implementing TableExpr.__iter__()
+# TODO(kszucs): support t.select(*t) syntax by implementing Table.__iter__()

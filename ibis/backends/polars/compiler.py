@@ -803,7 +803,7 @@ def count_star(op, **kw):
         condition = translate(where, **kw)
         result = condition.sum()
     else:
-        result = pl.len()
+        result = pl.count()
     return result.cast(dtype_to_polars(op.dtype))
 
 
