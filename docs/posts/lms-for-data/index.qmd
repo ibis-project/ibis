@@ -236,14 +236,14 @@ t
 3. Cache the table to avoid re-running the UDF
 
 :::{.callout-note title="Is this RAG?" collapse="true"}
-Retrieval augmented generation (RAG) is a technique for retrieving information,
-augmented the prompt input to a model with that information, and using it to
-generate a response that incorporates the retrieved information for improved
-accuracy.
+Retrieval augmented generation (RAG) is a term for retrieving information,
+augmenting the prompt input to a language model with that information, and using
+that prompt to generate a response with improved accuracy.
 
 In the example above, we've retrieved information from a table (that could be in
 a remote database) and used it to augment the prompt input to a language model.
-The model then generated a response that incorporates the retrieved information.
+The model then generated a response that incorporates the retrieved information,
+improving accuracy.
 
 > I would like to abolish the term RAG and instead just agree that we should
 > always try to provide models with the appropriate context to provide high
@@ -446,7 +446,7 @@ t
 ```
 
 :::{.callout-note}
-You could use a LM to write a subroutine that uses a LM! This is an excercise
+You could use a LM to write a subroutine that uses a LM! This is an exercise
 left to the reader.
 :::
 
