@@ -367,9 +367,9 @@ And apply that UDF to our penguins table:
 
 ```{python}
 t = (
-    t.mutate(translated_poem=translate_text(t.poem)) # <1>
-    .relocate(t.columns[:5], "translated_poem") # <2>
-    .cache() # <3>
+    t.mutate(translated_poem=translate_text(t.poem))  # <1>
+    .relocate(t.columns[:5], "translated_poem")  # <2>
+    .cache()  # <3>
 )
 t
 ```
@@ -403,47 +403,56 @@ We'll define a function that writes an Ibis UDF, similar to what we've used
 above:
 
 ```{python}
-@marvin.fn
-def _generate_python_function(text: str) -> str:
-    """Generate a simple, typed, correct Python function from text."""
+@marvin.fn  # <1>
+def _generate_python_function(text: str) -> str:  # <1>
+    """Generate a simple, typed, correct Python function from text."""  # <1>
 
 
-def create_udf_from_text(text: str) -> str:
+def create_udf_from_text(text: str) -> str:  # <2>
     """Create a UDF from text."""
-    return f"""
+    return f""" 
 import ibis
 
 @ibis.udf.scalar.python
 {_generate_python_function(text)}
-""".strip()
+""".strip()  # <2>
 ```
+
+1. Define a Marvin function to generate a Python function from text
+2. Define a Python function, wrapping a Marvin function with an Ibis UDF
 
 Now we'll create a UDF from text to count the number of vowels in a string:
 
 ```{python}
-udf = create_udf_from_text(
-    "a function named count_vowels that given an input string, returns an int w/ the number of vowels (y_included as a boolean option defaulted to False). NO DOCSTRING, we don't document our code in this household"
+udf = create_udf_from_text(  # <1>
+    "a function named count_vowels that given an input string, returns an int w/ the number of vowels (y_included as a boolean option defaulted to False). NO DOCSTRING, we don't document our code in this household"  # <1>
 )
 print(udf)
 ```
 
+1. Create a UDF from text
+
 And execute that so the UDF is available:
 
 ```{python}
-exec(udf)
+exec(udf)  # <1>
 ```
+
+1. Execute the UDF code to make it available to call
 
 Now we can augment our table with an analytic subroutine written by a language
 model:
 
 ```{python}
-t = (
-    t.mutate(island_vowel_count=count_vowels(t.island),
-                species_vowel_count=count_vowels(t.species))
-    .relocate("island", "island_vowel_count", "species", "species_vowel_count")
-)
+t = t.mutate(  # <1>
+    species_vowel_count=count_vowels(t.species),  # <1>
+    island_vowel_count=count_vowels(t.island),  # <1>
+).relocate("species", "species_vowel_count", "island", "island_vowel_count")  # <2>
 t
 ```
+
+1. Apply the UDF by mutating the table with the function
+2. Rearrange the columns we care about to the front
 
 :::{.callout-note}
 You could use a LM to write a subroutine that uses a LM! This is an exercise
@@ -560,7 +569,7 @@ print(sql)
 3. Generate the SQL string
 
 ```{python}
-r = imdb_title_basics.sql(sql) # <1>
+r = imdb_title_basics.sql(sql)  # <1>
 r
 ```
 
@@ -596,13 +605,13 @@ Keep an eye out for our own gimmicky data assistant soon...
 To summarize:
 
 ```{python}
-from rich import print
+from rich import print  # <1>
 
-with open("index.qmd", "r") as f:
-    blog_text = f.read()
+with open("index.qmd", "r") as f:  # <2>
+    blog_text = f.read()  # <2>
 
 
-class BlogSummary(BaseModel):
+class BlogSummary(BaseModel):  # <3>
     """Summarizes a blog post"""
 
     key_points: list[str] = Field(..., description="The key points of the blog post")
@@ -611,25 +620,29 @@ class BlogSummary(BaseModel):
     )
     one_sentence_summary: str = Field(
         ..., description="A one sentence summary of the blog post"
-    )
+    )  # <3>
 
 
-summary = marvin.cast(
-    blog_text,
-    target=BlogSummary,
-)
+summary = marvin.cast(  # <4>
+    blog_text,  # <4>
+    target=BlogSummary,  # <4>
+)  # <4>
 print(summary)
 ```
+
+1. Import rich's print to better display Python objects
+2. Read the blog post from a file
+3. Define a data model for the blog post summary
+4. Use Marvin to cast the blog post to the data model
 
 To generate a thumbnail from the text:
 
 ```{python}
-import os
-import httpx
+import os  # <1>
+import httpx  # <1>
 
-if not os.path.exists("thumbnail.png"):
-
-    key_points = "\n - ".join(summary.key_points)
+if not os.path.exists("thumbnail.png"):  # <2>
+    key_points = "\n - ".join(summary.key_points)  # <3>
     thumbnail = marvin.paint(
         f"""Create a beautiful (dark background) thumbnail for the blog post with the following key points:
 
@@ -641,20 +654,28 @@ if not os.path.exists("thumbnail.png"):
 
         {summary.one_paragraph_summary}
         """
-    )
+    )  # <3>
 
-    image = httpx.get(thumbnail.data[0].url)
-    with open("thumbnail.png", "wb") as f:
-        f.write(image.content)
+    image = httpx.get(thumbnail.data[0].url)  # <4>
+    with open("thumbnail.png", "wb") as f:  # <5>
+        f.write(image.content)  # <5>
 ```
+
+1. Import extra libraries
+2. Check if the thumbnail already exists
+3. Use Marvin to generate a thumbnail from the blog post summary
+4. Get the thumnail data from the URL
+5. Write the data's content to a file
 
 ```{python}
-# show the image
-import matplotlib.pyplot as plt
+import matplotlib.pyplot as plt  # <1>
 
-img = plt.imread("thumbnail.png")
-plt.imshow(img)
+img = plt.imread("thumbnail.png")  # <2>
+plt.imshow(img)  # <2>
 ```
+
+1. Import matplotlib to display the thumbnail
+2. Display the thumbnail
 
 ## Next steps
 
