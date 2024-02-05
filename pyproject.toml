@@ -402,7 +402,7 @@ builtin = "clear,rare,names"
 [tool.ruff]
 line-length = 88
 respect-gitignore = true
-exclude = ["*_py310.py"]
+exclude = [".direnv", "result-*", "*_py310.py", "decompiled.py"]
 target-version = "py39"
 
 [tool.ruff.lint]
@@ -500,14 +500,12 @@ required-imports = ["from __future__ import annotations"]
   "D", # ignore all docstring lints in tests
 ]
 "{docs,ci}/**/*.py" = ["INP001"]
-"*/decompiled.py" = ["ALL"]
 "{ci/release/verify_release,docs/**/*_impl}.py" = [
   "T201",
 ] # prints output using `print`
 "docs/**/{datafusion,polars}_*.py" = ["T201"] # prints output using `print`
 
 [tool.ruff.format]
-exclude = [".direnv", "result-*", "_py310.py", "decompiled.py"]
 docstring-code-format = true
 docstring-code-line-length = 88
 
