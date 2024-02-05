@@ -10,6 +10,7 @@ on:
       - "**/*.qmd"
       - "codecov.yml"
       - ".envrc"
+      - ".codespellrc"
     branches:
       - main
       - "*.x.x"
@@ -20,6 +21,7 @@ on:
       - "**/*.qmd"
       - "codecov.yml"
       - ".envrc"
+      - ".codespellrc"
     branches:
       - main
       - "*.x.x"
