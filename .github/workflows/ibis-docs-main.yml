@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - main
-      - "*.x.x"
   merge_group:
 
 # only a single docs job that pushes to `main` can run at any given time
