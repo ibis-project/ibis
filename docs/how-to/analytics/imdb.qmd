@@ -1,0 +1,276 @@
+---
+title: Analyze IMDB data using Ibis
+---
+
+Let's use the Ibis examples module and the DuckDB backend to find some movies
+to watch.
+
+Adapted from [Phillip in the Cloud's livestream using the same
+data](https://www.youtube.com/watch?v=J7sEn9VklKY).
+
+## Imports
+
+For this example, we'll just use Ibis.
+
+```{python}
+from ibis.interactive import *  # <1>
+```
+
+1. This import imports `ibis.examples` as `ex`.
+
+## Fetch the example data
+
+We can use the `ibis.examples` module to fetch the IMDB data. Ibis
+automatically caches the data on disk so subsequent runs don't require fetching
+from cloud storage on each call to `fetch`.
+
+```{python}
+name_basics = ex.imdb_name_basics.fetch()
+name_basics
+```
+
+To ensure column names are Pythonic, we can rename as `snake_case`.
+
+```{python}
+name_basics.rename("snake_case")
+```
+
+Let's grab all of the relevant IMDB tables and rename columns.
+
+```{python}
+name_basics = ex.imdb_name_basics.fetch().rename("snake_case")
+title_akas = ex.imdb_title_akas.fetch().rename("snake_case")
+title_basics = ex.imdb_title_basics.fetch().rename("snake_case")
+title_crew = ex.imdb_title_crew.fetch().rename("snake_case")
+title_episode = ex.imdb_title_episode.fetch().rename("snake_case")
+title_principals = ex.imdb_title_principals.fetch().rename("snake_case")
+title_ratings = ex.imdb_title_ratings.fetch().rename("snake_case")
+```
+
+## Preview the data
+
+We'll print out the first few rows of each table to get an idea of what is
+contained in each.
+
+```{python}
+name_basics.head()
+```
+
+```{python}
+title_akas.head()
+```
+
+```{python}
+title_basics.head()
+```
+
+```{python}
+title_crew.head()
+```
+
+```{python}
+title_episode.head()
+```
+
+```{python}
+title_principals.head()
+```
+
+```{python}
+title_ratings.head()
+```
+
+## Basic data exploration
+
+Let's check how many records are in each table. It's just Python, so we can
+construct a dictionary and iterate through it in a for loop.
+
+```{python}
+tables = {
+    "name_basics": name_basics,
+    "title_akas": title_akas,
+    "title_basics": title_basics,
+    "title_crew": title_crew,
+    "title_episode": title_episode,
+    "title_principals": title_principals,
+    "title_ratings": title_ratings,
+}
+max_name_len = max(map(len, tables.keys())) + 1
+```
+
+```{python}
+print("Length of tables:")
+for t in tables:
+    print(f"\t{t.ljust(max_name_len)}: {tables[t].count().to_pandas():,}")
+```
+
+## Clean data
+
+Looking at the data, the `nconst` and `tconst` columns seem to be unique
+identifiers. Let's confirm and adjust them accordingly.
+
+```{python}
+name_basics.head()
+```
+
+Check the number of unique `nconst` values.
+
+```{python}
+name_basics.nconst.nunique()
+```
+
+Confirm it's equal to the number of rows.
+
+```{python}
+name_basics.nconst.nunique() == name_basics.count()
+```
+
+Mutate the table to convert `nconst` to an integer.
+
+```{python}
+t = name_basics.mutate(nconst=_.nconst.replace("nm", "").cast("int"))
+t.head()
+```
+
+Let's also turn `primary_profession` into an array of strings instead of
+a single comma-separated string.
+
+```{python}
+t = t.mutate(primary_profession=_.primary_profession.split(","))
+t
+```
+
+And, combining the two concepts, convert `known_for_titles` into an array of
+integers corresponding to `tconst` identifiers.
+
+```{python}
+t = t.mutate(
+    known_for_titles=_.known_for_titles.split(",").map(
+        lambda tconst: tconst.replace("tt", "").cast("int")
+    )
+)
+t
+```
+
+## DRY-ing up the code
+
+We can define functions to convert `nconst` and `tconst` to integers.
+
+```{python}
+def nconst_to_int(nconst):
+    return nconst.replace("nm", "").cast("int")
+
+
+def tconst_to_int(tconst):
+    return tconst.replace("tt", "").cast("int")
+```
+
+Then combine the previous data cleansing in a single mutate call.
+
+```{python}
+name_basics = name_basics.mutate(
+    nconst=nconst_to_int(_.nconst),
+    primary_profession=_.primary_profession.split(","),
+    known_for_titles=_.known_for_titles.split(",").map(tconst_to_int),
+)
+name_basics
+```
+
+We can use `ibis.to_sql` to see the SQL this generates.
+
+```{python}
+ibis.to_sql(name_basics)
+```
+
+Clean the rest of the tables. We'll convert `nconst` and `tconst` columns
+consistently to allow for easy joining.
+
+```{python}
+title_akas = title_akas.mutate(title_id=tconst_to_int(_.title_id)).rename(
+    tconst="title_id"
+)
+title_basics = title_basics.mutate(tconst=tconst_to_int(_.tconst))
+title_crew = title_crew.mutate(
+    tconst=tconst_to_int(_.tconst),
+    directors=_.directors.split(",").map(nconst_to_int),
+    writers=_.writers.split(",").map(nconst_to_int),
+)
+title_episode = title_episode.mutate(
+    tconst=tconst_to_int(_.tconst), parent_tconst=tconst_to_int(_.parent_tconst)
+)
+title_principals = title_principals.mutate(
+    tconst=tconst_to_int(_.tconst), nconst=nconst_to_int(_.nconst)
+)
+title_ratings = title_ratings.mutate(tconst=tconst_to_int(_.tconst))
+```
+
+## Finding good (and bad) movies to watch
+
+Join the IMDB rankings with information about the movies.
+
+```{python}
+joined = title_basics.join(title_ratings, "tconst")
+joined
+```
+
+```{python}
+joined.title_type.value_counts().order_by(_.title_type_count.desc())
+```
+
+Filter down to movies.
+
+```{python}
+joined = joined.filter(_.title_type == "movie")
+joined
+```
+
+Reorder the columns and drop some.
+
+```{python}
+joined = joined.select(
+    "tconst",
+    "primary_title",
+    "average_rating",
+    "num_votes",
+    "genres",
+    "runtime_minutes",
+)
+joined
+```
+
+Sort by the average rating.
+
+```{python}
+joined = joined.order_by([_.average_rating.desc(), _.num_votes.desc()])
+joined
+```
+
+A lot of 10/10 movies I haven't heard of … let's filter to movies with at least
+`N` votes.
+
+```{python}
+N = 50000
+joined = joined.filter(_.num_votes > N)
+joined
+```
+
+What if you're in the mood for a bad movie?
+
+```{python}
+joined = joined.order_by([_.average_rating.asc(), _.num_votes.desc()])
+joined
+```
+
+And specifically a bad comedy?
+
+```{python}
+joined = joined.filter(_.genres.contains("Comedy"))
+joined
+```
+
+Perfect!
+
+## Next Steps
+
+We only used two of the IMDB tables. What else can we do with the rest of the
+data? Play around and let us know!
