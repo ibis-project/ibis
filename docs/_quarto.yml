@@ -193,6 +193,8 @@ quartodoc:
   renderer: _renderer.py
   options:
     signature_name: short
+    # sets include inherited everywhere by default ----
+    include_inherited: true
   sections:
     - title: Expression API
       desc: "APIs for manipulating table, column and scalar expressions"
