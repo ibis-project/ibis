@@ -19,16 +19,17 @@ data engineering, data analyst, and data science workflows.
 There are three main use cases for language models for data practitioners:
 
 1. Synthetic data generation
-2. Natural language processing
+2. Use in analytic subroutines
 3. Writing analytic code
 
 We'll describe each and then demonstrate them with code.
 
 ## Setup
 
-We'll use [Marvin](https://askmarvin.ai), the AI engineering toolkit, alongside
-[Ibis](https://ibis-project.org), the data engineering toolkit, to demonstrate
-the capabilities of language models for data using the default DuckDB backend.
+We'll use [Marvin](https://askmarvin.ai), a toolkit for AI engineering,
+alongside [Ibis](https://ibis-project.org), a toolkit for data engineering, to
+demonstrate the capabilities of language models for data using the default
+DuckDB backend.
 
 :::{.callout-tip}
 We'll use a cloud service provider (OpenAI) to demonstrate these capabilities.
@@ -241,39 +242,26 @@ t
 2. Rearrange the columns we care about to the front
 3. Cache the table to avoid re-running the UDF
 
-:::{.callout-note title="Is this RAG?" collapse="true"}
-Retrieval augmented generation (RAG) is a term for retrieving information,
-augmenting the prompt input to a language model with that information, and using
-that prompt to generate a response with improved accuracy.
-
-In the example above, we've retrieved information from a table (that could be in
-a remote database) and used it to augment the prompt input to a language model.
-The model then generated a response that incorporates the retrieved information,
-improving accuracy.
-
-> I would like to abolish the term RAG and instead just agree that we should
-> always try to provide models with the appropriate context to provide high
-> quality answers. - [Hamel
-> Husain](https://twitter.com/HamelHusain/status/1709740984643596768)
-
-I would consider this RAG, but I also consider RAG to be a silly term.
-:::
-
 Nice! While not particularly useful in this case, the same process can be used
 for generating product descriptions or other practical applications.
 
-## Natural language processing
+## Use in analytic subroutines
+
+We've already done this above with the penguin poems to generate some data.
+However, for real-world use cases the more common use of language models will be
+to extract structured data from unsstructured text.
 
 This includes tasks like:
 
 - sentiment analysis
+- data labeling
 - named entity recognition
 - part of speech tagging
 - summarization
 - translation
 - question answering
 
-Each of these tasks can be, to some extent, solved by traditional natural
+Each of these tasks can be, to some extent, performed by traditional natural
 language processing (NLP) techniques. However, modern-day LMs can solve these
 tasks with a single model, and often with state-of-the-art performance. This
 drastically simplifies what a single engineer, who doesn't need a deep
@@ -384,23 +372,75 @@ t
 2. Rearrange the columns we care about to the front
 3. Cache the table to avoid re-running the UDF
 
-## Writing analytical code
+### Data labeling
+
+We can label the data by classifying penguins based on their attributes. While this is a contrived example, this could be useful for classifying product feedback or customer support tickets for data organization in any backend Ibis supports:
+
+```{python}
+labels = ["small", "medium", "large"]  # <1>
+
+# <2>
+instructions = f"""You are to classify a penguin into one of {labels} based on
+its bill length, bill depth, flipper length, and body mass.
+
+The averages for these penguins are:
+
+    - bill length: {penguins["bill_length_mm"].mean().to_pandas()}mm
+    - bill depth: {penguins["bill_depth_mm"].mean().to_pandas()}mm
+    - flipper length: {penguins["flipper_length_mm"].mean().to_pandas()}mm
+    - body mass: {penguins["body_mass_g"].mean().to_pandas()}g
+
+Use your best judgement to classify the penguin.
+"""  # <2>
+
+
+@ibis.udf.scalar.python  # <3>
+def classify_penguin(
+    bill_length: float, bill_depth: float, flipper_length: float, body_mass: float
+) -> str:
+    return marvin.classify(
+        f"Penguin with bill length {bill_length}mm, bill depth {bill_depth}mm, flipper length {flipper_length}mm, and body mass {body_mass}g",
+        labels=labels,
+        instructions=instructions,
+    )  # <3>
+```
+
+1. Define the labels for the classification
+2. Construct instructions for the LM based on data
+3. Define a scalar Python UDF to classify penguins based on their attributes
+
+
+And apply that UDF to our penguins table:
+
+```{python}
+t = (
+    t.mutate(  # <1>
+        classification=classify_penguin(
+            t.bill_length_mm, t.bill_depth_mm, t.flipper_length_mm, t.body_mass_g
+        )
+    )  # <1>
+    .relocate("classification")  # <2>
+    .cache()  # <3>
+)
+```
+
+1. Apply the UDF by mutating the table with the function
+2. Rearrange the columns we care about to the front
+3. Cache the table to avoid re-running the UDF
+
+## Writing analytic code
 
 Finally, language models can be used to write code. This is more useful with
 systems around them to execute code, feed back error messages, make adjustments,
 and so on. There are numerous pitfalls with language models writing code, but
 they're fairly good at SQL.
 
-### Three approaches
+### Two approaches
 
-We can think of three approaches to analytical code with language models:
+We can think of two approaches to writing analytic code with language models:
 
-1. Use LMs in an analytic subroutine
-2. Use LMs to write an analytic subroutine
-3. Use LMs to write analytic code
-
-We've already seen numerous examples of the first approach above. Let's explore
-the second and third approaches.
+1. Use LMs to write an analytic subroutine
+2. Use LMs to write analytic code
 
 ### Writing an analytic subroutine
 
@@ -430,8 +470,10 @@ Now we'll create a UDF from text to count the number of vowels in a string:
 
 ```{python}
 udf = create_udf_from_text(  # <1>
-    "a function named count_vowels that given an input string, returns an int w/ the number of vowels (y_included as a boolean option defaulted to False). NO DOCSTRING, we don't document our code in this household"  # <1>
-)
+    """"a function named count_vowels that given an input string, returns an int
+    w/ the number of vowels (y_included as a boolean option defaulted to False).
+    NO DOCSTRING, we don't document our code in this household"""
+)  # <1>
 print(udf)
 ```
 
@@ -527,16 +569,6 @@ r
 
 1. Execute the SQL string on the table
 
-:::{.callout-note title="This is definitely RAG"}
-In this case, we've retrieved a table's name, schema, and a preview of its data
-to generate a high-quality SQL query. We're definitely doing RAG now.
-
-While most RAG implementations use a similarity metric between text converted to
-numberes (tokens/word embeddings), I find simple text retrieval in a
-well-organized knowledge base to be more effective. We'll follow up on this in
-future posts.
-:::
-
 #### A more complex example
 
 Let's see how this works on a query that requires joining two tables. We'll load
@@ -588,13 +620,21 @@ r
 
 The biggest issue with language models today is the cost, followed by the time
 it takes to generate responses. Generating a million rows of synthetic data
-points with state-of-the-art LLMs is prohibitively expensive and slow. If you're
-using language models in your data workflows, you'll need to be mindful of the
-cost and bottleneck on speed of data processing likely to be introduced.
+points with state-of-the-art LLMs is prohibitively expensive and slow.
+Extrapolating from generating 1000 weather stations, it would cost about $4000
+USD and take over a week using GPT-4-turbo with OpenAI. Then again, this could
+be less expensive and time consuming than collecting or purchasing the data. If
+you're using language models in your data workflows, you'll need to be mindful
+of the cost and bottleneck on speed of data processing likely to be introduced.
 
 Smaller open source language models can reduce this cost to practically zero,
 but at the expensive of quality. Generating responses may also be slower
 depending on your hardware setup and other factors.
+
+Language models also have a tendency to generate incorrect outputs in the
+context of a given task. This is a risk that needs to be tolerated or mitigated
+with a surrounding system. I would not recommend giving a language model access
+to a production database without a human in the loop.
 
 ## Looking forward
 
@@ -654,7 +694,8 @@ import httpx  # <1>
 if not os.path.exists("thumbnail.png"):  # <2>
     key_points = "\n - ".join(summary.key_points)  # <3>
     thumbnail = marvin.paint(
-        f"""Create a beautiful (dark background) thumbnail for the blog post with the following key points:
+        f"""Create a beautiful (dark background) thumbnail for the blog post
+        with the following key points:
 
         {key_points}
 
