@@ -807,7 +807,7 @@ ibis.to_sql(expr)
 You can mix the overlapping key names with other expressions:
 
 ```{python}
-joined = t4.join(t5, ["key1", "key2", t4.key3.left(4) == t4.key3.left(4)])
+joined = t4.join(t5, ["key1", "key2", t4.key3.left(4) == t5.key3.left(4)])
 expr = joined[t4, t5.value2]
 ibis.to_sql(expr)
 ```

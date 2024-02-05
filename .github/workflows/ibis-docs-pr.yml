@@ -5,6 +5,7 @@ on:
     branches:
       - main
       - "*.x.x"
+      - "the-epic-split"
   merge_group:
 
 concurrency:

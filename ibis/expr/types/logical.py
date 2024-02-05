@@ -306,7 +306,7 @@ class BooleanColumn(NumericColumn, BooleanValue):
         >>> (t.arr == None).any(where=t.arr != None)
         False
         """
-        from ibis.common.deferred import Call, _, Deferred
+        from ibis.common.deferred import Call, Deferred, _
 
         parents = self.op().relations
 
