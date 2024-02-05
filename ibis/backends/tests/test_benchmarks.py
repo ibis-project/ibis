@@ -158,7 +158,7 @@ _backends = set(_get_backend_names())
 # compile is a no-op
 _backends.remove("pandas")
 
-_XFAIL_COMPILE_BACKENDS = {"dask", "pyspark", "polars", "risingwave"}
+_XFAIL_COMPILE_BACKENDS = ("dask", "polars")
 
 
 @pytest.mark.benchmark(group="compilation")
@@ -741,10 +741,10 @@ def test_snowflake_medium_sized_to_pandas(benchmark):
 
 
 def test_parse_many_duckdb_types(benchmark):
-    parse = pytest.importorskip("ibis.backends.duckdb.datatypes").DuckDBType.from_string
+    from ibis.backends.base.sqlglot.datatypes import DuckDBType
 
     def parse_many(types):
-        list(map(parse, types))
+        list(map(DuckDBType.from_string, types))
 
     types = ["VARCHAR", "INTEGER", "DOUBLE", "BIGINT"] * 1000
     benchmark(parse_many, types)

@@ -1733,7 +1733,7 @@ class Column(Value, _FixedTextJupyterMixin):
 
         Returns
         -------
-        TableExpr
+        Table
             A top-k expression
         """
 
