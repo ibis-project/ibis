@@ -1,30 +1,35 @@
 from __future__ import annotations
 
 import functools
+from typing import TYPE_CHECKING, Any
+
 from public import public
-from typing import Any, Optional, TYPE_CHECKING
-from collections.abc import Iterator, Mapping
 
 import ibis
 import ibis.expr.operations as ops
-
 from ibis import util
-from ibis.expr.types import Table, Value
 from ibis.common.deferred import Deferred
+from ibis.common.egraph import DisjointSet
+from ibis.common.exceptions import (
+    ExpressionError,
+    IbisInputError,
+    InputTypeError,
+    IntegrityError,
+)
 from ibis.expr.analysis import flatten_predicates
-from ibis.common.exceptions import ExpressionError, IntegrityError
+from ibis.expr.rewrites import peel_join_field
+from ibis.expr.types.generic import Value
 from ibis.expr.types.relations import (
+    Table,
     bind,
-    dereference_values,
     dereference_mapping,
     unwrap_aliases,
 )
-from ibis.expr.operations.relations import JoinKind
-from ibis.expr.rewrites import peel_join_field
-from ibis.common.egraph import DisjointSet
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
+
+    from ibis.expr.operations.relations import JoinKind
 
 
 def disambiguate_fields(
@@ -36,9 +41,7 @@ def disambiguate_fields(
     left_template,
     right_template,
 ):
-    """
-    Resolve name collisions between the left and right tables.
-    """
+    """Resolve name collisions between the left and right tables."""
     collisions = set()
     left_template = left_template or "{name}"
     right_template = right_template or "{name}"
@@ -190,6 +193,9 @@ def prepare_predicates(
         The right table
     predicates
         Predicates to bind and dereference, see the possible values above
+    comparison
+        The comparison operation to construct if the input is a pair of
+        expression-like objects
     """
     deref_left = dereference_mapping_left(left)
     deref_right = dereference_mapping_right(right)
@@ -266,7 +272,7 @@ class Join(Table):
         return Table(self.op())
 
     @functools.wraps(Table.join)
-    def join(  # noqa: D102
+    def join(
         self,
         right,
         predicates: Any,
@@ -275,8 +281,8 @@ class Join(Table):
         lname: str = "",
         rname: str = "{name}_right",
     ):
-        import pyarrow as pa
         import pandas as pd
+        import pyarrow as pa
 
         # TODO(kszucs): factor out to a helper function
         if isinstance(right, (pd.DataFrame, pa.Table)):
@@ -324,7 +330,7 @@ class Join(Table):
         return self.__class__(left, collisions=collisions, equalities=equalities)
 
     @functools.wraps(Table.asof_join)
-    def asof_join(  # noqa: D102
+    def asof_join(
         self: Table,
         right: Table,
         on,
@@ -403,7 +409,7 @@ class Join(Table):
         return self.__class__(left, collisions=collisions, equalities=equalities)
 
     @functools.wraps(Table.cross_join)
-    def cross_join(  # noqa: D102
+    def cross_join(
         self: Table,
         right: Table,
         *rest: Table,
@@ -418,7 +424,7 @@ class Join(Table):
         return left
 
     @functools.wraps(Table.select)
-    def select(self, *args, **kwargs):  # noqa: D102
+    def select(self, *args, **kwargs):
         chain = self.op()
         values = bind(self, (args, kwargs))
         values = unwrap_aliases(values)
