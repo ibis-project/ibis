@@ -129,16 +129,6 @@ class Subquery(Value):
 class ScalarSubquery(Subquery):
     shape = ds.scalar
 
-    def __init__(self, rel):
-        from ibis.expr.operations import Reduction
-
-        super().__init__(rel=rel)
-        if not isinstance(self.value, Reduction):
-            raise IntegrityError(
-                f"Subquery {self.value!r} is not a reduction, only "
-                "reductions can be used as scalar subqueries"
-            )
-
 
 @public
 class ExistsSubquery(Subquery):

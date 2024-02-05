@@ -147,11 +147,6 @@ def test_subquery_integrity_check():
     with pytest.raises(IntegrityError, match=msg):
         ops.ScalarSubquery(t)
 
-    agg = t.agg(t.a.sum() + 1)
-    msg = "is not a reduction"
-    with pytest.raises(IntegrityError, match=msg):
-        ops.ScalarSubquery(agg)
-
 
 def test_select_turns_scalar_reduction_into_subquery():
     arr = ibis.literal([1, 2, 3])
