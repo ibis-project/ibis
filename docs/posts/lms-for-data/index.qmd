@@ -74,7 +74,8 @@ _ = ibis.get_backend().raw_sql("set enable_progress_bar = false")
 Language models can be used to generate synthetic data. This is useful for
 testing, training, and other purposes. For example, you can use a language model
 to generate synthetic data for training a machine learning model (including a
-language model).
+language model). This can be a great alternative to collecting or purchasing
+data for machine learning training and is easily customizable with language.
 
 :::{.callout-tip}
 This post was re-inspired by the [1 billion row challenge we recently solved
@@ -475,7 +476,11 @@ def _text_to_sql(
     table_schemas: list[str],
     table_previews: list[str],
 ) -> str:
-    """Writes a SQL SELECT statement for the `text` given the provided `table_names`, `table_schemas`, and `table_previews`."""  # <1>
+    """Writes a SQL SELECT statement for the `text` given the provided
+    `table_names`, `table_schemas`, and `table_previews`.
+
+    Use newlines and indentation for readability.
+    """  # <1
 
 
 def text_to_sql(  # <2>
