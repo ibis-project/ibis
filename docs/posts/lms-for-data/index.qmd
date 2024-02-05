@@ -46,6 +46,18 @@ You'll need to install Marvin and Ibis to follow along:
 pip install 'ibis-framework[duckdb,examples]' marvin
 ```
 
+You need to create a `.env` file in `$HOME/.marvin` or your working directory
+like:
+
+```{.env}
+MARVIN_OPENAI_API_KEY="XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
+MARVIN_OPENAI_CHAT_COMPLETIONS_MODEL="gpt-4-0125-preview"
+```
+
+See [the Marvin
+documentation](https://www.askmarvin.ai/docs/configuration/settings/) for
+details on configuration.
+
 Then import them and turn on Ibis interactive mode:
 
 ```{python}
@@ -64,8 +76,8 @@ ibis.options.repr.interactive.max_rows = 6  # <5>
 _ = ibis.get_backend().raw_sql("set enable_progress_bar = false")
 ```
 
-1. Import Ibis, the data engineering toolkit
-2. Import Marvin, the AI engineering toolkit
+1. Import Ibis, an data engineering toolkit
+2. Import Marvin, an AI engineering toolkit
 3. Import Pydantic, used to define data models for Marvin
 4. Set Ibis to interactive mode to display the results of our queries
 5. Set the maximum number of rows to display in interactive mode
@@ -249,7 +261,7 @@ for generating product descriptions or other practical applications.
 
 We've already done this above with the penguin poems to generate some data.
 However, for real-world use cases the more common use of language models will be
-to extract structured data from unsstructured text.
+to extract structured data from unstructured text.
 
 This includes tasks like:
 
