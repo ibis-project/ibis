@@ -1247,17 +1247,17 @@ test = ["pandas[test]", "pre-commit", "pytest", "pytest-cov", "pytest-rerunfailu
 
 [[package]]
 name = "datafusion"
-version = "34.0.0"
+version = "35.0.0"
 description = "Build and run queries against data"
 optional = true
 python-versions = ">=3.6"
 files = [
-    {file = "datafusion-34.0.0-cp38-abi3-macosx_10_12_x86_64.whl", hash = "sha256:b52dc70b0b3274e8e6fae8ddb1cca410677bea7977b061506e07f8b9ebd0150a"},
-    {file = "datafusion-34.0.0-cp38-abi3-macosx_11_0_arm64.whl", hash = "sha256:c1b6ea5bed05365d549a20279117887d05aafad3ddf2b3bb8d0c37ec86c588ea"},
-    {file = "datafusion-34.0.0-cp38-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:6f5bf0f8977c36a3cd77ed449f8f12083c1897310150fdd8e9df2eae1edd5bb5"},
-    {file = "datafusion-34.0.0-cp38-abi3-manylinux_2_28_aarch64.whl", hash = "sha256:96693f9efc0cb2dbd7d57544bcb94eac23f9fddbe2354e19cf3101c0bccdb383"},
-    {file = "datafusion-34.0.0-cp38-abi3-win_amd64.whl", hash = "sha256:c6a9212ebe42b24e0e220aff7224a24ff3b025de86cd7dca75e69a518a11ecfc"},
-    {file = "datafusion-34.0.0.tar.gz", hash = "sha256:f47144c143072bd32640869c6a395e2b9351ff9cd7539391eaae13636058cb9e"},
+    {file = "datafusion-35.0.0-cp38-abi3-macosx_10_12_x86_64.whl", hash = "sha256:8e460dff1f6588632273629145d53d77878b2969b6fbeccec034a9404bed8dbe"},
+    {file = "datafusion-35.0.0-cp38-abi3-macosx_11_0_arm64.whl", hash = "sha256:e817d61c82d93fc0f64334b86045e1fcdae39f9a84b2afb82c5b66d7f6b9b85d"},
+    {file = "datafusion-35.0.0-cp38-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:ca943440ad61ac3f9cd894e5bd2266986809132076f951687ea40642b1bd1103"},
+    {file = "datafusion-35.0.0-cp38-abi3-manylinux_2_28_aarch64.whl", hash = "sha256:fb299b7550b5466f84463c3715605153c356f78fdd0c67ea630feb67631789d2"},
+    {file = "datafusion-35.0.0-cp38-abi3-win_amd64.whl", hash = "sha256:9c66e2b258b705adbfd611b492698eb52b42f2bd123ff838e5cbe7353e54bd3d"},
+    {file = "datafusion-35.0.0.tar.gz", hash = "sha256:467f8d8f963256a321031f405cc553c8aa27e3cab6402389eb10ddb2db55a40d"},
 ]
 
 [package.dependencies]
@@ -5404,6 +5404,7 @@ files = [
     {file = "PyYAML-6.0.1-cp311-cp311-win_amd64.whl", hash = "sha256:bf07ee2fef7014951eeb99f56f39c9bb4af143d8aa3c21b1677805985307da34"},
     {file = "PyYAML-6.0.1-cp312-cp312-macosx_10_9_x86_64.whl", hash = "sha256:855fb52b0dc35af121542a76b9a84f8d1cd886ea97c84703eaa6d88e37a2ad28"},
     {file = "PyYAML-6.0.1-cp312-cp312-macosx_11_0_arm64.whl", hash = "sha256:40df9b996c2b73138957fe23a16a4f0ba614f4c0efce1e9406a184b6d07fa3a9"},
+    {file = "PyYAML-6.0.1-cp312-cp312-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:a08c6f0fe150303c1c6b71ebcd7213c2858041a7e01975da3a99aed1e7a378ef"},
     {file = "PyYAML-6.0.1-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:6c22bec3fbe2524cde73d7ada88f6566758a8f7227bfbf93a408a9d86bcc12a0"},
     {file = "PyYAML-6.0.1-cp312-cp312-musllinux_1_1_x86_64.whl", hash = "sha256:8d4e9c88387b0f5c7d5f281e55304de64cf7f9c0021a3525bd3b1c542da3b0e4"},
     {file = "PyYAML-6.0.1-cp312-cp312-win32.whl", hash = "sha256:d483d2cdf104e7c9fa60c544d92981f12ad66a457afae824d146093b8c294c54"},
@@ -7444,4 +7445,4 @@ visualization = ["graphviz"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.9"
-content-hash = "2e7df88bb8c9f768d1e9122c920dc43230eac690db413b121171e7ad0508bf37"
+content-hash = "3e9fad9badab8b70856437d3bd009797e7910bb8bfd358960f072593249a2af6"
