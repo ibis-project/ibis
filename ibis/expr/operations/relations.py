@@ -127,6 +127,8 @@ class Subquery(Value):
 
 @public
 class ScalarSubquery(Subquery):
+    shape = ds.scalar
+
     def __init__(self, rel):
         from ibis.expr.operations import Reduction
 

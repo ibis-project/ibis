@@ -180,6 +180,17 @@ def test_select_turns_value_with_multiple_parents_into_subquery():
     assert t1.op() == expected
 
 
+def test_value_to_array_creates_subquery():
+    rel = t.int_col.sum().as_table()
+    with pytest.warns(FutureWarning, match="implicit"):
+        expr = rel.to_array()
+
+    op = expr.op()
+    assert op.shape.is_scalar()
+    assert op.dtype.is_int64()
+    assert isinstance(op, ops.ScalarSubquery)
+
+
 def test_mutate():
     proj = t.select(t, other=t.int_col + 1)
     expected = Project(
