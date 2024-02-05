@@ -85,7 +85,7 @@ class Expr(Immutable, Coercible):
             except TranslationError as e:
                 lines = [
                     "Translation to backend failed",
-                    f"Error message: {repr(e)}",
+                    f"Error message: {e!r}",
                     "Expression repr follows:",
                     self._repr(),
                 ]
