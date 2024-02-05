@@ -117,7 +117,7 @@ boroughs
 ```
 
 ```{python}
-boroughs.filter(_.geom.intersects(broad_station.geom))
+boroughs.filter(boroughs.geom.intersects(broad_station.select(broad_station.geom).to_array()))
 ```
 
 ### `d_within` (ST_DWithin)
@@ -133,9 +133,14 @@ streets
 Using the deferred API, we can check which streets are within `d=10` meters of distance.
 
 ```{python}
-sts_near_broad = streets.filter(_.geom.d_within(broad_station.geom, 10))
+sts_near_broad = streets.filter(_.geom.d_within(broad_station.select(_.geom).to_array(), 10))
 sts_near_broad
 ```
+
+::: {.callout-note}
+In the previous query, `streets` and `broad_station` are different tables. We use [`to_array()`](../../reference/expression-tables.qmd#ibis.expr.types.relations.Table.to_array) to generate a
+scalar subquery from a table with a single column (whose shape is scalar).
+:::
 
 To visualize the findings, we will convert the tables to GeoPandas DataFrames.
 
@@ -196,7 +201,7 @@ To find if there were any homicides in that area, we can find where the polygon 
 200 meters buffer to our "Broad St" station point intersects with the geometry column in our homicides table.
 
 ```{python}
-h_near_broad = homicides.filter(_.geom.intersects(broad_station.geom.buffer(200)))
+h_near_broad = homicides.filter(_.geom.intersects(broad_station.select(_.geom.buffer(200)).to_array()))
 h_near_broad
 ```
 
@@ -205,7 +210,7 @@ data we can't tell the street near which it happened. However, we can check if t
 distance of a street.
 
 ```{python}
-h_street = streets.filter(_.geom.d_within(h_near_broad.geom, 2))
+h_street = streets.filter(_.geom.d_within(h_near_broad.select(_.geom).to_array(), 2))
 h_street
 ```
 
