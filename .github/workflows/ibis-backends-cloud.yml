@@ -99,6 +99,7 @@ jobs:
 
       - name: upload code coverage
         if: success()
+        continue-on-error: true
         uses: codecov/codecov-action@v4
         with:
           flags: backend,${{ matrix.backend.name }},${{ runner.os }},python-${{ steps.install_python.outputs.python-version }}

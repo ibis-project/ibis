@@ -92,6 +92,7 @@ jobs:
 
       - name: upload code coverage
         if: success()
+        continue-on-error: true
         uses: codecov/codecov-action@v4
         with:
           flags: core,${{ runner.os }},python-${{ steps.install_python.outputs.python-version }}
@@ -177,6 +178,7 @@ jobs:
 
       - name: upload code coverage
         if: success()
+        continue-on-error: true
         uses: codecov/codecov-action@v4
         with:
           flags: core,doctests,${{ runner.os }},python-${{ steps.install_python.outputs.python-version }}
