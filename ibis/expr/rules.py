@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import operator
 from itertools import product, starmap
 from typing import Optional
 
@@ -108,39 +107,6 @@ def _promote_integral_binop(exprs, op):
     return dt.highest_precedence(dtypes)
 
 
-def _promote_decimal_binop(args, op):
-    if len(args) != 2:
-        return highest_precedence_dtype(args)
-
-    # TODO: Add support for setting the maximum precision and maximum scale
-    left = args[0].dtype
-    right = args[1].dtype
-
-    max_prec = 31 if left.precision <= 31 and right.precision <= 31 else 63
-    max_scale = 31
-
-    if op is operator.mul:
-        return dt.Decimal(
-            min(max_prec, left.precision + right.precision),
-            min(max_scale, left.scale + right.scale),
-        )
-    elif op is operator.add or op is operator.sub:
-        return dt.Decimal(
-            min(
-                max_prec,
-                max(
-                    left.precision - left.scale,
-                    right.precision - right.scale,
-                )
-                + max(left.scale, right.scale)
-                + 1,
-            ),
-            max(left.scale, right.scale),
-        )
-    else:
-        return highest_precedence_dtype(args)
-
-
 @public
 def numeric_like(name, op):
     @attribute
@@ -149,8 +115,6 @@ def numeric_like(name, op):
         dtypes = [arg.dtype for arg in args]
         if util.all_of(dtypes, dt.Integer):
             result = _promote_integral_binop(args, op)
-        elif util.all_of(dtypes, dt.Decimal):
-            result = _promote_decimal_binop(args, op)
         else:
             result = highest_precedence_dtype(args)
 
