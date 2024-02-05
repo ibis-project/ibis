@@ -23,7 +23,7 @@ import ibis.expr.schema as sch
 from ibis import util
 from ibis.common.deferred import Deferred
 from ibis.expr.types.core import Expr, _FixedTextJupyterMixin
-from ibis.expr.types.generic import TableExpr, ValueExpr, literal
+from ibis.expr.types.generic import ValueExpr, literal
 from ibis.selectors import Selector
 
 if TYPE_CHECKING:
@@ -93,13 +93,13 @@ def _regular_join_method(
 
 # TODO(kszucs): should use (table, *args, **kwargs) instead to avoid interpreting
 # nested inputs
-def bind(table: TableExpr, value: Any, prefer_column=True) -> Iterator[ir.Value]:
+def bind(table: Table, value: Any, prefer_column=True) -> Iterator[ir.Value]:
     """Bind a value to a table expression."""
     if prefer_column and type(value) in (str, int):
         yield table._get_column(value)
     elif isinstance(value, ValueExpr):
         yield value
-    elif isinstance(value, TableExpr):
+    elif isinstance(value, Table):
         for name in value.columns:
             yield value._get_column(name)
     elif isinstance(value, Deferred):
@@ -4372,4 +4372,4 @@ class CachedTable(Table):
         return current_backend._release_cached(self)
 
 
-public(TableExpr=Table, CachedTableExpr=CachedTable)
+public(Table=Table, CachedTable=CachedTable)
