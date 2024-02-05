@@ -203,7 +203,7 @@ def evaluate_annotations(
     else:
         localns = dict(Self=f"{module_name}.{class_name}")
     return {
-        k: eval(v, globalns, localns) if isinstance(v, str) else v  # noqa: PGH001
+        k: eval(v, globalns, localns) if isinstance(v, str) else v
         for k, v in annots.items()
     }
 

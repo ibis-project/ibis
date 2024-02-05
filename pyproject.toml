@@ -401,6 +401,11 @@ builtin = "clear,rare,names"
 
 [tool.ruff]
 line-length = 88
+respect-gitignore = true
+exclude = [".direnv", "result-*", "*_py310.py", "decompiled.py"]
+target-version = "py39"
+
+[tool.ruff.lint]
 select = [
   "B",   # flake8-bugbear
   "BLE", # flake8-blind-except
@@ -430,7 +435,6 @@ select = [
   "W",   # pycodestyle
   "YTT", # flake8-2020
 ]
-respect-gitignore = true
 ignore = [
   "B028",    # required stacklevel argument to warn
   "B904",    # raise from e or raise from None in exception handlers
@@ -477,8 +481,6 @@ ignore = [
   "SIM300",  # yoda conditions
   "UP007",   # Optional[str] -> str | None
 ]
-exclude = ["*_py310.py"]
-target-version = "py39"
 # none of these codes will be automatically fixed by ruff
 unfixable = [
   "T201",   # print statements
@@ -487,25 +489,23 @@ unfixable = [
   "F841",   # unused variables
 ]
 
-[tool.ruff.pyupgrade]
+[tool.ruff.lint.pyupgrade]
 keep-runtime-typing = true
 
-[tool.ruff.isort]
+[tool.ruff.lint.isort]
 required-imports = ["from __future__ import annotations"]
 
-[tool.ruff.per-file-ignores]
+[tool.ruff.lint.per-file-ignores]
 "*test*.py" = [
   "D", # ignore all docstring lints in tests
 ]
 "{docs,ci}/**/*.py" = ["INP001"]
-"*/decompiled.py" = ["ALL"]
 "{ci/release/verify_release,docs/**/*_impl}.py" = [
   "T201",
 ] # prints output using `print`
 "docs/**/{datafusion,polars}_*.py" = ["T201"] # prints output using `print`
 
 [tool.ruff.format]
-exclude = [".direnv", "result-*", "_py310.py", "decompiled.py"]
 docstring-code-format = true
 docstring-code-line-length = 88
 

@@ -1410,7 +1410,7 @@ class SomeChunksOf(Slotted, Pattern):
         if result is NoMatch:
             return NoMatch
         else:
-            return sum(result, [])
+            return [el for lst in result for el in lst]
 
 
 def _maybe_unwrap_capture(obj):
