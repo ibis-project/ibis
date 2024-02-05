@@ -4,8 +4,6 @@ on:
   push:
     branches:
       - main
-      - "*.x.x"
-      - "the-epic-split"
   merge_group:
 
 # only a single docs job that pushes to `main` can run at any given time
