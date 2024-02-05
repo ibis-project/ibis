@@ -1,0 +1,96 @@
+---
+title: Read parquet files with Ibis
+---
+
+In this example, we will use Ibis's DuckDB backend to analyze data from
+a remote parquet source using `ibis.read_parquet`. `ibis.read_parquet` can also
+read local parquet files, and there are other `ibis.read_*` functions that
+conveniently return a table expression from a file. One such function is
+`ibis.read_csv`, which reads from local and remote CSV.
+
+We will be reading from the [**Global Biodiversity Information Facility (GBIF)
+Species Occurrences**](https://registry.opendata.aws/gbif/) dataset. It is
+hosted on S3 at `s3://gbif-open-data-us-east-1/occurrence/`
+
+## Reading One Partition
+
+We can read a single partition by specifying its path.
+
+We do this by calling
+[`read_parquet`](https://ibis-project.org/api/expressions/top_level/#ibis.read_parquet)
+on the partition we care about.
+
+So to read the first partition in this dataset, we'll call `read_parquet` on
+`00000` in that path:
+
+```{python}
+import ibis
+
+t = ibis.read_parquet(
+    "s3://gbif-open-data-us-east-1/occurrence/2023-04-01/occurrence.parquet/000000"
+)
+t
+```
+
+Note that we're calling `read_parquet` and receiving a table expression without
+establishing a connection first. Ibis spins up a DuckDB connection (or
+whichever default backend you have) when you call `ibis.read_parquet` (or even
+`ibis.read_csv`).
+
+Since our result, `t`, is a table expression, we can now run queries against
+the file using Ibis expressions. For example, we can select columns, filter the
+file, and then view the first five rows of the result:
+
+```{python}
+cols = [
+    "gbifid",
+    "datasetkey",
+    "occurrenceid",
+    "kingdom",
+    "phylum",
+    "class",
+    "order",
+    "family",
+    "genus",
+    "species",
+    "day",
+    "month",
+    "year",
+]
+
+t.select(cols).filter(t["family"].isin(["Corvidae"])).limit(5).to_pandas()
+```
+
+We can count the rows in the table (partition):
+
+```{python}
+t.count().to_pandas()
+```
+
+## Reading all partitions: filter, aggregate, export
+
+We can use `read_parquet` to read an entire parquet file by globbing all
+partitions:
+
+```{python}
+t = ibis.read_parquet(
+    "s3://gbif-open-data-us-east-1/occurrence/2023-04-01/occurrence.parquet/*"
+)
+```
+
+Since the function returns a table expression, we can perform valid selections,
+filters, aggregations, and exports just as we could with any other table
+expression:
+
+```{python}
+df = (
+    t.select(["gbifid", "family", "species"])
+    .filter(t["family"].isin(["Corvidae"]))
+    # Here we limit by 10,000 to fetch a quick batch of results
+    .limit(10000)
+    .group_by("species")
+    .count()
+    .to_pandas()
+)
+df
+```
