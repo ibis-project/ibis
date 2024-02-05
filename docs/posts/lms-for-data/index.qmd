@@ -12,7 +12,7 @@ categories:
 ## Overview
 
 This post will give an overview of how (large) language models (LMs) fit into
-data engineering, analyst, and science workflows.
+data engineering, data analyst, and data science workflows.
 
 ## Use cases
 
@@ -32,7 +32,7 @@ the capabilities of language models for data using the default DuckDB backend.
 
 :::{.callout-tip}
 We'll use a cloud service provider (OpenAI) to demonstrate these capabilities.
-In a follow-up post, we'll explore using local "open source" language models to
+In a follow-up post, we'll explore using local open source language models to
 achieve the same results.
 :::
 
@@ -159,7 +159,7 @@ penguins
 
 1. Load the penguins dataset from Ibis examples
 
-And take a sample of five rows to reduce our AI service costs:
+And take a sample of six rows to reduce our AI service costs:
 
 ```{python}
 t1 = penguins.filter(penguins.species == "Adelie").sample(fraction=0.1).limit(2)  # <1>
@@ -392,8 +392,7 @@ they're fairly good at SQL.
 
 ### Three approaches
 
-We can think of three approaches to writing analytical code with language
-models:
+We can think of three approaches to analytical code with language models:
 
 1. Use LMs in an analytic subroutine
 2. Use LMs to write an analytic subroutine
@@ -582,14 +581,15 @@ r
 
 ## Issues with language models today
 
-The biggest model with language models today is the cost. Similarly, the time
-for inferencing these models is the second biggest concern. Generating millions
-of synthetic data points with state-of-the-art LLMs is prohibitively expensive
-and slow.
+The biggest issue with language models today is the cost, followed by the time
+it takes to generate responses. Generating a million rows of synthetic data
+points with state-of-the-art LLMs is prohibitively expensive and slow. If you're
+using language models in your data workflows, you'll need to be mindful of the
+cost and bottleneck on speed of data processing likely to be introduced.
 
 Smaller open source language models can reduce this cost to practically zero,
-but at the expensive of quality. And generating synthetic data is likely even
-slower.
+but at the expensive of quality. Generating responses may also be slower
+depending on your hardware setup and other factors.
 
 ## Looking forward
 
@@ -607,7 +607,7 @@ Keep an eye out for our own gimmicky data assistant soon...
 
 ## Conclusion
 
-To summarize:
+To summarize this blog:
 
 ```{python}
 from rich import print  # <1>
@@ -673,13 +673,12 @@ if not os.path.exists("thumbnail.png"):  # <2>
 5. Write the data's content to a file
 
 ```{python}
-import matplotlib.pyplot as plt  # <1>
+from IPython.display import Image  # <1>
 
-img = plt.imread("thumbnail.png")  # <2>
-plt.imshow(img)  # <2>
+Image(filename="./thumbnail.png")  # <2>
 ```
 
-1. Import matplotlib to display the thumbnail
+1. Import IPython functionality to display the thumbnail
 2. Display the thumbnail
 
 ## Next steps
@@ -688,4 +687,4 @@ Try this out yourself! All you need is an OpenAI account and the code above.
 
 It's never been a better time to get involved with Ibis. [Join us on Zulip and
 introduce yourself!](https://ibis-project.zulipchat.com/) More Ibis + language
-model content coming soon...
+model content coming soon.
