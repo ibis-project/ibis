@@ -374,7 +374,10 @@ t
 
 ### Data labeling
 
-We can label the data by classifying penguins based on their attributes. While this is a contrived example, this could be useful for classifying product feedback or customer support tickets for data organization in any backend Ibis supports:
+We can label the data by classifying penguins based on their attributes. While
+this is a contrived example, this could be useful for classifying product
+feedback or customer support tickets for data organization in any backend Ibis
+supports:
 
 ```{python}
 labels = ["small", "medium", "large"]  # <1>
