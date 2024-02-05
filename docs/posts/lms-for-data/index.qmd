@@ -545,7 +545,7 @@ table_names = ["imdb_title_basics", "imdb_title_ratings"]  # <2>
 table_schemas = [
     str(imdb_title_basics.schema()),
     str(imdb_title_ratings.schema()),
-] 
+]
 table_previews = [
     str(imdb_title_basics.limit(5)),
     str(imdb_title_ratings.limit(5)),
