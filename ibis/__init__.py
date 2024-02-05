@@ -1,7 +1,7 @@
 """Initialize Ibis module."""
 from __future__ import annotations
 
-__version__ = "7.2.0"
+__version__ = "8.0.0"
 
 from ibis import examples, util
 from ibis.backends.base import BaseBackend
