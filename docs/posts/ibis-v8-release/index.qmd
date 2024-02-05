@@ -9,23 +9,28 @@ categories:
 
 ## Overview
 
-Ibis v8 marks the first release of data streaming backends in Ibis! We're
-excited to begin bridging the gap between batch and streaming systems, starting
-with [Apache Flink](https://flink.apache.org/) and
-[RisingWave](https://risingwave.com) backends in this release. We've also added
-a new batch backend with [Exasol](https://exasol.com), bringing the total number
-of backends Ibis supports to 20.
+Ibis v8 marks the first release of stream processing backends in Ibis! This
+enhances [the composable data ecosystem
+vision](../../concepts/composable-ecosystem.qmd) by allowing users to implement
+data transformation logic in a standard Python dataframe API and execute it
+against either batch or streaming systems.
+
+This release includes [Apache Flink](https://flink.apache.org/), a streaming
+backend, and [RisingWave](https://risingwave.com), a streaming database backend.
+We've also added a new batch backend with [Exasol](https://exasol.com), bringing
+the total number of backends Ibis supports to 20.
 
 [Most geospatial operations are now supported in the DuckDB
 backend](#geospatial-operations-in-duckdb), making Ibis a great local option for
 geospatial analytics.
 
-### What is data streaming?
+### What is stream processing?
 
-Data streaming is a method of processing data continuously as it arrives rather
-than in batches at points in time. This is useful for applications that require
-low latency and is increasingly common in modern data
-applications.
+Stream processing systems are designed to handle high-throughput, low-latency
+data processing with time semantics. They are used to process data in real-time
+with minimum latency and are often used in applications such as fraud detection,
+real-time analytics, and IoT. Systems using stream processing are increasingly
+common in modern data applications.
 
 Apache Flink is the most popular open-source stream processing framework, with
 numerous cloud options. RisingWave is an open-source Postgres-compatible
