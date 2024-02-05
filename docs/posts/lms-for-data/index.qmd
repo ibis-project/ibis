@@ -57,6 +57,12 @@ ibis.options.interactive = True  # <4>
 ibis.options.repr.interactive.max_rows = 6  # <5>
 ```
 
+```{python}
+# | code-fold: true
+# | echo: false
+_ = ibis.get_backend().raw_sql("set enable_progress_bar = false")
+```
+
 1. Import Ibis, the data engineering toolkit
 2. Import Marvin, the AI engineering toolkit
 3. Import Pydantic, used to define data models for Marvin
@@ -156,7 +162,6 @@ penguins
 And take a sample of five rows to reduce our AI service costs:
 
 ```{python}
-# t = penguins.sample(fraction=0.025).limit(5) # <1>
 t1 = penguins.filter(penguins.species == "Adelie").sample(fraction=0.1).limit(2)  # <1>
 t2 = penguins.filter(penguins.species == "Gentoo").sample(fraction=0.1).limit(2)  # <1>
 t3 = (  # <1>
