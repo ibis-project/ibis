@@ -2,6 +2,7 @@
 title: "Language models for data"
 author: "Cody Peterson"
 date: "2024-02-05"
+image: thumbnail.png
 categories:
     - blog
     - llms
@@ -19,7 +20,7 @@ There are three main use cases for language models for data practitioners:
 
 1. Synthetic data generation
 2. Natural language processing
-3. Writing code
+3. Writing analytic code
 
 We'll describe each and then demonstrate them with code.
 
@@ -53,12 +54,14 @@ import marvin  # <2>
 from pydantic import BaseModel, Field  # <3>
 
 ibis.options.interactive = True  # <4>
+ibis.options.repr.interactive.max_rows = 6  # <5>
 ```
 
 1. Import Ibis, the data engineering toolkit
 2. Import Marvin, the AI engineering toolkit
 3. Import Pydantic, used to define data models for Marvin
 4. Set Ibis to interactive mode to display the results of our queries
+5. Set the maximum number of rows to display in interactive mode
 
 ## Synthetic data generation
 
@@ -85,19 +88,24 @@ synthetic data.
 We can generate synthetic weather stations in a few lines of code:
 
 ```{python}
-class WeatherStation(BaseModel): # <1>
-    station: str = Field( # <1>
-        ..., description="The weather station name", example="Sandy Silicon" # <1>
-    ) # <1>
-    temperature: float = Field( # <1>
-        ..., description="The average temperature in Fahrenheit", example=72.5 # <1>
-    ) # <1>
+class WeatherStation(BaseModel):  # <1>
+    station: str = Field(
+        ...,
+        description="The weather station name",
+        example="Sandy Silicon",
+    )  # <1>
+    temperature: float = Field(
+        ...,
+        description="The average temperature in Fahrenheit",
+        example=72.5,
+    )  # <1>
 
-stations = marvin.generate( # <2>
-    target=WeatherStation, # <2>
-    instructions="Generate fictitious but plausible-sounding weather stations with names that excite data nerds", # <2>
-    n=3, # <2>
-) # <2>
+
+stations = marvin.generate(  # <2>
+    target=WeatherStation,  # <2>
+    instructions="Generate fictitious but plausible-sounding weather stations with names that excite data nerds",  # <2>
+    n=6,  # <2>
+)  # <2>
 stations
 ```
 
@@ -118,14 +126,16 @@ s
 
 1. Convert the generated data to an Ibis table
 
-While we've only generated three weather stations, you can repeat this process
+While we've only generated six weather stations, you can repeat this process
 until you get as many as you'd like! You can then use Ibis to generate a billion
 rows of weather data for these stations as in the one billion row challenge.
 
 :::{.callout-warning}
-Running this with GPT-4-turbo to generate 1000 weather stations costs about
-$4 USD. This is rather expensive for synthetic data! You can mitigate this by
-using a cheaper model (e.g. GPT-3.5-turbo) but may get worse results.
+Running this with GPT-4-turbo to generate 1000 weather stations (with `n=10` and
+feeding in all previous attempts to the prompt to attempt avoiding duplicates)
+costs about $4 USD and resulted in about 150 duplicates. This is rather
+expensive for synthetic data! You can mitigate this by using a cheaper model
+(e.g. GPT-3.5-turbo) but may get worse results.
 
 Alternatively, you can generate the data for free on your laptop with a small
 open source language model! Look out for a future post exploring this option.
@@ -137,7 +147,7 @@ We can augment existing data with synthetic data. First, let's load the penguins
 dataset:
 
 ```{python}
-penguins = ibis.examples.penguins.fetch() # <1>
+penguins = ibis.examples.penguins.fetch()  # <1>
 penguins
 ```
 
@@ -146,24 +156,33 @@ penguins
 And take a sample of five rows to reduce our AI service costs:
 
 ```{python}
-t = penguins.sample(fraction=0.025).limit(5) # <1>
+# t = penguins.sample(fraction=0.025).limit(5) # <1>
+t1 = penguins.filter(penguins.species == "Adelie").sample(fraction=0.1).limit(2)  # <1>
+t2 = penguins.filter(penguins.species == "Gentoo").sample(fraction=0.1).limit(2)  # <1>
+t3 = (  # <1>
+    penguins.filter(penguins.species == "Chinstrap")  # <1>
+    .sample(fraction=0.1)  # <1>
+    .limit(2)  # <1>
+)  # <1>
+t = t1.union(t2).union(t3)  # <2>
 t
 ```
 
-1. Sample a fraction of the data, then take the first five rows
+1. Sample two rows from each species
+2. Union the samples together
 
 Now we define a UDF to generate a poem to describe each penguin:
 
 ```{python}
-@ibis.udf.scalar.python # <1>
-def penguin_poem( # <1>
-    species: str, # <1>
-    island: str, # <1>
-    bill_length_mm: float, # <1>
-    bill_depth_mm: float, # <1>
-    flipper_length_mm: float, # <1>
-    body_mass_g: float, # <1>
-) -> str: # <1>
+@ibis.udf.scalar.python  # <1>
+def penguin_poem(  # <1>
+    species: str,  # <1>
+    island: str,  # <1>
+    bill_length_mm: float,  # <1>
+    bill_depth_mm: float,  # <1>
+    flipper_length_mm: float,  # <1>
+    body_mass_g: float,  # <1>
+) -> str:  # <1>
     # <2>
     instructions = f"""Provide a whimsical poem that rhymes for a penguin.
 
@@ -176,14 +195,14 @@ def penguin_poem( # <1>
         body mass of {body_mass_g} g.
 
     You must reference the penguin's size in addition to its species and island.
-    """ # <2>
+    """  # <2>
 
-    poem = marvin.generate( # <3>
-        n=1, # <3>
-        instructions=instructions, # <3>
-    ) # <3>
+    poem = marvin.generate(  # <3>
+        n=1,  # <3>
+        instructions=instructions,  # <3>
+    )  # <3>
 
-    return poem[0] # <4>
+    return poem[0]  # <4>
 ```
 
 1. Define a scalar Python UDF to generate a poem from penguin data
@@ -195,18 +214,18 @@ And apply that UDF to our penguins table:
 
 ```{python}
 t = (
-    t.mutate( # <1>
-        poem=penguin_poem( # <1>
-            t.species, # <1>
-            t.island, # <1>
-            t.bill_length_mm, # <1>
-            t.bill_depth_mm, # <1>
-            t.flipper_length_mm, # <1>
-            t.body_mass_g, # <1>
-        ) # <1>
+    t.mutate(  # <1>
+        poem=penguin_poem(  # <1>
+            t.species,  # <1>
+            t.island,  # <1>
+            t.bill_length_mm,  # <1>
+            t.bill_depth_mm,  # <1>
+            t.flipper_length_mm,  # <1>
+            t.body_mass_g,  # <1>
+        )  # <1>
     )
-    .relocate("species", "island", "poem") # <2>
-    .cache() # <3>
+    .relocate("species", "island", "poem")  # <2>
+    .cache()  # <3>
 )
 t
 ```
@@ -259,15 +278,15 @@ understanding of NLP or ML in general, can accomplish.
 We can use a language model to perform sentiment analysis on the penguin poems:
 
 ```{python}
-@marvin.fn # <1>
-def _sentiment_analysis(text: str) -> float: # <1>
+@marvin.fn  # <1>
+def _sentiment_analysis(text: str) -> float:  # <1>
     """Returns a sentiment score for `text`
-    between -1 (negative) and 1 (positive)."""
-# <1>
+    between -1 (negative) and 1 (positive)."""  # <1>
 
-@ibis.udf.scalar.python # <2>
-def sentiment_analysis(text: str) -> float: # <2>
-    return _sentiment_analysis(text) # <3>
+
+@ibis.udf.scalar.python  # <2>
+def sentiment_analysis(text: str) -> float:  # <2>
+    return _sentiment_analysis(text)  # <3>
 ```
 
 1. Define a Marvin function to perform sentiment analysis
@@ -278,9 +297,9 @@ And apply that UDF to our penguins table:
 
 ```{python}
 t = (
-    t.mutate(sentiment=sentiment_analysis(t.poem)) # <1>
-    .relocate(t.columns[:3], "sentiment") # <2>
-    .cache() # <3>
+    t.mutate(sentiment=sentiment_analysis(t.poem))  # <1>
+    .relocate(t.columns[:3], "sentiment")  # <2>
+    .cache()  # <3>
 )
 t
 ```
@@ -295,14 +314,14 @@ While not exactly named entity recognition, we can extract arbitrary entities
 from text. In this case, we'll extract a list of words that rhyme from the poem:
 
 ```{python}
-@ibis.udf.scalar.python # <1>
-def extract_rhyming_words(text: str) -> list[str]: # <1>
-    words = marvin.extract( # <2>
-        text, # <2>
-        instructions="Extract the primary rhyming words from the text", # <2>
-    ) # <2>
+@ibis.udf.scalar.python  # <1>
+def extract_rhyming_words(text: str) -> list[str]:  # <1>
+    words = marvin.extract(  # <2>
+        text,  # <2>
+        instructions="Extract the primary rhyming words from the text",  # <2>
+    )  # <2>
 
-    return words # <3>
+    return words  # <3>
 ```
 
 1. Define a scalar Python UDF to extract rhyming words from a poem
@@ -313,9 +332,9 @@ And apply that UDF to our penguins table:
 
 ```{python}
 t = (
-    t.mutate(rhyming_words=extract_rhyming_words(t.poem)) # <1>
-    .relocate(t.columns[:4], "rhyming_words") # <2>
-    .cache() # <3>
+    t.mutate(rhyming_words=extract_rhyming_words(t.poem))  # <1>
+    .relocate(t.columns[:4], "rhyming_words")  # <2>
+    .cache()  # <3>
 )
 t
 ```
@@ -330,14 +349,14 @@ We can translate the penguin poems into Spanish or any language the language
 model sufficiently knows:
 
 ```{python}
-@marvin.fn # <1>
-def _translate_text(text: str, target_language: str = "spanish") -> str: # <1>
-    """Translate `text` to `target_language`."""
-# <1>
+@marvin.fn  # <1>
+def _translate_text(text: str, target_language: str = "spanish") -> str:  # <1>
+    """Translate `text` to `target_language`."""  # <1>
 
-@ibis.udf.scalar.python # <2>
-def translate_text(text: str, target_language: str = "spanish") -> str: # <2>
-    return _translate_text(text, target_language) # <3>
+
+@ibis.udf.scalar.python  # <2>
+def translate_text(text: str, target_language: str = "spanish") -> str:  # <2>
+    return _translate_text(text, target_language)  # <3>
 ```
 
 1. Define a Marvin function to translate text
@@ -359,52 +378,121 @@ t
 2. Rearrange the columns we care about to the front
 3. Cache the table to avoid re-running the UDF
 
-## Writing code
+## Writing analytical code
 
 Finally, language models can be used to write code. This is more useful with
 systems around them to execute code, feed back error messages, make adjustments,
 and so on. There are numerous pitfalls with language models writing code, but
 they're fairly good at SQL.
 
+### Three approaches
+
+We can think of three approaches to writing analytical code with language
+models:
+
+1. Use LMs in an analytic subroutine
+2. Use LMs to write an analytic subroutine
+3. Use LMs to write analytic code
+
+We've already seen numerous examples of the first approach above. Let's explore
+the second and third approaches.
+
+### Writing an analytic subroutine
+
+We'll define a function that writes an Ibis UDF, similar to what we've used
+above:
+
+```{python}
+@marvin.fn
+def _generate_python_function(text: str) -> str:
+    """Generate a simple, typed, correct Python function from text."""
+
+
+def create_udf_from_text(text: str) -> str:
+    """Create a UDF from text."""
+    return f"""
+import ibis
+
+@ibis.udf.scalar.python
+{_generate_python_function(text)}
+""".strip()
+```
+
+Now we'll create a UDF from text to count the number of vowels in a string:
+
+```{python}
+udf = create_udf_from_text(
+    "a function named count_vowels that given an input string, returns an int w/ the number of vowels (y_included as a boolean option defaulted to False). NO DOCSTRING, we don't document our code in this household"
+)
+print(udf)
+```
+
+And execute that so the UDF is available:
+
+```{python}
+exec(udf)
+```
+
+Now we can augment our table with an analytic subroutine written by a language
+model:
+
+```{python}
+t = (
+    t.mutate(island_vowel_count=count_vowels(t.island),
+                species_vowel_count=count_vowels(t.species))
+    .relocate("island", "island_vowel_count", "species", "species_vowel_count")
+)
+t
+```
+
+:::{.callout-note}
+You could use a LM to write a subroutine that uses a LM! This is an excercise
+left to the reader.
+:::
+
+### Writing analytic code
+
 Let's define a function that outputs SQL:
 
 ```{python}
-@marvin.fn # <1>
+@marvin.fn  # <1>
 def _text_to_sql(
     text: str,
     table_names: list[str],
     table_schemas: list[str],
     table_previews: list[str],
 ) -> str:
-    """Writes a SQL SELECT statement for the `text` given the provided `table_names`, `table_schemas`, and `table_previews`."""
-# <1>
+    """Writes a SQL SELECT statement for the `text` given the provided `table_names`, `table_schemas`, and `table_previews`."""  # <1>
 
-def text_to_sql( # <2>
-    text: str, # <2>
-    table_names: list[str], # <2>
-    table_schemas: list[str], # <2>
-    table_previews: list[str], # <2>
-) -> str: # <2>
-    sql = _text_to_sql(text, table_names, table_schemas, table_previews) # <3>
-    return sql.strip(";") # <4>
+
+def text_to_sql(  # <2>
+    text: str,  # <2>
+    table_names: list[str],  # <2>
+    table_schemas: list[str],  # <2>
+    table_previews: list[str],  # <2>
+) -> str:  # <2>
+    sql = _text_to_sql(text, table_names, table_schemas, table_previews)  # <3>
+    return sql.strip().strip(";")  # <4>
 ```
 
 1. Define a Marvin function to write SQL from text
 2. Define a Python function to apply the Marvin function to a string
 3. Generate the SQL string
-4. Strip the trailing semicolon that is sometimes generated, as it causes issues
- with Ibis
+4. Strip the trailing whitespace and semicolon that is sometimes generated, as
+ it causes issues with Ibis
 
 We can try that out on our penguins table:
 
 ```{python}
-text = "the count of penguins by species, from highest to lowest, per each island" # <1>
+text = (  # <1>
+    "the count of penguins by species, from highest to lowest, per each island"  # <1>
+)
 
-table_names = ["penguins"] # <2>
-table_schemas = [str(penguins.schema())] # <2>
-table_previews = [str(penguins.limit(5))] # <2>
+table_names = ["penguins"]  # <2>
+table_schemas = [str(penguins.schema())]  # <2>
+table_previews = [str(penguins.limit(5))]  # <2>
 
-sql = text_to_sql(text, table_names, table_schemas, table_previews) # <3>
+sql = text_to_sql(text, table_names, table_schemas, table_previews)  # <3>
 print(sql)
 ```
 
@@ -431,33 +519,39 @@ well-organized knowledge base to be more effective. We'll follow up on this in
 future posts.
 :::
 
-### A more complex example
+#### A more complex example
 
 Let's see how this works on a query that requires joining two tables. We'll load
 in some IMDB data:
 
 ```{python}
-imdb_title_basics = ibis.examples.imdb_title_basics.fetch() # <1>
+imdb_title_basics = ibis.examples.imdb_title_basics.fetch()  # <1>
 imdb_title_basics
 ```
 
 1. Load the IMDB title basics dataset from Ibis examples
 
 ```{python}
-imdb_title_ratings = ibis.examples.imdb_title_ratings.fetch() # <1>
+imdb_title_ratings = ibis.examples.imdb_title_ratings.fetch()  # <1>
 imdb_title_ratings
 ```
 
 1. Load the IMDB title ratings dataset from Ibis examples
 
 ```{python}
-text = "the highest rated movies w/ over 100k ratings -- movies only" # <1>
+text = "the highest rated movies w/ over 100k ratings -- movies only"  # <1>
 
-table_names = ["imdb_title_basics", "imdb_title_ratings"] # <2>
-table_schemas = [str(imdb_title_basics.schema()), str(imdb_title_ratings.schema())] # <2>
-table_previews = [str(imdb_title_basics.limit(5)), str(imdb_title_ratings.limit(5))] # <2>
+table_names = ["imdb_title_basics", "imdb_title_ratings"]  # <2>
+table_schemas = [
+    str(imdb_title_basics.schema()),
+    str(imdb_title_ratings.schema()),
+] 
+table_previews = [
+    str(imdb_title_basics.limit(5)),
+    str(imdb_title_ratings.limit(5)),
+]  # <2>
 
-sql = text_to_sql(text, table_names, table_schemas, table_previews) # <3>
+sql = text_to_sql(text, table_names, table_schemas, table_previews)  # <3>
 print(sql)
 ```
 
@@ -497,9 +591,75 @@ become increasingly commonplace. Some predictions:
 
 Keep an eye out for our own gimmicky data assistant soon...
 
+## Conclusion
+
+To summarize:
+
+```{python}
+from rich import print
+
+with open("index.qmd", "r") as f:
+    blog_text = f.read()
+
+
+class BlogSummary(BaseModel):
+    """Summarizes a blog post"""
+
+    key_points: list[str] = Field(..., description="The key points of the blog post")
+    one_paragraph_summary: str = Field(
+        ..., description="A one paragraph summary of the blog post"
+    )
+    one_sentence_summary: str = Field(
+        ..., description="A one sentence summary of the blog post"
+    )
+
+
+summary = marvin.cast(
+    blog_text,
+    target=BlogSummary,
+)
+print(summary)
+```
+
+To generate a thumbnail from the text:
+
+```{python}
+import os
+import httpx
+
+if not os.path.exists("thumbnail.png"):
+
+    key_points = "\n - ".join(summary.key_points)
+    thumbnail = marvin.paint(
+        f"""Create a beautiful (dark background) thumbnail for the blog post with the following key points:
+
+        {key_points}
+
+        The post is about {summary.one_sentence_summary}
+
+        A one paragraph summary:
+
+        {summary.one_paragraph_summary}
+        """
+    )
+
+    image = httpx.get(thumbnail.data[0].url)
+    with open("thumbnail.png", "wb") as f:
+        f.write(image.content)
+```
+
+```{python}
+# show the image
+import matplotlib.pyplot as plt
+
+img = plt.imread("thumbnail.png")
+plt.imshow(img)
+```
+
 ## Next steps
 
 Try this out yourself! All you need is an OpenAI account and the code above.
 
-It's never been a better time to get involved with Ibis. [Join us on
-Zulip and introduce yourself!](https://ibis-project.zulipchat.com/)
+It's never been a better time to get involved with Ibis. [Join us on Zulip and
+introduce yourself!](https://ibis-project.zulipchat.com/) More Ibis + language
+model content coming soon...
