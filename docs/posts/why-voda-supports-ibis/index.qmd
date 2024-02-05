@@ -9,12 +9,14 @@ categories:
 
 ## Overview
 
-The Ibis project is an [independently governed open source
-community](https://github.com/ibis-project/governance) that builds the portable
-Python dataframe library. It is primarily backed by [Voltron
-Data](https://voltrondata.com) but has
-[contributors](https://github.com/ibis-project/ibis/graphs/contributors) across
-a range of data companies and institutions.
+The Ibis project is an [independently
+governed](https://github.com/ibis-project/governance) open source community
+project to  build and maintain **the portable Python dataframe library**. Ibis
+has  [contributors](https://github.com/ibis-project/ibis/graphs/contributors)
+across  a range of data companies and institutions. Today the core Ibis
+maintainers are  employed by [Voltron Data](https://voltrondata.com). Voltron
+Data’s support of  Ibis is a part of its strategy to enable modular and
+composable systems for  data analytics.
 
 ## Background
 
@@ -168,10 +170,10 @@ you choose to use.
 
 ::: {.callout-important}
 [Ibis is independently governed](https://github.com/ibis-project/governance) and
-not owned by Voltron Data. Currently, four out of five members of the
-steering committee are employed by Voltron Data (the fifth being at Alphabet
-working on Google BigQuery). We are working toward a more diverse
-representation of companies and organizations as the project continues to grow.
+not owned by Voltron Data. Currently, four out of five members of the steering
+committee are employed by Voltron Data (the fifth being at Alphabet working on
+Google BigQuery). We are working toward a more diverse representation of
+companies and organizations as the project continues to grow.
 
 Voltron Data also welcomes this dilution of power and influence! A healthy
 open source project is one that is not controlled by a single entity. This is

@@ -1,6 +1,6 @@
 ---
 title: "Ibis project 2024 roadmap"
-author: "Cody"
+author: "Cody Peterson"
 date: "2024-02-10"
 image: commits.png
 categories:
@@ -50,7 +50,7 @@ Our top five themes for 2024 include:
 scaling to more backends, we need to complete a major rework of library
 internals and stabilize the API for backend authors. Related work in this area
 will make it easier than ever to create new Ibis backends and maintain them.
-This work will also include improving backend interfaces for DDL operations like
+This work will also include improving backend interfaces for operations like
 table creation, insertion, and upsertion.
 
 2. **Ibis for ML**: Increasingly, data projects are ML projects. Ibis can
@@ -117,7 +117,7 @@ covering the majority of feature engineering operations and handoff to popular
 ML training frameworks.
 
 ::: {.callout-note collapse="true" title="LLMs: the Ibis Birdbrain project"}
-Cody has been working on a new LLM integration for Ibis called `ibis-birdbrain`.
+I've been working on a new LLM integration for Ibis called `ibis-birdbrain`.
 **It's highly experimental and still a work in progress**, but keep an eye out
 for more details soon!
 :::
