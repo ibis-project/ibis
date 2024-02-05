@@ -58,7 +58,7 @@ def test_relation_coercion():
 
 def test_unbound_table():
     node = t.op()
-    assert isinstance(t, ir.TableExpr)
+    assert isinstance(t, ir.Table)
     assert isinstance(node, UnboundTable)
     assert node.name == "t"
     assert node.schema == Schema(
@@ -492,7 +492,7 @@ def test_join():
     assert isinstance(joined.op().to_expr(), ir.Join)
 
     result = joined._finish()
-    assert isinstance(joined, ir.TableExpr)
+    assert isinstance(joined, ir.Table)
     assert isinstance(joined.op(), JoinChain)
     assert isinstance(joined.op().to_expr(), ir.Join)
 

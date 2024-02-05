@@ -1690,7 +1690,7 @@ def test_unbound_table_using_class_definition():
 
     cases = {t1: "MyTable", t2: "MyNamedTable"}
     for t, name in cases.items():
-        assert isinstance(t, ir.TableExpr)
+        assert isinstance(t, ir.Table)
         assert isinstance(t.op(), ops.UnboundTable)
         assert t.schema() == expected_schema
         assert t.get_name() == name

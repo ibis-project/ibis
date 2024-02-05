@@ -2586,7 +2586,7 @@ def test_timestamp_bucket_offset(backend, offset_mins):
     backend.assert_series_equal(res, sol)
 
 
-_NO_SQLGLOT_DIALECT = ("pandas", "dask", "druid", "flink", "datafusion", "polars")
+_NO_SQLGLOT_DIALECT = ("pandas", "dask", "flink", "polars")
 no_sqlglot_dialect = sorted(
     param(backend, marks=pytest.mark.xfail) for backend in _NO_SQLGLOT_DIALECT
 )
@@ -2602,7 +2602,7 @@ no_sqlglot_dialect = sorted(
 @pytest.mark.parametrize(
     "dialect",
     [
-        *sorted(_get_backend_names() - {"pyspark", *_NO_SQLGLOT_DIALECT}),
+        *sorted(_get_backend_names() - {*_NO_SQLGLOT_DIALECT}),
         *no_sqlglot_dialect,
     ],
 )
