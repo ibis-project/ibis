@@ -26,13 +26,7 @@ def get_leaf_classes(op):
 
 
 def main():
-    internal_ops = {
-        # Never translates into anything
-        ops.UnresolvedExistsSubquery,
-        ops.ScalarParameter,
-    }
-
-    public_ops = frozenset(get_leaf_classes(ops.Value)) - internal_ops
+    public_ops = frozenset(get_leaf_classes(ops.Value))
     support = {"operation": [f"{op.__module__}.{op.__name__}" for op in public_ops]}
     support.update(
         (name, list(map(backend.has_operation, public_ops)))

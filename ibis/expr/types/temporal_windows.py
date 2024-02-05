@@ -5,11 +5,8 @@ from typing import TYPE_CHECKING
 from public import public
 
 import ibis.common.exceptions as com
-import ibis.expr.analysis as an
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
-from ibis.common.deferred import Deferred
-from ibis.selectors import Selector
 from ibis.expr.types.relations import bind
 
 if TYPE_CHECKING:

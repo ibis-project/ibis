@@ -11,7 +11,7 @@ import ibis.common.exceptions as exc
 import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
-from ibis.backends.base import BaseBackend, CanCreateDatabase
+from ibis.backends.base import BaseBackend, CanCreateDatabase, NoUrl
 from ibis.backends.base.sql.ddl import fully_qualified_re, is_fully_qualified
 from ibis.backends.flink.compiler.core import FlinkCompiler
 from ibis.backends.flink.ddl import (
@@ -38,7 +38,7 @@ if TYPE_CHECKING:
     from ibis.api import Watermark
 
 
-class Backend(BaseBackend, CanCreateDatabase):
+class Backend(BaseBackend, CanCreateDatabase, NoUrl):
     name = "flink"
     compiler = FlinkCompiler
     supports_temporary_tables = True

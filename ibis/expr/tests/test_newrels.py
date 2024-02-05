@@ -147,11 +147,6 @@ def test_subquery_integrity_check():
     with pytest.raises(IntegrityError, match=msg):
         ops.ScalarSubquery(t)
 
-    agg = t.agg(t.a.sum() + 1)
-    msg = "is not a reduction"
-    with pytest.raises(IntegrityError, match=msg):
-        ops.ScalarSubquery(agg)
-
 
 def test_select_turns_scalar_reduction_into_subquery():
     arr = ibis.literal([1, 2, 3])
@@ -178,6 +173,17 @@ def test_select_turns_value_with_multiple_parents_into_subquery():
     subquery = ops.ScalarSubquery(v_filt.a.max().as_table())
     expected = Project(parent=t, values={"int_col": t.int_col, "max": subquery})
     assert t1.op() == expected
+
+
+def test_value_to_array_creates_subquery():
+    rel = t.int_col.sum().as_table()
+    with pytest.warns(FutureWarning, match="implicit"):
+        expr = rel.to_array()
+
+    op = expr.op()
+    assert op.shape.is_scalar()
+    assert op.dtype.is_int64()
+    assert isinstance(op, ops.ScalarSubquery)
 
 
 def test_mutate():

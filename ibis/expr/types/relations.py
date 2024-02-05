@@ -25,6 +25,7 @@ from ibis.common.deferred import Deferred
 from ibis.expr.types.core import Expr, _FixedTextJupyterMixin
 from ibis.expr.types.generic import ValueExpr, literal
 from ibis.selectors import Selector
+from ibis.util import deprecated
 
 if TYPE_CHECKING:
     import pandas as pd
@@ -1127,9 +1128,9 @@ class Table(Expr, _FixedTextJupyterMixin):
         metrics = unwrap_aliases(metrics)
         having = unwrap_aliases(having)
 
-        groups = dereference_values(self.op(), groups)
-        metrics = dereference_values(self.op(), metrics)
-        having = dereference_values(self.op(), having)
+        groups = dereference_values(node, groups)
+        metrics = dereference_values(node, metrics)
+        having = dereference_values(node, having)
 
         # the user doesn't need to specify the metrics used in the having clause
         # explicitly, we implicitly add them to the metrics list by looking for
@@ -1803,6 +1804,23 @@ class Table(Expr, _FixedTextJupyterMixin):
         for table in rest:
             node = ops.Intersection(node, table, distinct=distinct)
         return node.to_expr().select(self.columns)
+
+    @deprecated(as_of="9.0", instead="conversion to scalar subquery is implicit")
+    def to_array(self) -> ir.Column:
+        """View a single column table as an array.
+
+        Returns
+        -------
+        Value
+            A single column view of a table
+        """
+        schema = self.schema()
+        if len(schema) != 1:
+            raise com.ExpressionError(
+                "Table must have exactly one column when viewed as array"
+            )
+
+        return ops.ScalarSubquery(self).to_expr()
 
     def mutate(self, *exprs: Sequence[ir.Expr] | None, **mutations: ir.Value) -> Table:
         """Add columns to a table expression.
