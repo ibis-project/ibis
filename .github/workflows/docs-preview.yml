@@ -5,6 +5,10 @@ on:
     types:
       - labeled
 
+concurrency:
+  group: ${{ github.repository }}-${{ github.head_ref || github.sha }}-${{ github.workflow }}
+  cancel-in-progress: true
+
 jobs:
   docs_preview:
     runs-on: ubuntu-latest
