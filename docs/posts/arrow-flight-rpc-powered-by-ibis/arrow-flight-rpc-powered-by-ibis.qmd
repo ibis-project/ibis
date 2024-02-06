@@ -221,7 +221,7 @@ docker run --name flight-ibis \
 
 You should see output like this, which means the server is running:
 
-```bash
+```
 /opt/flight_ibis /opt/flight_ibis
 Generating TLS certs...
 Created TLS Key pair successfully.
@@ -417,7 +417,7 @@ instead of specifying the `--flight-password` argument
 That should yield output similar to this, which shows the Database shown up with
 Ibis and the Arrow infrastructure that includes Flight:
 
-```bash
+```
 2024-02-06 14:51:57,210 - INFO     Flight Server init args: {'self': <flight_ibis.server.FlightServer object at 0x115b496d0>, 'host_uri': 'grpc+tls://0.0.0.0:8815', 'location_uri': 'grpc+tls://localhost:8815', 'max_endpoints': 1, 'database_file': PosixPath('/private/tmp/joe/flight-ibis-demo/data/tpch.duckdb'), 'duckdb_threads': 4, 'duckdb_memory_limit': '4GB', 'logger': <Logger flight_server (INFO)>, 'verify_client': False, 'auth_handler': <flight_ibis.server.NoOpAuthHandler object at 0x10d055fd0>, 'middleware': {'basic': <flight_ibis.server.BasicAuthServerMiddlewareFactory object at 0x10a2feb50>}, 'log_level': 'INFO', 'log_file': None, 'log_file_mode': 'w', '__class__': <class 'flight_ibis.server.FlightServer'>}
 2024-02-06 14:51:57,851 - INFO     Running Flight-Ibis server - version: 0.0.28
 2024-02-06 14:51:57,852 - INFO     Using Python version: 3.11.7 (main, Dec  4 2023, 18:10:11) [Clang 15.0.0 (clang-1500.1.0.2.5)]
