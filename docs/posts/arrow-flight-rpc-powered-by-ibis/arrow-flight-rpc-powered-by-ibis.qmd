@@ -17,7 +17,7 @@ difficult enough challenge. Serving over an API is even worse, and fraught with
 questions that demand answers. What will the API look like? Will transfer be
 efficient? Will it be easy to use? Can any of this be done while maintaining
 security? Once the data is large enough, the use of REST or GraphQL frameworks
-is untenable — they simply cannot keep up at scale. 
+is untenable — they simply cannot keep up at scale.
 
 Furthermore, the easiest solutions to think of have their own difficulties:
 
@@ -46,7 +46,7 @@ Arrow-native tool, Arrow Flight does all of this in the Arrow columnar format.
 We’ve espoused the benefits of columnar data for a while now, especially with
 Arrow, which encodes the schema with the data. This encoding makes data transfer
 trivial, as there are no secondary data structures to send — just the table, and
-you’re done. 
+you’re done.
 
 Stringing all of these powerful tools and standards together provides a robust
 solution for providing large amounts of data via APIs, reliably and quickly.
@@ -128,7 +128,7 @@ Flight example](https://arrow.apache.org/cookbook/py/flight.html).
 
 For the purposes of experimentation, you can simply run a containerized version
 of this example Arrow RPC server/client using this DockerHub image, instead of
-building yourself: 
+building yourself:
 
 > DockerHub image:
 > [https://hub.docker.com/repository/docker/voltrondata/flight-ibis/general](https://hub.docker.com/repository/docker/voltrondata/flight-ibis/general)
@@ -178,7 +178,7 @@ the transformations:
 Here we’ll cover two methods for running the example API server. The first is
 the provided Docker image, for ease of use. The second will run from source code
 using your own Python environment, so you can explore and experiment  — or just
-not use Docker. 
+not use Docker.
 
 Both have the same functionality, but we encourage running from source, with the
 `--editable` option, if you want to change or iterate on this example.
@@ -253,7 +253,7 @@ subsequent step) can communicate with the server from a different container
 
 At this point, you have a DuckDB-fueled server with a running API, waiting for a
 user to submit a request so Ibis can pull data out and offer it over Arrow
-Flight RPC. 
+Flight RPC.
 
 ### Running the client in Docker
 
@@ -301,8 +301,8 @@ You should see output similar to:
 0      122309     121717             F     110419.40  ...    1995-01-06  TAKE BACK RETURN        AIR            y silent excuses. f
 1      122309     121717             F     110419.40  ...    1995-04-06       COLLECT COD       SHIP  lyly according to the careful
 2      122407      36307             F      55686.16  ...    1994-07-15       COLLECT COD       MAIL       ins. express, bold depen
-3      122407      36307             F      55686.16  ...    1994-07-08  TAKE BACK RETURN        AIR        lar notornis above the 
-4      122407      36307             F      55686.16  ...    1994-04-19              NONE      TRUCK                   onic foxes. 
+3      122407      36307             F      55686.16  ...    1994-07-08  TAKE BACK RETURN        AIR        lar notornis above the
+4      122407      36307             F      55686.16  ...    1994-04-19              NONE      TRUCK                   onic foxes.
 
 [5 rows x 24 columns]
 2024-02-06 19:49:18,683 - INFO        o_orderkey  o_custkey o_orderstatus  ...    l_shipinstruct l_shipmode                               l_comment
@@ -331,7 +331,7 @@ simply ask and receive!
 
 The client container exits immediately after it finishes pulling data.  To stop
 the server, just go back to the terminal you opened to run it, and hit `Ctrl+C`
-to stop the server and the interactive container. 
+to stop the server and the interactive container.
 
 ### Method 2 - running from source (Python)
 
@@ -468,14 +468,14 @@ That should yield output similar to this:
 0      122309     121717             F     110419.40  ...    1995-01-06  TAKE BACK RETURN        AIR            y silent excuses. f
 1      122309     121717             F     110419.40  ...    1995-04-06       COLLECT COD       SHIP  lyly according to the careful
 2      122407      36307             F      55686.16  ...    1994-07-15       COLLECT COD       MAIL       ins. express, bold depen
-3      122407      36307             F      55686.16  ...    1994-07-08  TAKE BACK RETURN        AIR        lar notornis above the 
-4      122407      36307             F      55686.16  ...    1994-04-19              NONE      TRUCK                   onic foxes. 
+3      122407      36307             F      55686.16  ...    1994-07-08  TAKE BACK RETURN        AIR        lar notornis above the
+4      122407      36307             F      55686.16  ...    1994-04-19              NONE      TRUCK                   onic foxes.
 
 [5 rows x 24 columns]
 2024-02-06 14:52:50,089 - INFO        o_orderkey  o_custkey o_orderstatus  ...    l_shipinstruct l_shipmode                             l_comment
-0     3515587      28580             P  ...              NONE        AIR  e carefully regular frays. special, 
+0     3515587      28580             P  ...              NONE        AIR  e carefully regular frays. special,
 1     3515588      27691             O  ...  TAKE BACK RETURN        FOB           lites. carefully ironic dep
-2     3515588      27691             O  ...  TAKE BACK RETURN        FOB    y express packages wake. blithely 
+2     3515588      27691             O  ...  TAKE BACK RETURN        FOB    y express packages wake. blithely
 3     3515588      27691             O  ...  TAKE BACK RETURN       RAIL                 es. daring accounts a
 4     3515588      27691             O  ...       COLLECT COD        FOB                           l ideas caj
 
@@ -506,7 +506,7 @@ flight-client --host=localhost \
               --flight-username=test \
               --flight-password=testing123 \
               --custkey-filter-value=127171 \
-              --requested-columns="o_custkey,o_orderkey" 
+              --requested-columns="o_custkey,o_orderkey"
 ```
 
 :::{.callout-note}
@@ -562,7 +562,7 @@ securely. In a composable data system, tools like Ibis and Arrow Flight RPC
 offer modularity that ensures you can remain flexible to business and technology
 changes at no cost to functionality. At Voltron Data, we focus on building
 systems like these, and would love to talk to you about how you can get started
-today. 
+today.
 
 - For more information about Apache Arrow - see the
  Arrow [homepage](https://arrow.apache.org/).
