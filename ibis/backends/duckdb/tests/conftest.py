@@ -104,7 +104,6 @@ def con(data_dir, tmp_path_factory, worker_id):
 @pytest.fixture(scope="session")
 def gpd():
     pytest.importorskip("shapely")
-    pytest.importorskip("geoalchemy2")
     return pytest.importorskip("geopandas")
 
 
