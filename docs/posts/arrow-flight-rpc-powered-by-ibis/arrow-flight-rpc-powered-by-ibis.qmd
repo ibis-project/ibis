@@ -1,0 +1,576 @@
+---
+title: "Powering data APIs with Arrow Flight RPC and Ibis"
+author: "Philip Moore + Kae Suarez"
+date: "2024-02-09"
+categories:
+    - blog
+    - "arrow flight"
+---
+
+:::{.callout-tip title="**TL;DR**"}
+In this article, we’ll demonstrate how you can use a Apache Arrow Flight RPC API
+server powered by Ibis to serve your customers with ease.
+:::
+
+For any company with large amounts of data, storing and serving over SQL is a
+difficult enough challenge. Serving over an API is even worse, and fraught with
+questions that demand answers. What will the API look like? Will transfer be
+efficient? Will it be easy to use? Can any of this be done while maintaining
+security? Once the data is large enough, the use of REST or GraphQL frameworks
+is untenable — they simply cannot keep up at scale. 
+
+Furthermore, the easiest solutions to think of have their own difficulties:
+
+- One could upload their data to AWS S3, Google Cloud GCS, Azure Blob, or any
+ other cloud storage service. However, this solution comes with the engineering
+ cost of ensuring only the exact right data is placed there while minimizing
+ ingress and egress, and the financial costs of using the system.
+- One could simply expose a SQL database, but this method generally misses the
+ point of defining an API. Typically, when businesses define APIs for customers -
+ one core design goal is to *abstract* the back-end data platform.  For example -
+ Amazon would never give customers direct access to the SQL database powering its
+ e-commerce platform - that would be a security nightmare.
+
+This leaves us with a crucial need: a fast API that functions at scale, working
+off of a data store of choice, while only exposing what the owner needs it to.
+
+## Efficient and secure APIs with Apache Arrow Flight RPC
+
+For the secure and scalable data transfer capabilities necessary to serve
+customers, we’ll use [Apache Arrow Flight
+RPC](https://arrow.apache.org/docs/format/Flight.html), a framework for remote
+procedure call-based data serving based on Arrow data. Specifically, it uses
+[gRPC](https://grpc.io) to enable data transfer over HTTP/2, through use of
+Protocol Buffers (protobufs) to enable efficiency. Furthermore, as an
+Arrow-native tool, Arrow Flight does all of this in the Arrow columnar format.
+We’ve espoused the benefits of columnar data for a while now, especially with
+Arrow, which encodes the schema with the data. This encoding makes data transfer
+trivial, as there are no secondary data structures to send — just the table, and
+you’re done. 
+
+Stringing all of these powerful tools and standards together provides a robust
+solution for providing large amounts of data via APIs, reliably and quickly.
+Even better, it’s extensible — by adding functionality such as
+equality/inequality filters applied before transport, and projecting only
+requested columns, we can ensure minimal data transfer. This reduces network
+bandwidth requirements immensely, because of the old adage: the fastest way to
+do something is not to do it at all.
+
+As for support, Arrow Flight RPC serves to the Arrow Flight client or to Apache
+Spark — both tools that you can, of course, use in your composable data
+pipeline. Speaking of which, using Arrow Flight RPC, we can get an API together
+— but what about getting data into it?
+
+## Preparing data for transport - enter Ibis
+
+When it comes to getting data from arbitrary backends, there are a couple of
+common answers.
+
+- Have the server connect to a data platform (i.e. database) and use SQL to
+ transform the data in preparation for sending it to customers of your API.
+ Using SQL can be problematic to maintain - as back-end database platforms change
+ over time, requiring code changes because of SQL dialect differences.
+- Another pattern is having the API server use a PySpark client for connecting
+ to Spark. Using PySpark mostly locks you into using Spark as your back-end data
+ platform - because not many data platforms use it other than Spark.
+
+:::{.callout-tip}
+DuckDB recently added an [experimental PySpark
+interface](https://duckdb.org/docs/api/python/spark_api.html) in version 0.9.1 -
+but not many other platforms support the PySpark interface.
+:::
+
+Luckily, we know a solution that avoids both these pitfalls while guaranteeing
+modularity.
+
+[Ibis](https://ibis-project.org/), the Python-native interface for your database
+of choice, is a long-time favorite of ours here at Voltron Data. Whenever you
+need to address arbitrary backends, Ibis can offer you that bundled up in a
+dataframe interface to ensure ease of use. Of course, it also comes with
+portability wherever your data lives, across 18+ backends that include PySpark,
+Oracle, and BigQuery. If you want to learn more, we’ve talked about it before:
+
+- [https://voltrondata.com/resources/breaking-down-first-principles-ibis](https://voltrondata.com/resources/breaking-down-first-principles-ibis)
+- [https://voltrondata.com/resources/hugging-face-embeddings-ibis-custom-search-engine-data](https://voltrondata.com/resources/hugging-face-embeddings-ibis-custom-search-engine-data)
+- [https://voltrondata.com/resources/use-langchain-ibis-chat-with-data-stored-anywhere](https://voltrondata.com/resources/use-langchain-ibis-chat-with-data-stored-anywhere)
+
+As for what it can do here, Ibis can help by abstracting your back-end data
+platform when developing your API. This makes your API more resilient to changes
+in your data platform, because the API only needs to speak to Ibis — and Ibis
+can handle talking to the backend. Better yet, Ibis works seamlessly with the
+Arrow in-memory data format - making it easy to work with Arrow Flight for
+zero-copy data transfer.
+
+With no further ado, let’s show what Ibis and Arrow Flight RPC can do together.
+
+## API example
+
+In this demo, we showcase an API, which we host on
+[Docker](https://hub.docker.com/repository/docker/voltrondata/flight-ibis/general)
+and supply code in [Github](https://github.com/voltrondata/flight-ibis-demo), to
+serve data from DuckDB to a customer, all with enterprise-ready security.
+Internally, the API will use Ibis to apply built-in and requested business rules
+(i.e., transformations) to the underlying data and serve it via the Arrow Flight
+RPC server for consumption. The sample data is from generated TPC-H data, since
+it has enough of a schema to showcase the business rules in action.
+
+### Code
+
+The code for our example Arrow Flight RPC server, our default client, and a
+Spark-based client are located in this Github repo:
+https://github.com/voltrondata/flight-ibis-demo
+
+:::{.callout-note}
+Inspiration for building this Python-based example API was taken from the
+[Apache Arrow Python Cookbook](https://arrow.apache.org/cookbook/py/) - [Arrow
+Flight example](https://arrow.apache.org/cookbook/py/flight.html).
+:::
+
+For the purposes of experimentation, you can simply run a containerized version
+of this example Arrow RPC server/client using this DockerHub image, instead of
+building yourself: 
+
+> DockerHub image:
+> [https://hub.docker.com/repository/docker/voltrondata/flight-ibis/general](https://hub.docker.com/repository/docker/voltrondata/flight-ibis/general)
+
+We also provide all containerization information in the repo so you can
+customize and run it in Kubernetes via the provided
+[helm-chart](https://github.com/voltrondata/flight-ibis-demo/tree/main/helm-chart)
+(just change the values.yaml file for your needs).
+
+### Security
+
+If you intend to distribute data, especially in a business context, a secure API
+is absolutely essential. Fortunately, Arrow Flight RPC enables this, with the
+robustness you expect. In this demo, the API has enterprise-ready security
+features such as:
+
+- Token-based authentication initially via password, then with a Bearer token in
+ subsequent calls
+- TLS for encrypting traffic to/from the server
+- Mutual TLS (MTLS) - requiring that the client has a CA-signed private RSA key
+
+With all of these features, you can expose your Flight RPC server on the public
+internet with very minimal risk, especially not from unauthorized users.
+
+### Business rules
+
+Our API uses Ibis to apply the following transformations/rules to the
+[TPC-H](https://www.tpc.org/tpch/) schema data on the fly for any given client
+request, with any further client-specified modifications applied on top of
+these:
+
+- Filter out orders by customers that have a total number of transactions
+ greater than 98% of customers — this mimics the practice of filtering outliers
+- Filter out `orders` transactions by customers in the `Europe` region
+- Filter out `lineitem` transactions with parts manufactured by `Manufacturer#3`
+- Pre-join the `lineitem` table to the `orders` table so that order attributes
+ and `lineitem` attributes can be viewed in the same row by our API’s customers
+
+:::{.callout-tip}
+You can see all of the example Arrow Flight RPC server’s Ibis code for running
+the transformations:
+[here](https://github.com/voltrondata/flight-ibis-demo/blob/main/src/flight_ibis/data_logic_ibis.py)
+:::
+
+### Testing the API
+
+Here we’ll cover two methods for running the example API server. The first is
+the provided Docker image, for ease of use. The second will run from source code
+using your own Python environment, so you can explore and experiment  — or just
+not use Docker. 
+
+Both have the same functionality, but we encourage running from source, with the
+`--editable` option, if you want to change or iterate on this example.
+
+### Method 1 - Docker
+
+Running the API with Docker will of course require that you have Docker
+installed.  If not, go [here](https://docs.docker.com/get-docker/) for
+downloading and installation instructions.
+
+From there, all you need to do is make sure you start the Docker daemon process
+(by launching the Docker app), so that you can run containers — such as the one
+we offer here.
+
+### Running the server in Docker
+
+:::{.callout-note}
+The Docker image `voltrondata/flight-ibis` is ~1.8GB in size, because it has
+been bootstrapped to include the sample 1GB TPC-H DuckDB database file. Be
+prepared for that before running any of the following commands.
+:::
+
+Open a terminal  and run the following to start the example Flight RPC-Ibis
+server in Docker - enabling TLS and requiring a username/password for
+authentication by clients:
+
+```bash
+docker run --name flight-ibis \
+           --interactive \
+           --rm \
+           --tty \
+           --init \
+           --network host \
+           --env FLIGHT_TLS="tls/server.crt tls/server.key" \
+           --env FLIGHT_USERNAME="test" \
+           --env FLIGHT_PASSWORD="testing123" \
+           --pull missing \
+           voltrondata/flight-ibis:latest
+```
+
+You should see output like this, which means the server is running:
+
+```bash
+/opt/flight_ibis /opt/flight_ibis
+Generating TLS certs...
+Created TLS Key pair successfully.
+Cert file path: /opt/flight_ibis/tls/server.crt
+Key file path: /opt/flight_ibis/tls/server.key
+/opt/flight_ibis
+2024-02-06 19:45:53,060 - INFO     Flight Server init args: {'self': <flight_ibis.server.FlightServer object at 0xffff71f814f0>, 'host_uri': 'grpc+tls://0.0.0.0:8815', 'location_uri': 'grpc+tls://localhost:8815', 'max_endpoints': 1, 'database_file': PosixPath('/opt/flight_ibis/data/tpch.duckdb'), 'duckdb_threads': 4, 'duckdb_memory_limit': '4GB', 'logger': <Logger flight_server (INFO)>, 'verify_client': False, 'auth_handler': <flight_ibis.server.NoOpAuthHandler object at 0xffff738ac5d0>, 'middleware': {'basic': <flight_ibis.server.BasicAuthServerMiddlewareFactory object at 0xffff9e264450>}, 'log_level': 'INFO', 'log_file': None, 'log_file_mode': 'w', '__class__': <class 'flight_ibis.server.FlightServer'>}
+2024-02-06 19:45:53,521 - INFO     Running Flight-Ibis server - version: 0.0.28
+2024-02-06 19:45:53,521 - INFO     Using Python version: 3.11.7 (main, Feb  1 2024, 04:37:50) [GCC 12.2.0]
+2024-02-06 19:45:53,521 - INFO     Using PyArrow version: 15.0.0
+2024-02-06 19:45:53,521 - INFO     Using Ibis version: 8.0.0
+2024-02-06 19:45:53,521 - INFO     Using DuckDB version: 0.9.2
+2024-02-06 19:45:53,521 - INFO     Database details:
+2024-02-06 19:45:53,521 - INFO        Database file: /opt/flight_ibis/data/tpch.duckdb
+2024-02-06 19:45:53,521 - INFO        Threads: 4
+2024-02-06 19:45:53,521 - INFO        Memory Limit: 4GB
+2024-02-06 19:45:53,521 - INFO     Serving on grpc+tls://0.0.0.0:8815 (generated end-points will refer to location: grpc+tls://localhost:8815)
+```
+
+:::{.callout-note}
+The Docker image’s `entrypoint` will generate self-signed TLS certificates if
+you don’t mount your own inside the container’s `/opt/flight_ibis/tls` directory
+:::
+
+:::{.callout-note}
+We are using the `--network host` argument so that the client (run in a
+subsequent step) can communicate with the server from a different container
+:::
+
+At this point, you have a DuckDB-fueled server with a running API, waiting for a
+user to submit a request so Ibis can pull data out and offer it over Arrow
+Flight RPC. 
+
+### Running the client in Docker
+
+The same container can be run in client mode, so there is no need to pull
+anything new to start interacting — you will, however, need to open a new
+terminal window.
+
+Keep the server running that you just started (by leaving the terminal open),
+then open another terminal, and run:
+
+```bash
+docker run --name flight-ibis-client \
+           --interactive \
+           --rm \
+           --tty \
+           --init \
+           --network host \
+           --pull missing \
+           --entrypoint flight-client \
+           -- voltrondata/flight-ibis:latest \
+              --host=localhost \
+              --tls \
+              --no-tls-verify \
+              --flight-username=test \
+              --flight-password=testing123
+```
+
+:::{.callout-note}
+We use `--no-tls-verify` here for demonstration only - because we don’t have
+direct access to the self-signed TLS certificate generated in the server’s
+container.  You'll notice in the client’s output below a `WARNING` that this is
+insecure.  Don’t use this in a production setting!
+:::
+
+You should see output similar to:
+
+```
+2024-02-06 19:49:15,699 - INFO     Timer Flight Client test started
+2024-02-06 19:49:15,699 - INFO     run_flight_client - was called with args: {'host': 'localhost', 'port': 8815, 'tls': True, 'tls_verify': False, 'tls_roots': None, 'mtls': None, 'flight_username': 'test', 'log_level': 'INFO', 'log_file': None, 'log_file_mode': 'w', 'from_date': datetime.datetime(1994, 1, 1, 0, 0), 'to_date': datetime.datetime(1995, 12, 31, 0, 0), 'num_endpoints': 1, 'custkey_filter_value': None, 'requested_columns': '*', 'logger': <Logger flight_client (INFO)>}
+2024-02-06 19:49:15,699 - WARNING  TLS verification is disabled, this is insecure, only use for development purposes!
+2024-02-06 19:49:15,703 - INFO     Connected to Flight Server at location: grpc+tls://localhost:8815
+2024-02-06 19:49:15,784 - INFO     Authenticated to the Flight Server as user: test
+2024-02-06 19:49:15,784 - INFO     Command Descriptor: <pyarrow.flight.FlightDescriptor cmd=b'{"command": "get_golden_rule_facts", "kwargs": {"num_endpoints": 1, "min_date": "1994-01-01T00:00:00", "max_date": "1995-12-31T00:00:00"}}'>
+2024-02-06 19:49:18,562 - INFO        o_orderkey  o_custkey o_orderstatus  o_totalprice  ... l_receiptdate    l_shipinstruct l_shipmode                      l_comment
+0      122309     121717             F     110419.40  ...    1995-01-06  TAKE BACK RETURN        AIR            y silent excuses. f
+1      122309     121717             F     110419.40  ...    1995-04-06       COLLECT COD       SHIP  lyly according to the careful
+2      122407      36307             F      55686.16  ...    1994-07-15       COLLECT COD       MAIL       ins. express, bold depen
+3      122407      36307             F      55686.16  ...    1994-07-08  TAKE BACK RETURN        AIR        lar notornis above the 
+4      122407      36307             F      55686.16  ...    1994-04-19              NONE      TRUCK                   onic foxes. 
+
+[5 rows x 24 columns]
+2024-02-06 19:49:18,683 - INFO        o_orderkey  o_custkey o_orderstatus  ...    l_shipinstruct l_shipmode                               l_comment
+0     3361764      65734             F  ...  TAKE BACK RETURN    REG AIR       pinto beans wake carefully. quick
+1     3361859      94657             F  ...       COLLECT COD       RAIL            requests; ruthlessly final d
+2     3361859      94657             F  ...  TAKE BACK RETURN        AIR         the slyly regular accounts. dep
+3     3361859      94657             F  ...  TAKE BACK RETURN       SHIP             use alongside of the furiou
+4     3361891     140707             O  ...              NONE    REG AIR  final accounts snooze final instructio
+
+[5 rows x 24 columns]
+2024-02-06 19:49:18,695 - INFO     Got 1120929 rows total (225496463 bytes) - from 1 endpoint(s) (2 total chunk(s))
+2024-02-06 19:49:18,695 - INFO     Flight Client test: Elapsed time: 2.9967 seconds
+```
+
+:::{.callout-tip}
+For more you can do with the client, scroll down to the “Filtering and
+Projecting” section for more functionality.
+:::
+
+The default command gets all the hosted data, with the default business rules
+applied. Ease of use is a must with any valuable API, and a full fetch is a
+common enough critical path that it must be easy — thus, it’s good that you can
+simply ask and receive!
+
+### Docker cleanup
+
+The client container exits immediately after it finishes pulling data.  To stop
+the server, just go back to the terminal you opened to run it, and hit `Ctrl+C`
+to stop the server and the interactive container. 
+
+### Method 2 - running from source (Python)
+
+Of course, where Docker brings ease of use in return for rigidness, running from
+source takes more setup, but you can feel free to tune as you wish. It’s fairly
+straightforward, but having Python 3.9+ installed is a requirement we do not
+detail here. Once you do, follow these steps (also outlined in the repo’s
+[README.md](http://README.md)):
+
+### Setup
+
+```bash
+# Clone the repo
+git clone https://github.com/voltrondata/flight-ibis-demo.git
+
+# Go into the repo folder
+cd flight-ibis-demo
+
+# Create a Python 3.10+ virtual environment
+python3 -m venv ./venv
+
+# Activate the virtual environment
+. ./venv/bin/activate
+
+# Upgrade pip, setuptools, and wheel
+pip install --upgrade pip setuptools wheel
+
+# Install the flight-ibis demo Python package
+pip install --editable .
+```
+
+### Bootstrapping the environment
+
+Of course, an API is nothing without data. We don’t serve data in the repo, but
+we do provide a route to generate what you’ll need:
+
+```bash
+flight-data-bootstrap
+```
+
+This generates a TPC-H 1GB DuckDB database file (which will take ~250MB of disk
+space due to compression), more than enough to try out the API.
+
+### Setting up security
+
+To secure the system, we’ll generate a TLS certificate keypair which will be
+used to encrypt traffic to/from our server. This is essential, especially since
+we require password authentication to our server.  Here is the command to
+generate a self-signed RSA keypair (don’t use this in a production environment):
+
+```bash
+flight-create-tls-keypair
+```
+
+That command will generate the a `server.crt` and `server.key` file in the `tls`
+folder in your local copy of the repo.  The files will be git ignored for
+security purposes.
+
+:::{.callout-note}
+You can and should use a trusted CA-signed TLS RSA key pair for running your
+Flight RPC server in a production environment so your customers can safely trust
+and verify your server’s identity.
+:::
+
+### Running the Flight Ibis server with TLS and password-based authentication
+
+Now that we’ve installed the Python package, bootstrapped the environment with
+data, and created our TLS certificate keypair, we can finally run the server.
+Just one last step on launch, specify a username and password for clients to
+connect:
+
+```bash
+flight-server --tls=tls/server.crt tls/server.key \
+              --flight-username=test \
+              --flight-password=testing123
+```
+
+:::{.callout-tip}
+You can alternatively set an environment variable called: `FLIGHT_PASSWORD`
+instead of specifying the `--flight-password` argument
+:::
+
+That should yield output similar to this, which shows the Database shown up with
+Ibis and the Arrow infrastructure that includes Flight:
+
+```bash
+2024-02-06 14:51:57,210 - INFO     Flight Server init args: {'self': <flight_ibis.server.FlightServer object at 0x115b496d0>, 'host_uri': 'grpc+tls://0.0.0.0:8815', 'location_uri': 'grpc+tls://localhost:8815', 'max_endpoints': 1, 'database_file': PosixPath('/private/tmp/joe/flight-ibis-demo/data/tpch.duckdb'), 'duckdb_threads': 4, 'duckdb_memory_limit': '4GB', 'logger': <Logger flight_server (INFO)>, 'verify_client': False, 'auth_handler': <flight_ibis.server.NoOpAuthHandler object at 0x10d055fd0>, 'middleware': {'basic': <flight_ibis.server.BasicAuthServerMiddlewareFactory object at 0x10a2feb50>}, 'log_level': 'INFO', 'log_file': None, 'log_file_mode': 'w', '__class__': <class 'flight_ibis.server.FlightServer'>}
+2024-02-06 14:51:57,851 - INFO     Running Flight-Ibis server - version: 0.0.28
+2024-02-06 14:51:57,852 - INFO     Using Python version: 3.11.7 (main, Dec  4 2023, 18:10:11) [Clang 15.0.0 (clang-1500.1.0.2.5)]
+2024-02-06 14:51:57,852 - INFO     Using PyArrow version: 15.0.0
+2024-02-06 14:51:57,852 - INFO     Using Ibis version: 8.0.0
+2024-02-06 14:51:57,852 - INFO     Using DuckDB version: 0.9.2
+2024-02-06 14:51:57,852 - INFO     Database details:
+2024-02-06 14:51:57,852 - INFO        Database file: /private/tmp/joe/flight-ibis-demo/data/tpch.duckdb
+2024-02-06 14:51:57,852 - INFO        Threads: 4
+2024-02-06 14:51:57,852 - INFO        Memory Limit: 4GB
+2024-02-06 14:51:57,852 - INFO     Serving on grpc+tls://0.0.0.0:8815 (generated end-points will refer to location: grpc+tls://localhost:8815)
+```
+
+### Consuming data from the server using an Arrow Flight client
+
+With the server now running, we can run the example Arrow Flight client command
+to demonstrate consumption of the server’s data by opening another terminal and
+running this command:
+
+```bash
+# Activate our Python virtual environment in this terminal
+. ./venv/bin/activate
+
+# Run the Flight Arrow client example
+flight-client --host=localhost \
+              --tls \
+              --tls-roots=tls/server.crt \
+              --flight-username=test \
+              --flight-password=testing123
+```
+
+:::{.callout-note}
+The `--tls-roots` argument (used above) is only needed if your TLS certificate
+is self-signed.  In this case, we are telling the client to trust this
+certificate.  In production - remember to use a certificate signed by a trusted
+Certificate Authority (CA).
+:::
+
+That should yield output similar to this:
+
+```
+2024-02-06 14:52:48,133 - INFO     Timer Flight Client test started
+2024-02-06 14:52:48,133 - INFO     run_flight_client - was called with args: {'host': 'localhost', 'port': 8815, 'tls': True, 'tls_verify': True, 'tls_roots': 'tls/server.crt', 'mtls': None, 'flight_username': 'test', 'log_level': 'INFO', 'log_file': None, 'log_file_mode': 'w', 'from_date': datetime.datetime(1994, 1, 1, 0, 0), 'to_date': datetime.datetime(1995, 12, 31, 0, 0), 'num_endpoints': 1, 'custkey_filter_value': None, 'requested_columns': '*', 'logger': <Logger flight_client (INFO)>}
+2024-02-06 14:52:48,134 - INFO     Connected to Flight Server at location: grpc+tls://localhost:8815
+2024-02-06 14:52:48,244 - INFO     Authenticated to the Flight Server as user: test
+2024-02-06 14:52:48,244 - INFO     Command Descriptor: <pyarrow.flight.FlightDescriptor cmd=b'{"command": "get_golden_rule_facts", "kwargs": {"num_endpoints": 1, "min_date": "1994-01-01T00:00:00", "max_date": "1995-12-31T00:00:00"}}'>
+2024-02-06 14:52:49,994 - INFO        o_orderkey  o_custkey o_orderstatus  o_totalprice  ... l_receiptdate    l_shipinstruct l_shipmode                      l_comment
+0      122309     121717             F     110419.40  ...    1995-01-06  TAKE BACK RETURN        AIR            y silent excuses. f
+1      122309     121717             F     110419.40  ...    1995-04-06       COLLECT COD       SHIP  lyly according to the careful
+2      122407      36307             F      55686.16  ...    1994-07-15       COLLECT COD       MAIL       ins. express, bold depen
+3      122407      36307             F      55686.16  ...    1994-07-08  TAKE BACK RETURN        AIR        lar notornis above the 
+4      122407      36307             F      55686.16  ...    1994-04-19              NONE      TRUCK                   onic foxes. 
+
+[5 rows x 24 columns]
+2024-02-06 14:52:50,089 - INFO        o_orderkey  o_custkey o_orderstatus  ...    l_shipinstruct l_shipmode                             l_comment
+0     3515587      28580             P  ...              NONE        AIR  e carefully regular frays. special, 
+1     3515588      27691             O  ...  TAKE BACK RETURN        FOB           lites. carefully ironic dep
+2     3515588      27691             O  ...  TAKE BACK RETURN        FOB    y express packages wake. blithely 
+3     3515588      27691             O  ...  TAKE BACK RETURN       RAIL                 es. daring accounts a
+4     3515588      27691             O  ...       COLLECT COD        FOB                           l ideas caj
+
+[5 rows x 24 columns]
+2024-02-06 14:52:50,098 - INFO     Got 1120929 rows total (225496463 bytes) - from 1 endpoint(s) (2 total chunk(s))
+2024-02-06 14:52:50,098 - INFO     Flight Client test: Elapsed time: 1.9649 seconds
+```
+
+As with the Docker method, the default command gets all the hosted data, with
+the default business rules applied. Ease of use is a must with any valuable API,
+and a full fetch is a common enough critical path that it must be easy — thus,
+it’s good that you can simply ask and receive!
+
+### Filtering and projecting
+
+In our example server, we’ve enabled our Flight Arrow clients to specify filters
+and column projections in the `command` dictionary that they send for the
+`do_get` end-point. For users with a need to reduce data taken locally, be that
+due to computational costs or bandwidth limitations, being able to specify
+filters in the request is essential for a production-quality API.
+
+To use this functionality, run this command in your client terminal:
+
+```bash
+flight-client --host=localhost \
+              --tls \
+              --tls-roots=tls/server.crt \
+              --flight-username=test \
+              --flight-password=testing123 \
+              --custkey-filter-value=127171 \
+              --requested-columns="o_custkey,o_orderkey" 
+```
+
+:::{.callout-note}
+If you used the Docker method, then just add the arguments:
+`--custkey-filter-value=127171 \` and
+`--requested-columns="o_custkey,o_orderkey"` to your client-running command to
+test the same behavior!
+:::
+
+We should see output similar to this:
+
+```
+2024-02-06 14:53:15,421 - INFO     Timer Flight Client test started
+2024-02-06 14:53:15,421 - INFO     run_flight_client - was called with args: {'host': 'localhost', 'port': 8815, 'tls': True, 'tls_verify': True, 'tls_roots': 'tls/server.crt', 'mtls': None, 'flight_username': 'test', 'log_level': 'INFO', 'log_file': None, 'log_file_mode': 'w', 'from_date': datetime.datetime(1994, 1, 1, 0, 0), 'to_date': datetime.datetime(1995, 12, 31, 0, 0), 'num_endpoints': 1, 'custkey_filter_value': 127171, 'requested_columns': 'o_custkey,o_orderkey', 'logger': <Logger flight_client (INFO)>}
+2024-02-06 14:53:15,422 - INFO     Connected to Flight Server at location: grpc+tls://localhost:8815
+2024-02-06 14:53:15,534 - INFO     Authenticated to the Flight Server as user: test
+2024-02-06 14:53:15,535 - INFO     Command Descriptor: <pyarrow.flight.FlightDescriptor cmd=b'{"command": "get_golden_rule_facts", "kwargs": {"num_endpoints": 1, "min_date": "1994-01-01T00:00:00", "max_date": "1995-12-31T00:00:00"}, "filters": [{"column": "o_custkey", "operator": "=", "value": 127171}], "columns": ["o_custkey", "o_orderkey"]}'>
+2024-02-06 14:53:17,129 - INFO        o_custkey  o_orderkey
+0     127171     2998659
+1     127171     2998659
+2     127171     3018402
+3     127171     3018402
+2024-02-06 14:53:17,131 - INFO        o_custkey  o_orderkey
+0     127171     4998663
+1     127171     4998663
+2     127171     4998663
+2024-02-06 14:53:17,132 - INFO     Got 7 rows total (56 bytes) - from 1 endpoint(s) (8 total chunk(s))
+2024-02-06 14:53:17,132 - INFO     Flight Client test: Elapsed time: 1.7104 seconds
+```
+
+In the output above, we only show 2 columns sent by the server, and further - we
+only retrieved 7 rows of data - for a total of 56 bytes!  We reduced the data
+sent by the server from 225,496,463 to 56 bytes - a significant savings in
+network throughput, and an effort in data processing offloaded to the server
+instead of the client. This is especially important in cases where a lightweight
+system must use the requested data, such as a FaaS platform or an embedded
+system.
+
+## Next steps
+
+In our subsequent blog posts on Arrow Flight RPC with Ibis, we’ll show:
+
+- How to install the example Flight RPC server with Ibis in Kubernetes - and
+ consuming it from your local laptop
+- How you can consume the Arrow Flight RPC server’s data from Spark - in
+ parallel for performance
+
+## Summary
+
+Here, we’ve showcased only one way you can use Arrow Flight RPC and Ibis to
+create powerful business APIs that exactly suit your needs efficiently and
+securely. In a composable data system, tools like Ibis and Arrow Flight RPC
+offer modularity that ensures you can remain flexible to business and technology
+changes at no cost to functionality. At Voltron Data, we focus on building
+systems like these, and would love to talk to you about how you can get started
+today. 
+
+- For more information about Apache Arrow - see the
+ Arrow [homepage](https://arrow.apache.org/).
+- For more information about Apache Arrow Flight RPC -  see its
+ [documentation](https://arrow.apache.org/docs/format/Flight.html)
+- For more information about Ibis - see the Ibis
+ [homepage](https://ibis-project.org).
+
+A [Voltron Data Enterprise Support
+subscription](https://voltrondata.com/product) can help accelerate your success
+with Apache Arrow Flight RPC even further!
