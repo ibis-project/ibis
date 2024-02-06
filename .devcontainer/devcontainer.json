@@ -11,7 +11,7 @@
   },
   "features": {
     "ghcr.io/rocker-org/devcontainer-features/quarto-cli:1": {
-      "version": "1.4.339"
+      "version": "1.4.549"
     }
   }
 }
