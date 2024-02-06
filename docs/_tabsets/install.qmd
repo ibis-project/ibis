@@ -36,6 +36,9 @@ installers = [
     {"name": "pixi", "line": "Add the `ibis-{extra}` package:", "cmd": "pixi add ibis-{extra}"},
 ]
 
+with open("./_callouts/pypi_warning.qmd") as f:
+    pypi_warning = f.read()
+
 for installer in installers:
     installer_name = installer["name"]
     cmd = installer["cmd"]
@@ -82,8 +85,8 @@ for installer in installers:
         print(f"Connect using [`ibis.{mod}.connect`](./backends/{backend_name.lower()}.qmd#ibis.{mod}.connect).")
         print()
 
-    if installer_name == "pip":
-        print("{{< include /_callouts/pypi_warning.qmd >}}")
+        if installer_name == "pip":
+            print(pypi_warning)
 
     print()
     print(":::")
