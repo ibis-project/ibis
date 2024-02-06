@@ -9,11 +9,11 @@ import pytest
 from pytest import param
 
 import ibis
+from ibis.conftest import LINUX, MACOS, SANDBOXED
 
 gpd = pytest.importorskip("geopandas")
 gtm = pytest.importorskip("geopandas.testing")
 shapely = pytest.importorskip("shapely")
-pytest.importorskip("geoalchemy2")
 
 
 def test_geospatial_point(zones, zones_gdf):
@@ -290,3 +290,12 @@ def test_literal_geospatial_inferred(con, shp, expected, snapshot):
     pair = f"{name} {expected}"
     assert pair in result
     snapshot.assert_match(result, "out.sql")
+
+
+@pytest.mark.skipif(
+    (LINUX or MACOS) and SANDBOXED,
+    reason="nix on linux cannot download duckdb extensions or data due to sandboxing",
+)
+def test_load_geo_example(con):
+    t = ibis.examples.zones.fetch(backend=con)
+    assert t.geom.type().is_geospatial()
