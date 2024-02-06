@@ -4,5 +4,7 @@ channels:
 dependencies:
   - psycopg
   - pip
+  - pyarrow =15
+  - snowflake-connector-python >=3.0.2,<4
   - pip:
       - -r file:requirements-dev.txt
