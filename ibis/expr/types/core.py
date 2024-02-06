@@ -137,7 +137,7 @@ class Expr(Immutable, Coercible):
 
     def has_name(self):
         """Check whether this expression has an explicit name."""
-        return isinstance(self._arg, ops.Named)
+        return hasattr(self._arg, "name")
 
     def get_name(self):
         """Return the name of this expression."""
