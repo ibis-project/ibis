@@ -56,23 +56,10 @@ for installer in installers:
         print(f"## {backend_name}")
         print()
 
-        if backend_name == "Flink":
-            if installer_name == "pip":
-                print("Install alongside the `apache-flink` package:")
-                print()
-                print(f"```bash\npip install ibis-framework apache-flink\n```")
-
-            else:
-                print(
-                    dedent(
-                        """\
-                        ::: {.callout-important}
-                        ## PyFlink is not available on conda-forge; please
-                        use `pip` to install the PyFlink backend instead.
-                        :::"""
-                    )
-                )
-                continue
+        if backend_name == "Flink" and installer_name == "pip":
+            print("Install alongside the `apache-flink` package:")
+            print()
+            print(f"```bash\npip install ibis-framework apache-flink\n```")
 
         else:
             extra = backend.get("extra", mod)
