@@ -37,7 +37,7 @@ repos:
         types_or:
           - python
           - pyi
-        args: ["check", "--force-exclude", "--show-source", "--fix"]
+        args: ["check", "--force-exclude", "--output-format=full", "--fix"]
         require_serial: true
         minimum_pre_commit_version: "2.9.2"
   - repo: local
