@@ -59,6 +59,8 @@ dependencies:
   - trino-python-client >=0.321
   # geospatial
   - leafmap >=0.29.6
+  # streaming
+  - kafka-python
   # test dependencies
   - filelock >=3.7.0,<4
   - hypothesis >=6.58.0,<7
