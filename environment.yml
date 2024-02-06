@@ -3,7 +3,6 @@ channels:
   - conda-forge
 dependencies:
   - psycopg
-  - psycopg-c
   - pip
   - pip:
       - -r file:requirements-dev.txt
