@@ -55,7 +55,7 @@ def _(dtype, values):
             return None
         try:
             return json.loads(v)
-        except Exception:
+        except Exception:  # noqa: BLE001
             return v
 
     return _format_nested([try_json(v) for v in values])

@@ -23,6 +23,9 @@ about:
       href: install.qmd
     - icon: book
       href: tutorials/getting_started.qmd
+    - icon: postcard
+      text: Blog
+      href: posts.qmd
     - icon: github
       text: GitHub
       href: https://github.com/ibis-project

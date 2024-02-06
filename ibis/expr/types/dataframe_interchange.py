@@ -1,11 +1,14 @@
 from __future__ import annotations
 
 from functools import cached_property
-from typing import TYPE_CHECKING, Sequence
+from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    import ibis.expr.types as ir
+    from collections.abc import Sequence
+
     import pyarrow as pa
+
+    import ibis.expr.types as ir
 
 
 class IbisDataFrame:
@@ -38,7 +41,8 @@ class IbisDataFrame:
         """Returns the pyarrow implementation of the __dataframe__ protocol.
 
         If the backing ibis Table hasn't been executed yet, this will result
-        in executing and caching the result."""
+        in executing and caching the result.
+        """
         if self._pyarrow_table is None:
             self._pyarrow_table = self._table.to_pyarrow()
         return self._pyarrow_table.__dataframe__(
@@ -48,8 +52,7 @@ class IbisDataFrame:
 
     @cached_property
     def _empty_pyarrow_df(self):
-        """A pyarrow implementation of the __dataframe__ protocol for an
-        empty table with the same schema as this table.
+        """A pyarrow implementation of the __dataframe__ protocol for an empty table.
 
         Used for returning dtype information without executing the backing ibis
         expression.
@@ -125,11 +128,11 @@ class IbisColumn:
 
     @cached_property
     def _pyarrow_col(self):
-        """Returns the pyarrow implementation of the __dataframe__ protocol's
-        Column type.
+        """Returns the pyarrow implementation of the __dataframe__ protocol's Column type.
 
         If the backing ibis Table hasn't been executed yet, this will result
-        in executing and caching the result."""
+        in executing and caching the result.
+        """
         return self._df._pyarrow_df.get_column_by_name(self._name)
 
     # These methods may all be handled without executing the query

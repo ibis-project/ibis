@@ -36,6 +36,9 @@ installers = [
     {"name": "pixi", "line": "Add the `ibis-{extra}` package:", "cmd": "pixi add ibis-{extra}"},
 ]
 
+with open("./_callouts/pypi_warning.qmd") as f:
+    pypi_warning = f.read()
+
 for installer in installers:
     installer_name = installer["name"]
     cmd = installer["cmd"]
@@ -53,22 +56,10 @@ for installer in installers:
         print(f"## {backend_name}")
         print()
 
-        if backend_name == "Flink":
-            if installer_name == "pip":
-                print("Install alongside the `apache-flink` package:")
-                print()
-                print(f"```bash\npip install ibis-framework apache-flink\n```")
-
-            else:
-                print(
-                    dedent(
-                        """\
-                        ::: {.callout-important}
-                        ## PyFlink is not available on conda-forge; please use `pip` to install the PyFlink backend instead.
-                        :::"""
-                    )
-                )
-                continue
+        if backend_name == "Flink" and installer_name == "pip":
+            print("Install alongside the `apache-flink` package:")
+            print()
+            print(f"```bash\npip install ibis-framework apache-flink\n```")
 
         else:
             extra = backend.get("extra", mod)
@@ -81,8 +72,8 @@ for installer in installers:
         print(f"Connect using [`ibis.{mod}.connect`](./backends/{backend_name.lower()}.qmd#ibis.{mod}.connect).")
         print()
 
-    if installer_name == "pip":
-        print("{{< include /_callouts/pypi_warning.qmd >}}")
+        if installer_name == "pip":
+            print(pypi_warning)
 
     print()
     print(":::")

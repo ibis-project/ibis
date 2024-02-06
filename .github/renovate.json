@@ -12,6 +12,7 @@
   ],
   "automerge": false,
   "labels": ["dependencies"],
+  "nix": { "enabled": true },
   "packageRules": [
     {
       "matchManagers": ["docker-compose", "dockerfile", "github-actions"],

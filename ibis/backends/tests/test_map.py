@@ -225,7 +225,7 @@ def test_literal_map_getitem_broadcast(backend, alltypes, df):
     expr = lookup_table[alltypes.string_col]
 
     result = expr.name("tmp").execute()
-    expected = df.string_col.apply(lambda x: value.get(x, None)).rename("tmp")
+    expected = df.string_col.apply(value.get).rename("tmp")
 
     backend.assert_series_equal(result, expected)
 

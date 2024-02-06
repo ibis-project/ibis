@@ -260,7 +260,7 @@ def test_array_index(con, arr, gen_idx):
 )
 def test_array_concat(con, arrays):
     expr = L([]).cast("!array<int8>")
-    expected = sum(arrays, [])
+    expected = sum(arrays, [])  # noqa: RUF017
     for arr in arrays:
         expr += L(arr, type="!array<int8>")
 

@@ -263,10 +263,10 @@ def test_generic_instance_of_with_covariant_typevar():
     assert p.match(My(1, 2, "3"), context={}) == My(1, 2, "3")
     assert p.describe() == "a My[int, Any]"
 
-    assert match(My[int, AnyType], v := My(1, 2, "3")) == v
-    assert match(My[int, int], v := My(1, 2, "3")) == v
+    assert match(My[int, AnyType], v := My(1, 2, "3")) == v  # noqa: RUF018
+    assert match(My[int, int], v := My(1, 2, "3")) == v  # noqa: RUF018
     assert match(My[int, float], My(1, 2, "3")) is NoMatch
-    assert match(My[int, float], v := My(1, 2.0, "3")) == v
+    assert match(My[int, float], v := My(1, 2.0, "3")) == v  # noqa: RUF018
 
 
 def test_generic_instance_of_disallow_nested_coercion():
@@ -777,12 +777,12 @@ def test_matching():
     assert Capture("pi", InstanceOf(float)) == "pi" @ InstanceOf(float)
     assert Capture("pi", InstanceOf(float)) == "pi" @ InstanceOf(float)
 
-    assert match(Capture("pi", InstanceOf(float)), 3.14, ctx := {}) == 3.14
+    assert match(Capture("pi", InstanceOf(float)), 3.14, ctx := {}) == 3.14  # noqa: RUF018
     assert ctx == {"pi": 3.14}
-    assert match("pi" @ InstanceOf(float), 3.14, ctx := {}) == 3.14
+    assert match("pi" @ InstanceOf(float), 3.14, ctx := {}) == 3.14  # noqa: RUF018
     assert ctx == {"pi": 3.14}
 
-    assert match("pi" @ InstanceOf(float), 3.14, ctx := {}) == 3.14
+    assert match("pi" @ InstanceOf(float), 3.14, ctx := {}) == 3.14  # noqa: RUF018
     assert ctx == {"pi": 3.14}
 
     assert match(InstanceOf(int) | InstanceOf(float), 3) == 3
@@ -894,13 +894,13 @@ def test_matching_sequence_pattern_keeps_original_type():
 def test_matching_sequence_with_captures():
     v = list(range(1, 9))
     assert match([1, 2, 3, 4, Some(...)], v) == v
-    assert match([1, 2, 3, 4, "rest" @ Some(...)], v, ctx := {}) == v
+    assert match([1, 2, 3, 4, "rest" @ Some(...)], v, ctx := {}) == v  # noqa: RUF018
     assert ctx == {"rest": [5, 6, 7, 8]}
 
     v = list(range(5))
-    assert match([0, 1, x @ Some(...), 4], v, ctx := {}) == v
+    assert match([0, 1, x @ Some(...), 4], v, ctx := {}) == v  # noqa: RUF018
     assert ctx == {"x": [2, 3]}
-    assert match([0, 1, "var" @ Some(...), 4], v, ctx := {}) == v
+    assert match([0, 1, "var" @ Some(...), 4], v, ctx := {}) == v  # noqa: RUF018
     assert ctx == {"var": [2, 3]}
 
     p = [
@@ -911,7 +911,7 @@ def test_matching_sequence_with_captures():
         6,
     ]
     v = [0, 1, 2, 3, 4.0, 5.0, 6]
-    assert match(p, v, ctx := {}) == v
+    assert match(p, v, ctx := {}) == v  # noqa: RUF018
     assert ctx == {"ints": [2, 3], "last_float": 5.0}
 
 
@@ -927,7 +927,7 @@ def test_matching_sequence_remaining():
     assert match([1, 2, 3, Some(InstanceOf(int) & Between(0, 10))], five) == five
     assert match([1, 2, 3, Some(InstanceOf(int) & Between(0, 4))], five) is NoMatch
     assert match([1, 2, 3, Some(int, at_least=2)], four) is NoMatch
-    assert match([1, 2, 3, "res" @ Some(int, at_least=2)], five, ctx := {}) == five
+    assert match([1, 2, 3, "res" @ Some(int, at_least=2)], five, ctx := {}) == five  # noqa: RUF018
     assert ctx == {"res": [4, 5]}
 
 
@@ -944,12 +944,12 @@ def test_matching_sequence_complicated():
         "a": [2, 3],
         "b": [5, 6, 7],
     }
-    assert match(pat, range(1, 10), ctx := {}) == list(range(1, 10))
+    assert match(pat, range(1, 10), ctx := {}) == list(range(1, 10))  # noqa: RUF018
     assert ctx == expected
 
     pat = [1, 2, Capture("remaining", Some(...))]
     expected = {"remaining": [3, 4, 5, 6, 7, 8, 9]}
-    assert match(pat, range(1, 10), ctx := {}) == list(range(1, 10))
+    assert match(pat, range(1, 10), ctx := {}) == list(range(1, 10))  # noqa: RUF018
     assert ctx == expected
 
     v = [0, [1, 2, "3"], [1, 2, "4"], 3]

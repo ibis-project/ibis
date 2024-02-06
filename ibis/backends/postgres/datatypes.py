@@ -73,7 +73,7 @@ class PostgresType(AlchemyType):
             return dt.Map(dt.string, dt.string, nullable=nullable)
         elif isinstance(typ, psql.INTERVAL):
             field = typ.fields.upper()
-            if (unit := _postgres_interval_fields.get(field, None)) is None:
+            if (unit := _postgres_interval_fields.get(field)) is None:
                 raise ValueError(f"Unknown PostgreSQL interval field {field!r}")
             elif unit in {"Y", "M"}:
                 raise ValueError(

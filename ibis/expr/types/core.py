@@ -3,7 +3,7 @@ from __future__ import annotations
 import contextlib
 import os
 import webbrowser
-from typing import TYPE_CHECKING, Any, Mapping, NoReturn, Tuple, Iterator
+from typing import TYPE_CHECKING, Any, NoReturn
 
 from public import public
 from rich.jupyter import JupyterMixin
@@ -13,10 +13,12 @@ from ibis.common.annotations import ValidationError
 from ibis.common.exceptions import IbisError, TranslationError
 from ibis.common.grounds import Immutable
 from ibis.common.patterns import Coercible, CoercionError
-from ibis.config import _default_backend, options as opts
+from ibis.config import _default_backend
+from ibis.config import options as opts
 from ibis.util import experimental
 
 if TYPE_CHECKING:
+    from collections.abc import Iterator, Mapping
     from pathlib import Path
 
     import pandas as pd
@@ -26,7 +28,7 @@ if TYPE_CHECKING:
     import ibis.expr.types as ir
     from ibis.backends.base import BaseBackend
 
-    TimeContext = Tuple[pd.Timestamp, pd.Timestamp]
+    TimeContext = tuple[pd.Timestamp, pd.Timestamp]
 
 
 class _FixedTextJupyterMixin(JupyterMixin):
@@ -232,7 +234,7 @@ class Expr(Immutable, Coercible):
         else:
             return f(self, *args, **kwargs)
 
-    def op(self) -> ops.Node:  # noqa: D102
+    def op(self) -> ops.Node:
         return self._arg
 
     def _find_backends(self) -> tuple[list[BaseBackend], bool]:
@@ -468,7 +470,7 @@ class Expr(Immutable, Coercible):
         params: Mapping[ir.Scalar, Any] | None = None,
         **kwargs: Any,
     ) -> None:
-        """Write the results of executing the given expression to a parquet file
+        """Write the results of executing the given expression to a parquet file.
 
         This method is eager and will execute the associated expression
         immediately.
@@ -515,7 +517,7 @@ class Expr(Immutable, Coercible):
         params: Mapping[ir.Scalar, Any] | None = None,
         **kwargs: Any,
     ) -> None:
-        """Write the results of executing the given expression to a CSV file
+        """Write the results of executing the given expression to a CSV file.
 
         This method is eager and will execute the associated expression
         immediately.
@@ -541,7 +543,7 @@ class Expr(Immutable, Coercible):
         params: Mapping[ir.Scalar, Any] | None = None,
         **kwargs: Any,
     ) -> None:
-        """Write the results of executing the given expression to a Delta Lake table
+        """Write the results of executing the given expression to a Delta Lake table.
 
         This method is eager and will execute the associated expression
         immediately.
@@ -589,8 +591,8 @@ class Expr(Immutable, Coercible):
 
     def unbind(self) -> ir.Table:
         """Return an expression built on `UnboundTable` instead of backend-specific objects."""
-        from ibis.expr.analysis import p, c
         from ibis.common.deferred import _
+        from ibis.expr.analysis import c, p
 
         rule = p.DatabaseTable >> c.UnboundTable(name=_.name, schema=_.schema)
         return self.op().replace(rule).to_expr()

@@ -742,6 +742,7 @@ def uses_java_re(t):
                     raises=AttributeError,
                 ),
                 pytest.mark.broken(["druid"], raises=sa.exc.ProgrammingError),
+                pytest.mark.xfail_version(datafusion=["datafusion==35"]),
             ],
         ),
         param(
