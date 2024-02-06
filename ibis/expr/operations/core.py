@@ -11,11 +11,10 @@ import ibis.expr.datatypes as dt
 import ibis.expr.rules as rlz
 from ibis import util
 from ibis.common.annotations import attribute
-from ibis.common.bases import Abstract
 from ibis.common.graph import Node as Traversable
 from ibis.common.grounds import Concrete
 from ibis.common.patterns import Coercible, CoercionError
-from ibis.common.typing import DefaultTypeVars, VarTuple
+from ibis.common.typing import DefaultTypeVars
 
 
 @public
@@ -41,29 +40,12 @@ class Node(Concrete, Traversable):
     #     return super().__children__
 
 
-# TODO(kszucs): remove this mixin
-@public
-class Named(Abstract):
-    __slots__: VarTuple[str] = tuple()
-
-    @property
-    @abstractmethod
-    def name(self) -> str:
-        """Name of the operation.
-
-        Returns
-        -------
-        str
-
-        """
-
-
 T = TypeVar("T", bound=dt.DataType, covariant=True)
 S = TypeVar("S", bound=ds.DataShape, default=ds.Any, covariant=True)
 
 
 @public
-class Value(Node, Named, Coercible, DefaultTypeVars, Generic[T, S]):
+class Value(Node, Coercible, DefaultTypeVars, Generic[T, S]):
     @classmethod
     def __coerce__(
         cls, value: Any, T: Optional[type] = None, S: Optional[type] = None
@@ -103,8 +85,8 @@ class Value(Node, Named, Coercible, DefaultTypeVars, Generic[T, S]):
     # TODO(kszucs): figure out how to represent not named arguments
     @property
     def name(self) -> str:
-        args = ", ".join(arg.name for arg in self.__args__ if isinstance(arg, Named))
-        return f"{self.__class__.__name__}({args})"
+        names = (arg.name for arg in self.__args__ if hasattr(arg, "name"))
+        return f"{self.__class__.__name__}({', '.join(names)})"
 
     @property
     @abstractmethod

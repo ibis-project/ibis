@@ -15,12 +15,12 @@ from ibis.common.deferred import Deferred  # noqa: TCH001
 from ibis.common.grounds import Singleton
 from ibis.common.patterns import InstanceOf, Length  # noqa: TCH001
 from ibis.common.typing import VarTuple  # noqa: TCH001
-from ibis.expr.operations.core import Named, Scalar, Unary, Value
+from ibis.expr.operations.core import Scalar, Unary, Value
 from ibis.expr.operations.relations import Relation  # noqa: TCH001
 
 
 @public
-class RowID(Value, Named):
+class RowID(Value):
     """The row number (an autonumeric) of the returned result."""
 
     name = "rowid"
@@ -160,7 +160,7 @@ NULL = Literal(None, dt.null)
 
 
 @public
-class ScalarParameter(Scalar, Named):
+class ScalarParameter(Scalar):
     _counter = itertools.count()
 
     dtype: dt.DataType

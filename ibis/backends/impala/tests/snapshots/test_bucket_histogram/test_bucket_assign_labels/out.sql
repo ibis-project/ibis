@@ -10,7 +10,7 @@ SELECT
     THEN '25 to 50'
     ELSE 'error'
   END AS `tier2`,
-  `t1`.`CountStar()`
+  `t1`.`CountStar(alltypes)`
 FROM (
   SELECT
     CASE
@@ -36,7 +36,7 @@ FROM (
       THEN 3
       ELSE CAST(NULL AS TINYINT)
     END AS `tier`,
-    COUNT(*) AS `CountStar()`
+    COUNT(*) AS `CountStar(alltypes)`
   FROM `alltypes` AS `t0`
   GROUP BY
     1

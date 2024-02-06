@@ -1,3 +1,3 @@
 SELECT
-  CAST(FROM_UNIXTIME(CAST(`t0`.`c` AS INT)) AS TIMESTAMP) AS `TimestampFromUNIX(c)`
+  CAST(FROM_UNIXTIME(CAST(`t0`.`c` AS INT)) AS TIMESTAMP) AS `TimestampFromUNIX(c, SECOND)`
 FROM `alltypes` AS `t0`
