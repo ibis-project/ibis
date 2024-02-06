@@ -93,7 +93,7 @@ data for machine learning training and is easily customizable with language.
 :::{.callout-tip}
 This post was re-inspired by the [1 billion row challenge we recently solved
 with Ibis on three local backends](../1brc/index.qmd) in which synthetic data
-generated from a seed file was used to generate a billion rows.
+created from a seed file was used to generate a billion rows.
 
 With language models, we can reproduce this synthetic data and customize the
 data produced with natural language!
@@ -437,6 +437,7 @@ t = (
     .relocate("classification")  # <2>
     .cache()  # <3>
 )
+t
 ```
 
 1. Apply the UDF by mutating the table with the function
@@ -537,7 +538,7 @@ def _text_to_sql(
     `table_names`, `table_schemas`, and `table_previews`.
 
     Use newlines and indentation for readability.
-    """  # <1
+    """  # <1>
 
 
 def text_to_sql(  # <2>
