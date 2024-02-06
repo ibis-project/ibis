@@ -10,11 +10,12 @@ from rich.jupyter import JupyterMixin
 
 import ibis.expr.operations as ops
 from ibis.common.annotations import ValidationError
-from ibis.common.exceptions import IbisError, TranslationError
+from ibis.common.exceptions import IbisError
 from ibis.common.grounds import Immutable
 from ibis.common.patterns import Coercible, CoercionError
 from ibis.config import _default_backend
 from ibis.config import options as opts
+from ibis.expr.types.pretty import to_rich
 from ibis.util import experimental
 
 if TYPE_CHECKING:
@@ -57,7 +58,38 @@ class Expr(Immutable, Coercible):
         return self.__interactive_rich_console__(console, options)
 
     def __interactive_rich_console__(self, console, options):
-        raise NotImplementedError()
+        if console.is_jupyter:
+            # Rich infers a console width in jupyter notebooks, but since
+            # notebooks can use horizontal scroll bars we don't want to apply a
+            # limit here. Since rich requires an integer for max_width, we
+            # choose an arbitrarily large integer bound. Note that we need to
+            # handle this here rather than in `to_rich_table`, as this setting
+            # also needs to be forwarded to `console.render`.
+            options = options.update(max_width=1_000_000)
+            console_width = None
+        else:
+            console_width = options.max_width
+
+        try:
+            rt = to_rich(self, console_width=console_width)
+        except Exception as e:
+            # In IPython exceptions inside of _repr_mimebundle_ are swallowed to
+            # allow calling several display functions and choosing to display
+            # the "best" result based on some priority.
+            # This behavior, though, means that exceptions that bubble up inside of the interactive repr
+            # are silently caught.
+            #
+            # We can't stop the exception from being swallowed, but we can force
+            # the display of that exception as we do here.
+            #
+            # A _very_ annoying caveat is that this exception is _not_ being
+            # ` raise`d, it is only being printed to the console.  This means
+            # that you cannot "catch" it.
+            #
+            # This restriction is only present in IPython, not in other REPLs.
+            console.print_exception()
+            raise e
+        return console.render(rt, options=options)
 
     def __init__(self, arg: ops.Node) -> None:
         object.__setattr__(self, "_arg", arg)
@@ -78,20 +110,9 @@ class Expr(Immutable, Coercible):
         if not opts.interactive:
             return self._repr()
 
-        from ibis.expr.types.pretty import simple_console
+        from ibis.expr.types.pretty import pretty_repr
 
-        with simple_console.capture() as capture:
-            try:
-                simple_console.print(self)
-            except TranslationError as e:
-                lines = [
-                    "Translation to backend failed",
-                    f"Error message: {e!r}",
-                    "Expression repr follows:",
-                    self._repr(),
-                ]
-                return "\n".join(lines)
-        return capture.get().rstrip()
+        return pretty_repr(self)
 
     def __reduce__(self):
         return (self.__class__, (self._arg,))
