@@ -1,3 +1,3 @@
 SELECT
-  COUNT(*) AS "CountStar()"
+  COUNT(*) AS "CountStar(star1)"
 FROM "star1" AS "t0"
