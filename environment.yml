@@ -1,0 +1,6 @@
+name: ibis-dev
+dependencies:
+  - pip
+  - psycopg2 >=0.19.3,<1 # because psycopg2 only ships windows wheels
+  - pip:
+      - -r file:requirements-dev.txt
