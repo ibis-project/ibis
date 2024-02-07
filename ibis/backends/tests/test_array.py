@@ -448,23 +448,26 @@ def test_array_slice(backend, start, stop):
         param({"a": [[1, 2], [4]]}, {"a": [[2, 3], [5]]}, id="no_nulls"),
     ],
 )
+@pytest.mark.parametrize(
+    "func",
+    [
+        lambda x: x + 1,
+        functools.partial(lambda x, y: x + y, y=1),
+    ],
+)
 @pytest.mark.broken(
     ["risingwave"],
     raises=AssertionError,
     reason="TODO(Kexiang): seems a bug",
 )
-def test_array_map(con, input, output):
+def test_array_map(con, input, output, func):
     t = ibis.memtable(input, schema=ibis.schema(dict(a="!array<int8>")))
     t = ibis.memtable(input, schema=ibis.schema(dict(a="!array<int8>")))
     expected = pd.Series(output["a"])
 
-    expr = t.select(a=t.a.map(lambda x: x + 1))
-    result = con.execute(expr.a)
-    assert frozenset(map(tuple, result.values)) == frozenset(
-        map(tuple, expected.values)
-    )
-
-    expr = t.select(a=t.a.map(functools.partial(lambda x, y: x + y, y=1)))
+    result = t.a.map(func)
+    assert result.get_name() == "ArrayMap(a, Add(x, 1))"
+    expr = t.select(a=result)
     result = con.execute(expr.a)
     assert frozenset(map(tuple, result.values)) == frozenset(
         map(tuple, expected.values)
@@ -512,17 +515,20 @@ def test_array_map(con, input, output):
         param({"a": [[1, 2], [4]]}, {"a": [[2], [4]]}, id="no_nulls"),
     ],
 )
-def test_array_filter(con, input, output):
+@pytest.mark.parametrize(
+    "predicate",
+    [
+        lambda x: x > 1,
+        functools.partial(lambda x, y: x > y, y=1),
+    ],
+)
+def test_array_filter(con, input, output, predicate):
     t = ibis.memtable(input, schema=ibis.schema(dict(a="!array<int8>")))
     expected = pd.Series(output["a"])
 
-    expr = t.select(a=t.a.filter(lambda x: x > 1))
-    result = con.execute(expr.a)
-    assert frozenset(map(tuple, result.values)) == frozenset(
-        map(tuple, expected.values)
-    )
-
-    expr = t.select(a=t.a.filter(functools.partial(lambda x, y: x > y, y=1)))
+    result = t.a.filter(predicate)
+    assert result.get_name() == "ArrayFilter(a, Greater(x, 1))"
+    expr = t.select(a=result)
     result = con.execute(expr.a)
     assert frozenset(map(tuple, result.values)) == frozenset(
         map(tuple, expected.values)
