@@ -1059,10 +1059,6 @@ class SQLGlotCompiler(abc.ABC):
         on = sg.and_(*predicates) if predicates else None
         return sge.Join(this=table, side=sides[how], kind=kinds[how], on=on)
 
-    @visit_node.register(ops.Project)
-    def visit_Project(self, op, *, parent, values):
-        return sg.select(*self._cleanup_names(values)).from_(parent)
-
     @staticmethod
     def _generate_groups(groups):
         return map(sge.convert, range(1, len(groups) + 1))
