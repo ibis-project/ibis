@@ -9,14 +9,20 @@ from public import public
 from sqlglot.dialects import Oracle
 from sqlglot.dialects.dialect import create_with_partitions_sql, rename_func
 
-import ibis
 import ibis.common.exceptions as com
 import ibis.expr.operations as ops
 from ibis.backends.base.sqlglot.compiler import NULL, STAR, SQLGlotCompiler
 from ibis.backends.base.sqlglot.datatypes import OracleType
-from ibis.backends.base.sqlglot.rewrites import Window, replace_log2, replace_log10
-from ibis.common.patterns import replace
-from ibis.expr.analysis import p, x, y
+from ibis.backends.base.sqlglot.rewrites import (
+    Window,
+    exclude_unsupported_window_frame_from_ops,
+    exclude_unsupported_window_frame_from_row_number,
+    replace_log2,
+    replace_log10,
+    rewrite_empty_order_by_window,
+    rewrite_first_to_first_value,
+    rewrite_last_to_last_value,
+)
 from ibis.expr.rewrites import rewrite_sample
 
 
@@ -59,44 +65,6 @@ Oracle.Generator.TYPE_MAPPING |= {
 Oracle.Generator.TZ_TO_WITH_TIME_ZONE = True
 
 
-@replace(p.WindowFunction(p.First(x, y)))
-def rewrite_first(_, x, y):
-    if y is not None:
-        raise com.UnsupportedOperationError(
-            "`first` aggregate over window does not support `where`"
-        )
-    return _.copy(func=ops.FirstValue(x))
-
-
-@replace(p.WindowFunction(p.Last(x, y)))
-def rewrite_last(_, x, y):
-    if y is not None:
-        raise com.UnsupportedOperationError(
-            "`last` aggregate over window does not support `where`"
-        )
-    return _.copy(func=ops.LastValue(x))
-
-
-@replace(p.WindowFunction(frame=x @ p.WindowFrame(order_by=())))
-def rewrite_empty_order_by_window(_, x):
-    return _.copy(frame=x.copy(order_by=(ibis.NA,)))
-
-
-@replace(p.WindowFunction(p.RowNumber | p.NTile, x))
-def exclude_unsupported_window_frame_from_row_number(_, x):
-    return ops.Subtract(_.copy(frame=x.copy(start=None, end=None)), 1)
-
-
-@replace(
-    p.WindowFunction(
-        p.Lag | p.Lead | p.PercentRank | p.CumeDist | p.Any | p.All,
-        x @ p.WindowFrame(start=None),
-    )
-)
-def exclude_unsupported_window_frame_from_ops(_, x):
-    return _.copy(frame=x.copy(start=None, end=None))
-
-
 @public
 class OracleCompiler(SQLGlotCompiler):
     __slots__ = ()
@@ -107,8 +75,8 @@ class OracleCompiler(SQLGlotCompiler):
     rewrites = (
         exclude_unsupported_window_frame_from_row_number,
         exclude_unsupported_window_frame_from_ops,
-        rewrite_first,
-        rewrite_last,
+        rewrite_first_to_first_value,
+        rewrite_last_to_last_value,
         rewrite_empty_order_by_window,
         rewrite_sample,
         replace_log2,
