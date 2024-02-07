@@ -318,9 +318,10 @@ def test_dot_sql_limit(con):
 def mem_t(con):
     if con.name == "druid":
         pytest.xfail("druid does not support create_table")
-    name = f"test_{con.name}_temp_mem_t_for_cte"
-    t = con.create_table(name, ibis.memtable({"a": list("def")}))
-    yield t
+
+    name = ibis.util.gen_name(con.name)
+    con.create_table(name, ibis.memtable({"a": list("def")}))
+    yield name
     with contextlib.suppress(NotImplementedError):
         con.drop_table(name, force=True)
 
@@ -328,12 +329,11 @@ def mem_t(con):
 @dot_sql_notimpl
 @dot_sql_never
 @pytest.mark.notyet(["polars"], raises=PolarsComputeError)
-def test_cte(con, snapshot, mem_t):
-    t = mem_t
+def test_cte(con, mem_t):
+    t = con.table(mem_t)
     foo = t.alias("foo")
     assert foo.schema() == t.schema()
     assert foo.count().execute() == t.count().execute()
 
     expr = foo.sql('SELECT count(*) "x" FROM "foo"', dialect="duckdb")
-    sql = con.compile(expr)
-    snapshot.assert_match(sql, "out.sql")
+    assert expr.execute().iat[0, 0] == t.count().execute()
