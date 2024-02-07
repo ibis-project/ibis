@@ -1468,12 +1468,12 @@ def test_unresolved_existence_predicate(t1, t2):
     expr = (t1.key1 == t2.key1).any()
     assert isinstance(expr, Deferred)
 
-    filtered = t2.filter(t1.key1 == t2.key1).select(ibis.literal(1))
+    filtered = t2.filter(t1.key1 == t2.key1)
     subquery = ops.ExistsSubquery(filtered)
     expected = ops.Filter(parent=t1, predicates=[subquery])
     assert t1[expr].op() == expected
 
-    filtered = t1.filter(t1.key1 == t2.key1).select(ibis.literal(1))
+    filtered = t1.filter(t1.key1 == t2.key1)
     subquery = ops.ExistsSubquery(filtered)
     expected = ops.Filter(parent=t2, predicates=[subquery])
     assert t2[expr].op() == expected
