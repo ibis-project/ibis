@@ -160,6 +160,11 @@ docs-render:
 docs-preview:
     quarto preview docs
 
+# regen api and preview docs
+docs-api-preview:
+    just docs-apigen --verbose
+    quarto preview docs
+
 # deploy docs to netlify
 docs-deploy:
     quarto publish --no-prompt --no-browser --no-render netlify docs
