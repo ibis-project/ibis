@@ -771,7 +771,8 @@ class SQLGlotCompiler(abc.ABC):
 
     @visit_node.register(ops.ExistsSubquery)
     def visit_ExistsSubquery(self, op, *, rel):
-        return self.f.exists(rel.this)
+        select = rel.this.select(1, append=False)
+        return self.f.exists(select)
 
     @visit_node.register(ops.InSubquery)
     def visit_InSubquery(self, op, *, rel, needle):

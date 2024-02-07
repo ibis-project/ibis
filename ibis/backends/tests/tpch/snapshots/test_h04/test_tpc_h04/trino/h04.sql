@@ -32,7 +32,7 @@ FROM (
     WHERE
       EXISTS(
         SELECT
-          1 AS "1"
+          1
         FROM "hive"."ibis_sf1"."lineitem" AS "t1"
         WHERE
           (
