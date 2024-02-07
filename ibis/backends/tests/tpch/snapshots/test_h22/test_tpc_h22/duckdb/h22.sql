@@ -54,7 +54,7 @@ FROM (
       AND NOT (
         EXISTS(
           SELECT
-            CAST(1 AS TINYINT) AS "1"
+            1
           FROM "orders" AS "t1"
           WHERE
             "t1"."o_custkey" = "t0"."c_custkey"

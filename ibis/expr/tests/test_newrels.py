@@ -141,7 +141,7 @@ def test_subquery_integrity_check():
     t = ibis.table(name="t", schema={"a": "int64", "b": "string"})
     agg = t.agg([t.a.sum(), t.a.mean()])
 
-    msg = "Subquery must have exactly one column, got 2"
+    msg = "must have exactly one column, got 2"
     with pytest.raises(IntegrityError, match=msg):
         ops.ScalarSubquery(agg)
     with pytest.raises(IntegrityError, match=msg):

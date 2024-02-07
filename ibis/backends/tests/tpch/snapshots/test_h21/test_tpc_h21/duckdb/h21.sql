@@ -37,7 +37,7 @@ FROM (
       AND "t10"."n_name" = 'SAUDI ARABIA'
       AND EXISTS(
         SELECT
-          CAST(1 AS TINYINT) AS "1"
+          1
         FROM "lineitem" AS "t6"
         WHERE
           (
@@ -50,7 +50,7 @@ FROM (
       AND NOT (
         EXISTS(
           SELECT
-            CAST(1 AS TINYINT) AS "1"
+            1
           FROM "lineitem" AS "t7"
           WHERE
             (

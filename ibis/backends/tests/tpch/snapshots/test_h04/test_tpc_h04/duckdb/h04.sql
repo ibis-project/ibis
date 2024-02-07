@@ -20,7 +20,7 @@ FROM (
     WHERE
       EXISTS(
         SELECT
-          CAST(1 AS TINYINT) AS "1"
+          1
         FROM "lineitem" AS "t1"
         WHERE
           (
