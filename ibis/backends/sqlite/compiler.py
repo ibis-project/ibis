@@ -15,9 +15,9 @@ from ibis.backends.base.sqlglot.datatypes import SQLiteType
 from ibis.backends.base.sqlglot.rewrites import (
     rewrite_first_to_first_value,
     rewrite_last_to_last_value,
+    rewrite_sample_as_filter,
 )
 from ibis.common.temporal import DateUnit, IntervalUnit
-from ibis.expr.rewrites import rewrite_sample
 
 SQLite.Generator.TYPE_MAPPING |= {
     sge.DataType.Type.BOOLEAN: "BOOLEAN",
@@ -31,10 +31,11 @@ class SQLiteCompiler(SQLGlotCompiler):
     dialect = "sqlite"
     quoted = True
     type_mapper = SQLiteType
-    rewrites = SQLGlotCompiler.rewrites + (
-        rewrite_sample,
+    rewrites = (
+        rewrite_sample_as_filter,
         rewrite_first_to_first_value,
         rewrite_last_to_last_value,
+        *SQLGlotCompiler.rewrites,
     )
 
     NAN = NULL
