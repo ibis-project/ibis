@@ -65,7 +65,7 @@ FROM (
       AND NOT (
         EXISTS(
           SELECT
-            1 AS "1"
+            1
           FROM "hive"."ibis_sf1"."orders" AS "t1"
           WHERE
             "t1"."o_custkey" = "t2"."c_custkey"
