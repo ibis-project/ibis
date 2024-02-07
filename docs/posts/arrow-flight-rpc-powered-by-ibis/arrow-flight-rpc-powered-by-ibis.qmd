@@ -570,7 +570,3 @@ today.
  [documentation](https://arrow.apache.org/docs/format/Flight.html)
 - For more information about Ibis - see the Ibis
  [homepage](https://ibis-project.org).
-
-A [Voltron Data Enterprise Support
-subscription](https://voltrondata.com/product) can help accelerate your success
-with Apache Arrow Flight RPC even further!
