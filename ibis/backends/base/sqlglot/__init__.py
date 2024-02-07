@@ -210,18 +210,6 @@ class SQLGlotBackend(BaseBackend):
         with self._safe_raw_sql(src):
             pass
 
-    def _register_temp_view_cleanup(self, name: str) -> None:
-        """Register a clean up function for a temporary view.
-
-        No-op by default.
-
-        Parameters
-        ----------
-        name
-            The temporary view to register for clean up.
-
-        """
-
     def _load_into_cache(self, name, expr):
         self.create_table(name, expr, schema=expr.schema(), temp=True)
 
