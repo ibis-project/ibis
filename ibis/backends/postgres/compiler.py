@@ -15,7 +15,7 @@ import ibis.expr.operations as ops
 import ibis.expr.rules as rlz
 from ibis.backends.base.sqlglot.compiler import NULL, STAR, SQLGlotCompiler, paren
 from ibis.backends.base.sqlglot.datatypes import PostgresType
-from ibis.expr.rewrites import rewrite_sample
+from ibis.backends.base.sqlglot.rewrites import rewrite_sample_as_filter
 
 Postgres.Generator.TRANSFORMS |= {
     sge.Map: rename_func("hstore"),
@@ -37,7 +37,7 @@ class PostgresCompiler(SQLGlotCompiler):
 
     dialect = "postgres"
     type_mapper = PostgresType
-    rewrites = rewrite_sample, *SQLGlotCompiler.rewrites
+    rewrites = (rewrite_sample_as_filter, *SQLGlotCompiler.rewrites)
     quoted = True
 
     NAN = sge.Literal.number("'NaN'::double precision")

@@ -22,9 +22,9 @@ from ibis.backends.base.sqlglot.compiler import (
     paren,
 )
 from ibis.backends.base.sqlglot.datatypes import DataFusionType
+from ibis.backends.base.sqlglot.rewrites import rewrite_sample_as_filter
 from ibis.common.temporal import IntervalUnit, TimestampUnit
 from ibis.expr.operations.udf import InputType
-from ibis.expr.rewrites import rewrite_sample
 from ibis.formats.pyarrow import PyArrowType
 
 
@@ -48,7 +48,7 @@ class DataFusionCompiler(SQLGlotCompiler):
     dialect = "datafusion"
     type_mapper = DataFusionType
     quoted = True
-    rewrites = (rewrite_sample, *SQLGlotCompiler.rewrites)
+    rewrites = (rewrite_sample_as_filter, *SQLGlotCompiler.rewrites)
 
     def _aggregate(self, funcname: str, *args, where):
         expr = self.f[funcname](*args)

@@ -14,7 +14,7 @@ import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 from ibis.backends.base.sqlglot.compiler import NULL, SQLGlotCompiler
 from ibis.backends.base.sqlglot.datatypes import DruidType
-from ibis.expr.rewrites import rewrite_sample
+from ibis.backends.base.sqlglot.rewrites import rewrite_sample_as_filter
 
 
 # Is postgres the best dialect to inherit from?
@@ -34,7 +34,7 @@ class DruidCompiler(SQLGlotCompiler):
     dialect = "druid"
     type_mapper = DruidType
     quoted = True
-    rewrites = (rewrite_sample, *SQLGlotCompiler.rewrites)
+    rewrites = (rewrite_sample_as_filter, *SQLGlotCompiler.rewrites)
 
     def _aggregate(self, funcname: str, *args, where):
         expr = self.f[funcname](*args)
