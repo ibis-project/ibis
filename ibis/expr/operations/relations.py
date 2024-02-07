@@ -28,6 +28,8 @@ NonSortKey = Annotated[T, ~InstanceOf(SortKey)]
 
 @public
 class Relation(Node, Coercible):
+    missing = frozenset()
+
     @classmethod
     def __coerce__(cls, value):
         from ibis.expr.types import Table
@@ -120,6 +122,13 @@ class Project(Relation):
     def schema(self):
         return Schema({k: v.dtype for k, v in self.values.items()})
 
+    @attribute
+    def missing(self):
+        values = (v.relations for v in self.values.values())
+        result = set().union(*values)
+        result.discard(self.parent)
+        return frozenset(result)
+
 
 class Simple(Relation):
     parent: Relation
@@ -131,6 +140,10 @@ class Simple(Relation):
     @attribute
     def schema(self):
         return self.parent.schema
+
+    @attribute
+    def missing(self):
+        return self.parent.missing
 
 
 # TODO(kszucs): remove in favor of View
@@ -200,6 +213,15 @@ class JoinChain(Relation):
     def schema(self):
         return Schema({k: v.dtype.copy(nullable=True) for k, v in self.values.items()})
 
+    @attribute
+    def missing(self):
+        values = (v.relations for v in self.values.values())
+        result = set().union(*values)
+        for join in self.rest:
+            result.discard(join.table)
+        result.discard(self.first)
+        return frozenset(result)
+
     def to_expr(self):
         import ibis.expr.types as ir
 
@@ -234,6 +256,13 @@ class Filter(Simple):
                 )
         super().__init__(parent=parent, predicates=predicates)
 
+    @attribute
+    def missing(self):
+        preds = (pred.relations for pred in self.predicates)
+        result = set().union(*preds)
+        result.discard(self.parent)
+        return frozenset(result)
+
 
 @public
 class Limit(Simple):
@@ -266,6 +295,13 @@ class Aggregate(Relation):
     def schema(self):
         return Schema({k: v.dtype for k, v in self.values.items()})
 
+    @attribute
+    def missing(self):
+        values = (v.relations for v in self.values.values())
+        result = set().union(*values)
+        result.discard(self.parent)
+        return frozenset(result)
+
 
 @public
 class Set(Relation):
@@ -289,6 +325,10 @@ class Set(Relation):
     def schema(self):
         return self.left.schema
 
+    @attribute
+    def missing(self):
+        return self.left.missing | self.right.missing
+
 
 @public
 class Union(Set):
@@ -309,6 +349,7 @@ class Difference(Set):
 class PhysicalTable(Relation):
     name: str
     values = FrozenDict()
+    missing = frozenset()
 
 
 @public
@@ -375,6 +416,13 @@ class DummyTable(Relation):
     @attribute
     def schema(self):
         return Schema({k: v.dtype for k, v in self.values.items()})
+
+    @attribute
+    def missing(self):
+        result = set()
+        for v in self.values.values():
+            result |= v.relations
+        return frozenset(result)
 
 
 @public

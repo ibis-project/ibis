@@ -253,6 +253,13 @@ class SQLGlotCompiler(abc.ABC):
             A sqlglot expression
 
         """
+        assert isinstance(op, ops.Relation)
+        if op.missing:
+            raise com.IntegrityError(
+                # TODO(kszucs): more detailed error message suggesting a solution
+                "There are unresolved relations in the expression tree"
+            )
+
         # substitute parameters immediately to avoid having to define a
         # ScalarParameter translation rule
         params = self._prepare_params(params)

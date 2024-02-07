@@ -17,7 +17,7 @@ class Subquery(Value):
 
     @attribute
     def relations(self):
-        return frozenset()
+        return self.rel.missing
 
 
 @public
@@ -73,4 +73,4 @@ class InSubquery(Subquery):
 
     @attribute
     def relations(self):
-        return self.needle.relations
+        return self.rel.missing | self.needle.relations
