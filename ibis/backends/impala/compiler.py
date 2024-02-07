@@ -18,8 +18,8 @@ from ibis.backends.base.sqlglot.rewrites import (
     rewrite_empty_order_by_window,
     rewrite_first_to_first_value,
     rewrite_last_to_last_value,
+    rewrite_sample_as_filter,
 )
-from ibis.expr.rewrites import rewrite_sample
 
 
 def _interval(self, e):
@@ -48,7 +48,7 @@ class ImpalaCompiler(SQLGlotCompiler):
     dialect = "impala"
     type_mapper = ImpalaType
     rewrites = (
-        rewrite_sample,
+        rewrite_sample_as_filter,
         rewrite_first_to_first_value,
         rewrite_last_to_last_value,
         rewrite_empty_order_by_window,
