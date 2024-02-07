@@ -743,6 +743,13 @@ def test_aggregate_keywords(table):
     assert_equal(expr2, expected)
 
 
+def test_select_on_literals(table):
+    # literal ints and strings are column indices, everything else is a value
+    expr1 = table.select(col1=True, col2=1, col3="a")
+    expr2 = table.select(col1=ibis.literal(True), col2=table.b, col3=table.a)
+    assert expr1.equals(expr2)
+
+
 def test_filter_on_literal_boolean(table):
     expr1 = table.filter(True)
     expr2 = table.filter(ibis.literal(True))
