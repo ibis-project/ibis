@@ -21,9 +21,10 @@ from ibis.backends.base.sqlglot.rewrites import (
     rewrite_empty_order_by_window,
     rewrite_first_to_first_value,
     rewrite_last_to_last_value,
+    rewrite_sample_as_filter,
 )
 from ibis.common.patterns import replace
-from ibis.expr.rewrites import p, rewrite_sample
+from ibis.expr.rewrites import p
 
 MySQL.Generator.TRANSFORMS |= {
     sge.LogicalOr: rename_func("max"),
@@ -65,7 +66,7 @@ class MySQLCompiler(SQLGlotCompiler):
     type_mapper = MySQLType
     rewrites = (
         rewrite_limit,
-        rewrite_sample,
+        rewrite_sample_as_filter,
         rewrite_first_to_first_value,
         rewrite_last_to_last_value,
         exclude_unsupported_window_frame_from_ops,
