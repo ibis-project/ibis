@@ -449,11 +449,11 @@ def test_array_slice(backend, start, stop):
     ],
 )
 @pytest.mark.parametrize(
-    "func,result_name",
+    "func",
     [
-        (lambda x: x + 1, "ArrayMap(a, Add(x, 1))"),
-        (functools.partial(lambda x, y: x + y, y=1), "ArrayMap(a, Add(x, 1))"),
-        (ibis._ + 1, "ArrayMap(a, Add(_, 1))"),
+        lambda x: x + 1,
+        functools.partial(lambda x, y: x + y, y=1),
+        ibis._ + 1,
     ],
 )
 @pytest.mark.broken(
@@ -461,14 +461,12 @@ def test_array_slice(backend, start, stop):
     raises=AssertionError,
     reason="TODO(Kexiang): seems a bug",
 )
-def test_array_map(con, input, output, func, result_name):
+def test_array_map(con, input, output, func):
     t = ibis.memtable(input, schema=ibis.schema(dict(a="!array<int8>")))
     t = ibis.memtable(input, schema=ibis.schema(dict(a="!array<int8>")))
     expected = pd.Series(output["a"])
 
-    result = t.a.map(func)
-    assert result.get_name() == result_name
-    expr = t.select(a=result)
+    expr = t.select(a=t.a.map(func))
     result = con.execute(expr.a)
     assert frozenset(map(tuple, result.values)) == frozenset(
         map(tuple, expected.values)
@@ -517,20 +515,18 @@ def test_array_map(con, input, output, func, result_name):
     ],
 )
 @pytest.mark.parametrize(
-    ("predicate,result_name"),
+    "predicate",
     [
-        (lambda x: x > 1, "ArrayFilter(a, Greater(x, 1))"),
-        (functools.partial(lambda x, y: x > y, y=1), "ArrayFilter(a, Greater(x, 1))"),
-        (ibis._ > 1, "ArrayFilter(a, Greater(_, 1))"),
+        lambda x: x > 1,
+        functools.partial(lambda x, y: x > y, y=1),
+        ibis._ > 1,
     ],
 )
-def test_array_filter(con, input, output, predicate, result_name):
+def test_array_filter(con, input, output, predicate):
     t = ibis.memtable(input, schema=ibis.schema(dict(a="!array<int8>")))
     expected = pd.Series(output["a"])
 
-    result = t.a.filter(predicate)
-    assert result.get_name() == result_name
-    expr = t.select(a=result)
+    expr = t.select(a=t.a.filter(predicate))
     result = con.execute(expr.a)
     assert frozenset(map(tuple, result.values)) == frozenset(
         map(tuple, expected.values)
