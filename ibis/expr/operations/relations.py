@@ -9,7 +9,6 @@ from public import public
 
 import ibis.expr.datashape as ds
 import ibis.expr.datatypes as dt
-import ibis.expr.rules as rlz
 from ibis.common.annotations import attribute
 from ibis.common.collections import FrozenDict
 from ibis.common.exceptions import IbisTypeError, IntegrityError, RelationError
@@ -97,59 +96,6 @@ class Field(Value):
     @attribute
     def relations(self):
         return frozenset({self.rel})
-
-
-@public
-class Subquery(Value):
-    rel: Relation
-    shape = ds.columnar
-
-    def __init__(self, rel, **kwargs):
-        if len(rel.schema) != 1:
-            raise IntegrityError(
-                f"Subquery must have exactly one column, got {len(rel.schema)}"
-            )
-        super().__init__(rel=rel, **kwargs)
-
-    @attribute
-    def value(self):
-        (value,) = self.rel.values.values()
-        return value
-
-    @attribute
-    def relations(self):
-        return frozenset()
-
-    @property
-    def dtype(self):
-        return self.value.dtype
-
-
-@public
-class ScalarSubquery(Subquery):
-    shape = ds.scalar
-
-
-@public
-class ExistsSubquery(Subquery):
-    dtype = dt.boolean
-
-
-@public
-class InSubquery(Subquery):
-    needle: Value
-    dtype = dt.boolean
-
-    def __init__(self, rel, needle):
-        super().__init__(rel=rel, needle=needle)
-        if not rlz.comparable(self.value, self.needle):
-            raise IntegrityError(
-                f"Subquery {self.needle!r} is not comparable to {self.value!r}"
-            )
-
-    @attribute
-    def relations(self):
-        return self.needle.relations
 
 
 def _check_integrity(values, allowed_parents):
