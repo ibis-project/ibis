@@ -18,8 +18,8 @@ from ibis.backends.base.sqlglot.rewrites import (
     exclude_unsupported_window_frame_from_ops,
     rewrite_first_to_first_value,
     rewrite_last_to_last_value,
+    rewrite_sample_as_filter,
 )
-from ibis.expr.rewrites import rewrite_sample
 
 
 # TODO(cpcloud): remove this hack once
@@ -43,7 +43,7 @@ class TrinoCompiler(SQLGlotCompiler):
     dialect = "trino"
     type_mapper = TrinoType
     rewrites = (
-        rewrite_sample,
+        rewrite_sample_as_filter,
         rewrite_first_to_first_value,
         rewrite_last_to_last_value,
         exclude_unsupported_window_frame_from_ops,

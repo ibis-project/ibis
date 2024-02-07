@@ -21,8 +21,8 @@ from ibis.backends.base.sqlglot.compiler import (
     SQLGlotCompiler,
     parenthesize,
 )
+from ibis.backends.base.sqlglot.rewrites import rewrite_sample_as_filter
 from ibis.backends.clickhouse.datatypes import ClickhouseType
-from ibis.expr.rewrites import rewrite_sample
 
 ClickHouse.Generator.TRANSFORMS |= {
     exp.ArraySize: rename_func("length"),
@@ -37,7 +37,7 @@ class ClickHouseCompiler(SQLGlotCompiler):
 
     dialect = "clickhouse"
     type_mapper = ClickhouseType
-    rewrites = (rewrite_sample, *SQLGlotCompiler.rewrites)
+    rewrites = (rewrite_sample_as_filter, *SQLGlotCompiler.rewrites)
 
     def _aggregate(self, funcname: str, *args, where):
         has_filter = where is not None

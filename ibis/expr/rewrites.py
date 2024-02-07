@@ -6,7 +6,6 @@ from collections.abc import Mapping
 
 import toolz
 
-import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 from ibis.common.deferred import Item, _, deferred, var
@@ -80,20 +79,6 @@ def rewrite_dropna(_):
         return _.parent
 
     return ops.Filter(_.parent, tuple(preds))
-
-
-@replace(p.Sample)
-def rewrite_sample(_):
-    """Rewrite Sample as `t.filter(random() <= fraction)`.
-
-    Errors as unsupported if a `seed` is specified.
-    """
-    if _.seed is not None:
-        raise com.UnsupportedOperationError(
-            "`Table.sample` with a random seed is unsupported"
-        )
-    pred = ops.LessEqual(ops.RandomScalar(), _.fraction)
-    return ops.Filter(_.parent, (pred,))
 
 
 @replace(p.Analytic)

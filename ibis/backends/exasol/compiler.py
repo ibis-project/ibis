@@ -16,8 +16,8 @@ from ibis.backends.base.sqlglot.rewrites import (
     exclude_unsupported_window_frame_from_rank,
     exclude_unsupported_window_frame_from_row_number,
     rewrite_empty_order_by_window,
+    rewrite_sample_as_filter,
 )
-from ibis.expr.rewrites import rewrite_sample
 
 
 def _interval(self, e):
@@ -50,7 +50,7 @@ class ExasolCompiler(SQLGlotCompiler):
     type_mapper = ExasolType
     quoted = True
     rewrites = (
-        rewrite_sample,
+        rewrite_sample_as_filter,
         exclude_unsupported_window_frame_from_ops,
         exclude_unsupported_window_frame_from_rank,
         exclude_unsupported_window_frame_from_row_number,
