@@ -10,59 +10,28 @@ from sqlglot import exp
 from sqlglot.dialects import Snowflake
 from sqlglot.dialects.dialect import rename_func
 
-import ibis
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 from ibis import util
 from ibis.backends.base.sqlglot.compiler import NULL, C, FuncGen, SQLGlotCompiler
 from ibis.backends.base.sqlglot.datatypes import SnowflakeType
-from ibis.backends.base.sqlglot.rewrites import replace_log2, replace_log10
+from ibis.backends.base.sqlglot.rewrites import (
+    exclude_unsupported_window_frame_from_ops,
+    exclude_unsupported_window_frame_from_row_number,
+    replace_log2,
+    replace_log10,
+    rewrite_empty_order_by_window,
+    rewrite_first_to_first_value,
+    rewrite_last_to_last_value,
+)
 from ibis.common.patterns import replace
-from ibis.expr.analysis import p, x, y
+from ibis.expr.analysis import p
 
 Snowflake.Generator.TRANSFORMS |= {
     exp.ApproxDistinct: rename_func("approx_count_distinct"),
     exp.Levenshtein: rename_func("editdistance"),
 }
-
-
-@replace(p.WindowFunction(p.First(x, y)))
-def rewrite_first(_, x, y):
-    if y is not None:
-        raise com.UnsupportedOperationError(
-            "`first` aggregate over window does not support `where`"
-        )
-    return _.copy(func=ops.FirstValue(x))
-
-
-@replace(p.WindowFunction(p.Last(x, y)))
-def rewrite_last(_, x, y):
-    if y is not None:
-        raise com.UnsupportedOperationError(
-            "`last` aggregate over window does not support `where`"
-        )
-    return _.copy(func=ops.LastValue(x))
-
-
-@replace(p.WindowFunction(frame=x @ p.WindowFrame(order_by=())))
-def rewrite_empty_order_by_window(_, x):
-    return _.copy(frame=x.copy(order_by=(ibis.NA,)))
-
-
-@replace(p.WindowFunction(p.RowNumber | p.NTile, x))
-def exclude_unsupported_window_frame_from_row_number(_, x):
-    return ops.Subtract(_.copy(frame=x.copy(start=None, end=None)), 1)
-
-
-@replace(
-    p.WindowFunction(
-        p.Lag | p.Lead | p.PercentRank | p.CumeDist | p.Any | p.All,
-        x @ p.WindowFrame(start=None),
-    )
-)
-def exclude_unsupported_window_frame_from_ops(_, x):
-    return _.copy(frame=x.copy(start=None, end=None))
 
 
 @replace(p.ToJSONMap | p.ToJSONArray)
@@ -86,8 +55,8 @@ class SnowflakeCompiler(SQLGlotCompiler):
         replace_to_json,
         exclude_unsupported_window_frame_from_row_number,
         exclude_unsupported_window_frame_from_ops,
-        rewrite_first,
-        rewrite_last,
+        rewrite_first_to_first_value,
+        rewrite_last_to_last_value,
         rewrite_empty_order_by_window,
         replace_log2,
         replace_log10,

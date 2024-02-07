@@ -810,11 +810,6 @@ def test_simple_ungrouped_window_with_scalar_order_by(alltypes):
                     raises=AssertionError,
                     strict=False,  # sometimes it passes
                 ),
-                pytest.mark.notyet(
-                    ["oracle"],
-                    raises=com.UnsupportedOperationError,
-                    reason="oracle doesn't allow unordered analytic functions without a windowing clause",
-                ),
                 pytest.mark.notimpl(
                     ["flink"],
                     raises=com.UnsupportedOperationError,
@@ -860,11 +855,6 @@ def test_simple_ungrouped_window_with_scalar_order_by(alltypes):
                     ),
                     raises=AssertionError,
                     strict=False,  # sometimes it passes
-                ),
-                pytest.mark.notyet(
-                    ["oracle"],
-                    raises=com.UnsupportedOperationError,
-                    reason="oracle doesn't allow unordered analytic functions without a windowing clause",
                 ),
                 pytest.mark.notimpl(
                     ["flink"],

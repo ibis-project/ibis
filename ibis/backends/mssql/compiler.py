@@ -22,12 +22,13 @@ from ibis.backends.base.sqlglot.compiler import (
 )
 from ibis.backends.base.sqlglot.datatypes import MSSQLType
 from ibis.backends.base.sqlglot.rewrites import (
+    exclude_unsupported_window_frame_from_ops,
+    exclude_unsupported_window_frame_from_row_number,
     rewrite_first_to_first_value,
     rewrite_last_to_last_value,
 )
 from ibis.common.deferred import var
-from ibis.common.patterns import replace
-from ibis.expr.rewrites import p, rewrite_sample
+from ibis.expr.rewrites import rewrite_sample
 
 
 class MSSQL(TSQL):
@@ -65,16 +66,6 @@ end = var("end")
 # * Boolean expressions MUST be used in a WHERE clause, i.e., SELECT * FROM t WHERE 1 is not allowed
 
 
-@replace(p.WindowFunction(p.RowNumber | p.NTile, y))
-def exclude_unsupported_window_frame_from_ops_with_offset(_, y):
-    return ops.Subtract(_.copy(frame=y.copy(start=None, end=0)), 1)
-
-
-@replace(p.WindowFunction(p.Lag | p.Lead | p.PercentRank | p.CumeDist, y))
-def exclude_unsupported_window_frame_from_ops(_, y):
-    return _.copy(frame=y.copy(start=None, end=0))
-
-
 @public
 class MSSQLCompiler(SQLGlotCompiler):
     __slots__ = ()
@@ -86,7 +77,7 @@ class MSSQLCompiler(SQLGlotCompiler):
         rewrite_first_to_first_value,
         rewrite_last_to_last_value,
         exclude_unsupported_window_frame_from_ops,
-        exclude_unsupported_window_frame_from_ops_with_offset,
+        exclude_unsupported_window_frame_from_row_number,
         *SQLGlotCompiler.rewrites,
     )
     quoted = True
