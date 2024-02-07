@@ -288,6 +288,13 @@ def exclude_unsupported_window_frame_from_row_number(_, y):
     return ops.Subtract(_.copy(frame=y.copy(start=None, end=0)), 1)
 
 
+@replace(p.WindowFunction(p.MinRank | p.DenseRank, y @ p.WindowFrame(start=None)))
+def exclude_unsupported_window_frame_from_rank(_, y):
+    return ops.Subtract(
+        _.copy(frame=y.copy(start=None, end=0, order_by=y.order_by or (ops.NULL,))), 1
+    )
+
+
 @replace(
     p.WindowFunction(
         p.Lag | p.Lead | p.PercentRank | p.CumeDist | p.Any | p.All,

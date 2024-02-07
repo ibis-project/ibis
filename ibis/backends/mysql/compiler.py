@@ -16,13 +16,14 @@ from ibis.backends.base.sqlglot.compiler import NULL, STAR, SQLGlotCompiler
 from ibis.backends.base.sqlglot.datatypes import MySQLType
 from ibis.backends.base.sqlglot.rewrites import (
     exclude_unsupported_window_frame_from_ops,
+    exclude_unsupported_window_frame_from_rank,
     exclude_unsupported_window_frame_from_row_number,
     rewrite_empty_order_by_window,
     rewrite_first_to_first_value,
     rewrite_last_to_last_value,
 )
 from ibis.common.patterns import replace
-from ibis.expr.rewrites import p, rewrite_sample, y
+from ibis.expr.rewrites import p, rewrite_sample
 
 MySQL.Generator.TRANSFORMS |= {
     sge.LogicalOr: rename_func("max"),
@@ -54,13 +55,6 @@ def rewrite_limit(_, **kwargs):
         some_large_number = (1 << 64) - 1
         return _.copy(n=some_large_number)
     return _
-
-
-@replace(p.WindowFunction(p.MinRank | p.DenseRank, y @ p.WindowFrame(start=None)))
-def exclude_unsupported_window_frame_from_rank(_, y):
-    return ops.Subtract(
-        _.copy(frame=y.copy(start=None, end=0, order_by=y.order_by or (ops.NULL,))), 1
-    )
 
 
 @public
