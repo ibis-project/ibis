@@ -130,6 +130,7 @@ def test_dtype_from_nullable_list_type(value_nullable, list_nullable):
             dt.Set(dt.String(nullable=False)),
             pa.list_(pa.field("item", pa.string(), nullable=False)),
         ),
+        (dt.uuid, pa.string()),
     ],
 )
 def test_ibis_exclusive_types(ibis_type, arrow_type):
