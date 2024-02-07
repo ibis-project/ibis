@@ -13,11 +13,11 @@ from ibis.backends.base.sqlglot.compiler import NULL, SQLGlotCompiler
 from ibis.backends.base.sqlglot.datatypes import ExasolType
 from ibis.backends.base.sqlglot.rewrites import (
     exclude_unsupported_window_frame_from_ops,
+    exclude_unsupported_window_frame_from_rank,
     exclude_unsupported_window_frame_from_row_number,
     rewrite_empty_order_by_window,
 )
-from ibis.common.patterns import replace
-from ibis.expr.rewrites import p, rewrite_sample, y
+from ibis.expr.rewrites import rewrite_sample
 
 
 def _interval(self, e):
@@ -41,13 +41,6 @@ class Exasol(Postgres):
         TYPE_MAPPING = Postgres.Generator.TYPE_MAPPING.copy() | {
             sge.DataType.Type.TIMESTAMPTZ: "TIMESTAMP WITH LOCAL TIME ZONE",
         }
-
-
-@replace(p.WindowFunction(p.MinRank | p.DenseRank, y @ p.WindowFrame(start=None)))
-def exclude_unsupported_window_frame_from_rank(_, y):
-    return ops.Subtract(
-        _.copy(frame=y.copy(start=None, end=0, order_by=y.order_by or (ops.NULL,))), 1
-    )
 
 
 class ExasolCompiler(SQLGlotCompiler):

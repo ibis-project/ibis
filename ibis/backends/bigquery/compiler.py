@@ -16,22 +16,15 @@ from ibis.backends.base.sqlglot.compiler import NULL, STAR, SQLGlotCompiler, par
 from ibis.backends.base.sqlglot.datatypes import BigQueryType, BigQueryUDFType
 from ibis.backends.base.sqlglot.rewrites import (
     exclude_unsupported_window_frame_from_ops,
+    exclude_unsupported_window_frame_from_rank,
     exclude_unsupported_window_frame_from_row_number,
     rewrite_first_to_first_value,
     rewrite_last_to_last_value,
 )
-from ibis.common.patterns import replace
 from ibis.common.temporal import DateUnit, IntervalUnit, TimestampUnit, TimeUnit
-from ibis.expr.rewrites import p, rewrite_sample, y
+from ibis.expr.rewrites import rewrite_sample
 
 _NAME_REGEX = re.compile(r'[^!"$()*,./;?@[\\\]^`{}~\n]+')
-
-
-@replace(p.WindowFunction(p.MinRank | p.DenseRank, y @ p.WindowFrame(start=None)))
-def exclude_unsupported_window_frame_from_rank(_, y):
-    return ops.Subtract(
-        _.copy(frame=y.copy(start=None, end=0, order_by=y.order_by or (ops.NULL,))), 1
-    )
 
 
 class BigQueryCompiler(SQLGlotCompiler):
