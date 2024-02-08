@@ -3,3 +3,4 @@
 skip = *.lock,.direnv,.git,./docs/_freeze,./docs/_output/**,./docs/_inv/**,docs/_freeze/**,*.svg,*.css,*.html,*.js
 ignore-regex = \b(i[if]f|I[IF]F|AFE)\b
 builtin = clear,rare,names
+ignore-words-list = tim

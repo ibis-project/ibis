@@ -1,0 +1,231 @@
+---
+title: "Ibis project 2024 roadmap"
+author: "Cody Peterson"
+date: "2024-02-15"
+image: commits.png
+draft: true
+categories:
+    - blog
+    - roadmap
+    - community
+---
+
+## Overview
+
+Welcome to the first public roadmap for the Ibis project! If you aren't familiar
+with the background of Ibis or who supports it nowadays, we recommend reading
+[why Voltron Data supports Ibis](../why-voda-supports-ibis/index.qmd) before the
+roadmap below.
+
+## 2024 roadmap
+
+We have a [public roadmap as a GitHub
+project!](https://github.com/orgs/ibis-project/projects/5)
+
+![Ibis roadmap](roadmap.png)
+
+We are early in our use of this GitHub project, so please pardon any
+disorganization as we get it up and running efficiently. In general, we have:
+
+- **Roadmap view**: consisting of meta-issues in their respective repositories
+ for high-level objectives of the Ibis project
+- **Triage view**: consisting of new issues across Ibis project repositories
+ that need to be triaged
+- **Backlog view**: consisting of issues that have been triaged (assigned a
+ priority) and are on the backlog
+- **TODO view**: consisting of issues that are in progress or ready to be worked
+ on soon
+- **Label-specific views**: consisting of issues for specific labels, like
+ documentation or a large refactor
+
+Right now, [the team at Voltron Data](../why-voda-supports-ibis/index.qmd) sets
+the roadmap and priorities. Over time as more contributors and organizations
+join the project, we expect this process to diversify and become more
+community-driven. We'd love to have you involved in the process! [Join us on
+Zulip](https://ibis-project.zulipchat.com) or interact with us on
+[GitHub](https://github.com/ibis-project/ibis) to get involved and join the
+decision making process for Ibis.
+
+### Overall themes
+
+Our top five themes for 2024 include:
+
+1. **Ibis backends**: Ibis is a Python frontend for many backends. To continue
+scaling to more backends, we need to complete a major rework of library
+internals and stabilize the API for backend authors. Related work in this area
+will make it easier than ever to create new Ibis backends and maintain them.
+This work will also include improving backend interfaces for operations like
+table creation, insertion, and upsertion. This theme allows Ibis to deliver on
+the promise of a single Python dataframe API that can be written once and run on
+any execution engine.
+
+2. **Ibis for ML**: Increasingly, data projects are ML projects. Ibis can
+uniquely help with feature engineering and other ML tasks connecting your data
+where it lives to ML models. We will continue to improve Ibis for ML use cases.
+This theme allows Ibis to cover more of the data and MLOps lifecycle, with
+efficient feature engineering and handoff to ML training frameworks.
+
+3. **Ibis for streaming data**: Ibis has only been for batch data until very
+recently. With the addition of the first streaming backends, we will continue to
+improve Ibis for streaming data use cases and bridge the gap between batch and
+streaming data. This theme allows Ibis to expand its promise of a single Python
+dataframe to stream processing, too.
+
+4. **Ibis for geospatial**: Ibis has a rich set of geospatial expressions, but
+most backends do not implement them. We will continue to improve Ibis for
+geospatial use cases and bridge the gap between geospatial data and other data
+types. This theme allows Ibis to cover more of the data lifecycle for geospatial
+data.
+
+5. **Ibis community**: Ibis is an open source project and we want to make it as
+easy as possible for new contributors to get involved. We will continue to
+improve the Ibis community and make it easier than ever to contribute to Ibis.
+This theme is critical for Ibis to continue to grow and thrive as an open source
+project. We aim to delight our community and make it easy to get involved.
+
+We believe these themes will help Ibis as a standard Python interface for many
+backends and real-world data use cases.
+
+### The big refactor
+
+The biggest item in Q1 2024 and primary focus of the core Ibis team right now is
+the big refactor -- dubbed "the epic split" -- continuing the great work
+completed by Krisztián in [his PR splitting the relational
+operations](https://github.com/ibis-project/ibis/pull/7752). You can read more
+details in that PR, but the gist is that a new intermediary representation for
+Ibis expressions is being has been created that drastically simplifies the
+codebase.
+
+With that refactor in place, each backend Ibis supports needs to be moved to the
+new relational model. As a consequence, we are also swapping out SQLAlchemy for
+[SQLGlot](https://github.com/tobymao/sqlglot). We are losing out on some of the
+things SQLAlchemy did for us automatically, but overall this gives us a lot more
+control over the SQL that is generated, reduces dependency overhead, and
+simplifies the codebase further.
+
+::: {.callout-note}
+We are targeting release in Ibis 9.0. Look at for a blog post dedicated to the
+refactor soon!
+:::
+
+### Ibis for ML preprocessing
+
+Data projects are increasingly ML projects. pandas and scikit-learn are the
+default for Python users, but tend to lack scalability. Many projects look to
+address this and Ibis does not intend on duplicating effort here. Instead, we
+want to leverage what sets Ibis apart -- the ability to have a single Python API
+that scales across many backends -- to feature engineering and other ML
+preprocessing tasks ahead of model training.
+
+Jim took this on over the last few months, building up the
+[IbisML](https://github.com/ibis-project/ibisml) package to a usable (but still
+toy) state. We will further invest in IbisML this year to get it a
+production-ready state, bringing the power of Ibis to ML feature engineering.
+
+We're [excited to welcome the (former) Claypot AI team to Voltron
+Data](https://voltrondata.com/resources/voltron-data-acquires-claypot-ai) to
+help drive this work forward! Expect a release announcement for IbisML soon
+covering the majority of feature engineering operations and handoff to popular
+ML training frameworks.
+
+::: {.callout-note collapse="true" title="LLMs: the Ibis Birdbrain project"}
+I've been working on a new LLM integration for Ibis called `ibis-birdbrain`.
+**It's highly experimental and still a work in progress**, but keep an eye out
+for more details soon!
+:::
+
+### Streaming data backends
+
+With the release of Ibis 8.0, we added support for Apache Flink in collaboration
+with Claypot AI, the first dedicated streaming data backend for Ibis.
+
+::: {.callout-note}
+Since writing this roadmap, [Voltron Data has acquired Claypot
+AI!](https://voltrondata.com/resources/voltron-data-acquires-claypot-ai). We are
+excited to welcome the Claypot team and continue to build the composable data
+ecosystem with their streaming and ML expertise.
+:::
+
+We've also collaborated with [RisingWave](https://risingwave.com/) on the second
+streaming backend, which was merged recently. This backend is still early and
+fairly experimental, but demonstrates the ability for Ibis to quickly add new
+backends. We can now add batch and streaming backend with ease!
+
+### Geospatial improvements
+
+Ibis supports [50+ geospatial
+expressions](https://ibis-project.org/reference/expression-geospatial) in the
+API, but most backends do not implement them.
+
+::: {.callout-note}
+This is a great opportunity for new contributors to get involved with Ibis! Let
+us know if you're interested in adding geospatial support to your favorite
+backend.
+:::
+
+### Community engagement
+
+Hello! Expect to see an increased presence from the Ibis project in the form of
+blogs, conference talks, video content, and more in 2024. [Join us on
+Zulip](https://ibis-project.zulipchat.com) to discuss ideas and get involved!
+
+We would love to onboard new contributors to the project.
+
+### New backends
+
+Adding new backends is not a priority for the Ibis team at Voltron Data in Q1.
+Instead, we are focusing on [the big refactor](#the-big-refactor) and other
+internal library improvements to get Ibis to the point where adding new backends
+is much easier and maintanable. That will take the form of stabilizing the new
+intermediary representation, separating out **connection** from **compilation**
+steps, and solidifying the API for backend authors. We will also introduce new
+documentation and possibly testing frameworks to ease the burden of adding new
+backends.
+
+We are still happy to support new backends! Some have already been mentioned,
+but being added in Q1 include:
+
+- Apache Flink
+- Exasol
+- RisingWave
+
+Adding a new backend is a great way to get involved with Ibis! If you're
+interested, [join us on Zulip](https://ibis-project.zulipchat.com) and let us
+know or [open an issue on
+GitHub](https://github.com/ibis-project/ibis/issues/new/choose).
+
+### Logo and website design
+
+We will likely engage an external design firm to help us redesign the logo
+(initially created by Tim Swast, thanks Tim! It has served us well!) and website
+theme. We aim to keep the website simple and focused on documentation that helps
+users, but want to deviate from the default themes in Quarto to make Ibis stand
+out.
+
+### Documentation
+
+> "When you're ~~selling~~ distributing free and open source software, the
+> documentation is the product." - old tech adage, origin unknown
+
+A few months ago, we moved our documentation to [Quarto](https://quarto.org) and
+revamped most of the website along the way. We will continue improving the
+documentation with backend-specific getting started tutorials, how-to guides for
+common tasks, improved API references, improving the website search
+functionality, and more!
+
+Improving the documentation is a great way to get involved with Ibis!
+
+## Beyond Q1 2024
+
+This writeup of our roadmap is heavily biased toward Q1 of 2024. Looking out,
+our priorities remain much the same. After the big refactor is done, we will
+continue improving our library internals, backend interface, and ensuring the
+longevity of Ibis. We'll continue improving ML, streaming, and geospatial
+support.
+
+Expect an updated roadmap blog in the second half of the year for more details!
+
+## Next steps
+
+It's never been a better time to get involved with Ibis. [Join us on Zulip and
+introduce yourself!](https://ibis-project.zulipchat.com/)
