@@ -143,7 +143,7 @@ def _clean_join_predicates(left, right, predicates):
             # resolve deferred expressions on the left table
             pred = pred.resolve(left.to_expr())
         elif not isinstance(pred, ir.Expr):
-            raise NotImplementedError
+            raise NotImplementedError(pred)
 
         if not isinstance(pred, ir.BooleanValue):
             raise com.ExpressionError("Join predicate must be a boolean expression")
