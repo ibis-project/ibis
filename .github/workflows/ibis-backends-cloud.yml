@@ -53,6 +53,27 @@ jobs:
     steps:
       - name: checkout
         uses: actions/checkout@v4
+        if: github.event.label.name != 'ci-run-cloud'
+
+      - name: checkout
+        if: github.event.label.name == 'ci-run-cloud'
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.sha }}
+
+      - uses: tibdex/github-app-token@v2
+        id: generate_token
+        with:
+          app_id: ${{ secrets.DOCS_BOT_APP_ID }}
+          private_key: ${{ secrets.DOCS_BOT_APP_PRIVATE_KEY }}
+
+      - name: reset cloud ci run label
+        uses: actions-ecosystem/action-remove-labels@v1
+        if: github.event.label.name == 'ci-run-cloud'
+        with:
+          labels: ci-run-cloud
+          github_token: ${{ steps.generate_token.outputs.token }}
 
       - name: install poetry
         run: pipx install 'poetry==1.7.1'
