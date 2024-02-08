@@ -1,8 +1,9 @@
 ---
 title: "Ibis project 2024 roadmap"
 author: "Cody Peterson"
-date: "2024-02-10"
+date: "2024-02-15"
 image: commits.png
+draft: true
 categories:
     - blog
     - roadmap
@@ -135,12 +136,11 @@ for more details soon!
 
 ### Streaming data backends
 
-With the release of Ibis 8.0, we will add support for Apache Flink in
-collaboration with Claypot AI, the first dedicated streaming data backend for
-Ibis.
+With the release of Ibis 8.0, we added support for Apache Flink in collaboration
+with Claypot AI, the first dedicated streaming data backend for Ibis.
 
 ::: {.callout-note}
-Since drafting this roadmap, [Voltron Data has acquired Claypot
+Since writing this roadmap, [Voltron Data has acquired Claypot
 AI!](https://voltrondata.com/resources/voltron-data-acquires-claypot-ai). We are
 excited to welcome the Claypot team and continue to build the composable data
 ecosystem with their streaming and ML expertise.
