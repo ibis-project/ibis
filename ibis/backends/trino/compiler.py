@@ -6,14 +6,13 @@ from functools import partial, reduce, singledispatchmethod
 import sqlglot as sg
 import sqlglot.expressions as sge
 import toolz
-from sqlglot.dialects import Trino
-from sqlglot.dialects.dialect import rename_func
 
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 from ibis.backends.base.sqlglot.compiler import FALSE, NULL, SQLGlotCompiler, paren
 from ibis.backends.base.sqlglot.datatypes import TrinoType
+from ibis.backends.base.sqlglot.dialects import Trino
 from ibis.backends.base.sqlglot.rewrites import (
     exclude_unsupported_window_frame_from_ops,
     rewrite_first_to_first_value,
@@ -22,25 +21,10 @@ from ibis.backends.base.sqlglot.rewrites import (
 )
 
 
-# TODO(cpcloud): remove this hack once
-# https://github.com/tobymao/sqlglot/issues/2735 is resolved
-def make_cross_joins_explicit(node):
-    if not (node.kind or node.side):
-        node.args["kind"] = "CROSS"
-    return node
-
-
-Trino.Generator.TRANSFORMS |= {
-    sge.BitwiseLeftShift: rename_func("bitwise_left_shift"),
-    sge.BitwiseRightShift: rename_func("bitwise_right_shift"),
-    sge.Join: sg.transforms.preprocess([make_cross_joins_explicit]),
-}
-
-
 class TrinoCompiler(SQLGlotCompiler):
     __slots__ = ()
 
-    dialect = "trino"
+    dialect = Trino
     type_mapper = TrinoType
     rewrites = (
         rewrite_sample_as_filter,

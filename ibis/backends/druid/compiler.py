@@ -5,35 +5,21 @@ from functools import singledispatchmethod
 import sqlglot as sg
 import sqlglot.expressions as sge
 import toolz
-from sqlglot import exp
-from sqlglot.dialects import Postgres
-from sqlglot.dialects.dialect import rename_func
 
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 from ibis.backends.base.sqlglot.compiler import NULL, SQLGlotCompiler
 from ibis.backends.base.sqlglot.datatypes import DruidType
+from ibis.backends.base.sqlglot.dialects import Druid
 from ibis.backends.base.sqlglot.rewrites import rewrite_sample_as_filter
-
-
-# Is postgres the best dialect to inherit from?
-class Druid(Postgres):
-    """The druid dialect."""
-
-    class Generator(Postgres.Generator):
-        TRANSFORMS = Postgres.Generator.TRANSFORMS.copy() | {
-            exp.ApproxDistinct: rename_func("approx_count_distinct"),
-            exp.Pow: rename_func("power"),
-        }
 
 
 class DruidCompiler(SQLGlotCompiler):
     __slots__ = ()
 
-    dialect = "druid"
+    dialect = Druid
     type_mapper = DruidType
-    quoted = True
     rewrites = (rewrite_sample_as_filter, *SQLGlotCompiler.rewrites)
 
     def _aggregate(self, funcname: str, *args, where):

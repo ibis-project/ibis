@@ -6,9 +6,6 @@ from functools import partial, singledispatchmethod
 import sqlglot as sg
 import sqlglot.expressions as sge
 from public import public
-from sqlglot import exp
-from sqlglot.dialects import Snowflake
-from sqlglot.dialects.dialect import rename_func
 
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
@@ -16,6 +13,7 @@ import ibis.expr.operations as ops
 from ibis import util
 from ibis.backends.base.sqlglot.compiler import NULL, C, FuncGen, SQLGlotCompiler
 from ibis.backends.base.sqlglot.datatypes import SnowflakeType
+from ibis.backends.base.sqlglot.dialects import Snowflake
 from ibis.backends.base.sqlglot.rewrites import (
     exclude_unsupported_window_frame_from_ops,
     exclude_unsupported_window_frame_from_row_number,
@@ -27,11 +25,6 @@ from ibis.backends.base.sqlglot.rewrites import (
 )
 from ibis.common.patterns import replace
 from ibis.expr.analysis import p
-
-Snowflake.Generator.TRANSFORMS |= {
-    exp.ApproxDistinct: rename_func("approx_count_distinct"),
-    exp.Levenshtein: rename_func("editdistance"),
-}
 
 
 @replace(p.ToJSONMap | p.ToJSONArray)
@@ -47,8 +40,7 @@ class SnowflakeFuncGen(FuncGen):
 class SnowflakeCompiler(SQLGlotCompiler):
     __slots__ = ()
 
-    dialect = "snowflake"
-    quoted = True
+    dialect = Snowflake
     type_mapper = SnowflakeType
     no_limit_value = NULL
     rewrites = (

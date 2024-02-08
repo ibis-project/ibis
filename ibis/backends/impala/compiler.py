@@ -1,12 +1,9 @@
 from __future__ import annotations
 
-import contextlib
 from functools import singledispatchmethod
 
 import sqlglot as sg
 import sqlglot.expressions as sge
-from sqlglot.dialects import Hive
-from sqlglot.dialects.dialect import rename_func
 
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
@@ -14,6 +11,7 @@ import ibis.expr.operations as ops
 from ibis import util
 from ibis.backends.base.sqlglot.compiler import NULL, STAR, SQLGlotCompiler
 from ibis.backends.base.sqlglot.datatypes import ImpalaType
+from ibis.backends.base.sqlglot.dialects import Impala
 from ibis.backends.base.sqlglot.rewrites import (
     rewrite_empty_order_by_window,
     rewrite_first_to_first_value,
@@ -22,30 +20,10 @@ from ibis.backends.base.sqlglot.rewrites import (
 )
 
 
-def _interval(self, e):
-    """Work around Impala's inability to handle string literals in INTERVAL syntax."""
-    arg = e.args["this"].this
-    with contextlib.suppress(AttributeError):
-        arg = arg.sql(self.dialect)
-    res = f"INTERVAL {arg} {e.args['unit']}"
-    return res
-
-
-class Impala(Hive):
-    class Generator(Hive.Generator):
-        TRANSFORMS = Hive.Generator.TRANSFORMS.copy() | {
-            sge.ApproxDistinct: rename_func("ndv"),
-            sge.IsNan: rename_func("is_nan"),
-            sge.IsInf: rename_func("is_inf"),
-            sge.DayOfWeek: rename_func("dayofweek"),
-            sge.Interval: _interval,
-        }
-
-
 class ImpalaCompiler(SQLGlotCompiler):
     __slots__ = ()
 
-    dialect = "impala"
+    dialect = Impala
     type_mapper = ImpalaType
     rewrites = (
         rewrite_sample_as_filter,
@@ -54,7 +32,6 @@ class ImpalaCompiler(SQLGlotCompiler):
         rewrite_empty_order_by_window,
         *SQLGlotCompiler.rewrites,
     )
-    quoted = True
 
     def _aggregate(self, funcname: str, *args, where):
         if where is not None:

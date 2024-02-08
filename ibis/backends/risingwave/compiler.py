@@ -10,16 +10,15 @@ import ibis.expr.datashape as ds
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 from ibis.backends.base.sqlglot.datatypes import RisingWaveType
+from ibis.backends.base.sqlglot.dialects import RisingWave
 from ibis.backends.postgres.compiler import PostgresCompiler
-from ibis.backends.risingwave.dialect import RisingWave  # noqa: F401
 
 
 @public
 class RisingwaveCompiler(PostgresCompiler):
     __slots__ = ()
 
-    dialect = "risingwave"
-    name = "risingwave"
+    dialect = RisingWave
     type_mapper = RisingWaveType
 
     @singledispatchmethod
@@ -30,7 +29,7 @@ class RisingwaveCompiler(PostgresCompiler):
     def visit_Correlation(self, op, *, left, right, how, where):
         if how == "sample":
             raise com.UnsupportedOperationError(
-                f"{self.name} only implements `pop` correlation coefficient"
+                "RisingWave only implements `pop` correlation coefficient"
             )
         return super().visit_Correlation(
             op, left=left, right=right, how=how, where=where

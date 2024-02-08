@@ -30,7 +30,7 @@ class SQLGlotBackend(BaseBackend):
     name: ClassVar[str]
 
     @property
-    def _sqlglot_dialect(self) -> str:
+    def dialect(self) -> sg.Dialect:
         return self.compiler.dialect
 
     @classmethod
@@ -115,7 +115,7 @@ class SQLGlotBackend(BaseBackend):
     ):
         """Compile an Ibis expression to a SQL string."""
         query = self._to_sqlglot(expr, limit=limit, params=params, **kwargs)
-        sql = query.sql(dialect=self.compiler.dialect, pretty=True)
+        sql = query.sql(dialect=self.dialect, pretty=True)
         self._log(sql)
         return sql
 
@@ -380,6 +380,6 @@ class SQLGlotBackend(BaseBackend):
         """
         ident = sg.table(
             name, db=schema, catalog=database, quoted=self.compiler.quoted
-        ).sql(self.compiler.dialect)
+        ).sql(self.dialect)
         with self._safe_raw_sql(f"TRUNCATE TABLE {ident}"):
             pass

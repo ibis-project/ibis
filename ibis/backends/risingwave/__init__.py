@@ -19,22 +19,14 @@ import ibis.expr.types as ir
 from ibis import util
 from ibis.backends.postgres import Backend as PostgresBackend
 from ibis.backends.risingwave.compiler import RisingwaveCompiler
-from ibis.backends.risingwave.dialect import RisingWave as RisingWaveDialect
 
 if TYPE_CHECKING:
     import pandas as pd
     import pyarrow as pa
 
 
-def _verify_source_line(func_name: str, line: str):
-    if line.startswith("@"):
-        raise com.InvalidDecoratorError(func_name, line)
-    return line
-
-
 class Backend(PostgresBackend):
     name = "risingwave"
-    dialect = RisingWaveDialect
     compiler = RisingwaveCompiler()
     supports_python_udfs = False
 

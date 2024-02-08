@@ -1,3 +1,3 @@
 SELECT
-  CAST(CAST(`t0`.`i` AS TIMESTAMP) + INTERVAL '5' MONTH AS TIMESTAMP) AS `TimestampAdd(i, 5M)`
+  CAST(CAST(`t0`.`i` AS TIMESTAMP) + INTERVAL 5 MONTH AS TIMESTAMP) AS `TimestampAdd(i, 5M)`
 FROM `alltypes` AS `t0`

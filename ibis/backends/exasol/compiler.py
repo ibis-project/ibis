@@ -1,16 +1,15 @@
 from __future__ import annotations
 
-import contextlib
 from functools import singledispatchmethod
 
 import sqlglot.expressions as sge
-from sqlglot.dialects import Postgres
 
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 from ibis.backends.base.sqlglot.compiler import NULL, SQLGlotCompiler
 from ibis.backends.base.sqlglot.datatypes import ExasolType
+from ibis.backends.base.sqlglot.dialects import Exasol
 from ibis.backends.base.sqlglot.rewrites import (
     exclude_unsupported_window_frame_from_ops,
     exclude_unsupported_window_frame_from_rank,
@@ -20,35 +19,11 @@ from ibis.backends.base.sqlglot.rewrites import (
 )
 
 
-def _interval(self, e):
-    """Work around Exasol's inability to handle string literals in INTERVAL syntax."""
-    arg = e.args["this"].this
-    with contextlib.suppress(AttributeError):
-        arg = arg.sql(self.dialect)
-    res = f"INTERVAL '{arg}' {e.args['unit']}"
-    return res
-
-
-# Is postgres the best dialect to inherit from?
-class Exasol(Postgres):
-    """The exasol dialect."""
-
-    class Generator(Postgres.Generator):
-        TRANSFORMS = Postgres.Generator.TRANSFORMS.copy() | {
-            sge.Interval: _interval,
-        }
-
-        TYPE_MAPPING = Postgres.Generator.TYPE_MAPPING.copy() | {
-            sge.DataType.Type.TIMESTAMPTZ: "TIMESTAMP WITH LOCAL TIME ZONE",
-        }
-
-
 class ExasolCompiler(SQLGlotCompiler):
     __slots__ = ()
 
-    dialect = "exasol"
+    dialect = Exasol
     type_mapper = ExasolType
-    quoted = True
     rewrites = (
         rewrite_sample_as_filter,
         exclude_unsupported_window_frame_from_ops,

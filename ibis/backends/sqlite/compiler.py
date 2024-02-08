@@ -5,13 +5,13 @@ from functools import singledispatchmethod
 import sqlglot as sg
 import sqlglot.expressions as sge
 from public import public
-from sqlglot.dialects.sqlite import SQLite
 
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 from ibis.backends.base.sqlglot.compiler import NULL, SQLGlotCompiler
 from ibis.backends.base.sqlglot.datatypes import SQLiteType
+from ibis.backends.base.sqlglot.dialects import SQLite
 from ibis.backends.base.sqlglot.rewrites import (
     rewrite_first_to_first_value,
     rewrite_last_to_last_value,
@@ -19,17 +19,12 @@ from ibis.backends.base.sqlglot.rewrites import (
 )
 from ibis.common.temporal import DateUnit, IntervalUnit
 
-SQLite.Generator.TYPE_MAPPING |= {
-    sge.DataType.Type.BOOLEAN: "BOOLEAN",
-}
-
 
 @public
 class SQLiteCompiler(SQLGlotCompiler):
     __slots__ = ()
 
-    dialect = "sqlite"
-    quoted = True
+    dialect = SQLite
     type_mapper = SQLiteType
     rewrites = (
         rewrite_sample_as_filter,

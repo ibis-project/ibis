@@ -131,7 +131,7 @@ class Backend(SQLGlotBackend):
     @contextlib.contextmanager
     def _safe_raw_sql(self, query: str, *args, **kwargs):
         with contextlib.suppress(AttributeError):
-            query = query.sql(dialect=self.compiler.dialect)
+            query = query.sql(dialect=self.dialect)
 
         with self.begin() as cur:
             yield cur.execute(query, *args, **kwargs)
@@ -165,7 +165,7 @@ class Backend(SQLGlotBackend):
                     table_name, db=schema, catalog=database, quoted=self.compiler.quoted
                 )
             )
-            .sql(self.compiler.dialect)
+            .sql(self.dialect)
         )
         return sch.Schema.from_tuples(name_type_pairs)
 
@@ -180,7 +180,7 @@ class Backend(SQLGlotBackend):
 
     def _metadata(self, query: str) -> Iterable[tuple[str, dt.DataType]]:
         table = sg.table(util.gen_name("exasol_metadata"), quoted=self.compiler.quoted)
-        dialect = self.compiler.dialect
+        dialect = self.dialect
         create_view = sg.exp.Create(
             kind="VIEW",
             this=table,
@@ -385,7 +385,7 @@ class Backend(SQLGlotBackend):
             )
         drop_schema = sg.exp.Drop(kind="SCHEMA", this=name, exists=force)
         with self.begin() as con:
-            con.execute(drop_schema.sql(dialect=self.compiler.dialect))
+            con.execute(drop_schema.sql(dialect=self.dialect))
 
     def create_schema(
         self, name: str, database: str | None = None, force: bool = False
@@ -397,7 +397,7 @@ class Backend(SQLGlotBackend):
         create_schema = sg.exp.Create(kind="SCHEMA", this=name, exists=force)
         open_schema = self.current_schema
         with self.begin() as con:
-            con.execute(create_schema.sql(dialect=self.compiler.dialect))
+            con.execute(create_schema.sql(dialect=self.dialect))
             # Exasol implicitly opens the created schema, therefore we need to restore
             # the previous context.
             con.execute(
