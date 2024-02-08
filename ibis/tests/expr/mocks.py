@@ -16,6 +16,8 @@ from __future__ import annotations
 
 import contextlib
 
+from sqlglot.dialects import DuckDB
+
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
 from ibis.backends.base import BaseBackend
@@ -27,6 +29,7 @@ class MockBackend(BaseBackend):
     name = "mock"
     version = "1.0"
     current_database = "mockdb"
+    dialect = DuckDB
 
     def __init__(self):
         super().__init__()

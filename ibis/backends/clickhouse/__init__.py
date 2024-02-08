@@ -27,7 +27,6 @@ from ibis.backends.base import BaseBackend, CanCreateDatabase
 from ibis.backends.base.sqlglot import SQLGlotBackend
 from ibis.backends.base.sqlglot.compiler import C
 from ibis.backends.clickhouse.compiler import ClickHouseCompiler
-from ibis.backends.clickhouse.datatypes import ClickhouseType
 
 if TYPE_CHECKING:
     from collections.abc import Iterable, Iterator, Mapping
@@ -221,13 +220,14 @@ class Backend(SQLGlotBackend, CanCreateDatabase):
         """Merge registered external tables with any new external tables."""
         external_data = ExternalData()
         n = 0
+        type_mapper = self.compiler.type_mapper
         for name, obj in (external_tables or {}).items():
             n += 1
             if not (schema := obj.schema):
                 raise TypeError(f"Schema is empty for external table {name}")
 
             structure = [
-                f"{name} {ClickhouseType.to_string(typ.copy(nullable=not typ.is_nested()))}"
+                f"{name} {type_mapper.to_string(typ.copy(nullable=not typ.is_nested()))}"
                 for name, typ in schema.items()
             ]
             external_data.add_file(
@@ -478,7 +478,9 @@ class Backend(SQLGlotBackend, CanCreateDatabase):
         query = sge.Describe(this=sg.table(table_name, db=database))
         with self._safe_raw_sql(query) as results:
             names, types, *_ = results.result_columns
-        return sch.Schema(dict(zip(names, map(ClickhouseType.from_string, types))))
+        return sch.Schema(
+            dict(zip(names, map(self.compiler.type_mapper.from_string, types)))
+        )
 
     def _metadata(self, query: str) -> sch.Schema:
         name = util.gen_name("clickhouse_metadata")
@@ -490,7 +492,7 @@ class Backend(SQLGlotBackend, CanCreateDatabase):
         finally:
             with closing(self.raw_sql(f"DROP VIEW {name}")):
                 pass
-        return zip(names, map(ClickhouseType.from_string, types))
+        return zip(names, map(self.compiler.type_mapper.from_string, types))
 
     def create_database(
         self, name: str, *, force: bool = False, engine: str = "Atomic"
@@ -637,7 +639,8 @@ class Backend(SQLGlotBackend, CanCreateDatabase):
             this=sg.table(name, db=database),
             expressions=[
                 sge.ColumnDef(
-                    this=sg.to_identifier(name), kind=ClickhouseType.from_ibis(typ)
+                    this=sg.to_identifier(name),
+                    kind=self.compiler.type_mapper.from_ibis(typ),
                 )
                 for name, typ in schema.items()
             ],

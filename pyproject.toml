@@ -270,6 +270,7 @@ filterwarnings = [
   "ignore:Concatenating dataframes with unknown divisions:UserWarning",
   "ignore:Possible nested set at position:FutureWarning",
   'ignore:\s+You did not provide metadata:UserWarning',
+  "ignore:Minimal version of pyarrow will soon be increased:FutureWarning",
   # numpy by way of dask
   'ignore:np\.find_common_type is deprecated:DeprecationWarning',
   # pandas

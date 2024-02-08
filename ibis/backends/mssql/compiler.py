@@ -6,8 +6,6 @@ from functools import singledispatchmethod
 import sqlglot as sg
 import sqlglot.expressions as sge
 from public import public
-from sqlglot.dialects import TSQL
-from sqlglot.dialects.dialect import rename_func
 
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
@@ -21,6 +19,7 @@ from ibis.backends.base.sqlglot.compiler import (
     paren,
 )
 from ibis.backends.base.sqlglot.datatypes import MSSQLType
+from ibis.backends.base.sqlglot.dialects import MSSQL
 from ibis.backends.base.sqlglot.rewrites import (
     exclude_unsupported_window_frame_from_ops,
     exclude_unsupported_window_frame_from_row_number,
@@ -29,24 +28,6 @@ from ibis.backends.base.sqlglot.rewrites import (
     rewrite_sample_as_filter,
 )
 from ibis.common.deferred import var
-
-
-class MSSQL(TSQL):
-    class Generator(TSQL.Generator):
-        pass
-
-
-MSSQL.Generator.TRANSFORMS |= {
-    sge.ApproxDistinct: rename_func("approx_count_distinct"),
-    sge.Stddev: rename_func("stdevp"),
-    sge.StddevPop: rename_func("stdevp"),
-    sge.StddevSamp: rename_func("stdev"),
-    sge.Variance: rename_func("var"),
-    sge.VariancePop: rename_func("varp"),
-    sge.Ceil: rename_func("ceiling"),
-    sge.Trim: lambda self, e: f"TRIM({e.this.sql(self.dialect)})",
-    sge.DateFromParts: rename_func("datefromparts"),
-}
 
 y = var("y")
 start = var("start")
@@ -70,7 +51,7 @@ end = var("end")
 class MSSQLCompiler(SQLGlotCompiler):
     __slots__ = ()
 
-    dialect = "mssql"
+    dialect = MSSQL
     type_mapper = MSSQLType
     rewrites = (
         rewrite_sample_as_filter,
@@ -80,7 +61,6 @@ class MSSQLCompiler(SQLGlotCompiler):
         exclude_unsupported_window_frame_from_row_number,
         *SQLGlotCompiler.rewrites,
     )
-    quoted = True
 
     @property
     def NAN(self):

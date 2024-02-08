@@ -660,7 +660,7 @@ class Backend(SQLGlotBackend, CanCreateSchema):
             for param, value in (params or {}).items()
         ]
         with contextlib.suppress(AttributeError):
-            query = query.sql(self.compiler.dialect)
+            query = query.sql(self.dialect)
         return self._execute(query, query_parameters=query_parameters)
 
     @property

@@ -7,6 +7,7 @@ from functools import singledispatchmethod
 
 import sqlglot as sg
 import sqlglot.expressions as sge
+from sqlglot.dialects import BigQuery
 
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
@@ -28,7 +29,7 @@ _NAME_REGEX = re.compile(r'[^!"$()*,./;?@[\\\]^`{}~\n]+')
 
 
 class BigQueryCompiler(SQLGlotCompiler):
-    dialect = "bigquery"
+    dialect = BigQuery
     type_mapper = BigQueryType
     udf_type_mapper = BigQueryUDFType
     rewrites = (
