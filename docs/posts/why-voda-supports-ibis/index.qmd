@@ -68,7 +68,7 @@ Why does Voltron Data employ a Technical Product Manager to work on Ibis
 full-time? Why does Voltron Data employ five software engineers to work on Ibis
 full-time? Great questions!
 
-::: {.callout-note}
+::: {.callout-note title="The Composable Codex"}
 To understand Voltron Data -- or if you're generally interested in learning
 about the composable data ecosystem -- check out the [The Composable
 Codex by Voltron Data](https://voltrondata.com/codex).
@@ -101,16 +101,16 @@ The strategy goes like this:
  lagged behind in some areas. Distributed big data analytics is one area where
  the performance of existing software has lagged way behind hardware.
 - Organizations choose data platforms based on many factors. No one chooses a
- data platform _only_ because it can very fast run on accelerated hardware.
+ data platform _only_ because it can run very fast on accelerated hardware.
 - Wouldn’t it be nice if there were a composable data processing engine that
  could be embedded into _any_ data platform to enable that platform to run jobs
  on accelerated hardware? Then the platform builders wouldn’t need to duplicate
  efforts. And organizations wouldn’t need to migrate to different platforms to
  accelerate their workloads.
 - Voltron Data built Theseus to be that composable engine.
-- Voltron Data is _not_ building a platform around Theseus. Instead, it is
- partnering with other companies and organizations to embed Theseus in their
- platforms.
+- Voltron Data is _not_ building a platform (PaaS or SaaS) around Theseus.
+ Instead, it is partnering with other companies and organizations to embed
+ Theseus in their platforms.
 - Theseus is great for very large-scale ETL workloads with very high throughput
  needs. For other types of workloads, other engines are better. Voltron Data
  wants to make it easy to choose the best engine for your workload. Your choice
@@ -168,7 +168,7 @@ a platform running Theseus on NVIDIA GPUs. With Ibis, you have the choice of
 20+ backends, and the code you write is the same regardless of which backend
 you choose to use.
 
-::: {.callout-important}
+::: {.callout-important title="Ibis is independently governed"}
 [Ibis is independently governed](https://github.com/ibis-project/governance) and
 not owned by Voltron Data. Currently, four out of five members of the steering
 committee are employed by Voltron Data (the fifth being at Alphabet working on
