@@ -130,6 +130,8 @@ class PyArrowType(TypeMapper):
             return dt.Map(key_dtype, value_dtype, nullable=nullable)
         elif isinstance(typ, JSONType):
             return dt.JSON()
+        elif pa.types.is_dictionary(typ):
+            return cls.to_ibis(typ.value_type)
         else:
             return _from_pyarrow_types[typ](nullable=nullable)
 
