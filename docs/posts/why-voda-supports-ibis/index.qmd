@@ -1,7 +1,7 @@
 ---
 title: "Why Voltron Data supports Ibis"
 author: "Cody Peterson + Ian Cook"
-date: "2024-02-10"
+date: "2024-02-08"
 image: standards.png
 categories:
     - blog
@@ -193,10 +193,9 @@ their hard work! They are:
 - [**Jim Crist-Harif**](https://github.com/jcrist): the engineering manager for
  the Ibis team at Voltron Data
 - [**Krisztián Szűcs**](https://github.com/kszucs): long-time Ibis contributor
- and primary author of the precursor to [the big refactor](#the-big-refactor)
+ and primary author of the precursor to the big internals refactor for 8.0
 - [**Naty Clementi**](https://github.com/ncclementi): newest member of the Ibis
- team at Voltron Data recently focusing on [geospatial support in
- DuckDB](#geospatial-improvements)
+ team at Voltron Data recently focusing on geospatial support in  DuckDB
 - [**Phillip Cloud**](https://github.com/cpcloud): the tech lead for the Ibis
  team at Voltron Data
 
