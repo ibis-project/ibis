@@ -122,6 +122,14 @@ def test_dtype_from_nullable_list_type(value_nullable, list_nullable):
     assert restored_type.value_field.nullable is value_nullable
 
 
+@pytest.mark.parametrize("value_type", [pa.string(), pa.date64()])
+def test_dtype_from_dictionary_type(value_type):
+    dict_type = pa.dictionary(pa.int32(), value_type)
+    ibis_type = PyArrowType.to_ibis(dict_type)
+    expected = PyArrowType.to_ibis(value_type)
+    assert ibis_type == expected
+
+
 @pytest.mark.parametrize(
     ("ibis_type", "arrow_type"),
     [
