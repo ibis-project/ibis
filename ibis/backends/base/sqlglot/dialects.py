@@ -165,7 +165,7 @@ Oracle.Generator.TZ_TO_WITH_TIME_ZONE = True
 
 
 class Polars(Postgres):
-    """Subclass of Spark dialect for PySpark.
+    """Subclass of Postgres dialect for Polars.
 
     This is here to allow referring to the Postgres dialect as "polars"
     """
