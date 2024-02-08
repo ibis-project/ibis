@@ -444,7 +444,7 @@ class ArrayValue(Value):
         └────────────────────────┘
         """
         if isinstance(func, Deferred):
-            name = str(func)
+            name = "_"
         else:
             name = next(iter(inspect.signature(func).parameters.keys()))
         parameter = ops.Argument(
@@ -544,7 +544,7 @@ class ArrayValue(Value):
         └───────────────────────────────┘
         """
         if isinstance(predicate, Deferred):
-            name = str(predicate)
+            name = "_"
         else:
             name = next(iter(inspect.signature(predicate).parameters.keys()))
         parameter = ops.Argument(
