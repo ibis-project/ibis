@@ -14,6 +14,7 @@ from ibis.backends.base.sql.compiler import (
     TableSetFormatter,
 )
 from ibis.backends.base.sql.registry import quote_identifier
+from ibis.backends.base.sqlglot.dialects import Flink
 from ibis.backends.flink.translator import FlinkExprTranslator
 
 
@@ -95,6 +96,8 @@ class FlinkCompiler(Compiler):
     select_class = FlinkSelect
 
     cheap_in_memory_tables = True
+
+    dialect = Flink
 
     @classmethod
     def to_sql(cls, node, context=None, params=None):

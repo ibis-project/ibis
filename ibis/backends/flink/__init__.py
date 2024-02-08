@@ -44,6 +44,11 @@ class Backend(BaseBackend, CanCreateDatabase, NoUrl):
     supports_temporary_tables = True
     supports_python_udfs = True
 
+    @property
+    def dialect(self):
+        # TODO: remove when ported to sqlglot
+        return self.compiler.dialect
+
     def do_connect(self, table_env: TableEnvironment) -> None:
         """Create a Flink `Backend` for use with Ibis.
 
