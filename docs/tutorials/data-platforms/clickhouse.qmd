@@ -6,7 +6,7 @@ title: ClickHouse
 [ClickHouse](https://clickhouse.com/) as a backend.
 
 In this example we'll demonstrate using Ibis to connect to a ClickHouse server,
-and executing a few queries.
+and to execute a few queries.
 
 ```{python}
 from ibis.interactive import *
