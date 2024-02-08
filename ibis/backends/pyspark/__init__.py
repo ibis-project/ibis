@@ -88,7 +88,6 @@ class _PySparkCursor:
 class Backend(SQLGlotBackend, CanCreateDatabase):
     name = "pyspark"
     compiler = PySparkCompiler()
-    _sqlglot_dialect = "spark"
 
     class Options(ibis.config.Config):
         """PySpark options.
@@ -245,7 +244,7 @@ class Backend(SQLGlotBackend, CanCreateDatabase):
 
     def raw_sql(self, query: str | sg.Expression, **kwargs: Any) -> _PySparkCursor:
         with contextlib.suppress(AttributeError):
-            query = query.sql(dialect=self._sqlglot_dialect)
+            query = query.sql(dialect=self.dialect)
         query = self._session.sql(query)
         return _PySparkCursor(query)
 
@@ -482,7 +481,7 @@ class Backend(SQLGlotBackend, CanCreateDatabase):
         """
         maybe_noscan = " NOSCAN" * noscan
         table = sg.table(name, db=database, quoted=self.compiler.quoted).sql(
-            dialect=self._sqlglot_dialect
+            dialect=self.dialect
         )
         return self.raw_sql(f"ANALYZE TABLE {table} COMPUTE STATISTICS{maybe_noscan}")
 

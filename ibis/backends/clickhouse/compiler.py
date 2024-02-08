@@ -7,9 +7,6 @@ from typing import Any
 
 import sqlglot as sg
 import sqlglot.expressions as sge
-from sqlglot import exp
-from sqlglot.dialects import ClickHouse
-from sqlglot.dialects.dialect import rename_func
 
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
@@ -21,22 +18,16 @@ from ibis.backends.base.sqlglot.compiler import (
     SQLGlotCompiler,
     parenthesize,
 )
+from ibis.backends.base.sqlglot.datatypes import ClickHouseType
+from ibis.backends.base.sqlglot.dialects import ClickHouse
 from ibis.backends.base.sqlglot.rewrites import rewrite_sample_as_filter
-from ibis.backends.clickhouse.datatypes import ClickhouseType
-
-ClickHouse.Generator.TRANSFORMS |= {
-    exp.ArraySize: rename_func("length"),
-    exp.ArraySort: rename_func("arraySort"),
-    exp.LogicalAnd: rename_func("min"),
-    exp.LogicalOr: rename_func("max"),
-}
 
 
 class ClickHouseCompiler(SQLGlotCompiler):
     __slots__ = ()
 
-    dialect = "clickhouse"
-    type_mapper = ClickhouseType
+    dialect = ClickHouse
+    type_mapper = ClickHouseType
     rewrites = (rewrite_sample_as_filter, *SQLGlotCompiler.rewrites)
 
     def _aggregate(self, funcname: str, *args, where):

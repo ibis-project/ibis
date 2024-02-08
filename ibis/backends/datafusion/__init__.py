@@ -46,8 +46,6 @@ if TYPE_CHECKING:
 
 class Backend(SQLGlotBackend, CanCreateDatabase, CanCreateSchema, NoUrl):
     name = "datafusion"
-    dialect = "datafusion"
-    builder = None
     supports_in_memory_tables = True
     supports_arrays = True
     compiler = DataFusionCompiler()

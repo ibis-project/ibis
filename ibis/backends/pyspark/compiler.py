@@ -15,6 +15,7 @@ import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 from ibis.backends.base.sqlglot.compiler import FALSE, NULL, STAR, TRUE, SQLGlotCompiler
 from ibis.backends.base.sqlglot.datatypes import PySparkType
+from ibis.backends.base.sqlglot.dialects import PySpark
 from ibis.backends.base.sqlglot.rewrites import Window, p
 from ibis.common.patterns import replace
 from ibis.config import options
@@ -48,10 +49,9 @@ def offset_to_filter(_):
 class PySparkCompiler(SQLGlotCompiler):
     __slots__ = ()
 
-    dialect = "spark"
+    dialect = PySpark
     type_mapper = PySparkType
     rewrites = (offset_to_filter, *SQLGlotCompiler.rewrites)
-    quoted = True
 
     def _aggregate(self, funcname: str, *args, where):
         func = self.f[funcname]
