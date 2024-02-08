@@ -6484,17 +6484,17 @@ sqlalchemy = ">=1.0.0"
 
 [[package]]
 name = "sqlglot"
-version = "20.8.0"
+version = "21.0.1"
 description = "An easily customizable SQL parser and transpiler"
 optional = false
 python-versions = ">=3.7"
 files = [
-    {file = "sqlglot-20.8.0-py3-none-any.whl", hash = "sha256:cb73b81a26da462c34b12b98cf193d679d4b5693703d309db236d9784cef60bb"},
-    {file = "sqlglot-20.8.0.tar.gz", hash = "sha256:5636e97fab9efdb4a8690c0e32bbd2d657fe91eb650f10e913a56b4bd979faef"},
+    {file = "sqlglot-21.0.1-py3-none-any.whl", hash = "sha256:eed0f1b1506e25e34d91a24eb8c90eb078ec2dcee9e541d1fbc75f0e55e0f543"},
+    {file = "sqlglot-21.0.1.tar.gz", hash = "sha256:747cc1cc1b69024bbce8e38581115bf0888fb6748cbad6d09f8153fc1dc82af8"},
 ]
 
 [package.extras]
-dev = ["autoflake", "black", "duckdb (>=0.6)", "isort", "maturin (>=1.4,<2.0)", "mypy (>=0.990)", "pandas", "pdoc", "pre-commit", "pyspark", "python-dateutil", "types-python-dateutil"]
+dev = ["duckdb (>=0.6)", "maturin (>=1.4,<2.0)", "mypy", "pandas", "pdoc", "pre-commit", "pyspark", "python-dateutil", "ruff", "types-python-dateutil", "typing-extensions"]
 rs = ["sqlglotrs (==0.1.0)"]
 
 [[package]]
@@ -7445,4 +7445,4 @@ visualization = ["graphviz"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.9"
-content-hash = "3e9fad9badab8b70856437d3bd009797e7910bb8bfd358960f072593249a2af6"
+content-hash = "f5d82772af26d262eb3df745659750bd76602bfaaea7e0b7799486a76b3e3ceb"
