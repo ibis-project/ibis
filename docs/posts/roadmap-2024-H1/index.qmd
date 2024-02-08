@@ -103,7 +103,7 @@ control over the SQL that is generated, reduces dependency overhead, and
 simplifies the codebase further.
 
 ::: {.callout-note}
-We are targeting release in v9 of Ibis. Look at for a blog post dedicated to the
+We are targeting release in Ibis 9.0. Look at for a blog post dedicated to the
 refactor soon!
 :::
 
@@ -135,8 +135,9 @@ for more details soon!
 
 ### Streaming data backends
 
-With the release of Ibis v8, we added support for Apache Flink in collaboration
-with Claypot AI, the first dedicated streaming data backend for Ibis.
+With the release of Ibis 8.0, we will add support for Apache Flink in
+collaboration with Claypot AI, the first dedicated streaming data backend for
+Ibis.
 
 ::: {.callout-note}
 Since drafting this roadmap, [Voltron Data has acquired Claypot

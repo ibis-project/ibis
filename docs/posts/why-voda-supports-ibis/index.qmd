@@ -38,8 +38,8 @@ early 2022:
 #### Cody
 
 My name is Cody and I'm employed by Voltron Data to work on Ibis full-time as a
-Technical Product Manager. I am an Ibis committer and have contributed Delta
-Lake table input/output methods, helped moved the documentation over to
+Technical Product Manager. I am an Ibis contributed and have created the Delta
+Lake table input/output methods, helped move the documentation over to
 [Quarto](https://quarto.org), and created the [Zulip
 chat](https://ibis-project.zulipchat.com) for the community.
 
@@ -52,7 +52,7 @@ ecosystem.
 #### Ian
 
 I'm Ian, Director of Product Management at Voltron Data. I'm an Apache Arrow
-committer and I have a decade of experience working with SQL, dataframe APIs,
+contributor and I have a decade of experience working with SQL, dataframe APIs,
 open standards, and distributed systems.
 
 My job is to align our open source engineering work at Voltron Data with the
@@ -102,8 +102,8 @@ The strategy goes like this:
  the performance of existing software has lagged way behind hardware.
 - Organizations choose data platforms based on many factors. No one chooses a
  data platform _only_ because it can very fast run on accelerated hardware.
-- Wouldn’t it be nice if there was a composable data processing engine that
- could be embedded into _any_ data platform, to enable that platform to run jobs
+- Wouldn’t it be nice if there were a composable data processing engine that
+ could be embedded into _any_ data platform to enable that platform to run jobs
  on accelerated hardware? Then the platform builders wouldn’t need to duplicate
  efforts. And organizations wouldn’t need to migrate to different platforms to
  accelerate their workloads.
