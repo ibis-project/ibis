@@ -14,7 +14,6 @@ diamonds.json
 *.ndjson
 reference/
 objects.json
-*support_matrix.csv
 
 # generated notebooks and files
 *.ipynb

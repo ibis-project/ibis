@@ -7,9 +7,6 @@ from itertools import starmap
 
 import sqlglot as sg
 import sqlglot.expressions as sge
-from sqlglot import exp, transforms
-from sqlglot.dialects import Postgres
-from sqlglot.dialects.dialect import rename_func
 
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
@@ -22,32 +19,18 @@ from ibis.backends.base.sqlglot.compiler import (
     paren,
 )
 from ibis.backends.base.sqlglot.datatypes import DataFusionType
+from ibis.backends.base.sqlglot.dialects import DataFusion
 from ibis.backends.base.sqlglot.rewrites import rewrite_sample_as_filter
 from ibis.common.temporal import IntervalUnit, TimestampUnit
 from ibis.expr.operations.udf import InputType
 from ibis.formats.pyarrow import PyArrowType
 
 
-class DataFusion(Postgres):
-    class Generator(Postgres.Generator):
-        TRANSFORMS = Postgres.Generator.TRANSFORMS.copy() | {
-            exp.Select: transforms.preprocess([transforms.eliminate_qualify]),
-            exp.Pow: rename_func("pow"),
-            exp.IsNan: rename_func("isnan"),
-            exp.CurrentTimestamp: rename_func("now"),
-            exp.Split: rename_func("string_to_array"),
-            exp.Array: rename_func("make_array"),
-            exp.ArrayContains: rename_func("array_has"),
-            exp.ArraySize: rename_func("array_length"),
-        }
-
-
 class DataFusionCompiler(SQLGlotCompiler):
     __slots__ = ()
 
-    dialect = "datafusion"
+    dialect = DataFusion
     type_mapper = DataFusionType
-    quoted = True
     rewrites = (rewrite_sample_as_filter, *SQLGlotCompiler.rewrites)
 
     def _aggregate(self, funcname: str, *args, where):

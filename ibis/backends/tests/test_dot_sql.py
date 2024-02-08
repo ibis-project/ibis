@@ -10,7 +10,20 @@ from pytest import param
 import ibis
 import ibis.common.exceptions as com
 from ibis import _
-from ibis.backends.base import _IBIS_TO_SQLGLOT_DIALECT, _get_backend_names
+from ibis.backends.base import _get_backend_names
+
+# here to load the dialect in to sqlglot so we can use it for transpilation
+from ibis.backends.base.sqlglot.dialects import (  # noqa: F401
+    MSSQL,
+    DataFusion,
+    Druid,
+    Exasol,
+    Flink,
+    Impala,
+    Polars,
+    PySpark,
+    RisingWave,
+)
 from ibis.backends.tests.errors import (
     GoogleBadRequest,
     OracleDatabaseError,
@@ -45,12 +58,11 @@ def test_con_dot_sql(backend, con, schema):
     # pull out the quoted name
     name = _NAMES.get(con.name, "functional_alltypes")
     quoted = True
-    dialect = _IBIS_TO_SQLGLOT_DIALECT.get(con.name, con.name)
     cols = [
-        sg.column("string_col", quoted=quoted).as_("s", quoted=quoted).sql(dialect),
+        sg.column("string_col", quoted=quoted).as_("s", quoted=quoted).sql(con.dialect),
         (sg.column("double_col", quoted=quoted) + 1.0)
         .as_("new_col", quoted=quoted)
-        .sql(dialect),
+        .sql(con.dialect),
     ]
     t = (
         con.sql(
@@ -252,7 +264,6 @@ def test_table_dot_sql_transpile(backend, alltypes, dialect, df):
     name = "foo2"
     foo = alltypes.select(x=_.bigint_col + 1).alias(name)
     expr = sg.select(sg.column("x", quoted=True)).from_(sg.table(name, quoted=True))
-    dialect = _IBIS_TO_SQLGLOT_DIALECT.get(dialect, dialect)
     sqlstr = expr.sql(dialect=dialect, pretty=True)
     dot_sql_expr = foo.sql(sqlstr, dialect=dialect)
     result = dot_sql_expr.execute()
@@ -278,7 +289,6 @@ def test_con_dot_sql_transpile(backend, con, dialect, df):
     foo = sg.select(
         sg.alias(sg.column("bigint_col", quoted=True) + 1, "x", quoted=True)
     ).from_(t)
-    dialect = _IBIS_TO_SQLGLOT_DIALECT.get(dialect, dialect)
     sqlstr = foo.sql(dialect=dialect, pretty=True)
     expr = con.sql(sqlstr, dialect=dialect)
     result = expr.execute()

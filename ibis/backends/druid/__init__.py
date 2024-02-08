@@ -91,7 +91,7 @@ class Backend(SQLGlotBackend):
     @contextlib.contextmanager
     def _safe_raw_sql(self, query, *args, **kwargs):
         with contextlib.suppress(AttributeError):
-            query = query.sql(dialect=self.compiler.dialect)
+            query = query.sql(dialect=self.dialect)
 
         with contextlib.closing(self.con.cursor()) as cur:
             cur.execute(query, *args, **kwargs)
@@ -116,7 +116,7 @@ class Backend(SQLGlotBackend):
         name_type_pairs = self._metadata(
             sg.select(STAR)
             .from_(sg.table(table_name, db=schema, catalog=database))
-            .sql(self.compiler.dialect)
+            .sql(self.dialect)
         )
         return sch.Schema.from_tuples(name_type_pairs)
 

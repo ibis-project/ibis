@@ -6,14 +6,13 @@ from functools import partial, reduce, singledispatchmethod
 import sqlglot as sg
 import sqlglot.expressions as sge
 from public import public
-from sqlglot.dialects import MySQL
-from sqlglot.dialects.dialect import rename_func
 
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 from ibis.backends.base.sqlglot.compiler import NULL, STAR, SQLGlotCompiler
 from ibis.backends.base.sqlglot.datatypes import MySQLType
+from ibis.backends.base.sqlglot.dialects import MySQL
 from ibis.backends.base.sqlglot.rewrites import (
     exclude_unsupported_window_frame_from_ops,
     exclude_unsupported_window_frame_from_rank,
@@ -25,19 +24,6 @@ from ibis.backends.base.sqlglot.rewrites import (
 )
 from ibis.common.patterns import replace
 from ibis.expr.rewrites import p
-
-MySQL.Generator.TRANSFORMS |= {
-    sge.LogicalOr: rename_func("max"),
-    sge.LogicalAnd: rename_func("min"),
-    sge.VariancePop: rename_func("var_pop"),
-    sge.Variance: rename_func("var_samp"),
-    sge.Stddev: rename_func("stddev_pop"),
-    sge.StddevPop: rename_func("stddev_pop"),
-    sge.StddevSamp: rename_func("stddev_samp"),
-    sge.RegexpLike: (
-        lambda _, e: f"({e.this.sql('mysql')} RLIKE {e.expression.sql('mysql')})"
-    ),
-}
 
 
 @replace(p.Limit)
@@ -62,7 +48,7 @@ def rewrite_limit(_, **kwargs):
 class MySQLCompiler(SQLGlotCompiler):
     __slots__ = ()
 
-    dialect = "mysql"
+    dialect = MySQL
     type_mapper = MySQLType
     rewrites = (
         rewrite_limit,
@@ -75,7 +61,6 @@ class MySQLCompiler(SQLGlotCompiler):
         rewrite_empty_order_by_window,
         *SQLGlotCompiler.rewrites,
     )
-    quoted = True
 
     @property
     def NAN(self):

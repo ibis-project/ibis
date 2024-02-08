@@ -30,22 +30,10 @@ if TYPE_CHECKING:
 
     import pandas as pd
     import pyarrow as pa
+    import sqlglot as sg
     import torch
 
 __all__ = ("BaseBackend", "Database", "connect")
-
-# TODO(cpcloud): move these to a place that doesn't require importing
-# backend-specific dependencies
-_IBIS_TO_SQLGLOT_DIALECT = {
-    "mssql": "tsql",
-    "impala": "hive",
-    "pyspark": "spark",
-    "polars": "postgres",
-    "datafusion": "postgres",
-    # closest match see https://github.com/ibis-project/ibis/pull/7303#discussion_r1350223901
-    "exasol": "oracle",
-    "risingwave": "postgres",
-}
 
 
 class Database:
@@ -805,6 +793,14 @@ class BaseBackend(abc.ABC, _FileIOHandler):
             key=lambda expr: expr.op(),
         )
 
+    @property
+    @abc.abstractmethod
+    def dialect(self) -> sg.Dialect | None:
+        """The sqlglot dialect for this backend, where applicable.
+
+        Returns None if the backend is not a SQL backend.
+        """
+
     def __getstate__(self):
         return dict(_con_args=self._con_args, _con_kwargs=self._con_kwargs)
 
@@ -1272,15 +1268,11 @@ class BaseBackend(abc.ABC, _FileIOHandler):
 
         # only transpile if the backend dialect doesn't match the input dialect
         name = self.name
-        if (output_dialect := getattr(self, "_sqlglot_dialect", name)) is None:
+        if (output_dialect := self.dialect) is None:
             raise NotImplementedError(f"No known sqlglot dialect for backend {name}")
 
         if dialect != output_dialect:
-            (query,) = sg.transpile(
-                query,
-                read=_IBIS_TO_SQLGLOT_DIALECT.get(dialect, dialect),
-                write=output_dialect,
-            )
+            (query,) = sg.transpile(query, read=dialect, write=output_dialect)
         return query
 
 

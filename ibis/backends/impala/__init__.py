@@ -69,8 +69,6 @@ class Backend(SQLGlotBackend):
 
     supports_in_memory_tables = True
 
-    _sqlglot_dialect = "hive"  # not 100% accurate, but very close
-
     class Options(ibis.config.Config):
         """Impala specific options.
 
@@ -269,7 +267,7 @@ class Backend(SQLGlotBackend):
     def _safe_raw_sql(self, query: str | DDL | DML):
         if not isinstance(query, str):
             try:
-                query = query.sql(dialect=self.compiler.dialect)
+                query = query.sql(dialect=self.dialect)
             except AttributeError:
                 query = query.compile()
 
@@ -284,7 +282,7 @@ class Backend(SQLGlotBackend):
     def _fully_qualified_name(self, name, database):
         database = database or self.current_database
         return sg.table(name, db=database, quoted=self.compiler.quoted).sql(
-            self.compiler.dialect
+            self.dialect
         )
 
     @property

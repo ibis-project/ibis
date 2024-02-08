@@ -8,7 +8,7 @@ from pytest import param
 import ibis
 import ibis.expr.datatypes as dt
 import ibis.tests.strategies as its
-from ibis.backends.clickhouse.datatypes import ClickhouseType
+from ibis.backends.base.sqlglot.datatypes import ClickHouseType
 
 pytest.importorskip("clickhouse_connect")
 
@@ -250,7 +250,7 @@ def test_array_discovery_clickhouse(con):
     ],
 )
 def test_parse_type(ch_type, ibis_type):
-    parsed_ibis_type = ClickhouseType.from_string(ch_type)
+    parsed_ibis_type = ClickHouseType.from_string(ch_type)
     assert parsed_ibis_type == ibis_type
 
 
@@ -286,6 +286,6 @@ roundtrippable_types = st.deferred(
 
 @h.given(roundtrippable_types)
 def test_type_roundtrip(ibis_type):
-    type_string = ClickhouseType.to_string(ibis_type)
-    parsed_ibis_type = ClickhouseType.from_string(type_string)
+    type_string = ClickHouseType.to_string(ibis_type)
+    parsed_ibis_type = ClickHouseType.from_string(type_string)
     assert parsed_ibis_type == ibis_type
