@@ -11,6 +11,9 @@ on:
       - ".envrc"
     branches:
       - main
+  pull_request_target:
+    types:
+      - labeled
 
 permissions:
   # this allows extractions/setup-just to list releases for `just` at a higher
@@ -35,6 +38,7 @@ jobs:
       group: ${{ matrix.backend.name }}-${{ matrix.python-version }}
       cancel-in-progress: false
     runs-on: ubuntu-latest
+    if: github.event_name == 'push' || github.event.label.name == 'ci-run-cloud'
     strategy:
       fail-fast: false
       matrix:
