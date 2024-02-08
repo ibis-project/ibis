@@ -1,12 +1,11 @@
 from __future__ import annotations
 
 from functools import partial
-from typing import Literal, NoReturn
+from typing import NoReturn
 
 import sqlglot as sg
 import sqlglot.expressions as sge
 
-import ibis
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 from ibis.common.collections import FrozenDict
@@ -943,11 +942,6 @@ class MSSQLType(SqlglotType):
     @classmethod
     def _from_sqlglot_STRUCT(cls) -> sge.DataType:
         raise com.UnsupportedBackendType("SQL Server does not support structs")
-
-
-# TODO(kszucs): add a bool converter method to support different clickhouse bool types
-def _bool_type() -> Literal["Bool", "UInt8", "Int8"]:
-    return getattr(getattr(ibis.options, "clickhouse", None), "bool_type", "Bool")
 
 
 class ClickHouseType(SqlglotType):
