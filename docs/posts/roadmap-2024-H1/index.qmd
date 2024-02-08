@@ -40,7 +40,10 @@ disorganization as we get it up and running efficiently. In general, we have:
 Right now, [the team at Voltron Data](../why-voda-supports-ibis/index.qmd) sets
 the roadmap and priorities. Over time as more contributors and organizations
 join the project, we expect this process to diversify and become more
-community-driven.
+community-driven. We'd love to have you involved in the process! [Join us on
+Zulip](https://ibis-project.zulipchat.com) or interact with us on
+[GitHub](https://github.com/ibis-project/ibis) to get involved and join the
+decision making process for Ibis.
 
 ### Overall themes
 
@@ -51,25 +54,33 @@ scaling to more backends, we need to complete a major rework of library
 internals and stabilize the API for backend authors. Related work in this area
 will make it easier than ever to create new Ibis backends and maintain them.
 This work will also include improving backend interfaces for operations like
-table creation, insertion, and upsertion.
+table creation, insertion, and upsertion. This theme allows Ibis to deliver on
+the promise of a single Python dataframe API that can be written once and run on
+any execution engine.
 
 2. **Ibis for ML**: Increasingly, data projects are ML projects. Ibis can
 uniquely help with feature engineering and other ML tasks connecting your data
 where it lives to ML models. We will continue to improve Ibis for ML use cases.
+This theme allows Ibis to cover more of the data and MLOps lifecycle, with
+efficient feature engineering and handoff to ML training frameworks.
 
 3. **Ibis for streaming data**: Ibis has only been for batch data until very
 recently. With the addition of the first streaming backends, we will continue to
 improve Ibis for streaming data use cases and bridge the gap between batch and
-streaming data.
+streaming data. This theme allows Ibis to expand its promise of a single Python
+dataframe to stream processing, too.
 
 4. **Ibis for geospatial**: Ibis has a rich set of geospatial expressions, but
 most backends do not implement them. We will continue to improve Ibis for
 geospatial use cases and bridge the gap between geospatial data and other data
-types.
+types. This theme allows Ibis to cover more of the data lifecycle for geospatial
+data.
 
 5. **Ibis community**: Ibis is an open source project and we want to make it as
 easy as possible for new contributors to get involved. We will continue to
 improve the Ibis community and make it easier than ever to contribute to Ibis.
+This theme is critical for Ibis to continue to grow and thrive as an open source
+project. We aim to delight our community and make it easy to get involved.
 
 We believe these themes will help Ibis as a standard Python interface for many
 backends and real-world data use cases.
