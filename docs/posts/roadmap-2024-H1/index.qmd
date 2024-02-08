@@ -110,8 +110,8 @@ Jim took this on over the last few months, building up the
 toy) state. We will further invest in IbisML this year to get it a
 production-ready state, bringing the power of Ibis to ML feature engineering.
 
-We're [excited to welcome the (former) Claypot AI team to
-VoDa](https://voltrondata.com/resources/voltron-data-acquires-claypot-ai) to
+We're [excited to welcome the (former) Claypot AI team to Voltron
+Data](https://voltrondata.com/resources/voltron-data-acquires-claypot-ai) to
 help drive this work forward! Expect a release announcement for IbisML soon
 covering the majority of feature engineering operations and handoff to popular
 ML training frameworks.

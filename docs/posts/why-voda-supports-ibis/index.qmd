@@ -191,14 +191,14 @@ their hard work! They are:
 - [**Gil Forsyth**](https://github.com/gforsyth): long-time Ibis contributor and
  primary maintainer of the `ibis-substrait` package
 - [**Jim Crist-Harif**](https://github.com/jcrist): the engineering manager for
- the Ibis team at VoDa
+ the Ibis team at Voltron Data
 - [**Krisztián Szűcs**](https://github.com/kszucs): long-time Ibis contributor
  and primary author of the precursor to [the big refactor](#the-big-refactor)
 - [**Naty Clementi**](https://github.com/ncclementi): newest member of the Ibis
- team at VoDa recently focusing on [geospatial support in
+ team at Voltron Data recently focusing on [geospatial support in
  DuckDB](#geospatial-improvements)
 - [**Phillip Cloud**](https://github.com/cpcloud): the tech lead for the Ibis
- team at VoDa
+ team at Voltron Data
 
 If you're interacting with us on GitHub or Zulip, you'll definitely run into at
 least one of them! They make the Ibis project the delightful software it is
