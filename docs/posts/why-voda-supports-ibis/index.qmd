@@ -38,7 +38,7 @@ early 2022:
 #### Cody
 
 My name is Cody and I'm employed by Voltron Data to work on Ibis full-time as a
-Technical Product Manager. I am an Ibis contributed and have created the Delta
+Technical Product Manager. I am an Ibis contributor and have created the Delta
 Lake table input/output methods, helped move the documentation over to
 [Quarto](https://quarto.org), and created the [Zulip
 chat](https://ibis-project.zulipchat.com) for the community.
