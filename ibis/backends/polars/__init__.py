@@ -13,6 +13,7 @@ import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis.backends.base import BaseBackend, Database, NoUrl
+from ibis.backends.base.sqlglot.dialects import Polars
 from ibis.backends.pandas.rewrites import (
     bind_unbound_table,
     replace_parameter,
@@ -31,9 +32,7 @@ if TYPE_CHECKING:
 
 class Backend(BaseBackend, NoUrl):
     name = "polars"
-    builder = None
-
-    _sqlglot_dialect = "postgres"
+    dialect = Polars
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

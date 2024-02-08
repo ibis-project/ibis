@@ -26,6 +26,7 @@ class BasePandasBackend(BaseBackend, NoUrl):
     """Base class for backends based on pandas."""
 
     name = "pandas"
+    dialect = None
     backend_table_type = pd.DataFrame
 
     class Options(ibis.config.Config):

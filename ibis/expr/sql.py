@@ -370,14 +370,14 @@ def to_sql(expr: ir.Expr, dialect: str | None = None, **kwargs) -> SQLString:
             read = "duckdb"
             write = ibis.options.sql.default_dialect
         else:
-            read = write = getattr(backend, "_sqlglot_dialect", backend.name)
+            read = write = backend.dialect
     else:
         try:
             backend = getattr(ibis, dialect)
         except AttributeError:
             raise ValueError(f"Unknown dialect {dialect}")
         else:
-            read = write = getattr(backend, "_sqlglot_dialect", dialect)
+            read = write = getattr(backend, "dialect", dialect)
 
     sql = backend._to_sql(expr.unbind(), **kwargs)
     (pretty,) = sg.transpile(sql, read=read, write=write, pretty=True)

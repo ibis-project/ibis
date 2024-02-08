@@ -6,6 +6,7 @@ from functools import partial, reduce, singledispatchmethod
 import sqlglot as sg
 import sqlglot.expressions as sge
 from public import public
+from sqlglot.dialects import DuckDB
 
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
@@ -29,7 +30,7 @@ _INTERVAL_SUFFIXES = {
 class DuckDBCompiler(SQLGlotCompiler):
     __slots__ = ()
 
-    dialect = "duckdb"
+    dialect = DuckDB
     type_mapper = DuckDBType
 
     def _aggregate(self, funcname: str, *args, where):

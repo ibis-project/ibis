@@ -29,10 +29,6 @@ class BaseSQLBackend(BaseBackend):
 
     compiler = Compiler
 
-    @property
-    def _sqlglot_dialect(self) -> str:
-        return self.name
-
     def _from_url(self, url: str, **kwargs):
         """Connect to a backend using a URL `url`.
 

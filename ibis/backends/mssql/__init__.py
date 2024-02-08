@@ -126,7 +126,7 @@ class Backend(SQLGlotBackend, CanCreateDatabase, CanCreateSchema, NoUrl):
             meta = cur.fetchall()
 
         if not meta:
-            fqn = sg.table(name, db=schema, catalog=database).sql(self.compiler.dialect)
+            fqn = sg.table(name, db=schema, catalog=database).sql(self.dialect)
             raise com.IbisError(f"Table not found: {fqn}")
 
         mapping = {}
@@ -154,7 +154,7 @@ class Backend(SQLGlotBackend, CanCreateDatabase, CanCreateSchema, NoUrl):
         return sch.Schema(mapping)
 
     def _metadata(self, query) -> Iterator[tuple[str, dt.DataType]]:
-        tsql = sge.convert(str(query)).sql(self.compiler.dialect)
+        tsql = sge.convert(str(query)).sql(self.dialect)
         query = f"EXEC sp_describe_first_result_set @tsql = N{tsql}"
         with self._safe_raw_sql(query) as cur:
             rows = cur.fetchall()
@@ -221,7 +221,7 @@ class Backend(SQLGlotBackend, CanCreateDatabase, CanCreateSchema, NoUrl):
     @contextlib.contextmanager
     def _safe_raw_sql(self, query, *args, **kwargs):
         with contextlib.suppress(AttributeError):
-            query = query.sql(self.compiler.dialect)
+            query = query.sql(self.dialect)
 
         with self.begin() as cur:
             cur.execute(query, *args, **kwargs)
@@ -229,7 +229,7 @@ class Backend(SQLGlotBackend, CanCreateDatabase, CanCreateSchema, NoUrl):
 
     def raw_sql(self, query: str | sg.Expression, **kwargs: Any) -> Any:
         with contextlib.suppress(AttributeError):
-            query = query.sql(self.compiler.dialect)
+            query = query.sql(self.dialect)
 
         con = self.con
         cursor = con.cursor()
@@ -295,7 +295,7 @@ GO"""
                 cur.execute(f"USE {self._quote(current_database)}")
 
     def _quote(self, name: str):
-        return sg.to_identifier(name, quoted=True).sql(self.compiler.dialect)
+        return sg.to_identifier(name, quoted=True).sql(self.dialect)
 
     def drop_schema(
         self, name: str, database: str | None = None, force: bool = False
@@ -342,7 +342,7 @@ GO"""
         if conditions:
             sql = sql.where(*conditions)
 
-        sql = sql.sql(self.compiler.dialect)
+        sql = sql.sql(self.dialect)
 
         with self._safe_raw_sql(sql) as cur:
             out = cur.fetchall()
@@ -432,19 +432,15 @@ GO"""
         raw_this = sg.table(name, catalog=database, quoted=False)
         with self._safe_raw_sql(create_stmt) as cur:
             if query is not None:
-                insert_stmt = sge.Insert(this=table, expression=query).sql(
-                    self.compiler.dialect
-                )
+                insert_stmt = sge.Insert(this=table, expression=query).sql(self.dialect)
                 cur.execute(insert_stmt)
 
             if overwrite:
                 cur.execute(
-                    sge.Drop(kind="TABLE", this=this, exists=True).sql(
-                        self.compiler.dialect
-                    )
+                    sge.Drop(kind="TABLE", this=this, exists=True).sql(self.dialect)
                 )
-                old = raw_table.sql(self.compiler.dialect)
-                new = raw_this.sql(self.compiler.dialect)
+                old = raw_table.sql(self.dialect)
+                new = raw_this.sql(self.dialect)
                 cur.execute(f"EXEC sp_rename '{old}', '{new}'")
 
         if schema is None:
@@ -494,14 +490,14 @@ GO"""
             df = op.data.to_frame()
             data = df.itertuples(index=False)
             cols = ", ".join(
-                ident.sql(self.compiler.dialect)
+                ident.sql(self.dialect)
                 for ident in map(
                     partial(sg.to_identifier, quoted=quoted), schema.keys()
                 )
             )
             specs = ", ".join(repeat("?", len(schema)))
             table = sg.table(name, quoted=quoted)
-            sql = f"INSERT INTO {table.sql(self.compiler.dialect)} ({cols}) VALUES ({specs})"
+            sql = f"INSERT INTO {table.sql(self.dialect)} ({cols}) VALUES ({specs})"
 
             with self._safe_raw_sql(create_stmt) as cur:
                 if not df.empty:
