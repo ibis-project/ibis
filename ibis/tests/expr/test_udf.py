@@ -146,3 +146,13 @@ def test_udf_deferred(dec, table):
     assert isinstance(expr, Deferred)
     assert repr(expr) == "myfunc(_.a)"
     assert expr.resolve(table).equals(myfunc(table.a))
+
+
+def test_builtin_scalar_noargs():
+    @ibis.udf.scalar.builtin
+    def version() -> str:
+        ...
+
+    expr = version()
+    assert expr.type().is_string()
+    assert type(expr.op().shape) is ibis.expr.datashape.Scalar
