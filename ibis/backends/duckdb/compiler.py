@@ -51,6 +51,7 @@ class DuckDBCompiler(SQLGlotCompiler):
         ops.MapMerge: "map_concat",
         ops.MapValues: "map_values",
         ops.Mode: "mode",
+        ops.RandomUUID: "uuid",
         ops.TimeFromHMS: "make_time",
         ops.TypeOf: "typeof",
         ops.GeoPoint: "st_point",

@@ -24,6 +24,7 @@ class RisingwaveCompiler(PostgresCompiler):
         (
             ops.DateFromYMD,
             ops.Mode,
+            ops.RandomUUID,
             *(
                 op
                 for op in ALL_OPERATIONS

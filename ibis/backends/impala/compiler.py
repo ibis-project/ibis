@@ -81,6 +81,7 @@ class ImpalaCompiler(SQLGlotCompiler):
         ops.Ln: "ln",
         ops.Log10: "log10",
         ops.Log2: "log2",
+        ops.RandomUUID: "uuid",
         ops.RStrip: "rtrim",
         ops.Strip: "trim",
         ops.TypeOf: "typeof",

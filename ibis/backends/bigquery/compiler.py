@@ -122,6 +122,7 @@ class BigQueryCompiler(SQLGlotCompiler):
         ops.Levenshtein: "edit_distance",
         ops.Modulus: "mod",
         ops.RandomScalar: "rand",
+        ops.RandomUUID: "generate_uuid",
         ops.RegexReplace: "regexp_replace",
         ops.RegexSearch: "regexp_contains",
         ops.Time: "time",

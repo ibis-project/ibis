@@ -194,6 +194,11 @@ class RandomScalar(Constant):
 
 
 @public
+class RandomUUID(Constant):
+    dtype = dt.uuid
+
+
+@public
 class E(Constant):
     dtype = dt.float64
 

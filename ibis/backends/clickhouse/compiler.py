@@ -98,6 +98,7 @@ class ClickHouseCompiler(SQLGlotCompiler):
         ops.NullIf: "nullIf",
         ops.RStrip: "trimRight",
         ops.RandomScalar: "randCanonical",
+        ops.RandomUUID: "generateUUIDv4",
         ops.RegexReplace: "replaceRegexpAll",
         ops.RowNumber: "row_number",
         ops.StartsWith: "startsWith",
