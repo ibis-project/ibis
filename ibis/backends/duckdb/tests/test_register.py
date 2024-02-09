@@ -445,3 +445,190 @@ def test_memtable_null_column_parquet_dtype_roundtrip(con, tmp_path):
     after = con.read_parquet(tmp_path / "tmp.parquet")
 
     assert before.a.type() == after.a.type()
+
+
+# TODO: Placing the tests for Iceberg read/write here for now.
+# Initially, could not find an appropriate folder under ibis/tests/
+# with a `con` that implements all the required functions here.
+@pytest.mark.parametrize(
+    "table_name",
+    [
+        # "astronauts",
+        # "awards_players",
+        # "diamonds",
+        "functional_alltypes",
+    ],
+)
+def test_pyiceberg(con, tmp_path, table_name):
+    # TODO: For initial exploration with pyiceberg only.
+    # Will be removed.
+
+    ibis_table = con.table(table_name)
+    # out_path = tmp_path / "out.parquet"
+    # con.to_parquet(ibis_table, out_path)
+
+    # from ibis.backends.flink.datatypes import get_field_data_types
+
+    # pyflink_table = con._from_ibis_table_to_pyflink_table(ibis_table)
+    # pyflink_schema = pyflink_table.get_schema()
+    # arrow_schema = create_arrow_schema(
+    #     pyflink_schema.get_field_names(), get_field_data_types(pyflink_schema)
+    # )
+
+    ## Load catalog
+    import pyiceberg
+    import pyiceberg.catalog
+
+    catalog = pyiceberg.catalog.load_catalog(
+        # name="default",
+        **{
+            # "type": "rest",
+            "uri": "http://localhost:8181",
+            "s3.endpoint": "http://localhost:9000",
+            # "py-io-impl": "pyiceberg.io.pyarrow.PyArrowFileIO",
+            "s3.access-key-id": "admin",
+            "s3.secret-access-key": "password",
+        }
+    )
+
+    namespace_list = catalog.list_namespaces()
+    print(f"namespace_list= {namespace_list}")
+
+    ## Create namespace
+    namespace = "my_namespace"
+    try:
+        catalog.create_namespace(namespace)
+    except pyiceberg.exceptions.NamespaceAlreadyExistsError:
+        pass
+
+    table_list = catalog.list_tables(namespace)
+    print(f"table_list= {table_list}")
+
+    ## Create table
+    from pyiceberg.schema import Schema
+    from pyiceberg.types import (
+        BooleanType,
+        FloatType,
+        DoubleType,
+        IntegerType,
+        LongType,
+        NestedField,
+        StringType,
+        StructType,
+        TimestampType,
+    )
+
+    # def functional_alltypes_schema():
+    schema = Schema(
+        # NestedField(field_id=1, name="datetime", field_type=TimestampType(), required=True),
+        # NestedField(field_id=2, name="symbol", field_type=StringType(), required=True),
+        # NestedField(field_id=3, name="bid", field_type=FloatType(), required=False),
+        # NestedField(field_id=4, name="ask", field_type=DoubleType(), required=False),
+        NestedField(field_id=1, name="id", field_type=LongType(), required=False),
+        NestedField(field_id=2, name="bool_col", field_type=BooleanType(), required=False),
+        # NestedField(field_id=3, name="timestamp_col", field_type=TimestampType(), required=True),
+    )
+
+    from pyiceberg.partitioning import PartitionSpec, PartitionField
+    from pyiceberg.transforms import DayTransform, IdentityTransform
+
+    # Note: pyiceberg does not support appending to partitioned tables
+    partition_spec = PartitionSpec(
+        PartitionField(
+            # source_id=3, field_id=1000, transform=DayTransform(), name="timestamp_col"
+            source_id=1, field_id=1000, transform=IdentityTransform(), name="id"
+        )
+    )
+
+    from pyiceberg.table.sorting import SortOrder, SortField
+    from pyiceberg.transforms import IdentityTransform
+
+    # Sort on the symbol
+    sort_order = SortOrder(SortField(source_id=1, transform=IdentityTransform()))
+
+    table_name = "my_table"
+    try:
+        catalog.create_table(
+            # identifier=f"{namespace}.{table_name}",
+            # identifier=f"default.{table_name}",
+            identifier=(namespace, table_name),
+            schema=schema,
+            # location="s3://warehouse",
+            partition_spec=partition_spec,
+            sort_order=sort_order,
+        )
+    except pyiceberg.exceptions.TableAlreadyExistsError:
+        pass
+
+    # import requests.models
+    table_list = catalog.list_tables(namespace)
+    print(f"table_list= {table_list}")
+
+    ## Load table
+    iceberg_table = catalog.load_table(identifier=f"{namespace}.{table_name}")
+    print(f"iceberg_table= {iceberg_table}")
+
+    ## Write Iceberg table
+    # source_df = ibis_table.to_pandas()
+    # df = source_df[["id", "bool_col", "timestamp_col"]]
+    pyarrow_df = con.to_pyarrow(ibis_table)
+    # pyarrow_df = pyarrow_df.select(["id", "bool_col", "timestamp_col"])
+    pyarrow_df = pyarrow_df.select(["id", "bool_col"])
+    pyarrow_df = pa.concat_tables([pyarrow_df for _ in range(1000*1000)])
+
+    # iceberg_table.append(pyarrow_df)
+    iceberg_table.append(pyarrow_df)
+    iceberg_table.overwrite(pyarrow_df)
+    # return
+
+    ## Read Iceberg table
+    # iceberg_table.scan(
+    #     row_filter=GreaterThanOrEqual("trip_distance", 10.0),
+    #     selected_fields=("VendorID", "tpep_pickup_datetime", "tpep_dropoff_datetime"),
+    # ).to_arrow()
+    arrow_table = iceberg_table.scan().to_arrow()
+    print(f"arrow_table= {arrow_table}")
+    print(f"arrow_table.num_rows= {arrow_table.num_rows}")
+
+
+@pytest.mark.parametrize(
+    "table_name",
+    [
+        # "astronauts",
+        # "awards_players",
+        "diamonds",
+        # "functional_alltypes",
+    ],
+)
+def test_to_iceberg_and_read_iceberg(con, table_name):
+    ibis_table = con.table(table_name)
+
+    # Write table to Iceberg
+    catalog_properties = {
+        "uri": "http://localhost:8181",
+        "s3.endpoint": "http://localhost:9000",
+        "s3.access-key-id": "admin",
+        "s3.secret-access-key": "password",
+    }
+    catalog = "my_catalog"
+    namespace = "my_namespace"
+    ibis_table.to_iceberg(
+        catalog_properties=catalog_properties,
+        catalog=catalog,
+        namespace=namespace,
+    )
+
+    # Load the table from Iceberg
+    ibis_table_from_iceberg = ibis.read_iceberg(
+        table_name=ibis_table.get_name(),
+        catalog_properties=catalog_properties,
+        catalog=catalog,
+        namespace=namespace,
+    )
+    arrow_table_from_iceberg = ibis_table_from_iceberg.to_pyarrow()
+    print(f"arrow_table_from_iceberg= {arrow_table_from_iceberg}")
+
+    arrow_table_from_ibis = ibis_table.to_pyarrow()
+    print(f"arrow_table_from_ibis= {arrow_table_from_ibis}")
+
+    assert arrow_table_from_iceberg.num_rows == arrow_table_from_ibis.num_rows

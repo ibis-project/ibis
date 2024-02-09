@@ -575,6 +575,144 @@ class _FileIOHandler:
                     writer.write_batch(batch)
 
     @util.experimental
+    def to_iceberg(
+        self,
+        expr: ir.Table,
+        catalog_properties: dict[str, str],
+        *,
+        catalog: str = "default",
+        namespace: str = "default",
+        path: str = None,
+        table_properties: dict[str, str] = {},
+        overwrite: bool = True,
+        params: Mapping[ir.Scalar, Any] | None = None,
+    ) -> None:
+        """Executes the given expression and writes the results to an Iceberg table.
+
+        This method is eager and will execute the associated expression
+        immediately.
+
+        Parameters
+        ----------
+        expr
+            The ibis expression to execute and write to Iceberg.
+        catalog_properties
+            The properties (string key-value pairs) that are used while loading
+            the Iceberg catalog. Properties are passed to `pyiceberg.catalog.load_catalog()`.
+        catalog
+            Name of the Iceberg catalog in which the table will be created.
+        namespace
+            The Iceberg namespace in which the table will be written.
+        path
+            The Iceberg path under which the table will be created, e.g.
+            "s3://warehouse". When path is not specified, Iceberg catalog will
+            (1) choose an existing bucket to create the table,
+            (2) set the table path as f"{bucket}.{namespace}.{ibis_table_name}".
+            Note that, we set `ibis_table_name` here to `ibis_table.get_name()`.
+
+            Note: If `path` does not exist in Iceberg storage, Iceberg will raise
+              ServerError. If the table has been written in Iceberg before, the
+              table's path in Iceberg storage cannot be changed. That means, the
+              Iceberg table fixes the path of a table while writing it for the first
+              time.
+              # TODO (mehmet): Observed this behavior with the REST catalog.
+              # Could not find a doc to verify this behavior. It might be fruitful
+              # to take a look at the source code:
+              # https://github.com/tabular-io/iceberg-rest-image
+        table_properties
+            The table properties (string key-value pairs) for the Iceberg table.
+            These will be passed to `pyiceberg.catalog.create_table()`. A list of
+            available properties can be found in the Iceberg doc:
+            https://iceberg.apache.org/docs/latest/configuration/
+        overwrite
+            Whether to overwrite the data within the existing Iceberg table,
+            or append to it.
+        params
+            Mapping of scalar parameter expressions to value.
+        """
+        import pyiceberg
+        import pyiceberg.catalog
+        import requests
+
+        from pyiceberg.io.pyarrow import pyarrow_to_schema
+
+        pa = self._import_pyarrow()
+
+        # TODO: Iceberg support requires managing several relatively complex
+        # objects/processes:
+        # - catalogs
+        # - namespaces
+        # - table partitioning
+        # - sort order
+        # In the following, we skip majority of this complexity for the sake
+        # of simplicity in this initial iteration.
+
+        # Load Iceberg catalog
+        # TODO: Loading the catalog each time is not efficient.
+        try:
+            catalog = pyiceberg.catalog.load_catalog(
+                name=catalog,
+                **catalog_properties
+            )
+        except requests.exceptions.ConnectionError:
+            raise exc.IbisError(
+                "Could not connect to Iceberg catalog using "
+                f"catalog_properties: {catalog_properties}"
+            )
+
+        # Create Iceberg namespace
+        if namespace != "default":
+            try:
+                catalog.create_namespace(namespace)
+            except pyiceberg.exceptions.NamespaceAlreadyExistsError:
+                pass
+
+        # Create Iceberg table
+        table = expr.as_table()
+        table_name = table.get_name()
+        iceberg_schema = table.schema().to_pyarrow()
+
+        table_identifier = (namespace, table_name)
+        try:
+            # TODO: Iceberg allows for partitioning files that constitute a table.
+            # Pyiceberg allows for specifying the partitioning structure through
+            # a transformation defined on a table column, e.g., day of the timestamp
+            # column.
+            #
+            # Note: Pyiceberg exposes three classes PartitionSpec, PartitionField,
+            # Transform to capture the partitioning specification. We need to find
+            # a clean way to expose this to Ibis users.
+            #
+            # Q: Would it be "good practice" to ask users to specify the partitioning
+            # and sorting with pyiceberg's interface.
+            #
+            # Note: There is a similar process for specifying the sort order in
+            # Iceberg tables.
+            #
+            # Note: pyiceberg.table.append() currently does not support partitioning yet.
+            # Support for partitioning seems to be in the plan as indicated by the
+            # comments in the source code: https://github.com/apache/iceberg-python
+            iceberg_table = catalog.create_table(
+                identifier=table_identifier,
+                schema=iceberg_schema,
+                location=path,
+                # partition_spec=partition_spec,
+                # sort_order=sort_order,
+                properties=table_properties,
+            )
+        except pyiceberg.exceptions.TableAlreadyExistsError:
+            iceberg_table = catalog.load_table(identifier=table_identifier)
+
+        with expr.to_pyarrow_batches(params=params) as batch_reader:
+            for i, batch in enumerate(batch_reader):
+                pa_table = pa.Table.from_batches([batch])
+
+                if overwrite and i == 0:
+                    iceberg_table.overwrite(pa_table)
+                else:
+                    iceberg_table.append(pa_table)
+
+    @util.experimental
     def to_csv(
         self,
         expr: ir.Table,

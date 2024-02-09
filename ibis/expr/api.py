@@ -47,8 +47,9 @@ if TYPE_CHECKING:
     import numpy as np
     import pandas as pd
     import pyarrow as pa
+    import pyiceberg
 
-    from ibis.common.typing import SupportsSchema
+    from ibis.common.typing import Iterator, SupportsSchema
 
 __all__ = (
     "aggregate",
@@ -150,6 +151,7 @@ __all__ = (
     "range_window",
     "read_csv",
     "read_delta",
+    "read_iceberg",
     "read_json",
     "read_parquet",
     "row_number",
@@ -2400,3 +2402,183 @@ def least(*args: Any) -> ir.Value:
 
     """
     return ops.Least(args).to_expr()
+
+
+# TODO: Move
+# - _arrow_record_batch_iterator_from_iceberg_table()
+# - _arrow_batch_reader_from_iceberg_table()
+# somewhere else.
+def _arrow_record_batch_iterator_from_iceberg_table(
+    iceberg_table: pyiceberg.table.Table,
+    snapshot_id: str = None,
+    options: dict[str, str] = {},
+    limit: int = None,
+) -> Iterator[pa.RecordBatch]:
+    # Note: This function is a modification of `pyiceberg.table.to_arrow()`.
+    # The modification has been done to read the Iceberg table as RecordBatch
+    # iterator rather than a single Arrow table.
+
+    from pyiceberg.expressions import AlwaysTrue
+    from pyiceberg.io.pyarrow import _task_to_table, PyArrowFileIO
+
+    scan_result = iceberg_table.scan(
+        snapshot_id=snapshot_id,
+        options=options,
+        limit=limit,
+    )
+
+    scheme, netloc, _ = PyArrowFileIO.parse_location(iceberg_table.location())
+    if isinstance(iceberg_table.io, PyArrowFileIO):
+        fs = iceberg_table.io.fs_by_scheme(scheme, netloc)
+    else:
+        try:
+            from pyiceberg.io.fsspec import FsspecFileIO
+
+            if isinstance(iceberg_table.io, FsspecFileIO):
+                from pyarrow.fs import PyFileSystem
+
+                fs = PyFileSystem(FSSpecHandler(iceberg_table.io.get_fs(scheme)))
+            else:
+                raise ValueError(
+                    f"Expected PyArrowFileIO or FsspecFileIO, got: {iceberg_table.io}"
+                )
+        except ModuleNotFoundError as e:
+            # When FsSpec is not installed
+            raise ValueError(
+                f"Expected PyArrowFileIO or FsspecFileIO, got: {iceberg_table.io}"
+            ) from e
+
+    # Note: `row_counts` arg below is not meaningful for our use case.
+    # It is used by pyiceberg to manage concurrent execution of `_task_to_table()`'s.
+    task_iterator = scan_result.plan_files()
+    projected_schema = scan_result.projection()
+    projected_field_ids = projected_schema.field_ids
+    for task in task_iterator:
+        arrow_table = _task_to_table(
+            fs=fs,
+            task=task,
+            bound_row_filter=AlwaysTrue(),
+            projected_schema=projected_schema,
+            projected_field_ids=projected_field_ids,
+            positional_deletes=[],
+            case_sensitive=scan_result.case_sensitive,
+            row_counts=[],
+            limit=scan_result.limit,
+            name_mapping=iceberg_table.name_mapping(),
+        )
+        if arrow_table is None:
+            continue
+
+        arrow_batches = arrow_table.to_batches()
+        for batch in arrow_batches:
+            yield batch
+
+
+def _arrow_batch_reader_from_iceberg_table(
+    iceberg_table: pyiceberg.table.Table,
+    snapshot_id: str = None,
+    options: dict[str, str] = {},
+    limit: int = None,
+) -> pa.RecordBatchReader:
+    from pyiceberg.io.pyarrow import schema_to_pyarrow
+
+    from ibis.backends.base import _FileIOHandler
+
+    pa = _FileIOHandler._import_pyarrow()
+
+    record_batch_iterator = _arrow_record_batch_iterator_from_iceberg_table(
+        iceberg_table=iceberg_table,
+        snapshot_id=snapshot_id,
+        options=options,
+        limit=limit,
+    )
+
+    arrow_schema = schema_to_pyarrow(iceberg_table.schema())
+    return pa.RecordBatchReader.from_batches(arrow_schema, record_batch_iterator)
+
+
+def read_iceberg(
+    table_name: str,
+    catalog_properties: dict[str, str],
+    *,
+    catalog: str = "default",
+    namespace: str = "default",
+    snapshot_id: str = None,
+    options: dict[str, str] = {},
+    limit: int = None,
+) -> ir.Table:
+    """Create an Ibis table from an Iceberg table. The table
+    is bound to the default backend.
+
+    Parameters
+    ----------
+        table_name
+            The name of the Iceberg table.
+        catalog_properties
+            The properties (string key-value pairs) that are used while loading
+            the Iceberg catalog. Properties are passed to `pyiceberg.catalog.load_catalog()`.
+        catalog
+            Name of the Iceberg catalog in which the table will be created.
+        namespace
+            The Iceberg namespace in which the table will be written.
+        snapshot_id
+            ID of the snapshot for the Iceberg table.
+        options
+            The options (string key-value pairs) that are used while scanning
+            the Iceberg table. Options are passed to `pyiceberg.table.scan()`.
+        limit
+            The limit on the number of rows that will be used from the Iceberg
+            table.
+
+    Returns
+    -------
+    Table
+        An Ibis table bound to the default backend.
+
+    Examples
+    --------
+    Suppose that an Iceberg table 'penguins' has been previously created
+    under the 'birds' namespace.
+
+    >>> catalog_properties = {
+    >>>     "uri": "http://localhost:8181",
+    >>>     "s3.endpoint": "http://localhost:9000",
+    >>>     "s3.access-key-id": "admin",
+    >>>     "s3.secret-access-key": "password",
+    >>> }
+    >>> penguins.from_iceberg(
+    >>>     table_name="penguins",
+    >>>     catalog_properties=catalog_properties,
+    >>>     namespace="birds",
+    >>> }
+    """
+
+    import pyiceberg.catalog
+
+    catalog = pyiceberg.catalog.load_catalog(**catalog_properties)
+    # TODO: Is it fine to bubble up the pyiceberg errors such as
+    # pyiceberg.exceptions.NoSuchTableError?
+    iceberg_table = catalog.load_table(identifier=(namespace, table_name))
+
+    # TODO: Pyiceberg provides filtering columns and rows via the args
+    # `row_filter` and `selected_fields` to `scan()`. However, these
+    # operations are being performed in memory after fetching the table
+    # data entirely from Iceberg. For more context, see the discussion on
+    # https://github.com/ibis-project/ibis/issues/7712#issuecomment-1850331739
+
+    from ibis.config import _default_backend
+
+    con = _default_backend()  # Default backend is DuckDB
+
+    arrow_batch_reader = _arrow_batch_reader_from_iceberg_table(
+        iceberg_table=iceberg_table,
+        snapshot_id=snapshot_id,
+        options=options,
+        limit=limit,
+    )
+
+    ibis_table = con.read_in_memory(
+        source=arrow_batch_reader,
+        table_name=table_name
+    )
+    return ibis_table

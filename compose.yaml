@@ -406,6 +406,64 @@ services:
     networks:
       - flink
 
+  iceberg-rest:
+    image: tabulario/iceberg-rest
+    container_name: iceberg-rest
+    networks:
+      iceberg:
+    ports:
+      - 8181:8181
+    environment:
+      - AWS_ACCESS_KEY_ID=admin
+      - AWS_SECRET_ACCESS_KEY=password
+      - AWS_REGION=us-east-1
+      - CATALOG_WAREHOUSE=s3://warehouse/
+      - CATALOG_IO__IMPL=org.apache.iceberg.aws.s3.S3FileIO
+      - CATALOG_S3_ENDPOINT=http://iceberg-minio:9000
+    depends_on:
+      - iceberg-minio
+      - iceberg-mc
+
+  iceberg-minio:
+    image: minio/minio
+    container_name: iceberg-minio
+    environment:
+      - MINIO_ROOT_USER=admin
+      - MINIO_ROOT_PASSWORD=password
+      - MINIO_DOMAIN=iceberg-minio
+    networks:
+      iceberg:
+        aliases:
+          - warehouse.iceberg-minio
+          - warehouse2.iceberg-minio
+    ports:
+      - 9001:9001
+      - 9000:9000
+    command: ["server", "/data", "--console-address", ":9001"]
+
+  iceberg-mc:
+    image: minio/mc
+    container_name: iceberg-mc
+    networks:
+      iceberg:
+    environment:
+      - AWS_ACCESS_KEY_ID=admin
+      - AWS_SECRET_ACCESS_KEY=password
+      - AWS_REGION=us-east-1
+    entrypoint: >
+      /bin/sh -c "
+      until (/usr/bin/mc config host add iceberg-minio http://iceberg-minio:9000 admin password) do echo '...waiting...' && sleep 1; done;
+      /usr/bin/mc rm -r --force iceberg-minio/warehouse;
+      /usr/bin/mc rm -r --force iceberg-minio/warehouse2;
+      /usr/bin/mc mb iceberg-minio/warehouse;
+      /usr/bin/mc mb iceberg-minio/warehouse2;
+      /usr/bin/mc policy set public iceberg-minio/warehouse;
+      /usr/bin/mc policy set public iceberg-minio/warehouse2;
+      tail -f /dev/null
+      "
+    depends_on:
+      - iceberg-minio
+
   kudu:
     cap_add:
       - SYS_TIME
@@ -572,6 +630,7 @@ services:
       - risingwave
 
 networks:
+  iceberg:
   impala:
     # docker defaults to naming networks "$PROJECT_$NETWORK" but the Java Hive
     # Metastore clients don't accept underscores in the thrift URIs and

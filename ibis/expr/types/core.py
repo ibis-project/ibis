@@ -511,6 +511,82 @@ class Expr(Immutable, Coercible):
         self._find_backend(use_default=True).to_parquet(self, path, **kwargs)
 
     @experimental
+    def to_iceberg(
+        self,
+        catalog_properties: dict[str, str],
+        *,
+        catalog: str = "default",
+        namespace: str = "default",
+        path: str = None,
+        table_properties: dict[str, str] = {},
+        overwrite: bool = True,
+        params: Mapping[ir.Scalar, Any] | None = None,
+    ) -> None:
+        """Write the results of executing the given expression to a parquet file.
+
+        This method is eager and will execute the associated expression
+        immediately.
+
+        Parameters
+        ----------
+        path
+            The data source. A string or Path to the parquet file.
+        catalog_properties
+            The catalog properties that are used while loading the Iceberg catalog.
+            These will be passed to `pyiceberg.catalog.load_catalog()`.
+        catalog
+            Name of the Iceberg catalog in which the table will be created.
+        namespace
+            The Iceberg namespace in which the table will be written.
+        path
+            The Iceberg path under which the table will be created, e.g.
+            "s3://warehouse". When it is given as None, the Iceberg catalog
+            will choose a bucket to create the table. If the given path does
+            not exist, Iceberg will raise ServerError.
+        table_properties
+            The table properties for the Iceberg table. These will be passed
+            to `pyiceberg.catalog.create_table()`.
+        overwrite
+            Whether to overwrite the existing Iceberg table or append to it.
+        params
+            Mapping of scalar parameter expressions to value.
+
+        Examples
+        --------
+        Write out an expression to a single Iceberg table.
+
+        >>> import ibis
+        >>> penguins = ibis.examples.penguins.fetch()
+        >>> catalog_properties = {
+        >>>     "uri": "http://localhost:8181",
+        >>>     "s3.endpoint": "http://localhost:9000",
+        >>>     "s3.access-key-id": "admin",
+        >>>     "s3.secret-access-key": "password",
+        >>> }
+        >>> penguins.to_iceberg(catalog_properties=catalog_properties)
+
+        Specify the optional arguments.
+
+        >>> penguins.to_iceberg(
+        >>>     catalog_properties=catalog_properties,
+        >>>     catalog="my_catalog",
+        >>>     namespace="my_namespace",
+        >>>     path="s3://warehouse",
+        >>>     table_properties=table_properties,
+        >>> )
+        """
+        self._find_backend(use_default=True).to_iceberg(
+            expr=self,
+            catalog_properties=catalog_properties,
+            catalog=catalog,
+            namespace=namespace,
+            path=path,
+            table_properties=table_properties,
+            overwrite=overwrite,
+            params=params,
+        )
+
+    @experimental
     def to_csv(
         self,
         path: str | Path,
