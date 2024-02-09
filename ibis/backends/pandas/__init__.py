@@ -301,7 +301,7 @@ class BasePandasBackend(BaseBackend):
         # cudf.pandas adds a column with the name `__index_level_0__` (and maybe
         # other index level columns) but these aren't part of the known schema
         # so we drop them
-        output = output.drop_columns(
+        output = output.drop(
             filter(lambda col: col.startswith("__index_level_"), output.column_names)
         )
         table = PyArrowData.convert_table(output, table_expr.schema())

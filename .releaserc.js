@@ -10,8 +10,8 @@ module.exports = {
       {
         // deprecations are patch releases
         releaseRules: [{ type: "depr", release: "patch" }],
-        preset: "conventionalcommits",
-      },
+        preset: "conventionalcommits"
+      }
     ],
     [
       "@semantic-release/release-notes-generator",
@@ -27,17 +27,17 @@ module.exports = {
             { type: "refactor", section: "Refactors" },
             { type: "perf", section: "Performance" },
             { type: "test", hidden: true },
-            { type: "depr", section: "Deprecations" },
-          ],
-        },
-      },
+            { type: "depr", section: "Deprecations" }
+          ]
+        }
+      }
     ],
     [
       "@semantic-release/changelog",
       {
         changelogTitle: "Release notes\n---",
-        changelogFile: "docs/release_notes.md",
-      },
+        changelogFile: "docs/release_notes.md"
+      }
     ],
     [
       "semantic-release-replace-plugin",
@@ -52,13 +52,13 @@ module.exports = {
                 file: "ibis/__init__.py",
                 hasChanged: true,
                 numMatches: 1,
-                numReplacements: 1,
-              },
+                numReplacements: 1
+              }
             ],
-            countMatches: true,
-          },
-        ],
-      },
+            countMatches: true
+          }
+        ]
+      }
     ],
     [
       "@semantic-release/exec",
@@ -67,22 +67,22 @@ module.exports = {
           "ci/release/verify_conditions.sh ${options.dryRun}",
         verifyReleaseCmd: "ci/release/verify_release.sh ${nextRelease.version}",
         prepareCmd: "ci/release/prepare.sh ${nextRelease.version}",
-        publishCmd: "ci/release/publish.sh",
-      },
+        publishCmd: "ci/release/publish.sh"
+      }
     ],
     [
       "@semantic-release/github",
       {
         successComment: false,
-        assets: ["dist/*.whl"],
-      },
+        assets: ["dist/*.whl"]
+      }
     ],
     [
       "@semantic-release/git",
       {
         assets: ["pyproject.toml", "docs/release_notes.md", "ibis/__init__.py"],
-        message: "chore(release): ${nextRelease.version}",
-      },
-    ],
-  ],
+        message: "chore(release): ${nextRelease.version}"
+      }
+    ]
+  ]
 };
