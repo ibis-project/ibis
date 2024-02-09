@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import atexit
 from functools import partial
 from itertools import repeat
 from typing import TYPE_CHECKING
@@ -208,28 +207,6 @@ class Backend(PostgresBackend):
         return ops.DatabaseTable(
             name, schema=schema, source=self, namespace=ops.Namespace(database=database)
         ).to_expr()
-
-    def _get_temp_view_definition(self, name: str, definition):
-        drop = sge.Drop(
-            kind="VIEW", exists=True, this=sg.table(name), cascade=True
-        ).sql(self.dialect)
-
-        create = sge.Create(
-            this=sg.to_identifier(name, quoted=self.compiler.quoted),
-            kind="VIEW",
-            expression=definition,
-            replace=False,
-        ).sql(self.dialect)
-
-        atexit.register(self._clean_up_tmp_view, name)
-        return f"{drop}; {create}"
-
-    def _clean_up_tmp_view(self, name: str) -> None:
-        drop = sge.Drop(
-            kind="VIEW", exists=True, this=sg.table(name), cascade=True
-        ).sql(self.dialect)
-        with self.begin() as bind:
-            bind.execute(drop)
 
     def _register_in_memory_table(self, op: ops.InMemoryTable) -> None:
         schema = op.schema
