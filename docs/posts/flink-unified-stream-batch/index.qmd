@@ -134,7 +134,7 @@ In a database like Postgres, this could be as simple as
 SELECT DISTINCT t0.`string_col`, t0.`int_col`
 FROM functional_alltypes t0
 ```
-And in pandas, you would use the method `drop_duplicates()`:
+And in `pandas`, you would use the method `drop_duplicates()`:
 ```python
 df.drop_duplicates()
 ```
@@ -164,8 +164,9 @@ execution). You can [download and install Docker Compose from the official
 website](https://docs.docker.com/compose/install/).
 * JDK 11 release: Flink requires Java 11.
 * Python 3.9 or 3.10.
-* Follow [the setup tutorial](https://ibis-project.org/tutorials/open-source-software/apache-flink/0_setup)
-to install the Flink backend for Ibis.
+* Follow [the setup
+tutorial](../../tutorials/open-source-software/apache-flink/0_setup.qmd) to
+install the Flink backend for Ibis.
 * Clone the [example repository](https://github.com/ibis-project/ibis-flink-example).
 :::
 
@@ -202,7 +203,7 @@ for _, msg in zip(range(100), consumer):
     rows.append(msg)
 ```
 
-This is a tabular dataset and we can convert it into a pandas DataFrame:
+This is a tabular dataset and we can convert it into a `pandas` DataFrame:
 
 ```{python}
 import json
@@ -214,15 +215,18 @@ df["createTime"] = pd.to_datetime(df["createTime"])
 df
 ```
 
-We can connect to this DataFrame in ibis:
+We can connect to this DataFrame in Ibis in a local execution backend:
 
 ```{python}
 import ibis
 
-con = ibis.pandas.connect()
-t = con.create_table("payments", df)
-t
+con = ibis.get_backend()
+con.create_table("payments", df)
 ```
+
+::: {.callout-note}
+The default execution engine for Ibis is DuckDB.
+:::
 
 This is a series of records of order transactions. At Company Potclay, we have
 just deployed a new ad campaign, which is A/B tested by province, and we’re
@@ -233,23 +237,52 @@ writing this feature on a smaller set of batch data. After we make sure that
 the logic looks correct and handles all edge cases appropriately, we want to
 deploy this as a streaming workload.
 
-Here is how we would define this feature in Ibis code:
+Ibis allows us to write transformations on top of so-called abstract or unbound
+tables (i.e., tables that are not bound to an actual data source). This
+separation between transformation logic and the underlying data and execution
+is one of the things that makes Ibis so powerful. It's similar to dependency
+injection, but in this case the data is the dependency and is injected at
+runtime.
+
+To write transformations on top of an unbound table, we need to first define an
+`ibis.table()` with a schema. Here is how we would write all of this in Ibis
+code:
 
 ```{python}
-agged = t[
+import ibis.expr.schema as sch
+import ibis.expr.datatypes as dt
+from ibis import _
+
+schema = sch.Schema(
+    {
+        "createTime": dt.timestamp(scale=3),
+        "orderId": dt.int64,
+        "payAmount": dt.float64,
+        "payPlatform": dt.int32,
+        "provinceId": dt.int32,
+    }
+)
+unbound_table = ibis.table(schema, name="payments")
+unbound_agged = unbound_table[
     "provinceId",
-    t.payAmount.sum()
-    .over(range=(-ibis.interval(seconds=10), 0), order_by=t.createTime)
+    _.payAmount.sum()
+    .over(range=(-ibis.interval(seconds=10), 0), order_by=_.createTime)
     .name("pay_amount"),
 ]
-agged
+unbound_agged
 ```
 
-Carrying out the computations using `pandas` backend is as simple as:
+Carrying out the computations using the local execution backend that we
+connected to above is as simple as:
 
 ```{python}
-agged.to_pandas()
+con.to_pandas(unbound_agged)
 ```
+
+::: {.callout-note}
+DuckDB is much faster than `pandas`, and using Ibis you don't need to write SQL
+for it!
+:::
 
 For local experimentation purposes, this DataFrame only consists of 100 rows,
 so doing this in memory is easy.
@@ -270,8 +303,6 @@ and link it for cluster execution explicitly:
 :::
 
 ```{python}
-import ibis.expr.schema as sch
-import ibis.expr.datatypes as dt
 from pyflink.table import EnvironmentSettings, TableEnvironment
 from pyflink.common import Configuration
 
@@ -307,8 +338,8 @@ source_configs = {
     "format": "json",
 }
 
-t = connection.create_table(
-    "payment_msg",
+connection.create_table(
+    "payments",
     schema=source_schema,
     tbl_properties=source_configs,
     watermark=ibis.watermark(
@@ -321,13 +352,7 @@ How would we write this in Flink SQL? Ibis makes this extremely easy by
 exposing a `compile()` API:
 
 ```{python}
-agged = t[
-    "provinceId",
-    t.payAmount.sum()
-    .over(range=(-ibis.interval(seconds=10), 0), order_by=t.createTime)
-    .name("pay_amount"),
-]
-sql = connection.compile(agged)
+sql = connection.compile(unbound_agged)
 print(sql)
 ```
 
@@ -354,10 +379,11 @@ connection.create_table(
 )
 ```
 
-Now, let’s write the results into this sink:
+Now, let’s write the results into this sink. Note that we can directly reuse
+the transformation logic that we wrote above for the local execution backend!!
 
 ```{python}
-connection.insert("kafka_sink", agged)
+connection.insert("kafka_sink", unbound_agged)
 ```
 
 ::: {.callout-tip}
@@ -366,8 +392,8 @@ You can examine the results either using the Kafka console consumer CLI or the
 :::
 
 How easy was it to define both batch and streaming workloads using Ibis?
-Without Ibis, you would have needed to write a pandas workload and then convert
-it into Flink SQL manually.
+Without Ibis, you would have needed to write a `pandas`/DuckDB workload and
+then convert it into Flink SQL manually.
 
 ## Concluding thoughts
 
