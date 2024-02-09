@@ -26,7 +26,6 @@ from ibis.backends.tests.errors import (
     MySQLProgrammingError,
     OracleDatabaseError,
     PsycoPg2InternalError,
-    Py4JJavaError,
     PyDruidProgrammingError,
     PyODBCDataError,
     PyODBCProgrammingError,
@@ -120,6 +119,11 @@ def test_scalar_fillna_nullif(con, expr, expected):
                     raises=ExaQueryError,
                     reason="no way to test for nan-ness",
                 ),
+                pytest.mark.notyet(
+                    ["flink"],
+                    "NaN is not supported in Flink SQL",
+                    raises=NotImplementedError,
+                ),
             ],
             id="nan_col",
         ),
@@ -128,7 +132,6 @@ def test_scalar_fillna_nullif(con, expr, expected):
         ),
     ],
 )
-@pytest.mark.notyet(["flink"], "NaN is not supported in Flink SQL", raises=ValueError)
 def test_isna(backend, alltypes, col, value, filt):
     table = alltypes.select(**{col: value})
     df = table.execute()
@@ -168,7 +171,9 @@ def test_isna(backend, alltypes, col, value, filt):
                     reason="NaN != NULL for these backends",
                 ),
                 pytest.mark.notyet(
-                    ["flink"], "NaN is not supported in Flink SQL", raises=ValueError
+                    ["flink"],
+                    "NaN is not supported in Flink SQL",
+                    raises=NotImplementedError,
                 ),
             ],
             id="nan_col",
@@ -373,7 +378,9 @@ def test_case_where(backend, alltypes, df):
 
 # TODO: some of these are notimpl (datafusion) others are probably never
 @pytest.mark.notimpl(["mysql", "sqlite", "mssql", "druid", "exasol"])
-@pytest.mark.notyet(["flink"], "NaN is not supported in Flink SQL", raises=ValueError)
+@pytest.mark.notyet(
+    ["flink"], "NaN is not supported in Flink SQL", raises=NotImplementedError
+)
 def test_select_filter_mutate(backend, alltypes, df):
     """Test that select, filter and mutate are executed in right order.
 
@@ -484,14 +491,15 @@ def test_dropna_invalid(alltypes):
 @pytest.mark.parametrize(
     "subset",
     [
-        None,
+        param(None, id="none"),
         param(
             [],
             marks=pytest.mark.notimpl(["exasol"], raises=ExaQueryError, strict=False),
+            id="empty",
         ),
-        "col_1",
-        ["col_1", "col_2"],
-        ["col_1", "col_3"],
+        param("col_1", id="single"),
+        param(["col_1", "col_2"], id="one-and-two"),
+        param(["col_1", "col_3"], id="one-and-three"),
     ],
 )
 def test_dropna_table(backend, alltypes, how, subset):
@@ -748,11 +756,6 @@ def test_between(backend, alltypes, df):
 
 
 @pytest.mark.notimpl(["druid"])
-@pytest.mark.notimpl(
-    ["flink"],
-    raises=Py4JJavaError,
-    reason="Flink does not support now() - t.`timestamp_col`",
-)
 def test_interactive(alltypes, monkeypatch):
     monkeypatch.setattr(ibis.options, "interactive", True)
 
@@ -995,7 +998,6 @@ def test_memtable_column_naming_mismatch(backend, con, monkeypatch, df, columns)
 @pytest.mark.notimpl(
     ["dask", "pandas", "polars"], raises=NotImplementedError, reason="not a SQL backend"
 )
-@pytest.mark.notimpl(["flink"], reason="no sqlglot dialect", raises=ValueError)
 def test_many_subqueries(con, snapshot):
     def query(t, group_cols):
         t2 = t.mutate(key=ibis.row_number().over(ibis.window(order_by=group_cols)))
@@ -1390,7 +1392,7 @@ def test_try_cast(con, from_val, to_type, expected):
             "int",
             marks=[
                 pytest.mark.never(
-                    ["clickhouse", "pyspark"], reason="casts to 1672531200"
+                    ["clickhouse", "pyspark", "flink"], reason="casts to 1672531200"
                 ),
                 pytest.mark.notyet(["bigquery"], raises=GoogleBadRequest),
                 pytest.mark.notyet(["trino"], raises=TrinoUserError),
@@ -1750,7 +1752,7 @@ def test_dynamic_table_slice_with_computed_offset(backend):
     backend.assert_frame_equal(result, expected)
 
 
-@pytest.mark.notimpl(["druid", "flink", "polars", "snowflake"])
+@pytest.mark.notimpl(["druid", "polars", "snowflake"])
 @pytest.mark.notimpl(
     ["risingwave"],
     raises=PsycoPg2InternalError,
@@ -1771,7 +1773,7 @@ def test_sample(backend):
     backend.assert_frame_equal(empty, df.iloc[:0])
 
 
-@pytest.mark.notimpl(["druid", "flink", "polars", "snowflake"])
+@pytest.mark.notimpl(["druid", "polars", "snowflake"])
 @pytest.mark.notimpl(
     ["risingwave"],
     raises=PsycoPg2InternalError,
@@ -1829,7 +1831,6 @@ def test_substitute(backend):
 @pytest.mark.notimpl(
     ["dask", "pandas", "polars"], raises=NotImplementedError, reason="not a SQL backend"
 )
-@pytest.mark.notimpl(["flink"], reason="no sqlglot dialect", raises=ValueError)
 def test_simple_memtable_construct(con):
     t = ibis.memtable({"a": [1, 2]})
     expr = t.a

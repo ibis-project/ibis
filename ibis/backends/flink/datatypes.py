@@ -2,7 +2,14 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from pyflink.table.types import DataType, DataTypes, RowType, _from_java_data_type
+from pyflink.table.types import (
+    ArrayType,
+    DataType,
+    DataTypes,
+    MapType,
+    RowType,
+    _from_java_data_type,
+)
 
 import ibis.expr.datatypes as dt
 import ibis.expr.schema as sch
@@ -28,8 +35,9 @@ class FlinkRowSchema(SchemaMapper):
 
 class FlinkType(TypeMapper):
     @classmethod
-    def to_ibis(cls, typ: DataType, nullable=True) -> dt.DataType:
+    def to_ibis(cls, typ: DataType) -> dt.DataType:
         """Convert a flink type to an ibis type."""
+        nullable = typ.nullable
         if typ == DataTypes.STRING():
             return dt.String(nullable=nullable)
         elif typ == DataTypes.BOOLEAN():
@@ -53,8 +61,18 @@ class FlinkType(TypeMapper):
         elif typ == DataTypes.TIME():
             return dt.Time(nullable=nullable)
         elif typ == DataTypes.TIMESTAMP():
-            return dt.Timestamp(
-                scale=typ.precision,
+            return dt.Timestamp(scale=typ.precision, nullable=nullable)
+        elif isinstance(typ, ArrayType):
+            return dt.Array(value_type=cls.to_ibis(typ.element_type), nullable=nullable)
+        elif isinstance(typ, MapType):
+            return dt.Map(
+                key_type=cls.to_ibis(typ.key_type),
+                value_type=cls.to_ibis(typ.value_type),
+                nullable=nullable,
+            )
+        elif isinstance(typ, RowType):
+            return dt.Struct(
+                {field.name: cls.to_ibis(field.data_type) for field in typ.fields},
                 nullable=nullable,
             )
         else:
@@ -63,38 +81,39 @@ class FlinkType(TypeMapper):
     @classmethod
     def from_ibis(cls, dtype: dt.DataType) -> DataType:
         """Convert an ibis type to a flink type."""
+        nullable = dtype.nullable
         if dtype.is_string():
-            return DataTypes.STRING(nullable=dtype.nullable)
+            return DataTypes.STRING(nullable=nullable)
         elif dtype.is_boolean():
-            return DataTypes.BOOLEAN(nullable=dtype.nullable)
+            return DataTypes.BOOLEAN(nullable=nullable)
         elif dtype.is_binary():
-            return DataTypes.BYTES(nullable=dtype.nullable)
+            return DataTypes.BYTES(nullable=nullable)
         elif dtype.is_int8():
-            return DataTypes.TINYINT(nullable=dtype.nullable)
+            return DataTypes.TINYINT(nullable=nullable)
         elif dtype.is_int16():
-            return DataTypes.SMALLINT(nullable=dtype.nullable)
+            return DataTypes.SMALLINT(nullable=nullable)
         elif dtype.is_int32():
-            return DataTypes.INT(nullable=dtype.nullable)
+            return DataTypes.INT(nullable=nullable)
         elif dtype.is_int64():
-            return DataTypes.BIGINT(nullable=dtype.nullable)
+            return DataTypes.BIGINT(nullable=nullable)
         elif dtype.is_uint8():
-            return DataTypes.TINYINT(nullable=dtype.nullable)
+            return DataTypes.TINYINT(nullable=nullable)
         elif dtype.is_uint16():
-            return DataTypes.SMALLINT(nullable=dtype.nullable)
+            return DataTypes.SMALLINT(nullable=nullable)
         elif dtype.is_uint32():
-            return DataTypes.INT(nullable=dtype.nullable)
+            return DataTypes.INT(nullable=nullable)
         elif dtype.is_uint64():
-            return DataTypes.BIGINT(nullable=dtype.nullable)
+            return DataTypes.BIGINT(nullable=nullable)
         elif dtype.is_float16():
-            return DataTypes.FLOAT(nullable=dtype.nullable)
+            return DataTypes.FLOAT(nullable=nullable)
         elif dtype.is_float32():
-            return DataTypes.FLOAT(nullable=dtype.nullable)
+            return DataTypes.FLOAT(nullable=nullable)
         elif dtype.is_float64():
-            return DataTypes.DOUBLE(nullable=dtype.nullable)
+            return DataTypes.DOUBLE(nullable=nullable)
         elif dtype.is_date():
-            return DataTypes.DATE(nullable=dtype.nullable)
+            return DataTypes.DATE(nullable=nullable)
         elif dtype.is_time():
-            return DataTypes.TIME(nullable=dtype.nullable)
+            return DataTypes.TIME(nullable=nullable)
         elif dtype.is_timestamp():
             # Note (mehmet): If `precision` is None, set it to 6.
             # This is because `DataTypes.TIMESTAMP` throws TypeError
@@ -102,7 +121,23 @@ class FlinkType(TypeMapper):
             # if it is not provided.
             return DataTypes.TIMESTAMP(
                 precision=dtype.scale if dtype.scale is not None else 6,
-                nullable=dtype.nullable,
+                nullable=nullable,
+            )
+        elif dtype.is_array():
+            return DataTypes.ARRAY(cls.from_ibis(dtype.value_type), nullable=nullable)
+        elif dtype.is_map():
+            return DataTypes.MAP(
+                key_type=cls.from_ibis(dtype.key_type),
+                value_type=cls.from_ibis(dtype.key_type),
+                nullable=nullable,
+            )
+        elif dtype.is_struct():
+            return DataTypes.ROW(
+                [
+                    DataTypes.FIELD(name, data_type=cls.from_ibis(typ))
+                    for name, typ in dtype.items()
+                ],
+                nullable=nullable,
             )
         else:
             return super().from_ibis(dtype)

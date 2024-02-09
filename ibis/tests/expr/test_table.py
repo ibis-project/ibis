@@ -1774,7 +1774,7 @@ def test_merge_as_of_allows_overlapping_columns():
     ]  # select columns we care about
     signal_two = signal_two.rename(voltage="value", signal_two="field")
 
-    merged = ibis.api.asof_join(signal_one, signal_two, "timestamp_received")
+    merged = signal_one.asof_join(signal_two, "timestamp_received")
     assert merged.columns == [
         "current",
         "timestamp_received",

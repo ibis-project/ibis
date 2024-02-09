@@ -116,8 +116,6 @@ def test_array_repeat(con):
     assert np.array_equal(result, expected)
 
 
-# Issues #2370
-@pytest.mark.notimpl(["flink"], raises=com.OperationNotDefinedError)
 def test_array_concat(con):
     left = ibis.literal([1, 2, 3])
     right = ibis.literal([2, 1])
@@ -126,8 +124,6 @@ def test_array_concat(con):
     assert sorted(result) == sorted([1, 2, 3, 2, 1])
 
 
-# Issues #2370
-@pytest.mark.notimpl(["flink"], raises=com.OperationNotDefinedError)
 def test_array_concat_variadic(con):
     left = ibis.literal([1, 2, 3])
     right = ibis.literal([2, 1])
@@ -138,7 +134,7 @@ def test_array_concat_variadic(con):
 
 
 # Issues #2370
-@pytest.mark.notimpl(["flink"], raises=com.OperationNotDefinedError)
+@pytest.mark.notimpl(["flink"], raises=Py4JJavaError)
 @pytest.mark.notyet(["trino"], raises=TrinoUserError)
 def test_array_concat_some_empty(con):
     left = ibis.literal([])
@@ -149,7 +145,6 @@ def test_array_concat_some_empty(con):
     assert np.array_equal(result, expected)
 
 
-@pytest.mark.notimpl(["flink"], raises=com.OperationNotDefinedError)
 def test_array_radd_concat(con):
     left = [1]
     right = ibis.literal([2])
@@ -250,7 +245,7 @@ def test_array_discovery(backend):
     reason="BigQuery doesn't support casting array<T> to array<U>",
     raises=GoogleBadRequest,
 )
-@pytest.mark.notimpl(["datafusion"], raises=com.OperationNotDefinedError)
+@pytest.mark.notimpl(["datafusion", "flink"], raises=com.OperationNotDefinedError)
 def test_unnest_simple(backend):
     array_types = backend.array_types
     expected = (
@@ -361,7 +356,7 @@ def test_unnest_no_nulls(backend):
     raises=ValueError,
     reason="all the input arrays must have same number of dimensions",
 )
-@pytest.mark.notimpl(["datafusion"], raises=com.OperationNotDefinedError)
+@pytest.mark.notimpl(["datafusion", "flink"], raises=com.OperationNotDefinedError)
 def test_unnest_default_name(backend):
     array_types = backend.array_types
     df = array_types.execute()
@@ -551,11 +546,28 @@ def test_array_filter(con, input, output, predicate):
 
 @builtin_array
 @pytest.mark.notimpl(["polars"], raises=com.OperationNotDefinedError)
-def test_array_contains(backend, con):
+@pytest.mark.parametrize(
+    ("col", "value"),
+    [
+        param(
+            "x",
+            1,
+            marks=[
+                pytest.mark.broken(
+                    ["flink"],
+                    raises=Py4JJavaError,
+                    reason="unknown; NPE during execution",
+                )
+            ],
+        ),
+        ("y", "a"),
+    ],
+)
+def test_array_contains(backend, con, col, value):
     t = backend.array_types
-    expr = t.x.contains(1)
+    expr = t[col].contains(value)
     result = con.execute(expr)
-    expected = t.x.execute().map(lambda lst: 1 in lst)
+    expected = t[col].execute().map(lambda lst: value in lst)
     assert frozenset(result.values) == frozenset(expected.values)
 
 
@@ -647,9 +659,10 @@ def test_array_remove(con, a):
     reason="bigquery doesn't support null elements in arrays",
 )
 @pytest.mark.broken(
-    ["risingwave"],
-    raises=AssertionError,
-    reason="TODO(Kexiang): seems a bug",
+    ["risingwave"], raises=AssertionError, reason="TODO(Kexiang): seems a bug"
+)
+@pytest.mark.notyet(
+    ["flink"], raises=Py4JJavaError, reason="empty arrays not supported"
 )
 @pytest.mark.parametrize(
     ("input", "expected"),
@@ -665,9 +678,6 @@ def test_array_remove(con, a):
             id="not_null",
         ),
     ],
-)
-@pytest.mark.notimpl(
-    ["flink"], raises=NotImplementedError, reason="`from_ibis()` is not implemented"
 )
 def test_array_unique(con, input, expected):
     t = ibis.memtable(input)
@@ -793,7 +803,7 @@ def test_array_intersect(con, data):
 )
 @pytest.mark.notimpl(["postgres"], raises=PsycoPg2SyntaxError)
 @pytest.mark.notimpl(["risingwave"], raises=PsycoPg2InternalError)
-@pytest.mark.notimpl(["datafusion"], raises=com.OperationNotDefinedError)
+@pytest.mark.notimpl(["datafusion", "flink"], raises=com.OperationNotDefinedError)
 @pytest.mark.broken(
     ["trino"], reason="inserting maps into structs doesn't work", raises=TrinoUserError
 )
@@ -819,6 +829,7 @@ def test_unnest_struct(con):
         "polars",
         "postgres",
         "risingwave",
+        "flink",
     ],
     raises=com.OperationNotDefinedError,
 )
@@ -848,7 +859,7 @@ def test_zip(backend):
 )
 @pytest.mark.notimpl(["postgres"], raises=PsycoPg2SyntaxError)
 @pytest.mark.notimpl(["risingwave"], raises=PsycoPg2ProgrammingError)
-@pytest.mark.notimpl(["datafusion"], raises=com.OperationNotDefinedError)
+@pytest.mark.notimpl(["datafusion", "flink"], raises=com.OperationNotDefinedError)
 @pytest.mark.notimpl(
     ["polars"],
     raises=com.OperationNotDefinedError,

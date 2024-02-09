@@ -19,13 +19,13 @@ from ibis.backends.base.sql.ddl import (
     is_fully_qualified,
 )
 from ibis.backends.base.sql.registry import quote_identifier
-from ibis.backends.flink.registry import type_to_sql_string
+from ibis.backends.base.sqlglot.datatypes import FlinkType
 from ibis.util import promote_list
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
 
-    from ibis.api import Watermark
+    from ibis.expr.api import Watermark
 
 
 def format_schema(schema: sch.Schema):
@@ -41,13 +41,11 @@ def _format_schema_element(name, t):
 
 
 def type_to_flink_sql_string(tval):
+    sql_string = FlinkType.from_ibis(tval)
     if tval.is_timestamp():
-        return f"timestamp({tval.scale})" if tval.scale is not None else "timestamp"
+        return f"TIMESTAMP({tval.scale})" if tval.scale is not None else "TIMESTAMP"
     else:
-        sql_string = type_to_sql_string(tval)
-        if not tval.nullable:
-            sql_string += " NOT NULL"
-        return sql_string
+        return sql_string.sql("flink") + " NOT NULL" * (not tval.nullable)
 
 
 def _format_watermark_strategy(watermark: Watermark) -> str:
@@ -364,7 +362,7 @@ class InsertSelect(_CatalogAwareBaseQualifiedSQLStatement, InsertSelect):
         else:
             partition = ""
 
-        select_query = self.select.compile()
+        select_query = self.select
         scoped_name = self._get_scoped_name(
             self.table_name, self.database, self.catalog
         )

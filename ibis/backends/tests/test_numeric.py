@@ -26,6 +26,7 @@ from ibis.backends.tests.errors import (
     PsycoPg2DivisionByZero,
     PsycoPg2InternalError,
     Py4JError,
+    Py4JJavaError,
     PyDruidProgrammingError,
     PyODBCDataError,
     PyODBCProgrammingError,
@@ -52,7 +53,7 @@ from ibis.expr import datatypes as dt
                 "duckdb": "TINYINT",
                 "postgres": "integer",
                 "risingwave": "integer",
-                "flink": "TINYINT NOT NULL",
+                "flink": "INT NOT NULL",
             },
             id="int8",
         ),
@@ -68,7 +69,7 @@ from ibis.expr import datatypes as dt
                 "duckdb": "SMALLINT",
                 "postgres": "integer",
                 "risingwave": "integer",
-                "flink": "SMALLINT NOT NULL",
+                "flink": "INT NOT NULL",
             },
             id="int16",
         ),
@@ -100,7 +101,7 @@ from ibis.expr import datatypes as dt
                 "duckdb": "BIGINT",
                 "postgres": "integer",
                 "risingwave": "integer",
-                "flink": "BIGINT NOT NULL",
+                "flink": "INT NOT NULL",
             },
             id="int64",
         ),
@@ -116,7 +117,7 @@ from ibis.expr import datatypes as dt
                 "duckdb": "UTINYINT",
                 "postgres": "integer",
                 "risingwave": "integer",
-                "flink": "TINYINT NOT NULL",
+                "flink": "INT NOT NULL",
             },
             id="uint8",
         ),
@@ -132,7 +133,7 @@ from ibis.expr import datatypes as dt
                 "duckdb": "USMALLINT",
                 "postgres": "integer",
                 "risingwave": "integer",
-                "flink": "SMALLINT NOT NULL",
+                "flink": "INT NOT NULL",
             },
             id="uint16",
         ),
@@ -164,7 +165,7 @@ from ibis.expr import datatypes as dt
                 "duckdb": "UBIGINT",
                 "postgres": "integer",
                 "risingwave": "integer",
-                "flink": "BIGINT NOT NULL",
+                "flink": "INT NOT NULL",
             },
             id="uint64",
         ),
@@ -180,7 +181,7 @@ from ibis.expr import datatypes as dt
                 "duckdb": "FLOAT",
                 "postgres": "numeric",
                 "risingwave": "numeric",
-                "flink": "FLOAT NOT NULL",
+                "flink": "DECIMAL(2, 1) NOT NULL",
             },
             marks=[
                 pytest.mark.notimpl(
@@ -208,7 +209,7 @@ from ibis.expr import datatypes as dt
                 "duckdb": "FLOAT",
                 "postgres": "numeric",
                 "risingwave": "numeric",
-                "flink": "FLOAT NOT NULL",
+                "flink": "DECIMAL(2, 1) NOT NULL",
             },
             id="float32",
         ),
@@ -224,7 +225,7 @@ from ibis.expr import datatypes as dt
                 "duckdb": "DOUBLE",
                 "postgres": "numeric",
                 "risingwave": "numeric",
-                "flink": "DOUBLE NOT NULL",
+                "flink": "DECIMAL(2, 1) NOT NULL",
             },
             id="float64",
         ),
@@ -373,7 +374,7 @@ def test_numeric_literal(con, backend, expr, expected_types):
                 pytest.mark.notyet(
                     ["flink"],
                     "The precision can be up to 38 in Flink",
-                    raises=ValueError,
+                    raises=Py4JJavaError,
                 ),
                 pytest.mark.notyet(["mssql"], raises=PyODBCProgrammingError),
             ],
@@ -431,7 +432,7 @@ def test_numeric_literal(con, backend, expr, expected_types):
                 pytest.mark.notyet(
                     ["flink"],
                     "Infinity is not supported in Flink SQL",
-                    raises=ValueError,
+                    raises=Py4JJavaError,
                 ),
                 pytest.mark.notyet(
                     ["snowflake"],
@@ -490,7 +491,7 @@ def test_numeric_literal(con, backend, expr, expected_types):
                 pytest.mark.notyet(
                     ["flink"],
                     "Infinity is not supported in Flink SQL",
-                    raises=ValueError,
+                    raises=Py4JJavaError,
                 ),
                 pytest.mark.notyet(
                     ["snowflake"],
@@ -557,7 +558,7 @@ def test_numeric_literal(con, backend, expr, expected_types):
                 pytest.mark.notyet(
                     ["flink"],
                     "NaN is not supported in Flink SQL",
-                    raises=ValueError,
+                    raises=Py4JJavaError,
                 ),
                 pytest.mark.notyet(
                     ["snowflake"],
@@ -659,8 +660,9 @@ def test_decimal_literal(con, backend, expr, expected_types, expected_result):
         ),
     ],
 )
+@pytest.mark.notimpl(["sqlite", "mssql", "druid"], raises=com.OperationNotDefinedError)
 @pytest.mark.notimpl(
-    ["sqlite", "mssql", "flink", "druid"], raises=com.OperationNotDefinedError
+    ["flink"], raises=(com.OperationNotDefinedError, NotImplementedError)
 )
 @pytest.mark.notimpl(["mysql"], raises=(MySQLOperationalError, NotImplementedError))
 def test_isnan_isinf(
@@ -716,16 +718,7 @@ def test_isnan_isinf(
         param(L(5.556).exp(), math.exp(5.556), id="exp"),
         param(L(5.556).sign(), 1, id="sign-pos"),
         param(L(-5.556).sign(), -1, id="sign-neg"),
-        param(
-            L(0).sign(),
-            0,
-            id="sign-zero",
-            marks=pytest.mark.broken(
-                ["flink"],
-                "An error occurred while calling z:org.apache.flink.table.runtime.arrow.ArrowUtils.collectAsPandasDataFrame.",
-                raises=Py4JError,
-            ),
-        ),
+        param(L(0).sign(), 0, id="sign-zero"),
         param(L(5.556).sqrt(), math.sqrt(5.556), id="sqrt"),
         param(
             L(5.556).log(2),
@@ -1130,7 +1123,7 @@ def test_floating_mod(backend, alltypes, df):
                 ),
                 pytest.mark.notyet(
                     "flink",
-                    raises=Py4JError,
+                    raises=Py4JJavaError,
                     reason="Flink doesn't do integer division by zero",
                 ),
             ],
@@ -1146,7 +1139,7 @@ def test_floating_mod(backend, alltypes, df):
                 ),
                 pytest.mark.notyet(
                     "flink",
-                    raises=Py4JError,
+                    raises=Py4JJavaError,
                     reason="Flink doesn't do integer division by zero",
                 ),
             ],
@@ -1162,7 +1155,7 @@ def test_floating_mod(backend, alltypes, df):
                 ),
                 pytest.mark.notyet(
                     "flink",
-                    raises=Py4JError,
+                    raises=Py4JJavaError,
                     reason="Flink doesn't do integer division by zero",
                 ),
             ],
@@ -1178,7 +1171,7 @@ def test_floating_mod(backend, alltypes, df):
                 ),
                 pytest.mark.notyet(
                     "flink",
-                    raises=Py4JError,
+                    raises=Py4JJavaError,
                     reason="Flink doesn't do integer division by zero",
                 ),
             ],
@@ -1195,6 +1188,11 @@ def test_floating_mod(backend, alltypes, df):
                     reason="Oracle doesn't do integer division by zero",
                 ),
                 pytest.mark.never(["impala"], reason="doesn't allow divide by zero"),
+                pytest.mark.notyet(
+                    "flink",
+                    raises=Py4JJavaError,
+                    reason="Flink doesn't do integer division by zero",
+                ),
             ],
         ),
         param(
@@ -1207,6 +1205,11 @@ def test_floating_mod(backend, alltypes, df):
                     reason="Oracle doesn't do integer division by zero",
                 ),
                 pytest.mark.never(["impala"], reason="doesn't allow divide by zero"),
+                pytest.mark.notyet(
+                    "flink",
+                    raises=Py4JJavaError,
+                    reason="Flink doesn't do integer division by zero",
+                ),
             ],
         ),
         param(
@@ -1219,6 +1222,11 @@ def test_floating_mod(backend, alltypes, df):
                     reason="Oracle doesn't do integer division by zero",
                 ),
                 pytest.mark.never(["impala"], reason="doesn't allow divide by zero"),
+                pytest.mark.notyet(
+                    "flink",
+                    raises=Py4JJavaError,
+                    reason="Flink doesn't do integer division by zero",
+                ),
             ],
         ),
         param(
@@ -1231,6 +1239,11 @@ def test_floating_mod(backend, alltypes, df):
                     reason="Oracle doesn't do integer division by zero",
                 ),
                 pytest.mark.never(["impala"], reason="doesn't allow divide by zero"),
+                pytest.mark.notyet(
+                    "flink",
+                    raises=Py4JJavaError,
+                    reason="Flink doesn't do integer division by zero",
+                ),
             ],
         ),
         param(
@@ -1342,11 +1355,6 @@ def test_clip(backend, alltypes, df, ibis_func, pandas_func):
     ["druid"],
     raises=PyDruidProgrammingError,
     reason="SQL query requires 'MIN' operator that is not supported.",
-)
-@pytest.mark.never(
-    ["flink"],
-    raises=com.UnsupportedOperationError,
-    reason="Flink does not support 'MIN' or 'MAX' operation without specifying window.",
 )
 def test_histogram(con, alltypes):
     n = 10
