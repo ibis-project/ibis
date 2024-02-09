@@ -189,7 +189,7 @@ would extract a chunk of the data and load it in batch:
 ```{python}
 # | code-fold: true
 # | include: false
-!pip install apache-flink
+!pip install apache-flink kafka-python
 !git clone https://github.com/ibis-project/ibis-flink-example
 !cd ibis-flink-example && docker compose up kafka init-kafka data-generator -d && sleep 10 && cd ..
 ```
