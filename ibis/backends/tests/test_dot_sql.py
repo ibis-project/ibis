@@ -35,8 +35,6 @@ dot_sql_never = pytest.mark.never(
     ["dask", "pandas"], reason="dask and pandas do not accept SQL"
 )
 
-pytestmark = [pytest.mark.xdist_group("dot_sql")]
-
 _NAMES = {
     "bigquery": "ibis_gbq_testing.functional_alltypes",
     "exasol": '"functional_alltypes"',

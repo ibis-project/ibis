@@ -323,23 +323,6 @@ class Backend(SQLGlotBackend, CanListDatabases, NoUrl):
                 for name, _, _, _, trino_type, *_ in info
             )
 
-    def _execute_view_creation(self, name, definition):
-        # NB: trino doesn't support temporary views so we use the less
-        # desirable method of cleaning up when the Python process exits using
-        # an atexit hook
-        #
-        # the method that defines the atexit hook is defined in the parent
-        # class
-        view = sg.Create(
-            kind="VIEW",
-            this=sg.table(name, quoted=self.compiler.quoted),
-            expression=definition,
-            replace=True,
-        )
-
-        with self._safe_raw_sql(view):
-            pass
-
     def create_schema(
         self, name: str, database: str | None = None, force: bool = False
     ) -> None:
