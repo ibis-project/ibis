@@ -1,2 +1,3 @@
-SELECT EXTRACT(hour from t0.`i`) AS `tmp`
-FROM table t0
+SELECT
+  EXTRACT(hour FROM `t0`.`i`) AS `tmp`
+FROM `table` AS `t0`

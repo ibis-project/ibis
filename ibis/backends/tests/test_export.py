@@ -29,16 +29,8 @@ limit = [
     param(
         42,
         id="limit",
-        marks=[
-            pytest.mark.notimpl(
-                [
-                    # limit not implemented for flink and pandas backend execution
-                    "dask",
-                    "pandas",
-                    "flink",
-                ]
-            ),
-        ],
+        # limit not implemented for pandas-family backends
+        marks=[pytest.mark.notimpl(["dask", "pandas"])],
     ),
 ]
 
@@ -301,7 +293,6 @@ def test_memtable_to_file(tmp_path, con, ftype, monkeypatch):
     assert outfile.is_file()
 
 
-@pytest.mark.notimpl(["flink"])
 def test_table_to_csv(tmp_path, backend, awards_players):
     outcsv = tmp_path / "out.csv"
 
@@ -315,7 +306,6 @@ def test_table_to_csv(tmp_path, backend, awards_players):
     backend.assert_frame_equal(awards_players.to_pandas(), df)
 
 
-@pytest.mark.notimpl(["flink"])
 @pytest.mark.notimpl(
     ["duckdb"],
     reason="cannot inline WriteOptions objects",
@@ -339,10 +329,7 @@ def test_table_to_csv_writer_kwargs(delimiter, tmp_path, awards_players):
             dt.Decimal(38, 9),
             pa.Decimal128Type,
             id="decimal128",
-            marks=[
-                pytest.mark.notyet(["flink"], raises=NotImplementedError),
-                pytest.mark.notyet(["exasol"], raises=ExaQueryError),
-            ],
+            marks=[pytest.mark.notyet(["exasol"], raises=ExaQueryError)],
         ),
         param(
             dt.Decimal(76, 38),
@@ -361,7 +348,6 @@ def test_table_to_csv_writer_kwargs(delimiter, tmp_path, awards_players):
                     raises=(PySparkParseException, PySparkArithmeticException),
                     reason="precision is out of range",
                 ),
-                pytest.mark.notyet(["flink"], raises=NotImplementedError),
                 pytest.mark.notyet(["exasol"], raises=ExaQueryError),
             ],
         ),
@@ -480,14 +466,7 @@ def test_to_pandas_batches_empty_table(backend, con):
     assert sum(map(len, t.to_pandas_batches())) == n
 
 
-@pytest.mark.notimpl(["flink"])
-@pytest.mark.parametrize(
-    "n",
-    [
-        None,
-        1,
-    ],
-)
+@pytest.mark.parametrize("n", [None, 1])
 def test_to_pandas_batches_nonempty_table(backend, con, n):
     t = backend.functional_alltypes.limit(n)
     n = t.count().execute()
@@ -496,16 +475,7 @@ def test_to_pandas_batches_nonempty_table(backend, con, n):
     assert sum(map(len, t.to_pandas_batches())) == n
 
 
-@pytest.mark.notimpl(["flink"])
-@pytest.mark.parametrize(
-    "n",
-    [
-        None,
-        0,
-        1,
-        2,
-    ],
-)
+@pytest.mark.parametrize("n", [None, 0, 1, 2])
 def test_to_pandas_batches_column(backend, con, n):
     t = backend.functional_alltypes.limit(n).timestamp_col
     n = t.count().execute()

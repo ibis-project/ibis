@@ -180,8 +180,10 @@ class PostgresCompiler(SQLGlotCompiler):
 
     @visit_node.register(ops.ArrayContains)
     def visit_ArrayContains(self, op, *, arg, other):
+        arg_dtype = op.arg.dtype
         return sge.ArrayContains(
-            this=arg, expression=self.f.array(self.cast(other, op.arg.dtype.value_type))
+            this=self.cast(arg, arg_dtype),
+            expression=self.f.array(self.cast(other, arg_dtype.value_type)),
         )
 
     @visit_node.register(ops.ArrayFilter)

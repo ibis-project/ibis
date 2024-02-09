@@ -11,11 +11,7 @@ from pytest import param
 import ibis
 import ibis.expr.datatypes as dt
 from ibis import _
-from ibis.backends.tests.errors import (
-    OracleDatabaseError,
-    PsycoPg2InternalError,
-    Py4JJavaError,
-)
+from ibis.backends.tests.errors import OracleDatabaseError, PsycoPg2InternalError
 
 
 @pytest.mark.parametrize(
@@ -103,15 +99,6 @@ def test_scalar_param_struct(con):
     reason="mysql and sqlite will never implement map types",
 )
 @pytest.mark.notyet(["bigquery"])
-@pytest.mark.notimpl(
-    ["flink"],
-    "WIP",
-    raises=Py4JJavaError,
-    reason=(
-        "SqlParseException: Expecting alias, found character literal"
-        "sql= SELECT MAP_FROM_ARRAYS(ARRAY['a', 'b', 'c'], ARRAY['ghi', 'def', 'abc']) '[' 'b' ']' AS `MapGet(param_0, 'b', None)`"
-    ),
-)
 @pytest.mark.notimpl(
     ["risingwave"],
     raises=PsycoPg2InternalError,

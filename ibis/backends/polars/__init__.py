@@ -409,6 +409,9 @@ class Backend(BaseBackend, NoUrl):
 
         return translate(node, ctx=self._context)
 
+    def _get_sql_string_view_schema(self, name, table, query) -> sch.Schema:
+        raise NotImplementedError("table.sql() not yet supported in polars")
+
     def _get_schema_using_query(self, query: str) -> sch.Schema:
         return schema_from_polars(self._context.execute(query).schema)
 

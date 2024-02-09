@@ -208,11 +208,6 @@ def test_literal_map_merge(con):
 
 
 @pytest.mark.notimpl(
-    ["flink"],
-    raises=NotImplementedError,
-    reason="No translation rule for map<string, string>",
-)
-@pytest.mark.notimpl(
     ["risingwave"],
     raises=PsycoPg2InternalError,
     reason="function hstore(character varying[], character varying[]) does not exist",
@@ -229,11 +224,6 @@ def test_literal_map_getitem_broadcast(backend, alltypes, df):
     backend.assert_series_equal(result, expected)
 
 
-@pytest.mark.notimpl(
-    ["flink"],
-    raises=NotImplementedError,
-    reason="No translation rule for map<string, string>",
-)
 @pytest.mark.notimpl(
     ["risingwave"],
     raises=PsycoPg2InternalError,
@@ -296,11 +286,6 @@ def test_map_construct_array_column(con, alltypes, df):
 @pytest.mark.notyet(
     ["postgres", "risingwave"], reason="only support maps of string -> string"
 )
-@pytest.mark.notimpl(
-    ["flink"],
-    raises=NotImplementedError,
-    reason="No translation rule for map<string, int16>",
-)
 def test_map_get_with_compatible_value_smaller(con):
     value = ibis.literal({"A": 1000, "B": 2000})
     expr = value.get("C", 3)
@@ -310,11 +295,6 @@ def test_map_get_with_compatible_value_smaller(con):
 @pytest.mark.notyet(
     ["postgres", "risingwave"], reason="only support maps of string -> string"
 )
-@pytest.mark.notimpl(
-    ["flink"],
-    raises=NotImplementedError,
-    reason="No translation rule for map<string, int8>",
-)
 def test_map_get_with_compatible_value_bigger(con):
     value = ibis.literal({"A": 1, "B": 2})
     expr = value.get("C", 3000)
@@ -323,11 +303,6 @@ def test_map_get_with_compatible_value_bigger(con):
 
 @pytest.mark.notyet(
     ["postgres", "risingwave"], reason="only support maps of string -> string"
-)
-@pytest.mark.notimpl(
-    ["flink"],
-    raises=NotImplementedError,
-    reason="NotImplementedError: No translation rule for map<string, int16>",
 )
 def test_map_get_with_incompatible_value_different_kind(con):
     value = ibis.literal({"A": 1000, "B": 2000})
@@ -339,11 +314,6 @@ def test_map_get_with_incompatible_value_different_kind(con):
 @pytest.mark.notyet(
     ["postgres", "risingwave"], reason="only support maps of string -> string"
 )
-@pytest.mark.notimpl(
-    ["flink"],
-    raises=NotImplementedError,
-    reason="No translation rule for map<string, int16>",
-)
 def test_map_get_with_null_on_not_nullable(con, null_value):
     map_type = dt.Map(dt.string, dt.Int16(nullable=False))
     value = ibis.literal({"A": 1000, "B": 2000}).cast(map_type)
@@ -353,10 +323,8 @@ def test_map_get_with_null_on_not_nullable(con, null_value):
 
 
 @pytest.mark.parametrize("null_value", [None, ibis.NA])
-@pytest.mark.notimpl(
-    ["flink"],
-    raises=NotImplementedError,
-    reason="No translation rule for map<string, null>",
+@pytest.mark.notyet(
+    ["flink"], raises=Py4JJavaError, reason="Flink cannot handle typeless nulls"
 )
 @pytest.mark.notimpl(
     ["risingwave"],
@@ -373,10 +341,8 @@ def test_map_get_with_null_on_null_type_with_null(con, null_value):
 @pytest.mark.notyet(
     ["postgres", "risingwave"], reason="only support maps of string -> string"
 )
-@pytest.mark.notimpl(
-    ["flink"],
-    raises=NotImplementedError,
-    reason="No translation rule for map<string, null>",
+@pytest.mark.notyet(
+    ["flink"], raises=Py4JJavaError, reason="Flink cannot handle typeless nulls"
 )
 def test_map_get_with_null_on_null_type_with_non_null(con):
     value = ibis.literal({"A": None, "B": None})

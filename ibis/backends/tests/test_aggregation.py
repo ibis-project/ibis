@@ -23,6 +23,7 @@ from ibis.backends.tests.errors import (
     PolarsInvalidOperationError,
     PsycoPg2InternalError,
     Py4JError,
+    Py4JJavaError,
     PyDruidProgrammingError,
     PyODBCProgrammingError,
     PySparkAnalysisException,
@@ -637,13 +638,10 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
             id="first",
             marks=[
                 pytest.mark.notimpl(
-                    ["druid", "impala", "mssql", "mysql", "oracle", "flink"],
+                    ["druid", "impala", "mssql", "mysql", "oracle"],
                     raises=com.OperationNotDefinedError,
                 ),
-                pytest.mark.notimpl(
-                    ["risingwave"],
-                    raises=PsycoPg2InternalError,
-                ),
+                pytest.mark.notimpl(["risingwave"], raises=PsycoPg2InternalError),
             ],
         ),
         param(
@@ -652,13 +650,10 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
             id="last",
             marks=[
                 pytest.mark.notimpl(
-                    ["druid", "impala", "mssql", "mysql", "oracle", "flink"],
+                    ["druid", "impala", "mssql", "mysql", "oracle"],
                     raises=com.OperationNotDefinedError,
                 ),
-                pytest.mark.notimpl(
-                    ["risingwave"],
-                    raises=PsycoPg2InternalError,
-                ),
+                pytest.mark.notimpl(["risingwave"], raises=PsycoPg2InternalError),
             ],
         ),
         param(
@@ -1048,7 +1043,7 @@ def test_quantile(
                     reason="backend only implements population correlation coefficient",
                 ),
                 pytest.mark.notyet(
-                    ["impala", "mysql", "sqlite"],
+                    ["impala", "mysql", "sqlite", "flink"],
                     raises=com.OperationNotDefinedError,
                 ),
                 pytest.mark.notyet(
@@ -1318,11 +1313,7 @@ def test_date_quantile(alltypes, func):
     reason="ORA-00904: 'GROUP_CONCAT': invalid identifier",
 )
 @pytest.mark.notimpl(["exasol"], raises=ExaQueryError)
-@pytest.mark.notyet(
-    ["flink"],
-    raises=Py4JError,
-    reason='SQL parse failed. Encountered "group_concat ("',
-)
+@pytest.mark.notyet(["flink"], raises=Py4JJavaError)
 def test_group_concat(
     backend, alltypes, df, ibis_cond, pandas_cond, ibis_sep, pandas_sep
 ):
@@ -1573,7 +1564,7 @@ def test_grouped_case(backend, con):
 
 @pytest.mark.notimpl(["datafusion", "polars"], raises=com.OperationNotDefinedError)
 @pytest.mark.notimpl(["exasol"], raises=ExaQueryError)
-@pytest.mark.notyet(["flink"], raises=com.UnsupportedOperationError)
+@pytest.mark.notyet(["flink"], raises=Py4JJavaError)
 @pytest.mark.notyet(["impala"], raises=ImpalaHiveServer2Error)
 @pytest.mark.notyet(["clickhouse"], raises=ClickHouseDatabaseError)
 @pytest.mark.notyet(["druid"], raises=PyDruidProgrammingError)

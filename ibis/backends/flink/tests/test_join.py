@@ -8,6 +8,7 @@ import pytest
 
 import ibis
 from ibis.backends.flink.tests.conftest import TestConf as tm
+from ibis.backends.tests.errors import Py4JJavaError
 
 
 @pytest.fixture(scope="module")
@@ -115,7 +116,11 @@ def remove_temp_files(left_tmp, right_tmp):
     right_tmp.close()
 
 
-@pytest.mark.xfail(raises=AssertionError, reason="test seems broken", strict=False)
+@pytest.mark.xfail(
+    raises=(Py4JJavaError, AssertionError),
+    reason="subquery probably uses too much memory/resources, flink complains about network buffers",
+    strict=False,
+)
 def test_outer_join(left_tumble, right_tumble):
     expr = left_tumble.join(
         right_tumble,
