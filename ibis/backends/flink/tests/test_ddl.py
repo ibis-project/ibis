@@ -111,20 +111,13 @@ def test_force_recreate_table_from_schema(
 
 
 @pytest.mark.parametrize(
-    "employee_df",
-    [
-        pd.DataFrame(
-            [("fred flintstone", "award", 2002, "lg_id", "tie", "this is a note")]
-        )
-    ],
-)
-@pytest.mark.parametrize(
     "schema, table_name",
     [(None, None), (TEST_TABLES["awards_players"], "awards_players")],
 )
-def test_recreate_in_mem_table(
-    con, employee_df, schema, table_name, temp_table, csv_source_configs
-):
+def test_recreate_in_mem_table(con, schema, table_name, temp_table, csv_source_configs):
+    employee_df = pd.DataFrame(
+        [("fred flintstone", "award", 2002, "lg_id", "tie", "this is a note")]
+    )
     # create table once
     if table_name is not None:
         tbl_properties = csv_source_configs(table_name)
@@ -138,39 +131,35 @@ def test_recreate_in_mem_table(
         tbl_properties=tbl_properties,
         temp=True,
     )
-    assert temp_table in con.list_tables()
-    if schema is not None:
-        assert new_table.schema() == schema
+    try:
+        assert temp_table in con.list_tables()
+        if schema is not None:
+            assert new_table.schema() == schema
 
-    # create the same table a second time should fail
-    with pytest.raises(
-        Py4JJavaError,
-        match="An error occurred while calling o8.createTemporaryView",
-    ):
-        new_table = con.create_table(
-            name=temp_table,
-            obj=employee_df,
-            schema=schema,
-            tbl_properties=tbl_properties,
-            overwrite=False,
-            temp=True,
-        )
+        # create the same table a second time should fail
+        with pytest.raises(
+            Py4JJavaError,
+            match=r"An error occurred while calling o\d+\.createTemporaryView",
+        ):
+            new_table = con.create_table(
+                name=temp_table,
+                obj=employee_df,
+                schema=schema,
+                tbl_properties=tbl_properties,
+                overwrite=False,
+                temp=True,
+            )
+    finally:
+        con.drop_table(temp_table, force=True)
 
 
-@pytest.mark.parametrize(
-    "employee_df",
-    [
-        pd.DataFrame(
-            [("fred flintstone", "award", 2002, "lg_id", "tie", "this is a note")]
-        )
-    ],
-)
 @pytest.mark.parametrize(
     "schema_props", [(None, None), (TEST_TABLES["awards_players"], "awards_players")]
 )
-def test_force_recreate_in_mem_table(
-    con, employee_df, schema_props, temp_table, csv_source_configs
-):
+def test_force_recreate_in_mem_table(con, schema_props, temp_table, csv_source_configs):
+    employee_df = pd.DataFrame(
+        [("fred flintstone", "award", 2002, "lg_id", "tie", "this is a note")]
+    )
     # create table once
     schema = schema_props[0]
     if schema_props[1] is not None:
@@ -185,22 +174,25 @@ def test_force_recreate_in_mem_table(
         tbl_properties=tbl_properties,
         temp=True,
     )
-    assert temp_table in con.list_tables()
-    if schema is not None:
-        assert new_table.schema() == schema
+    try:
+        assert temp_table in con.list_tables()
+        if schema is not None:
+            assert new_table.schema() == schema
 
-    # force recreate the same table a second time should succeed
-    new_table = con.create_table(
-        name=temp_table,
-        obj=employee_df,
-        schema=schema,
-        tbl_properties=tbl_properties,
-        temp=True,
-        overwrite=True,
-    )
-    assert temp_table in con.list_tables()
-    if schema is not None:
-        assert new_table.schema() == schema
+        # force recreate the same table a second time should succeed
+        new_table = con.create_table(
+            name=temp_table,
+            obj=employee_df,
+            schema=schema,
+            tbl_properties=tbl_properties,
+            temp=True,
+            overwrite=True,
+        )
+        assert temp_table in con.list_tables()
+        if schema is not None:
+            assert new_table.schema() == schema
+    finally:
+        con.drop_table(temp_table, force=True)
 
 
 @pytest.fixture
@@ -250,8 +242,11 @@ def test_create_source_table_with_watermark_and_primary_key(
         ),
         primary_key=primary_key,
     )
-    assert temp_table in con.list_tables()
-    assert new_table.schema() == functional_alltypes_schema_w_nonnullable_columns
+    try:
+        assert temp_table in con.list_tables()
+        assert new_table.schema() == functional_alltypes_schema_w_nonnullable_columns
+    finally:
+        con.drop_table(temp_table, force=True)
 
 
 @pytest.mark.parametrize(
@@ -279,14 +274,16 @@ def test_create_table_failure_with_invalid_primary_keys(
     assert temp_table not in con.list_tables()
 
 
+@pytest.fixture
+def temp_view(con):
+    name = ibis.util.gen_name("view")
+    yield name
+    con.drop_view(name, force=True)
+
+
 @pytest.mark.parametrize("temp", [True, False])
 def test_create_view(
-    con,
-    temp_table: str,
-    awards_players_schema: sch.Schema,
-    csv_source_configs,
-    temp_view: str,
-    temp,
+    con, temp_table, awards_players_schema, csv_source_configs, temp_view, temp
 ):
     table = con.create_table(
         name=temp_table,
@@ -404,10 +401,15 @@ def test_insert_values_into_table(con, tempdir_sink_configs, obj):
             schema=sink_schema,
             tbl_properties=tempdir_sink_configs(tempdir),
         )
-        con.insert("tempdir_sink", obj).wait()
-        temporary_file = next(iter(os.listdir(tempdir)))
-        with open(os.path.join(tempdir, temporary_file)) as f:
-            assert f.read() == '"fred flintstone",35,1.28\n"barney rubble",32,2.32\n'
+        try:
+            con.insert("tempdir_sink", obj).wait()
+            temporary_file = next(iter(os.listdir(tempdir)))
+            with open(os.path.join(tempdir, temporary_file)) as f:
+                assert (
+                    f.read() == '"fred flintstone",35,1.28\n"barney rubble",32,2.32\n'
+                )
+        finally:
+            con.drop_table("tempdir_sink", force=True)
 
 
 def test_insert_simple_select(con, tempdir_sink_configs):
@@ -419,20 +421,27 @@ def test_insert_simple_select(con, tempdir_sink_configs):
         ),
         temp=True,
     )
-    sink_schema = sch.Schema({"name": dt.string, "age": dt.int64})
-    source_table = ibis.table(
-        sch.Schema({"name": dt.string, "age": dt.int64, "gpa": dt.float64}), "source"
-    )
-    with tempfile.TemporaryDirectory() as tempdir:
-        con.create_table(
-            "tempdir_sink",
-            schema=sink_schema,
-            tbl_properties=tempdir_sink_configs(tempdir),
+    try:
+        sink_schema = sch.Schema({"name": dt.string, "age": dt.int64})
+        source_table = ibis.table(
+            sch.Schema({"name": dt.string, "age": dt.int64, "gpa": dt.float64}),
+            "source",
         )
-        con.insert("tempdir_sink", source_table[["name", "age"]]).wait()
-        temporary_file = next(iter(os.listdir(tempdir)))
-        with open(os.path.join(tempdir, temporary_file)) as f:
-            assert f.read() == '"fred flintstone",35\n"barney rubble",32\n'
+        with tempfile.TemporaryDirectory() as tempdir:
+            con.create_table(
+                "tempdir_sink",
+                schema=sink_schema,
+                tbl_properties=tempdir_sink_configs(tempdir),
+            )
+            try:
+                con.insert("tempdir_sink", source_table[["name", "age"]]).wait()
+                temporary_file = next(iter(os.listdir(tempdir)))
+                with open(os.path.join(tempdir, temporary_file)) as f:
+                    assert f.read() == '"fred flintstone",35\n"barney rubble",32\n'
+            finally:
+                con.drop_table("tempdir_sink", force=True)
+    finally:
+        con.drop_table("source", force=True)
 
 
 @pytest.mark.parametrize("table_name", ["new_table", None])
@@ -443,13 +452,13 @@ def test_read_csv(con, awards_players_schema, csv_source_configs, table_name):
         schema=awards_players_schema,
         table_name=table_name,
     )
-
-    if table_name is None:
-        table_name = table.get_name()
-    assert table_name in con.list_tables()
-    assert table.schema() == awards_players_schema
-
-    con.drop_table(table_name)
+    try:
+        if table_name is None:
+            table_name = table.get_name()
+        assert table_name in con.list_tables()
+        assert table.schema() == awards_players_schema
+    finally:
+        con.drop_table(table_name)
     assert table_name not in con.list_tables()
 
 
@@ -463,12 +472,13 @@ def test_read_parquet(con, data_dir, tmp_path, table_name, functional_alltypes_s
         table_name=table_name,
     )
 
-    if table_name is None:
-        table_name = table.get_name()
-    assert table_name in con.list_tables()
-    assert table.schema() == functional_alltypes_schema
-
-    con.drop_table(table_name)
+    try:
+        if table_name is None:
+            table_name = table.get_name()
+        assert table_name in con.list_tables()
+        assert table.schema() == functional_alltypes_schema
+    finally:
+        con.drop_table(table_name)
     assert table_name not in con.list_tables()
 
 
@@ -487,29 +497,19 @@ def test_read_json(con, data_dir, tmp_path, table_name, functional_alltypes_sche
         path=path, schema=functional_alltypes_schema, table_name=table_name
     )
 
-    if table_name is None:
-        table_name = table.get_name()
-    assert table_name in con.list_tables()
-    assert table.schema() == functional_alltypes_schema
-    assert table.count().execute() == len(pq_table)
-
-    con.drop_table(table_name)
+    try:
+        if table_name is None:
+            table_name = table.get_name()
+        assert table_name in con.list_tables()
+        assert table.schema() == functional_alltypes_schema
+        assert table.count().execute() == len(pq_table)
+    finally:
+        con.drop_table(table_name)
     assert table_name not in con.list_tables()
 
 
-@pytest.fixture(scope="module")
-def functional_alltypes(con):
-    return con.table("functional_alltypes")
-
-
 @pytest.mark.parametrize(
-    "table_name",
-    [
-        "astronauts",
-        "awards_players",
-        "diamonds",
-        "functional_alltypes",
-    ],
+    "table_name", ["astronauts", "awards_players", "diamonds", "functional_alltypes"]
 )
 def test_to_csv(con, tmp_path, table_name):
     table = con.table(table_name)
@@ -523,13 +523,7 @@ def test_to_csv(con, tmp_path, table_name):
 
 
 @pytest.mark.parametrize(
-    "table_name",
-    [
-        "astronauts",
-        "awards_players",
-        "diamonds",
-        "functional_alltypes",
-    ],
+    "table_name", ["astronauts", "awards_players", "diamonds", "functional_alltypes"]
 )
 def test_to_parquet(con, tmp_path, table_name):
     table = con.table(table_name)

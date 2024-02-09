@@ -12,7 +12,7 @@ import ibis.common.exceptions as com
 from ibis import _
 from ibis.backends.base import _get_backend_names
 
-# here to load the dialect in to sqlglot so we can use it for transpilation
+# import here to load the dialect in to sqlglot so we can use it for transpilation
 from ibis.backends.base.sqlglot.dialects import (  # noqa: F401
     MSSQL,
     DataFusion,
@@ -25,12 +25,12 @@ from ibis.backends.base.sqlglot.dialects import (  # noqa: F401
     RisingWave,
 )
 from ibis.backends.tests.errors import (
+    ExaQueryError,
     GoogleBadRequest,
     OracleDatabaseError,
     PolarsComputeError,
 )
 
-dot_sql_notimpl = pytest.mark.notimpl(["flink"])
 dot_sql_never = pytest.mark.never(
     ["dask", "pandas"], reason="dask and pandas do not accept SQL"
 )
@@ -41,7 +41,6 @@ _NAMES = {
 }
 
 
-@pytest.mark.notimpl(["flink"])
 @pytest.mark.notyet(["oracle"], reason="table quoting behavior")
 @dot_sql_never
 @pytest.mark.parametrize(
@@ -94,7 +93,6 @@ def test_con_dot_sql(backend, con, schema):
 @pytest.mark.notyet(
     ["druid"], raises=com.IbisTypeError, reason="druid does not preserve case"
 )
-@dot_sql_notimpl
 @dot_sql_never
 def test_table_dot_sql(backend):
     alltypes = backend.functional_alltypes
@@ -142,7 +140,6 @@ def test_table_dot_sql(backend):
     OracleDatabaseError,
     reason="oracle doesn't know which of the tables in the join to sort from",
 )
-@dot_sql_notimpl
 @dot_sql_never
 def test_table_dot_sql_with_join(backend):
     alltypes = backend.functional_alltypes
@@ -194,7 +191,6 @@ def test_table_dot_sql_with_join(backend):
 @pytest.mark.notyet(
     ["bigquery"], raises=GoogleBadRequest, reason="requires a qualified name"
 )
-@dot_sql_notimpl
 @dot_sql_never
 def test_table_dot_sql_repr(backend):
     alltypes = backend.functional_alltypes
@@ -220,7 +216,6 @@ def test_table_dot_sql_repr(backend):
     assert repr(t)
 
 
-@dot_sql_notimpl
 @dot_sql_never
 def test_dot_sql_alias_with_params(backend, alltypes, df):
     t = alltypes
@@ -230,7 +225,6 @@ def test_dot_sql_alias_with_params(backend, alltypes, df):
     backend.assert_series_equal(result.x, expected)
 
 
-@dot_sql_notimpl
 @dot_sql_never
 def test_dot_sql_reuse_alias_with_different_types(backend, alltypes, df):
     foo1 = alltypes.select(x=alltypes.string_col).alias("foo")
@@ -241,21 +235,15 @@ def test_dot_sql_reuse_alias_with_different_types(backend, alltypes, df):
     backend.assert_series_equal(foo2.x.execute(), expected2)
 
 
-_NO_SQLGLOT_DIALECT = {"pandas", "dask", "druid", "flink"}
-no_sqlglot_dialect = sorted(
-    # TODO(cpcloud): remove the strict=False hack once backends are ported to
-    # sqlglot
-    param(backend, marks=pytest.mark.xfail(strict=False))
-    for backend in _NO_SQLGLOT_DIALECT
-)
+_NO_SQLGLOT_DIALECT = ("pandas", "dask")
+no_sqlglot_dialect = [
+    param(dialect, marks=pytest.mark.xfail) for dialect in sorted(_NO_SQLGLOT_DIALECT)
+]
+dialects = sorted(_get_backend_names(exclude=_NO_SQLGLOT_DIALECT)) + no_sqlglot_dialect
 
 
-@pytest.mark.parametrize(
-    "dialect",
-    [*sorted(_get_backend_names() - _NO_SQLGLOT_DIALECT), *no_sqlglot_dialect],
-)
+@pytest.mark.parametrize("dialect", dialects)
 @pytest.mark.notyet(["polars"], raises=PolarsComputeError)
-@dot_sql_notimpl
 @dot_sql_never
 @pytest.mark.notyet(["druid"], reason="druid doesn't respect column name case")
 def test_table_dot_sql_transpile(backend, alltypes, dialect, df):
@@ -269,18 +257,11 @@ def test_table_dot_sql_transpile(backend, alltypes, dialect, df):
     backend.assert_series_equal(result.x, expected)
 
 
-@pytest.mark.parametrize(
-    "dialect",
-    [
-        *sorted(_get_backend_names() - {"pyspark", *_NO_SQLGLOT_DIALECT}),
-        *no_sqlglot_dialect,
-    ],
-)
+@pytest.mark.parametrize("dialect", dialects)
 @pytest.mark.notyet(
     ["druid"], raises=AttributeError, reason="druid doesn't respect column names"
 )
 @pytest.mark.notyet(["bigquery"])
-@dot_sql_notimpl
 @dot_sql_never
 def test_con_dot_sql_transpile(backend, con, dialect, df):
     t = sg.table("functional_alltypes", quoted=True)
@@ -294,9 +275,13 @@ def test_con_dot_sql_transpile(backend, con, dialect, df):
     backend.assert_series_equal(result.x, expected)
 
 
-@dot_sql_notimpl
 @dot_sql_never
-@pytest.mark.notimpl(["druid", "flink", "polars", "exasol"])
+@pytest.mark.notimpl(["druid", "polars"])
+@pytest.mark.notimpl(
+    ["exasol"],
+    raises=ExaQueryError,
+    reason="loading the test data is a pain because of embedded commas",
+)
 def test_order_by_no_projection(backend):
     con = backend.connection
     expr = (
@@ -309,7 +294,6 @@ def test_order_by_no_projection(backend):
     assert set(result) == {"Ross, Jerry L.", "Chang-Diaz, Franklin R."}
 
 
-@dot_sql_notimpl
 @dot_sql_never
 @pytest.mark.notyet(["polars"], raises=PolarsComputeError)
 def test_dot_sql_limit(con):
@@ -328,15 +312,19 @@ def mem_t(con):
         pytest.xfail("druid does not support create_table")
 
     name = ibis.util.gen_name(con.name)
-    con.create_table(name, ibis.memtable({"a": list("def")}))
+
+    # flink only supports memtables if `temp` is True, seems like we should
+    # address that for users
+    con.create_table(
+        name, ibis.memtable({"a": list("def")}), temp=con.name == "flink" or None
+    )
     yield name
     with contextlib.suppress(NotImplementedError):
         con.drop_table(name, force=True)
 
 
-@dot_sql_notimpl
 @dot_sql_never
-@pytest.mark.notyet(["polars"], raises=PolarsComputeError)
+@pytest.mark.notyet(["polars"], raises=NotImplementedError)
 def test_cte(con, mem_t):
     t = con.table(mem_t)
     foo = t.alias("foo")

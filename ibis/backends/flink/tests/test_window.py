@@ -1,63 +1,56 @@
 from __future__ import annotations
 
 import pytest
+from pyflink.util.exceptions import TableException
 from pytest import param
 
 import ibis
-from ibis.common.exceptions import UnsupportedOperationError
+from ibis.backends.tests.errors import Py4JJavaError
 
 
-def test_window_requires_order_by(con, simple_table):
-    expr = simple_table.mutate(simple_table.c - simple_table.c.mean())
-    with pytest.raises(
-        UnsupportedOperationError,
-        match="Flink engine does not support generic window clause with no order by",
-    ):
-        con.compile(expr)
+@pytest.mark.xfail(raises=TableException)
+def test_window_requires_order_by(con):
+    t = con.tables.functional_alltypes
+    expr = t.mutate(t.double_col - t.double_col.mean())
+    con.execute(expr)
 
 
-def test_window_does_not_support_multiple_order_by(con, simple_table):
-    expr = simple_table.f.sum().over(
-        rows=(-1, 1),
-        group_by=[simple_table.g, simple_table.a],
-        order_by=[simple_table.f, simple_table.d],
-    )
-    with pytest.raises(
-        UnsupportedOperationError,
-        match="Windows in Flink can only be ordered by a single time column",
-    ):
-        con.compile(expr)
+@pytest.mark.xfail(raises=TableException)
+def test_window_does_not_support_multiple_order_by(con):
+    t = con.tables.functional_alltypes
+    expr = t.double_col.sum().over(rows=(-1, 1), order_by=[t.timestamp_col, t.int_col])
+    con.execute(expr)
 
 
 @pytest.mark.parametrize(
-    ("window", "err"),
+    "window",
     [
         param(
             {"rows": (-1, 1)},
-            "OVER RANGE FOLLOWING windows are not supported in Flink yet",
             id="bounded_rows_following",
+            marks=[pytest.mark.xfail(raises=TableException)],
         ),
         param(
             {"rows": (-1, None)},
-            "OVER RANGE FOLLOWING windows are not supported in Flink yet",
             id="unbounded_rows_following",
+            marks=[pytest.mark.xfail(raises=TableException)],
         ),
         param(
             {"rows": (-500, 1)},
-            "OVER RANGE FOLLOWING windows are not supported in Flink yet",
             id="casted_bounded_rows_following",
+            marks=[pytest.mark.xfail(raises=TableException)],
         ),
         param(
             {"range": (-1000, 0)},
-            "Data Type mismatch between ORDER BY and RANGE clause",
             id="int_range",
+            marks=[pytest.mark.xfail(raises=Py4JJavaError)],
         ),
     ],
 )
-def test_window_invalid_start_end(con, simple_table, window, err):
-    expr = simple_table.f.sum().over(**window, order_by=simple_table.f)
-    with pytest.raises(UnsupportedOperationError, match=err):
-        con.compile(expr)
+def test_window_invalid_start_end(con, window):
+    t = con.tables.functional_alltypes
+    expr = t.int_col.sum().over(**window, order_by=t.timestamp_col)
+    con.execute(expr)
 
 
 def test_range_window(con, snapshot, simple_table):

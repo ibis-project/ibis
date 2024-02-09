@@ -10,8 +10,6 @@ from ibis.backends.conftest import _get_backends_to_test
 
 sg = pytest.importorskip("sqlglot")
 
-pytestmark = pytest.mark.notimpl(["flink"])
-
 simple_literal = param(ibis.literal(1), id="simple_literal")
 array_literal = param(
     ibis.array([1]),

@@ -289,7 +289,6 @@ def test_join_with_trivial_predicate(awards_players, predicate, how, pandas_valu
 
 
 @pytest.mark.notimpl(["druid"], raises=PyDruidProgrammingError)
-@pytest.mark.notimpl(["flink"], reason="`win` table isn't loaded")
 @pytest.mark.parametrize(
     ("how", "nrows", "gen_right", "keys"),
     [

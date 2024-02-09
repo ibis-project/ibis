@@ -1,6 +1,10 @@
-SELECT t0.`ExtractYear(i)`, COUNT(*) AS `ExtractYear(i)_count`
+SELECT
+  `t1`.`ExtractYear(i)`,
+  COUNT(*) AS `ExtractYear(i)_count`
 FROM (
-  SELECT EXTRACT(year from t1.`i`) AS `ExtractYear(i)`
-  FROM table t1
-) t0
-GROUP BY t0.`ExtractYear(i)`
+  SELECT
+    EXTRACT(year FROM `t0`.`i`) AS `ExtractYear(i)`
+  FROM `table` AS `t0`
+) AS `t1`
+GROUP BY
+  `t1`.`ExtractYear(i)`

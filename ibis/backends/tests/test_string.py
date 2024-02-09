@@ -604,10 +604,7 @@ def uses_java_re(t):
             lambda t: t.date_string_col[-2],
             lambda t: t.date_string_col.str[-2],
             id="negative-index",
-            marks=[
-                pytest.mark.broken(["druid"], raises=PyDruidProgrammingError),
-                pytest.mark.broken(["flink"], raises=AssertionError),
-            ],
+            marks=[pytest.mark.broken(["druid"], raises=PyDruidProgrammingError)],
         ),
         param(
             lambda t: t.date_string_col[t.date_string_col.length() - 1 :],

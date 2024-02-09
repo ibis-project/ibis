@@ -1,2 +1,3 @@
-SELECT count(DISTINCT CASE WHEN t0.`g` = 'A' THEN t0.`b` ELSE NULL END) AS `CountDistinct(b, Equals(g, 'A'))`
-FROM table t0
+SELECT
+  COUNT(DISTINCT IF(`t0`.`g` = 'A', `t0`.`b`, ARRAY[`t0`.`b`][2])) AS `CountDistinct(b, Equals(g, 'A'))`
+FROM `table` AS `t0`

@@ -96,6 +96,7 @@ def time_keyed_right(time_keyed_df2):
         "mssql",
         "sqlite",
         "risingwave",
+        "flink",
     ]
 )
 def test_asof_join(con, time_left, time_right, time_df1, time_df2, direction, op):
@@ -137,6 +138,7 @@ def test_asof_join(con, time_left, time_right, time_df1, time_df2, direction, op
         "mssql",
         "sqlite",
         "risingwave",
+        "flink",
     ]
 )
 def test_keyed_asof_join_with_tolerance(

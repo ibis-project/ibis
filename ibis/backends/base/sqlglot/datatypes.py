@@ -1029,3 +1029,13 @@ class ClickHouseType(SqlglotType):
         key_type = cls.from_ibis(dtype.key_type.copy(nullable=False))
         value_type = cls.from_ibis(dtype.value_type)
         return sge.DataType(this=typecode.MAP, expressions=[key_type, value_type])
+
+
+class FlinkType(SqlglotType):
+    dialect = "flink"
+    default_decimal_precision = 38
+    default_decimal_scale = 18
+
+    @classmethod
+    def _from_ibis_Binary(cls, dtype: dt.Binary) -> sge.DataType:
+        return sge.DataType(this=sge.DataType.Type.VARBINARY)

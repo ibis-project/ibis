@@ -129,7 +129,7 @@ class ColGen:
 
 def paren(expr):
     """Wrap a sqlglot expression in parentheses."""
-    return sge.Paren(this=expr)
+    return sge.Paren(this=sge.convert(expr))
 
 
 def parenthesize(op, arg):

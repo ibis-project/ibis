@@ -122,7 +122,7 @@ def test_context_adjustment_filter_before_window(
 @pytest.mark.notimpl(["duckdb"])
 @pytest.mark.notimpl(
     ["flink"],
-    raises=com.UnsupportedOperationError,
+    raises=com.OperationNotDefinedError,
     reason="Flink engine does not support generic window clause with no order by",
 )
 def test_context_adjustment_multi_col_udf_non_grouped(
