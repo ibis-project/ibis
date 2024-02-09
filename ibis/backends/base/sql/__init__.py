@@ -408,8 +408,3 @@ class BaseSQLBackend(BaseBackend):
     @classmethod
     def has_operation(cls, operation: type[ops.Value]) -> bool:
         return operation in cls._get_operations()
-
-    def _create_temp_view(self, view, definition):
-        raise NotImplementedError(
-            f"The {self.name} backend does not implement temporary view creation"
-        )
