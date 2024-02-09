@@ -18,9 +18,28 @@ self: super: {
       })
     ];
   });
+
   pyodbc = super.pyodbc.overridePythonAttrs (attrs: {
     preFixup = attrs.preFixup or "" + ''
       addAutoPatchelfSearchPath ${self.pkgs.unixODBC}
+    '';
+  });
+
+  avro-python3 = super.avro-python3.overridePythonAttrs (attrs: {
+    nativeBuildInputs = attrs.nativeBuildInputs or [ ] ++ [
+      self.pycodestyle
+      self.isort
+    ];
+  });
+
+  apache-flink-libraries = super.apache-flink-libraries.overridePythonAttrs (attrs: {
+    buildInputs = attrs.nativeBuildInputs or [ ] ++ [ self.setuptools ];
+    # apache-flink and apache-flink-libraries both install version.py into the
+    # pyflink output derivation, which is invalid: whichever gets installed
+    # last will be used
+    postInstall = ''
+      rm $out/${self.python.sitePackages}/pyflink/version.py
+      rm $out/${self.python.sitePackages}/pyflink/__pycache__/version.*.pyc
     '';
   });
 }

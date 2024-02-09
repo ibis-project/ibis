@@ -1,2 +1,3 @@
-SELECT EXTRACT(second from t0.`i`) AS `tmp`
-FROM table t0
+SELECT
+  EXTRACT(second FROM `t0`.`i`) AS `tmp`
+FROM `table` AS `t0`

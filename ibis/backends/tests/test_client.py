@@ -30,7 +30,6 @@ from ibis.backends.tests.errors import (
     OracleDatabaseError,
     PsycoPg2InternalError,
     PsycoPg2UndefinedObject,
-    Py4JJavaError,
     PyODBCProgrammingError,
     SnowflakeProgrammingError,
     TrinoUserError,
@@ -49,6 +48,10 @@ def new_schema():
 def _create_temp_table_with_schema(backend, con, temp_table_name, schema, data=None):
     if con.name == "druid":
         pytest.xfail("druid doesn't implement create_table")
+    elif con.name == "flink":
+        pytest.xfail(
+            "flink doesn't implement create_table from schema without additional arguments"
+        )
     temporary = con.create_table(temp_table_name, schema=schema)
     assert temporary.to_pandas().empty
 
@@ -130,12 +133,8 @@ def test_create_table(backend, con, temp_table, func, sch):
         param(
             False,
             True,
-            marks=[
-                pytest.mark.notyet(
-                    ["polars"], raises=com.IbisError, reason="all tables are ephemeral"
-                )
-            ],
             id="no temp, overwrite",
+            marks=pytest.mark.notyet(["flink", "polars"]),
         ),
         param(
             True,
@@ -182,6 +181,7 @@ def test_create_table_overwrite_temp(backend, con, temp_table, temp, overwrite):
     ids=["dataframe", "pyarrow table"],
 )
 @pytest.mark.notyet(["druid"], raises=NotImplementedError)
+@pytest.mark.notyet(["flink"], raises=com.IbisError)
 def test_load_data(backend, con, temp_table, lamduh):
     sch = ibis.schema(
         [
@@ -221,14 +221,6 @@ def test_load_data(backend, con, temp_table, lamduh):
         ),
     ],
 )
-@pytest.mark.broken(
-    ["flink"],
-    raises=Py4JJavaError,
-    reason=(
-        "org.apache.flink.table.api.ValidationException: "
-        "Table `default_catalog`.`default_database`.`functional_alltypes` was not found."
-    ),
-)
 def test_query_schema(ddl_backend, expr_fn, expected):
     expr = expr_fn(ddl_backend.functional_alltypes)
 
@@ -250,9 +242,6 @@ _LIMIT = {
 
 @pytest.mark.notimpl(["datafusion", "mssql"])
 @pytest.mark.never(["dask", "pandas"], reason="dask and pandas do not support SQL")
-@pytest.mark.notimpl(
-    ["flink"], raises=AttributeError, reason="'Backend' object has no attribute 'sql'"
-)
 def test_sql(backend, con):
     # execute the expression using SQL query
     table = backend.format_table("functional_alltypes")
@@ -315,6 +304,11 @@ def test_create_table_from_schema(con, new_schema, temp_table):
     ["risingwave"],
     raises=PsycoPg2InternalError,
     reason="truncate not supported upstream",
+)
+@pytest.mark.notimpl(
+    ["flink"],
+    raises=com.IbisError,
+    reason="`tbl_properties` is required when creating table with schema",
 )
 def test_create_temporary_table_from_schema(con_no_data, new_schema):
     temp_table = gen_name(f"test_{con_no_data.name}_tmp")
@@ -395,16 +389,6 @@ def test_nullable_input_output(con, temp_table):
 
 
 @mark.notimpl(["druid", "polars"])
-@pytest.mark.broken(
-    ["flink"],
-    raises=ValueError,
-    reason=(
-        "table `FUNCTIONAL_ALLTYPES` does not exist"
-        "Note (mehmet): Not raised when only this test function is executed, "
-        "but can be reproduced by running all the test functions in this file."
-        "TODO (mehmet): Caused by the test execution order?"
-    ),
-)
 def test_create_drop_view(ddl_con, temp_view):
     # setup
     table_name = "functional_alltypes"
@@ -609,6 +593,11 @@ def test_insert_overwrite_from_list(con, employee_data_1_temp_table):
     reason="`insert` method not implemented",
 )
 @pytest.mark.notyet(["druid"], raises=NotImplementedError)
+@pytest.mark.notimpl(
+    ["flink"],
+    raises=com.IbisError,
+    reason="`tbl_properties` is required when creating table with schema",
+)
 def test_insert_from_memtable(con, temp_table):
     df = pd.DataFrame({"x": range(3)})
     table_name = temp_table
@@ -644,6 +633,7 @@ def test_list_databases(con):
         "pyspark": set(),
         "sqlite": {"main"},
         "trino": {"memory"},
+        "flink": set(),
     }
     result = set(con.list_databases())
     assert test_databases[con.name] <= result
@@ -671,6 +661,11 @@ def test_list_databases(con):
     ["risingwave"],
     raises=PsycoPg2InternalError,
     reason="unsigned integers are not supported",
+)
+@pytest.mark.notimpl(
+    ["flink"],
+    raises=com.IbisError,
+    reason="`tbl_properties` is required when creating table with schema",
 )
 def test_unsigned_integer_type(con, temp_table):
     con.create_table(

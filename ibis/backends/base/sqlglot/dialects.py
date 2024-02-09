@@ -70,6 +70,10 @@ class Exasol(Postgres):
 
 class Flink(Hive):
     class Generator(Hive.Generator):
+        TYPE_MAPPING = Hive.Generator.TYPE_MAPPING.copy() | {
+            sge.DataType.Type.TIME: "TIME",
+        }
+
         TRANSFORMS = Hive.Generator.TRANSFORMS.copy() | {
             sge.Stddev: rename_func("stddev_samp"),
             sge.StddevPop: rename_func("stddev_pop"),
@@ -82,7 +86,20 @@ class Flink(Hive):
             ),
             sge.ArrayConcat: rename_func("array_concat"),
             sge.Length: rename_func("char_length"),
+            sge.TryCast: lambda self,
+            e: f"TRY_CAST({e.this.sql(self.dialect)} AS {e.to.sql(self.dialect)})",
+            sge.DayOfYear: rename_func("dayofyear"),
+            sge.DayOfWeek: rename_func("dayofweek"),
+            sge.DayOfMonth: rename_func("dayofmonth"),
         }
+
+    class Tokenizer(Hive.Tokenizer):
+        # In Flink, embedded single quotes are escaped like most other SQL
+        # dialects: doubling up the single quote
+        #
+        # We override it here because we inherit from Hive's dialect and Hive
+        # uses a backslash to escape single quotes
+        STRING_ESCAPES = ["'"]
 
 
 class Impala(Hive):

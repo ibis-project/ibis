@@ -274,14 +274,6 @@ PANDAS_UNITS = {
                     raises=AssertionError,
                     reason="numpy array are different",
                 ),
-                pytest.mark.never(
-                    ["flink"],
-                    raises=Py4JJavaError,
-                    reason=(
-                        "CalciteContextException: No match found for function signature trunc(<TIMESTAMP>, <CHARACTER>)"
-                        "Timestamp truncation is not supported in Flink"
-                    ),
-                ),
             ],
         ),
         param(
@@ -291,14 +283,6 @@ PANDAS_UNITS = {
                     ["polars"],
                     raises=AssertionError,
                     reason="numpy array are different",
-                ),
-                pytest.mark.never(
-                    ["flink"],
-                    raises=Py4JJavaError,
-                    reason=(
-                        "CalciteContextException: No match found for function signature trunc(<TIMESTAMP>, <CHARACTER>)"
-                        "Timestamp truncation is not supported in Flink"
-                    ),
                 ),
             ],
         ),
@@ -310,14 +294,6 @@ PANDAS_UNITS = {
                     raises=AssertionError,
                     reason="numpy array are different",
                 ),
-                pytest.mark.never(
-                    ["flink"],
-                    raises=Py4JJavaError,
-                    reason=(
-                        "CalciteContextException: No match found for function signature trunc(<TIMESTAMP>, <CHARACTER>)"
-                        "Timestamp truncation is not supported in Flink"
-                    ),
-                ),
             ],
         ),
         param(
@@ -325,17 +301,9 @@ PANDAS_UNITS = {
             marks=[
                 pytest.mark.notimpl(["mysql"], raises=com.UnsupportedOperationError),
                 pytest.mark.broken(
-                    ["polars"],
+                    ["polars", "flink"],
                     raises=AssertionError,
-                    reason="numpy array are different",
-                ),
-                pytest.mark.never(
-                    ["flink"],
-                    raises=Py4JJavaError,
-                    reason=(
-                        "CalciteContextException: No match found for function signature trunc(<TIMESTAMP>, <CHARACTER>)"
-                        "Timestamp truncation is not supported in Flink"
-                    ),
+                    reason="implemented, but doesn't match other backends",
                 ),
             ],
         ),
@@ -348,14 +316,6 @@ PANDAS_UNITS = {
                     raises=AssertionError,
                     reason="numpy array are different",
                 ),
-                pytest.mark.never(
-                    ["flink"],
-                    raises=Py4JJavaError,
-                    reason=(
-                        "CalciteContextException: No match found for function signature trunc(<TIMESTAMP>, <CHARACTER>)"
-                        "Timestamp truncation is not supported in Flink"
-                    ),
-                ),
             ],
         ),
         param(
@@ -367,14 +327,6 @@ PANDAS_UNITS = {
                     raises=AssertionError,
                     reason="numpy array are different",
                 ),
-                pytest.mark.never(
-                    ["flink"],
-                    raises=Py4JJavaError,
-                    reason=(
-                        "CalciteContextException: No match found for function signature trunc(<TIMESTAMP>, <CHARACTER>)"
-                        "Timestamp truncation is not supported in Flink"
-                    ),
-                ),
             ],
         ),
         param(
@@ -385,11 +337,6 @@ PANDAS_UNITS = {
                     ["polars"],
                     raises=AssertionError,
                     reason="numpy array are different",
-                ),
-                pytest.mark.never(
-                    ["flink"],
-                    raises=com.UnsupportedOperationError,
-                    reason="<IntervalUnit.SECOND: 's'> unit is not supported in timestamp truncate",
                 ),
             ],
         ),
@@ -405,11 +352,6 @@ PANDAS_UNITS = {
                     raises=AssertionError,
                     reason="numpy array are different",
                 ),
-                pytest.mark.notimpl(
-                    ["flink"],
-                    raises=com.UnsupportedOperationError,
-                    reason="<IntervalUnit.MILLISECOND: 'ms'> unit is not supported in timestamp truncate",
-                ),
             ],
         ),
         param(
@@ -424,10 +366,10 @@ PANDAS_UNITS = {
                     raises=AssertionError,
                     reason="numpy array are different",
                 ),
-                pytest.mark.notimpl(
+                pytest.mark.notyet(
                     ["flink"],
-                    raises=com.UnsupportedOperationError,
-                    reason="<IntervalUnit.MICROSECOND: 'us'> unit is not supported in timestamp truncate",
+                    raises=Py4JJavaError,
+                    reason="microseconds not supported in truncation",
                 ),
             ],
         ),
@@ -457,10 +399,10 @@ PANDAS_UNITS = {
                     raises=PolarsPanicException,
                     reason="attempt to calculate the remainder with a divisor of zero",
                 ),
-                pytest.mark.notimpl(
+                pytest.mark.notyet(
                     ["flink"],
-                    raises=com.UnsupportedOperationError,
-                    reason="<IntervalUnit.NANOSECOND: 'ns'> unit is not supported in timestamp truncate",
+                    raises=Py4JJavaError,
+                    reason="nanoseconds not supported in truncation",
                 ),
             ],
         ),
@@ -491,61 +433,17 @@ def test_timestamp_truncate(backend, alltypes, df, unit):
 @pytest.mark.parametrize(
     "unit",
     [
-        param(
-            "Y",
-            marks=[
-                pytest.mark.never(
-                    ["flink"],
-                    raises=Py4JJavaError,
-                    reason=(
-                        "CalciteContextException: No match found for function signature trunc(<DATE>, <CHARACTER>)"
-                        "Timestamp truncation is not supported in Flink"
-                    ),
-                ),
-            ],
-        ),
-        param(
-            "M",
-            marks=[
-                pytest.mark.never(
-                    ["flink"],
-                    raises=Py4JJavaError,
-                    reason=(
-                        "CalciteContextException: No match found for function signature trunc(<DATE>, <CHARACTER>)"
-                        "Timestamp truncation is not supported in Flink"
-                    ),
-                ),
-            ],
-        ),
-        param(
-            "D",
-            marks=[
-                pytest.mark.never(
-                    ["flink"],
-                    raises=Py4JJavaError,
-                    reason=(
-                        "CalciteContextException: No match found for function signature trunc(<DATE>, <CHARACTER>)"
-                        "Timestamp truncation is not supported in Flink"
-                    ),
-                ),
-            ],
-        ),
+        "Y",
+        "M",
+        "D",
         param(
             "W",
             marks=[
                 pytest.mark.notyet(["mysql"], raises=com.UnsupportedOperationError),
-                pytest.mark.never(
-                    ["flink"],
-                    raises=Py4JJavaError,
-                    reason=(
-                        "CalciteContextException: No match found for function signature trunc(<DATE>, <CHARACTER>)"
-                        "Timestamp truncation is not supported in Flink"
-                    ),
-                ),
                 pytest.mark.broken(
-                    ["exasol"],
+                    ["flink", "exasol"],
                     raises=AssertionError,
-                    reason="behavior is different than expected",
+                    reason="Implemented, but behavior doesn't match other backends",
                 ),
             ],
         ),
@@ -984,9 +882,9 @@ timestamp_value = pd.Timestamp("2018-01-01 18:18:18")
                     raises=AttributeError,
                     reason="'StringColumn' object has no attribute 'date'",
                 ),
-                pytest.mark.broken(
+                pytest.mark.notimpl(
                     ["flink"],
-                    raises=com.UnsupportedOperationError,
+                    raises=com.OperationNotDefinedError,
                     reason="DATE_DIFF is not supported in Flink",
                 ),
                 pytest.mark.broken(
@@ -1207,26 +1105,7 @@ def test_temporal_binop_pandas_timedelta(
     backend.assert_series_equal(result, expected.astype(result.dtype))
 
 
-@pytest.mark.parametrize(
-    "func_name",
-    [
-        "gt",
-        "ge",
-        "lt",
-        "le",
-        "eq",
-        param(
-            "ne",
-            marks=[
-                pytest.mark.notimpl(
-                    ["flink"],
-                    raises=Py4JJavaError,
-                    reason="SqlParseException: Bang equal '!=' is not allowed under the current SQL conformance level",
-                ),
-            ],
-        ),
-    ],
-)
+@pytest.mark.parametrize("func_name", ["gt", "ge", "lt", "le", "eq", "ne"])
 @pytest.mark.notimpl(
     ["polars"],
     raises=TypeError,
@@ -1316,16 +1195,7 @@ def test_timestamp_comparison_filter(backend, con, alltypes, df, func_name):
             ],
         ),
         "eq",
-        param(
-            "ne",
-            marks=[
-                pytest.mark.notimpl(
-                    ["flink"],
-                    raises=Py4JJavaError,
-                    reason="SqlParseException: Bang equal '!=' is not allowed under the current SQL conformance level",
-                ),
-            ],
-        ),
+        "ne",
     ],
 )
 @pytest.mark.broken(
@@ -1370,11 +1240,6 @@ def test_timestamp_comparison_filter_numpy(backend, con, alltypes, df, func_name
     raises=AttributeError,
     reason="'StringColumn' object has no attribute 'date'",
 )
-@pytest.mark.broken(
-    ["flink"],
-    raises=Py4JJavaError,
-    reason="ParseException: Encountered '+ INTERVAL CAST'",
-)
 def test_interval_add_cast_scalar(backend, alltypes):
     timestamp_date = alltypes.timestamp_col.date()
     delta = ibis.literal(10).cast("interval('D')")
@@ -1393,6 +1258,7 @@ def test_interval_add_cast_scalar(backend, alltypes):
     raises=AttributeError,
     reason="'StringColumn' object has no attribute 'date'",
 )
+@pytest.mark.broken(["flink"], raises=AssertionError, reason="incorrect results")
 def test_interval_add_cast_column(backend, alltypes, df):
     timestamp_date = alltypes.timestamp_col.date()
     delta = alltypes.bigint_col.cast("interval('D')")
@@ -1437,10 +1303,6 @@ def test_interval_add_cast_column(backend, alltypes, df):
                     ["druid"],
                     raises=AttributeError,
                     reason="'StringColumn' object has no attribute 'strftime'",
-                ),
-                pytest.mark.notimpl(
-                    ["flink"],
-                    raises=AssertionError,
                 ),
             ],
             id="column_format_str",
@@ -1638,11 +1500,6 @@ def test_string_to_timestamp(alltypes, fmt):
     ],
 )
 @pytest.mark.notimpl(["druid", "oracle"], raises=com.OperationNotDefinedError)
-@pytest.mark.notimpl(
-    ["flink"],
-    raises=Py4JJavaError,
-    reason="DayOfWeekName is not supported in Flink",
-)
 @pytest.mark.notimpl(["exasol"], raises=com.OperationNotDefinedError)
 @pytest.mark.broken(
     ["risingwave"],
@@ -1697,20 +1554,6 @@ def test_day_of_week_column(backend, alltypes, df):
             lambda s: s.dt.day_name().str.len().sum(),
             id="day_of_week_full_name",
             marks=[
-                pytest.mark.broken(
-                    ["risingwave"],
-                    raises=AssertionError,
-                    reason="Refer to https://github.com/risingwavelabs/risingwave/issues/14670",
-                ),
-                pytest.mark.never(
-                    ["flink"],
-                    raises=Py4JJavaError,
-                    reason=(
-                        "SqlValidatorException: No match found for function signature dayname(<TIMESTAMP>)"
-                        "`day_of_week_name` is not supported in Flink"
-                        "Ref: https://nightlies.apache.org/flink/flink-docs-release-1.13/docs/dev/table/functions/systemfunctions/#temporal-functions"
-                    ),
-                ),
                 pytest.mark.broken(
                     ["risingwave"],
                     raises=AssertionError,
@@ -1959,13 +1802,10 @@ def test_time_literal(con, backend):
                     reason="doesn't have enough precision to capture microseconds",
                 ),
                 pytest.mark.notyet(["trino"], raises=AssertionError),
-                pytest.mark.notimpl(
+                pytest.mark.notyet(
                     ["flink"],
                     raises=AssertionError,
-                    reason=(
-                        "Flink does not support microsecond precision in time."
-                        "assert datetime.time(13, 20, 5) == datetime.time(13, 20, 5, 561021)"
-                    ),
+                    reason="flink doesn't preserve subsecond information",
                 ),
             ],
         ),
@@ -2176,7 +2016,6 @@ def test_integer_cast_to_timestamp_scalar(alltypes, df):
 )
 @pytest.mark.broken(
     ["flink"],
-    reason="Casting from timestamp[s] to timestamp[ns] would result in out of bounds timestamp: 81953424000",
     raises=ArrowInvalid,
 )
 @pytest.mark.notyet(["polars"], raises=PolarsComputeError)
@@ -2272,13 +2111,8 @@ def test_large_timestamp(con):
             id="us",
             marks=[
                 pytest.mark.notyet(
-                    ["sqlite"],
+                    ["sqlite", "flink"],
                     reason="doesn't support microseconds",
-                    raises=AssertionError,
-                ),
-                pytest.mark.broken(
-                    ["flink"],
-                    reason="assert Timestamp('2023-01-07 13:20:05.561000') == Timestamp('2023-01-07 13:20:05.561021')",
                     raises=AssertionError,
                 ),
                 pytest.mark.notyet(
@@ -2407,15 +2241,6 @@ def test_timestamp_precision_output(con, ts, scale, unit):
                     ["mysql"],
                     raises=com.OperationNotDefinedError,
                     reason="timestampdiff rounds after subtraction and mysql doesn't have a date_trunc function",
-                ),
-                pytest.mark.broken(
-                    ["flink"],
-                    raises=AssertionError,
-                    reason=(
-                        "assert 1 == 2"
-                        "Note (mehmet): Flink rounds the time difference down not up."
-                        "Hence computes 1 hour difference between 23:59:59 and 01:58:00."
-                    ),
                 ),
             ],
         ),
@@ -2601,10 +2426,7 @@ no_sqlglot_dialect = sorted(
 )
 @pytest.mark.parametrize(
     "dialect",
-    [
-        *sorted(_get_backend_names() - {*_NO_SQLGLOT_DIALECT}),
-        *no_sqlglot_dialect,
-    ],
+    [*sorted(_get_backend_names(exclude=_NO_SQLGLOT_DIALECT)), *no_sqlglot_dialect],
 )
 def test_temporal_literal_sql(value, dialect, snapshot):
     expr = ibis.literal(value)
@@ -2621,8 +2443,15 @@ no_time_type = pytest.mark.xfail(
     "dialect",
     [
         *sorted(
-            _get_backend_names()
-            - {"pyspark", "impala", "clickhouse", "oracle", *_NO_SQLGLOT_DIALECT}
+            _get_backend_names(
+                exclude=(
+                    "pyspark",
+                    "impala",
+                    "clickhouse",
+                    "oracle",
+                    *_NO_SQLGLOT_DIALECT,
+                )
+            )
         ),
         *no_sqlglot_dialect,
     ],

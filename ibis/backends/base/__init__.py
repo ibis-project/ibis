@@ -1277,8 +1277,13 @@ class BaseBackend(abc.ABC, _FileIOHandler):
 
 
 @functools.cache
-def _get_backend_names() -> frozenset[str]:
+def _get_backend_names(*, exclude: tuple[str] = ()) -> frozenset[str]:
     """Return the set of known backend names.
+
+    Parameters
+    ----------
+    exclude
+        Exclude these backend names from the result
 
     Notes
     -----
@@ -1293,7 +1298,7 @@ def _get_backend_names() -> frozenset[str]:
         entrypoints = importlib.metadata.entry_points()["ibis.backends"]
     else:
         entrypoints = importlib.metadata.entry_points(group="ibis.backends")
-    return frozenset(ep.name for ep in entrypoints)
+    return frozenset(ep.name for ep in entrypoints).difference(exclude)
 
 
 def connect(resource: Path | str, **kwargs: Any) -> BaseBackend:

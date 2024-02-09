@@ -2,15 +2,18 @@ from __future__ import annotations
 
 from typing import Any
 
+import pandas as pd
 import pytest
 
 import ibis
 from ibis.backends.conftest import TEST_TABLES
 from ibis.backends.tests.base import BackendTest
+from ibis.backends.tests.data import array_types, json_types, struct_types, win
 
 
 class TestConf(BackendTest):
     force_sort = True
+    stateful = False
     deps = "pandas", "pyflink"
 
     @staticmethod
@@ -50,18 +53,16 @@ class TestConf(BackendTest):
         return ibis.flink.connect(stream_table_env, **kw)
 
     def _load_data(self, **_: Any) -> None:
-        import pandas as pd
-
-        from ibis.backends.tests.data import array_types, json_types, struct_types, win
+        con = self.connection
 
         for table_name in TEST_TABLES:
             path = self.data_dir / "parquet" / f"{table_name}.parquet"
-            self.connection.create_table(table_name, pd.read_parquet(path), temp=True)
+            con.create_table(table_name, pd.read_parquet(path), temp=True)
 
-        self.connection.create_table("array_types", array_types, temp=True)
-        self.connection.create_table("json_t", json_types, temp=True)
-        self.connection.create_table("struct", struct_types, temp=True)
-        self.connection.create_table("win", win, temp=True)
+        con.create_table("array_types", array_types, temp=True)
+        con.create_table("json_t", json_types, temp=True)
+        con.create_table("struct", struct_types, temp=True)
+        con.create_table("win", win, temp=True)
 
 
 class TestConfForStreaming(TestConf):
@@ -110,16 +111,6 @@ def con(tmp_path_factory, data_dir, worker_id):
     ).connection
 
 
-@pytest.fixture(scope="session")
-def db(con):
-    return con.database()
-
-
-@pytest.fixture(scope="session")
-def alltypes(con):
-    return con.tables.functional_alltypes
-
-
 @pytest.fixture
 def awards_players_schema():
     return TEST_TABLES["awards_players"]
@@ -163,39 +154,3 @@ def csv_source_configs():
         }
 
     return generate_csv_configs
-
-
-@pytest.fixture
-def temp_view(con) -> str:
-    """Return a temporary view name.
-
-    Parameters
-    ----------
-    con : backend connection
-
-    Yields
-    ------
-    name : string
-        Random view name for a temporary usage.
-
-    Note (mehmet): Added this here because the fixture
-    ibis/ibis/backends/conftest.py::temp_view()
-    leads to docker related errors through its parameter `ddl_con`.
-    """
-    from ibis import util
-
-    name = util.gen_name("view")
-    yield name
-
-    con.drop_view(name, force=True)
-
-
-@pytest.fixture(autouse=True)
-def reset_con(con):
-    yield
-    tables_to_drop = list(set(con.list_tables()) - set(TEST_TABLES.keys()))
-    for table in tables_to_drop:
-        con.drop_table(table, force=True)
-    views_to_drop = list(set(con.list_views()) - set(TEST_TABLES.keys()))
-    for view in views_to_drop:
-        con.drop_view(view, temp=True, force=True)
