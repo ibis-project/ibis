@@ -146,11 +146,6 @@ def add_one_pyarrow(s: int) -> int:  # s is series, int is the element type
     raises=NotImplementedError,
     reason="postgres only supports Python-native UDFs",
 )
-@mark.notimpl(
-    ["flink"],
-    raises=com.OperationNotDefinedError,
-    reason="No translation rule for Pandas or PyArrow",
-)
 @mark.parametrize(
     "add_one",
     [
@@ -168,7 +163,7 @@ def add_one_pyarrow(s: int) -> int:  # s is series, int is the element type
             add_one_pyarrow,
             marks=[
                 mark.notyet(
-                    ["snowflake", "sqlite", "pyspark"],
+                    ["snowflake", "sqlite", "pyspark", "flink"],
                     raises=NotImplementedError,
                     reason="backend doesn't support pyarrow UDFs",
                 )

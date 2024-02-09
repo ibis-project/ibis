@@ -1472,7 +1472,7 @@ class Backend(SQLGlotBackend, CanCreateSchema, UrlFromPath):
         """No op."""
 
     def _compile_pandas_udf(self, _: ops.ScalarUDF) -> None:
-        raise NotImplementedError("duckdb doesn't support pandas UDFs")
+        raise NotImplementedError("DuckDB doesn't support pandas UDFs")
 
     def _get_temp_view_definition(self, name: str, definition: str) -> str:
         return sge.Create(

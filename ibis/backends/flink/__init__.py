@@ -38,6 +38,8 @@ if TYPE_CHECKING:
 
     from ibis.expr.api import Watermark
 
+_INPUT_TYPE_TO_FUNC_TYPE = {InputType.PYTHON: "general", InputType.PANDAS: "pandas"}
+
 
 class Backend(SQLGlotBackend, CanCreateDatabase, NoUrl):
     name = "flink"
@@ -305,17 +307,23 @@ class Backend(SQLGlotBackend, CanCreateDatabase, NoUrl):
 
     def _register_udfs(self, expr: ir.Expr) -> None:
         for udf_node in expr.op().find(ops.ScalarUDF):
-            if udf_node.__input_type__ == InputType.PYTHON:
-                func = udf_node.__func__
-                name = func.__name__
-                self._table_env.drop_temporary_function(name)
-                udf = self._compile_python_udf(udf_node)
-                self._table_env.create_temporary_function(name, udf)
+            if udf_node.__input_type__ not in _INPUT_TYPE_TO_FUNC_TYPE:
+                raise NotImplementedError("Flink doesn't support PyArrow UDFs")
 
-    def _compile_python_udf(self, udf_node: ops.ScalarUDF):
+            func = udf_node.__func__
+            name = func.__name__
+            self._table_env.drop_temporary_function(name)
+            udf = self._compile_udf(udf_node)
+            self._table_env.create_temporary_function(name, udf)
+
+    def _compile_udf(self, udf_node: ops.ScalarUDF):
         from pyflink.table.udf import udf
 
-        return udf(udf_node.__func__, result_type=FlinkType.from_ibis(udf_node.dtype))
+        return udf(
+            udf_node.__func__,
+            result_type=FlinkType.from_ibis(udf_node.dtype),
+            func_type=_INPUT_TYPE_TO_FUNC_TYPE[udf_node.__input_type__],
+        )
 
     def _gen_udf_name(self, name: str, schema: str | None) -> str:
         return ".".join(filter(None, (schema, name)))
