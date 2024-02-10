@@ -1488,7 +1488,7 @@ class StringValue(Value):
         return ops.StringSplit(self, delimiter).to_expr()
 
     def concat(self, other: str | StringValue, *args: str | StringValue) -> StringValue:
-        """Concatenate strings.
+        """Concatenate strings. NULLS are propagated. Equivalent to the `+` operator.
 
         Parameters
         ----------
@@ -1506,16 +1506,24 @@ class StringValue(Value):
         --------
         >>> import ibis
         >>> ibis.options.interactive = True
-        >>> t = ibis.memtable({"s": ["abc", "bac", "bca"]})
-        >>> t.s.concat("xyz")
+        >>> t = ibis.memtable({"s": ["abc", None]})
+        >>> t.s.concat("xyz", "123")
+        ┏━━━━━━━━━━━━━━━━┓
+        ┃ StringConcat() ┃
+        ┡━━━━━━━━━━━━━━━━┩
+        │ string         │
+        ├────────────────┤
+        │ abcxyz123      │
+        │ NULL           │
+        └────────────────┘
+        >>> t.s + "xyz"
         ┏━━━━━━━━━━━━━━━━┓
         ┃ StringConcat() ┃
         ┡━━━━━━━━━━━━━━━━┩
         │ string         │
         ├────────────────┤
         │ abcxyz         │
-        │ bacxyz         │
-        │ bcaxyz         │
+        │ NULL           │
         └────────────────┘
         """
         return ops.StringConcat((self, other, *args)).to_expr()

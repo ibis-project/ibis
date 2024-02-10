@@ -492,6 +492,17 @@ def _substring(t, op):
         )
 
 
+def _string_concat(t, op):
+    # We can't use the builtin sa.func.concat because we want NULL + <anything>
+    # to be NULL. But with sa.func.concat, NULL + <anything> is <anything>.
+    # See https://github.com/ibis-project/ibis/issues/8302
+    sa_args = (t.translate(a) for a in op.arg)
+    first, *rest = sa_args
+    for arg in rest:
+        first += arg
+    return first
+
+
 def _gen_string_find(func):
     def string_find(t, op):
         if op.end is not None:
@@ -661,7 +672,7 @@ sqlalchemy_operation_registry: dict[Any, Any] = {
     ops.StringSQLILike: functools.partial(_string_like, "ilike"),
     ops.StartsWith: _startswith,
     ops.EndsWith: _endswith,
-    ops.StringConcat: varargs(sa.func.concat),
+    ops.StringConcat: _string_concat,
     ops.Substring: _substring,
     # math
     ops.Ln: unary(sa.func.ln),

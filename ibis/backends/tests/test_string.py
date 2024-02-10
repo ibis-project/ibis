@@ -1019,6 +1019,41 @@ def test_capitalize(con):
     assert con.execute(expr) == expected
 
 
+_PD_NOTIMPL = pytest.mark.notimpl(
+    ["pandas"],
+    raises=TypeError,
+)
+
+
+@pytest.mark.parametrize(
+    ("args, expected"),
+    [
+        pytest.param((ibis.literal(None, str), None), None, marks=_PD_NOTIMPL),
+        pytest.param(("abc", None), None, marks=_PD_NOTIMPL),
+        pytest.param(("abc", ibis.literal(None, str)), None, marks=_PD_NOTIMPL),
+        pytest.param(("abc", "def", None), None, marks=_PD_NOTIMPL),
+        (("abc", "def"), "abcdef"),
+        (("abc", "def"), "abcdef"),
+    ],
+)
+@pytest.mark.parametrize("method", ["plus", "concat"])
+def test_string_concat(con, args, method, expected):
+    args = [
+        ibis.literal(arg, type="string") if isinstance(arg, str) else arg
+        for arg in args
+    ]
+    first, rest = args[0], args[1:]
+    if method == "plus":
+        expr = first
+        for arg in rest:
+            expr = expr + arg
+    elif method == "concat":
+        expr = first.concat(*rest)
+    else:
+        raise ValueError(f"Unknown method {method}")
+    assert con.execute(expr) == expected
+
+
 @pytest.mark.notimpl(
     ["dask", "pandas", "polars", "druid", "oracle", "flink"],
     raises=OperationNotDefinedError,
