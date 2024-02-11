@@ -423,7 +423,9 @@ class DataFusionCompiler(SQLGlotCompiler):
     @visit_node.register(ops.StringConcat)
     def visit_StringConcat(self, op, *, arg):
         any_args_null = (a.is_(NULL) for a in arg)
-        return self.if_(sg.or_(*any_args_null), NULL, self.f.concat(*arg))
+        return self.if_(
+            sg.or_(*any_args_null), self.cast(NULL, dt.string), self.f.concat(*arg)
+        )
 
     @visit_node.register(ops.Arbitrary)
     @visit_node.register(ops.ArgMax)
