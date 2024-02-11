@@ -1051,12 +1051,12 @@ def test_concat_with_null(con, fn):
 
 
 @pytest.mark.parametrize(
-    ("args", "expected"),
+    "args",
     [
-        param((ibis.literal(None, str), None), None),
-        param((ibis.literal("abc"), None), None),
-        param((ibis.literal("abc"), ibis.literal(None, str)), None),
-        param((ibis.literal("abc"), "def", None), None),
+        param((ibis.literal(None, str), None), id="null-null"),
+        param((ibis.literal("abc"), None), id="abc-null"),
+        param((ibis.literal("abc"), ibis.literal(None, str)), id="abc-typed-null"),
+        param((ibis.literal("abc"), "def", None), id="abc-def-null"),
     ],
 )
 @pytest.mark.parametrize(
@@ -1065,6 +1065,6 @@ def test_concat_with_null(con, fn):
     ids=["concat", "add"],
 )
 @pytest.mark.notimpl(["pandas", "dask"], raises=TypeError)
-def test_concat(con, args, expected, method):
+def test_concat(con, args, method):
     expr = method(args)
-    assert con.execute(expr) == expected
+    assert con.execute(expr) is None
