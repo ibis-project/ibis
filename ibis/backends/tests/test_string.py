@@ -1033,3 +1033,15 @@ def test_re_split_column_multiple_patterns(alltypes):
     )
     result = expr.execute()
     assert all(not any(element) for element in result)
+
+
+@pytest.mark.parametrize(
+    "fn",
+    [lambda n: n + "a", lambda n: n + n, lambda n: "a" + n],
+    ids=["null-a", "null-null", "a-null"],
+)
+def test_concat_with_null(con, fn):
+    null = ibis.literal(None, type="string")
+    expr = fn(null)
+    result = con.execute(expr)
+    assert pd.isna(result)
