@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import contextlib
+from functools import reduce
+from operator import add
 
 import numpy as np
 import pandas as pd
@@ -1040,8 +1042,29 @@ def test_re_split_column_multiple_patterns(alltypes):
     [lambda n: n + "a", lambda n: n + n, lambda n: "a" + n],
     ids=["null-a", "null-null", "a-null"],
 )
+@pytest.mark.notimpl(["pandas", "dask"], raises=TypeError)
 def test_concat_with_null(con, fn):
     null = ibis.literal(None, type="string")
     expr = fn(null)
     result = con.execute(expr)
     assert pd.isna(result)
+
+
+@pytest.mark.parametrize(
+    ("args", "expected"),
+    [
+        param((ibis.literal(None, str), None), None),
+        param((ibis.literal("abc"), None), None),
+        param((ibis.literal("abc"), ibis.literal(None, str)), None),
+        param((ibis.literal("abc"), "def", None), None),
+    ],
+)
+@pytest.mark.parametrize(
+    "method",
+    [lambda args: args[0].concat(*args[1:]), lambda args: reduce(add, args)],
+    ids=["concat", "add"],
+)
+@pytest.mark.notimpl(["pandas", "dask"], raises=TypeError)
+def test_concat(con, args, expected, method):
+    expr = method(args)
+    assert con.execute(expr) == expected
