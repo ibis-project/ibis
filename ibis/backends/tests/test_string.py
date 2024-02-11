@@ -1067,4 +1067,4 @@ def test_concat_with_null(con, fn):
 @pytest.mark.notimpl(["pandas", "dask"], raises=TypeError)
 def test_concat(con, args, method):
     expr = method(args)
-    assert con.execute(expr) is None
+    assert pd.isna(con.execute(expr))
