@@ -17,7 +17,6 @@ import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
 from ibis.backends.base import _get_backend_names
-from ibis.backends.pandas.udf import udf
 
 pytestmark = pytest.mark.benchmark
 
@@ -214,7 +213,8 @@ def pt():
         }
     )
 
-    return ibis.pandas.connect(dict(df=data)).table("df")
+    con = ibis.duckdb.connect()
+    return con.create_table("df", data)
 
 
 def high_card_group_by(t):
@@ -277,51 +277,12 @@ def high_card_grouped_rolling(t):
     return t.value.mean().over(high_card_rolling_window(t))
 
 
-@udf.reduction(["double"], "double")
-def my_mean(series):
-    return series.mean()
-
-
-def low_card_grouped_rolling_udf_mean(t):
-    return my_mean(t.value).over(low_card_rolling_window(t))
-
-
-def high_card_grouped_rolling_udf_mean(t):
-    return my_mean(t.value).over(high_card_rolling_window(t))
-
-
-@udf.analytic(["double"], "double")
-def my_zscore(series):
-    return (series - series.mean()) / series.std()
-
-
 def low_card_window(t):
     return ibis.window(group_by=t.low_card_key)
 
 
 def high_card_window(t):
     return ibis.window(group_by=t.key)
-
-
-def low_card_window_analytics_udf(t):
-    return my_zscore(t.value).over(low_card_window(t))
-
-
-def high_card_window_analytics_udf(t):
-    return my_zscore(t.value).over(high_card_window(t))
-
-
-@udf.reduction(["double", "double"], "double")
-def my_wm(v, w):
-    return np.average(v, weights=w)
-
-
-def low_card_grouped_rolling_udf_wm(t):
-    return my_wm(t.value, t.value).over(low_card_rolling_window(t))
-
-
-def high_card_grouped_rolling_udf_wm(t):
-    return my_wm(t.value, t.value).over(low_card_rolling_window(t))
 
 
 broken_pandas_grouped_rolling = pytest.mark.xfail(
@@ -351,30 +312,6 @@ broken_pandas_grouped_rolling = pytest.mark.xfail(
         pytest.param(
             high_card_grouped_rolling,
             id="high_card_grouped_rolling",
-            marks=[broken_pandas_grouped_rolling],
-        ),
-        pytest.param(
-            low_card_grouped_rolling_udf_mean,
-            id="low_card_grouped_rolling_udf_mean",
-            marks=[broken_pandas_grouped_rolling],
-        ),
-        pytest.param(
-            high_card_grouped_rolling_udf_mean,
-            id="high_card_grouped_rolling_udf_mean",
-            marks=[broken_pandas_grouped_rolling],
-        ),
-        pytest.param(low_card_window_analytics_udf, id="low_card_window_analytics_udf"),
-        pytest.param(
-            high_card_window_analytics_udf, id="high_card_window_analytics_udf"
-        ),
-        pytest.param(
-            low_card_grouped_rolling_udf_wm,
-            id="low_card_grouped_rolling_udf_wm",
-            marks=[broken_pandas_grouped_rolling],
-        ),
-        pytest.param(
-            high_card_grouped_rolling_udf_wm,
-            id="high_card_grouped_rolling_udf_wm",
             marks=[broken_pandas_grouped_rolling],
         ),
     ],
