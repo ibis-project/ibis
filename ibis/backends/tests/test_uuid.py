@@ -27,9 +27,7 @@ UUID_BACKEND_TYPE = {
 }
 
 
-@pytest.mark.notimpl(["datafusion", "polars"], raises=NotImplementedError)
 @pytest.mark.notimpl(["polars"], raises=NotImplementedError)
-@pytest.mark.notimpl(["datafusion"], raises=Exception)
 def test_uuid_literal(con, backend):
     backend_name = backend.name()
 
