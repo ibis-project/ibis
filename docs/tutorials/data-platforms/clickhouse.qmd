@@ -1,5 +1,6 @@
 ---
 title: ClickHouse
+freeze: auto
 ---
 
 [Ibis](https://ibis-project.com) supports reading and querying data using
