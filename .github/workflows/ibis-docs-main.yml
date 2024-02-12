@@ -51,7 +51,8 @@ jobs:
       - name: verify internal links
         run: nix develop --ignore-environment '.#links' -c just checklinks --offline --no-progress
 
-      - name: build and push quarto docs
-        run: nix develop --ignore-environment --keep NETLIFY_AUTH_TOKEN -c just docs-deploy
-        env:
-          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+      # TODO: re-enable when geo blog is fixed (to_array)
+      # - name: build and push quarto docs
+      #   run: nix develop --ignore-environment --keep NETLIFY_AUTH_TOKEN -c just docs-deploy
+      #   env:
+      #     NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
