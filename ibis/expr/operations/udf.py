@@ -10,11 +10,12 @@ from typing import TYPE_CHECKING, Any, Callable, Optional, TypeVar, overload
 from public import public
 
 import ibis.common.exceptions as exc
+import ibis.expr.datashape as ds
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.rules as rlz
 from ibis import util
-from ibis.common.annotations import Argument
+from ibis.common.annotations import Argument, attribute
 from ibis.common.collections import FrozenDict
 from ibis.common.deferred import deferrable
 
@@ -35,7 +36,16 @@ class InputType(enum.Enum):
 
 @public
 class ScalarUDF(ops.Value):
-    shape = rlz.shape_like("args")
+    @attribute
+    def shape(self):
+        if not (args := getattr(self, "args")):  # noqa: B009
+            # if a udf builtin takes no args then the shape check will fail
+            # because there are no arguments to grab the shape of. In that case
+            # default to a scalar shape
+            return ds.scalar
+        else:
+            args = args if util.is_iterable(args) else [args]
+            return rlz.highest_precedence_shape(args)
 
 
 @public
@@ -95,6 +105,7 @@ class _UDF(abc.ABC):
                 )
                 for arg_name, param in inspect.signature(fn).parameters.items()
             }
+
         else:
             arg_types, return_annotation = signature
             arg_names = list(inspect.signature(fn).parameters)

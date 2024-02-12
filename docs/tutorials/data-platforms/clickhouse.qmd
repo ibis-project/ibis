@@ -1,0 +1,142 @@
+---
+title: ClickHouse
+---
+
+[Ibis](https://ibis-project.com) supports reading and querying data using
+[ClickHouse](https://clickhouse.com/) as a backend.
+
+In this example we'll demonstrate using Ibis to connect to a ClickHouse server,
+and to execute a few queries.
+
+```{python}
+from ibis.interactive import *
+```
+
+## Creating a Connection
+
+First we need to connect Ibis to a running ClickHouse server.
+
+In this example we'll run queries against the publicly available [ClickHouse
+playground](https://clickhouse.com/docs/en/getting-started/playground) server.
+
+To run against your own ClickHouse server you'd only need to change the
+connection details.
+
+```{python}
+con = ibis.connect("clickhouse://play@play.clickhouse.com:443")
+```
+
+## Listing available tables
+
+The ClickHouse playground server has a number of interesting datasets
+available. To see them, we can examine the tables via the `.tables` attribute.
+
+This shows a list of all tables available:
+
+```{python}
+con.tables
+```
+
+## Inspecting a Table
+
+Lets take a look at the `hackernews` table. This table contains all posts and
+comments on [Hacker News](https://news.ycombinator.com/).
+
+We can access the table by attribute as `con.tables.hackernews`.
+
+```{python}
+t = con.tables.hackernews
+```
+
+We can then take a peak at the first few rows using the `.head()` method.
+
+```{python}
+t.head()
+```
+
+## Finding the highest scoring posts
+
+Here we find the top 5 posts by score.
+
+Posts have a title, so we:
+
+- `filter` out rows that lack a title
+- `select` only the columns we're interested in
+- `order` them by score, descending
+- `limit` to the top 5 rows
+
+```{python}
+top_posts_by_score = (
+    t.filter(_.title != "")
+    .select("title", "score")
+    .order_by(ibis.desc("score"))
+    .limit(5)
+)
+
+top_posts_by_score
+```
+
+## Finding the most prolific commenters
+
+Here we find the top 5 commenters by number of comments made.
+
+To do this we:
+
+- `filter` out rows with no author
+- `group_by` author
+- `count` all the rows in each group
+- `order_by` the counts, descending
+- `limit` to the top 5 rows
+
+```{python}
+top_commenters = (
+    t.filter(_.by != "")
+    .group_by("by")
+    .agg(count=_.count())
+    .order_by(ibis.desc("count"))
+    .limit(5)
+)
+
+top_commenters
+```
+
+This query could also be expressed using the `.topk` method, which is
+a shorthand for the above:
+
+```{python}
+# This is a shorthand for the above
+top_commenters = t.filter(_.by != "").by.topk(5)
+
+top_commenters
+```
+
+## Finding top commenters by score
+
+Here we find the top 5 commenters with the highest cumulative scores. In this
+case the `.topk` shorthand won't work and we'll need to write out the full
+`group_by` -> `agg` -> `order_by` -> `limit` pipeline.
+
+```{python}
+top_commenters_by_score = (
+    t.filter(_.by != "")
+    .group_by("by")
+    .agg(total_score=_.score.sum())
+    .order_by(ibis.desc("total_score"))
+    .limit(5)
+)
+
+top_commenters_by_score
+```
+
+## Next Steps
+
+There are lots of other interesting queries one might ask of this dataset.
+
+A few examples:
+
+- What posts had the most comments?
+- How do post scores fluctuate over time?
+- What day of the week has the highest average post score? What day has the lowest?
+
+To learn more about how to use Ibis with Clickhouse, see [the
+documentation](https://ibis-project.org/backends/ClickHouse/).

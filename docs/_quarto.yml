@@ -367,9 +367,60 @@ quartodoc:
             name: Temporal expressions
             desc: Dates, times, timestamps and intervals.
           contents:
-            - TimestampValue
-            - DateValue
-            - TimeValue
+            - name: TimestampValue
+              members:
+                - add
+                - radd
+                - sub
+                - between
+                - bucket
+                - date
+                - day
+                - day_of_week
+                - day_of_year
+                - delta
+                - epoch_seconds
+                - hour
+                - microsecond
+                - millisecond
+                - minute
+                - month
+                - quarter
+                - second
+                - strftime
+                - time
+                - truncate
+                - week_of_year
+                - year
+            - name: DateValue
+              members:
+                - add
+                - radd
+                - sub
+                - day
+                - day_of_week
+                - day_of_year
+                - epoch_seconds
+                - month
+                - quarter
+                - strftime
+                - truncate
+                - week_of_year
+                - year
+            - name: TimeValue
+              members:
+                - add
+                - radd
+                - sub
+                - between
+                - hour
+                - microsecond
+                - millisecond
+                - minute
+                - second
+                - strftime
+                - time
+                - truncate
             - IntervalValue
             - DayOfWeek
             - name: now
@@ -392,7 +443,6 @@ quartodoc:
               package: ibis
               dynamic: true
               signature_name: full
-
         - kind: page
           path: expression-collections
           package: ibis

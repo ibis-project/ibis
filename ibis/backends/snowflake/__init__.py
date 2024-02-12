@@ -1004,7 +1004,7 @@ $$"""
         query = sg.exp.insert(
             expression=self.compile(obj),
             into=table,
-            columns=[sg.column(col, quoted=True) for col in obj.columns],
+            columns=[sg.to_identifier(col, quoted=True) for col in obj.columns],
             dialect=self.name,
         )
         with self.begin() as con:

@@ -50,27 +50,21 @@ For a better development experience see the `conda` or `nix` setup instructions.
 
 ## Conda
 
-::: {.callout-note}
-Some optional dependencies for Windows are not available through `conda`/`mamba`
-:::
+### Support matrix [^conda-callout]
 
-### Support matrix
-
-| Python Version       | Python 3.9                   | Python 3.10      | Python 3.11      |
-| -------------------- | ---------------------------- | ---------------- | ---------------- |
-| **Operating System** |                              |                  |                  |
-| **Linux**            | {{< fa check >}}[^supported] | {{< fa check >}} | {{< fa check >}} |
-| **macOS (x86_64)**   | {{< fa check >}}             | {{< fa check >}} | {{< fa check >}} |
-| **macOS (aarch64)**  | {{< fa check >}}             | {{< fa check >}} | {{< fa check >}} |
-| **Windows**          | {{< fa check >}}             | {{< fa check >}} | {{< fa check >}} |
+|      Python Version {{< fa arrow-right >}} |                   Python 3.9 |   Python 3.10    |   Python 3.11    |
+| -----------------------------------------: | :--------------------------: | :--------------: | :--------------: |
+| **Operating System** {{< fa arrow-down >}} |                              |                  |                  |
+|                                  **Linux** | {{< fa check >}}[^supported] | {{< fa check >}} | {{< fa check >}} |
+|                         **macOS (x86_64)** |             {{< fa check >}} | {{< fa check >}} | {{< fa check >}} |
+|                        **macOS (aarch64)** |             {{< fa check >}} | {{< fa check >}} | {{< fa check >}} |
+|                                **Windows** |             {{< fa check >}} | {{< fa check >}} | {{< fa check >}} |
 
 ::: {.panel-tabset}
 
 ```{python}
 #| echo: false
 #| output: asis
-
-import itertools
 
 managers = {
     "conda": {
@@ -83,63 +77,42 @@ managers = {
     }
 }
 
-platforms = {
-    "Linux": "linux-64",
-    "macOS (x86_64)": "osx-64",
-    "macOS (aarch64)": "osx-arm64", "Windows": "win-64"
-}
-
-
 for manager, params in managers.items():
-    # tabsets can't be nested so the count is manual
-    step = itertools.count(1)
-
     name = params["name"]
     url = params["url"]
 
     print(f"## `{manager}`")
     print()
-    print(f"{next(step)}. Install [{name}]({url})")
+    print(f"1. Install [{name}]({url})")
     print()
-    print(f"{next(step)}. Install `gh`")
+    print(f"1. Install `gh`")
     print()
     print("    ```sh")
     print(f"    {manager} install -c conda-forge gh")
     print("    ```")
     print()
-    print(f"{next(step)}. Fork and clone the ibis repository:")
+    print(f"1. Fork and clone the ibis repository:")
     print()
     print("    ```sh")
     print("    gh repo fork --clone --remote ibis-project/ibis")
     print("    ```")
     print()
-    print(f"{next(step)}. Create a Conda environment from a lock file in the repo:")
+    print(f"1. Create a Conda environment using `environment.yml`")
     print()
-    print("::: {.panel-tabset}")
+    print("    ```sh")
+    print("    cd ibis")
+    print(f"    {manager} env create --file environment.yml")
+    print("    ```")
     print()
-    for os, platform in platforms.items():
-        print(f"## {os}")
-        print()
-        print("```sh")
-        print(f"# Create a dev environment for {platform}")
-        print("cd ibis")
-        print(f"{manager} create -n ibis-dev --file=ci/conda-lock/{platform}/3.10.lock")
-        print("```")
-        print()
-    print()
-    print(":::")
-    print()
-
-    print(f"{next(step)}. Activate the environment")
+    print(f"1. Activate the environment")
     print()
     print("    ```sh")
     print(f"    {manager} activate ibis-dev")
     print("    ```")
     print()
-    print(f"{next(step)}. Install your local copy of `ibis` into the Conda environment")
+    print(f"1. Install your local copy of `ibis` into the {manager.capitalize()} environment")
     print()
     print("    ```sh")
-    print("    cd ibis")
     print("    pip install -e '.[all]'")
     print("    ```")
     print()
@@ -149,7 +122,7 @@ for manager, params in managers.items():
 
 ## Nix
 
-#### Support Matrix
+### Support matrix
 
 |      Python Version {{< fa arrow-right >}} |                Python 3.9                 |           Python 3.10           |           Python 3.11           |
 | -----------------------------------------: | :---------------------------------------: | :-----------------------------: | :-----------------------------: |
@@ -220,6 +193,7 @@ just docs-preview
 
 to build and serve the documentation.
 
+[^conda-callout]: Some optional dependencies for Windows and Mac OS are not available through `conda`/`mamba`
 [^supported]: Tested in CI. If this doesn't work for you, please [file an issue](https://github.com/ibis-project/ibis/issues/new).
 [^unknown]: Not tested in CI. Unknown if this setup works.
 [^unlikely]: Unlikely to ever be supported or no upstream support.

@@ -90,6 +90,7 @@ _to_pyarrow_types = {
     dt.Unknown: pa.string(),
     dt.MACADDR: pa.string(),
     dt.INET: pa.string(),
+    dt.UUID: pa.string(),
 }
 
 

@@ -12,6 +12,9 @@
   "features": {
     "ghcr.io/rocker-org/devcontainer-features/quarto-cli:1": {
       "version": "1.4.549"
+    },
+    "ghcr.io/eitsupi/devcontainer-features/duckdb-cli:1": {
+      "extensions": "httpfs,sqlite,postgres,spatial,substrait,parquet,json,arrow,mysql"
     }
   }
 }
