@@ -1,5 +1,5 @@
 ---
-title: "Ibis v8: streaming and more!"
+title: "Ibis 8.0: streaming and more!"
 author: "Ibis team"
 date: "2024-02-05"
 categories:
@@ -9,7 +9,7 @@ categories:
 
 ## Overview
 
-Ibis v8 marks the first release of stream processing backends in Ibis! This
+Ibis 8.0 marks the first release of stream processing backends in Ibis! This
 enhances [the composable data ecosystem
 vision](../../concepts/composable-ecosystem.qmd) by allowing users to implement
 data transformation logic in a standard Python dataframe API and execute it
@@ -59,7 +59,7 @@ batch or streaming.
 
 Ibis aims to solve this dilemma by providing a standard dataframe API that can
 work across data systems, whether batch or streaming. This is a long-term vision
-and we're excited to take the first steps toward it in Ibis v8 with the launch
+and we're excited to take the first steps toward it in Ibis 8.0 with the launch
 of **two** streaming backends (and one more batch backend).
 
 This allows a user to leverage DuckDB or Polars or DataFusion locally, then
@@ -127,7 +127,7 @@ t
 
 ### rename
 
-The largest breaking change in Ibis v7/v8 is the deprecation of `relabel` in
+The largest breaking change in Ibis 7/8 is the deprecation of `relabel` in
 favor of `rename`, swapping the order of the arguments. This change was made to
 be consistent with the rest of the Ibis API. We apologize for any inconvenience
 this may cause, but we believe this change will make Ibis a better and more
@@ -153,7 +153,7 @@ t.rename(SPECIES="species")
 
 ## Functionality
 
-A lot of new functionality has been added in Ibis v7/v8.
+A lot of new functionality has been added in Ibis 7/8.
 
 ### pandas batches
 
@@ -261,7 +261,7 @@ z
 
 ## Wrapping up
 
-Ibis v8 brings exciting new features and the first streaming backends into Ibis!
+Ibis 8.0 brings exciting new features and the first streaming backends into Ibis!
 We hope you're excited as we are about breaking down barriers between batch and
 streaming systems with a standard Python dataframe API.
 
