@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from functools import singledispatchmethod
 
+import sqlglot as sg
 import sqlglot.expressions as sge
 
 import ibis.common.exceptions as com
@@ -100,6 +101,11 @@ class ExasolCompiler(SQLGlotCompiler):
     @visit_node.register(ops.ExtractSecond)
     def visit_ExtractSecond(self, op, *, arg):
         return self.f.floor(self.cast(self.f.extract(self.v.second, arg), op.dtype))
+
+    @visit_node.register(ops.StringConcat)
+    def visit_StringConcat(self, op, *, arg):
+        any_args_null = (a.is_(NULL) for a in arg)
+        return self.if_(sg.or_(*any_args_null), NULL, self.f.concat(*arg))
 
     @visit_node.register(ops.AnalyticVectorizedUDF)
     @visit_node.register(ops.ApproxMedian)
