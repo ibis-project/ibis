@@ -1490,6 +1490,8 @@ class StringValue(Value):
     def concat(self, other: str | StringValue, *args: str | StringValue) -> StringValue:
         """Concatenate strings.
 
+        NULLs are propagated. This methods is equivalent to using the `+` operator.
+
         Parameters
         ----------
         other
@@ -1506,16 +1508,24 @@ class StringValue(Value):
         --------
         >>> import ibis
         >>> ibis.options.interactive = True
-        >>> t = ibis.memtable({"s": ["abc", "bac", "bca"]})
-        >>> t.s.concat("xyz")
+        >>> t = ibis.memtable({"s": ["abc", None]})
+        >>> t.s.concat("xyz", "123")
+        ┏━━━━━━━━━━━━━━━━┓
+        ┃ StringConcat() ┃
+        ┡━━━━━━━━━━━━━━━━┩
+        │ string         │
+        ├────────────────┤
+        │ abcxyz123      │
+        │ NULL           │
+        └────────────────┘
+        >>> t.s + "xyz"
         ┏━━━━━━━━━━━━━━━━┓
         ┃ StringConcat() ┃
         ┡━━━━━━━━━━━━━━━━┩
         │ string         │
         ├────────────────┤
         │ abcxyz         │
-        │ bacxyz         │
-        │ bcaxyz         │
+        │ NULL           │
         └────────────────┘
         """
         return ops.StringConcat((self, other, *args)).to_expr()

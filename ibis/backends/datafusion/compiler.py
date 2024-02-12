@@ -420,6 +420,13 @@ class DataFusionCompiler(SQLGlotCompiler):
     def visit_ArrayIndex(self, op, *, arg, index):
         return self.f.array_element(arg, index + self.cast(index >= 0, op.index.dtype))
 
+    @visit_node.register(ops.StringConcat)
+    def visit_StringConcat(self, op, *, arg):
+        any_args_null = (a.is_(NULL) for a in arg)
+        return self.if_(
+            sg.or_(*any_args_null), self.cast(NULL, dt.string), self.f.concat(*arg)
+        )
+
     @visit_node.register(ops.Arbitrary)
     @visit_node.register(ops.ArgMax)
     @visit_node.register(ops.ArgMin)

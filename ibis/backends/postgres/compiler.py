@@ -170,6 +170,10 @@ class PostgresCompiler(SQLGlotCompiler):
             self.cast(self.f.array(), op.dtype),
         )
 
+    @visit_node.register(ops.StringConcat)
+    def visit_StringConcat(self, op, *, arg):
+        return reduce(lambda x, y: sge.DPipe(this=x, expression=y), arg)
+
     @visit_node.register(ops.ArrayConcat)
     def visit_ArrayConcat(self, op, *, arg):
         return reduce(self.f.array_cat, map(partial(self.cast, to=op.dtype), arg))
