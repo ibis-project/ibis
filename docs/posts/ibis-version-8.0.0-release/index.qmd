@@ -1,7 +1,7 @@
 ---
 title: "Ibis 8.0: streaming and more!"
 author: "Ibis team"
-date: "2024-02-05"
+date: "2024-02-12"
 categories:
     - release
     - blog
