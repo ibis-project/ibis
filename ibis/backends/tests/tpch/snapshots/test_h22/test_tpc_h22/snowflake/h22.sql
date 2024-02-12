@@ -65,7 +65,7 @@ FROM (
       AND NOT (
         EXISTS(
           SELECT
-            1 AS "1"
+            1
           FROM "SNOWFLAKE_SAMPLE_DATA"."TPCH_SF1"."ORDERS" AS "t1"
           WHERE
             "t1"."O_CUSTKEY" = "t2"."c_custkey"
