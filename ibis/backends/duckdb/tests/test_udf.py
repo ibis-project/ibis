@@ -61,11 +61,7 @@ def test_builtin_scalar_noargs(con):
         ...
 
     expr = version()
-
-    with con.begin() as c:
-        expected = c.exec_driver_sql("SELECT version()").scalar()
-
-    assert con.execute(expr) == expected
+    assert con.execute(expr) == f"v{con.version}"
 
 
 @udf.agg.builtin
