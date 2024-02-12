@@ -1,0 +1,274 @@
+---
+title: "Ibis 8.0: streaming and more!"
+author: "Ibis team"
+date: "2024-02-12"
+categories:
+    - release
+    - blog
+---
+
+## Overview
+
+Ibis 8.0 marks the first release of stream processing backends in Ibis! This
+enhances [the composable data ecosystem
+vision](../../concepts/composable-ecosystem.qmd) by allowing users to implement
+data transformation logic in a standard Python dataframe API and execute it
+against either batch or streaming systems.
+
+This release includes [Apache Flink](https://flink.apache.org/), a streaming
+backend, and [RisingWave](https://risingwave.com), a streaming database backend.
+We've also added a new batch backend with [Exasol](https://exasol.com), bringing
+the total number of backends Ibis supports to 20.
+
+[Most geospatial operations are now supported in the DuckDB
+backend](#geospatial-operations-in-duckdb), making Ibis a great local option for
+geospatial analytics.
+
+### What is stream processing?
+
+Stream processing systems are designed to handle high-throughput, low-latency
+data processing with time semantics. They are used to process data in real-time
+with minimum latency and are often used in applications such as fraud detection,
+real-time analytics, and IoT. Systems using stream processing are increasingly
+common in modern data applications.
+
+Apache Flink is the most popular open-source stream processing framework, with
+numerous cloud options. RisingWave is an open-source Postgres-compatible
+streaming database with a cloud offering that is gaining popularity and
+simplifies the streaming experience.
+
+Ibis now supports both and going forward can add more streaming backends to
+unify the Python user experience across batch and streaming systems.
+
+### Unifying batch and streaming UX in Python
+
+Whether you're using a batch or streaming data platform -- and the lines are
+continually blurring between them -- you'll need a frontend to interact with as
+a data engineer, analyst, or scientist. If you're using Python, that frontend is
+likely a dataframe API.
+
+Standards benefit individual users by reducing the cognitive load of learning
+and understanding new data systems. Organizations benefit from this in the form
+of lower onboarding costs, easier collaboration between teams, and better
+interfaces for data systems.
+
+We saw in the recent [one billion row challenge post how even CSV reader keyword
+arguments can differ greatly between APIs](../1brc/index.qmd#setup-1). This is
+compounded by tightly coupling a dataframe API to every query engine, whether
+batch or streaming.
+
+Ibis aims to solve this dilemma by providing a standard dataframe API that can
+work across data systems, whether batch or streaming. This is a long-term vision
+and we're excited to take the first steps toward it in Ibis 8.0 with the launch
+of **two** streaming backends (and one more batch backend).
+
+This allows a user to leverage DuckDB or Polars or DataFusion locally, then
+scale out batch processing to Snowflake or BigQuery or ClickHouse in the cloud,
+then switch from batch to stream processing with Apache Flink or RisingWave, all
+without changing their dataframe code. As Ibis [adds new
+features](#functionality) and implements them across backends, users can take
+advantage of these features without needing to learn new APIs.
+
+## Backends
+
+Three new backends were added in this release.
+
+### Apache Flink
+
+In collaboration with Claypot AI ([recently acquired by Voltron
+Data](https://voltrondata.com/resources/voltron-data-acquires-claypot-ai)),
+we've added the [first streaming backend with Apache
+Flink](../../backends/flink.qmd). You can check out the [blog post](TODO: link)
+and [tutorial](TODO: link) to get started with this new backend.
+
+### RisingWave
+
+In collboration with [RisingWave](https://risingwave.com), we've added the
+[second streaming backend with RisingWave](../../backends/flink.qmd) # TODO:
+update. This backend is earlier in development, but we're excited to have it as
+the second streaming backend in Ibis and will continue to improve it.
+
+### Exasol
+
+In collaboration with [Exasol](https://exasol.com), we've added the [Exasol
+backend](../../backends/exasol.qmd). This is a traditional batch backend and
+brings another great option for fast batch analytics to Ibis.
+
+## Breaking changes
+
+You can view the [full changelog](../../../release_notes.md) for additional
+breaking changes. There have been few that we expect to affect most users.
+
+:::{.callout-note}
+The PM for the team was distracted playing with LLMs and didn't write a v7 blog
+post, so we're covering breaking changes and features from both below.
+:::
+
+If you're new to Ibis, see [how to install](../../../install.qmd) and [the
+getting started tutorial](../../../tutorials/getting_started.qmd).
+
+To follow along with this blog, ensure you're on `'ibis-framework>=8,<9'`.
+First, we’ll setup Ibis and fetch some sample data to use.
+
+```{python}
+import ibis
+import ibis.selectors as s
+
+ibis.options.interactive = True
+ibis.options.repr.interactive.max_rows = 3
+```
+
+Now, fetch the penguins dataset.
+
+```{python}
+t = ibis.examples.penguins.fetch()
+t
+```
+
+### rename
+
+The largest breaking change in Ibis 7/8 is the deprecation of `relabel` in
+favor of `rename`, swapping the order of the arguments. This change was made to
+be consistent with the rest of the Ibis API. We apologize for any inconvenience
+this may cause, but we believe this change will make Ibis a better and more
+consistent dataframe standard going forward.
+
+In the past, you would use `relabel` like this:
+
+```{python}
+t.relabel({"species": "SPECIES"})
+```
+
+Now, you would use `rename` like this:
+
+```{python}
+t.rename({"SPECIES": "species"})
+```
+
+or this:
+
+```{python}
+t.rename(SPECIES="species")
+```
+
+## Functionality
+
+A lot of new functionality has been added in Ibis 7/8.
+
+### pandas batches
+
+The `.to_pandas_batches()` method can be used to output batches of pandas
+dataframes:
+
+```{python}
+batches = t.to_pandas_batches(chunk_size=200)
+for df in batches:
+    print(df.shape)
+```
+
+### range
+
+The `range()` function can be used to create a monotonic sequence of integers:
+
+```{python}
+s = ibis.range(10)
+s
+```
+
+You can turn it into a table:
+
+```{python}
+s.unnest().name("index").as_table()
+```
+
+This can be useful for [creating synthetic
+data](../1brc/index.qmd#bonus-more-billion-row-data-generation) and other use
+cases.
+
+### relocate
+
+The `.relocate()` method can be used to move columns to the beginning of a
+table, which is very useful for interactive data exploration with wide tables:
+
+```{python}
+t
+```
+
+Then:
+
+```{python}
+t.relocate("sex", "year")
+```
+
+### sample
+
+The `.sample()` method can be used to sample rows from a table:
+
+:::{.callout-info}
+Number of rows returned may vary by invocation.
+:::
+
+```{python}
+t.count()
+```
+
+```{python}
+t.sample(fraction=0.1).count()
+```
+
+### negative slicing
+
+More Pythonic slicing is now supported:
+
+```{python}
+t[:3]
+```
+
+```{python}
+t[-3:]
+```
+
+```{python}
+t[-6:-3]
+```
+
+### geospatial operations in DuckDB
+
+Ibis supports over 50 geospatial operations, with many being recently added to
+DuckDB backend. While backend-specific, this is worth calling out because it
+brings a great local option for geospatial analytics to Ibis. [Read the first
+geospatial blog](../ibis-duckdb-geospatial/index.qmd) or [the second geospatial
+blog](../ibis-duckdb-geospatial-dev-guru/index.qmd) to learn more.
+
+A new `zones` example dataset with a geometric datatype has been added for a
+quick demonstration:
+
+```{python}
+z = ibis.examples.zones.fetch()
+z = z.relocate("geom")
+z
+```
+
+We can use geospatial operations on that column:
+
+```{python}
+z = z.mutate(
+    area=z.geom.area(),
+    centroid=z.geom.centroid(),
+).relocate("area", "centroid")
+z
+```
+
+## Wrapping up
+
+Ibis 8.0 brings exciting new features and the first streaming backends into Ibis!
+We hope you're excited as we are about breaking down barriers between batch and
+streaming systems with a standard Python dataframe API.
+
+As always, try Ibis by [installing](../../install.qmd) and [getting
+started](../../tutorials/getting_started.qmd).
+
+If you run into any issues or find support is lacking for your backend, [open an
+issue](https://github.com/ibis-project/issues/new/choose) or
+[discussion](https://github.com/ibis-project/discussions/new/choose) and let us
+know!
