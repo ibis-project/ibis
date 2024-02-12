@@ -78,19 +78,21 @@ Three new backends were added in this release.
 In collaboration with Claypot AI ([recently acquired by Voltron
 Data](https://voltrondata.com/resources/voltron-data-acquires-claypot-ai)),
 we've added the [first streaming backend with Apache
-Flink](../../backends/flink.qmd). You can check out the [blog post](TODO: link)
-and [tutorial](TODO: link) to get started with this new backend.
+Flink](../../backends/flink.qmd). You can check out the [blog
+post](../flink-announcement/index.qmd) and
+[tutorial](../../tutorials/open-source-software/apache-flink/0_setup.qmd) to get
+started with this new backend.
 
 ### RisingWave
 
-In collboration with [RisingWave](https://risingwave.com), we've added the
-[second streaming backend with RisingWave](../../backends/flink.qmd) # TODO:
-update. This backend is earlier in development, but we're excited to have it as
-the second streaming backend in Ibis and will continue to improve it.
+[RisingWave](https://risingwave.com) has contributed [second streaming backend
+with RisingWave](../../backends/risingwave.qmd). This backend is earlier in
+development, but we're excited to have it in Ibis and it will continue to
+improve it.
 
 ### Exasol
 
-In collaboration with [Exasol](https://exasol.com), we've added the [Exasol
+[Exasol](https://exasol.com) has contributed the [Exasol
 backend](../../backends/exasol.qmd). This is a traditional batch backend and
 brings another great option for fast batch analytics to Ibis.
 
