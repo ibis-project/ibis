@@ -70,6 +70,17 @@ class SnowflakeCompiler(SQLGlotCompiler):
     def visit_node(self, op, **kw):
         return super().visit_node(op, **kw)
 
+    @staticmethod
+    def _minimize_spec(start, end, spec):
+        if (
+            start is None
+            and isinstance(getattr(end, "value", None), ops.Literal)
+            and end.value.value == 0
+            and end.following
+        ):
+            return None
+        return spec
+
     @visit_node.register(ops.Literal)
     def visit_Literal(self, op, *, value, dtype):
         if value is None:
