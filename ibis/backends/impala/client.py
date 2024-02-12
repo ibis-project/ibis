@@ -8,8 +8,8 @@ import ibis
 import ibis.common.exceptions as com
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
-from ibis.backends.base.sql.ddl import AlterTable, InsertSelect
 from ibis.backends.impala import ddl
+from ibis.backends.impala.ddl import AlterTable, InsertSelect
 
 if TYPE_CHECKING:
     import pandas as pd

@@ -1,1 +1,1 @@
-DROP FUNCTION IF EXISTS `test_name`(string, string)
+DROP FUNCTION IF EXISTS `test_name`(STRING, STRING)

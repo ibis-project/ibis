@@ -1,6 +1,6 @@
 CREATE EXTERNAL TABLE IF NOT EXISTS `foo`.`new_table`
-(`foo` string,
- `bar` tinyint,
- `baz` smallint)
+(`foo` STRING,
+ `bar` TINYINT,
+ `baz` SMALLINT)
 STORED AS PARQUET
 LOCATION '/path/to/'

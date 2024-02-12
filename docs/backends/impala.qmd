@@ -202,7 +202,7 @@ table or database.
 ```{python}
 #| echo: false
 #| output: asis
-render_methods(get_object("ibis.backends.base.sql", "BaseSQLBackend"), "table")
+render_methods(get_object("ibis.backends.base.sqlglot", "SQLGlotBackend"), "table")
 ```
 
 The client's `table` method allows you to create an Ibis table
