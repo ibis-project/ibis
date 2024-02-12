@@ -208,6 +208,11 @@ def calc_zscore(s):
                 pytest.mark.notimpl(["dask"], raises=com.OperationNotDefinedError),
                 pytest.mark.notimpl(["flink"], raises=com.OperationNotDefinedError),
                 pytest.mark.notimpl(["risingwave"], raises=PsycoPg2InternalError),
+                pytest.mark.broken(
+                    ["snowflake"],
+                    raises=AssertionError,
+                    reason="behavior of windows with nth_value has changed; unclear whether that is in ibis or in snowflake itself",
+                ),
             ],
         ),
         param(
@@ -776,8 +781,8 @@ def test_simple_ungrouped_window_with_scalar_order_by(alltypes):
                 pytest.mark.broken(["mssql"], raises=PyODBCProgrammingError),
                 pytest.mark.notyet(
                     ["snowflake"],
-                    reason="backend requires ordering",
-                    raises=SnowflakeProgrammingError,
+                    reason="backend supports this functionality but requires meaningful ordering",
+                    raises=AssertionError,
                 ),
                 pytest.mark.notimpl(
                     ["risingwave"],
@@ -818,8 +823,8 @@ def test_simple_ungrouped_window_with_scalar_order_by(alltypes):
                 pytest.mark.broken(["mssql"], raises=PyODBCProgrammingError),
                 pytest.mark.notyet(
                     ["snowflake"],
-                    reason="backend requires ordering",
-                    raises=SnowflakeProgrammingError,
+                    reason="backend supports this functionality but requires meaningful ordering",
+                    raises=AssertionError,
                 ),
                 pytest.mark.notimpl(
                     ["risingwave"],
