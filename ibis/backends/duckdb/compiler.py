@@ -359,6 +359,10 @@ class DuckDBCompiler(SQLGlotCompiler):
         else:
             raise NotImplementedError(f"No available hashing function for {how}")
 
+    @visit_node.register(ops.StringConcat)
+    def visit_StringConcat(self, op, *, arg):
+        return reduce(lambda x, y: sge.DPipe(this=x, expression=y), arg)
+
 
 _SIMPLE_OPS = {
     ops.ArrayPosition: "list_indexof",
