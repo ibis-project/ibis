@@ -85,14 +85,14 @@ started with this new backend.
 
 ### RisingWave
 
-In collboration with [RisingWave](https://risingwave.com), we've added the
-[second streaming backend with RisingWave](../../backends/risingwave.qmd). This
-backend is earlier in development, but we're excited to have it in Ibis and it
-will continue to improve it.
+[RisingWave](https://risingwave.com) has contributed [second streaming backend
+with RisingWave](../../backends/risingwave.qmd). This backend is earlier in
+development, but we're excited to have it in Ibis and it will continue to
+improve it.
 
 ### Exasol
 
-In collaboration with [Exasol](https://exasol.com), we've added the [Exasol
+[Exasol](https://exasol.com) has contributed the [Exasol
 backend](../../backends/exasol.qmd). This is a traditional batch backend and
 brings another great option for fast batch analytics to Ibis.
 
