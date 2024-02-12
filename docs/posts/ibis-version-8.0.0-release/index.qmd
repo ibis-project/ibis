@@ -87,8 +87,8 @@ started with this new backend.
 
 In collboration with [RisingWave](https://risingwave.com), we've added the
 [second streaming backend with RisingWave](../../backends/risingwave.qmd). This
-backend is earlier in development, but we're excited to have it as the second
-streaming backend in Ibis and will continue to improve it.
+backend is earlier in development, but we're excited to have it in Ibis and it
+will continue to improve it.
 
 ### Exasol
 
