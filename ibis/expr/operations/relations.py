@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import itertools
 from abc import abstractmethod
+from functools import reduce
+from operator import and_
 from typing import TYPE_CHECKING, Annotated, Any, Literal, Optional
 from typing import Union as UnionType
 
@@ -121,12 +123,17 @@ class InMemoryTable(PhysicalTable):
 def _clean_join_predicates(left, right, predicates):
     import ibis.expr.analysis as an
     import ibis.expr.types as ir
+    import ibis.selectors as s
     from ibis.expr.analysis import shares_all_roots
 
     result = []
 
     for pred in predicates:
-        if isinstance(pred, tuple):
+        if isinstance(pred, s.Selector):
+            pred = reduce(
+                and_, (lk == rk for lk, rk in s.expand_overlap(pred, left, right))
+            )
+        elif isinstance(pred, tuple):
             if len(pred) != 2:
                 raise com.ExpressionError("Join key tuple must be length 2")
             lk, rk = pred
