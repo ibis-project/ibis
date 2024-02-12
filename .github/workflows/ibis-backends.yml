@@ -124,6 +124,7 @@ jobs:
               - libgeos-dev
           - name: risingwave
             title: Risingwave
+            serial: true
             services:
               - risingwave
             extras:
@@ -233,6 +234,7 @@ jobs:
             backend:
               name: risingwave
               title: Risingwave
+              serial: true
               services:
                 - risingwave
               extras:
