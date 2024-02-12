@@ -589,6 +589,8 @@ class SnowflakeCompiler(SQLGlotCompiler):
 
 
 _SIMPLE_OPS = {
+    ops.Any: "max",
+    ops.All: "min",
     ops.ArrayDistinct: "array_distinct",
     ops.ArrayFlatten: "array_flatten",
     ops.ArrayIndex: "get",
