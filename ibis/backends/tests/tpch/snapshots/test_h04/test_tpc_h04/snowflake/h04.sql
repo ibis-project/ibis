@@ -32,7 +32,7 @@ FROM (
     WHERE
       EXISTS(
         SELECT
-          1 AS "1"
+          1
         FROM "SNOWFLAKE_SAMPLE_DATA"."TPCH_SF1"."LINEITEM" AS "t1"
         WHERE
           (

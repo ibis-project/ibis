@@ -86,7 +86,7 @@ FROM (
       AND "t15"."n_name" = 'SAUDI ARABIA'
       AND EXISTS(
         SELECT
-          1 AS "1"
+          1
         FROM "t7" AS "t13"
         WHERE
           (
@@ -99,7 +99,7 @@ FROM (
       AND NOT (
         EXISTS(
           SELECT
-            1 AS "1"
+            1
           FROM "t7" AS "t14"
           WHERE
             (
