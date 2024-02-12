@@ -5,4 +5,4 @@ FROM "t" AS "t0"
 WHERE
   "t0"."a" = CAST(1 AS TINYINT)
 ORDER BY
-  CONCAT("t0"."b", 'a') ASC
+  "t0"."b" || 'a' ASC
