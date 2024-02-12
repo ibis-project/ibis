@@ -42,6 +42,12 @@ website:
   search:
     location: navbar
     type: overlay
+    algolia:
+      index-name: prod_IBIS
+      application-id: FPF3DG0E1W
+      search-only-api-key: d7187f538e360cc609b61ed82a34d4b3
+      analytics-events: true
+      show-logo: true
 
   # options
   reader-mode: false
