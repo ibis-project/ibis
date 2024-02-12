@@ -20,7 +20,6 @@ if TYPE_CHECKING:
     import pandas as pd
     import pyarrow as pa
 
-
 __all__ = ["BaseSQLBackend"]
 
 
