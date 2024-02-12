@@ -1,0 +1,53 @@
+# Getting started
+
+In this tutorial, you will learn how to set up and use Flink with Ibis. After
+setting up the Flink backend for Ibis in this tutorial, we'll see a real-life
+example in [A real-life use case: fraud detection](1_single_feature.qmd).
+
+## Set up and connect to Flink
+
+Install the Flink backend for Ibis with `pip`:
+```{python}
+# | include: false
+!pip install ibis-framework apache-flink
+```
+
+::: {.callout-warning}
+You need to install the Flink backend for Ibis alongside
+the `apache-flink` package. PyFlink is not available on conda-forge, so you
+cannot install the Flink backend for Ibis with `conda`, `mamba`, or `pixi`.
+:::
+
+
+To connect to a Flink session, simply create a `pyflink.table.TableEnvironment`
+and pass that to `ibis.flink.connect()`:
+
+```{python}
+from pyflink.table import EnvironmentSettings, TableEnvironment
+
+import ibis
+
+env_settings = EnvironmentSettings.in_streaming_mode()
+table_env = TableEnvironment.create(env_settings)
+connection = ibis.flink.connect(table_env)
+```
+
+::: {.callout-tip}
+If you’re working on a batch data pipeline, simply change the
+TableEnvironment settings to batch mode before connecting to it:
+```{python}
+env_settings = EnvironmentSettings.in_batch_mode()
+```
+:::
+
+Now you can connect to data sources, create transformations, and write the
+results into sinks!
+
+## Next steps
+
+Now that you're connected to Flink, you can [continue this tutorial to learn the
+basics of Ibis](1_single_feature.qmd) or query your own data. See the rest of
+the Ibis documentation or
+[Flink documentation](https://nightlies.apache.org/flink/flink-docs-stable/). You
+can [open an issue](https://github.com/ibis-project/ibis/issues/new/choose) if you
+run into one!
