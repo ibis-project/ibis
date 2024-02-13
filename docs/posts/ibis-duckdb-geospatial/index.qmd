@@ -87,6 +87,16 @@ broad_station = subway_stations.filter(subway_stations.NAME == "Broad St")
 broad_station
 ```
 
+Then convert it to a scalar subquery:
+
+```{python}
+broad_station_subquery = broad_station.select("geom").to_array()
+```
+
+::: {.callout-note}
+The `.to_array()` API will change in version `9.0` to a more convenient alternative: `broad_station.as_scalar()`.
+:::
+
 ### `geo_equals` (`ST_Equals`)
 
 In DuckDB `ST_Equals` returns `True` if two geometries are topologically equal. This means that they have the same
@@ -96,14 +106,14 @@ The following is a bit redundant but we can check if our `"Broad St"` point matc
 `geo_equals`
 
 ```{python}
-subway_stations.filter(subway_stations.geom.geo_equals(broad_station.geom))
+subway_stations.filter(subway_stations.geom.geo_equals(broad_station_subquery))
 ```
 
 We can also write this query without using `broad_station` as a variable, and with the help of the deferred expressions
 API, also known as [the underscore API](../../how-to/analytics/chain_expressions.qmd).
 
 ```{python}
-subway_stations.filter(_.geom.geo_equals(_.filter(_.NAME == "Broad St").geom))
+subway_stations.filter(_.geom.geo_equals(_.filter(_.NAME == "Broad St")[["geom"]].to_array()))
 ```
 
 ### `intersect` (ST_Intersect)
@@ -117,7 +127,7 @@ boroughs
 ```
 
 ```{python}
-boroughs.filter(boroughs.geom.intersects(broad_station.select(broad_station.geom).to_array()))
+boroughs.filter(boroughs.geom.intersects(broad_station_subquery))
 ```
 
 ### `d_within` (ST_DWithin)
@@ -133,7 +143,7 @@ streets
 Using the deferred API, we can check which streets are within `d=10` meters of distance.
 
 ```{python}
-sts_near_broad = streets.filter(_.geom.d_within(broad_station.select(_.geom).to_array(), 10))
+sts_near_broad = streets.filter(_.geom.d_within(broad_station_subquery, 10))
 sts_near_broad
 ```
 
