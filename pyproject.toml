@@ -39,7 +39,6 @@ classifiers = [
 python = "^3.9"
 atpublic = ">=2.3,<5"
 bidict = ">=0.22.1,<1"
-multipledispatch = ">=0.6,<2"
 numpy = ">=1,<2"
 pandas = ">=1.2.5,<3"
 parsy = ">=2,<3"
