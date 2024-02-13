@@ -1,6 +1,6 @@
 CREATE TABLE `foo`.`another_table`
-(`foo` string,
- `bar` tinyint,
- `baz` smallint)
+(`foo` STRING,
+ `bar` TINYINT,
+ `baz` SMALLINT)
 STORED AS PARQUET
 LOCATION '/path/to/table'

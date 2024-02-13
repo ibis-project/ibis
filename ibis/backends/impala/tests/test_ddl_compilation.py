@@ -3,13 +3,13 @@ from __future__ import annotations
 import pytest
 
 import ibis
-from ibis.backends.base.sql.ddl import (
+from ibis.backends.impala import ddl
+from ibis.backends.impala.ddl import (
     CTAS,
     CreateTableWithSchema,
     DropTable,
     InsertSelect,
 )
-from ibis.backends.impala import ddl
 
 
 @pytest.fixture

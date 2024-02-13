@@ -6,20 +6,8 @@ import sqlglot as sg
 
 import ibis.common.exceptions as exc
 import ibis.expr.schema as sch
-from ibis.backends.base.sql.ddl import (
-    CreateTable,
-    CreateTableWithSchema,
-    DropObject,
-    InsertSelect,
-    RenameTable,
-    _CreateDDL,
-    _format_properties,
-    _is_quoted,
-    format_partition,
-    is_fully_qualified,
-)
-from ibis.backends.base.sql.registry import quote_identifier
 from ibis.backends.base.sqlglot.datatypes import FlinkType
+from ibis.backends.base.sqlglot.ddl import DDL, DML, CreateDDL, DropObject
 from ibis.util import promote_list
 
 if TYPE_CHECKING:
@@ -28,106 +16,89 @@ if TYPE_CHECKING:
     from ibis.expr.api import Watermark
 
 
-def format_schema(schema: sch.Schema):
-    elements = [
-        _format_schema_element(name, t) for name, t in zip(schema.names, schema.types)
-    ]
+class FlinkBase:
+    dialect = "hive"
 
-    return "({})".format(",\n ".join(elements))
+    def format_dtype(self, dtype):
+        sql_string = FlinkType.from_ibis(dtype)
+        if dtype.is_timestamp():
+            return (
+                f"TIMESTAMP({dtype.scale})" if dtype.scale is not None else "TIMESTAMP"
+            )
+        else:
+            return sql_string.sql("flink") + " NOT NULL" * (not dtype.nullable)
 
+    def format_properties(self, props):
+        tokens = []
+        for k, v in sorted(props.items()):
+            tokens.append(f"  '{k}'='{v}'")
+        return "(\n{}\n)".format(",\n".join(tokens))
 
-def _format_schema_element(name, t):
-    return f"{quote_identifier(name, force=True)} {type_to_flink_sql_string(t)}"
+    def format_watermark_strategy(self, watermark: Watermark) -> str:
+        from ibis.backends.flink.utils import translate_literal
 
-
-def type_to_flink_sql_string(tval):
-    sql_string = FlinkType.from_ibis(tval)
-    if tval.is_timestamp():
-        return f"TIMESTAMP({tval.scale})" if tval.scale is not None else "TIMESTAMP"
-    else:
-        return sql_string.sql("flink") + " NOT NULL" * (not tval.nullable)
-
-
-def _format_watermark_strategy(watermark: Watermark) -> str:
-    from ibis.backends.flink.utils import translate_literal
-
-    if watermark.allowed_delay is None:
-        return watermark.time_col
-    return f"{watermark.time_col} - {translate_literal(watermark.allowed_delay.op())}"
-
-
-def format_schema_with_watermark(
-    schema: sch.Schema,
-    watermark: Watermark | None = None,
-    primary_keys: Sequence[str] | None = None,
-) -> str:
-    elements = [
-        _format_schema_element(name, t) for name, t in zip(schema.names, schema.types)
-    ]
-
-    if watermark is not None:
-        elements.append(
-            f"WATERMARK FOR {watermark.time_col} AS {_format_watermark_strategy(watermark)}"
+        if watermark.allowed_delay is None:
+            return watermark.time_col
+        return (
+            f"{watermark.time_col} - {translate_literal(watermark.allowed_delay.op())}"
         )
 
-    if primary_keys is not None and primary_keys:
-        # Note (mehmet): Currently supports "NOT ENFORCED" only. For the reason
-        # of this choice, the following quote from Flink docs is self-explanatory:
-        # "SQL standard specifies that a constraint can either be ENFORCED or
-        # NOT ENFORCED. This controls if the constraint checks are performed on
-        # the incoming/outgoing data. Flink does not own the data therefore the
-        # only mode we want to support is the NOT ENFORCED mode. It is up to the
-        # user to ensure that the query enforces key integrity."
-        # Ref: https://nightlies.apache.org/flink/flink-docs-release-1.18/docs/dev/table/sql/create/#primary-key
-        comma_separated_keys = ", ".join(f"`{key}`" for key in primary_keys)
-        elements.append(f"PRIMARY KEY ({comma_separated_keys}) NOT ENFORCED")
-
-    return "({})".format(",\n ".join(elements))
-
-
-class _CatalogAwareBaseQualifiedSQLStatement:
-    def _get_scoped_name(
-        self, obj_name: str, database: str | None = None, catalog: str | None = None
+    def format_schema_with_watermark(
+        self,
+        schema: sch.Schema,
+        watermark: Watermark | None = None,
+        primary_keys: Sequence[str] | None = None,
     ) -> str:
-        if is_fully_qualified(obj_name):
-            return obj_name
-        if _is_quoted(obj_name):
-            obj_name = obj_name[1:-1]
-        return sg.table(obj_name, db=database, catalog=catalog, quoted=True).sql(
-            dialect="hive"
-        )
+        elements = [
+            f"{self.quote(name)} {self.format_dtype(t)}"
+            for name, t in zip(schema.names, schema.types)
+        ]
+
+        if watermark is not None:
+            elements.append(
+                f"WATERMARK FOR {watermark.time_col} AS {self.format_watermark_strategy(watermark)}"
+            )
+
+        if primary_keys is not None and primary_keys:
+            # Note (mehmet): Currently supports "NOT ENFORCED" only. For the reason
+            # of this choice, the following quote from Flink docs is self-explanatory:
+            # "SQL standard specifies that a constraint can either be ENFORCED or
+            # NOT ENFORCED. This controls if the constraint checks are performed on
+            # the incoming/outgoing data. Flink does not own the data therefore the
+            # only mode we want to support is the NOT ENFORCED mode. It is up to the
+            # user to ensure that the query enforces key integrity."
+            # Ref: https://nightlies.apache.org/flink/flink-docs-release-1.18/docs/dev/table/sql/create/#primary-key
+            comma_separated_keys = ", ".join(f"`{key}`" for key in primary_keys)
+            elements.append(f"PRIMARY KEY ({comma_separated_keys}) NOT ENFORCED")
+
+        return "({})".format(",\n ".join(elements))
 
 
-class CreateTableFromConnector(
-    _CatalogAwareBaseQualifiedSQLStatement, CreateTableWithSchema
-):
+class CreateTableWithSchema(FlinkBase, CreateDDL):
     def __init__(
         self,
         table_name: str,
         schema: sch.Schema,
-        tbl_properties: dict,
-        watermark: Watermark | None = None,
+        database=None,
+        catalog=None,
+        can_exist=False,
+        external=False,
+        partition=None,
         primary_key: str | Sequence[str] | None = None,
-        database: str | None = None,
-        catalog: str | None = None,
+        tbl_properties=None,
         temporary: bool = False,
-        **kwargs,
+        watermark: Watermark | None = None,
     ):
-        super().__init__(
-            table_name=table_name,
-            database=database,
-            schema=schema,
-            table_format=None,
-            format=None,
-            path=None,
-            tbl_properties=tbl_properties,
-            **kwargs,
-        )
+        self.can_exist = can_exist
         self.catalog = catalog
+        self.database = database
+        self.partition = partition
+        self.primary_keys = promote_list(primary_key)
+        self.schema = schema
+        self.table_name = table_name
+        self.tbl_properties = tbl_properties
         self.temporary = temporary
         self.watermark = watermark
-
-        self.primary_keys = promote_list(primary_key)
 
         # Check if `primary_keys` is a subset of the columns in `schema`.
         if self.primary_keys and not set(self.primary_keys) <= set(schema.names):
@@ -137,12 +108,6 @@ class CreateTableFromConnector(
                 f"\t schema.names= {schema.names}"
             )
 
-    def _storage(self) -> str:
-        return f"STORED AS {self.format}" if self.format else None
-
-    def _format_tbl_properties(self) -> str:
-        return f"WITH {_format_properties(self.tbl_properties)}"
-
     @property
     def _prefix(self) -> str:
         # `TEMPORARY` is not documented in Flink's documentation
@@ -150,9 +115,7 @@ class CreateTableFromConnector(
         return f"CREATE{modifier} TABLE"
 
     def _create_line(self) -> str:
-        scoped_name = self._get_scoped_name(
-            self.table_name, self.database, self.catalog
-        )
+        scoped_name = self.scoped_name(self.table_name, self.database, self.catalog)
         return f"{self._prefix} {self._if_exists()}{scoped_name}"
 
     @property
@@ -172,19 +135,27 @@ class CreateTableFromConnector(
             }
             main_schema = sch.Schema(fields)
 
-            yield format_schema_with_watermark(
+            yield self.format_schema_with_watermark(
                 main_schema, self.watermark, self.primary_keys
             )
-            yield f"PARTITIONED BY {format_schema(part_schema)}"
+            yield f"PARTITIONED BY {self.format_schema(part_schema)}"
         else:
-            yield format_schema_with_watermark(
+            yield self.format_schema_with_watermark(
                 self.schema, self.watermark, self.primary_keys
             )
 
-        yield self._format_tbl_properties()
+        yield f"WITH {self.format_properties(self.tbl_properties)}"
+
+    @property
+    def pieces(self):
+        yield self._create_line()
+        yield from filter(None, self._pieces)
+
+    def compile(self):
+        return "\n".join(self.pieces)
 
 
-class CreateView(_CatalogAwareBaseQualifiedSQLStatement, CreateTable):
+class CreateView(FlinkBase, CreateDDL):
     def __init__(
         self,
         name: str,
@@ -212,7 +183,7 @@ class CreateView(_CatalogAwareBaseQualifiedSQLStatement, CreateTable):
             return "CREATE VIEW"
 
     def _create_line(self):
-        scoped_name = self._get_scoped_name(self.name, self.database, self.catalog)
+        scoped_name = self.scoped_name(self.name, self.database, self.catalog)
         return f"{self._prefix} {self._if_exists()}{scoped_name}"
 
     @property
@@ -220,8 +191,11 @@ class CreateView(_CatalogAwareBaseQualifiedSQLStatement, CreateTable):
         yield self._create_line()
         yield f"AS {self.query_expression}"
 
+    def compile(self):
+        return "\n".join(self.pieces)
 
-class DropTable(_CatalogAwareBaseQualifiedSQLStatement, DropObject):
+
+class DropTable(FlinkBase, DropObject):
     _object_type = "TABLE"
 
     def __init__(
@@ -239,7 +213,7 @@ class DropTable(_CatalogAwareBaseQualifiedSQLStatement, DropObject):
         self.temporary = temporary
 
     def _object_name(self):
-        return self._get_scoped_name(self.table_name, self.database, self.catalog)
+        return self.scoped_name(self.table_name, self.database, self.catalog)
 
     def compile(self):
         temporary = "TEMPORARY " if self.temporary else ""
@@ -268,36 +242,30 @@ class DropView(DropTable):
         )
 
 
-class RenameTable(RenameTable):
-    def __init__(
-        self,
-        old_name: str,
-        new_name: str,
-        old_database: str | None = None,
-        new_database: str | None = None,
-        must_exist: bool = True,
-    ):
-        super().__init__(
-            old_name=old_name,
-            new_name=new_name,
-            old_database=old_database,
-            new_database=new_database,
-        )
+class RenameTable(FlinkBase, DDL):
+    def __init__(self, old_name: str, new_name: str, must_exist: bool = True):
+        self.old_name = old_name
+        self.new_name = new_name
         self.must_exist = must_exist
 
     def compile(self):
         if_exists = "" if self.must_exist else "IF EXISTS"
-        return f"ALTER TABLE {if_exists} {self._old} RENAME TO {self._new}"
+        return f"ALTER TABLE {if_exists} {self.old_name} RENAME TO {self.new_name}"
 
 
 class _DatabaseObject:
     def _object_name(self):
-        scoped_name = f"{quote_identifier(self.catalog)}." if self.catalog else ""
-        scoped_name += quote_identifier(self.name)
-        return scoped_name
+        name = sg.to_identifier(self.name, quoted=True).sql(dialect=self.dialect)
+        if self.catalog:
+            catalog = sg.to_identifier(self.catalog, quoted=True).sql(
+                dialect=self.dialect
+            )
+            return f"{catalog}.{name}"
+        else:
+            return name
 
 
-class CreateDatabase(_DatabaseObject, _CreateDDL):
+class CreateDatabase(FlinkBase, _DatabaseObject, CreateDDL):
     def __init__(
         self,
         name: str,
@@ -313,7 +281,7 @@ class CreateDatabase(_DatabaseObject, _CreateDDL):
 
     def _format_db_properties(self) -> str:
         return (
-            f"WITH {_format_properties(self.db_properties)}"
+            f"WITH {self.format_properties(self.db_properties)}"
             if self.db_properties
             else ""
         )
@@ -325,7 +293,7 @@ class CreateDatabase(_DatabaseObject, _CreateDDL):
         return f"{create_line}\n{self._format_db_properties()}"
 
 
-class DropDatabase(_DatabaseObject, DropObject):
+class DropDatabase(FlinkBase, _DatabaseObject, DropObject):
     _object_type = "DATABASE"
 
     def __init__(self, name: str, catalog: str | None = None, must_exist: bool = True):
@@ -334,7 +302,7 @@ class DropDatabase(_DatabaseObject, DropObject):
         self.catalog = catalog
 
 
-class InsertSelect(_CatalogAwareBaseQualifiedSQLStatement, InsertSelect):
+class InsertSelect(FlinkBase, DML):
     def __init__(
         self,
         table_name,
@@ -345,10 +313,13 @@ class InsertSelect(_CatalogAwareBaseQualifiedSQLStatement, InsertSelect):
         partition_schema=None,
         overwrite=False,
     ):
-        super().__init__(
-            table_name, select_expr, database, partition, partition_schema, overwrite
-        )
+        self.table_name = table_name
+        self.database = database
         self.catalog = catalog
+        self.select = select_expr
+        self.partition = partition
+        self.partition_schema = partition_schema
+        self.overwrite = overwrite
 
     def compile(self):
         if self.overwrite:
@@ -357,13 +328,11 @@ class InsertSelect(_CatalogAwareBaseQualifiedSQLStatement, InsertSelect):
             cmd = "INSERT INTO"
 
         if self.partition is not None:
-            part = format_partition(self.partition, self.partition_schema)
+            part = self.format_partition(self.partition, self.partition_schema)
             partition = f" {part} "
         else:
             partition = ""
 
         select_query = self.select
-        scoped_name = self._get_scoped_name(
-            self.table_name, self.database, self.catalog
-        )
+        scoped_name = self.scoped_name(self.table_name, self.database, self.catalog)
         return f"{cmd} {scoped_name}{partition}\n{select_query}"

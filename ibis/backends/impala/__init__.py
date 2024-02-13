@@ -20,7 +20,11 @@ import ibis.expr.datatypes as dt
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis import util
-from ibis.backends.base.sql.ddl import (
+from ibis.backends.base.sqlglot import SQLGlotBackend
+from ibis.backends.impala import ddl, udf
+from ibis.backends.impala.client import ImpalaTable
+from ibis.backends.impala.compiler import ImpalaCompiler
+from ibis.backends.impala.ddl import (
     CTAS,
     CreateDatabase,
     CreateTableWithSchema,
@@ -31,10 +35,6 @@ from ibis.backends.base.sql.ddl import (
     RenameTable,
     TruncateTable,
 )
-from ibis.backends.base.sqlglot import SQLGlotBackend
-from ibis.backends.impala import ddl, udf
-from ibis.backends.impala.client import ImpalaTable
-from ibis.backends.impala.compiler import ImpalaCompiler
 from ibis.backends.impala.udf import (
     aggregate_function,
     scalar_function,
@@ -51,7 +51,6 @@ if TYPE_CHECKING:
     import pyarrow as pa
 
     import ibis.expr.operations as ops
-    from ibis.backends.base.sql.compiler import DDL, DML
 
 
 __all__ = (
@@ -264,7 +263,7 @@ class Backend(SQLGlotBackend):
         return PandasData.convert_table(results, schema)
 
     @contextlib.contextmanager
-    def _safe_raw_sql(self, query: str | DDL | DML):
+    def _safe_raw_sql(self, query: str):
         if not isinstance(query, str):
             try:
                 query = query.sql(dialect=self.dialect)

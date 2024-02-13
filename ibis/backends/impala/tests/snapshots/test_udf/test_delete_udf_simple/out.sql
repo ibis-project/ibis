@@ -1,1 +1,1 @@
-DROP FUNCTION `test_name`(string, string)
+DROP FUNCTION `test_name`(STRING, STRING)

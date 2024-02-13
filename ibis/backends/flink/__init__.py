@@ -15,7 +15,7 @@ from ibis.backends.base.sqlglot import SQLGlotBackend
 from ibis.backends.flink.compiler import FlinkCompiler
 from ibis.backends.flink.ddl import (
     CreateDatabase,
-    CreateTableFromConnector,
+    CreateTableWithSchema,
     DropDatabase,
     DropTable,
     DropView,
@@ -456,7 +456,7 @@ class Backend(SQLGlotBackend, CanCreateDatabase, NoUrl):
 
             # TODO (mehmet): Given that we rely on default catalog if one is not specified,
             # is there any point to support temporary tables?
-            statement = CreateTableFromConnector(
+            statement = CreateTableWithSchema(
                 table_name=name,
                 schema=schema,
                 tbl_properties=tbl_properties,

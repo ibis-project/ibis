@@ -1,1 +1,1 @@
-DROP AGGREGATE FUNCTION `test_name`(string, string)
+DROP AGGREGATE FUNCTION `test_name`(STRING, STRING)

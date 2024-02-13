@@ -136,3 +136,6 @@ ibis/examples/descriptions
 # automatically generated odbc file for ci
 ci/odbc/odbc.ini
 *-citibike-tripdata.tar.xz
+
+# data downloaded by the geospatial tutorial
+docs/posts/ibis-duckdb-geospatial/nyc_data.db.wal
