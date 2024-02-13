@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from functools import singledispatchmethod
-
 import sqlglot as sg
 import sqlglot.expressions as sge
 from public import public
@@ -37,56 +35,53 @@ class SQLiteCompiler(SQLGlotCompiler):
     POS_INF = sge.Literal.number("1e999")
     NEG_INF = sge.Literal.number("-1e999")
 
+    UNSUPPORTED_OPERATIONS = frozenset(
+        (
+            ops.Levenshtein,
+            ops.RegexSplit,
+            ops.StringSplit,
+            ops.IsNan,
+            ops.IsInf,
+            ops.Covariance,
+            ops.Correlation,
+            ops.Quantile,
+            ops.MultiQuantile,
+            ops.Median,
+            ops.ApproxMedian,
+            ops.Array,
+            ops.ArrayConcat,
+            ops.ArrayStringJoin,
+            ops.ArrayCollect,
+            ops.ArrayContains,
+            ops.ArrayFlatten,
+            ops.ArrayLength,
+            ops.ArraySort,
+            ops.ArrayStringJoin,
+            ops.CountDistinctStar,
+            ops.IntervalBinary,
+            ops.IntervalAdd,
+            ops.IntervalSubtract,
+            ops.IntervalMultiply,
+            ops.IntervalFloorDivide,
+            ops.IntervalFromInteger,
+            ops.TimestampBucket,
+            ops.TimestampAdd,
+            ops.TimestampSub,
+            ops.TimestampDiff,
+            ops.StringToTimestamp,
+            ops.TimeDelta,
+            ops.DateDelta,
+            ops.TimestampDelta,
+            ops.TryCast,
+        )
+    )
+
     def _aggregate(self, funcname: str, *args, where):
         expr = self.f[funcname](*args)
         if where is not None:
             return sge.Filter(this=expr, expression=sge.Where(this=where))
         return expr
 
-    @singledispatchmethod
-    def visit_node(self, op, **kw):
-        return super().visit_node(op, **kw)
-
-    @visit_node.register(ops.Levenshtein)
-    @visit_node.register(ops.RegexSplit)
-    @visit_node.register(ops.StringSplit)
-    @visit_node.register(ops.IsNan)
-    @visit_node.register(ops.IsInf)
-    @visit_node.register(ops.Covariance)
-    @visit_node.register(ops.Correlation)
-    @visit_node.register(ops.Quantile)
-    @visit_node.register(ops.MultiQuantile)
-    @visit_node.register(ops.Median)
-    @visit_node.register(ops.ApproxMedian)
-    @visit_node.register(ops.Array)
-    @visit_node.register(ops.ArrayConcat)
-    @visit_node.register(ops.ArrayStringJoin)
-    @visit_node.register(ops.ArrayCollect)
-    @visit_node.register(ops.ArrayContains)
-    @visit_node.register(ops.ArrayFlatten)
-    @visit_node.register(ops.ArrayLength)
-    @visit_node.register(ops.ArraySort)
-    @visit_node.register(ops.ArrayStringJoin)
-    @visit_node.register(ops.CountDistinctStar)
-    @visit_node.register(ops.IntervalBinary)
-    @visit_node.register(ops.IntervalAdd)
-    @visit_node.register(ops.IntervalSubtract)
-    @visit_node.register(ops.IntervalMultiply)
-    @visit_node.register(ops.IntervalFloorDivide)
-    @visit_node.register(ops.IntervalFromInteger)
-    @visit_node.register(ops.TimestampBucket)
-    @visit_node.register(ops.TimestampAdd)
-    @visit_node.register(ops.TimestampSub)
-    @visit_node.register(ops.TimestampDiff)
-    @visit_node.register(ops.StringToTimestamp)
-    @visit_node.register(ops.TimeDelta)
-    @visit_node.register(ops.DateDelta)
-    @visit_node.register(ops.TimestampDelta)
-    @visit_node.register(ops.TryCast)
-    def visit_Undefined(self, op, **kwargs):
-        return super().visit_Undefined(op, **kwargs)
-
-    @visit_node.register(ops.Cast)
     def visit_Cast(self, op, *, arg, to) -> sge.Cast:
         if to.is_timestamp():
             if to.timezone not in (None, "UTC"):
@@ -103,7 +98,6 @@ class SQLiteCompiler(SQLGlotCompiler):
             return self.f.time(arg)
         return super().visit_Cast(op, arg=arg, to=to)
 
-    @visit_node.register(ops.Limit)
     def visit_Limit(self, op, *, parent, n, offset):
         # SQLite doesn't support compiling an OFFSET without a LIMIT, but
         # treats LIMIT -1 as no limit
@@ -111,7 +105,6 @@ class SQLiteCompiler(SQLGlotCompiler):
             op, parent=parent, n=(-1 if n is None else n), offset=offset
         )
 
-    @visit_node.register(ops.WindowBoundary)
     def visit_WindowBoundary(self, op, *, value, preceding):
         if op.value.dtype.is_interval():
             raise com.OperationNotDefinedError(
@@ -119,7 +112,6 @@ class SQLiteCompiler(SQLGlotCompiler):
             )
         return super().visit_WindowBoundary(op, value=value, preceding=preceding)
 
-    @visit_node.register(ops.JoinLink)
     def visit_JoinLink(self, op, **kwargs):
         if op.how == "asof":
             raise com.UnsupportedOperationError(
@@ -127,19 +119,15 @@ class SQLiteCompiler(SQLGlotCompiler):
             )
         return super().visit_JoinLink(op, **kwargs)
 
-    @visit_node.register(ops.StartsWith)
     def visit_StartsWith(self, op, *, arg, start):
         return arg.like(self.f.concat(start, "%"))
 
-    @visit_node.register(ops.EndsWith)
     def visit_EndsWith(self, op, *, arg, end):
         return arg.like(self.f.concat("%", end))
 
-    @visit_node.register(ops.StrRight)
     def visit_StrRight(self, op, *, arg, nchars):
         return self.f.substr(arg, -nchars, nchars)
 
-    @visit_node.register(ops.StringFind)
     def visit_StringFind(self, op, *, arg, substr, start, end):
         if op.end is not None:
             raise NotImplementedError("`end` not yet implemented")
@@ -151,36 +139,29 @@ class SQLiteCompiler(SQLGlotCompiler):
 
         return self.f.instr(arg, substr)
 
-    @visit_node.register(ops.StringJoin)
     def visit_StringJoin(self, op, *, arg, sep):
         args = [arg[0]]
         for item in arg[1:]:
             args.extend([sep, item])
         return self.f.concat(*args)
 
-    @visit_node.register(ops.StringContains)
-    def visit_Contains(self, op, *, haystack, needle):
+    def visit_StringContains(self, op, *, haystack, needle):
         return self.f.instr(haystack, needle) >= 1
 
-    @visit_node.register(ops.ExtractQuery)
     def visit_ExtractQuery(self, op, *, arg, key):
         if op.key is None:
             return self.f._ibis_extract_full_query(arg)
         return self.f._ibis_extract_query(arg, key)
 
-    @visit_node.register(ops.Greatest)
     def visit_Greatest(self, op, *, arg):
         return self.f.max(*arg)
 
-    @visit_node.register(ops.Least)
     def visit_Least(self, op, *, arg):
         return self.f.min(*arg)
 
-    @visit_node.register(ops.IdenticalTo)
     def visit_IdenticalTo(self, op, *, left, right):
         return sge.Is(this=left, expression=right)
 
-    @visit_node.register(ops.Clip)
     def visit_Clip(self, op, *, arg, lower, upper):
         if upper is not None:
             arg = self.if_(arg.is_(NULL), arg, self.f.min(upper, arg))
@@ -190,15 +171,12 @@ class SQLiteCompiler(SQLGlotCompiler):
 
         return arg
 
-    @visit_node.register(ops.RandomScalar)
     def visit_RandomScalar(self, op):
         return 0.5 + self.f.random() / sge.Literal.number(float(-1 << 64))
 
-    @visit_node.register(ops.Cot)
     def visit_Cot(self, op, *, arg):
         return 1 / self.f.tan(arg)
 
-    @visit_node.register(ops.Arbitrary)
     def visit_Arbitrary(self, op, *, arg, how, where):
         if op.how == "heavy":
             raise com.OperationNotDefinedError(
@@ -207,11 +185,9 @@ class SQLiteCompiler(SQLGlotCompiler):
 
         return self._aggregate(f"_ibis_arbitrary_{how}", arg, where=where)
 
-    @visit_node.register(ops.ArgMin)
     def visit_ArgMin(self, *args, **kwargs):
         return self._visit_arg_reduction("min", *args, **kwargs)
 
-    @visit_node.register(ops.ArgMax)
     def visit_ArgMax(self, *args, **kwargs):
         return self._visit_arg_reduction("max", *args, **kwargs)
 
@@ -224,36 +200,28 @@ class SQLiteCompiler(SQLGlotCompiler):
         agg = self._aggregate(func, key, where=cond)
         return self.f.anon.json_extract(self.f.json_array(arg, agg), "$[0]")
 
-    @visit_node.register(ops.Variance)
     def visit_Variance(self, op, *, arg, how, where):
         return self._aggregate(f"_ibis_var_{op.how}", arg, where=where)
 
-    @visit_node.register(ops.StandardDev)
     def visit_StandardDev(self, op, *, arg, how, where):
         var = self._aggregate(f"_ibis_var_{op.how}", arg, where=where)
         return self.f.sqrt(var)
 
-    @visit_node.register(ops.ApproxCountDistinct)
     def visit_ApproxCountDistinct(self, op, *, arg, where):
         return self.agg.count(sge.Distinct(expressions=[arg]), where=where)
 
-    @visit_node.register(ops.CountDistinct)
     def visit_CountDistinct(self, op, *, arg, where):
         return self.agg.count(sge.Distinct(expressions=[arg]), where=where)
 
-    @visit_node.register(ops.Strftime)
     def visit_Strftime(self, op, *, arg, format_str):
         return self.f.strftime(format_str, arg)
 
-    @visit_node.register(ops.DateFromYMD)
     def visit_DateFromYMD(self, op, *, year, month, day):
         return self.f.date(self.f.printf("%04d-%02d-%02d", year, month, day))
 
-    @visit_node.register(ops.TimeFromHMS)
     def visit_TimeFromHMS(self, op, *, hours, minutes, seconds):
         return self.f.time(self.f.printf("%02d:%02d:%02d", hours, minutes, seconds))
 
-    @visit_node.register(ops.TimestampFromYMDHMS)
     def visit_TimestampFromYMDHMS(
         self, op, *, year, month, day, hours, minutes, seconds
     ):
@@ -286,16 +254,12 @@ class SQLiteCompiler(SQLGlotCompiler):
             raise com.UnsupportedOperationError(f"Unsupported truncate unit {unit}")
         return func(arg, *params)
 
-    @visit_node.register(ops.DateTruncate)
     def visit_DateTruncate(self, op, *, arg, unit):
         return self._temporal_truncate(self.f.date, arg, unit)
 
-    @visit_node.register(ops.TimestampTruncate)
     def visit_TimestampTruncate(self, op, *, arg, unit):
         return self._temporal_truncate(self.f.datetime, arg, unit)
 
-    @visit_node.register(ops.DateAdd)
-    @visit_node.register(ops.DateSub)
     def visit_DateArithmetic(self, op, *, left, right):
         unit = op.right.dtype.unit
         sign = "+" if isinstance(op, ops.DateAdd) else "-"
@@ -308,53 +272,43 @@ class SQLiteCompiler(SQLGlotCompiler):
         else:
             return self.f.date(left, self.f.concat(sign, right, f" {unit.plural}"))
 
-    @visit_node.register(ops.DateDiff)
+    visit_DateAdd = visit_DateSub = visit_DateArithmetic
+
     def visit_DateDiff(self, op, *, left, right):
         return self.f.julianday(left) - self.f.julianday(right)
 
-    @visit_node.register(ops.ExtractYear)
     def visit_ExtractYear(self, op, *, arg):
         return self.cast(self.f.strftime("%Y", arg), dt.int64)
 
-    @visit_node.register(ops.ExtractQuarter)
     def visit_ExtractQuarter(self, op, *, arg):
         return (self.f.strftime("%m", arg) + 2) / 3
 
-    @visit_node.register(ops.ExtractMonth)
     def visit_ExtractMonth(self, op, *, arg):
         return self.cast(self.f.strftime("%m", arg), dt.int64)
 
-    @visit_node.register(ops.ExtractDay)
     def visit_ExtractDay(self, op, *, arg):
         return self.cast(self.f.strftime("%d", arg), dt.int64)
 
-    @visit_node.register(ops.ExtractDayOfYear)
     def visit_ExtractDayOfYear(self, op, *, arg):
         return self.cast(self.f.strftime("%j", arg), dt.int64)
 
-    @visit_node.register(ops.ExtractHour)
     def visit_ExtractHour(self, op, *, arg):
         return self.cast(self.f.strftime("%H", arg), dt.int64)
 
-    @visit_node.register(ops.ExtractMinute)
     def visit_ExtractMinute(self, op, *, arg):
         return self.cast(self.f.strftime("%M", arg), dt.int64)
 
-    @visit_node.register(ops.ExtractSecond)
     def visit_ExtractSecond(self, op, *, arg):
         return self.cast(self.f.strftime("%S", arg), dt.int64)
 
-    @visit_node.register(ops.ExtractMillisecond)
-    def visit_Millisecond(self, op, *, arg):
+    def visit_ExtractMillisecond(self, op, *, arg):
         return self.cast(self.f.mod(self.f.strftime("%f", arg) * 1000, 1000), dt.int64)
 
-    @visit_node.register(ops.ExtractMicrosecond)
-    def visit_Microsecond(self, op, *, arg):
+    def visit_ExtractMicrosecond(self, op, *, arg):
         return self.cast(
             self.f.mod(self.cast(self.f.strftime("%f", arg), dt.int64), 1000), dt.int64
         )
 
-    @visit_node.register(ops.ExtractWeekOfYear)
     def visit_ExtractWeekOfYear(self, op, *, arg):
         """ISO week of year.
 
@@ -400,17 +354,14 @@ class SQLiteCompiler(SQLGlotCompiler):
         date = self.f.date(arg, "-3 days", "weekday 4")
         return (self.f.strftime("%j", date) - 1) / 7 + 1
 
-    @visit_node.register(ops.ExtractEpochSeconds)
     def visit_ExtractEpochSeconds(self, op, *, arg):
         return self.cast((self.f.julianday(arg) - 2440587.5) * 86400.0, dt.int64)
 
-    @visit_node.register(ops.DayOfWeekIndex)
     def visit_DayOfWeekIndex(self, op, *, arg):
         return self.cast(
             self.f.mod(self.cast(self.f.strftime("%w", arg) + 6, dt.int64), 7), dt.int64
         )
 
-    @visit_node.register(ops.DayOfWeekName)
     def visit_DayOfWeekName(self, op, *, arg):
         return sge.Case(
             this=self.f.strftime("%w", arg),
@@ -425,7 +376,6 @@ class SQLiteCompiler(SQLGlotCompiler):
             ],
         )
 
-    @visit_node.register(ops.Xor)
     def visit_Xor(self, op, *, left, right):
         return (left.or_(right)).and_(sg.not_(left.and_(right)))
 
@@ -502,13 +452,11 @@ for _op, _name in _SIMPLE_OPS.items():
     assert isinstance(type(_op), type), type(_op)
     if issubclass(_op, ops.Reduction):
 
-        @SQLiteCompiler.visit_node.register(_op)
         def _fmt(self, op, *, _name: str = _name, where, **kw):
             return self.agg[_name](*kw.values(), where=where)
 
     else:
 
-        @SQLiteCompiler.visit_node.register(_op)
         def _fmt(self, op, *, _name: str = _name, **kw):
             return self.f[_name](*kw.values())
 

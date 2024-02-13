@@ -3,7 +3,6 @@ from __future__ import annotations
 import calendar
 import itertools
 import re
-from functools import singledispatchmethod
 
 import sqlglot as sg
 import sqlglot.expressions as sge
@@ -16,7 +15,7 @@ import ibis.expr.operations as ops
 from ibis.backends.base.sqlglot.compiler import FALSE, NULL, STAR, TRUE, SQLGlotCompiler
 from ibis.backends.base.sqlglot.datatypes import PySparkType
 from ibis.backends.base.sqlglot.dialects import PySpark
-from ibis.backends.base.sqlglot.rewrites import Window, p
+from ibis.backends.base.sqlglot.rewrites import p
 from ibis.common.patterns import replace
 from ibis.config import options
 from ibis.util import gen_name
@@ -53,15 +52,18 @@ class PySparkCompiler(SQLGlotCompiler):
     type_mapper = PySparkType
     rewrites = (offset_to_filter, *SQLGlotCompiler.rewrites)
 
+    UNSUPPORTED_OPERATIONS = frozenset(
+        (
+            ops.RowID,
+            ops.TimestampBucket,
+        )
+    )
+
     def _aggregate(self, funcname: str, *args, where):
         func = self.f[funcname]
         if where is not None:
             args = tuple(self.if_(where, arg, NULL) for arg in args)
         return func(*args)
-
-    @singledispatchmethod
-    def visit_node(self, op, **kwargs):
-        return super().visit_node(op, **kwargs)
 
     def visit_NonNullLiteral(self, op, *, value, dtype):
         if dtype.is_floating():
@@ -85,7 +87,6 @@ class PySparkCompiler(SQLGlotCompiler):
         else:
             return None
 
-    @visit_node.register(ops.Field)
     def visit_Field(self, op, *, rel, name):
         result = super().visit_Field(op, rel=rel, name=name)
         if op.dtype.is_floating() and options.pyspark.treat_nan_as_null:
@@ -93,7 +94,6 @@ class PySparkCompiler(SQLGlotCompiler):
         else:
             return result
 
-    @visit_node.register(ops.Cast)
     def visit_Cast(self, op, *, arg, to):
         if to.is_json():
             if op.arg.dtype.is_string():
@@ -103,7 +103,6 @@ class PySparkCompiler(SQLGlotCompiler):
         else:
             return self.cast(arg, to)
 
-    @visit_node.register(ops.IsNull)
     def visit_IsNull(self, op, *, arg):
         is_null = arg.is_(NULL)
         is_nan = self.f.isnan(arg)
@@ -112,7 +111,6 @@ class PySparkCompiler(SQLGlotCompiler):
         else:
             return is_null
 
-    @visit_node.register(ops.NotNull)
     def visit_NotNull(self, op, *, arg):
         is_not_null = arg.is_(sg.not_(NULL))
         is_not_nan = sg.not_(self.f.isnan(arg))
@@ -121,56 +119,45 @@ class PySparkCompiler(SQLGlotCompiler):
         else:
             return is_not_null
 
-    @visit_node.register(ops.IsInf)
     def visit_IsInf(self, op, *, arg):
         if op.arg.dtype.is_floating():
             return sg.or_(arg == self.POS_INF, arg == self.NEG_INF)
         return FALSE
 
-    @visit_node.register(ops.Xor)
     def visit_Xor(self, op, left, right):
         return (left | right) & ~(left & right)
 
-    @visit_node.register(ops.Time)
     def visit_Time(self, op, *, arg):
         return arg - self.f.anon.date_trunc("day", arg)
 
-    @visit_node.register(ops.IntervalFromInteger)
     def visit_IntervalFromInteger(self, op, *, arg, unit):
         arg = self.f.concat(arg, sge.convert(f" {unit.plural}"))
         typ = sge.DataType(this=sge.DataType.Type.INTERVAL)
         return sg.cast(sge.convert(arg), to=typ)
 
-    @visit_node.register(ops.DayOfWeekIndex)
     def visit_DayOfWeekIndex(self, op, *, arg):
         return (self.f.dayofweek(arg) + 5) % 7
 
-    @visit_node.register(ops.DayOfWeekName)
     def visit_DayOfWeekName(self, op, *, arg):
         return sge.Case(
             this=(self.f.dayofweek(arg) + 5) % 7,
             ifs=list(itertools.starmap(self.if_, enumerate(calendar.day_name))),
         )
 
-    @visit_node.register(ops.ExtractDayOfYear)
     def visit_ExtractDayOfYear(self, op, *, arg):
         return self.cast(self.f.dayofyear(arg), op.dtype)
 
-    @visit_node.register(ops.ExtractMillisecond)
     def visit_ExtractMillisecond(self, op, *, arg):
         return self.cast(self.f.date_format(arg, "SSS"), op.dtype)
 
-    @visit_node.register(ops.ExtractMicrosecond)
     def visit_ExtractMicrosecond(self, op, *, arg):
         raise com.UnsupportedOperationError(
             "PySpark backend does not support extracting microseconds."
         )
 
-    @visit_node.register(ops.ExtractEpochSeconds)
     def visit_ExtractEpochSeconds(self, op, *, arg):
         return self.f.unix_timestamp(self.cast(arg, dt.timestamp))
 
-    @visit_node.register(ops.TimestampFromUNIX)
     def visit_TimestampFromUNIX(self, op, *, arg, unit):
         if not op.unit:
             return self.f.to_timestamp(self.f.from_unixtime(arg))
@@ -183,9 +170,6 @@ class PySparkCompiler(SQLGlotCompiler):
                 f"unit {op.unit.short}. Supported unit is s."
             )
 
-    @visit_node.register(ops.TimestampTruncate)
-    @visit_node.register(ops.DateTruncate)
-    @visit_node.register(ops.TimeTruncate)
     def visit_TimestampTruncate(self, op, *, arg, unit):
         if unit.short == "ns":
             raise com.UnsupportedOperationError(
@@ -193,19 +177,18 @@ class PySparkCompiler(SQLGlotCompiler):
             )
         return self.f.anon.date_trunc(unit.singular, arg)
 
-    @visit_node.register(ops.CountStar)
+    visit_TimeTruncate = visit_DateTruncate = visit_TimestampTruncate
+
     def visit_CountStar(self, op, *, arg, where):
         if where is not None:
             return self.f.sum(self.cast(where, op.dtype))
         return self.f.count(STAR)
 
-    @visit_node.register(ops.CountDistinct)
     def visit_CountDistinct(self, op, *, arg, where):
         if where is not None:
             arg = self.if_(where, arg, NULL)
         return self.f.count(sge.Distinct(expressions=[arg]))
 
-    @visit_node.register(ops.CountDistinctStar)
     def visit_CountDistinctStar(self, op, *, arg, where):
         if where is None:
             return self.f.count(sge.Distinct(expressions=[STAR]))
@@ -220,19 +203,16 @@ class PySparkCompiler(SQLGlotCompiler):
         ]
         return self.f.count(sge.Distinct(expressions=cols))
 
-    @visit_node.register(ops.First)
     def visit_First(self, op, *, arg, where):
         if where is not None:
             arg = self.if_(where, arg, NULL)
         return self.f.first(arg, TRUE)
 
-    @visit_node.register(ops.Last)
     def visit_Last(self, op, *, arg, where):
         if where is not None:
             arg = self.if_(where, arg, NULL)
         return self.f.last(arg, TRUE)
 
-    @visit_node.register(ops.Arbitrary)
     def visit_Arbitrary(self, op, *, arg, how, where):
         if where is not None:
             arg = self.if_(where, arg, NULL)
@@ -246,11 +226,9 @@ class PySparkCompiler(SQLGlotCompiler):
                 "Supported values are `first` and `last`."
             )
 
-    @visit_node.register(ops.Median)
     def visit_Median(self, op, *, arg, where):
         return self.agg.percentile(arg, 0.5, where=where)
 
-    @visit_node.register(ops.GroupConcat)
     def visit_GroupConcat(self, op, *, arg, sep, where):
         if where is not None:
             arg = self.if_(where, arg, NULL)
@@ -258,7 +236,6 @@ class PySparkCompiler(SQLGlotCompiler):
         collected = self.if_(self.f.size(collected).eq(0), NULL, collected)
         return self.f.array_join(collected, sep)
 
-    @visit_node.register(ops.Correlation)
     def visit_Correlation(self, op, *, left, right, how, where):
         if (left_type := op.left.dtype).is_boolean():
             left = self.cast(left, dt.Int32(nullable=left_type.nullable))
@@ -278,18 +255,15 @@ class PySparkCompiler(SQLGlotCompiler):
             self.f.array(),
         )
 
-    @visit_node.register(ops.IntegerRange)
     def visit_IntegerRange(self, op, *, start, stop, step):
         zero = sge.convert(0)
         return self._build_sequence(start, stop, step, zero)
 
-    @visit_node.register(ops.TimestampRange)
     def visit_TimestampRange(self, op, *, start, stop, step):
         unit = op.step.dtype.resolution
         zero = sge.Interval(this=sge.convert(0), unit=unit)
         return self._build_sequence(start, stop, step, zero)
 
-    @visit_node.register(ops.Sample)
     def visit_Sample(
         self, op, *, parent, fraction: float, method: str, seed: int | None, **_
     ):
@@ -303,7 +277,6 @@ class PySparkCompiler(SQLGlotCompiler):
         )
         return sg.select(STAR).from_(sample)
 
-    @visit_node.register(ops.WindowBoundary)
     def visit_WindowBoundary(self, op, *, value, preceding):
         if isinstance(op.value, ops.Literal) and op.value.value == 0:
             value = "CURRENT ROW"
@@ -333,29 +306,25 @@ class PySparkCompiler(SQLGlotCompiler):
 
         return f"ibis_udf_{name}"
 
-    @visit_node.register(ops.ElementWiseVectorizedUDF)
-    @visit_node.register(ops.ReductionVectorizedUDF)
     def visit_VectorizedUDF(self, op, *, func, func_args, input_type, return_type):
         return self.f[self.__sql_name__(op)](*func_args)
 
-    @visit_node.register(ops.MapGet)
+    visit_ElementWiseVectorizedUDF = visit_ReductionVectorizedUDF = visit_VectorizedUDF
+
     def visit_MapGet(self, op, *, arg, key, default):
         if default is None:
             return arg[key]
         else:
             return self.if_(self.f.map_contains_key(arg, key), arg[key], default)
 
-    @visit_node.register(ops.ArrayZip)
     def visit_ArrayZip(self, op, *, arg):
         return self.f.arrays_zip(*arg)
 
-    @visit_node.register(ops.ArrayMap)
     def visit_ArrayMap(self, op, *, arg, body, param):
         param = sge.Identifier(this=param)
         func = sge.Lambda(this=body, expressions=[param])
         return self.f.transform(arg, func)
 
-    @visit_node.register(ops.ArrayFilter)
     def visit_ArrayFilter(self, op, *, arg, body, param):
         param = sge.Identifier(this=param)
         func = sge.Lambda(this=self.if_(body, param, NULL), expressions=[param])
@@ -363,19 +332,15 @@ class PySparkCompiler(SQLGlotCompiler):
         func = sge.Lambda(this=param.is_(sg.not_(NULL)), expressions=[param])
         return self.f.filter(transform, func)
 
-    @visit_node.register(ops.ArrayIndex)
     def visit_ArrayIndex(self, op, *, arg, index):
         return self.f.element_at(arg, index + 1)
 
-    @visit_node.register(ops.ArrayPosition)
     def visit_ArrayPosition(self, op, *, arg, other):
         return self.f.array_position(arg, other)
 
-    @visit_node.register(ops.ArrayRepeat)
     def visit_ArrayRepeat(self, op, *, arg, times):
         return self.f.flatten(self.f.array_repeat(arg, times))
 
-    @visit_node.register(ops.ArraySlice)
     def visit_ArraySlice(self, op, *, arg, start, stop):
         size = self.f.array_size(arg)
         start = self.if_(start < 0, self.if_(start < -size, 0, size + start), start)
@@ -387,7 +352,6 @@ class PySparkCompiler(SQLGlotCompiler):
         length = self.if_(stop < start, 0, stop - start)
         return self.f.slice(arg, start + 1, length)
 
-    @visit_node.register(ops.ArrayContains)
     def visit_ArrayContains(self, op, *, arg, other):
         return self.if_(
             arg.is_(NULL),
@@ -395,11 +359,9 @@ class PySparkCompiler(SQLGlotCompiler):
             self.f.coalesce(self.f.array_contains(arg, other), FALSE),
         )
 
-    @visit_node.register(ops.ArrayStringJoin)
     def visit_ArrayStringJoin(self, op, *, arg, sep):
         return self.f.concat_ws(sep, arg)
 
-    @visit_node.register(ops.StringFind)
     def visit_StringFind(self, op, *, arg, substr, start, end):
         if end is not None:
             raise com.UnsupportedOperationError(
@@ -413,11 +375,9 @@ class PySparkCompiler(SQLGlotCompiler):
 
         return self.f.instr(arg, substr)
 
-    @visit_node.register(ops.RegexReplace)
     def visit_RegexReplace(self, op, *, arg, pattern, replacement):
         return self.f.regexp_replace(arg, pattern, replacement)
 
-    @visit_node.register(ops.JSONGetItem)
     def visit_JSONGetItem(self, op, *, arg, index):
         if op.index.dtype.is_integer():
             fmt = "$[%s]"
@@ -426,7 +386,6 @@ class PySparkCompiler(SQLGlotCompiler):
         path = self.f.format_string(fmt, index)
         return self.f.get_json_object(arg, path)
 
-    @visit_node.register(Window)
     def visit_Window(self, op, *, func, group_by, order_by, **kwargs):
         if isinstance(op.func, ops.Analytic):
             # spark disallows specifying boundaries for lead/lag
@@ -437,11 +396,10 @@ class PySparkCompiler(SQLGlotCompiler):
                 order = sge.Order(expressions=[NULL])
             return sge.Window(this=func, partition_by=group_by, order=order)
         else:
-            return super().visit_node(
+            return super().visit_Window(
                 op, func=func, group_by=group_by, order_by=order_by, **kwargs
             )
 
-    @visit_node.register(ops.JoinLink)
     def visit_JoinLink(self, op, **kwargs):
         if op.how == "asof":
             raise com.UnsupportedOperationError(
@@ -452,12 +410,6 @@ class PySparkCompiler(SQLGlotCompiler):
             )
         return super().visit_JoinLink(op, **kwargs)
 
-    @visit_node.register(ops.RowID)
-    @visit_node.register(ops.TimestampBucket)
-    def visit_Undefined(self, op, **_):
-        raise com.OperationNotDefinedError(type(op).__name__)
-
-    @visit_node.register(ops.HexDigest)
     def visit_HexDigest(self, op, *, arg, how):
         if how == "md5":
             return self.f.md5(arg)
@@ -492,7 +444,6 @@ _SIMPLE_OPS = {
 for _op, _name in _SIMPLE_OPS.items():
     assert isinstance(type(_op), type), type(_op)
 
-    @PySparkCompiler.visit_node.register(_op)
     def _fmt(self, op, *, _name: str = _name, **kw):
         return self.f[_name](*kw.values())
 

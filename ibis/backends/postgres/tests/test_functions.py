@@ -672,7 +672,8 @@ def test_interactive_repr_shows_error(alltypes):
     with config.option_context("interactive", True):
         result = repr(expr)
 
-    assert "OperationNotDefinedError('BaseConvert')" in result
+    assert "OperationNotDefinedError" in result
+    assert "BaseConvert" in result
 
 
 def test_subquery(alltypes, df):

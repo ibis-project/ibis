@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import math
-from functools import partial, reduce, singledispatchmethod
+from functools import partial, reduce
 
 import sqlglot as sg
 import sqlglot.expressions as sge
@@ -43,6 +43,16 @@ class TrinoCompiler(SQLGlotCompiler):
     POS_INF = sg.func("infinity")
     NEG_INF = -POS_INF
 
+    UNSUPPORTED_OPERATIONS = frozenset(
+        (
+            ops.Quantile,
+            ops.MultiQuantile,
+            ops.Median,
+            ops.RowID,
+            ops.TimestampBucket,
+        )
+    )
+
     def _aggregate(self, funcname: str, *args, where):
         expr = self.f[funcname](*args)
         if where is not None:
@@ -60,11 +70,6 @@ class TrinoCompiler(SQLGlotCompiler):
             return None
         return spec
 
-    @singledispatchmethod
-    def visit_node(self, op, **kw):
-        return super().visit_node(op, **kw)
-
-    @visit_node.register(ops.Sample)
     def visit_Sample(
         self, op, *, parent, fraction: float, method: str, seed: int | None, **_
     ):
@@ -80,7 +85,6 @@ class TrinoCompiler(SQLGlotCompiler):
         )
         return sg.select(STAR).from_(sample)
 
-    @visit_node.register(ops.Correlation)
     def visit_Correlation(self, op, *, left, right, how, where):
         if how == "sample":
             raise com.UnsupportedOperationError(
@@ -94,7 +98,6 @@ class TrinoCompiler(SQLGlotCompiler):
 
         return self.agg.corr(left, right, where=where)
 
-    @visit_node.register(ops.Arbitrary)
     def visit_Arbitrary(self, op, *, arg, how, where):
         if how != "first":
             raise com.UnsupportedOperationError(
@@ -102,7 +105,6 @@ class TrinoCompiler(SQLGlotCompiler):
             )
         return self.agg.arbitrary(arg, where=where)
 
-    @visit_node.register(ops.BitXor)
     def visit_BitXor(self, op, *, arg, where):
         a, b = map(sg.to_identifier, "ab")
         input_fn = combine_fn = sge.Lambda(
@@ -110,11 +112,9 @@ class TrinoCompiler(SQLGlotCompiler):
         )
         return self.agg.reduce_agg(arg, 0, input_fn, combine_fn, where=where)
 
-    @visit_node.register(ops.ArrayRepeat)
     def visit_ArrayRepeat(self, op, *, arg, times):
         return self.f.flatten(self.f.repeat(arg, times))
 
-    @visit_node.register(ops.ArraySlice)
     def visit_ArraySlice(self, op, *, arg, start, stop):
         def _neg_idx_to_pos(n, idx):
             return self.if_(idx < 0, n + self.f.greatest(idx, -n), idx)
@@ -133,15 +133,12 @@ class TrinoCompiler(SQLGlotCompiler):
 
         return self.f.slice(arg, start + 1, stop - start)
 
-    @visit_node.register(ops.ArrayMap)
     def visit_ArrayMap(self, op, *, arg, param, body):
         return self.f.transform(arg, sge.Lambda(this=body, expressions=[param]))
 
-    @visit_node.register(ops.ArrayFilter)
     def visit_ArrayFilter(self, op, *, arg, param, body):
         return self.f.filter(arg, sge.Lambda(this=body, expressions=[param]))
 
-    @visit_node.register(ops.ArrayContains)
     def visit_ArrayContains(self, op, *, arg, other):
         return self.if_(
             arg.is_(sg.not_(NULL)),
@@ -149,33 +146,25 @@ class TrinoCompiler(SQLGlotCompiler):
             NULL,
         )
 
-    @visit_node.register(ops.JSONGetItem)
     def visit_JSONGetItem(self, op, *, arg, index):
         fmt = "%d" if op.index.dtype.is_integer() else '"%s"'
         return self.f.json_extract(arg, self.f.format(f"$[{fmt}]", index))
 
-    @visit_node.register(ops.DayOfWeekIndex)
     def visit_DayOfWeekIndex(self, op, *, arg):
         return self.cast(paren(self.f.day_of_week(arg) + 6) % 7, op.dtype)
 
-    @visit_node.register(ops.DayOfWeekName)
     def visit_DayOfWeekName(self, op, *, arg):
         return self.f.date_format(arg, "%W")
 
-    @visit_node.register(ops.StrRight)
     def visit_StrRight(self, op, *, arg, nchars):
         return self.f.substr(arg, -nchars)
 
-    @visit_node.register(ops.EndsWith)
     def visit_EndsWith(self, op, *, arg, end):
         return self.f.substr(arg, -self.f.length(end)).eq(end)
 
-    @visit_node.register(ops.Repeat)
     def visit_Repeat(self, op, *, arg, times):
         return self.f.array_join(self.f.repeat(arg, times), "")
 
-    @visit_node.register(ops.DateTruncate)
-    @visit_node.register(ops.TimestampTruncate)
     def visit_DateTimestampTruncate(self, op, *, arg, unit):
         _truncate_precisions = {
             # ms unit is not yet officially documented but it works
@@ -196,19 +185,18 @@ class TrinoCompiler(SQLGlotCompiler):
             )
         return self.f.date_trunc(precision, arg)
 
-    @visit_node.register(ops.DateFromYMD)
+    visit_DateTruncate = visit_TimestampTruncate = visit_DateTimestampTruncate
+
     def visit_DateFromYMD(self, op, *, year, month, day):
         return self.f.from_iso8601_date(
             self.f.format("%04d-%02d-%02d", year, month, day)
         )
 
-    @visit_node.register(ops.TimeFromHMS)
     def visit_TimeFromHMS(self, op, *, hours, minutes, seconds):
         return self.cast(
             self.f.format("%02d:%02d:%02d", hours, minutes, seconds), dt.time
         )
 
-    @visit_node.register(ops.TimestampFromYMDHMS)
     def visit_TimestampFromYMDHMS(
         self, op, *, year, month, day, hours, minutes, seconds
     ):
@@ -227,7 +215,6 @@ class TrinoCompiler(SQLGlotCompiler):
             dt.timestamp,
         )
 
-    @visit_node.register(ops.TimestampFromUNIX)
     def visit_TimestampFromUNIX(self, op, *, arg, unit):
         short = unit.short
         if short == "ms":
@@ -242,7 +229,6 @@ class TrinoCompiler(SQLGlotCompiler):
             raise com.UnsupportedOperationError(f"{unit!r} unit is not supported")
         return self.cast(res, op.dtype)
 
-    @visit_node.register(ops.StructColumn)
     def visit_StructColumn(self, op, *, names, values):
         return self.cast(sge.Struct(expressions=list(values)), op.dtype)
 
@@ -272,37 +258,30 @@ class TrinoCompiler(SQLGlotCompiler):
         else:
             return None
 
-    @visit_node.register(ops.Log)
     def visit_Log(self, op, *, arg, base):
         return self.f.log(base, arg, dialect=self.dialect)
 
-    @visit_node.register(ops.MapGet)
     def visit_MapGet(self, op, *, arg, key, default):
         return self.f.coalesce(self.f.element_at(arg, key), default)
 
-    @visit_node.register(ops.MapContains)
     def visit_MapContains(self, op, *, arg, key):
         return self.f.contains(self.f.map_keys(arg), key)
 
-    @visit_node.register(ops.ExtractFile)
-    def visit_ExtractProtocol(self, op, *, arg):
+    def visit_ExtractFile(self, op, *, arg):
         return self.f.concat_ws(
             "?",
             self.f.nullif(self.f.url_extract_path(arg), ""),
             self.f.nullif(self.f.url_extract_query(arg), ""),
         )
 
-    @visit_node.register(ops.ExtractQuery)
     def visit_ExtractQuery(self, op, *, arg, key):
         if key is None:
             return self.f.url_extract_query(arg)
         return self.f.url_extract_parameter(arg, key)
 
-    @visit_node.register(ops.Cot)
     def visit_Cot(self, op, *, arg):
         return 1.0 / self.f.tan(arg)
 
-    @visit_node.register(ops.StringAscii)
     def visit_StringAscii(self, op, *, arg):
         return self.f.codepoint(
             sge.Cast(
@@ -314,19 +293,15 @@ class TrinoCompiler(SQLGlotCompiler):
             )
         )
 
-    @visit_node.register(ops.ArrayStringJoin)
     def visit_ArrayStringJoin(self, op, *, sep, arg):
         return self.f.array_join(arg, sep)
 
-    @visit_node.register(ops.First)
     def visit_First(self, op, *, arg, where):
         return self.f.element_at(self.agg.array_agg(arg, where=where), 1)
 
-    @visit_node.register(ops.Last)
     def visit_Last(self, op, *, arg, where):
         return self.f.element_at(self.agg.array_agg(arg, where=where), -1)
 
-    @visit_node.register(ops.ArrayZip)
     def visit_ArrayZip(self, op, *, arg):
         max_zip_arguments = 5
         chunks = (
@@ -354,15 +329,11 @@ class TrinoCompiler(SQLGlotCompiler):
         assert all_n == len(op.dtype.value_type)
         return chunk
 
-    @visit_node.register(ops.ExtractMicrosecond)
     def visit_ExtractMicrosecond(self, op, *, arg):
         # trino only seems to store milliseconds, but the result of formatting
         # always pads the right with 000
         return self.cast(self.f.date_format(arg, "%f"), dt.int32)
 
-    @visit_node.register(ops.TimeDelta)
-    @visit_node.register(ops.DateDelta)
-    @visit_node.register(ops.TimestampDelta)
     def visit_TemporalDelta(self, op, *, part, left, right):
         # trino truncates _after_ the delta, whereas many other backends
         # truncate each operand
@@ -374,7 +345,8 @@ class TrinoCompiler(SQLGlotCompiler):
             dialect=dialect,
         )
 
-    @visit_node.register(ops.IntervalFromInteger)
+    visit_TimeDelta = visit_DateDelta = visit_TimestampDelta = visit_TemporalDelta
+
     def visit_IntervalFromInteger(self, op, *, arg, unit):
         unit = op.unit.short
         if unit in ("Y", "Q", "M", "W"):
@@ -385,8 +357,6 @@ class TrinoCompiler(SQLGlotCompiler):
             )
         )
 
-    @visit_node.register(ops.TimestampRange)
-    @visit_node.register(ops.IntegerRange)
     def visit_Range(self, op, *, start, stop, step):
         def zero_value(dtype):
             if dtype.is_interval():
@@ -420,11 +390,11 @@ class TrinoCompiler(SQLGlotCompiler):
             self.f.array(),
         )
 
-    @visit_node.register(ops.ArrayIndex)
+    visit_IntegerRange = visit_TimestampRange = visit_Range
+
     def visit_ArrayIndex(self, op, *, arg, index):
         return self.f.element_at(arg, index + 1)
 
-    @visit_node.register(ops.Cast)
     def visit_Cast(self, op, *, arg, to):
         from_ = op.arg.dtype
         if from_.is_integer() and to.is_interval():
@@ -437,33 +407,21 @@ class TrinoCompiler(SQLGlotCompiler):
             return self.f.from_unixtime(arg, to.timezone or "UTC")
         return super().visit_Cast(op, arg=arg, to=to)
 
-    @visit_node.register(ops.CountDistinctStar)
     def visit_CountDistinctStar(self, op, *, arg, where):
         make_col = partial(sg.column, table=arg.alias_or_name, quoted=self.quoted)
         row = self.f.row(*map(make_col, op.arg.schema.names))
         return self.agg.count(sge.Distinct(expressions=[row]), where=where)
 
-    @visit_node.register(ops.ArrayConcat)
     def visit_ArrayConcat(self, op, *, arg):
         return self.f.concat(*arg)
 
-    @visit_node.register(ops.StringContains)
     def visit_StringContains(self, op, *, haystack, needle):
         return self.f.strpos(haystack, needle) > 0
 
-    @visit_node.register(ops.RegexExtract)
     def visit_RegexpExtract(self, op, *, arg, pattern, index):
         # sqlglot doesn't support the third `group` argument for trino so work
         # around that limitation using an anonymous function
         return self.f.anon.regexp_extract(arg, pattern, index)
-
-    @visit_node.register(ops.Quantile)
-    @visit_node.register(ops.MultiQuantile)
-    @visit_node.register(ops.Median)
-    @visit_node.register(ops.RowID)
-    @visit_node.register(ops.TimestampBucket)
-    def visit_Undefined(self, op, **kw):
-        return super().visit_Undefined(op, **kw)
 
 
 _SIMPLE_OPS = {
@@ -508,13 +466,11 @@ for _op, _name in _SIMPLE_OPS.items():
     assert isinstance(type(_op), type), type(_op)
     if issubclass(_op, ops.Reduction):
 
-        @TrinoCompiler.visit_node.register(_op)
         def _fmt(self, op, *, _name: str = _name, where, **kw):
             return self.agg[_name](*kw.values(), where=where)
 
     else:
 
-        @TrinoCompiler.visit_node.register(_op)
         def _fmt(self, op, *, _name: str = _name, **kw):
             return self.f[_name](*kw.values())
 

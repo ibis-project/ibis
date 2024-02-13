@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import string
-from functools import partial, reduce, singledispatchmethod
+from functools import partial, reduce
 
 import sqlglot as sg
 import sqlglot.expressions as sge
@@ -32,6 +32,13 @@ class PostgresCompiler(SQLGlotCompiler):
     NAN = sge.Literal.number("'NaN'::double precision")
     POS_INF = sge.Literal.number("'Inf'::double precision")
     NEG_INF = sge.Literal.number("'-Inf'::double precision")
+    UNSUPPORTED_OPERATIONS = frozenset(
+        (
+            ops.RowID,
+            ops.TimeDelta,
+            ops.ArrayFlatten,
+        )
+    )
 
     def _aggregate(self, funcname: str, *args, where):
         expr = self.f[funcname](*args)
@@ -39,11 +46,6 @@ class PostgresCompiler(SQLGlotCompiler):
             return sge.Filter(this=expr, expression=sge.Where(this=where))
         return expr
 
-    @singledispatchmethod
-    def visit_node(self, op, **kwargs):
-        return super().visit_node(op, **kwargs)
-
-    @visit_node.register(ops.Mode)
     def visit_Mode(self, op, *, arg, where):
         expr = self.f.mode()
         expr = sge.WithinGroup(
@@ -66,15 +68,12 @@ class PostgresCompiler(SQLGlotCompiler):
         )
         return paren(agg)[0]
 
-    @visit_node.register(ops.ArgMin)
     def visit_ArgMin(self, op, *, arg, key, where):
         return self.visit_ArgMinMax(op, arg=arg, key=key, where=where, desc=False)
 
-    @visit_node.register(ops.ArgMax)
     def visit_ArgMax(self, op, *, arg, key, where):
         return self.visit_ArgMinMax(op, arg=arg, key=key, where=where, desc=True)
 
-    @visit_node.register(ops.Sum)
     def visit_Sum(self, op, *, arg, where):
         arg = (
             self.cast(self.cast(arg, dt.int32), op.dtype)
@@ -83,15 +82,12 @@ class PostgresCompiler(SQLGlotCompiler):
         )
         return self.agg.sum(arg, where=where)
 
-    @visit_node.register(ops.IsNan)
     def visit_IsNan(self, op, *, arg):
         return arg.eq(self.cast(sge.convert("NaN"), op.arg.dtype))
 
-    @visit_node.register(ops.IsInf)
     def visit_IsInf(self, op, *, arg):
         return arg.isin(self.POS_INF, self.NEG_INF)
 
-    @visit_node.register(ops.CountDistinctStar)
     def visit_CountDistinctStar(self, op, *, where, arg):
         # use a tuple because postgres doesn't accept COUNT(DISTINCT a, b, c, ...)
         #
@@ -103,7 +99,6 @@ class PostgresCompiler(SQLGlotCompiler):
         )
         return self.agg.count(sge.Distinct(expressions=[row]), where=where)
 
-    @visit_node.register(ops.Correlation)
     def visit_Correlation(self, op, *, left, right, how, where):
         if how == "sample":
             raise com.UnsupportedOperationError(
@@ -119,20 +114,15 @@ class PostgresCompiler(SQLGlotCompiler):
 
         return self.agg.corr(left, right, where=where)
 
-    @visit_node.register(ops.ApproxMedian)
     def visit_ApproxMedian(self, op, *, arg, where):
         return self.visit_Median(op, arg=arg, where=where)
 
-    @visit_node.register(ops.Median)
     def visit_Median(self, op, *, arg, where):
         return self.visit_Quantile(op, arg=arg, quantile=sge.convert(0.5), where=where)
 
-    @visit_node.register(ops.ApproxCountDistinct)
     def visit_ApproxCountDistinct(self, op, *, arg, where):
         return self.agg.count(sge.Distinct(expressions=[arg]), where=where)
 
-    @visit_node.register(ops.IntegerRange)
-    @visit_node.register(ops.TimestampRange)
     def visit_Range(self, op, *, start, stop, step):
         def zero_value(dtype):
             if dtype.is_interval():
@@ -170,15 +160,14 @@ class PostgresCompiler(SQLGlotCompiler):
             self.cast(self.f.array(), op.dtype),
         )
 
-    @visit_node.register(ops.StringConcat)
+    visit_IntegerRange = visit_TimestampRange = visit_Range
+
     def visit_StringConcat(self, op, *, arg):
         return reduce(lambda x, y: sge.DPipe(this=x, expression=y), arg)
 
-    @visit_node.register(ops.ArrayConcat)
     def visit_ArrayConcat(self, op, *, arg):
         return reduce(self.f.array_cat, map(partial(self.cast, to=op.dtype), arg))
 
-    @visit_node.register(ops.ArrayContains)
     def visit_ArrayContains(self, op, *, arg, other):
         arg_dtype = op.arg.dtype
         return sge.ArrayContains(
@@ -186,7 +175,6 @@ class PostgresCompiler(SQLGlotCompiler):
             expression=self.f.array(self.cast(other, arg_dtype.value_type)),
         )
 
-    @visit_node.register(ops.ArrayFilter)
     def visit_ArrayFilter(self, op, *, arg, body, param):
         return self.f.array(
             sg.select(sg.column(param, quoted=self.quoted))
@@ -194,13 +182,11 @@ class PostgresCompiler(SQLGlotCompiler):
             .where(body)
         )
 
-    @visit_node.register(ops.ArrayMap)
     def visit_ArrayMap(self, op, *, arg, body, param):
         return self.f.array(
             sg.select(body).from_(sge.Unnest(expressions=[arg], alias=param))
         )
 
-    @visit_node.register(ops.ArrayPosition)
     def visit_ArrayPosition(self, op, *, arg, other):
         t = sge.Unnest(expressions=[arg], alias="value", offset=True)
         idx = sg.column("ordinality")
@@ -209,13 +195,11 @@ class PostgresCompiler(SQLGlotCompiler):
             sg.select(idx).from_(t).where(value.eq(other)).limit(1).subquery(), 0
         )
 
-    @visit_node.register(ops.ArraySort)
     def visit_ArraySort(self, op, *, arg):
         return self.f.array(
             sg.select("x").from_(sge.Unnest(expressions=[arg], alias="x")).order_by("x")
         )
 
-    @visit_node.register(ops.ArrayRepeat)
     def visit_ArrayRepeat(self, op, *, arg, times):
         i = sg.to_identifier("i")
         length = self.f.cardinality(arg)
@@ -225,19 +209,16 @@ class PostgresCompiler(SQLGlotCompiler):
             )
         )
 
-    @visit_node.register(ops.ArrayDistinct)
     def visit_ArrayDistinct(self, op, *, arg):
         return self.if_(
             arg.is_(NULL), NULL, self.f.array(sg.select(self.f.explode(arg)).distinct())
         )
 
-    @visit_node.register(ops.ArrayUnion)
     def visit_ArrayUnion(self, op, *, left, right):
         return self.f.anon.array(
             sg.union(sg.select(self.f.explode(left)), sg.select(self.f.explode(right)))
         )
 
-    @visit_node.register(ops.ArrayIntersect)
     def visit_ArrayIntersect(self, op, *, left, right):
         return self.f.anon.array(
             sg.intersect(
@@ -245,7 +226,6 @@ class PostgresCompiler(SQLGlotCompiler):
             )
         )
 
-    @visit_node.register(ops.Log2)
     def visit_Log2(self, op, *, arg):
         return self.cast(
             self.f.log(
@@ -255,7 +235,6 @@ class PostgresCompiler(SQLGlotCompiler):
             op.dtype,
         )
 
-    @visit_node.register(ops.Log)
     def visit_Log(self, op, *, arg, base):
         if base is not None:
             if not op.base.dtype.is_decimal():
@@ -267,7 +246,6 @@ class PostgresCompiler(SQLGlotCompiler):
             arg = self.cast(arg, dt.decimal)
         return self.cast(self.f.log(base, arg), op.dtype)
 
-    @visit_node.register(ops.StructField)
     def visit_StructField(self, op, *, arg, field):
         idx = op.arg.dtype.names.index(field) + 1
         # postgres doesn't have anonymous structs :(
@@ -282,11 +260,9 @@ class PostgresCompiler(SQLGlotCompiler):
             op.dtype,
         )
 
-    @visit_node.register(ops.StructColumn)
     def visit_StructColumn(self, op, *, names, values):
         return self.f.row(*map(self.cast, values, op.dtype.types))
 
-    @visit_node.register(ops.ToJSONArray)
     def visit_ToJSONArray(self, op, *, arg):
         return self.if_(
             self.f.json_typeof(arg).eq(sge.convert("array")),
@@ -294,23 +270,18 @@ class PostgresCompiler(SQLGlotCompiler):
             NULL,
         )
 
-    @visit_node.register(ops.Map)
     def visit_Map(self, op, *, keys, values):
         return self.f.map(self.f.array(*keys), self.f.array(*values))
 
-    @visit_node.register(ops.MapLength)
     def visit_MapLength(self, op, *, arg):
         return self.f.cardinality(self.f.akeys(arg))
 
-    @visit_node.register(ops.MapGet)
     def visit_MapGet(self, op, *, arg, key, default):
         return self.if_(self.f.exist(arg, key), self.f.json_extract(arg, key), default)
 
-    @visit_node.register(ops.MapMerge)
     def visit_MapMerge(self, op, *, left, right):
         return sge.DPipe(this=left, expression=right)
 
-    @visit_node.register(ops.TypeOf)
     def visit_TypeOf(self, op, *, arg):
         typ = self.cast(self.f.pg_typeof(arg), dt.string)
         return self.if_(
@@ -319,7 +290,6 @@ class PostgresCompiler(SQLGlotCompiler):
             typ,
         )
 
-    @visit_node.register(ops.Round)
     def visit_Round(self, op, *, arg, digits):
         if digits is None:
             return self.f.round(arg)
@@ -329,7 +299,6 @@ class PostgresCompiler(SQLGlotCompiler):
             return result
         return self.cast(result, dt.float64)
 
-    @visit_node.register(ops.Modulus)
     def visit_Modulus(self, op, *, left, right):
         # postgres doesn't allow modulus of double precision values, so upcast and
         # then downcast later if necessary
@@ -343,24 +312,20 @@ class PostgresCompiler(SQLGlotCompiler):
         else:
             return result
 
-    @visit_node.register(ops.RegexExtract)
     def visit_RegexExtract(self, op, *, arg, pattern, index):
         pattern = self.f.concat("(", pattern, ")")
         matches = self.f.regexp_match(arg, pattern)
         return self.if_(arg.rlike(pattern), paren(matches)[index], NULL)
 
-    @visit_node.register(ops.FindInSet)
     def visit_FindInSet(self, op, *, needle, values):
         return self.f.coalesce(
             self.f.array_position(self.f.array(*values), needle),
             0,
         )
 
-    @visit_node.register(ops.StringContains)
     def visit_StringContains(self, op, *, haystack, needle):
         return self.f.strpos(haystack, needle) > 0
 
-    @visit_node.register(ops.EndsWith)
     def visit_EndsWith(self, op, *, arg, end):
         return self.f.right(arg, self.f.length(end)).eq(end)
 
@@ -380,7 +345,6 @@ class PostgresCompiler(SQLGlotCompiler):
             return self.cast(value, dt.json)
         return None
 
-    @visit_node.register(ops.TimestampFromYMDHMS)
     def visit_TimestampFromYMDHMS(
         self, op, *, year, month, day, hours, minutes, seconds
     ):
@@ -394,12 +358,10 @@ class PostgresCompiler(SQLGlotCompiler):
             self.cast(seconds, dt.float64),
         )
 
-    @visit_node.register(ops.DateFromYMD)
     def visit_DateFromYMD(self, op, *, year, month, day):
         to_int32 = partial(self.cast, to=dt.int32)
         return self.f.datefromparts(to_int32(year), to_int32(month), to_int32(day))
 
-    @visit_node.register(ops.TimestampBucket)
     def visit_TimestampBucket(self, op, *, arg, interval, offset):
         origin = self.f.make_timestamp(
             *map(partial(self.cast, to=dt.int32), (1970, 1, 1, 0, 0, 0))
@@ -410,46 +372,36 @@ class PostgresCompiler(SQLGlotCompiler):
 
         return self.f.date_bin(interval, arg, origin)
 
-    @visit_node.register(ops.DayOfWeekIndex)
     def visit_DayOfWeekIndex(self, op, *, arg):
         return self.cast(self.f.extract("dow", arg) + 6, dt.int16) % 7
 
-    @visit_node.register(ops.DayOfWeekName)
     def visit_DayOfWeekName(self, op, *, arg):
         return self.f.trim(self.f.to_char(arg, "Day"), string.whitespace)
 
-    @visit_node.register(ops.ExtractSecond)
     def visit_ExtractSecond(self, op, *, arg):
         return self.cast(self.f.floor(self.f.extract("second", arg)), op.dtype)
 
-    @visit_node.register(ops.ExtractMillisecond)
     def visit_ExtractMillisecond(self, op, *, arg):
         return self.cast(
             self.f.floor(self.f.extract("millisecond", arg)) % 1_000, op.dtype
         )
 
-    @visit_node.register(ops.ExtractMicrosecond)
     def visit_ExtractMicrosecond(self, op, *, arg):
         return self.f.extract("microsecond", arg) % 1_000_000
 
-    @visit_node.register(ops.ExtractDayOfYear)
     def visit_ExtractDayOfYear(self, op, *, arg):
         return self.f.extract("doy", arg)
 
-    @visit_node.register(ops.ExtractWeekOfYear)
     def visit_ExtractWeekOfYear(self, op, *, arg):
         return self.f.extract("week", arg)
 
-    @visit_node.register(ops.ExtractEpochSeconds)
     def visit_ExtractEpochSeconds(self, op, *, arg):
         return self.f.extract("epoch", arg)
 
-    @visit_node.register(ops.ArrayIndex)
     def visit_ArrayIndex(self, op, *, arg, index):
         index = self.if_(index < 0, self.f.cardinality(arg) + index, index)
         return paren(arg)[index + 1]
 
-    @visit_node.register(ops.ArraySlice)
     def visit_ArraySlice(self, op, *, arg, start, stop):
         neg_to_pos_index = lambda n, index: self.if_(index < 0, n + index, index)
 
@@ -468,7 +420,6 @@ class PostgresCompiler(SQLGlotCompiler):
         slice_expr = sge.Slice(this=start + 1, expression=stop)
         return paren(arg)[slice_expr]
 
-    @visit_node.register(ops.IntervalFromInteger)
     def visit_IntervalFromInteger(self, op, *, arg, unit):
         plural = unit.plural
         if plural == "minutes":
@@ -493,8 +444,6 @@ class PostgresCompiler(SQLGlotCompiler):
 
         return self.f.make_interval(sge.Kwarg(this=key, expression=arg))
 
-    @visit_node.register(ops.Cast)
-    @visit_node.register(ops.TryCast)
     def visit_Cast(self, op, *, arg, to):
         from_ = op.arg.dtype
 
@@ -519,11 +468,7 @@ class PostgresCompiler(SQLGlotCompiler):
 
         return self.cast(arg, op.to)
 
-    @visit_node.register(ops.RowID)
-    @visit_node.register(ops.TimeDelta)
-    @visit_node.register(ops.ArrayFlatten)
-    def visit_Undefined(self, op, **_):
-        raise com.OperationNotDefinedError(type(op).__name__)
+    visit_TryCast = visit_Cast
 
 
 _SIMPLE_OPS = {
@@ -589,13 +534,11 @@ for _op, _name in _SIMPLE_OPS.items():
     assert isinstance(type(_op), type), type(_op)
     if issubclass(_op, ops.Reduction):
 
-        @PostgresCompiler.visit_node.register(_op)
         def _fmt(self, op, *, _name: str = _name, where, **kw):
             return self.agg[_name](*kw.values(), where=where)
 
     else:
 
-        @PostgresCompiler.visit_node.register(_op)
         def _fmt(self, op, *, _name: str = _name, **kw):
             return self.f[_name](*kw.values())
 

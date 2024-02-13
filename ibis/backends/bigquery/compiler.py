@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import re
-from functools import singledispatchmethod
 
 import sqlglot as sg
 import sqlglot.expressions as sge
@@ -42,6 +41,29 @@ class BigQueryCompiler(SQLGlotCompiler):
         *SQLGlotCompiler.rewrites,
     )
 
+    UNSUPPORTED_OPERATIONS = frozenset(
+        (
+            ops.CountDistinctStar,
+            ops.DateDiff,
+            ops.ExtractAuthority,
+            ops.ExtractFile,
+            ops.ExtractFragment,
+            ops.ExtractHost,
+            ops.ExtractPath,
+            ops.ExtractProtocol,
+            ops.ExtractQuery,
+            ops.ExtractUserInfo,
+            ops.FindInSet,
+            ops.Median,
+            ops.Quantile,
+            ops.MultiQuantile,
+            ops.RegexSplit,
+            ops.RowID,
+            ops.TimestampBucket,
+            ops.TimestampDiff,
+        )
+    )
+
     NAN = sge.Cast(
         this=sge.convert("NaN"), to=sge.DataType(this=sge.DataType.Type.DOUBLE)
     )
@@ -71,21 +93,14 @@ class BigQueryCompiler(SQLGlotCompiler):
             return None
         return spec
 
-    @singledispatchmethod
-    def visit_node(self, op, **kw):
-        return super().visit_node(op, **kw)
-
-    @visit_node.register(ops.GeoXMax)
-    @visit_node.register(ops.GeoXMin)
-    @visit_node.register(ops.GeoYMax)
-    @visit_node.register(ops.GeoYMin)
     def visit_BoundingBox(self, op, *, arg):
         name = type(op).__name__[len("Geo") :].lower()
         return sge.Dot(
             this=self.f.st_boundingbox(arg), expression=sg.to_identifier(name)
         )
 
-    @visit_node.register(ops.GeoSimplify)
+    visit_GeoXMax = visit_GeoXMin = visit_GeoYMax = visit_GeoYMin = visit_BoundingBox
+
     def visit_GeoSimplify(self, op, *, arg, tolerance, preserve_collapsed):
         if (
             not isinstance(op.preserve_collapsed, ops.Literal)
@@ -97,27 +112,21 @@ class BigQueryCompiler(SQLGlotCompiler):
             )
         return self.f.st_simplify(arg, tolerance)
 
-    @visit_node.register(ops.ApproxMedian)
     def visit_ApproxMedian(self, op, *, arg, where):
         return self.agg.approx_quantiles(arg, 2, where=where)[self.f.offset(1)]
 
-    @visit_node.register(ops.Pi)
     def visit_Pi(self, op):
         return self.f.acos(-1)
 
-    @visit_node.register(ops.E)
     def visit_E(self, op):
         return self.f.exp(1)
 
-    @visit_node.register(ops.TimeDelta)
     def visit_TimeDelta(self, op, *, left, right, part):
         return self.f.time_diff(left, right, part, dialect=self.dialect)
 
-    @visit_node.register(ops.DateDelta)
     def visit_DateDelta(self, op, *, left, right, part):
         return self.f.date_diff(left, right, part, dialect=self.dialect)
 
-    @visit_node.register(ops.TimestampDelta)
     def visit_TimestampDelta(self, op, *, left, right, part):
         left_tz = op.left.dtype.timezone
         right_tz = op.right.dtype.timezone
@@ -131,27 +140,22 @@ class BigQueryCompiler(SQLGlotCompiler):
             "timestamp difference with mixed timezone/timezoneless values is not implemented"
         )
 
-    @visit_node.register(ops.GroupConcat)
     def visit_GroupConcat(self, op, *, arg, sep, where):
         if where is not None:
             arg = self.if_(where, arg, NULL)
         return self.f.string_agg(arg, sep)
 
-    @visit_node.register(ops.FloorDivide)
     def visit_FloorDivide(self, op, *, left, right):
         return self.cast(self.f.floor(self.f.ieee_divide(left, right)), op.dtype)
 
-    @visit_node.register(ops.Log2)
     def visit_Log2(self, op, *, arg):
         return self.f.log(arg, 2, dialect=self.dialect)
 
-    @visit_node.register(ops.Log)
     def visit_Log(self, op, *, arg, base):
         if base is None:
             return self.f.ln(arg)
         return self.f.log(arg, base, dialect=self.dialect)
 
-    @visit_node.register(ops.ArrayRepeat)
     def visit_ArrayRepeat(self, op, *, arg, times):
         start = step = 1
         array_length = self.f.array_length(arg)
@@ -165,13 +169,11 @@ class BigQueryCompiler(SQLGlotCompiler):
             sg.select(arg[self.f.safe_ordinal(idx)]).from_(self._unnest(series, as_=i))
         )
 
-    @visit_node.register(ops.Capitalize)
     def visit_Capitalize(self, op, *, arg):
         return self.f.concat(
             self.f.upper(self.f.substr(arg, 1, 1)), self.f.lower(self.f.substr(arg, 2))
         )
 
-    @visit_node.register(ops.NthValue)
     def visit_NthValue(self, op, *, arg, nth):
         if not isinstance(op.nth, ops.Literal):
             raise com.UnsupportedOperationError(
@@ -179,33 +181,23 @@ class BigQueryCompiler(SQLGlotCompiler):
             )
         return self.f.nth_value(arg, nth)
 
-    @visit_node.register(ops.StrRight)
     def visit_StrRight(self, op, *, arg, nchars):
         return self.f.substr(arg, -self.f.least(self.f.length(arg), nchars))
 
-    @visit_node.register(ops.StringJoin)
     def visit_StringJoin(self, op, *, arg, sep):
         return self.f.array_to_string(self.f.array(*arg), sep)
 
-    @visit_node.register(ops.DayOfWeekIndex)
     def visit_DayOfWeekIndex(self, op, *, arg):
         return self.f.mod(self.f.extract(self.v.dayofweek, arg) + 5, 7)
 
-    @visit_node.register(ops.DayOfWeekName)
     def visit_DayOfWeekName(self, op, *, arg):
         return self.f.initcap(sge.Cast(this=arg, to="STRING FORMAT 'DAY'"))
 
-    @visit_node.register(ops.StringToTimestamp)
     def visit_StringToTimestamp(self, op, *, arg, format_str):
         if (timezone := op.dtype.timezone) is not None:
             return self.f.parse_timestamp(format_str, arg, timezone)
         return self.f.parse_datetime(format_str, arg)
 
-    @visit_node.register(ops.Floor)
-    def visit_Floor(self, op, *, arg):
-        return self.cast(self.f.floor(arg), op.dtype)
-
-    @visit_node.register(ops.ArrayCollect)
     def visit_ArrayCollect(self, op, *, arg, where):
         if where is not None:
             arg = self.if_(where, arg, NULL)
@@ -214,7 +206,6 @@ class BigQueryCompiler(SQLGlotCompiler):
     def _neg_idx_to_pos(self, arg, idx):
         return self.if_(idx < 0, self.f.array_length(arg) + idx, idx)
 
-    @visit_node.register(ops.ArraySlice)
     def visit_ArraySlice(self, op, *, arg, start, stop):
         index = sg.to_identifier("bq_arr_slice")
         cond = [index >= self._neg_idx_to_pos(arg, start)]
@@ -227,11 +218,9 @@ class BigQueryCompiler(SQLGlotCompiler):
             sg.select(el).from_(self._unnest(arg, as_=el, offset=index)).where(*cond)
         )
 
-    @visit_node.register(ops.ArrayIndex)
     def visit_ArrayIndex(self, op, *, arg, index):
         return arg[self.f.safe_offset(index)]
 
-    @visit_node.register(ops.ArrayContains)
     def visit_ArrayContains(self, op, *, arg, other):
         name = sg.to_identifier(util.gen_name("bq_arr_contains"))
         return sge.Exists(
@@ -240,11 +229,9 @@ class BigQueryCompiler(SQLGlotCompiler):
             .where(name.eq(other))
         )
 
-    @visit_node.register(ops.StringContains)
     def visit_StringContains(self, op, *, haystack, needle):
         return self.f.strpos(haystack, needle) > 0
 
-    @visit_node.register(ops.StringFind)
     def visti_StringFind(self, op, *, arg, substr, start, end):
         if start is not None:
             raise NotImplementedError(
@@ -294,7 +281,6 @@ class BigQueryCompiler(SQLGlotCompiler):
             return sge.convert(str(value))
         return None
 
-    @visit_node.register(ops.IntervalFromInteger)
     def visit_IntervalFromInteger(self, op, *, arg, unit):
         if unit == IntervalUnit.NANOSECOND:
             raise com.UnsupportedOperationError(
@@ -302,7 +288,6 @@ class BigQueryCompiler(SQLGlotCompiler):
             )
         return sge.Interval(this=arg, unit=self.v[unit.singular])
 
-    @visit_node.register(ops.Strftime)
     def visit_Strftime(self, op, *, arg, format_str):
         arg_dtype = op.arg.dtype
         if arg_dtype.is_timestamp():
@@ -316,12 +301,10 @@ class BigQueryCompiler(SQLGlotCompiler):
             assert arg_dtype.is_time(), arg_dtype
             return self.f.format_time(format_str, arg)
 
-    @visit_node.register(ops.IntervalMultiply)
     def visit_IntervalMultiply(self, op, *, left, right):
         unit = self.v[op.left.dtype.resolution.upper()]
         return sge.Interval(this=self.f.extract(unit, left) * right, unit=unit)
 
-    @visit_node.register(ops.TimestampFromUNIX)
     def visit_TimestampFromUNIX(self, op, *, arg, unit):
         unit = op.unit
         if unit == TimestampUnit.SECOND:
@@ -337,7 +320,6 @@ class BigQueryCompiler(SQLGlotCompiler):
         else:
             raise com.UnsupportedOperationError(f"Unit not supported: {unit}")
 
-    @visit_node.register(ops.Cast)
     def visit_Cast(self, op, *, arg, to):
         from_ = op.arg.dtype
         if from_.is_timestamp() and to.is_integer():
@@ -360,34 +342,22 @@ class BigQueryCompiler(SQLGlotCompiler):
             return self.cast(self.f.trunc(arg), dt.int64)
         return super().visit_Cast(op, arg=arg, to=to)
 
-    @visit_node.register(ops.JSONGetItem)
     def visit_JSONGetItem(self, op, *, arg, index):
         return arg[index]
 
-    @visit_node.register(ops.ExtractEpochSeconds)
     def visit_ExtractEpochSeconds(self, op, *, arg):
         return self.f.unix_seconds(arg)
 
-    @visit_node.register(ops.ExtractWeekOfYear)
     def visit_ExtractWeekOfYear(self, op, *, arg):
         return self.f.extract(self.v.isoweek, arg)
 
-    @visit_node.register(ops.ExtractYear)
-    @visit_node.register(ops.ExtractQuarter)
-    @visit_node.register(ops.ExtractMonth)
-    @visit_node.register(ops.ExtractDay)
-    @visit_node.register(ops.ExtractDayOfYear)
-    @visit_node.register(ops.ExtractHour)
-    @visit_node.register(ops.ExtractMinute)
-    @visit_node.register(ops.ExtractSecond)
-    @visit_node.register(ops.ExtractMicrosecond)
-    @visit_node.register(ops.ExtractMillisecond)
-    def visit_ExtractDateField(self, op, *, arg):
-        name = type(op).__name__[len("Extract") :].upper()
-        return self.f.extract(self.v[name], arg)
+    def visit_ExtractMillisecond(self, op, *, arg):
+        return self.f.extract(self.v.millisecond, arg)
 
-    @visit_node.register(ops.TimestampTruncate)
-    def visit_Timestamp(self, op, *, arg, unit):
+    def visit_ExtractMicrosecond(self, op, *, arg):
+        return self.f.extract(self.v.microsecond, arg)
+
+    def visit_TimestampTruncate(self, op, *, arg, unit):
         if unit == IntervalUnit.NANOSECOND:
             raise com.UnsupportedOperationError(
                 f"BigQuery does not support truncating {op.arg.dtype} values to unit {unit!r}"
@@ -398,7 +368,6 @@ class BigQueryCompiler(SQLGlotCompiler):
             unit = unit.name
         return self.f.timestamp_trunc(arg, self.v[unit], dialect=self.dialect)
 
-    @visit_node.register(ops.DateTruncate)
     def visit_DateTruncate(self, op, *, arg, unit):
         if unit == DateUnit.WEEK:
             unit = "WEEK(MONDAY)"
@@ -406,7 +375,6 @@ class BigQueryCompiler(SQLGlotCompiler):
             unit = unit.name
         return self.f.date_trunc(arg, self.v[unit], dialect=self.dialect)
 
-    @visit_node.register(ops.TimeTruncate)
     def visit_TimeTruncate(self, op, *, arg, unit):
         if unit == TimeUnit.NANOSECOND:
             raise com.UnsupportedOperationError(
@@ -454,11 +422,9 @@ class BigQueryCompiler(SQLGlotCompiler):
         )
         return self.if_(condition, self.f.array(inner), self.f.array())
 
-    @visit_node.register(ops.IntegerRange)
     def visit_IntegerRange(self, op, *, start, stop, step):
         return self._make_range(self.f.generate_array, start, stop, step, op.step.dtype)
 
-    @visit_node.register(ops.TimestampRange)
     def visit_TimestampRange(self, op, *, start, stop, step):
         if op.start.dtype.timezone is None or op.stop.dtype.timezone is None:
             raise com.IbisTypeError(
@@ -468,7 +434,6 @@ class BigQueryCompiler(SQLGlotCompiler):
             self.f.generate_timestamp_array, start, stop, step, op.step.dtype
         )
 
-    @visit_node.register(ops.First)
     def visit_First(self, op, *, arg, where):
         if where is not None:
             arg = self.if_(where, arg, NULL)
@@ -477,15 +442,13 @@ class BigQueryCompiler(SQLGlotCompiler):
         )
         return array[self.f.safe_offset(0)]
 
-    @visit_node.register(ops.Last)
     def visit_Last(self, op, *, arg, where):
         if where is not None:
             arg = self.if_(where, arg, NULL)
         array = self.f.array_reverse(self.f.array_agg(sge.IgnoreNulls(this=arg)))
         return array[self.f.safe_offset(0)]
 
-    @visit_node.register(ops.Arbitrary)
-    def _arbitrary(self, op, *, arg, how, where):
+    def visit_Arbitrary(self, op, *, arg, how, where):
         if how != "first":
             raise com.UnsupportedOperationError(
                 f"{how!r} value not supported for arbitrary in BigQuery"
@@ -493,17 +456,14 @@ class BigQueryCompiler(SQLGlotCompiler):
 
         return self.agg.any_value(arg, where=where)
 
-    @visit_node.register(ops.ArrayFilter)
     def visit_ArrayFilter(self, op, *, arg, body, param):
         return self.f.array(
             sg.select(param).from_(self._unnest(arg, as_=param)).where(body)
         )
 
-    @visit_node.register(ops.ArrayMap)
     def visit_ArrayMap(self, op, *, arg, body, param):
         return self.f.array(sg.select(body).from_(self._unnest(arg, as_=param)))
 
-    @visit_node.register(ops.ArrayZip)
     def visit_ArrayZip(self, op, *, arg):
         lengths = [self.f.array_length(arr) - 1 for arr in arg]
         idx = sg.to_identifier(util.gen_name("bq_arr_idx"))
@@ -518,7 +478,6 @@ class BigQueryCompiler(SQLGlotCompiler):
             sge.Select(kind="STRUCT", expressions=struct_fields).from_(indices)
         )
 
-    @visit_node.register(ops.ArrayPosition)
     def visit_ArrayPosition(self, op, *, arg, other):
         name = sg.to_identifier(util.gen_name("bq_arr"))
         idx = sg.to_identifier(util.gen_name("bq_arr_idx"))
@@ -532,27 +491,23 @@ class BigQueryCompiler(SQLGlotCompiler):
         alias = sge.TableAlias(columns=[sg.to_identifier(as_)])
         return sge.Unnest(expressions=[expression], alias=alias, offset=offset)
 
-    @visit_node.register(ops.ArrayRemove)
     def visit_ArrayRemove(self, op, *, arg, other):
         name = sg.to_identifier(util.gen_name("bq_arr"))
         unnest = self._unnest(arg, as_=name)
         return self.f.array(sg.select(name).from_(unnest).where(name.neq(other)))
 
-    @visit_node.register(ops.ArrayDistinct)
     def visit_ArrayDistinct(self, op, *, arg):
         name = util.gen_name("bq_arr")
         return self.f.array(
             sg.select(name).distinct().from_(self._unnest(arg, as_=name))
         )
 
-    @visit_node.register(ops.ArraySort)
     def visit_ArraySort(self, op, *, arg):
         name = util.gen_name("bq_arr")
         return self.f.array(
             sg.select(name).from_(self._unnest(arg, as_=name)).order_by(name)
         )
 
-    @visit_node.register(ops.ArrayUnion)
     def visit_ArrayUnion(self, op, *, left, right):
         lname = util.gen_name("bq_arr_left")
         rname = util.gen_name("bq_arr_right")
@@ -560,7 +515,6 @@ class BigQueryCompiler(SQLGlotCompiler):
         rhs = sg.select(rname).from_(self._unnest(right, as_=rname))
         return self.f.array(sg.union(lhs, rhs, distinct=True))
 
-    @visit_node.register(ops.ArrayIntersect)
     def visit_ArrayIntersect(self, op, *, left, right):
         lname = util.gen_name("bq_arr_left")
         rname = util.gen_name("bq_arr_right")
@@ -568,7 +522,6 @@ class BigQueryCompiler(SQLGlotCompiler):
         rhs = sg.select(rname).from_(self._unnest(right, as_=rname))
         return self.f.array(sg.intersect(lhs, rhs, distinct=True))
 
-    @visit_node.register(ops.Substring)
     def visit_Substring(self, op, *, arg, start, length):
         if isinstance(op.length, ops.Literal) and (value := op.length.value) < 0:
             raise com.IbisInputError(
@@ -579,7 +532,6 @@ class BigQueryCompiler(SQLGlotCompiler):
         if_neg = self.f.substr(arg, self.f.length(arg) + start + 1, *suffix)
         return self.if_(start >= 0, if_pos, if_neg)
 
-    @visit_node.register(ops.RegexExtract)
     def visit_RegexExtract(self, op, *, arg, pattern, index):
         matches = self.f.regexp_contains(arg, pattern)
         nonzero_index_replace = self.f.regexp_replace(
@@ -593,8 +545,6 @@ class BigQueryCompiler(SQLGlotCompiler):
         extract = self.if_(index.eq(0), zero_index_replace, nonzero_index_replace)
         return self.if_(matches, extract, NULL)
 
-    @visit_node.register(ops.TimestampAdd)
-    @visit_node.register(ops.TimestampSub)
     def visit_TimestampAddSub(self, op, *, left, right):
         if not isinstance(right, sge.Interval):
             raise com.OperationNotDefinedError(
@@ -610,8 +560,8 @@ class BigQueryCompiler(SQLGlotCompiler):
         funcname = f"TIMESTAMP_{opname.upper()}"
         return self.f.anon[funcname](left, right)
 
-    @visit_node.register(ops.DateAdd)
-    @visit_node.register(ops.DateSub)
+    visit_TimestampAdd = visit_TimestampSub = visit_TimestampAddSub
+
     def visit_DateAddSub(self, op, *, left, right):
         if not isinstance(right, sge.Interval):
             raise com.OperationNotDefinedError(
@@ -626,7 +576,8 @@ class BigQueryCompiler(SQLGlotCompiler):
         funcname = f"DATE_{opname.upper()}"
         return self.f.anon[funcname](left, right)
 
-    @visit_node.register(ops.Covariance)
+    visit_DateAdd = visit_DateSub = visit_DateAddSub
+
     def visit_Covariance(self, op, *, left, right, how, where):
         if where is not None:
             left = self.if_(where, left, NULL)
@@ -642,7 +593,6 @@ class BigQueryCompiler(SQLGlotCompiler):
         assert how in ("POP", "SAMP"), 'how not in ("POP", "SAMP")'
         return self.agg[f"COVAR_{how}"](left, right, where=where)
 
-    @visit_node.register(ops.Correlation)
     def visit_Correlation(self, op, *, left, right, how, where):
         if how == "sample":
             raise ValueError(f"Correlation with how={how!r} is not supported.")
@@ -659,7 +609,6 @@ class BigQueryCompiler(SQLGlotCompiler):
 
         return self.agg.corr(left, right, where=where)
 
-    @visit_node.register(ops.TypeOf)
     def visit_TypeOf(self, op, *, arg):
         name = sg.to_identifier(util.gen_name("bq_typeof"))
         from_ = self._unnest(self.f.array(self.f.format("%T", arg)), as_=name)
@@ -689,11 +638,9 @@ class BigQueryCompiler(SQLGlotCompiler):
         case = sge.Case(ifs=ifs, default=sge.convert("UNKNOWN"))
         return sg.select(case).from_(from_).subquery()
 
-    @visit_node.register(ops.Xor)
     def visit_Xor(self, op, *, left, right):
         return sg.or_(sg.and_(left, sg.not_(right)), sg.and_(sg.not_(left), right))
 
-    @visit_node.register(ops.HashBytes)
     def visit_HashBytes(self, op, *, arg, how):
         if how not in ("md5", "sha1", "sha256", "sha512"):
             raise NotImplementedError(how)
@@ -703,46 +650,21 @@ class BigQueryCompiler(SQLGlotCompiler):
     def _gen_valid_name(name: str) -> str:
         return "_".join(_NAME_REGEX.findall(name)) or "tmp"
 
-    @visit_node.register(ops.CountStar)
     def visit_CountStar(self, op, *, arg, where):
         if where is not None:
             return self.f.countif(where)
         return self.f.count(STAR)
 
-    @visit_node.register(ops.Degrees)
     def visit_Degrees(self, op, *, arg):
         return paren(180 * arg / self.f.acos(-1))
 
-    @visit_node.register(ops.Radians)
     def visit_Radians(self, op, *, arg):
         return paren(self.f.acos(-1) * arg / 180)
 
-    @visit_node.register(ops.CountDistinct)
     def visit_CountDistinct(self, op, *, arg, where):
         if where is not None:
             arg = self.if_(where, arg, NULL)
         return self.f.count(sge.Distinct(expressions=[arg]))
-
-    @visit_node.register(ops.CountDistinctStar)
-    @visit_node.register(ops.DateDiff)
-    @visit_node.register(ops.ExtractAuthority)
-    @visit_node.register(ops.ExtractFile)
-    @visit_node.register(ops.ExtractFragment)
-    @visit_node.register(ops.ExtractHost)
-    @visit_node.register(ops.ExtractPath)
-    @visit_node.register(ops.ExtractProtocol)
-    @visit_node.register(ops.ExtractQuery)
-    @visit_node.register(ops.ExtractUserInfo)
-    @visit_node.register(ops.FindInSet)
-    @visit_node.register(ops.Median)
-    @visit_node.register(ops.Quantile)
-    @visit_node.register(ops.MultiQuantile)
-    @visit_node.register(ops.RegexSplit)
-    @visit_node.register(ops.RowID)
-    @visit_node.register(ops.TimestampBucket)
-    @visit_node.register(ops.TimestampDiff)
-    def visit_Undefined(self, op, **_):
-        raise com.OperationNotDefinedError(type(op).__name__)
 
 
 _SIMPLE_OPS = {
@@ -806,13 +728,11 @@ for _op, _name in _SIMPLE_OPS.items():
     assert isinstance(type(_op), type), type(_op)
     if issubclass(_op, ops.Reduction):
 
-        @BigQueryCompiler.visit_node.register(_op)
         def _fmt(self, op, *, _name: str = _name, where, **kw):
             return self.agg[_name](*kw.values(), where=where)
 
     else:
 
-        @BigQueryCompiler.visit_node.register(_op)
         def _fmt(self, op, *, _name: str = _name, **kw):
             return self.f[_name](*kw.values())
 

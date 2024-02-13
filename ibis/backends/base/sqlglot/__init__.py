@@ -35,10 +35,12 @@ class SQLGlotBackend(BaseBackend):
 
     @classmethod
     def has_operation(cls, operation: type[ops.Value]) -> bool:
-        # singledispatchmethod overrides `__get__` so we can't directly access
-        # the dispatcher
-        dispatcher = cls.compiler.visit_node.register.__self__.dispatcher
-        return dispatcher.dispatch(operation) is not dispatcher.dispatch(object)
+        compiler = cls.compiler
+        method = getattr(compiler, f"visit_{operation.__name__}", None)
+        return method is not None and method not in (
+            compiler.visit_Undefined,
+            compiler.visit_Unsupported,
+        )
 
     def _fetch_from_cursor(self, cursor, schema: sch.Schema) -> pd.DataFrame:
         import pandas as pd
