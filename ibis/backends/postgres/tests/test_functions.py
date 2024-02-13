@@ -243,14 +243,6 @@ def test_string_contains(con, haystack, needle, expected):
     assert con.execute(expr) == expected
 
 
-@pytest.mark.parametrize(
-    ("value", "expected"),
-    [("foo bar foo", "Foo Bar Foo"), ("foobar Foo", "Foobar Foo")],
-)
-def test_capitalize(con, value, expected):
-    assert con.execute(L(value).capitalize()) == expected
-
-
 def test_repeat(con):
     expr = L("bar ").repeat(3)
     assert con.execute(expr) == "bar bar bar "

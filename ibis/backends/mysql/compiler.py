@@ -291,11 +291,6 @@ class MySQLCompiler(SQLGlotCompiler):
             return self.f.locate(substr, arg, start + 1)
         return self.f.locate(substr, arg)
 
-    def visit_Capitalize(self, op, *, arg):
-        return self.f.concat(
-            self.f.upper(self.f.left(arg, 1)), self.f.lower(self.f.substr(arg, 2))
-        )
-
     def visit_LRStrip(self, op, *, arg, position):
         return reduce(
             lambda arg, char: self.f.trim(this=arg, position=position, expression=char),

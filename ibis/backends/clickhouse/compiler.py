@@ -452,11 +452,6 @@ class ClickHouseCompiler(SQLGlotCompiler):
             delimiter, self.cast(arg, dt.String(nullable=False))
         )
 
-    def visit_Capitalize(self, op, *, arg):
-        return self.f.concat(
-            self.f.upper(self.f.substr(arg, 1, 1)), self.f.lower(self.f.substr(arg, 2))
-        )
-
     def visit_GroupConcat(self, op, *, arg, sep, where):
         call = self.agg.groupArray(arg, where=where)
         return self.if_(self.f.empty(call), NULL, self.f.arrayStringConcat(call, sep))

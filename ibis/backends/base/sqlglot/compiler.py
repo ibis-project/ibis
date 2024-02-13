@@ -23,6 +23,7 @@ from ibis.backends.base.sqlglot.rewrites import (
     add_order_by_to_empty_ranking_window_functions,
     empty_in_values_right_side,
     one_to_zero_index,
+    rewrite_capitalize,
     sqlize,
 )
 from ibis.expr.operations.udf import InputType
@@ -179,6 +180,7 @@ class SQLGlotCompiler(abc.ABC):
         one_to_zero_index,
         add_one_to_nth_value_input,
         replace_bucket,
+        rewrite_capitalize,
     )
     """A sequence of rewrites to apply to the expression tree before compilation."""
 

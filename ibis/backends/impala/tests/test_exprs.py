@@ -286,7 +286,6 @@ def test_decimal_builtins_2(con, func, expected):
         (L("   a   ").strip(), "a"),
         (L("   a   ").lstrip(), "a   "),
         (L("   a   ").rstrip(), "   a"),
-        (L("abcd").capitalize(), "Abcd"),
         (L("abcd").substr(0, 2), "ab"),
         (L("abcd").left(2), "ab"),
         (L("abcd").right(2), "cd"),

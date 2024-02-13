@@ -124,16 +124,6 @@ class DruidCompiler(SQLGlotCompiler):
     def visit_EndsWith(self, op, *, arg, end):
         return self.f.right(arg, self.f.length(end)).eq(end)
 
-    def visit_Capitalize(self, op, *, arg):
-        return self.if_(
-            self.f.length(arg) < 2,
-            self.f.upper(arg),
-            self.f.concat(
-                self.f.upper(self.f.substr(arg, 1, 1)),
-                self.f.lower(self.f.substr(arg, 2)),
-            ),
-        )
-
     def visit_RegexSearch(self, op, *, arg, pattern):
         return self.f.anon.regexp_like(arg, pattern)
 

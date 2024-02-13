@@ -563,11 +563,6 @@ def uses_java_re(t):
             id="rstrip",
         ),
         param(
-            lambda t: t.string_col.capitalize(),
-            lambda t: t.string_col.str.capitalize(),
-            id="capitalize",
-        ),
-        param(
             lambda t: t.date_string_col.substr(2, 3),
             lambda t: t.date_string_col.str[2:5],
             id="substr",
@@ -844,11 +839,29 @@ def test_parse_url(con, result_func, expected):
     assert result == expected
 
 
-def test_capitalize(con):
-    s = ibis.literal("aBc")
-    expected = "Abc"
+@pytest.mark.parametrize(
+    ("inp, expected"),
+    [
+        (None, None),
+        ("", ""),
+        ("Abc", "Abc"),
+        ("abc", "Abc"),
+        ("aBC", "Abc"),
+        (" abc", " abc"),
+        ("9abc", "9abc"),
+        ("aBc dEf", "Abc def"),
+        ("aBc-dEf", "Abc-def"),
+        ("aBc1dEf", "Abc1def"),
+    ],
+)
+def test_capitalize(con, inp, expected):
+    s = ibis.literal(inp, type="string")
     expr = s.capitalize()
-    assert con.execute(expr) == expected
+    result = con.execute(expr)
+    if expected is not None:
+        assert result == expected
+    else:
+        assert pd.isnull(result)
 
 
 @pytest.mark.notimpl(

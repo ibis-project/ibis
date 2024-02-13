@@ -388,7 +388,9 @@ class StringValue(Value):
         return ops.RStrip(self).to_expr()
 
     def capitalize(self) -> StringValue:
-        """Capitalize the input string.
+        """Uppercase the first letter, lowercase the rest.
+
+        This is the same semantics as the Python `str.capitalize` method.
 
         Returns
         -------
@@ -399,7 +401,7 @@ class StringValue(Value):
         --------
         >>> import ibis
         >>> ibis.options.interactive = True
-        >>> t = ibis.memtable({"s": ["abc", "def", "ghi"]})
+        >>> t = ibis.memtable({"s": ["aBC", " abc", "ab cd", None]})
         >>> t.s.capitalize()
         ┏━━━━━━━━━━━━━━━┓
         ┃ Capitalize(s) ┃
@@ -407,8 +409,9 @@ class StringValue(Value):
         │ string        │
         ├───────────────┤
         │ Abc           │
-        │ Def           │
-        │ Ghi           │
+        │  abc          │
+        │ Ab cd         │
+        │ NULL          │
         └───────────────┘
         """
         return ops.Capitalize(self).to_expr()
