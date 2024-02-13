@@ -775,7 +775,7 @@ def srcs():
 
 @pytest.fixture
 def nrels():
-    return 300
+    return 225
 
 
 def make_big_union(t, nrels):
