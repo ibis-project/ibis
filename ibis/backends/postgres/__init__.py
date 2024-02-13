@@ -207,6 +207,7 @@ class Backend(SQLGlotBackend):
         port: int = 5432,
         database: str | None = None,
         schema: str | None = None,
+        **kwargs: Any,
     ) -> None:
         """Create an Ibis client connected to PostgreSQL database.
 
@@ -224,6 +225,8 @@ class Backend(SQLGlotBackend):
             Database to connect to
         schema
             PostgreSQL schema to use. If `None`, use the default `search_path`.
+        kwargs
+            Additional keyword arguments to pass to the backend client connection.
 
         Examples
         --------
@@ -265,6 +268,7 @@ class Backend(SQLGlotBackend):
             password=password,
             database=database,
             options=(f"-csearch_path={schema}" * (schema is not None)) or None,
+            **kwargs,
         )
 
         with self.begin() as cur:
