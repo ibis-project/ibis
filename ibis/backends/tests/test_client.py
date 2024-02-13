@@ -27,6 +27,7 @@ import ibis.expr.operations as ops
 from ibis.backends.conftest import ALL_BACKENDS
 from ibis.backends.tests.errors import (
     ExaQueryError,
+    ImpalaHiveServer2Error,
     OracleDatabaseError,
     PsycoPg2InternalError,
     PsycoPg2UndefinedObject,
@@ -639,14 +640,9 @@ def test_list_databases(con):
     assert test_databases[con.name] <= result
 
 
-@pytest.mark.notyet(
-    ["postgres", "snowflake"],
-    raises=TypeError,
-    reason="backend does not support unsigned integer types",
-)
 @pytest.mark.notyet(["mssql"], raises=PyODBCProgrammingError)
 @pytest.mark.notyet(["pyspark"], raises=com.IbisTypeError)
-@pytest.mark.notyet(["bigquery", "impala"], raises=com.UnsupportedBackendType)
+@pytest.mark.notyet(["bigquery"], raises=com.UnsupportedBackendType)
 @pytest.mark.notyet(
     ["postgres"], raises=PsycoPg2UndefinedObject, reason="no unsigned int types"
 )
@@ -657,6 +653,7 @@ def test_list_databases(con):
 @pytest.mark.notyet(["datafusion"], raises=Exception, reason="no unsigned int types")
 @pytest.mark.notyet(["druid"], raises=NotImplementedError)
 @pytest.mark.notyet(["snowflake"], raises=SnowflakeProgrammingError)
+@pytest.mark.notyet(["impala"], raises=ImpalaHiveServer2Error)
 @pytest.mark.notyet(
     ["risingwave"],
     raises=PsycoPg2InternalError,
