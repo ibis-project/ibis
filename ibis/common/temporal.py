@@ -217,7 +217,10 @@ def _from_str(value):
     elif lower == "today":
         return datetime.datetime.today()
 
-    value = dateutil.parser.parse(value)
+    try:
+        value = dateutil.parser.parse(value)
+    except dateutil.parser.ParserError:
+        raise TypeError(f"Unable to normalize {value} to timestamp")
     return value.replace(tzinfo=normalize_timezone(value.tzinfo))
 
 

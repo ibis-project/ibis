@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from datetime import datetime
 
-import dateutil.parser
 import numpy as np
 import pandas as pd
 import pytest
@@ -67,7 +66,7 @@ def test_timestamp_literals(function, value):
 
 
 def test_invalid_timestamp_literal():
-    with pytest.raises(dateutil.parser.ParserError):
+    with pytest.raises(TypeError, match="Unable to normalize"):
         ibis.timestamp("2015-01-01 00:71")
 
 

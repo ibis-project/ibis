@@ -346,4 +346,14 @@ def normalize(typ, value):
         raise TypeError(f"Unable to normalize {value!r} to {dtype!r}")
 
 
+def normalizable(typ, value):
+    """Check if a value can be normalized to a given type."""
+    try:
+        normalize(typ, value)
+    except TypeError:
+        return False
+    else:
+        return True
+
+
 public(infer=infer, normalize=normalize)
