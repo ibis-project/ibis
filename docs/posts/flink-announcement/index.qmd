@@ -10,14 +10,15 @@ categories:
 
 ## Introduction
 
-Ibis 8.0 marks the official release of the Apache Flink backend for Ibis. Flink
-is one of the most established stream-processing frameworks out there and a
-central part of the real-time data infrastructure at companies like DoorDash,
-LinkedIn, Netflix, and Uber. It is commonly applied in use cases such as fraud
-detection, anomaly detection, real-time recommendation, dynamic pricing, and
-online advertising. The Flink backend is also the first streaming backend Ibis
-supports. Follow along as we define and execute a simple streaming job using
-Ibis!
+Ibis 8.0 marks the official release of the Apache Flink backend for Ibis. Ibis
+users can now manipulate data across streaming and batch contexts using the same
+interface. Flink is one of the most established stream-processing frameworks out
+there and a central part of the real-time data infrastructure at companies like
+DoorDash, LinkedIn, Netflix, and Uber. It is commonly applied in use cases such
+as fraud detection, anomaly detection, real-time recommendation, dynamic
+pricing, and online advertising. The Flink backend is also the first streaming
+backend Ibis supports. Follow along as we define and execute a simple streaming
+job using Ibis!
 
 ## Installation prerequisites
 
