@@ -54,8 +54,8 @@ def test_roundtripable_types(arrow_type):
         (pa.decimal256(38, 5), dt.Decimal(38, 5, nullable=False), pa.decimal128(38, 5)),
         (pa.decimal256(39, 6), dt.Decimal(39, 6, nullable=False), pa.decimal256(39, 6)),
         (pa.decimal256(76, 6), dt.Decimal(76, 6, nullable=False), pa.decimal256(76, 6)),
-        (pa.date32(), dt.Date(nullable=False), pa.date64()),
-        (pa.date64(), dt.Date(nullable=False), pa.date64()),
+        (pa.date32(), dt.Date(nullable=False), pa.date32()),
+        (pa.date64(), dt.Date(nullable=False), pa.date32()),
         (pa.time32("s"), dt.Time(nullable=False), pa.time64("ns")),
         (pa.time32("ms"), dt.Time(nullable=False), pa.time64("ns")),
         (pa.time64("us"), dt.Time(nullable=False), pa.time64("ns")),
@@ -122,7 +122,7 @@ def test_dtype_from_nullable_list_type(value_nullable, list_nullable):
     assert restored_type.value_field.nullable is value_nullable
 
 
-@pytest.mark.parametrize("value_type", [pa.string(), pa.date64()])
+@pytest.mark.parametrize("value_type", [pa.string(), pa.date32()])
 def test_dtype_from_dictionary_type(value_type):
     dict_type = pa.dictionary(pa.int32(), value_type)
     ibis_type = PyArrowType.to_ibis(dict_type)
