@@ -48,7 +48,7 @@ def castable(source, target):
     Based on the underlying datatypes and the value in case of Literals
     """
     value = getattr(source, "value", None)
-    return dt.castable(source.dtype, target.dtype, value=value)
+    return source.dtype.castable(target.dtype, value=value)
 
 
 @public

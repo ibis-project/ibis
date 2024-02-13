@@ -2692,7 +2692,7 @@ class Table(Expr, _FixedTextJupyterMixin):
 
                 col_type = schema[col]
                 val_type = val.type() if isinstance(val, Expr) else dt.infer(val)
-                if not dt.castable(val_type, col_type):
+                if not val_type.castable(col_type):
                     raise com.IbisTypeError(
                         f"Cannot fillna on column {col!r} of type {col_type} with a "
                         f"value of type {val_type}"
@@ -2704,7 +2704,7 @@ class Table(Expr, _FixedTextJupyterMixin):
                 else dt.infer(replacements)
             )
             for col, col_type in schema.items():
-                if col_type.nullable and not dt.castable(val_type, col_type):
+                if col_type.nullable and not val_type.castable(col_type):
                     raise com.IbisTypeError(
                         f"Cannot fillna on column {col!r} of type {col_type} with a "
                         f"value of type {val_type} - pass in an explicit mapping "

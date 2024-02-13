@@ -145,11 +145,9 @@ class DataType(Concrete, Coercible):
 
         return cast(self, other, **kwargs)
 
-    def castable(self, other, **kwargs):
-        # TODO(kszucs): remove it or deprecate it?
-        from ibis.expr.datatypes.cast import castable
-
-        return castable(self, other, **kwargs)
+    def castable(self, other, **kwargs) -> bool:
+        """Check whether this type is castable to another."""
+        return isinstance(other, self.__class__)
 
     @classmethod
     def from_string(cls, value) -> Self:
@@ -476,6 +474,19 @@ class Null(Primitive):
     scalar = "NullScalar"
     column = "NullColumn"
 
+    def castable(self, other, **kwargs) -> bool:
+        # The null type is castable to any type, even if the target type is *not*
+        # nullable.
+        #
+        # We handle the promotion of `null + !T -> T` at the `castable` call site.
+        #
+        # It might be possible to build a system with a single function that tries
+        # to promote types and use the exception to indicate castability, but that
+        # is a deeper refactor to be tackled later.
+        #
+        # See https://github.com/ibis-project/ibis/issues/2891 for the bug report
+        return True
+
 
 @public
 class Boolean(Primitive):
@@ -513,6 +524,11 @@ class Integer(Primitive, Numeric):
     def nbytes(self) -> int:
         """Return the number of bytes used to store values of this type."""
 
+    def castable(self, other, value: int | None = None, **kwargs) -> bool:
+        return (isinstance(other, Boolean) and value in (0, 1)) or isinstance(
+            other, (Floating, Decimal, JSON, Interval)
+        )
+
 
 @public
 class String(Variadic, Singleton):
@@ -527,6 +543,24 @@ class String(Variadic, Singleton):
 
     scalar = "StringScalar"
     column = "StringColumn"
+
+    def castable(self, other, value: str | None = None, **kwargs) -> bool:
+        def can_parse(value: str | None) -> bool:
+            import pandas as pd
+
+            if value is None:
+                return False
+
+            try:
+                pd.Timestamp(value)
+            except ValueError:
+                return False
+            else:
+                return True
+
+        return isinstance(other, (String, JSON, UUID)) or (
+            isinstance(other, (Date, Time, Timestamp)) and can_parse(value)
+        )
 
 
 @public
@@ -558,6 +592,9 @@ class Date(Temporal, Primitive):
 
     scalar = "DateScalar"
     column = "DateColumn"
+
+    def castable(self, other, **kwargs) -> bool:
+        return isinstance(other, (Date, Timestamp))
 
 
 @public
@@ -623,6 +660,9 @@ class Timestamp(Temporal, Parametric):
         else:
             return ""
 
+    def castable(self, other, **kwargs) -> bool:
+        return isinstance(other, (Date, Timestamp))
+
 
 @public
 class SignedInteger(Integer):
@@ -634,6 +674,23 @@ class SignedInteger(Integer):
         upper = (1 << exp) - 1
         return Bounds(lower=~upper, upper=upper)
 
+    def castable(self, other, value: int | None = None, **kwargs) -> bool:
+        if isinstance(other, SignedInteger):
+            return self.nbytes <= other.nbytes
+        elif isinstance(other, UnsignedInteger):
+            if value is not None:
+                # TODO(kszucs): we may not need to actually check the value since the
+                # literal construction now checks for bounds and doesn't use castable()
+                # anymore
+                return other.bounds.lower <= value <= other.bounds.upper
+            else:
+                return (
+                    other.bounds.upper - other.bounds.lower
+                    >= self.bounds.upper - self.bounds.lower
+                )
+        else:
+            return super().castable(other, value=value, **kwargs)
+
 
 @public
 class UnsignedInteger(Integer):
@@ -644,6 +701,22 @@ class UnsignedInteger(Integer):
         exp = self.nbytes * 8
         upper = (1 << exp) - 1
         return Bounds(lower=0, upper=upper)
+
+    def castable(self, other, value: int | None = None, **kwargs) -> bool:
+        if isinstance(other, UnsignedInteger):
+            return self.nbytes <= other.nbytes
+        elif isinstance(other, SignedInteger):
+            if value is not None:
+                # TODO(kszucs): we may not need to actually check the value since the
+                # literal construction now checks for bounds and doesn't use castable()
+                # anymore
+                return other.bounds.lower <= value <= other.bounds.upper
+            else:
+                return (other.bounds.upper - other.bounds.lower) >= (
+                    self.bounds.upper - self.bounds.lower
+                )
+        else:
+            return super().castable(other, value=value, **kwargs)
 
 
 @public
@@ -657,6 +730,14 @@ class Floating(Primitive, Numeric):
     @abstractmethod
     def nbytes(self) -> int:  # pragma: no cover
         """Return the number of bytes used to store values of this type."""
+
+    def castable(self, other, upcast: bool = False, **kwargs) -> bool:
+        return isinstance(other, (Decimal, JSON)) or (
+            isinstance(other, Floating)
+            # double -> float must be allowed because
+            # float literals are inferred as doubles
+            and ((not upcast) or other.nbytes >= self.nbytes)
+        )
 
 
 @public
@@ -791,6 +872,28 @@ class Decimal(Numeric, Parametric):
 
         return f"({', '.join(args)})"
 
+    def castable(self, other, **kwargs) -> bool:
+        if not isinstance(other, Decimal):
+            return False
+
+        other_prec = other.precision
+        self_prec = self.precision
+        other_sc = other.scale
+        self_sc = self.scale
+        return (
+            # If either sides precision and scale are both `None`, return `True`.
+            other_prec is None
+            and other_sc is None
+            or self_prec is None
+            and self_sc is None
+            # Otherwise, return `True` unless we are downcasting precision or scale.
+            or (
+                other_prec is None
+                or (self_prec is not None and other_prec >= self_prec)
+            )
+            and (other_sc is None or (self_sc is not None and other_sc >= self_sc))
+        )
+
 
 @public
 class Interval(Parametric):
@@ -810,6 +913,9 @@ class Interval(Parametric):
     @property
     def _pretty_piece(self) -> str:
         return f"('{self.unit.value}')"
+
+    def castable(self, other, **kwargs) -> bool:
+        return isinstance(other, Interval) and self.unit == other.unit
 
 
 @public
@@ -869,6 +975,12 @@ class Struct(Parametric, MapSet):
         pairs = ", ".join(map("{}: {}".format, self.names, self.types))
         return f"<{pairs}>"
 
+    def castable(self, other, **kwargs) -> bool:
+        return isinstance(other, Struct) and all(
+            self[field].castable(other[field], **kwargs)
+            for field in self.keys() & other.keys()
+        )
+
 
 T = TypeVar("T", bound=DataType, covariant=True)
 
@@ -885,6 +997,12 @@ class Array(Variadic, Parametric, Generic[T]):
     @property
     def _pretty_piece(self) -> str:
         return f"<{self.value_type}>"
+
+    def castable(self, other, **kwargs) -> bool:
+        return isinstance(other, GeoSpatial) or (
+            isinstance(other, Array)
+            and self.value_type.castable(other.value_type, **kwargs)
+        )
 
 
 K = TypeVar("K", bound=DataType, covariant=True)
@@ -904,6 +1022,13 @@ class Map(Variadic, Parametric, Generic[K, V]):
     @property
     def _pretty_piece(self) -> str:
         return f"<{self.key_type}, {self.value_type}>"
+
+    def castable(self, other, **kwargs) -> bool:
+        return (
+            isinstance(other, Map)
+            and self.key_type.castable(other.key_type, **kwargs)
+            and self.value_type.castable(other.value_type, **kwargs)
+        )
 
 
 @public
@@ -995,6 +1120,9 @@ class UUID(DataType):
 
     scalar = "UUIDScalar"
     column = "UUIDColumn"
+
+    def castable(self, other, **kwargs) -> bool:
+        return super().castable(other, **kwargs) or isinstance(other, String)
 
 
 @public

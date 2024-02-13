@@ -25,7 +25,7 @@ import ibis.expr.datatypes as dt
     ],
 )
 def test_implicitly_castable_primitives(source, target):
-    assert dt.castable(source, target)
+    assert source.castable(target)
 
 
 @pytest.mark.parametrize(
@@ -43,15 +43,12 @@ def test_implicitly_castable_primitives(source, target):
     ],
 )
 def test_implicitly_uncastable_primitives(source, target):
-    assert not dt.castable(source, target)
+    assert not source.castable(target)
 
 
-@pytest.mark.parametrize(
-    ("source", "target", "value"),
-    [(dt.int8, dt.boolean, 0), (dt.int8, dt.boolean, 1)],
-)
-def test_implicitly_castable_values(source, target, value):
-    assert dt.castable(source, target, value=value)
+@pytest.mark.parametrize("value", [0, 1])
+def test_implicitly_castable_int_to_bool(value):
+    assert dt.int8.castable(dt.boolean, value=value)
 
 
 @pytest.mark.parametrize(
@@ -59,4 +56,4 @@ def test_implicitly_castable_values(source, target, value):
     [(dt.int8, dt.boolean, 3), (dt.int8, dt.boolean, -1)],
 )
 def test_implicitly_uncastable_values(source, target, value):
-    assert not dt.castable(source, target, value=value)
+    assert not source.castable(target, value=value)
