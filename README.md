@@ -16,7 +16,7 @@ Ibis has three primary components:
 
 1. **A dataframe API for Python**.
    Python users can write Ibis code to manipulate tabular data.
-2. **Interfaces to 15+ query engines.**
+2. **Interfaces to 20+ query engines.**
    Wherever data is stored, people can use Ibis as their API of choice to communicate with any of those query engines.
 3. **Deferred execution**.
    Ibis uses deferred execution, so execution of code is pushed to the query engine.
@@ -31,7 +31,7 @@ Ibis aims to be a future-proof solution to interacting with data using Python an
 - **Deferred execution**: Ibis pushes code execution to the query engine and only moves required data into memory when necessary.
   Analytics workflows are faster and more efficient
 - **Interactive mode**: Ibis provides an interactive mode in which users can quickly diagnose problems, explore data, and mock up workflows and pipelines locally.
-- **10+ supported backends**: Ibis supports multiple query engines and DataFrame APIs.
+- **20+ supported backends**: Ibis supports multiple query engines and DataFrame APIs.
   Use one interface to transform with your data wherever it lives: from DataFrames in pandas to Parquet files through DuckDB to tables in BigQuery.
 - **Minimize rewrites**: Teams can often keep their Ibis code the same regardless of backend changes, like increasing or decreasing computing power, changing the number or size of their databases, or switching backends entirely.
 - **Flexibility when you need it**: When Ibis doesn't support something, it provides a way to jump directly into SQL.
