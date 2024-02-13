@@ -165,7 +165,7 @@ class PyArrowType(TypeMapper):
         elif dtype.is_time():
             return pa.time64("ns")
         elif dtype.is_date():
-            return pa.date64()
+            return pa.date32()
         elif dtype.is_array():
             value_field = pa.field(
                 "item",
