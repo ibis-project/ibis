@@ -60,7 +60,7 @@ class Backend(BaseBackend, NoUrl):
             self._add_table(name, table)
 
     def disconnect(self) -> None:
-        raise NotImplementedError()
+        pass
 
     @property
     def version(self) -> str:

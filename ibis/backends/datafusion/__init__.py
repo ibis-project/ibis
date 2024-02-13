@@ -95,7 +95,7 @@ class Backend(SQLGlotBackend, CanCreateDatabase, CanCreateSchema, NoUrl):
             self.register(path, table_name=name)
 
     def disconnect(self) -> None:
-        raise NotImplementedError
+        pass
 
     @contextlib.contextmanager
     def _safe_raw_sql(self, sql: sge.Statement) -> Any:

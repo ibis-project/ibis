@@ -62,7 +62,7 @@ class Backend(BasePandasBackend, NoUrl):
         super().do_connect(dictionary)
 
     def disconnect(self) -> None:
-        raise NotImplementedError
+        pass
 
     @property
     def version(self):
