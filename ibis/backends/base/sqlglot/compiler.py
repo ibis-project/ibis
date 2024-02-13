@@ -653,7 +653,7 @@ class SQLGlotCompiler(abc.ABC):
 
     @visit_node.register(ops.StringConcat)
     def visit_StringConcat(self, op, *, arg):
-        return self.f.concat(*arg)
+        return reduce(lambda x, y: sge.DPipe(this=x, expression=y), arg)
 
     @visit_node.register(ops.StringJoin)
     def visit_StringJoin(self, op, *, sep, arg):
