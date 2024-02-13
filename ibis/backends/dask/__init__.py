@@ -61,6 +61,9 @@ class Backend(BasePandasBackend, NoUrl):
                 )
         super().do_connect(dictionary)
 
+    def disconnect(self) -> None:
+        raise NotImplementedError
+
     @property
     def version(self):
         return dask.__version__

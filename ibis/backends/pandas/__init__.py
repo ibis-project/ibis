@@ -53,6 +53,9 @@ class BasePandasBackend(BaseBackend, NoUrl):
         self.dictionary = dictionary or {}
         self.schemas: MutableMapping[str, sch.Schema] = {}
 
+    def disconnect(self) -> None:
+        raise NotImplementedError
+
     def from_dataframe(
         self,
         df: pd.DataFrame,

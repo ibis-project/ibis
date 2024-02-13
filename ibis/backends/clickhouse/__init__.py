@@ -446,7 +446,7 @@ class Backend(SQLGlotBackend, CanCreateDatabase):
         self._log(query)
         return self.con.query(query, external_data=external_data, **kwargs)
 
-    def close(self) -> None:
+    def disconnect(self) -> None:
         """Close ClickHouse connection."""
         self.con.close()
 
