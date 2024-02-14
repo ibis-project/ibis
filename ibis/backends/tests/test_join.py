@@ -190,6 +190,9 @@ def test_semi_join_topk(con, batting, awards_players, func):
     if con.name == "sqlite":
         # TODO: remove after CTE extraction is reimplemented
         pytest.skip("topk -> semi-join performance has increased post SQLGlot refactor")
+    elif con.name == "risingwave":
+        # e.g., https://github.com/ibis-project/ibis/actions/runs/7900463100/job/21562034052
+        pytest.skip("risingwave times out on semi join topk")
     batting = batting.mutate(year=batting.yearID)
     left = func(batting, batting.year.topk(5)).select("year", "RBI")
     expr = left.join(awards_players, left.year == awards_players.yearID)
