@@ -45,9 +45,16 @@ These client-server backends need to be started before testing them.
 They can be started with `docker compose` directly, or using the `just` tool.
 
 - ClickHouse: `just up clickhouse`
-- PostgreSQL: `just up postgres`
+- Exasol: `just up exasol`
+- Flink: `just up flink`
+- Impala: `just up impala`
+- SQL Server: `just up mssql`
 - MySQL: `just up mysql`
-- impala: `just up impala`
+- Oracle: `just up oracle`
+- PostgreSQL: `just up postgres`
+- RisingWave: `just up risingwave`
+- Trino: `just up trino`
+- Druid: `just up druid`
 
 ### Test the backend locally
 
