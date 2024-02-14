@@ -67,6 +67,9 @@ class Backend(SQLGlotBackend, CanCreateDatabase, NoUrl):
         """
         self._table_env = table_env
 
+    def disconnect(self) -> None:
+        pass
+
     def raw_sql(self, query: str) -> TableResult:
         return self._table_env.execute_sql(query)
 
