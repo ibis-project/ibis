@@ -109,7 +109,10 @@ class Unnest(Value):
 
     @attribute
     def dtype(self):
-        return self.arg.dtype.value_type
+        if self.offset:
+            return dt.Struct(dict(offset=dt.uint64, value=self.arg.dtype.value_type))
+        else:
+            return self.arg.dtype.value_type
 
 
 @public
