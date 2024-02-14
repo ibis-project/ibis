@@ -54,6 +54,7 @@ They can be started with `docker compose` directly, or using the `just` tool.
 - PostgreSQL: `just up postgres`
 - RisingWave: `just up risingwave`
 - Trino: `just up trino`
+- Druid: `just up druid`
 
 ### Test the backend locally
 
