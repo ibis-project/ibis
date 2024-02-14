@@ -1,8 +1,52 @@
 from __future__ import annotations
 
+import hypothesis as h
 import pytest
 
 import ibis.expr.datatypes as dt
+import ibis.tests.strategies as ibst
+
+
+@h.given(ibst.signed_integer_dtypes(), ibst.signed_integer_dtypes())
+def test_signed_integer_castable_to_signed_integer(from_, to):
+    if from_.nbytes > to.nbytes:
+        assert not from_.castable(to)
+    else:
+        assert from_.castable(to)
+
+
+@h.given(ibst.unsigned_integer_dtypes(), ibst.unsigned_integer_dtypes())
+def test_unsigned_integer_castable_to_unsigned_integer(from_, to):
+    if from_.nbytes > to.nbytes:
+        assert not from_.castable(to)
+    else:
+        assert from_.castable(to)
+
+
+# TODO(kszucs): unsigned to signed implicit cast is currently allowed to not
+# break the integral promotion rule logic in rules.py
+# @h.given(ibst.signed_integer_dtypes(), ibst.unsigned_integer_dtypes())
+# def test_signed_integer_not_castable_to_unsigned_integer(from_, to):
+#     assert not from_.castable(to)
+
+
+@h.given(ibst.integer_dtypes(), ibst.floating_dtypes())
+def test_integer_castable_to_floating(from_, to):
+    assert from_.castable(to)
+
+
+# TODO(kszucs): we could be more pedantic here considering the precision
+@h.given(ibst.integer_dtypes(), ibst.decimal_dtypes())
+def test_integer_castable_to_decimal(from_, to):
+    assert from_.castable(to)
+
+
+@h.given(ibst.integer_dtypes(), ibst.boolean_dtype())
+def test_integer_castable_to_boolean(from_, to):
+    assert from_.castable(to, value=0)
+    assert from_.castable(to, value=1)
+    assert not from_.castable(to, value=-1)
+    assert not from_.castable(to)
 
 
 @pytest.mark.parametrize(
@@ -13,7 +57,7 @@ import ibis.expr.datatypes as dt
         (dt.null, dt.date),
         (dt.int8, dt.int64),
         (dt.int8, dt.Decimal(12, 2)),
-        (dt.int16, dt.uint64),
+        # (dt.int16, dt.uint64),
         (dt.int32, dt.int32),
         (dt.int32, dt.int64),
         (dt.uint32, dt.uint64),
