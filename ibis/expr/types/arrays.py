@@ -267,7 +267,7 @@ class ArrayValue(Value):
     __mul__ = __rmul__ = repeat
 
     def unnest(self,
-               offset: Optional[bool] = False
+               offset: bool = False
         ) -> ir.Value:
         """Flatten an array into a column.
 
