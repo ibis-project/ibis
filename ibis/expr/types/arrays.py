@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import inspect
-from typing import TYPE_CHECKING, Callable
+from typing import TYPE_CHECKING, Callable, Optional
 
 from public import public
 
@@ -266,8 +266,15 @@ class ArrayValue(Value):
 
     __mul__ = __rmul__ = repeat
 
-    def unnest(self) -> ir.Value:
+    def unnest(self,
+               offset: Optional[bool] = False
+        ) -> ir.Value:
         """Flatten an array into a column.
+
+        Parameters
+        ----------
+        offset
+            Whether to include the position index in the unnested array.
 
         ::: {.callout-note}
         ## Rows with empty arrays are dropped in the output.
@@ -305,7 +312,7 @@ class ArrayValue(Value):
         ir.Value
             Unnested array
         """
-        expr = ops.Unnest(self).to_expr()
+        expr = ops.Unnest(self, offset).to_expr()
         try:
             return expr.name(self.get_name())
         except com.ExpressionError:

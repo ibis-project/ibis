@@ -384,6 +384,12 @@ class BigQueryCompiler(SQLGlotCompiler):
             unit = unit.name
         return self.f.time_trunc(arg, self.v[unit], dialect=self.dialect)
 
+    def visit_Unnest(self, op, *, arg, offset):
+        if not offset:
+            return sge.Explode(this=arg)
+        else:
+            return sge.Posexplode(this=arg)
+
     def _nullifzero(self, step, zero, step_dtype):
         if step_dtype.is_interval():
             return self.if_(step.eq(zero), NULL, step)
