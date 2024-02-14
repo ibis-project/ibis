@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from functools import singledispatchmethod
-
 import sqlglot.expressions as sge
 from public import public
 
@@ -9,6 +7,7 @@ import ibis.common.exceptions as com
 import ibis.expr.datashape as ds
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
+from ibis.backends.base.sqlglot.compiler import ALL_OPERATIONS
 from ibis.backends.base.sqlglot.datatypes import RisingWaveType
 from ibis.backends.base.sqlglot.dialects import RisingWave
 from ibis.backends.postgres.compiler import PostgresCompiler
@@ -21,11 +20,20 @@ class RisingwaveCompiler(PostgresCompiler):
     dialect = RisingWave
     type_mapper = RisingWaveType
 
-    @singledispatchmethod
-    def visit_node(self, op, **kwargs):
-        return super().visit_node(op, **kwargs)
+    UNSUPPORTED_OPERATIONS = frozenset(
+        (
+            ops.DateFromYMD,
+            ops.Mode,
+            *(
+                op
+                for op in ALL_OPERATIONS
+                if issubclass(
+                    op, (ops.GeoSpatialUnOp, ops.GeoSpatialBinOp, ops.GeoUnaryUnion)
+                )
+            ),
+        )
+    )
 
-    @visit_node.register(ops.Correlation)
     def visit_Correlation(self, op, *, left, right, how, where):
         if how == "sample":
             raise com.UnsupportedOperationError(
@@ -35,9 +43,6 @@ class RisingwaveCompiler(PostgresCompiler):
             op, left=left, right=right, how=how, where=where
         )
 
-    @visit_node.register(ops.TimestampTruncate)
-    @visit_node.register(ops.DateTruncate)
-    @visit_node.register(ops.TimeTruncate)
     def visit_TimestampTruncate(self, op, *, arg, unit):
         unit_mapping = {
             "Y": "year",
@@ -57,7 +62,8 @@ class RisingwaveCompiler(PostgresCompiler):
 
         return self.f.date_trunc(unit, arg)
 
-    @visit_node.register(ops.IntervalFromInteger)
+    visit_TimeTruncate = visit_DateTruncate = visit_TimestampTruncate
+
     def visit_IntervalFromInteger(self, op, *, arg, unit):
         if op.arg.shape == ds.scalar:
             return sge.Interval(this=arg, unit=self.v[unit.name])
@@ -75,11 +81,6 @@ class RisingwaveCompiler(PostgresCompiler):
             return sge.convert(str(value))
         return None
 
-    @visit_node.register(ops.DateFromYMD)
-    @visit_node.register(ops.Mode)
-    def visit_Undefined(self, op, **_):
-        raise com.OperationNotDefinedError(type(op).__name__)
-
 
 _SIMPLE_OPS = {
     ops.First: "first_value",
@@ -90,13 +91,11 @@ for _op, _name in _SIMPLE_OPS.items():
     assert isinstance(type(_op), type), type(_op)
     if issubclass(_op, ops.Reduction):
 
-        @RisingwaveCompiler.visit_node.register(_op)
         def _fmt(self, op, *, _name: str = _name, where, **kw):
             return self.agg[_name](*kw.values(), where=where)
 
     else:
 
-        @RisingwaveCompiler.visit_node.register(_op)
         def _fmt(self, op, *, _name: str = _name, **kw):
             return self.f[_name](*kw.values())
 

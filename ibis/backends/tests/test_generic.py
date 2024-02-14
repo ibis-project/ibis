@@ -1321,15 +1321,7 @@ def test_hexdigest(backend, alltypes):
     backend.assert_series_equal(h1, h2)
 
 
-@pytest.mark.notimpl(
-    [
-        "pandas",
-        "dask",
-        "oracle",
-        "snowflake",
-        "sqlite",
-    ]
-)
+@pytest.mark.notimpl(["pandas", "dask", "oracle", "sqlite"])
 @pytest.mark.parametrize(
     ("from_val", "to_type", "expected"),
     [
@@ -1344,6 +1336,7 @@ def test_hexdigest(backend, alltypes):
             marks=[
                 pytest.mark.notyet(["duckdb", "impala"], reason="casts to NULL"),
                 pytest.mark.notyet(["bigquery"], raises=GoogleBadRequest),
+                pytest.mark.notyet(["snowflake"], raises=SnowflakeProgrammingError),
                 pytest.mark.notyet(["trino"], raises=TrinoUserError),
                 pytest.mark.notyet(["exasol"], raises=ExaQueryError),
                 pytest.mark.broken(
@@ -1379,7 +1372,6 @@ def test_try_cast(con, from_val, to_type, expected):
         "pandas",
         "postgres",
         "risingwave",
-        "snowflake",
         "sqlite",
     ]
 )
@@ -1395,6 +1387,7 @@ def test_try_cast(con, from_val, to_type, expected):
                     ["clickhouse", "pyspark", "flink"], reason="casts to 1672531200"
                 ),
                 pytest.mark.notyet(["bigquery"], raises=GoogleBadRequest),
+                pytest.mark.notyet(["snowflake"], raises=SnowflakeProgrammingError),
                 pytest.mark.notyet(["trino"], raises=TrinoUserError),
                 pytest.mark.notyet(["mssql"], raises=PyODBCDataError),
                 pytest.mark.broken(["polars"], reason="casts to 1672531200000000000"),
@@ -1443,7 +1436,6 @@ def test_try_cast_table(backend, con):
         "oracle",
         "postgres",
         "risingwave",
-        "snowflake",
         "sqlite",
         "exasol",
     ]
@@ -1463,6 +1455,7 @@ def test_try_cast_table(backend, con):
                     reason="casts this to to a number",
                 ),
                 pytest.mark.notyet(["bigquery"], raises=GoogleBadRequest),
+                pytest.mark.notyet(["snowflake"], raises=SnowflakeProgrammingError),
                 pytest.mark.notyet(["trino"], raises=TrinoUserError),
                 pytest.mark.notyet(["mssql"], raises=PyODBCDataError),
             ],

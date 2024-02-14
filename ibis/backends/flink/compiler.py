@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-from functools import singledispatchmethod
-
 import sqlglot as sg
 import sqlglot.expressions as sge
 
@@ -37,6 +35,41 @@ class FlinkCompiler(SQLGlotCompiler):
         *SQLGlotCompiler.rewrites,
     )
 
+    UNSUPPORTED_OPERATIONS = frozenset(
+        (
+            ops.AnalyticVectorizedUDF,
+            ops.ApproxMedian,
+            ops.Arbitrary,
+            ops.ArgMax,
+            ops.ArgMin,
+            ops.ArrayCollect,
+            ops.ArrayFlatten,
+            ops.ArraySort,
+            ops.ArrayStringJoin,
+            ops.Correlation,
+            ops.CountDistinctStar,
+            ops.Covariance,
+            ops.DateDiff,
+            ops.ExtractURLField,
+            ops.FindInSet,
+            ops.IsInf,
+            ops.IsNan,
+            ops.Levenshtein,
+            ops.MapMerge,
+            ops.Median,
+            ops.MultiQuantile,
+            ops.NthValue,
+            ops.Quantile,
+            ops.ReductionVectorizedUDF,
+            ops.RegexSplit,
+            ops.RowID,
+            ops.ScalarUDF,
+            ops.StringSplit,
+            ops.Translate,
+            ops.Unnest,
+        )
+    )
+
     @property
     def NAN(self):
         raise NotImplementedError("Flink does not support NaN")
@@ -46,6 +79,10 @@ class FlinkCompiler(SQLGlotCompiler):
         raise NotImplementedError("Flink does not support Infinity")
 
     NEG_INF = POS_INF
+
+    @staticmethod
+    def _generate_groups(groups):
+        return groups
 
     def _aggregate(self, funcname: str, *args, where):
         func = self.f[funcname]
@@ -75,10 +112,6 @@ class FlinkCompiler(SQLGlotCompiler):
             args = tuple(sge.Case(ifs=[sge.If(this=where, true=arg)]) for arg in args)
         return func(*args)
 
-    @singledispatchmethod
-    def visit_node(self, op, **kwargs):
-        return super().visit_node(op, **kwargs)
-
     @staticmethod
     def _minimize_spec(start, end, spec):
         if (
@@ -90,7 +123,6 @@ class FlinkCompiler(SQLGlotCompiler):
             return None
         return spec
 
-    @visit_node.register(ops.TumbleWindowingTVF)
     def visit_TumbleWindowingTVF(self, op, *, table, time_col, window_size, offset):
         args = [
             self.v[f"TABLE {table.this.sql(self.dialect)}"],
@@ -114,7 +146,6 @@ class FlinkCompiler(SQLGlotCompiler):
             )
         )
 
-    @visit_node.register(ops.HopWindowingTVF)
     def visit_HopWindowingTVF(
         self, op, *, table, time_col, window_size, window_slide, offset
     ):
@@ -135,7 +166,6 @@ class FlinkCompiler(SQLGlotCompiler):
             )
         )
 
-    @visit_node.register(ops.CumulateWindowingTVF)
     def visit_CumulateWindowingTVF(
         self, op, *, table, time_col, window_size, window_step, offset
     ):
@@ -156,7 +186,6 @@ class FlinkCompiler(SQLGlotCompiler):
             )
         )
 
-    @visit_node.register(ops.InMemoryTable)
     def visit_InMemoryTable(self, op, *, name, schema, data):
         # the performance of this is rather terrible
         tuples = data.to_frame().itertuples(index=False)
@@ -230,15 +259,12 @@ class FlinkCompiler(SQLGlotCompiler):
             return self.cast(value.isoformat(timespec="microseconds"), dtype)
         return None
 
-    @visit_node.register(ops.ArrayIndex)
     def visit_ArrayIndex(self, op, *, arg, index):
         return sge.Bracket(this=arg, expressions=[index + 1])
 
-    @visit_node.register(ops.Xor)
     def visit_Xor(self, op, *, left, right):
         return sg.or_(sg.and_(left, sg.not_(right)), sg.and_(sg.not_(left), right))
 
-    @visit_node.register(ops.Literal)
     def visit_Literal(self, op, *, value, dtype):
         if value is None:
             assert dtype.nullable, "dtype is not nullable but value is None"
@@ -247,13 +273,11 @@ class FlinkCompiler(SQLGlotCompiler):
             return sge.NULL
         return super().visit_Literal(op, value=value, dtype=dtype)
 
-    @visit_node.register(ops.MapGet)
     def visit_MapGet(self, op, *, arg, key, default):
         if default is sge.NULL:
             default = self.cast(default, op.dtype)
         return self.f.coalesce(arg[key], default)
 
-    @visit_node.register(ops.ArraySlice)
     def visit_ArraySlice(self, op, *, arg, start, stop):
         args = [arg, self.if_(start >= 0, start + 1, start)]
 
@@ -264,15 +288,12 @@ class FlinkCompiler(SQLGlotCompiler):
 
         return self.f.array_slice(*args)
 
-    @visit_node.register(ops.Not)
     def visit_Not(self, op, *, arg):
         return sg.not_(self.cast(arg, dt.boolean))
 
-    @visit_node.register(ops.Date)
     def visit_Date(self, op, *, arg):
         return self.cast(arg, dt.date)
 
-    @visit_node.register(ops.TryCast)
     def visit_TryCast(self, op, *, arg, to):
         type_mapper = self.type_mapper
         if op.arg.dtype.is_temporal() and to.is_numeric():
@@ -281,11 +302,9 @@ class FlinkCompiler(SQLGlotCompiler):
             )
         return sge.TryCast(this=arg, to=type_mapper.from_ibis(to))
 
-    @visit_node.register(ops.FloorDivide)
     def visit_FloorDivide(self, op, *, left, right):
         return self.f.floor(left / right)
 
-    @visit_node.register(ops.JSONGetItem)
     def visit_JSONGetItem(self, op, *, arg, index):
         assert isinstance(op.index, ops.Literal)
         idx = op.index
@@ -299,7 +318,6 @@ class FlinkCompiler(SQLGlotCompiler):
         key_hack = f"{sge.convert(query_path).sql(self.dialect)} WITH CONDITIONAL ARRAY WRAPPER"
         return self.f.json_query(arg, self.v[key_hack])
 
-    @visit_node.register(ops.TimestampFromUNIX)
     def visit_TimestampFromUNIX(self, op, *, arg, unit):
         from ibis.common.temporal import TimestampUnit
 
@@ -312,11 +330,9 @@ class FlinkCompiler(SQLGlotCompiler):
 
         return self.cast(self.f.to_timestamp_ltz(arg, precision), dt.timestamp)
 
-    @visit_node.register(ops.Time)
     def visit_Time(self, op, *, arg):
         return self.cast(arg, op.dtype)
 
-    @visit_node.register(ops.TimeFromHMS)
     def visit_TimeFromHMS(self, op, *, hours, minutes, seconds):
         padded_hour = self.f.lpad(self.cast(hours, dt.string), 2, "0")
         padded_minute = self.f.lpad(self.cast(minutes, dt.string), 2, "0")
@@ -325,7 +341,6 @@ class FlinkCompiler(SQLGlotCompiler):
             self.f.concat(padded_hour, ":", padded_minute, ":", padded_second), op.dtype
         )
 
-    @visit_node.register(ops.DateFromYMD)
     def visit_DateFromYMD(self, op, *, year, month, day):
         padded_year = self.f.lpad(self.cast(year, dt.string), 4, "0")
         padded_month = self.f.lpad(self.cast(month, dt.string), 2, "0")
@@ -334,7 +349,6 @@ class FlinkCompiler(SQLGlotCompiler):
             self.f.concat(padded_year, "-", padded_month, "-", padded_day), op.dtype
         )
 
-    @visit_node.register(ops.TimestampFromYMDHMS)
     def visit_TimestampFromYMDHMS(
         self, op, *, year, month, day, hours, minutes, seconds
     ):
@@ -361,11 +375,9 @@ class FlinkCompiler(SQLGlotCompiler):
             op.dtype,
         )
 
-    @visit_node.register(ops.ExtractEpochSeconds)
     def visit_ExtractEpochSeconds(self, op, *, arg):
         return self.f.unix_timestamp(self.cast(arg, dt.string))
 
-    @visit_node.register(ops.Cast)
     def visit_Cast(self, op, *, arg, to):
         from_ = op.arg.dtype
         if to.is_timestamp():
@@ -384,7 +396,6 @@ class FlinkCompiler(SQLGlotCompiler):
         else:
             return self.cast(arg, to)
 
-    @visit_node.register(ops.IfElse)
     def visit_IfElse(self, op, *, bool_expr, true_expr, false_null_expr):
         return self.if_(
             bool_expr,
@@ -396,23 +407,18 @@ class FlinkCompiler(SQLGlotCompiler):
             ),
         )
 
-    @visit_node.register(ops.Log10)
     def visit_Log10(self, op, *, arg):
         return self.f.anon.log(10, arg)
 
-    @visit_node.register(ops.ExtractMillisecond)
     def visit_ExtractMillisecond(self, op, *, arg):
         return self.f.extract(self.v.millisecond, arg)
 
-    @visit_node.register(ops.ExtractMicrosecond)
     def visit_ExtractMicrosecond(self, op, *, arg):
         return self.f.extract(self.v.microsecond, arg)
 
-    @visit_node.register(ops.DayOfWeekIndex)
     def visit_DayOfWeekIndex(self, op, *, arg):
         return (self.f.dayofweek(arg) + 5) % 7
 
-    @visit_node.register(ops.DayOfWeekName)
     def visit_DayOfWeekName(self, op, *, arg):
         index = self.cast(self.f.dayofweek(self.cast(arg, dt.date)), op.dtype)
         lookup_table = self.f.str_to_map(
@@ -420,11 +426,9 @@ class FlinkCompiler(SQLGlotCompiler):
         )
         return lookup_table[index]
 
-    @visit_node.register(ops.TimestampNow)
     def visit_TimestampNow(self, op):
         return self.v.current_timestamp
 
-    @visit_node.register(ops.TimestampBucket)
     def visit_TimestampBucket(self, op, *, arg, interval, offset):
         unit = op.interval.dtype.unit.name
         unit_var = self.v[unit]
@@ -446,9 +450,6 @@ class FlinkCompiler(SQLGlotCompiler):
             self.v[f"FLOOR({arg.sql(self.dialect)} TO {unit_var.sql(self.dialect)})"],
         )
 
-    @visit_node.register(ops.TimeDelta)
-    @visit_node.register(ops.TimestampDelta)
-    @visit_node.register(ops.DateDelta)
     def visit_TemporalDelta(self, op, *, part, left, right):
         right = self.visit_TemporalTruncate(None, arg=right, unit=part)
         left = self.visit_TemporalTruncate(None, arg=left, unit=part)
@@ -458,20 +459,21 @@ class FlinkCompiler(SQLGlotCompiler):
             self.cast(left, dt.timestamp),
         )
 
-    @visit_node.register(ops.TimestampTruncate)
-    @visit_node.register(ops.DateTruncate)
-    @visit_node.register(ops.TimeTruncate)
+    visit_TimeDelta = visit_DateDelta = visit_TimestampDelta = visit_TemporalDelta
+
     def visit_TemporalTruncate(self, op, *, arg, unit):
         unit_var = self.v[unit.name]
         arg_sql = arg.sql(self.dialect)
         unit_sql = unit_var.sql(self.dialect)
         return self.f.floor(self.v[f"{arg_sql} TO {unit_sql}"])
 
-    @visit_node.register(ops.StringContains)
+    visit_TimestampTruncate = (
+        visit_DateTruncate
+    ) = visit_TimeTruncate = visit_TemporalTruncate
+
     def visit_StringContains(self, op, *, haystack, needle):
         return self.f.instr(haystack, needle) > 0
 
-    @visit_node.register(ops.StringFind)
     def visit_StringFind(self, op, *, arg, substr, start, end):
         if end is not None:
             raise com.UnsupportedOperationError(
@@ -485,79 +487,38 @@ class FlinkCompiler(SQLGlotCompiler):
 
         return self.f.instr(arg, substr)
 
-    @visit_node.register(ops.StartsWith)
     def visit_StartsWith(self, op, *, arg, start):
         return self.f.left(arg, self.f.char_length(start)).eq(start)
 
-    @visit_node.register(ops.EndsWith)
     def visit_EndsWith(self, op, *, arg, end):
         return self.f.right(arg, self.f.char_length(end)).eq(end)
 
-    @visit_node.register(ops.ExtractProtocol)
-    @visit_node.register(ops.ExtractAuthority)
-    @visit_node.register(ops.ExtractUserInfo)
-    @visit_node.register(ops.ExtractHost)
-    @visit_node.register(ops.ExtractFile)
-    @visit_node.register(ops.ExtractPath)
     def visit_ExtractUrlField(self, op, *, arg):
         return self.f.parse_url(arg, type(op).__name__[len("Extract") :].upper())
 
-    @visit_node.register(ops.ExtractQuery)
+    visit_ExtractAuthority = (
+        visit_ExtractHost
+    ) = (
+        visit_ExtractUserInfo
+    ) = (
+        visit_ExtractProtocol
+    ) = visit_ExtractFile = visit_ExtractPath = visit_ExtractUrlField
+
     def visit_ExtractQuery(self, op, *, arg, key):
         return self.f.parse_url(*filter(None, (arg, "QUERY", key)))
 
-    @visit_node.register(ops.ExtractFragment)
     def visit_ExtractFragment(self, op, *, arg):
         return self.f.parse_url(arg, "REF")
 
-    @visit_node.register(ops.CountStar)
     def visit_CountStar(self, op, *, arg, where):
         if where is None:
             return self.f.count(STAR)
         return self.f.sum(self.cast(where, dt.int64))
 
-    @visit_node.register(ops.CountDistinct)
     def visit_CountDistinct(self, op, *, arg, where):
         if where is not None:
             arg = self.if_(where, arg, self.f.array(arg)[2])
         return self.f.count(sge.Distinct(expressions=[arg]))
-
-    @visit_node.register(ops.AnalyticVectorizedUDF)
-    @visit_node.register(ops.ApproxMedian)
-    @visit_node.register(ops.Arbitrary)
-    @visit_node.register(ops.ArgMax)
-    @visit_node.register(ops.ArgMin)
-    @visit_node.register(ops.ArrayCollect)
-    @visit_node.register(ops.ArrayFlatten)
-    @visit_node.register(ops.ArraySort)
-    @visit_node.register(ops.ArrayStringJoin)
-    @visit_node.register(ops.Correlation)
-    @visit_node.register(ops.CountDistinctStar)
-    @visit_node.register(ops.Covariance)
-    @visit_node.register(ops.DateDiff)
-    @visit_node.register(ops.ExtractURLField)
-    @visit_node.register(ops.FindInSet)
-    @visit_node.register(ops.IsInf)
-    @visit_node.register(ops.IsNan)
-    @visit_node.register(ops.Levenshtein)
-    @visit_node.register(ops.MapMerge)
-    @visit_node.register(ops.Median)
-    @visit_node.register(ops.MultiQuantile)
-    @visit_node.register(ops.NthValue)
-    @visit_node.register(ops.Quantile)
-    @visit_node.register(ops.ReductionVectorizedUDF)
-    @visit_node.register(ops.RegexSplit)
-    @visit_node.register(ops.RowID)
-    @visit_node.register(ops.ScalarUDF)
-    @visit_node.register(ops.StringSplit)
-    @visit_node.register(ops.Translate)
-    @visit_node.register(ops.Unnest)
-    def visit_Undefined(self, op, **_):
-        raise com.OperationNotDefinedError(type(op).__name__)
-
-    @staticmethod
-    def _generate_groups(groups):
-        return groups
 
 
 _SIMPLE_OPS = {
@@ -588,13 +549,11 @@ for _op, _name in _SIMPLE_OPS.items():
     assert isinstance(type(_op), type), type(_op)
     if issubclass(_op, ops.Reduction):
 
-        @FlinkCompiler.visit_node.register(_op)
         def _fmt(self, op, *, _name: str = _name, where, **kw):
             return self.agg[_name](*kw.values(), where=where)
 
     else:
 
-        @FlinkCompiler.visit_node.register(_op)
         def _fmt(self, op, *, _name: str = _name, **kw):
             return self.f[_name](*kw.values())
 

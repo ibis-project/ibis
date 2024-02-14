@@ -409,7 +409,6 @@ def uses_java_re(t):
             id="find_start",
             marks=[
                 pytest.mark.notimpl(["polars"], raises=com.OperationNotDefinedError),
-                pytest.mark.notyet(["bigquery"], raises=NotImplementedError),
             ],
         ),
         param(

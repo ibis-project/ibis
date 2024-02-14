@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import calendar
-from functools import singledispatchmethod
 
 import sqlglot as sg
 import sqlglot.expressions as sge
@@ -62,6 +61,63 @@ class MSSQLCompiler(SQLGlotCompiler):
         *SQLGlotCompiler.rewrites,
     )
 
+    UNSUPPORTED_OPERATIONS = frozenset(
+        (
+            ops.Any,
+            ops.All,
+            ops.ApproxMedian,
+            ops.Arbitrary,
+            ops.ArgMax,
+            ops.ArgMin,
+            ops.ArrayCollect,
+            ops.Array,
+            ops.ArrayDistinct,
+            ops.ArrayFlatten,
+            ops.ArrayMap,
+            ops.ArraySort,
+            ops.ArrayUnion,
+            ops.BitAnd,
+            ops.BitOr,
+            ops.BitXor,
+            ops.Covariance,
+            ops.CountDistinctStar,
+            ops.DateAdd,
+            ops.DateDiff,
+            ops.DateSub,
+            ops.EndsWith,
+            ops.First,
+            ops.IntervalAdd,
+            ops.IntervalFromInteger,
+            ops.IntervalMultiply,
+            ops.IntervalSubtract,
+            ops.IsInf,
+            ops.IsNan,
+            ops.Last,
+            ops.LPad,
+            ops.Levenshtein,
+            ops.Map,
+            ops.Median,
+            ops.Mode,
+            ops.MultiQuantile,
+            ops.NthValue,
+            ops.Quantile,
+            ops.RegexExtract,
+            ops.RegexReplace,
+            ops.RegexSearch,
+            ops.RegexSplit,
+            ops.RowID,
+            ops.RPad,
+            ops.StartsWith,
+            ops.StringSplit,
+            ops.StringToTimestamp,
+            ops.StructColumn,
+            ops.TimestampAdd,
+            ops.TimestampDiff,
+            ops.TimestampSub,
+            ops.Unnest,
+        )
+    )
+
     @property
     def NAN(self):
         return self.f.double("NaN")
@@ -80,10 +136,6 @@ class MSSQLCompiler(SQLGlotCompiler):
             args = tuple(self.if_(where, arg, NULL) for arg in args)
         return func(*args)
 
-    @singledispatchmethod
-    def visit_node(self, op, **kwargs):
-        return super().visit_node(op, **kwargs)
-
     @staticmethod
     def _generate_groups(groups):
         return groups
@@ -99,7 +151,6 @@ class MSSQLCompiler(SQLGlotCompiler):
             return None
         return spec
 
-    @visit_node.register(ops.StringLength)
     def visit_StringLength(self, op, *, arg):
         """The MSSQL LEN function doesn't count trailing spaces.
 
@@ -116,7 +167,6 @@ class MSSQLCompiler(SQLGlotCompiler):
         """
         return paren(self.f.len(self.f.concat("A", arg, "Z")) - 2)
 
-    @visit_node.register(ops.Capitalize)
     def visit_Capitalize(self, op, *, arg):
         length = paren(self.f.len(self.f.concat("A", arg, "Z")) - 2)
         return self.f.concat(
@@ -124,29 +174,24 @@ class MSSQLCompiler(SQLGlotCompiler):
             self.f.lower(self.f.substring(arg, 2, length - 1)),
         )
 
-    @visit_node.register(ops.GroupConcat)
     def visit_GroupConcat(self, op, *, arg, sep, where):
         if where is not None:
             arg = self.if_(where, arg, NULL)
         return self.f.group_concat(arg, sep)
 
-    @visit_node.register(ops.CountStar)
     def visit_CountStar(self, op, *, arg, where):
         if where is not None:
             return self.f.sum(self.if_(where, 1, 0))
         return self.f.count(STAR)
 
-    @visit_node.register(ops.CountDistinct)
     def visit_CountDistinct(self, op, *, arg, where):
         if where is not None:
             arg = self.if_(where, arg, NULL)
         return self.f.count(sge.Distinct(expressions=[arg]))
 
-    @visit_node.register(ops.DayOfWeekIndex)
     def visit_DayOfWeekIndex(self, op, *, arg):
         return self.f.datepart(self.v.weekday, arg) - 1
 
-    @visit_node.register(ops.DayOfWeekName)
     def visit_DayOfWeekName(self, op, *, arg):
         days = calendar.day_name
         return sge.Case(
@@ -154,8 +199,6 @@ class MSSQLCompiler(SQLGlotCompiler):
             ifs=list(map(self.if_, *zip(*enumerate(days)))),
         )
 
-    @visit_node.register(ops.DateTruncate)
-    @visit_node.register(ops.TimestampTruncate)
     def visit_DateTimestampTruncate(self, op, *, arg, unit):
         interval_units = {
             "us": "microsecond",
@@ -174,23 +217,21 @@ class MSSQLCompiler(SQLGlotCompiler):
 
         return self.f.datetrunc(self.v[unit], arg, dialect=self.dialect)
 
-    @visit_node.register(ops.Date)
+    visit_DateTruncate = visit_TimestampTruncate = visit_DateTimestampTruncate
+
     def visit_Date(self, op, *, arg):
         return self.cast(arg, dt.date)
 
-    @visit_node.register(ops.TimeDelta)
-    @visit_node.register(ops.DateDelta)
-    @visit_node.register(ops.TimestampDelta)
     def visit_DateTimeDelta(self, op, *, left, right, part):
         return self.f.datediff(
             sge.Var(this=part.this.upper()), right, left, dialect=self.dialect
         )
 
-    @visit_node.register(ops.Xor)
+    visit_TimeDelta = visit_DateDelta = visit_TimestampDelta = visit_DateTimeDelta
+
     def visit_Xor(self, op, *, left, right):
         return sg.and_(sg.or_(left, right), sg.not_(sg.and_(left, right)))
 
-    @visit_node.register(ops.TimestampBucket)
     def visit_TimestampBucket(self, op, *, arg, interval, offset):
         interval_units = {
             "ms": "millisecond",
@@ -223,50 +264,50 @@ class MSSQLCompiler(SQLGlotCompiler):
 
         return self.f.date_bucket(part, op.interval.value, arg, origin)
 
-    @visit_node.register(ops.ExtractEpochSeconds)
     def visit_ExtractEpochSeconds(self, op, *, arg):
         return self.cast(
             self.f.datediff(self.v.s, "1970-01-01 00:00:00", arg, dialect=self.dialect),
             dt.int64,
         )
 
-    @visit_node.register(ops.ExtractYear)
-    @visit_node.register(ops.ExtractMonth)
-    @visit_node.register(ops.ExtractDay)
-    @visit_node.register(ops.ExtractDayOfYear)
-    @visit_node.register(ops.ExtractHour)
-    @visit_node.register(ops.ExtractMinute)
-    @visit_node.register(ops.ExtractSecond)
-    @visit_node.register(ops.ExtractMillisecond)
-    @visit_node.register(ops.ExtractMicrosecond)
-    def visit_Extract(self, op, *, arg):
+    def visit_ExtractTemporalComponent(self, op, *, arg):
         return self.f.datepart(self.v[type(op).__name__[len("Extract") :].lower()], arg)
 
-    @visit_node.register(ops.ExtractWeekOfYear)
+    visit_ExtractYear = (
+        visit_ExtractMonth
+    ) = (
+        visit_ExtractDay
+    ) = (
+        visit_ExtractDayOfYear
+    ) = (
+        visit_ExtractHour
+    ) = (
+        visit_ExtractMinute
+    ) = (
+        visit_ExtractSecond
+    ) = (
+        visit_ExtractMillisecond
+    ) = visit_ExtractMicrosecond = visit_ExtractTemporalComponent
+
     def visit_ExtractWeekOfYear(self, op, *, arg):
         return self.f.datepart(self.v.iso_week, arg)
 
-    @visit_node.register(ops.TimeFromHMS)
     def visit_TimeFromHMS(self, op, *, hours, minutes, seconds):
         return self.f.timefromparts(hours, minutes, seconds, 0, 0)
 
-    @visit_node.register(ops.TimestampFromYMDHMS)
     def visit_TimestampFromYMDHMS(
         self, op, *, year, month, day, hours, minutes, seconds
     ):
         return self.f.datetimefromparts(year, month, day, hours, minutes, seconds, 0)
 
-    @visit_node.register(ops.StringFind)
     def visit_StringFind(self, op, *, arg, substr, start, end):
         if start is not None:
             return self.f.charindex(substr, arg, start)
         return self.f.charindex(substr, arg)
 
-    @visit_node.register(ops.Round)
     def visit_Round(self, op, *, arg, digits):
         return self.f.round(arg, digits if digits is not None else 0)
 
-    @visit_node.register(ops.TimestampFromUNIX)
     def visit_TimestampFromUNIX(self, op, *, arg, unit):
         unit = unit.short
         if unit == "s":
@@ -321,17 +362,14 @@ class MSSQLCompiler(SQLGlotCompiler):
 
         return None
 
-    @visit_node.register(ops.Log2)
     def visit_Log2(self, op, *, arg):
         return self.f.log(arg, 2, dialect=self.dialect)
 
-    @visit_node.register(ops.Log)
     def visit_Log(self, op, *, arg, base):
         if base is None:
             return self.f.log(arg, dialect=self.dialect)
         return self.f.log(arg, base, dialect=self.dialect)
 
-    @visit_node.register(ops.Cast)
     def visit_Cast(self, op, *, arg, to):
         from_ = op.arg.dtype
 
@@ -342,25 +380,21 @@ class MSSQLCompiler(SQLGlotCompiler):
             return self.f.dateadd(self.v.s, arg, "1970-01-01 00:00:00")
         return super().visit_Cast(op, arg=arg, to=to)
 
-    @visit_node.register(ops.Sum)
     def visit_Sum(self, op, *, arg, where):
         if op.arg.dtype.is_boolean():
             arg = self.if_(arg, 1, 0)
         return self.agg.sum(arg, where=where)
 
-    @visit_node.register(ops.Mean)
     def visit_Mean(self, op, *, arg, where):
         if op.arg.dtype.is_boolean():
             arg = self.if_(arg, 1, 0)
         return self.agg.avg(arg, where=where)
 
-    @visit_node.register(ops.Not)
     def visit_Not(self, op, *, arg):
         if isinstance(arg, sge.Boolean):
             return FALSE if arg == TRUE else TRUE
         return self.if_(arg, 1, 0).eq(0)
 
-    @visit_node.register(ops.HashBytes)
     def visit_HashBytes(self, op, *, arg, how):
         if how in ("md5", "sha1"):
             return self.f.hashbytes(how, arg)
@@ -371,7 +405,6 @@ class MSSQLCompiler(SQLGlotCompiler):
         else:
             raise NotImplementedError(how)
 
-    @visit_node.register(ops.HexDigest)
     def visit_HexDigest(self, op, *, arg, how):
         if how in ("md5", "sha1"):
             hashbinary = self.f.hashbytes(how, arg)
@@ -390,65 +423,9 @@ class MSSQLCompiler(SQLGlotCompiler):
             )
         )
 
-    @visit_node.register(ops.StringConcat)
     def visit_StringConcat(self, op, *, arg):
         any_args_null = (a.is_(NULL) for a in arg)
         return self.if_(sg.or_(*any_args_null), NULL, self.f.concat(*arg))
-
-    @visit_node.register(ops.Any)
-    @visit_node.register(ops.All)
-    @visit_node.register(ops.ApproxMedian)
-    @visit_node.register(ops.Arbitrary)
-    @visit_node.register(ops.ArgMax)
-    @visit_node.register(ops.ArgMin)
-    @visit_node.register(ops.ArrayCollect)
-    @visit_node.register(ops.Array)
-    @visit_node.register(ops.ArrayDistinct)
-    @visit_node.register(ops.ArrayFlatten)
-    @visit_node.register(ops.ArrayMap)
-    @visit_node.register(ops.ArraySort)
-    @visit_node.register(ops.ArrayUnion)
-    @visit_node.register(ops.BitAnd)
-    @visit_node.register(ops.BitOr)
-    @visit_node.register(ops.BitXor)
-    @visit_node.register(ops.Covariance)
-    @visit_node.register(ops.CountDistinctStar)
-    @visit_node.register(ops.DateAdd)
-    @visit_node.register(ops.DateDiff)
-    @visit_node.register(ops.DateSub)
-    @visit_node.register(ops.EndsWith)
-    @visit_node.register(ops.First)
-    @visit_node.register(ops.IntervalAdd)
-    @visit_node.register(ops.IntervalFromInteger)
-    @visit_node.register(ops.IntervalMultiply)
-    @visit_node.register(ops.IntervalSubtract)
-    @visit_node.register(ops.IsInf)
-    @visit_node.register(ops.IsNan)
-    @visit_node.register(ops.Last)
-    @visit_node.register(ops.LPad)
-    @visit_node.register(ops.Levenshtein)
-    @visit_node.register(ops.Map)
-    @visit_node.register(ops.Median)
-    @visit_node.register(ops.Mode)
-    @visit_node.register(ops.MultiQuantile)
-    @visit_node.register(ops.NthValue)
-    @visit_node.register(ops.Quantile)
-    @visit_node.register(ops.RegexExtract)
-    @visit_node.register(ops.RegexReplace)
-    @visit_node.register(ops.RegexSearch)
-    @visit_node.register(ops.RegexSplit)
-    @visit_node.register(ops.RowID)
-    @visit_node.register(ops.RPad)
-    @visit_node.register(ops.StartsWith)
-    @visit_node.register(ops.StringSplit)
-    @visit_node.register(ops.StringToTimestamp)
-    @visit_node.register(ops.StructColumn)
-    @visit_node.register(ops.TimestampAdd)
-    @visit_node.register(ops.TimestampDiff)
-    @visit_node.register(ops.TimestampSub)
-    @visit_node.register(ops.Unnest)
-    def visit_Undefined(self, op, **_):
-        raise com.OperationNotDefinedError(type(op).__name__)
 
 
 _SIMPLE_OPS = {
@@ -472,13 +449,11 @@ for _op, _name in _SIMPLE_OPS.items():
     assert isinstance(type(_op), type), type(_op)
     if issubclass(_op, ops.Reduction):
 
-        @MSSQLCompiler.visit_node.register(_op)
         def _fmt(self, op, *, _name: str = _name, where, **kw):
             return self.agg[_name](*kw.values(), where=where)
 
     else:
 
-        @MSSQLCompiler.visit_node.register(_op)
         def _fmt(self, op, *, _name: str = _name, **kw):
             return self.f[_name](*kw.values())
 

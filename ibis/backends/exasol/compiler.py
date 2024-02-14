@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from functools import singledispatchmethod
-
 import sqlglot as sg
 import sqlglot.expressions as sge
 
@@ -34,6 +32,71 @@ class ExasolCompiler(SQLGlotCompiler):
         *SQLGlotCompiler.rewrites,
     )
 
+    UNSUPPORTED_OPERATIONS = frozenset(
+        (
+            ops.AnalyticVectorizedUDF,
+            ops.ApproxMedian,
+            ops.Arbitrary,
+            ops.ArgMax,
+            ops.ArgMin,
+            ops.ArrayCollect,
+            ops.ArrayDistinct,
+            ops.ArrayFilter,
+            ops.ArrayFlatten,
+            ops.ArrayIntersect,
+            ops.ArrayMap,
+            ops.ArraySort,
+            ops.ArrayStringJoin,
+            ops.ArrayUnion,
+            ops.ArrayZip,
+            ops.BitwiseNot,
+            ops.Covariance,
+            ops.CumeDist,
+            ops.DateAdd,
+            ops.DateDelta,
+            ops.DateSub,
+            ops.DateFromYMD,
+            ops.DayOfWeekIndex,
+            ops.DayOfWeekName,
+            ops.ElementWiseVectorizedUDF,
+            ops.ExtractDayOfYear,
+            ops.ExtractEpochSeconds,
+            ops.ExtractQuarter,
+            ops.ExtractWeekOfYear,
+            ops.First,
+            ops.IntervalFromInteger,
+            ops.IsInf,
+            ops.IsNan,
+            ops.Last,
+            ops.Levenshtein,
+            ops.Median,
+            ops.MultiQuantile,
+            ops.Quantile,
+            ops.ReductionVectorizedUDF,
+            ops.RegexExtract,
+            ops.RegexReplace,
+            ops.RegexSearch,
+            ops.RegexSplit,
+            ops.RowID,
+            ops.StandardDev,
+            ops.Strftime,
+            ops.StringJoin,
+            ops.StringSplit,
+            ops.StringToTimestamp,
+            ops.TimeDelta,
+            ops.TimestampAdd,
+            ops.TimestampBucket,
+            ops.TimestampDelta,
+            ops.TimestampDiff,
+            ops.TimestampNow,
+            ops.TimestampSub,
+            ops.TimestampTruncate,
+            ops.TypeOf,
+            ops.Unnest,
+            ops.Variance,
+        )
+    )
+
     @staticmethod
     def _minimize_spec(start, end, spec):
         if (
@@ -56,10 +119,6 @@ class ExasolCompiler(SQLGlotCompiler):
         """Exasol does not allow dots in quoted column names."""
         return name.replace(".", "_")
 
-    @singledispatchmethod
-    def visit_node(self, op, **kw):
-        return super().visit_node(op, **kw)
-
     def visit_NonNullLiteral(self, op, *, value, dtype):
         if dtype.is_date():
             return self.cast(value.isoformat(), dtype)
@@ -74,105 +133,38 @@ class ExasolCompiler(SQLGlotCompiler):
             return sge.convert(str(value))
         return super().visit_NonNullLiteral(op, value=value, dtype=dtype)
 
-    @visit_node.register(ops.Date)
     def visit_Date(self, op, *, arg):
         return self.cast(arg, dt.date)
 
-    @visit_node.register(ops.StartsWith)
     def visit_StartsWith(self, op, *, arg, start):
         return self.f.left(arg, self.f.length(start)).eq(start)
 
-    @visit_node.register(ops.EndsWith)
     def visit_EndsWith(self, op, *, arg, end):
         return self.f.right(arg, self.f.length(end)).eq(end)
 
-    @visit_node.register(ops.StringFind)
     def visit_StringFind(self, op, *, arg, substr, start, end):
         return self.f.locate(substr, arg, (start if start is not None else 0) + 1)
 
-    @visit_node.register(ops.StringSQLILike)
     def visit_StringSQLILike(self, op, *, arg, pattern, escape):
         return self.f.upper(arg).like(self.f.upper(pattern))
 
-    @visit_node.register(ops.StringContains)
     def visit_StringContains(self, op, *, haystack, needle):
         return self.f.locate(needle, haystack) > 0
 
-    @visit_node.register(ops.ExtractSecond)
     def visit_ExtractSecond(self, op, *, arg):
         return self.f.floor(self.cast(self.f.extract(self.v.second, arg), op.dtype))
 
-    @visit_node.register(ops.StringConcat)
     def visit_StringConcat(self, op, *, arg):
         any_args_null = (a.is_(NULL) for a in arg)
         return self.if_(sg.or_(*any_args_null), NULL, self.f.concat(*arg))
 
-    @visit_node.register(ops.AnalyticVectorizedUDF)
-    @visit_node.register(ops.ApproxMedian)
-    @visit_node.register(ops.Arbitrary)
-    @visit_node.register(ops.ArgMax)
-    @visit_node.register(ops.ArgMin)
-    @visit_node.register(ops.ArrayCollect)
-    @visit_node.register(ops.ArrayDistinct)
-    @visit_node.register(ops.ArrayFilter)
-    @visit_node.register(ops.ArrayFlatten)
-    @visit_node.register(ops.ArrayIntersect)
-    @visit_node.register(ops.ArrayMap)
-    @visit_node.register(ops.ArraySort)
-    @visit_node.register(ops.ArrayStringJoin)
-    @visit_node.register(ops.ArrayUnion)
-    @visit_node.register(ops.ArrayZip)
-    @visit_node.register(ops.BitwiseNot)
-    @visit_node.register(ops.Covariance)
-    @visit_node.register(ops.CumeDist)
-    @visit_node.register(ops.DateAdd)
-    @visit_node.register(ops.DateDelta)
-    @visit_node.register(ops.DateSub)
-    @visit_node.register(ops.DateFromYMD)
-    @visit_node.register(ops.DayOfWeekIndex)
-    @visit_node.register(ops.DayOfWeekName)
-    @visit_node.register(ops.ElementWiseVectorizedUDF)
-    @visit_node.register(ops.ExtractDayOfYear)
-    @visit_node.register(ops.ExtractEpochSeconds)
-    @visit_node.register(ops.ExtractQuarter)
-    @visit_node.register(ops.ExtractWeekOfYear)
-    @visit_node.register(ops.First)
-    @visit_node.register(ops.IntervalFromInteger)
-    @visit_node.register(ops.IsInf)
-    @visit_node.register(ops.IsNan)
-    @visit_node.register(ops.Last)
-    @visit_node.register(ops.Levenshtein)
-    @visit_node.register(ops.Median)
-    @visit_node.register(ops.MultiQuantile)
-    @visit_node.register(ops.Quantile)
-    @visit_node.register(ops.ReductionVectorizedUDF)
-    @visit_node.register(ops.RegexExtract)
-    @visit_node.register(ops.RegexReplace)
-    @visit_node.register(ops.RegexSearch)
-    @visit_node.register(ops.RegexSplit)
-    @visit_node.register(ops.RowID)
-    @visit_node.register(ops.StandardDev)
-    @visit_node.register(ops.Strftime)
-    @visit_node.register(ops.StringJoin)
-    @visit_node.register(ops.StringSplit)
-    @visit_node.register(ops.StringToTimestamp)
-    @visit_node.register(ops.TimeDelta)
-    @visit_node.register(ops.TimestampAdd)
-    @visit_node.register(ops.TimestampBucket)
-    @visit_node.register(ops.TimestampDelta)
-    @visit_node.register(ops.TimestampDiff)
-    @visit_node.register(ops.TimestampNow)
-    @visit_node.register(ops.TimestampSub)
-    @visit_node.register(ops.TimestampTruncate)
-    @visit_node.register(ops.TypeOf)
-    @visit_node.register(ops.Unnest)
-    @visit_node.register(ops.Variance)
-    def visit_Undefined(self, op, **_):
-        raise com.OperationNotDefinedError(type(op).__name__)
+    def visit_CountDistinctStar(self, op, *, arg, where):
+        raise com.UnsupportedOperationError(
+            "COUNT(DISTINCT *) is not supported in Exasol"
+        )
 
-    @visit_node.register(ops.CountDistinctStar)
-    def visit_Unsupported(self, op, **_):
-        raise com.UnsupportedOperationError(type(op).__name__)
+    def visit_DateTruncate(self, op, *, arg, unit):
+        return super().visit_TimestampTruncate(op, arg=arg, unit=unit)
 
 
 _SIMPLE_OPS = {
@@ -186,13 +178,11 @@ for _op, _name in _SIMPLE_OPS.items():
     assert isinstance(type(_op), type), type(_op)
     if issubclass(_op, ops.Reduction):
 
-        @ExasolCompiler.visit_node.register(_op)
         def _fmt(self, op, *, _name: str = _name, where, **kw):
             return self.agg[_name](*kw.values(), where=where)
 
     else:
 
-        @ExasolCompiler.visit_node.register(_op)
         def _fmt(self, op, *, _name: str = _name, **kw):
             return self.f[_name](*kw.values())
 

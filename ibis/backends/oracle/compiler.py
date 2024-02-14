@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from functools import singledispatchmethod
-
 import sqlglot as sg
 import sqlglot.expressions as sge
 import toolz
@@ -13,7 +11,6 @@ from ibis.backends.base.sqlglot.compiler import NULL, STAR, SQLGlotCompiler
 from ibis.backends.base.sqlglot.datatypes import OracleType
 from ibis.backends.base.sqlglot.dialects import Oracle
 from ibis.backends.base.sqlglot.rewrites import (
-    Window,
     exclude_unsupported_window_frame_from_ops,
     exclude_unsupported_window_frame_from_row_number,
     replace_log2,
@@ -52,6 +49,42 @@ class OracleCompiler(SQLGlotCompiler):
     NEG_INF = sge.Literal.number("-binary_double_infinity")
     """Backend's negative infinity literal."""
 
+    UNSUPPORTED_OPERATIONS = frozenset(
+        (
+            ops.Arbitrary,
+            ops.ArgMax,
+            ops.ArgMin,
+            ops.ArrayCollect,
+            ops.Array,
+            ops.ArrayFlatten,
+            ops.ArrayMap,
+            ops.ArrayStringJoin,
+            ops.First,
+            ops.Last,
+            ops.Mode,
+            ops.MultiQuantile,
+            ops.RegexSplit,
+            ops.StringSplit,
+            ops.TimeTruncate,
+            ops.Bucket,
+            ops.TimestampBucket,
+            ops.TimeDelta,
+            ops.DateDelta,
+            ops.TimestampDelta,
+            ops.TimestampNow,
+            ops.TimestampFromYMDHMS,
+            ops.TimeFromHMS,
+            ops.IntervalFromInteger,
+            ops.DayOfWeekIndex,
+            ops.DayOfWeekName,
+            ops.DateDiff,
+            ops.ExtractEpochSeconds,
+            ops.ExtractWeekOfYear,
+            ops.ExtractDayOfYear,
+            ops.RowID,
+        )
+    )
+
     def _aggregate(self, funcname: str, *args, where):
         func = self.f[funcname]
         if where is not None:
@@ -62,11 +95,6 @@ class OracleCompiler(SQLGlotCompiler):
     def _generate_groups(groups):
         return groups
 
-    @singledispatchmethod
-    def visit_node(self, op, **kwargs):
-        return super().visit_node(op, **kwargs)
-
-    @visit_node.register(ops.Equals)
     def visit_Equals(self, op, *, left, right):
         # Oracle didn't have proper boolean types until recently and we handle them
         # as integers so we end up with things like "t0"."bool_col" = 1 (for True)
@@ -81,7 +109,6 @@ class OracleCompiler(SQLGlotCompiler):
                 return sg.not_(left)
         return super().visit_Equals(op, left=left, right=right)
 
-    @visit_node.register(ops.IsNull)
     def visit_IsNull(self, op, *, arg):
         # TODO(gil): find a better way to handle this
         # but CASE WHEN (bool_col = 1) IS NULL isn't valid and we can simply check if
@@ -90,7 +117,6 @@ class OracleCompiler(SQLGlotCompiler):
             return arg.this.is_(NULL)
         return arg.is_(NULL)
 
-    @visit_node.register(ops.Literal)
     def visit_Literal(self, op, *, value, dtype):
         # avoid casting NULL -- oracle handling for these casts is... complicated
         if value is None:
@@ -122,7 +148,6 @@ class OracleCompiler(SQLGlotCompiler):
 
         return super().visit_Literal(op, value=value, dtype=dtype)
 
-    @visit_node.register(ops.Cast)
     def visit_Cast(self, op, *, arg, to):
         if to.is_interval():
             # CASTing to an INTERVAL in Oracle requires specifying digits of
@@ -138,7 +163,6 @@ class OracleCompiler(SQLGlotCompiler):
                 )
         return self.cast(arg, to)
 
-    @visit_node.register(ops.Limit)
     def visit_Limit(self, op, *, parent, n, offset):
         # push limit/offset into subqueries
         if isinstance(parent, sge.Subquery) and parent.this.args.get("limit") is None:
@@ -173,61 +197,47 @@ class OracleCompiler(SQLGlotCompiler):
             return result.subquery(alias)
         return result
 
-    @visit_node.register(ops.Date)
     def visit_Date(self, op, *, arg):
         return sg.cast(arg, to="date")
 
-    @visit_node.register(ops.IsNan)
     def visit_IsNan(self, op, *, arg):
         return arg.eq(self.NAN)
 
-    @visit_node.register(ops.Log)
     def visit_Log(self, op, *, arg, base):
         return self.f.log(base, arg, dialect=self.dialect)
 
-    @visit_node.register(ops.IsInf)
     def visit_IsInf(self, op, *, arg):
         return arg.isin(self.POS_INF, self.NEG_INF)
 
-    @visit_node.register(ops.RandomScalar)
     def visit_RandomScalar(self, op):
         # Not using FuncGen here because of dotted function call
         return sg.func("dbms_random.value")
 
-    @visit_node.register(ops.Pi)
     def visit_Pi(self, op):
         return self.f.acos(-1)
 
-    @visit_node.register(ops.Cot)
     def visit_Cot(self, op, *, arg):
         return 1 / self.f.tan(arg)
 
-    @visit_node.register(ops.Degrees)
     def visit_Degrees(self, op, *, arg):
         return 180 * arg / self.visit_node(ops.Pi())
 
-    @visit_node.register(ops.Radians)
     def visit_Radians(self, op, *, arg):
         return self.visit_node(ops.Pi()) * arg / 180
 
-    @visit_node.register(ops.Modulus)
     def visit_Modulus(self, op, *, left, right):
         return self.f.mod(left, right)
 
-    @visit_node.register(ops.Levenshtein)
     def visit_Levenshtein(self, op, *, left, right):
         # Not using FuncGen here because of dotted function call
         return sg.func("utl_match.edit_distance", left, right)
 
-    @visit_node.register(ops.StartsWith)
     def visit_StartsWith(self, op, *, arg, start):
         return self.f.substr(arg, 0, self.f.length(start)).eq(start)
 
-    @visit_node.register(ops.EndsWith)
     def visit_EndsWith(self, op, *, arg, end):
         return self.f.substr(arg, -1 * self.f.length(end), self.f.length(end)).eq(end)
 
-    @visit_node.register(ops.StringFind)
     def visit_StringFind(self, op, *, arg, substr, start, end):
         if end is not None:
             raise NotImplementedError("`end` is not implemented")
@@ -242,11 +252,9 @@ class OracleCompiler(SQLGlotCompiler):
 
         return self.f.instr(arg, sub_string)
 
-    @visit_node.register(ops.StrRight)
     def visit_StrRight(self, op, *, arg, nchars):
         return self.f.substr(arg, -nchars)
 
-    @visit_node.register(ops.RegexExtract)
     def visit_RegexExtract(self, op, *, arg, pattern, index):
         return self.if_(
             index.eq(0),
@@ -254,21 +262,17 @@ class OracleCompiler(SQLGlotCompiler):
             self.f.regexp_substr(arg, pattern, 1, 1, "cn", index),
         )
 
-    @visit_node.register(ops.RegexReplace)
     def visit_RegexReplace(self, op, *, arg, pattern, replacement):
         return sge.RegexpReplace(this=arg, expression=pattern, replacement=replacement)
 
-    @visit_node.register(ops.StringContains)
     def visit_StringContains(self, op, *, haystack, needle):
         return self.f.instr(haystack, needle) > 0
 
-    @visit_node.register(ops.StringJoin)
     def visit_StringJoin(self, op, *, arg, sep):
         return self.f.concat(*toolz.interpose(sep, arg))
 
     ## Aggregate stuff
 
-    @visit_node.register(ops.Correlation)
     def visit_Correlation(self, op, *, left, right, where, how):
         if how == "sample":
             raise ValueError(
@@ -276,17 +280,14 @@ class OracleCompiler(SQLGlotCompiler):
             )
         return self.agg.corr(left, right, where=where)
 
-    @visit_node.register(ops.Covariance)
     def visit_Covariance(self, op, *, left, right, where, how):
         if how == "sample":
             return self.agg.covar_samp(left, right, where=where)
         return self.agg.covar_pop(left, right, where=where)
 
-    @visit_node.register(ops.ApproxMedian)
     def visit_ApproxMedian(self, op, *, arg, where):
         return self.visit_Quantile(op, arg=arg, quantile=0.5, where=where)
 
-    @visit_node.register(ops.Quantile)
     def visit_Quantile(self, op, *, arg, quantile, where):
         suffix = "cont" if op.arg.dtype.is_numeric() else "disc"
         funcname = f"percentile_{suffix}"
@@ -300,20 +301,17 @@ class OracleCompiler(SQLGlotCompiler):
         )
         return expr
 
-    @visit_node.register(ops.CountDistinct)
     def visit_CountDistinct(self, op, *, arg, where):
         if where is not None:
             arg = self.if_(where, arg)
 
         return sge.Count(this=sge.Distinct(expressions=[arg]))
 
-    @visit_node.register(ops.CountStar)
     def visit_CountStar(self, op, *, arg, where):
         if where is not None:
             return self.f.count(self.if_(where, 1, NULL))
         return self.f.count(STAR)
 
-    @visit_node.register(ops.IdenticalTo)
     def visit_IdenticalTo(self, op, *, left, right):
         # sqlglot NullSafeEQ uses "is not distinct from" which isn't supported in oracle
         return (
@@ -323,12 +321,9 @@ class OracleCompiler(SQLGlotCompiler):
             .eq(0)
         )
 
-    @visit_node.register(ops.Xor)
     def visit_Xor(self, op, *, left, right):
         return (left.or_(right)).and_(sg.not_(left.and_(right)))
 
-    @visit_node.register(ops.TimestampTruncate)
-    @visit_node.register(ops.DateTruncate)
     def visit_DateTruncate(self, op, *, arg, unit):
         trunc_unit_mapping = {
             "Y": "year",
@@ -359,7 +354,8 @@ class OracleCompiler(SQLGlotCompiler):
 
         return self.f.trunc(arg, unyt)
 
-    @visit_node.register(Window)
+    visit_TimestampTruncate = visit_DateTruncate
+
     def visit_Window(self, op, *, how, func, start, end, group_by, order_by):
         # Oracle has two (more?) types of analytic functions you can use inside OVER.
         #
@@ -441,44 +437,9 @@ class OracleCompiler(SQLGlotCompiler):
 
         return sge.Window(this=func, partition_by=group_by, order=order, spec=spec)
 
-    @visit_node.register(ops.StringConcat)
     def visit_StringConcat(self, op, *, arg):
         any_args_null = (a.is_(NULL) for a in arg)
         return self.if_(sg.or_(*any_args_null), NULL, self.f.concat(*arg))
-
-    @visit_node.register(ops.Arbitrary)
-    @visit_node.register(ops.ArgMax)
-    @visit_node.register(ops.ArgMin)
-    @visit_node.register(ops.ArrayCollect)
-    @visit_node.register(ops.Array)
-    @visit_node.register(ops.ArrayFlatten)
-    @visit_node.register(ops.ArrayMap)
-    @visit_node.register(ops.ArrayStringJoin)
-    @visit_node.register(ops.First)
-    @visit_node.register(ops.Last)
-    @visit_node.register(ops.Mode)
-    @visit_node.register(ops.MultiQuantile)
-    @visit_node.register(ops.RegexSplit)
-    @visit_node.register(ops.StringSplit)
-    @visit_node.register(ops.TimeTruncate)
-    @visit_node.register(ops.Bucket)
-    @visit_node.register(ops.TimestampBucket)
-    @visit_node.register(ops.TimeDelta)
-    @visit_node.register(ops.DateDelta)
-    @visit_node.register(ops.TimestampDelta)
-    @visit_node.register(ops.TimestampNow)
-    @visit_node.register(ops.TimestampFromYMDHMS)
-    @visit_node.register(ops.TimeFromHMS)
-    @visit_node.register(ops.IntervalFromInteger)
-    @visit_node.register(ops.DayOfWeekIndex)
-    @visit_node.register(ops.DayOfWeekName)
-    @visit_node.register(ops.DateDiff)
-    @visit_node.register(ops.ExtractEpochSeconds)
-    @visit_node.register(ops.ExtractWeekOfYear)
-    @visit_node.register(ops.ExtractDayOfYear)
-    @visit_node.register(ops.RowID)
-    def visit_Undefined(self, op, **_):
-        raise com.OperationNotDefinedError(type(op).__name__)
 
 
 _SIMPLE_OPS = {
@@ -499,13 +460,11 @@ for _op, _name in _SIMPLE_OPS.items():
     assert isinstance(type(_op), type), type(_op)
     if issubclass(_op, ops.Reduction):
 
-        @OracleCompiler.visit_node.register(_op)
         def _fmt(self, op, *, _name: str = _name, where, **kw):
             return self.agg[_name](*kw.values(), where=where)
 
     else:
 
-        @OracleCompiler.visit_node.register(_op)
         def _fmt(self, op, *, _name: str = _name, **kw):
             return self.f[_name](*kw.values())
 

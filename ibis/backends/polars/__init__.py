@@ -379,19 +379,19 @@ class Backend(BaseBackend, NoUrl):
     @classmethod
     @lru_cache
     def _get_operations(cls):
-        return frozenset(op for op in translate.registry if issubclass(op, ops.Value))
+        return tuple(op for op in translate.registry if issubclass(op, ops.Value))
 
     @classmethod
     def has_operation(cls, operation: type[ops.Value]) -> bool:
         # Polars doesn't support geospatial ops, but the dispatcher implements
         # a common base class that makes it appear that it does. Explicitly
         # exclude these operations.
-        if issubclass(operation, (ops.GeoSpatialUnOp, ops.GeoSpatialBinOp)):
+        if issubclass(
+            operation, (ops.GeoSpatialUnOp, ops.GeoSpatialBinOp, ops.GeoUnaryUnion)
+        ):
             return False
         op_classes = cls._get_operations()
-        return operation in op_classes or any(
-            issubclass(operation, op_impl) for op_impl in op_classes
-        )
+        return operation in op_classes or issubclass(operation, op_classes)
 
     def compile(
         self, expr: ir.Expr, params: Mapping[ir.Expr, object] | None = None, **_: Any
