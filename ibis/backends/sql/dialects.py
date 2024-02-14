@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import contextlib
+import math
 
 import sqlglot.expressions as sge
 from sqlglot import transforms
@@ -68,6 +69,47 @@ class Exasol(Postgres):
         }
 
 
+def _calculate_precision(interval_value: int) -> int:
+    """Calculate interval precision.
+
+    FlinkSQL interval data types use leading precision and fractional-
+    seconds precision. Because the leading precision defaults to 2, we need to
+    specify a different precision when the value exceeds 2 digits.
+
+    (see
+    https://learn.microsoft.com/en-us/sql/odbc/reference/appendixes/interval-literals)
+    """
+    # log10(interval_value) + 1 is equivalent to len(str(interval_value)), but is significantly
+    # faster and more memory-efficient
+    if interval_value == 0:
+        return 0
+    if interval_value < 0:
+        raise ValueError(
+            f"Expecting value to be a non-negative integer, got {interval_value}"
+        )
+    return int(math.log10(interval_value)) + 1
+
+
+def _interval_with_precision(self, e, quote_arg=True):
+    """Format interval with precision."""
+    arg = e.args["this"].this
+    formatted_arg = arg
+    with contextlib.suppress(AttributeError):
+        formatted_arg = arg.sql(self.dialect)
+
+    if quote_arg:
+        formatted_arg = f"'{formatted_arg}'"
+
+    unit = e.args["unit"]
+    # add precision when formatting interval scalars
+    if isinstance(arg, str):
+        prec = _calculate_precision(int(arg))
+        prec = max(prec, 2)
+        unit += f"({prec})"
+
+    return f"INTERVAL {formatted_arg} {unit}"
+
+
 class Flink(Hive):
     class Generator(Hive.Generator):
         TYPE_MAPPING = Hive.Generator.TYPE_MAPPING.copy() | {
@@ -91,6 +133,7 @@ class Flink(Hive):
             sge.DayOfYear: rename_func("dayofyear"),
             sge.DayOfWeek: rename_func("dayofweek"),
             sge.DayOfMonth: rename_func("dayofmonth"),
+            sge.Interval: _interval_with_precision,
         }
 
     class Tokenizer(Hive.Tokenizer):

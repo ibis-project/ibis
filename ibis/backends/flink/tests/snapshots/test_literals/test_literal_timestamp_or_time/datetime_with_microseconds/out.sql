@@ -1,2 +1,0 @@
-SELECT
-  CAST('2017-01-01 04:55:59.001122' AS TIMESTAMP) AS `datetime.datetime(2017, 1, 1, 4, 55, 59, 1122)`
