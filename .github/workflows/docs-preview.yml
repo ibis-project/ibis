@@ -5,13 +5,12 @@ on:
     types:
       - labeled
 
-concurrency:
-  group: ${{ github.repository }}-${{ github.head_ref || github.sha }}-${{ github.workflow }}
-  cancel-in-progress: true
-
 jobs:
   docs_preview:
     runs-on: ubuntu-latest
+    concurrency:
+      group: ${{ github.repository }}-${{ github.head_ref || github.sha }}-${{ github.workflow }}-${{ github.event.label.name }}
+      cancel-in-progress: true
     if: github.event.label.name == 'docs-preview'
     steps:
       - uses: tibdex/github-app-token@v2

@@ -20,10 +20,6 @@ permissions:
   # rate limit while restricting GITHUB_TOKEN permissions elsewhere
   contents: read
 
-concurrency:
-  group: ${{ github.repository }}-${{ github.head_ref || github.sha }}-${{ github.workflow }}
-  cancel-in-progress: true
-
 env:
   FORCE_COLOR: "1"
   SQLALCHEMY_WARN_20: "1"
@@ -35,8 +31,9 @@ jobs:
     # only a single bigquery or snowflake run at a time, otherwise test data is
     # clobbered by concurrent runs
     concurrency:
-      group: ${{ matrix.backend.name }}-${{ matrix.python-version }}
+      group: ${{ matrix.backend.name }}-${{ matrix.python-version }}-${{ github.event.label.name || 'ci-run-cloud' }}
       cancel-in-progress: false
+
     runs-on: ubuntu-latest
     if: github.event_name == 'push' || github.event.label.name == 'ci-run-cloud'
     strategy:
