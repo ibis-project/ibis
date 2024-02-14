@@ -177,13 +177,16 @@ def test_select_turns_value_with_multiple_parents_into_subquery():
 
 def test_value_to_array_creates_subquery():
     rel = t.int_col.sum().as_table()
-    with pytest.warns(FutureWarning, match="implicit"):
+    with pytest.warns(FutureWarning, match="as_scalar"):
         expr = rel.to_array()
 
     op = expr.op()
     assert op.shape.is_scalar()
     assert op.dtype.is_int64()
     assert isinstance(op, ops.ScalarSubquery)
+
+
+# TODO(kszucs): test as scalar
 
 
 def test_mutate():

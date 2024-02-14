@@ -1149,37 +1149,6 @@ class Value(Expr):
         """Sort an expression descending."""
         return ops.SortKey(self, ascending=False).to_expr()
 
-    def as_table(self) -> ir.Table:
-        """Promote the expression to a [Table](./expression-tables.qmd#ibis.expr.types.Table).
-
-        Returns
-        -------
-        Table
-            A table expression
-
-        Examples
-        --------
-        >>> import ibis
-        >>> t = ibis.table(dict(a="str"), name="t")
-        >>> expr = t.a.length().name("len").as_table()
-        >>> expected = t.select(len=t.a.length())
-        >>> expr.equals(expected)
-        True
-        """
-        parents = self.op().relations
-        values = {self.get_name(): self}
-
-        if len(parents) == 0:
-            return ops.DummyTable(values).to_expr()
-        elif len(parents) == 1:
-            (parent,) = parents
-            return parent.to_expr().select(self)
-        else:
-            raise com.RelationError(
-                f"Cannot convert {type(self)} expression involving multiple "
-                "base table references to a projection"
-            )
-
     def to_pandas(self, **kwargs) -> pd.Series:
         """Convert a column expression to a pandas Series or scalar object.
 
@@ -1233,6 +1202,9 @@ class Scalar(Value):
         from ibis.formats.pandas import PandasData
 
         return PandasData.convert_scalar(df, self.type())
+
+    def as_scalar(self):
+        return self
 
     def as_table(self) -> ir.Table:
         """Promote the scalar expression to a table.
@@ -1326,6 +1298,40 @@ class Column(Value, _FixedTextJupyterMixin):
         # this bug is fixed in later versions of geopandas
         (column,) = df.columns
         return PandasData.convert_column(df.loc[:, column], self.type())
+
+    def as_scalar(self) -> Scalar:
+        return self.as_table().as_scalar()
+
+    def as_table(self) -> ir.Table:
+        """Promote the expression to a [Table](./expression-tables.qmd#ibis.expr.types.Table).
+
+        Returns
+        -------
+        Table
+            A table expression
+
+        Examples
+        --------
+        >>> import ibis
+        >>> t = ibis.table(dict(a="str"), name="t")
+        >>> expr = t.a.length().name("len").as_table()
+        >>> expected = t.select(len=t.a.length())
+        >>> expr.equals(expected)
+        True
+        """
+        parents = self.op().relations
+        values = {self.get_name(): self}
+
+        if len(parents) == 0:
+            return ops.DummyTable(values).to_expr()
+        elif len(parents) == 1:
+            (parent,) = parents
+            return parent.to_expr().select(self)
+        else:
+            raise com.RelationError(
+                f"Cannot convert {type(self)} expression involving multiple "
+                "base table references to a projection"
+            )
 
     def _bind_reduction_filter(self, where):
         rels = self.op().relations

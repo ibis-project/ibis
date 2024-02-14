@@ -602,7 +602,11 @@ class Expr(Immutable, Coercible):
 
     def as_table(self) -> ir.Table:
         """Convert an expression to a table."""
-        raise NotImplementedError(type(self))
+        raise NotImplementedError("This expression cannot be converted to a table")
+
+    def as_scalar(self) -> ir.Scalar:
+        """Convert an expression to a scalar."""
+        raise NotImplementedError("This expression cannot be converted to a scalar")
 
 
 def _binop(op_class: type[ops.Binary], left: ir.Value, right: ir.Value) -> ir.Value:

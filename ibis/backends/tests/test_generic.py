@@ -770,6 +770,10 @@ def test_interactive(alltypes, monkeypatch):
 
 def test_correlated_subquery(alltypes):
     expr = alltypes[_.double_col > _.view().double_col]
+    with pytest.raises(com.IntegrityError):
+        expr.compile()
+
+    expr = alltypes[_.double_col > _.view().double_col.as_scalar()]
     assert expr.compile() is not None
 
 

@@ -285,6 +285,9 @@ class Table(Expr, _FixedTextJupyterMixin):
 
         return where.resolve(self)
 
+    def as_scalar(self) -> ir.ScalarExpr:
+        return ops.ScalarSubquery(self).to_expr()
+
     def as_table(self) -> Table:
         """Promote the expression to a table.
 
@@ -1805,7 +1808,7 @@ class Table(Expr, _FixedTextJupyterMixin):
             node = ops.Intersection(node, table, distinct=distinct)
         return node.to_expr().select(self.columns)
 
-    @deprecated(as_of="9.0", instead="conversion to scalar subquery is implicit")
+    @deprecated(as_of="9.0", instead="use table.as_scalar() instead")
     def to_array(self) -> ir.Column:
         """View a single column table as an array.
 
@@ -1819,8 +1822,7 @@ class Table(Expr, _FixedTextJupyterMixin):
             raise com.ExpressionError(
                 "Table must have exactly one column when viewed as array"
             )
-
-        return ops.ScalarSubquery(self).to_expr()
+        return self.as_scalar()
 
     def mutate(self, *exprs: Sequence[ir.Expr] | None, **mutations: ir.Value) -> Table:
         """Add columns to a table expression.
