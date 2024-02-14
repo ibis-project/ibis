@@ -34,6 +34,11 @@ class RisingwaveCompiler(PostgresCompiler):
         )
     )
 
+    SIMPLE_OPS = {
+        ops.First: "first_value",
+        ops.Last: "last_value",
+    }
+
     def visit_Correlation(self, op, *, left, right, how, where):
         if how == "sample":
             raise com.UnsupportedOperationError(
@@ -80,23 +85,3 @@ class RisingwaveCompiler(PostgresCompiler):
         elif dtype.is_json():
             return sge.convert(str(value))
         return None
-
-
-_SIMPLE_OPS = {
-    ops.First: "first_value",
-    ops.Last: "last_value",
-}
-
-for _op, _name in _SIMPLE_OPS.items():
-    assert isinstance(type(_op), type), type(_op)
-    if issubclass(_op, ops.Reduction):
-
-        def _fmt(self, op, *, _name: str = _name, where, **kw):
-            return self.agg[_name](*kw.values(), where=where)
-
-    else:
-
-        def _fmt(self, op, *, _name: str = _name, **kw):
-            return self.f[_name](*kw.values())
-
-    setattr(RisingwaveCompiler, f"visit_{_op.__name__}", _fmt)

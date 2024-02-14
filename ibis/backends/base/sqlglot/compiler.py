@@ -155,6 +155,20 @@ TRUE = sge.true()
 STAR = sge.Star()
 
 
+def parenthesize_inputs(f):
+    """Decorate a translation rule to parenthesize inputs."""
+
+    def wrapper(self, op, *, left, right):
+        return f(
+            self,
+            op,
+            left=self._add_parens(op.left, left),
+            right=self._add_parens(op.right, right),
+        )
+
+    return wrapper
+
+
 @public
 class SQLGlotCompiler(abc.ABC):
     __slots__ = "agg", "f", "v"
@@ -192,22 +206,168 @@ class SQLGlotCompiler(abc.ABC):
     UNSUPPORTED_OPERATIONS: frozenset[type[ops.Node]] = frozenset()
     """Set of operations the backend doesn't support."""
 
+    SIMPLE_OPS = {
+        ops.Abs: "abs",
+        ops.Acos: "acos",
+        ops.All: "bool_and",
+        ops.Any: "bool_or",
+        ops.ApproxCountDistinct: "approx_distinct",
+        ops.ArgMax: "max_by",
+        ops.ArgMin: "min_by",
+        ops.ArrayCollect: "array_agg",
+        ops.ArrayContains: "array_contains",
+        ops.ArrayFlatten: "flatten",
+        ops.ArrayLength: "array_size",
+        ops.ArraySort: "array_sort",
+        ops.ArrayStringJoin: "array_to_string",
+        ops.Asin: "asin",
+        ops.Atan2: "atan2",
+        ops.Atan: "atan",
+        ops.Capitalize: "initcap",
+        ops.Cos: "cos",
+        ops.Cot: "cot",
+        ops.Count: "count",
+        ops.CumeDist: "cume_dist",
+        ops.Date: "date",
+        ops.DateFromYMD: "datefromparts",
+        ops.Degrees: "degrees",
+        ops.DenseRank: "dense_rank",
+        ops.Exp: "exp",
+        ops.First: "first",
+        ops.FirstValue: "first_value",
+        ops.GroupConcat: "group_concat",
+        ops.IfElse: "if",
+        ops.IsInf: "isinf",
+        ops.IsNan: "isnan",
+        ops.JSONGetItem: "json_extract",
+        ops.LPad: "lpad",
+        ops.Last: "last",
+        ops.LastValue: "last_value",
+        ops.Levenshtein: "levenshtein",
+        ops.Ln: "ln",
+        ops.Log10: "log",
+        ops.Log2: "log2",
+        ops.Lowercase: "lower",
+        ops.Map: "map",
+        ops.Median: "median",
+        ops.MinRank: "rank",
+        ops.NTile: "ntile",
+        ops.NthValue: "nth_value",
+        ops.NullIf: "nullif",
+        ops.PercentRank: "percent_rank",
+        ops.Pi: "pi",
+        ops.Power: "pow",
+        ops.RPad: "rpad",
+        ops.Radians: "radians",
+        ops.RandomScalar: "random",
+        ops.RegexSearch: "regexp_like",
+        ops.RegexSplit: "regexp_split",
+        ops.Repeat: "repeat",
+        ops.Reverse: "reverse",
+        ops.RowNumber: "row_number",
+        ops.Sign: "sign",
+        ops.Sin: "sin",
+        ops.Sqrt: "sqrt",
+        ops.StartsWith: "starts_with",
+        ops.StrRight: "right",
+        ops.StringAscii: "ascii",
+        ops.StringContains: "contains",
+        ops.StringLength: "length",
+        ops.StringReplace: "replace",
+        ops.StringSplit: "split",
+        ops.StringToTimestamp: "str_to_time",
+        ops.Tan: "tan",
+        ops.Translate: "translate",
+        ops.Unnest: "explode",
+        ops.Uppercase: "upper",
+    }
+
+    BINARY_INFIX_OPS = (
+        # Binary operations
+        ops.Add,
+        ops.Subtract,
+        ops.Multiply,
+        ops.Divide,
+        ops.Modulus,
+        ops.Power,
+        # Comparisons
+        ops.GreaterEqual,
+        ops.Greater,
+        ops.LessEqual,
+        ops.Less,
+        ops.Equals,
+        ops.NotEquals,
+        # Boolean comparisons
+        ops.And,
+        ops.Or,
+        ops.Xor,
+        # Bitwise business
+        ops.BitwiseLeftShift,
+        ops.BitwiseRightShift,
+        ops.BitwiseAnd,
+        ops.BitwiseOr,
+        ops.BitwiseXor,
+        # Time arithmetic
+        ops.DateAdd,
+        ops.DateSub,
+        ops.DateDiff,
+        ops.TimestampAdd,
+        ops.TimestampSub,
+        ops.TimestampDiff,
+        # Interval Marginalia
+        ops.IntervalAdd,
+        ops.IntervalMultiply,
+        ops.IntervalSubtract,
+    )
+
     def __init__(self) -> None:
         self.agg = AggGen(aggfunc=self._aggregate)
         self.f = FuncGen()
         self.v = VarGen()
 
     def __init_subclass__(cls, **kwargs):
-        for leaf in ALL_OPERATIONS:
-            if not hasattr(cls, f"visit_{leaf.__name__}"):
-                setattr(cls, f"visit_{leaf.__name__}", cls.visit_Undefined)
+        super().__init_subclass__(**kwargs)
 
-        for leaf in cls.UNSUPPORTED_OPERATIONS:
+        def methodname(op: type) -> str:
+            assert isinstance(type(op), type), type(op)
+            return f"visit_{op.__name__}"
+
+        def make_impl(op, target_name):
+            assert isinstance(type(op), type), type(op)
+
+            if issubclass(op, ops.Reduction):
+
+                def impl(self, _, *, _name: str = target_name, where, **kw):
+                    return self.agg[_name](*kw.values(), where=where)
+
+            else:
+
+                def impl(self, _, *, _name: str = target_name, **kw):
+                    return self.f[_name](*kw.values())
+
+            return impl
+
+        # unconditionally raise an exception for unsupported operations
+        for op in cls.UNSUPPORTED_OPERATIONS:
             # change to visit_Unsupported in a follow up
             # TODO: handle geoespatial ops as a separate case?
-            setattr(cls, f"visit_{leaf.__name__}", cls.visit_Undefined)
+            setattr(cls, methodname(op), cls.visit_Undefined)
 
-        super().__init_subclass__(**kwargs)
+        # override existing base class implementations
+        for op, target_name in cls.SIMPLE_OPS.items():
+            setattr(cls, methodname(op), make_impl(op, target_name))
+
+        # add simple ops that are not already implemented
+        for op, target_name in SQLGlotCompiler.SIMPLE_OPS.items():
+            name = methodname(op)
+            if not hasattr(cls, name):
+                setattr(cls, name, make_impl(op, target_name))
+
+        # raise on any remaining unsupported operations
+        for op in ALL_OPERATIONS:
+            name = methodname(op)
+            if not hasattr(cls, name):
+                setattr(cls, name, cls.visit_Undefined)
 
     @property
     @abc.abstractmethod
@@ -1029,8 +1189,9 @@ class SQLGlotCompiler(abc.ABC):
 
         return sel
 
-    def _add_parens(self, op, sg_expr):
-        if type(op) in _BINARY_INFIX_OPS:
+    @classmethod
+    def _add_parens(cls, op, sg_expr):
+        if isinstance(op, cls.BINARY_INFIX_OPS):
             return paren(sg_expr)
         return sg_expr
 
@@ -1195,6 +1356,96 @@ class SQLGlotCompiler(abc.ABC):
     def visit_RegexExtract(self, op, *, arg, pattern, index):
         return self.f.regexp_extract(arg, pattern, index, dialect=self.dialect)
 
+    @parenthesize_inputs
+    def visit_Add(self, op, *, left, right):
+        return sge.Add(this=left, expression=right)
+
+    visit_DateAdd = visit_TimestampAdd = visit_IntervalAdd = visit_Add
+
+    @parenthesize_inputs
+    def visit_Subtract(self, op, *, left, right):
+        return sge.Sub(this=left, expression=right)
+
+    visit_DateSub = (
+        visit_DateDiff
+    ) = (
+        visit_TimestampSub
+    ) = visit_TimestampDiff = visit_IntervalSubtract = visit_Subtract
+
+    @parenthesize_inputs
+    def visit_Multiply(self, op, *, left, right):
+        return sge.Mul(this=left, expression=right)
+
+    visit_IntervalMultiply = visit_Multiply
+
+    @parenthesize_inputs
+    def visit_Divide(self, op, *, left, right):
+        return sge.Div(this=left, expression=right)
+
+    @parenthesize_inputs
+    def visit_Modulus(self, op, *, left, right):
+        return sge.Mod(this=left, expression=right)
+
+    @parenthesize_inputs
+    def visit_Power(self, op, *, left, right):
+        return sge.Pow(this=left, expression=right)
+
+    @parenthesize_inputs
+    def visit_GreaterEqual(self, op, *, left, right):
+        return sge.GTE(this=left, expression=right)
+
+    @parenthesize_inputs
+    def visit_Greater(self, op, *, left, right):
+        return sge.GT(this=left, expression=right)
+
+    @parenthesize_inputs
+    def visit_LessEqual(self, op, *, left, right):
+        return sge.LTE(this=left, expression=right)
+
+    @parenthesize_inputs
+    def visit_Less(self, op, *, left, right):
+        return sge.LT(this=left, expression=right)
+
+    @parenthesize_inputs
+    def visit_Equals(self, op, *, left, right):
+        return sge.EQ(this=left, expression=right)
+
+    @parenthesize_inputs
+    def visit_NotEquals(self, op, *, left, right):
+        return sge.NEQ(this=left, expression=right)
+
+    @parenthesize_inputs
+    def visit_And(self, op, *, left, right):
+        return sge.And(this=left, expression=right)
+
+    @parenthesize_inputs
+    def visit_Or(self, op, *, left, right):
+        return sge.Or(this=left, expression=right)
+
+    @parenthesize_inputs
+    def visit_Xor(self, op, *, left, right):
+        return sge.Xor(this=left, expression=right)
+
+    @parenthesize_inputs
+    def visit_BitwiseLeftShift(self, op, *, left, right):
+        return sge.BitwiseLeftShift(this=left, expression=right)
+
+    @parenthesize_inputs
+    def visit_BitwiseRightShift(self, op, *, left, right):
+        return sge.BitwiseRightShift(this=left, expression=right)
+
+    @parenthesize_inputs
+    def visit_BitwiseAnd(self, op, *, left, right):
+        return sge.BitwiseAnd(this=left, expression=right)
+
+    @parenthesize_inputs
+    def visit_BitwiseOr(self, op, *, left, right):
+        return sge.BitwiseOr(this=left, expression=right)
+
+    @parenthesize_inputs
+    def visit_BitwiseXor(self, op, *, left, right):
+        return sge.BitwiseXor(this=left, expression=right)
+
     def visit_Undefined(self, op, **_):
         raise com.OperationNotDefinedError(
             f"Compilation rule for {type(op).__name__!r} operation is not defined"
@@ -1204,149 +1455,3 @@ class SQLGlotCompiler(abc.ABC):
         raise com.UnsupportedOperationError(
             f"{type(op).__name__!r} operation is not supported in the {self.dialect} backend"
         )
-
-
-_SIMPLE_OPS = {
-    ops.Abs: "abs",
-    ops.Acos: "acos",
-    ops.All: "bool_and",
-    ops.Any: "bool_or",
-    ops.ApproxCountDistinct: "approx_distinct",
-    ops.ArgMax: "max_by",
-    ops.ArgMin: "min_by",
-    ops.ArrayCollect: "array_agg",
-    ops.ArrayContains: "array_contains",
-    ops.ArrayFlatten: "flatten",
-    ops.ArrayLength: "array_size",
-    ops.ArraySort: "array_sort",
-    ops.ArrayStringJoin: "array_to_string",
-    ops.Asin: "asin",
-    ops.Atan2: "atan2",
-    ops.Atan: "atan",
-    ops.Capitalize: "initcap",
-    ops.Cos: "cos",
-    ops.Cot: "cot",
-    ops.Count: "count",
-    ops.CumeDist: "cume_dist",
-    ops.Date: "date",
-    ops.DateFromYMD: "datefromparts",
-    ops.Degrees: "degrees",
-    ops.DenseRank: "dense_rank",
-    ops.Exp: "exp",
-    ops.First: "first",
-    ops.FirstValue: "first_value",
-    ops.GroupConcat: "group_concat",
-    ops.IfElse: "if",
-    ops.IsInf: "isinf",
-    ops.IsNan: "isnan",
-    ops.JSONGetItem: "json_extract",
-    ops.LPad: "lpad",
-    ops.Last: "last",
-    ops.LastValue: "last_value",
-    ops.Levenshtein: "levenshtein",
-    ops.Ln: "ln",
-    ops.Log10: "log",
-    ops.Log2: "log2",
-    ops.Lowercase: "lower",
-    ops.Map: "map",
-    ops.Median: "median",
-    ops.MinRank: "rank",
-    ops.NTile: "ntile",
-    ops.NthValue: "nth_value",
-    ops.NullIf: "nullif",
-    ops.PercentRank: "percent_rank",
-    ops.Pi: "pi",
-    ops.Power: "pow",
-    ops.RPad: "rpad",
-    ops.Radians: "radians",
-    ops.RandomScalar: "random",
-    ops.RegexSearch: "regexp_like",
-    ops.RegexSplit: "regexp_split",
-    ops.Repeat: "repeat",
-    ops.Reverse: "reverse",
-    ops.RowNumber: "row_number",
-    ops.Sign: "sign",
-    ops.Sin: "sin",
-    ops.Sqrt: "sqrt",
-    ops.StartsWith: "starts_with",
-    ops.StrRight: "right",
-    ops.StringAscii: "ascii",
-    ops.StringContains: "contains",
-    ops.StringLength: "length",
-    ops.StringReplace: "replace",
-    ops.StringSplit: "split",
-    ops.StringToTimestamp: "str_to_time",
-    ops.Tan: "tan",
-    ops.Translate: "translate",
-    ops.Unnest: "explode",
-    ops.Uppercase: "upper",
-}
-
-_BINARY_INFIX_OPS = {
-    # Binary operations
-    ops.Add: sge.Add,
-    ops.Subtract: sge.Sub,
-    ops.Multiply: sge.Mul,
-    ops.Divide: sge.Div,
-    ops.Modulus: sge.Mod,
-    ops.Power: sge.Pow,
-    # Comparisons
-    ops.GreaterEqual: sge.GTE,
-    ops.Greater: sge.GT,
-    ops.LessEqual: sge.LTE,
-    ops.Less: sge.LT,
-    ops.Equals: sge.EQ,
-    ops.NotEquals: sge.NEQ,
-    # Boolean comparisons
-    ops.And: sge.And,
-    ops.Or: sge.Or,
-    ops.Xor: sge.Xor,
-    # Bitwise business
-    ops.BitwiseLeftShift: sge.BitwiseLeftShift,
-    ops.BitwiseRightShift: sge.BitwiseRightShift,
-    ops.BitwiseAnd: sge.BitwiseAnd,
-    ops.BitwiseOr: sge.BitwiseOr,
-    ops.BitwiseXor: sge.BitwiseXor,
-    # Time arithmetic
-    ops.DateAdd: sge.Add,
-    ops.DateSub: sge.Sub,
-    ops.DateDiff: sge.Sub,
-    ops.TimestampAdd: sge.Add,
-    ops.TimestampSub: sge.Sub,
-    ops.TimestampDiff: sge.Sub,
-    # Interval Marginalia
-    ops.IntervalAdd: sge.Add,
-    ops.IntervalMultiply: sge.Mul,
-    ops.IntervalSubtract: sge.Sub,
-}
-
-for _op, _sym in _BINARY_INFIX_OPS.items():
-
-    def _fmt(self, op, *, _sym: sge.Expression = _sym, left, right):
-        return _sym(
-            this=self._add_parens(op.left, left),
-            expression=self._add_parens(op.right, right),
-        )
-
-    setattr(SQLGlotCompiler, f"visit_{_op.__name__}", _fmt)
-
-
-del _op, _sym, _fmt
-
-
-for _op, _name in _SIMPLE_OPS.items():
-    assert isinstance(type(_op), type), type(_op)
-    if issubclass(_op, ops.Reduction):
-
-        def _fmt(self, _, *, _name: str = _name, where, **kw):
-            return self.agg[_name](*kw.values(), where=where)
-
-    else:
-
-        def _fmt(self, _, *, _name: str = _name, **kw):
-            return self.f[_name](*kw.values())
-
-    setattr(SQLGlotCompiler, f"visit_{_op.__name__}", _fmt)
-
-
-del _op, _name, _fmt

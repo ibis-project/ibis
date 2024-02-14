@@ -76,6 +76,38 @@ class SQLiteCompiler(SQLGlotCompiler):
         )
     )
 
+    SIMPLE_OPS = {
+        ops.RegexReplace: "_ibis_regex_replace",
+        ops.RegexExtract: "_ibis_regex_extract",
+        ops.RegexSearch: "_ibis_regex_search",
+        ops.Translate: "_ibis_translate",
+        ops.Capitalize: "_ibis_capitalize",
+        ops.Reverse: "_ibis_reverse",
+        ops.RPad: "_ibis_rpad",
+        ops.LPad: "_ibis_lpad",
+        ops.Repeat: "_ibis_repeat",
+        ops.StringAscii: "_ibis_string_ascii",
+        ops.ExtractAuthority: "_ibis_extract_authority",
+        ops.ExtractFragment: "_ibis_extract_fragment",
+        ops.ExtractHost: "_ibis_extract_host",
+        ops.ExtractPath: "_ibis_extract_path",
+        ops.ExtractProtocol: "_ibis_extract_protocol",
+        ops.ExtractUserInfo: "_ibis_extract_user_info",
+        ops.BitwiseXor: "_ibis_xor",
+        ops.BitwiseNot: "_ibis_inv",
+        ops.Modulus: "mod",
+        ops.Log10: "log10",
+        ops.TypeOf: "typeof",
+        ops.BitOr: "_ibis_bit_or",
+        ops.BitAnd: "_ibis_bit_and",
+        ops.BitXor: "_ibis_bit_xor",
+        ops.First: "_ibis_arbitrary_first",
+        ops.Last: "_ibis_arbitrary_last",
+        ops.Mode: "_ibis_mode",
+        ops.Time: "time",
+        ops.Date: "date",
+    }
+
     def _aggregate(self, funcname: str, *args, where):
         expr = self.f[funcname](*args)
         if where is not None:
@@ -413,54 +445,3 @@ class SQLiteCompiler(SQLGlotCompiler):
         ):
             raise com.UnsupportedBackendType(f"Unsupported type: {dtype!r}")
         return super().visit_NonNullLiteral(op, value=value, dtype=dtype)
-
-
-_SIMPLE_OPS = {
-    ops.RegexReplace: "_ibis_regex_replace",
-    ops.RegexExtract: "_ibis_regex_extract",
-    ops.RegexSearch: "_ibis_regex_search",
-    ops.Translate: "_ibis_translate",
-    ops.Capitalize: "_ibis_capitalize",
-    ops.Reverse: "_ibis_reverse",
-    ops.RPad: "_ibis_rpad",
-    ops.LPad: "_ibis_lpad",
-    ops.Repeat: "_ibis_repeat",
-    ops.StringAscii: "_ibis_string_ascii",
-    ops.ExtractAuthority: "_ibis_extract_authority",
-    ops.ExtractFragment: "_ibis_extract_fragment",
-    ops.ExtractHost: "_ibis_extract_host",
-    ops.ExtractPath: "_ibis_extract_path",
-    ops.ExtractProtocol: "_ibis_extract_protocol",
-    ops.ExtractUserInfo: "_ibis_extract_user_info",
-    ops.BitwiseXor: "_ibis_xor",
-    ops.BitwiseNot: "_ibis_inv",
-    ops.Modulus: "mod",
-    ops.Log10: "log10",
-    ops.TypeOf: "typeof",
-    ops.BitOr: "_ibis_bit_or",
-    ops.BitAnd: "_ibis_bit_and",
-    ops.BitXor: "_ibis_bit_xor",
-    ops.First: "_ibis_arbitrary_first",
-    ops.Last: "_ibis_arbitrary_last",
-    ops.Mode: "_ibis_mode",
-    ops.Time: "time",
-    ops.Date: "date",
-}
-
-
-for _op, _name in _SIMPLE_OPS.items():
-    assert isinstance(type(_op), type), type(_op)
-    if issubclass(_op, ops.Reduction):
-
-        def _fmt(self, op, *, _name: str = _name, where, **kw):
-            return self.agg[_name](*kw.values(), where=where)
-
-    else:
-
-        def _fmt(self, op, *, _name: str = _name, **kw):
-            return self.f[_name](*kw.values())
-
-    setattr(SQLiteCompiler, f"visit_{_op.__name__}", _fmt)
-
-
-del _op, _name, _fmt

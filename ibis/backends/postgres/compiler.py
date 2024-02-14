@@ -40,6 +40,64 @@ class PostgresCompiler(SQLGlotCompiler):
         )
     )
 
+    SIMPLE_OPS = {
+        ops.ArrayCollect: "array_agg",
+        ops.ArrayRemove: "array_remove",
+        ops.BitAnd: "bit_and",
+        ops.BitOr: "bit_or",
+        ops.BitXor: "bit_xor",
+        ops.GeoArea: "st_area",
+        ops.GeoAsBinary: "st_asbinary",
+        ops.GeoAsEWKB: "st_asewkb",
+        ops.GeoAsEWKT: "st_asewkt",
+        ops.GeoAsText: "st_astext",
+        ops.GeoAzimuth: "st_azimuth",
+        ops.GeoBuffer: "st_buffer",
+        ops.GeoCentroid: "st_centroid",
+        ops.GeoContains: "st_contains",
+        ops.GeoContainsProperly: "st_contains",
+        ops.GeoCoveredBy: "st_coveredby",
+        ops.GeoCovers: "st_covers",
+        ops.GeoCrosses: "st_crosses",
+        ops.GeoDFullyWithin: "st_dfullywithin",
+        ops.GeoDWithin: "st_dwithin",
+        ops.GeoDifference: "st_difference",
+        ops.GeoDisjoint: "st_disjoint",
+        ops.GeoDistance: "st_distance",
+        ops.GeoEndPoint: "st_endpoint",
+        ops.GeoEnvelope: "st_envelope",
+        ops.GeoEquals: "st_equals",
+        ops.GeoGeometryN: "st_geometryn",
+        ops.GeoGeometryType: "st_geometrytype",
+        ops.GeoIntersection: "st_intersection",
+        ops.GeoIntersects: "st_intersects",
+        ops.GeoIsValid: "st_isvalid",
+        ops.GeoLength: "st_length",
+        ops.GeoLineLocatePoint: "st_linelocatepoint",
+        ops.GeoLineMerge: "st_linemerge",
+        ops.GeoLineSubstring: "st_linesubstring",
+        ops.GeoNPoints: "st_npoints",
+        ops.GeoOrderingEquals: "st_orderingequals",
+        ops.GeoOverlaps: "st_overlaps",
+        ops.GeoPerimeter: "st_perimeter",
+        ops.GeoSRID: "st_srid",
+        ops.GeoSetSRID: "st_setsrid",
+        ops.GeoSimplify: "st_simplify",
+        ops.GeoStartPoint: "st_startpoint",
+        ops.GeoTouches: "st_touches",
+        ops.GeoTransform: "st_transform",
+        ops.GeoUnaryUnion: "st_union",
+        ops.GeoUnion: "st_union",
+        ops.GeoWithin: "st_within",
+        ops.GeoX: "st_x",
+        ops.GeoY: "st_y",
+        ops.MapContains: "exist",
+        ops.MapKeys: "akeys",
+        ops.MapValues: "avals",
+        ops.RegexSearch: "regexp_like",
+        ops.TimeFromHMS: "make_time",
+    }
+
     def _aggregate(self, funcname: str, *args, where):
         expr = self.f[funcname](*args)
         if where is not None:
@@ -469,80 +527,3 @@ class PostgresCompiler(SQLGlotCompiler):
         return self.cast(arg, op.to)
 
     visit_TryCast = visit_Cast
-
-
-_SIMPLE_OPS = {
-    ops.ArrayCollect: "array_agg",
-    ops.ArrayRemove: "array_remove",
-    ops.BitAnd: "bit_and",
-    ops.BitOr: "bit_or",
-    ops.BitXor: "bit_xor",
-    ops.GeoArea: "st_area",
-    ops.GeoAsBinary: "st_asbinary",
-    ops.GeoAsEWKB: "st_asewkb",
-    ops.GeoAsEWKT: "st_asewkt",
-    ops.GeoAsText: "st_astext",
-    ops.GeoAzimuth: "st_azimuth",
-    ops.GeoBuffer: "st_buffer",
-    ops.GeoCentroid: "st_centroid",
-    ops.GeoContains: "st_contains",
-    ops.GeoContainsProperly: "st_contains",
-    ops.GeoCoveredBy: "st_coveredby",
-    ops.GeoCovers: "st_covers",
-    ops.GeoCrosses: "st_crosses",
-    ops.GeoDFullyWithin: "st_dfullywithin",
-    ops.GeoDWithin: "st_dwithin",
-    ops.GeoDifference: "st_difference",
-    ops.GeoDisjoint: "st_disjoint",
-    ops.GeoDistance: "st_distance",
-    ops.GeoEndPoint: "st_endpoint",
-    ops.GeoEnvelope: "st_envelope",
-    ops.GeoEquals: "st_equals",
-    ops.GeoGeometryN: "st_geometryn",
-    ops.GeoGeometryType: "st_geometrytype",
-    ops.GeoIntersection: "st_intersection",
-    ops.GeoIntersects: "st_intersects",
-    ops.GeoIsValid: "st_isvalid",
-    ops.GeoLength: "st_length",
-    ops.GeoLineLocatePoint: "st_linelocatepoint",
-    ops.GeoLineMerge: "st_linemerge",
-    ops.GeoLineSubstring: "st_linesubstring",
-    ops.GeoNPoints: "st_npoints",
-    ops.GeoOrderingEquals: "st_orderingequals",
-    ops.GeoOverlaps: "st_overlaps",
-    ops.GeoPerimeter: "st_perimeter",
-    ops.GeoSRID: "st_srid",
-    ops.GeoSetSRID: "st_setsrid",
-    ops.GeoSimplify: "st_simplify",
-    ops.GeoStartPoint: "st_startpoint",
-    ops.GeoTouches: "st_touches",
-    ops.GeoTransform: "st_transform",
-    ops.GeoUnaryUnion: "st_union",
-    ops.GeoUnion: "st_union",
-    ops.GeoWithin: "st_within",
-    ops.GeoX: "st_x",
-    ops.GeoY: "st_y",
-    ops.MapContains: "exist",
-    ops.MapKeys: "akeys",
-    ops.MapValues: "avals",
-    ops.RegexSearch: "regexp_like",
-    ops.TimeFromHMS: "make_time",
-}
-
-
-for _op, _name in _SIMPLE_OPS.items():
-    assert isinstance(type(_op), type), type(_op)
-    if issubclass(_op, ops.Reduction):
-
-        def _fmt(self, op, *, _name: str = _name, where, **kw):
-            return self.agg[_name](*kw.values(), where=where)
-
-    else:
-
-        def _fmt(self, op, *, _name: str = _name, **kw):
-            return self.f[_name](*kw.values())
-
-    setattr(PostgresCompiler, f"visit_{_op.__name__}", _fmt)
-
-
-del _op, _name, _fmt

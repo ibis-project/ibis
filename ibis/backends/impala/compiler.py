@@ -62,6 +62,30 @@ class ImpalaCompiler(SQLGlotCompiler):
         )
     )
 
+    SIMPLE_OPS = {
+        ops.All: "min",
+        ops.Any: "max",
+        ops.ApproxMedian: "appx_median",
+        ops.BaseConvert: "conv",
+        ops.BitwiseAnd: "bitand",
+        ops.BitwiseLeftShift: "shiftleft",
+        ops.BitwiseNot: "bitnot",
+        ops.BitwiseOr: "bitor",
+        ops.BitwiseRightShift: "shiftright",
+        ops.BitwiseXor: "bitxor",
+        ops.Cot: "cot",
+        ops.DayOfWeekName: "dayname",
+        ops.ExtractEpochSeconds: "unix_timestamp",
+        ops.Hash: "fnv_hash",
+        ops.LStrip: "ltrim",
+        ops.Ln: "ln",
+        ops.Log10: "log10",
+        ops.Log2: "log2",
+        ops.RStrip: "rtrim",
+        ops.Strip: "trim",
+        ops.TypeOf: "typeof",
+    }
+
     def _aggregate(self, funcname: str, *args, where):
         if where is not None:
             args = tuple(self.if_(where, arg, NULL) for arg in args)
@@ -329,44 +353,3 @@ class ImpalaCompiler(SQLGlotCompiler):
         if not dtype.is_float32():
             return self.cast(sign, dtype)
         return sign
-
-
-_SIMPLE_OPS = {
-    ops.All: "min",
-    ops.Any: "max",
-    ops.ApproxMedian: "appx_median",
-    ops.BaseConvert: "conv",
-    ops.BitwiseAnd: "bitand",
-    ops.BitwiseLeftShift: "shiftleft",
-    ops.BitwiseNot: "bitnot",
-    ops.BitwiseOr: "bitor",
-    ops.BitwiseRightShift: "shiftright",
-    ops.BitwiseXor: "bitxor",
-    ops.Cot: "cot",
-    ops.DayOfWeekName: "dayname",
-    ops.ExtractEpochSeconds: "unix_timestamp",
-    ops.Hash: "fnv_hash",
-    ops.LStrip: "ltrim",
-    ops.Ln: "ln",
-    ops.Log10: "log10",
-    ops.Log2: "log2",
-    ops.RStrip: "rtrim",
-    ops.Strip: "trim",
-    ops.TypeOf: "typeof",
-}
-
-for _op, _name in _SIMPLE_OPS.items():
-    assert isinstance(type(_op), type), type(_op)
-    if issubclass(_op, ops.Reduction):
-
-        def _fmt(self, op, *, _name: str = _name, where, **kw):
-            return self.agg[_name](*kw.values(), where=where)
-
-    else:
-
-        def _fmt(self, op, *, _name: str = _name, **kw):
-            return self.f[_name](*kw.values())
-
-    setattr(ImpalaCompiler, f"visit_{_op.__name__}", _fmt)
-
-del _op, _name, _fmt

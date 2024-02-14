@@ -59,6 +59,25 @@ class PySparkCompiler(SQLGlotCompiler):
         )
     )
 
+    SIMPLE_OPS = {
+        ops.ArrayDistinct: "array_distinct",
+        ops.ArrayFlatten: "flatten",
+        ops.ArrayIntersect: "array_intersect",
+        ops.ArrayRemove: "array_remove",
+        ops.ArraySort: "array_sort",
+        ops.ArrayUnion: "array_union",
+        ops.EndsWith: "endswith",
+        ops.Hash: "hash",
+        ops.Log10: "log10",
+        ops.LStrip: "ltrim",
+        ops.RStrip: "rtrim",
+        ops.MapLength: "size",
+        ops.MapContains: "map_contains_key",
+        ops.MapMerge: "map_concat",
+        ops.MapKeys: "map_keys",
+        ops.MapValues: "map_values",
+    }
+
     def _aggregate(self, funcname: str, *args, where):
         func = self.f[funcname]
         if where is not None:
@@ -419,35 +438,3 @@ class PySparkCompiler(SQLGlotCompiler):
             return self.f.sha2(arg, int(how[-3:]))
         else:
             raise NotImplementedError(f"No available hashing function for {how}")
-
-
-_SIMPLE_OPS = {
-    ops.ArrayDistinct: "array_distinct",
-    ops.ArrayFlatten: "flatten",
-    ops.ArrayIntersect: "array_intersect",
-    ops.ArrayRemove: "array_remove",
-    ops.ArraySort: "array_sort",
-    ops.ArrayUnion: "array_union",
-    ops.EndsWith: "endswith",
-    ops.Hash: "hash",
-    ops.Log10: "log10",
-    ops.LStrip: "ltrim",
-    ops.RStrip: "rtrim",
-    ops.MapLength: "size",
-    ops.MapContains: "map_contains_key",
-    ops.MapMerge: "map_concat",
-    ops.MapKeys: "map_keys",
-    ops.MapValues: "map_values",
-}
-
-
-for _op, _name in _SIMPLE_OPS.items():
-    assert isinstance(type(_op), type), type(_op)
-
-    def _fmt(self, op, *, _name: str = _name, **kw):
-        return self.f[_name](*kw.values())
-
-    setattr(PySparkCompiler, f"visit_{_op.__name__}", _fmt)
-
-
-del _op, _name, _fmt

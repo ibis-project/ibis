@@ -67,6 +67,23 @@ class DruidCompiler(SQLGlotCompiler):
         )
     )
 
+    SIMPLE_OPS = {
+        ops.BitAnd: "bit_and",
+        ops.BitOr: "bit_or",
+        ops.BitXor: "bit_xor",
+        ops.BitwiseAnd: "bitwise_and",
+        ops.BitwiseNot: "bitwise_complement",
+        ops.BitwiseOr: "bitwise_or",
+        ops.BitwiseXor: "bitwise_xor",
+        ops.BitwiseLeftShift: "bitwise_shift_left",
+        ops.BitwiseRightShift: "bitwise_shift_right",
+        ops.Modulus: "mod",
+        ops.Power: "power",
+        ops.Log10: "log10",
+        ops.ApproxCountDistinct: "approx_count_distinct",
+        ops.StringContains: "contains_string",
+    }
+
     def _aggregate(self, funcname: str, *args, where):
         expr = self.f[funcname](*args)
         if where is not None:
@@ -164,35 +181,3 @@ class DruidCompiler(SQLGlotCompiler):
                 "Z",
             )
         )
-
-
-_SIMPLE_OPS = {
-    ops.BitAnd: "bit_and",
-    ops.BitOr: "bit_or",
-    ops.BitXor: "bit_xor",
-    ops.BitwiseAnd: "bitwise_and",
-    ops.BitwiseNot: "bitwise_complement",
-    ops.BitwiseOr: "bitwise_or",
-    ops.BitwiseXor: "bitwise_xor",
-    ops.BitwiseLeftShift: "bitwise_shift_left",
-    ops.BitwiseRightShift: "bitwise_shift_right",
-    ops.Modulus: "mod",
-    ops.Power: "power",
-    ops.Log10: "log10",
-    ops.ApproxCountDistinct: "approx_count_distinct",
-    ops.StringContains: "contains_string",
-}
-
-for _op, _name in _SIMPLE_OPS.items():
-    assert isinstance(type(_op), type), type(_op)
-    if issubclass(_op, ops.Reduction):
-
-        def _fmt(self, op, *, _name: str = _name, where, **kw):
-            return self.agg[_name](*kw.values(), where=where)
-
-    else:
-
-        def _fmt(self, op, *, _name: str = _name, **kw):
-            return self.f[_name](*kw.values())
-
-    setattr(DruidCompiler, f"visit_{_op.__name__}", _fmt)

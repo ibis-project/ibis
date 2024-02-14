@@ -74,6 +74,62 @@ class BigQueryCompiler(SQLGlotCompiler):
         this=sge.convert("-Infinity"), to=sge.DataType(this=sge.DataType.Type.DOUBLE)
     )
 
+    SIMPLE_OPS = {
+        ops.StringAscii: "ascii",
+        ops.BitAnd: "bit_and",
+        ops.BitOr: "bit_or",
+        ops.BitXor: "bit_xor",
+        ops.DateFromYMD: "date",
+        ops.Divide: "ieee_divide",
+        ops.EndsWith: "ends_with",
+        ops.GeoArea: "st_area",
+        ops.GeoAsBinary: "st_asbinary",
+        ops.GeoAsText: "st_astext",
+        ops.GeoAzimuth: "st_azimuth",
+        ops.GeoBuffer: "st_buffer",
+        ops.GeoCentroid: "st_centroid",
+        ops.GeoContains: "st_contains",
+        ops.GeoCoveredBy: "st_coveredby",
+        ops.GeoCovers: "st_covers",
+        ops.GeoDWithin: "st_dwithin",
+        ops.GeoDifference: "st_difference",
+        ops.GeoDisjoint: "st_disjoint",
+        ops.GeoDistance: "st_distance",
+        ops.GeoEndPoint: "st_endpoint",
+        ops.GeoEquals: "st_equals",
+        ops.GeoGeometryType: "st_geometrytype",
+        ops.GeoIntersection: "st_intersection",
+        ops.GeoIntersects: "st_intersects",
+        ops.GeoLength: "st_length",
+        ops.GeoMaxDistance: "st_maxdistance",
+        ops.GeoNPoints: "st_numpoints",
+        ops.GeoPerimeter: "st_perimeter",
+        ops.GeoPoint: "st_geogpoint",
+        ops.GeoPointN: "st_pointn",
+        ops.GeoStartPoint: "st_startpoint",
+        ops.GeoTouches: "st_touches",
+        ops.GeoUnaryUnion: "st_union_agg",
+        ops.GeoUnion: "st_union",
+        ops.GeoWithin: "st_within",
+        ops.GeoX: "st_x",
+        ops.GeoY: "st_y",
+        ops.Hash: "farm_fingerprint",
+        ops.IsInf: "is_inf",
+        ops.IsNan: "is_nan",
+        ops.Log10: "log10",
+        ops.LPad: "lpad",
+        ops.RPad: "rpad",
+        ops.Levenshtein: "edit_distance",
+        ops.Modulus: "mod",
+        ops.RandomScalar: "rand",
+        ops.RegexReplace: "regexp_replace",
+        ops.RegexSearch: "regexp_contains",
+        ops.Time: "time",
+        ops.TimeFromHMS: "time",
+        ops.TimestampFromYMDHMS: "datetime",
+        ops.TimestampNow: "current_timestamp",
+    }
+
     def _aggregate(self, funcname: str, *args, where):
         func = self.f[funcname]
 
@@ -665,77 +721,3 @@ class BigQueryCompiler(SQLGlotCompiler):
         if where is not None:
             arg = self.if_(where, arg, NULL)
         return self.f.count(sge.Distinct(expressions=[arg]))
-
-
-_SIMPLE_OPS = {
-    ops.StringAscii: "ascii",
-    ops.BitAnd: "bit_and",
-    ops.BitOr: "bit_or",
-    ops.BitXor: "bit_xor",
-    ops.DateFromYMD: "date",
-    ops.Divide: "ieee_divide",
-    ops.EndsWith: "ends_with",
-    ops.GeoArea: "st_area",
-    ops.GeoAsBinary: "st_asbinary",
-    ops.GeoAsText: "st_astext",
-    ops.GeoAzimuth: "st_azimuth",
-    ops.GeoBuffer: "st_buffer",
-    ops.GeoCentroid: "st_centroid",
-    ops.GeoContains: "st_contains",
-    ops.GeoCoveredBy: "st_coveredby",
-    ops.GeoCovers: "st_covers",
-    ops.GeoDWithin: "st_dwithin",
-    ops.GeoDifference: "st_difference",
-    ops.GeoDisjoint: "st_disjoint",
-    ops.GeoDistance: "st_distance",
-    ops.GeoEndPoint: "st_endpoint",
-    ops.GeoEquals: "st_equals",
-    ops.GeoGeometryType: "st_geometrytype",
-    ops.GeoIntersection: "st_intersection",
-    ops.GeoIntersects: "st_intersects",
-    ops.GeoLength: "st_length",
-    ops.GeoMaxDistance: "st_maxdistance",
-    ops.GeoNPoints: "st_numpoints",
-    ops.GeoPerimeter: "st_perimeter",
-    ops.GeoPoint: "st_geogpoint",
-    ops.GeoPointN: "st_pointn",
-    ops.GeoStartPoint: "st_startpoint",
-    ops.GeoTouches: "st_touches",
-    ops.GeoUnaryUnion: "st_union_agg",
-    ops.GeoUnion: "st_union",
-    ops.GeoWithin: "st_within",
-    ops.GeoX: "st_x",
-    ops.GeoY: "st_y",
-    ops.Hash: "farm_fingerprint",
-    ops.IsInf: "is_inf",
-    ops.IsNan: "is_nan",
-    ops.Log10: "log10",
-    ops.LPad: "lpad",
-    ops.RPad: "rpad",
-    ops.Levenshtein: "edit_distance",
-    ops.Modulus: "mod",
-    ops.RandomScalar: "rand",
-    ops.RegexReplace: "regexp_replace",
-    ops.RegexSearch: "regexp_contains",
-    ops.Time: "time",
-    ops.TimeFromHMS: "time",
-    ops.TimestampFromYMDHMS: "datetime",
-    ops.TimestampNow: "current_timestamp",
-}
-
-
-for _op, _name in _SIMPLE_OPS.items():
-    assert isinstance(type(_op), type), type(_op)
-    if issubclass(_op, ops.Reduction):
-
-        def _fmt(self, op, *, _name: str = _name, where, **kw):
-            return self.agg[_name](*kw.values(), where=where)
-
-    else:
-
-        def _fmt(self, op, *, _name: str = _name, **kw):
-            return self.f[_name](*kw.values())
-
-    setattr(BigQueryCompiler, f"visit_{_op.__name__}", _fmt)
-
-del _op, _name, _fmt

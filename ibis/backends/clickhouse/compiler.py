@@ -41,6 +41,76 @@ class ClickHouseCompiler(SQLGlotCompiler):
         )
     )
 
+    SIMPLE_OPS = {
+        ops.All: "min",
+        ops.Any: "max",
+        ops.ApproxCountDistinct: "uniqHLL12",
+        ops.ApproxMedian: "median",
+        ops.ArgMax: "argMax",
+        ops.ArgMin: "argMin",
+        ops.ArrayCollect: "groupArray",
+        ops.ArrayContains: "has",
+        ops.ArrayFlatten: "arrayFlatten",
+        ops.ArrayIntersect: "arrayIntersect",
+        ops.ArrayPosition: "indexOf",
+        ops.BitwiseAnd: "bitAnd",
+        ops.BitwiseLeftShift: "bitShiftLeft",
+        ops.BitwiseNot: "bitNot",
+        ops.BitwiseOr: "bitOr",
+        ops.BitwiseRightShift: "bitShiftRight",
+        ops.BitwiseXor: "bitXor",
+        ops.Capitalize: "initcap",
+        ops.CountDistinct: "uniq",
+        ops.Date: "toDate",
+        ops.E: "e",
+        ops.EndsWith: "endsWith",
+        ops.ExtractAuthority: "netloc",
+        ops.ExtractDay: "toDayOfMonth",
+        ops.ExtractDayOfYear: "toDayOfYear",
+        ops.ExtractEpochSeconds: "toRelativeSecondNum",
+        ops.ExtractFragment: "fragment",
+        ops.ExtractHost: "domain",
+        ops.ExtractHour: "toHour",
+        ops.ExtractMinute: "toMinute",
+        ops.ExtractMonth: "toMonth",
+        ops.ExtractPath: "path",
+        ops.ExtractProtocol: "protocol",
+        ops.ExtractQuarter: "toQuarter",
+        ops.ExtractSecond: "toSecond",
+        ops.ExtractWeekOfYear: "toISOWeek",
+        ops.ExtractYear: "toYear",
+        ops.First: "any",
+        ops.IntegerRange: "range",
+        ops.IsInf: "isInfinite",
+        ops.IsNan: "isNaN",
+        ops.IsNull: "isNull",
+        ops.LStrip: "trimLeft",
+        ops.Last: "anyLast",
+        ops.Ln: "log",
+        ops.Log10: "log10",
+        ops.MapContains: "mapContains",
+        ops.MapKeys: "mapKeys",
+        ops.MapLength: "length",
+        ops.MapMerge: "mapUpdate",
+        ops.MapValues: "mapValues",
+        ops.Median: "quantileExactExclusive",
+        ops.NotNull: "isNotNull",
+        ops.NullIf: "nullIf",
+        ops.RStrip: "trimRight",
+        ops.RandomScalar: "randCanonical",
+        ops.RegexReplace: "replaceRegexpAll",
+        ops.RowNumber: "row_number",
+        ops.StartsWith: "startsWith",
+        ops.StrRight: "right",
+        ops.Strftime: "formatDateTime",
+        ops.StringLength: "length",
+        ops.StringReplace: "replaceAll",
+        ops.Strip: "trimBoth",
+        ops.TimestampNow: "now",
+        ops.TypeOf: "toTypeName",
+        ops.Unnest: "arrayJoin",
+    }
+
     def _aggregate(self, funcname: str, *args, where):
         has_filter = where is not None
         func = self.f[funcname + "If" * has_filter]
@@ -589,90 +659,3 @@ class ClickHouseCompiler(SQLGlotCompiler):
     @staticmethod
     def _generate_groups(groups):
         return groups
-
-
-_SIMPLE_OPS = {
-    ops.All: "min",
-    ops.Any: "max",
-    ops.ApproxCountDistinct: "uniqHLL12",
-    ops.ApproxMedian: "median",
-    ops.ArgMax: "argMax",
-    ops.ArgMin: "argMin",
-    ops.ArrayCollect: "groupArray",
-    ops.ArrayContains: "has",
-    ops.ArrayFlatten: "arrayFlatten",
-    ops.ArrayIntersect: "arrayIntersect",
-    ops.ArrayPosition: "indexOf",
-    ops.BitwiseAnd: "bitAnd",
-    ops.BitwiseLeftShift: "bitShiftLeft",
-    ops.BitwiseNot: "bitNot",
-    ops.BitwiseOr: "bitOr",
-    ops.BitwiseRightShift: "bitShiftRight",
-    ops.BitwiseXor: "bitXor",
-    ops.Capitalize: "initcap",
-    ops.CountDistinct: "uniq",
-    ops.Date: "toDate",
-    ops.E: "e",
-    ops.EndsWith: "endsWith",
-    ops.ExtractAuthority: "netloc",
-    ops.ExtractDay: "toDayOfMonth",
-    ops.ExtractDayOfYear: "toDayOfYear",
-    ops.ExtractEpochSeconds: "toRelativeSecondNum",
-    ops.ExtractFragment: "fragment",
-    ops.ExtractHost: "domain",
-    ops.ExtractHour: "toHour",
-    ops.ExtractMinute: "toMinute",
-    ops.ExtractMonth: "toMonth",
-    ops.ExtractPath: "path",
-    ops.ExtractProtocol: "protocol",
-    ops.ExtractQuarter: "toQuarter",
-    ops.ExtractSecond: "toSecond",
-    ops.ExtractWeekOfYear: "toISOWeek",
-    ops.ExtractYear: "toYear",
-    ops.First: "any",
-    ops.IntegerRange: "range",
-    ops.IsInf: "isInfinite",
-    ops.IsNan: "isNaN",
-    ops.IsNull: "isNull",
-    ops.LStrip: "trimLeft",
-    ops.Last: "anyLast",
-    ops.Ln: "log",
-    ops.Log10: "log10",
-    ops.MapContains: "mapContains",
-    ops.MapKeys: "mapKeys",
-    ops.MapLength: "length",
-    ops.MapMerge: "mapUpdate",
-    ops.MapValues: "mapValues",
-    ops.Median: "quantileExactExclusive",
-    ops.NotNull: "isNotNull",
-    ops.NullIf: "nullIf",
-    ops.RStrip: "trimRight",
-    ops.RandomScalar: "randCanonical",
-    ops.RegexReplace: "replaceRegexpAll",
-    ops.RowNumber: "row_number",
-    ops.StartsWith: "startsWith",
-    ops.StrRight: "right",
-    ops.Strftime: "formatDateTime",
-    ops.StringLength: "length",
-    ops.StringReplace: "replaceAll",
-    ops.Strip: "trimBoth",
-    ops.TimestampNow: "now",
-    ops.TypeOf: "toTypeName",
-    ops.Unnest: "arrayJoin",
-}
-
-for _op, _name in _SIMPLE_OPS.items():
-    assert isinstance(type(_op), type), type(_op)
-    if issubclass(_op, ops.Reduction):
-
-        def _fmt(self, op, *, _name: str = _name, where, **kw):
-            return self.agg[_name](*kw.values(), where=where)
-
-    else:
-
-        def _fmt(self, op, *, _name: str = _name, **kw):
-            return self.f[_name](*kw.values())
-
-    setattr(ClickHouseCompiler, f"visit_{_op.__name__}", _fmt)
-
-del _op, _name, _fmt
