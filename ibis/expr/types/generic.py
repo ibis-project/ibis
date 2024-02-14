@@ -1149,37 +1149,6 @@ class Value(Expr):
         """Sort an expression descending."""
         return ops.SortKey(self, ascending=False).to_expr()
 
-    def as_table(self) -> ir.Table:
-        """Promote the expression to a [Table](./expression-tables.qmd#ibis.expr.types.Table).
-
-        Returns
-        -------
-        Table
-            A table expression
-
-        Examples
-        --------
-        >>> import ibis
-        >>> t = ibis.table(dict(a="str"), name="t")
-        >>> expr = t.a.length().name("len").as_table()
-        >>> expected = t.select(len=t.a.length())
-        >>> expr.equals(expected)
-        True
-        """
-        parents = self.op().relations
-        values = {self.get_name(): self}
-
-        if len(parents) == 0:
-            return ops.DummyTable(values).to_expr()
-        elif len(parents) == 1:
-            (parent,) = parents
-            return parent.to_expr().select(self)
-        else:
-            raise com.RelationError(
-                f"Cannot convert {type(self)} expression involving multiple "
-                "base table references to a projection"
-            )
-
     def to_pandas(self, **kwargs) -> pd.Series:
         """Convert a column expression to a pandas Series or scalar object.
 
@@ -1233,6 +1202,42 @@ class Scalar(Value):
         from ibis.formats.pandas import PandasData
 
         return PandasData.convert_scalar(df, self.type())
+
+    def as_scalar(self):
+        """Inform ibis that the expression should be treated as a scalar.
+
+        If the expression is a literal, it will be returned as is. If it depends
+        on a table, it will be turned to a scalar subquery.
+
+        Returns
+        -------
+        Scalar
+            A scalar subquery or a literal
+
+        Examples
+        --------
+        >>> import ibis
+        >>>
+        >>> ibis.options.interactive = True
+        >>>
+        >>> t = ibis.examples.penguins.fetch()
+        >>> max_gentoo_weight = t.filter(t.species == "Gentoo").body_mass_g.max()
+        >>> light_penguins = t.filter(t.body_mass_g < max_gentoo_weight / 2)
+        >>> light_penguins.group_by("species").count()
+        ┏━━━━━━━━━━━┳━━━━━━━━━━━━━┓
+        ┃ species   ┃ CountStar() ┃
+        ┡━━━━━━━━━━━╇━━━━━━━━━━━━━┩
+        │ string    │ int64       │
+        ├───────────┼─────────────┤
+        │ Adelie    │          15 │
+        │ Chinstrap │           2 │
+        └───────────┴─────────────┘
+        """
+        parents = self.op().relations
+        if parents:
+            return ops.ScalarSubquery(self.as_table()).to_expr()
+        else:
+            return self
 
     def as_table(self) -> ir.Table:
         """Promote the scalar expression to a table.
@@ -1326,6 +1331,73 @@ class Column(Value, _FixedTextJupyterMixin):
         # this bug is fixed in later versions of geopandas
         (column,) = df.columns
         return PandasData.convert_column(df.loc[:, column], self.type())
+
+    def as_scalar(self) -> Scalar:
+        """Inform ibis that the expression should be treated as a scalar.
+
+        Creates a scalar subquery from the column expression. Since ibis cannot
+        be sure that the column expression contains only one value, the column
+        expression is wrapped in a scalar subquery and treated as a scalar.
+
+        Note that the execution of the scalar subquery will fail if the column
+        expression contains more than one value.
+
+        Returns
+        -------
+        Scalar
+            A scalar subquery
+
+        Examples
+        --------
+        >>> import ibis
+        >>>
+        >>> ibis.options.interactive = True
+        >>>
+        >>> t = ibis.examples.penguins.fetch()
+        >>> heavy_gentoo = t.filter(t.species == "Gentoo", t.body_mass_g > 6200)
+        >>> from_that_island = t.filter(t.island == heavy_gentoo.island.as_scalar())
+        >>> from_that_island.group_by("species").count()
+        ┏━━━━━━━━━┳━━━━━━━━━━━━━┓
+        ┃ species ┃ CountStar() ┃
+        ┡━━━━━━━━━╇━━━━━━━━━━━━━┩
+        │ string  │ int64       │
+        ├─────────┼─────────────┤
+        │ Adelie  │          44 │
+        │ Gentoo  │         124 │
+        └─────────┴─────────────┘
+        """
+        return self.as_table().as_scalar()
+
+    def as_table(self) -> ir.Table:
+        """Promote the expression to a [Table](./expression-tables.qmd#ibis.expr.types.Table).
+
+        Returns
+        -------
+        Table
+            A table expression
+
+        Examples
+        --------
+        >>> import ibis
+        >>> t = ibis.table(dict(a="str"), name="t")
+        >>> expr = t.a.length().name("len").as_table()
+        >>> expected = t.select(len=t.a.length())
+        >>> expr.equals(expected)
+        True
+        """
+        parents = self.op().relations
+        values = {self.get_name(): self}
+
+        if len(parents) == 0:
+            return ops.DummyTable(values).to_expr()
+        elif len(parents) == 1:
+            (parent,) = parents
+            return parent.to_expr().select(self)
+        else:
+            raise com.RelationError(
+                f"Cannot convert {type(self)} expression involving multiple "
+                "base table references to a projection"
+            )
 
     def _bind_reduction_filter(self, where):
         rels = self.op().relations

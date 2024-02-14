@@ -177,13 +177,41 @@ def test_select_turns_value_with_multiple_parents_into_subquery():
 
 def test_value_to_array_creates_subquery():
     rel = t.int_col.sum().as_table()
-    with pytest.warns(FutureWarning, match="implicit"):
+    with pytest.warns(FutureWarning, match="as_scalar"):
         expr = rel.to_array()
 
     op = expr.op()
     assert op.shape.is_scalar()
     assert op.dtype.is_int64()
     assert isinstance(op, ops.ScalarSubquery)
+
+
+def test_as_scalar_creates_subquery():
+    # scalar literal case
+    lit = ibis.literal(1)
+    expr = lit.as_scalar()
+    assert expr.equals(lit)
+
+    # scalar reduction case
+    reduction = t.int_col.sum()
+    expr = reduction.as_scalar()
+    expected = ops.ScalarSubquery(reduction.as_table())
+    assert expr.op() == expected
+
+    # column case
+    expr = t.int_col.as_scalar()
+    expected = ops.ScalarSubquery(t.int_col.as_table())
+    assert expr.op() == expected
+
+    # table case
+    proj = t.select(t.int_col)
+    expr = proj.as_scalar()
+    expected = ops.ScalarSubquery(proj)
+    assert expr.op() == expected
+
+    # table case but with multiple columns which can be validated
+    with pytest.raises(IntegrityError, match="must have exactly one column"):
+        t.as_scalar()
 
 
 def test_mutate():
