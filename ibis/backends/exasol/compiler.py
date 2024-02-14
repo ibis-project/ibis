@@ -97,6 +97,13 @@ class ExasolCompiler(SQLGlotCompiler):
         )
     )
 
+    SIMPLE_OPS = {
+        ops.Log10: "log10",
+        ops.Modulus: "mod",
+        ops.All: "min",
+        ops.Any: "max",
+    }
+
     @staticmethod
     def _minimize_spec(start, end, spec):
         if (
@@ -165,25 +172,3 @@ class ExasolCompiler(SQLGlotCompiler):
 
     def visit_DateTruncate(self, op, *, arg, unit):
         return super().visit_TimestampTruncate(op, arg=arg, unit=unit)
-
-
-_SIMPLE_OPS = {
-    ops.Log10: "log10",
-    ops.Modulus: "mod",
-    ops.All: "min",
-    ops.Any: "max",
-}
-
-for _op, _name in _SIMPLE_OPS.items():
-    assert isinstance(type(_op), type), type(_op)
-    if issubclass(_op, ops.Reduction):
-
-        def _fmt(self, op, *, _name: str = _name, where, **kw):
-            return self.agg[_name](*kw.values(), where=where)
-
-    else:
-
-        def _fmt(self, op, *, _name: str = _name, **kw):
-            return self.f[_name](*kw.values())
-
-    setattr(ExasolCompiler, f"visit_{_op.__name__}", _fmt)

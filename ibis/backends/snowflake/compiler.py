@@ -59,6 +59,32 @@ class SnowflakeCompiler(SQLGlotCompiler):
         )
     )
 
+    SIMPLE_OPS = {
+        ops.Any: "max",
+        ops.All: "min",
+        ops.ArrayDistinct: "array_distinct",
+        ops.ArrayFlatten: "array_flatten",
+        ops.ArrayIndex: "get",
+        ops.ArrayIntersect: "array_intersection",
+        ops.ArrayRemove: "array_remove",
+        ops.BitAnd: "bitand_agg",
+        ops.BitOr: "bitor_agg",
+        ops.BitXor: "bitxor_agg",
+        ops.BitwiseAnd: "bitand",
+        ops.BitwiseLeftShift: "bitshiftleft",
+        ops.BitwiseNot: "bitnot",
+        ops.BitwiseOr: "bitor",
+        ops.BitwiseRightShift: "bitshiftright",
+        ops.BitwiseXor: "bitxor",
+        ops.EndsWith: "endswith",
+        ops.Hash: "hash",
+        ops.Median: "median",
+        ops.Mode: "mode",
+        ops.StringToTimestamp: "to_timestamp_tz",
+        ops.TimeFromHMS: "time_from_parts",
+        ops.TimestampFromYMDHMS: "timestamp_from_parts",
+    }
+
     def __init__(self):
         super().__init__()
         self.f = SnowflakeFuncGen()
@@ -532,47 +558,3 @@ class SnowflakeCompiler(SQLGlotCompiler):
             )
             .subquery()
         )
-
-
-_SIMPLE_OPS = {
-    ops.Any: "max",
-    ops.All: "min",
-    ops.ArrayDistinct: "array_distinct",
-    ops.ArrayFlatten: "array_flatten",
-    ops.ArrayIndex: "get",
-    ops.ArrayIntersect: "array_intersection",
-    ops.ArrayRemove: "array_remove",
-    ops.BitAnd: "bitand_agg",
-    ops.BitOr: "bitor_agg",
-    ops.BitXor: "bitxor_agg",
-    ops.BitwiseAnd: "bitand",
-    ops.BitwiseLeftShift: "bitshiftleft",
-    ops.BitwiseNot: "bitnot",
-    ops.BitwiseOr: "bitor",
-    ops.BitwiseRightShift: "bitshiftright",
-    ops.BitwiseXor: "bitxor",
-    ops.EndsWith: "endswith",
-    ops.Hash: "hash",
-    ops.Median: "median",
-    ops.Mode: "mode",
-    ops.StringToTimestamp: "to_timestamp_tz",
-    ops.TimeFromHMS: "time_from_parts",
-    ops.TimestampFromYMDHMS: "timestamp_from_parts",
-}
-
-for _op, _name in _SIMPLE_OPS.items():
-    assert isinstance(type(_op), type), type(_op)
-    if issubclass(_op, ops.Reduction):
-
-        def _fmt(self, op, *, _name: str = _name, where, **kw):
-            return self.agg[_name](*kw.values(), where=where)
-
-    else:
-
-        def _fmt(self, op, *, _name: str = _name, **kw):
-            return self.f[_name](*kw.values())
-
-    setattr(SnowflakeCompiler, f"visit_{_op.__name__}", _fmt)
-
-
-del _op, _name, _fmt

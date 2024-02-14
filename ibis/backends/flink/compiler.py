@@ -70,6 +70,29 @@ class FlinkCompiler(SQLGlotCompiler):
         )
     )
 
+    SIMPLE_OPS = {
+        ops.All: "min",
+        ops.Any: "max",
+        ops.ApproxCountDistinct: "approx_count_distinct",
+        ops.ArrayDistinct: "array_distinct",
+        ops.ArrayLength: "cardinality",
+        ops.ArrayPosition: "array_position",
+        ops.ArrayRemove: "array_remove",
+        ops.ArrayUnion: "array_union",
+        ops.ExtractDayOfYear: "dayofyear",
+        ops.First: "first_value",
+        ops.Last: "last_value",
+        ops.Map: "map_from_arrays",
+        ops.Power: "power",
+        ops.RandomScalar: "rand",
+        ops.RegexSearch: "regexp",
+        ops.StrRight: "right",
+        ops.StringLength: "char_length",
+        ops.StringToTimestamp: "to_timestamp",
+        ops.Strip: "trim",
+        ops.TypeOf: "typeof",
+    }
+
     @property
     def NAN(self):
         raise NotImplementedError("Flink does not support NaN")
@@ -519,45 +542,3 @@ class FlinkCompiler(SQLGlotCompiler):
         if where is not None:
             arg = self.if_(where, arg, self.f.array(arg)[2])
         return self.f.count(sge.Distinct(expressions=[arg]))
-
-
-_SIMPLE_OPS = {
-    ops.All: "min",
-    ops.Any: "max",
-    ops.ApproxCountDistinct: "approx_count_distinct",
-    ops.ArrayDistinct: "array_distinct",
-    ops.ArrayLength: "cardinality",
-    ops.ArrayPosition: "array_position",
-    ops.ArrayRemove: "array_remove",
-    ops.ArrayUnion: "array_union",
-    ops.ExtractDayOfYear: "dayofyear",
-    ops.First: "first_value",
-    ops.Last: "last_value",
-    ops.Map: "map_from_arrays",
-    ops.Power: "power",
-    ops.RandomScalar: "rand",
-    ops.RegexSearch: "regexp",
-    ops.StrRight: "right",
-    ops.StringLength: "char_length",
-    ops.StringToTimestamp: "to_timestamp",
-    ops.Strip: "trim",
-    ops.TypeOf: "typeof",
-}
-
-
-for _op, _name in _SIMPLE_OPS.items():
-    assert isinstance(type(_op), type), type(_op)
-    if issubclass(_op, ops.Reduction):
-
-        def _fmt(self, op, *, _name: str = _name, where, **kw):
-            return self.agg[_name](*kw.values(), where=where)
-
-    else:
-
-        def _fmt(self, op, *, _name: str = _name, **kw):
-            return self.f[_name](*kw.values())
-
-    setattr(FlinkCompiler, f"visit_{_op.__name__}", _fmt)
-
-
-del _op, _name, _fmt

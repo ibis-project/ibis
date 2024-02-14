@@ -101,6 +101,21 @@ class MySQLCompiler(SQLGlotCompiler):
         )
     )
 
+    SIMPLE_OPS = {
+        ops.BitAnd: "bit_and",
+        ops.BitOr: "bit_or",
+        ops.BitXor: "bit_xor",
+        ops.DayOfWeekName: "dayname",
+        ops.Log10: "log10",
+        ops.StringContains: "instr",
+        ops.ExtractWeekOfYear: "weekofyear",
+        ops.ExtractEpochSeconds: "unix_timestamp",
+        ops.ExtractDayOfYear: "dayofyear",
+        ops.Strftime: "date_format",
+        ops.StringToTimestamp: "str_to_date",
+        ops.Log2: "log2",
+    }
+
     def _aggregate(self, funcname: str, *args, where):
         func = self.f[funcname]
         if where is not None:
@@ -338,37 +353,3 @@ class MySQLCompiler(SQLGlotCompiler):
                 this=right.this * 1_000, unit=sge.Var(this="MICROSECOND")
             )
         return self.f.date_add(left, right, dialect=self.dialect)
-
-
-_SIMPLE_OPS = {
-    ops.BitAnd: "bit_and",
-    ops.BitOr: "bit_or",
-    ops.BitXor: "bit_xor",
-    ops.DayOfWeekName: "dayname",
-    ops.Log10: "log10",
-    ops.StringContains: "instr",
-    ops.ExtractWeekOfYear: "weekofyear",
-    ops.ExtractEpochSeconds: "unix_timestamp",
-    ops.ExtractDayOfYear: "dayofyear",
-    ops.Strftime: "date_format",
-    ops.StringToTimestamp: "str_to_date",
-    ops.Log2: "log2",
-}
-
-
-for _op, _name in _SIMPLE_OPS.items():
-    assert isinstance(type(_op), type), type(_op)
-    if issubclass(_op, ops.Reduction):
-
-        def _fmt(self, op, *, _name: str = _name, where, **kw):
-            return self.agg[_name](*kw.values(), where=where)
-
-    else:
-
-        def _fmt(self, op, *, _name: str = _name, **kw):
-            return self.f[_name](*kw.values())
-
-    setattr(MySQLCompiler, f"visit_{_op.__name__}", _fmt)
-
-
-del _op, _name, _fmt

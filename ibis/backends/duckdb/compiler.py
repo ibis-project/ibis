@@ -37,6 +37,55 @@ class DuckDBCompiler(SQLGlotCompiler):
     dialect = DuckDB
     type_mapper = DuckDBType
 
+    SIMPLE_OPS = {
+        ops.ArrayPosition: "list_indexof",
+        ops.BitAnd: "bit_and",
+        ops.BitOr: "bit_or",
+        ops.BitXor: "bit_xor",
+        ops.EndsWith: "suffix",
+        ops.Hash: "hash",
+        ops.IntegerRange: "range",
+        ops.TimestampRange: "range",
+        ops.MapKeys: "map_keys",
+        ops.MapLength: "cardinality",
+        ops.MapMerge: "map_concat",
+        ops.MapValues: "map_values",
+        ops.Mode: "mode",
+        ops.TimeFromHMS: "make_time",
+        ops.TypeOf: "typeof",
+        ops.GeoPoint: "st_point",
+        ops.GeoAsText: "st_astext",
+        ops.GeoArea: "st_area",
+        ops.GeoBuffer: "st_buffer",
+        ops.GeoCentroid: "st_centroid",
+        ops.GeoContains: "st_contains",
+        ops.GeoCovers: "st_covers",
+        ops.GeoCoveredBy: "st_coveredby",
+        ops.GeoCrosses: "st_crosses",
+        ops.GeoDifference: "st_difference",
+        ops.GeoDisjoint: "st_disjoint",
+        ops.GeoDistance: "st_distance",
+        ops.GeoDWithin: "st_dwithin",
+        ops.GeoEndPoint: "st_endpoint",
+        ops.GeoEnvelope: "st_envelope",
+        ops.GeoEquals: "st_equals",
+        ops.GeoFlipCoordinates: "st_flipcoordinates",
+        ops.GeoGeometryType: "st_geometrytype",
+        ops.GeoIntersection: "st_intersection",
+        ops.GeoIntersects: "st_intersects",
+        ops.GeoIsValid: "st_isvalid",
+        ops.GeoLength: "st_length",
+        ops.GeoNPoints: "st_npoints",
+        ops.GeoOverlaps: "st_overlaps",
+        ops.GeoStartPoint: "st_startpoint",
+        ops.GeoTouches: "st_touches",
+        ops.GeoUnion: "st_union",
+        ops.GeoUnaryUnion: "st_union_agg",
+        ops.GeoWithin: "st_within",
+        ops.GeoX: "st_x",
+        ops.GeoY: "st_y",
+    }
+
     def _aggregate(self, funcname: str, *args, where):
         expr = self.f[funcname](*args)
         if where is not None:
@@ -334,71 +383,3 @@ class DuckDBCompiler(SQLGlotCompiler):
 
     def visit_StringConcat(self, op, *, arg):
         return reduce(lambda x, y: sge.DPipe(this=x, expression=y), arg)
-
-
-_SIMPLE_OPS = {
-    ops.ArrayPosition: "list_indexof",
-    ops.BitAnd: "bit_and",
-    ops.BitOr: "bit_or",
-    ops.BitXor: "bit_xor",
-    ops.EndsWith: "suffix",
-    ops.Hash: "hash",
-    ops.IntegerRange: "range",
-    ops.TimestampRange: "range",
-    ops.MapKeys: "map_keys",
-    ops.MapLength: "cardinality",
-    ops.MapMerge: "map_concat",
-    ops.MapValues: "map_values",
-    ops.Mode: "mode",
-    ops.TimeFromHMS: "make_time",
-    ops.TypeOf: "typeof",
-    ops.GeoPoint: "st_point",
-    ops.GeoAsText: "st_astext",
-    ops.GeoArea: "st_area",
-    ops.GeoBuffer: "st_buffer",
-    ops.GeoCentroid: "st_centroid",
-    ops.GeoContains: "st_contains",
-    ops.GeoCovers: "st_covers",
-    ops.GeoCoveredBy: "st_coveredby",
-    ops.GeoCrosses: "st_crosses",
-    ops.GeoDifference: "st_difference",
-    ops.GeoDisjoint: "st_disjoint",
-    ops.GeoDistance: "st_distance",
-    ops.GeoDWithin: "st_dwithin",
-    ops.GeoEndPoint: "st_endpoint",
-    ops.GeoEnvelope: "st_envelope",
-    ops.GeoEquals: "st_equals",
-    ops.GeoFlipCoordinates: "st_flipcoordinates",
-    ops.GeoGeometryType: "st_geometrytype",
-    ops.GeoIntersection: "st_intersection",
-    ops.GeoIntersects: "st_intersects",
-    ops.GeoIsValid: "st_isvalid",
-    ops.GeoLength: "st_length",
-    ops.GeoNPoints: "st_npoints",
-    ops.GeoOverlaps: "st_overlaps",
-    ops.GeoStartPoint: "st_startpoint",
-    ops.GeoTouches: "st_touches",
-    ops.GeoUnion: "st_union",
-    ops.GeoUnaryUnion: "st_union_agg",
-    ops.GeoWithin: "st_within",
-    ops.GeoX: "st_x",
-    ops.GeoY: "st_y",
-}
-
-
-for _op, _name in _SIMPLE_OPS.items():
-    assert isinstance(type(_op), type), type(_op)
-    if issubclass(_op, ops.Reduction):
-
-        def _fmt(self, op, *, _name: str = _name, where, **kw):
-            return self.agg[_name](*kw.values(), where=where)
-
-    else:
-
-        def _fmt(self, op, *, _name: str = _name, **kw):
-            return self.f[_name](*kw.values())
-
-    setattr(DuckDBCompiler, f"visit_{_op.__name__}", _fmt)
-
-
-del _op, _name, _fmt

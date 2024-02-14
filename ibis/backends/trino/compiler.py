@@ -53,6 +53,44 @@ class TrinoCompiler(SQLGlotCompiler):
         )
     )
 
+    SIMPLE_OPS = {
+        ops.Pi: "pi",
+        ops.E: "e",
+        ops.RegexReplace: "regexp_replace",
+        ops.Map: "map",
+        ops.MapKeys: "map_keys",
+        ops.MapLength: "cardinality",
+        ops.MapMerge: "map_concat",
+        ops.MapValues: "map_values",
+        ops.Log2: "log2",
+        ops.Log10: "log10",
+        ops.IsNan: "is_nan",
+        ops.IsInf: "is_infinite",
+        ops.StringToTimestamp: "date_parse",
+        ops.Strftime: "date_format",
+        ops.ExtractEpochSeconds: "to_unixtime",
+        ops.ExtractWeekOfYear: "week_of_year",
+        ops.ExtractDayOfYear: "day_of_year",
+        ops.ExtractMillisecond: "millisecond",
+        ops.ArrayUnion: "array_union",
+        ops.ArrayRemove: "array_remove",
+        ops.ArrayFlatten: "flatten",
+        ops.ArraySort: "array_sort",
+        ops.ArrayDistinct: "array_distinct",
+        ops.ArrayLength: "cardinality",
+        ops.ArrayCollect: "array_agg",
+        ops.ArrayIntersect: "array_intersect",
+        ops.BitAnd: "bitwise_and_agg",
+        ops.BitOr: "bitwise_or_agg",
+        ops.TypeOf: "typeof",
+        ops.Levenshtein: "levenshtein_distance",
+        ops.ExtractProtocol: "url_extract_protocol",
+        ops.ExtractHost: "url_extract_host",
+        ops.ExtractPath: "url_extract_path",
+        ops.ExtractFragment: "url_extract_fragment",
+        ops.ArrayPosition: "array_position",
+    }
+
     def _aggregate(self, funcname: str, *args, where):
         expr = self.f[funcname](*args)
         if where is not None:
@@ -422,58 +460,3 @@ class TrinoCompiler(SQLGlotCompiler):
         # sqlglot doesn't support the third `group` argument for trino so work
         # around that limitation using an anonymous function
         return self.f.anon.regexp_extract(arg, pattern, index)
-
-
-_SIMPLE_OPS = {
-    ops.Pi: "pi",
-    ops.E: "e",
-    ops.RegexReplace: "regexp_replace",
-    ops.Map: "map",
-    ops.MapKeys: "map_keys",
-    ops.MapLength: "cardinality",
-    ops.MapMerge: "map_concat",
-    ops.MapValues: "map_values",
-    ops.Log2: "log2",
-    ops.Log10: "log10",
-    ops.IsNan: "is_nan",
-    ops.IsInf: "is_infinite",
-    ops.StringToTimestamp: "date_parse",
-    ops.Strftime: "date_format",
-    ops.ExtractEpochSeconds: "to_unixtime",
-    ops.ExtractWeekOfYear: "week_of_year",
-    ops.ExtractDayOfYear: "day_of_year",
-    ops.ExtractMillisecond: "millisecond",
-    ops.ArrayUnion: "array_union",
-    ops.ArrayRemove: "array_remove",
-    ops.ArrayFlatten: "flatten",
-    ops.ArraySort: "array_sort",
-    ops.ArrayDistinct: "array_distinct",
-    ops.ArrayLength: "cardinality",
-    ops.ArrayCollect: "array_agg",
-    ops.ArrayIntersect: "array_intersect",
-    ops.BitAnd: "bitwise_and_agg",
-    ops.BitOr: "bitwise_or_agg",
-    ops.TypeOf: "typeof",
-    ops.Levenshtein: "levenshtein_distance",
-    ops.ExtractProtocol: "url_extract_protocol",
-    ops.ExtractHost: "url_extract_host",
-    ops.ExtractPath: "url_extract_path",
-    ops.ExtractFragment: "url_extract_fragment",
-    ops.ArrayPosition: "array_position",
-}
-
-for _op, _name in _SIMPLE_OPS.items():
-    assert isinstance(type(_op), type), type(_op)
-    if issubclass(_op, ops.Reduction):
-
-        def _fmt(self, op, *, _name: str = _name, where, **kw):
-            return self.agg[_name](*kw.values(), where=where)
-
-    else:
-
-        def _fmt(self, op, *, _name: str = _name, **kw):
-            return self.f[_name](*kw.values())
-
-    setattr(TrinoCompiler, f"visit_{_op.__name__}", _fmt)
-
-del _op, _name, _fmt

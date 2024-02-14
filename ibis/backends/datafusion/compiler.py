@@ -70,6 +70,21 @@ class DataFusionCompiler(SQLGlotCompiler):
         )
     )
 
+    SIMPLE_OPS = {
+        ops.ApproxMedian: "approx_median",
+        ops.ArrayRemove: "array_remove_all",
+        ops.BitAnd: "bit_and",
+        ops.BitOr: "bit_or",
+        ops.BitXor: "bit_xor",
+        ops.Cot: "cot",
+        ops.ExtractMicrosecond: "extract_microsecond",
+        ops.First: "first_value",
+        ops.Last: "last_value",
+        ops.Median: "median",
+        ops.StringLength: "character_length",
+        ops.RegexSplit: "regex_split",
+    }
+
     def _aggregate(self, funcname: str, *args, where):
         expr = self.f[funcname](*args)
         if where is not None:
@@ -465,33 +480,3 @@ class DataFusionCompiler(SQLGlotCompiler):
             sel = sel.group_by(*by_names_quoted)
 
         return sel
-
-
-_SIMPLE_OPS = {
-    ops.ApproxMedian: "approx_median",
-    ops.ArrayRemove: "array_remove_all",
-    ops.BitAnd: "bit_and",
-    ops.BitOr: "bit_or",
-    ops.BitXor: "bit_xor",
-    ops.Cot: "cot",
-    ops.ExtractMicrosecond: "extract_microsecond",
-    ops.First: "first_value",
-    ops.Last: "last_value",
-    ops.Median: "median",
-    ops.StringLength: "character_length",
-    ops.RegexSplit: "regex_split",
-}
-
-for _op, _name in _SIMPLE_OPS.items():
-    assert isinstance(type(_op), type), type(_op)
-    if issubclass(_op, ops.Reduction):
-
-        def _fmt(self, op, *, _name: str = _name, where, **kw):
-            return self.agg[_name](*kw.values(), where=where)
-
-    else:
-
-        def _fmt(self, op, *, _name: str = _name, **kw):
-            return self.f[_name](*kw.values())
-
-    setattr(DataFusionCompiler, f"visit_{_op.__name__}", _fmt)

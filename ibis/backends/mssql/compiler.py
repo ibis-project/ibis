@@ -118,6 +118,22 @@ class MSSQLCompiler(SQLGlotCompiler):
         )
     )
 
+    SIMPLE_OPS = {
+        ops.Atan2: "atn2",
+        ops.DateFromYMD: "datefromparts",
+        ops.Hash: "checksum",
+        ops.Ln: "log",
+        ops.Log10: "log10",
+        ops.Power: "power",
+        ops.RandomScalar: "rand",
+        ops.Repeat: "replicate",
+        ops.Reverse: "reverse",
+        ops.StringAscii: "ascii",
+        ops.TimestampNow: "sysdatetime",
+        ops.Min: "min",
+        ops.Max: "max",
+    }
+
     @property
     def NAN(self):
         return self.f.double("NaN")
@@ -426,38 +442,3 @@ class MSSQLCompiler(SQLGlotCompiler):
     def visit_StringConcat(self, op, *, arg):
         any_args_null = (a.is_(NULL) for a in arg)
         return self.if_(sg.or_(*any_args_null), NULL, self.f.concat(*arg))
-
-
-_SIMPLE_OPS = {
-    ops.Atan2: "atn2",
-    ops.DateFromYMD: "datefromparts",
-    ops.Hash: "checksum",
-    ops.Ln: "log",
-    ops.Log10: "log10",
-    ops.Power: "power",
-    ops.RandomScalar: "rand",
-    ops.Repeat: "replicate",
-    ops.Reverse: "reverse",
-    ops.StringAscii: "ascii",
-    ops.TimestampNow: "sysdatetime",
-    ops.Min: "min",
-    ops.Max: "max",
-}
-
-
-for _op, _name in _SIMPLE_OPS.items():
-    assert isinstance(type(_op), type), type(_op)
-    if issubclass(_op, ops.Reduction):
-
-        def _fmt(self, op, *, _name: str = _name, where, **kw):
-            return self.agg[_name](*kw.values(), where=where)
-
-    else:
-
-        def _fmt(self, op, *, _name: str = _name, **kw):
-            return self.f[_name](*kw.values())
-
-    setattr(MSSQLCompiler, f"visit_{_op.__name__}", _fmt)
-
-
-del _op, _name, _fmt

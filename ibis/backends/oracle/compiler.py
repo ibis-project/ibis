@@ -85,6 +85,20 @@ class OracleCompiler(SQLGlotCompiler):
         )
     )
 
+    SIMPLE_OPS = {
+        ops.ApproxCountDistinct: "approx_count_distinct",
+        ops.BitAnd: "bit_and_agg",
+        ops.BitOr: "bit_or_agg",
+        ops.BitXor: "bit_xor_agg",
+        ops.BitwiseAnd: "bitand",
+        ops.Hash: "hash",
+        ops.LPad: "lpad",
+        ops.RPad: "rpad",
+        ops.StringAscii: "ascii",
+        ops.Strip: "trim",
+        ops.Hash: "ora_hash",
+    }
+
     def _aggregate(self, funcname: str, *args, where):
         func = self.f[funcname]
         if where is not None:
@@ -440,35 +454,3 @@ class OracleCompiler(SQLGlotCompiler):
     def visit_StringConcat(self, op, *, arg):
         any_args_null = (a.is_(NULL) for a in arg)
         return self.if_(sg.or_(*any_args_null), NULL, self.f.concat(*arg))
-
-
-_SIMPLE_OPS = {
-    ops.ApproxCountDistinct: "approx_count_distinct",
-    ops.BitAnd: "bit_and_agg",
-    ops.BitOr: "bit_or_agg",
-    ops.BitXor: "bit_xor_agg",
-    ops.BitwiseAnd: "bitand",
-    ops.Hash: "hash",
-    ops.LPad: "lpad",
-    ops.RPad: "rpad",
-    ops.StringAscii: "ascii",
-    ops.Strip: "trim",
-    ops.Hash: "ora_hash",
-}
-
-for _op, _name in _SIMPLE_OPS.items():
-    assert isinstance(type(_op), type), type(_op)
-    if issubclass(_op, ops.Reduction):
-
-        def _fmt(self, op, *, _name: str = _name, where, **kw):
-            return self.agg[_name](*kw.values(), where=where)
-
-    else:
-
-        def _fmt(self, op, *, _name: str = _name, **kw):
-            return self.f[_name](*kw.values())
-
-    setattr(OracleCompiler, f"visit_{_op.__name__}", _fmt)
-
-
-del _op, _name, _fmt
