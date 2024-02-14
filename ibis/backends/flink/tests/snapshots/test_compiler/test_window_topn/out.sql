@@ -29,7 +29,7 @@ FROM (
     FROM (
       SELECT
         `t0`.*
-      FROM TABLE(TUMBLE(TABLE `table`, DESCRIPTOR(`i`), INTERVAL '600' SECOND)) AS `t0`
+      FROM TABLE(TUMBLE(TABLE `table`, DESCRIPTOR(`i`), INTERVAL '600' SECOND(3))) AS `t0`
     ) AS `t1`
   ) AS `t2`
 ) AS `t3`

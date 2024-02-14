@@ -6,7 +6,7 @@ SELECT
 FROM (
   SELECT
     `t0`.*
-  FROM TABLE(TUMBLE(TABLE `table`, DESCRIPTOR(`i`), INTERVAL '15' MINUTE)) AS `t0`
+  FROM TABLE(TUMBLE(TABLE `table`, DESCRIPTOR(`i`), INTERVAL '15' MINUTE(2))) AS `t0`
 ) AS `t1`
 GROUP BY
   `t1`.`window_start`,
