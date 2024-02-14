@@ -39,6 +39,9 @@ class MockBackend(BaseBackend):
     def do_connect(self):
         pass
 
+    def disconnect(self):
+        pass
+
     def table(self, name, **kwargs):
         schema = self.get_schema(name)
         node = ops.DatabaseTable(source=self, name=name, schema=schema)

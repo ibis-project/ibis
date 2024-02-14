@@ -1460,3 +1460,28 @@ def test_list_databases_schemas(con_create_database_schema):
             con_create_database_schema.drop_schema(schema, database=database)
     finally:
         con_create_database_schema.drop_database(database)
+
+
+@pytest.mark.notyet(
+    ["pandas", "dask", "polars", "datafusion"],
+    reason="this is a no-op for in-memory backends",
+)
+@pytest.mark.notyet(
+    ["trino", "clickhouse", "impala", "bigquery", "flink"],
+    reason="Backend client does not conform to DB-API, subsequent op does not raise",
+)
+@pytest.mark.skip()
+def test_close_connection(con):
+    if con.name == "pyspark":
+        # It would be great if there were a simple way to say "give me a new
+        # spark context" but I haven't found it.
+        pytest.skip("Closing spark context breaks subsequent tests")
+    new_con = getattr(ibis, con.name).connect(*con._con_args, **con._con_kwargs)
+
+    # Run any command that hits the backend
+    _ = new_con.list_tables()
+    new_con.disconnect()
+
+    # DB-API states that subsequent execution attempt should raise
+    with pytest.raises(Exception):  # noqa:B017
+        new_con.list_tables()

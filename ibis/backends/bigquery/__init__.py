@@ -447,6 +447,9 @@ class Backend(SQLGlotBackend, CanCreateSchema):
 
         self.partition_column = partition_column
 
+    def disconnect(self) -> None:
+        self.client.close()
+
     def _parse_project_and_dataset(self, dataset) -> tuple[str, str]:
         if not dataset and not self.dataset:
             raise ValueError("Unable to determine BigQuery dataset.")

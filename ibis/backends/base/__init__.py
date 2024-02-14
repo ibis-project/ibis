@@ -864,6 +864,10 @@ class BaseBackend(abc.ABC, _FileIOHandler):
         new_backend.reconnect()
         return new_backend
 
+    @abc.abstractmethod
+    def disconnect(self) -> None:
+        """Close the connection to the backend."""
+
     @staticmethod
     def _convert_kwargs(kwargs: MutableMapping) -> None:
         """Manipulate keyword arguments to `.connect` method."""

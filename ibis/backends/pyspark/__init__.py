@@ -158,6 +158,9 @@ class Backend(SQLGlotBackend, CanCreateDatabase):
         self._session.conf.set("spark.sql.session.timeZone", "UTC")
         self._session.conf.set("spark.sql.mapKeyDedupPolicy", "LAST_WIN")
 
+    def disconnect(self) -> None:
+        self._session.stop()
+
     def _metadata(self, query: str):
         cursor = self.raw_sql(query)
         struct_dtype = PySparkType.to_ibis(cursor.query.schema)

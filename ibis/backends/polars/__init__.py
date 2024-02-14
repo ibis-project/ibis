@@ -59,6 +59,9 @@ class Backend(BaseBackend, NoUrl):
         for name, table in (tables or {}).items():
             self._add_table(name, table)
 
+    def disconnect(self) -> None:
+        pass
+
     @property
     def version(self) -> str:
         return pl.__version__

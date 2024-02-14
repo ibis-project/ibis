@@ -94,6 +94,9 @@ class Backend(SQLGlotBackend, CanCreateDatabase, CanCreateSchema, NoUrl):
         for name, path in config.items():
             self.register(path, table_name=name)
 
+    def disconnect(self) -> None:
+        pass
+
     @contextlib.contextmanager
     def _safe_raw_sql(self, sql: sge.Statement) -> Any:
         yield self.raw_sql(sql).collect()

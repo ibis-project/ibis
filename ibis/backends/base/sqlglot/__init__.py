@@ -385,3 +385,8 @@ class SQLGlotBackend(BaseBackend):
         ).sql(self.dialect)
         with self._safe_raw_sql(f"TRUNCATE TABLE {ident}"):
             pass
+
+    def disconnect(self):
+        # This is part of the Python DB-API specification so should work for
+        # _most_ sqlglot backends
+        self.con.close()
