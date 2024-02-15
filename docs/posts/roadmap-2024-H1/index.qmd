@@ -197,7 +197,7 @@ We would love to onboard new contributors to the project.
 
 ## Other themes
 
-With less engineering priority, we have a few other themes for 2024.
+We have a few other themes for 2024 that are lower priority.
 
 ### New backends
 
