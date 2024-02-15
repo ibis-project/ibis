@@ -842,16 +842,16 @@ def test_parse_url(con, result_func, expected):
 @pytest.mark.parametrize(
     ("inp, expected"),
     [
-        (None, None),
-        ("", ""),
-        ("Abc", "Abc"),
-        ("abc", "Abc"),
-        ("aBC", "Abc"),
-        (" abc", " abc"),
-        ("9abc", "9abc"),
-        ("aBc dEf", "Abc def"),
-        ("aBc-dEf", "Abc-def"),
-        ("aBc1dEf", "Abc1def"),
+        param(None, None, id="none"),
+        param("", "", id="empty"),
+        param("Abc", "Abc", id="no_change"),
+        param("abc", "Abc", id="lower_to_upper"),
+        param("aBC", "Abc", id="mixed_to_upper"),
+        param(" abc", " abc", id="leading_space"),
+        param("9abc", "9abc", id="leading_digit"),
+        param("aBc dEf", "Abc def", id="mixed_with_space"),
+        param("aBc-dEf", "Abc-def", id="mixed_with_hyphen"),
+        param("aBc1dEf", "Abc1def", id="mixed_with_digit"),
     ],
 )
 def test_capitalize(con, inp, expected):
