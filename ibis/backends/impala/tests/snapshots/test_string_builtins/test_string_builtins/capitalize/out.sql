@@ -14,8 +14,8 @@ SELECT
         (
           1 + 1
         ) >= 1,
-        SUBSTRING(`t0`.`string_col`, 1 + 1),
-        SUBSTRING(`t0`.`string_col`, 1 + 1 + LENGTH(`t0`.`string_col`))
+        SUBSTRING(`t0`.`string_col`, 1 + 1, LENGTH(`t0`.`string_col`)),
+        SUBSTRING(`t0`.`string_col`, 1 + 1 + LENGTH(`t0`.`string_col`), LENGTH(`t0`.`string_col`))
       )
     )
   ) AS `Capitalize(string_col)`
