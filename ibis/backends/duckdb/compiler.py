@@ -92,6 +92,16 @@ class DuckDBCompiler(SQLGlotCompiler):
             return sge.Filter(this=expr, expression=sge.Where(this=where))
         return expr
 
+    def visit_StructColumn(self, op, *, names, values):
+        return sge.Struct.from_arg_list(
+            [
+                sge.PropertyEQ(
+                    this=sg.to_identifier(name, quoted=self.quoted), expression=value
+                )
+                for name, value in zip(names, values)
+            ]
+        )
+
     def visit_ArrayDistinct(self, op, *, arg):
         return self.if_(
             arg.is_(NULL),
@@ -314,6 +324,18 @@ class DuckDBCompiler(SQLGlotCompiler):
                 args.append(tz)
 
             return self.f[funcname](*args)
+        elif dtype.is_struct():
+            return sge.Struct.from_arg_list(
+                [
+                    sge.PropertyEQ(
+                        this=sg.to_identifier(k, quoted=self.quoted),
+                        expression=self.visit_Literal(
+                            ops.Literal(v, field_dtype), value=v, dtype=field_dtype
+                        ),
+                    )
+                    for field_dtype, (k, v) in zip(dtype.types, value.items())
+                ]
+            )
         else:
             return None
 
