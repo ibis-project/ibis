@@ -842,7 +842,18 @@ def test_parse_url(con, result_func, expected):
 @pytest.mark.parametrize(
     ("inp, expected"),
     [
-        param(None, None, id="none"),
+        param(
+            None,
+            None,
+            id="none",
+            marks=[
+                pytest.mark.notyet(
+                    ["druid"],
+                    raises=PyDruidProgrammingError,
+                    reason="illegal use of NULL",
+                )
+            ],
+        ),
         param(
             "",
             "",
