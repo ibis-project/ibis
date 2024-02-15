@@ -244,7 +244,7 @@ Improving the documentation is a great way to get involved with Ibis!
 
 ## Beyond Q1 2024
 
-This writeup of our roadmap is heavily biased toward Q1 of 2024. Looking beyond,
+This writeup of our roadmap is heavily focused on Q1 of 2024. Looking beyond,
 our priorities remain much the same. After the big refactor is done, we will
 continue improving our library internals, backend interface, and ensuring the
 longevity of Ibis. We'll continue improving ML, streaming, and geospatial
