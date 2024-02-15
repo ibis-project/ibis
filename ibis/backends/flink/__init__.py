@@ -301,10 +301,50 @@ class Backend(SQLGlotBackend, CanCreateDatabase, NoUrl):
 
         return pyflink.version.__version__
 
+    def _gen_udf_name(self, name: str, schema: str | None) -> str:
+        return ".".join(filter(None, (schema, name)))
+
+    def _gen_udf_rule(self, op: ops.ScalarUDF):
+        @self.add_operation(type(op))
+        def _(t, op):
+            func = self._gen_udf_name(op.__func_name__, schema=op.__udf_namespace__)
+            return f"{func}({', '.join(map(t.translate, op.args))})"
+
+    def _gen_udaf_rule(self, op: ops.AggUDF):
+        from ibis import NA
+
+        @self.add_operation(type(op))
+        def _(t, op):
+            func = self._gen_udf_name(op.__func_name__, schema=op.__udf_namespace__)
+            args = ", ".join(
+                t.translate(
+                    ops.IfElse(where, arg, NA)
+                    if (where := op.where) is not None
+                    else arg
+                )
+                for name, arg in zip(op.argnames, op.args)
+                if name != "where"
+            )
+            return f"{func}({args})"
+
+    def _define_udf_translation_rules(self, expr: ir.Expr):
+        for udf_node in expr.op().find(ops.ScalarUDF):
+            udf_node_type = type(udf_node)
+
+            if udf_node_type not in self.compiler.translator_class._registry:
+                self._gen_udf_rule(udf_node)
+
+        for udf_node in expr.op().find(ops.AggUDF):
+            udf_node_type = type(udf_node)
+
+            if udf_node_type not in self.compiler.translator_class._registry:
+                self._gen_udaf_rule(udf_node)
+
     def compile(
         self, expr: ir.Expr, params: Mapping[ir.Expr, Any] | None = None, **_: Any
     ) -> Any:
         """Compile an Ibis expression to Flink."""
+        self._define_udf_translation_rules(expr)
         return super().compile(expr, params=params)  # Discard `limit` and other kwargs.
 
     def _to_sql(self, expr: ir.Expr, **kwargs: Any) -> str:
