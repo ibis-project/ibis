@@ -843,7 +843,19 @@ def test_parse_url(con, result_func, expected):
     ("inp, expected"),
     [
         param(None, None, id="none"),
-        param("", "", id="empty"),
+        param(
+            "",
+            "",
+            id="empty",
+            marks=[
+                pytest.mark.notyet(
+                    ["oracle"],
+                    reason="https://github.com/oracle/python-oracledb/issues/298",
+                    raises=AssertionError,
+                ),
+                pytest.mark.notyet(["exasol"], raises=AssertionError),
+            ],
+        ),
         param("Abc", "Abc", id="no_change"),
         param("abc", "Abc", id="lower_to_upper"),
         param("aBC", "Abc", id="mixed_to_upper"),
