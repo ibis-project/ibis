@@ -1846,3 +1846,15 @@ def test_select_mutate_with_dict(backend):
 
     expr = t.select({"a": ibis.literal(1.0)}).limit(1)
     backend.assert_frame_equal(result, expected)
+
+
+@pytest.mark.broken(["mssql", "oracle"], reason="incorrect syntax")
+def test_isnull_equality(con, backend, monkeypatch):
+    monkeypatch.setattr(ibis.options, "default_backend", con)
+    t = ibis.memtable({"x": ["a", "b", None], "y": ["c", None, None], "z": [1, 2, 3]})
+    expr = t.mutate(out=t.x.isnull() == t.y.isnull()).order_by("z").select("out")
+    result = expr.to_pandas()
+
+    expected = pd.DataFrame({"out": [True, False, True]})
+
+    backend.assert_frame_equal(result, expected)

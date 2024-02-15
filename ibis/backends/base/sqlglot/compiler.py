@@ -320,6 +320,8 @@ class SQLGlotCompiler(abc.ABC):
         ops.IntervalSubtract,
     )
 
+    NEEDS_PARENS = BINARY_INFIX_OPS + (ops.IsNull,)
+
     def __init__(self) -> None:
         self.agg = AggGen(aggfunc=self._aggregate)
         self.f = FuncGen()
@@ -1191,7 +1193,7 @@ class SQLGlotCompiler(abc.ABC):
 
     @classmethod
     def _add_parens(cls, op, sg_expr):
-        if isinstance(op, cls.BINARY_INFIX_OPS):
+        if isinstance(op, cls.NEEDS_PARENS):
             return paren(sg_expr)
         return sg_expr
 
