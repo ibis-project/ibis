@@ -3,7 +3,6 @@ title: "Ibis project 2024 roadmap"
 author: "Cody Peterson"
 date: "2024-02-15"
 image: commits.png
-draft: true
 categories:
     - blog
     - roadmap
@@ -17,15 +16,17 @@ with the background of Ibis or who supports it nowadays, we recommend reading
 [why Voltron Data supports Ibis](../why-voda-supports-ibis/index.qmd) before the
 roadmap below.
 
-## 2024 roadmap
+## Roadmap GitHub project
 
 We have a [public roadmap as a GitHub
-project!](https://github.com/orgs/ibis-project/projects/5)
+project!](https://github.com/orgs/ibis-project/projects/5) You can follow along
+with specific higher-level issues you are interested in there to keep track of
+our progress.
 
 ![Ibis roadmap](roadmap.png)
 
-We are early in our use of this GitHub project, so please pardon any
-disorganization as we get it up and running efficiently. In general, we have:
+We are early in our use of this GitHub project so please pardon any
+disorganization as we get it up and running efficiently. We have:
 
 - **Roadmap view**: consisting of meta-issues in their respective repositories
  for high-level objectives of the Ibis project
@@ -38,7 +39,8 @@ disorganization as we get it up and running efficiently. In general, we have:
 - **Label-specific views**: consisting of issues for specific labels, like
  documentation or a large refactor
 
-Right now, [the team at Voltron Data](../why-voda-supports-ibis/index.qmd) sets
+Right now, [the team at Voltron
+Data](../why-voda-supports-ibis/index.qmd#who-are-the-core-contributors) sets
 the roadmap and priorities. Over time as more contributors and organizations
 join the project, we expect this process to diversify and become more
 community-driven. We'd love to have you involved in the process! [Join us on
@@ -46,7 +48,24 @@ Zulip](https://ibis-project.zulipchat.com) or interact with us on
 [GitHub](https://github.com/ibis-project/ibis) to get involved and join the
 decision making process for Ibis.
 
-### Overall themes
+::: {.callout-important title="Ibis is independently governed"}
+Repeating from [Why Voltron Data supports Ibis](../why-voda-supports-ibis/index.qmd):
+
+> [Ibis is independently governed](https://github.com/ibis-project/governance) and
+> not owned by Voltron Data. Currently, four out of five members of the steering
+> committee are employed by Voltron Data (the fifth being at Alphabet working on
+> Google BigQuery). We are working toward a more diverse representation of
+> companies and organizations as the project continues to grow.
+> 
+> Voltron Data also welcomes this dilution of power and influence! A healthy
+> open source project is one that is not controlled by a single entity. This is
+> true of [Apache Arrow](https://arrow.apache.org) and other open source projects
+> that Voltron Data employees have been instrumental in building.
+:::
+
+
+
+## Main themes
 
 Our top five themes for 2024 include:
 
@@ -101,14 +120,15 @@ new relational model. As a consequence, we are also swapping out SQLAlchemy for
 [SQLGlot](https://github.com/tobymao/sqlglot). We are losing out on some of the
 things SQLAlchemy did for us automatically, but overall this gives us a lot more
 control over the SQL that is generated, reduces dependency overhead, and
-simplifies the codebase further.
+simplifies the codebase further. This [was recently merged into
+main](https://github.com/ibis-project/ibis/pull/8310) and will be released in
+Ibis 9.0.
 
 ::: {.callout-note}
-We are targeting release in Ibis 9.0. Look at for a blog post dedicated to the
-refactor soon!
+Look out for a blog post dedicated to the refactor soon!
 :::
 
-### Ibis for ML preprocessing
+### Ibis for ML preprocessing and feature engineering
 
 Data projects are increasingly ML projects. pandas and scikit-learn are the
 default for Python users, but tend to lack scalability. Many projects look to
@@ -119,8 +139,9 @@ preprocessing tasks ahead of model training.
 
 Jim took this on over the last few months, building up the
 [IbisML](https://github.com/ibis-project/ibisml) package to a usable (but still
-toy) state. We will further invest in IbisML this year to get it a
-production-ready state, bringing the power of Ibis to ML feature engineering.
+early) state. We will further invest in IbisML this year to get it a
+production-ready state, bringing the power of Ibis to ML preprocessing and
+feature engineering.
 
 We're [excited to welcome the (former) Claypot AI team to Voltron
 Data](https://voltrondata.com/resources/voltron-data-acquires-claypot-ai) to
@@ -136,26 +157,31 @@ for more details soon!
 
 ### Streaming data backends
 
-With the release of Ibis 8.0, we added support for Apache Flink in collaboration
-with Claypot AI, the first dedicated streaming data backend for Ibis.
-
-::: {.callout-note}
-Since writing this roadmap, [Voltron Data has acquired Claypot
-AI!](https://voltrondata.com/resources/voltron-data-acquires-claypot-ai). We are
-excited to welcome the Claypot team and continue to build the composable data
-ecosystem with their streaming and ML expertise.
-:::
+With the [release of Ibis 8.0](../ibis-version-8.0.0-release/index.qmd), we
+added support for Apache Flink in collaboration with Claypot AI, the first
+dedicated streaming data backend for Ibis. We are also excited to have the
+(former) Claypot team helping us drive this forward!
 
 We've also collaborated with [RisingWave](https://risingwave.com/) on the second
-streaming backend, which was merged recently. This backend is still early and
+streaming backend, also released in Ibis 8.0. This backend is still early and
 fairly experimental, but demonstrates the ability for Ibis to quickly add new
 backends. We can now add batch and streaming backend with ease!
+
+We will continue to improve Ibis for streaming data use cases and bridge the gap
+in the dataframe API experience between batch and streaming data. This may mean
+new backends, though we expect to focus on improving the existing backends and
+the API for streaming data. If you're interested in contributing to Ibis and
+have expertise in a streaming engine, a new streaming backend is a great way to
+get involved!
 
 ### Geospatial improvements
 
 Ibis supports [50+ geospatial
 expressions](https://ibis-project.org/reference/expression-geospatial) in the
-API, but most backends do not implement them.
+API, but most backends do not implement them. We will continue to improve the
+coverage for geospatial operations across backends. [Naty recently added support
+in the DuckDB backend](../ibis-duckdb-geospatial/index.qmd), making Ibis a great
+option for local geospatial analysis.
 
 ::: {.callout-note}
 This is a great opportunity for new contributors to get involved with Ibis! Let
@@ -171,6 +197,10 @@ Zulip](https://ibis-project.zulipchat.com) to discuss ideas and get involved!
 
 We would love to onboard new contributors to the project.
 
+## Other themes
+
+With less engineering priority, we have a few other themes for 2024.
+
 ### New backends
 
 Adding new backends is not a priority for the Ibis team at Voltron Data in Q1.
@@ -182,8 +212,8 @@ steps, and solidifying the API for backend authors. We will also introduce new
 documentation and possibly testing frameworks to ease the burden of adding new
 backends.
 
-We are still happy to support new backends! Some have already been mentioned,
-but being added in Q1 include:
+We are still happy to support new backends! With contributions from the
+community, we have recently added:
 
 - Apache Flink
 - Exasol
@@ -196,11 +226,10 @@ GitHub](https://github.com/ibis-project/ibis/issues/new/choose).
 
 ### Logo and website design
 
-We will likely engage an external design firm to help us redesign the logo
-(initially created by Tim Swast, thanks Tim! It has served us well!) and website
-theme. We aim to keep the website simple and focused on documentation that helps
-users, but want to deviate from the default themes in Quarto to make Ibis stand
-out.
+We will likely redesign the logo (initially created by Tim Swast, thanks Tim! It
+has served us well!) and website theme. We aim to keep the website simple and
+focused on documentation that helps users, but want to deviate from the default
+themes in Quarto to make Ibis stand out.
 
 ### Documentation
 
@@ -217,7 +246,7 @@ Improving the documentation is a great way to get involved with Ibis!
 
 ## Beyond Q1 2024
 
-This writeup of our roadmap is heavily biased toward Q1 of 2024. Looking out,
+This writeup of our roadmap is heavily biased toward Q1 of 2024. Looking beyond,
 our priorities remain much the same. After the big refactor is done, we will
 continue improving our library internals, backend interface, and ensuring the
 longevity of Ibis. We'll continue improving ML, streaming, and geospatial
