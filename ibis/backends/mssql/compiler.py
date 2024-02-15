@@ -183,13 +183,6 @@ class MSSQLCompiler(SQLGlotCompiler):
         """
         return paren(self.f.len(self.f.concat("A", arg, "Z")) - 2)
 
-    def visit_Capitalize(self, op, *, arg):
-        length = paren(self.f.len(self.f.concat("A", arg, "Z")) - 2)
-        return self.f.concat(
-            self.f.upper(self.f.substring(arg, 1, 1)),
-            self.f.lower(self.f.substring(arg, 2, length - 1)),
-        )
-
     def visit_GroupConcat(self, op, *, arg, sep, where):
         if where is not None:
             arg = self.if_(where, arg, NULL)

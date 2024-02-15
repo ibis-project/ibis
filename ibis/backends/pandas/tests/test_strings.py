@@ -49,11 +49,6 @@ from ibis.backends.pandas.kernels import sql_like_to_regex
         param(lambda s: s.reverse(), lambda s: s.str[::-1], id="reverse"),
         param(lambda s: s.lower(), lambda s: s.str.lower(), id="lower"),
         param(lambda s: s.upper(), lambda s: s.str.upper(), id="upper"),
-        param(
-            lambda s: s.capitalize(),
-            lambda s: s.str.capitalize(),
-            id="capitalize",
-        ),
         param(lambda s: s.repeat(2), lambda s: s * 2, id="repeat"),
         param(
             lambda s: s.contains("a"),

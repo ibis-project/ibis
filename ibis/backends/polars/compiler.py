@@ -503,7 +503,6 @@ _string_unary = {
     ops.RStrip: "strip_chars_end",
     ops.Lowercase: "to_lowercase",
     ops.Uppercase: "to_uppercase",
-    ops.Capitalize: "to_titlecase",
 }
 
 
@@ -512,6 +511,15 @@ def string_length(op, **kw):
     arg = translate(op.arg, **kw)
     typ = dtype_to_polars(op.dtype)
     return arg.str.len_bytes().cast(typ)
+
+
+@translate.register(ops.Capitalize)
+def capitalize(op, **kw):
+    arg = translate(op.arg, **kw)
+    typ = dtype_to_polars(op.dtype)
+    first = arg.str.slice(0, 1).str.to_uppercase()
+    rest = arg.str.slice(1, None).str.to_lowercase()
+    return (first + rest).cast(typ)
 
 
 @translate.register(ops.StringUnary)

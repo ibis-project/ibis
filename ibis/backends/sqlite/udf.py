@@ -236,11 +236,6 @@ def _ibis_string_ascii(string):
 
 
 @udf
-def _ibis_capitalize(string):
-    return string.capitalize()
-
-
-@udf
 def _ibis_rpad(string, width, pad):
     return string.ljust(width, pad)[:width]
 

@@ -317,11 +317,6 @@ class DuckDBCompiler(SQLGlotCompiler):
         else:
             return None
 
-    def visit_Capitalize(self, op, *, arg):
-        return self.f.concat(
-            self.f.upper(self.f.substr(arg, 1, 1)), self.f.lower(self.f.substr(arg, 2))
-        )
-
     def _neg_idx_to_pos(self, array, idx):
         arg_length = self.f.array_size(array)
         return self.if_(

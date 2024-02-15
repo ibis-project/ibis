@@ -9,7 +9,10 @@ import ibis.expr.operations as ops
 from ibis.backends.base.sqlglot.compiler import NULL, SQLGlotCompiler
 from ibis.backends.base.sqlglot.datatypes import DruidType
 from ibis.backends.base.sqlglot.dialects import Druid
-from ibis.backends.base.sqlglot.rewrites import rewrite_sample_as_filter
+from ibis.backends.base.sqlglot.rewrites import (
+    rewrite_capitalize,
+    rewrite_sample_as_filter,
+)
 
 
 class DruidCompiler(SQLGlotCompiler):
@@ -17,7 +20,14 @@ class DruidCompiler(SQLGlotCompiler):
 
     dialect = Druid
     type_mapper = DruidType
-    rewrites = (rewrite_sample_as_filter, *SQLGlotCompiler.rewrites)
+    rewrites = (
+        rewrite_sample_as_filter,
+        *(
+            rewrite
+            for rewrite in SQLGlotCompiler.rewrites
+            if rewrite is not rewrite_capitalize
+        ),
+    )
 
     UNSUPPORTED_OPERATIONS = frozenset(
         (

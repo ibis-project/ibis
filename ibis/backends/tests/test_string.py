@@ -563,11 +563,6 @@ def uses_java_re(t):
             id="rstrip",
         ),
         param(
-            lambda t: t.string_col.capitalize(),
-            lambda t: t.string_col.str.capitalize(),
-            id="capitalize",
-        ),
-        param(
             lambda t: t.date_string_col.substr(2, 3),
             lambda t: t.date_string_col.str[2:5],
             id="substr",
@@ -844,11 +839,52 @@ def test_parse_url(con, result_func, expected):
     assert result == expected
 
 
-def test_capitalize(con):
-    s = ibis.literal("aBc")
-    expected = "Abc"
+@pytest.mark.parametrize(
+    ("inp, expected"),
+    [
+        param(
+            None,
+            None,
+            id="none",
+            marks=[
+                pytest.mark.notyet(
+                    ["druid"],
+                    raises=PyDruidProgrammingError,
+                    reason="illegal use of NULL",
+                )
+            ],
+        ),
+        param(
+            "",
+            "",
+            id="empty",
+            marks=[
+                pytest.mark.notyet(
+                    ["oracle"],
+                    reason="https://github.com/oracle/python-oracledb/issues/298",
+                    raises=AssertionError,
+                ),
+                pytest.mark.notyet(["exasol"], raises=AssertionError),
+            ],
+        ),
+        param("Abc", "Abc", id="no_change"),
+        param("abc", "Abc", id="lower_to_upper"),
+        param("aBC", "Abc", id="mixed_to_upper"),
+        param(" abc", " abc", id="leading_space"),
+        param("9abc", "9abc", id="leading_digit"),
+        param("aBc dEf", "Abc def", id="mixed_with_space"),
+        param("aBc-dEf", "Abc-def", id="mixed_with_hyphen"),
+        param("aBc1dEf", "Abc1def", id="mixed_with_digit"),
+    ],
+)
+def test_capitalize(con, inp, expected):
+    s = ibis.literal(inp, type="string")
     expr = s.capitalize()
-    assert con.execute(expr) == expected
+    result = con.execute(expr)
+    if expected is not None:
+        assert result == expected
+    else:
+        assert pd.isnull(result)
 
 
 @pytest.mark.notimpl(

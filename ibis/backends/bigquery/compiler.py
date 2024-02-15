@@ -225,11 +225,6 @@ class BigQueryCompiler(SQLGlotCompiler):
             sg.select(arg[self.f.safe_ordinal(idx)]).from_(self._unnest(series, as_=i))
         )
 
-    def visit_Capitalize(self, op, *, arg):
-        return self.f.concat(
-            self.f.upper(self.f.substr(arg, 1, 1)), self.f.lower(self.f.substr(arg, 2))
-        )
-
     def visit_NthValue(self, op, *, arg, nth):
         if not isinstance(op.nth, ops.Literal):
             raise com.UnsupportedOperationError(

@@ -245,6 +245,18 @@ def add_one_to_nth_value_input(_, **kwargs):
     return _.copy(nth=nth)
 
 
+@replace(p.Capitalize)
+def rewrite_capitalize(_, **kwargs):
+    """Rewrite Capitalize in terms of substring, concat, upper, and lower."""
+    first = ops.Uppercase(ops.Substring(_.arg, start=0, length=1))
+    # use length instead of length - 1 to avoid backends complaining about
+    # asking for negative length
+    #
+    # there are at most length - 1 characters, so asking for length is fine
+    rest = ops.Lowercase(ops.Substring(_.arg, start=1, length=ops.StringLength(_.arg)))
+    return ops.StringConcat((first, rest))
+
+
 @replace(p.Sample)
 def rewrite_sample_as_filter(_, **kwargs):
     """Rewrite Sample as `t.filter(random() <= fraction)`.
