@@ -53,7 +53,7 @@ class InSubquery(Subquery):
     needle: Value
 
     dtype = dt.boolean
-    shape = ds.columnar
+    shape = rlz.shape_like("needle")
 
     def __init__(self, rel, needle):
         if len(rel.schema) != 1:
