@@ -248,8 +248,17 @@ def add_one_to_nth_value_input(_, **kwargs):
 @replace(p.Capitalize)
 def rewrite_capitalize(_, **kwargs):
     """Rewrite Capitalize in terms of substring, concat, upper, and lower."""
-    first = ops.Uppercase(ops.Substring(_.arg, 0, 1))
-    rest = ops.Lowercase(ops.Substring(_.arg, 1, None))
+    first = ops.Uppercase(ops.Substring(_.arg, start=0, length=1))
+    length_minus_one = ops.Subtract(ops.StringLength(_.arg), 1)
+    rest = ops.Lowercase(
+        ops.Substring(
+            _.arg,
+            start=1,
+            # we can't use greatest here because datafusion doesn't support it
+            # in its sql dialect
+            length=ops.IfElse(ops.Less(length_minus_one, 0), 0, length_minus_one),
+        )
+    )
     return ops.StringConcat((first, rest))
 
 
