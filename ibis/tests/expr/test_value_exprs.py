@@ -1713,3 +1713,13 @@ def test_deferred_doesnt_convert_callables():
         b=t.b.split(",").filter(lambda pp: ~pp.isin(("word1", "word2")))
     )
     assert expr.equals(expected)
+
+
+def test_in_subquery_shape():
+    t = ibis.table([("a", "int64"), ("b", "string")])
+
+    expr = t.a.cast("string").isin(t.b)
+    assert expr.op().shape.is_columnar()
+
+    expr = ibis.literal(2).isin(t.a)
+    assert expr.op().shape.is_scalar()
