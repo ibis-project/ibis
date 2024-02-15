@@ -390,7 +390,8 @@ class StringValue(Value):
     def capitalize(self) -> StringValue:
         """Uppercase the first letter, lowercase the rest.
 
-        This is the same semantics as the Python `str.capitalize` method.
+        This API matches the semantics of the Python [](`str.capitalize`)
+        method.
 
         Returns
         -------
@@ -417,6 +418,13 @@ class StringValue(Value):
         return ops.Capitalize(self).to_expr()
 
     initcap = capitalize
+
+    @util.deprecated(
+        instead="use the `capitalize` method", as_of="9.0", removed_in="10.0"
+    )
+    def initcap(self) -> StringValue:
+        """Deprecated. Use `capitalize` instead."""
+        return self.capitalize()
 
     def __contains__(self, *_: Any) -> bool:
         raise TypeError("Use string_expr.contains(arg)")
