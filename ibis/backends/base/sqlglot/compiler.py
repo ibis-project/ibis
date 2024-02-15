@@ -225,7 +225,6 @@ class SQLGlotCompiler(abc.ABC):
         ops.Asin: "asin",
         ops.Atan2: "atan2",
         ops.Atan: "atan",
-        ops.Capitalize: "initcap",
         ops.Cos: "cos",
         ops.Cot: "cot",
         ops.Count: "count",
