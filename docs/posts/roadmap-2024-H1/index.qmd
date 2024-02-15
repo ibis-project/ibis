@@ -56,7 +56,7 @@ Repeating from [Why Voltron Data supports Ibis](../why-voda-supports-ibis/index.
 > committee are employed by Voltron Data (the fifth being at Alphabet working on
 > Google BigQuery). We are working toward a more diverse representation of
 > companies and organizations as the project continues to grow.
-> 
+
 > Voltron Data also welcomes this dilution of power and influence! A healthy
 > open source project is one that is not controlled by a single entity. This is
 > true of [Apache Arrow](https://arrow.apache.org) and other open source projects
