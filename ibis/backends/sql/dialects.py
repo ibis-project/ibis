@@ -90,19 +90,17 @@ def _calculate_precision(interval_value: int) -> int:
     return int(math.log10(interval_value)) + 1
 
 
-def _interval_with_precision(self, e, quote_arg=True):
+def _interval_with_precision(self, e):
     """Format interval with precision."""
     arg = e.args["this"].this
     formatted_arg = arg
     with contextlib.suppress(AttributeError):
         formatted_arg = arg.sql(self.dialect)
 
-    if quote_arg:
-        formatted_arg = f"'{formatted_arg}'"
-
     unit = e.args["unit"]
-    # add precision when formatting interval scalars
+    # when formatting interval scalars, need to quote arg and add precision
     if isinstance(arg, str):
+        formatted_arg = f"'{formatted_arg}'"
         prec = _calculate_precision(int(arg))
         prec = max(prec, 2)
         unit += f"({prec})"
