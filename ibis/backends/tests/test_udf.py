@@ -12,7 +12,6 @@ no_python_udfs = mark.notimpl(
         "dask",
         "druid",
         "exasol",
-        "flink",
         "impala",
         "mssql",
         "mysql",
@@ -27,7 +26,6 @@ no_python_udfs = mark.notimpl(
 @no_python_udfs
 @mark.notimpl(["pyspark"])
 @mark.notyet(["datafusion"], raises=NotImplementedError)
-@mark.notyet(["flink"], raises=com.OperationNotDefinedError)
 def test_udf(batting):
     @udf.scalar.python
     def num_vowels(s: str, include_y: bool = False) -> int:
@@ -55,6 +53,7 @@ def test_udf(batting):
     ["postgres"], raises=TypeError, reason="postgres only supports map<string, string>"
 )
 @mark.notimpl(["polars"])
+@mark.notimpl(["flink"], raises=NotImplementedError)
 @mark.notyet(["datafusion"], raises=NotImplementedError)
 @mark.notyet(
     ["sqlite"], raises=com.IbisTypeError, reason="sqlite doesn't support map types"
@@ -84,7 +83,7 @@ def test_map_udf(batting):
     ["postgres"], raises=TypeError, reason="postgres only supports map<string, string>"
 )
 @mark.notimpl(["polars"])
-@mark.notimpl(["flink"], raises=com.OperationNotDefinedError)
+@mark.notimpl(["flink"], raises=NotImplementedError)
 @mark.notyet(["datafusion"], raises=NotImplementedError)
 @mark.notyet(["sqlite"], raises=TypeError, reason="sqlite doesn't support map types")
 def test_map_merge_udf(batting):

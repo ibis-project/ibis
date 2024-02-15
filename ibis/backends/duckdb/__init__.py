@@ -1431,8 +1431,6 @@ class Backend(SQLGlotBackend, CanCreateSchema, UrlFromPath):
             self.con.register(name, op.data.to_pyarrow(schema))
 
     def _register_udfs(self, expr: ir.Expr) -> None:
-        import ibis.expr.operations as ops
-
         con = self.con
 
         for udf_node in expr.op().find(ops.ScalarUDF):
@@ -1446,7 +1444,7 @@ class Backend(SQLGlotBackend, CanCreateSchema, UrlFromPath):
             if registration_func is not None:
                 registration_func(con)
 
-    def _compile_udf(self, udf_node: ops.ScalarUDF) -> None:
+    def _compile_udf(self, udf_node: ops.ScalarUDF):
         func = udf_node.__func__
         name = type(udf_node).__name__
         type_mapper = self.compiler.type_mapper

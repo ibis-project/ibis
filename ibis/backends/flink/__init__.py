@@ -13,6 +13,7 @@ import ibis.expr.types as ir
 from ibis.backends.base import CanCreateDatabase, NoUrl
 from ibis.backends.base.sqlglot import SQLGlotBackend
 from ibis.backends.flink.compiler import FlinkCompiler
+from ibis.backends.flink.datatypes import FlinkType
 from ibis.backends.flink.ddl import (
     CreateDatabase,
     CreateTableWithSchema,
@@ -23,6 +24,7 @@ from ibis.backends.flink.ddl import (
     RenameTable,
 )
 from ibis.backends.tests.errors import Py4JJavaError
+from ibis.expr.operations.udf import InputType
 from ibis.util import gen_name
 
 if TYPE_CHECKING:
@@ -301,6 +303,20 @@ class Backend(SQLGlotBackend, CanCreateDatabase, NoUrl):
 
         return pyflink.version.__version__
 
+    def _register_udfs(self, expr: ir.Expr) -> None:
+        for udf_node in expr.op().find(ops.ScalarUDF):
+            if udf_node.__input_type__ == InputType.PYTHON:
+                func = udf_node.__func__
+                name = func.__name__
+                self._table_env.drop_temporary_function(name)
+                udf = self._compile_python_udf(udf_node)
+                self._table_env.create_temporary_function(name, udf)
+
+    def _compile_python_udf(self, udf_node: ops.ScalarUDF):
+        from pyflink.table.udf import udf
+
+        return udf(udf_node.__func__, result_type=FlinkType.from_ibis(udf_node.dtype))
+
     def _gen_udf_name(self, name: str, schema: str | None) -> str:
         return ".".join(filter(None, (schema, name)))
 
@@ -352,6 +368,8 @@ class Backend(SQLGlotBackend, CanCreateDatabase, NoUrl):
 
     def execute(self, expr: ir.Expr, **kwargs: Any) -> Any:
         """Execute an expression."""
+        self._register_udfs(expr)
+
         table_expr = expr.as_table()
         sql = self.compile(table_expr, **kwargs)
         df = self._table_env.sql_query(sql).to_pandas()
