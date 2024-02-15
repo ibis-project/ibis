@@ -99,16 +99,15 @@ def test_null_literal(backend, con, field):
 @pytest.mark.notyet(
     ["flink"], reason="flink doesn't support creating struct columns from literals"
 )
-def test_struct_column(backend, alltypes, df):
+def test_struct_column(alltypes, df):
     t = alltypes
-    expr = ibis.struct(dict(a=t.string_col, b=1, c=t.bigint_col)).name("s")
-    assert expr.type() == dt.Struct(dict(a=dt.string, b=dt.int8, c=dt.int64))
+    expr = t.select(s=ibis.struct(dict(a=t.string_col, b=1, c=t.bigint_col)))
+    assert expr.s.type() == dt.Struct(dict(a=dt.string, b=dt.int8, c=dt.int64))
     result = expr.execute()
-    expected = pd.Series(
-        (dict(a=a, b=1, c=c) for a, c in zip(df.string_col, df.bigint_col)),
-        name="s",
+    expected = pd.DataFrame(
+        {"s": [dict(a=a, b=1, c=c) for a, c in zip(df.string_col, df.bigint_col)]}
     )
-    tm.assert_series_equal(result, expected)
+    tm.assert_frame_equal(result, expected)
 
 
 @pytest.mark.notimpl(["dask", "pandas", "postgres", "risingwave", "polars"])
