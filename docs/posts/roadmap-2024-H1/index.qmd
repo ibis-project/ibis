@@ -137,7 +137,7 @@ preprocessing tasks ahead of model training.
 
 Jim took this on over the last few months, building up the
 [IbisML](https://github.com/ibis-project/ibisml) package to a usable (but still
-early) state. We will further invest in IbisML this year to get it a
+early) state. We will further invest in IbisML this year to get it to a
 production-ready state, bringing the power of Ibis to ML preprocessing and
 feature engineering.
 
