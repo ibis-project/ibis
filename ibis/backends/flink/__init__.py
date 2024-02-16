@@ -13,7 +13,6 @@ import ibis.expr.types as ir
 from ibis.backends.base import CanCreateDatabase, NoUrl
 from ibis.backends.base.sqlglot import SQLGlotBackend
 from ibis.backends.flink.compiler import FlinkCompiler
-from ibis.backends.flink.datatypes import FlinkType
 from ibis.backends.flink.ddl import (
     CreateDatabase,
     CreateTableWithSchema,
@@ -314,6 +313,8 @@ class Backend(SQLGlotBackend, CanCreateDatabase, NoUrl):
 
     def _register_udf(self, udf_node: ops.ScalarUDF):
         import pyflink.table.udf
+
+        from ibis.backends.flink.datatypes import FlinkType
 
         name = type(udf_node).__name__
         self._table_env.drop_temporary_function(name)
