@@ -5,7 +5,6 @@ import pytest
 from pytest import param
 
 import ibis
-import ibis.common.exceptions as exc
 import ibis.expr.datatypes as dt
 from ibis.backends.base.sqlglot.datatypes import DuckDBType
 
@@ -76,11 +75,8 @@ def test_null_dtype():
     t = ibis.memtable({"a": [None, None]})
     assert t.schema() == ibis.schema(dict(a="null"))
 
-    with pytest.raises(
-        exc.IbisTypeError,
-        match="DuckDB cannot yet reliably handle `null` typed columns",
-    ):
-        con.execute(t)
+    df = con.execute(t)
+    assert df.a.tolist() == [None, None]
 
 
 def test_parse_quoted_struct_field():
