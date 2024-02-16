@@ -376,7 +376,7 @@ def test_geo_dataframe(geotable):
 @pytest.mark.parametrize(
     ("shape", "value"),
     [
-        # # Geometry primitives (2D)
+        # Geometry primitives (2D)
         param("point", (30, 10), id="point"),
         param("linestring", ((30, 10), (10, 30), (40, 40)), id="linestring"),
         param(
