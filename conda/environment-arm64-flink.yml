@@ -1,9 +1,9 @@
-name: ibis-dev-arm64
+name: ibis-dev-flink
 channels:
   - conda-forge
 dependencies:
   # runtime dependencies
-  - python >=3.10
+  - python =3.10
   - atpublic >=2.3
   - bidict >=0.22.1
   - clickhouse-connect >=0.5.23
@@ -31,7 +31,7 @@ dependencies:
   - poetry-dynamic-versioning >=0.18.0
   - polars >=0.19
   - psycopg2 >=2.8.4
-  - pyarrow >=2
+  - pyarrow =11.0.0
   - pyarrow-tests
   - pyarrow-hotfix >=0.4
   - pydata-google-auth
@@ -58,6 +58,9 @@ dependencies:
   - trino-python-client >=0.321
   # geospatial
   - leafmap >=0.29.6
+  # streaming
+  - kafka-python
+  - openjdk <21
   # test dependencies
   - filelock >=3.7.0,<4
   - hypothesis >=6.58.0,<7
@@ -95,6 +98,8 @@ dependencies:
   - taplo
   - tqdm >=4.66.1
   - just
+  # needed for apache-flink=1.18.0
+  - py4j =0.10.9.7
   - pip
   - pip:
-      - lonboard>=0.3.0
+      - apache-flink>=1.18.1
