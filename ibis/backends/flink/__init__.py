@@ -307,68 +307,36 @@ class Backend(SQLGlotBackend, CanCreateDatabase, NoUrl):
 
     def _register_udfs(self, expr: ir.Expr) -> None:
         for udf_node in expr.op().find(ops.ScalarUDF):
-            if udf_node.__input_type__ not in _INPUT_TYPE_TO_FUNC_TYPE:
-                raise NotImplementedError("Flink doesn't support PyArrow UDFs")
+            register_func = getattr(
+                self, f"_register_{udf_node.__input_type__.name.lower()}_udf"
+            )
+            register_func(udf_node)
 
-            func = udf_node.__func__
-            name = func.__name__
-            self._table_env.drop_temporary_function(name)
-            udf = self._compile_udf(udf_node)
-            self._table_env.create_temporary_function(name, udf)
+    def _register_udf(self, udf_node: ops.ScalarUDF):
+        import pyflink.table.udf
 
-    def _compile_udf(self, udf_node: ops.ScalarUDF):
-        from pyflink.table.udf import udf
-
-        return udf(
+        name = type(udf_node).__name__
+        self._table_env.drop_temporary_function(name)
+        udf = pyflink.table.udf.udf(
             udf_node.__func__,
             result_type=FlinkType.from_ibis(udf_node.dtype),
             func_type=_INPUT_TYPE_TO_FUNC_TYPE[udf_node.__input_type__],
         )
+        self._table_env.create_temporary_function(name, udf)
 
-    def _gen_udf_name(self, name: str, schema: str | None) -> str:
-        return ".".join(filter(None, (schema, name)))
+    _register_pandas_udf = _register_udf
+    _register_python_udf = _register_udf
 
-    def _gen_udf_rule(self, op: ops.ScalarUDF):
-        @self.add_operation(type(op))
-        def _(t, op):
-            func = self._gen_udf_name(op.__func_name__, schema=op.__udf_namespace__)
-            return f"{func}({', '.join(map(t.translate, op.args))})"
+    def _register_builtin_udf(self, udf_node: ops.ScalarUDF) -> None:
+        """No-op."""
 
-    def _gen_udaf_rule(self, op: ops.AggUDF):
-        from ibis import NA
-
-        @self.add_operation(type(op))
-        def _(t, op):
-            func = self._gen_udf_name(op.__func_name__, schema=op.__udf_namespace__)
-            args = ", ".join(
-                t.translate(
-                    ops.IfElse(where, arg, NA)
-                    if (where := op.where) is not None
-                    else arg
-                )
-                for name, arg in zip(op.argnames, op.args)
-                if name != "where"
-            )
-            return f"{func}({args})"
-
-    def _define_udf_translation_rules(self, expr: ir.Expr):
-        for udf_node in expr.op().find(ops.ScalarUDF):
-            udf_node_type = type(udf_node)
-
-            if udf_node_type not in self.compiler.translator_class._registry:
-                self._gen_udf_rule(udf_node)
-
-        for udf_node in expr.op().find(ops.AggUDF):
-            udf_node_type = type(udf_node)
-
-            if udf_node_type not in self.compiler.translator_class._registry:
-                self._gen_udaf_rule(udf_node)
+    def _register_pyarrow_udf(self, udf_node: ops.ScalarUDF) -> None:
+        raise NotImplementedError("Flink doesn't support PyArrow UDFs")
 
     def compile(
         self, expr: ir.Expr, params: Mapping[ir.Expr, Any] | None = None, **_: Any
     ) -> Any:
         """Compile an Ibis expression to Flink."""
-        self._define_udf_translation_rules(expr)
         return super().compile(expr, params=params)  # Discard `limit` and other kwargs.
 
     def _to_sql(self, expr: ir.Expr, **kwargs: Any) -> str:

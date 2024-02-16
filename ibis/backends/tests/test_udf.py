@@ -4,6 +4,7 @@ from pytest import mark, param
 
 import ibis.common.exceptions as com
 from ibis import _, udf
+from ibis.backends.tests.errors import Py4JJavaError
 
 no_python_udfs = mark.notimpl(
     [
@@ -53,7 +54,7 @@ def test_udf(batting):
     ["postgres"], raises=TypeError, reason="postgres only supports map<string, string>"
 )
 @mark.notimpl(["polars"])
-@mark.notimpl(["flink"], raises=NotImplementedError)
+@mark.notimpl(["flink"], raises=Py4JJavaError)
 @mark.notyet(["datafusion"], raises=NotImplementedError)
 @mark.notyet(
     ["sqlite"], raises=com.IbisTypeError, reason="sqlite doesn't support map types"
@@ -83,7 +84,7 @@ def test_map_udf(batting):
     ["postgres"], raises=TypeError, reason="postgres only supports map<string, string>"
 )
 @mark.notimpl(["polars"])
-@mark.notimpl(["flink"], raises=NotImplementedError)
+@mark.notimpl(["flink"], raises=Py4JJavaError)
 @mark.notyet(["datafusion"], raises=NotImplementedError)
 @mark.notyet(["sqlite"], raises=TypeError, reason="sqlite doesn't support map types")
 def test_map_merge_udf(batting):
