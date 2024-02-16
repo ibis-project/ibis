@@ -388,7 +388,7 @@ class BigQueryCompiler(SQLGlotCompiler):
         if not offset:
             return sge.Explode(this=arg)
         else:
-            return sge.Posexplode(this=arg)
+            return sge.Subquery(this=sge.Select(expressions=[sge.Posexplode(this=arg)],kind="STRUCT"))
 
     def _nullifzero(self, step, zero, step_dtype):
         if step_dtype.is_interval():
