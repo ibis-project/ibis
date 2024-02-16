@@ -101,4 +101,6 @@ dependencies:
   - taplo
   - tqdm >=4.66.1
   - just
+  - pip:
+     - git+https://github.com/apache/iceberg-python.git@main
   # dependencies for lonboard
