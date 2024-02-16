@@ -1,14 +1,20 @@
 from __future__ import annotations
 
 try:
+    from duckdb import BinderException as DuckDBBinderException
     from duckdb import ConversionException as DuckDBConversionException
     from duckdb import InvalidInputException as DuckDBInvalidInputException
     from duckdb import NotImplementedException as DuckDBNotImplementedException
+    from duckdb import OutOfRangeException as DuckDBOutOfRangeException
     from duckdb import ParserException as DuckDBParserException
 except ImportError:
-    DuckDBConversionException = DuckDBInvalidInputException = DuckDBParserException = (
+    DuckDBConversionException = (
+        DuckDBInvalidInputException
+    ) = (
+        DuckDBParserException
+    ) = (
         DuckDBNotImplementedException
-    ) = None
+    ) = DuckDBBinderException = DuckDBOutOfRangeException = None
 
 try:
     from clickhouse_connect.driver.exceptions import (

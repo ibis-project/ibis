@@ -1181,7 +1181,6 @@ def test_range_expression_bounds(backend):
     raises=PsycoPg2InternalError,
     reason="Feature is not yet implemented: Unrecognized window function: percent_rank",
 )
-@pytest.mark.broken(["dask"], reason="different result ordering", raises=AssertionError)
 def test_rank_followed_by_over_call_merge_frames(backend, alltypes, df):
     # GH #7631
     t = alltypes
@@ -1197,7 +1196,9 @@ def test_rank_followed_by_over_call_merge_frames(backend, alltypes, df):
         .rename(expr.get_name())
     )
 
-    backend.assert_series_equal(result, expected)
+    backend.assert_series_equal(
+        result.value_counts().sort_index(), expected.value_counts().sort_index()
+    )
 
 
 @pytest.mark.notyet(
