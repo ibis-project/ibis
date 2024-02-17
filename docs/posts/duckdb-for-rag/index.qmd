@@ -1,0 +1,543 @@
+---
+title: "Using DuckDB for RAG"
+author: "Cody Peterson"
+date: "2024-02-29"
+categories:
+    - blog
+    - llms
+    - duckdb
+---
+
+## Overview
+
+In this post, we'll demonstrate retrieval-augmented generating (RAG) using Ibis,
+DuckDB, and OpenAI.
+
+::: {.callout-warning title="I dislike RAG as terminology"}
+We'll get into why, with code examples, below.
+
+This post will be a little more opinionated than usual...
+:::
+
+## What is RAG?
+
+I was going to write my own summary, but the first thing I came across from
+Google was [AWS's page on
+RAG](https://aws.amazon.com/what-is/retrieval-augmented-generation/), which is
+pretty good. Quoting their summary:
+
+> Retrieval-Augmented Generation (RAG) is the process of optimizing the output
+> of a large language model, so it references an authoritative knowledge base
+> outside of its training data sources before generating a response. Large
+> Language Models (LLMs) are trained on vast volumes of data and use billions of
+> parameters to generate original output for tasks like answering questions,
+> translating languages, and completing sentences. RAG extends the already
+> powerful capabilities of LLMs to specific domains or an organization's internal
+> knowledge base, all without the need to retrain the model. It is a
+> cost-effective approach to improving LLM output so it remains relevant,
+> accurate, and useful in various contexts.
+
+Right below, they explain why RAG is useful:
+
+> LLMs are a key artificial intelligence (AI) technology powering intelligent
+> chatbots and other natural language processing (NLP) applications. The goal is
+> to create bots that can answer user questions in various contexts by
+> cross-referencing authoritative knowledge sources. Unfortunately, the nature of
+> LLM technology introduces unpredictability in LLM responses. Additionally, LLM
+> training data is static and introduces a cut-off date on the knowledge it has.
+>
+> Known challenges of LLMs include:
+>
+> - Presenting false information when it does not have the answer.
+> - Presenting out-of-date or generic information when the user expects a
+ specific, current response.
+> - Creating a response from non-authoritative sources.
+> - Creating inaccurate responses due to terminology confusion, wherein
+ different training sources use the same terminology to talk about different
+ things.
+> - You can think of the Large Language Model as an over-enthusiastic new
+ employee who refuses to stay informed with current events but will always answer
+ every question with absolute confidence. Unfortunately, such an attitude can
+ negatively impact user trust and is not something you want your chatbots to
+ emulate!
+>
+> RAG is one approach to solving some of these challenges. It redirects the LLM
+> to retrieve relevant information from authoritative, pre-determined knowledge
+> sources. Organizations have greater control over the generated text output, and
+> users gain insights into how the LLM generates the response.
+
+### What are LLMs?
+
+To understand why RAG has become a thing, it's important to understand large
+language models (LLMs) -- in particular their **context length**. LLMs are, put
+simply, just neural networks trained on massive amounts of text data. Neural
+networks cannot actually work with text directly, they need numbers. So, text is
+converted into numbers before the training process begins.
+
+In cases like using neural networks for classification, you might take a very
+simple approach to assign numbers to categorical strings:
+
+| category | number |
+|----------|--------|
+| dog      | 1      |
+| fish     | 2      |
+| bird     | 3      |
+
+...but this would imply ordering to the categories ("dog" < "fish" < "bird") and
+that "bird" is more similar to "fish" than "dog". This is not the case (citation
+needed), so we tend to one-hot encode:
+
+| category | one-hot encoding |
+|----------|------------------|
+| dog      | [1, 0, 0]        |
+| fish     | [0, 1, 0]        |
+| bird     | [0, 0, 1]        |
+
+Notice now that each category is equally distant from each other and there is no
+implied ordering.
+
+For LLMs, we encode text as numbers as well -- typically called **tokens**. The
+tokens are then fed into the neural network both for training and for inference.
+The neural network is trained to predict the next token in a sequence of tokens.
+
+When you inference the LLM, you are effectively asking it to fill in the most
+likely sequence of tokens (text) to complete the input text. Additional
+techniques are used to **instruct** fine-tune LLMs to follow instructions and
+work well in mult-turn conversational settings.
+
+**Why does any of this matter?** It's important to both understand, at a basic
+level, how LLMs work and what they work well at. As noted in the previous
+section, grounding the LLM with useful information in the context is crucial to
+getting good results. However, the beauty of LLMs (and neural networks) is
+their abilitiy to generalize and learn complex tasks from data. This is why
+LLMs are so powerful -- they can, in a sense, do things typically only reserved
+for humans. This is true in other areas for neural networks as well.
+
+### Why I dislike RAG as terminology
+
+> "I would like to abolish the term RAG and instead just agree that we should
+> always try to provide models with the appropriate context to provide high
+> quality answers." - [Hamel
+> Husain](https://twitter.com/HamelHusain/status/1709740984643596768)
+
+RAG has become synonymous with turning your text data into "embeddings"
+(numbers), running a similarity search (e.g. cosine similarity) over those
+numbers against input text, and taking the top `k` results to feed into the LLM.
+This loses out on the semantic understanding LLMs are so powerful for and often
+results in bespoke technology stacks that are unnecessary.
+
+### Context length issues
+
+When GPT-4 launched, it supported a context length of about 8,000 tokens.
+Typically, one word is about two tokens, so we can call this about 4,000 input
+words. While that is a lot of words, much of the length gets taken up by the
+**system prompt** that instructs the LLM on what to do and other metadata that
+may be used as input. In practice, 8k token context lenght is not much.
+
+Over time, these context lengths have been increasing -- 16k, then 32k, and now
+128k for GPT-4-turbo models. Other LLMs have even higher context lenghts, with
+Google's Gemini family reporting 1M and 10M token context lengths. However, even
+these large context lengths do not solve some key problems. For one, LLMs may
+ignore or even be confused by context. While you can feed in a full textbook on
+machine learning, if you're just asking for information on k-means clustering
+you should probably only include that chapter. Additionally, you are charged
+money by the number of input tokens (and response tokens) and the time it takes
+to inference is proportional to that number. Regardless of the context lenght of
+the model, for the foreseeable future you want to be as efficient as possible.
+
+Thus, you need to have some method of retrieving and augmentign your input text
+with the most relevant information for the task at hand.
+
+## Setup
+
+Another reason I dislike RAG is, like traditional ML (and even software
+engineering), is that the best approach is often "**it depends**". What are you
+trying to accomplish? What are your constraints on resources?
+
+### Scenario
+
+For this blog, we'll use a scenario: we are trying to build a state-of-the-art
+exploratory data analysis (EDA) chatbot. I want to be able to ask it questions
+about my data, have it generate accurate SQL, and run that SQL on my behalf.
+
+We'll be using toy data (our favorite penguins dataset!) and LLM-generated
+English and SQL queries, but the same principles should apply for real-world use
+cases.
+
+### Setup code
+
+First, we need to install the neccessary packages:
+
+```bash
+pip install 'ibis-framework[duckdb,examples]' openai marvin python-dotenv
+```
+
+Then import them:
+
+```{python}
+import ibis
+import marvin
+
+from openai import OpenAI
+
+from dotenv import load_dotenv
+```
+
+You need to set the `OPENAI_API_KEY` environment variable to your OpenAI API
+key. You can do this by creating a `.env` file in the same directory as your
+code and adding the following line:
+
+```
+OPENAI_API_KEY=<your-api-key>
+```
+
+Then, you can load the environment variables with the following code:
+
+```{python}
+load_dotenv()
+```
+
+Now, we're ready to make LLM calls. Let's setup Ibis for interactive use:
+
+```{python}
+ibis.options.interactive = True
+ibis.options.repr.interactive.max_rows = 20
+ibis.options.repr.interactive.max_columns = None
+```
+
+and setup Marvin to used the latest GPT-4-turbo model:
+
+```{python}
+marvin.settings.openai.chat.completions.model = "gpt-4-0125-preview"
+marvin.settings.openai.chat.completions.model
+```
+
+and get our penguins:
+
+```{python}
+penguins = ibis.examples.penguins.fetch()
+penguins.limit(3)
+```
+
+## Demonstration
+
+We'll start with a slightly modified text-to-SQL function [stolen from our
+previous "LMs for data" blog](../lms-for-data/index.qmd): 
+
+```{python}
+@marvin.fn
+def _text_to_sql(
+    text: str,
+    table_name: str,
+    table_schema: str,
+    table_preview: str,
+) -> str:
+    """Writes a SQL SELECT statement for the `text` given the provided
+    `table_name`, `table_schema`, and `table_preview`.
+
+    Spell out all column names, never use SELECT *. Include ALL columns unless told otherwise.
+    Use newlines and indentation for readability. Use LIMIT, not TOP.
+    Select FROM the `table_name` only (penguins), you have no access to other tables.
+    """
+
+
+def text_to_sql(
+    text: str,
+    table_name: str,
+    table_schema: str,
+    table_preview: str,
+) -> str:
+    sql = _text_to_sql(text, table_name, table_schema, table_preview)
+    return sql.strip().strip(";")
+```
+
+This will take the user's English (or really, any language the LLM sufficiently
+knows) query and turn it into SQL.
+
+:::{.callout-info title="Isn't this already RAG?"}
+We have retrieved information (a table name, schema, and preview) augmented our
+model's input with that information, and generated a response.
+:::
+
+Our hypothetical service takes text as input, generates SQL, and runs it against
+the database on behalf of the user. We need some metric to evaluate the user's
+feedback on the generated SQL. This could be an explicit input from the user
+(rate it from 1 to 10, or simply upvote/downvote the response) or inferred based
+on user behavior (did the curse out the bot or ask it to modify the SQL after
+initial generation). We'll ignore this feedback component for now, but in
+practice this would be a crucial piece of the system.
+
+Additionally, we might bootstrap the system with a set of known English and SQL
+query pairs to improve accuracy of the model. For demonstration purposes, we'll
+use those. These would likely be handwritten, but I'm lazy so let's write one
+and generate the rest with a LLM. 
+
+First, we define the data object we want to generate and create a single
+example:
+
+```{python}
+from rich import print
+from pydantic import BaseModel, Field
+
+
+class EnglishAndSQL(BaseModel):
+    """Represents a pair of English and equivalent SQL queries on data."""
+
+    english: str = Field(..., description="The English query a user might ask.")
+    sql: str = Field(..., description="The equivalent SQL query.")
+
+example_1 = EnglishAndSQL(
+    english="the first 10 rows of the penguins, ordered by body_mass_g from heaviest to lightest",
+    sql="SELECT * FROM penguins ORDER BY body_mass_g DESC LIMIT 10",
+)
+print(example_1)
+```
+
+Then write some instructions for the LLM, including that example:
+
+```{python}
+instructions = """Generate English queries a typical analytics engineer
+exploring the penguins dataset for the first time might ask a SOTA EDA chatbot,
+alongside the SQL the chatbot would then generate to answer the question."""
+
+instructions += f"\n\nExample:\n\tEnglish: {example_1.english}\n\tSQL: {example_1.sql}"
+
+print(instructions)
+```
+
+And generate more examples:
+
+```{python}
+examples = marvin.generate(
+    target=EnglishAndSQL,
+    n=9,
+    instructions=instructions,
+)
+print(examples)
+```
+
+### Vector search over embeddings for RAG
+
+We'll put those examples in an Ibis table for easy and fast processing with
+DuckDB:
+
+```{python}
+t = ibis.memtable({"english": [example_1.english], "sql": [example_1.sql]})
+t = t.union(ibis.memtable([r.model_dump() for r in examples]))
+t
+```
+
+Now, we need to define a user-defined function (UDF) to add the embedding column
+for the text:
+
+```{python}
+@ibis.udf.scalar.python
+def embed(text: str) -> list[float]:
+    """Text to fixed-length array embedding."""
+    model = "text-embedding-3-small"
+    text = text.replace("\n", " ")
+    client = OpenAI()
+    return client.embeddings.create(input=[text], model=model).data[0].embedding
+```
+
+We'll use DuckDB's built-in cosine similarity function to compute the similarity
+between any two vectors:
+
+```{python}
+@ibis.udf.scalar.builtin
+def list_cosine_similarity(x, y) -> float:
+    """Compute cosine similarity between two vectors"""
+    ...
+```
+
+And then modify the English and SQL table to add the embeddings for the English
+text:
+
+```{python}
+t = (
+    t.mutate(
+        english_embedding=embed(t.english),
+    )
+    .relocate("english_embedding")
+    .cache()
+)
+t
+```
+
+We can test out our vector search by ensurring we get one, or close to it, by
+testing on our first example:
+
+```{python}
+s = (
+    t.mutate(
+        similarity=list_cosine_similarity(t.english_embedding, embed(example_1.english))
+    )
+    .relocate("similarity")
+    .order_by(ibis._["similarity"].desc())
+    .cache()
+)
+s
+```
+
+Congratulations! You have a working RAG system using DuckDB with just a bit of
+code.
+
+### Where vector search RAG fails
+
+Consider switching the ordering of "from heaviest to lightest":
+
+```{python}
+english = """the first 10 rows of the penguins, ordered by body_mass_g from
+lightest to heaviest"""
+
+s = (
+    t.mutate(similarity=list_cosine_similarity(t.english_embedding, embed(english)))
+    .relocate("similarity")
+    .order_by(ibis._["similarity"].desc())
+    .cache()
+)
+s
+```
+
+This is an entirely different meaning, and yet the computed similarity is close
+to one. Embeddings miss out on much of the semantic understanding for LLMs. Try
+it out yourself, using Marvin and GPT-4 to see if it can tell the different
+between these two English queries any better!
+
+We can veryify that the SQL would be different:
+
+::: {.panel-tabset}
+
+## Initial example
+
+```{python}
+sql = text_to_sql(
+    example_1.english,
+    table_name=penguins.get_name(),
+    table_schema=penguins.schema(),
+    table_preview=str(penguins),
+)
+ibis.to_sql(penguins.sql(sql))
+```
+
+```{python}
+penguins.sql(sql).limit(3)
+```
+
+## Modified example
+
+```{python}
+sql = text_to_sql(
+    english,
+    table_name=penguins.get_name(),
+    table_schema=penguins.schema(),
+    table_preview=str(penguins),
+)
+ibis.to_sql(penguins.sql(sql))
+```
+
+```{python}
+penguins.sql(sql).limit(3)
+```
+
+:::
+
+Despite high similarity of the English queries in the embedding space, the
+intended results and SQL are very different (descending vs ascending order). If
+you were to retrieve and augment your input to the text-to-SQL function with the
+most similar SQL from past samples, you might confused the model!
+
+Demonstrating this further, let's modify the English query to be equivalent but
+use very different words:
+
+```{python}
+english = """of the birds retrieve the initial ten opposite-of-columns,
+sorted from biggest to smallest by weight"""
+
+s = (
+    t.mutate(similarity=list_cosine_similarity(t.english_embedding, embed(english)))
+    .relocate("similarity")
+    .order_by(ibis._["similarity"].desc())
+    .cache()
+)
+s
+```
+
+In this case, despite resulting in what would be the same generated SQL, the
+cosine similarity of the vectors in their embedding space are much further
+apart.
+
+We can verify that the SQL would be effectively equivalent:
+
+::: {.panel-tabset}
+
+## Initial example
+
+```{python}
+sql = text_to_sql(
+    example_1.english,
+    table_name=penguins.get_name,
+    table_schema=penguins.schema,
+    table_preview=str(penguins),
+)
+ibis.to_sql(penguins.sql(sql))
+```
+
+```{python}
+penguins.sql(sql).limit(3)
+```
+
+## Modified example
+
+```{python}
+sql = text_to_sql(
+    english,
+    table_name=penguins.get_name,
+    table_schema=penguins.schema,
+    table_preview=str(penguins),
+)
+ibis.to_sql(penguins.sql(sql))
+```
+
+```{python}
+penguins.sql(sql).limit(3)
+```
+
+:::
+
+Despite low similarity, these English queries are effectively the same. Using
+our embedding similarity RAG, we might miss this example as it could be under
+the similarity threshold we set. Yet, a LLM can tell that these are semantically
+equivalent, as shown by the SQL it generates for each.
+
+## Discussion
+
+I am by no means an expert on any of this. I studied neural networks to an
+extent in college and I've kept up with all the hype around LLMs, but I'm not a
+researcher nor a practitioner building products.
+
+That said, I have noticed a pattern of tech-debt-inducing code for new machine
+learning technologies when implemented in practice. I hope this blog has
+provoked some thoughts around:
+
+- using bespoke databases when you may be using one that works just fine for the
+ job to be done
+- using embeddings and similarity search for semantic ranking of text
+- alternative approaches for getting the right context into your language models
+
+Also, keep in mind that we're making external API calls to OpenAI for the
+embeddings. This may be costly (though embeddings calls are relatively cheap)
+and time consuming depending on your quantity of data. You could consider using
+a self-hosted open source embedding model processing data where it lives to
+reduce this overhead.
+
+Let me know below or in [Zulip](https://ibis-project.zulipchat.com) if you have
+any thoughts or disagreements!
+
+## Next steps
+
+Try this out yourself! All you need is an OpenAI account and the code above.
+
+It's never been a better time to get involved with Ibis. [Join us on Zulip and
+introduce yourself!](https://ibis-project.zulipchat.com/) More Ibis + language
+model content coming soon.
