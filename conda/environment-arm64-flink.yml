@@ -1,9 +1,9 @@
-name: ibis-dev-arm64
+name: ibis-dev-flink
 channels:
   - conda-forge
 dependencies:
   # runtime dependencies
-  - python >=3.10
+  - python =3.10
   - atpublic >=2.3
   - bidict >=0.22.1
   - clickhouse-connect >=0.5.23
@@ -15,12 +15,10 @@ dependencies:
   - filelock >=3.7.0,<4
   - fsspec >=2022.1.0
   - gcsfs
-  - geoalchemy2 >=0.6.3
   - geopandas >=0.6
   - google-cloud-bigquery >=3,<4
   - google-cloud-bigquery-storage >=2,<3
   - impyla >=0.17
-  - multipledispatch >=0.6,<2
   - numpy >=1.15,<2
   - oracledb >=1.3.1
   - packaging >=21.3
@@ -31,12 +29,11 @@ dependencies:
   - poetry-dynamic-versioning >=0.18.0
   - polars >=0.19
   - psycopg2 >=2.8.4
-  - pyarrow >=2
+  - pyarrow =11.0.0
   - pyarrow-tests
   - pyarrow-hotfix >=0.4
   - pydata-google-auth
   - pydruid >=0.6.5
-  - pymssql >=2.2.5
   - pymysql >=1
   - pyspark >=3
   - python-dateutil >=2.8.2
@@ -48,16 +45,14 @@ dependencies:
   - rich >=12.4.4
   - shapely>=2,<3
   - snowflake-connector-python >=3.0.2
-  - snowflake-sqlalchemy >=1.4.1
-  - sqlalchemy <3,>=1.4
-  - sqlalchemy-risingwave >=1.0.0
-  - sqlalchemy-views <1,>=0.3.1
-  - sqlalchemy_exasol >=4.6.0
   - sqlglot >=18.7.0,<=20.11
   - toolz >=0.11
   - trino-python-client >=0.321
   # geospatial
   - leafmap >=0.29.6
+  # streaming
+  - kafka-python
+  - openjdk <21
   # test dependencies
   - filelock >=3.7.0,<4
   - hypothesis >=6.58.0,<7
@@ -95,6 +90,8 @@ dependencies:
   - taplo
   - tqdm >=4.66.1
   - just
+  # needed for apache-flink=1.18.0
+  - py4j =0.10.9.7
   - pip
   - pip:
-      - lonboard>=0.3.0
+      - apache-flink>=1.18.1
