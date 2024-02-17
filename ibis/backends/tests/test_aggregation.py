@@ -1594,7 +1594,7 @@ def test_group_concat_over_window(backend, con):
     backend.assert_frame_equal(result, expected)
 
 
-@pytest.mark.notimpl(["dask"], raises=NotImplementedError)
+@pytest.mark.xfail_version(dask=["dask<2024.2.0"])
 def test_value_counts_on_expr(backend, alltypes, df):
     expr = alltypes.bigint_col.add(1).value_counts()
     columns = expr.columns
