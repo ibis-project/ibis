@@ -109,7 +109,7 @@ work well in mult-turn conversational settings.
 level, how LLMs work and what they work well at. As noted in the previous
 section, grounding the LLM with useful information in the context is crucial to
 getting good results. However, the beauty of LLMs (and neural networks) is
-their abilitiy to generalize and learn complex tasks from data. This is why
+their ability to generalize and learn complex tasks from data. This is why
 LLMs are so powerful -- they can, in a sense, do things typically only reserved
 for humans. This is true in other areas for neural networks as well.
 
@@ -132,17 +132,17 @@ When GPT-4 launched, it supported a context length of about 8,000 tokens.
 Typically, one word is about two tokens, so we can call this about 4,000 input
 words. While that is a lot of words, much of the length gets taken up by the
 **system prompt** that instructs the LLM on what to do and other metadata that
-may be used as input. In practice, 8k token context lenght is not much.
+may be used as input. In practice, 8k token context length is not much.
 
 Over time, these context lengths have been increasing -- 16k, then 32k, and now
-128k for GPT-4-turbo models. Other LLMs have even higher context lenghts, with
+128k for GPT-4-turbo models. Other LLMs have even higher context lengths, with
 Google's Gemini family reporting 1M and 10M token context lengths. However, even
 these large context lengths do not solve some key problems. For one, LLMs may
 ignore or even be confused by context. While you can feed in a full textbook on
 machine learning, if you're just asking for information on k-means clustering
 you should probably only include that chapter. Additionally, you are charged
 money by the number of input tokens (and response tokens) and the time it takes
-to inference is proportional to that number. Regardless of the context lenght of
+to inference is proportional to that number. Regardless of the context length of
 the model, for the foreseeable future you want to be as efficient as possible.
 
 Thus, you need to have some method of retrieving and augmentign your input text
@@ -166,7 +166,7 @@ cases.
 
 ### Setup code
 
-First, we need to install the neccessary packages:
+First, we need to install the necessary packages:
 
 ```bash
 pip install 'ibis-framework[duckdb,examples]' openai marvin python-dotenv
@@ -222,7 +222,7 @@ penguins.limit(3)
 ## Demonstration
 
 We'll start with a slightly modified text-to-SQL function [stolen from our
-previous "LMs for data" blog](../lms-for-data/index.qmd): 
+previous "LMs for data" blog](../lms-for-data/index.qmd):
 
 ```{python}
 @marvin.fn
@@ -270,7 +270,7 @@ practice this would be a crucial piece of the system.
 Additionally, we might bootstrap the system with a set of known English and SQL
 query pairs to improve accuracy of the model. For demonstration purposes, we'll
 use those. These would likely be handwritten, but I'm lazy so let's write one
-and generate the rest with a LLM. 
+and generate the rest with a LLM.
 
 First, we define the data object we want to generate and create a single
 example:
@@ -404,7 +404,7 @@ to one. Embeddings miss out on much of the semantic understanding for LLMs. Try
 it out yourself, using Marvin and GPT-4 to see if it can tell the different
 between these two English queries any better!
 
-We can veryify that the SQL would be different:
+We can verify that the SQL would be different:
 
 ::: {.panel-tabset}
 
