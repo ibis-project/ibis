@@ -19,6 +19,8 @@ from sqlglot.dialects import (
 )
 from sqlglot.dialects.dialect import create_with_partitions_sql, rename_func
 
+from ibis.backends.sql.expressions import TemporalJoin
+
 ClickHouse.Generator.TRANSFORMS |= {
     sge.ArraySize: rename_func("length"),
     sge.ArraySort: rename_func("arraySort"),
@@ -132,7 +134,43 @@ class Flink(Hive):
             sge.DayOfWeek: rename_func("dayofweek"),
             sge.DayOfMonth: rename_func("dayofmonth"),
             sge.Interval: _interval_with_precision,
+            TemporalJoin: lambda self, expr: self.temporal_join_sql(expr),
         }
+
+        def join_sql(self, expr: sge.Join) -> str:
+            # DEPRECATED (mehmet): Added to support temporal-join through `JoinLink`,
+            # i.e., without adding `TemporalJoinLink`. Keeping it here only for reference
+            # during the reviews.
+
+            if expr.kind == "TEMPORAL":
+                on_sql = self.sql(expr, "on")
+                if on_sql:
+                    on_sql = self.indent(on_sql, skip_first=True)
+                    space = self.seg(" " * self.pad) if self.pretty else " "
+                    on_sql = f"{space}ON {on_sql}"
+
+                this_alias_sql = self.sql(expr.this, "alias")
+                expr.this.args["alias"] = None
+                this_sql_wo_alias = self.sql(expr.this)
+                op_sql = f"JOIN {this_sql_wo_alias}"
+                at_time_sql = self.sql(expr.this, "at_time")
+                return f"{self.seg(op_sql)} FOR SYSTEM_TIME AS OF {at_time_sql} AS {this_alias_sql}{on_sql}"
+
+            return super().join_sql(expr)
+
+        def temporal_join_sql(self, expr: TemporalJoin) -> str:
+            on_sql = self.sql(expr, "on")
+            if on_sql:
+                on_sql = self.indent(on_sql, skip_first=True)
+                space = self.seg(" " * self.pad) if self.pretty else " "
+                on_sql = f"{space}ON {on_sql}"
+
+            this_alias_sql = self.sql(expr.this, "alias")
+            expr.this.args["alias"] = None
+            this_sql_wo_alias = self.sql(expr.this)
+            op_sql = f"JOIN {this_sql_wo_alias}"
+            at_time_sql = self.sql(expr.at_time)
+            return f"{self.seg(op_sql)} FOR SYSTEM_TIME AS OF {at_time_sql} AS {this_alias_sql}{on_sql}"
 
     class Tokenizer(Hive.Tokenizer):
         # In Flink, embedded single quotes are escaped like most other SQL

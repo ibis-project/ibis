@@ -3,6 +3,7 @@ from __future__ import annotations
 import os
 import tempfile
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 import pandas as pd
 import pandas.testing as tm
@@ -15,6 +16,10 @@ import ibis.expr.datatypes as dt
 import ibis.expr.schema as sch
 from ibis.backends.conftest import TEST_TABLES
 from ibis.backends.tests.errors import Py4JJavaError
+
+
+if TYPE_CHECKING:
+    import ibis.expr.types as ir
 
 
 @pytest.fixture
@@ -534,3 +539,133 @@ def test_to_parquet(con, tmp_path, table_name):
     out_df = pd.read_parquet(out_path)
 
     tm.assert_frame_equal(source_df, out_df)
+
+
+@pytest.fixture
+def table_left_and_right_and_source_df(
+    con, data_dir, tempdir_sink_configs, tmp_path_factory
+) -> tuple[ir.Table, ir.Table, pd.DataFrame]:
+    # Subset of `functional_alltypes_schema`
+    schema = sch.Schema(
+        {
+            "id": dt.int32,
+            "bool_col": dt.bool,
+            "smallint_col": dt.int16,
+            "int_col": dt.int32,
+            "timestamp_col": dt.timestamp(scale=3),
+        }
+    )
+
+    df = pd.read_parquet(f"{data_dir}/parquet/functional_alltypes.parquet")
+    df = df[list(schema.names)]
+    df = df.head(20)
+
+    def create_table(table_name: str) -> ir.Table:
+        temp_path = tmp_path_factory.mktemp(table_name)
+        primary_key = "id" if table_name == "table_right" else None
+        table = con.create_table(
+            table_name,
+            schema=schema,
+            tbl_properties=tempdir_sink_configs(temp_path),
+            watermark=ibis.watermark(
+                time_col="timestamp_col", allowed_delay=ibis.interval(seconds=15)
+            ),
+            primary_key=primary_key,
+        )
+        con.insert(
+            table_name,
+            obj=df,
+            schema=schema,
+        ).wait()
+
+        return table
+
+    table_left = create_table(table_name="table_left")
+    table_right = create_table(table_name="table_right")
+
+    return table_left, table_right, df
+
+
+def compare_temporal_joined_and_expected_dfs(
+    join_expr: ir.Expr, source_df: pd.DataFrame
+):
+    joined_df = join_expr.to_pandas().sort_values("id")
+    joined_df = joined_df.reindex(sorted(joined_df.columns), axis=1)
+    joined_df = joined_df.drop("timestamp_col_right", axis=1)
+    # print(f"joined_df= \n{joined_df.to_string(index=False)}")
+
+    expected_df = pd.merge_asof(
+        source_df,
+        source_df,
+        on="timestamp_col",
+        by="id",
+    ).sort_values("id")
+    expected_df = expected_df.reindex(sorted(expected_df.columns), axis=1)
+    # print(f"expected_df= \n{expected_df.to_string(index=False)}")
+
+    assert (joined_df.values == expected_df.values).all()
+
+
+def test_temporal_join_w_at_time(con, table_left_and_right_and_source_df):
+    table_left, table_right, source_df = table_left_and_right_and_source_df
+
+    join_expr = table_left.temporal_join(
+        table_right,
+        at_time=table_left.timestamp_col,
+        predicates=[
+            table_left["id"] == table_right["id"],
+        ],
+    )
+    # join_expr.visualize()
+
+    sql = con.compile(join_expr)
+    # print(f"sql= \n{sql}")
+
+    expected_sql = """SELECT
+  `t2`.`id`,
+  `t2`.`bool_col`,
+  `t2`.`smallint_col`,
+  `t2`.`int_col`,
+  `t2`.`timestamp_col`,
+  `t3`.`bool_col` AS `bool_col_right`,
+  `t3`.`smallint_col` AS `smallint_col_right`,
+  `t3`.`int_col` AS `int_col_right`,
+  `t3`.`timestamp_col` AS `timestamp_col_right`
+FROM `table_left` AS `t2`
+JOIN `table_right` FOR SYSTEM_TIME AS OF `t2`.`timestamp_col` AS `t3`
+  ON `t2`.`id` = `t3`.`id`"""
+    assert sql == expected_sql
+
+    compare_temporal_joined_and_expected_dfs(join_expr=join_expr, source_df=source_df)
+
+
+def test_temporal_join_w_right_at_time(con, table_left_and_right_and_source_df):
+    table_left, table_right, source_df = table_left_and_right_and_source_df
+
+    table_right = table_right.at_time(table_left.timestamp_col)
+    join_expr = table_left.temporal_join(
+        table_right,
+        predicates=[
+            table_left["id"] == table_right["id"],
+        ],
+    )
+
+    sql = con.compile(join_expr)
+    # print(f"sql= \n{sql}")
+
+    expected_sql = """SELECT
+  `t1`.`id`,
+  `t1`.`bool_col`,
+  `t1`.`smallint_col`,
+  `t1`.`int_col`,
+  `t1`.`timestamp_col`,
+  `t3`.`bool_col` AS `bool_col_right`,
+  `t3`.`smallint_col` AS `smallint_col_right`,
+  `t3`.`int_col` AS `int_col_right`,
+  `t3`.`timestamp_col` AS `timestamp_col_right`
+FROM `table_left` AS `t1`
+JOIN `table_right` FOR SYSTEM_TIME AS OF `t1`.`timestamp_col` AS `t3`
+  ON `t1`.`id` = `t3`.`id`"""
+    assert sql == expected_sql
+
+    compare_temporal_joined_and_expected_dfs(join_expr=join_expr, source_df=source_df)

@@ -18,6 +18,7 @@ from public import public
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
+from ibis.backends.sql.expressions import TemporalJoin
 from ibis.backends.sql.rewrites import (
     add_one_to_nth_value_input,
     add_order_by_to_empty_ranking_window_functions,
@@ -1133,6 +1134,24 @@ class SQLGlotCompiler(abc.ABC):
         return sg.table(
             name, db=namespace.schema, catalog=namespace.database, quoted=self.quoted
         )
+
+    def visit_VersionedDatabaseTable(
+        self,
+        op,
+        *,
+        name: str,
+        schema: sch.Schema,
+        source: Any,
+        namespace: ops.Namespace,
+        at_time: ops.Column,
+    ) -> sge.Table:
+        return self.visit_DatabaseTable(
+            op, name=name, schema=schema, source=source, namespace=namespace
+        )
+
+    def visit_TemporalJoinLink(self, op, *, how, table, at_time, predicates):
+        on = sg.and_(*predicates) if predicates else None
+        return TemporalJoin(this=table, at_time=at_time, on=on)
 
     def visit_SelfReference(self, op, *, parent, identifier):
         return parent

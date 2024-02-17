@@ -228,6 +228,7 @@ class Backend(SQLBackend, CanCreateDatabase, NoUrl):
         name: str,
         database: str | None = None,
         catalog: str | None = None,
+        versioned: bool = False,
     ) -> ir.Table:
         """Return a table expression from a table or view in the database.
 
@@ -239,6 +240,8 @@ class Backend(SQLBackend, CanCreateDatabase, NoUrl):
             Database in which the table resides.
         catalog
             Catalog in which the table resides.
+        versioned
+            Whether the table is versioned with snapshots by the backend.
 
         Returns
         -------
@@ -251,12 +254,15 @@ class Backend(SQLBackend, CanCreateDatabase, NoUrl):
                 f"`database` must be a string; got {type(database)}"
             )
         schema = self.get_schema(name, catalog=catalog, database=database)
-        node = ops.DatabaseTable(
+
+        table_class = ops.VersionedDatabaseTable if versioned else ops.DatabaseTable
+        node = table_class(
             name,
             schema=schema,
             source=self,
             namespace=ops.Namespace(schema=catalog, database=database),
         )
+
         return node.to_expr()
 
     def get_schema(
@@ -501,7 +507,15 @@ class Backend(SQLBackend, CanCreateDatabase, NoUrl):
             sql = statement.compile()
             self.raw_sql(sql)
 
-            return self.table(name, database=database, catalog=catalog)
+            # Note: In Flink, versioned tables are defined implicitly for any table
+            # whose underlying sources or formats directly define changelogs. The only
+            # additional requirement is the CREATE table statement must contain a
+            # PRIMARY KEY and an event-time attribute.
+            # Ref: https://nightlies.apache.org/flink/flink-docs-master/docs/dev/table/concepts/versioned_tables/#versioned-table-sources
+            versioned = bool(watermark and primary_key)
+            return self.table(
+                name, database=database, catalog=catalog, versioned=versioned
+            )
 
     def drop_table(
         self,
@@ -835,6 +849,8 @@ class Backend(SQLBackend, CanCreateDatabase, NoUrl):
         self,
         table_name: str,
         obj: pa.Table | pd.DataFrame | ir.Table | list | dict,
+        *,
+        schema: sch.Schema | None = None,
         database: str | None = None,
         catalog: str | None = None,
         overwrite: bool = False,
@@ -847,6 +863,8 @@ class Backend(SQLBackend, CanCreateDatabase, NoUrl):
             The name of the table to insert data into.
         obj
             The source data or expression to insert.
+        schema
+            Schema of the table.
         database
             Name of the attached database that the table is located in.
         catalog
@@ -869,6 +887,8 @@ class Backend(SQLBackend, CanCreateDatabase, NoUrl):
         import pyarrow as pa
         import pyarrow_hotfix  # noqa: F401
 
+        from ibis.backends.flink.datatypes import FlinkRowSchema
+
         if isinstance(obj, ir.Table):
             statement = InsertSelect(
                 table_name,
@@ -884,7 +904,32 @@ class Backend(SQLBackend, CanCreateDatabase, NoUrl):
         if isinstance(obj, dict):
             obj = pd.DataFrame.from_dict(obj)
         if isinstance(obj, pd.DataFrame):
-            table = self._table_env.from_pandas(obj)
+            # table = self._table_env.from_pandas(obj)
+
+            # TODO: Tried the following per:
+            # https://github.com/ibis-project/ibis/pull/7921/files#r1457307135
+            #
+            # import ibis
+            # mem_table = ibis.memtable(obj)
+            # schema = mem_table.schema()
+            #
+            # But got the following error:
+            # E py4j.protocol.Py4JJavaError: An error occurred while calling o1971.executeInsert.
+            # E : org.apache.flink.table.api.ValidationException: Column types of query result and sink for 'default_catalog.default_database.table_left' do not match.
+            # E Cause: Incompatible types for sink column 'id' at position 0.
+            # E
+            # E Query schema: [id: BIGINT, bool_col: BOOLEAN, smallint_col: SMALLINT, int_col: INT, timestamp_col: TIMESTAMP(6)]
+            # E Sink schema:  [id: INT, bool_col: BOOLEAN, smallint_col: SMALLINT, int_col: INT, timestamp_col: TIMESTAMP(3)]
+
+            if schema:
+                schema_ = FlinkRowSchema.from_ibis(schema)
+                table = self._table_env.from_pandas(obj, schema_)
+            else:
+                table = self._table_env.from_pandas(obj)
+
+            pyflink_schema = FlinkRowSchema.from_ibis(schema)
+            table = self._table_env.from_pandas(obj, pyflink_schema)
+
             return table.execute_insert(table_name, overwrite=overwrite)
 
         if isinstance(obj, list):
