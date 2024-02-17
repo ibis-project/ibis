@@ -81,13 +81,7 @@ def test_literal_geospatial_explicit(con, expr, snapshot):
         shp_polygon_0,
         shp_multipolygon_0,
         shp_multilinestring_0,
-        param(
-            shp_multipoint_0,
-            marks=pytest.mark.xfail(
-                raises=AssertionError,
-                reason="Bug-fix change in GEOS 3.12 see shapely issue #1992",
-            ),
-        ),
+        shp_multipoint_0,
     ],
 )
 def test_literal_geospatial_inferred(con, shp, snapshot):
@@ -393,15 +387,7 @@ def test_geo_dataframe(geotable):
             id="polygon_single",
         ),
         # Multipart geometries (2D)
-        param(
-            "multipoint",
-            ((10, 40), (40, 30), (20, 20), (30, 10)),
-            id="multipoint",
-            marks=pytest.mark.xfail(
-                raises=AssertionError,
-                reason="Bug-fix change in GEOS 3.12 see shapely issue #1992",
-            ),
-        ),
+        param("multipoint", ((10, 40), (40, 30), (20, 20), (30, 10)), id="multipoint"),
         param(
             "multilinestring",
             (((10, 10), (20, 20), (10, 40)), ((40, 40), (30, 30), (40, 20), (30, 10))),
