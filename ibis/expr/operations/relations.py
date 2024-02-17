@@ -161,6 +161,7 @@ JoinKind = Literal[
     "any_inner",
     "any_left",
     "cross",
+    "temporal",
 ]
 
 
@@ -174,6 +175,15 @@ class JoinLink(Node):
     how: JoinKind
     table: JoinTable
     predicates: VarTuple[Value[dt.Boolean]]
+
+
+# TODO: `TemporalJoinLink` extends `JoinLink` to avoid the validation
+# error, but `how` is unnecessary for `TemporalJoinLink`.
+# Perhaps, make this extend `Expression` and include `TemporalJoinLink` in
+# the validation logic.
+@public
+class TemporalJoinLink(JoinLink):
+    at_time: Column
 
 
 @public
@@ -328,6 +338,13 @@ class DatabaseTable(PhysicalTable):
     schema: Schema
     source: Any
     namespace: Namespace = Namespace()
+
+
+@public
+class VersionedDatabaseTable(DatabaseTable):
+    """Table that is versioned with snapshots by the backend."""
+
+    at_time: Optional[Column] = None
 
 
 @public

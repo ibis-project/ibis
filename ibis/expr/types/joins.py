@@ -12,13 +12,14 @@ from ibis.common.deferred import Deferred
 from ibis.common.egraph import DisjointSet
 from ibis.common.exceptions import (
     ExpressionError,
+    IbisError,
     IbisInputError,
     InputTypeError,
     IntegrityError,
 )
 from ibis.expr.analysis import flatten_predicates
 from ibis.expr.rewrites import peel_join_field
-from ibis.expr.types.generic import Value
+from ibis.expr.types.generic import Column, Value
 from ibis.expr.types.relations import (
     Table,
     bind,
@@ -46,7 +47,7 @@ def disambiguate_fields(
     left_template = left_template or "{name}"
     right_template = right_template or "{name}"
 
-    if how == "inner" and util.all_of(predicates, ops.Equals):
+    if (how == "inner" and util.all_of(predicates, ops.Equals)) or how == "temporal":
         # for inner joins composed exclusively of equality predicates, we can
         # avoid renaming columns with colliding names if their values are
         # guaranteed to be equal due to the predicate
@@ -403,6 +404,68 @@ class Join(Table):
 
         # construct a new join link and add it to the join chain
         link = ops.JoinLink("asof", table=right, predicates=preds)
+        left = left.copy(rest=left.rest + (link,), values=values)
+
+        # return with a new JoinExpr wrapping the new join chain
+        return self.__class__(left, collisions=collisions, equalities=equalities)
+
+    @functools.wraps(Table.temporal_join)
+    def temporal_join(
+        self: Table,
+        right: Table,
+        predicates=(),
+        *,
+        at_time: Column = None,
+        lname: str = "",
+        rname: str = "{name}_right",
+    ):
+        if not isinstance(right.op(), ops.VersionedDatabaseTable):
+            raise IbisError(
+                "Right-table is not versioned. "
+                "Temporal join is defined only when the right-table is versioned."
+            )
+        elif at_time is None and right.at_time is None:
+            raise IbisInputError("Either `at_time` or `right.at_time` must be defined.")
+
+        at_time_op = right.op().at_time if at_time is None else at_time.op()
+        left = self.op()
+        # Check if `at_time` is based on a left-table.
+        # TODO (mehmet): Check with the reviewers the applicability of this check
+        # for all possible calls of `temporal_join()`.
+        if at_time_op.rel not in left.find(
+            finder=(ops.DatabaseTable, ops.VersionedDatabaseTable)
+        ):
+            raise IbisInputError("`at_time` needs to be defined on a left-table.")
+
+        # Rebase `at_time` on the JoinTable wrapping up the DatabaseTable
+        # `at_time` field is based on.
+        deref_left = dereference_mapping_left(left)
+        at_time = at_time_op.replace(deref_left, filter=ops.Value)
+
+        right = ops.JoinTable(right, index=left.length)
+        predicates = util.promote_list(predicates)
+        preds = list(prepare_predicates(left, right, predicates, comparison=ops.Equals))
+        if not util.all_of(list(preds), ops.Equals):
+            raise IbisInputError(
+                "All `predicates` given to `temporal_join` must be of `==` type."
+            )
+
+        values, collisions, equalities = disambiguate_fields(
+            how="temporal",
+            predicates=preds,
+            equalities=self._equalities,
+            left_fields=left.values,
+            right_fields=right.fields,
+            left_template=lname,
+            right_template=rname,
+        )
+
+        # construct a new join link and add it to the join chain
+        # TODO (mehmet): Is there a way to eliminate the need for `TemporalJoinLink` here
+        # and just use `JoinLink`?
+        link = ops.TemporalJoinLink(
+            how="temporal", table=right, at_time=at_time, predicates=preds
+        )
         left = left.copy(rest=left.rest + (link,), values=values)
 
         # return with a new JoinExpr wrapping the new join chain
