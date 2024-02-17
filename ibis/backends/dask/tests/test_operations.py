@@ -7,11 +7,13 @@ import numpy as np
 import numpy.testing as npt
 import pandas as pd
 import pytest
+from packaging.version import parse as vparse
 from pytest import param
 
 import ibis
 import ibis.expr.datatypes as dt
 
+dask = pytest.importorskip("dask")
 da = pytest.importorskip("dask.array")
 dd = pytest.importorskip("dask.dataframe")
 
@@ -446,7 +448,10 @@ def test_series_limit(t, df, offset):
     )
 
 
-@pytest.mark.xfail(reason="TODO - sorting - #2553")
+@pytest.mark.xfail(
+    condition=vparse(dask.__version__) < vparse("2024.2.0"),
+    reason="not implemented until 2024.2.0",
+)
 def test_complex_order_by(t, df):
     expr = t.order_by([ibis.desc(t.plain_int64 * t.plain_float64), t.plain_float64])
     result = expr.compile()
