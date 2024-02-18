@@ -11,7 +11,7 @@ import pytest
 from pytest import param
 
 import ibis
-from ibis.backends.conftest import TEST_TABLES, is_older_than
+from ibis.backends.conftest import TEST_TABLES
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
@@ -50,9 +50,7 @@ def gzip_csv(data_dir, tmp_path):
             "Diamonds2",
             id="csv_name",
             marks=pytest.mark.notyet(
-                ["pyspark"],
-                reason="pyspark lowercases view names",
-                condition=is_older_than("pyspark", "3.5.0"),
+                ["pyspark"], reason="pyspark lowercases view names"
             ),
         ),
         param(

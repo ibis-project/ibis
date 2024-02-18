@@ -132,36 +132,48 @@ class TestConf(BackendTest):
 
     @staticmethod
     def connect(*, tmpdir, worker_id, **kw):
-        from pyspark.sql import SparkSession
-
         # Spark internally stores timestamps as UTC values, and timestamp
         # data that is brought in without a specified time zone is
         # converted as local time to UTC with microsecond resolution.
         # https://spark.apache.org/docs/latest/sql-pyspark-pandas-with-arrow.html#timestamp-with-time-zone-semantics
-        spark = (
+
+        from pyspark.sql import SparkSession
+
+        config = (
             SparkSession.builder.appName("ibis_testing")
             .master("local[1]")
-            .config("spark.sql.session.timeZone", "UTC")
-            .config("spark.driver.extraJavaOptions", "-Duser.timezone=GMT")
-            .config("spark.executor.extraJavaOptions", "-Duser.timezone=GMT")
             .config("spark.cores.max", 1)
+            .config("spark.default.parallelism", 1)
+            .config("spark.driver.extraJavaOptions", "-Duser.timezone=GMT")
+            .config("spark.dynamicAllocation.enabled", False)
+            .config("spark.executor.extraJavaOptions", "-Duser.timezone=GMT")
             .config("spark.executor.heartbeatInterval", "3600s")
             .config("spark.executor.instances", 1)
             .config("spark.network.timeout", "4200s")
-            .config("spark.sql.execution.arrow.pyspark.enabled", False)
-            .config("spark.sql.legacy.timeParserPolicy", "LEGACY")
-            .config("spark.storage.blockManagerSlaveTimeoutMs", "4200s")
-            .config("spark.ui.showConsoleProgress", False)
-            .config("spark.default.parallelism", 1)
-            .config("spark.dynamicAllocation.enabled", False)
             .config("spark.rdd.compress", False)
             .config("spark.serializer", "org.apache.spark.serializer.KryoSerializer")
             .config("spark.shuffle.compress", False)
             .config("spark.shuffle.spill.compress", False)
+            .config("spark.sql.legacy.timeParserPolicy", "LEGACY")
+            .config("spark.sql.session.timeZone", "UTC")
             .config("spark.sql.shuffle.partitions", 1)
+            .config("spark.storage.blockManagerSlaveTimeoutMs", "4200s")
             .config("spark.ui.enabled", False)
-            .getOrCreate()
+            .config("spark.ui.showConsoleProgress", False)
+            .config("spark.sql.execution.arrow.pyspark.enabled", False)
         )
+
+        try:
+            from delta.pip_utils import configure_spark_with_delta_pip
+        except ImportError:
+            configure_spark_with_delta_pip = lambda cfg: cfg
+        else:
+            config = config.config(
+                "spark.sql.catalog.spark_catalog",
+                "org.apache.spark.sql.delta.catalog.DeltaCatalog",
+            ).config("spark.sql.extensions", "io.delta.sql.DeltaSparkSessionExtension")
+
+        spark = configure_spark_with_delta_pip(config).getOrCreate()
         return ibis.pyspark.connect(spark, **kw)
 
 
