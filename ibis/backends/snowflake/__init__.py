@@ -38,7 +38,9 @@ from ibis.backends.base.sqlglot.datatypes import SnowflakeType
 from ibis.backends.snowflake.compiler import SnowflakeCompiler
 from ibis.backends.snowflake.converter import SnowflakePandasData
 
-with warnings.catch_warnings():
+with warnings.catch_warnings(), contextlib.suppress(
+    importlib.metadata.PackageNotFoundError
+):
     if vparse(importlib.metadata.version("snowflake-connector-python")) >= vparse(
         "3.3.0"
     ):
