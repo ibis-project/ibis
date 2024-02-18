@@ -149,7 +149,6 @@ class Backend(SQLGlotBackend, CanCreateDatabase):
         """
         self._context = session.sparkContext
         self._session = session
-        self._catalog = session.catalog
 
         # Spark internally stores timestamps as UTC values, and timestamp data
         # that is brought in without a specified time zone is converted as
@@ -172,30 +171,35 @@ class Backend(SQLGlotBackend, CanCreateDatabase):
 
     @property
     def current_database(self) -> str:
-        return self._catalog.currentDatabase()
+        [(db,)] = self._session.sql("SELECT CURRENT_DATABASE()").collect()
+        return db
 
     @contextlib.contextmanager
-    def _active_database(self, name: str | None) -> None:
+    def _active_database(self, name: str | None):
         if name is None:
             yield
             return
         current = self.current_database
         try:
-            self._catalog.setCurrentDatabase(name)
+            self._session.catalog.setCurrentDatabase(name)
             yield
         finally:
-            self._catalog.setCurrentDatabase(current)
+            self._session.catalog.setCurrentDatabase(current)
 
     def list_databases(self, like: str | None = None) -> list[str]:
-        databases = [db.name for db in self._catalog.listDatabases()]
+        databases = [
+            db.namespace for db in self._session.sql("SHOW DATABASES").collect()
+        ]
         return self._filter_with_like(databases, like)
 
     def list_tables(
         self, like: str | None = None, database: str | None = None
     ) -> list[str]:
         tables = [
-            t.name
-            for t in self._catalog.listTables(dbName=database or self.current_database)
+            row.tableName
+            for row in self._session.sql(
+                f"SHOW TABLES IN {database or self.current_database}"
+            ).collect()
         ]
         return self._filter_with_like(tables, like)
 
@@ -393,7 +397,7 @@ class Backend(SQLGlotBackend, CanCreateDatabase):
         elif schema is not None:
             schema = PySparkSchema.from_ibis(schema)
             with self._active_database(database):
-                self._catalog.createTable(name, schema=schema, format=format)
+                self._session.catalog.createTable(name, schema=schema, format=format)
         else:
             raise com.IbisError("The schema or obj parameter is required")
 
@@ -717,7 +721,8 @@ class Backend(SQLGlotBackend, CanCreateDatabase):
             PySpark Delta Lake table write arguments. https://spark.apache.org/docs/3.1.1/api/python/reference/api/pyspark.sql.DataFrameWriter.save.html
 
         """
-        expr.compile().write.format("delta").save(os.fspath(path), **kwargs)
+        df = self._session.sql(expr.compile())
+        df.write.format("delta").save(os.fspath(path), **kwargs)
 
     def to_pyarrow(
         self,
