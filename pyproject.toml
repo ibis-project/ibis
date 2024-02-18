@@ -476,20 +476,6 @@ required-imports = ["from __future__ import annotations"]
 docstring-code-format = true
 docstring-code-line-length = 88
 
-[tool.conda-lock]
-channels = ["conda-forge"]
-
-[tool.conda-lock.dependencies]
-# conda-lock doesn't map dependencies' extras to conda-forge packages and we
-# use the array and dataframe extras from dask
-dask = ">=2021.10.0"
-pip = "*"
-pyarrow-tests = "*"
-deltalake = { source = "pypi" } # doesn't exist for osx-arm64
-shapely = { source = "pypi" }
-just = "*"
-taplo = "*"
-
 [tool.coverage.run]
 branch = true
 source = ["ibis"]
