@@ -38,19 +38,6 @@ from ibis.backends.base.sqlglot.datatypes import SnowflakeType
 from ibis.backends.snowflake.compiler import SnowflakeCompiler
 from ibis.backends.snowflake.converter import SnowflakePandasData
 
-with warnings.catch_warnings(), contextlib.suppress(
-    importlib.metadata.PackageNotFoundError
-):
-    if vparse(importlib.metadata.version("snowflake-connector-python")) >= vparse(
-        "3.3.0"
-    ):
-        warnings.filterwarnings(
-            "ignore",
-            message="You have an incompatible version of 'pyarrow' installed",
-            category=UserWarning,
-        )
-        import snowflake.connector as sc
-
 if TYPE_CHECKING:
     from collections.abc import Iterable, Iterator, Mapping
 
@@ -224,6 +211,17 @@ $$ {defn["source"]} $$"""
             Additional arguments passed to the URL constructor.
 
         """
+        with warnings.catch_warnings():
+            if vparse(
+                importlib.metadata.version("snowflake-connector-python")
+            ) >= vparse("3.3.0"):
+                warnings.filterwarnings(
+                    "ignore",
+                    message="You have an incompatible version of 'pyarrow' installed",
+                    category=UserWarning,
+                )
+                import snowflake.connector as sc
+
         connect_args = kwargs.copy()
         session_parameters = connect_args.pop("session_parameters", {})
 
