@@ -392,9 +392,18 @@ search_docs(text)
 
 ## RAG pitfalls
 
-As in traditional software engineering and machine learning, the architecture when building systems around language models is not a monolith. The best solution is often "**it depends**." Using cosine (or otherwise) similarity search over text transformed to numbers is not a silver bullet.
+As in traditional software engineering and machine learning, the architecture
+when building systems around language models is not a monolith. The best
+solution is often "**it depends**." Using cosine (or otherwise) similarity
+search over text transformed to numbers is not a silver bullet.
 
-We can demonstrate this with the following scenario: let's assume we're building a chatbot that writes and runs SQL on the user's behalf based on their questions posed in English (or any language the language model understand sufficiently). We might store past queries, the SQL generated, and some evaluation criteria (upvote/downvote on the generated SQL from the user) in a database. Then we can use the same RAG approach above to augment our queries with the user's past queries and the generated SQL.
+We can demonstrate this with the following scenario: let's assume we're building
+a chatbot that writes and runs SQL on the user's behalf based on their questions
+posed in English (or any language the language model understand sufficiently).
+We might store past queries, the SQL generated, and some evaluation criteria
+(upvote/downvote on the generated SQL from the user) in a database. Then we can
+use the same RAG approach above to augment our queries with the user's past
+queries and the generated SQL.
 
 Take the following English query:
 
