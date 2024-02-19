@@ -136,7 +136,7 @@ Now we have a DuckDB database with the `ibis` table containing all the file path
 
 ### Embedding text to vectors
 
-To search for similar text in traditional RAG fashion, we need to **embed** the text into vectors. We can use [OpenAI's embedding models](https://platform.openai.com/docs/guides/embeddings/embedding-models) to perform this step. 
+To search for similar text in traditional RAG fashion, we need to **embed** the text into vectors. We can use [OpenAI's embedding models](https://platform.openai.com/docs/guides/embeddings/embedding-models) to perform this step.
 
 Note that the maximum length of input **tokens** is 8,191. A word typically consists of 1-3 tokens. To estimate tokens of a string in Python, we can roughly divide the length of that string by 4. This isn't perfect, but will work for now. Let's augmented our data with the estimated number of tokens and sort from largest to smallest:
 
