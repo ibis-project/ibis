@@ -29,17 +29,17 @@ the connection string, or swap out DuckDB for another Ibis backend.
 ## What is RAG?
 
 Retrieval-augmented generation (RAG) is a technique for language model systems
-to retrieve relevant information from a knowledge base, augmented the model's
-input with that knowledge, and then generate a response. It serves to increase
-the accuracy of the model's response and provide useful context given language
-models' context length limitations.
+to retrieve relevant information from a knowledge base, augment the model's
+input with that knowledge, and then generate a response. It serves to provide
+useful context given language models' context length limitations and increase
+the quality of the response.
 
 ::: {.callout-note title="Is RAG dead?"}
 With increasing language model context lengths, is RAG dead?
 
 **No**. Though as we'll discuss later, it's unclear if traditional vector
 similarity search RAG is the best approach. Regardless, just because a language
-model can use the entire context of a textbook doesn't mean you'll get better
+model can use the entire content of a textbook doesn't mean you'll get better
 performance (accuracy or efficiency) than first retrieving the relevant subsets
 of the textbook.
 :::
@@ -62,12 +62,11 @@ Let's jump into the code!
 
 ## RAG over Ibis documentation
 
-We'll use the Ibis documentation as our knowledge base. A common toy problem is
-a chatbot over documentation, so this is a good starting point.
+We'll use the Ibis documentation as our knowledge base.
 
 ### Setup code
 
-First, we need to install and import the necessary packages:
+First we need to install and import the necessary packages:
 
 ```bash
 pip install 'ibis-framework[duckdb]' openai python-dotenv
@@ -90,10 +89,12 @@ Do this by creating a `.env` file in the same directory as the code and adding
 the following line:
 
 ```txt
-OPENAI_API_KEY=<your-api-key>
+OPENAI_API_KEY=<your-api-key>  # <1>
 ```
 
-Then, load the environment variables:
+1. Replace with your OpenAI API key.
+
+Then load the environment variables:
 
 ```{python}
 load_dotenv()  # <1>
@@ -101,7 +102,9 @@ load_dotenv()  # <1>
 
 1. Load environment variables from the `.env` file.
 
-Now, we're ready to make LLM calls. Let's setup Ibis for interactive use:
+Now we're ready to make OpenAI calls.
+
+Let's also setup Ibis for interactive use:
 
 ```{python}
 ibis.options.interactive = True  # <1>
@@ -111,7 +114,7 @@ ibis.options.interactive = True  # <1>
 
 ### Getting the data into DuckDB
 
-We'll write a function to clone any repository:
+We'll use a function to clone a given repository:
 
 ```{python}
 def clone_repo(repo_url):  # <1>
@@ -120,8 +123,8 @@ def clone_repo(repo_url):  # <1>
 
 1. Define a function to clone a repository.
 
-Now, we will clone `ibis` and prepare to ingest all the Quarto markdown files
-into a DuckDB database called `rag.ddb`:
+Let's clone `ibis` and prepare to ingest all the Quarto markdown files into a
+DuckDB database called `rag.ddb`:
 
 ```{python}
 org_url = "https://github.com/ibis-project"  # <1>
@@ -194,7 +197,6 @@ rag_con.list_tables()  # <11>
 _ = shutil.rmtree(repo_name, ignore_errors=True)
 ```
 
-
 Let's inspect the table:
 
 ```{python}
@@ -217,23 +219,18 @@ models](https://platform.openai.com/docs/guides/embeddings/embedding-models) to
 perform this step.
 
 Note that the maximum length of input **tokens** is 8,191. A word typically
-consists of 1-3 tokens. To estimate tokens of a string in Python, we can roughly
-divide the length of that string by 4. This isn't perfect, but will work for
-now. Let's augmented our data with the estimated number of tokens and sort from
-largest to smallest:
+consists of 1-3 tokens. To estimate the number of tokens of a string in Python,
+we can divide the length of that string by 4. This isn't perfect, but will work
+for now. Let's augmented our data with the estimated number of tokens and sort
+from largest to smallest:
 
 ```{python}
-def _estimate_tokens(text: str) -> int:  # <1>
+@ibis.udf.scalar.python  # <1>
+def estimate_tokens(text: str) -> int:  # <1>
     return len(text) // 4  # <1>
-
-
-@ibis.udf.scalar.python  # <2>
-def estimate_tokens(text: str) -> int:  # <2>
-    return _estimate_tokens(text)  # <2>
 ```
 
-1. Create a regular Python function to estimate tokens.
-2. Create an Ibis UDF using the Python function.
+1. Create an Ibis UDF using the Python function.
 
 ```{python}
 t = (
@@ -248,10 +245,10 @@ t
 2. Sort the table by the estimated number of tokens in descending order.
 3. Relocate the `filepath` and `tokens_estimate` columns to the front of the table.
 
-The longest text is certainly over our embedding model limit, and the second
-longest might be as well. In practice, we'd want to chunk our text into smaller
-pieces. This is its own challenge, but for the purposes of this demonstration
-we'll just ignore text that is probably too long.
+The longest text is certainly over our embedding model's token limit, and the
+second longest might be as well. In practice, we'd want to chunk our text into
+smaller pieces. This is its own challenge, but for the purposes of this
+demonstration we'll just ignore text that is too long.
 
 Let's define our embedding functions:
 
@@ -290,9 +287,6 @@ def embed(text: str, tokens_estimate: int) -> list[float]:  # <8>
 10. ...call the Python function to embed the text.
 11. Otherwise, return `None`.
 
-Cosine similarity over vectors is a common way to measure similarity for RAG
-applications. We'll explore its downsides below.
-
 Let's embed the text:
 
 ```{python}
@@ -317,7 +311,9 @@ DuckDB) when the text is too long or an error occurs.
 
 ### Searching with cosine similarity
 
-We'll make Ibis aware of DuckDB's built-in `list_cosine_similarity` function:
+Cosine similarity over vectors is a common way to measure similarity for RAG
+applications. We'll explore its downsides later. We need to make Ibis aware of
+DuckDB's built-in `list_cosine_similarity` function:
 
 ```{python}
 @ibis.udf.scalar.builtin  # <1>
@@ -393,9 +389,9 @@ search_docs(text)
 ## RAG pitfalls
 
 As in traditional software engineering and machine learning, the architecture
-when building systems around language models is not a monolith. The best
-solution is often "**it depends**." Using cosine (or otherwise) similarity
-search over text transformed to numbers is not a silver bullet.
+when building systems around language models is not a universal. The best
+depends on the application of the system. Using cosine (or otherwise) similarity
+search over text transformed to numbers may not always perform best.
 
 We can demonstrate this with the following scenario: let's assume we're building
 a chatbot that writes and runs SQL on the user's behalf based on their questions
@@ -447,6 +443,7 @@ That has a much lower cosine similarity in the embedding space:
 list_cosine_similarity(_embed(a), _embed(c))
 ```
 
+Despite semantic equivalence, these two queries would not be considered similar.
 You need to be careful and understand what the system is doing.
 
 ## Discussion
@@ -455,7 +452,7 @@ Is traditional RAG the best approach? It's unclear, and **it depends**.
 
 ### System architecture
 
-Often, RAG-based systems introduce yet-another-database to store the embeddings.
+Often RAG-based systems introduce yet-another-database to store the embeddings.
 Hopefully this post has demonstrated that traditional database options can work
 just fine. While we're only demonstrating this on a few rows here, DuckDB can
 scale up to many millions with ease.
@@ -484,8 +481,8 @@ Husain](https://twitter.com/HamelHusain/status/1709740984643596768)
 
 Some alternatives to vector search RAG include:
 
-- traditional search
-- using a web search engine
+- traditional search methods
+- using an external web search engine
 - using a language model for search
 
 The last point is particularly interesting -- in the above examples with `a` and
@@ -505,7 +502,6 @@ cheaper to run.
 With larger context lengths, we could also use an initial call to a language
 model to extract out relevant sections of text and then make a second call with
 that augmented context.
-
 
 ## Next steps
 
