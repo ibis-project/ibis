@@ -1214,8 +1214,23 @@ class Backend(SQLGlotBackend, CanCreateSchema, UrlFromPath):
         table = expr.as_table()
         sql = self.compile(table, limit=limit, params=params)
 
+        desired_schema = table.schema().to_pyarrow()
+
         def batch_producer(cur):
-            yield from cur.fetch_record_batch(rows_per_batch=chunk_size)
+            for batch in cur.fetch_record_batch(rows_per_batch=chunk_size):
+                if batch.schema != desired_schema:
+                    batch = pa.RecordBatch.from_arrays(
+                        [
+                            arr.cast(field.type, safe=False)
+                            for arr, field in zip(
+                                batch.columns,
+                                desired_schema,
+                            )
+                        ],
+                        schema=desired_schema,
+                        metadata=batch.schema.metadata,
+                    )
+                yield batch
 
         # TODO: check that this is still handled correctly
         # batch_producer keeps the `self.con` member alive long enough to
@@ -1224,7 +1239,7 @@ class Backend(SQLGlotBackend, CanCreateSchema, UrlFromPath):
         result = self.raw_sql(sql)
 
         return pa.RecordBatchReader.from_batches(
-            expr.as_table().schema().to_pyarrow(), batch_producer(result)
+            desired_schema, batch_producer(result)
         )
 
     def to_pyarrow(
