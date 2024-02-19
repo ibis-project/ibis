@@ -2,6 +2,7 @@
 title: "Using DuckDB (or any database Ibis supports) for RAG"
 author: "Cody Peterson"
 date: "2024-02-29"
+image: thumbnail.png
 categories:
     - blog
     - llms
@@ -34,7 +35,7 @@ the accuracy of the model's response and provide useful context given language
 models' context length limitations.
 
 ::: {.callout-note title="Is RAG dead?"}
-With increasing language model context length's, is RAG dead?
+With increasing language model context lengths, is RAG dead?
 
 **No**. Though as we'll discuss later, it's unclear if traditional vector
 similarity search RAG is the best approach. Regardless, just because a language
