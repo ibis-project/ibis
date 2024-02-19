@@ -296,6 +296,28 @@ class PyArrowData(DataMapper):
         else:
             return table
 
+    @classmethod
+    def convert_record_batch_reader(cls, reader: pa.RecordBatchReader, schema: Schema) -> pa.RecordBatchReader:
+        desired_schema = PyArrowSchema.from_ibis(schema)
+
+        def batch_producer():
+            for batch in reader:
+                if batch.schema != desired_schema:
+                    batch = pa.RecordBatch.from_arrays(
+                        [
+                            arr.cast(field.type, safe=False)
+                            for arr, field in zip(
+                                batch.columns,
+                                desired_schema,
+                            )
+                        ],
+                        schema=desired_schema,
+                        metadata=batch.schema.metadata,
+                    )
+                yield batch
+
+        return pa.RecordBatchReader.from_batches(desired_schema, batch_producer())
+
 
 class PyArrowTableProxy(TableProxy[pa.Table]):
     def to_frame(self):

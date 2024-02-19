@@ -1214,32 +1214,14 @@ class Backend(SQLGlotBackend, CanCreateSchema, UrlFromPath):
         table = expr.as_table()
         sql = self.compile(table, limit=limit, params=params)
 
-        desired_schema = table.schema().to_pyarrow()
-
-        def batch_producer(cur):
-            for batch in cur.fetch_record_batch(rows_per_batch=chunk_size):
-                if batch.schema != desired_schema:
-                    batch = pa.RecordBatch.from_arrays(
-                        [
-                            arr.cast(field.type, safe=False)
-                            for arr, field in zip(
-                                batch.columns,
-                                desired_schema,
-                            )
-                        ],
-                        schema=desired_schema,
-                        metadata=batch.schema.metadata,
-                    )
-                yield batch
-
         # TODO: check that this is still handled correctly
         # batch_producer keeps the `self.con` member alive long enough to
         # exhaust the record batch reader, even if the backend or connection
         # have gone out of scope in the caller
         result = self.raw_sql(sql)
 
-        return pa.RecordBatchReader.from_batches(
-            desired_schema, batch_producer(result)
+        return expr.__pyarrow_batch_result__(
+            result.fetch_record_batch(rows_per_batch=chunk_size),
         )
 
     def to_pyarrow(

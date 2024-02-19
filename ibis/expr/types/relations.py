@@ -274,6 +274,14 @@ class Table(Expr, _FixedTextJupyterMixin):
 
         return data_mapper.convert_table(table, self.schema())
 
+    def __pyarrow_batch_result__(
+        self, reader: pa.RecordBatchReader, data_mapper: type[PyArrowData] | None = None
+    ) -> pa.RecordBatchReader:
+        if data_mapper is None:
+            from ibis.formats.pyarrow import PyArrowData as data_mapper
+
+        return data_mapper.convert_record_batch_reader(reader, self.schema())
+
     def __pandas_result__(self, df: pd.DataFrame) -> pd.DataFrame:
         from ibis.formats.pandas import PandasData
 
