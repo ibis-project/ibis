@@ -1,5 +1,5 @@
 ---
-title: "Using DuckDB (or any database Ibis supports) for RAG"
+title: "Using DuckDB for RAG"
 author: "Cody Peterson"
 date: "2024-02-29"
 image: thumbnail.png
@@ -22,9 +22,10 @@ between arrays of numbers. Alternatively, a custom user-defined function (UDF)
 can be used for the similarity metric.
 :::
 
-DuckDB is the default backend for Ibis and makes rapid prototyping locally very
-easy. You can deploy it to [MotherDuck](https://motherduck.com) just by changing
-the connection string, or swap out DuckDB for another Ibis backend.
+[DuckDB is the default backend for Ibis](../why-duckdb/index.qmd) and makes
+rapid prototyping locally very easy. You can deploy it to
+[MotherDuck](https://motherduck.com) just by changing the connection string, or
+swap out DuckDB for another Ibis backend.
 
 ## What is RAG?
 
@@ -79,7 +80,8 @@ import shutil
 import subprocess
 
 from openai import OpenAI
-from dotenv import load_dotenv  # <1>
+from dotenv import load_dotenv
+from pathlib import Path  # <1>
 ```
 
 1. Import the libraries we'll use.
@@ -153,42 +155,33 @@ We'll walk through all the cloned files. For `.qmd` files, read the contents and
 insert them into the `ibis` table:
 
 ```{python}
-for root, _, files in os.walk(repo_name):  # <1>
-    for file in files:  # <2>
-        if file.endswith(".qmd"):  # <3>
-            with open(os.path.join(root, file)) as f:  # <4>
-                contents = f.read()  # <5>
+for filepath in Path(repo_name).rglob("*.qmd"):  # <1>
+    contents = filepath.read_text()  # <2>
 
-                data = {  # <6>
-                    "filepath": [os.path.join(root, file)],
-                    "contents": [contents],
-                }  # <6>
+    data = {"filepath": [str(filepath)], "contents": [contents]}  # <3>
 
-                t = ibis.memtable(data)  # <7>
+    t = ibis.memtable(data)  # <4>
 
-                if repo_name not in rag_con.list_tables():  # <8>
-                    rag_con.create_table(repo_name, t)  # <8>
-                else:  # <9>
-                    rag_con.insert(repo_name, t)  # <9>
+    if repo_name not in rag_con.list_tables():  # <5>
+        rag_con.create_table(repo_name, t)  # <5>
+    else:  # <6>
+        rag_con.insert(repo_name, t)  # <6>
 
-for table in rag_con.list_tables():  # <10>
-    if "memtable" in table:
-        rag_con.drop_view(table)  # <10>
+for table in rag_con.list_tables():  # <7>
+    if "memtable" in table:  # <7>
+        rag_con.drop_view(table)  # <7>
 
-rag_con.list_tables()  # <11>
+rag_con.list_tables()  # <8>
 ```
 
-1. Walk through all the files in the repository.
-2. For all of the files...
-3. ...if the file ends with `.qmd`...
-4. ...open the file.
-5. Read the contents of the file into a string.
-6. Setup the data to insert into the `ibis` table.
-7. Create an Ibis memtable from the data.
-8. If the table does not exist, create it and insert the data.
-9. If the table exists, insert the data.
-10. Drop any memtable views that were created.
-11. List the tables, showing the `ibis` table.
+1. Walk through all the Quarto markdown files in the repository.
+2. Read the contents of the file.
+3. Create a dictionary with the file path and contents.
+4. Create an Ibis memtable from the dictionary.
+5. If the table doesn't exist, create it with the memtable.
+6. Otherwise, insert the memtable into the table.
+7. Drop any memtables.
+8. List the tables in the database to show the `ibis` table.
 
 ```{python}
 #| code-fold: true
@@ -225,18 +218,10 @@ for now. Let's augmented our data with the estimated number of tokens and sort
 from largest to smallest:
 
 ```{python}
-@ibis.udf.scalar.python  # <1>
-def estimate_tokens(text: str) -> int:  # <1>
-    return len(text) // 4  # <1>
-```
-
-1. Create an Ibis UDF using the Python function.
-
-```{python}
 t = (
-    t.mutate(tokens_estimate=estimate_tokens(t.contents))  # <1>
-    .order_by(ibis._["tokens_estimate"].desc()) # <2>
-    .relocate("filepath", "tokens_estimate") # <3>
+    t.mutate(tokens_estimate=t.contents.length() // 4)  # <1>
+    .order_by(ibis._["tokens_estimate"].desc())  # <2>
+    .relocate("filepath", "tokens_estimate")  # <3>
 )
 t
 ```
@@ -255,31 +240,34 @@ Let's define our embedding functions:
 ```{python}
 def _embed(text: str) -> list[float]:  # <1>
     """Text to fixed-length array embedding."""  # <1>
-    try:  # <2>
-        model = "text-embedding-3-small"  # <3>
-        text = text.replace("\n", " ")  # <4>
-        client = OpenAI()  # <5>
+
+    model = "text-embedding-3-small"  # <2>
+    text = text.replace("\n", " ")  # <3>
+    client = OpenAI()  # <4>
+
+    try:  # <5>
         return (  # <6>
             client.embeddings.create(input=[text], model=model).data[0].embedding
         )  # <6>
     except Exception as e:  # <7>
         print(e)  # <7>
-        return None  # <7>
+    return None  # <7>
 
 
 @ibis.udf.scalar.python  # <8>
 def embed(text: str, tokens_estimate: int) -> list[float]:  # <8>
     """Text to fixed-length array embedding."""  # <8>
+
     if 0 < tokens_estimate < 8191:  # <9>
         return _embed(text)  # <10>
     return None  # <11>
 ```
 
 1. Define a regular Python function to embed text.
-2. Since it's an external API call, we need to handle exceptions.
-3. Define the embedding model to use.
-4. Replace newlines with spaces.
-5. Create an OpenAI client.
+2. Define the embedding model to use.
+3. Replace newlines with spaces.
+4. Create an OpenAI client.
+5. Since it's an external API call, we need to handle exceptions.
 6. Call the OpenAI API to embed the text.
 7. Handle exceptions and return `None` if an error occurs.
 8. Define an Ibis UDF using the Python function.
@@ -442,6 +430,16 @@ That has a much lower cosine similarity in the embedding space:
 ```{python}
 list_cosine_similarity(_embed(a), _embed(c))
 ```
+
+```{python}
+#| code-fold: true
+#| echo: false
+if os.path.exists("rag.ddb"):
+    os.remove("rag.ddb")
+if os.path.exists("rag.ddb.wal"):
+    os.remove("rag.ddb.wal")
+```
+
 
 Despite semantic equivalence, these two queries would not be considered similar.
 You need to be careful and understand what the system is doing.
