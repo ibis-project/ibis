@@ -1345,9 +1345,6 @@ def test_group_concat(
     )
 
 
-@pytest.mark.broken(
-    ["druid"], raises=PyDruidProgrammingError, reason="Java NullPointerException"
-)
 @pytest.mark.notimpl(["mssql"], raises=PyODBCProgrammingError)
 def test_topk_op(alltypes, df):
     # TopK expression will order rows by "count" but each backend
@@ -1606,9 +1603,6 @@ def test_value_counts_on_expr(backend, alltypes, df):
     backend.assert_frame_equal(result, expected)
 
 
-@pytest.mark.broken(
-    ["druid"], raises=PyDruidProgrammingError, reason="NullPointerException"
-)
 def test_group_by_expr(backend, con):
     expr = (
         ibis.memtable(

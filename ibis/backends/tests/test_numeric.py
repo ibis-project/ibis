@@ -339,7 +339,6 @@ def test_numeric_literal(con, backend, expr, expected_types):
                 "clickhouse": decimal.Decimal(
                     "1.10000000000000003193790845333396190208"
                 ),
-                "druid": decimal.Decimal("1.1"),
                 "oracle": 1.1,
             },
             {
@@ -357,6 +356,7 @@ def test_numeric_literal(con, backend, expr, expected_types):
                 pytest.mark.notyet(["snowflake"], raises=SnowflakeProgrammingError),
                 pytest.mark.notyet(["oracle"], raises=OracleDatabaseError),
                 pytest.mark.notyet(["impala"], raises=ImpalaHiveServer2Error),
+                pytest.mark.notyet(["druid"], raises=PyDruidProgrammingError),
                 pytest.mark.broken(
                     ["duckdb"],
                     reason="Unsupported precision.",
@@ -1086,9 +1086,6 @@ def test_mod(backend, alltypes, df):
 
 
 @pytest.mark.notimpl(["mssql"], raises=PyODBCProgrammingError)
-@pytest.mark.notyet(
-    ["druid"], raises=AssertionError, reason="mod with floats is integer mod"
-)
 @pytest.mark.notyet(
     ["bigquery"],
     reason="bigquery doesn't support floating modulus",
