@@ -1195,17 +1195,8 @@ class Backend(SQLGlotBackend, CanCreateSchema):
 
         return func
 
-    def _compile_builtin_udf(self, udf_node: ops.ScalarUDF) -> None:
-        """No op."""
-
     def _compile_python_udf(self, udf_node: ops.ScalarUDF) -> None:
         return self._get_udf_source(udf_node)
-
-    def _compile_pyarrow_udf(self, udf_node: ops.ScalarUDF) -> None:
-        raise NotImplementedError("PyArrow UDFs are not supported in BigQuery")
-
-    def _compile_pandas_udf(self, udf_node: ops.ScalarUDF) -> str:
-        raise NotImplementedError("Pandas UDFs are not supported in BigQuery")
 
     def _register_udfs(self, expr: ir.Expr) -> None:
         """No op because UDFs made with CREATE TEMPORARY FUNCTION must be followed by a query."""
