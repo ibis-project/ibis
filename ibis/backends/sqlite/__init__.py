@@ -3,7 +3,7 @@ from __future__ import annotations
 import contextlib
 import functools
 import sqlite3
-from typing import TYPE_CHECKING, Any, NoReturn
+from typing import TYPE_CHECKING, Any
 
 import sqlglot as sg
 import sqlglot.expressions as sge
@@ -318,9 +318,6 @@ class Backend(SQLGlotBackend, UrlFromPath):
             if registration_func is not None:
                 registration_func(con)
 
-    def _compile_builtin_udf(self, udf_node: ops.ScalarUDF) -> None:
-        pass
-
     def _compile_python_udf(self, udf_node: ops.ScalarUDF) -> None:
         name = type(udf_node).__name__
         nargs = len(udf_node.__signature__.parameters)
@@ -347,12 +344,6 @@ class Backend(SQLGlotBackend, UrlFromPath):
             return con.create_function(name, nargs, ignore_nulls(func))
 
         return register_udf
-
-    def _compile_pyarrow_udf(self, udf_node: ops.ScalarUDF) -> NoReturn:
-        raise NotImplementedError("pyarrow UDFs are not supported in SQLite")
-
-    def _compile_pandas_udf(self, udf_node: ops.ScalarUDF) -> NoReturn:
-        raise NotImplementedError("pandas UDFs are not supported in SQLite")
 
     def attach(self, name: str, path: str | Path) -> None:
         """Connect another SQLite database file to the current connection.

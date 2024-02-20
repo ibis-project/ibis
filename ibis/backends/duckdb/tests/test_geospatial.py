@@ -281,7 +281,14 @@ shp_multipolygon_0 = shapely.MultiPolygon([shp_polygon_0])
         (shp_polygon_0, "((0 0, 1 1, 2 2, 0 0))"),
         (shp_multipolygon_0, "(((0 0, 1 1, 2 2, 0 0)))"),
         (shp_multilinestring_0, "((0 0, 1 1, 2 2), (2 2, 1 1, 0 0))"),
-        (shp_multipoint_0, "(0 0, 1 1, 2 2)"),
+        param(
+            shp_multipoint_0,
+            "((0 0), (1 1), (2 2))",
+            marks=pytest.mark.xfail(
+                raises=AssertionError,
+                reason="Bug-fix change in GEOS 3.12 see shapely issue #1992",
+            ),
+        ),
     ],
 )
 def test_literal_geospatial_inferred(con, shp, expected, snapshot):

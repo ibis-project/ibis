@@ -434,15 +434,6 @@ class Backend(SQLGlotBackend):
             args=", ".join(argnames),
         )
 
-    def _compile_builtin_udf(self, udf_node: ops.ScalarUDF) -> None:
-        """No op."""
-
-    def _compile_pyarrow_udf(self, udf_node: ops.ScalarUDF) -> None:
-        raise NotImplementedError(f"pyarrow UDFs are not supported in {self.name}")
-
-    def _compile_pandas_udf(self, udf_node: ops.ScalarUDF) -> str:
-        raise NotImplementedError(f"pandas UDFs are not supported in {self.name}")
-
     def _define_udf_translation_rules(self, expr: ir.Expr) -> None:
         """No-op, these are defined in the compiler."""
 

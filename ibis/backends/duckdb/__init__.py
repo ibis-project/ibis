@@ -1419,16 +1419,9 @@ class Backend(SQLGlotBackend, CanCreateSchema, UrlFromPath):
             self._register_in_memory_table(memtable)
 
     def _register_in_memory_table(self, op: ops.InMemoryTable) -> None:
-        schema = op.schema
-        if null_columns := [col for col, dtype in schema.items() if dtype.is_null()]:
-            raise exc.IbisTypeError(
-                "DuckDB cannot yet reliably handle `null` typed columns; "
-                f"got null typed columns: {null_columns}"
-            )
-
         # only register if we haven't already done so
         if (name := op.name) not in self.list_tables():
-            self.con.register(name, op.data.to_pyarrow(schema))
+            self.con.register(name, op.data.to_pyarrow(op.schema))
 
     def _register_udfs(self, expr: ir.Expr) -> None:
         con = self.con

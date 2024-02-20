@@ -409,7 +409,6 @@ def test_geo_dataframe(geotable):
 def test_geo_literals_smoke(con, shape, value, modifier, snapshot):
     """Smoke tests for geo spatial literals."""
     expr = ibis.literal(value, type=getattr(dt, shape).copy(**modifier))
-
     snapshot.assert_match(con.compile(expr), "out.sql")
 
 

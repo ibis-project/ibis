@@ -537,12 +537,12 @@ def test_select_sort_sort(alltypes):
         param(
             ["id", "int_col"],
             {"by": ["id", "int_col"]},
-            marks=pytest.mark.notimpl(["dask"]),
+            marks=pytest.mark.xfail_version(dask=["dask<2024.2.0"]),
         ),
         param(
             ["id", ibis.desc("int_col")],
             {"by": ["id", "int_col"], "ascending": [True, False]},
-            marks=pytest.mark.notimpl(["dask"]),
+            marks=pytest.mark.xfail_version(dask=["dask<2024.2.0"]),
         ),
     ],
 )
@@ -849,13 +849,13 @@ def test_typeof(con):
 @pytest.mark.notyet(["impala"], reason="can't find table in subquery")
 @pytest.mark.notimpl(["datafusion", "druid"])
 @pytest.mark.notimpl(["pyspark"], condition=is_older_than("pyspark", "3.5.0"))
-@pytest.mark.notyet(["dask"], reason="not supported by the backend")
 @pytest.mark.notyet(["exasol"], raises=ExaQueryError, reason="not supported by exasol")
 @pytest.mark.broken(
     ["risingwave"],
     raises=PsycoPg2InternalError,
     reason="https://github.com/risingwavelabs/risingwave/issues/1343",
 )
+@pytest.mark.xfail_version(dask=["dask<2024.2.0"])
 def test_isin_uncorrelated(
     backend, batting, awards_players, batting_df, awards_players_df
 ):
@@ -876,7 +876,9 @@ def test_isin_uncorrelated(
 
 @pytest.mark.broken(["polars"], reason="incorrect answer")
 @pytest.mark.notimpl(["druid"])
-@pytest.mark.notyet(["dask"], reason="not supported by the backend")
+@pytest.mark.xfail_version(
+    dask=["dask<2024.2.0"], reason="not supported by the backend"
+)
 def test_isin_uncorrelated_filter(
     backend, batting, awards_players, batting_df, awards_players_df
 ):

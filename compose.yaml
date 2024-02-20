@@ -94,7 +94,7 @@ services:
       - trino
 
   minio:
-    image: bitnami/minio:2024.2.14
+    image: bitnami/minio:2024.2.17
     environment:
       MINIO_ROOT_USER: accesskey
       MINIO_ROOT_PASSWORD: secretkey
@@ -156,7 +156,7 @@ services:
       test:
         - CMD-SHELL
         - trino --output-format null --execute 'show schemas in hive; show schemas in memory'
-    image: trinodb/trino:438
+    image: trinodb/trino:439
     ports:
       - 8080:8080
     networks:
@@ -199,7 +199,7 @@ services:
       - druid
 
   druid-coordinator:
-    image: apache/druid:26.0.0
+    image: apache/druid:29.0.0
     hostname: coordinator
     container_name: coordinator
     volumes:
@@ -224,7 +224,7 @@ services:
       - druid
 
   druid-broker:
-    image: apache/druid:26.0.0
+    image: apache/druid:29.0.0
     hostname: broker
     container_name: broker
     volumes:
@@ -252,7 +252,7 @@ services:
       - druid
 
   druid-historical:
-    image: apache/druid:26.0.0
+    image: apache/druid:29.0.0
     hostname: historical
     container_name: historical
     volumes:
@@ -279,7 +279,7 @@ services:
       - druid
 
   druid-middlemanager:
-    image: apache/druid:26.0.0
+    image: apache/druid:29.0.0
     hostname: middlemanager
     container_name: middlemanager
     volumes:
@@ -307,7 +307,7 @@ services:
       - druid
 
   druid:
-    image: apache/druid:26.0.0
+    image: apache/druid:29.0.0
     hostname: router
     container_name: router
     volumes:

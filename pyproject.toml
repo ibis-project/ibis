@@ -47,7 +47,7 @@ pyarrow-hotfix = ">=0.4,<1"
 python-dateutil = ">=2.8.2,<3"
 pytz = ">=2022.7"
 rich = ">=12.4.4,<14"
-sqlglot = ">=18.12.0,<=20.11"
+sqlglot = ">=19.3.0,<=20.11"
 toolz = ">=0.11,<1"
 typing-extensions = ">=4.3.0,<5"
 black = { version = ">=22.1.0,<25", optional = true }
@@ -270,6 +270,8 @@ filterwarnings = [
   "ignore:Possible nested set at position:FutureWarning",
   'ignore:\s+You did not provide metadata:UserWarning',
   "ignore:Minimal version of pyarrow will soon be increased:FutureWarning",
+  # Dask deprecation warning - switch to dask-expr
+  "ignore:The current Dask DataFrame implementation is deprecated:DeprecationWarning",
   # numpy by way of dask
   'ignore:np\.find_common_type is deprecated:DeprecationWarning',
   # pandas
@@ -473,20 +475,6 @@ required-imports = ["from __future__ import annotations"]
 [tool.ruff.format]
 docstring-code-format = true
 docstring-code-line-length = 88
-
-[tool.conda-lock]
-channels = ["conda-forge"]
-
-[tool.conda-lock.dependencies]
-# conda-lock doesn't map dependencies' extras to conda-forge packages and we
-# use the array and dataframe extras from dask
-dask = ">=2021.10.0"
-pip = "*"
-pyarrow-tests = "*"
-deltalake = { source = "pypi" } # doesn't exist for osx-arm64
-shapely = { source = "pypi" }
-just = "*"
-taplo = "*"
 
 [tool.coverage.run]
 branch = true

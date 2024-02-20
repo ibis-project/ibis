@@ -38,17 +38,6 @@ from ibis.backends.base.sqlglot.datatypes import SnowflakeType
 from ibis.backends.snowflake.compiler import SnowflakeCompiler
 from ibis.backends.snowflake.converter import SnowflakePandasData
 
-with warnings.catch_warnings():
-    if vparse(importlib.metadata.version("snowflake-connector-python")) >= vparse(
-        "3.3.0"
-    ):
-        warnings.filterwarnings(
-            "ignore",
-            message="You have an incompatible version of 'pyarrow' installed",
-            category=UserWarning,
-        )
-        import snowflake.connector as sc
-
 if TYPE_CHECKING:
     from collections.abc import Iterable, Iterator, Mapping
 
@@ -222,6 +211,17 @@ $$ {defn["source"]} $$"""
             Additional arguments passed to the URL constructor.
 
         """
+        with warnings.catch_warnings():
+            if vparse(
+                importlib.metadata.version("snowflake-connector-python")
+            ) >= vparse("3.3.0"):
+                warnings.filterwarnings(
+                    "ignore",
+                    message="You have an incompatible version of 'pyarrow' installed",
+                    category=UserWarning,
+                )
+                import snowflake.connector as sc
+
         connect_args = kwargs.copy()
         session_parameters = connect_args.pop("session_parameters", {})
 
@@ -343,12 +343,6 @@ $$ {defn["source"]} $$"""
             # round trips per udf
             with self._safe_raw_sql(";\n".join(udf_sources)):
                 pass
-
-    def _compile_builtin_udf(self, udf_node: ops.ScalarUDF) -> None:
-        """No op."""
-
-    def _compile_pyarrow_udf(self, udf_node: ops.ScalarUDF) -> None:
-        raise NotImplementedError("pyarrow UDFs are not supported in Snowflake")
 
     def _compile_python_udf(self, udf_node: ops.ScalarUDF) -> str:
         return """\

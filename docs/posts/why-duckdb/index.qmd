@@ -1,0 +1,125 @@
+---
+title: "Why is DuckDB the default backend for Ibis?"
+author: "Phillip Cloud"
+date: "2024-02-20"
+categories:
+  - blog
+  - duckdb
+  - community
+---
+
+## Why DuckDB?
+
+Occasionally people ask us why DuckDB is the default backend.
+
+This blog posts aims to address this question.
+
+## A bit of history
+
+For years, Ibis had no default backend. We had somewhat hidden functionality to
+read parquet files with pandas, but no one working on the project at the time
+was comfortable making pandas execution the default.
+
+pandas is great, but we didn't want to inherit all of its [technical
+baggage](https://wesmckinney.com/blog/apache-arrow-pandas-internals/) for
+users, especially new users, of Ibis.
+
+So, we decided to not make any backend the official default because our primary
+option for local execution wouldn't give users a good out-of-the-box
+experience.
+
+## DuckDB
+
+DuckDB came along as the new kid on the block a few years ago, offering the
+uber-convenience of SQLite but for analytic use cases. It came with excellent
+performance to boot.
+
+It also had a thriving open source community and was built on a solid
+foundation of decades of academic database research, both of which made us all
+optimistic about its future.
+
+It is an **excellent** engine for a use case that is critical for a great
+experience when using Ibis: executing SQL against local data. In particular,
+DuckDB handles larger-than-memory CSV, Apache Parquet, and JSON files with
+aplomb.
+
+It was also a big plus that it had entry and exit points for existing ecosystem
+tools like Apache Arrow, and yes, pandas.
+
+## Fast forward to today
+
+DuckDB is now the **primary** recommended Ibis backend for working with local
+data.
+
+After we release 9.0, the DuckDB backend will surpass all of our other local
+backends in both performance and feature set, including AS OF JOIN support.
+
+## What about other backends?
+
+At the [time we made the
+decision](https://github.com/ibis-project/ibis/tree/8ccb81d49e252b57310bdb3a97eeb77ef1d28bac)
+to make DuckDB the default backend we had a few other options:
+
+### Dask
+
+Dask is great, but also inherits the technical baggage of pandas, the least
+desirable aspect of which is pandas type instability.
+
+We think that users should be able to handle strings and nulls without worrying
+about the NULL/NaN problem that every pandas and Dask user must grapple with.
+
+### DataFusion
+
+DataFusion continues to improve year over year, but at the time we were
+choosing a default backend it wasn't feature complete enough for us to choose
+it as the default.
+
+It's still lacking some important functionality that DuckDB has had since its
+early days:
+
+1. `UNNEST`
+1. `GREATEST` and `LEAST`
+
+### pandas
+
+Earlier I mentioned the technical baggage of pandas.
+
+1. Type instability. Introducing a NULL into an integer column causes an upcast
+   to float.
+1. A very complex set of combinations of possible types. For example, there are
+   three kinds of NULL values in pandas and three kinds of integer arrays to
+   use as backing storage for a `Series` object.
+1. Extremely undesirable memory allocation behavior. We didn't want to have to
+   give users a rule of thumb about how much extra memory to have around to
+   ensure their workload would complete.
+
+Another challenge with choosing pandas is that it makes iterating between
+development and production more difficult, because pandas diverges quite a lot
+from most production analytics databases.
+
+### PySpark
+
+We didn't think it was desirable to saddle users with a distributed system and
+a JVM to analyze local files.
+
+### SQLite
+
+SQLite is a wonderful tool, but it has a number of properties that make it
+unsuitable for analytics out of the box:
+
+1. Weak typing. This has consequences for storage and memory allocation. In
+   particular, efficient conversions to and from Apache Arrow are not possible.
+1. No native complex type support, JSON doesn't really count, see the previous point.
+1. Generally joins are slow unless your join key columns are indexed.
+
+## Conclusion
+
+DuckDB is the primary default backend because it fits our requirements:
+
+1. Great performance for local data
+1. A thriving open source community
+1. A solid foundation
+1. A large and well-supported feature set
+
+We are excited to see DuckDB continue to grow and evolve, and we are excited to
+work with the community to make Ibis the premier Python DataFrame API!

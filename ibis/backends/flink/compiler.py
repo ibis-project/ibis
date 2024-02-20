@@ -8,7 +8,7 @@ import sqlglot.expressions as sge
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
-from ibis.backends.base.sqlglot.compiler import STAR, SQLGlotCompiler, paren
+from ibis.backends.base.sqlglot.compiler import NULL, STAR, SQLGlotCompiler, paren
 from ibis.backends.base.sqlglot.datatypes import FlinkType
 from ibis.backends.base.sqlglot.dialects import Flink
 from ibis.backends.base.sqlglot.rewrites import (
@@ -291,12 +291,12 @@ class FlinkCompiler(SQLGlotCompiler):
         if value is None:
             assert dtype.nullable, "dtype is not nullable but value is None"
             if not dtype.is_null():
-                return self.cast(sge.NULL, dtype)
-            return sge.NULL
+                return self.cast(NULL, dtype)
+            return NULL
         return super().visit_Literal(op, value=value, dtype=dtype)
 
     def visit_MapGet(self, op, *, arg, key, default):
-        if default is sge.NULL:
+        if default is NULL:
             default = self.cast(default, op.dtype)
         return self.f.coalesce(arg[key], default)
 
@@ -421,10 +421,10 @@ class FlinkCompiler(SQLGlotCompiler):
     def visit_IfElse(self, op, *, bool_expr, true_expr, false_null_expr):
         return self.if_(
             bool_expr,
-            true_expr if true_expr != sge.NULL else self.cast(true_expr, op.dtype),
+            true_expr if true_expr != NULL else self.cast(true_expr, op.dtype),
             (
                 false_null_expr
-                if false_null_expr != sge.NULL
+                if false_null_expr != NULL
                 else self.cast(false_null_expr, op.dtype)
             ),
         )
