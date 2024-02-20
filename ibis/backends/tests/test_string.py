@@ -598,7 +598,6 @@ def uses_java_re(t):
             lambda t: t.date_string_col[-2],
             lambda t: t.date_string_col.str[-2],
             id="negative-index",
-            marks=[pytest.mark.broken(["druid"], raises=PyDruidProgrammingError)],
         ),
         param(
             lambda t: t.date_string_col[t.date_string_col.length() - 1 :],
@@ -613,7 +612,6 @@ def uses_java_re(t):
                         "Polars does not support columnar argument Subtract(StringLength(date_string_col), 1)"
                     ),
                 ),
-                pytest.mark.broken(["druid"], raises=PyDruidProgrammingError),
                 pytest.mark.xfail_version(datafusion=["datafusion==35"]),
             ],
         ),
@@ -630,7 +628,6 @@ def uses_java_re(t):
                         "Polars does not support columnar argument Subtract(StringLength(date_string_col), 1)"
                     ),
                 ),
-                pytest.mark.broken(["druid"], raises=PyDruidProgrammingError),
             ],
         ),
         param(
@@ -647,7 +644,6 @@ def uses_java_re(t):
                         "Subtract(StringLength(date_string_col), 0)"
                     ),
                 ),
-                pytest.mark.broken(["druid"], raises=PyDruidProgrammingError),
             ],
         ),
         param(
@@ -665,7 +661,6 @@ def uses_java_re(t):
                         "Polars does not support columnar argument Subtract(StringLength(date_string_col), 1)"
                     ),
                 ),
-                pytest.mark.broken(["druid"], raises=PyDruidProgrammingError),
             ],
         ),
         param(

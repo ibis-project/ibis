@@ -190,8 +190,6 @@ def test_insert(con):
 
 
 def test_to_other_sql(con, snapshot):
-    pytest.importorskip("snowflake.connector")
-
     t = con.table("functional_alltypes")
 
     sql = ibis.to_sql(t, dialect="snowflake")

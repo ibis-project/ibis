@@ -100,6 +100,10 @@ class DruidCompiler(SQLGlotCompiler):
             return sg.exp.Filter(this=expr, expression=sg.exp.Where(this=where))
         return expr
 
+    def visit_Sum(self, op, *, arg, where):
+        arg = self.if_(arg, 1, 0) if op.arg.dtype.is_boolean() else arg
+        return self.agg.sum(arg, where=where)
+
     def visit_InMemoryTable(self, op, *, name, schema, data):
         # the performance of this is rather terrible
         tuples = data.to_frame().itertuples(index=False)
