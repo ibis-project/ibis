@@ -1461,12 +1461,6 @@ class Backend(SQLGlotBackend, CanCreateSchema, UrlFromPath):
     _compile_python_udf = _compile_udf
     _compile_pyarrow_udf = _compile_udf
 
-    def _compile_builtin_udf(self, udf_node: ops.ScalarUDF) -> None:
-        """No op."""
-
-    def _compile_pandas_udf(self, _: ops.ScalarUDF) -> None:
-        raise NotImplementedError("DuckDB doesn't support pandas UDFs")
-
     def _get_temp_view_definition(self, name: str, definition: str) -> str:
         return sge.Create(
             this=sg.to_identifier(name, quoted=self.compiler.quoted),
