@@ -52,6 +52,7 @@ DB_TYPES = [
     ("DATETIMEOFFSET(5)", dt.timestamp(scale=5, timezone="UTC")),
     ("GEOMETRY", dt.geometry),
     ("GEOGRAPHY", dt.geography),
+    ("HIERARCHYID", dt.string),
 ]
 
 

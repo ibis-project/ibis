@@ -894,6 +894,8 @@ class ExasolType(SqlglotType):
 class MSSQLType(SqlglotType):
     dialect = "mssql"
 
+    unknown_type_strings = FrozenDict({"hierarchyid": dt.string})
+
     @classmethod
     def _from_sqlglot_BIT(cls):
         return dt.Boolean(nullable=cls.default_nullable)
