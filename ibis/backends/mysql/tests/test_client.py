@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import json
 from datetime import date
 from operator import methodcaller
 
@@ -184,5 +183,5 @@ def test_builtin_agg_udf(con):
     ft = con.tables.functional_alltypes[:5]
     expr = json_arrayagg(ft.string_col)
     result = expr.execute()
-    expected = json.dumps(list(map(str, range(5))), separators=",:")
+    expected = '["0","1","2","3","4"]'
     assert result == expected
