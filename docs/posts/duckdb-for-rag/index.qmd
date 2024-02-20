@@ -1,5 +1,5 @@
 ---
-title: "Using DuckDB for RAG"
+title: "Using DuckDB + Ibis for RAG"
 author: "Cody Peterson"
 date: "2024-02-29"
 image: thumbnail.png
