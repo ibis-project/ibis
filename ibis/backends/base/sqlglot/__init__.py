@@ -390,3 +390,21 @@ class SQLGlotBackend(BaseBackend):
         # This is part of the Python DB-API specification so should work for
         # _most_ sqlglot backends
         self.con.close()
+
+    def _compile_builtin_udf(self, udf_node: ops.ScalarUDF | ops.AggUDF) -> None:
+        """Compile a built-in UDF. No-op by default."""
+
+    def _compile_python_udf(self, udf_node: ops.ScalarUDF) -> None:
+        raise NotImplementedError(
+            f"Python UDFs are not supported in the {self.name} backend"
+        )
+
+    def _compile_pyarrow_udf(self, udf_node: ops.ScalarUDF) -> None:
+        raise NotImplementedError(
+            f"PyArrow UDFs are not supported in the {self.name} backend"
+        )
+
+    def _compile_pandas_udf(self, udf_node: ops.ScalarUDF) -> str:
+        raise NotImplementedError(
+            f"pandas UDFs are not supported in the {self.name} backend"
+        )
