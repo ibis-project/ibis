@@ -63,8 +63,6 @@ class MSSQLCompiler(SQLGlotCompiler):
 
     UNSUPPORTED_OPERATIONS = frozenset(
         (
-            ops.Any,
-            ops.All,
             ops.ApproxMedian,
             ops.Arbitrary,
             ops.ArgMax,
@@ -402,6 +400,8 @@ class MSSQLCompiler(SQLGlotCompiler):
     def visit_Not(self, op, *, arg):
         if isinstance(arg, sge.Boolean):
             return FALSE if arg == TRUE else TRUE
+        elif isinstance(arg, sge.Window):
+            return sge.Case(ifs=[self.if_(arg.eq(0), 1)], default=0)
         return self.if_(arg, 1, 0).eq(0)
 
     def visit_HashBytes(self, op, *, arg, how):
@@ -435,3 +435,13 @@ class MSSQLCompiler(SQLGlotCompiler):
     def visit_StringConcat(self, op, *, arg):
         any_args_null = (a.is_(NULL) for a in arg)
         return self.if_(sg.or_(*any_args_null), NULL, self.f.concat(*arg))
+
+    def visit_Any(self, op, *, arg, where):
+        if where is not None:
+            arg = self.if_(where, arg, NULL)
+        return sge.Max(this=self.if_(arg, 1, 0))
+
+    def visit_All(self, op, *, arg, where):
+        if where is not None:
+            arg = self.if_(where, arg, NULL)
+        return sge.Min(this=self.if_(arg, 1, 0))
