@@ -1031,7 +1031,7 @@ class BaseBackend(abc.ABC, _FileIOHandler):
         self._register_udfs(expr)
         self._register_in_memory_tables(expr)
 
-    def _define_udf_translation_rules(self, expr):
+    def _define_udf_translation_rules(self, expr: ir.Expr):
         if self.supports_python_udfs:
             raise NotImplementedError(self.name)
 

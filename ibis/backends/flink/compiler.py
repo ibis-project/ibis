@@ -63,7 +63,6 @@ class FlinkCompiler(SQLGlotCompiler):
             ops.ReductionVectorizedUDF,
             ops.RegexSplit,
             ops.RowID,
-            ops.ScalarUDF,
             ops.StringSplit,
             ops.Translate,
             ops.Unnest,
