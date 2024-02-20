@@ -1,9 +1,10 @@
 ---
 title: "Why is DuckDB the default backend for Ibis?"
 author: "Phillip Cloud"
-date: "2024-02-16"
+date: "2024-02-20"
 categories:
   - blog
+  - duckdb
   - community
 ---
 
