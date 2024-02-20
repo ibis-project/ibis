@@ -176,6 +176,8 @@ class WindowBuilder(Builder):
 
     def _maybe_cast_boundaries(self, start, end):
         if start and end:
+            if dt.same_base_type(start.dtype, end.dtype):
+                return start, end
             dtype = dt.higher_precedence(start.dtype, end.dtype)
             start = self._maybe_cast_boundary(start, dtype)
             end = self._maybe_cast_boundary(end, dtype)
