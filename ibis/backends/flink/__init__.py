@@ -307,7 +307,7 @@ class Backend(SQLGlotBackend, CanCreateDatabase, NoUrl):
     def _register_udfs(self, expr: ir.Expr) -> None:
         for udf_node in expr.op().find(ops.ScalarUDF):
             register_func = getattr(
-                self, f"_register_{udf_node.__input_type__.name.lower()}_udf"
+                self, f"_compile_{udf_node.__input_type__.name.lower()}_udf"
             )
             register_func(udf_node)
 
@@ -325,14 +325,8 @@ class Backend(SQLGlotBackend, CanCreateDatabase, NoUrl):
         )
         self._table_env.create_temporary_function(name, udf)
 
-    _register_pandas_udf = _register_udf
-    _register_python_udf = _register_udf
-
-    def _register_builtin_udf(self, udf_node: ops.ScalarUDF) -> None:
-        """No-op."""
-
-    def _register_pyarrow_udf(self, udf_node: ops.ScalarUDF) -> None:
-        raise NotImplementedError("Flink doesn't support PyArrow UDFs")
+    _compile_pandas_udf = _register_udf
+    _compile_python_udf = _register_udf
 
     def compile(
         self, expr: ir.Expr, params: Mapping[ir.Expr, Any] | None = None, **_: Any
