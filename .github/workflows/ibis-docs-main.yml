@@ -73,4 +73,3 @@ jobs:
           ALGOLIA_API_KEY: ${{ secrets.ALGOLIA_WRITE_API_KEY }}
           ALGOLIA_APP_ID: HS77W8GWM1
           ALGOLIA_INDEX: prod_ibis
-          QUARTO_INDEX_PATH: search.json
