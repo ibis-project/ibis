@@ -20,6 +20,12 @@ RAG!
 The database must support array types and have some form of similarity metric
 between arrays of numbers. Alternatively, a custom user-defined function (UDF)
 can be used for the similarity metric.
+
+The performance of calculating similarity will also be much faster if the
+database supports [fixed-sized
+arrays](https://duckdb.org/docs/sql/data_types/array) as DuckDB recently
+launched in version 0.10.0. We're still using 0.9.2 in this post, but it'll be
+easy to upgrade.
 :::
 
 [DuckDB is the default backend for Ibis](../why-duckdb/index.qmd) and makes
