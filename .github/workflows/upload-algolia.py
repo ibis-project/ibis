@@ -6,10 +6,10 @@ from urllib.request import urlopen
 
 from algoliasearch.search_client import SearchClient
 
-api_key = os.getenv("ALGOLIA_API_KEY")
-app_id = os.getenv("ALGOLIA_APP_ID")
-index_name = "test_IBIS"  # os.getenv("ALGOLIA_INDEX")
-index_file = os.getenv("QUARTO_INDEX_PATH")  # search.json
+api_key = os.environ["ALGOLIA_API_KEY"]
+app_id = os.environ["ALGOLIA_APP_ID"]
+index_name = os.environ["ALGOLIA_INDEX"]
+index_file = os.environ["QUARTO_INDEX_PATH"]  # search.json
 
 
 def truncate_string(string, max_size):
@@ -38,9 +38,12 @@ def main():
         search = json.load(f)
 
     # According to algolia docs, for the build plan each record (in our case this
-    # is search[i]) has a limit of 10KB. Every key in our record is pretty small
-    # except for the "text" one. I tried truncating it to < 10_000 and even though
-    # we don't get a record size error, we keep hitting a AlgoliaUnreachableHostException
+    # is search[i]) has a limit of 10KB.
+    # (see https://support.algolia.com/hc/en-us/articles/4406981897617-Is-there-a-size-limit-for-my-index-records and
+    # https://www.algolia.com/doc/guides/scaling/algolia-service-limits/)
+    # Every key in our record is pretty small except for the "text" one.
+    # I tried truncating it to < 10_000 and even though we don't get a record
+    # size error, we keep hitting a AlgoliaUnreachableHostException
     # I opened an issue because the error is unhelpful, and unclear.
     # https://github.com/algolia/algoliasearch-client-python/issues/565
 
