@@ -28,6 +28,23 @@ if TYPE_CHECKING:
 def _get_url():
     if (url := os.environ.get("SNOWFLAKE_URL")) is not None:
         return url
+    elif os.environ.get("SNOWFLAKE_HOME"):
+        import tomli
+
+        # requires a connection named ibis_testing or one explicitly set with
+        # export SNOWFLAKE_DEFAULT_CONNECTION_NAME
+        params = tomli.loads(
+            Path(os.environ["SNOWFLAKE_HOME"], "connections.toml").read_text()
+        )[os.environ.get("SNOWFLAKE_DEFAULT_CONNECTION_NAME", "ibis_testing")]
+        user, password, account, database, schema, warehouse = (
+            params["user"],
+            params["password"],
+            params["account"],
+            params["database"],
+            params["schema"],
+            params["warehouse"],
+        )
+        return f"snowflake://{user}:{password}@{account}/{database}/{schema}?warehouse={warehouse}"
     else:
         try:
             user, password, account, database, schema, warehouse = tuple(
