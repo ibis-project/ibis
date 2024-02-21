@@ -1,0 +1,477 @@
+---
+title: "Using DuckDB + Ibis for RAG"
+author: "Cody Peterson"
+date: "2024-02-22"
+image: thumbnail.png
+categories:
+    - blog
+    - llms
+    - duckdb
+---
+
+## Overview
+
+In this post, we'll demonstrate traditional retrieval-augmented generation (RAG)
+with DuckDB and OpenAI via Ibis and discuss the pros and cons. Notice that
+because Ibis is portable, you can use (almost) any database Ibis supports for
+RAG!
+
+::: {.callout-tip title="Which databases can I use?"}
+The database must support array types and have some form of similarity metric
+between arrays of numbers. Alternatively, a custom user-defined function (UDF)
+can be used for the similarity metric.
+:::
+
+[DuckDB is the default backend for Ibis](../why-duckdb/index.qmd) and makes
+rapid prototyping locally very easy. You can deploy it to
+[MotherDuck](https://motherduck.com) just by changing the connection string, or
+swap out DuckDB for another Ibis backend.
+
+## What is RAG?
+
+Retrieval-augmented generation (RAG) is a technique for language model systems
+to retrieve relevant information from a knowledge base, augment the model's
+input with that knowledge, and then generate a response. It serves to provide
+useful context given language models' context length limitations and increase
+the quality of the response.
+
+::: {.callout-note title="Is RAG dead?"}
+With increasing language model context lengths, is RAG dead?
+
+**No**. Though as we'll discuss later, it's unclear if traditional vector
+similarity search RAG is the best approach. Regardless, just because a language
+model can use the entire content of a textbook doesn't mean you'll get better
+performance (accuracy or efficiency) than first retrieving the relevant subsets
+of the textbook.
+:::
+
+Traditional RAG embeds text into vectors of numbers and then computes a
+similarity metric between input text and the knowledge base to determine the
+most relevant context.
+
+```{mermaid}
+graph LR
+    style T fill:#1E90FF,stroke:#1E90FF,color:#ffffff
+    style N fill:#1E90FF,stroke:#1E90FF,color:#ffffff
+    style C fill:#1E90FF,stroke:#1E90FF,color:#ffffff
+
+    T("text") --> N("numbers (embedding vector)")
+    N --> C("compute similarity metric")
+```
+
+Let's jump into the code!
+
+## RAG over Ibis documentation
+
+We'll use the Ibis documentation as our knowledge base.
+
+### Setup code
+
+First we need to install and import the necessary packages:
+
+```bash
+pip install 'ibis-framework[duckdb]' openai python-dotenv
+```
+
+```{python}
+import os  # <1>
+import ibis
+
+from openai import OpenAI
+from dotenv import load_dotenv
+from pathlib import Path  # <1>
+```
+
+1. Import the libraries we'll use.
+
+We need to set the `OPENAI_API_KEY` environment variable to our OpenAI API key.
+Do this by creating a `.env` file in the same directory as the code and adding
+the following line:
+
+```txt
+OPENAI_API_KEY=<your-api-key>  # <1>
+```
+
+1. Replace with your OpenAI API key.
+
+Then load the environment variables:
+
+```{python}
+load_dotenv()  # <1>
+```
+
+1. Load environment variables from the `.env` file.
+
+Now we're ready to make OpenAI calls.
+
+Let's also setup Ibis for interactive use:
+
+```{python}
+ibis.options.interactive = True  # <1>
+```
+
+1. Turn on Ibis interactive mode.
+
+### Getting the data into DuckDB
+
+Let's prepare to ingest all the Quarto markdown files into a
+DuckDB database called `rag.ddb`:
+
+```{python}
+rag_con = ibis.connect("duckdb://rag.ddb")  # <1>
+
+for table in rag_con.list_tables():  # <2>
+    rag_con.drop_table(table)  # <2>
+
+rag_con.list_tables()  # <3>
+```
+
+1. Create the Ibis connection to the DuckDB database.
+2. Drop any existing tables from previous runs.
+3. List the tables in the database to show that there are none.
+
+We'll walk through the Ibis `docs/` directory. For `.qmd` files, read the
+contents and insert them into the `ibis` table:
+
+::: {.callout-tip}
+We are running this blog within the Ibis repository. To run this on your own
+data, adjust the code accordingly!
+:::
+
+```{python}
+table_name = "ibis"  # <1>
+
+for filepath in Path(ibis.__file__).parents[1].joinpath("docs").rglob("*.qmd"):  # <2>
+    contents = filepath.read_text()  # <3>
+
+    data = { # <4>
+        "filepath": [str(filepath).split("ibis/")[1]],
+        "contents": [contents],
+    }  # <4>
+
+    t = ibis.memtable(data)  # <5>
+
+    if "ibis" not in rag_con.list_tables():  # <6>
+        rag_con.create_table("ibis", t)  # <6>
+    else:  # <7>
+        rag_con.insert("ibis", t)  # <7>
+
+for table in rag_con.list_tables():  # <8>
+    if "memtable" in table:  # <8>
+        rag_con.drop_view(table)  # <8>
+
+rag_con.list_tables()  # <9>
+```
+
+1. Define the table name.
+2. Walk through the `docs/` directory and find all `.qmd` files.
+3. Read the contents of each file.
+4. Create a dictionary with the file path and contents.
+5. Create an Ibis memtable from the dictionary.
+6. If the table doesn't exist, create it and insert the data.
+7. Otherwise, insert the data into the existing table.
+8. Drop any memtables that were created.
+9. List the tables in the database to show that the `ibis` table was created.
+
+Let's inspect the table:
+
+```{python}
+t = rag_con.table(table_name)  # <1>
+t
+```
+
+1. Get the `ibis` table from the DuckDB database.
+
+Now we have a DuckDB database with the `ibis` table containing all the file
+paths and contents of the Quarto markdown files in the `ibis` repository. You
+can adjust this code to work with any repository and any file type(s)! For
+instance, we may also want to ingest all the `.py` files in the Ibis repsoitory.
+
+### Embedding text to vectors
+
+To search for similar text in traditional RAG fashion, we need to **embed** the
+text into vectors. We can use [OpenAI's embedding
+models](https://platform.openai.com/docs/guides/embeddings/embedding-models) to
+perform this step.
+
+Note that the maximum length of input **tokens** is 8,191. A word typically
+consists of 1-3 tokens. To estimate the number of tokens of a string in Python,
+we can divide the length of that string by 4. This isn't perfect, but will work
+for now. Let's augmented our data with the estimated number of tokens and sort
+from largest to smallest:
+
+```{python}
+t = (
+    t.mutate(tokens_estimate=t.contents.length() // 4)  # <1>
+    .order_by(ibis._["tokens_estimate"].desc())  # <2>
+    .relocate("filepath", "tokens_estimate")  # <3>
+)
+t
+```
+
+1. Augment the table with the estimated number of tokens.
+2. Sort the table by the estimated number of tokens in descending order.
+3. Relocate the `filepath` and `tokens_estimate` columns to the front of the table.
+
+The longest text is certainly over our embedding model's token limit, and the
+second longest might be as well. In practice, we'd want to chunk our text into
+smaller pieces. This is its own challenge, but for the purposes of this
+demonstration we'll just ignore text that is too long.
+
+Let's define our embedding functions:
+
+```{python}
+def _embed(text: str) -> list[float]:  # <1>
+    """Text to fixed-length array embedding."""  # <1>
+
+    model = "text-embedding-3-small"  # <2>
+    text = text.replace("\n", " ")  # <3>
+    client = OpenAI()  # <4>
+
+    try:  # <5>
+        return (  # <6>
+            client.embeddings.create(input=[text], model=model).data[0].embedding
+        )  # <6>
+    except Exception as e:  # <7>
+        print(e)  # <7>
+    return None  # <7>
+
+
+@ibis.udf.scalar.python  # <8>
+def embed(text: str, tokens_estimate: int) -> list[float]:  # <8>
+    """Text to fixed-length array embedding."""  # <8>
+
+    if 0 < tokens_estimate < 8191:  # <9>
+        return _embed(text)  # <10>
+    return None  # <11>
+```
+
+1. Define a regular Python function to embed text.
+2. Define the embedding model to use.
+3. Replace newlines with spaces.
+4. Create an OpenAI client.
+5. Since it's an external API call, we need to handle exceptions.
+6. Call the OpenAI API to embed the text.
+7. Handle exceptions and return `None` if an error occurs.
+8. Define an Ibis UDF using the Python function.
+9. If the estimated number of tokens is within the limit...
+10. ...call the Python function to embed the text.
+11. Otherwise, return `None`.
+
+Let's embed the text:
+
+```{python}
+t = t.mutate(  # <1>
+    embedding=embed(t["contents"], t["tokens_estimate"])  # <1>
+).cache()  # <1>
+t
+```
+
+1. Augment the table with the embedded text and cache the result.
+
+Notice there was one error -- that second row's content was indeed too long! Our
+token estimate is a bit off, but overall useful. We accounted for this
+possibility in our Python UDF above, returning `None` (mapped to `NULL` in
+DuckDB) when the text is too long or an error occurs.
+
+### Searching with cosine similarity
+
+Cosine similarity over vectors is a common way to measure similarity for RAG
+applications. We'll explore its downsides later. We need to make Ibis aware of
+DuckDB's built-in `list_cosine_similarity` function:
+
+```{python}
+@ibis.udf.scalar.builtin  # <1>
+def list_cosine_similarity(x, y) -> float:  # <1>
+    """Compute cosine similarity between two vectors."""  # <1>
+```
+
+1. Use an Ibis builtin UDF to define a cosine similarity function.
+
+::: {.callout-tip}
+If using a different backend, you'll need to use its corresponding cosine
+similarity function or define your own.
+:::
+
+Now we can search for similar text in the documentation:
+
+```{python}
+def search_docs(text):  # <1>
+    embedding = _embed(text)  # <2>
+
+    s = (
+        t.mutate(similarity=list_cosine_similarity(t.embedding, embedding))  # <3>
+        .relocate("similarity")  # <4>
+        .order_by(ibis._["similarity"].desc())  # <5>
+        .cache()  # <6>
+    )
+
+    return s
+```
+
+1. Define a function to search the documentation.
+2. Embed the input text.
+3. Augment the table with the cosine similarity between the embedded text and the input text.
+4. Relocate the `similarity` column to the front of the table.
+5. Sort the table by the cosine similarity in descending order.
+6. Cache the result.
+
+```{python}
+text = "where can I chat with the community about Ibis?"
+search_docs(text)
+```
+
+```{python}
+text = "what do users say about Ibis?"
+search_docs(text)
+```
+
+```{python}
+text = "can Ibis complete the one billion row challenge?"
+search_docs(text)
+```
+
+```{python}
+text = "teach me about the Polars backend"
+search_docs(text)
+```
+
+```{python}
+text = "why does Voltron Data support Ibis?"
+search_docs(text)
+```
+
+```{python}
+text = "why should I use Ibis?"
+search_docs(text)
+```
+
+```{python}
+text = "what is the Ibis roadmap?"
+search_docs(text)
+```
+
+## RAG pitfalls
+
+As in traditional software engineering and machine learning, the architecture
+when building systems around language models is not a universal. The best
+depends on the application of the system. Using cosine (or otherwise) similarity
+search over text transformed to numbers may not always perform best.
+
+We can demonstrate this with the following scenario: let's assume we're building
+a chatbot that writes and runs SQL on the user's behalf based on their questions
+posed in English (or any language the language model understand sufficiently).
+We might store past queries, the SQL generated, and some evaluation criteria
+(upvote/downvote on the generated SQL from the user) in a database. Then we can
+use the same RAG approach above to augment our queries with the user's past
+queries and the generated SQL.
+
+Take the following English query:
+
+```{python}
+a = """the first 10 rows of the penguins, ordered by body_mass_g from
+lightest to heaviest"""
+```
+
+We can compute the cosine similarity of this query against itself, resulting in
+1.0 or close to it:
+
+```{python}
+list_cosine_similarity(_embed(a), _embed(a))
+```
+
+Now, let's flip the ordering. This would result in an entirely different SQL
+query and result set:
+
+```{python}
+b = """the first 10 rows of the penguins, ordered by body_mass_g from
+heaviest to lightest"""
+```
+
+And compute the cosine similarity of `a` and `b`:
+
+```{python}
+list_cosine_similarity(_embed(a), _embed(b))
+```
+
+Similarly, we can construct a semantically equivalent query that would result in
+the same SQL as example `a`:
+
+```{python}
+c = """of the birds retrieve the initial ten opposite-of-columns,
+sorted from biggest to smallest by weight"""
+```
+
+That has a much lower cosine similarity in the embedding space:
+
+```{python}
+list_cosine_similarity(_embed(a), _embed(c))
+```
+
+Despite semantic equivalence, these two queries would not be considered similar.
+You need to be careful and understand what the system is doing.
+
+## Discussion
+
+Is traditional RAG the best approach? It's unclear, and **it depends**.
+
+### System architecture
+
+Often RAG-based systems introduce yet-another-database to store the embeddings.
+Hopefully this post has demonstrated that traditional database options can work
+just fine. While we're only demonstrating this on a few rows here, DuckDB can
+scale up to many millions with ease.
+
+### Cost and speed
+
+The cost of running this demo from OpenAI is less than $0.01 USD. It also runs
+in about a minute, but with many rows this would be much slower. You need to
+consider your architecture here. One option would be using an open source
+embedding model that can run locally. Swap out the OpenAI calls with that and
+see how it goes!
+
+### Alternatives to vector search RAG
+
+It's clear that we should always be augmenting our language model calls with the
+most relevant context, even if traditional vector search RAG is not the best
+solution.  The problem then becomes the best way to retrieve that context for a
+given system's desired behavior.
+
+::: {.callout-note title="Abolish RAG as terminology?"}
+"I would like to abolish the term RAG and instead just agree that we should
+always try to provide models with the appropriate context to provide high
+quality answers." - [Hamel
+Husain](https://twitter.com/HamelHusain/status/1709740984643596768)
+:::
+
+Some alternatives to vector search RAG include:
+
+- traditional search methods
+- using an external web search engine
+- using a language model for search
+
+The last point is particularly interesting -- in the above examples with `a` and
+`c` strings, cosine similarity in the embedding space could not tell the queries
+are semantically equivalent. However, a sufficiently good language model
+certainly could. As we demonstrated in [language models for
+data](../lms-for-data/index.qmd), we could even setup a classifier and use [the
+logit bias
+trick](https://www.askmarvin.ai/docs/text/classification/#classifying-text) to
+compute similarity with a single output token.
+
+This trick makes the language model faster, but for practical applications the
+cost and speed of language models for search is still a concern. We can expect
+this concern to be mitigated over time as language models become faster and
+cheaper to run.
+
+With larger context lengths, we could also use an initial call to a language
+model to extract out relevant sections of text and then make a second call with
+that augmented context.
+
+## Next steps
+
+Try this out yourself! All you need is an OpenAI account and the code above.
+
+It's never been a better time to get involved with Ibis. [Join us on Zulip and
+introduce yourself!](https://ibis-project.zulipchat.com/) More Ibis + language
+model content coming soon.
