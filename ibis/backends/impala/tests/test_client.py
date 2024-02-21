@@ -170,11 +170,6 @@ def test_sql_query_limits(con, test_data_db):
         assert table.count().execute(limit=10) == 25
 
 
-def test_database_default_current_database(con):
-    db = con.database()
-    assert db.name == con.current_database
-
-
 def test_set_compression_codec(con):
     old_opts = con.get_options()
     assert old_opts["COMPRESSION_CODEC"].upper() in ("NONE", "")

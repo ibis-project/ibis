@@ -12,7 +12,7 @@ import ibis.common.exceptions as com
 import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
-from ibis.backends import BaseBackend, Database, NoUrl
+from ibis.backends import BaseBackend, NoUrl
 from ibis.backends.pandas.rewrites import (
     bind_unbound_table,
     replace_parameter,
@@ -330,9 +330,6 @@ class Backend(BaseBackend, NoUrl):
             self._add_table(table_name, pl.scan_parquet(path, **kwargs))
 
         return self.table(table_name)
-
-    def database(self, name=None):
-        return Database(name, self)
 
     def create_table(
         self,
