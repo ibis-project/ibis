@@ -76,8 +76,6 @@ pip install 'ibis-framework[duckdb]' openai python-dotenv
 ```{python}
 import os  # <1>
 import ibis
-import shutil
-import subprocess
 
 from openai import OpenAI
 from dotenv import load_dotenv
@@ -146,7 +144,10 @@ table_name = "ibis"  # <1>
 for filepath in Path(ibis.__file__).parents[1].joinpath("docs").rglob("*.qmd"):  # <2>
     contents = filepath.read_text()  # <3>
 
-    data = {"filepath": [str(filepath)], "contents": [contents]}  # <4>
+    data = { # <4>
+        "filepath": [str(filepath).split("ibis/")[1]],
+        "contents": [contents],
+    }  # <4>
 
     t = ibis.memtable(data)  # <5>
 
