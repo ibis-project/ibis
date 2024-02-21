@@ -120,6 +120,7 @@ pytest-repeat = ">=0.9.1,<0.10"
 pytest-snapshot = ">=0.9.0,<1"
 pytest-xdist = ">=2.3.0,<4"
 requests = ">=2,<3"
+tomli = ">=2.0.1,<3"
 
 [tool.poetry.group.docs.dependencies]
 altair = { version = ">=5.0.1,<6", python = ">=3.10,<3.13" }
