@@ -107,11 +107,6 @@ def test_read_geo_to_geopandas(con, data_dir, gpd):
     assert isinstance(gdf, gpd.GeoDataFrame)
 
 
-@pytest.mark.xfail(
-    LINUX and SANDBOXED,
-    reason="nix on linux cannot download duckdb extensions due to sandboxing",
-    raises=duckdb.IOException,
-)
 def test_read_geo_from_url(monkeypatch):
     con = ibis.duckdb.connect()
 
