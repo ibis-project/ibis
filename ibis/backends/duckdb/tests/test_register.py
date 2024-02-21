@@ -115,8 +115,6 @@ def test_read_geo_to_geopandas(con, data_dir, gpd):
 def test_read_geo_from_url(monkeypatch):
     con = ibis.duckdb.connect()
 
-    con.load_extension("httpfs")
-
     loaded_exts = []
     monkeypatch.setattr(con, "_load_extensions", lambda x, **_: loaded_exts.extend(x))
 
