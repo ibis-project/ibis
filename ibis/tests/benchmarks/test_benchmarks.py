@@ -16,7 +16,7 @@ import ibis
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
-from ibis.backends.base import _get_backend_names
+from ibis.backends import _get_backend_names
 
 pytestmark = pytest.mark.benchmark
 
@@ -676,7 +676,7 @@ def test_snowflake_medium_sized_to_pandas(benchmark):
 
 
 def test_parse_many_duckdb_types(benchmark):
-    from ibis.backends.base.sqlglot.datatypes import DuckDBType
+    from ibis.backends.sql.datatypes import DuckDBType
 
     def parse_many(types):
         list(map(DuckDBType.from_string, types))

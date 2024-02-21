@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-from ibis.backends.base import _get_backend_names
+from ibis.backends import _get_backend_names
 
 all_backends = list(_get_backend_names())
 

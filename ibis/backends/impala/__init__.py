@@ -20,7 +20,6 @@ import ibis.expr.datatypes as dt
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis import util
-from ibis.backends.base.sqlglot import SQLGlotBackend
 from ibis.backends.impala import ddl, udf
 from ibis.backends.impala.client import ImpalaTable
 from ibis.backends.impala.compiler import ImpalaCompiler
@@ -41,6 +40,7 @@ from ibis.backends.impala.udf import (
     wrap_uda,
     wrap_udf,
 )
+from ibis.backends.sql import SQLBackend
 from ibis.config import options
 
 if TYPE_CHECKING:
@@ -62,7 +62,7 @@ __all__ = (
 )
 
 
-class Backend(SQLGlotBackend):
+class Backend(SQLBackend):
     name = "impala"
     compiler = ImpalaCompiler()
 

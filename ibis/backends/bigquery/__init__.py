@@ -24,9 +24,7 @@ import ibis.common.exceptions as com
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
 from ibis import util
-from ibis.backends.base import CanCreateSchema, Database
-from ibis.backends.base.sqlglot import SQLGlotBackend
-from ibis.backends.base.sqlglot.datatypes import BigQueryType
+from ibis.backends import CanCreateSchema, Database
 from ibis.backends.bigquery.client import (
     BigQueryCursor,
     bigquery_param,
@@ -37,6 +35,8 @@ from ibis.backends.bigquery.client import (
 from ibis.backends.bigquery.compiler import BigQueryCompiler
 from ibis.backends.bigquery.datatypes import BigQuerySchema
 from ibis.backends.bigquery.udf.core import PythonToJavaScriptTranslator
+from ibis.backends.sql import SQLBackend
+from ibis.backends.sql.datatypes import BigQueryType
 
 if TYPE_CHECKING:
     from collections.abc import Iterable, Iterator, Mapping
@@ -123,7 +123,7 @@ def _remove_null_ordering_from_unsupported_window(
     return node
 
 
-class Backend(SQLGlotBackend, CanCreateSchema):
+class Backend(SQLBackend, CanCreateSchema):
     name = "bigquery"
     compiler = BigQueryCompiler()
     supports_in_memory_tables = True

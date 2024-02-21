@@ -6,7 +6,7 @@ from streamlit.connections import ExperimentalBaseConnection
 from streamlit.runtime.caching import cache_data
 
 import ibis
-from ibis.backends.base import BaseBackend
+from ibis.backends import BaseBackend
 
 __all__ = ["IbisConnection"]
 

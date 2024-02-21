@@ -23,10 +23,10 @@ import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis import util
-from ibis.backends.base import BaseBackend, CanCreateDatabase
-from ibis.backends.base.sqlglot import SQLGlotBackend
-from ibis.backends.base.sqlglot.compiler import C
+from ibis.backends import BaseBackend, CanCreateDatabase
 from ibis.backends.clickhouse.compiler import ClickHouseCompiler
+from ibis.backends.sql import SQLBackend
+from ibis.backends.sql.compiler import C
 
 if TYPE_CHECKING:
     from collections.abc import Iterable, Iterator, Mapping
@@ -39,7 +39,7 @@ def _to_memtable(v):
     return ibis.memtable(v).op() if not isinstance(v, ops.InMemoryTable) else v
 
 
-class Backend(SQLGlotBackend, CanCreateDatabase):
+class Backend(SQLBackend, CanCreateDatabase):
     name = "clickhouse"
     compiler = ClickHouseCompiler()
 

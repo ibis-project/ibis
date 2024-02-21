@@ -20,10 +20,10 @@ import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
-from ibis.backends.base import CanCreateDatabase, CanCreateSchema, NoUrl
-from ibis.backends.base.sqlglot import SQLGlotBackend
-from ibis.backends.base.sqlglot.compiler import C
+from ibis.backends import CanCreateDatabase, CanCreateSchema, NoUrl
 from ibis.backends.datafusion.compiler import DataFusionCompiler
+from ibis.backends.sql import SQLBackend
+from ibis.backends.sql.compiler import C
 from ibis.expr.operations.udf import InputType
 from ibis.formats.pyarrow import PyArrowType
 from ibis.util import gen_name, normalize_filename
@@ -44,7 +44,7 @@ if TYPE_CHECKING:
     import pandas as pd
 
 
-class Backend(SQLGlotBackend, CanCreateDatabase, CanCreateSchema, NoUrl):
+class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema, NoUrl):
     name = "datafusion"
     supports_in_memory_tables = True
     supports_arrays = True

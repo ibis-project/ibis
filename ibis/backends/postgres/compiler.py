@@ -11,10 +11,10 @@ import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.rules as rlz
-from ibis.backends.base.sqlglot.compiler import NULL, STAR, SQLGlotCompiler, paren
-from ibis.backends.base.sqlglot.datatypes import PostgresType
-from ibis.backends.base.sqlglot.dialects import Postgres
-from ibis.backends.base.sqlglot.rewrites import rewrite_sample_as_filter
+from ibis.backends.sql.compiler import NULL, STAR, SQLGlotCompiler, paren
+from ibis.backends.sql.datatypes import PostgresType
+from ibis.backends.sql.dialects import Postgres
+from ibis.backends.sql.rewrites import rewrite_sample_as_filter
 
 
 class PostgresUDFNode(ops.Value):

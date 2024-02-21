@@ -18,9 +18,9 @@ import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis import util
-from ibis.backends.base.sqlglot import SQLGlotBackend
-from ibis.backends.base.sqlglot.compiler import STAR, C
 from ibis.backends.exasol.compiler import ExasolCompiler
+from ibis.backends.sql import SQLBackend
+from ibis.backends.sql.compiler import STAR, C
 
 if TYPE_CHECKING:
     from collections.abc import Iterable, Mapping
@@ -28,13 +28,13 @@ if TYPE_CHECKING:
     import pandas as pd
     import pyarrow as pa
 
-    from ibis.backends.base import BaseBackend
+    from ibis.backends import BaseBackend
 
 # strip trailing encodings e.g., UTF8
 _VARCHAR_REGEX = re.compile(r"^((VAR)?CHAR(?:\(\d+\)))?(?:\s+.+)?$")
 
 
-class Backend(SQLGlotBackend):
+class Backend(SQLBackend):
     name = "exasol"
     compiler = ExasolCompiler()
     supports_temporary_tables = False

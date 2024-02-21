@@ -10,10 +10,10 @@ from public import public
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
-from ibis.backends.base.sqlglot.compiler import NULL, STAR, SQLGlotCompiler
-from ibis.backends.base.sqlglot.datatypes import MySQLType
-from ibis.backends.base.sqlglot.dialects import MySQL
-from ibis.backends.base.sqlglot.rewrites import (
+from ibis.backends.sql.compiler import NULL, STAR, SQLGlotCompiler
+from ibis.backends.sql.datatypes import MySQLType
+from ibis.backends.sql.dialects import MySQL
+from ibis.backends.sql.rewrites import (
     exclude_unsupported_window_frame_from_ops,
     exclude_unsupported_window_frame_from_rank,
     exclude_unsupported_window_frame_from_row_number,

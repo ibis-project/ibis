@@ -16,13 +16,13 @@ import snowflake.connector as sc
 import sqlglot as sg
 
 import ibis
-from ibis.backends.base.sqlglot.datatypes import SnowflakeType
 from ibis.backends.conftest import TEST_TABLES
+from ibis.backends.sql.datatypes import SnowflakeType
 from ibis.backends.tests.base import BackendTest
 from ibis.formats.pyarrow import PyArrowSchema
 
 if TYPE_CHECKING:
-    from ibis.backends.base import BaseBackend
+    from ibis.backends import BaseBackend
 
 
 def _get_url():

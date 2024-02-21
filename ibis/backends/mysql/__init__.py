@@ -21,10 +21,10 @@ import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis import util
-from ibis.backends.base import CanCreateDatabase
-from ibis.backends.base.sqlglot import SQLGlotBackend
-from ibis.backends.base.sqlglot.compiler import TRUE, C
+from ibis.backends import CanCreateDatabase
 from ibis.backends.mysql.compiler import MySQLCompiler
+from ibis.backends.sql import SQLBackend
+from ibis.backends.sql.compiler import TRUE, C
 
 if TYPE_CHECKING:
     from collections.abc import Iterable, Mapping
@@ -35,7 +35,7 @@ if TYPE_CHECKING:
     import ibis.expr.datatypes as dt
 
 
-class Backend(SQLGlotBackend, CanCreateDatabase):
+class Backend(SQLBackend, CanCreateDatabase):
     name = "mysql"
     compiler = MySQLCompiler()
     supports_create_or_replace = False

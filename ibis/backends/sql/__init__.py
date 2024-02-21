@@ -11,8 +11,8 @@ import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis import util
-from ibis.backends.base import BaseBackend
-from ibis.backends.base.sqlglot.compiler import STAR
+from ibis.backends import BaseBackend
+from ibis.backends.sql.compiler import STAR
 
 if TYPE_CHECKING:
     from collections.abc import Iterable, Iterator, Mapping
@@ -21,11 +21,11 @@ if TYPE_CHECKING:
     import pyarrow as pa
 
     import ibis.expr.datatypes as dt
-    from ibis.backends.base.sqlglot.compiler import SQLGlotCompiler
+    from ibis.backends.sql.compiler import SQLGlotCompiler
     from ibis.common.typing import SupportsSchema
 
 
-class SQLGlotBackend(BaseBackend):
+class SQLBackend(BaseBackend):
     compiler: ClassVar[SQLGlotCompiler]
     name: ClassVar[str]
 

@@ -44,12 +44,11 @@ dict(
 #| content: valuebox
 #| title: "Number of SQL backends"
 import importlib
-from ibis.backends.base.sqlglot import SQLGlotBackend
+from ibis.backends.sql import SQLBackend
 
 sql_backends = sum(
     issubclass(
-        importlib.import_module(f"ibis.backends.{entry_point.name}").Backend,
-        SQLGlotBackend
+        importlib.import_module(f"ibis.backends.{entry_point.name}").Backend, SQLBackend
     )
     for entry_point in ibis.util.backend_entry_points()
 )

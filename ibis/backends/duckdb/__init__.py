@@ -23,11 +23,11 @@ import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis import util
-from ibis.backends.base import CanCreateSchema, UrlFromPath
-from ibis.backends.base.sqlglot import SQLGlotBackend
-from ibis.backends.base.sqlglot.compiler import STAR, C, F
+from ibis.backends import CanCreateSchema, UrlFromPath
 from ibis.backends.duckdb.compiler import DuckDBCompiler
 from ibis.backends.duckdb.converter import DuckDBPandasData
+from ibis.backends.sql import SQLBackend
+from ibis.backends.sql.compiler import STAR, C, F
 from ibis.expr.operations.udf import InputType
 
 if TYPE_CHECKING:
@@ -74,7 +74,7 @@ class _Settings:
         return repr(dict(zip(kv["key"], kv["value"])))
 
 
-class Backend(SQLGlotBackend, CanCreateSchema, UrlFromPath):
+class Backend(SQLBackend, CanCreateSchema, UrlFromPath):
     name = "duckdb"
     compiler = DuckDBCompiler()
 

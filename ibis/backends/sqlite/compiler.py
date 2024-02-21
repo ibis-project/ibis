@@ -7,10 +7,10 @@ from public import public
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
-from ibis.backends.base.sqlglot.compiler import NULL, SQLGlotCompiler
-from ibis.backends.base.sqlglot.datatypes import SQLiteType
-from ibis.backends.base.sqlglot.dialects import SQLite
-from ibis.backends.base.sqlglot.rewrites import (
+from ibis.backends.sql.compiler import NULL, SQLGlotCompiler
+from ibis.backends.sql.datatypes import SQLiteType
+from ibis.backends.sql.dialects import SQLite
+from ibis.backends.sql.rewrites import (
     rewrite_first_to_first_value,
     rewrite_last_to_last_value,
     rewrite_sample_as_filter,

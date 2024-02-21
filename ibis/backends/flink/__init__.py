@@ -10,8 +10,7 @@ import ibis.common.exceptions as exc
 import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
-from ibis.backends.base import CanCreateDatabase, NoUrl
-from ibis.backends.base.sqlglot import SQLGlotBackend
+from ibis.backends import CanCreateDatabase, NoUrl
 from ibis.backends.flink.compiler import FlinkCompiler
 from ibis.backends.flink.ddl import (
     CreateDatabase,
@@ -22,6 +21,7 @@ from ibis.backends.flink.ddl import (
     InsertSelect,
     RenameTable,
 )
+from ibis.backends.sql import SQLBackend
 from ibis.backends.tests.errors import Py4JJavaError
 from ibis.expr.operations.udf import InputType
 from ibis.util import gen_name
@@ -40,7 +40,7 @@ if TYPE_CHECKING:
 _INPUT_TYPE_TO_FUNC_TYPE = {InputType.PYTHON: "general", InputType.PANDAS: "pandas"}
 
 
-class Backend(SQLGlotBackend, CanCreateDatabase, NoUrl):
+class Backend(SQLBackend, CanCreateDatabase, NoUrl):
     name = "flink"
     compiler = FlinkCompiler()
     supports_temporary_tables = True

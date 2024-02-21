@@ -147,7 +147,7 @@ class Options(Config):
         A callable to use when logging.
     graphviz_repr : bool
         Render expressions as GraphViz PNGs when running in a Jupyter notebook.
-    default_backend : Optional[ibis.backends.base.BaseBackend], default None
+    default_backend : Optional[ibis.backends.BaseBackend], default None
         The default backend to use for execution, defaults to DuckDB if not
         set.
     context_adjustment : ContextAdjustment

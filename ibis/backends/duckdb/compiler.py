@@ -11,12 +11,12 @@ from sqlglot.dialects import DuckDB
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
-from ibis.backends.base.sqlglot.compiler import (
+from ibis.backends.sql.compiler import (
     NULL,
     STAR,
     SQLGlotCompiler,
 )
-from ibis.backends.base.sqlglot.datatypes import DuckDBType
+from ibis.backends.sql.datatypes import DuckDBType
 
 _INTERVAL_SUFFIXES = {
     "ms": "milliseconds",

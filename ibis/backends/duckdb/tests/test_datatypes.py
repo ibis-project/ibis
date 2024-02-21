@@ -6,7 +6,7 @@ from pytest import param
 
 import ibis
 import ibis.expr.datatypes as dt
-from ibis.backends.base.sqlglot.datatypes import DuckDBType
+from ibis.backends.sql.datatypes import DuckDBType
 
 
 @pytest.mark.parametrize(

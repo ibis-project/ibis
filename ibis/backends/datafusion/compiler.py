@@ -11,16 +11,16 @@ import sqlglot.expressions as sge
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
-from ibis.backends.base.sqlglot.compiler import (
+from ibis.backends.sql.compiler import (
     FALSE,
     NULL,
     STAR,
     SQLGlotCompiler,
     paren,
 )
-from ibis.backends.base.sqlglot.datatypes import DataFusionType
-from ibis.backends.base.sqlglot.dialects import DataFusion
-from ibis.backends.base.sqlglot.rewrites import rewrite_sample_as_filter
+from ibis.backends.sql.datatypes import DataFusionType
+from ibis.backends.sql.dialects import DataFusion
+from ibis.backends.sql.rewrites import rewrite_sample_as_filter
 from ibis.common.temporal import IntervalUnit, TimestampUnit
 from ibis.expr.operations.udf import InputType
 from ibis.formats.pyarrow import PyArrowType

@@ -11,15 +11,15 @@ import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 from ibis import util
-from ibis.backends.base.sqlglot.compiler import (
+from ibis.backends.sql.compiler import (
     NULL,
     STAR,
     SQLGlotCompiler,
     parenthesize,
 )
-from ibis.backends.base.sqlglot.datatypes import ClickHouseType
-from ibis.backends.base.sqlglot.dialects import ClickHouse
-from ibis.backends.base.sqlglot.rewrites import rewrite_sample_as_filter
+from ibis.backends.sql.datatypes import ClickHouseType
+from ibis.backends.sql.dialects import ClickHouse
+from ibis.backends.sql.rewrites import rewrite_sample_as_filter
 
 
 class ClickHouseCompiler(SQLGlotCompiler):

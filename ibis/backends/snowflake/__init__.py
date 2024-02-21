@@ -32,11 +32,11 @@ import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
 from ibis import util
-from ibis.backends.base import CanCreateDatabase, CanCreateSchema
-from ibis.backends.base.sqlglot import SQLGlotBackend
-from ibis.backends.base.sqlglot.datatypes import SnowflakeType
+from ibis.backends import CanCreateDatabase, CanCreateSchema
 from ibis.backends.snowflake.compiler import SnowflakeCompiler
 from ibis.backends.snowflake.converter import SnowflakePandasData
+from ibis.backends.sql import SQLBackend
+from ibis.backends.sql.datatypes import SnowflakeType
 
 if TYPE_CHECKING:
     from collections.abc import Iterable, Iterator, Mapping
@@ -77,7 +77,7 @@ return longest.map((_, i) => {
 }
 
 
-class Backend(SQLGlotBackend, CanCreateDatabase, CanCreateSchema):
+class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
     name = "snowflake"
     compiler = SnowflakeCompiler()
     supports_python_udfs = True

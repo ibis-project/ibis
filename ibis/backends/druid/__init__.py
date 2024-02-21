@@ -13,10 +13,10 @@ import sqlglot as sg
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.schema as sch
-from ibis.backends.base.sqlglot import SQLGlotBackend
-from ibis.backends.base.sqlglot.compiler import STAR
-from ibis.backends.base.sqlglot.datatypes import DruidType
 from ibis.backends.druid.compiler import DruidCompiler
+from ibis.backends.sql import SQLBackend
+from ibis.backends.sql.compiler import STAR
+from ibis.backends.sql.datatypes import DruidType
 
 if TYPE_CHECKING:
     from collections.abc import Iterable, Mapping
@@ -27,7 +27,7 @@ if TYPE_CHECKING:
     import ibis.expr.types as ir
 
 
-class Backend(SQLGlotBackend):
+class Backend(SQLBackend):
     name = "druid"
     compiler = DruidCompiler()
     supports_create_or_replace = False

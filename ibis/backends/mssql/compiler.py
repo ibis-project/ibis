@@ -9,7 +9,7 @@ from public import public
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
-from ibis.backends.base.sqlglot.compiler import (
+from ibis.backends.sql.compiler import (
     FALSE,
     NULL,
     STAR,
@@ -17,9 +17,9 @@ from ibis.backends.base.sqlglot.compiler import (
     SQLGlotCompiler,
     paren,
 )
-from ibis.backends.base.sqlglot.datatypes import MSSQLType
-from ibis.backends.base.sqlglot.dialects import MSSQL
-from ibis.backends.base.sqlglot.rewrites import (
+from ibis.backends.sql.datatypes import MSSQLType
+from ibis.backends.sql.dialects import MSSQL
+from ibis.backends.sql.rewrites import (
     exclude_unsupported_window_frame_from_ops,
     exclude_unsupported_window_frame_from_row_number,
     p,
