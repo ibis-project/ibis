@@ -1,7 +1,7 @@
 ---
 title: "Using DuckDB + Ibis for RAG"
 author: "Cody Peterson"
-date: "2024-02-29"
+date: "2024-02-22"
 image: thumbnail.png
 categories:
     - blog
@@ -116,84 +116,66 @@ ibis.options.interactive = True  # <1>
 
 ### Getting the data into DuckDB
 
-We'll use a function to clone a given repository:
-
-```{python}
-def clone_repo(repo_url):  # <1>
-    subprocess.run(["git", "clone", "--depth", "1", repo_url], check=False)  # <1>
-```
-
-1. Define a function to clone a repository.
-
-Let's clone `ibis` and prepare to ingest all the Quarto markdown files into a
+Let's prepare to ingest all the Quarto markdown files into a
 DuckDB database called `rag.ddb`:
 
 ```{python}
-org_url = "https://github.com/ibis-project"  # <1>
-repo_name = "ibis"  # <1>
+rag_con = ibis.connect("duckdb://rag.ddb")  # <1>
 
-shutil.rmtree(repo_name, ignore_errors=True)  # <2>
-clone_repo(f"{org_url}/{repo_name}")  # <3>
+for table in rag_con.list_tables():  # <2>
+    rag_con.drop_table(table)  # <2>
 
-if os.path.exists("rag.ddb"):  # <4>
-    os.remove("rag.ddb")
-if os.path.exists("rag.ddb.wal"):
-    os.remove("rag.ddb.wal")  # <4>
-
-rag_con = ibis.connect("duckdb://rag.ddb")  # <5>
-rag_con.list_tables()  # <6>
+rag_con.list_tables()  # <3>
 ```
 
-1. Setup the repository to clone.
-2. Remove the repository if it exists to ensure a fresh clone.
-3. Clone the repository.
-4. Remove the DuckDB database if it exists to ensure a fresh database.
-5. Connect to the DuckDB database.
-6. List the tables in the database, showing it is empty.
+1. Create the Ibis connection to the DuckDB database.
+2. Drop any existing tables from previous runs.
+3. List the tables in the database to show that there are none.
 
-We'll walk through all the cloned files. For `.qmd` files, read the contents and
-insert them into the `ibis` table:
+We'll walk through the Ibis `docs/` directory. For `.qmd` files, read the
+contents and insert them into the `ibis` table:
+
+::: {.callout-tip}
+We are running this blog within the Ibis repository. To run this on your own
+data, adjust the code accordingly!
+:::
 
 ```{python}
-for filepath in Path(repo_name).rglob("*.qmd"):  # <1>
-    contents = filepath.read_text()  # <2>
+table_name = "ibis"  # <1>
 
-    data = {"filepath": [str(filepath)], "contents": [contents]}  # <3>
+for filepath in Path(ibis.__file__).parents[1].joinpath("docs").rglob("*.qmd"):  # <2>
+    contents = filepath.read_text()  # <3>
 
-    t = ibis.memtable(data)  # <4>
+    data = {"filepath": [str(filepath)], "contents": [contents]}  # <4>
 
-    if repo_name not in rag_con.list_tables():  # <5>
-        rag_con.create_table(repo_name, t)  # <5>
-    else:  # <6>
-        rag_con.insert(repo_name, t)  # <6>
+    t = ibis.memtable(data)  # <5>
 
-for table in rag_con.list_tables():  # <7>
-    if "memtable" in table:  # <7>
-        rag_con.drop_view(table)  # <7>
+    if "ibis" not in rag_con.list_tables():  # <6>
+        rag_con.create_table("ibis", t)  # <6>
+    else:  # <7>
+        rag_con.insert("ibis", t)  # <7>
 
-rag_con.list_tables()  # <8>
+for table in rag_con.list_tables():  # <8>
+    if "memtable" in table:  # <8>
+        rag_con.drop_view(table)  # <8>
+
+rag_con.list_tables()  # <9>
 ```
 
-1. Walk through all the Quarto markdown files in the repository.
-2. Read the contents of the file.
-3. Create a dictionary with the file path and contents.
-4. Create an Ibis memtable from the dictionary.
-5. If the table doesn't exist, create it with the memtable.
-6. Otherwise, insert the memtable into the table.
-7. Drop any memtables.
-8. List the tables in the database to show the `ibis` table.
-
-```{python}
-#| code-fold: true
-#| echo: false
-# this is here to avoid building all the docs in this post...
-_ = shutil.rmtree(repo_name, ignore_errors=True)
-```
+1. Define the table name.
+2. Walk through the `docs/` directory and find all `.qmd` files.
+3. Read the contents of each file.
+4. Create a dictionary with the file path and contents.
+5. Create an Ibis memtable from the dictionary.
+6. If the table doesn't exist, create it and insert the data.
+7. Otherwise, insert the data into the existing table.
+8. Drop any memtables that were created.
+9. List the tables in the database to show that the `ibis` table was created.
 
 Let's inspect the table:
 
 ```{python}
-t = rag_con.table(repo_name)  # <1>
+t = rag_con.table(table_name)  # <1>
 t
 ```
 
@@ -276,12 +258,6 @@ def embed(text: str, tokens_estimate: int) -> list[float]:  # <8>
 11. Otherwise, return `None`.
 
 Let's embed the text:
-
-```{python}
-#| code-fold: true
-#| echo: false
-_ = ibis.get_backend().raw_sql("set enable_progress_bar = false")
-```
 
 ```{python}
 t = t.mutate(  # <1>
@@ -430,16 +406,6 @@ That has a much lower cosine similarity in the embedding space:
 ```{python}
 list_cosine_similarity(_embed(a), _embed(c))
 ```
-
-```{python}
-#| code-fold: true
-#| echo: false
-if os.path.exists("rag.ddb"):
-    os.remove("rag.ddb")
-if os.path.exists("rag.ddb.wal"):
-    os.remove("rag.ddb.wal")
-```
-
 
 Despite semantic equivalence, these two queries would not be considered similar.
 You need to be careful and understand what the system is doing.
