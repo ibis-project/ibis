@@ -6,7 +6,7 @@ from urllib.request import urlopen
 
 from algoliasearch.search_client import SearchClient
 
-api_key = os.environ["ALGOLIA_API_KEY"]
+api_key = os.environ["ALGOLIA_WRITE_API_KEY"]
 app_id = os.environ["ALGOLIA_APP_ID"]
 index_name = os.environ["ALGOLIA_INDEX"]
 index_file = os.environ["QUARTO_INDEX_PATH"]  # search.json
