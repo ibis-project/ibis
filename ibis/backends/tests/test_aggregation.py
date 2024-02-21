@@ -288,7 +288,6 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
                     raises=AttributeError,
                     reason="'IntegerColumn' object has no attribute 'any'",
                 ),
-                pytest.mark.notimpl(["mssql"], raises=com.OperationNotDefinedError),
             ],
         ),
         param(
@@ -307,7 +306,6 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
                     reason="ORA-02000: missing AS keyword",
                 ),
                 pytest.mark.notimpl(["exasol"], raises=ExaQueryError),
-                pytest.mark.notimpl(["mssql"], raises=com.OperationNotDefinedError),
             ],
         ),
         param(
@@ -326,7 +324,6 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
                     reason="ORA-02000: missing AS keyword",
                 ),
                 pytest.mark.notimpl(["exasol"], raises=ExaQueryError),
-                pytest.mark.notimpl(["mssql"], raises=com.OperationNotDefinedError),
             ],
         ),
         param(
@@ -339,7 +336,6 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
                     raises=AttributeError,
                     reason="'IntegerColumn' object has no attribute 'all'",
                 ),
-                pytest.mark.notimpl(["mssql"], raises=com.OperationNotDefinedError),
             ],
         ),
         param(
@@ -358,7 +354,6 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
                     reason="ORA-02000: missing AS keyword",
                 ),
                 pytest.mark.notimpl(["exasol"], raises=ExaQueryError),
-                pytest.mark.notimpl(["mssql"], raises=com.OperationNotDefinedError),
             ],
         ),
         param(
@@ -377,7 +372,6 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
                     reason="ORA-02000: missing AS keyword",
                 ),
                 pytest.mark.notimpl(["exasol"], raises=ExaQueryError),
-                pytest.mark.notimpl(["mssql"], raises=com.OperationNotDefinedError),
             ],
         ),
         param(

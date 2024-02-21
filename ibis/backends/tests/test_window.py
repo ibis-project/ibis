@@ -249,7 +249,6 @@ def calc_zscore(s):
                 .astype(bool)
             ),
             id="cumany",
-            marks=[pytest.mark.broken(["mssql"], raises=com.OperationNotDefinedError)],
         ),
         param(
             lambda t, win: (t.double_col == 0).notany().over(win),
@@ -262,7 +261,6 @@ def calc_zscore(s):
             id="cumnotany",
             marks=[
                 pytest.mark.broken(["oracle"], raises=OracleDatabaseError),
-                pytest.mark.broken(["mssql"], raises=com.OperationNotDefinedError),
             ],
         ),
         param(
@@ -274,7 +272,6 @@ def calc_zscore(s):
                 .astype(bool)
             ),
             id="cumall",
-            marks=[pytest.mark.broken(["mssql"], raises=com.OperationNotDefinedError)],
         ),
         param(
             lambda t, win: (t.double_col == 0).notall().over(win),
@@ -287,7 +284,6 @@ def calc_zscore(s):
             id="cumnotall",
             marks=[
                 pytest.mark.broken(["oracle"], raises=OracleDatabaseError),
-                pytest.mark.broken(["mssql"], raises=com.OperationNotDefinedError),
             ],
         ),
         param(
