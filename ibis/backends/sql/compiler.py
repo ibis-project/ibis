@@ -1217,10 +1217,10 @@ class SQLGlotCompiler(abc.ABC):
             return sg.select(STAR).from_(parent).order_by(*keys)
 
     def visit_Union(self, op, *, left, right, distinct):
-        if isinstance(left, sge.Table):
+        if isinstance(left, (sge.Table, sge.Subquery)):
             left = sg.select(STAR).from_(left)
 
-        if isinstance(right, sge.Table):
+        if isinstance(right, (sge.Table, sge.Subquery)):
             right = sg.select(STAR).from_(right)
 
         return sg.union(
@@ -1230,10 +1230,10 @@ class SQLGlotCompiler(abc.ABC):
         )
 
     def visit_Intersection(self, op, *, left, right, distinct):
-        if isinstance(left, sge.Table):
+        if isinstance(left, (sge.Table, sge.Subquery)):
             left = sg.select(STAR).from_(left)
 
-        if isinstance(right, sge.Table):
+        if isinstance(right, (sge.Table, sge.Subquery)):
             right = sg.select(STAR).from_(right)
 
         return sg.intersect(
@@ -1243,10 +1243,10 @@ class SQLGlotCompiler(abc.ABC):
         )
 
     def visit_Difference(self, op, *, left, right, distinct):
-        if isinstance(left, sge.Table):
+        if isinstance(left, (sge.Table, sge.Subquery)):
             left = sg.select(STAR).from_(left)
 
-        if isinstance(right, sge.Table):
+        if isinstance(right, (sge.Table, sge.Subquery)):
             right = sg.select(STAR).from_(right)
 
         return sg.except_(

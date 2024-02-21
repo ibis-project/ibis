@@ -192,9 +192,24 @@ def test_table_set_operations_api(alltypes, method):
         False,
     ],
 )
-def test_top_level_union(backend, con, alltypes, distinct):
+@pytest.mark.parametrize(
+    "ordered",
+    [
+        False,
+        param(
+            True,
+            marks=pytest.mark.notyet(
+                ["mssql"], reason="ORDER BY not supported in subquery"
+            ),
+        ),
+    ],
+)
+def test_top_level_union(backend, con, alltypes, distinct, ordered):
     t1 = alltypes.select(a="bigint_col").filter(lambda t: t.a == 10).distinct()
     t2 = alltypes.select(a="bigint_col").filter(lambda t: t.a == 20).distinct()
+    if ordered:
+        t1 = t1.order_by("a")
+        t2 = t2.order_by("a")
     expr = t1.union(t2, distinct=distinct).limit(2)
     result = con.execute(expr)
     expected = pd.DataFrame({"a": [10, 20]})
@@ -237,10 +252,22 @@ def test_top_level_union(backend, con, alltypes, distinct):
     ],
     ids=["intersect", "difference"],
 )
+@pytest.mark.parametrize(
+    "ordered",
+    [
+        False,
+        param(
+            True,
+            marks=pytest.mark.notyet(
+                ["mssql"], reason="ORDER BY not supported in subquery"
+            ),
+        ),
+    ],
+)
 @pytest.mark.notimpl(["polars"], raises=com.OperationNotDefinedError)
 @pytest.mark.broken(["druid"], raises=PyDruidProgrammingError)
 def test_top_level_intersect_difference(
-    backend, con, alltypes, distinct, opname, expected
+    backend, con, alltypes, distinct, opname, expected, ordered
 ):
     t1 = (
         alltypes.select(a="bigint_col")
@@ -252,6 +279,9 @@ def test_top_level_intersect_difference(
         .filter(lambda t: (t.a == 20) | (t.a == 30))
         .distinct()
     )
+    if ordered:
+        t1 = t1.order_by("a")
+        t2 = t2.order_by("a")
     op = getattr(t1, opname)
     expr = op(t2, distinct=distinct).limit(2)
     result = con.execute(expr)

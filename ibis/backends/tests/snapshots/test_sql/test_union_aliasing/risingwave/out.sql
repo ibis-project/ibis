@@ -41,20 +41,28 @@ SELECT
   "t11"."diff"
 FROM (
   SELECT
-    "t6"."field_of_study",
-    "t6"."diff"
-  FROM "t5" AS "t6"
-  ORDER BY
-    "t6"."diff" DESC NULLS LAST
-  LIMIT 10
+    *
+  FROM (
+    SELECT
+      "t6"."field_of_study",
+      "t6"."diff"
+    FROM "t5" AS "t6"
+    ORDER BY
+      "t6"."diff" DESC NULLS LAST
+    LIMIT 10
+  ) AS "t9"
   UNION ALL
   SELECT
-    "t6"."field_of_study",
-    "t6"."diff"
-  FROM "t5" AS "t6"
-  WHERE
-    "t6"."diff" < 0
-  ORDER BY
-    "t6"."diff" ASC
-  LIMIT 10
+    *
+  FROM (
+    SELECT
+      "t6"."field_of_study",
+      "t6"."diff"
+    FROM "t5" AS "t6"
+    WHERE
+      "t6"."diff" < 0
+    ORDER BY
+      "t6"."diff" ASC
+    LIMIT 10
+  ) AS "t10"
 ) AS "t11"
