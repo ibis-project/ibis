@@ -400,7 +400,17 @@ class MSSQLCompiler(SQLGlotCompiler):
     def visit_Not(self, op, *, arg):
         if isinstance(arg, sge.Boolean):
             return FALSE if arg == TRUE else TRUE
-        elif isinstance(arg, sge.Window):
+        elif isinstance(arg, (sge.Window, sge.Max, sge.Min)):
+            # special case Window, Max, and Min.
+            # These are used for NOT ANY or NOT ALL and friends.
+            # We are working around MSSQL's rather unfriendly boolean handling rules
+            # and because Max or Min don't return booleans, we have to handle the equality check
+            # in a case statement instead.
+            # e.g.
+            # IFF(MAX(IFF(condition, 1, 0)) = 0, true_case, false_case)
+            # is invalid
+            # Needs to be
+            # CASE WHEN MAX(IFF(condition, 1, 0)) = 0 THEN true_case ELSE false_case END
             return sge.Case(ifs=[self.if_(arg.eq(0), 1)], default=0)
         return self.if_(arg, 1, 0).eq(0)
 
@@ -437,11 +447,13 @@ class MSSQLCompiler(SQLGlotCompiler):
         return self.if_(sg.or_(*any_args_null), NULL, self.f.concat(*arg))
 
     def visit_Any(self, op, *, arg, where):
+        arg = self.if_(arg, 1, 0)
         if where is not None:
             arg = self.if_(where, arg, NULL)
-        return sge.Max(this=self.if_(arg, 1, 0))
+        return sge.Max(this=arg)
 
     def visit_All(self, op, *, arg, where):
+        arg = self.if_(arg, 1, 0)
         if where is not None:
             arg = self.if_(where, arg, NULL)
-        return sge.Min(this=self.if_(arg, 1, 0))
+        return sge.Min(this=arg)
