@@ -24,7 +24,7 @@ import ibis.common.exceptions as com
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
 from ibis import util
-from ibis.backends import CanCreateSchema, Database
+from ibis.backends import CanCreateSchema
 from ibis.backends.bigquery.client import (
     BigQueryCursor,
     bigquery_param,
@@ -673,15 +673,6 @@ class Backend(SQLBackend, CanCreateSchema):
     @property
     def current_schema(self) -> str | None:
         return self.dataset
-
-    def database(self, name=None):
-        if name is None and not self.dataset:
-            raise ValueError(
-                "Unable to determine BigQuery dataset. Call "
-                "client.database('my_dataset') or set_database('my_dataset') "
-                "to assign your client a dataset."
-            )
-        return Database(name or self.dataset, self)
 
     def compile(
         self, expr: ir.Expr, limit: str | None = None, params=None, **kwargs: Any

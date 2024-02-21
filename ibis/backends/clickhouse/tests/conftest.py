@@ -106,11 +106,6 @@ def con(tmp_path_factory, data_dir, worker_id):
 
 
 @pytest.fixture(scope="session")
-def db(con):
-    return con.database()
-
-
-@pytest.fixture(scope="session")
 def alltypes(con):
     return con.tables.functional_alltypes
 

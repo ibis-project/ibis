@@ -1065,9 +1065,7 @@ func.register(fuzzy_equals.name, udf_db)
 The object `fuzzy_equals` is callable and works with Ibis expressions:
 
 ```python
->>> db = c.database('ibis_testing')
-
->>> t = db.functional_alltypes
+>>> t = con.tables.functional_alltypes
 
 >>> expr = fuzzy_equals(t.float_col, t.double_col / 10)
 

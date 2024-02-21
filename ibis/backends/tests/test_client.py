@@ -413,23 +413,6 @@ def test_create_drop_view(ddl_con, temp_view):
     assert set(t_expr.schema().names) == set(v_expr.schema().names)
 
 
-@mark.notimpl(["postgres", "risingwave", "polars"])
-@mark.notimpl(
-    ["datafusion"],
-    raises=NotImplementedError,
-    reason="doesn't seem to have a stateful notion of 'current database'",
-)
-def test_separate_database(ddl_con, alternate_current_database):
-    current_data_db = ddl_con.current_database
-    # using alternate_current_database switches "con" current
-    #  database to a temporary one until a test is over
-    tmp_db = ddl_con.database(alternate_current_database)
-    # verifying we can open another db which isn't equal to current
-    db = ddl_con.database(current_data_db)
-    assert db.name == current_data_db
-    assert tmp_db.name == alternate_current_database
-
-
 @pytest.fixture
 def employee_empty_temp_table(backend, con, test_employee_schema):
     temp_table_name = gen_name("temp_employee_empty_table")
