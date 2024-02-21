@@ -22,7 +22,7 @@ import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis import util
 from ibis.backends.oracle.compiler import OracleCompiler
-from ibis.backends.sql import STAR, SQLGlotBackend
+from ibis.backends.sql import STAR, SQLBackend
 from ibis.backends.sql.compiler import TRUE, C
 
 if TYPE_CHECKING:
@@ -32,7 +32,7 @@ if TYPE_CHECKING:
     import pyrrow as pa
 
 
-class Backend(SQLGlotBackend):
+class Backend(SQLBackend):
     name = "oracle"
     compiler = OracleCompiler()
 

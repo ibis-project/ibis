@@ -25,7 +25,7 @@ if TYPE_CHECKING:
     from ibis.common.typing import SupportsSchema
 
 
-class SQLGlotBackend(BaseBackend):
+class SQLBackend(BaseBackend):
     compiler: ClassVar[SQLGlotCompiler]
     name: ClassVar[str]
 

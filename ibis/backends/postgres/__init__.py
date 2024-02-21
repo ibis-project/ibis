@@ -25,7 +25,7 @@ import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis import util
 from ibis.backends.postgres.compiler import PostgresCompiler
-from ibis.backends.sql import SQLGlotBackend
+from ibis.backends.sql import SQLBackend
 from ibis.backends.sql.compiler import TRUE, C, ColGen, F
 from ibis.common.exceptions import InvalidDecoratorError
 
@@ -42,7 +42,7 @@ def _verify_source_line(func_name: str, line: str):
     return line
 
 
-class Backend(SQLGlotBackend):
+class Backend(SQLBackend):
     name = "postgres"
     compiler = PostgresCompiler()
     supports_python_udfs = True

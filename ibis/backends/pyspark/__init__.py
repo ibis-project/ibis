@@ -22,7 +22,7 @@ from ibis.backends import CanCreateDatabase
 from ibis.backends.pyspark.compiler import PySparkCompiler
 from ibis.backends.pyspark.converter import PySparkPandasData
 from ibis.backends.pyspark.datatypes import PySparkSchema, PySparkType
-from ibis.backends.sql import SQLGlotBackend
+from ibis.backends.sql import SQLBackend
 from ibis.expr.operations.udf import InputType
 from ibis.legacy.udf.vectorized import _coerce_to_series
 
@@ -85,7 +85,7 @@ class _PySparkCursor:
         """No-op for compatibility."""
 
 
-class Backend(SQLGlotBackend, CanCreateDatabase):
+class Backend(SQLBackend, CanCreateDatabase):
     name = "pyspark"
     compiler = PySparkCompiler()
 

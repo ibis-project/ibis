@@ -19,7 +19,7 @@ import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis import util
 from ibis.backends.exasol.compiler import ExasolCompiler
-from ibis.backends.sql import SQLGlotBackend
+from ibis.backends.sql import SQLBackend
 from ibis.backends.sql.compiler import STAR, C
 
 if TYPE_CHECKING:
@@ -34,7 +34,7 @@ if TYPE_CHECKING:
 _VARCHAR_REGEX = re.compile(r"^((VAR)?CHAR(?:\(\d+\)))?(?:\s+.+)?$")
 
 
-class Backend(SQLGlotBackend):
+class Backend(SQLBackend):
     name = "exasol"
     compiler = ExasolCompiler()
     supports_temporary_tables = False

@@ -40,7 +40,7 @@ from ibis.backends.impala.udf import (
     wrap_uda,
     wrap_udf,
 )
-from ibis.backends.sql import SQLGlotBackend
+from ibis.backends.sql import SQLBackend
 from ibis.config import options
 
 if TYPE_CHECKING:
@@ -62,7 +62,7 @@ __all__ = (
 )
 
 
-class Backend(SQLGlotBackend):
+class Backend(SQLBackend):
     name = "impala"
     compiler = ImpalaCompiler()
 

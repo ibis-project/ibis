@@ -18,7 +18,7 @@ import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis import util
 from ibis.backends import CanListDatabases, NoUrl
-from ibis.backends.sql import SQLGlotBackend
+from ibis.backends.sql import SQLBackend
 from ibis.backends.sql.compiler import C
 from ibis.backends.trino.compiler import TrinoCompiler
 
@@ -31,7 +31,7 @@ if TYPE_CHECKING:
     import ibis.expr.operations as ops
 
 
-class Backend(SQLGlotBackend, CanListDatabases, NoUrl):
+class Backend(SQLBackend, CanListDatabases, NoUrl):
     name = "trino"
     compiler = TrinoCompiler()
     supports_create_or_replace = False

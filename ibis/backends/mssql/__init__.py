@@ -24,7 +24,7 @@ import ibis.expr.types as ir
 from ibis import util
 from ibis.backends import CanCreateDatabase, CanCreateSchema, NoUrl
 from ibis.backends.mssql.compiler import MSSQLCompiler
-from ibis.backends.sql import SQLGlotBackend
+from ibis.backends.sql import SQLBackend
 from ibis.backends.sql.compiler import C
 
 if TYPE_CHECKING:
@@ -55,7 +55,7 @@ def datetimeoffset_to_datetime(value):
     )
 
 
-class Backend(SQLGlotBackend, CanCreateDatabase, CanCreateSchema, NoUrl):
+class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema, NoUrl):
     name = "mssql"
     compiler = MSSQLCompiler()
     supports_create_or_replace = False
