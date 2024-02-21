@@ -11,6 +11,7 @@ on:
       - "codecov.yml"
       - ".envrc"
       - ".codespellrc"
+      - "netlify.toml"
     branches:
       - main
       - "*.x.x"
@@ -22,6 +23,7 @@ on:
       - "codecov.yml"
       - ".envrc"
       - ".codespellrc"
+      - "netlify.toml"
     branches:
       - main
       - "*.x.x"

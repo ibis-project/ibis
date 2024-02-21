@@ -9,6 +9,7 @@ on:
       - "**/*.qmd"
       - "codecov.yml"
       - ".envrc"
+      - "netlify.toml"
     branches:
       - main
   pull_request_target:
