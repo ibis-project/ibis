@@ -321,6 +321,14 @@ text = "where can I chat with the community about Ibis?"
 search_docs(text)
 ```
 
+Now that we have retrieved the most similar documentation, we can augment our
+language model's input with that context prior to generating a response! In
+practice, we'd probably want to set a similarity threshold and take the top `N`
+results. Chunking our text into smaller pieces and selecting from those results
+would also be a good idea.
+
+Let's try a few more queries:
+
 ```{python}
 text = "what do users say about Ibis?"
 search_docs(text)
