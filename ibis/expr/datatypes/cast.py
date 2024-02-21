@@ -145,26 +145,3 @@ def highest_precedence(dtypes: Iterator[dt.DataType]) -> dt.DataType:
         return functools.reduce(higher_precedence, collected)
     else:
         return dt.null
-
-
-@public
-def same_base_type(source: dt.DataType, target: dt.DataType):
-    if (
-        (source.is_boolean() and target.is_boolean())
-        or (source.is_integer() and target.is_integer())
-        or (source.is_floating() and target.is_floating())
-        or (source.is_decimal() and target.is_decimal())
-        or (source.is_string() and target.is_string())
-        or (source.is_uuid() and target.is_uuid())
-        or (source.is_date() and target.is_date())
-        or (source.is_timestamp() and target.is_timestamp())
-        or (source.is_interval() and target.is_interval())
-        or (source.is_time() and target.is_time())
-        or (source.is_json() and target.is_json())
-        or (source.is_array() and target.is_array())
-        or (source.is_map() and target.is_map())
-        or (source.is_struct() and target.is_struct())
-        or (source.is_geospatial() and target.is_geospatial())
-    ):
-        return True
-    return False

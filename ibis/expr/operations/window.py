@@ -71,7 +71,7 @@ class WindowFrame(Value):
     shape = ds.columnar
 
     def __init__(self, start, end, **kwargs):
-        if start and end and not dt.same_base_type(start.dtype, end.dtype):
+        if start and end and not start.dtype.is_same_base_type(end.dtype):
             raise com.IbisTypeError(
                 "Window frame start and end boundaries must have the same datatype"
             )
