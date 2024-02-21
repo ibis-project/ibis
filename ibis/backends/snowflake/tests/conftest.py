@@ -33,9 +33,12 @@ def _get_url():
 
         # requires a connection named ibis_testing or one explicitly set with
         # export SNOWFLAKE_DEFAULT_CONNECTION_NAME
-        params = tomli.loads(
-            Path(os.environ["SNOWFLAKE_HOME"], "connections.toml").read_text()
-        )[os.environ.get("SNOWFLAKE_DEFAULT_CONNECTION_NAME", "ibis_testing")]
+        connection_name = os.environ.get(
+            "SNOWFLAKE_DEFAULT_CONNECTION_NAME", "ibis_testing"
+        )
+        config_file = Path(os.environ["SNOWFLAKE_HOME"], "connections.toml")
+        config_text = config_file.read_text()
+        params = tomli.loads(config_text)[connection_name]
         user, password, account, database, schema, warehouse = (
             params["user"],
             params["password"],
