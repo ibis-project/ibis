@@ -3,4 +3,4 @@ package = "@algolia/netlify-plugin-crawler"
 
 [plugins.inputs]
 branches = ['main', 'algolia-setup']
-disabled = true
+disabled = false
