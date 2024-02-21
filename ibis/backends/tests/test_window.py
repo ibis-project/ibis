@@ -544,17 +544,7 @@ def test_grouped_bounded_preceding_window(backend, alltypes, df, window_fn):
 @pytest.mark.parametrize(
     ("ordered"),
     [
-        param(
-            False,
-            id="unordered",
-            marks=[
-                pytest.mark.broken(
-                    ["mssql"],
-                    raises=PyODBCProgrammingError,
-                    reason="unbounded window frames are not supported",
-                ),
-            ],
-        ),
+        param(False, id="unordered"),
     ],
 )
 @pytest.mark.notimpl(["polars"], raises=com.OperationNotDefinedError)
@@ -667,13 +657,6 @@ def test_simple_ungrouped_window_with_scalar_order_by(alltypes):
             lambda df: pd.Series([df.double_col.mean()] * len(df.double_col)),
             False,
             id="unordered-mean",
-            marks=[
-                pytest.mark.broken(
-                    ["mssql"],
-                    raises=PyODBCProgrammingError,
-                    reason="unbounded window frames are not supported",
-                ),
-            ],
         ),
         param(
             lambda _, win: ibis.ntile(7).over(win),

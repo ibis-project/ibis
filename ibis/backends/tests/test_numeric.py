@@ -1342,11 +1342,6 @@ def test_clip(backend, alltypes, df, ibis_func, pandas_func):
     backend.assert_series_equal(result, expected, check_names=False)
 
 
-@pytest.mark.broken(
-    ["mssql"],
-    raises=PyODBCProgrammingError,
-    reason="unbounded window frames are not supported",
-)
 @pytest.mark.notimpl(["polars"], raises=com.OperationNotDefinedError)
 @pytest.mark.broken(
     ["druid"],
