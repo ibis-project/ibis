@@ -70,6 +70,6 @@ jobs:
         run: |
           python .github/workflows/upload-algolia.py
         env:
-          ALGOLIA_API_KEY: ${{ secrets.ALGOLIA_WRITE_API_KEY }}
+          ALGOLIA_WRITE_API_KEY: ${{ secrets.ALGOLIA_WRITE_API_KEY }}
           ALGOLIA_APP_ID: HS77W8GWM1
           ALGOLIA_INDEX: prod_ibis
