@@ -10,16 +10,16 @@ import toolz
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
-from ibis.backends.base.sqlglot.compiler import (
+from ibis.backends.sql.compiler import (
     FALSE,
     NULL,
     STAR,
     SQLGlotCompiler,
     paren,
 )
-from ibis.backends.base.sqlglot.datatypes import TrinoType
-from ibis.backends.base.sqlglot.dialects import Trino
-from ibis.backends.base.sqlglot.rewrites import (
+from ibis.backends.sql.datatypes import TrinoType
+from ibis.backends.sql.dialects import Trino
+from ibis.backends.sql.rewrites import (
     exclude_unsupported_window_frame_from_ops,
     rewrite_first_to_first_value,
     rewrite_last_to_last_value,

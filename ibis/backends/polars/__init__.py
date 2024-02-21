@@ -12,8 +12,7 @@ import ibis.common.exceptions as com
 import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
-from ibis.backends.base import BaseBackend, Database, NoUrl
-from ibis.backends.base.sqlglot.dialects import Polars
+from ibis.backends import BaseBackend, Database, NoUrl
 from ibis.backends.pandas.rewrites import (
     bind_unbound_table,
     replace_parameter,
@@ -21,6 +20,7 @@ from ibis.backends.pandas.rewrites import (
 )
 from ibis.backends.polars.compiler import translate
 from ibis.backends.polars.datatypes import dtype_to_polars, schema_from_polars
+from ibis.backends.sql.dialects import Polars
 from ibis.util import gen_name, normalize_filename
 
 if TYPE_CHECKING:

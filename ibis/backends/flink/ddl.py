@@ -6,8 +6,8 @@ import sqlglot as sg
 
 import ibis.common.exceptions as exc
 import ibis.expr.schema as sch
-from ibis.backends.base.sqlglot.datatypes import FlinkType
-from ibis.backends.base.sqlglot.ddl import DDL, DML, CreateDDL, DropObject
+from ibis.backends.sql.datatypes import FlinkType
+from ibis.backends.sql.ddl import DDL, DML, CreateDDL, DropObject
 from ibis.util import promote_list
 
 if TYPE_CHECKING:

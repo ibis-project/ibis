@@ -38,7 +38,7 @@ from ibis.backends.tests.errors import (
 from ibis.util import gen_name
 
 if TYPE_CHECKING:
-    from ibis.backends.base import BaseBackend
+    from ibis.backends import BaseBackend
 
 
 @pytest.fixture

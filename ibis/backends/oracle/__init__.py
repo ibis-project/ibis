@@ -21,9 +21,9 @@ import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis import util
-from ibis.backends.base.sqlglot import STAR, SQLGlotBackend
-from ibis.backends.base.sqlglot.compiler import TRUE, C
 from ibis.backends.oracle.compiler import OracleCompiler
+from ibis.backends.sql import STAR, SQLGlotBackend
+from ibis.backends.sql.compiler import TRUE, C
 
 if TYPE_CHECKING:
     from collections.abc import Iterable

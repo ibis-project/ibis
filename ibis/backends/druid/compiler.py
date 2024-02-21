@@ -6,10 +6,10 @@ import toolz
 
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
-from ibis.backends.base.sqlglot.compiler import NULL, SQLGlotCompiler
-from ibis.backends.base.sqlglot.datatypes import DruidType
-from ibis.backends.base.sqlglot.dialects import Druid
-from ibis.backends.base.sqlglot.rewrites import (
+from ibis.backends.sql.compiler import NULL, SQLGlotCompiler
+from ibis.backends.sql.datatypes import DruidType
+from ibis.backends.sql.dialects import Druid
+from ibis.backends.sql.rewrites import (
     rewrite_capitalize,
     rewrite_sample_as_filter,
 )

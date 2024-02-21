@@ -24,9 +24,9 @@ import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis import util
-from ibis.backends.base.sqlglot import SQLGlotBackend
-from ibis.backends.base.sqlglot.compiler import TRUE, C, ColGen, F
 from ibis.backends.postgres.compiler import PostgresCompiler
+from ibis.backends.sql import SQLGlotBackend
+from ibis.backends.sql.compiler import TRUE, C, ColGen, F
 from ibis.common.exceptions import InvalidDecoratorError
 
 if TYPE_CHECKING:

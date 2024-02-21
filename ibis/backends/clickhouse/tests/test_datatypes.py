@@ -8,7 +8,7 @@ from pytest import param
 import ibis
 import ibis.expr.datatypes as dt
 import ibis.tests.strategies as its
-from ibis.backends.base.sqlglot.datatypes import ClickHouseType
+from ibis.backends.sql.datatypes import ClickHouseType
 
 pytest.importorskip("clickhouse_connect")
 

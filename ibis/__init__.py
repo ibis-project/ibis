@@ -4,7 +4,7 @@ from __future__ import annotations
 __version__ = "8.0.0"
 
 from ibis import examples, util
-from ibis.backends.base import BaseBackend
+from ibis.backends import BaseBackend
 from ibis.common.exceptions import IbisError
 from ibis.config import options
 from ibis.expr import api

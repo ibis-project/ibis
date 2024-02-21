@@ -18,7 +18,7 @@ from public import public
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
-from ibis.backends.base.sqlglot.rewrites import (
+from ibis.backends.sql.rewrites import (
     add_one_to_nth_value_input,
     add_order_by_to_empty_ranking_window_functions,
     empty_in_values_right_side,
@@ -34,7 +34,7 @@ if TYPE_CHECKING:
 
     import ibis.expr.schema as sch
     import ibis.expr.types as ir
-    from ibis.backends.base.sqlglot.datatypes import SqlglotType
+    from ibis.backends.sql.datatypes import SqlglotType
 
 
 def get_leaf_classes(op):

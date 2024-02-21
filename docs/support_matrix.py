@@ -9,7 +9,7 @@ import ibis.expr.operations as ops
 def make_support_matrix():
     """Construct the backend operation support matrix data."""
 
-    from ibis.backends.base.sqlglot.compiler import ALL_OPERATIONS
+    from ibis.backends.sql.compiler import ALL_OPERATIONS
 
     support_matrix_ignored_operations = (ops.ScalarParameter,)
 

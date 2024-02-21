@@ -11,10 +11,10 @@ import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 from ibis import util
-from ibis.backends.base.sqlglot.compiler import NULL, C, FuncGen, SQLGlotCompiler
-from ibis.backends.base.sqlglot.datatypes import SnowflakeType
-from ibis.backends.base.sqlglot.dialects import Snowflake
-from ibis.backends.base.sqlglot.rewrites import (
+from ibis.backends.sql.compiler import NULL, C, FuncGen, SQLGlotCompiler
+from ibis.backends.sql.datatypes import SnowflakeType
+from ibis.backends.sql.dialects import Snowflake
+from ibis.backends.sql.rewrites import (
     exclude_unsupported_window_frame_from_ops,
     exclude_unsupported_window_frame_from_row_number,
     replace_log2,

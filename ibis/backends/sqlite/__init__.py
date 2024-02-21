@@ -15,9 +15,9 @@ import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis import util
-from ibis.backends.base import UrlFromPath
-from ibis.backends.base.sqlglot import SQLGlotBackend
-from ibis.backends.base.sqlglot.compiler import C, F
+from ibis.backends import UrlFromPath
+from ibis.backends.sql import SQLGlotBackend
+from ibis.backends.sql.compiler import C, F
 from ibis.backends.sqlite.compiler import SQLiteCompiler
 from ibis.backends.sqlite.converter import SQLitePandasData
 from ibis.backends.sqlite.udf import ignore_nulls, register_all

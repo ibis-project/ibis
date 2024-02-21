@@ -4,7 +4,7 @@ import pytest
 from pytest import param
 
 import ibis.expr.datatypes as dt
-from ibis.backends.base.sqlglot.datatypes import TrinoType
+from ibis.backends.sql.datatypes import TrinoType
 
 dtypes = [
     ("interval year to month", dt.Interval(unit="M")),

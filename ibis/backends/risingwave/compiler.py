@@ -7,10 +7,10 @@ import ibis.common.exceptions as com
 import ibis.expr.datashape as ds
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
-from ibis.backends.base.sqlglot.compiler import ALL_OPERATIONS
-from ibis.backends.base.sqlglot.datatypes import RisingWaveType
-from ibis.backends.base.sqlglot.dialects import RisingWave
 from ibis.backends.postgres.compiler import PostgresCompiler
+from ibis.backends.sql.compiler import ALL_OPERATIONS
+from ibis.backends.sql.datatypes import RisingWaveType
+from ibis.backends.sql.dialects import RisingWave
 
 
 @public

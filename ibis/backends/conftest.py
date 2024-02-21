@@ -19,7 +19,7 @@ from packaging.version import parse as vparse
 import ibis
 import ibis.common.exceptions as com
 from ibis import util
-from ibis.backends.base import CanCreateDatabase, CanCreateSchema, _get_backend_names
+from ibis.backends import CanCreateDatabase, CanCreateSchema, _get_backend_names
 from ibis.conftest import WINDOWS
 from ibis.util import promote_tuple
 
@@ -602,7 +602,7 @@ def temp_table(con) -> str:
 
     Parameters
     ----------
-    con : ibis.backends.base.Client
+    con : ibis.backends.Client
 
     Yields
     ------
@@ -657,7 +657,7 @@ def alternate_current_database(ddl_con, ddl_backend) -> str:
 
     Parameters
     ----------
-    ddl_con : ibis.backends.base.Client
+    ddl_con : ibis.backends.Client
 
     Yields
     ------

@@ -20,7 +20,7 @@ from sqlglot.dialects import DuckDB
 
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
-from ibis.backends.base import BaseBackend
+from ibis.backends import BaseBackend
 from ibis.expr.schema import Schema
 from ibis.expr.tests.conftest import MOCK_TABLES
 

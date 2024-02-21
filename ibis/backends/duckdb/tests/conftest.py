@@ -12,7 +12,7 @@ from ibis.conftest import SANDBOXED, WINDOWS
 if TYPE_CHECKING:
     from collections.abc import Iterator
 
-    from ibis.backends.base import BaseBackend
+    from ibis.backends import BaseBackend
 
 TEST_TABLES_GEO = {
     "zones": ibis.schema(

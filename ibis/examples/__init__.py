@@ -14,7 +14,7 @@ except ImportError:
 
 if TYPE_CHECKING:
     import ibis.expr.types as ir
-    from ibis.backends.base import BaseBackend
+    from ibis.backends import BaseBackend
 
 # These backends load the data directly using `read_csv`/`read_parquet`. All
 # other backends load the data using pyarrow, then passing it off to

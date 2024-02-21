@@ -10,10 +10,10 @@ from pytest import param
 import ibis
 import ibis.common.exceptions as com
 from ibis import _
-from ibis.backends.base import _get_backend_names
+from ibis.backends import _get_backend_names
 
 # import here to load the dialect in to sqlglot so we can use it for transpilation
-from ibis.backends.base.sqlglot.dialects import (  # noqa: F401
+from ibis.backends.sql.dialects import (  # noqa: F401
     MSSQL,
     DataFusion,
     Druid,

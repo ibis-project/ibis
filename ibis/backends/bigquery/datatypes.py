@@ -5,7 +5,7 @@ import google.cloud.bigquery as bq
 import ibis
 import ibis.expr.datatypes as dt
 import ibis.expr.schema as sch
-from ibis.backends.base.sqlglot.datatypes import BigQueryType
+from ibis.backends.sql.datatypes import BigQueryType
 from ibis.formats import SchemaMapper
 
 

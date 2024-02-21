@@ -17,9 +17,9 @@ import ibis.expr.datatypes as dt
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis import util
-from ibis.backends.base import CanListDatabases, NoUrl
-from ibis.backends.base.sqlglot import SQLGlotBackend
-from ibis.backends.base.sqlglot.compiler import C
+from ibis.backends import CanListDatabases, NoUrl
+from ibis.backends.sql import SQLGlotBackend
+from ibis.backends.sql.compiler import C
 from ibis.backends.trino.compiler import TrinoCompiler
 
 if TYPE_CHECKING:

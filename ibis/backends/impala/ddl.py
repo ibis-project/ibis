@@ -5,8 +5,8 @@ import json
 import sqlglot as sg
 
 import ibis.expr.schema as sch
-from ibis.backends.base.sqlglot.datatypes import ImpalaType
-from ibis.backends.base.sqlglot.ddl import DDL, DML, CreateDDL, DropFunction, DropObject
+from ibis.backends.sql.datatypes import ImpalaType
+from ibis.backends.sql.ddl import DDL, DML, CreateDDL, DropFunction, DropObject
 
 
 class ImpalaBase:

@@ -7,10 +7,10 @@ from public import public
 
 import ibis.common.exceptions as com
 import ibis.expr.operations as ops
-from ibis.backends.base.sqlglot.compiler import NULL, STAR, SQLGlotCompiler
-from ibis.backends.base.sqlglot.datatypes import OracleType
-from ibis.backends.base.sqlglot.dialects import Oracle
-from ibis.backends.base.sqlglot.rewrites import (
+from ibis.backends.sql.compiler import NULL, STAR, SQLGlotCompiler
+from ibis.backends.sql.datatypes import OracleType
+from ibis.backends.sql.dialects import Oracle
+from ibis.backends.sql.rewrites import (
     exclude_unsupported_window_frame_from_ops,
     exclude_unsupported_window_frame_from_row_number,
     replace_log2,

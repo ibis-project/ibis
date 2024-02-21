@@ -18,11 +18,11 @@ import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis import util
-from ibis.backends.base import CanCreateDatabase
-from ibis.backends.base.sqlglot import SQLGlotBackend
+from ibis.backends import CanCreateDatabase
 from ibis.backends.pyspark.compiler import PySparkCompiler
 from ibis.backends.pyspark.converter import PySparkPandasData
 from ibis.backends.pyspark.datatypes import PySparkSchema, PySparkType
+from ibis.backends.sql import SQLGlotBackend
 from ibis.expr.operations.udf import InputType
 from ibis.legacy.udf.vectorized import _coerce_to_series
 

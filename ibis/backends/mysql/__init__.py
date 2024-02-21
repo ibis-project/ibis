@@ -21,10 +21,10 @@ import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis import util
-from ibis.backends.base import CanCreateDatabase
-from ibis.backends.base.sqlglot import SQLGlotBackend
-from ibis.backends.base.sqlglot.compiler import TRUE, C
+from ibis.backends import CanCreateDatabase
 from ibis.backends.mysql.compiler import MySQLCompiler
+from ibis.backends.sql import SQLGlotBackend
+from ibis.backends.sql.compiler import TRUE, C
 
 if TYPE_CHECKING:
     from collections.abc import Iterable, Mapping

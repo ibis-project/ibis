@@ -17,7 +17,7 @@ import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis import selectors, util
-from ibis.backends.base import BaseBackend, connect
+from ibis.backends import BaseBackend, connect
 from ibis.common.deferred import Deferred, _, deferrable
 from ibis.common.dispatch import lazy_singledispatch
 from ibis.common.exceptions import IbisInputError

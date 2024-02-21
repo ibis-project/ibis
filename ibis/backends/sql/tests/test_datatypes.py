@@ -8,7 +8,7 @@ import sqlglot.expressions as sge
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.tests.strategies as its
-from ibis.backends.base.sqlglot.datatypes import DuckDBType, PostgresType, SqlglotType
+from ibis.backends.sql.datatypes import DuckDBType, PostgresType, SqlglotType
 
 
 def assert_dtype_roundtrip(ibis_type, sqlglot_expected=None):

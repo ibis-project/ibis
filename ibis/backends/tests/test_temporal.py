@@ -15,7 +15,7 @@ from pytest import param
 import ibis
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
-from ibis.backends.base import _get_backend_names
+from ibis.backends import _get_backend_names
 from ibis.backends.conftest import is_older_than
 from ibis.backends.tests.errors import (
     ArrowInvalid,

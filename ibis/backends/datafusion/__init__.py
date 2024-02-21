@@ -20,10 +20,10 @@ import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
-from ibis.backends.base import CanCreateDatabase, CanCreateSchema, NoUrl
-from ibis.backends.base.sqlglot import SQLGlotBackend
-from ibis.backends.base.sqlglot.compiler import C
+from ibis.backends import CanCreateDatabase, CanCreateSchema, NoUrl
 from ibis.backends.datafusion.compiler import DataFusionCompiler
+from ibis.backends.sql import SQLGlotBackend
+from ibis.backends.sql.compiler import C
 from ibis.expr.operations.udf import InputType
 from ibis.formats.pyarrow import PyArrowType
 from ibis.util import gen_name, normalize_filename

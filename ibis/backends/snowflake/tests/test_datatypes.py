@@ -5,8 +5,8 @@ from pytest import param
 
 import ibis
 import ibis.expr.datatypes as dt
-from ibis.backends.base.sqlglot.datatypes import SnowflakeType
 from ibis.backends.snowflake.tests.conftest import _get_url
+from ibis.backends.sql.datatypes import SnowflakeType
 from ibis.util import gen_name
 
 dtypes = [

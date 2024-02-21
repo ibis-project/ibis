@@ -12,10 +12,10 @@ import ibis
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
-from ibis.backends.base.sqlglot.compiler import FALSE, NULL, STAR, TRUE, SQLGlotCompiler
-from ibis.backends.base.sqlglot.datatypes import PySparkType
-from ibis.backends.base.sqlglot.dialects import PySpark
-from ibis.backends.base.sqlglot.rewrites import p
+from ibis.backends.sql.compiler import FALSE, NULL, STAR, TRUE, SQLGlotCompiler
+from ibis.backends.sql.datatypes import PySparkType
+from ibis.backends.sql.dialects import PySpark
+from ibis.backends.sql.rewrites import p
 from ibis.common.patterns import replace
 from ibis.config import options
 from ibis.util import gen_name

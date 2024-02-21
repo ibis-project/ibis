@@ -26,7 +26,7 @@ if TYPE_CHECKING:
     import torch
 
     import ibis.expr.types as ir
-    from ibis.backends.base import BaseBackend
+    from ibis.backends import BaseBackend
 
     TimeContext = tuple[pd.Timestamp, pd.Timestamp]
 

@@ -14,7 +14,7 @@ import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis import util
-from ibis.backends.base import NoUrl
+from ibis.backends import NoUrl
 from ibis.backends.pandas import BasePandasBackend
 from ibis.formats.pandas import PandasData
 
