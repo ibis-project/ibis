@@ -49,10 +49,10 @@ def main():
 
     max_size = 1_000
     for obj in search:
-        if len(obj["text"].encode("utf-8")) >= max_size:
+        if len(obj["text"].encode("utf-8")) > max_size:
             obj["text"] = truncate_string(obj["text"], max_size)
             size = len(obj["text"].encode("utf-8"))
-            assert size <= max_size
+            assert size < max_size
 
     index.replace_all_objects(search)
 
