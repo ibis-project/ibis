@@ -301,3 +301,6 @@ def test_compile_does_not_make_requests(con, mocker):
 def test_no_argument_connection():
     con = ibis.snowflake.connect()
     assert con.list_tables() is not None
+
+    con = ibis.connect("snowflake://")
+    assert con.list_tables() is not None
