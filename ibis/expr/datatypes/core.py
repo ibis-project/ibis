@@ -444,14 +444,6 @@ class DataType(Concrete, Coercible):
         """Return true if an instance of a Variadic type."""
         return isinstance(self, Variadic)
 
-    @abstractmethod
-    def is_same_base_type(self, other: DataType) -> bool:
-        """Check whether this type has the same base type as other type.
-
-        Examples of base types: integers, doubles, strings, booleans, etc.
-        """
-        ...
-
 
 @public
 class Unknown(DataType, Singleton):
@@ -459,9 +451,6 @@ class Unknown(DataType, Singleton):
 
     scalar = "UnknownScalar"
     column = "UnknownColumn"
-
-    def is_same_base_type(self, other: DataType) -> bool:
-        return other.is_unknown()
 
 
 @public
@@ -487,9 +476,6 @@ class Null(Primitive):
     scalar = "NullScalar"
     column = "NullColumn"
 
-    def is_same_base_type(self, other: DataType) -> bool:
-        return other.is_null()
-
 
 @public
 class Boolean(Primitive):
@@ -497,9 +483,6 @@ class Boolean(Primitive):
 
     scalar = "BooleanScalar"
     column = "BooleanColumn"
-
-    def is_same_base_type(self, other: DataType) -> bool:
-        return other.is_boolean()
 
 
 @public
@@ -530,9 +513,6 @@ class Integer(Primitive, Numeric):
     def nbytes(self) -> int:
         """Return the number of bytes used to store values of this type."""
 
-    def is_same_base_type(self, other: DataType) -> bool:
-        return other.is_integer()
-
 
 @public
 class String(Variadic, Singleton):
@@ -547,9 +527,6 @@ class String(Variadic, Singleton):
 
     scalar = "StringScalar"
     column = "StringColumn"
-
-    def is_same_base_type(self, other: DataType) -> bool:
-        return other.is_string()
 
 
 @public
@@ -569,9 +546,6 @@ class Binary(Variadic, Singleton):
     scalar = "BinaryScalar"
     column = "BinaryColumn"
 
-    def is_same_base_type(self, other: DataType) -> bool:
-        return other.is_binary()
-
 
 @public
 class Temporal(DataType):
@@ -585,9 +559,6 @@ class Date(Temporal, Primitive):
     scalar = "DateScalar"
     column = "DateColumn"
 
-    def is_same_base_type(self, other: DataType) -> bool:
-        return other.is_date()
-
 
 @public
 class Time(Temporal, Primitive):
@@ -595,9 +566,6 @@ class Time(Temporal, Primitive):
 
     scalar = "TimeScalar"
     column = "TimeColumn"
-
-    def is_same_base_type(self, other: DataType) -> bool:
-        return other.is_time()
 
 
 @public
@@ -655,9 +623,6 @@ class Timestamp(Temporal, Parametric):
         else:
             return ""
 
-    def is_same_base_type(self, other: DataType) -> bool:
-        return other.is_timestamp()
-
 
 @public
 class SignedInteger(Integer):
@@ -692,9 +657,6 @@ class Floating(Primitive, Numeric):
     @abstractmethod
     def nbytes(self) -> int:  # pragma: no cover
         """Return the number of bytes used to store values of this type."""
-
-    def is_same_base_type(self, other: DataType) -> bool:
-        return other.is_floating()
 
 
 @public
@@ -829,9 +791,6 @@ class Decimal(Numeric, Parametric):
 
         return f"({', '.join(args)})"
 
-    def is_same_base_type(self, other: DataType) -> bool:
-        return other.is_decimal()
-
 
 @public
 class Interval(Parametric):
@@ -851,9 +810,6 @@ class Interval(Parametric):
     @property
     def _pretty_piece(self) -> str:
         return f"('{self.unit.value}')"
-
-    def is_same_base_type(self, other: DataType) -> bool:
-        return other.is_interval()
 
 
 @public
@@ -913,9 +869,6 @@ class Struct(Parametric, MapSet):
         pairs = ", ".join(map("{}: {}".format, self.names, self.types))
         return f"<{pairs}>"
 
-    def is_same_base_type(self, other: DataType) -> bool:
-        return other.is_struct()
-
 
 T = TypeVar("T", bound=DataType, covariant=True)
 
@@ -932,9 +885,6 @@ class Array(Variadic, Parametric, Generic[T]):
     @property
     def _pretty_piece(self) -> str:
         return f"<{self.value_type}>"
-
-    def is_same_base_type(self, other: DataType) -> bool:
-        return other.is_array()
 
 
 K = TypeVar("K", bound=DataType, covariant=True)
@@ -955,9 +905,6 @@ class Map(Variadic, Parametric, Generic[K, V]):
     def _pretty_piece(self) -> str:
         return f"<{self.key_type}, {self.value_type}>"
 
-    def is_same_base_type(self, other: DataType) -> bool:
-        return other.is_map()
-
 
 @public
 class JSON(Variadic):
@@ -965,9 +912,6 @@ class JSON(Variadic):
 
     scalar = "JSONScalar"
     column = "JSONColumn"
-
-    def is_same_base_type(self, other: DataType) -> bool:
-        return other.is_json()
 
 
 @public
@@ -992,9 +936,6 @@ class GeoSpatial(DataType):
             piece += f";{self.srid}"
         return piece
 
-    def is_same_base_type(self, other: DataType) -> bool:
-        return other.is_geospatial()
-
 
 @public
 class Point(GeoSpatial):
@@ -1003,9 +944,6 @@ class Point(GeoSpatial):
     scalar = "PointScalar"
     column = "PointColumn"
 
-    def is_same_base_type(self, other: DataType) -> bool:
-        return other.is_point()
-
 
 @public
 class LineString(GeoSpatial):
@@ -1013,9 +951,6 @@ class LineString(GeoSpatial):
 
     scalar = "LineStringScalar"
     column = "LineStringColumn"
-
-    def is_same_base_type(self, other: DataType) -> bool:
-        return other.is_linestring()
 
 
 @public
@@ -1029,9 +964,6 @@ class Polygon(GeoSpatial):
     scalar = "PolygonScalar"
     column = "PolygonColumn"
 
-    def is_same_base_type(self, other: DataType) -> bool:
-        return other.is_polygon()
-
 
 @public
 class MultiLineString(GeoSpatial):
@@ -1039,9 +971,6 @@ class MultiLineString(GeoSpatial):
 
     scalar = "MultiLineStringScalar"
     column = "MultiLineStringColumn"
-
-    def is_same_base_type(self, other: DataType) -> bool:
-        return other.is_multilinestring()
 
 
 @public
@@ -1051,9 +980,6 @@ class MultiPoint(GeoSpatial):
     scalar = "MultiPointScalar"
     column = "MultiPointColumn"
 
-    def is_same_base_type(self, other: DataType) -> bool:
-        return other.is_multipoint()
-
 
 @public
 class MultiPolygon(GeoSpatial):
@@ -1061,9 +987,6 @@ class MultiPolygon(GeoSpatial):
 
     scalar = "MultiPolygonScalar"
     column = "MultiPolygonColumn"
-
-    def is_same_base_type(self, other: DataType) -> bool:
-        return other.is_multipolygon()
 
 
 @public
@@ -1073,9 +996,6 @@ class UUID(DataType):
     scalar = "UUIDScalar"
     column = "UUIDColumn"
 
-    def is_same_base_type(self, other: DataType) -> bool:
-        return other.is_uuid()
-
 
 @public
 class MACADDR(DataType):
@@ -1084,9 +1004,6 @@ class MACADDR(DataType):
     scalar = "MACADDRScalar"
     column = "MACADDRColumn"
 
-    def is_same_base_type(self, other: DataType) -> bool:
-        return other.is_macaddr()
-
 
 @public
 class INET(DataType):
@@ -1094,9 +1011,6 @@ class INET(DataType):
 
     scalar = "INETScalar"
     column = "INETColumn"
-
-    def is_same_base_type(self, other: DataType) -> bool:
-        return other.is_inet()
 
 
 # ---------------------------------------------------------------------
