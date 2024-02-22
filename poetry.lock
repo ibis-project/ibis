@@ -2688,13 +2688,13 @@ test = ["ipykernel", "jsonschema", "pytest (>=3.6.0)", "pytest-cov", "pytz"]
 
 [[package]]
 name = "itables"
-version = "1.7.0"
+version = "1.6.4"
 description = "Interactive Tables in Jupyter"
 optional = false
 python-versions = "*"
 files = [
-    {file = "itables-1.7.0-py3-none-any.whl", hash = "sha256:2f41528b6ef93fe838fed1e00a35c844a4ebf91fbfaa852b5aad83e039a8026c"},
-    {file = "itables-1.7.0.tar.gz", hash = "sha256:ad6ddd91feb65bde5c7a53fe77f222358fcd68dc80b90840ae06391745120d5c"},
+    {file = "itables-1.6.4-py3-none-any.whl", hash = "sha256:a9325ae3a20c0931c9a92b92ccd8809a8204c5c4e219ea287fd6d51fabf86920"},
+    {file = "itables-1.6.4.tar.gz", hash = "sha256:b880e5df47b8229f74be9b6971bd5cc46c6e742a624248c5c21795b3efa84800"},
 ]
 
 [package.dependencies]
@@ -7325,4 +7325,4 @@ visualization = ["graphviz"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.9"
-content-hash = "83d4c8bb4234eb0d2971532c4ec2c904aadafa82c5f022e445f525537845c5c5"
+content-hash = "74f81f7be9e04491689736c492631936d0a539f5dc85b3ae50d7cbf7b7d7de05"
