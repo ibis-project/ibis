@@ -400,3 +400,22 @@ class DuckDBCompiler(SQLGlotCompiler):
 
     def visit_StringConcat(self, op, *, arg):
         return reduce(lambda x, y: sge.DPipe(this=x, expression=y), arg)
+
+    def visit_Enumerate(self, op, *, arg, start: int):
+        # adapted from visit_ArrayZip
+        i = sg.to_identifier("i")
+        body = sge.Struct.from_arg_list(
+            [
+                # subtract one because array indexing is one-based, then add `start`
+                sge.Slice(this=sge.convert("index"), expression=i - 1 + start),
+                sge.Slice(
+                    # need to use list_element(arg, i) instead of arg[i] here
+                    # due to a sqlglot parse error
+                    this=sge.convert("value"),
+                    expression=self.f.list_element(arg, i),
+                ),
+            ]
+        )
+        func = sge.Lambda(this=body, expressions=[i])
+        applied = self.f.list_apply(self.f.range(1, self.f.len(arg) + 1), func)
+        return sge.Explode(this=applied)

@@ -12,6 +12,7 @@ from ibis.expr.types.generic import Column, Scalar, Value
 if TYPE_CHECKING:
     from collections.abc import Iterable
 
+    import ibis.expr.datatypes as dt
     import ibis.expr.types as ir
     from ibis.expr.types.typing import V
 
@@ -1040,6 +1041,38 @@ class ArrayValue(Value):
         └──────────────────────┴──────────────────────┴────────────┴───┘
         """
         return ops.ArrayFlatten(self).to_expr()
+
+    def enumerate(self, *, start: int = 0) -> dt.Struct:
+        """Return a struct column with an index field and a value field.
+
+        The `index` field starts from `start`.
+
+        Examples
+        --------
+        >>> from ibis.interactive import *
+        >>> a = ibis.array(["a", "b", "c"])
+        >>> a.enumerate()
+        ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+        ┃ Enumerate(Array())                  ┃
+        ┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+        │ struct<index: int64, value: string> │
+        ├─────────────────────────────────────┤
+        │ {'index': 0, 'value': 'a'}          │
+        │ {'index': 1, 'value': 'b'}          │
+        │ {'index': 2, 'value': 'c'}          │
+        └─────────────────────────────────────┘
+        >>> a.enumerate(start=1)
+        ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+        ┃ Enumerate(Array())                  ┃
+        ┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+        │ struct<index: int64, value: string> │
+        ├─────────────────────────────────────┤
+        │ {'index': 1, 'value': 'a'}          │
+        │ {'index': 2, 'value': 'b'}          │
+        │ {'index': 3, 'value': 'c'}          │
+        └─────────────────────────────────────┘
+        """
+        return ops.Enumerate(self, start).to_expr()
 
 
 @public

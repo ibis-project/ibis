@@ -226,3 +226,15 @@ class TimestampRange(Range):
     start: Value[dt.Timestamp]
     stop: Value[dt.Timestamp]
     step: Value[dt.Interval]
+
+
+@public
+class Enumerate(Value):
+    arg: Value[dt.Array]
+    start: int
+
+    shape = ds.columnar
+
+    @attribute
+    def dtype(self) -> dt.DataType:
+        return dt.Struct({"index": dt.int64, "value": self.arg.dtype.value_type})
