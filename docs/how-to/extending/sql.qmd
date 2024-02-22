@@ -163,7 +163,7 @@ with the SQL statement's execution.
 ::: {.callout-caution}
 ## You **must** close the cursor returned from `raw_sql` to avoid leaking resources
 
-Failure to do can result in a variety of errors and hard-to-debug behaviors.
+Failure to do so can result in a variety of errors and hard-to-debug behaviors.
 
 The easiest way to do this is to use a context manager:
 
