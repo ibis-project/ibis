@@ -126,13 +126,7 @@ The best way to interact with a single table is through the
 render_methods(
     table,
     "drop",
-    "drop_partition",
-    "files",
     "insert",
-    "is_partitioned",
-    "partition_schema",
-    "partitions",
-    "refresh",
     "describe_formatted",
 )
 ```
