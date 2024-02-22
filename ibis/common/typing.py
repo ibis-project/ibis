@@ -4,24 +4,26 @@ import re
 import sys
 from abc import abstractmethod
 from itertools import zip_longest
-from types import ModuleType  # noqa: F401
-from typing import (
-    TYPE_CHECKING,
-    Any,
-    Generic,  # noqa: F401
-    Optional,
-    TypeVar,
-    Union,
-    get_args,
-    get_origin,
-)
+from typing import TYPE_CHECKING, Any, Optional, TypeVar, Union, get_args, get_origin
 from typing import get_type_hints as _get_type_hints
 
 from ibis.common.bases import Abstract
 from ibis.common.caching import memoize
 
 if TYPE_CHECKING:
+    from collections.abc import Iterable, Mapping
+
     from typing_extensions import Self
+
+    import ibis.expr.datatypes as dt
+    import ibis.expr.schema as sch
+
+    SupportsSchema = TypeVar(
+        "SupportsSchema",
+        sch.Schema,
+        Mapping[str, str | dt.DataType],
+        Iterable[tuple[str, str | dt.DataType]],
+    )
 
 if sys.version_info >= (3, 10):
     from types import UnionType
@@ -144,6 +146,7 @@ def get_bound_typevars(obj: Any) -> dict[TypeVar, tuple[str, type]]:
 
     Examples
     --------
+    >>> from typing import Generic
     >>> class MyStruct(Generic[T, U]):
     ...     a: T
     ...     b: U
