@@ -208,7 +208,7 @@ from largest to smallest:
 
 ```{python}
 t = (
-    t.mutate(tokens_estimate=t.contents.length() // 4)  # <1>
+    t.mutate(tokens_estimate=t["contents"].length() // 4)  # <1>
     .order_by(ibis._["tokens_estimate"].desc())  # <2>
     .relocate("filepath", "tokens_estimate")  # <3>
 )
@@ -303,10 +303,12 @@ Now we can search for similar text in the documentation:
 
 ```{python}
 def search_docs(text):  # <1>
+    """Search documentation for similar text, returning a sorted table"""  # <1>
+
     embedding = _embed(text)  # <2>
 
     s = (
-        t.mutate(similarity=list_cosine_similarity(t.embedding, embedding))  # <3>
+        t.mutate(similarity=list_cosine_similarity(t["embedding"], embedding))  # <3>
         .relocate("similarity")  # <4>
         .order_by(ibis._["similarity"].desc())  # <5>
         .cache()  # <6>
