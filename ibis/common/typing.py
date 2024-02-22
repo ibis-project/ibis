@@ -11,19 +11,8 @@ from ibis.common.bases import Abstract
 from ibis.common.caching import memoize
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable, Mapping
-
     from typing_extensions import Self
 
-    import ibis.expr.datatypes as dt
-    import ibis.expr.schema as sch
-
-    SupportsSchema = TypeVar(
-        "SupportsSchema",
-        sch.Schema,
-        Mapping[str, str | dt.DataType],
-        Iterable[tuple[str, str | dt.DataType]],
-    )
 
 if sys.version_info >= (3, 10):
     from types import UnionType

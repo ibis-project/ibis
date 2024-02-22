@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Iterable, Iterator, Mapping
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Union
 
 import ibis.expr.datatypes as dt
 from ibis.common.annotations import attribute
@@ -14,6 +14,7 @@ from ibis.util import deprecated, indent
 
 if TYPE_CHECKING:
     import pandas as pd
+    from typing_extensions import TypeAlias
 
 
 class Schema(Concrete, Coercible, MapSet):
@@ -218,6 +219,13 @@ class Schema(Concrete, Coercible, MapSet):
         from ibis.formats.pandas import PandasData
 
         return PandasData.convert_table(df, self)
+
+
+SchemaLike: TypeAlias = Union[
+    Schema,
+    Mapping[str, Union[str, dt.DataType]],
+    Iterable[tuple[str, Union[str, dt.DataType]]],
+]
 
 
 @lazy_singledispatch

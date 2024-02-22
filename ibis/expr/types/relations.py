@@ -33,8 +33,8 @@ if TYPE_CHECKING:
 
     import ibis.expr.types as ir
     import ibis.selectors as s
-    from ibis.common.typing import SupportsSchema
     from ibis.expr.operations.relations import JoinKind
+    from ibis.expr.schema import SchemaLike
     from ibis.expr.types import Table
     from ibis.expr.types.groupby import GroupedTable
     from ibis.expr.types.tvf import WindowedTable
@@ -361,7 +361,7 @@ class Table(Expr, _FixedTextJupyterMixin):
         """
         return name in self.schema()
 
-    def cast(self, schema: SupportsSchema) -> Table:
+    def cast(self, schema: SchemaLike) -> Table:
         """Cast the columns of a table.
 
         Similar to `pandas.DataFrame.astype`.
@@ -438,7 +438,7 @@ class Table(Expr, _FixedTextJupyterMixin):
         """
         return self._cast(schema, cast_method="cast")
 
-    def try_cast(self, schema: SupportsSchema) -> Table:
+    def try_cast(self, schema: SchemaLike) -> Table:
         """Cast the columns of a table.
 
         If the cast fails for a row, the value is returned
@@ -472,7 +472,7 @@ class Table(Expr, _FixedTextJupyterMixin):
         """
         return self._cast(schema, cast_method="try_cast")
 
-    def _cast(self, schema: SupportsSchema, cast_method: str = "cast") -> Table:
+    def _cast(self, schema: SchemaLike, cast_method: str = "cast") -> Table:
         schema = sch.schema(schema)
 
         cols = []
