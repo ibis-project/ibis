@@ -14,6 +14,7 @@ from ibis.backends.tests.data import array_types, json_types, struct_types, win
 class TestConf(BackendTest):
     force_sort = True
     stateful = False
+    supports_map = True
     deps = "pandas", "pyflink"
 
     @staticmethod
@@ -63,6 +64,17 @@ class TestConf(BackendTest):
         con.create_table("json_t", json_types, temp=True)
         con.create_table("struct", struct_types, temp=True)
         con.create_table("win", win, temp=True)
+        con.create_table(
+            "map",
+            pd.DataFrame(
+                {
+                    "idx": [1, 2],
+                    "kv": [{"a": 1, "b": 2, "c": 3}, {"d": 4, "e": 5, "f": 6}],
+                }
+            ),
+            schema=ibis.schema({"idx": "int64", "kv": "map<string, int64>"}),
+            temp=True,
+        )
 
 
 class TestConfForStreaming(TestConf):

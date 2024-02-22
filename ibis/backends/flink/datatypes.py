@@ -127,8 +127,9 @@ class FlinkType(TypeMapper):
             return DataTypes.ARRAY(cls.from_ibis(dtype.value_type), nullable=nullable)
         elif dtype.is_map():
             return DataTypes.MAP(
-                key_type=cls.from_ibis(dtype.key_type),
-                value_type=cls.from_ibis(dtype.key_type),
+                # keys *must* be non-nullable
+                key_type=cls.from_ibis(dtype.key_type.copy(nullable=False)),
+                value_type=cls.from_ibis(dtype.value_type),
                 nullable=nullable,
             )
         elif dtype.is_struct():

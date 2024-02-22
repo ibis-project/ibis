@@ -55,7 +55,6 @@ class FlinkCompiler(SQLGlotCompiler):
             ops.IsInf,
             ops.IsNan,
             ops.Levenshtein,
-            ops.MapMerge,
             ops.Median,
             ops.MultiQuantile,
             ops.NthValue,
@@ -81,7 +80,8 @@ class FlinkCompiler(SQLGlotCompiler):
         ops.ExtractDayOfYear: "dayofyear",
         ops.First: "first_value",
         ops.Last: "last_value",
-        ops.Map: "map_from_arrays",
+        ops.MapKeys: "map_keys",
+        ops.MapValues: "map_values",
         ops.Power: "power",
         ops.RandomScalar: "rand",
         ops.RegexSearch: "regexp",
@@ -548,3 +548,21 @@ class FlinkCompiler(SQLGlotCompiler):
         if where is not None:
             arg = self.if_(where, arg, self.f.array(arg)[2])
         return self.f.count(sge.Distinct(expressions=[arg]))
+
+    def visit_MapContains(self, op: ops.MapContains, *, arg, key):
+        return self.f.array_contains(self.f.map_keys(arg), key)
+
+    def visit_Map(self, op: ops.Map, *, keys, values):
+        return self.cast(self.f.map_from_arrays(keys, values), op.dtype)
+
+    def visit_MapMerge(self, op: ops.MapMerge, *, left, right):
+        left_keys = self.f.map_keys(left)
+        left_values = self.f.map_values(left)
+
+        right_keys = self.f.map_keys(right)
+        right_values = self.f.map_values(right)
+
+        keys = self.f.array_concat(left_keys, right_keys)
+        values = self.f.array_concat(left_values, right_values)
+
+        return self.cast(self.f.map_from_arrays(keys, values), op.dtype)
