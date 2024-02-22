@@ -1,0 +1,143 @@
+---
+title: "Snow IO: loading data from other DBs into Snowflake"
+author: "Phillip Cloud"
+error: false
+date: "2024-03-06"
+categories:
+  - blog
+  - snowflake
+  - io
+  - productivity
+---
+
+## Recap
+
+We've [blogged about Snowflake IO before](../snowflake-io/index.qmd), in the
+context of getting local files into Snowflake as fast as possible.
+
+In this post, we'll show how to insert query results from another system into
+Snowflake, using Ibis.
+
+## Setup
+
+### Connect to your non-Snowflake system
+
+We'll connect to a postgres database running locally in a container. You
+should be able to swap in your own connection details as needed.
+
+```{python}
+from ibis.interactive import *  # <1>
+
+pg_con = ibis.connect("postgres://postgres:postgres@localhost/postgres")
+```
+
+1. Import Ibis for maximum productivity in interactive analysis.
+
+We'll use a test dataset that contains some baseball batting statistics.
+
+Ibis provides that example data, so we can dump that into postgres.
+
+
+```{python}
+pg_batting = pg_con.create_table(
+    "batting",
+    ibis.examples.Batting.fetch().to_pandas(),  # <1>
+    temp=True,  # <2>
+)
+```
+
+1. Yep, I'm using pandas here!
+2. Use a temporary table to avoid cluttering up the database.
+
+### Connect to Snowflake
+
+```{python}
+import os
+
+# snowflake://user:pass@account/database/schema?warehouse=my_warehouse
+snow_con = ibis.connect(os.environ["SNOWFLAKE_URL"])  # <1>
+```
+
+1. Set the `SNOWFLAKE_URL` environment variable to your Snowflake connection string.
+
+## Profit
+
+### Construct an Ibis expression from the postgres data
+
+Let's build an Ibis expression based on the `batting` table in our postgres database.
+
+```{python}
+pg_batting
+```
+
+We can compute the average [RBI](https://en.wikipedia.org/wiki/Run_batted_in) per year per team.
+
+```{python}
+pg_expr = pg_batting.group_by(("year_id", "team_id")).agg(avg_rbi=_.rbi.mean())
+pg_expr
+```
+
+We can also rename columns to be more consistent with typical Snowflake usage.
+
+```{python}
+pg_expr = pg_expr.rename("ALL_CAPS")
+pg_expr
+```
+
+Let's show how many rows we have in the result.
+
+```{python}
+pg_expr.count()
+```
+
+### Insert the computed results into Snowflake
+
+Because all Ibis backends implement the `to_pyarrow()` method, we can
+get data out of another system and into Snowflake with a few lines of code.
+
+First we'll create a table in Snowflake to hold the data.
+
+Ibis helps here by providing an API to access the schema from the
+**postgres**-based expression, and automatically translates postgres types into
+Snowflake types.
+
+```{python}
+snow_table = snow_con.create_table("pg_batting", schema=pg_expr.schema(), temp=True)  # <1>
+```
+
+1. By default the table will be created in the database and schema of the
+   current connection.
+
+   We create a temporary table for the same reason we do with postgres above.
+
+
+We'll show that the table is empty to sanity check ourselves.
+
+```{python}
+snow_table
+```
+
+Insert the expression's result table into Snowflake.
+
+```{python}
+snow_con.insert("pg_batting", pg_expr.to_pyarrow())
+```
+
+To sanity check what we've done let's peek at the table.
+
+```{python}
+snow_table
+```
+
+We'll count them too, to be extra sure.
+
+```{python}
+snow_table.count()
+```
+
+## Conclusion
+
+In this post we show how easy it is to move data from one backend into Snowflake using Ibis.
+
+Please try it out and get in touch on [Zulip](https://ibis-project.zulipchat.com/) or
+[GitHub](https://github.com/ibis-project/ibis), we'd love to hear from you!
