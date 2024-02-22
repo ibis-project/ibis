@@ -243,7 +243,14 @@ $$ {defn["source"]} $$"""
             ),
         )
 
-        con = sc.connect(**connect_args, session_parameters=session_parameters)
+        con = sc.connect(**connect_args)
+
+        with contextlib.closing(con.cursor()) as cur:
+            cur.execute(
+                "ALTER SESSION SET {}".format(
+                    " ".join(f"{k} = {v!r}" for k, v in session_parameters.items())
+                )
+            )
 
         if create_object_udfs:
             database = con.database
