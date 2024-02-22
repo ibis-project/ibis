@@ -22,7 +22,7 @@ if TYPE_CHECKING:
 
     import ibis.expr.datatypes as dt
     from ibis.backends.sql.compiler import SQLGlotCompiler
-    from ibis.common.typing import SupportsSchema
+    from ibis.expr.schema import SchemaLike
 
 
 class SQLBackend(BaseBackend):
@@ -137,7 +137,7 @@ class SQLBackend(BaseBackend):
     def sql(
         self,
         query: str,
-        schema: SupportsSchema | None = None,
+        schema: SchemaLike | None = None,
         dialect: str | None = None,
     ) -> ir.Table:
         query = self._transpile_sql(query, dialect=dialect)

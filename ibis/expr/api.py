@@ -48,7 +48,7 @@ if TYPE_CHECKING:
     import pandas as pd
     import pyarrow as pa
 
-    from ibis.common.typing import SupportsSchema
+    from ibis.expr.schema import SchemaLike
 
 __all__ = (
     "aggregate",
@@ -266,7 +266,7 @@ def param(type: dt.DataType) -> ir.Scalar:
 
 
 def schema(
-    pairs: SupportsSchema | None = None,
+    pairs: SchemaLike | None = None,
     names: Iterable[str] | None = None,
     types: Iterable[str | dt.DataType] | None = None,
 ) -> sch.Schema:
@@ -310,7 +310,7 @@ _table_names = (f"unbound_table_{i:d}" for i in itertools.count())
 
 
 def table(
-    schema: SupportsSchema | None = None,
+    schema: SchemaLike | None = None,
     name: str | None = None,
 ) -> ir.Table:
     """Create a table literal or an abstract table without data.
@@ -352,7 +352,7 @@ def memtable(
     data,
     *,
     columns: Iterable[str] | None = None,
-    schema: SupportsSchema | None = None,
+    schema: SchemaLike | None = None,
     name: str | None = None,
 ) -> Table:
     """Construct an ibis table expression from in-memory data.
@@ -441,7 +441,7 @@ def _memtable(
     data: pd.DataFrame | Any,
     *,
     columns: Iterable[str] | None = None,
-    schema: SupportsSchema | None = None,
+    schema: SchemaLike | None = None,
     name: str | None = None,
 ) -> Table:
     import pandas as pd
@@ -493,7 +493,7 @@ def _memtable_from_pyarrow_table(
     data: pa.Table,
     *,
     name: str | None = None,
-    schema: SupportsSchema | None = None,
+    schema: SchemaLike | None = None,
     columns: Iterable[str] | None = None,
 ):
     from ibis.formats.pyarrow import PyArrowTableProxy
