@@ -34,7 +34,7 @@ t = ibis.examples.penguins.fetch(backend=con, table_name="penguins")  # <2>
 1. Connect to an in-memory DuckDB database
 2. Read in the `penguins` example with our DuckDB database, and name it `penguins`
 
-## `Table.sql`
+## [`Table.sql`](../../reference/expression-tables.qmd#ibis.expr.types.relations.Table.sql)
 
 At the highest level there's the `Table.sql` method. This method allows you to
 run arbitrary `SELECT` statements against a table expression:
@@ -119,6 +119,10 @@ another.
 
 ## `Backend.sql`
 
+::: {.callout-tip}
+## `Backend.sql` supports the `dialect` argument.
+:::
+
 There's also the `Backend.sql` method, which can handle arbitrary `SELECT`
 statements as well and returns an Ibis table expression.
 
@@ -126,7 +130,7 @@ The main difference with `Table.sql` is that `Backend.sql` **can only refer to
 tables that already exist in the database**, because the API is defined on
 `Backend` instances.
 
-After the `Backend.sql` call, however, you're able to mix and match similar
+After calling `Backend.sql`, however, you're able to mix and match similar
 to `Table.sql`:
 
 ```{python}
@@ -147,10 +151,6 @@ to `Table.sql`:
 )
 ```
 
-::: {.callout-tip}
-## `Backend.sql` also supports the `dialect` argument.
-:::
-
 ## `Backend.raw_sql`
 
 At the lowest level there's `Backend.raw_sql` which is for those situations
@@ -161,16 +161,26 @@ modeled as a table expression.
 with the SQL statement's execution.
 
 ::: {.callout-caution}
-## You **must** close the cursor returned from `raw_sql` to avoid leaking resources
+## You may need to close the cursor returned from `raw_sql` to avoid leaking resources
 
-Failure to do results in variety of errors and hard-to-debug behaviors.
+Failure to do so can result in a variety of errors and hard-to-debug behaviors.
+
+For DDL statements, you may not need to close the cursor since DDL statements
+do not produce results.
+
+Depending on the backend you may have to experiment to see when closing the
+cursor is necessary.
+
+In most cases a cursor returned from a `SELECT` statement requires a call to
+`close()`.
 
 The easiest way to do this is to use a context manager:
 
 ```{python}
 from contextlib import closing
 
-with closing(con.raw_sql("CREATE TEMP TABLE my_table AS SELECT * FROM RANGE(10)")) as c:
+
+with closing(con.raw_sql("SELECT * FROM RANGE(10)")) as c:
     ...  # do something with c if necessary
 ```
 :::
