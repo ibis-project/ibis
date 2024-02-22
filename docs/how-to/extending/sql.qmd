@@ -161,9 +161,18 @@ modeled as a table expression.
 with the SQL statement's execution.
 
 ::: {.callout-caution}
-## You **must** close the cursor returned from `raw_sql` to avoid leaking resources
+## You may need to close the cursor returned from `raw_sql` to avoid leaking resources
 
 Failure to do so can result in a variety of errors and hard-to-debug behaviors.
+
+For DDL statements, you may not need to close the cursor since DDL statements
+do not produce results.
+
+Depending on the backend you may have to experiment to see when closing the
+cursor is necessary.
+
+In most cases a cursor returned from a `SELECT` statement requires a call to
+`close()`.
 
 The easiest way to do this is to use a context manager:
 
@@ -174,7 +183,4 @@ from contextlib import closing
 with closing(con.raw_sql("SELECT * FROM RANGE(10)")) as c:
     ...  # do something with c if necessary
 ```
-
-For DDL statements, you may not need to close the cursor since DDL statements
-do not produce results.
 :::
