@@ -20,6 +20,12 @@ RAG!
 The database must support array types and have some form of similarity metric
 between arrays of numbers. Alternatively, a custom user-defined function (UDF)
 can be used for the similarity metric.
+
+The performance of calculating similarity will also be much faster if the
+database supports [fixed-sized
+arrays](https://duckdb.org/docs/sql/data_types/array) as DuckDB recently
+launched in version 0.10.0. We're still using 0.9.2 in this post, but it'll be
+easy to upgrade.
 :::
 
 [DuckDB is the default backend for Ibis](../why-duckdb/index.qmd) and makes
@@ -202,7 +208,7 @@ from largest to smallest:
 
 ```{python}
 t = (
-    t.mutate(tokens_estimate=t.contents.length() // 4)  # <1>
+    t.mutate(tokens_estimate=t["contents"].length() // 4)  # <1>
     .order_by(ibis._["tokens_estimate"].desc())  # <2>
     .relocate("filepath", "tokens_estimate")  # <3>
 )
@@ -297,10 +303,12 @@ Now we can search for similar text in the documentation:
 
 ```{python}
 def search_docs(text):  # <1>
+    """Search documentation for similar text, returning a sorted table"""  # <1>
+
     embedding = _embed(text)  # <2>
 
     s = (
-        t.mutate(similarity=list_cosine_similarity(t.embedding, embedding))  # <3>
+        t.mutate(similarity=list_cosine_similarity(t["embedding"], embedding))  # <3>
         .relocate("similarity")  # <4>
         .order_by(ibis._["similarity"].desc())  # <5>
         .cache()  # <6>
@@ -320,6 +328,14 @@ def search_docs(text):  # <1>
 text = "where can I chat with the community about Ibis?"
 search_docs(text)
 ```
+
+Now that we have retrieved the most similar documentation, we can augment our
+language model's input with that context prior to generating a response! In
+practice, we'd probably want to set a similarity threshold and take the top `N`
+results. Chunking our text into smaller pieces and selecting from those results
+would also be a good idea.
+
+Let's try a few more queries:
 
 ```{python}
 text = "what do users say about Ibis?"
