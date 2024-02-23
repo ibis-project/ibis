@@ -453,7 +453,7 @@ def test_grouped_bounded_following_window(backend, alltypes, df, preceding, foll
 
 
 @pytest.mark.parametrize(
-    "window_fn",
+    "window_fn, window_size",
     [
         param(
             lambda t: ibis.window(
@@ -462,6 +462,7 @@ def test_grouped_bounded_following_window(backend, alltypes, df, preceding, foll
                 group_by=[t.string_col],
                 order_by=[t.id],
             ),
+            3,
             id="preceding-2-following-0",
         ),
         param(
@@ -471,18 +472,29 @@ def test_grouped_bounded_following_window(backend, alltypes, df, preceding, foll
                 group_by=[t.string_col],
                 order_by=[t.id],
             ),
+            3,
             id="preceding-2-following-0-tuple",
         ),
         param(
             lambda t: ibis.trailing_window(
                 preceding=2, group_by=[t.string_col], order_by=[t.id]
             ),
+            3,
             id="trailing-2",
+        ),
+        param(
+            lambda t: ibis.window(
+                preceding=1000, following=0, group_by=[t.string_col], order_by=[t.id]
+            ),
+            1001,
+            id="large-preceding-1000-following-0",
         ),
     ],
 )
 @pytest.mark.notimpl(["polars"], raises=com.OperationNotDefinedError)
-def test_grouped_bounded_preceding_window(backend, alltypes, df, window_fn):
+def test_grouped_bounded_preceding_window(
+    backend, alltypes, df, window_fn, window_size
+):
     window = window_fn(alltypes)
     expr = alltypes.mutate(val=alltypes.double_col.sum().over(window))
 
@@ -490,7 +502,7 @@ def test_grouped_bounded_preceding_window(backend, alltypes, df, window_fn):
     gdf = df.sort_values("id").groupby("string_col")
     expected = (
         df.assign(
-            val=gdf.double_col.rolling(3, min_periods=1)
+            val=gdf.double_col.rolling(window_size, min_periods=1)
             .sum()
             .sort_index(level=1)
             .reset_index(drop=True)

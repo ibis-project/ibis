@@ -168,17 +168,12 @@ class WindowBuilder(Builder):
         else:
             raise IbisInputError("Window frame can only depend on a single relation")
 
-    def _maybe_cast_boundary(self, boundary, dtype):
-        if boundary.dtype == dtype:
-            return boundary
-        value = ops.Cast(boundary.value, dtype)
-        return boundary.copy(value=value)
-
     def _maybe_cast_boundaries(self, start, end):
         if start and end:
-            dtype = dt.higher_precedence(start.dtype, end.dtype)
-            start = self._maybe_cast_boundary(start, dtype)
-            end = self._maybe_cast_boundary(end, dtype)
+            if start.dtype.is_interval() and end.dtype.is_numeric():
+                return start, ops.Cast(end.value, start.dtype)
+            elif start.dtype.is_numeric() and end.dtype.is_interval():
+                return ops.Cast(start.value, end.dtype), end
         return start, end
 
     def _determine_how(self, start, end):
