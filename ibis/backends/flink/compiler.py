@@ -149,6 +149,7 @@ class FlinkCompiler(SQLGlotCompiler):
             and end.following
         ):
             spec.args["end"] = "CURRENT ROW"
+            spec.args["end_side"] = None
         return spec
 
     def visit_TumbleWindowingTVF(self, op, *, table, time_col, window_size, offset):
