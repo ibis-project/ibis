@@ -484,9 +484,27 @@ def test_grouped_bounded_following_window(backend, alltypes, df, preceding, foll
         ),
         param(
             lambda t: ibis.window(
+                # snowflake doesn't allow windows larger than 1000
+                preceding=999,
+                following=0,
+                group_by=[t.string_col],
+                order_by=[t.id],
+            ),
+            1000,
+            id="large-preceding-999-following-0",
+        ),
+        param(
+            lambda t: ibis.window(
                 preceding=1000, following=0, group_by=[t.string_col], order_by=[t.id]
             ),
             1001,
+            marks=[
+                pytest.mark.notyet(
+                    ["snowflake"],
+                    raises=SnowflakeProgrammingError,
+                    reason="Windows larger than 1000 are not allowed",
+                )
+            ],
             id="large-preceding-1000-following-0",
         ),
     ],
