@@ -94,6 +94,7 @@ class PostgresCompiler(SQLGlotCompiler):
         ops.MapContains: "exist",
         ops.MapKeys: "akeys",
         ops.MapValues: "avals",
+        ops.RandomUUID: "gen_random_uuid",
         ops.RegexSearch: "regexp_like",
         ops.TimeFromHMS: "make_time",
     }

@@ -38,3 +38,25 @@ def test_uuid_literal(con, backend):
 
     with contextlib.suppress(com.OperationNotDefinedError):
         assert con.execute(expr.typeof()) == UUID_BACKEND_TYPE[backend_name]
+
+
+@pytest.mark.notimpl(
+    [
+        "datafusion",
+        "druid",
+        "exasol",
+        "flink",
+        "mssql",
+        "mysql",
+        "oracle",
+        "polars",
+        "pyspark",
+        "risingwave",
+    ],
+    raises=com.OperationNotDefinedError,
+)
+@pytest.mark.notimpl(["pandas", "dask"], raises=ValueError)
+def test_uuid_function(con):
+    obj = con.execute(ibis.uuid())
+    assert isinstance(obj, uuid.UUID)
+    assert obj.version == 4

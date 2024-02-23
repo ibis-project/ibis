@@ -106,6 +106,7 @@ class SQLiteCompiler(SQLGlotCompiler):
         ops.Mode: "_ibis_mode",
         ops.Time: "time",
         ops.Date: "date",
+        ops.RandomUUID: "uuid",
     }
 
     def _aggregate(self, funcname: str, *args, where):

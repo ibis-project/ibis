@@ -167,6 +167,7 @@ __all__ = (
     "trailing_range_window",
     "trailing_window",
     "union",
+    "uuid",
     "watermark",
     "where",
     "window",
@@ -688,6 +689,25 @@ def random() -> ir.FloatingScalar:
 
     """
     return ops.RandomScalar().to_expr()
+
+
+def uuid() -> ir.UUIDScalar:
+    """Return a random UUID version 4 value.
+
+    Similar to [('uuid.uuid4`) in the Python standard library.
+
+    Examples
+    --------
+    >>> from ibis.interactive import *
+    >>> ibis.uuid()  # doctest: +SKIP
+    UUID('e57e927b-aed2-483b-9140-dc32a26cad95')
+
+    Returns
+    -------
+    UUIDScalar
+        Random UUID value expression
+    """
+    return ops.RandomUUID().to_expr()
 
 
 @overload
