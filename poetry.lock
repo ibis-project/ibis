@@ -2688,13 +2688,13 @@ test = ["ipykernel", "jsonschema", "pytest (>=3.6.0)", "pytest-cov", "pytz"]
 
 [[package]]
 name = "itables"
-version = "1.6.4"
+version = "1.7.0"
 description = "Interactive Tables in Jupyter"
 optional = false
 python-versions = "*"
 files = [
-    {file = "itables-1.6.4-py3-none-any.whl", hash = "sha256:a9325ae3a20c0931c9a92b92ccd8809a8204c5c4e219ea287fd6d51fabf86920"},
-    {file = "itables-1.6.4.tar.gz", hash = "sha256:b880e5df47b8229f74be9b6971bd5cc46c6e742a624248c5c21795b3efa84800"},
+    {file = "itables-1.7.0-py3-none-any.whl", hash = "sha256:2f41528b6ef93fe838fed1e00a35c844a4ebf91fbfaa852b5aad83e039a8026c"},
+    {file = "itables-1.7.0.tar.gz", hash = "sha256:ad6ddd91feb65bde5c7a53fe77f222358fcd68dc80b90840ae06391745120d5c"},
 ]
 
 [package.dependencies]
@@ -5343,6 +5343,7 @@ files = [
     {file = "PyYAML-6.0.1-cp311-cp311-win_amd64.whl", hash = "sha256:bf07ee2fef7014951eeb99f56f39c9bb4af143d8aa3c21b1677805985307da34"},
     {file = "PyYAML-6.0.1-cp312-cp312-macosx_10_9_x86_64.whl", hash = "sha256:855fb52b0dc35af121542a76b9a84f8d1cd886ea97c84703eaa6d88e37a2ad28"},
     {file = "PyYAML-6.0.1-cp312-cp312-macosx_11_0_arm64.whl", hash = "sha256:40df9b996c2b73138957fe23a16a4f0ba614f4c0efce1e9406a184b6d07fa3a9"},
+    {file = "PyYAML-6.0.1-cp312-cp312-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:a08c6f0fe150303c1c6b71ebcd7213c2858041a7e01975da3a99aed1e7a378ef"},
     {file = "PyYAML-6.0.1-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:6c22bec3fbe2524cde73d7ada88f6566758a8f7227bfbf93a408a9d86bcc12a0"},
     {file = "PyYAML-6.0.1-cp312-cp312-musllinux_1_1_x86_64.whl", hash = "sha256:8d4e9c88387b0f5c7d5f281e55304de64cf7f9c0021a3525bd3b1c542da3b0e4"},
     {file = "PyYAML-6.0.1-cp312-cp312-win32.whl", hash = "sha256:d483d2cdf104e7c9fa60c544d92981f12ad66a457afae824d146093b8c294c54"},
@@ -7325,4 +7326,4 @@ visualization = ["graphviz"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.9"
-content-hash = "74f81f7be9e04491689736c492631936d0a539f5dc85b3ae50d7cbf7b7d7de05"
+content-hash = "7428b7cdc20ddd6d97a204e2a393f2a85465a834155d856a3b471f338b40eb17"
