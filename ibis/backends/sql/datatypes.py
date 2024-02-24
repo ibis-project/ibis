@@ -1030,7 +1030,9 @@ class ClickHouseType(SqlglotType):
         # key cannot be nullable in clickhouse
         key_type = cls.from_ibis(dtype.key_type.copy(nullable=False))
         value_type = cls.from_ibis(dtype.value_type)
-        return sge.DataType(this=typecode.MAP, expressions=[key_type, value_type])
+        return sge.DataType(
+            this=typecode.MAP, expressions=[key_type, value_type], nested=True
+        )
 
 
 class FlinkType(SqlglotType):
@@ -1041,3 +1043,17 @@ class FlinkType(SqlglotType):
     @classmethod
     def _from_ibis_Binary(cls, dtype: dt.Binary) -> sge.DataType:
         return sge.DataType(this=sge.DataType.Type.VARBINARY)
+
+    @classmethod
+    def _from_ibis_Map(cls, dtype: dt.Map) -> sge.DataType:
+        # key cannot be nullable in clickhouse
+        key_type = cls.from_ibis(dtype.key_type.copy(nullable=False))
+        value_type = cls.from_ibis(dtype.value_type)
+        return sge.DataType(
+            this=typecode.MAP,
+            expressions=[
+                sge.Var(this=key_type.sql(cls.dialect) + " NOT NULL"),
+                value_type,
+            ],
+            nested=True,
+        )

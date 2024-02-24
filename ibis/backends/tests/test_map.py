@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import numpy as np
 import pandas as pd
+import pandas.testing as tm
+import pyarrow as pa
 import pytest
 from pytest import param
 
@@ -56,20 +58,15 @@ def test_column_map_merge(backend):
     table = backend.map
     expr = table.select(
         "idx",
-        merged=table.kv.cast("map<string, int8>") + ibis.map({"d": 1}),
+        merged=table.kv + ibis.map({"d": np.int64(1)}),
     ).order_by("idx")
     result = expr.execute().merged
     expected = pd.Series(
         [{"a": 1, "b": 2, "c": 3, "d": 1}, {"d": 1, "e": 5, "f": 6}], name="merged"
     )
-    backend.assert_series_equal(result, expected)
+    tm.assert_series_equal(result, expected)
 
 
-@pytest.mark.notimpl(
-    ["flink"],
-    raises=exc.OperationNotDefinedError,
-    reason="No translation rule for <class 'ibis.expr.operations.maps.MapKeys'>",
-)
 @pytest.mark.notimpl(
     ["risingwave"],
     raises=PsycoPg2InternalError,
@@ -86,11 +83,6 @@ def test_literal_map_keys(con):
 
 
 @pytest.mark.notimpl(
-    ["flink"],
-    raises=exc.OperationNotDefinedError,
-    reason="No translation rule for <class 'ibis.expr.operations.maps.MapValues'>",
-)
-@pytest.mark.notimpl(
     ["risingwave"],
     raises=PsycoPg2InternalError,
     reason="function hstore(character varying[], character varying[]) does not exist",
@@ -104,11 +96,6 @@ def test_literal_map_values(con):
 
 
 @pytest.mark.notimpl(["postgres", "risingwave"])
-@pytest.mark.notimpl(
-    ["flink"],
-    raises=exc.OperationNotDefinedError,
-    reason="No translation rule for <class 'ibis.expr.operations.arrays.ArrayContains'>",
-)
 def test_scalar_isin_literal_map_keys(con):
     mapping = ibis.literal({"a": 1, "b": 2})
     a = ibis.literal("a")
@@ -122,11 +109,6 @@ def test_scalar_isin_literal_map_keys(con):
 @pytest.mark.notyet(
     ["postgres", "risingwave"], reason="only support maps of string -> string"
 )
-@pytest.mark.notimpl(
-    ["flink"],
-    raises=exc.OperationNotDefinedError,
-    reason="No translation rule for <class 'ibis.expr.operations.maps.MapContains'>",
-)
 def test_map_scalar_contains_key_scalar(con):
     mapping = ibis.literal({"a": 1, "b": 2})
     a = ibis.literal("a")
@@ -137,11 +119,6 @@ def test_map_scalar_contains_key_scalar(con):
     assert con.execute(false) == False  # noqa: E712
 
 
-@pytest.mark.notimpl(
-    ["flink"],
-    raises=exc.OperationNotDefinedError,
-    reason="No translation rule for <class 'ibis.expr.operations.maps.MapContains'>",
-)
 @pytest.mark.notimpl(
     ["risingwave"],
     raises=PsycoPg2InternalError,
@@ -159,11 +136,6 @@ def test_map_scalar_contains_key_column(backend, alltypes, df):
 @pytest.mark.notyet(
     ["postgres", "risingwave"], reason="only support maps of string -> string"
 )
-@pytest.mark.notimpl(
-    ["flink"],
-    raises=exc.OperationNotDefinedError,
-    reason=("No translation rule for <class 'ibis.expr.operations.maps.MapContains'>"),
-)
 def test_map_column_contains_key_scalar(backend, alltypes, df):
     expr = ibis.map(ibis.array([alltypes.string_col]), ibis.array([alltypes.int_col]))
     series = df.apply(lambda row: {row["string_col"]: row["int_col"]}, axis=1)
@@ -177,11 +149,6 @@ def test_map_column_contains_key_scalar(backend, alltypes, df):
 @pytest.mark.notyet(
     ["postgres", "risingwave"], reason="only support maps of string -> string"
 )
-@pytest.mark.notimpl(
-    ["flink"],
-    raises=exc.OperationNotDefinedError,
-    reason="No translation rule for <class 'ibis.expr.operations.maps.MapContains'>",
-)
 def test_map_column_contains_key_column(alltypes):
     map_expr = ibis.map(
         ibis.array([alltypes.string_col]), ibis.array([alltypes.int_col])
@@ -193,11 +160,6 @@ def test_map_column_contains_key_column(alltypes):
 
 @pytest.mark.notyet(
     ["postgres", "risingwave"], reason="only support maps of string -> string"
-)
-@pytest.mark.notimpl(
-    ["flink"],
-    raises=exc.OperationNotDefinedError,
-    reason="No translation rule for <class 'ibis.expr.operations.maps.MapMerge'>",
 )
 def test_literal_map_merge(con):
     a = ibis.literal({"a": 0, "b": 2})
@@ -270,10 +232,10 @@ def test_map_construct_dict(con, keys, values):
 @pytest.mark.notyet(
     ["postgres", "risingwave"], reason="only support maps of string -> string"
 )
-@pytest.mark.notimpl(
+@pytest.mark.broken(
     ["flink"],
-    raises=Py4JJavaError,
-    reason="Map key type should be non-nullable",
+    raises=pa.lib.ArrowInvalid,
+    reason="Map array child array should have no nulls",
 )
 def test_map_construct_array_column(con, alltypes, df):
     expr = ibis.map(ibis.array([alltypes.string_col]), ibis.array([alltypes.int_col]))
@@ -383,6 +345,7 @@ def test_map_length(con):
     assert con.execute(expr) == 2
 
 
+@pytest.mark.notimpl(["flink"], raises=exc.OperationNotDefinedError)
 def test_map_keys_unnest(backend):
     expr = backend.map.kv.keys().unnest()
     result = expr.to_pandas()
