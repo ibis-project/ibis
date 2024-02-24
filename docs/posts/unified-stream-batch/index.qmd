@@ -1,10 +1,11 @@
 ---
 title: "Stream-batch unification through Ibis lens"
 author: "Chloe"
-date: 2024-02-08
+date: 2024-02-19
 categories:
     - blog
     - flink
+    - risingwave
     - streaming
 ---
 
@@ -17,24 +18,25 @@ the user. We considered and prototyped with a number of tools and eventually
 chose Ibis. It had already established a position in the batch world and had
 support for 10+ of the most popular batch engines (at the time). We loved the
 idea of decoupling the user-facing interface from the execution engine, so that
- users can swap out the execution engine depending on their needs, without
- having to rewrite code. And, of course, it was open-source. It was everything
- we dreamed of.
+users can swap out the execution engine depending on their needs, without
+having to rewrite code. And, of course, it was open-source. It was everything
+we dreamed of.
 
 A few months later, [we started introducing Apache Flink as the first streaming
 backend into Ibis](https://github.com/ibis-project/ibis/pull/6408). We saw so
 much more that Ibis can do when it steps outside of batch.
 
 Ibis 8.0 marks the official launch of the first streaming backends in Ibis
-(Apache Flink and RisingWave). This is a very significant milestone in Ibis
-development.
+([Apache Flink](https://ibis-project.org/backends/flink) and
+[RisingWave](https://ibis-project.org/backends/risingwave)). This is a very
+significant milestone in Ibis development.
 
 You may be wondering: what does this mean? Why is this such a big deal? I will
 be answering these questions in this blog post.
 
 ## Ibis combines stream and batch into a single framework beyond version 8.0
 
-Today, Ibis provides support for close to 20 backends, including Dask, DuckDB,
+Today, Ibis provides support for 20+ backends including Dask, DuckDB,
 PostgreSQL, PySpark, Snowflake, and others. However - before the introduction
 of Flink and RisingWave backends - all of the supported backends derive from a
 batch paradigm (aside from Spark, which does offer support for stream
@@ -48,7 +50,7 @@ streaming data systems operate with unique concepts such as “event time”,
 “processing time”, “watermark”, etc. All of these were missing from Ibis.
 
 At the same time, streaming systems (Spark Streaming, Apache Flink, RisingWave,
-etc) have been gaining use cases. It drove the development of more mature
+etc) have been gaining popularity. It drove the development of more mature
 technologies as well as new approaches to close the gap between batch and
 streaming worlds. [Flink SQL, for example, was born as a part of such effort
 and, through allowing users to write streaming engines in a SQL-like manner,
@@ -106,7 +108,7 @@ representation (IR), using a library called
 
 What does this actually look like? For example, Ibis allows users to define
 window aggregations using the [`over()`
-method](https://ibis-project.org/reference/expression-tables#ibis.expr.types.groupby.GroupedTable.over).
+method](../../reference/expression-tables#ibis.expr.types.groupby.GroupedTable.over).
 When executed on the Flink backend, this translates into [Flink’s over
 aggregation query](https://nightlies.apache.org/flink/flink-docs-release-1.18/docs/dev/table/sql/queries/over-agg/)
 and outputs an aggregated value for every input row over a range of ordered
@@ -130,18 +132,21 @@ FROM (
 WHERE rownum = 1
 ```
 In a database like Postgres, this could be as simple as
+
 ```sql
 SELECT DISTINCT t0.`string_col`, t0.`int_col`
 FROM functional_alltypes t0
 ```
+
 And in `pandas`, you would use the method `drop_duplicates()`:
+
 ```python
 df.drop_duplicates()
 ```
 
 ::: {.callout-note}
 We’re working on supporting deduplication via `distinct()` in Flink backend and
-this feature should be available before the next major release!
+this feature should be available soon!
 :::
 
 These underlying discrepancies are abstracted in such a way that you, as an
@@ -296,9 +301,8 @@ First, let’s set up the Flink environment and connect to this Kafka source:
 Kafka connector is not part of the binary distribution, so we need to download
 and link it for cluster execution explicitly:
 ```{python}
-# | code-fold: true
 # | include: false
-!wget https://repo.maven.apache.org/maven2/org/apache/flink/flink-sql-connector-kafka/1.17.1/flink-sql-connector-kafka-1.17.1.jar
+!wget -N https://repo.maven.apache.org/maven2/org/apache/flink/flink-sql-connector-kafka/1.17.1/flink-sql-connector-kafka-1.17.1.jar
 ```
 :::
 
@@ -407,8 +411,9 @@ stops at some point.
 
 Of course, this is only the beginning. There are still technical challenges to
 be solved (e.g., backfill, window computations over large windows, GPU
-acceleration), and we hope we'll have more exciting updates to share with the
-community soon!
+acceleration), and we'll definitely have more exciting updates to share with
+the community soon!
 
-Check out the new Apache Flink and RisingWave backends and let us know what you
-think!
+Check out the new [Apache Flink](https://ibis-project.org/backends/flink) and
+[RisingWave](https://ibis-project.org/backends/risingwave) backends and let us
+know what you think!
