@@ -108,7 +108,7 @@ representation (IR), using a library called
 
 What does this actually look like? For example, Ibis allows users to define
 window aggregations using the [`over()`
-method](../../reference/expression-tables#ibis.expr.types.groupby.GroupedTable.over).
+method](../../reference/expression-tables.qmd#ibis.expr.types.groupby.GroupedTable.over).
 When executed on the Flink backend, this translates into [Flink’s over
 aggregation query](https://nightlies.apache.org/flink/flink-docs-release-1.18/docs/dev/table/sql/queries/over-agg/)
 and outputs an aggregated value for every input row over a range of ordered
