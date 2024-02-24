@@ -119,27 +119,29 @@ class TestConf(BackendTest):
     def _load_data(self, **_: Any) -> None:
         """Load test data into a Snowflake backend instance."""
 
-        url = urlparse(_get_url())
-        db, schema = url.path[1:].split("/", 1)
-        (warehouse,) = parse_qs(url.query)["warehouse"]
-        connect_args = {
-            "user": url.username,
-            "password": url.password,
-            "account": url.hostname,
-            "warehouse": warehouse,
-        }
+        connect_args = {}
 
-        session_parameters = {
-            "MULTI_STATEMENT_COUNT": 0,
-            "JSON_INDENT": 0,
-            "PYTHON_CONNECTOR_QUERY_RESULT_FORMAT": "arrow_force",
-        }
+        url = urlparse(_get_url())
+
+        if url.path:
+            db, schema = url.path[1:].split("/", 1)
+            (warehouse,) = parse_qs(url.query)["warehouse"]
+            connect_args.update(
+                {
+                    "user": url.username,
+                    "password": url.password,
+                    "account": url.hostname,
+                    "warehouse": warehouse,
+                }
+            )
+        else:
+            db = os.environ["SNOWFLAKE_DATABASE"]
+            schema = os.environ["SNOWFLAKE_SCHEMA"]
 
         dbschema = f"{db}.{schema}"
 
-        with closing(
-            sc.connect(**connect_args, session_parameters=session_parameters)
-        ) as con, closing(con.cursor()) as c:
+        with closing(sc.connect(**connect_args)) as con, closing(con.cursor()) as c:
+            c.execute("ALTER SESSION SET MULTI_STATEMENT_COUNT = 0 JSON_INDENT = 0")
             c.execute(
                 f"""
                 CREATE DATABASE IF NOT EXISTS {db};
