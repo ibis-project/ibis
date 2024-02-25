@@ -45,14 +45,14 @@ wowah_data
 ### Getting Table Info
 
 Let's learn more about these fields. Are there any nulls we should consider? We can
-use the [`info`](../reference/expression-tables.qmd#ibis.expr.types.relations.Table.info)
+use the [`info`](../../reference/expression-tables.qmd#ibis.expr.types.relations.Table.info)
 method on our Ibis expression.
 
 ```{python}
 wowah_data.info()
 ```
 
-We can also use [`value_counts`](../reference/expression-generic.qmd#ibis.expr.types.generic.Column.value_counts)
+We can also use [`value_counts`](../../reference/expression-generic.qmd#ibis.expr.types.generic.Column.value_counts)
 on specific columns if we want to learn more.
 
 ```{python}
