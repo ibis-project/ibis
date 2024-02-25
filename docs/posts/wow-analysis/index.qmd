@@ -1,5 +1,5 @@
 ---
-title: "Analsis of World of Warcraft Data"
+title: "Analysis of World of Warcraft Data"
 author: "Tyler White"
 error: false
 date: "2024-02-29"
