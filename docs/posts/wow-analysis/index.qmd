@@ -3,27 +3,36 @@ title: "Analsis of World of Warcraft Data"
 author: "Tyler White"
 error: false
 date: "2024-02-29"
+image: thumbnail.png
 categories:
   - blog
   - data engineering
   - duckdb
 ---
+
 ## Introduction
-This dataset has been around for a while, but it’s newer to me. I grew up playing video games, and I always had a great time jumping into Azeroth and whatever world was introduced in later expansions with my friends.
 
-This data was captured by a Horde player throughout 2008, between the release of the Burning Crusade and Wrath of the Lich King expansions. On November 13, 2008, we will see many characters navigating new areas and exceeding the previous max level of 70.
+I grew up playing games, and with the recent re-release of World of Warcraft Classic,
+it seems like a perfect time to analyze some in-game data!
 
-Let’s grab the data and try to answer a few questions.
+This dataset is the product of a Horde player's diligent recording throughout 2008,
+capturing the transitional phase between the Burning Crusade and Wrath of the Lich King
+expansions. Notably, starting November 13, 2008, the data showcases numerous characters
+venturing into new territories and advancing beyond the former level cap of 70.
 
 ## Analysis
 
-We’ll determine who logged in the most and who leveled from 70 to 80 the fastest. Also, what types of activities were those players engaging in? Let's get to work.
+We'll determine who logged in the most, who leveled from 70 to 80 the fastest, and
+what activities these players engaged with based on zones. Let's get to work.
 
 ### Getting Started
 
-Ibis ships with an examples module, and this specific data is included. I’ll use DuckDB here, but this is certainly possible with other backends, and I encourage you to experiment. DuckDB is the default Ibis backend, so it’ll be easy to use with this example.
+Ibis ships with an `examples` module, which includes this specific data. We'll use DuckDB
+here, but this is possible with other backends, and we encourage you to experiment.
+DuckDB is the default Ibis backend, so it'll be easy to use with this example.
 
-You can execute pip install `ibis-framework[duckdb,examples]` to work with Ibis and the example. You can also throw “jupyter” in to work in IPython or a notebook interface.
+You can execute `pip install ibis-framework[duckdb,examples]` to work with Ibis and the
+example data.
 
 ```{python}
 from ibis.interactive import *
@@ -35,52 +44,60 @@ wowah_data
 
 ### Getting Table Info
 
-I want to learn more about these fields. Are there any nulls we should consider? We can use the info method on our Ibis expression.
+Let's learn more about these fields. Are there any nulls we should consider? We can
+use the [`info`](../reference/expression-tables.qmd#ibis.expr.types.relations.Table.info)
+method on our Ibis expression.
 
 ```{python}
 wowah_data.info()
 ```
 
-We can also use `value_counts` on specific columns if we want to learn more.
+We can also use [`value_counts`](../reference/expression-generic.qmd#ibis.expr.types.generic.Column.value_counts)
+on specific columns if we want to learn more.
 
 ```{python}
 wowah_data.race.value_counts()
 ```
 
-We don’t have any missing values, and the data `value_count` results match what I would expect. How about duplicates?
+We don't have any missing values, and the data `value_counts` results match what I would
+expect.
+
+How about duplicates? We can check the count of unique rows against the total count.
 
 ```{python}
-wowah_data.mutate(
-    row_num=ibis.row_number().over(
-        ibis.window(group_by=wowah_data.columns, order_by=wowah_data.timestamp)
-    )
-).filter(_.row_num > 0)
+print(wowah_data.count())
+print(wowah_data.nunique())
+print(wowah_data.count() == wowah_data.nunique())
 ```
 
-Hmm, we have some duplicates. I am seeing 10,826,734 rows in the initial data and 10,823,177 unique values. A difference of 3,557 might not be a significant concern, but I’m curious. What could the duplicate rows be?
+So we have some duplicates. What could the duplicate rows be?
 
 We can find them like this.
 
 ```{python}
 wowah_duplicates = wowah_data.mutate(
     row_num=ibis.row_number().over(
-        ibis.window(group_by=wowah_data.columns, order_by=wowah_data.timestamp)
+        ibis.window(group_by=wowah_data.columns, order_by=_.timestamp)
     )
 ).filter(_.row_num > 0)
 
-wowah_duplicates.count()
+wowah_duplicates
 ```
 
-I suspect this data was captured by a single player spamming “/who” in the game, most likely using an AddOn, about every ten minutes. It’s possible the same players could have been captured twice, depending on how the command was being filtered.
+I suspect this data was captured by a single player spamming “/who” in the game, most
+likely using an AddOn, about every ten minutes. Some players could
+have been captured twice, depending on how the command was being filtered.
 
-I’ll remove these duplicates.
+We can go ahead and remove these duplicates.
 
 ```{python}
 wowah_data = wowah_data.distinct()
 ```
 
 ### Which player logged in the most?
-We just mentioned that there was a single player likely capturing these results. Let’s find out who that is.
+
+We mentioned that there was a single player likely capturing these results.
+Let's find out who that is.
 
 ```{python}
 (
@@ -94,11 +111,15 @@ We just mentioned that there was a single player likely capturing these results.
 That Troll Hunter that never exceeded level 1 is likely our person with 42,770 sessions.
 
 ### Who leveled the fastest from 70–80?
-At the end of the year, there were 884 level 80s. Which one leveled the fastest?
 
-This feels like one of those “trying to trick” you types of questions, and there are many solutions to it. This will involve filtering, grouping, and aggregating to compute each character's time taken to level from 70 to 80.
+At the end of the year, there were 884 level 80s. Who leveled the fastest?
 
-Let’s start by creating an expression to filter to only the level 80 characters, then join it to filter and identify only where they were level 70 or 80. We’re only concerned with three columns so that we will select only those.
+Finding this answer will involve filtering, grouping, and aggregating to compute
+each character's time taken to level from 70 to 80.
+
+Let's start by creating an expression to filter to only the level 80 characters, then
+join it to filter and identify only where they were level 70 or 80. We're only concerned
+with three columns so that we will select only those.
 
 ```{python}
 max_level_chars = wowah_data.filter(_.level == 80).select(_.char).distinct()
@@ -108,9 +129,10 @@ wowah_data_filtered = (
     .filter(_.level.isin([70, 80]))
     .select(_.char, _.level, _.timestamp)
 )
-
 wowah_data_filtered
 ```
+
+Let's use the `where` option to help with the aggregation.
 
 ```{python}
 level_calc = (
@@ -124,29 +146,42 @@ level_calc = (
     .mutate(days_from_70_to_80=(_.ts_80.delta(_.ts_70, "day")))
     .order_by(_.days_from_70_to_80)
 )
+```
 
+The data is filtered and grouped by character, and two new columns are created to
+represent timestamps for levels 70 and 80. Then we drop what we no longer need, get the
+distinct values, and calculate the time taken to level from 70 to 80. Then we sort it!
+
+```{python}
 level_calc
 ```
-The data is filtered and grouped by character, and two new columns are created to represent timestamps for levels 70 and 80. The data is then cleaned, and a new column is created to calculate the time taken to level from 70 to 80. Finally, the dataset is sorted by this column.
 
-This isn’t perfect, as I found a case where there was a player who seemed to have quit in March and then returned for the new expansion. They hit 71 before it looks like their login at 70 was captured later. If you’re curious, take a look at **char=21951** for yourself.
+This isn't perfect, as I found a case where there was a player who seemed to have quit
+in March and then returned for the new expansion. They hit 71 before it looks like their
+login at 70 was captured later. If you're curious, take a look at **char=21951** for yourself.
 
 ### How did they level?
 
-Let’s grab all the details from the previous result and join it back to get the timestamp and zone data.
+Let's grab all the details from the previous result and join it back to get the
+timestamp and zone data.
 
 ```{python}
 leveler_zones = (
     level_calc.join(wowah_data, "char", how="inner")
-    .filter((_.timestamp >= _.ts_70) & (_.timestamp <= _.ts_80))
+    .filter(_.timestamp.between(_.ts_70, _.ts_80))
     .group_by([_.char, _.zone])
     .agg(zone_count=_.zone.count())
 )
+leveler_zones
 ```
 
-This code summarizes how often those characters appear in different zones while leveling up from level 70 to 80. It combines two sets of data based on character names, selects records within the leveling timeframe, groups data by character and zone, and counts the number of times each character was found in each zone.
+This code summarizes how often those characters appear in different zones while leveling
+up from level 70 to 80. It combines two sets of data based on character names, selects
+records within the leveling timeframe, groups data by character and zone, and counts the
+number of times each character was found in each zone.
 
-There is another example table we can join to figure out the Zone information. I’m only interested in two columns, so I’ll filter this further and rename the columns.
+There is another example table we can join to figure out the Zone information. I'm only
+interested in two columns, so I'll filter this further and rename the columns.
 
 ```{python}
 zones = ex.wowah_zones_raw.fetch()
@@ -154,7 +189,8 @@ zones = zones.select(zone=_.Zone, zone_type=_.Type)
 zones
 ```
 
-Making use of `pivot_wider` and joining back to our `leveler_zones` expression will make this a breeze!
+Making use of `pivot_wider` and joining back to our `leveler_zones` expression will make
+this a breeze!
 
 ```{python}
 zones_pivot = (
@@ -163,12 +199,14 @@ zones_pivot = (
     .agg(zone_type_count=_.zone.count())
     .pivot_wider(names_from="zone_type", values_from="zone_type_count")
 )
-
 zones_pivot
 ```
 
-## Conclusion
+If they have a high value in the "Zone" column, they were likely questing. Other
+players opted to venture into dungeons.
 
-Doing complicated analysis tasks with Ibis is pretty straightforward. I find that Ibis makes data preparation much easier, especially when trying to apply bulk operations. Breaking things down into steps with these deferred engines makes things much more manageable.
+## Next Steps
 
-What other questions could we ask of this data?
+Get in touch with us on [GitHub](https://github.com/ibis-project) or
+[Zulip](https://ibis-project.zulipchat.com/), we'd love to see more analyses of this
+data set.
