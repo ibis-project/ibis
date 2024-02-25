@@ -13,7 +13,6 @@
 # limitations under the License.
 from __future__ import annotations
 
-import json
 import os
 
 import numpy as np
@@ -246,25 +245,3 @@ def test_kwargs_passthrough_in_connect():
         "postgresql://postgres:postgres@localhost/ibis_testing?sslmode=allow"
     )
     assert con.current_database == "ibis_testing"
-
-
-def test_json_to_pyarrow(con):
-    t = con.tables.json_t
-    table = t.to_pyarrow()
-    js = table["js"]
-
-    expected = [
-        {"a": [1, 2, 3, 4], "b": 1},
-        {"a": None, "b": 2},
-        {"a": "foo", "c": None},
-        None,
-        [42, 47, 55],
-        [],
-    ]
-    expected = frozenset(map(json.dumps, expected))
-
-    result = frozenset(
-        # loads and dumps so the string representation is the same
-        map(json.dumps, map(json.loads, js.to_pylist()))
-    )
-    assert result == expected

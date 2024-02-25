@@ -4,6 +4,7 @@ import builtins
 import contextlib
 import importlib
 import inspect
+import json
 import re
 import string
 import subprocess
@@ -1468,3 +1469,26 @@ def test_close_connection(con):
     # DB-API states that subsequent execution attempt should raise
     with pytest.raises(Exception):  # noqa:B017
         new_con.list_tables()
+
+
+def test_json_to_pyarrow(con):
+    t = con.tables.json_t
+    table = t.to_pyarrow()
+    js = table["js"]
+
+    expected = [
+        {"a": [1, 2, 3, 4], "b": 1},
+        {"a": None, "b": 2},
+        {"a": "foo", "c": None},
+        None,
+        [42, 47, 55],
+        [],
+    ]
+    expected = {json.dumps(val) for val in expected}
+
+    result = {
+        # loads and dumps so the string representation is the same
+        json.dumps(json.loads(val))
+        for val in js.to_pylist()
+    }
+    assert result == expected
