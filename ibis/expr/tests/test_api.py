@@ -147,3 +147,12 @@ def test_implicit_coercion_of_null_literal(op):
 
     assert expr1.op() == expected
     assert expr2.op() == expected
+
+
+def test_nested_name_property():
+    x = ibis.literal(1)
+    n = 100
+    for _ in range(n):  # noqa: F402
+        x = x + 1
+
+    assert x.op().name.count("Add") == n
