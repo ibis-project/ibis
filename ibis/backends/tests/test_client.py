@@ -1471,6 +1471,26 @@ def test_close_connection(con):
         new_con.list_tables()
 
 
+@pytest.mark.notyet(
+    ["clickhouse"],
+    raises=AttributeError,
+    reason="JSON extension is experimental and not enabled by default in testing",
+)
+@pytest.mark.notyet(
+    ["datafusion", "polars", "mssql", "druid", "oracle", "exasol", "impala"],
+    raises=AttributeError,
+    reason="JSON type not implemented",
+)
+@pytest.mark.notimpl(
+    ["risingwave", "sqlite"],
+    raises=pa.ArrowTypeError,
+    reason="mismatch between output value and expected input type",
+)
+@pytest.mark.never(
+    ["snowflake"],
+    raises=TypeError,
+    reason="snowflake uses a custom pyarrow extension type for JSON pretty printing",
+)
 def test_json_to_pyarrow(con):
     t = con.tables.json_t
     table = t.to_pyarrow()
