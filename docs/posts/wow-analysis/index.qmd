@@ -207,6 +207,9 @@ players opted to venture into dungeons.
 
 ## Next Steps
 
+It's pretty easy to do complex analysis with Ibis. We churned through over 10 million rows
+in no time.
+
 Get in touch with us on [GitHub](https://github.com/ibis-project) or
 [Zulip](https://ibis-project.zulipchat.com/), we'd love to see more analyses of this
 data set.
