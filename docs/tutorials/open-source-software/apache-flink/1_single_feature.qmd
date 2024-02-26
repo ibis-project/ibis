@@ -94,7 +94,6 @@ file](https://repo.maven.apache.org/maven2/org/apache/flink/flink-sql-connector-
 and manually add it into the classpath:
 
 ```{python}
-# | code-fold: true
 # | include: false
 !wget -N https://repo.maven.apache.org/maven2/org/apache/flink/flink-sql-connector-kafka/3.0.2-1.18/flink-sql-connector-kafka-3.0.2-1.18.jar
 connection.raw_sql("ADD JAR './flink-sql-connector-kafka-3.0.2-1.18.jar'")
