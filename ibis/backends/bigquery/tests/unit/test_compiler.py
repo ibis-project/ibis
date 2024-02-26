@@ -632,3 +632,58 @@ def test_unnest(snapshot):
         ).select(level_two=lambda t: t.level_one.unnest())
     )
     snapshot.assert_match(result, "out_two_unnests.sql")
+
+
+def test_time_travel(alltypes):
+    from ibis.selectors import all
+
+    # TODO (mehmet): Setting schema from `alltypes` as
+    # schema = alltypes.schema
+    # fails with this error
+    # `schema`: <bound method Table.schema of UnboundTable: functional_alltypes ... > is not coercible to a Schema
+    schema = ibis.schema(
+        dict(
+            id="int32",
+            bool_col="boolean",
+            tinyint_col="int8",
+            smallint_col="int16",
+            int_col="int32",
+            bigint_col="int64",
+            float_col="float32",
+            double_col="float64",
+            date_string_col="string",
+            string_col="string",
+            timestamp_col=dt.Timestamp(timezone="UTC"),
+            year="int32",
+            month="int32",
+        )
+    )
+
+    table = ops.DatabaseTable(
+        name="my_table",
+        schema=schema,
+        source="bigquery",
+        namespace=ops.Namespace(schema="my_dataset", database="my_project"),
+    ).to_expr()
+    table = table.time_travel(ibis.timestamp("2023-01-02T03:04:05"))
+    expr = table.select(all())
+
+    sql = ibis.bigquery.compile(expr)
+
+    expected_sql = """SELECT
+  `t0`.`id`,
+  `t0`.`bool_col`,
+  `t0`.`tinyint_col`,
+  `t0`.`smallint_col`,
+  `t0`.`int_col`,
+  `t0`.`bigint_col`,
+  `t0`.`float_col`,
+  `t0`.`double_col`,
+  `t0`.`date_string_col`,
+  `t0`.`string_col`,
+  `t0`.`timestamp_col`,
+  `t0`.`year`,
+  `t0`.`month`
+FROM my_project.my_dataset.`my_table` FOR SYSTEM_TIME AS OF datetime('2023-01-02T03:04:05') AS `t0`"""
+
+    assert sql == expected_sql
