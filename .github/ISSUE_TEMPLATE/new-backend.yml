@@ -1,17 +1,17 @@
-name: Documentation issue
-description: Open an issue about the Ibis documentation
-title: "docs: "
-labels: ["docs"]
+name: New backend request
+description: Suggest a new backend for Ibis
+title: "feat: "
+labels: ["feature", "new backend"]
 body:
   - type: markdown
     attributes:
-      value: Thanks for taking the time to open an issue about our documentation!
+      value: Thanks for taking the time to fill out a new backend request!
   - type: textarea
-    id: docs-issue
+    id: backend
     attributes:
-      label: Please describe the issue
-      description: Include as much detail as possible and screenshots if relevant.
-      placeholder: Description of the issue
+      label: Which new backend would you like to see in Ibis?
+      description: Please provide relevant links and disclose your affiliation with the backend.
+      placeholder: "I would like a new backend for ..."
     validations:
       required: true
   - type: checkboxes
