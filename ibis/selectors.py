@@ -66,6 +66,7 @@ import ibis.expr.types as ir
 from ibis import util
 from ibis.common.collections import frozendict  # noqa: TCH001
 from ibis.common.deferred import Deferred, Resolver
+from ibis.common.exceptions import IbisError
 from ibis.common.grounds import Concrete, Singleton
 
 
@@ -622,10 +623,12 @@ def if_all(selector: Selector, predicate: Deferred | Callable) -> IfAnyAll:
 
 class Sliceable(Singleton):
     def __getitem__(self, key: str | int | slice | Iterable[int | str]) -> Predicate:
-        import ibis.expr.analysis as an
-
         def pred(col: ir.Value) -> bool:
-            table = an.find_first_base_table(col.op())
+            try:
+                (table,) = col.op().relations
+            except ValueError:
+                raise IbisError("Column should depend on exactly one table")
+
             schema = table.schema
             idxs = schema._name_locs
             num_names = len(schema)

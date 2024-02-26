@@ -1808,32 +1808,20 @@ class Column(Value, _FixedTextJupyterMixin):
         Table
             A top-k expression
         """
+        from ibis.expr.types.relations import bind
 
-        from ibis.expr.analysis import find_first_base_table
+        try:
+            (table,) = self.op().relations
+        except ValueError:
+            raise com.IbisTypeError("TopK must depend on exactly one table.")
 
-        arg_table = find_first_base_table(self.op()).to_expr()
-
+        table = table.to_expr()
         if by is None:
-            by = self.count()
-
-        if callable(by):
-            by = by(arg_table)
-            by_table = arg_table
-        elif isinstance(by, Value):
-            by_table = find_first_base_table(by.op()).to_expr()
+            metric = self.count()
         else:
-            raise com.IbisTypeError(f"Invalid `by` argument with type {type(by)}")
+            (metric,) = bind(table, by)
 
-        assert by.op().name != self.op().name
-
-        if not arg_table.equals(by_table):
-            raise com.IbisError("Cross-table TopK; must provide a parent joined table")
-
-        return (
-            arg_table.aggregate(by, by=[self])
-            .order_by(ibis.desc(by.get_name()))
-            .limit(k)
-        )
+        return table.aggregate(metric, by=[self]).order_by(metric.desc()).limit(k)
 
     def arbitrary(
         self,

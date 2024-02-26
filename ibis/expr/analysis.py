@@ -2,29 +2,6 @@ from __future__ import annotations
 
 import ibis.common.graph as g
 import ibis.expr.operations as ops
-from ibis.common.deferred import deferred, var
-from ibis.common.patterns import pattern
-from ibis.util import Namespace
-
-p = Namespace(pattern, module=ops)
-c = Namespace(deferred, module=ops)
-
-x = var("x")
-y = var("y")
-
-
-# TODO(kszucs): should be removed
-def find_first_base_table(node):
-    def predicate(node):
-        if isinstance(node, ops.Relation):
-            return g.halt, node
-        else:
-            return g.proceed, None
-
-    try:
-        return next(g.traverse(predicate, node))
-    except StopIteration:
-        return None
 
 
 def flatten_predicates(node):
