@@ -396,3 +396,9 @@ def _geo_bin_op(op, left, right, **kwargs):
     fields = [left, right, inline_args(kwargs)]
     args = ", ".join(f"{field}" for field in fields if field)
     return f"{op.__class__.__name__}({args})"
+
+
+@fmt.register(ops.WindowFrame)
+def _window_frame(op, **kwargs):
+    fields = inline_args(kwargs)
+    return f"{op.__class__.__name__}({fields})"

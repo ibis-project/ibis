@@ -220,7 +220,6 @@ def test_window_api_supports_value_expressions(alltypes):
 
     w = ibis.window(between=(t.d, t.d + 1), group_by=t.b, order_by=t.c)
     assert w.bind(t) == ops.RowsWindowFrame(
-        table=t,
         start=ops.WindowBoundary(t.d, preceding=False),
         end=ops.WindowBoundary(t.d + 1, preceding=False),
         group_by=(t.b,),
@@ -233,7 +232,6 @@ def test_window_api_supports_scalar_order_by(alltypes):
 
     w = ibis.window(order_by=ibis.NA)
     assert w.bind(t) == ops.RowsWindowFrame(
-        table=t,
         start=None,
         end=None,
         group_by=(),
@@ -242,7 +240,6 @@ def test_window_api_supports_scalar_order_by(alltypes):
 
     w = ibis.window(order_by=ibis.random())
     assert w.bind(t) == ops.RowsWindowFrame(
-        table=t,
         start=None,
         end=None,
         group_by=(),
@@ -444,7 +441,7 @@ def test_window_bind_to_table(alltypes):
     spec = ibis.window(group_by="g", order_by=ibis.desc("f"))
 
     frame = spec.bind(t)
-    expected = ops.RowsWindowFrame(table=t, group_by=[t.g], order_by=[t.f.desc()])
+    expected = ops.RowsWindowFrame(group_by=[t.g], order_by=[t.f.desc()])
 
     assert frame == expected
 
@@ -458,7 +455,7 @@ def test_window_bind_value_expression_using_over(alltypes):
     expr = t.f.lag().over(w)
 
     frame = expr.op().frame
-    expected = ops.RowsWindowFrame(table=t, group_by=[t.g], order_by=[t.f.asc()])
+    expected = ops.RowsWindowFrame(group_by=[t.g], order_by=[t.f.asc()])
 
     assert frame == expected
 
@@ -541,7 +538,7 @@ def test_windowization_wraps_reduction_inside_a_nested_value_expression(alltypes
     assert expr.op() == ops.Not(
         ops.WindowFunction(
             func=ops.Any(t.f == 0),
-            frame=ops.RowsWindowFrame(table=t, end=0, group_by=[t.g], order_by=[t.a]),
+            frame=ops.RowsWindowFrame(end=0, group_by=[t.g], order_by=[t.a]),
         )
     )
 
@@ -559,9 +556,7 @@ def test_group_by_with_window_function_preserves_range(alltypes):
             "three": t.three,
             "four": ops.WindowFunction(
                 func=ops.Sum(t.two),
-                frame=ops.RowsWindowFrame(
-                    table=t, end=0, group_by=[t.three], order_by=[t.one]
-                ),
+                frame=ops.RowsWindowFrame(end=0, group_by=[t.three], order_by=[t.one]),
             ),
         },
     )

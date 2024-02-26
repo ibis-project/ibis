@@ -720,7 +720,6 @@ class Value(Expr):
         -------
         Value
             A window function expression
-
         """
         node = self.op()
         if window is None:

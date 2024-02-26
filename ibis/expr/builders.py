@@ -230,27 +230,21 @@ class WindowBuilder(Builder):
     def lookback(self, value) -> Self:
         return self.copy(max_lookback=value)
 
+    # TODO(kszucs): make this API private
     @annotated
     def bind(self, table: Optional[ops.Relation]):
+        from ibis.expr.types.relations import bind
+
         table = table or self._table
         if table is None:
             raise IbisInputError("Unable to bind window frame to a table")
 
         table = table.to_expr()
+        groupings = bind(table, self.groupings)
+        orderings = bind(table, self.orderings)
 
-        def bind_value(value):
-            if isinstance(value, str):
-                return table._get_column(value)
-            elif isinstance(value, Resolver):
-                return value.resolve({"_": table})
-            else:
-                return value
-
-        groupings = map(bind_value, self.groupings)
-        orderings = map(bind_value, self.orderings)
         if self.how == "rows":
             return ops.RowsWindowFrame(
-                table=table,
                 start=self.start,
                 end=self.end,
                 group_by=groupings,
@@ -259,7 +253,6 @@ class WindowBuilder(Builder):
             )
         elif self.how == "range":
             return ops.RangeWindowFrame(
-                table=table,
                 start=self.start,
                 end=self.end,
                 group_by=groupings,

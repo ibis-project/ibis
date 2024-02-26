@@ -21,7 +21,7 @@ import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 from ibis import util
-from ibis.common.deferred import Deferred
+from ibis.common.deferred import Deferred, Resolver
 from ibis.expr.types.core import Expr, _FixedTextJupyterMixin
 from ibis.expr.types.generic import ValueExpr, literal
 from ibis.selectors import Selector
@@ -105,6 +105,8 @@ def bind(table: Table, value: Any, prefer_column=True) -> Iterator[ir.Value]:
             yield value._get_column(name)
     elif isinstance(value, Deferred):
         yield value.resolve(table)
+    elif isinstance(value, Resolver):  # only used in windowbuilder
+        yield value.resolve({"_": table})
     elif isinstance(value, Selector):
         yield from value.expand(table)
     elif isinstance(value, Mapping):
@@ -162,7 +164,8 @@ def dereference_mapping(parents):
                 while isinstance(v, ops.Field) and v not in mapping:
                     mapping[v] = ops.Field(parent, k)
                     v = v.rel.values.get(v.name)
-            elif v.relations and v not in mapping:
+            # elif v.relations and v not in mapping:
+            elif v not in mapping:
                 # do not dereference literal expressions
                 mapping[v] = ops.Field(parent, k)
 
@@ -2127,21 +2130,18 @@ class Table(Expr, _FixedTextJupyterMixin):
         │       43.92193 │      17.15117 │        200.915205 │ 4201.754386 │
         └────────────────┴───────────────┴───────────────────┴─────────────┘
         """
-        from ibis.expr.rewrites import rewrite_project_input
+        from ibis.expr.rewrites import rewrite_project_inputs
 
         values = bind(self, (exprs, named_exprs))
         values = unwrap_aliases(values)
         values = dereference_values(self.op(), values)
+        # we need to detect reductions which are either turned into window functions
+        # or scalar subqueries depending on whether they are originating from self
+        values = rewrite_project_inputs(values)
         if not values:
             raise com.IbisTypeError(
                 "You must select at least one column for a valid projection"
             )
-
-        # we need to detect reductions which are either turned into window functions
-        # or scalar subqueries depending on whether they are originating from self
-        values = {
-            k: rewrite_project_input(v, relation=self.op()) for k, v in values.items()
-        }
         return ops.Project(self, values).to_expr()
 
     projection = select
@@ -2504,16 +2504,21 @@ class Table(Expr, _FixedTextJupyterMixin):
         └────────┴───────────┘
         """
         from ibis.expr.analysis import flatten_predicates
-        from ibis.expr.rewrites import rewrite_filter_input
+        from ibis.expr.rewrites import rewrite_project_inputs
 
-        preds = bind(self, predicates)
-        preds = unwrap_aliases(preds)
-        preds = dereference_values(self.op(), preds)
-        preds = flatten_predicates(list(preds.values()))
-        preds = list(map(rewrite_filter_input, preds))
-        if not preds:
+        values = bind(self, predicates)
+        values = unwrap_aliases(values)
+        values = dereference_values(self.op(), values)
+
+        # we need to detect reductions which are either turned into window functions
+        # or scalar subqueries depending on whether they are originating from self
+        values = rewrite_project_inputs(values)
+        values = dereference_values(self.op(), values)
+        values = flatten_predicates(list(values.values()))
+
+        if not values:
             raise com.IbisInputError("You must pass at least one predicate to filter")
-        return ops.Filter(self, preds).to_expr()
+        return ops.Filter(self, values).to_expr()
 
     def nunique(self, where: ir.BooleanValue | None = None) -> ir.IntegerScalar:
         """Compute the number of unique rows in the table.

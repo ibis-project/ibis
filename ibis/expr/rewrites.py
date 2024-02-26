@@ -82,44 +82,16 @@ def rewrite_dropna(_):
 
 
 @replace(p.Analytic)
-def project_wrap_analytic(_, rel):
+def project_wrap_analytic(_):
     # Wrap analytic functions in a window function
-    return ops.WindowFunction(_, ops.RowsWindowFrame(rel))
-
-
-@replace(p.Reduction)
-def project_wrap_reduction(_, rel):
-    # Query all the tables that the reduction depends on
-    if _.relations == {rel}:
-        # The reduction is fully originating from the `rel`, so turn
-        # it into a window function of `rel`
-        return ops.WindowFunction(_, ops.RowsWindowFrame(rel))
-    else:
-        # 1. The reduction doesn't depend on any table, constructed from
-        #    scalar values, so turn it into a scalar subquery.
-        # 2. The reduction is originating from `rel` and other tables,
-        #    so this is a correlated scalar subquery.
-        # 3. The reduction is originating entirely from other tables,
-        #    so this is an uncorrelated scalar subquery.
-        return ops.ScalarSubquery(_.to_expr().as_table())
-
-
-def rewrite_project_input(value, relation):
-    # we need to detect reductions which are either turned into window functions
-    # or scalar subqueries depending on whether they are originating from the
-    # relation
-    return value.replace(
-        project_wrap_analytic | project_wrap_reduction,
-        filter=p.Value & ~p.WindowFunction,
-        context={"rel": relation},
-    )
+    return ops.WindowFunction(_, ops.RowsWindowFrame())
 
 
 ReductionLike = p.Reduction | p.Field(p.Aggregate(groups={}))
 
 
 @replace(ReductionLike)
-def filter_wrap_reduction(_):
+def project_wrap_reduction(_):
     # Wrap reductions or fields referencing an aggregation without a group by -
     # which are scalar fields - in a scalar subquery. In the latter case we
     # use the reduction value from the aggregation.
@@ -127,11 +99,22 @@ def filter_wrap_reduction(_):
         value = _.rel.values[_.name]
     else:
         value = _
+    # 1. The reduction doesn't depend on any table, constructed from
+    #    scalar values, so turn it into a scalar subquery.
+    # 2. The reduction is originating from `rel` and other tables,
+    #    so this is a correlated scalar subquery.
+    # 3. The reduction is originating entirely from other tables,
+    #    so this is an uncorrelated scalar subquery.
     return ops.ScalarSubquery(value.to_expr().as_table())
 
 
-def rewrite_filter_input(value):
-    return value.replace(filter_wrap_reduction, filter=p.Value & ~p.WindowFunction)
+def rewrite_project_inputs(values):
+    # we need to detect reductions which are either turned into window functions
+    # or scalar subqueries depending on whether they are originating from the
+    # relation
+    pred = p.Value & ~p.WindowFunction
+    rules = project_wrap_analytic | project_wrap_reduction
+    return {k: v.replace(rules, filter=pred) for k, v in values.items()}
 
 
 @replace(p.Analytic | p.Reduction)

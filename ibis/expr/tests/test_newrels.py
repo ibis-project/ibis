@@ -127,9 +127,9 @@ def test_select_values():
     }
 
 
-def test_select_windowing_local_reduction():
+def test_select_reduction_turned_into_scalar_subquery():
     t1 = t.select(res=t.int_col.sum())
-    assert t1.op() == Project(parent=t, values={"res": t.int_col.sum().over()})
+    assert t1.op() == Project(parent=t, values={"res": t.int_col.sum().as_scalar()})
 
 
 def test_select_windowizing_analytic_function():
@@ -825,7 +825,7 @@ def test_select_with_uncorrelated_scalar_subquery():
     assert sub.op() == expected
 
 
-def test_select_with_reduction_turns_into_window_function():
+def test_select_with_reduction_turns_into_scalar_subquery():
     # Define your tables
     employees = ibis.table(
         name="employees", schema={"name": "string", "salary": "double"}
@@ -837,7 +837,7 @@ def test_select_with_reduction_turns_into_window_function():
         parent=employees,
         values={
             "name": employees.name,
-            "average_salary": employees.salary.mean().over(),
+            "average_salary": employees.salary.mean().as_scalar(),
         },
     )
     assert expr.op() == expected
@@ -1504,3 +1504,11 @@ def test_inner_join_convenience():
         # finish to evaluate the collisions
         result = fifth_join._finish().op()
         assert result == expected
+
+
+def test_e():
+    t = ibis.table(name="t", schema={"a": "int64", "b": "string"})
+    ix = ibis.row_number().name("ix")
+    expr = t.mutate(ix=ix)
+    expr = expr.filter(ix == 5)
+    print(expr)
