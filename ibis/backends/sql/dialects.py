@@ -21,6 +21,8 @@ from sqlglot.dialects import (
 from sqlglot.dialects.dialect import rename_func
 from sqlglot.helper import seq_get
 
+from ibis.backends.sql.expressions import TimeTravelTable
+
 ClickHouse.Generator.TRANSFORMS |= {
     sge.ArraySize: rename_func("length"),
     sge.ArraySort: rename_func("arraySort"),
@@ -132,6 +134,7 @@ class Flink(Hive):
             sge.DayOfWeek: rename_func("dayofweek"),
             sge.DayOfMonth: rename_func("dayofmonth"),
             sge.Interval: _interval_with_precision,
+            TimeTravelTable: lambda self, expr: self.time_travel_table_sql(expr),
         }
 
         def struct_sql(self, expression: sge.Struct) -> str:
@@ -186,6 +189,12 @@ class Flink(Hive):
             return (
                 f"ARRAY[{', '.join(self.sql(arg) for arg in expression.expressions)}]"
             )
+
+        def time_travel_table_sql(self, expr: TimeTravelTable) -> str:
+            this_sql = self.sql(expr, "this")
+            alias_sql = self.sql(expr, "alias")
+            timestamp_sql = self.sql(expr, "timestamp")
+            return f"{this_sql} FOR SYSTEM_TIME AS OF {timestamp_sql} AS {alias_sql}"
 
     class Tokenizer(Hive.Tokenizer):
         # In Flink, embedded single quotes are escaped like most other SQL

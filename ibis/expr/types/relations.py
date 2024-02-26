@@ -38,6 +38,7 @@ if TYPE_CHECKING:
     from ibis.expr.schema import SchemaLike
     from ibis.expr.types import Table
     from ibis.expr.types.groupby import GroupedTable
+    from ibis.expr.types.temporal import TimestampValue, TimeTravelTable
     from ibis.expr.types.tvf import WindowedTable
     from ibis.formats.pyarrow import PyArrowData
     from ibis.selectors import IfAnyAll
@@ -3084,6 +3085,46 @@ class Table(Expr, _FixedTextJupyterMixin):
         return Join(left.op()).asof_join(
             right, on, predicates, tolerance=tolerance, lname=lname, rname=rname
         )
+
+    def time_travel(
+        self: Table,
+        timestamp: TimestampValue,
+    ) -> TimeTravelTable:
+        """Time travels the table back to `timestamp`.
+
+        Returns a time-travel table that represents a snapshot of the caller
+        table, where the snapshot corresponds to the given `timestamp`. Enables
+        building queries against the historical table snapshots. How far the `timestamp`
+        can go back in time depends on the specific backend support. If the timestamp
+        specifies a point in time prior to the allowed time travel window or prior
+        to the creation of the table, then the query built off of the returned table
+        will fail while getting executed by the bounded backend.
+
+        Parameters
+        ----------
+        timestamp
+            Timestamp to which this table will be travelled back to.
+
+        Returns
+        -------
+        Table
+            Table expression
+        """
+
+        op = self.op()
+        # TODO (mehmet): Does it make sense to support `UnboundTable` as well?
+        if not isinstance(op, ops.DatabaseTable):
+            raise com.IbisInputError(
+                "`time_travel()` is supported for only tables of type `DatabaseTable`."
+            )
+
+        return ops.TimeTravelDatabaseTable(
+            name=op.name,
+            schema=op.schema,
+            source=op.source,
+            namespace=op.namespace,
+            timestamp=timestamp,
+        ).to_expr()
 
     def cross_join(
         left: Table,

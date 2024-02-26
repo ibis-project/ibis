@@ -8,18 +8,18 @@ import ibis
 import ibis.expr.datashape as ds
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
+import ibis.expr.types as ir
 from ibis import util
 from ibis.common.annotations import annotated
 from ibis.common.temporal import IntervalUnit
 from ibis.expr.types.core import _binop
 from ibis.expr.types.generic import Column, Scalar, Value
+from ibis.expr.types.relations import Table
 
 if TYPE_CHECKING:
     import datetime
 
     import pandas as pd
-
-    import ibis.expr.types as ir
 
 
 class _DateComponentMixin:
@@ -984,3 +984,8 @@ class DayOfWeek:
             The name of the day of the week
         """
         return ops.DayOfWeekName(self._expr).to_expr()
+
+
+@public
+class TimeTravelTable(Table):
+    pass

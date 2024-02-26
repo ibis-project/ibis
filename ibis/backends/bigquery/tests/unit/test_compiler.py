@@ -632,3 +632,42 @@ def test_unnest(snapshot):
         ).select(level_two=lambda t: t.level_one.unnest())
     )
     snapshot.assert_match(result, "out_two_unnests.sql")
+
+
+def test_time_travel(alltypes, snapshot):
+    from ibis.selectors import all
+
+    # TODO (mehmet): Setting schema from `alltypes` as
+    # schema = alltypes.schema
+    # fails with this error
+    # `schema`: <bound method Table.schema of UnboundTable: functional_alltypes ... > is not coercible to a Schema
+    schema = ibis.schema(
+        dict(
+            id="int32",
+            bool_col="boolean",
+            tinyint_col="int8",
+            smallint_col="int16",
+            int_col="int32",
+            bigint_col="int64",
+            float_col="float32",
+            double_col="float64",
+            date_string_col="string",
+            string_col="string",
+            timestamp_col=dt.Timestamp(timezone="UTC"),
+            year="int32",
+            month="int32",
+        )
+    )
+
+    table = ops.DatabaseTable(
+        name="my_table",
+        schema=schema,
+        source="bigquery",
+        namespace=ops.Namespace(catalog="my_project", database="my_dataset"),
+    ).to_expr()
+    table = table.time_travel(ibis.timestamp("2023-01-02T03:04:05"))
+    expr = table.select(all())
+
+    sql = ibis.bigquery.compile(expr)
+
+    snapshot.assert_match(sql, "out.sql")

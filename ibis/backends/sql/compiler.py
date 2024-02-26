@@ -17,6 +17,7 @@ import ibis.common.exceptions as com
 import ibis.common.patterns as pats
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
+from ibis.backends.sql.expressions import TimeTravelTable
 from ibis.backends.sql.rewrites import (
     FirstValue,
     LastValue,
@@ -1140,6 +1141,27 @@ class SQLGlotCompiler(abc.ABC):
     ) -> sg.Table:
         return sg.table(
             name, db=namespace.database, catalog=namespace.catalog, quoted=self.quoted
+        )
+
+    def visit_TimeTravelDatabaseTable(
+        self,
+        op,
+        *,
+        name: str,
+        schema: sch.Schema,
+        source: Any,
+        namespace: ops.Namespace,
+        timestamp: ops.Literal,
+    ) -> TimeTravelTable:
+        table = sg.table(
+            name, db=namespace.database, catalog=namespace.catalog, quoted=self.quoted
+        )
+        return TimeTravelTable(
+            this=table.this,
+            db=table.db,
+            catalog=table.catalog,
+            alias=table.alias,
+            timestamp=timestamp,
         )
 
     def visit_SelfReference(self, op, *, parent, identifier):

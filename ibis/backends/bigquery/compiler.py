@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import re
+from typing import TYPE_CHECKING
 
 import sqlglot as sg
 import sqlglot.expressions as sge
@@ -22,6 +23,12 @@ from ibis.backends.sql.rewrites import (
 )
 from ibis.common.temporal import DateUnit, IntervalUnit, TimestampUnit, TimeUnit
 from ibis.expr.rewrites import rewrite_stringslice
+
+if TYPE_CHECKING:
+    from typing import Any
+
+    import ibis.expr.schema as sch
+
 
 _NAME_REGEX = re.compile(r'[^!"$()*,./;?@[\\\]^`{}~\n]+')
 
@@ -698,3 +705,24 @@ class BigQueryCompiler(SQLGlotCompiler):
         if where is not None:
             arg = self.if_(where, arg, NULL)
         return self.f.count(sge.Distinct(expressions=[arg]))
+
+    def visit_TimeTravelDatabaseTable(
+        self,
+        op,
+        *,
+        name: str,
+        schema: sch.Schema,
+        source: Any,
+        namespace: ops.Namespace,
+        timestamp: ops.Literal,
+    ):
+        table = sg.table(
+            name, db=namespace.database, catalog=namespace.catalog, quoted=self.quoted
+        )
+        return sge.Table(
+            this=table.this,
+            db=table.db,
+            catalog=table.catalog,
+            alias=table.alias,
+            version=sge.Version(this="SYSTEM_TIME", kind="AS OF", expression=timestamp),
+        )
