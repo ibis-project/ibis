@@ -19,8 +19,8 @@ from ibis.backends.pandas.rewrites import (
     rewrite_join,
 )
 from ibis.backends.polars.compiler import translate
-from ibis.backends.polars.datatypes import dtype_to_polars, schema_from_polars
 from ibis.backends.sql.dialects import Polars
+from ibis.formats.polars import PolarsSchema
 from ibis.util import gen_name, normalize_filename
 
 if TYPE_CHECKING:
@@ -70,7 +70,7 @@ class Backend(BaseBackend, NoUrl):
         return self._filter_with_like(list(self._tables.keys()), like)
 
     def table(self, name: str, _schema: sch.Schema | None = None) -> ir.Table:
-        schema = schema_from_polars(self._tables[name].schema)
+        schema = PolarsSchema.to_ibis(self._tables[name].schema)
         return ops.DatabaseTable(name, schema, self).to_expr()
 
     def register(
@@ -342,10 +342,7 @@ class Backend(BaseBackend, NoUrl):
         overwrite: bool = False,
     ) -> ir.Table:
         if schema is not None and obj is None:
-            obj = pl.LazyFrame(
-                [],
-                schema={name: dtype_to_polars(dtype) for name, dtype in schema.items()},
-            )
+            obj = pl.LazyFrame([], schema=PolarsSchema.from_ibis(schema))
 
         if database is not None:
             raise com.IbisError(
@@ -413,7 +410,7 @@ class Backend(BaseBackend, NoUrl):
         raise NotImplementedError("table.sql() not yet supported in polars")
 
     def _get_schema_using_query(self, query: str) -> sch.Schema:
-        return schema_from_polars(self._context.execute(query).schema)
+        return PolarsSchema.to_ibis(self._context.execute(query).schema)
 
     def execute(
         self,
