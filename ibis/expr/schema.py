@@ -157,6 +157,13 @@ class Schema(Concrete, Coercible, MapSet):
         return PyArrowSchema.to_ibis(pyarrow_schema)
 
     @classmethod
+    def from_polars(cls, polars_schema):
+        """Return the equivalent ibis schema."""
+        from ibis.formats.polars import PolarsSchema
+
+        return PolarsSchema.to_ibis(polars_schema)
+
+    @classmethod
     def from_dask(cls, dask_schema):
         """Return the equivalent ibis schema."""
         return cls.from_pandas(dask_schema)
@@ -178,6 +185,12 @@ class Schema(Concrete, Coercible, MapSet):
         from ibis.formats.pyarrow import PyArrowSchema
 
         return PyArrowSchema.from_ibis(self)
+
+    def to_polars(self):
+        """Return the equivalent polars schema."""
+        from ibis.formats.polars import PolarsSchema
+
+        return PolarsSchema.from_ibis(self)
 
     def to_dask(self):
         """Return the equivalent dask dtypes."""
@@ -288,6 +301,15 @@ def infer_pyarrow_table(table, schema=None):
 
     schema = schema if schema is not None else table.schema
     return PyArrowSchema.to_ibis(schema)
+
+
+@infer.register("polars.DataFrame")
+@infer.register("polars.LazyFrame")
+def infer_polars_dataframe(df, schema=None):
+    from ibis.formats.polars import PolarsSchema
+
+    schema = schema if schema is not None else df.schema
+    return PolarsSchema.to_ibis(schema)
 
 
 # lock the dispatchers to avoid adding new implementations
