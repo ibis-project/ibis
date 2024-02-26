@@ -1681,7 +1681,7 @@ class Table(Expr, _FixedTextJupyterMixin):
         │     3 │ D      │     7 │
         └───────┴────────┴───────┘
 
-        This means than shuffling a Table is super simple
+        This means that shuffling a Table is super simple
 
         >>> t.order_by(ibis.random())  # doctest: +SKIP
         ┏━━━━━━━┳━━━━━━━━┳━━━━━━━┓
