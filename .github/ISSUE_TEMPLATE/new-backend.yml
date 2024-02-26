@@ -1,5 +1,5 @@
 name: New backend request
-description: Suggest a new backend for Ibis
+description: Suggest a new backend for Ibis.
 title: "feat: "
 labels: ["feature", "new backend"]
 body:
