@@ -85,7 +85,11 @@ class Value(Node, Coercible, DefaultTypeVars, Generic[T, S]):
     # TODO(kszucs): figure out how to represent not named arguments
     @property
     def name(self) -> str:
-        names = (arg.name for arg in self.__args__ if hasattr(arg, "name"))
+        names = (
+            name
+            for arg in self.__args__
+            if (name := getattr(arg, "name", None)) is not None
+        )
         return f"{self.__class__.__name__}({', '.join(names)})"
 
     @property
