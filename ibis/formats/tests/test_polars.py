@@ -4,8 +4,9 @@ import polars as pl
 import pytest
 from pytest import param
 
+import ibis
 import ibis.expr.datatypes as dt
-from ibis.backends.polars.datatypes import dtype_from_polars, dtype_to_polars
+from ibis.formats.polars import PolarsSchema, PolarsType
 
 
 @pytest.mark.parametrize(
@@ -52,9 +53,44 @@ from ibis.backends.polars.datatypes import dtype_from_polars, dtype_to_polars
     ],
 )
 def test_to_from_ibis_type(ibis_dtype, polars_type):
-    assert dtype_to_polars(ibis_dtype) == polars_type
-    assert dtype_from_polars(polars_type) == ibis_dtype
+    assert PolarsType.from_ibis(ibis_dtype) == polars_type
+    assert PolarsType.to_ibis(polars_type) == ibis_dtype
+    assert PolarsType.to_ibis(polars_type, nullable=False) == ibis_dtype(nullable=False)
+
+
+def test_decimal():
+    assert PolarsType.to_ibis(pl.Decimal()) == dt.Decimal(precision=None, scale=0)
+    assert PolarsType.to_ibis(pl.Decimal(precision=6, scale=3)) == dt.Decimal(
+        precision=6, scale=3
+    )
+    assert PolarsType.from_ibis(dt.Decimal()) == pl.Decimal(precision=None, scale=9)
+    assert PolarsType.from_ibis(dt.Decimal(precision=6, scale=3)) == pl.Decimal(
+        precision=6, scale=3
+    )
 
 
 def test_categorical():
-    assert dtype_from_polars(pl.Categorical()) == dt.string
+    assert PolarsType.to_ibis(pl.Categorical()) == dt.string
+
+
+def test_interval_unsupported_unit():
+    typ = dt.Interval(unit="s")
+    with pytest.raises(ValueError, match="Unsupported polars duration unit"):
+        PolarsType.from_ibis(typ)
+
+
+def test_map_unsupported():
+    typ = dt.Map(dt.String(), dt.Int64())
+    with pytest.raises(NotImplementedError, match="to polars is not supported"):
+        PolarsType.from_ibis(typ)
+
+
+def test_schema_to_and_from_ibis():
+    polars_schema = {"x": pl.Int64, "y": pl.List(pl.Utf8)}
+    ibis_schema = ibis.schema({"x": "int64", "y": "array<string>"})
+
+    s1 = PolarsSchema.to_ibis(polars_schema)
+    assert s1.equals(ibis_schema)
+
+    s2 = PolarsSchema.from_ibis(ibis_schema)
+    assert s2 == polars_schema
