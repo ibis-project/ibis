@@ -518,6 +518,12 @@ def test_order_by_expr(snapshot):
     snapshot.assert_match(to_sql(expr), "out.sql")
 
 
+def test_double_order_by_not_fused(snapshot):
+    t = ibis.table(dict(a="int", b="string"), name="t")
+    expr = t.order_by(t.a).order_by(t.b.desc())
+    snapshot.assert_match(to_sql(expr), "out.sql")
+
+
 def test_no_cartesian_join(snapshot):
     customers = ibis.table(
         dict(customer_id="int64", first_name="string", last_name="string"),
