@@ -340,7 +340,9 @@ class SQLString(str):
 
 
 @public
-def to_sql(expr: ir.Expr, dialect: str | None = None, **kwargs) -> SQLString:
+def to_sql(
+    expr: ir.Expr, dialect: str | None = None, pretty: bool = True, **kwargs
+) -> SQLString:
     """Return the formatted SQL string for an expression.
 
     Parameters
@@ -349,6 +351,8 @@ def to_sql(expr: ir.Expr, dialect: str | None = None, **kwargs) -> SQLString:
         Ibis expression.
     dialect
         SQL dialect to use for compilation.
+    pretty
+        Whether to use pretty formatting.
     kwargs
         Scalar parameters
 
@@ -380,5 +384,5 @@ def to_sql(expr: ir.Expr, dialect: str | None = None, **kwargs) -> SQLString:
             read = write = getattr(backend, "dialect", dialect)
 
     sql = backend._to_sql(expr.unbind(), **kwargs)
-    (pretty,) = sg.transpile(sql, read=read, write=write, pretty=True)
-    return SQLString(pretty)
+    (transpiled,) = sg.transpile(sql, read=read, write=write, pretty=pretty)
+    return SQLString(transpiled)

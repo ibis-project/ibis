@@ -102,6 +102,12 @@ class Window(ops.Value):
         return self.func.dtype
 
 
+# TODO(kszucs): there is a better strategy to rewrite the relational operations
+# to Select nodes by wrapping the leaf nodes in a Select node and then merging
+# Project, Filter, Sort, etc. incrementally into the Select node. This way we
+# can have tighter control over simplification logic.
+
+
 @replace(p.Project)
 def project_to_select(_, **kwargs):
     """Convert a Project node to a Select node."""
@@ -167,17 +173,22 @@ def merge_select_select(_, **kwargs):
 
     subs = {ops.Field(_.parent, k): v for k, v in _.parent.values.items()}
     selections = {k: v.replace(subs, filter=ops.Value) for k, v in _.selections.items()}
-    predicates = tuple(p.replace(subs, filter=ops.Value) for p in _.predicates)
-    sort_keys = tuple(s.replace(subs, filter=ops.Value) for s in _.sort_keys)
 
+    predicates = tuple(p.replace(subs, filter=ops.Value) for p in _.predicates)
     unique_predicates = toolz.unique(_.parent.predicates + predicates)
-    unique_sort_keys = {s.expr: s for s in _.parent.sort_keys + sort_keys}
+
+    sort_keys = tuple(s.replace(subs, filter=ops.Value) for s in _.sort_keys)
+    sort_key_exprs = {s.expr for s in sort_keys}
+    parent_sort_keys = tuple(
+        k for k in _.parent.sort_keys if k.expr not in sort_key_exprs
+    )
+    unique_sort_keys = sort_keys + parent_sort_keys
 
     return Select(
         _.parent.parent,
         selections=selections,
         predicates=unique_predicates,
-        sort_keys=unique_sort_keys.values(),
+        sort_keys=unique_sort_keys,
     )
 
 
