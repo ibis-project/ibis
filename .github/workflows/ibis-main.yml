@@ -78,7 +78,7 @@ jobs:
       - name: install ibis
         run: poetry install --without dev --without docs --extras "visualization decompiler"
 
-      - uses: extractions/setup-just@v1
+      - uses: extractions/setup-just@v2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -173,7 +173,7 @@ jobs:
       - name: install ibis with all extras
         run: poetry install --without dev --without docs --extras all
 
-      - uses: extractions/setup-just@v1
+      - uses: extractions/setup-just@v2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 

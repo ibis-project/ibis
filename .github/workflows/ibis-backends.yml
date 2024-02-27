@@ -353,7 +353,7 @@ jobs:
       - name: checkout
         uses: actions/checkout@v4
 
-      - uses: extractions/setup-just@v1
+      - uses: extractions/setup-just@v2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -488,7 +488,7 @@ jobs:
           sudo apt-get update -y -qq
           sudo apt-get install -qq -y build-essential libgeos-dev
 
-      - uses: extractions/setup-just@v1
+      - uses: extractions/setup-just@v2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -571,7 +571,7 @@ jobs:
           distribution: microsoft
           java-version: 17
 
-      - uses: extractions/setup-just@v1
+      - uses: extractions/setup-just@v2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
