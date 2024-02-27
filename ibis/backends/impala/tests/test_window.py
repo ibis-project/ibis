@@ -63,15 +63,6 @@ def test_window_frame_specs(alltypes, window, snapshot):
     assert_sql_equal(expr, snapshot)
 
 
-def test_window_rows_with_max_lookback(alltypes):
-    mlb = ibis.rows_with_max_lookback(3, ibis.interval(days=3))
-    t = alltypes
-    w = ibis.trailing_window(mlb, order_by=t.i)
-    expr = t.a.sum().over(w)
-    with pytest.raises(NotImplementedError):
-        ibis.to_sql(expr, dialect="impala")
-
-
 @pytest.mark.parametrize("name", ["sum", "min", "max", "mean"])
 def test_cumulative_functions(alltypes, name, snapshot):
     t = alltypes

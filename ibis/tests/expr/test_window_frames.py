@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import numpy as np
-import pandas as pd
 import pytest
 from pytest import param
 
@@ -11,7 +10,7 @@ import ibis.expr.datashape as ds
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 from ibis.common.annotations import ValidationError
-from ibis.common.exceptions import IbisInputError, IbisTypeError
+from ibis.common.exceptions import IbisInputError
 from ibis.common.patterns import NoMatch, Pattern
 
 
@@ -260,12 +259,6 @@ def test_window_api_properly_determines_how():
     assert ibis.window(following=3.14).how == "range"
     assert ibis.window(following=3).how == "rows"
 
-    mlb1 = ibis.rows_with_max_lookback(3, ibis.interval(months=3))
-    mlb2 = ibis.rows_with_max_lookback(3, ibis.interval(pd.Timedelta(days=3)))
-    mlb3 = ibis.rows_with_max_lookback(np.int64(7), ibis.interval(months=3))
-    for mlb in [mlb1, mlb2, mlb3]:
-        assert ibis.window(mlb).how == "rows"
-
 
 def test_window_api_mutually_exclusive_options():
     with pytest.raises(IbisInputError):
@@ -300,13 +293,6 @@ def test_window_builder_methods(alltypes):
     expected = ibis.window(preceding=5, following=1, group_by=t.a, order_by=[t.b, t.d])
     assert w3 == expected
 
-    w4 = ibis.trailing_window(ibis.rows_with_max_lookback(3, ibis.interval(months=3)))
-    w5 = w4.group_by(t.a)
-    expected = ibis.trailing_window(
-        ibis.rows_with_max_lookback(3, ibis.interval(months=3)), group_by=t.a
-    )
-    assert w5 == expected
-
 
 @pytest.mark.parametrize(
     ["method", "is_preceding"],
@@ -338,31 +324,11 @@ def test_window_api_preceding_following(method, is_preceding):
     p4 = method(t.a).op()
     assert p4.value == t.a.op()
 
-    # TODO(kszucs): support deferred
-
 
 def test_window_api_trailing_range():
     t = ibis.table([("col", "int64")], name="t")
     w = ibis.trailing_range_window(ibis.interval(days=1), order_by="col")
     w.bind(t)
-
-
-def test_window_api_max_rows_with_lookback(alltypes):
-    t = alltypes
-    mlb = ibis.rows_with_max_lookback(3, ibis.interval(days=5))
-    window = ibis.trailing_window(mlb, order_by=t.i)
-
-    window = ibis.trailing_window(mlb)
-    with pytest.raises(IbisTypeError):
-        t.f.lag().over(window)
-
-    window = ibis.trailing_window(mlb, order_by=t.a)
-    with pytest.raises(IbisTypeError):
-        t.f.lag().over(window)
-
-    window = ibis.trailing_window(mlb, order_by=[t.i, t.a])
-    with pytest.raises(IbisTypeError):
-        t.f.lag().over(window)
 
 
 @pytest.mark.parametrize(

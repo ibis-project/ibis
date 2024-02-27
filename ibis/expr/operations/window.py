@@ -100,21 +100,6 @@ class RowsWindowFrame(WindowFrame):
     how = "rows"
     start: Optional[WindowBoundary[dt.Integer]] = None
     end: Optional[WindowBoundary] = None
-    max_lookback: Optional[Value[dt.Interval]] = None
-
-    def __init__(self, max_lookback, order_by, **kwargs):
-        if max_lookback:
-            # TODO(kszucs): this should belong to a timeseries extension rather than
-            # the core window operation
-            if len(order_by) != 1:
-                raise com.IbisTypeError(
-                    "`max_lookback` window must be ordered by a single column"
-                )
-            if not order_by[0].dtype.is_timestamp():
-                raise com.IbisTypeError(
-                    "`max_lookback` window must be ordered by a timestamp column"
-                )
-        super().__init__(max_lookback=max_lookback, order_by=order_by, **kwargs)
 
 
 @public
