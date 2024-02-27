@@ -519,9 +519,38 @@ def test_dropna_table(backend, alltypes, how, subset):
     backend.assert_frame_equal(result, expected)
 
 
-def test_select_sort_sort(alltypes):
-    query = alltypes[alltypes.year, alltypes.bool_col]
-    query = query.order_by(query.year).order_by(query.bool_col)
+def test_select_sort_sort(backend, alltypes, df):
+    t = alltypes
+
+    expr = t.order_by(t.year, t.id.desc()).order_by(t.bool_col)
+
+    result = expr.execute().reset_index(drop=True)
+    expected = df.sort_values(
+        ["bool_col", "year", "id"], ascending=[True, True, False]
+    ).reset_index(drop=True)
+
+    backend.assert_frame_equal(result, expected)
+
+
+def test_select_sort_sort_deferred(backend, alltypes, df):
+    t = alltypes
+
+    expr = t.order_by(t.tinyint_col, t.bool_col, t.id).order_by(
+        _.bool_col.asc(), (_.tinyint_col + 1).desc()
+    )
+    result = expr.execute().reset_index(drop=True)
+
+    df = df.assign(tinyint_col_plus=df.tinyint_col + 1)
+    expected = (
+        df.sort_values(
+            ["bool_col", "tinyint_col_plus", "tinyint_col", "id"],
+            ascending=[True, False, True, True],
+        )
+        .drop(columns=["tinyint_col_plus"])
+        .reset_index(drop=True)
+    )
+
+    backend.assert_frame_equal(result, expected)
 
 
 @pytest.mark.parametrize(
