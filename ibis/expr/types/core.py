@@ -592,10 +592,9 @@ class Expr(Immutable, Coercible):
 
     def unbind(self) -> ir.Table:
         """Return an expression built on `UnboundTable` instead of backend-specific objects."""
-        from ibis.common.deferred import _
-        from ibis.expr.analysis import c, p
+        from ibis.expr.rewrites import _, d, p
 
-        rule = p.DatabaseTable >> c.UnboundTable(
+        rule = p.DatabaseTable >> d.UnboundTable(
             name=_.name, schema=_.schema, namespace=_.namespace
         )
         return self.op().replace(rule).to_expr()
@@ -609,7 +608,7 @@ class Expr(Immutable, Coercible):
     def as_scalar(self) -> ir.Scalar:
         """Convert an expression to a scalar."""
         raise NotImplementedError(
-            f"{type(self)} expression cannot be converted into scalars"
+            f"{type(self)} expressions cannot be converted into scalars"
         )
 
 

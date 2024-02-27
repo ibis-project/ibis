@@ -4109,8 +4109,7 @@ class Table(Expr, _FixedTextJupyterMixin):
         import pandas as pd
 
         import ibis.selectors as s
-        from ibis import _
-        from ibis.expr.analysis import p, x
+        from ibis.expr.rewrites import _, p, x
 
         orig_names_from = util.promote_list(names_from)
 
