@@ -6,7 +6,7 @@ from pytest import param
 
 import ibis
 import ibis.expr.datatypes as dt
-from ibis.formats.polars import PolarsSchema, PolarsType
+from ibis.formats.polars import PolarsData, PolarsSchema, PolarsType
 
 
 @pytest.mark.parametrize(
@@ -94,3 +94,48 @@ def test_schema_to_and_from_ibis():
 
     s2 = PolarsSchema.from_ibis(ibis_schema)
     assert s2 == polars_schema
+
+
+def test_infer_scalar():
+    assert PolarsData.infer_scalar(1).is_integer()
+    nested = PolarsData.infer_scalar([1])
+    assert nested.is_array()
+    assert nested.value_type.is_integer()
+
+
+def test_infer_column():
+    assert PolarsData.infer_column([1, 2, None]).is_integer()
+    assert PolarsData.infer_column(["a", "b"]).is_string()
+
+
+def test_infer_table():
+    schema = PolarsData.infer_table({"x": [1, 2, None], "y": ["a", "b", "c"]})
+    assert schema.names == ("x", "y")
+    assert schema["x"].is_integer()
+    assert schema["y"].is_string()
+
+
+def test_convert_scalar():
+    df = pl.DataFrame({"x": ["1"]})
+    res = PolarsData.convert_scalar(df, dt.int64)
+    assert res == 1
+    assert isinstance(res, int)
+
+
+def test_convert_column():
+    df = pl.DataFrame({"x": ["1", "2"]})
+    res = PolarsData.convert_column(df, dt.int64)
+    sol = pl.Series(name="x", values=[1, 2], dtype=pl.Int64)
+    assert res.equals(sol)
+    assert res.dtype == sol.dtype
+
+
+def test_convert_table():
+    df = pl.DataFrame({"x": ["1", "2"], "y": ["a", "b"]})
+    schema = ibis.schema({"x": "int64", "z": "string"})
+    df = PolarsData.convert_table(df, schema)
+    sol = pl.DataFrame(
+        {"x": [1, 2], "z": ["a", "b"]}, schema={"x": pl.Int64, "z": pl.Utf8}
+    )
+    assert df.equals(sol)
+    assert df.schema == sol.schema
