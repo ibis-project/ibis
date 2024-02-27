@@ -1860,3 +1860,23 @@ def test_isnull_equality(con, backend, monkeypatch):
     expected = pd.DataFrame({"out": [True, False, True]})
 
     backend.assert_frame_equal(result, expected)
+
+
+@pytest.mark.broken(
+    ["druid"],
+    raises=PyDruidProgrammingError,
+    reason=(
+        "Query could not be planned. A possible reason is [SQL query requires ordering a "
+        "table by non-time column [[id]], which is not supported."
+    ),
+)
+def test_subsequent_overlapping_order_by(con, backend, alltypes, df):
+    ts = alltypes.order_by(ibis.desc("id")).order_by("id")
+    result = con.execute(ts)
+    expected = df.sort_values("id").reset_index(drop=True)
+    backend.assert_frame_equal(result, expected)
+
+    ts2 = ts.order_by(ibis.desc("id"))
+    result = con.execute(ts2)
+    expected = df.sort_values("id", ascending=False).reset_index(drop=True)
+    backend.assert_frame_equal(result, expected)

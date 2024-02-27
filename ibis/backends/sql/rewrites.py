@@ -136,11 +136,14 @@ def merge_select_select(_, **kwargs):
     predicates = tuple(p.replace(subs, filter=ops.Value) for p in _.predicates)
     sort_keys = tuple(s.replace(subs, filter=ops.Value) for s in _.sort_keys)
 
+    unique_predicates = toolz.unique(_.parent.predicates + predicates)
+    unique_sort_keys = {s.expr: s for s in _.parent.sort_keys + sort_keys}
+
     return Select(
         _.parent.parent,
         selections=selections,
-        predicates=tuple(toolz.unique(_.parent.predicates + predicates)),
-        sort_keys=tuple(toolz.unique(_.parent.sort_keys + sort_keys)),
+        predicates=unique_predicates,
+        sort_keys=unique_sort_keys.values(),
     )
 
 
