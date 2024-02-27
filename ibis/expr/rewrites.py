@@ -50,7 +50,7 @@ def rewrite_fillna(_):
 
     selections = []
     for name in _.parent.schema.names:
-        col = ops.TableColumn(_.parent, name)
+        col = ops.Field(_.parent, name)
         if (value := mapping.get(name)) is not None:
             col = ops.Alias(ops.Coalesce((col, value)), name)
         selections.append(col)
@@ -62,7 +62,7 @@ def rewrite_fillna(_):
 def rewrite_dropna(_):
     """Rewrite DropNa expressions to use more common operations."""
     if _.subset is None:
-        columns = [ops.TableColumn(_.parent, name) for name in _.parent.schema.names]
+        columns = [ops.Field(_.parent, name) for name in _.parent.schema.names]
     else:
         columns = _.subset
 
