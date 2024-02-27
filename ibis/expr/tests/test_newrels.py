@@ -1544,3 +1544,10 @@ def test_inner_join_convenience():
         # finish to evaluate the collisions
         result = fifth_join._finish().op()
         assert result == expected
+
+
+def test_subsequent_order_by_calls():
+    ts = t.order_by(ibis.desc("int_col")).order_by("int_col")
+    first = ops.Sort(t, [t.int_col.desc()]).to_expr()
+    second = ops.Sort(first, [first.int_col.asc()]).to_expr()
+    assert ts.equals(second)
