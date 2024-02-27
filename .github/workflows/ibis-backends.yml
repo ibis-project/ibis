@@ -63,6 +63,7 @@ jobs:
               - geospatial
               - examples
               - decompiler
+              - polars
             additional_deps:
               - torch
           - name: clickhouse
@@ -116,6 +117,7 @@ jobs:
             extras:
               - postgres
               - geospatial
+              - polars
             additional_deps:
               - torch
             services:
@@ -246,6 +248,7 @@ jobs:
               extras:
                 - postgres
                 - geospatial
+                - polars
               additional_deps:
                 - torch
               services:
