@@ -305,7 +305,7 @@ First, let’s set up the Flink environment and connect to this Kafka source:
 Kafka connector is not part of the binary distribution, so we need to download
 and link it for cluster execution explicitly:
 ```{python}
-# | include: false
+# | output: false
 !wget -N https://repo.maven.apache.org/maven2/org/apache/flink/flink-sql-connector-kafka/1.17.1/flink-sql-connector-kafka-1.17.1.jar
 ```
 :::
