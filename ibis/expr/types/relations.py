@@ -29,6 +29,7 @@ from ibis.util import deprecated
 
 if TYPE_CHECKING:
     import pandas as pd
+    import polars as pl
     import pyarrow as pa
 
     import ibis.expr.types as ir
@@ -278,6 +279,11 @@ class Table(Expr, _FixedTextJupyterMixin):
         from ibis.formats.pandas import PandasData
 
         return PandasData.convert_table(df, self.schema())
+
+    def __polars_result__(self, df: pl.DataFrame) -> Any:
+        from ibis.formats.polars import PolarsData
+
+        return PolarsData.convert_table(df, self.schema())
 
     def _bind_reduction_filter(self, where):
         if where is None or not isinstance(where, Deferred):

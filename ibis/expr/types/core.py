@@ -22,6 +22,7 @@ if TYPE_CHECKING:
     from pathlib import Path
 
     import pandas as pd
+    import polars as pl
     import pyarrow as pa
     import torch
 
@@ -422,6 +423,38 @@ class Expr(Immutable, Coercible):
             A pyarrow table holding the results of the executed expression.
         """
         return self._find_backend(use_default=True).to_pyarrow(
+            self, params=params, limit=limit, **kwargs
+        )
+
+    @experimental
+    def to_polars(
+        self,
+        *,
+        params: Mapping[ir.Scalar, Any] | None = None,
+        limit: int | str | None = None,
+        **kwargs: Any,
+    ) -> pl.DataFrame:
+        """Execute expression and return results as a polars dataframe.
+
+        This method is eager and will execute the associated expression
+        immediately.
+
+        Parameters
+        ----------
+        params
+            Mapping of scalar parameter expressions to value.
+        limit
+            An integer to effect a specific row limit. A value of `None` means
+            "no limit". The default is in `ibis/config.py`.
+        kwargs
+            Keyword arguments
+
+        Returns
+        -------
+        DataFrame
+            A polars dataframe holding the results of the executed expression.
+        """
+        return self._find_backend(use_default=True).to_polars(
             self, params=params, limit=limit, **kwargs
         )
 

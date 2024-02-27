@@ -18,6 +18,7 @@ from ibis.util import deprecated
 
 if TYPE_CHECKING:
     import pandas as pd
+    import polars as pl
     import pyarrow as pa
 
     import ibis.expr.types as ir
@@ -1203,6 +1204,11 @@ class Scalar(Value):
 
         return PandasData.convert_scalar(df, self.type())
 
+    def __polars_result__(self, df: pl.DataFrame) -> Any:
+        from ibis.formats.polars import PolarsData
+
+        return PolarsData.convert_scalar(df, self.type())
+
     def as_scalar(self):
         """Inform ibis that the expression should be treated as a scalar.
 
@@ -1331,6 +1337,11 @@ class Column(Value, _FixedTextJupyterMixin):
         # this bug is fixed in later versions of geopandas
         (column,) = df.columns
         return PandasData.convert_column(df.loc[:, column], self.type())
+
+    def __polars_result__(self, df: pl.DataFrame) -> pl.Series:
+        from ibis.formats.polars import PolarsData
+
+        return PolarsData.convert_column(df, self.type())
 
     def as_scalar(self) -> Scalar:
         """Inform ibis that the expression should be treated as a scalar.
