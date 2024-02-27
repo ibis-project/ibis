@@ -102,8 +102,6 @@ def sort_to_select(_, **kwargs):
 @replace(p.WindowFunction)
 def window_function_to_window(_, **kwargs):
     """Convert a WindowFunction node to a Window node."""
-    if isinstance(_.frame, ops.RowsWindowFrame) and _.frame.max_lookback is not None:
-        raise NotImplementedError("max_lookback is not supported for SQL backends")
     return Window(
         how=_.frame.how,
         func=_.func,

@@ -147,7 +147,6 @@ class WindowBuilder(Builder):
     end: Optional[RangeWindowBoundary] = None
     groupings: VarTuple[Union[str, Resolver, ops.Value]] = ()
     orderings: VarTuple[Union[str, Resolver, ops.Value]] = ()
-    max_lookback: Optional[ops.Value[dt.Interval]] = None
 
     @attribute
     def _table(self):
@@ -156,7 +155,6 @@ class WindowBuilder(Builder):
             self.end,
             *self.groupings,
             *self.orderings,
-            self.max_lookback,
         )
         valuerels = (v.relations for v in inputs if isinstance(v, ops.Value))
         relations = frozenset().union(*valuerels)
@@ -227,9 +225,6 @@ class WindowBuilder(Builder):
     def order_by(self, expr) -> Self:
         return self.copy(orderings=self.orderings + util.promote_tuple(expr))
 
-    def lookback(self, value) -> Self:
-        return self.copy(max_lookback=value)
-
     @annotated
     def bind(self, table: Optional[ops.Relation]):
         table = table or self._table
@@ -255,7 +250,6 @@ class WindowBuilder(Builder):
                 end=self.end,
                 group_by=groupings,
                 order_by=orderings,
-                max_lookback=self.max_lookback,
             )
         elif self.how == "range":
             return ops.RangeWindowFrame(

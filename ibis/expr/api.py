@@ -9,7 +9,7 @@ import itertools
 import numbers
 import operator
 from collections import Counter
-from typing import TYPE_CHECKING, Any, NamedTuple, overload
+from typing import TYPE_CHECKING, Any, overload
 
 import ibis.expr.builders as bl
 import ibis.expr.datatypes as dt
@@ -44,7 +44,6 @@ if TYPE_CHECKING:
     from collections.abc import Iterable, Sequence
     from pathlib import Path
 
-    import numpy as np
     import pandas as pd
     import pyarrow as pa
 
@@ -154,7 +153,6 @@ __all__ = (
     "read_parquet",
     "row_number",
     "rows_window",
-    "rows_with_max_lookback",
     "schema",
     "Schema",
     "selectors",
@@ -1591,32 +1589,6 @@ def get_backend(expr: Expr | None = None) -> BaseBackend:
     return expr._find_backend(use_default=True)
 
 
-class RowsWithMaxLookback(NamedTuple):
-    rows: int
-    max_lookback: ir.IntervalValue
-
-
-def rows_with_max_lookback(
-    rows: int | np.integer, max_lookback: ir.IntervalValue
-) -> RowsWithMaxLookback:
-    """Create a bound preceding value for use with trailing window functions.
-
-    Parameters
-    ----------
-    rows
-        Number of rows
-    max_lookback
-        Maximum lookback in time
-
-    Returns
-    -------
-    RowsWithMaxLookback
-        A named tuple of rows and maximum look-back in time.
-
-    """
-    return RowsWithMaxLookback(rows, max_lookback)
-
-
 def window(
     preceding=None,
     following=None,
@@ -1658,12 +1630,6 @@ def window(
         A window frame
 
     """
-    if isinstance(preceding, RowsWithMaxLookback):
-        max_lookback = preceding.max_lookback
-        preceding = preceding.rows
-    else:
-        max_lookback = None
-
     has_rows = rows is not None
     has_range = range is not None
     has_between = between is not None
@@ -1673,12 +1639,7 @@ def window(
             "Must only specify either `rows`, `range`, `between` or `preceding`/`following`"
         )
 
-    builder = (
-        bl.LegacyWindowBuilder()
-        .group_by(group_by)
-        .order_by(order_by)
-        .lookback(max_lookback)
-    )
+    builder = bl.LegacyWindowBuilder().group_by(group_by).order_by(order_by)
     if has_rows:
         return builder.rows(*rows)
     elif has_range:
@@ -1716,17 +1677,10 @@ def rows_window(preceding=None, following=None, group_by=None, order_by=None):
         A window frame
 
     """
-    if isinstance(preceding, RowsWithMaxLookback):
-        max_lookback = preceding.max_lookback
-        preceding = preceding.rows
-    else:
-        max_lookback = None
-
     return (
         bl.LegacyWindowBuilder()
         .group_by(group_by)
         .order_by(order_by)
-        .lookback(max_lookback)
         .preceding_following(preceding, following, how="rows")
     )
 
