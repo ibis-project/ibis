@@ -1,10 +1,16 @@
 from __future__ import annotations
 
+from typing import TYPE_CHECKING, Any
+
 import polars as pl
 
 import ibis.expr.datatypes as dt
 from ibis.expr.schema import Schema
-from ibis.formats import SchemaMapper, TypeMapper
+from ibis.formats import DataMapper, SchemaMapper, TypeMapper
+
+if TYPE_CHECKING:
+    from collections.abc import Sequence
+
 
 _to_polars_types = {
     dt.Boolean: pl.Boolean,
@@ -106,3 +112,48 @@ class PolarsSchema(SchemaMapper):
         return Schema.from_tuples(
             [(name, PolarsType.to_ibis(typ)) for name, typ in schema.items()]
         )
+
+
+class PolarsData(DataMapper):
+    @classmethod
+    def infer_scalar(cls, scalar: Any) -> dt.DataType:
+        """Infer the ibis type of a scalar."""
+        return PolarsType.to_ibis(pl.Series(values=[scalar]).dtype)
+
+    @classmethod
+    def infer_column(cls, column: Sequence) -> dt.DataType:
+        """Infer the ibis type of a sequence."""
+        if not isinstance(column, pl.Series):
+            column = pl.Series(values=column)
+        return PolarsType.to_ibis(column.dtype)
+
+    @classmethod
+    def infer_table(cls, table) -> Schema:
+        """Infer the schema of a table."""
+        if not isinstance(table, pl.DataFrame):
+            table = pl.DataFrame(table)
+
+        return PolarsSchema.to_ibis(table.schema)
+
+    @classmethod
+    def convert_scalar(cls, df: pl.DataFrame, dtype: dt.DataType) -> Any:
+        assert df.shape == (1, 1)
+        df = cls.convert_table(df, Schema({df.columns[0]: dtype}))
+        return df[0, 0]
+
+    @classmethod
+    def convert_column(cls, df: pl.DataFrame, dtype: dt.DataType) -> pl.Series:
+        assert df.shape[1] == 1
+        df = cls.convert_table(df, Schema({df.columns[0]: dtype}))
+        return df[:, 0]
+
+    @classmethod
+    def convert_table(cls, df: pl.DataFrame, schema: Schema) -> pl.DataFrame:
+        pl_schema = PolarsSchema.from_ibis(schema)
+
+        if tuple(df.columns) != tuple(schema.names):
+            df = df.rename(dict(zip(df.columns, schema.names)))
+
+        if df.schema == pl_schema:
+            return df
+        return df.cast(pl_schema)
