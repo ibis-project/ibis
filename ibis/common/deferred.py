@@ -104,6 +104,9 @@ class Deferred(Slotted, Immutable, Final):
             f"The truth value of {self.__class__.__name__} objects is not defined"
         )
 
+    def __hash__(self):
+        return id(self)
+
     def __getitem__(self, name):
         return Deferred(Item(self, name))
 

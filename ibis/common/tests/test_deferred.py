@@ -202,10 +202,21 @@ def test_deferred_supports_string_arguments():
     assert b.resolve({}) == "3.14"
 
 
-def test_deferred_object_are_not_hashable():
-    # since __eq__ is overloaded, Deferred objects are not hashable
-    with pytest.raises(TypeError, match="unhashable type"):
-        hash(_.a)
+def test_deferred_objects_are_hashable():
+    a = _.a
+    assert hash(a) == hash(a)
+
+    # Works in dicts
+    d = {a: 1, _.b: 2}
+    assert d[a] == 1
+    assert _.c not in d
+    assert _.a not in d  # hash by identity only
+
+    # Works in sets
+    s = {a, a, _.b}
+    assert len(s) == 2
+    assert a in s
+    assert _.a not in s  # hash by identity only
 
 
 def test_deferred_const():
@@ -539,11 +550,6 @@ def test_deferrable_repr():
         return x + 1
 
     assert repr(myfunc(_.a)) == "<test>"
-
-
-def test_deferred_set_raises():
-    with pytest.raises(TypeError, match="unhashable type"):
-        {_.a, _.b}  # noqa: B018
 
 
 @pytest.mark.parametrize(
