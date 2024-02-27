@@ -476,6 +476,22 @@ def test_project_filter_sort():
     assert expr.op() == expected
 
 
+def test_order_by_supports_varargs():
+    expr = t.order_by(t.int_col, t.float_col)
+    expected = ops.Sort(
+        parent=t,
+        keys=[
+            ops.SortKey(ops.Field(t, "int_col"), ascending=True),
+            ops.SortKey(ops.Field(t, "float_col"), ascending=True),
+        ],
+    )
+    assert expr.op() == expected
+
+    # same with deferred and string column references
+    expr = t.order_by(_.int_col, "float_col")
+    assert expr.op() == expected
+
+
 def test_subsequent_filter():
     f1 = t.filter(t.bool_col)
     f2 = f1.filter(t.int_col > 0)

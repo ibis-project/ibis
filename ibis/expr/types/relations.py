@@ -1564,7 +1564,7 @@ class Table(Expr, _FixedTextJupyterMixin):
 
     def order_by(
         self,
-        by: str
+        *by: str
         | ir.Column
         | s.Selector
         | Sequence[str]
