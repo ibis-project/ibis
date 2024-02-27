@@ -415,19 +415,18 @@ class Join(Table):
         right: Table,
         predicates=(),
         *,
-        at_time: Column = None,
         lname: str = "",
         rname: str = "{name}_right",
     ):
         if not isinstance(right.op(), ops.VersionedDatabaseTable):
             raise IbisError(
-                "Right-table is not versioned. "
-                "Temporal join is defined only when the right-table is versioned."
+                "Table `right` is not versioned. "
+                "Temporal join is defined only when right-table is versioned."
             )
-        elif at_time is None and right.at_time is None:
-            raise IbisInputError("Either `at_time` or `right.at_time` must be defined.")
+        elif right.at_time is None:
+            raise IbisInputError("`at_time` must be defined for `right` table.")
 
-        at_time_op = right.op().at_time if at_time is None else at_time.op()
+        at_time_op = right.op().at_time
         left = self.op()
         # Check if `at_time` is based on a left-table.
         # TODO (mehmet): Check with the reviewers the applicability of this check

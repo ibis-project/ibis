@@ -17,7 +17,6 @@ import ibis.expr.schema as sch
 from ibis.backends.conftest import TEST_TABLES
 from ibis.backends.tests.errors import Py4JJavaError
 
-
 if TYPE_CHECKING:
     import ibis.expr.types as ir
 
@@ -606,40 +605,7 @@ def compare_temporal_joined_and_expected_dfs(
     assert (joined_df.values == expected_df.values).all()
 
 
-def test_temporal_join_w_at_time(con, table_left_and_right_and_source_df):
-    table_left, table_right, source_df = table_left_and_right_and_source_df
-
-    join_expr = table_left.temporal_join(
-        table_right,
-        at_time=table_left.timestamp_col,
-        predicates=[
-            table_left["id"] == table_right["id"],
-        ],
-    )
-    # join_expr.visualize()
-
-    sql = con.compile(join_expr)
-    # print(f"sql= \n{sql}")
-
-    expected_sql = """SELECT
-  `t2`.`id`,
-  `t2`.`bool_col`,
-  `t2`.`smallint_col`,
-  `t2`.`int_col`,
-  `t2`.`timestamp_col`,
-  `t3`.`bool_col` AS `bool_col_right`,
-  `t3`.`smallint_col` AS `smallint_col_right`,
-  `t3`.`int_col` AS `int_col_right`,
-  `t3`.`timestamp_col` AS `timestamp_col_right`
-FROM `table_left` AS `t2`
-JOIN `table_right` FOR SYSTEM_TIME AS OF `t2`.`timestamp_col` AS `t3`
-  ON `t2`.`id` = `t3`.`id`"""
-    assert sql == expected_sql
-
-    compare_temporal_joined_and_expected_dfs(join_expr=join_expr, source_df=source_df)
-
-
-def test_temporal_join_w_right_at_time(con, table_left_and_right_and_source_df):
+def test_temporal_join(con, table_left_and_right_and_source_df):
     table_left, table_right, source_df = table_left_and_right_and_source_df
 
     table_right = table_right.at_time(table_left.timestamp_col)
@@ -651,7 +617,7 @@ def test_temporal_join_w_right_at_time(con, table_left_and_right_and_source_df):
     )
 
     sql = con.compile(join_expr)
-    # print(f"sql= \n{sql}")
+    print(f"sql= \n{sql}")
 
     expected_sql = """SELECT
   `t1`.`id`,
