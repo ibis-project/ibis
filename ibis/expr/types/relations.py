@@ -3121,7 +3121,6 @@ class Table(Expr, _FixedTextJupyterMixin):
         right: Table,
         predicates: Sequence[ir.BooleanColumn] = (),
         *,
-        at_time: ir.Column = None,
         lname: str = "",
         rname: str = "{name}_right",
     ) -> Table:
@@ -3131,9 +3130,8 @@ class Table(Expr, _FixedTextJupyterMixin):
         with the corresponding versions of the matching rows in the `right` table.
         Thus, `right` must support versioning, i.e., it should be a "versioned table".
         Versions of the rows in `right` are determined with respect to a time-attribute
-        that must be a column of the `left` table. The time-attribute can be specified
-        either via the `at_time` arg, or by attaching it to `right` table by
-        `right.at_time(left.time_attribute)`.
+        that must be a column of the `left` table. The time-attribute should be specified
+        by attaching it to `right` table via `right.at_time(left.time_attribute)`.
 
         Columns on which the join will be performed should be provided in
         `predicates`. Every given predicate should be of an equality.
@@ -3144,8 +3142,6 @@ class Table(Expr, _FixedTextJupyterMixin):
             Table expression
         right
             Table expression
-        at_time
-            Time-attribute column.
         predicates
             Join predicates. Can only contain equalities.
         lname
@@ -3167,16 +3163,6 @@ class Table(Expr, _FixedTextJupyterMixin):
         table_left = con.create_table(...)
         table_right = con.create_table(...)
 
-        # By providing the time-attribute via `at_time` arg
-        join_expr = table_left.temporal_join(
-            table_right,
-            at_time=table_left.timestamp_col,
-            predicates=[
-                table_left["id"] == table_right["id"],
-            ],
-        )
-
-        # By attaching the time-attribute to `right` table
         table_right = table_right.at_time(table_left.timestamp_col)
         expr = table_left.temporal_join(
             table_right,
@@ -3207,7 +3193,6 @@ class Table(Expr, _FixedTextJupyterMixin):
         return Join(left.op()).temporal_join(
             right=right,
             predicates=predicates,
-            at_time=at_time,
             lname=lname,
             rname=rname,
         )
