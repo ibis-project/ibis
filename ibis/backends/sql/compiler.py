@@ -1151,7 +1151,7 @@ class SQLGlotCompiler(abc.ABC):
 
     def visit_TemporalJoinLink(self, op, *, how, table, at_time, predicates):
         on = sg.and_(*predicates) if predicates else None
-        return TemporalJoin(this=table, at_time=at_time, on=on)
+        return TemporalJoin(this=table, kind=how, at_time=at_time, on=on)
 
     def visit_SelfReference(self, op, *, parent, identifier):
         return parent
