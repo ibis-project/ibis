@@ -1,12 +1,14 @@
 from __future__ import annotations
 
-import polars as pl
 import pytest
 from pytest import param
 
 import ibis
 import ibis.expr.datatypes as dt
-from ibis.formats.polars import PolarsData, PolarsSchema, PolarsType
+
+pl = pytest.importorskip("polars")
+
+from ibis.formats.polars import PolarsData, PolarsSchema, PolarsType  # noqa: E402
 
 
 @pytest.mark.parametrize(
