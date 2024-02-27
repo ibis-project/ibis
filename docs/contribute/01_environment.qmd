@@ -63,8 +63,8 @@ For a better development experience see the `conda` or `nix` setup instructions.
 ::: {.panel-tabset}
 
 ```{python}
-#| echo: false
-#| output: asis
+# | echo: false
+# | output: asis
 
 managers = {
     "conda": {
@@ -74,7 +74,7 @@ managers = {
     "mamba": {
         "name": "Mamba",
         "url": "https://github.com/mamba-org/mamba",
-    }
+    },
 }
 
 for manager, params in managers.items():
@@ -101,16 +101,24 @@ for manager, params in managers.items():
     print()
     print("    ```sh")
     print("    cd ibis")
-    print(f"    {manager} env create --file environment.yml")
+    print(f"    {manager} env create --file conda/environment.yml")
     print("    ```")
     print()
+    if manager == "conda":
+        print()
+        print(
+            "    If you're using arm64 architecture (Mac M1/M2), use `conda/environment-arm64.yml` for setting up a dev environment for all the backends that are possible to install excluding Flink; use `conda/environment-arm64-flink.yml` for setting up a dev environment for all the backends that are possible to install including Flink. The reason to have two separate environments is because `apache-flink` forces `pyarrow` to downgrade to 11.0, which causes conflicts in other backends."
+        )
+        print()
     print(f"1. Activate the environment")
     print()
     print("    ```sh")
     print(f"    {manager} activate ibis-dev")
     print("    ```")
     print()
-    print(f"1. Install your local copy of `ibis` into the {manager.capitalize()} environment")
+    print(
+        f"1. Install your local copy of `ibis` into the {manager.capitalize()} environment"
+    )
     print()
     print("    ```sh")
     print("    pip install -e '.[all]'")
