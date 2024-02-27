@@ -46,6 +46,7 @@ if TYPE_CHECKING:
 
     import numpy as np
     import pandas as pd
+    import polars as pl
     import pyarrow as pa
 
     from ibis.expr.schema import SchemaLike
@@ -361,14 +362,15 @@ def memtable(
     Parameters
     ----------
     data
-        Any data accepted by the `pandas.DataFrame` constructor or a `pyarrow.Table`.
+        A table-like object (`pandas.DataFrame`, `pyarrow.Table`, or
+        `polars.DataFrame`), or any data accepted by the `pandas.DataFrame`
+        constructor (e.g. a list of dicts).
 
-        Examples of acceptable objects are a `pandas.DataFrame`, a `pyarrow.Table`,
-        a list of dicts of non-ibis Python objects, etc.
-        `ibis` objects, like `MapValue`, will result in an error.
+        Note that ibis objects (e.g. `MapValue`) may not be passed in as part
+        of `data` and will result in an error.
 
-        Do not depend on the underlying storage type (e.g., pyarrow.Table), it's subject
-        to change across non-major releases.
+        Do not depend on the underlying storage type (e.g., pyarrow.Table),
+        it's subject to change across non-major releases.
     columns
         Optional [](`typing.Iterable`) of [](`str`) column names. If provided,
         must match the number of columns in `data`.
@@ -506,6 +508,31 @@ def _memtable_from_pyarrow_table(
         name=name if name is not None else util.gen_name("pyarrow_memtable"),
         schema=sch.infer(data) if schema is None else schema,
         data=PyArrowTableProxy(data),
+    ).to_expr()
+
+
+@_memtable.register("polars.LazyFrame")
+def _memtable_from_polars_lazyframe(data: pl.LazyFrame, **kwargs):
+    return _memtable_from_polars_dataframe(data.collect(), **kwargs)
+
+
+@_memtable.register("polars.DataFrame")
+def _memtable_from_polars_dataframe(
+    data: pl.DataFrame,
+    *,
+    name: str | None = None,
+    schema: SchemaLike | None = None,
+    columns: Iterable[str] | None = None,
+):
+    from ibis.formats.polars import PolarsDataFrameProxy
+
+    if columns is not None:
+        assert schema is None, "if `columns` is not `None` then `schema` must be `None`"
+        schema = sch.Schema(dict(zip(columns, sch.infer(data).values())))
+    return ops.InMemoryTable(
+        name=name if name is not None else util.gen_name("polars_memtable"),
+        schema=sch.infer(data) if schema is None else schema,
+        data=PolarsDataFrameProxy(data),
     ).to_expr()
 
 

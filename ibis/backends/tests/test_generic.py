@@ -946,7 +946,7 @@ def test_memtable_bool_column(con):
     assert Counter(con.execute(t.a)) == Counter(data)
 
 
-def test_memtable_construct(backend, con, monkeypatch):
+def test_memtable_construct_from_pyarrow(backend, con, monkeypatch):
     pa = pytest.importorskip("pyarrow")
     monkeypatch.setattr(ibis.options, "default_backend", con)
 
@@ -962,6 +962,24 @@ def test_memtable_construct(backend, con, monkeypatch):
     backend.assert_frame_equal(
         t.order_by("a").execute().fillna(pd.NA), pa_t.to_pandas().fillna(pd.NA)
     )
+
+
+@pytest.mark.parametrize("lazy", [False, True])
+def test_memtable_construct_from_polars(backend, con, lazy):
+    pl = pytest.importorskip("polars")
+    df = pl.DataFrame(
+        {
+            "a": list("abc"),
+            "b": [1, 2, 3],
+            "c": [1.0, 2.0, 3.0],
+            "d": [None, "b", None],
+        }
+    )
+    obj = df.lazy() if lazy else df
+    t = ibis.memtable(obj)
+    res = con.to_pandas(t.order_by("a")).fillna(pd.NA)
+    sol = df.to_pandas().fillna(pd.NA)
+    backend.assert_frame_equal(res, sol)
 
 
 @pytest.mark.parametrize(
