@@ -609,7 +609,7 @@ def test_temporal_join(con, table_left_and_right_and_source_df):
     table_left, table_right, source_df = table_left_and_right_and_source_df
 
     table_right = table_right.at_time(table_left.timestamp_col)
-    join_expr = table_left.temporal_join(
+    join_expr = table_left.join(
         table_right,
         predicates=[
             table_left["id"] == table_right["id"],
@@ -630,7 +630,7 @@ def test_temporal_join(con, table_left_and_right_and_source_df):
   `t3`.`int_col` AS `int_col_right`,
   `t3`.`timestamp_col` AS `timestamp_col_right`
 FROM `table_left` AS `t1`
-JOIN `table_right` FOR SYSTEM_TIME AS OF `t1`.`timestamp_col` AS `t3`
+INNER JOIN `table_right` FOR SYSTEM_TIME AS OF `t1`.`timestamp_col` AS `t3`
   ON `t1`.`id` = `t3`.`id`"""
     assert sql == expected_sql
 

@@ -167,8 +167,8 @@ class Flink(Hive):
 
             this_alias_sql = self.sql(expr.this, "alias")
             expr.this.args["alias"] = None
-            this_sql_wo_alias = self.sql(expr.this)
-            op_sql = f"JOIN {this_sql_wo_alias}"
+            this_sql_wo_alias = self.sql(expr, "this")
+            op_sql = f"{expr.kind} JOIN {this_sql_wo_alias}"
             at_time_sql = self.sql(expr.at_time)
             return f"{self.seg(op_sql)} FOR SYSTEM_TIME AS OF {at_time_sql} AS {this_alias_sql}{on_sql}"
 

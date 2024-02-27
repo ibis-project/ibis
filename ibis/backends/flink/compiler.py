@@ -562,3 +562,13 @@ class FlinkCompiler(SQLGlotCompiler):
         values = self.f.array_concat(left_values, right_values)
 
         return self.cast(self.f.map_from_arrays(keys, values), op.dtype)
+
+    def visit_TemporalJoinLink(self, op, *, how, table, at_time, predicates):
+        if how not in ("left", "inner"):
+            raise com.UnsupportedOperationError(
+                f"Flink temporal does not support {how} join, but only left and inner join"
+            )
+
+        return super().visit_TemporalJoinLink(
+            op=op, how=how, table=table, at_time=at_time, predicates=predicates
+        )

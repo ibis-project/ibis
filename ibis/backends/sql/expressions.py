@@ -10,7 +10,7 @@ class TemporalJoin(sge.Join):
         "this": True,
         "on": False,
         "side": False,
-        "kind": False,
+        "kind": True,
         "using": False,
         "method": False,
         "global": False,

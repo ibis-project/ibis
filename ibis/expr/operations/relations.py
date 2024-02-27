@@ -177,10 +177,6 @@ class JoinLink(Node):
     predicates: VarTuple[Value[dt.Boolean]]
 
 
-# TODO: `TemporalJoinLink` extends `JoinLink` to avoid the validation
-# error, but `how` is unnecessary for `TemporalJoinLink`.
-# Perhaps, make this extend `Expression` and include `TemporalJoinLink` in
-# the validation logic.
 @public
 class TemporalJoinLink(JoinLink):
     at_time: Column
