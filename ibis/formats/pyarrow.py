@@ -12,6 +12,8 @@ from ibis.formats import DataMapper, SchemaMapper, TableProxy, TypeMapper
 if TYPE_CHECKING:
     from collections.abc import Sequence
 
+    import polars as pl
+
 
 _from_pyarrow_types = {
     pa.int8(): dt.Int8,
@@ -268,3 +270,11 @@ class PyArrowTableProxy(TableProxy[pa.Table]):
 
     def to_pyarrow(self, schema: Schema) -> pa.Table:
         return self.obj
+
+    def to_polars(self, schema: Schema) -> pl.DataFrame:
+        import polars as pl
+
+        from ibis.formats.polars import PolarsData
+
+        df = pl.from_arrow(self.obj)
+        return PolarsData.convert_table(df, schema)

@@ -6,10 +6,13 @@ import polars as pl
 
 import ibis.expr.datatypes as dt
 from ibis.expr.schema import Schema
-from ibis.formats import DataMapper, SchemaMapper, TypeMapper
+from ibis.formats import DataMapper, SchemaMapper, TableProxy, TypeMapper
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
+
+    import pandas as pd
+    import pyarrow as pa
 
 
 _to_polars_types = {
@@ -157,3 +160,17 @@ class PolarsData(DataMapper):
         if df.schema == pl_schema:
             return df
         return df.cast(pl_schema)
+
+
+class PolarsDataFrameProxy(TableProxy[pl.DataFrame]):
+    def to_frame(self) -> pd.DataFrame:
+        return self.obj.to_pandas()
+
+    def to_pyarrow(self, schema: Schema) -> pa.Table:
+        from ibis.formats.pyarrow import PyArrowData
+
+        table = self.obj.to_arrow()
+        return PyArrowData.convert_table(table, schema)
+
+    def to_polars(self, schema: Schema) -> pl.DataFrame:
+        return self.obj

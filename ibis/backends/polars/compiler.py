@@ -17,7 +17,7 @@ import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 from ibis.backends.pandas.rewrites import PandasAsofJoin, PandasJoin, PandasRename
 from ibis.expr.operations.udf import InputType
-from ibis.formats.polars import PolarsSchema, PolarsType
+from ibis.formats.polars import PolarsType
 from ibis.util import gen_name
 
 
@@ -66,21 +66,8 @@ def dummy_table(op, **kw):
 
 
 @translate.register(ops.InMemoryTable)
-def pandas_in_memory_table(op, **_):
-    lf = pl.from_pandas(op.data.to_frame()).lazy()
-    schema = PolarsSchema.to_ibis(lf.schema)
-
-    columns = []
-    for name, current_dtype in schema.items():
-        desired_dtype = op.schema[name]
-        if current_dtype != desired_dtype:
-            typ = PolarsType.from_ibis(desired_dtype)
-            columns.append(pl.col(name).cast(typ))
-
-    if columns:
-        return lf.with_columns(columns)
-    else:
-        return lf
+def in_memory_table(op, **_):
+    return op.data.to_polars(op.schema).lazy()
 
 
 @translate.register(ops.Alias)
