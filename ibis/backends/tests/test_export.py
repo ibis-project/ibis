@@ -494,3 +494,42 @@ def test_to_pandas_batches_scalar(backend, con):
 
     result2 = list(t.to_pandas_batches())
     assert result2 == [expected]
+
+
+@pytest.mark.parametrize("limit", limit_no_limit)
+def test_table_to_polars(limit, awards_players):
+    pl = pytest.importorskip("polars")
+    res = awards_players.to_polars(limit=limit)
+    assert isinstance(res, pl.DataFrame)
+    if limit is not None:
+        assert len(res) == limit
+
+    expected_schema = {
+        "playerID": pl.Utf8,
+        "awardID": pl.Utf8,
+        "yearID": pl.Int64,
+        "lgID": pl.Utf8,
+        "tie": pl.Utf8,
+        "notes": pl.Utf8,
+    }
+    assert res.schema == expected_schema
+
+
+@pytest.mark.parametrize("limit", limit_no_limit)
+def test_column_to_polars(limit, awards_players):
+    pl = pytest.importorskip("polars")
+    res = awards_players.awardID.to_polars(limit=limit)
+    assert isinstance(res, pl.Series)
+    if limit is not None:
+        assert len(res) == limit
+
+
+@pytest.mark.parametrize("limit", no_limit)
+def test_scalar_to_polars(limit, awards_players):
+    pytest.importorskip("polars")
+    scalar = awards_players.yearID.min().to_polars(limit=limit)
+    assert isinstance(scalar, int)
+
+    expr = awards_players.filter(awards_players.awardID == "DEADBEEF").yearID.min()
+    res = expr.to_polars(limit=limit)
+    assert res is None
