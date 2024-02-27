@@ -509,9 +509,8 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema, NoUrl):
 
         struct_schema = schema.as_struct().to_pyarrow()
 
-        return pa.ipc.RecordBatchReader.from_batches(
-            schema.to_pyarrow(),
-            (
+        def make_gen():
+            yield from (
                 # convert the renamed + casted columns into a record batch
                 pa.RecordBatch.from_struct_array(
                     # rename columns to match schema because datafusion lowercases things
@@ -522,7 +521,11 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema, NoUrl):
                     .cast(struct_schema)
                 )
                 for batch in frame.collect()
-            ),
+            )
+
+        return pa.ipc.RecordBatchReader.from_batches(
+            schema.to_pyarrow(),
+            make_gen(),
         )
 
     def to_pyarrow(self, expr: ir.Expr, **kwargs: Any) -> pa.Table:
