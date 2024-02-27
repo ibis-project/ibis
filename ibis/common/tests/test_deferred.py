@@ -202,12 +202,6 @@ def test_deferred_supports_string_arguments():
     assert b.resolve({}) == "3.14"
 
 
-def test_deferred_object_are_not_hashable():
-    # since __eq__ is overloaded, Deferred objects are not hashable
-    with pytest.raises(TypeError, match="unhashable type"):
-        hash(_.a)
-
-
 def test_deferred_const():
     obj = const({"a": 1, "b": 2, "c": "gamma"})
 
@@ -501,14 +495,6 @@ def test_deferred_is_not_iterable(obj):
         next(obj)
 
 
-@pytest.mark.parametrize("obj", [_, _.a, _.a.b[0]])
-def test_deferred_is_not_truthy(obj):
-    with pytest.raises(
-        TypeError, match="The truth value of Deferred objects is not defined"
-    ):
-        bool(obj)
-
-
 def test_deferrable(table):
     @deferrable
     def f(a, b, c=3):
@@ -539,11 +525,6 @@ def test_deferrable_repr():
         return x + 1
 
     assert repr(myfunc(_.a)) == "<test>"
-
-
-def test_deferred_set_raises():
-    with pytest.raises(TypeError, match="unhashable type"):
-        {_.a, _.b}  # noqa: B018
 
 
 @pytest.mark.parametrize(
@@ -602,3 +583,25 @@ def test_deferred_namespace(table):
 def test_custom_deferred_repr(table):
     expr = _.x + table.a
     assert repr(expr) == "(_.x + <column[int]>)"
+
+
+def test_deferred_hashable():
+    assert bool(_)
+    assert bool(_.a)
+    assert bool(_.a == _.a)
+    assert bool(_.a != _.b)
+
+    assert hash(_) == hash(_)
+    assert hash(_.a) == hash(_.a)
+    assert hash(_.b) != hash(_.a)
+
+    dct = {}
+    dct[_.a] = "a"
+    dct[_.b] = "b"
+    assert len(dct) == 2
+    assert dct[_.a] == "a"
+    assert dct[_.b] == "b"
+
+    dct[_.a] = "c"
+    assert len(dct) == 2
+    assert dct[_.a] == "c"
