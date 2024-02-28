@@ -250,10 +250,9 @@ forward.
 
 ## Ecosystem
 
-Ibis is part of a larger ecosystem of Python data tools.
-
-It is designed to work well with other tools in this ecosystem, and we continue
-to make it easier to use Ibis with other tools over time.
+Ibis is part of a larger ecosystem of Python data tools. It is designed to work
+well with other tools in this ecosystem, and we continue to make it easier to
+use Ibis with other tools over time.
 
 Ibis already works with other Python dataframes like:
 
