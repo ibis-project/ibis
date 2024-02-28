@@ -26,11 +26,6 @@ backend_categories = {
     "Naïve execution": ["pandas"],
 }
 
-
-def add_backend_to_category(category, backend):
-    backend_categories[category].append(backend)
-
-
 category_colors = {
     "Ibis API": "#999999",
     "Naïve execution": "#FF8C00",
@@ -45,29 +40,26 @@ nodes.append({"label": "Ibis API", "color": category_colors["Ibis API"]})
 node_index["Ibis API"] = 0
 
 
-def create_nodes_and_links():
-    idx = 1
-    for category, backends in backend_categories.items():
-        nodes.append({"label": category, "color": category_colors[category]})
-        node_index[category] = idx
-        links.append({"source": 0, "target": idx, "value": len(backends)})
-        idx += 1
+idx = 1
+for category, backends in backend_categories.items():
+    nodes.append({"label": category, "color": category_colors[category]})
+    node_index[category] = idx
+    links.append({"source": 0, "target": idx, "value": len(backends)})
+    idx += 1
 
-        for backend in backends:
-            if backend not in node_index:
-                nodes.append({"label": backend, "color": category_colors[category]})
-                node_index[backend] = idx
-                idx += 1
-            links.append(
-                {
-                    "source": node_index[category],
-                    "target": node_index[backend],
-                    "value": 1,
-                }
-            )
+    for backend in backends:
+        if backend not in node_index:
+            nodes.append({"label": backend, "color": category_colors[category]})
+            node_index[backend] = idx
+            idx += 1
+        links.append(
+            {
+                "source": node_index[category],
+                "target": node_index[backend],
+                "value": 1,
+            }
+        )
 
-
-create_nodes_and_links()
 
 fig = go.Figure(
     data=[
