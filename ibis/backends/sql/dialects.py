@@ -17,7 +17,7 @@ from sqlglot.dialects import (
     SQLite,
     Trino,
 )
-from sqlglot.dialects.dialect import create_with_partitions_sql, rename_func
+from sqlglot.dialects.dialect import rename_func
 
 ClickHouse.Generator.TRANSFORMS |= {
     sge.ArraySize: rename_func("length"),
@@ -184,23 +184,26 @@ MySQL.Generator.TRANSFORMS |= {
 
 
 def _create_sql(self, expression: sge.Create) -> str:
-    # TODO: should we use CREATE PRIVATE instead?  That will set an implicit
-    # lower bound of Oracle 18c
     properties = expression.args.get("properties")
     temporary = any(
         isinstance(prop, sge.TemporaryProperty)
         for prop in (properties.expressions if properties else [])
     )
-
     kind = expression.args["kind"]
-    if (obj := kind.upper()) in ("TABLE", "VIEW") and temporary:
-        if expression.expression:
-            return f"CREATE GLOBAL TEMPORARY {obj} {self.sql(expression, 'this')} AS {self.sql(expression, 'expression')}"
-        else:
-            # TODO: why does autocommit not work here?  need to specify the ON COMMIT part...
-            return f"CREATE GLOBAL TEMPORARY {obj} {self.sql(expression, 'this')} ON COMMIT PRESERVE ROWS"
-
-    return create_with_partitions_sql(self, expression)
+    if kind.upper() in ("TABLE", "VIEW") and temporary:
+        # Force insertion of required "GLOBAL" keyword
+        expression_sql = self.create_sql(expression).replace(
+            "CREATE TEMPORARY", "CREATE GLOBAL TEMPORARY"
+        )
+        if expression.expression:  #  CREATE ... AS ...
+            return self.sql(expression_sql, "expression")
+        else:  #  CREATE ... ON COMMIT PRESERVE ROWS
+            # Autocommit does not work here for some reason so we append it manually
+            return self.sql(
+                expression_sql + " ON COMMIT PRESERVE ROWS",
+                "expression",
+            )
+    return self.create_sql(expression)
 
 
 Oracle.Generator.TRANSFORMS |= {
