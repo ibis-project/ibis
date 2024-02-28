@@ -176,9 +176,9 @@ for your data platform.
 Data organizations can use Ibis to standardize the interface for SQL and Python
 data practitioners. It also allows data organizations to:
 
-- transfer data between systems easily
+- transfer data between systems
 - transform, analyze, and prepare data where it lives
-- easily benchmark your workload(s) across data systems using the same code
+- benchmark your workload(s) across data systems using the same code
 - mix SQL and Python code seamlessly, with all the benefits of a general-purpose
  programming language, type checking, and expression validation
 
