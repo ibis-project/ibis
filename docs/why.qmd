@@ -11,7 +11,7 @@ backend it is connected to -- with a consistent user experience.
 
 Ibis is the portable Python dataframe library.
 
-We can demonstrate this with a simple example on a few local backends:
+We can demonstrate this with a simple example on a few local query engines:
 
 ```{python}
 import ibis
@@ -72,25 +72,10 @@ t.limit(3)
 t.group_by(["species", "island"]).agg(count=t.count()).order_by("count")
 ```
 
-## Dask
+## PySpark
 
 ```{python}
-con = ibis.dask.connect()  # <1>
-
-t = con.read_parquet("penguins.parquet")
-t.limit(3)
-```
-
-1. Change only your connection to switch between backends.
-
-```{python}
-t.group_by(["species", "island"]).agg(count=t.count()).order_by("count")
-```
-
-## pandas
-
-```{python}
-con = ibis.pandas.connect()  # <1>
+con = ibis.connect("pyspark://")  # <1>
 
 t = con.read_parquet("penguins.parquet")
 t.limit(3)
