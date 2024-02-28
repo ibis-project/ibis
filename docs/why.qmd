@@ -4,14 +4,194 @@ title: "Why Ibis?"
 
 Ibis is the portable Python dataframe library.
 
-If you've had issues with scaling data transformation code in Python, need to
-work with data in multiple data platforms, find yourself translating between
-other Python dataframe APIs, or just want a great Python dataframe experience,
-Ibis is for you.
+## What is Ibis?
 
-## Portability
+Ibis defines a Python dataframe API that supports any query engine -- the
+frontend for any backend data platform. This includes 20+ backends today, most
+SQL-based.  This allows Ibis to have excellent performance -- as good as the
+backend it is connected to -- with a consistent user experience.
 
-You can reuse the same code across different backends.
+We can demonstrate this with a simple example on a few local backends:
+
+```{python}
+import ibis
+
+ibis.options.interactive = True
+```
+
+::: {.panel-tabset}
+
+```{python}
+#| echo: false
+t = ibis.examples.penguins.fetch()
+t.to_parquet("penguins.parquet")
+```
+
+## DuckDB
+
+```{python}
+con = ibis.duckdb.connect()  # <1>
+
+t = con.read_parquet("penguins.parquet")
+t.limit(3)
+```
+
+1. Change only your connection to switch between backends.
+
+```{python}
+t.group_by(["species", "island"]).agg(count=t.count()).order_by("count")
+```
+
+## Polars
+
+```{python}
+con = ibis.polars.connect()  # <1>
+
+t = con.read_parquet("penguins.parquet")
+t.limit(3)
+```
+
+1. Change only your connection to switch between backends.
+
+```{python}
+t.group_by(["species", "island"]).agg(count=t.count()).order_by("count")
+```
+
+## DataFusion
+
+```{python}
+con = ibis.datafusion.connect()  # <1>
+
+t = con.read_parquet("penguins.parquet")
+t.limit(3)
+```
+
+1. Change only your connection to switch between backends.
+
+```{python}
+t.group_by(["species", "island"]).agg(count=t.count()).order_by("count")
+```
+
+## PySpark
+
+```{python}
+con = ibis.connect("pyspark://")  # <1>
+
+t = con.read_parquet("penguins.parquet")
+t.limit(3)
+```
+
+1. Change only your connection to switch between backends.
+
+```{python}
+t.group_by(["species", "island"]).agg(count=t.count()).order_by("count")
+```
+
+:::
+
+## Who is Ibis for?
+
+Ibis for data engineers, data analysts, and data scientists to use directly with
+their data platform(s) of choice. It also has benefits for [data
+platforms](#ibis-for-data-platforms),
+[data organizations](#ibis-for-data-organizations), and
+[data library developers](#ibis-for-data-library-developers).
+
+### Ibis for data practitioners
+
+You can use Ibis at any stage of your data workflow, no matter your role.
+
+**Data engineers** can use Ibis to:
+
+- write and maintain complex ETL/ELT jobs
+- replace fragile SQL string pipelines with a robust Python API
+- replace PySpark with a more Pythonic API that supports Spark and many other
+ backends
+
+**Data analysts** can use Ibis to:
+
+- use Ibis interactive mode for rapid exploration
+- [create end-to-end analytics workflows](./posts/ibis-analytics/index.qmd)
+- work in a general-purpose, yet easy to learn, programming language without the
+ need for formatting SQL strings
+
+**Data scientists** can use Ibis to:
+
+- extract a sample of data for local iteration with a fast local backend
+- prototype with the same API that will be used in production
+- preprocess and feature engineer data before training a machine learning model
+
+### Ibis for data platforms
+
+Data platforms can use Ibis to quickly bring a fully-featured Python dataframe
+library with minimal effort to their platform. In addition to a great Python
+dataframe experience for their users, they also get integrations into the
+[broader Python and ML ecosystem](#ecosystem).
+
+Often, data platforms evolve to support Python in some sequence like:
+
+1. Develop a fast query engine with a SQL frontend
+2. Gain popularity and need to support Python for data science and ML use cases
+3. Develop a bespoke pandas or PySpark-like dataframe library and ML
+ integrations
+
+This third step is where Ibis comes in. Instead of spending X money and Y time
+developing a bespoke Python dataframe library, you can create an Ibis backend
+for your data platform [in as little as four hours for an experienced Ibis
+developer](https://voltrondata.com/resources/new-ibis-backend-shipped-in-four-hours-druid)
+or, more typically, on the order of
+[one](https://github.com/ibis-project/ibis/pull/7954) or
+[two](https://github.com/ibis-project/ibis/pull/7303) months for a new
+contributor.
+
+::: {.callout-warning title="Why not the pandas or PySpark APIs?" collapse="true"}
+The pandas API inherently does not scale due to its single-threaded design,
+ordered index, and a lot of API baggage. The creator of pandas (and Ibis!) has
+[talked about the issues with pandas
+publicly](https://wesmckinney.com/blog/apache-arrow-pandas-internals/). While
+there have been projects attempting to scale the pandas API, they always result
+in a dubious support matrix. You can see that with
+[Modin](https://modin.readthedocs.io/en/stable/supported_apis/dataframe_supported.html)
+or [pandas on Spark (formerly known as
+Koalas)](https://spark.apache.org/docs/latest/api/python/user_guide/pandas_on_spark/supported_pandas_api.html).
+
+[Google BigQuery
+DataFrames](https://github.com/googleapis/python-bigquery-dataframes) are a more
+modern attempt to scale the pandas API, built on top of Ibis. If you are going
+to build a pandas API, we recommend you take a look at this project.
+
+PySpark is a great API for Spark, but not very Pythonic and tightly coupled to
+the Spark execution engine.
+
+Ibis takes inspiration from pandas and PySpark -- and R and SQL -- but is designed to be
+scalable from the start. If offers a neutral,
+[self-governed](https://github.com/ibis-project/governance) open source option
+for your data platform.
+:::
+
+### Ibis for data organizations
+
+Data organizations can use Ibis to standardize the interface for SQL and Python
+data practitioners. It also allows them to:
+
+- transfer data between systems easily
+- transform, analyze, and prepare data where it lives
+- mix SQL and Python code seamlessly, with all the benefits of a general-purpose
+ programming language
+
+### Ibis for data library developers
+
+Python developers creating data libraries can use Ibis to:
+
+- instantly support 20+ data backends
+- instantly support pandas, PyArrow, and Polars objects
+- read and write from all common file formats (depending on the backend)
+- trace column-level lineage through Ibis expressions
+- compile Ibis expressions to SQL or Substrait
+- perform cross-dialect SQL transpilation (powered by
+ [SQLGlot](https://github.com/tobymao/sqlglot))
+
+## How does Ibis work?
 
 Most Python dataframes are tightly coupled to their execution engine. And many
 databases only support SQL, with no Python API. Ibis solves this problem by
@@ -19,7 +199,126 @@ providing a common API for data manipulation in Python, and compiling that API
 into the backend's native language. This means you can learn a single API and
 use it across any supported backend (execution engine).
 
-![](./portability.png)
+```{python}
+# | code-fold: true
+import plotly.graph_objects as go
+
+# Backend categories
+backend_categories = {
+    "SQL-generating": [
+        "BigQuery",
+        "ClickHouse",
+        "DataFusion",
+        "Druid",
+        "DuckDB",
+        "Exasol",
+        "Flink",
+        "Impala",
+        "MSSQL",
+        "MySQL",
+        "Oracle",
+        "PostgreSQL",
+        "PySpark",
+        "RisingWave",
+        "Snowflake",
+        "SQLite",
+        "Trino",
+    ],
+    "Expression-generating": ["Dask", "Polars"],
+    "Naïve execution": ["pandas"],
+}
+
+
+# Function to add new backends to a category
+def add_backend_to_category(category, backend):
+    if category in backend_categories:
+        backend_categories[category].append(backend)
+    else:
+        print(f"Category {category} not found.")
+
+
+# Colors for each category
+category_colors = {
+    "Ibis API": "#999999",  # Grey for neutrality.
+    "Naïve execution": "#FF8C00",  # A bright, deep orange.
+    "Expression-generating": "#6A5ACD",  # A slate blue, offering a clear contrast with orange.
+    "SQL-generating": "#3CB371",  # A medium sea green, vibrant yet distinct from blue and orange.
+}
+
+
+# Generate nodes and links for the sankey diagram
+nodes, links = [], []
+node_index = {}
+
+# Add Ibis API node
+nodes.append({"label": "Ibis API", "color": category_colors["Ibis API"]})
+node_index["Ibis API"] = 0
+
+
+# Function to create nodes and links
+def create_nodes_and_links():
+    idx = 1
+    for category, backends in backend_categories.items():
+        # Category node
+        nodes.append({"label": category, "color": category_colors[category]})
+        node_index[category] = idx
+        links.append({"source": 0, "target": idx, "value": len(backends)})
+        idx += 1
+
+        # Backend nodes
+        for backend in backends:
+            if (
+                backend not in node_index
+            ):  # Add the backend if it's not already in the index
+                nodes.append({"label": backend, "color": category_colors[category]})
+                node_index[backend] = idx
+                idx += 1
+            # Link from category to backend
+            links.append(
+                {
+                    "source": node_index[category],
+                    "target": node_index[backend],
+                    "value": 1,
+                }
+            )
+
+
+create_nodes_and_links()
+
+# create sankey diagram
+fig = go.Figure(
+    data=[
+        go.Sankey(
+            node=dict(
+                pad=20,
+                thickness=20,
+                line=dict(color="black", width=0.5),
+                label=[node["label"] for node in nodes],
+                color=[node["color"] for node in nodes],
+            ),
+            link=dict(
+                source=[link["source"] for link in links],
+                target=[link["target"] for link in links],
+                value=[link["value"] for link in links],
+            ),
+        )
+    ]
+)
+
+# Update layout for more padding around the figure
+# fig.update_layout(template="plotly_dark")
+fig.update_layout(
+    title_text="Ibis backend types", font_size=14, margin=dict(l=30, r=30, t=80, b=30)
+)
+
+# Display the figure
+fig.show()
+```
+
+As you can see, most backends generate SQL strings. Ibis uses
+[SQLGlot](https://github.com/tobymao/sqlglot) to transform Ibis expressions into
+SQL strings. You can also use the `.sql()` methods to mix in SQL strings,
+compiling them to Ibis expressions.
 
 While portability with Ibis isn't perfect, commonalities across backends and
 SQL dialects combined with years of engineering effort produce a full-featured
@@ -28,6 +327,26 @@ and robust framework for data manipulation in Python.
 In the long-term, we aim for a standard query plan Intermediate Representation
 (IR) like [Substrait](https://substrait.io) to simplify this further.
 
+## Scaling up and out
+
+Out of the box, Ibis offers a great local experience for working with many file
+formats. You can scale up with DuckDB (the default backend) or choose from other
+great options like Polars and DataFusion to work locally with large datasets.
+Once you hit scaling issues on a local machine, you can continue scaling up with
+a larger machine in the cloud using the same backend and same code.
+
+If you hit scaling issues on a large single-node machine, you can switch to a
+distributed backend like PySpark, BigQuery, or Trino by simply changing your
+connection string.
+
+## Stream-batch unification
+
+As of [Ibis 8.0](./posts/ibis-version-8.0.0-release/index.qmd), the first stream
+processing backends have been added. Since these systems tend to support SQL, we
+can with minimal changes to Ibis support both batch and streaming workloads with
+a single API. We aim to further unify the batch and streaming paradigms going
+forward.
+
 ## Ecosystem
 
 Ibis is part of a larger ecosystem of Python data tools.
@@ -35,36 +354,32 @@ Ibis is part of a larger ecosystem of Python data tools.
 It is designed to work well with other tools in this ecosystem, and we continue
 to make it easier to use Ibis with other tools over time.
 
-### Local experience
+Ibis already works with other Python dataframes like:
 
-Out of the box, Ibis offers a great local experience for working with many file
-formats.
+- [pandas](https://github.com/pandas-dev/pandas),
+- [Dask](https://github.com/dask/dask)
+- [Polars](https://github.com/pola-rs/polars)
 
-DuckDB is the default backend, with Polars and DataFusion as two other great
-local options. Many of the backends can run locally but require more setup than
-a pip installation.
+Ibis already works well with visualization libraries like:
 
-### Scaling up and out
+- [matplotlib](https://github.com/matplotlib/matplotlib)
+- [seaborn](https://github.com/mwaskom/seaborn)
+- [plotly](https://github.com/plotly/plotly.py)
+- [altair](https://github.com/altair-viz/altair)
+- [plotnine](https://github.com/has2k1/plotnine)
 
-After prototyping on a local backend, directly scale in the cloud.
+Ibis already works well with dashboarding libraries like:
 
-You can prototype on DuckDB and deploy with MotherDuck. You can scale from any
-Python client with Ibis installed to whatever your backend supports.
+- [Streamlit](https://github.com/streamlit/streamlit)
+- [dash](https://github.com/plotly/dash)
+- [Quarto dashboards](https://github.com/quarto-dev/quarto-cli)
 
-## Use cases
+Ibis already works well with machine learning libraries like:
 
-You can use Ibis at any stage of your data workflow.
-
-Use the same framework for local exploration on a few files or production
-workloads on the most advanced data platforms.
-
-Ibis helps with:
-
-- data catalog exploration
-- exploratory data analysis
-- transforming data
-- visualizing data
-- data science and machine learning
+- [scikit-learn](https://github.com/scikit-learn/scikit-learn)
+- [XGBoost](https://github.com/dmlc/xgboost)
+- [LightGBM](https://github.com/microsoft/lightgbm)
+- [PyTorch](https://github.com/pytorch/pytorch)
 
 ## Supported backends
 
@@ -73,12 +388,16 @@ Ibis helps with:
 See the [backend support matrix](support_matrix.qmd) for details on operations
 supported. [Open a feature
 request](https://github.com/ibis-project/ibis/issues/new?assignees=&labels=feature&projects=&template=feature-request.yml&title=feat)
-if you'd like to see support for an operation in a given backend. If the backend supports it, we'll do our best to add it quickly!
+if you'd like to see support for an operation in a given backend. If the backend
+supports it, we'll do our best to add it quickly!
 
 ## Community
 
-Community discussions primarily take place on [GitHub](https://github.com/ibis-project/ibis/discussions).
+Community discussions primarily take place on
+[GitHub](https://github.com/ibis-project/ibis/discussions) and
+[Zulip](https://ibis-project.zulipchat.com).
 
 ## Getting started
 
-If you're interested in trying Ibis we recommend the [getting started tutorial](./tutorials/getting_started.qmd).
+If you're interested in trying Ibis we recommend the [getting started
+tutorial](./tutorials/getting_started.qmd).
