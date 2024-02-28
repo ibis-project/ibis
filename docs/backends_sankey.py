@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import plotly.graph_objects as go
 
 backend_categories = {
@@ -26,10 +28,7 @@ backend_categories = {
 
 
 def add_backend_to_category(category, backend):
-    if category in backend_categories:
-        backend_categories[category].append(backend)
-    else:
-        print(f"Category {category} not found.")
+    backend_categories[category].append(backend)
 
 
 category_colors = {
