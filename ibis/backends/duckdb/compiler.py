@@ -11,11 +11,7 @@ from sqlglot.dialects import DuckDB
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
-from ibis.backends.sql.compiler import (
-    NULL,
-    STAR,
-    SQLGlotCompiler,
-)
+from ibis.backends.sql.compiler import NULL, STAR, SQLGlotCompiler, paren
 from ibis.backends.sql.datatypes import DuckDBType
 
 _INTERVAL_SUFFIXES = {
@@ -401,3 +397,11 @@ class DuckDBCompiler(SQLGlotCompiler):
 
     def visit_StringConcat(self, op, *, arg):
         return reduce(lambda x, y: sge.DPipe(this=x, expression=y), arg)
+
+    def visit_StructField(self, op, *, arg, field):
+        if not isinstance(op.arg, (ops.Field, sge.Struct)):
+            # parenthesize anything that isn't a simple field access
+            return sge.Dot(
+                this=paren(arg), expression=sg.to_identifier(field, quoted=self.quoted)
+            )
+        return super().visit_StructField(op, arg=arg, field=field)
