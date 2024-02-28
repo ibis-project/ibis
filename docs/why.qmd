@@ -2,14 +2,14 @@
 title: "Why Ibis?"
 ---
 
-Ibis is the portable Python dataframe library.
-
-## What is Ibis?
-
 Ibis defines a Python dataframe API that supports any query engine -- the
 frontend for any backend data platform. This includes 20+ backends today, most
 SQL-based.  This allows Ibis to have excellent performance -- as good as the
 backend it is connected to -- with a consistent user experience.
+
+## What is Ibis?
+
+Ibis is the portable Python dataframe library.
 
 We can demonstrate this with a simple example on a few local backends:
 
