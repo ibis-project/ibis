@@ -233,7 +233,7 @@ fig.show()
 As you can see, most backends generate SQL. Ibis uses
 [SQLGlot](https://github.com/tobymao/sqlglot) to transform Ibis expressions into
 SQL strings. You can also use the
-[`.sql()`](./how-to/extending/sql.qmd#table.sql ) methods to mix in SQL strings,
+[`.sql()`](./how-to/extending/sql.qmd#table.sql) methods to mix in SQL strings,
 compiling them to Ibis expressions.
 
 While portability with Ibis isn't perfect, commonalities across backends and
