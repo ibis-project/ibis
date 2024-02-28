@@ -159,8 +159,8 @@ Koalas)](https://spark.apache.org/docs/latest/api/python/user_guide/pandas_on_sp
 
 [Google BigQuery
 DataFrames](https://github.com/googleapis/python-bigquery-dataframes) is a more
-modern attempt to scale the pandas API, built on top of Ibis. If you are going
-to build a pandas API, we recommend you take a look at this project.
+modern attempt to scale the pandas API built on top of Ibis. If you are going
+to build a pandas API we recommend you take a look at this project.
 
 PySpark is a great API for Spark, but not very Pythonic and tightly coupled to
 the Spark execution engine.
@@ -180,7 +180,7 @@ data practitioners. It also allows data organizations to:
 - transform, analyze, and prepare data where it lives
 - easily benchmark your workload(s) across data systems using the same code
 - mix SQL and Python code seamlessly, with all the benefits of a general-purpose
- programming language
+ programming language, type checking, and expression validation
 
 ### Ibis for data library developers
 
