@@ -41,7 +41,6 @@ from ibis.backends.impala.udf import (
     wrap_udf,
 )
 from ibis.backends.sql import SQLBackend
-from ibis.config import options
 
 if TYPE_CHECKING:
     from collections.abc import Iterator, Mapping
@@ -67,21 +66,6 @@ class Backend(SQLBackend):
     compiler = ImpalaCompiler()
 
     supports_in_memory_tables = True
-
-    class Options(ibis.config.Config):
-        """Impala specific options.
-
-        Parameters
-        ----------
-        temp_db : str, default "__ibis_tmp"
-            Database to use for temporary objects.
-        temp_path : str, default "/tmp/ibis"
-            Path for storage of temporary data.
-
-        """
-
-        temp_db: str = "__ibis_tmp"
-        temp_path: str = "/tmp/__ibis"
 
     def _from_url(self, url: str, **kwargs: Any) -> Backend:
         """Connect to a backend using a URL `url`.
@@ -212,7 +196,6 @@ class Backend(SQLBackend):
 
         self.con = con
         self.options = {}
-        self._ensure_temp_db_exists()
 
     @cached_property
     def version(self):
@@ -702,12 +685,6 @@ class Backend(SQLBackend):
         self, name: str | None, database: str | None
     ) -> tuple[str, str | None]:
         return name if name is not None else util.gen_name("impala_table"), database
-
-    def _ensure_temp_db_exists(self):
-        # TODO: session memoize to avoid unnecessary `SHOW DATABASES` calls
-        name, path = options.impala.temp_db, options.impala.temp_path
-        if name not in self.list_databases():
-            self.create_database(name, path=path, force=True)
 
     def _drop_table(self, name: str) -> None:
         # database might have been dropped, so we suppress the
