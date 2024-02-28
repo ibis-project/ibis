@@ -14,7 +14,7 @@ hide:
 ## pip
 
 ::: {.callout-warning}
-`pip` will not handle installation of system dependencies
+## `pip` will not handle installation of system dependencies
 
 `pip` will not install system dependencies needed for some packages such as `psycopg2` and `kerberos`.
 
