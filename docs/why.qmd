@@ -158,7 +158,7 @@ or [pandas on Spark (formerly known as
 Koalas)](https://spark.apache.org/docs/latest/api/python/user_guide/pandas_on_spark/supported_pandas_api.html).
 
 [Google BigQuery
-DataFrames](https://github.com/googleapis/python-bigquery-dataframes) are a more
+DataFrames](https://github.com/googleapis/python-bigquery-dataframes) is a more
 modern attempt to scale the pandas API, built on top of Ibis. If you are going
 to build a pandas API, we recommend you take a look at this project.
 
