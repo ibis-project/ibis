@@ -91,11 +91,11 @@ t.group_by(["species", "island"]).agg(count=t.count()).order_by("count")
 
 ## Who is Ibis for?
 
-Ibis for data engineers, data analysts, and data scientists to use directly with
-their data platform(s) of choice. It also has benefits for [data
-platforms](#ibis-for-data-platforms),
-[data organizations](#ibis-for-data-organizations), and
-[data library developers](#ibis-for-data-library-developers).
+Ibis is for data engineers, data analysts, and data scientists to use directly
+with their data platform(s) of choice. It also has benefits for [data
+platforms](#ibis-for-data-platforms), [data
+organizations](#ibis-for-data-organizations), and [data library
+developers](#ibis-for-data-library-developers).
 
 ### Ibis for data practitioners
 
