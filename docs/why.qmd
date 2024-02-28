@@ -72,10 +72,25 @@ t.limit(3)
 t.group_by(["species", "island"]).agg(count=t.count()).order_by("count")
 ```
 
-## PySpark
+## Dask
 
 ```{python}
-con = ibis.connect("pyspark://")  # <1>
+con = ibis.dask.connect()  # <1>
+
+t = con.read_parquet("penguins.parquet")
+t.limit(3)
+```
+
+1. Change only your connection to switch between backends.
+
+```{python}
+t.group_by(["species", "island"]).agg(count=t.count()).order_by("count")
+```
+
+## pandas
+
+```{python}
+con = ibis.pandas.connect()  # <1>
 
 t = con.read_parquet("penguins.parquet")
 t.limit(3)
@@ -111,6 +126,7 @@ You can use Ibis at any stage of your data workflow, no matter your role.
 **Data analysts** can use Ibis to:
 
 - use Ibis interactive mode for rapid exploration
+- perform rapid exploratory data analysis using interactive mode
 - [create end-to-end analytics workflows](./posts/ibis-analytics/index.qmd)
 - work in a general-purpose, yet easy to learn, programming language without the
  need for formatting SQL strings
@@ -135,9 +151,10 @@ Often, data platforms evolve to support Python in some sequence like:
 3. Develop a bespoke pandas or PySpark-like dataframe library and ML
  integrations
 
-This third step is where Ibis comes in. Instead of spending X money and Y time
-developing a bespoke Python dataframe library, you can create an Ibis backend
-for your data platform [in as little as four hours for an experienced Ibis
+This third step is where Ibis comes in. Instead of spending a lot of time and
+money developing a bespoke Python dataframe library, you can create an Ibis
+backend for your data platform [in as little as four hours for an experienced
+Ibis
 developer](https://voltrondata.com/resources/new-ibis-backend-shipped-in-four-hours-druid)
 or, more typically, on the order of
 [one](https://github.com/ibis-project/ibis/pull/7954) or
@@ -172,10 +189,11 @@ for your data platform.
 ### Ibis for data organizations
 
 Data organizations can use Ibis to standardize the interface for SQL and Python
-data practitioners. It also allows them to:
+data practitioners. It also allows data organizations to:
 
 - transfer data between systems easily
 - transform, analyze, and prepare data where it lives
+- easily benchmark your workload(s) across data systems using the same code
 - mix SQL and Python code seamlessly, with all the benefits of a general-purpose
  programming language
 
