@@ -399,6 +399,9 @@ class DuckDBCompiler(SQLGlotCompiler):
         return reduce(lambda x, y: sge.DPipe(this=x, expression=y), arg)
 
     def visit_StructField(self, op, *, arg, field):
-        return sge.Dot(
-            this=paren(arg), expression=sg.to_identifier(field, quoted=self.quoted)
-        )
+        if not isinstance(op.arg, (ops.Field, sge.Struct)):
+            # parenthesize anything that isn't a simple field access
+            return sge.Dot(
+                this=paren(arg), expression=sg.to_identifier(field, quoted=self.quoted)
+            )
+        return super().visit_StructField(op, arg=arg, field=field)
