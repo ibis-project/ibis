@@ -10,7 +10,11 @@ from pytest import param
 
 import ibis
 import ibis.expr.datatypes as dt
-from ibis.backends.tests.errors import PsycoPg2InternalError, PsycoPg2SyntaxError
+from ibis.backends.tests.errors import (
+    PsycoPg2InternalError,
+    PsycoPg2SyntaxError,
+    Py4JJavaError,
+)
 
 pytestmark = [
     pytest.mark.never(["mysql", "sqlite", "mssql"], reason="No struct support"),
@@ -144,6 +148,7 @@ def test_collect_into_struct(alltypes):
     reason="struct literals not implemented",
     raises=PsycoPg2InternalError,
 )
+@pytest.mark.notimpl(["flink"], raises=Py4JJavaError, reason="not implemented in ibis")
 def test_field_access_after_case(con):
     s = ibis.struct({"a": 3})
     x = ibis.case().when(True, s).else_(ibis.struct({"a": 4})).end()
