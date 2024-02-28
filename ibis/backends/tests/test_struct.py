@@ -10,6 +10,7 @@ from pytest import param
 
 import ibis
 import ibis.expr.datatypes as dt
+from ibis.backends.tests.errors import PsycoPg2SyntaxError
 
 pytestmark = [
     pytest.mark.never(["mysql", "sqlite", "mssql"], reason="No struct support"),
@@ -135,6 +136,9 @@ def test_collect_into_struct(alltypes):
     assert len(val.loc[result.group == "1"].iat[0]["key"]) == 730
 
 
+@pytest.mark.notimpl(
+    ["postgres"], reason="struct literals not implemented", raises=PsycoPg2SyntaxError
+)
 def test_field_access_after_case(con):
     s = ibis.struct({"a": 3})
     x = ibis.case().when(True, s).else_(ibis.struct({"a": 4})).end()
