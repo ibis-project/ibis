@@ -66,6 +66,7 @@ dependencies:
   - pytest-xdist >=2.3.0,<4
   - requests >=2,<3
   # docs
+  - quarto >=1.4
   - altair >=5.0.1
   - distributed >=2022.9.1
   - ipykernel >=6.25.1

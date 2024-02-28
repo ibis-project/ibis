@@ -69,6 +69,7 @@ dependencies:
   - pytest-xdist >=2.3.0,<4
   - requests >=2,<3
   # docs
+  - quarto >=1.4
   - altair >=5.0.1
   - distributed >=2022.9.1
   - ipykernel >=6.25.1
@@ -79,8 +80,6 @@ dependencies:
   - py-cpuinfo >=9
   - quartodoc >=0.6.1
   - seaborn
-  # needs >1.4 for the dashboard but not available yet
-  - quarto
   # dev utilities
   - codespell >=2.2.6
   - go-shfmt

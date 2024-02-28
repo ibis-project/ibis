@@ -11,6 +11,13 @@ hide:
 
 ::: {.panel-tabset}
 
+::: {.callout-note}
+## MacOS users on arm64 CPUs must use a different setup
+If you are working with an `arm64` architecture (Mac M1/M2) refer directly to
+the `conda/mamba` setup and refer to the comment related to `arm64`
+architectures.
+:::
+
 ## pip
 
 ::: {.callout-warning}
@@ -18,7 +25,7 @@ hide:
 
 `pip` will not install system dependencies needed for some packages such as `psycopg2` and `kerberos`.
 
-For a better development experience see the `conda` or `nix` setup instructions.
+For a better development experience see the `conda/mamba` or `nix` setup instructions.
 :::
 
 1. [Install `gh`](https://cli.github.com/manual/installation)
@@ -48,7 +55,7 @@ For a better development experience see the `conda` or `nix` setup instructions.
    pip install -e '.[all]'
    ```
 
-## Conda
+## Conda/Mamba
 
 ### Support matrix [^conda-callout]
 
@@ -104,7 +111,7 @@ for manager, params in managers.items():
     print(f"    {manager} env create --file conda/environment.yml")
     print("    ```")
     print()
-    if manager == "conda":
+    if manager == "conda" or manager == "mamba":
         print()
         print(
             "    If you're using arm64 architecture (Mac M1/M2), use "
@@ -199,7 +206,8 @@ for manager, params in managers.items():
 
 ## Building the docs
 
-Install [`just`](https://just.systems/man/en/chapter_4.html) and run
+Install [`just`](https://just.systems/man/en/chapter_4.html) (if you installed
+via `conda/mamba` you are covered) and run
 
 ```bash
 just docs-preview
