@@ -199,11 +199,16 @@ providing a common API for data manipulation in Python, and compiling that API
 into the backend's native language. This means you can learn a single API and
 use it across any supported backend (execution engine).
 
+Ibis supports three types of backend:
+
+1. SQL-generating backends
+2. Expression-generating backends
+3. Naïve execution backends
+
 ```{python}
 # | code-fold: true
 import plotly.graph_objects as go
 
-# Backend categories
 backend_categories = {
     "SQL-generating": [
         "BigQuery",
@@ -229,7 +234,6 @@ backend_categories = {
 }
 
 
-# Function to add new backends to a category
 def add_backend_to_category(category, backend):
     if category in backend_categories:
         backend_categories[category].append(backend)
@@ -237,43 +241,33 @@ def add_backend_to_category(category, backend):
         print(f"Category {category} not found.")
 
 
-# Colors for each category
 category_colors = {
-    "Ibis API": "#999999",  # Grey for neutrality.
-    "Naïve execution": "#FF8C00",  # A bright, deep orange.
-    "Expression-generating": "#6A5ACD",  # A slate blue, offering a clear contrast with orange.
-    "SQL-generating": "#3CB371",  # A medium sea green, vibrant yet distinct from blue and orange.
+    "Ibis API": "#999999",
+    "Naïve execution": "#FF8C00",
+    "Expression-generating": "#6A5ACD",
+    "SQL-generating": "#3CB371",
 }
 
-
-# Generate nodes and links for the sankey diagram
 nodes, links = [], []
 node_index = {}
 
-# Add Ibis API node
 nodes.append({"label": "Ibis API", "color": category_colors["Ibis API"]})
 node_index["Ibis API"] = 0
 
 
-# Function to create nodes and links
 def create_nodes_and_links():
     idx = 1
     for category, backends in backend_categories.items():
-        # Category node
         nodes.append({"label": category, "color": category_colors[category]})
         node_index[category] = idx
         links.append({"source": 0, "target": idx, "value": len(backends)})
         idx += 1
 
-        # Backend nodes
         for backend in backends:
-            if (
-                backend not in node_index
-            ):  # Add the backend if it's not already in the index
+            if backend not in node_index:
                 nodes.append({"label": backend, "color": category_colors[category]})
                 node_index[backend] = idx
                 idx += 1
-            # Link from category to backend
             links.append(
                 {
                     "source": node_index[category],
@@ -285,7 +279,6 @@ def create_nodes_and_links():
 
 create_nodes_and_links()
 
-# create sankey diagram
 fig = go.Figure(
     data=[
         go.Sankey(
@@ -305,17 +298,14 @@ fig = go.Figure(
     ]
 )
 
-# Update layout for more padding around the figure
-# fig.update_layout(template="plotly_dark")
 fig.update_layout(
     title_text="Ibis backend types", font_size=14, margin=dict(l=30, r=30, t=80, b=30)
 )
 
-# Display the figure
 fig.show()
 ```
 
-As you can see, most backends generate SQL strings. Ibis uses
+As you can see, most backends generate SQL. Ibis uses
 [SQLGlot](https://github.com/tobymao/sqlglot) to transform Ibis expressions into
 SQL strings. You can also use the `.sql()` methods to mix in SQL strings,
 compiling them to Ibis expressions.
