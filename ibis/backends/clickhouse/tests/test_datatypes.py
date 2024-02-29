@@ -3,6 +3,7 @@ from __future__ import annotations
 import hypothesis as h
 import hypothesis.strategies as st
 import pytest
+import sqlglot.expressions as sge
 from pytest import param
 
 import ibis
@@ -278,7 +279,7 @@ roundtrippable_types = st.deferred(
         | its.date_dtype()
         | its.time_dtype()
         | its.timestamp_dtype(scale=st.integers(0, 9))
-        | its.array_dtypes(roundtrippable_types)
+        | its.array_dtypes(roundtrippable_types, nullable=false)
         | its.map_dtypes(map_key_types, roundtrippable_types, nullable=false)
     )
 )
@@ -289,3 +290,19 @@ def test_type_roundtrip(ibis_type):
     type_string = ClickHouseType.to_string(ibis_type)
     parsed_ibis_type = ClickHouseType.from_string(type_string)
     assert parsed_ibis_type == ibis_type
+
+
+def test_arrays_nullable():
+    # if dtype.nullable and not (dtype.is_map() or dtype.is_array()):
+    sge_type = ClickHouseType.from_ibis(dt.Array("float"))
+    typecode = sge.DataType.Type
+
+    assert sge_type == sge.DataType(
+        this=typecode.ARRAY,
+        expressions=[
+            sge.DataType(
+                this=typecode.NULLABLE, expressions=[sge.DataType(this=typecode.DOUBLE)]
+            )
+        ],
+        nested=True,
+    )
