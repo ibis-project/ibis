@@ -938,8 +938,8 @@ def flatten_data():
             marks=[
                 pytest.mark.notyet(
                     ["clickhouse"],
-                    reason="doesn't support nullable array elements",
-                    raises=ClickHouseDatabaseError,
+                    reason="Arrays are never nullable",
+                    raises=AssertionError,
                 )
             ],
         ),
@@ -950,8 +950,8 @@ def flatten_data():
             marks=[
                 pytest.mark.notyet(
                     ["clickhouse"],
-                    reason="doesn't support nullable array elements",
-                    raises=ClickHouseDatabaseError,
+                    reason="Arrays are never nullable",
+                    raises=AssertionError,
                 )
             ],
         ),

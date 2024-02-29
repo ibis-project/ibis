@@ -966,7 +966,7 @@ class ClickHouseType(SqlglotType):
     def from_ibis(cls, dtype: dt.DataType) -> sge.DataType:
         """Convert a sqlglot type to an ibis type."""
         typ = super().from_ibis(dtype)
-        if dtype.nullable and not dtype.is_map():
+        if dtype.nullable and not (dtype.is_map() or dtype.is_array()):
             # map cannot be nullable in clickhouse
             return sge.DataType(this=typecode.NULLABLE, expressions=[typ])
         else:
