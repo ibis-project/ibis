@@ -31,8 +31,6 @@ class TestConf(BackendTest):
     @property
     def native_bool(self) -> bool:
         return True
-        # [(value,)] = self.connection.con.query("SELECT true").result_set
-        # return isinstance(value, bool)
 
     @property
     def test_files(self) -> Iterable[Path]:
@@ -59,6 +57,7 @@ class TestConf(BackendTest):
         con.query(f"CREATE DATABASE {database} ENGINE = Atomic")
         con.query(f"USE {database}")
         for sql in self.ddl_script:
+            sql = sql.replace("\n", " ")
             con.query(sql)
 
     @staticmethod
