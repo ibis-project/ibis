@@ -175,6 +175,7 @@ class Options(Config):
     default_backend: Optional[Any] = None
     context_adjustment: ContextAdjustment = ContextAdjustment()
     sql: SQL = SQL()
+    chdb: Optional[Config] = None
     clickhouse: Optional[Config] = None
     dask: Optional[Config] = None
     impala: Optional[Config] = None

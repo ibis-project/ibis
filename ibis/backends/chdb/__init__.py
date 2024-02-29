@@ -1,0 +1,136 @@
+from __future__ import annotations
+
+import contextlib
+from typing import TYPE_CHECKING, Any
+
+import pyarrow as pa  # noqa: F401
+import pyarrow_hotfix  # noqa: F401
+import sqlglot as sg
+import sqlglot.expressions as sge
+from chdb.session import Session
+
+import ibis.common.exceptions as com
+import ibis.expr.schema as sch
+import ibis.expr.types as ir
+from ibis.backends import UrlFromPath
+from ibis.backends.clickhouse import Backend as CHBackend
+
+if TYPE_CHECKING:
+    from collections.abc import Mapping
+    from pathlib import Path
+
+    import pandas as pd
+
+
+class Backend(CHBackend, UrlFromPath):
+    name = "chdb"
+
+    @property
+    def version(self) -> str:
+        # TODO: there is a `PRAGMA version` we could use instead
+        import importlib.metadata
+
+        return importlib.metadata.version("chdb")
+
+    def do_connect(
+        self, path: None | str | Path = None, database: None | str = None
+    ) -> None:
+        self.con = Session(path)
+        if database is not None:
+            self.raw_sql(f"USE {database}")
+
+    def raw_sql(self, query: str | sge.Expression, **kwargs) -> Any:
+        """Execute a SQL string `query` against the database.
+
+        Parameters
+        ----------
+        query
+            Raw SQL string
+        external_tables
+            Mapping of table name to pandas DataFrames providing
+            external datasources for the query
+        kwargs
+            Backend specific query arguments
+
+        Returns
+        -------
+        Cursor
+            Clickhouse cursor
+
+        """
+        with contextlib.suppress(AttributeError):
+            query = query.sql(dialect="clickhouse", pretty=True)
+        self._log(query)
+        return self.con.query(query, **kwargs)
+
+    @contextlib.contextmanager
+    def _safe_raw_sql(self, *args, **kwargs):
+        yield self.raw_sql(*args, **kwargs)
+
+    def get_schema(
+        self, table_name: str, database: str | None = None, schema: str | None = None
+    ) -> sch.Schema:
+        """Return a Schema object for the indicated table and database.
+
+        Parameters
+        ----------
+        table_name
+            May **not** be fully qualified. Use `database` if you want to
+            qualify the identifier.
+        database
+            Database name
+        schema
+            Schema name, not supported by ClickHouse
+
+        Returns
+        -------
+        sch.Schema
+            Ibis schema
+
+        """
+        if schema is not None:
+            raise com.UnsupportedBackendFeatureError(
+                "`schema` namespaces are not supported by chdb"
+            )
+        query = sge.Describe(this=sg.table(table_name, db=database))
+        with self._safe_raw_sql(query, fmt="arrowtable") as table:
+            names = table.column("name").to_pylist()
+            types = table.column("type").to_pylist()
+            dtypes = map(self.compiler.type_mapper.from_string, types)
+        return sch.Schema(dict(zip(names, dtypes)))
+
+    def execute(
+        self,
+        expr: ir.Expr,
+        external_tables: Mapping[str, pd.DataFrame] | None = None,
+        **kwargs: Any,
+    ) -> Any:
+        """Execute an expression."""
+        table = expr.as_table()
+        sql = self.compile(table, **kwargs)
+        self._log(sql)
+
+        external_tables = self._collect_in_memory_tables(expr, external_tables)
+        if external_tables:
+            raise NotImplementedError("External tables are not yet supported")
+
+        df = self.con.query(sql, "arrowtable").to_pandas()
+        return expr.__pandas_result__(table.__pandas_result__(df))
+
+    def to_pyarrow(
+        self,
+        expr: ir.Expr,
+        *,
+        external_tables: Mapping[str, Any] | None = None,
+        **kwargs: Any,
+    ):
+        table = expr.as_table()
+        sql = self.compile(table, **kwargs)
+        self._log(sql)
+
+        external_tables = self._collect_in_memory_tables(expr, external_tables)
+        if external_tables:
+            raise NotImplementedError("External tables are not yet supported")
+
+        table = self.con.query(sql, "arrowtable")
+        return expr.__pyarrow_result__(table)
