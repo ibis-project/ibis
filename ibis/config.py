@@ -161,6 +161,7 @@ class Options(Config):
     graphviz_repr: bool = False
     default_backend: Optional[Any] = None
     sql: SQL = SQL()
+    chdb: Optional[Config] = None
     clickhouse: Optional[Config] = None
     dask: Optional[Config] = None
     impala: Optional[Config] = None

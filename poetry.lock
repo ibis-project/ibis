@@ -771,6 +771,34 @@ files = [
 ]
 
 [[package]]
+name = "chdb"
+version = "1.2.1"
+description = "chDB is an in-process SQL OLAP Engine powered by ClickHouse"
+optional = true
+python-versions = ">=3.8"
+files = [
+    {file = "chdb-1.2.1-cp310-cp310-macosx_10_15_x86_64.whl", hash = "sha256:5d7858769192694493b2b607db73daac5ca3df89b7be9c814657d936278da5dd"},
+    {file = "chdb-1.2.1-cp310-cp310-macosx_11_0_arm64.whl", hash = "sha256:e4ae2b6de6d67a5238f67a195dea355127b275b4d78fd6192d45fc5441b605d6"},
+    {file = "chdb-1.2.1-cp310-cp310-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:afe54f51c7042bad71a708fe37de00e293eeb72a94d80d6cb16524c9040f5c16"},
+    {file = "chdb-1.2.1-cp310-cp310-manylinux_2_5_x86_64.manylinux1_x86_64.manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:59c44c29bf21325e32e5158bfd7a9413920e25e3630afe06d6106500f6010938"},
+    {file = "chdb-1.2.1-cp311-cp311-macosx_10_15_x86_64.whl", hash = "sha256:9fed280ebd14934dcdf0ec35b45211fa87acbc440f40df1ad253449759d53cf4"},
+    {file = "chdb-1.2.1-cp311-cp311-macosx_11_0_arm64.whl", hash = "sha256:b86b84e008501445e2bc54306e4dbc504673774e93b3d51ba7ed47af43141447"},
+    {file = "chdb-1.2.1-cp311-cp311-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:ac256f3aa3bfbd41c9bcdd0bacd5eb9a6e64a057750e567f50c7951116c03a1f"},
+    {file = "chdb-1.2.1-cp311-cp311-manylinux_2_5_x86_64.manylinux1_x86_64.manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:41d62f4a02f04245c8865f921767db0fa8912a4a030e93a111855518b242c40a"},
+    {file = "chdb-1.2.1-cp312-cp312-macosx_10_15_x86_64.whl", hash = "sha256:243cdc4c8055dad3745922ad94c48986460dee7b4af5a95b19a0fead95fad86a"},
+    {file = "chdb-1.2.1-cp312-cp312-macosx_11_0_arm64.whl", hash = "sha256:d62fc66dc48e5fba6630169f3dd0b9597540ffa3fc7c59b7c02207dfb5b85b91"},
+    {file = "chdb-1.2.1-cp312-cp312-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:f7129b5a192f4920bcbf7deafbfcedf7b13347267797dbb943cd1ad2dc3ed86b"},
+    {file = "chdb-1.2.1-cp312-cp312-manylinux_2_5_x86_64.manylinux1_x86_64.manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:6d57d5b15ebc5d4158d75f3a19e50631513b1da57524c3ec7c0a48c2baf48836"},
+    {file = "chdb-1.2.1-cp38-cp38-macosx_10_15_x86_64.whl", hash = "sha256:e66646cf75d37fc61f530ca238fe89a8fcf527a7eed6524bf93d5db273948856"},
+    {file = "chdb-1.2.1-cp38-cp38-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:e7bba1fa210048f1548efc9926a4590465cf44de8f60dd90679601113464e8e1"},
+    {file = "chdb-1.2.1-cp38-cp38-manylinux_2_5_x86_64.manylinux1_x86_64.manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:da243218bacf811e4d4ab0f2f26ac7a26c6dee0c3778739032bf93a3529725ae"},
+    {file = "chdb-1.2.1-cp39-cp39-macosx_10_15_x86_64.whl", hash = "sha256:3e62a3d8767cabfaca789d88b051d8f57f8d4ad21d238854e38e8f614d72551b"},
+    {file = "chdb-1.2.1-cp39-cp39-macosx_11_0_arm64.whl", hash = "sha256:47d6ad89c0c1cd80ac6f49729515e9f43128f693d55b9b7bb2a62a5d93672fb0"},
+    {file = "chdb-1.2.1-cp39-cp39-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:15f950ff17d27d62c624b8f1298b97aab5c244b4019bd37ada065381baa7fbf2"},
+    {file = "chdb-1.2.1-cp39-cp39-manylinux_2_5_x86_64.manylinux1_x86_64.manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:aa0595ad7b37a9d1344daca7a8b33ed52cc9ce5994def3b3ee5a197007e151da"},
+]
+
+[[package]]
 name = "cleo"
 version = "2.1.0"
 description = "Cleo allows you to create beautiful and testable command-line interfaces."
@@ -7303,6 +7331,7 @@ cffi = ["cffi (>=1.11)"]
 
 [extras]
 bigquery = ["db-dtypes", "google-cloud-bigquery", "google-cloud-bigquery-storage", "pydata-google-auth"]
+chdb = ["chdb"]
 clickhouse = ["clickhouse-connect"]
 dask = ["dask", "regex"]
 datafusion = ["datafusion"]
