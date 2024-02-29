@@ -3,23 +3,42 @@ from __future__ import annotations
 import contextlib
 from typing import TYPE_CHECKING, Any
 
-import pyarrow as pa  # noqa: F401
+import pyarrow as pa
 import pyarrow_hotfix  # noqa: F401
 import sqlglot as sg
 import sqlglot.expressions as sge
 from chdb.session import Session
 
 import ibis.common.exceptions as com
+import ibis.expr.datatypes as dt
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis.backends import UrlFromPath
 from ibis.backends.clickhouse import Backend as CHBackend
+from ibis.formats.pyarrow import PyArrowData, PyArrowType
 
 if TYPE_CHECKING:
     from collections.abc import Mapping
     from pathlib import Path
 
-    import pandas as pd
+
+class ChdbArrowConverter(PyArrowData):
+    @classmethod
+    def convert_column(cls, column: pa.Array, dtype: dt.DataType) -> pa.Array:
+        pa_type = PyArrowType.from_ibis(dtype)
+        if dtype.is_date():
+            return column.cast(pa.int32()).cast(pa_type)
+        elif dtype.is_timestamp():
+            return column.cast(pa.int64()).cast(pa_type)
+        else:
+            return column.cast(pa_type)
+
+    @classmethod
+    def convert_table(cls, table: pa.Table, schema: sch.Schema) -> pa.Table:
+        arrays = []
+        for column, dtype in zip(table.columns, schema.values()):
+            arrays.append(cls.convert_column(column, dtype))
+        return pa.Table.from_arrays(arrays, names=schema.names)
 
 
 class Backend(CHBackend, UrlFromPath):
@@ -99,22 +118,10 @@ class Backend(CHBackend, UrlFromPath):
             dtypes = map(self.compiler.type_mapper.from_string, types)
         return sch.Schema(dict(zip(names, dtypes)))
 
-    def execute(
-        self,
-        expr: ir.Expr,
-        external_tables: Mapping[str, pd.DataFrame] | None = None,
-        **kwargs: Any,
-    ) -> Any:
+    def execute(self, expr: ir.Expr, **kwargs: Any) -> Any:
         """Execute an expression."""
         table = expr.as_table()
-        sql = self.compile(table, **kwargs)
-        self._log(sql)
-
-        external_tables = self._collect_in_memory_tables(expr, external_tables)
-        if external_tables:
-            raise NotImplementedError("External tables are not yet supported")
-
-        df = self.con.query(sql, "arrowtable").to_pandas()
+        df = self.to_pyarrow(table, **kwargs).to_pandas()
         return expr.__pandas_result__(table.__pandas_result__(df))
 
     def to_pyarrow(
@@ -132,5 +139,6 @@ class Backend(CHBackend, UrlFromPath):
         if external_tables:
             raise NotImplementedError("External tables are not yet supported")
 
-        table = self.con.query(sql, "arrowtable")
-        return expr.__pyarrow_result__(table)
+        result = self.con.query(sql, "arrowtable")
+        result = ChdbArrowConverter.convert_table(result, table.schema())
+        return expr.__pyarrow_result__(result)
