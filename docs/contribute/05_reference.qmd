@@ -1,6 +1,4 @@
----
-title: "Test Class Reference"
----
+# Test class reference
 
 This page provides a partial reference to the attributes, methods, properties
 and class-level variables that are used to help configure a backend for the Ibis
