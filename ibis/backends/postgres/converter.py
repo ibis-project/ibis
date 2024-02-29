@@ -11,13 +11,9 @@ class PostgresPandasData(PandasData):
 
         return gpd.GeoSeries(shp.from_wkb(s.map(bytes, na_action="ignore")))
 
-    convert_Point = (
-        convert_LineString
-    ) = (
-        convert_Polygon
-    ) = (
-        convert_MultiLineString
-    ) = convert_MultiPoint = convert_MultiPolygon = convert_GeoSpatial
+    convert_Point = convert_LineString = convert_Polygon = convert_MultiLineString = (
+        convert_MultiPoint
+    ) = convert_MultiPolygon = convert_GeoSpatial
 
     @classmethod
     def convert_Binary(cls, s, dtype, pandas_type):

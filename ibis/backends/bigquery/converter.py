@@ -11,10 +11,6 @@ class BigQueryPandasData(PandasData):
 
         return gpd.GeoSeries(shp.from_wkt(s))
 
-    convert_Point = (
-        convert_LineString
-    ) = (
-        convert_Polygon
-    ) = (
-        convert_MultiLineString
-    ) = convert_MultiPoint = convert_MultiPolygon = convert_GeoSpatial
+    convert_Point = convert_LineString = convert_Polygon = convert_MultiLineString = (
+        convert_MultiPoint
+    ) = convert_MultiPolygon = convert_GeoSpatial

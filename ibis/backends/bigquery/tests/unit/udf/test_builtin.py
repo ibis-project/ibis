@@ -6,8 +6,7 @@ to_sql = ibis.bigquery.compile
 
 
 @ibis.udf.scalar.builtin
-def farm_fingerprint(value: bytes) -> int:
-    ...
+def farm_fingerprint(value: bytes) -> int: ...
 
 
 @ibis.udf.scalar.builtin(schema="fn", database="bqutil")

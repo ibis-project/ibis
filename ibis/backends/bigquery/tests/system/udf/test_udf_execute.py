@@ -148,8 +148,7 @@ def test_builtin_scalar(con, value, expected):
     from ibis import udf
 
     @udf.scalar.builtin
-    def bit_count(x: bytes) -> int:
-        ...
+    def bit_count(x: bytes) -> int: ...
 
     expr = bit_count(value)
     result = con.execute(expr)
@@ -168,8 +167,7 @@ def test_builtin_agg(con, where, expected):
     from ibis import udf
 
     @udf.agg.builtin(name="array_concat_agg")
-    def concat_agg(x, where: bool = True) -> dt.Array[str]:
-        ...
+    def concat_agg(x, where: bool = True) -> dt.Array[str]: ...
 
     t = ibis.memtable({"a": [list("abc"), list("def")]})
     expr = concat_agg(t.a, **where)

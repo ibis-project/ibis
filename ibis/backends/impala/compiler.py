@@ -242,11 +242,7 @@ class ImpalaCompiler(SQLGlotCompiler):
     def visit_ExtractUrlField(self, op, *, arg):
         return self.f.parse_url(arg, type(op).__name__[len("Extract") :].upper())
 
-    visit_ExtractAuthority = (
-        visit_ExtractHost
-    ) = (
-        visit_ExtractUserInfo
-    ) = (
+    visit_ExtractAuthority = visit_ExtractHost = visit_ExtractUserInfo = (
         visit_ExtractProtocol
     ) = visit_ExtractFile = visit_ExtractPath = visit_ExtractUrlField
 

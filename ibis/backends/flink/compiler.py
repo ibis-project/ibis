@@ -496,9 +496,9 @@ class FlinkCompiler(SQLGlotCompiler):
         unit_sql = unit_var.sql(self.dialect)
         return self.f.floor(self.v[f"{arg_sql} TO {unit_sql}"])
 
-    visit_TimestampTruncate = (
-        visit_DateTruncate
-    ) = visit_TimeTruncate = visit_TemporalTruncate
+    visit_TimestampTruncate = visit_DateTruncate = visit_TimeTruncate = (
+        visit_TemporalTruncate
+    )
 
     def visit_StringContains(self, op, *, haystack, needle):
         return self.f.instr(haystack, needle) > 0
@@ -525,11 +525,7 @@ class FlinkCompiler(SQLGlotCompiler):
     def visit_ExtractUrlField(self, op, *, arg):
         return self.f.parse_url(arg, type(op).__name__[len("Extract") :].upper())
 
-    visit_ExtractAuthority = (
-        visit_ExtractHost
-    ) = (
-        visit_ExtractUserInfo
-    ) = (
+    visit_ExtractAuthority = visit_ExtractHost = visit_ExtractUserInfo = (
         visit_ExtractProtocol
     ) = visit_ExtractFile = visit_ExtractPath = visit_ExtractUrlField
 

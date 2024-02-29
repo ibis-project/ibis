@@ -28,8 +28,7 @@ class Iterable(Abstract, Generic[V]):
     """Iterable abstract base class for quicker isinstance checks."""
 
     @abstractmethod
-    def __iter__(self):
-        ...
+    def __iter__(self): ...
 
 
 @collections.abc.Reversible.register
@@ -37,8 +36,7 @@ class Reversible(Iterable[V]):
     """Reverse iterable abstract base class for quicker isinstance checks."""
 
     @abstractmethod
-    def __reversed__(self):
-        ...
+    def __reversed__(self): ...
 
 
 @collections.abc.Iterator.register
@@ -46,8 +44,7 @@ class Iterator(Iterable[V]):
     """Iterator abstract base class for quicker isinstance checks."""
 
     @abstractmethod
-    def __next__(self):
-        ...
+    def __next__(self): ...
 
     def __iter__(self):
         return self
@@ -58,8 +55,7 @@ class Sized(Abstract):
     """Sized abstract base class for quicker isinstance checks."""
 
     @abstractmethod
-    def __len__(self):
-        ...
+    def __len__(self): ...
 
 
 @collections.abc.Container.register
@@ -67,8 +63,7 @@ class Container(Abstract, Generic[V]):
     """Container abstract base class for quicker isinstance checks."""
 
     @abstractmethod
-    def __contains__(self, x):
-        ...
+    def __contains__(self, x): ...
 
 
 @collections.abc.Collection.register
@@ -81,8 +76,7 @@ class Sequence(Reversible[V], Collection[V]):
     """Sequence abstract base class for quicker isinstance checks."""
 
     @abstractmethod
-    def __getitem__(self, index):
-        ...
+    def __getitem__(self, index): ...
 
     def __iter__(self):
         i = 0
@@ -126,8 +120,7 @@ class Mapping(Collection[K], Generic[K, V]):
     """Mapping abstract base class for quicker isinstance checks."""
 
     @abstractmethod
-    def __getitem__(self, key):
-        ...
+    def __getitem__(self, key): ...
 
     def get(self, key, default=None):
         try:

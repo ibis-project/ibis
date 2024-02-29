@@ -40,9 +40,9 @@ class PandasConverter(DataMapper):
 
     convert_SignedInteger = convert_UnsignedInteger = convert_Integer
     convert_Int64 = convert_Int32 = convert_Int16 = convert_Int8 = convert_SignedInteger
-    convert_UInt64 = (
-        convert_UInt32
-    ) = convert_UInt16 = convert_UInt8 = convert_UnsignedInteger
+    convert_UInt64 = convert_UInt32 = convert_UInt16 = convert_UInt8 = (
+        convert_UnsignedInteger
+    )
 
     @classmethod
     def convert_Floating(cls, s, dtype, pandas_type):

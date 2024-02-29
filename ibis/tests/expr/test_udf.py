@@ -95,8 +95,7 @@ def test_vectorized_udf_operations(table, klass, output_type):
 )
 def test_udf_from_annotations(dec, table):
     @dec
-    def myfunc(x: int, y: str) -> float:
-        ...
+    def myfunc(x: int, y: str) -> float: ...
 
     assert myfunc(table.a, table.b).type().is_floating()
 
@@ -117,8 +116,7 @@ def test_udf_from_annotations(dec, table):
 )
 def test_udf_from_sig(dec, table):
     @dec(signature=((int, str), float))
-    def myfunc(x, y):
-        ...
+    def myfunc(x, y): ...
 
     assert myfunc(table.a, table.b).type().is_floating()
 
@@ -139,8 +137,7 @@ def test_udf_from_sig(dec, table):
 )
 def test_udf_deferred(dec, table):
     @dec
-    def myfunc(x: int) -> int:
-        ...
+    def myfunc(x: int) -> int: ...
 
     expr = myfunc(_.a)
     assert isinstance(expr, Deferred)
@@ -150,8 +147,7 @@ def test_udf_deferred(dec, table):
 
 def test_builtin_scalar_noargs():
     @ibis.udf.scalar.builtin
-    def version() -> str:
-        ...
+    def version() -> str: ...
 
     expr = version()
     assert expr.type().is_string()

@@ -104,18 +104,15 @@ class FlinkIntervalType(ABC):
     @classmethod
     @property
     @abstractmethod
-    def units(self):
-        ...
+    def units(self): ...
 
     @classmethod
     @property
     @abstractmethod
-    def factors(self):
-        ...
+    def factors(self): ...
 
     @abstractmethod
-    def _convert_to_highest_resolution(self):
-        ...
+    def _convert_to_highest_resolution(self): ...
 
     def _convert_to_combined_units(self) -> dict:
         converted_total = self._convert_to_highest_resolution()
@@ -132,12 +129,10 @@ class FlinkIntervalType(ABC):
         return interval_segments
 
     @abstractmethod
-    def _calculate_precisions(self) -> dict:
-        ...
+    def _calculate_precisions(self) -> dict: ...
 
     @abstractmethod
-    def format_as_string(self, interval_segments: dict, precisions: dict) -> str:
-        ...
+    def format_as_string(self, interval_segments: dict, precisions: dict) -> str: ...
 
 
 class YearsToMonthsInterval(FlinkIntervalType):

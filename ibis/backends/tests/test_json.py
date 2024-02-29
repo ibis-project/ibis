@@ -1,4 +1,5 @@
 """Tests for JSON operations."""
+
 from __future__ import annotations
 
 import sqlite3

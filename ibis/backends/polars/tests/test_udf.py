@@ -56,8 +56,7 @@ def test_multiple_argument_udf(alltypes):
 )
 def test_builtin_scalar_udf(con, value, expected):
     @udf.scalar.builtin
-    def cbrt(a: float) -> float:
-        ...
+    def cbrt(a: float) -> float: ...
 
     expr = cbrt(value)
     result = con.execute(expr)
@@ -109,8 +108,7 @@ def test_multiple_argument_scalar_udf(alltypes, func):
 
 def test_builtin_agg_udf(con):
     @udf.agg.builtin
-    def approx_n_unique(a, where: bool = True) -> int:
-        ...
+    def approx_n_unique(a, where: bool = True) -> int: ...
 
     ft = con.tables.functional_alltypes
     expr = approx_n_unique(ft.string_col)

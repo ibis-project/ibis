@@ -745,13 +745,11 @@ def timestamp(
     second: int | ir.IntegerValue | Deferred,
     /,
     timezone: str | None = None,
-) -> TimestampValue:
-    ...
+) -> TimestampValue: ...
 
 
 @overload
-def timestamp(value_or_year: Any, /, timezone: str | None = None) -> TimestampValue:
-    ...
+def timestamp(value_or_year: Any, /, timezone: str | None = None) -> TimestampValue: ...
 
 
 @deferrable
@@ -845,13 +843,11 @@ def date(
     month: int | ir.IntegerValue | Deferred,
     day: int | ir.IntegerValue | Deferred,
     /,
-) -> DateValue:
-    ...
+) -> DateValue: ...
 
 
 @overload
-def date(value_or_year: Any, /) -> DateValue:
-    ...
+def date(value_or_year: Any, /) -> DateValue: ...
 
 
 @deferrable
@@ -916,13 +912,11 @@ def time(
     minute: int | ir.IntegerValue | Deferred,
     second: int | ir.IntegerValue | Deferred,
     /,
-) -> TimeValue:
-    ...
+) -> TimeValue: ...
 
 
 @overload
-def time(value_or_hour: Any, /) -> TimeValue:
-    ...
+def time(value_or_hour: Any, /) -> TimeValue: ...
 
 
 @deferrable

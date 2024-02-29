@@ -473,8 +473,7 @@ def test_hash(alltypes, snapshot):
 
 def test_udf_in_array_map(alltypes):
     @udf.scalar.builtin(name="plus")
-    def my_add(a: int, b: int) -> int:
-        ...
+    def my_add(a: int, b: int) -> int: ...
 
     n = 5
     expr = (
@@ -489,8 +488,7 @@ def test_udf_in_array_map(alltypes):
 
 def test_udf_in_array_filter(alltypes):
     @udf.scalar.builtin(name="equals")
-    def my_eq(a: int, b: int) -> bool:
-        ...
+    def my_eq(a: int, b: int) -> bool: ...
 
     expr = alltypes.int_col.collect().filter(lambda x: my_eq(x, 1))
     result = expr.execute()

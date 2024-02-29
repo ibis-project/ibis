@@ -5,8 +5,7 @@ from ibis import _, udf
 
 
 @udf.scalar.builtin
-def flatten(x: list[list[str]]) -> list[str]:
-    ...
+def flatten(x: list[list[str]]) -> list[str]: ...
 
 
 expr = (

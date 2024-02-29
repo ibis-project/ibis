@@ -1,6 +1,5 @@
 """Lower the ibis expression graph to a SQL-like relational algebra."""
 
-
 from __future__ import annotations
 
 import operator

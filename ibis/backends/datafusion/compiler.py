@@ -248,9 +248,9 @@ class DataFusionCompiler(SQLGlotCompiler):
         part = type(op).__name__[skip:].lower()
         return self.f.date_part(part, arg)
 
-    visit_ExtractYear = (
-        visit_ExtractMonth
-    ) = visit_ExtractQuarter = visit_ExtractDay = visit_ExtractYearMonthQuarterDay
+    visit_ExtractYear = visit_ExtractMonth = visit_ExtractQuarter = visit_ExtractDay = (
+        visit_ExtractYearMonthQuarterDay
+    )
 
     def visit_ExtractDayOfYear(self, op, *, arg):
         return self.f.date_part("doy", arg)

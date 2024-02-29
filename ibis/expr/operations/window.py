@@ -86,13 +86,11 @@ class WindowFrame(Value):
 
     @property
     @abstractmethod
-    def start(self):
-        ...
+    def start(self): ...
 
     @property
     @abstractmethod
-    def end(self):
-        ...
+    def end(self): ...
 
 
 @public
