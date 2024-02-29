@@ -283,6 +283,8 @@ filterwarnings = [
   "ignore:iteritems is deprecated and will be removed in a future version:FutureWarning",
   'ignore:Passing unit-less datetime64 dtype to \.astype is deprecated:FutureWarning',
   'ignore:The default value of numeric_only in DataFrameGroupBy\.sum is deprecated:FutureWarning',
+  # pandas 2.2.x
+  "ignore:Passing a BlockManager to DataFrame is deprecated and will raise in a future version. Use public APIs instead:DeprecationWarning",
   # numpy
   "ignore:Creating an ndarray from ragged nested sequences:",
   'ignore:`np\.bool` is a deprecated alias for the builtin `bool`:DeprecationWarning',
