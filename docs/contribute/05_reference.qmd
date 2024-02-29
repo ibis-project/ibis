@@ -1,5 +1,5 @@
 ---
-title: "Test Class Reference"
+title: Test class reference
 ---
 
 This page provides a partial reference to the attributes, methods, properties
