@@ -16,8 +16,8 @@ import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 from ibis.backends.pandas.rewrites import PandasAsofJoin, PandasJoin, PandasRename
-from ibis.backends.polars.datatypes import dtype_to_polars, schema_from_polars
 from ibis.expr.operations.udf import InputType
+from ibis.formats.polars import PolarsType
 from ibis.util import gen_name
 
 
@@ -66,21 +66,8 @@ def dummy_table(op, **kw):
 
 
 @translate.register(ops.InMemoryTable)
-def pandas_in_memory_table(op, **_):
-    lf = pl.from_pandas(op.data.to_frame()).lazy()
-    schema = schema_from_polars(lf.schema)
-
-    columns = []
-    for name, current_dtype in schema.items():
-        desired_dtype = op.schema[name]
-        if current_dtype != desired_dtype:
-            typ = dtype_to_polars(desired_dtype)
-            columns.append(pl.col(name).cast(typ))
-
-    if columns:
-        return lf.with_columns(columns)
-    else:
-        return lf
+def in_memory_table(op, **_):
+    return op.data.to_polars(op.schema).lazy()
 
 
 @translate.register(ops.Alias)
@@ -101,12 +88,12 @@ def literal(op, **_):
 
     if dtype.is_array():
         value = pl.Series("", value)
-        typ = dtype_to_polars(dtype)
+        typ = PolarsType.from_ibis(dtype)
         val = pl.lit(value, dtype=typ)
         return val.implode()
     elif dtype.is_struct():
         values = [
-            pl.lit(v, dtype=dtype_to_polars(dtype[k])).alias(k)
+            pl.lit(v, dtype=PolarsType.from_ibis(dtype[k])).alias(k)
             for k, v in value.items()
         ]
         return pl.struct(values)
@@ -117,7 +104,7 @@ def literal(op, **_):
     elif dtype.is_binary():
         return pl.lit(value)
     else:
-        typ = dtype_to_polars(dtype)
+        typ = PolarsType.from_ibis(dtype)
         return pl.lit(op.value, dtype=typ)
 
 
@@ -179,7 +166,7 @@ def _cast(op, strict=True, **kw):
                 return arg.dt.truncate("1s")
             return arg
 
-    typ = dtype_to_polars(to)
+    typ = PolarsType.from_ibis(to)
     return arg.cast(typ, strict=strict)
 
 
@@ -509,14 +496,14 @@ _string_unary = {
 @translate.register(ops.StringLength)
 def string_length(op, **kw):
     arg = translate(op.arg, **kw)
-    typ = dtype_to_polars(op.dtype)
+    typ = PolarsType.from_ibis(op.dtype)
     return arg.str.len_bytes().cast(typ)
 
 
 @translate.register(ops.Capitalize)
 def capitalize(op, **kw):
     arg = translate(op.arg, **kw)
-    typ = dtype_to_polars(op.dtype)
+    typ = PolarsType.from_ibis(op.dtype)
     first = arg.str.slice(0, 1).str.to_uppercase()
     rest = arg.str.slice(1, None).str.to_lowercase()
     return (first + rest).cast(typ)
@@ -652,7 +639,7 @@ def str_right(op, **kw):
 @translate.register(ops.Round)
 def round(op, **kw):
     arg = translate(op.arg, **kw)
-    typ = dtype_to_polars(op.dtype)
+    typ = PolarsType.from_ibis(op.dtype)
     digits = _literal_value(op.digits)
     return arg.round(digits or 0).cast(typ)
 
@@ -705,7 +692,7 @@ def repeat(op, **kw):
 @translate.register(ops.Sign)
 def sign(op, **kw):
     arg = translate(op.arg, **kw)
-    typ = dtype_to_polars(op.dtype)
+    typ = PolarsType.from_ibis(op.dtype)
     return arg.sign().cast(typ)
 
 
@@ -765,7 +752,7 @@ for reduction in _reductions.keys():
         first, *rest = args
         method = operator.methodcaller(agg, *rest)
         return method(first.filter(reduce(operator.and_, predicates))).cast(
-            dtype_to_polars(op.dtype)
+            PolarsType.from_ibis(op.dtype)
         )
 
 
@@ -815,7 +802,7 @@ def count_star(op, **kw):
             result = pl.len()
         except AttributeError:
             result = pl.count()
-    return result.cast(dtype_to_polars(op.dtype))
+    return result.cast(PolarsType.from_ibis(op.dtype))
 
 
 @translate.register(ops.TimestampNow)
@@ -1109,7 +1096,7 @@ def bitwise_binops(op, **kw):
     else:
         result = pl.map_batches([left, right], lambda cols: ufunc(cols[0], cols[1]))
 
-    return result.cast(dtype_to_polars(op.dtype))
+    return result.cast(PolarsType.from_ibis(op.dtype))
 
 
 @translate.register(ops.BitwiseNot)
@@ -1149,7 +1136,7 @@ def binop(op, **kw):
 @translate.register(ops.ElementWiseVectorizedUDF)
 def elementwise_udf(op, **kw):
     func_args = [translate(arg, **kw) for arg in op.func_args]
-    return_type = dtype_to_polars(op.return_type)
+    return_type = PolarsType.from_ibis(op.return_type)
 
     return pl.map_batches(
         func_args, lambda args: op.func(*args), return_dtype=return_type
@@ -1252,7 +1239,7 @@ _UDF_INVOKERS = {
     #   -> convert back to a polars series
     InputType.PYTHON: lambda func, dtype, args: pl.Series(
         map(func, *(arg.to_list() for arg in args)),
-        dtype=dtype_to_polars(dtype),
+        dtype=PolarsType.from_ibis(dtype),
     ),
     # Convert polars series into a pyarrow array
     #  -> invoke the function on the pyarrow array
@@ -1272,7 +1259,7 @@ def execute_scalar_udf(op, **kw):
         return pl.map_batches(
             exprs=[translate(arg, **kw) for arg in op.args],
             function=partial(_UDF_INVOKERS[input_type], op.__func__, dtype),
-            return_dtype=dtype_to_polars(dtype),
+            return_dtype=PolarsType.from_ibis(dtype),
         )
     elif input_type == InputType.BUILTIN:
         first, *rest = map(translate, op.args)
@@ -1307,7 +1294,9 @@ def execute_regex_split(op, **kw):
     arg = translate(op.arg, **kw)
     pattern = translate(op.pattern, **kw)
     return pl.map_batches(
-        exprs=(arg, pattern), function=split, return_dtype=dtype_to_polars(op.dtype)
+        exprs=(arg, pattern),
+        function=split,
+        return_dtype=PolarsType.from_ibis(op.dtype),
     )
 
 
@@ -1319,7 +1308,7 @@ def execute_integer_range(op, **kw):
         )
     step = op.step.value
 
-    dtype = dtype_to_polars(op.dtype)
+    dtype = PolarsType.from_ibis(op.dtype)
     empty = pl.int_ranges(0, 0, dtype=dtype)
 
     if step == 0:

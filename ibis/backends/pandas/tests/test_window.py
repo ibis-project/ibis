@@ -7,13 +7,11 @@ from operator import methodcaller
 import numpy as np
 import pandas as pd
 import pytest
-from packaging.version import parse as vparse
 
 import ibis
 import ibis.expr.datatypes as dt
 from ibis.backends.pandas import Backend
 from ibis.backends.pandas.tests.conftest import TestConf as tm
-from ibis.common.annotations import ValidationError
 from ibis.legacy.udf.vectorized import reduction
 
 
@@ -467,48 +465,6 @@ def test_window_with_preceding_expr(index):
     expr = t.value.mean().over(window)
     result = expr.execute()
     tm.assert_series_equal(result, expected.rename("mean"))
-
-
-@pytest.mark.xfail(
-    condition=vparse("1.4") <= vparse(pd.__version__) < vparse("1.4.2"),
-    raises=ValueError,
-    reason="https://github.com/pandas-dev/pandas/pull/44068",
-)
-def test_window_with_mlb():
-    index = pd.date_range("20170501", "20170507")
-    data = np.random.randn(len(index), 3)
-    df = (
-        pd.DataFrame(data, columns=list("abc"), index=index)
-        .rename_axis("time")
-        .reset_index(drop=False)
-    )
-    client = ibis.pandas.connect({"df": df})
-    t = client.table("df")
-    rows_with_mlb = ibis.rows_with_max_lookback(5, ibis.interval(days=10))
-    expr = t.mutate(
-        sum=lambda df: df.a.sum().over(
-            ibis.trailing_window(rows_with_mlb, order_by="time", group_by="b")
-        )
-    )
-    result = expr.execute()
-    expected = df.set_index("time")
-    gb_df = (
-        expected.groupby(["b"])["a"]
-        .rolling("10d", closed="both")
-        .apply(lambda s: s.iloc[-5:].sum(), raw=False)
-        .sort_index(level=["time"])
-        .reset_index(drop=True)
-    )
-    expected = expected.reset_index(drop=False).assign(sum=gb_df)
-    tm.assert_frame_equal(result, expected)
-
-    rows_with_mlb = ibis.rows_with_max_lookback(5, 10)
-    with pytest.raises(ValidationError):
-        t.mutate(
-            sum=lambda df: df.a.sum().over(
-                ibis.trailing_window(rows_with_mlb, order_by="time")
-            )
-        )
 
 
 def test_window_grouping_key_has_scope(t, df):

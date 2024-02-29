@@ -22,6 +22,7 @@ if TYPE_CHECKING:
     from pathlib import Path
 
     import pandas as pd
+    import polars as pl
     import pyarrow as pa
     import torch
 
@@ -426,6 +427,38 @@ class Expr(Immutable, Coercible):
         )
 
     @experimental
+    def to_polars(
+        self,
+        *,
+        params: Mapping[ir.Scalar, Any] | None = None,
+        limit: int | str | None = None,
+        **kwargs: Any,
+    ) -> pl.DataFrame:
+        """Execute expression and return results as a polars dataframe.
+
+        This method is eager and will execute the associated expression
+        immediately.
+
+        Parameters
+        ----------
+        params
+            Mapping of scalar parameter expressions to value.
+        limit
+            An integer to effect a specific row limit. A value of `None` means
+            "no limit". The default is in `ibis/config.py`.
+        kwargs
+            Keyword arguments
+
+        Returns
+        -------
+        DataFrame
+            A polars dataframe holding the results of the executed expression.
+        """
+        return self._find_backend(use_default=True).to_polars(
+            self, params=params, limit=limit, **kwargs
+        )
+
+    @experimental
     def to_pandas_batches(
         self,
         *,
@@ -592,10 +625,9 @@ class Expr(Immutable, Coercible):
 
     def unbind(self) -> ir.Table:
         """Return an expression built on `UnboundTable` instead of backend-specific objects."""
-        from ibis.common.deferred import _
-        from ibis.expr.analysis import c, p
+        from ibis.expr.rewrites import _, d, p
 
-        rule = p.DatabaseTable >> c.UnboundTable(
+        rule = p.DatabaseTable >> d.UnboundTable(
             name=_.name, schema=_.schema, namespace=_.namespace
         )
         return self.op().replace(rule).to_expr()
@@ -609,7 +641,7 @@ class Expr(Immutable, Coercible):
     def as_scalar(self) -> ir.Scalar:
         """Convert an expression to a scalar."""
         raise NotImplementedError(
-            f"{type(self)} expression cannot be converted into scalars"
+            f"{type(self)} expressions cannot be converted into scalars"
         )
 
 

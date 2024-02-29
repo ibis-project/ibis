@@ -1,5 +1,5 @@
 name: Bug report
-description: File a bug report for Ibis
+description: File a bug report for Ibis.
 title: "bug: "
 labels: ["bug"]
 body:

@@ -304,3 +304,16 @@ def test_no_argument_connection():
 
     con = ibis.connect("snowflake://")
     assert con.list_tables() is not None
+
+
+def test_struct_of_json(con):
+    raw = {"a": [1, 2, 3], "b": "456"}
+    lit = ibis.struct(raw)
+    expr = lit.cast("struct<a: array<int>, b: json>")
+
+    n = 5
+    t = con.tables.functional_alltypes.mutate(lit=expr).limit(n).lit
+    result = con.to_pyarrow(t)
+
+    assert len(result) == n
+    assert all(value == raw for value in result.to_pylist())

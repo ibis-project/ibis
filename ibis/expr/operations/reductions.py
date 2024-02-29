@@ -4,7 +4,6 @@ from typing import Literal, Optional
 
 from public import public
 
-import ibis.common.exceptions as exc
 import ibis.expr.datashape as ds
 import ibis.expr.datatypes as dt
 import ibis.expr.rules as rlz
@@ -16,11 +15,6 @@ from ibis.expr.operations.relations import Relation  # noqa: TCH001
 @public
 class Reduction(Value):
     shape = ds.scalar
-
-    # TODO(kszucs): remove this
-    @property
-    def __window_op__(self):
-        return self
 
 
 # TODO(kszucs): all reductions all filterable so we could remove Filterable
@@ -73,16 +67,6 @@ class First(Filterable, Reduction):
 
     dtype = rlz.dtype_like("arg")
 
-    @property
-    def __window_op__(self):
-        import ibis.expr.operations as ops
-
-        if self.where is not None:
-            raise exc.OperationNotDefinedError(
-                "FirstValue cannot be filtered in a window context"
-            )
-        return ops.FirstValue(arg=self.arg)
-
 
 @public
 class Last(Filterable, Reduction):
@@ -91,16 +75,6 @@ class Last(Filterable, Reduction):
     arg: Column[dt.Any]
 
     dtype = rlz.dtype_like("arg")
-
-    @property
-    def __window_op__(self):
-        import ibis.expr.operations as ops
-
-        if self.where is not None:
-            raise exc.OperationNotDefinedError(
-                "LastValue cannot be filtered in a window context"
-            )
-        return ops.LastValue(arg=self.arg)
 
 
 @public
@@ -180,7 +154,6 @@ class Sum(Filterable, Reduction):
                 else None,
                 scale=max(dtype.scale, 2) if dtype.scale is not None else None,
             )
-
         else:
             raise TypeError(f"Cannot compute sum of {dtype} values")
 

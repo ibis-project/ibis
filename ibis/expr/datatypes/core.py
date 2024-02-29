@@ -82,6 +82,11 @@ def from_pyarrow(value, nullable=True):
     return DataType.from_pyarrow(value, nullable)
 
 
+@dtype.register("polars.datatypes.classes.DataTypeClass")
+def from_polars(value, nullable=True):
+    return DataType.from_polars(value, nullable)
+
+
 # lock the dispatcher to prevent new types from being registered
 del dtype.register
 
@@ -238,6 +243,13 @@ class DataType(Concrete, Coercible):
         return PyArrowType.to_ibis(arrow_type, nullable=nullable)
 
     @classmethod
+    def from_polars(cls, polars_type, nullable=True) -> Self:
+        """Return the equivalent ibis datatype."""
+        from ibis.formats.polars import PolarsType
+
+        return PolarsType.to_ibis(polars_type, nullable=nullable)
+
+    @classmethod
     def from_dask(cls, dask_type, nullable=True) -> Self:
         """Return the equivalent ibis datatype."""
         return cls.from_pandas(dask_type, nullable=nullable)
@@ -259,6 +271,12 @@ class DataType(Concrete, Coercible):
         from ibis.formats.pyarrow import PyArrowType
 
         return PyArrowType.from_ibis(self)
+
+    def to_polars(self):
+        """Return the equivalent polars datatype."""
+        from ibis.formats.polars import PolarsType
+
+        return PolarsType.from_ibis(self)
 
     def to_dask(self):
         """Return the equivalent dask datatype."""

@@ -403,6 +403,36 @@ def test_schema_from_to_pyarrow_schema():
     assert restored_schema == pyarrow_schema
 
 
+@pytest.mark.parametrize("lazy", [False, True])
+def test_schema_infer_polars_dataframe(lazy):
+    pl = pytest.importorskip("polars")
+    df = pl.DataFrame(
+        {"a": [1, 2, 3], "b": ["a", "b", "c"], "c": [True, False, True]},
+        schema={"a": pl.Int64, "b": pl.Utf8, "c": pl.Boolean},
+    )
+    if lazy:
+        df = df.lazy()
+    s = sch.infer(df)
+    assert s == sch.Schema({"a": dt.int64, "b": dt.string, "c": dt.boolean})
+
+
+def test_schema_from_to_polars_schema():
+    pl = pytest.importorskip("polars")
+
+    polars_schema = {
+        "a": pl.Int64,
+        "b": pl.Utf8,
+        "c": pl.Boolean,
+    }
+    ibis_schema = sch.Schema({"a": dt.int64, "b": dt.string, "c": dt.boolean})
+
+    res = sch.Schema.from_polars(polars_schema)
+    assert res == ibis_schema
+
+    res = ibis_schema.to_polars()
+    assert res == polars_schema
+
+
 def test_schema_from_to_numpy_dtypes():
     numpy_dtypes = [
         ("a", np.dtype("int64")),

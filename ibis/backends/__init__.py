@@ -24,6 +24,7 @@ if TYPE_CHECKING:
     from collections.abc import Iterable, Iterator, Mapping, MutableMapping
 
     import pandas as pd
+    import polars as pl
     import pyarrow as pa
     import sqlglot as sg
     import torch
@@ -222,6 +223,43 @@ class _FileIOHandler:
         return expr.__pyarrow_result__(
             table.rename_columns(table_expr.columns).cast(arrow_schema)
         )
+
+    @util.experimental
+    def to_polars(
+        self,
+        expr: ir.Expr,
+        *,
+        params: Mapping[ir.Scalar, Any] | None = None,
+        limit: int | str | None = None,
+        **kwargs: Any,
+    ) -> pl.DataFrame:
+        """Execute expression and return results in as a polars DataFrame.
+
+        This method is eager and will execute the associated expression
+        immediately.
+
+        Parameters
+        ----------
+        expr
+            Ibis expression to export to polars.
+        params
+            Mapping of scalar parameter expressions to value.
+        limit
+            An integer to effect a specific row limit. A value of `None` means
+            "no limit". The default is in `ibis/config.py`.
+        kwargs
+            Keyword arguments
+
+        Returns
+        -------
+        dataframe
+            A polars DataFrame holding the results of the executed expression.
+
+        """
+        import polars as pl
+
+        table = self.to_pyarrow(expr.as_table(), params=params, limit=limit, **kwargs)
+        return expr.__polars_result__(pl.from_arrow(table))
 
     @util.experimental
     def to_pyarrow_batches(

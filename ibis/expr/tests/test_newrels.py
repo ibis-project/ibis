@@ -476,6 +476,22 @@ def test_project_filter_sort():
     assert expr.op() == expected
 
 
+def test_order_by_supports_varargs():
+    expr = t.order_by(t.int_col, t.float_col)
+    expected = ops.Sort(
+        parent=t,
+        keys=[
+            ops.SortKey(ops.Field(t, "int_col"), ascending=True),
+            ops.SortKey(ops.Field(t, "float_col"), ascending=True),
+        ],
+    )
+    assert expr.op() == expected
+
+    # same with deferred and string column references
+    expr = t.order_by(_.int_col, "float_col")
+    assert expr.op() == expected
+
+
 def test_subsequent_filter():
     f1 = t.filter(t.bool_col)
     f2 = f1.filter(t.int_col > 0)
@@ -767,6 +783,46 @@ def test_join_predicate_dereferencing():
                 "value2": r3.value2,
             }
         )
+
+
+def test_join_predicate_dereferencing_using_tuple_syntax():
+    # GH #8292
+
+    t = ibis.table(name="t", schema={"x": "int64", "y": "string"})
+    t2 = t.mutate(x=_.x + 1)
+    t3 = t.mutate(x=_.x + 1)
+    t4 = t.mutate(x=_.x + 2)
+
+    j1 = ibis.join(t2, t3, [(t2.x, t3.x)])
+    j2 = ibis.join(t2, t4, [(t2.x, t4.x)])
+
+    with join_tables(t2, t3) as (r1, r2):
+        expected = ops.JoinChain(
+            first=r1,
+            rest=[
+                ops.JoinLink("inner", r2, [r1.x == r2.x]),
+            ],
+            values={
+                "x": r1.x,
+                "y": r1.y,
+                "y_right": r2.y,
+            },
+        )
+        assert j1.op() == expected
+
+    with join_tables(t2, t4) as (r1, r2):
+        expected = ops.JoinChain(
+            first=r1,
+            rest=[
+                ops.JoinLink("inner", r2, [r1.x == r2.x]),
+            ],
+            values={
+                "x": r1.x,
+                "y": r1.y,
+                "y_right": r2.y,
+            },
+        )
+        assert j2.op() == expected
 
 
 def test_aggregate():
@@ -1504,3 +1560,10 @@ def test_inner_join_convenience():
         # finish to evaluate the collisions
         result = fifth_join._finish().op()
         assert result == expected
+
+
+def test_subsequent_order_by_calls():
+    ts = t.order_by(ibis.desc("int_col")).order_by("int_col")
+    first = ops.Sort(t, [t.int_col.desc()]).to_expr()
+    second = ops.Sort(first, [first.int_col.asc()]).to_expr()
+    assert ts.equals(second)

@@ -506,17 +506,6 @@ def test_rolling_window(alltypes, func, df):
     tm.assert_series_equal(result, expected)
 
 
-def test_rolling_window_with_mlb(alltypes):
-    t = alltypes
-    window = ibis.trailing_window(
-        preceding=ibis.rows_with_max_lookback(3, ibis.interval(days=5)),
-        order_by=t.timestamp_col,
-    )
-    expr = t["double_col"].sum().over(window)
-    with pytest.raises(NotImplementedError):
-        expr.execute()
-
-
 @pytest.mark.parametrize("func", ["mean", "sum", "min", "max"])
 @pytest.mark.xfail(
     reason="Window function with empty PARTITION BY is not supported yet"

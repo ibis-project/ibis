@@ -14,10 +14,6 @@ from ibis.expr.operations.core import Column, Scalar, Value
 class Analytic(Value):
     shape = ds.columnar
 
-    @property
-    def __window_op__(self):
-        return self
-
 
 @public
 class ShiftBase(Analytic):

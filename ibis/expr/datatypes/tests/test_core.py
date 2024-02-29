@@ -690,6 +690,12 @@ def test_type_coercion():
         param(dt.boolean, id="boolean"),
     ],
 )
-@pytest.mark.parametrize("fmt", ["numpy", "pandas", "pyarrow"])
+@pytest.mark.parametrize("fmt", ["numpy", "pandas", "pyarrow", "polars"])
 def test_type_roundtrip(dtype, fmt):
+    pytest.importorskip(fmt)
     assert getattr(dt.DataType, f"from_{fmt}")(getattr(dtype, f"to_{fmt}")()) == dtype
+
+
+def test_dtype_from_polars():
+    pl = pytest.importorskip("polars")
+    assert dt.dtype(pl.Int64) == dt.int64

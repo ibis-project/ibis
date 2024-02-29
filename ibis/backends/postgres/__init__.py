@@ -260,7 +260,7 @@ class Backend(SQLBackend):
             month : int32
 
         """
-
+        psycopg2.extras.register_default_json(loads=lambda x: x)
         self.con = psycopg2.connect(
             host=host,
             port=port,

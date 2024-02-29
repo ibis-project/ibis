@@ -7,6 +7,7 @@ from ibis.util import PseudoHashable, indent
 
 if TYPE_CHECKING:
     import pandas as pd
+    import polars as pl
     import pyarrow as pa
 
     from ibis.expr.datatypes import DataType
@@ -248,6 +249,10 @@ class TableProxy(PseudoHashable[T]):
     @abstractmethod
     def to_pyarrow(self, schema: Schema) -> pa.Table:  # pragma: no cover
         """Convert this input to a PyArrow Table."""
+
+    @abstractmethod
+    def to_polars(self, schema: Schema) -> pl.DataFrame:  # pragma: no cover
+        """Convert this input to a Polars DataFrame."""
 
     def to_pyarrow_bytes(self, schema: Schema) -> bytes:
         import pyarrow as pa

@@ -8,6 +8,7 @@ from public import public
 
 import ibis.expr.operations as ops
 from ibis.common.deferred import deferrable
+from ibis.common.exceptions import IbisError
 from ibis.expr.types.generic import Column, Scalar, Value, literal
 
 if TYPE_CHECKING:
@@ -336,11 +337,12 @@ class StructValue(Value):
         --------
         [`Table.unpack`](./expression-tables.qmd#ibis.expr.types.relations.Table.unpack)
         """
-        import ibis.expr.analysis as an
+        try:
+            (table,) = self.op().relations
+        except ValueError:
+            raise IbisError("StructValue must depend on exactly one table")
 
-        # TODO(kszucs): avoid expression roundtripping
-        table = an.find_first_base_table(self.op()).to_expr()
-        return table[[self[name] for name in self.names]]
+        return table.to_expr().select([self[name] for name in self.names])
 
     def destructure(self) -> list[ir.Value]:
         """Destructure a ``StructValue`` into the corresponding struct fields.

@@ -29,6 +29,7 @@ from ibis.util import deprecated
 
 if TYPE_CHECKING:
     import pandas as pd
+    import polars as pl
     import pyarrow as pa
 
     import ibis.expr.types as ir
@@ -278,6 +279,11 @@ class Table(Expr, _FixedTextJupyterMixin):
         from ibis.formats.pandas import PandasData
 
         return PandasData.convert_table(df, self.schema())
+
+    def __polars_result__(self, df: pl.DataFrame) -> Any:
+        from ibis.formats.polars import PolarsData
+
+        return PolarsData.convert_table(df, self.schema())
 
     def _bind_reduction_filter(self, where):
         if where is None or not isinstance(where, Deferred):
@@ -1564,7 +1570,7 @@ class Table(Expr, _FixedTextJupyterMixin):
 
     def order_by(
         self,
-        by: str
+        *by: str
         | ir.Column
         | s.Selector
         | Sequence[str]
@@ -1681,7 +1687,7 @@ class Table(Expr, _FixedTextJupyterMixin):
         │     3 │ D      │     7 │
         └───────┴────────┴───────┘
 
-        This means than shuffling a Table is super simple
+        This means that shuffling a Table is super simple
 
         >>> t.order_by(ibis.random())  # doctest: +SKIP
         ┏━━━━━━━┳━━━━━━━━┳━━━━━━━┓
@@ -4109,8 +4115,7 @@ class Table(Expr, _FixedTextJupyterMixin):
         import pandas as pd
 
         import ibis.selectors as s
-        from ibis import _
-        from ibis.expr.analysis import p, x
+        from ibis.expr.rewrites import _, p, x
 
         orig_names_from = util.promote_list(names_from)
 

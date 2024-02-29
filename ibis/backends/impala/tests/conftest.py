@@ -154,10 +154,7 @@ class IbisTestEnv:
     @property
     def tmp_dir(self):
         leaf = util.gen_name("impala_test_tmp_dir")
-        options.impala.temp_path = tmp_dir = os.environ.get(
-            "IBIS_TEST_TMP_DIR", f"/tmp/{leaf}"
-        )
-        return tmp_dir
+        return os.environ.get("IBIS_TEST_TMP_DIR", f"/tmp/{leaf}")
 
     @property
     def test_data_db(self):
@@ -175,8 +172,7 @@ def env():
 
 @pytest.fixture(scope="session")
 def tmp_dir(env):
-    options.impala.temp_path = tmp_dir = env.tmp_dir
-    return tmp_dir
+    return env.tmp_dir
 
 
 @pytest.fixture(scope="session")

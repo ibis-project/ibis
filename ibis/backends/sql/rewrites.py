@@ -102,8 +102,6 @@ def sort_to_select(_, **kwargs):
 @replace(p.WindowFunction)
 def window_function_to_window(_, **kwargs):
     """Convert a WindowFunction node to a Window node."""
-    if isinstance(_.frame, ops.RowsWindowFrame) and _.frame.max_lookback is not None:
-        raise NotImplementedError("max_lookback is not supported for SQL backends")
     return Window(
         how=_.frame.how,
         func=_.func,
@@ -138,11 +136,14 @@ def merge_select_select(_, **kwargs):
     predicates = tuple(p.replace(subs, filter=ops.Value) for p in _.predicates)
     sort_keys = tuple(s.replace(subs, filter=ops.Value) for s in _.sort_keys)
 
+    unique_predicates = toolz.unique(_.parent.predicates + predicates)
+    unique_sort_keys = {s.expr: s for s in _.parent.sort_keys + sort_keys}
+
     return Select(
         _.parent.parent,
         selections=selections,
-        predicates=tuple(toolz.unique(_.parent.predicates + predicates)),
-        sort_keys=tuple(toolz.unique(_.parent.sort_keys + sort_keys)),
+        predicates=unique_predicates,
+        sort_keys=unique_sort_keys.values(),
     )
 
 

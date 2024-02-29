@@ -19,8 +19,8 @@ from ibis.backends.pandas.rewrites import (
     rewrite_join,
 )
 from ibis.backends.polars.compiler import translate
-from ibis.backends.polars.datatypes import dtype_to_polars, schema_from_polars
 from ibis.backends.sql.dialects import Polars
+from ibis.formats.polars import PolarsSchema
 from ibis.util import gen_name, normalize_filename
 
 if TYPE_CHECKING:
@@ -70,7 +70,7 @@ class Backend(BaseBackend, NoUrl):
         return self._filter_with_like(list(self._tables.keys()), like)
 
     def table(self, name: str, _schema: sch.Schema | None = None) -> ir.Table:
-        schema = schema_from_polars(self._tables[name].schema)
+        schema = PolarsSchema.to_ibis(self._tables[name].schema)
         return ops.DatabaseTable(name, schema, self).to_expr()
 
     def register(
@@ -342,10 +342,7 @@ class Backend(BaseBackend, NoUrl):
         overwrite: bool = False,
     ) -> ir.Table:
         if schema is not None and obj is None:
-            obj = pl.LazyFrame(
-                [],
-                schema={name: dtype_to_polars(dtype) for name, dtype in schema.items()},
-            )
+            obj = pl.LazyFrame([], schema=PolarsSchema.from_ibis(schema))
 
         if database is not None:
             raise com.IbisError(
@@ -413,7 +410,24 @@ class Backend(BaseBackend, NoUrl):
         raise NotImplementedError("table.sql() not yet supported in polars")
 
     def _get_schema_using_query(self, query: str) -> sch.Schema:
-        return schema_from_polars(self._context.execute(query).schema)
+        return PolarsSchema.to_ibis(self._context.execute(query).schema)
+
+    def _to_dataframe(
+        self,
+        expr: ir.Expr,
+        params: Mapping[ir.Expr, object] | None = None,
+        limit: int | None = None,
+        streaming: bool = False,
+        **kwargs: Any,
+    ) -> pl.DataFrame:
+        lf = self.compile(expr, params=params, **kwargs)
+        if limit == "default":
+            limit = ibis.options.sql.default_limit
+        if limit is not None:
+            df = lf.fetch(limit, streaming=streaming)
+        else:
+            df = lf.collect(streaming=streaming)
+        return df
 
     def execute(
         self,
@@ -423,14 +437,9 @@ class Backend(BaseBackend, NoUrl):
         streaming: bool = False,
         **kwargs: Any,
     ):
-        lf = self.compile(expr, params=params, **kwargs)
-        if limit == "default":
-            limit = ibis.options.sql.default_limit
-        if limit is not None:
-            df = lf.fetch(limit, streaming=streaming)
-        else:
-            df = lf.collect(streaming=streaming)
-
+        df = self._to_dataframe(
+            expr, params=params, limit=limit, streaming=streaming, **kwargs
+        )
         if isinstance(expr, (ir.Table, ir.Scalar)):
             return expr.__pandas_result__(df.to_pandas())
         else:
@@ -441,6 +450,19 @@ class Backend(BaseBackend, NoUrl):
                 # note: skip frame-construction overhead
                 return df.to_series().to_pandas()
 
+    def to_polars(
+        self,
+        expr: ir.Expr,
+        params: Mapping[ir.Expr, object] | None = None,
+        limit: int | None = None,
+        streaming: bool = False,
+        **kwargs: Any,
+    ):
+        df = self._to_dataframe(
+            expr, params=params, limit=limit, streaming=streaming, **kwargs
+        )
+        return expr.__polars_result__(df)
+
     def _to_pyarrow_table(
         self,
         expr: ir.Expr,
@@ -449,12 +471,9 @@ class Backend(BaseBackend, NoUrl):
         streaming: bool = False,
         **kwargs: Any,
     ):
-        lf = self.compile(expr, params=params, **kwargs)
-        if limit is not None:
-            df = lf.fetch(limit, streaming=streaming)
-        else:
-            df = lf.collect(streaming=streaming)
-
+        df = self._to_dataframe(
+            expr, params=params, limit=limit, streaming=streaming, **kwargs
+        )
         table = df.to_arrow()
         if isinstance(expr, (ir.Table, ir.Value)):
             schema = expr.as_table().schema().to_pyarrow()

@@ -946,7 +946,7 @@ def test_memtable_bool_column(con):
     assert Counter(con.execute(t.a)) == Counter(data)
 
 
-def test_memtable_construct(backend, con, monkeypatch):
+def test_memtable_construct_from_pyarrow(backend, con, monkeypatch):
     pa = pytest.importorskip("pyarrow")
     monkeypatch.setattr(ibis.options, "default_backend", con)
 
@@ -962,6 +962,24 @@ def test_memtable_construct(backend, con, monkeypatch):
     backend.assert_frame_equal(
         t.order_by("a").execute().fillna(pd.NA), pa_t.to_pandas().fillna(pd.NA)
     )
+
+
+@pytest.mark.parametrize("lazy", [False, True])
+def test_memtable_construct_from_polars(backend, con, lazy):
+    pl = pytest.importorskip("polars")
+    df = pl.DataFrame(
+        {
+            "a": list("abc"),
+            "b": [1, 2, 3],
+            "c": [1.0, 2.0, 3.0],
+            "d": [None, "b", None],
+        }
+    )
+    obj = df.lazy() if lazy else df
+    t = ibis.memtable(obj)
+    res = con.to_pandas(t.order_by("a")).fillna(pd.NA)
+    sol = df.to_pandas().fillna(pd.NA)
+    backend.assert_frame_equal(res, sol)
 
 
 @pytest.mark.parametrize(
@@ -1859,4 +1877,24 @@ def test_isnull_equality(con, backend, monkeypatch):
 
     expected = pd.DataFrame({"out": [True, False, True]})
 
+    backend.assert_frame_equal(result, expected)
+
+
+@pytest.mark.broken(
+    ["druid"],
+    raises=PyDruidProgrammingError,
+    reason=(
+        "Query could not be planned. A possible reason is [SQL query requires ordering a "
+        "table by non-time column [[id]], which is not supported."
+    ),
+)
+def test_subsequent_overlapping_order_by(con, backend, alltypes, df):
+    ts = alltypes.order_by(ibis.desc("id")).order_by("id")
+    result = con.execute(ts)
+    expected = df.sort_values("id").reset_index(drop=True)
+    backend.assert_frame_equal(result, expected)
+
+    ts2 = ts.order_by(ibis.desc("id"))
+    result = con.execute(ts2)
+    expected = df.sort_values("id", ascending=False).reset_index(drop=True)
     backend.assert_frame_equal(result, expected)
