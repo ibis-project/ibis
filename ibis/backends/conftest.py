@@ -247,13 +247,17 @@ def pytest_collection_modifyitems(session, config, items):
         # Yell loudly if unrecognized backend in notimpl, notyet or never
         for name in ("notimpl", "notyet", "never"):
             for mark in item.iter_markers(name=name):
-                if backend := set(util.promote_list(mark.args[0])).difference(
-                    ALL_BACKENDS
-                ):
+                marked_backends = util.promote_list(mark.args[0])
+                if backend := set(marked_backends).difference(ALL_BACKENDS):
                     unrecognized_backends.add(
                         f"""Unrecognize backend(s) {backend} passed to {name} marker in
 {item.path}::{item.originalname}"""
                     )
+                if "clickhouse" in marked_backends:
+                    chdb_mark = getattr(pytest.mark, mark.name)(
+                        "chdb", *mark.args[1:], **mark.kwargs
+                    )
+                    additional_markers.append((item, [chdb_mark]))
 
         # add the backend marker to any tests are inside "ibis/backends"
         parts = item.path.parts
