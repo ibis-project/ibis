@@ -591,7 +591,6 @@ def compare_temporal_joined_and_expected_dfs(
     joined_df = join_expr.to_pandas().sort_values("id")
     joined_df = joined_df.reindex(sorted(joined_df.columns), axis=1)
     joined_df = joined_df.drop("timestamp_col_right", axis=1)
-    # print(f"joined_df= \n{joined_df.to_string(index=False)}")
 
     expected_df = pd.merge_asof(
         source_df,
@@ -600,7 +599,6 @@ def compare_temporal_joined_and_expected_dfs(
         by="id",
     ).sort_values("id")
     expected_df = expected_df.reindex(sorted(expected_df.columns), axis=1)
-    # print(f"expected_df= \n{expected_df.to_string(index=False)}")
 
     assert (joined_df.values == expected_df.values).all()
 
@@ -617,7 +615,6 @@ def test_temporal_join(con, table_left_and_right_and_source_df):
     )
 
     sql = con.compile(join_expr)
-    print(f"sql= \n{sql}")
 
     expected_sql = """SELECT
   `t1`.`id`,

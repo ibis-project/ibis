@@ -3069,41 +3069,46 @@ class Table(Expr, _FixedTextJupyterMixin):
         │  106782 │ drugs             │          1732 │ drugs             │
         │  106782 │ Leonardo DiCaprio │          5989 │ Leonardo DiCaprio │
         └─────────┴───────────────────┴───────────────┴───────────────────┘
-
-        Examples for temporal join
-        --------
-        # Create left- and right-table. Right-table should be a versioned table.
-        >>> table_left = con.create_table(...)
-        >>> table_right = con.create_table(...)
-
-        # Set the time-attribute that will determine the version of the rows to be
-        # joined against in `table_right` at runtime.
-        >>> table_right = table_right.at_time(table_left.timestamp_col)
-
-        >>> expr = table_left.join(
-        >>>     table_right,
-        >>>     predicates=[
-        >>>         table_left["id"] == table_right["id"],
-        >>>     ],
-        >>> )
-
-        TODO (mehmet): If we bring `at_time()` in `join()` as
-        expr = table_left.join(
-            table_right.at_time(table_left.timestamp_col),
-            predicates=[
-                table_left["id"] == table_right["id"],
-            ],
-        )
-        this will raise
-        E ibis.common.exceptions.IntegrityError: Cannot add <ibis.expr.operations.logical.Equals object at 0x17c374270> to projection, they belong to another relation
-
-        The reason is that `at_time()` returns a new copy of `table_right` and
-        the predicates are defined with the old copy of `table_right`.
-
-        Is there a way to make this work without having to define `table_right`
-        in a separate line before `temporal_join()`? The API would look better
-        when `table_right.at_time()` is provided directly to `temporal_join()`.
         """
+
+        # TODO (mehmet): Did not place the example below in the docstring above
+        # as it requires `con`. Should we add a temporal join example in a different
+        # format, or skip it entirely here as Flink is the only backend supporting it?
+        #
+        # Examples for temporal join
+        # --------
+        # # Create left- and right-table. Right-table should be a versioned table.
+        # >>> table_left = con.create_table(...)
+        # >>> table_right = con.create_table(...)
+        #
+        # # Set the time-attribute that will determine the version of the rows to be
+        # # joined against in `table_right` at runtime.
+        # >>> table_right = table_right.at_time(table_left.timestamp_col)
+        #
+        # >>> expr = table_left.join(
+        # >>>     table_right,
+        # >>>     predicates=[
+        # >>>         table_left["id"] == table_right["id"],
+        # >>>     ],
+        # >>> )
+        #
+        # TODO (mehmet): If we bring `at_time()` in `join()` as
+        # expr = table_left.join(
+        #     table_right.at_time(table_left.timestamp_col),
+        #     predicates=[
+        #         table_left["id"] == table_right["id"],
+        #     ],
+        # )
+        # this will raise
+        # E ibis.common.exceptions.IntegrityError: Cannot add <ibis.expr.operations.logical.Equals object at 0x17c374270> to projection, they belong to another relation
+        #
+        # The reason is that `at_time()` returns a new copy of `table_right` and
+        # the predicates are defined with the old copy of `table_right`.
+        #
+        # Is there a way to make this work without having to define `table_right`
+        # in a separate line before `temporal_join()`? The API would look better
+        # when `table_right.at_time()` is provided directly to `temporal_join()`.
+
         from ibis.expr.types.joins import Join
 
         return Join(left.op()).join(
