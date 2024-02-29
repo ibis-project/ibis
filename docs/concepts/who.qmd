@@ -14,7 +14,7 @@ contribute to Ibis.
 
 ::: {.callout-tip title="Why does Voltron Data support Ibis?"}
 Check out the [blog post on why Voltron Data supports
-Ibis](../posts/why-voda-supports-ibis/index.qmd)
+Ibis](../posts/why-voda-supports-ibis/index.qmd).
 :::
 
 ## Other companies

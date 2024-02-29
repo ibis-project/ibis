@@ -209,7 +209,7 @@ Ibis supports three types of backend:
 3. Naïve execution backends
 
 ```{python}
-# | code-fold: true
+#| echo: false
 from backends_sankey import fig
 
 fig.show()
@@ -256,7 +256,7 @@ use Ibis with other tools over time.
 
 Ibis already works with other Python dataframes like:
 
-- [pandas](https://github.com/pandas-dev/pandas),
+- [pandas](https://github.com/pandas-dev/pandas)
 - [Dask](https://github.com/dask/dask)
 - [Polars](https://github.com/pola-rs/polars)
 
@@ -264,14 +264,14 @@ Ibis already works well with visualization libraries like:
 
 - [matplotlib](https://github.com/matplotlib/matplotlib)
 - [seaborn](https://github.com/mwaskom/seaborn)
-- [plotly](https://github.com/plotly/plotly.py)
-- [altair](https://github.com/altair-viz/altair)
+- [Plotly](https://github.com/plotly/plotly.py)
+- [Vega-Altair](https://github.com/altair-viz/altair)
 - [plotnine](https://github.com/has2k1/plotnine)
 
 Ibis already works well with dashboarding libraries like:
 
 - [Streamlit](https://github.com/streamlit/streamlit)
-- [dash](https://github.com/plotly/dash)
+- [Dash](https://github.com/plotly/dash)
 - [Quarto dashboards](https://github.com/quarto-dev/quarto-cli)
 
 Ibis already works well with machine learning libraries like:
