@@ -1,5 +1,5 @@
 ---
-title: "Analysis of World of Warcraft Data"
+title: "Analysis of World of Warcraft data"
 author: "Tyler White"
 error: false
 date: "2024-02-29"
@@ -25,7 +25,7 @@ venturing into new territories and advancing beyond the former level cap of 70.
 We'll determine who logged in the most, who leveled from 70 to 80 the fastest, and
 what activities these players engaged with based on zones. Let's get to work.
 
-### Getting Started
+### Getting started
 
 Ibis ships with an `examples` module, which includes this specific data. We'll use DuckDB
 here, but this is possible with other backends, and we encourage you to experiment.
@@ -42,7 +42,7 @@ wowah_data = ex.wowah_data_raw.fetch()
 wowah_data
 ```
 
-### Getting Table Info
+### Getting table info
 
 Let's learn more about these fields. Are there any nulls we should consider? We can
 use the [`info`](../../reference/expression-tables.qmd#ibis.expr.types.relations.Table.info)
@@ -205,7 +205,7 @@ zones_pivot
 If they have a high value in the "Zone" column, they were likely questing. Other
 players opted to venture into dungeons.
 
-## Next Steps
+## Next steps
 
 It's pretty easy to do complex analysis with Ibis. We churned through over 10 million rows
 in no time.
