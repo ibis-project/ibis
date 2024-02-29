@@ -13,6 +13,7 @@ import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
+from ibis import util
 from ibis.backends import UrlFromPath
 from ibis.backends.clickhouse import Backend as CHBackend
 from ibis.formats.pyarrow import PyArrowData, PyArrowType
@@ -78,7 +79,7 @@ class Backend(CHBackend, UrlFromPath):
 
         """
         with contextlib.suppress(AttributeError):
-            query = query.sql(dialect="clickhouse", pretty=True)
+            query = query.sql(self.dialect, pretty=True)
         self._log(query)
         return self.con.query(query, **kwargs)
 
@@ -118,6 +119,14 @@ class Backend(CHBackend, UrlFromPath):
             dtypes = map(self.compiler.type_mapper.from_string, types)
         return sch.Schema(dict(zip(names, dtypes)))
 
+    def _metadata(self, query: str) -> sch.Schema:
+        name = util.gen_name("clickhouse_metadata")
+        try:
+            self.raw_sql(f"CREATE VIEW {name} AS {query}")
+            return self.get_schema(name).items()
+        finally:
+            self.raw_sql(f"DROP VIEW {name}")
+
     def execute(self, expr: ir.Expr, **kwargs: Any) -> Any:
         """Execute an expression."""
         table = expr.as_table()
@@ -142,3 +151,7 @@ class Backend(CHBackend, UrlFromPath):
         result = self.con.query(sql, "arrowtable")
         result = ChdbArrowConverter.convert_table(result, table.schema())
         return expr.__pyarrow_result__(result)
+
+    def to_pyarrow_batches(self, expr: ir.Expr, **kwargs):
+        table = expr.as_table()
+        return self.to_pyarrow(table, **kwargs).to_reader()
