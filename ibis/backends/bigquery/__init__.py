@@ -81,7 +81,9 @@ def _create_client_info_gapic(application_name):
     return ClientInfo(user_agent=_create_user_agent(application_name))
 
 
-_MEMTABLE_PATTERN = re.compile(r"^_?ibis_(?:pandas|pyarrow)_memtable_[a-z0-9]{26}$")
+_MEMTABLE_PATTERN = re.compile(
+    r"^_?ibis_(?:[A-Za-z_][A-Za-z_0-9]*)_memtable_[a-z0-9]{26}$"
+)
 
 
 def _qualify_memtable(
