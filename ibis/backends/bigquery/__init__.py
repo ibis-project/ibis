@@ -435,9 +435,11 @@ class Backend(SQLBackend, CanCreateSchema):
                 location=location,
             )
 
-        self.client.default_query_job_config = bq.QueryJobConfig(
-            use_legacy_sql=False, allow_large_results=True
-        )
+        if self.client.default_query_job_config is None:
+            self.client.default_query_job_config = bq.QueryJobConfig()
+
+        self.client.default_query_job_config.use_legacy_sql = False
+        self.client.default_query_job_config.allow_large_results = True
 
         if storage_client is not None:
             self.storage_client = storage_client
