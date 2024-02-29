@@ -420,11 +420,11 @@ class Backend(SQLBackend, CanCreateDatabase):
         elif not isinstance(obj, ir.Table):
             obj = ibis.memtable(obj)
 
-        query = sge.insert(self.compile(obj), into=name, dialect=self.name)
+        query = sge.insert(self.compile(obj), into=name, dialect=self.dialect)
 
         external_tables = self._collect_in_memory_tables(obj, {})
         external_data = self._normalize_external_tables(external_tables)
-        return self.con.command(query.sql(self.name), external_data=external_data)
+        return self.con.command(query.sql(self.dialect), external_data=external_data)
 
     def raw_sql(
         self,
@@ -453,7 +453,7 @@ class Backend(SQLBackend, CanCreateDatabase):
         external_tables = toolz.valmap(_to_memtable, external_tables or {})
         external_data = self._normalize_external_tables(external_tables)
         with contextlib.suppress(AttributeError):
-            query = query.sql(dialect=self.name, pretty=True)
+            query = query.sql(dialect=self.dialect, pretty=True)
         self._log(query)
         return self.con.query(query, external_data=external_data, **kwargs)
 
@@ -527,7 +527,7 @@ class Backend(SQLBackend, CanCreateDatabase):
             pass
 
     def truncate_table(self, name: str, database: str | None = None) -> None:
-        ident = sg.table(name, db=database).sql(self.name)
+        ident = sg.table(name, db=database).sql(self.dialect)
         with self._safe_raw_sql(f"TRUNCATE TABLE {ident}"):
             pass
 
@@ -728,11 +728,10 @@ class Backend(SQLBackend, CanCreateDatabase):
             properties=sge.Properties(expressions=properties),
         )
 
-        external_data = self._normalize_external_tables(external_tables)
-
         # create the table
-        sql = code.sql(self.name, pretty=True)
-        self.con.raw_query(sql, external_data=external_data)
+        sql = code.sql(self.dialect, pretty=True)
+        with self._safe_raw_sql(sql, external_tables=external_tables):
+            pass
 
         return self.table(name, database=database)
 

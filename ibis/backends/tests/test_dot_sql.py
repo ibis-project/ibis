@@ -234,7 +234,7 @@ def test_dot_sql_reuse_alias_with_different_types(backend, alltypes, df):
     backend.assert_series_equal(foo2.x.execute(), expected2)
 
 
-_NO_SQLGLOT_DIALECT = ("pandas", "dask")
+_NO_SQLGLOT_DIALECT = ("pandas", "dask", "chdb")
 no_sqlglot_dialect = [
     param(dialect, marks=pytest.mark.xfail) for dialect in sorted(_NO_SQLGLOT_DIALECT)
 ]
