@@ -12,14 +12,13 @@ from ibis.common.deferred import Deferred
 from ibis.common.egraph import DisjointSet
 from ibis.common.exceptions import (
     ExpressionError,
-    IbisError,
     IbisInputError,
     InputTypeError,
     IntegrityError,
 )
 from ibis.expr.analysis import flatten_predicates
 from ibis.expr.rewrites import peel_join_field
-from ibis.expr.types.generic import Column, Value
+from ibis.expr.types.generic import Value
 from ibis.expr.types.relations import (
     Table,
     bind,
