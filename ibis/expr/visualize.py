@@ -93,8 +93,8 @@ def to_graph(expr, node_attr=None, edge_attr=None, label_edges: bool = False):
     graph = Graph.from_bfs(expr.op(), filter=ops.Node)
 
     g = gv.Digraph(
-        node_attr=node_attr or DEFAULT_NODE_ATTRS,
-        edge_attr=edge_attr or DEFAULT_EDGE_ATTRS,
+        node_attr=DEFAULT_NODE_ATTRS | (node_attr or {}),
+        edge_attr=DEFAULT_EDGE_ATTRS | (edge_attr or {}),
     )
 
     g.attr(rankdir="BT")
