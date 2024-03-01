@@ -245,7 +245,7 @@ def test_array_discovery(backend):
     reason="BigQuery doesn't support casting array<T> to array<U>",
     raises=GoogleBadRequest,
 )
-@pytest.mark.notimpl(["datafusion", "flink"], raises=com.OperationNotDefinedError)
+@pytest.mark.notimpl(["datafusion"], raises=com.OperationNotDefinedError)
 def test_unnest_simple(backend):
     array_types = backend.array_types
     expected = (
@@ -889,7 +889,7 @@ def test_zip_null(con, fn):
 )
 @pytest.mark.notimpl(["postgres"], raises=PsycoPg2SyntaxError)
 @pytest.mark.notimpl(["risingwave"], raises=PsycoPg2ProgrammingError)
-@pytest.mark.notimpl(["datafusion", "flink"], raises=com.OperationNotDefinedError)
+@pytest.mark.notimpl(["datafusion"], raises=com.OperationNotDefinedError)
 @pytest.mark.notimpl(
     ["polars"],
     raises=com.OperationNotDefinedError,
@@ -902,6 +902,9 @@ def test_zip_null(con, fn):
 )
 @pytest.mark.broken(
     ["trino"], reason="inserting maps into structs doesn't work", raises=TrinoUserError
+)
+@pytest.mark.broken(
+    ["flink"], raises=Py4JJavaError, reason="cannot insert schema type ROW<MAP<k,v>>"
 )
 def test_array_of_struct_unnest(con):
     jobs = ibis.memtable(

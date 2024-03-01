@@ -60,7 +60,6 @@ class FlinkCompiler(SQLGlotCompiler):
             ops.RowID,
             ops.StringSplit,
             ops.Translate,
-            ops.Unnest,
         )
     )
 
