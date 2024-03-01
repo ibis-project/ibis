@@ -91,13 +91,13 @@ t.group_by(["species", "island"]).agg(count=t.count()).order_by("count")
 
 ## Who is Ibis for?
 
-Ibis is for data engineers, data analysts, and data scientists to use directly
-with their data platform(s) of choice. It also has benefits for [data
-platforms](#ibis-for-data-platforms), [data
-organizations](#ibis-for-data-organizations), and [data library
-developers](#ibis-for-data-library-developers).
+Ibis is for data engineers, data analysts, and data scientists (or any title
+that needs to work with data!) to use directly with their data platform(s) of
+choice. It also has benefits for [data platforms](#ibis-for-data-platforms),
+[organizations](#ibis-for-organizations), and [library
+developers](#ibis-for-library-developers).
 
-### Ibis for data practitioners
+### Ibis for practitioners
 
 You can use Ibis at any stage of your data workflow, no matter your role.
 
@@ -171,10 +171,10 @@ scalable from the start. If offers a neutral,
 for your data platform.
 :::
 
-### Ibis for data organizations
+### Ibis for organizations
 
-Data organizations can use Ibis to standardize the interface for SQL and Python
-data practitioners. It also allows data organizations to:
+Organizations can use Ibis to standardize the interface for SQL and Python data
+practitioners. It also allows data organizations to:
 
 - transfer data between systems
 - transform, analyze, and prepare data where it lives
@@ -182,9 +182,9 @@ data practitioners. It also allows data organizations to:
 - mix SQL and Python code seamlessly, with all the benefits of a general-purpose
  programming language, type checking, and expression validation
 
-### Ibis for data library developers
+### Ibis for library developers
 
-Python developers creating data libraries can use Ibis to:
+Python developers creating libraries can use Ibis to:
 
 - instantly support 20+ data backends
 - instantly support pandas, PyArrow, and Polars objects
