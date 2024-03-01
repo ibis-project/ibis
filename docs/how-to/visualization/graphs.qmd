@@ -1,0 +1,84 @@
+# GraphViz + Ibis
+
+Ibis supports visualizing an expression as a [directed
+graph](https://en.wikipedia.org/wiki/Directed_graph) using
+[GraphViz](https://graphviz.org/).
+
+To get started, make sure you've installed the necessary dependencies.
+
+```sh
+$ pip install 'ibis-framework[duckdb,examples,graphviz]'
+```
+
+::: {.callout-note collapse="true"}
+## Replace `duckdb` with your backend of choice
+
+For instance, you can replace `duckdb` with `snowflake` if you want to use the
+[Snowflake backend](../../backends/snowflake.qmd).
+:::
+
+
+Let's run through a few examples.
+
+First we'll import the things we need.
+
+```{python}
+import ibis
+
+from ibis import _
+from ibis.expr.visualize import to_graph
+```
+
+Now we can visualize an expression graph.
+
+Here's a call to `select`.
+
+```{python}
+t = ibis.examples.penguins.fetch()
+expr = t.select(lowered=_.species.lower())
+to_graph(expr)
+```
+
+The way to read the graph is from top to bottom.
+
+* The top of the graph contains Ibis operations with no dependents.
+* The edges encode dependencies from one node to another.
+* The bold text in the rectangles is the name of the Ibis operation class.
+* The bottom of the graph contains Ibis operations with no dependencies.
+* If this were a data flow graph, data would flow from bottom to top.
+
+Let's look at a more complex example: `group_by`.
+
+```{python}
+expr = (
+    t.group_by(_.species)
+    .agg(
+        bill_depth_avg=_.bill_depth_mm.mean(),
+        bill_length_avg=_.bill_length_mm.mean(),
+    )
+)
+to_graph(expr)
+```
+
+Switching gears, let's look at a `join` and show customization of node and edge
+attributes.
+
+```{python}
+left = ibis.table(dict(a="int64", b="string"), name="left")
+right = ibis.table(dict(b="string", c="int64", d="string"), name="right")
+expr = (
+    left.inner_join(right, "b")
+    .select(left.a, b=right.c, c=right.d)
+    .mutate(arrays=ibis.array([1, 2, 3]))
+)
+to_graph(
+    expr,
+    label_edges=True,
+    node_attr={"shape": "hexagon", "color": "green", "fontname": "Roboto Mono"},
+    edge_attr={"fontsize": "12", "fontname": "Comic Sans MS"}
+)
+```
+
+Please try out `to_graph` and give us feedback on
+[Zulip](https://ibis-project.zulipchat.org) or in a [GitHub
+issue](https://github.com/ibis-project/ibis/issues/new/choose)!
