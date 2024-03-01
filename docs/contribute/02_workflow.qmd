@@ -1,15 +1,21 @@
-# Contribute to the Ibis codebase
+---
+title: "Contribute to the Ibis codebase"
+---
 
-## Getting started
+## Workflow
+
+### Getting started
 
 First, set up a [development environment](./01_environment.qmd).
 
-## Taking issues
+If you're developing on Mac M1 or M2, see [docs for setting up Colima](#set-up-colima).
+
+### Taking issues
 
 If you find an issue you want to work on, write a comment with the text
 `/take` on the issue. GitHub will then assign the issue to you.
 
-## Running the test suite
+### Running the test suite
 
 To run tests that do not require a backend:
 
@@ -17,7 +23,7 @@ To run tests that do not require a backend:
 pytest -m core
 ```
 
-### Backend test suites
+#### Backend test suites
 
 :::{.callout-tip}
 ## You may be able to skip this section
@@ -40,7 +46,7 @@ To run the tests for a specific backend (e.g. sqlite):
 pytest -m sqlite
 ```
 
-## Setting up non-trivial backends
+### Setting up non-trivial backends
 
 :::{.callout-note}
 ## MacOS users on arm64 CPUs must use a different setup
@@ -70,7 +76,8 @@ if you ran `just up postgres`:
 ```sh
 pytest -m postgres
 ```
-### Test the backend locally
+
+#### Test the backend locally
 
 If anything seems amiss with a backend, you can of course test it locally:
 
@@ -79,7 +86,7 @@ export PGPASSWORD=postgres
 psql -t -A -h localhost -U postgres -d ibis_testing -c "select 'success'"
 ```
 
-## Writing the commit
+### Writing the commit
 
 Ibis follows the [Conventional Commits](https://www.conventionalcommits.org/) structure.
 In brief, the commit summary should look like:
@@ -97,12 +104,14 @@ The type (e.g. `fix`) can be:
 
       fixes #4242
 
-## Submit a pull request
+### Submit a pull request
 
 Ibis follows the standard GitHub pull request process. The team will review the PR and merge when it's ready.
 
-
 ## Colima setup for Mac M1/M2 users {#set-up-colima}
+
+[Colima](https://github.com/abiosoft/colima) is a container runtime that
+supports Mac M1 and M2 CPUs.
 
 If you are working with an M1 or M2 CPU architecture, you will need to
 run Docker to be able to test some backends supported by Ibis. With Colima,
@@ -110,10 +119,6 @@ you can run Docker on newer Macs without using Docker Desktop.[^1][^2]
 
 [^1]: [Goodbye Docker Desktop for Mac, Hello Colima](https://jacobtomlinson.dev/posts/2022/goodbye-docker-desktop-for-mac-hello-colima/)
 [^2]: [Installing Colima as a Docker Engine provider with Buildx and Compose plugins installed](https://aosolorzano.medium.com/installing-colima-as-a-Docker-engine-provider-with-buildx-and-compose-plugins-installed-1ce8b3bae158)
-
-### Colima
-
-[Colima](https://github.com/abiosoft/colima) is container runtime with minimal setup, that has support for Mac M1 and M2 CPUs.
 
 ### Get started
 
