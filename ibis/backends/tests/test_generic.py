@@ -1041,7 +1041,7 @@ def test_many_subqueries(con, snapshot):
     reason="invalid code generated for unnesting a struct",
     raises=TrinoUserError,
 )
-@pytest.mark.broke(
+@pytest.mark.broken(
     ["flink"],
     reason="invalid code generated for unnesting a struct",
     raises=Py4JJavaError,
