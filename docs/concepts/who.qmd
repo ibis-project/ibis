@@ -8,9 +8,9 @@ guide](/contribute).
 ## Voltron Data
 
 [Voltron Data](https://voltrondata.com) is the primary sponsor of Ibis, with
-most of the core development team employed there. As of writing, this includes
-five full-time developers, one technical product manager, and other staff who
-contribute to Ibis.
+most of the core development team employed there. This includes nine full-time
+developers, one technical product manager, and other staff who contribute to
+Ibis.
 
 ::: {.callout-tip title="Why does Voltron Data support Ibis?"}
 Check out the [blog post on why Voltron Data supports
