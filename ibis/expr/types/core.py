@@ -163,6 +163,8 @@ class Expr(Immutable, Coercible):
         *,
         label_edges: bool = False,
         verbose: bool = False,
+        node_attr: Mapping[str, str] | None = None,
+        edge_attr: Mapping[str, str] | None = None,
     ) -> None:
         """Visualize an expression as a GraphViz graph in the browser.
 
@@ -175,6 +177,27 @@ class Expr(Immutable, Coercible):
             Show operation input names as edge labels
         verbose
             Print the graphviz DOT code to stderr if [](`True`)
+        node_attr
+            Mapping of ``(attribute, value)`` pairs set for all nodes.
+            Options are specified by the ``graphviz`` Python library.
+        edge_attr
+            Mapping of ``(attribute, value)`` pairs set for all edges.
+            Options are specified by the ``graphviz`` Python library.
+
+        Examples
+        --------
+        Open the visualization of an expression in default browser:
+
+        >>> import ibis
+        >>> left = ibis.table(dict(a="int64", b="string"), name="left")
+        >>> right = ibis.table(dict(b="string", c="int64", d="string"), name="right")
+        >>> expr = left.inner_join(right, "b").select(left.a, b=right.c, c=right.d)
+        >>> expr.visualize(
+        ...     format="svg",
+        ...     label_edges=True,
+        ...     node_attr={"fontname": "Roboto Mono", "fontsize": "10"},
+        ...     edge_attr={"fontsize": "8"},
+        ... )  # quartodoc: +SKIP # doctest: +SKIP
 
         Raises
         ------
@@ -184,7 +207,12 @@ class Expr(Immutable, Coercible):
         import ibis.expr.visualize as viz
 
         path = viz.draw(
-            viz.to_graph(self, label_edges=label_edges),
+            viz.to_graph(
+                self,
+                node_attr=node_attr,
+                edge_attr=edge_attr,
+                label_edges=label_edges,
+            ),
             format=format,
             verbose=verbose,
         )

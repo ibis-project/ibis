@@ -93,8 +93,8 @@ def to_graph(expr, node_attr=None, edge_attr=None, label_edges: bool = False):
     graph = Graph.from_bfs(expr.op(), filter=ops.Node)
 
     g = gv.Digraph(
-        node_attr=node_attr or DEFAULT_NODE_ATTRS,
-        edge_attr=edge_attr or DEFAULT_EDGE_ATTRS,
+        node_attr=DEFAULT_NODE_ATTRS | (node_attr or {}),
+        edge_attr=DEFAULT_EDGE_ATTRS | (edge_attr or {}),
     )
 
     g.attr(rankdir="BT")
@@ -152,6 +152,7 @@ def draw(graph, path=None, format="png", verbose: bool = False):
 
 
 if __name__ == "__main__":
+    import json
     from argparse import ArgumentParser
 
     from ibis import _
@@ -173,6 +174,20 @@ if __name__ == "__main__":
         action="store_true",
         help="Show operation inputs as edge labels.",
     )
+    p.add_argument(
+        "-n",
+        "--node-attr",
+        type=lambda x: json.loads(x) if x else {},
+        default="{}",
+        help='JSON string of node attributes. E.g., \'{"fontname": "Roboto Mono", "fontsize": "10"}\'',
+    )
+    p.add_argument(
+        "-e",
+        "--edge-attr",
+        type=lambda x: json.loads(x) if x else {},
+        default="{}",
+        help='JSON string of edge attributes. E.g., \'{"fontsize": "8"}\'',
+    )
 
     args = p.parse_args()
 
@@ -191,4 +206,10 @@ if __name__ == "__main__":
             structs=ibis.struct({"a": [1, 2, 3], "b": {"c": 1, "d": 2}}),
         )
     )
-    expr.visualize(verbose=args.verbose > 0, label_edges=args.label_edges)
+
+    expr.visualize(
+        verbose=args.verbose > 0,
+        label_edges=args.label_edges,
+        node_attr=args.node_attr,
+        edge_attr=args.edge_attr,
+    )
