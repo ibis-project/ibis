@@ -136,16 +136,26 @@ def to_graph(
                 if not label_edges:
                     label = None
                 else:
-                    for name, arg in zip(v.argnames, v.args):
-                        if isinstance(arg, tuple) and u in arg:
-                            index = arg.index(u)
-                            name = f"{name}[{index}]"
-                            break
-                        elif arg == u:
-                            break
+                    if isinstance(v, ops.Relation):
+                        if (name := getattr(u, "name", None)) in v.fields:
+                            name = f"fields[{name!r}]"
+                        else:
+                            name = None
                     else:
-                        name = None
-                    label = f"<.{name}>"
+                        for name, arg in zip(v.argnames, v.args):
+                            if isinstance(arg, tuple) and u in arg:
+                                index = arg.index(u)
+                                name = f"{name}[{index}]"
+                                break
+                            elif arg == u:
+                                break
+                        else:
+                            name = None
+
+                    if name is not None:
+                        label = f"<.{name}>"
+                    else:
+                        label = None
 
                 g.edge(
                     uhash,
