@@ -8,20 +8,34 @@ guide](/contribute).
 ## Voltron Data
 
 [Voltron Data](https://voltrondata.com) is the primary sponsor of Ibis, with
-most of the core development team employed there. As of writing, this includes
-five full-time developers, one technical product manager, and other staff who
-contribute to Ibis.
+most of the core development team employed there. This includes nine full-time
+developers, one technical product manager, and other staff who contribute to
+Ibis.
+
+::: {.callout-tip title="Why does Voltron Data support Ibis?"}
+Check out the [blog post on why Voltron Data supports
+Ibis](../posts/why-voda-supports-ibis/index.qmd).
+:::
 
 ## Other companies
 
 Ibis is used by many other companies, with various tools built on top of it.
 Some include:
 
-- [Google BigQuery DataFrames](https://github.com/googleapis/python-bigquery-dataframes), a clone of the pandas API built on Ibis
-- [Starburst Galaxy Python DataFrames](https://www.starburst.io/blog/introducing-python-dataframes/), with support for Ibis
-- [Claypot AI's contribution of the Flink backend](https://github.com/claypotai/ibis-flink-example), working in collaboration with Voltron Data
-- [Microsoft's Magpie project](https://www.microsoft.com/en-us/research/project/magpie-2/), built on top of Ibis
-- [SuperDuperDB](https://github.com/SuperDuperDB/superduperdb), bringing AI to any backend Ibis supports
+- [Google BigQuery
+ DataFrames](https://github.com/googleapis/python-bigquery-dataframes), a clone
+ of the pandas API built on Ibis
+- [Starburst Galaxy Python
+ DataFrames](https://www.starburst.io/blog/introducing-python-dataframes/), with
+ support for Ibis
+- [Claypot AI's contribution of the Flink
+ backend](https://github.com/claypotai/ibis-flink-example), working in
+ collaboration with Voltron Data
+- [Microsoft's Magpie
+ project](https://www.microsoft.com/en-us/research/project/magpie-2/), built on
+ top of Ibis
+- [SuperDuperDB](https://github.com/SuperDuperDB/superduperdb), bringing AI to
+ any backend Ibis supports
 
 Ibis is also contributed to by other companies. You can [look through the full
 list of contributors on
@@ -41,8 +55,10 @@ Wes, Voltron Data, and others to solve problems seen throughout the space that
 are compounding as data volume and AI complexity increase. Some good background
 material on the composable data ecosystem and Ibis can be found at:
 
-- ["Apache Arrow and the '10 Things I Hate About pandas'" by Wes](https://wesmckinney.com/blog/apache-arrow-pandas-internals/)
-- ["The Road to Composable Data Systems: Thoughts on the Last 15 Years and the Future" by Wes](https://wesmckinney.com/blog/looking-back-15-years/)
+- ["Apache Arrow and the '10 Things I Hate About pandas'" by
+ Wes](https://wesmckinney.com/blog/apache-arrow-pandas-internals/)
+- ["The Road to Composable Data Systems: Thoughts on the Last 15 Years and the
+ Future" by Wes](https://wesmckinney.com/blog/looking-back-15-years/)
 - ["The Composable Codex" by Voltron Data](https://voltrondata.com/codex)
 
 ## Support for production workloads

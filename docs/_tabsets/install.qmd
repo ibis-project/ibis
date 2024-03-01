@@ -24,6 +24,7 @@ backends = [
     {"name": "Polars", "module": "polars"},
     {"name": "PostgreSQL", "module": "postgres"},
     {"name": "PySpark", "module": "pyspark"},
+    {"name": "RisingWave", "module": "risingwave"},
     {"name": "Snowflake", "module": "snowflake"},
     {"name": "SQLite", "module": "sqlite"},
     {"name": "Trino", "module": "trino"},
