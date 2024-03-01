@@ -174,7 +174,7 @@ for your data platform.
 ### Ibis for organizations
 
 Organizations can use Ibis to standardize the interface for SQL and Python data
-practitioners. It also allows data organizations to:
+practitioners. It also allows organizations to:
 
 - transfer data between systems
 - transform, analyze, and prepare data where it lives
