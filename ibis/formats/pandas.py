@@ -176,13 +176,9 @@ class PandasData(DataMapper):
             return gpd.GeoSeries(s)
         return gpd.GeoSeries.from_wkb(s)
 
-    convert_Point = (
-        convert_LineString
-    ) = (
-        convert_Polygon
-    ) = (
-        convert_MultiLineString
-    ) = convert_MultiPoint = convert_MultiPolygon = convert_GeoSpatial
+    convert_Point = convert_LineString = convert_Polygon = convert_MultiLineString = (
+        convert_MultiPoint
+    ) = convert_MultiPolygon = convert_GeoSpatial
 
     @classmethod
     def convert_default(cls, s, dtype, pandas_type):

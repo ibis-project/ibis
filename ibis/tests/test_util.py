@@ -1,4 +1,5 @@
 """Test ibis.util utilities."""
+
 from __future__ import annotations
 
 import pytest

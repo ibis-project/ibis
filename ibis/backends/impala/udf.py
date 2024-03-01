@@ -44,8 +44,7 @@ class Function(abc.ABC):
         return self._klass(*args)
 
     def _make_fn(self):
-        def fn(*args, **kwargs):
-            ...
+        def fn(*args, **kwargs): ...
 
         fn.__name__ = self.name
         fn.__signature__ = inspect.Signature(

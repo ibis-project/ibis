@@ -91,16 +91,10 @@ def get_type_params(obj: Any) -> dict[str, type]:
     Examples
     --------
     >>> from typing import Dict, List
-    >>>
-    >>> class MyList(List[T]):
-    ...     ...
-    >>>
+    >>> class MyList(List[T]): ...
     >>> get_type_params(MyList[int])
     {'T': <class 'int'>}
-    >>>
-    >>> class MyDict(Dict[T, U]):
-    ...     ...
-    >>>
+    >>> class MyDict(Dict[T, U]): ...
     >>> get_type_params(MyDict[int, str])
     {'T': <class 'int'>, 'U': <class 'str'>}
 
@@ -146,8 +140,7 @@ def get_bound_typevars(obj: Any) -> dict[TypeVar, tuple[str, type]]:
     ...     a: T
     ...
     ...     @property
-    ...     def myprop(self) -> U:
-    ...         ...
+    ...     def myprop(self) -> U: ...
     >>> get_bound_typevars(MyStruct[float, bytes])
     {~T: ('a', <class 'float'>), ~U: ('myprop', <class 'bytes'>)}
 
@@ -252,8 +245,7 @@ class Sentinel(type):
         raise TypeError("Sentinels are not constructible")
 
 
-class CoercionError(Exception):
-    ...
+class CoercionError(Exception): ...
 
 
 class Coercible(Abstract):
@@ -266,5 +258,4 @@ class Coercible(Abstract):
 
     @classmethod
     @abstractmethod
-    def __coerce__(cls, value: Any, **kwargs: Any) -> Self:
-        ...
+    def __coerce__(cls, value: Any, **kwargs: Any) -> Self: ...

@@ -128,8 +128,7 @@ class Final(Abstract):
 @collections.abc.Hashable.register
 class Hashable(Abstract):
     @abstractmethod
-    def __hash__(self) -> int:
-        ...
+    def __hash__(self) -> int: ...
 
 
 class Comparable(Abstract):
@@ -154,8 +153,7 @@ class Comparable(Abstract):
             return NotImplemented
 
     @abstractmethod
-    def __equals__(self, other) -> bool:
-        ...
+    def __equals__(self, other) -> bool: ...
 
     def __cached_equals__(self, other) -> bool:
         if self is other:

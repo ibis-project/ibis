@@ -898,9 +898,9 @@ class SQLGlotCompiler(abc.ABC):
         funcname = f"{funcs[type(op)]}_{hows[how]}"
         return self.agg[funcname](*args, where=where)
 
-    visit_Variance = (
-        visit_StandardDev
-    ) = visit_Covariance = visit_VarianceStandardDevCovariance
+    visit_Variance = visit_StandardDev = visit_Covariance = (
+        visit_VarianceStandardDevCovariance
+    )
 
     def visit_Arbitrary(self, op, *, arg, how, where):
         if how == "heavy":
@@ -1369,11 +1369,9 @@ class SQLGlotCompiler(abc.ABC):
     def visit_Subtract(self, op, *, left, right):
         return sge.Sub(this=left, expression=right)
 
-    visit_DateSub = (
-        visit_DateDiff
-    ) = (
-        visit_TimestampSub
-    ) = visit_TimestampDiff = visit_IntervalSubtract = visit_Subtract
+    visit_DateSub = visit_DateDiff = visit_TimestampSub = visit_TimestampDiff = (
+        visit_IntervalSubtract
+    ) = visit_Subtract
 
     @parenthesize_inputs
     def visit_Multiply(self, op, *, left, right):

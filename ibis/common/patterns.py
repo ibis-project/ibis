@@ -220,8 +220,7 @@ class Pattern(Hashable):
         return f"matching {self!r}"
 
     @abstractmethod
-    def __eq__(self, other: Pattern) -> bool:
-        ...
+    def __eq__(self, other: Pattern) -> bool: ...
 
     def __invert__(self) -> Not:
         """Syntax sugar for matching the inverse of the pattern."""

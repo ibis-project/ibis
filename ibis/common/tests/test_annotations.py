@@ -179,8 +179,7 @@ def test_signature():
 
 
 def test_signature_from_callable():
-    def test(a: int, b: int, c: int = 1):
-        ...
+    def test(a: int, b: int, c: int = 1): ...
 
     sig = Signature.from_callable(test)
     assert sig.validate(test, args=(2, 3), kwargs={}) == {"a": 2, "b": 3, "c": 1}
@@ -194,8 +193,7 @@ def test_signature_from_callable():
 
 
 def test_signature_from_callable_with_varargs():
-    def test(a: int, b: int, *args: int):
-        ...
+    def test(a: int, b: int, *args: int): ...
 
     sig = Signature.from_callable(test)
     assert sig.validate(test, args=(2, 3), kwargs={}) == {"a": 2, "b": 3, "args": ()}
@@ -222,8 +220,7 @@ def test_signature_from_callable_with_varargs():
 
 
 def test_signature_from_callable_with_positional_only_arguments(snapshot):
-    def test(a: int, b: int, /, c: int = 1):
-        ...
+    def test(a: int, b: int, /, c: int = 1): ...
 
     sig = Signature.from_callable(test)
     assert sig.validate(test, args=(2, 3), kwargs={}) == {"a": 2, "b": 3, "c": 1}
@@ -240,8 +237,7 @@ def test_signature_from_callable_with_positional_only_arguments(snapshot):
 
 
 def test_signature_from_callable_with_keyword_only_arguments(snapshot):
-    def test(a: int, b: int, *, c: float, d: float = 0.0):
-        ...
+    def test(a: int, b: int, *, c: float, d: float = 0.0): ...
 
     sig = Signature.from_callable(test)
     assert sig.validate(test, args=(2, 3), kwargs=dict(c=4.0)) == {
@@ -476,8 +472,7 @@ def test_annotated_function_with_varkwargs():
 
 def test_multiple_validation_failures():
     @annotated
-    def test(a: float, b: float, *args: int, **kwargs: int):
-        ...
+    def test(a: float, b: float, *args: int, **kwargs: int): ...
 
     with pytest.raises(ValidationError) as excinfo:
         test(1.0, 2.0, 3.0, 4, c=5.0, d=6)

@@ -26,7 +26,7 @@ lock:
 # format code
 fmt:
     ruff format .
-    ruff --fix .
+    ruff check --fix .
 
 # run all non-backend tests; additional arguments are forwarded to pytest
 check *args:

@@ -26,12 +26,10 @@ def _is_quoted(x):
 class Base(ABC):
     @property
     @abstractmethod
-    def dialect(self):
-        ...
+    def dialect(self): ...
 
     @abstractmethod
-    def compile(self):
-        ...
+    def compile(self): ...
 
     def quote(self, ident):
         return sg.to_identifier(ident, quoted=True).sql(dialect=self.dialect)
@@ -48,8 +46,7 @@ class Base(ABC):
         )
 
     @abstractmethod
-    def format_dtype(self, dtype):
-        ...
+    def format_dtype(self, dtype): ...
 
     def format_schema(self, schema):
         elements = [

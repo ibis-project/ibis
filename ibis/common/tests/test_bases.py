@@ -30,13 +30,11 @@ def test_classes_are_based_on_abstract():
 def test_abstract():
     class Foo(Abstract):
         @abstractmethod
-        def foo(self):
-            ...
+        def foo(self): ...
 
         @property
         @abstractmethod
-        def bar(self):
-            ...
+        def bar(self): ...
 
     assert not issubclass(type(Foo), ABCMeta)
     assert issubclass(type(Foo), AbstractMeta)

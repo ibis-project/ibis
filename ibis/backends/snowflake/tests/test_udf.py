@@ -9,24 +9,20 @@ from ibis import udf
 
 
 @udf.scalar.builtin
-def soundex(s: str) -> str:
-    ...
+def soundex(s: str) -> str: ...
 
 
 @udf.scalar.builtin
-def jarowinkler_similarity(a: str, b: str) -> float:
-    ...
+def jarowinkler_similarity(a: str, b: str) -> float: ...
 
 
 # TODO: allow multiple signatures
 @udf.scalar.builtin(name="compress")
-def compress_str(data: str, method: str) -> bytes:
-    ...
+def compress_str(data: str, method: str) -> bytes: ...
 
 
 @udf.scalar.builtin(name="compress")
-def compress_bytes(data: bytes, method: str) -> bytes:
-    ...
+def compress_bytes(data: bytes, method: str) -> bytes: ...
 
 
 @pytest.mark.parametrize(
@@ -64,13 +60,11 @@ def test_compress(con, func, pyargs, snowargs):
 
 
 @udf.agg.builtin
-def minhash(x, y) -> dt.json:
-    ...
+def minhash(x, y) -> dt.json: ...
 
 
 @udf.agg.builtin
-def approximate_jaccard_index(a) -> float:
-    ...
+def approximate_jaccard_index(a) -> float: ...
 
 
 def test_builtin_agg_udf(con):

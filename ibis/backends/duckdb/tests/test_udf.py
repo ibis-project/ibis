@@ -7,33 +7,27 @@ from ibis import udf
 
 
 @udf.scalar.builtin
-def hamming(a: str, b: str) -> int:
-    ...
+def hamming(a: str, b: str) -> int: ...
 
 
 @udf.scalar.builtin
-def jaccard(a: str, b: str) -> float:
-    ...
+def jaccard(a: str, b: str) -> float: ...
 
 
 @udf.scalar.builtin
-def jaro_similarity(a: str, b: str) -> float:
-    ...
+def jaro_similarity(a: str, b: str) -> float: ...
 
 
 @udf.scalar.builtin
-def jaro_winkler_similarity(a: str, b: str) -> float:
-    ...
+def jaro_winkler_similarity(a: str, b: str) -> float: ...
 
 
 @udf.scalar.builtin
-def damerau_levenshtein(a: str, b: str) -> int:
-    ...
+def damerau_levenshtein(a: str, b: str) -> int: ...
 
 
 @udf.scalar.builtin
-def mismatches(a: str, b: str) -> int:
-    ...
+def mismatches(a: str, b: str) -> int: ...
 
 
 @pytest.mark.parametrize(
@@ -57,26 +51,22 @@ def test_builtin_scalar(con, func):
 
 def test_builtin_scalar_noargs(con):
     @udf.scalar.builtin
-    def version() -> str:
-        ...
+    def version() -> str: ...
 
     expr = version()
     assert con.execute(expr) == f"v{con.version}"
 
 
 @udf.agg.builtin
-def product(x, where: bool = True) -> float:
-    ...
+def product(x, where: bool = True) -> float: ...
 
 
 @udf.agg.builtin
-def fsum(x, where: bool = True) -> float:
-    ...
+def fsum(x, where: bool = True) -> float: ...
 
 
 @udf.agg.builtin
-def favg(x: float, where: bool = True) -> float:
-    ...
+def favg(x: float, where: bool = True) -> float: ...
 
 
 @pytest.mark.parametrize("func", [product, fsum, favg])

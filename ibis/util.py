@@ -1,4 +1,5 @@
 """Ibis utility functions."""
+
 from __future__ import annotations
 
 import base64
@@ -43,7 +44,7 @@ V = TypeVar("V")
 
 
 # https://www.compart.com/en/unicode/U+22EE
-VERTICAL_ELLIPSIS = "\u22EE"
+VERTICAL_ELLIPSIS = "\u22ee"
 # https://www.compart.com/en/unicode/U+2026
 HORIZONTAL_ELLIPSIS = "\u2026"
 

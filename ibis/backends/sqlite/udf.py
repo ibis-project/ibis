@@ -432,8 +432,7 @@ class _ibis_arbitrary(abc.ABC):
         self.value = None
 
     @abc.abstractmethod
-    def step(self, value):
-        ...
+    def step(self, value): ...
 
     def finalize(self) -> int | None:
         return self.value

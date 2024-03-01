@@ -47,8 +47,9 @@ def test_repr_png_is_none_in_interactive(table):
 def test_repr_png_is_not_none_in_not_interactive(table):
     pytest.importorskip("ibis.expr.visualize")
 
-    with config.option_context("interactive", False), config.option_context(
-        "graphviz_repr", True
+    with (
+        config.option_context("interactive", False),
+        config.option_context("graphviz_repr", True),
     ):
         assert table._repr_png_() is not None
 

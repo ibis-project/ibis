@@ -329,11 +329,9 @@ def test_generic_coerced_to():
         def __coerce__(cls, value, T=..., S=...):
             return cls(value, Scalar())
 
-        def dtype(self) -> T:
-            ...
+        def dtype(self) -> T: ...
 
-        def shape(self) -> S:
-            ...
+        def shape(self) -> S: ...
 
     class Literal(Value[T, Scalar]):
         __slots__ = ("_value", "_dtype")
