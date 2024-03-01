@@ -125,3 +125,9 @@ def test_string_literal_backslash_escaping(con):
     expr = ibis.literal("\\d\\e")
     result = con.execute(expr)
     assert result == "\\d\\e"
+
+
+def test_connect_without_explicit_session():
+    con = ibis.pyspark.connect()
+    result = con.sql("SELECT CAST(1 AS BIGINT) as foo").to_pandas()
+    tm.assert_frame_equal(result, pd.DataFrame({"foo": [1]}))

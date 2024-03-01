@@ -130,7 +130,7 @@ class Backend(SQLBackend, CanCreateDatabase):
         super().__init__(*args, **kwargs)
         self._cached_dataframes = {}
 
-    def do_connect(self, session: SparkSession) -> None:
+    def do_connect(self, session: SparkSession | None = None) -> None:
         """Create a PySpark `Backend` for use with Ibis.
 
         Parameters
@@ -147,6 +147,11 @@ class Backend(SQLBackend, CanCreateDatabase):
         <ibis.backends.pyspark.Backend at 0x...>
 
         """
+        if session is None:
+            from pyspark.sql import SparkSession
+
+            session = SparkSession.builder.getOrCreate()
+
         self._context = session.sparkContext
         self._session = session
 
