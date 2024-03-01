@@ -261,7 +261,7 @@ def test_unnest_simple(backend):
 
 
 @builtin_array
-@pytest.mark.notimpl(["datafusion", "flink"], raises=com.OperationNotDefinedError)
+@pytest.mark.notimpl(["datafusion"], raises=com.OperationNotDefinedError)
 def test_unnest_complex(backend):
     array_types = backend.array_types
     df = array_types.execute()
@@ -356,7 +356,7 @@ def test_unnest_no_nulls(backend):
     raises=ValueError,
     reason="all the input arrays must have same number of dimensions",
 )
-@pytest.mark.notimpl(["datafusion", "flink"], raises=com.OperationNotDefinedError)
+@pytest.mark.notimpl(["datafusion"], raises=com.OperationNotDefinedError)
 def test_unnest_default_name(backend):
     array_types = backend.array_types
     df = array_types.execute()
@@ -803,9 +803,12 @@ def test_array_intersect(con, data):
 )
 @pytest.mark.notimpl(["postgres"], raises=PsycoPg2SyntaxError)
 @pytest.mark.notimpl(["risingwave"], raises=PsycoPg2InternalError)
-@pytest.mark.notimpl(["datafusion", "flink"], raises=com.OperationNotDefinedError)
+@pytest.mark.notimpl(["datafusion"], raises=com.OperationNotDefinedError)
 @pytest.mark.broken(
     ["trino"], reason="inserting maps into structs doesn't work", raises=TrinoUserError
+)
+@pytest.mark.broken(
+    ["flink"], raises=Py4JJavaError, reason="error on memtable compilation"
 )
 def test_unnest_struct(con):
     data = {"value": [[{"a": 1}, {"a": 2}], [{"a": 3}, {"a": 4}]]}
@@ -904,7 +907,7 @@ def test_zip_null(con, fn):
     ["trino"], reason="inserting maps into structs doesn't work", raises=TrinoUserError
 )
 @pytest.mark.broken(
-    ["flink"], raises=Py4JJavaError, reason="cannot insert schema type ROW<MAP<k,v>>"
+    ["flink"], raises=Py4JJavaError, reason="error on memtable compilation"
 )
 def test_array_of_struct_unnest(con):
     jobs = ibis.memtable(
@@ -1082,9 +1085,12 @@ def test_range_start_stop_step_zero(con, start, stop):
     reason="ibis hasn't implemented this behavior yet",
 )
 @pytest.mark.notyet(
-    ["datafusion", "flink"],
+    ["datafusion"],
     raises=com.OperationNotDefinedError,
     reason="backend doesn't support unnest",
+)
+@pytest.mark.broken(
+    ["flink"], raises=Py4JJavaError, reason="error on memtable compilation"
 )
 def test_unnest_empty_array(con):
     t = ibis.memtable({"arr": [[], ["a"], ["a", "b"]]})
