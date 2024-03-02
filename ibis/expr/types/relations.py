@@ -3755,7 +3755,7 @@ class Table(Expr, _FixedTextJupyterMixin):
         values_from: str | Iterable[str] | s.Selector = "value",
         values_fill: int | float | str | ir.Scalar | None = None,
         values_agg: str | Callable[[ir.Value], ir.Scalar] | Deferred = "arbitrary",
-    ):
+    ) -> Table:
         """Pivot a table to a wider format.
 
         Parameters
