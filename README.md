@@ -10,10 +10,10 @@
 
 ## What is Ibis?
 
-Ibis is the portable Python dataframe library.
+Ibis is the portable Python dataframe library:
 
 - Fast local dataframes with the default DuckDB backend
-- Lazy (default) or interactive execution
+- Lazy (by default) or interactive execution
 - [Mix Python dataframe and SQL code](#python--sql-better-together)
 - Use the same dataframe API for [20+ backends](#backends)
 - Iterate locally and deploy remotely by [changing a single line of code](#portability)
