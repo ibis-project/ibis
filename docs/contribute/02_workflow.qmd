@@ -25,7 +25,7 @@ pytest -m core
 
 #### Backend test suites
 
-:::{.callout-tip}
+::: {.callout-tip}
 ## You may be able to skip this section
 
 If you haven't made changes to the core of ibis (e.g., `ibis/expr`) or any
@@ -48,8 +48,9 @@ pytest -m sqlite
 
 ### Setting up non-trivial backends
 
-:::{.callout-note}
+::: {.callout-note}
 ## MacOS users on arm64 CPUs must use a different setup
+
 If you are working with an `arm64` architecture (Mac M1/M2) you can setup Docker
 with [Colima](https://github.com/abiosoft/colima). Refer to
 [set up colima](#set-up-colima). Or you can download Docker desktop.
