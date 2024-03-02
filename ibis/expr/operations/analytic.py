@@ -58,6 +58,7 @@ class RowNumber(RankBase):
     Examples
     --------
     >>> import ibis
+    >>> import ibis.expr.datatypes as dt
     >>> t = ibis.table([("values", dt.int64)])
     >>> w = ibis.window(order_by=t.values)
     >>> row_num = ibis.row_number().over(w)
