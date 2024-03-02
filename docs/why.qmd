@@ -250,7 +250,6 @@ GROUP BY species, island
 """.strip()
 ```
 
-
 ::: {.panel-tabset}
 
 ## DuckDB
@@ -293,6 +292,9 @@ g.order_by("count")
 ```
 
 :::
+
+This allows you to combine the flexibility of Python with the scale and
+performance of modern SQL.
 
 ## Scaling up and out
 
