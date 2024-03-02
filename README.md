@@ -128,7 +128,7 @@ You can mix SQL and Python code:
 └───────────┴───────────┴───────┘
 ```
 
-This allows you to combine the flexibility of Python with the scale and performance of modern SQL OLAP engines.
+This allows you to combine the flexibility of Python with the scale and performance of modern SQL.
 
 ## Backends
 
