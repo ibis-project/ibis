@@ -183,6 +183,7 @@ Or, for most backends, read from common file formats like CSV or Parquet:
 
 ```python
 >>> t = con.read_csv("penguins.csv")
+>>> t = con.read_parquet("penguins.parquet")
 ```
 
 By changing your connection object, you can work with any backend Ibis supports using the same API.
