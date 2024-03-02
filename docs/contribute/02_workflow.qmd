@@ -117,40 +117,40 @@ If you are working with an M1 or M2 CPU architecture, you will need to
 run Docker to be able to test some backends supported by Ibis. With Colima[^1],
 you can run Docker on newer Macs without using Docker Desktop[^2].
 
-[^1]: [Installing Colima as a Docker Engine provider with Buildx and Compose plugins installed](https://aosolorzano.medium.com/installing-colima-as-a-docker-engine-provider-with-buildx-and-compose-plugins-installed-1ce8b3bae158)
+[^1]: [Installing Colima as a Docker Engine provider with `buildx` and `compose` plugins installed](https://aosolorzano.medium.com/installing-colima-as-a-docker-engine-provider-with-buildx-and-compose-plugins-installed-1ce8b3bae158)
 [^2]: [Goodbye Docker Desktop for Mac, Hello Colima](https://jacobtomlinson.dev/posts/2022/goodbye-docker-desktop-for-mac-hello-colima/)
 
 ### Get started
 
-1. Uninstall Docker Desktop
+#### Uninstall Docker Desktop
 
-   If you have Docker desktop installed, follow [^1] or [^2], both of them have
-   a section on how to get rid of it.
+If you have Docker desktop installed, follow [^1] or [^2], both of them have
+a section on how to uninstall Docker Desktop.
 
-2. Install Docker Client with [Homebrew](https://brew.sh/)
+#### Install Docker client with [Homebrew](https://brew.sh/)
 
-   Make sure your Homebrew installation is up to date.
+Make sure your Homebrew installation is up to date.
 
-   ```bash
-   $ brew install docker
-   ```
+```bash
+$ brew install docker
+```
 
-3. Check installation by running
+#### Check installation by running
 
-   ```bash
-   $ docker --version
-   ```
+```bash
+$ docker --version
+```
 
 Notice we haven't installed any Docker Engine yet, and only the Docker client
 information is displayed.
 
-4. Install Colima
+#### Install Colima
 
-   ```bash
-   $ brew install colima
-   ```
+```bash
+$ brew install colima
+```
 
-5. Install Docker Compose Plugin (optional)
+#### Install Docker Compose plugin (optional)
 
 If you want to be able to run `docker compose` or run `just up`, follow these
 steps.
@@ -180,7 +180,7 @@ Check it worked:
 $ docker compose version
 ```
 
-1. Take it for a spin. (Example for the [Ibis](https://github.com/ibis-project/ibis) project)
+#### Start Colima
 
 ```bash
 $ colima start
