@@ -4,6 +4,7 @@ import contextlib
 import sys
 import tempfile
 from html import escape
+from typing import Callable
 
 import graphviz as gv
 
@@ -88,8 +89,18 @@ def get_label(node):
 DEFAULT_NODE_ATTRS = {"shape": "box", "fontname": "Deja Vu Sans Mono"}
 DEFAULT_EDGE_ATTRS = {"fontname": "Deja Vu Sans Mono"}
 
+NodeAttributeCallback = Callable[[ops.Node], dict[str, str] | None]
+EdgeAttributeCallback = Callable[[ops.Node, ops.Node], dict[str, str] | None]
 
-def to_graph(expr, node_attr=None, edge_attr=None, label_edges: bool = False):
+
+def to_graph(
+    expr,
+    node_attr=None,
+    node_attr_callback: NodeAttributeCallback | None = None,
+    edge_attr=None,
+    edge_attr_callback: EdgeAttributeCallback | None = None,
+    label_edges: bool = False,
+):
     graph = Graph.from_bfs(expr.op(), filter=ops.Node)
 
     g = gv.Digraph(
@@ -105,13 +116,21 @@ def to_graph(expr, node_attr=None, edge_attr=None, label_edges: bool = False):
     for v, us in graph.items():
         vhash = str(hash(v))
         if v not in seen:
-            g.node(vhash, label=get_label(v))
+            g.node(
+                vhash,
+                label=get_label(v),
+                _attributes=node_attr_callback(v) if node_attr_callback else {},
+            )
             seen.add(v)
 
         for u in us:
             uhash = str(hash(u))
             if u not in seen:
-                g.node(uhash, label=get_label(u))
+                g.node(
+                    uhash,
+                    label=get_label(u),
+                    _attributes=node_attr_callback(u) if node_attr_callback else {},
+                )
                 seen.add(u)
             if (edge := (u, v)) not in edges:
                 if not label_edges:
@@ -128,7 +147,12 @@ def to_graph(expr, node_attr=None, edge_attr=None, label_edges: bool = False):
                         name = None
                     label = f"<.{name}>"
 
-                g.edge(uhash, vhash, label=label)
+                g.edge(
+                    uhash,
+                    vhash,
+                    label=label,
+                    _attributes=edge_attr_callback(u, v) if edge_attr_callback else {},
+                )
                 edges.add(edge)
     return g
 
