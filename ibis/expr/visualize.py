@@ -4,7 +4,7 @@ import contextlib
 import sys
 import tempfile
 from html import escape
-from typing import Callable
+from typing import Callable, Optional
 
 import graphviz as gv
 
@@ -89,8 +89,8 @@ def get_label(node):
 DEFAULT_NODE_ATTRS = {"shape": "box", "fontname": "Deja Vu Sans Mono"}
 DEFAULT_EDGE_ATTRS = {"fontname": "Deja Vu Sans Mono"}
 
-NodeAttributeCallback = Callable[[ops.Node], dict[str, str] | None]
-EdgeAttributeCallback = Callable[[ops.Node, ops.Node], dict[str, str] | None]
+NodeAttributeCallback = Callable[[ops.Node], Optional[dict[str, str]]]
+EdgeAttributeCallback = Callable[[ops.Node, ops.Node], Optional[dict[str, str]]]
 
 
 def to_graph(
