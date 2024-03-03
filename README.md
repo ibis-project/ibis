@@ -189,6 +189,8 @@ Typically, you'll create a connection object:
 And work with tables in that backend:
 
 ```python
+>>> con.list_tables()
+['penguins']
 >>> t = con.table("penguins")
 ```
 
