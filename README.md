@@ -101,8 +101,8 @@ ORDER BY
 You can mix SQL and Python code:
 
 ```python
->>> t1 = t.sql("SELECT species, island, count(*) AS count FROM penguins GROUP BY 1, 2")
->>> t1
+>>> a = t.sql("SELECT species, island, count(*) AS count FROM penguins GROUP BY 1, 2")
+>>> a 
 ┏━━━━━━━━━━━┳━━━━━━━━━━━┳━━━━━━━┓
 ┃ species   ┃ island    ┃ count ┃
 ┡━━━━━━━━━━━╇━━━━━━━━━━━╇━━━━━━━┩
@@ -114,8 +114,8 @@ You can mix SQL and Python code:
 │ Gentoo    │ Biscoe    │   124 │
 │ Chinstrap │ Dream     │    68 │
 └───────────┴───────────┴───────┘
->>> t2 = t1.order_by("count")
->>> t2
+>>> b = a.order_by("count")
+>>> b
 ┏━━━━━━━━━━━┳━━━━━━━━━━━┳━━━━━━━┓
 ┃ species   ┃ island    ┃ count ┃
 ┡━━━━━━━━━━━╇━━━━━━━━━━━╇━━━━━━━┩
