@@ -94,3 +94,6 @@ INSERT INTO ibis_testing.win VALUES
     ('a', 2, 0),
     ('a', 3, 1),
     ('a', 4, 1);
+
+CREATE OR REPLACE TABLE ibis_testing.topk (x Nullable(Int64)) ENGINE = Memory;
+INSERT INTO ibis_testing.topk VALUES (1), (1), (NULL);

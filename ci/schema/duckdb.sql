@@ -51,3 +51,7 @@ CREATE OR REPLACE TABLE map (idx BIGINT, kv MAP(STRING, BIGINT));
 INSERT INTO map VALUES
     (1, MAP(['a', 'b', 'c'], [1, 2, 3])),
     (2, MAP(['d', 'e', 'f'], [4, 5, 6]));
+
+
+CREATE OR REPLACE TABLE topk (x BIGINT);
+INSERT INTO topk VALUES (1), (1), (NULL);

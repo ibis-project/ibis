@@ -289,3 +289,8 @@ CREATE TABLE map (idx BIGINT, kv HSTORE);
 INSERT INTO map VALUES
     (1, 'a=>1,b=>2,c=>3'),
     (2, 'd=>4,e=>5,c=>6');
+
+DROP TABLE IF EXISTS topk;
+
+CREATE TABLE topk (x BIGINT);
+INSERT INTO topk VALUES (1), (1), (NULL);

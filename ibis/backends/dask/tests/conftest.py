@@ -12,7 +12,7 @@ import ibis
 import ibis.expr.datatypes as dt
 from ibis.backends.conftest import TEST_TABLES
 from ibis.backends.pandas.tests.conftest import TestConf as PandasTest
-from ibis.backends.tests.data import array_types, json_types, win
+from ibis.backends.tests.data import array_types, json_types, topk, win
 
 dd = pytest.importorskip("dask.dataframe")
 
@@ -64,6 +64,11 @@ class TestConf(PandasTest):
         con.create_table(
             "json_t",
             dd.from_pandas(json_types, npartitions=NPARTITIONS),
+            overwrite=True,
+        )
+        con.create_table(
+            "topk",
+            dd.from_pandas(topk.to_pandas(), npartitions=NPARTITIONS),
             overwrite=True,
         )
 

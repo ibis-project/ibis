@@ -16,7 +16,13 @@ from ibis.backends.bigquery import EXTERNAL_DATA_SCOPES, Backend
 from ibis.backends.bigquery.datatypes import BigQuerySchema
 from ibis.backends.conftest import TEST_TABLES
 from ibis.backends.tests.base import BackendTest
-from ibis.backends.tests.data import json_types, non_null_array_types, struct_types, win
+from ibis.backends.tests.data import (
+    json_types,
+    non_null_array_types,
+    struct_types,
+    topk,
+    win,
+)
 
 DATASET_ID = "ibis_gbq_testing"
 DATASET_ID_TOKYO = "ibis_gbq_testing_tokyo"
@@ -211,6 +217,19 @@ class TestConf(BackendTest):
                         schema=BigQuerySchema.from_ibis(
                             ibis.schema(dict(g="string", x="!int64", y="int64"))
                         ),
+                    ),
+                )
+            )
+
+            futures.append(
+                e.submit(
+                    make_job,
+                    client.load_table_from_dataframe,
+                    topk.to_pandas(),
+                    bq.TableReference(testing_dataset, "topk"),
+                    job_config=bq.LoadJobConfig(
+                        write_disposition=write_disposition,
+                        schema=BigQuerySchema.from_ibis(ibis.schema(dict(x="int64"))),
                     ),
                 )
             )
