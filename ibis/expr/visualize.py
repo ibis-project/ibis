@@ -89,16 +89,16 @@ def get_label(node):
 DEFAULT_NODE_ATTRS = {"shape": "box", "fontname": "Deja Vu Sans Mono"}
 DEFAULT_EDGE_ATTRS = {"fontname": "Deja Vu Sans Mono"}
 
-NodeAttributeCallback = Callable[[ops.Node], Optional[dict[str, str]]]
-EdgeAttributeCallback = Callable[[ops.Node, ops.Node], Optional[dict[str, str]]]
+NodeAttributeGetter = Callable[[ops.Node], Optional[dict[str, str]]]
+EdgeAttributeGetter = Callable[[ops.Node, ops.Node], Optional[dict[str, str]]]
 
 
 def to_graph(
     expr,
     node_attr=None,
-    node_attr_callback: NodeAttributeCallback | None = None,
+    node_attr_getter: NodeAttributeGetter | None = None,
     edge_attr=None,
-    edge_attr_callback: EdgeAttributeCallback | None = None,
+    edge_attr_getter: EdgeAttributeGetter | None = None,
     label_edges: bool = False,
 ):
     graph = Graph.from_bfs(expr.op(), filter=ops.Node)
@@ -119,7 +119,7 @@ def to_graph(
             g.node(
                 vhash,
                 label=get_label(v),
-                _attributes=node_attr_callback(v) if node_attr_callback else {},
+                _attributes=node_attr_getter(v) if node_attr_getter else {},
             )
             seen.add(v)
 
@@ -129,7 +129,7 @@ def to_graph(
                 g.node(
                     uhash,
                     label=get_label(u),
-                    _attributes=node_attr_callback(u) if node_attr_callback else {},
+                    _attributes=node_attr_getter(u) if node_attr_getter else {},
                 )
                 seen.add(u)
             if (edge := (u, v)) not in edges:
@@ -151,7 +151,7 @@ def to_graph(
                     uhash,
                     vhash,
                     label=label,
-                    _attributes=edge_attr_callback(u, v) if edge_attr_callback else {},
+                    _attributes=edge_attr_getter(u, v) if edge_attr_getter else {},
                 )
                 edges.add(edge)
     return g
