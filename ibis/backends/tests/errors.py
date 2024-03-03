@@ -8,11 +8,7 @@ try:
     from duckdb import OutOfRangeException as DuckDBOutOfRangeException
     from duckdb import ParserException as DuckDBParserException
 except ImportError:
-    DuckDBConversionException = (
-        DuckDBInvalidInputException
-    ) = (
-        DuckDBParserException
-    ) = (
+    DuckDBConversionException = DuckDBInvalidInputException = DuckDBParserException = (
         DuckDBNotImplementedException
     ) = DuckDBBinderException = DuckDBOutOfRangeException = None
 
