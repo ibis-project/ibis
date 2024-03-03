@@ -12,9 +12,10 @@
 
 Ibis is the portable Python dataframe library:
 
-- Fast local dataframes with the default DuckDB backend
-- Lazy (by default) or interactive execution
-- [Mix Python dataframe and SQL code](#python--sql-better-together)
+- Fast local dataframes (via DuckDB)
+- Lazy dataframe expressions
+- Interactive mode for iterative data exploration
+- [Compose Python dataframe and SQL code](#python--sql-better-together)
 - Use the same dataframe API for [20+ backends](#backends)
 - Iterate locally and deploy remotely by [changing a single line of code](#portability)
 
@@ -144,20 +145,32 @@ Ibis supports 20+ backends:
 - [Dask](https://ibis-project.org/backends/dask/)
 - [DuckDB](https://ibis-project.org/backends/duckdb/)
 - [Exasol](https://ibis-project.org/backends/exasol)
-- [HeavyAI](https://github.com/heavyai/ibis-heavyai)
 - [MySQL](https://ibis-project.org/backends/mysql/)
 - [Oracle](https://ibis-project.org/backends/oracle/)
-- [Pandas](https://ibis-project.org/backends/pandas/)
+- [pandas](https://ibis-project.org/backends/pandas/)
 - [Polars](https://ibis-project.org/backends/polars/)
 - [PostgreSQL](https://ibis-project.org/backends/postgresql/)
+- [RisingWave](https://ibis-project.org/backends/risingwave/)
 - [SQL Server](https://ibis-project.org/backends/mssql/)
 - [SQLite](https://ibis-project.org/backends/sqlite/)
 - [Snowflake](https://ibis-project.org/backends/snowflake)
 - [Trino](https://ibis-project.org/backends/trino/)
 
+## How it works
+
+Most Python dataframes are tightly coupled to their execution engine. And many databases only support SQL, with no Python API. Ibis solves this problem by providing a common API for data manipulation in Python, and compiling that API into the backend’s native language. This means you can learn a single API and use it across any supported backend (execution engine).
+
+Ibis supports three types of backend:
+
+1. SQL-generating backends
+2. Expression-generating backends
+3. Naïve execution backends
+
+![Ibis backend types](docs/images/backends.png)
+
 ## Portability
 
-You can set the backend Ibis uses:
+To use different backends, you can set the backend Ibis uses:
 
 ```python
 >>> ibis.set_backend("duckdb")
@@ -165,7 +178,7 @@ You can set the backend Ibis uses:
 >>> ibis.set_backend("datafusion")
 ```
 
-More conventionally, you'll create a connection object:
+Typically, you'll create a connection object:
 
 ```python
 >>> con = ibis.duckdb.connect()
@@ -179,14 +192,17 @@ And work with tables in that backend:
 >>> t = con.table("penguins")
 ```
 
-Or, for most backends, read from common file formats like CSV or Parquet:
+You can also read from common file formats like CSV or Apache Parquet:
 
 ```python
 >>> t = con.read_csv("penguins.csv")
 >>> t = con.read_parquet("penguins.parquet")
 ```
 
-By changing your connection object, you can work with any backend Ibis supports using the same API.
+This allows you to iterate locally and deploy remotely by changing a single line of code.
+
+> [!TIP]
+> Check out [the blog on backend agnostic arrays](https://ibis-project.org/posts/backend-agnostic-arrays/) for one example using the same code across DuckDB and BigQuery.
 
 ## Community and contributing
 
