@@ -12,7 +12,7 @@
 
 Ibis is the portable Python dataframe library:
 
-- Fast local dataframes (via DuckDB)
+- Fast local dataframes (via DuckDB by default)
 - Lazy dataframe expressions
 - Interactive mode for iterative data exploration
 - [Compose Python dataframe and SQL code](#python--sql-better-together)
