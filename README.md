@@ -102,7 +102,7 @@ You can mix SQL and Python code:
 
 ```python
 >>> a = t.sql("SELECT species, island, count(*) AS count FROM penguins GROUP BY 1, 2")
->>> a 
+>>> a
 ┏━━━━━━━━━━━┳━━━━━━━━━━━┳━━━━━━━┓
 ┃ species   ┃ island    ┃ count ┃
 ┡━━━━━━━━━━━╇━━━━━━━━━━━╇━━━━━━━┩
