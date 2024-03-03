@@ -119,8 +119,7 @@ def test_infer_mixed_type_fails():
 
 
 def test_infer_timestamp_with_tz():
-    now_raw = datetime.utcnow()
-    now_utc = pytz.utc.localize(now_raw)
+    now_utc = datetime.now(pytz.UTC)
     assert now_utc.tzinfo == pytz.UTC
     assert dt.infer(now_utc).timezone == str(pytz.UTC)
 

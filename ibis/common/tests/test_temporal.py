@@ -186,9 +186,9 @@ def test_normalize_timezone(value, expected):
             datetime(2017, 1, 1, 0, 0, 0, 1, tzinfo=dateutil.tz.UTC),
         ),
         # plain integer
-        (1000, datetime(1970, 1, 1, 0, 16, 40)),
+        (1000, datetime(1970, 1, 1, 0, 16, 40, tzinfo=dateutil.tz.UTC)),
         # floating point
-        (1000.123, datetime(1970, 1, 1, 0, 16, 40, 123000)),
+        (1000.123, datetime(1970, 1, 1, 0, 16, 40, 123000, tzinfo=dateutil.tz.UTC)),
     ],
 )
 def test_normalize_datetime(value, expected):

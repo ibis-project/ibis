@@ -1,3 +1,0 @@
-test(2, 3) missing a required argument: 'c'
-
-Expected signature: test(a: int, b: int, *, c: float, d: float = 0.0)
