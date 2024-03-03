@@ -77,7 +77,11 @@ def test_con_dot_sql(backend, con, schema):
     backend.assert_series_equal(result.astype(expected.dtype), expected)
 
 
-@pytest.mark.notyet(["polars"], raises=PolarsComputeError)
+@pytest.mark.notyet(
+    ["polars"],
+    raises=PolarsComputeError,
+    reason="polars doesn't support quoted identifiers referencing CTEs",
+)
 @pytest.mark.notyet(
     ["bigquery"], raises=GoogleBadRequest, reason="requires a qualified name"
 )
@@ -119,7 +123,11 @@ def test_table_dot_sql(backend):
     assert pytest.approx(result) == expected
 
 
-@pytest.mark.notyet(["polars"], raises=PolarsComputeError)
+@pytest.mark.notyet(
+    ["polars"],
+    raises=PolarsComputeError,
+    reason="polars doesn't support quoted identifiers referencing CTEs",
+)
 @pytest.mark.notyet(
     ["bigquery"], raises=GoogleBadRequest, reason="requires a qualified name"
 )
@@ -315,7 +323,11 @@ def mem_t(con):
 
 
 @dot_sql_never
-@pytest.mark.notyet(["polars"], raises=NotImplementedError)
+@pytest.mark.notyet(
+    ["polars"],
+    raises=PolarsComputeError,
+    reason="polars doesn't support selecting from quoted identifiers referencing CTEs",
+)
 @pytest.mark.notyet(
     ["druid"],
     raises=KeyError,
@@ -337,3 +349,13 @@ def test_cte(alltypes, df):
     )
 
     tm.assert_frame_equal(result, expected)
+
+
+@dot_sql_never
+def test_bare_minimum(alltypes, df):
+    """Test that a backend that supports dot sql can do the most basic thing."""
+
+    expr = alltypes.sql(
+        'SELECT COUNT(*) AS "n" FROM "functional_alltypes"', dialect="duckdb"
+    )
+    assert expr.to_pandas().iat[0, 0] == len(df)

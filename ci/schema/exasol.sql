@@ -48,7 +48,7 @@ CREATE OR REPLACE TABLE EXASOL."awards_players"
     "yearID"   BIGINT,
     "lgID"     VARCHAR(256),
     "tie"      VARCHAR(256),
-    "notest"   VARCHAR(256)
+    "notes"   VARCHAR(256)
 );
 
 CREATE OR REPLACE TABLE EXASOL."functional_alltypes"
