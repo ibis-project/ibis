@@ -253,9 +253,10 @@ def test_signature_from_callable_with_keyword_only_arguments(snapshot):
         "d": 5.0,
     }
 
-    with pytest.raises(ValidationError) as excinfo:
+    with pytest.raises(
+        ValidationError, match="missing a required (?:keyword-only )?argument: 'c'"
+    ) as excinfo:
         sig.validate(test, args=(2, 3), kwargs={})
-    snapshot.assert_match(str(excinfo.value), "missing_a_required_argument.txt")
 
     with pytest.raises(ValidationError) as excinfo:
         sig.validate(test, args=(2, 3, 4), kwargs={})

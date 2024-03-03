@@ -166,7 +166,7 @@ def test_literal_mixed_type_fails():
 
 
 def test_timestamp_literal_without_tz():
-    now_raw = datetime.datetime.utcnow()
+    now_raw = datetime.datetime.now()
     assert now_raw.tzinfo is None
     assert ibis.literal(now_raw).type().timezone is None
 
