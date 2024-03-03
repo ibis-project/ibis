@@ -28,6 +28,7 @@ if TYPE_CHECKING:
 
     import ibis.expr.types as ir
     from ibis.backends import BaseBackend
+    from ibis.expr.visualize import EdgeAttributeCallback, NodeAttributeCallback
 
     TimeContext = tuple[pd.Timestamp, pd.Timestamp]
 
@@ -164,7 +165,9 @@ class Expr(Immutable, Coercible):
         label_edges: bool = False,
         verbose: bool = False,
         node_attr: Mapping[str, str] | None = None,
+        node_attr_callback: NodeAttributeCallback | None = None,
         edge_attr: Mapping[str, str] | None = None,
+        edge_attr_callback: EdgeAttributeCallback | None = None,
     ) -> None:
         """Visualize an expression as a GraphViz graph in the browser.
 
@@ -180,15 +183,22 @@ class Expr(Immutable, Coercible):
         node_attr
             Mapping of ``(attribute, value)`` pairs set for all nodes.
             Options are specified by the ``graphviz`` Python library.
+        node_attr_callback
+            Callback taking a node and returning a mapping of ``(attribute, value)`` pairs
+            for that node. Options are specified by the ``graphviz`` Python library.
         edge_attr
             Mapping of ``(attribute, value)`` pairs set for all edges.
             Options are specified by the ``graphviz`` Python library.
+        edge_attr_callback
+            Callback taking two adjacent nodes and returning a mapping of ``(attribute, value)`` pairs
+            for the edge between those nodes. Options are specified by the ``graphviz`` Python library.
 
         Examples
         --------
         Open the visualization of an expression in default browser:
 
         >>> import ibis
+        >>> import ibis.expr.operations as ops
         >>> left = ibis.table(dict(a="int64", b="string"), name="left")
         >>> right = ibis.table(dict(b="string", c="int64", d="string"), name="right")
         >>> expr = left.inner_join(right, "b").select(left.a, b=right.c, c=right.d)
@@ -196,7 +206,9 @@ class Expr(Immutable, Coercible):
         ...     format="svg",
         ...     label_edges=True,
         ...     node_attr={"fontname": "Roboto Mono", "fontsize": "10"},
+        ...     node_attr_callback=lambda node: isinstance(node, ops.Field) and {"shape": "oval"},
         ...     edge_attr={"fontsize": "8"},
+        ...     edge_attr_callback=lambda u, v: isinstance(u, ops.Field) and {"color": "red"},
         ... )  # quartodoc: +SKIP # doctest: +SKIP
 
         Raises
@@ -210,7 +222,9 @@ class Expr(Immutable, Coercible):
             viz.to_graph(
                 self,
                 node_attr=node_attr,
+                node_attr_callback=node_attr_callback,
                 edge_attr=edge_attr,
+                edge_attr_callback=edge_attr_callback,
                 label_edges=label_edges,
             ),
             format=format,
