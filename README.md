@@ -1,8 +1,8 @@
 # Ibis
 
-[![Documentation Status](https://img.shields.io/badge/docs-docs.ibis--project.org-blue.svg)](http://ibis-project.org)
-[![Project Chat](https://img.shields.io/badge/zulip-join_chat-purple.svg?logo=zulip)](https://ibis-project.zulipchat.com)
-[![Anaconda-Server Badge](https://anaconda.org/conda-forge/ibis-framework/badges/version.svg)](https://anaconda.org/conda-forge/ibis-framework)
+[![Documentation status](https://img.shields.io/badge/docs-docs.ibis--project.org-blue.svg)](http://ibis-project.org)
+[![Project chat](https://img.shields.io/badge/zulip-join_chat-purple.svg?logo=zulip)](https://ibis-project.zulipchat.com)
+[![Anaconda badge](https://anaconda.org/conda-forge/ibis-framework/badges/version.svg)](https://anaconda.org/conda-forge/ibis-framework)
 [![PyPI](https://img.shields.io/pypi/v/ibis-framework.svg)](https://pypi.org/project/ibis-framework)
 [![Build status](https://github.com/ibis-project/ibis/actions/workflows/ibis-main.yml/badge.svg)](https://github.com/ibis-project/ibis/actions/workflows/ibis-main.yml?query=branch%3Amain)
 [![Build status](https://github.com/ibis-project/ibis/actions/workflows/ibis-backends.yml/badge.svg)](https://github.com/ibis-project/ibis/actions/workflows/ibis-backends.yml?query=branch%3Amain)
@@ -10,51 +10,133 @@
 
 ## What is Ibis?
 
-Ibis is a Python library that provides a lightweight, universal interface for data wrangling. It helps Python users explore and transform data of any size, stored anywhere.
+Ibis is the portable Python dataframe library:
 
-Ibis has three primary components:
+- Fast local dataframes (via DuckDB by default)
+- Lazy dataframe expressions
+- Interactive mode for iterative data exploration
+- [Compose Python dataframe and SQL code](#python--sql-better-together)
+- Use the same dataframe API for [20+ backends](#backends)
+- Iterate locally and deploy remotely by [changing a single line of code](#portability)
 
-1. **A dataframe API for Python**.
-   Python users can write Ibis code to manipulate tabular data.
-2. **Interfaces to 20+ query engines.**
-   Wherever data is stored, people can use Ibis as their API of choice to communicate with any of those query engines.
-3. **Deferred execution**.
-   Ibis uses deferred execution, so execution of code is pushed to the query engine.
-   Users can execute at the speed of their backend, not their local computer.
+See the documentation on ["Why Ibis?"](https://ibis-project.org/why) to learn more.
 
-## Why Use Ibis?
+## Getting started
 
-Ibis aims to be a future-proof solution to interacting with data using Python and can accomplish this goal through its main features:
+You can `pip install` Ibis with a backend and example data:
 
-- **Familiar API**: Ibis’s API design borrows from popular APIs like pandas and dplyr that most users already know and like to use.
-- **Consistent syntax**: Ibis aims to be a universal Python API for tabular data of any size, big or small.
-- **Deferred execution**: Ibis pushes code execution to the query engine and only moves required data into memory when necessary.
-  Analytics workflows are faster and more efficient
-- **Interactive mode**: Ibis provides an interactive mode in which users can quickly diagnose problems, explore data, and mock up workflows and pipelines locally.
-- **20+ supported backends**: Ibis supports multiple query engines and DataFrame APIs.
-  Use one interface to transform with your data wherever it lives: from DataFrames in pandas to Parquet files through DuckDB to tables in BigQuery.
-- **Minimize rewrites**: Teams can often keep their Ibis code the same regardless of backend changes, like increasing or decreasing computing power, changing the number or size of their databases, or switching backends entirely.
-- **Flexibility when you need it**: When Ibis doesn't support something, it provides a way to jump directly into SQL.
+```bash
+pip install 'ibis-framework[duckdb,examples]'
+```
 
-## Common Use Cases
+> [!TIP]
+> See the [installation guide](https://ibis-project.org/install) for more installation options.
 
-- **Speed up prototype to production.**
-  Scale code written and tested locally to a distributed system or cloud SQL engine with minimal rewrites.
-- **Boost performance of existing Python or pandas code.**
-  For example a general rule of thumb for pandas is "Have 5 to 10 times as much RAM as the size of your dataset".
-  When a dataset exceeds this rule using in-memory frameworks like pandas can be slow.
-  Instead, using Ibis will significantly speed up your workflows because of its deferred execution.
-  Ibis also empowers you to switch to a faster database engine, without changing much of your code.
-- **Get rid of long, error-prone, `f`-strings.**
-  Ibis provides one syntax for multiple query engines and dataframe APIs that lets you avoid learning new flavors of SQL or other framework-specific code.
-  Learn the syntax once and use that syntax anywhere.
+Then use Ibis:
+
+```python
+>>> import ibis
+>>> ibis.options.interactive = True
+>>> t = ibis.examples.penguins.fetch()
+>>> t
+┏━━━━━━━━━┳━━━━━━━━━━━┳━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━┳━━━━━━━━┳━━━━━━━┓
+┃ species ┃ island    ┃ bill_length_mm ┃ bill_depth_mm ┃ flipper_length_mm ┃ body_mass_g ┃ sex    ┃ year  ┃
+┡━━━━━━━━━╇━━━━━━━━━━━╇━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━╇━━━━━━━━╇━━━━━━━┩
+│ string  │ string    │ float64        │ float64       │ int64             │ int64       │ string │ int64 │
+├─────────┼───────────┼────────────────┼───────────────┼───────────────────┼─────────────┼────────┼───────┤
+│ Adelie  │ Torgersen │           39.1 │          18.7 │               181 │        3750 │ male   │  2007 │
+│ Adelie  │ Torgersen │           39.5 │          17.4 │               186 │        3800 │ female │  2007 │
+│ Adelie  │ Torgersen │           40.3 │          18.0 │               195 │        3250 │ female │  2007 │
+│ Adelie  │ Torgersen │           NULL │          NULL │              NULL │        NULL │ NULL   │  2007 │
+│ Adelie  │ Torgersen │           36.7 │          19.3 │               193 │        3450 │ female │  2007 │
+│ Adelie  │ Torgersen │           39.3 │          20.6 │               190 │        3650 │ male   │  2007 │
+│ Adelie  │ Torgersen │           38.9 │          17.8 │               181 │        3625 │ female │  2007 │
+│ Adelie  │ Torgersen │           39.2 │          19.6 │               195 │        4675 │ male   │  2007 │
+│ Adelie  │ Torgersen │           34.1 │          18.1 │               193 │        3475 │ NULL   │  2007 │
+│ Adelie  │ Torgersen │           42.0 │          20.2 │               190 │        4250 │ NULL   │  2007 │
+│ …       │ …         │              … │             … │                 … │           … │ …      │     … │
+└─────────┴───────────┴────────────────┴───────────────┴───────────────────┴─────────────┴────────┴───────┘
+>>> g = t.group_by(["species", "island"]).agg(count=t.count()).order_by("count")
+>>> g
+┏━━━━━━━━━━━┳━━━━━━━━━━━┳━━━━━━━┓
+┃ species   ┃ island    ┃ count ┃
+┡━━━━━━━━━━━╇━━━━━━━━━━━╇━━━━━━━┩
+│ string    │ string    │ int64 │
+├───────────┼───────────┼───────┤
+│ Adelie    │ Biscoe    │    44 │
+│ Adelie    │ Torgersen │    52 │
+│ Adelie    │ Dream     │    56 │
+│ Chinstrap │ Dream     │    68 │
+│ Gentoo    │ Biscoe    │   124 │
+└───────────┴───────────┴───────┘
+```
+
+> [!TIP]
+> See the [getting started tutorial](https://ibis-project.org/tutorials/getting_started) for a full introduction to Ibis.
+
+## Python + SQL: better together
+
+For most backends, Ibis works by compiling its dataframe expressions into SQL:
+
+```python
+>>> ibis.to_sql(g)
+SELECT
+  "t1"."species",
+  "t1"."island",
+  "t1"."count"
+FROM (
+  SELECT
+    "t0"."species",
+    "t0"."island",
+    COUNT(*) AS "count"
+  FROM "penguins" AS "t0"
+  GROUP BY
+    1,
+    2
+) AS "t1"
+ORDER BY
+  "t1"."count" ASC
+```
+
+You can mix SQL and Python code:
+
+```python
+>>> a = t.sql("SELECT species, island, count(*) AS count FROM penguins GROUP BY 1, 2")
+>>> a
+┏━━━━━━━━━━━┳━━━━━━━━━━━┳━━━━━━━┓
+┃ species   ┃ island    ┃ count ┃
+┡━━━━━━━━━━━╇━━━━━━━━━━━╇━━━━━━━┩
+│ string    │ string    │ int64 │
+├───────────┼───────────┼───────┤
+│ Adelie    │ Torgersen │    52 │
+│ Adelie    │ Biscoe    │    44 │
+│ Adelie    │ Dream     │    56 │
+│ Gentoo    │ Biscoe    │   124 │
+│ Chinstrap │ Dream     │    68 │
+└───────────┴───────────┴───────┘
+>>> b = a.order_by("count")
+>>> b
+┏━━━━━━━━━━━┳━━━━━━━━━━━┳━━━━━━━┓
+┃ species   ┃ island    ┃ count ┃
+┡━━━━━━━━━━━╇━━━━━━━━━━━╇━━━━━━━┩
+│ string    │ string    │ int64 │
+├───────────┼───────────┼───────┤
+│ Adelie    │ Biscoe    │    44 │
+│ Adelie    │ Torgersen │    52 │
+│ Adelie    │ Dream     │    56 │
+│ Chinstrap │ Dream     │    68 │
+│ Gentoo    │ Biscoe    │   124 │
+└───────────┴───────────┴───────┘
+```
+
+This allows you to combine the flexibility of Python with the scale and performance of modern SQL.
 
 ## Backends
 
-Ibis acts as a universal frontend to the following systems:
+Ibis supports 20+ backends:
 
-- [Apache Arrow DataFusion](https://ibis-project.org/backends/datafusion/) (experimental)
-- [Apache Druid](https://ibis-project.org/backends/druid/) (experimental)
+- [Apache Arrow DataFusion](https://ibis-project.org/backends/datafusion/)
+- [Apache Druid](https://ibis-project.org/backends/druid/)
 - [Apache Flink](https://ibis-project.org/backends/flink)
 - [Apache Impala](https://ibis-project.org/backends/impala/)
 - [Apache PySpark](https://ibis-project.org/backends/pyspark/)
@@ -62,127 +144,69 @@ Ibis acts as a universal frontend to the following systems:
 - [ClickHouse](https://ibis-project.org/backends/clickhouse/)
 - [Dask](https://ibis-project.org/backends/dask/)
 - [DuckDB](https://ibis-project.org/backends/duckdb/)
-- [Exasol](https://ibis-project.org/backends/exasol) (experimental)
-- [HeavyAI](https://github.com/heavyai/ibis-heavyai)
+- [Exasol](https://ibis-project.org/backends/exasol)
 - [MySQL](https://ibis-project.org/backends/mysql/)
-- [Oracle](https://ibis-project.org/backends/oracle/) (experimental)
-- [Pandas](https://ibis-project.org/backends/pandas/)
-- [Polars](https://ibis-project.org/backends/polars/) (experimental)
+- [Oracle](https://ibis-project.org/backends/oracle/)
+- [pandas](https://ibis-project.org/backends/pandas/)
+- [Polars](https://ibis-project.org/backends/polars/)
 - [PostgreSQL](https://ibis-project.org/backends/postgresql/)
+- [RisingWave](https://ibis-project.org/backends/risingwave/)
 - [SQL Server](https://ibis-project.org/backends/mssql/)
 - [SQLite](https://ibis-project.org/backends/sqlite/)
-- [Snowflake](https://ibis-project.org/backends/snowflake) (experimental)
-- [Trino](https://ibis-project.org/backends/trino/) (experimental)
+- [Snowflake](https://ibis-project.org/backends/snowflake)
+- [Trino](https://ibis-project.org/backends/trino/)
 
-The list of supported backends is continuously growing. Anyone can get involved
-in adding new ones! Learn more about contributing to ibis in our contributing
-documentation at https://github.com/ibis-project/ibis/blob/main/docs/CONTRIBUTING.md
+## How it works
 
-## Installation
+Most Python dataframes are tightly coupled to their execution engine. And many databases only support SQL, with no Python API. Ibis solves this problem by providing a common API for data manipulation in Python, and compiling that API into the backend’s native language. This means you can learn a single API and use it across any supported backend (execution engine).
 
-Install Ibis from PyPI with:
+Ibis supports three types of backend:
 
-```bash
-pip install 'ibis-framework[duckdb]'
-```
+1. SQL-generating backends
+2. Expression-generating backends
+3. Naïve execution backends
 
-Or from conda-forge with:
+![Ibis backend types](docs/images/backends.png)
 
-```bash
-conda install ibis-framework -c conda-forge
-```
+## Portability
 
-(It’s a common mistake to `pip install ibis`. If you try to use Ibis and get errors early on try uninstalling `ibis` and installing `ibis-framework`)
-
-To discover ibis, we suggest starting with the DuckDB backend (which is included by default in the conda-forge package). The DuckDB backend is performant and fully featured.
-
-To use ibis with other backends, include the backend name in brackets for PyPI:
-
-```bash
-pip install 'ibis-framework[postgres]'
-```
-
-Or use `ibis-$BACKEND` where `$BACKEND` is the specific backend you want to use when installing from conda-forge:
-
-```bash
-conda install ibis-postgres -c conda-forge
-```
-
-## Getting Started with Ibis
-
-We provide a number of tutorial and example notebooks in the
-[ibis-examples](https://github.com/ibis-project/ibis-examples). The easiest way
-to try these out is through the online interactive notebook environment
-provided here:
-[![Binder](https://static.mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/ibis-project/ibis-examples/main)
-
-You can also get started analyzing any dataset, anywhere with just a few lines
-of Ibis code. Here’s an example of how to use Ibis with a SQLite database.
-
-Download the SQLite database from the `ibis-tutorial-data` GCS (Google Cloud
-Storage) bucket, then connect to it using ibis.
-
-```bash
-curl -LsSO 'https://storage.googleapis.com/ibis-tutorial-data/geography.duckdb'
-```
-
-Connect to the database and show the available tables
+To use different backends, you can set the backend Ibis uses:
 
 ```python
->>> import ibis
->>> from ibis import _
->>> ibis.options.interactive = True
->>> con = ibis.duckdb.connect("geography.duckdb")
->>> con.tables
-Tables
-------
-- countries
-- gdp
-- independence
+>>> ibis.set_backend("duckdb")
+>>> ibis.set_backend("polars")
+>>> ibis.set_backend("datafusion")
 ```
 
-Choose the `countries` table and preview its first few rows
+Typically, you'll create a connection object:
 
 ```python
->>> countries = con.tables.countries
->>> countries.head()
-┏━━━━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━━━━━┳━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━━━┓
-┃ iso_alpha2 ┃ iso_alpha3 ┃ iso_numeric ┃ fips   ┃ name                 ┃ capital          ┃ area_km2 ┃ population ┃ continent ┃
-┡━━━━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━━━━━━╇━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━━━━┩
-│ string     │ string     │ int64       │ string │ string               │ string           │ float64  │ int64      │ string    │
-├────────────┼────────────┼─────────────┼────────┼──────────────────────┼──────────────────┼──────────┼────────────┼───────────┤
-│ AD         │ AND        │          20 │ AN     │ Andorra              │ Andorra la Vella │    468.0 │      84000 │ EU        │
-│ AE         │ ARE        │         784 │ AE     │ United Arab Emirates │ Abu Dhabi        │  82880.0 │    4975593 │ AS        │
-│ AF         │ AFG        │           4 │ AF     │ Afghanistan          │ Kabul            │ 647500.0 │   29121286 │ AS        │
-│ AG         │ ATG        │          28 │ AC     │ Antigua and Barbuda  │ St. Johns        │    443.0 │      86754 │ NA        │
-│ AI         │ AIA        │         660 │ AV     │ Anguilla             │ The Valley       │    102.0 │      13254 │ NA        │
-└────────────┴────────────┴─────────────┴────────┴──────────────────────┴──────────────────┴──────────┴────────────┴───────────┘
+>>> con = ibis.duckdb.connect()
+>>> con = ibis.polars.connect()
+>>> con = ibis.datafusion.connect()
 ```
 
-Show the 5 least populous countries in Asia
+And work with tables in that backend:
 
 ```python
-
->>> (
-...     countries.filter(_.continent == "AS")
-...     .select("name", "population")
-...     .order_by(_.population)
-...     .limit(5)
-... )
-┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━┓
-┃ name                           ┃ population ┃
-┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━┩
-│ string                         │ int64      │
-├────────────────────────────────┼────────────┤
-│ Cocos [Keeling] Islands        │        628 │
-│ British Indian Ocean Territory │       4000 │
-│ Brunei                         │     395027 │
-│ Maldives                       │     395650 │
-│ Macao                          │     449198 │
-└────────────────────────────────┴────────────┘
+>>> con.list_tables()
+['penguins']
+>>> t = con.table("penguins")
 ```
 
-## Community and Contributing
+You can also read from common file formats like CSV or Apache Parquet:
+
+```python
+>>> t = con.read_csv("penguins.csv")
+>>> t = con.read_parquet("penguins.parquet")
+```
+
+This allows you to iterate locally and deploy remotely by changing a single line of code.
+
+> [!TIP]
+> Check out [the blog on backend agnostic arrays](https://ibis-project.org/posts/backend-agnostic-arrays/) for one example using the same code across DuckDB and BigQuery.
+
+## Community and contributing
 
 Ibis is an open source project and welcomes contributions from anyone in the community.
 
