@@ -244,6 +244,7 @@ _LIMIT = {
 
 @pytest.mark.notimpl(["datafusion", "mssql"])
 @pytest.mark.never(["dask", "pandas"], reason="dask and pandas do not support SQL")
+@pytest.mark.never("chdb")  # flaky python abort
 def test_sql(backend, con):
     # execute the expression using SQL query
     table = backend.format_table("functional_alltypes")
