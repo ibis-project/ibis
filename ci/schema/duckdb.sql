@@ -1,4 +1,4 @@
-CREATE TEMP TABLE array_types (
+CREATE OR REPLACE TABLE array_types (
     x BIGINT[],
     y TEXT[],
     z DOUBLE PRECISION[],
@@ -16,7 +16,7 @@ INSERT INTO array_types VALUES
     ([4, NULL, NULL, 5], ['d', NULL, NULL, 'e'], [4.0, NULL, NULL, 5.0], 'c', 6.0, [[1, 2, 3]]);
 
 
-CREATE TEMP TABLE struct (
+CREATE OR REPLACE TABLE struct (
     abc STRUCT(a DOUBLE, b STRING, c BIGINT)
 );
 
@@ -29,7 +29,7 @@ INSERT INTO struct VALUES
     (NULL),
     ({'a': 3.0, 'b': 'orange', 'c': NULL});
 
-CREATE TEMP TABLE json_t (js TEXT);
+CREATE OR REPLACE TABLE json_t (js TEXT);
 
 INSERT INTO json_t VALUES
     ('{"a": [1,2,3,4], "b": 1}'),
@@ -39,7 +39,7 @@ INSERT INTO json_t VALUES
     ('[42,47,55]'),
     ('[]');
 
-CREATE TEMP TABLE win (g TEXT, x BIGINT NOT NULL, y BIGINT);
+CREATE OR REPLACE TABLE win (g TEXT, x BIGINT NOT NULL, y BIGINT);
 INSERT INTO win VALUES
     ('a', 0, 3),
     ('a', 1, 2),
@@ -47,7 +47,7 @@ INSERT INTO win VALUES
     ('a', 3, 1),
     ('a', 4, 1);
 
-CREATE TEMP TABLE map (idx BIGINT, kv MAP(STRING, BIGINT));
+CREATE OR REPLACE TABLE map (idx BIGINT, kv MAP(STRING, BIGINT));
 INSERT INTO map VALUES
     (1, MAP(['a', 'b', 'c'], [1, 2, 3])),
     (2, MAP(['d', 'e', 'f'], [4, 5, 6]));
