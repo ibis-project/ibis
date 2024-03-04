@@ -335,7 +335,7 @@ class DatabaseTable(PhysicalTable):
 class VersionedTable(Simple):
     """Table that is versioned with snapshots by the backend."""
 
-    at_time: Column = None
+    at_time: Column[dt.Timestamp]
 
 
 @public
