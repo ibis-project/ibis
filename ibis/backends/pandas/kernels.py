@@ -11,6 +11,7 @@ except ImportError:
     import re
 from functools import reduce
 from urllib.parse import parse_qs, urlsplit
+from uuid import uuid4
 
 import numpy as np
 import pandas as pd
@@ -323,6 +324,7 @@ generic = {
     ops.Or: operator.or_,
     ops.Power: operator.pow,
     ops.Radians: np.radians,
+    ops.RandomUUID: uuid4
     ops.Sign: np.sign,
     ops.Sin: np.sin,
     ops.Sqrt: np.sqrt,

@@ -6,6 +6,7 @@ import operator
 from collections.abc import Mapping
 from functools import partial, reduce, singledispatch
 from math import isnan
+from uuid import uuid4
 
 import numpy as np
 import pandas as pd
@@ -808,6 +809,11 @@ def count_star(op, **kw):
 @translate.register(ops.TimestampNow)
 def timestamp_now(op, **_):
     return pl.lit(pd.Timestamp("now", tz="UTC").tz_localize(None))
+
+
+@translate.register(ops.RandomUUID)
+def random_uuid(op, **_):
+    return pl.lit(str(uuid4())
 
 
 @translate.register(ops.Strftime)

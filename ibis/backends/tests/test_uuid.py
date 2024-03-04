@@ -26,7 +26,7 @@ UUID_BACKEND_TYPE = {
     "trino": "uuid",
 }
 
-
+# todo: to figure out the uuid type in polars, String did not work for Polars
 @pytest.mark.notimpl(["polars"], raises=NotImplementedError)
 def test_uuid_literal(con, backend):
     backend_name = backend.name()
@@ -49,7 +49,6 @@ def test_uuid_literal(con, backend):
         "mssql",
         "mysql",
         "oracle",
-        "polars",
         "pyspark",
         "risingwave",
     ],
@@ -77,7 +76,6 @@ def test_uuid_function(con):
     ],
     raises=com.OperationNotDefinedError,
 )
-@pytest.mark.notimpl(["pandas", "dask"], raises=ValueError)
 def test_uuid_unique_each_row(con):
     expr = (
         con.tables.functional_alltypes.mutate(uuid=ibis.uuid()).limit(2).uuid.nunique()
