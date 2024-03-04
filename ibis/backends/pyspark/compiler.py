@@ -70,6 +70,7 @@ class PySparkCompiler(SQLGlotCompiler):
         ops.Hash: "hash",
         ops.Log10: "log10",
         ops.LStrip: "ltrim",
+        ops.RandomUUID: "uuid",
         ops.RStrip: "rtrim",
         ops.MapLength: "size",
         ops.MapContains: "map_contains_key",

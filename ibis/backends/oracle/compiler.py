@@ -93,6 +93,7 @@ class OracleCompiler(SQLGlotCompiler):
         ops.BitwiseAnd: "bitand",
         ops.Hash: "hash",
         ops.LPad: "lpad",
+        ops.RandomUUID: "random_uuid",
         ops.RPad: "rpad",
         ops.StringAscii: "ascii",
         ops.Strip: "trim",

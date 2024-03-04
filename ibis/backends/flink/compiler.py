@@ -84,6 +84,7 @@ class FlinkCompiler(SQLGlotCompiler):
         ops.MapValues: "map_values",
         ops.Power: "power",
         ops.RandomScalar: "rand",
+        ops.RandomUUID: "uuid",
         ops.RegexSearch: "regexp",
         ops.StrRight: "right",
         ops.StringLength: "char_length",

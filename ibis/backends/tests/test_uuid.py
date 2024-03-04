@@ -19,6 +19,7 @@ UUID_BACKEND_TYPE = {
     "exasol": "UUID",
     "flink": "CHAR(36) NOT NULL",
     "impala": "STRING",
+    "mssql": "uniqueidentifier",
     "postgres": "uuid",
     "risingwave": "character varying",
     "snowflake": "VARCHAR",
@@ -42,15 +43,10 @@ def test_uuid_literal(con, backend):
 
 @pytest.mark.notimpl(
     [
-        "datafusion",
         "druid",
         "exasol",
-        "flink",
-        "mssql",
         "mysql",
-        "oracle",
         "polars",
-        "pyspark",
         "risingwave",
     ],
     raises=com.OperationNotDefinedError,
@@ -64,15 +60,10 @@ def test_uuid_function(con):
 
 @pytest.mark.notimpl(
     [
-        "datafusion",
         "druid",
         "exasol",
-        "flink",
-        "mssql",
         "mysql",
-        "oracle",
         "polars",
-        "pyspark",
         "risingwave",
     ],
     raises=com.OperationNotDefinedError,
