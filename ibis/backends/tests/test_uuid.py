@@ -60,3 +60,26 @@ def test_uuid_function(con):
     obj = con.execute(ibis.uuid())
     assert isinstance(obj, uuid.UUID)
     assert obj.version == 4
+
+
+@pytest.mark.notimpl(
+    [
+        "datafusion",
+        "druid",
+        "exasol",
+        "flink",
+        "mssql",
+        "mysql",
+        "oracle",
+        "polars",
+        "pyspark",
+        "risingwave",
+    ],
+    raises=com.OperationNotDefinedError,
+)
+@pytest.mark.notimpl(["pandas", "dask"], raises=ValueError)
+def test_uuid_unique_each_row(con):
+    expr = (
+        con.tables.functional_alltypes.mutate(uuid=ibis.uuid()).limit(2).uuid.nunique()
+    )
+    assert expr.execute() == 2
