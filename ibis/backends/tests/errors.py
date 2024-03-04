@@ -29,6 +29,11 @@ except ImportError:
 
 
 try:
+    from chdb import ChdbError
+except ImportError:
+    ChdbError = None
+
+try:
     from pyexasol.exceptions import ExaQueryError
 except ImportError:
     ExaQueryError = None

@@ -46,6 +46,7 @@ from ibis.expr import datatypes as dt
             {
                 "bigquery": "INT64",
                 "clickhouse": "UInt8",
+                "chdb": "UInt8",
                 "impala": "TINYINT",
                 "snowflake": "INTEGER",
                 "sqlite": "integer",
@@ -62,6 +63,7 @@ from ibis.expr import datatypes as dt
             {
                 "bigquery": "INT64",
                 "clickhouse": "UInt8",
+                "chdb": "UInt8",
                 "impala": "TINYINT",
                 "snowflake": "INTEGER",
                 "sqlite": "integer",
@@ -78,6 +80,7 @@ from ibis.expr import datatypes as dt
             {
                 "bigquery": "INT64",
                 "clickhouse": "UInt8",
+                "chdb": "UInt8",
                 "impala": "TINYINT",
                 "snowflake": "INTEGER",
                 "sqlite": "integer",
@@ -94,6 +97,7 @@ from ibis.expr import datatypes as dt
             {
                 "bigquery": "INT64",
                 "clickhouse": "UInt8",
+                "chdb": "UInt8",
                 "impala": "TINYINT",
                 "snowflake": "INTEGER",
                 "sqlite": "integer",
@@ -110,6 +114,7 @@ from ibis.expr import datatypes as dt
             {
                 "bigquery": "INT64",
                 "clickhouse": "UInt8",
+                "chdb": "UInt8",
                 "impala": "TINYINT",
                 "snowflake": "INTEGER",
                 "sqlite": "integer",
@@ -126,6 +131,7 @@ from ibis.expr import datatypes as dt
             {
                 "bigquery": "INT64",
                 "clickhouse": "UInt8",
+                "chdb": "UInt8",
                 "impala": "TINYINT",
                 "snowflake": "INTEGER",
                 "sqlite": "integer",
@@ -142,6 +148,7 @@ from ibis.expr import datatypes as dt
             {
                 "bigquery": "INT64",
                 "clickhouse": "UInt8",
+                "chdb": "UInt8",
                 "impala": "TINYINT",
                 "snowflake": "INTEGER",
                 "sqlite": "integer",
@@ -158,6 +165,7 @@ from ibis.expr import datatypes as dt
             {
                 "bigquery": "INT64",
                 "clickhouse": "UInt8",
+                "chdb": "UInt8",
                 "impala": "TINYINT",
                 "snowflake": "INTEGER",
                 "sqlite": "integer",
@@ -174,6 +182,7 @@ from ibis.expr import datatypes as dt
             {
                 "bigquery": "FLOAT64",
                 "clickhouse": "Float64",
+                "chdb": "Float64",
                 "impala": "DECIMAL(2,1)",
                 "snowflake": "INTEGER",
                 "sqlite": "real",
@@ -202,6 +211,7 @@ from ibis.expr import datatypes as dt
             {
                 "bigquery": "FLOAT64",
                 "clickhouse": "Float64",
+                "chdb": "Float64",
                 "impala": "DECIMAL(2,1)",
                 "snowflake": "INTEGER",
                 "sqlite": "real",
@@ -218,6 +228,7 @@ from ibis.expr import datatypes as dt
             {
                 "bigquery": "FLOAT64",
                 "clickhouse": "Float64",
+                "chdb": "Float64",
                 "impala": "DECIMAL(2,1)",
                 "snowflake": "INTEGER",
                 "sqlite": "real",
@@ -303,6 +314,7 @@ def test_numeric_literal(con, backend, expr, expected_types):
                 "pyspark": decimal.Decimal("1.1"),
                 "mysql": decimal.Decimal("1.1"),
                 "clickhouse": decimal.Decimal("1.1"),
+                "chdb": decimal.Decimal("1.1"),
                 "dask": decimal.Decimal("1.1"),
                 "mssql": decimal.Decimal("1.1"),
                 "druid": decimal.Decimal("1.1"),
@@ -313,6 +325,7 @@ def test_numeric_literal(con, backend, expr, expected_types):
             {
                 "bigquery": "NUMERIC",
                 "clickhouse": "Decimal(38, 9)",
+                "chdb": "Decimal(38, 9)",
                 "snowflake": "DECIMAL",
                 "impala": "DECIMAL(38,9)",
                 "sqlite": "real",
@@ -339,11 +352,13 @@ def test_numeric_literal(con, backend, expr, expected_types):
                 "clickhouse": decimal.Decimal(
                     "1.10000000000000003193790845333396190208"
                 ),
+                "chdb": decimal.Decimal("1.10000000000000003193790845333396190208"),
                 "oracle": 1.1,
             },
             {
                 "bigquery": "BIGNUMERIC",
                 "clickhouse": "Decimal(76, 38)",
+                "chdb": "Decimal(76, 38)",
                 "sqlite": "real",
                 "trino": "decimal(2,1)",
                 "duckdb": "DECIMAL(18,3)",

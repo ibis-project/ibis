@@ -245,7 +245,7 @@ def pytest_collection_modifyitems(session, config, items):
     unrecognized_backends = set()
     for item in items:
         # Yell loudly if unrecognized backend in notimpl, notyet or never
-        for name in ("notimpl", "notyet", "never"):
+        for name in ("notimpl", "notyet", "never", "broken"):
             for mark in item.iter_markers(name=name):
                 marked_backends = util.promote_list(mark.args[0])
                 if backend := set(marked_backends).difference(ALL_BACKENDS):

@@ -16,6 +16,7 @@ import ibis.expr.types as ir
 from ibis import util
 from ibis.backends import UrlFromPath
 from ibis.backends.clickhouse import Backend as CHBackend
+from ibis.backends.sql.compiler import C
 from ibis.formats.pyarrow import PyArrowData, PyArrowType
 
 if TYPE_CHECKING:
@@ -30,6 +31,8 @@ class ChdbArrowConverter(PyArrowData):
         if dtype.is_date():
             return column.cast(pa.int32()).cast(pa_type)
         elif dtype.is_timestamp():
+            if dtype.scale is None:
+                pa_type = pa.timestamp("s")
             return column.cast(pa.int64()).cast(pa_type)
         else:
             return column.cast(pa_type)
@@ -59,7 +62,9 @@ class Backend(CHBackend, UrlFromPath):
         if database is not None:
             self.raw_sql(f"USE {database}")
 
-    def raw_sql(self, query: str | sge.Expression, **kwargs) -> Any:
+    def raw_sql(
+        self, query: str | sge.Expression, external_tables=None, **kwargs
+    ) -> Any:
         """Execute a SQL string `query` against the database.
 
         Parameters
@@ -78,6 +83,8 @@ class Backend(CHBackend, UrlFromPath):
             Clickhouse cursor
 
         """
+        if external_tables:
+            raise NotImplementedError("External tables are not yet supported")
         with contextlib.suppress(AttributeError):
             query = query.sql(self.dialect, pretty=True)
         self._log(query)
@@ -113,10 +120,10 @@ class Backend(CHBackend, UrlFromPath):
                 "`schema` namespaces are not supported by chdb"
             )
         query = sge.Describe(this=sg.table(table_name, db=database))
-        with self._safe_raw_sql(query, fmt="arrowtable") as table:
-            names = table.column("name").to_pylist()
-            types = table.column("type").to_pylist()
-            dtypes = map(self.compiler.type_mapper.from_string, types)
+        table = self.raw_sql(query, fmt="arrowtable")
+        names = table.column("name").to_pylist()
+        types = table.column("type").to_pylist()
+        dtypes = map(self.compiler.type_mapper.from_string, types)
         return sch.Schema(dict(zip(names, dtypes)))
 
     def _metadata(self, query: str) -> sch.Schema:
@@ -143,15 +150,18 @@ class Backend(CHBackend, UrlFromPath):
         table = expr.as_table()
         sql = self.compile(table, **kwargs)
         self._log(sql)
-
         external_tables = self._collect_in_memory_tables(expr, external_tables)
-        if external_tables:
-            raise NotImplementedError("External tables are not yet supported")
 
-        result = self.con.query(sql, "arrowtable")
+        result = self.raw_sql(sql, fmt="arrowtable", external_tables=external_tables)
         result = ChdbArrowConverter.convert_table(result, table.schema())
         return expr.__pyarrow_result__(result)
 
     def to_pyarrow_batches(self, expr: ir.Expr, **kwargs):
         table = expr.as_table()
         return self.to_pyarrow(table, **kwargs).to_reader()
+
+    def list_databases(self, like: str | None = None) -> list[str]:
+        query = sg.select(C.name).from_(sg.table("databases", db="system"))
+        result = self.raw_sql(query, fmt="arrowtable")
+        databases = result.column("name").to_pylist()
+        return self._filter_with_like(databases, like)

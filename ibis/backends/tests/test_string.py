@@ -13,6 +13,7 @@ import ibis
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 from ibis.backends.tests.errors import (
+    ChdbError,
     ClickHouseDatabaseError,
     OracleDatabaseError,
     PsycoPg2InternalError,
@@ -30,6 +31,7 @@ from ibis.common.annotations import ValidationError
             {
                 "bigquery": "STRING",
                 "clickhouse": "String",
+                "chdb": "String",
                 "snowflake": "VARCHAR",
                 "sqlite": "text",
                 "trino": "varchar(6)",
@@ -46,6 +48,7 @@ from ibis.common.annotations import ValidationError
             {
                 "bigquery": "STRING",
                 "clickhouse": "String",
+                "chdb": "String",
                 "snowflake": "VARCHAR",
                 "sqlite": "text",
                 "trino": "varchar(7)",
@@ -74,6 +77,7 @@ from ibis.common.annotations import ValidationError
             {
                 "bigquery": "STRING",
                 "clickhouse": "String",
+                "chdb": "String",
                 "snowflake": "VARCHAR",
                 "sqlite": "text",
                 "trino": "varchar(7)",
@@ -995,6 +999,11 @@ def test_re_split_column(alltypes):
         "bigquery",
     ],
     raises=com.OperationNotDefinedError,
+)
+@pytest.mark.notyet(
+    ["chdb"],
+    raises=ChdbError,
+    reason="clickhouse only supports pattern constants",
 )
 @pytest.mark.notyet(
     ["clickhouse"],
