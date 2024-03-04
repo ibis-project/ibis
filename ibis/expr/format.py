@@ -339,7 +339,7 @@ def _self_reference(op, parent, **kwargs):
 
 @fmt.register(ops.JoinTable)
 def _join_table(op, parent, index):
-    return parent
+    return f"{parent}#{index}"
 
 
 @fmt.register(ops.Literal)

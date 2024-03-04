@@ -178,11 +178,6 @@ class JoinLink(Node):
 
 
 @public
-class TemporalJoinLink(JoinLink):
-    at_time: Column
-
-
-@public
 class JoinChain(Relation):
     first: JoinTable
     rest: VarTuple[JoinLink]
@@ -337,10 +332,10 @@ class DatabaseTable(PhysicalTable):
 
 
 @public
-class VersionedDatabaseTable(DatabaseTable):
+class VersionedTable(Simple):
     """Table that is versioned with snapshots by the backend."""
 
-    at_time: Optional[Column] = None
+    at_time: Column = None
 
 
 @public

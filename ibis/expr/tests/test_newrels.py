@@ -1155,6 +1155,7 @@ def test_self_join_extensive():
 
     aaa = a.join(a, [a.a == a.a]).join(a, [a.a == a.a])
     aaa1 = aa.join(a, [aa.a == a.a])
+
     aaa2 = aa.join(a, "a")
     aaa3 = aa.join(a, [("a", "a")])
     with join_tables(a, a, a) as (r1, r2, r3):
@@ -1567,3 +1568,29 @@ def test_subsequent_order_by_calls():
     first = ops.Sort(t, [t.int_col.desc()]).to_expr()
     second = ops.Sort(first, [first.int_col.asc()]).to_expr()
     assert ts.equals(second)
+
+
+def test_temporal_join():
+    t1 = ibis.table(name="t1", schema={"a": "int64", "b": "string", "c": "timestamp"})
+    t2 = ibis.table(name="t2", schema={"d": "int64", "e": "string"})
+
+    joined = t1.join(t2.at_time(t1.c), [t1.a == t2.d])
+
+    right = t2.at_time(t1.c)
+    assert right.op() == ops.VersionedTable(t2, at_time=t1.c)
+
+    with join_tables(t1, right) as (r1, r2):
+        expected = ops.JoinChain(
+            first=r1,
+            rest=[
+                ops.JoinLink("temporal", r2, [r1.a == r2.d]),
+            ],
+            values={
+                "a": r1.a,
+                "b": r1.b,
+                "c": r1.c,
+                "d": r2.d,
+                "e": r2.e,
+            },
+        )
+        assert joined.op() == expected

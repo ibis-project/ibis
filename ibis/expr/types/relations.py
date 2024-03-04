@@ -2883,15 +2883,12 @@ class Table(Expr, _FixedTextJupyterMixin):
         Table
             Table expression
         """
-
         op = self.op()
-        if not isinstance(op, ops.VersionedDatabaseTable):
-            raise com.IbisInputError(
-                "Table is not versioned. "
-                "`at_time()` is defined only for versioned tables."
-            )
-
-        return op.copy(at_time=time_attribute).to_expr()
+        if isinstance(op, ops.VersionedTable):
+            node = op.copy(at_time=time_attribute)
+        else:
+            node = ops.VersionedTable(self, at_time=time_attribute)
+        return node.to_expr()
 
     def join(
         left: Table,

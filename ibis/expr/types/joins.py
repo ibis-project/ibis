@@ -133,7 +133,7 @@ def dereference_mapping_left(chain):
 def dereference_mapping_right(right):
     # the right table is wrapped in a JoinTable the uniqueness of the underlying
     # table which requires the predicates to be dereferenced to the wrapped
-    return {v: ops.Field(right, k) for k, v in right.values.items()}
+    return dereference_mapping(right)
 
 
 def dereference_sides(left, right, deref_left, deref_right):
@@ -144,7 +144,7 @@ def dereference_sides(left, right, deref_left, deref_right):
 
 def dereference_value(pred, deref_left, deref_right):
     deref_both = {**deref_left, **deref_right}
-    if isinstance(pred, ops.Comparison) and pred.left.relations == pred.right.relations:
+    if isinstance(pred, ops.Comparison):
         left, right = dereference_sides(pred.left, pred.right, deref_left, deref_right)
         return pred.copy(left=left, right=right)
     else:
@@ -271,30 +271,6 @@ class Join(Table):
             raise IntegrityError(f"Name collisions: {self._collisions}")
         return Table(self.op())
 
-    def get_at_time_for_temporal_join(self, right) -> ops.Field | None:
-        if not isinstance(right.op(), ops.VersionedDatabaseTable):
-            return None
-
-        if right.at_time is None:
-            raise IbisInputError(
-                "`at_time` must be defined for versioned table `right`."
-            )
-
-        # Check if `at_time` is based on a left-table.
-        # TODO (mehmet): Check with the reviewers the applicability of this check
-        # for all possible calls of `temporal_join()`.
-        left = self.op()
-        at_time_op = right.op().at_time
-        if at_time_op.rel not in left.find(
-            finder=(ops.DatabaseTable, ops.VersionedDatabaseTable)
-        ):
-            raise IbisInputError("`at_time` needs to be defined on a left-table.")
-
-        # Rebase `at_time` on the JoinTable wrapping up the DatabaseTable
-        # `at_time` field is based on.
-        deref_left = dereference_mapping_left(left)
-        return at_time_op.replace(deref_left, filter=ops.Value)
-
     @functools.wraps(Table.join)
     def join(
         self,
@@ -316,11 +292,11 @@ class Join(Table):
                 f"right operand must be a Table, got {type(right).__name__}"
             )
 
-        # Get `at_time` if the call is for a temporal join.
-        at_time = self.get_at_time_for_temporal_join(right)
-
+        right = right.op()
         if how == "left_semi":
             how = "semi"
+        elif isinstance(right, ops.VersionedTable):
+            how = "temporal"
         elif how == "asof":
             raise IbisInputError("use table.asof_join(...) instead")
 
@@ -350,21 +326,7 @@ class Join(Table):
         )
 
         # construct a new join link and add it to the join chain
-        if at_time is not None:
-            if not util.all_of(preds, ops.Equals):
-                raise IbisInputError(
-                    "All `predicates` given to `temporal_join` must be of `==` type."
-                )
-
-            # TODO (mehmet): Is there a way to eliminate the need for `TemporalJoinLink` here
-            # and use `JoinLink` for temporal join?
-            link = ops.TemporalJoinLink(
-                how=how, table=right, at_time=at_time, predicates=preds
-            )
-
-        else:
-            link = ops.JoinLink(how, table=right, predicates=preds)
-
+        link = ops.JoinLink(how, table=right, predicates=preds)
         left = left.copy(rest=left.rest + (link,), values=values)
 
         # return with a new JoinExpr wrapping the new join chain
