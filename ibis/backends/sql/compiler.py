@@ -1141,6 +1141,7 @@ class SQLGlotCompiler(abc.ABC):
         version = sge.Version(this="TIMESTAMP", expression=at_time, kind="AS OF")
         table = parent.copy()
         table.set("version", version)
+        # breakpoint()
         return table
 
     def visit_JoinChain(self, op, *, first, rest, values):

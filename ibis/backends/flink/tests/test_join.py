@@ -195,7 +195,6 @@ def test_temporal_join_compile():
     )
 
     sql = ibis.flink.compile(join)
-
     expected_sql = """SELECT
   `t2`.`id`,
   `t2`.`bool_col`,

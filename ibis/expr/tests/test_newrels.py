@@ -1579,18 +1579,20 @@ def test_temporal_join():
     right = t2.at_time(t1.c)
     assert right.op() == ops.VersionedTable(t2, at_time=t1.c)
 
-    with join_tables(t1, right) as (r1, r2):
-        expected = ops.JoinChain(
-            first=r1,
-            rest=[
-                ops.JoinLink("temporal", r2, [r1.a == r2.d]),
-            ],
-            values={
-                "a": r1.a,
-                "b": r1.b,
-                "c": r1.c,
-                "d": r2.d,
-                "e": r2.e,
-            },
-        )
-        assert joined.op() == expected
+    r1 = ops.JoinTable(t1, index=0).to_expr()
+    r2 = ops.JoinTable(ops.VersionedTable(t2, at_time=r1.c), index=1).to_expr()
+
+    expected = ops.JoinChain(
+        first=r1,
+        rest=[
+            ops.JoinLink("temporal", r2, [r1.a == r2.d]),
+        ],
+        values={
+            "a": r1.a,
+            "b": r1.b,
+            "c": r1.c,
+            "d": r2.d,
+            "e": r2.e,
+        },
+    )
+    assert joined.op() == expected

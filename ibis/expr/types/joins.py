@@ -319,7 +319,12 @@ class Join(Table):
             how = "semi"
         elif isinstance(right, ops.VersionedTable):
             # TODO(kszucs): need to tweak the user experience here
+            # the dereferencing logic must be improved as well, but first
+            # the desired API must be figured out
             how = "temporal"
+            deref_left = dereference_mapping_left(self.op())
+            at_time = right.at_time.replace(deref_left, filter=ops.Value)
+            right = right.copy(at_time=at_time)
         elif how == "asof":
             raise IbisInputError("use table.asof_join(...) instead")
 
