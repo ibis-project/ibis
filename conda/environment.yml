@@ -51,7 +51,7 @@ dependencies:
   - toolz >=0.11
   - trino-python-client >=0.321
   # geospatial
-  - leafmap >=0.29.6
+  - leafmap >=0.29.6,<0.31
   # streaming
   - kafka-python
   # test dependencies
@@ -93,4 +93,6 @@ dependencies:
   - taplo
   - tqdm >=4.66.1
   - just
-  # dependencies for lonboard
+  - pip
+  - pip:
+      - lonboard==0.4.0

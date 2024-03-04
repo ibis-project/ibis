@@ -50,7 +50,7 @@ dependencies:
   - toolz >=0.11
   - trino-python-client >=0.321
   # geospatial
-  - leafmap >=0.29.6
+  - leafmap >=0.29.6,<0.31
   # test dependencies
   - filelock >=3.7.0,<4
   - hypothesis >=6.58.0,<7
@@ -91,4 +91,4 @@ dependencies:
   - just
   - pip
   - pip:
-      - lonboard>=0.3.0
+      - lonboard==0.4.0
