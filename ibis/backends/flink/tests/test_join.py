@@ -7,6 +7,7 @@ import pandas as pd
 import pytest
 
 import ibis
+import ibis.expr.datatypes as dt
 from ibis.backends.flink.tests.conftest import TestConf as tm
 from ibis.backends.tests.errors import Py4JJavaError
 
@@ -164,3 +165,48 @@ def test_outer_join(left_tumble, right_tumble):
         }
     )
     tm.assert_frame_equal(result_df, expected_df)
+
+
+def test_temporal_join_compile():
+    left = ibis.table(
+        name="table_left",
+        schema={
+            "id": dt.int32,
+            "bool_col": dt.boolean,
+            "smallint_col": dt.int16,
+            "int_col": dt.int32,
+            "timestamp_col": dt.Timestamp(scale=3),
+        },
+    )
+    right = ibis.table(
+        name="table_right",
+        schema={
+            "id": dt.Int32(nullable=False),
+            "bool_col": dt.boolean,
+            "smallint_col": dt.int16,
+            "int_col": dt.int32,
+            "timestamp_col": dt.Timestamp(scale=3),
+        },
+    )
+
+    join = left.join(
+        right.at_time(left.timestamp_col),
+        predicates=[left.id == right.id],
+    )
+
+    sql = ibis.flink.compile(join)
+
+    expected_sql = """SELECT
+  `t2`.`id`,
+  `t2`.`bool_col`,
+  `t2`.`smallint_col`,
+  `t2`.`int_col`,
+  `t2`.`timestamp_col`,
+  `t4`.`bool_col` AS `bool_col_right`,
+  `t4`.`smallint_col` AS `smallint_col_right`,
+  `t4`.`int_col` AS `int_col_right`,
+  `t4`.`timestamp_col` AS `timestamp_col_right`
+FROM `table_left` AS `t2`
+INNER JOIN `table_right` FOR SYSTEM_TIME AS OF `t2`.`timestamp_col` AS `t4`
+  ON `t2`.`id` = `t4`.`id`"""
+    assert sql == expected_sql

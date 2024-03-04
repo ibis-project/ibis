@@ -18,7 +18,6 @@ from public import public
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
-from ibis.backends.sql.expressions import TemporalJoin
 from ibis.backends.sql.rewrites import (
     add_one_to_nth_value_input,
     add_order_by_to_empty_ranking_window_functions,
@@ -1135,26 +1134,14 @@ class SQLGlotCompiler(abc.ABC):
             name, db=namespace.schema, catalog=namespace.database, quoted=self.quoted
         )
 
-    def visit_VersionedDatabaseTable(
-        self,
-        op,
-        *,
-        name: str,
-        schema: sch.Schema,
-        source: Any,
-        namespace: ops.Namespace,
-        at_time: ops.Column,
-    ) -> sge.Table:
-        return self.visit_DatabaseTable(
-            op, name=name, schema=schema, source=source, namespace=namespace
-        )
-
-    def visit_TemporalJoinLink(self, op, *, how, table, at_time, predicates):
-        on = sg.and_(*predicates) if predicates else None
-        return TemporalJoin(this=table, kind=how, at_time=at_time, on=on)
-
     def visit_SelfReference(self, op, *, parent, identifier):
         return parent
+
+    def visit_VersionedTable(self, op, *, parent, at_time):
+        version = sge.Version(this="TIMESTAMP", expression=at_time, kind="AS OF")
+        table = parent.copy()
+        table.set("version", version)
+        return table
 
     def visit_JoinChain(self, op, *, first, rest, values):
         result = sg.select(*self._cleanup_names(values)).from_(first)
@@ -1177,6 +1164,7 @@ class SQLGlotCompiler(abc.ABC):
             "asof": "asof",
             "any_left": "left",
             "any_inner": None,
+            "temporal": None,
         }
         kinds = {
             "any_left": "any",
@@ -1189,6 +1177,7 @@ class SQLGlotCompiler(abc.ABC):
             "anti": "anti",
             "cross": "cross",
             "outer": "outer",
+            "temporal": "inner",
         }
         assert (
             predicates or how == "cross"

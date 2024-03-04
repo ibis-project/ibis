@@ -255,14 +255,12 @@ class Backend(SQLBackend, CanCreateDatabase, NoUrl):
             )
         schema = self.get_schema(name, catalog=catalog, database=database)
 
-        table_class = ops.VersionedDatabaseTable if versioned else ops.DatabaseTable
-        node = table_class(
+        node = ops.DatabaseTable(
             name,
             schema=schema,
             source=self,
             namespace=ops.Namespace(schema=catalog, database=database),
         )
-
         return node.to_expr()
 
     def get_schema(
