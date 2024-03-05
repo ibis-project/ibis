@@ -799,6 +799,14 @@ def test_group_by_kwargs(table):
     assert_equal(expr, expected)
 
 
+def test_group_by_nargs(table):
+    t = table
+    by = ["f", t.h]
+    e1 = t.group_by(by, z="g").aggregate(t.d.mean().name("foo"))
+    e2 = t.group_by(*by, z="g").aggregate(t.d.mean().name("foo"))
+    assert_equal(e1, e2)
+
+
 def test_compound_aggregate_expr(table):
     # See ibis #24
     compound_expr = (table["a"].sum() / table["a"].mean()).name("foo")
