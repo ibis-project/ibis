@@ -51,11 +51,12 @@ class Expr(Immutable, Coercible):
     _arg: ops.Node
 
     def __rich_console__(self, console, options):
-        if not opts.interactive:
+        if opts.interactive:
+            return self.__interactive_rich_console__(console, options)
+        else:
             from rich.text import Text
 
             return console.render(Text(str(self)), options=options)
-        return self.__interactive_rich_console__(console, options)
 
     def __interactive_rich_console__(self, console, options):
         raise NotImplementedError()
