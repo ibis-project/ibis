@@ -12,8 +12,8 @@ empty spreadsheet with just the header. Even though the spreadsheet is empty,
 you know what the data would look like.
 
 Unbound tables allow you to write transformations for data as long as it
-conforms to the provided schema. You don't need to connect to data until you're
-ready to execute the expression and compute outputs.
+conforms to the provided schema. You don't need to connect to a data source
+until you're ready to execute the expression and compute outputs.
 
 ## Example
 
@@ -48,6 +48,8 @@ diamonds. In order to do this, we can first calculate the average carat for
 each color and cut of diamonds, then make a pivot table to show the results:
 
 ```{python}
+from ibis import _
+
 expr = (
     diamonds.group_by(["cut", "color"])
     .agg(carat=_.carat.mean())
@@ -57,15 +59,14 @@ expr = (
 )
 ```
 
-Now that we're ready to compute results, we can connect to any of the backends.
-This feature logic can be reused and you don't need to modify it again!
+Now that we're ready to compute results, we can connect to any of Ibis'
+supported backends. This feature logic can be reused and you don't need to
+modify it again!
 
 This is a dataset that we can process locally. Let's connect to DuckDB and load
 the data into a DuckDB table:
 
 ```{python}
-import pandas as pd
-
 parquet_dir = "diamonds.parquet"
 
 # download data into a local file
