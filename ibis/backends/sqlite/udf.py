@@ -223,7 +223,7 @@ def pi():
     return math.pi
 
 
-@udf(skip_if_exists=True)
+@udf(skip_if_exists=True, deterministic=False)
 def uuid():
     return str(uuid4())
 
