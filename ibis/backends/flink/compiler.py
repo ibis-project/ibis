@@ -5,10 +5,12 @@ from __future__ import annotations
 import sqlglot as sg
 import sqlglot.expressions as sge
 
+import ibis.backends.sql.expressions as sqlexpr
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 from ibis.backends.sql.compiler import NULL, STAR, SQLGlotCompiler
+from ibis.expr.operations.match_recognize import AfterMatchStrategy, OutputMode
 from ibis.backends.sql.datatypes import FlinkType
 from ibis.backends.sql.dialects import Flink
 from ibis.backends.sql.rewrites import (
@@ -17,6 +19,7 @@ from ibis.backends.sql.rewrites import (
     exclude_unsupported_window_frame_from_row_number,
     rewrite_sample_as_filter,
 )
+
 
 
 class FlinkCompiler(SQLGlotCompiler):
@@ -562,3 +565,46 @@ class FlinkCompiler(SQLGlotCompiler):
         values = self.f.array_concat(left_values, right_values)
 
         return self.cast(self.f.map_from_arrays(keys, values), op.dtype)
+
+    def visit_MatchRecognizeAfterMatch(
+        self,
+        op,
+        *,
+        strategy: AfterMatchStrategy,
+        variable: ops.MatchRecognizeVariable,
+    ) -> sqlexpr.MatchRecognizeAfterMatch:
+        if (
+            variable is None
+            and strategy in {
+                AfterMatchStrategy.SKIP_TO_FIRST,
+                AfterMatchStrategy.SKIP_TO_LAST
+            }
+        ):
+            raise ValueError(
+                "`variable` must be defined when after match strategy is "
+                "SKIP_TO_FIRST or SKIP_TO_LAST."
+            )
+
+        if strategy == AfterMatchStrategy.SKIP_TO_FIRST:
+            strategy_str = f"SKIP TO FIRST {variable.args.get('name')}"
+        elif strategy == AfterMatchStrategy.SKIP_TO_LAST:
+            strategy_str = f"SKIP TO LAST {variable.args.get('name')}"
+        elif strategy == AfterMatchStrategy.SKIP_PAST_LAST:
+            strategy_str = f"SKIP PAST LAST ROW"
+        elif strategy == AfterMatchStrategy.SKIP_TO_NEXT:
+            strategy_str = f"SKIP TO NEXT ROW"
+
+        return sqlexpr.MatchRecognizeAfterMatch(this=strategy_str)
+
+    def visit_MatchRecognizeOutputMode(
+        self,
+        op,
+        *,
+        output_mode: OutputMode,
+    ) -> sqlexpr.MatchRecognizeOutputMode:
+        if output_mode == OutputMode.SINGLE_ROW:
+            output_mode_str = "ONE ROW PER MATCH"
+        elif output_mode == OutputMode.ALL_ROWS:
+            output_mode_str = "ALL ROWS PER MATCH"
+
+        return sqlexpr.MatchRecognizeOutputMode(this=output_mode_str)

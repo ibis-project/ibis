@@ -37,6 +37,7 @@ if TYPE_CHECKING:
     from ibis.expr.operations.relations import JoinKind
     from ibis.expr.schema import SchemaLike
     from ibis.expr.types import Table
+
     from ibis.expr.types.groupby import GroupedTable
     from ibis.expr.types.tvf import WindowedTable
     from ibis.formats.pyarrow import PyArrowData
@@ -4410,6 +4411,190 @@ class Table(Expr, _FixedTextJupyterMixin):
         from ibis.expr.types.temporal_windows import WindowedTable
 
         return WindowedTable(self, time_col)
+
+    def pattern_variable(self: Table,name: str) -> ir.MatchRecognizeVariable:
+        """Creates a pattern variable for `MATCH RECOGNIZE`.
+
+        Pattern variables created with this function are provided to
+        the `variables` argument of `match_recognize()`, which then
+        composes the `define`, `pattern` and `measures` clauses of the
+        `MATCH RECOGNIZE` statement. For more information on how these
+        fields are constructed, refer to the docstring of
+        `match_recognize()`.
+
+        Pattern variables are the building blocks for pattern
+        matching. Each variable is defined by a `name` and possibly a
+        `definition`. Name of the variable is set when the variable is
+        created by this function. Its definition can be set by via
+        `.define(definition: ir.Expr)`, where `definition` should be
+        built with pattern variables, including this variable. See the
+        examples below for how to create and define pattern variables.
+        See the docstring of `MatchRecognizeVariable.define()` for
+        more information and examples on variable definition.
+
+        A pattern variable essentially represents the set of all data
+        rows matching its definition. Thus its definition should be a
+        boolean expression that evaluates to true or false for every
+        given data row.  If the variable definition evaluates to true
+        for a given data row, then the data row gets mapped to the
+        variable. A single data row can get mapped to multiple
+        variables. Note that variables that are defined without an
+        expression are always assigned to all the data rows.
+
+        Parameters
+        ----------
+        name
+            Name of the variable.
+
+        Returns
+        -------
+        Variable
+            Expression that defines the variable.
+
+        Examples
+        --------
+        Given an Ibis table `table`
+
+        > var_a = table.pattern_variable("a")
+
+        will create a pattern variable `var_a`. Its definition can be
+        set as follows
+
+        > var_a.define(var_a.int_col >= 0)
+
+        which implies that `var_a` gets assigned to only data rows with
+        a non-negative value for `int_col` column. It is possible to define
+        a variable in terms of other variables, such as
+
+        > import ibis
+        > var_b = table.pattern_variable("b")
+        > var_a.define(ibis.and_(var_a.int_col >= 0, var_b.bool_col))
+
+        which implies that `var_a` gets assigned to only data rows
+        with a non-negative `int_col` column value, and only if the
+        last data row that was mapped to `var_b` has its `bool_col`
+        column evaluating to true.
+        """
+
+        return ops.MatchRecognizeVariable(name=name, table=self).to_expr()
+
+    def match_recognize(
+        self: Table,
+        order_by: str | ir.Column,
+        variables: ir.MatchRecognizeVariable | Iterable[ir.MatchRecognizeVariable],
+        measures: ir.MatchRecognizeMeasure | Iterable[ir.MatchRecognizeMeasure],
+        after_match: ir.MatchRecognizeAfterMatch,
+        partition_by: str | Iterable[str] | ir.Column | Iterable[ir.Column] | None = None,
+        output_mode: str = "single row",
+    ) -> ir.MatchRecognizeTable:
+        """Creates an expression to perform pattern matching on the table.
+
+        Pattern matching enables the following:
+        * Logically partition and order the data rows by defining
+        `partition_by` and `order_by`.
+        * Seek patterns of data rows by defining `variables` and
+        `after_match`.
+        * Select the output of pattern matching by defining `measures`
+        and `output_mode`.
+
+        Pattern variables given in `variables` serve as the basic
+        building blocks of the pattern being sought. They are created
+        with `.pattern_variable()`. The order in which the variables
+        are defined in the pattern is determined by the order they are
+        given in `variables`. For instance, if `variables` is given as
+        [var_a, var_b], this will imply seeking a pattern (`var_a`,
+        `var_b`), plus the corresponding variable quantifiers.  See
+        the doc for `.pattern_variable()` for more information on
+        defining and quantifying the variables for creating patterns.
+
+        Once a pattern is found in the sequence of data rows, the next
+        data row to start looking for the new match is decided by
+        the after-match strategy given in `after_match`. See the doc
+        for `ibis.after_match()` for more information on different
+        after-match strategies and how to select one.
+
+        Measurements to be collected from the matched patterns are
+        specified in `measures`. They are created with
+        `ibis.pattern_measurement()`. Each measurement has a name and
+        a numeric definition. They can be thought as the columns of
+        the table generated by pattern matching.  See the doc for
+        `ibis.pattern_measurement() for information on how to
+        create pattern measurements.
+
+        The number of data rows that should be emitted for every found
+        pattern match is determined by `output_mode`. There are
+        currently only two output modes supported: "single row"
+        (default) and "all rows". Not all backends support both of
+        these modes. For instance, Flink only supports "single row".
+
+        Note that some of the backends might impose requirements on
+        the table for pattern matching support. For instance, pattern
+        matching is currently supported in Flink only for
+        append-tables. Furthermore, Flink also produces an
+        append-table as the output of pattern matching.
+
+        Parameters
+        ----------
+        order_by
+            Table column(s) or column name(s) to be used for ordering
+            the data rows.
+        variables
+            Variables to be used for defining the pattern.
+        measures
+            Measurements to collect/output from the matched patterns.
+        after_match
+            After-match strategy to decide where to resume pattern
+            matching after a match is found.
+        partition_by
+            Table column(s) or column name(s) to be used for logically
+            partitioning the data rows.
+        output_mode
+            Mode to determine the number of rows emitted for the matched
+            patterns.
+
+        Returns
+        -------
+        Table
+            Expression representing the pattern matching results.
+        """
+        from ibis.expr.operations.match_recognize import AfterMatchStrategy, OutputMode
+
+        partition_by = ops.MatchRecognizePartitionBy(
+            columns=[
+                self._get_column(column) if isinstance(column, str) else column
+                for column in util.promote_list(partition_by)
+            ]
+        )
+        order_by = ops.MatchRecognizeOrderBy(
+            columns=[
+                self._get_column(column) if isinstance(column, str) else column
+                for column in util.promote_list(order_by)
+            ]
+        )
+        variables = util.promote_list(variables)
+        define = ops.MatchRecognizeDefine(variables=variables)
+        pattern = ops.MatchRecognizePattern(variables=variables)
+
+        measures = util.promote_list(measures)
+        measures = ops.MatchRecognizeMeasures(measures=measures)
+
+        output_mode = OutputMode.from_str(output_mode)
+        output_mode = ops.MatchRecognizeOutputMode(output_mode=output_mode)
+
+        op = self.op()
+        return ops.MatchRecognizeTable(
+            name=op.name,
+            schema=op.schema,
+            source=op.source,
+            namespace=op.namespace,
+            define=define,
+            pattern=pattern,
+            measures=measures,
+            after_match=after_match,
+            partition_by=partition_by,
+            order_by=order_by,
+            output_mode=output_mode,
+        ).to_expr()
 
 
 @public

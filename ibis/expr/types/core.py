@@ -60,6 +60,8 @@ class Expr(Immutable, Coercible):
     def __interactive_rich_console__(self, console, options):
         raise NotImplementedError()
 
+    # TODO (mehmet): `arg` is not always of type `ops.Node`.
+    # e.g. I have seen it being of `ibis.expr.types.relations.Table`.
     def __init__(self, arg: ops.Node) -> None:
         object.__setattr__(self, "_arg", arg)
 

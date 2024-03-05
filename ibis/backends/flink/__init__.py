@@ -842,6 +842,8 @@ class Backend(SQLBackend, CanCreateDatabase, NoUrl):
         self,
         table_name: str,
         obj: pa.Table | pd.DataFrame | ir.Table | list | dict,
+        *,
+        schema: sch.Schema | None = None,
         database: str | None = None,
         catalog: str | None = None,
         overwrite: bool = False,
@@ -876,6 +878,8 @@ class Backend(SQLBackend, CanCreateDatabase, NoUrl):
         import pyarrow as pa
         import pyarrow_hotfix  # noqa: F401
 
+        from ibis.backends.flink.datatypes import FlinkRowSchema
+
         if isinstance(obj, ir.Table):
             statement = InsertSelect(
                 table_name,
@@ -891,7 +895,15 @@ class Backend(SQLBackend, CanCreateDatabase, NoUrl):
         if isinstance(obj, dict):
             obj = pd.DataFrame.from_dict(obj)
         if isinstance(obj, pd.DataFrame):
-            table = self._table_env.from_pandas(obj)
+            if schema:
+                schema_ = FlinkRowSchema.from_ibis(schema)
+                table = self._table_env.from_pandas(obj, schema_)
+            else:
+                table = self._table_env.from_pandas(obj)
+
+            pyflink_schema = FlinkRowSchema.from_ibis(schema)
+            table = self._table_env.from_pandas(obj, pyflink_schema)
+
             return table.execute_insert(table_name, overwrite=overwrite)
 
         if isinstance(obj, list):

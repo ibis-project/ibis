@@ -16,6 +16,7 @@ from public import public
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
+import ibis.backends.sql.expressions as sqlexpr
 from ibis.backends.sql.rewrites import (
     FirstValue,
     LastValue,
@@ -1136,6 +1137,150 @@ class SQLGlotCompiler(abc.ABC):
         return sg.table(
             name, db=namespace.schema, catalog=namespace.database, quoted=self.quoted
         )
+
+    def visit_MatchRecognizePartitionBy(
+        self,
+        op,
+        *,
+        columns: list[Column],
+    ) -> sqlexpr.MatchRecognizePartitionBy:
+        return sqlexpr.MatchRecognizePartitionBy(columns=columns)
+
+    def visit_MatchRecognizeOrderBy(
+        self,
+        op,
+        *,
+        columns: list[Column],
+    ) -> sqlexpr.MatchRecognizeOrderBy:
+        return sqlexpr.MatchRecognizeOrderBy(columns=columns)
+
+    def visit_Quantifier(
+        self,
+        op,
+        *,
+        min_num_rows: int,
+        max_num_rows: int,
+        reluctant: bool,
+    ) -> sqlexpr.Quantifier:
+        return sqlexpr.Quantifier(
+            min_num_rows=min_num_rows,
+            max_num_rows=max_num_rows,
+            reluctant=reluctant,
+        )
+
+    def visit_MatchRecognizeVariable(
+        self,
+        op,
+        *,
+        name: str,
+        table: ops.Relation,
+        definition: ops.Value,
+        quantifier: ops.Quantifier,
+    ) -> sqlexpr.MatchRecognizeVariable:
+        return sqlexpr.MatchRecognizeVariable(
+            name=name,
+            definition=definition,
+            quantifier=quantifier,
+        )
+
+    def visit_MatchRecognizeVariableField(
+        self,
+        op,
+        *,
+        field: ops.Field,
+        variable: ops.MatchRecognizeVariable,
+    ) -> sge.Column:
+        return sg.column(
+            self._gen_valid_name(field.args.get("this")), table=variable.args.get("name"), quoted=self.quoted
+        )
+
+    def visit_First(
+        self,
+        op,
+        *,
+        field: ops.MatchRecognizeVariableField,
+        offset: int,
+    ):
+        if offset:
+            return self.agg.first(arg, offset)
+        else:
+            return self.agg.first(arg)
+
+    def visit_Last(
+        self,
+        op,
+        *,
+        field: ops.MatchRecognizeVariableField,
+        offset: int,
+    ):
+        if offset:
+            return self.agg.last(arg, offset)
+        else:
+            return self.agg.last(arg)
+
+    def visit_MatchRecognizeDefine(
+        self,
+        op,
+        *,
+        variables: list[ops.MatchRecognizeVariable],
+    ) -> sqlexpr.MatchRecognizeDefine:
+        return sqlexpr.MatchRecognizeDefine(variables=variables)
+
+    def visit_MatchRecognizePattern(
+        self,
+        op,
+        *,
+        variables: list[ops.MatchRecognizeVariable],
+    ) -> sqlexpr.MatchRecognizePattern:
+        return sqlexpr.MatchRecognizePattern(variables=variables)
+
+    def visit_MatchRecognizeMeasure(
+        self,
+        op,
+        *,
+        name: str,
+        definition: ops.Value,
+    ) -> sqlexpr.MatchRecognizeMeasure:
+        return sqlexpr.MatchRecognizeMeasure(name=name, definition=definition)
+
+    def visit_MatchRecognizeMeasures(
+        self,
+        op,
+        *,
+        measures: list[ops.MatchRecognizeMeasure],
+    ) -> sqlexpr.MatchRecognizeMeasures:
+        return sqlexpr.MatchRecognizeMeasures(measures=measures)
+
+    def visit_MatchRecognizeTable(
+        self,
+        op,
+        *,
+        name: str,
+        schema: sch.Schema,
+        source: Any,
+        namespace: ops.Namespace,
+        define: ops.MatchRecognizeDefine,
+        pattern: ops.Relation,
+        measures: ops.Relation,
+        after_match: str,
+        partition_by: str | Column,
+        order_by: str | Column,
+        output_mode: str,
+    ) -> sqlexpr.MatchRecognizeTable:
+        table = sg.table(
+            name, db=namespace.schema, catalog=namespace.database, quoted=self.quoted
+        )
+        match_recognize = sqlexpr.MatchRecognize(
+            partition_by=partition_by,
+            order_by=order_by,
+            define=define,
+            pattern=pattern,
+            after_match=after_match,
+            measures=measures,
+            output_mode=output_mode,
+        )
+
+        return sqlexpr.MatchRecognizeTable(table=table, match_recognize=match_recognize)
 
     def visit_SelfReference(self, op, *, parent, identifier):
         return parent
