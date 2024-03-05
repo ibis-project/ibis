@@ -1,0 +1,202 @@
+# Datatypes and Datashapes
+
+Every value in Ibis has two important properties: a type and shape.
+
+The type is probably familiar to you. It is something like
+
+- `Integer`
+- `Floating`
+- `String`
+- `Array`
+
+The shape is one of
+
+- `Scalar` (a single value)
+- `Column` (a series of values)
+
+## Datatype Flavors
+
+For some datatypes, there are further options that define them.
+For instance, `Integer` values can be signed or unsigned, and
+they have a precision. For example, "uint8", "int64", etc.
+These flavors don't affect their capabilities
+(eg both signed and unsigned ints have a `.abs()` method),
+but the flavor does impact how the underlying backend performs the computation.
+
+## Capabilities
+
+Depending on the combination of datatype and datashape, a value has
+different capabilities. For example:
+
+- All `String` values (both `StringScalars` and `StringColumns`) have the
+  method `.upper()` that transforms the string to uppercase.
+  `Floating` and `Array` values don't have this method, of course.
+- `IntegerColumn` and `FloatingColumn`  values have `.mean()`, `.max()`, etc methods
+  (which return `FloatingScalar` values),
+  because you can aggregate over them, since they are a collection of values.
+  On the other hand, `IntegerScalar` and `FloatingColumn` values do **not** have these
+  methods, because it doesn't make sense to take the mean or max of a single value.
+- If you call `.execute()` on these values, you get different results.
+  `Scalar` shapes result in plain python objects:
+  - `IntegerScalar`: plain python `int` object.
+  - `FloatingScalar`: plain python `float` object.
+  - `StringScalar`: plain python `str` object.
+  - `ArrayScalar`: plain python `list` object.
+  On the other hand, `Column` shapes result in `pandas.Series`:
+  - `IntegerColumn`: pd.Series of integers, with the same flavor.
+       For example, if the `IntegerColumn` was specifically "uint16",
+       then the pandas series will also be of type "uint16".
+  - `FloatingColumn`: pd.Series of floats with the same flavor.
+  - etc.
+
+## Broadcasting and Alignment
+
+There are rules for how different datashapes are combined. This is similar to
+how SQL and numpy handles merging datashapes, if you are familiar with them.
+
+```python
+import ibis
+
+ibis.options.interactive = True
+t1 = ibis.examples.penguins.fetch().head(100)
+t1
+# ┏━━━━━━━━━┳━━━━━━━━━━━┳━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━┳━━━━━━━━┳━━━━━━━┓
+# ┃ species ┃ island    ┃ bill_length_mm ┃ bill_depth_mm ┃ flipper_length_mm ┃ body_mass_g ┃ sex    ┃ year  ┃
+# ┡━━━━━━━━━╇━━━━━━━━━━━╇━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━╇━━━━━━━━╇━━━━━━━┩
+# │ string  │ string    │ float64        │ float64       │ int64             │ int64       │ string │ int64 │
+# ├─────────┼───────────┼────────────────┼───────────────┼───────────────────┼─────────────┼────────┼───────┤
+# │ Adelie  │ Torgersen │           39.1 │          18.7 │               181 │        3750 │ male   │  2007 │
+# │ Adelie  │ Torgersen │           39.5 │          17.4 │               186 │        3800 │ female │  2007 │
+# │ Adelie  │ Torgersen │           40.3 │          18.0 │               195 │        3250 │ female │  2007 │
+# │ Adelie  │ Torgersen │           NULL │          NULL │              NULL │        NULL │ NULL   │  2007 │
+# │ Adelie  │ Torgersen │           36.7 │          19.3 │               193 │        3450 │ female │  2007 │
+# │ Adelie  │ Torgersen │           39.3 │          20.6 │               190 │        3650 │ male   │  2007 │
+# │ Adelie  │ Torgersen │           38.9 │          17.8 │               181 │        3625 │ female │  2007 │
+# │ Adelie  │ Torgersen │           39.2 │          19.6 │               195 │        4675 │ male   │  2007 │
+# │ Adelie  │ Torgersen │           34.1 │          18.1 │               193 │        3475 │ NULL   │  2007 │
+# │ Adelie  │ Torgersen │           42.0 │          20.2 │               190 │        4250 │ NULL   │  2007 │
+# │ …       │ …         │              … │             … │                 … │           … │ …      │     … │
+# └─────────┴───────────┴────────────────┴───────────────┴───────────────────┴─────────────┴────────┴───────┘
+
+# We can look at the datatype of the year Column
+t1.year.type()
+# Int64(nullable=True)
+
+# Combining two Scalars results in a Scalar:
+t1.year.mean() + t1.year.std()
+# 2008.0025189076296
+
+# Combining a Column and Scalar results in a Column:
+t1.year + 1000
+# ┏━━━━━━━━━━━━━━━━━┓
+# ┃ Add(year, 1000) ┃
+# ┡━━━━━━━━━━━━━━━━━┩
+# │ int64           │
+# ├─────────────────┤
+# │            3007 │
+# │            3007 │
+# │            3007 │
+# │            3007 │
+# │            3007 │
+# │            3007 │
+# │            3007 │
+# │            3007 │
+# │            3007 │
+# │            3007 │
+# │               … │
+# └─────────────────┘
+
+# Combining two Columns results in a Column:
+t1.year + t1.bill_length_mm
+# ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+# ┃ Add(year, bill_length_mm) ┃
+# ┡━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+# │ float64                   │
+# ├───────────────────────────┤
+# │                    2046.1 │
+# │                    2046.5 │
+# │                    2047.3 │
+# │                      NULL │
+# │                    2043.7 │
+# │                    2046.3 │
+# │                    2045.9 │
+# │                    2046.2 │
+# │                    2041.1 │
+# │                    2049.0 │
+# │                         … │
+# └───────────────────────────┘
+```
+
+One requirement that might surprise you if you are coming from Numpy is
+Ibis's requirements on aligning `Columns`: In Numpy, if you have two arbitrary
+arrays, each of length 100, you can add them together, and it works because the
+elements are "lined up" based on position. Ibis is different. Because it is based
+around SQL, and SQL has no notion of inherint row ordering, you cannot "line up"
+any two `Column`s in Ibis: They both **have** to be derived from the same
+`Table` expression. For example:
+
+```python
+t2 = ibis.examples.population.fetch().head(100)
+t2
+# ┏━━━━━━━━━━━━━┳━━━━━━━┳━━━━━━━━━━━━┓
+# ┃ country     ┃ year  ┃ population ┃
+# ┡━━━━━━━━━━━━━╇━━━━━━━╇━━━━━━━━━━━━┩
+# │ string      │ int64 │ int64      │
+# ├─────────────┼───────┼────────────┤
+# │ Afghanistan │  1995 │   17586073 │
+# │ Afghanistan │  1996 │   18415307 │
+# │ Afghanistan │  1997 │   19021226 │
+# │ Afghanistan │  1998 │   19496836 │
+# │ Afghanistan │  1999 │   19987071 │
+# │ Afghanistan │  2000 │   20595360 │
+# │ Afghanistan │  2001 │   21347782 │
+# │ Afghanistan │  2002 │   22202806 │
+# │ Afghanistan │  2003 │   23116142 │
+# │ Afghanistan │  2004 │   24018682 │
+# │ …           │     … │          … │
+# └─────────────┴───────┴────────────┘
+
+t1.bill_depth_mm + t2.population
+# RelationError: Cannot convert <class 'ibis.expr.types.numeric.FloatingColumn'> expression involving multiple base table references to a projection
+
+# If you want to use these two columns together, you would need to join the tables
+# together first:
+j = ibis.join(t1, t2, "year")
+j
+# ┏━━━━━━━━━┳━━━━━━━━┳━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━┳━━━━━━━━┳━━━━━━━┳━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━┓
+# ┃ species ┃ island ┃ bill_length_mm ┃ bill_depth_mm ┃ flipper_length_mm ┃ body_mass_g ┃ sex    ┃ year  ┃ country        ┃ population ┃
+# ┡━━━━━━━━━╇━━━━━━━━╇━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━╇━━━━━━━━╇━━━━━━━╇━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━┩
+# │ string  │ string │ float64        │ float64       │ int64             │ int64       │ string │ int64 │ string         │ int64      │
+# ├─────────┼────────┼────────────────┼───────────────┼───────────────────┼─────────────┼────────┼───────┼────────────────┼────────────┤
+# │ Adelie  │ Dream  │           42.3 │          21.2 │               191 │        4150 │ male   │  2007 │ Afghanistan    │   26349243 │
+# │ Adelie  │ Dream  │           43.2 │          18.5 │               192 │        4100 │ male   │  2008 │ Afghanistan    │   27032197 │
+# │ Adelie  │ Dream  │           42.3 │          21.2 │               191 │        4150 │ male   │  2007 │ Albania        │    3166222 │
+# │ Adelie  │ Dream  │           43.2 │          18.5 │               192 │        4100 │ male   │  2008 │ Albania        │    3156608 │
+# │ Adelie  │ Dream  │           42.3 │          21.2 │               191 │        4150 │ male   │  2007 │ Algeria        │   35097043 │
+# │ Adelie  │ Dream  │           43.2 │          18.5 │               192 │        4100 │ male   │  2008 │ Algeria        │   35725377 │
+# │ Adelie  │ Dream  │           42.3 │          21.2 │               191 │        4150 │ male   │  2007 │ American Samoa │      57919 │
+# │ Adelie  │ Dream  │           43.2 │          18.5 │               192 │        4100 │ male   │  2008 │ American Samoa │      57053 │
+# │ Adelie  │ Dream  │           42.3 │          21.2 │               191 │        4150 │ male   │  2007 │ Andorra        │      81292 │
+# │ Adelie  │ Dream  │           43.2 │          18.5 │               192 │        4100 │ male   │  2008 │ Andorra        │      79969 │
+# │ …       │ …      │              … │             … │                 … │           … │ …      │     … │ …              │          … │
+# └─────────┴────────┴────────────────┴───────────────┴───────────────────┴─────────────┴────────┴───────┴────────────────┴────────────┘
+
+j.bill_depth_mm + j.population
+# ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+# ┃ Add(bill_depth_mm, population) ┃
+# ┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+# │ float64                        │
+# ├────────────────────────────────┤
+# │                   2.634926e+07 │
+# │                   2.703222e+07 │
+# │                   3.166243e+06 │
+# │                   3.156626e+06 │
+# │                   3.509706e+07 │
+# │                   3.572540e+07 │
+# │                   5.794020e+04 │
+# │                   5.707150e+04 │
+# │                   8.131320e+04 │
+# │                   7.998750e+04 │
+# │                              … │
+# └────────────────────────────────┘
+```
