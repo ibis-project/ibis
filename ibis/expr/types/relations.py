@@ -922,7 +922,7 @@ class Table(Expr, _FixedTextJupyterMixin):
 
     def group_by(
         self,
-        by: str | ir.Value | Iterable[str] | Iterable[ir.Value] | None = (),
+        *by: str | ir.Value | Iterable[str] | Iterable[ir.Value] | None,
         **key_exprs: str | ir.Value | Iterable[str] | Iterable[ir.Value],
     ) -> GroupedTable:
         """Create a grouped table expression.
@@ -978,9 +978,7 @@ class Table(Expr, _FixedTextJupyterMixin):
         """
         from ibis.expr.types.groupby import GroupedTable
 
-        if by is None:
-            by = ()
-
+        by = tuple(v for v in by if v is not None)
         groups = bind(self, (by, key_exprs))
         return GroupedTable(self, groups)
 
