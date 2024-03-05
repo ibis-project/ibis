@@ -90,12 +90,9 @@ broad_station
 Then convert it to a scalar subquery:
 
 ```{python}
-broad_station_subquery = broad_station.select("geom").to_array()
+broad_station_subquery = broad_station.select("geom").as_scalar()
 ```
 
-::: {.callout-note}
-The `.to_array()` API will change in version `9.0` to a more convenient alternative: `broad_station.as_scalar()`.
-:::
 
 ### `geo_equals` (`ST_Equals`)
 
@@ -113,7 +110,7 @@ We can also write this query without using `broad_station` as a variable, and wi
 API, also known as [the underscore API](../../how-to/analytics/chain_expressions.qmd).
 
 ```{python}
-subway_stations.filter(_.geom.geo_equals(_.filter(_.NAME == "Broad St")[["geom"]].to_array()))
+subway_stations.filter(_.geom.geo_equals(_.filter(_.NAME == "Broad St")[["geom"]].as_scalar()))
 ```
 
 ### `intersect` (ST_Intersect)
@@ -148,8 +145,9 @@ sts_near_broad
 ```
 
 ::: {.callout-note}
-In the previous query, `streets` and `broad_station` are different tables. We use [`to_array()`](../../reference/expression-tables.qmd#ibis.expr.types.relations.Table.to_array) to generate a
-scalar subquery from a table with a single column (whose shape is scalar).
+In the previous query, `streets` and `broad_station` are different tables. We use
+[`as_scalar()`](../../reference/expression-tables.qmd#ibis.expr.types.relations.Table.as_scalar)
+to generate a scalar subquery from a table with a single column (whose shape is scalar).
 :::
 
 To visualize the findings, we will convert the tables to GeoPandas DataFrames.
@@ -211,7 +209,7 @@ To find if there were any homicides in that area, we can find where the polygon 
 200 meters buffer to our "Broad St" station point intersects with the geometry column in our homicides table.
 
 ```{python}
-h_near_broad = homicides.filter(_.geom.intersects(broad_station.select(_.geom.buffer(200)).to_array()))
+h_near_broad = homicides.filter(_.geom.intersects(broad_station.select(_.geom.buffer(200)).as_scalar()))
 h_near_broad
 ```
 
@@ -220,7 +218,7 @@ data we can't tell the street near which it happened. However, we can check if t
 distance of a street.
 
 ```{python}
-h_street = streets.filter(_.geom.d_within(h_near_broad.select(_.geom).to_array(), 2))
+h_street = streets.filter(_.geom.d_within(h_near_broad.select(_.geom).as_scalar(), 2))
 h_street
 ```
 
