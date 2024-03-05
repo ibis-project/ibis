@@ -16,6 +16,7 @@ import ibis.common.exceptions as com
 import ibis.expr.datashape as ds
 import ibis.expr.datatypes as dt
 import ibis.expr.types as ir
+from ibis import _
 from ibis.backends.tests.errors import (
     ClickHouseDatabaseError,
     GoogleBadRequest,
@@ -480,6 +481,33 @@ def test_array_map(con, input, output, func):
     assert frozenset(map(tuple, result.values)) == frozenset(
         map(tuple, expected.values)
     )
+
+
+@pytest.mark.parametrize(
+    "func",
+    [
+        pytest.param(lambda t: t.x.map(_.b), id="t.x.map(_.b)"),
+        pytest.param(
+            lambda t: _.x.map(_.b),
+            id="_.x.map(_.b)",
+            marks=pytest.mark.xfail(
+                raises=AttributeError,
+                reason="The inner deferred binds to the table, not each array element",
+            ),
+        ),
+    ],
+)
+def test_array_map_deferred(con, func):
+    t = con.create_table(
+        "t",
+        {"x": [[{"a": 1, "b": 2}, {"a": 3, "b": 4}]]},
+        overwrite=True,
+    )
+    result = t.select(bs=func(t))
+    expected = ibis.memtable({"bs": [[2, 4]]})
+    result_df = result.to_pandas()
+    expected_df = expected.execute()
+    tm.assert_frame_equal(result_df, expected_df)
 
 
 @builtin_array
