@@ -8,7 +8,8 @@ everywhere".
 
 In Ibis, you can define unbound tables. An unbound table is a table with a
 specified schema but not connected to a data source. You can think of it as an
-empty CSV file with just the header.
+empty spreadsheet with just the header. Even though the spreadsheet is empty,
+you know what the data would look like.
 
 Unbound tables allow you to write transformations for data as long as it
 conforms to the provided schema. You don't need to connect to data until you're
@@ -21,20 +22,18 @@ Here's how we can define an unbound table in Ibis:
 ```{python}
 import ibis
 
-schema = ibis.schema(
-    {
-        "carat": "float64",
-        "cut": "string",
-        "color": "string",
-        "clarity": "string",
-        "depth": "float64",
-        "table": "float64",
-        "price": "int64",
-        "x": "float64",
-        "y": "float64",
-        "z": "float64",
-    }
-)
+schema = {
+    "carat": "float64",
+    "cut": "string",
+    "color": "string",
+    "clarity": "string",
+    "depth": "float64",
+    "table": "float64",
+    "price": "int64",
+    "x": "float64",
+    "y": "float64",
+    "z": "float64",
+}
 diamonds = ibis.table(schema, name="diamonds")
 diamonds
 ```
@@ -61,15 +60,18 @@ expr = (
 Now that we're ready to compute results, we can connect to any of the backends.
 This feature logic can be reused and you don't need to modify it again!
 
-This is a small enough dataset that we can process locally. Let's connect to
-DuckDB and load the data into a DuckDB table:
+This is a dataset that we can process locally. Let's connect to DuckDB and load
+the data into a DuckDB table:
 
 ```{python}
 import pandas as pd
 
-parquet_dir = "../../../ci/ibis-testing-data/parquet/diamonds.parquet"
-con = ibis.duckdb.connect(":memory:")
-con.create_table("diamonds", pd.read_parquet(parquet_dir))
+parquet_dir = "diamonds.parquet"
+
+# download data into a local file
+ibis.examples.diamonds.fetch().to_parquet(parquet_dir)
+con = ibis.duckdb.connect()
+con.read_parquet(parquet_dir, table_name="diamonds")
 ```
 
 Connecting to this DuckDB table and executing the transformation on the loaded
