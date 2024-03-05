@@ -232,7 +232,7 @@ class OracleCompiler(SQLGlotCompiler):
         return sge.RegexpReplace(
             this=sg.func("sys_guid"),
             expression=sge.convert("(.{8})(.{4})(.{4})(.{4})(.{12})"),
-            replacement=sge.convert("\\1-\\2-\\3-\\4-\\5")
+            replacement=sge.convert("\\1-\\2-\\3-\\4-\\5"),
         )
 
     def visit_Pi(self, op):
