@@ -1,15 +1,21 @@
-# Contribute to the Ibis codebase
+---
+title: "Contribute to the Ibis codebase"
+---
 
-## Getting started
+## Workflow
+
+### Getting started
 
 First, set up a [development environment](./01_environment.qmd).
 
-## Taking issues
+If you're developing on Mac M1 or M2, see [docs for setting up Colima](#set-up-colima).
+
+### Taking issues
 
 If you find an issue you want to work on, write a comment with the text
 `/take` on the issue. GitHub will then assign the issue to you.
 
-## Running the test suite
+### Running the test suite
 
 To run tests that do not require a backend:
 
@@ -17,9 +23,9 @@ To run tests that do not require a backend:
 pytest -m core
 ```
 
-### Backend test suites
+#### Backend test suites
 
-:::{.callout-tip}
+::: {.callout-tip}
 ## You may be able to skip this section
 
 If you haven't made changes to the core of ibis (e.g., `ibis/expr`) or any
@@ -40,17 +46,18 @@ To run the tests for a specific backend (e.g. sqlite):
 pytest -m sqlite
 ```
 
-## Setting up non-trivial backends
+### Setting up non-trivial backends
 
-:::{.callout-note}
+::: {.callout-note}
 ## MacOS users on arm64 CPUs must use a different setup
+
 If you are working with an `arm64` architecture (Mac M1/M2) you can setup Docker
 with [Colima](https://github.com/abiosoft/colima). Refer to
 [set up colima](#set-up-colima). Or you can download Docker desktop.
 :::
 
 These client-server backends need to be started before testing them.
-They can be started with `Docker compose` directly, or using the `just` tool.
+They can be started with `docker compose` directly, or using the `just` tool.
 
 - ClickHouse: `just up clickhouse`
 - Exasol: `just up exasol` (no `arm64` support)
@@ -70,7 +77,8 @@ if you ran `just up postgres`:
 ```sh
 pytest -m postgres
 ```
-### Test the backend locally
+
+#### Test the backend locally
 
 If anything seems amiss with a backend, you can of course test it locally:
 
@@ -79,7 +87,7 @@ export PGPASSWORD=postgres
 psql -t -A -h localhost -U postgres -d ibis_testing -c "select 'success'"
 ```
 
-## Writing the commit
+### Writing the commit
 
 Ibis follows the [Conventional Commits](https://www.conventionalcommits.org/) structure.
 In brief, the commit summary should look like:
@@ -97,93 +105,92 @@ The type (e.g. `fix`) can be:
 
       fixes #4242
 
-## Submit a pull request
+### Submit a pull request
 
 Ibis follows the standard GitHub pull request process. The team will review the PR and merge when it's ready.
 
-
 ## Colima setup for Mac M1/M2 users {#set-up-colima}
 
+[Colima](https://github.com/abiosoft/colima) is a container runtime that
+supports Mac M1 and M2 CPUs.
+
 If you are working with an M1 or M2 CPU architecture, you will need to
-run Docker to be able to test some backends supported by Ibis. With Colima,
-you can run Docker on newer Macs without using Docker Desktop.[^1][^2]
+run Docker to be able to test some backends supported by Ibis. With Colima[^1],
+you can run Docker on newer Macs without using Docker Desktop[^2].
 
-[^1]: [Goodbye Docker Desktop for Mac, Hello Colima](https://jacobtomlinson.dev/posts/2022/goodbye-docker-desktop-for-mac-hello-colima/)
-[^2]: [Installing Colima as a Docker Engine provider with Buildx and Compose plugins installed](https://aosolorzano.medium.com/installing-colima-as-a-Docker-engine-provider-with-buildx-and-compose-plugins-installed-1ce8b3bae158)
-
-### Colima
-
-[Colima](https://github.com/abiosoft/colima) is container runtime with minimal setup, that has support for Mac M1 and M2 CPUs.
+[^1]: [Installing Colima as a Docker Engine provider with `buildx` and `compose` plugins installed](https://aosolorzano.medium.com/installing-colima-as-a-docker-engine-provider-with-buildx-and-compose-plugins-installed-1ce8b3bae158)
+[^2]: [Goodbye Docker Desktop for Mac, Hello Colima](https://jacobtomlinson.dev/posts/2022/goodbye-docker-desktop-for-mac-hello-colima/)
 
 ### Get started
 
-1. Uninstall Docker Desktop
+#### Uninstall Docker Desktop
 
-If you have Docker desktop installed, follow the references, both of them have
-a section on how to get rid of it.
+If you have Docker desktop installed, follow [^1] or [^2], both of them have
+a section on how to uninstall Docker Desktop.
 
-2. Install Docker Client with `brew`
+#### Install Docker client with [Homebrew](https://brew.sh/)
 
-Make sure your brew installation is up to date and cashed cleaned up, just in case.
-
-```bash
-$ brew install Docker
-```
-
-Check installation by doing
+Make sure your Homebrew installation is up to date.
 
 ```bash
-$ Docker --version
+$ brew install docker
 ```
 
-Notice we haven't installed any Docker Engine yet, and nly the Docker client
+#### Check installation by running
+
+```bash
+$ docker --version
+```
+
+Notice we haven't installed any Docker Engine yet, and only the Docker client
 information is displayed.
 
-1. Install Colima
+#### Install Colima
 
 ```bash
 $ brew install colima
 ```
 
-4. Install Docker Compose Plugin (optional)
+#### Install Docker Compose plugin (optional)
 
-If you want to be able to run `Docker compose ...` or run `just up ...` follow
-this steps. Noticed I said `Docker compose ...` not `Docker-compose ...`.
+If you want to be able to run `docker compose` or run `just up`, follow these
+steps.
 
-According to the official Docker [documentation](https://docs.Docker.com/compose/install/linux/),
-run the following commands in a separate terminal:
+The official [Docker
+documentation](https://docs.docker.com/compose/install/linux/) suggests
+running the following commands in a separate terminal:
 
 Replace the link on the `curl` step with the version you desired, find them here
-https://github.com/Docker/compose/releases/
+https://github.com/docker/compose/releases/
 
 ```bash
-$ DOCKER_CONFIG=${DOCKER_CONFIG:-$HOME/.Docker}
+$ DOCKER_CONFIG=${DOCKER_CONFIG:-$HOME/.docker}
 $ mkdir -p $DOCKER_CONFIG/cli-plugins
-$ curl -SL https://github.com/Docker/compose/releases/download/v2.24.6/Docker-compose-darwin-aarch64 -o $DOCKER_CONFIG/cli-plugins/Docker-compose
+$ curl -SL https://github.com/docker/compose/releases/download/v2.24.6/docker-compose-darwin-aarch64 -o $DOCKER_CONFIG/cli-plugins/docker-compose
 ```
 
 Then add execution permission to the downloaded binary:
 
 ```bash
-$ chmod +x $DOCKER_CONFIG/cli-plugins/Docker-compose
+$ chmod +x $DOCKER_CONFIG/cli-plugins/docker-compose
 ```
 
 Check it worked:
 
 ```bash
-$ Docker compose version
+$ docker compose version
 ```
 
-1. Take it for a spin. (Example for the [Ibis](https://github.com/ibis-project/ibis) project)
+#### Start Colima
 
 ```bash
 $ colima start
 ```
 
-Notice that now you can run the `Docker version` and you will see the engine.
+You can now run `docker version` and you will see the engine.
 
-:::{.callout-note}
-By default this starts with 2cpu and 2GB of memory, and 60GB disk,
+::: {.callout-note}
+## By default this launches containers with 2 CPUs, 2GB of RAM, and 60GB of disk space.
 
 You can modify this as well as the architecture by passing command line
 arguments (`--cpu`, `--memory`, `--disk`, and `--arch`) to `colima start`.

@@ -81,7 +81,9 @@ def _create_client_info_gapic(application_name):
     return ClientInfo(user_agent=_create_user_agent(application_name))
 
 
-_MEMTABLE_PATTERN = re.compile(r"^_?ibis_(?:pandas|pyarrow)_memtable_[a-z0-9]{26}$")
+_MEMTABLE_PATTERN = re.compile(
+    r"^_?ibis_(?:[A-Za-z_][A-Za-z_0-9]*)_memtable_[a-z0-9]{26}$"
+)
 
 
 def _qualify_memtable(
@@ -433,9 +435,11 @@ class Backend(SQLBackend, CanCreateSchema):
                 location=location,
             )
 
-        self.client.default_query_job_config = bq.QueryJobConfig(
-            use_legacy_sql=False, allow_large_results=True
-        )
+        if self.client.default_query_job_config is None:
+            self.client.default_query_job_config = bq.QueryJobConfig()
+
+        self.client.default_query_job_config.use_legacy_sql = False
+        self.client.default_query_job_config.allow_large_results = True
 
         if storage_client is not None:
             self.storage_client = storage_client

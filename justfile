@@ -98,7 +98,7 @@ download-data owner="ibis-project" repo="testing-data" rev="master":
 
 # start backends using docker compose; no arguments starts all backends
 up *backends:
-    docker compose up --wait {{ backends }}
+    docker compose up --build --wait {{ backends }}
 
 # stop and remove containers -> clean up dangling volumes -> start backends
 reup *backends:
