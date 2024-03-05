@@ -223,7 +223,7 @@ def test_projection_with_star_expr(table):
 
     # it lives!
     proj = t[t, new_expr]
-    repr(proj)
+    str(proj)
 
     ex_names = table.schema().names + ("bigger_a",)
     assert proj.schema().names == ex_names
@@ -397,7 +397,7 @@ def test_repr_same_but_distinct_objects(con):
     t_copy = con.table("test1")
     table2 = t[t_copy["f"] > 0]
 
-    result = repr(table2)
+    result = str(table2)
     assert result.count("DatabaseTable") == 1
 
 
@@ -411,7 +411,7 @@ def test_filter_fusion_distinct_table_objects(con):
     expr4 = t[tt.f > 0][t.c > 0]
 
     assert_equal(expr, expr2)
-    assert repr(expr) == repr(expr2)
+    assert str(expr) == str(expr2)
     assert_equal(expr, expr3)
     assert_equal(expr, expr4)
 
@@ -1077,7 +1077,7 @@ def test_join_combo_with_projection(table):
     # this works
     joined = t.left_join(t2, [t["g"] == t2["g"]])
     proj = joined.select([t, t2["foo"], t2["bar"]])
-    repr(proj)
+    str(proj)
 
 
 def test_join_getitem_projection(con):
@@ -1232,7 +1232,7 @@ def test_filter_join():
     # It works!
     joined = table1.inner_join(table2, [table1["key1"] == table2["key3"]])
     filtered = joined.filter([table1.value1 > 0])
-    repr(filtered)
+    str(filtered)
 
 
 def test_inner_join_overlapping_column_names():

@@ -54,7 +54,7 @@ class Expr(Immutable, Coercible):
         if not opts.interactive:
             from rich.text import Text
 
-            return console.render(Text(self._repr()), options=options)
+            return console.render(Text(str(self)), options=options)
         return self.__interactive_rich_console__(console, options)
 
     def __interactive_rich_console__(self, console, options):
@@ -75,35 +75,32 @@ class Expr(Immutable, Coercible):
         else:
             raise CoercionError("Unable to coerce value to an expression")
 
-    def __repr__(self) -> str:
-        if not opts.interactive:
-            return self._repr()
+    def __str__(self) -> str:
+        if opts.interactive:
+            from ibis.expr.types.pretty import simple_console
 
-        from ibis.expr.types.pretty import simple_console
+            with simple_console.capture() as capture:
+                try:
+                    simple_console.print(self)
+                except TranslationError as e:
+                    lines = [
+                        "Translation to backend failed",
+                        f"Error message: {e!r}",
+                        "Expression repr follows:",
+                        self._repr(),
+                    ]
+                    return "\n".join(lines)
+            return capture.get().rstrip()
+        else:
+            from ibis.expr.format import pretty
 
-        with simple_console.capture() as capture:
-            try:
-                simple_console.print(self)
-            except TranslationError as e:
-                lines = [
-                    "Translation to backend failed",
-                    f"Error message: {e!r}",
-                    "Expression repr follows:",
-                    self._repr(),
-                ]
-                return "\n".join(lines)
-        return capture.get().rstrip()
+            return pretty(self)
 
     def __reduce__(self):
         return (self.__class__, (self._arg,))
 
     def __hash__(self):
         return hash((self.__class__, self._arg))
-
-    def _repr(self) -> str:
-        from ibis.expr.format import pretty
-
-        return pretty(self)
 
     def equals(self, other):
         """Return whether this expression is _structurally_ equivalent to `other`.
@@ -157,6 +154,12 @@ class Expr(Immutable, Coercible):
             # so fallback to the default text representation.
             with contextlib.suppress(Exception):
                 return viz.to_graph(self).pipe(format="png")
+
+    def _repr_pretty_(self, p, cycle):
+        if cycle:
+            p.text(f"{self.__class__.__name__}(...)")
+        else:
+            p.text(str(self))
 
     def visualize(
         self,

@@ -23,7 +23,7 @@ def test_format_sql_query_result(con, snapshot):
         avg_arrdelay=_.avg_arrdelay.round(1),
     )
 
-    snapshot.assert_match(repr(expr), "repr.txt")
+    snapshot.assert_match(str(expr), "repr.txt")
 
 
 def test_memoize_database_table(con, snapshot):
@@ -41,7 +41,7 @@ def test_memoize_database_table(con, snapshot):
         [met1, table3["f"].sum().name("bar")], by=[table3["g"], table2["key"]]
     )
 
-    result = repr(expr)
+    result = str(expr)
     assert result.count("test1") == 1
     assert result.count("test2") == 1
 
@@ -58,7 +58,7 @@ def test_memoize_insert_sort_key(con, snapshot):
 
     worst = expr[expr.dev.notnull()].order_by(ibis.desc("dev")).limit(10)
 
-    result = repr(worst)
+    result = str(worst)
     assert result.count("airlines") == 1
 
     snapshot.assert_match(result, "repr.txt")

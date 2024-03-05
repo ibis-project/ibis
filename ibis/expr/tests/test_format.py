@@ -13,7 +13,7 @@ import ibis.legacy.udf.vectorized as udf
 from ibis import util
 
 # easier to switch implementation if needed
-fmt = repr
+fmt = str
 
 
 @pytest.mark.parametrize("cls", [ops.PhysicalTable, ops.Relation])
@@ -225,8 +225,8 @@ def test_complex_repr(snapshot):
 
 def test_value_exprs_repr():
     t = ibis.table(dict(a="int64", b="string"), name="t")
-    assert "r0.a" in repr(t.a)
-    assert "Sum(r0.a)" in repr(t.a.sum())
+    assert "r0.a" in str(t.a)
+    assert "Sum(r0.a)" in str(t.a.sum())
 
 
 def test_show_types(monkeypatch):
@@ -234,9 +234,9 @@ def test_show_types(monkeypatch):
 
     t = ibis.table(dict(a="int64", b="string"), name="t")
     expr = t.a / 1.0
-    assert "# int64" in repr(t.a)
-    assert "# float64" in repr(expr)
-    assert "# float64" in repr(expr.sum())
+    assert "# int64" in str(t.a)
+    assert "# float64" in str(expr)
+    assert "# float64" in str(expr.sum())
 
 
 def test_schema_truncation(monkeypatch, snapshot):
