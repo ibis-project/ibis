@@ -125,11 +125,10 @@ The next major component of Ibis is the compilers.
 
 The first few versions of Ibis directly generated strings, but the compiler
 infrastructure was generalized to support compilation of
-[SQLAlchemy](https://docs.sqlalchemy.org/en/latest/tutorial/index.html#unified-tutorial) based
-expressions.
+[SQLGlot](https://sqlglot.com/)-based expressions.
 
 The compiler works by translating the different pieces of SQL expression into a
-string or SQLAlchemy expression.
+string or SQLGlot expression.
 
 The main pieces of a `SELECT` statement are:
 

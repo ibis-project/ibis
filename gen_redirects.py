@@ -56,7 +56,6 @@ REDIRECTS = {
     "/api/backends/base/": "/reference/backends/base/",
     "/api/backends/pandas/": "/reference/backends/pandas/",
     "/api/backends/sql/": "/reference/backends/sql/",
-    "/api/backends/sqlalchemy/": "/reference/backends/sqlalchemy/",
     "/api/config/": "/reference/config/",
     "/api/datatypes/": "/reference/datatypes/",
     "/api/expressions/": "/reference/expressions/",
@@ -143,7 +142,9 @@ REDIRECTS = {
     "/ibis-for-dplyr-users/": "/tutorial/ibis-for-dplyr-users/",
     "/ibis-for-pandas-users/": "/tutorial/ibis-for-pandas-users/",
     "/ibis-for-sql-programmers/": "/tutorial/ibis-for-sql-users/",
+    "/reference/backends/": "/backends/",
     "/reference/backends/pandas/": "/backends/pandas/",
+    "/reference/config/": "/how-to/configure/basics",
     "/reference/expressions/": "/reference/",
     "/reference/expressions/collections/": "/reference/expression-collections",
     "/reference/expressions/generic/": "/reference/expression-generic",
@@ -172,7 +173,6 @@ REDIRECTS = {
     # TODO: "/how_to/memtable_join/"
     # TODO: "/reference/backends/base/"
     # TODO: "/reference/backends/sql/"
-    # TODO: "/reference/backends/sqlalchemy/"
 }
 
 # Fill in templates
