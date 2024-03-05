@@ -40,14 +40,14 @@ _from_sqlglot_types = {
     typecode.LONGTEXT: dt.String,
     typecode.MEDIUMBLOB: dt.Binary,
     typecode.MEDIUMTEXT: dt.String,
-    typecode.MONEY: dt.Decimal(15, 4),
+    typecode.MONEY: dt.Decimal(19, 4),
     typecode.NCHAR: dt.String,
     typecode.UUID: dt.UUID,
     typecode.NULL: dt.Null,
     typecode.NVARCHAR: dt.String,
     typecode.OBJECT: partial(dt.Map, dt.string, dt.json),
     typecode.SMALLINT: dt.Int16,
-    typecode.SMALLMONEY: dt.Decimal(6, 4),
+    typecode.SMALLMONEY: dt.Decimal(10, 4),
     typecode.TEXT: dt.String,
     typecode.TIME: dt.Time,
     typecode.TIMETZ: dt.Time,
@@ -163,6 +163,7 @@ class SqlglotType(TypeMapper):
             dtype = method(*typ.expressions)
         else:
             dtype = _from_sqlglot_types[typecode](nullable=cls.default_nullable)
+            print(f"new type from ibis -> sqlglot {dtype}")
 
         if nullable is not None:
             return dtype.copy(nullable=nullable)
