@@ -46,7 +46,6 @@ About pandas'"](https://wesmckinney.com/blog/apache-arrow-pandas-internals/).
 
 Ibis started as a pandas-like API for Apache Impala, but has since expanded to
 support many backends. It currently leverages open-source projects like
-[SQLAlchemy](https://github.com/sqlalchemy/sqlalchemy) and
 [SQLGlot](https://github.com/tobymao/sqlglot) to work with many backends. While
 these projects are great, they rely on backend-specific SQL that does not
 constitute a standard. Going forward, we expect ADBC and Substrait to be the
