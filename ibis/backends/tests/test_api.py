@@ -126,5 +126,5 @@ def test_unbind(alltypes, expr_fn):
     assert expr.unbind() != expr
     assert expr.unbind().schema() == expr.schema()
 
-    assert "Unbound" not in repr(expr)
-    assert "Unbound" in repr(expr.unbind())
+    assert "Unbound" not in str(expr)
+    assert "Unbound" in str(expr.unbind())

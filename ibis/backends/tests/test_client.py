@@ -933,7 +933,7 @@ def test_repr(alltypes, interactive, monkeypatch):
 
     expr = alltypes.select("date_string_col")
 
-    s = repr(expr)
+    s = str(expr)
     # no control characters
     assert all(c.isprintable() or c in "\n\r\t" for c in s)
     if interactive:
@@ -948,7 +948,7 @@ def test_interactive_repr_show_types(alltypes, show_types, monkeypatch):
     monkeypatch.setattr(ibis.options.repr.interactive, "show_types", show_types)
 
     expr = alltypes.select("id")
-    s = repr(expr)
+    s = str(expr)
     if show_types:
         assert "int" in s
     else:
