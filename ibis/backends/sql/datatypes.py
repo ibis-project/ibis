@@ -163,7 +163,6 @@ class SqlglotType(TypeMapper):
             dtype = method(*typ.expressions)
         else:
             dtype = _from_sqlglot_types[typecode](nullable=cls.default_nullable)
-            print(f"new type from ibis -> sqlglot {dtype}")
 
         if nullable is not None:
             return dtype.copy(nullable=nullable)
