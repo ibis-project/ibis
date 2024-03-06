@@ -1,4 +1,6 @@
-# Write and execute unbound expressions
+---
+title: Write and execute unbound expressions
+---
 
 One of the most powerful features of Ibis is the separation of transformation
 logic from the execution engine, which allows you to "write once, execute
@@ -15,7 +17,7 @@ Unbound tables allow you to write transformations for data as long as it
 conforms to the provided schema. You don't need to connect to a data source
 until you're ready to execute the expression and compute outputs.
 
-## Example
+## Execute an unbound expression
 
 Here's how we can define an unbound table in Ibis:
 
@@ -99,4 +101,18 @@ con.create_table("results", schema=output_schema)
 con.insert("results", expr)
 
 con.table("results").to_pandas()
+```
+
+## Execute on another backend
+
+Because Ibis separates the transformation logic from the execution engine, you
+can easily reuse the written transformation for another backend. Here we use
+Polars as an example, but you can do the same for any of Ibis' 20+ supported
+backends as long as that particular backend supports the operations
+(see [the operation support matrix](../../support_matrix.qmd)).
+
+```{python}
+pl = ibis.polars.connect()
+pl.read_parquet(parquet_dir, table_name="diamonds")
+pl.to_pandas(expr)
 ```
