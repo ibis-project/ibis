@@ -1279,7 +1279,7 @@ def test_repr_timestamp_array(con, monkeypatch):
     assert ibis.options.default_backend is con
 
     expr = ibis.array(pd.date_range("2010-01-01", "2010-01-03", freq="D").tolist())
-    assert "Translation to backend failed" not in repr(expr)
+    assert "Translation to backend failed" not in str(expr)
 
 
 @pytest.mark.notyet(
