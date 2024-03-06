@@ -1594,7 +1594,6 @@ def test_day_of_week_column_group_by(
 @pytest.mark.notimpl(
     ["datafusion", "druid", "oracle"], raises=com.OperationNotDefinedError
 )
-@pytest.mark.notimpl(["exasol"], raises=com.OperationNotDefinedError)
 def test_now(con):
     expr = ibis.now()
     result = con.execute(expr.name("tmp"))
@@ -1605,7 +1604,6 @@ def test_now(con):
 @pytest.mark.notimpl(
     ["datafusion", "druid", "oracle"], raises=com.OperationNotDefinedError
 )
-@pytest.mark.notimpl(["exasol"], raises=com.OperationNotDefinedError)
 def test_now_from_projection(alltypes):
     n = 2
     expr = alltypes.select(now=ibis.now()).limit(n)
