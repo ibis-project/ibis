@@ -17,7 +17,6 @@ from ibis import _
 from ibis import literal as L
 from ibis.backends.tests.errors import (
     ArrowNotImplementedError,
-    DuckDBOutOfRangeException,
     DuckDBParserException,
     ExaQueryError,
     GoogleBadRequest,
@@ -849,23 +848,11 @@ def test_trig_functions_columns(backend, expr, alltypes, df, expected_fn):
     backend.assert_series_equal(result, expected)
 
 
-@pytest.mark.notyet(
-    ["mssql", "mysql", "duckdb", "exasol"],
-    raises=(
-        PyODBCProgrammingError,
-        MySQLOperationalError,
-        DuckDBOutOfRangeException,
-        ExaQueryError,
-    ),
-)
-@pytest.mark.broken(
-    ["sqlite", "impala"], raises=AssertionError, reason="behavior doesn't match numpy"
-)
 def test_cotangent(backend, alltypes, df):
     dc_max = df.double_col.max()
-    expr = alltypes.select(tmp=(_.double_col / dc_max).cot())
+    expr = alltypes.select(tmp=(0.5 + _.double_col / dc_max).cot())
     result = expr.tmp.to_pandas()
-    expected = 1.0 / np.tan(df.double_col / dc_max).rename("tmp")
+    expected = 1.0 / np.tan(0.5 + df.double_col / dc_max).rename("tmp")
     backend.assert_series_equal(result, expected)
 
 
