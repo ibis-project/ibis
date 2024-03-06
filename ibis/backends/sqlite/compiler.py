@@ -10,11 +10,7 @@ import ibis.expr.operations as ops
 from ibis.backends.sql.compiler import NULL, SQLGlotCompiler
 from ibis.backends.sql.datatypes import SQLiteType
 from ibis.backends.sql.dialects import SQLite
-from ibis.backends.sql.rewrites import (
-    rewrite_first_to_first_value,
-    rewrite_last_to_last_value,
-    rewrite_sample_as_filter,
-)
+from ibis.backends.sql.rewrites import rewrite_sample_as_filter
 from ibis.common.temporal import DateUnit, IntervalUnit
 
 
@@ -24,12 +20,7 @@ class SQLiteCompiler(SQLGlotCompiler):
 
     dialect = SQLite
     type_mapper = SQLiteType
-    rewrites = (
-        rewrite_sample_as_filter,
-        rewrite_first_to_first_value,
-        rewrite_last_to_last_value,
-        *SQLGlotCompiler.rewrites,
-    )
+    rewrites = (rewrite_sample_as_filter, *SQLGlotCompiler.rewrites)
 
     NAN = NULL
     POS_INF = sge.Literal.number("1e999")

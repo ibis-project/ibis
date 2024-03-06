@@ -15,7 +15,7 @@ import ibis.expr.operations as ops
 from ibis.backends.sql.compiler import FALSE, NULL, STAR, TRUE, SQLGlotCompiler
 from ibis.backends.sql.datatypes import PySparkType
 from ibis.backends.sql.dialects import PySpark
-from ibis.backends.sql.rewrites import p
+from ibis.backends.sql.rewrites import FirstValue, LastValue, p
 from ibis.common.patterns import replace
 from ibis.config import options
 from ibis.util import gen_name
@@ -222,6 +222,12 @@ class PySparkCompiler(SQLGlotCompiler):
         ]
         return self.f.count(sge.Distinct(expressions=cols))
 
+    def visit_FirstValue(self, op, *, arg):
+        return self.f.first(arg, TRUE)
+
+    def visit_LastValue(self, op, *, arg):
+        return self.f.last(arg, TRUE)
+
     def visit_First(self, op, *, arg, where):
         if where is not None:
             arg = self.if_(where, arg, NULL)
@@ -406,12 +412,14 @@ class PySparkCompiler(SQLGlotCompiler):
         return self.f.get_json_object(arg, path)
 
     def visit_Window(self, op, *, func, group_by, order_by, **kwargs):
-        if isinstance(op.func, ops.Analytic):
-            # spark disallows specifying boundaries for lead/lag
+        if isinstance(op.func, ops.Analytic) and not isinstance(
+            op.func, (FirstValue, LastValue)
+        ):
+            # spark disallows specifying boundaries for most window functions
             if order_by:
                 order = sge.Order(expressions=order_by)
             else:
-                # pyspark requires an order by clause for lag/lead
+                # pyspark requires an order by clause for most window functions
                 order = sge.Order(expressions=[NULL])
             return sge.Window(this=func, partition_by=group_by, order=order)
         else:

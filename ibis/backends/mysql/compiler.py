@@ -18,8 +18,6 @@ from ibis.backends.sql.rewrites import (
     exclude_unsupported_window_frame_from_rank,
     exclude_unsupported_window_frame_from_row_number,
     rewrite_empty_order_by_window,
-    rewrite_first_to_first_value,
-    rewrite_last_to_last_value,
     rewrite_sample_as_filter,
 )
 from ibis.common.patterns import replace
@@ -53,8 +51,6 @@ class MySQLCompiler(SQLGlotCompiler):
     rewrites = (
         rewrite_limit,
         rewrite_sample_as_filter,
-        rewrite_first_to_first_value,
-        rewrite_last_to_last_value,
         exclude_unsupported_window_frame_from_ops,
         exclude_unsupported_window_frame_from_rank,
         exclude_unsupported_window_frame_from_row_number,

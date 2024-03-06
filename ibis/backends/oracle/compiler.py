@@ -11,13 +11,13 @@ from ibis.backends.sql.compiler import NULL, STAR, SQLGlotCompiler
 from ibis.backends.sql.datatypes import OracleType
 from ibis.backends.sql.dialects import Oracle
 from ibis.backends.sql.rewrites import (
+    FirstValue,
+    LastValue,
     exclude_unsupported_window_frame_from_ops,
     exclude_unsupported_window_frame_from_row_number,
     replace_log2,
     replace_log10,
     rewrite_empty_order_by_window,
-    rewrite_first_to_first_value,
-    rewrite_last_to_last_value,
     rewrite_sample_as_filter,
 )
 
@@ -31,8 +31,6 @@ class OracleCompiler(SQLGlotCompiler):
     rewrites = (
         exclude_unsupported_window_frame_from_row_number,
         exclude_unsupported_window_frame_from_ops,
-        rewrite_first_to_first_value,
-        rewrite_last_to_last_value,
         rewrite_empty_order_by_window,
         rewrite_sample_as_filter,
         replace_log2,
@@ -409,8 +407,8 @@ class OracleCompiler(SQLGlotCompiler):
             ops.Correlation,  # "corr",
             ops.Count,  # "count",
             ops.Covariance,  # "covar_pop", "covar_samp",
-            ops.FirstValue,  # "first_value",
-            ops.LastValue,  # "last_value",
+            FirstValue,  # "first_value",
+            LastValue,  # "last_value",
             ops.Max,  # "max",
             ops.Min,  # "min",
             ops.NthValue,  # "nth_value",
