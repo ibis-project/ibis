@@ -1178,6 +1178,10 @@ class Backend(SQLBackend, CanCreateSchema, UrlFromPath):
                 )
             elif started is False:
                 self._record_batch_readers_consumed[t.name] = True
+
+        if expr.op().find((ops.GeoSpatialUnOp, ops.GeoSpatialBinOp)):
+            self.load_extension("spatial")
+
         super()._run_pre_execute_hooks(expr)
 
     def to_pyarrow_batches(
