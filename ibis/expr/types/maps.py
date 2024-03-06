@@ -17,7 +17,14 @@ if TYPE_CHECKING:
 
 @public
 class MapValue(Value):
-    """A map literal or column expression.
+    """A dict-like collection with fixed-type keys and values.
+
+    This type is similar to a Python dictionary, except with the
+    restriction that all keys must have the same type, and all values
+    must have the same type.
+    For example, all keys are `string`s, and all values are `int64`s.
+    Each key must be unique within the map.
+    There can be 0, 1, or many key-value pairs in a map.
 
     Can be constructed with [`ibis.map()`](#ibis.expr.types.map).
 
@@ -433,11 +440,10 @@ def map(
     keys: Iterable[Any] | Mapping[Any, Any] | ArrayColumn,
     values: Iterable[Any] | ArrayColumn | None = None,
 ) -> MapValue:
-    """Create a [map container object](https://docs.python.org/3/glossary.html#term-mapping).
+    """Create a MapValue.
 
-    If the `keys` and `values` are Python literals, then the output will be a
-    `MapScalar`. If the `keys` and `values` are expressions (`ArrayColumn`),
-    then the the output will be a `MapColumn`.
+    If any of the `keys` or `values` are Columns, then the output will be a MapColumn.
+    Otherwise, the output will be a MapScalar.
 
     Parameters
     ----------
@@ -449,22 +455,19 @@ def map(
     Returns
     -------
     MapValue
-        An expression representing either a map column or literal (associative
-        array with key/value pairs of fixed types)
+        Either a MapScalar or MapColumn, depending on the input shapes.
 
     Examples
     --------
-    Create a map literal from a dict with the type inferred
+    Create a Map scalar from a dict with the type inferred
 
     >>> import ibis
     >>> ibis.options.interactive = True
     >>> ibis.map(dict(a=1, b=2))
     {'a': 1, 'b': 2}
 
-    Create a new map column from columns with keys and values
+    Create a Map Column from columns with keys and values
 
-    >>> import ibis
-    >>> ibis.options.interactive = True
     >>> t = ibis.memtable({"keys": [["a", "b"], ["b"]], "values": [[1, 2], [3]]})
     >>> t
     ┏━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━┓

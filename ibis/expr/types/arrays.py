@@ -20,6 +20,25 @@ import ibis.common.exceptions as com
 
 @public
 class ArrayValue(Value):
+    """An Array is a nested type, a variable-length sequence of values of a single type.
+
+    Examples
+    --------
+    >>> import ibis
+    >>> ibis.options.interactive = True
+    >>> ibis.memtable({"a": [[1, None, 3], [4], [], None]})
+    ┏━━━━━━━━━━━━━━━━━━━━━━┓
+    ┃ a                    ┃
+    ┡━━━━━━━━━━━━━━━━━━━━━━┩
+    │ array<int64>         │
+    ├──────────────────────┤
+    │ [1, None, ... +1]    │
+    │ [4]                  │
+    │ []                   │
+    │ NULL                 │
+    └──────────────────────┘
+    """
+
     def length(self) -> ir.IntegerValue:
         """Compute the length of an array.
 
@@ -1065,10 +1084,13 @@ class ArrayColumn(Column, ArrayValue):
 def array(values: Iterable[V]) -> ArrayValue:
     """Create an array expression.
 
+    If any values are Columns, the result will be an ArrayColumn.
+    Otherwise, the result will be an ArrayScalar.
+
     Parameters
     ----------
     values
-        An iterable of Ibis expressions or a list of Python literals
+        An iterable of Ibis expressions or Python literals
 
     Returns
     -------
@@ -1076,7 +1098,7 @@ def array(values: Iterable[V]) -> ArrayValue:
 
     Examples
     --------
-    Create an array from scalar values
+    Create an array scalar from scalar values
 
     >>> import ibis
     >>> ibis.options.interactive = True
