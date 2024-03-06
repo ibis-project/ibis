@@ -11,6 +11,7 @@ import pandas as pd
 import pandas.testing as tm
 import pyarrow as pa
 import pytest
+from pytest import param
 
 import ibis
 import ibis.expr.datatypes as dt
@@ -106,7 +107,9 @@ def test_read_geo_to_geopandas(con, data_dir, gpd):
     assert isinstance(gdf, gpd.GeoDataFrame)
 
 
-def test_read_geo_from_url(con, monkeypatch):
+def test_read_geo_from_url(monkeypatch):
+    con = ibis.duckdb.connect()
+
     loaded_exts = []
     monkeypatch.setattr(con, "_load_extensions", lambda x, **_: loaded_exts.extend(x))
 
@@ -422,12 +425,32 @@ def test_csv_with_slash_n_null(con, tmp_path):
 
 
 @pytest.mark.xfail(
-    LINUX and SANDBOXED,
-    reason=("nix can't hit GCS because it is sandboxed."),
+    LINUX and SANDBOXED, reason="nix can't hit GCS because it is sandboxed."
 )
-def test_register_filesystem_gcs(con):
+@pytest.mark.parametrize(
+    "extensions",
+    [
+        [],
+        param(
+            ["httpfs"],
+            marks=[
+                pytest.mark.xfail(
+                    duckdb.__version__ == "0.10.0",
+                    reason="https://github.com/duckdb/duckdb/issues/10698",
+                    raises=duckdb.HTTPException,
+                )
+            ],
+        ),
+    ],
+)
+def test_register_filesystem_gcs(extensions):
     fsspec = pytest.importorskip("fsspec")
     pytest.importorskip("gcsfs")
+
+    con = ibis.duckdb.connect()
+
+    for ext in extensions:
+        con.load_extension(ext)
 
     gcs = fsspec.filesystem("gcs")
 

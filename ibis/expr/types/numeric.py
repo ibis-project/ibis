@@ -594,7 +594,7 @@ class NumericValue(Value):
         --------
         >>> import ibis
         >>> ibis.options.interactive = True
-        >>> t = ibis.memtable({"values": [-1, 0, 1]})
+        >>> t = ibis.memtable({"values": [-1, -2, 3]})
         >>> t.values.cot()
         ┏━━━━━━━━━━━━━┓
         ┃ Cot(values) ┃
@@ -602,8 +602,8 @@ class NumericValue(Value):
         │ float64     │
         ├─────────────┤
         │   -0.642093 │
-        │         inf │
-        │    0.642093 │
+        │    0.457658 │
+        │   -7.015253 │
         └─────────────┘
         """
         return ops.Cot(self).to_expr()

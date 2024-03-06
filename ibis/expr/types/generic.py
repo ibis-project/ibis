@@ -1223,21 +1223,19 @@ class Scalar(Value):
         Examples
         --------
         >>> import ibis
-        >>>
         >>> ibis.options.interactive = True
-        >>>
         >>> t = ibis.examples.penguins.fetch()
         >>> max_gentoo_weight = t.filter(t.species == "Gentoo").body_mass_g.max()
         >>> light_penguins = t.filter(t.body_mass_g < max_gentoo_weight / 2)
-        >>> light_penguins.group_by("species").count()
-        ┏━━━━━━━━━━━┳━━━━━━━━━━━━━┓
-        ┃ species   ┃ CountStar() ┃
-        ┡━━━━━━━━━━━╇━━━━━━━━━━━━━┩
-        │ string    │ int64       │
-        ├───────────┼─────────────┤
-        │ Adelie    │          15 │
-        │ Chinstrap │           2 │
-        └───────────┴─────────────┘
+        >>> light_penguins.species.value_counts().order_by("species")
+        ┏━━━━━━━━━━━┳━━━━━━━━━━━━━━━┓
+        ┃ species   ┃ species_count ┃
+        ┡━━━━━━━━━━━╇━━━━━━━━━━━━━━━┩
+        │ string    │ int64         │
+        ├───────────┼───────────────┤
+        │ Adelie    │            15 │
+        │ Chinstrap │             2 │
+        └───────────┴───────────────┘
         """
         parents = self.op().relations
         if parents:
@@ -1361,21 +1359,19 @@ class Column(Value, _FixedTextJupyterMixin):
         Examples
         --------
         >>> import ibis
-        >>>
         >>> ibis.options.interactive = True
-        >>>
         >>> t = ibis.examples.penguins.fetch()
         >>> heavy_gentoo = t.filter(t.species == "Gentoo", t.body_mass_g > 6200)
         >>> from_that_island = t.filter(t.island == heavy_gentoo.island.as_scalar())
-        >>> from_that_island.group_by("species").count()
-        ┏━━━━━━━━━┳━━━━━━━━━━━━━┓
-        ┃ species ┃ CountStar() ┃
-        ┡━━━━━━━━━╇━━━━━━━━━━━━━┩
-        │ string  │ int64       │
-        ├─────────┼─────────────┤
-        │ Adelie  │          44 │
-        │ Gentoo  │         124 │
-        └─────────┴─────────────┘
+        >>> from_that_island.species.value_counts().order_by("species")
+        ┏━━━━━━━━━┳━━━━━━━━━━━━━━━┓
+        ┃ species ┃ species_count ┃
+        ┡━━━━━━━━━╇━━━━━━━━━━━━━━━┩
+        │ string  │ int64         │
+        ├─────────┼───────────────┤
+        │ Adelie  │            44 │
+        │ Gentoo  │           124 │
+        └─────────┴───────────────┘
         """
         return self.as_table().as_scalar()
 

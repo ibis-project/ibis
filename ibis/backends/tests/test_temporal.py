@@ -20,6 +20,7 @@ from ibis.backends.conftest import is_older_than
 from ibis.backends.tests.errors import (
     ArrowInvalid,
     ClickHouseDatabaseError,
+    DuckDBBinderException,
     DuckDBInvalidInputException,
     ExaQueryError,
     GoogleBadRequest,
@@ -1131,69 +1132,33 @@ def test_timestamp_comparison_filter(backend, con, alltypes, df, func_name):
     backend.assert_frame_equal(result, expected)
 
 
+no_mixed_timestamp_comparisons = [
+    pytest.mark.notimpl(
+        ["dask"],
+        raises=ValueError,
+        reason="Metadata inference failed in `gt`.",
+    ),
+    pytest.mark.notimpl(
+        ["pandas"],
+        raises=TypeError,
+        reason="Invalid comparison between dtype=datetime64[ns, UTC] and datetime",
+    ),
+    pytest.mark.never(
+        ["duckdb"],
+        raises=DuckDBBinderException,
+        # perhaps we should consider disallowing this in ibis as well
+        reason="DuckDB doesn't allow comparing timestamp with and without timezones",
+    ),
+]
+
+
 @pytest.mark.parametrize(
     "func_name",
     [
-        param(
-            "gt",
-            marks=[
-                pytest.mark.notimpl(
-                    ["dask"],
-                    raises=ValueError,
-                    reason="Metadata inference failed in `gt`.",
-                ),
-                pytest.mark.notimpl(
-                    ["pandas"],
-                    raises=TypeError,
-                    reason="Invalid comparison between dtype=datetime64[ns, UTC] and datetime",
-                ),
-            ],
-        ),
-        param(
-            "ge",
-            marks=[
-                pytest.mark.notimpl(
-                    ["dask"],
-                    raises=ValueError,
-                    reason="Metadata inference failed in `ge`.",
-                ),
-                pytest.mark.notimpl(
-                    ["pandas"],
-                    raises=TypeError,
-                    reason="Invalid comparison between dtype=datetime64[ns, UTC] and datetime",
-                ),
-            ],
-        ),
-        param(
-            "lt",
-            marks=[
-                pytest.mark.notimpl(
-                    ["dask"],
-                    raises=ValueError,
-                    reason="Metadata inference failed in `lt`.",
-                ),
-                pytest.mark.notimpl(
-                    ["pandas"],
-                    raises=TypeError,
-                    reason="Invalid comparison between dtype=datetime64[ns, UTC] and datetime",
-                ),
-            ],
-        ),
-        param(
-            "le",
-            marks=[
-                pytest.mark.notimpl(
-                    ["dask"],
-                    raises=ValueError,
-                    reason="Metadata inference failed in `le`.",
-                ),
-                pytest.mark.notimpl(
-                    ["pandas"],
-                    raises=TypeError,
-                    reason="Invalid comparison between dtype=datetime64[ns, UTC] and datetime",
-                ),
-            ],
-        ),
+        param("gt", marks=no_mixed_timestamp_comparisons),
+        param("ge", marks=no_mixed_timestamp_comparisons),
+        param("lt", marks=no_mixed_timestamp_comparisons),
+        param("le", marks=no_mixed_timestamp_comparisons),
         "eq",
         "ne",
     ],

@@ -57,6 +57,7 @@ jobs:
         backend:
           - name: duckdb
             title: DuckDB
+            serial: true
             extras:
               - duckdb
               - deltalake
