@@ -339,7 +339,7 @@ def test_limit_with_self_join(functional_alltypes, snapshot):
 
     expr = t.join(t2, t.tinyint_col < t2.timestamp_col.minute()).count()
     snapshot.assert_match(to_sql(expr), "out.sql")
-    assert_decompile_roundtrip(expr, snapshot, eq=lambda x, y: repr(x) == repr(y))
+    assert_decompile_roundtrip(expr, snapshot, eq=lambda x, y: str(x) == str(y))
 
 
 def test_topk_predicate_pushdown_bug(nation, customer, region, snapshot):
