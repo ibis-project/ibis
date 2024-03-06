@@ -24,8 +24,6 @@ from ibis.backends.sql.rewrites import (
     exclude_unsupported_window_frame_from_row_number,
     p,
     replace,
-    rewrite_first_to_first_value,
-    rewrite_last_to_last_value,
     rewrite_sample_as_filter,
 )
 from ibis.common.deferred import var
@@ -66,8 +64,6 @@ class MSSQLCompiler(SQLGlotCompiler):
     type_mapper = MSSQLType
     rewrites = (
         rewrite_sample_as_filter,
-        rewrite_first_to_first_value,
-        rewrite_last_to_last_value,
         exclude_unsupported_window_frame_from_ops,
         exclude_unsupported_window_frame_from_row_number,
         rewrite_rows_range_order_by_window,

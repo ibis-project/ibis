@@ -19,11 +19,7 @@ from ibis.backends.sql.compiler import (
 )
 from ibis.backends.sql.datatypes import TrinoType
 from ibis.backends.sql.dialects import Trino
-from ibis.backends.sql.rewrites import (
-    exclude_unsupported_window_frame_from_ops,
-    rewrite_first_to_first_value,
-    rewrite_last_to_last_value,
-)
+from ibis.backends.sql.rewrites import exclude_unsupported_window_frame_from_ops
 
 
 class TrinoCompiler(SQLGlotCompiler):
@@ -31,12 +27,7 @@ class TrinoCompiler(SQLGlotCompiler):
 
     dialect = Trino
     type_mapper = TrinoType
-    rewrites = (
-        rewrite_first_to_first_value,
-        rewrite_last_to_last_value,
-        exclude_unsupported_window_frame_from_ops,
-        *SQLGlotCompiler.rewrites,
-    )
+    rewrites = (exclude_unsupported_window_frame_from_ops, *SQLGlotCompiler.rewrites)
     quoted = True
 
     NAN = sg.func("nan")

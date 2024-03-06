@@ -18,8 +18,6 @@ from ibis.backends.sql.rewrites import (
     replace_log2,
     replace_log10,
     rewrite_empty_order_by_window,
-    rewrite_first_to_first_value,
-    rewrite_last_to_last_value,
     rewrite_sample_as_filter,
 )
 
@@ -33,8 +31,6 @@ class OracleCompiler(SQLGlotCompiler):
     rewrites = (
         exclude_unsupported_window_frame_from_row_number,
         exclude_unsupported_window_frame_from_ops,
-        rewrite_first_to_first_value,
-        rewrite_last_to_last_value,
         rewrite_empty_order_by_window,
         rewrite_sample_as_filter,
         replace_log2,

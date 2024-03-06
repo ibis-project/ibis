@@ -177,17 +177,11 @@ def calc_zscore(s):
             lambda t, win: t.float_col.first().over(win),
             lambda t: t.float_col.transform("first"),
             id="first",
-            marks=[
-                pytest.mark.notimpl(["exasol"], raises=com.OperationNotDefinedError),
-            ],
         ),
         param(
             lambda t, win: t.float_col.last().over(win),
             lambda t: t.float_col.transform("last"),
             id="last",
-            marks=[
-                pytest.mark.notimpl(["exasol"], raises=com.OperationNotDefinedError),
-            ],
         ),
         param(
             lambda t, win: t.double_col.nth(3).over(win),
@@ -1073,7 +1067,7 @@ def test_mutate_window_filter(backend, alltypes):
     backend.assert_frame_equal(res, sol, check_dtype=False)
 
 
-@pytest.mark.notimpl(["polars", "exasol"], raises=com.OperationNotDefinedError)
+@pytest.mark.notimpl(["polars"], raises=com.OperationNotDefinedError)
 def test_first_last(backend):
     t = backend.win
     w = ibis.window(group_by=t.g, order_by=[t.x, t.y], preceding=1, following=0)
