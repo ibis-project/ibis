@@ -453,15 +453,6 @@ class PandasExecutor(Dispatched, PandasUtils):
         return agg
 
     @classmethod
-    def visit(cls, op: ops.FirstValue | ops.LastValue, arg):
-        i = 0 if isinstance(op, ops.FirstValue) else -1
-
-        def agg(df, order_keys):
-            return df[arg.name].iat[i]
-
-        return agg
-
-    @classmethod
     def visit(
         cls, op: ops.AnalyticVectorizedUDF, func, func_args, input_type, return_type
     ):

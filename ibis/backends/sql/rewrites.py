@@ -63,6 +63,28 @@ class Select(ops.Relation):
 
 
 @public
+class FirstValue(ops.Analytic):
+    """Retrieve the first element."""
+
+    arg: ops.Column[dt.Any]
+
+    @attribute
+    def dtype(self):
+        return self.arg.dtype
+
+
+@public
+class LastValue(ops.Analytic):
+    """Retrieve the last element."""
+
+    arg: ops.Column[dt.Any]
+
+    @attribute
+    def dtype(self):
+        return self.arg.dtype
+
+
+@public
 class Window(ops.Value):
     """Window modelled after SQL's window statements."""
 
@@ -277,7 +299,7 @@ def rewrite_first_to_first_value(_, x, y, **kwargs):
         raise com.UnsupportedOperationError(
             "`first` with `where` is unsupported in a window function"
         )
-    return _.copy(func=ops.FirstValue(x))
+    return _.copy(func=FirstValue(x))
 
 
 @replace(p.WindowFunction(p.Last(x, where=y)))
@@ -287,7 +309,7 @@ def rewrite_last_to_last_value(_, x, y, **kwargs):
         raise com.UnsupportedOperationError(
             "`last` with `where` is unsupported in a window function"
         )
-    return _.copy(func=ops.LastValue(x))
+    return _.copy(func=LastValue(x))
 
 
 @replace(p.WindowFunction(frame=y @ p.WindowFrame(order_by=())))
