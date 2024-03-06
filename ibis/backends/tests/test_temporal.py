@@ -2220,6 +2220,7 @@ def test_timestamp_precision_output(con, ts, scale, unit):
                     reason="postgres doesn't have any easy way to accurately compute the delta in specific units",
                     raises=com.OperationNotDefinedError,
                 ),
+                pytest.mark.notimpl(["exasol"], raises=com.OperationNotDefinedError),
             ],
         ),
         param(ibis.date("1992-09-30"), ibis.date("1992-10-01"), "day", 1, id="date"),
@@ -2240,11 +2241,12 @@ def test_timestamp_precision_output(con, ts, scale, unit):
                     raises=com.OperationNotDefinedError,
                     reason="timestampdiff rounds after subtraction and mysql doesn't have a date_trunc function",
                 ),
+                pytest.mark.notimpl(["exasol"], raises=com.OperationNotDefinedError),
             ],
         ),
     ],
 )
-@pytest.mark.notimpl(["sqlite", "exasol"], raises=com.OperationNotDefinedError)
+@pytest.mark.notimpl(["sqlite"], raises=com.OperationNotDefinedError)
 def test_delta(con, start, end, unit, expected):
     expr = end.delta(start, unit)
     assert con.execute(expr) == expected
