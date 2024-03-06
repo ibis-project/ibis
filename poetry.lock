@@ -147,13 +147,13 @@ files = [
 
 [[package]]
 name = "anywidget"
-version = "0.7.1"
+version = "0.9.3"
 description = "custom jupyter widgets made easy"
 optional = false
 python-versions = ">=3.7"
 files = [
-    {file = "anywidget-0.7.1-py3-none-any.whl", hash = "sha256:17828c6e255a7066c960636cbda045d55b08c996a2fc4e886e4c8507db6e9407"},
-    {file = "anywidget-0.7.1.tar.gz", hash = "sha256:1c4cb51063f8ec5172b8c8efb1bfb79861d340c3491220d56b8c2a6aa8db3b3d"},
+    {file = "anywidget-0.9.3-py3-none-any.whl", hash = "sha256:ffc7a9ce67fc392137f65aa516fa90fcf8ee8e596ba7325407167b92c8c1479c"},
+    {file = "anywidget-0.9.3.tar.gz", hash = "sha256:0a869ef28adeb591e16f573d8b9c744a6d6756bb8df3d91165210cc9e2e26db8"},
 ]
 
 [package.dependencies]
@@ -163,7 +163,7 @@ typing-extensions = ">=4.2.0"
 
 [package.extras]
 dev = ["comm (>=0.1.0)", "watchfiles (>=0.18.0)"]
-test = ["black[jupyter]", "ipython (<8.13)", "msgspec", "pydantic", "pytest", "pytest-cov", "ruff"]
+test = ["ipython (<8.13)", "msgspec", "pydantic", "pytest", "pytest-cov", "ruff"]
 
 [[package]]
 name = "appdirs"
@@ -3075,17 +3075,17 @@ files = [
 
 [[package]]
 name = "lonboard"
-version = "0.4.0"
+version = "0.6.0"
 description = "Python library for fast, interactive geospatial vector data visualization in Jupyter."
 optional = false
 python-versions = ">=3.8,<4.0"
 files = [
-    {file = "lonboard-0.4.0-py3-none-any.whl", hash = "sha256:2c521805c05db4c8efdbd7cb19174d3f5e1c43723b7c6db358b2f158d96e671f"},
-    {file = "lonboard-0.4.0.tar.gz", hash = "sha256:c60ccaa5ac06ad2fdad88e146cc2206389d59e0dd4d53bd6de8bab26cae81e7c"},
+    {file = "lonboard-0.6.0-py3-none-any.whl", hash = "sha256:31e0db50593587188895d47d5322e97300fb7f8eb5420f97eac40658a6fa84a9"},
+    {file = "lonboard-0.6.0.tar.gz", hash = "sha256:1cfb38c52b26c4f61be7565b76fb0500e44c118651be06748189234a6ec0422f"},
 ]
 
 [package.dependencies]
-anywidget = ">=0.7.1,<0.8.0"
+anywidget = ">=0.9.0,<0.10.0"
 geopandas = ">=0.13"
 matplotlib = ">=3.7,<4.0"
 palettable = ">=3.3.3,<4.0.0"
@@ -5353,6 +5353,7 @@ files = [
     {file = "PyYAML-6.0.1-cp311-cp311-win_amd64.whl", hash = "sha256:bf07ee2fef7014951eeb99f56f39c9bb4af143d8aa3c21b1677805985307da34"},
     {file = "PyYAML-6.0.1-cp312-cp312-macosx_10_9_x86_64.whl", hash = "sha256:855fb52b0dc35af121542a76b9a84f8d1cd886ea97c84703eaa6d88e37a2ad28"},
     {file = "PyYAML-6.0.1-cp312-cp312-macosx_11_0_arm64.whl", hash = "sha256:40df9b996c2b73138957fe23a16a4f0ba614f4c0efce1e9406a184b6d07fa3a9"},
+    {file = "PyYAML-6.0.1-cp312-cp312-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:a08c6f0fe150303c1c6b71ebcd7213c2858041a7e01975da3a99aed1e7a378ef"},
     {file = "PyYAML-6.0.1-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:6c22bec3fbe2524cde73d7ada88f6566758a8f7227bfbf93a408a9d86bcc12a0"},
     {file = "PyYAML-6.0.1-cp312-cp312-musllinux_1_1_x86_64.whl", hash = "sha256:8d4e9c88387b0f5c7d5f281e55304de64cf7f9c0021a3525bd3b1c542da3b0e4"},
     {file = "PyYAML-6.0.1-cp312-cp312-win32.whl", hash = "sha256:d483d2cdf104e7c9fa60c544d92981f12ad66a457afae824d146093b8c294c54"},
@@ -7324,4 +7325,4 @@ visualization = ["graphviz"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.9"
-content-hash = "76aecbe03f4837aead8d786cc1d92a8be643c33a00bf7bde77d39864684a27ca"
+content-hash = "dbcd94269d4a9fea04f481ab961bd49114fd310258281b545ba54a8eff56a978"
