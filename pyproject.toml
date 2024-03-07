@@ -323,6 +323,10 @@ filterwarnings = [
   "ignore:is_sparse is deprecated and will be removed in a future version:DeprecationWarning",
   # google-api-core
   "ignore:Please install grpcio-status to obtain helpful grpc error messages.",
+  # dateutil tz
+  'ignore:datetime\.datetime\.utcfromtimestamp\(\) is deprecated and scheduled for removal:DeprecationWarning',
+  # types using custom tp_new are deprecated in python 3.12
+  "ignore:Type .+ uses PyType_Spec with a metaclass that has custom tp_new:DeprecationWarning",
 ]
 empty_parameter_set_mark = "fail_at_collect"
 markers = [
