@@ -563,6 +563,11 @@ jobs:
             deps:
               - "'pandas@>2'"
               - "'numpy@>1.24'"
+          - python-version: "3.12"
+            pyspark-version: "3.5"
+            deps:
+              - "'pandas@>2'"
+              - "'numpy@>1.24'"
     steps:
       - name: checkout
         uses: actions/checkout@v4

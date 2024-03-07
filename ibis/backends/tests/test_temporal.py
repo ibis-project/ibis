@@ -1575,7 +1575,7 @@ def test_now_from_projection(alltypes):
     ts = result.now
     assert len(result) == n
     assert ts.nunique() == 1
-    assert ~pd.isna(ts.iat[0])
+    assert not pd.isna(ts.iat[0])
 
 
 DATE_BACKEND_TYPES = {
