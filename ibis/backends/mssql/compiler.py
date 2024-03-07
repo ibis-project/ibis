@@ -133,6 +133,7 @@ class MSSQLCompiler(SQLGlotCompiler):
         ops.Log10: "log10",
         ops.Power: "power",
         ops.RandomScalar: "rand",
+        ops.RandomUUID: "newid",
         ops.Repeat: "replicate",
         ops.Reverse: "reverse",
         ops.StringAscii: "ascii",
