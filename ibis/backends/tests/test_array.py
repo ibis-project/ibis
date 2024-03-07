@@ -31,6 +31,7 @@ from ibis.backends.tests.errors import (
     PySparkAnalysisException,
     TrinoUserError,
 )
+from ibis.common.annotations import SignatureValidationError
 
 pytestmark = [
     pytest.mark.never(
@@ -487,6 +488,15 @@ def test_array_map(con, input, output, func):
     "func",
     [
         pytest.param(lambda t: t.x.map(_.b), id="t.x.map(_.b)"),
+        pytest.param(lambda t: _.x.map(lambda el: el.b), id="_.x.map(lambda el: el.b)"),
+        pytest.param(
+            lambda t: t.x.map(lambda el: _.b),
+            id="t.x.map(lambda elem: _.b)",
+            marks=pytest.mark.xfail(
+                raises=SignatureValidationError,
+                reason="_.b is not coercible to a Value",
+            ),
+        ),
         pytest.param(
             lambda t: _.x.map(_.b),
             id="_.x.map(_.b)",
