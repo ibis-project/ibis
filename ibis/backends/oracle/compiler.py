@@ -227,14 +227,6 @@ class OracleCompiler(SQLGlotCompiler):
         # Not using FuncGen here because of dotted function call
         return sg.func("dbms_random.value")
 
-    def visit_RandomUUID(self, op):
-        # sys_guid differs only at one character
-        return sge.RegexpReplace(
-            this=sg.func("sys_guid"),
-            expression=sge.convert("(.{8})(.{4})(.{4})(.{4})(.{12})"),
-            replacement=sge.convert("\\1-\\2-\\3-\\4-\\5"),
-        )
-
     def visit_Pi(self, op):
         return self.f.acos(-1)
 
