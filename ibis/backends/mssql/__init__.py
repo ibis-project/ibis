@@ -323,13 +323,41 @@ GO"""
     def list_tables(
         self,
         like: str | None = None,
-        database: str | None = None,
+        database: tuple[str, str] | str | None = None,
         schema: str | None = None,
     ) -> list[str]:
+        """List the tables in the database.
+
+        Parameters
+        ----------
+        like
+            A pattern to use for listing tables.
+        database
+            Table location. If not passed, uses the current catalog and database.
+
+            To specify a table in a separate catalog, you can pass in the
+            catalog and database as a string `"catalog.database"`, or as a tuple of
+            strings `("catalog", "database")`.
+
+            ::: {.callout-note}
+            ## Ibis does not use the word `schema` to refer to database hierarchy.
+
+            A collection of tables is referred to as a `database`.
+            A collection of `database` is referred to as a `catalog`.
+
+            These terms are mapped onto the corresponding features in each
+            backend (where available), regardless of whether the backend itself
+            uses the same terminology.
+            :::
+        schema
+            [deprecated] The schema inside `database` to perform the list against.
+        """
+        table_loc = self._warn_and_create_table_loc(database, schema)
+        catalog, db = self._to_catalog_db_tuple(table_loc)
         conditions = []
 
-        if schema is not None:
-            conditions.append(C.table_schema.eq(sge.convert(schema)))
+        if table_loc is not None:
+            conditions.append(C.table_schema.eq(sge.convert(db)))
 
         sql = (
             sg.select("table_name")
@@ -337,7 +365,7 @@ GO"""
                 sg.table(
                     "tables",
                     db="information_schema",
-                    catalog=database if database is not None else self.current_database,
+                    catalog=catalog if catalog is not None else self.current_catalog,
                 )
             )
             .distinct()

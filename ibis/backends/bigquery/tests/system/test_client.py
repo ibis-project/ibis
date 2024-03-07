@@ -233,8 +233,8 @@ def test_exists_table_different_project(con):
     name = "co_daily_summary"
     dataset = "bigquery-public-data.epa_historical_air_quality"
 
-    assert name in con.list_tables(schema=dataset)
-    assert "foobar" not in con.list_tables(schema=dataset)
+    assert name in con.list_tables(database=dataset)
+    assert "foobar" not in con.list_tables(database=dataset)
 
 
 def test_multiple_project_queries(con, snapshot):
@@ -404,3 +404,19 @@ def test_create_table_with_options(con):
         assert t.execute().empty
     finally:
         con.drop_table(name)
+
+
+def test_list_tables_schema_warning_refactor(con):
+    pypi_tables = [
+        "external",
+        "native",
+    ]
+
+    assert con.list_tables()
+
+    # Warn but succeed for schema list
+    with pytest.raises(FutureWarning):
+        assert con.list_tables(schema="pypi") == pypi_tables
+
+    assert con.list_tables(database="ibis-gbq.pypi") == pypi_tables
+    assert con.list_tables(database=("ibis-gbq", "pypi")) == pypi_tables

@@ -264,7 +264,20 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema, NoUrl):
         like: str | None = None,
         database: str | None = None,
     ) -> list[str]:
-        """List the available tables."""
+        """Return the list of table names in the current database.
+
+        Parameters
+        ----------
+        like
+            A pattern in Python's regex format.
+        database
+            Unused in the datafusion backend.
+
+        Returns
+        -------
+        list[str]
+            The list of the table names that match the pattern `like`.
+        """
         return self._filter_with_like(self.con.tables(), like)
 
     def get_schema(

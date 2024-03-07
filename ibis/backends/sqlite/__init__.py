@@ -127,6 +127,16 @@ class Backend(SQLBackend, UrlFromPath):
         like: str | None = None,
         database: str | None = None,
     ) -> list[str]:
+        """List the tables in the database.
+
+        Parameters
+        ----------
+        like
+            A pattern to use for listing tables.
+        database
+            Database to list tables from. Default behavior is to show tables in
+            the current database.
+        """
         if database is None:
             database = "main"
 

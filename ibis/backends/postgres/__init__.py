@@ -273,7 +273,10 @@ class Backend(SQLBackend):
             cur.execute("SET TIMEZONE = UTC")
 
     def list_tables(
-        self, like: str | None = None, schema: str | None = None
+        self,
+        like: str | None = None,
+        schema: str | None = None,
+        database: tuple[str, str] | str | None = None,
     ) -> list[str]:
         """List the tables in the database.
 
@@ -282,24 +285,57 @@ class Backend(SQLBackend):
         like
             A pattern to use for listing tables.
         schema
-            The schema to perform the list against.
+            [deprecated] The schema to perform the list against.
+        database
+            Database to list tables from. Default behavior is to show tables in
+            the current database.
 
-            ::: {.callout-warning}
-            ## `schema` refers to database hierarchy
+            ::: {.callout-note}
+            ## Ibis does not use the word `schema` to refer to database hierarchy.
 
-            The `schema` parameter does **not** refer to the column names and
-            types of `table`.
+            A collection of tables is referred to as a `database`.
+            A collection of `database` is referred to as a `catalog`.
+
+            These terms are mapped onto the corresponding features in each
+            backend (where available), regardless of whether the backend itself
+            uses the same terminology.
             :::
 
         """
+        if schema is not None:
+            self._warn_schema()
+
+        if schema is not None and database is not None:
+            raise ValueError(
+                "Using both the `schema` and `database` kwargs is not supported. "
+                "`schema` is deprecated and will be removed in Ibis 10.0"
+                "\nUse the `database` kwarg with one of the following patterns:"
+                '\ndatabase="database"'
+                '\ndatabase=("catalog", "database")'
+                '\ndatabase="catalog.database"',
+            )
+        elif schema is not None:
+            table_loc = schema
+        elif database is not None:
+            table_loc = database
+        else:
+            table_loc = (self.current_database, self.current_schema)
+
+        table_loc = self._to_sqlglot_table(table_loc)
+
         conditions = [TRUE]
 
-        if schema is not None:
-            conditions = C.table_schema.eq(sge.convert(schema))
+        if (db := table_loc.args["db"]) is not None:
+            db.args["quoted"] = False
+            db = db.sql(dialect=self.name)
+            conditions.append(C.table_schema.eq(db))
+        if (catalog := table_loc.args["catalog"]) is not None:
+            catalog.args["quoted"] = False
+            catalog = catalog.sql(dialect=self.name)
+            conditions.append(C.table_catalog.eq(catalog))
 
-        col = "table_name"
         sql = (
-            sg.select(col)
+            sg.select("table_name")
             .from_(sg.table("tables", db="information_schema"))
             .distinct()
             .where(*conditions)
@@ -309,7 +345,30 @@ class Backend(SQLBackend):
         with self._safe_raw_sql(sql) as cur:
             out = cur.fetchall()
 
+        # Include temporary tables only if no database has been explicitly specified
+        # to avoid temp tables showing up in all calls to `list_tables`
+        if db == "public":
+            out += self._fetch_temp_tables()
+
         return self._filter_with_like(map(itemgetter(0), out), like)
+
+    def _fetch_temp_tables(self):
+        # postgres temporary tables are stored in a separate schema
+        # so we need to independently grab them and return them along with
+        # the existing results
+
+        sql = (
+            sg.select("table_name")
+            .from_(sg.table("tables", db="information_schema"))
+            .distinct()
+            .where(C.table_type.eq("LOCAL TEMPORARY"))
+            .sql(self.dialect)
+        )
+
+        with self._safe_raw_sql(sql) as cur:
+            out = cur.fetchall()
+
+        return out
 
     def list_databases(self, like=None) -> list[str]:
         # http://dba.stackexchange.com/a/1304/58517
@@ -487,7 +546,7 @@ $$""".format(**self._get_udf_source(udf_node))
             .where(
                 a.attnum > 0,
                 sg.not_(a.attisdropped),
-                n.nspname.eq(schema) if schema is not None else TRUE,
+                n.nspname.eq(database) if database is not None else TRUE,
                 c.relname.eq(name),
             )
             .order_by(a.attnum)

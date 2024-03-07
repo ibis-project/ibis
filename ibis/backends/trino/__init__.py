@@ -190,7 +190,7 @@ class Backend(SQLBackend, CanListDatabases, NoUrl):
     def list_tables(
         self,
         like: str | None = None,
-        database: str | None = None,
+        database: tuple[str, str] | str | None = None,
         schema: str | None = None,
     ) -> list[str]:
         """List the tables in the database.
@@ -200,31 +200,24 @@ class Backend(SQLBackend, CanListDatabases, NoUrl):
         like
             A pattern to use for listing tables.
         database
-            The database (catalog) to perform the list against.
+            The database location to perform the list against.
+
+            By default uses the current `database` (`self.current_database`) and
+            `catalog` (`self.current_catalog`).
+
+            To specify a table in a separate catalog, you can pass in the
+            catalog and database as a string `"catalog.database"`, or as a tuple of
+            strings `("catalog", "database")`.
         schema
-            The schema inside `database` to perform the list against.
-
-            ::: {.callout-warning}
-            ## `schema` refers to database hierarchy
-
-            The `schema` parameter does **not** refer to the column names and
-            types of `table`.
-            :::
-
+            [deprecated] The schema inside `database` to perform the list against.
         """
+        table_loc = self._warn_and_create_table_loc(database, schema)
+
         query = "SHOW TABLES"
 
-        if database is not None and schema is None:
-            raise com.IbisInputError(
-                f"{self.name} cannot list tables only using `database` specifier. "
-                "Include a `schema` argument."
-            )
-        elif database is None and schema is not None:
-            database = sg.parse_one(schema, into=sg.exp.Table).sql(dialect=self.name)
-        else:
-            database = sg.table(schema, db=database).sql(dialect=self.name) or None
-        if database is not None:
-            query += f" IN {database}"
+        if table_loc is not None:
+            table_loc = table_loc.sql(dialect=self.dialect)
+            query += f" IN {table_loc}"
 
         with self._safe_raw_sql(query) as cur:
             tables = cur.fetchall()

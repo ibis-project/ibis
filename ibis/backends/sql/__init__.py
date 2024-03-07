@@ -7,6 +7,7 @@ import sqlglot as sg
 import sqlglot.expressions as sge
 
 import ibis
+import ibis.common.exceptions as exc
 import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
@@ -24,7 +25,47 @@ if TYPE_CHECKING:
     from ibis.expr.schema import SchemaLike
 
 
-class SQLBackend(BaseBackend):
+class _DatabaseSchemaHandler:
+    """Temporary mixin collecting several helper functions and code snippets.
+
+    Help to 'gracefully' deprecate the use of `schema` as a hierarchical term.
+    """
+
+    @staticmethod
+    def _warn_schema():
+        util.warn_deprecated(
+            name="schema",
+            as_of="9.0",
+            removed_in="10.0",
+            instead="Use the `database` kwarg with one of the following patterns:"
+            '\ndatabase="database"'
+            '\ndatabase=("catalog", "database")'
+            '\ndatabase="catalog.database"',
+            # TODO: add option for namespace object
+        )
+
+    def _warn_and_create_table_loc(self, database=None, schema=None):
+        if schema is not None:
+            self._warn_schema()
+
+        if database is not None and schema is not None:
+            if isinstance(database, str):
+                table_loc = f"{database}.{schema}"
+            elif isinstance(database, tuple):
+                table_loc = database + schema
+        elif schema is not None:
+            table_loc = schema
+        elif database is not None:
+            table_loc = database
+        else:
+            table_loc = None
+
+        table_loc = self._to_sqlglot_table(table_loc)
+
+        return table_loc
+
+
+class SQLBackend(BaseBackend, _DatabaseSchemaHandler):
     compiler: ClassVar[SQLGlotCompiler]
     name: ClassVar[str]
 
@@ -413,3 +454,60 @@ class SQLBackend(BaseBackend):
         raise NotImplementedError(
             f"pandas UDFs are not supported in the {self.name} backend"
         )
+
+    def _to_catalog_db_tuple(self, table_loc: sge.Table):
+        if table_loc is None or table_loc == (None, None):
+            return None, None
+
+        if (sg_cat := table_loc.args["catalog"]) is not None:
+            sg_cat.args["quoted"] = False
+            sg_cat = sg_cat.sql(self.name)
+        if (sg_db := table_loc.args["db"]) is not None:
+            sg_db.args["quoted"] = False
+            sg_db = sg_db.sql(self.name)
+
+        return sg_cat, sg_db
+
+    def _to_sqlglot_table(self, database):
+        if database is None:
+            return None
+        elif isinstance(database, tuple):
+            if len(database) > 2:
+                raise ValueError(
+                    "Only database hierarchies of two or fewer levels are supported."
+                    "\nYou can specify ('catalog', 'database')."
+                )
+            elif len(database) == 2:
+                catalog, database = database
+            elif len(database) == 1:
+                database = database[0]
+                catalog = None
+            else:
+                raise ValueError(
+                    f"Malformed database tuple {database} provided"
+                    "\nPlease specify one of:"
+                    '\n("catalog", "database")'
+                    '\n("database",)'
+                )
+            database = sg.exp.Table(
+                catalog=sg.to_identifier(catalog, quoted=self.compiler.quoted),
+                db=sg.to_identifier(database, quoted=self.compiler.quoted),
+            )
+        elif isinstance(database, str):
+            # There is no definition of a sqlglot catalog.database hierarchy outside
+            # of the standard table expression.
+            # sqlglot parsing of the string will assume that it's a Table
+            # so we unpack the arguments into a new sqlglot object, switching
+            # table (this) -> database (db) and database (db) -> catalog
+            table = sg.parse_one(database, into=sg.exp.Table, dialect=self.dialect)
+            if table.args["catalog"] is not None:
+                raise exc.IbisInputError(
+                    f"Overspecified table hierarchy provided: `{table.sql(self.dialect)}`"
+                )
+            catalog = table.args["db"]
+            db = table.args["this"]
+            database = sg.exp.Table(catalog=catalog, db=db)
+        else:
+            raise ValueError("oops")
+
+        return database

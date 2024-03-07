@@ -148,7 +148,7 @@ class Backend(SQLBackend, CanCreateSchema):
         project = self._session_dataset.project
         dataset = self._session_dataset.dataset_id
 
-        if raw_name not in self.list_tables(schema=dataset, database=project):
+        if raw_name not in self.list_tables(database=(project, dataset)):
             table_id = sg.table(
                 raw_name, db=dataset, catalog=project, quoted=False
             ).sql(dialect=self.name)
@@ -865,7 +865,7 @@ class Backend(SQLBackend, CanCreateSchema):
     def list_tables(
         self,
         like: str | None = None,
-        database: str | None = None,
+        database: tuple[str, str] | str | None = None,
         schema: str | None = None,
     ) -> list[str]:
         """List the tables in the database.
@@ -875,34 +875,33 @@ class Backend(SQLBackend, CanCreateSchema):
         like
             A pattern to use for listing tables.
         database
-            The database (project) to perform the list against.
-        schema
-            The schema (dataset) inside `database` to perform the list against.
+            The database location to perform the list against.
 
-            ::: {.callout-warning}
-            ## `schema` refers to database hierarchy
+            By default uses the current `dataset` (`self.current_database`) and
+            `project` (`self.current_catalog`).
 
-            The `schema` parameter does **not** refer to the column names and
-            types of `table`.
+            To specify a table in a separate BigQuery dataset, you can pass in the
+            dataset and project as a string `"dataset.project"`, or as a tuple of
+            strings `("dataset", "project")`.
+
+            ::: {.callout-note}
+            ## Ibis does not use the word `schema` to refer to database hierarchy.
+
+            A collection of tables is referred to as a `database`.
+            A collection of `database` is referred to as a `catalog`.
+
+            These terms are mapped onto the corresponding features in each
+            backend (where available), regardless of whether the backend itself
+            uses the same terminology.
             :::
-
+        schema
+            [deprecated] The schema (dataset) inside `database` to perform the list against.
         """
-        if database is not None and schema is None:
-            raise com.com.IbisInputError(
-                f"{self.name} cannot list tables only using `database` specifier. "
-                "Include a `schema` argument."
-            )
-        elif database is None and schema is not None:
-            database = sg.parse_one(schema, into=sge.Table, read=self.name)
-            database.args["quoted"] = False
-            database = database.sql(dialect=self.name)
-        else:
-            database = (
-                sg.table(schema, db=database, quoted=False).sql(dialect=self.name)
-                or None
-            )
+        table_loc = self._warn_and_create_table_loc(database, schema)
 
-        project, dataset = self._parse_project_and_dataset(database)
+        table_loc = table_loc.sql(dialect=self.name)
+
+        project, dataset = self._parse_project_and_dataset(table_loc)
         dataset_ref = bq.DatasetReference(project, dataset)
         result = [table.table_id for table in self.client.list_tables(dataset_ref)]
         return self._filter_with_like(result, like)

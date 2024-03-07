@@ -276,3 +276,22 @@ def test_invalid_connect(tmp_path):
     url = f"duckdb://{tmp_path}?read_only=invalid_value"
     with pytest.raises(ValueError):
         ibis.connect(url)
+
+
+def test_list_tables_schema_warning_refactor(con):
+    assert {
+        "astronauts",
+        "awards_players",
+        "batting",
+        "diamonds",
+        "functional_alltypes",
+        "win",
+    }.issubset(con.list_tables())
+
+    icecream_table = ["ice_cream"]
+
+    with pytest.warns(FutureWarning):
+        assert con.list_tables(schema="shops") == icecream_table
+
+    assert con.list_tables(database="shops") == icecream_table
+    assert con.list_tables(database=("shops",)) == icecream_table

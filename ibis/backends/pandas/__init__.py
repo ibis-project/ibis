@@ -148,6 +148,20 @@ class BasePandasBackend(BaseBackend, NoUrl):
         return pd.__version__
 
     def list_tables(self, like=None, database=None):
+        """Return the list of table names in the current database.
+
+        Parameters
+        ----------
+        like
+            A pattern in Python's regex format.
+        database
+            Unused in the pandas backend.
+
+        Returns
+        -------
+        list[str]
+            The list of the table names that match the pattern `like`.
+        """
         return self._filter_with_like(list(self.dictionary.keys()), like)
 
     def table(self, name: str, schema: sch.Schema | None = None):
