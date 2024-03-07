@@ -69,9 +69,7 @@ def test_date_extract(backend, alltypes, df, attr, expr_fn):
         param(
             "day_of_year",
             marks=[
-                pytest.mark.notimpl(
-                    ["exasol", "impala"], raises=com.OperationNotDefinedError
-                ),
+                pytest.mark.notimpl(["impala"], raises=com.OperationNotDefinedError),
                 pytest.mark.notyet(["oracle"], raises=com.OperationNotDefinedError),
             ],
         ),
