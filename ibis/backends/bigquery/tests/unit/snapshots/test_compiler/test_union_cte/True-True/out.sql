@@ -11,17 +11,21 @@ SELECT
   `t7`.`metric`
 FROM (
   SELECT
-    `t5`.`string_col`,
-    `t5`.`metric`
+    *
   FROM (
     SELECT
-      *
-    FROM `t1` AS `t2`
-    UNION DISTINCT
-    SELECT
-      *
-    FROM `t1` AS `t4`
-  ) AS `t5`
+      `t5`.`string_col`,
+      `t5`.`metric`
+    FROM (
+      SELECT
+        *
+      FROM `t1` AS `t2`
+      UNION DISTINCT
+      SELECT
+        *
+      FROM `t1` AS `t4`
+    ) AS `t5`
+  ) AS `t6`
   UNION DISTINCT
   SELECT
     *
