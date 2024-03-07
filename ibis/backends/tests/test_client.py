@@ -589,7 +589,6 @@ def test_insert_from_memtable(con, temp_table):
     mt = ibis.memtable(df)
     con.create_table(table_name, schema=mt.schema())
     con.insert(table_name, mt)
-    con.insert(table_name, mt)
 
     table = con.tables[table_name]
     assert len(table.execute()) == 6

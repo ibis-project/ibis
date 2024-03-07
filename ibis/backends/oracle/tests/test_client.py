@@ -4,8 +4,10 @@ from datetime import date  # noqa: TCH003
 
 import pandas as pd
 import pandas.testing as tm
+import pytest
 
 import ibis
+import ibis.common.exceptions as exc
 from ibis import udf
 
 
@@ -57,3 +59,15 @@ def test_builtin_agg_udf(con):
             c.execute(sql).fetchall(), columns=["string_col", "df_w"]
         )
     tm.assert_frame_equal(result, expected, check_dtype=False)
+
+
+def test_list_tables_schema_warning_refactor(con):
+    assert con.list_tables()
+
+    with pytest.raises(exc.IbisInputError):
+        con.list_tables(database="not none", schema="not none")
+
+    with pytest.warns(FutureWarning):
+        assert con.list_tables(schema="SYS", like="EXU8OPT") == ["EXU8OPT"]
+
+    assert con.list_tables(database="SYS", like="EXU8OPT") == ["EXU8OPT"]

@@ -157,6 +157,16 @@ class Backend(SQLBackend):
     def list_tables(
         self, like: str | None = None, database: str | None = None
     ) -> list[str]:
+        """List the tables in the database.
+
+        Parameters
+        ----------
+        like
+            A pattern to use for listing tables.
+        database
+            Database to list tables from. Default behavior is to show tables in
+            the current database.
+        """
         t = sg.table("TABLES", db="INFORMATION_SCHEMA", quoted=True)
         c = self.compiler
         query = sg.select(sg.column("TABLE_NAME", quoted=True)).from_(t).sql(c.dialect)

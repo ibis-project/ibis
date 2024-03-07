@@ -185,3 +185,20 @@ def test_builtin_agg_udf(con):
     result = expr.execute()
     expected = '["0","1","2","3","4"]'
     assert result == expected
+
+
+def test_list_tables_schema_warning_refactor(con):
+    mysql_tables = {
+        "column_stats",
+        "columns_priv",
+        "db",
+        "event",
+        "func",
+    }
+    assert con.list_tables()
+
+    with pytest.warns(FutureWarning):
+        assert mysql_tables.issubset(con.list_tables(schema="mysql"))
+
+    assert mysql_tables.issubset(con.list_tables(database="mysql"))
+    assert mysql_tables.issubset(con.list_tables(database=("mysql",)))

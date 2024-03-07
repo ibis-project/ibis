@@ -95,7 +95,7 @@ class TestConf(ServiceBackendTest):
         database = "hive"
         schema = "ibis_sf1"
 
-        tables = con.list_tables(schema="tiny", database="tpch")
+        tables = con.list_tables(database=("tpch", "tiny"))
         con.create_schema(schema, database=database, force=True)
 
         prefixes = {"partsupp": "ps"}

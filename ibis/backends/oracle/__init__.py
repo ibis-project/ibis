@@ -23,7 +23,7 @@ import ibis.expr.types as ir
 from ibis import util
 from ibis.backends.oracle.compiler import OracleCompiler
 from ibis.backends.sql import STAR, SQLBackend
-from ibis.backends.sql.compiler import TRUE, C
+from ibis.backends.sql.compiler import C
 
 if TYPE_CHECKING:
     import pandas as pd
@@ -202,7 +202,10 @@ class Backend(SQLBackend):
             return cursor
 
     def list_tables(
-        self, like: str | None = None, schema: str | None = None
+        self,
+        like: str | None = None,
+        schema: str | None = None,
+        database: tuple[str, str] | str | None = None,
     ) -> list[str]:
         """List the tables in the database.
 
@@ -211,14 +214,48 @@ class Backend(SQLBackend):
         like
             A pattern to use for listing tables.
         schema
-            The schema to perform the list against.
+            [deprecated] The schema to perform the list against.
+        database
+            Database to list tables from. Default behavior is to show tables in
+            the current database.
+
+            ::: {.callout-note}
+            ## Ibis does not use the word `schema` to refer to database hierarchy.
+
+            A collection of tables is referred to as a `database`.
+            A collection of `database` is referred to as a `catalog`.
+
+            These terms are mapped onto the corresponding features in each
+            backend (where available), regardless of whether the backend itself
+            uses the same terminology.
+            :::
 
         """
-        conditions = [TRUE]
+        if schema is not None and database is not None:
+            raise exc.IbisInputError(
+                "Using both the `schema` and `database` kwargs is not supported. "
+                "`schema` is deprecated and will be removed in Ibis 10.0"
+                "\nUse the `database` kwarg with one of the following patterns:"
+                '\ndatabase="database"'
+                '\ndatabase=("catalog", "database")'
+                '\ndatabase="catalog.database"',
+            )
+        if schema is not None:
+            # TODO: remove _warn_schema when the schema kwarg is removed
+            self._warn_schema()
+            table_loc = schema
+        elif database is not None:
+            table_loc = database
+        else:
+            table_loc = self.con.username.upper()
+        table_loc = self._to_sqlglot_table(table_loc)
 
-        if schema is None:
-            schema = self.con.username.upper()
-        conditions = C.owner.eq(sge.convert(schema.upper()))
+        # Deeply frustrating here where if we call `convert` on `table_loc`,
+        # which is a sg.exp.Table, the quotes are rendered as double-quotes
+        # which are invalid. With no `convert`, the same thing happens.
+        # If we call `convert` on the stringified SQL output, they get reparsed
+        # as literal strings and those are rendered correctly.
+        conditions = C.owner.eq(sge.convert(table_loc.sql(self.name)))
 
         tables = (
             sg.select("table_name", "owner")

@@ -137,6 +137,16 @@ class Backend(SQLBackend):
             yield cur.execute(query, *args, **kwargs)
 
     def list_tables(self, like=None, database=None):
+        """List the tables in the database.
+
+        Parameters
+        ----------
+        like
+            A pattern to use for listing tables.
+        database
+            Database to list tables from. Default behavior is to show tables in
+            the current database.
+        """
         tables = sg.select("table_name").from_(
             sg.table("EXA_ALL_TABLES", catalog="SYS")
         )

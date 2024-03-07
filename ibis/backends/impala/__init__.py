@@ -208,6 +208,22 @@ class Backend(SQLBackend):
         return self._filter_with_like(databases.name.tolist(), like)
 
     def list_tables(self, like=None, database=None):
+        """Return the list of table names in the current database.
+
+        Parameters
+        ----------
+        like
+            A pattern in Python's regex format.
+        database
+            The database from which to list tables.
+            If not provided, the current database is used.
+
+        Returns
+        -------
+        list[str]
+            The list of the table names that match the pattern `like`.
+        """
+
         statement = "SHOW TABLES"
         if database is not None:
             statement += f" IN {database}"

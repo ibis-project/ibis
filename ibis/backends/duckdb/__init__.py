@@ -893,7 +893,7 @@ class Backend(SQLBackend, CanCreateSchema, UrlFromPath):
     def list_tables(
         self,
         like: str | None = None,
-        database: str | None = None,
+        database: tuple[str, str] | str | None = None,
         schema: str | None = None,
     ) -> list[str]:
         """List tables and views.
@@ -903,10 +903,27 @@ class Backend(SQLBackend, CanCreateSchema, UrlFromPath):
         like
             Regex to filter by table/view name.
         database
-            Database name. If not passed, uses the current database. Only
-            supported with MotherDuck.
+            Database location. If not passed, uses the current database.
+
+            By default uses the current `database` (`self.current_database`) and
+            `catalog` (`self.current_catalog`).
+
+            To specify a table in a separate catalog, you can pass in the
+            catalog and database as a string `"catalog.database"`, or as a tuple of
+            strings `("catalog", "database")`.
+
+            ::: {.callout-note}
+            ## Ibis does not use the word `schema` to refer to database hierarchy.
+
+            A collection of tables is referred to as a `database`.
+            A collection of `database` is referred to as a `catalog`.
+
+            These terms are mapped onto the corresponding features in each
+            backend (where available), regardless of whether the backend itself
+            uses the same terminology.
+            :::
         schema
-            Schema name. If not passed, uses the current schema.
+            [deprecated] Schema name. If not passed, uses the current schema.
 
         Returns
         -------
@@ -923,18 +940,23 @@ class Backend(SQLBackend, CanCreateSchema, UrlFromPath):
         >>> bar = con.create_view("bar", foo)
         >>> con.list_tables()
         ['bar', 'foo']
-        >>> con.create_schema("my_schema")
-        >>> con.list_tables(schema="my_schema")
+        >>> con.create_database("my_database")
+        >>> con.list_tables(database="my_database")
         []
         >>> with con.begin() as c:
-        ...     c.exec_driver_sql("CREATE TABLE my_schema.baz (a INTEGER)")  # doctest: +ELLIPSIS
+        ...     c.exec_driver_sql("CREATE TABLE my_database.baz (a INTEGER)")  # doctest: +ELLIPSIS
         <...>
-        >>> con.list_tables(schema="my_schema")
+        >>> con.list_tables(database="my_database")
         ['baz']
 
         """
-        database = F.current_database() if database is None else sge.convert(database)
-        schema = F.current_schema() if schema is None else sge.convert(schema)
+        table_loc = self._warn_and_create_table_loc(database, schema)
+
+        catalog = F.current_database()
+        database = F.current_schema()
+        if table_loc is not None:
+            catalog = table_loc.catalog or catalog
+            database = table_loc.db or database
 
         col = "table_name"
         sql = (
@@ -942,10 +964,10 @@ class Backend(SQLBackend, CanCreateSchema, UrlFromPath):
             .from_(sg.table("tables", db="information_schema"))
             .distinct()
             .where(
-                C.table_catalog.eq(database).or_(
+                C.table_catalog.eq(catalog).or_(
                     C.table_catalog.eq(sge.convert("temp"))
                 ),
-                C.table_schema.eq(schema),
+                C.table_schema.eq(database),
             )
             .sql(self.name, pretty=True)
         )

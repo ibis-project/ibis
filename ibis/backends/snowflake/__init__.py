@@ -507,7 +507,7 @@ $$"""
     def list_tables(
         self,
         like: str | None = None,
-        database: str | None = None,
+        database: tuple[str, str] | str | None = None,
         schema: str | None = None,
     ) -> list[str]:
         """List the tables in the database.
@@ -517,38 +517,33 @@ $$"""
         like
             A pattern to use for listing tables.
         database
-            The database (catalog) to perform the list against.
-        schema
-            The schema inside `database` to perform the list against.
+            Table location. If not passed, uses the current catalog and database.
 
-            ::: {.callout-warning}
-            ## `schema` refers to database hierarchy
+            To specify a table in a separate Snowflake catalog, you can pass in the
+            catalog and database as a string `"catalog.database"`, or as a tuple of
+            strings `("catalog", "database")`.
 
-            The `schema` parameter does **not** refer to the column names and
-            types of `table`.
+            ::: {.callout-note}
+            ## Ibis does not use the word `schema` to refer to database hierarchy.
+
+            A collection of tables is referred to as a `database`.
+            A collection of `database` is referred to as a `catalog`.
+
+            These terms are mapped onto the corresponding features in each
+            backend (where available), regardless of whether the backend itself
+            uses the same terminology.
             :::
-
+        schema
+            [deprecated] The schema inside `database` to perform the list against.
         """
-
-        if database is not None and schema is None:
-            raise com.IbisInputError(
-                f"{self.name} cannot list tables only using `database` specifier. "
-                "Include a `schema` argument."
-            )
-        elif database is None and schema is not None:
-            database = sg.parse_one(schema, into=sge.Table).sql(dialect=self.name)
-        else:
-            database = (
-                sg.table(schema, db=database, quoted=True).sql(dialect=self.name)
-                or None
-            )
+        table_loc = self._warn_and_create_table_loc(database, schema)
 
         tables_query = "SHOW TABLES"
         views_query = "SHOW VIEWS"
 
-        if database is not None:
-            tables_query += f" IN {database}"
-            views_query += f" IN {database}"
+        if table_loc is not None:
+            tables_query += f" IN {table_loc}"
+            views_query += f" IN {table_loc}"
 
         with self.con.cursor() as cur:
             # TODO: considering doing this with a single query using information_schema
