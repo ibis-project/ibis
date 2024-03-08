@@ -107,7 +107,7 @@ class SQLBackend(BaseBackend):
         assert not isinstance(sql, sge.Subquery)
 
         if isinstance(sql, sge.Table):
-            sql = sg.select(STAR).from_(sql)
+            sql = sg.select(STAR, copy=False).from_(sql, copy=False)
 
         assert not isinstance(sql, sge.Subquery)
         return sql
@@ -117,7 +117,7 @@ class SQLBackend(BaseBackend):
     ):
         """Compile an Ibis expression to a SQL string."""
         query = self._to_sqlglot(expr, limit=limit, params=params, **kwargs)
-        sql = query.sql(dialect=self.dialect, pretty=True)
+        sql = query.sql(dialect=self.dialect, pretty=True, copy=False)
         self._log(sql)
         return sql
 

@@ -12,7 +12,7 @@ import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 from ibis import util
-from ibis.backends.sql.compiler import NULL, STAR, SQLGlotCompiler, paren
+from ibis.backends.sql.compiler import NULL, STAR, SQLGlotCompiler
 from ibis.backends.sql.datatypes import BigQueryType, BigQueryUDFType
 from ibis.backends.sql.rewrites import (
     exclude_unsupported_window_frame_from_ops,
@@ -707,10 +707,10 @@ class BigQueryCompiler(SQLGlotCompiler):
         return self.f.count(STAR)
 
     def visit_Degrees(self, op, *, arg):
-        return paren(180 * arg / self.f.acos(-1))
+        return sge.paren(180 * arg / self.f.acos(-1), copy=False)
 
     def visit_Radians(self, op, *, arg):
-        return paren(self.f.acos(-1) * arg / 180)
+        return sge.paren(self.f.acos(-1) * arg / 180, copy=False)
 
     def visit_CountDistinct(self, op, *, arg, where):
         if where is not None:

@@ -8,7 +8,7 @@ import sqlglot.expressions as sge
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
-from ibis.backends.sql.compiler import NULL, STAR, SQLGlotCompiler, paren
+from ibis.backends.sql.compiler import NULL, STAR, SQLGlotCompiler
 from ibis.backends.sql.datatypes import FlinkType
 from ibis.backends.sql.dialects import Flink
 from ibis.backends.sql.rewrites import (
@@ -467,12 +467,12 @@ class FlinkCompiler(SQLGlotCompiler):
         bucket_width = op.interval.value
         unit_func = self.f["dayofmonth" if unit.upper() == "DAY" else unit]
 
-        arg = self.f.anon.timestampadd(unit_var, -paren(offset), arg)
+        arg = self.f.anon.timestampadd(unit_var, -sge.paren(offset, copy=False), arg)
         mod = unit_func(arg) % bucket_width
 
         return self.f.anon.timestampadd(
             unit_var,
-            -paren(mod) + offset,
+            -sge.paren(mod, copy=False) + offset,
             self.v[f"FLOOR({arg.sql(self.dialect)} TO {unit_var.sql(self.dialect)})"],
         )
 

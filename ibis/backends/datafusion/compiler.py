@@ -11,13 +11,7 @@ import sqlglot.expressions as sge
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
-from ibis.backends.sql.compiler import (
-    FALSE,
-    NULL,
-    STAR,
-    SQLGlotCompiler,
-    paren,
-)
+from ibis.backends.sql.compiler import FALSE, NULL, STAR, SQLGlotCompiler
 from ibis.backends.sql.datatypes import DataFusionType
 from ibis.backends.sql.dialects import DataFusion
 from ibis.backends.sql.rewrites import rewrite_sample_as_filter
@@ -261,7 +255,7 @@ class DataFusionCompiler(SQLGlotCompiler):
 
     def visit_DayOfWeekName(self, op, *, arg):
         return sg.exp.Case(
-            this=paren(self.f.date_part("dow", arg) + 6) % 7,
+            this=sge.paren(self.f.date_part("dow", arg) + 6, copy=False) % 7,
             ifs=list(starmap(self.if_, enumerate(calendar.day_name))),
         )
 
@@ -438,7 +432,7 @@ class DataFusionCompiler(SQLGlotCompiler):
     def visit_Aggregate(self, op, *, parent, groups, metrics):
         """Support `GROUP BY` expressions in `SELECT` since DataFusion does not."""
         quoted = self.quoted
-        metrics = tuple(starmap(self._dedup_name, metrics.items()))
+        metrics = tuple(self._cleanup_names(metrics))
 
         if groups:
             # datafusion doesn't support count distinct aggregations alongside
@@ -459,7 +453,7 @@ class DataFusionCompiler(SQLGlotCompiler):
                 )
             )
             table = (
-                sg.select(*cols, *starmap(self._dedup_name, groups.items()))
+                sg.select(*cols, *self._cleanup_names(groups))
                 .from_(parent)
                 .subquery(parent.alias)
             )

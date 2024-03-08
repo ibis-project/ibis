@@ -11,12 +11,7 @@ import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 from ibis import util
-from ibis.backends.sql.compiler import (
-    NULL,
-    STAR,
-    SQLGlotCompiler,
-    parenthesize,
-)
+from ibis.backends.sql.compiler import NULL, STAR, SQLGlotCompiler
 from ibis.backends.sql.datatypes import ClickHouseType
 from ibis.backends.sql.dialects import ClickHouse
 from ibis.backends.sql.rewrites import rewrite_sample_as_filter
@@ -163,11 +158,11 @@ class ClickHouseCompiler(SQLGlotCompiler):
         return self.f.arrayFlatten(self.f.arrayMap(func, self.f.range(times)))
 
     def visit_ArraySlice(self, op, *, arg, start, stop):
-        start = parenthesize(op.start, start)
+        start = self._add_parens(op.start, start)
         start_correct = self.if_(start < 0, start, start + 1)
 
         if stop is not None:
-            stop = parenthesize(op.stop, stop)
+            stop = self._add_parens(op.stop, stop)
 
             length = self.if_(
                 stop < 0,

@@ -15,7 +15,6 @@ from ibis.backends.sql.compiler import (
     STAR,
     TRUE,
     SQLGlotCompiler,
-    paren,
 )
 from ibis.backends.sql.datatypes import MSSQLType
 from ibis.backends.sql.dialects import MSSQL
@@ -189,7 +188,7 @@ class MSSQLCompiler(SQLGlotCompiler):
 
         Thanks to @arkanovicz for this glorious hack.
         """
-        return paren(self.f.len(self.f.concat("A", arg, "Z")) - 2)
+        return sge.paren(self.f.len(self.f.concat("A", arg, "Z")) - 2, copy=False)
 
     def visit_GroupConcat(self, op, *, arg, sep, where):
         if where is not None:
