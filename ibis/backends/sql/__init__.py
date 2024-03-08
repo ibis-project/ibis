@@ -117,7 +117,7 @@ class SQLBackend(BaseBackend):
     ):
         """Compile an Ibis expression to a SQL string."""
         query = self._to_sqlglot(expr, limit=limit, params=params, **kwargs)
-        sql = query.sql(dialect=self.dialect, pretty=True)
+        sql = query.sql(dialect=self.dialect, pretty=True, copy=False)
         self._log(sql)
         return sql
 
