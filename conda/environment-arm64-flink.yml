@@ -56,7 +56,7 @@ dependencies:
   # test dependencies
   - filelock >=3.7.0,<4
   - hypothesis >=6.58.0,<7
-  - pytest >=7.0.0,<9
+  - pytest >=8.0.2,<9
   - pytest-benchmark >=3.4.1,<5
   - pytest-clarity >=1.0.1,<2
   - pytest-cov >=3.0.0,<5
