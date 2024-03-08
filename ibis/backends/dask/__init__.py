@@ -80,9 +80,7 @@ class Backend(BasePandasBackend, NoUrl):
             )
         if not isinstance(expr, ir.Expr):
             raise TypeError(
-                "`expr` has type {!r}, expected ibis.expr.types.Expr".format(
-                    type(expr).__name__
-                )
+                f"`expr` has type {type(expr).__name__!r}, expected ibis.expr.types.Expr"
             )
 
     def compile(

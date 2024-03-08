@@ -467,9 +467,7 @@ class LoadData(ImpalaBase, DDL):
             partition = ""
 
         scoped_name = self.scoped_name(self.table_name, self.database)
-        return "LOAD DATA INPATH '{}' {}INTO TABLE {}{}".format(
-            self.path, overwrite, scoped_name, partition
-        )
+        return f"LOAD DATA INPATH {self.path!r} {overwrite}INTO TABLE {scoped_name}{partition}"
 
 
 class PartitionProperties(AlterTable):

@@ -53,14 +53,10 @@ def validate_input_type(input_type: list[dt.DataType], func: Callable) -> Signat
 
         if declared_parameter_count != function_parameter_count:
             raise TypeError(
-                "Function signature {!r} has {:d} parameters, "
-                "input_type has {:d}. These must match. Non-column "
+                f"Function signature {func.__name__!r} has {function_parameter_count:d} parameters, "
+                f"input_type has {declared_parameter_count:d}. These must match. Non-column "
                 "parameters must be defined as keyword only, i.e., "
-                "def foo(col, *, function_param).".format(
-                    func.__name__,
-                    function_parameter_count,
-                    declared_parameter_count,
-                )
+                "def foo(col, *, function_param)."
             )
 
     return funcsig
