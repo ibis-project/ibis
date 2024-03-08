@@ -1533,52 +1533,36 @@ def test_array_length_scalar():
     assert isinstance(expr.op(), ops.ArrayLength)
 
 
-def double_int(x):
-    return x * 2
-
-
-def double_float(x):
-    return x * 2.0
-
-
-def is_negative(x):
-    return x < 0
-
-
 def test_array_map():
     arr = ibis.array([1, 2, 3])
 
-    result_int = arr.map(double_int)
-    result_float = arr.map(double_float)
+    r1 = arr.map(_ * 2)
+    r2 = arr.map(lambda x: x * 2.0)
+    r3 = arr.map(functools.partial(lambda a, b: a + b, b=2))
 
-    assert result_int.type() == dt.Array(dt.int16)
-    assert result_float.type() == dt.Array(dt.float64)
+    assert r1.type() == dt.Array(dt.int16)
+    assert r2.type() == dt.Array(dt.float64)
+    assert r3.type() == dt.Array(dt.int16)
 
-
-def test_array_map_partial():
-    arr = ibis.array([1, 2, 3])
-
-    def add(x, y):
-        return x + y
-
-    result = arr.map(functools.partial(add, y=2))
-    assert result.type() == dt.Array(dt.int16)
+    with pytest.raises(TypeError, match="must be a Deferred or Callable"):
+        # Non-deferred expressions aren't allowed
+        arr.map(arr[0])
 
 
 def test_array_filter():
     arr = ibis.array([1, 2, 3])
-    result = arr.filter(is_negative)
-    assert result.type() == arr.type()
 
+    r1 = arr.filter(lambda x: x < 0)
+    r2 = arr.filter(_ < 0)
+    r3 = arr.filter(functools.partial(lambda a, b: a == b, b=2))
 
-def test_array_filter_partial():
-    arr = ibis.array([1, 2, 3])
+    assert r1.type() == arr.type()
+    assert r2.type() == arr.type()
+    assert r3.type() == arr.type()
 
-    def equal(x, y):
-        return x == y
-
-    result = arr.filter(functools.partial(equal, y=2))
-    assert result.type() == arr.type()
+    with pytest.raises(TypeError, match="must be a Deferred or Callable"):
+        # Non-deferred expressions aren't allowed
+        arr.filter(arr[0])
 
 
 @pytest.mark.parametrize(
