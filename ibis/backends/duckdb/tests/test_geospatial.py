@@ -306,3 +306,31 @@ def test_literal_geospatial_inferred(con, shp, expected, snapshot):
 def test_load_geo_example(con):
     t = ibis.examples.zones.fetch(backend=con)
     assert t.geom.type().is_geospatial()
+
+
+# For the next two tests we really want to ensure that
+# load_extenstion("spatial") hasn't been run yet. So we create a new connection
+# instead of using the  con fixture.
+
+# geospatial literal object,
+geo_line_lit = ibis.literal(
+    shapely.LineString([[0, 0], [1, 0], [1, 1]]), type="geometry"
+)
+
+
+@pytest.mark.parametrize("geo_line_lit", [geo_line_lit])
+def test_geo_unop_geo_literals(geo_line_lit):
+    # GeoSpatialUnOp operation on a geospatial literal
+    con = ibis.duckdb.connect()
+    expr = geo_line_lit.length()
+
+    assert con.execute(expr) == 2
+
+
+@pytest.mark.parametrize("geo_line_lit", [geo_line_lit])
+def test_geo_binop_geo_literals(geo_line_lit):
+    # GeoSpatialBinOp operation on a geospatial literal
+    con = ibis.duckdb.connect()
+    expr = geo_line_lit.distance(shapely.Point(0, 0))
+
+    assert con.execute(expr) == 0
