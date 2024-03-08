@@ -77,7 +77,6 @@ def test_date_extract(backend, alltypes, df, attr, expr_fn):
             "quarter",
             marks=[
                 pytest.mark.notyet(["oracle"], raises=OracleDatabaseError),
-                pytest.mark.notimpl(["exasol"], raises=com.OperationNotDefinedError),
             ],
         ),
         "hour",

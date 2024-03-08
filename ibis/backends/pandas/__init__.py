@@ -317,9 +317,7 @@ class Backend(BasePandasBackend):
 
         if not isinstance(query, ir.Expr):
             raise TypeError(
-                "`query` has type {!r}, expected ibis.expr.types.Expr".format(
-                    type(query).__name__
-                )
+                f"`query` has type {type(query).__name__!r}, expected ibis.expr.types.Expr"
             )
 
         params = params or {}

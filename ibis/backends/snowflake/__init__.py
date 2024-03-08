@@ -165,10 +165,7 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
 
     def _make_udf(self, name: str, defn) -> str:
         signature = ", ".join(
-            "{} {}".format(
-                sg.to_identifier(argname, quoted=self.compiler.quoted).sql(self.name),
-                typ,
-            )
+            f"{sg.to_identifier(argname, quoted=self.compiler.quoted).sql(self.name)} {typ}"
             for argname, typ in defn["inputs"].items()
         )
         return_type = defn["returns"]
