@@ -143,7 +143,7 @@ def test_timestamp_extract(backend, alltypes, df, attr):
             id="day_of_week_full_name",
             marks=[
                 pytest.mark.notimpl(
-                    ["druid", "oracle", "exasol"],
+                    ["druid", "oracle"],
                     raises=com.OperationNotDefinedError,
                 ),
                 pytest.mark.broken(
@@ -1510,6 +1510,9 @@ def test_day_of_week_column(backend, alltypes, df):
             lambda t: t.timestamp_col.day_of_week.index().count(),
             lambda s: s.dt.dayofweek.count(),
             id="day_of_week_index",
+            marks=[
+                pytest.mark.notimpl(["exasol"], raises=com.OperationNotDefinedError)
+            ],
         ),
         param(
             lambda t: t.timestamp_col.day_of_week.full_name().length().sum(),
@@ -1531,7 +1534,6 @@ def test_day_of_week_column(backend, alltypes, df):
     raises=AttributeError,
     reason="'StringColumn' object has no attribute 'day_of_week'",
 )
-@pytest.mark.notimpl(["exasol"], raises=com.OperationNotDefinedError)
 def test_day_of_week_column_group_by(
     backend, alltypes, df, day_of_week_expr, day_of_week_pandas
 ):
