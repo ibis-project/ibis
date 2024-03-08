@@ -241,7 +241,7 @@ def test_timestamp_extract_epoch_seconds(backend, alltypes, df):
     backend.assert_series_equal(result, expected)
 
 
-@pytest.mark.notimpl(["oracle", "exasol"], raises=com.OperationNotDefinedError)
+@pytest.mark.notimpl(["oracle"], raises=com.OperationNotDefinedError)
 @pytest.mark.notimpl(
     ["druid"],
     raises=AttributeError,
