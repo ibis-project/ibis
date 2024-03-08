@@ -1,42 +1,32 @@
-WITH "t6" AS (
-  SELECT
-    "t5"."street",
-    ROW_NUMBER() OVER (ORDER BY "t5"."street" ASC NULLS LAST) - 1 AS "key"
-  FROM (
-    SELECT
-      "t2"."street",
-      "t2"."key"
-    FROM (
-      SELECT
-        "t0"."street",
-        ROW_NUMBER() OVER (ORDER BY "t0"."street" ASC NULLS LAST) - 1 AS "key"
-      FROM "data" "t0"
-    ) "t2"
-    INNER JOIN (
-      SELECT
-        "t1"."key"
-      FROM (
-        SELECT
-          "t0"."street",
-          ROW_NUMBER() OVER (ORDER BY "t0"."street" ASC NULLS LAST) - 1 AS "key"
-        FROM "data" "t0"
-      ) "t1"
-    ) "t4"
-      ON "t2"."key" = "t4"."key"
-  ) "t5"
-), "t1" AS (
+WITH "t1" AS (
   SELECT
     "t0"."street",
     ROW_NUMBER() OVER (ORDER BY "t0"."street" ASC NULLS LAST) - 1 AS "key"
   FROM "data" "t0"
+), "t7" AS (
+  SELECT
+    "t6"."street",
+    ROW_NUMBER() OVER (ORDER BY "t6"."street" ASC NULLS LAST) - 1 AS "key"
+  FROM (
+    SELECT
+      "t3"."street",
+      "t3"."key"
+    FROM "t1" "t3"
+    INNER JOIN (
+      SELECT
+        "t2"."key"
+      FROM "t1" "t2"
+    ) "t5"
+      ON "t3"."key" = "t5"."key"
+  ) "t6"
 )
 SELECT
-  "t8"."street",
-  "t8"."key"
-FROM "t6" "t8"
+  "t9"."street",
+  "t9"."key"
+FROM "t7" "t9"
 INNER JOIN (
   SELECT
-    "t7"."key"
-  FROM "t6" "t7"
-) "t10"
-  ON "t8"."key" = "t10"."key"
+    "t8"."key"
+  FROM "t7" "t8"
+) "t11"
+  ON "t9"."key" = "t11"."key"

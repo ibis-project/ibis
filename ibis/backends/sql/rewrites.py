@@ -236,9 +236,14 @@ def sqlize(
     simplified = sqlized.replace(merge_select_select)
 
     # extract common table expressions while wrapping them in a CTE node
-    ctes = extract_ctes(simplified)
-    subs = {cte: CTE(cte) for cte in ctes}
-    result = simplified.replace(subs)
+    ctes = frozenset(extract_ctes(simplified))
+
+    def wrap(node, _, **kwargs):
+        new = node.__recreate__(kwargs)
+        return CTE(new) if node in ctes else new
+
+    result = simplified.replace(wrap)
+    ctes = reversed([cte.parent for cte in result.find(CTE)])
 
     return result, ctes
 
