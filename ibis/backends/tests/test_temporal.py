@@ -342,7 +342,7 @@ PANDAS_UNITS = {
             "ms",
             marks=[
                 pytest.mark.notimpl(
-                    ["clickhouse", "mysql", "sqlite", "datafusion"],
+                    ["clickhouse", "mysql", "sqlite", "datafusion", "exasol"],
                     raises=com.UnsupportedOperationError,
                 ),
                 pytest.mark.broken(
@@ -356,7 +356,7 @@ PANDAS_UNITS = {
             "us",
             marks=[
                 pytest.mark.notimpl(
-                    ["clickhouse", "mysql", "sqlite", "trino", "datafusion"],
+                    ["clickhouse", "mysql", "sqlite", "trino", "datafusion", "exasol"],
                     raises=com.UnsupportedOperationError,
                 ),
                 pytest.mark.broken(
@@ -389,6 +389,7 @@ PANDAS_UNITS = {
                         "trino",
                         "mssql",
                         "datafusion",
+                        "exasol",
                     ],
                     raises=com.UnsupportedOperationError,
                 ),
@@ -411,7 +412,6 @@ PANDAS_UNITS = {
     raises=AttributeError,
     reason="AttributeError: 'StringColumn' object has no attribute 'truncate'",
 )
-@pytest.mark.notimpl(["exasol"], raises=com.OperationNotDefinedError)
 def test_timestamp_truncate(backend, alltypes, df, unit):
     expr = alltypes.timestamp_col.truncate(unit).name("tmp")
 
@@ -439,7 +439,7 @@ def test_timestamp_truncate(backend, alltypes, df, unit):
             marks=[
                 pytest.mark.notyet(["mysql"], raises=com.UnsupportedOperationError),
                 pytest.mark.broken(
-                    ["flink", "exasol"],
+                    ["flink"],
                     raises=AssertionError,
                     reason="Implemented, but behavior doesn't match other backends",
                 ),
