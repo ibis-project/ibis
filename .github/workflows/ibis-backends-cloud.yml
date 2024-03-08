@@ -87,7 +87,7 @@ jobs:
           github_token: ${{ steps.generate_token.outputs.token }}
 
       - name: install poetry
-        run: pipx install 'poetry==1.8.1'
+        run: pipx install 'poetry==1.8.2'
 
       - name: install python
         uses: actions/setup-python@v5
