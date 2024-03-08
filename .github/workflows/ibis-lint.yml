@@ -28,7 +28,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: install nix
-        uses: cachix/install-nix-action@v25
+        uses: cachix/install-nix-action@v26
         with:
           extra_nix_config: |
             access-tokens = github.com=${{ secrets.GITHUB_TOKEN }}
@@ -53,7 +53,7 @@ jobs:
           fetch-depth: 0
 
       - name: install nix
-        uses: cachix/install-nix-action@v25
+        uses: cachix/install-nix-action@v26
         with:
           extra_nix_config: |
             access-tokens = github.com=${{ secrets.GITHUB_TOKEN }}
@@ -75,7 +75,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: cachix/install-nix-action@v25
+      - uses: cachix/install-nix-action@v26
         with:
           extra_nix_config: |
             access-tokens = github.com=${{ secrets.GITHUB_TOKEN }}
