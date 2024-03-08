@@ -188,7 +188,7 @@ def extract_ctes(node):
     g = Graph.from_bfs(node, filter=(ops.Relation, ops.Subquery, ops.JoinLink))
     for node, dependents in g.invert().items():
         if isinstance(node, ops.View) or (
-            isinstance(node, cte_types) and len(dependents) > 1
+            len(dependents) > 1 and isinstance(node, cte_types)
         ):
             result.append(node)
 
@@ -236,7 +236,7 @@ def sqlize(
     simplified = sqlized.replace(merge_select_select)
 
     # extract common table expressions while wrapping them in a CTE node
-    ctes = set(extract_ctes(simplified))
+    ctes = frozenset(extract_ctes(simplified))
 
     def wrap(node, _, **kwargs):
         new = node.__recreate__(kwargs)
