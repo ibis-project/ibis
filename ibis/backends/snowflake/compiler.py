@@ -480,6 +480,48 @@ class SnowflakeCompiler(SQLGlotCompiler):
         # boolxor accepts numerics ... and returns a boolean? wtf?
         return self.f.boolxor(self.cast(left, dt.int8), self.cast(right, dt.int8))
 
+    def visit_Window(self, op, *, how, func, start, end, group_by, order_by):
+        if start is None:
+            start = {}
+        if end is None:
+            end = {}
+
+        start_value = start.get("value", "UNBOUNDED")
+        start_side = start.get("side", "PRECEDING")
+        end_value = end.get("value", "UNBOUNDED")
+        end_side = end.get("side", "FOLLOWING")
+
+        if getattr(start_value, "this", None) == "0":
+            start_value = "CURRENT ROW"
+            start_side = None
+
+        if getattr(end_value, "this", None) == "0":
+            end_value = "CURRENT ROW"
+            end_side = None
+
+        spec = sge.WindowSpec(
+            kind=how.upper(),
+            start=start_value,
+            start_side=start_side,
+            end=end_value,
+            end_side=end_side,
+            over="OVER",
+        )
+        order = sge.Order(expressions=order_by) if order_by else None
+
+        orig_spec = spec
+        spec = self._minimize_spec(op.start, op.end, orig_spec)
+
+        # due to https://docs.snowflake.com/en/sql-reference/functions-analytic#window-frame-usage-notes
+        # we need to make the default window rows (since range isn't supported)
+        # and we need to make the default frame unbounded preceding to current
+        # row
+        if spec is None and isinstance(op.func, (ops.First, ops.Last, ops.NthValue)):
+            spec = orig_spec
+            spec.args["kind"] = "ROWS"
+
+        return sge.Window(this=func, partition_by=group_by, order=order, spec=spec)
+
     def visit_WindowBoundary(self, op, *, value, preceding):
         if not isinstance(op.value, ops.Literal):
             raise com.OperationNotDefinedError(

@@ -202,11 +202,6 @@ def calc_zscore(s):
                 pytest.mark.notimpl(["dask"], raises=com.OperationNotDefinedError),
                 pytest.mark.notimpl(["flink"], raises=com.OperationNotDefinedError),
                 pytest.mark.notimpl(["risingwave"], raises=PsycoPg2InternalError),
-                pytest.mark.broken(
-                    ["snowflake"],
-                    raises=AssertionError,
-                    reason="behavior of windows with nth_value has changed; unclear whether that is in ibis or in snowflake itself",
-                ),
             ],
         ),
         param(
