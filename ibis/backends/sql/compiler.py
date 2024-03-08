@@ -19,6 +19,7 @@ import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 from ibis.backends.sql.rewrites import (
+    CTE,
     FirstValue,
     LastValue,
     add_one_to_nth_value_input,
@@ -448,6 +449,7 @@ class SQLGlotCompiler(abc.ABC):
         params = self._prepare_params(params)
         op, ctes = sqlize(op, params=params, rewrites=self.rewrites)
 
+        results = {}
         aliases = {}
         counter = itertools.count()
 
@@ -465,17 +467,23 @@ class SQLGlotCompiler(abc.ABC):
             alias = sg.to_identifier(alias, quoted=self.quoted, copy=False)
             try:
                 # any nested select must be a subquery unless it is the root
-                return result.subquery(alias, copy=False)
+                result = result.subquery(alias, copy=False)
             except AttributeError:
                 # although tables cannot be turned into subqueries, but we still
                 # need to alias them in which case copying is necessary
-                return result.as_(alias, quoted=self.quoted, copy=True)
+                result = result.as_(alias, quoted=self.quoted, copy=True)
 
-        # apply translate rules in topological order
-        results = op.map(fn)
+            if isinstance(node, CTE):
+                # since we use op.map_clear() below, the intermediate results
+                # will be lost, so we need to store the CTEs separately
+                results[node] = result
 
-        # get the root node as a sqlglot select statement
-        out = results[op]
+            return result
+
+        # apply translate rules in topological order getting back the sqlglot
+        # expression for the root node
+        out = op.map_clear(fn)
+
         if isinstance(out, sge.Table):
             out = sg.select(STAR, copy=False).from_(out, copy=False)
         elif isinstance(out, sge.Subquery):
