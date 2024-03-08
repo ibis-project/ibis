@@ -549,16 +549,118 @@ class _FileIOHandler:
             write_deltalake(path, batch_reader, **kwargs)
 
 
-class CanListDatabases(abc.ABC):
+class CanListCatalog(abc.ABC):
     @abc.abstractmethod
-    def list_databases(self, like: str | None = None) -> list[str]:
-        """List existing databases in the current connection.
+    def list_catalogs(self, like: str | None = None) -> list[str]:
+        """List existing catalogs in the current connection.
+
+        ::: {.callout-note}
+        ## Ibis does not use the word `schema` to refer to database hierarchy.
+
+        A collection of `table` is referred to as a `database`.
+        A collection of `database` is referred to as a `catalog`.
+
+        These terms are mapped onto the corresponding features in each
+        backend (where available), regardless of whether the backend itself
+        uses the same terminology.
+        :::
 
         Parameters
         ----------
         like
             A pattern in Python's regex format to filter returned database
             names.
+
+        Returns
+        -------
+        list[str]
+            The catalog names that exist in the current connection, that match
+            the `like` pattern if provided.
+
+        """
+
+    @property
+    @abc.abstractmethod
+    def current_catalog(self) -> str:
+        """The current catalog in use."""
+
+
+class CanCreateCatalog(CanListCatalog):
+    @abc.abstractmethod
+    def create_catalog(self, name: str, force: bool = False) -> None:
+        """Create a new catalog.
+
+        ::: {.callout-note}
+        ## Ibis does not use the word `schema` to refer to database hierarchy.
+
+        A collection of `table` is referred to as a `database`.
+        A collection of `database` is referred to as a `catalog`.
+
+        These terms are mapped onto the corresponding features in each
+        backend (where available), regardless of whether the backend itself
+        uses the same terminology.
+        :::
+
+        Parameters
+        ----------
+        name
+            Name of the new catalog.
+        force
+            If `False`, an exception is raised if the catalog already exists.
+
+        """
+
+    @abc.abstractmethod
+    def drop_catalog(self, name: str, force: bool = False) -> None:
+        """Drop a catalog with name `name`.
+
+        ::: {.callout-note}
+        ## Ibis does not use the word `schema` to refer to database hierarchy.
+
+        A collection of `table` is referred to as a `database`.
+        A collection of `database` is referred to as a `catalog`.
+
+        These terms are mapped onto the corresponding features in each
+        backend (where available), regardless of whether the backend itself
+        uses the same terminology.
+        :::
+
+        Parameters
+        ----------
+        name
+            Catalog to drop.
+        force
+            If `False`, an exception is raised if the catalog does not exist.
+
+        """
+
+
+class CanListDatabase(abc.ABC):
+    @abc.abstractmethod
+    def list_databases(
+        self, like: str | None = None, catalog: str | None = None
+    ) -> list[str]:
+        """List existing databases in the current connection.
+
+        ::: {.callout-note}
+        ## Ibis does not use the word `schema` to refer to database hierarchy.
+
+        A collection of `table` is referred to as a `database`.
+        A collection of `database` is referred to as a `catalog`.
+
+        These terms are mapped onto the corresponding features in each
+        backend (where available), regardless of whether the backend itself
+        uses the same terminology.
+        :::
+
+        Parameters
+        ----------
+        like
+            A pattern in Python's regex format to filter returned database
+            names.
+        catalog
+            The catalog to list databases from. If `None`, the current catalog
+            is searched.
 
         Returns
         -------
@@ -574,98 +676,80 @@ class CanListDatabases(abc.ABC):
         """The current database in use."""
 
 
-class CanCreateDatabase(CanListDatabases):
+class CanCreateDatabase(CanListDatabase):
     @abc.abstractmethod
-    def create_database(self, name: str, force: bool = False) -> None:
-        """Create a new database.
+    def create_database(
+        self, name: str, catalog: str | None = None, force: bool = False
+    ) -> None:
+        """Create a database named `name` in `catalog`.
 
         Parameters
         ----------
         name
-            Name of the new database.
+            Name of the database to create.
+        catalog
+            Name of the catalog in which to create the database. If `None`, the
+            current catalog is used.
         force
-            If `False`, an exception is raised if the database already exists.
+            If `False`, an exception is raised if the database exists.
 
         """
 
     @abc.abstractmethod
-    def drop_database(self, name: str, force: bool = False) -> None:
-        """Drop a database with name `name`.
+    def drop_database(
+        self, name: str, catalog: str | None = None, force: bool = False
+    ) -> None:
+        """Drop the database with `name` in `catalog`.
 
         Parameters
         ----------
         name
-            Database to drop.
+            Name of the schema to drop.
+        catalog
+            Name of the catalog to drop the database from. If `None`, the
+            current catalog is used.
         force
             If `False`, an exception is raised if the database does not exist.
 
         """
 
 
-class CanCreateSchema(abc.ABC):
-    @abc.abstractmethod
-    def create_schema(
-        self, name: str, database: str | None = None, force: bool = False
-    ) -> None:
-        """Create a schema named `name` in `database`.
-
-        Parameters
-        ----------
-        name
-            Name of the schema to create.
-        database
-            Name of the database in which to create the schema. If `None`, the
-            current database is used.
-        force
-            If `False`, an exception is raised if the schema exists.
-
-        """
-
-    @abc.abstractmethod
-    def drop_schema(
-        self, name: str, database: str | None = None, force: bool = False
-    ) -> None:
-        """Drop the schema with `name` in `database`.
-
-        Parameters
-        ----------
-        name
-            Name of the schema to drop.
-        database
-            Name of the database to drop the schema from. If `None`, the
-            current database is used.
-        force
-            If `False`, an exception is raised if the schema does not exist.
-
-        """
-
-    @abc.abstractmethod
+# TODO: remove this for 10.0
+class CanListSchema:
+    @util.deprecated(
+        instead="Use `list_databases` instead`", as_of="9.0", removed_in="10.0"
+    )
     def list_schemas(
         self, like: str | None = None, database: str | None = None
     ) -> list[str]:
-        """List existing schemas in the current connection.
-
-        Parameters
-        ----------
-        like
-            A pattern in Python's regex format to filter returned schema
-            names.
-        database
-            The database to list schemas from. If `None`, the current database
-            is searched.
-
-        Returns
-        -------
-        list[str]
-            The schema names that exist in the current connection, that match
-            the `like` pattern if provided.
-
-        """
+        return self.list_databases(like=like, catalog=database)
 
     @property
-    @abc.abstractmethod
+    @util.deprecated(
+        instead="Use `Backend.current_database` instead.",
+        as_of="9.0",
+        removed_in="10.0",
+    )
     def current_schema(self) -> str:
-        """Return the current schema."""
+        return self.current_database
+
+
+class CanCreateSchema(CanListSchema):
+    @util.deprecated(
+        instead="Use `create_database` instead", as_of="9.0", removed_in="10.0"
+    )
+    def create_schema(
+        self, name: str, database: str | None = None, force: bool = False
+    ) -> None:
+        self.create_database(name=name, catalog=database, force=force)
+
+    @util.deprecated(
+        instead="Use `drop_database` instead", as_of="9.0", removed_in="10.0"
+    )
+    def drop_schema(
+        self, name: str, database: str | None = None, force: bool = False
+    ) -> None:
+        self.drop_database(name=name, catalog=database, force=force)
 
 
 class BaseBackend(abc.ABC, _FileIOHandler):

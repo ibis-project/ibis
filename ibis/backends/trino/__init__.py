@@ -16,7 +16,7 @@ import ibis.common.exceptions as com
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis import util
-from ibis.backends import CanListDatabases, NoUrl
+from ibis.backends import CanCreateDatabase, CanCreateSchema, CanListCatalog, NoUrl
 from ibis.backends.sql import SQLBackend
 from ibis.backends.sql.compiler import C
 from ibis.backends.trino.compiler import TrinoCompiler
@@ -30,7 +30,7 @@ if TYPE_CHECKING:
     import ibis.expr.operations as ops
 
 
-class Backend(SQLBackend, CanListDatabases, NoUrl):
+class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, CanCreateSchema, NoUrl):
     name = "trino"
     compiler = TrinoCompiler()
     supports_create_or_replace = False
@@ -155,37 +155,37 @@ class Backend(SQLBackend, CanListDatabases, NoUrl):
         return version
 
     @property
-    def current_database(self) -> str:
+    def current_catalog(self) -> str:
         with self._safe_raw_sql(sg.select(C.current_catalog)) as cur:
             [(database,)] = cur.fetchall()
         return database
 
     @property
-    def current_schema(self) -> str:
+    def current_database(self) -> str:
         with self._safe_raw_sql(sg.select(C.current_schema)) as cur:
             [(schema,)] = cur.fetchall()
         return schema
 
-    def list_databases(self, like: str | None = None) -> list[str]:
+    def list_catalogs(self, like: str | None = None) -> list[str]:
         query = "SHOW CATALOGS"
         with self._safe_raw_sql(query) as cur:
             catalogs = cur.fetchall()
         return self._filter_with_like(list(map(itemgetter(0), catalogs)), like=like)
 
-    def list_schemas(
-        self, like: str | None = None, database: str | None = None
+    def list_databases(
+        self, like: str | None = None, catalog: str | None = None
     ) -> list[str]:
         query = "SHOW SCHEMAS"
 
-        if database is not None:
-            database = sg.to_identifier(database, quoted=self.compiler.quoted).sql(
+        if catalog is not None:
+            catalog = sg.to_identifier(catalog, quoted=self.compiler.quoted).sql(
                 self.name
             )
-            query += f" IN {database}"
+            query += f" IN {catalog}"
 
         with self._safe_raw_sql(query) as cur:
-            schemata = cur.fetchall()
-        return self._filter_with_like(list(map(itemgetter(0), schemata)), like)
+            databases = cur.fetchall()
+        return self._filter_with_like(list(map(itemgetter(0), databases)), like)
 
     def list_tables(
         self,
@@ -312,24 +312,24 @@ class Backend(SQLBackend, CanListDatabases, NoUrl):
             }
         )
 
-    def create_schema(
-        self, name: str, database: str | None = None, force: bool = False
+    def create_database(
+        self, name: str, catalog: str | None = None, force: bool = False
     ) -> None:
         with self._safe_raw_sql(
             sge.Create(
-                this=sg.table(name, catalog=database, quoted=self.compiler.quoted),
+                this=sg.table(name, catalog=catalog, quoted=self.compiler.quoted),
                 kind="SCHEMA",
                 exists=force,
             )
         ):
             pass
 
-    def drop_schema(
-        self, name: str, database: str | None = None, force: bool = False
+    def drop_database(
+        self, name: str, catalog: str | None = None, force: bool = False
     ) -> None:
         with self._safe_raw_sql(
             sge.Drop(
-                this=sg.table(name, catalog=database, quoted=self.compiler.quoted),
+                this=sg.table(name, catalog=catalog, quoted=self.compiler.quoted),
                 kind="SCHEMA",
                 exists=force,
             )

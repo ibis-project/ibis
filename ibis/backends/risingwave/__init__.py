@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from functools import partial
 from itertools import repeat
+from operator import itemgetter
 from typing import TYPE_CHECKING
 
 import psycopg2
@@ -257,3 +258,13 @@ class Backend(PostgresBackend):
             with self.begin() as cur:
                 cur.execute(create_stmt_sql)
                 extras.execute_batch(cur, sql, data, 128)
+
+    def list_databases(
+        self, *, like: str | None = None, catalog: str | None = None
+    ) -> list[str]:
+        dbs = "SHOW SCHEMAS"
+
+        with self._safe_raw_sql(dbs) as cur:
+            databases = list(map(itemgetter(0), cur))
+
+        return self._filter_with_like(databases, like)

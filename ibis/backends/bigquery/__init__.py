@@ -25,7 +25,7 @@ import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis import util
-from ibis.backends import CanCreateSchema
+from ibis.backends import CanCreateDatabase, CanCreateSchema
 from ibis.backends.bigquery.client import (
     BigQueryCursor,
     bigquery_param,
@@ -125,7 +125,7 @@ def _remove_null_ordering_from_unsupported_window(
     return node
 
 
-class Backend(SQLBackend, CanCreateSchema):
+class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
     name = "bigquery"
     compiler = BigQueryCompiler()
     supports_in_memory_tables = True
@@ -471,10 +471,10 @@ class Backend(SQLBackend, CanCreateSchema):
     def dataset_id(self):
         return self.dataset
 
-    def create_schema(
+    def create_database(
         self,
         name: str,
-        database: str | None = None,
+        catalog: str | None = None,
         force: bool = False,
         collate: str | None = None,
         **options: Any,
@@ -491,24 +491,24 @@ class Backend(SQLBackend, CanCreateSchema):
 
         stmt = sge.Create(
             kind="SCHEMA",
-            this=sg.table(name, db=database),
+            this=sg.table(name, db=catalog),
             exists=force,
             properties=sge.Properties(expressions=properties),
         )
 
         self.raw_sql(stmt.sql(self.name))
 
-    def drop_schema(
+    def drop_database(
         self,
         name: str,
-        database: str | None = None,
+        catalog: str | None = None,
         force: bool = False,
         cascade: bool = False,
     ) -> None:
         """Drop a BigQuery dataset."""
         stmt = sge.Drop(
             kind="SCHEMA",
-            this=sg.table(name, db=database),
+            this=sg.table(name, db=catalog),
             exists=force,
             cascade=cascade,
         )
@@ -669,11 +669,11 @@ class Backend(SQLBackend, CanCreateSchema):
         return self._execute(query, query_parameters=query_parameters)
 
     @property
-    def current_database(self) -> str:
+    def current_catalog(self) -> str:
         return self.data_project
 
     @property
-    def current_schema(self) -> str | None:
+    def current_database(self) -> str | None:
         return self.dataset
 
     def compile(
@@ -754,8 +754,8 @@ class Backend(SQLBackend, CanCreateSchema):
         return super().insert(
             table_name,
             obj,
-            schema=schema if schema is not None else self.current_schema,
-            database=database if database is not None else self.current_database,
+            schema=schema if schema is not None else self.current_database,
+            database=database if database is not None else self.current_catalog,
             overwrite=overwrite,
         )
 
@@ -843,19 +843,19 @@ class Backend(SQLBackend, CanCreateSchema):
         table_ref = bq.TableReference(
             bq.DatasetReference(
                 project=database or self.data_project,
-                dataset_id=schema or self.current_schema,
+                dataset_id=schema or self.current_database,
             ),
             name,
         )
         return schema_from_bigquery_table(self.client.get_table(table_ref))
 
-    def list_schemas(
-        self, like: str | None = None, database: str | None = None
+    def list_databases(
+        self, like: str | None = None, catalog: str | None = None
     ) -> list[str]:
         results = [
             dataset.dataset_id
             for dataset in self.client.list_datasets(
-                project=database if database is not None else self.data_project
+                project=catalog if catalog is not None else self.data_project
             )
         ]
         return self._filter_with_like(results, like)
@@ -1016,7 +1016,7 @@ class Backend(SQLBackend, CanCreateSchema):
                 raise com.IbisInputError("Cannot specify database for temporary table")
             database = self._session_dataset.project
         else:
-            dataset = database or self.current_schema
+            dataset = database or self.current_database
 
         try:
             table = sg.parse_one(name, into=sge.Table, read="bigquery")
@@ -1067,7 +1067,7 @@ class Backend(SQLBackend, CanCreateSchema):
             kind="TABLE",
             this=sg.table(
                 name,
-                db=schema or self.current_schema,
+                db=schema or self.current_database,
                 catalog=database or self.billing_project,
             ),
             exists=force,
@@ -1087,7 +1087,7 @@ class Backend(SQLBackend, CanCreateSchema):
             kind="VIEW",
             this=sg.table(
                 name,
-                db=schema or self.current_schema,
+                db=schema or self.current_database,
                 catalog=database or self.billing_project,
             ),
             expression=self.compile(obj),
@@ -1109,7 +1109,7 @@ class Backend(SQLBackend, CanCreateSchema):
             kind="VIEW",
             this=sg.table(
                 name,
-                db=schema or self.current_schema,
+                db=schema or self.current_database,
                 catalog=database or self.billing_project,
             ),
             exists=force,

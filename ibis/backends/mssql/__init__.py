@@ -22,7 +22,7 @@ import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis import util
-from ibis.backends import CanCreateDatabase, CanCreateSchema, NoUrl
+from ibis.backends import CanCreateCatalog, CanCreateDatabase, CanCreateSchema, NoUrl
 from ibis.backends.mssql.compiler import MSSQLCompiler
 from ibis.backends.sql import SQLBackend
 from ibis.backends.sql.compiler import C
@@ -55,7 +55,7 @@ def datetimeoffset_to_datetime(value):
     )
 
 
-class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema, NoUrl):
+class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, CanCreateSchema, NoUrl):
     name = "mssql"
     compiler = MSSQLCompiler()
     supports_create_or_replace = False
@@ -152,7 +152,7 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema, NoUrl):
                 sg.table(
                     "columns",
                     db="information_schema",
-                    catalog=database or self.current_database,
+                    catalog=database or self.current_catalog,
                 )
             )
             .where(*conditions)
@@ -226,12 +226,12 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema, NoUrl):
         return sch.Schema(schema)
 
     @property
-    def current_database(self) -> str:
+    def current_catalog(self) -> str:
         with self._safe_raw_sql(sg.select(self.compiler.f.db_name())) as cur:
             [(database,)] = cur.fetchall()
         return database
 
-    def list_databases(self, like: str | None = None) -> list[str]:
+    def list_catalogs(self, like: str | None = None) -> list[str]:
         s = sg.table("databases", db="sys")
 
         with self._safe_raw_sql(sg.select(C.name).from_(s)) as cur:
@@ -240,7 +240,7 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema, NoUrl):
         return self._filter_with_like(results, like=like)
 
     @property
-    def current_schema(self) -> str:
+    def current_database(self) -> str:
         with self._safe_raw_sql(sg.select(self.compiler.f.schema_name())) as cur:
             [(schema,)] = cur.fetchall()
         return schema
@@ -285,7 +285,7 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema, NoUrl):
             con.commit()
             return cursor
 
-    def create_database(self, name: str, force: bool = False) -> None:
+    def create_catalog(self, name: str, force: bool = False) -> None:
         name = self._quote(name)
         create_stmt = (
             f"""\
@@ -300,18 +300,18 @@ GO"""
         with self._safe_raw_sql(create_stmt):
             pass
 
-    def drop_database(self, name: str, force: bool = False) -> None:
+    def drop_catalog(self, name: str, force: bool = False) -> None:
         name = self._quote(name)
         if_exists = "IF EXISTS " * force
 
         with self._safe_raw_sql(f"DROP DATABASE {if_exists}{name}"):
             pass
 
-    def create_schema(
-        self, name: str, database: str | None = None, force: bool = False
+    def create_database(
+        self, name: str, catalog: str | None = None, force: bool = False
     ) -> None:
-        current_database = self.current_database
-        should_switch_database = database is not None and database != current_database
+        current_catalog = self.current_catalog
+        should_switch_catalog = catalog is not None and catalog != current_catalog
 
         name = self._quote(name)
 
@@ -327,35 +327,35 @@ GO"""
         )
 
         with self.begin() as cur:
-            if should_switch_database:
-                cur.execute(f"USE {self._quote(database)}")
+            if should_switch_catalog:
+                cur.execute(f"USE {self._quote(catalog)}")
 
             cur.execute(create_stmt)
 
-            if should_switch_database:
-                cur.execute(f"USE {self._quote(current_database)}")
+            if should_switch_catalog:
+                cur.execute(f"USE {self._quote(current_catalog)}")
 
     def _quote(self, name: str):
         return sg.to_identifier(name, quoted=True).sql(self.dialect)
 
-    def drop_schema(
-        self, name: str, database: str | None = None, force: bool = False
+    def drop_database(
+        self, name: str, catalog: str | None = None, force: bool = False
     ) -> None:
-        current_database = self.current_database
-        should_switch_database = database is not None and database != current_database
+        current_catalog = self.current_catalog
+        should_switch_catalog = catalog is not None and catalog != current_catalog
 
         name = self._quote(name)
 
         if_exists = "IF EXISTS " * force
 
         with self.begin() as cur:
-            if should_switch_database:
-                cur.execute(f"USE {self._quote(database)}")
+            if should_switch_catalog:
+                cur.execute(f"USE {self._quote(catalog)}")
 
             cur.execute(f"DROP SCHEMA {if_exists}{name}")
 
-            if should_switch_database:
-                cur.execute(f"USE {self._quote(current_database)}")
+            if should_switch_catalog:
+                cur.execute(f"USE {self._quote(current_catalog)}")
 
     def list_tables(
         self,
@@ -418,14 +418,14 @@ GO"""
 
         return self._filter_with_like(map(itemgetter(0), out), like)
 
-    def list_schemas(
-        self, like: str | None = None, database: str | None = None
+    def list_databases(
+        self, like: str | None = None, catalog: str | None = None
     ) -> list[str]:
         query = sg.select(C.schema_name).from_(
             sg.table(
                 "schemata",
                 db="information_schema",
-                catalog=database or self.current_database,
+                catalog=catalog or self.current_catalog,
             )
         )
         with self._safe_raw_sql(query) as cur:

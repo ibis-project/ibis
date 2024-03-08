@@ -96,9 +96,7 @@ class TestConf(BackendTest):
 
     def _tpch_table(self, name: str):
         name = name.upper()
-        t = self.connection.table(
-            name, database="SNOWFLAKE_SAMPLE_DATA", schema="TPCH_SF1"
-        )
+        t = self.connection.table(name, database="SNOWFLAKE_SAMPLE_DATA.TPCH_SF1")
         return t.rename("snake_case")
 
     def _transform_tpch_sql(self, parsed):

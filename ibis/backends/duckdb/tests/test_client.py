@@ -97,23 +97,23 @@ def test_attach_detach(tmpdir):
 
     # default name
     name = "test1"
-    assert name not in con2.list_databases()
+    assert name not in con2.list_catalogs()
 
     con2.attach(path1)
-    assert name in con2.list_databases()
+    assert name in con2.list_catalogs()
 
     con2.detach(name)
-    assert name not in con2.list_databases()
+    assert name not in con2.list_catalogs()
 
     # passed-in name
     name = "test_foo"
-    assert name not in con2.list_databases()
+    assert name not in con2.list_catalogs()
 
     con2.attach(path1, name=name)
-    assert name in con2.list_databases()
+    assert name in con2.list_catalogs()
 
     con2.detach(name)
-    assert name not in con2.list_databases()
+    assert name not in con2.list_catalogs()
 
     with pytest.raises(duckdb.BinderException):
         con2.detach(name)
