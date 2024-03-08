@@ -61,11 +61,11 @@ def test_hive_table_overwrite(tmp_name):
 
 
 def test_list_catalogs(con):
-    assert {"hive", "memory", "system", "tpch", "tpcds"}.issubset(con.list_databases())
+    assert {"hive", "memory", "system", "tpch", "tpcds"}.issubset(con.list_catalogs())
 
 
-def test_list_schemas(con):
-    assert {"information_schema", "sf1"}.issubset(con.list_schemas(database="tpch"))
+def test_list_databases(con):
+    assert {"information_schema", "sf1"}.issubset(con.list_databases(catalog="tpch"))
 
 
 @pytest.mark.parametrize(("source", "expected"), [(None, "ibis"), ("foo", "foo")])

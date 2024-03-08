@@ -79,9 +79,9 @@ def test_compile_toplevel(snapshot):
     snapshot.assert_match(str(result), "out.sql")
 
 
-def test_list_databases(con):
+def test_list_catalogs(con):
     assert POSTGRES_TEST_DB is not None
-    assert POSTGRES_TEST_DB in con.list_databases()
+    assert POSTGRES_TEST_DB in con.list_catalogs()
 
 
 def test_interval_films_schema(con):
@@ -250,4 +250,4 @@ def test_kwargs_passthrough_in_connect():
     con = ibis.connect(
         "postgresql://postgres:postgres@localhost/ibis_testing?sslmode=allow"
     )
-    assert con.current_database == "ibis_testing"
+    assert con.current_catalog == "ibis_testing"

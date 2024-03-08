@@ -24,6 +24,7 @@ import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis import util
+from ibis.backends import CanCreateDatabase, CanCreateSchema, CanListCatalog
 from ibis.backends.postgres.compiler import PostgresCompiler
 from ibis.backends.sql import SQLBackend
 from ibis.backends.sql.compiler import TRUE, C, ColGen, F
@@ -40,7 +41,7 @@ def _verify_source_line(func_name: str, line: str):
     return line
 
 
-class Backend(SQLBackend):
+class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, CanCreateSchema):
     name = "postgres"
     compiler = PostgresCompiler()
     supports_python_udfs = True
@@ -319,7 +320,7 @@ class Backend(SQLBackend):
         elif database is not None:
             table_loc = database
         else:
-            table_loc = (self.current_database, self.current_schema)
+            table_loc = (self.current_catalog, self.current_database)
 
         table_loc = self._to_sqlglot_table(table_loc)
 
@@ -370,12 +371,23 @@ class Backend(SQLBackend):
 
         return out
 
-    def list_databases(self, like=None) -> list[str]:
+    def list_catalogs(self, like=None) -> list[str]:
         # http://dba.stackexchange.com/a/1304/58517
-        dbs = (
+        cats = (
             sg.select(C.datname)
             .from_(sg.table("pg_database", db="pg_catalog"))
             .where(sg.not_(C.datistemplate))
+        )
+        with self._safe_raw_sql(cats) as cur:
+            catalogs = list(map(itemgetter(0), cur))
+
+        return self._filter_with_like(catalogs, like)
+
+    def list_databases(
+        self, *, like: str | None = None, catalog: str | None = None
+    ) -> list[str]:
+        dbs = sg.select(C.schema_name).from_(
+            sg.table("schemata", db="information_schema")
         )
         with self._safe_raw_sql(dbs) as cur:
             databases = list(map(itemgetter(0), cur))
@@ -383,13 +395,13 @@ class Backend(SQLBackend):
         return self._filter_with_like(databases, like)
 
     @property
-    def current_database(self) -> str:
+    def current_catalog(self) -> str:
         with self._safe_raw_sql(sg.select(F.current_database())) as cur:
             (db,) = cur.fetchone()
         return db
 
     @property
-    def current_schema(self) -> str:
+    def current_database(self) -> str:
         with self._safe_raw_sql(sg.select(F.current_schema())) as cur:
             (schema,) = cur.fetchone()
         return schema
@@ -588,34 +600,34 @@ $$""".format(**self._get_udf_source(udf_node))
             with self._safe_raw_sql(drop_stmt):
                 pass
 
-    def create_schema(
-        self, name: str, database: str | None = None, force: bool = False
+    def create_database(
+        self, name: str, catalog: str | None = None, force: bool = False
     ) -> None:
-        if database is not None and database != self.current_database:
+        if catalog is not None and catalog != self.current_catalog:
             raise exc.UnsupportedOperationError(
-                f"{self.name} does not support creating a schema in a different database"
+                f"{self.name} does not support creating a database in a different catalog"
             )
         sql = sge.Create(
-            kind="SCHEMA", this=sg.table(name, catalog=database), exists=force
+            kind="SCHEMA", this=sg.table(name, catalog=catalog), exists=force
         )
         with self._safe_raw_sql(sql):
             pass
 
-    def drop_schema(
+    def drop_database(
         self,
         name: str,
-        database: str | None = None,
+        catalog: str | None = None,
         force: bool = False,
         cascade: bool = False,
     ) -> None:
-        if database is not None and database != self.current_database:
+        if catalog is not None and catalog != self.current_catalog:
             raise exc.UnsupportedOperationError(
-                f"{self.name} does not support dropping a schema in a different database"
+                f"{self.name} does not support dropping a database in a different catalog"
             )
 
         sql = sge.Drop(
             kind="SCHEMA",
-            this=sg.table(name, catalog=database),
+            this=sg.table(name, catalog=catalog),
             exists=force,
             cascade=cascade,
         )
@@ -657,7 +669,7 @@ $$""".format(**self._get_udf_source(udf_node))
         if obj is None and schema is None:
             raise ValueError("Either `obj` or `schema` must be specified")
 
-        if database is not None and database != self.current_database:
+        if database is not None and database != self.current_catalog:
             raise com.UnsupportedOperationError(
                 f"Creating tables in other databases is not supported by {self.name}"
             )
@@ -737,9 +749,9 @@ $$""".format(**self._get_udf_source(udf_node))
         schema: str | None = None,
         force: bool = False,
     ) -> None:
-        if database is not None and database != self.current_database:
+        if database is not None and database != self.current_catalog:
             raise com.UnsupportedOperationError(
-                f"Droppping tables in other databases is not supported by {self.name}"
+                f"Dropping tables in other databases is not supported by {self.name}"
             )
         else:
             database = None

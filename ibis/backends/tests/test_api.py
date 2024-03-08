@@ -18,31 +18,45 @@ def test_version(backend):
     assert isinstance(backend.api.version, str)
 
 
-# 1. `current_database` returns '.', but isn't listed in list_databases()
+# 1. `current_catalog` returns '.', but isn't listed in list_catalogs()
 @pytest.mark.never(
-    ["polars", "dask", "exasol", "pandas", "druid", "oracle", "bigquery"],
-    reason="backend does not support databases",
+    [
+        "polars",
+        "clickhouse",
+        "sqlite",
+        "dask",
+        "exasol",
+        "pandas",
+        "druid",
+        "oracle",
+        "bigquery",
+        "mysql",
+        "impala",
+        "pyspark",
+        "flink",
+    ],
+    reason="backend does not support catalogs",
     raises=AttributeError,
 )
 @pytest.mark.notimpl(
     ["datafusion"],
     raises=NotImplementedError,
-    reason="current_database isn't implemented",
+    reason="current_catalog isn't implemented",
 )
-def test_database_consistency(backend, con):
-    databases = con.list_databases()
-    assert isinstance(databases, list)
-    assert len(databases) >= 1
-    assert all(isinstance(database, str) for database in databases)
+def test_catalog_consistency(backend, con):
+    catalogs = con.list_catalogs()
+    assert isinstance(catalogs, list)
+    assert len(catalogs) >= 1
+    assert all(isinstance(catalog, str) for catalog in catalogs)
 
-    # every backend has a different set of databases, not testing the
+    # every backend has a different set of catalogs, not testing the
     # exact names for now
-    current_database = con.current_database
-    assert isinstance(current_database, str)
+    current_catalog = con.current_catalog
+    assert isinstance(current_catalog, str)
     if backend.name() == "snowflake":
-        assert current_database.upper() in databases
+        assert current_catalog.upper() in catalogs
     else:
-        assert current_database in databases
+        assert current_catalog in catalogs
 
 
 def test_list_tables(con):

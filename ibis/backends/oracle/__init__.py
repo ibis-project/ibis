@@ -21,6 +21,7 @@ import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis import util
+from ibis.backends import CanListDatabase, CanListSchema
 from ibis.backends.oracle.compiler import OracleCompiler
 from ibis.backends.sql import STAR, SQLBackend
 from ibis.backends.sql.compiler import C
@@ -71,7 +72,7 @@ def metadata_row_to_type(
     return typ
 
 
-class Backend(SQLBackend):
+class Backend(SQLBackend, CanListDatabase, CanListSchema):
     name = "oracle"
     compiler = OracleCompiler()
 
@@ -276,12 +277,12 @@ class Backend(SQLBackend):
 
         return self._filter_with_like(map(itemgetter(0), out), like)
 
-    def list_schemas(
-        self, like: str | None = None, database: str | None = None
+    def list_databases(
+        self, like: str | None = None, catalog: str | None = None
     ) -> list[str]:
-        if database is not None:
+        if catalog is not None:
             raise exc.UnsupportedArgumentError(
-                "No cross-database schema access in Oracle"
+                "No cross-catalog schema access in Oracle"
             )
 
         query = sg.select("username").from_("all_users").order_by("username")

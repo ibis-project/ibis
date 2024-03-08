@@ -33,7 +33,7 @@ import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis import util
-from ibis.backends import CanCreateDatabase, CanCreateSchema
+from ibis.backends import CanCreateCatalog, CanCreateDatabase, CanCreateSchema
 from ibis.backends.snowflake.compiler import SnowflakeCompiler
 from ibis.backends.snowflake.converter import SnowflakePandasData
 from ibis.backends.sql import SQLBackend
@@ -76,7 +76,7 @@ return longest.map((_, i) => {
 }
 
 
-class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
+class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, CanCreateSchema):
     name = "snowflake"
     compiler = SnowflakeCompiler()
     supports_python_udfs = True
@@ -155,11 +155,11 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
         return version
 
     @property
-    def current_schema(self) -> str:
+    def current_database(self) -> str:
         return self.con.schema
 
     @property
-    def current_database(self) -> str:
+    def current_catalog(self) -> str:
         return self.con.database
 
     def _make_udf(self, name: str, defn) -> str:
@@ -496,19 +496,21 @@ $$"""
             }
         )
 
-    def list_databases(self, like: str | None = None) -> list[str]:
+    def list_catalogs(self, like: str | None = None) -> list[str]:
         with self._safe_raw_sql("SHOW DATABASES") as con:
-            databases = list(map(itemgetter(1), con))
-        return self._filter_with_like(databases, like)
+            catalogs = list(map(itemgetter(1), con))
+        return self._filter_with_like(catalogs, like)
 
-    def list_schemas(
-        self, like: str | None = None, database: str | None = None
+    def list_databases(
+        self, like: str | None = None, catalog: str | None = None
     ) -> list[str]:
         query = "SHOW SCHEMAS"
 
-        if database is not None:
-            db = sg.to_identifier(database, quoted=self.compiler.quoted).sql(self.name)
-            query += f" IN {db}"
+        if catalog is not None:
+            sg_cat = sg.to_identifier(catalog, quoted=self.compiler.quoted).sql(
+                self.name
+            )
+            query += f" IN {sg_cat}"
 
         with self._safe_raw_sql(query) as con:
             schemata = list(map(itemgetter(1), con))
@@ -583,16 +585,16 @@ $$"""
                     with contextlib.suppress(Exception):
                         shutil.rmtree(tmpdir.name)
 
-    def create_database(self, name: str, force: bool = False) -> None:
+    def create_catalog(self, name: str, force: bool = False) -> None:
+        current_catalog = self.current_catalog
         current_database = self.current_database
-        current_schema = self.current_schema
         quoted = self.compiler.quoted
         create_stmt = sge.Create(
             this=sg.to_identifier(name, quoted=quoted), kind="DATABASE", exists=force
         )
         use_stmt = sge.Use(
             kind="SCHEMA",
-            this=sg.table(current_schema, db=current_database, quoted=quoted),
+            this=sg.table(current_database, db=current_catalog, quoted=quoted),
         ).sql(self.name)
         with self._safe_raw_sql(create_stmt) as cur:
             # Snowflake automatically switches to the new database after creating
@@ -601,11 +603,11 @@ $$"""
             # so we switch back to the original database and schema
             cur.execute(use_stmt)
 
-    def drop_database(self, name: str, force: bool = False) -> None:
-        current_database = self.current_database
-        if name == current_database:
+    def drop_catalog(self, name: str, force: bool = False) -> None:
+        current_catalog = self.current_catalog
+        if name == current_catalog:
             raise com.UnsupportedOperationError(
-                "Dropping the current database is not supported because its behavior is undefined"
+                "Dropping the current catalog is not supported because its behavior is undefined"
             )
         drop_stmt = sge.Drop(
             this=sg.to_identifier(name, quoted=self.compiler.quoted),
@@ -615,18 +617,18 @@ $$"""
         with self._safe_raw_sql(drop_stmt):
             pass
 
-    def create_schema(
-        self, name: str, database: str | None = None, force: bool = False
+    def create_database(
+        self, name: str, catalog: str | None = None, force: bool = False
     ) -> None:
+        current_catalog = self.current_catalog
         current_database = self.current_database
-        current_schema = self.current_schema
         quoted = self.compiler.quoted
         create_stmt = sge.Create(
-            this=sg.table(name, db=database, quoted=quoted), kind="SCHEMA", exists=force
+            this=sg.table(name, db=catalog, quoted=quoted), kind="SCHEMA", exists=force
         )
         use_stmt = sge.Use(
             kind="SCHEMA",
-            this=sg.table(current_schema, db=current_database, quoted=quoted),
+            this=sg.table(current_database, db=current_catalog, quoted=quoted),
         ).sql(self.name)
         with self._safe_raw_sql(create_stmt) as cur:
             # Snowflake automatically switches to the new schema after creating
@@ -655,18 +657,18 @@ $$"""
         else:
             return cur
 
-    def drop_schema(
-        self, name: str, database: str | None = None, force: bool = False
+    def drop_database(
+        self, name: str, catalog: str | None = None, force: bool = False
     ) -> None:
-        if self.current_schema == name and (
-            database is None or self.current_database == database
+        if self.current_database == name and (
+            catalog is None or self.current_catalog == catalog
         ):
             raise com.UnsupportedOperationError(
-                "Dropping the current schema is not supported because its behavior is undefined"
+                "Dropping the current database is not supported because its behavior is undefined"
             )
 
         drop_stmt = sge.Drop(
-            this=sg.table(name, db=database, quoted=self.compiler.quoted),
+            this=sg.table(name, db=catalog, quoted=self.compiler.quoted),
             kind="SCHEMA",
             exists=force,
         )

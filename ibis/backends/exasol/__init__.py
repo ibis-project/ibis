@@ -18,6 +18,7 @@ import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis import util
+from ibis.backends import CanCreateDatabase, CanCreateSchema
 from ibis.backends.exasol.compiler import ExasolCompiler
 from ibis.backends.sql import SQLBackend
 from ibis.backends.sql.compiler import STAR, C
@@ -34,7 +35,7 @@ if TYPE_CHECKING:
 _VARCHAR_REGEX = re.compile(r"^((VAR)?CHAR(?:\(\d+\)))?(?:\s+.+)?$")
 
 
-class Backend(SQLBackend):
+class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
     name = "exasol"
     compiler = ExasolCompiler()
     supports_temporary_tables = False
@@ -378,52 +379,54 @@ class Backend(SQLBackend):
         ).to_expr()
 
     @property
-    def current_schema(self) -> str:
+    def current_database(self) -> str:
         with self._safe_raw_sql("SELECT CURRENT_SCHEMA") as cur:
             [(schema,)] = cur.fetchall()
         return schema
 
-    def drop_schema(
-        self, name: str, database: str | None = None, force: bool = False
+    def drop_database(
+        self, name: str, catalog: str | None = None, force: bool = False
     ) -> None:
-        if database is not None:
+        if catalog is not None:
             raise NotImplementedError(
-                "`database` argument is not supported for the Exasol backend"
+                "`catalog` argument is not supported for the Exasol backend"
             )
         drop_schema = sg.exp.Drop(kind="SCHEMA", this=name, exists=force)
         with self.begin() as con:
             con.execute(drop_schema.sql(dialect=self.dialect))
 
-    def create_schema(
-        self, name: str, database: str | None = None, force: bool = False
+    def create_database(
+        self, name: str, catalog: str | None = None, force: bool = False
     ) -> None:
-        if database is not None:
+        if catalog is not None:
             raise NotImplementedError(
-                "`database` argument is not supported for the Exasol backend"
+                "`catalog` argument is not supported for the Exasol backend"
             )
-        create_schema = sg.exp.Create(kind="SCHEMA", this=name, exists=force)
-        open_schema = self.current_schema
+        create_database = sg.exp.Create(kind="SCHEMA", this=name, exists=force)
+        open_database = self.current_database
         with self.begin() as con:
-            con.execute(create_schema.sql(dialect=self.dialect))
+            con.execute(create_database.sql(dialect=self.dialect))
             # Exasol implicitly opens the created schema, therefore we need to restore
             # the previous context.
             con.execute(
-                f"OPEN SCHEMA {open_schema}" if open_schema else f"CLOSE SCHEMA {name}"
+                f"OPEN SCHEMA {open_database}"
+                if open_database
+                else f"CLOSE SCHEMA {name}"
             )
 
-    def list_schemas(
-        self, like: str | None = None, database: str | None = None
+    def list_databases(
+        self, like: str | None = None, catalog: str | None = None
     ) -> list[str]:
-        if database is not None:
+        if catalog is not None:
             raise NotImplementedError(
-                "`database` argument is not supported for the Exasol backend"
+                "`catalog` argument is not supported for the Exasol backend"
             )
 
         query = sg.select("schema_name").from_(sg.table("EXA_SCHEMAS", catalog="SYS"))
 
         with self._safe_raw_sql(query) as con:
-            schemas = con.fetchall()
-        return self._filter_with_like([schema for (schema,) in schemas], like=like)
+            databases = con.fetchall()
+        return self._filter_with_like([db for (db,) in databases], like=like)
 
     def _cursor_batches(
         self,

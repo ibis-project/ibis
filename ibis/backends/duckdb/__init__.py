@@ -22,7 +22,7 @@ import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis import util
-from ibis.backends import CanCreateSchema, UrlFromPath
+from ibis.backends import CanCreateDatabase, CanCreateSchema, UrlFromPath
 from ibis.backends.duckdb.compiler import DuckDBCompiler
 from ibis.backends.duckdb.converter import DuckDBPandasData
 from ibis.backends.sql import SQLBackend
@@ -73,7 +73,7 @@ class _Settings:
         return repr(dict(zip(kv["key"], kv["value"])))
 
 
-class Backend(SQLBackend, CanCreateSchema, UrlFromPath):
+class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema, UrlFromPath):
     name = "duckdb"
     compiler = DuckDBCompiler()
 
@@ -85,16 +85,16 @@ class Backend(SQLBackend, CanCreateSchema, UrlFromPath):
         return _Settings(self.con)
 
     @property
-    def current_database(self) -> str:
+    def current_catalog(self) -> str:
         with self._safe_raw_sql(sg.select(self.compiler.f.current_database())) as cur:
             [(db,)] = cur.fetchall()
         return db
 
     @property
-    def current_schema(self) -> str:
+    def current_database(self) -> str:
         with self._safe_raw_sql(sg.select(self.compiler.f.current_schema())) as cur:
-            [(schema,)] = cur.fetchall()
-        return schema
+            [(db,)] = cur.fetchall()
+        return db
 
     # TODO(kszucs): should be moved to the base SQLGLot backend
     def raw_sql(self, query: str | sg.Expression, **kwargs: Any) -> Any:
@@ -345,7 +345,7 @@ class Backend(SQLBackend, CanCreateSchema, UrlFromPath):
     def _safe_raw_sql(self, *args, **kwargs):
         yield self.raw_sql(*args, **kwargs)
 
-    def list_databases(self, like: str | None = None) -> list[str]:
+    def list_catalogs(self, like: str | None = None) -> list[str]:
         col = "catalog_name"
         query = sg.select(sge.Distinct(expressions=[sg.column(col)])).from_(
             sg.table("schemata", db="information_schema")
@@ -355,16 +355,16 @@ class Backend(SQLBackend, CanCreateSchema, UrlFromPath):
         dbs = result[col]
         return self._filter_with_like(dbs.to_pylist(), like)
 
-    def list_schemas(
-        self, like: str | None = None, database: str | None = None
+    def list_databases(
+        self, like: str | None = None, catalog: str | None = None
     ) -> list[str]:
         col = "schema_name"
         query = sg.select(sge.Distinct(expressions=[sg.column(col)])).from_(
             sg.table("schemata", db="information_schema")
         )
 
-        if database is not None:
-            query = query.where(sg.column("catalog_name").eq(sge.convert(database)))
+        if catalog is not None:
+            query = query.where(sg.column("catalog_name").eq(sge.convert(catalog)))
 
         with self._safe_raw_sql(query) as cur:
             out = cur.fetch_arrow_table()
@@ -479,27 +479,27 @@ class Backend(SQLBackend, CanCreateSchema, UrlFromPath):
         """
         self._load_extensions([extension], force_install=force_install)
 
-    def create_schema(
-        self, name: str, database: str | None = None, force: bool = False
+    def create_database(
+        self, name: str, catalog: str | None = None, force: bool = False
     ) -> None:
-        if database is not None:
+        if catalog is not None:
             raise exc.UnsupportedOperationError(
-                "DuckDB cannot create a schema in another database."
+                "DuckDB cannot create a database in another catalog."
             )
 
-        name = sg.table(name, catalog=database, quoted=self.compiler.quoted)
+        name = sg.table(name, catalog=catalog, quoted=self.compiler.quoted)
         with self._safe_raw_sql(sge.Create(this=name, kind="SCHEMA", replace=force)):
             pass
 
-    def drop_schema(
-        self, name: str, database: str | None = None, force: bool = False
+    def drop_database(
+        self, name: str, catalog: str | None = None, force: bool = False
     ) -> None:
-        if database is not None:
+        if catalog is not None:
             raise exc.UnsupportedOperationError(
-                "DuckDB cannot drop a schema in another database."
+                "DuckDB cannot drop a database in another catalog."
             )
 
-        name = sg.table(name, catalog=database, quoted=self.compiler.quoted)
+        name = sg.table(name, catalog=catalog, quoted=self.compiler.quoted)
         with self._safe_raw_sql(sge.Drop(this=name, kind="SCHEMA", replace=force)):
             pass
 
