@@ -51,11 +51,11 @@ join = (
     t1
     # _ is t1
     .join(t2, _.x == t2.x)
-    # _ is the join result:
+    # `xmod` is a deferred expression:
     .mutate(xmod=xmod)
     # _ is the TableExpression after mutate:
     .group_by(_.xmod)
-    # `ct` is a ColumnExpression derived from a deferred expression:
+    # `ymax` and `zmax` are ColumnExpressions derived from a deferred expression:
     .aggregate(ymax=ymax, zmax=zmax)
     # _ is the aggregation result:
     .filter(_.ymax == _.zmax)
