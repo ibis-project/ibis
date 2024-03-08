@@ -28,13 +28,15 @@ in
   ibis39 = pkgs.callPackage ./ibis.nix { python3 = pkgs.python39; };
   ibis310 = pkgs.callPackage ./ibis.nix { python3 = pkgs.python310; };
   ibis311 = pkgs.callPackage ./ibis.nix { python3 = pkgs.python311; };
+  ibis312 = pkgs.callPackage ./ibis.nix { python3 = pkgs.python312; };
 
   ibisDevEnv39 = mkPoetryDevEnv pkgs.python39;
   ibisDevEnv310 = mkPoetryDevEnv pkgs.python310;
   ibisDevEnv311 = mkPoetryDevEnv pkgs.python311;
+  ibisDevEnv312 = mkPoetryDevEnv pkgs.python312;
 
   ibisSmallDevEnv = mkPoetryEnv {
-    python = pkgs.python311;
+    python = pkgs.python312;
     groups = [ "dev" ];
     extras = [ ];
   };
@@ -73,7 +75,7 @@ in
   gen-examples = pkgs.writeShellApplication {
     name = "gen-examples";
     runtimeInputs = [
-      pkgs.ibisDevEnv311
+      pkgs.ibisDevEnv312
       (pkgs.rWrapper.override {
         packages = with pkgs.rPackages; [
           Lahman

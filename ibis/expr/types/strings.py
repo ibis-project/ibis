@@ -1157,7 +1157,7 @@ class StringValue(Value):
         │ c.........a │
         │ def         │
         └─────────────┘
-        >>> t.s.re_split("\.+").name("splits")
+        >>> t.s.re_split(r"\.+").name("splits")
         ┏━━━━━━━━━━━━━━━━━━━━━━┓
         ┃ splits               ┃
         ┡━━━━━━━━━━━━━━━━━━━━━━┩
@@ -1230,7 +1230,7 @@ class StringValue(Value):
 
         Normalize all whitespace to a single space:
 
-        >>> s.re_replace("\s+", " ")
+        >>> s.re_replace(r"\s+", " ")
         ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
         ┃ RegexReplace(s, '\\s+', ' ') ┃
         ┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩

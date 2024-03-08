@@ -49,6 +49,7 @@ jobs:
           - "3.9"
           - "3.10"
           - "3.11"
+          - "3.12"
     steps:
       - name: checkout
         uses: actions/checkout@v4
@@ -84,13 +85,11 @@ jobs:
 
       - name: run all core tests and run benchmarks once parallel
         if: matrix.os != 'windows-latest'
-        # TODO(cpcloud): bring back benchmarks smoke tests -m 'core or benchmarks'
-        run: just ci-check -m core --numprocesses auto
+        run: just ci-check -m "'core or benchmarks'" --numprocesses auto
 
       - name: run all core tests and run benchmarks once serial
         if: matrix.os == 'windows-latest'
-        # TODO(cpcloud): bring back benchmarks smoke tests -m 'core or benchmarks'
-        run: just ci-check -m core
+        run: just ci-check -m "'core or benchmarks'"
 
       - name: upload code coverage
         if: success()
@@ -101,14 +100,7 @@ jobs:
 
   test_shapely_duckdb_import:
     name: Test shapely and duckdb import
-    runs-on: ${{ matrix.os }}
-    strategy:
-      fail-fast: false
-      matrix:
-        os:
-          - ubuntu-latest
-        python-version:
-          - "3.11"
+    runs-on: ubuntu-latest
     steps:
       - name: checkout
         uses: actions/checkout@v4
@@ -120,10 +112,10 @@ jobs:
         uses: actions/setup-python@v5
         id: install_python
         with:
-          python-version: ${{ matrix.python-version }}
+          python-version: "3.12"
           cache: poetry
 
-      - name: install ${{ matrix.os }} system dependencies
+      - name: install system dependencies
         run: |
           set -euo pipefail
 
@@ -141,14 +133,7 @@ jobs:
     # FIXME(kszucs): re-enable this build
     if: false
     name: Doctests
-    runs-on: ${{ matrix.os }}
-    strategy:
-      fail-fast: false
-      matrix:
-        os:
-          - ubuntu-latest
-        python-version:
-          - "3.11"
+    runs-on: ubuntu-latest
     steps:
       - name: install system dependencies
         run: |
@@ -167,7 +152,7 @@ jobs:
         uses: actions/setup-python@v5
         id: install_python
         with:
-          python-version: ${{ matrix.python-version }}
+          python-version: "3.12"
           cache: poetry
 
       - name: install ibis with all extras

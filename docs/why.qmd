@@ -228,6 +228,74 @@ and robust framework for data manipulation in Python.
 In the long-term, we aim for a standard query plan Intermediate Representation
 (IR) like [Substrait](https://substrait.io) to simplify this further.
 
+## Python + SQL: better together
+
+For most backends, Ibis works by compiling Python expressions into SQL:
+
+```{python}
+g = t.group_by(["species", "island"]).agg(count=t.count()).order_by("count")
+ibis.to_sql(g)
+```
+
+You can mix and match Python and SQL code:
+
+```{python}
+sql = """
+SELECT
+  species,
+  island,
+  COUNT(*) AS count
+FROM penguins
+GROUP BY species, island
+""".strip()
+```
+
+::: {.panel-tabset}
+
+## DuckDB
+
+```{python}
+con = ibis.duckdb.connect()
+t = con.read_parquet("penguins.parquet")
+g = t.alias("penguins").sql(sql)
+g
+```
+
+```{python}
+g.order_by("count")
+```
+
+## DataFusion
+
+```{python}
+con = ibis.datafusion.connect()
+t = con.read_parquet("penguins.parquet")
+g = t.alias("penguins").sql(sql)
+g
+```
+
+```{python}
+g.order_by("count")
+```
+
+## PySpark
+
+```{python}
+con = ibis.connect("pyspark://")
+t = con.read_parquet("penguins.parquet")
+g = t.alias("penguins").sql(sql)
+g
+```
+
+```{python}
+g.order_by("count")
+```
+
+:::
+
+This allows you to combine the flexibility of Python with the scale and
+performance of modern SQL.
+
 ## Scaling up and out
 
 Out of the box, Ibis offers a great local experience for working with many file

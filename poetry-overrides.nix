@@ -42,4 +42,12 @@ self: super: {
       rm $out/${self.python.sitePackages}/pyflink/__pycache__/version.*.pyc
     '';
   });
+
+  thrift = super.thrift.overridePythonAttrs (attrs: {
+    # ignore silly bytecode-compilation-on-install for Pythons >= 3.12
+    postPatch = (attrs.postPatch or "") +
+      self.pkgs.lib.optionalString (self.pkgs.lib.versionAtLeast self.python.version "3.12") ''
+        substituteInPlace setup.cfg --replace 'optimize = 1' 'optimize = 0'
+      '';
+  });
 }

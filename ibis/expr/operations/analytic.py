@@ -90,24 +90,6 @@ class NTile(Analytic):
 
 
 @public
-class FirstValue(Analytic):
-    """Retrieve the first element."""
-
-    arg: Column[dt.Any]
-
-    dtype = rlz.dtype_like("arg")
-
-
-@public
-class LastValue(Analytic):
-    """Retrieve the last element."""
-
-    arg: Column[dt.Any]
-
-    dtype = rlz.dtype_like("arg")
-
-
-@public
 class NthValue(Analytic):
     """Retrieve the Nth element."""
 

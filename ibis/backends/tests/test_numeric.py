@@ -825,18 +825,34 @@ def test_trig_functions_literals(con, expr, expected):
         param(_.dc.acos(), np.arccos, id="acos"),
         param(_.dc.asin(), np.arcsin, id="asin"),
         param(_.dc.atan(), np.arctan, id="atan"),
-        param(_.dc.atan2(_.dc), lambda c: np.arctan2(c, c), id="atan2"),
+        param(
+            _.dc.atan2(_.dc),
+            lambda c: np.arctan2(c, c),
+            id="atan2",
+            marks=[
+                pytest.mark.notyet(
+                    ["mssql", "exasol"], raises=(PyODBCProgrammingError, ExaQueryError)
+                )
+            ],
+        ),
         param(_.dc.cos(), np.cos, id="cos"),
-        param(_.dc.cot(), lambda c: 1.0 / np.tan(c), id="cot"),
         param(_.dc.sin(), np.sin, id="sin"),
         param(_.dc.tan(), np.tan, id="tan"),
     ],
 )
 def test_trig_functions_columns(backend, expr, alltypes, df, expected_fn):
     dc_max = df.double_col.max()
-    expr = alltypes.mutate(dc=(_.double_col / dc_max).nullif(0)).select(tmp=expr)
+    expr = alltypes.mutate(dc=_.double_col / dc_max).select(tmp=expr)
     result = expr.tmp.to_pandas()
-    expected = expected_fn((df.double_col / dc_max).replace(0.0, np.nan)).rename("tmp")
+    expected = expected_fn(df.double_col / dc_max).rename("tmp")
+    backend.assert_series_equal(result, expected)
+
+
+def test_cotangent(backend, alltypes, df):
+    dc_max = df.double_col.max()
+    expr = alltypes.select(tmp=(0.5 + _.double_col / dc_max).cot())
+    result = expr.tmp.to_pandas()
+    expected = 1.0 / np.tan(0.5 + df.double_col / dc_max).rename("tmp")
     backend.assert_series_equal(result, expected)
 
 

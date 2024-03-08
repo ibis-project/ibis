@@ -1,0 +1,118 @@
+---
+title: Write and execute unbound expressions
+---
+
+One of the most powerful features of Ibis is the separation of transformation
+logic from the execution engine, which allows you to "write once, execute
+everywhere".
+
+## Unbound tables
+
+In Ibis, you can define unbound tables. An unbound table is a table with a
+specified schema but not connected to a data source. You can think of it as an
+empty spreadsheet with just the header. Even though the spreadsheet is empty,
+you know what the data would look like.
+
+Unbound tables allow you to write transformations for data as long as it
+conforms to the provided schema. You don't need to connect to a data source
+until you're ready to execute the expression and compute outputs.
+
+## Execute an unbound expression
+
+Here's how we can define an unbound table in Ibis:
+
+```{python}
+import ibis
+
+schema = {
+    "carat": "float64",
+    "cut": "string",
+    "color": "string",
+    "clarity": "string",
+    "depth": "float64",
+    "table": "float64",
+    "price": "int64",
+    "x": "float64",
+    "y": "float64",
+    "z": "float64",
+}
+diamonds = ibis.table(schema, name="diamonds")
+diamonds
+```
+
+So far, we have an empty `diamonds` table that contains 10 columns. Even though
+there is no data in the `diamonds` table right now, we can write
+transformations knowing that these are the columns available to us.
+
+Given this table of diamonds of various carats, cuts, and colors, we're
+interested in learning the average carat for each color of premium and ideal
+diamonds. In order to do this, we can first calculate the average carat for
+each color and cut of diamonds, then make a pivot table to show the results:
+
+```{python}
+from ibis import _
+
+expr = (
+    diamonds.group_by(["cut", "color"])
+    .agg(carat=_.carat.mean())
+    .pivot_wider(
+        names=("Premium", "Ideal"), names_from="cut", values_from="carat", names_sort=True, values_agg="mean"
+    )
+)
+```
+
+Now that we're ready to compute results, we can connect to any of Ibis'
+supported backends. This feature logic can be reused and you don't need to
+modify it again!
+
+This is a dataset that we can process locally. Let's connect to DuckDB and load
+the data into a DuckDB table:
+
+```{python}
+parquet_dir = "diamonds.parquet"
+
+# download data into a local file
+ibis.examples.diamonds.fetch().to_parquet(parquet_dir)
+con = ibis.duckdb.connect()
+con.read_parquet(parquet_dir, table_name="diamonds")
+```
+
+Connecting to this DuckDB table and executing the transformation on the loaded
+data is now as simple as
+
+```{python}
+con.to_pandas(expr)
+```
+
+Voilà!
+
+If you want to continue to work with the data in DuckDB, you can create a new
+table and insert the outputs into it like so:
+
+```{python}
+output_schema = ibis.schema(
+    {
+        "color": "string",
+        "Ideal": "float64",
+        "Premium": "float64",
+    }
+)
+con.create_table("results", schema=output_schema)
+con.insert("results", expr)
+
+con.table("results").to_pandas()
+```
+
+## Execute on another backend
+
+Because Ibis separates the transformation logic from the execution engine, you
+can easily reuse the written transformation for another backend. Here we use
+Polars as an example, but you can do the same for any of Ibis' 20+ supported
+backends as long as that particular backend supports the operations
+(see [the operation support matrix](../../support_matrix.qmd)).
+
+```{python}
+pl = ibis.polars.connect()
+pl.read_parquet(parquet_dir, table_name="diamonds")
+pl.to_pandas(expr)
+```

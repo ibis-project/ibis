@@ -1,0 +1,117 @@
+---
+title: Datatypes and Datashapes
+---
+
+Every value in Ibis has two important properties: a type and shape.
+
+The type is probably familiar to you. It is something like
+
+- `Integer`
+- `Floating`
+- `String`
+- `Array`
+
+The shape is one of
+
+- `Scalar` (a single value)
+- `Column` (a series of values)
+
+## Datatype Flavors
+
+For some datatypes, there are further options that define them.
+For instance, `Integer` values can be signed or unsigned, and
+they have a precision. For example, "uint8", "int64", etc.
+These flavors don't affect their capabilities
+(eg both signed and unsigned ints have a `.abs()` method),
+but the flavor does impact how the underlying backend performs the computation.
+
+## Capabilities
+
+Depending on the combination of datatype and datashape, a value has
+different capabilities. For example:
+
+- All `String` values (both `StringScalars` and `StringColumns`) have the
+  method `.upper()` that transforms the string to uppercase.
+  `Floating` and `Array` values don't have this method, of course.
+- `IntegerColumn` and `FloatingColumn`  values have `.mean()`, `.max()`, etc methods
+  because you can aggregate over them, since they are a collection of values.
+  On the other hand, `IntegerScalar` and `FloatingScalar` values do **not** have these
+  methods, because it doesn't make sense to take the mean or max of a single value.
+- If you call `.to_pandas()` on these values, you get different results.
+  `Scalar` shapes result in scalar objects:
+  - `IntegerScalar`: NumPy `int64` object (or whatever specific flavor).
+  - `FloatingScalar`: NumPy `float64` object  (or whatever specific flavor).
+  - `StringScalar`: plain python `str` object.
+  - `ArrayScalar`: plain python `list` object.
+- On the other hand, `Column` shapes result in `pandas.Series`:
+  - `IntegerColumn`: pd.Series of integers, with the same flavor.
+       For example, if the `IntegerColumn` was specifically "uint16",
+       then the pandas series will hold a numpy array of type "uint16".
+  - `FloatingColumn`: pd.Series of numpy floats with the same flavor.
+  - etc.
+
+## Broadcasting and Alignment
+
+There are rules for how different datashapes are combined. This is similar to
+how SQL and NumPy handles merging datashapes, if you are familiar with them.
+
+```{python}
+import ibis
+
+ibis.options.interactive = True
+t1 = ibis.examples.penguins.fetch().head(100)
+t1
+```
+
+We can look at the datatype of the year Column
+
+```{python}
+t1.year.type()
+```
+
+Combining two `Scalar`s results in a `Scalar`:
+
+```{python}
+t1.year.mean() + t1.year.std()
+```
+
+Combining a `Column` and `Scalar` results in a `Column`:
+
+```{python}
+t1.year + 1000
+```
+
+Combining two `Column`s results in a `Column`:
+
+```{python}
+t1.year + t1.bill_length_mm
+```
+
+One requirement that might surprise you if you are coming from NumPy is
+Ibis's requirements on aligning `Columns`: In NumPy, if you have two arbitrary
+arrays, each of length 100, you can add them together, and it works because the
+elements are "lined up" based on position. Ibis is different. Because it is based
+around SQL, and SQL has no notion of inherent row ordering, you cannot "line up"
+any two `Column`s in Ibis: They both **have** to be derived from the same
+`Table` expression. For example:
+
+```{python}
+t2 = ibis.examples.population.fetch().head(100)
+t2
+```
+
+```{python}
+#| error: true
+t1.bill_depth_mm + t2.population
+```
+
+If you want to use these two columns together, you would need to join the tables together first:
+
+```{python}
+j = ibis.join(t1, t2, "year")
+j
+```
+
+```{python}
+j.bill_depth_mm + j.population
+```

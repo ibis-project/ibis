@@ -18,8 +18,6 @@ from ibis.backends.sql.rewrites import (
     exclude_unsupported_window_frame_from_ops,
     exclude_unsupported_window_frame_from_rank,
     exclude_unsupported_window_frame_from_row_number,
-    rewrite_first_to_first_value,
-    rewrite_last_to_last_value,
     rewrite_sample_as_filter,
 )
 from ibis.common.temporal import DateUnit, IntervalUnit, TimestampUnit, TimeUnit
@@ -33,8 +31,6 @@ class BigQueryCompiler(SQLGlotCompiler):
     udf_type_mapper = BigQueryUDFType
     rewrites = (
         rewrite_sample_as_filter,
-        rewrite_first_to_first_value,
-        rewrite_last_to_last_value,
         exclude_unsupported_window_frame_from_ops,
         exclude_unsupported_window_frame_from_row_number,
         exclude_unsupported_window_frame_from_rank,

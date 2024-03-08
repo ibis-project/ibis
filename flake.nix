@@ -125,9 +125,9 @@
     in
     rec {
       packages = {
-        inherit (pkgs) ibis39 ibis310 ibis311;
+        inherit (pkgs) ibis39 ibis310 ibis311 ibis312;
 
-        default = pkgs.ibis311;
+        default = pkgs.ibis312;
 
         inherit (pkgs) update-lock-files gen-all-extras gen-examples check-release-notes-spelling;
       };
@@ -136,8 +136,9 @@
         ibis39 = mkDevShell pkgs.ibisDevEnv39;
         ibis310 = mkDevShell pkgs.ibisDevEnv310;
         ibis311 = mkDevShell pkgs.ibisDevEnv311;
+        ibis312 = mkDevShell pkgs.ibisDevEnv312;
 
-        default = ibis311;
+        default = ibis312;
 
         preCommit = pkgs.mkShell {
           name = "preCommit";

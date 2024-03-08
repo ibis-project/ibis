@@ -387,11 +387,10 @@ class PythonToJavaScriptTranslator:
 
     @semicolon
     def visit_AugAssign(self, node):
-        return "{} {}= {}".format(
-            self.visit(node.target),
-            self.visit(node.op),
-            self.visit(node.value),
-        )
+        target = self.visit(node.target)
+        op = self.visit(node.op)
+        value = self.visit(node.value)
+        return f"{target} {op}= {value}"
 
     def visit_Module(self, node):
         return "\n\n".join(map(self.visit, node.body))
@@ -437,11 +436,10 @@ class PythonToJavaScriptTranslator:
         return "\n".join(lines)
 
     def visit_IfExp(self, node):
-        return "({} ? {} : {})".format(
-            self.visit(node.test),
-            self.visit(node.body),
-            self.visit(node.orelse),
-        )
+        test = self.visit(node.test)
+        body = self.visit(node.body)
+        orelse = self.visit(node.orelse)
+        return f"({test} ? {body} : {orelse})"
 
     def visit_Index(self, node):
         return self.visit(node.value)

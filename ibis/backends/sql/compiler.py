@@ -19,6 +19,8 @@ import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 from ibis.backends.sql.rewrites import (
+    FirstValue,
+    LastValue,
     add_one_to_nth_value_input,
     add_order_by_to_empty_ranking_window_functions,
     empty_in_values_right_side,
@@ -235,7 +237,7 @@ class SQLGlotCompiler(abc.ABC):
         ops.DenseRank: "dense_rank",
         ops.Exp: "exp",
         ops.First: "first",
-        ops.FirstValue: "first_value",
+        FirstValue: "first_value",
         ops.GroupConcat: "group_concat",
         ops.IfElse: "if",
         ops.IsInf: "isinf",
@@ -243,7 +245,7 @@ class SQLGlotCompiler(abc.ABC):
         ops.JSONGetItem: "json_extract",
         ops.LPad: "lpad",
         ops.Last: "last",
-        ops.LastValue: "last_value",
+        LastValue: "last_value",
         ops.Levenshtein: "levenshtein",
         ops.Ln: "ln",
         ops.Log10: "log",
@@ -1215,10 +1217,10 @@ class SQLGlotCompiler(abc.ABC):
             return sg.select(STAR).from_(parent).order_by(*keys)
 
     def visit_Union(self, op, *, left, right, distinct):
-        if isinstance(left, sge.Table):
+        if isinstance(left, (sge.Table, sge.Subquery)):
             left = sg.select(STAR).from_(left)
 
-        if isinstance(right, sge.Table):
+        if isinstance(right, (sge.Table, sge.Subquery)):
             right = sg.select(STAR).from_(right)
 
         return sg.union(
@@ -1228,10 +1230,10 @@ class SQLGlotCompiler(abc.ABC):
         )
 
     def visit_Intersection(self, op, *, left, right, distinct):
-        if isinstance(left, sge.Table):
+        if isinstance(left, (sge.Table, sge.Subquery)):
             left = sg.select(STAR).from_(left)
 
-        if isinstance(right, sge.Table):
+        if isinstance(right, (sge.Table, sge.Subquery)):
             right = sg.select(STAR).from_(right)
 
         return sg.intersect(
@@ -1241,10 +1243,10 @@ class SQLGlotCompiler(abc.ABC):
         )
 
     def visit_Difference(self, op, *, left, right, distinct):
-        if isinstance(left, sge.Table):
+        if isinstance(left, (sge.Table, sge.Subquery)):
             left = sg.select(STAR).from_(left)
 
-        if isinstance(right, sge.Table):
+        if isinstance(right, (sge.Table, sge.Subquery)):
             right = sg.select(STAR).from_(right)
 
         return sg.except_(

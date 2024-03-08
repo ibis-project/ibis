@@ -307,21 +307,19 @@ class Table(Expr, _FixedTextJupyterMixin):
         Examples
         --------
         >>> import ibis
-        >>>
         >>> ibis.options.interactive = True
-        >>>
         >>> t = ibis.examples.penguins.fetch()
         >>> heavy_gentoo = t.filter(t.species == "Gentoo", t.body_mass_g > 6200)
         >>> from_that_island = t.filter(t.island == heavy_gentoo.select("island").as_scalar())
-        >>> from_that_island.group_by("species").count()
-        ┏━━━━━━━━━┳━━━━━━━━━━━━━┓
-        ┃ species ┃ CountStar() ┃
-        ┡━━━━━━━━━╇━━━━━━━━━━━━━┩
-        │ string  │ int64       │
-        ├─────────┼─────────────┤
-        │ Adelie  │          44 │
-        │ Gentoo  │         124 │
-        └─────────┴─────────────┘
+        >>> from_that_island.species.value_counts().order_by("species")
+        ┏━━━━━━━━━┳━━━━━━━━━━━━━━━┓
+        ┃ species ┃ species_count ┃
+        ┡━━━━━━━━━╇━━━━━━━━━━━━━━━┩
+        │ string  │ int64         │
+        ├─────────┼───────────────┤
+        │ Adelie  │            44 │
+        │ Gentoo  │           124 │
+        └─────────┴───────────────┘
         """
         return ops.ScalarSubquery(self).to_expr()
 
@@ -2985,18 +2983,18 @@ class Table(Expr, _FixedTextJupyterMixin):
         sequence. Find all instances where a user both tagged and
         rated a movie:
 
-        >>> tags.join(ratings, ["userId", "movieId"]).head(5)
-        ┏━━━━━━━━┳━━━━━━━━━┳━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━┓
-        ┃ userId ┃ movieId ┃ tag             ┃ timestamp  ┃ rating  ┃
-        ┡━━━━━━━━╇━━━━━━━━━╇━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━━┩
-        │ int64  │ int64   │ string          │ int64      │ float64 │
-        ├────────┼─────────┼─────────────────┼────────────┼─────────┤
-        │      2 │   60756 │ will ferrell    │ 1445714992 │     5.0 │
-        │      2 │   89774 │ Tom Hardy       │ 1445715205 │     5.0 │
-        │      2 │  106782 │ Martin Scorsese │ 1445715056 │     5.0 │
-        │      7 │   48516 │ way too long    │ 1169687325 │     1.0 │
-        │     18 │     431 │ mafia           │ 1462138755 │     4.0 │
-        └────────┴─────────┴─────────────────┴────────────┴─────────┘
+        >>> tags.join(ratings, ["userId", "movieId"]).head(5).order_by("userId")
+        ┏━━━━━━━━┳━━━━━━━━━┳━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━┓
+        ┃ userId ┃ movieId ┃ tag            ┃ timestamp  ┃ rating  ┃
+        ┡━━━━━━━━╇━━━━━━━━━╇━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━━┩
+        │ int64  │ int64   │ string         │ int64      │ float64 │
+        ├────────┼─────────┼────────────────┼────────────┼─────────┤
+        │     62 │       2 │ Robin Williams │ 1528843907 │     4.0 │
+        │     62 │     110 │ sword fight    │ 1528152535 │     4.5 │
+        │     62 │     410 │ gothic         │ 1525636609 │     4.5 │
+        │     62 │    2023 │ mafia          │ 1525636733 │     5.0 │
+        │     62 │    2124 │ quirky         │ 1525636846 │     5.0 │
+        └────────┴─────────┴────────────────┴────────────┴─────────┘
 
         To self-join a table with itself, you need to call
         `.view()` on one of the arguments so the two tables
@@ -3021,17 +3019,17 @@ class Table(Expr, _FixedTextJupyterMixin):
         ...         movie_tags.movieId != view.movieId,
         ...         (_.tag.lower(), lambda t: t.tag.lower()),
         ...     ],
-        ... ).head()
+        ... ).head().order_by(("movieId", "movieId_right"))
         ┏━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━┓
         ┃ movieId ┃ tag               ┃ movieId_right ┃ tag_right         ┃
         ┡━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━┩
         │ int64   │ string            │ int64         │ string            │
         ├─────────┼───────────────────┼───────────────┼───────────────────┤
-        │   60756 │ funny             │          1732 │ funny             │
-        │   60756 │ Highly quotable   │          1732 │ Highly quotable   │
-        │   89774 │ Tom Hardy         │        139385 │ tom hardy         │
-        │  106782 │ drugs             │          1732 │ drugs             │
-        │  106782 │ Leonardo DiCaprio │          5989 │ Leonardo DiCaprio │
+        │    1732 │ funny             │         60756 │ funny             │
+        │    1732 │ Highly quotable   │         60756 │ Highly quotable   │
+        │    1732 │ drugs             │        106782 │ drugs             │
+        │    5989 │ Leonardo DiCaprio │        106782 │ Leonardo DiCaprio │
+        │  139385 │ tom hardy         │         89774 │ Tom Hardy         │
         └─────────┴───────────────────┴───────────────┴───────────────────┘
         """
         from ibis.expr.types.joins import Join
@@ -3954,15 +3952,17 @@ class Table(Expr, _FixedTextJupyterMixin):
         │ A      │ M       │     18 │
         │ …      │ …       │      … │
         └────────┴─────────┴────────┘
-        >>> warpbreaks.pivot_wider(names_from="wool", values_from="breaks", values_agg="mean")
+        >>> warpbreaks.pivot_wider(
+        ...     names_from="wool", values_from="breaks", values_agg="mean"
+        ... ).select("tension", "A", "B").order_by("tension")
         ┏━━━━━━━━━┳━━━━━━━━━━━┳━━━━━━━━━━━┓
         ┃ tension ┃ A         ┃ B         ┃
         ┡━━━━━━━━━╇━━━━━━━━━━━╇━━━━━━━━━━━┩
         │ string  │ float64   │ float64   │
         ├─────────┼───────────┼───────────┤
+        │ H       │ 24.555556 │ 18.777778 │
         │ L       │ 44.555556 │ 28.222222 │
         │ M       │ 24.000000 │ 28.777778 │
-        │ H       │ 24.555556 │ 18.777778 │
         └─────────┴───────────┴───────────┘
 
         Passing `Deferred` objects to `values_agg` is supported
@@ -3971,14 +3971,14 @@ class Table(Expr, _FixedTextJupyterMixin):
         ...     names_from="tension",
         ...     values_from="breaks",
         ...     values_agg=_.sum(),
-        ... ).order_by("wool")
+        ... ).select("wool", "H", "L", "M").order_by(s.all())
         ┏━━━━━━━━┳━━━━━━━┳━━━━━━━┳━━━━━━━┓
-        ┃ wool   ┃ L     ┃ M     ┃ H     ┃
+        ┃ wool   ┃ H     ┃ L     ┃ M     ┃
         ┡━━━━━━━━╇━━━━━━━╇━━━━━━━╇━━━━━━━┩
         │ string │ int64 │ int64 │ int64 │
         ├────────┼───────┼───────┼───────┤
-        │ A      │   401 │   216 │   221 │
-        │ B      │   254 │   259 │   169 │
+        │ A      │   221 │   401 │   216 │
+        │ B      │   169 │   254 │   259 │
         └────────┴───────┴───────┴───────┘
 
         Use a custom aggregate function
@@ -3987,15 +3987,15 @@ class Table(Expr, _FixedTextJupyterMixin):
         ...     names_from="wool",
         ...     values_from="breaks",
         ...     values_agg=lambda col: col.std() / col.mean(),
-        ... )
+        ... ).select("tension", "A", "B").order_by("tension")
         ┏━━━━━━━━━┳━━━━━━━━━━┳━━━━━━━━━━┓
         ┃ tension ┃ A        ┃ B        ┃
         ┡━━━━━━━━━╇━━━━━━━━━━╇━━━━━━━━━━┩
         │ string  │ float64  │ float64  │
         ├─────────┼──────────┼──────────┤
+        │ H       │ 0.418344 │ 0.260590 │
         │ L       │ 0.406183 │ 0.349325 │
         │ M       │ 0.360844 │ 0.327719 │
-        │ H       │ 0.418344 │ 0.260590 │
         └─────────┴──────────┴──────────┘
 
         Generate some random data, setting the random seed for reproducibility
@@ -4016,22 +4016,22 @@ class Table(Expr, _FixedTextJupyterMixin):
         ...     ]
         ... )
         >>> production = raw.filter(((_.product == "A") & (_.country == "AI")) | (_.product == "B"))
-        >>> production
+        >>> production.order_by(s.all())
         ┏━━━━━━━━━┳━━━━━━━━━┳━━━━━━━┳━━━━━━━━━━━━┓
         ┃ product ┃ country ┃ year  ┃ production ┃
         ┡━━━━━━━━━╇━━━━━━━━━╇━━━━━━━╇━━━━━━━━━━━━┩
         │ string  │ string  │ int64 │ float64    │
         ├─────────┼─────────┼───────┼────────────┤
-        │ B       │ AI      │  2000 │   0.477010 │
-        │ B       │ AI      │  2001 │   0.865310 │
-        │ B       │ AI      │  2002 │   0.260492 │
-        │ B       │ AI      │  2003 │   0.805028 │
-        │ B       │ AI      │  2004 │   0.548699 │
-        │ B       │ AI      │  2005 │   0.014042 │
-        │ B       │ AI      │  2006 │   0.719705 │
-        │ B       │ AI      │  2007 │   0.398824 │
-        │ B       │ AI      │  2008 │   0.824845 │
-        │ B       │ AI      │  2009 │   0.668153 │
+        │ A       │ AI      │  2000 │   0.844422 │
+        │ A       │ AI      │  2001 │   0.757954 │
+        │ A       │ AI      │  2002 │   0.420572 │
+        │ A       │ AI      │  2003 │   0.258917 │
+        │ A       │ AI      │  2004 │   0.511275 │
+        │ A       │ AI      │  2005 │   0.404934 │
+        │ A       │ AI      │  2006 │   0.783799 │
+        │ A       │ AI      │  2007 │   0.303313 │
+        │ A       │ AI      │  2008 │   0.476597 │
+        │ A       │ AI      │  2009 │   0.583382 │
         │ …       │ …       │     … │          … │
         └─────────┴─────────┴───────┴────────────┘
 

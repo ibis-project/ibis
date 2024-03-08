@@ -20,6 +20,7 @@ from ibis.backends.conftest import is_older_than
 from ibis.backends.tests.errors import (
     ArrowInvalid,
     ClickHouseDatabaseError,
+    DuckDBBinderException,
     DuckDBInvalidInputException,
     ExaQueryError,
     GoogleBadRequest,
@@ -68,9 +69,7 @@ def test_date_extract(backend, alltypes, df, attr, expr_fn):
         param(
             "day_of_year",
             marks=[
-                pytest.mark.notimpl(
-                    ["exasol", "impala"], raises=com.OperationNotDefinedError
-                ),
+                pytest.mark.notimpl(["impala"], raises=com.OperationNotDefinedError),
                 pytest.mark.notyet(["oracle"], raises=com.OperationNotDefinedError),
             ],
         ),
@@ -78,7 +77,6 @@ def test_date_extract(backend, alltypes, df, attr, expr_fn):
             "quarter",
             marks=[
                 pytest.mark.notyet(["oracle"], raises=OracleDatabaseError),
-                pytest.mark.notimpl(["exasol"], raises=com.OperationNotDefinedError),
             ],
         ),
         "hour",
@@ -145,7 +143,7 @@ def test_timestamp_extract(backend, alltypes, df, attr):
             id="day_of_week_full_name",
             marks=[
                 pytest.mark.notimpl(
-                    ["druid", "oracle", "exasol"],
+                    ["druid", "oracle"],
                     raises=com.OperationNotDefinedError,
                 ),
                 pytest.mark.broken(
@@ -242,7 +240,7 @@ def test_timestamp_extract_epoch_seconds(backend, alltypes, df):
     backend.assert_series_equal(result, expected)
 
 
-@pytest.mark.notimpl(["oracle", "exasol"], raises=com.OperationNotDefinedError)
+@pytest.mark.notimpl(["oracle"], raises=com.OperationNotDefinedError)
 @pytest.mark.notimpl(
     ["druid"],
     raises=AttributeError,
@@ -344,7 +342,7 @@ PANDAS_UNITS = {
             "ms",
             marks=[
                 pytest.mark.notimpl(
-                    ["clickhouse", "mysql", "sqlite", "datafusion"],
+                    ["clickhouse", "mysql", "sqlite", "datafusion", "exasol"],
                     raises=com.UnsupportedOperationError,
                 ),
                 pytest.mark.broken(
@@ -358,7 +356,7 @@ PANDAS_UNITS = {
             "us",
             marks=[
                 pytest.mark.notimpl(
-                    ["clickhouse", "mysql", "sqlite", "trino", "datafusion"],
+                    ["clickhouse", "mysql", "sqlite", "trino", "datafusion", "exasol"],
                     raises=com.UnsupportedOperationError,
                 ),
                 pytest.mark.broken(
@@ -391,6 +389,7 @@ PANDAS_UNITS = {
                         "trino",
                         "mssql",
                         "datafusion",
+                        "exasol",
                     ],
                     raises=com.UnsupportedOperationError,
                 ),
@@ -413,7 +412,6 @@ PANDAS_UNITS = {
     raises=AttributeError,
     reason="AttributeError: 'StringColumn' object has no attribute 'truncate'",
 )
-@pytest.mark.notimpl(["exasol"], raises=com.OperationNotDefinedError)
 def test_timestamp_truncate(backend, alltypes, df, unit):
     expr = alltypes.timestamp_col.truncate(unit).name("tmp")
 
@@ -441,7 +439,7 @@ def test_timestamp_truncate(backend, alltypes, df, unit):
             marks=[
                 pytest.mark.notyet(["mysql"], raises=com.UnsupportedOperationError),
                 pytest.mark.broken(
-                    ["flink", "exasol"],
+                    ["flink"],
                     raises=AssertionError,
                     reason="Implemented, but behavior doesn't match other backends",
                 ),
@@ -1131,69 +1129,33 @@ def test_timestamp_comparison_filter(backend, con, alltypes, df, func_name):
     backend.assert_frame_equal(result, expected)
 
 
+no_mixed_timestamp_comparisons = [
+    pytest.mark.notimpl(
+        ["dask"],
+        raises=ValueError,
+        reason="Metadata inference failed in `gt`.",
+    ),
+    pytest.mark.notimpl(
+        ["pandas"],
+        raises=TypeError,
+        reason="Invalid comparison between dtype=datetime64[ns, UTC] and datetime",
+    ),
+    pytest.mark.never(
+        ["duckdb"],
+        raises=DuckDBBinderException,
+        # perhaps we should consider disallowing this in ibis as well
+        reason="DuckDB doesn't allow comparing timestamp with and without timezones",
+    ),
+]
+
+
 @pytest.mark.parametrize(
     "func_name",
     [
-        param(
-            "gt",
-            marks=[
-                pytest.mark.notimpl(
-                    ["dask"],
-                    raises=ValueError,
-                    reason="Metadata inference failed in `gt`.",
-                ),
-                pytest.mark.notimpl(
-                    ["pandas"],
-                    raises=TypeError,
-                    reason="Invalid comparison between dtype=datetime64[ns, UTC] and datetime",
-                ),
-            ],
-        ),
-        param(
-            "ge",
-            marks=[
-                pytest.mark.notimpl(
-                    ["dask"],
-                    raises=ValueError,
-                    reason="Metadata inference failed in `ge`.",
-                ),
-                pytest.mark.notimpl(
-                    ["pandas"],
-                    raises=TypeError,
-                    reason="Invalid comparison between dtype=datetime64[ns, UTC] and datetime",
-                ),
-            ],
-        ),
-        param(
-            "lt",
-            marks=[
-                pytest.mark.notimpl(
-                    ["dask"],
-                    raises=ValueError,
-                    reason="Metadata inference failed in `lt`.",
-                ),
-                pytest.mark.notimpl(
-                    ["pandas"],
-                    raises=TypeError,
-                    reason="Invalid comparison between dtype=datetime64[ns, UTC] and datetime",
-                ),
-            ],
-        ),
-        param(
-            "le",
-            marks=[
-                pytest.mark.notimpl(
-                    ["dask"],
-                    raises=ValueError,
-                    reason="Metadata inference failed in `le`.",
-                ),
-                pytest.mark.notimpl(
-                    ["pandas"],
-                    raises=TypeError,
-                    reason="Invalid comparison between dtype=datetime64[ns, UTC] and datetime",
-                ),
-            ],
-        ),
+        param("gt", marks=no_mixed_timestamp_comparisons),
+        param("ge", marks=no_mixed_timestamp_comparisons),
+        param("lt", marks=no_mixed_timestamp_comparisons),
+        param("le", marks=no_mixed_timestamp_comparisons),
         "eq",
         "ne",
     ],
@@ -1548,6 +1510,9 @@ def test_day_of_week_column(backend, alltypes, df):
             lambda t: t.timestamp_col.day_of_week.index().count(),
             lambda s: s.dt.dayofweek.count(),
             id="day_of_week_index",
+            marks=[
+                pytest.mark.notimpl(["exasol"], raises=com.OperationNotDefinedError)
+            ],
         ),
         param(
             lambda t: t.timestamp_col.day_of_week.full_name().length().sum(),
@@ -1569,7 +1534,6 @@ def test_day_of_week_column(backend, alltypes, df):
     raises=AttributeError,
     reason="'StringColumn' object has no attribute 'day_of_week'",
 )
-@pytest.mark.notimpl(["exasol"], raises=com.OperationNotDefinedError)
 def test_day_of_week_column_group_by(
     backend, alltypes, df, day_of_week_expr, day_of_week_pandas
 ):
@@ -1611,7 +1575,7 @@ def test_now_from_projection(alltypes):
     ts = result.now
     assert len(result) == n
     assert ts.nunique() == 1
-    assert ~pd.isna(ts.iat[0])
+    assert not pd.isna(ts.iat[0])
 
 
 DATE_BACKEND_TYPES = {
@@ -2220,6 +2184,7 @@ def test_timestamp_precision_output(con, ts, scale, unit):
                     reason="postgres doesn't have any easy way to accurately compute the delta in specific units",
                     raises=com.OperationNotDefinedError,
                 ),
+                pytest.mark.notimpl(["exasol"], raises=com.OperationNotDefinedError),
             ],
         ),
         param(ibis.date("1992-09-30"), ibis.date("1992-10-01"), "day", 1, id="date"),
@@ -2240,11 +2205,12 @@ def test_timestamp_precision_output(con, ts, scale, unit):
                     raises=com.OperationNotDefinedError,
                     reason="timestampdiff rounds after subtraction and mysql doesn't have a date_trunc function",
                 ),
+                pytest.mark.notimpl(["exasol"], raises=com.OperationNotDefinedError),
             ],
         ),
     ],
 )
-@pytest.mark.notimpl(["sqlite", "exasol"], raises=com.OperationNotDefinedError)
+@pytest.mark.notimpl(["sqlite"], raises=com.OperationNotDefinedError)
 def test_delta(con, start, end, unit, expected):
     expr = end.delta(start, unit)
     assert con.execute(expr) == expected

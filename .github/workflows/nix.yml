@@ -37,12 +37,13 @@ jobs:
           - "3.9"
           - "3.10"
           - "3.11"
+          - "3.12"
     steps:
       - name: checkout
         uses: actions/checkout@v4
 
       - name: install nix
-        uses: cachix/install-nix-action@v25
+        uses: cachix/install-nix-action@v26
         with:
           nix_path: nixpkgs=channel:nixos-unstable-small
           extra_nix_config: |

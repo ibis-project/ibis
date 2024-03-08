@@ -226,7 +226,7 @@ def _from_str(value):
 
 @normalize_datetime.register(numbers.Number)
 def _from_number(value):
-    return datetime.datetime.utcfromtimestamp(value)
+    return datetime.datetime.fromtimestamp(value, dateutil.tz.UTC)
 
 
 @normalize_datetime.register(datetime.time)

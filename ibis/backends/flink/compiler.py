@@ -15,8 +15,6 @@ from ibis.backends.sql.rewrites import (
     exclude_unsupported_window_frame_from_ops,
     exclude_unsupported_window_frame_from_rank,
     exclude_unsupported_window_frame_from_row_number,
-    rewrite_first_to_first_value,
-    rewrite_last_to_last_value,
     rewrite_sample_as_filter,
 )
 
@@ -30,8 +28,6 @@ class FlinkCompiler(SQLGlotCompiler):
         exclude_unsupported_window_frame_from_row_number,
         exclude_unsupported_window_frame_from_ops,
         exclude_unsupported_window_frame_from_rank,
-        rewrite_first_to_first_value,
-        rewrite_last_to_last_value,
         *SQLGlotCompiler.rewrites,
     )
 
@@ -84,6 +80,7 @@ class FlinkCompiler(SQLGlotCompiler):
         ops.MapValues: "map_values",
         ops.Power: "power",
         ops.RandomScalar: "rand",
+        ops.RandomUUID: "uuid",
         ops.RegexSearch: "regexp",
         ops.StrRight: "right",
         ops.StringLength: "char_length",

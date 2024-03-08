@@ -63,6 +63,28 @@ class Select(ops.Relation):
 
 
 @public
+class FirstValue(ops.Analytic):
+    """Retrieve the first element."""
+
+    arg: ops.Column[dt.Any]
+
+    @attribute
+    def dtype(self):
+        return self.arg.dtype
+
+
+@public
+class LastValue(ops.Analytic):
+    """Retrieve the last element."""
+
+    arg: ops.Column[dt.Any]
+
+    @attribute
+    def dtype(self):
+        return self.arg.dtype
+
+
+@public
 class Window(ops.Value):
     """Window modelled after SQL's window statements."""
 
@@ -100,10 +122,23 @@ def sort_to_select(_, **kwargs):
 
 @replace(p.WindowFunction)
 def window_function_to_window(_, **kwargs):
-    """Convert a WindowFunction node to a Window node."""
+    """Convert a WindowFunction node to a Window node.
+
+    Also rewrites first -> first_value, last -> last_value.
+    """
+    func = _.func
+    if isinstance(func, (ops.First, ops.Last)):
+        if func.where is not None:
+            raise com.UnsupportedOperationError(
+                f"`{type(func).__name__.lower()}` with `where` is unsupported "
+                "in a window function"
+            )
+        cls = FirstValue if isinstance(func, ops.First) else LastValue
+        func = cls(func.arg)
+
     return Window(
         how=_.frame.how,
-        func=_.func,
+        func=func,
         start=_.frame.start,
         end=_.frame.end,
         group_by=_.frame.group_by,
@@ -201,9 +236,14 @@ def sqlize(
     simplified = sqlized.replace(merge_select_select)
 
     # extract common table expressions while wrapping them in a CTE node
-    ctes = extract_ctes(simplified)
-    subs = {cte: CTE(cte) for cte in ctes}
-    result = simplified.replace(subs)
+    ctes = frozenset(extract_ctes(simplified))
+
+    def wrap(node, _, **kwargs):
+        new = node.__recreate__(kwargs)
+        return CTE(new) if node in ctes else new
+
+    result = simplified.replace(wrap)
+    ctes = reversed([cte.parent for cte in result.find(CTE)])
 
     return result, ctes
 
@@ -268,26 +308,6 @@ def rewrite_sample_as_filter(_, **kwargs):
             "`Table.sample` with a random seed is unsupported"
         )
     return ops.Filter(_.parent, (ops.LessEqual(ops.RandomScalar(), _.fraction),))
-
-
-@replace(p.WindowFunction(p.First(x, where=y)))
-def rewrite_first_to_first_value(_, x, y, **kwargs):
-    """Rewrite Ibis's first to first_value when used in a window function."""
-    if y is not None:
-        raise com.UnsupportedOperationError(
-            "`first` with `where` is unsupported in a window function"
-        )
-    return _.copy(func=ops.FirstValue(x))
-
-
-@replace(p.WindowFunction(p.Last(x, where=y)))
-def rewrite_last_to_last_value(_, x, y, **kwargs):
-    """Rewrite Ibis's last to last_value when used in a window function."""
-    if y is not None:
-        raise com.UnsupportedOperationError(
-            "`last` with `where` is unsupported in a window function"
-        )
-    return _.copy(func=ops.LastValue(x))
 
 
 @replace(p.WindowFunction(frame=y @ p.WindowFrame(order_by=())))

@@ -24,7 +24,7 @@ To run against your own ClickHouse server you'd only need to change the
 connection details.
 
 ```{python}
-con = ibis.connect("clickhouse://play@play.clickhouse.com:443")
+con = ibis.connect("clickhouse://play:clickhouse@play.clickhouse.com:443?secure=True")
 ```
 
 ## Listing available tables
@@ -113,9 +113,7 @@ top_commenters
 
 ## Finding top commenters by score
 
-Here we find the top 5 commenters with the highest cumulative scores. In this
-case the `.topk` shorthand won't work and we'll need to write out the full
-`group_by` -> `agg` -> `order_by` -> `limit` pipeline.
+Here we find the top 5 commenters with the highest cumulative scores.
 
 ```{python}
 top_commenters_by_score = (
@@ -125,6 +123,14 @@ top_commenters_by_score = (
     .order_by(ibis.desc("total_score"))
     .limit(5)
 )
+
+top_commenters_by_score
+```
+
+Using the `.topk` method, this can be written in a single line:
+
+```{python}
+top_commenters_by_score = t.by.topk(5, by=_.score.sum().name("total_score"))
 
 top_commenters_by_score
 ```

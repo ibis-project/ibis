@@ -344,7 +344,9 @@ class PandasData(DataMapper):
                 # than the value supported by Python the value is an integer
                 #
                 # TODO: can we do better than implicit truncation to microseconds?
-                value = datetime.datetime.utcfromtimestamp(value / 1e9)
+                import dateutil
+
+                value = datetime.datetime.fromtimestamp(value / 1e9, dateutil.tz.UTC)
 
             if (tz := dtype.timezone) is not None:
                 return value.astimezone(normalize_timezone(tz))

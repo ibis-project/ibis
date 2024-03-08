@@ -109,7 +109,7 @@ tqdm = ">=4.66.1,<5"
 filelock = ">=3.7.0,<4"
 hypothesis = ">=6.58.0,<7"
 packaging = ">=21.3,<24"
-pytest = ">=7.0.0,<9"
+pytest = ">=8.0.2,<9"
 pytest-benchmark = ">=3.4.1,<5"
 pytest-clarity = ">=1.0.1,<2"
 pytest-cov = ">=3.0.0,<5"
@@ -323,6 +323,10 @@ filterwarnings = [
   "ignore:is_sparse is deprecated and will be removed in a future version:DeprecationWarning",
   # google-api-core
   "ignore:Please install grpcio-status to obtain helpful grpc error messages.",
+  # dateutil tz
+  'ignore:datetime\.datetime\.utcfromtimestamp\(\) is deprecated and scheduled for removal:DeprecationWarning',
+  # types using custom tp_new are deprecated in python 3.12
+  "ignore:Type .+ uses PyType_Spec with a metaclass that has custom tp_new:DeprecationWarning",
 ]
 empty_parameter_set_mark = "fail_at_collect"
 markers = [

@@ -53,16 +53,11 @@ class ExasolCompiler(SQLGlotCompiler):
             ops.Covariance,
             ops.CumeDist,
             ops.DateAdd,
-            ops.DateDelta,
             ops.DateSub,
             ops.DateFromYMD,
             ops.DayOfWeekIndex,
-            ops.DayOfWeekName,
             ops.ElementWiseVectorizedUDF,
-            ops.ExtractDayOfYear,
             ops.ExtractEpochSeconds,
-            ops.ExtractQuarter,
-            ops.ExtractWeekOfYear,
             ops.First,
             ops.IntervalFromInteger,
             ops.IsInf,
@@ -89,7 +84,6 @@ class ExasolCompiler(SQLGlotCompiler):
             ops.TimestampDelta,
             ops.TimestampDiff,
             ops.TimestampSub,
-            ops.TimestampTruncate,
             ops.TypeOf,
             ops.Unnest,
             ops.Variance,
@@ -169,5 +163,43 @@ class ExasolCompiler(SQLGlotCompiler):
             "COUNT(DISTINCT *) is not supported in Exasol"
         )
 
+    def visit_TimestampTruncate(self, op, *, arg, unit):
+        short_name = unit.short
+        unit_mapping = {"W": "IW"}
+        unsupported = {"ms", "us"}
+
+        if short_name in unsupported:
+            raise com.UnsupportedOperationError(
+                f"Unsupported truncate unit {short_name}"
+            )
+
+        if short_name not in unit_mapping:
+            return super().visit_TimestampTruncate(op, arg=arg, unit=unit)
+
+        return self.f.date_trunc(unit_mapping[short_name], arg)
+
     def visit_DateTruncate(self, op, *, arg, unit):
-        return super().visit_TimestampTruncate(op, arg=arg, unit=unit)
+        return self.visit_TimestampTruncate(op, arg=arg, unit=unit)
+
+    def visit_DateDelta(self, op, *, part, left, right):
+        # Note: general delta handling could be done based on part (unit),
+        #       consider adapting this while implementing time based deltas.
+        #       * part = day -> days_between
+        #       * part = hour -> hours_between
+        #       * ...
+        return self.f.days_between(left, right)
+
+    def visit_ExtractDayOfYear(self, op, *, arg):
+        return self.cast(self.f.to_char(arg, "DDD"), op.dtype)
+
+    def visit_ExtractWeekOfYear(self, op, *, arg):
+        return self.cast(self.f.to_char(arg, "IW"), op.dtype)
+
+    def visit_DayOfWeekName(self, op, *, arg):
+        return self.f.concat(
+            self.f.substr(self.f.to_char(arg, "DAY"), 0, 1),
+            self.f.trim(self.f.lower(self.f.substr(self.f.to_char(arg, "DAY"), 2))),
+        )
+
+    def visit_ExtractQuarter(self, op, *, arg):
+        return self.cast(self.f.to_char(arg, "Q"), op.dtype)
