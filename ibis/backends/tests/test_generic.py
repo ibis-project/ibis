@@ -833,7 +833,6 @@ def test_exists(batting, awards_players, method_name):
         "polars",
         "druid",
         "oracle",
-        "exasol",
     ],
     raises=com.OperationNotDefinedError,
 )

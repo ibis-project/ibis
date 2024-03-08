@@ -84,7 +84,6 @@ class ExasolCompiler(SQLGlotCompiler):
             ops.TimestampDelta,
             ops.TimestampDiff,
             ops.TimestampSub,
-            ops.TypeOf,
             ops.Unnest,
             ops.Variance,
         )
@@ -95,6 +94,7 @@ class ExasolCompiler(SQLGlotCompiler):
         ops.Modulus: "mod",
         ops.All: "min",
         ops.Any: "max",
+        ops.TypeOf: "typeof",
     }
 
     @staticmethod
