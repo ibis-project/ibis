@@ -56,7 +56,6 @@ class ExasolCompiler(SQLGlotCompiler):
             ops.DateSub,
             ops.DateFromYMD,
             ops.DayOfWeekIndex,
-            ops.DayOfWeekName,
             ops.ElementWiseVectorizedUDF,
             ops.ExtractEpochSeconds,
             ops.First,
@@ -181,6 +180,12 @@ class ExasolCompiler(SQLGlotCompiler):
 
     def visit_ExtractWeekOfYear(self, op, *, arg):
         return self.cast(self.f.to_char(arg, "IW"), op.dtype)
+
+    def visit_DayOfWeekName(self, op, *, arg):
+        return self.f.concat(
+            self.f.substr(self.f.to_char(arg, "DAY"), 0, 1),
+            self.f.trim(self.f.lower(self.f.substr(self.f.to_char(arg, "DAY"), 2))),
+        )
 
     def visit_ExtractQuarter(self, op, *, arg):
         return self.cast(self.f.to_char(arg, "Q"), op.dtype)
