@@ -445,15 +445,19 @@ class ArrayValue(Value):
         """
         if isinstance(func, Deferred):
             name = "_"
-        else:
+            resolve = func.resolve
+        elif callable(func):
             name = next(iter(inspect.signature(func).parameters.keys()))
+            resolve = func
+        else:
+            raise TypeError(
+                f"`func` must be a Deferred or Callable, got `{type(func).__name__}`"
+            )
+
         parameter = ops.Argument(
             name=name, shape=self.op().shape, dtype=self.type().value_type
         )
-        if isinstance(func, Deferred):
-            body = func.resolve(parameter.to_expr())
-        else:
-            body = func(parameter.to_expr())
+        body = resolve(parameter.to_expr())
         return ops.ArrayMap(self, param=parameter.param, body=body).to_expr()
 
     def filter(
@@ -545,17 +549,20 @@ class ArrayValue(Value):
         """
         if isinstance(predicate, Deferred):
             name = "_"
-        else:
+            resolve = predicate.resolve
+        elif callable(predicate):
             name = next(iter(inspect.signature(predicate).parameters.keys()))
+            resolve = predicate
+        else:
+            raise TypeError(
+                f"`predicate` must be a Deferred or Callable, got `{type(predicate).__name__}`"
+            )
         parameter = ops.Argument(
             name=name,
             shape=self.op().shape,
             dtype=self.type().value_type,
         )
-        if isinstance(predicate, Deferred):
-            body = predicate.resolve(parameter.to_expr())
-        else:
-            body = predicate(parameter.to_expr())
+        body = resolve(parameter.to_expr())
         return ops.ArrayFilter(self, param=parameter.param, body=body).to_expr()
 
     def contains(self, other: ir.Value) -> ir.BooleanValue:
