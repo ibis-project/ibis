@@ -154,6 +154,9 @@ class BigQueryCompiler(SQLGlotCompiler):
 
     visit_GeoXMax = visit_GeoXMin = visit_GeoYMax = visit_GeoYMin = visit_BoundingBox
 
+    def visit_ArrayStringJoin(self, op, *, arg, sep):
+        return self.f.anon.array_to_string(arg, sep)
+
     def visit_GeoSimplify(self, op, *, arg, tolerance, preserve_collapsed):
         if (
             not isinstance(op.preserve_collapsed, ops.Literal)
@@ -233,7 +236,7 @@ class BigQueryCompiler(SQLGlotCompiler):
         return self.f.substr(arg, -self.f.least(self.f.length(arg), nchars))
 
     def visit_StringJoin(self, op, *, arg, sep):
-        return self.f.array_to_string(self.f.array(*arg), sep)
+        return self.f.anon.array_to_string(self.f.array(*arg), sep)
 
     def visit_DayOfWeekIndex(self, op, *, arg):
         return self.f.mod(self.f.extract(self.v.dayofweek, arg) + 5, 7)

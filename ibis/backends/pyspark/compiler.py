@@ -12,7 +12,7 @@ import ibis
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
-from ibis.backends.sql.compiler import FALSE, NULL, STAR, TRUE, SQLGlotCompiler
+from ibis.backends.sql.compiler import FALSE, NULL, STAR, SQLGlotCompiler
 from ibis.backends.sql.datatypes import PySparkType
 from ibis.backends.sql.dialects import PySpark
 from ibis.backends.sql.rewrites import FirstValue, LastValue, p
@@ -223,28 +223,28 @@ class PySparkCompiler(SQLGlotCompiler):
         return self.f.count(sge.Distinct(expressions=cols))
 
     def visit_FirstValue(self, op, *, arg):
-        return self.f.first(arg, TRUE)
+        return sge.IgnoreNulls(this=self.f.first(arg))
 
     def visit_LastValue(self, op, *, arg):
-        return self.f.last(arg, TRUE)
+        return sge.IgnoreNulls(this=self.f.last(arg))
 
     def visit_First(self, op, *, arg, where):
         if where is not None:
             arg = self.if_(where, arg, NULL)
-        return self.f.first(arg, TRUE)
+        return sge.IgnoreNulls(this=self.f.first(arg))
 
     def visit_Last(self, op, *, arg, where):
         if where is not None:
             arg = self.if_(where, arg, NULL)
-        return self.f.last(arg, TRUE)
+        return sge.IgnoreNulls(this=self.f.last(arg))
 
     def visit_Arbitrary(self, op, *, arg, how, where):
         if where is not None:
             arg = self.if_(where, arg, NULL)
         if how == "first":
-            return self.f.first(arg, TRUE)
+            return sge.IgnoreNulls(this=self.f.first(arg))
         elif how == "last":
-            return self.f.last(arg, TRUE)
+            return sge.IgnoreNulls(this=self.f.last(arg))
         else:
             raise com.UnsupportedOperationError(
                 f"PySpark backend does not support arbitrary with how={how}. "

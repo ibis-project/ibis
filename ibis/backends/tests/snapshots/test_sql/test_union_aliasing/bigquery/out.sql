@@ -15,8 +15,8 @@ WITH `t5` AS (
         `t2`.`field_of_study`,
         `t2`.`years`,
         `t2`.`degrees`,
-        first_value(`t2`.`degrees`) OVER (PARTITION BY `t2`.`field_of_study` ORDER BY `t2`.`years` ASC ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) AS `earliest_degrees`,
-        last_value(`t2`.`degrees`) OVER (PARTITION BY `t2`.`field_of_study` ORDER BY `t2`.`years` ASC ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) AS `latest_degrees`
+        FIRST_VALUE(`t2`.`degrees`) OVER (PARTITION BY `t2`.`field_of_study` ORDER BY `t2`.`years` ASC ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) AS `earliest_degrees`,
+        LAST_VALUE(`t2`.`degrees`) OVER (PARTITION BY `t2`.`field_of_study` ORDER BY `t2`.`years` ASC ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) AS `latest_degrees`
       FROM (
         SELECT
           `t1`.`field_of_study`,
