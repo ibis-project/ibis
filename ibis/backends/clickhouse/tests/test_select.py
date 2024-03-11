@@ -35,7 +35,7 @@ def time_right(con):
     return con.table("time_df2")
 
 
-def test_timestamp_extract_field(alltypes, snapshot):
+def test_timestamp_extract_field(alltypes, assert_sql):
     t = alltypes.timestamp_col
     expr = alltypes[
         t.year().name("year"),
@@ -45,21 +45,16 @@ def test_timestamp_extract_field(alltypes, snapshot):
         t.minute().name("minute"),
         t.second().name("second"),
     ]
-
-    result = ibis.clickhouse.compile(expr)
-
-    snapshot.assert_match(result, "out.sql")
+    assert_sql(expr)
 
 
-def test_isin_notin_in_select(alltypes, snapshot):
+def test_isin_notin_in_select(alltypes, assert_sql):
     values = ["foo", "bar"]
     filtered = alltypes[alltypes.string_col.isin(values)]
-    result = ibis.clickhouse.compile(filtered)
-    snapshot.assert_match(result, "out1.sql")
+    assert_sql(filtered, "out1.sql")
 
     filtered = alltypes[alltypes.string_col.notin(values)]
-    result = ibis.clickhouse.compile(filtered)
-    snapshot.assert_match(result, "out2.sql")
+    assert_sql(filtered, "out2.sql")
 
 
 def test_head(alltypes):
@@ -100,14 +95,12 @@ def test_subquery(alltypes, df):
     tm.assert_frame_equal(result, expected)
 
 
-def test_simple_scalar_aggregates(alltypes, snapshot):
+def test_simple_scalar_aggregates(alltypes, assert_sql):
     # Things like table.column.{sum, mean, ...}()
     table = alltypes
 
     expr = table[table.int_col > 0].float_col.sum()
-
-    sql_query = ibis.clickhouse.compile(expr)
-    snapshot.assert_match(sql_query, "out.sql")
+    assert_sql(expr)
 
 
 # def test_scalar_aggregates_multiple_tables(alltypes):
@@ -156,50 +149,42 @@ def test_simple_scalar_aggregates(alltypes, snapshot):
 #     assert result == expected
 
 
-def test_table_column_unbox(alltypes, snapshot):
+def test_table_column_unbox(alltypes, assert_sql):
     m = alltypes.float_col.sum().name("total")
     agged = alltypes[alltypes.int_col > 0].group_by("string_col").aggregate([m])
     expr = agged.string_col
-
-    result = ibis.clickhouse.compile(expr)
-    snapshot.assert_match(result, "out.sql")
+    assert_sql(expr)
 
 
-def test_complex_array_expr_projection(alltypes, snapshot):
+def test_complex_array_expr_projection(alltypes, assert_sql):
     # May require finding the base table and forming a projection.
     expr = (
         alltypes.group_by("string_col")
         .aggregate([alltypes.count().name("count")])
         .string_col.cast("double")
     )
-
-    result = ibis.clickhouse.compile(expr)
-    snapshot.assert_match(result, "out.sql")
+    assert_sql(expr)
 
 
 @pytest.mark.parametrize(
     "expr",
     [param(ibis.now(), id="now"), param(ibis.literal(1) + ibis.literal(2), id="add")],
 )
-def test_scalar_exprs_no_table_refs(expr, snapshot):
-    result = ibis.clickhouse.compile(expr)
-    snapshot.assert_match(result, "out.sql")
+def test_scalar_exprs_no_table_refs(expr, assert_sql):
+    assert_sql(expr)
 
 
-def test_isnull_case_expr_rewrite_failure(alltypes, snapshot):
+def test_isnull_case_expr_rewrite_failure(alltypes, assert_sql):
     # #172, case expression that was not being properly converted into an
     # aggregation
     reduction = alltypes.string_col.isnull().ifelse(1, 0).sum()
-
-    result = ibis.clickhouse.compile(reduction)
-    snapshot.assert_match(result, "out.sql")
+    assert_sql(reduction)
 
 
-def test_physical_table_reference_translate(alltypes, snapshot):
+def test_physical_table_reference_translate(alltypes, assert_sql):
     # If an expression's table leaves all reference database tables, verify
     # we translate correctlys
-    result = ibis.clickhouse.compile(alltypes)
-    snapshot.assert_match(result, "out.sql")
+    assert_sql(alltypes)
 
 
 def test_non_equijoin(alltypes):
@@ -223,56 +208,46 @@ def test_non_equijoin(alltypes):
     ("left_key", "right_key"), [("playerID", "playerID"), ("playerID", "awardID")]
 )
 def test_simple_joins(
-    batting, awards_players, join_type, left_key, right_key, snapshot
+    batting, awards_players, join_type, left_key, right_key, assert_sql
 ):
     t1, t2 = batting, awards_players
     pred = [t1[left_key] == t2[right_key]]
     expr = getattr(t1, join_type)(t2, pred)[[t1]]
-
-    result = ibis.clickhouse.compile(expr)
-    snapshot.assert_match(result, "out.sql")
+    assert_sql(expr)
 
 
-def test_self_reference_simple(con, alltypes, snapshot):
+def test_self_reference_simple(con, alltypes, assert_sql):
     expr = alltypes.view()
-    result = ibis.clickhouse.compile(expr)
-    snapshot.assert_match(result, "out.sql")
+    assert_sql(expr)
     assert len(con.execute(expr))
 
 
-def test_join_self_reference(con, alltypes, snapshot):
+def test_join_self_reference(con, alltypes, assert_sql):
     t1 = alltypes
     t2 = t1.view()
     expr = t1.inner_join(t2, ["id"])[[t1]]
-
-    result = ibis.clickhouse.compile(expr)
-    snapshot.assert_match(result, "out.sql")
+    assert_sql(expr)
     assert len(con.execute(expr))
 
 
-def test_where_simple_comparisons(con, alltypes, snapshot):
+def test_where_simple_comparisons(con, alltypes, assert_sql):
     t1 = alltypes
     expr = t1.filter([t1.float_col > 0, t1.int_col < t1.float_col * 2])
-
-    result = ibis.clickhouse.compile(expr)
-    snapshot.assert_match(result, "out.sql")
+    assert_sql(expr)
     assert len(con.execute(expr))
 
 
-def test_where_with_between(con, alltypes, snapshot):
+def test_where_with_between(con, alltypes, assert_sql):
     t = alltypes
 
     expr = t.filter([t.int_col > 0, t.float_col.between(0, 1)])
-    result = ibis.clickhouse.compile(expr)
-    snapshot.assert_match(result, "out.sql")
+    assert_sql(expr)
     con.execute(expr)
 
 
-def test_ifelse_use_if(con, alltypes, snapshot):
+def test_ifelse_use_if(con, alltypes, assert_sql):
     expr = ibis.ifelse(alltypes.float_col > 0, alltypes.int_col, alltypes.bigint_col)
-
-    result = expr.compile()
-    snapshot.assert_match(result, "out.sql")
+    assert_sql(expr)
     con.execute(expr)
 
 
@@ -290,14 +265,13 @@ def test_filter_predicates(diamonds):
     expr.execute()
 
 
-def test_where_with_timestamp(snapshot):
+def test_where_with_timestamp(assert_sql):
     t = ibis.table(
         [("uuid", "string"), ("ts", "timestamp"), ("search_level", "int64")],
         name="t",
     )
     expr = t.group_by(t.uuid).aggregate(min_date=t.ts.min(where=t.search_level == 1))
-    result = ibis.clickhouse.compile(expr)
-    snapshot.assert_match(result, "out.sql")
+    assert_sql(expr)
 
 
 def test_timestamp_scalar_in_filter(alltypes):
@@ -313,17 +287,15 @@ def test_timestamp_scalar_in_filter(alltypes):
     expr.execute()
 
 
-def test_named_from_filter_groupby(snapshot):
+def test_named_from_filter_groupby(assert_sql):
     t = ibis.table([("key", "string"), ("value", "double")], name="t0")
     gb = t.filter(t.value == 42).group_by(t.key)
     sum_expr = lambda t: (t.value + 1 + 2 + 3).sum()
     expr = gb.aggregate(abc=sum_expr)
-    result = ibis.clickhouse.compile(expr)
-    snapshot.assert_match(result, "out1.sql")
+    assert_sql(expr, "out1.sql")
 
     expr = gb.aggregate(foo=sum_expr)
-    result = ibis.clickhouse.compile(expr)
-    snapshot.assert_match(result, "out2.sql")
+    assert_sql(expr, "out2.sql")
 
 
 def test_join_with_external_table_errors(alltypes):
@@ -385,30 +357,26 @@ def test_asof_join(time_left, time_right):
     )
 
 
-def test_count_name(snapshot):
+def test_count_name(assert_sql):
     t = ibis.table(dict(a="string", b="bool"), name="t")
 
     expr = t.group_by(t.a).agg(
         A=t.count(where=~t.b).fillna(0), B=t.count(where=t.b).fillna(0)
     )
+    assert_sql(expr)
 
-    snapshot.assert_match(str(ibis.to_sql(expr, dialect="clickhouse")), "out.sql")
 
-
-def test_array_join_in_subquery(snapshot):
+def test_array_join_in_subquery(assert_sql):
     node_view = ibis.table(dict(id="int64"), name="node_view")
     way_view = ibis.table(dict(ids="array<!int64>"), name="way_view")
 
     expr = node_view.id.isin(way_view.ids.unnest())
-
-    out = ibis.clickhouse.compile(expr)
-    snapshot.assert_match(out, "out.sql")
+    assert_sql(expr)
 
 
-def test_complex_join(snapshot):
+def test_complex_join(assert_sql):
     t1 = ibis.table({"a": "int", "b": "int"}, name="s")
     t2 = ibis.table({"c": "int", "d": "int"}, name="t")
     t3 = t1.join(t2, t1.a == t2.c)
     q = t3.mutate(e=t3.c / (t3.a - t3.b))
-    out = ibis.clickhouse.compile(q)
-    snapshot.assert_match(out, "out.sql")
+    assert_sql(q)

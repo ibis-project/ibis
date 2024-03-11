@@ -112,11 +112,16 @@ class SQLBackend(BaseBackend):
         return sql
 
     def compile(
-        self, expr: ir.Expr, limit: str | None = None, params=None, **kwargs: Any
+        self,
+        expr: ir.Expr,
+        limit: str | None = None,
+        params=None,
+        pretty: bool = False,
+        **kwargs: Any,
     ):
         """Compile an Ibis expression to a SQL string."""
         query = self._to_sqlglot(expr, limit=limit, params=params, **kwargs)
-        sql = query.sql(dialect=self.dialect, pretty=True, copy=False)
+        sql = query.sql(dialect=self.dialect, pretty=pretty, copy=False)
         self._log(sql)
         return sql
 

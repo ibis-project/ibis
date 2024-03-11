@@ -66,9 +66,8 @@ shp_multipolygon_0 = shapely.geometry.MultiPolygon([shp_polygon_0])
         point_geog_2,
     ],
 )
-def test_literal_geospatial_explicit(con, expr, snapshot):
-    result = con.compile(expr)
-    snapshot.assert_match(result, "out.sql")
+def test_literal_geospatial_explicit(expr, assert_sql):
+    assert_sql(expr)
 
 
 @pytest.mark.parametrize(
@@ -85,8 +84,9 @@ def test_literal_geospatial_explicit(con, expr, snapshot):
         shp_multipoint_0,
     ],
 )
-def test_literal_geospatial_inferred(con, shp, snapshot):
-    snapshot.assert_match(con.compile(ibis.literal(shp)), "out.sql")
+def test_literal_geospatial_inferred(shp, assert_sql):
+    expr = ibis.literal(shp)
+    assert_sql(expr)
 
 
 @pytest.mark.parametrize(
@@ -407,10 +407,10 @@ def test_geo_dataframe(geotable):
         ),
     ],
 )
-def test_geo_literals_smoke(con, shape, value, modifier, snapshot):
+def test_geo_literals_smoke(con, shape, value, modifier, assert_sql):
     """Smoke tests for geo spatial literals."""
     expr = ibis.literal(value, type=getattr(dt, shape).copy(**modifier))
-    snapshot.assert_match(con.compile(expr), "out.sql")
+    assert_sql(expr)
 
 
 @pytest.mark.parametrize(
@@ -472,29 +472,30 @@ def test_geo_literals_smoke(con, shape, value, modifier, snapshot):
         ),
     ],
 )
-def test_geo_ops_smoke(geotable, fn_expr, snapshot):
+def test_geo_ops_smoke(geotable, fn_expr, assert_sql):
     """Smoke tests for geo spatial operations."""
-    snapshot.assert_match(fn_expr(geotable).compile(), "out.sql")
+    expr = fn_expr(geotable)
+    assert_sql(expr)
 
 
-def test_geo_equals(geotable, snapshot):
+def test_geo_equals(geotable, assert_sql):
     # Fix https://github.com/ibis-project/ibis/pull/2956
     expr = geotable.mutate(
         Location_Latitude=geotable.geo_point.y(), Latitude=geotable.geo_point.y()
     )
 
-    snapshot.assert_match(expr.compile(), "out1.sql")
+    assert_sql(expr, "out1.sql")
 
     # simple test using ==
     expr = geotable.geo_point == geotable.geo_point
-    snapshot.assert_match(expr.compile(), "out2.sql")
+    assert_sql(expr, "out2.sql")
     result = expr.execute()
     assert not result.empty
     assert result.all()
 
     # using geo_equals
     expr = geotable.geo_point.geo_equals(geotable.geo_point).name("tmp")
-    snapshot.assert_match(expr.compile(), "out3.sql")
+    assert_sql(expr, "out3.sql")
     result = expr.execute()
     assert not result.empty
     assert result.all()

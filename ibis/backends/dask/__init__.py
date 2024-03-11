@@ -89,6 +89,7 @@ class Backend(BasePandasBackend, NoUrl):
         params: dict | None = None,
         limit: int | None = None,
         timecontext=None,
+        **kwargs,
     ):
         from ibis.backends.dask.executor import DaskExecutor
 

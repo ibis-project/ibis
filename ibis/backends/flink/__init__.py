@@ -328,10 +328,16 @@ class Backend(SQLBackend, CanCreateDatabase, NoUrl):
     _compile_python_udf = _register_udf
 
     def compile(
-        self, expr: ir.Expr, params: Mapping[ir.Expr, Any] | None = None, **_: Any
+        self,
+        expr: ir.Expr,
+        params: Mapping[ir.Expr, Any] | None = None,
+        pretty: bool = False,
+        **_: Any,
     ) -> Any:
         """Compile an Ibis expression to Flink."""
-        return super().compile(expr, params=params)  # Discard `limit` and other kwargs.
+        return super().compile(
+            expr, params=params, pretty=pretty
+        )  # Discard `limit` and other kwargs.
 
     def _to_sql(self, expr: ir.Expr, **kwargs: Any) -> str:
         return str(self.compile(expr, **kwargs))

@@ -712,3 +712,12 @@ def test_employee_data_2():
     )
 
     return df2
+
+
+@pytest.fixture
+def assert_sql(con, snapshot):
+    def checker(expr, file_name="out.sql"):
+        sql = con.compile(expr, pretty=True)
+        snapshot.assert_match(sql, file_name)
+
+    return checker

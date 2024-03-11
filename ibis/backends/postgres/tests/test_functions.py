@@ -33,14 +33,14 @@ pytest.importorskip("psycopg2")
         ),
     ],
 )
-def test_cast(alltypes, expr_fn, snapshot):
+def test_cast(alltypes, expr_fn, assert_sql):
     expr = expr_fn(alltypes)
-    snapshot.assert_match(expr.compile(), "out.sql")
+    assert_sql(expr)
 
 
-def test_date_cast(alltypes, snapshot):
+def test_date_cast(alltypes, assert_sql):
     result = alltypes.date_string_col.cast("date")
-    snapshot.assert_match(result.compile(), "out.sql")
+    assert_sql(result)
 
 
 @pytest.mark.parametrize(
@@ -66,7 +66,7 @@ def test_noop_cast(alltypes, column):
     assert col.cast(col.type()).equals(col)
 
 
-def test_timestamp_cast_noop(alltypes, snapshot):
+def test_timestamp_cast_noop(alltypes, assert_sql):
     # See GH #592
     timestamp_col_type = alltypes.timestamp_col.type()
     result1 = alltypes.timestamp_col.cast(timestamp_col_type)
@@ -77,8 +77,8 @@ def test_timestamp_cast_noop(alltypes, snapshot):
 
     assert result1.type() == timestamp_col_type
 
-    snapshot.assert_match(result1.compile(), "out1.sql")
-    snapshot.assert_match(result2.compile(), "out2.sql")
+    assert_sql(result1, "out1.sql")
+    assert_sql(result2, "out2.sql")
 
 
 @pytest.mark.parametrize(
@@ -486,14 +486,13 @@ def test_category_label(alltypes, df):
 
 
 @pytest.mark.parametrize("distinct", [True, False])
-def test_union_cte(alltypes, distinct, snapshot):
+def test_union_cte(alltypes, distinct, assert_sql):
     t = alltypes
     expr1 = t.group_by(t.string_col).aggregate(metric=t.double_col.sum())
     expr2 = expr1.view()
     expr3 = expr1.view()
     expr = expr1.union(expr2, distinct=distinct).union(expr3, distinct=distinct)
-    result = " ".join(line.strip() for line in expr.compile().splitlines())
-    snapshot.assert_match(result, "out.sql")
+    assert_sql(expr)
 
 
 @pytest.mark.parametrize(
@@ -1025,7 +1024,7 @@ def test_identical_to(con, df):
     tm.assert_series_equal(result, expected)
 
 
-def test_analytic_functions(alltypes, snapshot):
+def test_analytic_functions(alltypes, assert_sql):
     expr = alltypes.select(
         rank=alltypes.double_col.rank(),
         dense_rank=alltypes.double_col.dense_rank(),
@@ -1033,7 +1032,7 @@ def test_analytic_functions(alltypes, snapshot):
         ntile=alltypes.double_col.ntile(7),
         percent_rank=alltypes.double_col.percent_rank(),
     )
-    snapshot.assert_match(str(ibis.to_sql(expr)), "out.sql")
+    assert_sql(expr)
 
 
 @pytest.mark.parametrize("opname", ["invert", "neg"])

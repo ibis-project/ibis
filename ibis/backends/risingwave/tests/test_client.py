@@ -49,12 +49,11 @@ def test_list_tables(con):
     assert len(con.list_tables(like="functional")) == 1
 
 
-def test_compile_toplevel(snapshot):
+def test_compile_toplevel(assert_sql):
     t = ibis.table([("foo", "double")], name="t0")
 
     expr = t.foo.sum()
-    result = ibis.postgres.compile(expr)
-    snapshot.assert_match(str(result), "out.sql")
+    assert_sql(expr)
 
 
 def test_list_databases(con):

@@ -56,11 +56,11 @@ def test_string_temporal_compare(con, op, left, right, type):
     "op",
     ["add", "sub", "mul", "truediv", "pow", "lt", "le", "gt", "ge", "eq", "ne"],
 )
-def test_binary_infix_operators(con, alltypes, op, snapshot):
+def test_binary_infix_operators(con, alltypes, op, assert_sql):
     func = getattr(operator, op)
     a, b = alltypes.int_col, alltypes.tinyint_col
     expr = func(a, b)
-    snapshot.assert_match(expr.compile(), "out.sql")
+    assert_sql(expr)
     assert len(con.execute(expr))
 
 
@@ -78,19 +78,19 @@ def test_binary_infix_operators(con, alltypes, op, snapshot):
         lambda a, b, c: (b + (-(a + c))),
     ],
 )
-def test_binary_infix_parenthesization(con, alltypes, op, snapshot):
+def test_binary_infix_parenthesization(con, alltypes, op, assert_sql):
     a = alltypes.int_col
     b = alltypes.tinyint_col
     c = alltypes.double_col
 
     expr = op(a, b, c)
-    snapshot.assert_match(expr.compile(), "out.sql")
+    assert_sql(expr)
     assert len(con.execute(expr))
 
 
-def test_between(con, alltypes, snapshot):
+def test_between(con, alltypes, assert_sql):
     expr = alltypes.int_col.between(0, 10)
-    snapshot.assert_match(expr.compile(), "out.sql")
+    assert_sql(expr)
     assert len(con.execute(expr))
 
 
@@ -143,9 +143,9 @@ def test_field_in_literals(con, alltypes, df, container):
 
 
 @pytest.mark.parametrize("column", ["int_col", "float_col", "bool_col"])
-def test_negate(con, alltypes, column, snapshot):
+def test_negate(con, alltypes, column, assert_sql):
     expr = -alltypes[column]
-    snapshot.assert_match(expr.compile(), "out.sql")
+    assert_sql(expr)
     assert len(con.execute(expr))
 
 
@@ -199,17 +199,17 @@ def test_ifelse(alltypes, df, op, pandas_op):
     tm.assert_series_equal(result, expected)
 
 
-def test_simple_case(con, alltypes, snapshot):
+def test_simple_case(con, alltypes, assert_sql):
     t = alltypes
     expr = (
         t.string_col.case().when("foo", "bar").when("baz", "qux").else_("default").end()
     )
 
-    snapshot.assert_match(expr.compile(), "out.sql")
+    assert_sql(expr)
     assert len(con.execute(expr))
 
 
-def test_search_case(con, alltypes, snapshot):
+def test_search_case(con, alltypes, assert_sql):
     t = alltypes
     expr = (
         ibis.case()
@@ -219,7 +219,7 @@ def test_search_case(con, alltypes, snapshot):
         .end()
     )
 
-    snapshot.assert_match(expr.compile(), "out.sql")
+    assert_sql(expr)
     assert len(con.execute(expr))
 
 

@@ -317,14 +317,13 @@ def test_category_label(alltypes, df):
 
 
 @pytest.mark.parametrize("distinct", [True, False])
-def test_union_cte(alltypes, distinct, snapshot):
+def test_union_cte(alltypes, distinct, assert_sql):
     t = alltypes
     expr1 = t.group_by(t.string_col).aggregate(metric=t.double_col.sum())
     expr2 = expr1.view()
     expr3 = expr1.view()
     expr = expr1.union(expr2, distinct=distinct).union(expr3, distinct=distinct)
-    result = " ".join(line.strip() for line in expr.compile().splitlines())
-    snapshot.assert_match(result, "out.sql")
+    assert_sql(expr)
 
 
 @pytest.mark.parametrize(
