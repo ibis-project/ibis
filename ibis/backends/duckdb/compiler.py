@@ -182,7 +182,7 @@ class DuckDBCompiler(SQLGlotCompiler):
         i = sg.to_identifier("i")
         body = sge.Struct.from_arg_list(
             [
-                sge.Slice(this=k, expression=v[i])
+                sge.PropertyEQ(this=k, expression=v[i])
                 for k, v in zip(map(sge.convert, op.dtype.value_type.names), arg)
             ]
         )
