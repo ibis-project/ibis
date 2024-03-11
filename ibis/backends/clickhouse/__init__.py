@@ -25,6 +25,7 @@ import ibis.expr.types as ir
 from ibis import util
 from ibis.backends import BaseBackend, CanCreateDatabase
 from ibis.backends.clickhouse.compiler import ClickHouseCompiler
+from ibis.backends.clickhouse.converter import ClickHousePandasData
 from ibis.backends.sql import SQLBackend
 from ibis.backends.sql.compiler import C
 
@@ -165,6 +166,7 @@ class Backend(SQLBackend, CanCreateDatabase):
             client_name=client_name,
             query_limit=0,
             compress=compression,
+            settings=settings,
             **kwargs,
         )
 
@@ -380,11 +382,10 @@ class Backend(SQLBackend, CanCreateDatabase):
         else:
             df.columns = list(schema.names)
 
-        # TODO: remove the extra conversion
-        #
-        # the extra __pandas_result__ call is to work around slight differences
-        # in single column conversion and whole table conversion
-        return expr.__pandas_result__(table.__pandas_result__(df))
+        # TODO: remove the extra conversion by passing the converter to
+        # __pandas_result__, a la `__pandas_result__(df, converter)`
+        df = ClickHousePandasData.convert_table(df, schema=schema)
+        return expr.__pandas_result__(df)
 
     def insert(
         self,
