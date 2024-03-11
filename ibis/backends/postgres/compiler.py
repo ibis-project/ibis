@@ -315,7 +315,7 @@ class PostgresCompiler(SQLGlotCompiler):
         #
         # but also postgres should really support anonymous structs
         return self.cast(
-            self.f.json_extract(self.f.to_jsonb(arg), sge.convert(f"f{idx:d}")),
+            self.f.jsonb_extract_path(self.f.to_jsonb(arg), sge.convert(f"f{idx:d}")),
             op.dtype,
         )
 
@@ -336,10 +336,17 @@ class PostgresCompiler(SQLGlotCompiler):
         return self.f.cardinality(self.f.akeys(arg))
 
     def visit_MapGet(self, op, *, arg, key, default):
-        return self.if_(self.f.exist(arg, key), self.f.json_extract(arg, key), default)
+        return self.if_(
+            self.f.exist(arg, key),
+            self.f.jsonb_extract_path_text(self.f.to_jsonb(arg), key),
+            default,
+        )
 
     def visit_MapMerge(self, op, *, left, right):
         return sge.DPipe(this=left, expression=right)
+
+    def visit_ArrayStringJoin(self, op, *, arg, sep):
+        return self.f.anon.array_to_string(arg, sep)
 
     def visit_TypeOf(self, op, *, arg):
         typ = self.cast(self.f.pg_typeof(arg), dt.string)
