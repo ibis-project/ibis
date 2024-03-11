@@ -20,8 +20,8 @@ WITH "t5" AS (
       FROM (
         SELECT
           "t1"."field_of_study",
-          CAST(TO_JSONB("t1"."__pivoted__") -> 'f1' AS VARCHAR) AS "years",
-          CAST(TO_JSONB("t1"."__pivoted__") -> 'f2' AS BIGINT) AS "degrees"
+          CAST(JSONB_EXTRACT_PATH(TO_JSONB("t1"."__pivoted__"), 'f1') AS VARCHAR) AS "years",
+          CAST(JSONB_EXTRACT_PATH(TO_JSONB("t1"."__pivoted__"), 'f2') AS BIGINT) AS "degrees"
         FROM (
           SELECT
             "t0"."field_of_study",
