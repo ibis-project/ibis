@@ -670,7 +670,7 @@ class Backend(SQLBackend, CanCreateSchema, UrlFromPath):
                 sg.to_identifier("columns").eq(
                     sge.Struct(
                         expressions=[
-                            sge.Slice(
+                            sge.PropertyEQ(
                                 this=sge.convert(key), expression=sge.convert(value)
                             )
                             for key, value in columns.items()
