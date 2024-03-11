@@ -461,10 +461,13 @@ class SQLGlotCompiler(abc.ABC):
             aliases[node] = alias
 
             alias = sg.to_identifier(alias, quoted=self.quoted)
-            try:
-                return result.subquery(alias)
-            except AttributeError:
+            if isinstance(result, sge.Subquery):
                 return result.as_(alias, quoted=self.quoted)
+            else:
+                try:
+                    return result.subquery(alias)
+                except AttributeError:
+                    return result.as_(alias, quoted=self.quoted)
 
         # apply translate rules in topological order
         results = op.map(fn)
@@ -1344,10 +1347,13 @@ class SQLGlotCompiler(abc.ABC):
         if isinstance(child, sge.Table):
             child = sg.select(STAR).from_(child)
 
-        try:
-            return child.subquery(name)
-        except AttributeError:
-            return child.as_(name)
+        if isinstance(child, sge.Subquery):
+            return child.as_(name, quoted=self.quoted)
+        else:
+            try:
+                return child.subquery(name)
+            except AttributeError:
+                return child.as_(name, quoted=self.quoted)
 
     def visit_SQLStringView(self, op, *, query: str, child, schema):
         return sg.parse_one(query, read=self.dialect)
