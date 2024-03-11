@@ -497,6 +497,9 @@ def test_to_pandas_batches_scalar(backend, con):
 
 
 @pytest.mark.parametrize("limit", limit_no_limit)
+@pytest.mark.never(
+    ["druid"], raises=AssertionError, reason="Druid has an extra __time column"
+)
 def test_table_to_polars(limit, awards_players):
     pl = pytest.importorskip("polars")
     res = awards_players.to_polars(limit=limit)
