@@ -631,9 +631,7 @@ class Expr(Immutable, Coercible):
         params
             Mapping of scalar parameter expressions to value.
         **kwargs
-            Additional keyword arguments passed to pyarrow.csv.CSVWriter
-
-        https://arrow.apache.org/docs/python/generated/pyarrow.csv.CSVWriter.html
+            Additional keyword arguments passed to deltalake.writer.write_deltalake method
         """
         self._find_backend(use_default=True).to_delta(self, path, **kwargs)
 
