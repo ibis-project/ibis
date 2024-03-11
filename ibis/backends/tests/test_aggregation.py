@@ -32,10 +32,11 @@ from ibis.backends.tests.errors import (
 )
 from ibis.legacy.udf.vectorized import reduction
 
+with pytest.warns(FutureWarning, match="v9.0"):
 
-@reduction(input_type=[dt.double], output_type=dt.double)
-def mean_udf(s):
-    return s.mean()
+    @reduction(input_type=[dt.double], output_type=dt.double)
+    def mean_udf(s):
+        return s.mean()
 
 
 aggregate_test_params = [
@@ -232,13 +233,14 @@ def test_aggregate_grouped(backend, alltypes, df, result_fn, expected_fn):
 def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
     """Tests .aggregate() on a multi-key group_by with a reduction
     operation."""
+    with pytest.warns(FutureWarning, match="v9.0"):
 
-    @reduction(
-        input_type=[dt.double],
-        output_type=dt.Struct({"mean": dt.double, "std": dt.double}),
-    )
-    def mean_and_std(v):
-        return v.mean(), v.std()
+        @reduction(
+            input_type=[dt.double],
+            output_type=dt.Struct({"mean": dt.double, "std": dt.double}),
+        )
+        def mean_and_std(v):
+            return v.mean(), v.std()
 
     grouping_key_cols = ["bigint_col", "int_col"]
 
@@ -1427,8 +1429,8 @@ def test_aggregate_list_like(backend, alltypes, df, agg_fn):
     words, the resulting table expression should have one element, which
     is the list / np.array).
     """
-
-    udf = reduction(input_type=[dt.double], output_type=dt.Array(dt.double))(agg_fn)
+    with pytest.warns(FutureWarning, match="v9.0"):
+        udf = reduction(input_type=[dt.double], output_type=dt.Array(dt.double))(agg_fn)
 
     expr = alltypes.aggregate(result_col=udf(alltypes.double_col))
     result = expr.execute()
@@ -1468,14 +1470,15 @@ def test_aggregate_mixed_udf(backend, alltypes, df):
     (In particular, one aggregation that results in an array, and other
     aggregation(s) that result in a non-array)
     """
+    with pytest.warns(FutureWarning, match="v9.0"):
 
-    @reduction(input_type=[dt.double], output_type=dt.double)
-    def sum_udf(v):
-        return np.sum(v)
+        @reduction(input_type=[dt.double], output_type=dt.double)
+        def sum_udf(v):
+            return np.sum(v)
 
-    @reduction(input_type=[dt.double], output_type=dt.Array(dt.double))
-    def collect_udf(v):
-        return np.array(v)
+        @reduction(input_type=[dt.double], output_type=dt.Array(dt.double))
+        def collect_udf(v):
+            return np.array(v)
 
     expr = alltypes.aggregate(
         sum_col=sum_udf(alltypes.double_col),

@@ -43,9 +43,11 @@ def add_one(s):
 
 
 def create_add_one_udf(result_formatter, id):
-    @elementwise(input_type=[dt.double], output_type=dt.double)
-    def add_one_legacy(s):
-        return result_formatter(add_one(s))
+    with pytest.warns(FutureWarning, match="v9.0"):
+
+        @elementwise(input_type=[dt.double], output_type=dt.double)
+        def add_one_legacy(s):
+            return result_formatter(add_one(s))
 
     @ibis.udf.scalar.pandas
     def add_one_udf(s: float) -> float:
@@ -73,9 +75,10 @@ def calc_zscore(s):
 
 
 def create_calc_zscore_udf(result_formatter):
-    return analytic(input_type=[dt.double], output_type=dt.double)(
-        _format_udf_return_type(calc_zscore, result_formatter)
-    )
+    with pytest.warns(FutureWarning, match="v9.0"):
+        return analytic(input_type=[dt.double], output_type=dt.double)(
+            _format_udf_return_type(calc_zscore, result_formatter)
+        )
 
 
 calc_zscore_udfs = [
@@ -84,11 +87,12 @@ calc_zscore_udfs = [
     create_calc_zscore_udf(result_formatter=lambda v: list(v)),  # list,
 ]
 
+with pytest.warns(FutureWarning, match="v9.0"):
 
-@reduction(input_type=[dt.double], output_type=dt.double)
-def calc_mean(s):
-    assert isinstance(s, (np.ndarray, pd.Series))
-    return s.mean()
+    @reduction(input_type=[dt.double], output_type=dt.double)
+    def calc_mean(s):
+        assert isinstance(s, (np.ndarray, pd.Series))
+        return s.mean()
 
 
 # elementwise multi-column UDF
@@ -98,10 +102,11 @@ def add_one_struct(v):
 
 
 def create_add_one_struct_udf(result_formatter):
-    return elementwise(
-        input_type=[dt.double],
-        output_type=dt.Struct({"col1": dt.double, "col2": dt.double}),
-    )(_format_struct_udf_return_type(add_one_struct, result_formatter))
+    with pytest.warns(FutureWarning, match="v9.0"):
+        return elementwise(
+            input_type=[dt.double],
+            output_type=dt.Struct({"col1": dt.double, "col2": dt.double}),
+        )(_format_struct_udf_return_type(add_one_struct, result_formatter))
 
 
 add_one_struct_udfs = [
@@ -139,35 +144,37 @@ add_one_struct_udfs = [
     ),
 ]
 
+with pytest.warns(FutureWarning, match="v9.0"):
 
-@elementwise(
-    input_type=[dt.double],
-    output_type=dt.Struct({"double_col": dt.double, "col2": dt.double}),
-)
-def overwrite_struct_elementwise(v):
-    assert isinstance(v, pd.Series)
-    return v + 1, v + 2
+    @elementwise(
+        input_type=[dt.double],
+        output_type=dt.Struct({"double_col": dt.double, "col2": dt.double}),
+    )
+    def overwrite_struct_elementwise(v):
+        assert isinstance(v, pd.Series)
+        return v + 1, v + 2
+
+    @elementwise(
+        input_type=[dt.double],
+        output_type=dt.Struct(
+            {"double_col": dt.double, "col2": dt.double, "float_col": dt.double}
+        ),
+    )
+    def multiple_overwrite_struct_elementwise(v):
+        assert isinstance(v, pd.Series)
+        return v + 1, v + 2, v + 3
 
 
-@elementwise(
-    input_type=[dt.double],
-    output_type=dt.Struct(
-        {"double_col": dt.double, "col2": dt.double, "float_col": dt.double}
-    ),
-)
-def multiple_overwrite_struct_elementwise(v):
-    assert isinstance(v, pd.Series)
-    return v + 1, v + 2, v + 3
+with pytest.warns(FutureWarning, match="v9.0"):
 
-
-@analytic(
-    input_type=[dt.double, dt.double],
-    output_type=dt.Struct({"double_col": dt.double, "demean_weight": dt.double}),
-)
-def overwrite_struct_analytic(v, w):
-    assert isinstance(v, pd.Series)
-    assert isinstance(w, pd.Series)
-    return v - v.mean(), w - w.mean()
+    @analytic(
+        input_type=[dt.double, dt.double],
+        output_type=dt.Struct({"double_col": dt.double, "demean_weight": dt.double}),
+    )
+    def overwrite_struct_analytic(v, w):
+        assert isinstance(v, pd.Series)
+        assert isinstance(w, pd.Series)
+        return v - v.mean(), w - w.mean()
 
 
 # analytic multi-column UDF
@@ -178,10 +185,11 @@ def demean_struct(v, w):
 
 
 def create_demean_struct_udf(result_formatter):
-    return analytic(
-        input_type=[dt.double, dt.double],
-        output_type=dt.Struct({"demean": dt.double, "demean_weight": dt.double}),
-    )(_format_struct_udf_return_type(demean_struct, result_formatter))
+    with pytest.warns(FutureWarning, match="v9.0"):
+        return analytic(
+            input_type=[dt.double, dt.double],
+            output_type=dt.Struct({"demean": dt.double, "demean_weight": dt.double}),
+        )(_format_struct_udf_return_type(demean_struct, result_formatter))
 
 
 demean_struct_udfs = [
@@ -216,10 +224,11 @@ def mean_struct(v, w):
 
 
 def create_mean_struct_udf(result_formatter):
-    return reduction(
-        input_type=[dt.double, dt.int64],
-        output_type=dt.Struct({"mean": dt.double, "mean_weight": dt.double}),
-    )(_format_struct_udf_return_type(mean_struct, result_formatter))
+    with pytest.warns(FutureWarning, match="v9.0"):
+        return reduction(
+            input_type=[dt.double, dt.int64],
+            output_type=dt.Struct({"mean": dt.double, "mean_weight": dt.double}),
+        )(_format_struct_udf_return_type(mean_struct, result_formatter))
 
 
 mean_struct_udfs = [
@@ -232,23 +241,23 @@ mean_struct_udfs = [
     ),  # np.array of scalar
 ]
 
+with pytest.warns(FutureWarning, match="v9.0"):
 
-@reduction(
-    input_type=[dt.double, dt.int64],
-    output_type=dt.Struct({"double_col": dt.double, "mean_weight": dt.double}),
-)
-def overwrite_struct_reduction(v, w):
-    assert isinstance(v, (np.ndarray, pd.Series))
-    assert isinstance(w, (np.ndarray, pd.Series))
-    return v.mean(), w.mean()
+    @reduction(
+        input_type=[dt.double, dt.int64],
+        output_type=dt.Struct({"double_col": dt.double, "mean_weight": dt.double}),
+    )
+    def overwrite_struct_reduction(v, w):
+        assert isinstance(v, (np.ndarray, pd.Series))
+        assert isinstance(w, (np.ndarray, pd.Series))
+        return v.mean(), w.mean()
 
-
-@reduction(
-    input_type=[dt.double],
-    output_type=dt.Array(dt.double),
-)
-def quantiles(series, *, quantiles):
-    return series.quantile(quantiles)
+    @reduction(
+        input_type=[dt.double],
+        output_type=dt.Array(dt.double),
+    )
+    def quantiles(series, *, quantiles):
+        return series.quantile(quantiles)
 
 
 @pytest.mark.parametrize(
@@ -344,29 +353,31 @@ def test_output_type_in_list_invalid():
         com.IbisTypeError,
         match="The output type of a UDF must be a single datatype.",
     ):
+        with pytest.warns(FutureWarning, match="v9.0"):
 
-        @elementwise(input_type=[dt.double], output_type=[dt.double])
-        def _(s):
-            return s + 1
+            @elementwise(input_type=[dt.double], output_type=[dt.double])
+            def _(s):
+                return s + 1
 
 
 def test_valid_kwargs(udf_backend, udf_alltypes, udf_df):
     # Test different forms of UDF definition with keyword arguments
+    with pytest.warns(FutureWarning, match="v9.0"):
 
-    @elementwise(input_type=[dt.double], output_type=dt.double)
-    def foo1(v):
-        # Basic UDF with kwargs
-        return v + 1
+        @elementwise(input_type=[dt.double], output_type=dt.double)
+        def foo1(v):
+            # Basic UDF with kwargs
+            return v + 1
 
-    @elementwise(input_type=[dt.double], output_type=dt.double)
-    def foo2(v, *, amount):
-        # UDF with keyword only arguments
-        return v + amount
+        @elementwise(input_type=[dt.double], output_type=dt.double)
+        def foo2(v, *, amount):
+            # UDF with keyword only arguments
+            return v + amount
 
-    @elementwise(input_type=[dt.double], output_type=dt.double)
-    def foo3(v, **kwargs):
-        # UDF with kwargs
-        return v + kwargs.get("amount", 1)
+        @elementwise(input_type=[dt.double], output_type=dt.double)
+        def foo3(v, **kwargs):
+            # UDF with kwargs
+            return v + kwargs.get("amount", 1)
 
     expr = udf_alltypes.mutate(
         v1=foo1(udf_alltypes["double_col"]),
@@ -392,14 +403,15 @@ def test_valid_kwargs(udf_backend, udf_alltypes, udf_df):
 
 def test_valid_args(udf_backend, udf_alltypes, udf_df):
     # Test different forms of UDF definition with *args
+    with pytest.warns(FutureWarning, match="v9.0"):
 
-    @elementwise(input_type=[dt.double, dt.int32], output_type=dt.double)
-    def foo1(*args):
-        return args[0] + args[1]
+        @elementwise(input_type=[dt.double, dt.int32], output_type=dt.double)
+        def foo1(*args):
+            return args[0] + args[1]
 
-    @elementwise(input_type=[dt.double, dt.int32], output_type=dt.double)
-    def foo2(v, *args):
-        return v + args[0]
+        @elementwise(input_type=[dt.double, dt.int32], output_type=dt.double)
+        def foo2(v, *args):
+            return v + args[0]
 
     result = udf_alltypes.mutate(
         v1=foo1(udf_alltypes["double_col"], udf_alltypes["int_col"]),
@@ -416,27 +428,28 @@ def test_valid_args(udf_backend, udf_alltypes, udf_df):
 
 def test_valid_args_and_kwargs(udf_backend, udf_alltypes, udf_df):
     # Test UDFs with both *args and keyword arguments
+    with pytest.warns(FutureWarning, match="v9.0"):
 
-    @elementwise(input_type=[dt.double, dt.int32], output_type=dt.double)
-    def foo1(*args, amount):
-        # UDF with *args and a keyword-only argument
-        return args[0] + args[1] + amount
+        @elementwise(input_type=[dt.double, dt.int32], output_type=dt.double)
+        def foo1(*args, amount):
+            # UDF with *args and a keyword-only argument
+            return args[0] + args[1] + amount
 
-    @elementwise(input_type=[dt.double, dt.int32], output_type=dt.double)
-    def foo2(*args, **kwargs):
-        # UDF with *args and **kwargs
-        return args[0] + args[1] + kwargs.get("amount", 1)
+        @elementwise(input_type=[dt.double, dt.int32], output_type=dt.double)
+        def foo2(*args, **kwargs):
+            # UDF with *args and **kwargs
+            return args[0] + args[1] + kwargs.get("amount", 1)
 
-    @elementwise(input_type=[dt.double, dt.int32], output_type=dt.double)
-    def foo3(v, *args, amount):
-        # UDF with an explicit positional argument, *args, and a keyword-only
-        # argument
-        return v + args[0] + amount
+        @elementwise(input_type=[dt.double, dt.int32], output_type=dt.double)
+        def foo3(v, *args, amount):
+            # UDF with an explicit positional argument, *args, and a keyword-only
+            # argument
+            return v + args[0] + amount
 
-    @elementwise(input_type=[dt.double, dt.int32], output_type=dt.double)
-    def foo4(v, *args, **kwargs):
-        # UDF with an explicit positional argument, *args, and **kwargs
-        return v + args[0] + kwargs.get("amount", 1)
+        @elementwise(input_type=[dt.double, dt.int32], output_type=dt.double)
+        def foo4(v, *args, **kwargs):
+            # UDF with an explicit positional argument, *args, and **kwargs
+            return v + args[0] + kwargs.get("amount", 1)
 
     result = udf_alltypes.mutate(
         v1=foo1(udf_alltypes["double_col"], udf_alltypes["int_col"], amount=2),
@@ -460,10 +473,11 @@ def test_invalid_kwargs():
     # keyword argument raises an error
 
     with pytest.raises(TypeError, match=".*must be defined as keyword only.*"):
+        with pytest.warns(FutureWarning, match="v9.0"):
 
-        @elementwise(input_type=[dt.double], output_type=dt.double)
-        def _(v, _):
-            return v + 1
+            @elementwise(input_type=[dt.double], output_type=dt.double)
+            def _(v, _):
+                return v + 1
 
 
 @pytest.mark.parametrize("udf", add_one_struct_udfs)
@@ -526,16 +540,18 @@ def test_elementwise_udf_overwrite_destruct_and_assign(udf_backend, udf_alltypes
 @pytest.mark.xfail_version(pyspark=["pyspark<3.1"])
 @pytest.mark.parametrize("method", ["destructure", "unpack"])
 def test_elementwise_udf_destructure_exact_once(udf_alltypes, method, tmp_path):
-    @elementwise(
-        input_type=[dt.double],
-        output_type=dt.Struct({"col1": dt.double, "col2": dt.double}),
-    )
-    def add_one_struct_exact_once(v):
-        key = v.iloc[0]
-        path = tmp_path / str(key)
-        assert not path.exists()
-        path.touch()
-        return v + 1, v + 2
+    with pytest.warns(FutureWarning, match="v9.0"):
+
+        @elementwise(
+            input_type=[dt.double],
+            output_type=dt.Struct({"col1": dt.double, "col2": dt.double}),
+        )
+        def add_one_struct_exact_once(v):
+            key = v.iloc[0]
+            path = tmp_path / str(key)
+            assert not path.exists()
+            path.touch()
+            return v + 1, v + 2
 
     struct = add_one_struct_exact_once(udf_alltypes["id"])
 

@@ -337,12 +337,14 @@ def test_two_inner_joins(snapshot):
 def test_destruct_selection(snapshot):
     table = ibis.table([("col", "int64")], name="t")
 
-    @udf.reduction(
-        input_type=["int64"],
-        output_type=dt.Struct({"sum": "int64", "mean": "float64"}),
-    )
-    def multi_output_udf(v):
-        return v.sum(), v.mean()
+    with pytest.warns(FutureWarning, match="v9.0"):
+
+        @udf.reduction(
+            input_type=["int64"],
+            output_type=dt.Struct({"sum": "int64", "mean": "float64"}),
+        )
+        def multi_output_udf(v):
+            return v.sum(), v.mean()
 
     expr = table.aggregate(multi_output_udf(table["col"]).destructure())
     result = fmt(expr)

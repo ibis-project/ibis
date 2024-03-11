@@ -498,14 +498,15 @@ def test_window_on_and_by_key_as_window_input(t, df):
     )
 
     # Test UDF
+    with pytest.warns(FutureWarning, match="v9.0"):
 
-    @reduction(input_type=[dt.int64], output_type=dt.int64)
-    def count(v):
-        return len(v)
+        @reduction(input_type=[dt.int64], output_type=dt.int64)
+        def count(v):
+            return len(v)
 
-    @reduction(input_type=[dt.int64, dt.int64], output_type=dt.int64)
-    def count_both(v1, v2):
-        return len(v1)
+        @reduction(input_type=[dt.int64, dt.int64], output_type=dt.int64)
+        def count_both(v1, v2):
+            return len(v1)
 
     tm.assert_series_equal(
         count(t[order_by]).over(row_window).execute(),
@@ -545,17 +546,21 @@ def test_rolling_window_udf_nan_and_non_numeric(t, group_by, order_by):
     t = t.mutate(nan_int64=t["plain_int64"])
     t = t.mutate(nan_int64=None)
 
-    @reduction(input_type=[dt.int64], output_type=dt.int64)
-    def count_int64(v):
-        return len(v)
+    with pytest.warns(FutureWarning, match="v9.0"):
 
-    @reduction(input_type=[dt.timestamp], output_type=dt.int64)
-    def count_timestamp(v):
-        return len(v)
+        @reduction(input_type=[dt.int64], output_type=dt.int64)
+        def count_int64(v):
+            return len(v)
 
-    @reduction(input_type=[t["map_of_strings_integers"].type()], output_type=dt.int64)
-    def count_complex(v):
-        return len(v)
+        @reduction(input_type=[dt.timestamp], output_type=dt.int64)
+        def count_timestamp(v):
+            return len(v)
+
+        @reduction(
+            input_type=[t["map_of_strings_integers"].type()], output_type=dt.int64
+        )
+        def count_complex(v):
+            return len(v)
 
     window = ibis.trailing_window(preceding=1, order_by=order_by, group_by=group_by)
 
