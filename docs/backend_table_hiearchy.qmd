@@ -1,0 +1,38 @@
+---
+title: Backend Table Hierarchy
+---
+
+Several SQL backends support two levels of hierarchy in organizing tables
+(although the levels are also used for other purposes, like data access,
+billing, etc.).
+
+Ibis uses the following terminology:
+
+- `database`: a collection of tables
+- `catalog`: a collection of databases
+
+Below is a table with the terminology used by each backend for the two levels of
+hierarchy. This is provided as a reference, note that when using Ibis, we will
+use the terms `catalog` and `database` and map them onto the appropriate fields.
+
+
+| Backend    | Catalog        | Database   |
+|------------|----------------|------------|
+| bigquery   | project        | database   |
+| clickhouse |                | database   |
+| dask       |                | NA         |
+| datafusion | catalog        | schema     |
+| druid      | dataSourceType | dataSource |
+| duckdb     | database       | schema     |
+| flink      | catalog        | database   |
+| impala     |                | database   |
+| mssql      | database       | schema     |
+| mysql      |                | database   |
+| oracle     |                | database   |
+| pandas     |                | NA         |
+| polars     |                | NA         |
+| postgres   | database       | schema     |
+| pyspark    |                | database   |
+| risingwave | database       | schema     |
+| snowflake  |                | database   |
+| trino      | catalog        | schema     |
