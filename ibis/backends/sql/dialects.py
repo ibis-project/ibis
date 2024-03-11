@@ -46,6 +46,7 @@ class Druid(Postgres):
         TRANSFORMS = Postgres.Generator.TRANSFORMS.copy() | {
             sge.ApproxDistinct: rename_func("approx_count_distinct"),
             sge.Pow: rename_func("power"),
+            sge.ArrayJoin: rename_func("array_to_string"),
         }
 
 
