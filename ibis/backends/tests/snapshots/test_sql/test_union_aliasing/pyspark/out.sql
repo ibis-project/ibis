@@ -1,7 +1,7 @@
 WITH `t5` AS (
   SELECT
     `t4`.`field_of_study`,
-    FIRST(`t4`.`diff`, TRUE) AS `diff`
+    FIRST(`t4`.`diff`) IGNORE NULLS AS `diff`
   FROM (
     SELECT
       `t3`.`field_of_study`,
@@ -15,8 +15,8 @@ WITH `t5` AS (
         `t2`.`field_of_study`,
         `t2`.`years`,
         `t2`.`degrees`,
-        FIRST(`t2`.`degrees`, TRUE) OVER (PARTITION BY `t2`.`field_of_study` ORDER BY `t2`.`years` ASC NULLS LAST ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) AS `earliest_degrees`,
-        LAST(`t2`.`degrees`, TRUE) OVER (PARTITION BY `t2`.`field_of_study` ORDER BY `t2`.`years` ASC NULLS LAST ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) AS `latest_degrees`
+        FIRST(`t2`.`degrees`) IGNORE NULLS OVER (PARTITION BY `t2`.`field_of_study` ORDER BY `t2`.`years` ASC NULLS LAST ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) AS `earliest_degrees`,
+        LAST(`t2`.`degrees`) IGNORE NULLS OVER (PARTITION BY `t2`.`field_of_study` ORDER BY `t2`.`years` ASC NULLS LAST ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) AS `latest_degrees`
       FROM (
         SELECT
           `t1`.`field_of_study`,
