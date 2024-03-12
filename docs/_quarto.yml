@@ -428,7 +428,22 @@ quartodoc:
                 - strftime
                 - time
                 - truncate
-            - IntervalValue
+            - name: IntervalValue
+              dynamic: true
+              members:
+                - to_unit
+                - negate
+                - years
+                - quarters
+                - months
+                - weeks
+                - days
+                - hours
+                - minutes
+                - seconds
+                - milliseconds
+                - microseconds
+                - nanoseconds
             - DayOfWeek
             - name: now
               package: ibis

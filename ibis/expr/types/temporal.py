@@ -833,57 +833,57 @@ class IntervalValue(Value):
 
     @property
     def years(self) -> ir.IntegerValue:
-        """Extract the number of years from an interval."""
+        """The number of years (IntegerValue)."""
         return self.to_unit("Y")
 
     @property
     def quarters(self) -> ir.IntegerValue:
-        """Extract the number of quarters from an interval."""
+        """The number of quarters (IntegerValue)."""
         return self.to_unit("Q")
 
     @property
     def months(self) -> ir.IntegerValue:
-        """Extract the number of months from an interval."""
+        """The number of months (IntegerValue)."""
         return self.to_unit("M")
 
     @property
     def weeks(self) -> ir.IntegerValue:
-        """Extract the number of weeks from an interval."""
+        """The number of weeks (IntegerValue)."""
         return self.to_unit("W")
 
     @property
     def days(self) -> ir.IntegerValue:
-        """Extract the number of days from an interval."""
+        """The number of days (IntegerValue)."""
         return self.to_unit("D")
 
     @property
     def hours(self) -> ir.IntegerValue:
-        """Extract the number of hours from an interval."""
+        """The number of hours (IntegerValue)."""
         return self.to_unit("h")
 
     @property
     def minutes(self) -> ir.IntegerValue:
-        """Extract the number of minutes from an interval."""
+        """The number of minutes (IntegerValue)."""
         return self.to_unit("m")
 
     @property
     def seconds(self) -> ir.IntegerValue:
-        """Extract the number of seconds from an interval."""
+        """The number of seconds (IntegerValue)."""
         return self.to_unit("s")
 
     @property
     def milliseconds(self) -> ir.IntegerValue:
-        """Extract the number of milliseconds from an interval."""
+        """The number of milliseconds (IntegerValue)."""
         return self.to_unit("ms")
 
     @property
     def microseconds(self) -> ir.IntegerValue:
-        """Extract the number of microseconds from an interval."""
+        """The number of microseconds (IntegerValue)."""
         return self.to_unit("us")
 
     @property
     def nanoseconds(self) -> ir.IntegerValue:
-        """Extract the number of nanoseconds from an interval."""
+        """The number of nanoseconds (IntegerValue)."""
         return self.to_unit("ns")
 
     def __add__(
