@@ -193,7 +193,7 @@ def _coerce_replacer(obj: ReplacerLike, context: Optional[dict] = None) -> Repla
             try:
                 return obj[node]
             except KeyError:
-                return node.__class__(**kwargs)
+                return node.__recreate__(kwargs)
     elif callable(obj):
         fn = obj
     else:
