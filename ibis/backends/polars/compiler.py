@@ -216,16 +216,20 @@ def project(op, **kw):
 @translate.register(ops.Sort)
 def sort(op, **kw):
     lf = translate(op.parent, **kw)
+    if not op.keys:
+        return lf
 
-    if op.keys:
-        by = [key.name for key in op.keys]
-        descending = [key.descending for key in op.keys]
-        try:
-            lf = lf.sort(by, descending=descending, nulls_last=True)
-        except TypeError:  # pragma: no cover
-            lf = lf.sort(by, reverse=descending, nulls_last=True)  # pragma: no cover
+    newcols = {gen_name("sort_key"): translate(col.expr, **kw) for col in op.keys}
+    lf = lf.with_columns(**newcols)
 
-    return lf
+    by = list(newcols.keys())
+    descending = [key.descending for key in op.keys]
+    try:
+        lf = lf.sort(by, descending=descending, nulls_last=True)
+    except TypeError:  # pragma: no cover
+        lf = lf.sort(by, reverse=descending, nulls_last=True)  # pragma: no cover
+
+    return lf.drop(*by)
 
 
 @translate.register(ops.Filter)
