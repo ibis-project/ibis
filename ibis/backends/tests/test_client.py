@@ -1343,12 +1343,10 @@ def test_persist_expression_release(con, alltypes):
 
 
 @contextlib.contextmanager
-def gen_test_name(con: BaseBackend) -> str:
+def gen_test_name(con: BaseBackend):
     name = gen_name("test_table")
-    try:
-        yield name
-    finally:
-        con.drop_table(name, force=True)
+    yield name
+    con.drop_table(name, force=True)
 
 
 @mark.notimpl(

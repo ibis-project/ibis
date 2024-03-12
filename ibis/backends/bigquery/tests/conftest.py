@@ -52,7 +52,12 @@ class TestConf(BackendTest):
             os.environ.get(PROJECT_ID_ENV_VAR, default_project_id) or DEFAULT_PROJECT_ID
         )
 
-        client = bq.Client(project=project_id, credentials=credentials)
+        client = bq.Client(
+            project=project_id,
+            credentials=credentials,
+            default_query_job_config=bq.QueryJobConfig(use_query_cache=False),
+        )
+        assert client.default_query_job_config.use_query_cache is False
 
         try:
             client.query("SELECT 1")
@@ -280,6 +285,11 @@ class TestConf(BackendTest):
         con = ibis.bigquery.connect(
             project_id=project_id, dataset_id=DATASET_ID, credentials=credentials, **kw
         )
+        # disable the query cache to avoid invalid results
+        #
+        # it's rare, but it happens
+        # https://github.com/googleapis/python-bigquery/issues/1845
+        con.client.default_query_job_config.use_query_cache = False
         expr = ibis.literal(1)
         try:
             con.execute(expr)

@@ -150,7 +150,10 @@ def test_builtin_scalar(con, value, expected):
     @udf.scalar.builtin
     def bit_count(x: bytes) -> int: ...
 
+    assert con.client.default_query_job_config.use_query_cache is False
+
     expr = bit_count(value)
+
     result = con.execute(expr)
     assert result == expected
 

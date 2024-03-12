@@ -76,6 +76,7 @@ def con(credentials, project_id, dataset_id):
     con = ibis.bigquery.connect(
         project_id=project_id, dataset_id=dataset_id, credentials=credentials
     )
+    con.client.default_query_job_config.use_query_cache = False
     try:
         con.sql("SELECT 1")
     except gexc.Forbidden:
