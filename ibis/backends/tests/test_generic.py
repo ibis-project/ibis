@@ -519,40 +519,6 @@ def test_dropna_table(backend, alltypes, how, subset):
     backend.assert_frame_equal(result, expected)
 
 
-def test_select_sort_sort(backend, alltypes, df):
-    t = alltypes
-
-    expr = t.order_by(t.year, t.id.desc()).order_by(t.bool_col)
-
-    result = expr.execute().reset_index(drop=True)
-    expected = df.sort_values(
-        ["bool_col", "year", "id"], ascending=[True, True, False]
-    ).reset_index(drop=True)
-
-    backend.assert_frame_equal(result, expected)
-
-
-def test_select_sort_sort_deferred(backend, alltypes, df):
-    t = alltypes
-
-    expr = t.order_by(t.tinyint_col, t.bool_col, t.id).order_by(
-        _.bool_col.asc(), (_.tinyint_col + 1).desc()
-    )
-    result = expr.execute().reset_index(drop=True)
-
-    df = df.assign(tinyint_col_plus=df.tinyint_col + 1)
-    expected = (
-        df.sort_values(
-            ["bool_col", "tinyint_col_plus", "tinyint_col", "id"],
-            ascending=[True, False, True, True],
-        )
-        .drop(columns=["tinyint_col_plus"])
-        .reset_index(drop=True)
-    )
-
-    backend.assert_frame_equal(result, expected)
-
-
 @pytest.mark.parametrize(
     "key, df_kwargs",
     [
@@ -1913,8 +1879,7 @@ def test_isnull_equality(con, backend, monkeypatch):
     ["druid"],
     raises=PyDruidProgrammingError,
     reason=(
-        "Query could not be planned. A possible reason is SQL query requires ordering a "
-        "table by non-time column [[id]], which is not supported."
+        "Query could not be planned. SQL query requires ordering a table by time column"
     ),
 )
 def test_subsequent_overlapping_order_by(con, backend, alltypes, df):
@@ -1926,6 +1891,92 @@ def test_subsequent_overlapping_order_by(con, backend, alltypes, df):
     ts2 = ts.order_by(ibis.desc("id"))
     result = con.execute(ts2)
     expected = df.sort_values("id", ascending=False).reset_index(drop=True)
+    backend.assert_frame_equal(result, expected)
+
+
+@pytest.mark.broken(
+    ["druid"],
+    raises=PyDruidProgrammingError,
+    reason=(
+        "Query could not be planned. SQL query requires ordering a table by time column"
+    ),
+)
+@pytest.mark.broken(
+    ["dask"],
+    raises=(AssertionError, NotImplementedError),
+    reason=(
+        "dask doesn't support deterministic .sort_values(); "
+        "for older dask versions sorting by multiple columns is not supported"
+    ),
+)
+def test_select_sort_sort(backend, alltypes, df):
+    t = alltypes
+    expr = t.order_by(t.year, t.id.desc()).order_by(t.bool_col)
+
+    result = expr.execute().reset_index(drop=True)
+
+    expected = df.sort_values(
+        ["bool_col", "year", "id"], ascending=[True, True, False], kind="mergesort"
+    ).reset_index(drop=True)
+
+    expected1 = (
+        df.sort_values(["year", "id"], ascending=[True, False], kind="mergesort")
+        .sort_values(["bool_col"], kind="mergesort")
+        .reset_index(drop=True)
+    )
+
+    backend.assert_frame_equal(expected, expected1)
+    backend.assert_frame_equal(result, expected)
+
+
+@pytest.mark.broken(
+    ["druid"],
+    raises=PyDruidProgrammingError,
+    reason=(
+        "Query could not be planned. SQL query requires ordering a table by time column"
+    ),
+)
+@pytest.mark.broken(
+    ["dask"],
+    raises=(AssertionError, NotImplementedError),
+    reason=(
+        "dask doesn't support deterministic .sort_values(); "
+        "for older dask versions sorting by multiple columns is not supported"
+    ),
+    strict=False,
+)
+def test_select_sort_sort_deferred(backend, alltypes, df):
+    t = alltypes
+
+    expr = t.order_by(t.tinyint_col, t.bool_col, t.id).order_by(
+        _.bool_col.asc(), (_.tinyint_col + 1).desc()
+    )
+    result = expr.execute().reset_index(drop=True)
+
+    df = df.assign(tinyint_col_plus=df.tinyint_col + 1)
+    expected = (
+        df.sort_values(
+            ["bool_col", "tinyint_col_plus", "tinyint_col", "id"],
+            ascending=[True, False, True, True],
+            kind="mergesort",
+        )
+        .drop(columns=["tinyint_col_plus"])
+        .reset_index(drop=True)
+    )
+    expected1 = (
+        df.sort_values(
+            ["tinyint_col", "bool_col", "id"],
+            ascending=[True, True, True],
+            kind="mergesort",
+        )
+        .sort_values(
+            ["bool_col", "tinyint_col_plus"], ascending=[True, False], kind="mergesort"
+        )
+        .drop(columns=["tinyint_col_plus"])
+        .reset_index(drop=True)
+    )
+
+    backend.assert_frame_equal(expected, expected1)
     backend.assert_frame_equal(result, expected)
 
 
