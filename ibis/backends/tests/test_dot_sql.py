@@ -3,27 +3,16 @@ from __future__ import annotations
 import contextlib
 
 import pandas as pd
+import pandas.testing as tm
 import pytest
 import sqlglot as sg
 from pytest import param
 
 import ibis
+import ibis.backends.sql.dialects  # to load dialects
 import ibis.common.exceptions as com
 from ibis import _
 from ibis.backends import _get_backend_names
-
-# import here to load the dialect in to sqlglot so we can use it for transpilation
-from ibis.backends.sql.dialects import (  # noqa: F401
-    MSSQL,
-    DataFusion,
-    Druid,
-    Exasol,
-    Flink,
-    Impala,
-    Polars,
-    PySpark,
-    RisingWave,
-)
 from ibis.backends.tests.errors import (
     ExaQueryError,
     GoogleBadRequest,
@@ -325,11 +314,19 @@ def mem_t(con):
 
 @dot_sql_never
 @pytest.mark.notyet(["polars"], raises=NotImplementedError)
-def test_cte(con, mem_t):
-    t = con.table(mem_t)
-    foo = t.alias("foo")
-    assert foo.schema() == t.schema()
-    assert foo.count().execute() == t.count().execute()
+def test_cte(alltypes, df):
+    expr = alltypes.alias("ft").sql(
+        'SELECT "string_col", CAST(COUNT(*) AS BIGINT) "n" FROM "ft" GROUP BY "string_col"',
+        dialect="duckdb",
+    )
+    result = expr.to_pandas().set_index("string_col").sort_index()
 
-    expr = foo.sql('SELECT count(*) "x" FROM "foo"', dialect="duckdb")
-    assert expr.execute().iat[0, 0] == t.count().execute()
+    expected = (
+        df.groupby("string_col")
+        .size()
+        .reset_index(name="n")
+        .set_index("string_col")
+        .sort_index()
+    )
+
+    tm.assert_frame_equal(result, expected)
