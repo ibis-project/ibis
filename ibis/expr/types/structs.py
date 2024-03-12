@@ -33,12 +33,12 @@ def struct(
     Parameters
     ----------
     value
-        Either a {`str`: `Value`} mapping,
-        or an iterable of tuples of the form (`str`, `Value`).
+        Either a `{str: Value}` mapping, or an iterable of tuples of the form
+        `(str, Value)`.
     type
         An instance of `ibis.expr.datatypes.DataType` or a string indicating
-        the ibis type of `value`. This is only used if all of the input values
-        are python literals. eg "struct<a: float, b: string>".
+        the Ibis type of `value`. This is only used if all of the input values
+        are Python literals. eg `struct<a: float, b: string>`.
 
     Returns
     -------
@@ -48,16 +48,19 @@ def struct(
     Examples
     --------
     Create a struct scalar literal from a `dict` with the type inferred
+
     >>> import ibis
     >>> ibis.options.interactive = True
     >>> ibis.struct(dict(a=1, b="foo"))
     {'a': 1, 'b': 'foo'}
 
-    Specify a specific type (note the 1 is now a float):
+    Specify a type (note the 1 is now a `float`):
+
     >>> ibis.struct(dict(a=1, b="foo"), type="struct<a: float, b: string>")
     {'a': 1.0, 'b': 'foo'}
 
     Create a struct column from a column and a scalar literal
+
     >>> t = ibis.memtable({"a": [1, 2, 3]})
     >>> ibis.struct([("a", t.a), ("b", "foo")])
     ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
@@ -83,17 +86,17 @@ def struct(
 
 @public
 class StructValue(Value):
-    """A Struct is a nested type with ordered fields of fixed types.
+    """A Struct is a nested type with ordered fields of any type.
 
-    For example, a Struct might have a field "a" of type int64 and a field "b"
-    of type string. See the examples below.
+    For example, a Struct might have a field `a` of type `int64` and a field `b`
+    of type `string`.
 
-    Can be constructed with [`ibis.struct()`](#ibis.expr.types.struct).
+    Structs can be constructed with [`ibis.struct()`](#ibis.expr.types.struct).
 
     Examples
     --------
-    Construct a Struct column with a field "a" of type int64 and a field "b" of
-    type string:
+    Construct a `Struct` column with fields `a: int64` and `b: string`
+
     >>> import ibis
     >>> ibis.options.interactive = True
     >>> t = ibis.memtable({"s": [{"a": 1, "b": "foo"}, {"a": 3, "b": None}, None]})
@@ -108,7 +111,8 @@ class StructValue(Value):
     │ NULL                        │
     └─────────────────────────────┘
 
-    Can use either `.` or `[]` to access fields:
+    You can use dot notation (`.`) or square-bracket syntax (`[]`) to access
+    struct column fields
 
     >>> t.s.a
     ┏━━━━━━━┓

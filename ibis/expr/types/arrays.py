@@ -20,7 +20,7 @@ import ibis.common.exceptions as com
 
 @public
 class ArrayValue(Value):
-    """An Array is a nested type, a variable-length sequence of values of a single type.
+    """An Array is a variable-length sequence of values of a single type.
 
     Examples
     --------

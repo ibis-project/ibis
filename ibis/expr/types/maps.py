@@ -19,14 +19,16 @@ if TYPE_CHECKING:
 class MapValue(Value):
     """A dict-like collection with fixed-type keys and values.
 
-    This type is similar to a Python dictionary, except with the
-    restriction that all keys must have the same type, and all values
-    must have the same type.
-    For example, all keys are `string`s, and all values are `int64`s.
-    Each key must be unique within the map.
-    There can be 0, 1, or many key-value pairs in a map.
+    Maps are similar to a Python dictionary, with the restriction that all keys
+    must have the same type, and all values must have the same type.
 
-    Can be constructed with [`ibis.map()`](#ibis.expr.types.map).
+    The key type and the value type can be different.
+
+    For example, keys are `string`s, and values are `int64`s.
+
+    Keys are unique within a given map value.
+
+    Maps can be constructed with [`ibis.map()`](#ibis.expr.types.map).
 
     Examples
     --------
@@ -78,11 +80,7 @@ class MapValue(Value):
     └───────────────────┘
     """
 
-    def get(
-        self,
-        key: ir.Value,
-        default: ir.Value | None = None,
-    ) -> ir.Value:
+    def get(self, key: ir.Value, default: ir.Value | None = None) -> ir.Value:
         """Return the value for `key` from `expr`.
 
         Return `default` if `key` is not in the map.
