@@ -314,6 +314,11 @@ def mem_t(con):
 
 @dot_sql_never
 @pytest.mark.notyet(["polars"], raises=NotImplementedError)
+@pytest.mark.notyet(
+    ["druid"],
+    raises=KeyError,
+    reason="upstream does not preserve column names in schema inference",
+)
 def test_cte(alltypes, df):
     expr = alltypes.alias("ft").sql(
         'SELECT "string_col", CAST(COUNT(*) AS BIGINT) "n" FROM "ft" GROUP BY "string_col"',
