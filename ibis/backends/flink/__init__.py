@@ -261,8 +261,9 @@ class Backend(SQLBackend, CanCreateDatabase, NoUrl):
     def get_schema(
         self,
         table_name: str,
-        database: str | None = None,
+        *,
         catalog: str | None = None,
+        database: str | None = None,
     ) -> sch.Schema:
         """Return a Schema object for the indicated table and database.
 
@@ -270,10 +271,10 @@ class Backend(SQLBackend, CanCreateDatabase, NoUrl):
         ----------
         table_name : str
             Table name.
-        database : str, optional
-            Database name.
         catalog : str, optional
             Catalog name.
+        database : str, optional
+            Database name.
 
         Returns
         -------

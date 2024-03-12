@@ -121,7 +121,7 @@ class SQLBackend(BaseBackend, _DatabaseSchemaHandler):
             Table expression
 
         """
-        table_schema = self.get_schema(name, schema=schema, database=database)
+        table_schema = self.get_schema(name, catalog=schema, database=database)
         return ops.DatabaseTable(
             name,
             schema=table_schema,

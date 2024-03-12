@@ -115,11 +115,15 @@ class Backend(SQLBackend):
         return sch.Schema(schema)
 
     def get_schema(
-        self, table_name: str, schema: str | None = None, database: str | None = None
+        self,
+        table_name: str,
+        *,
+        catalog: str | None = None,
+        database: str | None = None,
     ) -> sch.Schema:
         return self._get_schema_using_query(
             sg.select(STAR)
-            .from_(sg.table(table_name, db=schema, catalog=database))
+            .from_(sg.table(table_name, db=database, catalog=catalog))
             .sql(self.dialect)
         )
 

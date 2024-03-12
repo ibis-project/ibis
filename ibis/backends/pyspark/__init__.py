@@ -325,7 +325,8 @@ class Backend(SQLBackend, CanCreateDatabase):
     def get_schema(
         self,
         table_name: str,
-        schema: str | None = None,
+        *,
+        catalog: str | None = None,
         database: str | None = None,
     ) -> sch.Schema:
         """Return a Schema object for the indicated table and database.
@@ -334,12 +335,10 @@ class Backend(SQLBackend, CanCreateDatabase):
         ----------
         table_name
             Table name. May be fully qualified
-        schema
-            Spark does not have a schema argument for its table() method,
-            so this must be None
+        catalog
+            Unsupported in PySpark backend.
         database
-            Spark does not have a database argument for its table() method,
-            so this must be None
+            Database to use to get the active database.
 
         Returns
         -------
@@ -347,11 +346,6 @@ class Backend(SQLBackend, CanCreateDatabase):
             An ibis schema
 
         """
-        if schema is not None:
-            raise com.UnsupportedArgumentError(
-                "Spark does not support the `schema` argument for `get_schema`"
-            )
-
         with self._active_database(database):
             df = self._session.table(table_name)
             struct = PySparkType.to_ibis(df.schema)

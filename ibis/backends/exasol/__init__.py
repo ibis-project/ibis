@@ -167,13 +167,20 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
         return self._filter_with_like([table for (table,) in tables], like=like)
 
     def get_schema(
-        self, table_name: str, schema: str | None = None, database: str | None = None
+        self,
+        table_name: str,
+        *,
+        catalog: str | None = None,
+        database: str | None = None,
     ) -> sch.Schema:
         return self._get_schema_using_query(
             sg.select(STAR)
             .from_(
                 sg.table(
-                    table_name, db=schema, catalog=database, quoted=self.compiler.quoted
+                    table_name,
+                    db=database,
+                    catalog=catalog,
+                    quoted=self.compiler.quoted,
                 )
             )
             .sql(self.dialect)

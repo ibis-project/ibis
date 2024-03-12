@@ -463,7 +463,11 @@ class Backend(SQLBackend, CanCreateDatabase):
         self.con.close()
 
     def get_schema(
-        self, table_name: str, database: str | None = None, schema: str | None = None
+        self,
+        table_name: str,
+        *,
+        catalog: str | None = None,
+        database: str | None = None,
     ) -> sch.Schema:
         """Return a Schema object for the indicated table and database.
 
@@ -472,10 +476,10 @@ class Backend(SQLBackend, CanCreateDatabase):
         table_name
             May **not** be fully qualified. Use `database` if you want to
             qualify the identifier.
+        catalog
+            Catalog name, not supported by ClickHouse
         database
             Database name
-        schema
-            Schema name, not supported by ClickHouse
 
         Returns
         -------
@@ -483,9 +487,9 @@ class Backend(SQLBackend, CanCreateDatabase):
             Ibis schema
 
         """
-        if schema is not None:
+        if catalog is not None:
             raise com.UnsupportedBackendFeatureError(
-                "`schema` namespaces are not supported by clickhouse"
+                "`catalog` namespaces are not supported by clickhouse"
             )
         query = sge.Describe(this=sg.table(table_name, db=database))
         with self._safe_raw_sql(query) as results:

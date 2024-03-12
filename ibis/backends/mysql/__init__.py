@@ -197,9 +197,9 @@ class Backend(SQLBackend, CanCreateDatabase):
                 cur.execute(f"DROP TABLE {table}")
 
     def get_schema(
-        self, name: str, schema: str | None = None, database: str | None = None
+        self, name: str, *, catalog: str | None = None, database: str | None = None
     ) -> sch.Schema:
-        table = sg.table(name, db=schema, catalog=database, quoted=True).sql(self.name)
+        table = sg.table(name, db=database, catalog=catalog, quoted=True).sql(self.name)
 
         with self.begin() as cur:
             cur.execute(f"DESCRIBE {table}")

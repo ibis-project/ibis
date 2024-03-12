@@ -210,7 +210,11 @@ class Backend(SQLBackend, UrlFromPath):
         )
 
     def get_schema(
-        self, table_name: str, schema: str | None = None, database: str | None = None
+        self,
+        table_name: str,
+        *,
+        catalog: str | None = None,
+        database: str | None = None,
     ) -> sch.Schema:
         """Compute the schema of a `table`.
 
@@ -219,8 +223,8 @@ class Backend(SQLBackend, UrlFromPath):
         table_name
             May **not** be fully qualified. Use `database` if you want to
             qualify the identifier.
-        schema
-            Schema name. Unused for sqlite.
+        catalog
+            Catalog name. Unused for sqlite.
         database
             Database name
 
@@ -230,8 +234,8 @@ class Backend(SQLBackend, UrlFromPath):
             Ibis schema
 
         """
-        if schema is not None:
-            raise TypeError("sqlite doesn't support `schema`, use `database` instead")
+        if catalog is not None:
+            raise TypeError("sqlite doesn't support `catalog`, use `database` instead")
         with self.begin() as cur:
             return self._inspect_schema(cur, table_name, database)
 

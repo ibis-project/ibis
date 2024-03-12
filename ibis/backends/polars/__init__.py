@@ -370,7 +370,7 @@ class Backend(BaseBackend, NoUrl):
         self._add_table(name, obj)
         return self.table(name)
 
-    def get_schema(self, table_name, database=None):
+    def get_schema(self, table_name):
         return self._tables[table_name].schema
 
     @classmethod
