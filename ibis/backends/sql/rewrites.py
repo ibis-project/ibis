@@ -17,7 +17,7 @@ from ibis.common.annotations import attribute
 from ibis.common.collections import FrozenDict  # noqa: TCH001
 from ibis.common.deferred import var
 from ibis.common.graph import Graph
-from ibis.common.patterns import Object, Pattern, _, replace
+from ibis.common.patterns import InstanceOf, Object, Pattern, _, replace
 from ibis.common.typing import VarTuple  # noqa: TCH001
 from ibis.expr.rewrites import d, p, replace_parameter
 from ibis.expr.schema import Schema
@@ -184,8 +184,9 @@ def merge_select_select(_, **kwargs):
 def extract_ctes(node):
     result = []
     cte_types = (Select, ops.Aggregate, ops.JoinChain, ops.Set, ops.Limit, ops.Sample)
+    dont_count = (ops.Field, ops.CountStar, ops.CountDistinctStar)
 
-    g = Graph.from_bfs(node, filter=(ops.Relation, ops.Subquery, ops.JoinLink))
+    g = Graph.from_bfs(node, filter=~InstanceOf(dont_count))
     for node, dependents in g.invert().items():
         if isinstance(node, ops.View) or (
             len(dependents) > 1 and isinstance(node, cte_types)
