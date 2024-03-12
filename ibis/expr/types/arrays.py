@@ -1084,8 +1084,9 @@ class ArrayColumn(Column, ArrayValue):
 def array(values: Iterable[V]) -> ArrayValue:
     """Create an array expression.
 
-    If any values are Columns, the result will be an ArrayColumn.
-    Otherwise, the result will be an ArrayScalar.
+    If any values are [column expressions](../concepts/datatypes.qmd) the
+    result will be a column. Otherwise the result will be a
+    [scalar](../concepts/datatypes.qmd).
 
     Parameters
     ----------
