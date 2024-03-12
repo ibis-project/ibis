@@ -453,10 +453,14 @@ $$"""
             )
 
     def get_schema(
-        self, table_name: str, schema: str | None = None, database: str | None = None
+        self,
+        table_name: str,
+        *,
+        catalog: str | None = None,
+        database: str | None = None,
     ) -> Iterable[tuple[str, dt.DataType]]:
         table = sg.table(
-            table_name, db=schema, catalog=database, quoted=self.compiler.quoted
+            table_name, db=database, catalog=catalog, quoted=self.compiler.quoted
         )
         with self._safe_raw_sql(sge.Describe(kind="TABLE", this=table)) as cur:
             result = cur.fetchall()

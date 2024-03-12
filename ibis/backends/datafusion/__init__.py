@@ -274,17 +274,20 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, CanCreateSchema, 
         """
         return self._filter_with_like(self.con.tables(), like)
 
-    # XXX(Gil): refactor schema out of this
     def get_schema(
-        self, table_name: str, schema: str | None = None, database: str | None = None
+        self,
+        table_name: str,
+        *,
+        catalog: str | None = None,
+        database: str | None = None,
     ) -> sch.Schema:
-        if database is not None:
-            catalog = self.con.catalog(database)
+        if catalog is not None:
+            catalog = self.con.catalog(catalog)
         else:
             catalog = self.con.catalog()
 
-        if schema is not None:
-            database = catalog.database(schema)
+        if database is not None:
+            database = catalog.database(database)
         else:
             database = catalog.database()
 

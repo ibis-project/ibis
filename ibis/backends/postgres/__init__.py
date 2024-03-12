@@ -535,7 +535,11 @@ $$""".format(**self._get_udf_source(udf_node))
                 pass
 
     def get_schema(
-        self, name: str, schema: str | None = None, database: str | None = None
+        self,
+        name: str,
+        *,
+        catalog: str | None = None,
+        database: str | None = None,
     ):
         a = ColGen(table="a")
         c = ColGen(table="c")

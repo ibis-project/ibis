@@ -839,11 +839,17 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
             return ".".join(f"`{part}`" for part in func.split("."))
         return func
 
-    def get_schema(self, name, schema: str | None = None, database: str | None = None):
+    def get_schema(
+        self,
+        name,
+        *,
+        catalog: str | None = None,
+        database: str | None = None,
+    ):
         table_ref = bq.TableReference(
             bq.DatasetReference(
-                project=database or self.data_project,
-                dataset_id=schema or self.current_database,
+                project=catalog or self.data_project,
+                dataset_id=database or self.current_database,
             ),
             name,
         )

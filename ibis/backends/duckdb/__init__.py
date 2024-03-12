@@ -274,7 +274,7 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema, UrlFromPath):
             Table expression
 
         """
-        table_schema = self.get_schema(name, schema=schema, database=database)
+        table_schema = self.get_schema(name, catalog=schema, database=database)
         # load geospatial only if geo columns
         if any(typ.is_geospatial() for typ in table_schema.types):
             self.load_extension("spatial")
@@ -286,7 +286,11 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema, UrlFromPath):
         ).to_expr()
 
     def get_schema(
-        self, table_name: str, schema: str | None = None, database: str | None = None
+        self,
+        table_name: str,
+        *,
+        catalog: str | None = None,
+        database: str | None = None,
     ) -> sch.Schema:
         """Compute the schema of a `table`.
 
@@ -295,8 +299,8 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema, UrlFromPath):
         table_name
             May **not** be fully qualified. Use `database` if you want to
             qualify the identifier.
-        schema
-            Schema name
+        catalog
+            Catalog name
         database
             Database name
 
@@ -308,11 +312,11 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema, UrlFromPath):
         """
         conditions = [sg.column("table_name").eq(sge.convert(table_name))]
 
-        if database is not None:
-            conditions.append(sg.column("table_catalog").eq(sge.convert(database)))
+        if catalog is not None:
+            conditions.append(sg.column("table_catalog").eq(sge.convert(catalog)))
 
-        if schema is not None:
-            conditions.append(sg.column("table_schema").eq(sge.convert(schema)))
+        if database is not None:
+            conditions.append(sg.column("table_schema").eq(sge.convert(database)))
 
         query = (
             sg.select(

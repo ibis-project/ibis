@@ -933,7 +933,9 @@ class BaseBackend(abc.ABC, _FileIOHandler):
         """
 
     @abc.abstractmethod
-    def table(self, name: str, database: str | None = None) -> ir.Table:
+    def table(
+        self, name: str, database: tuple[str, str] | str | None = None
+    ) -> ir.Table:
         """Construct a table expression.
 
         Parameters
@@ -942,6 +944,21 @@ class BaseBackend(abc.ABC, _FileIOHandler):
             Table name
         database
             Database name
+            If not provided, the current database is used.
+            For backends that support multi-level table hierarchies, you can
+            pass in a dotted string path like `"catalog.database"` or a tuple of
+            strings like `("catalog", "database")`.
+
+            ::: {.callout-note}
+            ## Ibis does not use the word `schema` to refer to database hierarchy.
+
+            A collection of tables is referred to as a `database`.
+            A collection of `database` is referred to as a `catalog`.
+
+            These terms are mapped onto the corresponding features in each
+            backend (where available), regardless of whether the backend itself
+            uses the same terminology.
+            :::
 
         Returns
         -------

@@ -170,7 +170,7 @@ class BasePandasBackend(BaseBackend, NoUrl):
         schema = PandasData.infer_table(df, schema=schema)
         return ops.DatabaseTable(name, schema, self).to_expr()
 
-    def get_schema(self, table_name, database=None):
+    def get_schema(self, table_name, *, database=None):
         schemas = self.schemas
         try:
             schema = schemas[table_name]

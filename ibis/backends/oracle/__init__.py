@@ -293,10 +293,10 @@ class Backend(SQLBackend, CanListDatabase, CanListSchema):
         return self._filter_with_like(schemata, like)
 
     def get_schema(
-        self, name: str, schema: str | None = None, database: str | None = None
+        self, name: str, *, catalog: str | None = None, database: str | None = None
     ) -> sch.Schema:
-        if schema is None:
-            schema = self.con.username.upper()
+        if database is None:
+            database = self.con.username.upper()
         stmt = (
             sg.select(
                 C.column_name,
@@ -308,7 +308,7 @@ class Backend(SQLBackend, CanListDatabase, CanListSchema):
             .from_(sg.table("all_tab_columns"))
             .where(
                 C.table_name.eq(sge.convert(name)),
-                C.owner.eq(sge.convert(schema)),
+                C.owner.eq(sge.convert(database)),
             )
             .order_by(C.column_id)
         )

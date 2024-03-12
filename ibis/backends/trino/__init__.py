@@ -98,7 +98,11 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, CanCreateSchema, No
                 cur.close()
 
     def get_schema(
-        self, table_name: str, schema: str | None = None, database: str | None = None
+        self,
+        table_name: str,
+        *,
+        catalog: str | None = None,
+        database: str | None = None,
     ) -> sch.Schema:
         """Compute the schema of a `table`.
 
@@ -107,8 +111,8 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, CanCreateSchema, No
         table_name
             May **not** be fully qualified. Use `database` if you want to
             qualify the identifier.
-        schema
-            Schema name
+        catalog
+            Catalog name
         database
             Database name
 
@@ -120,8 +124,8 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, CanCreateSchema, No
         """
         conditions = [sg.column("table_name").eq(sge.convert(table_name))]
 
-        if schema is not None:
-            conditions.append(sg.column("table_schema").eq(sge.convert(schema)))
+        if database is not None:
+            conditions.append(sg.column("table_schema").eq(sge.convert(database)))
 
         query = (
             sg.select(
@@ -129,7 +133,7 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, CanCreateSchema, No
                 "data_type",
                 sg.column("is_nullable").eq(sge.convert("YES")).as_("nullable"),
             )
-            .from_(sg.table("columns", db="information_schema", catalog=database))
+            .from_(sg.table("columns", db="information_schema", catalog=catalog))
             .where(sg.and_(*conditions))
             .order_by("ordinal_position")
         )
@@ -138,7 +142,7 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, CanCreateSchema, No
             meta = cur.fetchall()
 
         if not meta:
-            fqn = sg.table(table_name, db=schema, catalog=database).sql(self.name)
+            fqn = sg.table(table_name, db=database, catalog=catalog).sql(self.name)
             raise com.IbisError(f"Table not found: {fqn}")
 
         return sch.Schema(

@@ -132,12 +132,12 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, CanCreateSchema, 
         self.con = con
 
     def get_schema(
-        self, name: str, schema: str | None = None, database: str | None = None
+        self, name: str, *, catalog: str | None = None, database: str | None = None
     ) -> sch.Schema:
         conditions = [sg.column("table_name").eq(sge.convert(name))]
 
-        if schema is not None:
-            conditions.append(sg.column("table_schema").eq(sge.convert(schema)))
+        if database is not None:
+            conditions.append(sg.column("table_schema").eq(sge.convert(database)))
 
         query = (
             sg.select(
@@ -152,7 +152,7 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, CanCreateSchema, 
                 sg.table(
                     "columns",
                     db="information_schema",
-                    catalog=database or self.current_catalog,
+                    catalog=catalog or self.current_catalog,
                 )
             )
             .where(*conditions)
@@ -163,7 +163,7 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, CanCreateSchema, 
             meta = cur.fetchall()
 
         if not meta:
-            fqn = sg.table(name, db=schema, catalog=database).sql(self.dialect)
+            fqn = sg.table(name, db=database, catalog=catalog).sql(self.dialect)
             raise com.IbisError(f"Table not found: {fqn}")
 
         mapping = {}
