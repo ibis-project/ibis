@@ -54,7 +54,7 @@ class Expr(Immutable, Coercible):
         if not opts.interactive:
             from rich.text import Text
 
-            return console.render(Text(self._repr()), options=options)
+            return console.render(Text(repr(self)), options=options)
         return self.__interactive_rich_console__(console, options)
 
     def __interactive_rich_console__(self, console, options):
@@ -76,34 +76,36 @@ class Expr(Immutable, Coercible):
             raise CoercionError("Unable to coerce value to an expression")
 
     def __repr__(self) -> str:
-        if not opts.interactive:
-            return self._repr()
+        from ibis.expr.format import get_defining_scope, pretty
 
-        from ibis.expr.types.pretty import simple_console
+        if opts.repr.show_variables:
+            scope = get_defining_scope(self)
+        else:
+            scope = None
 
-        with simple_console.capture() as capture:
-            try:
-                simple_console.print(self)
-            except TranslationError as e:
-                lines = [
-                    "Translation to backend failed",
-                    f"Error message: {e!r}",
-                    "Expression repr follows:",
-                    self._repr(),
-                ]
-                return "\n".join(lines)
-        return capture.get().rstrip()
+        if opts.interactive:
+            from ibis.expr.types.pretty import simple_console
+
+            with simple_console.capture() as capture:
+                try:
+                    simple_console.print(self)
+                except TranslationError as e:
+                    lines = [
+                        "Translation to backend failed",
+                        f"Error message: {e!r}",
+                        "Expression repr follows:",
+                        pretty(self, scope=scope),
+                    ]
+                    return "\n".join(lines)
+            return capture.get().rstrip()
+        else:
+            return pretty(self, scope=scope)
 
     def __reduce__(self):
         return (self.__class__, (self._arg,))
 
     def __hash__(self):
         return hash((self.__class__, self._arg))
-
-    def _repr(self) -> str:
-        from ibis.expr.format import pretty
-
-        return pretty(self)
 
     def equals(self, other):
         """Return whether this expression is _structurally_ equivalent to `other`.

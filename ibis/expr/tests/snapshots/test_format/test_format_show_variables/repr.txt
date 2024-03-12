@@ -1,0 +1,29 @@
+alltypes := UnboundTable: alltypes
+  a int8
+  b int16
+  c int32
+  d int64
+  e float32
+  f float64
+  g string
+  h boolean
+  i timestamp
+  j date
+  k time
+
+filtered := Filter[alltypes]
+  alltypes.f > 0
+
+ordered := Sort[filtered]
+  asc filtered.f
+
+projected := Project[ordered]
+  a: ordered.a
+  b: ordered.b
+  f: ordered.f
+
+add := projected.a + projected.b
+
+sub := projected.a - projected.b
+
+Multiply(Add(a, b), Subtract(a, b)): add * sub
