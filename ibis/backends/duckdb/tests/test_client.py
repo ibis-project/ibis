@@ -78,11 +78,13 @@ def test_cross_db(tmpdir):
 
     con2.attach(path1, name="test1", read_only=True)
 
-    t1_from_con2 = con2.table("t1", schema="main", database="test1")
+    with pytest.warns(FutureWarning):
+        t1_from_con2 = con2.table("t1", schema="main", database="test1")
     assert t1_from_con2.schema() == t2.schema()
     assert t1_from_con2.execute().equals(t2.execute())
 
-    foo_t1_from_con2 = con2.table("t1", schema="foo", database="test1")
+    with pytest.warns(FutureWarning):
+        foo_t1_from_con2 = con2.table("t1", schema="foo", database="test1")
     assert foo_t1_from_con2.schema() == t2.schema()
     assert foo_t1_from_con2.execute().equals(t2.execute())
 

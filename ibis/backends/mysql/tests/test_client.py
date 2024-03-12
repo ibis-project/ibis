@@ -97,7 +97,7 @@ def tmp_t(con):
 
 
 def test_get_schema_from_query_other_schema(con, tmp_t):
-    t = con.table(tmp_t, schema="test_schema")
+    t = con.table(tmp_t, database="test_schema")
     assert t.schema() == ibis.schema({"x": dt.inet})
 
 

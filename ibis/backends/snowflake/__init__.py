@@ -775,7 +775,7 @@ $$"""
         with self._safe_raw_sql(create_stmt):
             pass
 
-        return self.table(name, schema=db, database=catalog)
+        return self.table(name, database=(catalog, db))
 
     def read_csv(
         self, path: str | Path, table_name: str | None = None, **kwargs: Any

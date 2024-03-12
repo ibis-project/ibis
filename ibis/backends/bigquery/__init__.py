@@ -136,8 +136,7 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
         self._session_dataset: bq.DatasetReference | None = None
         self._query_cache.lookup = lambda name: self.table(
             name,
-            schema=self._session_dataset.dataset_id,
-            database=self._session_dataset.project,
+            database=(self._session_dataset.project, self._session_dataset.dataset_id),
         ).op()
 
     def _register_in_memory_table(self, op: ops.InMemoryTable) -> None:
@@ -518,47 +517,35 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
     def table(
         self, name: str, database: str | None = None, schema: str | None = None
     ) -> ir.Table:
-        if database is not None and schema is None:
-            raise com.IbisInputError(
-                f"The {self.name} backend cannot return a table expression using only a "
-                "`database` specifier. Include a `schema` argument."
-            )
+        if schema is not None:
+            # TODO: remove _warn_schema when the schema kwarg is removed
+            from ibis.util import _warn_schema
+
+            _warn_schema()
+        if database is not None and schema is not None:
+            if isinstance(database, str):
+                table_loc = f"{database}.{schema}"
+            elif isinstance(database, tuple):
+                table_loc = database + schema
+        elif schema is not None:
+            table_loc = schema
+        elif database is not None:
+            table_loc = database
+        else:
+            table_loc = None
+
+        table_loc = self._to_sqlglot_table(table_loc)
+
+        if table_loc is not None:
+            if (sg_cat := table_loc.args["catalog"]) is not None:
+                sg_cat.args["quoted"] = False
+            if (sg_db := table_loc.args["db"]) is not None:
+                sg_db.args["quoted"] = False
+            table_loc = table_loc.sql(dialect=self.name)
+
+        project, dataset = self._parse_project_and_dataset(table_loc)
 
         table = sg.parse_one(name, into=sge.Table, read=self.name)
-
-        # table.catalog will be the empty string
-        if table.catalog:
-            if database is not None:
-                raise com.IbisInputError(
-                    "Cannot specify database both in the table name and as an argument"
-                )
-            else:
-                database = table.catalog
-
-        # table.db will be the empty string
-        if table.db:
-            if schema is not None:
-                raise com.IbisInputError(
-                    "Cannot specify schema both in the table name and as an argument"
-                )
-            else:
-                schema = table.db
-
-        if database is not None and schema is None:
-            database = sg.parse_one(database, into=sge.Table, read=self.name)
-            database.args["quoted"] = False
-            database = database.sql(dialect=self.name)
-        elif database is None and schema is not None:
-            database = sg.parse_one(schema, into=sge.Table, read=self.name)
-            database.args["quoted"] = False
-            database = database.sql(dialect=self.name)
-        else:
-            database = (
-                sg.table(schema, db=database, quoted=False).sql(dialect=self.name)
-                or None
-            )
-
-        project, dataset = self._parse_project_and_dataset(database)
 
         bq_table = self.client.get_table(
             bq.TableReference(
@@ -1061,7 +1048,7 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
         sql = stmt.sql(self.name)
 
         self.raw_sql(sql)
-        return self.table(table.name, schema=table.db, database=table.catalog)
+        return self.table(table.name, database=(table.catalog, table.db))
 
     def drop_table(
         self,
