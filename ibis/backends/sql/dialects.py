@@ -294,5 +294,7 @@ def make_cross_joins_explicit(node):
 Trino.Generator.TRANSFORMS |= {
     sge.BitwiseLeftShift: rename_func("bitwise_left_shift"),
     sge.BitwiseRightShift: rename_func("bitwise_right_shift"),
+    sge.FirstValue: rename_func("first_value"),
     sge.Join: transforms.preprocess([make_cross_joins_explicit]),
+    sge.LastValue: rename_func("last_value"),
 }
