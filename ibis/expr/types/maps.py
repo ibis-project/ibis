@@ -17,9 +17,18 @@ if TYPE_CHECKING:
 
 @public
 class MapValue(Value):
-    """A map literal or column expression.
+    """A dict-like collection with fixed-type keys and values.
 
-    Can be constructed with [`ibis.map()`](#ibis.expr.types.map).
+    Maps are similar to a Python dictionary, with the restriction that all keys
+    must have the same type, and all values must have the same type.
+
+    The key type and the value type can be different.
+
+    For example, keys are `string`s, and values are `int64`s.
+
+    Keys are unique within a given map value.
+
+    Maps can be constructed with [`ibis.map()`](#ibis.expr.types.map).
 
     Examples
     --------
@@ -71,11 +80,7 @@ class MapValue(Value):
     └───────────────────┘
     """
 
-    def get(
-        self,
-        key: ir.Value,
-        default: ir.Value | None = None,
-    ) -> ir.Value:
+    def get(self, key: ir.Value, default: ir.Value | None = None) -> ir.Value:
         """Return the value for `key` from `expr`.
 
         Return `default` if `key` is not in the map.
@@ -433,11 +438,10 @@ def map(
     keys: Iterable[Any] | Mapping[Any, Any] | ArrayColumn,
     values: Iterable[Any] | ArrayColumn | None = None,
 ) -> MapValue:
-    """Create a [map container object](https://docs.python.org/3/glossary.html#term-mapping).
+    """Create a MapValue.
 
-    If the `keys` and `values` are Python literals, then the output will be a
-    `MapScalar`. If the `keys` and `values` are expressions (`ArrayColumn`),
-    then the the output will be a `MapColumn`.
+    If any of the `keys` or `values` are Columns, then the output will be a MapColumn.
+    Otherwise, the output will be a MapScalar.
 
     Parameters
     ----------
@@ -449,22 +453,19 @@ def map(
     Returns
     -------
     MapValue
-        An expression representing either a map column or literal (associative
-        array with key/value pairs of fixed types)
+        Either a MapScalar or MapColumn, depending on the input shapes.
 
     Examples
     --------
-    Create a map literal from a dict with the type inferred
+    Create a Map scalar from a dict with the type inferred
 
     >>> import ibis
     >>> ibis.options.interactive = True
     >>> ibis.map(dict(a=1, b=2))
     {'a': 1, 'b': 2}
 
-    Create a new map column from columns with keys and values
+    Create a Map Column from columns with keys and values
 
-    >>> import ibis
-    >>> ibis.options.interactive = True
     >>> t = ibis.memtable({"keys": [["a", "b"], ["b"]], "values": [[1, 2], [3]]})
     >>> t
     ┏━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━┓

@@ -27,55 +27,41 @@ def struct(
 ) -> StructValue:
     """Create a struct expression.
 
-    If the input expressions are all column expressions, then the output will be
-    a `StructColumn`.
-
-    If the input expressions are Python literals, then the output will be a
-    `StructScalar`.
+    If any of the inputs are Columns, then the output will be a `StructColumn`.
+    Otherwise, the output will be a `StructScalar`.
 
     Parameters
     ----------
     value
-        The underlying data for literal struct value or a pairs of field names
-        and column expressions.
+        Either a `{str: Value}` mapping, or an iterable of tuples of the form
+        `(str, Value)`.
     type
         An instance of `ibis.expr.datatypes.DataType` or a string indicating
-        the ibis type of `value`. This is only used if all of the input values
-        are literals.
+        the Ibis type of `value`. This is only used if all of the input values
+        are Python literals. eg `struct<a: float, b: string>`.
 
     Returns
     -------
     StructValue
-        An expression representing a literal or column struct (compound type with
-        fields of fixed types)
+        An StructScalar or StructColumn expression.
 
     Examples
     --------
-    Create a struct literal from a [](`dict`) with the type inferred
+    Create a struct scalar literal from a `dict` with the type inferred
+
     >>> import ibis
-    >>> t = ibis.struct(dict(a=1, b="foo"))
-
-    Create a struct literal from a [](`dict`) with a specified type
-    >>> t = ibis.struct(dict(a=1, b="foo"), type="struct<a: float, b: string>")
-
-    Specify a specific type for the struct literal
-    >>> t = ibis.struct(dict(a=1, b=40), type="struct<a: float, b: int32>")
-
-    Create a struct array from multiple arrays
     >>> ibis.options.interactive = True
-    >>> t = ibis.memtable({"a": [1, 2, 3], "b": ["foo", "bar", "baz"]})
-    >>> ibis.struct([("a", t.a), ("b", t.b)])
-    ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-    ┃ StructColumn()              ┃
-    ┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
-    │ struct<a: int64, b: string> │
-    ├─────────────────────────────┤
-    │ {'a': 1, 'b': 'foo'}        │
-    │ {'a': 2, 'b': 'bar'}        │
-    │ {'a': 3, 'b': 'baz'}        │
-    └─────────────────────────────┘
+    >>> ibis.struct(dict(a=1, b="foo"))
+    {'a': 1, 'b': 'foo'}
 
-    Create a struct array from columns and literals
+    Specify a type (note the 1 is now a `float`):
+
+    >>> ibis.struct(dict(a=1, b="foo"), type="struct<a: float, b: string>")
+    {'a': 1.0, 'b': 'foo'}
+
+    Create a struct column from a column and a scalar literal
+
+    >>> t = ibis.memtable({"a": [1, 2, 3]})
     >>> ibis.struct([("a", t.a), ("b", "foo")])
     ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
     ┃ StructColumn()              ┃
@@ -100,12 +86,17 @@ def struct(
 
 @public
 class StructValue(Value):
-    """A struct literal or column.
+    """A Struct is a nested type with ordered fields of any type.
 
-    Can be constructed with [`ibis.struct()`](#ibis.expr.types.struct).
+    For example, a Struct might have a field `a` of type `int64` and a field `b`
+    of type `string`.
+
+    Structs can be constructed with [`ibis.struct()`](#ibis.expr.types.struct).
 
     Examples
     --------
+    Construct a `Struct` column with fields `a: int64` and `b: string`
+
     >>> import ibis
     >>> ibis.options.interactive = True
     >>> t = ibis.memtable({"s": [{"a": 1, "b": "foo"}, {"a": 3, "b": None}, None]})
@@ -120,7 +111,8 @@ class StructValue(Value):
     │ NULL                        │
     └─────────────────────────────┘
 
-    Can use either `.` or `[]` to access fields:
+    You can use dot notation (`.`) or square-bracket syntax (`[]`) to access
+    struct column fields
 
     >>> t.s.a
     ┏━━━━━━━┓
