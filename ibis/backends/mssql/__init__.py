@@ -28,7 +28,7 @@ from ibis.backends.sql import SQLBackend
 from ibis.backends.sql.compiler import C
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable, Iterator, Mapping
+    from collections.abc import Iterable, Mapping
 
     import pandas as pd
     import pyarrow as pa
@@ -153,11 +153,13 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema, NoUrl):
 
         return sch.Schema(mapping)
 
-    def _metadata(self, query) -> Iterator[tuple[str, dt.DataType]]:
+    def _get_schema_using_query(self, query: str) -> sch.Schema:
         tsql = sge.convert(str(query)).sql(self.dialect)
         query = f"EXEC sp_describe_first_result_set @tsql = N{tsql}"
         with self._safe_raw_sql(query) as cur:
             rows = cur.fetchall()
+
+        schema = {}
         for (
             _,
             _,
@@ -182,7 +184,9 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema, NoUrl):
             elif newtyp.is_timestamp():
                 newtyp = newtyp.copy(scale=scale)
 
-            yield name, newtyp
+            schema[name] = newtyp
+
+        return sch.Schema(schema)
 
     @property
     def current_database(self) -> str:

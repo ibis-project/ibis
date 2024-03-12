@@ -483,17 +483,15 @@ class Backend(SQLBackend, CanCreateDatabase):
             dict(zip(names, map(self.compiler.type_mapper.from_string, types)))
         )
 
-    def _metadata(self, query: str) -> sch.Schema:
+    def _get_schema_using_query(self, query: str) -> sch.Schema:
         name = util.gen_name("clickhouse_metadata")
         with closing(self.raw_sql(f"CREATE VIEW {name} AS {query}")):
             pass
         try:
-            with closing(self.raw_sql(f"DESCRIBE {name}")) as results:
-                names, types, *_ = results.result_columns
+            return self.get_schema(name)
         finally:
             with closing(self.raw_sql(f"DROP VIEW {name}")):
                 pass
-        return zip(names, map(self.compiler.type_mapper.from_string, types))
 
     def create_database(
         self, name: str, *, force: bool = False, engine: str = "Atomic"

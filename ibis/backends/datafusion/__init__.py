@@ -39,8 +39,6 @@ except ImportError:
     SessionConfig = None
 
 if TYPE_CHECKING:
-    from collections.abc import Iterator
-
     import pandas as pd
 
 
@@ -101,7 +99,7 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema, NoUrl):
     def _safe_raw_sql(self, sql: sge.Statement) -> Any:
         yield self.raw_sql(sql).collect()
 
-    def _metadata(self, query: str) -> Iterator[tuple[str, dt.DataType]]:
+    def _get_schema_using_query(self, query: str) -> sch.Schema:
         name = gen_name("datafusion_metadata_view")
         table = sg.table(name, quoted=self.compiler.quoted)
         src = sge.Create(
@@ -122,16 +120,15 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema, NoUrl):
             )
         finally:
             self.drop_view(name)
-        return (
-            (
-                name,
-                self.compiler.type_mapper.from_string(
+        return sch.Schema(
+            {
+                name: self.compiler.type_mapper.from_string(
                     type_string, nullable=is_nullable == "YES"
-                ),
-            )
-            for name, type_string, is_nullable in zip(
-                result["column_name"], result["data_type"], result["is_nullable"]
-            )
+                )
+                for name, type_string, is_nullable in zip(
+                    result["column_name"], result["data_type"], result["is_nullable"]
+                )
+            }
         )
 
     def _register_builtin_udfs(self):

@@ -27,12 +27,10 @@ from ibis.backends.sql import SQLBackend
 from ibis.backends.sql.compiler import TRUE, C
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable, Mapping
+    from collections.abc import Mapping
 
     import pandas as pd
     import pyarrow as pa
-
-    import ibis.expr.datatypes as dt
 
 
 class Backend(SQLBackend, CanCreateDatabase):
@@ -188,22 +186,15 @@ class Backend(SQLBackend, CanCreateDatabase):
             databases = list(map(itemgetter(0), cur.fetchall()))
         return self._filter_with_like(databases, like)
 
-    def _metadata(self, query: str) -> Iterable[tuple[str, dt.DataType]]:
-        table = util.gen_name("mysql_metadata")
+    def _get_schema_using_query(self, query: str) -> sch.Schema:
+        table = util.gen_name(f"{self.name}_metadata")
 
         with self.begin() as cur:
             cur.execute(f"CREATE TEMPORARY TABLE {table} AS {query}")
             try:
-                cur.execute(f"DESCRIBE {table}")
-                result = cur.fetchall()
+                return self.get_schema(table)
             finally:
                 cur.execute(f"DROP TABLE {table}")
-
-        type_mapper = self.compiler.type_mapper
-        return (
-            (name, type_mapper.from_string(type_string, nullable=is_nullable == "YES"))
-            for name, type_string, is_nullable, *_ in result
-        )
 
     def get_schema(
         self, name: str, schema: str | None = None, database: str | None = None

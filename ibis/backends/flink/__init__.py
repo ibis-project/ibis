@@ -76,7 +76,7 @@ class Backend(SQLBackend, CanCreateDatabase, NoUrl):
     def raw_sql(self, query: str) -> TableResult:
         return self._table_env.execute_sql(query)
 
-    def _metadata(self, query: str):
+    def _get_schema_using_query(self, query: str) -> sch.Schema:
         from pyflink.table.types import create_arrow_schema
 
         table = self._table_env.sql_query(query)
@@ -84,8 +84,7 @@ class Backend(SQLBackend, CanCreateDatabase, NoUrl):
         pa_schema = create_arrow_schema(
             schema.get_field_names(), schema.get_field_data_types()
         )
-        # sort of wasteful, but less code to write
-        return sch.Schema.from_pyarrow(pa_schema).items()
+        return sch.Schema.from_pyarrow(pa_schema)
 
     def list_databases(self, like: str | None = None) -> list[str]:
         databases = self._table_env.list_databases()

@@ -26,8 +26,6 @@ from ibis.backends.sql import STAR, SQLBackend
 from ibis.backends.sql.compiler import TRUE, C
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable
-
     import pandas as pd
     import pyrrow as pa
 
@@ -465,7 +463,7 @@ class Backend(SQLBackend):
 
         atexit.register(self._clean_up_tmp_table, name)
 
-    def _metadata(self, query: str) -> Iterable[tuple[str, dt.DataType]]:
+    def _get_schema_using_query(self, query: str) -> sch.Schema:
         name = util.gen_name("oracle_metadata")
         dialect = self.name
 
@@ -517,6 +515,8 @@ class Backend(SQLBackend):
                 # drop the view no matter what
                 con.execute(drop_view)
 
+        schema = {}
+
         # TODO: hand all this off to the type mapper
         type_mapper = self.compiler.type_mapper
         for name, type_string, precision, scale, nullable in results:
@@ -527,7 +527,9 @@ class Backend(SQLBackend):
                 scale=scale,
                 nullable=nullable,
             )
-            yield name, typ
+            schema[name] = typ
+
+        return sch.Schema(schema)
 
     def _fetch_from_cursor(self, cursor, schema: sch.Schema) -> pd.DataFrame:
         # TODO(gforsyth): this can probably be generalized a bit and put into

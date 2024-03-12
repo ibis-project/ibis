@@ -16,7 +16,6 @@ from impala.error import Error as ImpylaError
 
 import ibis.common.exceptions as com
 import ibis.config
-import ibis.expr.datatypes as dt
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis import util
@@ -43,7 +42,7 @@ from ibis.backends.impala.udf import (
 from ibis.backends.sql import SQLBackend
 
 if TYPE_CHECKING:
-    from collections.abc import Iterator, Mapping
+    from collections.abc import Mapping
     from pathlib import Path
 
     import pandas as pd
@@ -369,33 +368,23 @@ class Backend(SQLBackend):
             zip(meta["name"], meta["type"].map(self.compiler.type_mapper.from_string))
         )
 
-    def _metadata(self, query: str) -> Iterator[tuple[str, dt.DataType]]:
-        """Return a Schema object for the indicated table and database.
-
-        Parameters
-        ----------
-        query
-            Query to execute against Impala
-
-        Returns
-        -------
-        Iterator[tuple[str, dt.DataType]]
-            Iterator of column name and Ibis type pairs
-
-        """
-        tmpview = util.gen_name("impala_tmpview")
-        query = f"CREATE VIEW IF NOT EXISTS {tmpview} AS {query}"
-
-        with self._safe_raw_sql(query) as cur:
-            try:
-                cur.execute(f"DESCRIBE {tmpview}")
-                meta = fetchall(cur)
-            finally:
-                cur.execute(f"DROP VIEW IF EXISTS {tmpview}")
-
-        return zip(
-            meta["name"], meta["type"].map(self.compiler.type_mapper.from_string)
+    def _get_schema_using_query(self, query: str) -> sch.Schema:
+        """Return a Schema object for the indicated table and database."""
+        name = util.gen_name(f"{self.name}_metadata")
+        ident = sg.to_identifier(name, quoted=self.compiler.quoted)
+        create_sql = sge.Create(
+            kind="VIEW", this=ident, exists=True, expression=query, dialect=self.dialect
         )
+        drop_sql = sge.Drop(kind="VIEW", this=ident, exists=True)
+
+        with self._safe_raw_sql(create_sql):
+            pass
+
+        try:
+            return self.get_schema(name)
+        finally:
+            with self._safe_raw_sql(drop_sql):
+                pass
 
     @property
     def client_options(self):

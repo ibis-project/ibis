@@ -30,6 +30,7 @@ import ibis
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
+import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis import util
 from ibis.backends import CanCreateDatabase, CanCreateSchema
@@ -42,8 +43,6 @@ if TYPE_CHECKING:
     from collections.abc import Iterable, Iterator, Mapping
 
     import pandas as pd
-
-    import ibis.expr.schema as sch
 
 
 _SNOWFLAKE_MAP_UDFS = {
@@ -474,15 +473,15 @@ $$"""
             result = cur.fetchall()
 
         type_mapper = self.compiler.type_mapper
-        return ibis.schema(
+        return sch.Schema(
             {
                 name: type_mapper.from_string(typ, nullable=nullable == "Y")
                 for name, typ, _, nullable, *_ in result
             }
         )
 
-    def _metadata(self, query: str) -> Iterable[tuple[str, dt.DataType]]:
-        dialect = self.name
+    def _get_schema_using_query(self, query: str) -> sch.Schema:
+        dialect = self.dialect
         sql = sge.Describe(kind="RESULT", this=self.compiler.f.last_query_id()).sql(
             dialect
         )
@@ -490,9 +489,11 @@ $$"""
             rows = cur.execute(sql).fetchall()
 
         type_mapper = self.compiler.type_mapper
-        return (
-            (name, type_mapper.from_string(type_name, nullable=nullable == "Y"))
-            for name, type_name, _, nullable, *_ in rows
+        return sch.Schema(
+            {
+                name: type_mapper.from_string(type_name, nullable=nullable == "Y")
+                for name, type_name, _, nullable, *_ in rows
+            }
         )
 
     def list_databases(self, like: str | None = None) -> list[str]:

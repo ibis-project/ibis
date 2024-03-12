@@ -30,8 +30,6 @@ from ibis.backends.sql.compiler import TRUE, C, ColGen, F
 from ibis.common.exceptions import InvalidDecoratorError
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable
-
     import pandas as pd
     import pyarrow as pa
 
@@ -510,7 +508,7 @@ $$""".format(**self._get_udf_source(udf_node))
             }
         )
 
-    def _metadata(self, query: str) -> Iterable[tuple[str, dt.DataType]]:
+    def _get_schema_using_query(self, query: str) -> sch.Schema:
         name = util.gen_name(f"{self.name}_metadata")
 
         create_stmt = sge.Create(
@@ -526,7 +524,7 @@ $$""".format(**self._get_udf_source(udf_node))
         with self._safe_raw_sql(create_stmt):
             pass
         try:
-            yield from self.get_schema(name).items()
+            return self.get_schema(name)
         finally:
             with self._safe_raw_sql(drop_stmt):
                 pass
