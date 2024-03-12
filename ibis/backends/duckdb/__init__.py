@@ -264,7 +264,7 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema, UrlFromPath):
         name
             Table name
         schema
-            Schema name
+            [deprecated] Schema name
         database
             Database name
 
@@ -274,7 +274,14 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema, UrlFromPath):
             Table expression
 
         """
-        table_schema = self.get_schema(name, catalog=schema, database=database)
+        table_loc = self._warn_and_create_table_loc(database, schema)
+
+        catalog, database = None, None
+        if table_loc is not None:
+            catalog = table_loc.catalog or None
+            database = table_loc.db or None
+
+        table_schema = self.get_schema(name, catalog=catalog, database=database)
         # load geospatial only if geo columns
         if any(typ.is_geospatial() for typ in table_schema.types):
             self.load_extension("spatial")
@@ -282,7 +289,7 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema, UrlFromPath):
             name,
             schema=table_schema,
             source=self,
-            namespace=ops.Namespace(database=database, schema=schema),
+            namespace=ops.Namespace(database=catalog, schema=database),
         ).to_expr()
 
     def get_schema(

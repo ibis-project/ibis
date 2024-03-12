@@ -46,7 +46,7 @@ def test_cross_db_access(con, temp_catalog, temp_db):
     con.raw_sql(
         f'CREATE TABLE "{temp_catalog}"."{temp_db}"."{table}" ("x" INT)'
     ).close()
-    t = con.table(table, schema=temp_db, database=temp_catalog)
+    t = con.table(table, database=(temp_catalog, temp_db))
     assert t.schema() == ibis.schema(dict(x="int"))
     assert t.execute().empty
 
@@ -55,7 +55,7 @@ def test_cross_db_create_table(con, temp_catalog, temp_db):
     table_name = gen_name("tmp_table")
     data = pd.DataFrame({"key": list("abc"), "value": [[1], [2], [3]]})
     table = con.create_table(table_name, data, database=f"{temp_catalog}.{temp_db}")
-    queried_table = con.table(table_name, database=temp_catalog, schema=temp_db)
+    queried_table = con.table(table_name, database=(temp_catalog, temp_db))
 
     tm.assert_frame_equal(table.execute(), data)
     tm.assert_frame_equal(queried_table.execute(), data)

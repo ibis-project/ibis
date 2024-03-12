@@ -105,7 +105,10 @@ class SQLBackend(BaseBackend, _DatabaseSchemaHandler):
         return df
 
     def table(
-        self, name: str, schema: str | None = None, database: str | None = None
+        self,
+        name: str,
+        schema: str | None = None,
+        database: tuple[str, str] | str | None = None,
     ) -> ir.Table:
         """Construct a table expression.
 
@@ -114,7 +117,7 @@ class SQLBackend(BaseBackend, _DatabaseSchemaHandler):
         name
             Table name
         schema
-            Schema name
+            [deprecated] Schema name
         database
             Database name
 
@@ -124,7 +127,14 @@ class SQLBackend(BaseBackend, _DatabaseSchemaHandler):
             Table expression
 
         """
-        table_schema = self.get_schema(name, catalog=schema, database=database)
+        table_loc = self._warn_and_create_table_loc(database, schema)
+
+        catalog, database = None, None
+        if table_loc is not None:
+            catalog = table_loc.catalog or None
+            database = table_loc.db or None
+
+        table_schema = self.get_schema(name, catalog=catalog, database=database)
         return ops.DatabaseTable(
             name,
             schema=table_schema,
