@@ -163,7 +163,7 @@ class Backend(SQLBackend, UrlFromPath):
 
     def _inspect_schema(
         self, cur: sqlite3.Cursor, table_name: str, database: str | None = None
-    ) -> Iterator[tuple[str, dt.DataType]]:
+    ) -> sch.Schema:
         if database is None:
             database = "main"
 
@@ -192,8 +192,12 @@ class Backend(SQLBackend, UrlFromPath):
             else:
                 raise com.IbisError(f"Failed to infer types for columns {unknown}")
 
-        for name, (typ, nullable) in table_info.items():
-            yield name, self._parse_type(typ, nullable)
+        return sch.Schema(
+            {
+                name: self._parse_type(typ, nullable)
+                for name, (typ, nullable) in table_info.items()
+            }
+        )
 
     def get_schema(
         self, table_name: str, schema: str | None = None, database: str | None = None
@@ -219,20 +223,19 @@ class Backend(SQLBackend, UrlFromPath):
         if schema is not None:
             raise TypeError("sqlite doesn't support `schema`, use `database` instead")
         with self.begin() as cur:
-            return sch.Schema.from_tuples(
-                self._inspect_schema(cur, table_name, database)
-            )
+            return self._inspect_schema(cur, table_name, database)
 
-    def _metadata(self, query: str) -> Iterator[tuple[str, dt.DataType]]:
+    def _get_schema_using_query(self, query: str) -> Iterator[tuple[str, dt.DataType]]:
         with self.begin() as cur:
             # create a view that should only be visible in this transaction
             view = util.gen_name("ibis_sqlite_metadata")
             cur.execute(f"CREATE TEMPORARY VIEW {view} AS {query}")
 
-            yield from self._inspect_schema(cur, view, database="temp")
-
-            # drop the view when we're done with it
-            cur.execute(f"DROP VIEW IF EXISTS {view}")
+            try:
+                return self._inspect_schema(cur, view, database="temp")
+            finally:
+                # drop the view when we're done with it
+                cur.execute(f"DROP VIEW IF EXISTS {view}")
 
     def _fetch_from_cursor(
         self, cursor: sqlite3.Cursor, schema: sch.Schema

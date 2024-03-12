@@ -158,7 +158,7 @@ class Backend(SQLBackend):
     def get_schema(
         self, table_name: str, schema: str | None = None, database: str | None = None
     ) -> sch.Schema:
-        name_type_pairs = self._metadata(
+        return self._get_schema_using_query(
             sg.select(STAR)
             .from_(
                 sg.table(
@@ -167,7 +167,6 @@ class Backend(SQLBackend):
             )
             .sql(self.dialect)
         )
-        return sch.Schema.from_tuples(name_type_pairs)
 
     def _fetch_from_cursor(self, cursor, schema: sch.Schema) -> pd.DataFrame:
         import pandas as pd
@@ -178,31 +177,29 @@ class Backend(SQLBackend):
         df = ExasolPandasData.convert_table(df, schema)
         return df
 
-    def _metadata(self, query: str) -> Iterable[tuple[str, dt.DataType]]:
-        table = sg.table(util.gen_name("exasol_metadata"), quoted=self.compiler.quoted)
+    def _get_schema_using_query(self, query: str) -> sch.Schema:
+        table = sg.table(
+            util.gen_name(f"{self.name}_metadata"), quoted=self.compiler.quoted
+        )
         dialect = self.dialect
         create_view = sg.exp.Create(
             kind="VIEW",
             this=table,
             expression=sg.parse_one(query, dialect=dialect),
         )
-        drop_view = sg.exp.Drop(kind="VIEW", this=table)
-        describe = sg.exp.Describe(this=table)
+        drop_view = sg.exp.Drop(kind="VIEW", this=table).sql(dialect)
+        describe = sg.exp.Describe(this=table).sql(dialect)
+        type_mapper = self.compiler.type_mapper
         with self._safe_raw_sql(create_view):
             try:
-                yield from (
-                    (
-                        name,
-                        self.compiler.type_mapper.from_string(
-                            _VARCHAR_REGEX.sub(r"\1", typ)
-                        ),
-                    )
-                    for name, typ, *_ in self.con.execute(
-                        describe.sql(dialect=dialect)
-                    ).fetchall()
+                return sch.Schema(
+                    {
+                        name: type_mapper.from_string(_VARCHAR_REGEX.sub(r"\1", typ))
+                        for name, typ, *_ in self.con.execute(describe).fetchall()
+                    }
                 )
             finally:
-                self.con.execute(drop_view.sql(dialect=dialect))
+                self.con.execute(drop_view)
 
     def _register_in_memory_table(self, op: ops.InMemoryTable) -> None:
         schema = op.schema

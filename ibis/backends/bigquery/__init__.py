@@ -22,6 +22,7 @@ from pydata_google_auth import cache
 import ibis
 import ibis.common.exceptions as com
 import ibis.expr.operations as ops
+import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis import util
 from ibis.backends import CanCreateSchema
@@ -39,13 +40,12 @@ from ibis.backends.sql import SQLBackend
 from ibis.backends.sql.datatypes import BigQueryType
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable, Iterator, Mapping
+    from collections.abc import Iterable, Mapping
     from pathlib import Path
 
     import pyarrow as pa
     from google.cloud.bigquery.table import RowIterator
 
-    import ibis.expr.types as dt
 
 SCOPES = ["https://www.googleapis.com/auth/bigquery"]
 EXTERNAL_DATA_SCOPES = [
@@ -592,7 +592,7 @@ class Backend(SQLBackend, CanCreateSchema):
                 dataset_id=query.destination.dataset_id,
             )
 
-    def _metadata(self, query: str) -> Iterator[tuple[name, dt.DataType]]:
+    def _get_schema_using_query(self, query: str) -> sch.Schema:
         self._make_session()
 
         job = self.client.query(
@@ -600,9 +600,7 @@ class Backend(SQLBackend, CanCreateSchema):
             job_config=bq.QueryJobConfig(dry_run=True, use_query_cache=False),
             project=self.billing_project,
         )
-        return (
-            (f.name, BigQuerySchema._dtype_from_bigquery_field(f)) for f in job.schema
-        )
+        return BigQuerySchema.to_ibis(job.schema)
 
     def _execute(self, stmt, query_parameters=None):
         self._make_session()

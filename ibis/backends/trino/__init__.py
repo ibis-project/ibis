@@ -13,7 +13,6 @@ import trino
 
 import ibis
 import ibis.common.exceptions as com
-import ibis.expr.datatypes as dt
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis import util
@@ -299,29 +298,26 @@ class Backend(SQLBackend, CanListDatabases, NoUrl):
             **kwargs,
         )
 
-    @contextlib.contextmanager
-    def _prepare_metadata(self, query: str) -> Iterator[dict[str, str]]:
+    def _get_schema_using_query(self, query: str) -> sch.Schema:
         name = util.gen_name(f"{self.name}_metadata")
         with self.begin() as cur:
             cur.execute(f"PREPARE {name} FROM {query}")
             try:
                 cur.execute(f"DESCRIBE OUTPUT {name}")
-                yield cur.fetchall()
+                info = cur.fetchall()
             finally:
                 cur.execute(f"DEALLOCATE PREPARE {name}")
 
-    def _metadata(self, query: str) -> Iterator[tuple[str, dt.DataType]]:
-        with self._prepare_metadata(query) as info:
-            yield from (
-                # trino types appear to be always nullable
-                (
-                    name,
-                    self.compiler.type_mapper.from_string(trino_type).copy(
-                        nullable=True
-                    ),
+        type_mapper = self.compiler.type_mapper
+        return sch.Schema(
+            {
+                name: type_mapper.from_string(trino_type).copy(
+                    # trino types appear to be always nullable
+                    nullable=True
                 )
                 for name, _, _, _, trino_type, *_ in info
-            )
+            }
+        )
 
     def create_schema(
         self, name: str, database: str | None = None, force: bool = False

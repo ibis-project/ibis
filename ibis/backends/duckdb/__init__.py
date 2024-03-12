@@ -18,7 +18,6 @@ import sqlglot.expressions as sge
 
 import ibis
 import ibis.common.exceptions as exc
-import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
@@ -31,7 +30,7 @@ from ibis.backends.sql.compiler import STAR, C, F
 from ibis.expr.operations.udf import InputType
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable, Iterator, Mapping, MutableMapping, Sequence
+    from collections.abc import Iterable, Mapping, MutableMapping, Sequence
 
     import pandas as pd
     import torch
@@ -1404,19 +1403,21 @@ class Backend(SQLBackend, CanCreateSchema, UrlFromPath):
         )
         return DuckDBPandasData.convert_table(df, schema)
 
-    def _metadata(self, query: str) -> Iterator[tuple[str, dt.DataType]]:
+    def _get_schema_using_query(self, query: str) -> sch.Schema:
         with self._safe_raw_sql(f"DESCRIBE {query}") as cur:
             rows = cur.fetch_arrow_table()
 
         rows = rows.to_pydict()
 
-        for name, typ, null in zip(
-            rows["column_name"], rows["column_type"], rows["null"]
-        ):
-            yield (
-                name,
-                self.compiler.type_mapper.from_string(typ, nullable=null == "YES"),
-            )
+        type_mapper = self.compiler.type_mapper
+        return sch.Schema(
+            {
+                name: type_mapper.from_string(typ, nullable=null == "YES")
+                for name, typ, null in zip(
+                    rows["column_name"], rows["column_type"], rows["null"]
+                )
+            }
+        )
 
     def _register_in_memory_tables(self, expr: ir.Expr) -> None:
         for memtable in expr.op().find(ops.InMemoryTable):

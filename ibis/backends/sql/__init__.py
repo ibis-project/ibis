@@ -15,12 +15,11 @@ from ibis.backends import BaseBackend
 from ibis.backends.sql.compiler import STAR
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable, Iterator, Mapping
+    from collections.abc import Iterable, Mapping
 
     import pandas as pd
     import pyarrow as pa
 
-    import ibis.expr.datatypes as dt
     from ibis.backends.sql.compiler import SQLGlotCompiler
     from ibis.expr.schema import SchemaLike
 
@@ -145,14 +144,20 @@ class SQLBackend(BaseBackend):
             schema = self._get_schema_using_query(query)
         return ops.SQLQueryResult(query, ibis.schema(schema), self).to_expr()
 
-    # TODO(kszucs): should be removed in favor of _get_schema_using_query()
     @abc.abstractmethod
-    def _metadata(self, query: str) -> Iterator[tuple[str, dt.DataType]]:
-        """Return the metadata of a SQL query."""
-
     def _get_schema_using_query(self, query: str) -> sch.Schema:
-        """Return an ibis Schema from a backend-specific SQL string."""
-        return sch.Schema.from_tuples(self._metadata(query))
+        """Return an ibis Schema from a backend-specific SQL string.
+
+        Parameters
+        ----------
+        query
+            Backend-specific SQL string
+
+        Returns
+        -------
+        Schema
+            The schema inferred from `query`
+        """
 
     def _get_sql_string_view_schema(self, name, table, query) -> sch.Schema:
         compiler = self.compiler

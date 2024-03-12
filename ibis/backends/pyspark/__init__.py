@@ -165,10 +165,10 @@ class Backend(SQLBackend, CanCreateDatabase):
     def disconnect(self) -> None:
         self._session.stop()
 
-    def _metadata(self, query: str):
+    def _get_schema_using_query(self, query: str) -> sch.Schema:
         cursor = self.raw_sql(query)
         struct_dtype = PySparkType.to_ibis(cursor.query.schema)
-        return struct_dtype.items()
+        return sch.Schema(struct_dtype)
 
     @property
     def version(self):
