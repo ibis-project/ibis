@@ -433,10 +433,6 @@ quartodoc:
               members:
                 - to_unit
                 - negate
-                - __add__
-                - __sub__
-                - __mul__
-                - __floordiv__
                 - years
                 - quarters
                 - months
