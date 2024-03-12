@@ -68,6 +68,7 @@ class MSSQLCompiler(SQLGlotCompiler):
         rewrite_rows_range_order_by_window,
         *SQLGlotCompiler.rewrites,
     )
+    copy_func_args = True
 
     UNSUPPORTED_OPERATIONS = frozenset(
         (

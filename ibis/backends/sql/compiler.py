@@ -84,16 +84,17 @@ class AnonymousFuncGen:
 
 
 class FuncGen:
-    __slots__ = ("namespace", "anon")
+    __slots__ = ("namespace", "anon", "copy")
 
-    def __init__(self, namespace: str | None = None) -> None:
+    def __init__(self, namespace: str | None = None, copy: bool = False) -> None:
         self.namespace = namespace
         self.anon = AnonymousFuncGen()
+        self.copy = copy
 
     def __getattr__(self, name: str) -> Callable[..., sge.Func]:
         name = ".".join(filter(None, (self.namespace, name)))
         return lambda *args, **kwargs: sg.func(
-            name, *map(sge.convert, args), **kwargs, copy=False
+            name, *map(sge.convert, args), **kwargs, copy=self.copy
         )
 
     def __getitem__(self, key: str) -> Callable[..., sge.Func]:
@@ -179,6 +180,9 @@ class SQLGlotCompiler(abc.ABC):
 
     quoted: bool = True
     """Whether to always quote identifiers."""
+
+    copy_func_args: bool = False
+    """Whether to copy function arguments when generating SQL."""
 
     NAN: ClassVar[sge.Expression] = sge.Cast(
         this=sge.convert("NaN"), to=sge.DataType(this=sge.DataType.Type.DOUBLE)
@@ -315,7 +319,7 @@ class SQLGlotCompiler(abc.ABC):
 
     def __init__(self) -> None:
         self.agg = AggGen(aggfunc=self._aggregate)
-        self.f = FuncGen()
+        self.f = FuncGen(copy=self.__class__.copy_func_args)
         self.v = VarGen()
 
     def __init_subclass__(cls, **kwargs):
