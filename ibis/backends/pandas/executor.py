@@ -591,8 +591,10 @@ class PandasExecutor(Dispatched, PandasUtils):
         newcols = {gen_name("sort_key"): col for col in keys}
         names = list(newcols.keys())
         df = parent.assign(**newcols)
-        df = df.sort_values(by=names, ascending=ascending, ignore_index=True)
-        return df.drop(names, axis=1)
+        df = df.sort_values(
+            by=names, ascending=ascending, ignore_index=True, kind="mergesort"
+        )
+        return df.drop(columns=names)
 
     @classmethod
     def visit(cls, op: PandasAggregate, parent, groups, metrics):
