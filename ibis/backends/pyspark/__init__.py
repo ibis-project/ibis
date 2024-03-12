@@ -306,7 +306,9 @@ class Backend(SQLBackend, CanCreateDatabase):
             database does not exist
 
         """
-        sql = sge.Drop(kind="DATABASE", exist=force, this=sg.to_identifier(name))
+        sql = sge.Drop(
+            kind="DATABASE", exist=force, this=sg.to_identifier(name), cascade=force
+        )
         with self._safe_raw_sql(sql):
             pass
 
