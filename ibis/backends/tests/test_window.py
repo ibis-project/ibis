@@ -71,14 +71,15 @@ def pandas_ntile(x, bucket: int):
     )
 
 
-@reduction(input_type=[dt.double], output_type=dt.double)
-def mean_udf(s):
-    return s.mean()
+with pytest.warns(FutureWarning, match="v9.0"):
 
+    @reduction(input_type=[dt.double], output_type=dt.double)
+    def mean_udf(s):
+        return s.mean()
 
-@analytic(input_type=[dt.double], output_type=dt.double)
-def calc_zscore(s):
-    return (s - s.mean()) / s.std()
+    @analytic(input_type=[dt.double], output_type=dt.double)
+    def calc_zscore(s):
+        return (s - s.mean()) / s.std()
 
 
 @pytest.mark.parametrize(

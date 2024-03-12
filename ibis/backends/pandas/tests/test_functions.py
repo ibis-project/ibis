@@ -216,9 +216,11 @@ def test_quantile_multi_array_access(client, t, df):
 def test_execute_with_same_hash_value_in_scope(
     left, right, expected_value, expected_type, left_dtype, right_dtype
 ):
-    @udf.elementwise([left_dtype, right_dtype], left_dtype)
-    def my_func(x, _):
-        return x
+    with pytest.warns(FutureWarning, match="v9.0"):
+
+        @udf.elementwise([left_dtype, right_dtype], left_dtype)
+        def my_func(x, _):
+            return x
 
     df = pd.DataFrame({"left": [left], "right": [right]})
     con = ibis.pandas.connect()
@@ -255,9 +257,11 @@ def test_ifelse_returning_bool():
     ],
 )
 def test_signature_does_not_match_input_type(dtype, value):
-    @udf.elementwise([dtype], dtype)
-    def func(x):
-        return x
+    with pytest.warns(FutureWarning, match="v9.0"):
+
+        @udf.elementwise([dtype], dtype)
+        def func(x):
+            return x
 
     df = pd.DataFrame({"col": [value]})
     table = ibis.pandas.connect().from_dataframe(df)

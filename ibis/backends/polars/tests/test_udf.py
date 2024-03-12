@@ -12,22 +12,21 @@ from ibis.legacy.udf.vectorized import elementwise, reduction
 pytest.importorskip("polars")
 pc = pytest.importorskip("pyarrow.compute")
 
+with pytest.warns(FutureWarning, match="v9.0"):
 
-@elementwise(input_type=["string"], output_type="int64")
-def my_string_length(arr, **kwargs):
-    return pl.from_arrow(
-        pc.cast(pc.multiply(pc.utf8_length(arr.to_arrow()), 2), target_type="int64")
-    )
+    @elementwise(input_type=["string"], output_type="int64")
+    def my_string_length(arr, **kwargs):
+        return pl.from_arrow(
+            pc.cast(pc.multiply(pc.utf8_length(arr.to_arrow()), 2), target_type="int64")
+        )
 
+    @elementwise(input_type=[dt.int64, dt.int64], output_type=dt.int64)
+    def my_add(arr1, arr2, **kwargs):
+        return pl.from_arrow(pc.add(arr1.to_arrow(), arr2.to_arrow()))
 
-@elementwise(input_type=[dt.int64, dt.int64], output_type=dt.int64)
-def my_add(arr1, arr2, **kwargs):
-    return pl.from_arrow(pc.add(arr1.to_arrow(), arr2.to_arrow()))
-
-
-@reduction(input_type=[dt.float64], output_type=dt.float64)
-def my_mean(arr):
-    return pc.mean(arr)
+    @reduction(input_type=[dt.float64], output_type=dt.float64)
+    def my_mean(arr):
+        return pc.mean(arr)
 
 
 def test_udf(alltypes):

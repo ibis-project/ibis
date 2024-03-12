@@ -19,6 +19,7 @@ from ibis.expr.operations import (
     ElementWiseVectorizedUDF,
     ReductionVectorizedUDF,
 )
+from ibis.util import deprecated
 
 if TYPE_CHECKING:
     import pandas as pd
@@ -263,6 +264,7 @@ def _udf_decorator(node_type, input_type, output_type):
     return wrapper
 
 
+@deprecated(as_of="9.0", instead="")
 def analytic(input_type, output_type):
     """Define an analytic UDF that produces the same of rows as the input.
 
@@ -275,36 +277,11 @@ def analytic(input_type, output_type):
     output_type : ibis.expr.datatypes.DataType
         The return type of the function.
 
-    Examples
-    --------
-    >>> import ibis
-    >>> import ibis.expr.datatypes as dt
-    >>> from ibis.legacy.udf.vectorized import analytic
-    >>> @analytic(input_type=[dt.double], output_type=dt.double)
-    ... def zscore(series):  # note the use of aggregate functions
-    ...     return (series - series.mean()) / series.std()
-
-    Define and use an UDF with multiple return columns:
-
-    >>> @analytic(
-    ...     input_type=[dt.double],
-    ...     output_type=dt.Struct(dict(demean="double", zscore="double")),
-    ... )
-    ... def demean_and_zscore(v):
-    ...     mean = v.mean()
-    ...     std = v.std()
-    ...     return v - mean, (v - mean) / std
-    >>>
-    >>> win = ibis.window(preceding=None, following=None, group_by="key")
-    >>> # add two columns "demean" and "zscore"
-    >>> table = table.mutate(  # quartodoc: +SKIP # doctest: +SKIP
-    ...     demean_and_zscore(table["v"]).over(win).destructure()
-    ... )
-
     """
     return _udf_decorator(AnalyticVectorizedUDF, input_type, output_type)
 
 
+@deprecated(as_of="9.0", instead="use the ibis.udf.* api")
 def elementwise(input_type, output_type):
     """Define a UDF that operates element-wise on a Pandas Series.
 
@@ -317,39 +294,11 @@ def elementwise(input_type, output_type):
     output_type : ibis.expr.datatypes.DataType
         The return type of the function.
 
-    Examples
-    --------
-    >>> import ibis
-    >>> import ibis.expr.datatypes as dt
-    >>> from ibis.legacy.udf.vectorized import elementwise
-    >>> @elementwise(input_type=[dt.string], output_type=dt.int64)
-    ... def my_string_length(series):
-    ...     return series.str.len() * 2
-
-    Define an UDF with non-column parameters:
-
-    >>> @elementwise(input_type=[dt.string], output_type=dt.int64)
-    ... def my_string_length(series, *, times):
-    ...     return series.str.len() * times
-
-    Define and use an UDF with multiple return columns:
-
-    >>> @elementwise(
-    ...     input_type=[dt.string],
-    ...     output_type=dt.Struct(dict(year=dt.string, monthday=dt.string)),
-    ... )
-    ... def year_monthday(date):
-    ...     return date.str.slice(0, 4), date.str.slice(4, 8)
-    >>>
-    >>> # add two columns "year" and "monthday"
-    >>> table = table.mutate(
-    ...     year_monthday(table["date"]).destructure()
-    ... )  # quartodoc: +SKIP # doctest: +SKIP
-
     """
     return _udf_decorator(ElementWiseVectorizedUDF, input_type, output_type)
 
 
+@deprecated(as_of="9.0", instead="use the @ibis.udf.agg.builtin decorator")
 def reduction(input_type, output_type):
     """Define a UDF reduction function that produces 1 row of output for N rows of input.
 
@@ -361,29 +310,5 @@ def reduction(input_type, output_type):
         function. Variadic arguments are not yet supported.
     output_type : ibis.expr.datatypes.DataType
         The return type of the function.
-
-    Examples
-    --------
-    >>> import ibis
-    >>> import ibis.expr.datatypes as dt
-    >>> from ibis.legacy.udf.vectorized import reduction
-    >>> @reduction(input_type=[dt.string], output_type=dt.int64)
-    ... def my_string_length_agg(series, **kwargs):
-    ...     return (series.str.len() * 2).sum()
-
-    Define and use an UDF with multiple return columns:
-
-    >>> @reduction(
-    ...     input_type=[dt.double],
-    ...     output_type=dt.Struct(dict(mean="double", std="double")),
-    ... )
-    ... def mean_and_std(v):
-    ...     return v.mean(), v.std()
-    >>>
-    >>> # create aggregation columns "mean" and "std"
-    >>> table = table.group_by("key").aggregate(  # quartodoc: +SKIP # doctest: +SKIP
-    ...     mean_and_std(table["v"]).destructure()
-    ... )
-
     """
     return _udf_decorator(ReductionVectorizedUDF, input_type, output_type)

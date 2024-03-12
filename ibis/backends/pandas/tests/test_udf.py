@@ -54,52 +54,46 @@ def t2(con):
     return con.table("df2")
 
 
-@udf.elementwise(input_type=["string"], output_type="int64")
-def my_string_length(series, **kwargs):
-    return series.str.len() * 2
+with pytest.warns(FutureWarning, match="v9.0"):
 
+    @udf.elementwise(input_type=["string"], output_type="int64")
+    def my_string_length(series, **kwargs):
+        return series.str.len() * 2
 
-@udf.elementwise(input_type=[dt.double, dt.double], output_type=dt.double)
-def my_add(series1, series2, **kwargs):
-    return series1 + series2
+    @udf.elementwise(input_type=[dt.double, dt.double], output_type=dt.double)
+    def my_add(series1, series2, **kwargs):
+        return series1 + series2
 
+    @udf.reduction(["double"], "double")
+    def my_mean(series):
+        return series.mean()
 
-@udf.reduction(["double"], "double")
-def my_mean(series):
-    return series.mean()
+    @udf.reduction(input_type=[dt.string], output_type=dt.int64)
+    def my_string_length_sum(series, **kwargs):
+        return (series.str.len() * 2).sum()
 
+    @udf.reduction(input_type=[dt.double, dt.double], output_type=dt.double)
+    def my_corr(lhs, rhs, **kwargs):
+        return lhs.corr(rhs)
 
-@udf.reduction(input_type=[dt.string], output_type=dt.int64)
-def my_string_length_sum(series, **kwargs):
-    return (series.str.len() * 2).sum()
+    @udf.elementwise([dt.double], dt.double)
+    def add_one(x):
+        return x + 1.0
 
+    @udf.elementwise([dt.double], dt.double)
+    def times_two(x):
+        return x * 2.0
 
-@udf.reduction(input_type=[dt.double, dt.double], output_type=dt.double)
-def my_corr(lhs, rhs, **kwargs):
-    return lhs.corr(rhs)
+    @udf.analytic(input_type=["double"], output_type="double")
+    def zscore(series):
+        return (series - series.mean()) / series.std()
 
-
-@udf.elementwise([dt.double], dt.double)
-def add_one(x):
-    return x + 1.0
-
-
-@udf.elementwise([dt.double], dt.double)
-def times_two(x):
-    return x * 2.0
-
-
-@udf.analytic(input_type=["double"], output_type="double")
-def zscore(series):
-    return (series - series.mean()) / series.std()
-
-
-@udf.reduction(
-    input_type=[dt.double],
-    output_type=dt.Array(dt.double),
-)
-def quantiles(series, *, quantiles):
-    return np.array(series.quantile(quantiles))
+    @udf.reduction(
+        input_type=[dt.double],
+        output_type=dt.Array(dt.double),
+    )
+    def quantiles(series, *, quantiles):
+        return np.array(series.quantile(quantiles))
 
 
 def test_udf(t, df):
@@ -211,24 +205,28 @@ def test_udaf_groupby():
 
 def test_udaf_parameter_mismatch():
     with pytest.raises(TypeError):
+        with pytest.warns(FutureWarning, match="v9.0"):
 
-        @udf.reduction(input_type=[dt.double], output_type=dt.double)
-        def my_corr(lhs, rhs, **kwargs):
-            pass
+            @udf.reduction(input_type=[dt.double], output_type=dt.double)
+            def my_corr(lhs, rhs, **kwargs):
+                pass
 
 
 def test_udf_parameter_mismatch():
     with pytest.raises(TypeError):
+        with pytest.warns(FutureWarning, match="v9.0"):
 
-        @udf.reduction(input_type=[], output_type=dt.double)
-        def my_corr2(lhs, **kwargs):
-            pass
+            @udf.reduction(input_type=[], output_type=dt.double)
+            def my_corr2(lhs, **kwargs):
+                pass
 
 
 def test_udf_error(t):
-    @udf.elementwise(input_type=[dt.double], output_type=dt.double)
-    def error_udf(s):
-        raise ValueError("xxx")
+    with pytest.warns(FutureWarning, match="v9.0"):
+
+        @udf.elementwise(input_type=[dt.double], output_type=dt.double)
+        def error_udf(s):
+            raise ValueError("xxx")
 
     with pytest.raises(ValueError):
         error_udf(t.c).execute()
@@ -236,12 +234,13 @@ def test_udf_error(t):
 
 def test_udf_no_reexecution(t2):
     execution_count = 0
+    with pytest.warns(FutureWarning, match="v9.0"):
 
-    @udf.elementwise(input_type=[dt.double], output_type=dt.double)
-    def times_two_count_executions(x):
-        nonlocal execution_count
-        execution_count += 1
-        return x * 2.0
+        @udf.elementwise(input_type=[dt.double], output_type=dt.double)
+        def times_two_count_executions(x):
+            nonlocal execution_count
+            execution_count += 1
+            return x * 2.0
 
     expr = t2.mutate(doubled=times_two_count_executions(t2.a))
     expr.execute()
@@ -313,10 +312,11 @@ def test_udaf_window_interval():
 
 def test_multiple_argument_udaf_window():
     # PR 2035
+    with pytest.warns(FutureWarning, match="v9.0"):
 
-    @udf.reduction(["double", "double"], "double")
-    def my_wm(v, w):
-        return np.average(v, weights=w)
+        @udf.reduction(["double", "double"], "double")
+        def my_wm(v, w):
+            return np.average(v, weights=w)
 
     df = pd.DataFrame(
         {
@@ -427,36 +427,38 @@ def test_array_return_type_reduction_group_by(con, t, df, qs):
 
 
 def test_elementwise_udf_with_many_args(t2):
-    @udf.elementwise(
-        input_type=[dt.double] * 16 + [dt.int32] * 8, output_type=dt.double
-    )
-    def my_udf(
-        c1,
-        c2,
-        c3,
-        c4,
-        c5,
-        c6,
-        c7,
-        c8,
-        c9,
-        c10,
-        c11,
-        c12,
-        c13,
-        c14,
-        c15,
-        c16,
-        c17,
-        c18,
-        c19,
-        c20,
-        c21,
-        c22,
-        c23,
-        c24,
-    ):
-        return c1
+    with pytest.warns(FutureWarning, match="v9.0"):
+
+        @udf.elementwise(
+            input_type=[dt.double] * 16 + [dt.int32] * 8, output_type=dt.double
+        )
+        def my_udf(
+            c1,
+            c2,
+            c3,
+            c4,
+            c5,
+            c6,
+            c7,
+            c8,
+            c9,
+            c10,
+            c11,
+            c12,
+            c13,
+            c14,
+            c15,
+            c16,
+            c17,
+            c18,
+            c19,
+            c20,
+            c21,
+            c22,
+            c23,
+            c24,
+        ):
+            return c1
 
     expr = my_udf(*([t2.a] * 8 + [t2.b] * 8 + [t2.c] * 8))
     result = expr.execute()

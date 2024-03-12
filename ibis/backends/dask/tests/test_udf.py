@@ -85,69 +85,60 @@ def t_timestamp(con):
 # UDF Functions
 # -------------
 
+with pytest.warns(FutureWarning, match="v9.0"):
 
-@elementwise(input_type=["string"], output_type="int64")
-def my_string_length(series, **kwargs):
-    return series.str.len() * 2
+    @elementwise(input_type=["string"], output_type="int64")
+    def my_string_length(series, **kwargs):
+        return series.str.len() * 2
 
+    @elementwise(input_type=[dt.double, dt.double], output_type=dt.double)
+    def my_add(series1, series2, **kwargs):
+        return series1 + series2
 
-@elementwise(input_type=[dt.double, dt.double], output_type=dt.double)
-def my_add(series1, series2, **kwargs):
-    return series1 + series2
+    @reduction(["double"], "double")
+    def my_mean(series):
+        return series.mean()
 
+    @reduction(
+        input_type=[dt.Timestamp(timezone="UTC")],
+        output_type=dt.Timestamp(timezone="UTC"),
+    )
+    def my_tz_min(series):
+        return series.min()
 
-@reduction(["double"], "double")
-def my_mean(series):
-    return series.mean()
+    @elementwise(
+        input_type=[dt.Timestamp(timezone="UTC")],
+        output_type=dt.Timestamp(timezone="UTC"),
+    )
+    def my_tz_add_one(series):
+        return series + pd.Timedelta(1, unit="D")
 
+    @reduction(input_type=[dt.string], output_type=dt.int64)
+    def my_string_length_sum(series, **kwargs):
+        return (series.str.len() * 2).sum()
 
-@reduction(
-    input_type=[dt.Timestamp(timezone="UTC")],
-    output_type=dt.Timestamp(timezone="UTC"),
-)
-def my_tz_min(series):
-    return series.min()
+    @reduction(input_type=[dt.double, dt.double], output_type=dt.double)
+    def my_corr(lhs, rhs, **kwargs):
+        return lhs.corr(rhs)
 
+    @elementwise([dt.double], dt.double)
+    def add_one(x):
+        return x + 1.0
 
-@elementwise(
-    input_type=[dt.Timestamp(timezone="UTC")],
-    output_type=dt.Timestamp(timezone="UTC"),
-)
-def my_tz_add_one(series):
-    return series + pd.Timedelta(1, unit="D")
+    @elementwise([dt.double], dt.double)
+    def times_two(x):
+        return x * 2.0
 
+    @analytic(input_type=["double"], output_type="double")
+    def zscore(series):
+        return (series - series.mean()) / series.std()
 
-@reduction(input_type=[dt.string], output_type=dt.int64)
-def my_string_length_sum(series, **kwargs):
-    return (series.str.len() * 2).sum()
-
-
-@reduction(input_type=[dt.double, dt.double], output_type=dt.double)
-def my_corr(lhs, rhs, **kwargs):
-    return lhs.corr(rhs)
-
-
-@elementwise([dt.double], dt.double)
-def add_one(x):
-    return x + 1.0
-
-
-@elementwise([dt.double], dt.double)
-def times_two(x):
-    return x * 2.0
-
-
-@analytic(input_type=["double"], output_type="double")
-def zscore(series):
-    return (series - series.mean()) / series.std()
-
-
-@reduction(
-    input_type=[dt.double],
-    output_type=dt.Array(dt.double),
-)
-def collect(series):
-    return list(series)
+    @reduction(
+        input_type=[dt.double],
+        output_type=dt.Array(dt.double),
+    )
+    def collect(series):
+        return list(series)
 
 
 # -----
@@ -371,34 +362,38 @@ def test_array_return_type_reduction_group_by(t, df):
 
 
 def test_elementwise_udf_with_many_args(t2):
-    @elementwise(input_type=[dt.double] * 16 + [dt.int32] * 8, output_type=dt.double)
-    def my_udf(
-        c1,
-        c2,
-        c3,
-        c4,
-        c5,
-        c6,
-        c7,
-        c8,
-        c9,
-        c10,
-        c11,
-        c12,
-        c13,
-        c14,
-        c15,
-        c16,
-        c17,
-        c18,
-        c19,
-        c20,
-        c21,
-        c22,
-        c23,
-        c24,
-    ):
-        return c1
+    with pytest.warns(FutureWarning, match="v9.0"):
+
+        @elementwise(
+            input_type=[dt.double] * 16 + [dt.int32] * 8, output_type=dt.double
+        )
+        def my_udf(
+            c1,
+            c2,
+            c3,
+            c4,
+            c5,
+            c6,
+            c7,
+            c8,
+            c9,
+            c10,
+            c11,
+            c12,
+            c13,
+            c14,
+            c15,
+            c16,
+            c17,
+            c18,
+            c19,
+            c20,
+            c21,
+            c22,
+            c23,
+            c24,
+        ):
+            return c1
 
     expr = my_udf(*([t2.a] * 8 + [t2.b] * 8 + [t2.c] * 8))
     result = expr.execute()
@@ -408,30 +403,34 @@ def test_elementwise_udf_with_many_args(t2):
 
 
 # -----------------
-# Test raied errors
+# Test raised errors
 # -----------------
 
 
 def test_udaf_parameter_mismatch():
     with pytest.raises(TypeError):
+        with pytest.warns(FutureWarning, match="v9.0"):
 
-        @reduction(input_type=[dt.double], output_type=dt.double)
-        def my_corr(lhs, rhs, **kwargs):
-            pass
+            @reduction(input_type=[dt.double], output_type=dt.double)
+            def my_corr(lhs, rhs, **kwargs):
+                pass
 
 
 def test_udf_parameter_mismatch():
     with pytest.raises(TypeError):
+        with pytest.warns(FutureWarning, match="v9.0"):
 
-        @reduction(input_type=[], output_type=dt.double)
-        def my_corr2(lhs, **kwargs):
-            pass
+            @reduction(input_type=[], output_type=dt.double)
+            def my_corr2(lhs, **kwargs):
+                pass
 
 
 def test_udf_error(t):
-    @elementwise(input_type=[dt.double], output_type=dt.double)
-    def error_udf(s):
-        raise ValueError("xxx")
+    with pytest.warns(FutureWarning, match="v9.0"):
+
+        @elementwise(input_type=[dt.double], output_type=dt.double)
+        def error_udf(s):
+            raise ValueError("xxx")
 
     with pytest.raises(ValueError):
         error_udf(t.c).execute()
