@@ -92,7 +92,9 @@ class FuncGen:
 
     def __getattr__(self, name: str) -> Callable[..., sge.Func]:
         name = ".".join(filter(None, (self.namespace, name)))
-        return lambda *args, **kwargs: sg.func(name, *map(sge.convert, args), **kwargs)
+        return lambda *args, **kwargs: sg.func(
+            name, *map(sge.convert, args), **kwargs, copy=False
+        )
 
     def __getitem__(self, key: str) -> Callable[..., sge.Func]:
         return getattr(self, key)
