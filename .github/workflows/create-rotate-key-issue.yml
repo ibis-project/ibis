@@ -11,11 +11,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Generate a GitHub token
-        uses: tibdex/github-app-token@v2
+        uses: actions/create-github-app-token@v1.9
         id: generate_token
         with:
-          app_id: ${{ secrets.SQUAWK_BOT_APP_ID }}
-          private_key: ${{ secrets.SQUAWK_BOT_APP_PRIVATE_KEY }}
+          app-id: ${{ secrets.SQUAWK_BOT_APP_ID }}
+          private-key: ${{ secrets.SQUAWK_BOT_APP_PRIVATE_KEY }}
 
       - name: checkout
         uses: actions/checkout@v4
