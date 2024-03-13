@@ -850,6 +850,15 @@ def test_zip(backend):
     assert len(s[0][0]) == len(res.type().value_type)
     assert len(x[0]) == len(s[0])
 
+    # clickhouse nested types can't be null
+    if backend.name() != "clickhouse":
+        # the .map is workaround for https://github.com/ibis-project/ibis/issues/8641
+        a = ibis.literal([1, 2, 3], type="array<int64>").map(ibis._)
+        b = ibis.literal(None, type="array<int64>")
+        assert backend.connection.execute(a.zip(b)) is None
+        assert backend.connection.execute(b.zip(a)) is None
+        assert backend.connection.execute(b.zip(b)) is None
+
 
 @builtin_array
 @pytest.mark.notyet(
