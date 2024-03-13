@@ -2065,7 +2065,7 @@ def test_invalid_distinct_empty_key():
 
 def test_unbind_with_namespace():
     schema = ibis.schema({"a": "int"})
-    ns = ops.Namespace(database="db", schema="sch")
+    ns = ops.Namespace(catalog="catalog", database="database")
 
     t_op = ops.DatabaseTable(name="t", schema=schema, source=None, namespace=ns)
     t = t_op.to_expr()

@@ -256,7 +256,7 @@ class Table(Expr, _FixedTextJupyterMixin):
         """Return the fully qualified name of the table."""
         arg = self._arg
         namespace = getattr(arg, "namespace", ops.Namespace())
-        pieces = namespace.database, namespace.schema, arg.name
+        pieces = namespace.catalog, namespace.database, arg.name
         return ".".join(filter(None, pieces))
 
     def __array__(self, dtype=None):

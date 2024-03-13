@@ -254,7 +254,7 @@ class Backend(SQLBackend, CanCreateDatabase, NoUrl):
             name,
             schema=schema,
             source=self,
-            namespace=ops.Namespace(schema=catalog, database=database),
+            namespace=ops.Namespace(catalog=catalog, database=database),
         )
         return node.to_expr()
 

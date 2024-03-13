@@ -1034,7 +1034,7 @@ class SQLGlotCompiler(abc.ABC):
         # not actually a table, but easier to quote individual namespace
         # components this way
         namespace = op.__udf_namespace__
-        return sg.table(funcname, db=namespace.schema, catalog=namespace.database).sql(
+        return sg.table(funcname, db=namespace.database, catalog=namespace.catalog).sql(
             self.dialect
         )
 
@@ -1113,7 +1113,7 @@ class SQLGlotCompiler(abc.ABC):
         self, op, *, name: str, schema: sch.Schema, namespace: ops.Namespace
     ) -> sg.Table:
         return sg.table(
-            name, db=namespace.schema, catalog=namespace.database, quoted=self.quoted
+            name, db=namespace.database, catalog=namespace.catalog, quoted=self.quoted
         )
 
     def visit_InMemoryTable(
@@ -1131,7 +1131,7 @@ class SQLGlotCompiler(abc.ABC):
         namespace: ops.Namespace,
     ) -> sg.Table:
         return sg.table(
-            name, db=namespace.schema, catalog=namespace.database, quoted=self.quoted
+            name, db=namespace.database, catalog=namespace.catalog, quoted=self.quoted
         )
 
     def visit_SelfReference(self, op, *, parent, identifier):

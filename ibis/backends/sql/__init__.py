@@ -136,7 +136,7 @@ class SQLBackend(BaseBackend, _DatabaseSchemaHandler):
             name,
             schema=table_schema,
             source=self,
-            namespace=ops.Namespace(database=database, schema=schema),
+            namespace=ops.Namespace(catalog=catalog, database=database),
         ).to_expr()
 
     def _to_sqlglot(
