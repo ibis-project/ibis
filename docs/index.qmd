@@ -148,14 +148,6 @@ t["species"].topk(num_species)  # <2>
 Ibis works with any Python plotting library that supports the [dataframe interchange protocol](https://data-apis.org/dataframe-protocol/latest/index.html).
 
 ```{python}
-# | code-fold: true
-width = 640  # <1>
-height = 480  # <1>
-```
-
-1. Set the width and height of the plots.
-
-```{python}
 grouped = (  # <1>
     t.group_by("species")  # <1>
     .aggregate(count=ibis._.count())  # <1>
@@ -186,7 +178,7 @@ chart = (
         y="count",
         tooltip=["species", "count"],
     )
-    .properties(width=width, height=height)
+    .properties(width=600, height=400)
     .interactive()
 )
 chart
@@ -204,7 +196,7 @@ import matplotlib.pyplot as plt
 chart = grouped.to_pandas().plot.bar(
     x="species",
     y="count",
-    figsize=(width / 100, height / 100),
+    figsize=(600 / 100, 400 / 100),
 )
 plt.show()
 ```
@@ -222,8 +214,8 @@ chart = px.bar(
     grouped.to_pandas(),
     x="species",
     y="count",
-    width=width,
-    height=height,
+    width=600,
+    height=400,
 )
 chart
 ```
@@ -242,7 +234,7 @@ chart = (
         aes(x="species", y="count"),
     )
     + geom_bar(stat="identity")
-    + theme(figure_size=(width / 100, height / 100))
+    + theme(figure_size=(600 / 100, 400 / 100))
 )
 chart
 ```
@@ -261,7 +253,7 @@ chart = sns.barplot(
     x="species",
     y="count",
 )
-chart.figure.set_size_inches(width / 100, height / 100)
+chart.figure.set_size_inches(600 / 100, 400 / 100)
 ```
 
 :::
