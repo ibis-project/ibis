@@ -800,30 +800,17 @@ def test_big_join_expr(benchmark, src, diff):
     benchmark(ir.Table.join, src, diff, ["validation_name"], how="outer")
 
 
-def test_big_join_execute(benchmark, nrels):
-    pytest.importorskip("duckdb")
-
-    con = ibis.duckdb.connect()
-
+def test_big_join_compile(benchmark, nrels):
     # cache to avoid a request-per-union operand
     src = make_big_union(
-        con.read_csv(
-            "https://github.com/ibis-project/ibis/files/12580336/source_pivot.csv"
-        )
-        .rename(id="column0")
-        .cache(),
+        ibis.table(schema={"validation_name": "string", "id": "int64"}, name="sources"),
         nrels,
     )
 
     diff = make_big_union(
-        con.read_csv(
-            "https://github.com/ibis-project/ibis/files/12580340/differences_pivot.csv"
-        )
-        .rename(id="column0")
-        .cache(),
-        nrels,
+        ibis.table(schema={"validation_name": "string"}, name="diffs"), nrels
     )
 
     expr = src.join(diff, ["validation_name"], how="outer")
-    t = benchmark.pedantic(expr.to_pyarrow, rounds=1, iterations=1, warmup_rounds=1)
+    t = benchmark.pedantic(expr.compile, rounds=1, iterations=1, warmup_rounds=1)
     assert len(t)
