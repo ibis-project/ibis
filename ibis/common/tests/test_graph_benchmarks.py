@@ -52,7 +52,13 @@ def test_dfs(benchmark):
     benchmark(Graph.from_dfs, node)
 
 
-def test_replace(benchmark):
+def test_replace_pattern(benchmark):
     node = generate_node(500)
     pattern = Object(MyNode, a=Between(lower=100)) >> _.copy(a=_.a + 1)
     benchmark(node.replace, pattern)
+
+
+def test_replace_mapping(benchmark):
+    node = generate_node(500)
+    subs = {generate_node(1): generate_node(0)}
+    benchmark(node.replace, subs)
