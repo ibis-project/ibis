@@ -417,3 +417,24 @@ def test_format_new_value_operation(alltypes, snapshot):
 
     assert "Inc" in result
     assert last_line == "incremented: Inc(r0.a)"
+
+
+def test_format_show_variables(monkeypatch, alltypes, snapshot):
+    monkeypatch.setattr(ibis.options.repr, "show_variables", True)
+
+    filtered = alltypes[alltypes.f > 0]
+    ordered = filtered.order_by("f")
+    projected = ordered[["a", "b", "f"]]
+
+    add = projected.a + projected.b
+    sub = projected.a - projected.b
+    expr = add * sub
+
+    result = fmt(expr)
+
+    assert "projected.a" in result
+    assert "projected.b" in result
+    assert "filtered" in result
+    assert "ordered" in result
+
+    snapshot.assert_match(result, "repr.txt")

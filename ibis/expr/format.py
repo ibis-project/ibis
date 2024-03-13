@@ -1,10 +1,12 @@
 from __future__ import annotations
 
 import functools
+import inspect
 import itertools
 import textwrap
 import types
 from collections.abc import Mapping, Sequence
+from typing import Optional
 
 from public import public
 
@@ -145,43 +147,77 @@ def inline_args(fields, prefer_positional=False):
     return ", ".join(f"{k}={v}" for k, v in fields.items())
 
 
+def get_defining_frame(expr):
+    """Locate the outermost frame where `expr` is defined."""
+    for frame_info in inspect.stack()[::-1]:
+        for var in frame_info.frame.f_locals.values():
+            if isinstance(var, ir.Expr) and expr.equals(var):
+                return frame_info.frame
+    raise ValueError(f"No defining frame found for {expr}")
+
+
+def get_defining_scope(expr):
+    """Get variables in the scope where `expr` is first defined."""
+    frame = get_defining_frame(expr)
+    scope = {**frame.f_globals, **frame.f_locals}
+    return {k: v for k, v in scope.items() if isinstance(v, ir.Expr)}
+
+
 class Rendered(str):
     def __repr__(self):
         return self
 
 
 @public
-def pretty(node):
-    if isinstance(node, ir.Expr):
-        node = node.op()
-    elif not isinstance(node, ops.Node):
-        raise TypeError(f"Expected an expression , got {type(node)}")
+def pretty(expr: ir.Expr, scope: Optional[dict[str, ir.Expr]] = None):
+    """Pretty print an expression.
 
+    Parameters
+    ----------
+    expr
+        The expression to pretty print.
+    scope
+        A dictionary of expression to name mappings used to intermediate
+        assignments. If not provided, the names of the expressions will be
+        generated.
+
+    Returns
+    -------
+    str
+        A pretty printed representation of the expression.
+    """
+    if not isinstance(expr, ir.Expr):
+        raise TypeError(f"Expected an expression, got {type(expr)}")
+
+    node = expr.op()
+    refs = {}
     refcnt = itertools.count()
-    tables = {}
+    variables = {v.op(): k for k, v in (scope or {}).items()}
 
     def mapper(op, _, **kwargs):
         result = fmt(op, **kwargs)
-        if isinstance(op, ops.Relation) and not isinstance(op, ops.JoinTable):
-            tables[op] = result
+        if var := variables.get(op):
+            refs[op] = result
+            result = var
+        elif isinstance(op, ops.Relation) and not isinstance(op, ops.JoinTable):
+            refs[op] = result
             result = f"r{next(refcnt)}"
         return Rendered(result)
 
     results = node.map(mapper)
 
     out = []
-    for table, rendered in tables.items():
-        if table is not node:
-            ref = results[table]
-            out.append(f"{ref} := {rendered}")
+    for ref, rendered in refs.items():
+        if ref is not node:
+            out.append(f"{results[ref]} := {rendered}")
 
-    res = results[node]
+    res = refs.get(node, results[node])
     if isinstance(node, ops.Literal):
         out.append(res)
     elif isinstance(node, ops.Value):
         out.append(f"{node.name}: {res}{type_info(node.dtype)}")
-    elif isinstance(node, ops.Relation):
-        out.append(tables[node])
+    else:
+        out.append(res)
 
     return "\n\n".join(out)
 

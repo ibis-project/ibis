@@ -119,9 +119,11 @@ class Repr(Config):
         SQLQueryResult operations.
     show_types : bool
         Show the inferred type of value expressions in the repr.
+    show_variables : bool
+        Show the variables in the repr instead of generated names. This is
+        an advanced option and may not work in all scenarios.
     interactive : bool
         Options controlling the interactive repr.
-
     """
 
     depth: Optional[PosInt] = None
@@ -129,6 +131,7 @@ class Repr(Config):
     table_rows: PosInt = 10
     query_text_length: PosInt = 80
     show_types: bool = False
+    show_variables: bool = False
     interactive: Interactive = Interactive()
 
 
