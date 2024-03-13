@@ -11,7 +11,7 @@ import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.rules as rlz
-from ibis.backends.sql.compiler import NULL, STAR, SQLGlotCompiler, paren
+from ibis.backends.sql.compiler import NULL, STAR, SQLGlotCompiler
 from ibis.backends.sql.datatypes import PostgresType
 from ibis.backends.sql.dialects import Postgres
 from ibis.backends.sql.rewrites import rewrite_sample_as_filter
@@ -125,7 +125,7 @@ class PostgresCompiler(SQLGlotCompiler):
             sge.Ordered(this=sge.Order(this=arg, expressions=[key]), desc=desc),
             where=sg.and_(*conditions),
         )
-        return paren(agg)[0]
+        return sge.paren(agg, copy=False)[0]
 
     def visit_ArgMin(self, op, *, arg, key, where):
         return self.visit_ArgMinMax(op, arg=arg, key=key, where=where, desc=False)
@@ -378,7 +378,7 @@ class PostgresCompiler(SQLGlotCompiler):
     def visit_RegexExtract(self, op, *, arg, pattern, index):
         pattern = self.f.concat("(", pattern, ")")
         matches = self.f.regexp_match(arg, pattern)
-        return self.if_(arg.rlike(pattern), paren(matches)[index], NULL)
+        return self.if_(arg.rlike(pattern), sge.paren(matches, copy=False)[index], NULL)
 
     def visit_FindInSet(self, op, *, needle, values):
         return self.f.coalesce(
@@ -463,7 +463,7 @@ class PostgresCompiler(SQLGlotCompiler):
 
     def visit_ArrayIndex(self, op, *, arg, index):
         index = self.if_(index < 0, self.f.cardinality(arg) + index, index)
-        return paren(arg)[index + 1]
+        return sge.paren(arg, copy=False)[index + 1]
 
     def visit_ArraySlice(self, op, *, arg, start, stop):
         neg_to_pos_index = lambda n, index: self.if_(index < 0, n + index, index)
@@ -481,7 +481,7 @@ class PostgresCompiler(SQLGlotCompiler):
             stop = neg_to_pos_index(arg_length, stop)
 
         slice_expr = sge.Slice(this=start + 1, expression=stop)
-        return paren(arg)[slice_expr]
+        return sge.paren(arg, copy=False)[slice_expr]
 
     def visit_IntervalFromInteger(self, op, *, arg, unit):
         plural = unit.plural

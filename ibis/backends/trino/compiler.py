@@ -10,13 +10,7 @@ import toolz
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
-from ibis.backends.sql.compiler import (
-    FALSE,
-    NULL,
-    STAR,
-    SQLGlotCompiler,
-    paren,
-)
+from ibis.backends.sql.compiler import FALSE, NULL, STAR, SQLGlotCompiler
 from ibis.backends.sql.datatypes import TrinoType
 from ibis.backends.sql.dialects import Trino
 from ibis.backends.sql.rewrites import exclude_unsupported_window_frame_from_ops
@@ -181,7 +175,9 @@ class TrinoCompiler(SQLGlotCompiler):
         return self.f.json_extract(arg, self.f.format(f"$[{fmt}]", index))
 
     def visit_DayOfWeekIndex(self, op, *, arg):
-        return self.cast(paren(self.f.day_of_week(arg) + 6) % 7, op.dtype)
+        return self.cast(
+            sge.paren(self.f.day_of_week(arg) + 6, copy=False) % 7, op.dtype
+        )
 
     def visit_DayOfWeekName(self, op, *, arg):
         return self.f.date_format(arg, "%W")
