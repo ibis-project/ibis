@@ -402,9 +402,7 @@ class Backend(SQLBackend, CanListDatabase, CanListSchema):
         else:
             temp_name = name
 
-        initial_table = sg.table(
-            temp_name, catalog=database, quoted=self.compiler.quoted
-        )
+        initial_table = sg.table(temp_name, db=database, quoted=self.compiler.quoted)
         target = sge.Schema(this=initial_table, expressions=column_defs)
 
         create_stmt = sge.Create(
@@ -414,7 +412,7 @@ class Backend(SQLBackend, CanListDatabase, CanListSchema):
         )
 
         # This is the same table as initial_table unless overwrite == True
-        final_table = sg.table(name, catalog=database, quoted=self.compiler.quoted)
+        final_table = sg.table(name, db=database, quoted=self.compiler.quoted)
         with self._safe_raw_sql(create_stmt) as cur:
             if query is not None:
                 insert_stmt = sge.Insert(this=initial_table, expression=query).sql(
@@ -424,14 +422,14 @@ class Backend(SQLBackend, CanListDatabase, CanListSchema):
 
             if overwrite:
                 self.drop_table(
-                    final_table.name, final_table.catalog, final_table.db, force=True
+                    name=final_table.name, database=final_table.db, force=True
                 )
                 cur.execute(
                     f"ALTER TABLE IF EXISTS {initial_table.sql(self.name)} RENAME TO {final_table.sql(self.name)}"
                 )
 
         if schema is None:
-            return self.table(name, schema=database)
+            return self.table(name, database=database)
 
         # preserve the input schema if it was provided
         return ops.DatabaseTable(
@@ -441,11 +439,13 @@ class Backend(SQLBackend, CanListDatabase, CanListSchema):
     def drop_table(
         self,
         name: str,
-        database: str | None = None,
-        schema: str | None = None,
+        database: tuple[str, str] | str | None = None,
         force: bool = False,
     ) -> None:
-        table = sg.table(name, db=schema, catalog=database, quoted=self.compiler.quoted)
+        table_loc = self._to_sqlglot_table(database or None)
+        catalog, db = self._to_catalog_db_tuple(table_loc)
+
+        table = sg.table(name, db=db, catalog=catalog, quoted=self.compiler.quoted)
 
         with self.begin() as bind:
             # global temporary tables cannot be dropped without first truncating them
@@ -457,7 +457,7 @@ class Backend(SQLBackend, CanListDatabase, CanListSchema):
             with contextlib.suppress(oracledb.DatabaseError):
                 bind.execute(f"TRUNCATE TABLE {table.sql(self.name)}")
 
-        super().drop_table(name, database=database, schema=schema, force=force)
+        super().drop_table(name, database=(catalog, db), force=force)
 
     def _register_in_memory_table(self, op: ops.InMemoryTable) -> None:
         schema = op.schema

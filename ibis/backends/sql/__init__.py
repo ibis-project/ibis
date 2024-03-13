@@ -298,15 +298,15 @@ class SQLBackend(BaseBackend, _DatabaseSchemaHandler):
     def drop_table(
         self,
         name: str,
-        database: str | None = None,
-        schema: str | None = None,
+        database: tuple[str, str] | str | None = None,
         force: bool = False,
     ) -> None:
+        table_loc = self._warn_and_create_table_loc(database, None)
+        catalog, db = self._to_catalog_db_tuple(table_loc)
+
         drop_stmt = sg.exp.Drop(
             kind="TABLE",
-            this=sg.table(
-                name, db=schema, catalog=database, quoted=self.compiler.quoted
-            ),
+            this=sg.table(name, db=db, catalog=catalog, quoted=self.compiler.quoted),
             exists=force,
         )
         with self._safe_raw_sql(drop_stmt):

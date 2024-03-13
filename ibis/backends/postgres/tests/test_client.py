@@ -115,7 +115,7 @@ def test_unsupported_intervals(con):
     assert t["g"].type() == dt.Interval("M")
 
 
-@pytest.mark.parametrize("params", [{}, {"database": POSTGRES_TEST_DB}])
+@pytest.mark.parametrize("params", [{}, {"database": "public"}])
 def test_create_and_drop_table(con, temp_table, params):
     sch = ibis.schema(
         [

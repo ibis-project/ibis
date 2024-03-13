@@ -178,8 +178,8 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
 
         table_ref = self._session_dataset.table(table_name)
 
-        schema = self._session_dataset.dataset_id
-        database = self._session_dataset.project
+        database = self._session_dataset.dataset_id
+        catalog = self._session_dataset.project
 
         # drop the table if it exists
         #
@@ -188,7 +188,7 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
         #
         # dropping the table first means all write_dispositions can be
         # WRITE_APPEND
-        self.drop_table(table_name, schema=schema, database=database, force=True)
+        self.drop_table(table_name, database=(catalog, database), force=True)
 
         if os.path.isdir(path):
             raise NotImplementedError("Reading from a directory is not supported.")
@@ -214,7 +214,7 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
                 ):
                     fut.result()
 
-        return self.table(table_name, schema=schema, database=database)
+        return self.table(table_name, database=(catalog, database))
 
     def read_parquet(
         self, path: str | Path, table_name: str | None = None, **kwargs: Any
@@ -517,31 +517,7 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
     def table(
         self, name: str, database: str | None = None, schema: str | None = None
     ) -> ir.Table:
-        if schema is not None:
-            # TODO: remove _warn_schema when the schema kwarg is removed
-            from ibis.util import _warn_schema
-
-            _warn_schema()
-        if database is not None and schema is not None:
-            if isinstance(database, str):
-                table_loc = f"{database}.{schema}"
-            elif isinstance(database, tuple):
-                table_loc = database + schema
-        elif schema is not None:
-            table_loc = schema
-        elif database is not None:
-            table_loc = database
-        else:
-            table_loc = None
-
-        table_loc = self._to_sqlglot_table(table_loc)
-
-        if table_loc is not None:
-            if (sg_cat := table_loc.args["catalog"]) is not None:
-                sg_cat.args["quoted"] = False
-            if (sg_db := table_loc.args["db"]) is not None:
-                sg_db.args["quoted"] = False
-            table_loc = table_loc.sql(dialect=self.name)
+        table_loc = self._warn_and_create_table_loc(database, schema)
 
         project, dataset = self._parse_project_and_dataset(table_loc)
 
@@ -1055,15 +1031,17 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
         name: str,
         *,
         schema: str | None = None,
-        database: str | None = None,
+        database: tuple[str | str] | str | None = None,
         force: bool = False,
     ) -> None:
+        table_loc = self._warn_and_create_table_loc(database, schema)
+        catalog, db = self._to_catalog_db_tuple(table_loc)
         stmt = sge.Drop(
             kind="TABLE",
             this=sg.table(
                 name,
-                db=schema or self.current_database,
-                catalog=database or self.billing_project,
+                db=db or self.current_database,
+                catalog=catalog or self.billing_project,
             ),
             exists=force,
         )
@@ -1189,6 +1167,33 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
     @contextlib.contextmanager
     def _safe_raw_sql(self, *args, **kwargs):
         yield self.raw_sql(*args, **kwargs)
+
+    # TODO: remove when the schema kwarg is removed
+    def _warn_and_create_table_loc(self, database=None, schema=None):
+        if schema is not None:
+            self._warn_schema()
+        if database is not None and schema is not None:
+            if isinstance(database, str):
+                table_loc = f"{database}.{schema}"
+            elif isinstance(database, tuple):
+                table_loc = database + schema
+        elif schema is not None:
+            table_loc = schema
+        elif database is not None:
+            table_loc = database
+        else:
+            table_loc = None
+
+        table_loc = self._to_sqlglot_table(table_loc)
+
+        if table_loc is not None:
+            if (sg_cat := table_loc.args["catalog"]) is not None:
+                sg_cat.args["quoted"] = False
+            if (sg_db := table_loc.args["db"]) is not None:
+                sg_db.args["quoted"] = False
+            table_loc = table_loc.sql(dialect=self.name)
+
+        return table_loc
 
 
 def compile(expr, params=None, **kwargs):
