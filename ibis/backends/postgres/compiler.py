@@ -345,9 +345,6 @@ class PostgresCompiler(SQLGlotCompiler):
     def visit_MapMerge(self, op, *, left, right):
         return sge.DPipe(this=left, expression=right)
 
-    def visit_ArrayStringJoin(self, op, *, arg, sep):
-        return self.f.anon.array_to_string(arg, sep)
-
     def visit_TypeOf(self, op, *, arg):
         typ = self.cast(self.f.pg_typeof(arg), dt.string)
         return self.if_(
