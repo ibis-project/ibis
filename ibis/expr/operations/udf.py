@@ -139,7 +139,7 @@ class _UDF(abc.ABC):
                 # method
                 "__func__": property(fget=lambda _, fn=fn: fn),
                 "__config__": FrozenDict(kwargs),
-                "__udf_namespace__": ops.Namespace(schema=schema, database=database),
+                "__udf_namespace__": ops.Namespace(database=schema, catalog=database),
                 "__module__": fn.__module__,
                 "__func_name__": func_name,
             }

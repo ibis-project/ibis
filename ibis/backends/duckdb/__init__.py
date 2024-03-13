@@ -289,7 +289,7 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema, UrlFromPath):
             name,
             schema=table_schema,
             source=self,
-            namespace=ops.Namespace(database=catalog, schema=database),
+            namespace=ops.Namespace(catalog=catalog, database=database),
         ).to_expr()
 
     def get_schema(

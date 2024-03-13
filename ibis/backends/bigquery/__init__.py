@@ -558,7 +558,7 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
             table.name,
             schema=schema_from_bigquery_table(bq_table),
             source=self,
-            namespace=ops.Namespace(schema=dataset, database=project),
+            namespace=ops.Namespace(database=dataset, catalog=project),
         )
         table_expr = node.to_expr()
         return rename_partitioned_column(table_expr, bq_table, self.partition_column)
