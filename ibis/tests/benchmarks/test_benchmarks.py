@@ -801,16 +801,23 @@ def test_big_join_expr(benchmark, src, diff):
 
 
 def test_big_join_compile(benchmark, nrels):
-    # cache to avoid a request-per-union operand
+    pytest.importorskip("duckdb")
+
     src = make_big_union(
         ibis.table(schema={"validation_name": "string", "id": "int64"}, name="sources"),
         nrels,
     )
 
     diff = make_big_union(
-        ibis.table(schema={"validation_name": "string"}, name="diffs"), nrels
+        ibis.table(schema={"validation_name": "string", "id": "int64"}, name="diffs"),
+        nrels,
     )
 
     expr = src.join(diff, ["validation_name"], how="outer")
-    t = benchmark.pedantic(expr.compile, rounds=1, iterations=1, warmup_rounds=1)
+    t = benchmark.pedantic(
+        lambda expr=expr: ibis.duckdb.compile(expr),
+        rounds=1,
+        iterations=1,
+        warmup_rounds=1,
+    )
     assert len(t)
