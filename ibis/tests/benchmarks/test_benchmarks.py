@@ -800,18 +800,8 @@ def test_big_join_expr(benchmark, src, diff):
     benchmark(ir.Table.join, src, diff, ["validation_name"], how="outer")
 
 
-def test_big_join_compile(benchmark, nrels):
+def test_big_join_compile(benchmark, src, diff):
     pytest.importorskip("duckdb")
-
-    src = make_big_union(
-        ibis.table(schema={"validation_name": "string", "id": "int64"}, name="sources"),
-        nrels,
-    )
-
-    diff = make_big_union(
-        ibis.table(schema={"validation_name": "string", "id": "int64"}, name="diffs"),
-        nrels,
-    )
 
     expr = src.join(diff, ["validation_name"], how="outer")
     t = benchmark.pedantic(
