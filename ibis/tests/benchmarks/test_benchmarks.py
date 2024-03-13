@@ -815,7 +815,7 @@ def test_big_join_compile(benchmark, nrels):
 
     expr = src.join(diff, ["validation_name"], how="outer")
     t = benchmark.pedantic(
-        lambda expr=expr: ibis.duckdb.compile(expr),
+        lambda expr=expr: ibis.to_sql(expr, dialect="duckdb"),
         rounds=1,
         iterations=1,
         warmup_rounds=1,
