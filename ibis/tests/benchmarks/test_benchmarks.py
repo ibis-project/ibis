@@ -668,9 +668,9 @@ def test_snowflake_medium_sized_to_pandas(benchmark):
     # LINEITEM at scale factor 1 is around 6MM rows, but we limit to 1,000,000
     # to make the benchmark fast enough for development, yet large enough to show a
     # difference if there's a performance hit
-    lineitem = con.table("LINEITEM", schema="SNOWFLAKE_SAMPLE_DATA.TPCH_SF1").limit(
-        1_000_000
-    )
+    lineitem = con.table(
+        "LINEITEM", schema="TPCH_SF1", database="SNOWFLAKE_SAMPLE_DATA"
+    ).limit(1_000_000)
 
     benchmark.pedantic(lineitem.to_pandas, rounds=5, iterations=1, warmup_rounds=1)
 
@@ -800,17 +800,14 @@ def test_big_join_expr(benchmark, src, diff):
     benchmark(ir.Table.join, src, diff, ["validation_name"], how="outer")
 
 
-def test_big_join_compile(benchmark, nrels):
-    # cache to avoid a request-per-union operand
-    src = make_big_union(
-        ibis.table(schema={"validation_name": "string", "id": "int64"}, name="sources"),
-        nrels,
-    )
-
-    diff = make_big_union(
-        ibis.table(schema={"validation_name": "string"}, name="diffs"), nrels
-    )
+def test_big_join_compile(benchmark, src, diff):
+    pytest.importorskip("duckdb")
 
     expr = src.join(diff, ["validation_name"], how="outer")
-    t = benchmark.pedantic(expr.compile, rounds=1, iterations=1, warmup_rounds=1)
+    t = benchmark.pedantic(
+        lambda expr=expr: ibis.to_sql(expr, dialect="duckdb"),
+        rounds=1,
+        iterations=1,
+        warmup_rounds=1,
+    )
     assert len(t)
