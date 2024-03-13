@@ -678,13 +678,6 @@ $$""".format(**self._get_udf_source(udf_node))
         if obj is None and schema is None:
             raise ValueError("Either `obj` or `schema` must be specified")
 
-        if database is not None and database != self.current_catalog:
-            raise com.UnsupportedOperationError(
-                f"Creating tables in other databases is not supported by {self.name}"
-            )
-        else:
-            database = None
-
         properties = []
 
         if temp:
@@ -720,7 +713,7 @@ $$""".format(**self._get_udf_source(udf_node))
         else:
             temp_name = name
 
-        table = sg.table(temp_name, catalog=database, quoted=self.compiler.quoted)
+        table = sg.table(temp_name, db=database, quoted=self.compiler.quoted)
         target = sge.Schema(this=table, expressions=column_defs)
 
         create_stmt = sge.Create(
@@ -755,20 +748,11 @@ $$""".format(**self._get_udf_source(udf_node))
         self,
         name: str,
         database: str | None = None,
-        schema: str | None = None,
         force: bool = False,
     ) -> None:
-        if database is not None and database != self.current_catalog:
-            raise com.UnsupportedOperationError(
-                f"Dropping tables in other databases is not supported by {self.name}"
-            )
-        else:
-            database = None
         drop_stmt = sg.exp.Drop(
             kind="TABLE",
-            this=sg.table(
-                name, db=schema, catalog=database, quoted=self.compiler.quoted
-            ),
+            this=sg.table(name, db=database, quoted=self.compiler.quoted),
             exists=force,
         )
         with self._safe_raw_sql(drop_stmt):
