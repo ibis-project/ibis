@@ -5,6 +5,7 @@ from __future__ import annotations
 import ast
 import contextlib
 import os
+import urllib
 import warnings
 from operator import itemgetter
 from pathlib import Path
@@ -948,7 +949,6 @@ class Backend(SQLBackend, CanCreateSchema, UrlFromPath):
             )
             .sql(self.name, pretty=True)
         )
-
         out = self.con.execute(sql).fetch_arrow_table()
 
         return self._filter_with_like(out[col].to_pylist(), like)
@@ -987,6 +987,47 @@ class Backend(SQLBackend, CanCreateSchema, UrlFromPath):
         )
 
         return self.table(table_name)
+
+    def read_mysql(
+        self,
+        *,
+        uri: str,
+        catalog: str,
+        table_name: str | None = None,
+    ) -> ir.Table:
+        """Register a table from a MySQL instance into a DuckDB table.
+
+        Parameters
+        ----------
+        uri
+            A mysql URI of the form `mysql://user:password@host:port/database`
+        catalog
+            User-defined alias given to the MySQL database that is being attached
+            to DuckDB
+        table_name
+            The table to read
+
+        Returns
+        -------
+        ir.Table
+            The just-registered table.
+        """
+
+        parsed = urllib.parse.urlparse(uri)
+
+        if table_name is None:
+            raise ValueError("`table_name` is required when registering a mysql table")
+
+        self._load_extensions(["mysql"])
+
+        database = parsed.path.strip("/")
+
+        query_con = f"""ATTACH 'host={parsed.hostname} user={parsed.username} password={parsed.password} port={parsed.port} database={database}' AS {catalog} (TYPE mysql)"""
+
+        with self._safe_raw_sql(query_con):
+            pass
+
+        return self.table(table_name, schema=database, database=catalog)
 
     def read_sqlite(self, path: str | Path, table_name: str | None = None) -> ir.Table:
         """Register a table from a SQLite database into a DuckDB table.
