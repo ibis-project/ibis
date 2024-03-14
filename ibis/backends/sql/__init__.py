@@ -238,10 +238,11 @@ class SQLBackend(BaseBackend, _DatabaseSchemaHandler):
         schema: str | None = None,
         overwrite: bool = False,
     ) -> ir.Table:
+        table_loc = self._warn_and_create_table_loc(database, schema)
+        catalog, db = self._to_catalog_db_tuple(table_loc)
+
         src = sge.Create(
-            this=sg.table(
-                name, db=schema, catalog=database, quoted=self.compiler.quoted
-            ),
+            this=sg.table(name, db=db, catalog=catalog, quoted=self.compiler.quoted),
             kind="VIEW",
             replace=overwrite,
             expression=self.compile(obj),
@@ -249,7 +250,7 @@ class SQLBackend(BaseBackend, _DatabaseSchemaHandler):
         self._register_in_memory_tables(obj)
         with self._safe_raw_sql(src):
             pass
-        return self.table(name, database=database)
+        return self.table(name, database=(catalog, db))
 
     def _register_in_memory_tables(self, expr: ir.Expr) -> None:
         for memtable in expr.op().find(ops.InMemoryTable):
@@ -263,10 +264,11 @@ class SQLBackend(BaseBackend, _DatabaseSchemaHandler):
         schema: str | None = None,
         force: bool = False,
     ) -> None:
+        table_loc = self._warn_and_create_table_loc(database, schema)
+        catalog, db = self._to_catalog_db_tuple(table_loc)
+
         src = sge.Drop(
-            this=sg.table(
-                name, db=schema, catalog=database, quoted=self.compiler.quoted
-            ),
+            this=sg.table(name, db=db, catalog=catalog, quoted=self.compiler.quoted),
             kind="VIEW",
             exists=force,
         )
