@@ -8,17 +8,17 @@ FROM "tbl" AS "t1"
 SEMI JOIN (
   SELECT
     "t2"."city",
-    "t2"."Count(city)"
+    "t2"."CountStar(tbl)"
   FROM (
     SELECT
       "t0"."city",
-      COUNT("t0"."city") AS "Count(city)"
+      COUNT(*) AS "CountStar(tbl)"
     FROM "tbl" AS "t0"
     GROUP BY
       1
   ) AS "t2"
   ORDER BY
-    "t2"."Count(city)" DESC
+    "t2"."CountStar(tbl)" DESC
   LIMIT 10
 ) AS "t5"
   ON "t1"."city" = "t5"."city"

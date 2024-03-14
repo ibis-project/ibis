@@ -1884,7 +1884,7 @@ def test_isnull_equality(con, backend, monkeypatch):
     ["druid"],
     raises=PyDruidProgrammingError,
     reason=(
-        "Query could not be planned. A possible reason is [SQL query requires ordering a "
+        "Query could not be planned. A possible reason is SQL query requires ordering a "
         "table by non-time column [[id]], which is not supported."
     ),
 )
@@ -1898,3 +1898,24 @@ def test_subsequent_overlapping_order_by(con, backend, alltypes, df):
     result = con.execute(ts2)
     expected = df.sort_values("id", ascending=False).reset_index(drop=True)
     backend.assert_frame_equal(result, expected)
+
+
+@pytest.mark.broken(
+    ["clickhouse"],
+    raises=AssertionError,
+    reason="https://github.com/ClickHouse/ClickHouse/issues/61313",
+)
+@pytest.mark.notimpl(
+    ["pandas", "dask"], raises=IndexError, reason="NaN isn't treated as NULL"
+)
+@pytest.mark.notimpl(
+    ["druid"],
+    raises=AttributeError,
+    reason="inserting three rows into druid is difficult",
+)
+def test_topk_counts_null(con):
+    t = con.tables.topk
+    tk = t.x.topk(10)
+    tkf = tk.filter(_.x.isnull())[1]
+    result = con.to_pyarrow(tkf)
+    assert result[0].as_py() == 1

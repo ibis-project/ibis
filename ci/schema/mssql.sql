@@ -131,3 +131,8 @@ INSERT INTO win VALUES
     ('a', 2, 0),
     ('a', 3, 1),
     ('a', 4, 1);
+
+DROP TABLE IF EXISTS topk;
+
+CREATE TABLE topk (x BIGINT);
+INSERT INTO topk VALUES (1), (1), (NULL);

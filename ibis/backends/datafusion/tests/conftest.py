@@ -7,7 +7,7 @@ import pytest
 import ibis
 from ibis.backends.conftest import TEST_TABLES
 from ibis.backends.tests.base import BackendTest
-from ibis.backends.tests.data import array_types, win
+from ibis.backends.tests.data import array_types, topk, win
 
 
 class TestConf(BackendTest):
@@ -27,6 +27,7 @@ class TestConf(BackendTest):
             con.register(path, table_name=table_name)
         con.register(array_types, table_name="array_types")
         con.register(win, table_name="win")
+        con.register(topk, table_name="topk")
 
     @staticmethod
     def connect(*, tmpdir, worker_id, **kw):

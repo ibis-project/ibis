@@ -1823,10 +1823,11 @@ class Column(Value, _FixedTextJupyterMixin):
             raise com.IbisTypeError("TopK must depend on exactly one table.")
 
         table = table.to_expr()
+
         if by is None:
-            metric = self.count()
-        else:
-            (metric,) = bind(table, by)
+            by = lambda t: t.count()
+
+        (metric,) = bind(table, by)
 
         return table.aggregate(metric, by=[self]).order_by(metric.desc()).limit(k)
 

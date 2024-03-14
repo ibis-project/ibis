@@ -8,7 +8,7 @@ import pytest
 import ibis
 from ibis.backends.conftest import TEST_TABLES
 from ibis.backends.tests.base import BackendTest
-from ibis.backends.tests.data import array_types, json_types, struct_types, win
+from ibis.backends.tests.data import array_types, json_types, struct_types, topk, win
 
 
 class TestConf(BackendTest):
@@ -75,6 +75,7 @@ class TestConf(BackendTest):
             schema=ibis.schema({"idx": "int64", "kv": "map<string, int64>"}),
             temp=True,
         )
+        con.create_table("topk", topk, temp=True)
 
 
 class TestConfForStreaming(TestConf):

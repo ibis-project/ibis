@@ -3,12 +3,13 @@ from __future__ import annotations
 from typing import Any
 
 import numpy as np
+import polars as pl
 import pytest
 
 import ibis
 from ibis.backends.conftest import TEST_TABLES
 from ibis.backends.tests.base import BackendTest
-from ibis.backends.tests.data import array_types, struct_types, win
+from ibis.backends.tests.data import array_types, struct_types, topk, win
 
 
 class TestConf(BackendTest):
@@ -26,6 +27,9 @@ class TestConf(BackendTest):
         con.register(array_types, table_name="array_types")
         con.register(struct_types, table_name="struct")
         con.register(win, table_name="win")
+
+        # TODO: remove when pyarrow inputs are supported
+        con._add_table("topk", pl.from_arrow(topk).lazy())
 
     @staticmethod
     def connect(*, tmpdir, worker_id, **kw):

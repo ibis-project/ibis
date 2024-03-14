@@ -12,7 +12,7 @@ import ibis
 from ibis import util
 from ibis.backends.conftest import TEST_TABLES
 from ibis.backends.tests.base import BackendTest
-from ibis.backends.tests.data import json_types, win
+from ibis.backends.tests.data import json_types, topk, win
 
 
 def set_pyspark_database(con, database):
@@ -129,6 +129,7 @@ class TestConf(BackendTest):
 
         s.createDataFrame(json_types).createOrReplaceTempView("json_t")
         s.createDataFrame(win).createOrReplaceTempView("win")
+        s.createDataFrame(topk.to_pandas()).createOrReplaceTempView("topk")
 
     @staticmethod
     def connect(*, tmpdir, worker_id, **kw):

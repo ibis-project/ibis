@@ -12,7 +12,7 @@ import ibis.expr.datatypes as dt
 from ibis.backends.conftest import TEST_TABLES
 from ibis.backends.pandas import Backend
 from ibis.backends.tests.base import BackendTest
-from ibis.backends.tests.data import array_types, json_types, struct_types, win
+from ibis.backends.tests.data import array_types, json_types, struct_types, topk, win
 
 
 class TestConf(BackendTest):
@@ -35,6 +35,7 @@ class TestConf(BackendTest):
         con.create_table("struct", struct_types, overwrite=True)
         con.create_table("win", win, overwrite=True)
         con.create_table("json_t", json_types, overwrite=True)
+        con.create_table("topk", topk.to_pandas(), overwrite=True)
 
     @staticmethod
     def connect(*, tmpdir, worker_id, **kw):

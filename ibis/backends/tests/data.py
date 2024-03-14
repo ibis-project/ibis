@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import numpy as np
 import pandas as pd
+import pyarrow as pa
 
 array_types = pd.DataFrame(
     [
@@ -124,3 +125,5 @@ win = pd.DataFrame(
         "y": [3, 2, 0, 1, 1],
     }
 )
+
+topk = pa.Table.from_pydict({"x": [1, 1, None]})

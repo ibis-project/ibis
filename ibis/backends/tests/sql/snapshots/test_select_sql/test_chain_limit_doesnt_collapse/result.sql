@@ -3,17 +3,17 @@ SELECT
 FROM (
   SELECT
     "t1"."city",
-    "t1"."Count(city)"
+    "t1"."CountStar(tbl)"
   FROM (
     SELECT
       "t0"."city",
-      COUNT("t0"."city") AS "Count(city)"
+      COUNT(*) AS "CountStar(tbl)"
     FROM "tbl" AS "t0"
     GROUP BY
       1
   ) AS "t1"
   ORDER BY
-    "t1"."Count(city)" DESC
+    "t1"."CountStar(tbl)" DESC
   LIMIT 10
 ) AS "t3"
 LIMIT 5
@@ -23,17 +23,17 @@ OFFSET (
   FROM (
     SELECT
       "t1"."city",
-      "t1"."Count(city)"
+      "t1"."CountStar(tbl)"
     FROM (
       SELECT
         "t0"."city",
-        COUNT("t0"."city") AS "Count(city)"
+        COUNT(*) AS "CountStar(tbl)"
       FROM "tbl" AS "t0"
       GROUP BY
         1
     ) AS "t1"
     ORDER BY
-      "t1"."Count(city)" DESC
+      "t1"."CountStar(tbl)" DESC
     LIMIT 10
   ) AS "t3"
 )
