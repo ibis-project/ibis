@@ -1056,19 +1056,22 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
         database: str | None = None,
         overwrite: bool = False,
     ) -> ir.Table:
+        table_loc = self._warn_and_create_table_loc(database, schema)
+        catalog, db = self._to_catalog_db_tuple(table_loc)
+
         stmt = sge.Create(
             kind="VIEW",
             this=sg.table(
                 name,
-                db=schema or self.current_database,
-                catalog=database or self.billing_project,
+                db=db or self.current_database,
+                catalog=catalog or self.billing_project,
             ),
             expression=self.compile(obj),
             replace=overwrite,
         )
         self._register_in_memory_tables(obj)
         self.raw_sql(stmt.sql(self.name))
-        return self.table(name, schema=schema, database=database)
+        return self.table(name, database=(catalog, database))
 
     def drop_view(
         self,
@@ -1078,12 +1081,15 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
         database: str | None = None,
         force: bool = False,
     ) -> None:
+        table_loc = self._warn_and_create_table_loc(database, schema)
+        catalog, db = self._to_catalog_db_tuple(table_loc)
+
         stmt = sge.Drop(
             kind="VIEW",
             this=sg.table(
                 name,
-                db=schema or self.current_database,
-                catalog=database or self.billing_project,
+                db=db or self.current_database,
+                catalog=catalog or self.billing_project,
             ),
             exists=force,
         )

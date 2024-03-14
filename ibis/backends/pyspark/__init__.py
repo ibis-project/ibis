@@ -420,7 +420,6 @@ class Backend(SQLBackend, CanCreateDatabase):
         obj: ir.Table,
         *,
         database: str | None = None,
-        schema: str | None = None,
         overwrite: bool = False,
     ) -> ir.Table:
         """Create a temporary Spark view from a table expression.
@@ -433,8 +432,6 @@ class Backend(SQLBackend, CanCreateDatabase):
             Expression to use for the view
         database
             Database name
-        schema
-            Schema name
         overwrite
             Replace an existing view of the same name if it exists
 
@@ -445,9 +442,7 @@ class Backend(SQLBackend, CanCreateDatabase):
 
         """
         src = sge.Create(
-            this=sg.table(
-                name, db=schema, catalog=database, quoted=self.compiler.quoted
-            ),
+            this=sg.table(name, db=database, quoted=self.compiler.quoted),
             kind="TEMPORARY VIEW",
             replace=overwrite,
             expression=self.compile(obj),
