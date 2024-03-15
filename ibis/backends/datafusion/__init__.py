@@ -664,6 +664,9 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, CanCreateSchema, 
         # datafusion doesn't support `TRUNCATE TABLE` so we use `DELETE FROM`
         #
         # however datafusion as of 34.0.0 doesn't implement DELETE DML yet
-        ident = sg.table(name, db=schema, catalog=database).sql(self.name)
+        table_loc = self._warn_and_create_table_loc(database, schema)
+        catalog, db = self._to_catalog_db_tuple(table_loc)
+
+        ident = sg.table(name, db=db, catalog=catalog).sql(self.name)
         with self._safe_raw_sql(sge.delete(ident)):
             pass

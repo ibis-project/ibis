@@ -417,7 +417,7 @@ class SQLBackend(BaseBackend, _DatabaseSchemaHandler):
         catalog, db = self._to_catalog_db_tuple(table_loc)
 
         if overwrite:
-            self.truncate_table(table_name, schema=db, database=catalog)
+            self.truncate_table(table_name, database=(catalog, db))
 
         if not isinstance(obj, ir.Table):
             obj = ibis.memtable(obj)
@@ -449,14 +449,31 @@ class SQLBackend(BaseBackend, _DatabaseSchemaHandler):
         name
             Table name
         database
-            Database name
+            Name of the attached database that the table is located in.
+
+            For backends that support multi-level table hierarchies, you can
+            pass in a dotted string path like `"catalog.database"` or a tuple of
+            strings like `("catalog", "database")`.
+
+            ::: {.callout-note}
+            ## Ibis does not use the word `schema` to refer to database hierarchy.
+
+            A collection of tables is referred to as a `database`.
+            A collection of `database` is referred to as a `catalog`.
+            These terms are mapped onto the corresponding features in each
+            backend (where available), regardless of whether the backend itself
+            uses the same terminology.
+            :::
         schema
-            Schema name
+            [deprecated] Schema name
 
         """
-        ident = sg.table(
-            name, db=schema, catalog=database, quoted=self.compiler.quoted
-        ).sql(self.dialect)
+        table_loc = self._warn_and_create_table_loc(database, schema)
+        catalog, db = self._to_catalog_db_tuple(table_loc)
+
+        ident = sg.table(name, db=db, catalog=catalog, quoted=self.compiler.quoted).sql(
+            self.dialect
+        )
         with self._safe_raw_sql(f"TRUNCATE TABLE {ident}"):
             pass
 
