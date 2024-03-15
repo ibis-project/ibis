@@ -393,15 +393,31 @@ class SQLBackend(BaseBackend, _DatabaseSchemaHandler):
         obj
             The source data or expression to insert
         schema
-            The name of the schema that the table is located in
+            [deprecated] The name of the schema that the table is located in
         database
             Name of the attached database that the table is located in.
+
+            For backends that support multi-level table hierarchies, you can
+            pass in a dotted string path like `"catalog.database"` or a tuple of
+            strings like `("catalog", "database")`.
+
+            ::: {.callout-note}
+            ## Ibis does not use the word `schema` to refer to database hierarchy.
+            A collection of tables is referred to as a `database`.
+            A collection of `database` is referred to as a `catalog`.
+            These terms are mapped onto the corresponding features in each
+            backend (where available), regardless of whether the backend itself
+            uses the same terminology.
+            :::
         overwrite
             If `True` then replace existing contents of table
 
         """
+        table_loc = self._warn_and_create_table_loc(database, schema)
+        catalog, db = self._to_catalog_db_tuple(table_loc)
+
         if overwrite:
-            self.truncate_table(table_name, schema=schema, database=database)
+            self.truncate_table(table_name, schema=db, database=catalog)
 
         if not isinstance(obj, ir.Table):
             obj = ibis.memtable(obj)
@@ -412,7 +428,7 @@ class SQLBackend(BaseBackend, _DatabaseSchemaHandler):
         quoted = compiler.quoted
         query = sge.insert(
             expression=self.compile(obj),
-            into=sg.table(table_name, db=schema, catalog=database, quoted=quoted),
+            into=sg.table(table_name, db=db, catalog=catalog, quoted=quoted),
             columns=[
                 sg.to_identifier(col, quoted=quoted)
                 for col in self.get_schema(table_name).names
