@@ -1234,19 +1234,16 @@ class Backend(SQLBackend, CanCreateSchema, UrlFromPath):
             :::
 
         """
-        cur = self._to_duckdb_relation(expr, params=params, limit=limit)
-        rb = cur.record_batch(batch_size=chunk_size)
+        self._run_pre_execute_hooks(expr)
+        table = expr.as_table()
+        sql = self.compile(table, limit=limit, params=params)
 
-        def batch_stream(con, cur, rb):
-            # A generator function to hold a reference to con and cur
-            # throughout the lifespan of the record batch reader. This is to
-            # work around previous bugs upstream bugs in duckdb where segfaults
-            # or corruption would occur if the cursor was collected before the
-            # record batch reader was exhausted.
-            yield from rb
+        def batch_producer(cur):
+            yield from cur.fetch_record_batch(rows_per_batch=chunk_size)
 
+        result = self.raw_sql(sql)
         return pa.RecordBatchReader.from_batches(
-            rb.schema, batch_stream(self.con, cur, rb)
+            expr.as_table().schema().to_pyarrow(), batch_producer(result)
         )
 
     def to_pyarrow(
