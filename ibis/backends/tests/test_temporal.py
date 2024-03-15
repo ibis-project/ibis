@@ -1562,7 +1562,6 @@ def test_now(con):
     assert isinstance(result, datetime.datetime)
 
 
-@pytest.mark.notimpl(["polars"], reason="assert 1 == 5", raises=AssertionError)
 @pytest.mark.notimpl(["datafusion"], raises=com.OperationNotDefinedError)
 def test_now_from_projection(alltypes):
     n = 2
@@ -1579,9 +1578,6 @@ def test_today(con):
     assert isinstance(result, datetime.date)
 
 
-@pytest.mark.notimpl(
-    ["polars"], reason="polars fails to project literal", raises=AssertionError
-)
 def test_today_from_projection(alltypes):
     expr = alltypes.select(today=ibis.today()).limit(2).today
     ts = expr.execute()

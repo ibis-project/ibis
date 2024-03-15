@@ -192,18 +192,30 @@ def project(op, **kw):
 
     selections = []
     unnests = []
+    scalars = []
     for name, arg in op.values.items():
         if isinstance(arg, ops.Unnest):
+            translated = translate(arg.arg, **kw).alias(name)
             unnests.append(name)
-            translated = translate(arg.arg, **kw)
+            selections.append(translated)
         elif isinstance(arg, ops.Value):
-            translated = translate(arg, **kw)
+            translated = translate(arg, **kw).alias(name)
+            if arg.shape.is_scalar():
+                scalars.append(translated)
+                selections.append(pl.col(name))
+            else:
+                selections.append(translated)
         else:
             raise com.TranslationError(
                 "Polars backend is unable to compile selection with "
                 f"operation type of {type(arg)}"
             )
-        selections.append(translated.alias(name))
+
+    if scalars:
+        # Scalars need to first be projected to columns with `with_columns`,
+        # otherwise if a downstream select only selects out the scalar-backed
+        # columns they'll return with only a single row.
+        lf = lf.with_columns(scalars)
 
     if selections:
         lf = lf.select(selections)
