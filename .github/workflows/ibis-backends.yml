@@ -185,7 +185,7 @@ jobs:
             extras:
               - flink
             additional_deps:
-              - apache-flink
+              - "'apache-flink < 1.19.0'"
             services:
               - flink
         include:
@@ -198,7 +198,7 @@ jobs:
               extras:
                 - flink
               additional_deps:
-                - apache-flink
+                - "'apache-flink < 1.19.0'"
               services:
                 - flink
         exclude:
@@ -314,7 +314,7 @@ jobs:
               extras:
                 - flink
               additional_deps:
-                - apache-flink
+                - "'apache-flink < 1.19.0'"
               services:
                 - flink
           - os: ubuntu-latest
@@ -326,7 +326,7 @@ jobs:
               extras:
                 - flink
               additional_deps:
-                - apache-flink
+                - "'apache-flink < 1.19.0'"
               services:
                 - flink
           - os: windows-latest
