@@ -276,3 +276,11 @@ def test_invalid_connect(tmp_path):
     url = f"duckdb://{tmp_path}?read_only=invalid_value"
     with pytest.raises(ValueError):
         ibis.connect(url)
+
+
+# @pytest.mark.xfail(
+#     raises=(duckdb.InvalidInputException, duckdb.BinderException),
+#     reason="https://github.com/ibis-project/ibis/issues/8632",
+# )
+def test_map_null_workaround_xfail(con):
+    con.con.sql("SELECT MAP([0, 1, 2], NULL::INT[]);").fetchone()
