@@ -818,7 +818,7 @@ def test_unnest_struct(con):
     tm.assert_series_equal(result, expected)
 
 
-ARRAY_ZIP_NOTIMPL = pytest.mark.notimpl(
+array_zip_notimpl = pytest.mark.notimpl(
     [
         "dask",
         "datafusion",
@@ -835,7 +835,7 @@ ARRAY_ZIP_NOTIMPL = pytest.mark.notimpl(
 
 
 @builtin_array
-@ARRAY_ZIP_NOTIMPL
+@array_zip_notimpl
 def test_zip(backend):
     t = backend.array_types
 
@@ -855,7 +855,7 @@ def test_zip(backend):
 
 
 @builtin_array
-@ARRAY_ZIP_NOTIMPL
+@array_zip_notimpl
 @pytest.mark.notyet(
     "clickhouse",
     raises=ClickHouseDatabaseError,
