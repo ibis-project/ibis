@@ -113,6 +113,7 @@ class TestConf(BackendTest):
                 ('a', 4, 1)
             """
         )
+        con.drop_table("topk", database="ibis_testing", force=True)
         con.create_table(
             "topk", schema=ibis.schema({"x": "int64"}), database="ibis_testing"
         )
