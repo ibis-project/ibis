@@ -189,6 +189,11 @@ class TimestampNow(Constant):
 
 
 @public
+class DateNow(Constant):
+    dtype = dt.date
+
+
+@public
 class RandomScalar(Constant):
     dtype = dt.float64
 

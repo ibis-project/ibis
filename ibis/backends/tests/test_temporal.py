@@ -1578,6 +1578,23 @@ def test_now_from_projection(alltypes):
     assert not pd.isna(ts.iat[0])
 
 
+def test_today(con):
+    result = con.execute(ibis.today())
+    assert isinstance(result, datetime.date)
+
+
+@pytest.mark.notimpl(
+    ["polars"], reason="polars fails to project literal", raises=AssertionError
+)
+def test_today_from_projection(alltypes):
+    expr = alltypes.select(today=ibis.today()).limit(2).today
+    ts = expr.execute()
+    assert len(ts) == 2
+    assert ts.nunique() == 1
+    years = expr.year().execute()
+    assert years.nunique() == 1
+
+
 DATE_BACKEND_TYPES = {
     "bigquery": "DATE",
     "clickhouse": "Date",

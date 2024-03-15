@@ -449,6 +449,10 @@ quartodoc:
               package: ibis
               dynamic: true
               signature_name: full
+            - name: today
+              package: ibis
+              dynamic: true
+              signature_name: full
             - name: date
               package: ibis
               dynamic: true

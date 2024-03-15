@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import calendar
+import datetime
 import math
 import operator
 from collections.abc import Mapping
@@ -812,6 +813,11 @@ def count_star(op, **kw):
 @translate.register(ops.TimestampNow)
 def timestamp_now(op, **_):
     return pl.lit(pd.Timestamp("now", tz="UTC").tz_localize(None))
+
+
+@translate.register(ops.DateNow)
+def date_now(op, **_):
+    return pl.lit(datetime.date.today())
 
 
 @translate.register(ops.Strftime)

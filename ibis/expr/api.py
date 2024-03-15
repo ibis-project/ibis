@@ -161,6 +161,7 @@ __all__ = (
     "struct",
     "to_sql",
     "table",
+    "today",
     "time",
     "timestamp",
     "trailing_range_window",
@@ -1129,6 +1130,18 @@ def now() -> ir.TimestampScalar:
 
     """
     return ops.TimestampNow().to_expr()
+
+
+def today() -> ir.DateScalar:
+    """Return an expression that will compute the current date.
+
+    Returns
+    -------
+    DateScalar
+        An expression representing the current date.
+
+    """
+    return ops.DateNow().to_expr()
 
 
 def rank() -> ir.IntegerColumn:

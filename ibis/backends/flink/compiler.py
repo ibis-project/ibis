@@ -455,6 +455,9 @@ class FlinkCompiler(SQLGlotCompiler):
     def visit_TimestampNow(self, op):
         return self.v.current_timestamp
 
+    def visit_DateNow(self, op):
+        return self.v.current_date
+
     def visit_TimestampBucket(self, op, *, arg, interval, offset):
         unit = op.interval.dtype.unit.name
         unit_var = self.v[unit]

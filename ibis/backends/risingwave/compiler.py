@@ -40,6 +40,9 @@ class RisingwaveCompiler(PostgresCompiler):
         ops.Last: "last_value",
     }
 
+    def visit_DateNow(self, op):
+        return self.cast(sge.CurrentTimestamp(), dt.date)
+
     def visit_Correlation(self, op, *, left, right, how, where):
         if how == "sample":
             raise com.UnsupportedOperationError(

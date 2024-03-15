@@ -698,6 +698,9 @@ class SQLGlotCompiler(abc.ABC):
     def visit_TimestampNow(self, op):
         return sge.CurrentTimestamp()
 
+    def visit_DateNow(self, op):
+        return sge.CurrentDate()
+
     def visit_Strftime(self, op, *, arg, format_str):
         return sge.TimeToStr(this=arg, format=format_str)
 
