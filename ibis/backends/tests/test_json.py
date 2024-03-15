@@ -4,11 +4,10 @@ from __future__ import annotations
 
 import sqlite3
 
+import numpy as np
 import pandas as pd
-import pandas.testing as tm
 import pytest
 from packaging.version import parse as vparse
-from pytest import param
 
 pytestmark = [
     pytest.mark.never(["impala"], reason="doesn't support JSON and never will"),
@@ -17,21 +16,6 @@ pytestmark = [
 ]
 
 
-@pytest.mark.parametrize(
-    ("expr_fn", "expected"),
-    [
-        param(
-            lambda t: t.js["a"].name("res"),
-            pd.Series([[1, 2, 3, 4], None, "foo"] + [None] * 3, name="res"),
-            id="object",
-        ),
-        param(
-            lambda t: t.js[1].name("res"),
-            pd.Series([None] * 4 + [47, None], dtype="object", name="res"),
-            id="array",
-        ),
-    ],
-)
 @pytest.mark.notyet(
     ["sqlite"],
     condition=vparse(sqlite3.sqlite_version) < vparse("3.38.0"),
@@ -44,10 +28,36 @@ pytestmark = [
 @pytest.mark.broken(
     ["risingwave"], reason="TODO(Kexiang): order mismatch in array", strict=False
 )
-def test_json_getitem(json_t, expr_fn, expected):
+def test_json_getitem_object(json_t):
+    expr_fn = lambda t: t.js["a"].name("res")
+    expected = frozenset([(1, 2, 3, 4), None, "foo"] + [None] * 3)
     expr = expr_fn(json_t)
-    result = expr.execute()
-    tm.assert_series_equal(result.fillna(pd.NA), expected.fillna(pd.NA))
+    result = frozenset(
+        expr.execute()
+        .map(lambda o: tuple(o) if isinstance(o, list) else o)
+        .replace({np.nan: None})
+    )
+    assert result == expected
+
+
+@pytest.mark.notyet(
+    ["sqlite"],
+    condition=vparse(sqlite3.sqlite_version) < vparse("3.38.0"),
+    reason="JSON not supported in SQLite < 3.38.0",
+)
+@pytest.mark.broken(
+    ["flink"],
+    reason="https://github.com/ibis-project/ibis/pull/6920#discussion_r1373212503",
+)
+@pytest.mark.broken(
+    ["risingwave"], reason="TODO(Kexiang): order mismatch in array", strict=False
+)
+def test_json_getitem_array(json_t):
+    expr_fn = lambda t: t.js[1].name("res")
+    expected = frozenset([None] * 4 + [47, None])
+    expr = expr_fn(json_t)
+    result = frozenset(expr.execute().replace({np.nan: None}))
+    assert result == expected
 
 
 @pytest.mark.notimpl(["dask", "mysql", "pandas", "risingwave"])
