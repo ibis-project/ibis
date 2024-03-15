@@ -10,7 +10,7 @@ from pytest import param
 import ibis
 import ibis.common.exceptions as exc
 import ibis.expr.datatypes as dt
-from ibis.backends.tests.errors import Py4JJavaError
+from ibis.backends.tests.errors import PsycoPg2InternalError, Py4JJavaError
 
 pytestmark = [
     pytest.mark.never(
@@ -37,6 +37,28 @@ mark_notimpl_risingwave_hstore = pytest.mark.notimpl(
     ["risingwave"],
     reason="function hstore(character varying[], character varying[]) does not exist",
 )
+
+
+@pytest.mark.notyet("clickhouse", reason="nested types can't be NULL")
+@pytest.mark.broken(["pandas", "dask"], reason="TypeError: iteration over a 0-d array")
+@pytest.mark.notimpl(
+    ["risingwave"],
+    raises=PsycoPg2InternalError,
+    reason="function hstore(character varying[], character varying[]) does not exist",
+)
+@pytest.mark.parametrize(
+    ("k", "v"),
+    [
+        param(["a", "b"], None, id="null_values"),
+        param(None, ["c", "d"], id="null_keys"),
+        param(None, None, id="null_both"),
+    ],
+)
+def test_map_nulls(con, k, v):
+    k = ibis.literal(k, type="array<string>")
+    v = ibis.literal(v, type="array<string>")
+    m = ibis.map(k, v)
+    assert con.execute(m) is None
 
 
 @pytest.mark.notimpl(["pandas", "dask"])

@@ -385,7 +385,10 @@ class PostgresCompiler(SQLGlotCompiler):
         )
 
     def visit_Map(self, op, *, keys, values):
-        return self.f.map(self.f.array(*keys), self.f.array(*values))
+        # map(["a", "b"], NULL) results in {"a": NULL, "b": NULL} in regular postgres,
+        # so we need to modify it to return NULL instead
+        regular = self.f.map(keys, values)
+        return self.if_(values.is_(NULL), NULL, regular)
 
     def visit_MapLength(self, op, *, arg):
         return self.f.cardinality(self.f.akeys(arg))
