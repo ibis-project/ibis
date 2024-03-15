@@ -714,11 +714,14 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
             If `True` then replace existing contents of table
 
         """
+        table_loc = self._warn_and_create_table_loc(database, schema)
+        catalog, db = self._to_catalog_db_tuple(table_loc)
+
         return super().insert(
             table_name,
             obj,
-            schema=schema if schema is not None else self.current_database,
-            database=database if database is not None else self.current_catalog,
+            schema=db if db is not None else self.current_database,
+            database=catalog if catalog is not None else self.current_catalog,
             overwrite=overwrite,
         )
 

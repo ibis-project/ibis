@@ -1040,16 +1040,34 @@ $$"""
             The source data or expression to insert
         schema
             The name of the schema that the table is located in
+        schema
+            [deprecated] The name of the schema that the table is located in
         database
             Name of the attached database that the table is located in.
+
+            For multi-level table hierarchies, you can pass in a dotted string
+            path like `"catalog.database"` or a tuple of strings like
+            `("catalog", "database")`.
+
+            ::: {.callout-note}
+            ## Ibis does not use the word `schema` to refer to database hierarchy.
+            A collection of tables is referred to as a `database`.
+            A collection of `database` is referred to as a `catalog`.
+            These terms are mapped onto the corresponding features in each
+            backend (where available), regardless of whether the backend itself
+            uses the same terminology.
+            :::
         overwrite
             If `True` then replace existing contents of table
 
         """
+        table_loc = self._warn_and_create_table_loc(database, schema)
+        catalog, db = self._to_catalog_db_tuple(table_loc)
+
         if not isinstance(obj, ir.Table):
             obj = ibis.memtable(obj)
 
-        table = sg.table(table_name, db=schema, catalog=database, quoted=True)
+        table = sg.table(table_name, db=db, catalog=catalog, quoted=True)
         self._run_pre_execute_hooks(obj)
         query = sg.exp.insert(
             expression=self.compile(obj),
