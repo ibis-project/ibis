@@ -856,7 +856,11 @@ def test_zip(backend):
 
 @builtin_array
 @ARRAY_ZIP_NOTIMPL
-@pytest.mark.notyet("clickhouse", reason="clickhouse nested types can't be null")
+@pytest.mark.notyet(
+    "clickhouse",
+    raises=ClickHouseDatabaseError,
+    reason="clickhouse nested types can't be null",
+)
 def test_zip_null(backend):
     # the .map is workaround for https://github.com/ibis-project/ibis/issues/8641
     a = ibis.literal([1, 2, 3], type="array<int64>").map(ibis._)
