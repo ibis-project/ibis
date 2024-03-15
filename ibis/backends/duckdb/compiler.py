@@ -187,7 +187,7 @@ class DuckDBCompiler(SQLGlotCompiler):
             ]
         )
         func = sge.Lambda(this=body, expressions=[i])
-        regular = self.f.list_apply(
+        zipped_arrays = self.f.list_apply(
             self.f.range(
                 1,
                 # DuckDB Range excludes upper bound
@@ -196,8 +196,8 @@ class DuckDBCompiler(SQLGlotCompiler):
             func,
         )
         # if any of the input arrays in arg are NULL, the result is NULL
-        any_arg_null = reduce(lambda x, y: x | y.is_(NULL), arg, False)
-        return self.if_(any_arg_null, NULL, regular)
+        any_arg_null = sg.or_(*(arr.is_(NULL) for arr in arg))
+        return self.if_(any_arg_null, NULL, zipped_arrays)
 
     def visit_MapGet(self, op, *, arg, key, default):
         return self.f.ifnull(

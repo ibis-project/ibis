@@ -929,8 +929,7 @@ class ArrayValue(Value):
         -------
         Array
             Array of structs where each struct field is an element of each input
-            array.
-            The fields are named `f1`, `f2`, `f3`, etc.
+            array. The fields are named `f1`, `f2`, `f3`, etc.
 
         Examples
         --------
