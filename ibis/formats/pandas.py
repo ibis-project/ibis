@@ -59,6 +59,8 @@ class PandasType(NumpyType):
     def from_ibis(cls, dtype):
         if dtype.is_timestamp() and dtype.timezone:
             return pdt.DatetimeTZDtype("ns", dtype.timezone)
+        elif dtype.is_date():
+            return np.dtype("M8[s]")
         elif dtype.is_interval():
             return np.dtype(f"timedelta64[{dtype.unit.short}]")
         else:
