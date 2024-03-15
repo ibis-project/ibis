@@ -10,7 +10,7 @@ from pytest import param
 import ibis
 import ibis.common.exceptions as exc
 import ibis.expr.datatypes as dt
-from ibis.backends.tests.errors import PsycoPg2InternalError, Py4JJavaError
+from ibis.backends.tests.errors import Py4JJavaError
 
 pytestmark = [
     pytest.mark.never(
@@ -25,6 +25,15 @@ pytestmark = [
     ),
 ]
 
+MARK_NOTYET_POSTGRES = pytest.mark.notyet(
+    "postgres", reason="only supports string -> string"
+)
+
+MARK_NOTIMPL_RISINGWAVE_HSTORE = pytest.mark.notimpl(
+    ["risingwave"],
+    reason="function hstore(character varying[], character varying[]) does not exist",
+)
+
 
 @pytest.mark.notimpl(["pandas", "dask"])
 def test_map_table(backend):
@@ -37,11 +46,7 @@ def test_map_table(backend):
 @pytest.mark.xfail_version(
     duckdb=["duckdb<0.8.0"], raises=exc.UnsupportedOperationError
 )
-@pytest.mark.notimpl(
-    ["risingwave"],
-    raises=PsycoPg2InternalError,
-    reason="function hstore(character varying[], character varying[]) does not exist",
-)
+@MARK_NOTIMPL_RISINGWAVE_HSTORE
 def test_column_map_values(backend):
     table = backend.map
     expr = table.select("idx", vals=table.kv.values()).order_by("idx")
@@ -67,11 +72,7 @@ def test_column_map_merge(backend):
     tm.assert_series_equal(result, expected)
 
 
-@pytest.mark.notimpl(
-    ["risingwave"],
-    raises=PsycoPg2InternalError,
-    reason="function hstore(character varying[], character varying[]) does not exist",
-)
+@MARK_NOTIMPL_RISINGWAVE_HSTORE
 def test_literal_map_keys(con):
     mapping = ibis.literal({"1": "a", "2": "b"})
     expr = mapping.keys().name("tmp")
@@ -82,11 +83,7 @@ def test_literal_map_keys(con):
     assert np.array_equal(result, ["1", "2"])
 
 
-@pytest.mark.notimpl(
-    ["risingwave"],
-    raises=PsycoPg2InternalError,
-    reason="function hstore(character varying[], character varying[]) does not exist",
-)
+@MARK_NOTIMPL_RISINGWAVE_HSTORE
 def test_literal_map_values(con):
     mapping = ibis.literal({"1": "a", "2": "b"})
     expr = mapping.values().name("tmp")
@@ -95,7 +92,8 @@ def test_literal_map_values(con):
     assert np.array_equal(result, ["a", "b"])
 
 
-@pytest.mark.notimpl(["postgres", "risingwave"])
+@MARK_NOTIMPL_RISINGWAVE_HSTORE
+@MARK_NOTYET_POSTGRES
 def test_scalar_isin_literal_map_keys(con):
     mapping = ibis.literal({"a": 1, "b": 2})
     a = ibis.literal("a")
@@ -106,9 +104,8 @@ def test_scalar_isin_literal_map_keys(con):
     assert con.execute(false) == False  # noqa: E712
 
 
-@pytest.mark.notyet(
-    ["postgres", "risingwave"], reason="only support maps of string -> string"
-)
+@MARK_NOTIMPL_RISINGWAVE_HSTORE
+@MARK_NOTYET_POSTGRES
 def test_map_scalar_contains_key_scalar(con):
     mapping = ibis.literal({"a": 1, "b": 2})
     a = ibis.literal("a")
@@ -119,11 +116,7 @@ def test_map_scalar_contains_key_scalar(con):
     assert con.execute(false) == False  # noqa: E712
 
 
-@pytest.mark.notimpl(
-    ["risingwave"],
-    raises=PsycoPg2InternalError,
-    reason="function hstore(character varying[], character varying[]) does not exist",
-)
+@MARK_NOTIMPL_RISINGWAVE_HSTORE
 def test_map_scalar_contains_key_column(backend, alltypes, df):
     value = {"1": "a", "3": "c"}
     mapping = ibis.literal(value)
@@ -133,9 +126,8 @@ def test_map_scalar_contains_key_column(backend, alltypes, df):
     backend.assert_series_equal(result, expected)
 
 
-@pytest.mark.notyet(
-    ["postgres", "risingwave"], reason="only support maps of string -> string"
-)
+@MARK_NOTIMPL_RISINGWAVE_HSTORE
+@MARK_NOTYET_POSTGRES
 def test_map_column_contains_key_scalar(backend, alltypes, df):
     expr = ibis.map(ibis.array([alltypes.string_col]), ibis.array([alltypes.int_col]))
     series = df.apply(lambda row: {row["string_col"]: row["int_col"]}, axis=1)
@@ -146,9 +138,8 @@ def test_map_column_contains_key_scalar(backend, alltypes, df):
     backend.assert_series_equal(result, series)
 
 
-@pytest.mark.notyet(
-    ["postgres", "risingwave"], reason="only support maps of string -> string"
-)
+@MARK_NOTIMPL_RISINGWAVE_HSTORE
+@MARK_NOTYET_POSTGRES
 def test_map_column_contains_key_column(alltypes):
     map_expr = ibis.map(
         ibis.array([alltypes.string_col]), ibis.array([alltypes.int_col])
@@ -158,9 +149,8 @@ def test_map_column_contains_key_column(alltypes):
     assert result.all()
 
 
-@pytest.mark.notyet(
-    ["postgres", "risingwave"], reason="only support maps of string -> string"
-)
+@MARK_NOTIMPL_RISINGWAVE_HSTORE
+@MARK_NOTYET_POSTGRES
 def test_literal_map_merge(con):
     a = ibis.literal({"a": 0, "b": 2})
     b = ibis.literal({"a": 1, "c": 3})
@@ -169,11 +159,7 @@ def test_literal_map_merge(con):
     assert con.execute(expr) == {"a": 1, "b": 2, "c": 3}
 
 
-@pytest.mark.notimpl(
-    ["risingwave"],
-    raises=PsycoPg2InternalError,
-    reason="function hstore(character varying[], character varying[]) does not exist",
-)
+@MARK_NOTIMPL_RISINGWAVE_HSTORE
 def test_literal_map_getitem_broadcast(backend, alltypes, df):
     value = {"1": "a", "2": "b"}
 
@@ -186,20 +172,22 @@ def test_literal_map_getitem_broadcast(backend, alltypes, df):
     backend.assert_series_equal(result, expected)
 
 
-POSTGRES_MARK = pytest.mark.notyet("postgres", reason="only supports string -> string")
-
 keys = pytest.mark.parametrize(
     "keys",
     [
         pytest.param(["a", "b"], id="string"),
         pytest.param(
             [1, 2],
-            marks=POSTGRES_MARK,
+            marks=[
+                MARK_NOTYET_POSTGRES,
+            ],
             id="int",
         ),
         pytest.param(
             [True, False],
-            marks=POSTGRES_MARK,
+            marks=[
+                MARK_NOTYET_POSTGRES,
+            ],
             id="bool",
         ),
         pytest.param(
@@ -208,13 +196,13 @@ keys = pytest.mark.parametrize(
                 pytest.mark.notyet(
                     "clickhouse", reason="only supports str,int,bool,timestamp keys"
                 ),
-                POSTGRES_MARK,
+                MARK_NOTYET_POSTGRES,
             ],
             id="float",
         ),
         pytest.param(
             [ibis.timestamp("2021-01-01"), ibis.timestamp("2021-01-02")],
-            marks=POSTGRES_MARK,
+            marks=MARK_NOTYET_POSTGRES,
             id="timestamp",
         ),
         pytest.param(
@@ -226,7 +214,7 @@ keys = pytest.mark.parametrize(
                 pytest.mark.notimpl(
                     ["pandas", "dask"], reason="DateFromYMD isn't implemented"
                 ),
-                POSTGRES_MARK,
+                MARK_NOTYET_POSTGRES,
             ],
             id="date",
         ),
@@ -237,7 +225,7 @@ keys = pytest.mark.parametrize(
                     "clickhouse", reason="only supports str,int,bool,timestamp keys"
                 ),
                 pytest.mark.notyet(["pandas", "dask"]),
-                POSTGRES_MARK,
+                MARK_NOTYET_POSTGRES,
             ],
             id="array",
         ),
@@ -248,7 +236,7 @@ keys = pytest.mark.parametrize(
                     "clickhouse", reason="only supports str,int,bool,timestamp keys"
                 ),
                 pytest.mark.notyet(["pandas", "dask"]),
-                POSTGRES_MARK,
+                MARK_NOTYET_POSTGRES,
             ],
             id="struct",
         ),
@@ -262,22 +250,30 @@ values = pytest.mark.parametrize(
         pytest.param(["a", "b"], id="string"),
         pytest.param(
             [1, 2],
-            marks=POSTGRES_MARK,
+            marks=[
+                MARK_NOTYET_POSTGRES,
+            ],
             id="int",
         ),
         pytest.param(
             [True, False],
-            marks=POSTGRES_MARK,
+            marks=[
+                MARK_NOTYET_POSTGRES,
+            ],
             id="bool",
         ),
         pytest.param(
             [1.0, 2.0],
-            marks=POSTGRES_MARK,
+            marks=[
+                MARK_NOTYET_POSTGRES,
+            ],
             id="float",
         ),
         pytest.param(
             [ibis.timestamp("2021-01-01"), ibis.timestamp("2021-01-02")],
-            marks=POSTGRES_MARK,
+            marks=[
+                MARK_NOTYET_POSTGRES,
+            ],
             id="timestamp",
         ),
         pytest.param(
@@ -286,7 +282,7 @@ values = pytest.mark.parametrize(
                 pytest.mark.notimpl(
                     ["pandas", "dask"], reason="DateFromYMD isn't implemented"
                 ),
-                POSTGRES_MARK,
+                MARK_NOTYET_POSTGRES,
             ],
             id="date",
         ),
@@ -294,7 +290,7 @@ values = pytest.mark.parametrize(
             [[1, 2], [3, 4]],
             marks=[
                 pytest.mark.notyet("clickhouse", reason="nested types can't be null"),
-                POSTGRES_MARK,
+                MARK_NOTYET_POSTGRES,
             ],
             id="array",
         ),
@@ -302,7 +298,7 @@ values = pytest.mark.parametrize(
             [ibis.struct(dict(a=1)), ibis.struct(dict(a=2))],
             marks=[
                 pytest.mark.notyet("clickhouse", reason="nested types can't be null"),
-                POSTGRES_MARK,
+                MARK_NOTYET_POSTGRES,
             ],
             id="struct",
         ),
@@ -310,12 +306,9 @@ values = pytest.mark.parametrize(
 )
 
 
-@keys
 @values
-@pytest.mark.notimpl(
-    ["risingwave"],
-    reason="function hstore(character varying[], character varying[]) does not exist",
-)
+@keys
+@MARK_NOTIMPL_RISINGWAVE_HSTORE
 def test_map_get_all_types(con, keys, values):
     m = ibis.map(ibis.array(keys), ibis.array(values))
     for key, val in zip(keys, values):
@@ -325,21 +318,14 @@ def test_map_get_all_types(con, keys, values):
 
 
 @keys
-@pytest.mark.notimpl(
-    ["risingwave"],
-    reason="function hstore(character varying[], character varying[]) does not exist",
-)
+@MARK_NOTIMPL_RISINGWAVE_HSTORE
 def test_map_contains_all_types(con, keys):
     m = ibis.map(ibis.array(keys), ibis.array(keys))
     for key in keys:
         assert con.execute(m.contains(key))
 
 
-@pytest.mark.notimpl(
-    ["risingwave"],
-    raises=PsycoPg2InternalError,
-    reason="function hstore(character varying[], character varying[]) does not exist",
-)
+@MARK_NOTIMPL_RISINGWAVE_HSTORE
 def test_literal_map_get_broadcast(backend, alltypes, df):
     value = {"1": "a", "2": "b"}
 
@@ -367,20 +353,15 @@ def test_literal_map_get_broadcast(backend, alltypes, df):
         param(["a", "b"], ["1", "2"], id="int"),
     ],
 )
-@pytest.mark.notimpl(
-    ["risingwave"],
-    raises=PsycoPg2InternalError,
-    reason="function hstore(character varying[], character varying[]) does not exist",
-)
+@MARK_NOTIMPL_RISINGWAVE_HSTORE
 def test_map_construct_dict(con, keys, values):
     expr = ibis.map(keys, values)
     result = con.execute(expr.name("tmp"))
     assert result == dict(zip(keys, values))
 
 
-@pytest.mark.notyet(
-    ["postgres", "risingwave"], reason="only support maps of string -> string"
-)
+@MARK_NOTIMPL_RISINGWAVE_HSTORE
+@MARK_NOTYET_POSTGRES
 @pytest.mark.broken(
     ["flink"],
     raises=pa.lib.ArrowInvalid,
@@ -394,37 +375,33 @@ def test_map_construct_array_column(con, alltypes, df):
     assert result.to_list() == expected.to_list()
 
 
-@pytest.mark.notyet(
-    ["postgres", "risingwave"], reason="only support maps of string -> string"
-)
+@MARK_NOTIMPL_RISINGWAVE_HSTORE
+@MARK_NOTYET_POSTGRES
 def test_map_get_with_compatible_value_smaller(con):
     value = ibis.literal({"A": 1000, "B": 2000})
     expr = value.get("C", 3)
     assert con.execute(expr) == 3
 
 
-@pytest.mark.notyet(
-    ["postgres", "risingwave"], reason="only support maps of string -> string"
-)
+@MARK_NOTIMPL_RISINGWAVE_HSTORE
+@MARK_NOTYET_POSTGRES
 def test_map_get_with_compatible_value_bigger(con):
     value = ibis.literal({"A": 1, "B": 2})
     expr = value.get("C", 3000)
     assert con.execute(expr) == 3000
 
 
-@pytest.mark.notyet(
-    ["postgres", "risingwave"], reason="only support maps of string -> string"
-)
+@MARK_NOTIMPL_RISINGWAVE_HSTORE
+@MARK_NOTYET_POSTGRES
 def test_map_get_with_incompatible_value_different_kind(con):
     value = ibis.literal({"A": 1000, "B": 2000})
     expr = value.get("C", 3.0)
     assert con.execute(expr) == 3.0
 
 
+@MARK_NOTIMPL_RISINGWAVE_HSTORE
+@MARK_NOTYET_POSTGRES
 @pytest.mark.parametrize("null_value", [None, ibis.NA])
-@pytest.mark.notyet(
-    ["postgres", "risingwave"], reason="only support maps of string -> string"
-)
 def test_map_get_with_null_on_not_nullable(con, null_value):
     map_type = dt.Map(dt.string, dt.Int16(nullable=False))
     value = ibis.literal({"A": 1000, "B": 2000}).cast(map_type)
@@ -437,11 +414,7 @@ def test_map_get_with_null_on_not_nullable(con, null_value):
 @pytest.mark.notyet(
     ["flink"], raises=Py4JJavaError, reason="Flink cannot handle typeless nulls"
 )
-@pytest.mark.notimpl(
-    ["risingwave"],
-    raises=PsycoPg2InternalError,
-    reason="function hstore(character varying[], character varying[]) does not exist",
-)
+@MARK_NOTIMPL_RISINGWAVE_HSTORE
 def test_map_get_with_null_on_null_type_with_null(con, null_value):
     value = ibis.literal({"A": None, "B": None})
     expr = value.get("C", null_value)
@@ -449,9 +422,8 @@ def test_map_get_with_null_on_null_type_with_null(con, null_value):
     assert pd.isna(result)
 
 
-@pytest.mark.notyet(
-    ["postgres", "risingwave"], reason="only support maps of string -> string"
-)
+@MARK_NOTIMPL_RISINGWAVE_HSTORE
+@MARK_NOTYET_POSTGRES
 @pytest.mark.notyet(
     ["flink"], raises=Py4JJavaError, reason="Flink cannot handle typeless nulls"
 )
@@ -466,11 +438,7 @@ def test_map_get_with_null_on_null_type_with_non_null(con):
     raises=exc.IbisError,
     reason="`tbl_properties` is required when creating table with schema",
 )
-@pytest.mark.notimpl(
-    ["risingwave"],
-    raises=PsycoPg2InternalError,
-    reason="function hstore(character varying[], character varying[]) does not exist",
-)
+@MARK_NOTIMPL_RISINGWAVE_HSTORE
 def test_map_create_table(con, temp_table):
     t = con.create_table(
         temp_table,
@@ -484,11 +452,7 @@ def test_map_create_table(con, temp_table):
     raises=exc.OperationNotDefinedError,
     reason="No translation rule for <class 'ibis.expr.operations.maps.MapLength'>",
 )
-@pytest.mark.notimpl(
-    ["risingwave"],
-    raises=PsycoPg2InternalError,
-    reason="function hstore(character varying[], character varying[]) does not exist",
-)
+@MARK_NOTIMPL_RISINGWAVE_HSTORE
 def test_map_length(con):
     expr = ibis.literal(dict(a="A", b="B")).length()
     assert con.execute(expr) == 2
