@@ -2705,22 +2705,23 @@ test = ["ipykernel", "jsonschema", "pytest (>=3.6.0)", "pytest-cov", "pytz"]
 
 [[package]]
 name = "itables"
-version = "1.6.4"
-description = "Interactive Tables in Jupyter"
+version = "2.0.0"
+description = "Pandas and Polar DataFrames as interactive DataTables"
 optional = false
-python-versions = "*"
+python-versions = ">=3.7"
 files = [
-    {file = "itables-1.6.4-py3-none-any.whl", hash = "sha256:a9325ae3a20c0931c9a92b92ccd8809a8204c5c4e219ea287fd6d51fabf86920"},
-    {file = "itables-1.6.4.tar.gz", hash = "sha256:b880e5df47b8229f74be9b6971bd5cc46c6e742a624248c5c21795b3efa84800"},
+    {file = "itables-2.0.0-py3-none-any.whl", hash = "sha256:34690c50ff16a450488aaf16a519f7f7203d1f165bee07694b1cf0bf76dc2594"},
+    {file = "itables-2.0.0.tar.gz", hash = "sha256:858ac48e181a1168655e925a658b96d1ef77f5b7d499e0e73e7378aeabe38683"},
 ]
 
 [package.dependencies]
-IPython = "*"
+ipython = "*"
 numpy = "*"
 pandas = "*"
 
 [package.extras]
 polars = ["polars", "pyarrow"]
+test = ["ipykernel", "jupytext", "matplotlib", "nbconvert", "pytest", "pytest-cov", "pytz", "shiny", "world-bank-data"]
 
 [[package]]
 name = "jaraco-classes"
@@ -7331,4 +7332,4 @@ visualization = ["graphviz"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.9"
-content-hash = "5d1db97841f7821384f75ccc37fb2ee22397f6bd175a9e37ca5b0f6b03f1bf29"
+content-hash = "f21a96d782004797cbd6e9b574a08e9544da84d8cf0afcb99dd79d2485cd8dac"
