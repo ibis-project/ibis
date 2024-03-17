@@ -818,8 +818,7 @@ def test_unnest_struct(con):
     tm.assert_series_equal(result, expected)
 
 
-@builtin_array
-@pytest.mark.notimpl(
+array_zip_notimpl = pytest.mark.notimpl(
     [
         "dask",
         "datafusion",
@@ -833,6 +832,10 @@ def test_unnest_struct(con):
     ],
     raises=com.OperationNotDefinedError,
 )
+
+
+@builtin_array
+@array_zip_notimpl
 def test_zip(backend):
     t = backend.array_types
 
@@ -849,6 +852,22 @@ def test_zip(backend):
     s = res.execute()
     assert len(s[0][0]) == len(res.type().value_type)
     assert len(x[0]) == len(s[0])
+
+
+@builtin_array
+@array_zip_notimpl
+@pytest.mark.notyet(
+    "clickhouse",
+    raises=ClickHouseDatabaseError,
+    reason="clickhouse nested types can't be null",
+)
+def test_zip_null(backend):
+    # the .map is workaround for https://github.com/ibis-project/ibis/issues/8641
+    a = ibis.literal([1, 2, 3], type="array<int64>").map(ibis._)
+    b = ibis.literal(None, type="array<int64>")
+    assert backend.connection.execute(a.zip(b)) is None
+    assert backend.connection.execute(b.zip(a)) is None
+    assert backend.connection.execute(b.zip(b)) is None
 
 
 @builtin_array

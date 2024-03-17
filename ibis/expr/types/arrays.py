@@ -929,13 +929,19 @@ class ArrayValue(Value):
         -------
         Array
             Array of structs where each struct field is an element of each input
-            array.
+            array. The fields are named `f1`, `f2`, `f3`, etc.
 
         Examples
         --------
         >>> import ibis
         >>> ibis.options.interactive = True
-        >>> t = ibis.memtable({"numbers": [[3, 2], [], None], "strings": [["a", "c"], None, ["e"]]})
+        >>> ibis.options.repr.interactive.max_depth = 2
+        >>> t = ibis.memtable(
+        ...     {
+        ...         "numbers": [[3, 2], [6, 7], [], None],
+        ...         "strings": [["a", "c"], ["d"], [], ["x", "y"]],
+        ...     }
+        ... )
         >>> t
         ┏━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━┓
         ┃ numbers              ┃ strings              ┃
@@ -943,30 +949,21 @@ class ArrayValue(Value):
         │ array<int64>         │ array<string>        │
         ├──────────────────────┼──────────────────────┤
         │ [3, 2]               │ ['a', 'c']           │
-        │ []                   │ NULL                 │
-        │ NULL                 │ ['e']                │
+        │ [6, 7]               │ ['d']                │
+        │ []                   │ []                   │
+        │ NULL                 │ ['x', 'y']           │
         └──────────────────────┴──────────────────────┘
-        >>> expr = t.numbers.zip(t.strings)
-        >>> expr
-        ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-        ┃ ArrayZip()                           ┃
-        ┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
-        │ array<struct<f1: int64, f2: string>> │
-        ├──────────────────────────────────────┤
-        │ [{...}, {...}]                       │
-        │ []                                   │
-        │ [{...}]                              │
-        └──────────────────────────────────────┘
-        >>> expr.unnest()
-        ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-        ┃ ArrayZip()                    ┃
-        ┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
-        │ struct<f1: int64, f2: string> │
-        ├───────────────────────────────┤
-        │ {'f1': 3, 'f2': 'a'}          │
-        │ {'f1': 2, 'f2': 'c'}          │
-        │ {'f1': None, 'f2': 'e'}       │
-        └───────────────────────────────┘
+        >>> t.numbers.zip(t.strings)
+        ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+        ┃ ArrayZip()                                    ┃
+        ┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+        │ array<struct<f1: int64, f2: string>>          │
+        ├───────────────────────────────────────────────┤
+        │ [{'f1': 3, 'f2': 'a'}, {'f1': 2, 'f2': 'c'}]  │
+        │ [{'f1': 6, 'f2': 'd'}, {'f1': 7, 'f2': None}] │
+        │ []                                            │
+        │ NULL                                          │
+        └───────────────────────────────────────────────┘
         """
 
         return ops.ArrayZip((self, other, *others)).to_expr()
