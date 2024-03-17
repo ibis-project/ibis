@@ -202,15 +202,40 @@ def test_client_with_regional_endpoints(
         client_options=bqstorage_options, credentials=credentials
     )
 
-    con = ibis.bigquery.connect(
+    tokyo_con = ibis.bigquery.connect(
         client=bq_client, storage_client=bqstorage_client, project_id=project_id
+    )
+
+    tokyo_con.raw_sql(
+        """
+        CREATE SCHEMA IF NOT EXISTS ibis_gbq_testing_tokyo OPTIONS (
+            location = 'asia-northeast1'
+        );
+
+        CREATE OR REPLACE TABLE ibis_gbq_testing_tokyo.functional_alltypes (
+            id INT64,
+            bool_col BOOLEAN,
+            tinyint_col INT64,
+            smallint_col INT64,
+            int_col INT64,
+            bigint_col INT64,
+            float_col FLOAT64,
+            double_col FLOAT64,
+            date_string_col STRING,
+            string_col STRING,
+            timestamp_col DATETIME,
+            year INT64,
+            month INT64
+        )
+        """
     )
 
     # Fails because dataset not in Tokyo.
     with pytest.raises(gexc.NotFound, match=dataset_id):
-        con.table(f"{dataset_id}.functional_alltypes")
+        tokyo_con.table(f"{dataset_id}.functional_alltypes")
 
     # Succeeds because dataset is in Tokyo.
-    alltypes = con.table(f"{dataset_id_tokyo}.functional_alltypes")
-    df = alltypes.limit(2).execute()
-    assert len(df.index) == 2
+    alltypes = tokyo_con.table(f"{dataset_id_tokyo}.functional_alltypes")
+    df = alltypes.execute()
+    assert df.empty
+    assert not len(alltypes.to_pyarrow())
