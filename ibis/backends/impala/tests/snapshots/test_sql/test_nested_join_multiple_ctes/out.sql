@@ -34,12 +34,10 @@ FROM (
     `t6`.`userid` = 118205 AND EXTRACT(year FROM `t6`.`datetime`) > 2001
 ) AS `t7`
 WHERE
-  `t7`.`movieid` IN (
-    SELECT
-      `t6`.`movieid`
-    FROM `t5` AS `t6`
-    WHERE
-      `t6`.`userid` = 118205
-      AND EXTRACT(year FROM `t6`.`datetime`) > 2001
-      AND EXTRACT(year FROM `t6`.`datetime`) < 2009
-  )
+  `t7`.`movieid` IN (SELECT
+    `t6`.`movieid`
+  FROM `t5` AS `t6`
+  WHERE
+    `t6`.`userid` = 118205
+    AND EXTRACT(year FROM `t6`.`datetime`) > 2001
+    AND EXTRACT(year FROM `t6`.`datetime`) < 2009)
