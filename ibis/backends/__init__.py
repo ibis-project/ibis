@@ -926,8 +926,8 @@ class BaseBackend(abc.ABC, _FileIOHandler):
         """Compile an expression."""
         return self.compiler.to_sql(expr, params=params)
 
-    def _to_sql(self, expr: ir.Expr, **kwargs) -> str:
-        """Convert an expression to a SQL string.
+    def _to_sqlglot(self, expr: ir.Expr, **kwargs) -> sg.exp.Expression:
+        """Convert an Ibis expression to a sqlglot expression.
 
         Called by `ibis.to_sql`; gives the backend an opportunity to generate
         nicer SQL for human consumption.

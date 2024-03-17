@@ -133,20 +133,18 @@ FROM (
         ON "t7"."o_orderkey" = "t9"."l_orderkey"
     ) AS "t11"
     WHERE
-      "t11"."o_orderkey" IN (
+      "t11"."o_orderkey" IN (SELECT
+        "t10"."l_orderkey"
+      FROM (
         SELECT
-          "t10"."l_orderkey"
-        FROM (
-          SELECT
-            "t8"."l_orderkey",
-            SUM("t8"."l_quantity") AS "qty_sum"
-          FROM "t5" AS "t8"
-          GROUP BY
-            1
-        ) AS "t10"
-        WHERE
-          "t10"."qty_sum" > 300
-      )
+          "t8"."l_orderkey",
+          SUM("t8"."l_quantity") AS "qty_sum"
+        FROM "t5" AS "t8"
+        GROUP BY
+          1
+      ) AS "t10"
+      WHERE
+        "t10"."qty_sum" > 300)
   ) AS "t13"
   GROUP BY
     1,

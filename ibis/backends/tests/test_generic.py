@@ -1544,11 +1544,6 @@ def test_try_cast_func(con, from_val, to_type, func):
                     raises=GoogleBadRequest,
                     reason="bigquery doesn't support OFFSET without LIMIT",
                 ),
-                pytest.mark.notyet(
-                    ["mssql"],
-                    raises=PyODBCProgrammingError,
-                    reason="mssql doesn't support OFFSET without LIMIT",
-                ),
                 pytest.mark.notyet(["exasol"], raises=ExaQueryError),
                 pytest.mark.never(
                     ["impala"],
@@ -1735,7 +1730,7 @@ def test_dynamic_table_slice(backend, slc, expected_count_fn):
 @pytest.mark.notyet(
     ["mssql"],
     reason="doesn't support dynamic limit/offset; compiles incorrectly in sqlglot",
-    raises=AssertionError,
+    raises=PyODBCProgrammingError,
 )
 @pytest.mark.notimpl(
     ["risingwave"],

@@ -75,8 +75,6 @@ class ImpalaCompiler(SQLGlotCompiler):
         ops.Hash: "fnv_hash",
         ops.LStrip: "ltrim",
         ops.Ln: "ln",
-        ops.Log10: "log10",
-        ops.Log2: "log2",
         ops.RandomUUID: "uuid",
         ops.RStrip: "rtrim",
         ops.Strip: "trim",
@@ -113,6 +111,12 @@ class ImpalaCompiler(SQLGlotCompiler):
             ):
                 return None
         return spec
+
+    def visit_Log2(self, op, *, arg):
+        return self.f.anon.log2(arg)
+
+    def visit_Log10(self, op, *, arg):
+        return self.f.anon.log10(arg)
 
     def visit_Literal(self, op, *, value, dtype):
         if value is None and dtype.is_binary():

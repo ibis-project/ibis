@@ -371,18 +371,17 @@ def to_sql(
             # default to duckdb for SQL compilation because it supports the
             # widest array of ibis features for SQL backends
             backend = ibis.duckdb
-            read = "duckdb"
-            write = ibis.options.sql.default_dialect
+            dialect = ibis.options.sql.default_dialect
         else:
-            read = write = backend.dialect
+            dialect = backend.dialect
     else:
         try:
             backend = getattr(ibis, dialect)
         except AttributeError:
             raise ValueError(f"Unknown dialect {dialect}")
         else:
-            read = write = getattr(backend, "dialect", dialect)
+            dialect = getattr(backend, "dialect", dialect)
 
-    sql = backend._to_sql(expr.unbind(), **kwargs)
-    (transpiled,) = sg.transpile(sql, read=read, write=write, pretty=pretty)
-    return SQLString(transpiled)
+    sg_expr = backend._to_sqlglot(expr.unbind(), **kwargs)
+    sql = sg_expr.sql(dialect=dialect, pretty=pretty)
+    return SQLString(sql)

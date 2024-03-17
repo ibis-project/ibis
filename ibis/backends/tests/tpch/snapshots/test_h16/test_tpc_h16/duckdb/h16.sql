@@ -52,13 +52,11 @@ FROM (
       )
       AND "t6"."p_size" IN (CAST(49 AS TINYINT), CAST(14 AS TINYINT), CAST(23 AS TINYINT), CAST(45 AS TINYINT), CAST(19 AS TINYINT), CAST(3 AS TINYINT), CAST(36 AS TINYINT), CAST(9 AS TINYINT))
       AND NOT (
-        "t6"."ps_suppkey" IN (
-          SELECT
-            "t2"."s_suppkey"
-          FROM "supplier" AS "t2"
-          WHERE
-            "t2"."s_comment" LIKE '%Customer%Complaints%'
-        )
+        "t6"."ps_suppkey" IN (SELECT
+          "t2"."s_suppkey"
+        FROM "supplier" AS "t2"
+        WHERE
+          "t2"."s_comment" LIKE '%Customer%Complaints%')
       )
   ) AS "t7"
   GROUP BY

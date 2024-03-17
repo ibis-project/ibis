@@ -17,7 +17,7 @@ FROM (
   ) AS "t1"
 ) AS "t2"
 WHERE
-  NOT "t2"."dev" IS NULL
+  "t2"."dev" IS NOT NULL
 ORDER BY
   "t2"."dev" DESC
 LIMIT 10
