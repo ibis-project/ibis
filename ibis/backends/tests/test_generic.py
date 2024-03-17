@@ -1863,6 +1863,12 @@ def test_select_mutate_with_dict(backend):
     backend.assert_frame_equal(result, expected)
 
 
+def test_select_scalar(alltypes):
+    res = alltypes.select(y=ibis.literal(1)).limit(3).execute()
+    assert len(res.y) == 3
+    assert (res.y == 1).all()
+
+
 @pytest.mark.broken(["mssql", "oracle"], reason="incorrect syntax")
 def test_isnull_equality(con, backend, monkeypatch):
     monkeypatch.setattr(ibis.options, "default_backend", con)
