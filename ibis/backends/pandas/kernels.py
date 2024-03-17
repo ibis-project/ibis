@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import datetime
 import decimal
 import json
 import math
@@ -335,6 +336,7 @@ generic = {
     ops.E: lambda: np.e,
     ops.Pi: lambda: np.pi,
     ops.TimestampNow: lambda: pd.Timestamp("now", tz="UTC").tz_localize(None),
+    ops.DateNow: lambda: pd.Timestamp(datetime.date.today()),
     ops.StringConcat: lambda xs: reduce(operator.add, xs),
     ops.StringJoin: lambda xs, sep: reduce(lambda x, y: x + sep + y, xs),
     ops.Log: lambda x, base: np.log(x) if base is None else np.log(x) / np.log(base),

@@ -34,6 +34,7 @@ class DataFusion(Postgres):
             sge.Pow: rename_func("pow"),
             sge.IsNan: rename_func("isnan"),
             sge.CurrentTimestamp: rename_func("now"),
+            sge.CurrentDate: rename_func("today"),
             sge.Split: rename_func("string_to_array"),
             sge.Array: rename_func("make_array"),
             sge.ArrayContains: rename_func("array_has"),
@@ -151,6 +152,7 @@ class Impala(Hive):
             sge.IsInf: rename_func("is_inf"),
             sge.DayOfWeek: rename_func("dayofweek"),
             sge.Interval: lambda self, e: _interval(self, e, quote_arg=False),
+            sge.CurrentDate: rename_func("current_date"),
         }
 
 

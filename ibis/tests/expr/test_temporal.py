@@ -922,3 +922,9 @@ def test_timestamp_bucket():
         ValueError, match="Must specify either interval value or components"
     ):
         ts.bucket()
+
+
+def test_today():
+    result = ibis.today()
+    assert isinstance(result, ir.DateScalar)
+    assert isinstance(result.op(), ops.DateNow)

@@ -69,7 +69,6 @@ class OracleCompiler(SQLGlotCompiler):
             ops.TimeDelta,
             ops.DateDelta,
             ops.TimestampDelta,
-            ops.TimestampNow,
             ops.TimestampFromYMDHMS,
             ops.TimeFromHMS,
             ops.IntervalFromInteger,
