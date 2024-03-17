@@ -861,13 +861,17 @@ def test_zip(backend):
     raises=ClickHouseDatabaseError,
     reason="clickhouse nested types can't be null",
 )
-def test_zip_null(backend):
-    # the .map is workaround for https://github.com/ibis-project/ibis/issues/8641
-    a = ibis.literal([1, 2, 3], type="array<int64>").map(ibis._)
+@pytest.mark.never(
+    "bigquery",
+    raises=AssertionError,
+    reason="BigQuery converts NULLs with an array type into empty arrays",
+)
+def test_zip_null(con):
+    a = ibis.literal([1, 2, 3], type="array<int64>")
     b = ibis.literal(None, type="array<int64>")
-    assert backend.connection.execute(a.zip(b)) is None
-    assert backend.connection.execute(b.zip(a)) is None
-    assert backend.connection.execute(b.zip(b)) is None
+    assert con.execute(a.zip(b)) is None
+    assert con.execute(b.zip(a)) is None
+    assert con.execute(b.zip(b)) is None
 
 
 @builtin_array
