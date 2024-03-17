@@ -110,8 +110,8 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema, NoUrl):
         # If no user/password given, assume Windows Integrated Authentication
         # and set "Trusted_Connection" accordingly
         # see: https://learn.microsoft.com/en-us/sql/connect/odbc/linux-mac/using-integrated-authentication
-        if user is None and password is None and "Trusted_Connection" not in kwargs:
-            kwargs["Trusted_Connection"] = "yes"
+        if user is None and password is None:
+            kwargs.setdefault("Trusted_Connection", "yes")
 
         con = pyodbc.connect(
             user=user,
