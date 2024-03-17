@@ -1,0 +1,20 @@
+---
+title: Loading Google Cloud Storage files with DuckDB
+---
+
+Loading data stored on Google Cloud Storage to DuckDB requires specifying `gcs` as filesystem.
+
+```python
+from ibis.interactive import *
+
+con = ibis.duckdb.connect()
+
+import fsspec
+import gcsfs
+
+gcs = fsspec.filesystem("gcs")
+
+con.register_filesystem(gcs)
+
+t = con.read_json("gs://...")
+```
