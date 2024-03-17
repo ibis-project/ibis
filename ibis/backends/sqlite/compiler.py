@@ -87,8 +87,6 @@ class SQLiteCompiler(SQLGlotCompiler):
         ops.BitwiseXor: "_ibis_xor",
         ops.BitwiseNot: "_ibis_inv",
         ops.Modulus: "mod",
-        ops.Log10: "log10",
-        ops.Log2: "log2",
         ops.TypeOf: "typeof",
         ops.BitOr: "_ibis_bit_or",
         ops.BitAnd: "_ibis_bit_and",
