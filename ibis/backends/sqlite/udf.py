@@ -128,14 +128,14 @@ def ln(arg):
 def log2(arg):
     if arg < 0:
         return None
-    return math.log(arg, 2)
+    return math.log2(arg)
 
 
 @udf(skip_if_exists=True)
 def log10(arg):
     if arg < 0:
         return None
-    return math.log(arg, 10)
+    return math.log10(arg)
 
 
 @udf(skip_if_exists=True)

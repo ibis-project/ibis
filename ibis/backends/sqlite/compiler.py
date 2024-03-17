@@ -88,6 +88,7 @@ class SQLiteCompiler(SQLGlotCompiler):
         ops.BitwiseNot: "_ibis_inv",
         ops.Modulus: "mod",
         ops.Log10: "log10",
+        ops.Log2: "log2",
         ops.TypeOf: "typeof",
         ops.BitOr: "_ibis_bit_or",
         ops.BitAnd: "_ibis_bit_and",
@@ -105,6 +106,12 @@ class SQLiteCompiler(SQLGlotCompiler):
         if where is not None:
             return sge.Filter(this=expr, expression=sge.Where(this=where))
         return expr
+
+    def visit_Log10(self, op, *, arg):
+        return self.f.anon.log10(arg)
+
+    def visit_Log2(self, op, *, arg):
+        return self.f.anon.log2(arg)
 
     def visit_Cast(self, op, *, arg, to) -> sge.Cast:
         if to.is_timestamp():
