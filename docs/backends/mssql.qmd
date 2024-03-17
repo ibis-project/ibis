@@ -71,13 +71,31 @@ con = ibis.mssql.connect()  # <1>
 
 ### `ibis.mssql.connect`
 
+::: {.panel-tabset}
+
+## Windows
+
 ```python
 con = ibis.mssql.connect(
     user="username",
     password="password",
     host="hostname",
+    driver="SQL Server",
 )
 ```
+
+## OSX / Linux
+
+```python
+con = ibis.mssql.connect(
+    user="username",
+    password="password",
+    host="hostname",
+    driver="FreeTDS",  # if you are using unixODBC
+)
+```
+
+:::
 
 ::: {.callout-note}
 `ibis.mssql.connect` is a thin wrapper around [`ibis.backends.mssql.Backend.do_connect`](#ibis.backends.mssql.Backend.do_connect).
@@ -101,6 +119,19 @@ passing a properly-formatted MSSQL connection URL to `ibis.connect`:
 ```python
 con = ibis.connect(f"mssql://{user}:{password}@{host}:{port}")
 ```
+
+### Using Integrated Authentication
+
+Integrated Authentication allows users to log in via NTLM or Kerberos.
+To make use of integrated authentication, use `ibis.mssql.connect` as documented
+above, but do not specify values for `user` or `password`. The PyODBC driver
+will then default to Integrated Authentication.
+
+Some environments may require you to set additional keywords to connect.
+Additional information is available at the following pages:
+
+- https://learn.microsoft.com/en-us/aspnet/web-api/overview/security/integrated-windows-authentication
+- https://learn.microsoft.com/en-us/sql/connect/odbc/linux-mac/using-integrated-authentication
 
 ```{python}
 #| echo: false
