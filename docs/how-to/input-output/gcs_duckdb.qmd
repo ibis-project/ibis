@@ -17,7 +17,4 @@ gcs = fsspec.filesystem("gcs")
 con.register_filesystem(gcs)
 
 t = con.read_json("gs://...")
-
 ```
-
-Where `<URL>` is the url provided by GCS.
