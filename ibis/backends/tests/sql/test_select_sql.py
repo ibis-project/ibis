@@ -47,7 +47,7 @@ def test_select_sql(alltypes, star1, expr_fn, snapshot):
     assert_decompile_roundtrip(expr, snapshot)
 
 
-def test_nameless_table(snapshot):
+def test_nameless_table():
     # Generate a unique table name when we haven't passed on
     nameless = ibis.table([("key", "string")])
     assert nameless.op().name is not None
