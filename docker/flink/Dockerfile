@@ -1,7 +1,9 @@
-FROM flink:1.18.1
+ARG FLINK_VERSION=1.18.1
+FROM flink:${FLINK_VERSION}
 
 # ibis-flink requires PyFlink dependency
-RUN wget -nv -P $FLINK_HOME/lib/ https://repo1.maven.org/maven2/org/apache/flink/flink-python/1.18.1/flink-python-1.18.1.jar
+ARG FLINK_VERSION=1.18.1
+RUN wget -nv -P $FLINK_HOME/lib/ https://repo1.maven.org/maven2/org/apache/flink/flink-python/${FLINK_VERSION}/flink-python-${FLINK_VERSION}.jar
 
 # install python3 and pip3
 RUN apt-get update -y && \
@@ -12,4 +14,4 @@ RUN ln -s /usr/bin/python3 /usr/bin/python
 # install PyFlink
 ARG BUILDARCH
 ENV JAVA_HOME=/usr/lib/jvm/java-11-openjdk-${BUILDARCH:-amd64}
-RUN pip3 install apache-flink==1.18.1
+RUN pip3 install apache-flink==${FLINK_VERSION}
