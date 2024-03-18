@@ -61,12 +61,18 @@ jobs:
             extras:
               - duckdb
               - deltalake
-              - geospatial
               - examples
               - decompiler
               - polars
             additional_deps:
               - torch
+          # TODO: remove this duckdb job once the next duckdb_spatial is released
+          - name: duckdb
+            title: DuckDB + Geospatial
+            extras:
+              - geospatial
+            additional_deps:
+              - "'duckdb<0.10'"
           - name: clickhouse
             title: ClickHouse
             services:
