@@ -72,11 +72,13 @@ FROM (
       )
       AND "t8"."p_size" IN (49, 14, 23, 45, 19, 3, 36, 9)
       AND NOT (
-        "t8"."ps_suppkey" IN (SELECT
-          "t1"."s_suppkey"
-        FROM "hive"."ibis_sf1"."supplier" AS "t1"
-        WHERE
-          "t1"."s_comment" LIKE '%Customer%Complaints%')
+        "t8"."ps_suppkey" IN (
+          SELECT
+            "t1"."s_suppkey"
+          FROM "hive"."ibis_sf1"."supplier" AS "t1"
+          WHERE
+            "t1"."s_comment" LIKE '%Customer%Complaints%'
+        )
       )
   ) AS "t9"
   GROUP BY

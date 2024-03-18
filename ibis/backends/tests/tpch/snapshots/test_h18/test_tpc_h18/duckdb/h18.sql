@@ -90,18 +90,20 @@ FROM (
         ON "t4"."o_orderkey" = "t5"."l_orderkey"
     ) AS "t7"
     WHERE
-      "t7"."o_orderkey" IN (SELECT
-        "t6"."l_orderkey"
-      FROM (
+      "t7"."o_orderkey" IN (
         SELECT
-          "t2"."l_orderkey",
-          SUM("t2"."l_quantity") AS "qty_sum"
-        FROM "lineitem" AS "t2"
-        GROUP BY
-          1
-      ) AS "t6"
-      WHERE
-        "t6"."qty_sum" > CAST(300 AS SMALLINT))
+          "t6"."l_orderkey"
+        FROM (
+          SELECT
+            "t2"."l_orderkey",
+            SUM("t2"."l_quantity") AS "qty_sum"
+          FROM "lineitem" AS "t2"
+          GROUP BY
+            1
+        ) AS "t6"
+        WHERE
+          "t6"."qty_sum" > CAST(300 AS SMALLINT)
+      )
   ) AS "t9"
   GROUP BY
     1,

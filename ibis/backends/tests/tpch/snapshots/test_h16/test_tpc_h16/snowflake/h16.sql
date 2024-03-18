@@ -72,11 +72,13 @@ FROM (
       )
       AND "t8"."p_size" IN (49, 14, 23, 45, 19, 3, 36, 9)
       AND NOT (
-        "t8"."ps_suppkey" IN (SELECT
-          "t1"."S_SUPPKEY" AS "s_suppkey"
-        FROM "SNOWFLAKE_SAMPLE_DATA"."TPCH_SF1"."SUPPLIER" AS "t1"
-        WHERE
-          "t1"."S_COMMENT" LIKE '%Customer%Complaints%')
+        "t8"."ps_suppkey" IN (
+          SELECT
+            "t1"."S_SUPPKEY" AS "s_suppkey"
+          FROM "SNOWFLAKE_SAMPLE_DATA"."TPCH_SF1"."SUPPLIER" AS "t1"
+          WHERE
+            "t1"."S_COMMENT" LIKE '%Customer%Complaints%'
+        )
       )
   ) AS "t9"
   GROUP BY
