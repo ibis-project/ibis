@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import math
+
 import sqlglot as sg
 import sqlglot.expressions as sge
 from public import public
@@ -110,6 +112,12 @@ class SQLiteCompiler(SQLGlotCompiler):
 
     def visit_Log2(self, op, *, arg):
         return self.f.anon.log2(arg)
+
+    def visit_Log(self, op, *, arg, base):
+        func = self.f.anon.log
+        if base is None:
+            base = math.e
+        return func(base, arg)
 
     def visit_Cast(self, op, *, arg, to) -> sge.Cast:
         if to.is_timestamp():

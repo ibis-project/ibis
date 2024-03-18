@@ -125,7 +125,11 @@ def ln(arg):
 
 
 @udf(skip_if_exists=True)
-def log(arg, base):
+def log(base, arg):
+    """Return the logarithm of `arg` in the given `base`.
+
+    The argument order matches the builtin sqlite function.
+    """
     if arg < 0:
         return None
     return math.log(arg, base)
