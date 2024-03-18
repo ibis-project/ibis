@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import getpass
 import os
 from typing import Any
 
@@ -10,9 +11,9 @@ from google.cloud import bigquery as bq
 
 import ibis
 from ibis.backends.bigquery import EXTERNAL_DATA_SCOPES, Backend
-from ibis.backends.tests.base import BackendTest
+from ibis.backends.tests.base import PYTHON_SHORT_VERSION, BackendTest
 
-DATASET_ID = "ibis_gbq_testing"
+DATASET_ID = f"ibis_gbq_testing_{getpass.getuser()}_{PYTHON_SHORT_VERSION}"
 DEFAULT_PROJECT_ID = "ibis-gbq"
 PROJECT_ID_ENV_VAR = "GOOGLE_BIGQUERY_PROJECT_ID"
 
@@ -56,8 +57,11 @@ class TestConf(BackendTest):
         except gexc.Forbidden:
             pytest.skip("User does not have permission to create dataset")
 
+        query = client.query(f"CREATE SCHEMA IF NOT EXISTS {DATASET_ID}")
+        query.result()
+
         path = self.script_dir.joinpath(f"{self.name()}.sql")
-        ddl = path.read_text()
+        ddl = path.read_text().format(dataset=DATASET_ID)
         query = client.query(ddl)
         query.result()
 

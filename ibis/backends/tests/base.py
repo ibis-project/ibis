@@ -4,6 +4,7 @@ import abc
 import concurrent.futures
 import inspect
 import subprocess
+import sys
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Literal
 
@@ -17,6 +18,9 @@ if TYPE_CHECKING:
     from collections.abc import Iterable, Iterator, Mapping
 
     import ibis.expr.types as ir
+
+
+PYTHON_SHORT_VERSION = f"{sys.version_info.major}{sys.version_info.minor}"
 
 
 class BackendTest(abc.ABC):
