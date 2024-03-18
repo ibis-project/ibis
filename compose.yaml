@@ -379,7 +379,7 @@ services:
       - exasol:/data
 
   flink-jobmanager:
-    image: flink:1.18.1
+    image: flink:${FLINK_VERSION}
     environment:
       FLINK_PROPERTIES: |
         jobmanager.rpc.address: flink-jobmanager
@@ -390,8 +390,11 @@ services:
       - flink
 
   flink:
-    build: ./docker/flink
-    image: ibis-flink
+    image: ibis-flink-${FLINK_VERSION}
+    build:
+      context: ./docker/flink
+      args:
+        FLINK_VERSION: ${FLINK_VERSION}
     environment:
       FLINK_PROPERTIES: |
         jobmanager.rpc.address: flink-jobmanager

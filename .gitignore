@@ -40,7 +40,6 @@ dist
 coverage.xml
 
 # Environments
-.env
 .venv
 env/
 venv/
