@@ -146,6 +146,15 @@ class StructValue(Value):
     def _ipython_key_completions_(self) -> list[str]:
         return sorted(self.type().names)
 
+    def keys(self):
+        return self.names
+
+    def values(self):
+        return [self[name] for name in self.names]
+
+    def items(self):
+        return [(name, self[name]) for name in self.names]
+
     def __getitem__(self, name: str) -> ir.Value:
         """Extract the `name` field from this struct.
 

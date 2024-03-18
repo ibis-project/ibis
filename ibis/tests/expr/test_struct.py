@@ -98,3 +98,29 @@ def test_nested_lift():
     )
     expr = t.a.b.lift()
     assert expr.schema() == ibis.schema({"x": "int", "y": "int"})
+
+
+def test_struct_is_mapping():
+    s = ibis.struct({"a": "foo", "b": "bar"})
+    assert tuple(s.keys()) == ("a", "b")
+    assert len(tuple(s.values())) == 2
+    assert len(tuple(s.items())) == 2
+
+    def f(**kwargs):
+        pass
+
+    f(**s)
+
+
+def test_struct_isnt_full_container():
+    # Disallow some things to avoid footguns:
+    # https://github.com/ibis-project/ibis/pull/8671#issuecomment-2004438438
+    s = ibis.struct({"a": "foo", "b": "bar"})
+    with pytest.raises(TypeError):
+        assert "a" in s
+    with pytest.raises(TypeError):
+        assert "c" not in s
+    with pytest.raises(TypeError):
+        assert len(s) == 2
+    with pytest.raises(TypeError):
+        assert tuple(s) == ("a", "b")
