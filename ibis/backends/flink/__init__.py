@@ -333,8 +333,10 @@ class Backend(SQLBackend, CanCreateDatabase, NoUrl):
         """Compile an Ibis expression to Flink."""
         return super().compile(expr, params=params)  # Discard `limit` and other kwargs.
 
-    def _to_sql(self, expr: ir.Expr, **kwargs: Any) -> str:
-        return str(self.compile(expr, **kwargs))
+    def _to_sqlglot(
+        self, expr: ir.Expr, params: Mapping[ir.Expr, Any] | None = None, **_: Any
+    ) -> str:
+        return super()._to_sqlglot(expr, params=params)
 
     def execute(self, expr: ir.Expr, **kwargs: Any) -> Any:
         """Execute an expression."""

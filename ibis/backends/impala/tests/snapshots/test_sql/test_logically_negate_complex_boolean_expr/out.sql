@@ -1,5 +1,5 @@
 SELECT
   NOT (
-    `t0`.`a` IN ('foo') AND NOT `t0`.`c` IS NULL
+    `t0`.`a` IN ('foo') AND `t0`.`c` IS NOT NULL
   ) AS `tmp`
 FROM `t` AS `t0`

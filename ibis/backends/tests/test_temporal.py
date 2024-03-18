@@ -1140,11 +1140,11 @@ no_mixed_timestamp_comparisons = [
         raises=TypeError,
         reason="Invalid comparison between dtype=datetime64[ns, UTC] and datetime",
     ),
-    pytest.mark.never(
-        ["duckdb"],
+    pytest.mark.xfail_version(
+        duckdb=["duckdb>=0.10"],
         raises=DuckDBBinderException,
         # perhaps we should consider disallowing this in ibis as well
-        reason="DuckDB doesn't allow comparing timestamp with and without timezones",
+        reason="DuckDB doesn't allow comparing timestamp with and without timezones starting at version 0.10",
     ),
 ]
 

@@ -1,3 +1,3 @@
 SELECT
-  NOT `t0`.`a` IS NULL AS `NotNull(a)`
+  `t0`.`a` IS NOT NULL AS `NotNull(a)`
 FROM `alltypes` AS `t0`

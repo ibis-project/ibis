@@ -5,6 +5,8 @@ from __future__ import annotations
 import pickle
 from typing import Callable
 
+import pytest
+
 import ibis
 import ibis.expr.types as ir
 from ibis import util
@@ -55,6 +57,8 @@ def assert_decompile_roundtrip(
         operations from table.view() calls, or other relations whose equality
         is difficult to roundtrip.
     """
+    pytest.importorskip("black")
+
     rendered = ibis.decompile(expr, format=True)
     if snapshot is not None:
         snapshot.assert_match(rendered, "decompiled.py")

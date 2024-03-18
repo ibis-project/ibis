@@ -1532,6 +1532,11 @@ def test_try_cast_func(con, from_val, to_type, func):
                     reason="doesn't support OFFSET without ORDER BY",
                 ),
                 pytest.mark.notyet(["oracle"], raises=com.UnsupportedArgumentError),
+                pytest.mark.never(
+                    ["mssql"],
+                    raises=PyODBCProgrammingError,
+                    reason="sqlglot generates code that requires > 0 fetch rows",
+                ),
             ],
         ),
         param(
@@ -1543,11 +1548,6 @@ def test_try_cast_func(con, from_val, to_type, func):
                     ["bigquery"],
                     raises=GoogleBadRequest,
                     reason="bigquery doesn't support OFFSET without LIMIT",
-                ),
-                pytest.mark.notyet(
-                    ["mssql"],
-                    raises=PyODBCProgrammingError,
-                    reason="mssql doesn't support OFFSET without LIMIT",
                 ),
                 pytest.mark.notyet(["exasol"], raises=ExaQueryError),
                 pytest.mark.never(
@@ -1575,6 +1575,11 @@ def test_try_cast_func(con, from_val, to_type, func):
                     reason="doesn't support OFFSET without ORDER BY",
                 ),
                 pytest.mark.notyet(["oracle"], raises=com.UnsupportedArgumentError),
+                pytest.mark.never(
+                    ["mssql"],
+                    raises=PyODBCProgrammingError,
+                    reason="sqlglot generates code that requires > 0 fetch rows",
+                ),
             ],
         ),
         param(
@@ -1618,7 +1623,18 @@ def test_static_table_slice(backend, slc, expected_count_fn):
         param(slice(-3, -2), lambda _: 1, id="[-3:-2]"),
         # positive stop
         param(slice(-4000, 7000), lambda _: 3700, id="[-4000:7000]"),
-        param(slice(-3, 2), lambda _: 0, id="[-3:2]"),
+        param(
+            slice(-3, 2),
+            lambda _: 0,
+            id="[-3:2]",
+            marks=[
+                pytest.mark.never(
+                    ["mssql"],
+                    raises=PyODBCProgrammingError,
+                    reason="sqlglot generates code that requires > 0 fetch rows",
+                ),
+            ],
+        ),
         ##################
         ### POSITIVE start
         # negative stop
@@ -1735,7 +1751,7 @@ def test_dynamic_table_slice(backend, slc, expected_count_fn):
 @pytest.mark.notyet(
     ["mssql"],
     reason="doesn't support dynamic limit/offset; compiles incorrectly in sqlglot",
-    raises=AssertionError,
+    raises=PyODBCProgrammingError,
 )
 @pytest.mark.notimpl(
     ["risingwave"],

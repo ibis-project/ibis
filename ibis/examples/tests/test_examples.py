@@ -11,6 +11,7 @@ from ibis.conftest import CI, LINUX, MACOS, SANDBOXED
 pytestmark = pytest.mark.examples
 
 duckdb = pytest.importorskip("duckdb")
+pytest.importorskip("pins")
 
 # large files or files that are used elsewhere
 ignored = frozenset(

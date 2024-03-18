@@ -304,6 +304,8 @@ def test_literal_geospatial_inferred(con, shp, expected, snapshot):
     reason="nix on linux cannot download duckdb extensions or data due to sandboxing",
 )
 def test_load_geo_example(con):
+    pytest.importorskip("pins")
+
     t = ibis.examples.zones.fetch(backend=con)
     assert t.geom.type().is_geospatial()
 

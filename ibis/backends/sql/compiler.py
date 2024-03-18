@@ -925,7 +925,7 @@ class SQLGlotCompiler(abc.ABC):
         return self.f.exists(select)
 
     def visit_InSubquery(self, op, *, rel, needle):
-        return needle.isin(rel.this)
+        return needle.isin(query=rel.this)
 
     def visit_Array(self, op, *, exprs):
         return self.f.array(*exprs)

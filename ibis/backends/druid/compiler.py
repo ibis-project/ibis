@@ -88,7 +88,6 @@ class DruidCompiler(SQLGlotCompiler):
         ops.BitwiseRightShift: "bitwise_shift_right",
         ops.Modulus: "mod",
         ops.Power: "power",
-        ops.Log10: "log10",
         ops.ApproxCountDistinct: "approx_count_distinct",
         ops.StringContains: "contains_string",
     }
@@ -98,6 +97,9 @@ class DruidCompiler(SQLGlotCompiler):
         if where is not None:
             return sg.exp.Filter(this=expr, expression=sg.exp.Where(this=where))
         return expr
+
+    def visit_Log10(self, op, *, arg):
+        return self.f.anon.log10(arg)
 
     def visit_Sum(self, op, *, arg, where):
         arg = self.if_(arg, 1, 0) if op.arg.dtype.is_boolean() else arg

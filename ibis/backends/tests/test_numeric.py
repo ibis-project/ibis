@@ -943,6 +943,19 @@ def test_simple_math_functions_columns(
                     reason="function log10(numeric, numeric) does not exist",
                 ),
             ],
+            id="log2-explicit",
+        ),
+        param(
+            lambda t: t.double_col.add(1).log2(),
+            lambda t: np.log2(t.double_col + 1),
+            marks=[
+                pytest.mark.notimpl(["druid"], raises=PyDruidProgrammingError),
+                pytest.mark.notimpl(
+                    ["risingwave"],
+                    raises=PsycoPg2InternalError,
+                    reason="function log10(numeric, numeric) does not exist",
+                ),
+            ],
             id="log2",
         ),
         param(

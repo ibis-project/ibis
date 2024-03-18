@@ -324,7 +324,11 @@ class SnowflakeCompiler(SQLGlotCompiler):
         )
 
     def visit_ArrayZip(self, op, *, arg):
-        return self.f.udf.array_zip(self.f.array(*arg))
+        return self.if_(
+            sg.not_(sg.or_(*(arr.is_(NULL) for arr in arg))),
+            self.f.udf.array_zip(self.f.array(*arg)),
+            NULL,
+        )
 
     def visit_DayOfWeekName(self, op, *, arg):
         return sge.Case(

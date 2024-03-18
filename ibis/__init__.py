@@ -97,7 +97,7 @@ def __getattr__(name: str) -> BaseBackend:
     # - has_operation
     # - add_operation
     # - _from_url
-    # - _to_sql
+    # - _to_sqlglot
     #
     # We also copy over the docstring from `do_connect` to the proxy `connect`
     # method, since that's where all the backend-specific kwargs are currently
@@ -119,7 +119,7 @@ def __getattr__(name: str) -> BaseBackend:
     proxy.add_operation = backend.add_operation
     proxy.name = name
     proxy._from_url = backend._from_url
-    proxy._to_sql = backend._to_sql
+    proxy._to_sqlglot = backend._to_sqlglot
     # Add any additional methods that should be exposed at the top level
     for name in getattr(backend, "_top_level_methods", ()):
         setattr(proxy, name, getattr(backend, name))

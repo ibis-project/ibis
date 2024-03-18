@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import math
+
 import sqlglot as sg
 import sqlglot.expressions as sge
 from public import public
@@ -87,7 +89,6 @@ class SQLiteCompiler(SQLGlotCompiler):
         ops.BitwiseXor: "_ibis_xor",
         ops.BitwiseNot: "_ibis_inv",
         ops.Modulus: "mod",
-        ops.Log10: "log10",
         ops.TypeOf: "typeof",
         ops.BitOr: "_ibis_bit_or",
         ops.BitAnd: "_ibis_bit_and",
@@ -105,6 +106,18 @@ class SQLiteCompiler(SQLGlotCompiler):
         if where is not None:
             return sge.Filter(this=expr, expression=sge.Where(this=where))
         return expr
+
+    def visit_Log10(self, op, *, arg):
+        return self.f.anon.log10(arg)
+
+    def visit_Log2(self, op, *, arg):
+        return self.f.anon.log2(arg)
+
+    def visit_Log(self, op, *, arg, base):
+        func = self.f.anon.log
+        if base is None:
+            base = math.e
+        return func(base, arg)
 
     def visit_Cast(self, op, *, arg, to) -> sge.Cast:
         if to.is_timestamp():

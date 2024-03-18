@@ -1371,7 +1371,7 @@ class Backend(SQLBackend, CanCreateSchema, UrlFromPath):
 
         """
         self._run_pre_execute_hooks(expr)
-        query = self._to_sql(expr, params=params)
+        query = self.compile(expr, params=params)
         args = ["FORMAT 'parquet'", *(f"{k.upper()} {v!r}" for k, v in kwargs.items())]
         copy_cmd = f"COPY ({query}) TO {str(path)!r} ({', '.join(args)})"
         with self._safe_raw_sql(copy_cmd):
@@ -1407,7 +1407,7 @@ class Backend(SQLBackend, CanCreateSchema, UrlFromPath):
 
         """
         self._run_pre_execute_hooks(expr)
-        query = self._to_sql(expr, params=params)
+        query = self.compile(expr, params=params)
         args = [
             "FORMAT 'csv'",
             f"HEADER {int(header)}",
