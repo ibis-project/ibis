@@ -120,9 +120,6 @@ class SQLBackend(BaseBackend):
         self._log(sql)
         return sql
 
-    def _to_sql(self, expr: ir.Expr, **kwargs) -> str:
-        return self.compile(expr, **kwargs)
-
     def _log(self, sql: str) -> None:
         """Log `sql`.
 
