@@ -125,6 +125,13 @@ def ln(arg):
 
 
 @udf(skip_if_exists=True)
+def log(arg, base):
+    if arg < 0:
+        return None
+    return math.log(arg, base)
+
+
+@udf(skip_if_exists=True)
 def log2(arg):
     if arg < 0:
         return None
