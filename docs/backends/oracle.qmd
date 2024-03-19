@@ -2,8 +2,6 @@
 
 [https://docs.oracle.com/database/oracle/oracle-database](https://docs.oracle.com/database/oracle/oracle-database)
 
-{{< include /_callouts/experimental_backend.qmd >}}
-
 ![](https://img.shields.io/badge/memtables-fallback-yellow?style=flat-square) ![](https://img.shields.io/badge/inputs-Oracle tables-blue?style=flat-square) ![](https://img.shields.io/badge/outputs-Oracle tables | CSV | pandas | Parquet | PyArrow-orange?style=flat-square)
 
 ## Install

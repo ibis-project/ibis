@@ -2,8 +2,6 @@
 
 [https://www.pola.rs](https://www.pola.rs)
 
-{{< include /_callouts/experimental_backend.qmd >}}
-
 ![](https://img.shields.io/badge/memtables-native-green?style=flat-square) ![](https://img.shields.io/badge/inputs-CSV | Delta Lake | pandas | Parquet-blue?style=flat-square) ![](https://img.shields.io/badge/outputs-CSV | pandas | Delta Lake | Parquet | PyArrow-orange?style=flat-square)
 
 ## Install

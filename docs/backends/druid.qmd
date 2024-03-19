@@ -2,8 +2,6 @@
 
 [https://druid.apache.org](https://druid.apache.org)
 
-{{< include /_callouts/experimental_backend.qmd >}}
-
 ![](https://img.shields.io/badge/memtables-fallback-yellow?style=flat-square) ![](https://img.shields.io/badge/inputs-Druid tables-blue?style=flat-square) ![](https://img.shields.io/badge/outputs-Druid tables | CSV | pandas | Parquet | PyArrow-orange?style=flat-square)
 
 ## Install

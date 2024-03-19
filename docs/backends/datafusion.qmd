@@ -2,8 +2,6 @@
 
 [https://arrow.apache.org/datafusion](https://arrow.apache.org/datafusion)
 
-{{< include /_callouts/experimental_backend.qmd >}}
-
 ![](https://img.shields.io/badge/memtables-not supported- grey?style=flat-square) ![](https://img.shields.io/badge/inputs-CSV | Delta Lake | Parquet-blue?style=flat-square) ![](https://img.shields.io/badge/outputs-CSV | Delta Lake | pandas | Parquet | PyArrow-orange?style=flat-square)
 
 ## Install
