@@ -457,3 +457,23 @@ class MSSQLCompiler(SQLGlotCompiler):
         if where is not None:
             arg = self.if_(where, arg, NULL)
         return sge.Min(this=arg)
+
+    def visit_Select(self, op, *, parent, selections, predicates, sort_keys):
+        # if we've constructed a useless projection return the parent relation
+        if not selections and not predicates and not sort_keys:
+            return parent
+
+        result = parent
+
+        if selections:
+            result = sg.select(*self._cleanup_names(selections), copy=False).from_(
+                result, copy=False
+            )
+
+        if predicates:
+            result = result.where(*predicates, copy=True)
+
+        if sort_keys:
+            result = result.order_by(*sort_keys, copy=False)
+
+        return result
