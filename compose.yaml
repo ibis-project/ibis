@@ -362,7 +362,7 @@ services:
       - oracle:/opt/oracle/data
 
   exasol:
-    image: exasol/docker-db:7.1.25
+    image: exasol/docker-db:7.1.26
     privileged: true
     ports:
       - 8563:8563
