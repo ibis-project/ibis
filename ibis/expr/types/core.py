@@ -324,9 +324,9 @@ class Expr(Immutable, Coercible):
             if has_unbound:
                 raise IbisError(
                     "Expression contains unbound tables and therefore cannot "
-                    "be executed. Use ibis.<backend>.execute(expr) or "
-                    "assign a backend instance to "
-                    "`ibis.options.default_backend`."
+                    "be executed. Use `<backend>.execute(expr)` to execute "
+                    "against an explicit backend, or rebuild the expression "
+                    "using bound tables instead."
                 )
             default = _default_backend() if use_default else None
             if default is None:
