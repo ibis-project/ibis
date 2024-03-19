@@ -11,6 +11,7 @@ import pandas as pd
 import pandas.testing as tm
 import pyarrow as pa
 import pytest
+from packaging.version import parse as parse_version
 from pytest import param
 
 import ibis
@@ -430,16 +431,17 @@ def test_csv_with_slash_n_null(con, tmp_path):
 @pytest.mark.parametrize(
     "extensions",
     [
-        [],
+        param([], id="none"),
         param(
             ["httpfs"],
             marks=[
                 pytest.mark.xfail(
-                    duckdb.__version__ == "0.10.0",
+                    parse_version(duckdb.__version__) >= parse_version("0.10.0"),
                     reason="https://github.com/duckdb/duckdb/issues/10698",
                     raises=duckdb.HTTPException,
                 )
             ],
+            id="httpfs",
         ),
     ],
 )
