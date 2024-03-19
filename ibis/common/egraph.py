@@ -6,6 +6,7 @@ import math
 from collections.abc import Callable, Hashable, Iterable, Iterator, Mapping
 from typing import Any, TypeVar
 
+from ibis.common.bases import FrozenSlotted as Slotted
 from ibis.common.graph import Node
 from ibis.util import promote_list
 
@@ -258,38 +259,6 @@ class DisjointSet(Mapping[K, set[K]]):
                 )
 
 
-class Slotted:
-    """A lightweight alternative to `ibis.common.grounds.Concrete`.
-
-    This class is used to create immutable dataclasses with slots and a precomputed
-    hash value for quicker dictionary lookups.
-    """
-
-    __slots__ = ("__precomputed_hash__",)
-    __precomputed_hash__: int
-
-    def __init__(self, *args):
-        for name, value in itertools.zip_longest(self.__slots__, args):
-            object.__setattr__(self, name, value)
-        object.__setattr__(self, "__precomputed_hash__", hash(args))
-
-    def __eq__(self, other):
-        if self is other:
-            return True
-        if type(self) is not type(other):
-            return NotImplemented
-        for name in self.__slots__:
-            if getattr(self, name) != getattr(other, name):
-                return False
-        return True
-
-    def __hash__(self):
-        return self.__precomputed_hash__
-
-    def __setattr__(self, name, value):
-        raise AttributeError("Can't set attributes on immutable ENode instance")
-
-
 class Variable(Slotted):
     """A named capture in a pattern.
 
@@ -306,7 +275,7 @@ class Variable(Slotted):
     def __init__(self, name: str):
         if name is None:
             raise ValueError("Variable name cannot be None")
-        super().__init__(name)
+        super().__init__(name=name)
 
     def __repr__(self):
         return f"${self.name}"
@@ -360,7 +329,7 @@ class Pattern(Slotted):
     def __init__(self, head, args, name=None, conditions=None):
         # TODO(kszucs): ensure that args are either patterns, variables or leaf values
         assert all(not isinstance(arg, (ENode, Node)) for arg in args)
-        super().__init__(head, tuple(args), name)
+        super().__init__(head=head, args=tuple(args), name=name)
 
     def matches_none(self):
         """Evaluate whether the pattern is guaranteed to match nothing.
@@ -472,6 +441,9 @@ class DynamicApplier(Slotted):
     __slots__ = ("func",)
     func: Callable
 
+    def __init__(self, func):
+        super().__init__(func=func)
+
     def substitute(self, egraph, enode, subst):
         kwargs = {k: v for k, v in subst.items() if isinstance(k, str)}
         result = self.func(egraph, enode, **kwargs)
@@ -494,7 +466,7 @@ class Rewrite(Slotted):
             raise TypeError(
                 "applier must be a Pattern or a Variable returning an ENode"
             )
-        super().__init__(matcher, applier)
+        super().__init__(matcher=matcher, applier=applier)
 
     def __repr__(self):
         return f"{self.lhs} >> {self.rhs}"
@@ -519,7 +491,7 @@ class ENode(Slotted, Node):
     def __init__(self, head, args):
         # TODO(kszucs): ensure that it is a ground term, this check should be removed
         assert all(not isinstance(arg, (Pattern, Variable)) for arg in args)
-        super().__init__(head, tuple(args))
+        super().__init__(head=head, args=tuple(args))
 
     @property
     def __argnames__(self):
