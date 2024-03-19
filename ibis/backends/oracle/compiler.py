@@ -237,7 +237,7 @@ class OracleCompiler(SQLGlotCompiler):
         return self.visit_node(ops.Pi()) * arg / 180
 
     def visit_Modulus(self, op, *, left, right):
-        return self.f.mod(left, right)
+        return self.f.anon.mod(left, right)
 
     def visit_Levenshtein(self, op, *, left, right):
         # Not using FuncGen here because of dotted function call
