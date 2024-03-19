@@ -226,6 +226,7 @@ keys = pytest.mark.parametrize(
                 ),
                 pytest.mark.notyet(["pandas", "dask"]),
                 mark_notyet_postgres,
+                pytest.mark.notimpl("flink"),
             ],
             id="array",
         ),
@@ -237,6 +238,7 @@ keys = pytest.mark.parametrize(
                 ),
                 pytest.mark.notyet(["pandas", "dask"]),
                 mark_notyet_postgres,
+                pytest.mark.notimpl("flink"),
             ],
             id="struct",
         ),
@@ -309,7 +311,6 @@ values = pytest.mark.parametrize(
 @values
 @keys
 @mark_notimpl_risingwave_hstore
-@pytest.mark.notimpl("flink")
 def test_map_get_all_types(con, keys, values):
     m = ibis.map(ibis.array(keys), ibis.array(values))
     for key, val in zip(keys, values):
@@ -320,7 +321,6 @@ def test_map_get_all_types(con, keys, values):
 
 @keys
 @mark_notimpl_risingwave_hstore
-@pytest.mark.notimpl("flink")
 def test_map_contains_all_types(con, keys):
     m = ibis.map(ibis.array(keys), ibis.array(keys))
     for key in keys:
