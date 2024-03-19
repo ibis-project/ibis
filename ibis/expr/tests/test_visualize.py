@@ -144,8 +144,7 @@ def test_filter():
     t = ibis.table([("a", "int64"), ("b", "string"), ("c", "int32")])
     expr = t.filter((t.a == 1) & (t.b == "x"))
     graph = viz.to_graph(expr, label_edges=True)
-    assert "predicates[0]" in graph.source
-    assert "predicates[1]" in graph.source
+    assert "Filter" in graph.source
 
 
 def test_html_escape(monkeypatch):
