@@ -417,9 +417,7 @@ def test_composition_of_annotable_and_comparable():
     assert a != c
     assert c != a
     assert a.__equals__(b)
-    assert a.__cached_equals__(b)
     assert not a.__equals__(c)
-    assert not a.__cached_equals__(c)
 
 
 def test_maintain_definition_order():

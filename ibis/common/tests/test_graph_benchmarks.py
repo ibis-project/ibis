@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Optional
+from typing import Any, Optional
 
 import pytest
 from typing_extensions import Self
@@ -19,9 +19,10 @@ class MyNode(Concrete, Node):
     d: frozendict[str, int]
     e: Optional[Self] = None
     f: tuple[Self, ...] = ()
+    g: Any = None
 
 
-def generate_node(depth):
+def generate_node(depth, g=None):
     # generate a nested node object with the given depth
     if depth == 0:
         return MyNode(10, "20", c=(30, 40), d=frozendict(e=50, f=60))
@@ -32,6 +33,7 @@ def generate_node(depth):
         d=frozendict(e=5, f=6),
         e=generate_node(0),
         f=(generate_node(depth - 1), generate_node(0)),
+        g=g,
     )
 
 
@@ -62,3 +64,12 @@ def test_replace_mapping(benchmark):
     node = generate_node(500)
     subs = {generate_node(1): generate_node(0)}
     benchmark(node.replace, subs)
+
+
+def test_equality_caching(benchmark):
+    node = generate_node(150)
+    other = generate_node(150)
+    assert node == other
+    assert other == node
+    assert node is not other
+    benchmark.pedantic(node.__eq__, args=[other], iterations=100, rounds=200)

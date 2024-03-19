@@ -22,6 +22,7 @@ from ibis.common.bases import (  # noqa: F401
     AbstractMeta,
     Comparable,
     Final,
+    Hashable,
     Immutable,
     Singleton,
 )

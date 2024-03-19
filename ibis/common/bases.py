@@ -5,8 +5,6 @@ from abc import abstractmethod
 from typing import TYPE_CHECKING, Any
 from weakref import WeakValueDictionary
 
-from ibis.common.caching import WeakCache
-
 if TYPE_CHECKING:
     from collections.abc import Mapping
 
@@ -141,21 +139,14 @@ class Comparable(Abstract):
 
     Since the class holds a global cache of comparison results, it is important
     to make sure that the instances are not kept alive longer than necessary.
-    This is done automatically by using weak references for the compared objects.
     """
 
-    __cache__ = WeakCache()
-
-    def __eq__(self, other) -> bool:
-        try:
-            return self.__cached_equals__(other)
-        except TypeError:
-            return NotImplemented
+    __cache__ = {}
 
     @abstractmethod
     def __equals__(self, other) -> bool: ...
 
-    def __cached_equals__(self, other) -> bool:
+    def __eq__(self, other) -> bool:
         if self is other:
             return True
 
@@ -163,19 +154,23 @@ class Comparable(Abstract):
         if type(self) is not type(other):
             return False
 
-        # reduce space required for commutative operation
-        if id(self) < id(other):
-            key = (self, other)
-        else:
-            key = (other, self)
-
+        id1 = id(self)
+        id2 = id(other)
         try:
-            result = self.__cache__[key]
+            return self.__cache__[id1][id2]
         except KeyError:
             result = self.__equals__(other)
-            self.__cache__[key] = result
+            self.__cache__.setdefault(id1, {})[id2] = result
+            self.__cache__.setdefault(id2, {})[id1] = result
+            return result
 
-        return result
+    def __del__(self):
+        id1 = id(self)
+        for id2 in self.__cache__.pop(id1, ()):
+            eqs2 = self.__cache__[id2]
+            del eqs2[id1]
+            if not eqs2:
+                del self.__cache__[id2]
 
 
 class SlottedMeta(AbstractMeta):

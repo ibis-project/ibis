@@ -140,7 +140,7 @@ class DataType(Concrete, Coercible):
             raise TypeError(
                 f"invalid equality comparison between DataType and {type(other)}"
             )
-        return super().__cached_equals__(other)
+        return self == other
 
     def cast(self, other, **kwargs):
         # TODO(kszucs): remove it or deprecate it?
