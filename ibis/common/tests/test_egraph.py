@@ -73,6 +73,12 @@ def test_disjoint_set():
         (4, {4}),
     )
 
+    # test removing an element
+    del ds[3]
+    assert 3 not in ds
+    assert len(ds) == 3
+    assert tuple(ds.items()) == ((1, {1, 2}), (2, {1, 2}), (4, {4}))
+
     # check that the disjoint set doesn't get corrupted by adding an existing element
     ds.verify()
     ds.add(1)

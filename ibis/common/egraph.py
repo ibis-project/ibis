@@ -95,6 +95,19 @@ class DisjointSet(Mapping[K, set[K]]):
         id = self._parents[id]
         return self._classes[id]
 
+    def __delitem__(self, id):
+        """Remove the given id from the disjoint set.
+
+        Parameters
+        ----------
+        id :
+            The id to remove from the disjoint set.
+
+        """
+        self[id].remove(id)
+        del self._classes[id]
+        del self._parents[id]
+
     def __iter__(self) -> Iterator[K]:
         """Iterate over the ids in the disjoint set."""
         return iter(self._parents)
