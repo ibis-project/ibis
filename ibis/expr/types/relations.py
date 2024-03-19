@@ -3043,7 +3043,6 @@ class Table(Expr, _FixedTextJupyterMixin):
         right: Table,
         on: str | ir.BooleanColumn,
         predicates: str | ir.Column | Sequence[str | ir.Column] = (),
-        by: str | ir.Column | Sequence[str | ir.Column] = (),
         tolerance: str | ir.IntervalScalar | None = None,
         *,
         lname: str = "",
@@ -3053,8 +3052,6 @@ class Table(Expr, _FixedTextJupyterMixin):
 
         Similar to a left join except that the match is done on nearest key
         rather than equal keys.
-
-        Optionally, match keys with `by` before joining with `predicates`.
 
         Parameters
         ----------
@@ -3066,8 +3063,6 @@ class Table(Expr, _FixedTextJupyterMixin):
             Closest match inequality condition
         predicates
             Additional join predicates
-        by
-            Additional equality join predicates
         tolerance
             Amount of time to look behind when joining
         lname
@@ -3085,7 +3080,7 @@ class Table(Expr, _FixedTextJupyterMixin):
         from ibis.expr.types.joins import Join
 
         return Join(left.op()).asof_join(
-            right, on, predicates, by=by, tolerance=tolerance, lname=lname, rname=rname
+            right, on, predicates, tolerance=tolerance, lname=lname, rname=rname
         )
 
     def cross_join(

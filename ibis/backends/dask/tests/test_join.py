@@ -229,7 +229,7 @@ def test_asof_join(time_left, time_right, time_df1, time_df2):
 def test_keyed_asof_join(
     time_keyed_left, time_keyed_right, time_keyed_df1, time_keyed_df2
 ):
-    expr = time_keyed_left.asof_join(time_keyed_right, "time", by="key")[
+    expr = time_keyed_left.asof_join(time_keyed_right, "time", predicates="key")[
         time_keyed_left, time_keyed_right.other_value
     ]
     result = expr.compile()
@@ -254,7 +254,9 @@ def test_asof_join_overlapping_non_predicate(
     time_keyed_df1.assign(collide=time_keyed_df1["key"] + time_keyed_df1["value"])
     time_keyed_df2.assign(collide=time_keyed_df2["key"] + time_keyed_df2["other_value"])
 
-    expr = time_keyed_left.asof_join(time_keyed_right, on="time", by=[("key", "key")])
+    expr = time_keyed_left.asof_join(
+        time_keyed_right, on="time", predicates=[("key", "key")]
+    )
     result = expr.compile()
     expected = dd.merge_asof(
         time_keyed_df1, time_keyed_df2, on="time", by="key", suffixes=("", "_right")

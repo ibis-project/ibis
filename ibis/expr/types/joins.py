@@ -335,13 +335,12 @@ class Join(Table):
         right: Table,
         on,
         predicates=(),
-        by=(),
         tolerance=None,
         *,
         lname: str = "",
         rname: str = "{name}_right",
     ):
-        predicates = util.promote_list(predicates) + util.promote_list(by)
+        predicates = util.promote_list(predicates)
         if tolerance is not None:
             # `tolerance` parameter is mimicking the pandas API, but we express
             # it at the expression level by a sequence of operations:

@@ -333,7 +333,7 @@ def test_asof_join_predicate(time_left, time_right, time_df1, time_df2):
 def test_keyed_asof_join(
     time_keyed_left, time_keyed_right, time_keyed_df1, time_keyed_df2
 ):
-    expr = time_keyed_left.asof_join(time_keyed_right, "time", by="key")
+    expr = time_keyed_left.asof_join(time_keyed_right, "time", predicates="key")
     expr = expr.select(time_keyed_left, time_keyed_right.other_value)
     result = expr.execute()
     expected = pd.merge_asof(time_keyed_df1, time_keyed_df2, on="time", by="key")
@@ -345,7 +345,7 @@ def test_keyed_asof_join_with_tolerance(
     time_keyed_left, time_keyed_right, time_keyed_df1, time_keyed_df2
 ):
     expr = time_keyed_left.asof_join(
-        time_keyed_right, "time", by="key", tolerance=2 * ibis.interval(days=1)
+        time_keyed_right, "time", predicates="key", tolerance=2 * ibis.interval(days=1)
     )
     result = expr.execute()
     expected = pd.merge_asof(
