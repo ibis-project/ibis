@@ -18,8 +18,8 @@ pytest.importorskip("clickhouse_connect")
         ibis.timestamp("2015-01-01 12:34:56"),
     ],
 )
-def test_timestamp_literals(con, expr, snapshot):
-    snapshot.assert_match(con.compile(expr), "out.sql")
+def test_timestamp_literals(con, expr, assert_sql):
+    assert_sql(expr)
     assert con.execute(expr) == Timestamp("2015-01-01 12:34:56")
 
 
@@ -32,8 +32,8 @@ def test_timestamp_literals(con, expr, snapshot):
         param(ibis.timestamp("2015-01-01 12:34:56.789321 UTC"), id="micros_tz"),
     ],
 )
-def test_fine_grained_timestamp_literals(con, expr, snapshot):
-    snapshot.assert_match(con.compile(expr), "out.sql")
+def test_fine_grained_timestamp_literals(con, expr, assert_sql):
+    assert_sql(expr)
     assert con.execute(expr) == expr.op().value
 
 
@@ -49,10 +49,9 @@ def test_fine_grained_timestamp_literals(con, expr, snapshot):
         param(False, id="false"),
     ],
 )
-def test_string_numeric_boolean_literals(con, value, snapshot):
+def test_string_numeric_boolean_literals(con, value, assert_sql):
     expr = ibis.literal(value)
-    result = con.compile(expr)
-    snapshot.assert_match(result, "out.sql")
+    assert_sql(expr)
     assert con.execute(expr) == value
 
 

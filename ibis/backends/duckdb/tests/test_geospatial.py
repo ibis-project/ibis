@@ -32,17 +32,16 @@ def test_geospatial_point(zones, zones_gdf):
         param("n_points", {}, id="n_points"),
     ],
 )
-def test_geospatial_unary_snapshot(operation, keywords, snapshot):
+def test_geospatial_unary_snapshot(operation, keywords, assert_sql):
     t = ibis.table([("geom", "geometry")], name="t")
     expr = getattr(t.geom, operation)(**keywords).name("tmp")
-    snapshot.assert_match(ibis.to_sql(expr), "out.sql")
+    assert_sql(expr)
 
 
-def test_geospatial_dwithin(snapshot):
+def test_geospatial_dwithin(assert_sql):
     t = ibis.table([("geom", "geometry")], name="t")
     expr = t.geom.d_within(t.geom, 3.0).name("tmp")
-
-    snapshot.assert_match(ibis.to_sql(expr), "out.sql")
+    assert_sql(expr)
 
 
 # geospatial unary functions that return a non-geometry series
@@ -252,9 +251,8 @@ point_geom = ibis.literal((1, 0), type="point:geometry").name("p")
 
 
 @pytest.mark.parametrize("expr", [point, point_geom])
-def test_literal_geospatial_explicit(con, expr, snapshot):
-    result = str(con.compile(expr))
-    snapshot.assert_match(result, "out.sql")
+def test_literal_geospatial_explicit(con, expr, assert_sql):
+    assert_sql(expr)
 
 
 # test input data with shapely geometries
@@ -291,12 +289,13 @@ shp_multipolygon_0 = shapely.MultiPolygon([shp_polygon_0])
         ),
     ],
 )
-def test_literal_geospatial_inferred(con, shp, expected, snapshot):
-    result = str(con.compile(ibis.literal(shp).name("result")))
+def test_literal_geospatial_inferred(con, shp, expected, assert_sql):
+    expr = ibis.literal(shp).name("result")
+    result = con.compile(expr)
     name = type(shp).__name__.upper()
     pair = f"{name} {expected}"
     assert pair in result
-    snapshot.assert_match(result, "out.sql")
+    assert_sql(expr)
 
 
 @pytest.mark.skipif(

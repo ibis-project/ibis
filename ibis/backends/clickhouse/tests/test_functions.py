@@ -19,10 +19,9 @@ pytest.importorskip("clickhouse_connect")
 
 
 @pytest.mark.parametrize("to_type", ["int8", "int16", "float32", "float", "!float64"])
-def test_cast_double_col(alltypes, to_type, snapshot):
+def test_cast_double_col(alltypes, to_type, assert_sql):
     expr = alltypes.double_col.cast(to_type)
-    result = expr.compile()
-    snapshot.assert_match(result, "out.sql")
+    assert_sql(expr)
 
 
 @pytest.mark.parametrize(
@@ -37,9 +36,9 @@ def test_cast_double_col(alltypes, to_type, snapshot):
         "!struct<a: string, b: int64>",
     ],
 )
-def test_cast_string_col(alltypes, to_type, snapshot):
+def test_cast_string_col(alltypes, to_type, assert_sql):
     expr = alltypes.string_col.cast(to_type)
-    snapshot.assert_match(expr.compile(), "out.sql")
+    assert_sql(expr)
 
 
 @pytest.mark.parametrize(
@@ -60,14 +59,14 @@ def test_cast_string_col(alltypes, to_type, snapshot):
         "month",
     ],
 )
-def test_noop_cast(alltypes, column, snapshot):
+def test_noop_cast(alltypes, column, assert_sql):
     col = alltypes[column]
     result = col.cast(col.type())
     assert result.equals(col)
-    snapshot.assert_match(result.compile(), "out.sql")
+    assert_sql(result)
 
 
-def test_timestamp_cast(alltypes, snapshot):
+def test_timestamp_cast(alltypes, assert_sql):
     target = dt.Timestamp(nullable=False)
     result1 = alltypes.timestamp_col.cast(target)
     result2 = alltypes.int_col.cast(target)
@@ -75,20 +74,20 @@ def test_timestamp_cast(alltypes, snapshot):
     assert isinstance(result1, ir.TimestampColumn)
     assert isinstance(result2, ir.TimestampColumn)
 
-    snapshot.assert_match(result1.compile(), "out1.sql")
-    snapshot.assert_match(result2.compile(), "out2.sql")
+    assert_sql(result1, "out1.sql")
+    assert_sql(result2, "out2.sql")
 
 
-def test_timestamp_now(con, snapshot):
+def test_timestamp_now(con, assert_sql):
     expr = ibis.now()
-    snapshot.assert_match(con.compile(expr), "out.sql")
+    assert_sql(expr)
 
 
 @pytest.mark.parametrize("unit", ["y", "m", "d", "w", "h", "minute"])
-def test_timestamp_truncate(con, unit, snapshot):
+def test_timestamp_truncate(con, unit, assert_sql):
     stamp = ibis.timestamp("2009-05-17 12:34:56")
     expr = stamp.truncate(unit)
-    snapshot.assert_match(con.compile(expr), "out.sql")
+    assert_sql(expr)
 
 
 @pytest.mark.parametrize(("value", "expected"), [(0, None), (5.5, 5.5)])
@@ -185,13 +184,13 @@ def test_string_substring(con, op, expected):
     assert con.execute(op(value)) == expected
 
 
-def test_string_column_substring(con, alltypes, snapshot):
+def test_string_column_substring(con, alltypes, assert_sql):
     expr = alltypes.string_col.substr(2)
-    snapshot.assert_match(expr.compile(), "out1.sql")
+    assert_sql(expr, "out1.sql")
     assert len(con.execute(expr))
 
     expr = alltypes.string_col.substr(0, 3)
-    snapshot.assert_match(expr.compile(), "out2.sql")
+    assert_sql(expr, "out2.sql")
     assert len(con.execute(expr))
 
 
@@ -243,12 +242,12 @@ def test_find_in_set(con, value, expected):
     assert con.execute(expr) == expected
 
 
-def test_string_column_find_in_set(con, alltypes, snapshot):
+def test_string_column_find_in_set(con, alltypes, assert_sql):
     s = alltypes.string_col
     vals = list("abc")
 
     expr = s.find_in_set(vals)
-    snapshot.assert_match(expr.compile(), "out.sql")
+    assert_sql(expr)
     assert len(con.execute(expr))
 
 
@@ -271,25 +270,25 @@ def test_string_find_like(con, expr, expected):
     assert con.execute(expr) == expected
 
 
-def test_string_column_like(con, alltypes, snapshot):
+def test_string_column_like(con, alltypes, assert_sql):
     expr = alltypes.string_col.like("foo%")
-    snapshot.assert_match(expr.compile(), "out1.sql")
+    assert_sql(expr, "out1.sql")
     assert len(con.execute(expr))
 
     expr = alltypes.string_col.like(["foo%", "%bar"])
-    snapshot.assert_match(expr.compile(), "out2.sql")
+    assert_sql(expr, "out2.sql")
     assert len(con.execute(expr))
 
 
-def test_string_column_find(con, alltypes, snapshot):
+def test_string_column_find(con, alltypes, assert_sql):
     s = alltypes.string_col
 
     expr = s.find("a")
-    snapshot.assert_match(expr.compile(), "out1.sql")
+    assert_sql(expr, "out1.sql")
     assert len(con.execute(expr))
 
     expr = s.find(s)
-    snapshot.assert_match(expr.compile(), "out2.sql")
+    assert_sql(expr, "out2.sql")
     assert len(con.execute(expr))
 
 
@@ -309,9 +308,9 @@ def test_string_column_find(con, alltypes, snapshot):
         param(methodcaller("sign"), id="sign"),
     ],
 )
-def test_translate_math_functions(con, alltypes, call, snapshot):
+def test_translate_math_functions(con, alltypes, call, assert_sql):
     expr = call(alltypes.double_col)
-    snapshot.assert_match(expr.compile(), "out.sql")
+    assert_sql(expr, "out.sql")
     assert len(con.execute(expr))
 
 
@@ -352,21 +351,21 @@ def test_math_functions(con, expr, expected):
     assert con.execute(expr) == expected
 
 
-def test_greatest_least(con, alltypes, snapshot):
+def test_greatest_least(con, alltypes, assert_sql):
     expr = ibis.greatest(alltypes.int_col, 10)
-    snapshot.assert_match(expr.compile(), "out1.sql")
+    assert_sql(expr, "out1.sql")
     assert len(con.execute(expr))
 
     expr = ibis.greatest(alltypes.int_col, alltypes.bigint_col)
-    snapshot.assert_match(expr.compile(), "out2.sql")
+    assert_sql(expr, "out2.sql")
     assert len(con.execute(expr))
 
     expr = ibis.least(alltypes.int_col, 10)
-    snapshot.assert_match(expr.compile(), "out3.sql")
+    assert_sql(expr, "out3.sql")
     assert len(con.execute(expr))
 
     expr = ibis.least(alltypes.int_col, alltypes.bigint_col)
-    snapshot.assert_match(expr.compile(), "out4.sql")
+    assert_sql(expr, "out4.sql")
     assert len(con.execute(expr))
 
 
@@ -397,15 +396,15 @@ def test_regexp_extract(con, expr, expected):
     assert con.execute(expr) == expected
 
 
-def test_column_regexp_extract(con, alltypes, snapshot):
+def test_column_regexp_extract(con, alltypes, assert_sql):
     expr = alltypes.string_col.re_extract(r"[\d]+", 3)
-    snapshot.assert_match(expr.compile(), "out.sql")
+    assert_sql(expr, "out.sql")
     assert len(con.execute(expr))
 
 
-def test_column_regexp_replace(con, alltypes, snapshot):
+def test_column_regexp_replace(con, alltypes, assert_sql):
     expr = alltypes.string_col.re_replace(r"[\d]+", "aaa")
-    snapshot.assert_match(expr.compile(), "out.sql")
+    assert_sql(expr, "out.sql")
     assert len(con.execute(expr))
 
 
@@ -437,10 +436,10 @@ def test_literal_none_to_nullable_column(alltypes):
     tm.assert_series_equal(result, expected)
 
 
-def test_timestamp_from_integer(con, alltypes, snapshot):
+def test_timestamp_from_integer(con, alltypes, assert_sql):
     # timestamp_col has datetime type
     expr = alltypes.int_col.to_timestamp()
-    snapshot.assert_match(expr.compile(), "out.sql")
+    assert_sql(expr, "out.sql")
     assert len(con.execute(expr))
 
 
@@ -460,15 +459,15 @@ def test_count_distinct_with_filter(alltypes):
         param(",", 0, id="comma_zero"),
     ],
 )
-def test_group_concat(alltypes, sep, where_case, snapshot):
+def test_group_concat(alltypes, sep, where_case, assert_sql):
     where = None if where_case is None else alltypes.bool_col == where_case
     expr = alltypes.string_col.group_concat(sep, where)
-    snapshot.assert_match(expr.compile(), "out.sql")
+    assert_sql(expr, "out.sql")
 
 
-def test_hash(alltypes, snapshot):
+def test_hash(alltypes, assert_sql):
     expr = alltypes.string_col.hash()
-    snapshot.assert_match(expr.compile(), "out.sql")
+    assert_sql(expr)
 
 
 def test_udf_in_array_map(alltypes):

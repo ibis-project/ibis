@@ -1,3 +1,1 @@
-SELECT
-  COUNT(DISTINCT IF(`t0`.`value` >= 1.0, `t0`.`key`, NULL)) AS `CountDistinct(key, GreaterEqual(value, 1.0))`
-FROM `t0` AS `t0`
+SELECT COUNT(DISTINCT IF(`t0`.`value` >= 1.0, `t0`.`key`, NULL)) AS `CountDistinct(key, GreaterEqual(value, 1.0))` FROM `t0` AS `t0`

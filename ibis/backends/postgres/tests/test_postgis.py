@@ -26,38 +26,30 @@ def test_empty_select(geotable):
     assert len(result) == 0
 
 
-def test_select_point_geodata(geotable, snapshot):
+def test_select_point_geodata(geotable, assert_sql):
     expr = geotable["geo_point"]
-    sqla_expr = expr.compile()
-    compiled = str(sqla_expr)
-    snapshot.assert_match(compiled, "out.sql")
+    assert_sql(expr)
     data = expr.execute()
     assert data.geom_type.iloc[0] == "Point"
 
 
-def test_select_linestring_geodata(geotable, snapshot):
+def test_select_linestring_geodata(geotable, assert_sql):
     expr = geotable["geo_linestring"]
-    sqla_expr = expr.compile()
-    compiled = str(sqla_expr)
-    snapshot.assert_match(compiled, "out.sql")
+    assert_sql(expr)
     data = expr.execute()
     assert data.geom_type.iloc[0] == "LineString"
 
 
-def test_select_polygon_geodata(geotable, snapshot):
+def test_select_polygon_geodata(geotable, assert_sql):
     expr = geotable["geo_polygon"]
-    sqla_expr = expr.compile()
-    compiled = str(sqla_expr)
-    snapshot.assert_match(compiled, "out.sql")
+    assert_sql(expr)
     data = expr.execute()
     assert data.geom_type.iloc[0] == "Polygon"
 
 
-def test_select_multipolygon_geodata(geotable, snapshot):
+def test_select_multipolygon_geodata(geotable, assert_sql):
     expr = geotable["geo_multipolygon"]
-    sqla_expr = expr.compile()
-    compiled = str(sqla_expr)
-    snapshot.assert_match(compiled, "out.sql")
+    assert_sql(expr)
     data = expr.execute()
     assert data.geom_type.iloc[0] == "MultiPolygon"
 

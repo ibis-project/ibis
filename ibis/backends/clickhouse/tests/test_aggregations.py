@@ -15,20 +15,20 @@ pytest.importorskip("clickhouse_connect")
 @pytest.mark.parametrize(
     "reduction", ["sum", "count", "mean", "max", "min", "std", "var"]
 )
-def test_reduction_where(alltypes, reduction, snapshot):
+def test_reduction_where(alltypes, reduction, assert_sql):
     method = getattr(alltypes.double_col, reduction)
     cond = alltypes.bigint_col < 70
     expr = method(where=cond)
 
-    snapshot.assert_match(expr.compile(), "out.sql")
+    assert_sql(expr)
 
 
 @pytest.mark.parametrize("method", ["var", "std"])
-def test_std_var_pop(con, alltypes, method, snapshot):
+def test_std_var_pop(con, alltypes, method, assert_sql):
     cond = alltypes.bigint_col < 70
     col = alltypes.double_col
     expr = getattr(col, method)(where=cond, how="pop")
-    snapshot.assert_match(expr.compile(), "out.sql")
+    assert_sql(expr)
     assert isinstance(con.execute(expr), float)
 
 

@@ -15,6 +15,11 @@ from ibis.util import gen_name
 cc = pytest.importorskip("clickhouse_connect")
 
 
+def test_connection(con):
+    assert con is not None
+    assert isinstance(con, ibis.backends.clickhouse.Backend)
+
+
 def test_run_sql(con):
     query = "SELECT * FROM ibis_testing.functional_alltypes"
     table = con.sql(query)

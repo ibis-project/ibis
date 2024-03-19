@@ -376,6 +376,7 @@ class Expr(Immutable, Coercible):
         limit: int | None = None,
         timecontext: TimeContext | None = None,
         params: Mapping[ir.Value, Any] | None = None,
+        pretty: bool = False,
     ):
         """Compile to an execution target.
 
@@ -394,9 +395,11 @@ class Expr(Immutable, Coercible):
             execute will result in an error.
         params
             Mapping of scalar parameter expressions to value
+        pretty
+            In case of SQL backends, return a pretty formatted SQL query.
         """
         return self._find_backend().compile(
-            self, limit=limit, timecontext=timecontext, params=params
+            self, limit=limit, timecontext=timecontext, params=params, pretty=pretty
         )
 
     @experimental
