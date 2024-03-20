@@ -1225,8 +1225,6 @@ def execute_arg_min(op, **kw):
 
 @translate.register(ops.SQLStringView)
 def execute_sql_string_view(op, *, ctx: pl.SQLContext, **kw):
-    child = translate(op.child, ctx=ctx, **kw)
-    ctx.register(op.name, child)
     return ctx.execute(op.query)
 
 

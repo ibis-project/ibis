@@ -407,7 +407,17 @@ class Backend(BaseBackend, NoUrl):
         return translate(node, ctx=self._context)
 
     def _get_sql_string_view_schema(self, name, table, query) -> sch.Schema:
-        raise NotImplementedError("table.sql() not yet supported in polars")
+        import sqlglot as sg
+
+        cte = sg.parse_one(str(ibis.to_sql(table, dialect="postgres")), read="postgres")
+        parsed = sg.parse_one(query, read=self.dialect)
+        parsed.args["with"] = cte.args.pop("with", [])
+        parsed = parsed.with_(
+            sg.to_identifier(name, quoted=True), as_=cte, dialect=self.dialect
+        )
+
+        sql = parsed.sql(self.dialect)
+        return self._get_schema_using_query(sql)
 
     def _get_schema_using_query(self, query: str) -> sch.Schema:
         return PolarsSchema.to_ibis(self._context.execute(query).schema)

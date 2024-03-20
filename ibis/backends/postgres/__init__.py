@@ -11,10 +11,8 @@ from operator import itemgetter
 from typing import TYPE_CHECKING, Any, Callable
 from urllib.parse import parse_qs, urlparse
 
-import psycopg2
 import sqlglot as sg
 import sqlglot.expressions as sge
-from psycopg2 import extras
 
 import ibis
 import ibis.common.exceptions as com
@@ -102,6 +100,8 @@ class Backend(SQLBackend):
         return self.connect(**kwargs)
 
     def _register_in_memory_table(self, op: ops.InMemoryTable) -> None:
+        from psycopg2.extras import execute_batch
+
         schema = op.schema
         if null_columns := [col for col, dtype in schema.items() if dtype.is_null()]:
             raise exc.IbisTypeError(
@@ -148,9 +148,10 @@ class Backend(SQLBackend):
             specs = ", ".join(repeat("%s", len(columns)))
             table = sg.table(name, quoted=quoted)
             sql = f"INSERT INTO {table.sql(self.dialect)} ({cols}) VALUES ({specs})"
+
             with self.begin() as cur:
                 cur.execute(create_stmt_sql)
-                extras.execute_batch(cur, sql, data, 128)
+                execute_batch(cur, sql, data, 128)
 
     @contextlib.contextmanager
     def begin(self):
@@ -258,7 +259,11 @@ class Backend(SQLBackend):
             month : int32
 
         """
+        import psycopg2
+        import psycopg2.extras
+
         psycopg2.extras.register_default_json(loads=lambda x: x)
+
         self.con = psycopg2.connect(
             host=host,
             port=port,
@@ -700,6 +705,9 @@ $$""".format(**self._get_udf_source(udf_node))
             yield result
 
     def raw_sql(self, query: str | sg.Expression, **kwargs: Any) -> Any:
+        import psycopg2
+        import psycopg2.extras
+
         with contextlib.suppress(AttributeError):
             query = query.sql(dialect=self.dialect)
 
@@ -709,11 +717,11 @@ $$""".format(**self._get_udf_source(udf_node))
         try:
             # try to load hstore, uuid and ipaddress extensions
             with contextlib.suppress(psycopg2.ProgrammingError):
-                extras.register_hstore(cursor)
+                psycopg2.extras.register_hstore(cursor)
             with contextlib.suppress(psycopg2.ProgrammingError):
-                extras.register_uuid(conn_or_curs=cursor)
+                psycopg2.extras.register_uuid(conn_or_curs=cursor)
             with contextlib.suppress(psycopg2.ProgrammingError):
-                extras.register_ipaddress(cursor)
+                psycopg2.extras.register_ipaddress(cursor)
         except Exception:
             cursor.close()
             raise
@@ -740,4 +748,4 @@ $$""".format(**self._get_udf_source(udf_node))
 
         if conversions:
             table_expr = table_expr.mutate(**conversions)
-        return super()._to_sqlglot(table_expr, limit=limit, params=params)
+        return super()._to_sqlglot(table_expr, limit=limit, params=params, **kwargs)

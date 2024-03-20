@@ -103,7 +103,7 @@ def test_scalar_to_pyarrow_scalar(limit, awards_players):
     assert isinstance(scalar, pa.Scalar)
 
 
-@pytest.mark.notimpl(["druid", "exasol"])
+@pytest.mark.notimpl(["druid"])
 def test_table_to_pyarrow_table_schema(awards_players):
     table = awards_players.to_pyarrow()
     assert isinstance(table, pa.Table)
