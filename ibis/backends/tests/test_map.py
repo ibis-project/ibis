@@ -327,12 +327,6 @@ def test_map_contains_all_types(con, keys):
     a = ibis.array(keys)
     m = ibis.map(a, a)
     for key in keys:
-        # ensure key is the same type as the array
-        # Otherwise on flink we get an error when we try
-        # ARRAY_CONTAINS(ARRAY<TINYINT NOT NULL> NOT NULL, INT NOT NULL)
-        if not isinstance(key, ibis.Expr):
-            key = ibis.literal(key)
-        key = key.cast(a.type().value_type)
         assert con.execute(m.contains(key))
 
 
