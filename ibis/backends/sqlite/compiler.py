@@ -88,7 +88,6 @@ class SQLiteCompiler(SQLGlotCompiler):
         ops.ExtractUserInfo: "_ibis_extract_user_info",
         ops.BitwiseXor: "_ibis_xor",
         ops.BitwiseNot: "_ibis_inv",
-        ops.Modulus: "mod",
         ops.TypeOf: "typeof",
         ops.BitOr: "_ibis_bit_or",
         ops.BitAnd: "_ibis_bit_and",
@@ -273,6 +272,9 @@ class SQLiteCompiler(SQLGlotCompiler):
                 seconds,
             )
         )
+
+    def visit_Modulus(self, op, *, left, right):
+        return self.f.anon.mod(left, right)
 
     def _temporal_truncate(self, func, arg, unit):
         modifiers = {

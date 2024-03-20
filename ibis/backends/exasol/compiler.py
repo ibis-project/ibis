@@ -92,7 +92,6 @@ class ExasolCompiler(SQLGlotCompiler):
 
     SIMPLE_OPS = {
         ops.Log10: "log10",
-        ops.Modulus: "mod",
         ops.All: "min",
         ops.Any: "max",
     }
@@ -118,6 +117,9 @@ class ExasolCompiler(SQLGlotCompiler):
     def _gen_valid_name(name: str) -> str:
         """Exasol does not allow dots in quoted column names."""
         return name.replace(".", "_")
+
+    def visit_Modulus(self, op, *, left, right):
+        return self.f.anon.mod(left, right)
 
     def visit_NonNullLiteral(self, op, *, value, dtype):
         if dtype.is_date():
