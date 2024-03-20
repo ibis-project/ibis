@@ -196,6 +196,7 @@ keys = pytest.mark.parametrize(
                 pytest.mark.notyet(
                     "clickhouse", reason="only supports str,int,bool,timestamp keys"
                 ),
+                pytest.mark.notyet("flink", reason="doesn't support float keys"),
                 mark_notyet_postgres,
             ],
             id="float",
@@ -301,6 +302,7 @@ values = pytest.mark.parametrize(
             marks=[
                 pytest.mark.notyet("clickhouse", reason="nested types can't be null"),
                 mark_notyet_postgres,
+                pytest.mark.notimpl("flink", reason="can't construct structs"),
             ],
             id="struct",
         ),
@@ -322,8 +324,15 @@ def test_map_get_all_types(con, keys, values):
 @keys
 @mark_notimpl_risingwave_hstore
 def test_map_contains_all_types(con, keys):
-    m = ibis.map(ibis.array(keys), ibis.array(keys))
+    a = ibis.array(keys)
+    m = ibis.map(a, a)
     for key in keys:
+        # ensure key is the same type as the array
+        # Otherwise on flink we get an error when we try
+        # ARRAY_CONTAINS(ARRAY<TINYINT NOT NULL> NOT NULL, INT NOT NULL)
+        if not isinstance(key, ibis.Expr):
+            key = ibis.literal(key)
+        key = key.cast(a.type().value_type)
         assert con.execute(m.contains(key))
 
 
