@@ -25,4 +25,6 @@ LEFT OUTER JOIN (
     AND "t1"."month" = CAST(2 AS TINYINT)
     AND "t1"."day" = CAST(29 AS TINYINT)
 ) AS "t5"
-  ON "t4"."year" = "t5"."year" AND "t4"."month" = "t5"."month" AND "t4"."day" = "t5"."day"
+  ON "t4"."year" = "t5"."year"
+  AND "t4"."month" = "t5"."month"
+  AND "t4"."day" = "t5"."day"
