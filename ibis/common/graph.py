@@ -56,19 +56,18 @@ def _flatten_collections(node: Any) -> Iterator[N]:
     >>> c = MyNode(2, "c", (a, b))
     >>> d = MyNode(1, "d", (c,))
     >>>
-    >>> assert list(_flatten_collections(a)) == [a]
     >>> assert list(_flatten_collections((c,))) == [c]
     >>> assert list(_flatten_collections([a, b, (c, a)])) == [a, b, c, a]
+    >>> assert list(_flatten_collections([{"b": b, "a": a}])) == [b, a]
 
     """
-    if isinstance(node, Node):
-        yield node
-    elif isinstance(node, (tuple, list)):
-        for item in node:
+    for item in node:
+        if isinstance(item, Node):
+            yield item
+        elif isinstance(item, (tuple, list)):
             yield from _flatten_collections(item)
-    elif isinstance(node, (dict, frozendict)):
-        for value in node.values():
-            yield from _flatten_collections(value)
+        elif isinstance(item, (dict, frozendict)):
+            yield from _flatten_collections(item.values())
 
 
 def _recursive_lookup(obj: Any, dct: dict) -> Any:
