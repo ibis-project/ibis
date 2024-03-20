@@ -61,14 +61,15 @@ def _flatten_collections(node: Any) -> Iterator[N]:
     >>> assert list(_flatten_collections([a, b, (c, a)])) == [a, b, c, a]
 
     """
-    if isinstance(node, Node):
-        yield node
-    elif isinstance(node, (tuple, list)):
-        for item in node:
-            yield from _flatten_collections(item)
-    elif isinstance(node, (dict, frozendict)):
-        for value in node.values():
-            yield from _flatten_collections(value)
+    queue = deque([node])
+    while queue:
+        item = queue.popleft()
+        if isinstance(item, Node):
+            yield item
+        elif isinstance(item, (tuple, list)):
+            queue.extend(item)
+        elif isinstance(item, (dict, frozendict)):
+            queue.extend(item.values())
 
 
 def _recursive_lookup(obj: Any, dct: dict) -> Any:
