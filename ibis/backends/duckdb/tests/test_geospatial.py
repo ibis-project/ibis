@@ -310,28 +310,33 @@ def test_load_geo_example(con):
 
 
 # For the next two tests we really want to ensure that
-# load_extenstion("spatial") hasn't been run yet. So we create a new connection
-# instead of using the  con fixture.
-
-# geospatial literal object,
-geo_line_lit = ibis.literal(
-    shapely.LineString([[0, 0], [1, 0], [1, 1]]), type="geometry"
-)
+# load_extenstion("spatial") hasn't been run yet, so we create a new connection
+# instead of using the con fixture.
 
 
-@pytest.mark.parametrize("geo_line_lit", [geo_line_lit])
-def test_geo_unop_geo_literals(geo_line_lit):
-    # GeoSpatialUnOp operation on a geospatial literal
-    con = ibis.duckdb.connect()
+@pytest.fixture(scope="session")
+def geo_line_lit():
+    return ibis.literal(shapely.LineString([[0, 0], [1, 0], [1, 1]]), type="geometry")
+
+
+@pytest.fixture(scope="session")
+def ext_dir(tmp_path_factory):
+    # this directory is necessary because of Windows extension downloads race
+    # condition
+    return tmp_path_factory.mktemp("extensions")
+
+
+def test_geo_unop_geo_literals(ext_dir, geo_line_lit):
+    """GeoSpatialUnOp operation on a geospatial literal"""
+    con = ibis.duckdb.connect(extension_directory=ext_dir)
     expr = geo_line_lit.length()
 
     assert con.execute(expr) == 2
 
 
-@pytest.mark.parametrize("geo_line_lit", [geo_line_lit])
-def test_geo_binop_geo_literals(geo_line_lit):
-    # GeoSpatialBinOp operation on a geospatial literal
-    con = ibis.duckdb.connect()
+def test_geo_binop_geo_literals(ext_dir, geo_line_lit):
+    """GeoSpatialBinOp operation on a geospatial literal"""
+    con = ibis.duckdb.connect(extension_directory=ext_dir)
     expr = geo_line_lit.distance(shapely.Point(0, 0))
 
     assert con.execute(expr) == 0
