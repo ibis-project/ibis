@@ -984,7 +984,7 @@ def test_asof_join_with_by():
         )
         assert join_without_by.op() == expected
 
-    join_with_by = api.asof_join(left, right, "time", by="key")
+    join_with_predicates = api.asof_join(left, right, "time", predicates="key")
     with join_tables(left, right) as (r1, r2):
         expected = ops.JoinChain(
             first=r1,
@@ -1000,7 +1000,7 @@ def test_asof_join_with_by():
                 "value2": r2.value2,
             },
         )
-        assert join_with_by.op() == expected
+        assert join_with_predicates.op() == expected
 
 
 @pytest.mark.parametrize(

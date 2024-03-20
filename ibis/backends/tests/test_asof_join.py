@@ -152,7 +152,7 @@ def test_keyed_asof_join_with_tolerance(
 ):
     on = op(time_keyed_left["time"], time_keyed_right["time"])
     expr = time_keyed_left.asof_join(
-        time_keyed_right, on=on, by="key", tolerance=ibis.interval(days=2)
+        time_keyed_right, on=on, predicates="key", tolerance=ibis.interval(days=2)
     )
 
     result = con.execute(expr)
