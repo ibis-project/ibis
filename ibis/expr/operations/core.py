@@ -9,7 +9,6 @@ from typing_extensions import Any, Self, TypeVar
 import ibis.expr.datashape as ds
 import ibis.expr.datatypes as dt
 import ibis.expr.rules as rlz
-from ibis import util
 from ibis.common.annotations import attribute
 from ibis.common.graph import Node as Traversable
 from ibis.common.grounds import Concrete
@@ -25,11 +24,6 @@ class Node(Concrete, Traversable):
                 f"invalid equality comparison between Node and {type(other)}"
             )
         return self.__cached_equals__(other)
-
-    @util.deprecated(as_of="4.0", instead="remove intermediate .op() calls")
-    def op(self) -> Self:
-        """Make `Node` backwards compatible with code that uses `Expr.op()`."""
-        return self
 
     # Avoid custom repr for performance reasons
     __repr__ = object.__repr__
@@ -121,16 +115,6 @@ class Value(Node, Coercible, DefaultTypeVars, Generic[T, S]):
         """Set of relations the value node depends on."""
         children = (n.relations for n in self.__children__ if isinstance(n, Value))
         return frozenset().union(*children)
-
-    @property
-    @util.deprecated(as_of="7.0", instead="use .dtype property instead")
-    def output_dtype(self):
-        return self.dtype
-
-    @property
-    @util.deprecated(as_of="7.0", instead="use .shape property instead")
-    def output_shape(self):
-        return self.shape
 
     def to_expr(self):
         import ibis.expr.types as ir
