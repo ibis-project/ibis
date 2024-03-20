@@ -265,6 +265,19 @@ g
 g.order_by("count")
 ```
 
+## Polars
+
+```{python}
+con = ibis.polars.connect()
+t = con.read_parquet("penguins.parquet")
+g = t.alias("penguins").sql(sql)
+g
+```
+
+```{python}
+g.order_by("count")
+```
+
 ## DataFusion
 
 ```{python}
