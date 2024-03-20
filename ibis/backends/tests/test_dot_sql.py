@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import contextlib
+import getpass
 
 import pandas as pd
 import pandas.testing as tm
@@ -13,6 +14,7 @@ import ibis.backends.sql.dialects  # to load dialects
 import ibis.common.exceptions as com
 from ibis import _
 from ibis.backends import _get_backend_names
+from ibis.backends.tests.base import PYTHON_SHORT_VERSION
 from ibis.backends.tests.errors import (
     ExaQueryError,
     GoogleBadRequest,
@@ -25,7 +27,7 @@ dot_sql_never = pytest.mark.never(
 )
 
 _NAMES = {
-    "bigquery": "ibis_gbq_testing.functional_alltypes",
+    "bigquery": f"ibis_gbq_testing_{getpass.getuser()}_{PYTHON_SHORT_VERSION}.functional_alltypes",
     "exasol": '"functional_alltypes"',
 }
 

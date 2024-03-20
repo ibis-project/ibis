@@ -3,7 +3,6 @@ from __future__ import annotations
 import collections
 import datetime
 import decimal
-import itertools
 
 import pandas as pd
 import pandas.testing as tm
@@ -12,7 +11,6 @@ import pytz
 
 import ibis
 import ibis.expr.datatypes as dt
-import ibis.expr.operations as ops
 from ibis.backends.bigquery.client import bigquery_param
 from ibis.util import gen_name
 
@@ -112,8 +110,7 @@ def test_different_partition_col_name(monkeypatch, con):
     assert col in parted_alltypes.columns
 
 
-def test_subquery_scalar_params(alltypes, monkeypatch, snapshot):
-    monkeypatch.setattr(ops.ScalarParameter, "_counter", itertools.count())
+def test_subquery_scalar_params(alltypes):
     t = alltypes
     p = ibis.param("timestamp").name("my_param")
     expr = (
@@ -126,7 +123,7 @@ def test_subquery_scalar_params(alltypes, monkeypatch, snapshot):
         .name("count")
     )
     result = expr.compile(params={p: "20140101"})
-    snapshot.assert_match(result, "out.sql")
+    assert "datetime('2014-01-01T00:00:00')" in result
 
 
 def test_repr_struct_of_array_of_struct():

@@ -184,9 +184,8 @@ def test_auth_cache_unknown(project_id):
         )
 
 
-def test_client_with_regional_endpoints(
-    project_id, credentials, dataset_id, dataset_id_tokyo, region_tokyo
-):
+def test_client_with_regional_endpoints(project_id, credentials, dataset_id):
+    region_tokyo = "asia-northeast1"
     bq_options = google.api_core.client_options.ClientOptions(
         api_endpoint=f"https://{region_tokyo}-bigquery.googleapis.com"
     )
@@ -207,12 +206,12 @@ def test_client_with_regional_endpoints(
     )
 
     tokyo_con.raw_sql(
-        """
-        CREATE SCHEMA IF NOT EXISTS ibis_gbq_testing_tokyo OPTIONS (
+        f"""
+        CREATE SCHEMA IF NOT EXISTS {dataset_id}_tokyo OPTIONS (
             location = 'asia-northeast1'
         );
 
-        CREATE OR REPLACE TABLE ibis_gbq_testing_tokyo.functional_alltypes (
+        CREATE OR REPLACE TABLE {dataset_id}_tokyo.functional_alltypes (
             id INT64,
             bool_col BOOLEAN,
             tinyint_col INT64,
@@ -235,7 +234,7 @@ def test_client_with_regional_endpoints(
         tokyo_con.table(f"{dataset_id}.functional_alltypes")
 
     # Succeeds because dataset is in Tokyo.
-    alltypes = tokyo_con.table(f"{dataset_id_tokyo}.functional_alltypes")
+    alltypes = tokyo_con.table(f"{dataset_id}_tokyo.functional_alltypes")
     df = alltypes.execute()
     assert df.empty
     assert not len(alltypes.to_pyarrow())
