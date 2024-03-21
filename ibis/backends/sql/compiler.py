@@ -1203,30 +1203,6 @@ class SQLGlotCompiler(abc.ABC):
             return sge.paren(sg_expr, copy=False)
         return sg_expr
 
-    def visit_Filter(self, op, *, parent, predicates):
-        predicates = (
-            self._add_parens(raw_predicate, predicate)
-            for raw_predicate, predicate in zip(op.predicates, predicates)
-        )
-        try:
-            return parent.where(*predicates, copy=False)
-        except AttributeError:
-            return (
-                sg.select(STAR, copy=False)
-                .from_(parent, copy=False)
-                .where(*predicates, copy=False)
-            )
-
-    def visit_Sort(self, op, *, parent, keys):
-        try:
-            return parent.order_by(*keys, copy=False)
-        except AttributeError:
-            return (
-                sg.select(STAR, copy=False)
-                .from_(parent, copy=False)
-                .order_by(*keys, copy=False)
-            )
-
     def visit_Union(self, op, *, left, right, distinct):
         if isinstance(left, (sge.Table, sge.Subquery)):
             left = sg.select(STAR, copy=False).from_(left, copy=False)
