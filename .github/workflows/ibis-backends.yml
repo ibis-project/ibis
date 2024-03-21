@@ -194,19 +194,6 @@ jobs:
               - "'apache-flink < 1.20.0'"
             services:
               - flink
-        include:
-          - os: ubuntu-latest
-            python-version: "3.10"
-            backend:
-              name: flink
-              title: Flink
-              serial: true
-              extras:
-                - flink
-              additional_deps:
-                - "'apache-flink < 1.20.0'"
-              services:
-                - flink
         exclude:
           - os: windows-latest
             backend:
@@ -313,18 +300,6 @@ jobs:
               services:
                 - oracle
           - os: windows-latest
-            backend:
-              name: flink
-              title: Flink
-              serial: true
-              extras:
-                - flink
-              additional_deps:
-                - "'apache-flink < 1.20.0'"
-              services:
-                - flink
-          - os: ubuntu-latest
-            python-version: "3.11"
             backend:
               name: flink
               title: Flink
