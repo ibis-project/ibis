@@ -2025,6 +2025,16 @@ def test_topk_counts_null(con):
     raises=AssertionError,
     reason="ClickHouse returns False for x.isin([None])",
 )
+@pytest.mark.notimpl(
+    ["pandas", "dask"],
+    raises=AssertionError,
+    reason="null isin semantics are not implemented for pandas or dask",
+)
+@pytest.mark.never(
+    "mssql",
+    raises=AssertionError,
+    reason="mssql doesn't support null isin semantics in a projection because there is no bool type",
+)
 def test_null_isin_null_is_null(con):
     t = ibis.memtable({"x": [1]})
     expr = t.x.isin([None])
