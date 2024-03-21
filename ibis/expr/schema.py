@@ -89,7 +89,7 @@ class Schema(Concrete, Coercible, MapSet):
             raise TypeError(
                 f"invalid equality comparison between Schema and {type(other)}"
             )
-        return self.__cached_equals__(other)
+        return self == other
 
     @classmethod
     def from_tuples(

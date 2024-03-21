@@ -23,7 +23,7 @@ class Node(Concrete, Traversable):
             raise TypeError(
                 f"invalid equality comparison between Node and {type(other)}"
             )
-        return self.__cached_equals__(other)
+        return self == other
 
     # Avoid custom repr for performance reasons
     __repr__ = object.__repr__

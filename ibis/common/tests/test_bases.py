@@ -17,7 +17,6 @@ from ibis.common.bases import (
     Singleton,
     Slotted,
 )
-from ibis.common.caching import WeakCache
 
 
 def test_classes_are_based_on_abstract():
@@ -79,9 +78,19 @@ def test_immutable():
     assert copy.deepcopy(foo) is foo
 
 
+class Cache(dict):
+    def setpair(self, a, b, value):
+        a, b = id(a), id(b)
+        self.setdefault(a, {})[b] = value
+        self.setdefault(b, {})[a] = value
+
+    def getpair(self, a, b):
+        return self.get(id(a), {}).get(id(b))
+
+
 class Node(Comparable):
     # override the default cache object
-    __cache__ = WeakCache()
+    __cache__ = Cache()
     __slots__ = ("name",)
     num_equal_calls = 0
 
@@ -107,14 +116,6 @@ def cache():
     assert not cache
 
 
-def pair(a, b):
-    # for same ordering with comparable
-    if id(a) < id(b):
-        return (a, b)
-    else:
-        return (b, a)
-
-
 def test_comparable_basic(cache):
     a = Node(name="a")
     b = Node(name="a")
@@ -133,28 +134,48 @@ def test_comparable_caching(cache):
     d = Node(name="d")
     e = Node(name="e")
 
-    cache[pair(a, b)] = True
-    cache[pair(a, c)] = False
-    cache[pair(c, d)] = True
-    cache[pair(b, d)] = False
-    assert len(cache) == 4
+    cache.setpair(a, b, True)
+    cache.setpair(a, c, False)
+    cache.setpair(c, d, True)
+    cache.setpair(b, d, False)
+    expected = {
+        id(a): {id(b): True, id(c): False},
+        id(b): {id(a): True, id(d): False},
+        id(c): {id(a): False, id(d): True},
+        id(d): {id(c): True, id(b): False},
+    }
+    assert cache == expected
 
     assert a == b
+    assert b == a
     assert a != c
+    assert c != a
     assert c == d
+    assert d == c
     assert b != d
+    assert d != b
     assert Node.num_equal_calls == 0
+    assert cache == expected
 
     # no cache hit
-    assert pair(a, e) not in cache
+    assert cache.getpair(a, e) is None
     assert a != e
+    assert cache.getpair(a, e) is False
     assert Node.num_equal_calls == 1
-    assert len(cache) == 5
+    expected = {
+        id(a): {id(b): True, id(c): False, id(e): False},
+        id(b): {id(a): True, id(d): False},
+        id(c): {id(a): False, id(d): True},
+        id(d): {id(c): True, id(b): False},
+        id(e): {id(a): False},
+    }
+    assert cache == expected
 
     # run only once
     assert e != a
     assert Node.num_equal_calls == 1
-    assert pair(a, e) in cache
+    assert cache.getpair(a, e) is False
+    assert cache == expected
 
 
 def test_comparable_garbage_collection(cache):
@@ -163,16 +184,29 @@ def test_comparable_garbage_collection(cache):
     c = Node(name="c")
     d = Node(name="d")
 
-    cache[pair(a, b)] = True
-    cache[pair(a, c)] = False
-    cache[pair(c, d)] = True
-    cache[pair(b, d)] = False
+    cache.setpair(a, b, True)
+    cache.setpair(a, c, False)
+    cache.setpair(c, d, True)
+    cache.setpair(b, d, False)
 
-    assert weakref.getweakrefcount(a) == 2
+    assert cache.getpair(a, c) is False
+    assert cache.getpair(c, d) is True
     del c
-    assert weakref.getweakrefcount(a) == 1
+    assert cache == {
+        id(a): {id(b): True},
+        id(b): {id(a): True, id(d): False},
+        id(d): {id(b): False},
+    }
+
+    assert cache.getpair(a, b) is True
+    assert cache.getpair(b, d) is False
     del b
-    assert weakref.getweakrefcount(a) == 0
+    assert cache == {}
+
+    assert a != d
+    assert cache == {id(a): {id(d): False}, id(d): {id(a): False}}
+    del a
+    assert cache == {}
 
 
 def test_comparable_cache_reuse(cache):
