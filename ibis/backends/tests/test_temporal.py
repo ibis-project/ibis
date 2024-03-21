@@ -81,16 +81,7 @@ def test_date_extract(backend, alltypes, df, attr, expr_fn):
         ),
         "hour",
         "minute",
-        param(
-            "second",
-            marks=[
-                pytest.mark.broken(
-                    ["exasol"],
-                    raises=AssertionError,
-                    reason="seems like exasol might be rounding",
-                )
-            ],
-        ),
+        "second",
     ],
 )
 @pytest.mark.notimpl(
