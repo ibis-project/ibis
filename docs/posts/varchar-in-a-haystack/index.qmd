@@ -1,0 +1,38 @@
+---
+title: "Varchar in a Haystack"
+author: "Tyler White"
+error: false
+date: "2024-03-21"
+image: thumbnail.png
+categories:
+  - blog
+  - data analysis
+  - puzzle
+---
+
+## The Scenario
+
+You're a data analyst, and a new ticket just landed in your queue. It reads something like this:
+
+> Subject: Urgent: Data Discovery Needed for Critical Analysis
+> Hi Data Team,
+> 
+> I hope this message finds you well. I'm reaching out with an urgent request 
+> that directly impacts the company's most critical project. We need to locate
+> a specific value within our database but don't know which column it's in. 
+> Unfortunately, we don't have documentation for this particular table. We are 
+> looking for the value "NEEDLE" in the table.
+> 
+> We think it is in the X database, Y schema, and Z table. We appreciate your 
+> help with this urgent matter!
+
+You're not sure what to make of this request, but you're intrigued. You decide
+to give it a shot.
+
+## Next steps
+
+It's pretty easy to do complex analysis with Ibis. 
+
+Get in touch with us on [GitHub](https://github.com/ibis-project) or
+[Zulip](https://ibis-project.zulipchat.com/), we'd love to see more analyses of this
+data set.
