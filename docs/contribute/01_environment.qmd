@@ -108,13 +108,13 @@ for manager, params in managers.items():
 
 ### Support matrix
 
-|      Python Version {{< fa arrow-right >}} |                Python 3.9                 |           Python 3.10           |           Python 3.11           |
-| -----------------------------------------: | :---------------------------------------: | :-----------------------------: | :-----------------------------: |
-| **Operating System** {{< fa arrow-down >}} |                                           |                                 |                                 |
-|                                  **Linux** |       {{< fa check >}} [^supported]       |        {{< fa check >}}         |        {{< fa check >}}         |
-|                         **macOS (x86_64)** |             {{< fa check >}}              |        {{< fa check >}}         |        {{< fa check >}}         |
-|                        **macOS (aarch64)** | {{< fa triangle-exclamation >}}[^unknown] | {{< fa triangle-exclamation >}} | {{< fa triangle-exclamation >}} |
-|                                **Windows** |         {{< fa ban >}}[^unlikely]         |         {{< fa ban >}}          |         {{< fa ban >}}          |
+|      Python Version {{< fa arrow-right >}} |  Python 3.9                  |  Python 3.10              |   Python 3.11             |
+| -----------------------------------------: | :--------------------------: | :-----------------------: | :-----------------------: |
+| **Operating System** {{< fa arrow-down >}} |                              |                           |                           |
+|                                  **Linux** | {{< fa check >}}[^supported] | {{< fa check >}}          | {{< fa check >}}          |
+|                         **macOS (x86_64)** | {{< fa check >}}             | {{< fa check >}}          | {{< fa check >}}          |
+|                    **macOS (arm64/M1/M2)** | {{< fa ban >}}[^m1]          | {{< fa ban >}}[^m1]       | {{< fa ban >}}[^m1]       |
+|                                **Windows** | {{< fa ban >}}[^unlikely]    | {{< fa ban >}}[^unlikely] | {{< fa ban >}}[^unlikely] |
 
 1.  [Install `nix`](https://nixos.org/download.html)
 1.  Configure `nix`
@@ -218,5 +218,5 @@ to build and serve the documentation.
 
 [^conda-callout]: Some optional dependencies for Windows and Mac OS are not available through `conda`/`mamba`
 [^supported]: Tested in CI. If this doesn't work for you, please [file an issue](https://github.com/ibis-project/ibis/issues/new).
-[^unknown]: Not tested in CI. Unknown if this setup works.
+[^m1]: Not working as of March 2024. See https://github.com/ibis-project/ibis/issues/8696
 [^unlikely]: Unlikely to ever be supported or no upstream support.
