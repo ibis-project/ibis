@@ -1360,7 +1360,7 @@ def read_csv(
         Backend-specific keyword arguments for the file type. For the DuckDB
         backend used by default, please refer to:
 
-        * CSV/TSV: https://duckdb.org/docs/data/csv#parameters.
+        * CSV/TSV: https://duckdb.org/docs/data/csv/overview.html#parameters.
 
     Returns
     -------
