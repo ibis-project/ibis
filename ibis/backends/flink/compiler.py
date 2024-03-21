@@ -302,7 +302,7 @@ class FlinkCompiler(SQLGlotCompiler):
     def visit_MapGet(self, op, *, arg, key, default):
         if default is NULL:
             default = self.cast(default, op.dtype)
-        return self.f.coalesce(arg[key], default)
+        return self.f.coalesce(arg[self.cast(key, op.arg.dtype.key_type)], default)
 
     def visit_ArraySlice(self, op, *, arg, start, stop):
         args = [arg, self.if_(start >= 0, start + 1, start)]
