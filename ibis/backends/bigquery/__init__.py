@@ -719,8 +719,6 @@ class Backend(SQLBackend, CanCreateSchema):
         """
         self._run_pre_execute_hooks(expr)
 
-        # TODO: upstream needs to pass params to raw_sql, I think.
-        kwargs.pop("timecontext", None)
         sql = self.compile(expr, limit=limit, params=params, **kwargs)
         self._log(sql)
         cursor = self.raw_sql(sql, params=params, **kwargs)
