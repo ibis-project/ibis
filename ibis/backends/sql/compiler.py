@@ -14,6 +14,7 @@ import sqlglot.expressions as sge
 from public import public
 
 import ibis.common.exceptions as com
+import ibis.common.patterns as pats
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 from ibis.backends.sql.rewrites import (
@@ -174,6 +175,20 @@ class SQLGlotCompiler(abc.ABC):
         rewrite_capitalize,
     )
     """A sequence of rewrites to apply to the expression tree before compilation."""
+
+    extra_supported_ops: frozenset = frozenset(
+        (
+            ops.Project,
+            ops.Filter,
+            ops.Sort,
+            ops.WindowFunction,
+            ops.RowsWindowFrame,
+            ops.RangeWindowFrame,
+        )
+    )
+    """A frozenset of ops classes that are supported, but don't have explicit
+    `visit_*` methods (usually due to being handled by rewrite rules). Used by
+    `has_operation`"""
 
     no_limit_value: sge.Null | None = None
     """The value to use to indicate no limit."""
@@ -365,6 +380,15 @@ class SQLGlotCompiler(abc.ABC):
             name = methodname(op)
             if not hasattr(cls, name):
                 setattr(cls, name, cls.visit_Undefined)
+
+        # Expand extra_supported_ops with any rewrite rules
+        extra_supported_ops = set(cls.extra_supported_ops)
+        for rule in cls.rewrites:
+            if isinstance(rule, pats.Replace) and isinstance(
+                rule.matcher, pats.InstanceOf
+            ):
+                extra_supported_ops.add(rule.matcher.type)
+        cls.extra_supported_ops = frozenset(extra_supported_ops)
 
     @property
     @abc.abstractmethod

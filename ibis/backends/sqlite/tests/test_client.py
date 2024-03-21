@@ -8,6 +8,7 @@ import pytest
 from pytest import param
 
 import ibis
+import ibis.expr.operations as ops
 from ibis.conftest import not_windows
 
 
@@ -75,3 +76,15 @@ def test_connect(url, ext, tmp_path):
     con = ibis.connect(url(path))
     one = ibis.literal(1)
     assert con.execute(one) == 1
+
+
+def test_has_operation(con):
+    # Core operations handled in non-standard ways
+    for op in [ops.Project, ops.Filter, ops.Sort, ops.Aggregate]:
+        assert con.has_operation(op)
+    # Handled by base class rewrite
+    assert con.has_operation(ops.Capitalize)
+    # Handled by compiler-specific rewrite
+    assert con.has_operation(ops.Sample)
+    # Handled by visit_* method
+    assert con.has_operation(ops.Cast)
