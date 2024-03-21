@@ -468,3 +468,10 @@ def test_map_keys_unnest(backend):
     expr = backend.map.kv.keys().unnest()
     result = expr.to_pandas()
     assert frozenset(result) == frozenset("abcdef")
+
+
+@mark_notimpl_risingwave_hstore
+def test_map_contains_null(con):
+    expr = ibis.map(["a"], ibis.literal([None], type="array<string>"))
+    assert con.execute(expr.contains("a"))
+    assert not con.execute(expr.contains("b"))
