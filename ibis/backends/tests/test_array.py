@@ -583,7 +583,7 @@ def test_array_contains(backend, con, col, value):
                 pytest.mark.notyet(
                     ["flink"],
                     raises=Py4JJavaError,
-                    reason="SQL validation failed; Flink does not support ARRAY[]",
+                    reason="SQL validation failed; Flink does not support ARRAY[]",  # https://issues.apache.org/jira/browse/FLINK-20578
                 ),
                 pytest.mark.broken(
                     ["datafusion"],
@@ -621,7 +621,7 @@ def test_array_position(con, a, expected_array):
                 pytest.mark.notyet(
                     ["flink"],
                     raises=Py4JJavaError,
-                    reason="SQL validation failed; Flink does not support ARRAY[]",
+                    reason="SQL validation failed; Flink does not support ARRAY[]",  # https://issues.apache.org/jira/browse/FLINK-20578
                 )
             ],
         ),
@@ -808,7 +808,10 @@ def test_array_intersect(con, data):
     ["trino"], reason="inserting maps into structs doesn't work", raises=TrinoUserError
 )
 @pytest.mark.broken(
-    ["flink"], raises=Py4JJavaError, reason="error on memtable compilation"
+    ["flink"],
+    raises=Py4JJavaError,
+    reason="flink throws exception on named struct with a single field",
+    # also cannot do array<struct<>> in flink; needs to be written as row<row<struct<>>>
 )
 def test_unnest_struct(con):
     data = {"value": [[{"a": 1}, {"a": 2}], [{"a": 3}, {"a": 4}]]}
@@ -907,7 +910,10 @@ def test_zip_null(con, fn):
     ["trino"], reason="inserting maps into structs doesn't work", raises=TrinoUserError
 )
 @pytest.mark.broken(
-    ["flink"], raises=Py4JJavaError, reason="error on memtable compilation"
+    ["flink"],
+    raises=Py4JJavaError,
+    reason="flink throws exception on named struct with a single field",
+    # also cannot do array<struct<>> in flink; needs to be written as row<row<struct<>>>
 )
 def test_array_of_struct_unnest(con):
     jobs = ibis.memtable(
@@ -1090,7 +1096,9 @@ def test_range_start_stop_step_zero(con, start, stop):
     reason="backend doesn't support unnest",
 )
 @pytest.mark.broken(
-    ["flink"], raises=Py4JJavaError, reason="error on memtable compilation"
+    ["flink"],
+    raises=Py4JJavaError,
+    reason="SQL validation failed; Flink does not support ARRAY[]",  # https://issues.apache.org/jira/browse/FLINK-20578
 )
 def test_unnest_empty_array(con):
     t = ibis.memtable({"arr": [[], ["a"], ["a", "b"]]})
