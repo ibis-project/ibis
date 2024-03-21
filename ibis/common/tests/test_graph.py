@@ -288,12 +288,7 @@ def test_flatten_collections():
     assert list(result) == [A, B, C, D, E]
 
     result = _flatten_collections(
-        {
-            "a": 0.0,
-            "b": A,
-            "c": (MyMapping(d=B, e=3), frozendict(f=C)),
-            "d": [5, "6", {"e": (D, 8.9)}],
-        }
+        [0.0, A, (MyMapping(d=B, e=3), frozendict(f=C)), [5, "6", {"e": (D, 8.9)}]]
     )
     assert list(result) == [A, C, D]
 
