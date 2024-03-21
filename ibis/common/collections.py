@@ -281,7 +281,7 @@ class FrozenDict(dict, Mapping[K, V], Hashable):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        hashable = frozenset(dict(self).items())
+        hashable = frozenset(self.items())
         object.__setattr__(self, "__precomputed_hash__", hash(hashable))
 
     def __hash__(self) -> int:
