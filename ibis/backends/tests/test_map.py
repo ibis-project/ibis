@@ -29,6 +29,10 @@ mark_notyet_postgres = pytest.mark.notyet(
     "postgres", reason="only supports string -> string"
 )
 
+mark_notyet_snowflake = pytest.mark.notyet(
+    "snowflake", reason="map keys must be strings"
+)
+
 mark_notimpl_risingwave_hstore = pytest.mark.notimpl(
     ["risingwave"],
     reason="function hstore(character varying[], character varying[]) does not exist",
@@ -178,16 +182,12 @@ keys = pytest.mark.parametrize(
         pytest.param(["a", "b"], id="string"),
         pytest.param(
             [1, 2],
-            marks=[
-                mark_notyet_postgres,
-            ],
+            marks=[mark_notyet_postgres, mark_notyet_snowflake],
             id="int",
         ),
         pytest.param(
             [True, False],
-            marks=[
-                mark_notyet_postgres,
-            ],
+            marks=[mark_notyet_postgres, mark_notyet_snowflake],
             id="bool",
         ),
         pytest.param(
@@ -197,12 +197,13 @@ keys = pytest.mark.parametrize(
                     "clickhouse", reason="only supports str,int,bool,timestamp keys"
                 ),
                 mark_notyet_postgres,
+                mark_notyet_snowflake,
             ],
             id="float",
         ),
         pytest.param(
             [ibis.timestamp("2021-01-01"), ibis.timestamp("2021-01-02")],
-            marks=mark_notyet_postgres,
+            marks=[mark_notyet_postgres, mark_notyet_snowflake],
             id="timestamp",
         ),
         pytest.param(
@@ -215,6 +216,7 @@ keys = pytest.mark.parametrize(
                     ["pandas", "dask"], reason="DateFromYMD isn't implemented"
                 ),
                 mark_notyet_postgres,
+                mark_notyet_snowflake,
             ],
             id="date",
         ),
@@ -226,6 +228,7 @@ keys = pytest.mark.parametrize(
                 ),
                 pytest.mark.notyet(["pandas", "dask"]),
                 mark_notyet_postgres,
+                mark_notyet_snowflake,
             ],
             id="array",
         ),
@@ -238,6 +241,7 @@ keys = pytest.mark.parametrize(
                 pytest.mark.notyet(["pandas", "dask"]),
                 mark_notyet_postgres,
                 pytest.mark.notimpl("flink"),
+                mark_notyet_snowflake,
             ],
             id="struct",
         ),
