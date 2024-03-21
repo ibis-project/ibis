@@ -198,7 +198,7 @@ class SnowflakeCompiler(SQLGlotCompiler):
     def visit_Map(self, op, *, keys, values):
         return self.if_(
             sg.and_(self.f.is_array(keys), self.f.is_array(values)),
-            self.f.udf.object_from_arrays(keys, values),
+            self.f.arrays_to_object(keys, values),
             NULL,
         )
 
