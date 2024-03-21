@@ -210,7 +210,6 @@ def test_timestamp_extract_milliseconds(backend, alltypes, df):
     raises=GoogleBadRequest,
     reason="UNIX_SECONDS does not support DATETIME arguments",
 )
-@pytest.mark.notimpl(["exasol"], raises=com.OperationNotDefinedError)
 @pytest.mark.broken(
     ["dask", "pandas"],
     raises=AssertionError,
