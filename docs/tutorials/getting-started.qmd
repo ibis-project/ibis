@@ -1,4 +1,8 @@
-# Tutorial: getting started
+---
+title: "Tutorial: getting started"
+aliases:
+  - getting_started.html
+---
 
 This is a quick tour of some basic commands and usage patterns, just to get your flippers wet.
 
