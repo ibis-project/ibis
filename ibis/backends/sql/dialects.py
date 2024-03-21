@@ -21,6 +21,8 @@ from sqlglot.dialects import (
 from sqlglot.dialects.dialect import rename_func
 from sqlglot.helper import find_new_name, seq_get
 
+from ibis.backends.sql.expressions import AntiWindowJoin, SemiWindowJoin
+
 ClickHouse.Generator.TRANSFORMS |= {
     sge.ArraySize: rename_func("length"),
     sge.ArraySort: rename_func("arraySort"),
@@ -208,6 +210,8 @@ class Flink(Hive):
             sge.DayOfWeek: rename_func("dayofweek"),
             sge.DayOfMonth: rename_func("dayofmonth"),
             sge.Interval: _interval_with_precision,
+            AntiWindowJoin: lambda self, expr: self.window_join_sql(expr),
+            SemiWindowJoin: lambda self, expr: self.window_join_sql(expr),
         }
 
         def struct_sql(self, expression: sge.Struct) -> str:
