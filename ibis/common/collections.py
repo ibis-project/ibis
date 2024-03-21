@@ -3,7 +3,6 @@ from __future__ import annotations
 import collections.abc
 from abc import abstractmethod
 from itertools import tee
-from types import MappingProxyType
 from typing import TYPE_CHECKING, Any, Generic, TypeVar
 
 from public import public
@@ -276,42 +275,26 @@ class MapSet(Mapping[K, V]):
 
 
 @public
-class FrozenDict(Mapping[K, V], Hashable):
-    """Immutable dictionary with a precomputed hash value."""
-
-    __slots__ = ("__view__", "__precomputed_hash__")
-    __view__: MappingProxyType
+class FrozenDict(dict, Mapping[K, V], Hashable):
+    __slots__ = ("__precomputed_hash__",)
     __precomputed_hash__: int
 
     def __init__(self, *args, **kwargs):
-        dictview = MappingProxyType(dict(*args, **kwargs))
-        dicthash = hash(tuple(dictview.items()))
-        object.__setattr__(self, "__view__", dictview)
-        object.__setattr__(self, "__precomputed_hash__", dicthash)
+        super().__init__(*args, **kwargs)
+        hashable = frozenset(self.items())
+        object.__setattr__(self, "__precomputed_hash__", hash(hashable))
 
-    def __str__(self):
-        return str(self.__view__)
+    def __hash__(self) -> int:
+        return self.__precomputed_hash__
 
-    def __repr__(self):
-        return f"{self.__class__.__name__}({dict(self.__view__)!r})"
+    def __setitem__(self, key: K, value: V) -> None:
+        raise TypeError("'FrozenDict' object does not support item assignment")
 
     def __setattr__(self, name: str, _: Any) -> None:
         raise TypeError(f"Attribute {name!r} cannot be assigned to frozendict")
 
-    def __reduce__(self):
-        return self.__class__, (dict(self.__view__),)
-
-    def __iter__(self):
-        return iter(self.__view__)
-
-    def __len__(self):
-        return len(self.__view__)
-
-    def __getitem__(self, key):
-        return self.__view__[key]
-
-    def __hash__(self):
-        return self.__precomputed_hash__
+    def __reduce__(self) -> tuple:
+        return (self.__class__, (dict(self),))
 
 
 class RewindableIterator(Iterator[V]):

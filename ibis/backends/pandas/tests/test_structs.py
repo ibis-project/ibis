@@ -57,6 +57,9 @@ def test_struct_field_literal(value):
     result = con.execute(expr)
     assert result == 0
 
+    expr = struct.cast("struct<fruit: string, weight: float64>")
+    assert con.execute(expr) == {"fruit": "pear", "weight": 0.0}
+
 
 def test_struct_field_series(struct_table):
     t = struct_table

@@ -423,12 +423,9 @@ def test_frozendict():
     with pytest.raises(TypeError, match=msg):
         d["d"] = 4
 
-    with pytest.raises(TypeError):
-        d.__view__["a"] = 2
-    with pytest.raises(TypeError):
-        d.__view__ = {"a": 2}
+    assert hash(FrozenDict(a=1, b=2)) == hash(FrozenDict(b=2, a=1))
+    assert hash(FrozenDict(a=1, b=2)) != hash(d)
 
-    assert hash(d)
     assert_pickle_roundtrip(d)
 
 
