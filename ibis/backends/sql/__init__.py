@@ -35,8 +35,11 @@ class SQLBackend(BaseBackend):
     @classmethod
     def has_operation(cls, operation: type[ops.Value]) -> bool:
         compiler = cls.compiler
+        if operation in compiler.extra_supported_ops:
+            return True
         method = getattr(compiler, f"visit_{operation.__name__}", None)
-        return method is not None and method not in (
+        return method not in (
+            None,
             compiler.visit_Undefined,
             compiler.visit_Unsupported,
         )
