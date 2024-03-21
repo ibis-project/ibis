@@ -154,7 +154,7 @@ class ExasolCompiler(SQLGlotCompiler):
         return self.f.locate(needle, haystack) > 0
 
     def visit_ExtractSecond(self, op, *, arg):
-        return self.f.floor(self.cast(self.f.extract(self.v.second, arg), op.dtype))
+        return self.cast(self.f.floor(self.f.extract(self.v.second, arg)), op.dtype)
 
     def visit_ExtractMillisecond(self, op, *, arg):
         return self.cast(
