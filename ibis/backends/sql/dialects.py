@@ -19,6 +19,8 @@ from sqlglot.dialects import (
 )
 from sqlglot.dialects.dialect import rename_func
 
+from ibis.backends.sql.expressions import AntiWindowJoin, SemiWindowJoin
+
 ClickHouse.Generator.TRANSFORMS |= {
     sge.ArraySize: rename_func("length"),
     sge.ArraySort: rename_func("arraySort"),
@@ -133,7 +135,26 @@ class Flink(Hive):
             sge.DayOfWeek: rename_func("dayofweek"),
             sge.DayOfMonth: rename_func("dayofmonth"),
             sge.Interval: _interval_with_precision,
+            AntiWindowJoin: lambda self, expr: self.window_join_sql(expr),
+            SemiWindowJoin: lambda self, expr: self.window_join_sql(expr),
         }
+
+        def window_join_sql(self, expr: AntiWindowJoin | SemiWindowJoin) -> str:
+            space = self.seg(" " * self.pad) if self.pretty else " "
+            where_sql = self.sql(expr, "where")
+            if where_sql:
+                where_sql = self.indent(where_sql, skip_first=True)
+                where_sql = f"{space}WHERE {where_sql}"
+
+            # Note: When `this` is `sge.Subquery`, `this_sql` is wrapped
+            # with '( ... )', which leads to a failure in Flink.
+            this = expr.args.get("this")
+            if isinstance(this, sge.Subquery):
+                this = this.unnest()
+            this_sql = self.sql(this)
+
+            not_sql = "NOT " if isinstance(expr, AntiWindowJoin) else ""
+            return f" WHERE {not_sql}EXISTS {self.wrap(f'{this_sql}{where_sql}')}"
 
     class Tokenizer(Hive.Tokenizer):
         # In Flink, embedded single quotes are escaped like most other SQL

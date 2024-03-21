@@ -11,6 +11,7 @@ import ibis.expr.operations as ops
 from ibis.backends.sql.compiler import NULL, STAR, SQLGlotCompiler
 from ibis.backends.sql.datatypes import FlinkType
 from ibis.backends.sql.dialects import Flink
+from ibis.backends.sql.expressions import AntiWindowJoin, SemiWindowJoin
 from ibis.backends.sql.rewrites import (
     exclude_unsupported_window_frame_from_ops,
     exclude_unsupported_window_frame_from_rank,
@@ -566,3 +567,15 @@ class FlinkCompiler(SQLGlotCompiler):
         values = self.f.array_concat(left_values, right_values)
 
         return self.cast(self.f.map_from_arrays(keys, values), op.dtype)
+
+    def visit_JoinLink(self, op, *, how, table, predicates):
+        if how not in {"anti_window", "semi_window"}:
+            return super().visit_JoinLink(
+                op=op, how=how, table=table, predicates=predicates
+            )
+
+        where = sg.and_(*predicates) if predicates else None
+        select_table = sg.select(STAR, copy=False).from_(table, copy=False)
+
+        window_join_class = AntiWindowJoin if how == "anti_window" else SemiWindowJoin
+        return window_join_class(this=select_table, where=where)
