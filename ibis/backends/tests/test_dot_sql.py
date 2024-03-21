@@ -352,10 +352,9 @@ def test_cte(alltypes, df):
 
 
 @dot_sql_never
-def test_bare_minimum(alltypes, df):
+def test_bare_minimum(con, alltypes, df):
     """Test that a backend that supports dot sql can do the most basic thing."""
 
-    expr = alltypes.sql(
-        'SELECT COUNT(*) AS "n" FROM "functional_alltypes"', dialect="duckdb"
-    )
+    name = _NAMES.get(con.name, "functional_alltypes").replace('"', "")
+    expr = alltypes.sql(f'SELECT COUNT(*) AS "n" FROM "{name}"', dialect="duckdb")
     assert expr.to_pandas().iat[0, 0] == len(df)
