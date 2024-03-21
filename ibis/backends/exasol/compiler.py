@@ -156,6 +156,16 @@ class ExasolCompiler(SQLGlotCompiler):
     def visit_ExtractSecond(self, op, *, arg):
         return self.f.floor(self.cast(self.f.extract(self.v.second, arg), op.dtype))
 
+    def visit_ExtractMillisecond(self, op, *, arg):
+        return self.cast(
+            (
+                self.f.extract(self.v.second, arg)
+                - self.f.floor(self.f.extract(self.v.second, arg))
+            )
+            * 1000,
+            op.dtype,
+        )
+
     def visit_StringConcat(self, op, *, arg):
         any_args_null = (a.is_(NULL) for a in arg)
         return self.if_(sg.or_(*any_args_null), NULL, self.f.concat(*arg))

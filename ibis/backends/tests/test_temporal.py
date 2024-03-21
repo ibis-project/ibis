@@ -123,7 +123,7 @@ def test_timestamp_extract(backend, alltypes, df, attr):
             id="millisecond",
             marks=[
                 pytest.mark.notimpl(
-                    ["druid", "oracle", "exasol"], raises=com.OperationNotDefinedError
+                    ["druid", "oracle"], raises=com.OperationNotDefinedError
                 ),
             ],
         ),
@@ -199,7 +199,6 @@ def test_timestamp_extract_microseconds(backend, alltypes, df):
     reason="'StringColumn' object has no attribute 'millisecond'",
 )
 @pytest.mark.broken(["sqlite"], raises=AssertionError)
-@pytest.mark.notimpl(["exasol"], raises=com.OperationNotDefinedError)
 def test_timestamp_extract_milliseconds(backend, alltypes, df):
     expr = alltypes.timestamp_col.millisecond().name("millisecond")
     result = expr.execute()
@@ -1941,7 +1940,6 @@ def test_date_column_from_iso(backend, con, alltypes, df):
 
 
 @pytest.mark.notimpl(["druid", "oracle"], raises=com.OperationNotDefinedError)
-@pytest.mark.notimpl(["exasol"], raises=com.OperationNotDefinedError)
 def test_timestamp_extract_milliseconds_with_big_value(con):
     timestamp = ibis.timestamp("2021-01-01 01:30:59.333456")
     millis = timestamp.millisecond()
