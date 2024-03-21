@@ -68,11 +68,7 @@ class Backend(BasePandasBackend, NoUrl):
     def version(self):
         return dask.__version__
 
-    def _validate_args(self, expr, limit, timecontext):
-        if timecontext is not None:
-            raise com.UnsupportedArgumentError(
-                "The Dask backend does not support timecontext"
-            )
+    def _validate_args(self, expr, limit):
         if limit != "default" and limit is not None:
             raise com.UnsupportedArgumentError(
                 "limit parameter to execute is not yet implemented in the "
@@ -88,12 +84,11 @@ class Backend(BasePandasBackend, NoUrl):
         expr: ir.Expr,
         params: dict | None = None,
         limit: int | None = None,
-        timecontext=None,
         **kwargs,
     ):
         from ibis.backends.dask.executor import DaskExecutor
 
-        self._validate_args(expr, limit, timecontext)
+        self._validate_args(expr, limit)
         params = params or {}
         params = {k.op() if isinstance(k, ir.Expr) else k: v for k, v in params.items()}
 
@@ -104,12 +99,11 @@ class Backend(BasePandasBackend, NoUrl):
         expr: ir.Expr,
         params: Mapping[ir.Expr, object] | None = None,
         limit: str = "default",
-        timecontext=None,
         **kwargs,
     ):
         from ibis.backends.dask.executor import DaskExecutor
 
-        self._validate_args(expr, limit, timecontext)
+        self._validate_args(expr, limit)
         params = params or {}
         params = {k.op() if isinstance(k, ir.Expr) else k: v for k, v in params.items()}
 

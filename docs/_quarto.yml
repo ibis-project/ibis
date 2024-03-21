@@ -174,7 +174,6 @@ website:
 
         - section: Configuration
           contents:
-            - reference/ContextAdjustment.qmd
             - reference/Interactive.qmd
             - reference/Options.qmd
             - reference/Repr.qmd
@@ -623,7 +622,6 @@ quartodoc:
       desc: "Ibis configuration"
       package: ibis.config
       contents:
-        - ContextAdjustment
         - Interactive
         - Options
         - Repr

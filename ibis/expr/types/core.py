@@ -30,8 +30,6 @@ if TYPE_CHECKING:
     from ibis.backends import BaseBackend
     from ibis.expr.visualize import EdgeAttributeGetter, NodeAttributeGetter
 
-    TimeContext = tuple[pd.Timestamp, pd.Timestamp]
-
 
 class _FixedTextJupyterMixin(JupyterMixin):
     """JupyterMixin adds a spurious newline to text, this fixes the issue."""
@@ -343,7 +341,6 @@ class Expr(Immutable, Coercible):
     def execute(
         self,
         limit: int | str | None = "default",
-        timecontext: TimeContext | None = None,
         params: Mapping[ir.Value, Any] | None = None,
         **kwargs: Any,
     ):
@@ -354,27 +351,18 @@ class Expr(Immutable, Coercible):
         limit
             An integer to effect a specific row limit. A value of `None` means
             "no limit". The default is in `ibis/config.py`.
-        timecontext
-            Defines a time range of `(begin, end)`. When defined, the execution
-            will only compute result for data inside the time range. The time
-            range is inclusive of both endpoints. This is conceptually same as
-            a time filter.
-            The time column must be named `'time'` and should preserve
-            across the expression. For example, if that column is dropped then
-            execute will result in an error.
         params
             Mapping of scalar parameter expressions to value
         kwargs
             Keyword arguments
         """
         return self._find_backend(use_default=True).execute(
-            self, limit=limit, timecontext=timecontext, params=params, **kwargs
+            self, limit=limit, params=params, **kwargs
         )
 
     def compile(
         self,
         limit: int | None = None,
-        timecontext: TimeContext | None = None,
         params: Mapping[ir.Value, Any] | None = None,
         pretty: bool = False,
     ):
@@ -385,21 +373,13 @@ class Expr(Immutable, Coercible):
         limit
             An integer to effect a specific row limit. A value of `None` means
             "no limit". The default is in `ibis/config.py`.
-        timecontext
-            Defines a time range of `(begin, end)`. When defined, the execution
-            will only compute result for data inside the time range. The time
-            range is inclusive of both endpoints. This is conceptually same as
-            a time filter.
-            The time column must be named `'time'` and should preserve
-            across the expression. For example, if that column is dropped then
-            execute will result in an error.
         params
             Mapping of scalar parameter expressions to value
         pretty
             In case of SQL backends, return a pretty formatted SQL query.
         """
         return self._find_backend().compile(
-            self, limit=limit, timecontext=timecontext, params=params, pretty=pretty
+            self, limit=limit, params=params, pretty=pretty
         )
 
     @experimental
