@@ -45,7 +45,7 @@ dependencies:
   - rich >=12.4.4
   - shapely>=2,<3
   - snowflake-connector-python >=3.0.2
-  - sqlglot >=18.7.0,<=20.11
+  - sqlglot >=18.7.0
   - toolz >=0.11
   - trino-python-client >=0.321
   # geospatial
