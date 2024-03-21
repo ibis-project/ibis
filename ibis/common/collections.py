@@ -281,7 +281,7 @@ class FrozenDict(dict, Mapping[K, V], Hashable):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        hashable = tuple(sorted(dict(self).items()))
+        hashable = frozenset(dict(self).items())
         object.__setattr__(self, "__precomputed_hash__", hash(hashable))
 
     def __hash__(self) -> int:
@@ -294,7 +294,7 @@ class FrozenDict(dict, Mapping[K, V], Hashable):
         raise TypeError(f"Attribute {name!r} cannot be assigned to frozendict")
 
     def __reduce__(self) -> tuple:
-        return (FrozenDict, (dict(self),))
+        return (self.__class__, (dict(self),))
 
 
 class RewindableIterator(Iterator[V]):
