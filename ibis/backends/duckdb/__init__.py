@@ -1364,7 +1364,7 @@ class Backend(SQLBackend, CanCreateSchema, UrlFromPath):
         header
             Whether to write the column names as the first line of the CSV file.
         **kwargs
-            DuckDB CSV writer arguments. https://duckdb.org/docs/data/csv.html#parameters
+            DuckDB CSV writer arguments. https://duckdb.org/docs/data/csv/overview.html#parameters
 
         """
         self._run_pre_execute_hooks(expr)
