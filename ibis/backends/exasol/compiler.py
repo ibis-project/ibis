@@ -57,7 +57,6 @@ class ExasolCompiler(SQLGlotCompiler):
             ops.DateFromYMD,
             ops.DayOfWeekIndex,
             ops.ElementWiseVectorizedUDF,
-            ops.ExtractEpochSeconds,
             ops.First,
             ops.IntervalFromInteger,
             ops.IsInf,
@@ -165,6 +164,9 @@ class ExasolCompiler(SQLGlotCompiler):
             * 1000,
             op.dtype,
         )
+
+    def visit_ExtractEpochSeconds(self, op, *, arg):
+        return self.f.floor(self.f.posix_time(self.cast(arg, dt.timestamp)))
 
     def visit_StringConcat(self, op, *, arg):
         any_args_null = (a.is_(NULL) for a in arg)
