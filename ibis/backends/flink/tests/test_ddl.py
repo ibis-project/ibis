@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import os
 import tempfile
-from pathlib import Path
 
 import pandas as pd
 import pandas.testing as tm
@@ -463,22 +462,25 @@ def test_read_csv(con, awards_players_schema, csv_source_configs, table_name):
 
 
 @pytest.mark.parametrize("table_name", ["new_table", None])
-def test_read_parquet(con, data_dir, tmp_path, table_name, functional_alltypes_schema):
-    fname = Path("functional_alltypes.parquet")
-    fname = Path(data_dir) / "parquet" / fname.name
+@pytest.mark.parametrize("schema", ["functional_alltypes_schema", None])
+def test_read_parquet(con, data_dir, table_name, schema, functional_alltypes_schema):
+    if schema == "functional_alltypes_schema":
+        schema = functional_alltypes_schema
+
+    path = data_dir.joinpath("parquet", "functional_alltypes.parquet")
     table = con.read_parquet(
-        path=tmp_path / fname.name,
-        schema=functional_alltypes_schema,
+        path=path,
+        schema=schema,
         table_name=table_name,
     )
 
-    try:
-        if table_name is None:
-            table_name = table.get_name()
-        assert table_name in con.list_tables()
-        assert table.schema() == functional_alltypes_schema
-    finally:
-        con.drop_table(table_name)
+    if table_name is None:
+        table_name = table.get_name()
+    assert table_name in con.list_tables()
+    if schema:
+        assert table.schema() == schema
+
+    con.drop_table(table_name)
     assert table_name not in con.list_tables()
 
 
