@@ -32,7 +32,7 @@ class MapLength(Unary):
 @public
 class MapGet(Value):
     arg: Value[dt.Map]
-    key: Value[dt.String | dt.Integer]
+    key: Value
     default: Value = None
 
     shape = rlz.shape_like("args")
@@ -45,7 +45,7 @@ class MapGet(Value):
 @public
 class MapContains(Value):
     arg: Value[dt.Map]
-    key: Value[dt.String | dt.Integer]
+    key: Value
 
     shape = rlz.shape_like("args")
     dtype = dt.bool

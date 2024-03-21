@@ -546,7 +546,11 @@ class FlinkCompiler(SQLGlotCompiler):
         return self.f.count(sge.Distinct(expressions=[arg]))
 
     def visit_MapContains(self, op: ops.MapContains, *, arg, key):
-        return self.f.array_contains(self.f.map_keys(arg), key)
+        key_type = op.arg.dtype.key_type
+        return self.f.array_contains(
+            self.cast(self.f.map_keys(arg), dt.Array(value_type=key_type)),
+            self.cast(key, key_type),
+        )
 
     def visit_Map(self, op: ops.Map, *, keys, values):
         return self.cast(self.f.map_from_arrays(keys, values), op.dtype)
