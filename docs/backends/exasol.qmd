@@ -73,11 +73,7 @@ con = ibis.exasol.connect(
     user = "username",
     password = "password",
     host = "localhost",
-    port = 8563,
-    schema = None,
-    encryption = True,
-    certificate_validation = True,
-    encoding = "en_US.UTF-8"
+    port = 8563
 )
 ```
 
