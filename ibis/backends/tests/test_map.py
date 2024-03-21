@@ -196,7 +196,6 @@ keys = pytest.mark.parametrize(
                 pytest.mark.notyet(
                     "clickhouse", reason="only supports str,int,bool,timestamp keys"
                 ),
-                pytest.mark.notyet("flink", reason="doesn't support float keys"),
                 mark_notyet_postgres,
             ],
             id="float",
@@ -227,7 +226,6 @@ keys = pytest.mark.parametrize(
                 ),
                 pytest.mark.notyet(["pandas", "dask"]),
                 mark_notyet_postgres,
-                pytest.mark.notimpl("flink"),
             ],
             id="array",
         ),
