@@ -2885,7 +2885,7 @@ class Table(Expr, _FixedTextJupyterMixin):
         --------
         >>> import ibis
         >>> import ibis.selectors as s
-        >>> ibis.options.interactive = True  
+        >>> ibis.options.interactive = True
         >>> p = ibis.examples.penguins.fetch()
         >>> p.describe()
         ┏━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━┳━━━━━━━┳━━━━━━━┳━━━━━━━━┳━━━━━━━━┳━━━┓
