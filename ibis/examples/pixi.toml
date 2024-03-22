@@ -1,0 +1,21 @@
+[project]
+name = "examples"
+version = "0.1.0"
+description = "Add a short description here"
+authors = ["Gil Forsyth <gil@forsyth.dev>"]
+channels = ["conda-forge"]
+platforms = ["linux-64"]
+
+[tasks]
+
+[dependencies]
+tqdm = ">=4.66.2,<4.67"
+r-tidyverse = ">=2.0.0,<2.1"
+r-palmerpenguins = ">=0.1.1,<0.2"
+python = ">=3.11.8,<3.12"
+pins = ">=0.8.4,<0.9"
+r-janitor = ">=2.2.0,<2.3"
+ibis-duckdb = ">=8.0.0,<8.1"
+r-stringr = ">=1.5.1,<1.6"
+google-cloud-storage = ">=2.16.0,<2.17"
+gcsfs = ">=2024.3.1,<2024.4"
