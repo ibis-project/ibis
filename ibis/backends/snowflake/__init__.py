@@ -220,7 +220,7 @@ $$ {defn["source"]} $$"""
                     message="You have an incompatible version of 'pyarrow' installed",
                     category=UserWarning,
                 )
-                import snowflake.connector as sc
+            import snowflake.connector as sc
 
         connect_args = kwargs.copy()
         session_parameters = connect_args.pop("session_parameters", {})
