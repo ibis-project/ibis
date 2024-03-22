@@ -255,8 +255,10 @@ class TrinoCompiler(SQLGlotCompiler):
             raise com.UnsupportedOperationError(f"{unit!r} unit is not supported")
         return self.cast(res, op.dtype)
 
-    def visit_StructColumn(self, op, *, names, values):
-        return self.cast(sge.Struct(expressions=list(values)), op.dtype)
+    def visit_StructColumn(self, op, *, names, values, dtype):
+        if values is None:
+            return self.cast(NULL, dtype)
+        return self.cast(sge.Struct(expressions=list(values)), dtype)
 
     def visit_NonNullLiteral(self, op, *, value, dtype):
         if dtype.is_floating():

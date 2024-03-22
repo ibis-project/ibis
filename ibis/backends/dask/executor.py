@@ -118,9 +118,26 @@ class DaskExecutor(PandasExecutor, DaskUtils):
         return cls.partitionwise(mapper, kwargs, name=op.name, dtype=dtype)
 
     @classmethod
-    def visit(cls, op: ops.Array, exprs):
+    def visit(cls, op: ops.StructColumn, names, values, dtype):
+        if values is None:
+            return None
+
+        def process_row(row):
+            return {
+                name: DaskConverter.convert_scalar(value, dty)
+                for name, value, dty in zip(names, row, dtype.fields.values())
+            }
+
+        pdt = PandasType.from_ibis(op.dtype)
+        return cls.rowwise(process_row, values, name=op.name, dtype=pdt)
+
+    @classmethod
+    def visit(cls, op: ops.Array, exprs, dtype):
+        if exprs is None:
+            return None
+        pdt = PandasType.from_ibis(op.dtype)
         return cls.rowwise(
-            lambda row: np.array(row, dtype=object), exprs, name=op.name, dtype=object
+            lambda row: np.array(row, dtype=object), exprs, name=op.name, dtype=pdt
         )
 
     @classmethod

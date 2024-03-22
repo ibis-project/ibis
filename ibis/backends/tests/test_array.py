@@ -30,6 +30,7 @@ from ibis.backends.tests.errors import (
     PySparkAnalysisException,
     TrinoUserError,
 )
+from ibis.common.annotations import ValidationError
 
 pytestmark = [
     pytest.mark.never(
@@ -70,6 +71,43 @@ pytestmark = [
 # list.
 
 
+def test_array_factory(con):
+    a = ibis.array([1, 2, 3])
+    assert con.execute(a) == [1, 2, 3]
+
+    a2 = ibis.array(a)
+    assert con.execute(a2) == [1, 2, 3]
+
+    typed = ibis.array([1, 2, 3], type="array<string>")
+    assert con.execute(typed) == ["1", "2", "3"]
+
+    typed2 = ibis.array(a, type="array<string>")
+    assert con.execute(typed2) == ["1", "2", "3"]
+
+
+@pytest.mark.notimpl(["pandas", "dask"], raises=ValueError)
+def test_array_factory_empty(con):
+    with pytest.raises(ValidationError):
+        ibis.array([])
+
+    empty_typed = ibis.array([], type="array<string>")
+    assert empty_typed.type() == dt.Array(value_type=dt.string)
+    assert con.execute(empty_typed) == []
+
+
+@pytest.mark.notyet(
+    "clickhouse", raises=ClickHouseDatabaseError, reason="nested types can't be NULL"
+)
+def test_array_factory_null(con):
+    with pytest.raises(ValidationError):
+        ibis.array(None)
+    with pytest.raises(ValidationError):
+        ibis.array(None, type="int64")
+    none_typed = ibis.array(None, type="array<string>")
+    assert none_typed.type() == dt.Array(value_type=dt.string)
+    assert con.execute(none_typed) is None
+
+
 def test_array_column(backend, alltypes, df):
     expr = ibis.array(
         [alltypes["double_col"], alltypes["double_col"], 5.0, ibis.literal(6.0)]
@@ -107,6 +145,7 @@ def test_array_scalar(con):
 
 
 @pytest.mark.notimpl(["flink", "polars"], raises=com.OperationNotDefinedError)
+@pytest.mark.notimpl("postgres", raises=PsycoPg2SyntaxError)
 def test_array_repeat(con):
     expr = ibis.array([1.0, 2.0]) * 2
 

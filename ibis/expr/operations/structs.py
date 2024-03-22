@@ -1,7 +1,10 @@
 from __future__ import annotations
 
+from typing import Optional
+
 from public import public
 
+import ibis.expr.datashape as ds
 import ibis.expr.datatypes as dt
 import ibis.expr.rules as rlz
 from ibis.common.annotations import ValidationError, attribute
@@ -30,19 +33,34 @@ class StructField(Value):
 @public
 class StructColumn(Value):
     names: VarTuple[str]
-    values: VarTuple[Value]
+    values: Optional[VarTuple[Value]]
+    dtype: Optional[dt.Struct] = None
 
-    shape = rlz.shape_like("values")
-
-    def __init__(self, names, values):
-        if len(names) != len(values):
-            raise ValidationError(
-                f"Length of names ({len(names)}) does not match length of "
-                f"values ({len(values)})"
-            )
-        super().__init__(names=names, values=values)
+    def __init__(
+        self,
+        names: VarTuple[str],
+        values: None | VarTuple[Value],
+        dtype: dt.Struct | None = None,
+    ):
+        if len(names) == 0:
+            raise ValidationError("StructColumn must have at least one field")
+        if values is None:
+            if dtype is None:
+                raise ValidationError("If values is None, dtype must be provided")
+            if not isinstance(dtype, dt.Struct):
+                raise ValidationError(f"dtype must be a struct, got {dtype}")
+        else:
+            if len(names) != len(values):
+                raise ValidationError(
+                    f"Length of names ({len(names)}) does not match length of "
+                    f"values ({len(values)})"
+                )
+            if dtype is None:
+                dtype = dt.Struct.from_tuples(zip(names, (v.dtype for v in values)))
+        super().__init__(names=names, values=values, dtype=dtype)
 
     @attribute
-    def dtype(self) -> dt.DataType:
-        dtypes = (value.dtype for value in self.values)
-        return dt.Struct.from_tuples(zip(self.names, dtypes))
+    def shape(self) -> ds.DataShape:
+        if self.values is None:
+            return ds.scalar
+        return rlz.highest_precedence_shape(self.values)

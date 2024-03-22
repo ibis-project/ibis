@@ -728,6 +728,8 @@ def struct_field(op, **kw):
 
 @translate.register(ops.StructColumn)
 def struct_column(op, **kw):
+    if op.values is None:
+        return pl.lit(None)
     fields = [translate(v, **kw).alias(k) for k, v in zip(op.names, op.values)]
     return pl.struct(fields)
 
@@ -969,8 +971,13 @@ def array_concat(op, **kw):
 
 @translate.register(ops.Array)
 def array_column(op, **kw):
+    if op.exprs is None:
+        return pl.lit(None, dtype=PolarsType.from_ibis(op.dtype))
     cols = [translate(col, **kw) for col in op.exprs]
-    return pl.concat_list(cols)
+    if len(cols) > 0:
+        return pl.concat_list(cols)
+    else:
+        return pl.lit([], dtype=PolarsType.from_ibis(op.dtype))
 
 
 @translate.register(ops.ArrayCollect)

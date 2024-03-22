@@ -212,7 +212,22 @@ class PandasExecutor(Dispatched, PandasUtils):
         return pd.Series(result, name=op.name)
 
     @classmethod
-    def visit(cls, op: ops.Array, exprs):
+    def visit(cls, op: ops.StructColumn, names, values, dtype):
+        if values is None:
+            return None
+
+        def process_row(row):
+            return {
+                name: PandasConverter.convert_scalar(value, dty)
+                for name, value, dty in zip(names, row, dtype.fields.values())
+            }
+
+        return cls.rowwise(process_row, values)
+
+    @classmethod
+    def visit(cls, op: ops.Array, exprs, dtype):
+        if exprs is None:
+            return None
         return cls.rowwise(lambda row: np.array(row, dtype=object), exprs)
 
     @classmethod

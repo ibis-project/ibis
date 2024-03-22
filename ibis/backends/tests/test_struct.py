@@ -11,16 +11,58 @@ from pytest import param
 import ibis
 import ibis.expr.datatypes as dt
 from ibis.backends.tests.errors import (
+    ClickHouseDatabaseError,
     PsycoPg2InternalError,
     PsycoPg2SyntaxError,
     Py4JJavaError,
 )
+from ibis.common.annotations import ValidationError
 
 pytestmark = [
     pytest.mark.never(["mysql", "sqlite", "mssql"], reason="No struct support"),
     pytest.mark.notyet(["impala"]),
     pytest.mark.notimpl(["datafusion", "druid", "oracle", "exasol"]),
 ]
+
+mark_notimpl_postgres_literals = pytest.mark.notimpl(
+    "postgres", reason="struct literals not implemented", raises=PsycoPg2SyntaxError
+)
+
+
+@pytest.mark.broken("postgres", reason="JSON handling is buggy")
+def test_struct_factory(con):
+    s = ibis.struct({"a": 1, "b": 2})
+    assert con.execute(s) == {"a": 1, "b": 2}
+
+    s2 = ibis.struct(s)
+    assert con.execute(s2) == {"a": 1, "b": 2}
+
+    typed = ibis.struct({"a": 1, "b": 2}, type="struct<a: string, b: string>")
+    assert con.execute(typed) == {"a": "1", "b": "2"}
+
+    typed2 = ibis.struct(s, type="struct<a: string, b: string>")
+    assert con.execute(typed2) == {"a": "1", "b": "2"}
+
+
+def test_struct_factory_empty():
+    with pytest.raises(ValidationError):
+        ibis.struct({})
+    with pytest.raises(ValidationError):
+        ibis.struct({}, type="struct<>")
+    with pytest.raises(ValidationError):
+        ibis.struct({}, type="struct<a: float64, b: float64>")
+
+
+@mark_notimpl_postgres_literals
+@pytest.mark.notyet(
+    "clickhouse", raises=ClickHouseDatabaseError, reason="nested types can't be NULL"
+)
+def test_struct_factory_null(con):
+    with pytest.raises(TypeError):
+        ibis.struct(None)
+    none_typed = ibis.struct(None, type="struct<a: float64, b: float>")
+    assert none_typed.type() == dt.Struct(fields={"a": dt.float64, "b": dt.float64})
+    assert con.execute(none_typed) is None
 
 
 @pytest.mark.notimpl(["dask"])
@@ -70,8 +112,18 @@ _STRUCT_LITERAL = ibis.struct(
 _NULL_STRUCT_LITERAL = ibis.NA.cast("struct<a: int64, b: string, c: float64>")
 
 
-@pytest.mark.notimpl(["postgres", "risingwave"])
-@pytest.mark.parametrize("field", ["a", "b", "c"])
+@pytest.mark.notimpl(["risingwave"])
+@pytest.mark.parametrize(
+    "field",
+    [
+        "a",
+        pytest.param(
+            "b",
+            marks=pytest.mark.broken("postgres", reason="""result is `"2"`, not `2`"""),
+        ),
+        "c",
+    ],
+)
 @pytest.mark.notyet(
     ["flink"], reason="flink doesn't support creating struct columns from literals"
 )
@@ -84,7 +136,7 @@ def test_literal(backend, con, field):
     backend.assert_series_equal(result, expected.astype(dtype))
 
 
-@pytest.mark.notimpl(["postgres"])
+@mark_notimpl_postgres_literals
 @pytest.mark.parametrize("field", ["a", "b", "c"])
 @pytest.mark.notyet(
     ["clickhouse"], reason="clickhouse doesn't support nullable nested types"
@@ -100,7 +152,7 @@ def test_null_literal(backend, con, field):
     backend.assert_series_equal(result, expected)
 
 
-@pytest.mark.notimpl(["dask", "pandas", "postgres", "risingwave"])
+@pytest.mark.notimpl(["postgres", "risingwave"])
 @pytest.mark.notyet(
     ["flink"], reason="flink doesn't support creating struct columns from literals"
 )
@@ -115,7 +167,7 @@ def test_struct_column(alltypes, df):
     tm.assert_frame_equal(result, expected)
 
 
-@pytest.mark.notimpl(["dask", "pandas", "postgres", "risingwave", "polars"])
+@pytest.mark.notimpl(["postgres", "risingwave", "polars"])
 @pytest.mark.notyet(
     ["flink"], reason="flink doesn't support creating struct columns from collect"
 )
@@ -140,9 +192,6 @@ def test_collect_into_struct(alltypes):
     assert len(val.loc[result.group == "1"].iat[0]["key"]) == 730
 
 
-@pytest.mark.notimpl(
-    ["postgres"], reason="struct literals not implemented", raises=PsycoPg2SyntaxError
-)
 @pytest.mark.notimpl(
     ["risingwave"],
     reason="struct literals not implemented",

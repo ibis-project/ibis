@@ -10,7 +10,11 @@ from pytest import param
 import ibis
 import ibis.common.exceptions as exc
 import ibis.expr.datatypes as dt
-from ibis.backends.tests.errors import Py4JJavaError
+from ibis.backends.tests.errors import (
+    ClickHouseDatabaseError,
+    Py4JJavaError,
+)
+from ibis.common.annotations import ValidationError
 
 pytestmark = [
     pytest.mark.never(
@@ -37,6 +41,43 @@ mark_notimpl_risingwave_hstore = pytest.mark.notimpl(
     ["risingwave"],
     reason="function hstore(character varying[], character varying[]) does not exist",
 )
+
+
+@mark_notimpl_risingwave_hstore
+@mark_notyet_postgres
+def test_map_factory(con):
+    m = ibis.map({"a": 1, "b": 2})
+    assert con.execute(m) == {"a": 1, "b": 2}
+
+    m2 = ibis.map(m)
+    assert con.execute(m2) == {"a": 1, "b": 2}
+
+    typed = ibis.map({"a": 1, "b": 2}, type="map<string, string>")
+    assert con.execute(typed) == {"a": "1", "b": "2"}
+
+    typed2 = ibis.map(m, type="map<string, string>")
+    assert con.execute(typed2) == {"a": "1", "b": "2"}
+
+
+@pytest.mark.notimpl(["pandas", "dask"], raises=ValueError)
+@mark_notimpl_risingwave_hstore
+def test_map_factory_empty(con):
+    with pytest.raises(ValidationError):
+        ibis.map({})
+    empty_typed = ibis.map({}, type="map<string, string>")
+    assert empty_typed.type() == dt.Map(key_type=dt.string, value_type=dt.string)
+    assert con.execute(empty_typed) == {}
+
+
+@pytest.mark.notyet(
+    "clickhouse", raises=ClickHouseDatabaseError, reason="nested types can't be NULL"
+)
+def test_map_factory_null(con):
+    with pytest.raises(ValidationError):
+        ibis.map(None)
+    null_typed = ibis.map(None, type="map<string, string>")
+    assert null_typed.type() == dt.Map(key_type=dt.string, value_type=dt.string)
+    assert con.execute(null_typed) is None
 
 
 @pytest.mark.notimpl(["pandas", "dask"])
@@ -474,6 +515,6 @@ def test_map_keys_unnest(backend):
 
 @mark_notimpl_risingwave_hstore
 def test_map_contains_null(con):
-    expr = ibis.map(["a"], ibis.literal([None], type="array<string>"))
+    expr = ibis.map(["a"], ibis.array([None], type="array<string>"))
     assert con.execute(expr.contains("a"))
     assert not con.execute(expr.contains("b"))

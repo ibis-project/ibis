@@ -7,22 +7,36 @@ from public import public
 import ibis.expr.datashape as ds
 import ibis.expr.datatypes as dt
 import ibis.expr.rules as rlz
-from ibis.common.annotations import attribute
+from ibis.common.annotations import ValidationError, attribute
 from ibis.common.typing import VarTuple  # noqa: TCH001
 from ibis.expr.operations.core import Unary, Value
 
 
 @public
 class Array(Value):
-    exprs: VarTuple[Value]
+    exprs: Optional[VarTuple[Value]]
+    dtype: Optional[dt.Array] = None
+
+    def __init__(self, exprs, dtype: dt.Array | None = None):
+        if exprs is None:
+            if dtype is None:
+                raise ValidationError("If values is None, dtype must be provided")
+            if not isinstance(dtype, dt.Array):
+                raise ValidationError(f"dtype must be an array, got {dtype}")
+        elif len(exprs) == 0:
+            if dtype is None:
+                raise ValidationError("If values is empty, dtype must be provided")
+            if not isinstance(dtype, dt.Array):
+                raise ValidationError(f"dtype must be an array, got {dtype}")
+        elif dtype is None:
+            dtype = dt.Array(rlz.highest_precedence_dtype(exprs))
+        super().__init__(exprs=exprs, dtype=dtype)
 
     @attribute
     def shape(self):
+        if self.exprs is None or len(self.exprs) == 0:
+            return ds.scalar
         return rlz.highest_precedence_shape(self.exprs)
-
-    @attribute
-    def dtype(self):
-        return dt.Array(rlz.highest_precedence_dtype(self.exprs))
 
 
 @public

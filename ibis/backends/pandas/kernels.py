@@ -254,6 +254,14 @@ def round_serieswise(arg, digits):
         return np.round(arg, digits).astype("float64")
 
 
+def map_(row: pd.Series) -> dict:
+    k = row["keys"]
+    v = row["values"]
+    if k is None or v is None:
+        return None
+    return dict(zip(k, v))
+
+
 reductions = {
     ops.Min: lambda x: x.min(),
     ops.Max: lambda x: x.max(),
@@ -362,7 +370,7 @@ rowwise = {
     ops.EndsWith: lambda row: row["arg"].endswith(row["end"]),
     ops.IntegerRange: integer_range_rowwise,
     ops.JSONGetItem: lambda row: safe_json_getitem(row["arg"], row["index"]),
-    ops.Map: lambda row: dict(zip(row["keys"], row["values"])),
+    ops.Map: map_,
     ops.MapGet: lambda row: safe_get(row["arg"], row["key"], row["default"]),
     ops.MapContains: lambda row: safe_contains(row["arg"], row["key"]),
     ops.MapMerge: lambda row: safe_merge(row["left"], row["right"]),
