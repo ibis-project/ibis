@@ -2886,6 +2886,98 @@ class Table(Expr, _FixedTextJupyterMixin):
             aggs.append(agg)
         return ibis.union(*aggs).order_by(ibis.asc("pos"))
 
+    def describe(
+        self, quantile: Sequence[ir.NumericValue | float] = [0.25, 0.5, 0.75]
+    ) -> Table:
+        """Return summary information about a table.
+
+        Parameters
+        ----------
+        quantile
+            The quantiles to compute for numerical columns. Defaults to [0.25, 0.5, 0.75].
+
+        Returns
+        -------
+        Table
+            A table containing summary information about the columns of self.
+
+        Notes
+        -----
+        This function computes summary statistics for each column in the table. For
+        numerical columns, it computes statistics such as minimum, maximum, mean,
+        standard deviation, and quantiles. For string columns, it computes the mode
+        and the number of unique values.
+
+        Examples
+        --------
+        >>> import ibis
+        >>> ibis.options.interactive = True
+        >>> import ibis.selectors as s
+        >>> p = ibis.examples.penguins.fetch()
+        >>> p.describe()
+        ┏━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━┳━━━━━━━┳━━━━━━━━┳━━━━━━━━━┳━━━━━━━━━┳━━━┓
+        ┃ name              ┃ type    ┃ count ┃ mode   ┃ unique  ┃ min     ┃ … ┃
+        ┡━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━╇━━━━━━━╇━━━━━━━━╇━━━━━━━━━╇━━━━━━━━━╇━━━┩
+        │ string            │ string  │ int64 │ string │ float64 │ float64 │ … │
+        ├───────────────────┼─────────┼───────┼────────┼─────────┼─────────┼───┤
+        │ species           │ string  │   344 │ Adelie │     3.0 │    NULL │ … │
+        │ island            │ string  │   344 │ Biscoe │     3.0 │    NULL │ … │
+        │ bill_length_mm    │ float64 │   342 │ NULL   │    NULL │    32.1 │ … │
+        │ bill_depth_mm     │ float64 │   342 │ NULL   │    NULL │    13.1 │ … │
+        │ flipper_length_mm │ int64   │   342 │ NULL   │    NULL │   172.0 │ … │
+        │ body_mass_g       │ int64   │   342 │ NULL   │    NULL │  2700.0 │ … │
+        │ sex               │ string  │   333 │ male   │     2.0 │    NULL │ … │
+        │ year              │ int64   │   344 │ NULL   │    NULL │  2007.0 │ … │
+        └───────────────────┴─────────┴───────┴────────┴─────────┴─────────┴───┘
+        >>> p.select(s.of_type("numeric")).describe()
+        ┏━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━┳━━━━━━━┳━━━━━━━━━┳━━━━━━━━━━━━━┳━━━━━━━━━━━━┳━━━┓
+        ┃ name              ┃ type    ┃ count ┃ min     ┃ mean        ┃ std        ┃ … ┃
+        ┡━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━╇━━━━━━━╇━━━━━━━━━╇━━━━━━━━━━━━━╇━━━━━━━━━━━━╇━━━┩
+        │ string            │ string  │ int64 │ float64 │ float64     │ float64    │ … │
+        ├───────────────────┼─────────┼───────┼─────────┼─────────────┼────────────┼───┤
+        │ bill_length_mm    │ float64 │   342 │    32.1 │   43.921930 │   5.459584 │ … │
+        │ bill_depth_mm     │ float64 │   342 │    13.1 │   17.151170 │   1.974793 │ … │
+        │ flipper_length_mm │ int64   │   342 │   172.0 │  200.915205 │  14.061714 │ … │
+        │ body_mass_g       │ int64   │   342 │  2700.0 │ 4201.754386 │ 801.954536 │ … │
+        │ year              │ int64   │   344 │  2007.0 │ 2008.029070 │   0.818356 │ … │
+        └───────────────────┴─────────┴───────┴─────────┴─────────────┴────────────┴───┘
+        >>> p.select(s.of_type("string")).describe()
+        ┏━━━━━━━━━┳━━━━━━━━┳━━━━━━━┳━━━━━━━━┳━━━━━━━━┓
+        ┃ name    ┃ type   ┃ count ┃ mode   ┃ unique ┃
+        ┡━━━━━━━━━╇━━━━━━━━╇━━━━━━━╇━━━━━━━━╇━━━━━━━━┩
+        │ string  │ string │ int64 │ string │ int64  │
+        ├─────────┼────────┼───────┼────────┼────────┤
+        │ species │ string │   344 │ Adelie │      3 │
+        │ island  │ string │   344 │ Biscoe │      3 │
+        │ sex     │ string │   333 │ male   │      2 │
+        └─────────┴────────┴───────┴────────┴────────┘
+        """
+
+        quantile = sorted(quantile)
+        data = []
+        for colname in self.columns:
+            col = self[colname]
+            typ = col.type()
+            one = {}
+            one["name"] = colname
+            one["type"] = str(typ)
+            one["count"] = col.count().execute()
+            if typ.is_numeric():
+                one["min"] = col.min().execute()
+                one["mean"] = col.mean().execute()
+                one["std"] = col.std().execute()
+                for q in quantile:
+                    pname = (
+                        f"p{int(q * 100)}" if q * 100 == int(q * 100) else f"p{q * 100}"
+                    )
+                    one[pname] = col.quantile(q).execute()
+                one["max"] = col.max().execute()
+            elif typ.is_string():
+                one["mode"] = col.mode().execute()
+                one["unique"] = col.nunique().execute()
+            data.append(one)
+        return ibis.memtable(data)
+
     def join(
         left: Table,
         right: Table,
