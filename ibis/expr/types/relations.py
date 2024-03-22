@@ -2894,7 +2894,7 @@ class Table(Expr, _FixedTextJupyterMixin):
         Parameters
         ----------
         quantile
-            The quantiles to compute for numerical columns. Defaults to [0.25, 0.5, 0.75].
+            The quantiles to compute for numerical columns. Defaults to (0.25, 0.5, 0.75).
 
         Returns
         -------
@@ -2915,42 +2915,42 @@ class Table(Expr, _FixedTextJupyterMixin):
         >>> import ibis.selectors as s
         >>> p = ibis.examples.penguins.fetch()
         >>> p.describe()
-        ┏━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━┳━━━━━━━┳━━━━━━━━┳━━━━━━━━━┳━━━━━━━━━┳━━━┓
-        ┃ name              ┃ type    ┃ count ┃ mode   ┃ unique  ┃ min     ┃ … ┃
-        ┡━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━╇━━━━━━━╇━━━━━━━━╇━━━━━━━━━╇━━━━━━━━━╇━━━┩
-        │ string            │ string  │ int64 │ string │ float64 │ float64 │ … │
-        ├───────────────────┼─────────┼───────┼────────┼─────────┼─────────┼───┤
-        │ species           │ string  │   344 │ Adelie │     3.0 │    NULL │ … │
-        │ island            │ string  │   344 │ Biscoe │     3.0 │    NULL │ … │
-        │ bill_length_mm    │ float64 │   342 │ NULL   │    NULL │    32.1 │ … │
-        │ bill_depth_mm     │ float64 │   342 │ NULL   │    NULL │    13.1 │ … │
-        │ flipper_length_mm │ int64   │   342 │ NULL   │    NULL │   172.0 │ … │
-        │ body_mass_g       │ int64   │   342 │ NULL   │    NULL │  2700.0 │ … │
-        │ sex               │ string  │   333 │ male   │     2.0 │    NULL │ … │
-        │ year              │ int64   │   344 │ NULL   │    NULL │  2007.0 │ … │
-        └───────────────────┴─────────┴───────┴────────┴─────────┴─────────┴───┘
+        ┏━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━┳━━━━━━━┳━━━━━━━┳━━━━━━━━┳━━━━━━━━┳━━━━━━━━━━━━━┳━━━┓
+        ┃ name              ┃ type    ┃ count ┃ nulls ┃ unique ┃ mode   ┃ mean        ┃ … ┃
+        ┡━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━╇━━━━━━━╇━━━━━━━╇━━━━━━━━╇━━━━━━━━╇━━━━━━━━━━━━━╇━━━┩
+        │ string            │ string  │ int64 │ int64 │ int64  │ string │ float64     │ … │
+        ├───────────────────┼─────────┼───────┼───────┼────────┼────────┼─────────────┼───┤
+        │ species           │ string  │   344 │     0 │      3 │ Adelie │        NULL │ … │
+        │ island            │ string  │   344 │     0 │      3 │ Biscoe │        NULL │ … │
+        │ bill_length_mm    │ float64 │   344 │     2 │    164 │ NULL   │   43.921930 │ … │
+        │ bill_depth_mm     │ float64 │   344 │     2 │     80 │ NULL   │   17.151170 │ … │
+        │ flipper_length_mm │ int64   │   344 │     2 │     55 │ NULL   │  200.915205 │ … │
+        │ body_mass_g       │ int64   │   344 │     2 │     94 │ NULL   │ 4201.754386 │ … │
+        │ sex               │ string  │   344 │    11 │      2 │ male   │        NULL │ … │
+        │ year              │ int64   │   344 │     0 │      3 │ NULL   │ 2008.029070 │ … │
+        └───────────────────┴─────────┴───────┴───────┴────────┴────────┴─────────────┴───┘
         >>> p.select(s.of_type("numeric")).describe()
-        ┏━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━┳━━━━━━━┳━━━━━━━━━┳━━━━━━━━━━━━━┳━━━━━━━━━━━━┳━━━┓
-        ┃ name              ┃ type    ┃ count ┃ min     ┃ mean        ┃ std        ┃ … ┃
-        ┡━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━╇━━━━━━━╇━━━━━━━━━╇━━━━━━━━━━━━━╇━━━━━━━━━━━━╇━━━┩
-        │ string            │ string  │ int64 │ float64 │ float64     │ float64    │ … │
-        ├───────────────────┼─────────┼───────┼─────────┼─────────────┼────────────┼───┤
-        │ bill_length_mm    │ float64 │   342 │    32.1 │   43.921930 │   5.459584 │ … │
-        │ bill_depth_mm     │ float64 │   342 │    13.1 │   17.151170 │   1.974793 │ … │
-        │ flipper_length_mm │ int64   │   342 │   172.0 │  200.915205 │  14.061714 │ … │
-        │ body_mass_g       │ int64   │   342 │  2700.0 │ 4201.754386 │ 801.954536 │ … │
-        │ year              │ int64   │   344 │  2007.0 │ 2008.029070 │   0.818356 │ … │
-        └───────────────────┴─────────┴───────┴─────────┴─────────────┴────────────┴───┘
+        ┏━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━┳━━━━━━━┳━━━━━━━┳━━━━━━━━┳━━━━━━━━━━━━━┳━━━━━━━━━━━━┳━━━┓
+        ┃ name              ┃ type    ┃ count ┃ nulls ┃ unique ┃ mean        ┃ std        ┃ … ┃
+        ┡━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━╇━━━━━━━╇━━━━━━━╇━━━━━━━━╇━━━━━━━━━━━━━╇━━━━━━━━━━━━╇━━━┩
+        │ string            │ string  │ int64 │ int64 │ int64  │ float64     │ float64    │ … │
+        ├───────────────────┼─────────┼───────┼───────┼────────┼─────────────┼────────────┼───┤
+        │ bill_length_mm    │ float64 │   344 │     2 │    164 │   43.921930 │   5.459584 │ … │
+        │ bill_depth_mm     │ float64 │   344 │     2 │     80 │   17.151170 │   1.974793 │ … │
+        │ flipper_length_mm │ int64   │   344 │     2 │     55 │  200.915205 │  14.061714 │ … │
+        │ body_mass_g       │ int64   │   344 │     2 │     94 │ 4201.754386 │ 801.954536 │ … │
+        │ year              │ int64   │   344 │     0 │      3 │ 2008.029070 │   0.818356 │ … │
+        └───────────────────┴─────────┴───────┴───────┴────────┴─────────────┴────────────┴───┘
         >>> p.select(s.of_type("string")).describe()
-        ┏━━━━━━━━━┳━━━━━━━━┳━━━━━━━┳━━━━━━━━┳━━━━━━━━┓
-        ┃ name    ┃ type   ┃ count ┃ mode   ┃ unique ┃
-        ┡━━━━━━━━━╇━━━━━━━━╇━━━━━━━╇━━━━━━━━╇━━━━━━━━┩
-        │ string  │ string │ int64 │ string │ int64  │
-        ├─────────┼────────┼───────┼────────┼────────┤
-        │ species │ string │   344 │ Adelie │      3 │
-        │ island  │ string │   344 │ Biscoe │      3 │
-        │ sex     │ string │   333 │ male   │      2 │
-        └─────────┴────────┴───────┴────────┴────────┘
+        ┏━━━━━━━━━┳━━━━━━━━┳━━━━━━━┳━━━━━━━┳━━━━━━━━┳━━━━━━━━┓
+        ┃ name    ┃ type   ┃ count ┃ nulls ┃ unique ┃ mode   ┃
+        ┡━━━━━━━━━╇━━━━━━━━╇━━━━━━━╇━━━━━━━╇━━━━━━━━╇━━━━━━━━┩
+        │ string  │ string │ int64 │ int64 │ int64  │ string │
+        ├─────────┼────────┼───────┼───────┼────────┼────────┤
+        │ species │ string │   344 │     0 │      3 │ Adelie │
+        │ island  │ string │   344 │     0 │      3 │ Biscoe │
+        │ sex     │ string │   344 │    11 │      2 │ male   │
+        └─────────┴────────┴───────┴───────┴────────┴────────┘
         """
         import ibis.selectors as s
         from ibis import literal as lit
