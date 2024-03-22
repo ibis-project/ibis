@@ -2887,7 +2887,7 @@ class Table(Expr, _FixedTextJupyterMixin):
         return ibis.union(*aggs).order_by(ibis.asc("pos"))
 
     def describe(
-        self, quantile: Sequence[ir.NumericValue | float] = [0.25, 0.5, 0.75]
+        self, quantile: Sequence[ir.NumericValue | float] = (0.25, 0.5, 0.75)
     ) -> Table:
         """Return summary information about a table.
 
@@ -2952,31 +2952,56 @@ class Table(Expr, _FixedTextJupyterMixin):
         │ sex     │ string │   333 │ male   │      2 │
         └─────────┴────────┴───────┴────────┴────────┘
         """
+        import ibis.selectors as s
+        from ibis import literal as lit
 
         quantile = sorted(quantile)
-        data = []
+        aggs = []
+        string_col = False
+        numeric_col = False
         for colname in self.columns:
             col = self[colname]
             typ = col.type()
-            one = {}
-            one["name"] = colname
-            one["type"] = str(typ)
-            one["count"] = col.count().execute()
+
             if typ.is_numeric():
-                one["min"] = col.min().execute()
-                one["mean"] = col.mean().execute()
-                one["std"] = col.std().execute()
-                for q in quantile:
-                    pname = (
-                        f"p{int(q * 100)}" if q * 100 == int(q * 100) else f"p{q * 100}"
-                    )
-                    one[pname] = col.quantile(q).execute()
-                one["max"] = col.max().execute()
+                numeric_col = True
             elif typ.is_string():
-                one["mode"] = col.mode().execute()
-                one["unique"] = col.nunique().execute()
-            data.append(one)
-        return ibis.memtable(data)
+                string_col = True
+
+            agg = self.agg(
+                name=lit(colname),
+                type=lit(str(typ)),
+                count=col.isnull().count(),
+                nulls=col.isnull().sum(),
+                unique=col.nunique(),
+                mode=col.mode() if typ.is_string() else lit(None).cast(str),
+                mean=col.mean() if typ.is_numeric() else lit(None).cast(float),
+                std=col.std() if typ.is_numeric() else lit(None).cast(float),
+                min=col.min().cast(float)
+                if typ.is_numeric()
+                else lit(None).cast(float),
+                **{
+                    f"p{int(q * 100)}"
+                    if q * 100 == int(q * 100)
+                    else f"p{q * 100}": col.quantile(q).cast(float)
+                    if typ.is_numeric()
+                    else lit(None).cast(float)
+                    for q in quantile
+                },
+                max=col.max().cast(float)
+                if typ.is_numeric()
+                else lit(None).cast(float),
+            )
+            aggs.append(agg)
+
+        t = ibis.union(*aggs)
+
+        if string_col and not numeric_col:
+            t = t.select(~s.of_type("float"))
+        elif numeric_col and not string_col:
+            t = t.drop("mode")
+
+        return t
 
     def join(
         left: Table,
