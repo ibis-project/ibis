@@ -3,7 +3,6 @@ from __future__ import annotations
 import contextlib
 import functools
 import glob
-import importlib
 import inspect
 import itertools
 import json
@@ -24,7 +23,6 @@ import pyarrow as pa
 import pyarrow_hotfix  # noqa: F401
 import sqlglot as sg
 import sqlglot.expressions as sge
-from packaging.version import parse as vparse
 
 import ibis
 import ibis.common.exceptions as com
@@ -211,16 +209,7 @@ $$ {defn["source"]} $$"""
             Additional arguments passed to the URL constructor.
 
         """
-        with warnings.catch_warnings():
-            if vparse(
-                importlib.metadata.version("snowflake-connector-python")
-            ) >= vparse("3.3.0"):
-                warnings.filterwarnings(
-                    "ignore",
-                    message="You have an incompatible version of 'pyarrow' installed",
-                    category=UserWarning,
-                )
-            import snowflake.connector as sc
+        import snowflake.connector as sc
 
         connect_args = kwargs.copy()
         session_parameters = connect_args.pop("session_parameters", {})

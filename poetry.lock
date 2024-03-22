@@ -7318,7 +7318,7 @@ polars = ["packaging", "polars"]
 postgres = ["psycopg2"]
 pyspark = ["packaging", "pyspark"]
 risingwave = ["psycopg2"]
-snowflake = ["packaging", "snowflake-connector-python"]
+snowflake = ["snowflake-connector-python"]
 sqlite = ["regex"]
 trino = ["trino"]
 visualization = ["graphviz"]
@@ -7326,4 +7326,4 @@ visualization = ["graphviz"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.9"
-content-hash = "f2970631588aee944cf11aee8750fa25ea668ca88f3866f9d9a9298efeb35129"
+content-hash = "c027055e842aad44dd7ea5622de4924e1f678d25e1f4425fa9a6045e482997d2"
