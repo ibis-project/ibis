@@ -29,9 +29,67 @@ You're a data analyst, and a new ticket just landed in your queue. It reads some
 You're not sure what to make of this request, but you're intrigued. You decide
 to give it a shot.
 
+## The Table
+
+For setting up this particular problem, I will use Pandas to create a table
+with 100 columns and 100 rows. Then I'll update a row with the value "NEEDLE"
+to demonstrate how we can find it. 
+
+```{python}
+#| code-fold: true
+import pandas as pd
+import random
+import string
+from ibis.interactive import *
+
+
+def random_string(length=10):
+    return "".join(
+        random.choice(string.ascii_letters + string.digits) for _ in range(length)
+    )
+
+
+data = [[random_string() for _ in range(10)] for _ in range(100)]
+column_names = [f"COLUMN_{i+1}" for i in range(10)]
+df = pd.DataFrame(data, columns=column_names)
+df.at[41, 'COLUMN_9'] = "NEEDLE"
+t = ibis.memtable(df)
+```
+
+```{python}
+t
+```
+
+## The Solution
+
+We could loop through each column and then setup a predicate to search through
+and find the value. Another option might be building up a SQL query dynamically, 
+but that can always be a bit dangerous and can be difficult to troubleshoot. 
+
+Fortunately, Ibis offers an excellent solution to this problem. 
+
+```{python}
+expr = t.filter(s.if_any(s.of_type("string"), _ == "NEEDLE"))
+
+expr
+```
+
+We can see it in COLUMN_9. 
+
+# TODO, can we figure out which column that was in and select only that column?
+
+That generated a lot of SQL that I would rather not have written.
+```{python}
+ibis.to_sql(expr)
+```
+
+This approach is efficient and concise, leveraging Ibis's ability to handle 
+complex query logic under the hood.
+
 ## Next steps
 
-It's pretty easy to do complex analysis with Ibis. 
+Selectors like this can be very powerful when exploring data that you're not
+familiar with, but also checking across several columns. 
 
 Get in touch with us on [GitHub](https://github.com/ibis-project) or
 [Zulip](https://ibis-project.zulipchat.com/), we'd love to see more analyses of this
