@@ -1302,7 +1302,6 @@ def test_hashbytes(backend, alltypes):
         "clickhouse",
         "dask",
         "datafusion",
-        "exasol",
         "flink",
         "impala",
         "mysql",

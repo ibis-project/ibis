@@ -217,3 +217,18 @@ class ExasolCompiler(SQLGlotCompiler):
 
     def visit_ExtractQuarter(self, op, *, arg):
         return self.cast(self.f.to_char(arg, "Q"), op.dtype)
+
+    def visit_HexDigest(self, op, *, arg, how):
+        ibis2exasol = {
+            "md5": "hash_md5",
+            "sha1": "hash_sha[1]",
+            "sha256": "hash_sha256",
+            "sha512": "hash_sha512",
+        }
+        how = how.lower()
+        if how not in ibis2exasol:
+            raise com.UnsupportedOperationError(
+                f"Unsupported hashing algorithm ({how})"
+            )
+        func = self.f[ibis2exasol[how]]
+        return func(arg)
