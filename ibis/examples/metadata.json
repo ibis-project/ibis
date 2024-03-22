@@ -1113,6 +1113,21 @@
   "nwtco_raw": {
     "description": "Data from the National Wilm's Tumor Study"
   },
+  "nycflights13_airlines": {
+    "description": "translation between two letter carrier codes and names"
+  },
+  "nycflights13_airports": {
+    "description": "airport names and locations"
+  },
+  "nycflights13_flights": {
+    "description": "all flights that departed from NYC in 2013"
+  },
+  "nycflights13_planes": {
+    "description": "construction information about each plane"
+  },
+  "nycflights13_weather": {
+    "description": "hourly meterological data for each airport"
+  },
   "oats": {
     "description": "Data from an Oats Field Trial"
   },
@@ -1381,10 +1396,10 @@
     "description": "Average Heights and Weights for American Women"
   },
   "world_bank_pop": {
-    "description": "Population data from the world bank"
+    "description": "Population data from the World Bank"
   },
   "world_bank_pop_raw": {
-    "description": "Population data from the world bank"
+    "description": "Population data from the World Bank"
   },
   "wowah_data_raw": {},
   "wowah_location_coords_raw": {},

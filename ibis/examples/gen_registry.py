@@ -108,6 +108,63 @@ def add_movielens_example(
             con.read_csv(csv_path).to_parquet(parquet_path, codec="zstd")
 
 
+def add_nycflights13_example(data_path: Path, *, metadata: Metadata) -> None:
+    filenames = [
+        "airlines.csv",
+        "airports.csv",
+        "flights.csv.zip",
+        "planes.csv",
+        "weather.csv",
+    ]
+
+    BASE_URL = (
+        "https://github.com/machow/nycflights13-py/raw/master/nycflights13/data/{}"
+    )
+
+    def download_and_convert(filename: str, *, bar: tqdm.tqdm):
+        parquet_path = data_path / f"nycflights13_{filename.split('.')[0]}.parquet"
+
+        if parquet_path.exists():
+            metadata[parquet_path.with_suffix("").name] = {}
+            bar.update()
+            return
+
+        if not filename.endswith("zip"):
+            with tempfile.TemporaryDirectory() as d:
+                con = ibis.duckdb.connect()
+                table = con.read_csv(BASE_URL.format(filename))
+                table.to_parquet(parquet_path, codec="zstd")
+        else:
+            resp = requests.get(BASE_URL.format(filename))
+            resp.raise_for_status()
+            raw_bytes = resp.content
+
+            # convert to parquet
+            with tempfile.TemporaryDirectory() as d:
+                con = ibis.duckdb.connect()
+                d = Path(d)
+                all_data = d / filename
+                all_data.write_bytes(raw_bytes)
+
+                # extract the CSVs into the current temp dir and convert them to
+                # zstd-compressed Parquet files using DuckDB
+                with zipfile.ZipFile(all_data) as zf:
+                    zf.extractall(d)
+
+                parquet_path = data_path / "nycflights13_flights.parquet"
+                con.read_csv(d / "flights.csv").to_parquet(parquet_path, codec="zstd")
+
+        metadata[parquet_path.with_suffix("").name] = {}
+        bar.update()
+
+    bar = tqdm.tqdm(total=len(filenames))
+    with concurrent.futures.ThreadPoolExecutor() as e:
+        for fut in concurrent.futures.as_completed(
+            e.submit(download_and_convert, filename, bar=bar) for filename in filenames
+        ):
+            fut.result()
+
+
 def add_zones_geojson(data_path: Path) -> None:
     file_name = "zones.geojson"
     url = "https://raw.githubusercontent.com/ibis-project/testing-data/master/geojson/zones.geojson"
@@ -226,6 +283,7 @@ def main(parser):
 
     metadata = {}
 
+    print("Adding movielens examples...")  # noqa: T201
     add_movielens_example(
         data_path,
         metadata=metadata,
@@ -236,12 +294,19 @@ def main(parser):
         ),
     )
 
+    print("Adding imdb examples...")  # noqa: T201
     add_imdb_example(data_path)
 
+    print("Adding wowah examples...")  # noqa: T201
     add_wowah_example(data_path, client=storage.Client(), metadata=metadata)
 
+    print("Adding zones geojson example...")  # noqa: T201
     add_zones_geojson(data_path)
 
+    print("Adding nycflights examples...")  # noqa: T201
+    add_nycflights13_example(data_path, metadata=metadata)
+
+    print("Adding R examples...")  # noqa: T201
     # generate data from R
     subprocess.check_call(["Rscript", str(EXAMPLES_DIRECTORY / "gen_examples.R")])
 
