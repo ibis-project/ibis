@@ -3,7 +3,7 @@ channels:
   - conda-forge
 dependencies:
   # runtime dependencies
-  - python =3.10
+  - python =3.11
   - atpublic >=2.3
   - bidict >=0.22.1
   - clickhouse-connect >=0.5.23

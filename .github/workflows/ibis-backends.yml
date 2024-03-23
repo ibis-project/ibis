@@ -345,6 +345,9 @@ jobs:
       - name: start services
         if: matrix.backend.services != null
         run: docker compose up --wait ${{ join(matrix.backend.services, ' ') }}
+        env:
+          GPG_KEY: ${{ matrix.python-version == '3.11' && 'A035C8C19219BA821ECEA86B64E628F8D684696D' || 'E3FF2839C048B25C084DEBE9B26995E310250568' }}
+          PYTHON_VERSION: ${{ matrix.python-version == '3.11' &&  '3.11.8' || '3.9.19' }}
 
       - name: install poetry
         run: pipx install 'poetry==1.8.2'
