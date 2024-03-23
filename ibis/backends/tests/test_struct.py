@@ -72,9 +72,6 @@ _NULL_STRUCT_LITERAL = ibis.NA.cast("struct<a: int64, b: string, c: float64>")
 
 @pytest.mark.notimpl(["postgres", "risingwave"])
 @pytest.mark.parametrize("field", ["a", "b", "c"])
-@pytest.mark.notyet(
-    ["flink"], reason="flink doesn't support creating struct columns from literals"
-)
 def test_literal(backend, con, field):
     query = _STRUCT_LITERAL[field]
     dtype = query.type().to_pandas()
@@ -88,9 +85,6 @@ def test_literal(backend, con, field):
 @pytest.mark.parametrize("field", ["a", "b", "c"])
 @pytest.mark.notyet(
     ["clickhouse"], reason="clickhouse doesn't support nullable nested types"
-)
-@pytest.mark.notyet(
-    ["flink"], reason="flink doesn't support creating struct columns from literals"
 )
 def test_null_literal(backend, con, field):
     query = _NULL_STRUCT_LITERAL[field]
