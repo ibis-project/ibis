@@ -138,3 +138,6 @@ ci/odbc/odbc.ini
 
 # data downloaded by the geospatial tutorial
 docs/posts/ibis-duckdb-geospatial/nyc_data.db.wal
+
+# pixi environment directory
+.pixi
