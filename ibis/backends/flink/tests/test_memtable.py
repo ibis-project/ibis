@@ -4,6 +4,7 @@ import pytest
 from pyflink.common.types import Row
 
 import ibis
+from ibis.backends.tests.errors import Py4JJavaError
 
 
 @pytest.mark.parametrize(
@@ -36,3 +37,11 @@ def test_create_memtable(con, data, schema, expected):
     result = con.raw_sql(con.compile(t))
     # raw_sql() returns a `TableResult` object and doesn't natively convert to pandas
     assert list(result.collect()) == expected
+
+
+@pytest.mark.xfail(
+    raises=Py4JJavaError,
+    reason="cannot create an ARRAY of named STRUCTs directly from the ARRAY[] constructor; https://issues.apache.org/jira/browse/FLINK-34898",
+)
+def test_create_named_struct_array_with_array_constructor(con):
+    con.raw_sql("SELECT ARRAY[cast(ROW(1) as ROW<a INT>)];")

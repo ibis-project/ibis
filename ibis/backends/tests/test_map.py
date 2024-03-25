@@ -240,7 +240,11 @@ keys = pytest.mark.parametrize(
                 ),
                 pytest.mark.notyet(["pandas", "dask"]),
                 mark_notyet_postgres,
-                pytest.mark.broken(["flink"], raises=Py4JJavaError),
+                pytest.mark.broken(
+                    ["flink"],
+                    raises=Py4JJavaError,
+                    reason="does not support selecting struct key from map",
+                ),
                 mark_notyet_snowflake,
             ],
             id="struct",
