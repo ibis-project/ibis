@@ -454,6 +454,8 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
         self.client.close()
 
     def _parse_project_and_dataset(self, dataset) -> tuple[str, str]:
+        if isinstance(dataset, sge.Table):
+            dataset = dataset.sql(self.dialect)
         if not dataset and not self.dataset:
             raise ValueError("Unable to determine BigQuery dataset.")
         project, _, dataset = parse_project_and_dataset(
@@ -519,7 +521,39 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
     ) -> ir.Table:
         table_loc = self._warn_and_create_table_loc(database, schema)
 
-        project, dataset = self._parse_project_and_dataset(table_loc)
+        table = sg.parse_one(name, into=sge.Table, read=self.name)
+
+        # Bigquery, unlike other bcakends, had existing support for specifying
+        # table hierarchy in the table name, e.g. con.table("dataset.table_name")
+        # so here we have an extra layer of disambiguation to handle.
+
+        # Default `catalog` to None unless we've parsed it out of the database/schema kwargs
+        # Raise if there are path specifications in both the name and as a kwarg
+        catalog = None if table_loc is None else table_loc.catalog
+        if table.catalog:
+            if table_loc is not None and table_loc.catalog:
+                raise com.IbisInputError(
+                    "Cannot specify catalog both in the table name and as an argument"
+                )
+            else:
+                catalog = table.catalog
+
+        # Default `db` to None unless we've parsed it out of the database/schema kwargs
+        db = None if table_loc is None else table_loc.db
+        if table.db:
+            if table_loc is not None and table_loc.db:
+                raise com.IbisInputError(
+                    "Cannot specify database both in the table name and as an argument"
+                )
+            else:
+                db = table.db
+
+        database = (
+            sg.table(None, db=db, catalog=catalog, quoted=False).sql(dialect=self.name)
+            or None
+        )
+
+        project, dataset = self._parse_project_and_dataset(database)
 
         table = sg.parse_one(name, into=sge.Table, read=self.name)
 
@@ -716,12 +750,15 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
         """
         table_loc = self._warn_and_create_table_loc(database, schema)
         catalog, db = self._to_catalog_db_tuple(table_loc)
+        if catalog is None:
+            catalog = self.current_catalog
+        if db is None:
+            db = self.current_database
 
         return super().insert(
             table_name,
             obj,
-            schema=db if db is not None else self.current_database,
-            database=catalog if catalog is not None else self.current_catalog,
+            database=(catalog, db),
             overwrite=overwrite,
         )
 
@@ -868,8 +905,6 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
             [deprecated] The schema (dataset) inside `database` to perform the list against.
         """
         table_loc = self._warn_and_create_table_loc(database, schema)
-
-        table_loc = table_loc.sql(dialect=self.name)
 
         project, dataset = self._parse_project_and_dataset(table_loc)
         dataset_ref = bq.DatasetReference(project, dataset)
@@ -1102,8 +1137,7 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
     def _clean_up_cached_table(self, op):
         self.drop_table(
             op.name,
-            schema=self._session_dataset.dataset_id,
-            database=self._session_dataset.project,
+            database=(self._session_dataset.project, self._session_dataset.dataset_id),
         )
 
     def _get_udf_source(self, udf_node: ops.ScalarUDF):
@@ -1198,7 +1232,6 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
                 sg_cat.args["quoted"] = False
             if (sg_db := table_loc.args["db"]) is not None:
                 sg_db.args["quoted"] = False
-            table_loc = table_loc.sql(dialect=self.name)
 
         return table_loc
 
