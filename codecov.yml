@@ -1,4 +1,5 @@
 codecov:
+  branch: main
   notify:
     # a high number to try to delay codecov reporting until most of the test
     # runs have finished. Should match with comment.after_n_builds below.
