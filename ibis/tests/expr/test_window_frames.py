@@ -14,6 +14,11 @@ from ibis.common.exceptions import IbisInputError
 from ibis.common.patterns import NoMatch, Pattern
 
 
+@pytest.fixture
+def t(alltypes):
+    return alltypes
+
+
 def test_window_boundary():
     # the boundary value must be either numeric or interval
     b = ops.WindowBoundary(5, preceding=False)
@@ -214,39 +219,44 @@ def test_window_builder_between():
     assert w9.how == "range"
 
 
-def test_window_api_supports_value_expressions(alltypes):
-    t = alltypes
-
+def test_window_api_supports_value_expressions(t):
     w = ibis.window(between=(t.d, t.d + 1), group_by=t.b, order_by=t.c)
-    assert w.bind(t) == ops.RowsWindowFrame(
-        table=t,
+    func = t.a.sum().over(w).op()
+    expected = ops.WindowFunction(
+        func=t.a.sum(),
+        how="rows",
         start=ops.WindowBoundary(t.d, preceding=False),
         end=ops.WindowBoundary(t.d + 1, preceding=False),
         group_by=(t.b,),
         order_by=(t.c,),
     )
+    assert func == expected
 
 
-def test_window_api_supports_scalar_order_by(alltypes):
-    t = alltypes
-
-    w = ibis.window(order_by=ibis.NA)
-    assert w.bind(t) == ops.RowsWindowFrame(
-        table=t,
+def test_window_api_supports_scalar_order_by(t):
+    window = ibis.window(order_by=ibis.NA)
+    expr = t.a.sum().over(window).op()
+    expected = ops.WindowFunction(
+        t.a.sum(),
+        how="rows",
         start=None,
         end=None,
         group_by=(),
         order_by=(ibis.NA.op(),),
     )
+    assert expr == expected
 
-    w = ibis.window(order_by=ibis.random())
-    assert w.bind(t) == ops.RowsWindowFrame(
-        table=t,
+    window = ibis.window(order_by=ibis.random())
+    expr = t.a.sum().over(window).op()
+    expected = ops.WindowFunction(
+        t.a.sum(),
+        how="rows",
         start=None,
         end=None,
         group_by=(),
-        order_by=(ibis.random().op(),),
+        order_by=[ibis.random()],
     )
+    assert expr == expected
 
 
 def test_window_api_properly_determines_how():
@@ -281,8 +291,7 @@ def test_window_api_mutually_exclusive_options():
         ibis.window(range=(None, 5), between=(None, 5))
 
 
-def test_window_builder_methods(alltypes):
-    t = alltypes
+def test_window_builder_methods(t):
     w1 = ibis.window(preceding=5, following=1, group_by=t.a, order_by=t.b)
 
     w2 = w1.group_by(t.c)
@@ -327,8 +336,21 @@ def test_window_api_preceding_following(method, is_preceding):
 
 def test_window_api_trailing_range():
     t = ibis.table([("col", "int64")], name="t")
-    w = ibis.trailing_range_window(ibis.interval(days=1), order_by="col")
-    w.bind(t)
+    start = ibis.interval(days=1)
+    end = ibis.literal(0).cast(start.type())
+
+    window = ibis.trailing_range_window(start, order_by="col")
+    expr = t.col.sum().over(window).op()
+
+    expected = ops.WindowFunction(
+        t.col.sum(),
+        how="range",
+        start=ops.WindowBoundary(start, preceding=True),
+        end=ops.WindowBoundary(end, preceding=False),
+        group_by=(),
+        order_by=[t.col],
+    )
+    assert expr == expected
 
 
 @pytest.mark.parametrize(
@@ -405,34 +427,39 @@ def test_window_api_preceding_following_invalid_tuple(kind, begin, end):
         ibis.window(**kwargs)
 
 
-def test_window_bind_to_table(alltypes):
-    t = alltypes
+def test_window_bind_to_table(t):
     spec = ibis.window(group_by="g", order_by=ibis.desc("f"))
 
-    frame = spec.bind(t)
-    expected = ops.RowsWindowFrame(table=t, group_by=[t.g], order_by=[t.f.desc()])
+    window = t.a.sum().over(spec).op()
+    expected = ops.WindowFunction(
+        t.a.sum(),
+        how="rows",
+        start=None,
+        end=None,
+        group_by=[t.g],
+        order_by=[t.f.desc()],
+    )
+    assert window == expected
 
-    assert frame == expected
 
-
-def test_window_bind_value_expression_using_over(alltypes):
+def test_window_bind_value_expression_using_over(t):
     # GH #542
-    t = alltypes
-
     w = ibis.window(group_by="g", order_by="f")
 
-    expr = t.f.lag().over(w)
+    window = t.f.lag().over(w).op()
+    expected = ops.WindowFunction(
+        t.f.lag(),
+        how="rows",
+        start=None,
+        end=None,
+        group_by=[t.g],
+        order_by=[t.f.asc()],
+    )
+    assert window == expected
 
-    frame = expr.op().frame
-    expected = ops.RowsWindowFrame(table=t, group_by=[t.g], order_by=[t.f.asc()])
 
-    assert frame == expected
-
-
-def test_window_analysis_propagate_nested_windows(alltypes):
+def test_window_analysis_propagate_nested_windows(t):
     # GH #469
-    t = alltypes
-
     w = ibis.window(group_by=t.g, order_by=t.f)
     col = (t.f - t.f.lag()).lag()
 
@@ -442,8 +469,7 @@ def test_window_analysis_propagate_nested_windows(alltypes):
     assert result.equals(expected)
 
 
-def test_window_analysis_combine_group_by(alltypes):
-    t = alltypes
+def test_window_analysis_combine_group_by(t):
     w = ibis.window(group_by=t.g, order_by=t.f)
 
     diff = t.d - t.d.lag()
@@ -468,7 +494,7 @@ def test_window_analysis_combine_preserves_existing_window():
     )
     w = ibis.cumulative_window(order_by=t.one)
     mut = t.group_by(t.three).mutate(four=t.two.sum().over(w))
-    assert mut.op().values["four"].frame.start is None
+    assert mut.op().values["four"].start is None
 
 
 def test_window_analysis_auto_windowize_bug():
@@ -496,20 +522,24 @@ def test_window_analysis_auto_windowize_bug():
     assert enriched.equals(expected)
 
 
-def test_windowization_wraps_reduction_inside_a_nested_value_expression(alltypes):
-    t = alltypes
+def test_windowization_wraps_reduction_inside_a_nested_value_expression(t):
     win = ibis.window(
         following=0,
         group_by=[t.g],
         order_by=[t.a],
     )
     expr = (t.f == 0).notany().over(win)
-    assert expr.op() == ops.Not(
+    expected = ops.Not(
         ops.WindowFunction(
             func=ops.Any(t.f == 0),
-            frame=ops.RowsWindowFrame(table=t, end=0, group_by=[t.g], order_by=[t.a]),
+            how="rows",
+            start=None,
+            end=0,
+            group_by=[t.g],
+            order_by=[t.a],
         )
     )
+    assert expr.op() == expected
 
 
 def test_group_by_with_window_function_preserves_range(alltypes):
@@ -525,9 +555,11 @@ def test_group_by_with_window_function_preserves_range(alltypes):
             "three": t.three,
             "four": ops.WindowFunction(
                 func=ops.Sum(t.two),
-                frame=ops.RowsWindowFrame(
-                    table=t, end=0, group_by=[t.three], order_by=[t.one]
-                ),
+                how="rows",
+                start=None,
+                end=0,
+                group_by=[t.three],
+                order_by=[t.one],
             ),
         },
     )

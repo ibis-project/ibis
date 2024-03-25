@@ -60,23 +60,17 @@ def get_label(node):
                 ops.Field,
                 ops.Alias,
                 ops.PhysicalTable,
-                ops.window.RangeWindowFrame,
             ),
         )
         else None
     )
     if nodename is not None:
-        # [TODO] Don't show nodename because it's too long and ruins the image
-        if isinstance(node, ops.window.RangeWindowFrame):
-            label_fmt = "<<B>{}</B>>"
-            label = label_fmt.format(escape(name))
+        if isinstance(node, ops.Relation):
+            label_fmt = "<<I>{}</I>: <B>{}</B>{}>"
         else:
-            if isinstance(node, ops.Relation):
-                label_fmt = "<<I>{}</I>: <B>{}</B>{}>"
-            else:
-                label_fmt = '<<I>{}</I>: <B>{}</B><BR ALIGN="LEFT" />:: {}>'
-            # typename is already escaped
-            label = label_fmt.format(escape(nodename), escape(name), typename)
+            label_fmt = '<<I>{}</I>: <B>{}</B><BR ALIGN="LEFT" />:: {}>'
+        # typename is already escaped
+        label = label_fmt.format(escape(nodename), escape(name), typename)
     else:
         if isinstance(node, ops.Relation):
             label_fmt = "<<B>{}</B>{}>"

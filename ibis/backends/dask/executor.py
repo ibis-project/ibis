@@ -22,6 +22,8 @@ from ibis.backends.pandas.rewrites import (
     PandasLimit,
     PandasResetIndex,
     PandasScalarSubquery,
+    PandasWindowFrame,
+    PandasWindowFunction,
     plan,
 )
 from ibis.common.exceptions import UnboundExpressionError
@@ -271,7 +273,7 @@ class DaskExecutor(PandasExecutor, DaskUtils):
     ############################ Window functions #############################
 
     @classmethod
-    def visit(cls, op: ops.WindowFrame, table, start, end, **kwargs):
+    def visit(cls, op: PandasWindowFrame, table, start, end, **kwargs):
         table = table.compute()
         if isinstance(start, dd.Series):
             start = start.compute()
@@ -280,7 +282,7 @@ class DaskExecutor(PandasExecutor, DaskUtils):
         return super().visit(op, table=table, start=start, end=end, **kwargs)
 
     @classmethod
-    def visit(cls, op: ops.WindowFunction, func, frame):
+    def visit(cls, op: PandasWindowFunction, func, frame):
         result = super().visit(op, func=func, frame=frame)
         return cls.asseries(result)
 

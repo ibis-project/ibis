@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from abc import abstractmethod
+from typing import Literal as LiteralType
 from typing import Optional
 
 from public import public
@@ -17,7 +17,6 @@ from ibis.expr.operations.core import Column, Value
 from ibis.expr.operations.generic import Literal
 from ibis.expr.operations.numeric import Negate
 from ibis.expr.operations.reductions import Reduction  # noqa: TCH001
-from ibis.expr.operations.relations import Relation  # noqa: TCH001
 from ibis.expr.operations.sortkeys import SortKey  # noqa: TCH001
 
 T = TypeVar("T", bound=dt.Numeric | dt.Interval, covariant=True)
@@ -61,66 +60,44 @@ class WindowBoundary(Value[T, S]):
 
 
 @public
-class WindowFrame(Value):
-    """A window frame operation bound to a table."""
-
-    table: Relation
-    group_by: VarTuple[Column] = ()
-    order_by: VarTuple[SortKey] = ()
-
-    shape = ds.columnar
-
-    def __init__(self, start, end, **kwargs):
-        if start and end:
-            if not (
-                (start.dtype.is_interval() and end.dtype.is_interval())
-                or (start.dtype.is_numeric() and end.dtype.is_numeric())
-            ):
-                raise com.IbisTypeError(
-                    "Window frame start and end boundaries must have the same datatype"
-                )
-        super().__init__(start=start, end=end, **kwargs)
-
-    def dtype(self) -> dt.DataType:
-        return dt.Array(dt.Struct.from_tuples(self.table.schema.items()))
-
-    @property
-    @abstractmethod
-    def start(self): ...
-
-    @property
-    @abstractmethod
-    def end(self): ...
-
-
-@public
-class RowsWindowFrame(WindowFrame):
-    how = "rows"
-    start: Optional[WindowBoundary[dt.Integer]] = None
-    end: Optional[WindowBoundary] = None
-
-
-@public
-class RangeWindowFrame(WindowFrame):
-    how = "range"
-    start: Optional[WindowBoundary[dt.Numeric | dt.Interval]] = None
-    end: Optional[WindowBoundary[dt.Numeric | dt.Interval]] = None
-
-
-@public
 class WindowFunction(Value):
     func: Analytic | Reduction
-    frame: WindowFrame
+    how: LiteralType["rows", "range"] = "rows"
+    start: Optional[WindowBoundary[dt.Numeric | dt.Interval]] = None
+    end: Optional[WindowBoundary[dt.Numeric | dt.Interval]] = None
+    group_by: VarTuple[Column] = ()
+    order_by: VarTuple[SortKey] = ()
 
     dtype = rlz.dtype_like("func")
     shape = ds.columnar
 
-    def __init__(self, func, frame):
-        if func.relations and frame.table not in func.relations:
-            raise com.RelationError(
-                "The reduction has different parent relation than the window"
+    def __init__(self, how, start, end, **kwargs):
+        if how == "rows":
+            if start and not start.dtype.is_integer():
+                raise com.IbisTypeError(
+                    "Row-based window frame start boundary must be an integer"
+                )
+            if end and not end.dtype.is_integer():
+                raise com.IbisTypeError(
+                    "Row-based window frame end boundary must be an integer"
+                )
+        elif how == "range":
+            if (
+                start
+                and end
+                and not (
+                    (start.dtype.is_interval() and end.dtype.is_interval())
+                    or (start.dtype.is_numeric() and end.dtype.is_numeric())
+                )
+            ):
+                raise com.IbisTypeError(
+                    "Window frame start and end boundaries must have the same datatype"
+                )
+        else:
+            raise com.IbisTypeError(
+                f"Window frame type must be either 'rows' or 'range', got {how}"
             )
-        super().__init__(func=func, frame=frame)
+        super().__init__(how=how, start=start, end=end, **kwargs)
 
     @property
     def name(self):
