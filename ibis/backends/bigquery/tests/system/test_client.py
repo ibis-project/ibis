@@ -33,8 +33,12 @@ def test_list_tables(con):
     assert set(tables) == {"functional_alltypes", "functional_alltypes_parted"}
 
 
+def test_current_catalog(con):
+    assert con.current_catalog == con.billing_project
+
+
 def test_current_database(con):
-    assert con.current_database == con.billing_project
+    assert con.current_database == con.dataset
 
 
 def test_array_collect(struct_table):
@@ -236,9 +240,10 @@ def test_exists_table_different_project(con):
 
 def test_multiple_project_queries(con, snapshot):
     so = con.table(
-        "posts_questions", database="bigquery-public-data", schema="stackoverflow"
+        "posts_questions",
+        database=("bigquery-public-data", "stackoverflow"),
     )
-    trips = con.table("trips", database="nyc-tlc", schema="yellow")
+    trips = con.table("trips", database="nyc-tlc.yellow")
     join = so.join(trips, so.tags == trips.rate_code)[[so.title]]
     result = join.compile()
     snapshot.assert_match(result, "out.sql")
@@ -246,9 +251,9 @@ def test_multiple_project_queries(con, snapshot):
 
 def test_multiple_project_queries_execute(con):
     posts_questions = con.table(
-        "posts_questions", database="bigquery-public-data", schema="stackoverflow"
+        "posts_questions", database="bigquery-public-data.stackoverflow"
     ).limit(5)
-    trips = con.table("trips", database="nyc-tlc", schema="yellow").limit(5)
+    trips = con.table("trips", database="nyc-tlc.yellow").limit(5)
     predicate = posts_questions.tags == trips.rate_code
     cols = [posts_questions.title]
     join = posts_questions.left_join(trips, predicate)[cols]
