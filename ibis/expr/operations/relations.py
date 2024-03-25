@@ -181,9 +181,7 @@ JoinKind = Literal[
     "outer",
     "asof",
     "semi",
-    "semi_window",
     "anti",
-    "anti_window",
     "any_inner",
     "any_left",
     "cross",
@@ -197,24 +195,9 @@ class JoinLink(Node):
     predicates: VarTuple[Value[dt.Boolean]]
 
 
-class Where(Node):
-    table: JoinTable
-    predicates: VarTuple[Value[dt.Boolean]]
-
-
-@public
-class WhereExists(Where):
-    pass
-
-
-@public
-class WhereNotExists(Where):
-    pass
-
-
 @public
 class JoinChain(Relation):
-    first: Reference
+    first: JoinTable
     rest: VarTuple[JoinLink | Where]
     values: FrozenOrderedDict[str, Unaliased[Value]]
 
@@ -225,6 +208,8 @@ class JoinChain(Relation):
                 raise IntegrityError(
                     f"Cannot add {join.table!r} to the join chain, it is already in the chain"
                 )
+
+            assert join.table not in allowed_parents
             allowed_parents.add(join.table)
             _check_integrity(join.predicates, allowed_parents)
         _check_integrity(values.values(), allowed_parents)

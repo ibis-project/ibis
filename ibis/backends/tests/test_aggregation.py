@@ -22,7 +22,6 @@ from ibis.backends.tests.errors import (
     OracleDatabaseError,
     PolarsInvalidOperationError,
     PsycoPg2InternalError,
-    Py4JError,
     Py4JJavaError,
     PyDruidProgrammingError,
     PyODBCProgrammingError,
@@ -1313,9 +1312,6 @@ def test_topk_op(alltypes, df):
     ["dask"],
     raises=NotImplementedError,
     reason="sorting on aggregations not yet implemented",
-)
-@pytest.mark.notyet(
-    ["flink"], raises=Py4JError, reason="Flink doesn't support semi joins"
 )
 def test_topk_filter_op(con, alltypes, df, result_fn, expected_fn):
     # TopK expression will order rows by "count" but each backend

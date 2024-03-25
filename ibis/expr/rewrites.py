@@ -13,7 +13,7 @@ from ibis.common.exceptions import ExpressionError, IbisInputError
 from ibis.common.graph import Node as Traversable
 from ibis.common.graph import traverse
 from ibis.common.grounds import Concrete
-from ibis.common.patterns import Check, pattern, replace
+from ibis.common.patterns import AnyOf, Check, pattern, replace
 from ibis.common.typing import VarTuple  # noqa: TCH001
 from ibis.util import Namespace, promote_list
 
@@ -374,3 +374,80 @@ def simplify(node):
     node = node.replace(subsequent_projects | subsequent_filters)
     node = node.replace(complete_reprojection)
     return node
+
+
+@replace(p.Comparison)
+def rebase_predicates_on_table_underlying_jointable(_):
+    left, right = _.left, _.right
+    left_table = left.rel.parent
+    right_table = right.rel.parent
+    return _.copy(
+        left=left.copy(rel=left_table, name=left.name),
+        right=right.copy(rel=right_table, name=right.name),
+    )
+
+
+@replace(p.JoinChain)
+def rewrite_join_chain_for_semi_anti_join(_, y=None):
+    # TODO (mehmet): Added optional arg `y` to work around the
+    # error raised for `test_many_subqueries()`.
+    # Is there a cleaner way to address this?
+
+    links = _.find_topmost(ops.JoinLink)
+    semi_anti_links, new_links = [], []
+    for link in links:
+        if link.how in {"semi", "anti"}:
+            semi_anti_links.append(link)
+        else:
+            new_links.append(link)
+
+    # Nothing to do with the original join chain
+    if not semi_anti_links:
+        return _
+
+    if new_links:
+        node = _.copy(rest=tuple(new_links))
+    else:
+        node = _.first.parent
+
+    for link in semi_anti_links:
+        # Note: `filter` is necessary to avoid rebasing predicates
+        # in the `JoinChain`'s deeper down the tree. E.g., when
+        # a table is semi/anti-joined with an inner-join as
+        # table.join(inner_join, predicates=..., how="semi/anti")
+        link = link.replace(
+            rebase_predicates_on_table_underlying_jointable,
+            filter=AnyOf(p.JoinLink | p.Comparison | p.Field | p.JoinTable),
+        )
+
+        # Rebase predicates on `node` if the underlying table for
+        # a predicate lies within the tree starting at `node`.
+        # TODO (mehmet): Is there a cleaner way to do this?
+        # Perhaps using `.replace()`?
+        predicates = []
+        for pred in link.predicates:
+            relations_under_node = node.find(ops.Relation)
+            if pred.left.rel in relations_under_node:
+                pred = pred.copy(left=pred.left.copy(rel=node))
+            if pred.right.rel in relations_under_node:
+                pred = pred.copy(right=pred.right.copy(rel=node))
+
+            predicates.append(pred)
+
+        filtered = ops.Filter(parent=link.table.parent, predicates=predicates)
+
+        subquery = ops.ExistsSubquery(filtered)
+        if link.how == "anti":
+            subquery = ops.Not(subquery)
+        node = ops.Filter(parent=node, predicates=[subquery])
+
+    # Project to the columns specified in the initial `JoinChain`.
+    # TODO (mehmet): Is there a more efficient way to apply projection
+    # on `node`?
+    key_set = node.fields.keys() & _.fields.keys()
+    columns = []
+    for column in node.schema.names:
+        if column in key_set:
+            columns.append(column)
+
+    return node.to_expr().select(columns).op()
