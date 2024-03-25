@@ -152,10 +152,10 @@ You can store it as an environment variable to avoid having to log in again:
 The DuckDB backend has experimental support for
 [geospatial](../posts/ibis-duckdb-geospatial/index.qmd) operations.
 
-To enable geospatial operations, install `geospatial` extra or otherwise install
+To enable geospatial operations, install the `geospatial` extra or otherwise install
 the additional required dependencies:
 
-See [read_geo](#ibis.backends.duckdb.Backend.read_geo) for some tips on reading
+See [`read_geo`](#ibis.backends.duckdb.Backend.read_geo) for some tips on reading
 in geospatial data.
 
 
@@ -163,20 +163,20 @@ in geospatial data.
 
 ## `pip`
 
-```{.bash}
+```bash
 pip install 'ibis-framework[geospatial]'
 ```
 
 
 ## `conda`
 
-```{.bash}
+```bash
 conda install -c conda-forge geopandas 'shapely>=2,<3'
 ```
 
 ## `mamba`
 
-```{.bash}
+```bash
 mamba install -c conda-forge geopandas 'shapely>=2,<3'
 ```
 
