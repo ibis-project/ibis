@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import Optional
+
 from public import public
 
 import ibis
@@ -8,18 +10,14 @@ import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 from ibis.common.annotations import attribute
 from ibis.common.collections import FrozenDict
-from ibis.common.patterns import replace
+from ibis.common.patterns import InstanceOf, replace
 from ibis.common.typing import VarTuple  # noqa: TCH001
-from ibis.expr.rewrites import replace_parameter, rewrite_stringslice
+from ibis.expr.rewrites import p, replace_parameter, rewrite_stringslice
 from ibis.expr.schema import Schema
 from ibis.util import gen_name
 
 
 class PandasRelation(ops.Relation):
-    pass
-
-
-class PandasValue(ops.Value):
     pass
 
 
@@ -114,7 +112,7 @@ class PandasLimit(PandasRelation):
 
 
 @public
-class PandasScalarSubquery(PandasValue):
+class PandasScalarSubquery(ops.Value):
     # variant with no integrity checks
     rel: ops.Relation
 
@@ -125,8 +123,41 @@ class PandasScalarSubquery(PandasValue):
         return self.rel.schema.types[0]
 
 
+@public
+class PandasWindowFrame(ops.Node):
+    table: ops.Relation
+    how: str
+    start: Optional[ops.Value]
+    end: Optional[ops.Value]
+    group_by: VarTuple[ops.Column]
+    order_by: VarTuple[ops.SortKey]
+
+
+@public
+class PandasWindowFunction(ops.Value):
+    func: ops.Value
+    frame: PandasWindowFrame
+
+    shape = ds.columnar
+
+    @property
+    def dtype(self):
+        return self.func.dtype
+
+
 def is_columnar(node):
     return isinstance(node, ops.Value) and node.shape.is_columnar()
+
+
+computable_column = p.Value(shape=ds.columnar) & ~InstanceOf(
+    (
+        ops.Reduction,
+        ops.Analytic,
+        ops.SortKey,
+        ops.WindowFunction,
+        ops.WindowBoundary,
+    )
+)
 
 
 @replace(ops.Project)
@@ -143,17 +174,9 @@ def rewrite_project(_, **kwargs):
     selects = {ops.Field(_.parent, k): k for k in _.parent.schema}
     for node in winfuncs:
         # add computed values from the window function
-        values = list(node.func.__args__)
-        # add computed values from the window frame
-        values += node.frame.group_by
-        values += [key.expr for key in node.frame.order_by]
-        if node.frame.start is not None:
-            values.append(node.frame.start.value)
-        if node.frame.end is not None:
-            values.append(node.frame.end.value)
-
-        for v in values:
-            if is_columnar(v) and v not in selects:
+        columns = node.find(computable_column, filter=ops.Value)
+        for v in columns:
+            if v not in selects:
                 selects[v] = gen_name("value")
 
     # STEP 1: construct the pre-projection
@@ -163,15 +186,16 @@ def rewrite_project(_, **kwargs):
     # STEP 2: construct new window function nodes
     metrics = {}
     for node in winfuncs:
-        frame = node.frame
-        start = None if frame.start is None else frame.start.replace(subs)
-        end = None if frame.end is None else frame.end.replace(subs)
-        order_by = [key.replace(subs) for key in frame.order_by]
-        group_by = [key.replace(subs) for key in frame.group_by]
-        frame = frame.__class__(
-            proj, start=start, end=end, group_by=group_by, order_by=order_by
+        subbed = node.replace(subs, filter=ops.Value)
+        frame = PandasWindowFrame(
+            table=proj,
+            how=subbed.how,
+            start=subbed.start,
+            end=subbed.end,
+            group_by=subbed.group_by,
+            order_by=subbed.order_by,
         )
-        metrics[node] = ops.WindowFunction(node.func.replace(subs), frame)
+        metrics[node] = PandasWindowFunction(subbed.func, frame)
 
     # STEP 3: reconstruct the current projection with the window functions
     subs.update(metrics)
@@ -190,9 +214,9 @@ def rewrite_aggregate(_, **kwargs):
 
     reductions = {}
     for v in _.metrics.values():
-        for reduction in v.find_topmost(ops.Reduction):
-            for arg in reduction.__args__:
-                if is_columnar(arg) and arg not in selects:
+        for reduction in v.find(ops.Reduction, filter=ops.Value):
+            for arg in reduction.find(computable_column, filter=ops.Value):
+                if arg not in selects:
                     selects[arg] = gen_name("value")
             if reduction not in reductions:
                 reductions[reduction] = gen_name("reduction")

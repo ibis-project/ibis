@@ -46,14 +46,10 @@ end = var("end")
 # * Boolean expressions MUST be used in a WHERE clause, i.e., SELECT * FROM t WHERE 1 is not allowed
 
 
-@replace(
-    p.WindowFunction(
-        p.Reduction & ~p.ReductionVectorizedUDF, frame=y @ p.WindowFrame(order_by=())
-    )
-)
-def rewrite_rows_range_order_by_window(_, y, **kwargs):
+@replace(p.WindowFunction(p.Reduction & ~p.ReductionVectorizedUDF, order_by=()))
+def rewrite_rows_range_order_by_window(_, **kwargs):
     # MSSQL requires an order by in a window frame that has either ROWS or RANGE
-    return _.copy(frame=y.copy(order_by=(_.func.arg,)))
+    return _.copy(order_by=(_.func.arg,))
 
 
 @public

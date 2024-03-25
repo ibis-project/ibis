@@ -405,7 +405,7 @@ class PySparkCompiler(SQLGlotCompiler):
         path = self.f.format_string(fmt, index)
         return self.f.get_json_object(arg, path)
 
-    def visit_Window(self, op, *, func, group_by, order_by, **kwargs):
+    def visit_WindowFunction(self, op, *, func, group_by, order_by, **kwargs):
         if isinstance(op.func, ops.Analytic) and not isinstance(
             op.func, (FirstValue, LastValue)
         ):
@@ -417,7 +417,7 @@ class PySparkCompiler(SQLGlotCompiler):
                 order = sge.Order(expressions=[NULL])
             return sge.Window(this=func, partition_by=group_by, order=order)
         else:
-            return super().visit_Window(
+            return super().visit_WindowFunction(
                 op, func=func, group_by=group_by, order_by=order_by, **kwargs
             )
 

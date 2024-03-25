@@ -36,8 +36,8 @@ r1 := Project[r0]
 r2 := Project[r1]
   arrdelay: r1.arrdelay
   dest:     r1.dest
-  dest_avg: WindowFunction(func=Mean(r1.arrdelay), frame=RowsWindowFrame(table=r1, group_by=[r1.dest]))
-  dev:      r1.arrdelay - WindowFunction(func=Mean(r1.arrdelay), frame=RowsWindowFrame(table=r1, group_by=[r1.dest]))
+  dest_avg: WindowFunction(func=Mean(r1.arrdelay), how='rows', group_by=[r1.dest])
+  dev:      r1.arrdelay - WindowFunction(func=Mean(r1.arrdelay), how='rows', group_by=[r1.dest])
 
 r3 := Filter[r2]
   NotNull(r2.dev)

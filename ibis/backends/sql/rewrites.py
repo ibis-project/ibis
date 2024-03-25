@@ -4,13 +4,12 @@ from __future__ import annotations
 
 import operator
 from functools import reduce
-from typing import TYPE_CHECKING, Any, Literal, Optional
+from typing import TYPE_CHECKING, Any
 
 import toolz
 from public import public
 
 import ibis.common.exceptions as com
-import ibis.expr.datashape as ds
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 from ibis.common.annotations import attribute
@@ -84,24 +83,6 @@ class LastValue(ops.Analytic):
         return self.arg.dtype
 
 
-@public
-class Window(ops.Value):
-    """Window modelled after SQL's window statements."""
-
-    how: Literal["rows", "range"]
-    func: ops.Reduction | ops.Analytic
-    start: Optional[ops.WindowBoundary] = None
-    end: Optional[ops.WindowBoundary] = None
-    group_by: VarTuple[ops.Column] = ()
-    order_by: VarTuple[ops.SortKey] = ()
-
-    shape = ds.columnar
-
-    @attribute
-    def dtype(self):
-        return self.func.dtype
-
-
 # TODO(kszucs): there is a better strategy to rewrite the relational operations
 # to Select nodes by wrapping the leaf nodes in a Select node and then merging
 # Project, Filter, Sort, etc. incrementally into the Select node. This way we
@@ -126,30 +107,16 @@ def sort_to_select(_, **kwargs):
     return Select(_.parent, selections=_.values, sort_keys=_.keys)
 
 
-@replace(p.WindowFunction)
-def window_function_to_window(_, **kwargs):
-    """Convert a WindowFunction node to a Window node.
-
-    Also rewrites first -> first_value, last -> last_value.
-    """
-    func = _.func
-    if isinstance(func, (ops.First, ops.Last)):
-        if func.where is not None:
-            raise com.UnsupportedOperationError(
-                f"`{type(func).__name__.lower()}` with `where` is unsupported "
-                "in a window function"
-            )
-        cls = FirstValue if isinstance(func, ops.First) else LastValue
-        func = cls(func.arg)
-
-    return Window(
-        how=_.frame.how,
-        func=func,
-        start=_.frame.start,
-        end=_.frame.end,
-        group_by=_.frame.group_by,
-        order_by=_.frame.order_by,
-    )
+@replace(p.WindowFunction(p.First | p.Last))
+def first_to_firstvalue(_, **kwargs):
+    """Convert a First or Last node to a FirstValue or LastValue node."""
+    if _.func.where is not None:
+        raise com.UnsupportedOperationError(
+            f"`{type(_.func).__name__.lower()}` with `where` is unsupported "
+            "in a window function"
+        )
+    klass = FirstValue if isinstance(_.func, ops.First) else LastValue
+    return _.copy(func=klass(_.func.arg))
 
 
 @replace(Object(Select, Object(Select)))
@@ -162,10 +129,10 @@ def merge_select_select(_, **kwargs):
     """
     # don't merge if either the outer or the inner select has window functions
     for v in _.selections.values():
-        if v.find(Window, filter=ops.Value):
+        if v.find(ops.WindowFunction, filter=ops.Value):
             return _
     for v in _.parent.selections.values():
-        if v.find((Window, ops.Unnest), filter=ops.Value):
+        if v.find((ops.WindowFunction, ops.Unnest), filter=ops.Value):
             return _
     for v in _.predicates:
         if v.find((ops.ExistsSubquery, ops.InSubquery), filter=ops.Value):
@@ -240,7 +207,7 @@ def sqlize(
         | project_to_select
         | filter_to_select
         | sort_to_select
-        | window_function_to_window,
+        | first_to_firstvalue,
         context=context,
     )
 
@@ -268,10 +235,12 @@ replace_log10 = p.Log10 >> d.Log(_.arg, base=10)
 
 
 """Add an ORDER BY clause to rank window functions that don't have one."""
-add_order_by_to_empty_ranking_window_functions = p.WindowFunction(
-    func=p.NTile(y),
-    frame=p.WindowFrame(order_by=()) >> _.copy(order_by=(y,)),
-)
+
+
+@replace(p.WindowFunction(func=p.NTile(y), order_by=()))
+def add_order_by_to_empty_ranking_window_functions(_, **kwargs):
+    return _.copy(order_by=(y,))
+
 
 """Replace checks against an empty right side with `False`."""
 empty_in_values_right_side = p.InValues(options=()) >> d.Literal(False, dtype=dt.bool)
@@ -322,28 +291,27 @@ def rewrite_sample_as_filter(_, **kwargs):
     return ops.Filter(_.parent, (ops.LessEqual(ops.RandomScalar(), _.fraction),))
 
 
-@replace(p.WindowFunction(frame=y @ p.WindowFrame(order_by=())))
-def rewrite_empty_order_by_window(_, y, **kwargs):
-    return _.copy(frame=y.copy(order_by=(ops.NULL,)))
+@replace(p.WindowFunction(order_by=()))
+def rewrite_empty_order_by_window(_, **kwargs):
+    return _.copy(order_by=(ops.NULL,))
 
 
-@replace(p.WindowFunction(p.RowNumber | p.NTile, y))
-def exclude_unsupported_window_frame_from_row_number(_, y):
-    return ops.Subtract(_.copy(frame=y.copy(start=None, end=0)), 1)
+@replace(p.WindowFunction(p.RowNumber | p.NTile))
+def exclude_unsupported_window_frame_from_row_number(_, **kwargs):
+    return ops.Subtract(_.copy(start=None, end=0), 1)
 
 
-@replace(p.WindowFunction(p.MinRank | p.DenseRank, y @ p.WindowFrame(start=None)))
-def exclude_unsupported_window_frame_from_rank(_, y):
+@replace(p.WindowFunction(p.MinRank | p.DenseRank, start=None))
+def exclude_unsupported_window_frame_from_rank(_, **kwargs):
     return ops.Subtract(
-        _.copy(frame=y.copy(start=None, end=0, order_by=y.order_by or (ops.NULL,))), 1
+        _.copy(start=None, end=0, order_by=_.order_by or (ops.NULL,)), 1
     )
 
 
 @replace(
     p.WindowFunction(
-        p.Lag | p.Lead | p.PercentRank | p.CumeDist | p.Any | p.All,
-        y @ p.WindowFrame(start=None),
+        p.Lag | p.Lead | p.PercentRank | p.CumeDist | p.Any | p.All, start=None
     )
 )
-def exclude_unsupported_window_frame_from_ops(_, y, **kwargs):
-    return _.copy(frame=y.copy(start=None, end=0, order_by=y.order_by or (ops.NULL,)))
+def exclude_unsupported_window_frame_from_ops(_, **kwargs):
+    return _.copy(start=None, end=0, order_by=_.order_by or (ops.NULL,))
