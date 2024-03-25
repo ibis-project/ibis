@@ -154,7 +154,6 @@ class Backend(SQLBackend, CanCreateDatabase):
         """
         if settings is None:
             settings = {}
-        settings.setdefault("session_timezone", "UTC")
 
         self.con = cc.get_client(
             host=host,
