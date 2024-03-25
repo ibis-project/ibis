@@ -180,25 +180,6 @@ def test_outer_join(left_tumble_wo_ambiguity, right_tmp_wo_ambiguity):
     params=[
         (
             ["num"],
-            """SELECT
-  `t4`.`num`,
-  `t4`.`id`,
-  `t4`.`window_start`,
-  `t4`.`window_end`
-FROM (
-  SELECT
-    `t0`.*
-  FROM TABLE(TUMBLE(TABLE `left`, DESCRIPTOR(`row_time`), INTERVAL '5' MINUTE(2))) AS `t0`
-) AS `t4` WHERE NOT EXISTS (
-  SELECT
-    *
-  FROM (
-    SELECT
-      `t1`.*
-    FROM TABLE(TUMBLE(TABLE `right`, DESCRIPTOR(`row_time`), INTERVAL '5' MINUTE(2))) AS `t1`
-  ) AS `t5`
-    WHERE `t4`.`num` = `t5`.`num`
-)""",
             pd.DataFrame.from_dict(
                 {
                     "num": {0: 1},
@@ -214,27 +195,6 @@ FROM (
         ),
         (
             ["num", "window_start", "window_end"],
-            """SELECT
-  `t4`.`num`,
-  `t4`.`id`,
-  `t4`.`window_start`,
-  `t4`.`window_end`
-FROM (
-  SELECT
-    `t0`.*
-  FROM TABLE(TUMBLE(TABLE `left`, DESCRIPTOR(`row_time`), INTERVAL '5' MINUTE(2))) AS `t0`
-) AS `t4` WHERE NOT EXISTS (
-  SELECT
-    *
-  FROM (
-    SELECT
-      `t1`.*
-    FROM TABLE(TUMBLE(TABLE `right`, DESCRIPTOR(`row_time`), INTERVAL '5' MINUTE(2))) AS `t1`
-  ) AS `t5`
-    WHERE `t4`.`num` = `t5`.`num`
-    AND `t4`.`window_start` = `t5`.`window_start`
-    AND `t4`.`window_end` = `t5`.`window_end`
-)""",
             pd.DataFrame.from_dict(
                 {
                     "num": {0: 1, 1: 2},
@@ -252,15 +212,15 @@ FROM (
         ),
     ]
 )
-def anti_join_predicates_and_sql_and_df(request):
+def anti_join_predicates_and_expected_df(request):
     return request.param
 
 
 @pytest.fixture
-def anti_join_expr_and_sql_and_df(
-    anti_join_predicates_and_sql_and_df, left_tumble, right_tumble
+def anti_join_expr_and_expected_df(
+    anti_join_predicates_and_expected_df, left_tumble, right_tumble
 ):
-    predicates, expected_sql, expected_df = anti_join_predicates_and_sql_and_df
+    predicates, expected_df = anti_join_predicates_and_expected_df
 
     expr = left_tumble.join(
         right_tumble,
@@ -274,17 +234,17 @@ def anti_join_expr_and_sql_and_df(
         "window_end",
     ]
 
-    return expr, expected_sql, expected_df
+    return expr, expected_df
 
 
-def test_anti_join_sql(anti_join_expr_and_sql_and_df):
-    expr, expected_sql, _ = anti_join_expr_and_sql_and_df
+def test_anti_join_sql(anti_join_expr_and_expected_df, snapshot):
+    expr, _ = anti_join_expr_and_expected_df
     sql = ibis.to_sql(expr, dialect="flink")
-    assert sql == expected_sql
+    snapshot.assert_match(sql, "out.sql")
 
 
-def test_anti_join_result(anti_join_expr_and_sql_and_df):
-    expr, _, expected_df = anti_join_expr_and_sql_and_df
+def test_anti_join_result(anti_join_expr_and_expected_df):
+    expr, expected_df = anti_join_expr_and_expected_df
     result_df = expr.to_pandas()
     tm.assert_frame_equal(result_df, expected_df, check_dtype=False)
 
@@ -293,25 +253,6 @@ def test_anti_join_result(anti_join_expr_and_sql_and_df):
     params=[
         (
             ["num"],
-            """SELECT
-  `t4`.`num`,
-  `t4`.`id`,
-  `t4`.`window_start`,
-  `t4`.`window_end`
-FROM (
-  SELECT
-    `t0`.*
-  FROM TABLE(TUMBLE(TABLE `left`, DESCRIPTOR(`row_time`), INTERVAL '5' MINUTE(2))) AS `t0`
-) AS `t4` WHERE EXISTS (
-  SELECT
-    *
-  FROM (
-    SELECT
-      `t1`.*
-    FROM TABLE(TUMBLE(TABLE `right`, DESCRIPTOR(`row_time`), INTERVAL '5' MINUTE(2))) AS `t1`
-  ) AS `t5`
-    WHERE `t4`.`num` = `t5`.`num`
-)""",
             pd.DataFrame.from_dict(
                 {
                     "num": {0: 2, 1: 3},
@@ -329,27 +270,6 @@ FROM (
         ),
         (
             ["num", "window_start", "window_end"],
-            """SELECT
-  `t4`.`num`,
-  `t4`.`id`,
-  `t4`.`window_start`,
-  `t4`.`window_end`
-FROM (
-  SELECT
-    `t0`.*
-  FROM TABLE(TUMBLE(TABLE `left`, DESCRIPTOR(`row_time`), INTERVAL '5' MINUTE(2))) AS `t0`
-) AS `t4` WHERE EXISTS (
-  SELECT
-    *
-  FROM (
-    SELECT
-      `t1`.*
-    FROM TABLE(TUMBLE(TABLE `right`, DESCRIPTOR(`row_time`), INTERVAL '5' MINUTE(2))) AS `t1`
-  ) AS `t5`
-    WHERE `t4`.`num` = `t5`.`num`
-    AND `t4`.`window_start` = `t5`.`window_start`
-    AND `t4`.`window_end` = `t5`.`window_end`
-)""",
             pd.DataFrame.from_dict(
                 {
                     "num": {0: 3},
@@ -365,15 +285,15 @@ FROM (
         ),
     ]
 )
-def semi_join_predicates_and_sql_and_df(request):
+def semi_join_predicates_and_expected_df(request):
     return request.param
 
 
 @pytest.fixture
-def semi_join_expr_and_sql_and_df(
-    semi_join_predicates_and_sql_and_df, left_tumble, right_tumble
+def semi_join_expr_and_expected_df(
+    semi_join_predicates_and_expected_df, left_tumble, right_tumble
 ):
-    predicates, expected_sql, expected_df = semi_join_predicates_and_sql_and_df
+    predicates, expected_df = semi_join_predicates_and_expected_df
 
     expr = left_tumble.join(
         right_tumble,
@@ -387,16 +307,16 @@ def semi_join_expr_and_sql_and_df(
         "window_end",
     ]
 
-    return expr, expected_sql, expected_df
+    return expr, expected_df
 
 
-def test_semi_join_sql(semi_join_expr_and_sql_and_df):
-    expr, expected_sql, _ = semi_join_expr_and_sql_and_df
+def test_semi_join_sql(semi_join_expr_and_expected_df, snapshot):
+    expr, _ = semi_join_expr_and_expected_df
     sql = ibis.to_sql(expr, dialect="flink")
-    assert sql == expected_sql
+    snapshot.assert_match(sql, "out.sql")
 
 
-def test_semi_join_result(semi_join_expr_and_sql_and_df):
-    expr, _, expected_df = semi_join_expr_and_sql_and_df
+def test_semi_join_result(semi_join_expr_and_expected_df):
+    expr, expected_df = semi_join_expr_and_expected_df
     result_df = expr.to_pandas()
     tm.assert_frame_equal(result_df, expected_df, check_dtype=False)

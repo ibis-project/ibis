@@ -157,9 +157,7 @@ JoinKind = Literal[
     "outer",
     "asof",
     "semi",
-    "semi_window",
     "anti",
-    "anti_window",
     "any_inner",
     "any_left",
     "cross",
@@ -178,25 +176,10 @@ class JoinLink(Node):
     predicates: VarTuple[Value[dt.Boolean]]
 
 
-class Where(Node):
-    table: JoinTable
-    predicates: VarTuple[Value[dt.Boolean]]
-
-
-@public
-class WhereExists(Where):
-    pass
-
-
-@public
-class WhereNotExists(Where):
-    pass
-
-
 @public
 class JoinChain(Relation):
     first: JoinTable
-    rest: VarTuple[JoinLink | Where]
+    rest: VarTuple[JoinLink]
     values: FrozenDict[str, Unaliased[Value]]
 
     def __init__(self, first, rest, values):
