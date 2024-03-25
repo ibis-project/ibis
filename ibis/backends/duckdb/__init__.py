@@ -101,7 +101,13 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema, UrlFromPath):
     def raw_sql(self, query: str | sg.Expression, **kwargs: Any) -> Any:
         with contextlib.suppress(AttributeError):
             query = query.sql(dialect=self.name)
-        return self.con.execute(query, **kwargs)
+        try:
+            return self.con.execute(query, **kwargs)
+        except (duckdb.ParserException, duckdb.BinderException) as e:
+            raise RuntimeError(
+                "Failed to parse SQL. This is a bug in Ibis. Please report it at "
+                f"https://github.com/ibis-project/ibis/issues. SQL: \n\n {query}"
+            ) from e
 
     def _to_sqlglot(
         self, expr: ir.Expr, limit: str | None = None, params=None, **_: Any
