@@ -513,7 +513,7 @@ GO"""
                 cur.execute(f"EXEC sp_rename '{old}', '{new}'")
 
         if schema is None:
-            return self.table(name, schema=database)
+            return self.table(name, database=database)
 
         # preserve the input schema if it was provided
         return ops.DatabaseTable(

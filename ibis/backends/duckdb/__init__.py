@@ -246,7 +246,7 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema, UrlFromPath):
                         ).sql(self.name)
                     )
 
-        return self.table(name, schema=database)
+        return self.table(name, database=database)
 
     def _load_into_cache(self, name, expr):
         self.create_table(name, expr, schema=expr.schema(), temp=True)
@@ -1060,7 +1060,7 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema, UrlFromPath):
         with self._safe_raw_sql(query_con):
             pass
 
-        return self.table(table_name, schema=database, database=catalog)
+        return self.table(table_name, database=(database, catalog))
 
     def read_sqlite(self, path: str | Path, table_name: str | None = None) -> ir.Table:
         """Register a table from a SQLite database into a DuckDB table.

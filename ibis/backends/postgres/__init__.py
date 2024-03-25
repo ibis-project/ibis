@@ -737,7 +737,7 @@ $$""".format(**self._get_udf_source(udf_node))
                 )
 
         if schema is None:
-            return self.table(name, schema=database)
+            return self.table(name, database=database)
 
         # preserve the input schema if it was provided
         return ops.DatabaseTable(
