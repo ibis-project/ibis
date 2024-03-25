@@ -97,6 +97,7 @@ jobs:
         uses: codecov/codecov-action@v4
         with:
           flags: core,${{ runner.os }},python-${{ steps.install_python.outputs.python-version }}
+          token: ${{ secrets.CODECOV_TOKEN }}
 
   test_shapely_duckdb_import:
     name: Test shapely and duckdb import
@@ -171,3 +172,4 @@ jobs:
         uses: codecov/codecov-action@v4
         with:
           flags: core,doctests,${{ runner.os }},python-${{ steps.install_python.outputs.python-version }}
+          token: ${{ secrets.CODECOV_TOKEN }}
