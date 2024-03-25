@@ -475,3 +475,12 @@ def lower_sample(_, **kwargs):
             "`Table.sample` with a random seed is unsupported"
         )
     return ops.Filter(_.parent, (ops.LessEqual(ops.RandomScalar(), _.fraction),))
+
+
+@replace(p.JoinLink)
+def replace_join_link_w_where(_):
+    if _.how not in {"semi", "anti"} or not _.find(ops.WindowingTVF):
+        return _
+
+    where_class = ops.WhereExists if _.how == "semi" else ops.WhereNotExists
+    return where_class(table=_.table, predicates=_.predicates)

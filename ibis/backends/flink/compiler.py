@@ -16,6 +16,8 @@ from ibis.backends.sql.rewrites import (
     exclude_unsupported_window_frame_from_ops,
     exclude_unsupported_window_frame_from_rank,
     exclude_unsupported_window_frame_from_row_number,
+    replace_join_link_w_where,
+    rewrite_sample_as_filter,
 )
 
 

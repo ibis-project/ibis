@@ -243,17 +243,6 @@ class Join(Table):
             how = "semi"
         elif how == "asof":
             raise IbisInputError("use table.asof_join(...) instead")
-        elif how in {"semi_window", "anti_window"} and not (
-            self.op().find(ops.WindowingTVF) and right.op().find(ops.WindowingTVF)
-        ):
-            # TODO (mehmet): Instead of adding new join types `semi/anti_window`,
-            # would it make sense to (1) check the left and right nodes if they
-            # contain a `WindowingTVF` in their expression trees, (2) if they
-            # do, we would treat it as semi/anti-window-join?
-            raise IbisInputError(
-                "For semi/anti-window-join, both `left` and `right` tables "
-                "must be based on a windowing table-valued function."
-            )
 
         chain = self.op()
         right = right.op()
@@ -268,10 +257,6 @@ class Join(Table):
             # the join is a cross join, because a cross join already has this
             # behavior
             preds.append(ops.Literal(True, dtype="bool"))
-
-        # Note: Setting `right_fields` to `{}` to avoid referencing the columns
-        # of `right` for semi/anti-join.
-        right_fields = {} if how in {"semi_window", "anti_window"} else right.fields
 
         # calculate the fields based in lname and rname, this should be a best
         # effort to avoid collisions, but does not raise if there are any
