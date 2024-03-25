@@ -982,7 +982,12 @@ def flatten_data():
                     ["clickhouse"],
                     reason="Arrays are never nullable",
                     raises=AssertionError,
-                )
+                ),
+                pytest.mark.broken(
+                    ["polars"],
+                    raises=TypeError,
+                    reason="comparison of nested arrays doesn't work in pandas testing module",
+                ),
             ],
         ),
     ],
@@ -1192,7 +1197,7 @@ timestamp_range_tzinfos = pytest.mark.parametrize(
             datetime(2017, 1, 1),
             datetime(2017, 1, 2),
             ibis.interval(hours=1),
-            "1H",
+            "1h",
             id="pos",
             marks=pytest.mark.notimpl(
                 ["risingwave"],
@@ -1204,7 +1209,7 @@ timestamp_range_tzinfos = pytest.mark.parametrize(
             datetime(2017, 1, 2),
             datetime(2017, 1, 1),
             ibis.interval(hours=-1),
-            "-1H",
+            "-1h",
             id="neg_inner",
             marks=[
                 pytest.mark.broken(
@@ -1221,7 +1226,7 @@ timestamp_range_tzinfos = pytest.mark.parametrize(
             datetime(2017, 1, 2),
             datetime(2017, 1, 1),
             -ibis.interval(hours=1),
-            "-1H",
+            "-1h",
             id="neg_outer",
             marks=[
                 pytest.mark.notyet(["polars"], raises=com.UnsupportedOperationError),

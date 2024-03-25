@@ -186,7 +186,10 @@ def test_aggregate_grouped(backend, alltypes, df, result_fn, expected_fn):
 
     # Note: Using `reset_index` to get the grouping key as a column
     expected = (
-        df.groupby(grouping_key_col).apply(expected_fn).rename("tmp").reset_index()
+        df.groupby(grouping_key_col)
+        .apply(expected_fn, include_groups=False)
+        .rename("tmp")
+        .reset_index()
     )
 
     # Row ordering may differ depending on backend, so sort on the
