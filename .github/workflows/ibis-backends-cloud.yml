@@ -139,3 +139,4 @@ jobs:
         uses: codecov/codecov-action@v4
         with:
           flags: backend,${{ matrix.backend.name }},${{ runner.os }},python-${{ steps.install_python.outputs.python-version }}
+          token: ${{ secrets.CODECOV_TOKEN }}
