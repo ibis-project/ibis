@@ -16,6 +16,7 @@ from ibis.backends.sql.rewrites import (
     exclude_unsupported_window_frame_from_ops,
     exclude_unsupported_window_frame_from_rank,
     exclude_unsupported_window_frame_from_row_number,
+    replace_join_link_w_where,
     rewrite_sample_as_filter,
 )
 
@@ -25,10 +26,11 @@ class FlinkCompiler(SQLGlotCompiler):
     dialect = Flink
     type_mapper = FlinkType
     rewrites = (
-        rewrite_sample_as_filter,
         exclude_unsupported_window_frame_from_row_number,
         exclude_unsupported_window_frame_from_ops,
         exclude_unsupported_window_frame_from_rank,
+        replace_join_link_w_where,
+        rewrite_sample_as_filter,
         *SQLGlotCompiler.rewrites,
     )
 
@@ -568,14 +570,14 @@ class FlinkCompiler(SQLGlotCompiler):
 
         return self.cast(self.f.map_from_arrays(keys, values), op.dtype)
 
-    def visit_JoinLink(self, op, *, how, table, predicates):
-        if how not in {"anti_window", "semi_window"}:
-            return super().visit_JoinLink(
-                op=op, how=how, table=table, predicates=predicates
-            )
-
+    def visit_WhereExists(self, op: ops.WhereExists, table, predicates):
         where = sg.and_(*predicates) if predicates else None
         select_table = sg.select(STAR, copy=False).from_(table, copy=False)
 
-        window_join_class = AntiWindowJoin if how == "anti_window" else SemiWindowJoin
-        return window_join_class(this=select_table, where=where)
+        return SemiWindowJoin(this=select_table, where=where)
+
+    def visit_WhereNotExists(self, op: ops.WhereNotExists, table, predicates):
+        where = sg.and_(*predicates) if predicates else None
+        select_table = sg.select(STAR, copy=False).from_(table, copy=False)
+
+        return AntiWindowJoin(this=select_table, where=where)

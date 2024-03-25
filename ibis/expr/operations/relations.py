@@ -178,10 +178,25 @@ class JoinLink(Node):
     predicates: VarTuple[Value[dt.Boolean]]
 
 
+class Where(Node):
+    table: JoinTable
+    predicates: VarTuple[Value[dt.Boolean]]
+
+
+@public
+class WhereExists(Where):
+    pass
+
+
+@public
+class WhereNotExists(Where):
+    pass
+
+
 @public
 class JoinChain(Relation):
     first: JoinTable
-    rest: VarTuple[JoinLink]
+    rest: VarTuple[JoinLink | Where]
     values: FrozenDict[str, Unaliased[Value]]
 
     def __init__(self, first, rest, values):

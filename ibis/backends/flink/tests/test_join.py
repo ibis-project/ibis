@@ -265,7 +265,7 @@ def anti_join_expr_and_sql_and_df(
     expr = left_tumble.join(
         right_tumble,
         predicates=predicates,
-        how="anti_window",
+        how="anti",
     )
     expr = expr[
         "num",
@@ -378,7 +378,7 @@ def semi_join_expr_and_sql_and_df(
     expr = left_tumble.join(
         right_tumble,
         predicates=predicates,
-        how="semi_window",
+        how="semi",
     )
     expr = expr[
         "num",
