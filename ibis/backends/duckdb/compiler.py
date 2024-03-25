@@ -199,6 +199,12 @@ class DuckDBCompiler(SQLGlotCompiler):
         any_arg_null = sg.or_(*(arr.is_(NULL) for arr in arg))
         return self.if_(any_arg_null, NULL, zipped_arrays)
 
+    def visit_Map(self, op, *, keys, values):
+        # workaround for https://github.com/ibis-project/ibis/issues/8632
+        regular = self.f.map(keys, values)
+        either_null = sg.or_(keys.is_(NULL), values.is_(NULL))
+        return self.if_(either_null, NULL, regular)
+
     def visit_MapGet(self, op, *, arg, key, default):
         return self.f.ifnull(
             self.f.list_extract(self.f.element_at(arg, key), 1), default
