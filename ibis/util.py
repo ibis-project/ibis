@@ -8,7 +8,6 @@ import collections.abc
 import functools
 import importlib.metadata
 import itertools
-import logging
 import operator
 import os
 import sys
@@ -17,13 +16,7 @@ import types
 import uuid
 import warnings
 from types import ModuleType
-from typing import (
-    TYPE_CHECKING,
-    Any,
-    Callable,
-    Generic,
-    TypeVar,
-)
+from typing import TYPE_CHECKING, Any, Callable, Generic, TypeVar
 from uuid import uuid4
 
 import toolz
@@ -319,51 +312,6 @@ def convert_unit(value, unit, to, floor: bool = True):
         return op(value.to_expr(), factor).op()
     except AttributeError:
         return op(value, factor)
-
-
-def get_logger(
-    name: str,
-    level: str | None = None,
-    format: str | None = None,
-    propagate: bool = False,
-) -> logging.Logger:
-    """Get a logger.
-
-    Parameters
-    ----------
-    name
-        Logger name
-    level
-        Logging level
-    format
-        Format string
-    propagate
-        Propagate the logger
-
-    Returns
-    -------
-    logging.Logger
-
-    """
-    logging.basicConfig()
-    handler = logging.StreamHandler()
-
-    if format is None:
-        format = (
-            "%(relativeCreated)6d "
-            "%(name)-20s "
-            "%(levelname)-8s "
-            "%(threadName)-25s "
-            "%(message)s"
-        )
-    handler.setFormatter(logging.Formatter(fmt=format))
-    logger = logging.getLogger(name)
-    logger.propagate = propagate
-    logger.setLevel(
-        level or getattr(logging, os.environ.get("LOGLEVEL", "WARNING").upper())
-    )
-    logger.addHandler(handler)
-    return logger
 
 
 # taken from the itertools documentation
