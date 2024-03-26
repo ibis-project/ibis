@@ -25,7 +25,7 @@ from ibis.backends.tests.errors import (
     OracleDatabaseError,
     PolarsInvalidOperationError,
     PsycoPg2InternalError,
-    PsycoPg2SyntaxError,
+    PsycoPgSyntaxError,
     Py4JJavaError,
     PyAthenaDatabaseError,
     PyAthenaOperationalError,
@@ -1736,7 +1736,7 @@ def test_hexdigest(backend, alltypes):
                 pytest.mark.notimpl(["flink"], raises=Py4JJavaError),
                 pytest.mark.notimpl(["druid"], raises=PyDruidProgrammingError),
                 pytest.mark.notimpl(["oracle"], raises=OracleDatabaseError),
-                pytest.mark.notimpl(["postgres"], raises=PsycoPg2SyntaxError),
+                pytest.mark.notimpl(["postgres"], raises=PsycoPgSyntaxError),
                 pytest.mark.notimpl(["risingwave"], raises=PsycoPg2InternalError),
                 pytest.mark.notimpl(["snowflake"], raises=AssertionError),
                 pytest.mark.never(

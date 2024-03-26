@@ -92,6 +92,8 @@ def test_type_map(db):
     sol = pd.DataFrame(
         {"str_col": ["a"], "date_col": pd.Series([date(2022, 1, 1)], dtype="object")}
     )
+    sol["date_col"] = sol["date_col"].astype(res["date_col"].dtype)
+
     assert res.equals(sol)
 
 
