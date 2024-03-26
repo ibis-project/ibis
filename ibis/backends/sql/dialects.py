@@ -169,18 +169,13 @@ class Flink(Hive):
 
             expression = annotate_types(expression)
             first_arg = seq_get(expression.expressions, 0)
+            # it's an array of structs
             if isinstance(first_arg, sge.Struct):
-                # it's an array of structs
-                named_structs = False
-                for arg in expression.expressions:
-                    for e in arg.expressions:
-                        if isinstance(e, sge.Alias):
-                            named_structs = True
                 # get rid of aliasing because we want to compile this as CAST instead
                 args = deepcopy(expression.expressions)
-                if named_structs:
-                    for arg in args:
-                        arg.set("expressions", [e.this for e in arg.expressions])
+                for arg in args:
+                    for e in arg.expressions:
+                        arg.set("expressions", [e.unalias() for e in arg.expressions])
 
                 format_values = ", ".join([self.sql(arg) for arg in args])
                 # all elements of the array should have the same type
