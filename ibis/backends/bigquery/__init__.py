@@ -1038,7 +1038,7 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
 
         column_defs = [
             sge.ColumnDef(
-                this=name,
+                this=sg.to_identifier(name, quoted=self.compiler.quoted),
                 kind=BigQueryType.from_ibis(typ),
                 constraints=(
                     None
