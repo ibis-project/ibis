@@ -644,7 +644,7 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, CanCreateSchema, 
         with self._safe_raw_sql(create_stmt):
             pass
 
-        return self.table(name, schema=database)
+        return self.table(name, database=database)
 
     def truncate_table(
         self, name: str, database: str | None = None, schema: str | None = None
