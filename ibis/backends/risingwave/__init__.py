@@ -172,13 +172,6 @@ class Backend(PostgresBackend):
         if obj is None and schema is None:
             raise ValueError("Either `obj` or `schema` must be specified")
 
-        if database is not None and database != self.current_database:
-            raise com.UnsupportedOperationError(
-                f"Creating tables in other databases is not supported by {self.name}"
-            )
-        else:
-            database = None
-
         if connector_properties is not None and (
             encode_format is None or data_format is None
         ):
@@ -223,7 +216,7 @@ class Backend(PostgresBackend):
         else:
             temp_name = name
 
-        table = sg.table(temp_name, catalog=database, quoted=self.compiler.quoted)
+        table = sg.table(temp_name, db=database, quoted=self.compiler.quoted)
         target = sge.Schema(this=table, expressions=column_defs)
 
         if connector_properties is None:
@@ -244,14 +237,14 @@ class Backend(PostgresBackend):
                 data_format, encode_format, encode_properties
             )
 
-        this = sg.table(name, catalog=database, quoted=self.compiler.quoted)
+        this = sg.table(name, db=database, quoted=self.compiler.quoted)
         with self._safe_raw_sql(create_stmt) as cur:
             if query is not None:
                 insert_stmt = sge.Insert(this=table, expression=query).sql(self.dialect)
                 cur.execute(insert_stmt)
 
             if overwrite:
-                self.drop_table(name, database=database, schema=schema, force=True)
+                self.drop_table(name, database=database, force=True)
                 cur.execute(
                     f"ALTER TABLE {table.sql(self.dialect)} RENAME TO {this.sql(self.dialect)}"
                 )
@@ -330,7 +323,6 @@ class Backend(PostgresBackend):
         obj: ir.Table,
         *,
         database: str | None = None,
-        schema: str | None = None,
         overwrite: bool = False,
     ) -> ir.Table:
         """Creating a materialized view. The created materialized view can be accessed like a normal table.
@@ -342,9 +334,7 @@ class Backend(PostgresBackend):
         obj
             The select statement to materialize.
         database
-            Name of the database where the view exists, if not the default.
-        schema
-            Name of the schema where the view exists, if not the default
+            Name of the database where the view exists, if not the default
         overwrite
             Whether to overwrite the existing materialized view with the same name
 
@@ -353,21 +343,12 @@ class Backend(PostgresBackend):
         Table
             Table expression
         """
-        if database is not None and database != self.current_database:
-            raise com.UnsupportedOperationError(
-                f"Creating materialized views in other databases is not supported by {self.name}"
-            )
-        else:
-            database = None
-
         if overwrite:
             temp_name = util.gen_name(f"{self.name}_table")
         else:
             temp_name = name
 
-        table = sg.table(
-            temp_name, db=schema, catalog=database, quoted=self.compiler.quoted
-        )
+        table = sg.table(temp_name, db=database, quoted=self.compiler.quoted)
 
         create_stmt = sge.Create(
             this=table,
@@ -376,14 +357,14 @@ class Backend(PostgresBackend):
         )
         self._register_in_memory_tables(obj)
 
-        this = sg.table(name, catalog=database, quoted=self.compiler.quoted)
         with self._safe_raw_sql(create_stmt) as cur:
             if overwrite:
-                self.drop_materialized_view(
-                    name, database=database, schema=schema, force=True
-                )
+                target = sg.table(name, db=database).sql(self.dialect)
+
+                self.drop_materialized_view(target, database=database, force=True)
+
                 cur.execute(
-                    f"ALTER MATERIALIZED VIEW {table.sql(self.dialect)} RENAME TO {this.sql(self.dialect)}"
+                    f"ALTER MATERIALIZED VIEW {table.sql(self.dialect)} RENAME TO {target}"
                 )
 
         return self.table(name, database=database)
@@ -393,7 +374,6 @@ class Backend(PostgresBackend):
         name: str,
         *,
         database: str | None = None,
-        schema: str | None = None,
         force: bool = False,
     ) -> None:
         """Drop a materialized view.
@@ -404,15 +384,11 @@ class Backend(PostgresBackend):
             Materialized view name to drop.
         database
             Name of the database where the view exists, if not the default.
-        schema
-            Name of the schema where the view exists, if not the default.
         force
             If `False`, an exception is raised if the view does not exist.
         """
         src = sge.Drop(
-            this=sg.table(
-                name, db=schema, catalog=database, quoted=self.compiler.quoted
-            ),
+            this=sg.table(name, db=database, quoted=self.compiler.quoted),
             kind="MATERIALIZED VIEW",
             exists=force,
         )
@@ -455,13 +431,6 @@ class Backend(PostgresBackend):
         Table
             Table expression
         """
-        if database is not None and database != self.current_database:
-            raise com.UnsupportedOperationError(
-                f"Creating sources in other databases is not supported by {self.name}"
-            )
-        else:
-            database = None
-
         column_defs = [
             sge.ColumnDef(
                 this=sg.to_identifier(colname, quoted=self.compiler.quoted),
@@ -475,7 +444,7 @@ class Backend(PostgresBackend):
             for colname, typ in schema.items()
         ]
 
-        table = sg.table(name, catalog=database, quoted=self.compiler.quoted)
+        table = sg.table(name, db=database, quoted=self.compiler.quoted)
         target = sge.Schema(this=table, expressions=column_defs)
 
         create_stmt = sge.Create(
@@ -500,7 +469,6 @@ class Backend(PostgresBackend):
         name: str,
         *,
         database: str | None = None,
-        schema: str | None = None,
         force: bool = False,
     ) -> None:
         """Drop a Source.
@@ -511,15 +479,11 @@ class Backend(PostgresBackend):
             Source name to drop.
         database
             Name of the database where the view exists, if not the default.
-        schema
-            Name of the schema where the view exists, if not the default.
         force
             If `False`, an exception is raised if the source does not exist.
         """
         src = sge.Drop(
-            this=sg.table(
-                name, db=schema, catalog=database, quoted=self.compiler.quoted
-            ),
+            this=sg.table(name, db=database, quoted=self.compiler.quoted),
             kind="SOURCE",
             exists=force,
         )
@@ -534,7 +498,6 @@ class Backend(PostgresBackend):
         *,
         obj: ir.Table | None = None,
         database: str | None = None,
-        schema: str | None = None,
         data_format: str | None = None,
         encode_format: str | None = None,
         encode_properties: dict | None = None,
@@ -555,8 +518,6 @@ class Backend(PostgresBackend):
             An Ibis table expression or pandas table that will be used to extract the schema and the data of the new table. Only one of `sink_from` or `obj` can be provided.
         database
             Name of the database where the source exists, if not the default.
-        schema
-            Name of the schema where the view exists, if not the default.
         data_format
             The data format for the new source, e.g., "PLAIN". data_format and encode_format must be specified at the same time.
         encode_format
@@ -564,14 +525,7 @@ class Backend(PostgresBackend):
         encode_properties
             The properties of encode format, providing information like schema registry url. Refer https://docs.risingwave.com/docs/current/sql-create-source/ for more details.
         """
-        if database is not None and database != self.current_database:
-            raise com.UnsupportedOperationError(
-                f"Creating sinks in other databases is not supported by {self.name}"
-            )
-        else:
-            database = None
-
-        table = sg.table(name, db=schema, catalog=database, quoted=self.compiler.quoted)
+        table = sg.table(name, db=database, quoted=self.compiler.quoted)
 
         if encode_format is None != data_format is None:
             raise com.RelationError(
@@ -600,7 +554,6 @@ class Backend(PostgresBackend):
         name: str,
         *,
         database: str | None = None,
-        schema: str | None = None,
         force: bool = False,
     ) -> None:
         """Drop a Sink.
@@ -611,15 +564,11 @@ class Backend(PostgresBackend):
             Sink name to drop.
         database
             Name of the database where the view exists, if not the default.
-        schema
-            Name of the schema where the view exists, if not the default.
         force
             If `False`, an exception is raised if the source does not exist.
         """
         src = sge.Drop(
-            this=sg.table(
-                name, db=schema, catalog=database, quoted=self.compiler.quoted
-            ),
+            this=sg.table(name, db=database, quoted=self.compiler.quoted),
             kind="SINK",
             exists=force,
         )
