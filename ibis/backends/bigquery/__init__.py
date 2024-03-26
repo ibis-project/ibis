@@ -1150,7 +1150,7 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
 
         signature = [
             sge.ColumnDef(
-                this=sg.to_identifier(name),
+                this=sg.to_identifier(name, quoted=self.compiler.quoted),
                 kind=type_mapper.from_ibis(param.annotation.pattern.dtype),
             )
             for name, param in udf_node.__signature__.parameters.items()
