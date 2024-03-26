@@ -394,7 +394,8 @@ class PandasExecutor(Dispatched, PandasUtils):
                 col = df[arg.name].shift(freq=sign(offset))
                 res = col.reindex(df.index)
                 if not pd.isnull(default):
-                    res = res.fillna(default)
+                    with pd.option_context("future.no_silent_downcasting", True):
+                        res = res.fillna(default)
                 return res.reset_index(drop=True)
 
         else:
@@ -403,7 +404,8 @@ class PandasExecutor(Dispatched, PandasUtils):
             def agg(df, order_keys):
                 res = df[arg.name].shift(sign(offset))
                 if not pd.isnull(default):
-                    res = res.fillna(default)
+                    with pd.option_context("future.no_silent_downcasting", True):
+                        res = res.fillna(default)
                 return res
 
         return agg
@@ -600,7 +602,9 @@ class PandasExecutor(Dispatched, PandasUtils):
     def visit(cls, op: PandasAggregate, parent, groups, metrics):
         if groups:
             parent = parent.groupby([col.name for col in groups.values()])
-            metrics = {k: parent.apply(v) for k, v in metrics.items()}
+            metrics = {
+                k: parent.apply(v, include_groups=False) for k, v in metrics.items()
+            }
             result = cls.concat(metrics, axis=1).reset_index()
             renames = {v.name: k for k, v in op.groups.items()}
             return result.rename(columns=renames)
@@ -744,7 +748,8 @@ class PandasExecutor(Dispatched, PandasUtils):
 
     @classmethod
     def visit(cls, op: ops.FillNa, parent, replacements):
-        return parent.fillna(replacements)
+        with pd.option_context("future.no_silent_downcasting", True):
+            return parent.fillna(replacements)
 
     @classmethod
     def visit(cls, op: ops.InValues, value, options):
