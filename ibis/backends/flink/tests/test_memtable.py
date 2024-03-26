@@ -39,7 +39,8 @@ def test_create_memtable(con, data, schema, expected):
     assert list(result.collect()) == expected
 
 
-@pytest.mark.xfail(
+@pytest.mark.notyet(
+    ["flink"],
     raises=Py4JJavaError,
     reason="cannot create an ARRAY of named STRUCTs directly from the ARRAY[] constructor; https://issues.apache.org/jira/browse/FLINK-34898",
 )

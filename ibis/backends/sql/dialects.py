@@ -141,7 +141,6 @@ class Flink(Hive):
 
             values = []
             schema = []
-            unknown_type = False
 
             for e in expression.expressions:
                 if isinstance(e, sge.PropertyEQ):
@@ -149,20 +148,16 @@ class Flink(Hive):
                 # named structs
                 if isinstance(e, sge.Alias):
                     if e.type and e.type.is_type(sge.DataType.Type.UNKNOWN):
-                        unknown_type = True
+                        self.unsupported(
+                            "Cannot convert untyped key-value definitions (try annotate_types)."
+                        )
                     else:
                         schema.append(f"{self.sql(e, 'alias')} {self.sql(e.type)}")
                     values.append(self.sql(e, "this"))
                 else:
                     values.append(self.sql(e))
 
-            size = len(expression.expressions)
-
-            if not size or len(schema) != size:
-                if unknown_type:
-                    self.unsupported(
-                        "Cannot convert untyped key-value definitions (try annotate_types)."
-                    )
+            if not (size := len(expression.expressions)) or len(schema) != size:
                 return self.func("ROW", *values)
             return f"CAST(ROW({', '.join(values)}) AS ROW({', '.join(schema)}))"
 
