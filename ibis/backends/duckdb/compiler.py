@@ -252,9 +252,9 @@ class DuckDBCompiler(SQLGlotCompiler):
     def visit_TimestampFromUNIX(self, op, *, arg, unit):
         unit = unit.short
         if unit == "ms":
-            return self.f.epoch_ms(arg)
+            return self.cast(self.f.epoch_ms(arg), op.dtype)
         elif unit == "s":
-            return sge.UnixToTime(this=arg)
+            return self.cast(sge.UnixToTime(this=arg), op.dtype)
         else:
             raise com.UnsupportedOperationError(f"{unit!r} unit is not supported!")
 
@@ -275,7 +275,7 @@ class DuckDBCompiler(SQLGlotCompiler):
             func = self.f[f"to_{_INTERVAL_SUFFIXES[to.unit.short]}"]
             return func(sg.cast(arg, to=self.type_mapper.from_ibis(dt.int32)))
         elif to.is_timestamp() and op.arg.dtype.is_integer():
-            return self.f.to_timestamp(arg)
+            return self.cast(self.f.to_timestamp(arg), to)
 
         return self.cast(arg, to)
 
