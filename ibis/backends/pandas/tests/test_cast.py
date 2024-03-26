@@ -163,7 +163,7 @@ def test_timestamp_with_timezone_is_inferred_correctly(t, df):
 def test_cast_date(t, df, column):
     expr = t[column].cast("date")
     result = expr.execute()
-    expected = df[column].dt.normalize().dt.tz_localize(None).dt.date
+    expected = df[column].dt.normalize().dt.tz_localize(None).astype(result.dtype)
     tm.assert_series_equal(result, expected)
 
 
