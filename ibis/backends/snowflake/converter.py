@@ -1,9 +1,9 @@
 from __future__ import annotations
 
-import datetime
 import json
 from typing import TYPE_CHECKING
 
+import pandas as pd
 import pyarrow as pa
 
 from ibis.formats.pandas import PandasData
@@ -52,15 +52,15 @@ pa.register_extension_type(PYARROW_JSON_TYPE)
 class SnowflakePandasData(PandasData):
     @classmethod
     def convert_Timestamp_element(cls, dtype):
-        return datetime.datetime.fromisoformat
+        return pd.Timestamp.fromisoformat
 
     @classmethod
     def convert_Date_element(cls, dtype):
-        return datetime.date.fromisoformat
+        return pd.Timestamp.fromisoformat
 
     @classmethod
     def convert_Time_element(cls, dtype):
-        return datetime.time.fromisoformat
+        return pd.Timestamp.fromisoformat
 
     @classmethod
     def convert_JSON(cls, s, dtype, pandas_type):
