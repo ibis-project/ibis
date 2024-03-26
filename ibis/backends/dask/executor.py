@@ -31,6 +31,23 @@ from ibis.util import gen_name
 # ruff: noqa: F811
 
 
+def limit_df(
+    df: dd.DataFrame,
+    col: str,
+    n: int | pd.DataFrame,
+    offset: int | pd.DataFrame,
+):
+    if isinstance(offset, pd.DataFrame):
+        offset = offset.iat[0, 0]
+    if isinstance(n, pd.DataFrame):
+        n = n.iat[0, 0]
+
+    if n is None:
+        return df[df[col] >= offset]
+
+    return df[df[col].between(offset, offset + n - 1)]
+
+
 class DaskExecutor(PandasExecutor, DaskUtils):
     name = "dask"
     kernels = dask_kernels
@@ -291,17 +308,17 @@ class DaskExecutor(PandasExecutor, DaskUtils):
 
     @classmethod
     def visit(cls, op: PandasLimit, parent, n, offset):
-        n = n.compute().iat[0, 0]
-        offset = offset.compute().iat[0, 0]
-
         name = gen_name("limit")
         df = add_globally_consecutive_column(parent, name, set_as_index=False)
-        if n is None:
-            df = df[df[name] >= offset]
-        else:
-            df = df[df[name].between(offset, offset + n - 1)]
 
-        return df.drop(columns=[name])
+        return df.map_partitions(
+            limit_df,
+            col=name,
+            n=n,
+            offset=offset,
+            align_dataframes=False,
+            meta=df._meta,
+        ).drop(columns=[name])
 
     @classmethod
     def visit(cls, op: PandasResetIndex, parent):
