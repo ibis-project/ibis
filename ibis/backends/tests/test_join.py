@@ -92,10 +92,12 @@ def test_mutating_join(backend, batting, awards_players, how):
             .reset_index(drop=True)
         )
     else:
+        result = expr.execute()
+        with pd.option_context("future.no_silent_downcasting", True):
+            result = result.fillna(np.nan)
+
         result = (
-            expr.execute()
-            .fillna(np.nan)
-            .assign(
+            result.assign(
                 playerID=lambda df: df.playerID.where(
                     df.playerID.notnull(),
                     df.playerID_right,
