@@ -135,11 +135,15 @@ class DuckDBCompiler(SQLGlotCompiler):
 
         if start is None:
             start = 0
+        elif isinstance(op.start, ops.Literal) and op.start.value >= 0:
+            start = op.start.value
         else:
             start = self.f.least(arg_length, self._neg_idx_to_pos(arg, start))
 
         if stop is None:
             stop = arg_length
+        elif isinstance(op.stop, ops.Literal) and op.stop.value >= 0:
+            stop = op.stop.value
         else:
             stop = self._neg_idx_to_pos(arg, stop)
 
