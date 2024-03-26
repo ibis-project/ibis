@@ -2859,6 +2859,36 @@ class Table(Expr, _FixedTextJupyterMixin):
             aggs.append(agg)
         return ibis.union(*aggs).order_by(ibis.asc("pos"))
 
+    def at_time(
+        self: Table,
+        time_attribute: ir.Column,
+    ) -> Table:
+        """Sets the time-attribute used for picking the table version at runtime.
+
+        Time-attribute determines the version/snapshot used at runtime for the
+        versioned table. Defined only for versioned tables. Raises `IbisInputError`
+        if it is called on a table that does not support versioning.
+
+        Parameters
+        ----------
+        time_attribute
+            A table column to determine the version of this table.
+
+        Returns
+        -------
+        Table
+            Table expression
+        """
+
+        op = self.op()
+        if not isinstance(op, ops.VersionedDatabaseTable):
+            raise com.IbisInputError(
+                "Table is not versioned. "
+                "`at_time()` is defined only for versioned tables."
+            )
+
+        return op.copy(at_time=time_attribute).to_expr()
+
     def join(
         left: Table,
         right: Table,
@@ -2879,6 +2909,16 @@ class Table(Expr, _FixedTextJupyterMixin):
         rname: str = "{name}_right",
     ) -> Table:
         """Perform a join between two tables.
+
+        When `right` is a versioned table, this will perform a temporal join.
+        This will join the rows in `left` with the corresponding versions of the
+        matching rows in `right`. Thus, `right` must support versioning, i.e.,
+        it should be a "versioned table". Versions of the rows in `right` are
+        determined with respect to a time-attribute that must be a column of `left`.
+        The time-attribute should be specified by attaching it to `right` with
+        `right.at_time(left.time_attribute)`. Columns on which the join will be
+        performed should be provided in `predicates`. Every given predicate should
+        be of an equality.
 
         Parameters
         ----------
@@ -3032,6 +3072,45 @@ class Table(Expr, _FixedTextJupyterMixin):
         │  139385 │ tom hardy         │         89774 │ Tom Hardy         │
         └─────────┴───────────────────┴───────────────┴───────────────────┘
         """
+
+        # TODO (mehmet): Did not place the example below in the docstring above
+        # as it requires `con`. Should we add a temporal join example in a different
+        # format, or skip it entirely here as Flink is the only backend supporting it?
+        #
+        # Examples for temporal join
+        # --------
+        # # Create left- and right-table. Right-table should be a versioned table.
+        # >>> table_left = con.create_table(...)
+        # >>> table_right = con.create_table(...)
+        #
+        # # Set the time-attribute that will determine the version of the rows to be
+        # # joined against in `table_right` at runtime.
+        # >>> table_right = table_right.at_time(table_left.timestamp_col)
+        #
+        # >>> expr = table_left.join(
+        # >>>     table_right,
+        # >>>     predicates=[
+        # >>>         table_left["id"] == table_right["id"],
+        # >>>     ],
+        # >>> )
+        #
+        # TODO (mehmet): If we bring `at_time()` in `join()` as
+        # expr = table_left.join(
+        #     table_right.at_time(table_left.timestamp_col),
+        #     predicates=[
+        #         table_left["id"] == table_right["id"],
+        #     ],
+        # )
+        # this will raise
+        # E ibis.common.exceptions.IntegrityError: Cannot add <ibis.expr.operations.logical.Equals object at 0x17c374270> to projection, they belong to another relation
+        #
+        # The reason is that `at_time()` returns a new copy of `table_right` and
+        # the predicates are defined with the old copy of `table_right`.
+        #
+        # Is there a way to make this work without having to define `table_right`
+        # in a separate line before `temporal_join()`? The API would look better
+        # when `table_right.at_time()` is provided directly to `temporal_join()`.
+
         from ibis.expr.types.joins import Join
 
         return Join(left.op()).join(
