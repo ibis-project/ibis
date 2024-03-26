@@ -7,7 +7,7 @@ import json
 from typing import TYPE_CHECKING, Any
 from urllib.parse import parse_qs, urlparse
 
-import pydruid
+import pydruid.db
 import sqlglot as sg
 
 import ibis.common.exceptions as com
