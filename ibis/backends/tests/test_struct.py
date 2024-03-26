@@ -205,6 +205,11 @@ def test_field_access_after_case(con):
     raises=sg.ParseError,
     reason="trino returns unquoted and therefore unparsable struct field names",
 )
+@pytest.mark.notyet(
+    ["snowflake"],
+    raises=AssertionError,
+    reason="snowflake doesn't have strongly typed structs",
+)
 def test_keyword_fields(con, nullable):
     schema = ibis.schema(
         {
