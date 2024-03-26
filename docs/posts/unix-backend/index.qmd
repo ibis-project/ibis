@@ -1,0 +1,75 @@
+---
+title: "Scaling to infinity and beyond: the Unix backend"
+author: "Phillip Cloud"
+date: "2024-04-01"
+categories:
+    - blog
+    - serious
+    - web-scale
+    - unix
+---
+
+## The Unix backend for Ibis
+
+We're happy to announce a new Ibis backend built on the world's best known web
+scale technology: Unix pipes.
+
+## Why?
+
+Why not? Pipes rock and they automatically stream data between operators and
+scale to your hard drive.
+
+What's not to love?
+
+## Demo
+
+All production ready backends ship with amazing demos.
+
+The Unix backend is no different. Let's see it in action.
+
+```{python}
+import ibis
+
+ibis.options.interactive = True
+
+con = ibis.unix.connect({"p": "/data/penguins.csv"})
+t = con.table("p")
+t
+```
+
+Sweet, huh?
+
+Let's filter the and look at only the year 2009.
+
+```{python}
+expr = t.filter(t.year == 2009)
+expr
+```
+
+We can sort the result of that too, and filter again.
+
+```{python}
+expr = (
+    expr.order_by("species", ibis.desc("bill_length_mm"))
+    .filter(lambda t: t.island == "Biscoe")
+)
+expr
+```
+
+There's even support for joins!
+
+## How does it work?
+
+Glad you asked!
+
+The Unix backend for Ibis was built over the course of a few hours, which is
+about the time it takes to make a production ready Ibis backend.
+
+## Conclusion
+
+If you've gotten this far hopefully you've had a good laugh. We aren't going to
+ship a Unix backend, but there's a commit you find if you want to tinker with
+it.
+
+Ibis is very flexible and powerful at both the user facing API level and as
+seen in this wacky post also at the level of the backend implementation.
