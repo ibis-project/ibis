@@ -188,3 +188,11 @@ def csv_source_configs():
         }
 
     return generate_csv_configs
+
+
+@pytest.fixture(scope="module")
+def tempdir_sink_configs():
+    def generate_tempdir_configs(tempdir):
+        return {"connector": "filesystem", "path": tempdir, "format": "csv"}
+
+    return generate_tempdir_configs
