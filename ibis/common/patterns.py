@@ -1503,6 +1503,18 @@ class PatternList(Slotted, Pattern):
         if not is_iterable(values):
             return NoMatch
 
+        # Note (mehmet): Got a generator in `values`:
+        # <generator object Table.match_recognize.<locals>.<genexpr> at 0x17a808930>
+        # after adding `symbols: tuple[MatchRecognizeVariable]` in `ops.MatchRecognizeTable`.
+        # I could not figure why I got a generator here, but added the following
+        # to work around this for now.
+        #
+        # TODO (mehmet): Should we add types for the arguments here? It is hard
+        # to understand their expected types otherwise.
+        from types import GeneratorType
+        if isinstance(values, GeneratorType):
+            values = list(values)
+
         if len(values) != len(self.patterns):
             return NoMatch
 

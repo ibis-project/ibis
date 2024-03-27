@@ -35,6 +35,8 @@ from ibis.expr.types import (
     array,
     literal,
     map,
+    pattern_measurement,
+    pattern_after_match,
     null,
     struct,
 )
@@ -136,6 +138,8 @@ __all__ = (
     "least",
     "literal",
     "map",
+    "pattern_measurement",
+    "pattern_after_match",
     "memtable",
     "NA",
     "negate",

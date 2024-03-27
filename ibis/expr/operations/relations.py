@@ -80,14 +80,14 @@ class Field(Value):
 
     shape = ds.columnar
 
-    def __init__(self, rel, name):
+    def __init__(self, rel, name, **kwargs: Any):
         if name not in rel.schema:
             columns_formatted = ", ".join(map(repr, rel.schema.names))
             raise IbisTypeError(
                 f"Column {name!r} is not found in table. "
                 f"Existing columns: {columns_formatted}."
             )
-        super().__init__(rel=rel, name=name)
+        super().__init__(rel=rel, name=name, **kwargs)
 
     @attribute
     def dtype(self):
