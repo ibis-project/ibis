@@ -416,12 +416,24 @@ class SQLGlotCompiler(abc.ABC):
 
     # Concrete API
 
-    def if_(self, condition, true, false: sge.Expression | None = None) -> sge.If:
-        return sge.If(
-            this=sge.convert(condition),
-            true=sge.convert(true),
-            false=None if false is None else sge.convert(false),
-        )
+    # TODO: If we could statically analyze a sqlglot condition and determine if it's
+    # always true or always false, all users would get the
+    # benefit of the optimization by default without needing to check for
+    # and then convert to bool literals themselves.
+    # https://github.com/tobymao/sqlglot/issues/3229
+    def if_(
+        self,
+        condition: bool | sge.Expression,
+        true,
+        false: sge.Expression | None = None,
+    ) -> sge.If:
+        true = sge.convert(true)
+        if false is not None:
+            false = sge.convert(false)
+        if isinstance(condition, bool):
+            return true if condition else false
+        else:
+            return sge.If(this=sge.convert(condition), true=true, false=false)
 
     def cast(self, arg, to: dt.DataType) -> sge.Cast:
         return sg.cast(sge.convert(arg), to=self.type_mapper.from_ibis(to), copy=False)
@@ -809,6 +821,8 @@ class SQLGlotCompiler(abc.ABC):
         return self.f.ltrim(arg, string.whitespace)
 
     def visit_Substring(self, op, *, arg, start, length):
+        if isinstance(op.start, ops.Literal):
+            start = op.start.value
         start += 1
         arg_length = self.f.length(arg)
 

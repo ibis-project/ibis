@@ -9,13 +9,7 @@ FROM (
     SUM("t6"."c_acctbal") AS "totacctbal"
   FROM (
     SELECT
-      IF(
-        (
-          0 + 1
-        ) >= 1,
-        SUBSTRING("t2"."c_phone", 0 + 1, 2),
-        SUBSTRING("t2"."c_phone", 0 + 1 + LENGTH("t2"."c_phone"), 2)
-      ) AS "cntrycode",
+      SUBSTRING("t2"."c_phone", 1, 2) AS "cntrycode",
       "t2"."c_acctbal"
     FROM (
       SELECT
@@ -30,13 +24,7 @@ FROM (
       FROM "hive"."ibis_sf1"."customer" AS "t0"
     ) AS "t2"
     WHERE
-      IF(
-        (
-          0 + 1
-        ) >= 1,
-        SUBSTRING("t2"."c_phone", 0 + 1, 2),
-        SUBSTRING("t2"."c_phone", 0 + 1 + LENGTH("t2"."c_phone"), 2)
-      ) IN ('13', '31', '23', '29', '30', '18', '17')
+      SUBSTRING("t2"."c_phone", 1, 2) IN ('13', '31', '23', '29', '30', '18', '17')
       AND "t2"."c_acctbal" > (
         SELECT
           AVG("t3"."c_acctbal") AS "Mean(c_acctbal)"
@@ -53,13 +41,7 @@ FROM (
           FROM "hive"."ibis_sf1"."customer" AS "t0"
           WHERE
             CAST("t0"."c_acctbal" AS DECIMAL(15, 2)) > CAST(0.0 AS DOUBLE)
-            AND IF(
-              (
-                0 + 1
-              ) >= 1,
-              SUBSTRING("t0"."c_phone", 0 + 1, 2),
-              SUBSTRING("t0"."c_phone", 0 + 1 + LENGTH("t0"."c_phone"), 2)
-            ) IN ('13', '31', '23', '29', '30', '18', '17')
+            AND SUBSTRING("t0"."c_phone", 1, 2) IN ('13', '31', '23', '29', '30', '18', '17')
         ) AS "t3"
       )
       AND NOT (
