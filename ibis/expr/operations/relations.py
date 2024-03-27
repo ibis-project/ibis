@@ -161,6 +161,7 @@ JoinKind = Literal[
     "any_inner",
     "any_left",
     "cross",
+    "temporal",
 ]
 
 
@@ -328,6 +329,13 @@ class DatabaseTable(PhysicalTable):
     schema: Schema
     source: Any
     namespace: Namespace = Namespace()
+
+
+@public
+class VersionedTable(Simple):
+    """Table that is versioned with snapshots by the backend."""
+
+    at_time: Column[dt.Timestamp]
 
 
 @public

@@ -2859,6 +2859,33 @@ class Table(Expr, _FixedTextJupyterMixin):
             aggs.append(agg)
         return ibis.union(*aggs).order_by(ibis.asc("pos"))
 
+    def at_time(
+        self: Table,
+        time_attribute: ir.Column,
+    ) -> Table:
+        """Sets the time-attribute used for picking the table version at runtime.
+
+        Time-attribute determines the version/snapshot used at runtime for the
+        versioned table. Defined only for versioned tables. Raises `IbisInputError`
+        if it is called on a table that does not support versioning.
+
+        Parameters
+        ----------
+        time_attribute
+            A table column to determine the version of this table.
+
+        Returns
+        -------
+        Table
+            Table expression
+        """
+        op = self.op()
+        if isinstance(op, ops.VersionedTable):
+            node = op.copy(at_time=time_attribute)
+        else:
+            node = ops.VersionedTable(self, at_time=time_attribute)
+        return node.to_expr()
+
     def join(
         left: Table,
         right: Table,
@@ -2879,6 +2906,16 @@ class Table(Expr, _FixedTextJupyterMixin):
         rname: str = "{name}_right",
     ) -> Table:
         """Perform a join between two tables.
+
+        When `right` is a versioned table, this will perform a temporal join.
+        This will join the rows in `left` with the corresponding versions of the
+        matching rows in `right`. Thus, `right` must support versioning, i.e.,
+        it should be a "versioned table". Versions of the rows in `right` are
+        determined with respect to a time-attribute that must be a column of `left`.
+        The time-attribute should be specified by attaching it to `right` with
+        `right.at_time(left.time_attribute)`. Columns on which the join will be
+        performed should be provided in `predicates`. Every given predicate should
+        be of an equality.
 
         Parameters
         ----------

@@ -135,6 +135,11 @@ class Flink(Hive):
             sge.Interval: _interval_with_precision,
         }
 
+        def version_sql(self, expression: sge.Version) -> str:
+            if expression.name == "TIMESTAMP":
+                expression.set("this", "SYSTEM_TIME")
+            return super(Hive.Generator, self).version_sql(expression)
+
     class Tokenizer(Hive.Tokenizer):
         # In Flink, embedded single quotes are escaped like most other SQL
         # dialects: doubling up the single quote

@@ -46,7 +46,7 @@ def disambiguate_fields(
     left_template = left_template or "{name}"
     right_template = right_template or "{name}"
 
-    if how == "inner" and util.all_of(predicates, ops.Equals):
+    if (how == "inner" and util.all_of(predicates, ops.Equals)) or how == "temporal":
         # for inner joins composed exclusively of equality predicates, we can
         # avoid renaming columns with colliding names if their values are
         # guaranteed to be equal due to the predicate
@@ -133,7 +133,7 @@ def dereference_mapping_left(chain):
 def dereference_mapping_right(right):
     # the right table is wrapped in a JoinTable the uniqueness of the underlying
     # table which requires the predicates to be dereferenced to the wrapped
-    return {v: ops.Field(right, k) for k, v in right.values.items()}
+    return dereference_mapping(right)
 
 
 def dereference_sides(left, right, deref_left, deref_right):
@@ -144,7 +144,7 @@ def dereference_sides(left, right, deref_left, deref_right):
 
 def dereference_value(pred, deref_left, deref_right):
     deref_both = {**deref_left, **deref_right}
-    if isinstance(pred, ops.Comparison) and pred.left.relations == pred.right.relations:
+    if isinstance(pred, ops.Comparison):
         left, right = dereference_sides(pred.left, pred.right, deref_left, deref_right)
         return pred.copy(left=left, right=right)
     else:
@@ -271,6 +271,28 @@ class Join(Table):
             raise IntegrityError(f"Name collisions: {self._collisions}")
         return Table(self.op())
 
+    def _create_join(self, how, left, right, predicates, lname, rname):
+        # calculate the fields based in lname and rname, this should be a best
+        # effort to avoid collisions, but does not raise if there are any
+        # if no disambiaution happens using a final .select() call, then
+        # the finish() method will raise due to the name collisions
+        values, collisions, equalities = disambiguate_fields(
+            how=how,
+            predicates=predicates,
+            equalities=self._equalities,
+            left_fields=left.values,
+            right_fields=right.fields,
+            left_template=lname,
+            right_template=rname,
+        )
+
+        # construct a new join link and add it to the join chain
+        link = ops.JoinLink(how, table=right, predicates=predicates)
+        left = left.copy(rest=left.rest + (link,), values=values)
+
+        # return with a new JoinExpr wrapping the new join chain
+        return self.__class__(left, collisions=collisions, equalities=equalities)
+
     @functools.wraps(Table.join)
     def join(
         self,
@@ -292,8 +314,17 @@ class Join(Table):
                 f"right operand must be a Table, got {type(right).__name__}"
             )
 
+        right = right.op()
         if how == "left_semi":
             how = "semi"
+        elif isinstance(right, ops.VersionedTable):
+            # TODO(kszucs): need to tweak the user experience here
+            # the dereferencing logic must be improved as well, but first
+            # the desired API must be figured out
+            how = "temporal"
+            deref_left = dereference_mapping_left(self.op())
+            at_time = right.at_time.replace(deref_left, filter=ops.Value)
+            right = right.copy(at_time=at_time)
         elif how == "asof":
             raise IbisInputError("use table.asof_join(...) instead")
 
@@ -308,26 +339,7 @@ class Join(Table):
             # behavior
             preds.append(ops.Literal(True, dtype="bool"))
 
-        # calculate the fields based in lname and rname, this should be a best
-        # effort to avoid collisions, but does not raise if there are any
-        # if no disambiaution happens using a final .select() call, then
-        # the finish() method will raise due to the name collisions
-        values, collisions, equalities = disambiguate_fields(
-            how=how,
-            predicates=preds,
-            equalities=self._equalities,
-            left_fields=left.values,
-            right_fields=right.fields,
-            left_template=lname,
-            right_template=rname,
-        )
-
-        # construct a new join link and add it to the join chain
-        link = ops.JoinLink(how, table=right, predicates=preds)
-        left = left.copy(rest=left.rest + (link,), values=values)
-
-        # return with a new JoinExpr wrapping the new join chain
-        return self.__class__(left, collisions=collisions, equalities=equalities)
+        return self._create_join(how, left, right, preds, lname, rname)
 
     @functools.wraps(Table.asof_join)
     def asof_join(
@@ -390,22 +402,7 @@ class Join(Table):
         preds = prepare_predicates(left, right, predicates, comparison=ops.Equals)
         preds = [on, *preds]
 
-        values, collisions, equalities = disambiguate_fields(
-            how="asof",
-            predicates=preds,
-            equalities=self._equalities,
-            left_fields=left.values,
-            right_fields=right.fields,
-            left_template=lname,
-            right_template=rname,
-        )
-
-        # construct a new join link and add it to the join chain
-        link = ops.JoinLink("asof", table=right, predicates=preds)
-        left = left.copy(rest=left.rest + (link,), values=values)
-
-        # return with a new JoinExpr wrapping the new join chain
-        return self.__class__(left, collisions=collisions, equalities=equalities)
+        return self._create_join("asof", left, right, preds, lname, rname)
 
     @functools.wraps(Table.cross_join)
     def cross_join(

@@ -926,9 +926,9 @@ class SQLGlotCompiler(abc.ABC):
         funcname = f"{funcs[type(op)]}_{hows[how]}"
         return self.agg[funcname](*args, where=where)
 
-    visit_Variance = visit_StandardDev = visit_Covariance = (
-        visit_VarianceStandardDevCovariance
-    )
+    visit_Variance = (
+        visit_StandardDev
+    ) = visit_Covariance = visit_VarianceStandardDevCovariance
 
     def visit_Arbitrary(self, op, *, arg, how, where):
         if how == "heavy":
@@ -1164,6 +1164,12 @@ class SQLGlotCompiler(abc.ABC):
     def visit_SelfReference(self, op, *, parent, identifier):
         return parent
 
+    def visit_VersionedTable(self, op, *, parent, at_time):
+        version = sge.Version(this="TIMESTAMP", expression=at_time, kind="AS OF")
+        table = parent.copy()
+        table.set("version", version)
+        return table
+
     def visit_JoinChain(self, op, *, first, rest, values):
         result = sg.select(*self._cleanup_names(values), copy=False).from_(
             first, copy=False
@@ -1187,6 +1193,7 @@ class SQLGlotCompiler(abc.ABC):
             "asof": "asof",
             "any_left": "left",
             "any_inner": None,
+            "temporal": None,
         }
         kinds = {
             "any_left": "any",
@@ -1199,6 +1206,7 @@ class SQLGlotCompiler(abc.ABC):
             "anti": "anti",
             "cross": "cross",
             "outer": "outer",
+            "temporal": "inner",
         }
         assert (
             predicates or how == "cross"
@@ -1410,9 +1418,11 @@ class SQLGlotCompiler(abc.ABC):
     def visit_Subtract(self, op, *, left, right):
         return sge.Sub(this=left, expression=right)
 
-    visit_DateSub = visit_DateDiff = visit_TimestampSub = visit_TimestampDiff = (
-        visit_IntervalSubtract
-    ) = visit_Subtract
+    visit_DateSub = (
+        visit_DateDiff
+    ) = (
+        visit_TimestampSub
+    ) = visit_TimestampDiff = visit_IntervalSubtract = visit_Subtract
 
     @parenthesize_inputs
     def visit_Multiply(self, op, *, left, right):
