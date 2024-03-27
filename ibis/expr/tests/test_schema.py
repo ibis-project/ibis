@@ -5,7 +5,6 @@ from dataclasses import dataclass
 from typing import NamedTuple
 
 import numpy as np
-import pandas.testing as tm
 import pyarrow as pa
 import pytest
 
@@ -178,22 +177,6 @@ def test_nullable_output():
 @pytest.fixture
 def df():
     return pd.DataFrame({"A": pd.Series([1], dtype="int8"), "b": ["x"]})
-
-
-def test_apply_to_column_rename(df):
-    schema = sch.Schema({"a": "int8", "B": "string"})
-    expected = df.rename({"A": "a", "b": "B"}, axis=1)
-    with pytest.warns(FutureWarning):
-        df = schema.apply_to(df.copy())
-    tm.assert_frame_equal(df, expected)
-
-
-def test_apply_to_column_order(df):
-    schema = sch.Schema({"a": "int8", "b": "string"})
-    expected = df.rename({"A": "a"}, axis=1)
-    with pytest.warns(FutureWarning):
-        new_df = schema.apply_to(df.copy())
-    tm.assert_frame_equal(new_df, expected)
 
 
 def test_api_accepts_schema_objects():
