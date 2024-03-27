@@ -4,8 +4,6 @@ import contextlib
 from functools import reduce
 from operator import add
 
-import numpy as np
-import pandas as pd
 import pytest
 from pytest import param
 
@@ -20,6 +18,7 @@ from ibis.backends.tests.errors import (
     PyODBCProgrammingError,
 )
 from ibis.common.annotations import ValidationError
+from ibis.conftest import np, pd
 
 
 @pytest.mark.parametrize(

@@ -6,8 +6,6 @@ import math
 import operator
 from operator import and_, lshift, or_, rshift, xor
 
-import numpy as np
-import pandas as pd
 import pytest
 from pytest import param
 
@@ -35,6 +33,7 @@ from ibis.backends.tests.errors import (
     SnowflakeProgrammingError,
     TrinoUserError,
 )
+from ibis.conftest import np, pd
 from ibis.expr import datatypes as dt
 
 

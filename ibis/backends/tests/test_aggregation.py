@@ -3,8 +3,6 @@ from __future__ import annotations
 from datetime import date
 from operator import methodcaller
 
-import numpy as np
-import pandas as pd
 import pytest
 from pytest import param
 
@@ -30,6 +28,7 @@ from ibis.backends.tests.errors import (
     SnowflakeProgrammingError,
     TrinoUserError,
 )
+from ibis.conftest import np, pd
 from ibis.legacy.udf.vectorized import reduction
 
 with pytest.warns(FutureWarning, match="v9.0"):

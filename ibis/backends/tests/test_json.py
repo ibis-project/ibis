@@ -4,10 +4,10 @@ from __future__ import annotations
 
 import sqlite3
 
-import numpy as np
-import pandas as pd
 import pytest
 from packaging.version import parse as vparse
+
+from ibis.conftest import np, pd
 
 pytestmark = [
     pytest.mark.never(["impala"], reason="doesn't support JSON and never will"),

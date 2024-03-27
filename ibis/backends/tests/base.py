@@ -8,11 +8,10 @@ import sys
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Literal
 
-import numpy as np
-import pandas as pd
-import pandas.testing as tm
 import pytest
 from filelock import FileLock
+
+from ibis.conftest import np, pd, tm
 
 if TYPE_CHECKING:
     from collections.abc import Iterable, Iterator, Mapping

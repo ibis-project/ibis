@@ -10,7 +10,6 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 import _pytest
-import numpy as np
 import pytest
 from packaging.requirements import Requirement
 from packaging.version import parse as vparse
@@ -24,7 +23,7 @@ from ibis.backends import (
     CanListSchema,
     _get_backend_names,
 )
-from ibis.conftest import WINDOWS
+from ibis.conftest import WINDOWS, np
 from ibis.util import promote_tuple
 
 if TYPE_CHECKING:

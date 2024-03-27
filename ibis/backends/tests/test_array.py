@@ -3,9 +3,6 @@ from __future__ import annotations
 import functools
 from datetime import datetime
 
-import numpy as np
-import pandas as pd
-import pandas.testing as tm
 import pytest
 import pytz
 import toolz
@@ -30,6 +27,7 @@ from ibis.backends.tests.errors import (
     PySparkAnalysisException,
     TrinoUserError,
 )
+from ibis.conftest import np, pd, tm
 
 pytestmark = [
     pytest.mark.never(

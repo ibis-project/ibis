@@ -6,8 +6,6 @@ import operator
 import warnings
 from operator import methodcaller
 
-import numpy as np
-import pandas as pd
 import pytest
 import sqlglot as sg
 from pytest import param
@@ -39,6 +37,7 @@ from ibis.backends.tests.errors import (
     TrinoUserError,
 )
 from ibis.common.annotations import ValidationError
+from ibis.conftest import np, pd
 
 
 @pytest.mark.parametrize("attr", ["year", "month", "day"])

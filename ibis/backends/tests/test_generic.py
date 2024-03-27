@@ -6,8 +6,6 @@ import decimal
 from collections import Counter
 from operator import invert, methodcaller, neg
 
-import numpy as np
-import pandas as pd
 import pytest
 import toolz
 from pytest import param
@@ -33,6 +31,7 @@ from ibis.backends.tests.errors import (
     TrinoUserError,
 )
 from ibis.common.annotations import ValidationError
+from ibis.conftest import np, pd
 
 NULL_BACKEND_TYPES = {
     "bigquery": "NULL",
@@ -110,7 +109,7 @@ def test_scalar_fillna_nullif(con, expr, expected):
     [
         param(
             "nan_col",
-            ibis.literal(np.nan),
+            lambda: ibis.literal(np.nan),
             methodcaller("isnan"),
             marks=[
                 pytest.mark.notimpl(["mysql", "mssql", "sqlite", "druid"]),
@@ -128,12 +127,15 @@ def test_scalar_fillna_nullif(con, expr, expected):
             id="nan_col",
         ),
         param(
-            "none_col", ibis.NA.cast("float64"), methodcaller("isnull"), id="none_col"
+            "none_col",
+            lambda: ibis.NA.cast("float64"),
+            methodcaller("isnull"),
+            id="none_col",
         ),
     ],
 )
 def test_isna(backend, alltypes, col, value, filt):
-    table = alltypes.select(**{col: value})
+    table = alltypes.select(**{col: value()})
     df = table.execute()
 
     result = table[filt(table[col])].execute().reset_index(drop=True)
