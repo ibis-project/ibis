@@ -182,20 +182,27 @@ def _(dtype, values):
 
 
 def format_column(dtype, values):
-    import pandas as pd
+    try:
+        import pandas as pd
+    except ImportError:
 
-    null_str = Text.styled("NULL", style="dim")
-    if dtype.is_floating():
-        # We don't want to treat `nan` as `NULL` for floating point types
         def isnull(x):
-            return x is None or x is pd.NA
+            return x is None
 
+        isnull_float = isnull
     else:
-
+        # We don't want to treat `nan` as `NULL` for floating point types
         def isnull(x):
             o = pd.isna(x)
             # pd.isna broadcasts if `x` is an array
             return o if isinstance(o, bool) else False
+
+        def isnull_float(x):
+            return x is None or x is pd.NA
+
+    null_str = Text.styled("NULL", style="dim")
+    if dtype.is_floating():
+        isnull = isnull_float
 
     nonnull = [v for v in values if not isnull(v)]
     if nonnull:

@@ -4,7 +4,6 @@ import itertools
 from datetime import date, datetime, time, timedelta, timezone
 
 import dateutil
-import pandas as pd
 import pytest
 import pytz
 from packaging.version import parse as vparse
@@ -19,7 +18,7 @@ from ibis.common.temporal import (
     normalize_timedelta,
     normalize_timezone,
 )
-from ibis.conftest import WINDOWS
+from ibis.conftest import WINDOWS, pd
 
 interval_units = pytest.mark.parametrize(
     ["singular", "plural", "short"],

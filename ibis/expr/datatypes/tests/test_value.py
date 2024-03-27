@@ -6,13 +6,12 @@ import json
 from collections import OrderedDict
 from datetime import date, datetime, timedelta
 
-import numpy as np
-import pandas as pd
 import pytest
 import pytz
 from packaging.version import parse as vparse
 
 import ibis.expr.datatypes as dt
+from ibis.conftest import np, pd
 
 
 class Foo(enum.Enum):

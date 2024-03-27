@@ -95,7 +95,7 @@ def test_coerced_to_value(typehint, value, expected):
 
 @pytest.mark.pandas
 def test_coerced_to_interval_value():
-    import pandas as pd
+    from ibis.conftest import pd
 
     expected = ops.Literal(1, dt.Interval("s"))
     pat = Pattern.from_typehint(ops.Value[dt.Interval])

@@ -2,14 +2,12 @@ from __future__ import annotations
 
 import collections
 import decimal
-from typing import TYPE_CHECKING, Union
+from typing import Union
 
 from ibis.common.dispatch import Dispatched, lazy_singledispatch
+from ibis.conftest import pa, pd
 
 # ruff: noqa: F811
-if TYPE_CHECKING:
-    import pandas as pd
-    import pyarrow as pa
 
 
 def test_lazy_singledispatch():
@@ -222,10 +220,8 @@ def test_dispatched():
 
 
 def test_dispatched_lazy():
-    import pyarrow as pa
-
     empty_pyarrow_table = pa.Table.from_arrays([])
-    empty_pandas_table = empty_pyarrow_table.to_pandas()
+    empty_pandas_table = pd.DataFrame()
 
     v = Visitor()
     assert v.f({}) == "f_dict"

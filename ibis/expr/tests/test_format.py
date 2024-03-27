@@ -371,6 +371,8 @@ def test_format_dummy_table(snapshot):
 
 
 def test_format_in_memory_table(snapshot):
+    pytest.importorskip("pandas")
+
     t = ibis.memtable([(1, 2), (3, 4), (5, 6)], columns=["x", "y"])
     expr = t.x.sum() + t.y.sum()
 

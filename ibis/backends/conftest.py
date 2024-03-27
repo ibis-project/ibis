@@ -11,7 +11,6 @@ from typing import TYPE_CHECKING, Any
 
 import _pytest
 import numpy as np
-import pandas as pd
 import pytest
 from packaging.requirements import Requirement
 from packaging.version import parse as vparse
@@ -701,6 +700,8 @@ def test_employee_schema() -> ibis.schema:
 
 @pytest.fixture
 def test_employee_data_1():
+    pd = pytest.importorskip("pandas")
+
     df = pd.DataFrame(
         {
             "first_name": ["A", "B", "C"],
@@ -715,6 +716,8 @@ def test_employee_data_1():
 
 @pytest.fixture
 def test_employee_data_2():
+    pd = pytest.importorskip("pandas")
+
     df2 = pd.DataFrame(
         {
             "first_name": ["X", "Y", "Z"],

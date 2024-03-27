@@ -3,8 +3,10 @@ from __future__ import annotations
 from datetime import time
 from decimal import Decimal
 
+import pytest
+
+pd = pytest.importorskip("pandas")
 import numpy as np
-import pandas as pd
 import pandas.testing as tm
 import pyarrow as pa
 import pytest

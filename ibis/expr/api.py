@@ -446,14 +446,36 @@ def _memtable(
     schema: SchemaLike | None = None,
     name: str | None = None,
 ) -> Table:
-    import pandas as pd
+    try:
+        import pandas as pd
+    except ImportError:
+        pass
+    else:
+        data = pd.DataFrame(data, columns=columns)
+        return _memtable(data, name=name, schema=schema)
 
+    try:
+        import pyarrow as pa
+    except ImportError:
+        pass
+    else:
+        data = pa.table(data)
+        return _memtable(data, name=name, schema=schema)
+
+    raise IbisInputError("Unsupported data type for memtable construction")
+
+
+@_memtable.register("pandas.DataFrame")
+def _memtable_from_pandas_dataframe(
+    data: pd.DataFrame,
+    *,
+    name: str | None = None,
+    schema: SchemaLike | None = None,
+    columns: Iterable[str] | None = None,
+):
     from ibis.formats.pandas import PandasDataFrameProxy
 
-    if not isinstance(data, pd.DataFrame):
-        df = pd.DataFrame(data, columns=columns)
-    else:
-        df = data
+    df = data
 
     if df.columns.inferred_type != "string":
         cols = df.columns

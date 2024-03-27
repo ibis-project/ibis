@@ -1046,7 +1046,7 @@ def test_self_join():
 
 
 def test_self_join_view():
-    t = ibis.memtable({"x": [1, 2], "y": [2, 1], "z": ["a", "b"]})
+    t = ibis.table(name="t", schema={"x": "int64", "y": "int64", "z": "string"})
     t_view = t.view()
     expr = t.join(t_view, t.x == t_view.y).select("x", "y", "z", "z_right")
 
@@ -1062,7 +1062,7 @@ def test_self_join_view():
 
 
 def test_self_join_with_view_projection():
-    t1 = ibis.memtable({"x": [1, 2], "y": [2, 1], "z": ["a", "b"]})
+    t1 = ibis.table(name="t1", schema={"x": "int64", "y": "int64", "z": "string"})
     t2 = t1.view()
     expr = t1.inner_join(t2, ["x"])[[t1]]
 

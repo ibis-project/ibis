@@ -3,7 +3,6 @@ from __future__ import annotations
 import operator
 from datetime import datetime
 
-import pandas as pd
 import pytest
 from dateutil.tz import tzoffset, tzutc
 from pytest import param
@@ -14,6 +13,7 @@ import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 from ibis import _
 from ibis.common.exceptions import IbisInputError, IntegrityError
+from ibis.conftest import pd
 
 
 def test_schema_from_names_types():
