@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import contextlib
 import math
+from copy import deepcopy
 
 import sqlglot.expressions as sge
 from sqlglot import transforms
@@ -18,6 +19,7 @@ from sqlglot.dialects import (
     Trino,
 )
 from sqlglot.dialects.dialect import rename_func
+from sqlglot.helper import seq_get
 
 ClickHouse.Generator.TRANSFORMS |= {
     sge.ArraySize: rename_func("length"),
@@ -113,6 +115,7 @@ class Flink(Hive):
     class Generator(Hive.Generator):
         TYPE_MAPPING = Hive.Generator.TYPE_MAPPING.copy() | {
             sge.DataType.Type.TIME: "TIME",
+            sge.DataType.Type.STRUCT: "ROW",
         }
 
         TRANSFORMS = Hive.Generator.TRANSFORMS.copy() | {
@@ -121,10 +124,6 @@ class Flink(Hive):
             sge.StddevSamp: rename_func("stddev_samp"),
             sge.Variance: rename_func("var_samp"),
             sge.VariancePop: rename_func("var_pop"),
-            sge.Array: (
-                lambda self,
-                e: f"ARRAY[{', '.join(arg.sql(self.dialect) for arg in e.expressions)}]"
-            ),
             sge.ArrayConcat: rename_func("array_concat"),
             sge.Length: rename_func("char_length"),
             sge.TryCast: lambda self,
@@ -134,6 +133,59 @@ class Flink(Hive):
             sge.DayOfMonth: rename_func("dayofmonth"),
             sge.Interval: _interval_with_precision,
         }
+
+        def struct_sql(self, expression: sge.Struct) -> str:
+            from sqlglot.optimizer.annotate_types import annotate_types
+
+            expression = annotate_types(expression)
+
+            values = []
+            schema = []
+
+            for e in expression.expressions:
+                if isinstance(e, sge.PropertyEQ):
+                    e = sge.alias_(e.expression, e.this)
+                # named structs
+                if isinstance(e, sge.Alias):
+                    if e.type and e.type.is_type(sge.DataType.Type.UNKNOWN):
+                        self.unsupported(
+                            "Cannot convert untyped key-value definitions (try annotate_types)."
+                        )
+                    else:
+                        schema.append(f"{self.sql(e, 'alias')} {self.sql(e.type)}")
+                    values.append(self.sql(e, "this"))
+                else:
+                    values.append(self.sql(e))
+
+            if not (size := len(expression.expressions)) or len(schema) != size:
+                return self.func("ROW", *values)
+            return f"CAST(ROW({', '.join(values)}) AS ROW({', '.join(schema)}))"
+
+        def array_sql(self, expression: sge.Array) -> str:
+            # workaround for the time being because you cannot construct an array of named
+            # STRUCTs directly from the ARRAY[] constructor
+            # https://issues.apache.org/jira/browse/FLINK-34898
+            from sqlglot.optimizer.annotate_types import annotate_types
+
+            expression = annotate_types(expression)
+            first_arg = seq_get(expression.expressions, 0)
+            # it's an array of structs
+            if isinstance(first_arg, sge.Struct):
+                # get rid of aliasing because we want to compile this as CAST instead
+                args = deepcopy(expression.expressions)
+                for arg in args:
+                    for e in arg.expressions:
+                        arg.set("expressions", [e.unalias() for e in arg.expressions])
+
+                format_values = ", ".join([self.sql(arg) for arg in args])
+                # all elements of the array should have the same type
+                format_dtypes = self.sql(first_arg.type)
+
+                return f"CAST(ARRAY[{format_values}] AS ARRAY<{format_dtypes}>)"
+
+            return (
+                f"ARRAY[{', '.join(self.sql(arg) for arg in expression.expressions)}]"
+            )
 
     class Tokenizer(Hive.Tokenizer):
         # In Flink, embedded single quotes are escaped like most other SQL
