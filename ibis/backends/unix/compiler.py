@@ -59,6 +59,7 @@ opcodes = {
     ops.Subtract: "-",
     ops.Multiply: "*",
     ops.Divide: "/",
+    ops.Power: "^",
 }
 
 
@@ -156,6 +157,11 @@ def count_star(op, *, arg, where):
 @translate.register(ops.Sum)
 def total(op, *, arg, where):
     return f"+={arg}"
+
+
+@translate.register(ops.Mean)
+def mean(op, *, arg, where):
+    return f"+={arg}/NR"
 
 
 @translate.register(ops.SortKey)

@@ -95,9 +95,6 @@ class Backend(BaseBackend, NoUrl):
         pipe_dir: str | None = None,
         **_: Any,
     ):
-        if pipe_dir is None:
-            pipe_dir = tempfile.mkdtemp()
-
         if params is None:
             params = dict()
         else:
@@ -123,7 +120,7 @@ class Backend(BaseBackend, NoUrl):
             # value expressions are strings that are passed to the command
             # (likely awk for any non-trivial computation)
             if isinstance(node, ops.Relation):
-                path = Path(pipe_dir, f"t{next(counter)}")
+                path = Path(*filter(None, (pipe_dir, f"t{next(counter)}")))
                 commands.append((source, path))
                 return path
 
@@ -176,8 +173,7 @@ class Backend(BaseBackend, NoUrl):
         params: Mapping[ir.Expr, object] | None = None,
         **kwargs: Any,
     ) -> str:
-        with tempfile.TemporaryDirectory() as pipe_dir:
-            plan = self.compile(expr, params=params, pipe_dir=pipe_dir, **kwargs)
+        plan = self.compile(expr, params=params, **kwargs)
 
         return "\n".join(
             f"{shlex.join(list(map(str, cmd)))} > {output.name}" for cmd, output in plan
@@ -205,15 +201,17 @@ class Backend(BaseBackend, NoUrl):
 if __name__ == "__main__":
     # Create a backend with some data
     unix = Backend()
-    backend = unix.connect({"p": "/data/penguins.csv", "q": "/data/penguins.csv"})
+    backend = unix.connect({"p": "penguins.csv", "q": "penguins.csv"})
     # Create an expression
     t = backend.table("p")
     q = backend.table("q")
     expr = (
         t.filter([t.year == 2009])
-        .select("year", "flipper_length_mm", island=lambda t: t.island.lower())
-        .group_by("island")
-        .agg(n=lambda t: t.count())
+        .select(
+            "year", "species", "flipper_length_mm", island=lambda t: t.island.lower()
+        )
+        .group_by("island", "species")
+        .agg(n=lambda t: t.count(), avg=lambda t: t.island.upper().length().mean())
         .order_by("n")
         .mutate(ilength=lambda t: t.island.length())
         .limit(5)
@@ -224,5 +222,8 @@ if __name__ == "__main__":
     result = expr.execute()
     print(result)  # noqa: T201
 
-    result = t.join(t, ["year"]).select("year").execute()
+    join = t.join(t, ["year"]).select("year")
+    print(backend.explain(join))  # noqa: T201
+
+    result = join.execute()
     print(result)  # noqa: T201
