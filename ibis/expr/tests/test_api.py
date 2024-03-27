@@ -156,3 +156,18 @@ def test_nested_name_property():
         x = x + 1
 
     assert x.op().name.count("Add") == n
+
+
+def test_unbound_table_namespace():
+    t = ibis.table(name="bork", schema=(("a", "int"), ("b", "int")), database="bork")
+
+    assert t.op().namespace == ops.Namespace(database="bork")
+
+    t = ibis.table(
+        name="bork", schema=(("a", "int"), ("b", "int")), database="bork", catalog="ork"
+    )
+
+    assert t.op().namespace == ops.Namespace(catalog="ork", database="bork")
+
+    with pytest.raises(ValueError, match="A catalog-only namespace is invalid in Ibis"):
+        ibis.table(name="bork", schema=(("a", "int"), ("b", "int")), catalog="bork")

@@ -313,8 +313,14 @@ _table_names = (f"unbound_table_{i:d}" for i in itertools.count())
 def table(
     schema: SchemaLike | None = None,
     name: str | None = None,
+    catalog: str | None = None,
+    database: str | None = None,
 ) -> ir.Table:
     """Create a table literal or an abstract table without data.
+
+    Ibis uses the word database to refer to a collection of tables, and the word
+    catalog to refer to a collection of databases. You can use a combination of
+    `catalog` and `database` to specify a hierarchical location for table.
 
     Parameters
     ----------
@@ -322,6 +328,10 @@ def table(
         A schema for the table
     name
         Name for the table. One is generated if this value is `None`.
+    catalog
+        A collection of database.
+    database
+        A collection of tables. Required if catalog is not `None`.
 
     Returns
     -------
@@ -340,13 +350,32 @@ def table(
       a int64
       b string
 
+
+    Create a table with no data backing it in a specific location
+
+    >>> import ibis
+    >>> ibis.options.interactive = False
+    >>> t = ibis.table(schema=dict(a="int"), name="t", catalog="cat", database="db")
+    >>> t
+    UnboundTable: cat.db.t
+      a int64
     """
     if name is None:
         if isinstance(schema, type):
             name = schema.__name__
         else:
             name = next(_table_names)
-    return ops.UnboundTable(name=name, schema=schema).to_expr()
+    if catalog is not None and database is None:
+        raise ValueError(
+            "A catalog-only namespace is invalid in Ibis, "
+            "please specify a database as well."
+        )
+
+    return ops.UnboundTable(
+        name=name,
+        schema=schema,
+        namespace=ops.Namespace(catalog=catalog, database=database),
+    ).to_expr()
 
 
 def memtable(
