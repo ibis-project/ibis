@@ -807,15 +807,42 @@ def test_array_intersect(con, data):
 @pytest.mark.broken(
     ["trino"], reason="inserting maps into structs doesn't work", raises=TrinoUserError
 )
-@pytest.mark.broken(
-    ["flink"],
-    raises=Py4JJavaError,
-    reason="flink throws exception on named struct with a single field",
-    # also cannot do array<struct<>> in flink; needs to be written as row<row<struct<>>>
-)
 def test_unnest_struct(con):
     data = {"value": [[{"a": 1}, {"a": 2}], [{"a": 3}, {"a": 4}]]}
     t = ibis.memtable(data, schema=ibis.schema({"value": "!array<!struct<a: !int>>"}))
+    expr = t.value.unnest()
+
+    result = con.execute(expr)
+
+    expected = pd.DataFrame(data).explode("value").iloc[:, 0].reset_index(drop=True)
+    tm.assert_series_equal(result, expected)
+
+
+@builtin_array
+@pytest.mark.notimpl(
+    ["clickhouse"],
+    raises=ClickHouseDatabaseError,
+    reason="ClickHouse won't accept dicts for struct type values",
+)
+@pytest.mark.notimpl(["postgres"], raises=PsycoPg2SyntaxError)
+@pytest.mark.notimpl(["risingwave"], raises=PsycoPg2InternalError)
+@pytest.mark.notimpl(["datafusion"], raises=com.OperationNotDefinedError)
+@pytest.mark.broken(
+    ["trino"], reason="inserting maps into structs doesn't work", raises=TrinoUserError
+)
+@pytest.mark.broken(
+    ["flink"], reason="flink unnests a and b as separate columns", raises=Py4JJavaError
+)
+def test_unnest_struct_with_multiple_fields(con):
+    data = {
+        "value": [
+            [{"a": 1, "b": "banana"}, {"a": 2, "b": "apple"}],
+            [{"a": 3, "b": "coconut"}, {"a": 4, "b": "orange"}],
+        ]
+    }
+    t = ibis.memtable(
+        data, schema=ibis.schema({"value": "!array<!struct<a: !int, b: !string>>"})
+    )
     expr = t.value.unnest()
 
     result = con.execute(expr)
@@ -909,11 +936,10 @@ def test_zip_null(con, fn):
 @pytest.mark.broken(
     ["trino"], reason="inserting maps into structs doesn't work", raises=TrinoUserError
 )
-@pytest.mark.broken(
+@pytest.mark.notyet(
     ["flink"],
     raises=Py4JJavaError,
-    reason="flink throws exception on named struct with a single field",
-    # also cannot do array<struct<>> in flink; needs to be written as row<row<struct<>>>
+    reason="does not seem to support field selection on unnest",
 )
 def test_array_of_struct_unnest(con):
     jobs = ibis.memtable(
@@ -1095,7 +1121,7 @@ def test_range_start_stop_step_zero(con, start, stop):
     raises=com.OperationNotDefinedError,
     reason="backend doesn't support unnest",
 )
-@pytest.mark.broken(
+@pytest.mark.notyet(
     ["flink"],
     raises=Py4JJavaError,
     reason="SQL validation failed; Flink does not support ARRAY[]",  # https://issues.apache.org/jira/browse/FLINK-20578
