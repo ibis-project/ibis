@@ -2965,8 +2965,26 @@ class Table(Expr, _FixedTextJupyterMixin):
 
             if typ.is_numeric():
                 numeric_col = True
+                col_mode = lit(None).cast(str)
+                col_mean = col.mean()
+                col_std = col.std()
+                col_min = col.min().cast(float)
+                col_max = col.max().cast(float)
+                quantile_values = {
+                    f"p{100*q:.6f}".rstrip("0").rstrip("."): col.quantile(q).cast(float)
+                    for q in quantile
+                }
             elif typ.is_string():
                 string_col = True
+                col_mode = col.mode()
+                col_mean = lit(None).cast(float)
+                col_std = lit(None).cast(float)
+                col_min = lit(None).cast(float)
+                col_max = lit(None).cast(float)
+                quantile_values = {
+                    f"p{100*q:.6f}".rstrip("0").rstrip("."): lit(None).cast(float)
+                    for q in quantile
+                }
 
             agg = self.agg(
                 name=lit(colname),
@@ -2974,23 +2992,12 @@ class Table(Expr, _FixedTextJupyterMixin):
                 count=col.isnull().count(),
                 nulls=col.isnull().sum(),
                 unique=col.nunique(),
-                mode=col.mode() if typ.is_string() else lit(None).cast(str),
-                mean=col.mean() if typ.is_numeric() else lit(None).cast(float),
-                std=col.std() if typ.is_numeric() else lit(None).cast(float),
-                min=col.min().cast(float)
-                if typ.is_numeric()
-                else lit(None).cast(float),
-                **{
-                    f"p{int(q * 100)}"
-                    if q * 100 == int(q * 100)
-                    else f"p{q * 100}": col.quantile(q).cast(float)
-                    if typ.is_numeric()
-                    else lit(None).cast(float)
-                    for q in quantile
-                },
-                max=col.max().cast(float)
-                if typ.is_numeric()
-                else lit(None).cast(float),
+                mode=col_mode,
+                mean=col_mean,
+                std=col_std,
+                min=col_min,
+                **quantile_values,
+                max=col_max,
             )
             aggs.append(agg)
 
