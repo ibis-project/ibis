@@ -5,10 +5,11 @@ from decimal import Decimal
 
 import pytest
 
+pa = pytest.importorskip("pyarrow")
 pd = pytest.importorskip("pandas")
-import numpy as np
+np = pytest.importorskip("numpy")
+
 import pandas.testing as tm
-import pyarrow as pa
 import pytest
 from pytest import param
 

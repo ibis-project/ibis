@@ -7,8 +7,6 @@ import itertools
 import os
 import string
 
-import numpy as np
-import pandas as pd
 import pytest
 from packaging.version import parse as vparse
 
@@ -17,6 +15,7 @@ import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
 from ibis.backends import _get_backend_names
+from ibis.conftest import np, pd
 
 pytestmark = pytest.mark.benchmark
 

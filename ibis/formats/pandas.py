@@ -10,7 +10,6 @@ from typing import TYPE_CHECKING
 import numpy as np
 import pandas as pd
 import pandas.api.types as pdt
-import pyarrow as pa
 
 import ibis.expr.datatypes as dt
 import ibis.expr.schema as sch
@@ -18,10 +17,10 @@ from ibis.common.numeric import normalize_decimal
 from ibis.common.temporal import normalize_timezone
 from ibis.formats import DataMapper, SchemaMapper, TableProxy
 from ibis.formats.numpy import NumpyType
-from ibis.formats.pyarrow import PyArrowData, PyArrowSchema, PyArrowType
 
 if TYPE_CHECKING:
     import polars as pl
+    import pyarrow as pa
 
 _has_arrow_dtype = hasattr(pd, "ArrowDtype")
 
@@ -47,6 +46,8 @@ class PandasType(NumpyType):
             return cls.to_ibis(typ.categories.dtype, nullable=nullable)
         elif pdt.is_extension_array_dtype(typ):
             if _has_arrow_dtype and isinstance(typ, pd.ArrowDtype):
+                from ibis.formats.pyarrow import PyArrowType
+
                 return PyArrowType.to_ibis(typ.pyarrow_dtype, nullable=nullable)
             else:
                 name = typ.__class__.__name__.replace("Dtype", "")
@@ -87,10 +88,14 @@ class PandasSchema(SchemaMapper):
 class PandasData(DataMapper):
     @classmethod
     def infer_scalar(cls, s):
+        from ibis.formats.pyarrow import PyArrowData
+
         return PyArrowData.infer_scalar(s)
 
     @classmethod
     def infer_column(cls, s):
+        from ibis.formats.pyarrow import PyArrowData
+
         return PyArrowData.infer_column(s)
 
     @classmethod
@@ -406,6 +411,10 @@ class PandasDataFrameProxy(TableProxy[pd.DataFrame]):
         return self.obj
 
     def to_pyarrow(self, schema: sch.Schema) -> pa.Table:
+        import pyarrow as pa
+
+        from ibis.formats.pyarrow import PyArrowSchema
+
         pyarrow_schema = PyArrowSchema.from_ibis(schema)
         return pa.Table.from_pandas(self.obj, schema=pyarrow_schema)
 

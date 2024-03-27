@@ -64,10 +64,17 @@ class MissingModule:
     __getattr__ = _swallow_or_skip
 
 
+has_numpy = False
+has_pandas = False
+has_pyarrow = False
+
 try:
     import numpy as np
     import pandas as pd
     import pandas.testing as tm
+
+    has_numpy = True
+    has_pandas = True
 except ImportError:
     np = MissingModule("numpy")
     pd = MissingModule("pandas")
@@ -75,6 +82,9 @@ except ImportError:
 
 try:
     import pyarrow as pa
+
+    has_numpy = True
+    has_pyarrow = True
 except ImportError:
     pa = MissingModule("pyarrow")
 

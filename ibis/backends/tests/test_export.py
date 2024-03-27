@@ -21,7 +21,6 @@ from ibis.backends.tests.errors import (
     TrinoUserError,
 )
 from ibis.conftest import pa, pd
-from ibis.formats.pyarrow import PyArrowType
 
 limit = [
     param(
@@ -407,6 +406,9 @@ def test_roundtrip_delta(backend, con, alltypes, tmp_path, monkeypatch):
     ["druid"], raises=AttributeError, reason="string type is used for timestamp_col"
 )
 def test_arrow_timestamp_with_time_zone(alltypes):
+    pytest.importorskip("pyarrow")
+    from ibis.formats.pyarrow import PyArrowType
+
     t = alltypes.select(
         tz=alltypes.timestamp_col.cast(
             alltypes.timestamp_col.type().copy(timezone="UTC")

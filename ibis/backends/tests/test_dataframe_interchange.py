@@ -1,8 +1,9 @@
 from __future__ import annotations
 
-import pyarrow as pa
 import pytest
 from packaging.version import parse as vparse
+
+from ibis.conftest import pa
 
 pytestmark = pytest.mark.skipif(
     vparse(pa.__version__) < vparse("12"), reason="pyarrow >= 12 required"

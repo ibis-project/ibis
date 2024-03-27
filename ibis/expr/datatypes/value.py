@@ -190,10 +190,20 @@ def infer_interval_pandas(value) -> dt.Interval:
 @infer.register("pandas.Series")
 def infer_numpy_array(value):
     from ibis.formats.numpy import NumpyType
-    from ibis.formats.pyarrow import PyArrowData
 
     if value.dtype.kind == "O":
-        value_dtype = PyArrowData.infer_column(value)
+        try:
+            from ibis.formats.pyarrow import PyArrowData
+        except ImportError:
+            try:
+                # handle embedded series objects
+                value_dtype = highest_precedence(map(infer, value))
+            except TypeError:
+                # we can still have a type error, e.g., float64 and string in the
+                # same array
+                value_dtype = dt.unknown
+        else:
+            value_dtype = PyArrowData.infer_column(value)
     else:
         value_dtype = NumpyType.to_ibis(value.dtype)
 
