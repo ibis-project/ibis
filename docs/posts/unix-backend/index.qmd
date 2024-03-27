@@ -158,7 +158,7 @@ Notably operations are *not* part of Ibis's public API.
 When we talk about "compilation" in Ibis, we're talking about the process of
 converting an _operation_ into something that the backend knows how to execute.
 
-In the case of this ~wild~ 100% production-ready Unix backend, each operation
+In the case of this ~~wild~~ 100% production-ready Unix backend, each operation
 is compiled into a list of strings that represent the shell command to run to
 execute the operation.
 
