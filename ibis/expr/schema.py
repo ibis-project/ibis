@@ -10,10 +10,9 @@ from ibis.common.dispatch import lazy_singledispatch
 from ibis.common.exceptions import InputTypeError, IntegrityError
 from ibis.common.grounds import Concrete
 from ibis.common.patterns import Coercible
-from ibis.util import deprecated, indent
+from ibis.util import indent
 
 if TYPE_CHECKING:
-    import pandas as pd
     from typing_extensions import TypeAlias
 
 
@@ -223,15 +222,6 @@ class Schema(Concrete, Coercible, MapSet):
 
         """
         return self.names[i]
-
-    @deprecated(
-        as_of="6.0",
-        instead="use ibis.formats.pandas.PandasConverter.convert_frame() instead",
-    )
-    def apply_to(self, df: pd.DataFrame) -> pd.DataFrame:
-        from ibis.formats.pandas import PandasData
-
-        return PandasData.convert_table(df, self)
 
 
 SchemaLike: TypeAlias = Union[
