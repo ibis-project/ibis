@@ -6,13 +6,14 @@ from typing import TYPE_CHECKING, Callable
 from public import public
 
 import ibis.expr.operations as ops
+import ibis.expr.types as ir
 from ibis.common.deferred import Deferred, deferrable
 from ibis.expr.types.generic import Column, Scalar, Value
 
 if TYPE_CHECKING:
     from collections.abc import Iterable
 
-    import ibis.expr.types as ir
+    import ibis.expr.datatypes as dt
     from ibis.expr.types.typing import V
 
 import ibis.common.exceptions as com
@@ -1067,7 +1068,11 @@ class ArrayColumn(Column, ArrayValue):
 
 @public
 @deferrable
-def array(values: Iterable[V]) -> ArrayValue:
+def array(
+    values: ArrayValue | Iterable[V] | None,
+    *,
+    type: str | dt.DataType | None = None,
+) -> ArrayValue:
     """Create an array expression.
 
     If any values are [column expressions](../concepts/datatypes.qmd) the
@@ -1078,6 +1083,9 @@ def array(values: Iterable[V]) -> ArrayValue:
     ----------
     values
         An iterable of Ibis expressions or Python literals
+    type
+        An instance of `ibis.expr.datatypes.DataType` or a string indicating
+        the Ibis type of `value`. eg `array<float>`.
 
     Returns
     -------
@@ -1106,15 +1114,17 @@ def array(values: Iterable[V]) -> ArrayValue:
     │ [3, 42, ... +1]      │
     └──────────────────────┘
 
-    >>> ibis.array([t.a, 42 + ibis.literal(5)])
-    ┏━━━━━━━━━━━━━━━━━━━━━━┓
-    ┃ Array()              ┃
-    ┡━━━━━━━━━━━━━━━━━━━━━━┩
-    │ array<int64>         │
-    ├──────────────────────┤
-    │ [1, 47]              │
-    │ [2, 47]              │
-    │ [3, 47]              │
-    └──────────────────────┘
+    >>> ibis.array([t.a, 42 + ibis.literal(5)], type="array<float>")
+    ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+    ┃ Cast(Array(), array<float64>) ┃
+    ┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+    │ array<float64>                │
+    ├───────────────────────────────┤
+    │ [1.0, 47.0]                   │
+    │ [2.0, 47.0]                   │
+    │ [3.0, 47.0]                   │
+    └───────────────────────────────┘
     """
-    return ops.Array(tuple(values)).to_expr()
+    if isinstance(values, ir.ArrayValue):
+        return values.cast(type) if type is not None else values
+    return ops.Array(values, type).to_expr()

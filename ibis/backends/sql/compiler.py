@@ -951,13 +951,24 @@ class SQLGlotCompiler(abc.ABC):
     def visit_InSubquery(self, op, *, rel, needle):
         return needle.isin(query=rel.this)
 
-    def visit_Array(self, op, *, exprs):
-        return self.f.array(*exprs)
+    def visit_Array(self, op, *, exprs, dtype):
+        if exprs is None:
+            vals = NULL
+        else:
+            vals = self.f.array(*exprs)
+        return self.cast(vals, dtype)
 
-    def visit_StructColumn(self, op, *, names, values):
-        return sge.Struct.from_arg_list(
-            [value.as_(name, quoted=self.quoted) for name, value in zip(names, values)]
-        )
+    def visit_StructColumn(self, op, *, names, values, dtype):
+        if values is None:
+            vals = NULL
+        else:
+            vals = sge.Struct.from_arg_list(
+                [
+                    value.as_(name, quoted=self.quoted)
+                    for name, value in zip(names, values)
+                ]
+            )
+        return self.cast(vals, dtype)
 
     def visit_StructField(self, op, *, arg, field):
         return sge.Dot(this=arg, expression=sg.to_identifier(field, quoted=self.quoted))

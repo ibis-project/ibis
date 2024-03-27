@@ -267,7 +267,9 @@ class SnowflakeCompiler(SQLGlotCompiler):
             step.neq(0), self.f.array_generate_range(start, stop, step), self.f.array()
         )
 
-    def visit_StructColumn(self, op, *, names, values):
+    def visit_StructColumn(self, op, *, names, values, dtype):
+        if values is None:
+            return self.cast(NULL, dtype)
         return self.f.object_construct_keep_null(
             *itertools.chain.from_iterable(zip(names, values))
         )

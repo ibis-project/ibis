@@ -319,8 +319,10 @@ class PostgresCompiler(SQLGlotCompiler):
             op.dtype,
         )
 
-    def visit_StructColumn(self, op, *, names, values):
-        return self.f.row(*map(self.cast, values, op.dtype.types))
+    def visit_StructColumn(self, op, *, names, values, dtype):
+        if values is None:
+            return self.cast(self.f.jsonb_build_object(), op.dtype)
+        return self.f.row(*map(self.cast, values, dtype.types))
 
     def visit_ToJSONArray(self, op, *, arg):
         return self.if_(
@@ -330,7 +332,10 @@ class PostgresCompiler(SQLGlotCompiler):
         )
 
     def visit_Map(self, op, *, keys, values):
-        return self.f.map(self.f.array(*keys), self.f.array(*values))
+        # map(["a", "b"], NULL) results in {"a": NULL, "b": NULL} in regular postgres,
+        # so we need to modify it to return NULL instead
+        regular = self.f.map(keys, values)
+        return self.if_(values.is_(NULL), NULL, regular)
 
     def visit_MapLength(self, op, *, arg):
         return self.f.cardinality(self.f.akeys(arg))

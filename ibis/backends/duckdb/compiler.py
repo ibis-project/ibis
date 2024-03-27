@@ -89,15 +89,20 @@ class DuckDBCompiler(SQLGlotCompiler):
             return sge.Filter(this=expr, expression=sge.Where(this=where))
         return expr
 
-    def visit_StructColumn(self, op, *, names, values):
-        return sge.Struct.from_arg_list(
-            [
-                sge.PropertyEQ(
-                    this=sg.to_identifier(name, quoted=self.quoted), expression=value
-                )
-                for name, value in zip(names, values)
-            ]
-        )
+    def visit_StructColumn(self, op, *, names, values, dtype):
+        if values is None:
+            val = NULL
+        else:
+            val = sge.Struct.from_arg_list(
+                [
+                    sge.PropertyEQ(
+                        this=sg.to_identifier(name, quoted=self.quoted),
+                        expression=value,
+                    )
+                    for name, value in zip(names, values)
+                ]
+            )
+        return self.cast(val, dtype)
 
     def visit_ArrayDistinct(self, op, *, arg):
         return self.if_(
@@ -198,6 +203,12 @@ class DuckDBCompiler(SQLGlotCompiler):
         # if any of the input arrays in arg are NULL, the result is NULL
         any_arg_null = sg.or_(*(arr.is_(NULL) for arr in arg))
         return self.if_(any_arg_null, NULL, zipped_arrays)
+
+    def visit_Map(self, op, *, keys, values):
+        # workaround for https://github.com/ibis-project/ibis/issues/8632
+        regular = self.f.map(keys, values)
+        either_null = sg.or_(keys.is_(NULL), values.is_(NULL))
+        return self.if_(either_null, NULL, regular)
 
     def visit_MapGet(self, op, *, arg, key, default):
         return self.f.ifnull(

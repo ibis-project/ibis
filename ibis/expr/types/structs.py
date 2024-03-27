@@ -1,20 +1,19 @@
 from __future__ import annotations
 
-import collections
 from keyword import iskeyword
 from typing import TYPE_CHECKING
 
 from public import public
 
+import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 from ibis.common.deferred import deferrable
 from ibis.common.exceptions import IbisError
-from ibis.expr.types.generic import Column, Scalar, Value, literal
+from ibis.expr.types.generic import Column, Scalar, Value
 
 if TYPE_CHECKING:
     from collections.abc import Iterable, Mapping, Sequence
 
-    import ibis.expr.datatypes as dt
     import ibis.expr.types as ir
     from ibis.expr.types.typing import V
 
@@ -22,7 +21,8 @@ if TYPE_CHECKING:
 @public
 @deferrable
 def struct(
-    value: Iterable[tuple[str, V]] | Mapping[str, V],
+    value: Iterable[tuple[str, V]] | Mapping[str, V] | StructValue | None,
+    *,
     type: str | dt.DataType | None = None,
 ) -> StructValue:
     """Create a struct expression.
@@ -37,8 +37,7 @@ def struct(
         `(str, Value)`.
     type
         An instance of `ibis.expr.datatypes.DataType` or a string indicating
-        the Ibis type of `value`. This is only used if all of the input values
-        are Python literals. eg `struct<a: float, b: string>`.
+        the Ibis type of `value`. eg `struct<a: float, b: string>`.
 
     Returns
     -------
@@ -62,26 +61,35 @@ def struct(
     Create a struct column from a column and a scalar literal
 
     >>> t = ibis.memtable({"a": [1, 2, 3]})
-    >>> ibis.struct([("a", t.a), ("b", "foo")])
-    ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-    ┃ StructColumn()              ┃
-    ┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
-    │ struct<a: int64, b: string> │
-    ├─────────────────────────────┤
-    │ {'a': 1, 'b': 'foo'}        │
-    │ {'a': 2, 'b': 'foo'}        │
-    │ {'a': 3, 'b': 'foo'}        │
-    └─────────────────────────────┘
+    >>> ibis.struct([("a", t.a), ("b", "foo")], type="struct<a: float, b: string>")
+    ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+    ┃ Cast(StructColumn(), struct<a: float64, b: string>) ┃
+    ┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+    │ struct<a: float64, b: string>                       │
+    ├─────────────────────────────────────────────────────┤
+    │ {'a': 1.0, 'b': 'foo'}                              │
+    │ {'a': 2.0, 'b': 'foo'}                              │
+    │ {'a': 3.0, 'b': 'foo'}                              │
+    └─────────────────────────────────────────────────────┘
     """
     import ibis.expr.operations as ops
 
-    fields = dict(value)
-    if any(isinstance(value, Value) for value in fields.values()):
+    if isinstance(value, StructValue):
+        return value.cast(type) if type is not None else value
+    if value is not None:
+        fields = dict(value)
         names = tuple(fields.keys())
         values = tuple(fields.values())
-        return ops.StructColumn(names=names, values=values).to_expr()
     else:
-        return literal(collections.OrderedDict(fields), type=type)
+        if type is None:
+            raise TypeError("Must specify type if value is None")
+        type = dt.dtype(type)
+        names = type.names
+        values = None
+    result = ops.StructColumn(names=names, values=values, dtype=type).to_expr()
+    if type is not None:
+        return result.cast(type)
+    return result
 
 
 @public
