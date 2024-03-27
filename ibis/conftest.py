@@ -53,17 +53,15 @@ class MissingModule:
     def __str__(self):
         return f"Missing module {self._name}"
 
-    def __call__(self, *args, **kwargs):
+    def _swallow_or_skip(self, *args, **kwargs):
         if self.__swallow__:
             return self
         else:
             pytest.skip(str(self))
 
-    def __getattr__(self, name):
-        if self.__swallow__:
-            return self
-        else:
-            pytest.skip(str(self))
+    __neg__ = _swallow_or_skip
+    __call__ = _swallow_or_skip
+    __getattr__ = _swallow_or_skip
 
 
 try:

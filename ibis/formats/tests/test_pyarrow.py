@@ -1,10 +1,11 @@
 from __future__ import annotations
 
+import pytest
+
+pa = pytest.importorskip("pyarrow")
 import hypothesis as h
 import hypothesis.strategies as st
-import pyarrow as pa
 import pyarrow.tests.strategies as past
-import pytest
 
 import ibis.expr.datatypes as dt
 from ibis.common.exceptions import IntegrityError

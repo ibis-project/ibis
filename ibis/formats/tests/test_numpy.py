@@ -1,10 +1,11 @@
 from __future__ import annotations
 
+import pytest
+
+np = pytest.importorskip("numpy")
 import hypothesis as h
 import hypothesis.extra.numpy as npst
 import hypothesis.strategies as st
-import numpy as np
-import pytest
 from packaging.version import parse as vparse
 
 import ibis.expr.datatypes as dt
