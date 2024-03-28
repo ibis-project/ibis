@@ -39,6 +39,7 @@ class TrinoCompiler(SQLGlotCompiler):
     )
 
     SIMPLE_OPS = {
+        ops.Arbitrary: "any_value",
         ops.Pi: "pi",
         ops.E: "e",
         ops.RegexReplace: "regexp_replace",
@@ -121,13 +122,6 @@ class TrinoCompiler(SQLGlotCompiler):
             right = self.cast(right, dt.Int32(nullable=right_type.nullable))
 
         return self.agg.corr(left, right, where=where)
-
-    def visit_Arbitrary(self, op, *, arg, how, where):
-        if how != "first":
-            raise com.UnsupportedOperationError(
-                'Trino only supports how="first" for `arbitrary` reduction'
-            )
-        return self.agg.arbitrary(arg, where=where)
 
     def visit_BitXor(self, op, *, arg, where):
         a, b = map(sg.to_identifier, "ab")

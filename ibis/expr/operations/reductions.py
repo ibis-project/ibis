@@ -53,8 +53,12 @@ class CountDistinctStar(Filterable, Reduction):
 
 @public
 class Arbitrary(Filterable, Reduction):
+    """Retrieve an arbitrary element.
+
+    Returns a non-null value unless the column is empty or all values are NULL.
+    """
+
     arg: Column[dt.Any]
-    how: Literal["first", "last", "heavy"]
 
     dtype = rlz.dtype_like("arg")
 

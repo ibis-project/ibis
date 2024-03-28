@@ -266,13 +266,8 @@ class PandasExecutor(Dispatched, PandasUtils):
         return agg
 
     @classmethod
-    def visit(cls, op: ops.Arbitrary, arg, where, how):
-        if how == "first":
-            return cls.agg(cls.kernels.reductions[ops.First], arg, where)
-        elif how == "last":
-            return cls.agg(cls.kernels.reductions[ops.Last], arg, where)
-        else:
-            raise OperationNotDefinedError(f"Arbitrary {how!r} is not supported")
+    def visit(cls, op: ops.Arbitrary, arg, where):
+        return cls.agg(cls.kernels.reductions[ops.Arbitrary], arg, where)
 
     @classmethod
     def visit(cls, op: ops.ArgMin | ops.ArgMax, arg, key, where):

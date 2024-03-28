@@ -29,7 +29,6 @@ class DataFusionCompiler(SQLGlotCompiler):
 
     UNSUPPORTED_OPERATIONS = frozenset(
         (
-            ops.Arbitrary,
             ops.ArgMax,
             ops.ArgMin,
             ops.ArrayDistinct,
@@ -65,6 +64,7 @@ class DataFusionCompiler(SQLGlotCompiler):
     )
 
     SIMPLE_OPS = {
+        ops.Arbitrary: "first_value",
         ops.ApproxMedian: "approx_median",
         ops.ArrayRemove: "array_remove_all",
         ops.BitAnd: "bit_and",

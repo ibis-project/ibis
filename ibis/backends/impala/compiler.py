@@ -29,7 +29,6 @@ class ImpalaCompiler(SQLGlotCompiler):
 
     UNSUPPORTED_OPERATIONS = frozenset(
         (
-            ops.Arbitrary,
             ops.ArgMax,
             ops.ArgMin,
             ops.ArrayCollect,

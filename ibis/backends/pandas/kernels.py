@@ -254,6 +254,12 @@ def round_serieswise(arg, digits):
         return np.round(arg, digits).astype("float64")
 
 
+def arbitrary(arg):
+    # Arbitrary excludes null values unless they're all null
+    arg = arg.dropna()
+    return arg.iat[0] if len(arg) else None
+
+
 reductions = {
     ops.Min: lambda x: x.min(),
     ops.Max: lambda x: x.max(),
@@ -270,6 +276,7 @@ reductions = {
     ops.BitXor: lambda x: np.bitwise_xor.reduce(x.values),
     ops.Last: lambda x: x.iat[-1],
     ops.First: lambda x: x.iat[0],
+    ops.Arbitrary: arbitrary,
     ops.CountDistinct: lambda x: x.nunique(),
     ops.ApproxCountDistinct: lambda x: x.nunique(),
     ops.ArrayCollect: lambda x: x.tolist(),

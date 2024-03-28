@@ -34,6 +34,7 @@ class DuckDBCompiler(SQLGlotCompiler):
     type_mapper = DuckDBType
 
     SIMPLE_OPS = {
+        ops.Arbitrary: "any_value",
         ops.ArrayPosition: "list_indexof",
         ops.BitAnd: "bit_and",
         ops.BitOr: "bit_or",
