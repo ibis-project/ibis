@@ -1,11 +1,8 @@
 from __future__ import annotations
 
-import contextlib
 from dataclasses import dataclass
 from typing import NamedTuple
 
-import numpy as np
-import pyarrow as pa
 import pytest
 
 import ibis.expr.datatypes as dt
@@ -13,18 +10,19 @@ import ibis.expr.schema as sch
 from ibis.common.exceptions import IntegrityError
 from ibis.common.grounds import Annotable
 from ibis.common.patterns import CoercedTo
+from ibis.conftest import np, pa, pd
 
-has_pandas = False
-with contextlib.suppress(ImportError):
-    import pandas as pd
+# has_pandas = False
+# with contextlib.suppress(ImportError):
+#     import pandas as pd
 
-    has_pandas = True
+#     has_pandas = True
 
-has_dask = False
-with contextlib.suppress(ImportError):
-    import dask.dataframe as dd  # noqa: F401
+# has_dask = False
+# with contextlib.suppress(ImportError):
+#     import dask.dataframe as dd  # noqa: F401
 
-    has_dask = True
+#     has_dask = True
 
 
 def test_whole_schema():
@@ -440,12 +438,12 @@ def test_schema_from_to_numpy_dtypes():
         pytest.param(
             "from_dask",
             "to_dask",
-            marks=pytest.mark.skipif(not has_dask, reason="dask not installed"),
+            # marks=pytest.mark.skipif(not has_dask, reason="dask not installed"),
         ),
         pytest.param(
             "from_pandas",
             "to_pandas",
-            marks=pytest.mark.skipif(not has_pandas, reason="pandas not installed"),
+            # marks=pytest.mark.skipif(not has_pandas, reason="pandas not installed"),
         ),
     ],
 )

@@ -41,3 +41,61 @@ not_windows = pytest.mark.skipif(
     condition=WINDOWS,
     reason="windows prevents two connections to the same file even in the same process",
 )
+
+
+class MissingModule:
+    __swallow__ = True
+    __version__ = "0.0.0"
+
+    def __init__(self, name):
+        self._name = name
+
+    def __str__(self):
+        return f"Missing module {self._name}"
+
+    def _swallow_or_skip(self, *args, **kwargs):
+        if self.__swallow__:
+            return self
+        else:
+            pytest.skip(str(self))
+
+    __neg__ = _swallow_or_skip
+    __call__ = _swallow_or_skip
+    __getattr__ = _swallow_or_skip
+
+
+has_numpy = False
+has_pandas = False
+has_pyarrow = False
+
+try:
+    import numpy as np
+    import pandas as pd
+    import pandas.testing as tm
+
+    has_numpy = True
+    has_pandas = True
+except ImportError:
+    np = MissingModule("numpy")
+    pd = MissingModule("pandas")
+    tm = MissingModule("pandas.testing")
+
+try:
+    import pyarrow as pa
+
+    has_numpy = True
+    has_pyarrow = True
+except ImportError:
+    pa = MissingModule("pyarrow")
+
+
+def pytest_runtest_setup(item):
+    MissingModule.__swallow__ = False
+    if hasattr(item, "callspec"):
+        for v in item.callspec.params.values():
+            if isinstance(v, MissingModule):
+                pytest.skip(str(v))
+
+
+def pytest_runtest_teardown(item, nextitem):
+    MissingModule.__swallow__ = True

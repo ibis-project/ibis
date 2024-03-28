@@ -4,8 +4,6 @@ import datetime
 import pickle
 import re
 
-import numpy as np
-import pandas as pd
 import pytest
 from pytest import param
 
@@ -20,6 +18,7 @@ from ibis import _
 from ibis.common.annotations import ValidationError
 from ibis.common.deferred import Deferred
 from ibis.common.exceptions import ExpressionError, IntegrityError, RelationError
+from ibis.conftest import np, pd
 from ibis.expr import api
 from ibis.expr.rewrites import simplify
 from ibis.expr.tests.test_newrels import join_tables
@@ -1334,7 +1333,7 @@ def test_join_invalid_expr_type(con):
     invalid_right = left.foo_id
     join_key = ["bar_id"]
 
-    with pytest.raises(TypeError):
+    with pytest.raises(com.IbisInputError):
         left.inner_join(invalid_right, join_key)
 
 
@@ -1883,6 +1882,8 @@ def test_python_table_ambiguous():
 
 
 def test_memtable_filter():
+    pytest.importorskip("pandas")
+
     # Mostly just a smoketest, this used to error on construction
     t = ibis.memtable([(1, 2), (3, 4), (5, 6)], columns=["x", "y"])
     expr = t.filter(t.x > 1)
@@ -2028,6 +2029,8 @@ def test_pivot_longer_no_match():
 
 
 def test_pivot_wider():
+    pytest.importorskip("pandas")
+
     fish = ibis.table({"fish": "int", "station": "string", "seen": "int"}, name="fish")
     res = fish.pivot_wider(
         names=["Release", "Lisbon"], names_from="station", values_from="seen"

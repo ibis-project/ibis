@@ -281,21 +281,18 @@ class Join(Table):
         lname: str = "",
         rname: str = "{name}_right",
     ):
-        import pandas as pd
-        import pyarrow as pa
-
-        # TODO(kszucs): factor out to a helper function
-        if isinstance(right, (pd.DataFrame, pa.Table)):
-            right = ibis.memtable(right)
-        elif not isinstance(right, Table):
-            raise TypeError(
-                f"right operand must be a Table, got {type(right).__name__}"
-            )
+        if not isinstance(right, Table):
+            try:
+                right = ibis.memtable(right)
+            except Exception as e:
+                raise IbisInputError(
+                    "Unable to construct a table from the input"
+                ) from e
 
         if how == "left_semi":
             how = "semi"
         elif how == "asof":
-            raise IbisInputError("use table.asof_join(...) instead")
+            raise IbisInputError("Use table.asof_join(...) instead")
 
         left = self.op()
         right = ops.JoinTable(right, index=left.length)

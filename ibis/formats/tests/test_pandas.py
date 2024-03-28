@@ -3,10 +3,13 @@ from __future__ import annotations
 from datetime import time
 from decimal import Decimal
 
-import numpy as np
-import pandas as pd
+import pytest
+
+pa = pytest.importorskip("pyarrow")
+pd = pytest.importorskip("pandas")
+np = pytest.importorskip("numpy")
+
 import pandas.testing as tm
-import pyarrow as pa
 import pytest
 from pytest import param
 

@@ -6,13 +6,12 @@ import json
 from collections import OrderedDict
 from datetime import date, datetime, timedelta
 
-import numpy as np
-import pandas as pd
 import pytest
 import pytz
 from packaging.version import parse as vparse
 
 import ibis.expr.datatypes as dt
+from ibis.conftest import np, pd
 
 
 class Foo(enum.Enum):
@@ -309,7 +308,7 @@ def test_from_numpy_timedelta():
             (dt.Array(dt.Timestamp()), dt.Array(dt.Timestamp(scale=6))),
         ),
         # Implied from object dtype
-        (np.array([1, 2, 3], dtype=object), (dt.Array(dt.int64),)),
+        (np.array([1, 2, 3], dtype=object), (dt.Array(dt.int64), dt.Array(dt.int8))),
         (np.array([1.0, 2.0, 3.0], dtype=object), (dt.Array(dt.float64),)),
         (np.array([True, False, True], dtype=object), (dt.Array(dt.boolean),)),
         (np.array(["1", "2", "3"], dtype=object), (dt.Array(dt.string),)),

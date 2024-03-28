@@ -9,7 +9,6 @@ from datetime import date, datetime, time
 from decimal import Decimal
 from operator import attrgetter, methodcaller
 
-import numpy as np
 import pytest
 import pytz
 import toolz
@@ -25,6 +24,7 @@ from ibis import _, literal
 from ibis.common.annotations import ValidationError
 from ibis.common.collections import frozendict
 from ibis.common.exceptions import IbisTypeError
+from ibis.conftest import np
 from ibis.expr import api
 from ibis.tests.util import assert_equal
 

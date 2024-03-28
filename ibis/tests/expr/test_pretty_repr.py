@@ -3,12 +3,12 @@ from __future__ import annotations
 import datetime
 import decimal
 
-import pandas as pd
 import pytest
 from rich.console import Console
 
 import ibis
 import ibis.expr.datatypes as dt
+from ibis.conftest import pd
 from ibis.expr.types.pretty import format_column, format_values
 
 null = "NULL"

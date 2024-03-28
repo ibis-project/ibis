@@ -2,8 +2,6 @@ from __future__ import annotations
 
 from datetime import datetime
 
-import numpy as np
-import pandas as pd
 import pytest
 
 import ibis
@@ -11,6 +9,7 @@ import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.rules as rlz
 import ibis.expr.types as ir
+from ibis.conftest import np, pd
 from ibis.expr import api
 
 

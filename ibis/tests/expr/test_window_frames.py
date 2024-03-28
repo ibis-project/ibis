@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import numpy as np
 import pytest
 from pytest import param
 
@@ -12,6 +11,7 @@ import ibis.expr.operations as ops
 from ibis.common.annotations import ValidationError
 from ibis.common.exceptions import IbisInputError
 from ibis.common.patterns import NoMatch, Pattern
+from ibis.conftest import np
 
 
 def test_window_boundary():

@@ -12,9 +12,6 @@ import sys
 from operator import itemgetter
 from typing import TYPE_CHECKING
 
-import numpy as np
-import pandas as pd
-import pyarrow as pa
 import pytest
 import rich.console
 import toolz
@@ -36,6 +33,7 @@ from ibis.backends.tests.errors import (
     SnowflakeProgrammingError,
     TrinoUserError,
 )
+from ibis.conftest import np, pa, pd
 from ibis.util import gen_name
 
 if TYPE_CHECKING:

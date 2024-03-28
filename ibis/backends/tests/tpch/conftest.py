@@ -11,7 +11,6 @@ import sqlglot as sg
 from dateutil.relativedelta import relativedelta
 
 import ibis
-from ibis.formats.pandas import PandasData
 
 if TYPE_CHECKING:
     import ibis.expr.types as ir
@@ -41,6 +40,8 @@ def tpch_test(test: Callable[..., ir.Table]):
     asserting that the result of the ibis expression is equal to the expected
     result of executing the raw SQL.
     """
+    pytest.importorskip("pandas")
+    from ibis.formats.pandas import PandasData
 
     @pytest.mark.tpch
     @pytest.mark.usefixtures("backend", "snapshot")

@@ -2,9 +2,6 @@ from __future__ import annotations
 
 from collections.abc import Mapping
 
-import numpy as np
-import pandas as pd
-import pandas.testing as tm
 import pytest
 from pytest import param
 
@@ -15,6 +12,7 @@ from ibis.backends.tests.errors import (
     PsycoPg2SyntaxError,
     Py4JJavaError,
 )
+from ibis.conftest import np, pd, tm
 
 pytestmark = [
     pytest.mark.never(["mysql", "sqlite", "mssql"], reason="No struct support"),

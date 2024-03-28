@@ -25,7 +25,6 @@ import ibis.expr.types as ir
 from ibis import util
 from ibis.backends import BaseBackend, CanCreateDatabase
 from ibis.backends.clickhouse.compiler import ClickHouseCompiler
-from ibis.backends.clickhouse.converter import ClickHousePandasData
 from ibis.backends.sql import SQLBackend
 from ibis.backends.sql.compiler import C
 
@@ -374,6 +373,8 @@ class Backend(SQLBackend, CanCreateDatabase):
     ) -> Any:
         """Execute an expression."""
         import pandas as pd
+
+        from ibis.backends.clickhouse.converter import ClickHousePandasData
 
         table = expr.as_table()
         sql = self.compile(table, limit=limit, **kwargs)

@@ -2,11 +2,10 @@ from __future__ import annotations
 
 import operator
 
-import pandas as pd
-import pandas.testing as tm
 import pytest
 
 import ibis
+from ibis.conftest import pd, tm
 
 
 @pytest.fixture(scope="module")

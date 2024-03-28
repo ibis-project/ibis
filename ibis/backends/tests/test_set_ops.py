@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import random
 
-import pandas as pd
 import pytest
 from pytest import param
 
@@ -11,6 +10,7 @@ import ibis.common.exceptions as com
 import ibis.expr.types as ir
 from ibis import _
 from ibis.backends.tests.errors import PsycoPg2InternalError, PyDruidProgrammingError
+from ibis.conftest import pd
 
 
 @pytest.fixture
