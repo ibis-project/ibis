@@ -165,18 +165,16 @@ class BasePandasBackend(BaseBackend, NoUrl):
         return self._filter_with_like(list(self.dictionary.keys()), like)
 
     def table(self, name: str, schema: sch.Schema | None = None):
-        df = self.dictionary[name]
-        schema = schema or self.schemas.get(name, None)
-        schema = PandasData.infer_table(df, schema=schema)
-        return ops.DatabaseTable(name, schema, self).to_expr()
+        inferred_schema = self.get_schema(name)
+        overridden_schema = {**inferred_schema, **(schema or {})}
+        return ops.DatabaseTable(name, overridden_schema, self).to_expr()
 
     def get_schema(self, table_name, *, database=None):
-        schemas = self.schemas
         try:
-            schema = schemas[table_name]
+            schema = self.schemas[table_name]
         except KeyError:
             df = self.dictionary[table_name]
-            schemas[table_name] = schema = PandasData.infer_table(df)
+            self.schemas[table_name] = schema = PandasData.infer_table(df)
 
         return schema
 
