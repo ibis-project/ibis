@@ -64,7 +64,6 @@ class DataFusionCompiler(SQLGlotCompiler):
     )
 
     SIMPLE_OPS = {
-        ops.Arbitrary: "first_value",
         ops.ApproxMedian: "approx_median",
         ops.ArrayRemove: "array_remove_all",
         ops.BitAnd: "bit_and",
@@ -151,6 +150,12 @@ class DataFusionCompiler(SQLGlotCompiler):
         if length is not None:
             return self.f.substr(arg, start, length)
         return self.f.substr(arg, start)
+
+    def visit_Arbitrary(self, op, *, arg, where):
+        cond = ~arg.is_(None)
+        if where is not None:
+            cond &= where
+        return self.agg.first_value(arg, where=cond)
 
     def visit_Variance(self, op, *, arg, how, where):
         if how == "sample":
