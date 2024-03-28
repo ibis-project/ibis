@@ -736,6 +736,7 @@ _reductions = {
     ops.All: "all",
     ops.Any: "any",
     ops.ApproxMedian: "median",
+    ops.Arbitrary: "first",
     ops.Count: "count",
     ops.CountDistinct: "n_unique",
     ops.First: "first",
