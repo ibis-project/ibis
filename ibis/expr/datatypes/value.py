@@ -181,7 +181,21 @@ def infer_pandas_timestamp(value):
 @infer.register("pandas.Timedelta")
 def infer_interval_pandas(value) -> dt.Interval:
     # pandas Timedelta has more granularity
-    units = {"D": "d", "H": "h", "T": "m", "S": "s", "L": "ms", "U": "us", "N": "ns"}
+    units = {
+        "D": "d",
+        "H": "h",
+        "h": "h",
+        "T": "m",
+        "min": "m",
+        "S": "s",
+        "s": "s",
+        "L": "ms",
+        "ms": "ms",
+        "U": "us",
+        "us": "us",
+        "N": "ns",
+        "ns": "ns",
+    }
     unit = units[value.resolution_string]
     return dt.Interval(unit)
 

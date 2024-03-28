@@ -306,7 +306,7 @@ def test_group_concat(t, df):
     result = expr.execute()
     expected = (
         df.groupby("dup_strings")
-        .apply(lambda df: ",".join(df.plain_int64.astype(str)))
+        .apply(lambda df: ",".join(df.plain_int64.astype(str)), include_groups=False)
         .reset_index()
         .rename(columns={0: "foo"})
     )
@@ -406,7 +406,8 @@ def test_weighted_average(t, df):
     expected = (
         df.groupby("dup_strings")
         .apply(
-            lambda df: (df.plain_int64 * df.plain_float64).sum() / df.plain_int64.sum()
+            lambda df: (df.plain_int64 * df.plain_float64).sum() / df.plain_int64.sum(),
+            include_groups=False,
         )
         .reset_index()
         .rename(columns={0: "avg"})
@@ -503,7 +504,9 @@ def test_cast_on_group_by(t, df):
     result = expr.execute()
     expected = (
         df.groupby("dup_strings")
-        .float64_with_zeros.apply(lambda s: (s == 0).astype("int64").sum())
+        .float64_with_zeros.apply(
+            lambda s: (s == 0).astype("int64").sum(), include_groups=False
+        )
         .reset_index()
         .rename(columns={"float64_with_zeros": "casted"})
     )
@@ -542,7 +545,7 @@ def test_left_binary_op_gb(t, df, opname, argfunc):
     result = expr.execute()
     expected = (
         df.groupby("dup_strings")
-        .float64_with_zeros.apply(lambda s: op(*argfunc(s)).sum())
+        .float64_with_zeros.apply(lambda s: op(*argfunc(s)).sum(), include_groups=False)
         .reset_index()
         .rename(columns={"float64_with_zeros": "foo"})
     )
@@ -582,11 +585,12 @@ def test_ifelse_series(t, df, left_f, right_f):
         left = pd.Series(np.repeat(left, len(cond)), name=cond.name)
     expected = left.where(cond, right_f(series))
 
-    tm.assert_series_equal(
-        result.astype(object).fillna(pd.NA),
-        expected.astype(object).fillna(pd.NA),
-        check_dtype=False,
-    )
+    with pd.option_context("future.no_silent_downcasting", True):
+        tm.assert_series_equal(
+            result.astype(object).fillna(pd.NA),
+            expected.astype(object).fillna(pd.NA),
+            check_dtype=False,
+        )
 
 
 @pytest.mark.parametrize(

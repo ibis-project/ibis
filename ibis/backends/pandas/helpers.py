@@ -151,7 +151,7 @@ class GroupedFrame:
 
     def apply_reduction(self, func, **kwargs):
         name = gen_name("result")
-        result = self.groupby.apply(func, **kwargs).rename(name)
+        result = self.groupby.apply(func, include_groups=False, **kwargs).rename(name)
         df = self.df.merge(result, left_on=self.group_keys, right_index=True)
         return df[name]
 
