@@ -347,3 +347,49 @@ def exclude_unsupported_window_frame_from_rank(_, y):
 )
 def exclude_unsupported_window_frame_from_ops(_, y, **kwargs):
     return _.copy(frame=y.copy(start=None, end=0, order_by=y.order_by or (ops.NULL,)))
+
+
+@replace(p.JoinChain)
+def replace_join_chain_w_filter(_):
+    links = _.find(ops.JoinLink)
+    semi_anti_links, new_links = [], []
+    for link in links:
+        if link.how in {"semi", "anti"}:
+            semi_anti_links.append(link)
+        else:
+            new_links.append(link)
+
+    # Nothing to do with the original join chain
+    if not semi_anti_links:
+        return _
+
+    chain = _.copy(rest=tuple(new_links))
+
+    # Create the new predicates off of the tables underlying
+    # the `JoinTable`'s.
+    # Note: Replacing the predicates with something like
+    # chain = chain.replace(p.Comparison >> _.copy(...))
+    # fails at `_check_integrity()` line of `JoinChain.__init__()`.
+    predicates = []
+    for pred in link.predicates:
+        left, right = pred.left, pred.right
+        left_table = left.rel.parent
+        right_table = right.rel.parent
+        pred_ = pred.copy(
+            left=left.copy(rel=left_table, name=left.name),
+            right=right.copy(rel=right_table, name=right.name),
+        )
+        predicates.append(pred_)
+
+    node = chain.first.parent  # left_table
+    for link in semi_anti_links:
+        filtered = ops.Filter(parent=link.table.parent, predicates=predicates)
+        subquery = ops.ExistsSubquery(filtered)
+        if link.how == "anti":
+            subquery = ops.Not(subquery)
+        node = ops.Filter(parent=node, predicates=[subquery])
+
+    # Project to the columns specified in the initial `JoinChain`.
+    # TODO (mehmet): Is there a more efficient way to apply projection
+    # on `node`?
+    return node.to_expr().select(list(chain.fields.keys())).op()

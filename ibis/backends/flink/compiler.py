@@ -15,6 +15,7 @@ from ibis.backends.sql.rewrites import (
     exclude_unsupported_window_frame_from_ops,
     exclude_unsupported_window_frame_from_rank,
     exclude_unsupported_window_frame_from_row_number,
+    replace_join_chain_w_filter,
     rewrite_sample_as_filter,
 )
 
@@ -24,10 +25,11 @@ class FlinkCompiler(SQLGlotCompiler):
     dialect = Flink
     type_mapper = FlinkType
     rewrites = (
-        rewrite_sample_as_filter,
         exclude_unsupported_window_frame_from_row_number,
         exclude_unsupported_window_frame_from_ops,
         exclude_unsupported_window_frame_from_rank,
+        replace_join_chain_w_filter,
+        rewrite_sample_as_filter,
         *SQLGlotCompiler.rewrites,
     )
 
