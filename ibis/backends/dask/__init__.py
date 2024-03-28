@@ -10,8 +10,6 @@ import ibis.common.exceptions as com
 
 # import the pandas execution module to register dispatched implementations of
 # execute_node that the dask backend will later override
-import ibis.expr.operations as ops
-import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis import util
 from ibis.backends import NoUrl
@@ -167,11 +165,14 @@ class Backend(BasePandasBackend, NoUrl):
         self.dictionary[table_name] = df
         return self.table(table_name)
 
-    def table(self, name: str, schema: sch.Schema | None = None):
-        df = self.dictionary[name]
-        schema = schema or self.schemas.get(name, None)
-        schema = PandasData.infer_table(df.head(1), schema=schema)
-        return ops.DatabaseTable(name, schema, self).to_expr()
+    def get_schema(self, table_name, *, database=None):
+        try:
+            schema = self.schemas[table_name]
+        except KeyError:
+            df = self.dictionary[table_name]
+            self.schemas[table_name] = schema = PandasData.infer_table(df.head(1))
+
+        return schema
 
     def _convert_object(self, obj) -> dd.DataFrame:
         if isinstance(obj, dd.DataFrame):

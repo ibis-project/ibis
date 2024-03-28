@@ -20,12 +20,6 @@ with contextlib.suppress(ImportError):
 
     has_pandas = True
 
-has_dask = False
-with contextlib.suppress(ImportError):
-    import dask.dataframe as dd  # noqa: F401
-
-    has_dask = True
-
 
 def test_whole_schema():
     schema = {
@@ -437,11 +431,6 @@ def test_schema_from_to_numpy_dtypes():
 @pytest.mark.parametrize(
     ("from_method", "to_method"),
     [
-        pytest.param(
-            "from_dask",
-            "to_dask",
-            marks=pytest.mark.skipif(not has_dask, reason="dask not installed"),
-        ),
         pytest.param(
             "from_pandas",
             "to_pandas",
