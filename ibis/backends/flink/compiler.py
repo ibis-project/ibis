@@ -35,7 +35,6 @@ class FlinkCompiler(SQLGlotCompiler):
         (
             ops.AnalyticVectorizedUDF,
             ops.ApproxMedian,
-            ops.Arbitrary,
             ops.ArgMax,
             ops.ArgMin,
             ops.ArrayCollect,

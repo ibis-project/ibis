@@ -32,7 +32,6 @@ class DruidCompiler(SQLGlotCompiler):
     UNSUPPORTED_OPERATIONS = frozenset(
         (
             ops.ApproxMedian,
-            ops.Arbitrary,
             ops.ArgMax,
             ops.ArgMin,
             ops.ArrayCollect,

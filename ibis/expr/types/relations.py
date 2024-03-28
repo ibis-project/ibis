@@ -1342,16 +1342,16 @@ class Table(Expr, _FixedTextJupyterMixin):
 
         if keep is None:
             having = lambda t: t.count() == 1
-            how = "first"
+            method = "first"
         elif keep in ("first", "last"):
             having = None
-            how = keep
+            method = keep
         else:
             raise com.IbisError(
                 f"Invalid value for `keep`: {keep!r}, must be 'first', 'last' or None"
             )
 
-        aggs = {col.get_name(): col.arbitrary(how=how) for col in (~on).expand(self)}
+        aggs = {col.get_name(): getattr(col, method)() for col in (~on).expand(self)}
 
         gb = self.group_by(on)
         if having is not None:

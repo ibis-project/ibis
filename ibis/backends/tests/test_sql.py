@@ -108,17 +108,12 @@ def test_isin_bug(con, snapshot):
     raises=NotImplementedError,
 )
 @pytest.mark.notyet(
-    ["datafusion", "exasol"],
+    ["datafusion", "exasol", "oracle", "flink", "risingwave"],
     reason="no unnest support",
     raises=exc.OperationNotDefinedError,
 )
 @pytest.mark.notyet(
     ["sqlite", "mysql", "druid", "impala", "mssql"], reason="no unnest support upstream"
-)
-@pytest.mark.notimpl(
-    ["oracle", "flink"],
-    reason="unnest not yet implemented",
-    raises=exc.OperationNotDefinedError,
 )
 @pytest.mark.parametrize("backend_name", _get_backends_to_test())
 def test_union_aliasing(backend_name, snapshot):

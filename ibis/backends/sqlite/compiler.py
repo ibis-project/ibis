@@ -70,6 +70,7 @@ class SQLiteCompiler(SQLGlotCompiler):
     )
 
     SIMPLE_OPS = {
+        ops.Arbitrary: "_ibis_first",
         ops.RegexReplace: "_ibis_regex_replace",
         ops.RegexExtract: "_ibis_regex_extract",
         ops.RegexSearch: "_ibis_regex_search",
@@ -92,8 +93,8 @@ class SQLiteCompiler(SQLGlotCompiler):
         ops.BitOr: "_ibis_bit_or",
         ops.BitAnd: "_ibis_bit_and",
         ops.BitXor: "_ibis_bit_xor",
-        ops.First: "_ibis_arbitrary_first",
-        ops.Last: "_ibis_arbitrary_last",
+        ops.First: "_ibis_first",
+        ops.Last: "_ibis_last",
         ops.Mode: "_ibis_mode",
         ops.Time: "time",
         ops.Date: "date",
@@ -212,14 +213,6 @@ class SQLiteCompiler(SQLGlotCompiler):
 
     def visit_Cot(self, op, *, arg):
         return 1 / self.f.tan(arg)
-
-    def visit_Arbitrary(self, op, *, arg, how, where):
-        if op.how == "heavy":
-            raise com.OperationNotDefinedError(
-                "how='heavy' not implemented for the SQLite backend"
-            )
-
-        return self._aggregate(f"_ibis_arbitrary_{how}", arg, where=where)
 
     def visit_ArgMin(self, *args, **kwargs):
         return self._visit_arg_reduction("min", *args, **kwargs)

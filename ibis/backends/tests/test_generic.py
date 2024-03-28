@@ -26,6 +26,7 @@ from ibis.backends.tests.errors import (
     MySQLProgrammingError,
     OracleDatabaseError,
     PsycoPg2InternalError,
+    Py4JJavaError,
     PyDruidProgrammingError,
     PyODBCDataError,
     PyODBCProgrammingError,
@@ -1112,33 +1113,11 @@ def test_pivot_wider(backend):
         ),
     ],
 )
-@pytest.mark.parametrize(
-    "keep",
-    [
-        "first",
-        param(
-            "last",
-            marks=pytest.mark.notimpl(
-                ["bigquery", "trino"],
-                raises=com.UnsupportedOperationError,
-                reason="backend doesn't support how='last'",
-            ),
-        ),
-    ],
-)
+@pytest.mark.parametrize("keep", ["first", "last"])
 @pytest.mark.notimpl(
     ["druid", "impala", "oracle"],
-    raises=(
-        NotImplementedError,
-        OracleDatabaseError,
-        com.OperationNotDefinedError,
-    ),
+    raises=(NotImplementedError, OracleDatabaseError, com.OperationNotDefinedError),
     reason="arbitrary not implemented in the backend",
-)
-@pytest.mark.notimpl(
-    ["datafusion"],
-    raises=com.OperationNotDefinedError,
-    reason="backend doesn't implement window functions",
 )
 @pytest.mark.notimpl(
     ["polars"],
@@ -1147,7 +1126,7 @@ def test_pivot_wider(backend):
 )
 @pytest.mark.notimpl(
     ["flink"],
-    raises=com.OperationNotDefinedError,
+    raises=Py4JJavaError,
     reason="backend doesn't implement deduplication",
 )
 @pytest.mark.notimpl(
@@ -1210,18 +1189,13 @@ def test_distinct_on_keep(backend, on, keep):
     raises=com.OperationNotDefinedError,
 )
 @pytest.mark.notimpl(
-    ["datafusion"],
-    raises=com.OperationNotDefinedError,
-    reason="backend doesn't implement window functions",
-)
-@pytest.mark.notimpl(
     ["polars"],
     raises=com.OperationNotDefinedError,
     reason="backend doesn't implement ops.WindowFunction",
 )
 @pytest.mark.notimpl(
     ["flink"],
-    raises=com.OperationNotDefinedError,
+    raises=Py4JJavaError,
     reason="backend doesn't implement deduplication",
 )
 @pytest.mark.notimpl(

@@ -507,128 +507,6 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
             ],
         ),
         param(
-            lambda t, where: t.double_col.arbitrary(where=where),
-            lambda t, where: t.double_col[where].iloc[0],
-            id="arbitrary_default",
-            marks=[
-                pytest.mark.notimpl(
-                    [
-                        "impala",
-                        "mysql",
-                        "polars",
-                        "datafusion",
-                        "mssql",
-                        "druid",
-                        "oracle",
-                        "exasol",
-                        "flink",
-                    ],
-                    raises=com.OperationNotDefinedError,
-                ),
-                pytest.mark.notimpl(
-                    ["risingwave"],
-                    raises=PsycoPg2InternalError,
-                ),
-            ],
-        ),
-        param(
-            lambda t, where: t.double_col.arbitrary(how="first", where=where),
-            lambda t, where: t.double_col[where].iloc[0],
-            id="arbitrary_first",
-            marks=[
-                pytest.mark.notimpl(
-                    [
-                        "impala",
-                        "mysql",
-                        "polars",
-                        "datafusion",
-                        "mssql",
-                        "druid",
-                        "oracle",
-                        "exasol",
-                        "flink",
-                    ],
-                    raises=com.OperationNotDefinedError,
-                ),
-                pytest.mark.notimpl(
-                    ["risingwave"],
-                    raises=PsycoPg2InternalError,
-                ),
-            ],
-        ),
-        param(
-            lambda t, where: t.double_col.arbitrary(how="last", where=where),
-            lambda t, where: t.double_col[where].iloc[-1],
-            id="arbitrary_last",
-            marks=[
-                pytest.mark.notimpl(
-                    [
-                        "impala",
-                        "mysql",
-                        "polars",
-                        "datafusion",
-                        "mssql",
-                        "druid",
-                        "oracle",
-                        "exasol",
-                        "flink",
-                    ],
-                    raises=com.OperationNotDefinedError,
-                ),
-                pytest.mark.notimpl(
-                    ["bigquery", "trino"],
-                    raises=com.UnsupportedOperationError,
-                    reason="backend only supports the `first` option for `.arbitrary()",
-                ),
-                pytest.mark.notimpl(
-                    ["risingwave"],
-                    raises=PsycoPg2InternalError,
-                ),
-            ],
-        ),
-        param(
-            lambda t, where: t.double_col.arbitrary(how="heavy", where=where),
-            lambda t, where: t.double_col[where].iloc[8],
-            id="arbitrary_heavy",
-            # only clickhouse implements this option
-            marks=[
-                pytest.mark.notimpl(
-                    [
-                        "dask",
-                        "datafusion",
-                        "druid",
-                        "impala",
-                        "mssql",
-                        "mysql",
-                        "oracle",
-                        "pandas",
-                        "polars",
-                        "sqlite",
-                        "exasol",
-                        "flink",
-                    ],
-                    raises=com.OperationNotDefinedError,
-                ),
-                pytest.mark.notimpl(
-                    [
-                        "bigquery",
-                        "duckdb",
-                        "postgres",
-                        "risingwave",
-                        "pyspark",
-                        "trino",
-                    ],
-                    raises=com.UnsupportedOperationError,
-                    reason="how='heavy' not supported in the backend",
-                ),
-                pytest.mark.notimpl(
-                    ["snowflake"],
-                    raises=com.UnsupportedOperationError,
-                    reason="Snowflake only supports the `first` option for `.arbitrary()",
-                ),
-            ],
-        ),
-        param(
             lambda t, where: t.double_col.first(where=where),
             lambda t, where: t.double_col[where].iloc[0],
             id="first",
@@ -781,6 +659,40 @@ def test_reduction_ops(
     except TypeError:  # assert_allclose only handles numerics
         # if we're not testing numerics, then the arrays should be exactly equal
         np.testing.assert_array_equal(result, expected)
+
+
+@pytest.mark.notimpl(
+    [
+        "impala",
+        "mysql",
+        "polars",
+        "datafusion",
+        "mssql",
+        "druid",
+        "oracle",
+        "exasol",
+        "flink",
+        "risingwave",
+    ],
+    raises=com.OperationNotDefinedError,
+)
+@pytest.mark.parametrize("filtered", [False, True])
+def test_arbitrary(backend, alltypes, df, filtered):
+    # Arbitrary chooses a non-null arbitrary value. To ensure we can test for
+    # _something_ we create a column that is a mix of nulls and a single value
+    # (or a single value after filtering is applied).
+    if filtered:
+        new = alltypes.int_col.cases([(3, 30), (4, 40)])
+        where = _.int_col == 3
+    else:
+        new = (alltypes.int_col == 3).ifelse(30, None)
+        where = None
+
+    t = alltypes.mutate(new=new)
+
+    expr = t.new.arbitrary(where=where)
+    res = expr.execute()
+    assert res == 30
 
 
 @pytest.mark.parametrize(

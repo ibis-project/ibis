@@ -56,8 +56,8 @@ class SnowflakeCompiler(SQLGlotCompiler):
     )
 
     SIMPLE_OPS = {
-        ops.Any: "max",
         ops.All: "min",
+        ops.Any: "max",
         ops.ArrayDistinct: "array_distinct",
         ops.ArrayFlatten: "array_flatten",
         ops.ArrayIndex: "get",
@@ -163,6 +163,9 @@ class SnowflakeCompiler(SQLGlotCompiler):
         elif dtype.is_binary():
             return sge.HexString(this=value.hex())
         return super().visit_Literal(op, value=value, dtype=dtype)
+
+    def visit_Arbitrary(self, op, *, arg, where):
+        return self.f.get(self.agg.array_agg(arg, where=where), 0)
 
     def visit_Cast(self, op, *, arg, to):
         if to.is_struct() or to.is_map():
@@ -379,15 +382,6 @@ class SnowflakeCompiler(SQLGlotCompiler):
             )
 
         return self.f.time_slice(arg, interval.value, interval.dtype.unit.name)
-
-    def visit_Arbitrary(self, op, *, arg, how, where):
-        if how == "first":
-            return self.f.get(self.agg.array_agg(arg, where=where), 0)
-        elif how == "last":
-            expr = self.agg.array_agg(arg, where=where)
-            return self.f.get(expr, self.f.array_size(expr) - 1)
-        else:
-            raise com.UnsupportedOperationError("how must be 'first' or 'last'")
 
     def visit_ArraySlice(self, op, *, arg, start, stop):
         if start is None:

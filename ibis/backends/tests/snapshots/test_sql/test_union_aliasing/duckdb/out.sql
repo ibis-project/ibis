@@ -1,7 +1,7 @@
 WITH "t5" AS (
   SELECT
     "t4"."field_of_study",
-    FIRST("t4"."diff") AS "diff"
+    ANY_VALUE("t4"."diff") AS "diff"
   FROM (
     SELECT
       "t3"."field_of_study",

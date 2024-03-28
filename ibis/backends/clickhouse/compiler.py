@@ -41,6 +41,7 @@ class ClickHouseCompiler(SQLGlotCompiler):
         ops.Any: "max",
         ops.ApproxCountDistinct: "uniqHLL12",
         ops.ApproxMedian: "median",
+        ops.Arbitrary: "any",
         ops.ArgMax: "argMax",
         ops.ArgMin: "argMin",
         ops.ArrayCollect: "groupArray",
@@ -201,15 +202,6 @@ class ClickHouseCompiler(SQLGlotCompiler):
                 "ClickHouse only implements `sample` correlation coefficient"
             )
         return self.agg.corr(left, right, where=where)
-
-    def visit_Arbitrary(self, op, *, arg, how, where):
-        if how == "first":
-            return self.agg.any(arg, where=where)
-        elif how == "last":
-            return self.agg.anyLast(arg, where=where)
-        else:
-            assert how == "heavy"
-            return self.agg.anyHeavy(arg, where=where)
 
     def visit_Substring(self, op, *, arg, start, length):
         # Clickhouse is 1-indexed
