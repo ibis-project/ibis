@@ -666,7 +666,6 @@ def test_reduction_ops(
         "impala",
         "mysql",
         "polars",
-        "datafusion",
         "mssql",
         "druid",
         "oracle",
