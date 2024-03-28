@@ -168,13 +168,15 @@ class DataMapper(Generic[S, C, T]):
         raise NotImplementedError
 
     @classmethod
-    def convert_table(cls, obj: T) -> T:
+    def convert_table(cls, obj: T, schema: Schema) -> T:
         """Convert a format-specific table to the given ibis schema.
 
         Parameters
         ----------
         obj
             The format-specific table-like object to convert.
+        schema
+            The Ibis schema to convert to.
 
         Returns
         -------
