@@ -74,7 +74,7 @@ class DaskConverter(DataMapper):
         else:
             s = dd.to_datetime(s)
 
-        return s.dt.normalize()
+        return s
 
     @classmethod
     def convert_String(cls, s, dtype, pandas_type):

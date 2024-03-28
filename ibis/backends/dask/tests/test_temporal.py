@@ -66,8 +66,12 @@ def test_timestamp_functions(con, case_func, expected_func):
 def test_cast_datetime_strings_to_date(t, df, column):
     expr = t[column].cast("date")
     result = expr.execute()
+
     df_computed = df.compute()
-    expected = pd.to_datetime(df_computed[column]).map(lambda x: x.date())
+    expected = pd.to_datetime(df_computed[column])
+    if expected.dt.tz:
+        expected = expected.dt.tz_convert("UTC")
+    expected = expected.dt.tz_localize(None).astype(result.dtype)
 
     tm.assert_series_equal(
         result.reset_index(drop=True).rename("tmp"),
@@ -114,10 +118,10 @@ def test_cast_integer_to_date(t, pandas_df):
     expr = t.plain_int64.cast("date")
     result = expr.execute()
     expected = pd.Series(
-        pd.to_datetime(pandas_df.plain_int64.values, unit="D").date,
+        pd.to_datetime(pandas_df.plain_int64.values, unit="D"),
         index=pandas_df.index,
         name="plain_int64",
-    )
+    ).astype(result.dtype)
     tm.assert_series_equal(result, expected, check_names=False)
 
 

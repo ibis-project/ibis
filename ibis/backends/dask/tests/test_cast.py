@@ -146,13 +146,12 @@ def test_timestamp_with_timezone_is_inferred_correctly(t):
 def test_cast_date(t, df, column):
     expr = t[column].cast("date")
     result = expr.execute()
-    expected = (
-        df[column]
-        .dt.normalize()
-        .map(lambda x: x.date())
-        .compute()
-        .rename(expr.get_name())
-    )
+
+    expected = df[column].compute().rename(expr.get_name())
+    if expected.dt.tz:
+        expected = expected.dt.tz_convert("UTC")
+    expected = expected.dt.tz_localize(None).astype(result.dtype)
+
     tm.assert_series_equal(result, expected, check_index=False)
 
 
