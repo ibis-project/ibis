@@ -162,11 +162,6 @@ class Schema(Concrete, Coercible, MapSet):
 
         return PolarsSchema.to_ibis(polars_schema)
 
-    @classmethod
-    def from_dask(cls, dask_schema):
-        """Return the equivalent ibis schema."""
-        return cls.from_pandas(dask_schema)
-
     def to_numpy(self):
         """Return the equivalent numpy dtypes."""
         from ibis.formats.numpy import NumpySchema
@@ -190,10 +185,6 @@ class Schema(Concrete, Coercible, MapSet):
         from ibis.formats.polars import PolarsSchema
 
         return PolarsSchema.from_ibis(self)
-
-    def to_dask(self):
-        """Return the equivalent dask dtypes."""
-        return self.to_pandas()
 
     def as_struct(self) -> dt.Struct:
         return dt.Struct(self)
