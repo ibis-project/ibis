@@ -1,13 +1,13 @@
 SELECT
   "t5"."t1_id1",
   "t5"."t1_val1",
-  "t9"."id3",
-  "t9"."val2",
-  "t9"."dt",
-  "t9"."t3_val2",
-  "t9"."id2a",
-  "t9"."id2b",
-  "t9"."val2_right"
+  "t10"."id3",
+  "t10"."val2",
+  "t10"."dt",
+  "t10"."t3_val2",
+  "t10"."id2a",
+  "t10"."id2b",
+  "t10"."val2_right"
 FROM (
   SELECT
     "t0"."id1" AS "t1_id1",
@@ -16,22 +16,28 @@ FROM (
 ) AS "t5"
 LEFT OUTER JOIN (
   SELECT
-    "t7"."id3",
-    "t7"."val2",
-    "t7"."dt",
-    "t7"."t3_val2",
+    "t8"."id3",
+    "t8"."val2",
+    "t8"."dt",
+    "t8"."t3_val2",
     "t3"."id2a",
     "t3"."id2b",
     "t3"."val2" AS "val2_right"
   FROM (
     SELECT
-      CAST("t1"."id3" AS BIGINT) AS "id3",
-      "t1"."val2",
-      "t1"."dt",
-      CAST("t1"."id3" AS BIGINT) AS "t3_val2"
-    FROM "test3" AS "t1"
-  ) AS "t7"
+      "t6"."id3",
+      "t6"."val2",
+      "t6"."dt",
+      "t6"."id3" AS "t3_val2"
+    FROM (
+      SELECT
+        CAST("t2"."id3" AS BIGINT) AS "id3",
+        "t2"."val2",
+        "t2"."dt"
+      FROM "test3" AS "t2"
+    ) AS "t6"
+  ) AS "t8"
   INNER JOIN "test2" AS "t3"
-    ON "t3"."id2b" = "t7"."id3"
-) AS "t9"
-  ON "t5"."t1_id1" = "t9"."id2a"
+    ON "t3"."id2b" = "t8"."id3"
+) AS "t10"
+  ON "t5"."t1_id1" = "t10"."id2a"

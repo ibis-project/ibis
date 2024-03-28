@@ -1,23 +1,18 @@
 SELECT
-  "t2"."arrdelay",
-  "t2"."dest",
-  "t2"."dest_avg",
-  "t2"."dev"
+  "t1"."arrdelay",
+  "t1"."dest",
+  "t1"."dest_avg",
+  "t1"."dev"
 FROM (
   SELECT
-    "t1"."arrdelay",
-    "t1"."dest",
-    AVG("t1"."arrdelay") OVER (PARTITION BY "t1"."dest" ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) AS "dest_avg",
-    "t1"."arrdelay" - AVG("t1"."arrdelay") OVER (PARTITION BY "t1"."dest" ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) AS "dev"
-  FROM (
-    SELECT
-      "t0"."arrdelay",
-      "t0"."dest"
-    FROM "airlines" AS "t0"
-  ) AS "t1"
-) AS "t2"
+    "t0"."arrdelay",
+    "t0"."dest",
+    AVG("t0"."arrdelay") OVER (PARTITION BY "t0"."dest" ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) AS "dest_avg",
+    "t0"."arrdelay" - AVG("t0"."arrdelay") OVER (PARTITION BY "t0"."dest" ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) AS "dev"
+  FROM "airlines" AS "t0"
+) AS "t1"
 WHERE
-  "t2"."dev" IS NOT NULL
+  "t1"."dev" IS NOT NULL
 ORDER BY
-  "t2"."dev" DESC
+  "t1"."dev" DESC
 LIMIT 10

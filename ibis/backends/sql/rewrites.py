@@ -160,13 +160,13 @@ def merge_select_select(_, **kwargs):
     `predicates`, `sort_keys` and keeping the outer `selections`. All selections
     from the inner Select are inlined into the outer Select.
     """
-    # don't merge if either the outer or the inner select has window functions
-    for v in _.selections.values():
-        if v.find(Window, filter=ops.Value):
-            return _
+    # only merge subsequent projections if the inner projection is a simple
+    # containing only field references, this avoids extensive inlining causing
+    # the query to grow exponentially for complex expressions
     for v in _.parent.selections.values():
-        if v.find((Window, ops.Unnest), filter=ops.Value):
+        if not isinstance(v, (ops.Field, ops.Literal)):
             return _
+
     for v in _.predicates:
         if v.find((ops.ExistsSubquery, ops.InSubquery), filter=ops.Value):
             return _
@@ -231,7 +231,8 @@ def sqlize(
     assert isinstance(node, ops.Relation)
 
     # apply the backend specific rewrites
-    node = node.replace(reduce(operator.or_, rewrites))
+    if rewrites:
+        node = node.replace(reduce(operator.or_, rewrites))
 
     # lower the expression graph to a SQL-like relational algebra
     context = {"params": params}
