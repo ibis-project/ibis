@@ -462,23 +462,30 @@ class PostgresCompiler(SQLGlotCompiler):
         return self.f.extract("epoch", arg)
 
     def visit_ArrayIndex(self, op, *, arg, index):
+        if isinstance(op.index, ops.Literal):
+            index = op.index.value
         index = self.if_(index < 0, self.f.cardinality(arg) + index, index)
-        return sge.paren(arg, copy=False)[index + 1]
+        # cast to int so sqlglot always applies the index offset
+        index = sge.cast(index, "int")
+        return sge.paren(arg, copy=False)[index]
 
     def visit_ArraySlice(self, op, *, arg, start, stop):
-        neg_to_pos_index = lambda n, index: self.if_(index < 0, n + index, index)
-
         arg_length = self.f.cardinality(arg)
+        ensure_pos_idx = lambda idx: self.if_(idx < 0, arg_length + idx, idx)
+        if isinstance(op.start, ops.Literal):
+            start = op.start.value
+        if isinstance(op.stop, ops.Literal):
+            stop = op.stop.value
 
         if start is None:
             start = 0
         else:
-            start = self.f.least(arg_length, neg_to_pos_index(arg_length, start))
+            start = self.f.least(arg_length, ensure_pos_idx(start))
 
         if stop is None:
             stop = arg_length
         else:
-            stop = neg_to_pos_index(arg_length, stop)
+            stop = ensure_pos_idx(stop)
 
         slice_expr = sge.Slice(this=start + 1, expression=stop)
         return sge.paren(arg, copy=False)[slice_expr]

@@ -256,6 +256,10 @@ class BigQueryCompiler(SQLGlotCompiler):
 
     def visit_ArraySlice(self, op, *, arg, start, stop):
         index = sg.to_identifier("bq_arr_slice")
+        if isinstance(op.start, ops.Literal):
+            start = op.start.value
+        if isinstance(op.stop, ops.Literal):
+            stop = op.stop.value
         cond = [index >= self._neg_idx_to_pos(arg, start)]
 
         if stop is not None:
@@ -471,6 +475,12 @@ class BigQueryCompiler(SQLGlotCompiler):
         return self.if_(condition, self.f.array(inner), self.f.array())
 
     def visit_IntegerRange(self, op, *, start, stop, step):
+        if isinstance(op.start, ops.Literal):
+            start = op.start.value
+        if isinstance(op.stop, ops.Literal):
+            stop = op.stop.value
+        if isinstance(op.step, ops.Literal):
+            step = op.step.value
         return self._make_range(self.f.generate_array, start, stop, step, op.step.dtype)
 
     def visit_TimestampRange(self, op, *, start, stop, step):
@@ -478,6 +488,12 @@ class BigQueryCompiler(SQLGlotCompiler):
             raise com.IbisTypeError(
                 "Timestamps without timezone values are not supported when generating timestamp ranges"
             )
+        if isinstance(op.start, ops.Literal):
+            start = op.start.value
+        if isinstance(op.stop, ops.Literal):
+            stop = op.stop.value
+        if isinstance(op.step, ops.Literal):
+            step = op.step.value
         return self._make_range(
             self.f.generate_timestamp_array, start, stop, step, op.step.dtype
         )
@@ -575,7 +591,11 @@ class BigQueryCompiler(SQLGlotCompiler):
             raise com.IbisInputError(
                 f"Length parameter must be a non-negative value; got {value}"
             )
-        suffix = (length,) * (length is not None)
+        if isinstance(op.start, ops.Literal):
+            start = op.start.value
+        if isinstance(op.length, ops.Literal):
+            length = op.length.value
+        suffix = (length,) if length is not None else ()
         if_pos = self.f.substr(arg, start + 1, *suffix)
         if_neg = self.f.substr(arg, self.f.length(arg) + start + 1, *suffix)
         return self.if_(start >= 0, if_pos, if_neg)
@@ -590,7 +610,11 @@ class BigQueryCompiler(SQLGlotCompiler):
         zero_index_replace = self.f.regexp_replace(
             arg, self.f.concat(".*?", self.f.concat("(", pattern, ")"), ".*"), "\\\\1"
         )
-        extract = self.if_(index.eq(0), zero_index_replace, nonzero_index_replace)
+        if isinstance(op.index, ops.Literal):
+            index_is_zero = op.index.value == 0
+        else:
+            index_is_zero = index.eq(0)
+        extract = self.if_(index_is_zero, zero_index_replace, nonzero_index_replace)
         return self.if_(matches, extract, NULL)
 
     def visit_TimestampAddSub(self, op, *, left, right):

@@ -133,15 +133,31 @@ class DuckDBCompiler(SQLGlotCompiler):
     def visit_ArraySlice(self, op, *, arg, start, stop):
         arg_length = self.f.len(arg)
 
+        def ensure_pos_idx(idx):
+            return self.if_(
+                idx >= 0,
+                idx,
+                # Need to have the greatest here to handle the case where
+                # abs(neg_index) > arg_length
+                # e.g. where the magnitude of the negative index is greater than the
+                # length of the array
+                # You cannot index a[:-3] if a = [1, 2]
+                arg_length + self.f.greatest(idx, -arg_length),
+            )
+
+        if isinstance(op.start, ops.Literal):
+            start = op.start.value
+        if isinstance(op.stop, ops.Literal):
+            stop = op.stop.value
         if start is None:
             start = 0
         else:
-            start = self.f.least(arg_length, self._neg_idx_to_pos(arg, start))
+            start = ensure_pos_idx(start)
 
         if stop is None:
             stop = arg_length
         else:
-            stop = self._neg_idx_to_pos(arg, stop)
+            stop = ensure_pos_idx(stop)
 
         return self.f.list_slice(arg, start + 1, stop)
 
@@ -338,19 +354,6 @@ class DuckDBCompiler(SQLGlotCompiler):
             )
         else:
             return None
-
-    def _neg_idx_to_pos(self, array, idx):
-        arg_length = self.f.array_size(array)
-        return self.if_(
-            idx >= 0,
-            idx,
-            # Need to have the greatest here to handle the case where
-            # abs(neg_index) > arg_length
-            # e.g. where the magnitude of the negative index is greater than the
-            # length of the array
-            # You cannot index a[:-3] if a = [1, 2]
-            arg_length + self.f.greatest(idx, -arg_length),
-        )
 
     def visit_Correlation(self, op, *, left, right, how, where):
         if how == "sample":
