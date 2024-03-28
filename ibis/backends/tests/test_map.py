@@ -468,7 +468,6 @@ def test_map_length(con):
     assert con.execute(expr) == 2
 
 
-@pytest.mark.notimpl(["flink"], raises=exc.OperationNotDefinedError)
 def test_map_keys_unnest(backend):
     expr = backend.map.kv.keys().unnest()
     result = expr.to_pandas()

@@ -33,7 +33,8 @@ from ibis.backends.tests.errors import Py4JJavaError
 def test_create_memtable(con, data, schema, expected):
     t = ibis.memtable(data, schema=ibis.schema(schema))
     # cannot use con.execute(t) directly because of some behavioral discrepancy between
-    # `TableEnvironment.execute_sql()` and `TableEnvironment.sql_query()`
+    # `TableEnvironment.execute_sql()` and `TableEnvironment.sql_query()`; this doesn't
+    # seem to be an issue if we don't execute memtable directly
     result = con.raw_sql(con.compile(t))
     # raw_sql() returns a `TableResult` object and doesn't natively convert to pandas
     assert list(result.collect()) == expected
