@@ -229,9 +229,32 @@ class BooleanValue(NumericValue):
         """
         return self.negate()
 
-    @staticmethod
-    def __negate_op__():
-        return ops.Not
+    def negate(self) -> BooleanValue:
+        """Negate a boolean expression.
+
+        Returns
+        -------
+        BooleanValue
+            A boolean value expression
+
+        Examples
+        --------
+        >>> import ibis
+        >>> ibis.options.interactive = True
+        >>> t = ibis.memtable({"values": [True, False, False, None]})
+        >>> t.values.negate()
+        ┏━━━━━━━━━━━━━┓
+        ┃ Not(values) ┃
+        ┡━━━━━━━━━━━━━┩
+        │ boolean     │
+        ├─────────────┤
+        │ False       │
+        │ True        │
+        │ True        │
+        │ NULL        │
+        └─────────────┘
+        """
+        return ops.Not(self).to_expr()
 
 
 @public
