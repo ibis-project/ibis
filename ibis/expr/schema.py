@@ -229,7 +229,7 @@ def schema(value: Any) -> Schema:
 
 
 @lazy_singledispatch
-def infer(value: Any, schema=None) -> Schema:
+def infer(value: Any) -> Schema:
     """Infer the corresponding ibis schema for a python object."""
     raise InputTypeError(value)
 
@@ -269,28 +269,25 @@ def from_pyarrow_schema(schema):
 
 
 @infer.register("pandas.DataFrame")
-def infer_pandas_dataframe(df, schema=None):
+def infer_pandas_dataframe(df):
     from ibis.formats.pandas import PandasData
 
-    return PandasData.infer_table(df, schema)
+    return PandasData.infer_table(df)
 
 
-# TODO(kszucs): do we really need the schema kwarg?
 @infer.register("pyarrow.Table")
-def infer_pyarrow_table(table, schema=None):
+def infer_pyarrow_table(table):
     from ibis.formats.pyarrow import PyArrowSchema
 
-    schema = schema if schema is not None else table.schema
-    return PyArrowSchema.to_ibis(schema)
+    return PyArrowSchema.to_ibis(table.schema)
 
 
 @infer.register("polars.DataFrame")
 @infer.register("polars.LazyFrame")
-def infer_polars_dataframe(df, schema=None):
+def infer_polars_dataframe(df):
     from ibis.formats.polars import PolarsSchema
 
-    schema = schema if schema is not None else df.schema
-    return PolarsSchema.to_ibis(schema)
+    return PolarsSchema.to_ibis(df.schema)
 
 
 # lock the dispatchers to avoid adding new implementations
