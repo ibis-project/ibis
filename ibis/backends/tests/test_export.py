@@ -11,7 +11,6 @@ import ibis.expr.datatypes as dt
 from ibis import util
 from ibis.backends.tests.errors import (
     DuckDBNotImplementedException,
-    DuckDBParserException,
     ExaQueryError,
     MySQLOperationalError,
     OracleDatabaseError,
@@ -309,7 +308,7 @@ def test_table_to_csv(tmp_path, backend, awards_players):
 @pytest.mark.notimpl(
     ["duckdb"],
     reason="cannot inline WriteOptions objects",
-    raises=DuckDBParserException,
+    raises=RuntimeError,
 )
 @pytest.mark.parametrize("delimiter", [";", "\t"], ids=["semicolon", "tab"])
 def test_table_to_csv_writer_kwargs(delimiter, tmp_path, awards_players):
