@@ -582,7 +582,7 @@ if __name__ == "__main__":
         w = not False
         yyz = None
         print(yyz)  # noqa: T201
-        foobar = x < y < z < w  # x < y and y < z
+        foobar = x < y < z < w  # x < y and y < z and z < w
         foobar = 1
         baz = foobar // 3
         console.log(baz)  # noqa: F821

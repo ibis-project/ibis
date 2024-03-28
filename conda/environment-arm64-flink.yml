@@ -3,7 +3,7 @@ channels:
   - conda-forge
 dependencies:
   # runtime dependencies
-  - python =3.10
+  - python =3.11
   - atpublic >=2.3
   - bidict >=0.22.1
   - clickhouse-connect >=0.5.23
@@ -91,8 +91,8 @@ dependencies:
   - taplo
   - tqdm >=4.66.1
   - just
-  # needed for apache-flink=1.18.0
+  # needed for apache-flink >=1.18.0
   - py4j =0.10.9.7
   - pip
   - pip:
-      - apache-flink>=1.18.1
+      - apache-flink >=1.19.0

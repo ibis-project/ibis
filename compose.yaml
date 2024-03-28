@@ -379,7 +379,13 @@ services:
       - exasol:/data
 
   flink-jobmanager:
-    image: flink:${FLINK_VERSION}
+    image: ibis-flink-${FLINK_VERSION}:python${PYTHON_VERSION}
+    build:
+      context: ./docker/flink
+      args:
+        FLINK_VERSION: ${FLINK_VERSION}
+        GPG_KEY: ${GPG_KEY}
+        PYTHON_VERSION: ${PYTHON_VERSION}
     environment:
       FLINK_PROPERTIES: |
         jobmanager.rpc.address: flink-jobmanager
@@ -390,11 +396,13 @@ services:
       - flink
 
   flink:
-    image: ibis-flink-${FLINK_VERSION}
+    image: ibis-flink-${FLINK_VERSION}:python${PYTHON_VERSION}
     build:
       context: ./docker/flink
       args:
         FLINK_VERSION: ${FLINK_VERSION}
+        GPG_KEY: ${GPG_KEY}
+        PYTHON_VERSION: ${PYTHON_VERSION}
     environment:
       FLINK_PROPERTIES: |
         jobmanager.rpc.address: flink-jobmanager
