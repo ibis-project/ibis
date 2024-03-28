@@ -163,7 +163,7 @@ def dereference_mapping(parents):
                 while isinstance(v, ops.Field) and v not in mapping:
                     mapping[v] = ops.Field(parent, k)
                     v = v.rel.values.get(v.name)
-            elif v.relations and v not in mapping:
+            elif v not in mapping:
                 # do not dereference literal expressions
                 mapping[v] = ops.Field(parent, k)
 

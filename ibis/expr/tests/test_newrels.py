@@ -499,6 +499,26 @@ def test_subsequent_filter():
     assert f2.op() == expected
 
 
+def test_project_dereferences_literal_expressions():
+    one = ibis.literal(1)
+    two = ibis.literal(2)
+    four = (one + one) * two
+    t1 = t.mutate(four=four)
+    assert t1.op() == Project(
+        parent=t,
+        values={
+            "bool_col": t.bool_col,
+            "int_col": t.int_col,
+            "float_col": t.float_col,
+            "string_col": t.string_col,
+            "four": four,
+        },
+    )
+
+    t2 = t1.select(four)
+    assert t2.op() == Project(parent=t1, values={four.get_name(): t1.four})
+
+
 def test_project_before_and_after_filter():
     t1 = t.select(
         bool_col=~t.bool_col, int_col=t.int_col + 1, float_col=t.float_col * 3
