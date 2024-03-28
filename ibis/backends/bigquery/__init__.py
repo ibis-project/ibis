@@ -1038,7 +1038,7 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
 
         column_defs = [
             sge.ColumnDef(
-                this=name,
+                this=sg.to_identifier(name, quoted=self.compiler.quoted),
                 kind=BigQueryType.from_ibis(typ),
                 constraints=(
                     None
@@ -1150,7 +1150,7 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
 
         signature = [
             sge.ColumnDef(
-                this=sg.to_identifier(name),
+                this=sg.to_identifier(name, quoted=self.compiler.quoted),
                 kind=type_mapper.from_ibis(param.annotation.pattern.dtype),
             )
             for name, param in udf_node.__signature__.parameters.items()

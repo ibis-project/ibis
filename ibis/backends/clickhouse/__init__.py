@@ -652,7 +652,7 @@ class Backend(SQLBackend, CanCreateDatabase):
             this=sg.table(name, db=database),
             expressions=[
                 sge.ColumnDef(
-                    this=sg.to_identifier(name),
+                    this=sg.to_identifier(name, quoted=self.compiler.quoted),
                     kind=self.compiler.type_mapper.from_ibis(typ),
                 )
                 for name, typ in schema.items()
