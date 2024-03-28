@@ -93,7 +93,7 @@ class StringValue(Value):
         if isinstance(key, slice):
             start, stop, step = key.start, key.stop, key.step
 
-            if step is not None and not isinstance(step, ir.Expr) and step != 1:
+            if isinstance(step, ir.Expr) or (step is not None and step != 1):
                 raise ValueError("Step can only be 1")
 
             if not isinstance(start, ir.Expr):

@@ -437,6 +437,18 @@ def test_cast_same_type_noop(table):
     assert i.cast("int8") is i
 
 
+def test_string_slice_step(table):
+    s = ibis.literal("abcde")
+    s[1:3]
+    s[1:3:1]
+    with pytest.raises(ValueError):
+        s[1:3:2]
+    with pytest.raises(ValueError):
+        s[1 : 3 : ibis.literal(1)]
+    with pytest.raises(ValueError):
+        s[1 : 3 : ibis.literal(2)]
+
+
 @pytest.mark.parametrize("type", ["int8", "int32", "double", "float32"])
 def test_string_to_number(table, type):
     casted = table.g.cast(type)
