@@ -146,7 +146,7 @@ class WindowBuilder(Builder):
     start: Optional[RangeWindowBoundary] = None
     end: Optional[RangeWindowBoundary] = None
     groupings: VarTuple[Union[str, Resolver, ops.Value]] = ()
-    orderings: VarTuple[Union[str, Resolver, ops.Value]] = ()
+    orderings: VarTuple[Union[str, Resolver, ops.SortKey]] = ()
 
     @attribute
     def _table(self):
@@ -225,42 +225,18 @@ class WindowBuilder(Builder):
     def order_by(self, expr) -> Self:
         return self.copy(orderings=self.orderings + util.promote_tuple(expr))
 
-    @annotated
-    def bind(self, table: Optional[ops.Relation]):
-        table = table or self._table
+    def bind(self, table):
+        from ibis.expr.types.relations import bind
+
         if table is None:
-            raise IbisInputError("Unable to bind window frame to a table")
-
-        table = table.to_expr()
-
-        def bind_value(value):
-            if isinstance(value, str):
-                return table._get_column(value)
-            elif isinstance(value, Resolver):
-                return value.resolve({"_": table})
+            if self._table is None:
+                raise IbisInputError("Cannot bind window frame without a table")
             else:
-                return value
+                table = self._table.to_expr()
 
-        groupings = map(bind_value, self.groupings)
-        orderings = map(bind_value, self.orderings)
-        if self.how == "rows":
-            return ops.RowsWindowFrame(
-                table=table,
-                start=self.start,
-                end=self.end,
-                group_by=groupings,
-                order_by=orderings,
-            )
-        elif self.how == "range":
-            return ops.RangeWindowFrame(
-                table=table,
-                start=self.start,
-                end=self.end,
-                group_by=groupings,
-                order_by=orderings,
-            )
-        else:
-            raise ValueError(f"Unsupported `{self.how}` window type")
+        grouping = bind(table, self.groupings)
+        orderings = bind(table, self.orderings)
+        return self.copy(groupings=grouping, orderings=orderings)
 
 
 class LegacyWindowBuilder(WindowBuilder):

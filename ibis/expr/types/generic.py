@@ -723,7 +723,7 @@ class Value(Expr):
             A window function expression
 
         """
-        node = self.op()
+
         if window is None:
             window = ibis.window(
                 rows=rows,
@@ -734,17 +734,18 @@ class Value(Expr):
         elif not isinstance(window, bl.WindowBuilder):
             raise com.IbisTypeError("Unexpected window type: {window!r}")
 
+        node = self.op()
         if len(node.relations) == 0:
             table = None
         elif len(node.relations) == 1:
             (table,) = node.relations
+            table = table.to_expr()
         else:
             raise com.RelationError("Cannot use window with multiple tables")
 
         @deferrable
         def bind(table):
-            frame = window.bind(table)
-            winfunc = rewrite_window_input(node, frame)
+            winfunc = rewrite_window_input(node, window.bind(table))
             if winfunc == node:
                 raise com.IbisTypeError(
                     "No reduction or analytic function found to construct a window expression"

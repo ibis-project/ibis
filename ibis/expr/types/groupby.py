@@ -201,13 +201,9 @@ class GroupedTable(Concrete):
         [`GroupedTable.mutate`](#ibis.expr.types.groupby.GroupedTable.mutate)
         """
         table = self.table.to_expr()
-        frame = ops.RowsWindowFrame(
-            table=self.table,
-            group_by=self.groupings,
-            order_by=self.orderings,
-        )
         values = bind(table, (exprs, kwexprs))
-        return [rewrite_window_input(expr.op(), frame).to_expr() for expr in values]
+        window = ibis.window(group_by=self.groupings, order_by=self.orderings)
+        return [rewrite_window_input(expr.op(), window).to_expr() for expr in values]
 
     projection = select
 
