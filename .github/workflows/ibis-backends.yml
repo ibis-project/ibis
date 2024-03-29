@@ -71,6 +71,10 @@ jobs:
       - name: install ibis
         run: poetry install --without dev --without docs --extras bigquery
 
+      - uses: extractions/setup-just@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
       - name: run simple bigquery unit tests
         run: just ci-check ibis/backends/bigquery/tests/unit
 
