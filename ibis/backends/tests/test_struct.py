@@ -1,20 +1,25 @@
 from __future__ import annotations
 
+import contextlib
 from collections.abc import Mapping
 
 import numpy as np
 import pandas as pd
 import pandas.testing as tm
 import pytest
+import sqlglot as sg
 from pytest import param
 
 import ibis
 import ibis.expr.datatypes as dt
+from ibis import util
 from ibis.backends.tests.errors import (
+    ClickHouseDatabaseError,
     PsycoPg2InternalError,
     PsycoPg2SyntaxError,
     Py4JJavaError,
 )
+from ibis.common.exceptions import IbisError
 
 pytestmark = [
     pytest.mark.never(["mysql", "sqlite", "mssql"], reason="No struct support"),
@@ -145,3 +150,87 @@ def test_field_access_after_case(con):
     x = ibis.case().when(True, s).else_(ibis.struct({"a": 4})).end()
     y = x.a
     assert con.to_pandas(y) == 3
+
+
+@pytest.mark.notimpl(
+    ["postgres"], reason="struct literals not implemented", raises=PsycoPg2SyntaxError
+)
+@pytest.mark.notimpl(["flink"], raises=IbisError, reason="not implemented in ibis")
+@pytest.mark.parametrize(
+    "nullable",
+    [
+        param(
+            True,
+            marks=[
+                pytest.mark.notyet(
+                    ["clickhouse"],
+                    raises=ClickHouseDatabaseError,
+                    reason="ClickHouse doesn't support nested nullable types",
+                )
+            ],
+            id="nullable",
+        ),
+        param(
+            False,
+            marks=[
+                pytest.mark.notyet(
+                    ["clickhouse"],
+                    raises=sg.ParseError,
+                    reason="sqlglot fails to parse",
+                ),
+                pytest.mark.notyet(
+                    ["polars"],
+                    raises=AssertionError,
+                    reason="polars doesn't support non-nullable types",
+                ),
+                pytest.mark.notyet(
+                    ["risingwave"],
+                    reason="non-nullable struct types not implemented",
+                    raises=PsycoPg2InternalError,
+                ),
+                pytest.mark.notimpl(
+                    ["pyspark"],
+                    raises=AssertionError,
+                    reason="non-nullable struct types not yet implemented in Ibis's PySpark backend",
+                ),
+            ],
+            id="non-nullable",
+        ),
+    ],
+)
+@pytest.mark.broken(
+    ["trino"],
+    raises=sg.ParseError,
+    reason="trino returns unquoted and therefore unparsable struct field names",
+)
+@pytest.mark.notyet(
+    ["snowflake"],
+    raises=AssertionError,
+    reason="snowflake doesn't have strongly typed structs",
+)
+def test_keyword_fields(con, nullable):
+    schema = ibis.schema(
+        {
+            "struct": dt.Struct(
+                {
+                    "select": "int",
+                    "from": "int",
+                    "where": "int",
+                    "order": "int",
+                    "left join": "int",
+                    "full outer join": "int",
+                },
+                nullable=nullable,
+            )
+        }
+    )
+
+    name = util.gen_name("struct_keywords")
+    t = con.create_table(name, schema=schema)
+
+    try:
+        assert t.schema() == schema
+        assert t.count().execute() == 0
+    finally:
+        with contextlib.suppress(NotImplementedError):
+            con.drop_table(name, force=True)
