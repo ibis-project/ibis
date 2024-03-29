@@ -28,7 +28,7 @@ from ibis.backends.bigquery.datatypes import BigQueryType
             dt.Struct.from_tuples(
                 [("a", dt.int64), ("b", dt.string), ("c", dt.Array(dt.string))]
             ),
-            "STRUCT<a INT64, b STRING, c ARRAY<STRING>>",
+            "STRUCT<`a` INT64, `b` STRING, `c` ARRAY<STRING>>",
             id="struct",
         ),
         param(dt.date, "DATE", id="date"),
@@ -48,7 +48,7 @@ from ibis.backends.bigquery.datatypes import BigQueryType
         ),
         param(
             dt.Array(dt.Struct({"a": dt.string})),
-            "ARRAY<STRUCT<a STRING>>",
+            "ARRAY<STRUCT<`a` STRING>>",
             id="array<struct>",
         ),
         param(dt.Decimal(38, 9), "NUMERIC", id="decimal-numeric"),
@@ -77,7 +77,7 @@ def test_simple_failure_mode(datatype):
         BigQueryType.to_string(datatype)
 
 
-def test_struct_type():
+def test_array_type():
     dtype = dt.Array(dt.int64)
     parsed_type = sg.parse_one("BIGINT[]", into=sg.exp.DataType, read="duckdb")
 
