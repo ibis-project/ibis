@@ -379,6 +379,25 @@ def test_format_in_memory_table(snapshot):
     snapshot.assert_match(result, "repr.txt")
 
 
+def test_format_unbound_table_namespace(snapshot):
+    t = ibis.table(name="bork", schema=(("a", "int"), ("b", "int")))
+
+    result = fmt(t)
+    snapshot.assert_match(result, "repr.txt")
+
+    t = ibis.table(name="bork", schema=(("a", "int"), ("b", "int")), database="bork")
+
+    result = fmt(t)
+    snapshot.assert_match(result, "reprdb.txt")
+
+    t = ibis.table(
+        name="bork", schema=(("a", "int"), ("b", "int")), catalog="ork", database="bork"
+    )
+
+    result = fmt(t)
+    snapshot.assert_match(result, "reprcatdb.txt")
+
+
 def test_format_new_relational_operation(alltypes, snapshot):
     class MyRelation(ops.Relation):
         parent: ops.Relation

@@ -87,6 +87,24 @@ export PGPASSWORD=postgres
 psql -t -A -h localhost -U postgres -d ibis_testing -c "select 'success'"
 ```
 
+#### Adding appropriate tests
+
+If you pull request involves a new feature, you should add appropriate tests to cover
+all ordinary and edge cases.
+
+Pytest markers can be used to assert that a test should fail or raise a specific error.
+We use a number of pytest markers in ibis:
+
+- `pytest.mark.notimpl`: the backend can do a thing, we haven't mapped the op
+- `pytest.mark.notyet`: the backend cannot do a thing, but might in the future
+- `pytest.mark.never`: the backend will never support this / pass this test (common example
+here is a test running on sqlite that relies on strong typing)
+- `pytest.mark.broken`: this test broke and it's demonstrably unrelated to the PR I'm working
+on and fixing it shouldn't block this PR from going in (but we should fix it up pronto)
+
+Refrain from using a generic marker like `pytest.mark.xfail`.
+
+
 ### Writing the commit
 
 Ibis follows the [Conventional Commits](https://www.conventionalcommits.org/) structure.

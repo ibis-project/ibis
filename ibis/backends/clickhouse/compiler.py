@@ -225,9 +225,9 @@ class ClickHouseCompiler(SQLGlotCompiler):
             )
 
         if start is not None:
-            return self.f.locate(arg, substr, start)
+            return self.f.position(arg, substr, start)
 
-        return self.f.locate(arg, substr)
+        return self.f.position(arg, substr)
 
     def visit_RegexSearch(self, op, *, arg, pattern):
         return sge.RegexpLike(this=arg, expression=pattern)
@@ -478,7 +478,7 @@ class ClickHouseCompiler(SQLGlotCompiler):
         return self.f.repeat(arg, self.f.accurateCast(times, "UInt64"))
 
     def visit_StringContains(self, op, haystack, needle):
-        return self.f.locate(haystack, needle) > 0
+        return self.f.position(haystack, needle) > 0
 
     def visit_DayOfWeekIndex(self, op, *, arg):
         weekdays = len(calendar.day_name)

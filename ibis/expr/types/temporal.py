@@ -939,19 +939,9 @@ class IntervalValue(Value):
         IntervalValue
             A negated interval value expression
         """
-        op = self.op()
-        if hasattr(op, "negate"):
-            result = op.negate()
-        else:
-            result = ops.Negate(self)
-
-        return result.to_expr()
+        return ops.Negate(self).to_expr()
 
     __neg__ = negate
-
-    @staticmethod
-    def __negate_op__():
-        return ops.Negate
 
 
 @public

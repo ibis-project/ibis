@@ -10,10 +10,9 @@ from ibis.common.dispatch import lazy_singledispatch
 from ibis.common.exceptions import InputTypeError, IntegrityError
 from ibis.common.grounds import Concrete
 from ibis.common.patterns import Coercible
-from ibis.util import deprecated, indent
+from ibis.util import indent
 
 if TYPE_CHECKING:
-    import pandas as pd
     from typing_extensions import TypeAlias
 
 
@@ -163,11 +162,6 @@ class Schema(Concrete, Coercible, MapSet):
 
         return PolarsSchema.to_ibis(polars_schema)
 
-    @classmethod
-    def from_dask(cls, dask_schema):
-        """Return the equivalent ibis schema."""
-        return cls.from_pandas(dask_schema)
-
     def to_numpy(self):
         """Return the equivalent numpy dtypes."""
         from ibis.formats.numpy import NumpySchema
@@ -191,10 +185,6 @@ class Schema(Concrete, Coercible, MapSet):
         from ibis.formats.polars import PolarsSchema
 
         return PolarsSchema.from_ibis(self)
-
-    def to_dask(self):
-        """Return the equivalent dask dtypes."""
-        return self.to_pandas()
 
     def as_struct(self) -> dt.Struct:
         return dt.Struct(self)
@@ -224,15 +214,6 @@ class Schema(Concrete, Coercible, MapSet):
         """
         return self.names[i]
 
-    @deprecated(
-        as_of="6.0",
-        instead="use ibis.formats.pandas.PandasConverter.convert_frame() instead",
-    )
-    def apply_to(self, df: pd.DataFrame) -> pd.DataFrame:
-        from ibis.formats.pandas import PandasData
-
-        return PandasData.convert_table(df, self)
-
 
 SchemaLike: TypeAlias = Union[
     Schema,
@@ -248,7 +229,7 @@ def schema(value: Any) -> Schema:
 
 
 @lazy_singledispatch
-def infer(value: Any, schema=None) -> Schema:
+def infer(value: Any) -> Schema:
     """Infer the corresponding ibis schema for a python object."""
     raise InputTypeError(value)
 
@@ -288,28 +269,25 @@ def from_pyarrow_schema(schema):
 
 
 @infer.register("pandas.DataFrame")
-def infer_pandas_dataframe(df, schema=None):
+def infer_pandas_dataframe(df):
     from ibis.formats.pandas import PandasData
 
-    return PandasData.infer_table(df, schema)
+    return PandasData.infer_table(df)
 
 
-# TODO(kszucs): do we really need the schema kwarg?
 @infer.register("pyarrow.Table")
-def infer_pyarrow_table(table, schema=None):
+def infer_pyarrow_table(table):
     from ibis.formats.pyarrow import PyArrowSchema
 
-    schema = schema if schema is not None else table.schema
-    return PyArrowSchema.to_ibis(schema)
+    return PyArrowSchema.to_ibis(table.schema)
 
 
 @infer.register("polars.DataFrame")
 @infer.register("polars.LazyFrame")
-def infer_polars_dataframe(df, schema=None):
+def infer_polars_dataframe(df):
     from ibis.formats.polars import PolarsSchema
 
-    schema = schema if schema is not None else df.schema
-    return PolarsSchema.to_ibis(schema)
+    return PolarsSchema.to_ibis(df.schema)
 
 
 # lock the dispatchers to avoid adding new implementations
