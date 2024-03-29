@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# shellcheck disable=all
 
 ###############################################################################
 #  Licensed to the Apache Software Foundation (ASF) under one
