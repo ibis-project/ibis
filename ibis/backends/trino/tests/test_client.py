@@ -61,11 +61,11 @@ def test_hive_table_overwrite(tmp_name):
 
 
 def test_list_catalogs(con):
-    assert {"hive", "memory", "system", "tpch", "tpcds"}.issubset(con.list_databases())
+    assert {"hive", "memory", "system", "tpch", "tpcds"}.issubset(con.list_catalogs())
 
 
-def test_list_schemas(con):
-    assert {"information_schema", "sf1"}.issubset(con.list_schemas(database="tpch"))
+def test_list_databases(con):
+    assert {"information_schema", "sf1"}.issubset(con.list_databases(catalog="tpch"))
 
 
 @pytest.mark.parametrize(("source", "expected"), [(None, "ibis"), ("foo", "foo")])
@@ -83,7 +83,7 @@ def test_con_source(source, expected):
 
 
 @pytest.mark.parametrize(
-    ("database", "schema", "table"),
+    ("catalog", "database", "table"),
     [
         # tables known to exist
         ("system", "metadata", "table_comments"),
@@ -91,8 +91,8 @@ def test_con_source(source, expected):
         ("tpch", "sf1", "nation"),
     ],
 )
-def test_cross_schema_table_access(con, database, schema, table):
-    t = con.table(table, schema=schema, database=database)
+def test_cross_schema_table_access(con, catalog, database, table):
+    t = con.table(table, database=(catalog, database))
     assert t.count().execute()
 
 
@@ -149,13 +149,37 @@ def test_create_table_timestamp():
 
 
 def test_table_access_database_schema(con):
-    t = con.table("region", schema="sf1", database="tpch")
+    t = con.table("region", database=("tpch", "sf1"))
     assert t.count().execute()
 
     with pytest.raises(exc.IbisError, match='Table not found: tpch."tpch.sf1".region'):
-        con.table("region", schema="tpch.sf1", database="tpch")
+        con.table("region", database=("tpch", "tpch.sf1"))
 
-    with pytest.raises(
-        exc.IbisError, match='Table not found: system."tpch.sf1".region'
-    ):
-        con.table("region", schema="tpch.sf1", database="system")
+    with pytest.raises(exc.IbisError, match="Overspecified table hierarchy provided"):
+        con.table("region", database="system.tpch.sf1")
+
+
+def test_list_tables_schema_warning_refactor(con):
+    tpch_tables = [
+        "customer",
+        "lineitem",
+        "nation",
+        "orders",
+        "part",
+        "partsupp",
+        "region",
+        "supplier",
+    ]
+
+    assert con.list_tables()
+
+    # Error if user mixes tuple inputs and string inputs for database and schema
+    with pytest.raises(FutureWarning):
+        with pytest.raises(exc.IbisInputError):
+            con.list_tables(database=("tuple", "ohstuff"), schema="str")
+
+    with pytest.warns(FutureWarning):
+        assert con.list_tables(database="tpch", schema="sf1") == tpch_tables
+
+    assert con.list_tables(database="tpch.sf1") == tpch_tables
+    assert con.list_tables(database=("tpch", "sf1")) == tpch_tables

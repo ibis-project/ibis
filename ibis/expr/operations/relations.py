@@ -313,8 +313,8 @@ class PhysicalTable(Relation):
 
 @public
 class Namespace(Concrete):
+    catalog: Optional[str] = None
     database: Optional[str] = None
-    schema: Optional[str] = None
 
 
 @public

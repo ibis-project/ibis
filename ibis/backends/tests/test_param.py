@@ -85,7 +85,6 @@ def test_scalar_param_array(con):
     ["mysql", "sqlite", "mssql"],
     reason="mysql and sqlite will never implement struct types",
 )
-@pytest.mark.notimpl(["flink"], "WIP")
 def test_scalar_param_struct(con):
     value = dict(a=1, b="abc", c=3.0)
     param = ibis.param("struct<a: int64, b: string, c: float64>")

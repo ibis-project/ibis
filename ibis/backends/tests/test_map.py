@@ -240,7 +240,11 @@ keys = pytest.mark.parametrize(
                 ),
                 pytest.mark.notyet(["pandas", "dask"]),
                 mark_notyet_postgres,
-                pytest.mark.notimpl("flink"),
+                pytest.mark.notyet(
+                    ["flink"],
+                    raises=Py4JJavaError,
+                    reason="does not support selecting struct key from map",
+                ),
                 mark_notyet_snowflake,
             ],
             id="struct",
@@ -304,7 +308,6 @@ values = pytest.mark.parametrize(
             marks=[
                 pytest.mark.notyet("clickhouse", reason="nested types can't be null"),
                 mark_notyet_postgres,
-                pytest.mark.notimpl("flink", reason="can't construct structs"),
             ],
             id="struct",
         ),

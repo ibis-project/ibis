@@ -19,11 +19,6 @@ if TYPE_CHECKING:
 
 @public
 class NumericValue(Value):
-    @staticmethod
-    def __negate_op__():
-        # TODO(kszucs): do we need this?
-        return ops.Negate
-
     def negate(self) -> NumericValue:
         """Negate a numeric expression.
 
@@ -48,14 +43,7 @@ class NumericValue(Value):
         │             -1 │
         └────────────────┘
         """
-        op = self.op()
-        try:
-            result = op.negate()
-        except AttributeError:
-            op_class = self.__negate_op__()
-            result = op_class(self)
-
-        return result.to_expr()
+        return ops.Negate(self).to_expr()
 
     def __neg__(self) -> NumericValue:
         """Negate `self`.

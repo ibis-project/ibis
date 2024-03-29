@@ -422,6 +422,7 @@ jobs:
         uses: codecov/codecov-action@v4
         with:
           flags: backend,${{ matrix.backend.name }},${{ runner.os }},python-${{ steps.install_python.outputs.python-version }}
+          token: ${{ secrets.CODECOV_TOKEN }}
 
       - name: Show docker compose logs on fail
         if: matrix.backend.services != null && failure()
@@ -547,6 +548,7 @@ jobs:
         uses: codecov/codecov-action@v4
         with:
           flags: backend,${{ matrix.backend.name }},${{ runner.os }},python-${{ steps.install_python.outputs.python-version }}
+          token: ${{ secrets.CODECOV_TOKEN }}
 
       - name: Show docker compose logs on fail
         if: matrix.backend.services != null && failure()
@@ -636,6 +638,7 @@ jobs:
         uses: codecov/codecov-action@v4
         with:
           flags: backend,pyspark,${{ runner.os }},python-${{ steps.install_python.outputs.python-version }}
+          token: ${{ secrets.CODECOV_TOKEN }}
 
   backends:
     # this job exists so that we can use a single job from this workflow to gate merging

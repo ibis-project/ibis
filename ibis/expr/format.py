@@ -244,6 +244,14 @@ def _physical_table(op, name, **kwargs):
     return f"{op.__class__.__name__}: {name}\n{schema}"
 
 
+@fmt.register(ops.UnboundTable)
+@fmt.register(ops.DatabaseTable)
+def _unbound_table(op, name, **kwargs):
+    schema = render_schema(op.schema, indent_level=1)
+    name = ".".join(filter(None, op.namespace.args + (name,)))
+    return f"{op.__class__.__name__}: {name}\n{schema}"
+
+
 @fmt.register(ops.InMemoryTable)
 def _in_memory_table(op, data, **kwargs):
     import rich.pretty

@@ -16,7 +16,7 @@ import ibis.common.exceptions as com
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis import util
-from ibis.backends import CanListDatabases, NoUrl
+from ibis.backends import CanCreateDatabase, CanCreateSchema, CanListCatalog, NoUrl
 from ibis.backends.sql import SQLBackend
 from ibis.backends.sql.compiler import C
 from ibis.backends.trino.compiler import TrinoCompiler
@@ -30,7 +30,7 @@ if TYPE_CHECKING:
     import ibis.expr.operations as ops
 
 
-class Backend(SQLBackend, CanListDatabases, NoUrl):
+class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, CanCreateSchema, NoUrl):
     name = "trino"
     compiler = TrinoCompiler()
     supports_create_or_replace = False
@@ -98,7 +98,11 @@ class Backend(SQLBackend, CanListDatabases, NoUrl):
                 cur.close()
 
     def get_schema(
-        self, table_name: str, schema: str | None = None, database: str | None = None
+        self,
+        table_name: str,
+        *,
+        catalog: str | None = None,
+        database: str | None = None,
     ) -> sch.Schema:
         """Compute the schema of a `table`.
 
@@ -107,8 +111,8 @@ class Backend(SQLBackend, CanListDatabases, NoUrl):
         table_name
             May **not** be fully qualified. Use `database` if you want to
             qualify the identifier.
-        schema
-            Schema name
+        catalog
+            Catalog name
         database
             Database name
 
@@ -120,8 +124,8 @@ class Backend(SQLBackend, CanListDatabases, NoUrl):
         """
         conditions = [sg.column("table_name").eq(sge.convert(table_name))]
 
-        if schema is not None:
-            conditions.append(sg.column("table_schema").eq(sge.convert(schema)))
+        if database is not None:
+            conditions.append(sg.column("table_schema").eq(sge.convert(database)))
 
         query = (
             sg.select(
@@ -129,7 +133,7 @@ class Backend(SQLBackend, CanListDatabases, NoUrl):
                 "data_type",
                 sg.column("is_nullable").eq(sge.convert("YES")).as_("nullable"),
             )
-            .from_(sg.table("columns", db="information_schema", catalog=database))
+            .from_(sg.table("columns", db="information_schema", catalog=catalog))
             .where(sg.and_(*conditions))
             .order_by("ordinal_position")
         )
@@ -138,7 +142,7 @@ class Backend(SQLBackend, CanListDatabases, NoUrl):
             meta = cur.fetchall()
 
         if not meta:
-            fqn = sg.table(table_name, db=schema, catalog=database).sql(self.name)
+            fqn = sg.table(table_name, db=database, catalog=catalog).sql(self.name)
             raise com.IbisError(f"Table not found: {fqn}")
 
         return sch.Schema(
@@ -155,42 +159,42 @@ class Backend(SQLBackend, CanListDatabases, NoUrl):
         return version
 
     @property
-    def current_database(self) -> str:
+    def current_catalog(self) -> str:
         with self._safe_raw_sql(sg.select(C.current_catalog)) as cur:
             [(database,)] = cur.fetchall()
         return database
 
     @property
-    def current_schema(self) -> str:
+    def current_database(self) -> str:
         with self._safe_raw_sql(sg.select(C.current_schema)) as cur:
             [(schema,)] = cur.fetchall()
         return schema
 
-    def list_databases(self, like: str | None = None) -> list[str]:
+    def list_catalogs(self, like: str | None = None) -> list[str]:
         query = "SHOW CATALOGS"
         with self._safe_raw_sql(query) as cur:
             catalogs = cur.fetchall()
         return self._filter_with_like(list(map(itemgetter(0), catalogs)), like=like)
 
-    def list_schemas(
-        self, like: str | None = None, database: str | None = None
+    def list_databases(
+        self, like: str | None = None, catalog: str | None = None
     ) -> list[str]:
         query = "SHOW SCHEMAS"
 
-        if database is not None:
-            database = sg.to_identifier(database, quoted=self.compiler.quoted).sql(
+        if catalog is not None:
+            catalog = sg.to_identifier(catalog, quoted=self.compiler.quoted).sql(
                 self.name
             )
-            query += f" IN {database}"
+            query += f" IN {catalog}"
 
         with self._safe_raw_sql(query) as cur:
-            schemata = cur.fetchall()
-        return self._filter_with_like(list(map(itemgetter(0), schemata)), like)
+            databases = cur.fetchall()
+        return self._filter_with_like(list(map(itemgetter(0), databases)), like)
 
     def list_tables(
         self,
         like: str | None = None,
-        database: str | None = None,
+        database: tuple[str, str] | str | None = None,
         schema: str | None = None,
     ) -> list[str]:
         """List the tables in the database.
@@ -200,31 +204,24 @@ class Backend(SQLBackend, CanListDatabases, NoUrl):
         like
             A pattern to use for listing tables.
         database
-            The database (catalog) to perform the list against.
+            The database location to perform the list against.
+
+            By default uses the current `database` (`self.current_database`) and
+            `catalog` (`self.current_catalog`).
+
+            To specify a table in a separate catalog, you can pass in the
+            catalog and database as a string `"catalog.database"`, or as a tuple of
+            strings `("catalog", "database")`.
         schema
-            The schema inside `database` to perform the list against.
-
-            ::: {.callout-warning}
-            ## `schema` refers to database hierarchy
-
-            The `schema` parameter does **not** refer to the column names and
-            types of `table`.
-            :::
-
+            [deprecated] The schema inside `database` to perform the list against.
         """
+        table_loc = self._warn_and_create_table_loc(database, schema)
+
         query = "SHOW TABLES"
 
-        if database is not None and schema is None:
-            raise com.IbisInputError(
-                f"{self.name} cannot list tables only using `database` specifier. "
-                "Include a `schema` argument."
-            )
-        elif database is None and schema is not None:
-            database = sg.parse_one(schema, into=sg.exp.Table).sql(dialect=self.name)
-        else:
-            database = sg.table(schema, db=database).sql(dialect=self.name) or None
-        if database is not None:
-            query += f" IN {database}"
+        if table_loc is not None:
+            table_loc = table_loc.sql(dialect=self.dialect)
+            query += f" IN {table_loc}"
 
         with self._safe_raw_sql(query) as cur:
             tables = cur.fetchall()
@@ -319,24 +316,24 @@ class Backend(SQLBackend, CanListDatabases, NoUrl):
             }
         )
 
-    def create_schema(
-        self, name: str, database: str | None = None, force: bool = False
+    def create_database(
+        self, name: str, catalog: str | None = None, force: bool = False
     ) -> None:
         with self._safe_raw_sql(
             sge.Create(
-                this=sg.table(name, catalog=database, quoted=self.compiler.quoted),
+                this=sg.table(name, catalog=catalog, quoted=self.compiler.quoted),
                 kind="SCHEMA",
                 exists=force,
             )
         ):
             pass
 
-    def drop_schema(
-        self, name: str, database: str | None = None, force: bool = False
+    def drop_database(
+        self, name: str, catalog: str | None = None, force: bool = False
     ) -> None:
         with self._safe_raw_sql(
             sge.Drop(
-                this=sg.table(name, catalog=database, quoted=self.compiler.quoted),
+                this=sg.table(name, catalog=catalog, quoted=self.compiler.quoted),
                 kind="SCHEMA",
                 exists=force,
             )

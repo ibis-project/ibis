@@ -7,7 +7,7 @@ import json
 from typing import TYPE_CHECKING, Any
 from urllib.parse import parse_qs, urlparse
 
-import pydruid
+import pydruid.db
 import sqlglot as sg
 
 import ibis.common.exceptions as com
@@ -115,11 +115,15 @@ class Backend(SQLBackend):
         return sch.Schema(schema)
 
     def get_schema(
-        self, table_name: str, schema: str | None = None, database: str | None = None
+        self,
+        table_name: str,
+        *,
+        catalog: str | None = None,
+        database: str | None = None,
     ) -> sch.Schema:
         return self._get_schema_using_query(
             sg.select(STAR)
-            .from_(sg.table(table_name, db=schema, catalog=database))
+            .from_(sg.table(table_name, db=database, catalog=catalog))
             .sql(self.dialect)
         )
 
@@ -157,6 +161,16 @@ class Backend(SQLBackend):
     def list_tables(
         self, like: str | None = None, database: str | None = None
     ) -> list[str]:
+        """List the tables in the database.
+
+        Parameters
+        ----------
+        like
+            A pattern to use for listing tables.
+        database
+            Database to list tables from. Default behavior is to show tables in
+            the current database.
+        """
         t = sg.table("TABLES", db="INFORMATION_SCHEMA", quoted=True)
         c = self.compiler
         query = sg.select(sg.column("TABLE_NAME", quoted=True)).from_(t).sql(c.dialect)

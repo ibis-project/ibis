@@ -78,11 +78,13 @@ def test_cross_db(tmpdir):
 
     con2.attach(path1, name="test1", read_only=True)
 
-    t1_from_con2 = con2.table("t1", schema="main", database="test1")
+    with pytest.warns(FutureWarning):
+        t1_from_con2 = con2.table("t1", schema="main", database="test1")
     assert t1_from_con2.schema() == t2.schema()
     assert t1_from_con2.execute().equals(t2.execute())
 
-    foo_t1_from_con2 = con2.table("t1", schema="foo", database="test1")
+    with pytest.warns(FutureWarning):
+        foo_t1_from_con2 = con2.table("t1", schema="foo", database="test1")
     assert foo_t1_from_con2.schema() == t2.schema()
     assert foo_t1_from_con2.execute().equals(t2.execute())
 
@@ -97,23 +99,23 @@ def test_attach_detach(tmpdir):
 
     # default name
     name = "test1"
-    assert name not in con2.list_databases()
+    assert name not in con2.list_catalogs()
 
     con2.attach(path1)
-    assert name in con2.list_databases()
+    assert name in con2.list_catalogs()
 
     con2.detach(name)
-    assert name not in con2.list_databases()
+    assert name not in con2.list_catalogs()
 
     # passed-in name
     name = "test_foo"
-    assert name not in con2.list_databases()
+    assert name not in con2.list_catalogs()
 
     con2.attach(path1, name=name)
-    assert name in con2.list_databases()
+    assert name in con2.list_catalogs()
 
     con2.detach(name)
-    assert name not in con2.list_databases()
+    assert name not in con2.list_catalogs()
 
     with pytest.raises(duckdb.BinderException):
         con2.detach(name)
@@ -276,3 +278,22 @@ def test_invalid_connect(tmp_path):
     url = f"duckdb://{tmp_path}?read_only=invalid_value"
     with pytest.raises(ValueError):
         ibis.connect(url)
+
+
+def test_list_tables_schema_warning_refactor(con):
+    assert {
+        "astronauts",
+        "awards_players",
+        "batting",
+        "diamonds",
+        "functional_alltypes",
+        "win",
+    }.issubset(con.list_tables())
+
+    icecream_table = ["ice_cream"]
+
+    with pytest.warns(FutureWarning):
+        assert con.list_tables(schema="shops") == icecream_table
+
+    assert con.list_tables(database="shops") == icecream_table
+    assert con.list_tables(database=("shops",)) == icecream_table

@@ -669,7 +669,7 @@ def test_snowflake_medium_sized_to_pandas(benchmark):
     # to make the benchmark fast enough for development, yet large enough to show a
     # difference if there's a performance hit
     lineitem = con.table(
-        "LINEITEM", schema="TPCH_SF1", database="SNOWFLAKE_SAMPLE_DATA"
+        "LINEITEM", database=("SNOWFLAKE_SAMPLE_DATA", "TPCH_SF1")
     ).limit(1_000_000)
 
     benchmark.pedantic(lineitem.to_pandas, rounds=5, iterations=1, warmup_rounds=1)

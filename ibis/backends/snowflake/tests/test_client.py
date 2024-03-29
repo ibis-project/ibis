@@ -16,44 +16,46 @@ from ibis.util import gen_name
 
 
 @pytest.fixture
-def temp_db(con):
-    db = gen_name("tmp_db")
+def temp_catalog(con):
+    cat = gen_name("tmp_catalog")
 
-    con.create_database(db)
-    assert db in con.list_databases()
+    con.create_catalog(cat)
+    assert cat in con.list_catalogs()
 
-    yield db
+    yield cat
 
-    con.drop_database(db)
-    assert db not in con.list_databases()
+    con.drop_catalog(cat)
+    assert cat not in con.list_catalogs()
 
 
 @pytest.fixture
-def temp_schema(con, temp_db):
-    schema = gen_name("tmp_schema")
+def temp_db(con, temp_catalog):
+    database = gen_name("tmp_database")
 
-    con.create_schema(schema, database=temp_db)
-    assert schema in con.list_schemas(database=temp_db)
+    con.create_database(database, catalog=temp_catalog)
+    assert database in con.list_databases(catalog=temp_catalog)
 
-    yield schema
+    yield database
 
-    con.drop_schema(schema, database=temp_db)
-    assert schema not in con.list_schemas(database=temp_db)
+    con.drop_database(database, catalog=temp_catalog)
+    assert database not in con.list_databases(catalog=temp_catalog)
 
 
-def test_cross_db_access(con, temp_db, temp_schema):
+def test_cross_db_access(con, temp_catalog, temp_db):
     table = gen_name("tmp_table")
-    con.raw_sql(f'CREATE TABLE "{temp_db}"."{temp_schema}"."{table}" ("x" INT)').close()
-    t = con.table(table, schema=temp_schema, database=temp_db)
+    con.raw_sql(
+        f'CREATE TABLE "{temp_catalog}"."{temp_db}"."{table}" ("x" INT)'
+    ).close()
+    t = con.table(table, database=(temp_catalog, temp_db))
     assert t.schema() == ibis.schema(dict(x="int"))
     assert t.execute().empty
 
 
-def test_cross_db_create_table(con, temp_db, temp_schema):
+def test_cross_db_create_table(con, temp_catalog, temp_db):
     table_name = gen_name("tmp_table")
     data = pd.DataFrame({"key": list("abc"), "value": [[1], [2], [3]]})
-    table = con.create_table(table_name, data, database=f"{temp_db}.{temp_schema}")
-    queried_table = con.table(table_name, database=temp_db, schema=temp_schema)
+    table = con.create_table(table_name, data, database=f"{temp_catalog}.{temp_db}")
+    queried_table = con.table(table_name, database=(temp_catalog, temp_db))
 
     tm.assert_frame_equal(table.execute(), data)
     tm.assert_frame_equal(queried_table.execute(), data)
@@ -108,32 +110,37 @@ def test_timestamp_tz_column(simple_con):
     assert expr.execute().empty
 
 
-def test_create_schema(simple_con):
-    schema = gen_name("test_create_schema")
-
-    cur_schema = simple_con.current_schema
-    cur_db = simple_con.current_database
-
-    simple_con.create_schema(schema)
-
-    assert simple_con.current_schema == cur_schema
-    assert simple_con.current_database == cur_db
-
-    simple_con.drop_schema(schema)
-
-    assert simple_con.current_schema == cur_schema
-    assert simple_con.current_database == cur_db
-
-
 def test_create_database(simple_con):
     database = gen_name("test_create_database")
-    cur_db = simple_con.current_database
+
+    cur_database = simple_con.current_database
+    cur_catalog = simple_con.current_catalog
 
     simple_con.create_database(database)
-    assert simple_con.current_database == cur_db
+
+    assert simple_con.current_database == cur_database
+    assert simple_con.current_catalog == cur_catalog
 
     simple_con.drop_database(database)
-    assert simple_con.current_database == cur_db
+
+    assert simple_con.current_database == cur_database
+    assert simple_con.current_catalog == cur_catalog
+
+
+def test_create_catalog(simple_con):
+    catalog = gen_name("test_create_catalog")
+    cur_catalog = simple_con.current_catalog
+
+    simple_con.create_catalog(catalog)
+    assert simple_con.current_catalog == cur_catalog
+
+    simple_con.drop_catalog(catalog)
+    assert simple_con.current_catalog == cur_catalog
+
+
+@pytest.fixture(scope="session")
+def cat_con():
+    return ibis.connect(_get_url())
 
 
 @pytest.fixture(scope="session")
@@ -141,45 +148,40 @@ def db_con():
     return ibis.connect(_get_url())
 
 
-@pytest.fixture(scope="session")
-def schema_con():
-    return ibis.connect(_get_url())
+def test_drop_current_catalog_not_allowed(cat_con):
+    catalog = gen_name("test_create_catalog")
+    cur_cat = cat_con.current_catalog
+
+    cat_con.create_catalog(catalog)
+
+    assert cat_con.current_catalog == cur_cat
+
+    cat_con.raw_sql(f'USE DATABASE "{catalog}"').close()
+
+    with pytest.raises(com.UnsupportedOperationError, match="behavior is undefined"):
+        cat_con.drop_catalog(catalog)
+
+    cat_con.raw_sql(f'USE DATABASE "{cur_cat}"').close()
+
+    cat_con.drop_catalog(catalog)
 
 
 def test_drop_current_db_not_allowed(db_con):
     database = gen_name("test_create_database")
-    cur_db = db_con.current_database
+    cur_database = db_con.current_database
 
     db_con.create_database(database)
 
-    assert db_con.current_database == cur_db
+    assert db_con.current_database == cur_database
 
-    db_con.raw_sql(f'USE DATABASE "{database}"').close()
+    db_con.raw_sql(f'USE SCHEMA "{database}"').close()
 
     with pytest.raises(com.UnsupportedOperationError, match="behavior is undefined"):
         db_con.drop_database(database)
 
-    db_con.raw_sql(f'USE DATABASE "{cur_db}"').close()
+    db_con.raw_sql(f'USE SCHEMA "{cur_database}"').close()
 
     db_con.drop_database(database)
-
-
-def test_drop_current_schema_not_allowed(schema_con):
-    schema = gen_name("test_create_schema")
-    cur_schema = schema_con.current_schema
-
-    schema_con.create_schema(schema)
-
-    assert schema_con.current_schema == cur_schema
-
-    schema_con.raw_sql(f'USE SCHEMA "{schema}"').close()
-
-    with pytest.raises(com.UnsupportedOperationError, match="behavior is undefined"):
-        schema_con.drop_schema(schema)
-
-    schema_con.raw_sql(f'USE SCHEMA "{cur_schema}"').close()
-
-    schema_con.drop_schema(schema)
 
 
 def test_read_csv_options(con, tmp_path):
@@ -317,3 +319,39 @@ def test_struct_of_json(con):
 
     assert len(result) == n
     assert all(value == raw for value in result.to_pylist())
+
+
+def test_list_tables_schema_warning_refactor(con):
+    assert {
+        "ASTRONAUTS",
+        "AWARDS_PLAYERS",
+        "BATTING",
+        "DIAMONDS",
+        "FUNCTIONAL_ALLTYPES",
+    }.issubset(con.list_tables())
+
+    like_table = [
+        "EVENT_TABLES",
+        "EXTERNAL_TABLES",
+        "TABLES",
+        "TABLE_CONSTRAINTS",
+        "TABLE_PRIVILEGES",
+        "TABLE_STORAGE_METRICS",
+    ]
+
+    with pytest.warns(FutureWarning):
+        assert (
+            con.list_tables(
+                database="IBIS_TESTING", schema="INFORMATION_SCHEMA", like="TABLE"
+            )
+            == like_table
+        )
+
+    assert (
+        con.list_tables(database="IBIS_TESTING.INFORMATION_SCHEMA", like="TABLE")
+        == like_table
+    )
+    assert (
+        con.list_tables(database=("IBIS_TESTING", "INFORMATION_SCHEMA"), like="TABLE")
+        == like_table
+    )

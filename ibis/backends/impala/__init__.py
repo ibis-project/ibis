@@ -208,6 +208,22 @@ class Backend(SQLBackend):
         return self._filter_with_like(databases.name.tolist(), like)
 
     def list_tables(self, like=None, database=None):
+        """Return the list of table names in the current database.
+
+        Parameters
+        ----------
+        like
+            A pattern in Python's regex format.
+        database
+            The database from which to list tables.
+            If not provided, the current database is used.
+
+        Returns
+        -------
+        list[str]
+            The list of the table names that match the pattern `like`.
+        """
+
         statement = "SHOW TABLES"
         if database is not None:
             statement += f" IN {database}"
@@ -337,7 +353,11 @@ class Backend(SQLBackend):
         self._safe_exec_sql(statement)
 
     def get_schema(
-        self, table_name: str, schema: str | None = None, database: str | None = None
+        self,
+        table_name: str,
+        *,
+        catalog: str | None = None,
+        database: str | None = None,
     ) -> sch.Schema:
         """Return a Schema object for the indicated table and database.
 
@@ -345,8 +365,8 @@ class Backend(SQLBackend):
         ----------
         table_name
             Table name
-        schema
-            Schema name. Unused in the impala backend.
+        catalog
+            Catalog name. Unused in the impala backend.
         database
             Database name
 
@@ -358,7 +378,7 @@ class Backend(SQLBackend):
         """
         query = sge.Describe(
             this=sg.table(
-                table_name, db=schema, catalog=database, quoted=self.compiler.quoted
+                table_name, db=database, catalog=catalog, quoted=self.compiler.quoted
             )
         )
 

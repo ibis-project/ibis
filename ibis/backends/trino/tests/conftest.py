@@ -92,11 +92,11 @@ class TestConf(ServiceBackendTest):
         to match the DuckDB TPC-H query conventions.
         """
         con = self.connection
-        database = "hive"
-        schema = "ibis_sf1"
+        catalog = "hive"
+        database = "ibis_sf1"
 
-        tables = con.list_tables(schema="tiny", database="tpch")
-        con.create_schema(schema, database=database, force=True)
+        tables = con.list_tables(database=("tpch", "tiny"))
+        con.create_database(database, catalog=catalog, force=True)
 
         prefixes = {"partsupp": "ps"}
 
@@ -108,7 +108,7 @@ class TestConf(ServiceBackendTest):
                 prefix = prefixes.get(table, table[0])
 
                 t = (
-                    con.table(table, schema="tiny", database="tpch")
+                    con.table(table, database=("tpch", "tiny"))
                     .rename(f"{prefix}_{{}}".format)
                     # https://github.com/trinodb/trino/issues/19477
                     .mutate(
@@ -118,7 +118,7 @@ class TestConf(ServiceBackendTest):
 
                 sql = sge.Create(
                     kind="VIEW",
-                    this=sg.table(table, db=schema, catalog=database),
+                    this=sg.table(table, db=database, catalog=catalog),
                     expression=self.connection._to_sqlglot(t),
                     replace=True,
                 ).sql("trino", pretty=True)
@@ -128,7 +128,7 @@ class TestConf(ServiceBackendTest):
     def _tpch_table(self, name: str):
         from ibis import _
 
-        table = self.connection.table(name, schema="ibis_sf1", database="hive")
+        table = self.connection.table(name, database=("hive", "ibis_sf1"))
         table = table.mutate(s.across(s.of_type("double"), _.cast("decimal(15, 2)")))
         return table
 

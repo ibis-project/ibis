@@ -597,28 +597,71 @@ def test_insert_from_memtable(con, temp_table):
 
 
 @pytest.mark.notyet(
-    ["bigquery", "oracle", "dask", "exasol", "polars", "pandas", "druid"],
+    [
+        "bigquery",
+        "clickhouse",
+        "dask",
+        "druid",
+        "exasol",
+        "impala",
+        "mysql",
+        "oracle",
+        "pandas",
+        "polars",
+        "flink",
+        "pyspark",
+        "sqlite",
+    ],
     raises=AttributeError,
-    reason="doesn't support the common notion of a database",
+    reason="doesn't support the common notion of a catalog",
 )
-def test_list_databases(con):
+def test_list_catalogs(con):
     # Every backend has its own databases
-    test_databases = {
-        "clickhouse": {"system", "default", "ibis_testing"},
+    test_catalogs = {
         "datafusion": {"datafusion"},
         "duckdb": {"memory"},
         "exasol": set(),
-        "impala": set(),
+        "flink": set(),
         "mssql": {"ibis_testing"},
-        "mysql": {"ibis_testing", "information_schema"},
         "oracle": set(),
         "postgres": {"postgres", "ibis_testing"},
         "risingwave": {"dev"},
         "snowflake": {"IBIS_TESTING"},
-        "pyspark": set(),
-        "sqlite": {"main"},
         "trino": {"memory"},
-        "flink": set(),
+    }
+    result = set(con.list_catalogs())
+    assert test_catalogs[con.name] <= result
+
+
+@pytest.mark.notyet(
+    [
+        "dask",
+        "druid",
+        "pandas",
+        "polars",
+    ],
+    raises=AttributeError,
+    reason="doesn't support the common notion of a catalog",
+)
+def test_list_database_contents(con):
+    # Every backend has its own databases
+    test_databases = {
+        "bigquery": {"ibis_gbq_testing"},
+        "clickhouse": {"system", "default", "ibis_testing"},
+        "datafusion": {"public"},
+        "duckdb": {"pg_catalog", "main", "information_schema"},
+        "exasol": {"EXASOL"},
+        "flink": {"default_database"},
+        "impala": {"ibis_testing", "default", "_impala_builtins"},
+        "mssql": {"INFORMATION_SCHEMA", "dbo", "guest"},
+        "mysql": {"ibis_testing", "information_schema"},
+        "oracle": {"SYS", "IBIS"},
+        "postgres": {"public", "information_schema"},
+        "pyspark": set(),
+        "risingwave": {"public", "rw_catalog", "information_schema"},
+        "snowflake": {"IBIS_TESTING"},
+        "sqlite": {"main"},
+        "trino": {"default", "information_schema"},
     }
     result = set(con.list_databases())
     assert test_databases[con.name] <= result
@@ -1389,59 +1432,92 @@ def test_overwrite(ddl_con, monkeypatch):
         assert t2.count().execute() == expected_count
 
 
-@pytest.mark.notyet(["datafusion"], reason="cannot list or drop databases")
+@pytest.mark.notyet(["datafusion"], reason="cannot list or drop catalogs")
+def test_create_catalog(con_create_catalog):
+    catalog = gen_name("test_create_catalog")
+    con_create_catalog.create_catalog(catalog)
+    assert catalog in con_create_catalog.list_catalogs()
+    con_create_catalog.drop_catalog(catalog)
+    assert catalog not in con_create_catalog.list_catalogs()
+
+
 def test_create_database(con_create_database):
     database = gen_name("test_create_database")
     con_create_database.create_database(database)
+    if con_create_database.name == "exasol":
+        database = database.upper()
     assert database in con_create_database.list_databases()
+    database = database.lower()
     con_create_database.drop_database(database)
+    if con_create_database.name == "exasol":
+        database = database.upper()
     assert database not in con_create_database.list_databases()
 
 
-def test_create_schema(con_create_schema):
-    schema = gen_name("test_create_schema")
-    con_create_schema.create_schema(schema)
-    assert schema in con_create_schema.list_schemas()
-    con_create_schema.drop_schema(schema)
-    assert schema not in con_create_schema.list_schemas()
+def test_list_schema_warns(con_list_schema):
+    with pytest.warns(FutureWarning):
+        con_list_schema.list_schemas()
 
 
-@pytest.mark.notimpl(
-    ["risingwave"],
-    raises=PsycoPg2InternalError,
-    reason="Feature is not yet implemented: information_schema.schemata is not supported,",
+@pytest.mark.never(
+    [
+        "clickhouse",
+        "mysql",
+        "pyspark",
+        "flink",
+    ],
+    reason="No schema methods",
 )
-def test_list_schemas(con_create_schema):
-    schemas = con_create_schema.list_schemas()
-    assert len(schemas) == len(set(schemas))
+def test_create_schema(con_create_database):
+    schema = gen_name("test_create_schema")
+    with pytest.warns(FutureWarning):
+        con_create_database.create_schema(schema)
+    with pytest.warns(FutureWarning):
+        if con_create_database.name == "exasol":
+            schema = schema.upper()
+        assert schema in con_create_database.list_schemas()
+        schema = schema.lower()
+    with pytest.warns(FutureWarning):
+        con_create_database.drop_schema(schema)
+    with pytest.warns(FutureWarning):
+        if con_create_database.name == "exasol":
+            schema = schema.upper()
+        assert schema not in con_create_database.list_schemas()
+
+
+def test_list_databases(con_create_database):
+    databases = con_create_database.list_databases()
+    assert len(databases) == len(set(databases))
 
 
 @pytest.mark.notyet(["datafusion"], reason="cannot list or drop databases")
-def test_create_database_schema(con_create_database_schema):
-    database = gen_name("test_create_database")
-    con_create_database_schema.create_database(database)
+def test_create_catalog_database(con_create_catalog_database):
+    catalog = gen_name("test_create_catalog")
+    con_create_catalog_database.create_catalog(catalog)
     try:
-        schema = gen_name("test_create_database_schema")
-        con_create_database_schema.create_schema(schema, database=database)
-        con_create_database_schema.drop_schema(schema, database=database)
+        database = gen_name("test_create_catalog_database")
+        con_create_catalog_database.create_database(database, catalog=catalog)
+        con_create_catalog_database.drop_database(database, catalog=catalog)
     finally:
-        con_create_database_schema.drop_database(database)
+        con_create_catalog_database.drop_catalog(catalog)
 
 
 @pytest.mark.notyet(["datafusion"], reason="cannot list or drop databases")
-def test_list_databases_schemas(con_create_database_schema):
-    database = gen_name("test_create_database")
-    con_create_database_schema.create_database(database)
+def test_list_catalogs_databases(con_create_catalog_database):
+    catalog = gen_name("test_create_catalog")
+    con_create_catalog_database.create_catalog(catalog)
     try:
-        schema = gen_name("test_create_database_schema")
-        con_create_database_schema.create_schema(schema, database=database)
+        database = gen_name("test_create_catalog_database")
+        con_create_catalog_database.create_database(database, catalog=catalog)
 
         try:
-            assert schema in con_create_database_schema.list_schemas(database=database)
+            assert database in con_create_catalog_database.list_databases(
+                catalog=catalog
+            )
         finally:
-            con_create_database_schema.drop_schema(schema, database=database)
+            con_create_catalog_database.drop_database(database, catalog=catalog)
     finally:
-        con_create_database_schema.drop_database(database)
+        con_create_catalog_database.drop_catalog(catalog)
 
 
 @pytest.mark.notyet(

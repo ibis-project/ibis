@@ -7,6 +7,7 @@ import sqlglot as sg
 import sqlglot.expressions as sge
 
 import ibis
+import ibis.common.exceptions as exc
 import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
@@ -24,7 +25,47 @@ if TYPE_CHECKING:
     from ibis.expr.schema import SchemaLike
 
 
-class SQLBackend(BaseBackend):
+class _DatabaseSchemaHandler:
+    """Temporary mixin collecting several helper functions and code snippets.
+
+    Help to 'gracefully' deprecate the use of `schema` as a hierarchical term.
+    """
+
+    @staticmethod
+    def _warn_schema():
+        util.warn_deprecated(
+            name="schema",
+            as_of="9.0",
+            removed_in="10.0",
+            instead="Use the `database` kwarg with one of the following patterns:"
+            '\ndatabase="database"'
+            '\ndatabase=("catalog", "database")'
+            '\ndatabase="catalog.database"',
+            # TODO: add option for namespace object
+        )
+
+    def _warn_and_create_table_loc(self, database=None, schema=None):
+        if schema is not None:
+            self._warn_schema()
+
+        if database is not None and schema is not None:
+            if isinstance(database, str):
+                table_loc = f"{database}.{schema}"
+            elif isinstance(database, tuple):
+                table_loc = database + schema
+        elif schema is not None:
+            table_loc = schema
+        elif database is not None:
+            table_loc = database
+        else:
+            table_loc = None
+
+        table_loc = self._to_sqlglot_table(table_loc)
+
+        return table_loc
+
+
+class SQLBackend(BaseBackend, _DatabaseSchemaHandler):
     compiler: ClassVar[SQLGlotCompiler]
     name: ClassVar[str]
 
@@ -64,7 +105,10 @@ class SQLBackend(BaseBackend):
         return df
 
     def table(
-        self, name: str, schema: str | None = None, database: str | None = None
+        self,
+        name: str,
+        schema: str | None = None,
+        database: tuple[str, str] | str | None = None,
     ) -> ir.Table:
         """Construct a table expression.
 
@@ -73,7 +117,7 @@ class SQLBackend(BaseBackend):
         name
             Table name
         schema
-            Schema name
+            [deprecated] Schema name
         database
             Database name
 
@@ -83,12 +127,19 @@ class SQLBackend(BaseBackend):
             Table expression
 
         """
-        table_schema = self.get_schema(name, schema=schema, database=database)
+        table_loc = self._warn_and_create_table_loc(database, schema)
+
+        catalog, database = None, None
+        if table_loc is not None:
+            catalog = table_loc.catalog or None
+            database = table_loc.db or None
+
+        table_schema = self.get_schema(name, catalog=catalog, database=database)
         return ops.DatabaseTable(
             name,
             schema=table_schema,
             source=self,
-            namespace=ops.Namespace(database=database, schema=schema),
+            namespace=ops.Namespace(catalog=catalog, database=database),
         ).to_expr()
 
     def _to_sqlglot(
@@ -187,10 +238,11 @@ class SQLBackend(BaseBackend):
         schema: str | None = None,
         overwrite: bool = False,
     ) -> ir.Table:
+        table_loc = self._warn_and_create_table_loc(database, schema)
+        catalog, db = self._to_catalog_db_tuple(table_loc)
+
         src = sge.Create(
-            this=sg.table(
-                name, db=schema, catalog=database, quoted=self.compiler.quoted
-            ),
+            this=sg.table(name, db=db, catalog=catalog, quoted=self.compiler.quoted),
             kind="VIEW",
             replace=overwrite,
             expression=self.compile(obj),
@@ -198,7 +250,7 @@ class SQLBackend(BaseBackend):
         self._register_in_memory_tables(obj)
         with self._safe_raw_sql(src):
             pass
-        return self.table(name, database=database)
+        return self.table(name, database=(catalog, db))
 
     def _register_in_memory_tables(self, expr: ir.Expr) -> None:
         for memtable in expr.op().find(ops.InMemoryTable):
@@ -212,10 +264,11 @@ class SQLBackend(BaseBackend):
         schema: str | None = None,
         force: bool = False,
     ) -> None:
+        table_loc = self._warn_and_create_table_loc(database, schema)
+        catalog, db = self._to_catalog_db_tuple(table_loc)
+
         src = sge.Drop(
-            this=sg.table(
-                name, db=schema, catalog=database, quoted=self.compiler.quoted
-            ),
+            this=sg.table(name, db=db, catalog=catalog, quoted=self.compiler.quoted),
             kind="VIEW",
             exists=force,
         )
@@ -252,15 +305,15 @@ class SQLBackend(BaseBackend):
     def drop_table(
         self,
         name: str,
-        database: str | None = None,
-        schema: str | None = None,
+        database: tuple[str, str] | str | None = None,
         force: bool = False,
     ) -> None:
+        table_loc = self._warn_and_create_table_loc(database, None)
+        catalog, db = self._to_catalog_db_tuple(table_loc)
+
         drop_stmt = sg.exp.Drop(
             kind="TABLE",
-            this=sg.table(
-                name, db=schema, catalog=database, quoted=self.compiler.quoted
-            ),
+            this=sg.table(name, db=db, catalog=catalog, quoted=self.compiler.quoted),
             exists=force,
         )
         with self._safe_raw_sql(drop_stmt):
@@ -345,15 +398,31 @@ class SQLBackend(BaseBackend):
         obj
             The source data or expression to insert
         schema
-            The name of the schema that the table is located in
+            [deprecated] The name of the schema that the table is located in
         database
             Name of the attached database that the table is located in.
+
+            For backends that support multi-level table hierarchies, you can
+            pass in a dotted string path like `"catalog.database"` or a tuple of
+            strings like `("catalog", "database")`.
+
+            ::: {.callout-note}
+            ## Ibis does not use the word `schema` to refer to database hierarchy.
+            A collection of tables is referred to as a `database`.
+            A collection of `database` is referred to as a `catalog`.
+            These terms are mapped onto the corresponding features in each
+            backend (where available), regardless of whether the backend itself
+            uses the same terminology.
+            :::
         overwrite
             If `True` then replace existing contents of table
 
         """
+        table_loc = self._warn_and_create_table_loc(database, schema)
+        catalog, db = self._to_catalog_db_tuple(table_loc)
+
         if overwrite:
-            self.truncate_table(table_name, schema=schema, database=database)
+            self.truncate_table(table_name, database=(catalog, db))
 
         if not isinstance(obj, ir.Table):
             obj = ibis.memtable(obj)
@@ -364,7 +433,7 @@ class SQLBackend(BaseBackend):
         quoted = compiler.quoted
         query = sge.insert(
             expression=self.compile(obj),
-            into=sg.table(table_name, db=schema, catalog=database, quoted=quoted),
+            into=sg.table(table_name, db=db, catalog=catalog, quoted=quoted),
             columns=[
                 sg.to_identifier(col, quoted=quoted)
                 for col in self.get_schema(table_name).names
@@ -385,14 +454,31 @@ class SQLBackend(BaseBackend):
         name
             Table name
         database
-            Database name
+            Name of the attached database that the table is located in.
+
+            For backends that support multi-level table hierarchies, you can
+            pass in a dotted string path like `"catalog.database"` or a tuple of
+            strings like `("catalog", "database")`.
+
+            ::: {.callout-note}
+            ## Ibis does not use the word `schema` to refer to database hierarchy.
+
+            A collection of tables is referred to as a `database`.
+            A collection of `database` is referred to as a `catalog`.
+            These terms are mapped onto the corresponding features in each
+            backend (where available), regardless of whether the backend itself
+            uses the same terminology.
+            :::
         schema
-            Schema name
+            [deprecated] Schema name
 
         """
-        ident = sg.table(
-            name, db=schema, catalog=database, quoted=self.compiler.quoted
-        ).sql(self.dialect)
+        table_loc = self._warn_and_create_table_loc(database, schema)
+        catalog, db = self._to_catalog_db_tuple(table_loc)
+
+        ident = sg.table(name, db=db, catalog=catalog, quoted=self.compiler.quoted).sql(
+            self.dialect
+        )
         with self._safe_raw_sql(f"TRUNCATE TABLE {ident}"):
             pass
 
@@ -418,3 +504,60 @@ class SQLBackend(BaseBackend):
         raise NotImplementedError(
             f"pandas UDFs are not supported in the {self.name} backend"
         )
+
+    def _to_catalog_db_tuple(self, table_loc: sge.Table):
+        if table_loc is None or table_loc == (None, None):
+            return None, None
+
+        if (sg_cat := table_loc.args["catalog"]) is not None:
+            sg_cat.args["quoted"] = False
+            sg_cat = sg_cat.sql(self.name)
+        if (sg_db := table_loc.args["db"]) is not None:
+            sg_db.args["quoted"] = False
+            sg_db = sg_db.sql(self.name)
+
+        return sg_cat, sg_db
+
+    def _to_sqlglot_table(self, database):
+        if database is None:
+            return None
+        elif isinstance(database, tuple):
+            if len(database) > 2:
+                raise ValueError(
+                    "Only database hierarchies of two or fewer levels are supported."
+                    "\nYou can specify ('catalog', 'database')."
+                )
+            elif len(database) == 2:
+                catalog, database = database
+            elif len(database) == 1:
+                database = database[0]
+                catalog = None
+            else:
+                raise ValueError(
+                    f"Malformed database tuple {database} provided"
+                    "\nPlease specify one of:"
+                    '\n("catalog", "database")'
+                    '\n("database",)'
+                )
+            database = sg.exp.Table(
+                catalog=sg.to_identifier(catalog, quoted=self.compiler.quoted),
+                db=sg.to_identifier(database, quoted=self.compiler.quoted),
+            )
+        elif isinstance(database, str):
+            # There is no definition of a sqlglot catalog.database hierarchy outside
+            # of the standard table expression.
+            # sqlglot parsing of the string will assume that it's a Table
+            # so we unpack the arguments into a new sqlglot object, switching
+            # table (this) -> database (db) and database (db) -> catalog
+            table = sg.parse_one(database, into=sg.exp.Table, dialect=self.dialect)
+            if table.args["catalog"] is not None:
+                raise exc.IbisInputError(
+                    f"Overspecified table hierarchy provided: `{table.sql(self.dialect)}`"
+                )
+            catalog = table.args["db"]
+            db = table.args["this"]
+            database = sg.exp.Table(catalog=catalog, db=db)
+        else:
+            raise ValueError("oops")
+
+        return database

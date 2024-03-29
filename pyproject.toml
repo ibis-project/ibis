@@ -113,7 +113,7 @@ packaging = ">=21.3,<25"
 pytest = ">=8.0.2,<9"
 pytest-benchmark = ">=3.4.1,<5"
 pytest-clarity = ">=1.0.1,<2"
-pytest-cov = ">=3.0.0,<5"
+pytest-cov = ">=3.0.0,<6"
 pytest-httpserver = ">=1.0.5,<2"
 pytest-mock = ">=3.6.1,<4"
 pytest-randomly = ">=3.10.1,<4"
@@ -193,7 +193,7 @@ pandas = ["regex"]
 polars = ["polars", "packaging"]
 postgres = ["psycopg2"]
 pyspark = ["pyspark", "packaging"]
-snowflake = ["snowflake-connector-python", "packaging"]
+snowflake = ["snowflake-connector-python"]
 sqlite = ["regex"]
 risingwave = ["psycopg2"]
 trino = ["trino"]

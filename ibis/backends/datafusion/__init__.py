@@ -20,7 +20,7 @@ import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
-from ibis.backends import CanCreateDatabase, CanCreateSchema, NoUrl
+from ibis.backends import CanCreateCatalog, CanCreateDatabase, CanCreateSchema, NoUrl
 from ibis.backends.datafusion.compiler import DataFusionCompiler
 from ibis.backends.sql import SQLBackend
 from ibis.backends.sql.compiler import C
@@ -42,7 +42,7 @@ if TYPE_CHECKING:
     import pandas as pd
 
 
-class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema, NoUrl):
+class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, CanCreateSchema, NoUrl):
     name = "datafusion"
     supports_in_memory_tables = True
     supports_arrays = True
@@ -203,14 +203,14 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema, NoUrl):
         return self.con.sql(query)
 
     @property
-    def current_database(self) -> str:
+    def current_catalog(self) -> str:
         raise NotImplementedError()
 
     @property
-    def current_schema(self) -> str:
+    def current_database(self) -> str:
         return NotImplementedError()
 
-    def list_databases(self, like: str | None = None) -> list[str]:
+    def list_catalogs(self, like: str | None = None) -> list[str]:
         code = (
             sg.select(C.table_catalog)
             .from_(sg.table("tables", db="information_schema"))
@@ -219,44 +219,38 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema, NoUrl):
         result = self.con.sql(code).to_pydict()
         return self._filter_with_like(result["table_catalog"], like)
 
-    def create_database(self, name: str, force: bool = False) -> None:
+    def create_catalog(self, name: str, force: bool = False) -> None:
         with self._safe_raw_sql(
             sge.Create(kind="DATABASE", this=sg.to_identifier(name), exists=force)
         ):
             pass
 
-    def drop_database(self, name: str, force: bool = False) -> None:
+    def drop_catalog(self, name: str, force: bool = False) -> None:
         raise com.UnsupportedOperationError(
             "DataFusion does not support dropping databases"
         )
 
-    def list_schemas(
-        self, like: str | None = None, database: str | None = None
+    def list_databases(
+        self, like: str | None = None, catalog: str | None = None
     ) -> list[str]:
         return self._filter_with_like(
-            self.con.catalog(
-                database if database is not None else "datafusion"
-            ).names(),
+            self.con.catalog(catalog if catalog is not None else "datafusion").names(),
             like=like,
         )
 
-    def create_schema(
-        self, name: str, database: str | None = None, force: bool = False
+    def create_database(
+        self, name: str, catalog: str | None = None, force: bool = False
     ) -> None:
         # not actually a table, but this is how sqlglot represents schema names
-        schema_name = sg.table(name, db=database)
-        with self._safe_raw_sql(
-            sge.Create(kind="SCHEMA", this=schema_name, exists=force)
-        ):
+        db_name = sg.table(name, db=catalog)
+        with self._safe_raw_sql(sge.Create(kind="SCHEMA", this=db_name, exists=force)):
             pass
 
-    def drop_schema(
-        self, name: str, database: str | None = None, force: bool = False
+    def drop_database(
+        self, name: str, catalog: str | None = None, force: bool = False
     ) -> None:
-        schema_name = sg.table(name, db=database)
-        with self._safe_raw_sql(
-            sge.Drop(kind="SCHEMA", this=schema_name, exists=force)
-        ):
+        db_name = sg.table(name, db=catalog)
+        with self._safe_raw_sql(sge.Drop(kind="SCHEMA", this=db_name, exists=force)):
             pass
 
     def list_tables(
@@ -264,19 +258,36 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema, NoUrl):
         like: str | None = None,
         database: str | None = None,
     ) -> list[str]:
-        """List the available tables."""
+        """Return the list of table names in the current database.
+
+        Parameters
+        ----------
+        like
+            A pattern in Python's regex format.
+        database
+            Unused in the datafusion backend.
+
+        Returns
+        -------
+        list[str]
+            The list of the table names that match the pattern `like`.
+        """
         return self._filter_with_like(self.con.tables(), like)
 
     def get_schema(
-        self, table_name: str, schema: str | None = None, database: str | None = None
+        self,
+        table_name: str,
+        *,
+        catalog: str | None = None,
+        database: str | None = None,
     ) -> sch.Schema:
-        if database is not None:
-            catalog = self.con.catalog(database)
+        if catalog is not None:
+            catalog = self.con.catalog(catalog)
         else:
             catalog = self.con.catalog()
 
-        if schema is not None:
-            database = catalog.database(schema)
+        if database is not None:
+            database = catalog.database(database)
         else:
             database = catalog.database()
 
@@ -633,7 +644,7 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema, NoUrl):
         with self._safe_raw_sql(create_stmt):
             pass
 
-        return self.table(name, schema=database)
+        return self.table(name, database=database)
 
     def truncate_table(
         self, name: str, database: str | None = None, schema: str | None = None
@@ -653,6 +664,9 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema, NoUrl):
         # datafusion doesn't support `TRUNCATE TABLE` so we use `DELETE FROM`
         #
         # however datafusion as of 34.0.0 doesn't implement DELETE DML yet
-        ident = sg.table(name, db=schema, catalog=database).sql(self.name)
+        table_loc = self._warn_and_create_table_loc(database, schema)
+        catalog, db = self._to_catalog_db_tuple(table_loc)
+
+        ident = sg.table(name, db=db, catalog=catalog).sql(self.name)
         with self._safe_raw_sql(sge.delete(ident)):
             pass

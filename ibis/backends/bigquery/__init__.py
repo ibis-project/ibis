@@ -25,7 +25,7 @@ import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis import util
-from ibis.backends import CanCreateSchema
+from ibis.backends import CanCreateDatabase, CanCreateSchema
 from ibis.backends.bigquery.client import (
     BigQueryCursor,
     bigquery_param,
@@ -125,7 +125,7 @@ def _remove_null_ordering_from_unsupported_window(
     return node
 
 
-class Backend(SQLBackend, CanCreateSchema):
+class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
     name = "bigquery"
     compiler = BigQueryCompiler()
     supports_in_memory_tables = True
@@ -136,8 +136,7 @@ class Backend(SQLBackend, CanCreateSchema):
         self._session_dataset: bq.DatasetReference | None = None
         self._query_cache.lookup = lambda name: self.table(
             name,
-            schema=self._session_dataset.dataset_id,
-            database=self._session_dataset.project,
+            database=(self._session_dataset.project, self._session_dataset.dataset_id),
         ).op()
 
     def _register_in_memory_table(self, op: ops.InMemoryTable) -> None:
@@ -148,7 +147,7 @@ class Backend(SQLBackend, CanCreateSchema):
         project = self._session_dataset.project
         dataset = self._session_dataset.dataset_id
 
-        if raw_name not in self.list_tables(schema=dataset, database=project):
+        if raw_name not in self.list_tables(database=(project, dataset)):
             table_id = sg.table(
                 raw_name, db=dataset, catalog=project, quoted=False
             ).sql(dialect=self.name)
@@ -179,8 +178,8 @@ class Backend(SQLBackend, CanCreateSchema):
 
         table_ref = self._session_dataset.table(table_name)
 
-        schema = self._session_dataset.dataset_id
-        database = self._session_dataset.project
+        database = self._session_dataset.dataset_id
+        catalog = self._session_dataset.project
 
         # drop the table if it exists
         #
@@ -189,7 +188,7 @@ class Backend(SQLBackend, CanCreateSchema):
         #
         # dropping the table first means all write_dispositions can be
         # WRITE_APPEND
-        self.drop_table(table_name, schema=schema, database=database, force=True)
+        self.drop_table(table_name, database=(catalog, database), force=True)
 
         if os.path.isdir(path):
             raise NotImplementedError("Reading from a directory is not supported.")
@@ -215,7 +214,7 @@ class Backend(SQLBackend, CanCreateSchema):
                 ):
                     fut.result()
 
-        return self.table(table_name, schema=schema, database=database)
+        return self.table(table_name, database=(catalog, database))
 
     def read_parquet(
         self, path: str | Path, table_name: str | None = None, **kwargs: Any
@@ -455,6 +454,8 @@ class Backend(SQLBackend, CanCreateSchema):
         self.client.close()
 
     def _parse_project_and_dataset(self, dataset) -> tuple[str, str]:
+        if isinstance(dataset, sge.Table):
+            dataset = dataset.sql(self.dialect)
         if not dataset and not self.dataset:
             raise ValueError("Unable to determine BigQuery dataset.")
         project, _, dataset = parse_project_and_dataset(
@@ -471,10 +472,10 @@ class Backend(SQLBackend, CanCreateSchema):
     def dataset_id(self):
         return self.dataset
 
-    def create_schema(
+    def create_database(
         self,
         name: str,
-        database: str | None = None,
+        catalog: str | None = None,
         force: bool = False,
         collate: str | None = None,
         **options: Any,
@@ -491,24 +492,24 @@ class Backend(SQLBackend, CanCreateSchema):
 
         stmt = sge.Create(
             kind="SCHEMA",
-            this=sg.table(name, db=database),
+            this=sg.table(name, db=catalog),
             exists=force,
             properties=sge.Properties(expressions=properties),
         )
 
         self.raw_sql(stmt.sql(self.name))
 
-    def drop_schema(
+    def drop_database(
         self,
         name: str,
-        database: str | None = None,
+        catalog: str | None = None,
         force: bool = False,
         cascade: bool = False,
     ) -> None:
         """Drop a BigQuery dataset."""
         stmt = sge.Drop(
             kind="SCHEMA",
-            this=sg.table(name, db=database),
+            this=sg.table(name, db=catalog),
             exists=force,
             cascade=cascade,
         )
@@ -518,47 +519,43 @@ class Backend(SQLBackend, CanCreateSchema):
     def table(
         self, name: str, database: str | None = None, schema: str | None = None
     ) -> ir.Table:
-        if database is not None and schema is None:
-            raise com.IbisInputError(
-                f"The {self.name} backend cannot return a table expression using only a "
-                "`database` specifier. Include a `schema` argument."
-            )
+        table_loc = self._warn_and_create_table_loc(database, schema)
 
         table = sg.parse_one(name, into=sge.Table, read=self.name)
 
-        # table.catalog will be the empty string
+        # Bigquery, unlike other bcakends, had existing support for specifying
+        # table hierarchy in the table name, e.g. con.table("dataset.table_name")
+        # so here we have an extra layer of disambiguation to handle.
+
+        # Default `catalog` to None unless we've parsed it out of the database/schema kwargs
+        # Raise if there are path specifications in both the name and as a kwarg
+        catalog = None if table_loc is None else table_loc.catalog
         if table.catalog:
-            if database is not None:
+            if table_loc is not None and table_loc.catalog:
+                raise com.IbisInputError(
+                    "Cannot specify catalog both in the table name and as an argument"
+                )
+            else:
+                catalog = table.catalog
+
+        # Default `db` to None unless we've parsed it out of the database/schema kwargs
+        db = None if table_loc is None else table_loc.db
+        if table.db:
+            if table_loc is not None and table_loc.db:
                 raise com.IbisInputError(
                     "Cannot specify database both in the table name and as an argument"
                 )
             else:
-                database = table.catalog
+                db = table.db
 
-        # table.db will be the empty string
-        if table.db:
-            if schema is not None:
-                raise com.IbisInputError(
-                    "Cannot specify schema both in the table name and as an argument"
-                )
-            else:
-                schema = table.db
-
-        if database is not None and schema is None:
-            database = sg.parse_one(database, into=sge.Table, read=self.name)
-            database.args["quoted"] = False
-            database = database.sql(dialect=self.name)
-        elif database is None and schema is not None:
-            database = sg.parse_one(schema, into=sge.Table, read=self.name)
-            database.args["quoted"] = False
-            database = database.sql(dialect=self.name)
-        else:
-            database = (
-                sg.table(schema, db=database, quoted=False).sql(dialect=self.name)
-                or None
-            )
+        database = (
+            sg.table(None, db=db, catalog=catalog, quoted=False).sql(dialect=self.name)
+            or None
+        )
 
         project, dataset = self._parse_project_and_dataset(database)
+
+        table = sg.parse_one(name, into=sge.Table, read=self.name)
 
         bq_table = self.client.get_table(
             bq.TableReference(
@@ -571,7 +568,7 @@ class Backend(SQLBackend, CanCreateSchema):
             table.name,
             schema=schema_from_bigquery_table(bq_table),
             source=self,
-            namespace=ops.Namespace(schema=dataset, database=project),
+            namespace=ops.Namespace(database=dataset, catalog=project),
         )
         table_expr = node.to_expr()
         return rename_partitioned_column(table_expr, bq_table, self.partition_column)
@@ -669,11 +666,11 @@ class Backend(SQLBackend, CanCreateSchema):
         return self._execute(query, query_parameters=query_parameters)
 
     @property
-    def current_database(self) -> str:
+    def current_catalog(self) -> str:
         return self.data_project
 
     @property
-    def current_schema(self) -> str | None:
+    def current_database(self) -> str | None:
         return self.dataset
 
     def compile(
@@ -751,11 +748,17 @@ class Backend(SQLBackend, CanCreateSchema):
             If `True` then replace existing contents of table
 
         """
+        table_loc = self._warn_and_create_table_loc(database, schema)
+        catalog, db = self._to_catalog_db_tuple(table_loc)
+        if catalog is None:
+            catalog = self.current_catalog
+        if db is None:
+            db = self.current_database
+
         return super().insert(
             table_name,
             obj,
-            schema=schema if schema is not None else self.current_schema,
-            database=database if database is not None else self.current_database,
+            database=(catalog, db),
             overwrite=overwrite,
         )
 
@@ -839,23 +842,29 @@ class Backend(SQLBackend, CanCreateSchema):
             return ".".join(f"`{part}`" for part in func.split("."))
         return func
 
-    def get_schema(self, name, schema: str | None = None, database: str | None = None):
+    def get_schema(
+        self,
+        name,
+        *,
+        catalog: str | None = None,
+        database: str | None = None,
+    ):
         table_ref = bq.TableReference(
             bq.DatasetReference(
-                project=database or self.data_project,
-                dataset_id=schema or self.current_schema,
+                project=catalog or self.data_project,
+                dataset_id=database or self.current_database,
             ),
             name,
         )
         return schema_from_bigquery_table(self.client.get_table(table_ref))
 
-    def list_schemas(
-        self, like: str | None = None, database: str | None = None
+    def list_databases(
+        self, like: str | None = None, catalog: str | None = None
     ) -> list[str]:
         results = [
             dataset.dataset_id
             for dataset in self.client.list_datasets(
-                project=database if database is not None else self.data_project
+                project=catalog if catalog is not None else self.data_project
             )
         ]
         return self._filter_with_like(results, like)
@@ -863,7 +872,7 @@ class Backend(SQLBackend, CanCreateSchema):
     def list_tables(
         self,
         like: str | None = None,
-        database: str | None = None,
+        database: tuple[str, str] | str | None = None,
         schema: str | None = None,
     ) -> list[str]:
         """List the tables in the database.
@@ -873,34 +882,31 @@ class Backend(SQLBackend, CanCreateSchema):
         like
             A pattern to use for listing tables.
         database
-            The database (project) to perform the list against.
-        schema
-            The schema (dataset) inside `database` to perform the list against.
+            The database location to perform the list against.
 
-            ::: {.callout-warning}
-            ## `schema` refers to database hierarchy
+            By default uses the current `dataset` (`self.current_database`) and
+            `project` (`self.current_catalog`).
 
-            The `schema` parameter does **not** refer to the column names and
-            types of `table`.
+            To specify a table in a separate BigQuery dataset, you can pass in the
+            dataset and project as a string `"dataset.project"`, or as a tuple of
+            strings `("dataset", "project")`.
+
+            ::: {.callout-note}
+            ## Ibis does not use the word `schema` to refer to database hierarchy.
+
+            A collection of tables is referred to as a `database`.
+            A collection of `database` is referred to as a `catalog`.
+
+            These terms are mapped onto the corresponding features in each
+            backend (where available), regardless of whether the backend itself
+            uses the same terminology.
             :::
-
+        schema
+            [deprecated] The schema (dataset) inside `database` to perform the list against.
         """
-        if database is not None and schema is None:
-            raise com.com.IbisInputError(
-                f"{self.name} cannot list tables only using `database` specifier. "
-                "Include a `schema` argument."
-            )
-        elif database is None and schema is not None:
-            database = sg.parse_one(schema, into=sge.Table, read=self.name)
-            database.args["quoted"] = False
-            database = database.sql(dialect=self.name)
-        else:
-            database = (
-                sg.table(schema, db=database, quoted=False).sql(dialect=self.name)
-                or None
-            )
+        table_loc = self._warn_and_create_table_loc(database, schema)
 
-        project, dataset = self._parse_project_and_dataset(database)
+        project, dataset = self._parse_project_and_dataset(table_loc)
         dataset_ref = bq.DatasetReference(project, dataset)
         result = [table.table_id for table in self.client.list_tables(dataset_ref)]
         return self._filter_with_like(result, like)
@@ -1017,7 +1023,7 @@ class Backend(SQLBackend, CanCreateSchema):
                 raise com.IbisInputError("Cannot specify database for temporary table")
             database = self._session_dataset.project
         else:
-            dataset = database or self.current_schema
+            dataset = database or self.current_database
 
         try:
             table = sg.parse_one(name, into=sge.Table, read="bigquery")
@@ -1054,22 +1060,24 @@ class Backend(SQLBackend, CanCreateSchema):
         sql = stmt.sql(self.name)
 
         self.raw_sql(sql)
-        return self.table(table.name, schema=table.db, database=table.catalog)
+        return self.table(table.name, database=(table.catalog, table.db))
 
     def drop_table(
         self,
         name: str,
         *,
         schema: str | None = None,
-        database: str | None = None,
+        database: tuple[str | str] | str | None = None,
         force: bool = False,
     ) -> None:
+        table_loc = self._warn_and_create_table_loc(database, schema)
+        catalog, db = self._to_catalog_db_tuple(table_loc)
         stmt = sge.Drop(
             kind="TABLE",
             this=sg.table(
                 name,
-                db=schema or self.current_schema,
-                catalog=database or self.billing_project,
+                db=db or self.current_database,
+                catalog=catalog or self.billing_project,
             ),
             exists=force,
         )
@@ -1084,19 +1092,22 @@ class Backend(SQLBackend, CanCreateSchema):
         database: str | None = None,
         overwrite: bool = False,
     ) -> ir.Table:
+        table_loc = self._warn_and_create_table_loc(database, schema)
+        catalog, db = self._to_catalog_db_tuple(table_loc)
+
         stmt = sge.Create(
             kind="VIEW",
             this=sg.table(
                 name,
-                db=schema or self.current_schema,
-                catalog=database or self.billing_project,
+                db=db or self.current_database,
+                catalog=catalog or self.billing_project,
             ),
             expression=self.compile(obj),
             replace=overwrite,
         )
         self._register_in_memory_tables(obj)
         self.raw_sql(stmt.sql(self.name))
-        return self.table(name, schema=schema, database=database)
+        return self.table(name, database=(catalog, database))
 
     def drop_view(
         self,
@@ -1106,12 +1117,15 @@ class Backend(SQLBackend, CanCreateSchema):
         database: str | None = None,
         force: bool = False,
     ) -> None:
+        table_loc = self._warn_and_create_table_loc(database, schema)
+        catalog, db = self._to_catalog_db_tuple(table_loc)
+
         stmt = sge.Drop(
             kind="VIEW",
             this=sg.table(
                 name,
-                db=schema or self.current_schema,
-                catalog=database or self.billing_project,
+                db=db or self.current_database,
+                catalog=catalog or self.billing_project,
             ),
             exists=force,
         )
@@ -1123,8 +1137,7 @@ class Backend(SQLBackend, CanCreateSchema):
     def _clean_up_cached_table(self, op):
         self.drop_table(
             op.name,
-            schema=self._session_dataset.dataset_id,
-            database=self._session_dataset.project,
+            database=(self._session_dataset.project, self._session_dataset.dataset_id),
         )
 
     def _get_udf_source(self, udf_node: ops.ScalarUDF):
@@ -1195,6 +1208,32 @@ class Backend(SQLBackend, CanCreateSchema):
     @contextlib.contextmanager
     def _safe_raw_sql(self, *args, **kwargs):
         yield self.raw_sql(*args, **kwargs)
+
+    # TODO: remove when the schema kwarg is removed
+    def _warn_and_create_table_loc(self, database=None, schema=None):
+        if schema is not None:
+            self._warn_schema()
+        if database is not None and schema is not None:
+            if isinstance(database, str):
+                table_loc = f"{database}.{schema}"
+            elif isinstance(database, tuple):
+                table_loc = database + schema
+        elif schema is not None:
+            table_loc = schema
+        elif database is not None:
+            table_loc = database
+        else:
+            table_loc = None
+
+        table_loc = self._to_sqlglot_table(table_loc)
+
+        if table_loc is not None:
+            if (sg_cat := table_loc.args["catalog"]) is not None:
+                sg_cat.args["quoted"] = False
+            if (sg_db := table_loc.args["db"]) is not None:
+                sg_db.args["quoted"] = False
+
+        return table_loc
 
 
 def compile(expr, params=None, **kwargs):

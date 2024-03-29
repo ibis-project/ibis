@@ -148,21 +148,33 @@ class BasePandasBackend(BaseBackend, NoUrl):
         return pd.__version__
 
     def list_tables(self, like=None, database=None):
+        """Return the list of table names in the current database.
+
+        Parameters
+        ----------
+        like
+            A pattern in Python's regex format.
+        database
+            Unused in the pandas backend.
+
+        Returns
+        -------
+        list[str]
+            The list of the table names that match the pattern `like`.
+        """
         return self._filter_with_like(list(self.dictionary.keys()), like)
 
     def table(self, name: str, schema: sch.Schema | None = None):
-        df = self.dictionary[name]
-        schema = schema or self.schemas.get(name, None)
-        schema = PandasData.infer_table(df, schema=schema)
-        return ops.DatabaseTable(name, schema, self).to_expr()
+        inferred_schema = self.get_schema(name)
+        overridden_schema = {**inferred_schema, **(schema or {})}
+        return ops.DatabaseTable(name, overridden_schema, self).to_expr()
 
-    def get_schema(self, table_name, database=None):
-        schemas = self.schemas
+    def get_schema(self, table_name, *, database=None):
         try:
-            schema = schemas[table_name]
+            schema = self.schemas[table_name]
         except KeyError:
             df = self.dictionary[table_name]
-            schemas[table_name] = schema = PandasData.infer_table(df)
+            self.schemas[table_name] = schema = PandasData.infer_table(df)
 
         return schema
 

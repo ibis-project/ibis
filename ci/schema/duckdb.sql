@@ -55,3 +55,7 @@ INSERT INTO map VALUES
 
 CREATE OR REPLACE TABLE topk (x BIGINT);
 INSERT INTO topk VALUES (1), (1), (NULL);
+
+CREATE SCHEMA shops;
+CREATE TABLE shops.ice_cream (flavor TEXT, quantity INT);
+INSERT INTO shops.ice_cream values ('vanilla', 2), ('chocolate', 3);

@@ -147,6 +147,41 @@ You can store it as an environment variable to avoid having to log in again:
 ['penguins']
 ```
 
+## Geospatial
+
+The DuckDB backend has experimental support for
+[geospatial](../posts/ibis-duckdb-geospatial/index.qmd) operations.
+
+To enable geospatial operations, install the `geospatial` extra or otherwise install
+the additional required dependencies:
+
+See [`read_geo`](#ibis.backends.duckdb.Backend.read_geo) for some tips on reading
+in geospatial data.
+
+
+::: {.panel-tabset}
+
+## `pip`
+
+```bash
+pip install 'ibis-framework[geospatial]'
+```
+
+
+## `conda`
+
+```bash
+conda install -c conda-forge geopandas 'shapely>=2,<3'
+```
+
+## `mamba`
+
+```bash
+mamba install -c conda-forge geopandas 'shapely>=2,<3'
+```
+
+:::
+
 ```{python}
 #| echo: false
 BACKEND = "DuckDB"

@@ -1,0 +1,3 @@
+UnboundTable: bork
+  a int64
+  b int64

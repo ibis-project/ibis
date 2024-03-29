@@ -123,6 +123,15 @@ _to_sqlglot_types = {
     dt.Time: typecode.TIME,
 }
 
+_geotypes = {
+    "POINT": dt.Point,
+    "LINESTRING": dt.LineString,
+    "POLYGON": dt.Polygon,
+    "MULTIPOINT": dt.MultiPoint,
+    "MULTILINESTRING": dt.MultiLineString,
+    "MULTIPOLYGON": dt.MultiPolygon,
+}
+
 
 class SqlglotType(TypeMapper):
     dialect: str | None = None
@@ -283,7 +292,7 @@ class SqlglotType(TypeMapper):
         cls, arg: sge.DataTypeParam | None = None
     ) -> sge.DataType:
         if arg is not None:
-            return getattr(dt, str(arg))(nullable=cls.default_nullable)
+            return _geotypes[str(arg).upper()](nullable=cls.default_nullable)
         return dt.GeoSpatial(geotype="geometry", nullable=cls.default_nullable)
 
     @classmethod

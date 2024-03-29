@@ -759,18 +759,7 @@ class ArrayValue(Value):
         --------
         >>> import ibis
         >>> ibis.options.interactive = True
-        >>> t = ibis.memtable({"arr": [[1, 3, 3], [], [42, 42], None]})
-        >>> t
-        ┏━━━━━━━━━━━━━━━━━━━━━━┓
-        ┃ arr                  ┃
-        ┡━━━━━━━━━━━━━━━━━━━━━━┩
-        │ array<int64>         │
-        ├──────────────────────┤
-        │ [1, 3, ... +1]       │
-        │ []                   │
-        │ [42, 42]             │
-        │ NULL                 │
-        └──────────────────────┘
+        >>> t = ibis.memtable({"arr": [[1, 3, 3], [], [42, 42, None], None]})
         >>> t.arr.unique()
         ┏━━━━━━━━━━━━━━━━━━━━━━┓
         ┃ ArrayDistinct(arr)   ┃
@@ -779,7 +768,7 @@ class ArrayValue(Value):
         ├──────────────────────┤
         │ [3, 1]               │
         │ []                   │
-        │ [42]                 │
+        │ [42, None]           │
         │ NULL                 │
         └──────────────────────┘
         """

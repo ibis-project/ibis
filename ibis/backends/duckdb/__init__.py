@@ -23,7 +23,7 @@ import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis import util
-from ibis.backends import CanCreateSchema, UrlFromPath
+from ibis.backends import CanCreateDatabase, CanCreateSchema, UrlFromPath
 from ibis.backends.duckdb.compiler import DuckDBCompiler
 from ibis.backends.duckdb.converter import DuckDBPandasData
 from ibis.backends.sql import SQLBackend
@@ -74,7 +74,7 @@ class _Settings:
         return repr(dict(zip(kv["key"], kv["value"])))
 
 
-class Backend(SQLBackend, CanCreateSchema, UrlFromPath):
+class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema, UrlFromPath):
     name = "duckdb"
     compiler = DuckDBCompiler()
 
@@ -86,16 +86,16 @@ class Backend(SQLBackend, CanCreateSchema, UrlFromPath):
         return _Settings(self.con)
 
     @property
-    def current_database(self) -> str:
+    def current_catalog(self) -> str:
         with self._safe_raw_sql(sg.select(self.compiler.f.current_database())) as cur:
             [(db,)] = cur.fetchall()
         return db
 
     @property
-    def current_schema(self) -> str:
+    def current_database(self) -> str:
         with self._safe_raw_sql(sg.select(self.compiler.f.current_schema())) as cur:
-            [(schema,)] = cur.fetchall()
-        return schema
+            [(db,)] = cur.fetchall()
+        return db
 
     # TODO(kszucs): should be moved to the base SQLGLot backend
     def raw_sql(self, query: str | sg.Expression, **kwargs: Any) -> Any:
@@ -246,7 +246,7 @@ class Backend(SQLBackend, CanCreateSchema, UrlFromPath):
                         ).sql(self.name)
                     )
 
-        return self.table(name, schema=database)
+        return self.table(name, database=database)
 
     def _load_into_cache(self, name, expr):
         self.create_table(name, expr, schema=expr.schema(), temp=True)
@@ -264,7 +264,7 @@ class Backend(SQLBackend, CanCreateSchema, UrlFromPath):
         name
             Table name
         schema
-            Schema name
+            [deprecated] Schema name
         database
             Database name
 
@@ -274,7 +274,14 @@ class Backend(SQLBackend, CanCreateSchema, UrlFromPath):
             Table expression
 
         """
-        table_schema = self.get_schema(name, schema=schema, database=database)
+        table_loc = self._warn_and_create_table_loc(database, schema)
+
+        catalog, database = None, None
+        if table_loc is not None:
+            catalog = table_loc.catalog or None
+            database = table_loc.db or None
+
+        table_schema = self.get_schema(name, catalog=catalog, database=database)
         # load geospatial only if geo columns
         if any(typ.is_geospatial() for typ in table_schema.types):
             self.load_extension("spatial")
@@ -282,11 +289,15 @@ class Backend(SQLBackend, CanCreateSchema, UrlFromPath):
             name,
             schema=table_schema,
             source=self,
-            namespace=ops.Namespace(database=database, schema=schema),
+            namespace=ops.Namespace(catalog=catalog, database=database),
         ).to_expr()
 
     def get_schema(
-        self, table_name: str, schema: str | None = None, database: str | None = None
+        self,
+        table_name: str,
+        *,
+        catalog: str | None = None,
+        database: str | None = None,
     ) -> sch.Schema:
         """Compute the schema of a `table`.
 
@@ -295,8 +306,8 @@ class Backend(SQLBackend, CanCreateSchema, UrlFromPath):
         table_name
             May **not** be fully qualified. Use `database` if you want to
             qualify the identifier.
-        schema
-            Schema name
+        catalog
+            Catalog name
         database
             Database name
 
@@ -308,11 +319,11 @@ class Backend(SQLBackend, CanCreateSchema, UrlFromPath):
         """
         conditions = [sg.column("table_name").eq(sge.convert(table_name))]
 
-        if database is not None:
-            conditions.append(sg.column("table_catalog").eq(sge.convert(database)))
+        if catalog is not None:
+            conditions.append(sg.column("table_catalog").eq(sge.convert(catalog)))
 
-        if schema is not None:
-            conditions.append(sg.column("table_schema").eq(sge.convert(schema)))
+        if database is not None:
+            conditions.append(sg.column("table_schema").eq(sge.convert(database)))
 
         query = (
             sg.select(
@@ -346,7 +357,7 @@ class Backend(SQLBackend, CanCreateSchema, UrlFromPath):
     def _safe_raw_sql(self, *args, **kwargs):
         yield self.raw_sql(*args, **kwargs)
 
-    def list_databases(self, like: str | None = None) -> list[str]:
+    def list_catalogs(self, like: str | None = None) -> list[str]:
         col = "catalog_name"
         query = sg.select(sge.Distinct(expressions=[sg.column(col)])).from_(
             sg.table("schemata", db="information_schema")
@@ -356,16 +367,16 @@ class Backend(SQLBackend, CanCreateSchema, UrlFromPath):
         dbs = result[col]
         return self._filter_with_like(dbs.to_pylist(), like)
 
-    def list_schemas(
-        self, like: str | None = None, database: str | None = None
+    def list_databases(
+        self, like: str | None = None, catalog: str | None = None
     ) -> list[str]:
         col = "schema_name"
         query = sg.select(sge.Distinct(expressions=[sg.column(col)])).from_(
             sg.table("schemata", db="information_schema")
         )
 
-        if database is not None:
-            query = query.where(sg.column("catalog_name").eq(sge.convert(database)))
+        if catalog is not None:
+            query = query.where(sg.column("catalog_name").eq(sge.convert(catalog)))
 
         with self._safe_raw_sql(query) as cur:
             out = cur.fetch_arrow_table()
@@ -480,27 +491,27 @@ class Backend(SQLBackend, CanCreateSchema, UrlFromPath):
         """
         self._load_extensions([extension], force_install=force_install)
 
-    def create_schema(
-        self, name: str, database: str | None = None, force: bool = False
+    def create_database(
+        self, name: str, catalog: str | None = None, force: bool = False
     ) -> None:
-        if database is not None:
+        if catalog is not None:
             raise exc.UnsupportedOperationError(
-                "DuckDB cannot create a schema in another database."
+                "DuckDB cannot create a database in another catalog."
             )
 
-        name = sg.table(name, catalog=database, quoted=self.compiler.quoted)
+        name = sg.table(name, catalog=catalog, quoted=self.compiler.quoted)
         with self._safe_raw_sql(sge.Create(this=name, kind="SCHEMA", replace=force)):
             pass
 
-    def drop_schema(
-        self, name: str, database: str | None = None, force: bool = False
+    def drop_database(
+        self, name: str, catalog: str | None = None, force: bool = False
     ) -> None:
-        if database is not None:
+        if catalog is not None:
             raise exc.UnsupportedOperationError(
-                "DuckDB cannot drop a schema in another database."
+                "DuckDB cannot drop a database in another catalog."
             )
 
-        name = sg.table(name, catalog=database, quoted=self.compiler.quoted)
+        name = sg.table(name, catalog=catalog, quoted=self.compiler.quoted)
         with self._safe_raw_sql(sge.Drop(this=name, kind="SCHEMA", replace=force)):
             pass
 
@@ -893,7 +904,7 @@ class Backend(SQLBackend, CanCreateSchema, UrlFromPath):
     def list_tables(
         self,
         like: str | None = None,
-        database: str | None = None,
+        database: tuple[str, str] | str | None = None,
         schema: str | None = None,
     ) -> list[str]:
         """List tables and views.
@@ -903,10 +914,27 @@ class Backend(SQLBackend, CanCreateSchema, UrlFromPath):
         like
             Regex to filter by table/view name.
         database
-            Database name. If not passed, uses the current database. Only
-            supported with MotherDuck.
+            Database location. If not passed, uses the current database.
+
+            By default uses the current `database` (`self.current_database`) and
+            `catalog` (`self.current_catalog`).
+
+            To specify a table in a separate catalog, you can pass in the
+            catalog and database as a string `"catalog.database"`, or as a tuple of
+            strings `("catalog", "database")`.
+
+            ::: {.callout-note}
+            ## Ibis does not use the word `schema` to refer to database hierarchy.
+
+            A collection of tables is referred to as a `database`.
+            A collection of `database` is referred to as a `catalog`.
+
+            These terms are mapped onto the corresponding features in each
+            backend (where available), regardless of whether the backend itself
+            uses the same terminology.
+            :::
         schema
-            Schema name. If not passed, uses the current schema.
+            [deprecated] Schema name. If not passed, uses the current schema.
 
         Returns
         -------
@@ -923,18 +951,23 @@ class Backend(SQLBackend, CanCreateSchema, UrlFromPath):
         >>> bar = con.create_view("bar", foo)
         >>> con.list_tables()
         ['bar', 'foo']
-        >>> con.create_schema("my_schema")
-        >>> con.list_tables(schema="my_schema")
+        >>> con.create_database("my_database")
+        >>> con.list_tables(database="my_database")
         []
         >>> with con.begin() as c:
-        ...     c.exec_driver_sql("CREATE TABLE my_schema.baz (a INTEGER)")  # doctest: +ELLIPSIS
+        ...     c.exec_driver_sql("CREATE TABLE my_database.baz (a INTEGER)")  # doctest: +ELLIPSIS
         <...>
-        >>> con.list_tables(schema="my_schema")
+        >>> con.list_tables(database="my_database")
         ['baz']
 
         """
-        database = F.current_database() if database is None else sge.convert(database)
-        schema = F.current_schema() if schema is None else sge.convert(schema)
+        table_loc = self._warn_and_create_table_loc(database, schema)
+
+        catalog = F.current_database()
+        database = F.current_schema()
+        if table_loc is not None:
+            catalog = table_loc.catalog or catalog
+            database = table_loc.db or database
 
         col = "table_name"
         sql = (
@@ -942,10 +975,10 @@ class Backend(SQLBackend, CanCreateSchema, UrlFromPath):
             .from_(sg.table("tables", db="information_schema"))
             .distinct()
             .where(
-                C.table_catalog.eq(database).or_(
+                C.table_catalog.eq(catalog).or_(
                     C.table_catalog.eq(sge.convert("temp"))
                 ),
-                C.table_schema.eq(schema),
+                C.table_schema.eq(database),
             )
             .sql(self.name, pretty=True)
         )
@@ -1027,7 +1060,7 @@ class Backend(SQLBackend, CanCreateSchema, UrlFromPath):
         with self._safe_raw_sql(query_con):
             pass
 
-        return self.table(table_name, schema=database, database=catalog)
+        return self.table(table_name, database=(database, catalog))
 
     def read_sqlite(self, path: str | Path, table_name: str | None = None) -> ir.Table:
         """Register a table from a SQLite database into a DuckDB table.

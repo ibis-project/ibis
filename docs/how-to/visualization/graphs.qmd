@@ -7,7 +7,7 @@ graph](https://en.wikipedia.org/wiki/Directed_graph) using
 To get started, make sure you've installed the necessary dependencies.
 
 ```sh
-$ pip install 'ibis-framework[duckdb,examples,graphviz]'
+$ pip install 'ibis-framework[duckdb,examples,visualization]'
 ```
 
 ::: {.callout-note collapse="true"}

@@ -60,8 +60,14 @@ def test_simple_aggregate_execute(alltypes):
 
 
 def test_list_tables(con):
-    assert len(con.list_tables()) > 0
     assert len(con.list_tables(like="functional")) == 1
+    assert {"astronauts", "batting", "diamonds"} <= set(con.list_tables())
+
+    _ = con.create_table("tempy", schema=ibis.schema(dict(id="int")), temp=True)
+
+    assert "tempy" in con.list_tables()
+    # temp tables only show up when database='public' (or default)
+    assert "tempy" not in con.list_tables(database="tiger")
 
 
 def test_compile_toplevel(assert_sql):
@@ -72,9 +78,9 @@ def test_compile_toplevel(assert_sql):
     assert_sql(expr)
 
 
-def test_list_databases(con):
+def test_list_catalogs(con):
     assert POSTGRES_TEST_DB is not None
-    assert POSTGRES_TEST_DB in con.list_databases()
+    assert POSTGRES_TEST_DB in con.list_catalogs()
 
 
 def test_interval_films_schema(con):
@@ -108,7 +114,7 @@ def test_unsupported_intervals(con):
     assert t["g"].type() == dt.Interval("M")
 
 
-@pytest.mark.parametrize("params", [{}, {"database": POSTGRES_TEST_DB}])
+@pytest.mark.parametrize("params", [{}, {"database": "public"}])
 def test_create_and_drop_table(con, temp_table, params):
     sch = ibis.schema(
         [
@@ -243,4 +249,4 @@ def test_kwargs_passthrough_in_connect():
     con = ibis.connect(
         "postgresql://postgres:postgres@localhost/ibis_testing?sslmode=allow"
     )
-    assert con.current_database == "ibis_testing"
+    assert con.current_catalog == "ibis_testing"

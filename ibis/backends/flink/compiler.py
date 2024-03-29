@@ -566,3 +566,6 @@ class FlinkCompiler(SQLGlotCompiler):
         values = self.f.array_concat(left_values, right_values)
 
         return self.cast(self.f.map_from_arrays(keys, values), op.dtype)
+
+    def visit_StructColumn(self, op, *, names, values):
+        return self.cast(sge.Struct(expressions=list(values)), op.dtype)
