@@ -924,11 +924,6 @@ def test_ungrouped_unbounded_window(
 @pytest.mark.notimpl(
     ["impala"], raises=ImpalaHiveServer2Error, reason="limited RANGE support"
 )
-@pytest.mark.notyet(
-    ["clickhouse"],
-    reason="RANGE OFFSET frame for 'DB::ColumnNullable' ORDER BY column is not implemented",
-    raises=ClickHouseDatabaseError,
-)
 @pytest.mark.notyet(["mssql"], raises=PyODBCProgrammingError)
 @pytest.mark.broken(
     ["mysql"],
