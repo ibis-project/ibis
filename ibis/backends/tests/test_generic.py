@@ -852,6 +852,11 @@ def test_typeof(con):
     reason="https://github.com/risingwavelabs/risingwave/issues/1343",
 )
 @pytest.mark.xfail_version(dask=["dask<2024.2.0"])
+@pytest.mark.notyet(
+    ["mssql"],
+    raises=PyODBCProgrammingError,
+    reason="naked IN queries are not supported",
+)
 def test_isin_uncorrelated(
     backend, batting, awards_players, batting_df, awards_players_df
 ):

@@ -119,6 +119,30 @@ def first_to_firstvalue(_, **kwargs):
     return _.copy(func=klass(_.func.arg))
 
 
+def complexity(node):
+    """Assign a complexity score to a node.
+
+    Subsequent projections can be merged into a single projection by replacing
+    the fields referenced in the outer projection with the computed expressions
+    from the inner projection. This inlining can result in very complex value
+    expressions depending on the projections. In order to prevent excessive
+    inlining, we assign a complexity score to each node.
+
+    The complexity score assigns 1 to each value expression and adds up in the
+    tree hierarchy unless there is a Field node where we don't add up the
+    complexity of the referenced relation. This way we treat fields kind of like
+    reusable variables considering them less complex than they were inlined.
+    """
+
+    def accum(node, *args):
+        if isinstance(node, ops.Field):
+            return 1
+        else:
+            return 1 + sum(args)
+
+    return node.map_nodes(accum)[node]
+
+
 @replace(Object(Select, Object(Select)))
 def merge_select_select(_, **kwargs):
     """Merge subsequent Select relations into one.
@@ -128,15 +152,11 @@ def merge_select_select(_, **kwargs):
     from the inner Select are inlined into the outer Select.
     """
     # don't merge if either the outer or the inner select has window functions
-    for v in _.selections.values():
-        if v.find(ops.WindowFunction, filter=ops.Value):
-            return _
-    for v in _.parent.selections.values():
-        if v.find((ops.WindowFunction, ops.Unnest), filter=ops.Value):
-            return _
-    for v in _.predicates:
-        if v.find((ops.ExistsSubquery, ops.InSubquery), filter=ops.Value):
-            return _
+    blocking = (ops.WindowFunction, ops.ExistsSubquery, ops.InSubquery, ops.Unnest)
+    if _.find_below(blocking, filter=ops.Value):
+        return _
+    if _.parent.find_below(blocking, filter=ops.Value):
+        return _
 
     subs = {ops.Field(_.parent, k): v for k, v in _.parent.values.items()}
     selections = {k: v.replace(subs, filter=ops.Value) for k, v in _.selections.items()}
@@ -151,12 +171,13 @@ def merge_select_select(_, **kwargs):
     )
     unique_sort_keys = sort_keys + parent_sort_keys
 
-    return Select(
+    result = Select(
         _.parent.parent,
         selections=selections,
         predicates=unique_predicates,
         sort_keys=unique_sort_keys,
     )
+    return result if complexity(result) <= complexity(_) else _
 
 
 def extract_ctes(node):
@@ -198,7 +219,8 @@ def sqlize(
     assert isinstance(node, ops.Relation)
 
     # apply the backend specific rewrites
-    node = node.replace(reduce(operator.or_, rewrites))
+    if rewrites:
+        node = node.replace(reduce(operator.or_, rewrites))
 
     # lower the expression graph to a SQL-like relational algebra
     context = {"params": params}
