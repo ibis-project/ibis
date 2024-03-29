@@ -43,7 +43,7 @@ env:
 
 jobs:
   test_bigquery_lite:
-    name: BigQuery ubuntu-latest python-${{ matrix.python-version }}
+    name: BigQuery ${{ matrix.os }} python-${{ matrix.python-version }}
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
