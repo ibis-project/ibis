@@ -1590,7 +1590,9 @@ DATE_BACKEND_TYPES = {
 }
 
 
-@pytest.mark.notimpl(["pandas", "dask", "exasol"], raises=com.OperationNotDefinedError)
+@pytest.mark.notimpl(
+    ["pandas", "dask", "exasol", "risingwave"], raises=com.OperationNotDefinedError
+)
 @pytest.mark.notimpl(
     ["druid"], raises=PyDruidProgrammingError, reason="SQL parse failed"
 )
@@ -1825,7 +1827,9 @@ def test_interval_literal(con, backend):
         assert con.execute(expr.typeof()) == INTERVAL_BACKEND_TYPES[backend_name]
 
 
-@pytest.mark.notimpl(["pandas", "dask", "exasol"], raises=com.OperationNotDefinedError)
+@pytest.mark.notimpl(
+    ["pandas", "dask", "exasol", "risingwave"], raises=com.OperationNotDefinedError
+)
 @pytest.mark.broken(
     ["druid"],
     raises=AttributeError,

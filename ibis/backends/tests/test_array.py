@@ -1320,10 +1320,6 @@ def test_repr_timestamp_array(con, monkeypatch):
 @pytest.mark.broken(
     ["dask"], raises=AssertionError, reason="DataFrame.index are different"
 )
-@pytest.mark.notimpl(
-    ["risingwave"],
-    reason="Only table-in-out functions can have subquery parameters",
-)
 def test_unnest_range(con):
     expr = ibis.range(2).unnest().name("x").as_table().mutate({"y": 1.0})
     result = con.execute(expr)
