@@ -1100,6 +1100,30 @@ This can be evaluated directly, yielding the above query:
 ibis.to_sql(expr)
 ```
 
+`topk` has a `by` parameter that allows you to pass in an expression to compute the topk results
+by. This allows you to define more complex topk like the following:
+
+```{python}
+from ibis import _
+
+expr = purchases.user_id.topk(10, by=_.price.sum().name("total_purchase_amount"))
+```
+
+This gives you the top 10 users with the highest total purchase amounts.
+
+Furthermore, you can compute topk over tables by using the special SQL function, `ROW_NUMBER`.
+Ibis provides a `row_number()` function that allows you to do this:
+
+```{python}
+expr = purchases.mutate(
+  row_number=ibis.row_number().over(group_by=[_.user_id], order_by=_.price)
+)
+expr = expr[_.row_number < 3]
+```
+
+The output of this is a table with the three most expensive items that each user has purchased
+(or, in plain SQL translation: the top three items per user_id that have the maximum price).
+
 ## Date / time data
 
 See `Timestamp methods <api.timestamp>`{.interpreted-text role="ref"}
