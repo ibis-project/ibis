@@ -9,7 +9,7 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable-small";
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-23.11";
 
     poetry2nix = {
       url = "github:nix-community/poetry2nix";
@@ -138,7 +138,7 @@
         ibis311 = mkDevShell pkgs.ibisDevEnv311;
         ibis312 = mkDevShell pkgs.ibisDevEnv312;
 
-        default = ibis312;
+        default = ibis311;
 
         preCommit = pkgs.mkShell {
           name = "preCommit";
