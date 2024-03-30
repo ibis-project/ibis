@@ -64,6 +64,16 @@ class Substring(Value):
 
 
 @public
+class StringSlice(Value):
+    arg: Value[dt.String]
+    start: Optional[Value[dt.Integer]] = None
+    end: Optional[Value[dt.Integer]] = None
+
+    dtype = dt.string
+    shape = rlz.shape_like("arg")
+
+
+@public
 class StrRight(Value):
     arg: Value[dt.String]
     nchars: Value[dt.Integer]

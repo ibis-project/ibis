@@ -16,6 +16,7 @@ from ibis.backends.sql.rewrites import (
     rewrite_empty_order_by_window,
     rewrite_sample_as_filter,
 )
+from ibis.expr.rewrites import rewrite_stringslice
 
 
 class ExasolCompiler(SQLGlotCompiler):
@@ -29,6 +30,7 @@ class ExasolCompiler(SQLGlotCompiler):
         exclude_unsupported_window_frame_from_rank,
         exclude_unsupported_window_frame_from_row_number,
         rewrite_empty_order_by_window,
+        rewrite_stringslice,
         *SQLGlotCompiler.rewrites,
     )
 

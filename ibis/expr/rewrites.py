@@ -82,6 +82,26 @@ def rewrite_dropna(_):
     return ops.Filter(_.parent, tuple(preds))
 
 
+@replace(p.StringSlice)
+def rewrite_stringslice(_, **kwargs):
+    """Rewrite StringSlice in terms of Substring."""
+    if _.end is None:
+        return ops.Substring(_.arg, start=_.start)
+    if _.start is None:
+        return ops.Substring(_.arg, start=0, length=_.end)
+    if (
+        isinstance(_.start, ops.Literal)
+        and isinstance(_.start.value, int)
+        and isinstance(_.end, ops.Literal)
+        and isinstance(_.end.value, int)
+    ):
+        # optimization for constant values
+        length = _.end.value - _.start.value
+    else:
+        length = ops.Subtract(_.end, _.start)
+    return ops.Substring(_.arg, start=_.start, length=length)
+
+
 @replace(p.Analytic)
 def project_wrap_analytic(_, rel):
     # Wrap analytic functions in a window function

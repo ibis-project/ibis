@@ -563,107 +563,6 @@ def uses_java_re(t):
             id="rstrip",
         ),
         param(
-            lambda t: t.date_string_col.substr(2, 3),
-            lambda t: t.date_string_col.str[2:5],
-            id="substr",
-        ),
-        param(
-            lambda t: t.date_string_col.substr(2),
-            lambda t: t.date_string_col.str[2:],
-            id="substr-start-only",
-            marks=[
-                pytest.mark.broken(
-                    ["mssql"],
-                    reason="substr requires 3 arguments",
-                    raises=PyODBCProgrammingError,
-                ),
-            ],
-        ),
-        param(
-            lambda t: t.date_string_col.left(2),
-            lambda t: t.date_string_col.str[:2],
-            id="left",
-        ),
-        param(
-            lambda t: t.date_string_col.right(2),
-            lambda t: t.date_string_col.str[-2:],
-            id="right",
-        ),
-        param(
-            lambda t: t.date_string_col[1:3],
-            lambda t: t.date_string_col.str[1:3],
-            id="slice",
-        ),
-        param(
-            lambda t: t.date_string_col[-2],
-            lambda t: t.date_string_col.str[-2],
-            id="negative-index",
-        ),
-        param(
-            lambda t: t.date_string_col[t.date_string_col.length() - 1 :],
-            lambda t: t.date_string_col.str[-1:],
-            id="expr_slice_begin",
-            # TODO: substring #2553
-            marks=[
-                pytest.mark.notimpl(
-                    ["polars"],
-                    raises=com.UnsupportedArgumentError,
-                    reason=(
-                        "Polars does not support columnar argument Subtract(StringLength(date_string_col), 1)"
-                    ),
-                ),
-                pytest.mark.xfail_version(datafusion=["datafusion==35"]),
-            ],
-        ),
-        param(
-            lambda t: t.date_string_col[: t.date_string_col.length()],
-            lambda t: t.date_string_col,
-            id="expr_slice_end",
-            # TODO: substring #2553
-            marks=[
-                pytest.mark.notimpl(
-                    ["polars"],
-                    raises=com.UnsupportedArgumentError,
-                    reason=(
-                        "Polars does not support columnar argument Subtract(StringLength(date_string_col), 1)"
-                    ),
-                ),
-            ],
-        ),
-        param(
-            lambda t: t.date_string_col[:],
-            lambda t: t.date_string_col,
-            id="expr_empty_slice",
-            # TODO: substring #2553
-            marks=[
-                pytest.mark.notimpl(
-                    ["polars"],
-                    raises=com.UnsupportedArgumentError,
-                    reason=(
-                        "Polars does not support columnar argument "
-                        "Subtract(StringLength(date_string_col), 0)"
-                    ),
-                ),
-            ],
-        ),
-        param(
-            lambda t: t.date_string_col[
-                t.date_string_col.length() - 2 : t.date_string_col.length() - 1
-            ],
-            lambda t: t.date_string_col.str[-2:-1],
-            id="expr_slice_begin_end",
-            # TODO: substring #2553
-            marks=[
-                pytest.mark.notimpl(
-                    ["polars"],
-                    raises=com.UnsupportedArgumentError,
-                    reason=(
-                        "Polars does not support columnar argument Subtract(StringLength(date_string_col), 1)"
-                    ),
-                ),
-            ],
-        ),
-        param(
             lambda t: t.date_string_col.split("/"),
             lambda t: t.date_string_col.str.split("/"),
             id="split",
@@ -717,6 +616,73 @@ def test_string(backend, alltypes, df, result_func, expected_func):
     result = expr.execute()
 
     expected = backend.default_series_rename(expected_func(df))
+    backend.assert_series_equal(result, expected)
+
+
+@pytest.mark.parametrize(
+    ("result_func", "expected_func"),
+    [
+        param(lambda c: c.substr(2, 3), lambda c: c.str[2:5], id="substr"),
+        param(lambda c: c.substr(2), lambda c: c.str[2:], id="substr-start-only"),
+        param(lambda c: c.left(2), lambda c: c.str[:2], id="left"),
+        param(lambda c: c.right(2), lambda c: c.str[-2:], id="right"),
+        param(lambda c: c[1:3], lambda c: c.str[1:3], id="slice"),
+        param(lambda c: c[2], lambda c: c.str[2], id="positive-index"),
+        param(lambda c: c[-2], lambda c: c.str[-2], id="negative-index"),
+        param(
+            lambda c: c[c.length() - 1 :],
+            lambda c: c.str[-1:],
+            id="expr_slice_begin",
+            # TODO: substring #2553
+            marks=[
+                pytest.mark.notimpl(
+                    ["polars"],
+                    raises=com.UnsupportedArgumentError,
+                    reason=(
+                        "Polars does not support columnar argument Subtract(StringLength(date_string_col), 1)"
+                    ),
+                ),
+                pytest.mark.xfail_version(datafusion=["datafusion==35"]),
+            ],
+        ),
+        param(
+            lambda c: c[: c.length()],
+            lambda c: c,
+            id="expr_slice_end",
+            # TODO: substring #2553
+            marks=[
+                pytest.mark.notimpl(
+                    ["polars"],
+                    raises=com.UnsupportedArgumentError,
+                    reason=(
+                        "Polars does not support columnar argument Subtract(StringLength(date_string_col), 1)"
+                    ),
+                ),
+            ],
+        ),
+        param(lambda c: c[:], lambda c: c, id="expr_empty_slice"),
+        param(
+            lambda c: c[c.length() - 2 : c.length() - 1],
+            lambda c: c.str[-2:-1],
+            id="expr_slice_begin_end",
+            # TODO: substring #2553
+            marks=[
+                pytest.mark.notimpl(
+                    ["polars"],
+                    raises=com.UnsupportedArgumentError,
+                    reason=(
+                        "Polars does not support columnar argument Subtract(StringLength(date_string_col), 1)"
+                    ),
+                ),
+            ],
+        ),
+    ],
+)
+def test_substring(backend, alltypes, df, result_func, expected_func):
+    expr = result_func(alltypes.date_string_col).name("tmp")
+    result = expr.execute()
+
+    expected = backend.default_series_rename(expected_func(df.date_string_col))
     backend.assert_series_equal(result, expected)
 
 

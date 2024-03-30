@@ -17,6 +17,7 @@ from ibis.backends.sql.dialects import DataFusion
 from ibis.backends.sql.rewrites import rewrite_sample_as_filter
 from ibis.common.temporal import IntervalUnit, TimestampUnit
 from ibis.expr.operations.udf import InputType
+from ibis.expr.rewrites import rewrite_stringslice
 from ibis.formats.pyarrow import PyArrowType
 
 
@@ -25,7 +26,11 @@ class DataFusionCompiler(SQLGlotCompiler):
 
     dialect = DataFusion
     type_mapper = DataFusionType
-    rewrites = (rewrite_sample_as_filter, *SQLGlotCompiler.rewrites)
+    rewrites = (
+        rewrite_sample_as_filter,
+        rewrite_stringslice,
+        *SQLGlotCompiler.rewrites,
+    )
 
     UNSUPPORTED_OPERATIONS = frozenset(
         (
@@ -144,12 +149,6 @@ class DataFusionCompiler(SQLGlotCompiler):
         if to.is_decimal():
             return self.f.arrow_cast(arg, f"{PyArrowType.from_ibis(to)}".capitalize())
         return self.cast(arg, to)
-
-    def visit_Substring(self, op, *, arg, start, length):
-        start = self.if_(start < 0, self.f.length(arg) + start + 1, start + 1)
-        if length is not None:
-            return self.f.substr(arg, start, length)
-        return self.f.substr(arg, start)
 
     def visit_Arbitrary(self, op, *, arg, where):
         cond = ~arg.is_(None)
