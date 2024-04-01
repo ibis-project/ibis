@@ -72,6 +72,7 @@ class PandasUtils:
 
             def applier(df):
                 return func(df[arg_column.name])
+
         else:
 
             def applier(df):

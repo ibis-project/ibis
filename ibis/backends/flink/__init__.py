@@ -143,6 +143,58 @@ class Backend(SQLBackend, CanCreateDatabase, NoUrl):
         statement = DropDatabase(name=name, catalog=catalog, must_exist=not force)
         self.raw_sql(statement.compile())
 
+    def list(
+        self,
+        like: str | None = None,
+        *,
+        database: str | None = None,
+        catalog: str | None = None,
+        temp: bool = False,
+    ) -> list[str]:
+        """List the names of tables and views in the database.
+
+        Returns the list of names for all the temporary or permanent
+        tables/views in the `database` and `catalog`. If `database`
+        and `catalog` are not specified, their default values will be
+        used. If `temp` is True, permanent tables/views get excluded,
+        and `database` and `catalog` arguments are ignored as
+        temporary tables/views can only be listed for the default
+        database and catalog.
+
+        Parameters
+        ----------
+        like : str, optional
+            A pattern in Python's regex format.
+        database : str, optional
+            The database to list tables of, if not the current one.
+        catalog : str, optional
+            The catalog to list tables of, if not the current one.
+        temp : bool, optional
+            Whether to list only temporary tables/views (True) or
+            both temporary and permanent tables/views (False).
+
+        Returns
+        -------
+        list[str]
+            The list of table/view names that match the pattern `like`.
+        """
+        catalog = catalog or self.current_catalog
+        database = database or self.current_database
+
+        # The following is equivalent to the SQL query string `SHOW TABLES FROM|IN`,
+        # but executing the SQL string directly yields a `TableResult` object
+        # Note (mehmet): `list_***_tables()` returns both tables and views.
+        # Ref: Docstring for pyflink/table/table_environment.py:list_tables()
+        if temp:
+            # Note (mehmet): TableEnvironment does not provide a function to list
+            # the temporary tables in a given catalog and database.
+            # Ref: https://nightlies.apache.org/flink/flink-docs-master/api/java/org/apache/flink/table/api/TableEnvironment.html
+            tables_and_views = self._table_env.list_temporary_tables()
+        else:
+            tables_and_views = self._table_env._j_tenv.listTables(catalog, database)
+
+        return self._filter_with_like(tables_and_views, like)
+
     def list_tables(
         self,
         like: str | None = None,
@@ -151,68 +203,64 @@ class Backend(SQLBackend, CanCreateDatabase, NoUrl):
         catalog: str | None = None,
         temp: bool = False,
     ) -> list[str]:
-        """Return the list of table/view names.
+        """List the names of tables in the database.
 
-        Return the list of table/view names in the `database` and `catalog`. If
-        `database`/`catalog` are not specified, their default values will be
-        used. Temporary tables can only be listed for the default database and
-        catalog, hence `database` and `catalog` are ignored if `temp` is True.
+        Returns the list of names for all the temporary or permanent
+        tables in the `database` and `catalog`. If `database` and
+        `catalog` are not specified, their default values will be
+        used. If `temp` is True, permanent tables get excluded, and
+        `database` and `catalog` arguments are ignored as temporary
+        tables can only be listed for the default database and
+        catalog.
 
         Parameters
         ----------
         like : str, optional
             A pattern in Python's regex format.
-        temp : bool, optional
-            Whether to list temporary tables or permanent tables.
         database : str, optional
             The database to list tables of, if not the current one.
         catalog : str, optional
             The catalog to list tables of, if not the current one.
+        temp : bool, optional
+            Whether to list only temporary tables (True) or
+            both temporary and permanent tables (False).
 
         Returns
         -------
         list[str]
-            The list of the table/view names that match the pattern `like`.
-
+            The list of table names that match the pattern `like`.
         """
-        catalog = catalog or self.current_catalog
-        database = database or self.current_database
+        tables_and_views = self.list(
+            like=like,
+            database=database,
+            catalog=catalog,
+            temp=temp,
+        )
+        views = self.list_views(like=like, temp=temp)
 
-        # The following is equivalent to the SQL query string `SHOW TABLES FROM|IN`,
-        # but executing the SQL string directly yields a `TableResult` object
-        if temp:
-            # Note (mehmet): TableEnvironment does not provide a function to list
-            # the temporary tables in a given catalog and database.
-            # Ref: https://nightlies.apache.org/flink/flink-docs-master/api/java/org/apache/flink/table/api/TableEnvironment.html
-            tables = self._table_env.list_temporary_tables()
-        else:
-            # Note (mehmet): `listTables` returns both tables and views.
-            # Ref: Docstring for pyflink/table/table_environment.py:list_tables()
-            tables = self._table_env._j_tenv.listTables(catalog, database)
-
-        return self._filter_with_like(tables, like)
+        # Note: Flink does not allow creating a view (virtual table)
+        # using the name of an existing table.
+        return list(set(tables_and_views) - set(views))
 
     def list_views(
         self,
         like: str | None = None,
         temp: bool = False,
     ) -> list[str]:
-        """Return the list of view names.
-
-        Return the list of view names.
+        """List the names of views.
 
         Parameters
         ----------
         like : str, optional
             A pattern in Python's regex format.
         temp : bool, optional
-            Whether to list temporary views or permanent views.
+            Whether to list only the temporary views (True) or both
+            temporary and permanent views (False).
 
         Returns
         -------
         list[str]
-            The list of the view names that match the pattern `like`.
-
+            The list of view names that match the pattern `like`.
         """
 
         if temp:
@@ -657,9 +705,11 @@ class Backend(SQLBackend, CanCreateDatabase, NoUrl):
                 ),
                 expression=query_expression,
                 exists=force,
-                properties=sge.Properties(expressions=[sge.TemporaryProperty()])
-                if temp
-                else None,
+                properties=(
+                    sge.Properties(expressions=[sge.TemporaryProperty()])
+                    if temp
+                    else None
+                ),
             )
             self.raw_sql(stmt.sql(self.name))
 
@@ -998,6 +1048,7 @@ class Backend(SQLBackend, CanCreateDatabase, NoUrl):
         from pyflink.table.types import create_arrow_schema
 
         from ibis.backends.flink.datatypes import get_field_data_types
+
         # Note (mehmet): Implementation of this is based on
         # pyflink/table/table.py: to_pandas().
 

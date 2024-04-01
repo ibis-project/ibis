@@ -578,13 +578,50 @@ $$"""
 
         return self._filter_with_like(schemata, like)
 
+    def list(
+        self,
+        like: str | None = None,
+        database: tuple[str, str] | str | None = None,
+        schema: str | None = None,
+    ) -> list[str]:
+        """List the names of tables and views in the database.
+
+        Parameters
+        ----------
+        like
+            A pattern to use for listing tables/views.
+        database
+            Table location. If not passed, uses the current catalog and database.
+
+            To specify a table in a separate Snowflake catalog, you can pass in the
+            catalog and database as a string `"catalog.database"`, or as a tuple of
+            strings `("catalog", "database")`.
+
+            ::: {.callout-note}
+            ## Ibis does not use the word `schema` to refer to database hierarchy.
+
+            A collection of tables/views is referred to as a `database`.
+            A collection of `database` is referred to as a `catalog`.
+
+            These terms are mapped onto the corresponding features in each
+            backend (where available), regardless of whether the backend itself
+            uses the same terminology.
+            :::
+        schema
+            [deprecated] The schema inside `database` to perform the list against.
+        """
+
+        return self.list_tables(
+            like=like, database=database, schema=schema
+        ) + self.list_views(like=like, database=database, schema=schema)
+
     def list_tables(
         self,
         like: str | None = None,
         database: tuple[str, str] | str | None = None,
         schema: str | None = None,
     ) -> list[str]:
-        """List the tables in the database.
+        """List the names of tables in the database.
 
         ::: {.callout-note}
         ## Ibis does not use the word `schema` to refer to database hierarchy.
@@ -611,20 +648,56 @@ $$"""
             [deprecated] The schema inside `database` to perform the list against.
         """
         table_loc = self._warn_and_create_table_loc(database, schema)
-
-        tables_query = "SHOW TABLES"
-        views_query = "SHOW VIEWS"
-
+        query = "SHOW TABLES"
         if table_loc is not None:
-            tables_query += f" IN {table_loc}"
-            views_query += f" IN {table_loc}"
+            query += f" IN {table_loc}"
 
         with self.con.cursor() as cur:
-            # TODO: considering doing this with a single query using information_schema
-            tables = list(map(itemgetter(1), cur.execute(tables_query)))
-            views = list(map(itemgetter(1), cur.execute(views_query)))
+            tables = list(map(itemgetter(1), cur.execute(query)))
 
-        return self._filter_with_like(tables + views, like=like)
+        return self._filter_with_like(tables, like=like)
+
+    def list_views(
+        self,
+        like: str | None = None,
+        database: tuple[str, str] | str | None = None,
+        schema: str | None = None,
+    ) -> list[str]:
+        """List the names of views in the database.
+
+        Parameters
+        ----------
+        like
+            A pattern to use for listing views.
+        database
+            Table location. If not passed, uses the current catalog and database.
+
+            To specify a table in a separate Snowflake catalog, you can pass in the
+            catalog and database as a string `"catalog.database"`, or as a tuple of
+            strings `("catalog", "database")`.
+
+            ::: {.callout-note}
+            ## Ibis does not use the word `schema` to refer to database hierarchy.
+
+            A collection of views is referred to as a `database`.
+            A collection of `database` is referred to as a `catalog`.
+
+            These terms are mapped onto the corresponding features in each
+            backend (where available), regardless of whether the backend itself
+            uses the same terminology.
+            :::
+        schema
+            [deprecated] The schema inside `database` to perform the list against.
+        """
+        table_loc = self._warn_and_create_table_loc(database, schema)
+        query = "SHOW VIEWS"
+        if table_loc is not None:
+            query += f" IN {table_loc}"
+
+        with self.con.cursor() as cur:
+            views = list(map(itemgetter(1), cur.execute(query)))
+
+        return self._filter_with_like(views, like=like)
 
     def _register_in_memory_table(self, op: ops.InMemoryTable) -> None:
         import pyarrow.parquet as pq

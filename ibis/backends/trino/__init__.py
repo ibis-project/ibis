@@ -206,30 +206,61 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, CanCreateSchema):
             databases = cur.fetchall()
         return self._filter_with_like(list(map(itemgetter(0), databases)), like)
 
-    def list_tables(
+    def list(
         self,
         like: str | None = None,
         database: tuple[str, str] | str | None = None,
         schema: str | None = None,
     ) -> list[str]:
-        """List the tables in the database.
+        """List the names of tables and views in the database.
 
         Parameters
         ----------
         like
-            A pattern to use for listing tables.
+            A pattern to use for listing tables/views.
         database
             The database location to perform the list against.
 
             By default uses the current `database` (`self.current_database`) and
             `catalog` (`self.current_catalog`).
 
-            To specify a table in a separate catalog, you can pass in the
+            To specify a table/view in a separate catalog, you can pass in the
             catalog and database as a string `"catalog.database"`, or as a tuple of
             strings `("catalog", "database")`.
         schema
             [deprecated] The schema inside `database` to perform the list against.
         """
+        return self.list_tables(like=like, database=database, schema=schema)
+
+    def list_tables(
+        self,
+        like: str | None = None,
+        database: tuple[str, str] | str | None = None,
+        schema: str | None = None,
+    ) -> list[str]:
+        """List the names of tables and views in the database.
+
+        Parameters
+        ----------
+        like
+            A pattern to use for listing tables/views.
+        database
+            The database location to perform the list against.
+
+            By default uses the current `database` (`self.current_database`) and
+            `catalog` (`self.current_catalog`).
+
+            To specify a table/view in a separate catalog, you can pass in the
+            catalog and database as a string `"catalog.database"`, or as a tuple of
+            strings `("catalog", "database")`.
+        schema
+            [deprecated] The schema inside `database` to perform the list against.
+        """
+
+        # TODO (mehmet): Trino does not seem to allow for showing
+        # only the views.
+        # Ref: https://trino.io/docs/current/sql/show-tables.html
+
         table_loc = self._warn_and_create_table_loc(database, schema)
 
         query = "SHOW TABLES"

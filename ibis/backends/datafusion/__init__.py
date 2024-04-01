@@ -261,12 +261,34 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, CanCreateSchema, 
         with self._safe_raw_sql(sge.Drop(kind="SCHEMA", this=db_name, exists=force)):
             pass
 
+    def list(
+        self,
+        like: str | None = None,
+        database: str | None = None,
+    ) -> list[str]:
+        """List the names of tables and views in the database.
+
+        Parameters
+        ----------
+        like
+            A pattern in Python's regex format.
+        database
+            Unused in the datafusion backend.
+
+        Returns
+        -------
+        list[str]
+            The list of the table/view names that match the pattern `like`.
+        """
+
+        return self.list_tables(like=like, database=database)
+
     def list_tables(
         self,
         like: str | None = None,
         database: str | None = None,
     ) -> list[str]:
-        """Return the list of table names in the current database.
+        """List the names of tables in the database.
 
         Parameters
         ----------
@@ -280,6 +302,11 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, CanCreateSchema, 
         list[str]
             The list of the table names that match the pattern `like`.
         """
+        # TODO (mehmet): `datafusion` library treats views as tables and
+        # does not expose any API that would make it possible to filter
+        # out the views from the tables.
+        # Ref: https://github.com/apache/arrow-datafusion-python
+
         database = database or "public"
         query = (
             sg.select("table_name")

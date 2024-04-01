@@ -897,18 +897,18 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
         ]
         return self._filter_with_like(results, like)
 
-    def list_tables(
+    def list(
         self,
         like: str | None = None,
         database: tuple[str, str] | str | None = None,
         schema: str | None = None,
     ) -> list[str]:
-        """List the tables in the database.
+        """List the names of tables and views in the database.
 
         Parameters
         ----------
         like
-            A pattern to use for listing tables.
+            A pattern to use for listing tables/views.
         database
             The database location to perform the list against.
 
@@ -922,7 +922,7 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
             ::: {.callout-note}
             ## Ibis does not use the word `schema` to refer to database hierarchy.
 
-            A collection of tables is referred to as a `database`.
+            A collection of tables/views is referred to as a `database`.
             A collection of `database` is referred to as a `catalog`.
 
             These terms are mapped onto the corresponding features in each
@@ -932,6 +932,57 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
         schema
             [deprecated] The schema (dataset) inside `database` to perform the list against.
         """
+
+        return self.list_tables(like=like, database=database, schema=schema)
+
+    def list_tables(
+        self,
+        like: str | None = None,
+        database: tuple[str, str] | str | None = None,
+        schema: str | None = None,
+    ) -> list[str]:
+        """List the names of tables and views in the database.
+
+        Parameters
+        ----------
+        like
+            A pattern to use for listing tables/views.
+        database
+            The database location to perform the list against.
+
+            By default uses the current `dataset` (`self.current_database`) and
+            `project` (`self.current_catalog`).
+
+            To specify a table in a separate BigQuery dataset, you can pass in the
+            dataset and project as a string `"dataset.project"`, or as a tuple of
+            strings `("dataset", "project")`.
+
+            ::: {.callout-note}
+            ## Ibis does not use the word `schema` to refer to database hierarchy.
+
+            A collection of tables/views is referred to as a `database`.
+            A collection of `database` is referred to as a `catalog`.
+
+            These terms are mapped onto the corresponding features in each
+            backend (where available), regardless of whether the backend itself
+            uses the same terminology.
+            :::
+        schema
+            [deprecated] The schema (dataset) inside `database` to perform the list against.
+        """
+
+        # TODO (mehmet): BigQuery API does not seem to allow for
+        # retrieving only tables or only views:
+        # - https://cloud.google.com/bigquery/docs/reference/rest/v2/tables/list#request-body
+        # - https://cloud.google.com/bigquery/docs/view-metadata#python
+        #
+        # We could exclude views from the list by retrieving the
+        # meta-data for each table with `self.client.get_table()` and
+        # checking if it is a view or not. But this would obviously be
+        # costly.
+        #
+        # Leaving this decision to the review process.
+
         table_loc = self._warn_and_create_table_loc(database, schema)
 
         project, dataset = self._parse_project_and_dataset(table_loc)

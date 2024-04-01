@@ -61,15 +61,15 @@ def test_simple_aggregate_execute(alltypes):
     assert isinstance(v, float)
 
 
-def test_list_tables(con):
+def test_list(con):
     assert len(con.list_tables(like="functional")) == 1
     assert {"astronauts", "batting", "diamonds"} <= set(con.list_tables())
 
     _ = con.create_table("tempy", schema=ibis.schema(dict(id="int")), temp=True)
 
-    assert "tempy" in con.list_tables()
+    assert "tempy" in con.list()
     # temp tables only show up when database='public' (or default)
-    assert "tempy" not in con.list_tables(database="tiger")
+    assert "tempy" not in con.list(database="tiger")
 
 
 def test_compile_toplevel(assert_sql):
@@ -192,7 +192,7 @@ def test_unknown_column_type(con, col):
 
 def test_insert_with_cte(con):
     X = con.create_table("X", schema=ibis.schema(dict(id="int")), temp=True)
-    assert "X" in con.list_tables()
+    assert "X" in con.list()
     expr = X.join(X.mutate(a=X["id"] + 1), ["id"])
     Y = con.create_table("Y", expr, temp=True)
     assert Y.execute().empty

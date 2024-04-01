@@ -16,6 +16,7 @@ services:
       - clickhouse
 
   mysql:
+    platform: linux/amd64
     environment:
       MYSQL_ALLOW_EMPTY_PASSWORD: "true"
       MYSQL_DATABASE: ibis_testing
@@ -38,6 +39,7 @@ services:
       - $PWD/docker/mysql:/docker-entrypoint-initdb.d:ro
 
   postgres:
+    platform: linux/amd64
     user: postgres
     environment:
       POSTGRES_PASSWORD: postgres
@@ -59,6 +61,7 @@ services:
       - postgres:/data
 
   mssql:
+    platform: linux/amd64
     image: mcr.microsoft.com/mssql/server:2022-latest
     environment:
       MSSQL_SA_PASSWORD: 1bis_Testing!
@@ -341,6 +344,7 @@ services:
       - druid
 
   oracle:
+    platform: linux/amd64
     image: gvenzl/oracle-free:23.4-slim
     environment:
       ORACLE_PASSWORD: ibis

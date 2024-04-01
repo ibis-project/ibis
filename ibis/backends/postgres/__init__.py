@@ -120,7 +120,7 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, CanCreateSchema):
             )
 
         # only register if we haven't already done so
-        if (name := op.name) not in self.list_tables():
+        if (name := op.name) not in self.list():
             quoted = self.compiler.quoted
             column_defs = [
                 sg.exp.ColumnDef(
@@ -297,35 +297,15 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, CanCreateSchema):
         with self.begin() as cur:
             cur.execute("SET TIMEZONE = UTC")
 
-    def list_tables(
+    def _list_tables_and_views_or_only_views(
         self,
+        views_only: bool,
         like: str | None = None,
         schema: str | None = None,
         database: tuple[str, str] | str | None = None,
     ) -> list[str]:
-        """List the tables in the database.
+        """Helper function for `list/list_tables/list_views()`."""
 
-        ::: {.callout-note}
-        ## Ibis does not use the word `schema` to refer to database hierarchy.
-
-        A collection of tables is referred to as a `database`.
-        A collection of `database` is referred to as a `catalog`.
-
-        These terms are mapped onto the corresponding features in each
-        backend (where available), regardless of whether the backend itself
-        uses the same terminology.
-        :::
-
-        Parameters
-        ----------
-        like
-            A pattern to use for listing tables.
-        schema
-            [deprecated] The schema to perform the list against.
-        database
-            Database to list tables from. Default behavior is to show tables in
-            the current database.
-        """
         if schema is not None:
             self._warn_schema()
 
@@ -358,9 +338,10 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, CanCreateSchema):
             catalog = catalog.sql(dialect=self.name)
             conditions.append(C.table_catalog.eq(sge.convert(catalog)))
 
+        table = "views" if views_only else "tables"
         sql = (
             sg.select("table_name")
-            .from_(sg.table("tables", db="information_schema"))
+            .from_(sg.table(table, db="information_schema"))
             .distinct()
             .where(*conditions)
             .sql(self.dialect)
@@ -375,6 +356,115 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, CanCreateSchema):
             out += self._fetch_temp_tables()
 
         return self._filter_with_like(map(itemgetter(0), out), like)
+
+    def list(
+        self,
+        like: str | None = None,
+        schema: str | None = None,
+        database: tuple[str, str] | str | None = None,
+    ) -> list[str]:
+        """List the names of tables and views in the database.
+
+        Parameters
+        ----------
+        like
+            A pattern to use for listing tables/views.
+        schema
+            [deprecated] The schema to perform the list against.
+        database
+            Database to list tables/views from. Default behavior is to
+            show tables/views in the current database.
+
+            ::: {.callout-note}
+            ## Ibis does not use the word `schema` to refer to database hierarchy.
+
+            A collection of tables/views is referred to as a `database`.
+            A collection of `database` is referred to as a `catalog`.
+
+            These terms are mapped onto the corresponding features in each
+            backend (where available), regardless of whether the backend itself
+            uses the same terminology.
+            :::
+        """
+
+        return self._list_tables_and_views_or_only_views(
+            views_only=False,
+            like=like,
+            schema=schema,
+            database=database,
+        )
+
+    def list_tables(
+        self,
+        like: str | None = None,
+        schema: str | None = None,
+        database: tuple[str, str] | str | None = None,
+    ) -> list[str]:
+        """List the names of tables in the database.
+
+        Parameters
+        ----------
+        like
+            A pattern to use for listing tables.
+        schema
+            [deprecated] The schema to perform the list against.
+        database
+            Database to list tables from. Default behavior is to show tables in
+            the current database.
+
+            ::: {.callout-note}
+            ## Ibis does not use the word `schema` to refer to database hierarchy.
+
+            A collection of tables is referred to as a `database`.
+            A collection of `database` is referred to as a `catalog`.
+
+            These terms are mapped onto the corresponding features in each
+            backend (where available), regardless of whether the backend itself
+            uses the same terminology.
+            :::
+        """
+        tables_and_views = self.list(like=like, schema=schema, database=database)
+        views = self.list_views(like=like, schema=schema, database=database)
+
+        # Note: Postgres does not allow creating a view with
+        # the name of an existing table.
+        return list(set(tables_and_views) - set(views))
+
+    def list_views(
+        self,
+        like: str | None = None,
+        schema: str | None = None,
+        database: tuple[str, str] | str | None = None,
+    ) -> list[str]:
+        """List the names of views in the database.
+
+        Parameters
+        ----------
+        like
+            A pattern to use for listing views.
+        schema
+            [deprecated] The schema to perform the list against.
+        database
+            Database to list views from. Default behavior is to show views in
+            the current database.
+
+            ::: {.callout-note}
+            ## Ibis does not use the word `schema` to refer to database hierarchy.
+
+            A collection of views is referred to as a `database`.
+            A collection of `database` is referred to as a `catalog`.
+
+            These terms are mapped onto the corresponding features in each
+            backend (where available), regardless of whether the backend itself
+            uses the same terminology.
+            :::
+        """
+        return self._list_tables_and_views_or_only_views(
+            views_only=True,
+            like=like,
+            schema=schema,
+            database=database,
+        )
 
     def _fetch_temp_tables(self):
         # postgres temporary tables are stored in a separate schema

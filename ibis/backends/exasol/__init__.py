@@ -136,41 +136,72 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
             con.commit()
 
     @contextlib.contextmanager
-    def _safe_raw_sql(self, query: str, *args, **kwargs):
+    def _safe_raw_sql(self, query: str | sge.Expression, *args, **kwargs):
         with contextlib.suppress(AttributeError):
             query = query.sql(dialect=self.dialect)
 
         with self.begin() as cur:
             yield cur.execute(query, *args, **kwargs)
 
-    def list_tables(self, like=None, database=None):
-        """List the tables in the database.
+    def list(self, like=None, database=None) -> list[str]:
+        """List the names of tables and views in the database.
+
+        Parameters
+        ----------
+        like
+            A pattern to use for listing tables/views.
+        database
+            Database to list tables/views from. Default behavior is to
+            list tables/views in the current database.
+        """
+        return self.list_tables(like=like, database=database) + self.list_views(
+            like=like, database=database
+        )
+
+    def list_tables(self, like=None, database=None) -> list[str]:
+        """List the names of tables in the database.
 
         Parameters
         ----------
         like
             A pattern to use for listing tables.
         database
-            Database to list tables from. Default behavior is to show tables in
+            Database to list tables from. Default behavior is to list tables in
             the current database.
         """
-        tables = sg.select("table_name").from_(
+        sg_expr = sg.select("table_name").from_(
             sg.table("EXA_ALL_TABLES", catalog="SYS")
         )
-        views = sg.select(sg.column("view_name").as_("table_name")).from_(
+        if database is not None:
+            sg_expr = sg_expr.where(sg.column("table_schema").eq(sge.convert(database)))
+
+        with self._safe_raw_sql(sg_expr) as con:
+            tables = con.fetchall()
+
+        return self._filter_with_like([table for (table,) in tables], like=like)
+
+    def list_views(self, like=None, database=None) -> list[str]:
+        """List the names of views in the database.
+
+        Parameters
+        ----------
+        like
+            A pattern to use for listing views.
+        database
+            Database to list views from. Default behavior is to show views in
+            the current database.
+        """
+        sg_expr = sg.select(sg.column("view_name")).from_(
             sg.table("EXA_ALL_VIEWS", catalog="SYS")
         )
 
         if database is not None:
-            tables = tables.where(sg.column("table_schema").eq(sge.convert(database)))
-            views = views.where(sg.column("view_schema").eq(sge.convert(database)))
+            sg_expr = sg_expr.where(sg.column("view_schema").eq(sge.convert(database)))
 
-        query = sg.union(tables, views)
+        with self._safe_raw_sql(sg_expr) as con:
+            views = con.fetchall()
 
-        with self._safe_raw_sql(query) as con:
-            tables = con.fetchall()
-
-        return self._filter_with_like([table for (table,) in tables], like=like)
+        return self._filter_with_like([view for (view,) in views], like=like)
 
     def get_schema(
         self,

@@ -208,8 +208,27 @@ class Backend(SQLBackend):
             databases = fetchall(cur)
         return self._filter_with_like(databases.name.tolist(), like)
 
+    def list(self, like=None, database=None):
+        """List the names of tables and views in the database.
+
+        Parameters
+        ----------
+        like
+            A pattern in Python's regex format.
+        database
+            The database from which to list tables/views.
+            If not provided, the current database is used.
+
+        Returns
+        -------
+        list[str]
+            The list of table/view names that match the
+            pattern `like`.
+        """
+        return self.list_tables(like=like, database=database)
+
     def list_tables(self, like=None, database=None):
-        """Return the list of table names in the current database.
+        """List the names of tables in the database.
 
         Parameters
         ----------
@@ -224,6 +243,12 @@ class Backend(SQLBackend):
         list[str]
             The list of the table names that match the pattern `like`.
         """
+
+        # TODO (mehmet): Impala SQL does not seem to have a way to list
+        # the views. We could run DESCRIBE FORMATTED query for each
+        # table and check if it is view. But this would obviously be
+        # costly.
+        # Ref: https://impala.apache.org/docs/build/html/topics/impala_describe.html
 
         statement = "SHOW TABLES"
         if database is not None:

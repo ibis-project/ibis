@@ -148,8 +148,25 @@ class BasePandasBackend(BaseBackend, NoUrl):
     def version(self) -> str:
         return pd.__version__
 
+    def list(self, like=None, database=None):
+        """List the names of tables in the database.
+
+        Parameters
+        ----------
+        like
+            A pattern in Python's regex format.
+        database
+            Unused in the pandas backend.
+
+        Returns
+        -------
+        list[str]
+            The list of table names that match the pattern `like`.
+        """
+        return self.list_tables()
+
     def list_tables(self, like=None, database=None):
-        """Return the list of table names in the current database.
+        """List the names of tables in the database.
 
         Parameters
         ----------
@@ -229,6 +246,9 @@ class BasePandasBackend(BaseBackend, NoUrl):
         database: str | None = None,
         overwrite: bool = False,
     ) -> ir.Table:
+        # TODO (mehmet): Should we remove this to decouple
+        # views from tables across all backends?
+        # E.g., `polars` backend does not implement this.
         return self.create_table(
             name, obj=obj, temp=None, database=database, overwrite=overwrite
         )

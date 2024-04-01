@@ -269,36 +269,15 @@ class Backend(SQLBackend, CanCreateDatabase):
             con.commit()
             return cursor
 
-    # TODO: disable positional arguments
-    def list_tables(
+    def _list_tables_and_views_or_only_views(
         self,
+        views_only: bool,
         like: str | None = None,
         schema: str | None = None,
         database: tuple[str, str] | str | None = None,
     ) -> list[str]:
-        """List the tables in the database.
+        """Helper functions for `list_tables/views()`."""
 
-        ::: {.callout-note}
-        ## Ibis does not use the word `schema` to refer to database hierarchy.
-
-        A collection of tables is referred to as a `database`.
-        A collection of `database` is referred to as a `catalog`.
-
-        These terms are mapped onto the corresponding features in each
-        backend (where available), regardless of whether the backend itself
-        uses the same terminology.
-        :::
-
-        Parameters
-        ----------
-        like
-            A pattern to use for listing tables.
-        schema
-            [deprecated] The schema to perform the list against.
-        database
-            Database to list tables from. Default behavior is to show tables in
-            the current database (``self.current_database``).
-        """
         if schema is not None:
             self._warn_schema()
 
@@ -329,10 +308,10 @@ class Backend(SQLBackend, CanCreateDatabase):
                 sg_db.args["quoted"] = False
             conditions = [C.table_schema.eq(sge.convert(table_loc.sql(self.name)))]
 
-        col = "table_name"
+        table = "views" if views_only else "tables"
         sql = (
-            sg.select(col)
-            .from_(sg.table("tables", db="information_schema"))
+            sg.select("table_name")
+            .from_(sg.table(table, db="information_schema"))
             .distinct()
             .where(*conditions)
             .sql(self.name)
@@ -342,6 +321,116 @@ class Backend(SQLBackend, CanCreateDatabase):
             out = cur.fetchall()
 
         return self._filter_with_like(map(itemgetter(0), out), like)
+
+    def list(
+        self,
+        like: str | None = None,
+        schema: str | None = None,
+        database: tuple[str, str] | str | None = None,
+    ) -> list[str]:
+        """List the names of tables and views in the database.
+
+        Parameters
+        ----------
+        like
+            A pattern to use for listing tables/views.
+        schema
+            [deprecated] The schema to perform the list against.
+        database
+            Database to list tables/views from. Default behavior is to
+            show tables/views in the current database
+            (``self.current_database``).
+
+            ::: {.callout-note}
+            ## Ibis does not use the word `schema` to refer to database hierarchy.
+
+            A collection of tables/views is referred to as a `database`.
+            A collection of `database` is referred to as a `catalog`.
+
+            These terms are mapped onto the corresponding features in each
+            backend (where available), regardless of whether the backend itself
+            uses the same terminology.
+            :::
+        """
+        return self._list_tables_and_views_or_only_views(
+            views_only=False,
+            like=like,
+            schema=schema,
+            database=database,
+        )
+
+    # TODO: disable positional arguments
+    def list_tables(
+        self,
+        like: str | None = None,
+        schema: str | None = None,
+        database: tuple[str, str] | str | None = None,
+    ) -> list[str]:
+        """List the names of tables in the database.
+
+        Parameters
+        ----------
+        like
+            A pattern to use for listing tables.
+        schema
+            [deprecated] The schema to perform the list against.
+        database
+            Database to list tables from. Default behavior is to show tables in
+            the current database (``self.current_database``).
+
+            ::: {.callout-note}
+            ## Ibis does not use the word `schema` to refer to database hierarchy.
+
+            A collection of tables is referred to as a `database`.
+            A collection of `database` is referred to as a `catalog`.
+
+            These terms are mapped onto the corresponding features in each
+            backend (where available), regardless of whether the backend itself
+            uses the same terminology.
+            :::
+        """
+        tables_and_views = self.list(like=like, schema=schema, database=database)
+        views = self.list_views(like=like, schema=schema, database=database)
+
+        # Note: Mysql does not allow creating a view using
+        # the name of an existing table.
+        return list(set(tables_and_views) - set(views))
+
+    def list_views(
+        self,
+        like: str | None = None,
+        schema: str | None = None,
+        database: tuple[str, str] | str | None = None,
+    ) -> list[str]:
+        """List the names of views in the database.
+
+        Parameters
+        ----------
+        like
+            A pattern to use for listing views.
+        schema
+            [deprecated] The schema to perform the list against.
+        database
+            Database to list views from. Default behavior is to show
+            views in the current database (``self.current_database``).
+
+            ::: {.callout-note}
+            ## Ibis does not use the word `schema` to refer to database hierarchy.
+
+            A collection of views is referred to as a `database`.
+            A collection of `database` is referred to as a `catalog`.
+
+            These terms are mapped onto the corresponding features in each
+            backend (where available), regardless of whether the backend itself
+            uses the same terminology.
+            :::
+        """
+        return self._list_tables_and_views_or_only_views(
+            views_only=True,
+            like=like,
+            schema=schema,
+            database=database,
+        )
 
     def execute(
         self, expr: ir.Expr, limit: str | None = "default", **kwargs: Any

@@ -358,13 +358,88 @@ GO"""
             if should_switch_catalog:
                 cur.execute(f"USE {self._quote(current_catalog)}")
 
+    def _list_tables_and_views_or_only_views(
+        self,
+        views_only: bool,
+        like: str | None = None,
+        database: tuple[str, str] | str | None = None,
+        schema: str | None = None,
+    ) -> list[str]:
+        """Helper function for `list_tables/views()`."""
+
+        table_loc = self._warn_and_create_table_loc(database, schema)
+        catalog, db = self._to_catalog_db_tuple(table_loc)
+        conditions = []
+
+        if table_loc is not None:
+            conditions.append(C.table_schema.eq(sge.convert(db)))
+
+        sg_expr = (
+            sg.select("table_name")
+            .from_(
+                sg.table(
+                    "views" if views_only else "tables",
+                    db="information_schema",
+                    catalog=catalog if catalog is not None else self.current_catalog,
+                )
+            )
+            .distinct()
+        )
+
+        if conditions:
+            sg_expr = sg_expr.where(*conditions)
+
+        sql = sg_expr.sql(self.dialect)
+        with self._safe_raw_sql(sql) as cur:
+            out = cur.fetchall()
+
+        return self._filter_with_like(map(itemgetter(0), out), like)
+
+    def list(
+        self,
+        like: str | None = None,
+        database: tuple[str, str] | str | None = None,
+        schema: str | None = None,
+    ) -> list[str]:
+        """List the names of tables and views in the database.
+
+        Parameters
+        ----------
+        like
+            A pattern to use for listing tables/views.
+        database
+            Table/view location. If not passed, uses the current
+            catalog and database.
+
+            To specify a table/view in a separate catalog, you can
+            pass in the catalog and database as a string
+            `"catalog.database"`, or as a tuple of strings
+            `("catalog", "database")`.
+
+            ::: {.callout-note}
+            ## Ibis does not use the word `schema` to refer to database hierarchy.
+
+            A collection of tables/views is referred to as a `database`.
+            A collection of `database` is referred to as a `catalog`.
+
+            These terms are mapped onto the corresponding features in each
+            backend (where available), regardless of whether the backend itself
+            uses the same terminology.
+            :::
+        schema
+            [deprecated] The schema inside `database` to perform the list against.
+        """
+        return self._list_tables_and_views_or_only_views(
+            views_only=False, like=like, database=database, schema=schema
+        )
+
     def list_tables(
         self,
         like: str | None = None,
         database: tuple[str, str] | str | None = None,
         schema: str | None = None,
     ) -> list[str]:
-        """List the tables in the database.
+        """List the names of tables in the database.
 
         ::: {.callout-note}
         ## Ibis does not use the word `schema` to refer to database hierarchy.
@@ -390,34 +465,53 @@ GO"""
         schema
             [deprecated] The schema inside `database` to perform the list against.
         """
-        table_loc = self._warn_and_create_table_loc(database, schema)
-        catalog, db = self._to_catalog_db_tuple(table_loc)
-        conditions = []
-
-        if table_loc is not None:
-            conditions.append(C.table_schema.eq(sge.convert(db)))
-
-        sql = (
-            sg.select("table_name")
-            .from_(
-                sg.table(
-                    "tables",
-                    db="information_schema",
-                    catalog=catalog if catalog is not None else self.current_catalog,
-                )
-            )
-            .distinct()
+        tables_and_views = self.list(
+            like=like,
+            database=database,
+            schema=schema,
         )
+        views = self.list_views(like=like, database=database, schema=schema)
 
-        if conditions:
-            sql = sql.where(*conditions)
+        # Note: Mssql does not allow creating a view (virtual table)
+        # using the name of an existing table.
+        return list(set(tables_and_views) - set(views))
 
-        sql = sql.sql(self.dialect)
+    def list_views(
+        self,
+        like: str | None = None,
+        database: tuple[str, str] | str | None = None,
+        schema: str | None = None,
+    ) -> list[str]:
+        """List the names of views in the database.
 
-        with self._safe_raw_sql(sql) as cur:
-            out = cur.fetchall()
+        Parameters
+        ----------
+        like
+            A pattern to use for listing views.
+        database
+            View location. If not passed, uses the current catalog and database.
 
-        return self._filter_with_like(map(itemgetter(0), out), like)
+            To specify a view in a separate catalog, you can pass in the
+            catalog and database as a string `"catalog.database"`, or as a tuple of
+            strings `("catalog", "database")`.
+
+            ::: {.callout-note}
+            ## Ibis does not use the word `schema` to refer to database hierarchy.
+
+            A collection of views is referred to as a `database`.
+            A collection of `database` is referred to as a `catalog`.
+
+            These terms are mapped onto the corresponding features in each
+            backend (where available), regardless of whether the backend itself
+            uses the same terminology.
+            :::
+        schema
+            [deprecated] The schema inside `database` to perform the list against.
+        """
+
+        return self._list_tables_and_views_or_only_views(
+            views_only=True, like=like, database=database, schema=schema
+        )
 
     def list_databases(
         self, like: str | None = None, catalog: str | None = None

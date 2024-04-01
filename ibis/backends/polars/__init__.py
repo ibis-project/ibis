@@ -68,7 +68,41 @@ class Backend(BaseBackend, NoUrl):
     def version(self) -> str:
         return pl.__version__
 
+    def list(self, like=None, database=None):
+        """List the names of tables in the database.
+
+        Parameters
+        ----------
+        like
+            A pattern in Python's regex format.
+        database
+            Unused in the polars backend.
+
+        Returns
+        -------
+        list[str]
+            The list of table names that match the pattern `like`.
+        """
+        # TODO (mehmet): Added this function explicitly for docs
+        # purposes.  Would it be cleaner to defined it as `self.list =
+        # self.list_tables`?
+        return self.list_tables(like=like, database=database)
+
     def list_tables(self, like=None, database=None):
+        """List the names of tables in the database.
+
+        Parameters
+        ----------
+        like
+            A pattern in Python's regex format.
+        database
+            Unused in the polars backend.
+
+        Returns
+        -------
+        list[str]
+            The list of table names that match the pattern `like`.
+        """
         return self._filter_with_like(list(self._tables.keys()), like)
 
     def table(self, name: str, _schema: sch.Schema | None = None) -> ir.Table:

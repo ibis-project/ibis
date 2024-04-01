@@ -26,7 +26,7 @@ def test_create_exists_view(con, alltypes, temp_view):
     t1 = alltypes.group_by("string_col").size()
     t2 = con.create_view(temp_view, t1)
 
-    assert temp_view in con.list_tables()
+    assert temp_view in con.list_views()
     # just check it works for now
     assert t2.execute() is not None
 

@@ -35,7 +35,19 @@ class TestConf(BackendTest):
             t = s.read.parquet(path).repartition(num_partitions)
             if (sort_col := sort_cols.get(name)) is not None:
                 t = t.sort(sort_col)
+            # TODO (mehmet): Why are all created as views here?
+            # Why not use `self.connection.create_table()`?
+            # Update: It seems temporary tables are not allowed
+            # in Spark and creating tables here instead of views
+            # would require deleting them at the end of the tests.
+            # Is this the reason they were created as views in
+            # the first place?
             t.createOrReplaceTempView(name)
+
+            # TODO (mehmet): Getting the dataframe with `t.toPandas()`
+            # to maintain the outcome of `repartition()` and `sort()`
+            # performed above. Is this really necessary?
+            # self.connection.create_table(name=name, obj=t.toPandas(), overwrite=True)
 
         s.createDataFrame([(1, "a")], ["foo", "bar"]).createOrReplaceTempView("simple")
 

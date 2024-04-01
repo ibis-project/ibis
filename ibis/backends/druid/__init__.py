@@ -158,6 +158,19 @@ class Backend(SQLBackend):
     def drop_table(self, *args, **kwargs):
         raise NotImplementedError()
 
+    def list(self, like: str | None = None, database: str | None = None) -> list[str]:
+        """List the names of tables and views in the database.
+
+        Parameters
+        ----------
+        like
+            A pattern to use for listing tables/views.
+        database
+            Database to list tables/views from. Default behavior is to
+            show tables/views in the current database.
+        """
+        return self.list_tables(like=like, database=database)
+
     def list_tables(
         self, like: str | None = None, database: str | None = None
     ) -> list[str]:
@@ -171,6 +184,11 @@ class Backend(SQLBackend):
             Database to list tables from. Default behavior is to show tables in
             the current database.
         """
+
+        # TODO (mehmet): Druid SQL does not seem to have a way to
+        # list the views.
+        # Ref: https://druid.apache.org/docs/latest/tutorials/tutorial-sql-query-view/
+
         t = sg.table("TABLES", db="INFORMATION_SCHEMA", quoted=True)
         c = self.compiler
         query = sg.select(sg.column("TABLE_NAME", quoted=True)).from_(t).sql(c.dialect)
