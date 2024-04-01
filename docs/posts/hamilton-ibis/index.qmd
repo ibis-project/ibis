@@ -22,8 +22,8 @@ metadata.
 Let’s introduce Ibis before exploring how it pairs with Hamilton.
 
 ## Standalone Ibis
-Here’s an Ibis code snippet to load data from a CSV, compute features, select columns,
-and filter rows, illustrating typical feature engineering operations.
+Here’s an Ibis code snippet to load data from a parquet file, compute features,
+select columns, and filter rows, illustrating typical feature engineering operations.
 
 Reading the code, you’ll notice that:
 
