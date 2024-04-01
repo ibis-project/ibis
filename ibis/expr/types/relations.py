@@ -2963,9 +2963,19 @@ class Table(Expr, _FixedTextJupyterMixin):
             col = self[colname]
             typ = col.type()
 
+            # default statistics to None
+            col_mean = lit(None).cast(float)
+            col_std = lit(None).cast(float)
+            col_min = lit(None).cast(float)
+            col_max = lit(None).cast(float)
+            col_mode = lit(None).cast(str)
+            quantile_values = {
+                        f"p{100*q:.6f}".rstrip("0").rstrip("."): lit(None).cast(float)
+                        for q in quantile
+            }
+
             if typ.is_numeric():
                 numeric_col = True
-                col_mode = lit(None).cast(str)
                 col_mean = col.mean()
                 col_std = col.std()
                 col_min = col.min().cast(float)
@@ -2977,14 +2987,12 @@ class Table(Expr, _FixedTextJupyterMixin):
             elif typ.is_string():
                 string_col = True
                 col_mode = col.mode()
-                col_mean = lit(None).cast(float)
-                col_std = lit(None).cast(float)
-                col_min = lit(None).cast(float)
-                col_max = lit(None).cast(float)
-                quantile_values = {
-                    f"p{100*q:.6f}".rstrip("0").rstrip("."): lit(None).cast(float)
-                    for q in quantile
-                }
+            elif typ.is_boolean():
+                numeric_col = True
+                col_mean = col.mean()
+            else:
+                # Will not calculate statistics for other types
+                continue
 
             agg = self.agg(
                 name=lit(colname),
@@ -3003,6 +3011,7 @@ class Table(Expr, _FixedTextJupyterMixin):
 
         t = ibis.union(*aggs)
 
+        # TODO(jiting): Need a better way to remove columns with all NULL
         if string_col and not numeric_col:
             t = t.select(~s.of_type("float"))
         elif numeric_col and not string_col:
