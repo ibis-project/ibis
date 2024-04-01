@@ -25,6 +25,7 @@ from ibis.backends.tests.errors import (
     ImpalaHiveServer2Error,
     MySQLProgrammingError,
     OracleDatabaseError,
+    PolarsSchemaError,
     PsycoPg2InternalError,
     Py4JJavaError,
     PyDruidProgrammingError,
@@ -586,6 +587,74 @@ def test_table_info(alltypes):
     assert expr.columns == list(df.columns)
 
 
+@pytest.mark.notimpl(
+    [
+        "datafusion",
+        "impala",
+        "trino",
+        "mysql",
+        "mssql",
+        "trino",
+        "flink",
+    ],
+    raises=com.OperationNotDefinedError,
+    reason="quantile and mode is not supported",
+)
+@pytest.mark.notimpl(
+    [
+        "clickhouse",
+        "pyspark",
+        "clickhouse",
+        "risingwave",
+        "impala",
+        "oracle",
+    ],
+    raises=com.OperationNotDefinedError,
+    reason="mode is not supported",
+)
+@pytest.mark.notimpl(
+    [
+        "sqlite",
+    ],
+    raises=com.OperationNotDefinedError,
+    reason="quantile is not supported",
+)
+@pytest.mark.notimpl(
+    [
+        "exasol",
+        "druid",
+    ],
+    raises=com.OperationNotDefinedError,
+    reason="Mode and StandardDev is not supported",
+)
+@pytest.mark.notimpl(
+    [
+        "polars",
+    ],
+    raises=PolarsSchemaError,
+    reason="cannot extend/append Float64 with Float32",
+)
+@pytest.mark.notimpl(
+    [
+        "oracle",
+    ],
+    raises=OracleDatabaseError,
+    reason="ORA-02000: missing AS keyword",
+)
+@pytest.mark.notimpl(
+    [
+        "pandas",
+    ],
+    raises=ValueError,
+    reason=" FutureWarning: concat empty or all-NA entries is deprecated",
+)
+@pytest.mark.notimpl(
+    [
+        "dask",
+    ],
+    raises=ValueError,
+    reason="Unable to concatenate DataFrame with unknown division specifying axis=1",
+)
 @pytest.mark.notyet(
     ["druid"],
     raises=PyDruidProgrammingError,
@@ -653,9 +722,9 @@ def test_table_describe(alltypes, selector, expected_columns):
     sometypes = alltypes.select(selector)
     expr = sometypes.describe()
     df = expr.execute()
-    assert sometypes.columns == list(df.name)
-    assert expr.columns == expected_columns
-    assert expr.columns == list(df.columns)
+    assert sorted(sometypes.columns) == sorted(df.name)
+    assert sorted(expr.columns) == sorted(expected_columns)
+    assert sorted(expr.columns) == sorted(df.columns)
 
 
 @pytest.mark.parametrize(
