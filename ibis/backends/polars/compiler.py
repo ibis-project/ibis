@@ -1329,7 +1329,7 @@ def execute_integer_range(op, **kw):
         )
     step = op.step.value
 
-    dtype = PolarsType.from_ibis(op.dtype)
+    dtype = PolarsType.from_ibis(op.dtype.value_type)
     empty = pl.int_ranges(0, 0, dtype=dtype)
 
     if step == 0:
