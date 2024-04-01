@@ -17,7 +17,7 @@ import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.selectors as s
 from ibis import _
-from ibis.backends.conftest import is_older_than
+from ibis.backends.conftest import is_newer_than, is_older_than
 from ibis.backends.tests.errors import (
     ClickHouseDatabaseError,
     ExaQueryError,
@@ -613,9 +613,9 @@ def test_table_info(alltypes):
     raises=PolarsSchemaError,
     reason="cannot extend/append Float64 with Float32",
 )
-@pytest.mark.notimpl(
+@pytest.mark.broken(
     ["pandas"],
-    raises=ValueError,
+    condition=is_newer_than("pandas", "2.1.0"),
     reason="FutureWarning: concat empty or all-NA entries is deprecated",
 )
 @pytest.mark.notyet(
@@ -700,9 +700,9 @@ def test_table_info(alltypes):
                     reason="quantile is not supported",
                 ),
                 pytest.mark.notimpl(
-                    ["dask"],
-                    raises=ValueError,
-                    reason="Unable to concatenate DataFrame with unknown division specifying axis=1",
+                    ["oracle"],
+                    raises=OracleDatabaseError,
+                    reason="Mode is not supported and ORA-02000: missing AS keyword",
                 ),
             ],
             id="numeric_col",
@@ -731,8 +731,13 @@ def test_table_info(alltypes):
                 ),
                 pytest.mark.notimpl(
                     ["oracle"],
-                    raises=(OracleDatabaseError, com.OperationNotDefinedError),
+                    raises=com.OperationNotDefinedError,
                     reason="Mode is not supported and ORA-02000: missing AS keyword",
+                ),
+                pytest.mark.notimpl(
+                    ["dask"],
+                    raises=ValueError,
+                    reason="Unable to concatenate DataFrame with unknown division specifying axis=1",
                 ),
             ],
             id="string_col",
