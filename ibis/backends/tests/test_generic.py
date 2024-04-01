@@ -602,25 +602,6 @@ def test_table_info(alltypes):
 )
 @pytest.mark.notimpl(
     [
-        "clickhouse",
-        "pyspark",
-        "clickhouse",
-        "risingwave",
-        "impala",
-        "oracle",
-    ],
-    raises=com.OperationNotDefinedError,
-    reason="mode is not supported",
-)
-@pytest.mark.notimpl(
-    [
-        "sqlite",
-    ],
-    raises=com.OperationNotDefinedError,
-    reason="quantile is not supported",
-)
-@pytest.mark.notimpl(
-    [
         "exasol",
         "druid",
     ],
@@ -628,32 +609,14 @@ def test_table_info(alltypes):
     reason="Mode and StandardDev is not supported",
 )
 @pytest.mark.notimpl(
-    [
-        "polars",
-    ],
+    ["polars"],
     raises=PolarsSchemaError,
     reason="cannot extend/append Float64 with Float32",
 )
 @pytest.mark.notimpl(
-    [
-        "oracle",
-    ],
-    raises=OracleDatabaseError,
-    reason="ORA-02000: missing AS keyword",
-)
-@pytest.mark.notimpl(
-    [
-        "pandas",
-    ],
+    ["pandas"],
     raises=ValueError,
-    reason=" FutureWarning: concat empty or all-NA entries is deprecated",
-)
-@pytest.mark.notimpl(
-    [
-        "dask",
-    ],
-    raises=ValueError,
-    reason="Unable to concatenate DataFrame with unknown division specifying axis=1",
+    reason="FutureWarning: concat empty or all-NA entries is deprecated",
 )
 @pytest.mark.notyet(
     ["druid"],
@@ -684,6 +647,34 @@ def test_table_info(alltypes):
                 "p75",
                 "max",
             ],
+            marks=[
+                pytest.mark.notimpl(
+                    ["sqlite"],
+                    raises=com.OperationNotDefinedError,
+                    reason="quantile is not supported",
+                ),
+                pytest.mark.notimpl(
+                    [
+                        "clickhouse",
+                        "pyspark",
+                        "clickhouse",
+                        "risingwave",
+                        "impala",
+                    ],
+                    raises=com.OperationNotDefinedError,
+                    reason="mode is not supported",
+                ),
+                pytest.mark.notimpl(
+                    ["dask"],
+                    raises=ValueError,
+                    reason="Unable to concatenate DataFrame with unknown division specifying axis=1",
+                ),
+                pytest.mark.notimpl(
+                    ["oracle"],
+                    raises=(OracleDatabaseError, com.OperationNotDefinedError),
+                    reason="Mode is not supported and ORA-02000: missing AS keyword",
+                ),
+            ],
             id="numeric_string_col",
         ),
         param(
@@ -702,6 +693,18 @@ def test_table_info(alltypes):
                 "p75",
                 "max",
             ],
+            marks=[
+                pytest.mark.notimpl(
+                    ["sqlite"],
+                    raises=com.OperationNotDefinedError,
+                    reason="quantile is not supported",
+                ),
+                pytest.mark.notimpl(
+                    ["dask"],
+                    raises=ValueError,
+                    reason="Unable to concatenate DataFrame with unknown division specifying axis=1",
+                ),
+            ],
             id="numeric_col",
         ),
         param(
@@ -713,6 +716,24 @@ def test_table_info(alltypes):
                 "nulls",
                 "unique",
                 "mode",
+            ],
+            marks=[
+                pytest.mark.notimpl(
+                    [
+                        "clickhouse",
+                        "pyspark",
+                        "clickhouse",
+                        "risingwave",
+                        "impala",
+                    ],
+                    raises=com.OperationNotDefinedError,
+                    reason="mode is not supported",
+                ),
+                pytest.mark.notimpl(
+                    ["oracle"],
+                    raises=(OracleDatabaseError, com.OperationNotDefinedError),
+                    reason="Mode is not supported and ORA-02000: missing AS keyword",
+                ),
             ],
             id="string_col",
         ),
