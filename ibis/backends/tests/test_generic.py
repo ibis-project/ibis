@@ -586,6 +586,78 @@ def test_table_info(alltypes):
     assert expr.columns == list(df.columns)
 
 
+@pytest.mark.notyet(
+    ["druid"],
+    raises=PyDruidProgrammingError,
+    reason="Druid only supports trivial unions",
+)
+@pytest.mark.parametrize(
+    ("selector", "expected_columns"),
+    [
+        param(
+            s.any_of(
+                s.of_type("numeric"),
+                s.of_type("string"),
+                s.of_type("bool"),
+            ),
+            [
+                "name",
+                "type",
+                "count",
+                "nulls",
+                "unique",
+                "mode",
+                "mean",
+                "std",
+                "min",
+                "p25",
+                "p50",
+                "p75",
+                "max",
+            ],
+            id="numeric_string_col",
+        ),
+        param(
+            s.of_type("numeric"),
+            [
+                "name",
+                "type",
+                "count",
+                "nulls",
+                "unique",
+                "mean",
+                "std",
+                "min",
+                "p25",
+                "p50",
+                "p75",
+                "max",
+            ],
+            id="numeric_col",
+        ),
+        param(
+            s.of_type("string"),
+            [
+                "name",
+                "type",
+                "count",
+                "nulls",
+                "unique",
+                "mode",
+            ],
+            id="string_col",
+        ),
+    ],
+)
+def test_table_describe(alltypes, selector, expected_columns):
+    sometypes = alltypes.select(selector)
+    expr = sometypes.describe()
+    df = expr.execute()
+    assert sometypes.columns == list(df.name)
+    assert expr.columns == expected_columns
+    assert expr.columns == list(df.columns)
+
+
 @pytest.mark.parametrize(
     ("ibis_op", "pandas_op"),
     [
