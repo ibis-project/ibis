@@ -613,11 +613,6 @@ def test_table_info(alltypes):
     raises=PolarsSchemaError,
     reason="cannot extend/append Float64 with Float32",
 )
-@pytest.mark.broken(
-    ["pandas"],
-    condition=is_newer_than("pandas", "2.1.0"),
-    reason="FutureWarning: concat empty or all-NA entries is deprecated",
-)
 @pytest.mark.notyet(
     ["druid"],
     raises=PyDruidProgrammingError,
@@ -673,6 +668,11 @@ def test_table_info(alltypes):
                     ["oracle"],
                     raises=(OracleDatabaseError, com.OperationNotDefinedError),
                     reason="Mode is not supported and ORA-02000: missing AS keyword",
+                ),
+                pytest.mark.broken(
+                    ["pandas"],
+                    condition=is_newer_than("pandas", "2.1.0"),
+                    reason="FutureWarning: concat empty or all-NA entries is deprecated",
                 ),
             ],
             id="numeric_string_col",
