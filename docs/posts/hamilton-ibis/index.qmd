@@ -37,8 +37,9 @@ existing ones.
 ```{python}
 import ibis
 
+url = "https://storage.googleapis.com/ibis-blog-data-public/hamilton-ibis/absenteeism.parquet"
 feature_set = (
-  ibis.read_parquet(sources="absenteeism.parquet", table_name="absenteeism")
+  ibis.read_parquet(sources=url, table_name="absenteeism")
   .rename("snake_case")
   .mutate(  # allows us to define new columns
     has_children=ibis.ifelse(ibis._.son > 0, True, False),
@@ -121,11 +122,11 @@ import ibis
 import ibis.expr.types as ir
 
 def raw_table(raw_data_path: str) -> ir.Table:
-    """Load CSV from `raw_data_path` into a Table expression
+    """Load parquet from `raw_data_path` into a Table expression
     and format column names to snakecase
     """
     return (
-        ibis.read_csv(sources=raw_data_path, table_name="absenteism")
+        ibis.read_parquet(sources=raw_data_path, table_name="absenteism")
         .rename("snake_case")
     )
 
@@ -173,11 +174,11 @@ from hamilton.plugins import ibis_extensions
 # extract specific columns from the table
 @extract_columns("son", "pet", "month_of_absence")
 def raw_table(raw_data_path: str) -> ir.Table:
-    """Load the CSV found at `raw_data_path` into a Table expression
+    """Load the parquet found at `raw_data_path` into a Table expression
     and format columns to snakecase
     """
     return (
-        ibis.read_csv(sources=raw_data_path, table_name="absenteism")
+        ibis.read_parquet(sources=raw_data_path, table_name="absenteism")
         .rename("snake_case")
     )
 
