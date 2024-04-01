@@ -626,6 +626,7 @@ def test_table_info(alltypes):
                 s.of_type("numeric"),
                 s.of_type("string"),
                 s.of_type("bool"),
+                s.of_type("timestamp"),
             ),
             [
                 "name",
@@ -675,7 +676,7 @@ def test_table_info(alltypes):
                     reason="FutureWarning: concat empty or all-NA entries is deprecated",
                 ),
             ],
-            id="numeric_string_col",
+            id="all_cols",
         ),
         param(
             s.of_type("numeric"),
