@@ -11,7 +11,7 @@ from ibis.common.bases import Hashable
 from ibis.common.collections import frozendict
 from ibis.common.patterns import NoMatch, Pattern
 from ibis.common.typing import _ClassInfo
-from ibis.util import experimental
+from ibis.util import experimental, promote_list
 
 if TYPE_CHECKING:
     from typing_extensions import Self
@@ -340,9 +340,39 @@ class Node(Hashable):
         determined by a breadth-first search.
 
         """
-        nodes = Graph.from_bfs(self, filter=filter, context=context).nodes()
+        graph = Graph.from_bfs(self, filter=filter, context=context)
         finder = _coerce_finder(finder, context)
-        return [node for node in nodes if finder(node)]
+        return [node for node in graph.nodes() if finder(node)]
+
+    @experimental
+    def find_below(
+        self,
+        finder: FinderLike,
+        filter: Optional[FinderLike] = None,
+        context: Optional[dict] = None,
+    ) -> list[Node]:
+        """Find all nodes below the current node matching a given pattern in the graph.
+
+        A variant of find() that only returns nodes below the current node in the graph.
+
+        Parameters
+        ----------
+        finder
+            A type, tuple of types, a pattern or a callable to match upon.
+        filter
+            A type, tuple of types, a pattern or a callable to filter out nodes
+            from the traversal. The traversal will only visit nodes that match
+            the given filter and stop otherwise.
+        context
+            Optional context to use if `finder` or `filter` is a pattern.
+
+        Returns
+        -------
+        The list of nodes matching the given pattern.
+        """
+        graph = Graph.from_bfs(self.__children__, filter=filter, context=context)
+        finder = _coerce_finder(finder, context)
+        return [node for node in graph.nodes() if finder(node)]
 
     @experimental
     def find_topmost(
@@ -620,10 +650,8 @@ def bfs(root: Node) -> Graph:
     """
     # fast path for the default no filter case, according to benchmarks
     # this is gives a 10% speedup compared to the filtered version
-    if not isinstance(root, Node):
-        raise TypeError("node must be an instance of ibis.common.graph.Node")
-
-    queue = deque([root])
+    nodes = _flatten_collections(promote_list(root))
+    queue = deque(nodes)
     graph = Graph()
 
     while queue:
@@ -651,14 +679,9 @@ def bfs_while(root: Node, filter: Finder) -> Graph:
     A graph constructed from the root node.
 
     """
-    if not isinstance(root, Node):
-        raise TypeError("node must be an instance of ibis.common.graph.Node")
-
-    queue = deque()
+    nodes = _flatten_collections(promote_list(root))
+    queue = deque(node for node in nodes if filter(node))
     graph = Graph()
-
-    if filter(root):
-        queue.append(root)
 
     while queue:
         if (node := queue.popleft()) not in graph:
@@ -684,10 +707,8 @@ def dfs(root: Node) -> Graph:
     """
     # fast path for the default no filter case, according to benchmarks
     # this is gives a 10% speedup compared to the filtered version
-    if not isinstance(root, Node):
-        raise TypeError("node must be an instance of ibis.common.graph.Node")
-
-    stack = deque([root])
+    nodes = _flatten_collections(promote_list(root))
+    stack = deque(nodes)
     graph = {}
 
     while stack:
@@ -715,14 +736,9 @@ def dfs_while(root: Node, filter: Finder) -> Graph:
     A graph constructed from the root node.
 
     """
-    if not isinstance(root, Node):
-        raise TypeError("node must be an instance of ibis.common.graph.Node")
-
-    stack = deque()
+    nodes = _flatten_collections(promote_list(root))
+    stack = deque(node for node in nodes if filter(node))
     graph = {}
-
-    if filter(root):
-        stack.append(root)
 
     while stack:
         if (node := stack.pop()) not in graph:
