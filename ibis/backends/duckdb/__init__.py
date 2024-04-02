@@ -27,7 +27,7 @@ from ibis.backends import CanCreateDatabase, CanCreateSchema, UrlFromPath
 from ibis.backends.duckdb.compiler import DuckDBCompiler
 from ibis.backends.duckdb.converter import DuckDBPandasData
 from ibis.backends.sql import SQLBackend
-from ibis.backends.sql.compiler import STAR, C, F
+from ibis.backends.sql.compiler import STAR, C
 from ibis.expr.operations.udf import InputType
 
 if TYPE_CHECKING:
@@ -154,6 +154,10 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema, UrlFromPath):
         database
             The name of the database in which to create the table; if not
             passed, the current database is used.
+
+            For multi-level table hierarchies, you can pass in a dotted string
+            path like `"catalog.database"` or a tuple of strings like
+            `("catalog", "database")`.
         temp
             Create a temporary table
         overwrite
@@ -161,6 +165,20 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema, UrlFromPath):
             if the table exists
 
         """
+        table_loc = self._to_sqlglot_table(database)
+
+        if getattr(table_loc, "catalog", False) and temp:
+            raise exc.UnsupportedArgumentError(
+                "DuckDB can only create temporary tables in the `temp` catalog. "
+                "Don't specify a catalog to enable temp table creation."
+            )
+
+        catalog = self.current_catalog
+        database = self.current_database
+        if table_loc is not None:
+            catalog = table_loc.catalog or catalog
+            database = table_loc.db or database
+
         if obj is None and schema is None:
             raise ValueError("Either `obj` or `schema` must be specified")
 
@@ -168,6 +186,7 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema, UrlFromPath):
 
         if temp:
             properties.append(sge.TemporaryProperty())
+            catalog = "temp"
 
         temp_memtable_view = None
 
@@ -202,8 +221,10 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema, UrlFromPath):
         else:
             temp_name = name
 
-        initial_table = sg.table(
-            temp_name, catalog=database, quoted=self.compiler.quoted
+        initial_table = sge.Table(
+            this=sg.to_identifier(temp_name, quoted=self.compiler.quoted),
+            catalog=catalog,
+            db=database,
         )
         target = sge.Schema(this=initial_table, expressions=column_defs)
 
@@ -214,7 +235,11 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema, UrlFromPath):
         )
 
         # This is the same table as initial_table unless overwrite == True
-        final_table = sg.table(name, catalog=database, quoted=self.compiler.quoted)
+        final_table = sge.Table(
+            this=sg.to_identifier(name, quoted=self.compiler.quoted),
+            catalog=catalog,
+            db=database,
+        )
         with self._safe_raw_sql(create_stmt) as cur:
             if query is not None:
                 insert_stmt = sge.insert(query, into=initial_table).sql(self.name)
@@ -254,7 +279,7 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema, UrlFromPath):
         if temp_memtable_view is not None:
             self.con.unregister(temp_memtable_view)
 
-        return self.table(name, database=database)
+        return self.table(name, database=(catalog, database))
 
     def _load_into_cache(self, name, expr):
         self.create_table(name, expr, schema=expr.schema(), temp=True)
@@ -971,8 +996,8 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema, UrlFromPath):
         """
         table_loc = self._warn_and_create_table_loc(database, schema)
 
-        catalog = F.current_database()
-        database = F.current_schema()
+        catalog = self.current_catalog
+        database = self.current_database
         if table_loc is not None:
             catalog = table_loc.catalog or catalog
             database = table_loc.db or database
