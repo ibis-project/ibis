@@ -727,7 +727,9 @@ class Backend(SQLBackend, CanCreateDatabase):
             [pyspark.sql.DataFrameWriter](https://spark.apache.org/docs/latest/api/python/reference/pyspark.sql/api/pyspark.sql.DataFrameWriter.html).
 
         """
-        df = self._session.sql(expr.compile())
+        self._run_pre_execute_hooks(expr)
+        table = expr.as_table()
+        df = self._session.sql(self.compile(table))
         df.write.format("parquet").save(os.fspath(path), **kwargs)
 
     @util.experimental
@@ -753,7 +755,9 @@ class Backend(SQLBackend, CanCreateDatabase):
             [pyspark.sql.DataFrameWriter](https://spark.apache.org/docs/latest/api/python/reference/pyspark.sql/api/pyspark.sql.DataFrameWriter.html).
 
         """
-        df = self._session.sql(expr.compile())
+        self._run_pre_execute_hooks(expr)
+        table = expr.as_table()
+        df = self._session.sql(self.compile(table))
         df.write.format("csv").save(os.fspath(path), **kwargs)
 
     @util.experimental
@@ -779,7 +783,9 @@ class Backend(SQLBackend, CanCreateDatabase):
             [pyspark.sql.DataFrameWriter](https://spark.apache.org/docs/latest/api/python/reference/pyspark.sql/api/pyspark.sql.DataFrameWriter.html).
 
         """
-        df = self._session.sql(expr.compile())
+        self._run_pre_execute_hooks(expr)
+        table = expr.as_table()
+        df = self._session.sql(self.compile(table))
         df.write.format("delta").save(os.fspath(path), **kwargs)
 
     def to_pyarrow(
