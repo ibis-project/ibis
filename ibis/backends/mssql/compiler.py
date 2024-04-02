@@ -26,6 +26,7 @@ from ibis.backends.sql.rewrites import (
     rewrite_sample_as_filter,
 )
 from ibis.common.deferred import var
+from ibis.expr.rewrites import rewrite_stringslice
 
 y = var("y")
 start = var("start")
@@ -66,6 +67,7 @@ class MSSQLCompiler(SQLGlotCompiler):
         exclude_unsupported_window_frame_from_ops,
         exclude_unsupported_window_frame_from_row_number,
         rewrite_rows_range_order_by_window,
+        rewrite_stringslice,
         *SQLGlotCompiler.rewrites,
     )
     copy_func_args = True
@@ -189,6 +191,15 @@ class MSSQLCompiler(SQLGlotCompiler):
         Thanks to @arkanovicz for this glorious hack.
         """
         return sge.paren(self.f.len(self.f.concat("A", arg, "Z")) - 2, copy=False)
+
+    def visit_Substring(self, op, *, arg, start, length):
+        start += 1
+        start = self.if_(start >= 1, start, start + self.f.length(arg))
+        if length is None:
+            # We don't need to worry about if start + length is greater than the
+            # length of the string, MSSQL will just return the rest of the string
+            length = self.f.length(arg)
+        return self.f.substring(arg, start, length)
 
     def visit_GroupConcat(self, op, *, arg, sep, where):
         if where is not None:

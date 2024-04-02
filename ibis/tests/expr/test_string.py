@@ -18,7 +18,6 @@ import pytest
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
 from ibis import literal
-from ibis.tests.util import assert_equal
 
 
 def test_lower_upper(table):
@@ -94,16 +93,6 @@ def test_contains(table):
 
     with pytest.raises(TypeError):
         "foo" in table.g  # noqa: B015
-
-
-@pytest.mark.parametrize(
-    ("left_slice", "right_start", "right_stop"),
-    [(slice(None, 3), 0, 3), (slice(2, 6), 2, 4)],
-)
-def test_getitem_slice(table, left_slice, right_start, right_stop):
-    case = table.g[left_slice]
-    expected = table.g.substr(right_start, right_stop)
-    assert_equal(case, expected)
 
 
 def test_add_radd(table, string_col):

@@ -20,6 +20,7 @@ from ibis.backends.sql.rewrites import (
     rewrite_empty_order_by_window,
     rewrite_sample_as_filter,
 )
+from ibis.expr.rewrites import rewrite_stringslice
 
 
 @public
@@ -33,6 +34,7 @@ class OracleCompiler(SQLGlotCompiler):
         exclude_unsupported_window_frame_from_ops,
         rewrite_empty_order_by_window,
         rewrite_sample_as_filter,
+        rewrite_stringslice,
         replace_log2,
         replace_log10,
         *SQLGlotCompiler.rewrites,

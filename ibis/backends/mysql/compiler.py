@@ -21,7 +21,7 @@ from ibis.backends.sql.rewrites import (
     rewrite_sample_as_filter,
 )
 from ibis.common.patterns import replace
-from ibis.expr.rewrites import p
+from ibis.expr.rewrites import p, rewrite_stringslice
 
 
 @replace(p.Limit)
@@ -55,6 +55,7 @@ class MySQLCompiler(SQLGlotCompiler):
         exclude_unsupported_window_frame_from_rank,
         exclude_unsupported_window_frame_from_row_number,
         rewrite_empty_order_by_window,
+        rewrite_stringslice,
         *SQLGlotCompiler.rewrites,
     )
 

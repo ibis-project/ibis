@@ -402,6 +402,14 @@ class DuckDBCompiler(SQLGlotCompiler):
     def visit_StringConcat(self, op, *, arg):
         return reduce(lambda x, y: sge.DPipe(this=x, expression=y), arg)
 
+    def visit_StringSlice(self, op, *, arg, start, end):
+        if start is not None:
+            start += 1
+        # workaround for https://github.com/duckdb/duckdb/issues/11431
+        start = self.f.ifnull(start, 1)
+        end = self.f.ifnull(end, -1)
+        return self.f.array_slice(arg, start, end)
+
     def visit_StructField(self, op, *, arg, field):
         if not isinstance(op.arg, (ops.Field, sge.Struct)):
             # parenthesize anything that isn't a simple field access

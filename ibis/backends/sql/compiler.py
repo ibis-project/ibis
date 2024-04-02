@@ -809,20 +809,15 @@ class SQLGlotCompiler(abc.ABC):
         return self.f.ltrim(arg, string.whitespace)
 
     def visit_Substring(self, op, *, arg, start, length):
-        start += 1
-        arg_length = self.f.length(arg)
-
-        if length is None:
-            return self.if_(
-                start >= 1,
-                self.f.substring(arg, start),
-                self.f.substring(arg, start + arg_length),
+        if isinstance(op.length, ops.Literal) and (value := op.length.value) < 0:
+            raise com.IbisInputError(
+                f"Length parameter must be a non-negative value; got {value}"
             )
-        return self.if_(
-            start >= 1,
-            self.f.substring(arg, start, length),
-            self.f.substring(arg, start + arg_length, length),
-        )
+        start += 1
+        start = self.if_(start >= 1, start, start + self.f.length(arg))
+        if length is None:
+            return self.f.substring(arg, start)
+        return self.f.substring(arg, start, length)
 
     def visit_StringFind(self, op, *, arg, substr, start, end):
         if end is not None:

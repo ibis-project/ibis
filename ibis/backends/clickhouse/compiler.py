@@ -15,6 +15,7 @@ from ibis.backends.sql.compiler import NULL, STAR, SQLGlotCompiler
 from ibis.backends.sql.datatypes import ClickHouseType
 from ibis.backends.sql.dialects import ClickHouse
 from ibis.backends.sql.rewrites import rewrite_sample_as_filter
+from ibis.expr.rewrites import rewrite_stringslice
 
 
 class ClickHouseCompiler(SQLGlotCompiler):
@@ -22,7 +23,11 @@ class ClickHouseCompiler(SQLGlotCompiler):
 
     dialect = ClickHouse
     type_mapper = ClickHouseType
-    rewrites = (rewrite_sample_as_filter, *SQLGlotCompiler.rewrites)
+    rewrites = (
+        rewrite_sample_as_filter,
+        rewrite_stringslice,
+        *SQLGlotCompiler.rewrites,
+    )
 
     UNSUPPORTED_OPERATIONS = frozenset(
         (
@@ -202,13 +207,6 @@ class ClickHouseCompiler(SQLGlotCompiler):
                 "ClickHouse only implements `sample` correlation coefficient"
             )
         return self.agg.corr(left, right, where=where)
-
-    def visit_Substring(self, op, *, arg, start, length):
-        # Clickhouse is 1-indexed
-        suffix = (length,) * (length is not None)
-        if_pos = self.f.substring(arg, start + 1, *suffix)
-        if_neg = self.f.substring(arg, self.f.length(arg) + start + 1, *suffix)
-        return self.if_(start >= 0, if_pos, if_neg)
 
     def visit_StringFind(self, op, *, arg, substr, start, end):
         if end is not None:
