@@ -14,6 +14,7 @@ from ibis.backends.sql.rewrites import (
     rewrite_empty_order_by_window,
     rewrite_sample_as_filter,
 )
+from ibis.expr.rewrites import rewrite_stringslice
 
 
 class ImpalaCompiler(SQLGlotCompiler):
@@ -24,6 +25,7 @@ class ImpalaCompiler(SQLGlotCompiler):
     rewrites = (
         rewrite_sample_as_filter,
         rewrite_empty_order_by_window,
+        rewrite_stringslice,
         *SQLGlotCompiler.rewrites,
     )
 

@@ -13,6 +13,7 @@ from ibis.backends.sql.rewrites import (
     rewrite_capitalize,
     rewrite_sample_as_filter,
 )
+from ibis.expr.rewrites import rewrite_stringslice
 
 
 class DruidCompiler(SQLGlotCompiler):
@@ -22,6 +23,7 @@ class DruidCompiler(SQLGlotCompiler):
     type_mapper = DruidType
     rewrites = (
         rewrite_sample_as_filter,
+        rewrite_stringslice,
         *(
             rewrite
             for rewrite in SQLGlotCompiler.rewrites

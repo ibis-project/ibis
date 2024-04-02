@@ -10,7 +10,7 @@ from ibis.common.annotations import attribute
 from ibis.common.collections import FrozenDict
 from ibis.common.patterns import replace
 from ibis.common.typing import VarTuple  # noqa: TCH001
-from ibis.expr.rewrites import replace_parameter
+from ibis.expr.rewrites import replace_parameter, rewrite_stringslice
 from ibis.expr.schema import Schema
 from ibis.util import gen_name
 
@@ -330,6 +330,7 @@ def plan(node, backend, params):
         | rewrite_join
         | rewrite_limit
         | replace_parameter
+        | rewrite_stringslice
         | bind_unbound_table,
         context=ctx,
     )

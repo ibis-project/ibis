@@ -20,6 +20,7 @@ from ibis.backends.pandas.rewrites import (
 )
 from ibis.backends.polars.compiler import translate
 from ibis.backends.sql.dialects import Polars
+from ibis.expr.rewrites import rewrite_stringslice
 from ibis.formats.polars import PolarsSchema
 from ibis.util import gen_name, normalize_filename
 
@@ -400,7 +401,7 @@ class Backend(BaseBackend, NoUrl):
 
         node = expr.as_table().op()
         node = node.replace(
-            rewrite_join | replace_parameter | bind_unbound_table,
+            rewrite_join | replace_parameter | bind_unbound_table | rewrite_stringslice,
             context={"params": params, "backend": self},
         )
 

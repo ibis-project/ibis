@@ -58,25 +58,25 @@ class StringValue(Value):
         │ r                     │
         └───────────────────────┘
         >>> t.food[:3]
-        ┏━━━━━━━━━━━━━━━━━━━━━━━┓
-        ┃ Substring(food, 0, 3) ┃
-        ┡━━━━━━━━━━━━━━━━━━━━━━━┩
-        │ string                │
-        ├───────────────────────┤
-        │ bre                   │
-        │ che                   │
-        │ ric                   │
-        └───────────────────────┘
+        ┏━━━━━━━━━━━━━━━━━━━━━━┓
+        ┃ StringSlice(food, 3) ┃
+        ┡━━━━━━━━━━━━━━━━━━━━━━┩
+        │ string               │
+        ├──────────────────────┤
+        │ bre                  │
+        │ che                  │
+        │ ric                  │
+        └──────────────────────┘
         >>> t.food[3:5]
-        ┏━━━━━━━━━━━━━━━━━━━━━━━┓
-        ┃ Substring(food, 3, 2) ┃
-        ┡━━━━━━━━━━━━━━━━━━━━━━━┩
-        │ string                │
-        ├───────────────────────┤
-        │ ad                    │
-        │ es                    │
-        │ e                     │
-        └───────────────────────┘
+        ┏━━━━━━━━━━━━━━━━━━━━━━━━━┓
+        ┃ StringSlice(food, 3, 5) ┃
+        ┡━━━━━━━━━━━━━━━━━━━━━━━━━┩
+        │ string                  │
+        ├─────────────────────────┤
+        │ ad                      │
+        │ es                      │
+        │ e                       │
+        └─────────────────────────┘
         >>> t.food[7]
         ┏━━━━━━━━━━━━━━━━━━━━━━━┓
         ┃ Substring(food, 7, 1) ┃
@@ -92,29 +92,20 @@ class StringValue(Value):
 
         if isinstance(key, slice):
             start, stop, step = key.start, key.stop, key.step
-
             if step is not None and not isinstance(step, ir.Expr) and step != 1:
                 raise ValueError("Step can only be 1")
-
-            if not isinstance(start, ir.Expr):
-                if start is not None and start < 0:
-                    raise ValueError(
-                        "Negative slicing not yet supported, got start value "
-                        f"of {start:d}"
-                    )
-                if start is None:
-                    start = 0
-
-            if not isinstance(stop, ir.Expr):
-                if stop is not None and stop < 0:
-                    raise ValueError(
-                        "Negative slicing not yet supported, got stop value "
-                        f"of {stop:d}"
-                    )
-                if stop is None:
-                    stop = self.length()
-
-            return self.substr(start, stop - start)
+            if start is not None and not isinstance(start, ir.Expr) and start < 0:
+                raise ValueError(
+                    "Negative slicing not yet supported, got start value "
+                    f"of {start:d}"
+                )
+            if stop is not None and not isinstance(stop, ir.Expr) and stop < 0:
+                raise ValueError(
+                    "Negative slicing not yet supported, got stop value " f"of {stop:d}"
+                )
+            if start is None and stop is None:
+                return self
+            return ops.StringSlice(self, start, stop).to_expr()
         elif isinstance(key, int):
             return self.substr(key, 1)
         raise NotImplementedError(f"string __getitem__[{key.__class__.__name__}]")

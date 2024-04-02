@@ -21,6 +21,7 @@ from ibis.backends.sql.rewrites import (
     rewrite_sample_as_filter,
 )
 from ibis.common.temporal import DateUnit, IntervalUnit, TimestampUnit, TimeUnit
+from ibis.expr.rewrites import rewrite_stringslice
 
 _NAME_REGEX = re.compile(r'[^!"$()*,./;?@[\\\]^`{}~\n]+')
 
@@ -34,6 +35,7 @@ class BigQueryCompiler(SQLGlotCompiler):
         exclude_unsupported_window_frame_from_ops,
         exclude_unsupported_window_frame_from_row_number,
         exclude_unsupported_window_frame_from_rank,
+        rewrite_stringslice,
         *SQLGlotCompiler.rewrites,
     )
 
@@ -562,16 +564,6 @@ class BigQueryCompiler(SQLGlotCompiler):
         lhs = sg.select(lname).from_(self._unnest(left, as_=lname))
         rhs = sg.select(rname).from_(self._unnest(right, as_=rname))
         return self.f.array(sg.intersect(lhs, rhs, distinct=True))
-
-    def visit_Substring(self, op, *, arg, start, length):
-        if isinstance(op.length, ops.Literal) and (value := op.length.value) < 0:
-            raise com.IbisInputError(
-                f"Length parameter must be a non-negative value; got {value}"
-            )
-        suffix = (length,) * (length is not None)
-        if_pos = self.f.substr(arg, start + 1, *suffix)
-        if_neg = self.f.substr(arg, self.f.length(arg) + start + 1, *suffix)
-        return self.if_(start >= 0, if_pos, if_neg)
 
     def visit_RegexExtract(self, op, *, arg, pattern, index):
         matches = self.f.regexp_contains(arg, pattern)

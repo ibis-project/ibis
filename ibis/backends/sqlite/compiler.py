@@ -14,6 +14,7 @@ from ibis.backends.sql.datatypes import SQLiteType
 from ibis.backends.sql.dialects import SQLite
 from ibis.backends.sql.rewrites import rewrite_sample_as_filter
 from ibis.common.temporal import DateUnit, IntervalUnit
+from ibis.expr.rewrites import rewrite_stringslice
 
 
 @public
@@ -22,7 +23,11 @@ class SQLiteCompiler(SQLGlotCompiler):
 
     dialect = SQLite
     type_mapper = SQLiteType
-    rewrites = (rewrite_sample_as_filter, *SQLGlotCompiler.rewrites)
+    rewrites = (
+        rewrite_sample_as_filter,
+        rewrite_stringslice,
+        *SQLGlotCompiler.rewrites,
+    )
 
     NAN = NULL
     POS_INF = sge.Literal.number("1e999")

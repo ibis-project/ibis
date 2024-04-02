@@ -21,6 +21,7 @@ from ibis.backends.sql.rewrites import (
     replace_log10,
     rewrite_empty_order_by_window,
 )
+from ibis.expr.rewrites import rewrite_stringslice
 
 
 class SnowflakeFuncGen(FuncGen):
@@ -38,6 +39,7 @@ class SnowflakeCompiler(SQLGlotCompiler):
         exclude_unsupported_window_frame_from_row_number,
         exclude_unsupported_window_frame_from_ops,
         rewrite_empty_order_by_window,
+        rewrite_stringslice,
         replace_log2,
         replace_log10,
         *SQLGlotCompiler.rewrites,
