@@ -59,11 +59,8 @@ A = MyNode(name="A", children=[B, C])
 
 def test_bfs():
     assert list(bfs(A).keys()) == [A, B, C, D, E]
-
-    with pytest.raises(
-        TypeError, match="must be an instance of ibis.common.graph.Node"
-    ):
-        bfs(1)
+    assert list(bfs([D, E, B])) == [D, E, B]
+    assert bfs(1) == {}
 
 
 def test_construction():
@@ -82,11 +79,8 @@ def test_graph_repr():
 
 def test_dfs():
     assert list(dfs(A).keys()) == [D, E, B, C, A]
-
-    with pytest.raises(
-        TypeError, match="must be an instance of ibis.common.graph.Node"
-    ):
-        dfs(1)
+    assert list(dfs([D, E, B])) == [D, E, B]
+    assert dfs(1) == {}
 
 
 def test_invert():
@@ -391,6 +385,16 @@ def test_node_find_using_pattern():
 
     result = A.find(If(_.children))
     assert result == [A, B]
+
+
+def test_node_find_below():
+    lowercase = MyNode(name="lowercase", children=[])
+    root = MyNode(name="root", children=[A, B, lowercase])
+    result = root.find_below(MyNode)
+    assert result == [A, B, lowercase, C, D, E]
+
+    result = root.find_below(lambda x: x.name.islower(), filter=lambda x: x != root)
+    assert result == [lowercase]
 
 
 def test_node_find_topmost_using_type():
