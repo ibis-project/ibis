@@ -8,6 +8,7 @@ import keyword
 import re
 import sys
 import urllib.parse
+import warnings
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Callable, ClassVar
 from urllib.parse import parse_qs, urlparse
@@ -1459,15 +1460,15 @@ class NoUrl:
     name: str
 
     def _from_url(self, url: str, **kwargs) -> BaseBackend:
-        """Connect to the backend using provided keyword arguments.
+        """Connect to the backend with empty url.
 
         Parameters
         ----------
         url : str
             The URL with which to connect to the backend. This parameter is not used
-            in this method but is kept for consistency with other connection methods.
+            in this method but is kept for consistency.
         kwargs
-            Additional keyword arguments used for establishing the connection.
+            Additional keyword arguments.
 
         Returns
         -------
@@ -1475,4 +1476,9 @@ class NoUrl:
             A backend instance
 
         """
+        # Check if additional components are provided in the URL
+        if len(url.split("://")) > 1:
+            warnings.warn(
+                f"Additional components in the URL are ignored. url = '{url}'"
+            )
         return self.connect(**kwargs)
