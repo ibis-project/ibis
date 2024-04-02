@@ -323,7 +323,11 @@ class SqlglotType(TypeMapper):
     @classmethod
     def _from_ibis_Struct(cls, dtype: dt.Struct) -> sge.DataType:
         fields = [
-            sge.ColumnDef(this=str(name), kind=cls.from_ibis(field))
+            sge.ColumnDef(
+                # always quote struct fields to allow reserved words as field names
+                this=sg.to_identifier(name, quoted=True),
+                kind=cls.from_ibis(field),
+            )
             for name, field in dtype.items()
         ]
         return sge.DataType(this=typecode.STRUCT, expressions=fields, nested=True)

@@ -71,6 +71,7 @@ class BigQueryCompiler(SQLGlotCompiler):
     )
 
     SIMPLE_OPS = {
+        ops.Arbitrary: "any_value",
         ops.StringAscii: "ascii",
         ops.BitAnd: "bit_and",
         ops.BitOr: "bit_or",
@@ -495,14 +496,6 @@ class BigQueryCompiler(SQLGlotCompiler):
             arg = self.if_(where, arg, NULL)
         array = self.f.array_reverse(self.f.array_agg(sge.IgnoreNulls(this=arg)))
         return array[self.f.safe_offset(0)]
-
-    def visit_Arbitrary(self, op, *, arg, how, where):
-        if how != "first":
-            raise com.UnsupportedOperationError(
-                f"{how!r} value not supported for arbitrary in BigQuery"
-            )
-
-        return self.agg.any_value(arg, where=where)
 
     def visit_ArrayFilter(self, op, *, arg, body, param):
         return self.f.array(

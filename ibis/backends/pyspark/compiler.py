@@ -238,18 +238,11 @@ class PySparkCompiler(SQLGlotCompiler):
             arg = self.if_(where, arg, NULL)
         return sge.IgnoreNulls(this=self.f.last(arg))
 
-    def visit_Arbitrary(self, op, *, arg, how, where):
+    def visit_Arbitrary(self, op, *, arg, where):
+        # For Spark>=3.4 we could use any_value here
         if where is not None:
             arg = self.if_(where, arg, NULL)
-        if how == "first":
-            return sge.IgnoreNulls(this=self.f.first(arg))
-        elif how == "last":
-            return sge.IgnoreNulls(this=self.f.last(arg))
-        else:
-            raise com.UnsupportedOperationError(
-                f"PySpark backend does not support arbitrary with how={how}. "
-                "Supported values are `first` and `last`."
-            )
+        return sge.IgnoreNulls(this=self.f.first(arg))
 
     def visit_Median(self, op, *, arg, where):
         return self.agg.percentile(arg, 0.5, where=where)

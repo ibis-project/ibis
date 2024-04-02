@@ -29,7 +29,6 @@ class DataFusionCompiler(SQLGlotCompiler):
 
     UNSUPPORTED_OPERATIONS = frozenset(
         (
-            ops.Arbitrary,
             ops.ArgMax,
             ops.ArgMin,
             ops.ArrayDistinct,
@@ -151,6 +150,12 @@ class DataFusionCompiler(SQLGlotCompiler):
         if length is not None:
             return self.f.substr(arg, start, length)
         return self.f.substr(arg, start)
+
+    def visit_Arbitrary(self, op, *, arg, where):
+        cond = ~arg.is_(None)
+        if where is not None:
+            cond &= where
+        return self.agg.first_value(arg, where=cond)
 
     def visit_Variance(self, op, *, arg, how, where):
         if how == "sample":

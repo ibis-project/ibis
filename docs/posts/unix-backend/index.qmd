@@ -1,0 +1,251 @@
+---
+title: "Scaling to infinity and beyond: the Unix backend"
+author: "Phillip Cloud"
+date: "2024-04-01"
+categories:
+    - blog
+    - serious
+    - web-scale
+    - unix
+---
+
+## The Unix backend for Ibis
+
+We're happy to announce a new Ibis backend built on the world's best known web
+scale technology: Unix pipes.
+
+## Why?
+
+Why not? Pipes rock and they automatically stream data between operators and
+scale to your hard drive.
+
+What's not to love?
+
+## Demo
+
+All production ready backends ship with amazing demos.
+
+The Unix backend is no different. Let's see it in action.
+
+First we'll install the Unix backend.
+
+```bash
+pip install ibish
+```
+
+Like all production-ready libraries `ibish` depends on the latest commit of `ibis-framework`.
+
+Next we'll download some data.
+
+```{python}
+!curl -LsS 'https://storage.googleapis.com/ibis-examples/penguins/20240322T125036Z-9aae2/penguins.csv.gz' | zcat > penguins.csv
+```
+
+```{python}
+import ibis
+import ibish
+
+
+ibis.options.interactive = True
+
+unix = ibish.connect({"p": "penguins.csv"})
+
+t = unix.table("p")
+t
+```
+
+Sweet, huh?
+
+Let's filter the data and look at only the year 2009.
+
+```{python}
+expr = t.filter(t.year == 2009)
+expr
+```
+
+We can sort the result of that too, and filter again.
+
+```{python}
+expr = (
+    expr.order_by("species", ibis.desc("bill_length_mm"))
+    .filter(lambda t: t.island == "Biscoe")
+)
+expr
+```
+
+There's even support for joins and aggregations!
+
+Let's count the number of island, species pairs and sort descending by the count.
+
+```{python}
+expr = (
+    t.group_by("island", "species")
+    .agg(n=lambda t: t.count())
+    .order_by(ibis.desc("n"))
+)
+expr
+```
+
+For kicks, let's compare that to the DuckDB backend to make sure we're able to count stuff.
+
+To be extra awesome, we'll *reuse the same expression to do the computation*.
+
+```{python}
+ddb = ibis.duckdb.connect()
+ddb.read_csv("penguins.csv", table_name="p")  # <1>
+ibis.memtable(ddb.to_pyarrow(expr.unbind()))
+```
+
+1. The `read_csv` is necessary so that the expression's table
+   name--`p`--matches one inside the DuckDB database.
+
+## How does it work?
+
+Glad you asked!
+
+The Unix backend for Ibis was built over the course of a few hours, which is
+about the time it takes to make a production ready Ibis backend.
+
+Broadly speaking, the Unix backend:
+
+1. Produces a shell command for each Ibis _table_ operation.
+1. Produces a nominal output location for the output of that command, in the form of a [named pipe](https://en.wikipedia.org/wiki/Named_pipe) opened in write mode.
+1. Reads output from the named pipe output location of the root of the expression tree.
+1. Calls `pandas.read_csv` on that output.
+
+::: {.callout-note collapse="true"}
+# Why named pipes?
+
+Shell commands only allow a single input from `stdin`.
+
+However, joins accept > 1 input so we need a way to stream more than one input to a join operation.
+
+Named pipes support the semantics of "unnamed" pipes (FIFO queue behavior) but
+can be used in pipelines with nodes that have more a single input since they
+exist as paths on the file system.
+:::
+
+### Expressions
+
+Ibis expressions are an abstract representation of an analytics computation
+over tabular data.
+
+Ibis ships a public API, whose instances we call *expressions*.
+
+Expressions have an associated type--accessible via their
+[`type()`](../../reference/expression-generic.qmd#ibis.expr.types.generic.Value.type)
+method--that determines what methods are available on them.
+
+Expressions are ignorant of their underlying implementation: their
+composability is determined solely by their type.
+
+This type is determined by the expression's underlying *operation*.
+
+The two-layer model makes it easy to describe operations in terms of the data
+types produced by an expression, rather than as instances of a specific class
+in a hierarchy.
+
+This allows Ibis maintainers to alter expression API implementations without
+changing those APIs making it easier to maintain and easier to keep stable than
+if we had a complex (but not necessarily deep!) class hierarchy.
+
+Operations, though, are really where the nitty gritty implementation details
+start.
+
+### Operations
+
+Ibis _operations_ are lightweight classes that model the tree structure of a computation.
+
+They have zero or more inputs, whose types and values are constrained by Ibis's _type system_.
+
+Notably operations are *not* part of Ibis's public API.
+
+When we talk about "compilation" in Ibis, we're talking about the process of
+converting an _operation_ into something that the backend knows how to execute.
+
+In the case of this 1̵0̸0̵%̵ p̶̺̑r̴̛ͅo̵̒ͅḍ̴̌u̷͇͒c̵̠̈t̷͍̿i̶̪͐o̸̳̾n̷͓̄-r̵̡̫̞͓͆̂̏ẽ̸̪̱̽ͅā̸̤̹̘̅̓͝d̵͇̞̏̂̔̽y̴̝͎̫̬͋̇̒̅ Unix backend, each operation
+is compiled into a list of strings that represent the shell command to run to
+execute the operation.
+
+In other backends, like DuckDB, these compilation rules produce a sqlglot object.
+
+The `compile` method is also the place where the backend has a chance to invoke
+custom rewrite rules over operations.
+
+Rewrites are a very useful tool for the Unix backend. For example, the `join`
+command (yep, it's in coreutils!) that we use to execute inner joins with this
+backend requires that the inputs be sorted, otherwise the results won't be
+correct. So, I added a rewrite rule that replaces the left and right relations
+in a join operation with equivalent relations sorted on the join keys.
+
+Once you obtain the output of compile, it's up to the backend what to do next.
+
+### Backend implementation
+
+At this point we've got our shell commands and some output locations created as
+named pipes.
+
+What next?
+
+Well, we need to execute the commands and write their output to the corresponding named pipe.
+
+You might think
+
+> I'll just loop over the operations, open the pipe in write mode and call
+> `subprocess.Popen(cmd, stdout=named_pipe)`.
+
+Not a bad thought, but the semantics of named pipes do not abide such thoughts :)
+
+Named pipes, when opened in write mode, will block until a corresponding handle
+is opened in *read* mode.
+
+Futures using a scoped thread pool are a decent way to handle this.
+
+The idea is to launch every node concurrently and then read from the last
+node's output. This initial read of the root node's output pipe kicks off the
+cascade of other reads necessary to move data through the pipeline.
+
+The Unix backend thus constructs a scoped `ThreadPoolExecutor()` using
+a context manager and submits a task for each operation to the executor.
+Importantly, opening the named pipe in write mode happens **inside** the task,
+to avoid blocking the main thread while waiting for a reader to be opened.
+
+The final output task's path is then passed directly to `read_csv`, and we've
+now got the result of our computation.
+
+#### Show me the commands already!
+
+Roger that.
+
+```{python}
+expr = (
+    t.filter([t.year == 2009])
+    .select(
+        "year", "species", "flipper_length_mm", island=lambda t: t.island.lower()
+    )
+    .group_by("island", "species")
+    .agg(n=lambda t: t.count(), avg=lambda t: t.island.upper().length().mean())
+    .order_by("n")
+    .mutate(ilength=lambda t: t.island.length())
+    .limit(5)
+)
+print(unix.explain(expr))  # <1>
+```
+
+1. `explain` isn't a public method and not likely to become one any time soon.
+
+## Conclusion
+
+If you've gotten this far hopefully you've had a good laugh.
+
+Let's wrap up with some final thoughts.
+
+### Things to do
+
+- Join our [Zulip](https://ibis-project.zulipchat.com/)!
+- Open a GitHub [issue](https://github.com/ibis-project/ibis/issues/new/choose)
+  or [discussion](https://github.com/ibis-project/ibis/discussions/new/choose)!
+
+### Things to avoid doing
+
+- Putting this into production

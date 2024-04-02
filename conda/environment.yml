@@ -28,7 +28,7 @@ dependencies:
   - pip
   - poetry-core >=1.0.0
   - poetry-dynamic-versioning >=0.18.0
-  - polars >=0.19
+  - polars >=0.20.17
   - psycopg2 >=2.8.4
   - pyarrow >=2
   - pyarrow-hotfix >=0.4

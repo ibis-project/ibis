@@ -26,6 +26,7 @@ reductions = {
     # Window functions are calculated locally using pandas
     ops.Last: lambda x: x.compute().iloc[-1] if isinstance(x, dd.Series) else x.iat[-1],
     ops.First: lambda x: x.loc[0] if isinstance(x, dd.Series) else x.iat[0],
+    ops.Arbitrary: lambda x: x.reduction(pandas_kernels.arbitrary),
 }
 
 serieswise = {

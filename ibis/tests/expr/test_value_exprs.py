@@ -493,16 +493,21 @@ def test_negate_boolean_column(table, op):
     assert isinstance(result.op(), ops.Not)
 
 
-@pytest.mark.parametrize("column", ["a", "b", "c", "d", "e", "f", "g", "h"])
-@pytest.mark.parametrize("how", ["first", "last", "heavy"])
+@pytest.mark.parametrize("column", ["a", "b"])
 @pytest.mark.parametrize("condition_fn", [lambda t: None, lambda t: t.a > 8])
-def test_arbitrary(table, column, how, condition_fn):
+def test_arbitrary(table, column, condition_fn):
     col = table[column]
     where = condition_fn(table)
-    expr = col.arbitrary(how=how, where=where)
+    expr = col.arbitrary(where=where)
     assert expr.type() == col.type()
     assert isinstance(expr, ir.Scalar)
     assert isinstance(expr.op(), ops.Arbitrary)
+
+
+def test_arbitrary_how_deprecated(table):
+    with pytest.warns(FutureWarning, match="v9.0"):
+        out = table.a.arbitrary(how="last")
+    assert isinstance(out.op(), ops.Arbitrary)
 
 
 @pytest.mark.parametrize(

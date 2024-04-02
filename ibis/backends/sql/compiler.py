@@ -930,13 +930,6 @@ class SQLGlotCompiler(abc.ABC):
         visit_VarianceStandardDevCovariance
     )
 
-    def visit_Arbitrary(self, op, *, arg, how, where):
-        if how == "heavy":
-            raise com.UnsupportedOperationError(
-                f"how='heavy' not supported in the {self.dialect} backend"
-            )
-        return self.agg[how](arg, where=where)
-
     def visit_SimpleCase(self, op, *, base=None, cases, results, default):
         return sge.Case(
             this=base, ifs=list(map(self.if_, cases, results)), default=default

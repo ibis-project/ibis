@@ -22,6 +22,7 @@ class RisingwaveCompiler(PostgresCompiler):
 
     UNSUPPORTED_OPERATIONS = frozenset(
         (
+            ops.Arbitrary,
             ops.DateFromYMD,
             ops.Mode,
             ops.RandomUUID,

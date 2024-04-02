@@ -9,7 +9,7 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable-small";
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-23.11";
 
     poetry2nix = {
       url = "github:nix-community/poetry2nix";
@@ -73,7 +73,7 @@
         git
         just
         nixpkgs-fmt
-        nodePackages.prettier
+        nodejs_20.pkgs.prettier
         shellcheck
         shfmt
         statix
@@ -98,7 +98,7 @@
           # link checking
           lychee
           # release automation
-          nodejs
+          nodejs_20
           # used in notebooks to download data
           curl
           # docs
@@ -138,7 +138,7 @@
         ibis311 = mkDevShell pkgs.ibisDevEnv311;
         ibis312 = mkDevShell pkgs.ibisDevEnv312;
 
-        default = ibis312;
+        default = ibis311;
 
         preCommit = pkgs.mkShell {
           name = "preCommit";
@@ -152,7 +152,7 @@
 
         release = pkgs.mkShell {
           name = "release";
-          nativeBuildInputs = with pkgs; [ git poetry nodejs unzip gnugrep ];
+          nativeBuildInputs = with pkgs; [ git poetry nodejs_20 unzip gnugrep ];
         };
       };
     }
