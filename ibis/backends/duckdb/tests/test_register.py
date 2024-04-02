@@ -165,12 +165,15 @@ def test_temp_directory(tmp_path):
 
 @pytest.fixture(scope="session")
 def pgurl():  # pragma: no cover
-    pgcon = ibis.postgres.connect(user="postgres", password="postgres")
-    df = pd.DataFrame({"x": [1.0, 2.0, 3.0, 1.0], "y": ["a", "b", "c", "a"]})
-    s = ibis.schema(dict(x="float64", y="str"))
+    pgcon = ibis.postgres.connect(
+        user="postgres", password="postgres", host="localhost"
+    )
 
-    pgcon.create_table("duckdb_test", df, s, force=True)
-    yield pgcon.con.url
+    df = pd.DataFrame({"x": [1.0, 2.0, 3.0, 1.0], "y": ["a", "b", "c", "a"]})
+
+    pgcon.create_table("duckdb_test", df, overwrite=True)
+    yield pgcon.con.info
+
     pgcon.drop_table("duckdb_test", force=True)
 
 
@@ -182,7 +185,7 @@ def test_read_postgres(con, pgurl):  # pragma: no cover
     # container up just for this test.  To run locally set env variable to True
     # and once a postgres container is up run the test.
     table = con.read_postgres(
-        f"postgres://{pgurl.username}:{pgurl.password}@{pgurl.host}:{pgurl.port}",
+        f"postgres://{pgurl.user}:{pgurl.password}@{pgurl.host}:{pgurl.port}",
         table_name="duckdb_test",
     )
     assert table.count().execute()
@@ -204,6 +207,7 @@ def mysqlurl():  # pragma: no cover
     os.environ.get("DUCKDB_MYSQL") is None, reason="avoiding CI shenanigans"
 )
 def test_read_mysql(con, mysqlurl):  # pragma: no cover
+    # to run this test run first the mysql test suit to get the ibis-testing
     # we don't run this test in CI, only locally, to avoid bringing a mysql
     # container up just for this test.  To run locally set env variable to True
     # and once a mysql container is up run the test.
@@ -213,7 +217,7 @@ def test_read_mysql(con, mysqlurl):  # pragma: no cover
     hostname = "127.0.0.1"
 
     table = con.read_mysql(
-        uri=f"mysql://{mysqlurl.user.decode()}:{mysqlurl.password.decode()}@{hostname}:{mysqlurl.port}/ibis_testing",
+        f"mysql://{mysqlurl.user.decode()}:{mysqlurl.password.decode()}@{hostname}:{mysqlurl.port}/ibis_testing",
         catalog="mysqldb",
         table_name="duckdb_test",
     )
@@ -233,9 +237,6 @@ def test_read_sqlite(con, tmp_path):
 
     ft = con.read_sqlite(path, table_name="t")
     assert ft.count().execute()
-
-    with pytest.raises(ValueError):
-        con.read_sqlite(path)
 
 
 def test_read_sqlite_no_table_name(con, tmp_path):

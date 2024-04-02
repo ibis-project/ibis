@@ -987,7 +987,7 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema, UrlFromPath):
         return self._filter_with_like(out[col].to_pylist(), like)
 
     def read_postgres(
-        self, uri: str, table_name: str | None = None, schema: str = "public"
+        self, uri: str, *, table_name: str | None = None, database: str = "public"
     ) -> ir.Table:
         """Register a table from a postgres instance into a DuckDB table.
 
@@ -997,8 +997,8 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema, UrlFromPath):
             A postgres URI of the form `postgres://user:password@host:port`
         table_name
             The table to read
-        schema
-            PostgreSQL schema where `table_name` resides
+        database
+            PostgreSQL database (schema) where `table_name` resides
 
         Returns
         -------
@@ -1015,7 +1015,7 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema, UrlFromPath):
         self._create_temp_view(
             table_name,
             sg.select(STAR).from_(
-                self.compiler.f.postgres_scan_pushdown(uri, schema, table_name)
+                self.compiler.f.postgres_scan_pushdown(uri, database, table_name)
             ),
         )
 
@@ -1023,8 +1023,8 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema, UrlFromPath):
 
     def read_mysql(
         self,
-        *,
         uri: str,
+        *,
         catalog: str,
         table_name: str | None = None,
     ) -> ir.Table:
@@ -1060,9 +1060,11 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema, UrlFromPath):
         with self._safe_raw_sql(query_con):
             pass
 
-        return self.table(table_name, database=(database, catalog))
+        return self.table(table_name, database=(catalog, database))
 
-    def read_sqlite(self, path: str | Path, table_name: str | None = None) -> ir.Table:
+    def read_sqlite(
+        self, path: str | Path, *, table_name: str | None = None
+    ) -> ir.Table:
         """Register a table from a SQLite database into a DuckDB table.
 
         Parameters
@@ -1090,7 +1092,7 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema, UrlFromPath):
         ...     )  # doctest: +ELLIPSIS
         <...>
         >>> con = ibis.connect("duckdb://")
-        >>> t = con.read_sqlite("/tmp/sqlite.db", table_name="t")
+        >>> t = con.read_sqlite(path="/tmp/sqlite.db", table_name="t")
         >>> t
         ┏━━━━━━━┳━━━━━━━━┓
         ┃ a     ┃ b      ┃
