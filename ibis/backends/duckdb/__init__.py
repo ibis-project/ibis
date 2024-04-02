@@ -159,6 +159,14 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema, UrlFromPath):
             if the table exists
 
         """
+        table_loc = self._to_sqlglot_table(database)
+
+        catalog = F.current_database()
+        database = F.current_schema()
+        if table_loc is not None:
+            catalog = table_loc.catalog or catalog
+            database = table_loc.db or database
+
         if obj is None and schema is None:
             raise ValueError("Either `obj` or `schema` must be specified")
 
