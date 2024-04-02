@@ -1458,5 +1458,21 @@ class NoUrl:
 
     name: str
 
-    def _from_url(self, url: str, **_) -> ir.Table:
-        raise NotImplementedError(self.name)
+    def _from_url(self, url: str, **kwargs) -> BaseBackend:
+        """Connect to the backend with empty url.
+
+        Parameters
+        ----------
+        url : str
+            The URL with which to connect to the backend. This parameter is not used
+            in this method but is kept for consistency.
+        kwargs
+            Additional keyword arguments.
+
+        Returns
+        -------
+        BaseBackend
+            A backend instance
+
+        """
+        return self.connect(**kwargs)
