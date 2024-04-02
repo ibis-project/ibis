@@ -8,7 +8,6 @@ import keyword
 import re
 import sys
 import urllib.parse
-import warnings
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Callable, ClassVar
 from urllib.parse import parse_qs, urlparse
@@ -1476,9 +1475,4 @@ class NoUrl:
             A backend instance
 
         """
-        # Check if additional components are provided in the URL
-        if len(url.split("://")) > 1:
-            warnings.warn(
-                f"Additional components in the URL are ignored. url = '{url}'"
-            )
         return self.connect(**kwargs)
