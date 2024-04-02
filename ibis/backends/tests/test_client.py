@@ -711,12 +711,12 @@ def test_unsigned_integer_type(con, temp_table):
         ),
         param(
             "dask://",
-            marks=[mark.dask, mark.xfail(raises=NotImplementedError)],
+            marks=mark.dask,
             id="dask",
         ),
         param(
             "datafusion://",
-            marks=[mark.datafusion, mark.xfail(raises=NotImplementedError)],
+            marks=mark.datafusion,
             id="datafusion",
         ),
         param(
@@ -731,8 +731,13 @@ def test_unsigned_integer_type(con, temp_table):
         ),
         param(
             "pandas://",
-            marks=[mark.pandas, mark.xfail(raises=NotImplementedError)],
+            marks=mark.pandas,
             id="pandas",
+        ),
+        param(
+            "polars://",
+            marks=mark.polars,
+            id="polars",
         ),
         param(
             "postgres://postgres:postgres@localhost:5432",
