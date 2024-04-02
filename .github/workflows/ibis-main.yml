@@ -78,9 +78,7 @@ jobs:
 
       - name: install minimum versions of dependencies
         run: |
-          if [ -f ci/requirements/requirements-${{ matrix.python-version }}.txt ]; then
-            pip install -r ci/requirements/requirements-${{ matrix.python-version }}.txt
-          fi
+          pip install -r ci/requirements/requirements-${{ matrix.python-version }}.txt
 
       - name: install ibis
         run: poetry install --without dev --without docs --extras "visualization decompiler"

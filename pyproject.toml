@@ -40,10 +40,10 @@ classifiers = [
 python = "^3.9"
 atpublic = ">=2.3,<5"
 bidict = ">=0.22.1,<1"
-numpy = ">=1,<2"
+numpy = ">=1.23.0,<2" # https://numpy.org/neps/nep-0029-deprecation_policy.html
 pandas = ">=1.2.5,<3"
 parsy = ">=2,<3"
-pyarrow = ">=2,<16"
+pyarrow = ">=6.0.0,<16"
 pyarrow-hotfix = ">=0.4,<1"
 python-dateutil = ">=2.8.2,<3"
 pytz = ">=2022.7"
