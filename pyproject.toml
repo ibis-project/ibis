@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "ibis-framework"
-version = "8.0.0"
+version = "8.0.0.dev836"
 packages = [{ include = "ibis" }]
 include = ["ibis/examples/metadata.json", "ibis/examples/CITATIONS.md"]
 exclude = [
@@ -510,7 +510,7 @@ omit = [
 universal = false
 
 [tool.poetry-dynamic-versioning]
-enable = true
+enable = false
 dirty = true
 style = "pep440"
 pattern = '^(?P<base>\d+(\.\d+)*)'

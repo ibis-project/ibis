@@ -3,7 +3,7 @@ atpublic==2.3
 bidict==0.22.1
 numpy==1.23.0
 pandas==1.2.5
-parsy===2.0.0
+parsy===2.0
 pyarrow==6.0.0
 pyarrow-hotfix==0.4
 python-dateutil==2.8.2
