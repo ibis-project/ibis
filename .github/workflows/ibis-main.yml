@@ -76,6 +76,12 @@ jobs:
         if: matrix.os == 'windows-latest'
         run: choco install graphviz
 
+      - name: install minimum versions of dependencies
+        run: |
+          if [ -f ci/requirements/requirements-${{ matrix.python-version }}.txt ]; then
+            pip install -r ci/requirements/requirements-${{ matrix.python-version }}.txt
+          fi
+
       - name: install ibis
         run: poetry install --without dev --without docs --extras "visualization decompiler"
 

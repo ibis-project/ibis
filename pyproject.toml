@@ -35,6 +35,7 @@ classifiers = [
 [tool.poetry.urls]
 "Issue Tracker" = "https://github.com/ibis-project/ibis/issues"
 
+# Keep minimum versions in sync with ci/requirements/requirements-3.9.txt
 [tool.poetry.dependencies]
 python = "^3.9"
 atpublic = ">=2.3,<5"
