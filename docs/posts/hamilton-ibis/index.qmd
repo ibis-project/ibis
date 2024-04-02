@@ -1,7 +1,7 @@
 ---
 title: Portable dataflows with Ibis and Hamilton
 author: "Thierry Jean"
-date: "2024-03-28"
+date: "2024-04-02"
 image: "thumbnail.png"
 categories:
     - blog
