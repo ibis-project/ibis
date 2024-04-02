@@ -55,10 +55,11 @@ feature_set = (
 
 ### Challenge 1 – Maintain and test complex data transformations
 
-Ibis has an SQL-like syntax and supports chaining operations, allowing for powerful
-queries in a few lines of code. Conversely, there’s a risk of sprawling complexity as
-expressions as statements are appended, making them harder to test and debug. Preventing
-this issue requires a lot of upfront discipline and refactoring.
+Ibis has an SQL-like syntax and supports chaining operations, allowing for
+powerful queries in a few lines of code. Conversely, there’s a risk of
+sprawling complexity as expressions are appended, making them harder to test
+and debug. Preventing this issue requires a lot of upfront discipline and
+refactoring.
 
 ### Challenge 2 – Orchestrate Ibis code in production
 
