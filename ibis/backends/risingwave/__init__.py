@@ -19,6 +19,7 @@ import ibis.expr.types as ir
 from ibis import util
 from ibis.backends.postgres import Backend as PostgresBackend
 from ibis.backends.risingwave.compiler import RisingwaveCompiler
+from ibis.util import experimental
 
 if TYPE_CHECKING:
     import pandas as pd
@@ -317,6 +318,7 @@ class Backend(PostgresBackend):
 
         return self._filter_with_like(databases, like)
 
+    @experimental
     def create_materialized_view(
         self,
         name: str,
