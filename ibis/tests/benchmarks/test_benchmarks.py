@@ -87,7 +87,7 @@ def make_large_expr(base):
         _timestamp=(src_table["_timestamp"] - src_table["_timestamp"] % 3600)
         .cast("int32")
         .name("_timestamp"),
-        valid_seconds=300,
+        valid_seconds=ibis.literal(300),
     )
 
     aggs = []
