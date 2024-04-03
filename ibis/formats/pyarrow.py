@@ -90,8 +90,6 @@ class PyArrowType(TypeMapper):
             value_dtype = cls.to_ibis(typ.value_type, typ.value_field.nullable)
             return dt.Array(value_dtype, nullable=nullable)
         elif pa.types.is_struct(typ):
-            if typ.num_fields == 0:
-                raise ValueError("Empty struct type is not supported")
             field_dtypes = {
                 field.name: cls.to_ibis(field.type, field.nullable) for field in typ
             }
