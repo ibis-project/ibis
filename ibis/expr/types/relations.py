@@ -23,7 +23,7 @@ import ibis.expr.schema as sch
 from ibis import util
 from ibis.common.deferred import Deferred, Resolver
 from ibis.expr.types.core import Expr, _FixedTextJupyterMixin
-from ibis.expr.types.generic import ValueExpr, literal
+from ibis.expr.types.generic import Value, literal
 from ibis.expr.types.pretty import to_rich
 from ibis.selectors import Selector
 from ibis.util import deprecated
@@ -97,15 +97,23 @@ def _regular_join_method(
 
 # TODO(kszucs): should use (table, *args, **kwargs) instead to avoid interpreting
 # nested inputs
-def bind(table: Table, value: Any) -> Iterator[ir.Value]:
+def bind(table: Table, value: Any, int_as_column=False) -> Iterator[ir.Value]:
     """Bind a value to a table expression."""
-    if type(value) in (str, int):
-        yield table._get_column(value)
-    elif isinstance(value, ValueExpr):
+    if isinstance(value, str):
+        # TODO(kszucs): perhaps use getattr(table, value) instead for nicer error msg
+        yield ops.Field(table, value).to_expr()
+    elif isinstance(value, bool):
+        yield literal(value)
+    elif int_as_column and isinstance(value, int):
+        name = table.columns[value]
+        yield ops.Field(table, name).to_expr()
+    elif isinstance(value, ops.Value):
+        yield value.to_expr()
+    elif isinstance(value, Value):
         yield value
     elif isinstance(value, Table):
         for name in value.columns:
-            yield value._get_column(name)
+            yield ops.Field(table, name).to_expr()
     elif isinstance(value, Deferred):
         yield value.resolve(table)
     elif isinstance(value, Resolver):
@@ -114,17 +122,11 @@ def bind(table: Table, value: Any) -> Iterator[ir.Value]:
         yield from value.expand(table)
     elif isinstance(value, Mapping):
         for k, v in value.items():
-            for val in bind(table, v):
+            for val in bind(table, v, int_as_column=int_as_column):
                 yield val.name(k)
     elif util.is_iterable(value):
         for v in value:
-            yield from bind(table, v)
-    elif isinstance(value, ops.Value):
-        # TODO(kszucs): from certain builders, like ir.GroupedTable we pass
-        # operation nodes instead of expressions to table methods, it would
-        # be better to convert them to expressions before passing them to
-        # this function
-        yield value.to_expr()
+            yield from bind(table, v, int_as_column=int_as_column)
     elif callable(value):
         yield value(table)
     else:
@@ -567,13 +569,6 @@ class Table(Expr, _FixedTextJupyterMixin):
             console_width=console_width,
         )
 
-    # TODO(kszucs): expose this method in the public API
-    def _get_column(self, name: str | int) -> ir.Column:
-        """Get a column from the table."""
-        if isinstance(name, int):
-            name = self.schema().name_at_position(name)
-        return ops.Field(self, name).to_expr()
-
     def __getitem__(self, what):
         """Select items from a table expression.
 
@@ -820,22 +815,18 @@ class Table(Expr, _FixedTextJupyterMixin):
         """
         from ibis.expr.types.logical import BooleanValue
 
-        if isinstance(what, (str, int)):
-            return self._get_column(what)
-        elif isinstance(what, slice):
+        if isinstance(what, slice):
             limit, offset = util.slice_to_limit_offset(what, self.count())
             return self.limit(limit, offset=offset)
-        elif isinstance(what, (list, tuple, Table)):
-            # Projection case
-            return self.select(what)
 
-        items = tuple(bind(self, what))
-        if util.all_of(items, BooleanValue):
-            # TODO(kszucs): this branch should be removed, .filter should be
-            # used instead
-            return self.filter(items)
+        values = tuple(bind(self, what, int_as_column=True))
+        if isinstance(what, (str, int)):
+            assert len(values) == 1
+            return values[0]
+        elif util.all_of(values, BooleanValue):
+            return self.filter(values)
         else:
-            return self.select(items)
+            return self.select(values)
 
     def __len__(self):
         raise com.ExpressionError("Use .count() instead")
@@ -878,7 +869,7 @@ class Table(Expr, _FixedTextJupyterMixin):
         └───────────┘
         """
         try:
-            return self._get_column(key)
+            return ops.Field(self, key).to_expr()
         except com.IbisTypeError:
             pass
 
@@ -2073,7 +2064,7 @@ class Table(Expr, _FixedTextJupyterMixin):
 
         Projection by zero-indexed column position
 
-        >>> t.select(0, 4).head()
+        >>> t.select(t[0], t[4]).head()
         ┏━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━┓
         ┃ species ┃ flipper_length_mm ┃
         ┡━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━┩
@@ -4409,10 +4400,10 @@ class Table(Expr, _FixedTextJupyterMixin):
             where = 0
 
         # all columns that should come BEFORE the matched selectors
-        front = [left for left in range(where) if left not in sels]
+        front = [self[left] for left in range(where) if left not in sels]
 
         # all columns that should come AFTER the matched selectors
-        back = [right for right in range(where, ncols) if right not in sels]
+        back = [self[right] for right in range(where, ncols) if right not in sels]
 
         # selected columns
         middle = [self[i].name(name) for i, name in sels.items()]

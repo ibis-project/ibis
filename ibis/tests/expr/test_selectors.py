@@ -342,7 +342,7 @@ def test_if_any(penguins):
 
 
 def test_negate_range(penguins):
-    assert penguins.select(~s.r[3:]).equals(penguins.select(0, 1, 2))
+    assert penguins.select(~s.r[3:]).equals(penguins[[0, 1, 2]])
 
 
 def test_string_range_start(penguins):
@@ -378,16 +378,15 @@ def test_all(penguins):
 @pytest.mark.parametrize(
     ("seq", "expected"),
     [
-        param([0, 1, 2], (0, 1, 2), id="int_tuple"),
         param(~s.r[[3, 4, 5]], sorted(set(range(8)) - {3, 4, 5}), id="neg_int_list"),
         param(~s.r[3, 4, 5], sorted(set(range(8)) - {3, 4, 5}), id="neg_int_tuple"),
         param(s.r["island", "year"], ("island", "year"), id="string_tuple"),
         param(s.r[["island", "year"]], ("island", "year"), id="string_list"),
-        param(iter(["island", 4, "year"]), ("island", 4, "year"), id="mixed_iterable"),
+        param(iter(["island", "year"]), ("island", "year"), id="mixed_iterable"),
     ],
 )
 def test_sequence(penguins, seq, expected):
-    assert penguins.select(seq).equals(penguins.select(*expected))
+    assert penguins.select(seq).equals(penguins[expected])
 
 
 def test_names_callable(penguins):
