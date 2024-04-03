@@ -1,7 +1,7 @@
 Release notes
 ---
 
-## [8.0.0](https://github.com/ibis-project/ibis/compare/7.2.0...8.0.0) (2024-02-05)
+## [v8.0.0](https://github.com/ibis-project/ibis/compare/7.2.0...8.0.0) (2024-02-05)
 
 
 ### ⚠ BREAKING CHANGES
@@ -141,7 +141,7 @@ Release notes
 
 * deprecate Value.least() and Value.greatest() ([f711337](https://github.com/ibis-project/ibis/commit/f711337ca9d6ee5cf1bca89f1ba0a2545919704c))
 
-## [7.2.0](https://github.com/ibis-project/ibis/compare/7.1.0...7.2.0) (2023-12-18)
+## [v7.2.0](https://github.com/ibis-project/ibis/compare/7.1.0...7.2.0) (2023-12-18)
 
 
 ### Features
@@ -288,7 +288,7 @@ Release notes
 
 * **common:** improve the performance of replacing nodes by using a specialized `node.__recreate__()` method ([f3da926](https://github.com/ibis-project/ibis/commit/f3da9265c5af8e624fe7dea9ac3ac170c95b6e0c))
 
-## [7.1.0](https://github.com/ibis-project/ibis/compare/7.0.0...7.1.0) (2023-11-16)
+## [v7.1.0](https://github.com/ibis-project/ibis/compare/7.0.0...7.1.0) (2023-11-16)
 
 
 ### Features
@@ -493,7 +493,7 @@ Release notes
 
 * **bigquery:** use more efficient representation for memtables ([697d325](https://github.com/ibis-project/ibis/commit/697d325f13bdf2746a50e86204eb8834b1710bd6))
 
-## [7.0.0](https://github.com/ibis-project/ibis/compare/6.1.0...7.0.0) (2023-10-02)
+## [v7.0.0](https://github.com/ibis-project/ibis/compare/6.1.0...7.0.0) (2023-10-02)
 
 
 ### ⚠ BREAKING CHANGES
@@ -845,7 +845,7 @@ or patterns from `ibis.common.patterns`
 * **api:** deprecate top-level `ibis.geo_*` functions in favor of their corresponding methods ([71b7106](https://github.com/ibis-project/ibis/commit/71b71068cd5cba09371cae710914bf0d6742bb15))
 * **api:** replace `nullifzero` with `ifnull` and zeroifnull with `fillna` ([ac85d11](https://github.com/ibis-project/ibis/commit/ac85d110e5633d2fb593020f0f3347e4086d565e))
 
-## [6.2.0](https://github.com/ibis-project/ibis/compare/6.1.0...6.2.0) (2023-08-31)
+## [v6.2.0](https://github.com/ibis-project/ibis/compare/6.1.0...6.2.0) (2023-08-31)
 
 ### Features
 
@@ -863,7 +863,7 @@ or patterns from `ibis.common.patterns`
 
 * **trino:** add connection docstring ([507a00e](https://github.com/ibis-project/ibis/commit/507a00e95784fd4054bd5146f49c2e6e168793db))
 
-## [6.1.0](https://github.com/ibis-project/ibis/compare/6.0.0...6.1.0) (2023-08-03)
+## [v6.1.0](https://github.com/ibis-project/ibis/compare/6.0.0...6.1.0) (2023-08-03)
 
 
 ### Features
@@ -965,7 +965,7 @@ or patterns from `ibis.common.patterns`
 * **snowflake:** enable multiple statements and clean up duplicated parameter setting code ([75824a6](https://github.com/ibis-project/ibis/commit/75824a6d302afd53988bfb4684e18d59354cd04f))
 * **tests:** clean up backend test setup to make non-data-loading steps atomic ([16b4632](https://github.com/ibis-project/ibis/commit/16b4632ba73a2c88be5a31662aba9f094602354e))
 
-## [6.0.0](https://github.com/ibis-project/ibis/compare/5.1.0...6.0.0) (2023-07-05)
+## [v6.0.0](https://github.com/ibis-project/ibis/compare/5.1.0...6.0.0) (2023-07-05)
 
 
 ### ⚠ BREAKING CHANGES
@@ -1342,7 +1342,7 @@ multiple hash functions working.
 
 * **api:** deprecate tuple syntax for order by keys ([5ed5110](https://github.com/ibis-project/ibis/commit/5ed51107a866fcfac01b9f7aadb3f38607eb3f04))
 
-## [5.1.0](https://github.com/ibis-project/ibis/compare/5.0.0...5.1.0) (2023-04-11)
+## [v5.1.0](https://github.com/ibis-project/ibis/compare/5.0.0...5.1.0) (2023-04-11)
 
 
 ### Features
@@ -1446,7 +1446,7 @@ multiple hash functions working.
 * **selectors:** make doctests more complete and actually run them ([c8f2964](https://github.com/ibis-project/ibis/commit/c8f2964e224b07d5d676fd57106043883da4d207))
 * style and review fixes in getting started guide ([3b0f8db](https://github.com/ibis-project/ibis/commit/3b0f8dbe93b6112101e084737e8733fa61c6558a))
 
-## [5.0.0](https://github.com/ibis-project/ibis/compare/4.1.0...5.0.0) (2023-03-15)
+## [v5.0.0](https://github.com/ibis-project/ibis/compare/4.1.0...5.0.0) (2023-03-15)
 
 
 ### ⚠ BREAKING CHANGES
@@ -1791,7 +1791,7 @@ multiple hash functions working.
 * **tutorial:** remove impala from sql tutorial ([7627c13](https://github.com/ibis-project/ibis/commit/7627c137b3af400139a2e019e6fb3184bc2fe876))
 * use teal for primary & accent colors ([24be961](https://github.com/ibis-project/ibis/commit/24be96158f67850f528597195d20c00c7ff98cfb))
 
-## [4.1.0](https://github.com/ibis-project/ibis/compare/4.0.0...4.1.0) (2023-01-25)
+## [v4.1.0](https://github.com/ibis-project/ibis/compare/4.0.0...4.1.0) (2023-01-25)
 
 
 ### Features
@@ -1947,7 +1947,7 @@ multiple hash functions working.
 * **ir:** schedule DatabaseTable.change_name for removal ([e4bae26](https://github.com/ibis-project/ibis/commit/e4bae26b6671a16ceeab9beff4e21d66a6e2fbb9))
 * **schema:** schedule `Schema.delete()` and `Schema.append()` for removal ([45ac9a9](https://github.com/ibis-project/ibis/commit/45ac9a9a07987aa27318a471ebb481d5387d7de5))
 
-## [4.0.0](https://github.com/ibis-project/ibis/compare/3.2.0...4.0.0) (2023-01-09)
+## [v4.0.0](https://github.com/ibis-project/ibis/compare/3.2.0...4.0.0) (2023-01-09)
 
 
 ### ⚠ BREAKING CHANGES
@@ -2425,7 +2425,7 @@ multiple hash functions working.
 * use present tense for use cases and "why" section ([6cc7416](https://github.com/ibis-project/ibis/commit/6cc7416d8c1623400b399469192a28d64642bdd7))
 * **www:** fix frontpage example ([7db39e8](https://github.com/ibis-project/ibis/commit/7db39e81d1f0ee613c9694f1bdac18f1ba9a6acf))
 
-## [3.2.0](https://github.com/ibis-project/ibis/compare/3.1.0...3.2.0) (2022-09-15)
+## [v3.2.0](https://github.com/ibis-project/ibis/compare/3.1.0...3.2.0) (2022-09-15)
 
 
 ### Features
@@ -2560,7 +2560,7 @@ multiple hash functions working.
 * move the blog out to the top level sidebar for visibility ([417ba64](https://github.com/ibis-project/ibis/commit/417ba64074402436fc479b5a67761d74bb46357d))
 * remove underspecified UDF doc page ([0eb0ac0](https://github.com/ibis-project/ibis/commit/0eb0ac09f0ea9af973a80de4bc46f28a8b04e5db))
 
-## [3.1.0](https://github.com/ibis-project/ibis/compare/3.0.2...3.1.0) (2022-07-26)
+## [v3.1.0](https://github.com/ibis-project/ibis/compare/3.0.2...3.1.0) (2022-07-26)
 
 
 ### Features
@@ -2727,7 +2727,7 @@ multiple hash functions working.
 
 * **build:** replace version before exec plugin runs ([573139c](https://github.com/ibis-project/ibis/commit/573139c3569aa6c6a197910f3582c6e24593688e))
 
-## [3.0.0](https://github.com/ibis-project/ibis/compare/2.1.1...3.0.0) (2022-04-25)
+## [v3.0.0](https://github.com/ibis-project/ibis/compare/2.1.1...3.0.0) (2022-04-25)
 
 
 ### ⚠ BREAKING CHANGES
@@ -2923,7 +2923,7 @@ behavior from UUID datatypes will need to add an explicit cast first.
 
 * **setup.py:** set the correct version number for 2.1.0 ([f3d267b](https://github.com/ibis-project/ibis/commit/f3d267b96b9f14d3616c17b8f7bdeb8d0a6fc2cf))
 
-# [2.1.0](https://github.com/ibis-project/ibis/compare/2.0.0...2.1.0) (2022-01-12)
+# [v2.1.0](https://github.com/ibis-project/ibis/compare/2.0.0...2.1.0) (2022-01-12)
 
 
 ### Bug Fixes
@@ -2956,7 +2956,7 @@ behavior from UUID datatypes will need to add an explicit cast first.
 
 * "ci: install gdal for fiona" ([8503361](https://github.com/ibis-project/ibis/commit/850336100a271ee2b6043b92a1ceeb1d1d7b30f2))
 
-# [2.0.0](https://github.com/ibis-project/ibis/releases/tag/2.0.0) (2021-10-06)
+# [v2.0.0](https://github.com/ibis-project/ibis/releases/tag/2.0.0) (2021-10-06)
 
 ## Features
 
@@ -3028,7 +3028,7 @@ behavior from UUID datatypes will need to add an explicit cast first.
 * Remove deprecated `ibis.HDFS`, `ibis.WebHDFS` and `ibis.hdfs_connect` ([#2505](https://github.com/ibis-project/ibis/issues/2505))
 
 
-# [1.4.0](https://github.com/ibis-project/ibis/releases/tag/1.4.0) (2020-11-07)
+# [v1.4.0](https://github.com/ibis-project/ibis/releases/tag/1.4.0) (2020-11-07)
 
 ## Features
 
@@ -3110,7 +3110,7 @@ behavior from UUID datatypes will need to add an explicit cast first.
 * Enabled cumulative ops support for OmniSciDB ([#2113](https://github.com/ibis-project/ibis/issues/2113))
 
 
-# [1.3.0](https://github.com/ibis-project/ibis/releases/tag/1.3.0) (2020-02-27)
+# [v1.3.0](https://github.com/ibis-project/ibis/releases/tag/1.3.0) (2020-02-27)
 
 ## Features
 
@@ -3224,7 +3224,7 @@ behavior from UUID datatypes will need to add an explicit cast first.
 * Move CI pipelines to Azure ([#1856](https://github.com/ibis-project/ibis/issues/1856))
 
 
-# [1.2.0](https://github.com/ibis-project/ibis/releases/tag/1.2.0) (2019-06-24)
+# [v1.2.0](https://github.com/ibis-project/ibis/releases/tag/1.2.0) (2019-06-24)
 
 ## Features
 
@@ -3251,7 +3251,7 @@ behavior from UUID datatypes will need to add an explicit cast first.
 * Allow passing a branch to ci/feedstock.py ([#1826](https://github.com/ibis-project/ibis/issues/1826))
 
 
-# [1.1.0](https://github.com/ibis-project/ibis/releases/tag/1.1.0) (2019-06-09)
+# [v1.1.0](https://github.com/ibis-project/ibis/releases/tag/1.1.0) (2019-06-09)
 
 ## Features
 
@@ -3302,7 +3302,7 @@ behavior from UUID datatypes will need to add an explicit cast first.
 * Update README reference to MapD to say OmniSci ([#1749](https://github.com/ibis-project/ibis/issues/1749))
 
 
-# [1.0.0](https://github.com/ibis-project/ibis/releases/tag/1.0.0) (2019-03-26)
+# [v1.0.0](https://github.com/ibis-project/ibis/releases/tag/1.0.0) (2019-03-26)
 
 ## Features
 
@@ -3636,7 +3636,7 @@ The following people contributed to the 0.12.0 release :
      1  dlovell
      1  kwangin
 
-# 0.11.0 (2017-06-28)
+# v0.11.0 (2017-06-28)
 
 This release brings initial pandas backend support along with a number
 of bug fixes and reliability enhancements. We recommend that all users
@@ -3686,7 +3686,7 @@ upgrade from earlier versions of Ibis.
        1 Tarun Gogineni
        1 Wes McKinney
 
-# 0.8 (2016-05-19)
+# v0.8 (2016-05-19)
 
 This release brings initial PostgreSQL backend support along with a
 number of critical bug fixes and usability improvements. As several
@@ -3785,7 +3785,7 @@ Thank you to all who contributed patches to this release.
          1 Uri Laserson
          1 Kristopher Overholt
 
-# 0.6 (2015-12-01)
+# v0.6 (2015-12-01)
 
 This release brings expanded pandas and Impala integration, including
 support for managing partitioned tables in Impala. See the new
@@ -3850,7 +3850,7 @@ correctness. All users should upgrade as soon as possible.
      1 mariusvniekerk
      1 Kristopher Overholt
 
-# 0.5 (2015-09-10)
+# v0.5 (2015-09-10)
 
 Highlights in this release are the SQLite, Python 3, Impala UDA support,
 and an asynchronous execution API. There are also many usability
@@ -3891,7 +3891,7 @@ improvements, bug fixes, and other new features.
           9 Uri Laserson
           1 Kristopher Overholt
 
-# 0.4 (2015-08-14)
+# v0.4 (2015-08-14)
 
 ## New Features
 
@@ -3932,7 +3932,7 @@ improvements, bug fixes, and other new features.
           2 Kristopher Overholt
           1 Marius van Niekerk
 
-# 0.3 (2015-07-20)
+# v0.3 (2015-07-20)
 
 First public release. See https://ibis-project.org for more.
 
@@ -3968,7 +3968,7 @@ First public release. See https://ibis-project.org for more.
           4 Isaac Hodes
           2 Meghana Vuyyuru
 
-# 0.2 (2015-06-16)
+# v0.2 (2015-06-16)
 
 ## New Features
 
@@ -4028,7 +4028,7 @@ First public release. See https://ibis-project.org for more.
           1 Juliet Hougland
           1 Isaac Hodes
 
-# 0.1 (2015-03-26)
+# v0.1 (2015-03-26)
 
 First Ibis release.
 
