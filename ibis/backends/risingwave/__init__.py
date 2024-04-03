@@ -176,7 +176,7 @@ class Backend(PostgresBackend):
         if connector_properties is not None and (
             encode_format is None or data_format is None
         ):
-            raise com.RelationError(
+            raise com.UnsupportedOperationError(
                 "When creating tables with connector, both encode_format and data_format are required"
             )
 
@@ -327,7 +327,7 @@ class Backend(PostgresBackend):
         database: str | None = None,
         overwrite: bool = False,
     ) -> ir.Table:
-        """Creating a materialized view. The created materialized view can be accessed like a normal table.
+        """Create a materialized view. Materialized views can be accessed like a normal table.
 
         Parameters
         ----------
@@ -517,7 +517,7 @@ class Backend(PostgresBackend):
             The properties of the sink connector, providing the connector settings to push to the downstream data sink.
             Refer https://docs.risingwave.com/docs/current/data-delivery/ for the required properties of different data sink.
         obj
-            An Ibis table expression or pandas table that will be used to extract the schema and the data of the new table. Only one of `sink_from` or `obj` can be provided.
+            An Ibis table expression that will be used to extract the schema and the data of the new table. Only one of `sink_from` or `obj` can be provided.
         database
             Name of the database where the source exists, if not the default.
         data_format
@@ -528,9 +528,13 @@ class Backend(PostgresBackend):
             The properties of encode format, providing information like schema registry url. Refer https://docs.risingwave.com/docs/current/sql-create-source/ for more details.
         """
         table = sg.table(name, db=database, quoted=self.compiler.quoted)
+        if sink_from is None and obj is None:
+            raise ValueError("Either `sink_from` or `obj` must be specified")
+        if sink_from is not None and obj is not None:
+            raise ValueError("Only one of `sink_from` or `obj` should be specified")
 
-        if encode_format is None != data_format is None:
-            raise com.RelationError(
+        if (encode_format is None) != (data_format is None):
+            raise com.UnsupportedArgumentError(
                 "When creating sinks, both encode_format and data_format must be provided, or neither should be"
             )
 
