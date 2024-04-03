@@ -600,7 +600,7 @@ In many other situations, you can use constants without having to use
 but the number 5 like so:
 
 ```{python}
-expr = t3.mutate(number5=5)
+expr = t3.mutate(number5=ibis.literal(5))
 ibis.to_sql(expr)
 ```
 
