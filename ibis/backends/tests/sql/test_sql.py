@@ -390,7 +390,7 @@ def test_mutate_filter_join_no_cross_join(snapshot):
         [("person_id", "int64"), ("birth_datetime", "timestamp")],
         name="person",
     )
-    mutated = person.mutate(age=400)
+    mutated = person.mutate(age=ibis.literal(400))
     expr = mutated.filter(mutated.age <= 40)[mutated.person_id]
 
     snapshot.assert_match(to_sql(expr), "out.sql")

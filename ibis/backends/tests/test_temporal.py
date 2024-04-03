@@ -1236,7 +1236,7 @@ def test_interval_add_cast_column(backend, alltypes, df):
         ),
         param(
             lambda t: (
-                t.mutate(suffix="%d")
+                t.mutate(suffix=ibis.literal("%d"))
                 .select(formatted=lambda t: t.timestamp_col.strftime("%Y%m" + t.suffix))
                 .formatted
             ),

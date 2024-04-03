@@ -382,7 +382,7 @@ def test_mutate_scalar_with_window_after_join(npartitions):
 
     joined = left.outer_join(right, left.ints == right.group)
     proj = joined[left, right.value]
-    expr = proj.mutate(sum=proj.value.sum(), const=1)
+    expr = proj.mutate(sum=proj.value.sum(), const=ibis.literal(1))
     result = expr.execute()
     result = result.sort_values(["ints", "value"]).reset_index(drop=True)
     expected = (

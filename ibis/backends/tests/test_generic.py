@@ -785,7 +785,7 @@ def test_uncorrelated_subquery(backend, batting, batting_df):
 
 
 def test_int_column(alltypes):
-    expr = alltypes.mutate(x=1).x
+    expr = alltypes.mutate(x=ibis.literal(1)).x
     result = expr.execute()
     assert expr.type() == dt.int8
     assert result.dtype == np.int8

@@ -506,7 +506,7 @@ def test_mutate_after_join():
         q_count=joined["q_count"].fillna(0),
         p_density=joined.p_density.fillna(1e-10),
         q_density=joined.q_density.fillna(1e-10),
-        features="Order_Priority",
+        features=ibis.literal("Order_Priority"),
     )
 
     expected = pd.DataFrame(

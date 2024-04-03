@@ -232,7 +232,7 @@ def test_mutate():
 def test_mutate_overwrites_existing_column():
     t = ibis.table(dict(a="string", b="string"))
 
-    mut = t.mutate(a=42)
+    mut = t.mutate(a=ibis.literal(42))
     assert mut.op() == Project(parent=t, values={"a": ibis.literal(42), "b": t.b})
 
     sel = mut.select("a")
