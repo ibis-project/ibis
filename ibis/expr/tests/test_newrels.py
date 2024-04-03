@@ -551,7 +551,6 @@ def test_project_before_and_after_filter():
     )
 
 
-# TODO(kszucs): add test for failing integrity checks
 def test_join():
     t1 = ibis.table(name="t1", schema={"a": "int64", "b": "string"})
     t2 = ibis.table(name="t2", schema={"c": "int64", "d": "string"})
@@ -579,6 +578,26 @@ def test_join():
                 "d": t2.d,
             },
         )
+
+
+def test_join_integrity_checks():
+    t1 = ibis.table(name="t1", schema={"a": "int64", "b": "string"})
+
+    # correct example
+    r1 = ops.JoinTable(t1, 10)
+    r2 = ops.JoinTable(t1, 20)
+    assert r1 != r2
+    assert hash(r1) != hash(r2)
+    chain = ops.JoinChain(r1, [ops.JoinLink("inner", r2, [True])], values={})
+    assert isinstance(chain, JoinChain)
+
+    # not unique tables
+    r1 = ops.JoinTable(t1, 10)
+    r2 = ops.JoinTable(t1, 10)
+    assert r1 == r2
+    assert hash(r1) == hash(r2)
+    with pytest.raises(IntegrityError):
+        ops.JoinChain(r1, [ops.JoinLink("inner", r2, [True])], values={})
 
 
 def test_join_unambiguous_select():
