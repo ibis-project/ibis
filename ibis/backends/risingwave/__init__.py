@@ -531,7 +531,7 @@ class Backend(PostgresBackend):
         if sink_from is None and obj is None:
             raise ValueError("Either `sink_from` or `obj` must be specified")
         if sink_from is not None and obj is not None:
-            raise ValueError("Only one of `sink_from` or `obj` should be specified")
+            raise ValueError("Only one of `sink_from` or `obj` can be specified")
 
         if (encode_format is None) != (data_format is None):
             raise com.UnsupportedArgumentError(
