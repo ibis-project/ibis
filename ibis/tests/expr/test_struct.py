@@ -98,3 +98,19 @@ def test_nested_lift():
     )
     expr = t.a.b.lift()
     assert expr.schema() == ibis.schema({"x": "int", "y": "int"})
+
+
+def test_empty_struct():
+    with pytest.raises(ValueError, match="Empty struct type is not supported"):
+        ibis.memtable(
+            [
+                {
+                    "year": "2024",
+                    "period": "M01",
+                    "periodName": "January",
+                    "latest": "true",
+                    "value": "3.7",
+                    "footnotes": {},
+                }
+            ]
+        )
