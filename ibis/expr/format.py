@@ -169,7 +169,7 @@ class Rendered(str):
 
 
 @public
-def pretty(expr: ir.Expr, scope: Optional[dict[str, ir.Expr]] = None):
+def pretty(expr: ops.Node | ir.Expr, scope: Optional[dict[str, ir.Expr]] = None):
     """Pretty print an expression.
 
     Parameters
@@ -186,10 +186,13 @@ def pretty(expr: ir.Expr, scope: Optional[dict[str, ir.Expr]] = None):
     str
         A pretty printed representation of the expression.
     """
-    if not isinstance(expr, ir.Expr):
-        raise TypeError(f"Expected an expression, got {type(expr)}")
+    if isinstance(expr, ir.Expr):
+        node = expr.op()
+    elif isinstance(expr, ops.Node):
+        node = expr
+    else:
+        raise TypeError(f"Expected an expression or a node, got {type(expr)}")
 
-    node = expr.op()
     refs = {}
     refcnt = itertools.count()
     variables = {v.op(): k for k, v in (scope or {}).items()}
@@ -224,7 +227,8 @@ def pretty(expr: ir.Expr, scope: Optional[dict[str, ir.Expr]] = None):
 
 @functools.singledispatch
 def fmt(op, **kwargs):
-    raise NotImplementedError(f"no pretty printer for {type(op)}")
+    top = f"{op.__class__.__name__}\n"
+    return top + render_fields(kwargs, 1)
 
 
 @fmt.register(ops.Relation)
