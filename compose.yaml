@@ -199,7 +199,7 @@ services:
       - druid
 
   druid-coordinator:
-    image: apache/druid:29.0.0
+    image: apache/druid:29.0.1
     hostname: coordinator
     container_name: coordinator
     volumes:
@@ -224,7 +224,7 @@ services:
       - druid
 
   druid-broker:
-    image: apache/druid:29.0.0
+    image: apache/druid:29.0.1
     hostname: broker
     container_name: broker
     volumes:
@@ -252,7 +252,7 @@ services:
       - druid
 
   druid-historical:
-    image: apache/druid:29.0.0
+    image: apache/druid:29.0.1
     hostname: historical
     container_name: historical
     volumes:
@@ -279,7 +279,7 @@ services:
       - druid
 
   druid-middlemanager:
-    image: apache/druid:29.0.0
+    image: apache/druid:29.0.1
     hostname: middlemanager
     container_name: middlemanager
     volumes:
@@ -307,7 +307,7 @@ services:
       - druid
 
   druid:
-    image: apache/druid:29.0.0
+    image: apache/druid:29.0.1
     hostname: router
     container_name: router
     volumes:
