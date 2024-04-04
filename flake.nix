@@ -73,7 +73,7 @@
         git
         just
         nixpkgs-fmt
-        nodePackages.prettier
+        nodejs_20.pkgs.prettier
         shellcheck
         shfmt
         statix
@@ -98,7 +98,7 @@
           # link checking
           lychee
           # release automation
-          nodejs
+          nodejs_20
           # used in notebooks to download data
           curl
           # docs
@@ -152,7 +152,7 @@
 
         release = pkgs.mkShell {
           name = "release";
-          nativeBuildInputs = with pkgs; [ git poetry nodejs unzip gnugrep ];
+          nativeBuildInputs = with pkgs; [ git poetry nodejs_20 unzip gnugrep ];
         };
       };
     }
