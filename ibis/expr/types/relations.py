@@ -21,7 +21,7 @@ import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 from ibis import util
-from ibis.common.deferred import Deferred
+from ibis.common.deferred import Deferred, Resolver
 from ibis.expr.types.core import Expr, _FixedTextJupyterMixin
 from ibis.expr.types.generic import ValueExpr, literal
 from ibis.selectors import Selector
@@ -106,6 +106,8 @@ def bind(table: Table, value: Any) -> Iterator[ir.Value]:
             yield value._get_column(name)
     elif isinstance(value, Deferred):
         yield value.resolve(table)
+    elif isinstance(value, Resolver):
+        yield value.resolve({"_": table})
     elif isinstance(value, Selector):
         yield from value.expand(table)
     elif isinstance(value, Mapping):

@@ -2,4 +2,4 @@ r0 := UnboundTable: t
   a int64
   b string
 
-Mean(a): WindowFunction(func=Mean(r0.a), frame=RowsWindowFrame(table=r0, start=WindowBoundary(value=0, preceding=True)))
+Mean(a): WindowFunction(func=Mean(r0.a), how='rows', start=WindowBoundary(value=0, preceding=True))

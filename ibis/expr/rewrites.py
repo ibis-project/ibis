@@ -105,7 +105,7 @@ def rewrite_stringslice(_, **kwargs):
 @replace(p.Analytic)
 def project_wrap_analytic(_, rel):
     # Wrap analytic functions in a window function
-    return ops.WindowFunction(_, ops.RowsWindowFrame(rel))
+    return ops.WindowFunction(_)
 
 
 @replace(p.Reduction)
@@ -114,7 +114,7 @@ def project_wrap_reduction(_, rel):
     if _.relations == {rel}:
         # The reduction is fully originating from the `rel`, so turn
         # it into a window function of `rel`
-        return ops.WindowFunction(_, ops.RowsWindowFrame(rel))
+        return ops.WindowFunction(_)
     else:
         # 1. The reduction doesn't depend on any table, constructed from
         #    scalar values, so turn it into a scalar subquery.
@@ -156,37 +156,47 @@ def rewrite_filter_input(value):
 
 
 @replace(p.Analytic | p.Reduction)
-def window_wrap_reduction(_, frame):
+def window_wrap_reduction(_, window):
     # Wrap analytic and reduction functions in a window function. Used in the
     # value.over() API.
-    return ops.WindowFunction(_, frame)
+    return ops.WindowFunction(
+        _,
+        how=window.how,
+        start=window.start,
+        end=window.end,
+        group_by=window.groupings,
+        order_by=window.orderings,
+    )
 
 
 @replace(p.WindowFunction)
-def window_merge_frames(_, frame):
+def window_merge_frames(_, window):
     # Merge window frames, used in the value.over() and groupby.select() APIs.
-    if _.frame.start and frame.start and _.frame.start != frame.start:
+    if _.how != window.how:
+        raise ExpressionError(
+            f"Unable to merge {_.how} window with {window.how} window"
+        )
+    elif _.start and window.start and _.start != window.start:
         raise ExpressionError(
             "Unable to merge windows with conflicting `start` boundary"
         )
-    if _.frame.end and frame.end and _.frame.end != frame.end:
+    elif _.end and window.end and _.end != window.end:
         raise ExpressionError("Unable to merge windows with conflicting `end` boundary")
 
-    start = _.frame.start or frame.start
-    end = _.frame.end or frame.end
-    group_by = tuple(toolz.unique(_.frame.group_by + frame.group_by))
+    start = _.start or window.start
+    end = _.end or window.end
+    group_by = tuple(toolz.unique(_.group_by + window.groupings))
 
-    order_by = {}
-    for sort_key in frame.order_by + _.frame.order_by:
-        order_by[sort_key.expr] = sort_key.ascending
-    order_by = tuple(ops.SortKey(k, v) for k, v in order_by.items())
+    order_keys = {}
+    for sort_key in window.orderings + _.order_by:
+        order_keys[sort_key.expr] = sort_key.ascending
+    order_by = (ops.SortKey(k, v) for k, v in order_keys.items())
 
-    frame = _.frame.copy(start=start, end=end, group_by=group_by, order_by=order_by)
-    return ops.WindowFunction(_.func, frame)
+    return _.copy(start=start, end=end, group_by=group_by, order_by=order_by)
 
 
-def rewrite_window_input(value, frame):
-    context = {"frame": frame}
+def rewrite_window_input(value, window):
+    context = {"window": window}
     # if self is a reduction or analytic function, wrap it in a window function
     node = value.replace(
         window_wrap_reduction,

@@ -177,14 +177,7 @@ class SQLGlotCompiler(abc.ABC):
     """A sequence of rewrites to apply to the expression tree before compilation."""
 
     extra_supported_ops: frozenset = frozenset(
-        (
-            ops.Project,
-            ops.Filter,
-            ops.Sort,
-            ops.WindowFunction,
-            ops.RowsWindowFrame,
-            ops.RangeWindowFrame,
-        )
+        (ops.Project, ops.Filter, ops.Sort, ops.WindowFunction)
     )
     """A frozenset of ops classes that are supported, but don't have explicit
     `visit_*` methods (usually due to being handled by rewrite rules). Used by
@@ -975,7 +968,7 @@ class SQLGlotCompiler(abc.ABC):
         # that corresponds to _only_ this information
         return {"value": value, "side": "preceding" if preceding else "following"}
 
-    def visit_Window(self, op, *, how, func, start, end, group_by, order_by):
+    def visit_WindowFunction(self, op, *, how, func, start, end, group_by, order_by):
         if start is None:
             start = {}
         if end is None:

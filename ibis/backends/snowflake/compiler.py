@@ -480,7 +480,7 @@ class SnowflakeCompiler(SQLGlotCompiler):
         # boolxor accepts numerics ... and returns a boolean? wtf?
         return self.f.boolxor(self.cast(left, dt.int8), self.cast(right, dt.int8))
 
-    def visit_Window(self, op, *, how, func, start, end, group_by, order_by):
+    def visit_WindowFunction(self, op, *, how, func, start, end, group_by, order_by):
         if start is None:
             start = {}
         if end is None:

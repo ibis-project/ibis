@@ -368,7 +368,7 @@ class OracleCompiler(SQLGlotCompiler):
 
     visit_TimestampTruncate = visit_DateTruncate
 
-    def visit_Window(self, op, *, how, func, start, end, group_by, order_by):
+    def visit_WindowFunction(self, op, *, how, func, start, end, group_by, order_by):
         # Oracle has two (more?) types of analytic functions you can use inside OVER.
         #
         # The first group accepts an "analytic clause" which is decomposed into the
