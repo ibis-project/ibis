@@ -6,6 +6,7 @@ import tempfile
 from typing import TYPE_CHECKING, Any
 
 import pyarrow as pa
+import pyarrow.fs as pafs
 import pyarrow_hotfix  # noqa: F401
 import sqlglot as sg
 import sqlglot.expressions as sge
@@ -34,7 +35,7 @@ class ArrowFileTable(ops.PhysicalTable):
 
 class ChdbCompiler(ClickHouseCompiler):
     def visit_ArrowFileTable(self, node, name, path, schema):
-        return self.f.file(path, "Arrow")
+        return sge.Table(this=self.f.anon.file(path, "Arrow"))
 
 
 class ChdbArrowConverter(PyArrowData):
@@ -133,7 +134,7 @@ class Backend(CHBackend, UrlFromPath):
         dtypes = map(self.compiler.type_mapper.from_string, types)
         return sch.Schema(dict(zip(names, dtypes)))
 
-    def _metadata(self, query: str) -> sch.Schema:
+    def _get_schema_using_query(self, query: str) -> sch.Schema:
         name = util.gen_name("clickhouse_metadata")
         try:
             self.raw_sql(f"CREATE VIEW {name} AS {query}")
@@ -156,7 +157,7 @@ class Backend(CHBackend, UrlFromPath):
             return
 
         subs = {}
-        local = pa.fs.LocalFileSystem()
+        local = pafs.LocalFileSystem()
         with tempfile.TemporaryDirectory() as tmpdir:
             for memtable in memtables:
                 path = str(pathlib.Path(tmpdir) / f"{memtable.name}.arrow")

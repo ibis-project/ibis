@@ -328,6 +328,8 @@ class ClickHouseCompiler(SQLGlotCompiler):
 
             if (timezone := dtype.timezone) is not None:
                 args.append(timezone)
+            else:
+                args.append("UTC")
 
             return self.f[funcname](*args)
         elif dtype.is_date():

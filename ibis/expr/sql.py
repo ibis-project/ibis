@@ -375,6 +375,8 @@ def to_sql(
         else:
             dialect = backend.dialect
     else:
+        if dialect == "chdb":
+            dialect = "clickhouse"
         try:
             backend = getattr(ibis, dialect)
         except AttributeError:

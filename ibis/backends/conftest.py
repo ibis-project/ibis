@@ -253,11 +253,11 @@ def pytest_collection_modifyitems(session, config, items):
                         f"""Unrecognize backend(s) {backend} passed to {name} marker in
 {item.path}::{item.originalname}"""
                     )
-                if "clickhouse" in marked_backends:
-                    chdb_mark = getattr(pytest.mark, mark.name)(
-                        "chdb", *mark.args[1:], **mark.kwargs
-                    )
-                    additional_markers.append((item, [chdb_mark]))
+                # if "clickhouse" in marked_backends:
+                #     chdb_mark = getattr(pytest.mark, mark.name)(
+                #         "chdb", *mark.args[1:], **mark.kwargs
+                #     )
+                #     additional_markers.append((item, [chdb_mark]))
 
         # add the backend marker to any tests are inside "ibis/backends"
         parts = item.path.parts

@@ -19,6 +19,7 @@ import ibis.selectors as s
 from ibis import _
 from ibis.backends.conftest import is_older_than
 from ibis.backends.tests.errors import (
+    ChdbError,
     ClickHouseDatabaseError,
     ExaQueryError,
     GoogleBadRequest,
@@ -63,6 +64,7 @@ def test_null_literal(con, backend):
 BOOLEAN_BACKEND_TYPE = {
     "bigquery": "BOOL",
     "clickhouse": "Bool",
+    "chdb": "Bool",
     "impala": "BOOLEAN",
     "snowflake": "BOOLEAN",
     "sqlite": "integer",
@@ -154,6 +156,7 @@ def test_isna(backend, alltypes, col, value, filt):
                     [
                         "bigquery",
                         "clickhouse",
+                        "chdb",
                         "datafusion",
                         "duckdb",
                         "impala",
@@ -1377,7 +1380,8 @@ def test_try_cast(con, from_val, to_type, expected):
             "int",
             marks=[
                 pytest.mark.never(
-                    ["clickhouse", "pyspark", "flink"], reason="casts to 1672531200"
+                    ["clickhouse", "chdb", "pyspark", "flink"],
+                    reason="casts to 1672531200",
                 ),
                 pytest.mark.notyet(["bigquery"], raises=GoogleBadRequest),
                 pytest.mark.notyet(["snowflake"], raises=SnowflakeProgrammingError),
@@ -1788,6 +1792,7 @@ def test_sample_memtable(con, backend):
     [
         "bigquery",
         "clickhouse",
+        "chdb",
         "datafusion",
         "druid",
         "flink",
@@ -1837,7 +1842,7 @@ def test_simple_memtable_construct(con):
     # we can't generically check for specific sql, even with a snapshot,
     # because memtables have a unique name per table per process, so smoke test
     # it
-    assert str(ibis.to_sql(expr, dialect=con.name)).startswith("SELECT")
+    assert con.compile(expr).startswith("SELECT")
 
 
 def test_select_mutate_with_dict(backend):
