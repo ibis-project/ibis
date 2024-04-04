@@ -796,11 +796,6 @@ def test_array_intersect(con, data):
 
 
 @builtin_array
-@pytest.mark.notimpl(
-    ["clickhouse"],
-    raises=ClickHouseDatabaseError,
-    reason="ClickHouse won't accept dicts for struct type values",
-)
 @pytest.mark.notimpl(["postgres"], raises=PsycoPg2SyntaxError)
 @pytest.mark.notimpl(["risingwave"], raises=PsycoPg2InternalError)
 @pytest.mark.notimpl(["datafusion", "flink"], raises=com.OperationNotDefinedError)

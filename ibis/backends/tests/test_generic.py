@@ -1595,7 +1595,12 @@ def test_static_table_slice(backend, slc, expected_count_fn):
         # negative stop
         param(slice(-3, -2), lambda _: 1, id="[-3:-2]"),
         # positive stop
-        param(slice(-4000, 7000), lambda _: 3700, id="[-4000:7000]"),
+        param(
+            slice(-4000, 7000),
+            lambda _: 3700,
+            id="[-4000:7000]",
+            marks=[pytest.mark.notyet("clickhouse", raises=ClickHouseDatabaseError)],
+        ),
         param(
             slice(-3, 2),
             lambda _: 0,
@@ -1606,6 +1611,7 @@ def test_static_table_slice(backend, slc, expected_count_fn):
                     raises=PyODBCProgrammingError,
                     reason="sqlglot generates code that requires > 0 fetch rows",
                 ),
+                pytest.mark.notyet("clickhouse", raises=ClickHouseDatabaseError),
             ],
         ),
         ##################
@@ -1642,11 +1648,6 @@ def test_static_table_slice(backend, slc, expected_count_fn):
     reason="backend doesn't support dynamic limit/offset",
 )
 @pytest.mark.notimpl(["exasol"], raises=ExaQueryError)
-@pytest.mark.notyet(
-    ["clickhouse"],
-    raises=ClickHouseDatabaseError,
-    reason="clickhouse doesn't support dynamic limit/offset",
-)
 @pytest.mark.notyet(["druid"], reason="druid doesn't support dynamic limit/offset")
 @pytest.mark.notyet(["polars"], reason="polars doesn't support dynamic limit/offset")
 @pytest.mark.notyet(
@@ -1697,11 +1698,6 @@ def test_dynamic_table_slice(backend, slc, expected_count_fn):
     reason="backend doesn't support dynamic limit/offset",
 )
 @pytest.mark.notimpl(["exasol"], raises=ExaQueryError)
-@pytest.mark.notyet(
-    ["clickhouse"],
-    raises=ClickHouseDatabaseError,
-    reason="clickhouse doesn't support dynamic limit/offset",
-)
 @pytest.mark.notyet(["druid"], reason="druid doesn't support dynamic limit/offset")
 @pytest.mark.notyet(["polars"], reason="polars doesn't support dynamic limit/offset")
 @pytest.mark.notyet(
@@ -1975,11 +1971,6 @@ def test_select_sort_sort_deferred(backend, alltypes, df):
     backend.assert_frame_equal(result, expected)
 
 
-@pytest.mark.broken(
-    ["clickhouse"],
-    raises=AssertionError,
-    reason="https://github.com/ClickHouse/ClickHouse/issues/61313",
-)
 @pytest.mark.notimpl(
     ["pandas", "dask"], raises=IndexError, reason="NaN isn't treated as NULL"
 )
