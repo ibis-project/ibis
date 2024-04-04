@@ -55,7 +55,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: install poetry
-        run: pipx install 'poetry==1.7.1'
+        run: pipx install 'poetry==1.8.2'
 
       - name: install python
         uses: actions/setup-python@v5
@@ -107,7 +107,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: install poetry
-        run: pipx install 'poetry==1.7.1'
+        run: pipx install 'poetry==1.8.2'
 
       - name: install python
         uses: actions/setup-python@v5
@@ -147,7 +147,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: install poetry
-        run: pipx install 'poetry==1.7.1'
+        run: pipx install 'poetry==1.8.2'
 
       - name: install python
         uses: actions/setup-python@v5
