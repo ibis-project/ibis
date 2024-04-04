@@ -59,7 +59,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: install poetry
-        run: pipx install 'poetry==1.7.1'
+        run: pipx install 'poetry==1.8.2'
 
       - name: install python
         uses: actions/setup-python@v5
@@ -416,7 +416,7 @@ jobs:
         run: docker compose up --wait ${{ join(matrix.backend.services, ' ') }}
 
       - name: install poetry
-        run: pipx install 'poetry==1.7.1'
+        run: pipx install 'poetry==1.8.2'
 
       - name: install python
         uses: actions/setup-python@v5
@@ -558,7 +558,7 @@ jobs:
           python-version: ${{ matrix.python-version }}
 
       - name: install poetry
-        run: python -m pip install --upgrade pip 'poetry==1.7.1'
+        run: python -m pip install --upgrade pip 'poetry==1.8.2'
 
       - name: remove lonboard
         # it requires a version of pandas that min versions are not compatible with
@@ -643,7 +643,7 @@ jobs:
           python-version: ${{ matrix.python-version }}
 
       - name: install poetry
-        run: python -m pip install --upgrade pip 'poetry==1.7.1'
+        run: python -m pip install --upgrade pip 'poetry==1.8.2'
 
       - name: remove lonboard
         # it requires a version of pandas that pyspark is not compatible with
