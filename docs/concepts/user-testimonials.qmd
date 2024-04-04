@@ -75,6 +75,14 @@ GitHub](https://github.com/ibis-project/ibis/issues/7341#issuecomment-1760625921
 > Sadly, I didn't come across Ibis at that time and even contemplated creating a
 > set on my own.
 
+---
+
+From [Mark Druffel on Kedro Slack](https://linen-slack.kedro.org/t/16404402/does-anyone-know-if-kedro-viz-should-work-with-data-factorie#bbd4bcf4-fe46-4538-af13-d827bd0aa94a):
+
+> I now have catalog entries that use vanilla pyspark in my databricks environment and
+> polars on my laptop which is pretty slick 🔥 Just thought I'd share since I've seen
+> your team has been mentioning ibis a bit.
+
 ## Have a story to share?
 
 Let us know! We'd love to include it here. Please share your experience with
