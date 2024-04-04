@@ -1,0 +1,9 @@
+r0 := UnboundTable: t
+  a int64
+
+ValueList
+  values:
+    1
+    2.0
+    'three'
+    r0.a
