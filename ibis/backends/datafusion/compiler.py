@@ -39,10 +39,7 @@ class DataFusionCompiler(SQLGlotCompiler):
             ops.ArrayDistinct,
             ops.ArrayFilter,
             ops.ArrayFlatten,
-            ops.ArrayIntersect,
             ops.ArrayMap,
-            ops.ArraySort,
-            ops.ArrayUnion,
             ops.ArrayZip,
             ops.BitwiseNot,
             ops.Clip,
@@ -62,9 +59,7 @@ class DataFusionCompiler(SQLGlotCompiler):
             ops.TimestampNow,
             ops.TypeOf,
             ops.Unnest,
-            ops.EndsWith,
             ops.StringToTimestamp,
-            ops.Levenshtein,
         )
     )
 
@@ -82,6 +77,9 @@ class DataFusionCompiler(SQLGlotCompiler):
         ops.StringLength: "character_length",
         ops.RandomUUID: "uuid",
         ops.RegexSplit: "regex_split",
+        ops.EndsWith: "ends_with",
+        ops.ArrayIntersect: "array_intersect",
+        ops.ArrayUnion: "array_union",
     }
 
     def _aggregate(self, funcname: str, *args, where):
