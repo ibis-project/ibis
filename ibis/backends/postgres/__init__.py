@@ -60,7 +60,6 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, CanCreateSchema):
             A backend instance
 
         """
-
         url = urlparse(url)
         database, *schema = url.path[1:].split("/", 1)
         query_params = parse_qs(url.query)
@@ -70,6 +69,7 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, CanCreateSchema):
             "host": url.hostname,
             "database": database or "",
             "schema": schema[0] if schema else "",
+            "port": url.port,
         }
 
         for name, value in query_params.items():
@@ -97,6 +97,9 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, CanCreateSchema):
 
         if "password" in kwargs and kwargs["password"] is None:
             del kwargs["password"]
+
+        if "port" in kwargs and kwargs["port"] is None:
+            del kwargs["port"]
 
         return self.connect(**kwargs)
 

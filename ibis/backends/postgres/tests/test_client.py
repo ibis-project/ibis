@@ -26,6 +26,7 @@ import ibis
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.types as ir
+from ibis.backends.tests.errors import PsycoPg2OperationalError
 
 pytest.importorskip("psycopg2")
 
@@ -247,6 +248,12 @@ def test_timezone_from_column(contz, snapshot):
 
 def test_kwargs_passthrough_in_connect():
     con = ibis.connect(
-        "postgresql://postgres:postgres@localhost/ibis_testing?sslmode=allow"
+        "postgresql://postgres:postgres@localhost:5432/ibis_testing?sslmode=allow"
     )
     assert con.current_catalog == "ibis_testing"
+
+
+def test_port():
+    # check that we parse and use the port (and then of course fail cuz it's bogus)
+    with pytest.raises(PsycoPg2OperationalError):
+        ibis.connect("postgresql://postgres:postgres@localhost:1337/ibis_testing")
