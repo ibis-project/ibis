@@ -148,13 +148,13 @@ files = [
 
 [[package]]
 name = "anywidget"
-version = "0.7.1"
+version = "0.9.6"
 description = "custom jupyter widgets made easy"
 optional = false
 python-versions = ">=3.7"
 files = [
-    {file = "anywidget-0.7.1-py3-none-any.whl", hash = "sha256:17828c6e255a7066c960636cbda045d55b08c996a2fc4e886e4c8507db6e9407"},
-    {file = "anywidget-0.7.1.tar.gz", hash = "sha256:1c4cb51063f8ec5172b8c8efb1bfb79861d340c3491220d56b8c2a6aa8db3b3d"},
+    {file = "anywidget-0.9.6-py3-none-any.whl", hash = "sha256:f80366a7de6585594e1db5ed39af747f698a6afb9533398c244c2f8be1f4968a"},
+    {file = "anywidget-0.9.6.tar.gz", hash = "sha256:9e10cf017c1cb31c2b4c11b5904063efb6c35cc6f78ff5dc924dc510d8c24b91"},
 ]
 
 [package.dependencies]
@@ -164,7 +164,7 @@ typing-extensions = ">=4.2.0"
 
 [package.extras]
 dev = ["comm (>=0.1.0)", "watchfiles (>=0.18.0)"]
-test = ["black[jupyter]", "ipython (<8.13)", "msgspec", "pydantic", "pytest", "pytest-cov", "ruff"]
+test = ["ipython (<8.13)", "msgspec", "mypy (==1.9.0)", "pydantic", "pytest", "pytest-cov", "ruff"]
 
 [[package]]
 name = "appdirs"
@@ -3088,23 +3088,27 @@ files = [
 
 [[package]]
 name = "lonboard"
-version = "0.4.0"
+version = "0.8.0"
 description = "Python library for fast, interactive geospatial vector data visualization in Jupyter."
 optional = false
-python-versions = ">=3.8,<4.0"
+python-versions = "<4.0,>=3.8"
 files = [
-    {file = "lonboard-0.4.0-py3-none-any.whl", hash = "sha256:2c521805c05db4c8efdbd7cb19174d3f5e1c43723b7c6db358b2f158d96e671f"},
-    {file = "lonboard-0.4.0.tar.gz", hash = "sha256:c60ccaa5ac06ad2fdad88e146cc2206389d59e0dd4d53bd6de8bab26cae81e7c"},
+    {file = "lonboard-0.8.0-py3-none-any.whl", hash = "sha256:a9449b465d394e8947bac6a754c1961cbee12eedfd829da550bafd9043a2e471"},
+    {file = "lonboard-0.8.0.tar.gz", hash = "sha256:157a5a538fd5860c9cd74247ef3d78ed25657cea6ac3815469db52d0282b494c"},
 ]
 
 [package.dependencies]
-anywidget = ">=0.7.1,<0.8.0"
+anywidget = ">=0.9.0,<0.10.0"
 geopandas = ">=0.13"
 matplotlib = ">=3.7,<4.0"
 palettable = ">=3.3.3,<4.0.0"
 pandas = ">=2,<3"
 pyarrow = ">=14.0.1"
 shapely = ">=2,<3"
+typing-extensions = {version = ">=4.6.0,<5.0.0", markers = "python_version < \"3.12\""}
+
+[package.extras]
+cli = ["click (>=8.1.7,<9.0.0)", "pyogrio (>=0.7.2,<0.8.0)"]
 
 [[package]]
 name = "lz4"
@@ -7332,4 +7336,4 @@ visualization = ["graphviz"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.9"
-content-hash = "4187fa71283c284cda0c6f5770c5a17a58bbf3442e854ae8d8bb44d01ced475a"
+content-hash = "c55811088d5cfc11c022af514ddca9d09ad64e9ee42bbcf582b8440a7534ffa3"
