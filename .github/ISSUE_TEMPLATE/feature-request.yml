@@ -18,7 +18,7 @@ body:
     id: motivation
     attributes:
       label: What is the motivation behind your request?
-      description: Discuss the use case behind this feature request, and why is needed.
+      description: Discuss the use case behind this feature request, and why it is needed.
       placeholder: "I'm trying to do ... because I need ..."
     validations:
       required: false
