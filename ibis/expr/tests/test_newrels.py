@@ -864,6 +864,46 @@ def test_join_predicate_dereferencing_using_tuple_syntax():
         assert j2.op() == expected
 
 
+def test_join_rhs_dereferencing():
+    t1 = ibis.table(name="t1", schema={"a": "int64", "b": "string"})
+    t2 = ibis.table(name="t2", schema={"c": "int64", "d": "string"})
+
+    t3 = t2.mutate(e=t2.c + 1)
+    joined = t1.join(t3, [t1.a == t2.c])
+    with join_tables(t1, t3) as (r1, r2):
+        expected = JoinChain(
+            first=r1,
+            rest=[
+                JoinLink("inner", r2, [r1.a == r2.c]),
+            ],
+            values={
+                "a": r1.a,
+                "b": r1.b,
+                "c": r2.c,
+                "d": r2.d,
+                "e": r2.e,
+            },
+        )
+        assert joined.op() == expected
+
+    joined = t1.join(t3, [t1.a == (t2.c + 1)])
+    with join_tables(t1, t3) as (r1, r2):
+        expected = JoinChain(
+            first=r1,
+            rest=[
+                JoinLink("inner", r2, [r1.a == (r2.c + 1)]),
+            ],
+            values={
+                "a": r1.a,
+                "b": r1.b,
+                "c": r2.c,
+                "d": r2.d,
+                "e": r2.e,
+            },
+        )
+        assert joined.op() == expected
+
+
 def test_aggregate():
     agg = t.aggregate(by=[t.bool_col], metrics=[t.int_col.sum()])
     expected = Aggregate(

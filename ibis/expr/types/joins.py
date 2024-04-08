@@ -112,28 +112,23 @@ def disambiguate_fields(
     return fields, collisions, equalities
 
 
-def dereference_mapping_left(chain):
-    # construct the list of join table we wish to dereference fields to
-    rels = [chain.first]
-    for link in chain.rest:
-        if link.how not in ("semi", "anti"):
-            rels.append(link.table)
+def dereference_mapping_join(parents):
+    targets = []
+    reverse = {}
+    for parent in util.promote_list(parents):
+        if isinstance(parent, ops.JoinChain):
+            targets.append(parent.first)
+            for link in parent.rest:
+                if link.how not in ("semi", "anti"):
+                    targets.append(link.table)
+            for k, v in parent.values.items():
+                reverse[ops.Field(parent, k)] = v
+        else:
+            targets.append(parent)
 
-    # create the dereference mapping suitable to disambiguate field references
-    # from earlier in the relation hierarchy to one of the join tables
-    subs = dereference_mapping(rels)
-
-    # also allow to dereference fields of the join chain itself
-    for k, v in chain.values.items():
-        subs[ops.Field(chain, k)] = v
-
-    return subs
-
-
-def dereference_mapping_right(right):
-    # the right table is wrapped in a JoinTable the uniqueness of the underlying
-    # table which requires the predicates to be dereferenced to the wrapped
-    return {v: ops.Field(right, k) for k, v in right.values.items()}
+    mapping = dereference_mapping(targets)
+    mapping.update(reverse)
+    return mapping
 
 
 def dereference_sides(left, right, deref_left, deref_right):
@@ -142,8 +137,7 @@ def dereference_sides(left, right, deref_left, deref_right):
     return left, right
 
 
-def dereference_value(pred, deref_left, deref_right):
-    deref_both = {**deref_left, **deref_right}
+def dereference_value(pred, deref_left, deref_right, deref_both):
     if isinstance(pred, ops.Comparison) and pred.left.relations == pred.right.relations:
         left, right = dereference_sides(pred.left, pred.right, deref_left, deref_right)
         return pred.copy(left=left, right=right)
@@ -152,7 +146,7 @@ def dereference_value(pred, deref_left, deref_right):
 
 
 def prepare_predicates(
-    left: ops.JoinChain,
+    chain: ops.JoinChain,
     right: ops.Relation,
     predicates: Sequence[Any],
     comparison: type[ops.Comparison] = ops.Equals,
@@ -187,8 +181,8 @@ def prepare_predicates(
 
     Parameters
     ----------
-    left
-        The left table
+    chain
+        The join chain
     right
         The right table
     predicates
@@ -197,21 +191,22 @@ def prepare_predicates(
         The comparison operation to construct if the input is a pair of
         expression-like objects
     """
-    deref_left = dereference_mapping_left(left)
-    deref_right = dereference_mapping_right(right)
+    deref_left = dereference_mapping_join([chain])
+    deref_right = dereference_mapping_join([right])
+    deref_both = dereference_mapping_join([right, chain])
 
-    left, right = left.to_expr(), right.to_expr()
+    left, right = chain.to_expr(), right.to_expr()
     for pred in util.promote_list(predicates):
         if pred is True or pred is False:
             yield ops.Literal(pred, dtype="bool")
         elif isinstance(pred, Value):
             for node in flatten_predicates(pred.op()):
-                yield dereference_value(node, deref_left, deref_right)
+                yield dereference_value(node, deref_left, deref_right, deref_both)
         elif isinstance(pred, Deferred):
             # resolve deferred expressions on the left table
             pred = pred.resolve(left).op()
             for node in flatten_predicates(pred):
-                yield dereference_value(node, deref_left, deref_right)
+                yield dereference_value(node, deref_left, deref_right, deref_both)
         else:
             if isinstance(pred, tuple):
                 if len(pred) != 2:
@@ -430,7 +425,7 @@ class Join(Table):
 
         # if there are values referencing fields from the join chain constructed
         # so far, we need to replace them the fields from one of the join links
-        subs = dereference_mapping_left(chain)
+        subs = dereference_mapping_join([chain])
         values = {
             k: v.replace(peel_join_field, filter=ops.Value) for k, v in values.items()
         }
