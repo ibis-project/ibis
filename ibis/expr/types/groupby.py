@@ -28,10 +28,9 @@ import ibis.expr.types as ir
 from ibis.common.grounds import Concrete
 from ibis.common.typing import VarTuple  # noqa: TCH001
 from ibis.expr.rewrites import rewrite_window_input
-from ibis.expr.types.relations import bind
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable, Sequence
+    from collections.abc import Sequence
 
 
 @public
@@ -65,13 +64,14 @@ class GroupedTable(Concrete):
 
     def aggregate(self, *metrics, **kwds) -> ir.Table:
         """Compute aggregates over a group by."""
+        metrics = self.table.to_expr().bind(*metrics, **kwds)
         return self.table.to_expr().aggregate(
-            metrics, by=self.groupings, having=self.havings, **kwds
+            metrics, by=self.groupings, having=self.havings
         )
 
     agg = aggregate
 
-    def having(self, *expr: ir.BooleanScalar) -> GroupedTable:
+    def having(self, *predicates: ir.BooleanScalar) -> GroupedTable:
         """Add a post-aggregation result filter `expr`.
 
         ::: {.callout-warning}
@@ -80,8 +80,8 @@ class GroupedTable(Concrete):
 
         Parameters
         ----------
-        expr
-            An expression that filters based on an aggregate value.
+        predicates
+            Expressions that filters based on an aggregate value.
 
         Returns
         -------
@@ -89,10 +89,10 @@ class GroupedTable(Concrete):
             A grouped table expression
         """
         table = self.table.to_expr()
-        havings = tuple(bind(table, expr))
+        havings = table.bind(*predicates)
         return self.copy(havings=self.havings + havings)
 
-    def order_by(self, *expr: ir.Value | Iterable[ir.Value]) -> GroupedTable:
+    def order_by(self, *by: ir.Value) -> GroupedTable:
         """Sort a grouped table expression by `expr`.
 
         Notes
@@ -101,7 +101,7 @@ class GroupedTable(Concrete):
 
         Parameters
         ----------
-        expr
+        by
             Expressions to order the results by
 
         Returns
@@ -110,7 +110,7 @@ class GroupedTable(Concrete):
             A sorted grouped GroupedTable
         """
         table = self.table.to_expr()
-        orderings = tuple(bind(table, expr))
+        orderings = table.bind(*by)
         return self.copy(orderings=self.orderings + orderings)
 
     def mutate(
@@ -201,7 +201,7 @@ class GroupedTable(Concrete):
         [`GroupedTable.mutate`](#ibis.expr.types.groupby.GroupedTable.mutate)
         """
         table = self.table.to_expr()
-        values = bind(table, (exprs, kwexprs))
+        values = table.bind(*exprs, **kwexprs)
         window = ibis.window(group_by=self.groupings, order_by=self.orderings)
         return [rewrite_window_input(expr.op(), window).to_expr() for expr in values]
 

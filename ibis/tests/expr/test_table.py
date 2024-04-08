@@ -192,7 +192,7 @@ def test_projection_with_exprs(table):
 
 
 def test_projection_duplicate_names(table):
-    with pytest.raises(com.IntegrityError):
+    with pytest.raises(com.IbisInputError, match="Duplicate column name 'c'"):
         table.select([table.c, table.c])
 
 
@@ -2077,3 +2077,87 @@ def test_unbind_with_namespace():
 
     assert s.op() == expected.op()
     assert s.equals(expected)
+
+
+def test_table_bind():
+    def eq(left, right):
+        return all(a.equals(b) for a, b in zip(left, right))
+
+    t = ibis.table({"a": "int", "b": "string"}, name="t")
+
+    # boolean literals
+    exprs = t.bind(True, False)
+    expected = (ibis.literal(True), ibis.literal(False))
+    assert eq(exprs, expected)
+
+    # int literals
+    exprs = t.bind(1, 2)
+    expected = (ibis.literal(1), ibis.literal(2))
+    assert eq(exprs, expected)
+
+    # lambda input
+    exprs = t.bind(lambda t: t.a, lambda t: t.b)
+    expected = (t.a, t.b)
+    assert eq(exprs, expected)
+
+    # deferred input
+    exprs = t.bind(_.a, _.b)
+    expected = (t.a, t.b)
+    assert eq(exprs, expected)
+
+    # single table arg
+    exprs = t.bind(t)
+    expected = (t.a, t.b)
+    assert eq(exprs, expected)
+
+    # single selector arg
+    exprs = t.bind(s.all())
+    expected = (t.a, t.b)
+    assert eq(exprs, expected)
+
+    # single tuple arg
+    exprs = t.bind([1, "a"])
+    expected = (ibis.literal(1), t.a)
+    assert eq(exprs, expected)
+
+    # single list arg
+    exprs = t.bind([1, 2, "b"])
+    expected = (ibis.literal(1), ibis.literal(2), t.b)
+    assert eq(exprs, expected)
+
+    # single list arg with kwargs
+    exprs = t.bind([1], b=2)
+    expected = (ibis.literal(1), ibis.literal(2).name("b"))
+    assert eq(exprs, expected)
+
+    # single dict arg
+    exprs = t.bind({"c": 1, "d": 2})
+    expected = (ibis.literal(1).name("c"), ibis.literal(2).name("d"))
+    assert eq(exprs, expected)
+
+    # single dict arg with kwargs
+    exprs = t.bind({"c": 1}, d=2)
+    expected = (ibis.literal(1).name("c"), ibis.literal(2).name("d"))
+    assert eq(exprs, expected)
+
+    # single dict arg with overlapping kwargs
+    exprs = t.bind({"c": 1, "d": 2}, c=2)
+    expected = (ibis.literal(2).name("c"), ibis.literal(2).name("d"))
+    assert eq(exprs, expected)
+
+    # kwargs cannot cannot produce more than one value
+    with pytest.raises(com.IbisInputError):
+        t.bind(alias=t)
+    with pytest.raises(com.IbisInputError):
+        t.bind(alias=s.all())
+
+    # multiple args
+    exprs = t.bind(t, ["a", "b"], {"c": 1}, d=2)
+    expected = (
+        t.a,
+        t.b,
+        ibis.literal(["a", "b"]),
+        ibis.literal({"c": 1}),
+        ibis.literal(2).name("d"),
+    )
+    assert eq(exprs, expected)

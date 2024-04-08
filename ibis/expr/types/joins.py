@@ -176,15 +176,10 @@ def prepare_predicates(
             else:
                 lk = rk = pred
 
-            # bind the predicates to the join chain
-            (left_value,) = bind(left, lk)
-            (right_value,) = bind(right, rk)
-
-            # dereference the left value to one of the relations in the join chain
-            left_value = deref_left.dereference(left_value.op())
-            right_value = deref_right.dereference(right_value.op())
-
-            yield comparison(left_value, right_value)
+            for lhs, rhs in zip(bind(left, lk), bind(right, rk)):
+                lhs = deref_left.dereference(lhs.op())
+                rhs = deref_right.dereference(rhs.op())
+                yield comparison(lhs, rhs)
 
 
 def finished(method):
@@ -335,8 +330,9 @@ class Join(Table):
             result = self.left_join(
                 filtered, predicates=[left_on == right_on] + predicates
             )
-            values = {**self.op().values, **filtered.op().values}
-            return result.select(values)
+            values = {**filtered.op().values, **self.op().values}
+
+            return result.select(**values)
 
         chain = self.op()
         right = right.op()
@@ -383,7 +379,7 @@ class Join(Table):
     @functools.wraps(Table.select)
     def select(self, *args, **kwargs):
         chain = self.op()
-        values = bind(self, (args, kwargs))
+        values = self.bind(*args, **kwargs)
         values = unwrap_aliases(values)
 
         links = [link.table for link in chain.rest if link.how not in ("semi", "anti")]
