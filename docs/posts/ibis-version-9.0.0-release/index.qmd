@@ -174,43 +174,6 @@ to_graph(
 )
 ```
 
-### Create backends with empty URLs
-
-For convenience, you can now create backends with an empty URI for Dask, pandas,
-Polars, and DataFusion:
-
-```{python}
-con = ibis.connect("dask://")
-con = ibis.connect("pandas://")
-con = ibis.connect("polars://")
-con = ibis.connect("datafusion://")
-```
-
-This is in addition to the existing backend-specific connection methods:
-
-```{python}
-con = ibis.dask.connect()
-con = ibis.pandas.connect()
-con = ibis.polars.connect()
-con = ibis.datafusion.connect()
-```
-
-Note that URI parameters are not meaningful with these backends. The main use
-case is more convenient connection swapping programmatically:
-
-```{python}
-for backend in [
-    "duckdb",
-    "sqlite",
-    "pyspark",
-    "dask",
-    "pandas",
-    "polars",
-    "datafusion",
-]:
-    con = ibis.connect(f"{backend}://")
-```
-
 ### Polars input and output
 
 You can now directly output a Polars dataframe from an Ibis table (instead of going through Apache Arrow as previously possible):
@@ -309,6 +272,44 @@ grouped
 ```
 
 You can still pass in a list or tuple if you prefer.
+
+### Create backends with empty URLs
+
+For convenience, you can now create backends with an empty URI for Dask, pandas,
+Polars, and DataFusion:
+
+```{python}
+con = ibis.connect("dask://")
+con = ibis.connect("pandas://")
+con = ibis.connect("polars://")
+con = ibis.connect("datafusion://")
+```
+
+This is in addition to the existing backend-specific connection methods:
+
+```{python}
+con = ibis.dask.connect()
+con = ibis.pandas.connect()
+con = ibis.polars.connect()
+con = ibis.datafusion.connect()
+```
+
+Note that URI parameters are not meaningful with these backends. The main use
+case is more convenient connection swapping programmatically:
+
+```{python}
+for backend in [
+    "duckdb",
+    "sqlite",
+    "pyspark",
+    "dask",
+    "pandas",
+    "polars",
+    "datafusion",
+]:
+    con = ibis.connect(f"{backend}://")
+    print(con)
+```
 
 ## Wrapping up
 
