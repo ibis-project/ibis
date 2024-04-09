@@ -19,7 +19,7 @@ forward.
 Ibis 9.0 also adds new functionality, fixes many bugs, and welcomes a new
 committer to the project!
 
-### New committers
+### New committer
 
 We're excited to welcome [Nick Crews](https://github.com/NickCrews) as the
 newest committer to the Ibis project! Nick has been a long-time contributor to
@@ -176,7 +176,8 @@ to_graph(
 
 ### Polars input and output
 
-You can now directly output a Polars dataframe from an Ibis table (instead of going through Apache Arrow as previously possible):
+You can now directly output a Polars dataframe from an Ibis table (instead of
+going through Apache Arrow as previously possible):
 
 ```{python}
 t.to_polars()
@@ -273,9 +274,9 @@ grouped
 
 You can still pass in a list or tuple if you prefer.
 
-### Create backends with empty URLs
+### Create more backends with empty URLs
 
-For convenience, you can now create backends with an empty URI for Dask, pandas,
+For convenience, you can now create backends with an empty URL for Dask, pandas,
 Polars, and DataFusion:
 
 ```{python}
@@ -294,7 +295,7 @@ con = ibis.polars.connect()
 con = ibis.datafusion.connect()
 ```
 
-Note that URI parameters are not meaningful with these backends. The main use
+Note that URL parameters are not meaningful with these backends. The main use
 case is more convenient connection swapping programmatically:
 
 ```{python}
