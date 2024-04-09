@@ -91,8 +91,8 @@ dependencies:
   - taplo
   - tqdm >=4.66.1
   - just
-  # needed for apache-flink=1.18.0
+  # needed for apache-flink >=1.18.0
   - py4j =0.10.9.7
   - pip
   - pip:
-      - apache-flink>=1.18.1
+      - apache-flink >=1.19.0
