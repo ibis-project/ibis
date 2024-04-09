@@ -8,6 +8,7 @@ import pytest
 
 import ibis
 from ibis import util
+from ibis.backends.tests.errors import PySparkAnalysisException
 from ibis.tests.util import assert_equal
 
 pyspark = pytest.importorskip("pyspark")
@@ -20,10 +21,25 @@ def temp_view(con) -> str:
     con.drop_view(name, force=True)
 
 
-def test_create_exists_view(con, alltypes, temp_view):
+@pytest.mark.parametrize(
+    "table_name",
+    [
+        pytest.param("functional_alltypes", id="batch"),
+        pytest.param(
+            "functional_alltypes_streaming",
+            marks=pytest.mark.xfail(
+                raises=PySparkAnalysisException,
+                reason="Streaming aggregations require watermark.",
+            ),
+            id="streaming",
+        ),
+    ],
+)
+def test_create_exists_view(con, temp_view, table_name):
     assert temp_view not in con.list_tables()
 
-    t1 = alltypes.group_by("string_col").size()
+    table = con.table(table_name)
+    t1 = table.group_by("string_col").size()
     t2 = con.create_view(temp_view, t1)
 
     assert temp_view in con.list_tables()
@@ -33,11 +49,28 @@ def test_create_exists_view(con, alltypes, temp_view):
 
 def test_drop_non_empty_database(con, alltypes, temp_table_db):
     temp_database, temp_table = temp_table_db
+
     con.create_table(temp_table, alltypes, database=temp_database)
     assert temp_table in con.list_tables(database=temp_database)
 
-    with pytest.raises(pyspark.sql.utils.AnalysisException):
+    with pytest.raises(PySparkAnalysisException):
         con.drop_database(temp_database)
+
+
+def test_drop_non_empty_database_for_streaming(
+    con_streaming, alltypes_streaming, temp_database
+):
+    db_name = util.gen_name("database")
+    con_streaming.create_database(db_name)
+
+    table_name = "alltypes_streaming"
+    con_streaming.create_table(table_name, alltypes_streaming, database=temp_database)
+    assert table_name in con_streaming.list_tables(database=temp_database)
+
+    # As pyspark backend creates a view for in-memory obj,
+    # the database does not contain any actual table, and
+    # can be dropped.
+    con_streaming.drop_database(db_name)
 
 
 @pytest.fixture
@@ -63,13 +96,28 @@ def test_create_database_with_location(con, temp_db):
 
 def test_drop_table_not_exist(con):
     non_existent_table = f"ibis_table_{util.guid()}"
-    with pytest.raises(pyspark.sql.utils.AnalysisException):
+    with pytest.raises(PySparkAnalysisException):
         con.drop_table(non_existent_table)
     con.drop_table(non_existent_table, force=True)
 
 
-def test_truncate_table(con, alltypes, temp_table):
-    expr = alltypes.limit(1)
+@pytest.mark.parametrize(
+    "table_name",
+    [
+        pytest.param("functional_alltypes", id="batch"),
+        pytest.param(
+            "functional_alltypes_streaming",
+            marks=pytest.mark.xfail(
+                raises=PySparkAnalysisException,
+                reason="Temp view cannot be truncated.",
+            ),
+            id="streaming",
+        ),
+    ],
+)
+def test_truncate_table(con, temp_table, table_name):
+    table = con.table(table_name)
+    expr = table.limit(1)
 
     con.create_table(temp_table, obj=expr)
     con.truncate_table(temp_table)
@@ -79,11 +127,13 @@ def test_truncate_table(con, alltypes, temp_table):
     assert not nrows
 
 
-def test_ctas_from_table_expr(con, alltypes, temp_table_db):
-    expr = alltypes
+@pytest.mark.parametrize(
+    "table_name", ["functional_alltypes", "functional_alltypes_streaming"]
+)
+def test_ctas_from_table_expr(con, temp_table_db, table_name):
+    table = con.table(table_name)
     db, table_name = temp_table_db
-
-    con.create_table(table_name, expr, database=db)
+    con.create_table(table_name, table, database=db)
 
 
 def test_create_empty_table(con, temp_table):
@@ -104,8 +154,22 @@ def test_create_empty_table(con, temp_table):
     assert con.table(temp_table).execute().empty
 
 
-def test_insert_table(con, alltypes, temp_table, test_data_db):
-    expr = alltypes
+@pytest.mark.parametrize(
+    "table_name",
+    [
+        pytest.param("functional_alltypes", id="batch"),
+        pytest.param(
+            "functional_alltypes_streaming",
+            marks=pytest.mark.xfail(
+                raises=PySparkAnalysisException,
+                reason="Cannot insert into temp view.",
+            ),
+            id="streaming",
+        ),
+    ],
+)
+def test_insert_table(con, temp_table, test_data_db, table_name):
+    expr = con.table(table_name)
     db = test_data_db
 
     con.create_table(temp_table, expr.limit(0), database=db)
@@ -143,16 +207,32 @@ def test_insert_validate_types(con, alltypes, test_data_db, temp_table):
     con.insert(temp_table, to_insert.limit(10))
 
 
-def test_compute_stats(con, alltypes, temp_table):
-    con.create_table(temp_table, alltypes)
+@pytest.mark.parametrize(
+    "table_name",
+    [
+        pytest.param("functional_alltypes", id="batch"),
+        pytest.param(
+            "functional_alltypes_streaming",
+            marks=pytest.mark.xfail(
+                raises=PySparkAnalysisException,
+                reason="'ANALYZE TABLE' cannot be executed on temporary view.",
+            ),
+            id="streaming",
+        ),
+    ],
+)
+def test_compute_stats(con, temp_table, table_name):
+    table = con.table(table_name)
+    con.create_table(temp_table, table)
     con.compute_stats(temp_table)
     con.compute_stats(temp_table, noscan=True)
 
 
-@pytest.fixture
-def created_view(con, alltypes):
+@pytest.fixture(params=["functional_alltypes", "functional_alltypes_streaming"])
+def created_view(con, request):
     name = util.guid()
-    expr = alltypes.limit(10)
+    table = con.table(request.param)
+    expr = table.limit(10)
     con.create_view(name, expr)
     return name
 
@@ -164,6 +244,8 @@ def test_drop_view(con, created_view):
 
 @pytest.fixture
 def table(con, temp_database):
+    # TODO (mehmet): This fixture does not seem to be used anywhere?
+
     table_name = f"table_{util.guid()}"
     schema = ibis.schema([("foo", "string"), ("bar", "int64")])
     yield con.create_table(
@@ -178,8 +260,22 @@ def keyword_t(con):
     con.drop_table("distinct")
 
 
-def test_create_table_reserved_identifier(con, alltypes, keyword_t):
-    expr = alltypes
+@pytest.mark.parametrize(
+    "table_name",
+    [
+        pytest.param("functional_alltypes", id="batch"),
+        pytest.param(
+            "functional_alltypes_streaming",
+            marks=pytest.mark.xfail(
+                raises=PySparkAnalysisException,
+                reason="Streaming aggregations require watermark.",
+            ),
+            id="streaming",
+        ),
+    ],
+)
+def test_create_table_reserved_identifier(con, keyword_t, table_name):
+    expr = con.table(table_name)
     expected = expr.count().execute()
     t = con.create_table(keyword_t, expr)
     result = t.count().execute()

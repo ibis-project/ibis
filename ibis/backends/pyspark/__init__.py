@@ -303,8 +303,60 @@ class Backend(SQLBackend, CanCreateDatabase):
         df = self._session.createDataFrame(data=op.data.to_frame(), schema=schema)
         df.createOrReplaceTempView(op.name)
 
+    def _execute_stream(self, spark_df: DataFrame) -> pd.DataFrame:
+        # TODO (mehmet): Spark provides memory sink to write the
+        # query result as an in-memory table:
+        # "Memory sink (for debugging) - The output is stored in
+        # memory as an in-memory table. Both, Append and Complete
+        # output modes, are supported. This should be used for
+        # debugging purposes on low data volumes as the entire
+        # output is collected and stored in the driver's
+        # memory. Hence, use it with caution."
+        # Ref: https://spark.apache.org/docs/latest/structured-streaming-programming-guide.html#output-sinks
+        #
+        # E.g.,
+        # cursor.query.writeStream.format("memory").queryName("table_name").start()
+        #
+        # This in-memory table might conflict with those defined
+        # by the user. Hence, choosing to use the file-sink
+        # instead. Though, I don't think this is ideal either.
+
+        import tempfile
+
+        import pandas as pd
+
+        tmpdir = tempfile.mkdtemp()
+        dir_ = f"{tmpdir}/pyspark_fetch_from_cursor"
+        (
+            spark_df.writeStream.format("parquet")
+            .option("checkpointLocation", dir_)
+            .option("path", dir_)
+            .trigger(availableNow=True)
+            .start()
+            .awaitTermination()
+        )
+
+        # TODO (mehmet): `pd.read_parquet() / pq.ParquetDataset()` fails with
+        # > Error creating dataset. Could not read schema from ...
+        #
+        # import pyarrow.parquet as pq
+        # df = pq.ParquetDataset(f"file://{dir_}").read_pandas().to_pandas()
+        # return pd.read_parquet(dir_)
+
+        import glob
+
+        files = glob.glob(f"{dir_}/*.parquet")
+        df_list = [pd.read_parquet(f) for f in files]
+        df = pd.concat(df_list, ignore_index=True)
+
+        return df
+
     def _fetch_from_cursor(self, cursor, schema):
-        df = cursor.query.toPandas()  # blocks until finished
+        if cursor.query.isStreaming:
+            df = self._execute_stream(cursor.query)
+        else:
+            df = cursor.query.toPandas()  # blocks until finished
+
         return PySparkPandasData.convert_table(df, schema)
 
     def _safe_raw_sql(self, query: str) -> _PySparkCursor:
@@ -450,7 +502,18 @@ class Backend(SQLBackend, CanCreateDatabase):
             with self._active_database(database):
                 self._run_pre_execute_hooks(table)
                 df = self._session.sql(query)
-                df.write.saveAsTable(name, format=format, mode=mode)
+
+                if df.isStreaming:
+                    # Streaming dataframe cannot be saved as a table:
+                    # https://spark.apache.org/docs/2.3.0/structured-streaming-programming-guide.html#output-sinks
+                    # Following here the same convention we use for
+                    # the Flink backend and creating view for
+                    # in-memory obj.
+                    df.createTempView(name)
+
+                else:
+                    df.write.saveAsTable(name, format=format, mode=mode)
+
         elif schema is not None:
             schema = PySparkSchema.from_ibis(schema)
             with self._active_database(database):

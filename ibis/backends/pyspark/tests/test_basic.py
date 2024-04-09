@@ -6,14 +6,25 @@ import pytest
 from pytest import param
 
 import ibis
+from ibis.backends.tests.errors import PySparkAnalysisException
 from ibis.common.exceptions import IbisTypeError
 
 pyspark = pytest.importorskip("pyspark")
 
 
-@pytest.fixture
-def t(con):
+@pytest.fixture(scope="session")
+def batch_table(con):
     return con.table("basic_table")
+
+
+@pytest.fixture(scope="session")
+def streaming_table(con_streaming):
+    return con_streaming.table("basic_table_streaming")
+
+
+@pytest.fixture(params=["batch_table", "streaming_table"])
+def table(request):
+    return request.getfixturevalue(request.param)
 
 
 @pytest.fixture
@@ -21,17 +32,22 @@ def df(con):
     return con._session.table("basic_table").toPandas()
 
 
-def test_basic(t):
-    result = t.execute()
+def test_basic(table):
+    result = table.execute()
     expected = pd.DataFrame({"id": range(10), "str_col": "value"})
     tm.assert_frame_equal(result, expected)
 
 
-def test_projection(t):
-    result1 = t.mutate(v=t["id"]).execute()
+def test_projection(table):
+    result1 = table.mutate(v=table["id"]).execute()
     expected1 = pd.DataFrame({"id": range(10), "str_col": "value", "v": range(10)})
 
-    result2 = t.mutate(v=t["id"]).mutate(v2=t["id"]).mutate(id=t["id"] * 2).execute()
+    result2 = (
+        table.mutate(v=table["id"])
+        .mutate(v2=table["id"])
+        .mutate(id=table["id"] * 2)
+        .execute()
+    )
     expected2 = pd.DataFrame(
         {
             "id": range(0, 20, 2),
@@ -45,33 +61,99 @@ def test_projection(t):
     tm.assert_frame_equal(result2, expected2)
 
 
-def test_aggregation_col(t, df):
-    result = t["id"].count().execute()
+@pytest.mark.parametrize(
+    "table_fixture",
+    [
+        param("batch_table", id="batch"),
+        param(
+            "streaming_table",
+            marks=pytest.mark.xfail(
+                raises=PySparkAnalysisException,
+                reason="Streaming aggregations require watermark.",
+            ),
+            id="streaming",
+        ),
+    ],
+)
+def test_aggregation_col(table_fixture, df, request):
+    table = request.getfixturevalue(table_fixture)
+
+    result = table["id"].count().execute()
     assert result == len(df)
 
 
-def test_aggregation(t, df):
-    result = t.aggregate(max=t["id"].max()).execute()
+@pytest.mark.parametrize(
+    "table_fixture",
+    [
+        param("batch_table", id="batch"),
+        param(
+            "streaming_table",
+            marks=pytest.mark.xfail(
+                raises=PySparkAnalysisException,
+                reason="Streaming aggregations require watermark.",
+            ),
+            id="streaming",
+        ),
+    ],
+)
+def test_aggregation(table_fixture, df, request):
+    table = request.getfixturevalue(table_fixture)
+
+    result = table.aggregate(max=table["id"].max()).execute()
     expected = pd.DataFrame({"max": [df.id.max()]})
     tm.assert_frame_equal(result, expected)
 
 
-def test_group_by(t, df):
-    result = t.group_by("id").aggregate(max=t["id"].max()).execute()
+@pytest.mark.parametrize(
+    "table_fixture",
+    [
+        param("batch_table", id="batch"),
+        param(
+            "streaming_table",
+            marks=pytest.mark.xfail(
+                raises=PySparkAnalysisException,
+                reason="Streaming aggregations require watermark.",
+            ),
+            id="streaming",
+        ),
+    ],
+)
+def test_group_by(table_fixture, df, request):
+    table = request.getfixturevalue(table_fixture)
+
+    result = table.group_by("id").aggregate(max=table["id"].max()).execute()
     expected = df[["id"]].assign(max=df.groupby("id").id.max())
     tm.assert_frame_equal(result, expected)
 
 
-def test_window(t, df):
+@pytest.mark.parametrize(
+    "table_fixture",
+    [
+        param("batch_table", id="batch"),
+        param(
+            "streaming_table",
+            marks=pytest.mark.xfail(
+                raises=PySparkAnalysisException,
+                reason="Only time-window aggregations are supported in streaming.",
+            ),
+            id="streaming",
+        ),
+    ],
+)
+def test_window(table_fixture, df, request):
+    table = request.getfixturevalue(table_fixture)
+
     w = ibis.window()
-    result = t.mutate(grouped_demeaned=t["id"] - t["id"].mean().over(w)).execute()
+    result = table.mutate(
+        grouped_demeaned=table["id"] - table["id"].mean().over(w)
+    ).execute()
     expected = df.assign(grouped_demeaned=df.id - df.id.mean())
 
     tm.assert_frame_equal(result, expected)
 
 
-def test_greatest(t, df):
-    result = t.mutate(greatest=ibis.greatest(t.id, t.id + 1)).execute()
+def test_greatest(table, df):
+    result = table.mutate(greatest=ibis.greatest(table.id, table.id + 1)).execute()
     expected = df.assign(greatest=df.id + 1)
     tm.assert_frame_equal(result, expected)
 
@@ -95,21 +177,21 @@ def test_greatest(t, df):
         ),
     ],
 )
-def test_filter(t, df, filter_fn, expected_fn):
-    result = filter_fn(t).execute().reset_index(drop=True)
+def test_filter(table, df, filter_fn, expected_fn):
+    result = filter_fn(table).execute().reset_index(drop=True)
     expected = expected_fn(df).reset_index(drop=True)
     tm.assert_frame_equal(result, expected)
 
 
-def test_cast(t, df):
-    result = t.mutate(id_string=t.id.cast("string")).execute()
+def test_cast(table, df):
+    result = table.mutate(id_string=table.id.cast("string")).execute()
     df = df.assign(id_string=df.id.astype(str))
     tm.assert_frame_equal(result, df)
 
 
-def test_alias_after_select(t, df):
+def test_alias_after_select(table, df):
     # Regression test for issue 2136
-    table = t[["id"]]
+    table = table[["id"]]
     table = table.mutate(id2=table["id"])
     result = table.execute()
     tm.assert_series_equal(result["id"], result["id2"], check_names=False)

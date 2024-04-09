@@ -2,8 +2,10 @@ from __future__ import annotations
 
 import pandas.testing as tm
 import pytest
+from pytest import param
 
 import ibis
+from ibis.backends.tests.errors import PySparkAnalysisException
 
 pyspark = pytest.importorskip("pyspark")
 
@@ -11,16 +13,20 @@ import pyspark.sql.functions as F  # noqa: E402
 from pyspark.sql.window import Window  # noqa: E402
 
 
-@pytest.fixture
-def t(con):
-    return con.table("time_indexed_table")
-
-
-@pytest.fixture
-def spark_table(con):
-    return con._session.table("time_indexed_table")
-
-
+@pytest.mark.parametrize(
+    "table_name",
+    [
+        param("time_indexed_table", id="batch"),
+        param(
+            "time_indexed_table_streaming",
+            marks=pytest.mark.xfail(
+                raises=PySparkAnalysisException,
+                reason="Window function is not supported in AVG on streaming DataFrames/Datasets.",
+            ),
+            id="streaming",
+        ),
+    ],
+)
 @pytest.mark.parametrize(
     ("ibis_windows", "spark_range"),
     [
@@ -33,7 +39,10 @@ def spark_table(con):
     ],
     indirect=["ibis_windows"],
 )
-def test_time_indexed_window(t, spark_table, ibis_windows, spark_range):
+def test_time_indexed_window(con, table_name, ibis_windows, spark_range):
+    t = con.table(table_name)
+    spark_table = con._session.table(table_name)
+
     result = t.mutate(mean=t["value"].mean().over(ibis_windows[0])).execute()
 
     spark_window = (
@@ -50,6 +59,20 @@ def test_time_indexed_window(t, spark_table, ibis_windows, spark_range):
 
 
 @pytest.mark.parametrize(
+    "table_name",
+    [
+        param("time_indexed_table", id="batch"),
+        param(
+            "time_indexed_table_streaming",
+            marks=pytest.mark.xfail(
+                raises=PySparkAnalysisException,
+                reason="Window function is not supported in AVG on streaming DataFrames/Datasets.",
+            ),
+            id="streaming",
+        ),
+    ],
+)
+@pytest.mark.parametrize(
     ("ibis_windows", "spark_range"),
     [
         (
@@ -59,7 +82,10 @@ def test_time_indexed_window(t, spark_table, ibis_windows, spark_range):
     ],
     indirect=["ibis_windows"],
 )
-def test_multiple_windows(t, spark_table, ibis_windows, spark_range):
+def test_multiple_windows(con, table_name, ibis_windows, spark_range):
+    t = con.table(table_name)
+    spark_table = con._session.table(table_name)
+
     result = t.mutate(
         mean_1h=t["value"].mean().over(ibis_windows[0]),
         mean_2h=t["value"].mean().over(ibis_windows[1]),

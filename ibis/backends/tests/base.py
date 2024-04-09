@@ -140,7 +140,6 @@ class BackendTest(abc.ABC):
     ) -> BackendTest:
         """Load testdata from `data_dir`."""
         # handling for multi-processes pytest
-
         # get the temp directory shared by all workers
         root_tmp_dir = tmpdir.getbasetemp()
         if worker_id != "master":
