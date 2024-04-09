@@ -21,7 +21,7 @@ import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 from ibis import util
-from ibis.common.deferred import Deferred
+from ibis.common.deferred import Deferred, Resolver
 from ibis.expr.types.core import Expr, _FixedTextJupyterMixin
 from ibis.expr.types.generic import ValueExpr, literal
 from ibis.selectors import Selector
@@ -95,9 +95,9 @@ def _regular_join_method(
 
 # TODO(kszucs): should use (table, *args, **kwargs) instead to avoid interpreting
 # nested inputs
-def bind(table: Table, value: Any, prefer_column=True) -> Iterator[ir.Value]:
+def bind(table: Table, value: Any) -> Iterator[ir.Value]:
     """Bind a value to a table expression."""
-    if prefer_column and type(value) in (str, int):
+    if type(value) in (str, int):
         yield table._get_column(value)
     elif isinstance(value, ValueExpr):
         yield value
@@ -106,15 +106,17 @@ def bind(table: Table, value: Any, prefer_column=True) -> Iterator[ir.Value]:
             yield value._get_column(name)
     elif isinstance(value, Deferred):
         yield value.resolve(table)
+    elif isinstance(value, Resolver):
+        yield value.resolve({"_": table})
     elif isinstance(value, Selector):
         yield from value.expand(table)
     elif isinstance(value, Mapping):
         for k, v in value.items():
-            for val in bind(table, v, prefer_column=prefer_column):
+            for val in bind(table, v):
                 yield val.name(k)
     elif util.is_iterable(value):
         for v in value:
-            yield from bind(table, v, prefer_column=prefer_column)
+            yield from bind(table, v)
     elif isinstance(value, ops.Value):
         # TODO(kszucs): from certain builders, like ir.GroupedTable we pass
         # operation nodes instead of expressions to table methods, it would
@@ -163,7 +165,7 @@ def dereference_mapping(parents):
                 while isinstance(v, ops.Field) and v not in mapping:
                     mapping[v] = ops.Field(parent, k)
                     v = v.rel.values.get(v.name)
-            elif v.relations and v not in mapping:
+            elif v not in mapping:
                 # do not dereference literal expressions
                 mapping[v] = ops.Field(parent, k)
 
@@ -1946,7 +1948,7 @@ class Table(Expr, _FixedTextJupyterMixin):
         # string and integer inputs are going to be coerced to literals instead
         # of interpreted as column references like in select
         node = self.op()
-        values = bind(self, (exprs, mutations), prefer_column=False)
+        values = bind(self, (exprs, mutations))
         values = unwrap_aliases(values)
         # allow overriding of fields, hence the mutation behavior
         values = {**node.fields, **values}
@@ -3359,7 +3361,8 @@ class Table(Expr, _FixedTextJupyterMixin):
         >>> import ibis
         >>> ibis.options.interactive = True
         >>> t = ibis.examples.penguins.fetch()
-        >>> cached_penguins = t.mutate(computation="Heavy Computation").cache()
+        >>> heavy_computation = ibis.literal("Heavy Computation")
+        >>> cached_penguins = t.mutate(computation=heavy_computation).cache()
         >>> cached_penguins
         ┏━━━━━━━━━┳━━━━━━━━━━━┳━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━┳━━━┓
         ┃ species ┃ island    ┃ bill_length_mm ┃ bill_depth_mm ┃ flipper_length_mm ┃ … ┃
@@ -3381,7 +3384,7 @@ class Table(Expr, _FixedTextJupyterMixin):
 
         Explicit cache cleanup
 
-        >>> with t.mutate(computation="Heavy Computation").cache() as cached_penguins:
+        >>> with t.mutate(computation=heavy_computation).cache() as cached_penguins:
         ...     cached_penguins
         ┏━━━━━━━━━┳━━━━━━━━━━━┳━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━┳━━━┓
         ┃ species ┃ island    ┃ bill_length_mm ┃ bill_depth_mm ┃ flipper_length_mm ┃ … ┃

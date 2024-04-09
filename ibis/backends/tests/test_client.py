@@ -302,10 +302,10 @@ def test_create_table_from_schema(con, new_schema, temp_table):
     reason="temporary tables not implemented",
     raises=NotImplementedError,
 )
-@pytest.mark.notyet(
+@pytest.mark.never(
     ["risingwave"],
-    raises=PsycoPg2InternalError,
-    reason="truncate not supported upstream",
+    raises=com.UnsupportedOperationError,
+    reason="Feature is not yet implemented: CREATE TEMPORARY TABLE",
 )
 @pytest.mark.notimpl(
     ["flink"],
@@ -1210,11 +1210,11 @@ def test_create_table_timestamp(con, temp_table):
 @mark.notimpl(["exasol"], reason="Exasol does not support temporary tables")
 @pytest.mark.never(
     ["risingwave"],
-    raises=PsycoPg2InternalError,
+    raises=com.UnsupportedOperationError,
     reason="Feature is not yet implemented: CREATE TEMPORARY TABLE",
 )
 def test_persist_expression_ref_count(backend, con, alltypes):
-    non_persisted_table = alltypes.mutate(test_column="calculation")
+    non_persisted_table = alltypes.mutate(test_column=ibis.literal("calculation"))
     persisted_table = non_persisted_table.cache()
 
     op = non_persisted_table.op()
@@ -1235,11 +1235,13 @@ def test_persist_expression_ref_count(backend, con, alltypes):
 @mark.notimpl(["exasol"], reason="Exasol does not support temporary tables")
 @pytest.mark.never(
     ["risingwave"],
-    raises=PsycoPg2InternalError,
+    raises=com.UnsupportedOperationError,
     reason="Feature is not yet implemented: CREATE TEMPORARY TABLE",
 )
 def test_persist_expression(backend, alltypes):
-    non_persisted_table = alltypes.mutate(test_column="calculation", other_calc="xyz")
+    non_persisted_table = alltypes.mutate(
+        test_column=ibis.literal("calculation"), other_calc=ibis.literal("xyz")
+    )
     persisted_table = non_persisted_table.cache()
     backend.assert_frame_equal(
         non_persisted_table.to_pandas(), persisted_table.to_pandas()
@@ -1254,12 +1256,12 @@ def test_persist_expression(backend, alltypes):
 @mark.notimpl(["exasol"], reason="Exasol does not support temporary tables")
 @pytest.mark.never(
     ["risingwave"],
-    raises=PsycoPg2InternalError,
+    raises=com.UnsupportedOperationError,
     reason="Feature is not yet implemented: CREATE TEMPORARY TABLE",
 )
 def test_persist_expression_contextmanager(backend, alltypes):
     non_cached_table = alltypes.mutate(
-        test_column="calculation", other_column="big calc"
+        test_column=ibis.literal("calculation"), other_column=ibis.literal("big calc")
     )
     with non_cached_table.cache() as cached_table:
         backend.assert_frame_equal(
@@ -1275,12 +1277,12 @@ def test_persist_expression_contextmanager(backend, alltypes):
 @mark.notimpl(["exasol"], reason="Exasol does not support temporary tables")
 @pytest.mark.never(
     ["risingwave"],
-    raises=PsycoPg2InternalError,
+    raises=com.UnsupportedOperationError,
     reason="Feature is not yet implemented: CREATE TEMPORARY TABLE",
 )
 def test_persist_expression_contextmanager_ref_count(backend, con, alltypes):
     non_cached_table = alltypes.mutate(
-        test_column="calculation", other_column="big calc 2"
+        test_column=ibis.literal("calculation"), other_column=ibis.literal("big calc 2")
     )
     op = non_cached_table.op()
     with non_cached_table.cache() as cached_table:
@@ -1298,13 +1300,13 @@ def test_persist_expression_contextmanager_ref_count(backend, con, alltypes):
 )
 @pytest.mark.never(
     ["risingwave"],
-    raises=PsycoPg2InternalError,
+    raises=com.UnsupportedOperationError,
     reason="Feature is not yet implemented: CREATE TEMPORARY TABLE",
 )
 @mark.notimpl(["exasol"], reason="Exasol does not support temporary tables")
 def test_persist_expression_multiple_refs(backend, con, alltypes):
     non_cached_table = alltypes.mutate(
-        test_column="calculation", other_column="big calc 2"
+        test_column=ibis.literal("calculation"), other_column=ibis.literal("big calc 2")
     )
     op = non_cached_table.op()
     with non_cached_table.cache() as cached_table:
@@ -1340,12 +1342,12 @@ def test_persist_expression_multiple_refs(backend, con, alltypes):
 @mark.notimpl(["exasol"], reason="Exasol does not support temporary tables")
 @pytest.mark.never(
     ["risingwave"],
-    raises=PsycoPg2InternalError,
+    raises=com.UnsupportedOperationError,
     reason="Feature is not yet implemented: CREATE TEMPORARY TABLE",
 )
 def test_persist_expression_repeated_cache(alltypes):
     non_cached_table = alltypes.mutate(
-        test_column="calculation", other_column="big calc 2"
+        test_column=ibis.literal("calculation"), other_column=ibis.literal("big calc 2")
     )
     with non_cached_table.cache() as cached_table:
         with cached_table.cache() as nested_cached_table:
@@ -1360,21 +1362,16 @@ def test_persist_expression_repeated_cache(alltypes):
 @mark.notimpl(["exasol"], reason="Exasol does not support temporary tables")
 @pytest.mark.never(
     ["risingwave"],
-    raises=PsycoPg2InternalError,
+    raises=com.UnsupportedOperationError,
     reason="Feature is not yet implemented: CREATE TEMPORARY TABLE",
 )
 @mark.notimpl(
     ["oracle"],
     reason="Oracle error message for a missing table/view doesn't include the name of the table",
 )
-@pytest.mark.never(
-    ["risingwave"],
-    raises=PsycoPg2InternalError,
-    reason="Feature is not yet implemented: CREATE TEMPORARY TABLE",
-)
 def test_persist_expression_release(con, alltypes):
     non_cached_table = alltypes.mutate(
-        test_column="calculation", other_column="big calc 3"
+        test_column=ibis.literal("calculation"), other_column=ibis.literal("big calc 3")
     )
     cached_table = non_cached_table.cache()
     cached_table.release()

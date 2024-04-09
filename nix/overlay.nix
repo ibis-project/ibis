@@ -36,7 +36,7 @@ in
   ibisDevEnv312 = mkPoetryDevEnv pkgs.python312;
 
   ibisSmallDevEnv = mkPoetryEnv {
-    python = pkgs.python311;
+    python = pkgs.python312;
     groups = [ "dev" ];
     extras = [ ];
   };

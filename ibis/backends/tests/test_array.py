@@ -689,7 +689,7 @@ def test_array_unique(con, input, expected):
 
 @builtin_array
 @pytest.mark.notimpl(
-    ["datafusion", "flink", "polars"],
+    ["flink", "polars"],
     raises=com.OperationNotDefinedError,
 )
 @pytest.mark.broken(
@@ -709,7 +709,7 @@ def test_array_sort(con):
 
 
 @builtin_array
-@pytest.mark.notimpl(["datafusion", "polars"], raises=com.OperationNotDefinedError)
+@pytest.mark.notimpl(["polars"], raises=com.OperationNotDefinedError)
 @pytest.mark.parametrize(
     ("a", "b", "expected_array"),
     [
@@ -728,6 +728,11 @@ def test_array_sort(con):
                     ["bigquery"],
                     raises=GoogleBadRequest,
                     reason="BigQuery doesn't support arrays with null elements",
+                ),
+                pytest.mark.notyet(
+                    ["datafusion"],
+                    raises=AssertionError,
+                    reason="DataFusion transforms null elements to NAN",
                 ),
             ],
         ),
@@ -752,7 +757,7 @@ def test_array_union(con, a, b, expected_array):
 
 @builtin_array
 @pytest.mark.notimpl(
-    ["dask", "datafusion", "pandas", "polars", "flink"],
+    ["dask", "pandas", "polars", "flink"],
     raises=com.OperationNotDefinedError,
 )
 @pytest.mark.notimpl(
@@ -796,11 +801,6 @@ def test_array_intersect(con, data):
 
 
 @builtin_array
-@pytest.mark.notimpl(
-    ["clickhouse"],
-    raises=ClickHouseDatabaseError,
-    reason="ClickHouse won't accept dicts for struct type values",
-)
 @pytest.mark.notimpl(["postgres"], raises=PsycoPg2SyntaxError)
 @pytest.mark.notimpl(["risingwave"], raises=PsycoPg2InternalError)
 @pytest.mark.notimpl(["datafusion", "flink"], raises=com.OperationNotDefinedError)

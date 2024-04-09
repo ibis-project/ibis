@@ -6,6 +6,7 @@ import pytest
 from pytest import param
 
 import ibis
+from ibis.backends.tests.errors import ClickHouseDatabaseError
 
 cc = pytest.importorskip("clickhouse_connect")
 
@@ -196,7 +197,7 @@ def test_non_equijoin(alltypes):
     expr.compile()
 
     # while execution should fail since clickhouse doesn't support non-equijoin
-    with pytest.raises(Exception, match="Unsupported JOIN ON conditions"):
+    with pytest.raises(ClickHouseDatabaseError, match="INVALID_JOIN_ON_EXPRESSION"):
         expr.execute()
 
 

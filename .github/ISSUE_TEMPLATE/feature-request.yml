@@ -11,7 +11,15 @@ body:
     attributes:
       label: Is your feature request related to a problem?
       description: If so, please describe the problem.
-      placeholder: "I am frustated by ..."
+      placeholder: "I am frustrated by ..."
+    validations:
+      required: false
+  - type: textarea
+    id: motivation
+    attributes:
+      label: What is the motivation behind your request?
+      description: Discuss the use case behind this feature request, and why it is needed.
+      placeholder: "I'm trying to do ... because I need ..."
     validations:
       required: false
   - type: textarea

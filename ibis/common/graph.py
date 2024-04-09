@@ -295,6 +295,7 @@ class Node(Hashable):
         dependents = {k: set(v) for k, v in dependents.items()}
 
         for node, dependencies in graph.items():
+            # minor optimization to directly recurse into the children
             kwargs = {
                 k: _recursive_lookup(v, results)
                 for k, v in zip(node.__argnames__, node.__args__)
@@ -309,6 +310,23 @@ class Node(Hashable):
                     del results[dependency]
 
         return results[self]
+
+    @experimental
+    def map_nodes(self, fn: Callable, filter: Optional[Finder] = None) -> Any:
+        """Apply a function to all nodes in the graph more memory efficiently.
+
+        Alternative implementation of `map` passing only node results to the function
+        as positional arguments. This method is useful for calculations where the
+        nodes don't need to be reconstructed.
+        """
+        results: dict[Node, Any] = {}
+
+        graph, _ = Graph.from_bfs(self, filter=filter).toposort()
+        for node, children in graph.items():
+            args = _recursive_lookup(children, results)
+            results[node] = fn(node, *args)
+
+        return results
 
     # TODO(kszucs): perhaps rename it to find_all() for better clarity
     def find(

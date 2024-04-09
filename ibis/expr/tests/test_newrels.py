@@ -232,7 +232,7 @@ def test_mutate():
 def test_mutate_overwrites_existing_column():
     t = ibis.table(dict(a="string", b="string"))
 
-    mut = t.mutate(a=42)
+    mut = t.mutate(a=ibis.literal(42))
     assert mut.op() == Project(parent=t, values={"a": ibis.literal(42), "b": t.b})
 
     sel = mut.select("a")
@@ -499,6 +499,26 @@ def test_subsequent_filter():
     assert f2.op() == expected
 
 
+def test_project_dereferences_literal_expressions():
+    one = ibis.literal(1)
+    two = ibis.literal(2)
+    four = (one + one) * two
+    t1 = t.mutate(four=four)
+    assert t1.op() == Project(
+        parent=t,
+        values={
+            "bool_col": t.bool_col,
+            "int_col": t.int_col,
+            "float_col": t.float_col,
+            "string_col": t.string_col,
+            "four": four,
+        },
+    )
+
+    t2 = t1.select(four)
+    assert t2.op() == Project(parent=t1, values={four.get_name(): t1.four})
+
+
 def test_project_before_and_after_filter():
     t1 = t.select(
         bool_col=~t.bool_col, int_col=t.int_col + 1, float_col=t.float_col * 3
@@ -531,7 +551,6 @@ def test_project_before_and_after_filter():
     )
 
 
-# TODO(kszucs): add test for failing integrity checks
 def test_join():
     t1 = ibis.table(name="t1", schema={"a": "int64", "b": "string"})
     t2 = ibis.table(name="t2", schema={"c": "int64", "d": "string"})
@@ -559,6 +578,26 @@ def test_join():
                 "d": t2.d,
             },
         )
+
+
+def test_join_integrity_checks():
+    t1 = ibis.table(name="t1", schema={"a": "int64", "b": "string"})
+
+    # correct example
+    r1 = ops.JoinTable(t1, 10)
+    r2 = ops.JoinTable(t1, 20)
+    assert r1 != r2
+    assert hash(r1) != hash(r2)
+    chain = ops.JoinChain(r1, [ops.JoinLink("inner", r2, [True])], values={})
+    assert isinstance(chain, JoinChain)
+
+    # not unique tables
+    r1 = ops.JoinTable(t1, 10)
+    r2 = ops.JoinTable(t1, 10)
+    assert r1 == r2
+    assert hash(r1) == hash(r2)
+    with pytest.raises(IntegrityError):
+        ops.JoinChain(r1, [ops.JoinLink("inner", r2, [True])], values={})
 
 
 def test_join_unambiguous_select():

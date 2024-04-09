@@ -524,9 +524,7 @@ def uses_java_re(t):
             lambda t: t.int_col == 1,
             id="endswith",
             marks=[
-                pytest.mark.notimpl(
-                    ["datafusion", "mssql"], raises=com.OperationNotDefinedError
-                ),
+                pytest.mark.notimpl(["mssql"], raises=com.OperationNotDefinedError),
             ],
         ),
         param(
@@ -542,9 +540,7 @@ def uses_java_re(t):
             lambda t: t.date_string_col.str.endswith("/10"),
             id="endswith-simple",
             marks=[
-                pytest.mark.notimpl(
-                    ["datafusion", "mssql"], raises=com.OperationNotDefinedError
-                ),
+                pytest.mark.notimpl(["mssql"], raises=com.OperationNotDefinedError),
             ],
         ),
         param(
@@ -893,7 +889,6 @@ def test_multiple_subs(con):
     [
         "clickhouse",
         "dask",
-        "datafusion",
         "druid",
         "impala",
         "mssql",

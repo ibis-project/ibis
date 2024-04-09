@@ -1,6 +1,6 @@
 services:
   clickhouse:
-    image: clickhouse/clickhouse-server:24.2.2.71-alpine
+    image: clickhouse/clickhouse-server:24.3.2.23-alpine
     ports:
       - 8123:8123 # http port
       - 9000:9000 # native protocol port
@@ -94,7 +94,7 @@ services:
       - trino
 
   minio:
-    image: bitnami/minio:2024.3.30
+    image: bitnami/minio:2024.4.6
     environment:
       MINIO_ROOT_USER: accesskey
       MINIO_ROOT_PASSWORD: secretkey
@@ -156,7 +156,7 @@ services:
       test:
         - CMD-SHELL
         - trino --output-format null --execute 'show schemas in hive; show schemas in memory'
-    image: trinodb/trino:443
+    image: trinodb/trino:444
     ports:
       - 8080:8080
     networks:
@@ -199,7 +199,7 @@ services:
       - druid
 
   druid-coordinator:
-    image: apache/druid:29.0.0
+    image: apache/druid:29.0.1
     hostname: coordinator
     container_name: coordinator
     volumes:
@@ -224,7 +224,7 @@ services:
       - druid
 
   druid-broker:
-    image: apache/druid:29.0.0
+    image: apache/druid:29.0.1
     hostname: broker
     container_name: broker
     volumes:
@@ -252,7 +252,7 @@ services:
       - druid
 
   druid-historical:
-    image: apache/druid:29.0.0
+    image: apache/druid:29.0.1
     hostname: historical
     container_name: historical
     volumes:
@@ -279,7 +279,7 @@ services:
       - druid
 
   druid-middlemanager:
-    image: apache/druid:29.0.0
+    image: apache/druid:29.0.1
     hostname: middlemanager
     container_name: middlemanager
     volumes:
@@ -307,7 +307,7 @@ services:
       - druid
 
   druid:
-    image: apache/druid:29.0.0
+    image: apache/druid:29.0.1
     hostname: router
     container_name: router
     volumes:
@@ -542,7 +542,7 @@ services:
       - impala
 
   risingwave:
-    image: ghcr.io/risingwavelabs/risingwave:nightly-20240122
+    image: ghcr.io/risingwavelabs/risingwave:nightly-20240204
     command: "standalone --meta-opts=\" \
       --advertise-addr 0.0.0.0:5690 \
       --backend mem \

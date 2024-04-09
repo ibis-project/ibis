@@ -785,7 +785,7 @@ def test_uncorrelated_subquery(backend, batting, batting_df):
 
 
 def test_int_column(alltypes):
-    expr = alltypes.mutate(x=1).x
+    expr = alltypes.mutate(x=ibis.literal(1)).x
     result = expr.execute()
     assert expr.type() == dt.int8
     assert result.dtype == np.int8
@@ -852,6 +852,11 @@ def test_typeof(con):
     reason="https://github.com/risingwavelabs/risingwave/issues/1343",
 )
 @pytest.mark.xfail_version(dask=["dask<2024.2.0"])
+@pytest.mark.notyet(
+    ["mssql"],
+    raises=PyODBCProgrammingError,
+    reason="naked IN queries are not supported",
+)
 def test_isin_uncorrelated(
     backend, batting, awards_players, batting_df, awards_players_df
 ):
@@ -1595,7 +1600,12 @@ def test_static_table_slice(backend, slc, expected_count_fn):
         # negative stop
         param(slice(-3, -2), lambda _: 1, id="[-3:-2]"),
         # positive stop
-        param(slice(-4000, 7000), lambda _: 3700, id="[-4000:7000]"),
+        param(
+            slice(-4000, 7000),
+            lambda _: 3700,
+            id="[-4000:7000]",
+            marks=[pytest.mark.notyet("clickhouse", raises=ClickHouseDatabaseError)],
+        ),
         param(
             slice(-3, 2),
             lambda _: 0,
@@ -1606,6 +1616,7 @@ def test_static_table_slice(backend, slc, expected_count_fn):
                     raises=PyODBCProgrammingError,
                     reason="sqlglot generates code that requires > 0 fetch rows",
                 ),
+                pytest.mark.notyet("clickhouse", raises=ClickHouseDatabaseError),
             ],
         ),
         ##################
@@ -1642,11 +1653,6 @@ def test_static_table_slice(backend, slc, expected_count_fn):
     reason="backend doesn't support dynamic limit/offset",
 )
 @pytest.mark.notimpl(["exasol"], raises=ExaQueryError)
-@pytest.mark.notyet(
-    ["clickhouse"],
-    raises=ClickHouseDatabaseError,
-    reason="clickhouse doesn't support dynamic limit/offset",
-)
 @pytest.mark.notyet(["druid"], reason="druid doesn't support dynamic limit/offset")
 @pytest.mark.notyet(["polars"], reason="polars doesn't support dynamic limit/offset")
 @pytest.mark.notyet(
@@ -1697,11 +1703,6 @@ def test_dynamic_table_slice(backend, slc, expected_count_fn):
     reason="backend doesn't support dynamic limit/offset",
 )
 @pytest.mark.notimpl(["exasol"], raises=ExaQueryError)
-@pytest.mark.notyet(
-    ["clickhouse"],
-    raises=ClickHouseDatabaseError,
-    reason="clickhouse doesn't support dynamic limit/offset",
-)
 @pytest.mark.notyet(["druid"], reason="druid doesn't support dynamic limit/offset")
 @pytest.mark.notyet(["polars"], reason="polars doesn't support dynamic limit/offset")
 @pytest.mark.notyet(
@@ -1975,11 +1976,6 @@ def test_select_sort_sort_deferred(backend, alltypes, df):
     backend.assert_frame_equal(result, expected)
 
 
-@pytest.mark.broken(
-    ["clickhouse"],
-    raises=AssertionError,
-    reason="https://github.com/ClickHouse/ClickHouse/issues/61313",
-)
 @pytest.mark.notimpl(
     ["pandas", "dask"], raises=IndexError, reason="NaN isn't treated as NULL"
 )

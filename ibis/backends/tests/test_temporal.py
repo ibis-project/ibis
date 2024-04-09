@@ -1236,7 +1236,7 @@ def test_interval_add_cast_column(backend, alltypes, df):
         ),
         param(
             lambda t: (
-                t.mutate(suffix="%d")
+                t.mutate(suffix=ibis.literal("%d"))
                 .select(formatted=lambda t: t.timestamp_col.strftime("%Y%m" + t.suffix))
                 .formatted
             ),
@@ -1590,17 +1590,14 @@ DATE_BACKEND_TYPES = {
 }
 
 
-@pytest.mark.notimpl(["pandas", "dask", "exasol"], raises=com.OperationNotDefinedError)
+@pytest.mark.notimpl(
+    ["pandas", "dask", "exasol", "risingwave"], raises=com.OperationNotDefinedError
+)
 @pytest.mark.notimpl(
     ["druid"], raises=PyDruidProgrammingError, reason="SQL parse failed"
 )
 @pytest.mark.notimpl(
     ["oracle"], raises=OracleDatabaseError, reason="ORA-00936 missing expression"
-)
-@pytest.mark.notimpl(
-    ["risingwave"],
-    raises=com.OperationNotDefinedError,
-    reason="function make_date(integer, integer, integer) does not exist",
 )
 def test_date_literal(con, backend):
     expr = ibis.date(2022, 2, 4)
@@ -1631,11 +1628,6 @@ TIMESTAMP_BACKEND_TYPES = {
     raises=com.OperationNotDefinedError,
 )
 @pytest.mark.notyet(["impala"], raises=com.OperationNotDefinedError)
-@pytest.mark.notimpl(
-    ["risingwave"],
-    raises=PsycoPg2InternalError,
-    reason="function make_timestamp(integer, integer, integer, integer, integer, integer) does not exist",
-)
 def test_timestamp_literal(con, backend):
     expr = ibis.timestamp(2022, 2, 4, 16, 20, 0)
     result = con.execute(expr)
@@ -1689,11 +1681,6 @@ def test_timestamp_literal(con, backend):
         "<NUMERIC>, <NUMERIC>, <NUMERIC>, <NUMERIC>)"
     ),
 )
-@pytest.mark.notimpl(
-    ["risingwave"],
-    raises=PsycoPg2InternalError,
-    reason="function make_timestamp(integer, integer, integer, integer, integer, integer) does not exist",
-)
 def test_timestamp_with_timezone_literal(con, timezone, expected):
     expr = ibis.timestamp(2022, 2, 4, 16, 20, 0).cast(dt.Timestamp(timezone=timezone))
     result = con.execute(expr)
@@ -1722,11 +1709,6 @@ TIME_BACKEND_TYPES = {
     ["clickhouse", "impala", "exasol"], raises=com.OperationNotDefinedError
 )
 @pytest.mark.notimpl(["druid"], raises=com.OperationNotDefinedError)
-@pytest.mark.notimpl(
-    ["risingwave"],
-    raises=PsycoPg2InternalError,
-    reason="function make_time(integer, integer, integer) does not exist",
-)
 def test_time_literal(con, backend):
     expr = ibis.time(16, 20, 0)
     result = con.execute(expr)
@@ -1845,7 +1827,9 @@ def test_interval_literal(con, backend):
         assert con.execute(expr.typeof()) == INTERVAL_BACKEND_TYPES[backend_name]
 
 
-@pytest.mark.notimpl(["pandas", "dask", "exasol"], raises=com.OperationNotDefinedError)
+@pytest.mark.notimpl(
+    ["pandas", "dask", "exasol", "risingwave"], raises=com.OperationNotDefinedError
+)
 @pytest.mark.broken(
     ["druid"],
     raises=AttributeError,
@@ -1853,11 +1837,6 @@ def test_interval_literal(con, backend):
 )
 @pytest.mark.broken(
     ["oracle"], raises=OracleDatabaseError, reason="ORA-00936: missing expression"
-)
-@pytest.mark.notimpl(
-    ["risingwave"],
-    raises=com.OperationNotDefinedError,
-    reason="function make_date(integer, integer, integer) does not exist",
 )
 def test_date_column_from_ymd(backend, con, alltypes, df):
     c = alltypes.timestamp_col
@@ -1879,11 +1858,6 @@ def test_date_column_from_ymd(backend, con, alltypes, df):
     reason="StringColumn' object has no attribute 'year'",
 )
 @pytest.mark.notyet(["impala", "oracle"], raises=com.OperationNotDefinedError)
-@pytest.mark.notimpl(
-    ["risingwave"],
-    raises=PsycoPg2InternalError,
-    reason="function make_timestamp(smallint, smallint, smallint, smallint, smallint, smallint) does not exist",
-)
 def test_timestamp_column_from_ymdhms(backend, con, alltypes, df):
     c = alltypes.timestamp_col
     expr = ibis.timestamp(
