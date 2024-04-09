@@ -64,7 +64,7 @@ If you're new to Ibis, see [how to install](../../../install.qmd) and [the
 getting started tutorial](../../../tutorials/getting_started.qmd).
 
 To follow along with this blog, ensure you're on `'ibis-framework>=9,<10'`.
-First, we’ll setup Ibis and fetch some sample data to use.
+First, we’ll setup Ibis for interactive use:
 
 ```{python}
 import ibis
@@ -74,7 +74,7 @@ ibis.options.interactive = True
 ibis.options.repr.interactive.max_rows = 3
 ```
 
-Now, fetch the penguins dataset.
+And fetch the penguins dataset:
 
 ```{python}
 t = ibis.examples.penguins.fetch()
@@ -199,7 +199,15 @@ Note that URI parameters are not meaningful with these backends. The main use
 case is more convenient connection swapping programmatically:
 
 ```{python}
-for backend in ["dask", "pandas", "polars", "datafusion"]:
+for backend in [
+    "duckdb",
+    "sqlite",
+    "pyspark",
+    "dask",
+    "pandas",
+    "polars",
+    "datafusion",
+]:
     con = ibis.connect(f"{backend}://")
 ```
 
