@@ -398,7 +398,6 @@ jobs:
         id: install_python
         with:
           python-version: ${{ matrix.python-version }}
-          cache: poetry
 
       - name: install ibis
         run: poetry install --without dev --without docs --extras "${{ join(matrix.backend.extras, ' ') }}"
