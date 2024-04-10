@@ -981,6 +981,9 @@ class Table(Expr, _FixedTextJupyterMixin):
         by = tuple(v for v in by if v is not None)
         groups = bind(self, (by, key_exprs))
         return GroupedTable(self, groups)
+    
+    def pipe(self, func, *args, **kwargs):
+        return func(self, *args, **kwargs)
 
     # TODO(kszucs): shouldn't this be ibis.rowid() instead not bound to a specific table?
     def rowid(self) -> ir.IntegerValue:
