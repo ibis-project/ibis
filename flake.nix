@@ -129,7 +129,7 @@
 
         default = pkgs.ibis312;
 
-        inherit (pkgs) update-lock-files gen-all-extras gen-examples check-release-notes-spelling;
+        inherit (pkgs) update-lock-files gen-examples check-release-notes-spelling;
       };
 
       devShells = rec {
