@@ -140,37 +140,6 @@ leafmap = { version = ">=0.29.6,<0.31", python = ">=3.10,<3.13" }
 lonboard = { version = "==0.4.0", python = ">=3.10,<3.13" }
 
 [tool.poetry.extras]
-# generate the `all` extra using nix run '.#gen-all-extras'
-all = [
-  "black",
-  "clickhouse-connect",
-  "dask",
-  "datafusion",
-  "db-dtypes",
-  "deltalake",
-  "duckdb",
-  "fsspec",
-  "geopandas",
-  "google-cloud-bigquery",
-  "google-cloud-bigquery-storage",
-  "graphviz",
-  "impyla",
-  "oracledb",
-  "packaging",
-  "pins",
-  "polars",
-  "psycopg2",
-  "pydata-google-auth",
-  "pydruid",
-  "pyexasol",
-  "pymysql",
-  "pyodbc",
-  "pyspark",
-  "regex",
-  "shapely",
-  "snowflake-connector-python",
-  "trino",
-]
 bigquery = [
   "db-dtypes",
   "google-cloud-bigquery",
