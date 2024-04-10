@@ -62,7 +62,6 @@ jobs:
         id: install_python
         with:
           python-version: ${{ matrix.python-version }}
-          cache: poetry
 
       - name: install ${{ matrix.os }} system dependencies
         if: matrix.os == 'ubuntu-latest'
@@ -114,7 +113,6 @@ jobs:
         id: install_python
         with:
           python-version: "3.12"
-          cache: poetry
 
       - name: install system dependencies
         run: |
@@ -157,7 +155,7 @@ jobs:
           cache: poetry
 
       - name: install ibis with all extras
-        run: poetry install --without dev --without docs --extras all
+        run: poetry install --without dev --without docs --all-extras
 
       - uses: extractions/setup-just@v2
         env:
