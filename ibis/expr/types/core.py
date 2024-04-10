@@ -6,8 +6,11 @@ import webbrowser
 from typing import TYPE_CHECKING, Any, NoReturn
 
 from public import public
+from rich.console import Console
 from rich.jupyter import JupyterMixin
+from rich.text import Text
 
+import ibis
 import ibis.expr.operations as ops
 from ibis.common.annotations import ValidationError
 from ibis.common.exceptions import IbisError, TranslationError
@@ -15,6 +18,7 @@ from ibis.common.grounds import Immutable
 from ibis.common.patterns import Coercible, CoercionError
 from ibis.config import _default_backend
 from ibis.config import options as opts
+from ibis.expr.types.pretty import to_rich
 from ibis.util import experimental
 
 if TYPE_CHECKING:
@@ -48,15 +52,68 @@ class Expr(Immutable, Coercible):
     __slots__ = ("_arg",)
     _arg: ops.Node
 
-    def __rich_console__(self, console, options):
-        if not opts.interactive:
-            from rich.text import Text
+    def _noninteractive_repr(self) -> str:
+        from ibis.expr.format import pretty
 
-            return console.render(Text(repr(self)), options=options)
-        return self.__interactive_rich_console__(console, options)
+        return pretty(self)
 
-    def __interactive_rich_console__(self, console, options):
-        raise NotImplementedError()
+    def _interactive_repr(self) -> str:
+        console = Console(force_terminal=False)
+        with console.capture() as capture:
+            try:
+                console.print(self)
+            except TranslationError as e:
+                lines = [
+                    "Translation to backend failed",
+                    f"Error message: {e!r}",
+                    "Expression repr follows:",
+                    self._noninteractive_repr(),
+                ]
+                return "\n".join(lines)
+        return capture.get().rstrip()
+
+    def __repr__(self) -> str:
+        if ibis.options.interactive:
+            return self._interactive_repr()
+        else:
+            return self._noninteractive_repr()
+
+    def __rich_console__(self, console: Console, options):
+        if console.is_jupyter:
+            # Rich infers a console width in jupyter notebooks, but since
+            # notebooks can use horizontal scroll bars we don't want to apply a
+            # limit here. Since rich requires an integer for max_width, we
+            # choose an arbitrarily large integer bound. Note that we need to
+            # handle this here rather than in `to_rich`, as this setting
+            # also needs to be forwarded to `console.render`.
+            options = options.update(max_width=1_000_000)
+            console_width = None
+        else:
+            console_width = options.max_width
+
+        try:
+            if opts.interactive:
+                rich_object = to_rich(self, console_width=console_width)
+            else:
+                rich_object = Text(self._noninteractive_repr())
+        except Exception as e:
+            # In IPython exceptions inside of _repr_mimebundle_ are swallowed to
+            # allow calling several display functions and choosing to display
+            # the "best" result based on some priority.
+            # This behavior, though, means that exceptions that bubble up inside of the interactive repr
+            # are silently caught.
+            #
+            # We can't stop the exception from being swallowed, but we can force
+            # the display of that exception as we do here.
+            #
+            # A _very_ annoying caveat is that this exception is _not_ being
+            # ` raise`d, it is only being printed to the console.  This means
+            # that you cannot "catch" it.
+            #
+            # This restriction is only present in IPython, not in other REPLs.
+            console.print_exception()
+            raise e
+        return console.render(rich_object, options=options)
 
     def __init__(self, arg: ops.Node) -> None:
         object.__setattr__(self, "_arg", arg)
@@ -72,32 +129,6 @@ class Expr(Immutable, Coercible):
             return value.to_expr()
         else:
             raise CoercionError("Unable to coerce value to an expression")
-
-    def __repr__(self) -> str:
-        from ibis.expr.format import get_defining_scope, pretty
-
-        if opts.repr.show_variables:
-            scope = get_defining_scope(self)
-        else:
-            scope = None
-
-        if opts.interactive:
-            from ibis.expr.types.pretty import simple_console
-
-            with simple_console.capture() as capture:
-                try:
-                    simple_console.print(self)
-                except TranslationError as e:
-                    lines = [
-                        "Translation to backend failed",
-                        f"Error message: {e!r}",
-                        "Expression repr follows:",
-                        pretty(self, scope=scope),
-                    ]
-                    return "\n".join(lines)
-            return capture.get().rstrip()
-        else:
-            return pretty(self, scope=scope)
 
     def __reduce__(self):
         return (self.__class__, (self._arg,))
