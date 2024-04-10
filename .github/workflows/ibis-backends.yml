@@ -456,7 +456,7 @@ jobs:
           - windows-latest
         python-version:
           - "3.9"
-          - "3.11"
+          - "3.11.8"
         backend:
           - name: dask
             title: Dask
@@ -490,7 +490,7 @@ jobs:
               extras:
                 - postgres
                 - geospatial
-          - python-version: "3.11"
+          - python-version: "3.11.8"
             backend:
               name: postgres
               title: PostgreSQL
