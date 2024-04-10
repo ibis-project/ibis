@@ -830,7 +830,7 @@ class Struct(Parametric, MapSet):
 
     def __init__(self, fields, **kwargs):
         if fields is None or len(fields) == 0:
-            raise ValueError("Empty struct type is not supported")
+            raise TypeError("Empty struct type is not supported")
         super().__init__(fields=fields, **kwargs)
 
     @classmethod

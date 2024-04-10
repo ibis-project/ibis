@@ -42,8 +42,6 @@ def infer(value: Any) -> dt.DataType:
 @infer.register(collections.OrderedDict)
 def infer_struct(value: Mapping[str, Any]) -> dt.Struct:
     """Infer the [`Struct`](./datatypes.qmd#ibis.expr.datatypes.Struct) type of `value`."""
-    if not value:
-        raise TypeError("Empty struct type not supported")
     fields = {name: infer(val) for name, val in value.items()}
     return dt.Struct(fields)
 

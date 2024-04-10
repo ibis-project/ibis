@@ -128,11 +128,6 @@ def test_struct_literal_non_castable(value):
         ibis.struct(value, type=typestr)
 
 
-def test_struct_cast_to_empty_struct():
-    value = ibis.struct({"a": 1, "b": 2.0})
-    assert value.type().castable(dt.Struct({}))
-
-
 @pytest.mark.parametrize(
     "value",
     [
