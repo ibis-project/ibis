@@ -28,12 +28,14 @@ from ibis.backends.duckdb.compiler import DuckDBCompiler
 from ibis.backends.duckdb.converter import DuckDBPandasData
 from ibis.backends.sql import SQLBackend
 from ibis.backends.sql.compiler import STAR, C
+from ibis.common.dispatch import lazy_singledispatch
 from ibis.expr.operations.udf import InputType
 
 if TYPE_CHECKING:
     from collections.abc import Iterable, Mapping, MutableMapping, Sequence
 
     import pandas as pd
+    import polars as pl
     import torch
     from fsspec import AbstractFileSystem
 
@@ -847,10 +849,17 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema, UrlFromPath):
 
     def read_in_memory(
         self,
-        source: pd.DataFrame | pa.Table | pa.ipc.RecordBatchReader,
+        source: pd.DataFrame
+        | pa.Table
+        | pa.RecordBatchReader
+        | pl.DataFrame
+        | pl.LazyFrame,
         table_name: str | None = None,
     ) -> ir.Table:
-        """Register a Pandas DataFrame or pyarrow object as a table in the current database.
+        """Register an in-memory table object in the current database.
+
+        Supported objects include pandas DataFrame, a Polars
+        DataFrame/LazyFrame, or a PyArrow Table or RecordBatchReader.
 
         Parameters
         ----------
@@ -867,13 +876,7 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema, UrlFromPath):
 
         """
         table_name = table_name or util.gen_name("read_in_memory")
-        self.con.register(table_name, source)
-
-        if isinstance(source, pa.ipc.RecordBatchReader):
-            # Ensure the reader isn't marked as started, in case the name is
-            # being overwritten.
-            self._record_batch_readers_consumed[table_name] = False
-
+        _read_in_memory(source, table_name, self)
         return self.table(table_name)
 
     def read_delta(
@@ -1598,3 +1601,28 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema, UrlFromPath):
     def _create_temp_view(self, table_name, source):
         with self._safe_raw_sql(self._get_temp_view_definition(table_name, source)):
             pass
+
+
+@lazy_singledispatch
+def _read_in_memory(source: Any, table_name: str, _conn: Backend, **kwargs: Any):
+    raise NotImplementedError(
+        f"The `{_conn.name}` backend currently does not support "
+        f"reading data of {type(source)!r}"
+    )
+
+
+@_read_in_memory.register("polars.DataFrame")
+@_read_in_memory.register("polars.LazyFrame")
+@_read_in_memory.register("pyarrow.Table")
+@_read_in_memory.register("pandas.DataFrame")
+@_read_in_memory.register("pyarrow.dataset.Dataset")
+def _default(source, table_name, _conn, **kwargs: Any):
+    _conn.con.register(table_name, source)
+
+
+@_read_in_memory.register("pyarrow.RecordBatchReader")
+def _pyarrow_rbr(source, table_name, _conn, **kwargs: Any):
+    _conn.con.register(table_name, source)
+    # Ensure the reader isn't marked as started, in case the name is
+    # being overwritten.
+    _conn._record_batch_readers_consumed[table_name] = False
