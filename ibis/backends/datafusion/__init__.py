@@ -14,7 +14,6 @@ import pyarrow_hotfix  # noqa: F401
 import sqlglot as sg
 import sqlglot.expressions as sge
 
-import ibis
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
@@ -24,6 +23,7 @@ from ibis.backends import CanCreateCatalog, CanCreateDatabase, CanCreateSchema, 
 from ibis.backends.datafusion.compiler import DataFusionCompiler
 from ibis.backends.sql import SQLBackend
 from ibis.backends.sql.compiler import C
+from ibis.common.dispatch import lazy_singledispatch
 from ibis.expr.operations.udf import InputType
 from ibis.formats.pyarrow import PyArrowType
 from ibis.util import gen_name, normalize_filename
@@ -40,6 +40,7 @@ except ImportError:
 
 if TYPE_CHECKING:
     import pandas as pd
+    import polars as pl
 
 
 class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, CanCreateSchema, NoUrl):
@@ -293,6 +294,44 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, CanCreateSchema, 
 
         table = database.table(table_name)
         return sch.schema(table.schema)
+
+    def read_in_memory(
+        self,
+        source: pd.DataFrame
+        | pa.Table
+        | pa.RecordBatchReader
+        | pa.RecordBatch
+        | pl.DataFrame
+        | pl.LazyFrame,
+        table_name: str | None = None,
+        **kwargs: Any,
+    ) -> ir.Table:
+        """Register an in-memory table object in the current database.
+
+        Supported objects include pandas DataFrame, a Polars
+        DataFrame/LazyFrame, or a PyArrow Table or RecordBatchReader.
+
+        Parameters
+        ----------
+        source
+            The data source.
+        table_name
+            An optional name to use for the created table. This defaults to
+            a sequentially generated name.
+        kwargs
+            Keyword arguments to forward to a memory-format-specific reader function.
+
+        Returns
+        -------
+        ir.Table
+            The just-registered table
+
+        """
+        table_name = table_name or gen_name("read_in_memory")
+
+        _read_in_memory(source, table_name, self)
+
+        return self.table(table_name)
 
     def register(
         self,
@@ -550,7 +589,14 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, CanCreateSchema, 
     def create_table(
         self,
         name: str,
-        obj: pd.DataFrame | pa.Table | ir.Table | None = None,
+        obj: ir.Table
+        | pd.DataFrame
+        | pa.Table
+        | pa.RecordBatchReader
+        | pa.RecordBatch
+        | pl.DataFrame
+        | pl.LazyFrame
+        | None = None,
         *,
         schema: sch.Schema | None = None,
         database: str | None = None,
@@ -589,12 +635,10 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, CanCreateSchema, 
 
         quoted = self.compiler.quoted
 
-        if obj is not None:
-            if not isinstance(obj, ir.Expr):
-                table = ibis.memtable(obj)
-            else:
-                table = obj
+        if isinstance(obj, ir.Expr):
+            table = obj
 
+            # If it's a memtable, it will get registered in the pre-execute hooks
             self._run_pre_execute_hooks(table)
 
             relname = "_"
@@ -610,10 +654,13 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, CanCreateSchema, 
                     sg.to_identifier(relname, quoted=quoted)
                 )
             )
+        elif obj is not None:
+            _read_in_memory(obj, name, self, overwrite=overwrite)
+            return self.table(name, database=database)
         else:
             query = None
 
-        table_ident = sg.to_identifier(name, quoted=quoted)
+        table_ident = sg.table(name, db=database, quoted=quoted)
 
         if query is None:
             column_defs = [
@@ -670,3 +717,92 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, CanCreateSchema, 
         ident = sg.table(name, db=db, catalog=catalog).sql(self.name)
         with self._safe_raw_sql(sge.delete(ident)):
             pass
+
+
+@contextlib.contextmanager
+def _create_and_drop_memtable(_conn, table_name, tmp_name, overwrite):
+    """Workaround inability to overwrite tables in dataframe API.
+
+    Datafusion has helper methods for loading in-memory data, but these methods
+    don't allow overwriting tables.
+    The SQL interface allows creating tables from existing tables, so we register
+    the data as a table using the dataframe API, then run a
+
+    CREATE [OR REPLACE] TABLE table_name AS SELECT * FROM in_memory_thing
+
+    and that allows us to toggle the overwrite flag
+    """
+    src = sge.Create(
+        this=table_name,
+        kind="TABLE",
+        expression=sg.select("*").from_(tmp_name),
+        replace=overwrite,
+    )
+
+    yield
+
+    _conn.raw_sql(src)
+    _conn.drop_table(tmp_name)
+
+
+@lazy_singledispatch
+def _read_in_memory(
+    source: Any, table_name: str, _conn: Backend, overwrite: bool = False
+):
+    raise NotImplementedError("No support for source or imports missing")
+
+
+@_read_in_memory.register(dict)
+def _pydict(source, table_name, _conn, overwrite: bool = False):
+    tmp_name = gen_name("pydict")
+    with _create_and_drop_memtable(_conn, table_name, tmp_name, overwrite):
+        _conn.con.from_pydict(source, name=tmp_name)
+
+
+@_read_in_memory.register("polars.DataFrame")
+def _polars(source, table_name, _conn, overwrite: bool = False):
+    tmp_name = gen_name("polars")
+    with _create_and_drop_memtable(_conn, table_name, tmp_name, overwrite):
+        _conn.con.from_polars(source, name=tmp_name)
+
+
+@_read_in_memory.register("polars.LazyFrame")
+def _polars(source, table_name, _conn, overwrite: bool = False):
+    tmp_name = gen_name("polars")
+    with _create_and_drop_memtable(_conn, table_name, tmp_name, overwrite):
+        _conn.con.from_polars(source.collect(), name=tmp_name)
+
+
+@_read_in_memory.register("pyarrow.Table")
+def _pyarrow_table(source, table_name, _conn, overwrite: bool = False):
+    tmp_name = gen_name("pyarrow")
+    with _create_and_drop_memtable(_conn, table_name, tmp_name, overwrite):
+        _conn.con.from_arrow_table(source, name=tmp_name)
+
+
+@_read_in_memory.register("pyarrow.RecordBatchReader")
+def _pyarrow_rbr(source, table_name, _conn, overwrite: bool = False):
+    tmp_name = gen_name("pyarrow")
+    with _create_and_drop_memtable(_conn, table_name, tmp_name, overwrite):
+        _conn.con.from_arrow_table(source.read_all(), name=tmp_name)
+
+
+@_read_in_memory.register("pyarrow.RecordBatch")
+def _pyarrow_rb(source, table_name, _conn, overwrite: bool = False):
+    tmp_name = gen_name("pyarrow")
+    with _create_and_drop_memtable(_conn, table_name, tmp_name, overwrite):
+        _conn.con.register_record_batches(tmp_name, [[source]])
+
+
+@_read_in_memory.register("pyarrow.dataset.Dataset")
+def _pyarrow_rb(source, table_name, _conn, overwrite: bool = False):
+    tmp_name = gen_name("pyarrow")
+    with _create_and_drop_memtable(_conn, table_name, tmp_name, overwrite):
+        _conn.con.register_dataset(tmp_name, source)
+
+
+@_read_in_memory.register("pandas.DataFrame")
+def _pandas(source: pd.DataFrame, table_name, _conn, overwrite: bool = False):
+    tmp_name = gen_name("pandas")
+    with _create_and_drop_memtable(_conn, table_name, tmp_name, overwrite):
+        _conn.con.from_pandas(source, name=tmp_name)
