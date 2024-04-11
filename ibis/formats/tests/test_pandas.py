@@ -424,7 +424,7 @@ def test_schema_from_various_dataframes(col_data, schema_type):
 
 
 def test_convert_dataframe_with_timezone():
-    data = {"time": pd.date_range("2018-01-01", "2018-01-02", freq="H")}
+    data = {"time": pd.date_range("2018-01-01", "2018-01-02", freq="h")}
     df = expected = pd.DataFrame(data).assign(
         time=lambda df: df.time.dt.tz_localize("EST")
     )

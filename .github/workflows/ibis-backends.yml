@@ -467,7 +467,7 @@ jobs:
           - windows-latest
         python-version:
           - "3.9"
-          - "3.11.8"
+          - "3.11.8" # https://github.com/dask/dask/issues/11038
         backend:
           - name: dask
             title: Dask
