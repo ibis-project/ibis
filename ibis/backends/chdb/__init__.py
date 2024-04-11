@@ -78,6 +78,7 @@ class Backend(CHBackend, UrlFromPath):
         self, path: None | str | Path = None, database: None | str = None
     ) -> None:
         self.con = Session(path)
+        # self.raw_sql("SET session_timezone = 'UTC'")
         if database is not None:
             self.raw_sql(f"USE {database}")
 
@@ -148,13 +149,6 @@ class Backend(CHBackend, UrlFromPath):
         finally:
             self.raw_sql(f"DROP VIEW {name}")
 
-    def execute(self, expr: ir.Expr, **kwargs: Any) -> Any:
-        """Execute an expression."""
-        table = expr.as_table()
-        arrow = self.to_pyarrow(table, **kwargs)
-        df = arrow.to_pandas(integer_object_nulls=True)
-        return expr.__pandas_result__(table.__pandas_result__(df))
-
     @contextlib.contextmanager
     def _persisted_memtables(self, table):
         node = table.op()
@@ -190,6 +184,35 @@ class Backend(CHBackend, UrlFromPath):
     def to_pyarrow_batches(self, expr: ir.Expr, **kwargs):
         table = expr.as_table()
         return self.to_pyarrow(table, **kwargs).to_reader()
+
+    def execute(self, expr: ir.Expr, **kwargs: Any) -> Any:
+        """Execute an expression."""
+        table = expr.as_table()
+        arrow = self.to_pyarrow(table, **kwargs)
+
+        df = arrow.to_pandas(integer_object_nulls=True)  # , timestamp_as_object=True)
+        # return expr.__pandas_result__(table.__pandas_result__(df))
+        if isinstance(expr, ir.Column):
+            return df.iloc[:, 0]
+        elif isinstance(expr, ir.Scalar):
+            return df.iloc[0, 0]
+        else:
+            return df
+
+    def list_tables(
+        self, like: str | None = None, database: str | None = None
+    ) -> list[str]:
+        query = sg.select(C.name).from_(sg.table("tables", db="system"))
+
+        if database is None:
+            database = self.compiler.f.currentDatabase()
+        else:
+            database = sge.convert(database)
+
+        query = query.where(C.database.eq(database).or_(C.is_temporary))
+        result = self.raw_sql(query, fmt="arrowtable")
+        tables = result.column("name").to_pylist()
+        return self._filter_with_like(tables, like)
 
     def list_databases(self, like: str | None = None) -> list[str]:
         query = sg.select(C.name).from_(sg.table("databases", db="system"))

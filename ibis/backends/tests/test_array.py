@@ -295,7 +295,7 @@ def test_unnest_complex(backend):
     "pyspark", reason="pyspark throws away nulls in collect_list", raises=AssertionError
 )
 @pytest.mark.never(
-    "clickhouse",
+    ["clickhouse", "chdb"],
     reason="clickhouse throws away nulls in groupArray",
     raises=AssertionError,
 )
@@ -650,8 +650,8 @@ def test_array_remove(con, a):
     reason="BigQuery doesn't support arrays with null elements",
 )
 @pytest.mark.notyet(
-    ["clickhouse"],
-    raises=(AssertionError, TypeError),
+    ["clickhouse", "chdb"],
+    raises=AssertionError,
     reason="clickhouse doesn't support nullable array types",
 )
 @pytest.mark.notyet(
@@ -858,8 +858,8 @@ def test_zip(backend):
 @builtin_array
 @array_zip_notimpl
 @pytest.mark.notyet(
-    "clickhouse",
-    raises=ClickHouseDatabaseError,
+    ["clickhouse", "chdb"],
+    raises=(ClickHouseDatabaseError, ChdbError),
     reason="clickhouse nested types can't be null",
 )
 @pytest.mark.never(
@@ -968,7 +968,7 @@ def flatten_data():
             id="nulls_only",
             marks=[
                 pytest.mark.notyet(
-                    ["clickhouse"],
+                    ["clickhouse", "chdb"],
                     reason="Arrays are never nullable",
                     raises=AssertionError,
                 )
@@ -980,7 +980,7 @@ def flatten_data():
             id="mixed_nulls",
             marks=[
                 pytest.mark.notyet(
-                    ["clickhouse"],
+                    ["clickhouse", "chdb"],
                     reason="Arrays are never nullable",
                     raises=AssertionError,
                 )

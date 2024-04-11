@@ -392,6 +392,8 @@ class ClickHouseCompiler(SQLGlotCompiler):
 
         return self.f[converter](arg)
 
+        # return self.f["dateTrunc"](unit.name.lower(), arg)
+
     visit_TimeTruncate = visit_DateTruncate = visit_TimestampTruncate
 
     def visit_TimestampBucket(self, op, *, arg, interval, offset):
@@ -416,24 +418,9 @@ class ClickHouseCompiler(SQLGlotCompiler):
     def visit_TimestampFromYMDHMS(
         self, op, *, year, month, day, hours, minutes, seconds, **_
     ):
-        to_datetime = self.f.toDateTime(
-            self.f.concat(
-                self.f.toString(year),
-                "-",
-                self.f.leftPad(self.f.toString(month), 2, "0"),
-                "-",
-                self.f.leftPad(self.f.toString(day), 2, "0"),
-                " ",
-                self.f.leftPad(self.f.toString(hours), 2, "0"),
-                ":",
-                self.f.leftPad(self.f.toString(minutes), 2, "0"),
-                ":",
-                self.f.leftPad(self.f.toString(seconds), 2, "0"),
-            )
+        return self.f.makeDateTime64(
+            year, month, day, hours, minutes, seconds, 0, 0, op.dtype.timezone or "UTC"
         )
-        if timezone := op.dtype.timezone:
-            return self.f.toTimeZone(to_datetime, timezone)
-        return to_datetime
 
     def visit_StringSplit(self, op, *, arg, delimiter):
         return self.f.splitByString(
@@ -630,8 +617,7 @@ class ClickHouseCompiler(SQLGlotCompiler):
         )
 
         if step_value == 0:
-            dtype = dt.Array(dt.timestamp)
-            return self.cast(self.f.array(), dtype)
+            return self.cast(self.f.array(), op.dtype)
 
         return self.f.arrayMap(
             func, self.f.range(0, self.f.timestampDiff(unit, start, stop), step_value)

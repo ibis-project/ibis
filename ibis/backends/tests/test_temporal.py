@@ -331,7 +331,7 @@ PANDAS_UNITS = {
             "ms",
             marks=[
                 pytest.mark.notimpl(
-                    ["clickhouse", "mysql", "sqlite", "datafusion", "exasol"],
+                    ["clickhouse", "chdb", "mysql", "sqlite", "datafusion", "exasol"],
                     raises=com.UnsupportedOperationError,
                 ),
                 pytest.mark.broken(
@@ -345,7 +345,15 @@ PANDAS_UNITS = {
             "us",
             marks=[
                 pytest.mark.notimpl(
-                    ["clickhouse", "mysql", "sqlite", "trino", "datafusion", "exasol"],
+                    [
+                        "clickhouse",
+                        "chdb",
+                        "mysql",
+                        "sqlite",
+                        "trino",
+                        "datafusion",
+                        "exasol",
+                    ],
                     raises=com.UnsupportedOperationError,
                 ),
                 pytest.mark.broken(
@@ -367,6 +375,7 @@ PANDAS_UNITS = {
                     [
                         "bigquery",
                         "clickhouse",
+                        "chdb",
                         "duckdb",
                         "impala",
                         "mysql",
@@ -544,7 +553,7 @@ def test_date_truncate(backend, alltypes, df, unit):
             pd.Timedelta,
             marks=[
                 pytest.mark.notimpl(
-                    ["clickhouse"], raises=com.UnsupportedOperationError
+                    ["clickhouse", "chdb"], raises=com.UnsupportedOperationError
                 ),
                 pytest.mark.broken(
                     ["flink"],
@@ -563,7 +572,7 @@ def test_date_truncate(backend, alltypes, df, unit):
             pd.Timedelta,
             marks=[
                 pytest.mark.notimpl(
-                    ["clickhouse"], raises=com.UnsupportedOperationError
+                    ["clickhouse", "chdb"], raises=com.UnsupportedOperationError
                 ),
                 pytest.mark.notimpl(
                     ["trino"],
@@ -919,7 +928,7 @@ minus = lambda t, td: t.timestamp_col - pd.Timedelta(td)
                     reason="alltypes.timestamp_col is represented as string",
                 ),
                 pytest.mark.broken(
-                    ["clickhouse"],
+                    ["clickhouse", "chdb"],
                     raises=AssertionError,
                     reason="DateTime column overflows, should use DateTime64",
                 ),
@@ -1003,7 +1012,7 @@ minus = lambda t, td: t.timestamp_col - pd.Timedelta(td)
                     reason="unsupported operand type(s) for -: 'StringColumn' and 'Timedelta'",
                 ),
                 pytest.mark.broken(
-                    ["clickhouse"],
+                    ["clickhouse", "chdb"],
                     raises=AssertionError,
                     reason="DateTime column overflows, should use DateTime64",
                 ),
@@ -1291,7 +1300,7 @@ unit_factors = {"s": 10**9, "ms": 10**6, "us": 10**3, "ns": 1}
                     reason="PySpark backend does not support timestamp from unix time with unit ms. Supported unit is s.",
                 ),
                 pytest.mark.notimpl(
-                    ["clickhouse"],
+                    ["clickhouse", "chdb"],
                     raises=com.UnsupportedOperationError,
                     reason="`ms` unit is not supported!",
                 ),
@@ -1306,7 +1315,7 @@ unit_factors = {"s": 10**9, "ms": 10**6, "us": 10**3, "ns": 1}
                     reason="PySpark backend does not support timestamp from unix time with unit us. Supported unit is s.",
                 ),
                 pytest.mark.notimpl(
-                    ["duckdb", "mssql", "clickhouse"],
+                    ["duckdb", "mssql", "clickhouse", "chdb"],
                     raises=com.UnsupportedOperationError,
                     reason="`us` unit is not supported!",
                 ),
@@ -1326,7 +1335,7 @@ unit_factors = {"s": 10**9, "ms": 10**6, "us": 10**3, "ns": 1}
                     reason="PySpark backend does not support timestamp from unix time with unit ms. Supported unit is s.",
                 ),
                 pytest.mark.notimpl(
-                    ["duckdb", "mssql", "clickhouse"],
+                    ["duckdb", "mssql", "clickhouse", "chdb"],
                     raises=com.UnsupportedOperationError,
                     reason="`ms` unit is not supported!",
                 ),
@@ -1420,6 +1429,7 @@ def test_integer_to_timestamp(backend, con, unit):
         "dask",
         "pandas",
         "clickhouse",
+        "chdb",
         "sqlite",
         "datafusion",
         "mssql",
@@ -1579,6 +1589,7 @@ def test_today_from_projection(alltypes):
 DATE_BACKEND_TYPES = {
     "bigquery": "DATE",
     "clickhouse": "Date",
+    "chdb": "Date",
     "duckdb": "DATE",
     "flink": "DATE NOT NULL",
     "impala": "DATE",
@@ -1611,7 +1622,8 @@ def test_date_literal(con, backend):
 
 TIMESTAMP_BACKEND_TYPES = {
     "bigquery": "DATETIME",
-    "clickhouse": "DateTime",
+    "clickhouse": "DateTime64(0, 'UTC')",
+    "chdb": "DateTime64(0, 'UTC')",
     "impala": "TIMESTAMP",
     "snowflake": "TIMESTAMP_NTZ",
     "sqlite": "text",
@@ -1706,7 +1718,7 @@ TIME_BACKEND_TYPES = {
     raises=com.OperationNotDefinedError,
 )
 @pytest.mark.notyet(
-    ["clickhouse", "impala", "exasol"], raises=com.OperationNotDefinedError
+    ["clickhouse", "chdb", "impala", "exasol"], raises=com.OperationNotDefinedError
 )
 @pytest.mark.notimpl(["druid"], raises=com.OperationNotDefinedError)
 def test_time_literal(con, backend):
@@ -1722,7 +1734,7 @@ def test_time_literal(con, backend):
 
 
 @pytest.mark.notyet(
-    ["clickhouse", "impala"],
+    ["clickhouse", "chdb", "impala"],
     raises=com.OperationNotDefinedError,
     reason="backend doesn't have a time datatype",
 )
@@ -1769,6 +1781,7 @@ def test_extract_time_from_timestamp(con, microsecond):
 INTERVAL_BACKEND_TYPES = {
     "bigquery": "INTERVAL",
     "clickhouse": "IntervalSecond",
+    "chdb": "IntervalSecond",
     "sqlite": "integer",
     "trino": "interval day to second",
     "duckdb": "INTERVAL",
@@ -2213,7 +2226,7 @@ def test_delta(con, start, end, unit, expected):
             "50ms",
             marks=[
                 pytest.mark.notimpl(
-                    ["clickhouse"],
+                    ["clickhouse", "chdb"],
                     raises=com.UnsupportedOperationError,
                     reason="backend doesn't support sub-second interval precision",
                 ),
@@ -2410,7 +2423,7 @@ def test_time_literal_sql(dialect, snapshot, micros):
             "9999-01-02",
             marks=[
                 pytest.mark.broken(
-                    ["clickhouse"],
+                    ["clickhouse", "chdb"],
                     raises=AssertionError,
                     reason="clickhouse doesn't support dates after 2149-06-06",
                 ),
@@ -2429,7 +2442,7 @@ def test_time_literal_sql(dialect, snapshot, micros):
             id="small",
             marks=[
                 pytest.mark.broken(
-                    ["clickhouse"],
+                    ["clickhouse", "chdb"],
                     raises=AssertionError,
                     reason="clickhouse doesn't support dates before the UNIX epoch",
                 ),
@@ -2444,7 +2457,7 @@ def test_time_literal_sql(dialect, snapshot, micros):
         ),
         param(
             "2150-01-01",
-            marks=pytest.mark.broken(["clickhouse"], raises=AssertionError),
+            marks=pytest.mark.broken(["clickhouse", "chdb"], raises=AssertionError),
             id="medium",
         ),
     ],

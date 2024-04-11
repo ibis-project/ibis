@@ -30,7 +30,7 @@ class TimestampTruncate(Value):
     unit: IntervalUnit
 
     shape = rlz.shape_like("arg")
-    dtype = dt.timestamp
+    dtype = rlz.dtype_like("arg")
 
 
 @public
