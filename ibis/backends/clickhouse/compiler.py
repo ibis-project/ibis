@@ -630,7 +630,8 @@ class ClickHouseCompiler(SQLGlotCompiler):
         )
 
         if step_value == 0:
-            return self.f.array()
+            dtype = dt.Array(dt.timestamp)
+            return self.cast(self.f.array(), dtype)
 
         return self.f.arrayMap(
             func, self.f.range(0, self.f.timestampDiff(unit, start, stop), step_value)

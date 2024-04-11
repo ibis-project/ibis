@@ -83,7 +83,8 @@ class TestConf(BackendTest):
 
 @pytest.fixture(scope="session")
 def con(tmp_path_factory, data_dir, worker_id):
-    return TestConf.load_data(data_dir, tmp_path_factory, worker_id).connection
+    conf = TestConf.load_data(data_dir, tmp_path_factory, worker_id)
+    return conf.connection
 
 
 @pytest.fixture(scope="session")

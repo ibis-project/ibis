@@ -69,8 +69,6 @@ CREATE OR REPLACE TABLE ibis_testing.struct (
     )
 ) ENGINE = Log;
 
--- NULL is the same as tuple(NULL, NULL, NULL) because clickhouse doesn't
--- support Nullable(Tuple(...))
 INSERT INTO ibis_testing.struct VALUES
     (tuple(1.0, 'banana', 2)),
     (tuple(2.0, 'apple', 3)),

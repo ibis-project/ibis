@@ -48,6 +48,10 @@ class ChdbArrowConverter(PyArrowData):
             if dtype.scale is None:
                 pa_type = pa.timestamp("s")
             return column.cast(pa.int64()).cast(pa_type)
+        elif dtype.is_array() and dtype.value_type.is_timestamp():
+            if dtype.value_type.scale is None:
+                pa_type = pa.list_(pa.timestamp("s"))
+            return column.cast(pa.list_(pa.int64())).cast(pa_type)
         else:
             return column.cast(pa_type)
 
@@ -77,7 +81,9 @@ class Backend(CHBackend, UrlFromPath):
         if database is not None:
             self.raw_sql(f"USE {database}")
 
-    def raw_sql(self, query: str | sge.Expression, **kwargs) -> Any:
+    def raw_sql(
+        self, query: str | sge.Expression, external_tables=None, **kwargs
+    ) -> Any:
         """Execute a SQL string `query` against the database.
 
         Parameters
@@ -145,7 +151,8 @@ class Backend(CHBackend, UrlFromPath):
     def execute(self, expr: ir.Expr, **kwargs: Any) -> Any:
         """Execute an expression."""
         table = expr.as_table()
-        df = self.to_pyarrow(table, **kwargs).to_pandas()
+        arrow = self.to_pyarrow(table, **kwargs)
+        df = arrow.to_pandas(integer_object_nulls=True)
         return expr.__pandas_result__(table.__pandas_result__(df))
 
     @contextlib.contextmanager
@@ -178,8 +185,7 @@ class Backend(CHBackend, UrlFromPath):
             self._log(sql)
             result = self.raw_sql(sql, fmt="arrowtable")
 
-        result = ChdbArrowConverter.convert_table(result, table.schema())
-        return expr.__pyarrow_result__(result)
+        return expr.__pyarrow_result__(result, data_mapper=ChdbArrowConverter)
 
     def to_pyarrow_batches(self, expr: ir.Expr, **kwargs):
         table = expr.as_table()

@@ -17,6 +17,7 @@ import ibis.expr.datashape as ds
 import ibis.expr.datatypes as dt
 import ibis.expr.types as ir
 from ibis.backends.tests.errors import (
+    ChdbError,
     ClickHouseDatabaseError,
     GoogleBadRequest,
     ImpalaHiveServer2Error,
@@ -1056,7 +1057,9 @@ def test_range_start_stop_step(con, start, stop, step):
 @pytest.mark.parametrize("stop", [-7, 0, 7])
 @pytest.mark.parametrize("start", [-7, 0, 7])
 @pytest.mark.notyet(
-    ["clickhouse"], raises=ClickHouseDatabaseError, reason="not supported upstream"
+    ["clickhouse", "chdb"],
+    raises=(ClickHouseDatabaseError, ChdbError),
+    reason="not supported upstream",
 )
 @pytest.mark.notyet(
     ["datafusion"], raises=com.OperationNotDefinedError, reason="not supported upstream"
@@ -1227,7 +1230,7 @@ timestamp_range_tzinfos = pytest.mark.parametrize(
                 pytest.mark.notyet(["polars"], raises=com.UnsupportedOperationError),
                 pytest.mark.notyet(["bigquery"], raises=GoogleBadRequest),
                 pytest.mark.notyet(
-                    ["clickhouse", "snowflake"],
+                    ["clickhouse", "chdb", "snowflake"],
                     raises=com.UnsupportedOperationError,
                 ),
                 pytest.mark.notimpl(
@@ -1276,7 +1279,7 @@ def test_timestamp_range(con, start, stop, step, freq, tzinfo):
                 pytest.mark.notyet(["polars"], raises=com.UnsupportedOperationError),
                 pytest.mark.notyet(["bigquery"], raises=GoogleBadRequest),
                 pytest.mark.notyet(
-                    ["clickhouse", "snowflake"],
+                    ["clickhouse", "chdb", "snowflake"],
                     raises=com.UnsupportedOperationError,
                 ),
                 pytest.mark.notyet(
