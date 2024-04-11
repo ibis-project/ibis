@@ -30,7 +30,6 @@ class TestConf(ServiceBackendTest):
     rounding_method = "half_to_even"
     service_name = "mysql"
     deps = ("pymysql",)
-    supports_window_operations = True
 
     @property
     def test_files(self) -> Iterable[Path]:

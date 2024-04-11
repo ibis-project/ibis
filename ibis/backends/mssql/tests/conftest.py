@@ -23,7 +23,6 @@ MSSQL_PYODBC_DRIVER = os.environ.get("IBIS_TEST_MSSQL_PYODBC_DRIVER", "FreeTDS")
 class TestConf(ServiceBackendTest):
     # MSSQL has the same rounding behavior as postgres
     check_dtype = False
-    supports_window_operations = False
     returned_timestamp_unit = "s"
     supports_arrays_outside_of_select = supports_arrays = False
     supports_structs = False
