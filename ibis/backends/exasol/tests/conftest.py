@@ -28,7 +28,6 @@ class TestConf(ServiceBackendTest):
     check_names = False
     supports_arrays = False
     returned_timestamp_unit = "us"
-    supported_to_timestamp_units = {"s", "ms", "us"}
     native_bool = True
     supports_structs = False
     supports_json = False

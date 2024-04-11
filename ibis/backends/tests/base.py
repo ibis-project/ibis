@@ -37,7 +37,6 @@ class BackendTest(abc.ABC):
     supports_arrays: bool = True
     "Whether backend supports Arrays / Lists"
     returned_timestamp_unit: str = "us"
-    supported_to_timestamp_units = {"s", "ms", "us"}
     native_bool: bool = True
     "Whether backend has native boolean types"
     supports_structs: bool = True
