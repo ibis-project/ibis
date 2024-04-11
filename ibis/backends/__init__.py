@@ -932,7 +932,7 @@ class BaseBackend(abc.ABC, _FileIOHandler):
 
         """
     
-    def pipe(self, func, *args, **kwargs):
+    def pipe(self, func: Callable, *args, **kwargs):
         return func(self, *args, **kwargs)
 
     @abc.abstractmethod

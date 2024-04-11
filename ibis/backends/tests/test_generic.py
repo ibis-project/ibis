@@ -1990,3 +1990,12 @@ def test_topk_counts_null(con):
     tkf = tk.filter(_.x.isnull())[1]
     result = con.to_pyarrow(tkf)
     assert result[0].as_py() == 1
+
+
+def test_pipe_backend(con):
+    def add_one(con):
+        return con.tables.topk.mutate(x = _.x + 1)
+    
+    result = con.pipe(add_one)
+    expected = con.tables.topk.mutate(x = _.x + 1)
+    assert result.equals(expected)
