@@ -50,6 +50,7 @@ dependencies:
   - sqlglot >=22.5,<23.1
   - toolz >=0.11
   - trino-python-client >=0.321
+  - openjdk <21
   # geospatial
   - leafmap >=0.29.6,<0.31
   # streaming
