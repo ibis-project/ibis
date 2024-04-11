@@ -207,7 +207,7 @@ For a better development experience see the `conda/mamba` or `nix` setup instruc
 
 ## Code style and formatting
 
-Ibis uses several code linters and have a style guide for documentation, please
+Ibis uses several code linters and has a style guide for documentation, please
 checkout the [style and formatting guide](./03_style.qmd) for instructions on how to set things up.
 
 ## Building the docs
