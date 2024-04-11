@@ -20,7 +20,6 @@ def set_pyspark_database(con, database):
 
 
 class TestConf(BackendTest):
-    supported_to_timestamp_units = {"s"}
     deps = ("pyspark",)
 
     def _load_data(self, **_: Any) -> None:

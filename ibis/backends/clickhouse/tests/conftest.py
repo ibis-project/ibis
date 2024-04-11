@@ -25,7 +25,6 @@ IBIS_TEST_CLICKHOUSE_DB = os.environ.get("IBIS_TEST_DATA_DB", "ibis_testing")
 class TestConf(ServiceBackendTest):
     check_dtype = False
     returned_timestamp_unit = "s"
-    supported_to_timestamp_units = {"s"}
     supports_json = False
     force_sort = True
     rounding_method = "half_to_even"
