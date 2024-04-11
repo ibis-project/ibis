@@ -18,7 +18,6 @@ from ibis.backends.tests.base import BackendTest
 class TestConf(BackendTest):
     """Backend-specific class with information for testing."""
 
-    supports_floating_modulus = False
     returned_timestamp_unit = "us"
     supports_structs = True
     supports_json = True
