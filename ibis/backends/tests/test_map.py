@@ -33,6 +33,13 @@ mark_notyet_snowflake = pytest.mark.notyet(
     "snowflake", reason="map keys must be strings"
 )
 
+mark_notyet_clickhouse_nullable = pytest.mark.notyet(
+    ["clickhouse", "chdb"], reason="nested types can't be null"
+)
+mark_notyet_clickhouse_keytypes = pytest.mark.notyet(
+    ["clickhouse", "chdb"], reason="only supports str,int,bool,timestamp keys"
+)
+
 mark_notimpl_risingwave_hstore = pytest.mark.notimpl(
     ["risingwave"],
     reason="function hstore(character varying[], character varying[]) does not exist",
@@ -193,9 +200,7 @@ keys = pytest.mark.parametrize(
         pytest.param(
             [1.0, 2.0],
             marks=[
-                pytest.mark.notyet(
-                    "clickhouse", reason="only supports str,int,bool,timestamp keys"
-                ),
+                mark_notyet_clickhouse_keytypes,
                 mark_notyet_postgres,
                 mark_notyet_snowflake,
             ],
@@ -209,9 +214,7 @@ keys = pytest.mark.parametrize(
         pytest.param(
             [ibis.date(1, 2, 3), ibis.date(4, 5, 6)],
             marks=[
-                pytest.mark.notyet(
-                    "clickhouse", reason="only supports str,int,bool,timestamp keys"
-                ),
+                mark_notyet_clickhouse_keytypes,
                 pytest.mark.notimpl(
                     ["pandas", "dask"], reason="DateFromYMD isn't implemented"
                 ),
@@ -223,9 +226,7 @@ keys = pytest.mark.parametrize(
         pytest.param(
             [[1, 2], [3, 4]],
             marks=[
-                pytest.mark.notyet(
-                    "clickhouse", reason="only supports str,int,bool,timestamp keys"
-                ),
+                mark_notyet_clickhouse_keytypes,
                 pytest.mark.notyet(["pandas", "dask"]),
                 mark_notyet_postgres,
                 mark_notyet_snowflake,
@@ -235,9 +236,7 @@ keys = pytest.mark.parametrize(
         pytest.param(
             [ibis.struct(dict(a=1)), ibis.struct(dict(a=2))],
             marks=[
-                pytest.mark.notyet(
-                    "clickhouse", reason="only supports str,int,bool,timestamp keys"
-                ),
+                mark_notyet_clickhouse_keytypes,
                 pytest.mark.notyet(["pandas", "dask"]),
                 mark_notyet_postgres,
                 pytest.mark.notyet(
@@ -298,7 +297,7 @@ values = pytest.mark.parametrize(
         pytest.param(
             [[1, 2], [3, 4]],
             marks=[
-                pytest.mark.notyet("clickhouse", reason="nested types can't be null"),
+                mark_notyet_clickhouse_nullable,
                 mark_notyet_postgres,
             ],
             id="array",
@@ -306,7 +305,7 @@ values = pytest.mark.parametrize(
         pytest.param(
             [ibis.struct(dict(a=1)), ibis.struct(dict(a=2))],
             marks=[
-                pytest.mark.notyet("clickhouse", reason="nested types can't be null"),
+                mark_notyet_clickhouse_nullable,
                 mark_notyet_postgres,
             ],
             id="struct",

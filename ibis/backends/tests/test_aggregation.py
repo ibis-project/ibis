@@ -14,6 +14,7 @@ import ibis.expr.datatypes as dt
 from ibis import _
 from ibis import literal as L
 from ibis.backends.tests.errors import (
+    ChdbError,
     ClickHouseDatabaseError,
     ExaQueryError,
     GoogleBadRequest,
@@ -53,6 +54,8 @@ aggregate_test_params = [
                     "postgres",
                     "risingwave",
                     "clickhouse",
+                    "chdb",
+                    "chdb",
                     "impala",
                     "duckdb",
                     "polars",
@@ -85,6 +88,8 @@ aggregate_test_params = [
                 [
                     "bigquery",
                     "clickhouse",
+                    "chdb",
+                    "chdb",
                     "datafusion",
                     "impala",
                     "mysql",
@@ -203,6 +208,8 @@ def test_aggregate_grouped(backend, alltypes, df, result_fn, expected_fn):
     [
         "bigquery",
         "clickhouse",
+        "chdb",
+        "chdb",
         "datafusion",
         "duckdb",
         "impala",
@@ -418,6 +425,8 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
                     [
                         "bigquery",
                         "clickhouse",
+                        "chdb",
+                        "chdb",
                         "datafusion",
                         "impala",
                         "mysql",
@@ -923,8 +932,8 @@ def test_quantile(
                     raises=com.OperationNotDefinedError,
                 ),
                 pytest.mark.notyet(
-                    ["clickhouse"],
-                    raises=(ValueError, AttributeError),
+                    ["clickhouse", "chdb"],
+                    raises=ValueError,
                     reason="ClickHouse only implements `sample` correlation coefficient",
                 ),
                 pytest.mark.notimpl(
@@ -1011,7 +1020,7 @@ def test_quantile(
                     raises=com.OperationNotDefinedError,
                 ),
                 pytest.mark.notyet(
-                    ["clickhouse"],
+                    ["clickhouse", "chdb"],
                     raises=ValueError,
                     reason="ClickHouse only implements `sample` correlation coefficient",
                 ),
@@ -1101,8 +1110,8 @@ def test_median(alltypes, df):
     raises=com.OperationNotDefinedError,
 )
 @pytest.mark.notyet(
-    ["clickhouse"],
-    raises=ClickHouseDatabaseError,
+    ["clickhouse", "chdb"],
+    raises=(ClickHouseDatabaseError, ChdbError),
     reason="doesn't support median of strings",
 )
 @pytest.mark.broken(
@@ -1314,6 +1323,8 @@ def test_topk_filter_op(con, alltypes, df, result_fn, expected_fn):
     [
         "bigquery",
         "clickhouse",
+        "chdb",
+        "chdb",
         "datafusion",
         "duckdb",
         "impala",
@@ -1355,6 +1366,8 @@ def test_aggregate_list_like(backend, alltypes, df, agg_fn):
     [
         "bigquery",
         "clickhouse",
+        "chdb",
+        "chdb",
         "datafusion",
         "duckdb",
         "impala",
@@ -1470,7 +1483,7 @@ def test_grouped_case(backend, con):
 @pytest.mark.notimpl(["exasol"], raises=ExaQueryError)
 @pytest.mark.notyet(["flink"], raises=Py4JJavaError)
 @pytest.mark.notyet(["impala"], raises=ImpalaHiveServer2Error)
-@pytest.mark.notyet(["clickhouse"], raises=ClickHouseDatabaseError)
+@pytest.mark.notyet(["clickhouse", "chdb"], raises=(ClickHouseDatabaseError, ChdbError))
 @pytest.mark.notyet(["druid"], raises=PyDruidProgrammingError)
 @pytest.mark.notyet(["snowflake"], raises=SnowflakeProgrammingError)
 @pytest.mark.notyet(["trino"], raises=TrinoUserError)
