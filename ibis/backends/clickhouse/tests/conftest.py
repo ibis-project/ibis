@@ -26,7 +26,6 @@ class TestConf(ServiceBackendTest):
     check_dtype = False
     returned_timestamp_unit = "s"
     supported_to_timestamp_units = {"s"}
-    supports_floating_modulus = False
     supports_json = False
     force_sort = True
     rounding_method = "half_to_even"
