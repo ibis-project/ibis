@@ -1330,7 +1330,9 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema, UrlFromPath):
         limit: int | str | None = None,
         **_: Any,
     ) -> pa.Table:
-        table = self._to_duckdb_relation(expr, params=params, limit=limit).arrow()
+        table = self._to_duckdb_relation(expr, params=params, limit=limit).arrow(
+            batch_size=0
+        )
         return expr.__pyarrow_result__(table)
 
     def execute(
@@ -1344,7 +1346,9 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema, UrlFromPath):
         import pandas as pd
         import pyarrow.types as pat
 
-        table = self._to_duckdb_relation(expr, params=params, limit=limit).arrow()
+        table = self._to_duckdb_relation(expr, params=params, limit=limit).arrow(
+            batch_size=0
+        )
 
         df = pd.DataFrame(
             {
