@@ -15,7 +15,9 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 import pandas as pd
+import polars as pl
 import pyarrow as pa
+import pyarrow.dataset
 import pytest
 import rich.console
 import toolz
@@ -883,24 +885,76 @@ def test_self_join_memory_table(backend, con, monkeypatch):
 
 
 @pytest.mark.parametrize(
-    ("arg", "func"),
+    "obj, table_name",
     [
-        ([("a", 1.0)], lambda arg: ibis.memtable(arg, columns=["a", "b"])),
-        (pd.DataFrame([("a", 1.0)], columns=["a", "b"]), ibis.memtable),
+        param(
+            ibis.memtable([("a", 1)], columns=["a", "b"]),
+            "memtable",
+            id="memtable_list",
+        ),
+        param(
+            ibis.memtable(pa.table({"a": ["a"], "b": [1]})),
+            "memtable_pa",
+            id="memtable pyarrow",
+        ),
+        param(
+            ibis.memtable(pd.DataFrame({"a": ["a"], "b": [1]})),
+            "memtable_pandas",
+            id="memtable pandas",
+        ),
+        param(
+            ibis.memtable(pl.DataFrame({"a": ["a"], "b": [1]})),
+            "memtable_polars_eager",
+            id="memtable polars dataframe",
+        ),
+        param(
+            ibis.memtable(pl.LazyFrame({"a": ["a"], "b": [1]})),
+            "memtable_polars_lazy",
+            id="memtable polars lazyframe",
+        ),
+        param(pa.table({"a": ["a"], "b": [1]}), "df_arrow", id="pyarrow table"),
+        param(
+            pa.table({"a": ["a"], "b": [1]}).to_reader(),
+            "df_arrow_batch_reader",
+            id="pyarrow_rbr",
+        ),
+        param(
+            pa.table({"a": ["a"], "b": [1]}).to_batches()[0],
+            "df_arrow_single_batch",
+            marks=[pytest.mark.notyet("duckdb")],
+            id="pyarrow_single_batch",
+        ),
+        param(
+            pa.dataset.dataset(pa.table({"a": ["a"], "b": [1]})),
+            "df_arrow_dataset",
+            marks=[pytest.mark.notyet("polars")],
+            id="pyarrow dataset",
+        ),
+        param(pd.DataFrame({"a": ["a"], "b": [1]}), "df_pandas", id="pandas"),
+        param(
+            pl.DataFrame({"a": ["a"], "b": [1]}),
+            "df_polars_eager",
+            id="polars dataframe",
+        ),
+        param(
+            pl.LazyFrame({"a": ["a"], "b": [1]}),
+            "df_polars_lazy",
+            id="polars lazyframe",
+        ),
     ],
-    ids=["python", "pandas"],
 )
 @pytest.mark.notimpl(["druid"])
 @pytest.mark.notimpl(
     ["flink"],
     reason="Flink backend supports creating only TEMPORARY VIEW for in-memory data.",
 )
-def test_create_from_in_memory_table(con, temp_table, arg, func, monkeypatch):
-    monkeypatch.setattr(ibis.options, "default_backend", con)
+def test_create_table_in_memory(con, obj, table_name):
+    t = con.create_table(table_name, obj)
 
-    t = func(arg)
-    con.create_table(temp_table, t)
-    assert temp_table in con.list_tables()
+    result = pa.table({"a": ["a"], "b": [1]})
+    assert table_name in con.list_tables()
+
+    assert result.equals(t.to_pyarrow())
 
 
 def test_default_backend_option(con, monkeypatch):

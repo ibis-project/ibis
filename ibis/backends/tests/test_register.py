@@ -586,32 +586,3 @@ def test_read_csv(con, data_dir, in_table_name, num_diamonds):
         }
     )
     assert table.count().execute() == num_diamonds
-
-
-@pytest.mark.parametrize(
-    "obj, table_name",
-    [
-        (pa.table({"a": ["a"], "b": [1]}), "df_arrow"),
-        (pa.table({"a": ["a"], "b": [1]}).to_reader(), "df_arrow_batch_reader"),
-        param(
-            pa.table({"a": ["a"], "b": [1]}).to_batches()[0],
-            "df_arrow_single_batch",
-            marks=[pytest.mark.notyet("duckdb")],
-        ),
-        param(
-            pa.dataset.dataset(pa.table({"a": ["a"], "b": [1]})),
-            "df_arrow_dataset",
-            marks=[pytest.mark.notyet("polars")],
-        ),
-        (pd.DataFrame({"a": ["a"], "b": [1]}), "df_pandas"),
-        (pl.DataFrame({"a": ["a"], "b": [1]}), "df_polars_eager"),
-        (pl.LazyFrame({"a": ["a"], "b": [1]}), "df_polars_lazy"),
-    ],
-)
-def test_read_in_memory(con, obj, table_name):
-    t = con.read_in_memory(obj, table_name=table_name)
-
-    result = pa.table({"a": ["a"], "b": [1]})
-    assert table_name in con.list_tables()
-
-    assert result.equals(t.to_pyarrow())

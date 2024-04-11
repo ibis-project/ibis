@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from collections.abc import Mapping
+from collections.abc import Iterable, Mapping
 from functools import lru_cache
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
@@ -20,6 +20,7 @@ from ibis.backends.pandas.rewrites import (
 )
 from ibis.backends.polars.compiler import translate
 from ibis.backends.sql.dialects import Polars
+from ibis.common.dispatch import lazy_singledispatch
 from ibis.expr.rewrites import lower_stringslice
 from ibis.formats.polars import PolarsSchema
 from ibis.util import gen_name, normalize_filename, normalize_filenames
@@ -73,6 +74,44 @@ class Backend(BaseBackend, NoUrl):
     def table(self, name: str, _schema: sch.Schema | None = None) -> ir.Table:
         schema = PolarsSchema.to_ibis(self._tables[name].schema)
         return ops.DatabaseTable(name, schema, self).to_expr()
+
+    def read_in_memory(
+        self,
+        source: pd.DataFrame
+        | pa.Table
+        | pa.RecordBatchReader
+        | pa.RecordBatch
+        | pl.DataFrame
+        | pl.LazyFrame,
+        table_name: str | None = None,
+        **kwargs: Any,
+    ) -> ir.Table:
+        """Register an in-memory table object in the current database.
+
+        Supported objects include pandas DataFrame, a Polars
+        DataFrame/LazyFrame, or a PyArrow Table or RecordBatchReader.
+
+        Parameters
+        ----------
+        source
+            The data source.
+        table_name
+            An optional name to use for the created table. This defaults to
+            a sequentially generated name.
+        kwargs
+            Keyword arguments to forward to a memory-format-specific reader function.
+
+        Returns
+        -------
+        ir.Table
+            The just-registered table
+
+        """
+        table_name = table_name or gen_name("read_in_memory")
+
+        _read_in_memory(source, table_name, self, **kwargs)
+
+        return self.table(table_name)
 
     def register(
         self,
@@ -293,6 +332,7 @@ class Backend(BaseBackend, NoUrl):
 
         """
         table_name = table_name or gen_name("read_in_memory")
+
         self._add_table(table_name, pl.from_pandas(source, **kwargs).lazy())
         return self.table(table_name)
 
@@ -347,16 +387,20 @@ class Backend(BaseBackend, NoUrl):
     def create_table(
         self,
         name: str,
-        obj: pd.DataFrame | pa.Table | ir.Table | None = None,
+        obj: ir.Table
+        | pd.DataFrame
+        | pa.Table
+        | pa.RecordBatchReader
+        | pa.RecordBatch
+        | pl.DataFrame
+        | pl.LazyFrame
+        | None = None,
         *,
         schema: ibis.Schema | None = None,
         database: str | None = None,
         temp: bool | None = None,
         overwrite: bool = False,
     ) -> ir.Table:
-        if schema is not None and obj is None:
-            obj = pl.LazyFrame([], schema=PolarsSchema.from_ibis(schema))
-
         if database is not None:
             raise com.IbisError(
                 "Passing `database` to the Polars backend create_table method has no "
@@ -374,13 +418,12 @@ class Backend(BaseBackend, NoUrl):
                 f"Table {name} already exists. Use overwrite=True to clobber existing tables"
             )
 
-        if isinstance(obj, ir.Table):
-            obj = self.to_pyarrow(obj)
+        if schema is not None and obj is None:
+            obj = pl.LazyFrame([], schema=PolarsSchema.from_ibis(schema))
+            self._add_table(name, obj)
+        else:
+            _read_in_memory(obj, name, self)
 
-        if not isinstance(obj, (pl.DataFrame, pl.LazyFrame)):
-            obj = pl.LazyFrame(obj)
-
-        self._add_table(name, obj)
         return self.table(name)
 
     def create_view(
@@ -553,3 +596,34 @@ class Backend(BaseBackend, NoUrl):
 
     def _clean_up_cached_table(self, op):
         self._remove_table(op.name)
+
+
+@lazy_singledispatch
+def _read_in_memory(source: Any, table_name: str, _conn: Backend, **kwargs: Any):
+    raise NotImplementedError(
+        f"The `{_conn.name}` backend currently does not support "
+        f"reading data of {type(source)!r}"
+    )
+
+
+@_read_in_memory.register("ibis.expr.types.Table")
+def _table(source, table_name, _conn, **kwargs: Any):
+    _conn._add_table(table_name, source.to_polars())
+
+
+@_read_in_memory.register("polars.DataFrame")
+@_read_in_memory.register("polars.LazyFrame")
+def _polars(source, table_name, _conn, **kwargs: Any):
+    _conn._add_table(table_name, source)
+
+
+@_read_in_memory.register("pyarrow.Table")
+@_read_in_memory.register("pyarrow.RecordBatchReader")
+@_read_in_memory.register("pyarrow.RecordBatch")
+def _pyarrow(source, table_name, _conn, **kwargs: Any):
+    _conn._add_table(table_name, pl.from_arrow(source, **kwargs).lazy())
+
+
+@_read_in_memory.register("pandas.DataFrame")
+def _pandas(source: pd.DataFrame, table_name, _conn, **kwargs: Any):
+    _conn._add_table(table_name, pl.from_pandas(source, **kwargs).lazy())
