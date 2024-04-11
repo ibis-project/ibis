@@ -1,4 +1,4 @@
-Release notes
+---
 ---
 
 ## [8.0.0](https://github.com/ibis-project/ibis/compare/7.2.0...8.0.0) (2024-02-05)
@@ -2923,7 +2923,7 @@ behavior from UUID datatypes will need to add an explicit cast first.
 
 * **setup.py:** set the correct version number for 2.1.0 ([f3d267b](https://github.com/ibis-project/ibis/commit/f3d267b96b9f14d3616c17b8f7bdeb8d0a6fc2cf))
 
-# [2.1.0](https://github.com/ibis-project/ibis/compare/2.0.0...2.1.0) (2022-01-12)
+## [2.1.0](https://github.com/ibis-project/ibis/compare/2.0.0...2.1.0) (2022-01-12)
 
 
 ### Bug Fixes
@@ -2956,9 +2956,9 @@ behavior from UUID datatypes will need to add an explicit cast first.
 
 * "ci: install gdal for fiona" ([8503361](https://github.com/ibis-project/ibis/commit/850336100a271ee2b6043b92a1ceeb1d1d7b30f2))
 
-# [2.0.0](https://github.com/ibis-project/ibis/releases/tag/2.0.0) (2021-10-06)
+## [2.0.0](https://github.com/ibis-project/ibis/compare/1.4.0...2.0.0) (2021-10-06)
 
-## Features
+### Features
 
 * Serialization-deserialization of Node via pickle is now byte compatible between different processes ([#2938](https://github.com/ibis-project/ibis/issues/2938))
 * Support joining on different columns in ClickHouse backend ([#2916](https://github.com/ibis-project/ibis/issues/2916))
@@ -2984,7 +2984,7 @@ behavior from UUID datatypes will need to add an explicit cast first.
 * Added support for case/when in PySpark backend ([#2610](https://github.com/ibis-project/ibis/issues/2610))
 * Add support for np.array as literals for backends that already support lists as literals ([#2603](https://github.com/ibis-project/ibis/issues/2603))
 
-## Bugs
+### Bugs
 
 * Fix data races in impala connection pool accounting ([#2991](https://github.com/ibis-project/ibis/issues/2991))
 * Fix null literal compilation in the Clickhouse backend ([#2985](https://github.com/ibis-project/ibis/issues/2985))
@@ -3010,7 +3010,7 @@ behavior from UUID datatypes will need to add an explicit cast first.
 * Fixes binary data type translation into BigQuery bytes data type ([#2354](https://github.com/ibis-project/ibis/issues/2354))
 * Make StructValue picklable ([#2577](https://github.com/ibis-project/ibis/issues/2577))
 
-## Support
+### Support
 
 * Improvement of the backend API. The former `Client` subclasses have been replaced by a `Backend` class that must subclass `ibis.backends.base.BaseBackend`. The `BaseBackend` class contains abstract methods for the minimum subset of methods that backends must implement, and their signatures have been standardized across backends. The Ibis compiler has been refactored, and backends don't need to implement all compiler classes anymore if the default works for them. Only a subclass of `ibis.backends.base.sql.compiler.Compiler` is now required. Backends now need to register themselves as entry points. ([#2678](https://github.com/ibis-project/ibis/issues/2678))
 * Deprecate `exists_table(table)` in favor of `table in list_tables()` ([#2905](https://github.com/ibis-project/ibis/issues/2905))
@@ -3028,9 +3028,9 @@ behavior from UUID datatypes will need to add an explicit cast first.
 * Remove deprecated `ibis.HDFS`, `ibis.WebHDFS` and `ibis.hdfs_connect` ([#2505](https://github.com/ibis-project/ibis/issues/2505))
 
 
-# [1.4.0](https://github.com/ibis-project/ibis/releases/tag/1.4.0) (2020-11-07)
+## [1.4.0](https://github.com/ibis-project/ibis/compare/1.3.0...1.4.0) (2020-11-07)
 
-## Features
+### Features
 
 * Add Struct.from_dict ([#2514](https://github.com/ibis-project/ibis/issues/2514))
 * Add hash and hashbytes support for BigQuery backend ([#2310](https://github.com/ibis-project/ibis/issues/2310))
@@ -3073,7 +3073,7 @@ behavior from UUID datatypes will need to add an explicit cast first.
 * Create ExtractDayOfYear operation and add its support to Clickhouse, CSV, MySQL, OmniSciDB, pandas, Parquet, PostgreSQL, PySpark, SQLite and Spark ([#2173](https://github.com/ibis-project/ibis/issues/2173))
 * Implementations of Log Log2 Log10 for OmniSciDB backend ([#2095](https://github.com/ibis-project/ibis/issues/2095))
 
-## Bugs
+### Bugs
 
 * Table expressions do not recognize inet datatype (Postgres backend) ([#2462](https://github.com/ibis-project/ibis/issues/2462))
 * Table expressions do not recognize macaddr datatype (Postgres backend) ([#2461](https://github.com/ibis-project/ibis/issues/2461))
@@ -3097,7 +3097,7 @@ behavior from UUID datatypes will need to add an explicit cast first.
 * Fix millisecond issue for OmniSciDB :issue:`2167`, MySQL :issue:`2169`, PostgreSQL :issue:`2166`, pandas :issue:`2168`, BigQuery :issue:`2273` backends ([#2170](https://github.com/ibis-project/ibis/issues/2170))
 * [OmniSciDB] Fix TopK when used as filter ([#2134](https://github.com/ibis-project/ibis/issues/2134))
 
-## Support
+### Support
 
 * Move `ibis.HDFS`, `ibis.WebHDFS` and `ibis.hdfs_connect` to `ibis.impala.*` ([#2497](https://github.com/ibis-project/ibis/issues/2497))
 * Drop support to Python 3.6 ([#2288](https://github.com/ibis-project/ibis/issues/2288))
@@ -3110,9 +3110,9 @@ behavior from UUID datatypes will need to add an explicit cast first.
 * Enabled cumulative ops support for OmniSciDB ([#2113](https://github.com/ibis-project/ibis/issues/2113))
 
 
-# [1.3.0](https://github.com/ibis-project/ibis/releases/tag/1.3.0) (2020-02-27)
+## [1.3.0](https://github.com/ibis-project/ibis/compare/1.2.0...1.3.0) (2020-02-27)
 
-## Features
+### Features
 
 * Improve many arguments UDF performance in pandas backend. ([#2071](https://github.com/ibis-project/ibis/issues/2071))
 * Add DenseRank, RowNumber, MinRank, Count, PercentRank/CumeDist window operations to OmniSciDB ([#1976](https://github.com/ibis-project/ibis/issues/1976))
@@ -3144,7 +3144,7 @@ behavior from UUID datatypes will need to add an explicit cast first.
 * Spark client ([#1807](https://github.com/ibis-project/ibis/issues/1807))
 * Use pandas rolling apply to implement rows_with_max_lookback ([#1868](https://github.com/ibis-project/ibis/issues/1868))
 
-## Bugs
+### Bugs
 
 * Pin "clickhouse-driver" to ">=0.1.3" ([#2089](https://github.com/ibis-project/ibis/issues/2089))
 * Fix load data stage for Linux CI ([#2069](https://github.com/ibis-project/ibis/issues/2069))
@@ -3172,7 +3172,7 @@ behavior from UUID datatypes will need to add an explicit cast first.
 * Remove -x from pytest call in linux CI ([#1869](https://github.com/ibis-project/ibis/issues/1869))
 * Fix return type of Struct.from_tuples ([#1867](https://github.com/ibis-project/ibis/issues/1867))
 
-## Support
+### Support
 
 * Add support to Python 3.8 ([#2066](https://github.com/ibis-project/ibis/issues/2066))
 * Pin back version of isort ([#2079](https://github.com/ibis-project/ibis/issues/2079))
@@ -3224,16 +3224,16 @@ behavior from UUID datatypes will need to add an explicit cast first.
 * Move CI pipelines to Azure ([#1856](https://github.com/ibis-project/ibis/issues/1856))
 
 
-# [1.2.0](https://github.com/ibis-project/ibis/releases/tag/1.2.0) (2019-06-24)
+## [1.2.0](https://github.com/ibis-project/ibis/compare/1.1.0...1.2.0) (2019-06-24)
 
-## Features
+### Features
 
 * Add new geospatial functions to OmniSciDB backend ([#1836](https://github.com/ibis-project/ibis/issues/1836))
 * allow pandas timedelta in rows_with_max_lookback ([#1838](https://github.com/ibis-project/ibis/issues/1838))
 * Accept rows-with-max-lookback as preceding parameter ([#1825](https://github.com/ibis-project/ibis/issues/1825))
 * PostGIS support ([#1787](https://github.com/ibis-project/ibis/issues/1787))
 
-## Bugs
+### Bugs
 
 * Fix call to psql causing failing CI ([#1855](https://github.com/ibis-project/ibis/issues/1855))
 * Fix nested array literal repr ([#1851](https://github.com/ibis-project/ibis/issues/1851))
@@ -3241,7 +3241,7 @@ behavior from UUID datatypes will need to add an explicit cast first.
 * Add max_lookback to window replace and combine functions ([#1843](https://github.com/ibis-project/ibis/issues/1843))
 * Partially revert #1758 ([#1837](https://github.com/ibis-project/ibis/issues/1837))
 
-## Support
+### Support
 
 * Skip SQLAlchemy backend tests in connect method in backends.py ([#1847](https://github.com/ibis-project/ibis/issues/1847))
 * Validate order_by when using rows_with_max_lookback window ([#1848](https://github.com/ibis-project/ibis/issues/1848))
@@ -3251,9 +3251,9 @@ behavior from UUID datatypes will need to add an explicit cast first.
 * Allow passing a branch to ci/feedstock.py ([#1826](https://github.com/ibis-project/ibis/issues/1826))
 
 
-# [1.1.0](https://github.com/ibis-project/ibis/releases/tag/1.1.0) (2019-06-09)
+## [1.1.0](https://github.com/ibis-project/ibis/compare/1.0.0...1.1.0) (2019-06-09)
 
-## Features
+### Features
 
 * Conslidate trailing window functions ([#1809](https://github.com/ibis-project/ibis/issues/1809))
 * Call to_interval when casting integers to intervals ([#1766](https://github.com/ibis-project/ibis/issues/1766))
@@ -3268,7 +3268,7 @@ behavior from UUID datatypes will need to add an explicit cast first.
 * is_computable_arg dispatcher ([#1743](https://github.com/ibis-project/ibis/issues/1743))
 * Added float32 and geospatial types for create table from schema ([#1753](https://github.com/ibis-project/ibis/issues/1753))
 
-## Bugs
+### Bugs
 
 * Fix group_concat test and implementations ([#1819](https://github.com/ibis-project/ibis/issues/1819))
 * Fix failing strftime tests on Python 3.7 ([#1818](https://github.com/ibis-project/ibis/issues/1818))
@@ -3283,7 +3283,7 @@ behavior from UUID datatypes will need to add an explicit cast first.
 * Fix preceding and following with ``None`` ([#1765](https://github.com/ibis-project/ibis/issues/1765))
 * PostgreSQL interval type not recognized ([#1661](https://github.com/ibis-project/ibis/issues/1661))
 
-## Support
+### Support
 
 * Remove decorator hacks and add custom markers ([#1820](https://github.com/ibis-project/ibis/issues/1820))
 * Add development deps to setup.py ([#1814](https://github.com/ibis-project/ibis/issues/1814))
@@ -3301,10 +3301,9 @@ behavior from UUID datatypes will need to add an explicit cast first.
 * Re-enable CI for building step ([#1700](https://github.com/ibis-project/ibis/issues/1700))
 * Update README reference to MapD to say OmniSci ([#1749](https://github.com/ibis-project/ibis/issues/1749))
 
+## [1.0.0](https://github.com/ibis-project/ibis/compare/v0.14.0...1.0.0) (2019-03-26)
 
-# [1.0.0](https://github.com/ibis-project/ibis/releases/tag/1.0.0) (2019-03-26)
-
-## Features
+### Features
 
 * Add black as a pre-commit hook ([#1735](https://github.com/ibis-project/ibis/issues/1735))
 * Add support for the arbitrary aggregate in the mapd backend ([#1680](https://github.com/ibis-project/ibis/issues/1680))
@@ -3333,7 +3332,7 @@ behavior from UUID datatypes will need to add an explicit cast first.
 * Make ibis node instances hashable ([#1611](https://github.com/ibis-project/ibis/issues/1611))
 * Add ``range_window`` and ``trailing_range_window`` to docs ([#1608](https://github.com/ibis-project/ibis/issues/1608))
 
-## Bugs
+### Bugs
 
 * Make ``dev/merge-pr.py`` script handle PR branches ([#1745](https://github.com/ibis-project/ibis/issues/1745))
 * Fix ``NULLIF`` implementation for the pandas backend ([#1742](https://github.com/ibis-project/ibis/issues/1742))
@@ -3354,7 +3353,7 @@ behavior from UUID datatypes will need to add an explicit cast first.
 * Make sure we cast when NULL is else in CASE expressions ([#1651](https://github.com/ibis-project/ibis/issues/1651))
 * Fix equality ([#1600](https://github.com/ibis-project/ibis/issues/1600))
 
-## Support
+### Support
 
 * Do not build universal wheels ([#1748](https://github.com/ibis-project/ibis/issues/1748))
 * Remove tag prefix from versioneer ([#1747](https://github.com/ibis-project/ibis/issues/1747))
@@ -3377,13 +3376,13 @@ behavior from UUID datatypes will need to add an explicit cast first.
 * Set up CI with Azure Pipelines ([#1640](https://github.com/ibis-project/ibis/issues/1640))
 * Fix conda builds ([#1609](https://github.com/ibis-project/ibis/issues/1609))
 
-# v0.14.0 (2018-08-23)
+## [0.14](https://github.com/ibis-project/ibis/compare/v0.13.0...v0.14.0) (2018-08-23)
 
 This release brings refactored, more composable core components and rule
 system to ibis. We also focused quite heavily on the BigQuery backend
 this release.
 
-## New Features
+### New Features
 
 -   Allow keyword arguments in Node subclasses ([#968](https://github.com/ibis-project/ibis/issues/968))
 -   Splat args into Node subclasses instead of requiring a list
@@ -3418,7 +3417,7 @@ this release.
 -   Implement `TimestampNow` for BigQuery and pandas
     ([#1575](https://github.com/ibis-project/ibis/issues/1575))
 
-## Bug Fixes
+### Bug Fixes
 
 -   Nullable property is now propagated through value types
     ([#1289](https://github.com/ibis-project/ibis/issues/1289))
@@ -3437,7 +3436,7 @@ this release.
 -   Fix output type for some decimal operations
     ([#1541](https://github.com/ibis-project/ibis/issues/1541))
 
-## API Changes
+### API Changes
 
 -   The previous, private rules API has been rewritten
     ([#1366](https://github.com/ibis-project/ibis/issues/1366))
@@ -3449,21 +3448,21 @@ this release.
     ([#1390](https://github.com/ibis-project/ibis/issues/1390))
 -   Add `tolerance` parameter to `asof_join` ([#1443](https://github.com/ibis-project/ibis/issues/1443))
 
-# v0.13.0 (2018-03-30)
+## [0.13](https://github.com/ibis-project/ibis/compare/v0.12.0...v0.13.0) (2018-03-30)
 
 This release brings new backends, including support for executing
 against files, MySQL, pandas user defined scalar and aggregations along
 with a number of bug fixes and reliability enhancements. We recommend
 that all users upgrade from earlier versions of Ibis.
 
-## New Backends
+### New Backends
 
 -   File Support for CSV & HDF5 ([#1165](https://github.com/ibis-project/ibis/issues/1165), [#1194](https://github.com/ibis-project/ibis/issues/1194))
 -   File Support for Parquet Format ([#1175](https://github.com/ibis-project/ibis/issues/1175), [#1194](https://github.com/ibis-project/ibis/issues/1194))
 -   Experimental support for `MySQL` thanks to \@kszucs
     ([#1224](https://github.com/ibis-project/ibis/issues/1224))
 
-## New Features
+### New Features
 
 -   Support for Unsigned Integer Types ([#1194](https://github.com/ibis-project/ibis/issues/1194))
 -   Support for Interval types and expressions with support for
@@ -3512,7 +3511,7 @@ that all users upgrade from earlier versions of Ibis.
     [#1047](https://github.com/ibis-project/ibis/issues/1047))
 -   Design documentation for ibis ([#1351](https://github.com/ibis-project/ibis/issues/1351))
 
-## Bug Fixes
+### Bug Fixes
 
 -   Unbound parameters were failing in the simple case of a
     `ibis.expr.types.TableExpr.mutate`
@@ -3527,27 +3526,27 @@ that all users upgrade from earlier versions of Ibis.
     `ibis.expr.operations.NotContains`.
 -   Support `REGEX_EXTRACT` in PostgreSQL 10 ([#1276](https://github.com/ibis-project/ibis/issues/1276), [#1278](https://github.com/ibis-project/ibis/issues/1278))
 
-## API Changes
+### API Changes
 
 -   Fixing [#1378](https://github.com/ibis-project/ibis/issues/1378) required the removal
     of the `name` parameter to the `ibis.param` function. Use the
     `ibis.expr.types.Expr.name` method
     instead.
 
-# v0.12.0 (2017-10-28)
+## [0.12](https://github.com/ibis-project/ibis/compare/v0.11.0...v0.12.0) (2017-10-28)
 
 This release brings Clickhouse and BigQuery SQL support along with a
 number of bug fixes and reliability enhancements. We recommend that all
 users upgrade from earlier versions of Ibis.
 
-## New Backends
+### New Backends
 
 -   BigQuery backend ([#1170](https://github.com/ibis-project/ibis/issues/1170)), thanks
     to \@tsdlovell.
 -   Clickhouse backend ([#1127](https://github.com/ibis-project/ibis/issues/1127)),
     thanks to \@kszucs.
 
-## New Features
+### New Features
 
 -   Add support for `Binary` data type ([#1183](https://github.com/ibis-project/ibis/issues/1183))
 -   Allow users of the BigQuery client to define their own API proxy
@@ -3584,7 +3583,7 @@ users upgrade from earlier versions of Ibis.
     ([#1061](https://github.com/ibis-project/ibis/issues/1061))
 -   Add a pre_execute step in pandas backend ([#1189](https://github.com/ibis-project/ibis/issues/1189))
 
-## Bug Fixes
+### Bug Fixes
 
 -   Remove global expression caching to ensure repeatable code
     generation ([#1179](https://github.com/ibis-project/ibis/issues/1179),
@@ -3613,7 +3612,7 @@ users upgrade from earlier versions of Ibis.
 -   Memoization should include expression name where available
     ([#1080](https://github.com/ibis-project/ibis/issues/1080))
 
-## Performance Enhancements
+### Performance Enhancements
 
 -   Speed up imports ([#1074](https://github.com/ibis-project/ibis/issues/1074))
 -   Fix execution perf of groupby and selection
@@ -3622,7 +3621,7 @@ users upgrade from earlier versions of Ibis.
     ([#1070](https://github.com/ibis-project/ibis/issues/1070))
 -   Speed up pandas groupby ([#1067](https://github.com/ibis-project/ibis/issues/1067))
 
-## Contributors
+### Contributors
 
 The following people contributed to the 0.12.0 release :
 
@@ -3636,13 +3635,13 @@ The following people contributed to the 0.12.0 release :
      1  dlovell
      1  kwangin
 
-# 0.11.0 (2017-06-28)
+## [0.11](https://github.com/ibis-project/ibis/compare/v0.10.0...v0.11.0) (2017-06-28)
 
 This release brings initial pandas backend support along with a number
 of bug fixes and reliability enhancements. We recommend that all users
 upgrade from earlier versions of Ibis.
 
-## New Features
+### New Features
 
 -   Experimental pandas backend to allow execution of ibis expression
     against pandas DataFrames
@@ -3660,7 +3659,7 @@ upgrade from earlier versions of Ibis.
 -   Added a `type` parameter to `ibis.literal` to allow user
     specification of literal types
 
-## Bug Fixes
+### Bug Fixes
 
 -   Fix broken conda recipe
 -   Fix incorrectly typed fillna operation
@@ -3669,14 +3668,14 @@ upgrade from earlier versions of Ibis.
 -   Fix equality of nested types and construction of nested types when
     the value type is specified as a string
 
-## API Changes
+### API Changes
 
 -   Deprecate passing integer values to the `ibis.timestamp` literal
     constructor, this will be removed in 0.12.0
 -   Added the `admin_timeout` parameter to the kudu client `connect`
     function
 
-## Contributors
+### Contributors
 
     $ git shortlog --summary --numbered v0.10.0..v0.11.0
 
@@ -3686,19 +3685,19 @@ upgrade from earlier versions of Ibis.
        1 Tarun Gogineni
        1 Wes McKinney
 
-# 0.8 (2016-05-19)
+## [0.8](https://github.com/ibis-project/ibis/compare/v0.7.0...v0.8.0) (2016-05-19)
 
 This release brings initial PostgreSQL backend support along with a
 number of critical bug fixes and usability improvements. As several
 correctness bugs with the SQL compiler were fixed, we recommend that all
 users upgrade from earlier versions of Ibis.
 
-## New Features
+### New Features
 
 -   Initial PostgreSQL backend contributed by Phillip Cloud.
 -   Add `groupby` as an alias for `group_by` to table expressions
 
-## Bug Fixes
+### Bug Fixes
 
 -   Fix an expression error when filtering based on a new field
 -   Fix Impala\'s SQL compilation of using `OR` with compound filters
@@ -3707,17 +3706,17 @@ users upgrade from earlier versions of Ibis.
 -   Fix CTE (`WITH`) extraction inside `UNION ALL` expressions.
 -   Fix `ImportError` on Python 2 when `mock` library not installed
 
-## API Changes
+### API Changes
 
 -   The deprecated `ibis.impala_connect` and `ibis.make_client` APIs
     have been removed
 
-# 0.7 (2016-03-16)
+## [0.7](https://github.com/ibis-project/ibis/compare/v0.6.0...v0.7.0) (2016-03-16)
 
 This release brings initial Kudu-Impala integration and improved Impala
 and SQLite support, along with several critical bug fixes.
 
-## New Features
+### New Features
 
 -   Apache Kudu (incubating) integration for Impala users. Will
     add some documentation here when possible.
@@ -3758,7 +3757,7 @@ FROM (
   ) t1
 ```
 
-## Bug Fixes
+### Bug Fixes
 
 -   `CHAR(n)` and `VARCHAR(n)` Impala types now correctly map to Ibis
     string expressions
@@ -3776,7 +3775,7 @@ FROM (
 -   Fix handling of fully-materialized joins (aka `select *` joins) in
     SQLAlchemy / SQLite.
 
-## Contributors
+### Contributors
 
 Thank you to all who contributed patches to this release.
 
@@ -3785,7 +3784,7 @@ Thank you to all who contributed patches to this release.
          1 Uri Laserson
          1 Kristopher Overholt
 
-# 0.6 (2015-12-01)
+## [0.6](https://github.com/ibis-project/ibis/compare/v0.5.0...v0.6.0) (2015-12-01)
 
 This release brings expanded pandas and Impala integration, including
 support for managing partitioned tables in Impala. See the new
@@ -3798,7 +3797,7 @@ also was written since the 0.5 release.
 This release also includes bug fixes affecting generated SQL
 correctness. All users should upgrade as soon as possible.
 
-## New Features
+### New Features
 
 -   New integrated Impala functionality. See `Ibis for Impala Users` for more details on
     these things.
@@ -3837,11 +3836,11 @@ correctness. All users should upgrade as soon as possible.
 -   Passing `limit=None` to the `execute` method on expressions disables
     any default row limits.
 
-## API Changes
+### API Changes
 
 -   `ImpalaTable.rename` no longer mutates the calling table expression.
 
-## Contributors
+### Contributors
 
     $ git log v0.5.0..v0.6.0 --pretty=format:%aN | sort | uniq -c | sort -rn
     46 Wes McKinney
@@ -3850,13 +3849,13 @@ correctness. All users should upgrade as soon as possible.
      1 mariusvniekerk
      1 Kristopher Overholt
 
-# 0.5 (2015-09-10)
+## [0.5](https://github.com/ibis-project/ibis/compare/v0.4.0...v0.5.0) (2015-09-10)
 
 Highlights in this release are the SQLite, Python 3, Impala UDA support,
 and an asynchronous execution API. There are also many usability
 improvements, bug fixes, and other new features.
 
-## New Features
+### New Features
 
 -   SQLite client and built-in function support
 -   Ibis now supports Python 3.4 as well as 2.6 and 2.7
@@ -3879,21 +3878,21 @@ improvements, bug fixes, and other new features.
     compilation and ability to compile (since many operations are
     unavailable in SQLite, for example)
 
-## API Changes
+### API Changes
 
 -   Impala Ibis client creation now uses only `ibis.impala.connect`, and
     `ibis.make_client` has been deprecated
 
-## Contributors
+### Contributors
 
     $ git log v0.4.0..v0.5.0 --pretty=format:%aN | sort | uniq -c | sort -rn
           55 Wes McKinney
           9 Uri Laserson
           1 Kristopher Overholt
 
-# 0.4 (2015-08-14)
+## [0.4](https://github.com/ibis-project/ibis/compare/v0.3.0...v0.4.0) (2015-08-14)
 
-## New Features
+### New Features
 
 -   Add tooling to use Impala C++ scalar UDFs within Ibis (#262, #195)
 -   Support and testing for Kerberos-enabled secure HDFS clusters
@@ -3923,7 +3922,7 @@ improvements, bug fixes, and other new features.
     query to cluster, for better usability.
 -   Add conda installation recipes
 
-## Contributors
+### Contributors
 
     $ git log v0.3.0..v0.4.0 --pretty=format:%aN | sort | uniq -c | sort -rn
          38 Wes McKinney
@@ -3932,11 +3931,11 @@ improvements, bug fixes, and other new features.
           2 Kristopher Overholt
           1 Marius van Niekerk
 
-# 0.3 (2015-07-20)
+## [0.3](https://github.com/ibis-project/ibis/compare/v0.2.0...v0.3.0) (2015-07-20)
 
 First public release. See https://ibis-project.org for more.
 
-## New Features
+### New Features
 
 -   Implement window / analytic function support
 -   Enable non-equijoins (join clauses with operations other than `==`).
@@ -3960,7 +3959,7 @@ First public release. See https://ibis-project.org for more.
 -   Add an internal operation type signature API to enhance developer
     productivity.
 
-## Contributors
+### Contributors
 
     $ git log v0.2.0..v0.3.0 --pretty=format:%aN | sort | uniq -c | sort -rn
          59 Wes McKinney
@@ -3968,9 +3967,9 @@ First public release. See https://ibis-project.org for more.
           4 Isaac Hodes
           2 Meghana Vuyyuru
 
-# 0.2 (2015-06-16)
+## [0.2](https://github.com/ibis-project/ibis/compare/v0.1.0...v0.2.0) (2015-06-16)
 
-## New Features
+### New Features
 
 -   `insert` method on Ibis client for inserting data into existing
     tables.
@@ -4012,23 +4011,23 @@ First public release. See https://ibis-project.org for more.
 -   Add `add`, `sub`, and other explicit arithmetic methods to value
     expressions
 
-## API Changes
+### API Changes
 
 -   New Ibis client and Impala connection workflow. Client now combined
     from an Impala connection and an optional HDFS connection
 
-## Bug Fixes
+### Bug Fixes
 
 -   Numerous expression API bug fixes and rough edges fixed
 
-## Contributors
+### Contributors
 
     $ git log v0.1.0..v0.2.0 --pretty=format:%aN | sort | uniq -c | sort -rn
          71 Wes McKinney
           1 Juliet Hougland
           1 Isaac Hodes
 
-# 0.1 (2015-03-26)
+## [0.1](https://github.com/ibis-project/ibis/tree/v0.1.0) (2015-03-26)
 
 First Ibis release.
 

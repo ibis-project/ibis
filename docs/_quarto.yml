@@ -94,7 +94,7 @@ website:
       - sidebar:reference
     right:
       - posts.qmd
-      - release_notes.md
+      - release_notes.qmd
       - sidebar:contribute
 
   sidebar:

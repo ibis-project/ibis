@@ -35,8 +35,8 @@ module.exports = {
     [
       "@semantic-release/changelog",
       {
-        changelogTitle: "Release notes\n---",
-        changelogFile: "docs/release_notes.md"
+        changelogTitle: "---\n---",
+        changelogFile: "docs/release_notes_generated.qmd"
       }
     ],
     [
@@ -80,7 +80,11 @@ module.exports = {
     [
       "@semantic-release/git",
       {
-        assets: ["pyproject.toml", "docs/release_notes.md", "ibis/__init__.py"],
+        assets: [
+          "pyproject.toml",
+          "docs/release_notes_generated.qmd",
+          "ibis/__init__.py"
+        ],
         message: "chore(release): ${nextRelease.version}"
       }
     ]
