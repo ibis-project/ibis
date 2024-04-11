@@ -50,23 +50,8 @@ jobs:
       - name: check consistency with pyproject.toml
         run: poetry check --lock
 
-      - name: check that the `all` extra matches the current lock file
-        run: |
-          set -euo pipefail
-
-          js="$(mktemp --suffix=.pyproject.json)"
-          docker run --rm -i sclevine/yj -tj < pyproject.toml > "$js"
-
-          old="$(mktemp --suffix=.old)"
-          jq -rM '.tool.poetry.extras.all | unique | sort' < "$js" > "$old"
-
-          new="$(mktemp --suffix=.new)"
-          jq -rM '.tool.poetry.extras | with_entries(select(.key != "all")) | [.[]] | add | unique | sort' < "$js" > "$new"
-
-          diff --unified "$old" "$new"
-
       - name: generate requirements-dev.txt
-        run: poetry export --extras all --with dev --with test --with docs --without-hashes --no-ansi > requirements-dev.txt
+        run: poetry export --all-extras --with dev --with test --with docs --without-hashes --no-ansi > requirements-dev.txt
 
       - name: check requirements-dev.txt
         run: git diff --exit-code requirements-dev.txt

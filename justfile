@@ -16,7 +16,7 @@ lock:
         exit 1
     fi
     poetry lock --no-update
-    poetry export --extras all --with dev --with test --with docs --without-hashes --no-ansi > requirements-dev.txt
+    poetry export --all-extras --with dev --with test --with docs --without-hashes --no-ansi > requirements-dev.txt
 
 # show all backends
 @list-backends:

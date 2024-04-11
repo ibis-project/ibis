@@ -92,13 +92,4 @@ in
       python "$PWD/ibis/examples/gen_registry.py" "''${@}"
     '';
   };
-
-  gen-all-extras = pkgs.writeShellApplication {
-    name = "gen-all-extras";
-    runtimeInputs = with pkgs; [ yj jq ];
-    text = ''
-      echo -n 'all = '
-      yj -tj < pyproject.toml | jq -rM '.tool.poetry.extras | with_entries(select(.key != "all")) | [.[]] | add | unique | sort'
-    '';
-  };
 }
