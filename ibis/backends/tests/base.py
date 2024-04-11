@@ -38,8 +38,6 @@ class BackendTest(abc.ABC):
     "Whether backend supports Arrays / Lists"
     supports_arrays_outside_of_select: bool = supports_arrays
     "Whether backend supports Arrays / Lists outside of Select Statements"
-    supports_window_operations: bool = True
-    "Whether backend supports Window Operations"
     supports_divide_by_zero: bool = False
     "Whether backend supports division by zero"
     returned_timestamp_unit: str = "us"

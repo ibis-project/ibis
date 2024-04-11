@@ -34,7 +34,6 @@ oracledb.defaults.fetch_decimals = True
 
 class TestConf(ServiceBackendTest):
     check_dtype = False
-    supports_window_operations = False
     returned_timestamp_unit = "s"
     supports_arrays = False
     supports_arrays_outside_of_select = False
