@@ -931,7 +931,7 @@ class BaseBackend(abc.ABC, _FileIOHandler):
             The list of the table names that match the pattern `like`.
 
         """
-    
+
     def pipe(self, func: Callable, *args, **kwargs):
         return func(self, *args, **kwargs)
 
