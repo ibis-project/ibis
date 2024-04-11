@@ -36,8 +36,6 @@ class BackendTest(abc.ABC):
     "Check that column name matches when comparing Pandas Series"
     supports_arrays: bool = True
     "Whether backend supports Arrays / Lists"
-    supports_divide_by_zero: bool = False
-    "Whether backend supports division by zero"
     returned_timestamp_unit: str = "us"
     supported_to_timestamp_units = {"s", "ms", "us"}
     supports_floating_modulus: bool = True
