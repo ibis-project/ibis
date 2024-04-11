@@ -24,7 +24,7 @@ class TestConf(ServiceBackendTest):
     # MSSQL has the same rounding behavior as postgres
     check_dtype = False
     returned_timestamp_unit = "s"
-    supports_arrays_outside_of_select = supports_arrays = False
+    supports_arrays = False
     supports_structs = False
     supports_json = False
     rounding_method = "half_to_even"

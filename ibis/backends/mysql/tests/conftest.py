@@ -24,7 +24,7 @@ class TestConf(ServiceBackendTest):
     # mysql has the same rounding behavior as postgres
     check_dtype = False
     returned_timestamp_unit = "s"
-    supports_arrays = supports_arrays_outside_of_select = False
+    supports_arrays = False
     native_bool = False
     supports_structs = False
     rounding_method = "half_to_even"
