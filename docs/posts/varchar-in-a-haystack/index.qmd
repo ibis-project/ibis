@@ -1,5 +1,5 @@
 ---
-title: "Varchar in a Haystack"
+title: "Varchar in a haystack"
 author: "Tyler White"
 error: false
 date: "2024-03-28"
@@ -10,7 +10,7 @@ categories:
   - puzzle
 ---
 
-## The Scenario
+## The scenario
 
 You're a data analyst, and a new ticket landed in your queue.
 
@@ -29,7 +29,7 @@ You're a data analyst, and a new ticket landed in your queue.
 
 Whelp, let's give this a try.
 
-## The Table
+## The table
 
 To set up this particular problem, we can use pandas to create a table with 5
 columns and 100 rows. We can use the `at` method to update a row with the value
@@ -60,10 +60,11 @@ t = ibis.memtable(df, name="Z")
 t
 ```
 
-## The Solution(s)
+## The solution(s)
+
 There are a few ways we could solve this.
 
-#### Option 1: Write SQL
+#### Option 1: write SQL
 
 We could always spell it out with SQL, including each column that we want to
 check in the `WHERE` clause. In this scenario, we know each column is a varchar,
@@ -81,7 +82,7 @@ WHERE col1 = 'NEEDLE'
 
 This can be time-consuming. You might want something a little more dynamic.
 
-#### Option 2: Write Dynamic SQL
+#### Option 2: write dynamic SQL
 
 Dynamically constructing the SQL query at runtime can be more complex, but it
 offers more flexibility, especially if we have more than five columns.
@@ -110,7 +111,7 @@ END $$;
 This can be difficult to troubleshoot, and it is easy to get lost in the quote
 characters.
 
-#### Option 3: Use Ibis
+#### Option 3: use Ibis
 
 We can make use of [`selectors`](../../reference/selectors.qmd)!
 
@@ -122,7 +123,7 @@ expr
 
 We can see the **NEEDLE** value hiding in `col4`.
 
-## The Explanation
+## The explanation
 
 `s.of_type("string")` was used to select string columns, then `s.if_any()`
 builds up the ORs. The `_ == "NEEDLE"` part is the condition itself, checking
@@ -130,14 +131,15 @@ each column for the value.
 
 Here's the SQL that was generated to help us find it, which is quite similar
 to what we would have had to write if we had gone with [Option 1](#option-1-write-sql).
+
 ```{python}
 #| echo: false
 ibis.to_sql(expr)
 ```
 
-## The Conclusion
+## The conclusion
 
-Now that we've found the "NEEDLE" value, we can provide the information to the
+Now that we've found the `"NEEDLE"` value, we can provide the information to the
 requester. Urgent requests like this require quick and precise responses.
 
 Our use of Ibis demonstrates how easy it is to simplify navigating large
