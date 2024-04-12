@@ -555,10 +555,10 @@ class BigQueryCompiler(SQLGlotCompiler):
         nonzero_index_replace = self.f.regexp_replace(
             arg,
             self.f.concat(".*?", pattern, ".*"),
-            self.f.concat("\\\\", self.cast(index, dt.string)),
+            self.f.concat("\\", self.cast(index, dt.string)),
         )
         zero_index_replace = self.f.regexp_replace(
-            arg, self.f.concat(".*?", self.f.concat("(", pattern, ")"), ".*"), "\\\\1"
+            arg, self.f.concat(".*?", self.f.concat("(", pattern, ")"), ".*"), "\\1"
         )
         extract = self.if_(index.eq(0), zero_index_replace, nonzero_index_replace)
         return self.if_(matches, extract, NULL)
