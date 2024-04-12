@@ -195,22 +195,6 @@ class ImpalaCompiler(SQLGlotCompiler):
             # supported, but only within a certain range, and the
             # implementation wraps on over- and underflow
             return sge.convert(value.isoformat())
-        elif dtype.is_string():
-            value = (
-                value
-                # Escape \ first so we don't double escape other characters.
-                .replace("\\", "\\\\")
-                # ASCII escape sequences that are recognized in Python:
-                # https://docs.python.org/3/reference/lexical_analysis.html#string-and-bytes-literals
-                .replace("\a", "\\a")  # Bell
-                .replace("\b", "\\b")  # Backspace
-                .replace("\f", "\\f")  # Formfeed
-                .replace("\n", "\\n")  # Newline / Linefeed
-                .replace("\r", "\\r")  # Carriage return
-                .replace("\t", "\\t")  # Tab
-                .replace("\v", "\\v")  # Vertical tab
-            )
-            return sge.convert(value)
         elif dtype.is_decimal() and not value.is_finite():
             raise com.UnsupportedOperationError(
                 f"Non-finite decimal literal values are not supported by Impala; got: {value}"
