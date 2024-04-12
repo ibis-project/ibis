@@ -1144,11 +1144,12 @@ def test_pivot_wider(backend):
     reason="function last(double precision) does not exist, do you mean left or least",
 )
 def test_distinct_on_keep(backend, on, keep):
+    # We had better preserve previous ordering so that first/last are well-defined
     t = backend.diamonds.mutate(idx=ibis.row_number())
-    expr = t.distinct(on=on, keep=keep)
+    expr = t.order_by(t.columns).distinct(on=on, keep=keep)
     result = expr.execute()
     df = t.execute()
-    expected = df.drop_duplicates(subset=on, keep=keep)
+    expected = df.sort_values(t.columns).drop_duplicates(subset=on, keep=keep)
     assert result.columns.tolist() == expected.columns.tolist()
     assert set(result.idx) == set(expected.idx)
 
