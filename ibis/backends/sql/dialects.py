@@ -182,6 +182,8 @@ def _explode_to_unnest():
 
 
 class Flink(Hive):
+    UNESCAPED_SEQUENCES = {"\\\\d": "\\d"}
+
     class Generator(Hive.Generator):
         UNNEST_WITH_ORDINALITY = False
 
