@@ -1033,7 +1033,7 @@ def test_many_subqueries(con, snapshot):
 
 
 @pytest.mark.notimpl(
-    ["dask", "pandas", "oracle", "flink", "exasol"], raises=com.OperationNotDefinedError
+    ["dask", "pandas", "oracle", "exasol"], raises=com.OperationNotDefinedError
 )
 @pytest.mark.notimpl(["druid"], raises=AssertionError)
 @pytest.mark.notyet(
@@ -1045,6 +1045,11 @@ def test_many_subqueries(con, snapshot):
     ["trino"],
     reason="invalid code generated for unnesting a struct",
     raises=TrinoUserError,
+)
+@pytest.mark.broken(
+    ["flink"],
+    reason="invalid code generated for unnesting a struct",
+    raises=Py4JJavaError,
 )
 def test_pivot_longer(backend):
     diamonds = backend.diamonds
