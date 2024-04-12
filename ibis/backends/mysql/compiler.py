@@ -336,7 +336,7 @@ class MySQLCompiler(SQLGlotCompiler):
         return self.visit_LRStrip(op, arg=arg, position="TRAILING")
 
     def visit_IntervalFromInteger(self, op, *, arg, unit):
-        return sge.Interval(this=arg, unit=sge.convert(op.resolution.upper()))
+        return sge.Interval(this=arg, unit=sge.Var(this=op.resolution.upper()))
 
     def visit_TimestampAdd(self, op, *, left, right):
         if op.right.dtype.unit.short == "ms":
