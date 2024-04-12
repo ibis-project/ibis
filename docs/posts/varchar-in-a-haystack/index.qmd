@@ -2,7 +2,7 @@
 title: "Varchar in a haystack"
 author: "Tyler White"
 error: false
-date: "2024-03-28"
+date: "2024-04-12"
 image: thumbnail.png
 categories:
   - blog
