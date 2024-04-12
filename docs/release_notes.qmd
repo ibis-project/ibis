@@ -1,0 +1,6 @@
+---
+title: "Release notes"
+filters:
+  - fix-version-href.lua
+---
+{{< include ./release_notes_generated.qmd >}}
