@@ -638,7 +638,7 @@ class BigQueryCompiler(SQLGlotCompiler):
             self.if_(self.f.regexp_contains(name, "^-?[0-9]*$"), "INT64"),
             self.if_(
                 self.f.regexp_contains(
-                    name, r'^(-?[0-9]+[.e].*|CAST\\("([^"]*)" AS FLOAT64\\))$'
+                    name, r'^(-?[0-9]+[.e].*|CAST\("([^"]*)" AS FLOAT64\))$'
                 ),
                 "FLOAT64",
             ),
@@ -649,7 +649,7 @@ class BigQueryCompiler(SQLGlotCompiler):
             ),
             self.if_(self.f.starts_with(name, 'b"'), "BYTES"),
             self.if_(self.f.starts_with(name, "["), "ARRAY"),
-            self.if_(self.f.regexp_contains(name, r"^(STRUCT)?\\("), "STRUCT"),
+            self.if_(self.f.regexp_contains(name, r"^(STRUCT)?\("), "STRUCT"),
             self.if_(self.f.starts_with(name, "ST_"), "GEOGRAPHY"),
             self.if_(name.eq(sge.convert("NULL")), "NULL"),
         ]
