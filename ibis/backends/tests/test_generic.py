@@ -1144,12 +1144,7 @@ def test_pivot_wider(backend):
     reason="function last(double precision) does not exist, do you mean left or least",
 )
 def test_distinct_on_keep(backend, on, keep):
-    from ibis import _
-
-    t = backend.diamonds.mutate(one=ibis.literal(1)).mutate(
-        idx=ibis.row_number().over(order_by=_.one, rows=(None, 0))
-    )
-
+    t = backend.diamonds.mutate(idx=ibis.row_number())
     expr = t.distinct(on=on, keep=keep).order_by(ibis.asc("idx"))
     result = expr.execute()
     df = t.execute()
@@ -1209,11 +1204,7 @@ def test_distinct_on_keep(backend, on, keep):
     reason="function first(double precision) does not exist",
 )
 def test_distinct_on_keep_is_none(backend, on):
-    from ibis import _
-
-    t = backend.diamonds.mutate(one=ibis.literal(1)).mutate(
-        idx=ibis.row_number().over(order_by=_.one, rows=(None, 0))
-    )
+    t = backend.diamonds.mutate(idx=ibis.row_number())
 
     expr = t.distinct(on=on, keep=None).order_by(ibis.asc("idx"))
     result = expr.execute()
