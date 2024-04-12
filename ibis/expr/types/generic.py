@@ -500,6 +500,8 @@ class Value(Expr):
     def isin(self, values: Value | Sequence[Value]) -> ir.BooleanValue:
         """Check whether this expression's values are in `values`.
 
+        `NULL` values are propagated in the output. See examples for details.
+
         Parameters
         ----------
         values
@@ -569,6 +571,40 @@ class Value(Expr):
         │ True          │
         │ False         │
         └───────────────┘
+
+        `NULL` behavior
+
+        >>> t = ibis.memtable({"x": [1, 2]})
+        >>> t.x.isin([1, None])
+        ┏━━━━━━━━━━━━━┓
+        ┃ InValues(x) ┃
+        ┡━━━━━━━━━━━━━┩
+        │ boolean     │
+        ├─────────────┤
+        │ True        │
+        │ NULL        │
+        └─────────────┘
+        >>> t = ibis.memtable({"x": [1, None, 2]})
+        >>> t.x.isin([1])
+        ┏━━━━━━━━━━━━━┓
+        ┃ InValues(x) ┃
+        ┡━━━━━━━━━━━━━┩
+        │ boolean     │
+        ├─────────────┤
+        │ True        │
+        │ NULL        │
+        │ False       │
+        └─────────────┘
+        >>> t.x.isin([3])
+        ┏━━━━━━━━━━━━━┓
+        ┃ InValues(x) ┃
+        ┡━━━━━━━━━━━━━┩
+        │ boolean     │
+        ├─────────────┤
+        │ False       │
+        │ NULL        │
+        │ False       │
+        └─────────────┘
         """
         from ibis.expr.types import ArrayValue
 

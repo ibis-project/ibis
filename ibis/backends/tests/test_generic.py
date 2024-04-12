@@ -993,7 +993,7 @@ def test_memtable_construct_from_polars(backend, con, lazy):
         ([("a", "1.0")], ["d", "e"], ["d", "e"]),
     ],
 )
-def test_memtable_column_naming(backend, con, monkeypatch, df, columns, expected):
+def test_memtable_column_naming(con, monkeypatch, df, columns, expected):
     monkeypatch.setattr(ibis.options, "default_backend", con)
 
     t = ibis.memtable(df, columns=columns)
@@ -1009,7 +1009,7 @@ def test_memtable_column_naming(backend, con, monkeypatch, df, columns, expected
         ([("a", "1.0")], ["d"]),
     ],
 )
-def test_memtable_column_naming_mismatch(backend, con, monkeypatch, df, columns):
+def test_memtable_column_naming_mismatch(con, monkeypatch, df, columns):
     monkeypatch.setattr(ibis.options, "default_backend", con)
 
     with pytest.raises(ValueError):
@@ -1874,9 +1874,7 @@ def test_isnull_equality(con, backend, monkeypatch):
 @pytest.mark.broken(
     ["druid"],
     raises=PyDruidProgrammingError,
-    reason=(
-        "Query could not be planned. SQL query requires ordering a table by time column"
-    ),
+    reason="Query could not be planned. SQL query requires ordering a table by time column",
 )
 def test_subsequent_overlapping_order_by(con, backend, alltypes, df):
     ts = alltypes.order_by(ibis.desc("id")).order_by("id")
@@ -1990,3 +1988,24 @@ def test_topk_counts_null(con):
     tkf = tk.filter(_.x.isnull())[1]
     result = con.to_pyarrow(tkf)
     assert result[0].as_py() == 1
+
+
+@pytest.mark.notyet(
+    "clickhouse",
+    raises=AssertionError,
+    reason="ClickHouse returns False for x.isin([None])",
+)
+@pytest.mark.notimpl(
+    ["pandas", "dask"],
+    raises=AssertionError,
+    reason="null isin semantics are not implemented for pandas or dask",
+)
+@pytest.mark.never(
+    "mssql",
+    raises=AssertionError,
+    reason="mssql doesn't support null isin semantics in a projection because there is no bool type",
+)
+def test_null_isin_null_is_null(con):
+    t = ibis.memtable({"x": [1]})
+    expr = t.x.isin([None])
+    assert pd.isna(con.to_pandas(expr).iat[0])
