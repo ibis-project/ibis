@@ -231,6 +231,7 @@ jobs:
               - flink
             additional_deps:
               - "'apache-flink < 1.20.0'"
+              - "'pandas < 2.2'"
             services:
               - flink
         include:
@@ -362,6 +363,7 @@ jobs:
                 - flink
               additional_deps:
                 - "'apache-flink < 1.20.0'"
+                - "'pandas < 2.2'"
               services:
                 - flink
           - os: windows-latest
