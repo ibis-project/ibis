@@ -164,7 +164,7 @@ class SqlglotType(TypeMapper):
         if isinstance(typecode, sge.Interval):
             typ = sge.DataType(
                 this=sge.DataType.Type.INTERVAL,
-                expressions=[sge.IntervalSpan(this=typecode.unit)],
+                expressions=[typecode.unit],
             )
             typecode = typ.this
 
