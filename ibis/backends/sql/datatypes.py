@@ -731,6 +731,10 @@ class BigQueryType(SqlglotType):
 
     @classmethod
     def _from_sqlglot_TIMESTAMP(cls) -> dt.Timestamp:
+        return dt.Timestamp(timezone=None, nullable=cls.default_nullable)
+
+    @classmethod
+    def _from_sqlglot_TIMESTAMPTZ(cls) -> dt.Timestamp:
         return dt.Timestamp(timezone="UTC", nullable=cls.default_nullable)
 
     @classmethod
