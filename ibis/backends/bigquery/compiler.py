@@ -293,22 +293,7 @@ class BigQueryCompiler(SQLGlotCompiler):
         return self.f.strpos(arg, substr)
 
     def visit_NonNullLiteral(self, op, *, value, dtype):
-        if dtype.is_string():
-            return sge.convert(
-                str(value)
-                # Escape \ first so we don't double escape other characters.
-                .replace("\\", "\\\\")
-                # ASCII escape sequences that are recognized in Python:
-                # https://docs.python.org/3/reference/lexical_analysis.html#string-and-bytes-literals
-                .replace("\a", "\\a")  # Bell
-                .replace("\b", "\\b")  # Backspace
-                .replace("\f", "\\f")  # Formfeed
-                .replace("\n", "\\n")  # Newline / Linefeed
-                .replace("\r", "\\r")  # Carriage return
-                .replace("\t", "\\t")  # Tab
-                .replace("\v", "\\v")  # Vertical tab
-            )
-        elif dtype.is_inet() or dtype.is_macaddr():
+        if dtype.is_inet() or dtype.is_macaddr():
             return sge.convert(str(value))
         elif dtype.is_timestamp():
             funcname = "datetime" if dtype.timezone is None else "timestamp"
