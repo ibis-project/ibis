@@ -12,6 +12,7 @@ code-annotations: hover
 execute:
   warning: false
   error: false
+  cache: true
 
 filters:
   - interlinks
