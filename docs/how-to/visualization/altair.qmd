@@ -23,7 +23,7 @@ in Ibis tables or expressions:
 import altair as alt
 
 chart = (
-    alt.Chart(t.group_by("species").agg(count=ibis._.count()).to_pandas())
+    alt.Chart(t.group_by("species").agg(count=ibis._.count()))
     .mark_bar()
     .encode(
         x="species",
