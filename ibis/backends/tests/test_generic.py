@@ -1145,15 +1145,12 @@ def test_pivot_wider(backend):
 )
 def test_distinct_on_keep(backend, on, keep):
     t = backend.diamonds.mutate(idx=ibis.row_number())
-    expr = t.distinct(on=on, keep=keep).order_by(ibis.asc("idx"))
+    expr = t.distinct(on=on, keep=keep)
     result = expr.execute()
     df = t.execute()
-    expected = (
-        df.drop_duplicates(subset=on, keep=keep or False)
-        .sort_values(by=["idx"])
-        .reset_index(drop=True)
-    )
-    assert len(result) == len(expected)
+    expected = df.drop_duplicates(subset=on, keep=keep)
+    assert result.columns.tolist() == expected.columns.tolist()
+    assert set(result.idx) == set(expected.idx)
 
 
 @pytest.mark.parametrize(
@@ -1204,16 +1201,13 @@ def test_distinct_on_keep(backend, on, keep):
     reason="function first(double precision) does not exist",
 )
 def test_distinct_on_keep_is_none(backend, on):
-    t = backend.diamonds.mutate(idx=ibis.row_number())
-
-    expr = t.distinct(on=on, keep=None).order_by(ibis.asc("idx"))
+    t = backend.diamonds
+    expr = t.distinct(on=on, keep=None)
     result = expr.execute()
     df = t.execute()
-    expected = (
-        df.drop_duplicates(subset=on, keep=False)
-        .sort_values(by=["idx"])
-        .reset_index(drop=True)
-    )
+    expected = df.drop_duplicates(subset=on, keep=False)
+    # which row from each group isn't guaranteed, so we can't compare the actual rows
+    assert result.columns.tolist() == expected.columns.tolist()
     assert len(result) == len(expected)
 
 
