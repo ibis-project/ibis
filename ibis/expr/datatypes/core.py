@@ -602,6 +602,9 @@ class Timestamp(Temporal, Parametric):
         elif unit == TimestampUnit.NANOSECOND:
             scale = 9
         else:
+            # TODO: remove raise path as it's never triggered
+            # Timestamp op has a restriction that only the literal
+            # ints from 0 through 9 can be passed as scale
             raise ValueError(f"Invalid unit {unit}")
         return cls(scale=scale, timezone=timezone, nullable=nullable)
 
@@ -617,6 +620,9 @@ class Timestamp(Temporal, Parametric):
         elif 7 <= self.scale <= 9:
             return TimestampUnit.NANOSECOND
         else:
+            # TODO: remove raise path as it's never triggered
+            # TimestampUnit, which is a (child of) Enum
+            # so it'll raise in the Enum class constructor instead
             raise ValueError(f"Invalid scale {self.scale}")
 
     @property
