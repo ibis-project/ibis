@@ -119,6 +119,7 @@ class Backend(PostgresBackend):
 
         with self.begin() as cur:
             cur.execute("SET TIMEZONE = UTC")
+            cur.execute("SET RW_IMPLICIT_FLUSH TO true;")
 
     def create_table(
         self,
