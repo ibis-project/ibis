@@ -75,6 +75,7 @@ dependencies:
   - distributed >=2022.9.1
   - ipykernel >=6.25.1
   - itables >=1.6.3
+  - jupyter-cache
   - nbclient >=0.8.0
   - plotly >=5.16.1
   - plotnine >=0.12.2
