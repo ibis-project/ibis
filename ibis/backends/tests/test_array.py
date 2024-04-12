@@ -819,11 +819,6 @@ def test_unnest_struct(con):
 
 
 @builtin_array
-@pytest.mark.notimpl(
-    ["clickhouse"],
-    raises=ClickHouseDatabaseError,
-    reason="ClickHouse won't accept dicts for struct type values",
-)
 @pytest.mark.notimpl(["postgres"], raises=PsycoPg2SyntaxError)
 @pytest.mark.notimpl(["risingwave"], raises=PsycoPg2InternalError)
 @pytest.mark.notimpl(["datafusion"], raises=com.OperationNotDefinedError)
