@@ -221,6 +221,8 @@ class SQLBackend(BaseBackend, _DatabaseSchemaHandler):
 
         cte = self._to_sqlglot(table)
         parsed = sg.parse_one(query, read=dialect)
+        if parsed.args.get("with"):
+            parsed = sg.select(STAR).from_(parsed.subquery("_"))
         parsed.args["with"] = cte.args.pop("with", [])
         parsed = parsed.with_(
             sg.to_identifier(name, quoted=compiler.quoted), as_=cte, dialect=dialect

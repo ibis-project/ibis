@@ -358,3 +358,41 @@ def test_bare_minimum(con, alltypes, df):
     name = _NAMES.get(con.name, "functional_alltypes").replace('"', "")
     expr = alltypes.sql(f'SELECT COUNT(*) AS "n" FROM "{name}"', dialect="duckdb")
     assert expr.to_pandas().iat[0, 0] == len(df)
+
+
+@dot_sql_never
+@pytest.mark.notyet(
+    ["polars"],
+    raises=PolarsComputeError,
+    reason="polars doesn't support selecting from quoted identifiers referencing CTEs",
+)
+@pytest.mark.notyet(
+    ["druid"],
+    raises=KeyError,
+    reason="upstream does not preserve column names in schema inference",
+)
+def test_cte_basic(con, df):
+    t = con.tables.functional_alltypes
+    sql = 'with "x" as (select * from "functional_alltypes") select * from "x"'
+    expr = t.sql(sql, dialect="duckdb")
+    result = expr.execute()
+    tm.assert_frame_equal(result, df)
+
+
+@dot_sql_never
+@pytest.mark.notyet(
+    ["polars"],
+    raises=PolarsComputeError,
+    reason="polars doesn't support selecting from quoted identifiers referencing CTEs",
+)
+@pytest.mark.notyet(
+    ["druid"],
+    raises=KeyError,
+    reason="upstream does not preserve column names in schema inference",
+)
+def test_cte_with_alias(con, df):
+    t = con.tables.functional_alltypes
+    sql = 'with "x" as (select * from "foo") select * from "x"'
+    expr = t.alias("foo").sql(sql, dialect="duckdb")
+    result = expr.execute()
+    tm.assert_frame_equal(result, df)

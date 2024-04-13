@@ -187,7 +187,7 @@ def extract_ctes(node):
 
     g = Graph.from_bfs(node, filter=~InstanceOf(dont_count))
     for node, dependents in g.invert().items():
-        if isinstance(node, ops.View) or (
+        if isinstance(node, (ops.View, ops.SQLStringView)) or (
             len(dependents) > 1 and isinstance(node, cte_types)
         ):
             result.append(node)
