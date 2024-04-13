@@ -173,6 +173,35 @@ class TrinoCompiler(SQLGlotCompiler):
         fmt = "%d" if op.index.dtype.is_integer() else '"%s"'
         return self.f.json_extract(arg, self.f.format(f"$[{fmt}]", index))
 
+    def visit_UnwrapJSONString(self, op, *, arg):
+        return self.f.json_value(
+            self.f.json_format(arg), 'strict $?($.type() == "string")'
+        )
+
+    def visit_UnwrapJSONInt64(self, op, *, arg):
+        value = self.f.json_value(
+            self.f.json_format(arg), 'strict $?($.type() == "number")'
+        )
+        return self.cast(
+            self.if_(self.f.regexp_like(value, r"^\d+$"), value, NULL), op.dtype
+        )
+
+    def visit_UnwrapJSONFloat64(self, op, *, arg):
+        return self.cast(
+            self.f.json_value(
+                self.f.json_format(arg), 'strict $?($.type() == "number")'
+            ),
+            op.dtype,
+        )
+
+    def visit_UnwrapJSONBoolean(self, op, *, arg):
+        return self.cast(
+            self.f.json_value(
+                self.f.json_format(arg), 'strict $?($.type() == "boolean")'
+            ),
+            op.dtype,
+        )
+
     def visit_DayOfWeekIndex(self, op, *, arg):
         return self.cast(
             sge.paren(self.f.day_of_week(arg) + 6, copy=False) % 7, op.dtype

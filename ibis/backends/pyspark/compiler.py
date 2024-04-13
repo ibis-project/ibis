@@ -77,6 +77,10 @@ class PySparkCompiler(SQLGlotCompiler):
         ops.MapMerge: "map_concat",
         ops.MapKeys: "map_keys",
         ops.MapValues: "map_values",
+        ops.UnwrapJSONString: "unwrap_json_str",
+        ops.UnwrapJSONInt64: "unwrap_json_int",
+        ops.UnwrapJSONFloat64: "unwrap_json_float",
+        ops.UnwrapJSONBoolean: "unwrap_json_bool",
     }
 
     def _aggregate(self, funcname: str, *args, where):
