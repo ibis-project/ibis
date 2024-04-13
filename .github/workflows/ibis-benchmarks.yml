@@ -23,15 +23,14 @@ jobs:
       - name: checkout
         uses: actions/checkout@v4
 
-      - name: install poetry
-        run: pipx install 'poetry==1.8.2'
-
       - name: install python
         uses: actions/setup-python@v5
         id: install_python
         with:
           python-version: "3.11"
-          cache: poetry
+
+      - name: install poetry
+        run: pip install 'poetry==1.8.2'
 
       - name: install system dependencies
         run: sudo apt-get install -qq -y build-essential libgeos-dev freetds-dev unixodbc-dev
