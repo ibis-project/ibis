@@ -30,9 +30,6 @@ jobs:
       - name: checkout
         uses: actions/checkout@v4
 
-      - name: install poetry
-        run: pipx install 'poetry==1.8.2'
-
       - name: install python
         uses: actions/setup-python@v5
         id: install_python
@@ -40,6 +37,9 @@ jobs:
           python-version: "3.12"
           cache: pip
           cache-dependency-path: requirements-dev.txt
+
+      - name: install poetry
+        run: pip install 'poetry==1.8.2'
 
       - name: update apt-get
         run: sudo apt-get update -y -q
