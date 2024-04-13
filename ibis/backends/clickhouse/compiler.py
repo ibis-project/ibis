@@ -280,8 +280,6 @@ class ClickHouseCompiler(SQLGlotCompiler):
         if dtype.is_inet():
             v = str(value)
             return self.f.toIPv6(v) if ":" in v else self.f.toIPv4(v)
-        elif dtype.is_string():
-            return sge.convert(str(value).replace(r"\0", r"\\0"))
         elif dtype.is_decimal():
             precision = dtype.precision
             if precision is None or not 1 <= precision <= 76:

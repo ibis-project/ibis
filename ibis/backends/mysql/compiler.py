@@ -217,8 +217,6 @@ class MySQLCompiler(SQLGlotCompiler):
             raise com.UnsupportedBackendType(
                 "MySQL does not support arrays, structs or maps"
             )
-        elif dtype.is_string():
-            return sge.convert(value.replace("\\", "\\\\"))
         return None
 
     def visit_JSONGetItem(self, op, *, arg, index):
@@ -260,7 +258,7 @@ class MySQLCompiler(SQLGlotCompiler):
                 index.eq(0),
                 extracted,
                 self.f.regexp_replace(
-                    extracted, pattern, rf"\\{index.sql(self.dialect)}"
+                    extracted, pattern, f"\\{index.sql(self.dialect)}"
                 ),
             ),
             NULL,
@@ -336,7 +334,7 @@ class MySQLCompiler(SQLGlotCompiler):
         return self.visit_LRStrip(op, arg=arg, position="TRAILING")
 
     def visit_IntervalFromInteger(self, op, *, arg, unit):
-        return sge.Interval(this=arg, unit=sge.convert(op.resolution.upper()))
+        return sge.Interval(this=arg, unit=sge.Var(this=op.resolution.upper()))
 
     def visit_TimestampAdd(self, op, *, left, right):
         if op.right.dtype.unit.short == "ms":

@@ -469,7 +469,7 @@ class PostgresCompiler(SQLGlotCompiler):
 
     def visit_ArrayIndex(self, op, *, arg, index):
         index = self.if_(index < 0, self.f.cardinality(arg) + index, index)
-        return sge.paren(arg, copy=False)[index + 1]
+        return sge.paren(arg, copy=False)[index]
 
     def visit_ArraySlice(self, op, *, arg, start, stop):
         neg_to_pos_index = lambda n, index: self.if_(index < 0, n + index, index)

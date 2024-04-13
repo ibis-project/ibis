@@ -92,9 +92,6 @@ class PySparkCompiler(SQLGlotCompiler):
                 return self.f.nanvl(result, NULL)
             else:
                 return result
-        elif dtype.is_string():
-            value = value.replace("\\", "\\\\")
-            return sge.convert(value)
         elif dtype.is_binary():
             return self.f.unhex(value.hex())
         elif dtype.is_decimal():

@@ -586,7 +586,8 @@ class SQLGlotCompiler(abc.ABC):
             return self.cast(str(value), dtype)
         elif dtype.is_interval():
             return sge.Interval(
-                this=sge.convert(str(value)), unit=dtype.resolution.upper()
+                this=sge.convert(str(value)),
+                unit=sge.Var(this=dtype.resolution.upper()),
             )
         elif dtype.is_boolean():
             return sge.Boolean(this=bool(value))
@@ -788,7 +789,9 @@ class SQLGlotCompiler(abc.ABC):
         )
 
     def visit_IntervalFromInteger(self, op, *, arg, unit):
-        return sge.Interval(this=sge.convert(arg), unit=unit.singular.upper())
+        return sge.Interval(
+            this=sge.convert(arg), unit=sge.Var(this=unit.singular.upper())
+        )
 
     ### String Instruments
 

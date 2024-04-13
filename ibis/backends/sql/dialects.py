@@ -106,7 +106,7 @@ def _interval_with_precision(self, e):
         formatted_arg = f"'{formatted_arg}'"
         prec = _calculate_precision(int(arg))
         prec = max(prec, 2)
-        unit += f"({prec})"
+        unit.args["this"] += f"({prec})"
 
     return f"INTERVAL {formatted_arg} {unit}"
 
@@ -182,6 +182,8 @@ def _explode_to_unnest():
 
 
 class Flink(Hive):
+    UNESCAPED_SEQUENCES = {"\\\\d": "\\d"}
+
     class Generator(Hive.Generator):
         UNNEST_WITH_ORDINALITY = False
 
