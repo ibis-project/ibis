@@ -427,7 +427,22 @@ class DataFusionType(PostgresType):
     unknown_type_strings = {
         "utf8": dt.string,
         "float64": dt.float64,
+        "float32": dt.float32,
     }
+
+    @classmethod
+    def _from_sqlglot_TIMESTAMP(cls, scale, tz) -> dt.Timestamp:
+        scales = {"SECOND": 0, "MILLISECOND": 3, "MICROSECOND": 6, "NANOSECOND": 9}
+
+        assert tz is not None
+
+        tz = tz.this.this
+
+        return dt.Timestamp(
+            scale=scales[scale.this.this],
+            timezone=None if tz == "NONE" else tz,
+            nullable=cls.default_nullable,
+        )
 
 
 class MySQLType(SqlglotType):
