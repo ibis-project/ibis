@@ -123,10 +123,6 @@ jobs:
             extras:
               - clickhouse
               - examples
-          - name: dask
-            title: Dask
-            extras:
-              - dask
           - name: pandas
             title: Pandas
             extras:
@@ -237,6 +233,21 @@ jobs:
               - "'apache-flink < 1.20.0'"
             services:
               - flink
+        include:
+          - os: ubuntu-latest
+            python-version: "3.11.8"
+            backend:
+              name: dask
+              title: Dask
+              extras:
+                - dask
+          - os: ubuntu-latest
+            python-version: "3.9"
+            backend:
+              name: dask
+              title: Dask
+              extras:
+                - dask
         exclude:
           - os: windows-latest
             backend:
