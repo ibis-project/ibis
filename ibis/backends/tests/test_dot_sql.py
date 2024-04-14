@@ -147,7 +147,7 @@ def test_table_dot_sql_with_join(backend):
             """,
             dialect="duckdb",
         )
-        .alias("ft")
+        .alias("ft2")
         .group_by("s")  # group by a column from SQL
         .aggregate(fancy_af=lambda t: t.new_col.mean())
         .alias("awesome_t")  # create a name for the aggregate
@@ -157,7 +157,7 @@ def test_table_dot_sql_with_join(backend):
               "l"."fancy_af" AS "yas",
               "r"."s" AS "s"
             FROM "awesome_t" AS "l"
-            LEFT JOIN "ft" AS "r"
+            LEFT JOIN "ft2" AS "r"
             ON "l"."s" = "r"."s"
             """,  # clickhouse needs the r.s AS s, otherwise the column name is returned as r.s
             dialect="duckdb",
