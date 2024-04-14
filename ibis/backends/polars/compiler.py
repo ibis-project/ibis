@@ -852,7 +852,7 @@ def temporal_truncate(op, **kw):
     arg = translate(op.arg, **kw)
     unit = "mo" if op.unit.short == "M" else op.unit.short
     unit = f"1{unit.lower()}"
-    return arg.dt.truncate(unit, "-1w")
+    return arg.dt.truncate(unit).dt.offset_by("-1w")
 
 
 def _compile_literal_interval(op):
@@ -879,7 +879,9 @@ def timestamp_bucket(op, **kw):
         arg = arg.dt.offset_by(neg_offset)
     else:
         offset = None
-    res = arg.dt.truncate(interval, offset)
+    res = arg.dt.truncate(interval)
+    if offset is not None:
+        res = res.dt.offset_by(offset)
     return res
 
 
