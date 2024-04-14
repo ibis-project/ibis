@@ -78,11 +78,6 @@ def test_con_dot_sql(backend, con, schema):
 
 
 @pytest.mark.notyet(
-    ["polars"],
-    raises=PolarsComputeError,
-    reason="polars doesn't support quoted identifiers referencing CTEs",
-)
-@pytest.mark.notyet(
     ["bigquery"], raises=GoogleBadRequest, reason="requires a qualified name"
 )
 @pytest.mark.notyet(
@@ -123,10 +118,11 @@ def test_table_dot_sql(backend):
     assert pytest.approx(result) == expected
 
 
+@dot_sql_never
 @pytest.mark.notyet(
     ["polars"],
     raises=PolarsComputeError,
-    reason="polars doesn't support quoted identifiers referencing CTEs",
+    reason="polars doesn't support aliased tables",
 )
 @pytest.mark.notyet(
     ["bigquery"], raises=GoogleBadRequest, reason="requires a qualified name"
@@ -139,7 +135,6 @@ def test_table_dot_sql(backend):
     OracleDatabaseError,
     reason="oracle doesn't know which of the tables in the join to sort from",
 )
-@dot_sql_never
 def test_table_dot_sql_with_join(backend):
     alltypes = backend.functional_alltypes
     t = (
@@ -185,7 +180,6 @@ def test_table_dot_sql_with_join(backend):
     backend.assert_frame_equal(result, expected)
 
 
-@pytest.mark.notyet(["polars"], raises=PolarsComputeError)
 @pytest.mark.notyet(["druid"], reason="druid doesn't respect column name case")
 @pytest.mark.notyet(
     ["bigquery"], raises=GoogleBadRequest, reason="requires a qualified name"
@@ -242,7 +236,6 @@ dialects = sorted(_get_backend_names(exclude=_NO_SQLGLOT_DIALECT)) + no_sqlglot_
 
 
 @pytest.mark.parametrize("dialect", dialects)
-@pytest.mark.notyet(["polars"], raises=PolarsComputeError)
 @dot_sql_never
 @pytest.mark.notyet(["druid"], reason="druid doesn't respect column name case")
 def test_table_dot_sql_transpile(backend, alltypes, dialect, df):
@@ -323,11 +316,6 @@ def mem_t(con):
 
 
 @dot_sql_never
-@pytest.mark.notyet(
-    ["polars"],
-    raises=PolarsComputeError,
-    reason="polars doesn't support selecting from quoted identifiers referencing CTEs",
-)
 @pytest.mark.notyet(
     ["druid"],
     raises=KeyError,
