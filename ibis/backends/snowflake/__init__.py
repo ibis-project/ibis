@@ -80,6 +80,7 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, CanCreateSchema):
     supports_python_udfs = True
 
     _latest_udf_python_version = (3, 10)
+    _top_level_methods = ("from_snowpark",)
 
     def _convert_kwargs(self, kwargs):
         with contextlib.suppress(KeyError):
@@ -298,7 +299,7 @@ $$ {defn["source"]} $$"""
         >>> ibis.options.interactive = True
         >>> import snowflake.snowpark as sp  # doctest: +SKIP
         >>> session = sp.Session.builder.configs(...).create()  # doctest: +SKIP
-        >>> con = ibis.backends.snowflake.Backend.from_snowpark(session)  # doctest: +SKIP
+        >>> con = ibis.snowflake.from_snowpark(session)  # doctest: +SKIP
         >>> batting = con.tables.BATTING  # doctest: +SKIP
         >>> batting[["playerID", "RBI"]].head()  # doctest: +SKIP
         ┏━━━━━━━━━━━┳━━━━━━━┓
