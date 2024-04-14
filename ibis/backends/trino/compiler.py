@@ -447,3 +447,23 @@ class TrinoCompiler(SQLGlotCompiler):
         # sqlglot doesn't support the third `group` argument for trino so work
         # around that limitation using an anonymous function
         return self.f.anon.regexp_extract(arg, pattern, index)
+
+    def visit_ToJSONMap(self, op, *, arg):
+        return self.cast(
+            self.f.json_parse(
+                self.f.json_query(
+                    self.f.json_format(arg), 'strict $?($.type() == "object")'
+                )
+            ),
+            dt.Map(dt.string, dt.json),
+        )
+
+    def visit_ToJSONArray(self, op, *, arg):
+        return self.cast(
+            self.f.json_parse(
+                self.f.json_query(
+                    self.f.json_format(arg), 'strict $?($.type() == "array")'
+                )
+            ),
+            dt.Array(dt.json),
+        )
