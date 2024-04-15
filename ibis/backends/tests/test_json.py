@@ -64,7 +64,7 @@ def test_json_getitem_array(json_t):
 @pytest.mark.notyet(["bigquery", "sqlite"], reason="doesn't support maps")
 @pytest.mark.notyet(["postgres"], reason="only supports map<string, string>")
 @pytest.mark.notyet(
-    ["pyspark", "trino", "flink"], reason="should work but doesn't deserialize JSON"
+    ["pyspark", "flink"], reason="should work but doesn't deserialize JSON"
 )
 def test_json_map(backend, json_t):
     expr = json_t.js.map.name("res")
@@ -87,7 +87,7 @@ def test_json_map(backend, json_t):
 @pytest.mark.notimpl(["dask", "mysql", "pandas", "risingwave"])
 @pytest.mark.notyet(["sqlite"], reason="doesn't support arrays")
 @pytest.mark.notyet(
-    ["pyspark", "trino", "flink"], reason="should work but doesn't deserialize JSON"
+    ["pyspark", "flink"], reason="should work but doesn't deserialize JSON"
 )
 @pytest.mark.notyet(["bigquery"], reason="doesn't allow null in arrays")
 def test_json_array(backend, json_t):
