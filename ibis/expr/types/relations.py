@@ -2886,6 +2886,139 @@ class Table(Expr, _FixedTextJupyterMixin):
             aggs.append(agg)
         return ibis.union(*aggs).order_by(ibis.asc("pos"))
 
+    def describe(
+        self, quantile: Sequence[ir.NumericValue | float] = (0.25, 0.5, 0.75)
+    ) -> Table:
+        """Return summary information about a table.
+
+        Parameters
+        ----------
+        quantile
+            The quantiles to compute for numerical columns. Defaults to (0.25, 0.5, 0.75).
+
+        Returns
+        -------
+        Table
+            A table containing summary information about the columns of self.
+
+        Notes
+        -----
+        This function computes summary statistics for each column in the table. For
+        numerical columns, it computes statistics such as minimum, maximum, mean,
+        standard deviation, and quantiles. For string columns, it computes the mode
+        and the number of unique values.
+
+        Examples
+        --------
+        >>> import ibis
+        >>> import ibis.selectors as s
+        >>> ibis.options.interactive = True
+        >>> p = ibis.examples.penguins.fetch()
+        >>> p.describe()
+        ┏━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━┳━━━━━━━┳━━━━━━━┳━━━━━━━━┳━━━━━━━━┳━━━┓
+        ┃ name              ┃ type    ┃ count ┃ nulls ┃ unique ┃ mode   ┃ … ┃
+        ┡━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━╇━━━━━━━╇━━━━━━━╇━━━━━━━━╇━━━━━━━━╇━━━┩
+        │ string            │ string  │ int64 │ int64 │ int64  │ string │ … │
+        ├───────────────────┼─────────┼───────┼───────┼────────┼────────┼───┤
+        │ species           │ string  │   344 │     0 │      3 │ Adelie │ … │
+        │ island            │ string  │   344 │     0 │      3 │ Biscoe │ … │
+        │ bill_length_mm    │ float64 │   344 │     2 │    164 │ NULL   │ … │
+        │ bill_depth_mm     │ float64 │   344 │     2 │     80 │ NULL   │ … │
+        │ flipper_length_mm │ int64   │   344 │     2 │     55 │ NULL   │ … │
+        │ body_mass_g       │ int64   │   344 │     2 │     94 │ NULL   │ … │
+        │ sex               │ string  │   344 │    11 │      2 │ male   │ … │
+        │ year              │ int64   │   344 │     0 │      3 │ NULL   │ … │
+        └───────────────────┴─────────┴───────┴───────┴────────┴────────┴───┘
+        >>> p.select(s.of_type("numeric")).describe()
+        ┏━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━┳━━━━━━━┳━━━━━━━┳━━━━━━━━┳━━━━━━━━━━━━━┳━━━┓
+        ┃ name              ┃ type    ┃ count ┃ nulls ┃ unique ┃ mean        ┃ … ┃
+        ┡━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━╇━━━━━━━╇━━━━━━━╇━━━━━━━━╇━━━━━━━━━━━━━╇━━━┩
+        │ string            │ string  │ int64 │ int64 │ int64  │ float64     │ … │
+        ├───────────────────┼─────────┼───────┼───────┼────────┼─────────────┼───┤
+        │ bill_length_mm    │ float64 │   344 │     2 │    164 │   43.921930 │ … │
+        │ bill_depth_mm     │ float64 │   344 │     2 │     80 │   17.151170 │ … │
+        │ flipper_length_mm │ int64   │   344 │     2 │     55 │  200.915205 │ … │
+        │ body_mass_g       │ int64   │   344 │     2 │     94 │ 4201.754386 │ … │
+        │ year              │ int64   │   344 │     0 │      3 │ 2008.029070 │ … │
+        └───────────────────┴─────────┴───────┴───────┴────────┴─────────────┴───┘
+        >>> p.select(s.of_type("string")).describe()
+        ┏━━━━━━━━━┳━━━━━━━━┳━━━━━━━┳━━━━━━━┳━━━━━━━━┳━━━━━━━━┓
+        ┃ name    ┃ type   ┃ count ┃ nulls ┃ unique ┃ mode   ┃
+        ┡━━━━━━━━━╇━━━━━━━━╇━━━━━━━╇━━━━━━━╇━━━━━━━━╇━━━━━━━━┩
+        │ string  │ string │ int64 │ int64 │ int64  │ string │
+        ├─────────┼────────┼───────┼───────┼────────┼────────┤
+        │ species │ string │   344 │     0 │      3 │ Adelie │
+        │ island  │ string │   344 │     0 │      3 │ Biscoe │
+        │ sex     │ string │   344 │    11 │      2 │ male   │
+        └─────────┴────────┴───────┴───────┴────────┴────────┘
+        """
+        import ibis.selectors as s
+        from ibis import literal as lit
+
+        quantile = sorted(quantile)
+        aggs = []
+        string_col = False
+        numeric_col = False
+        for colname in self.columns:
+            col = self[colname]
+            typ = col.type()
+
+            # default statistics to None
+            col_mean = lit(None).cast(float)
+            col_std = lit(None).cast(float)
+            col_min = lit(None).cast(float)
+            col_max = lit(None).cast(float)
+            col_mode = lit(None).cast(str)
+            quantile_values = {
+                f"p{100*q:.6f}".rstrip("0").rstrip("."): lit(None).cast(float)
+                for q in quantile
+            }
+
+            if typ.is_numeric():
+                numeric_col = True
+                col_mean = col.mean()
+                col_std = col.std()
+                col_min = col.min().cast(float)
+                col_max = col.max().cast(float)
+                quantile_values = {
+                    f"p{100*q:.6f}".rstrip("0").rstrip("."): col.quantile(q).cast(float)
+                    for q in quantile
+                }
+            elif typ.is_string():
+                string_col = True
+                col_mode = col.mode()
+            elif typ.is_boolean():
+                numeric_col = True
+                col_mean = col.mean()
+            else:
+                # Will not calculate statistics for other types
+                continue
+
+            agg = self.agg(
+                name=lit(colname),
+                type=lit(str(typ)),
+                count=col.isnull().count(),
+                nulls=col.isnull().sum(),
+                unique=col.nunique(),
+                mode=col_mode,
+                mean=col_mean,
+                std=col_std,
+                min=col_min,
+                **quantile_values,
+                max=col_max,
+            )
+            aggs.append(agg)
+
+        t = ibis.union(*aggs)
+
+        # TODO(jiting): Need a better way to remove columns with all NULL
+        if string_col and not numeric_col:
+            t = t.select(~s.of_type("float"))
+        elif numeric_col and not string_col:
+            t = t.drop("mode")
+
+        return t
+
     def join(
         left: Table,
         right: Table,

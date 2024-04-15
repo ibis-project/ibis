@@ -62,8 +62,11 @@ try:
     from polars import ComputeError as PolarsComputeError
     from polars import PanicException as PolarsPanicException
     from polars.exceptions import InvalidOperationError as PolarsInvalidOperationError
+    from polars.exceptions import SchemaError as PolarsSchemaError
 except ImportError:
-    PolarsComputeError = PolarsPanicException = PolarsInvalidOperationError = None
+    PolarsComputeError = PolarsPanicException = PolarsInvalidOperationError = (
+        PolarsSchemaError
+    ) = None
 
 try:
     from pyarrow import ArrowInvalid, ArrowNotImplementedError

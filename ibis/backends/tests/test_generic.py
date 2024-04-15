@@ -17,7 +17,7 @@ import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.selectors as s
 from ibis import _
-from ibis.backends.conftest import is_older_than
+from ibis.backends.conftest import is_newer_than, is_older_than
 from ibis.backends.tests.errors import (
     ClickHouseDatabaseError,
     ExaQueryError,
@@ -25,6 +25,7 @@ from ibis.backends.tests.errors import (
     ImpalaHiveServer2Error,
     MySQLProgrammingError,
     OracleDatabaseError,
+    PolarsSchemaError,
     PsycoPg2InternalError,
     Py4JJavaError,
     PyDruidProgrammingError,
@@ -584,6 +585,173 @@ def test_table_info(alltypes):
         "pos",
     ]
     assert expr.columns == list(df.columns)
+
+
+@pytest.mark.notimpl(
+    [
+        "datafusion",
+        "impala",
+        "trino",
+        "mysql",
+        "mssql",
+        "trino",
+        "flink",
+    ],
+    raises=com.OperationNotDefinedError,
+    reason="quantile and mode is not supported",
+)
+@pytest.mark.notimpl(
+    [
+        "exasol",
+        "druid",
+    ],
+    raises=com.OperationNotDefinedError,
+    reason="Mode and StandardDev is not supported",
+)
+@pytest.mark.notimpl(
+    ["polars"],
+    raises=PolarsSchemaError,
+    reason="cannot extend/append Float64 with Float32",
+)
+@pytest.mark.notyet(
+    ["druid"],
+    raises=PyDruidProgrammingError,
+    reason="Druid only supports trivial unions",
+)
+@pytest.mark.parametrize(
+    ("selector", "expected_columns"),
+    [
+        param(
+            s.any_of(
+                s.of_type("numeric"),
+                s.of_type("string"),
+                s.of_type("bool"),
+                s.of_type("timestamp"),
+            ),
+            [
+                "name",
+                "type",
+                "count",
+                "nulls",
+                "unique",
+                "mode",
+                "mean",
+                "std",
+                "min",
+                "p25",
+                "p50",
+                "p75",
+                "max",
+            ],
+            marks=[
+                pytest.mark.notimpl(
+                    ["sqlite"],
+                    raises=com.OperationNotDefinedError,
+                    reason="quantile is not supported",
+                ),
+                pytest.mark.notimpl(
+                    [
+                        "clickhouse",
+                        "pyspark",
+                        "clickhouse",
+                        "risingwave",
+                        "impala",
+                    ],
+                    raises=com.OperationNotDefinedError,
+                    reason="mode is not supported",
+                ),
+                pytest.mark.notimpl(
+                    ["dask"],
+                    raises=ValueError,
+                    reason="Unable to concatenate DataFrame with unknown division specifying axis=1",
+                ),
+                pytest.mark.notimpl(
+                    ["oracle"],
+                    raises=(OracleDatabaseError, com.OperationNotDefinedError),
+                    reason="Mode is not supported and ORA-02000: missing AS keyword",
+                ),
+                pytest.mark.broken(
+                    ["pandas"],
+                    condition=is_newer_than("pandas", "2.1.0"),
+                    reason="FutureWarning: concat empty or all-NA entries is deprecated",
+                ),
+            ],
+            id="all_cols",
+        ),
+        param(
+            s.of_type("numeric"),
+            [
+                "name",
+                "type",
+                "count",
+                "nulls",
+                "unique",
+                "mean",
+                "std",
+                "min",
+                "p25",
+                "p50",
+                "p75",
+                "max",
+            ],
+            marks=[
+                pytest.mark.notimpl(
+                    ["sqlite"],
+                    raises=com.OperationNotDefinedError,
+                    reason="quantile is not supported",
+                ),
+                pytest.mark.notimpl(
+                    ["oracle"],
+                    raises=OracleDatabaseError,
+                    reason="Mode is not supported and ORA-02000: missing AS keyword",
+                ),
+            ],
+            id="numeric_col",
+        ),
+        param(
+            s.of_type("string"),
+            [
+                "name",
+                "type",
+                "count",
+                "nulls",
+                "unique",
+                "mode",
+            ],
+            marks=[
+                pytest.mark.notimpl(
+                    [
+                        "clickhouse",
+                        "pyspark",
+                        "clickhouse",
+                        "risingwave",
+                        "impala",
+                    ],
+                    raises=com.OperationNotDefinedError,
+                    reason="mode is not supported",
+                ),
+                pytest.mark.notimpl(
+                    ["oracle"],
+                    raises=com.OperationNotDefinedError,
+                    reason="Mode is not supported and ORA-02000: missing AS keyword",
+                ),
+                pytest.mark.notimpl(
+                    ["dask"],
+                    raises=ValueError,
+                    reason="Unable to concatenate DataFrame with unknown division specifying axis=1",
+                ),
+            ],
+            id="string_col",
+        ),
+    ],
+)
+def test_table_describe(alltypes, selector, expected_columns):
+    sometypes = alltypes.select(selector)
+    expr = sometypes.describe()
+    df = expr.execute()
+    assert sorted(sometypes.columns) == sorted(df.name)
+    assert sorted(expr.columns) == sorted(expected_columns)
+    assert sorted(expr.columns) == sorted(df.columns)
 
 
 @pytest.mark.parametrize(
