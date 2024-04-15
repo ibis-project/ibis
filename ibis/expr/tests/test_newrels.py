@@ -1606,3 +1606,28 @@ def test_subsequent_order_by_calls():
     first = ops.Sort(t, [t.int_col.desc()]).to_expr()
     second = ops.Sort(first, [first.int_col.asc()]).to_expr()
     assert ts.equals(second)
+
+
+@pytest.mark.parametrize("func", [ibis.random, ibis.uuid])
+def test_impure_operation_dereferencing(func):
+    t = ibis.table({"x": "int64"}, name="t")
+
+    impure = func()
+    t1 = t.mutate(y=impure)
+    t2 = t1.mutate(z=impure.cast("string"))
+
+    expected = ops.Project(
+        parent=t1,
+        values={"x": t1.x, "y": t1.y, "z": t1.y.cast("string")},
+    )
+    assert t2.op() == expected
+
+    v1 = func()
+    v2 = func()
+
+    t1 = t.mutate(y=v1)
+    t2 = t1.mutate(z=v2.cast("string"))
+    expected = ops.Project(
+        parent=t1, values={"x": t1.x, "y": t1.y, "z": v2.cast("string")}
+    )
+    assert t2.op() == expected

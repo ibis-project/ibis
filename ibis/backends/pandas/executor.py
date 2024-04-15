@@ -81,14 +81,6 @@ class PandasExecutor(Dispatched, PandasUtils):
             return PandasConverter.convert_scalar(arg, to)
 
     @classmethod
-    def visit(cls, op: ops.TypeOf, arg):
-        raise OperationNotDefinedError("TypeOf is not implemented")
-
-    @classmethod
-    def visit(cls, op: ops.RandomScalar):
-        raise OperationNotDefinedError("RandomScalar is not implemented")
-
-    @classmethod
     def visit(cls, op: ops.Greatest, arg):
         return cls.columnwise(lambda df: df.max(axis=1), arg)
 

@@ -80,7 +80,6 @@ class TrinoCompiler(SQLGlotCompiler):
         ops.ExtractPath: "url_extract_path",
         ops.ExtractFragment: "url_extract_fragment",
         ops.ArrayPosition: "array_position",
-        ops.RandomUUID: "uuid",
     }
 
     def _aggregate(self, funcname: str, *args, where):

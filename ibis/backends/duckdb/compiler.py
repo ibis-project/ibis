@@ -48,7 +48,6 @@ class DuckDBCompiler(SQLGlotCompiler):
         ops.MapMerge: "map_concat",
         ops.MapValues: "map_values",
         ops.Mode: "mode",
-        ops.RandomUUID: "uuid",
         ops.TimeFromHMS: "make_time",
         ops.TypeOf: "typeof",
         ops.GeoPoint: "st_point",
@@ -418,3 +417,9 @@ class DuckDBCompiler(SQLGlotCompiler):
                 expression=sg.to_identifier(field, quoted=self.quoted),
             )
         return super().visit_StructField(op, arg=arg, field=field)
+
+    def visit_RandomScalar(self, op, **kwargs):
+        return self.f.random()
+
+    def visit_RandomUUID(self, op, **kwargs):
+        return self.f.uuid()

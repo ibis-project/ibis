@@ -129,8 +129,6 @@ class MSSQLCompiler(SQLGlotCompiler):
         ops.Ln: "log",
         ops.Log10: "log10",
         ops.Power: "power",
-        ops.RandomScalar: "rand",
-        ops.RandomUUID: "newid",
         ops.Repeat: "replicate",
         ops.Reverse: "reverse",
         ops.StringAscii: "ascii",
@@ -171,6 +169,9 @@ class MSSQLCompiler(SQLGlotCompiler):
         ):
             return None
         return spec
+
+    def visit_RandomUUID(self, op, **kwargs):
+        return self.f.newid()
 
     def visit_StringLength(self, op, *, arg):
         """The MSSQL LEN function doesn't count trailing spaces.

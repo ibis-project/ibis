@@ -100,7 +100,6 @@ class PostgresCompiler(SQLGlotCompiler):
         ops.MapContains: "exist",
         ops.MapKeys: "akeys",
         ops.MapValues: "avals",
-        ops.RandomUUID: "gen_random_uuid",
         ops.RegexSearch: "regexp_like",
         ops.TimeFromHMS: "make_time",
     }
@@ -110,6 +109,9 @@ class PostgresCompiler(SQLGlotCompiler):
         if where is not None:
             return sge.Filter(this=expr, expression=sge.Where(this=where))
         return expr
+
+    def visit_RandomUUID(self, op, **kwargs):
+        return self.f.gen_random_uuid()
 
     def visit_Mode(self, op, *, arg, where):
         expr = self.f.mode()

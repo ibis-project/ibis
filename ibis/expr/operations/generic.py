@@ -184,6 +184,17 @@ class Constant(Scalar, Singleton):
 
 
 @public
+class Impure(Value):
+    _counter = itertools.count()
+    uid: Optional[int] = None
+
+    def __init__(self, uid, **kwargs):
+        if uid is None:
+            uid = next(self._counter)
+        super().__init__(uid=uid, **kwargs)
+
+
+@public
 class TimestampNow(Constant):
     dtype = dt.timestamp
 
@@ -194,13 +205,15 @@ class DateNow(Constant):
 
 
 @public
-class RandomScalar(Constant):
+class RandomScalar(Impure):
     dtype = dt.float64
+    shape = ds.scalar
 
 
 @public
-class RandomUUID(Constant):
+class RandomUUID(Impure):
     dtype = dt.uuid
+    shape = ds.scalar
 
 
 @public

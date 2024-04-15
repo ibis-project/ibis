@@ -76,7 +76,6 @@ class ImpalaCompiler(SQLGlotCompiler):
         ops.Hash: "fnv_hash",
         ops.LStrip: "ltrim",
         ops.Ln: "ln",
-        ops.RandomUUID: "uuid",
         ops.RStrip: "rtrim",
         ops.Strip: "trim",
         ops.TypeOf: "typeof",
