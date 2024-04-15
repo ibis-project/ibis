@@ -62,7 +62,7 @@ INNER JOIN (
       GROUP BY
         1
     ) AS `t10`
-      ON `t8`.`d` = `t10`.`d`
+      ON `t10`.`d` = `t10`.`d`
   ) AS `t11`
   WHERE
     `t11`.`row_count` < (
