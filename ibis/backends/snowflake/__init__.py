@@ -217,6 +217,7 @@ $$ {defn["source"]} $$"""
             session_parameters=session_parameters,
             create_object_udfs=create_object_udfs,
         )
+        self._from_snowpark = False
 
     def _setup_session(self, *, con, session_parameters, create_object_udfs: bool):
         self.con = con
@@ -320,7 +321,15 @@ $$ {defn["source"]} $$"""
             session_parameters={},
             create_object_udfs=create_object_udfs,
         )
+        backend._from_snowpark = True
         return backend
+
+    def reconnect(self) -> None:
+        if self._from_snowpark:
+            raise com.IbisError(
+                "Reconnecting is not supported when using a Snowpark session"
+            )
+        super().reconnect()
 
     def _get_udf_source(self, udf_node: ops.ScalarUDF):
         name = type(udf_node).__name__

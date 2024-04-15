@@ -5,6 +5,7 @@ import contextlib
 import importlib
 import inspect
 import json
+import os
 import re
 import string
 import subprocess
@@ -313,6 +314,11 @@ def test_create_table_from_schema(con, new_schema, temp_table):
     reason="`tbl_properties` is required when creating table with schema",
 )
 def test_create_temporary_table_from_schema(con_no_data, new_schema):
+    if con_no_data.name == "snowflake" and os.environ.get("SNOWFLAKE_SNOWPARK"):
+        with pytest.raises(com.IbisError, match="Reconnecting is not supported"):
+            con_no_data.reconnect()
+        return
+
     temp_table = gen_name(f"test_{con_no_data.name}_tmp")
     table = con_no_data.create_table(temp_table, schema=new_schema, temp=True)
 
