@@ -1585,6 +1585,14 @@ def test_json_to_pyarrow(con):
         None,
         [42, 47, 55],
         [],
+        "a",
+        "",
+        "b",
+        None,
+        True,
+        False,
+        42,
+        37.37,
     ]
     expected = {json.dumps(val) for val in expected}
 
@@ -1592,5 +1600,10 @@ def test_json_to_pyarrow(con):
         # loads and dumps so the string representation is the same
         json.dumps(json.loads(val))
         for val in js.to_pylist()
+        # proper null values must be ignored because they cannot be
+        # deserialized as JSON
+        #
+        # they exist in the json_t table, so the `js` value contains them
+        if val is not None
     }
     assert result == expected

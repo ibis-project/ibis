@@ -165,7 +165,15 @@ INSERT INTO "json_t" VALUES
     ('{"a":"foo", "c":null}'),
     ('null'),
     ('[42,47,55]'),
-    ('[]');
+    ('[]'),
+    ('"a"'),
+    ('""'),
+    ('"b"'),
+    (NULL),
+    ('true'),
+    ('false'),
+    ('42'),
+    ('37.37');
 
 DROP TABLE IF EXISTS "win" CASCADE;
 CREATE TABLE "win" ("g" TEXT, "x" BIGINT, "y" BIGINT);

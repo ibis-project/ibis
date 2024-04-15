@@ -325,6 +325,53 @@ class PostgresCompiler(SQLGlotCompiler):
             op.dtype,
         )
 
+    def visit_UnwrapJSONString(self, op, *, arg):
+        return self.if_(
+            self.f.json_typeof(arg).eq("string"),
+            self.f.json_extract_path_text(
+                arg,
+                # this is apparently how you pass in no additional arguments to
+                # a variadic function, see the "Variadic Function Resolution"
+                # section in
+                # https://www.postgresql.org/docs/current/typeconv-func.html
+                sge.Var(this="VARIADIC ARRAY[]::TEXT[]"),
+            ),
+            NULL,
+        )
+
+    def visit_UnwrapJSONInt64(self, op, *, arg):
+        text = self.f.json_extract_path_text(
+            arg, sge.Var(this="VARIADIC ARRAY[]::TEXT[]")
+        )
+        return self.if_(
+            self.f.json_typeof(arg).eq("number"),
+            self.cast(
+                self.if_(self.f.regexp_like(text, r"^\d+$", "g"), text, NULL),
+                op.dtype,
+            ),
+            NULL,
+        )
+
+    def visit_UnwrapJSONFloat64(self, op, *, arg):
+        text = self.f.json_extract_path_text(
+            arg, sge.Var(this="VARIADIC ARRAY[]::TEXT[]")
+        )
+        return self.if_(
+            self.f.json_typeof(arg).eq("number"), self.cast(text, op.dtype), NULL
+        )
+
+    def visit_UnwrapJSONBoolean(self, op, *, arg):
+        return self.if_(
+            self.f.json_typeof(arg).eq("boolean"),
+            self.cast(
+                self.f.json_extract_path_text(
+                    arg, sge.Var(this="VARIADIC ARRAY[]::TEXT[]")
+                ),
+                op.dtype,
+            ),
+            NULL,
+        )
+
     def visit_StructColumn(self, op, *, names, values):
         return self.f.row(*map(self.cast, values, op.dtype.types))
 

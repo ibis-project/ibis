@@ -179,6 +179,18 @@ class SnowflakeCompiler(SQLGlotCompiler):
     def visit_ToJSONArray(self, op, *, arg):
         return self.if_(self.f.is_array(arg), arg, NULL)
 
+    def visit_UnwrapJSONString(self, op, *, arg):
+        return self.if_(self.f.is_varchar(arg), self.f.as_varchar(arg), NULL)
+
+    def visit_UnwrapJSONInt64(self, op, *, arg):
+        return self.if_(self.f.is_integer(arg), self.f.as_integer(arg), NULL)
+
+    def visit_UnwrapJSONFloat64(self, op, *, arg):
+        return self.if_(self.f.is_double(arg), self.f.as_double(arg), NULL)
+
+    def visit_UnwrapJSONBoolean(self, op, *, arg):
+        return self.if_(self.f.is_boolean(arg), self.f.as_boolean(arg), NULL)
+
     def visit_IsNan(self, op, *, arg):
         return arg.eq(self.NAN)
 

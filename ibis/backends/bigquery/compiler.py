@@ -381,6 +381,18 @@ class BigQueryCompiler(SQLGlotCompiler):
     def visit_JSONGetItem(self, op, *, arg, index):
         return arg[index]
 
+    def visit_UnwrapJSONString(self, op, *, arg):
+        return self.f.anon["safe.string"](arg)
+
+    def visit_UnwrapJSONInt64(self, op, *, arg):
+        return self.f.anon["safe.int64"](arg)
+
+    def visit_UnwrapJSONFloat64(self, op, *, arg):
+        return self.f.anon["safe.float64"](arg)
+
+    def visit_UnwrapJSONBoolean(self, op, *, arg):
+        return self.f.anon["safe.bool"](arg)
+
     def visit_ExtractEpochSeconds(self, op, *, arg):
         return self.f.unix_seconds(arg)
 

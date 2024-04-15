@@ -209,10 +209,42 @@ class DuckDBCompiler(SQLGlotCompiler):
         return self.f.len(self.f.element_at(arg, key)).neq(0)
 
     def visit_ToJSONMap(self, op, *, arg):
-        return sge.TryCast(this=arg, to=self.type_mapper.from_ibis(op.dtype))
+        return self.if_(
+            self.f.json_type(arg).eq("OBJECT"),
+            self.cast(self.cast(arg, dt.json), op.dtype),
+            NULL,
+        )
 
     def visit_ToJSONArray(self, op, *, arg):
-        return self.visit_ToJSONMap(op, arg=arg)
+        return self.if_(
+            self.f.json_type(arg).eq("ARRAY"),
+            self.cast(self.cast(arg, dt.json), op.dtype),
+            NULL,
+        )
+
+    def visit_UnwrapJSONString(self, op, *, arg):
+        return self.if_(
+            self.f.json_type(arg).eq("VARCHAR"),
+            self.f.json_extract_string(arg, "$"),
+            NULL,
+        )
+
+    def visit_UnwrapJSONInt64(self, op, *, arg):
+        arg_type = self.f.json_type(arg)
+        return self.if_(
+            arg_type.isin("UBIGINT", "BIGINT"), self.cast(arg, op.dtype), NULL
+        )
+
+    def visit_UnwrapJSONFloat64(self, op, *, arg):
+        arg_type = self.f.json_type(arg)
+        return self.if_(
+            arg_type.isin("UBIGINT", "BIGINT", "DOUBLE"), self.cast(arg, op.dtype), NULL
+        )
+
+    def visit_UnwrapJSONBoolean(self, op, *, arg):
+        return self.if_(
+            self.f.json_type(arg).eq("BOOLEAN"), self.cast(arg, op.dtype), NULL
+        )
 
     def visit_ArrayConcat(self, op, *, arg):
         # TODO(cpcloud): map ArrayConcat to this in sqlglot instead of here

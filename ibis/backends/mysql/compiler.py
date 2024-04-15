@@ -342,3 +342,25 @@ class MySQLCompiler(SQLGlotCompiler):
                 this=right.this * 1_000, unit=sge.Var(this="MICROSECOND")
             )
         return self.f.date_add(left, right, dialect=self.dialect)
+
+    def visit_UnwrapJSONString(self, op, *, arg):
+        return self.if_(
+            self.f.json_type(arg).eq("STRING"), self.f.json_unquote(arg), NULL
+        )
+
+    def visit_UnwrapJSONInt64(self, op, *, arg):
+        return self.if_(
+            self.f.json_type(arg).eq("INTEGER"), self.cast(arg, op.dtype), NULL
+        )
+
+    def visit_UnwrapJSONFloat64(self, op, *, arg):
+        return self.if_(
+            self.f.json_type(arg).isin("DOUBLE", "INTEGER"),
+            self.cast(arg, op.dtype),
+            NULL,
+        )
+
+    def visit_UnwrapJSONBoolean(self, op, *, arg):
+        return self.if_(
+            self.f.json_type(arg).eq("BOOLEAN"), self.if_(arg.eq("true"), 1, 0), NULL
+        )

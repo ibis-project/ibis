@@ -11,6 +11,7 @@ import sqlglot.expressions as sge
 from pyspark import SparkConf
 from pyspark.sql import DataFrame, SparkSession
 from pyspark.sql.functions import PandasUDFType, pandas_udf
+from pyspark.sql.types import BooleanType, DoubleType, LongType, StringType
 
 import ibis.common.exceptions as com
 import ibis.config
@@ -38,6 +39,47 @@ def normalize_filenames(source_list):
     source_list = util.promote_list(source_list)
 
     return list(map(util.normalize_filename, source_list))
+
+
+@pandas_udf(returnType=DoubleType(), functionType=PandasUDFType.SCALAR)
+def unwrap_json_float(s: pd.Series) -> pd.Series:
+    import json
+
+    import pandas as pd
+
+    def nullify_type_mismatched_value(raw):
+        if pd.isna(raw):
+            return None
+
+        value = json.loads(raw)
+        # exact type check because we want to distinguish between integer
+        # and booleans and bool is a subclass of int
+        return value if type(value) in (float, int) else None
+
+    return s.map(nullify_type_mismatched_value)
+
+
+def unwrap_json(typ):
+    import json
+
+    import pandas as pd
+
+    type_mapping = {str: StringType(), int: LongType(), bool: BooleanType()}
+
+    @pandas_udf(returnType=type_mapping[typ], functionType=PandasUDFType.SCALAR)
+    def unwrap(s: pd.Series) -> pd.Series:
+        def nullify_type_mismatched_value(raw):
+            if pd.isna(raw):
+                return None
+
+            value = json.loads(raw)
+            # exact type check because we want to distinguish between integer
+            # and booleans and bool is a subclass of int
+            return value if type(value) == typ else None
+
+        return s.map(nullify_type_mismatched_value)
+
+    return unwrap
 
 
 class _PySparkCursor:
@@ -251,6 +293,10 @@ class Backend(SQLBackend, CanCreateDatabase):
             udf_return = PySparkType.from_ibis(udf.return_type)
             spark_udf = pandas_udf(udf_func, udf_return, PandasUDFType.GROUPED_AGG)
             self._session.udf.register(udf_name, spark_udf)
+
+        for typ in (str, int, bool):
+            self._session.udf.register(f"unwrap_json_{typ.__name__}", unwrap_json(typ))
+        self._session.udf.register("unwrap_json_float", unwrap_json_float)
 
     def _register_in_memory_table(self, op: ops.InMemoryTable) -> None:
         schema = PySparkSchema.from_ibis(op.schema)

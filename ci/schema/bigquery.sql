@@ -65,7 +65,15 @@ INSERT INTO {dataset}.json_t VALUES
     (JSON '{{"a":"foo", "c":null}}'),
     (JSON 'null'),
     (JSON '[42,47,55]'),
-    (JSON '[]');
+    (JSON '[]'),
+    (JSON '"a"'),
+    (JSON '""'),
+    (JSON '"b"'),
+    (NULL),
+    (JSON 'true'),
+    (JSON 'false'),
+    (JSON '42'),
+    (JSON '37.37');
 
 
 LOAD DATA OVERWRITE {dataset}.functional_alltypes (
