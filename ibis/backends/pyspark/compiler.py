@@ -57,6 +57,7 @@ class PySparkCompiler(SQLGlotCompiler):
         (
             ops.RowID,
             ops.TimestampBucket,
+            ops.RandomUUID,
         )
     )
 
