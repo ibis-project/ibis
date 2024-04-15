@@ -88,7 +88,7 @@ def test_join_with_multiple_predicates(how, left, right, df1, df2):
         # includes the column from the right table
         expected["key"] = pd.Series([np.nan, np.nan, np.nan], dtype=object)
     elif how == "outer":
-        expected["key"] = pd.Series(["a", "b", "c", "d", np.nan, np.nan], dtype=object)
+        expected["key"] = pd.Series(["a", np.nan, "b", np.nan, "c", "d"], dtype=object)
 
     assert list(result.columns) == expected_columns
     tm.assert_frame_equal(result, expected)
@@ -119,7 +119,7 @@ def test_join_with_multiple_predicates_written_as_one(how, left, right, df1, df2
     if how == "right":
         expected["key"] = pd.Series([np.nan, np.nan], dtype=object)
     elif how == "outer":
-        expected["key"] = pd.Series(["a", "b", "c", "d", np.nan, np.nan], dtype=object)
+        expected["key"] = pd.Series(["a", np.nan, "b", np.nan, "c", "d"], dtype=object)
 
     tm.assert_frame_equal(result[expected.columns], expected)
 

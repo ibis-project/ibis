@@ -148,7 +148,7 @@ bigquery = [
   "pydata-google-auth",
 ]
 clickhouse = ["clickhouse-connect"]
-dask = ["dask", "regex"]
+dask = ["dask", "regex", "packaging"]
 datafusion = ["datafusion"]
 druid = ["pydruid"]
 duckdb = ["duckdb"]
@@ -158,7 +158,7 @@ impala = ["impyla"]
 mssql = ["pyodbc"]
 mysql = ["pymysql"]
 oracle = ["oracledb", "packaging"]
-pandas = ["regex"]
+pandas = ["regex", "packaging"]
 polars = ["polars", "packaging"]
 postgres = ["psycopg2"]
 pyspark = ["pyspark", "packaging"]
@@ -299,6 +299,11 @@ filterwarnings = [
   'ignore:datetime\.datetime\.utcfromtimestamp\(\) is deprecated and scheduled for removal:DeprecationWarning',
   # types using custom tp_new are deprecated in python 3.12
   "ignore:Type .+ uses PyType_Spec with a metaclass that has custom tp_new:DeprecationWarning",
+  # pandas 2.2 warnings
+  'ignore:DataFrameGroupBy\.apply operated on the grouping columns\. This behavior is deprecated:DeprecationWarning',
+  'ignore:Downcasting object dtype arrays on \.fillna, \.ffill, \.bfill is deprecated:FutureWarning',
+  # pandas 2.2 warnings coming directly from the way flink uses pandas
+  "ignore:Passing a BlockManager to DataFrame is deprecated:DeprecationWarning",
 ]
 empty_parameter_set_mark = "fail_at_collect"
 markers = [

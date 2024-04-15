@@ -231,6 +231,7 @@ jobs:
               - flink
             additional_deps:
               - "'apache-flink < 1.20.0'"
+              - "'pandas < 2.2'"
             services:
               - flink
         include:
@@ -362,6 +363,7 @@ jobs:
                 - flink
               additional_deps:
                 - "'apache-flink < 1.20.0'"
+                - "'pandas < 2.2'"
               services:
                 - flink
           - os: windows-latest
@@ -467,7 +469,7 @@ jobs:
           - windows-latest
         python-version:
           - "3.9"
-          - "3.11.8"
+          - "3.11.8" # https://github.com/dask/dask/issues/11038
         backend:
           - name: dask
             title: Dask

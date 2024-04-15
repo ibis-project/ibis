@@ -323,9 +323,9 @@ def test_reduction_udf_array_return_type(udf_backend, udf_alltypes, udf_df):
     result = expr.execute()
 
     expected = udf_df.assign(
-        q=pd.Series([quantiles.func(udf_df["int_col"], quantiles=qs)])
-        .repeat(len(udf_df))
-        .reset_index(drop=True)
+        q=pd.Series(
+            [quantiles.func(udf_df["int_col"], quantiles=qs).tolist()] * len(udf_df)
+        )
     )
     udf_backend.assert_frame_equal(result, expected)
 

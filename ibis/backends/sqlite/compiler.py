@@ -392,7 +392,7 @@ class SQLiteCompiler(SQLGlotCompiler):
         return (self.f.strftime("%j", date) - 1) / 7 + 1
 
     def visit_ExtractEpochSeconds(self, op, *, arg):
-        return self.cast((self.f.julianday(arg) - 2440587.5) * 86400.0, dt.int64)
+        return self.cast(self.f.strftime("%s", arg), dt.int64)
 
     def visit_DayOfWeekIndex(self, op, *, arg):
         return self.cast(
