@@ -222,8 +222,8 @@ $$ {defn["source"]} $$"""
             create_object_udfs=create_object_udfs,
         )
 
-    def _setup_session(self, *, con, session_parameters, create_object_udfs: bool):
-        self.con = con
+    def _setup_session(self, *, session_parameters, create_object_udfs: bool):
+        con = self.con
 
         # enable multiple SQL statements by default
         session_parameters.setdefault("MULTI_STATEMENT_COUNT", 0)
@@ -318,12 +318,15 @@ $$ {defn["source"]} $$"""
         │ ansonca01 │    16 │
         └───────────┴───────┘
         """
+        import snowflake.connector
+
         backend = cls(_from_snowpark=True)
-        backend._setup_session(
-            con=session._conn._conn,
-            session_parameters={},
-            create_object_udfs=create_object_udfs,
-        )
+        backend.con = session._conn._conn
+        with contextlib.suppress(snowflake.connector.errors.ProgrammingError):
+            # stored procs on snowflake don't allow session mutation it seems
+            backend._setup_session(
+                session_parameters={}, create_object_udfs=create_object_udfs
+            )
         return backend
 
     def reconnect(self) -> None:
