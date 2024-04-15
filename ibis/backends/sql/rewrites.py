@@ -152,7 +152,13 @@ def merge_select_select(_, **kwargs):
     from the inner Select are inlined into the outer Select.
     """
     # don't merge if either the outer or the inner select has window functions
-    blocking = (ops.WindowFunction, ops.ExistsSubquery, ops.InSubquery, ops.Unnest)
+    blocking = (
+        ops.WindowFunction,
+        ops.ExistsSubquery,
+        ops.InSubquery,
+        ops.Unnest,
+        ops.Impure,
+    )
     if _.find_below(blocking, filter=ops.Value):
         return _
     if _.parent.find_below(blocking, filter=ops.Value):

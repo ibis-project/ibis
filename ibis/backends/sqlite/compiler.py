@@ -103,7 +103,6 @@ class SQLiteCompiler(SQLGlotCompiler):
         ops.Mode: "_ibis_mode",
         ops.Time: "time",
         ops.Date: "date",
-        ops.RandomUUID: "uuid",
     }
 
     def _aggregate(self, funcname: str, *args, where):
@@ -213,7 +212,7 @@ class SQLiteCompiler(SQLGlotCompiler):
 
         return arg
 
-    def visit_RandomScalar(self, op):
+    def visit_RandomScalar(self, op, **kwargs):
         return 0.5 + self.f.random() / sge.Literal.number(float(-1 << 64))
 
     def visit_Cot(self, op, *, arg):

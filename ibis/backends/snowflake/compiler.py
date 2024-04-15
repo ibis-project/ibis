@@ -78,7 +78,6 @@ class SnowflakeCompiler(SQLGlotCompiler):
         ops.Hash: "hash",
         ops.Median: "median",
         ops.Mode: "mode",
-        ops.RandomUUID: "uuid_string",
         ops.StringToTimestamp: "to_timestamp_tz",
         ops.TimeFromHMS: "time_from_parts",
         ops.TimestampFromYMDHMS: "timestamp_from_parts",
@@ -250,10 +249,13 @@ class SnowflakeCompiler(SQLGlotCompiler):
     def visit_Log(self, op, *, arg, base):
         return self.f.log(base, arg, dialect=self.dialect)
 
-    def visit_RandomScalar(self, op):
+    def visit_RandomScalar(self, op, **kwargs):
         return self.f.uniform(
             self.f.to_double(0.0), self.f.to_double(1.0), self.f.random()
         )
+
+    def visit_RandomUUID(self, op, **kwargs):
+        return self.f.uuid_string()
 
     def visit_ApproxMedian(self, op, *, arg, where):
         return self.agg.approx_percentile(arg, 0.5, where=where)

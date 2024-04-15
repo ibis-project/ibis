@@ -177,3 +177,31 @@ def test_union_generates_predictable_aliases(con):
     expr = ibis.union(sub1, sub2)
     df = con.execute(expr)
     assert len(df) == 2
+
+
+@pytest.mark.never(
+    ["pandas", "dask", "polars"],
+    reason="not SQL",
+    raises=NotImplementedError,
+)
+@pytest.mark.parametrize(
+    "value",
+    [
+        param(ibis.random(), id="random"),
+        param(
+            ibis.uuid(),
+            marks=pytest.mark.notimpl(
+                ["exasol", "risingwave", "druid", "oracle", "pyspark"],
+                raises=exc.OperationNotDefinedError,
+            ),
+            id="uuid",
+        ),
+    ],
+)
+def test_selects_with_impure_operations_not_merged(con, snapshot, value):
+    t = ibis.table({"x": "int64", "y": "float64"}, name="t")
+    t = t.mutate(y=value, z=value)
+    t = t.mutate(size=(t.y == t.z).ifelse("big", "small"))
+
+    sql = str(ibis.to_sql(t, dialect=con.name))
+    snapshot.assert_match(sql, "out.sql")

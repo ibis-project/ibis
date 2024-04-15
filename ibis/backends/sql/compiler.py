@@ -262,7 +262,6 @@ class SQLGlotCompiler(abc.ABC):
         ops.Power: "pow",
         ops.RPad: "rpad",
         ops.Radians: "radians",
-        ops.RandomScalar: "random",
         ops.RegexSearch: "regexp_like",
         ops.RegexSplit: "regexp_split",
         ops.Repeat: "repeat",
@@ -687,6 +686,14 @@ class SQLGlotCompiler(abc.ABC):
         if digits is not None:
             return sge.Round(this=arg, decimals=digits)
         return sge.Round(this=arg)
+
+    ### Random Noise
+
+    def visit_RandomScalar(self, op, **kwargs):
+        return self.f.rand()
+
+    def visit_RandomUUID(self, op, **kwargs):
+        return self.f.uuid()
 
     ### Dtype Dysmorphia
 

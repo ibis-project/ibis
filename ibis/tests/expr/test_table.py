@@ -567,11 +567,15 @@ def test_order_by_asc_deferred_sort_key(table):
     assert_equal(result, expected2)
 
 
+# different instantiations create unique objects
+rand = ibis.random()
+
+
 @pytest.mark.parametrize(
     ("key", "expected"),
     [
         param(ibis.NA, ibis.NA.op(), id="na"),
-        param(ibis.random(), ibis.random().op(), id="random"),
+        param(rand, rand.op(), id="random"),
         param(1.0, ibis.literal(1.0).op(), id="float"),
         param(ibis.literal("a"), ibis.literal("a").op(), id="string"),
         param(ibis.literal([1, 2, 3]), ibis.literal([1, 2, 3]).op(), id="array"),

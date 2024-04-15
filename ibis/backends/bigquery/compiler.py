@@ -120,8 +120,6 @@ class BigQueryCompiler(SQLGlotCompiler):
         ops.RPad: "rpad",
         ops.Levenshtein: "edit_distance",
         ops.Modulus: "mod",
-        ops.RandomScalar: "rand",
-        ops.RandomUUID: "generate_uuid",
         ops.RegexReplace: "regexp_replace",
         ops.RegexSearch: "regexp_contains",
         ops.Time: "time",
@@ -695,3 +693,6 @@ class BigQueryCompiler(SQLGlotCompiler):
         if where is not None:
             arg = self.if_(where, arg, NULL)
         return self.f.count(sge.Distinct(expressions=[arg]))
+
+    def visit_RandomUUID(self, op, **kwargs):
+        return self.f.generate_uuid()

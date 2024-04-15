@@ -76,7 +76,6 @@ class ImpalaCompiler(SQLGlotCompiler):
         ops.Hash: "fnv_hash",
         ops.LStrip: "ltrim",
         ops.Ln: "ln",
-        ops.RandomUUID: "uuid",
         ops.RStrip: "rtrim",
         ops.Strip: "trim",
         ops.TypeOf: "typeof",
@@ -146,7 +145,7 @@ class ImpalaCompiler(SQLGlotCompiler):
     def visit_Xor(self, op, *, left, right):
         return sg.and_(sg.or_(left, right), sg.not_(sg.and_(left, right)))
 
-    def visit_RandomScalar(self, op):
+    def visit_RandomScalar(self, op, **_):
         return self.f.rand(self.f.utc_to_unix_micros(self.f.utc_timestamp()))
 
     def visit_DayOfWeekIndex(self, op, *, arg):

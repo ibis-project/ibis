@@ -42,18 +42,12 @@ def test_uuid_literal(con, backend):
 
 
 @pytest.mark.notimpl(
-    [
-        "druid",
-        "exasol",
-        "mysql",
-        "oracle",
-        "polars",
-        "pyspark",
-        "risingwave",
-    ],
+    ["druid", "exasol", "oracle", "polars", "pyspark", "risingwave", "pandas", "dask"],
     raises=com.OperationNotDefinedError,
 )
-@pytest.mark.notimpl(["pandas", "dask"], raises=ValueError)
+@pytest.mark.broken(
+    ["mysql"], raises=AssertionError, reason="MySQL generates version 1 UUIDs"
+)
 def test_uuid_function(con):
     obj = con.execute(ibis.uuid())
     assert isinstance(obj, uuid.UUID)
@@ -61,18 +55,9 @@ def test_uuid_function(con):
 
 
 @pytest.mark.notimpl(
-    [
-        "druid",
-        "exasol",
-        "mysql",
-        "oracle",
-        "polars",
-        "pyspark",
-        "risingwave",
-    ],
+    ["druid", "exasol", "oracle", "polars", "pyspark", "risingwave", "pandas", "dask"],
     raises=com.OperationNotDefinedError,
 )
-@pytest.mark.notimpl(["pandas", "dask"], raises=ValueError)
 def test_uuid_unique_each_row(con):
     expr = (
         con.tables.functional_alltypes.mutate(uuid=ibis.uuid()).limit(2).uuid.nunique()
