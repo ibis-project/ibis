@@ -333,6 +333,25 @@ class DatabaseTable(PhysicalTable):
 
 
 @public
+class VersionedDatabaseTable(DatabaseTable):
+    """Table that is versioned with snapshots by the backend."""
+
+    at_time: Optional[Column] = None
+
+
+@public
+class TimeTravelDatabaseTable(DatabaseTable):
+    """Table for time travel."""
+
+    timestamp: Value[dt.Timestamp]
+
+    def to_expr(self):
+        from ibis.expr.types.temporal import TimeTravelTable
+
+        return TimeTravelTable(self)
+
+
+@public
 class InMemoryTable(PhysicalTable):
     schema: Schema
     data: TableProxy

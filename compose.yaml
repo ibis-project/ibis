@@ -139,6 +139,8 @@ services:
       AZURE_ABFS_OAUTH_SECRET: ""
       AZURE_ABFS_OAUTH_ENDPOINT: ""
       AZURE_WASB_ACCESS_KEY: ""
+    ports:
+      - 9083:9083
     depends_on:
       hive-metastore-db:
         condition: service_healthy
