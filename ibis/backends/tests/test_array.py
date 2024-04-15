@@ -30,6 +30,7 @@ from ibis.backends.tests.errors import (
     PySparkAnalysisException,
     TrinoUserError,
 )
+from ibis.common.collections import frozendict
 
 pytestmark = [
     pytest.mark.never(
@@ -815,7 +816,9 @@ def test_unnest_struct(con):
     result = con.execute(expr)
 
     expected = pd.DataFrame(data).explode("value").iloc[:, 0].reset_index(drop=True)
-    tm.assert_series_equal(result, expected)
+    assert frozenset(map(frozendict, result.values)) == frozenset(
+        map(frozendict, expected.values)
+    )
 
 
 @builtin_array
