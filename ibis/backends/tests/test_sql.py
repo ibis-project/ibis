@@ -191,7 +191,7 @@ def test_union_generates_predictable_aliases(con):
         param(
             ibis.uuid(),
             marks=pytest.mark.notimpl(
-                ["exasol", "risingwave", "druid", "oracle"],
+                ["exasol", "risingwave", "druid", "oracle", "pyspark"],
                 raises=exc.OperationNotDefinedError,
             ),
             id="uuid",
