@@ -59,6 +59,7 @@ class DruidCompiler(SQLGlotCompiler):
             ops.Median,
             ops.MultiQuantile,
             ops.Quantile,
+            ops.RandomUUID,
             ops.RegexReplace,
             ops.RegexSplit,
             ops.RowID,

@@ -185,7 +185,17 @@ def test_union_generates_predictable_aliases(con):
     raises=NotImplementedError,
 )
 @pytest.mark.notimpl(["risingwave"], raises=exc.OperationNotDefinedError)
-@pytest.mark.parametrize("value", [ibis.random(), ibis.uuid()])
+@pytest.mark.parametrize(
+    "value",
+    [
+        param(ibis.random(), id="random"),
+        param(
+            ibis.uuid(),
+            marks=pytest.mark.notimpl(["exasol"], raises=exc.OperationNotDefinedError),
+            id="uuid",
+        ),
+    ],
+)
 def test_selects_with_impure_operations_not_merged(con, snapshot, value):
     t = ibis.table({"x": "int64", "y": "float64"}, name="t")
     t = t.mutate(y=value, z=value)
