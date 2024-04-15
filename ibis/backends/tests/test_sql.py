@@ -184,6 +184,7 @@ def test_union_generates_predictable_aliases(con):
     reason="not SQL",
     raises=NotImplementedError,
 )
+@pytest.mark.notimpl(["risingwave"], raises=exc.OperationNotDefinedError)
 @pytest.mark.parametrize("value", [ibis.random(), ibis.uuid()])
 def test_selects_with_impure_operations_not_merged(con, snapshot, value):
     t = ibis.table({"x": "int64", "y": "float64"}, name="t")
