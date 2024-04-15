@@ -82,6 +82,9 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, CanCreateSchema):
     _latest_udf_python_version = (3, 10)
     _top_level_methods = ("from_snowpark",)
 
+    def __init__(self, _from_snowpark: bool = False) -> None:
+        self._from_snowpark = _from_snowpark
+
     def _convert_kwargs(self, kwargs):
         with contextlib.suppress(KeyError):
             kwargs["account"] = kwargs.pop("host")
@@ -217,7 +220,6 @@ $$ {defn["source"]} $$"""
             session_parameters=session_parameters,
             create_object_udfs=create_object_udfs,
         )
-        self._from_snowpark = False
 
     def _setup_session(self, *, con, session_parameters, create_object_udfs: bool):
         self.con = con
@@ -315,13 +317,12 @@ $$ {defn["source"]} $$"""
         │ ansonca01 │    16 │
         └───────────┴───────┘
         """
-        backend = cls()
+        backend = cls(_from_snowpark=True)
         backend._setup_session(
             con=session._conn._conn,
             session_parameters={},
             create_object_udfs=create_object_udfs,
         )
-        backend._from_snowpark = True
         return backend
 
     def reconnect(self) -> None:
