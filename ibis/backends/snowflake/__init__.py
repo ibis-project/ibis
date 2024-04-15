@@ -82,7 +82,8 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, CanCreateSchema):
     _latest_udf_python_version = (3, 10)
     _top_level_methods = ("from_snowpark",)
 
-    def __init__(self, _from_snowpark: bool = False) -> None:
+    def __init__(self, *args, _from_snowpark: bool = False, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
         self._from_snowpark = _from_snowpark
 
     def _convert_kwargs(self, kwargs):
