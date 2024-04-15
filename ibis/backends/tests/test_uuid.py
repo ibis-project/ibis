@@ -55,17 +55,7 @@ def test_uuid_function(con):
 
 
 @pytest.mark.notimpl(
-    [
-        "druid",
-        "exasol",
-        "mysql",
-        "oracle",
-        "polars",
-        "pyspark",
-        "risingwave",
-        "pandas",
-        "dask",
-    ],
+    ["druid", "exasol", "oracle", "polars", "pyspark", "risingwave", "pandas", "dask"],
     raises=com.OperationNotDefinedError,
 )
 def test_uuid_unique_each_row(con):
