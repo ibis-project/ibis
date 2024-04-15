@@ -590,8 +590,8 @@ def test_table_info(alltypes):
 @pytest.mark.notimpl(
     [
         "datafusion",
+        "bigquery",
         "impala",
-        "trino",
         "mysql",
         "mssql",
         "trino",
