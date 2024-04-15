@@ -184,14 +184,16 @@ def test_union_generates_predictable_aliases(con):
     reason="not SQL",
     raises=NotImplementedError,
 )
-@pytest.mark.notimpl(["risingwave"], raises=exc.OperationNotDefinedError)
 @pytest.mark.parametrize(
     "value",
     [
         param(ibis.random(), id="random"),
         param(
             ibis.uuid(),
-            marks=pytest.mark.notimpl(["exasol"], raises=exc.OperationNotDefinedError),
+            marks=pytest.mark.notimpl(
+                ["exasol", "risingwave", "druid", "oracle"],
+                raises=exc.OperationNotDefinedError,
+            ),
             id="uuid",
         ),
     ],
