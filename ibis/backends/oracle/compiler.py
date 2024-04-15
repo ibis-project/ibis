@@ -80,6 +80,7 @@ class OracleCompiler(SQLGlotCompiler):
             ops.ExtractWeekOfYear,
             ops.ExtractDayOfYear,
             ops.RowID,
+            ops.RandomUUID,
         )
     )
 
@@ -221,7 +222,7 @@ class OracleCompiler(SQLGlotCompiler):
     def visit_IsInf(self, op, *, arg):
         return arg.isin(self.POS_INF, self.NEG_INF)
 
-    def visit_RandomScalar(self, op):
+    def visit_RandomScalar(self, op, **_):
         # Not using FuncGen here because of dotted function call
         return sg.func("dbms_random.value")
 
