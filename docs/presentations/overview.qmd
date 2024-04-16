@@ -1,5 +1,8 @@
 ---
-title: "Ibis overview"
+title: "Ibis"
+subtitle: "An overview"
+author:
+  - Cody Peterson
 format:
   revealjs:
     footer: <https://ibis-project.org>
