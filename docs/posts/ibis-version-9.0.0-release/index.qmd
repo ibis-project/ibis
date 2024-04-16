@@ -1,7 +1,7 @@
 ---
 title: "Ibis 9.0: SQLGlot-ification"
 author: "Ibis team"
-date: "2024-04-09"
+date: "2024-04-18"
 categories:
     - release
     - blog
@@ -33,6 +33,11 @@ Day Unix backend](../unix-backend/index.qmd)! As always, there have been
 backend-specific improvements and bug fixes. Some highlights are below.
 
 Check the [full changelog](../../release_notes.md) for more details.
+
+### Snowflake
+
+You can now run Ibis inside of a Snowflake stored procedure! Look for a blog on
+this coming soon.
 
 ### DuckDB
 
@@ -146,6 +151,26 @@ A lot of new functionality has been added in Ibis 9.0.
 ### Python 3.12
 
 [Ibis now supports Python 3.12](https://github.com/ibis-project/ibis/pull/8529)!
+
+### Describe
+
+Ibis now has a `describe` method to get a summary of a table:
+
+```{python}
+#| code-fold: true
+#| echo: false
+ibis.options.repr.interactive.max_rows = len(t.columns)
+```
+
+```{python}
+t.describe()
+```
+
+```{python}
+#| code-fold: true
+#| echo: false
+ibis.options.repr.interactive.max_rows = 3
+```
 
 ### GraphViz custom attributes
 
