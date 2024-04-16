@@ -29,7 +29,7 @@ dependencies:
   - poetry-dynamic-versioning >=0.18.0
   - polars >=0.20.17
   - psycopg2 >=2.8.4
-  - pyarrow >=2
+  - pyarrow >=6
   - pyarrow-tests
   - pyarrow-hotfix >=0.4
   - pydata-google-auth
