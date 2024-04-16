@@ -476,6 +476,7 @@ jobs:
             deps:
               - "dask[array,dataframe]@2022.9.1"
               - "pandas@1.5.3"
+              - "numpy@1.23"
               - "pyarrow@6"
             extras:
               - dask
@@ -485,6 +486,7 @@ jobs:
               - "psycopg2@2.8.4"
               - "geopandas@0.6"
               - "Shapely@2"
+              - "numpy@1.23"
               - "pyarrow@6"
             services:
               - postgres
@@ -500,6 +502,7 @@ jobs:
                 - "psycopg2@2.8.4"
                 - "geopandas@0.6"
                 - "Shapely@2"
+                - "numpy@1.23"
                 - "pyarrow@6"
               services:
                 - postgres
@@ -514,6 +517,7 @@ jobs:
                 - "psycopg2@2.8.4"
                 - "geopandas@0.6"
                 - "Shapely@2"
+                - "numpy@1.23"
                 - "pyarrow@6"
               services:
                 - postgres
