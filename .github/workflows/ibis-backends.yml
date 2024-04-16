@@ -474,20 +474,24 @@ jobs:
           - name: dask
             title: Dask
             deps:
-              - "dask[array,dataframe]@2022.9.1"
-              - "pandas@1.5.3"
-              - "numpy@1.23.2"
-              - "pyarrow@6"
+              required:
+                - "numpy@1.23.2"
+                - "pyarrow@6"
+              optional:
+                - "dask[array,dataframe]@2022.9.1"
+                - "pandas@1.5.3"
             extras:
               - dask
           - name: postgres
             title: PostgreSQL
             deps:
-              - "psycopg2@2.8.4"
-              - "geopandas@0.6"
-              - "Shapely@2"
-              - "numpy@1.23.2"
-              - "pyarrow@6"
+              required:
+                - "numpy@1.23.2"
+                - "pyarrow@6"
+              optional:
+                - "psycopg2@2.8.4"
+                - "geopandas@0.6"
+                - "Shapely@2"
             services:
               - postgres
             extras:
@@ -499,11 +503,13 @@ jobs:
               name: postgres
               title: PostgreSQL
               deps:
-                - "psycopg2@2.8.4"
-                - "geopandas@0.6"
-                - "Shapely@2"
-                - "numpy@1.23.2"
-                - "pyarrow@6"
+                required:
+                  - "numpy@1.23.2"
+                  - "pyarrow@6"
+                optional:
+                  - "psycopg2@2.8.4"
+                  - "geopandas@0.6"
+                  - "Shapely@2"
               services:
                 - postgres
               extras:
@@ -514,11 +520,13 @@ jobs:
               name: postgres
               title: PostgreSQL
               deps:
-                - "psycopg2@2.8.4"
-                - "geopandas@0.6"
-                - "Shapely@2"
-                - "numpy@1.23.2"
-                - "pyarrow@6"
+                required:
+                  - "numpy@1.23.2"
+                  - "pyarrow@6"
+                optional:
+                  - "psycopg2@2.8.4"
+                  - "geopandas@0.6"
+                  - "Shapely@2"
               services:
                 - postgres
               extras:
@@ -558,8 +566,11 @@ jobs:
         # it requires a version of pandas that min versions are not compatible with
         run: poetry remove lonboard deltalake
 
-      - name: install minimum versions
-        run: poetry add --lock --optional ${{ join(matrix.backend.deps, ' ') }}
+      - name: install minimum versions of required deps
+        run: poetry add --lock ${{ join(matrix.backend.deps.required, ' ') }}
+
+      - name: install minimum versions of optional deps
+        run: poetry add --lock --optional ${{ join(matrix.backend.deps.optional, ' ') }}
 
       - name: checkout the lock file
         run: git checkout poetry.lock
