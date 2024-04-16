@@ -567,10 +567,10 @@ jobs:
         run: poetry remove lonboard deltalake
 
       - name: install minimum versions of required deps
-        run: poetry add --lock ${{ join(matrix.backend.deps.required, ' ') }}
+        run: poetry add --lock ${{ join(matrix.backend.deps.required, ' ') }} --python="==${{ steps.install_python.outputs.python-version }}"
 
       - name: install minimum versions of optional deps
-        run: poetry add --lock --optional ${{ join(matrix.backend.deps.optional, ' ') }}
+        run: poetry add --lock --optional ${{ join(matrix.backend.deps.optional, ' ') }} --python="==${{ steps.install_python.outputs.python-version }}"
 
       - name: checkout the lock file
         run: git checkout poetry.lock
