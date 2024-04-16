@@ -469,14 +469,14 @@ jobs:
           - windows-latest
         python-version:
           - "3.9"
-          - "3.11.8" # https://github.com/dask/dask/issues/11038
+          - "3.11"
         backend:
           - name: dask
             title: Dask
             deps:
               required:
                 - "numpy@1.23.2"
-                - "pyarrow@6"
+                - "pyarrow@7"
               optional:
                 - "dask[array,dataframe]@2022.9.1"
                 - "pandas@1.5.3"
@@ -487,7 +487,7 @@ jobs:
             deps:
               required:
                 - "numpy@1.23.2"
-                - "pyarrow@6"
+                - "pyarrow@7"
               optional:
                 - "psycopg2@2.8.4"
                 - "geopandas@0.6"
@@ -505,7 +505,7 @@ jobs:
               deps:
                 required:
                   - "numpy@1.23.2"
-                  - "pyarrow@6"
+                  - "pyarrow@7"
                 optional:
                   - "psycopg2@2.8.4"
                   - "geopandas@0.6"
@@ -515,14 +515,14 @@ jobs:
               extras:
                 - postgres
                 - geospatial
-          - python-version: "3.11.8"
+          - python-version: "3.11"
             backend:
               name: postgres
               title: PostgreSQL
               deps:
                 required:
                   - "numpy@1.23.2"
-                  - "pyarrow@6"
+                  - "pyarrow@7"
                 optional:
                   - "psycopg2@2.8.4"
                   - "geopandas@0.6"
@@ -532,6 +532,19 @@ jobs:
               extras:
                 - postgres
                 - geospatial
+          - python-version: "3.11"
+            backend:
+              name: dask
+              title: Dask
+              deps:
+                required:
+                  - "numpy@1.23.2"
+                  - "pyarrow@7"
+                optional:
+                  - "dask[array,dataframe]@2022.9.1"
+                  - "pandas@1.5.3"
+              extras:
+                - dask
     steps:
       - name: checkout
         uses: actions/checkout@v4
