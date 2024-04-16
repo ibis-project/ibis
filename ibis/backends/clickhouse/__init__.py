@@ -363,7 +363,9 @@ class Backend(SQLBackend, CanCreateDatabase):
 
         self._log(sql)
         schema = table.schema().to_pyarrow()
-        return pa.RecordBatchReader.from_batches(schema, batcher(sql, schema=schema))
+        return pa.ipc.RecordBatchReader.from_batches(
+            schema, batcher(sql, schema=schema)
+        )
 
     def execute(
         self,

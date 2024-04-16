@@ -1174,7 +1174,7 @@ class Backend(SQLBackend):
         pa_table = self.to_pyarrow(
             expr.as_table(), params=params, limit=limit, **kwargs
         )
-        return pa.RecordBatchReader.from_batches(
+        return pa.ipc.RecordBatchReader.from_batches(
             pa_table.schema, pa_table.to_batches(max_chunksize=chunk_size)
         )
 

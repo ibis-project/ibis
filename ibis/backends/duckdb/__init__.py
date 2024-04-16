@@ -828,7 +828,7 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema, UrlFromPath):
 
     def read_in_memory(
         self,
-        source: pd.DataFrame | pa.Table | pa.RecordBatchReader,
+        source: pd.DataFrame | pa.Table | pa.ipc.RecordBatchReader,
         table_name: str | None = None,
     ) -> ir.Table:
         """Register a Pandas DataFrame or pyarrow object as a table in the current database.
@@ -850,7 +850,7 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema, UrlFromPath):
         table_name = table_name or util.gen_name("read_in_memory")
         self.con.register(table_name, source)
 
-        if isinstance(source, pa.RecordBatchReader):
+        if isinstance(source, pa.ipc.RecordBatchReader):
             # Ensure the reader isn't marked as started, in case the name is
             # being overwritten.
             self._record_batch_readers_consumed[table_name] = False
@@ -1288,7 +1288,7 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema, UrlFromPath):
         limit: int | str | None = None,
         chunk_size: int = 1_000_000,
         **_: Any,
-    ) -> pa.RecordBatchReader:
+    ) -> pa.ipc.RecordBatchReader:
         """Return a stream of record batches.
 
         The returned `RecordBatchReader` contains a cursor with an unbounded lifetime.
@@ -1318,7 +1318,7 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema, UrlFromPath):
             yield from cur.fetch_record_batch(rows_per_batch=chunk_size)
 
         result = self.raw_sql(sql)
-        return pa.RecordBatchReader.from_batches(
+        return pa.ipc.RecordBatchReader.from_batches(
             expr.as_table().schema().to_pyarrow(), batch_producer(result)
         )
 

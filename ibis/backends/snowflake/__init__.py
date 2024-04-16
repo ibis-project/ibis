@@ -499,7 +499,7 @@ $$"""
         sql = self.compile(expr, limit=limit, params=params, **kwargs)
         target_schema = expr.as_table().schema().to_pyarrow()
 
-        return pa.RecordBatchReader.from_batches(
+        return pa.ipc.RecordBatchReader.from_batches(
             target_schema,
             self._make_batch_iter(
                 sql, target_schema=target_schema, chunk_size=chunk_size
