@@ -12,6 +12,7 @@ code-annotations: hover
 execute:
   warning: false
   error: false
+  cache: true
 
 filters:
   - interlinks
@@ -94,7 +95,7 @@ website:
       - sidebar:reference
     right:
       - posts.qmd
-      - release_notes.md
+      - release_notes.qmd
       - sidebar:contribute
 
   sidebar:

@@ -30,7 +30,7 @@ t.to_parquet("penguins.parquet")
 ## DuckDB
 
 ```{python}
-con = ibis.duckdb.connect()  # <1>
+con = ibis.connect("duckdb://")  # <1>
 
 t = con.read_parquet("penguins.parquet")
 t.limit(3)
@@ -45,7 +45,7 @@ t.group_by(["species", "island"]).agg(count=t.count()).order_by("count")
 ## Polars
 
 ```{python}
-con = ibis.polars.connect()  # <1>
+con = ibis.connect("polars://")  # <1>
 
 t = con.read_parquet("penguins.parquet")
 t.limit(3)
@@ -60,7 +60,7 @@ t.group_by(["species", "island"]).agg(count=t.count()).order_by("count")
 ## DataFusion
 
 ```{python}
-con = ibis.datafusion.connect()  # <1>
+con = ibis.connect("datafusion://")  # <1>
 
 t = con.read_parquet("penguins.parquet")
 t.limit(3)
@@ -255,7 +255,7 @@ GROUP BY species, island
 ## DuckDB
 
 ```{python}
-con = ibis.duckdb.connect()
+con = ibis.connect("duckdb://")
 t = con.read_parquet("penguins.parquet")
 g = t.alias("penguins").sql(sql)
 g
@@ -268,7 +268,7 @@ g.order_by("count")
 ## DataFusion
 
 ```{python}
-con = ibis.datafusion.connect()
+con = ibis.connect("datafusion://")
 t = con.read_parquet("penguins.parquet")
 g = t.alias("penguins").sql(sql)
 g

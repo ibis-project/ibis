@@ -36,16 +36,7 @@ class BackendTest(abc.ABC):
     "Check that column name matches when comparing Pandas Series"
     supports_arrays: bool = True
     "Whether backend supports Arrays / Lists"
-    supports_arrays_outside_of_select: bool = supports_arrays
-    "Whether backend supports Arrays / Lists outside of Select Statements"
-    supports_window_operations: bool = True
-    "Whether backend supports Window Operations"
-    supports_divide_by_zero: bool = False
-    "Whether backend supports division by zero"
     returned_timestamp_unit: str = "us"
-    supported_to_timestamp_units = {"s", "ms", "us"}
-    supports_floating_modulus: bool = True
-    "Whether backend supports floating point in modulus operations"
     native_bool: bool = True
     "Whether backend has native boolean types"
     supports_structs: bool = True

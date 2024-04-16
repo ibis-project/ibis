@@ -31,7 +31,7 @@ jobs:
     # only a single bigquery or snowflake run at a time, otherwise test data is
     # clobbered by concurrent runs
     concurrency:
-      group: ${{ matrix.backend.name }}-${{ matrix.python-version }}-${{ github.event.label.name || 'ci-run-cloud' }}
+      group: ${{ matrix.backend.title }}-${{ matrix.python-version }}-${{ github.event.label.name || 'ci-run-cloud' }}
       cancel-in-progress: false
 
     runs-on: ubuntu-latest
@@ -61,6 +61,13 @@ jobs:
               extras:
                 - bigquery
                 - geospatial
+          - python-version: "3.10"
+            backend:
+              name: snowflake
+              title: Snowflake + Snowpark
+              key: snowflake-snowpark
+              extras:
+                - snowflake
     steps:
       - name: checkout
         uses: actions/checkout@v4
@@ -86,15 +93,18 @@ jobs:
           labels: ci-run-cloud
           github_token: ${{ steps.generate_token.outputs.token }}
 
-      - name: install poetry
-        run: pipx install 'poetry==1.8.2'
-
       - name: install python
         uses: actions/setup-python@v5
         id: install_python
         with:
           python-version: ${{ matrix.python-version }}
-          cache: poetry
+
+      - name: install poetry
+        run: pip install 'poetry==1.8.2'
+
+      - name: install additional deps
+        if: matrix.backend.key == 'snowflake-snowpark'
+        run: poetry add snowflake-snowpark-python --python="==${{ steps.install_python.outputs.python-version }}"
 
       - name: install ibis
         run: poetry install --without dev --without docs --extras "${{ join(matrix.backend.extras, ' ') }}"
@@ -129,6 +139,10 @@ jobs:
           SNOWFLAKE_DATABASE: ${{ secrets.SNOWFLAKE_DATABASE }}
           SNOWFLAKE_SCHEMA: ${{ secrets.SNOWFLAKE_SCHEMA }}
           SNOWFLAKE_WAREHOUSE: ${{ secrets.SNOWFLAKE_WAREHOUSE }}
+
+      - name: enable snowpark testing
+        if: matrix.backend.key == 'snowflake-snowpark'
+        run: echo "SNOWFLAKE_SNOWPARK=1" >> "$GITHUB_ENV"
 
       - name: "run parallel tests: ${{ matrix.backend.name }}"
         run: just ci-check -m ${{ matrix.backend.name }} --numprocesses auto --dist=loadgroup

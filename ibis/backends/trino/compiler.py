@@ -80,7 +80,6 @@ class TrinoCompiler(SQLGlotCompiler):
         ops.ExtractPath: "url_extract_path",
         ops.ExtractFragment: "url_extract_fragment",
         ops.ArrayPosition: "array_position",
-        ops.RandomUUID: "uuid",
     }
 
     def _aggregate(self, funcname: str, *args, where):
@@ -172,6 +171,35 @@ class TrinoCompiler(SQLGlotCompiler):
     def visit_JSONGetItem(self, op, *, arg, index):
         fmt = "%d" if op.index.dtype.is_integer() else '"%s"'
         return self.f.json_extract(arg, self.f.format(f"$[{fmt}]", index))
+
+    def visit_UnwrapJSONString(self, op, *, arg):
+        return self.f.json_value(
+            self.f.json_format(arg), 'strict $?($.type() == "string")'
+        )
+
+    def visit_UnwrapJSONInt64(self, op, *, arg):
+        value = self.f.json_value(
+            self.f.json_format(arg), 'strict $?($.type() == "number")'
+        )
+        return self.cast(
+            self.if_(self.f.regexp_like(value, r"^\d+$"), value, NULL), op.dtype
+        )
+
+    def visit_UnwrapJSONFloat64(self, op, *, arg):
+        return self.cast(
+            self.f.json_value(
+                self.f.json_format(arg), 'strict $?($.type() == "number")'
+            ),
+            op.dtype,
+        )
+
+    def visit_UnwrapJSONBoolean(self, op, *, arg):
+        return self.cast(
+            self.f.json_value(
+                self.f.json_format(arg), 'strict $?($.type() == "boolean")'
+            ),
+            op.dtype,
+        )
 
     def visit_DayOfWeekIndex(self, op, *, arg):
         return self.cast(
@@ -447,3 +475,23 @@ class TrinoCompiler(SQLGlotCompiler):
         # sqlglot doesn't support the third `group` argument for trino so work
         # around that limitation using an anonymous function
         return self.f.anon.regexp_extract(arg, pattern, index)
+
+    def visit_ToJSONMap(self, op, *, arg):
+        return self.cast(
+            self.f.json_parse(
+                self.f.json_query(
+                    self.f.json_format(arg), 'strict $?($.type() == "object")'
+                )
+            ),
+            dt.Map(dt.string, dt.json),
+        )
+
+    def visit_ToJSONArray(self, op, *, arg):
+        return self.cast(
+            self.f.json_parse(
+                self.f.json_query(
+                    self.f.json_format(arg), 'strict $?($.type() == "array")'
+                )
+            ),
+            dt.Array(dt.json),
+        )

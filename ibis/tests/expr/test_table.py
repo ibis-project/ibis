@@ -19,7 +19,12 @@ import ibis.selectors as s
 from ibis import _
 from ibis.common.annotations import ValidationError
 from ibis.common.deferred import Deferred
-from ibis.common.exceptions import ExpressionError, IntegrityError, RelationError
+from ibis.common.exceptions import (
+    ExpressionError,
+    IbisTypeError,
+    IntegrityError,
+    RelationError,
+)
 from ibis.expr import api
 from ibis.expr.rewrites import simplify
 from ibis.expr.tests.test_newrels import join_tables
@@ -230,7 +235,7 @@ def test_projection_with_star_expr(table):
 
     # cannot pass an invalid table expression
     t2 = t.aggregate([t["a"].sum().name("sum(a)")], by=["g"])
-    with pytest.raises(IntegrityError):
+    with pytest.raises(IbisTypeError):
         t[[t2]]
     # TODO: there may be some ways this can be invalid
 
@@ -562,11 +567,15 @@ def test_order_by_asc_deferred_sort_key(table):
     assert_equal(result, expected2)
 
 
+# different instantiations create unique objects
+rand = ibis.random()
+
+
 @pytest.mark.parametrize(
     ("key", "expected"),
     [
         param(ibis.NA, ibis.NA.op(), id="na"),
-        param(ibis.random(), ibis.random().op(), id="random"),
+        param(rand, rand.op(), id="random"),
         param(1.0, ibis.literal(1.0).op(), id="float"),
         param(ibis.literal("a"), ibis.literal("a").op(), id="string"),
         param(ibis.literal([1, 2, 3]), ibis.literal([1, 2, 3]).op(), id="array"),
@@ -581,10 +590,8 @@ def test_order_by_scalar(table, key, expected):
     ("key", "exc_type"),
     [
         ("bogus", com.IbisTypeError),
-        # (("bogus", False), com.IbisTypeError),
+        (("bogus", False), com.IbisTypeError),
         (ibis.desc("bogus"), com.IbisTypeError),
-        (1000, IndexError),
-        # ((1000, False), IndexError),
         (_.bogus, AttributeError),
         (_.bogus.desc(), AttributeError),
     ],
@@ -746,7 +753,7 @@ def test_aggregate_keywords(table):
 def test_select_on_literals(table):
     # literal ints and strings are column indices, everything else is a value
     expr1 = table.select(col1=True, col2=1, col3="a")
-    expr2 = table.select(col1=ibis.literal(True), col2=table.b, col3=table.a)
+    expr2 = table.select(col1=ibis.literal(True), col2=ibis.literal(1), col3=table.a)
     assert expr1.equals(expr2)
 
 
@@ -1280,7 +1287,7 @@ def test_inner_join_overlapping_column_names():
         lambda t1, t2: [(t1.foo_id, t2.foo_id)],
         lambda t1, t2: [(_.foo_id, _.foo_id)],
         lambda t1, t2: [(t1.foo_id, _.foo_id)],
-        lambda t1, t2: [(2, 0)],  # foo_id is 2nd in t1, 0th in t2
+        lambda t1, t2: [(t1[2], t2[0])],  # foo_id is 2nd in t1, 0th in t2
         lambda t1, t2: [(lambda t: t.foo_id, lambda t: t.foo_id)],
     ],
 )

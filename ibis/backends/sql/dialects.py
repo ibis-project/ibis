@@ -19,7 +19,7 @@ from sqlglot.dialects import (
     Trino,
 )
 from sqlglot.dialects.dialect import rename_func
-from sqlglot.helper import seq_get
+from sqlglot.helper import find_new_name, seq_get
 
 ClickHouse.Generator.TRANSFORMS |= {
     sge.ArraySize: rename_func("length"),
@@ -106,25 +106,101 @@ def _interval_with_precision(self, e):
         formatted_arg = f"'{formatted_arg}'"
         prec = _calculate_precision(int(arg))
         prec = max(prec, 2)
-        unit += f"({prec})"
+        unit.args["this"] += f"({prec})"
 
     return f"INTERVAL {formatted_arg} {unit}"
 
 
+def _explode_to_unnest():
+    """Convert explode into unnest.
+
+    NOTE: Flink doesn't support UNNEST WITH ORDINALITY or UNNEST WITH OFFSET.
+    """
+
+    def _explode_to_unnest(expression: sge.Expression) -> sge.Expression:
+        if isinstance(expression, sge.Select):
+            from sqlglot.optimizer.scope import Scope
+
+            taken_select_names = set(expression.named_selects)
+            taken_source_names = {name for name, _ in Scope(expression).references}
+
+            def new_name(names: set[str], name: str) -> str:
+                name = find_new_name(names, name)
+                names.add(name)
+                return name
+
+            # we use list here because expression.selects is mutated inside the loop
+            for select in list(expression.selects):
+                explode = select.find(sge.Explode)
+
+                if explode:
+                    explode_alias = ""
+
+                    if isinstance(select, sge.Alias):
+                        explode_alias = select.args["alias"]
+                        alias = select
+                    elif isinstance(select, sge.Aliases):
+                        explode_alias = select.aliases[1]
+                        alias = select.replace(sge.alias_(select.this, "", copy=False))
+                    else:
+                        alias = select.replace(sge.alias_(select, ""))
+                        explode = alias.find(sge.Explode)
+                        assert explode
+
+                    explode_arg = explode.this
+
+                    # This ensures that we won't use EXPLODE's argument as a new selection
+                    if isinstance(explode_arg, sge.Column):
+                        taken_select_names.add(explode_arg.output_name)
+
+                    unnest_source_alias = new_name(taken_source_names, "_u")
+
+                    if not explode_alias:
+                        explode_alias = new_name(taken_select_names, "col")
+
+                    alias.set("alias", sge.to_identifier(explode_alias))
+
+                    column = sge.column(explode_alias, table=unnest_source_alias)
+
+                    explode.replace(column)
+
+                    expression.join(
+                        sge.alias_(
+                            sge.Unnest(
+                                expressions=[explode_arg.copy()],
+                            ),
+                            unnest_source_alias,
+                            table=[explode_alias],
+                        ),
+                        join_type="CROSS",
+                        copy=False,
+                    )
+
+        return expression
+
+    return _explode_to_unnest
+
+
 class Flink(Hive):
+    UNESCAPED_SEQUENCES = {"\\\\d": "\\d"}
+
     class Generator(Hive.Generator):
+        UNNEST_WITH_ORDINALITY = False
+
         TYPE_MAPPING = Hive.Generator.TYPE_MAPPING.copy() | {
             sge.DataType.Type.TIME: "TIME",
             sge.DataType.Type.STRUCT: "ROW",
         }
 
         TRANSFORMS = Hive.Generator.TRANSFORMS.copy() | {
+            sge.Select: transforms.preprocess([_explode_to_unnest()]),
             sge.Stddev: rename_func("stddev_samp"),
             sge.StddevPop: rename_func("stddev_pop"),
             sge.StddevSamp: rename_func("stddev_samp"),
             sge.Variance: rename_func("var_samp"),
             sge.VariancePop: rename_func("var_pop"),
             sge.ArrayConcat: rename_func("array_concat"),
+            sge.ArraySize: rename_func("cardinality"),
             sge.Length: rename_func("char_length"),
             sge.TryCast: lambda self,
             e: f"TRY_CAST({e.this.sql(self.dialect)} AS {e.to.sql(self.dialect)})",

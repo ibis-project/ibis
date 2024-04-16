@@ -8,7 +8,7 @@ categories:
 ---
 ## Overview
 
-Ibis 6.0.0 adds the Oracle backend, revamped UDF support, and many new features. This release also includes a number of refactors, bug fixes, and performance improvements. You can view the full changelog in [the release notes](../../../release_notes.md).
+Ibis 6.0.0 adds the Oracle backend, revamped UDF support, and many new features. This release also includes a number of refactors, bug fixes, and performance improvements. You can view the full changelog in [the release notes](../../../release_notes.qmd).
 
 If you're new to Ibis, see [how to install](../../../install.qmd) and [the getting started tutorial](../../../tutorials/getting_started.qmd).
 
@@ -273,7 +273,7 @@ t.agg(s.across(["species", "island"], ibis._.count()))
 
 ## Refactors
 
-Several internal refactors that shouldn't affect normal usage were made. See [the release notes](../../release_notes.md) for more details.
+Several internal refactors that shouldn't affect normal usage were made. See [the release notes](../../release_notes.qmd) for more details.
 
 ## Wrapping up
 

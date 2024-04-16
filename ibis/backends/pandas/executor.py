@@ -5,6 +5,7 @@ from functools import reduce
 
 import numpy as np
 import pandas as pd
+from packaging.version import parse as vparse
 
 import ibis.backends.pandas.kernels as pandas_kernels
 import ibis.expr.operations as ops
@@ -79,14 +80,6 @@ class PandasExecutor(Dispatched, PandasUtils):
             return PandasConverter.convert_column(arg, to)
         else:
             return PandasConverter.convert_scalar(arg, to)
-
-    @classmethod
-    def visit(cls, op: ops.TypeOf, arg):
-        raise OperationNotDefinedError("TypeOf is not implemented")
-
-    @classmethod
-    def visit(cls, op: ops.RandomScalar):
-        raise OperationNotDefinedError("RandomScalar is not implemented")
 
     @classmethod
     def visit(cls, op: ops.Greatest, arg):
@@ -180,7 +173,15 @@ class PandasExecutor(Dispatched, PandasUtils):
     @classmethod
     def visit(cls, op: ops.TimestampTruncate | ops.DateTruncate, arg, unit):
         # TODO(kszucs): should use serieswise()
-        unit = {"m": "Min", "ms": "L"}.get(unit.short, unit.short)
+        if vparse(pd.__version__) >= vparse("2.2"):
+            units = {"m": "min"}
+        else:
+            units = {"m": "Min", "ms": "L"}
+
+        unit = units.get(unit.short, unit.short)
+
+        if unit in "YMWD":
+            return arg.dt.to_period(unit).dt.to_timestamp()
         try:
             return arg.dt.floor(unit)
         except ValueError:

@@ -262,7 +262,6 @@ class SQLGlotCompiler(abc.ABC):
         ops.Power: "pow",
         ops.RPad: "rpad",
         ops.Radians: "radians",
-        ops.RandomScalar: "random",
         ops.RegexSearch: "regexp_like",
         ops.RegexSplit: "regexp_split",
         ops.Repeat: "repeat",
@@ -586,7 +585,8 @@ class SQLGlotCompiler(abc.ABC):
             return self.cast(str(value), dtype)
         elif dtype.is_interval():
             return sge.Interval(
-                this=sge.convert(str(value)), unit=dtype.resolution.upper()
+                this=sge.convert(str(value)),
+                unit=sge.Var(this=dtype.resolution.upper()),
             )
         elif dtype.is_boolean():
             return sge.Boolean(this=bool(value))
@@ -686,6 +686,14 @@ class SQLGlotCompiler(abc.ABC):
         if digits is not None:
             return sge.Round(this=arg, decimals=digits)
         return sge.Round(this=arg)
+
+    ### Random Noise
+
+    def visit_RandomScalar(self, op, **kwargs):
+        return self.f.rand()
+
+    def visit_RandomUUID(self, op, **kwargs):
+        return self.f.uuid()
 
     ### Dtype Dysmorphia
 
@@ -788,7 +796,9 @@ class SQLGlotCompiler(abc.ABC):
         )
 
     def visit_IntervalFromInteger(self, op, *, arg, unit):
-        return sge.Interval(this=sge.convert(arg), unit=unit.singular.upper())
+        return sge.Interval(
+            this=sge.convert(arg), unit=sge.Var(this=unit.singular.upper())
+        )
 
     ### String Instruments
 

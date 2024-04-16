@@ -27,12 +27,7 @@ class TestConf(ServiceBackendTest):
     check_dtype = False
     check_names = False
     supports_arrays = False
-    supports_arrays_outside_of_select = supports_arrays
-    supports_window_operations = True
-    supports_divide_by_zero = False
     returned_timestamp_unit = "us"
-    supported_to_timestamp_units = {"s", "ms", "us"}
-    supports_floating_modulus = True
     native_bool = True
     supports_structs = False
     supports_json = False

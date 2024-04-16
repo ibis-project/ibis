@@ -61,6 +61,7 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
         password: str,
         host: str = "localhost",
         port: int = 8563,
+        timezone: str = "UTC",
         **kwargs: Any,
     ) -> None:
         """Create an Ibis client connected to an Exasol database.
@@ -72,9 +73,11 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
         password
             Password used for authentication.
         host
-            Hostname to connect to (default: "localhost").
+            Hostname to connect to.
         port
-            Port number to connect to (default: 8563)
+            Port number to connect to.
+        timezone
+            The session timezone.
         kwargs
             Additional keyword arguments passed to `pyexasol.connect`.
 
@@ -92,6 +95,8 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
             quote_ident=True,
             **kwargs,
         )
+        with self.begin() as con:
+            con.execute(f"ALTER SESSION SET TIME_ZONE = {timezone!r}")
 
     def _from_url(self, url: str, **kwargs) -> BaseBackend:
         """Construct an ibis backend from a URL."""

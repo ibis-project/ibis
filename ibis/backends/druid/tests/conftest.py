@@ -94,10 +94,8 @@ def run_query(session: Session, query: str) -> None:
 class TestConf(ServiceBackendTest):
     # druid has the same rounding behavior as postgres
     check_dtype = False
-    supports_window_operations = False
     returned_timestamp_unit = "s"
     supports_arrays = False
-    supports_arrays_outside_of_select = supports_arrays
     native_bool = True
     supports_structs = False
     supports_json = False  # it does, but we haven't implemented it

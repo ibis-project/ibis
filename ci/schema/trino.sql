@@ -168,7 +168,15 @@ INSERT INTO memory.default.json_t VALUES
     (JSON '{"a":"foo", "c":null}'),
     (JSON 'null'),
     (JSON '[42,47,55]'),
-    (JSON '[]');
+    (JSON '[]'),
+    (JSON '"a"'),
+    (JSON '""'),
+    (JSON '"b"'),
+    (NULL),
+    (JSON 'true'),
+    (JSON 'false'),
+    (JSON '42'),
+    (JSON '37.37');
 
 DROP TABLE IF EXISTS win;
 CREATE TABLE win (g VARCHAR, x BIGINT, y BIGINT);

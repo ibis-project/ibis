@@ -131,7 +131,15 @@ INSERT INTO "json_t" ("js")
     SELECT parse_json('{"a":"foo", "c":null}') UNION
     SELECT parse_json('null') UNION
     SELECT parse_json('[42,47,55]') UNION
-    SELECT parse_json('[]');
+    SELECT parse_json('[]') UNION
+    SELECT parse_json('"a"') UNION
+    SELECT parse_json('""') UNION
+    SELECT parse_json('"b"') UNION
+    SELECT NULL UNION
+    SELECT parse_json('true') UNION
+    SELECT parse_json('false') UNION
+    SELECT parse_json('42') UNION
+    SELECT parse_json('37.37');
 
 CREATE OR REPLACE TABLE "win" ("g" TEXT, "x" BIGINT NOT NULL, "y" BIGINT);
 INSERT INTO "win" VALUES

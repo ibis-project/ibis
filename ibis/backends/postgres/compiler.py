@@ -100,7 +100,6 @@ class PostgresCompiler(SQLGlotCompiler):
         ops.MapContains: "exist",
         ops.MapKeys: "akeys",
         ops.MapValues: "avals",
-        ops.RandomUUID: "gen_random_uuid",
         ops.RegexSearch: "regexp_like",
         ops.TimeFromHMS: "make_time",
     }
@@ -110,6 +109,9 @@ class PostgresCompiler(SQLGlotCompiler):
         if where is not None:
             return sge.Filter(this=expr, expression=sge.Where(this=where))
         return expr
+
+    def visit_RandomUUID(self, op, **kwargs):
+        return self.f.gen_random_uuid()
 
     def visit_Mode(self, op, *, arg, where):
         expr = self.f.mode()
@@ -325,6 +327,53 @@ class PostgresCompiler(SQLGlotCompiler):
             op.dtype,
         )
 
+    def visit_UnwrapJSONString(self, op, *, arg):
+        return self.if_(
+            self.f.json_typeof(arg).eq("string"),
+            self.f.json_extract_path_text(
+                arg,
+                # this is apparently how you pass in no additional arguments to
+                # a variadic function, see the "Variadic Function Resolution"
+                # section in
+                # https://www.postgresql.org/docs/current/typeconv-func.html
+                sge.Var(this="VARIADIC ARRAY[]::TEXT[]"),
+            ),
+            NULL,
+        )
+
+    def visit_UnwrapJSONInt64(self, op, *, arg):
+        text = self.f.json_extract_path_text(
+            arg, sge.Var(this="VARIADIC ARRAY[]::TEXT[]")
+        )
+        return self.if_(
+            self.f.json_typeof(arg).eq("number"),
+            self.cast(
+                self.if_(self.f.regexp_like(text, r"^\d+$", "g"), text, NULL),
+                op.dtype,
+            ),
+            NULL,
+        )
+
+    def visit_UnwrapJSONFloat64(self, op, *, arg):
+        text = self.f.json_extract_path_text(
+            arg, sge.Var(this="VARIADIC ARRAY[]::TEXT[]")
+        )
+        return self.if_(
+            self.f.json_typeof(arg).eq("number"), self.cast(text, op.dtype), NULL
+        )
+
+    def visit_UnwrapJSONBoolean(self, op, *, arg):
+        return self.if_(
+            self.f.json_typeof(arg).eq("boolean"),
+            self.cast(
+                self.f.json_extract_path_text(
+                    arg, sge.Var(this="VARIADIC ARRAY[]::TEXT[]")
+                ),
+                op.dtype,
+            ),
+            NULL,
+        )
+
     def visit_StructColumn(self, op, *, names, values):
         return self.f.row(*map(self.cast, values, op.dtype.types))
 
@@ -469,7 +518,7 @@ class PostgresCompiler(SQLGlotCompiler):
 
     def visit_ArrayIndex(self, op, *, arg, index):
         index = self.if_(index < 0, self.f.cardinality(arg) + index, index)
-        return sge.paren(arg, copy=False)[index + 1]
+        return sge.paren(arg, copy=False)[index]
 
     def visit_ArraySlice(self, op, *, arg, start, stop):
         neg_to_pos_index = lambda n, index: self.if_(index < 0, n + index, index)

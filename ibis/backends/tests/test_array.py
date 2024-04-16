@@ -30,6 +30,7 @@ from ibis.backends.tests.errors import (
     PySparkAnalysisException,
     TrinoUserError,
 )
+from ibis.common.collections import frozendict
 
 pytestmark = [
     pytest.mark.never(
@@ -245,7 +246,7 @@ def test_array_discovery(backend):
     reason="BigQuery doesn't support casting array<T> to array<U>",
     raises=GoogleBadRequest,
 )
-@pytest.mark.notimpl(["datafusion", "flink"], raises=com.OperationNotDefinedError)
+@pytest.mark.notimpl(["datafusion"], raises=com.OperationNotDefinedError)
 def test_unnest_simple(backend):
     array_types = backend.array_types
     expected = (
@@ -261,7 +262,7 @@ def test_unnest_simple(backend):
 
 
 @builtin_array
-@pytest.mark.notimpl(["datafusion", "flink"], raises=com.OperationNotDefinedError)
+@pytest.mark.notimpl(["datafusion"], raises=com.OperationNotDefinedError)
 def test_unnest_complex(backend):
     array_types = backend.array_types
     df = array_types.execute()
@@ -356,7 +357,7 @@ def test_unnest_no_nulls(backend):
     raises=ValueError,
     reason="all the input arrays must have same number of dimensions",
 )
-@pytest.mark.notimpl(["datafusion", "flink"], raises=com.OperationNotDefinedError)
+@pytest.mark.notimpl(["datafusion"], raises=com.OperationNotDefinedError)
 def test_unnest_default_name(backend):
     array_types = backend.array_types
     df = array_types.execute()
@@ -583,7 +584,7 @@ def test_array_contains(backend, con, col, value):
                 pytest.mark.notyet(
                     ["flink"],
                     raises=Py4JJavaError,
-                    reason="SQL validation failed; Flink does not support ARRAY[]",
+                    reason="SQL validation failed; Flink does not support ARRAY[]",  # https://issues.apache.org/jira/browse/FLINK-20578
                 ),
                 pytest.mark.broken(
                     ["datafusion"],
@@ -621,7 +622,7 @@ def test_array_position(con, a, expected_array):
                 pytest.mark.notyet(
                     ["flink"],
                     raises=Py4JJavaError,
-                    reason="SQL validation failed; Flink does not support ARRAY[]",
+                    reason="SQL validation failed; Flink does not support ARRAY[]",  # https://issues.apache.org/jira/browse/FLINK-20578
                 )
             ],
         ),
@@ -803,13 +804,43 @@ def test_array_intersect(con, data):
 @builtin_array
 @pytest.mark.notimpl(["postgres"], raises=PsycoPg2SyntaxError)
 @pytest.mark.notimpl(["risingwave"], raises=PsycoPg2InternalError)
-@pytest.mark.notimpl(["datafusion", "flink"], raises=com.OperationNotDefinedError)
+@pytest.mark.notimpl(["datafusion"], raises=com.OperationNotDefinedError)
 @pytest.mark.broken(
     ["trino"], reason="inserting maps into structs doesn't work", raises=TrinoUserError
 )
 def test_unnest_struct(con):
     data = {"value": [[{"a": 1}, {"a": 2}], [{"a": 3}, {"a": 4}]]}
     t = ibis.memtable(data, schema=ibis.schema({"value": "!array<!struct<a: !int>>"}))
+    expr = t.value.unnest()
+
+    result = con.execute(expr)
+
+    expected = pd.DataFrame(data).explode("value").iloc[:, 0].reset_index(drop=True)
+    assert frozenset(map(frozendict, result.values)) == frozenset(
+        map(frozendict, expected.values)
+    )
+
+
+@builtin_array
+@pytest.mark.notimpl(["postgres"], raises=PsycoPg2SyntaxError)
+@pytest.mark.notimpl(["risingwave"], raises=PsycoPg2InternalError)
+@pytest.mark.notimpl(["datafusion"], raises=com.OperationNotDefinedError)
+@pytest.mark.broken(
+    ["trino"], reason="inserting maps into structs doesn't work", raises=TrinoUserError
+)
+@pytest.mark.broken(
+    ["flink"], reason="flink unnests a and b as separate columns", raises=Py4JJavaError
+)
+def test_unnest_struct_with_multiple_fields(con):
+    data = {
+        "value": [
+            [{"a": 1, "b": "banana"}, {"a": 2, "b": "apple"}],
+            [{"a": 3, "b": "coconut"}, {"a": 4, "b": "orange"}],
+        ]
+    }
+    t = ibis.memtable(
+        data, schema=ibis.schema({"value": "!array<!struct<a: !int, b: !string>>"})
+    )
     expr = t.value.unnest()
 
     result = con.execute(expr)
@@ -889,7 +920,7 @@ def test_zip_null(con, fn):
 )
 @pytest.mark.notimpl(["postgres"], raises=PsycoPg2SyntaxError)
 @pytest.mark.notimpl(["risingwave"], raises=PsycoPg2ProgrammingError)
-@pytest.mark.notimpl(["datafusion", "flink"], raises=com.OperationNotDefinedError)
+@pytest.mark.notimpl(["datafusion"], raises=com.OperationNotDefinedError)
 @pytest.mark.notimpl(
     ["polars"],
     raises=com.OperationNotDefinedError,
@@ -902,6 +933,11 @@ def test_zip_null(con, fn):
 )
 @pytest.mark.broken(
     ["trino"], reason="inserting maps into structs doesn't work", raises=TrinoUserError
+)
+@pytest.mark.notyet(
+    ["flink"],
+    raises=Py4JJavaError,
+    reason="does not seem to support field selection on unnest",
 )
 def test_array_of_struct_unnest(con):
     jobs = ibis.memtable(
@@ -982,7 +1018,12 @@ def flatten_data():
                     ["clickhouse"],
                     reason="Arrays are never nullable",
                     raises=AssertionError,
-                )
+                ),
+                pytest.mark.broken(
+                    ["polars"],
+                    raises=TypeError,
+                    reason="comparison of nested arrays doesn't work in pandas testing module",
+                ),
             ],
         ),
     ],
@@ -1079,9 +1120,14 @@ def test_range_start_stop_step_zero(con, start, stop):
     reason="ibis hasn't implemented this behavior yet",
 )
 @pytest.mark.notyet(
-    ["datafusion", "flink"],
+    ["datafusion"],
     raises=com.OperationNotDefinedError,
     reason="backend doesn't support unnest",
+)
+@pytest.mark.notyet(
+    ["flink"],
+    raises=Py4JJavaError,
+    reason="SQL validation failed; Flink does not support ARRAY[]",  # https://issues.apache.org/jira/browse/FLINK-20578
 )
 def test_unnest_empty_array(con):
     t = ibis.memtable({"arr": [[], ["a"], ["a", "b"]]})
@@ -1192,7 +1238,7 @@ timestamp_range_tzinfos = pytest.mark.parametrize(
             datetime(2017, 1, 1),
             datetime(2017, 1, 2),
             ibis.interval(hours=1),
-            "1H",
+            "1h",
             id="pos",
             marks=pytest.mark.notimpl(
                 ["risingwave"],
@@ -1204,7 +1250,7 @@ timestamp_range_tzinfos = pytest.mark.parametrize(
             datetime(2017, 1, 2),
             datetime(2017, 1, 1),
             ibis.interval(hours=-1),
-            "-1H",
+            "-1h",
             id="neg_inner",
             marks=[
                 pytest.mark.broken(
@@ -1221,7 +1267,7 @@ timestamp_range_tzinfos = pytest.mark.parametrize(
             datetime(2017, 1, 2),
             datetime(2017, 1, 1),
             -ibis.interval(hours=1),
-            "-1H",
+            "-1h",
             id="neg_outer",
             marks=[
                 pytest.mark.notyet(["polars"], raises=com.UnsupportedOperationError),

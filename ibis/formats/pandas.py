@@ -14,6 +14,7 @@ import pyarrow as pa
 
 import ibis.expr.datatypes as dt
 import ibis.expr.schema as sch
+from ibis import util
 from ibis.common.numeric import normalize_decimal
 from ibis.common.temporal import normalize_timezone
 from ibis.formats import DataMapper, SchemaMapper, TableProxy
@@ -213,7 +214,7 @@ class PandasData(DataMapper):
                     return s.map(date_parse, na_action="ignore")
                 except TypeError:
                     return s
-            except TypeError:
+            except (ValueError, TypeError):
                 try:
                     return pd.to_datetime(s).dt.tz_convert(dtype.timezone)
                 except TypeError:
@@ -225,7 +226,7 @@ class PandasData(DataMapper):
             s = s.dt.tz_convert("UTC").dt.tz_localize(None)
         try:
             return s.astype(pandas_type).dt.date
-        except (TypeError, pd._libs.tslibs.OutOfBoundsDatetime):
+        except (ValueError, TypeError, pd._libs.tslibs.OutOfBoundsDatetime):
 
             def try_date(v):
                 if isinstance(v, datetime.datetime):
@@ -300,7 +301,11 @@ class PandasData(DataMapper):
             if values is None:
                 return values
 
-            items = values.items() if isinstance(values, dict) else zip(names, values)
+            items = (
+                values.items()
+                if isinstance(values, dict)
+                else zip(names, util.promote_list(values))
+            )
             return {
                 k: converter(v) if v is not None else v
                 for converter, (k, v) in zip(converters, items)

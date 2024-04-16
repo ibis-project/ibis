@@ -98,7 +98,7 @@ brings another great option for fast batch analytics to Ibis.
 
 ## Breaking changes
 
-You can view the [full changelog](../../release_notes.md) for additional
+You can view the [full changelog](../../release_notes.qmd) for additional
 breaking changes. There have been few that we expect to affect most users.
 
 :::{.callout-note}

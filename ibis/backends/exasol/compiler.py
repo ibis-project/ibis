@@ -67,6 +67,7 @@ class ExasolCompiler(SQLGlotCompiler):
             ops.Median,
             ops.MultiQuantile,
             ops.Quantile,
+            ops.RandomUUID,
             ops.ReductionVectorizedUDF,
             ops.RegexExtract,
             ops.RegexReplace,

@@ -164,7 +164,7 @@ class SqlglotType(TypeMapper):
         if isinstance(typecode, sge.Interval):
             typ = sge.DataType(
                 this=sge.DataType.Type.INTERVAL,
-                expressions=[sge.IntervalSpan(this=typecode.unit)],
+                expressions=[typecode.unit],
             )
             typecode = typ.this
 
@@ -731,6 +731,10 @@ class BigQueryType(SqlglotType):
 
     @classmethod
     def _from_sqlglot_TIMESTAMP(cls) -> dt.Timestamp:
+        return dt.Timestamp(timezone=None, nullable=cls.default_nullable)
+
+    @classmethod
+    def _from_sqlglot_TIMESTAMPTZ(cls) -> dt.Timestamp:
         return dt.Timestamp(timezone="UTC", nullable=cls.default_nullable)
 
     @classmethod

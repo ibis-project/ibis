@@ -76,7 +76,6 @@ class ImpalaCompiler(SQLGlotCompiler):
         ops.Hash: "fnv_hash",
         ops.LStrip: "ltrim",
         ops.Ln: "ln",
-        ops.RandomUUID: "uuid",
         ops.RStrip: "rtrim",
         ops.Strip: "trim",
         ops.TypeOf: "typeof",
@@ -146,7 +145,7 @@ class ImpalaCompiler(SQLGlotCompiler):
     def visit_Xor(self, op, *, left, right):
         return sg.and_(sg.or_(left, right), sg.not_(sg.and_(left, right)))
 
-    def visit_RandomScalar(self, op):
+    def visit_RandomScalar(self, op, **_):
         return self.f.rand(self.f.utc_to_unix_micros(self.f.utc_timestamp()))
 
     def visit_DayOfWeekIndex(self, op, *, arg):
@@ -195,22 +194,6 @@ class ImpalaCompiler(SQLGlotCompiler):
             # supported, but only within a certain range, and the
             # implementation wraps on over- and underflow
             return sge.convert(value.isoformat())
-        elif dtype.is_string():
-            value = (
-                value
-                # Escape \ first so we don't double escape other characters.
-                .replace("\\", "\\\\")
-                # ASCII escape sequences that are recognized in Python:
-                # https://docs.python.org/3/reference/lexical_analysis.html#string-and-bytes-literals
-                .replace("\a", "\\a")  # Bell
-                .replace("\b", "\\b")  # Backspace
-                .replace("\f", "\\f")  # Formfeed
-                .replace("\n", "\\n")  # Newline / Linefeed
-                .replace("\r", "\\r")  # Carriage return
-                .replace("\t", "\\t")  # Tab
-                .replace("\v", "\\v")  # Vertical tab
-            )
-            return sge.convert(value)
         elif dtype.is_decimal() and not value.is_finite():
             raise com.UnsupportedOperationError(
                 f"Non-finite decimal literal values are not supported by Impala; got: {value}"

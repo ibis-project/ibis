@@ -19,17 +19,17 @@ dependencies:
   - google-cloud-bigquery >=3,<4
   - google-cloud-bigquery-storage >=2,<3
   - impyla >=0.17
-  - numpy >=1.15,<2
+  - numpy >=1.23.2,<2
   - oracledb >=1.3.1
   - packaging >=21.3
-  - pandas >=1.2.5,<2.2
+  - pandas >=1.5.3,<3
   - parsy >=2
   - pins >=0.8.2
   - poetry-core >=1.0.0
   - poetry-dynamic-versioning >=0.18.0
   - polars >=0.20.17
   - psycopg2 >=2.8.4
-  - pyarrow >=2
+  - pyarrow >=10.0.1
   - pyarrow-tests
   - pyarrow-hotfix >=0.4
   - pydata-google-auth
@@ -49,6 +49,7 @@ dependencies:
   - sqlglot >=22.5,<23.1
   - toolz >=0.11
   - trino-python-client >=0.321
+  - openjdk <21
   # geospatial
   - leafmap >=0.29.6,<0.31
   # test dependencies
@@ -63,6 +64,7 @@ dependencies:
   - pytest-randomly >=3.10.1,<4
   - pytest-repeat >=0.9.1,<0.10
   - pytest-snapshot >=0.9.0,<1
+  - pytest-timeout >=2.3.1,<3
   - pytest-xdist >=2.3.0,<4
   - requests >=2,<3
   # docs
@@ -71,6 +73,7 @@ dependencies:
   - distributed >=2022.9.1
   - ipykernel >=6.25.1
   - itables >=1.6.3
+  - jupyter-cache
   - nbclient >=0.8.0
   - plotly >=5.16.1
   - plotnine >=0.12.2

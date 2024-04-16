@@ -143,3 +143,13 @@ def test_NULL():
     assert ops.NULL.dtype is dt.null
     assert ops.NULL == ops.Literal(None, dt.null)
     assert ops.NULL is not ops.Literal(None, dt.int8)
+
+
+@pytest.mark.parametrize("op", [ops.RandomScalar, ops.RandomUUID])
+def test_unique_impure_values(op):
+    assert op() != op()
+    assert hash(op()) != hash(op())
+
+    node = op()
+    other = node.copy()
+    assert node == other

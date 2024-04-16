@@ -34,10 +34,8 @@ oracledb.defaults.fetch_decimals = True
 
 class TestConf(ServiceBackendTest):
     check_dtype = False
-    supports_window_operations = False
     returned_timestamp_unit = "s"
     supports_arrays = False
-    supports_arrays_outside_of_select = False
     # Automatic mutate so that logical type in ibis returns as bool
     # but the backend will still do whatever it's going to do
     native_bool = False

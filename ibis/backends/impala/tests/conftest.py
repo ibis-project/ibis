@@ -22,9 +22,7 @@ if TYPE_CHECKING:
 
 class TestConf(BackendTest):
     supports_arrays = True
-    supports_arrays_outside_of_select = False
     check_dtype = False
-    supports_divide_by_zero = True
     returned_timestamp_unit = "s"
     supports_structs = False
     supports_json = False

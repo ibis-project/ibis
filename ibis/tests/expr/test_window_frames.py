@@ -246,7 +246,8 @@ def test_window_api_supports_scalar_order_by(t):
     )
     assert expr == expected
 
-    window = ibis.window(order_by=ibis.random())
+    rand = ibis.random()
+    window = ibis.window(order_by=rand)
     expr = t.a.sum().over(window).op()
     expected = ops.WindowFunction(
         t.a.sum(),
@@ -254,7 +255,7 @@ def test_window_api_supports_scalar_order_by(t):
         start=None,
         end=None,
         group_by=(),
-        order_by=[ibis.random()],
+        order_by=[rand],
     )
     assert expr == expected
 

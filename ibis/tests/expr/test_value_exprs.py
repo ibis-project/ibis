@@ -882,18 +882,10 @@ def test_bitwise_exprs(fn, expected_op):
         ([1, 0], ["bar", "foo"]),
     ],
 )
-@pytest.mark.parametrize(
-    "expr_func",
-    [
-        lambda t, args: t[args],
-        lambda t, args: t.order_by(args),
-        lambda t, args: t.group_by(args).aggregate(bar_avg=t.bar.mean()),
-    ],
-)
-def test_table_operations_with_integer_column(position, names, expr_func):
+def test_table_operations_with_integer_column(position, names):
     t = ibis.table([("foo", "string"), ("bar", "double")])
-    result = expr_func(t, position)
-    expected = expr_func(t, names)
+    result = t[position]
+    expected = t[names]
     assert result.equals(expected)
 
 

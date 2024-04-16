@@ -79,7 +79,6 @@ ibis_testing*
 result
 result-*
 
-# generated mkdocs website
 .benchmarks
 
 # tutorial data
@@ -141,3 +140,10 @@ docs/posts/ibis-duckdb-geospatial/nyc_data.db.wal
 
 # pixi environment directory
 .pixi
+
+# jupyter cache directories
+docs/**/.jupyter_cache
+
+# quarto generated files
+docs/posts-listing.json
+docs/posts.feed-full-staged

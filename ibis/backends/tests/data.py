@@ -100,6 +100,14 @@ json_types = pd.DataFrame(
             "null",
             "[42,47,55]",
             "[]",
+            '"a"',
+            '""',
+            '"b"',
+            None,
+            "true",
+            "false",
+            "42",
+            "37.37",
         ]
     }
 )

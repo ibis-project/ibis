@@ -372,8 +372,9 @@ def test_fully_qualified_table_creation(con, project_id, dataset_id, temp_table)
 
 def test_fully_qualified_memtable_compile(project_id, dataset_id):
     new_bq_con = ibis.bigquery.connect(project_id=project_id, dataset_id=dataset_id)
-    # New connection shouldn't have _session_dataset populated after connection
-    assert new_bq_con._session_dataset is None
+    # New connection shouldn't have __session_dataset populated after
+    # connection
+    assert new_bq_con._Backend__session_dataset is None
 
     t = ibis.memtable(
         {"a": [1, 2, 3], "b": [4, 5, 6]},
@@ -422,3 +423,11 @@ def test_list_tables_schema_warning_refactor(con):
 
     assert con.list_tables(database="ibis-gbq.pypi") == pypi_tables
     assert con.list_tables(database=("ibis-gbq", "pypi")) == pypi_tables
+
+
+def test_create_temp_table_from_scratch(project_id, dataset_id):
+    con = ibis.bigquery.connect(project_id=project_id, dataset_id=dataset_id)
+    name = gen_name("bigquery_temp_table")
+    df = con.tables.functional_alltypes.limit(1)
+    t = con.create_table(name, obj=df, temp=True)
+    assert len(t.execute()) == 1

@@ -30,3 +30,35 @@ class ToJSONMap(Value):
 
     dtype = dt.Map(dt.string, dt.json)
     shape = rlz.shape_like("arg")
+
+
+@public
+class UnwrapJSONString(Value):
+    arg: Value[dt.JSON]
+
+    dtype = dt.string
+    shape = rlz.shape_like("arg")
+
+
+@public
+class UnwrapJSONInt64(Value):
+    arg: Value[dt.JSON]
+
+    dtype = dt.int64
+    shape = rlz.shape_like("arg")
+
+
+@public
+class UnwrapJSONFloat64(Value):
+    arg: Value[dt.JSON]
+
+    dtype = dt.float64
+    shape = rlz.shape_like("arg")
+
+
+@public
+class UnwrapJSONBoolean(Value):
+    arg: Value[dt.JSON]
+
+    dtype = dt.boolean
+    shape = rlz.shape_like("arg")

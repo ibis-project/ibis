@@ -103,7 +103,6 @@ class SQLiteCompiler(SQLGlotCompiler):
         ops.Mode: "_ibis_mode",
         ops.Time: "time",
         ops.Date: "date",
-        ops.RandomUUID: "uuid",
     }
 
     def _aggregate(self, funcname: str, *args, where):
@@ -213,7 +212,7 @@ class SQLiteCompiler(SQLGlotCompiler):
 
         return arg
 
-    def visit_RandomScalar(self, op):
+    def visit_RandomScalar(self, op, **kwargs):
         return 0.5 + self.f.random() / sge.Literal.number(float(-1 << 64))
 
     def visit_Cot(self, op, *, arg):
@@ -233,6 +232,34 @@ class SQLiteCompiler(SQLGlotCompiler):
 
         agg = self._aggregate(func, key, where=cond)
         return self.f.anon.json_extract(self.f.json_array(arg, agg), "$[0]")
+
+    def visit_UnwrapJSONString(self, op, *, arg):
+        return self.if_(
+            self.f.json_type(arg).eq("text"), self.f.json_extract_scalar(arg, "$"), NULL
+        )
+
+    def visit_UnwrapJSONInt64(self, op, *, arg):
+        return self.if_(
+            self.f.json_type(arg).eq("integer"),
+            self.cast(self.f.json_extract_scalar(arg, "$"), op.dtype),
+            NULL,
+        )
+
+    def visit_UnwrapJSONFloat64(self, op, *, arg):
+        return self.if_(
+            self.f.json_type(arg).isin("integer", "real"),
+            self.cast(self.f.json_extract_scalar(arg, "$"), op.dtype),
+            NULL,
+        )
+
+    def visit_UnwrapJSONBoolean(self, op, *, arg):
+        return self.if_(
+            # isin doesn't work here, with a strange error from sqlite about a
+            # misused row value
+            self.f.json_type(arg).isin("true", "false"),
+            self.cast(self.f.json_extract_scalar(arg, "$"), dt.int64),
+            NULL,
+        )
 
     def visit_Variance(self, op, *, arg, how, where):
         return self._aggregate(f"_ibis_var_{op.how}", arg, where=where)
@@ -392,7 +419,7 @@ class SQLiteCompiler(SQLGlotCompiler):
         return (self.f.strftime("%j", date) - 1) / 7 + 1
 
     def visit_ExtractEpochSeconds(self, op, *, arg):
-        return self.cast((self.f.julianday(arg) - 2440587.5) * 86400.0, dt.int64)
+        return self.cast(self.f.strftime("%s", arg), dt.int64)
 
     def visit_DayOfWeekIndex(self, op, *, arg):
         return self.cast(

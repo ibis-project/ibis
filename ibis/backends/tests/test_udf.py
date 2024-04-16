@@ -1,9 +1,12 @@
 from __future__ import annotations
 
+import sys
+
 from pytest import mark, param
 
 import ibis.common.exceptions as com
 from ibis import _, udf
+from ibis.backends.tests.errors import Py4JJavaError
 
 no_python_udfs = mark.notimpl(
     [
@@ -21,9 +24,16 @@ no_python_udfs = mark.notimpl(
         "risingwave",
     ]
 )
+cloudpickle_version_mismatch = mark.broken(
+    ["flink"],
+    condition=sys.version_info >= (3, 11),
+    raises=Py4JJavaError,
+    reason="Docker image has Python 3.10, results in `cloudpickle` version mismatch",
+)
 
 
 @no_python_udfs
+@cloudpickle_version_mismatch
 @mark.notimpl(["pyspark"])
 @mark.notyet(["datafusion"], raises=NotImplementedError)
 def test_udf(batting):
@@ -48,13 +58,16 @@ def test_udf(batting):
 
 
 @no_python_udfs
+@cloudpickle_version_mismatch
 @mark.notimpl(["pyspark"])
 @mark.notyet(
     ["postgres"], raises=TypeError, reason="postgres only supports map<string, string>"
 )
 @mark.notimpl(["polars"])
 @mark.never(
-    ["flink"], strict=False, reason="broken with Python 3.9; works in Python 3.10"
+    ["flink"],
+    condition=sys.version_info < (3, 10),
+    reason="broken with Python 3.9; works in Python 3.10",
 )
 @mark.notyet(["datafusion"], raises=NotImplementedError)
 @mark.notyet(
@@ -80,13 +93,16 @@ def test_map_udf(batting):
 
 
 @no_python_udfs
+@cloudpickle_version_mismatch
 @mark.notimpl(["pyspark"])
 @mark.notyet(
     ["postgres"], raises=TypeError, reason="postgres only supports map<string, string>"
 )
 @mark.notimpl(["polars"])
 @mark.never(
-    ["flink"], strict=False, reason="broken with Python 3.9; works in Python 3.10"
+    ["flink"],
+    condition=sys.version_info < (3, 10),
+    reason="broken with Python 3.9; works in Python 3.10",
 )
 @mark.notyet(["datafusion"], raises=NotImplementedError)
 @mark.notyet(["sqlite"], raises=TypeError, reason="sqlite doesn't support map types")
@@ -161,6 +177,7 @@ def add_one_pyarrow(s: int) -> int:  # s is series, int is the element type
                     raises=NotImplementedError,
                     reason="backend doesn't support pandas UDFs",
                 ),
+                cloudpickle_version_mismatch,
             ],
         ),
         param(

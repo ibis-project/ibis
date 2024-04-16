@@ -6,18 +6,44 @@ example in [A real-life use case: fraud detection](1_single_feature.qmd).
 
 ## Set up and connect to Flink
 
-Install the Flink backend for Ibis with `pip`:
+Install the Flink backend for Ibis:
 ```{python}
 # | include: false
 !pip install ibis-framework apache-flink
 ```
 
+::: {.panel-tabset}
+
+## Using `pip`
+
+```bash
+pip install ibis-framework apache-flink
+```
+
 ::: {.callout-warning}
 You need to install the Flink backend for Ibis alongside
-the `apache-flink` package. PyFlink is not available on conda-forge, so you
-cannot install the Flink backend for Ibis with `conda`, `mamba`, or `pixi`.
+the `apache-flink` package.
 :::
 
+## Using `conda`
+
+```bash
+conda install -c conda-forge ibis-flink
+```
+
+## Using `mamba`
+
+```bash
+mamba install -c conda-forge ibis-flink
+```
+
+## Using `pixi`
+
+```bash
+pixi add ibis-flink
+```
+
+:::
 
 To connect to a Flink session, simply create a `pyflink.table.TableEnvironment`
 and pass that to `ibis.flink.connect()`:

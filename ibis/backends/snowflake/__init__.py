@@ -80,6 +80,11 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, CanCreateSchema):
     supports_python_udfs = True
 
     _latest_udf_python_version = (3, 10)
+    _top_level_methods = ("from_snowpark",)
+
+    def __init__(self, *args, _from_snowpark: bool = False, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
+        self._from_snowpark = _from_snowpark
 
     def _convert_kwargs(self, kwargs):
         with contextlib.suppress(KeyError):
@@ -203,16 +208,22 @@ $$ {defn["source"]} $$"""
         create_object_udfs
             Enable object UDF extensions defined by ibis on the first
             connection to the database.
-        connect_args
-            Additional arguments passed to the DBAPI connection call.
         kwargs
-            Additional arguments passed to the URL constructor.
-
+            Additional arguments passed to the DBAPI connection call.
         """
         import snowflake.connector as sc
 
         connect_args = kwargs.copy()
         session_parameters = connect_args.pop("session_parameters", {})
+
+        self.con = sc.connect(**connect_args)
+        self._setup_session(
+            session_parameters=session_parameters,
+            create_object_udfs=create_object_udfs,
+        )
+
+    def _setup_session(self, *, session_parameters, create_object_udfs: bool):
+        con = self.con
 
         # enable multiple SQL statements by default
         session_parameters.setdefault("MULTI_STATEMENT_COUNT", 0)
@@ -231,8 +242,6 @@ $$ {defn["source"]} $$"""
                 TIMEZONE="UTC",
             ),
         )
-
-        con = sc.connect(**connect_args)
 
         with contextlib.closing(con.cursor()) as cur:
             cur.execute(
@@ -269,7 +278,63 @@ $$ {defn["source"]} $$"""
                     warnings.warn(
                         f"Unable to create Ibis UDFs, some functionality will not work: {e}"
                     )
-        self.con = con
+
+    @util.experimental
+    @classmethod
+    def from_snowpark(cls, session, *, create_object_udfs: bool = True) -> Backend:
+        """Create an Ibis Snowflake backend from a Snowpark session.
+
+        Parameters
+        ----------
+        session
+            A Snowpark session instance.
+        create_object_udfs
+            Enable object UDF extensions defined by ibis on the first
+            connection to the database.
+
+        Returns
+        -------
+        Backend
+            An Ibis Snowflake backend instance.
+
+        Examples
+        --------
+        >>> import ibis
+        >>> ibis.options.interactive = True
+        >>> import snowflake.snowpark as sp  # doctest: +SKIP
+        >>> session = sp.Session.builder.configs(...).create()  # doctest: +SKIP
+        >>> con = ibis.snowflake.from_snowpark(session)  # doctest: +SKIP
+        >>> batting = con.tables.BATTING  # doctest: +SKIP
+        >>> batting[["playerID", "RBI"]].head()  # doctest: +SKIP
+        ┏━━━━━━━━━━━┳━━━━━━━┓
+        ┃ playerID  ┃ RBI   ┃
+        ┡━━━━━━━━━━━╇━━━━━━━┩
+        │ string    │ int64 │
+        ├───────────┼───────┤
+        │ abercda01 │     0 │
+        │ addybo01  │    13 │
+        │ allisar01 │    19 │
+        │ allisdo01 │    27 │
+        │ ansonca01 │    16 │
+        └───────────┴───────┘
+        """
+        import snowflake.connector
+
+        backend = cls(_from_snowpark=True)
+        backend.con = session._conn._conn
+        with contextlib.suppress(snowflake.connector.errors.ProgrammingError):
+            # stored procs on snowflake don't allow session mutation it seems
+            backend._setup_session(
+                session_parameters={}, create_object_udfs=create_object_udfs
+            )
+        return backend
+
+    def reconnect(self) -> None:
+        if self._from_snowpark:
+            raise com.IbisError(
+                "Reconnecting is not supported when using a Snowpark session"
+            )
+        super().reconnect()
 
     def _get_udf_source(self, udf_node: ops.ScalarUDF):
         name = type(udf_node).__name__
@@ -434,7 +499,7 @@ $$"""
         sql = self.compile(expr, limit=limit, params=params, **kwargs)
         target_schema = expr.as_table().schema().to_pyarrow()
 
-        return pa.RecordBatchReader.from_batches(
+        return pa.ipc.RecordBatchReader.from_batches(
             target_schema,
             self._make_batch_iter(
                 sql, target_schema=target_schema, chunk_size=chunk_size

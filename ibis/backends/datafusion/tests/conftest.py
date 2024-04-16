@@ -12,7 +12,6 @@ from ibis.backends.tests.data import array_types, topk, win
 
 class TestConf(BackendTest):
     # check_names = False
-    # supports_divide_by_zero = True
     # returned_timestamp_unit = 'ns'
     supports_structs = False
     supports_json = False

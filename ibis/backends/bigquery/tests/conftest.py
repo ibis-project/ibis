@@ -21,8 +21,6 @@ PROJECT_ID_ENV_VAR = "GOOGLE_BIGQUERY_PROJECT_ID"
 class TestConf(BackendTest):
     """Backend-specific class with information for testing."""
 
-    supports_divide_by_zero = True
-    supports_floating_modulus = False
     returned_timestamp_unit = "us"
     supports_structs = True
     supports_json = True

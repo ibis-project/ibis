@@ -57,6 +57,7 @@ class PySparkCompiler(SQLGlotCompiler):
         (
             ops.RowID,
             ops.TimestampBucket,
+            ops.RandomUUID,
         )
     )
 
@@ -77,6 +78,10 @@ class PySparkCompiler(SQLGlotCompiler):
         ops.MapMerge: "map_concat",
         ops.MapKeys: "map_keys",
         ops.MapValues: "map_values",
+        ops.UnwrapJSONString: "unwrap_json_str",
+        ops.UnwrapJSONInt64: "unwrap_json_int",
+        ops.UnwrapJSONFloat64: "unwrap_json_float",
+        ops.UnwrapJSONBoolean: "unwrap_json_bool",
     }
 
     def _aggregate(self, funcname: str, *args, where):
@@ -92,9 +97,6 @@ class PySparkCompiler(SQLGlotCompiler):
                 return self.f.nanvl(result, NULL)
             else:
                 return result
-        elif dtype.is_string():
-            value = value.replace("\\", "\\\\")
-            return sge.convert(value)
         elif dtype.is_binary():
             return self.f.unhex(value.hex())
         elif dtype.is_decimal():

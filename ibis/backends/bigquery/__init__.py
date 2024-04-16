@@ -133,15 +133,19 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
 
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
-        self._session_dataset: bq.DatasetReference | None = None
+        self.__session_dataset: bq.DatasetReference | None = None
         self._query_cache.lookup = lambda name: self.table(
             name,
             database=(self._session_dataset.project, self._session_dataset.dataset_id),
         ).op()
 
-    def _register_in_memory_table(self, op: ops.InMemoryTable) -> None:
-        self._make_session()
+    @property
+    def _session_dataset(self):
+        if self.__session_dataset is None:
+            self.__session_dataset = self._make_session()
+        return self.__session_dataset
 
+    def _register_in_memory_table(self, op: ops.InMemoryTable) -> None:
         raw_name = op.name
 
         project = self._session_dataset.project
@@ -574,24 +578,20 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
         return rename_partitioned_column(table_expr, bq_table, self.partition_column)
 
     def _make_session(self) -> tuple[str, str]:
-        if (
-            self._session_dataset is None
-            and (client := getattr(self, "client", None)) is not None
-        ):
+        if (client := getattr(self, "client", None)) is not None:
             job_config = bq.QueryJobConfig(use_query_cache=False)
             query = client.query(
                 "SELECT 1", job_config=job_config, project=self.billing_project
             )
             query.result()
 
-            self._session_dataset = bq.DatasetReference(
+            return bq.DatasetReference(
                 project=query.destination.project,
                 dataset_id=query.destination.dataset_id,
             )
+        return None
 
     def _get_schema_using_query(self, query: str) -> sch.Schema:
-        self._make_session()
-
         job = self.client.query(
             query,
             job_config=bq.QueryJobConfig(dry_run=True, use_query_cache=False),
@@ -600,8 +600,6 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
         return BigQuerySchema.to_ibis(job.schema)
 
     def _execute(self, stmt, query_parameters=None):
-        self._make_session()
-
         job_config = bq.job.QueryJobConfig(query_parameters=query_parameters or [])
         query = self.client.query(
             stmt, job_config=job_config, project=self.billing_project
@@ -637,7 +635,6 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
             backend.
 
         """
-        self._make_session()
         self._define_udf_translation_rules(expr)
         sql = super()._to_sqlglot(expr, limit=limit, params=params, **kwargs)
 
@@ -834,7 +831,7 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
             ),
             chunk_size=chunk_size,
         )
-        return pa.RecordBatchReader.from_batches(schema.to_pyarrow(), batch_iter)
+        return pa.ipc.RecordBatchReader.from_batches(schema.to_pyarrow(), batch_iter)
 
     def _gen_udf_name(self, name: str, schema: Optional[str]) -> str:
         func = ".".join(filter(None, (schema, name)))

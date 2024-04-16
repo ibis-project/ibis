@@ -120,5 +120,8 @@ def __getattr__(name: str) -> BaseBackend:
     proxy.name = name
     proxy._from_url = backend._from_url
     proxy._to_sqlglot = backend._to_sqlglot
+    # Add any additional methods that should be exposed at the top level
+    for name in getattr(backend, "_top_level_methods", ()):
+        setattr(proxy, name, getattr(backend, name))
 
     return proxy

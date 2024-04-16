@@ -1,0 +1,149 @@
+---
+title: "Varchar in a haystack"
+author: "Tyler White"
+error: false
+date: "2024-04-12"
+image: thumbnail.png
+categories:
+  - blog
+  - data analysis
+  - puzzle
+---
+
+## The scenario
+
+You're a data analyst, and a new ticket landed in your queue.
+
+> Subject: Urgent: Data Discovery Needed for Critical Analysis
+>
+> Hi Data Team,
+>
+> I hope this message finds you well. I'm reaching out with an urgent request
+> that directly impacts the company's most critical project. We need to locate
+> a specific value within our database but do not know which column it's in.
+> Unfortunately, we don't have documentation for this particular table. We are
+> looking for the value "NEEDLE" in the table.
+>
+> We think it is in the X database, Y schema, and Z table. We appreciate your
+> help with this urgent matter!
+
+Whelp, let's give this a try.
+
+## The table
+
+To set up this particular problem, we can use pandas to create a table with 5
+columns and 100 rows. We can use the `at` method to update a row with the value
+"NEEDLE" to simulate what we need to find.
+
+```{python}
+#| code-fold: true
+import pandas as pd
+import random
+import string
+from ibis.interactive import *
+
+
+def random_string(length=10):
+    return "".join(
+        random.choice(string.ascii_letters + string.digits) for _ in range(length)
+    )
+
+
+data = [[random_string() for _ in range(5)] for _ in range(100)]
+column_names = [f"col{i+1}" for i in range(5)]
+df = pd.DataFrame(data, columns=column_names)
+df.at[42, 'col4'] = "NEEDLE"
+t = ibis.memtable(df, name="Z")
+```
+
+```{python}
+t
+```
+
+## The solution(s)
+
+There are a few ways we could solve this.
+
+#### Option 1: write SQL
+
+We could always spell it out with SQL, including each column that we want to
+check in the `WHERE` clause. In this scenario, we know each column is a varchar,
+so we can check each one for the value "NEEDLE".
+
+```sql
+SELECT *
+FROM Z
+WHERE col1 = 'NEEDLE'
+   OR col2 = 'NEEDLE'
+   OR col3 = 'NEEDLE'
+   OR col4 = 'NEEDLE'
+   OR col5 = 'NEEDLE';
+```
+
+This can be time-consuming. You might want something a little more dynamic.
+
+#### Option 2: write dynamic SQL
+
+Dynamically constructing the SQL query at runtime can be more complex, but it
+offers more flexibility, especially if we have more than five columns.
+
+```sql
+DO $$
+DECLARE
+    sql text;
+    where_clause text := '';
+BEGIN
+    SELECT INTO where_clause
+           string_agg(quote_ident(column_name) || ' = ''NEEDLE''', ' OR ')
+    FROM information_schema.columns
+    WHERE table_name = 'Z'
+        AND table_schema = 'public'
+        AND data_type IN ('character varying', 'varchar', 'text', 'char');
+
+    sql := 'SELECT *
+            FROM Z
+            WHERE ' || where_clause;
+
+    EXECUTE sql;
+END $$;
+```
+
+This can be difficult to troubleshoot, and it is easy to get lost in the quote
+characters.
+
+#### Option 3: use Ibis
+
+We can make use of [`selectors`](../../reference/selectors.qmd)!
+
+```{python}
+expr = t.filter(s.if_any(s.of_type("string"), _ == "NEEDLE"))
+
+expr
+```
+
+We can see the **NEEDLE** value hiding in `col4`.
+
+## The explanation
+
+`s.of_type("string")` was used to select string columns, then `s.if_any()`
+builds up the ORs. The `_ == "NEEDLE"` part is the condition itself, checking
+each column for the value.
+
+Here's the SQL that was generated to help us find it, which is quite similar
+to what we would have had to write if we had gone with [Option 1](#option-1-write-sql).
+
+```{python}
+#| echo: false
+ibis.to_sql(expr)
+```
+
+## The conclusion
+
+Now that we've found the `"NEEDLE"` value, we can provide the information to the
+requester. Urgent requests like this require quick and precise responses.
+
+Our use of Ibis demonstrates how easy it is to simplify navigating large
+datasets, and in this case, undocumented ones.
+
+Please get in touch with us on [GitHub](https://github.com/ibis-project) or
+[Zulip](https://ibis-project.zulipchat.com/). We'd love to hear from you!
