@@ -216,8 +216,8 @@ $$ {defn["source"]} $$"""
         connect_args = kwargs.copy()
         session_parameters = connect_args.pop("session_parameters", {})
 
+        self.con = sc.connect(**connect_args)
         self._setup_session(
-            con=sc.connect(**connect_args),
             session_parameters=session_parameters,
             create_object_udfs=create_object_udfs,
         )
