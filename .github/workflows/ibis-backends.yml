@@ -476,6 +476,7 @@ jobs:
             deps:
               - "dask[array,dataframe]@2022.9.1"
               - "pandas@1.5.3"
+              - "pyarrow@6"
             extras:
               - dask
           - name: postgres
@@ -484,6 +485,7 @@ jobs:
               - "psycopg2@2.8.4"
               - "geopandas@0.6"
               - "Shapely@2"
+              - "pyarrow@6"
             services:
               - postgres
             extras:
@@ -498,6 +500,7 @@ jobs:
                 - "psycopg2@2.8.4"
                 - "geopandas@0.6"
                 - "Shapely@2"
+                - "pyarrow@6"
               services:
                 - postgres
               extras:
@@ -511,6 +514,7 @@ jobs:
                 - "psycopg2@2.8.4"
                 - "geopandas@0.6"
                 - "Shapely@2"
+                - "pyarrow@6"
               services:
                 - postgres
               extras:
@@ -674,7 +678,7 @@ jobs:
     # this job exists so that we can use a single job from this workflow to gate merging
     runs-on: ubuntu-latest
     needs:
-      # - test_backends_min_version
+      - test_backends_min_version
       - test_backends
       - test_pyspark
     steps:
