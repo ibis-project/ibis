@@ -18,7 +18,7 @@ import ibis.expr.operations as ops
 import ibis.expr.types as ir
 from ibis.backends import _get_backend_names
 
-pytestmark = pytest.mark.benchmark
+pytestmark = [pytest.mark.benchmark, pytest.mark.timeout(30)]
 
 
 def make_t():
@@ -811,3 +811,24 @@ def test_big_join_compile(benchmark, src, diff):
         warmup_rounds=1,
     )
     assert len(t)
+
+
+@pytest.mark.timeout(5)
+def test_big_expression_compile(benchmark):
+    from ibis.tests.benchmarks.benchfuncs import clean_names
+
+    t = ibis.table(
+        schema={
+            "id": "int64",
+            "prefix": "string",
+            "first_name": "string",
+            "middle_name": "string",
+            "last_name": "string",
+            "suffix": "string",
+            "nickname": "string",
+        },
+        name="names",
+    )
+    t2 = clean_names(t)
+
+    assert benchmark(ibis.to_sql, t2, dialect="duckdb")
