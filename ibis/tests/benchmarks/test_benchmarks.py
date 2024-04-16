@@ -18,7 +18,7 @@ import ibis.expr.operations as ops
 import ibis.expr.types as ir
 from ibis.backends import _get_backend_names
 
-pytestmark = pytest.mark.benchmark
+pytestmark = [pytest.mark.benchmark, pytest.mark.timeout(30)]
 
 
 def make_t():
@@ -813,6 +813,7 @@ def test_big_join_compile(benchmark, src, diff):
     assert len(t)
 
 
+@pytest.mark.timeout(5)
 def test_big_expression_compile(benchmark):
     from ibis.tests.benchmarks.benchfuncs import clean_names
 
