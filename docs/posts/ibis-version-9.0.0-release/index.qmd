@@ -32,7 +32,7 @@ No new backends were added in this release, [unless you count the April Fools'
 Day Unix backend](../unix-backend/index.qmd)! As always, there have been
 backend-specific improvements and bug fixes. Some highlights are below.
 
-Check the [full changelog](../../release_notes.md) for more details.
+Check the [full changelog](../../release_notes.qmd) for more details.
 
 ### Snowflake
 
@@ -61,7 +61,7 @@ RisingWave backend.
 
 ## Breaking changes
 
-You can view the [full changelog](../../release_notes.md) for additional
+You can view the [full changelog](../../release_notes.qmd) for additional
 breaking changes. There is [one we expect to affect many
 users](#what-does-schema-mean).
 
@@ -142,7 +142,7 @@ con.current_catalog
 ### Other breaking changes
 
 There were a few more minor breaking changes, see [the full
-changelog](../../release_notes.md) for more details.
+changelog](../../release_notes.qmd) for more details.
 
 ## Functionality
 
