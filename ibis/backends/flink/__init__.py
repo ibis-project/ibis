@@ -1028,6 +1028,6 @@ class Backend(SQLBackend, CanCreateDatabase, NoUrl):
             arrow_schema, pyflink_schema.to_row_data_type(), timezone
         )
 
-        return pa.RecordBatchReader.from_batches(
+        return pa.ipc.RecordBatchReader.from_batches(
             arrow_schema, serializer.load_from_iterator(batches_iterator)
         )

@@ -831,7 +831,7 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
             ),
             chunk_size=chunk_size,
         )
-        return pa.RecordBatchReader.from_batches(schema.to_pyarrow(), batch_iter)
+        return pa.ipc.RecordBatchReader.from_batches(schema.to_pyarrow(), batch_iter)
 
     def _gen_udf_name(self, name: str, schema: Optional[str]) -> str:
         func = ".".join(filter(None, (schema, name)))
