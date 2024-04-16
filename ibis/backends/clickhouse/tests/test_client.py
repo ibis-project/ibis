@@ -314,3 +314,27 @@ def test_builtin_agg_udf(con, func):
         external_data=con._normalize_external_tables({table_name: t.op()}),
     ).squeeze()
     assert result == expected
+
+
+def test_create_table_no_syntax_error(con):
+    schema = ibis.schema(
+        [
+            ("play_id", "!string"),
+            ("uid", "!int64"),
+            ("feat1", "float64"),
+            ("feat2", "float64"),
+            ("feat3", "float64"),
+            ("feat4", "float64"),
+            ("feat5", "float64"),
+            ("feat6", "float64"),
+            ("feat7", "float64"),
+            ("feat8", "float64"),
+            ("feat9", "float64"),
+            ("feat10", "float64"),
+            ("feat11", "float64"),
+            ("play_timestamp", "!int64"),
+            ("tag_date", "!int32"),
+        ]
+    )
+    t = con.create_table(gen_name("clickouse_temp_table"), schema=schema, temp=True)
+    assert t.count().execute() == 0
