@@ -476,7 +476,7 @@ jobs:
             deps:
               required:
                 - "numpy@1.23.2"
-                - "pyarrow@7"
+                - "pyarrow@10.0.1"
               optional:
                 - "dask[array,dataframe]@2022.9.1"
                 - "pandas@1.5.3"
@@ -487,7 +487,7 @@ jobs:
             deps:
               required:
                 - "numpy@1.23.2"
-                - "pyarrow@7"
+                - "pyarrow@10.0.1"
               optional:
                 - "psycopg2@2.8.4"
                 - "geopandas@0.6"
@@ -505,7 +505,7 @@ jobs:
               deps:
                 required:
                   - "numpy@1.23.2"
-                  - "pyarrow@7"
+                  - "pyarrow@10.0.1"
                 optional:
                   - "psycopg2@2.8.4"
                   - "geopandas@0.6"
@@ -522,7 +522,7 @@ jobs:
               deps:
                 required:
                   - "numpy@1.23.2"
-                  - "pyarrow@7"
+                  - "pyarrow@10.0.1"
                 optional:
                   - "psycopg2@2.8.4"
                   - "geopandas@0.6"
@@ -539,7 +539,7 @@ jobs:
               deps:
                 required:
                   - "numpy@1.23.2"
-                  - "pyarrow@7"
+                  - "pyarrow@10.0.1"
                 optional:
                   - "dask[array,dataframe]@2022.9.1"
                   - "pandas@1.5.3"
