@@ -139,7 +139,13 @@ def test_map_values_nulls(con, map):
                     ["pandas", "dask"],
                     reason="result is False instead of None",
                     strict=False,  # passes for contains, but not for get
-                )
+                ),
+                pytest.mark.notimpl(
+                    "flink",
+                    raises=AssertionError,
+                    reason="not yet implemented",
+                    strict=False,
+                ),
             ],
             id="non_null_map_null_key",
         ),
