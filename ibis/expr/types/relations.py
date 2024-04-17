@@ -113,7 +113,7 @@ def bind(table: Table, value: Any, int_as_column=False) -> Iterator[ir.Value]:
         yield value
     elif isinstance(value, Table):
         for name in value.columns:
-            yield ops.Field(table, name).to_expr()
+            yield ops.Field(value, name).to_expr()
     elif isinstance(value, Deferred):
         yield value.resolve(table)
     elif isinstance(value, Resolver):

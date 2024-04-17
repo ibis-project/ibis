@@ -19,12 +19,7 @@ import ibis.selectors as s
 from ibis import _
 from ibis.common.annotations import ValidationError
 from ibis.common.deferred import Deferred
-from ibis.common.exceptions import (
-    ExpressionError,
-    IbisTypeError,
-    IntegrityError,
-    RelationError,
-)
+from ibis.common.exceptions import ExpressionError, IntegrityError, RelationError
 from ibis.expr import api
 from ibis.expr.rewrites import simplify
 from ibis.expr.tests.test_newrels import join_tables
@@ -235,7 +230,7 @@ def test_projection_with_star_expr(table):
 
     # cannot pass an invalid table expression
     t2 = t.aggregate([t["a"].sum().name("sum(a)")], by=["g"])
-    with pytest.raises(IbisTypeError):
+    with pytest.raises(IntegrityError):
         t[[t2]]
     # TODO: there may be some ways this can be invalid
 
