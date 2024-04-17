@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import os
+
 import pandas as pd
 import pandas.testing as tm
 import pyarrow as pa
@@ -191,15 +193,21 @@ def test_list_tables_database(con):
 
 
 @pytest.fixture
-def temp_db(con, worker_id):
-    dbname = f"clickhouse_create_database_{worker_id}"
+def tmpcon(worker_id):
+    dbname = f"clickhouse_database_{worker_id}"
+    con = ibis.clickhouse.connect(
+        host=os.environ.get("IBIS_TEST_CLICKHOUSE_HOST", "localhost"),
+        user=os.environ.get("IBIS_TEST_CLICKHOUSE_USER", "default"),
+        port=int(os.environ.get("IBIS_TEST_CLICKHOUSE_PORT", 8123)),
+        password=os.environ.get("IBIS_TEST_CLICKHOUSE_PASSWORD", ""),
+    )
     con.create_database(dbname, force=True)
-    yield dbname
+    yield con
     con.drop_database(dbname, force=True)
 
 
-def test_list_tables_empty_database(con, temp_db):
-    assert not con.list_tables(database=temp_db)
+def test_list_tables_empty_database(tmpcon):
+    assert not tmpcon.list_tables()
 
 
 @pytest.mark.parametrize("temp", [True, False], ids=["temp", "no_temp"])
