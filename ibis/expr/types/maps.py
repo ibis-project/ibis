@@ -76,7 +76,7 @@ class MapValue(Value):
     ├───────────────────┤
     │                 2 │
     │                 0 │
-    │                 0 │
+    │              NULL │
     └───────────────────┘
     """
 
@@ -149,7 +149,7 @@ class MapValue(Value):
         ├───────────────────┤
         │                 2 │
         │                 0 │
-        │                 0 │
+        │              NULL │
         └───────────────────┘
         """
 
@@ -304,7 +304,7 @@ class MapValue(Value):
         ├─────────────────────┤
         │ True                │
         │ False               │
-        │ False               │
+        │ NULL                │
         └─────────────────────┘
         """
         return ops.MapContains(self, key).to_expr()

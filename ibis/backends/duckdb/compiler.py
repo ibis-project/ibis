@@ -43,10 +43,7 @@ class DuckDBCompiler(SQLGlotCompiler):
         ops.Hash: "hash",
         ops.IntegerRange: "range",
         ops.TimestampRange: "range",
-        ops.MapKeys: "map_keys",
         ops.MapLength: "cardinality",
-        ops.MapMerge: "map_concat",
-        ops.MapValues: "map_values",
         ops.Mode: "mode",
         ops.TimeFromHMS: "make_time",
         ops.TypeOf: "typeof",
@@ -201,17 +198,43 @@ class DuckDBCompiler(SQLGlotCompiler):
 
     def visit_Map(self, op, *, keys, values):
         # workaround for https://github.com/ibis-project/ibis/issues/8632
-        regular = self.f.map(keys, values)
-        either_null = sg.or_(keys.is_(NULL), values.is_(NULL))
-        return self.if_(either_null, NULL, regular)
+        return self.if_(
+            sg.or_(keys.is_(NULL), values.is_(NULL)), NULL, self.f.map(keys, values)
+        )
 
     def visit_MapGet(self, op, *, arg, key, default):
-        return self.f.ifnull(
-            self.f.list_extract(self.f.element_at(arg, key), 1), default
+        return self.if_(
+            arg.is_(NULL),
+            NULL,
+            self.f.ifnull(
+                self.f.list_extract(
+                    self.if_(key.is_(NULL), NULL, self.f.element_at(arg, key)), 1
+                ),
+                default,
+            ),
         )
 
     def visit_MapContains(self, op, *, arg, key):
-        return self.f.len(self.f.element_at(arg, key)).neq(0)
+        return self.if_(
+            arg.is_(NULL),
+            NULL,
+            self.f.len(self.if_(key.is_(NULL), NULL, self.f.element_at(arg, key))).neq(
+                0
+            ),
+        )
+
+    def visit_MapKeys(self, op, *, arg):
+        return self.if_(arg.is_(NULL), NULL, self.f.map_keys(arg))
+
+    def visit_MapValues(self, op, *, arg):
+        return self.if_(arg.is_(NULL), NULL, self.f.map_values(arg))
+
+    def visit_MapMerge(self, op, *, left, right):
+        return self.if_(
+            sg.or_(left.is_(NULL), right.is_(NULL)),
+            NULL,
+            self.f.map_concat(left, right),
+        )
 
     def visit_ToJSONMap(self, op, *, arg):
         return self.if_(
