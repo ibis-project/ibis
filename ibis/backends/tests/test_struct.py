@@ -19,6 +19,7 @@ from ibis.backends.tests.errors import (
     PsycoPg2InternalError,
     PsycoPg2SyntaxError,
     Py4JJavaError,
+    PySparkAnalysisException,
 )
 from ibis.common.exceptions import IbisError, OperationNotDefinedError
 
@@ -253,6 +254,16 @@ def test_keyword_fields(con, nullable):
     reason="doesn't seem to support IN-style subqueries on structs",
 )
 @pytest.mark.notimpl(["pandas", "dask"], raises=OperationNotDefinedError)
+@pytest.mark.xfail_version(
+    pyspark=["pyspark<3.5"],
+    reason="requires pyspark 3.5",
+    raises=PySparkAnalysisException,
+)
+@pytest.mark.notimpl(
+    ["flink"],
+    raises=Py4JJavaError,
+    reason="fails to parse due to an unsupported operation; flink docs say the syntax is supported",
+)
 def test_isin_struct(con):
     needle1 = ibis.struct({"x": 1, "y": 2})
     needle2 = ibis.struct({"x": 2, "y": 3})
