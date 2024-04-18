@@ -940,7 +940,10 @@ class SQLGlotCompiler(abc.ABC):
         return self.f.exists(select)
 
     def visit_InSubquery(self, op, *, rel, needle):
-        return needle.isin(query=rel.this)
+        query = rel.this
+        if not isinstance(query, sge.Select):
+            query = sg.select(STAR).from_(query)
+        return needle.isin(query=query)
 
     def visit_Array(self, op, *, exprs):
         return self.f.array(*exprs)
