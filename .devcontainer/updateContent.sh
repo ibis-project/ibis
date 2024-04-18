@@ -2,4 +2,4 @@
 
 # install ibis
 python3 -m pip install ipython
-python3 -m pip install -e '.[clickhouse,duckdb,clickhouse,examples,geospatial]'
+POETRY_DYNAMIC_VERSIONING=false python3 -m pip install -e '.[duckdb,clickhouse,examples,geospatial]'
