@@ -51,6 +51,14 @@ def limit_df(
     return df[df[col].between(offset, offset + n - 1)]
 
 
+def argminmax_chunk(df, keycol, valcol, method):
+    return df.iloc[getattr(df[keycol], method)()]
+
+
+def argminmax_aggregate(df, keycol, valcol, method):
+    return df[valcol].iloc[getattr(df[keycol], method)()]
+
+
 class DaskExecutor(PandasExecutor, DaskUtils):
     name = "dask"
     kernels = dask_kernels
@@ -184,30 +192,25 @@ class DaskExecutor(PandasExecutor, DaskUtils):
 
     @classmethod
     def visit(cls, op: ops.ArgMin | ops.ArgMax, arg, key, where):
-        # TODO(kszucs): raise a warning about triggering compute()?
-        if isinstance(op, ops.ArgMin):
-            func = lambda x: x.idxmin()
-        else:
-            func = lambda x: x.idxmax()
+        method = "argmin" if isinstance(op, ops.ArgMin) else "argmax"
 
-        if where is None:
+        def agg(df):
+            if where is not None:
+                df = df.where(df[where.name])
 
-            def agg(df):
-                indices = func(df[key.name])
-                if isinstance(indices, (dd.Series, dd.core.Scalar)):
-                    # to support both aggregating within a group and globally
-                    indices = indices.compute()
-                return df[arg.name].loc[indices]
-        else:
-
-            def agg(df):
-                mask = df[where.name]
-                filtered = df[mask]
-                indices = func(filtered[key.name])
-                if isinstance(indices, (dd.Series, dd.core.Scalar)):
-                    # to support both aggregating within a group and globally
-                    indices = indices.compute()
-                return filtered[arg.name].loc[indices]
+            if isinstance(df, dd.DataFrame):
+                return df.reduction(
+                    chunk=argminmax_chunk,
+                    combine=argminmax_chunk,
+                    aggregate=argminmax_aggregate,
+                    meta=op.dtype.to_pandas(),
+                    token=method,
+                    keycol=key.name,
+                    valcol=arg.name,
+                    method=method,
+                )
+            else:
+                return argminmax_aggregate(df, key.name, arg.name, method)
 
         return agg
 
