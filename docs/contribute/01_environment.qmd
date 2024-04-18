@@ -97,7 +97,7 @@ for manager, params in managers.items():
     )
     print()
     print("    ```sh")
-    print("    pip install -e '.[all]'")
+    print("    pip install -e .")
     print("    ```")
     print()
 ```
@@ -200,7 +200,7 @@ For a better development experience see the `conda/mamba` or `nix` setup instruc
 1. Install ibis in development mode
 
    ```sh
-   pip install -e '.[all]'
+   pip install -e .
    ```
 
 :::
