@@ -1158,6 +1158,8 @@ class SQLGlotCompiler(abc.ABC):
     def visit_SelfReference(self, op, *, parent, identifier):
         return parent
 
+    visit_JoinReference = visit_SelfReference
+
     def visit_JoinChain(self, op, *, first, rest, values):
         result = sg.select(*self._cleanup_names(values), copy=False).from_(
             first, copy=False
@@ -1387,9 +1389,6 @@ class SQLGlotCompiler(abc.ABC):
 
     def visit_SQLQueryResult(self, op, *, query, schema, source):
         return sg.parse_one(query, dialect=self.dialect).subquery(copy=False)
-
-    def visit_JoinTable(self, op, *, parent, index):
-        return parent
 
     def visit_RegexExtract(self, op, *, arg, pattern, index):
         return self.f.regexp_extract(arg, pattern, index, dialect=self.dialect)

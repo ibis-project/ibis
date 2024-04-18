@@ -27,7 +27,7 @@ def test_rewrite_join_projection_without_other_ops(con):
     # Project out the desired fields
     view = j2[[filtered, table2["value1"], table3["value2"]]]
 
-    with join_tables(filtered, table2, table3) as (r1, r2, r3):
+    with join_tables(j2) as (r1, r2, r3):
         # Construct the thing we expect to obtain
         expected = ops.JoinChain(
             first=r1,
@@ -170,7 +170,7 @@ def test_filter_self_join():
     what = [left.region, metric]
     projected = joined.select(what)
 
-    with join_tables(left, right) as (r1, r2):
+    with join_tables(joined) as (r1, r2):
         join = ops.JoinChain(
             first=r1,
             rest=[

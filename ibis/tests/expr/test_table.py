@@ -901,7 +901,7 @@ def test_join_no_predicate_list(con):
     pred = region.r_regionkey == nation.n_regionkey
     joined = region.inner_join(nation, pred)
 
-    with join_tables(region, nation) as (r1, r2):
+    with join_tables(joined) as (r1, r2):
         expected = ops.JoinChain(
             first=r1,
             rest=[ops.JoinLink("inner", r2, [r1.r_regionkey == r2.n_regionkey])],
@@ -924,7 +924,7 @@ def test_join_deferred(con):
 
     res = region.join(nation, _.r_regionkey == nation.n_regionkey)
 
-    with join_tables(region, nation) as (r1, r2):
+    with join_tables(res) as (r1, r2):
         expected = ops.JoinChain(
             first=r1,
             rest=[ops.JoinLink("inner", r2, [r1.r_regionkey == r2.n_regionkey])],
@@ -970,7 +970,7 @@ def test_asof_join_with_by():
     right = ibis.table([("time", "int32"), ("key", "int32"), ("value2", "double")])
 
     join_without_by = api.asof_join(left, right, "time")
-    with join_tables(left, right) as (r1, r2):
+    with join_tables(join_without_by) as (r1, r2):
         r2 = join_without_by.op().rest[0].table.to_expr()
         expected = ops.JoinChain(
             first=r1,
@@ -987,7 +987,7 @@ def test_asof_join_with_by():
         assert join_without_by.op() == expected
 
     join_with_predicates = api.asof_join(left, right, "time", predicates="key")
-    with join_tables(left, right) as (r1, r2):
+    with join_tables(join_with_predicates) as (r1, r2):
         expected = ops.JoinChain(
             first=r1,
             rest=[
@@ -1205,7 +1205,7 @@ def test_cross_join_multiple(table):
     c = table["f", "h"]
 
     joined = ibis.cross_join(a, b, c)
-    with join_tables(a, b, c) as (r1, r2, r3):
+    with join_tables(joined) as (r1, r2, r3):
         expected = ops.JoinChain(
             first=r1,
             rest=[
@@ -1292,7 +1292,7 @@ def test_join_key_alternatives(con, key_maker):
     key = key_maker(t1, t2)
 
     joined = t1.inner_join(t2, key)
-    with join_tables(t1, t2) as (r1, r2):
+    with join_tables(joined) as (r1, r2):
         expected = ops.JoinChain(
             first=r1,
             rest=[
@@ -1376,7 +1376,7 @@ def test_unravel_compound_equijoin(table):
     p3 = t1.key3 == t2.key3
 
     joined = t1.inner_join(t2, [p1 & p2 & p3])
-    with join_tables(t1, t2) as (r1, r2):
+    with join_tables(joined) as (r1, r2):
         expected = ops.JoinChain(
             first=r1,
             rest=[

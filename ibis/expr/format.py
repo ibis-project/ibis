@@ -181,7 +181,7 @@ def pretty(node: Node, scope: Optional[dict[str, Node]] = None) -> str:
         if var := variables.get(op):
             refs[op] = result
             result = var
-        elif isinstance(op, ops.Relation) and not isinstance(op, ops.JoinTable):
+        elif isinstance(op, ops.Relation) and not isinstance(op, ops.JoinReference):
             refs[op] = result
             result = f"r{next(refcnt)}"
         return Rendered(result)
@@ -364,8 +364,8 @@ def _self_reference(op, parent, **kwargs):
     return f"{op.__class__.__name__}[{parent}]"
 
 
-@fmt.register(ops.JoinTable)
-def _join_table(op, parent, index):
+@fmt.register(ops.JoinReference)
+def _join_reference(op, parent, **kwargs):
     return parent
 
 

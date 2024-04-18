@@ -1,6 +1,7 @@
 ```{python}
 import ibis  # <1>
 import ibis.selectors as s  # <1>
+from ibis import _
 
 ibis.options.interactive = True  # <2>
 

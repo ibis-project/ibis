@@ -35,8 +35,8 @@ t = ibis.table(
 
 
 @contextlib.contextmanager
-def join_tables(*tables):
-    yield tuple(ops.JoinTable(t, i).to_expr() for i, t in enumerate(tables))
+def join_tables(table):
+    yield [t.to_expr() for t in table.op().tables]
 
 
 def test_field():
@@ -565,7 +565,7 @@ def test_join():
     assert isinstance(joined.op(), JoinChain)
     assert isinstance(joined.op().to_expr(), ir.Join)
 
-    with join_tables(t1, t2) as (t1, t2):
+    with join_tables(joined) as (t1, t2):
         assert result.op() == JoinChain(
             first=t1,
             rest=[
@@ -584,16 +584,16 @@ def test_join_integrity_checks():
     t1 = ibis.table(name="t1", schema={"a": "int64", "b": "string"})
 
     # correct example
-    r1 = ops.JoinTable(t1, 10)
-    r2 = ops.JoinTable(t1, 20)
+    r1 = ops.JoinReference(t1, 10)
+    r2 = ops.JoinReference(t1, 20)
     assert r1 != r2
     assert hash(r1) != hash(r2)
     chain = ops.JoinChain(r1, [ops.JoinLink("inner", r2, [True])], values={})
     assert isinstance(chain, JoinChain)
 
     # not unique tables
-    r1 = ops.JoinTable(t1, 10)
-    r2 = ops.JoinTable(t1, 10)
+    r1 = ops.JoinReference(t1, 10)
+    r2 = ops.JoinReference(t1, 10)
     assert r1 == r2
     assert hash(r1) == hash(r2)
     with pytest.raises(IntegrityError):
@@ -609,7 +609,7 @@ def test_join_unambiguous_select():
     expr2 = join.select("a_int", "b_int")
     assert expr1.equals(expr2)
 
-    with join_tables(a, b) as (r1, r2):
+    with join_tables(join) as (r1, r2):
         assert expr1.op() == JoinChain(
             first=r1,
             rest=[JoinLink("inner", r2, [r1.a_int == r2.b_int])],
@@ -627,7 +627,7 @@ def test_join_with_subsequent_projection():
     # a single computed value is pulled to a subsequent projection
     joined = t1.join(t2, [t1.a == t2.c])
     expr = joined.select(t1.a, t1.b, col=t2.c + 1)
-    with join_tables(t1, t2) as (r1, r2):
+    with join_tables(joined) as (r1, r2):
         expected = JoinChain(
             first=r1,
             rest=[JoinLink("inner", r2, [r1.a == r2.c])],
@@ -645,7 +645,7 @@ def test_join_with_subsequent_projection():
         baz=t2.d.name("bar") + "3",
         baz2=(t2.c + t1.a).name("foo"),
     )
-    with join_tables(t1, t2) as (r1, r2):
+    with join_tables(joined) as (r1, r2):
         expected = JoinChain(
             first=r1,
             rest=[JoinLink("inner", r2, [r1.a == r2.c])],
@@ -674,7 +674,7 @@ def test_join_with_subsequent_projection_colliding_names():
         foo=t2.a + 1,
         bar=t1.a + t2.a,
     )
-    with join_tables(t1, t2) as (r1, r2):
+    with join_tables(expr) as (r1, r2):
         expected = JoinChain(
             first=r1,
             rest=[JoinLink("inner", r2, [r1.a == r2.a])],
@@ -695,7 +695,7 @@ def test_chained_join():
     joined = a.join(b, [a.a == b.c]).join(c, [a.a == c.e])
     result = joined._finish()
 
-    with join_tables(a, b, c) as (r1, r2, r3):
+    with join_tables(joined) as (r1, r2, r3):
         assert result.op() == JoinChain(
             first=r1,
             rest=[
@@ -715,7 +715,7 @@ def test_chained_join():
     joined = a.join(b, [a.a == b.c]).join(c, [b.c == c.e])
     result = joined.select(a.a, b.d, c.f)
 
-    with join_tables(a, b, c) as (r1, r2, r3):
+    with join_tables(joined) as (r1, r2, r3):
         assert result.op() == JoinChain(
             first=r1,
             rest=[
@@ -739,7 +739,7 @@ def test_chained_join_referencing_intermediate_table():
     abc = ab.join(c, [ab.a == c.e])
     result = abc._finish()
 
-    with join_tables(a, b, c) as (r1, r2, r3):
+    with join_tables(abc) as (r1, r2, r3):
         assert result.op() == JoinChain(
             first=r1,
             rest=[
@@ -772,7 +772,7 @@ def test_join_predicate_dereferencing():
 
     # dereference table.foo_id to filtered.foo_id
     j1 = filtered.left_join(table2, table["foo_id"] == table2["foo_id"])
-    with join_tables(filtered, table2) as (r1, r2):
+    with join_tables(j1) as (r1, r2):
         expected = ops.JoinChain(
             first=r1,
             rest=[
@@ -793,7 +793,7 @@ def test_join_predicate_dereferencing():
     j1 = filtered.left_join(table2, table["foo_id"] == table2["foo_id"])
     j2 = j1.inner_join(table3, filtered["bar_id"] == table3["bar_id"])
     view = j2[[filtered, table2["value1"], table3["value2"]]]
-    with join_tables(filtered, table2, table3) as (r1, r2, r3):
+    with join_tables(j2) as (r1, r2, r3):
         expected = ops.JoinChain(
             first=r1,
             rest=[
@@ -835,7 +835,7 @@ def test_join_predicate_dereferencing_using_tuple_syntax():
     j1 = ibis.join(t2, t3, [(t2.x, t3.x)])
     j2 = ibis.join(t2, t4, [(t2.x, t4.x)])
 
-    with join_tables(t2, t3) as (r1, r2):
+    with join_tables(j1) as (r1, r2):
         expected = ops.JoinChain(
             first=r1,
             rest=[
@@ -849,7 +849,7 @@ def test_join_predicate_dereferencing_using_tuple_syntax():
         )
         assert j1.op() == expected
 
-    with join_tables(t2, t4) as (r1, r2):
+    with join_tables(j2) as (r1, r2):
         expected = ops.JoinChain(
             first=r1,
             rest=[
@@ -862,6 +862,34 @@ def test_join_predicate_dereferencing_using_tuple_syntax():
             },
         )
         assert j2.op() == expected
+
+
+def test_join_rhs_dereferencing():
+    t1 = ibis.table(name="t1", schema={"a": "int64", "b": "string"})
+    t2 = ibis.table(name="t2", schema={"c": "int64", "d": "string"})
+
+    t3 = t2.mutate(e=t2.c + 1)
+    joined = t1.join(t3, [t1.a == t2.c])
+    with join_tables(joined) as (r1, r2):
+        expected = JoinChain(
+            first=r1,
+            rest=[
+                JoinLink("inner", r2, [r1.a == r2.c]),
+            ],
+            values={"a": r1.a, "b": r1.b, "c": r2.c, "d": r2.d, "e": r2.e},
+        )
+        assert joined.op() == expected
+
+    joined = t1.join(t3, [t1.a == (t2.c + 1)])
+    with join_tables(joined) as (r1, r2):
+        expected = JoinChain(
+            first=r1,
+            rest=[
+                JoinLink("inner", r2, [r1.a == r2.e]),
+            ],
+            values={"a": r1.a, "b": r1.b, "c": r2.c, "d": r2.d, "e": r2.e},
+        )
+        assert joined.op() == expected
 
 
 def test_aggregate():
@@ -1063,7 +1091,7 @@ def test_self_join():
     t3 = t2.join(t2, ["key"])
     t4 = t3.join(t3, ["key"])
 
-    with join_tables(t2, t2, t3) as (r1, r2, r3):
+    with join_tables(t4) as (r1, r2, r3):
         expected = ops.JoinChain(
             first=r1,
             rest=[
@@ -1089,7 +1117,7 @@ def test_self_join_view():
     t_view = t.view()
     expr = t.join(t_view, t.x == t_view.y).select("x", "y", "z", "z_right")
 
-    with join_tables(t, t_view) as (r1, r2):
+    with join_tables(expr) as (r1, r2):
         expected = ops.JoinChain(
             first=r1,
             rest=[
@@ -1105,7 +1133,7 @@ def test_self_join_with_view_projection():
     t2 = t1.view()
     expr = t1.inner_join(t2, ["x"])[[t1]]
 
-    with join_tables(t1, t2) as (r1, r2):
+    with join_tables(expr) as (r1, r2):
         expected = ops.JoinChain(
             first=r1,
             rest=[
@@ -1120,10 +1148,14 @@ def test_joining_same_table_twice():
     left = ibis.table(name="left", schema={"time1": int, "value": float, "a": str})
     right = ibis.table(name="right", schema={"time2": int, "value2": float, "b": str})
 
-    joined = left.inner_join(right, left.a == right.b).inner_join(
-        right, left.value == right.value2
-    )
-    with join_tables(left, right, right) as (r1, r2, r3):
+    first = left.inner_join(right, left.a == right.b)
+
+    with pytest.raises(IbisInputError, match="Ambiguous field reference"):
+        first.inner_join(right, left.value == right.value2)
+
+    right_ = right.view()
+    second = first.inner_join(right_, left.value == right_.value2)
+    with join_tables(second) as (r1, r2, r3):
         expected = ops.JoinChain(
             first=r1,
             rest=[
@@ -1142,7 +1174,7 @@ def test_joining_same_table_twice():
                 "b_right": r3.b,
             },
         )
-        assert joined.op() == expected
+        assert second.op() == expected
 
 
 def test_join_chain_gets_reused_and_continued_after_a_select():
@@ -1153,7 +1185,7 @@ def test_join_chain_gets_reused_and_continued_after_a_select():
     ab = a.join(b, [a.a == b.c])
     abc = ab[a.b, b.d].join(c, [a.a == c.e])
 
-    with join_tables(a, b, c) as (r1, r2, r3):
+    with join_tables(abc) as (r1, r2, r3):
         expected = ops.JoinChain(
             first=r1,
             rest=[
@@ -1173,10 +1205,12 @@ def test_join_chain_gets_reused_and_continued_after_a_select():
 def test_self_join_extensive():
     a = ibis.table(name="a", schema={"a": "int64", "b": "string"})
 
-    aa = a.join(a, [a.a == a.a])
-    aa1 = a.join(a, "a")
-    aa2 = a.join(a, [("a", "a")])
-    with join_tables(a, a) as (r1, r2):
+    with pytest.raises(IbisInputError, match="Ambiguous field reference"):
+        a.join(a, [a.a == a.a])
+
+    a_ = a.view()
+    aa = a.join(a_, [a.a == a_.a])
+    with join_tables(aa) as (r1, r2):
         expected = ops.JoinChain(
             first=r1,
             rest=[
@@ -1189,14 +1223,28 @@ def test_self_join_extensive():
             },
         )
         assert aa.op() == expected
+
+    aa1 = a.join(a, "a")
+    aa2 = a.join(a, [("a", "a")])
+    with join_tables(aa1) as (r1, r2):
+        expected = ops.JoinChain(
+            first=r1,
+            rest=[
+                ops.JoinLink("inner", r2, [r1.a == r2.a]),
+            ],
+            values={
+                "a": r1.a,
+                "b": r1.b,
+                "b_right": r2.b,
+            },
+        )
         assert aa1.op() == expected
         assert aa2.op() == expected
 
-    aaa = a.join(a, [a.a == a.a]).join(a, [a.a == a.a])
-    aaa1 = aa.join(a, [aa.a == a.a])
-    aaa2 = aa.join(a, "a")
-    aaa3 = aa.join(a, [("a", "a")])
-    with join_tables(a, a, a) as (r1, r2, r3):
+    aaa = a.join(a, "a").join(a, "a")
+    aaa1 = aa1.join(a, "a")
+    aaa2 = aa1.join(a, [("a", "a")])
+    with join_tables(aaa) as (r1, r2, r3):
         expected = ops.JoinChain(
             first=r1,
             rest=[
@@ -1212,14 +1260,32 @@ def test_self_join_extensive():
         assert aaa.op() == expected
         assert aaa1.op() == expected
         assert aaa2.op() == expected
-        assert aaa3.op() == expected
 
 
 def test_self_join_with_intermediate_selection():
     a = ibis.table(name="a", schema={"a": "int64", "b": "string"})
     proj = a[["b", "a"]]
+    # the predicate only references the original table, unless we enforce
+    # that the predicates must contain both sides of the join, we can't
+    # do much with this, perhaps raise a warning
     join = proj.join(a, [a.a == a.a])
-    with join_tables(proj, a) as (r1, r2):
+    with join_tables(join) as (r1, r2):
+        expected = ops.JoinChain(
+            first=r1,
+            rest=[
+                ops.JoinLink("inner", r2, [r2.a == r2.a]),
+            ],
+            values={
+                "b": r1.b,
+                "a": r1.a,
+                "a_right": r2.a,
+                "b_right": r2.b,
+            },
+        )
+        assert join.op() == expected
+
+    join = proj.join(a, [proj.a == a.a])
+    with join_tables(join) as (r1, r2):
         expected = ops.JoinChain(
             first=r1,
             rest=[
@@ -1233,9 +1299,11 @@ def test_self_join_with_intermediate_selection():
         )
         assert join.op() == expected
 
-    aa = a.join(a, [a.a == a.a])["a", "b_right"]
-    aaa = aa.join(a, [aa.a == a.a])
-    with join_tables(a, a, a) as (r1, r2, r3):
+    a1 = a.view()
+    a2 = a.view()
+    aa = a.join(a1, [a.a == a1.a])["a", "b_right"]
+    aaa = aa.join(a2, [aa.a == a2.a])
+    with join_tables(aaa) as (r1, r2, r3):
         expected = ops.JoinChain(
             first=r1,
             rest=[
@@ -1306,7 +1374,7 @@ def test_self_view_join_followed_by_aggregate_correctly_dereference_fields():
     join = agged.inner_join(view, [agged.a == view.b])
     agg = join.aggregate(metrics, by=[agged.g])
 
-    with join_tables(agged, view) as (r1, r2):
+    with join_tables(join) as (r1, r2):
         expected_join = ops.JoinChain(
             first=r1,
             rest=[
@@ -1367,7 +1435,7 @@ def test_join_between_joins():
     exprs = [left, right.value3, right.value4]
     expr = joined.select(exprs)
 
-    with join_tables(t1, t2, right) as (r1, r2, r3):
+    with join_tables(expr) as (r1, r2, r3):
         expected = ops.JoinChain(
             first=r1,
             rest=[
@@ -1393,7 +1461,7 @@ def test_join_with_filtered_join_of_left():
     joined = t1.left_join(t2, [t1.a == t2.a]).filter(t1.a < 5)
     expr = t1.left_join(joined, [t1.a == joined.a]).select(t1)
 
-    with join_tables(t1, joined) as (r1, r2):
+    with join_tables(expr) as (r1, r2):
         expected = ops.JoinChain(
             first=r1,
             rest=[
@@ -1451,7 +1519,7 @@ def test_join_with_compound_predicate():
         ],
     )
     expr = joined[t1]
-    with join_tables(t1, t2) as (r1, r2):
+    with join_tables(joined) as (r1, r2):
         expected = ops.JoinChain(
             first=r1,
             rest=[
@@ -1486,7 +1554,7 @@ def test_inner_join_convenience():
     t5 = ibis.table(name="t5", schema={"a": "int64", "f": "string"})
 
     first_join = t1.inner_join(t2, [t1.a == t2.a])
-    with join_tables(t1, t2) as (r1, r2):
+    with join_tables(first_join) as (r1, r2):
         expected = ops.JoinChain(
             first=r1,
             rest=[
@@ -1504,7 +1572,7 @@ def test_inner_join_convenience():
 
     # note that we are joining on r2.a which isn't among the values
     second_join = first_join.inner_join(t3, [r2.a == t3.a])
-    with join_tables(t1, t2, t3) as (r1, r2, r3):
+    with join_tables(second_join) as (r1, r2, r3):
         expected = ops.JoinChain(
             first=r1,
             rest=[
@@ -1523,7 +1591,7 @@ def test_inner_join_convenience():
         assert result == expected
 
     third_join = second_join.left_join(t4, [r3.a == t4.a])
-    with join_tables(t1, t2, t3, t4) as (r1, r2, r3, r4):
+    with join_tables(third_join) as (r1, r2, r3, r4):
         expected = ops.JoinChain(
             first=r1,
             rest=[
@@ -1545,7 +1613,7 @@ def test_inner_join_convenience():
         assert result == expected
 
     fourth_join = third_join.inner_join(t5, [r3.a == t5.a], rname="{name}_")
-    with join_tables(t1, t2, t3, t4, t5) as (r1, r2, r3, r4, r5):
+    with join_tables(fourth_join) as (r1, r2, r3, r4, r5):
         # equality groups are being reset
         expected = ops.JoinChain(
             first=r1,
@@ -1575,7 +1643,7 @@ def test_inner_join_convenience():
         third_join.inner_join(t5, [r4.a == t5.a])._finish()
 
     fifth_join = third_join.inner_join(t5, [r4.a == t5.a], rname="{name}_")
-    with join_tables(t1, t2, t3, t4, t5) as (r1, r2, r3, r4, r5):
+    with join_tables(fifth_join) as (r1, r2, r3, r4, r5):
         # equality groups are being reset
         expected = ops.JoinChain(
             first=r1,
@@ -1631,3 +1699,15 @@ def test_impure_operation_dereferencing(func):
         parent=t1, values={"x": t1.x, "y": t1.y, "z": v2.cast("string")}
     )
     assert t2.op() == expected
+
+
+def test_mutate_ambiguty_check_not_too_strict():
+    t = ibis.table({"id": "int64"}, name="t")
+
+    first = t.mutate(v=t["id"])
+    second = first.mutate(v2=t["id"])
+    expected = ops.Project(
+        parent=first,
+        values={"id": first.id, "v": first.v, "v2": first.id},
+    )
+    assert second.op() == expected

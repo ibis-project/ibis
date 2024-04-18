@@ -192,8 +192,8 @@ def self_reference(op, parent, identifier):
     return f"{parent}.view()"
 
 
-@translate.register(ops.JoinTable)
-def join_table(op, parent, index):
+@translate.register(ops.JoinReference)
+def join_reference(op, parent, identifier):
     return parent
 
 
@@ -353,7 +353,7 @@ class CodeContext:
     )
 
     always_ignore = (
-        ops.JoinTable,
+        ops.JoinReference,
         ops.Field,
         dt.Primitive,
         dt.Variadic,

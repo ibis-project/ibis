@@ -7,7 +7,7 @@ WITH `t1` AS (
     1
 )
 SELECT
-  `t5`.`uuid`,
+  `t3`.`uuid`,
   `t3`.`CountStar(t)`
 FROM (
   SELECT

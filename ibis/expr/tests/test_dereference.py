@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import ibis
-from ibis.expr.types.relations import dereference_mapping
+from ibis.expr.types.relations import DerefMap
 
 t = ibis.table(
     [
@@ -20,7 +20,7 @@ def dereference_expect(expected):
 def test_dereference_project():
     p = t.select([t.int_col, t.double_col])
 
-    mapping = dereference_mapping([p.op()])
+    mapping = DerefMap.from_targets([p.op()])
     expected = dereference_expect(
         {
             p.int_col: p.int_col,
@@ -29,13 +29,13 @@ def test_dereference_project():
             t.double_col: p.double_col,
         }
     )
-    assert mapping == expected
+    assert mapping.subs == expected
 
 
 def test_dereference_mapping_self_reference():
     v = t.view()
 
-    mapping = dereference_mapping([v.op()])
+    mapping = DerefMap.from_targets([v.op()])
     expected = dereference_expect(
         {
             v.int_col: v.int_col,
@@ -43,4 +43,4 @@ def test_dereference_mapping_self_reference():
             v.string_col: v.string_col,
         }
     )
-    assert mapping == expected
+    assert mapping.subs == expected

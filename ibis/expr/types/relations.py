@@ -5,12 +5,7 @@ import operator
 import re
 from collections.abc import Iterable, Iterator, Mapping, Sequence
 from keyword import iskeyword
-from typing import (
-    TYPE_CHECKING,
-    Any,
-    Callable,
-    Literal,
-)
+from typing import TYPE_CHECKING, Any, Callable, Literal
 
 import toolz
 from public import public
@@ -22,6 +17,7 @@ import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 from ibis import util
 from ibis.common.deferred import Deferred, Resolver
+from ibis.expr.rewrites import DerefMap
 from ibis.expr.types.core import Expr, _FixedTextJupyterMixin
 from ibis.expr.types.generic import Value, literal
 from ibis.expr.types.pretty import to_rich
@@ -149,58 +145,12 @@ def unwrap_aliases(values: Iterator[ir.Value]) -> Mapping[str, ir.Value]:
     return result
 
 
-def dereference_mapping(parents):
-    parents = util.promote_list(parents)
-    mapping = {}
-
-    for parent in parents:
-        # do not defereference fields referencing the requested parents
-        for _, v in parent.fields.items():
-            mapping[v] = v
-
-    for parent in parents:
-        for k, v in parent.values.items():
-            if isinstance(v, ops.Field):
-                # track down the field in the hierarchy until no modification
-                # is made so only follow ops.Field nodes not arbitrary values;
-                # also stop tracking if the field belongs to a parent which
-                # we want to dereference to, see the docstring of
-                # `dereference_values()` for more details
-                while isinstance(v, ops.Field) and v not in mapping:
-                    mapping[v] = ops.Field(parent, k)
-                    v = v.rel.values.get(v.name)
-            elif v not in mapping and not v.find(ops.Impure):
-                # do not dereference literal expressions
-                mapping[v] = ops.Field(parent, k)
-
-    return mapping
-
-
 def dereference_values(
     parents: Iterable[ops.Parents], values: Mapping[str, ops.Value]
 ) -> Mapping[str, ops.Value]:
     """Trace and replace fields from earlier relations in the hierarchy.
 
-    In order to provide a nice user experience, we need to allow expressions
-    from earlier relations in the hierarchy. Consider the following example:
-
-    t = ibis.table([('a', 'int64'), ('b', 'string')], name='t')
-    t1 = t.select([t.a, t.b])
-    t2 = t1.filter(t.a > 0)  # note that not t1.a is referenced here
-    t3 = t2.select(t.a)  # note that not t2.a is referenced here
-
-    However the relational operations in the IR are strictly enforcing that
-    the expressions are referencing the immediate parent only. So we need to
-    track fields upwards the hierarchy to replace `t.a` with `t1.a` and `t2.a`
-    in the example above. This is called dereferencing.
-
-    Whether we can treat or not a field of a relation semantically equivalent
-    with a field of an earlier relation in the hierarchy depends on the
-    `.values` mapping of the relation. Leaf relations, like `t` in the example
-    above, have an empty `.values` mapping, so we cannot dereference fields
-    from them. On the other hand a projection, like `t1` in the example above,
-    has a `.values` mapping like `{'a': t.a, 'b': t.b}`, so we can deduce that
-    `t1.a` is semantically equivalent with `t.a` and so on.
+    For more details see :class:`ibis.expr.rewrites.DerefMap`.
 
     Parameters
     ----------
@@ -214,8 +164,8 @@ def dereference_values(
     The same mapping as `values` but with all the dereferenceable fields
     replaced with the fields from the parents.
     """
-    subs = dereference_mapping(parents)
-    return {k: v.replace(subs, filter=ops.Value) for k, v in values.items()}
+    dm = DerefMap.from_targets(parents)
+    return {k: dm.dereference(v) for k, v in values.items()}
 
 
 @public
@@ -1185,23 +1135,21 @@ class Table(Expr, _FixedTextJupyterMixin):
 
         groups = bind(self, by)
         metrics = bind(self, (metrics, kwargs))
-        having = bind(self, having)
+        having = tuple(bind(self, having))
 
         groups = unwrap_aliases(groups)
         metrics = unwrap_aliases(metrics)
-        having = unwrap_aliases(having)
 
         groups = dereference_values(node, groups)
         metrics = dereference_values(node, metrics)
-        having = dereference_values(node, having)
 
         # the user doesn't need to specify the metrics used in the having clause
         # explicitly, we implicitly add them to the metrics list by looking for
         # any metrics depending on self which are not specified explicitly
         pattern = p.Reduction(relations=Contains(node)) & ~In(set(metrics.values()))
         original_metrics = metrics.copy()
-        for pred in having.values():
-            for metric in pred.find_topmost(pattern):
+        for pred in having:
+            for metric in pred.op().find_topmost(pattern):
                 if metric.name in metrics:
                     metrics[util.get_name("metric")] = metric
                 else:
@@ -1212,7 +1160,7 @@ class Table(Expr, _FixedTextJupyterMixin):
 
         if having:
             # apply the having clause
-            agg = agg.filter(*having.values())
+            agg = agg.filter(*having)
             # remove any metrics that were only used in the having clause
             if metrics != original_metrics:
                 agg = agg.select(*groups.keys(), *original_metrics.keys())
