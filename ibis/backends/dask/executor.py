@@ -52,7 +52,8 @@ def limit_df(
 
 
 def argminmax_chunk(df, keycol, valcol, method):
-    return df.iloc[getattr(df[keycol], method)()]
+    idx = getattr(df[keycol], method)()
+    return df[[keycol, valcol]].iloc[idx : idx + 1]
 
 
 def argminmax_aggregate(df, keycol, valcol, method):
