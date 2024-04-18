@@ -297,11 +297,3 @@ def test_list_tables_schema_warning_refactor(con):
 
     assert con.list_tables(database="shops") == icecream_table
     assert con.list_tables(database=("shops",)) == icecream_table
-
-
-@pytest.mark.xfail(
-    raises=(duckdb.InvalidInputException, duckdb.BinderException),
-    reason="https://github.com/ibis-project/ibis/issues/8632",
-)
-def test_map_null_workaround(con):
-    con.sql("SELECT MAP([0, 1, 2], NULL::INT[])").to_pyarrow()
