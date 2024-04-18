@@ -429,6 +429,7 @@ serieswise = {
     ),
     ops.Capitalize: lambda arg: arg.str.capitalize(),
     ops.Date: lambda arg: arg.dt.floor("d"),
+    ops.IsoDayOfWeekIndex: lambda arg: pd.to_datetime(arg).dt.dayofweek + 1,
     ops.DayOfWeekIndex: lambda arg: pd.to_datetime(arg).dt.dayofweek,
     ops.DayOfWeekName: lambda arg: pd.to_datetime(arg).dt.day_name(),
     ops.EndsWith: lambda arg, end: arg.str.endswith(end),
