@@ -21,7 +21,6 @@ from ibis.expr.rewrites import peel_join_field
 from ibis.expr.types.generic import Value
 from ibis.expr.types.relations import (
     Table,
-    bind,
     dereference_mapping,
     unwrap_aliases,
 )
@@ -221,8 +220,8 @@ def prepare_predicates(
                 lk = rk = pred
 
             # bind the predicates to the join chain
-            (left_value,) = bind(left, lk)
-            (right_value,) = bind(right, rk)
+            (left_value,) = left.bind(lk)
+            (right_value,) = right.bind(rk)
 
             # dereference the left value to one of the relations in the join chain
             left_value, right_value = dereference_sides(
@@ -425,7 +424,7 @@ class Join(Table):
     @functools.wraps(Table.select)
     def select(self, *args, **kwargs):
         chain = self.op()
-        values = bind(self, (args, kwargs))
+        values = self.bind((args, kwargs))
         values = unwrap_aliases(values)
 
         # if there are values referencing fields from the join chain constructed

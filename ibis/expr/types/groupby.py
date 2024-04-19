@@ -28,7 +28,6 @@ import ibis.expr.types as ir
 from ibis.common.grounds import Concrete
 from ibis.common.typing import VarTuple  # noqa: TCH001
 from ibis.expr.rewrites import rewrite_window_input
-from ibis.expr.types.relations import bind
 
 if TYPE_CHECKING:
     from collections.abc import Iterable, Sequence
@@ -89,7 +88,7 @@ class GroupedTable(Concrete):
             A grouped table expression
         """
         table = self.table.to_expr()
-        havings = tuple(bind(table, expr))
+        havings = table.bind(expr)
         return self.copy(havings=self.havings + havings)
 
     def order_by(self, *expr: ir.Value | Iterable[ir.Value]) -> GroupedTable:
@@ -110,7 +109,7 @@ class GroupedTable(Concrete):
             A sorted grouped GroupedTable
         """
         table = self.table.to_expr()
-        orderings = tuple(bind(table, expr))
+        orderings = table.bind(expr)
         return self.copy(orderings=self.orderings + orderings)
 
     def mutate(
@@ -201,7 +200,7 @@ class GroupedTable(Concrete):
         [`GroupedTable.mutate`](#ibis.expr.types.groupby.GroupedTable.mutate)
         """
         table = self.table.to_expr()
-        values = bind(table, (exprs, kwexprs))
+        values = table.bind((exprs, kwexprs))
         window = ibis.window(group_by=self.groupings, order_by=self.orderings)
         return [rewrite_window_input(expr.op(), window).to_expr() for expr in values]
 

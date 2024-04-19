@@ -1890,8 +1890,6 @@ class Column(Value, _FixedTextJupyterMixin):
         Table
             A top-k expression
         """
-        from ibis.expr.types.relations import bind
-
         try:
             (table,) = self.op().relations
         except ValueError:
@@ -1902,8 +1900,7 @@ class Column(Value, _FixedTextJupyterMixin):
         if by is None:
             by = lambda t: t.count()
 
-        (metric,) = bind(table, by)
-
+        (metric,) = table.bind(by)
         return table.aggregate(metric, by=[self]).order_by(metric.desc()).limit(k)
 
     def arbitrary(

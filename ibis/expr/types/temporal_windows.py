@@ -7,7 +7,6 @@ from public import public
 import ibis.common.exceptions as com
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
-from ibis.expr.types.relations import bind
 
 if TYPE_CHECKING:
     from ibis.expr.types import Table
@@ -19,7 +18,7 @@ class WindowedTable:
 
     def __init__(self, table: ir.Table, time_col: ir.Value):
         self.table = table
-        self.time_col = next(bind(table, time_col))
+        (self.time_col,) = table.bind(time_col)
 
         if self.time_col is None:
             raise com.IbisInputError(
@@ -48,7 +47,7 @@ class WindowedTable:
         Table
             Table expression after applying tumbling table-valued function.
         """
-        time_col = next(bind(self.table, self.time_col))
+        (time_col,) = self.table.bind(self.time_col)
         return ops.TumbleWindowingTVF(
             table=self.table,
             time_col=time_col,
@@ -87,7 +86,7 @@ class WindowedTable:
         Table
             Table expression after applying hopping table-valued function.
         """
-        time_col = next(bind(self.table, self.time_col))
+        (time_col,) = self.table.bind(self.time_col)
         return ops.HopWindowingTVF(
             table=self.table,
             time_col=time_col,
@@ -125,7 +124,7 @@ class WindowedTable:
         Table
             Table expression after applying cumulate table-valued function.
         """
-        time_col = next(bind(self.table, self.time_col))
+        (time_col,) = self.table.bind(self.time_col)
         return ops.CumulateWindowingTVF(
             table=self.table,
             time_col=time_col,

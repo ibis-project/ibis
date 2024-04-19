@@ -225,17 +225,15 @@ class WindowBuilder(Builder):
     def order_by(self, expr) -> Self:
         return self.copy(orderings=self.orderings + util.promote_tuple(expr))
 
-    def bind(self, table):
-        from ibis.expr.types.relations import bind
-
+    def bind(self, table: ir.Table):
         if table is None:
             if self._table is None:
                 raise IbisInputError("Cannot bind window frame without a table")
             else:
                 table = self._table.to_expr()
 
-        grouping = bind(table, self.groupings)
-        orderings = bind(table, self.orderings)
+        grouping = table.bind(self.groupings)
+        orderings = table.bind(self.orderings)
         return self.copy(groupings=grouping, orderings=orderings)
 
 
