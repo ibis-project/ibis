@@ -35,6 +35,7 @@ from ibis.backends.tests.errors import (
     Py4JJavaError,
     PyDruidProgrammingError,
     PyODBCProgrammingError,
+    PySparkAnalysisException,
     SnowflakeProgrammingError,
     TrinoUserError,
 )
@@ -2468,3 +2469,45 @@ def test_date_scalar(con, value, func):
     assert isinstance(result, datetime.date)
 
     assert result == datetime.date.fromisoformat(value)
+
+
+@pytest.mark.broken(
+    ["duckdb", "postgres", "oracle", "clickhouse"],
+    reason="precision mismatch, (None vs 6)",
+    raises=AssertionError,
+)
+@pytest.mark.broken(
+    ["datafusion", "snowflake"],
+    reason="precision mismatch (None vs 9)",
+    raises=AssertionError,
+)
+@pytest.mark.notyet(
+    ["risingwave", "exasol", "trino", "impala"],
+    reason="no temp tables",
+    raises=(com.UnsupportedOperationError, NotImplementedError),
+)
+@pytest.mark.broken(
+    ["mssql", "pyspark"],
+    reason="cache not working",
+    raises=(PyODBCProgrammingError, PySparkAnalysisException),
+)
+@pytest.mark.notyet(["druid"], reason="create_table isn't implemented...")
+def test_memtable_timestamp_cache_isomorphic(con, monkeypatch):
+    monkeypatch.setattr(ibis.options, "default_backend", con)
+
+    # Caching
+    table = ibis.memtable(
+        dict(
+            id=[1, 2, 3],
+            ts=[
+                datetime.datetime(2010, 1, 1),
+                datetime.datetime(2010, 1, 2),
+                datetime.datetime(2010, 1, 3),
+            ],
+            val=["one", "two", "three"],
+        )
+    )
+
+    cached_table = table.cache()
+
+    assert table.schema() == cached_table.schema()
