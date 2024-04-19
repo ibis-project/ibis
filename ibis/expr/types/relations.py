@@ -40,7 +40,7 @@ if TYPE_CHECKING:
     from ibis.expr.schema import SchemaLike
     from ibis.expr.types import Table
     from ibis.expr.types.groupby import GroupedTable
-    from ibis.expr.types.tvf import WindowedTable
+    from ibis.expr.types.temporal_windows import WindowedTable
     from ibis.formats.pyarrow import PyArrowData
     from ibis.selectors import IfAnyAll
 
