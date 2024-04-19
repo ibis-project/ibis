@@ -135,7 +135,7 @@ This allows you to combine the flexibility of Python with the scale and performa
 
 Ibis supports 20+ backends:
 
-- [Apache Arrow DataFusion](https://ibis-project.org/backends/datafusion/)
+- [Apache DataFusion](https://ibis-project.org/backends/datafusion/)
 - [Apache Druid](https://ibis-project.org/backends/druid/)
 - [Apache Flink](https://ibis-project.org/backends/flink)
 - [Apache Impala](https://ibis-project.org/backends/impala/)
