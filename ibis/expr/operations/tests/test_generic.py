@@ -146,10 +146,6 @@ def test_NULL():
 
 
 @pytest.mark.parametrize("op", [ops.RandomScalar, ops.RandomUUID])
-def test_unique_impure_values(op):
-    assert op() != op()
-    assert hash(op()) != hash(op())
-
-    node = op()
-    other = node.copy()
-    assert node == other
+def test_impure_values_are_equal(op):
+    assert op() == op()
+    assert hash(op()) == hash(op())
