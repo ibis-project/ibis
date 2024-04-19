@@ -35,11 +35,16 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - run: echo "No build required"
+  test_pyspark:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "No build required"
   backends:
     # this job exists so that we can use a single job from this workflow to gate merging
     runs-on: ubuntu-latest
     needs:
       - test_backends_min_version
       - test_backends
+      - test_pyspark
     steps:
       - run: exit 0
