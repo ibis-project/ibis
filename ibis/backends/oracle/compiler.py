@@ -94,6 +94,7 @@ class OracleCompiler(SQLGlotCompiler):
         ops.LPad: "lpad",
         ops.RPad: "rpad",
         ops.StringAscii: "ascii",
+        ops.StringToDate: "to_date",
         ops.Strip: "trim",
         ops.Hash: "ora_hash",
     }
