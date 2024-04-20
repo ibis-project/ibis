@@ -1,0 +1,9 @@
+::: {.callout-warning collapse="true"}
+## Ibis in the browser is experimental.
+
+iOS is known to cause crashes on this page.
+
+Mobile Firefox may also not work (the page won't crash though).
+
+Please [open an issue on GitHub](https://github.com/ibis-project/ibis/issues/new/choose) if you encounter problems.
+:::

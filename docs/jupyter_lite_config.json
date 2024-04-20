@@ -1,0 +1,8 @@
+{
+  "PipliteAddon": {
+    "piplite_urls": [
+      "https://duckdb.github.io/duckdb-pyodide/wheels/duckdb-0.10.2-cp311-cp311-emscripten_3_1_46_wasm32.whl",
+      "dist/ibis_framework-8.0.0-py3-none-any.whl"
+    ]
+  }
+}
