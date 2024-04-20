@@ -1441,7 +1441,6 @@ def test_string_to_timestamp(alltypes, fmt):
         assert val.strftime("%m/%d/%y") == result["date_string_col"][i]
 
 
-
 @pytest.mark.parametrize(
     "fmt",
     [
@@ -1512,13 +1511,14 @@ def test_string_to_timestamp(alltypes, fmt):
 )
 @pytest.mark.notimpl(["exasol"], raises=com.OperationNotDefinedError)
 def test_string_to_date(alltypes, fmt):
-    table=alltypes
+    table = alltypes
     result = table.mutate(date=table.date_string_col.to_date(fmt)).execute()
 
     # TEST: do we get the same date out, that we put in?
     # format string assumes that we are using pandas' strftime
     for i, val in enumerate(result["date"]):
         assert val.strftime("%m/%d/%y") == result["date_string_col"][i]
+
 
 @pytest.mark.parametrize(
     ("date", "expected_index", "expected_day"),
