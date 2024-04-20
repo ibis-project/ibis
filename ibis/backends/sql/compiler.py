@@ -801,6 +801,8 @@ class SQLGlotCompiler(abc.ABC):
         )
 
     ### String Instruments
+    def visit_StringToDate(self, op, *, arg, format_str):
+        return self.f.to_timestamp(arg, format_str).date()
 
     def visit_Strip(self, op, *, arg):
         return self.f.trim(arg, string.whitespace)
