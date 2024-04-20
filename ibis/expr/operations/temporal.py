@@ -80,6 +80,15 @@ class StringToTimestamp(Value):
 
 
 @public
+class StringToDate(Value):
+    arg: Value[dt.String]
+    format_str: Value[dt.String]
+
+    shape = rlz.shape_like("arg")
+    dtype = dt.date
+
+
+@public
 class ExtractTemporalField(TemporalUnary):
     dtype = dt.int32
 
