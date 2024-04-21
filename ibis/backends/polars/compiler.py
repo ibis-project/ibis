@@ -1002,6 +1002,7 @@ _date_methods = {
     ops.ExtractDay: "day",
     ops.ExtractMonth: "month",
     ops.ExtractYear: "year",
+    ops.ExtractIsoYear: "iso_year",
     ops.ExtractQuarter: "quarter",
     ops.ExtractDayOfYear: "ordinal_day",
     ops.ExtractWeekOfYear: "week",

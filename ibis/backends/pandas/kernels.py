@@ -440,6 +440,7 @@ serieswise = {
     ops.ExtractSecond: lambda arg: arg.dt.second,
     ops.ExtractWeekOfYear: lambda arg: arg.dt.isocalendar().week.astype("int32"),
     ops.ExtractYear: lambda arg: arg.dt.year,
+    ops.ExtractIsoYear: lambda arg: arg.dt.isocalendar().year,
     ops.IsNull: lambda arg: arg.isnull(),
     ops.NotNull: lambda arg: arg.notnull(),
     ops.Lowercase: lambda arg: arg.str.lower(),
