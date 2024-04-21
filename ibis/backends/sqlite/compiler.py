@@ -66,6 +66,7 @@ class SQLiteCompiler(SQLGlotCompiler):
             ops.TimestampAdd,
             ops.TimestampSub,
             ops.TimestampDiff,
+            ops.StringToDate,
             ops.StringToTimestamp,
             ops.TimeDelta,
             ops.DateDelta,

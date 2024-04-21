@@ -37,6 +37,7 @@ class ClickHouseCompiler(SQLGlotCompiler):
             ops.Time,
             ops.TimeDelta,
             ops.StringToTimestamp,
+            ops.StringToDate
             ops.Levenshtein,
         )
     )
@@ -105,7 +106,6 @@ class ClickHouseCompiler(SQLGlotCompiler):
         ops.Strftime: "formatDateTime",
         ops.StringLength: "length",
         ops.StringReplace: "replaceAll",
-        ops.StringToDate: "toDate",
         ops.Strip: "trimBoth",
         ops.TimestampNow: "now",
         ops.TypeOf: "toTypeName",

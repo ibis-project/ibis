@@ -101,7 +101,6 @@ class PostgresCompiler(SQLGlotCompiler):
         ops.MapKeys: "akeys",
         ops.MapValues: "avals",
         ops.RegexSearch: "regexp_like",
-        ops.StringToDate: "to_date",
         ops.TimeFromHMS: "make_time",
     }
 
