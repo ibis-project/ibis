@@ -37,7 +37,7 @@ class ClickHouseCompiler(SQLGlotCompiler):
             ops.Time,
             ops.TimeDelta,
             ops.StringToTimestamp,
-            ops.StringToDate
+            ops.StringToDate,
             ops.Levenshtein,
         )
     )
