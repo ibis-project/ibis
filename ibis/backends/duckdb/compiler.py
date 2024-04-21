@@ -201,6 +201,9 @@ class DuckDBCompiler(SQLGlotCompiler):
         any_arg_null = sg.or_(*(arr.is_(NULL) for arr in arg))
         return self.if_(any_arg_null, NULL, zipped_arrays)
 
+    def visit_ExtractIsoYear(self, op, *, arg):
+        return self.f.isoyear(arg)
+
     def visit_Map(self, op, *, keys, values):
         # workaround for https://github.com/ibis-project/ibis/issues/8632
         return self.if_(
