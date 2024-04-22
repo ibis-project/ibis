@@ -30,9 +30,9 @@ Phillip Cloud
 ::: {.column width="50%"}
 Chloe He
 
-- …
-- …
-- …
+- Founding engineer at Claypot -> Senior engineer at Voltron Data
+- Infrastructure for real-time ML
+- Ibis streaming
 :::
 
 ::::
@@ -501,13 +501,171 @@ ibis.to_sql(expr)
 - Send to DB via DBAPI: `cursor.execute(ibis_generated_sql)`
 - (Heavily) massage the output
 
-# Streaming
+# Ibis + Streaming
 
-## Slide 1
-## Slide 2
-## Slide 3
-## Slide …
-## Slide N
+## Growth of streaming
+
+- Over 70% of Fortune 500 companies have adopted Kafka
+- 54% of Databricks’ customers are using Spark Structured Streaming
+- The stream processing market is expected to grow at a compound annual growth rate (CAGR) of 21.5% from 2022 to 2028 (IDC)
+
+## Batch and streaming
+
+```{mermaid}
+graph LR
+  A[data] --> B[batch processing] & C[stream processing] --> D[downstream]
+```
+
+## In the machine learning world...
+
+```{mermaid}
+graph TB
+  proddata --> sampled
+  model --> prodpipeline
+  subgraph "local env"
+  sampled[sampled data] --> local[local experimentation]
+  local <--> iterate
+  local --> model[finally, we have a production-ready model!]
+  end
+  subgraph "prod env"
+  proddata[production data] --> prodpipeline[production pipelines]
+  end
+```
+
+## {#local-experimentation-to-production-image}
+
+[Insert image here]
+
+## In the machine learning world...
+
+```{mermaid}
+graph TB
+  proddata --> sampled
+  model -- "code rewrite" --> prodpipeline
+  linkStyle 1 color:white;
+  subgraph "local env"
+  sampled[sampled data] --> local[local experimentation]
+  local <--> iterate
+  local --> model[finally, we have a production-ready model!]
+  end
+  subgraph "prod env"
+  proddata[production data] --> prodpipeline[production pipelines]
+  end
+```
+
+## A real-world example
+
+:::: {.columns}
+
+::: {.column width="50%"}
+pandas
+```python
+return (
+    clicks_df
+    .groupby(["user"])
+    .rolling("1h")
+    .size()
+)
+```
+:::
+
+::: {.column width="50%"}
+Flink SQL
+```sql
+SELECT user,
+       COUNT(url) OVER (
+         PARTITION BY user
+         ORDER BY click_time
+         RANGE BETWEEN
+           INTERVAL '1' HOUR PRECEDING
+           AND CURRENT ROW
+       ) AS one_hour_user_click_cnt
+  FROM clicks
+```
+:::
+
+::::
+
+## Code rewrites
+
+- From batch to streaming
+- From local experimentation to production
+- Backfilling a streaming feature on a batch backing table
+- …
+
+## The solution...
+
+Stream-batch unified API
+
+- Flink SQL
+- Spark DataFrame API
+- …
+
+## Stream-batch unification {.nostretch}
+
+:::: {.columns}
+
+::: {.column width="50%"}
+pandas
+```python
+return (
+    clicks_df
+    .groupby(["user"])
+    .rolling("1h")
+    .size()
+)
+```
+:::
+
+::: {.column width="50%"}
+Flink SQL
+```sql
+SELECT user,
+       COUNT(url) OVER (
+         PARTITION BY user
+         ORDER BY click_time
+         RANGE BETWEEN
+           INTERVAL '1' HOUR PRECEDING
+           AND CURRENT ROW
+       ) AS one_hour_user_click_cnt
+  FROM clicks
+```
+:::
+::::
+
+![](./arrow.png){fig-align="center" width=5%}
+
+Ibis
+```python
+agged = clicks.select(
+    _.user,
+    one_hour_user_click_cnt=_.url.count().over(
+        range=(-ibis.interval(hour=1), 0),
+        group_by=_.user,
+        order_by=_.click_time,
+    ),
+)
+```
+
+## Challenges of creating a unified API
+
+- Streaming is different
+  - Time semantics
+  - Long-running queries
+  - Sources and sinks
+  - …
+- Less established standards in streaming syntax
+
+## Ibis streaming today
+
+- Flink backend and RisingWave backend launched in Ibis 8.0
+- Introduction of watermarks, windowed aggregations, etc in Ibis
+
+## What's next?
+
+- Expand support of streaming operations and syntax
+- Continuously iterate on a stream-batch unified API
+- More streaming backends (Spark Structured Streaming)
 
 ## Try it out now!
 
@@ -546,9 +704,8 @@ Phillip
 ::: {.column width="50%"}
 Chloe
 
-- A
-- B
-- C
+- [LinkedIn (chloe-he)](https://www.linkedin.com/in/chloe-he)
+- [GitHub (@chloeh13q)](https://github.com/chloeh13q)
 
 :::
 ::::
