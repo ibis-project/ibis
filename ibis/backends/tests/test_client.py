@@ -615,7 +615,6 @@ def test_insert_from_memtable(con, temp_table):
         "pandas",
         "polars",
         "flink",
-        "pyspark",
         "sqlite",
     ],
     raises=AttributeError,
@@ -634,6 +633,7 @@ def test_list_catalogs(con):
         "risingwave": {"dev"},
         "snowflake": {"IBIS_TESTING"},
         "trino": {"memory"},
+        "pyspark": {"spark_catalog"},
     }
     result = set(con.list_catalogs())
     assert test_catalogs[con.name] <= result
@@ -647,7 +647,7 @@ def test_list_catalogs(con):
         "polars",
     ],
     raises=AttributeError,
-    reason="doesn't support the common notion of a catalog",
+    reason="doesn't support the common notion of a database",
 )
 def test_list_database_contents(con):
     # Every backend has its own databases

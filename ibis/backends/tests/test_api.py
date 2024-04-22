@@ -32,7 +32,6 @@ def test_version(backend):
         "bigquery",
         "mysql",
         "impala",
-        "pyspark",
         "flink",
     ],
     reason="backend does not support catalogs",
