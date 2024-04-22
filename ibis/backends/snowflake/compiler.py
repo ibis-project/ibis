@@ -78,7 +78,6 @@ class SnowflakeCompiler(SQLGlotCompiler):
         ops.Hash: "hash",
         ops.Median: "median",
         ops.Mode: "mode",
-        ops.StringToDate: "to_date",
         ops.StringToTimestamp: "to_timestamp_tz",
         ops.TimeFromHMS: "time_from_parts",
         ops.TimestampFromYMDHMS: "timestamp_from_parts",

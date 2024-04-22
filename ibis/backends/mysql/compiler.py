@@ -109,7 +109,6 @@ class MySQLCompiler(SQLGlotCompiler):
         ops.ExtractDayOfYear: "dayofyear",
         ops.Strftime: "date_format",
         ops.StringToTimestamp: "str_to_date",
-        ops.StringToDate: "str_to_date",
         ops.Log2: "log2",
     }
 
