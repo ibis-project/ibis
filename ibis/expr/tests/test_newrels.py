@@ -1618,7 +1618,7 @@ def test_impure_operation_dereferencing(func):
 
     expected = ops.Project(
         parent=t1,
-        values={"x": t1.x, "y": t1.y, "z": t1.y.cast("string")},
+        values={"x": t1.x, "y": t1.y, "z": impure.cast("string")},
     )
     assert t2.op() == expected
 

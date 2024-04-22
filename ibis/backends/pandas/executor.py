@@ -110,6 +110,10 @@ class PandasExecutor(Dispatched, PandasUtils):
         if func := cls.kernels.generic.get(typ):
             return cls.generic(func, **kwargs)
 
+        if len(operands) < 1:
+            raise OperationNotDefinedError(
+                f"No implementation found for operation {typ}"
+            )
         _, *rest = operands.values()
         is_multi_arg = bool(rest)
         is_multi_column = any_of(rest, pd.Series)
