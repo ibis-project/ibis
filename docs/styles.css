@@ -15,7 +15,7 @@ section[id^="parameters-"] {
   width: 1em;
 }
 
-#jupyterlite-console {
+.jupyterlite-console {
   width: 100%;
   height: 95%;
   margin: auto;

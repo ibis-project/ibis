@@ -1,6 +1,5 @@
 ---
-title: "Ibis"
-subtitle: "An overview"
+title: "Ibis: an overview"
 author:
   - Cody Peterson
 format:
