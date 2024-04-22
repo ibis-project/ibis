@@ -404,6 +404,16 @@ class PostgresType(SqlglotType):
             raise com.IbisTypeError("Postgres only supports string values in maps")
         return sge.DataType(this=typecode.HSTORE)
 
+    @classmethod
+    def from_string(cls, text: str, nullable: bool | None = None) -> dt.DataType:
+        if text.lower().startswith("vector"):
+            text = "vector"
+        if dtype := cls.unknown_type_strings.get(text.lower()):
+            return dtype
+
+        sgtype = sg.parse_one(text, into=sge.DataType, read=cls.dialect)
+        return cls.to_ibis(sgtype, nullable=nullable)
+
 
 class RisingWaveType(PostgresType):
     dialect = "risingwave"
