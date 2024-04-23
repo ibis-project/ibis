@@ -16,7 +16,6 @@ import ibis.common.exceptions as com
 from ibis import _
 from ibis import literal as L
 from ibis.backends.tests.errors import (
-    ArrowNotImplementedError,
     DuckDBParserException,
     ExaQueryError,
     GoogleBadRequest,
@@ -188,11 +187,6 @@ from ibis.expr import datatypes as dt
                     ["polars"],
                     "Unsupported type: Float16(nullable=True)",
                     raises=NotImplementedError,
-                ),
-                pytest.mark.broken(
-                    ["datafusion"],
-                    "Expected np.float16 instance",
-                    raises=ArrowNotImplementedError,
                 ),
             ],
             id="float16",

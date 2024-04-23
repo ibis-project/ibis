@@ -183,10 +183,15 @@ class Backend(BaseBackend, NoUrl):
         path = normalize_filename(path)
         table_name = table_name or gen_name("read_csv")
         try:
-            self._add_table(table_name, pl.scan_csv(path, **kwargs))
+            table = pl.scan_csv(path, **kwargs)
+            # triggers a schema computation to handle compressed csv inference
+            # and raise a compute error
+            table.schema  # noqa: B018
         except pl.exceptions.ComputeError:
             # handles compressed csvs
-            self._add_table(table_name, pl.read_csv(path, **kwargs))
+            table = pl.read_csv(path, **kwargs)
+
+        self._add_table(table_name, table)
         return self.table(table_name)
 
     def read_json(

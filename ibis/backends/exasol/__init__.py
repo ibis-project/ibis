@@ -293,7 +293,7 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
         overwrite: bool = False,
         temp: bool = False,
     ) -> ir.Table:
-        """Create a table in Snowflake.
+        """Create a table in Exasol.
 
         Parameters
         ----------

@@ -472,7 +472,9 @@ def test_csv_with_slash_n_null(con, tmp_path):
             ["httpfs"],
             marks=[
                 pytest.mark.xfail(
-                    parse_version(duckdb.__version__) >= parse_version("0.10.0"),
+                    parse_version("0.10.0")
+                    <= parse_version(duckdb.__version__)
+                    < parse_version("0.10.2"),
                     reason="https://github.com/duckdb/duckdb/issues/10698",
                     raises=duckdb.HTTPException,
                 )
