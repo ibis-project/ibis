@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING, Any
 import pyspark
 import sqlglot as sg
 import sqlglot.expressions as sge
+from packaging.version import parse as vparse
 from pyspark import SparkConf
 from pyspark.sql import DataFrame, SparkSession
 from pyspark.sql.functions import PandasUDFType, pandas_udf
@@ -32,6 +33,8 @@ if TYPE_CHECKING:
 
     import pandas as pd
     import pyarrow as pa
+
+PYSPARK_LT_34 = vparse(pyspark.__version__) < vparse("3.4")
 
 
 def normalize_filenames(source_list):
@@ -240,7 +243,7 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
 
     @contextlib.contextmanager
     def _active_catalog(self, name: str | None):
-        if name is None:
+        if name is None or PYSPARK_LT_34:
             yield
             return
         current = self.current_catalog
