@@ -55,6 +55,7 @@ D = MyNode(name="D", children=[])
 E = MyNode(name="E", children=[])
 B = MyNode(name="B", children=[D, E])
 A = MyNode(name="A", children=[B, C])
+F = MyNode(name="F", children=[{C: D, E: None}])
 
 
 def test_bfs():
@@ -68,8 +69,8 @@ def test_construction():
 
 
 def test_graph_nodes():
-    g = Graph(A)
-    assert g.nodes() == {A, B, C, D, E}
+    assert Graph(A).nodes() == {A, B, C, D, E}
+    assert Graph(F).nodes() == {F, C, D, E}
 
 
 def test_graph_repr():
@@ -286,6 +287,10 @@ def test_flatten_collections():
     )
     assert list(result) == [A, C, D]
 
+    # test that dictionary keys are also flattened
+    result = _flatten_collections([0.0, {A: B, C: [D]}, frozendict({E: 6})])
+    assert list(result) == [A, B, C, D, E]
+
 
 def test_recursive_lookup():
     results = {A: "A", B: "B", C: "C", D: "D"}
@@ -311,6 +316,9 @@ def test_recursive_lookup():
         ("B", "A"),
         my_map,
     )
+
+    # test that dictionary nodes as dictionary keys are also looked up
+    assert _recursive_lookup({A: B, C: D}, results) == {"A": "B", "C": "D"}
 
 
 def test_coerce_finder():
