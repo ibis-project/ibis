@@ -1,0 +1,9 @@
+r0 := UnboundTable: t
+  a int64
+
+MyNode
+  obj:
+    r0.a
+  children:
+    r0.a
+    r0.a + 1

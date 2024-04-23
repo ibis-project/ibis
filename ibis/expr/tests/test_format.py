@@ -10,6 +10,7 @@ import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.legacy.udf.vectorized as udf
 from ibis import util
+from ibis.common.graph import Node as Traversable
 from ibis.expr.format import fmt, pretty
 
 
@@ -463,5 +464,28 @@ def test_default_format_implementation(snapshot):
     t = ibis.table([("a", "int64")], name="t")
     vl = ValueList((1, 2.0, "three", t.a))
     result = pretty(vl)
+
+    snapshot.assert_match(result, "repr.txt")
+
+
+def test_arbitrary_traversables_are_supported(snapshot):
+    class MyNode(Traversable):
+        __slots__ = ("obj", "children")
+        __argnames__ = ("obj", "children")
+
+        def __init__(self, obj, children):
+            self.obj = obj.op()
+            self.children = tuple(child.op() for child in children)
+
+        @property
+        def __args__(self):
+            return self.obj, self.children
+
+        def __hash__(self):
+            return hash((self.__class__, self.obj, self.children))
+
+    t = ibis.table([("a", "int64")], name="t")
+    node = MyNode(t.a, [t.a, t.a + 1])
+    result = pretty(node)
 
     snapshot.assert_match(result, "repr.txt")
