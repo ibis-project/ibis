@@ -620,6 +620,7 @@ def test_insert_from_memtable(con, temp_table):
     raises=AttributeError,
     reason="doesn't support the common notion of a catalog",
 )
+@pytest.mark.xfail_version(pyspark=["pyspark<3.4"])
 def test_list_catalogs(con):
     # Every backend has its own databases
     test_catalogs = {

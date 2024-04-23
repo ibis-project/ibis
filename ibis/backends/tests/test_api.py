@@ -42,6 +42,7 @@ def test_version(backend):
     raises=NotImplementedError,
     reason="current_catalog isn't implemented",
 )
+@pytest.mark.xfail_version(pyspark=["pyspark<3.4"])
 def test_catalog_consistency(backend, con):
     catalogs = con.list_catalogs()
     assert isinstance(catalogs, list)
