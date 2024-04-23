@@ -7,6 +7,7 @@ import pandas.testing as tm
 import pytest
 
 import ibis
+from ibis.backends.tests.errors import DuckDBInvalidInputException
 
 
 @pytest.fixture(scope="module")
@@ -140,6 +141,9 @@ def test_asof_join(con, time_left, time_right, time_df1, time_df2, direction, op
         "risingwave",
         "flink",
     ]
+)
+@pytest.mark.xfail_version(
+    duckdb=["duckdb>=0.10.2"], raises=DuckDBInvalidInputException
 )
 def test_keyed_asof_join_with_tolerance(
     con,

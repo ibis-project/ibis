@@ -40,7 +40,7 @@ if TYPE_CHECKING:
     from ibis.expr.schema import SchemaLike
     from ibis.expr.types import Table
     from ibis.expr.types.groupby import GroupedTable
-    from ibis.expr.types.tvf import WindowedTable
+    from ibis.expr.types.temporal_windows import WindowedTable
     from ibis.formats.pyarrow import PyArrowData
     from ibis.selectors import IfAnyAll
 
@@ -169,7 +169,7 @@ def dereference_mapping(parents):
                 while isinstance(v, ops.Field) and v not in mapping:
                     mapping[v] = ops.Field(parent, k)
                     v = v.rel.values.get(v.name)
-            elif v not in mapping:
+            elif v not in mapping and not v.find(ops.Impure):
                 # do not dereference literal expressions
                 mapping[v] = ops.Field(parent, k)
 

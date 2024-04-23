@@ -1,6 +1,6 @@
 {
-  "image": "mcr.microsoft.com/vscode/devcontainers/python:3.11",
-  "updateContentCommand": ".devcontainer/updateContent.sh",
+  "build": { "dockerfile": "Dockerfile" },
+  "postCreateCommand": ".devcontainer/postCreate.sh",
   "customizations": {
     "codespaces": {
       "openFiles": ["docs/tutorials/getting_started.qmd"]
@@ -15,6 +15,10 @@
     },
     "ghcr.io/eitsupi/devcontainer-features/duckdb-cli:1": {
       "extensions": "httpfs,sqlite,postgres,spatial,substrait,parquet,json,arrow,mysql"
+    },
+    "ghcr.io/eitsupi/devcontainer-features/jq-likes:2": {
+      "jqVersion": "none",
+      "yqVersion": "latest"
     }
   }
 }
