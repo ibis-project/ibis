@@ -11,7 +11,6 @@ from pytest import param
 import ibis
 import ibis.expr.datatypes as dt
 from ibis import udf
-from ibis.backends.tests.errors import SnowflakeProgrammingError
 
 
 @udf.scalar.builtin
@@ -229,7 +228,7 @@ def snowpark_session():
     "execute_as",
     [
         "owner",
-        param("caller", marks=[pytest.mark.xfail(raises=SnowflakeProgrammingError)]),
+        "caller",
     ],
 )
 def test_ibis_inside_snowpark(snowpark_session, execute_as):
