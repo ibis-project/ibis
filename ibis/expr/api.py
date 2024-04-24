@@ -68,6 +68,7 @@ __all__ = (
     "array",
     "asc",
     "case",
+    "cases",
     "coalesce",
     "connect",
     "cross_join",
@@ -1105,56 +1106,76 @@ def interval(
     return functools.reduce(operator.add, intervals)
 
 
+@util.deprecated(instead="use ibis.cases() instead", as_of="9.0")
 def case() -> bl.SearchedCaseBuilder:
-    """Begin constructing a case expression.
+    """DEPRECATED: Use `ibis.cases()` instead."""
+    return bl.SearchedCaseBuilder()
 
-    Use the `.when` method on the resulting object followed by `.end` to create a
-    complete case expression.
+
+@deferrable
+def cases(*branches: tuple[Any, Any], else_: Any | None = None) -> ir.Value:
+    """Create a multi-branch if-else expression.
+
+    Goes through each (condition, value) pair in `branches`, finding the
+    first condition that evaluates to True, and returns the corresponding
+    value. If no condition is True, returns `else_`.
 
     Returns
     -------
-    SearchedCaseBuilder
-        A builder object to use for constructing a case expression.
+    Value
+        A value expression
 
     See Also
     --------
-    [`Value.case()`](./expression-generic.qmd#ibis.expr.types.generic.Value.case)
+    [`Value.cases()`](./expression-generic.qmd#ibis.expr.types.generic.Value.cases)
 
     Examples
     --------
     >>> import ibis
-    >>> from ibis import _
     >>> ibis.options.interactive = True
-    >>> t = ibis.memtable(
-    ...     {
-    ...         "left": [1, 2, 3, 4],
-    ...         "symbol": ["+", "-", "*", "/"],
-    ...         "right": [5, 6, 7, 8],
-    ...     }
-    ... )
-    >>> t.mutate(
-    ...     result=(
-    ...         ibis.case()
-    ...         .when(_.symbol == "+", _.left + _.right)
-    ...         .when(_.symbol == "-", _.left - _.right)
-    ...         .when(_.symbol == "*", _.left * _.right)
-    ...         .when(_.symbol == "/", _.left / _.right)
-    ...         .end()
-    ...     )
-    ... )
-    ┏━━━━━━━┳━━━━━━━━┳━━━━━━━┳━━━━━━━━━┓
-    ┃ left  ┃ symbol ┃ right ┃ result  ┃
-    ┡━━━━━━━╇━━━━━━━━╇━━━━━━━╇━━━━━━━━━┩
-    │ int64 │ string │ int64 │ float64 │
-    ├───────┼────────┼───────┼─────────┤
-    │     1 │ +      │     5 │     6.0 │
-    │     2 │ -      │     6 │    -4.0 │
-    │     3 │ *      │     7 │    21.0 │
-    │     4 │ /      │     8 │     0.5 │
-    └───────┴────────┴───────┴─────────┘
-
+    >>> v = ibis.memtable({"values": [1, 2, 1, 2, 3, 2, 4]}).values
+    >>> ibis.cases((v == 1, "a"), (v > 2, "b"), else_="unk").name("cases")
+    ┏━━━━━━━━┓
+    ┃ cases  ┃
+    ┡━━━━━━━━┩
+    │ string │
+    ├────────┤
+    │ a      │
+    │ unk    │
+    │ a      │
+    │ unk    │
+    │ b      │
+    │ unk    │
+    │ b      │
+    └────────┘
+    >>> ibis.cases(
+    ...     (v % 2 == 0, "divisible by 2"),
+    ...     (v % 3 == 0, "divisible by 3"),
+    ...     (v % 4 == 0, "shadowed by the 2 case"),
+    ... ).name("cases")
+    ┏━━━━━━━━━━━━━━━━┓
+    ┃ cases          ┃
+    ┡━━━━━━━━━━━━━━━━┩
+    │ string         │
+    ├────────────────┤
+    │ NULL           │
+    │ divisible by 2 │
+    │ NULL           │
+    │ divisible by 2 │
+    │ divisible by 3 │
+    │ divisible by 2 │
+    │ divisible by 2 │
+    └────────────────┘
     """
-    return bl.SearchedCaseBuilder()
+    for b in branches:
+        try:
+            condition, result = b
+        except (TypeError, ValueError) as e:
+            raise ValueError(
+                "Each branch must be a tuple of (condition, result)"
+            ) from e
+    cases, results = zip(*branches) if branches else ([], [])
+    return ops.SearchedCase(cases=cases, results=results, default=else_).to_expr()
 
 
 def now() -> ir.TimestampScalar:

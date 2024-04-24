@@ -929,6 +929,8 @@ class SQLGlotCompiler(abc.ABC):
     )
 
     def visit_SimpleCase(self, op, *, base=None, cases, results, default):
+        if not cases:
+            return default
         return sge.Case(
             this=base, ifs=list(map(self.if_, cases, results)), default=default
         )

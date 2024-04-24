@@ -275,11 +275,24 @@ class SimpleCase(Value):
     results: VarTuple[Value]
     default: Value
 
-    shape = rlz.shape_like("base")
-
-    def __init__(self, cases, results, **kwargs):
+    def __init__(self, base, cases, results, default):
         assert len(cases) == len(results)
-        super().__init__(cases=cases, results=results, **kwargs)
+
+        for case in cases:
+            if not rlz.comparable(base, case):
+                raise TypeError(
+                    f"Base expression {rlz._arg_type_error_format(base)} and "
+                    f"case {rlz._arg_type_error_format(case)} are not comparable"
+                )
+
+        if default.dtype.is_null() and results:
+            default = Cast(default, rlz.highest_precedence_dtype(results))
+        super().__init__(base=base, cases=cases, results=results, default=default)
+
+    @attribute
+    def shape(self):
+        exprs = [self.base, *self.cases, *self.results, self.default]
+        return rlz.highest_precedence_shape(exprs)
 
     @attribute
     def dtype(self):
@@ -295,14 +308,14 @@ class SearchedCase(Value):
 
     def __init__(self, cases, results, default):
         assert len(cases) == len(results)
-        if default.dtype.is_null():
+        if default.dtype.is_null() and results:
             default = Cast(default, rlz.highest_precedence_dtype(results))
         super().__init__(cases=cases, results=results, default=default)
 
     @attribute
     def shape(self):
-        # TODO(kszucs): can be removed after making Sequence iterable
-        return rlz.highest_precedence_shape(self.cases)
+        exprs = [*self.cases, *self.results, self.default]
+        return rlz.highest_precedence_shape(exprs)
 
     @attribute
     def dtype(self):

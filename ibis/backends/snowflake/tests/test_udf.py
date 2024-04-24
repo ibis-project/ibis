@@ -117,10 +117,8 @@ def test_xgboost_model(con):
 
     def cases(value, mapping):
         """This should really be a top-level function or method."""
-        expr = ibis.case()
-        for k, v in mapping.items():
-            expr = expr.when(value == k, v)
-        return expr.end()
+        pairs = [(value == k, v) for k, v in mapping.items()]
+        return ibis.cases(*pairs)
 
     diamonds = con.tables.DIAMONDS
     expr = diamonds.mutate(

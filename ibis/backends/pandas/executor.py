@@ -167,6 +167,8 @@ class PandasExecutor(Dispatched, PandasUtils):
     def visit(
         cls, op: ops.SearchedCase | ops.SimpleCase, cases, results, default, base=None
     ):
+        if not cases:
+            return default
         if base is not None:
             cases = tuple(base == case for case in cases)
         cases, _ = cls.asframe(cases, concat=False)
