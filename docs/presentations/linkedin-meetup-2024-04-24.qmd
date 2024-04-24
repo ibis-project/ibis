@@ -512,20 +512,28 @@ ibis.to_sql(expr)
 - 54% of Databricks’ customers are using Spark Structured Streaming
 - The stream processing market is expected to grow at a compound annual growth rate (CAGR) of 21.5% from 2022 to 2028 (IDC)
 
+![](./growth.png){fig-align="center"}
+
 ## Batch and streaming {background-image="./qrcode.svg" background-size="5%" background-position="96% 96%"}
 
 ```{mermaid}
+%%| fig-width: 20
+%%| fig-height: 10
+%%| fig-align: center
 graph LR
-  classDef white color:white;
-  A[data] --> B[batch processing] & C[stream processing] --> D[downstream]
-  class A white;
-  class B white;
-  class C white;
-  class D white;
+  subgraph " "
+    direction LR
+    A[data] --> B[batch processing] & C[stream processing] --> D[downstream]
+  end
 ```
+
+::: {.fragment}
+![](./engines.png){width="60%" fig-align="center"}
+:::
 
 ## In the machine learning world... {background-image="./qrcode.svg" background-size="5%" background-position="96% 96%"}
 
+::: {.fragment}
 ```{mermaid}
 graph TB
   proddata --> sampled
@@ -541,10 +549,11 @@ graph TB
     proddata[production data] --> prodpipeline[production pipelines]
   end
 ```
+:::
 
 ## {#local-experimentation-to-production-image}
 
-[Insert image here]
+![](./throwing.png)
 
 ## In the machine learning world... {background-image="./qrcode.svg" background-size="5%" background-position="96% 96%"}
 
@@ -568,9 +577,9 @@ graph TB
 
 ## A real-world example {background-image="./qrcode.svg" background-size="5%" background-position="96% 96%"}
 
-:::: {.columns}
+:::: {.r-hstack}
 
-::: {.column width="50%"}
+::: {.fragment style="margin-right: 300px;"}
 pandas
 ```python
 return (
@@ -582,9 +591,8 @@ return (
 ```
 :::
 
-::: {.column width="50%"}
+::: {.fragment}
 Flink SQL
-
 ```sql
 SELECT
   user,
@@ -603,20 +611,28 @@ FROM clicks
 
 ## Code rewrites {background-image="./qrcode.svg" background-size="5%" background-position="96% 96%"}
 
+::: {.incremental}
 - From batch to streaming
 - From local experimentation to production
 - Backfilling a streaming feature on a batch backing table
 - …
+:::
+
+::: {.notes}
+Examples for each
+:::
 
 ## The solution... {background-image="./qrcode.svg" background-size="5%" background-position="96% 96%"}
 
+::: {.fragment}
 Stream-batch unified API
 
 - Flink SQL
 - Spark DataFrame API
 - …
+:::
 
-## Stream-batch unification {.nostretch} {background-image="./qrcode.svg" background-size="5%" background-position="96% 96%"}
+## Stream-batch unification {background-image="./qrcode.svg" background-size="5%" background-position="96% 96%"}
 
 :::: {.columns}
 
@@ -649,8 +665,11 @@ FROM clicks
 :::
 ::::
 
-![](./arrow.png){fig-align="center" width=5%}
+::: {.fragment}
+![](./arrow.png){fig-align="center" width="5%"}
+:::
 
+::: {.fragment}
 Ibis
 ```python
 agged = clicks.select(
@@ -662,15 +681,18 @@ agged = clicks.select(
     ),
 )
 ```
+:::
 
-## Challenges of creating a unified API {background-image="./qrcode.svg" background-size="5%" background-position="96% 96%"}
+## But it's hard... {background-image="./qrcode.svg" background-size="5%" background-position="96% 96%"}
 
+::: {.incremental}
 - Streaming is different
   - Time semantics
   - Long-running queries
   - Sources and sinks
   - …
 - Less established standards in streaming syntax
+:::
 
 ## Ibis streaming today {background-image="./qrcode.svg" background-size="5%" background-position="96% 96%"}
 
@@ -682,6 +704,20 @@ agged = clicks.select(
 - Expand support of streaming operations and syntax
 - Continuously iterate on a stream-batch unified API
 - More streaming backends (Spark Structured Streaming)
+
+## Towards composable data systems
+
+:::: {.columns}
+
+::: {.column width="40%"}
+![](./cds_manifesto.png)
+:::
+::: {.column width="15%"}
+:::
+::: {.column width="40%"}
+![](./cds.png)
+:::
+::::
 
 ## Try it out now! {background-image="./qrcode.svg" background-size="5%" background-position="96% 96%"}
 
