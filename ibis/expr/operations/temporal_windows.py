@@ -13,7 +13,13 @@ from ibis.expr.schema import Schema
 
 @public
 class WindowingTVF(Relation):
-    """Generic windowing table-valued function."""
+    """Generic windowing table-valued function.
+
+    Table-valued functions return tables.
+
+    Windowing TVFs in Ibis return the original columns plus `window_start`,
+    `window_end`, and `window_time`.
+    """
 
     # TODO(kszucs): rename to `parent`
     table: Relation
@@ -28,14 +34,7 @@ class WindowingTVF(Relation):
         names = list(self.table.schema.names)
         types = list(self.table.schema.types)
 
-        # The return value of windowing TVF is a new relation that includes all columns
-        # of original relation as well as additional 3 columns named “window_start”,
-        # “window_end”, “window_time” to indicate the assigned window
-
-        # TODO(kszucs): this looks like an implementation detail leaked from the
-        # flink backend
         names.extend(["window_start", "window_end", "window_time"])
-        # window_start, window_end, window_time have type TIMESTAMP(3) in Flink
         types.extend([dt.timestamp(scale=3)] * 3)
 
         return Schema.from_tuples(list(zip(names, types)))

@@ -452,3 +452,52 @@ class PySparkCompiler(SQLGlotCompiler):
             return self.f.sha2(arg, int(how[-3:]))
         else:
             raise NotImplementedError(f"No available hashing function for {how}")
+
+    def visit_TumbleWindowingTVF(
+        self, op, *, table, time_col, window_size, offset=None
+    ):
+        if offset is not None:
+            raise com.UnsupportedOperationError(
+                "PySpark backend does not support offset in aggregations over windows."
+            )
+
+        subquery = (
+            sg.select(
+                sge.Column(
+                    this=STAR, table=sg.to_identifier(table.alias_or_name, quoted=True)
+                ),
+                self.f.window(time_col.this, window_size),
+            )
+            .from_(table)
+            .subquery("__windowed")
+        )
+        return self._standardize_windowing_output(subquery)
+
+    def visit_HopWindowingTVF(
+        self, op, *, table, time_col, window_size, window_slide, offset=None
+    ):
+        if offset is not None:
+            raise com.UnsupportedOperationError(
+                "PySpark backend does not support offset in aggregations over windows."
+            )
+
+        subquery = (
+            sg.select(
+                sge.Column(
+                    this=STAR, table=sg.to_identifier(table.alias_or_name, quoted=True)
+                ),
+                self.f.window(time_col.this, window_size, window_slide),
+            )
+            .from_(table)
+            .subquery("__windowed")
+        )
+        return self._standardize_windowing_output(subquery)
+
+    def _standardize_windowing_output(self, windowing_subquery):
+        return sg.select(
+            sge.Column(
+                this=STAR, table=sg.to_identifier(windowing_subquery.alias, quoted=True)
+            ),
+            sg.alias(sg.column("window.start"), "window_start", quoted=True),
+            sg.alias(sg.column("window.end"), "window_end", quoted=True),
+        ).from_(windowing_subquery)
