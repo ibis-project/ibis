@@ -1302,6 +1302,35 @@ class StringValue(Value):
         """
         return ops.StringToTimestamp(self, format_str).to_expr()
 
+    def to_date(self, format_str: str) -> ir.DateValue:
+        """Parse a string and return a date.
+
+        Parameters
+        ----------
+        format_str
+            Format string in `strptime` format
+
+        Returns
+        -------
+        DateValue
+            Parsed date value
+
+        Examples
+        --------
+        >>> import ibis
+        >>> ibis.options.interactive = True
+        >>> t = ibis.memtable({"ts": ["20170206"]})
+        >>> t.ts.to_date("%Y%m%d")
+        ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+        ┃ StringToDate(ts, '%Y%m%d') ┃
+        ┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+        │ date                       │
+        ├────────────────────────────┤
+        │ 2017-02-06                 │
+        └────────────────────────────┘
+        """
+        return ops.StringToDate(self, format_str).to_expr()
+
     def protocol(self):
         """Parse a URL and extract protocol.
 

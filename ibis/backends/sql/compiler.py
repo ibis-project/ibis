@@ -277,6 +277,7 @@ class SQLGlotCompiler(abc.ABC):
         ops.StringLength: "length",
         ops.StringReplace: "replace",
         ops.StringSplit: "split",
+        ops.StringToDate: "str_to_date",
         ops.StringToTimestamp: "str_to_time",
         ops.Tan: "tan",
         ops.Translate: "translate",
@@ -801,7 +802,6 @@ class SQLGlotCompiler(abc.ABC):
         )
 
     ### String Instruments
-
     def visit_Strip(self, op, *, arg):
         return self.f.trim(arg, string.whitespace)
 

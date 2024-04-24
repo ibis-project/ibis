@@ -936,6 +936,15 @@ def interval_from_integer(op, **kw):
     return _make_duration(arg, dt.Interval(unit=op.unit))
 
 
+@translate.register(ops.StringToDate)
+def string_to_date(op, **kw):
+    arg = translate(op.arg, **kw)
+    return arg.str.strptime(
+        dtype=pl.Date,
+        format=_literal_value(op.format_str),
+    )
+
+
 @translate.register(ops.StringToTimestamp)
 def string_to_timestamp(op, **kw):
     arg = translate(op.arg, **kw)
