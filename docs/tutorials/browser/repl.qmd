@@ -37,7 +37,7 @@ params.extend(("code", line) for line in lines.splitlines() if line)
 query = urlencode(params)
 
 jupyterlite = f"../../jupyterlite/repl/?{query}"
-iframe = f'<iframe src="{jupyterlite}" id="jupyterlite-console"></iframe>'
+iframe = f'<iframe src="{jupyterlite}" class="jupyterlite-console"></iframe>'
 print(iframe)
 ```
 
