@@ -1986,6 +1986,53 @@ def test_sample_with_seed(backend):
     backend.assert_frame_equal(df1, df2)
 
 
+@pytest.mark.parametrize(
+    "inp, exp",
+    [
+        pytest.param(
+            lambda: ibis.literal(1).cases([(1, "one"), (2, "two")], "other"),
+            "one",
+            id="basic",
+        ),
+        pytest.param(
+            lambda: ibis.literal(1).cases([(1, "one"), (2, "two")], default="other"),
+            "one",
+            id="one_kwarg",
+        ),
+        pytest.param(
+            lambda: ibis.literal(1).cases(
+                case_result_pairs=[(1, "one"), (2, "two")], default="other"
+            ),
+            "one",
+            id="two_kwargs",
+        ),
+        pytest.param(
+            lambda: ibis.literal(1).cases(
+                default="other", case_result_pairs=[(1, "one"), (2, "two")]
+            ),
+            "one",
+            id="two_kwargs_swapped",
+        ),
+        pytest.param(
+            lambda: ibis.literal(5).cases([(1, "one"), (2, "two")], "other"),
+            "other",
+            id="other",
+        ),
+        pytest.param(
+            lambda: ibis.literal(5).cases([(1, "one"), (2, "two")]),
+            None,
+            id="fallthrough",
+        ),
+    ],
+)
+def test_value_cases(con, inp, exp):
+    result = con.execute(inp())
+    if exp is None:
+        assert pd.isna(result)
+    else:
+        assert result == exp
+
+
 def test_substitute(backend):
     val = "400"
     t = backend.functional_alltypes
