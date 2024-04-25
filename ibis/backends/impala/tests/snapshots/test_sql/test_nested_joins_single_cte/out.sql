@@ -7,7 +7,7 @@ WITH `t1` AS (
     1
 )
 SELECT
-  `t7`.`uuid`,
+  `t4`.`uuid`,
   `t4`.`CountStar(t)`,
   `t5`.`last_visit`
 FROM (
@@ -28,4 +28,4 @@ LEFT OUTER JOIN (
   GROUP BY
     1
 ) AS `t5`
-  ON `t7`.`uuid` = `t5`.`uuid`
+  ON `t4`.`uuid` = `t5`.`uuid`

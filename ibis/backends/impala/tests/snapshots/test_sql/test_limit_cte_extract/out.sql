@@ -19,5 +19,5 @@ SELECT
   `t3`.`year`,
   `t3`.`month`
 FROM `t1` AS `t3`
-INNER JOIN `t1` AS `t5`
+INNER JOIN `t1` AS `t4`
   ON TRUE

@@ -13,5 +13,5 @@ SELECT
   "t1"."year",
   "t1"."month"
 FROM "functional_alltypes" AS "t1"
-INNER JOIN "functional_alltypes" AS "t3"
-  ON "t1"."id" = "t3"."id"
+INNER JOIN "functional_alltypes" AS "t2"
+  ON "t1"."id" = "t2"."id"

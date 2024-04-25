@@ -627,13 +627,12 @@ def traverse(
         The Node expression or a list of expressions.
 
     """
-
-    args = reversed(node) if isinstance(node, Sequence) else [node]
-    todo: deque[Node] = deque(args)
+    nodes = list(_flatten_collections(promote_list(node)))
+    queue: deque[Node] = deque(reversed(nodes))
     seen: set[Node] = set()
 
-    while todo:
-        node = todo.pop()
+    while queue:
+        node = queue.pop()
 
         if node in seen:
             continue
@@ -654,7 +653,7 @@ def traverse(
                     "an instance of boolean or iterable"
                 )
 
-            todo.extend(reversed(children))
+            queue.extend(reversed(children))
 
 
 def bfs(root: Node) -> Graph:

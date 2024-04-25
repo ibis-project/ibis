@@ -20,9 +20,9 @@ from ibis.expr.analysis import flatten_predicates
 from ibis.expr.rewrites import peel_join_field
 from ibis.expr.types.generic import Value
 from ibis.expr.types.relations import (
+    DerefMap,
     Table,
     bind,
-    dereference_mapping,
     unwrap_aliases,
 )
 
@@ -112,47 +112,8 @@ def disambiguate_fields(
     return fields, collisions, equalities
 
 
-def dereference_mapping_left(chain):
-    # construct the list of join table we wish to dereference fields to
-    rels = [chain.first]
-    for link in chain.rest:
-        if link.how not in ("semi", "anti"):
-            rels.append(link.table)
-
-    # create the dereference mapping suitable to disambiguate field references
-    # from earlier in the relation hierarchy to one of the join tables
-    subs = dereference_mapping(rels)
-
-    # also allow to dereference fields of the join chain itself
-    for k, v in chain.values.items():
-        subs[ops.Field(chain, k)] = v
-
-    return subs
-
-
-def dereference_mapping_right(right):
-    # the right table is wrapped in a JoinTable the uniqueness of the underlying
-    # table which requires the predicates to be dereferenced to the wrapped
-    return {v: ops.Field(right, k) for k, v in right.values.items()}
-
-
-def dereference_sides(left, right, deref_left, deref_right):
-    left = left.replace(deref_left, filter=ops.Value)
-    right = right.replace(deref_right, filter=ops.Value)
-    return left, right
-
-
-def dereference_value(pred, deref_left, deref_right):
-    deref_both = {**deref_left, **deref_right}
-    if isinstance(pred, ops.Comparison) and pred.left.relations == pred.right.relations:
-        left, right = dereference_sides(pred.left, pred.right, deref_left, deref_right)
-        return pred.copy(left=left, right=right)
-    else:
-        return pred.replace(deref_both, filter=ops.Value)
-
-
 def prepare_predicates(
-    left: ops.JoinChain,
+    chain: ops.JoinChain,
     right: ops.Relation,
     predicates: Sequence[Any],
     comparison: type[ops.Comparison] = ops.Equals,
@@ -187,8 +148,8 @@ def prepare_predicates(
 
     Parameters
     ----------
-    left
-        The left table
+    chain
+        The join chain
     right
         The right table
     predicates
@@ -197,21 +158,16 @@ def prepare_predicates(
         The comparison operation to construct if the input is a pair of
         expression-like objects
     """
-    deref_left = dereference_mapping_left(left)
-    deref_right = dereference_mapping_right(right)
+    reverse = {ops.Field(chain, k): v for k, v in chain.values.items()}
+    deref_right = DerefMap.from_targets(right)
+    deref_left = DerefMap.from_targets(chain.tables, extra=reverse)
+    deref_both = DerefMap.from_targets([*chain.tables, right], extra=reverse)
 
-    left, right = left.to_expr(), right.to_expr()
+    left, right = chain.to_expr(), right.to_expr()
     for pred in util.promote_list(predicates):
-        if pred is True or pred is False:
-            yield ops.Literal(pred, dtype="bool")
-        elif isinstance(pred, Value):
-            for node in flatten_predicates(pred.op()):
-                yield dereference_value(node, deref_left, deref_right)
-        elif isinstance(pred, Deferred):
-            # resolve deferred expressions on the left table
-            pred = pred.resolve(left).op()
-            for node in flatten_predicates(pred):
-                yield dereference_value(node, deref_left, deref_right)
+        if isinstance(pred, (Value, Deferred, bool)):
+            for bound in bind(left, pred):
+                yield deref_both.dereference(bound.op())
         else:
             if isinstance(pred, tuple):
                 if len(pred) != 2:
@@ -225,9 +181,9 @@ def prepare_predicates(
             (right_value,) = bind(right, rk)
 
             # dereference the left value to one of the relations in the join chain
-            left_value, right_value = dereference_sides(
-                left_value.op(), right_value.op(), deref_left, deref_right
-            )
+            left_value = deref_left.dereference(left_value.op())
+            right_value = deref_right.dereference(right_value.op())
+
             yield comparison(left_value, right_value)
 
 
@@ -248,11 +204,8 @@ class Join(Table):
     def __init__(self, arg, collisions=(), equalities=()):
         assert isinstance(arg, ops.Node)
         if not isinstance(arg, ops.JoinChain):
-            # coerce the input node to a join chain operation by first wrapping
-            # the input relation in a JoinTable so that we can join the same
-            # table with itself multiple times and to enable optimization
-            # passes later on
-            arg = ops.JoinTable(arg, index=0)
+            # coerce the input node to a join chain operation
+            arg = ops.JoinReference(arg, identifier=0)
             arg = ops.JoinChain(arg, rest=(), values=arg.fields)
         super().__init__(arg)
         # the collisions and equalities are used to track the name collisions
@@ -297,11 +250,14 @@ class Join(Table):
         elif how == "asof":
             raise IbisInputError("use table.asof_join(...) instead")
 
-        left = self.op()
-        right = ops.JoinTable(right, index=left.length)
+        chain = self.op()
+        right = right.op()
+        if not isinstance(right, ops.Reference):
+            right = ops.JoinReference(right, identifier=chain.length)
 
         # bind and dereference the predicates
-        preds = list(prepare_predicates(left, right, predicates))
+        preds = prepare_predicates(chain, right, predicates)
+        preds = flatten_predicates(preds)
         if not preds and how != "cross":
             # if there are no predicates, default to every row matching unless
             # the join is a cross join, because a cross join already has this
@@ -316,7 +272,7 @@ class Join(Table):
             how=how,
             predicates=preds,
             equalities=self._equalities,
-            left_fields=left.values,
+            left_fields=chain.values,
             right_fields=right.fields,
             left_template=lname,
             right_template=rname,
@@ -324,10 +280,10 @@ class Join(Table):
 
         # construct a new join link and add it to the join chain
         link = ops.JoinLink(how, table=right, predicates=preds)
-        left = left.copy(rest=left.rest + (link,), values=values)
+        chain = chain.copy(rest=chain.rest + (link,), values=values)
 
         # return with a new JoinExpr wrapping the new join chain
-        return self.__class__(left, collisions=collisions, equalities=equalities)
+        return self.__class__(chain, collisions=collisions, equalities=equalities)
 
     @functools.wraps(Table.asof_join)
     def asof_join(
@@ -382,19 +338,21 @@ class Join(Table):
             values = {**self.op().values, **filtered.op().values}
             return result.select(values)
 
-        left = self.op()
-        right = ops.JoinTable(right, index=left.length)
+        chain = self.op()
+        right = right.op()
+        if not isinstance(right, ops.Reference):
+            right = ops.JoinReference(right, identifier=chain.length)
 
         # TODO(kszucs): add extra validation for `on` with clear error messages
-        (on,) = prepare_predicates(left, right, [on], comparison=ops.GreaterEqual)
-        preds = prepare_predicates(left, right, predicates, comparison=ops.Equals)
+        (on,) = prepare_predicates(chain, right, [on], comparison=ops.GreaterEqual)
+        preds = prepare_predicates(chain, right, predicates, comparison=ops.Equals)
         preds = [on, *preds]
 
         values, collisions, equalities = disambiguate_fields(
             how="asof",
             predicates=preds,
             equalities=self._equalities,
-            left_fields=left.values,
+            left_fields=chain.values,
             right_fields=right.fields,
             left_template=lname,
             right_template=rname,
@@ -402,10 +360,10 @@ class Join(Table):
 
         # construct a new join link and add it to the join chain
         link = ops.JoinLink("asof", table=right, predicates=preds)
-        left = left.copy(rest=left.rest + (link,), values=values)
+        chain = chain.copy(rest=chain.rest + (link,), values=values)
 
         # return with a new JoinExpr wrapping the new join chain
-        return self.__class__(left, collisions=collisions, equalities=equalities)
+        return self.__class__(chain, collisions=collisions, equalities=equalities)
 
     @functools.wraps(Table.cross_join)
     def cross_join(
@@ -428,13 +386,15 @@ class Join(Table):
         values = bind(self, (args, kwargs))
         values = unwrap_aliases(values)
 
+        links = [link.table for link in chain.rest if link.how not in ("semi", "anti")]
+        derefmap = DerefMap.from_targets([chain.first, *links])
+
         # if there are values referencing fields from the join chain constructed
         # so far, we need to replace them the fields from one of the join links
-        subs = dereference_mapping_left(chain)
         values = {
             k: v.replace(peel_join_field, filter=ops.Value) for k, v in values.items()
         }
-        values = {k: v.replace(subs, filter=ops.Value) for k, v in values.items()}
+        values = {k: derefmap.dereference(v) for k, v in values.items()}
 
         node = chain.copy(values=values)
         return Table(node)

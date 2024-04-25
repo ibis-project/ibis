@@ -24,9 +24,9 @@ WITH "t9" AS (
 SELECT
   "t11"."region",
   "t11"."year",
-  "t11"."total" - "t13"."total" AS "yoy_change"
+  "t11"."total" - "t12"."total" AS "yoy_change"
 FROM "t9" AS "t11"
-INNER JOIN "t9" AS "t13"
+INNER JOIN "t9" AS "t12"
   ON "t11"."year" = (
-    "t13"."year" - CAST(1 AS TINYINT)
+    "t12"."year" - CAST(1 AS TINYINT)
   )

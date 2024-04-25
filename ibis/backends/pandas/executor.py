@@ -540,7 +540,7 @@ class PandasExecutor(Dispatched, PandasUtils):
         return df
 
     @classmethod
-    def visit(cls, op: ops.SelfReference | ops.JoinTable, parent, **kwargs):
+    def visit(cls, op: ops.Reference, parent, **kwargs):
         return parent
 
     @classmethod

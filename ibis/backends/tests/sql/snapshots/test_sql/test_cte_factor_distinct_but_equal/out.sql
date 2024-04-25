@@ -16,5 +16,5 @@ INNER JOIN (
   FROM "alltypes" AS "t1"
   GROUP BY
     1
-) AS "t6"
-  ON "t3"."g" = "t6"."g"
+) AS "t5"
+  ON "t3"."g" = "t5"."g"

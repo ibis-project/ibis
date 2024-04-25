@@ -3,16 +3,21 @@
 from __future__ import annotations
 
 import functools
+from collections import defaultdict
 from collections.abc import Mapping
 
 import toolz
 
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
+from ibis.common.collections import FrozenDict  # noqa: TCH001
 from ibis.common.deferred import Item, _, deferred, var
-from ibis.common.exceptions import ExpressionError
+from ibis.common.exceptions import ExpressionError, IbisInputError
+from ibis.common.graph import Node as Traversable
+from ibis.common.grounds import Concrete
 from ibis.common.patterns import Check, pattern, replace
-from ibis.util import Namespace
+from ibis.common.typing import VarTuple  # noqa: TCH001
+from ibis.util import Namespace, promote_list
 
 p = Namespace(pattern, module=ops)
 d = Namespace(deferred, module=ops)
@@ -21,6 +26,132 @@ d = Namespace(deferred, module=ops)
 x = var("x")
 y = var("y")
 name = var("name")
+
+
+class DerefMap(Concrete, Traversable):
+    """Trace and replace fields from earlier relations in the hierarchy.
+
+    In order to provide a nice user experience, we need to allow expressions
+    from earlier relations in the hierarchy. Consider the following example:
+
+    t = ibis.table([('a', 'int64'), ('b', 'string')], name='t')
+    t1 = t.select([t.a, t.b])
+    t2 = t1.filter(t.a > 0)  # note that not t1.a is referenced here
+    t3 = t2.select(t.a)  # note that not t2.a is referenced here
+
+    However the relational operations in the IR are strictly enforcing that
+    the expressions are referencing the immediate parent only. So we need to
+    track fields upwards the hierarchy to replace `t.a` with `t1.a` and `t2.a`
+    in the example above. This is called dereferencing.
+
+    Whether we can treat or not a field of a relation semantically equivalent
+    with a field of an earlier relation in the hierarchy depends on the
+    `.values` mapping of the relation. Leaf relations, like `t` in the example
+    above, have an empty `.values` mapping, so we cannot dereference fields
+    from them. On the other hand a projection, like `t1` in the example above,
+    has a `.values` mapping like `{'a': t.a, 'b': t.b}`, so we can deduce that
+    `t1.a` is semantically equivalent with `t.a` and so on.
+    """
+
+    """The relations we want the values to point to."""
+    rels: VarTuple[ops.Relation]
+
+    """Substitution mapping from values of earlier relations to the fields of `rels`."""
+    subs: FrozenDict[ops.Value, ops.Field]
+
+    """Ambiguous field references."""
+    ambigs: FrozenDict[ops.Value, VarTuple[ops.Value]]
+
+    @classmethod
+    def from_targets(cls, rels, extra=None):
+        """Create a dereference map from a list of target relations.
+
+        Usually a single relation is passed except for joins where multiple
+        relations are involved.
+
+        Parameters
+        ----------
+        rels : list of ops.Relation
+            The target relations to dereference to.
+        extra : dict, optional
+            Extra substitutions to be added to the dereference map.
+
+        Returns
+        -------
+        DerefMap
+        """
+        rels = promote_list(rels)
+        mapping = defaultdict(dict)
+        for rel in rels:
+            for field in rel.fields.values():
+                for value, distance in cls.backtrack(field):
+                    mapping[value][field] = distance
+
+        subs, ambigs = {}, {}
+        for from_, to in mapping.items():
+            mindist = min(to.values())
+            minkeys = [k for k, v in to.items() if v == mindist]
+            # if all the closest fields are from the same relation, then we
+            # can safely substitute them and we pick the first one arbitrarily
+            if all(minkeys[0].relations == k.relations for k in minkeys):
+                subs[from_] = minkeys[0]
+            else:
+                ambigs[from_] = minkeys
+
+        if extra is not None:
+            subs.update(extra)
+
+        return cls(rels, subs, ambigs)
+
+    @classmethod
+    def backtrack(cls, value):
+        """Backtrack the field in the relation hierarchy.
+
+        The field is traced back until no modification is made, so only follow
+        ops.Field nodes not arbitrary values.
+
+        Parameters
+        ----------
+        value : ops.Value
+            The value to backtrack.
+
+        Yields
+        ------
+        tuple[ops.Field, int]
+            The value node and the distance from the original value.
+        """
+        distance = 0
+        # track down the field in the hierarchy until no modification
+        # is made so only follow ops.Field nodes not arbitrary values;
+        while isinstance(value, ops.Field):
+            yield value, distance
+            value = value.rel.values.get(value.name)
+            distance += 1
+        if value is not None and not value.find(ops.Impure, filter=ops.Value):
+            yield value, distance
+
+    def dereference(self, value):
+        """Dereference a value to the target relations.
+
+        Also check for ambiguous field references. If a field reference is found
+        which is marked as ambiguous, then raise an error.
+
+        Parameters
+        ----------
+        value : ops.Value
+            The value to dereference.
+
+        Returns
+        -------
+        ops.Value
+            The dereferenced value.
+        """
+        ambigs = value.find(lambda x: x in self.ambigs, filter=ops.Value)
+        if ambigs:
+            raise IbisInputError(
+                f"Ambiguous field reference {ambigs!r} in expression {value!r}"
+            )
+        return value.replace(self.subs, filter=ops.Value)
 
 
 @replace(p.Field(p.JoinChain))

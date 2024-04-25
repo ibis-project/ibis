@@ -1248,13 +1248,8 @@ def execute_view(op, *, ctx: pl.SQLContext, **kw):
     return child
 
 
-@translate.register(ops.SelfReference)
-def execute_self_reference(op, **kw):
-    return translate(op.parent, **kw)
-
-
-@translate.register(ops.JoinTable)
-def execute_join_table(op, **kw):
+@translate.register(ops.Reference)
+def execute_reference(op, **kw):
     return translate(op.parent, **kw)
 
 

@@ -16,6 +16,7 @@ from ibis.common.graph import (
     bfs_while,
     dfs,
     dfs_while,
+    traverse,
 )
 from ibis.common.grounds import Annotable, Concrete
 from ibis.common.patterns import Eq, If, InstanceOf, Object, TupleOf, _
@@ -460,3 +461,11 @@ def test_map_clear():
     result = X.map_clear(record_result_keys)
     assert result == X
     assert result_sequence == expected_result_sequence
+
+
+def test_traverse():
+    def walker(node):
+        return True, node
+
+    result = list(traverse(walker, A))
+    assert result == [A, B, D, E, C]

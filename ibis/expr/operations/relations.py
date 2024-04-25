@@ -133,11 +133,10 @@ class Simple(Relation):
         return self.parent.schema
 
 
-# TODO(kszucs): remove in favor of View
 @public
-class SelfReference(Simple):
+class Reference(Relation):
     _uid_counter = itertools.count()
-
+    parent: Relation
     identifier: Optional[int] = None
 
     def __init__(self, parent, identifier):
@@ -146,8 +145,21 @@ class SelfReference(Simple):
         super().__init__(parent=parent, identifier=identifier)
 
     @attribute
+    def schema(self):
+        return self.parent.schema
+
+
+# TODO(kszucs): remove in favor of View
+@public
+class SelfReference(Reference):
+    values = FrozenDict()
+
+
+@public
+class JoinReference(Reference):
+    @attribute
     def values(self):
-        return FrozenDict()
+        return self.parent.fields
 
 
 JoinKind = Literal[
@@ -165,20 +177,15 @@ JoinKind = Literal[
 
 
 @public
-class JoinTable(Simple):
-    index: int
-
-
-@public
 class JoinLink(Node):
     how: JoinKind
-    table: JoinTable
+    table: Reference
     predicates: VarTuple[Value[dt.Boolean]]
 
 
 @public
 class JoinChain(Relation):
-    first: JoinTable
+    first: Reference
     rest: VarTuple[JoinLink]
     values: FrozenDict[str, Unaliased[Value]]
 
@@ -193,6 +200,10 @@ class JoinChain(Relation):
             _check_integrity(join.predicates, allowed_parents)
         _check_integrity(values.values(), allowed_parents)
         super().__init__(first=first, rest=rest, values=values)
+
+    @property
+    def tables(self):
+        return [self.first] + [link.table for link in self.rest]
 
     @property
     def length(self):
