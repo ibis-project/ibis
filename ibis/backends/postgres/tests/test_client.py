@@ -295,3 +295,84 @@ def test_pgvector_type_load(con):
     )
 
     con.drop_table("itemsvrandom")
+
+
+def test_name_dtype(con):
+    expected_schema = ibis.schema(
+        {
+            "f_table_catalog": dt.String(nullable=True),
+            "f_table_schema": dt.String(nullable=True),
+            "f_table_name": dt.String(nullable=True),
+            "f_geometry_column": dt.String(nullable=True),
+            "coord_dimension": dt.Int32(nullable=True),
+            "srid": dt.Int32(nullable=True),
+            "type": dt.String(nullable=True),
+        }
+    )
+
+    assert con.tables.geometry_columns.schema() == expected_schema
+
+
+def test_infoschema_dtypes(con):
+    # information_schema.views
+
+    #   |----------------------------+----------------|
+    #   | table_catalog              | sql_identifier |
+    #   | table_schema               | sql_identifier |
+    #   | table_name                 | sql_identifier |
+    #   | view_definition            | character_data |
+    #   | check_option               | character_data |
+    #   | is_updatable               | yes_or_no      |
+    #   | is_insertable_into         | yes_or_no      |
+    #   | is_trigger_updatable       | yes_or_no      |
+    #   | is_trigger_deletable       | yes_or_no      |
+    #   | is_trigger_insertable_into | yes_or_no      |
+    #   |----------------------------+----------------|
+    #
+    views_schema = ibis.schema(
+        {
+            "table_catalog": dt.String(nullable=True),
+            "table_schema": dt.String(nullable=True),
+            "table_name": dt.String(nullable=True),
+            "view_definition": dt.String(nullable=True),
+            "check_option": dt.String(nullable=True),
+            "is_updatable": dt.String(nullable=True),
+            "is_insertable_into": dt.String(nullable=True),
+            "is_trigger_updatable": dt.String(nullable=True),
+            "is_trigger_deletable": dt.String(nullable=True),
+            "is_trigger_insertable_into": dt.String(nullable=True),
+        }
+    )
+
+    assert con.table("views", database="information_schema").schema() == views_schema
+
+    # information_schema.sql_sizing
+
+    #   |-----------------+-----------------|
+    #   | sizing_id       | cardinal_number |
+    #   | sizing_name     | character_data  |
+    #   | supported_value | cardinal_number |
+    #   | comments        | character_data  |
+    #   |-----------------+-----------------|
+
+    sql_sizing_schema = ibis.schema(
+        {
+            "sizing_id": dt.UInt64(nullable=True),
+            "sizing_name": dt.String(nullable=True),
+            "supported_value": dt.UInt64(nullable=True),
+            "comments": dt.String(nullable=True),
+        }
+    )
+
+    assert (
+        con.table("sql_sizing", database="information_schema").schema()
+        == sql_sizing_schema
+    )
+
+    # information_schema.triggers has a `created` field with the custom timestamp type
+    triggers_created_schema = ibis.schema({"created": dt.Timestamp()})
+
+    assert (
+        con.table("triggers", database="information_schema").select("created").schema()
+        == triggers_created_schema
+    )
