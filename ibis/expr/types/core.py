@@ -16,8 +16,10 @@ from ibis.common.annotations import ValidationError
 from ibis.common.exceptions import IbisError, TranslationError
 from ibis.common.grounds import Immutable
 from ibis.common.patterns import Coercible, CoercionError
+from ibis.common.typing import get_defining_scope
 from ibis.config import _default_backend
 from ibis.config import options as opts
+from ibis.expr.format import pretty
 from ibis.expr.types.pretty import to_rich
 from ibis.util import experimental
 
@@ -44,7 +46,6 @@ class _FixedTextJupyterMixin(JupyterMixin):
         return bundle
 
 
-# TODO(kszucs): consider to subclass from Annotable with a single _arg field
 @public
 class Expr(Immutable, Coercible):
     """Base expression class."""
@@ -53,9 +54,11 @@ class Expr(Immutable, Coercible):
     _arg: ops.Node
 
     def _noninteractive_repr(self) -> str:
-        from ibis.expr.format import pretty
-
-        return pretty(self)
+        if ibis.options.repr.show_variables:
+            scope = get_defining_scope(self, types=Expr)
+        else:
+            scope = None
+        return pretty(self.op(), scope=scope)
 
     def _interactive_repr(self) -> str:
         console = Console(force_terminal=False)

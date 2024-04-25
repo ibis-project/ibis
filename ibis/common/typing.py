@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import inspect
 import re
 import sys
 from abc import abstractmethod
@@ -259,3 +260,21 @@ class Coercible(Abstract):
     @classmethod
     @abstractmethod
     def __coerce__(cls, value: Any, **kwargs: Any) -> Self: ...
+
+
+def get_defining_frame(obj):
+    """Locate the outermost frame where `obj` is defined."""
+    for frame_info in inspect.stack()[::-1]:
+        for var in frame_info.frame.f_locals.values():
+            if obj is var:
+                return frame_info.frame
+    raise ValueError(f"No defining frame found for {obj}")
+
+
+def get_defining_scope(obj, types=None):
+    """Get variables in the scope where `expr` is first defined."""
+    frame = get_defining_frame(obj)
+    scope = {**frame.f_globals, **frame.f_locals}
+    if types is not None:
+        scope = {k: v for k, v in scope.items() if isinstance(v, types)}
+    return scope
