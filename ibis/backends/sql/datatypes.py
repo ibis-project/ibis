@@ -369,11 +369,7 @@ class SqlglotType(TypeMapper):
             return sge.DataType(this=getattr(typecode, geotype.upper()))
         return sge.DataType(this=typecode.GEOMETRY)
 
-    _from_ibis_Point = (
-        _from_ibis_LineString
-    ) = (
-        _from_ibis_Polygon
-    ) = (
+    _from_ibis_Point = _from_ibis_LineString = _from_ibis_Polygon = (
         _from_ibis_MultiLineString
     ) = _from_ibis_MultiPoint = _from_ibis_MultiPolygon = _from_ibis_GeoSpatial
 
@@ -398,6 +394,17 @@ class PostgresType(SqlglotType):
             "macaddr8": dt.macaddr,
             "macaddr8[]": dt.Array(dt.macaddr),
             "name": dt.string,
+            # information schema dtypes
+            # defined as nonnegative int
+            "information_schema.cardinal_number": dt.uint64,
+            # character string with no specific max length
+            "information_schema.character_data": dt.string,
+            # same as above but used for SQL identifiers
+            "information_schema.sql_identifier": dt.string,
+            # "domain over type `timestamp with time zone`"
+            "information_schema.time_stamp": dt.timestamp,
+            # the pre-bool version of bool kept for backwards compatibility
+            "information_schema.yes_or_no": dt.string,
         }
     )
 
@@ -762,11 +769,9 @@ class BigQueryType(SqlglotType):
     def _from_sqlglot_TINYINT(cls) -> dt.Int64:
         return dt.Int64(nullable=cls.default_nullable)
 
-    _from_sqlglot_UINT = (
-        _from_sqlglot_USMALLINT
-    ) = (
-        _from_sqlglot_UTINYINT
-    ) = _from_sqlglot_INT = _from_sqlglot_SMALLINT = _from_sqlglot_TINYINT
+    _from_sqlglot_UINT = _from_sqlglot_USMALLINT = _from_sqlglot_UTINYINT = (
+        _from_sqlglot_INT
+    ) = _from_sqlglot_SMALLINT = _from_sqlglot_TINYINT
 
     @classmethod
     def _from_sqlglot_UBIGINT(cls) -> NoReturn:
