@@ -14,6 +14,7 @@
 from __future__ import annotations
 
 import os
+import random
 
 import numpy as np
 import pandas as pd
@@ -257,3 +258,40 @@ def test_port():
     # check that we parse and use the port (and then of course fail cuz it's bogus)
     with pytest.raises(PsycoPg2OperationalError):
         ibis.connect("postgresql://postgres:postgres@localhost:1337/ibis_testing")
+
+
+def test_pgvector_type_load(con):
+    """
+    CREATE TABLE items (id bigserial PRIMARY KEY, embedding vector(3));
+    INSERT INTO items (embedding) VALUES ('[1,2,3]'), ('[4,5,6]');
+    """
+    t = con.table("items")
+
+    assert t.schema() == ibis.schema(
+        {
+            "id": dt.int64(nullable=False),
+            "embedding": dt.unknown,
+        }
+    )
+
+    result = ["[1,2,3]", "[4,5,6]"]
+    assert t.to_pyarrow().column("embedding").to_pylist() == result
+
+    query = f"""
+    DROP TABLE IF EXISTS itemsvrandom;
+    CREATE TABLE itemsvrandom (id bigserial PRIMARY KEY, embedding vector({random.randint(4, 1000)}));
+    """
+
+    with con.raw_sql(query):
+        pass
+
+    t = con.table("itemsvrandom")
+
+    assert t.schema() == ibis.schema(
+        {
+            "id": dt.int64(nullable=False),
+            "embedding": dt.unknown,
+        }
+    )
+
+    con.drop_table("itemsvrandom")
