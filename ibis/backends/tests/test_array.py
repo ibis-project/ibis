@@ -1401,3 +1401,23 @@ def test_array_literal_with_exprs(con, input, expected):
     assert expr.op().shape == ds.scalar
     result = list(con.execute(expr))
     assert result == expected
+
+
+@pytest.mark.notimpl(
+    ["datafusion", "postgres", "pandas", "polars", "risingwave", "dask"],
+    raises=com.OperationNotDefinedError,
+)
+@pytest.mark.broken(
+    ["trino"],
+    raises=TrinoUserError,
+    reason="sqlglot generates code that assumes there's only at most two fields to unpack from a struct",
+)
+def test_zip_unnest_lift(con):
+    data = pd.DataFrame(dict(array1=[[1, 2, 3]], array2=[[4, 5, 6]]))
+    t = ibis.memtable(data)
+    zipped = t.mutate(zipped=t.array1.zip(t.array2))
+    unnested = zipped.mutate(unnest=zipped.zipped.unnest())
+    lifted = unnested.unnest.lift()
+    result = con.execute(lifted)
+    expected = pd.DataFrame({"f1": [1, 2, 3], "f2": [4, 5, 6]})
+    tm.assert_frame_equal(result, expected)
